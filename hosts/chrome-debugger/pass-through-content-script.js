@@ -68,7 +68,7 @@ async function jb_codeLoaderClient(uri,baseUrl) {
   self.jb = { uri }
   const coreFiles= jb_modules.core.map(x=>`/${x}`)
   await coreFiles.reduce((pr,url) => pr.then(()=> jb_loadFile(url,baseUrl)), Promise.resolve())
-  jb.noCodeLoader = false
+  jb.noSupervisedLoad = false
   var { If,not,contains,writeValue,obj,prop,rx,source,sink,call,jbm,startup,remote,pipe,log,net,aggregate,list,runActions,Var } = 
     jb.macro.ns('If,not,contains,writeValue,obj,prop,rx,source,sink,call,jbm,startup,remote,pipe,log,net,aggregate,list,runActions,Var') // ns use in modules
   await 'loader/code-loader,core/jb-common,misc/jb-callbag,misc/rx-comps,misc/pretty-print,misc/remote-context,misc/jbm,misc/remote'.split(',').map(x=>`/src/${x}.js`)

@@ -4,7 +4,7 @@ jbmFactory['remote'] = function(jb) {
 jb.component('prettyPrint', {
   params: [
     {id: 'profile', defaultValue: '%%'},
-    {id: 'forceFlat', as: 'boolean', type: 'boolean'},
+    {id: 'forceFlat', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,profile) => jb.utils.prettyPrint(jb.val(profile),{ ...ctx.params, comps: jb.studio.previewjb.comps})
 })
@@ -19,6 +19,7 @@ jb.extension('utils', 'prettyPrint', {
   },
   prettyPrintComp(compId,comp,settings={}) {
     if (comp) {
+      //const comp = Object.assign({}, _comp,{location: null})
       return `jb.component('${compId}', ${jb.utils.prettyPrint(comp,{ initialPath: compId, ...settings })})`
     }
   },
@@ -39,7 +40,7 @@ jb.extension('utils', 'prettyPrint', {
     if (!val || typeof val !== 'object')
       return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
 
-    const res = valueToMacro({path: initialPath, line:0, col: 0, depth :1}, val)
+    const res = valueToMacro({path: initialPath, line:0, col: 0, depth :1}, val, forceFlat)
     res.text = res.text.replace(jb.utils.fixedNLRegExp,'\n')
     return res
 
@@ -57,23 +58,25 @@ jb.extension('utils', 'prettyPrint', {
     function joinVals(ctx, innerVals, open, close, flat, isArray) {
       const {path, depth} = ctx
       const _open = typeof open === 'string' ? [{prop: '!open', item: open}] : open
-      const openResult = processList(ctx,[..._open, {prop: '!open-newline', item: () => newLine()}])
-      const arrayOrObj = isArray? 'array' : 'obj'
+      const arrayOrProfile = isArray? 'array' : 'profile'
+      const openResult = processList(ctx,[..._open, {prop: `!open-${arrayOrProfile}`, item: () => newLine()}])
 
       const beforeClose = innerVals.reduce((acc,{innerPath, val}, index) => {
-        const noColon = valueToMacro(ctx, val, flat).noColon // used to serialize function memeber
+        const fixedPropName = valueToMacro(ctx, val, flat).fixedPropName // used to serialize function memeber
+        const semanticPrefix = isArray ? `array-prefix-${index}` : 'prop'
+        const semanticSeparator = isArray ? `array-separator-${index}` : `obj-separator-${index}`
         return processList(acc,[
-          {prop: `!${arrayOrObj}-prefix-${index}`, item: isArray ? '' : fixPropName(innerPath) + (noColon ? '' : ': ')},
+          {prop: `${innerPath}~!${semanticPrefix}`, item: isArray ? '' : fixedPropName || (fixPropName(innerPath) + ': ')},
           {prop: '!value', item: ctx => {
               const ctxWithPath = { ...ctx, path: [path,innerPath].join('~'), depth: depth +1 }
               return {...ctxWithPath, ...valueToMacro(ctxWithPath, val, flat)}
             }
           },
-          {prop: `!${arrayOrObj}-separator-${index}`, item: () => index === innerVals.length-1 ? '' : ',' + (flat ? ' ' : newLine())},
+          {prop: `!${semanticSeparator}`, item: () => index === innerVals.length-1 ? '' : ',' + (flat ? ' ' : newLine())},
         ])}
       , {...openResult, unflat: false} )
-      const _close = typeof close === 'string' ? [{prop: '!close', item: close}] : close
-      const result = processList(beforeClose, [{prop: '!close-newline', item: () => newLine(-1)}, ..._close])
+      const _close = typeof close === 'string' ? [{prop: `!close-${arrayOrProfile}`, item: close}] : close
+      const result = processList(beforeClose, [{prop: `!close-${arrayOrProfile}`, item: () => newLine(-1)}, ..._close])
 
       const unflat = shouldNotFlat(result)
       if ((forceFlat || !unflat) && !flat)
@@ -139,8 +142,7 @@ jb.extension('utils', 'prettyPrint', {
       const twoFirstArgs = keys.length == 2 && params.length >= 2 && profile[params[0].id] && profile[params[1].id]
       if ((params.length < 3 && comp.macroByValue !== false) || comp.macroByValue || oneFirstArg || twoFirstArgs) {
         const args = systemProps.concat(params.map(param=>({innerPath: param.id, val: propOfProfile(param.id)})))
-        for(let i=0;i<5;i++)
-          if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
+        while (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop() // cut the undefined's at the end
         return joinVals(ctx, args, openProfileByValueGroup, closeProfileByValueGroup, flat, true)
       }
       const remarkProp = profile.remark ? [{innerPath: 'remark', val: profile.remark} ] : []
@@ -157,6 +159,18 @@ jb.extension('utils', 'prettyPrint', {
       }
     }
 
+    function serializeFunction(func) {
+      let asStr = func.toString().trim().replace(/^'([a-zA-Z_\-0-9]+)'/,'$1')
+      if (func.fixedName)
+        asStr = asStr.replace(/initExtension[^(]*\(/,`${func.fixedName}(`)
+      const asynch = asStr.indexOf('async') == 0 ? 'async ' : ''
+      const noPrefix = asStr.slice(asynch.length)
+      const funcName = func.fixedName || func.name
+      const header = noPrefix.indexOf(`${funcName}(`) == 0 ? funcName : noPrefix.indexOf(`function ${funcName}(`) == 0 ? `function ${funcName}` : ''
+      const fixedPropName = header ? `${asynch}${header}` : ''
+      return { text: asStr.slice(header.length+asynch.length).replace(/\n/g,jb.utils.fixedNL), fixedPropName, map: {} }
+    }
+
     function valueToMacro({path, line, col, depth}, val, flat) {
       const ctx = {path, line, col, depth}
       let result = doValueToMacro()
@@ -166,14 +180,11 @@ jb.extension('utils', 'prettyPrint', {
 
       function doValueToMacro() {
         if (Array.isArray(val)) return arrayToMacro(ctx, val, flat);
-        if (val === null) return 'null';
-        if (val === undefined) return 'undefined';
-        if (typeof val === 'object') return profileToMacro(ctx, val, flat);
-        if (typeof val === 'function') {
-          const asStr = val.toString().trim().replace(/^'([a-zA-Z_\-0-9]+)'/,'$1')
-          const header = asStr.indexOf(`${val.name}(`) == 0 ? val.name : asStr.indexOf(`function ${val.name}(`) == 0 ? `function ${val.name}` : ''
-          return { text: asStr.slice(header.length).replace(/\n/g,jb.utils.fixedNL), noColon: header ? true : false, map: {} }
-        }
+        if (val === null) return 'null'
+        if (val === undefined) return 'undefined'
+        if (typeof val === 'object') return profileToMacro(ctx, val, flat)
+        if (typeof val === 'function') return serializeFunction(val)
+    
         if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
           return processList(ctx,[
             {prop: '!value-text-start', item: "'"},
@@ -193,8 +204,8 @@ jb.extension('utils', 'prettyPrint', {
 
     function arrayToMacro(ctx, array, flat) {
       const vals = array.map((val,i) => ({innerPath: i, val}))
-      const openArray = [{prop:'!open-array', item:'['}]
-      const closeArray = [{prop:'!close-array', item:']'}]
+      const openArray = [{prop:'!open-array-char', item:'['}]
+      const closeArray = [{prop:'!close-array-char', item:']'}]
 
       return joinVals(ctx, vals, openArray, closeArray, flat, true)
     }
@@ -209,7 +220,7 @@ jb.extension('remoteCtx', {
         const profText = jb.utils.prettyPrint(ctx.profile)
         const vars = jb.objFromEntries(jb.entries(ctx.vars).filter(e => e[0] == '$disableLog' || profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
-        const data = profText.match(/({data})|(ctx.data)|(%%)/) && jb.remoteCtx.stripData(ctx.data) 
+        const data = jb.remoteCtx.usingData(profText) && jb.remoteCtx.stripData(ctx.data) 
         const params = jb.objFromEntries(jb.entries(isJS ? ctx.params: jb.entries(jb.path(ctx.cmpCtx,'params')))
             .filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
@@ -224,14 +235,20 @@ jb.extension('remoteCtx', {
              return jb.remoteCtx.stripFunction(data)
         if (data instanceof jb.core.jbCtx)
              return jb.remoteCtx.stripCtx(data)
+        if (Array.isArray(data) && data.length > 100)
+            jb.logError('stripData slicing large array',{data})
         if (Array.isArray(data))
              return data.slice(0,100).map(x=>jb.remoteCtx.stripData(x))
+        if (typeof data == 'object' && ['DOMRect'].indexOf(data.constructor.name) != -1)
+            return jb.objFromEntries(Object.keys(data.__proto__).map(k=>[k,data[k]]))
         if (typeof data == 'object' && ['VNode','Object','Array'].indexOf(data.constructor.name) == -1)
             return { $$: data.constructor.name}
         if (typeof data == 'object' && data.comps)
             return { uri : data.uri}
         if (typeof data == 'object')
-             return jb.objFromEntries(jb.entries(data).filter(e=> typeof e[1] != 'function').map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
+             return jb.objFromEntries(jb.entries(data)
+                .filter(e=> data.$ || typeof e[1] != 'function') // if not a profile, block functions
+                .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
     },
     stripFunction(f) {
         const {profile,runCtx,path,param,srcPath} = f
@@ -242,14 +259,15 @@ jb.extension('remoteCtx', {
             .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
         const params = jb.objFromEntries(jb.entries(jb.path(runCtx.cmpCtx,'params')).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
-        return Object.assign({$: 'runCtx', id: runCtx.id, path: [srcPath,path].filter(x=>x).join('~'), param, profile: profNoJS, data: jb.remoteCtx.stripData(runCtx.data), vars}, 
+        const usingData = jb.remoteCtx.usingData(profText); //profText.match(/\bdata\b/) || profText.match(/%[^$]/)
+        return Object.assign({$: 'runCtx', id: runCtx.id, path: [srcPath,path].filter(x=>x).join('~'), param, profile: profNoJS, data: usingData ? jb.remoteCtx.stripData(runCtx.data) : null, vars}, 
             Object.keys(params).length ? {cmpCtx: {params} } : {})
     },
     serailizeCtx(ctx) { return JSON.stringify(jb.remoteCtx.stripCtx(ctx)) },
     deStrip(data) {
         if (typeof data == 'string' && data.match(/^__JBART_FUNC:/))
             return eval(data.slice(14))
-        const stripedObj = typeof data == 'object' && jb.objFromEntries(jb.entries(data).map(e=>[e[0],jb.remoteCtx.deStrip(e[1])]))
+        const stripedObj = data && typeof data == 'object' && jb.objFromEntries(jb.entries(data).map(e=>[e[0],jb.remoteCtx.deStrip(e[1])]))
         if (stripedObj && data.$ == 'runCtx')
             return (ctx2,data2) => (new jb.core.jbCtx().ctx({...stripedObj})).extendVars(ctx2,data2).runItself()
         if (Array.isArray(data))
@@ -293,6 +311,7 @@ jb.extension('remoteCtx', {
             jb.logException(e,'eval profile',{code})
         }        
     },
+    usingData: profText => profText.match(/({data})|(ctx.data)|(%[^$])/)
 })
 
 ;
@@ -301,9 +320,9 @@ jb.extension('remoteCtx', {
 interface jbm : {
      uri : string // devtools•logPanel, studio•preview•debugView, •debugView
      parent : jbm // null means root
-     remoteExec(profile: any, ,{timeout,oneway}) : Promise | void
+     remoteExec(profile: any ,{timeout,oneway}) : Promise | void
      createCallbagSource(stripped ctx of cb_source) : cb
-     createCalllbagOperator(stripped ctx of cb_operator) : (source => cb)
+     createCallbagOperator(stripped ctx of cb_operator, {profText}) : (source => cb)
 }
 jbm interface can be implemented on the actual jb object or a jbm proxy via port
 
@@ -320,8 +339,6 @@ implementatios over frame(window,worker), websocket, connection
 Routing is implemented by remoteRoutingPort, first calclating the routing path, and sending to the message hop by hop to the destination.
 The routing path is reversed to create response message
 */
-
-//var { rx,source,jbm,remote,net,pipe, aggregate } = jb.ns('rx,source,jbm,remote,net')
 
 jb.extension('cbHandler', {
     initExtension() {
@@ -344,10 +361,16 @@ jb.extension('cbHandler', {
     },
     removeEntry(ids,m) {
         jb.log(`remote remove cb handlers at ${jb.uri}`,{ids,m})
-        jb.delay(1000).then(()=>
-            jb.asArray(ids).filter(x=>x).forEach(id => delete jb.cbHandler.map[id]))
+        jb.delay(10).then(()=> // TODO: BUGGY delay - not sure why the delay is needed - test: remoteTest.workerByUri
+            jb.asArray(ids).filter(x=>x).forEach(id => delete jb.cbHandler.map[id])
+        )
+    },
+    terminate() {
+        const keys = Object.keys(jb.cbHandler.map)
+        keys.forEach(id => typeof jb.cbHandler.map[id] == 'function' && jb.cbHandler.map[id](2)) // close connetions - may cause problems in tests
+        keys.forEach(id => delete jb.cbHandler.map[id])
     }
-}),
+})
 
 jb.extension('net', {
     reverseRoutingProps(routingMsg) {
@@ -362,6 +385,10 @@ jb.extension('net', {
         return { ...rPath, ...diableLog}
     },
     handleOrRouteMsg(from,to,handler,m, {blockContentScriptLoop} = {}) {
+        if (jb.frame.terminated) {
+            jb.log(`remote messsage arrived to terminated ${from}`,{from,to, m})
+            return
+        }
 //            jb.log(`remote handle or route at ${from}`,{m})
         if (blockContentScriptLoop && m.routingPath && m.routingPath.join(',').indexOf([from,to].join(',')) != -1) return
         const arrivedToDest = m.routingPath && m.routingPath.slice(-1)[0] === jb.uri || (m.to == from && m.from == to)
@@ -387,14 +414,14 @@ jb.extension('net', {
 
 jb.extension('jbm', {
     initExtension() {
-        Object.assign(this, { childJbms: {}, networkPeers: {} })
         Object.assign(jb, {
             uri: jb.uri || jb.frame.jbUri,
             ports: {},
             remoteExec: sctx => jb.codeLoader.bringMissingCode(sctx).then(()=>jb.remoteCtx.deStrip(sctx)()),
             createCallbagSource: sctx => jb.remoteCtx.deStrip(sctx)(),
-            createCalllbagOperator: sctx => jb.remoteCtx.deStrip(sctx)(),
-        })        
+            createCallbagOperator: sctx => jb.remoteCtx.deStrip(sctx)(),
+        })
+        return { childJbms: {}, networkPeers: {}, notifyChildReady: {} }
     },
     portFromFrame(frame,to,options) {
         if (jb.ports[to]) return jb.ports[to]
@@ -421,7 +448,7 @@ jb.extension('jbm', {
                     port.postMessage({$:'CB.createSource', remoteRun, cbId })
                     return (t,d) => outboundMsg({cbId,t,d})
                 },
-                createCalllbagOperator(remoteRun) {
+                createCallbagOperator(remoteRun) {
                     return source => {
                         const sourceId = jb.cbHandler.addToLookup(Object.assign(source,{remoteRun}))
                         const cbId = jb.cbHandler.newId()
@@ -444,7 +471,7 @@ jb.extension('jbm', {
                             handlers[cbId] && reject(err)
                         }, timeout)
                         handlers[cbId] = {resolve,reject,remoteRun, timer}
-                        jb.log('remote exec request',{remoteRun,port,oneway})
+                        jb.log('remote exec request',{remoteRun,port,oneway,cbId})
                         port.postMessage({$:'CB.exec', remoteRun, cbId, isAction, timeout })
                     })
                 }
@@ -495,23 +522,22 @@ jb.extension('jbm', {
                 port.postMessage({$:'CB', cbId,t, d: t == 0 ? (talkback = jb.cbHandler.addToLookup(d)) : jb.remoteCtx.stripCBVars(d), ...jb.net.reverseRoutingProps(routingMsg) }) 
             }
         }
-        function handleCBCommnad(cmd) {
+        async function handleCBCommnad(cmd) {
             const {$,sourceId,cbId,isAction} = cmd
-            jb.codeLoader.bringMissingCode(cmd.remoteRun)
-                .then(()=>{
-                    jb.log('run cmd from remote',{cmd})
-                    return jb.remoteCtx.deStrip(cmd.remoteRun)()
-                })
-                .then( result => {
-                    if ($ == 'CB.createSource' && typeof result == 'function')
-                        jb.cbHandler.map[cbId] = result
-                    else if ($ == 'CB.createOperator' && typeof result == 'function')
-                        jb.cbHandler.map[cbId] = result(remoteCB(sourceId, cbId,cmd) )
-                    else if ($ == 'CB.exec')
-                        port.postMessage({$:'execResult', cbId, result: isAction ? {} : jb.remoteCtx.stripData(result) , ...jb.net.reverseRoutingProps(cmd) })
-
-            }).catch(err=> $ == 'CB.exec' && 
-                port.postMessage({$:'execResult', cbId, result: { type: 'error', err}, ...jb.net.reverseRoutingProps(cmd) }))
+            try {
+            if (jb.codeLoader.loadingCode)
+                await jb.exec({$: 'waitFor', timeout: 500, check: () => !jb.codeLoader.loadingCode })
+                await jb.codeLoader.bringMissingCode(cmd.remoteRun)
+                const result = await jb.remoteCtx.deStrip(cmd.remoteRun)()
+                if ($ == 'CB.createSource' && typeof result == 'function')
+                    jb.cbHandler.map[cbId] = result
+                else if ($ == 'CB.createOperator' && typeof result == 'function')
+                    jb.cbHandler.map[cbId] = result(remoteCB(sourceId, cbId,cmd) )
+                else if ($ == 'CB.exec')
+                    port.postMessage({$:'execResult', cbId, result: isAction ? {} : jb.remoteCtx.stripData(result) , ...jb.net.reverseRoutingProps(cmd) })
+            } catch(err) { 
+                $ == 'CB.exec' && port.postMessage({$:'execResult', cbId, result: { type: 'error', err}, ...jb.net.reverseRoutingProps(cmd) })
+            }
         }
     },
     pathOfDistFolder() {
@@ -520,112 +546,144 @@ jb.extension('jbm', {
         return pathOfDistFolder && pathOfDistFolder() || location && location.href.match(/^[^:]*/)[0] + `://${location.host}/dist`
     },
     initDevToolsDebugge() {
-        if (self.jbRunningTests && !self.jbSingleTest) return
+        if (jb.test && jb.test.runningTests && !jb.test.singleTest) 
+            return jb.logError('jbart devtools is disables for multiple tests')
         if (!jb.jbm.networkPeers['devtools']) {
             jb.jbm.connectToPanel = panelUri => new jb.core.jbCtx().setVar('$disableLog',true).run(remote.action({
                     action: {$: 'jbm.connectToPanel', panelUri}, 
                     jbm: jbm.byUri('devtools'),
                     oneway: true
                 })) // called directly by initPanel
-            jb.jbm.networkPeers['devtools'] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'devtools',{blockContentScriptLoop: true}))
-            self.postMessage({initDevToolsPeerOnDebugge: {uri: jb.uri, distPath: jb.jbm.pathOfDistFolder(), spyParam: jb.path(jb,'spy.spyParam')}}, '*')
+            jb.jbm.networkPeers['devtools'] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(globalThis,'devtools',{blockContentScriptLoop: true}))
+            globalThis.postMessage({initDevToolsPeerOnDebugge: {uri: jb.uri, distPath: jb.jbm.pathOfDistFolder(), spyParam: jb.path(jb,'spy.spyParam')}}, '*')
         }
-    }            
+    },
+    terminateChild(id) {
+        if (!jb.jbm.childJbms[id]) return
+        const childJbm = jb.jbm.childJbms[id]
+        childJbm.terminated = true
+        jb.log('remote terminate child', {id})
+        Object.keys(jb.ports).filter(x=>x.indexOf(childJbm.uri) == 0)
+            .forEach(uri=>delete jb.ports[uri])
+        delete jb.jbm.childJbms[id]
+        childJbm.remoteExec(jb.remoteCtx.stripJS(() => {jb.cbHandler.terminate(); terminated = true; if (typeof close1 == 'function') close() } ), {oneway: true} )
+    },
+    terminateAllChildren() {
+        Object.keys(jb.jbm.childJbms).forEach(id=>jb.jbm.terminateChild(id))
+    }
+})
+
+jb.component('startup.codeLoaderServer', {
+    type: 'startupCode',
+    params: [
+        { id: 'projects' , as: 'array' },
+        { id: 'init' , type: 'action', dynamic: true },
+    ],
+    impl: ({vars}, projects, init) => `(function() { 
+jb_modules = { core: ${JSON.stringify(jb_modules.core)} };
+${jbInit.toString()}
+${jbSupervisedLoad.toString()}
+return jbInit('${vars.uri}',${JSON.stringify({projects, baseUrl: vars.baseUrl, multipleInFrame: vars.multipleJbmsInFrame})})
+    .then(jb => { jb.exec(${JSON.stringify(init.profile || {})}); return jb })
+})()`
+})
+
+jb.component('startup.codeLoaderClient', {
+    type: 'startupCode',
+    impl: ({vars}) => vars.multipleJbmsInFrame ? `(function () {
+const jb = { uri: '${vars.uri}'}
+globalThis.jbLoadingPhase = 'libs'
+${jb.codeLoader.clientCode()};
+jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
+globalThis.jbLoadingPhase = 'appFiles'
+return jb
+})()
+` : `jb = { uri: '${vars.uri}'}
+jbLoadingPhase = 'libs'
+${jb.codeLoader.clientCode()};
+spy = jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
+`
 })
 
 jb.component('jbm.worker', {
     type: 'jbm',
     params: [
         {id: 'id', as: 'string', defaultValue: 'w1' },
+        {id: 'init' , type: 'action', dynamic: true },
+        {id: 'startupCode', type: 'startupCode', dynamic: true, defaultValue: startup.codeLoaderClient() },
         {id: 'networkPeer', as: 'boolean', description: 'used for testing' },
     ],    
-    impl: ({},name,networkPeer) => {
+    impl: (ctx,name,init,startupCode,networkPeer) => {
         const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
         if (childsOrNet[name]) return childsOrNet[name]
         const workerUri = networkPeer ? name : `${jb.uri}•${name}`
         const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
+        const code = startupCode(ctx.setVars({uri: workerUri, multipleJbmsInFrame: false}))
         const workerCode = `
-jb = { uri: '${workerUri}'}
-jbLoadingPhase = 'libs'
-${jb.codeLoader.startupCode()};
-spy = jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
+jbInWorker = true
+jb_modules = { core: ${JSON.stringify(jb_modules.core)} };
+${jbInit.toString()}
+${jbSupervisedLoad.toString()}
+function jb_loadFile(url, baseUrl) { 
+    baseUrl = baseUrl || location.origin || ''
+    return Promise.resolve(importScripts(baseUrl+url)) 
+}
+${code};
 jb.codeLoaderJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
 jbLoadingPhase = 'appFiles'
 //# sourceURL=${workerUri}-startup.js
 `
-        const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
-        return childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
-    }
-})
-
-jb.component('jbm.worker1', {
-    type: 'jbm',
-    params: [
-        {id: 'id', as: 'string', defaultValue: 'w1' },
-        {id: 'networkPeer', as: 'boolean', description: 'used for testing' },
-    ],    
-    impl: ({},name,networkPeer) => {
-        const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
-        if (childsOrNet[name]) return childsOrNet[name]
-        const workerUri = networkPeer ? name : `${jb.uri}•${name}`
-        const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
-        
-        const workerCode = `
-importScripts(location.origin+'/src/loader/jb-loader.js')
-jb_codeLoaderClient('${workerUri}').then(() => {
-spy = jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
-jb.codeLoaderJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
-})
-//# sourceURL=${workerUri}-startup.js
-`
-        const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
-        return childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
-
-        function jb_codeLoaderClient() {
-            'core/jb-core,core/core-utils,core/jb-expression,core/jb-macro,misc/spy'.split(',').map(x=>`/src/${x}.js`).forEach(url=> importScripts(location.origin+url))
-            var { If,not,contains,writeValue,obj,prop,rx,source,sink,call,jbm,remote,pipe,log,net,aggregate,list } = jb.macro.ns('If,not,contains,writeValue,obj,prop,rx,source,sink,call,jbm,remote,pipe,log,net,aggregate,list') // ns use in modules
-            'loader/code-loader,core/jb-common,misc/jb-callbag,misc/rx-comps,misc/pretty-print,misc/remote-context,misc/jbm,misc/remote'.split(',').map(x=>`/src/${x}.js`).forEach(url=> importScripts(location.origin+url))
-        }        
+        const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name, type: 'application/javascript'})))
+        childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
+        childsOrNet[name].worker = worker
+        const result = Promise.resolve(init(ctx.setVar('jbm',childsOrNet[name]))).then(()=>childsOrNet[name])
+        result.uri = workerUri
+        return result
     }
 })
 
 jb.component('jbm.child', {
-    type: 'jbm',
-    params: [
-        {id: 'id', as: 'string', mandatory: true},
-        {id: 'codeLoaderUri', as: 'string', description: 'default is parent codeLoaderJbm'},
-    ],    
-    impl: ({},name) => {
+  type: 'jbm',
+  params: [
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'startupCode', type: 'startupCode', dynamic: true, defaultValue: startup.codeLoaderClient()},
+    {id: 'init', type: 'action', dynamic: true}
+  ],
+  impl: (ctx,name,startUpCode,init) => {
         if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
         const childUri = `${jb.uri}•${name}`
-        const child = jb.frame.eval(`(function () {
-const jb = { uri: '${childUri}'}
-self.jbLoadingPhase = 'libs'
-${jb.codeLoader.startupCode()};
-self.jbLoadingPhase = 'appFiles'
-return jb
-})()
+        const code = startUpCode(ctx.setVars({uri: childUri, multipleJbmsInFrame: true}))
+        const _child = jb.frame.eval(`${code}
 //# sourceURL=${childUri}-startup.js
 `)
-        jb.jbm.childJbms[name] = child
-        child.parent = jb
-        child.codeLoaderJbm = jb.codeLoaderJbm || jb // TODO: use codeLoaderUri
-        child.ports[jb.uri] = {
-            from: child.uri, to: jb.uri,
-            postMessage: m => 
-                jb.net.handleOrRouteMsg(jb.uri,child.uri,jb.ports[child.uri].handler,m),
-            onMessage: { addListener: handler => child.ports[jb.uri].handler = handler }, // only one handler
+        jb.jbm.childJbms[name] = _child
+        const result = Promise.resolve(_child).then(child=>{
+            initChild(child)
+            return Promise.resolve(init(ctx.setVar('jbm',child))).then(()=>child)
+        })
+        result.uri = childUri
+        return result
+
+        function initChild(child) {
+            child.spy.initSpy({spyParam: jb.spy.spyParam})
+            jb.jbm.childJbms[name] = child
+            child.parent = jb
+            child.codeLoaderJbm = jb.codeLoaderJbm || jb // TODO: use codeLoaderUri
+            child.ports[jb.uri] = {
+                from: child.uri, to: jb.uri,
+                postMessage: m => 
+                    jb.net.handleOrRouteMsg(jb.uri,child.uri,jb.ports[child.uri].handler,m),
+                onMessage: { addListener: handler => child.ports[jb.uri].handler = handler }, // only one handler
+            }
+            child.jbm.extendPortToJbmProxy(child.ports[jb.uri])
+            jb.ports[child.uri] = {
+                from: jb.uri,to: child.uri,
+                postMessage: m => 
+                    child.net.handleOrRouteMsg(child.uri,jb.uri,child.ports[jb.uri].handler ,m),
+                onMessage: { addListener: handler => jb.ports[child.uri].handler = handler }, // only one handler
+            }
+            jb.jbm.extendPortToJbmProxy(jb.ports[child.uri])
         }
-        child.jbm.extendPortToJbmProxy(child.ports[jb.uri])
-        jb.ports[child.uri] = {
-            from: jb.uri,to: child.uri,
-            postMessage: m => 
-                child.net.handleOrRouteMsg(child.uri,jb.uri,child.ports[jb.uri].handler ,m),
-            onMessage: { addListener: handler => jb.ports[child.uri].handler = handler }, // only one handler
-        }
-        jb.jbm.extendPortToJbmProxy(jb.ports[child.uri])
-        jb.spy && child.spy.initSpy({spyParam: jb.spy.spyParam})
-        return child
     }
 })
 
@@ -637,6 +695,8 @@ jb.component('jbm.byUri', {
     impl: ({},_uri) => {
         const uri = _uri()
         if (uri == jb.uri) return jb
+        const childJbm = Object.values(jb.jbm.childJbms).find(x=>x.uri == uri)
+        if (childJbm) return childJbm
         return calcNeighbourJbm(uri) || jb.jbm.extendPortToJbmProxy(remoteRoutingPort(jb.uri, uri),{doNotinitCommandListener: true})
 
         function remoteRoutingPort(from,to) {
@@ -681,9 +741,17 @@ jb.component('jbm.byUri', {
     }
 })
 
-jb.component('jbm.same', {
+jb.component('jbm.self', {
     type: 'jbm',
     impl: () => jb
+})
+
+jb.component('jbm.terminateChild', {
+    type: 'action',
+    params: [
+        {id: 'id', as: 'string'}
+    ],
+    impl: (ctx,id) => jb.jbm.terminateChild(id)
 })
 ;
 
@@ -692,7 +760,7 @@ jb.component('source.remote', {
     macroByValue: true,
     params: [
       {id: 'rx', type: 'rx', dynamic: true },
-      {id: 'jbm', type: 'jbm', defaultValue: jbm.same() },
+      {id: 'jbm', type: 'jbm', defaultValue: jbm.self() },
     ],
     impl: (ctx,rx,jbm) => {
         if (!jbm)
@@ -709,20 +777,34 @@ jb.component('remote.operator', {
     macroByValue: true,
     params: [
       {id: 'rx', type: 'rx', dynamic: true },
-      {id: 'jbm', type: 'jbm', defaultValue: jbm.same()},
+      {id: 'jbm', type: 'jbm', defaultValue: jbm.self()},
     ],
     impl: (ctx,rx,jbm) => {
         if (!jbm)
             return jb.logError('remote.operator - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
         const stripedRx = jbm.callbag ? rx : jb.remoteCtx.stripFunction(rx)
+        const profText = jb.utils.prettyPrint(rx.profile)
+        let counter = 0
+        const varsMap = {}
+        const cleanDataObjVars = jb.callbag.map(dataObj => {
+            if (typeof dataObj != 'object' || !dataObj.vars) return dataObj
+            const vars = { ...jb.objFromEntries(jb.entries(dataObj.vars).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))), messageId: ++counter } 
+            varsMap[counter] = dataObj.vars
+            return { data: dataObj.data, vars}
+        })
+        const restoreDataObjVars = jb.callbag.map(dataObj => {
+            const origVars = varsMap[dataObj.vars.messageId] 
+            varsMap[dataObj.messageId] = null
+            return {data: dataObj.data, vars: Object.assign(origVars,dataObj.vars) }
+        })
+
         if (jb.utils.isPromise(jbm)) {
             jb.log('jbm as promise in remote operator, adding request buffer', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
-            return source => {
-                const buffer = jb.callbag.replay(5)(source)
-                return jb.callbag.pipe(jb.callbag.fromPromise(jbm),jb.callbag.concatMap(_jbm=> _jbm.createCalllbagOperator(stripedRx)(buffer)))
-            }
+            return source => jb.callbag.pipe(jb.callbag.fromPromise(jbm),
+                    jb.callbag.concatMap(_jbm=> jb.callbag.pipe(
+                        source, jb.callbag.replay(5), cleanDataObjVars, _jbm.createCallbagOperator(stripedRx), restoreDataObjVars)))
         }
-        return jbm.createCalllbagOperator(stripedRx)
+        return source => jb.callbag.pipe(source, cleanDataObjVars, jbm.createCallbagOperator(stripedRx), restoreDataObjVars)
     }
 })
 
@@ -731,14 +813,18 @@ jb.component('remote.action', {
     description: 'exec a script on a remote node and returns a promise if not oneWay',
     params: [
       {id: 'action', dynamic: true },
-      {id: 'jbm', type: 'jbm', defaultValue: jbm.same()},
+      {id: 'jbm', type: 'jbm', defaultValue: jbm.self()},
       {id: 'oneway', as: 'boolean', description: 'do not wait for the respone' },
       {id: 'timeout', as: 'number', defaultValue: 10000 },
     ],
     impl: (ctx,action,jbm,oneway,timeout) => {
         if (!jbm)
             return jb.logError('remote.action - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
-        return Promise.resolve(jbm).then(_jbm => _jbm.remoteExec(jb.remoteCtx.stripFunction(action),{timeout,oneway,isAction: true}))
+        return Promise.resolve(jbm).then(_jbm => {
+            if (!_jbm || !_jbm.remoteExec)
+                return jb.logError('remote.action - can not resolve jbm', {in: jb.uri, jbm, _jbm, jbmProfile: ctx.profile.jbm, jb, ctx})
+            return _jbm.remoteExec(jb.remoteCtx.stripFunction(action),{timeout,oneway,isAction: true})
+        })
     }
 })
 
@@ -747,7 +833,7 @@ jb.component('remote.data', {
     macroByValue: true,
     params: [
       {id: 'data', dynamic: true },
-      {id: 'jbm', type: 'jbm', defaultValue: jbm.same()},
+      {id: 'jbm', type: 'jbm', defaultValue: jbm.self()},
       {id: 'timeout', as: 'number', defaultValue: 10000 },
     ],
     impl: (ctx,data,jbm,timeout) => {
@@ -762,17 +848,47 @@ jb.component('remote.initShadowData', {
     description: 'shadow watchable data on remote jbm',
     params: [
       {id: 'src', as: 'ref' },
-      {id: 'jbm', type: 'jbm'},
+      {id: 'jbm', type: 'jbm'}
     ],
     impl: rx.pipe(
         source.watchableData({ref: '%$src%', includeChildren: 'yes'}),
         rx.map(obj(prop('op','%op%'), prop('path',({data}) => jb.db.pathOfRef(data.ref)))),
-        rx.log('test op'),
-        sink.action(remote.action( 
-            ctx => jb.db.doOp(jb.db.refOfPath(ctx.data.path), ctx.data.op, ctx),
-            '%$jbm%')
-        )
+        sink.action(remote.action( remote.updateShadowData('%%'), '%$jbm%'))
     )
+})
+
+jb.component('remote.shadowResource', {
+    type: 'action',
+    description: 'shadow watchable data on remote jbm',
+    params: [
+      {id: 'resourceId', as: 'string' },
+      {id: 'jbm', type: 'jbm'},
+    ],
+    impl: runActions(
+        Var('resourceCopy', '%${%$resourceId%}%'),
+        remote.action(addComponent({id: '%$resourceId%', value: '%$resourceCopy%', type: 'watchableData' }),'%$jbm%'),
+        rx.pipe(
+            source.watchableData({ref: '%${%$resourceId%}%', includeChildren: 'yes'}),
+            rx.map(obj(prop('op','%op%'), prop('path',({data}) => jb.db.pathOfRef(data.ref)))),
+            sink.action(remote.action( remote.updateShadowData('%%'), '%$jbm%')
+        ))
+    )
+})
+
+jb.component('remote.updateShadowData', {
+    type: 'action:0',
+    description: 'internal - update shadow on remote jbm',
+    params: [
+        {id: 'entry' },
+    ],
+    impl: (ctx,entry) => {
+        jb.log('shadowData update',{op: entry.op, ctx})
+        const ref = jb.db.refOfPath(entry.path)
+        if (!ref)
+            jb.logError('shadowData path not found at destination',{path: entry.path, ctx})
+        else
+            jb.db.doOp(ref, entry.op, ctx)
+    }
 })
 
 jb.component('remote.copyPassiveData', {
@@ -815,7 +931,19 @@ jb.component('net.listAll', {
         )
         ,jbm.byUri(net.getRootParentUri())
     )
-});
+})
+
+jb.component('dataResource.yellowPages', { watchableData: {}})
+
+jb.component('remote.useYellowPages', {
+    type: 'action',
+    impl: runActions(
+        Var('yp','%$yellowPages%'),
+        remote.action(({},{yp}) => jb.component('dataResource.yellowPages', { watchableData: yp }), '%$jbm%'),
+        remote.initShadowData('%$yellowPages%', '%$jbm%'),
+    )
+})
+;
 
 
 };

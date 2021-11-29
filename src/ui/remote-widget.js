@@ -192,7 +192,7 @@ jb.component('widget.headless', {
             if (start !== 0) return
             const talkback = []
             sink(0, function headless(t, d) {
-                if (t == 1 && d == null)
+                if (t == 1 && (d == undefined || d == null))
                     talkback.forEach(tb=>tb(1))
             })
             filteredSrc(0, function headless(t, d) {

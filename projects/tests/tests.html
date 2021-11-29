@@ -10,11 +10,13 @@
 </style>
 </head>
 <body>
+	<div id="remoteTests"> </div>
+
 	<div id="mem"> </div>
 	<div id="testElem"> </div>
 	<div id="show"> </div>
  <script>
-	jb_codeLoaderServer('tests', {projects: ['studio','tests']})
+	jbInit('tests', {projects: ['studio','tests']})
 		.then(()=>{
 			jb.exec(defaultTheme()),
 			jb.spy.initSpyByUrl()
@@ -23,10 +25,8 @@
 				testType: '',
 				show: location.href.indexOf('&show') != -1,
 				specificTest: urlQuery('test'),
-				rerun: urlQuery('rerun'),
-				pattern: urlQuery('pattern'),
 				notPattern: urlQuery('not'),
-				take: urlQuery('take'),
+				...jb.objFromEntries(['rerun','pattern','take','remoteTests'].map(x=>[x,urlQuery(x)]))
 			}
 			console.log(params)
 			jb.test.runTests(params)

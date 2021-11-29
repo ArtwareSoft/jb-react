@@ -2,7 +2,7 @@
 Object.assign(jb, {
     log(logName, record, options) { jb.spy && jb.spy.log && jb.spy.log(logName, record, options) },
     logError(err,logObj) {
-      jb.frame.console && jb.frame.console.log('%c Error: ','color: red', err, logObj)
+      jb.frame.console && jb.frame.console.error('%c Error: ','color: red', err, logObj)
       jb.log('error',{err , ...logObj})
     },
     logException(e,err,logObj) {

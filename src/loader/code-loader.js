@@ -4,7 +4,9 @@ jb.extension('codeLoader', {
             clientComps: ['#extension','#core.run','#component','#jbm.extendPortToJbmProxy','#jbm.portFromFrame','#spy.initSpy','#codeLoader.getCodeFromRemote','#cbHandler.terminate','codeLoader.getCode','waitFor'],
             existingFEPaths: {},
             loadedFElibs: {},
-            server: jb.frame.jb_codeLoaderServer
+            server: jb.frame.jbInit,
+            serverUrl: jb.frame.jbCodeLoaderServerUrl,
+            getJSFromUrl: jb.frame.jbGetJSFromUrl
         }
     },
     existing() {
@@ -51,8 +53,9 @@ jb.extension('codeLoader', {
             .map(line=>({ lib: line[2], funcs: line[1].split(',')}))
             .flatMap(({lib,funcs}) => funcs.map(f=>`#${lib}.${f.trim()}`))
         const funcUsage = [...funcStr.matchAll(/\bjb\.([a-zA-Z0-9_]+)\.?([a-zA-Z0-9_]*)\(/g)].map(e=>e[2] ? `#${e[1]}.${e[2]}` : `#${e[1]}`)
+        const extraComps = [...funcStr.matchAll(/\/\/.?#jbLoadComponents:([ ,\.\-#a-zA-Z0-9_]*)/g)].map(e=>e[1]).flatMap(x=>x.split(',')).map(x=>x.trim()).filter(x=>x)
         //jb.log('codeLoader dependent on func',{f: func.name || funcStr, funcDefs, funcUsage})
-        return [ ...(func.__initFunc ? [func.__initFunc] : []), ...funcDefs, ...funcUsage]
+        return [ ...(func.__initFunc ? [func.__initFunc] : []), ...funcDefs, ...funcUsage, ...extraComps]
             .filter(x=>!x.match(/^#frame\./)).filter(id=> !onlyMissing || jb.codeLoader.missing(id))
     },
     code(ids) {
@@ -113,10 +116,17 @@ jb.extension('codeLoader', {
     async getCodeFromRemote(_ids) {
         const ids = _ids.filter(id => jb.codeLoader.missing(id))
         if (!ids.length) return
+        const vars = { ids: ids.join(','), existing: jb.codeLoader.existing().join(',') }
+        if (jb.codeLoader.serverUrl) {
+            const url = `${jbCodeLoaderServerUrl}/jb-${ids[0]}-x.js?ids=${vars.ids}&existing=${vars.existing}`.replace(/#/g,'-')
+            console.log(`codeLoader: ${url}`)
+            jb.log('codeLoader getCode',{url,ids})
+            return await jb['codeLoader'].getJSFromUrl(url)
+        }
+
         const stripedCode = {
-            $: 'runCtx', path: '',
-            profile: {$: 'codeLoader.getCode'},
-            vars: { ids: ids.join(','), existing: jb.codeLoader.existing().join(',') }
+            $: 'runCtx', path: '', vars,
+            profile: {$: 'codeLoader.getCode'}
         }
         jb.log('codeLoader request code from remote',{ids, stripedCode})
         jb.codeLoader.loadingCode = true

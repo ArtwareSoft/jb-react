@@ -1,7 +1,7 @@
 jb.extension('studio', 'hosts', {
     initExtension() {
         const location = jb.frame.location
-        const entryUrl = location && (new URLSearchParams(location.search).entryUrl || location.href) || ''
+        const entryUrl = location && (new jb.frame.URLSearchParams(location.search).entryUrl || location.href) || ''
         const host = jb.frame.jbInvscode ? (jb.frame.jbModuleUrl ? jb.studio.vscodeUserHost() : jb.studio.vscodeDevHost())
             : entryUrl.match(/chrome-extension:/) ? jb.studio.chromeExtensionHost()
             : entryUrl.match(/localhost:[0-9]*\/project\/studio/) ? jb.studio.devHost()
@@ -44,7 +44,6 @@ jb.extension('studio', 'hosts', {
         settings: () => Promise.resolve('{}'),
         locationToPath: loc => decodeURIComponent(loc.split('/file//').pop()).replace(/\\/g,'/'),
         // getFile: path => jb.vscode.service({$: 'getFile', path}).then( res=>res.content ),
-        // saveDelta: (path, edits) => jb.vscode.service({$: 'saveDelta', path, edits}),
         // saveFile: (path, contents) => jb.vscode.service({$: 'saveFile', path, contents}),
         // createDirectoryWithFiles: request => jb.vscode.service({$: 'createDirectoryWithFiles', ...request}),
         // showError: text => jb.vscode.service({$: 'showErrorMessage', text }),

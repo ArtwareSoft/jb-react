@@ -672,9 +672,47 @@ jb.component('rxTest.fork', {
         rx.fork(rx.take(1), sink.data('%$a/fork%')),
         rx.skip(1),
         rx.take(1),
-//        rx.delay(20),
         ),join(',')),    
       expectedResult: equals('%%,%$a/fork%','2,1')
+  })
+})
+
+jb.component('rxTest.resource', {
+  impl: dataTest({
+      calculate: pipe(rx.pipe( 
+        source.data(list(1,2,3)),
+        rx.resource('acc',obj(prop('sum',0))),
+        rx.do(({data},{acc}) => acc.sum += data),
+        rx.map('%%-%$acc/sum%'),
+        ),join(',')),    
+      expectedResult: equals('1-1,2-3,3-6')
+  })
+})
+
+jb.component('rxTest.queue.add', {
+  impl: dataTest({
+      calculate: pipe(rx.pipe( 
+        source.data(1),
+        rx.resource('q1', rx.queue(list(1,2,3))),
+        rx.do(runActions(delay(1),action.addToQueue('%$q1%',4) )),
+        rx.flatMap(source.queue('%$q1%')),
+        rx.take(4),
+        ),join(',')),    
+      expectedResult: equals('1,2,3,4')
+  })
+})
+
+jb.component('rxTest.queue.remove', {
+  impl: dataTest({
+      calculate: pipe(rx.pipe( 
+        source.data(1),
+        rx.resource('q1', rx.queue(list(1,2,3))),
+        rx.do(action.removeFromQueue('%$q1%',2)),
+        rx.flatMap(source.queue('%$q1%')),
+        rx.take(2),
+        rx.log('test')
+        ),join(',')),    
+      expectedResult: equals('1,3')
   })
 })
 

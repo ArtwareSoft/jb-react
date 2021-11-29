@@ -1,66 +1,65 @@
 if (typeof jbmFactory == 'undefined') jbmFactory = {};
 jbmFactory['vDebugger'] = function(jb) {
   jb.importAllMacros && eval(jb.importAllMacros());
-Object.assign(jb, { 
+Object.assign(jb, {
   extension(libId, p1 , p2) {
     const extId = typeof p1 == 'string' ? p1 : 'main'
     const extension = p2 || p1
-    const lib = jb[libId] = jb[libId] || {__initialized: {}, __require: [] }
+    const lib = jb[libId] = jb[libId] || {__extensions: {} }
     const funcs = Object.keys(extension).filter(k=>typeof extension[k] == 'function').filter(k=>!k.match(/^initExtension/))
+    const initialized = !!lib.__extensions[extId]
+    funcs.forEach(k=> {
+      extension[k].extId = extId
+      extension[k].__initFunc = extension.initExtension && `#${libId}.__extensions.${extId}.init`
+    })
     funcs.forEach(k=>lib[k] = extension[k])
+    const phase =  extension.$phase || { core: 1, utils: 5, db: 10, watchable: 20}[libId] || 100
+    lib.__extensions[extId] = { libId, phase, init: extension.initExtension, initialized, requireLibs: extension.$requireLibs, requireFuncs: extension.$requireFuncs }
 
-    if (extension.require) 
-      lib.__require = [...lib.__require, ...extension.require]
-    const initFuncId = Object.keys(extension).filter(k=>typeof extension[k] == 'function').filter(k=>k.match(/^initExtension/))[0]
-    const phaseFromFunc = ((initFuncId||'').match(/_phase([0-9]+)/)||[,0])[1]
-    const initFuncPhase = phaseFromFunc || { core: 1, utils: 5, db: 10, watchable: 20}[libId] || 100
-    const initFunc = `init_${libId}-${extId}-phase${initFuncPhase}`
-    const initFuncImpl = extension[initFuncId] || extension[initFunc]
-    if (!initFuncImpl) return
-
-    lib[initFunc] = initFuncImpl    
-    funcs.forEach(k=>lib[k].__initFuncs = [initFunc].map(x=>`#${libId}.${x}`))
-    if (jb.noCodeLoader) {
-      Object.assign(lib, lib[initFunc]())
-      lib.__initialized[initFunc] = true
+    if (jb.noSupervisedLoad && extension.initExtension) {
+      Object.assign(lib, extension.initExtension.apply(lib))
+      lib.__extensions[extId].initialized = true
     }
   },
   initializeLibs(libs) {
-    libs.flatMap(l => Object.keys(jb[l]).filter(x=>x.match(/^init_/)))
-      .sort((x,y) => Number(x.match(/-phase([0-9]+)/)[1]) - Number(y.match(/-phase([0-9]+)/)[1]) )
-      .forEach(initFunc=> {
-        const lib = jb[initFunc.match(/init_([^-]+)/)[1]]
-        if (! lib.__initialized[initFunc]) {
-          lib.__initialized[initFunc] = true
-          Object.assign(lib, lib[initFunc]())
-        }
+    libs.flatMap(l => Object.values(jb[l].__extensions)).sort((x,y) => x.phase - y.phase )
+      .filter(ext => ext.init && !ext.initialized)
+      .forEach(ext => {
+          ext.initialized = true
+          Object.assign(jb[ext.libId], ext.init.apply(jb[ext.libId]))
       })
-    return libs.flatMap(l => jb[l].__require||[])
-      .filter(url => !jb.frame.jb.__requiredLoaded[url])
-      .reduce((pr,url) => pr.then(() => jb_loadFile(url)).then(() => jb.frame.jb.__requiredLoaded[url] = true), Promise.resolve())
-  },  
+    const baseUrl = jb.path(jb.codeLoader,'baseUrl')
+    const libsToLoad = libs.flatMap(l => Object.values(jb[l].__extensions)).flatMap(ext => ext.requireLibs || []).filter(url => !jb.frame.jb.__requiredLoaded[url])
+    return Promise.all(libsToLoad.map( url => Promise.resolve(jb_loadFile(url,baseUrl,jb)).then(() => jb.frame.jb.__requiredLoaded[url] = true) ))
+  },
+
   component(id,comp) {
     // todo: move functionality to onAddComponent hook
     if (!jb.core.location) jb.initializeLibs(['core'])
-    try {
-      const errStack = new Error().stack.split(/\r|\n/)
-      const line = errStack.filter(x=>x && x != 'Error' && !x.match(/at Object.component/)).shift()
-      comp[jb.core.location] = line ? (line.split('at eval (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
-      comp[jb.core.project] = comp[jb.core.location][0].split('?')[1]
-      comp[jb.core.location][0] = comp[jb.core.location][0].split('?')[0]
-    
-      if (comp.watchableData !== undefined) {
-        jb.comps[jb.db.addDataResourcePrefix(id)] = comp
-        return jb.db.resource(jb.db.removeDataResourcePrefix(id),comp.watchableData)
+    if (comp.location) {
+        comp[jb.core.location] =  comp.location
+        delete comp.location
+    } else {
+      try {
+//        if (jb.frame.jbInvscode) debugger
+        const errStack = new Error().stack.split(/\r|\n/).map(x=>x.trim())
+        const line = errStack.filter(x=>x && !x.match(/^Error/) && !x.match(/at Object.component/)).shift()
+        comp[jb.core.location] = line ? (line.split('at ').pop().split('eval (').pop().split(' (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
+        comp[jb.core.project] = comp[jb.core.location][0].split('?')[1]
+        comp[jb.core.location][0] = comp[jb.core.location][0].split('?')[0]
+      } catch(e) {
+        console.log(e)
       }
-      if (comp.passiveData !== undefined) {
-        jb.comps[jb.db.addDataResourcePrefix(id)] = comp
-        return jb.db.passive(jb.db.removeDataResourcePrefix(id),comp.passiveData)
-      }
-    } catch(e) {
-      console.log(e)
     }
 
+    if (comp.watchableData !== undefined) {
+      jb.comps[jb.db.addDataResourcePrefix(id)] = comp
+      return jb.db.resource(jb.db.removeDataResourcePrefix(id),comp.watchableData)
+    }
+    if (comp.passiveData !== undefined) {
+      jb.comps[jb.db.addDataResourcePrefix(id)] = comp
+      return jb.db.passive(jb.db.removeDataResourcePrefix(id),comp.passiveData)
+    }
     jb.comps[id] = comp;
 
     // fix as boolean params to have type: 'boolean'
@@ -70,22 +69,22 @@ Object.assign(jb, {
     })
     comp[jb.core.loadingPhase] = jb.frame.jbLoadingPhase
   },
-  noCodeLoader: true
+  noSupervisedLoad: true
 })
 
 jb.extension('core', {
   initExtension() {
-    Object.assign(jb, { 
-      frame: (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {},
+    Object.assign(jb, {
+      frame: globalThis,
       comps: {}, ctxDictionary: {},
-      __requiredLoaded: {},
-      jstypes: jb.core.jsTypes()
+      __requiredLoaded: {}
     })
-    return { 
-      ctxCounter: 0, 
+    return {
+      ctxCounter: 0,
       project: Symbol.for('project'),
       location: Symbol.for('location'),
       loadingPhase: Symbol.for('loadingPhase'),
+      jstypes: jb.core._jsTypes()
     }
   },
   run(ctx,parentParam,settings) {
@@ -94,7 +93,7 @@ jb.extension('core', {
         return
       if (jb.ctxByPath) jb.ctxByPath[ctx.path] = ctx
       const runner = () => jb.core.doRun(...arguments)
-      Object.defineProperty(runner, 'name', { value: `${ctx.path} ${ctx.profile && ctx.profile.$ ||''}-prepare param` })        
+      Object.defineProperty(runner, 'name', { value: `${ctx.path} ${ctx.profile && ctx.profile.$ ||''}-prepare param` })
       let res = runner(...arguments)
       if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
           res = ctx.probe.record(ctx,res) || res
@@ -107,19 +106,19 @@ jb.extension('core', {
       const profile = ctx.profile
       if (profile == null || (typeof profile == 'object' && profile.$disabled))
         return jb.core.castToParam(null,parentParam)
-  
+
       if (profile.$debugger == 0) debugger
       if (profile.$asIs) return profile.$asIs
       if (parentParam && (parentParam.type||'').indexOf('[]') > -1 && ! parentParam.as) // fix to array value. e.g. single feature not in array
           parentParam.as = 'array'
-  
+
       if (typeof profile === 'object' && Object.getOwnPropertyNames(profile).length == 0)
         return
       const ctxWithVars = jb.core.extendWithVars(ctx,profile.$vars)
       const run = jb.core.prepare(ctxWithVars,parentParam)
       ctx.parentParam = parentParam
       const {castToParam } = jb.core
-      switch (run.type) {      
+      switch (run.type) {
         case 'booleanExp': return castToParam(jb.expression.calcBool(profile, ctx,parentParam), parentParam)
         case 'expression': return castToParam(jb.expression.calc(profile, ctx,parentParam), parentParam)
         case 'asIs': return profile
@@ -142,10 +141,10 @@ jb.extension('core', {
                 jb.core.run(new jb.core.jbCtx(run.ctx,{profile: paramObj.prof, forcePath: paramObj.forcePath || ctx.path + '~' + paramObj.path, path: ''}), paramObj.param);
             }
           }
-          Object.defineProperty(prepareParam, 'name', { value: `${run.ctx.path} ${profile.$ ||''}-prepare param` })        
-    
+          Object.defineProperty(prepareParam, 'name', { value: `${run.ctx.path} ${profile.$ ||''}-prepare param` })
+
           run.preparedParams.forEach(paramObj => prepareParam(paramObj))
-          const out = run.impl ? run.impl.call(null,run.ctx,...run.preparedParams.map(param=>run.ctx.params[param.name])) 
+          const out = run.impl ? run.impl.call(null,run.ctx,...run.preparedParams.map(param=>run.ctx.params[param.name]))
             : jb.core.run(new jb.core.jbCtx(run.ctx, { cmpCtx: run.ctx }),parentParam)
           return castToParam(out,parentParam)
       }
@@ -171,10 +170,10 @@ jb.extension('core', {
         const usingDefault = val === undefined && param.defaultValue !== undefined
         const forcePath = usingDefault && [comp_name, 'params', jb.utils.compParams(comp).indexOf(param), 'defaultValue'].join('~')
         if (forcePath) path = ''
-  
+
         const valOrDefaultArray = valOrDefault ? valOrDefault : []; // can remain single, if null treated as empty array
         const arrayParam = param.type && param.type.indexOf('[]') > -1 && Array.isArray(valOrDefaultArray);
-  
+
         if (param.dynamic) {
           const outerFunc = runCtx => {
             let func;
@@ -182,7 +181,7 @@ jb.extension('core', {
               func = (ctx2,data2) => jb.utils.flattenArray(valOrDefaultArray.map((prof,i)=> runCtx.extendVars(ctx2,data2).runInner(prof, {...param, as: 'asIs'}, path+'~'+i)))
             else
               func = (ctx2,data2) => jb.core.run(new jb.core.jbCtx(runCtx.extendVars(ctx2,data2),{ profile: valOrDefault, forcePath, path } ),param)
-  
+
             const debugFuncName = valOrDefault && valOrDefault.$ || typeof valOrDefault == 'string' && valOrDefault.slice(0,10) || ''
             Object.defineProperty(func, 'name', { value: p + ': ' + debugFuncName })
             Object.assign(func,{profile: valOrDefault,runCtx,path,srcPath: ctx.path,forcePath,param})
@@ -190,7 +189,7 @@ jb.extension('core', {
           }
           return { name: p, type: 'function', outerFunc, path, param, forcePath };
         }
-  
+
         if (arrayParam) // array of profiles
           return { name: p, type: 'array', array: valOrDefaultArray, param: Object.assign({},param,{type:param.type.split('[')[0],as:null}), forcePath, path };
         else
@@ -203,7 +202,7 @@ jb.extension('core', {
     const parentParam_type = parentParam && parentParam.type;
     const jstype = parentParam && parentParam.as;
     const isArray = Array.isArray(profile);
-  
+
     if (profile_jstype === 'string' && parentParam_type === 'boolean') return { type: 'booleanExp' };
     if (profile_jstype === 'boolean' || profile_jstype === 'number' || parentParam_type == 'asIs') return { type: 'asIs' };// native primitives
     if (profile_jstype === 'object' && jstype === 'object') return { type: 'object' };
@@ -211,7 +210,7 @@ jb.extension('core', {
     if (profile_jstype === 'function') return { type: 'function' };
     if (profile_jstype === 'object' && (profile instanceof RegExp)) return { type: 'asIs' };
     if (profile == null) return { type: 'asIs' };
-  
+
     if (isArray) {
       if (!profile.length) return { type: 'null' };
       if (!parentParam || !parentParam.type || parentParam.type === 'data' ) //  as default for array
@@ -220,14 +219,14 @@ jb.extension('core', {
         profile.sugar = true;
         return { type: 'runActions' };
       }
-    } 
+    }
     const comp_name = jb.utils.compName(profile,parentParam)
     if (!comp_name)
       return { type: 'asIs' }
     const comp = jb.comps[comp_name];
     if (!comp && comp_name) { jb.logError('component ' + comp_name + ' is not defined', {ctx}); return { type:'null' } }
     if (comp.impl == null) { jb.logError('component ' + comp_name + ' has no implementation', {ctx}); return { type:'null' } }
-  
+
     jb.macro.fixProfile(profile)
     const resCtx = Object.assign(new jb.core.jbCtx(ctx,{}), {parentParam, params: {}})
     const preparedParams = jb.core.prepareParams(comp_name,comp,profile,resCtx);
@@ -238,7 +237,7 @@ jb.extension('core', {
       return { type:'profile', ctx: new jb.core.jbCtx(resCtx,{profile: comp.impl, comp: comp_name, path: ''}), preparedParams: preparedParams };
   },
   castToParam: (value,param) => jb.core.tojstype(value,param ? param.as : null),
-  tojstype: (v,jstype) => (!jstype || !jb.jstypes[jstype]) ? v : jb.jstypes[jstype](v),
+  tojstype: (v,jstype) => (!jstype || !jb.core.jstypes[jstype]) ? v : jb.core.jstypes[jstype](v),
   jbCtx: class jbCtx {
     constructor(ctx,ctx2) {
       this.id = jb.core.ctxCounter++
@@ -252,7 +251,7 @@ jb.extension('core', {
           ctx2.path = '?'
         }
         this.profile = (typeof(ctx2.profile) != 'undefined') ?  ctx2.profile : ctx.profile
-  
+
         this.path = (ctx.path || '') + (ctx2.path ? '~' + ctx2.path : '')
         if (ctx2.forcePath)
           this.path = this.forcePath = ctx2.forcePath
@@ -270,7 +269,7 @@ jb.extension('core', {
     }
     exp(exp,jstype) { return jb.expression.calc(exp, this, {as: jstype}) }
     setVars(vars) { return new jb.core.jbCtx(this,{vars: vars}) }
-    setVar(name,val) { return name ? new jb.core.jbCtx(this,{vars: {[name]: val}}) : this }
+    setVar(name,val) { return name ? (name == 'datum' ? new jb.core.jbCtx(this,{data:val}) : new jb.core.jbCtx(this,{vars: {[name]: val}})) : this }
     setData(data) { return new jb.core.jbCtx(this,{data: data}) }
     runInner(profile,parentParam, path) { return jb.core.run(new jb.core.jbCtx(this,{profile: profile,path}), parentParam) }
     bool(profile) { return this.run(profile, { as: 'boolean'}) }
@@ -291,13 +290,7 @@ jb.extension('core', {
     runItself(parentParam,settings) { return jb.core.run(this,parentParam,settings) }
     dataObj(data) { return {data, vars: this.vars} }
   },
-  callStack(ctx) {
-    const ctxStack=[]; 
-    for(let innerCtx=ctx; innerCtx; innerCtx = innerCtx.cmpCtx) 
-      ctxStack.push(innerCtx)
-    return ctxStack.map(ctx=>ctx.callerPath)
-  },
-  jsTypes() { return {
+  _jsTypes() { return {
     asIs: x => x,
     object(value) {
       if (Array.isArray(value))
@@ -356,7 +349,7 @@ jb.extension('core', {
 Object.assign(jb, {
     log(logName, record, options) { jb.spy && jb.spy.log && jb.spy.log(logName, record, options) },
     logError(err,logObj) {
-      jb.frame.console && jb.frame.console.log('%c Error: ','color: red', err, logObj)
+      jb.frame.console && jb.frame.console.error('%c Error: ','color: red', err, logObj)
       jb.log('error',{err , ...logObj})
     },
     logException(e,err,logObj) {
@@ -420,6 +413,12 @@ jb.extension('utils', { // jb core utils
     
       return jb.utils.resolveFinishedPromise(res)
     },
+    callStack(ctx) {
+      const ctxStack=[]; 
+      for(let innerCtx=ctx; innerCtx; innerCtx = innerCtx.cmpCtx) 
+        ctxStack.push(innerCtx)
+      return ctxStack.map(ctx=>ctx.callerPath)
+    },    
     addDebugInfo(f,ctx) { f.ctx = ctx; return f},
     assignDebugInfoToFunc(func, ctx) {
       func.ctx = ctx
@@ -515,9 +514,11 @@ jb.extension('utils', { // generic utils
       })
       return res;
     },
-    sessionStorage: (id,val) => val == undefined ? JSON.parse(jb.frame.sessionStorage.getItem(id)) : jb.frame.sessionStorage.setItem(id,JSON.stringify(val)),
+    sessionStorage(id,val) {
+      if (!jb.frame.sessionStorage) return
+      return val == undefined ? JSON.parse(jb.frame.sessionStorage.getItem(id)) : jb.frame.sessionStorage.setItem(id,JSON.stringify(val))
+    },
     eval: (str,frame) => { try { return (frame || jb.frame).eval('('+str+')') } catch (e) { return Symbol.for('parseError') } },
-
 })
 
 // common generic promoted for easy usage
@@ -644,7 +645,7 @@ jb.extension('expression', {
             obj[subExp] = jb.expression.implicitlyCreateInnerObject(obj,subExp,refHandler)
         }
         if (last && jstype)
-            return jb.jstypes[jstype](obj[subExp])
+            return jb.core.jstypes[jstype](obj[subExp])
         return obj[subExp]
       }
     }
@@ -709,14 +710,13 @@ jb.extension('expression', {
 ;
 
 jb.extension('db', {
-    initExtension() {
-      Object.assign(this, { 
+    initExtension() { return { 
         passiveSym: Symbol.for('passive'),
         resources: {}, consts: {}, 
         watchableHandlers: [],
         isWatchableFunc: [], // assigned by watchable module, if loaded - must be put in array so the code loader will not pack it.
         simpleValueByRefHandler: jb.db._simpleValueByRefHandler()
-      })
+      }
     },
     _simpleValueByRefHandler() { return {
         val(v) {
@@ -815,7 +815,7 @@ jb.extension('db', {
 ;
 
 Object.assign(jb, {
-    defComponents: (items,id,def) => items.forEach(item=>jb.component(id(item), def(item)))
+    defComponents: (items,def) => items.forEach(item=>def(item))
 })
 
 jb.extension('macro', {
@@ -841,7 +841,9 @@ jb.extension('macro', {
         return (...allArgs) => {
             const { args, system } = jb.macro.splitSystemArgs(allArgs)
             const out = { $: `${ns}.${innerId}` }
-            if (args.length == 1 && typeof args[0] == 'object' && !Array.isArray(args[0]) && !jb.utils.compName(args[0])) // params by name
+            if (args.length == 0)
+                Object.assign(out)
+            else if (args.length == 1 && typeof args[0] == 'object' && !Array.isArray(args[0]) && !jb.utils.compName(args[0])) // params by name
                 Object.assign(out, args[0])
             else
                 Object.assign(out, { $byValue: args })
@@ -864,10 +866,10 @@ jb.extension('macro', {
     },
     argsToProfile(cmpId, args) {
         const comp = jb.comps[cmpId]
+        if (args.length == 0)
+            return { $: cmpId }        
         if (!comp)
             return { $: cmpId, $byValue: args }
-        if (args.length == 0)
-            return { $: cmpId }
         const params = comp.params || []
         const firstParamIsArray = (params[0] && params[0].type || '').indexOf('[]') != -1
         if (params.length == 1 && firstParamIsArray) // pipeline, or, and, plus
@@ -885,9 +887,11 @@ jb.extension('macro', {
         debugger;
     },
     fixProfile(profile) {
-        if (profile && profile.$byValue) {
+        if (!profile || !profile.constructor || ['Object','Array'].indexOf(profile.constructor.name) == -1) return
+        Object.values(profile).forEach(v=>jb.macro.fixProfile(v))
+        if (profile.$byValue) {
           if (!jb.comps[profile.$])
-            return jb.logError('fixProfile - missing component', {cmpId: profile.$, profile})
+            return jb.logError('fixProfile - missing component', {compId: profile.$, profile})
           Object.assign(profile, jb.macro.argsToProfile(profile.$, profile.$byValue))
           delete profile.$byValue
         }
@@ -925,18 +929,20 @@ jb.component('remark', {
   macro: (result, self) => Object.assign(result,{ remark: self.remark })
 });
 
-
 jb.extension('codeLoader', {
     initExtension() {
         return {
-            clientComps: ['#extension','#core.run','#component','#jbm.extendPortToJbmProxy','#jbm.portFromFrame','#spy.initSpy','#codeLoader.getCodeFromRemote','codeLoader.getCode','waitFor'],
+            clientComps: ['#extension','#core.run','#component','#jbm.extendPortToJbmProxy','#jbm.portFromFrame','#spy.initSpy','#codeLoader.getCodeFromRemote','#cbHandler.terminate','codeLoader.getCode','waitFor'],
             existingFEPaths: {},
-            loadedFElibs: {}
+            loadedFElibs: {},
+            server: jb.frame.jbInit,
+            serverUrl: jb.frame.jbCodeLoaderServerUrl,
+            getJSFromUrl: jb.frame.jbGetJSFromUrl
         }
     },
     existing() {
         const jbFuncs = Object.keys(jb).filter(x=> typeof jb[x] == 'function').map(x=>`#${x}`)
-        const libs = Object.keys(jb).filter(x=> typeof jb[x] == 'object' && jb[x].__initialized)
+        const libs = Object.keys(jb).filter(x=> typeof jb[x] == 'object' && jb[x].__extensions)
         const funcs = libs.flatMap(lib=>Object.keys(jb[lib]).filter(x => typeof jb[lib][x] == 'function').map(x=>`#${lib}.${x}`) )
         return [...Object.keys(jb.comps), ...jbFuncs, ...funcs]
     },
@@ -974,13 +980,13 @@ jb.extension('codeLoader', {
     dependentOnFunc(func, onlyMissing) {
         if (!func) debugger
         const funcStr = typeof func == 'string' ? func : func.toString()
-        const funcDefs = [...funcStr.matchAll(/{([a-zA-Z0-9_ ,]+)}\s*=\s*jb\.([a-zA-Z0-9_]+)\b/g)] // {...} = jb.xx
+        const funcDefs = [...funcStr.matchAll(/{([a-zA-Z0-9_ ,]+)}\s*=\s*jb\.([a-zA-Z0-9_]+)\b[^\.]/g)] // {...} = jb.xx
             .map(line=>({ lib: line[2], funcs: line[1].split(',')}))
             .flatMap(({lib,funcs}) => funcs.map(f=>`#${lib}.${f.trim()}`))
         const funcUsage = [...funcStr.matchAll(/\bjb\.([a-zA-Z0-9_]+)\.?([a-zA-Z0-9_]*)\(/g)].map(e=>e[2] ? `#${e[1]}.${e[2]}` : `#${e[1]}`)
+        const extraComps = [...funcStr.matchAll(/\/\/.?#jbLoadComponents:([ ,\.\-#a-zA-Z0-9_]*)/g)].map(e=>e[1]).flatMap(x=>x.split(',')).map(x=>x.trim()).filter(x=>x)
         //jb.log('codeLoader dependent on func',{f: func.name || funcStr, funcDefs, funcUsage})
-
-        return [ ...(func.__initFuncs || []), ...funcDefs, ...funcUsage]
+        return [ ...(func.__initFunc ? [func.__initFunc] : []), ...funcDefs, ...funcUsage, ...extraComps]
             .filter(x=>!x.match(/^#frame\./)).filter(id=> !onlyMissing || jb.codeLoader.missing(id))
     },
     code(ids) {
@@ -989,23 +995,39 @@ jb.extension('codeLoader', {
         const cmps = ids.filter(cmpId => jb.comps[cmpId])
         const topLevel = jb.utils.unique(funcs.filter(x=>x.match(/#[a-zA-Z0-9_]+$/))).map(x=>x.slice(1))
         const topLevelCode = topLevel.length && `Object.assign(jb, ${jb.utils.prettyPrint(jb.objFromEntries(topLevel.map(x=>[x,jb.path(jb,x)])))}\n)` || ''
-        const libs = jb.utils.unique(funcs.map(x=> (x.match(/#([a-zA-Z0-9_]+)\./) || ['',''])[1] ).filter(x=>x)) // group by
-        const libsCode = libs.map(lib => {
-            const funcsCode = jb.utils.prettyPrint(jb.objFromEntries(funcs.filter(x=>x.indexOf(lib) == 1).map(x=>[x.split('.').pop(),jb.path(jb,x.slice(1))])))
-            return `jb.extension('${lib}', ${funcsCode})`
+        const libsFuncs = jb.utils.unique(funcs.filter(x=>!x.match(/#[a-zA-Z0-9_]+$/))).map(x=>x.slice(1))
+            .filter(x=>jb.path(jb,x)).map(funcId =>({funcId, lib: funcId.split('.')[0], ext: jb.path(jb,funcId).extId}))
+            .filter(x=>!x.funcId.match(/\.__extensions/))
+        const noExt = libsFuncs.filter(x=>!x.ext)
+        if (noExt.length)
+            debugger
+        const extensions = jb.utils.unique(libsFuncs.map(x=>`${x.lib}#${x.ext}`)).map(x=>x.split('#'))
+        const libsCode = extensions.map(([lib,ext]) => {
+            const extObj = {
+                ...jb.objFromEntries(libsFuncs.filter(x=>x.lib == lib && x.ext == ext)
+                    .map(x=>[x.funcId.split('.').pop(), jb.path(jb,x.funcId)]) ),
+                $phase: jb.path(jb,`${lib}.__extensions.${ext}.phase`),
+                $requireLibs: jb.path(jb,`${lib}.__extensions.${ext}.requireLibs`),
+                $requireFuncs: jb.path(jb,`${lib}.__extensions.${ext}.requireFuncs`),
+                initExtension: jb.path(jb,`${lib}.__extensions.${ext}.init`),
+            }
+            const extCode = jb.utils.prettyPrint(Object.fromEntries(Object.entries(extObj).filter(([_, v]) => v != null)))
+            return `jb.extension('${lib}', '${ext}', ${extCode})`
         }).join('\n\n')
 
         const compsCode = cmps.map(cmpId =>jb.codeLoader.compToStr(cmpId)).join('\n\n')
             //jb.utils.prettyPrintComp(cmpId,jb.comps[cmpId],{noMacros: true})).join('\n\n')
-        return [topLevelCode,libsCode,compsCode,`jb.initializeLibs([${libs.map(l=>"'"+l+"'").join(',')}])`].join(';\n\n')
+        return [topLevelCode,libsCode,compsCode,`jb.initializeLibs([${jb.utils.unique(libsFuncs.map(x=>x.lib)).map(l=>"'"+l+"'").join(',')}])`].join(';\n\n')
+
     },
     compToStr(cmpId) {
-        const content = JSON.stringify(jb.comps[cmpId],
+        const compWithLocation = { ...jb.comps[cmpId], location : jb.comps[cmpId][jb.core.location]}
+        const content = JSON.stringify(compWithLocation,
             (k,v) => typeof v === 'function' ? '@@FUNC'+v.toString()+'FUNC@@' : v,2)
                 .replace(/"@@FUNC([^@]+)FUNC@@"/g, (_,str) => str.replace(/\\\\n/g,'@@__N').replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n').replace(/\\t/g,'').replace(/@@__N/g,'\\\\n') )
         return `jb.component('${cmpId}', ${content})`
     },
-    bringMissingCode(obj) {
+    async bringMissingCode(obj) {
         const missing = getMissingProfiles(obj)
         if (missing.length) 
             jb.log('codeLoader bring missing code',{obj, missing})
@@ -1022,14 +1044,23 @@ jb.extension('codeLoader', {
     missing(id) {
         return !(jb.comps[id] || id[0] == '#' && jb.path(jb, id.slice(1)))
     },
-    getCodeFromRemote(ids) {
+    async getCodeFromRemote(_ids) {
+        const ids = _ids.filter(id => jb.codeLoader.missing(id))
         if (!ids.length) return
+        const vars = { ids: ids.join(','), existing: jb.codeLoader.existing().join(',') }
+        if (jb.codeLoader.serverUrl) {
+            const url = `${jbCodeLoaderServerUrl}/jb-${ids[0]}-x.js?ids=${vars.ids}&existing=${vars.existing}`.replace(/#/g,'-')
+            console.log(`codeLoader: ${url}`)
+            jb.log('codeLoader getCode',{url,ids})
+            return await jb['codeLoader'].getJSFromUrl(url)
+        }
+
         const stripedCode = {
-            $: 'runCtx', path: '',
-            profile: {$: 'codeLoader.getCode'},
-            vars: { ids: ids.join(','), existing: jb.codeLoader.existing().join(',') }
+            $: 'runCtx', path: '', vars,
+            profile: {$: 'codeLoader.getCode'}
         }
         jb.log('codeLoader request code from remote',{ids, stripedCode})
+        jb.codeLoader.loadingCode = true
         return jb.codeLoaderJbm && jb.codeLoaderJbm['remoteExec'](stripedCode)
             .then(code=> {
                 jb.log('codeLoader code arrived from remote',{ids, stripedCode, length: code.length, url: `${jb.uri}-${ids[0]}-x.js`, lines: 1+(code.match(/\n/g) || []).length })
@@ -1038,19 +1069,23 @@ jb.extension('codeLoader', {
                     eval(`(function(jb) {${code}})(jb)\n//# sourceURL=${jb.uri}-${ids[0]}-x.js` )
                 } catch(error) {
                     jb.log('codeLoader eval error from remote',{error, ids, stripedCode})
+                } finally {
+                    jb.codeLoader.loadingCode = false
                 }
             })
     },
-    startupCode: () => jb.codeLoader.code(jb.codeLoader.treeShake(jb.codeLoader.clientComps,{})),
+    clientCode: () => jb.codeLoader.code(jb.codeLoader.treeShake(jb.codeLoader.clientComps,{})),
     treeShakeFrontendFeatures(paths) { // treeshake the code of the FRONTEND features without the backend part
         const _paths = paths.filter(path=>! jb.codeLoader.existingFEPaths[path]) // performance - avoid tree shake if paths were processed before 
         if (!_paths.length) return []
         paths.forEach(path=>jb.codeLoader.existingFEPaths[path] = true)
         return jb.utils.unique(jb.codeLoader.treeShake(_paths,jb.codeLoader.existing()).map(path=>path.split('~')[0]).filter(id=>jb.codeLoader.missing(id)))
     },
-    loadFELibsDirectly(libs) {
-        if (typeof document == 'undefined') 
+    async loadFELibsDirectly(libs) {
+        if (typeof document == 'undefined') {
+            debugger
             return jb.logError('can not load front end libs to a frame without a document')
+        }
         const _libs = jb.utils.unique(libs).filter(lib=>! jb.codeLoader.loadedFElibs[lib])
         return _libs.reduce((pr,lib) => pr.then(()=> loadFile(lib)).then(()=> jb.codeLoader.loadedFElibs[lib] = true), Promise.resolve())
 
@@ -1058,7 +1093,7 @@ jb.extension('codeLoader', {
             return new Promise(resolve => {
                 const type = lib.indexOf('.css') == -1 ? 'script' : 'link'
                 var s = document.createElement(type)
-                s.setAttribute(type == 'script' ? 'src' : 'href',`/dist/${lib}`)
+                s.setAttribute(type == 'script' ? 'src' : 'href',`${jb.codeLoader.baseUrl||''}/dist/${lib}`)
                 if (type == 'script') 
                     s.setAttribute('charset','utf8') 
                 else 
@@ -1077,12 +1112,29 @@ jb.component('codeLoader.getCode', {
         return jb.codeLoader.code(treeShake)
     }
 })
-;
+
+// code loader client
+
+jb.component('codeLoader.getCodeFromRemote', {
+    params: [
+        {id: 'ids'}
+    ],
+    impl: async (ctx,ids) => ids && jb.codeLoader.getCodeFromRemote(ids.split(','))
+})
+
+jb.component('codeLoader.setCodeLoaderJbm', {
+    params: [
+        {id: 'codeLoaderUri' }
+    ],
+    impl: (ctx, uri) => jb.codeLoaderJbm = ctx.run({$: 'jbm.byUri', uri}),
+    require: {$ : 'jbm.byUri'}
+});
 
 jb.extension('spy', {
+	$requireFuncs: 'jb.spy._log',
 	initExtension() {
 		// jb.spy._log() -- for codeLoader
-		Object.assign(this, {
+		return {
 			logs: [],
 			settings: { 
 				includeLogs: 'exception,error',
@@ -1090,7 +1142,7 @@ jb.extension('spy', {
 				MAX_LOG_SIZE: 10000
 			},
 			Error: jb.frame.Error
-		})
+		}
 	},
 	initSpyByUrl() {
 		const frame = jb.frame
@@ -1108,6 +1160,7 @@ jb.extension('spy', {
 		jb.spy.includeLogsInitialized = false
 		jb.spy._obs = jb.callbag.subject()
 		return jb.spy
+		// for loader - jb.spy.clear(), jb.spy.search()
 	},
 
 	memoryUsage: () => jb.path(jb.frame,'performance.memory.usedJSHeapSize'),
@@ -1164,7 +1217,7 @@ jb.extension('spy', {
 			jb.spy.logs = jb.spy.logs.slice(-1* jb.spy.settings.MAX_LOG_SIZE)
 		jb.spy._obs && jb.spy._obs.next(record)
 	},
-	frameAccessible(frame) { try { return Boolean(frame.document || frame.contentDocument) } catch(e) { return false } },
+	frameAccessible(frame) { try { return Boolean(frame.document || frame.contentDocument || frame.global) } catch(e) { return false } },
 	source(takeFrom) {
 		jb.spy.Error.stackTraceLimit = 50
 		const frames = [jb.frame]
@@ -1241,12 +1294,12 @@ jb.extension('spy', {
 
 ;
 
-// var { not,contains,writeValue,obj,prop } = jb.ns('not,contains,writeValue,obj,prop') // use in module
-
 jb.component('call', {
   type: 'any',
+  description: 'invoke dynamic parameter',
+  category: 'system:50',
   params: [
-    {id: 'param', as: 'string'}
+    {id: 'param', as: 'string', description: 'parameter name'}
   ],
   impl: function(context,param) {
  	  const paramObj = context.cmpCtx && context.cmpCtx.params[param];
@@ -1299,6 +1352,7 @@ jb.extension('utils', {
 
 jb.component('pipeline', {
   type: 'data',
+  category: 'common:100',
   description: 'map data arrays one after the other, do not wait for promises and rx',
   params: [
     {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true, description: 'click "=" for functions list'}
@@ -1308,6 +1362,7 @@ jb.component('pipeline', {
 
 jb.component('pipe', {
   type: 'data',
+  category: 'async:100',
   description: 'synch data, wait for promises and reactive (callbag) data',
   params: [
     {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true}
@@ -1320,7 +1375,7 @@ jb.component('data.if', {
   macroByValue: true,
   params: [
     {id: 'condition', as: 'boolean', mandatory: true, dynamic: true, type: 'boolean'},
-    {id: 'then', mandatory: true, dynamic: true },
+    {id: 'then', mandatory: true, dynamic: true},
     {id: 'else', dynamic: true, defaultValue: '%%'}
   ],
   impl: ({},cond,_then,_else) =>	cond() ? _then() : _else()
@@ -1335,21 +1390,12 @@ jb.component('action.if', {
     {id: 'then', type: 'action', mandatory: true, dynamic: true, composite: true},
     {id: 'else', type: 'action', dynamic: true}
   ],
-  impl: ({},cond,_then,_else) =>	cond ? _then() : _else()
-})
-
-jb.component('jbRun', {
-  type: 'action',
-  params: [
-    {id: 'profile', as: 'string', mandatory: true, description: 'profile name'},
-    {id: 'params', as: 'single'}
-  ],
-  impl: (ctx,profile,params) =>	ctx.run(Object.assign({$:profile},params || {}))
+  impl: ({},cond,_then,_else) => jb.utils.isPromise(cond) ? Promise.resolve(cond).then(_cond=> _cond ? _then() : _else()) :	(cond ? _then() : _else())
 })
 
 jb.component('list', {
   type: 'data',
-  description: 'also flatten arrays',
+  description: 'list definition, flatten internal arrays',
   params: [
     {id: 'items', type: 'data[]', as: 'array', composite: true}
   ],
@@ -1409,24 +1455,26 @@ jb.component('aggregate', {
   impl: ({},aggregator) => aggregator()
 })
 
-// jb.ns('math')
-
 jb.component('math.max', {
   type: 'aggregator',
+  category: 'math:80',
   impl: ctx => Math.max.apply(0,ctx.data)
 })
 
 jb.component('math.min', {
   type: 'aggregator',
+  category: 'math:80',
   impl: ctx => Math.max.apply(0,ctx.data)
 })
 
 jb.component('math.sum', {
   type: 'aggregator',
+  category: 'math:80',
   impl: ctx => ctx.data.reduce((acc,item) => +item+acc, 0)
 })
 
 jb.component('math.plus', {
+  category: 'math:80',
   params: [
     {id: 'x', as: 'number', mandatory: true },
     {id: 'y', as: 'number', mandatory: true },
@@ -1435,6 +1483,7 @@ jb.component('math.plus', {
 })
 
 jb.component('math.minus', {
+  category: 'math:80',
   params: [
     {id: 'x', as: 'number', mandatory: true},
     {id: 'y', as: 'number', mandatory: true},
@@ -1444,6 +1493,7 @@ jb.component('math.minus', {
 
 'abs,acos,acosh,asin,asinh,atan,atan2,atanh,cbrt,ceil,clz32,cos,cosh,exp,expm1,floor,fround,hypot,log2,random,round,sign,sin,sinh,sqrt,tan,tanh,trunc'
   .split(',').forEach(f=>jb.component(`math.${f}`, {
+    category: 'math:70',
     impl: ctx => Math[f](ctx.data)
   })
 )
@@ -1472,6 +1522,7 @@ jb.component('evalExpression', {
 
 jb.component('prefix', {
   type: 'data',
+  category: 'string:90',
   params: [
     {id: 'separator', as: 'string', mandatory: true},
     {id: 'text', as: 'string', defaultValue: '%%'}
@@ -1481,6 +1532,7 @@ jb.component('prefix', {
 
 jb.component('suffix', {
   type: 'data',
+  category: 'string:90',
   params: [
     {id: 'separator', as: 'string', mandatory: true},
     {id: 'text', as: 'string', defaultValue: '%%'}
@@ -1490,6 +1542,7 @@ jb.component('suffix', {
 
 jb.component('removePrefix', {
   type: 'data',
+  category: 'string:80',
   params: [
     {id: 'separator', as: 'string', mandatory: true},
     {id: 'text', as: 'string', defaultValue: '%%'}
@@ -1500,6 +1553,7 @@ jb.component('removePrefix', {
 
 jb.component('removeSuffix', {
   type: 'data',
+  category: 'string:80',
   params: [
     {id: 'separator', as: 'string', mandatory: true},
     {id: 'text', as: 'string', defaultValue: '%%'}
@@ -1509,6 +1563,7 @@ jb.component('removeSuffix', {
 
 jb.component('removeSuffixRegex', {
   type: 'data',
+  category: 'string:80',
   params: [
     {id: 'suffix', as: 'string', mandatory: true, description: 'regular expression. e.g [0-9]*'},
     {id: 'text', as: 'string', defaultValue: '%%'}
@@ -1520,8 +1575,28 @@ jb.component('removeSuffixRegex', {
 	}
 })
 
+jb.component('property', {
+  description: 'navigate/select/path property of object',
+  category: 'common:70',
+  params: [
+    {id: 'prop', as: 'string', mandatory: true},
+    {id: 'obj', defaultValue: '%%'}
+  ],
+  impl: (ctx,prop,obj) =>	jb.db.objectProperty(obj,prop,ctx)
+})
+
+jb.component('indexOf', {
+  category: 'common:70',
+  params: [
+    {id: 'array', as: 'array', mandatory: true},
+    {id: 'item', as: 'single', mandatory: true}
+  ],
+  impl: ({},array,item) => array.indexOf(item)
+})
+
 jb.component('writeValue', {
   type: 'action',
+  category: 'mutable:100',
   params: [
     {id: 'to', as: 'ref', mandatory: true},
     {id: 'value', mandatory: true},
@@ -1540,25 +1615,9 @@ jb.component('writeValue', {
   }
 })
 
-jb.component('property', {
-  description: 'navigate/select/path property of object',
-  params: [
-    {id: 'prop', as: 'string', mandatory: true},
-    {id: 'obj', defaultValue: '%%'}
-  ],
-  impl: (ctx,prop,obj) =>	jb.db.objectProperty(obj,prop,ctx)
-})
-
-jb.component('indexOf', {
-  params: [
-    {id: 'array', as: 'array', mandatory: true},
-    {id: 'item', as: 'single', mandatory: true}
-  ],
-  impl: ({},array,item) => array.indexOf(item)
-})
-
 jb.component('addToArray', {
   type: 'action',
+  category: 'mutable:80',
   params: [
     {id: 'array', as: 'ref', mandatory: true},
     {id: 'toAdd', as: 'array', mandatory: true}
@@ -1568,6 +1627,7 @@ jb.component('addToArray', {
 
 jb.component('move', {
   type: 'action',
+  category: 'mutable:80',
   description: 'move item in tree, activated from D&D',
   params: [
     {id: 'from', as: 'ref', mandatory: true},
@@ -1578,6 +1638,7 @@ jb.component('move', {
 
 jb.component('splice', {
   type: 'action',
+  category: 'mutable:80',
   params: [
     {id: 'array', as: 'ref', mandatory: true},
     {id: 'fromIndex', as: 'number', mandatory: true},
@@ -1590,6 +1651,7 @@ jb.component('splice', {
 
 jb.component('removeFromArray', {
   type: 'action',
+  category: 'mutable:80',
   params: [
     {id: 'array', as: 'ref', mandatory: true},
     {id: 'itemToRemove', as: 'single', description: 'choose item or index'},
@@ -1602,7 +1664,7 @@ jb.component('removeFromArray', {
 	}
 })
 
-jb.component('toggleBooleanValue', {
+jb.component('mutable.toggleBooleanValue', {
   type: 'action',
   params: [
     {id: 'of', as: 'ref'}
@@ -1687,6 +1749,7 @@ jb.component('sample', {
 
 jb.component('obj', {
   description: 'build object (dictionary) from props',
+  category: 'common:100',
   params: [
     {id: 'props', type: 'prop[]', mandatory: true, sugar: true}
   ],
@@ -1723,17 +1786,6 @@ jb.component('prop', {
   ],
   impl: ctx => ctx.params
 })
-
-// jb.component('objMethod', {
-//   type: 'prop',
-//   macroByValue: true,
-//   params: [
-//     {id: 'title', as: 'string', mandatory: true},
-//     {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: ''},
-//     {id: 'type', as: 'string', options: 'string,number,boolean,object,array,asIs', defaultValue: 'asIs'}
-//   ],
-//   impl: ({},title,val,type) => ({title,val: () => () => ctx2 => val(ctx2) ,type})
-// })
 
 jb.component('refProp', {
   type: 'prop',
@@ -2013,17 +2065,8 @@ jb.component('replace', {
     {id: 'useRegex', type: 'boolean', as: 'boolean', defaultValue: true},
     {id: 'regexFlags', as: 'string', defaultValue: 'g', description: 'g,i,m'}
   ],
-  impl: ({},find,replace,text,useRegex,regexFlags) => 
+  impl: ({},find,replace,text,useRegex,regexFlags) =>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
     useRegex ? text.replace(new RegExp(find,regexFlags) ,replace) : text.replace(find,replace)
-})
-
-jb.component('touch', {
-  description: 'change the value of a watchable variable to acticate its watchers',
-  type: 'action',
-  params: [
-    {id: 'dataRef', as: 'ref'}
-  ],
-  impl: writeValue('%$dataRef%',not('%$dataRef%'))
 })
 
 jb.component('isNull', {
@@ -2101,7 +2144,8 @@ jb.component('runActionOnItem', {
     {id: 'item', mandatory: true},
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
   ],
-  impl: (ctx,item,action) => item != null && action(ctx.setData(item))
+  impl: (ctx,item,action) => jb.utils.isPromise(item) ? Promise.resolve(item).then(_item => action(ctx.setData(_item))) 
+    : item != null && action(ctx.setData(item))
 })
 
 jb.component('runActionOnItems', {
@@ -2227,71 +2271,6 @@ jb.component('inGroup', {
     {id: 'item', as: 'single', defaultValue: '%%'}
   ],
   impl: ({},group,item) =>	group.indexOf(item) != -1
-})
-
-jb.component('http.get', {
-  type: 'data,action',
-  description: 'fetch data from external url',
-  params: [
-    {id: 'url', as: 'string'},
-    {id: 'json', as: 'boolean', description: 'convert result to json', type: 'boolean'},
-    {id: 'useProxy', as: 'string', options: ',localhost-server,cloud'}
-  ],
-  impl: (ctx,_url,_json,useProxy) => {
-    jb.urlProxy = jb.urlProxy || (typeof window !== 'undefined' && location.href.match(/^[^:]*/)[0] || 'http') + '://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
-    jb.cacheKiller = jb.cacheKiller || 1
-    if (ctx.probe)
-			return jb.http_get_cache[_url];
-    const json = _json || _url.match(/json$/);
-    let url = _url
-    if (useProxy == 'localhost-server')
-      url = `/?op=fetch&req=${JSON.stringify({url})}&cacheKiller=${jb.cacheKiller++}`
-    else if (useProxy == 'cloud')
-      url = `//jbart5-server.appspot.com/?op=fetch&req={url:"${url}"}&cacheKiller=${jb.cacheKiller++}`
-
-		return fetch(url, {mode: 'cors'})
-			  .then(r => json ? r.json() : r.text())
-				.then(res=> jb.http_get_cache ? (jb.http_get_cache[url] = res) : res)
-			  .catch(e => jb.logException(e,'http.get',{ctx}) || [])
-	}
-})
-
-jb.component('http.fetch', {
-  type: 'data,action',
-  description: 'fetch, get or post data from external url',
-  params: [
-    {id: 'url', as: 'string', mandatory: true},
-    {id: 'method', as: 'string', options: 'GET,POST', defaultValue: 'GET'},
-    {id: 'headers', as: 'single', templateValue: obj(prop('Content-Type', 'application/json; charset=UTF-8'))},
-    {id: 'body', as: 'single'},
-    {id: 'json', as: 'boolean', description: 'convert result to json', type: 'boolean'},
-    {id: 'useProxy', as: 'string', options: ',localhost-server,cloud,cloud-test-local'}
-  ],
-  impl: (ctx,url,method,headers,body,json,proxy) => {
-    const reqObj = {
-      url,
-      method,
-      headers: headers || {},
-      mode: 'cors',
-      body: (typeof body == 'string' || body == null) ? body : JSON.stringify(body)
-    }
-
-    const reqStr = encodeURIComponent(JSON.stringify(reqObj))
-		if (ctx.probe)
-			return jb.http_get_cache[reqStr];
-
-    if (proxy == 'localhost-server')
-      reqObj.url = `/?op=fetch&req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
-    else if (proxy == 'cloud')
-      reqObj.url = `//jbart5-server.appspot.com/fetch?req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
-    else if (proxy == 'cloud-test-local')
-      reqObj.url = `http://localhost:8080/fetch?req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
-
-    return fetch(reqObj.url, proxy ? {mode: 'cors'} : reqObj)
-			  .then(r => json ? r.json() : r.text())
-				.then(res=> jb.http_get_cache ? (jb.http_get_cache[reqStr] = res) : res)
-			  .catch(e => jb.logException(e,'http.fetch',{ctx}) || [])
-	}
 })
 
 jb.component('isRef', {
@@ -2531,7 +2510,10 @@ jb.extension('callbag', {
   map: f => source => (start, sink) => {
       if (start !== 0) return
       source(0, function map(t, d) {
-          sink(t, t === 1 ? f(d) : d)
+        if (t == 1 && d != null) 
+          sink(1,f(d))
+        else
+          sink(t, d)
       })
   },
   throwError: (condition,err) => source => (start, sink) => {
@@ -2825,13 +2807,51 @@ jb.extension('callbag', {
         }
       }
   },
+  fork: (...cbs) => source => (start, sink) => {
+    if (start != 0) return
+    let sinks = []
+    let talkback = null
+
+    registerSink(sink)
+    jb.callbag.pipe(forkSource, ...cbs)
+
+    source(0, function mainForkSource(t, d) {
+      if (t == 0) {
+        talkback = d
+        talkback(1)
+      } else {
+        const zinkz = sinks.slice(0)
+        for (let i = 0, n = zinkz.length, sink; i < n; i++) {
+            sink = zinkz[i]
+            if (sinks.indexOf(sink) > -1) sink(t, d)
+        }
+      }
+    })
+
+    function forkSource(start, forkSink) {
+      if (start == 0) registerSink(forkSink)
+    }
+
+    function registerSink(sink) {
+      sinks.push(sink)
+      sink(0, function fork(t,d) {
+          if (t === 2) {
+              const i = sinks.indexOf(sink)
+              if (i > -1) sinks.splice(i, 1)
+              if (!sinks.length)
+                talkback && talkback(2)
+          }
+          if (t == 1 && !d) // talkback
+            talkback && talkback(1)
+      })
+    }
+  },
   race(..._sources) { // take only the first result including errors and complete
     const sources = _sources.filter(x=>x).filter(x=>jb.callbag.fromAny(x))
     return function race(start, sink) {
       if (start !== 0) return
       const n = sources.length
       const sourceTalkbacks = new Array(n)
-      let endCount = 0
       let ended = false
       const talkback = (t, d) => {
         if (t === 2) ended = true
@@ -2910,7 +2930,7 @@ jb.extension('callbag', {
                   for (let i = 0, n = zinkz.length, sink; i < n; i++) {
                       sink = zinkz[i]
                       if (sinks.indexOf(sink) > -1) sink(t, d)
-              }
+                  }
           }
       }
       subj.next = data => subj(1,data)
@@ -3241,7 +3261,7 @@ jb.extension('callbag', {
       if (start !== 0) return
       let waiting = 0, end, endD, endSent
       source(0, function delay(t,d) {
-          if (t == 1 && d && !end) {
+          if (t == 1 && d != null && !end) {
             let id = setTimeout(()=> {
               waiting--
               clearTimeout(id)
@@ -3358,9 +3378,6 @@ jb.extension('callbag', {
 })
 ;
 
-// var { If, call, rx,sink,source } = jb.ns('rx,sink,source')
-// ************ sources
-
 jb.component('source.data', {
   type: 'rx',
   params: [
@@ -3429,7 +3446,8 @@ jb.component('rx.pipe', {
   params: [
     {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
   ],
-  impl: (ctx,elems) => jb.callbag.pipe(...jb.callbag.injectSniffers(elems(ctx).filter(x=>x),ctx))
+  impl: (ctx,elems) => 
+    jb.callbag.pipe(...jb.callbag.injectSniffers(elems(ctx).filter(x=>x),ctx))
 })
 
 jb.component('rx.merge', {
@@ -3447,11 +3465,21 @@ jb.component('rx.merge', {
 jb.component('rx.innerPipe', {
   type: 'rx',
   category: 'operator',
-  description: 'inner reactive pipeline without source',
+  description: 'composite operator, inner reactive pipeline without source',
   params: [
     {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, templateValue: []},
   ],
   impl: (ctx,elems) => source => jb.callbag.pipe(source, ...elems)
+})
+
+jb.component('rx.fork', {
+  type: 'rx',
+  category: 'operator',
+  description: 'separate operator with same source data',
+  params: [
+    {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, templateValue: []},
+  ],
+  impl: (ctx,elems) => jb.callbag.fork(...elems)
 })
 
 jb.component('rx.startWith', {
@@ -3467,7 +3495,7 @@ jb.component('rx.startWith', {
 jb.component('rx.var', {
   type: 'rx',
   category: 'operator',
-  description: 'define a variable that can be used later in the pipe',
+  description: 'define an immutable variable that can be used later in the pipe',
   params: [
     {id: 'name', as: 'string', dynamic: true, mandatory: true, description: 'if empty, does nothing'},
     {id: 'value', dynamic: true, defaultValue: '%%', mandatory: true},
@@ -3476,6 +3504,23 @@ jb.component('rx.var', {
     if (start != 0) return 
     return source(0, function Var(t, d) {
       sink(t, t === 1 ? d && {data: d.data, vars: {...d.vars, [name()]: value(d)}} : d)
+    })
+  }, null)
+})
+
+jb.component('rx.resource', {
+  type: 'rx',
+  category: 'operator',
+  description: 'define a static mutable variable that can be used later in the pipe',
+  params: [
+    {id: 'name', as: 'string', dynamic: true, mandatory: true, description: 'if empty, does nothing'},
+    {id: 'value', dynamic: true, mandatory: true},
+  ],
+  impl: If('%$name%', (ctx,{},{name,value}) => source => (start, sink) => {
+    if (start != 0) return
+    const val = value()
+    return source(0, function Var(t, d) {
+      sink(t, t === 1 ? d && {data: d.data, vars: {...d.vars, [name()]: val}} : d)
     })
   }, null)
 })
@@ -3906,6 +3951,51 @@ jb.component('action.subjectError', {
     ],
     impl: (ctx,subject,error) => subject.trigger.error(error())
 })
+
+// ********** queue 
+jb.component('rx.queue', {
+  type: 'data',
+  description: 'message queue',
+  category: 'variable',
+  params: [
+      {id: 'items', as: 'array' },
+  ],
+  impl: (ctx,items) => ({ items: items.slice(0), subject: jb.callbag.subject(), mkmk: 5 }) 
+})
+
+jb.component('source.queue', {
+  type: 'rx',
+  params: [
+      {id: 'queue', mandatory: true },
+  ],
+  impl: rx.merge(source.data('%$queue/items%'), '%$queue/subject%')
+})
+
+jb.component('action.addToQueue', {
+  type: 'action',
+  params: [
+      {id: 'queue', mandatory: true },
+      {id: 'item', dynamic: true, defaultValue: '%%' },
+  ],
+  impl: (ctx,queue,item) => {
+    const toAdd = item(ctx)
+    queue.items.push(toAdd)
+    queue.subject.next(ctx.dataObj(toAdd)) 
+  }
+})
+
+jb.component('action.removeFromQueue', {
+  type: 'action',
+  params: [
+      {id: 'queue', mandatory: true },
+      {id: 'item', dynamic: true, defaultValue: '%%' },
+  ],
+  impl: (ctx,queue,item) => {
+		const index = queue.items.indexOf(item(ctx))
+		if (index != -1)
+      queue.items.splice(index,1)
+  }
+})
 ;
 
 // const sampleRef = {
@@ -3914,6 +4004,8 @@ jb.component('action.subjectError', {
 // }
 
 jb.extension('watchable', {
+  $requireFuncs: 'jb.watchable.resourcesRef,jb.db.isWatchable,jb.watchable.isWatchable',
+
   initExtension() {
     jb.watchable.jbId = Symbol("jbId") // used in constructor
     jb.watchable.resourcesRef.id = 'resources' // for loader: jb.watchable.resourcesRef()
@@ -3951,8 +4043,10 @@ jb.extension('watchable', {
         jb.path(op,path,opOnRef) // create op as nested object
         const insertedIndex = jb.path(opOnRef.$splice,[0,2]) && jb.path(opOnRef.$splice,[0,0]) || opOnRef.$push && opVal.length
         const insertedPath = insertedIndex != null && path.concat(insertedIndex)
-        const opEvent = {op: opOnRef, path, insertedPath, ref, srcCtx, oldVal, opVal, timeStamp: new Date().getTime(), opCounter: this.opCounter++}
-        this.resources(jb.immutable.update(this.resources(),op),opEvent)
+        const opEvent = {before: this.resources(), op: opOnRef, path, insertedPath, ref, srcCtx, oldVal, opVal, 
+            timeStamp: new Date().getTime(), opCounter: this.opCounter++ }
+        this.resources(jb.immutable.update(this.resources(),op))
+        opEvent.after = this.resources() 
         const newVal = (opVal != null && opVal[jb.watchable.isProxy]) ? opVal : this.valOfPath(path);
         if (opOnRef.$push) {
           opOnRef.$push.forEach((toAdd,i)=>
@@ -3978,7 +4072,7 @@ jb.extension('watchable', {
           this.primitiveArraysDeltas[ref.$jb_obj[jb.watchable.jbId]] = this.primitiveArraysDeltas[ref.$jb_obj[jb.watchable.jbId]] || []
           this.primitiveArraysDeltas[ref.$jb_obj[jb.watchable.jbId]].push(opOnRef.$splice)
         }
-        opEvent.newVal = newVal;
+        opEvent.newVal = newVal
         jb.log('watchable notify doOp',{opEvent,ref,opOnRef,srcCtx})
         if (this.transactionEventsLog)
           this.transactionEventsLog.push(opEvent)
@@ -4312,8 +4406,7 @@ jb.extension('watchable', {
         return jb.callbag.fromIter([])
       }
       return jb.db.refHandler(ref).getOrCreateObservable({ref,cmp,includeChildren,srcCtx})
-  },
-
+  }
 })
 
 jb.extension('immutable', {
@@ -4425,7 +4518,7 @@ jb.extension('ui', 'react', {
             })
 
             if (widgetId && !destroyLocally)
-                jb.ui.widgetUserRequests.next({$:'destroy', ...e })
+                jb.ui.widgetUserRequests.next({$$:'destroy', ...e })
             else 
                 cmps.forEach(cmp=> (cmp.destroyCtxs || []).forEach(ctxIdToRun => {
                     jb.log('backend method destroy uiComp',{cmp, el: cmp.el})
@@ -4469,7 +4562,7 @@ jb.extension('ui', 'react', {
                 if (__afterIndex != i) res.sameOrder = false
                 if (__afterIndex == -1) {
                     res.length = i+1
-                    res[i] =  {$: 'delete' } //, __afterIndex: i }
+                    res[i] =  {$$: 'delete' } //, __afterIndex: i }
                 } else {
                     reused[__afterIndex] = true
                     const innerDiff = { __afterIndex, ...jb.ui.compareVdom(e, a[__afterIndex],ctx), ...(e.$remount ? {remount: true}: {}) }
@@ -4554,13 +4647,15 @@ jb.extension('ui', 'react', {
     elemToVdom(elem) {
         if (elem instanceof jb.ui.VNode) return elem
         if (elem.getAttribute('jb_external')) return
+        const textNode = Array.from(elem.children).filter(x=>x.tagName != 'BR').length == 0
         return {
             tag: elem.tagName.toLowerCase(),
             attributes: jb.objFromEntries([
                 ...Array.from(elem.attributes).map(e=>[e.name,e.value]), 
-                ...(jb.path(elem,'firstChild.nodeName') == '#text' ? [['$text',elem.firstChild.nodeValue]] : [])
+                ...(textNode ? [['$text',elem.innerText]] : [])
+                //...(jb.path(elem,'firstChild.nodeName') == '#text' ? [['$text',elem.firstChild.nodeValue]] : [])
             ]),
-            ...( elem.childElementCount && { children: Array.from(elem.children).map(el=> jb.ui.elemToVdom(el)).filter(x=>x) })
+            ...( elem.childElementCount && !textNode && { children: Array.from(elem.children).map(el=> jb.ui.elemToVdom(el)).filter(x=>x) })
         }
     },
 
@@ -4581,7 +4676,7 @@ jb.extension('ui', 'react', {
             childrenArr.forEach((e,i) => {
                 if (!e) {
                     !sameOrder && (childElems[i].setAttribute('__afterIndex',''+i))
-                } else if (e.$ == 'delete') {
+                } else if (e.$$ == 'delete') {
                     jb.ui.unmount(childElems[i])
                     elem.removeChild(childElems[i])
                     jb.log('removeChild dom',{childElem: childElems[i],e,elem,delta})
@@ -4678,8 +4773,8 @@ jb.extension('ui', 'react', {
                 elem[id] = JSON.parse(val) || ''
             } catch (e) {}
             jb.log(`dom set data ${id}`,{elem,att,val})
-        } else if (att === '$focus' && val) {
-            elem.setAttribute('__focus',val)
+        } else if (att === '$focus') {
+            elem.setAttribute('__focus',val || 'no source')
             jb.ui.focus(elem,val)
         } else if (att === '$scrollDown' && val) {
             elem.__appScroll = true
@@ -4919,7 +5014,7 @@ jb.extension('ui', 'react', {
         const removeWidgets = Object.keys(jb.ui.frontendWidgets||{}).filter(id=>!usedWidgets[id])
 
         removeWidgets.forEach(widgetId => {
-            jb.ui.widgetUserRequests.next({$:'destroy', widgetId, destroyWidget: true, cmps: [] })
+            jb.ui.widgetUserRequests.next({$$:'destroy', widgetId, destroyWidget: true, cmps: [] })
             if (jb.ui.frontendWidgets) delete jb.ui.frontendWidgets[widgetId]
         })
         
@@ -4934,7 +5029,8 @@ jb.extension('ui', 'react', {
         jb.log('garbageCollect',{maxUsed,removedCtxs,removedResources,removeWidgets,removeFollowUps})
 
         function querySelectAllWithWidgets(query) {
-            return jb.ui.headless ? [...Object.values(jb.ui.headless).flatMap(w=>w.body.querySelectorAll(query,{includeSelf:true})), ...Array.from(document.querySelectorAll(query))] : []
+            return jb.ui.headless ? [...Object.values(jb.ui.headless).filter(x=>x.body).flatMap(w=>w.body.querySelectorAll(query,{includeSelf:true})), 
+                ...Array.from(jb.frame.document && document.querySelectorAll(query) || [])].filter(x=>x) : []
         }
     },
     applyDeltaToCmp({delta, ctx, cmpId, elem, assumedVdom}) {
@@ -4973,26 +5069,33 @@ jb.extension('ui', 'react', {
         if (!_ctx) 
             return jb.logError('refreshElem - no ctx for elem',{elem, cmpId, cmpVer})
         const strongRefresh = jb.path(options,'strongRefresh')
-        let ctx = _ctx.setVar('$model',null).setVar('$state', strongRefresh ? {refresh: true } : 
-            {refresh: true, ...jb.path(elem._component,'state'), ...state}) // strongRefresh kills state
+        const newState = strongRefresh ? {refresh: true } 
+            : { ...jb.path(elem._component,'state'), refreshSource: jb.path(options,'refreshSource'), refresh: true, ...state} // strongRefresh kills state
+        let ctx = _ctx.setVars({$model: null, $state: newState, $refreshElemCall: true, $cmpId: cmpId, $cmpVer: cmpVer+1})
         ctx._parent = null
-
         if (options && options.extendCtx)
             ctx = options.extendCtx(ctx)
-        ctx = ctx.setVar('$refreshElemCall',true).setVar('$cmpId', cmpId).setVar('$cmpVer', cmpVer+1) // special vars for refresh
-        if (jb.ui.inStudio()) // updating to latest version of profile - todo: moveto studio
-            ctx.profile = jb.studio.execInStudio({$: 'studio.val', path: ctx.path}) || ctx.profile
+//        ctx = ctx.setVar('$refreshElemCall',true).setVar('$cmpId', cmpId).setVar('$cmpVer', cmpVer+1) // special vars for refresh
+        if (ctx.vars.$previewMode && jb.watchableComps.handler) // updating to latest version of profile - todo: moveto studio
+            ctx.profile = jb.watchableComps.handler.valOfPath(ctx.path.split('~')) || ctx.profile
         elem.setAttribute('__refreshing','')
         const cmp = ctx.profile.$ == 'openDialog' ? ctx.run(dialog.buildComp()) : ctx.runItself()
-        jb.log('refresh elem start',{cmp,ctx,elem, state, options})
+        jb.log('refresh elem start',{cmp,ctx,newState ,elem, state, options})
 
-        if (jb.path(options,'cssOnly')) {
-            const existingClass = (elem.className.match(/[a-zA-Z0-9_-]+⦾[0-9]*/)||[''])[0]
-            if (!existingClass)
-                jb.logError('refresh css only - can not find existing class',{elem,ctx})
-            const cssStyleElem = Array.from(document.querySelectorAll('style')).map(el=>({el,txt: el.innerText})).filter(x=>x.txt.indexOf(existingClass) != -1)[0].el
-            jb.log('refresh element css only',{cmp, lines: cmp.cssLines,ctx,elem, state, options})
-            jb.ui.hashCss(cmp.calcCssLines(),cmp.ctx,{existingClass, cssStyleElem})
+        const className = elem.className != null ? elem.className : jb.path(elem.attributes.class) || ''
+        const existingClass = (className.match(/[•a-zA-Z0-9_-]+⦾[0-9]*/)||[''])[0]
+        if (jb.path(options,'cssOnly') && existingClass) {
+            const { headlessWidget, headlessWidgetId } = ctx.vars
+            if (headlessWidget) {
+                const existingElemId = jb.entries(jb.ui.headless[headlessWidgetId].styles||{}).find(([id,text])=>text.indexOf(existingClass) != -1)[0]
+                jb.log('css only refresh headelss element',{existingElemId, cmp, lines: cmp.cssLines,ctx,elem, state, options})
+                jb.ui.hashCss(cmp.calcCssLines(),cmp.ctx,{existingClass, existingElemId})
+            } else {
+                const existingElem = Array.from(document.querySelectorAll('style')).find(el=>el.innerText.indexOf(existingClass) != -1)
+                const existingElemId = existingElem.getAttribute('elemId')
+                jb.log('css only refresh element',{existingElemId, existingElem, cmp, lines: cmp.cssLines,ctx,elem, state, options})
+                jb.ui.hashCss(cmp.calcCssLines(),cmp.ctx,{existingClass, existingElemId})
+            }
         } else {
             jb.log('do refresh element',{cmp,ctx,elem, state, options})
             cmp && jb.ui.applyNewVdom(elem, jb.ui.h(cmp), {strongRefresh, ctx})
@@ -5068,10 +5171,9 @@ jb.extension('ui', {
         }
         querySelectorAll(selector,{includeSelf}={}) {
             let maxDepth = 50
-            if (selector.match(/^:scope>/)) {
-                maxDepth = 1
-                selector = selector.slice(7)
-            }
+            if (!selector) debugger
+            if (selector.match(/^:scope>/)) 
+                return this.children.filter(el=>el.querySelector(selector.slice(7),{includeSelf: true}))
             if (selector == '' || selector == ':scope') return [this]
             if (selector.indexOf(',') != -1)
                 return selector.split(',').map(x=>x.trim()).reduce((res,sel) => [...res, ...this.querySelectorAll(sel,{includeSelf})], [])
@@ -5094,6 +5196,11 @@ jb.extension('ui', {
                     ...(vdom.children||[]).flatMap(ch=> doFind(ch,selectorMatcher,false,depth+1))
                 ]
             }
+        }
+        outerHTML() { // for tests
+            return `<${this.tag} ${jb.entries(this.attributes).map(([att,val]) => att+'="'+val+'"').join(' ')}>
+    ${(this.children || []).map(x=>x.outerHTML()).join('\n')}
+</${this.tag}>`
         }
     },
     toVdomOrStr(val) {
@@ -5137,7 +5244,7 @@ jb.extension('ui', {
     vdomDiff(newObj,orig) {
         const ignoreRegExp = /\$|checked|style|value|parentNode|frontend|__|widget|on-|remoteuri|width|height|top|left|aria-|tabindex/
         const ignoreValue = /__undefined/
-        const ignoreClasses = /selected|mdc-tab-[0-9]+/
+        const ignoreClasses = /selected|mdc-[a-z\-0-9]+/
         return doDiff(newObj,orig)
         function doDiff(newObj,orig,attName) {
             if (Array.isArray(orig) && orig.length == 0) orig = null
@@ -5172,17 +5279,27 @@ jb.extension('ui', {
 
 jb.extension('ui','comp', {
     initExtension() {
-        Object.assign(this, {
+        jb.core.jstypes.renderable = value => {
+            if (value == null) return '';
+            if (value instanceof jb.ui.VNode) return value;
+            if (value instanceof jb.ui.JbComponent) return jb.ui.h(value)
+            if (Array.isArray(value))
+                return jb.ui.h('div',{},value.map(item=>jb.core.jstypes.renderable(item)));
+            return '' + jb.val(value,true);
+        }
+    
+        return {
             lifeCycle: new Set('init,extendCtx,templateModifier,followUp,destroy'.split(',')),
             arrayProps: new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,frontEndLib,frontEndVar,eventHandler'.split(',')),
             singular: new Set('template,calcRenderProps,toolbar,styleParams,ctxForPick'.split(',')),
             cmpCounter: 1,
             cssHashCounter: 0,
+            cssElemCounter: 0,
             propCounter: 0,
             cssHashMap: {},                
-        })
+        }
     },
-    hashCss(_cssLines,ctx,{existingClass, cssStyleElem} = {}) {
+    hashCss(_cssLines,ctx,{existingClass, existingElemId} = {}) {
         const cssLines = (_cssLines||[]).filter(x=>x)
         const cssKey = cssLines.join('\n')
         if (!cssKey) return ''
@@ -5199,12 +5316,10 @@ jb.extension('ui','comp', {
                 this.cssHashCounter++;
             }
             const classId = existingClass || `${classPrefix}⦾${this.cssHashCounter}`
+            const elemId = existingElemId || `${classPrefix}⦾${(++jb.ui.cssElemCounter)}`
             cssMap[cssKey] = {classId, paths : {[ctx.path]: true}}
             const cssContent = linesToCssStyle(classId)
-            if (cssStyleElem)
-                cssStyleElem.innerText = cssContent
-            else
-                jb.ui.addStyleElem(ctx,cssContent,widgetId)
+            jb.ui.insertOrUpdateStyleElem(ctx,cssContent,elemId,{classId})
         }
         Object.assign(cssMap[cssKey].paths, {[ctx.path] : true})
         return cssMap[cssKey].classId
@@ -5319,7 +5434,7 @@ jb.extension('ui','comp', {
                     frontEndMethods.length && {interactive : 'true'}, 
                     frontEndVars && { $__vars : JSON.stringify(frontEndVars)},
                     this.state && { $__state : JSON.stringify(this.state)},
-                    { $__debug: JSON.stringify({ path: (this.ctxForPick || this.calcCtx).path, cmpCtxPath: this.calcCtx.cmpCtx.path }) },
+                    { $__debug: JSON.stringify({ path: (this.ctxForPick || this.calcCtx).path, callStack: jb.utils.callStack(this.calcCtx) }) },
                     this.ctxForPick && { 'pick-ctx': jb.ui.preserveCtx(this.ctxForPick) },
                 )
             }
@@ -5453,17 +5568,7 @@ jb.extension('ui','comp', {
         }
     }
 })
-
-jb.extension('jstypes', {
-    renderable(value) {
-        if (value == null) return '';
-        if (value instanceof jb.ui.VNode) return value;
-        if (value instanceof jb.ui.JbComponent) return jb.ui.h(value)
-        if (Array.isArray(value))
-            return jb.ui.h('div',{},value.map(item=>jb.jstypes.renderable(item)));
-        return '' + jb.val(value,true);
-    }
-});
+;
 
 jb.extension('ui', {
     focus(elem,logTxt,srcCtx) {
@@ -5492,15 +5597,13 @@ jb.extension('ui', {
         return jb.frame.parent && jb.frame.parent.jb
       } catch(e) {}
     },
-    inPreview: () => !jb.ui.inStudio() && jb.ui.parentFrameJb() && jb.ui.parentFrameJb().studio.initPreview,
-    previewOverlayDocument: ctx => (jb.path(ctx.frame(),'document.body') || jb.path(ctx.frame(),'parent.document.body')).ownerDocument,
+//    inPreview: () => !jb.ui.inStudio() && jb.ui.parentFrameJb() && jb.ui.parentFrameJb().studio.initPreview,
     widgetBody(ctx) {
-      const {elemToTest,previewOverlay,tstWidgetId,headlessWidget,FEwidgetId, headlessWidgetId} = ctx.vars
+      const {elemToTest,tstWidgetId,headlessWidget,FEwidgetId, headlessWidgetId} = ctx.vars
       const top = elemToTest ||
-        previewOverlay && jb.path(this.previewOverlayDocument(ctx),'body') ||
         tstWidgetId && jb.path(jb.ui.headless[tstWidgetId],'body') ||
         headlessWidget && jb.path(jb.ui.headless[headlessWidgetId],'body') ||
-        jb.path(ctx.frame().document,'body')
+        jb.path(jb.frame.document,'body')
       return FEwidgetId ? jb.ui.findIncludeSelf(top,`[widgetid="${FEwidgetId}"]`)[0] : top
     },
     ctxOfElem: (elem,att) => elem && elem.getAttribute && jb.ctxDictionary[elem.getAttribute(att || 'jb-ctx')],
@@ -5512,19 +5615,15 @@ jb.extension('ui', {
     frontendWidgetId: elem => jb.ui.parents(elem,{includeSelf: true})
         .filter(el=>el.getAttribute && el.getAttribute('widgettop') && el.getAttribute('frontend'))
         .map(el=>el.getAttribute('widgetid'))[0],
+    parentWidgetId: elem => jb.ui.parents(elem,{includeSelf: true})
+        .filter(el=>el.getAttribute && el.getAttribute('widgettop'))
+        .map(el=>el.getAttribute('widgetid'))[0],    
     elemOfCmp: (ctx,cmpId) => jb.ui.findIncludeSelf(jb.ui.widgetBody(ctx),`[cmp-id="${cmpId}"]`)[0],
     fromEvent: (cmp,event,elem,options) => jb.callbag.pipe(
           jb.callbag.fromEvent(event, elem || cmp.base, options),
           jb.callbag.takeUntil(cmp.destroyed)
     ),
-    renderWidget(profile,topElem,ctx) {
-      if (!jb.ui.renderWidgetInStudio && jb.path(jb.ui.parentFrameJb(),'ui.renderWidgetInStudio'))
-        eval('jb.ui.renderWidgetInStudio= ' + jb.ui.parentFrameJb().ui.renderWidgetInStudio.toString())
-      if (jb.frame.parent != jb.frame && jb.ui.renderWidgetInStudio)
-        return jb.ui.renderWidgetInStudio(profile,topElem)
-      else
-        return jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry(ctx).run(profile)),topElem)    
-    },
+    renderWidget: (profile,topElem,ctx) => jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry(ctx).run(profile)),topElem),
     extendWithServiceRegistry(_ctx) {
       const ctx = _ctx || new jb.core.jbCtx()
       return ctx.setVar('$serviceRegistry',{baseCtx: ctx, parentRegistry: ctx.vars.$serviceRegistry, services: {}})
@@ -5586,6 +5685,7 @@ jb.extension('ui', {
           el = el.parentNode
         }
     },
+    scrollIntoView: el => el.scrollIntoViewIfNeeded && el.scrollIntoViewIfNeeded(),
     activeElement: () => document.activeElement,
     find(el,selector,options) {
       if (!el) return []
@@ -5609,14 +5709,23 @@ jb.extension('ui', {
         elem.innerHTML = html
         el.appendChild(elem.firstChild)
     },
-    addStyleElem(ctx,innerHtml,widgetId) {
-      if (widgetId && !ctx.vars.previewOverlay) {
-        jb.ui.renderingUpdates.next({widgetId, css: innerHtml})
-      } else {
-        const style_elem = document.createElement('style')
-        style_elem.innerHTML = innerHtml
-        this.previewOverlayDocument(ctx).head.appendChild(style_elem)
-        return style_elem
+    insertOrUpdateStyleElem(ctx,innerText,elemId,{classId} = {}) {
+      const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId
+      if (widgetId && !ctx.vars.previewOverlay) { // headless
+        if (!jb.ui.headless[widgetId])
+          return
+        jb.ui.headless[widgetId].styles = jb.ui.headless[widgetId].styles || {}
+        jb.ui.headless[widgetId].styles[elemId] = innerText
+        jb.ui.renderingUpdates.next({widgetId, css: innerText, elemId, classId })
+      } else if (jb.frame.document) { // FE or local
+        let elem = document.querySelector(`head>style[elemId="${elemId}"]`)
+        if (!elem) {
+          elem = document.createElement('style')
+          elem.setAttribute('elemId',elemId)
+          document.head.appendChild(elem)
+        }
+        elem.setAttribute('src',`${classId || ''} ${ctx.path}`)
+        elem.innerText = innerText
       }
     },
     valueOfCssVar(varName,parent) {
@@ -5644,7 +5753,8 @@ jb.component('action.applyDeltaToCmp', {
     {id: 'cmpId', as: 'string', mandatory: true },
     {id: 'assumedVdom' },
   ],
-  impl: (ctx,delta,cmpId,assumedVdom) => jb.ui.applyDeltaToCmp({ctx,delta,cmpId,assumedVdom})
+  impl: (ctx,delta,cmpId,assumedVdom) => 
+    jb.ui.applyDeltaToCmp({ctx,delta,cmpId,assumedVdom})
 })
 
 jb.component('sink.applyDeltaToCmp', {
@@ -5699,7 +5809,7 @@ jb.component('styleByControl', {
     {id: 'control', type: 'control', mandatory: true, dynamic: true},
     {id: 'modelVar', as: 'string', mandatory: true}
   ],
-  impl: (ctx,control,modelVar) => control(ctx.setVar(modelVar,ctx.vars.$model))
+  impl: (ctx,control,modelVar) => control(ctx.setVar(modelVar, ctx.vars.$model))
 })
 
 jb.component('styleWithFeatures', {
@@ -5728,9 +5838,14 @@ jb.component('controlWithFeatures', {
   impl: (ctx,control,features) => control.jbExtend(features,ctx).orig(ctx)
 })
 
-// widely used
-// var { customStyle, styleByControl, styleWithFeatures, controlWithFeatures } = jb.macro
-;
+jb.component('renderWidget', {
+  type: 'action',
+  params: [
+    {id: 'control', type: 'control', dynamic: true, mandatory: true},
+    {id: 'selector', as: 'string', defaultValue: 'body'}
+  ],
+  impl: (ctx, control, selector) => jb.ui.render(jb.ui.h(control(jb.ui.extendWithServiceRegistry(ctx))), document.querySelector(selector))
+});
 
 jb.extension('ui', 'frontend', {
     refreshFrontEnd(elem, {content} = {}) {
@@ -5770,7 +5885,9 @@ jb.extension('ui', 'frontend', {
             if (toRun.length == 0 && !silent)
                 return jb.logError(`frontEnd - no method ${method}`,{cmp: {...this}})
             toRun.forEach(({path}) => jb.utils.tryWrapper(() => {
-                const profile = path.split('~').reduce((o,p)=>o[p],jb.comps)
+                const profile = path.split('~').reduce((o,p)=>o && o[p],jb.comps)
+                if (!profile)
+                    return jb.logError('runFEMethod - can not get profile',{method, path})
                 const srcCtx = new jb.core.jbCtx(this.ctx, { profile, path, forcePath: path })
                 const feMEthod = jb.core.run(srcCtx)
                 const el = this.base
@@ -5790,7 +5907,9 @@ jb.extension('ui', 'frontend', {
         enrichUserEvent(ev, userEvent) {
             (this.base.frontEndMethods || []).filter(x=>x.method == 'enrichUserEvent').map(({path}) => jb.utils.tryWrapper(() => {
                 const actionPath = path+'~action'
-                const profile = actionPath.split('~').reduce((o,p)=>o[p],jb.comps)
+                const profile = actionPath.split('~').reduce((o,p)=>o && o[p],jb.comps)
+                if (!profile)
+                    return jb.logError('enrichUserEvent - can not get profile',{method, path})
                 const vars = {cmp: this, $state: this.state, el: this.base, ...this.base.vars, ev, userEvent }
                 Object.assign(userEvent, jb.core.run( new jb.core.jbCtx(this.ctx, { vars, profile, path: actionPath })))
             }, 'enrichUserEvent',this.ctx))
@@ -5825,24 +5944,32 @@ jb.extension('ui', 'frontend', {
 ;
 
 jb.extension('ui', 'watchRef', {
+    $phase: 100,
+    $requireFuncs: 'jb.watchable.WatchableValueByRef',
     initExtension() {
-        // subscribe for watchable change
-        const resourcesHanlder = jb.db.watchableHandlers.find(x=>x.resources.id == 'resources')
-        resourcesHanlder && jb.ui.subscribeToRefChange(resourcesHanlder)
-        // jb.watchable.WatchableValueByRef() - for loader
+        // for loader: jb.watchable.WatchableValueByRef(
+        jb.db.watchableHandlers.forEach(h=> jb.ui.subscribeToRefChange(h))
     },
     subscribeToRefChange: watchHandler => jb.utils.subscribe(watchHandler.resourceChange, e=> {
         const changed_path = watchHandler.removeLinksFromPath(e.insertedPath || watchHandler.pathOfRef(e.ref))
         if (!changed_path) debugger
         //observe="resources://2~name;person~name
-        const body = !jb.frame.document || jb.path(e,'srcCtx.vars.headlessWidgetId') || jb.path(e,'srcCtx.vars.testID') ? jb.ui.widgetBody(e.srcCtx) : jb.frame.document.body
-        const elemsToCheck = jb.ui.find(body,'[observe]') // top down order
-        const elemsToCheckCtxBefore = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
+        const testTop = jb.path(e,'srcCtx.vars.testID') && jb.ui.widgetBody(e.srcCtx)
+        const tops = [testTop, jb.path(jb.frame.document,'body'), ...Object.values(jb.ui.headless).map(x=>x && x.body) ].filter(x=>x)
+        const elemsToCheck = tops.flatMap(top=> jb.ui.find(top,'[observe]').map(elem=>({top, elem})))
+        // const body = !jb.frame.document || jb.path(e,'srcCtx.vars.testID') ? jb.ui.widgetBody(e.srcCtx) : jb.frame.document.body
+        // const elemsToCheck = (jb.path(e,'srcCtx.vars.headlessWidget') ? headlessElemsToCheck() : jb.ui.find(body,'[observe]')) // top down order
+        //     .filter(el => {
+        //         const parentWidgetId = jb.ui.parentWidgetId(el)
+        //         return !parentWidgetId || parentWidgetId.split('-')[0] == jb.uri // || ['tests',jb.uri].indexOf(parentWidgetId.split('-')[0]) != -1
+        // })
+        const elemsToCheckCtxBefore = elemsToCheck.map(({elem}) =>elem.getAttribute('jb-ctx'))
         const originatingCmpId = jb.path(e.srcCtx, 'vars.cmp.cmpId')
         jb.log('refresh check observable elements',{originatingCmpId,elemsToCheck,e,srcCtx:e.srcCtx})
-        elemsToCheck.forEach((elem,i) => {
+        elemsToCheck.forEach(({elem, top},i) => {
             const cmpId = elem.getAttribute('cmp-id')
-            if (!jb.ui.parents(elem).find(el=>el == body))
+//            if (elem instanceof jb.ui.VNode ? headlessElemDetached(elem) : !jb.ui.parents(elem).find(el=>el == top))
+            if (!jb.ui.parents(elem).find(el=>el == top))
                 return jb.log('observable elem was detached in refresh process',{originatingCmpId,cmpId,elem})
             if (elemsToCheckCtxBefore[i] != elem.getAttribute('jb-ctx')) 
                 return jb.log('observable elem was refreshed from top in refresh process',{originatingCmpId,cmpId,elem})
@@ -5872,6 +5999,15 @@ jb.extension('ui', 'watchRef', {
             }
         })
 
+        function headlessElemsToCheck() {
+            const widgets = jb.path(e,'srcCtx.vars.headlessWidgetId') ? [jb.path(e,'srcCtx.vars.headlessWidgetId')] : Object.keys(jb.ui.headless)
+            return widgets.flatMap(w=> jb.ui.find(jb.path(jb.ui.headless,[w,'body']),'[observe]'))
+        }
+        function headlessElemDetached(el) {
+            const topParent = jb.ui.parents(el).pop()
+            return !Object.values(jb.ui.headless).find(x=>x.body == topParent)
+        }
+
         function observerFromStr(obsStr) {
             const parts = obsStr.split('://')
             const innerParts = parts[1].split(';')
@@ -5886,9 +6022,6 @@ jb.extension('ui', 'watchRef', {
         }
     })
 });
-
-// var { variable,watchable,followUp,backEnd,method,features,onDestroy,htmlAttribute,templateModifier,watchAndCalcModelProp,calcProp,watchRef } 
-//  = jb.ns('variable,watchable,followUp,backEnd,method,htmlAttribute,features,onDestroy,templateModifier,watchAndCalcModelProp,calcProp,watchRef,group')
 
 jb.component('method', {
   type: 'feature',
@@ -6343,7 +6476,7 @@ jb.component('sink.BEMethod', {
     macroByValue: true,
     params: [
         {id: 'method', as: 'string', dynamic: true },
-        {id: 'data', defaultValue: ({data}) => data instanceof Event ? null : data, dynamic: true },
+        {id: 'data', defaultValue: ({data}) => jb.frame.Event && data instanceof jb.frame.Event ? null : data, dynamic: true },
         {id: 'vars', dynamic: true },
     ],
     impl: sink.action((ctx,{},{method,data,vars}) => jb.ui.runBEMethodInAnyContext(ctx,method(ctx),data(ctx),vars(ctx)))
@@ -6469,7 +6602,7 @@ jb.component('source.frontEndEvent', {
     rx.pipe(source.event('%$event%','%$cmp.base%'), rx.takeUntil('%$cmp.destroyed%'))
 })
 
-jb.component('frontEnd.addUserEvent', {
+jb.component('rx.userEventVar', {
   type: 'rx',
   impl: rx.var('ev', ({data}) => jb.ui.buildUserEvent(data, jb.ui.closestCmpElem(data.currentTarget || data.target))),
 })
@@ -6585,13 +6718,23 @@ jb.component('feature.onKey', {
     ],
     impl: features(
         method(replace({find: '-', replace: '+', text: 'onKey%$key%Handler',useRegex: true}), call('action')),
-        frontEnd.init((ctx,{cmp,el}) => {
-          if (! cmp.hasOnKeyHanlder) {
-            cmp.hasOnKeyHanlder = true
-            ctx.run(rx.pipe(source.frontEndEvent('keydown'), frontEnd.addUserEvent(), 
-              rx.map(key.eventToMethod('%%',el)), rx.filter('%%'), rx.log('keyboard uiComp onKey %$key%'), sink.BEMethod('%%')))
-          }
-      })
+        frontEnd.init(If(not('%$cmp.hasOnKeyHanlder%'), runActions(
+          ({},{cmp}) => cmp.hasOnKeyHanlder = true,
+          rx.pipe(
+            source.frontEndEvent('keydown'), 
+            rx.userEventVar(), 
+            rx.map(key.eventToMethod('%%','%$el%')), 
+            rx.filter('%%'), 
+            rx.log('keyboard uiComp onKey %$key%'), 
+            sink.BEMethod('%%'))
+        ))),
+      //   frontEnd.init((ctx,{cmp,el}) => {
+      //     if (! cmp.hasOnKeyHanlder) {
+      //       cmp.hasOnKeyHanlder = true
+      //       ctx.run(rx.pipe(source.frontEndEvent('keydown'), rx.userEventVar(), 
+      //         rx.map(key.eventToMethod('%%',el)), rx.filter('%%'), rx.log('keyboard uiComp onKey %$key%'), sink.BEMethod('%%')))
+      //     }
+      // })
     )
 })
 
@@ -6895,18 +7038,19 @@ jb.component('css.underline', {
 jb.component('css.boxShadow', {
   type: 'feature,dialog-feature',
   params: [
-    {id: 'blurRadius', as: 'string', templateValue: '5'},
-    {id: 'spreadRadius', as: 'string', templateValue: '0'},
-    {id: 'shadowColor', as: 'string', templateValue: '#000000'},
-    {id: 'opacity', as: 'string', templateValue: 0.5, description: '0-1'},
-    {id: 'horizontal', as: 'string', templateValue: '10'},
-    {id: 'vertical', as: 'string', templateValue: '10'},
+    {id: 'inset', as: 'boolean', description: 'the box is raised or content is depressed inside the box'},
+    {id: 'blurRadius', as: 'string', defaultValue: '5', description: 'bigger and lighter shadow'},
+    {id: 'spreadRadius', as: 'string', defaultValue: '0', description: 'just bigger shadow'},
+    {id: 'shadowColor', as: 'string', defaultValue: '#000000'},
+    {id: 'opacity', as: 'string', defaultValue: 0.5, description: '0-1'},
+    {id: 'horizontal', as: 'string', defaultValue: '10', description: 'offset-x'},
+    {id: 'vertical', as: 'string', defaultValue: '10', description: 'offset-y'},
     {id: 'selector', as: 'string'}
   ],
-  impl: (ctx,blurRadius,spreadRadius,shadowColor,opacity,horizontal,vertical,selector) => {
+  impl: (ctx,inset, blurRadius,spreadRadius,shadowColor,opacity,horizontal,vertical,selector) => {
     const color = [parseInt(shadowColor.slice(1,3),16) || 0, parseInt(shadowColor.slice(3,5),16) || 0, parseInt(shadowColor.slice(5,7),16) || 0]
       .join(',');
-    return ({css: `${selector} { box-shadow: ${jb.ui.withUnits(horizontal)} ${jb.ui.withUnits(vertical)} ${jb.ui.withUnits(blurRadius)} ${jb.ui.withUnits(spreadRadius)} rgba(${color},${opacity}) }`})
+    return ({css: `${selector} { box-shadow: ${inset?'inset ':''}${jb.ui.withUnits(horizontal)} ${jb.ui.withUnits(vertical)} ${jb.ui.withUnits(blurRadius)} ${jb.ui.withUnits(spreadRadius)} rgba(${color},${opacity}) }`})
   }
 })
 
@@ -6969,17 +7113,16 @@ jb.component('css.conditionalClass', {
   })
 })
 
-jb.defComponents('layout,typography,detailedBorder,detailedColor,gridArea'.split(','), id=>`css.${id}`, f=> ({
-  type: 'feature:0',
-  params: [
-    {id: 'css', mandatory: true, as: 'string'}
-  ],
-  impl: (ctx,css) => ({css: jb.ui.fixCssLine(css)})
-}))
+jb.defComponents('layout,typography,detailedBorder,detailedColor,gridArea'.split(','), 
+  id => jb.component(`css.${id}`, ({
+    type: 'feature:0',
+    params: [
+      {id: 'css', mandatory: true, as: 'string'}
+    ],
+    impl: (ctx,css) => ({css: jb.ui.fixCssLine(css)})
+})))
 
 ;
-
-// var { text, firstSucceeding, customStyle, styleByControl, controlWithFeatures } = jb.ns('text')
 
 jb.component('text', {
   type: 'control',
@@ -7152,8 +7295,8 @@ jb.component('group.eliminateRecursion', {
     { id: 'maxDepth', as: 'number' }
   ],
   impl: (ctx,maxDepth) => {
-    const protectedComp = ctx.cmpCtx.cmpCtx.path
-    const timesInStack = jb.core.callStack(ctx).filter(x=>x && x.indexOf(protectedComp) != -1).length
+    const protectedComp = jb.path(ctx.cmpCtx,'cmpCtx.path')
+    const timesInStack = jb.utils.callStack(ctx).filter(x=>x && x.indexOf(protectedComp) != -1).length
     if (timesInStack > maxDepth)
       return ctx.run( calcProp({id: 'ctrls', value: () => [], phase: 1, priority: 100 }))
   }
@@ -7218,8 +7361,6 @@ jb.component('html.inIframe', {
   })
 })
 ;
-
-// var { image, pipeline } = jb.ns('image,css')
 
 jb.component('image', {
   type: 'control,image',
@@ -7370,17 +7511,15 @@ jb.component('feature.icon', {
     {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx => ({ // todo - fix for remote
-    icon: jb.ui.ctrl(ctx, features(
-      calcProp('icon'), calcProp('type'), calcProp('title'), calcProp('size'),
-      calcProp('iconPosition','%$$model/position%')
-    ))
+  impl: ctx => ({ 
+    icon: jb.ui.ctrl(ctx, {$: 'features', features: [
+      {$: 'calcProp', id: 'icon' }, {$: 'calcProp', id: 'type' }, {$: 'calcProp', id: 'title' }, {$: 'calcProp', id: 'size' }, 
+      {$: 'calcProp', id: 'iconPosition', value: '%$$model/position%' }
+    ] })
   })
 })
 
 ;
-
-// var { button } = jb.ns('button')
 
 jb.component('button', {
   type: 'control,clickable',
@@ -7628,8 +7767,6 @@ jb.component('field.columnWidth', {
   })
 });
 
-// var {editableText} = jb.ns('editableText')
-
 jb.component('editableText', {
   type: 'control',
   category: 'input:100,common:80',
@@ -7645,14 +7782,15 @@ jb.component('editableText', {
 
 jb.component('editableText.xButton', {
   type: 'feature',
+  category: 'editableText:80',
   impl: features(
-    method('cleanValue', writeValue('%$$model/databind()%', '')),
+    method('cleanValue', writeValue({to: '%$$model/databind()%', value: ''})),
     templateModifier(({},{vdom,databind}) => jb.ui.h('div', {},[
         vdom,
         ...(databind ? [jb.ui.h('button', { class: 'delete', onclick: 'cleanValue' } ,'×')]  : [])
     ])),
     css(
-        `>.delete {
+      `>.delete {
           margin-left: -16px;
           float: right;
           cursor: pointer; font: 20px sans-serif;
@@ -7661,7 +7799,7 @@ jb.component('editableText.xButton', {
       }
       { display : flex }
       >.delete:hover { opacity: .5 }`
-      )
+    )
   )
 })
 ;
@@ -7754,8 +7892,6 @@ jb.component('editableNumber', {
 
 ;
 
-// var {openDialog, dialog,dialogs, dialogFeature, and, or, runActionOnItems, getSessionStorage, userStateProp } = jb.ns('dialog,dialogs,openDialog,dialogFeature')
-
 jb.component('openDialog', {
   type: 'action,has-side-effects',
   params: [
@@ -7765,7 +7901,11 @@ jb.component('openDialog', {
     {id: 'menu', type: 'control', dynamic: true},
 	{id: 'onOK', type: 'action', dynamic: true},
 	{id: 'id', as: 'string'},
-    {id: 'features', type: 'dialog-feature[]', dynamic: true}
+    {id: 'features', type: 'dialog-feature[]', dynamic: true},
+	{id: 'doOpen', type: 'action', dynamic: true, defaultValue: runActions(
+		dialog.createDialogTopIfNeeded(),
+		action.subjectNext(dialogs.changeEmitter(), obj(prop('open',true), prop('dialog', '%$$dialog%')))
+	)}
   ],
   impl: ctx => {
 	const $dialog = { id: ctx.params.id || `dlg-${ctx.id}`, launcherCmpId: ctx.exp('%$cmp/cmpId%') }
@@ -7775,32 +7915,15 @@ jb.component('openDialog', {
 		formContainer: { err: ''},
 	})
 	$dialog.ctx = ctxWithDialog
-	ctxWithDialog.run(runActions(
-		dialog.createDialogTopIfNeeded(),
-		action.subjectNext(dialogs.changeEmitter(), obj(prop('open',true), prop('dialog', '%$$dialog%')))
-	))
-}
-  
-//   runActions(
-// 	Var('$dlg',(ctx,{},{id}) => {
-// 		const dialog = { id: id || `dlg-${ctx.id}`, launcherCmpId: ctx.exp('%$cmp/cmpId%') }
-// 		const ctxWithDialog = ctx.cmpCtx._parent.setVars({
-// 			$dialog: dialog,
-// 			dialogData: {},
-// 			formContainer: { err: ''},
-// 		})
-// 		dialog.ctx = ctxWithDialog
-// 		return dialog
-// 	}),
-// 	dialog.createDialogTopIfNeeded(),
-// 	action.subjectNext(dialogs.changeEmitter(), obj(prop('open',true), prop('dialog','%$$dlg%')))
-//   )
+	ctx.params.doOpen(ctxWithDialog)
+  }
 })
 
 jb.component('openDialog.probe', {
 	type: 'control:0',
 	params: jb.comps.openDialog.params,
-	impl: ctx => jb.ui.ctrl(ctx.setVar('$dialog',{}), dialog.init()).renderVdom()
+	impl: ctx => jb.ui.ctrl(ctx.setVar('$dialog',{}), {$: 'dialog.init'}).renderVdom(),
+	require: {$: 'dialog.init'}
 })
 
 jb.component('dialog.init', {
@@ -7825,7 +7948,8 @@ jb.component('dialog.buildComp', {
 	params: [
 		{id: 'dialog', defaultValue: '%$$dialog%' },
 	],
-	impl: (ctx,dlg) => jb.ui.ctrl(dlg.ctx, dialog.init())
+	impl: (ctx,dlg) => jb.ui.ctrl(dlg.ctx, {$: 'dialog.init'}),
+	require: {$: 'dialog.init'}
 })
 
 jb.component('dialog.createDialogTopIfNeeded', {
@@ -7833,16 +7957,19 @@ jb.component('dialog.createDialogTopIfNeeded', {
 	impl: (ctx) => {
 		const widgetBody = jb.ui.widgetBody(ctx)
 		if (widgetBody.querySelector(':scope>.jb-dialogs')) return
-		const vdom = ctx.run(dialog.dialogTop()).renderVdomAndFollowUp()
+		const vdom = ctx.run({$: 'dialog.dialogTop'}).renderVdomAndFollowUp()
 		if (ctx.vars.headlessWidget && widgetBody instanceof jb.ui.VNode) {
+			jb.log('dialog headless createTop',{vdom,widgetBody})
 			widgetBody.children.push(vdom)
 			vdom.parentNode = widgetBody
-			jb.log('dialog headless createTop',{vdom,widgetBody})
+			const delta = { children: { toAppend: [jb.ui.stripVdom(vdom)] }}
+			jb.ui.renderingUpdates.next({delta ,widgetId: ctx.vars.headlessWidgetId})
 		} else {
 			jb.ui.render(vdom,widgetBody)
 			jb.log('dialog dom createTop',{vdom,widgetBody})
 		}
-	}
+	},
+	require: {$: 'dialog.dialogTop'}
 })
 
 jb.component('dialog.closeDialog', {
@@ -8022,8 +8149,8 @@ jb.component('dialogFeature.nearLauncherPosition', {
 		if (!$props.launcherRectangle)
 			return { left: _offsetLeft + ev.clientX || 0, top: _offsetTop + ev.clientY || 0}
 		return {
-			left: $props.launcherRectangle.left + _offsetLeft  + (rightSide ? ev.elem.outerWidth : 0), 
-			top:  $props.launcherRectangle.top  + _offsetTop   + ev.elem.outerHeight
+			left: $props.launcherRectangle.x + _offsetLeft  + (rightSide ? ev.elem.outerWidth : 0), 
+			top:  $props.launcherRectangle.y  + _offsetTop   + ev.elem.outerHeight
 		}
 	  }),
 	  frontEnd.onRefresh( ({},{$state,el}) => { 
@@ -8037,8 +8164,8 @@ jb.component('dialogFeature.nearLauncherPosition', {
 			  if (!el) return
 			  const launcherRectangle = el.getBoundingClientRect()
 			  const dialogPos = {
-				left: launcherRectangle.left + pos.offsetLeft + (pos.rightSide ? jb.ui.outerWidth(el) : 0), 
-				top:  launcherRectangle.top  + pos.offsetTop  + jb.ui.outerHeight(el)
+				left: launcherRectangle.x + pos.offsetLeft + (pos.rightSide ? jb.ui.outerWidth(el) : 0), 
+				top:  launcherRectangle.y  + pos.offsetTop  + jb.ui.outerHeight(el)
 			  }
 			  if (dialogPos.left != 0 || dialogPos.top != 0)
 			  	cmp.refreshFE({ dialogPos })
@@ -8235,9 +8362,10 @@ jb.component('dialogs.changeEmitter', {
 	impl: (ctx,_widgetId) => {
 		const widgetId = !ctx.vars.previewOverlay && _widgetId || 'default'
 		jb.ui.dlgEmitters = jb.ui.dlgEmitters || {}
-		jb.ui.dlgEmitters[widgetId] = jb.ui.dlgEmitters[widgetId] || ctx.run(rx.subject({replay: true}))
+		jb.ui.dlgEmitters[widgetId] = jb.ui.dlgEmitters[widgetId] || ctx.run({$: 'rx.subject', replay: true})
 		return jb.ui.dlgEmitters[widgetId]
-	}
+	},
+	require: {$: 'rx.subject'}
 })
 
 jb.component('dialogs.destroyAllEmitters', {
@@ -8390,7 +8518,7 @@ jb.component('itemlist.selection', {
       const elem = parent.children[cmp.state.selected]
       if (elem) {
         elem.classList.add('selected')
-        elem.scrollIntoViewIfNeeded()
+        jb.ui.scrollIntoView(elem)
       }
     }),
     frontEnd.method('setSelected', ({data},{cmp}) => {
@@ -8991,8 +9119,6 @@ jb.component('feature.expandToEndOfRow', {
     impl: calcProp('expandToEndOfRow','%$condition()%')
 });
 
-// var { menu,menuStyle,menuSeparator,icon,key} = jb.ns('menu,menuStyle,menuSeparator,icon,key')
-
 jb.component('menu.menu', {
   type: 'menu.option',
   params: [
@@ -9047,24 +9173,27 @@ jb.component('menu.action', {
   params: [
     {id: 'title', as: 'string', dynamic: true, mandatory: true},
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
-    {id: 'icon', type: 'icon' },
+    {id: 'description', as: 'string', dynamic: true, mandatory: true},
+    {id: 'icon', type: 'icon'},
     {id: 'shortcut', as: 'string'},
     {id: 'showCondition', type: 'boolean', as: 'boolean', defaultValue: true}
   ],
   impl: ctx => ctx.params.showCondition && ({
 			leaf : ctx.params,
-			action: _ => ctx.params.action(ctx.setVars({topMenu:null})), // clean topMenu from context after the action
+			action: () => ctx.params.action(ctx.setVars({topMenu:null})), // clean topMenu from context after the action
       title: ctx.params.title(ctx),
+      description: ctx.params.description(ctx),
       shortcut: ctx.params.shortcut,
 			runShortcut: event => {
-				if (ctx.run(key.eventMatchKey(() => event.ev, () => ctx.params.shortcut)))
+				if (ctx.run({$: 'key.eventMatchKey', event: () => event.ev, key: () => ctx.params.shortcut}))
 					ctx.params.action()
 			},
 			ctx: ctx.setVar('menuDepth', (ctx.vars.menuDepth || 0)+1)
-		})
+		}),
+  require: key.eventMatchKey()
 })
 
-// ********* actions / controls ************
+// ********* controls ************
 
 jb.component('menu.control', {
   type: 'control,clickable,menu',
@@ -9075,17 +9204,17 @@ jb.component('menu.control', {
   ],
   impl: ctx => {
     const model = ctx.params.menu()
-    if (!model) debugger
     const menuModel = model || { options: [], ctx, title: ''}
     const ctxWithModel = ctx.setVars({menuModel})
     const ctxToUse = ctx.vars.topMenu ? ctxWithModel : jb.ui.extendWithServiceRegistry(ctxWithModel.setVar('topMenu',{}))
     jb.log('menu create uiComp',{topMenu: ctx.vars.topMenu, menuModel,ctx,ctxToUse})
-    return jb.ui.ctrl(ctxToUse, features(
+    return jb.ui.ctrl(ctxToUse, {$: 'features', features: [
       () => ({ctxForPick: menuModel.ctx }),
-      calcProp('title','%$menuModel.title%'),
-      htmlAttribute('menuDepth', '%$menuModel/ctx/vars/menuDepth%'),
-    ))
-	}
+      {$: 'calcProp', id: 'title', value: '%$menuModel.title%' },
+      {$: 'htmlAttribute', attribute: 'menuDepth', value: '%$menuModel/ctx/vars/menuDepth%' },
+    ]})
+	},
+  require: [{$: 'features'}, {$: 'calcProp'}, {$: 'htmlAttribute'}]
 })
 
 jb.component('menu.openContextMenu', {
@@ -9150,19 +9279,20 @@ jb.component('menu.initPopupMenu', {
   ],
   impl: features(
     calcProp('title', '%$menuModel.title%'),
-    method('openPopup', runActions(
-      parentCtx => parentCtx.run(menu.openContextMenu({
-        popupStyle: call('popupStyle'),
-        menu: () => parentCtx.run(If('%$innerMenu%','%$innerMenu.menu()%', '%$$model.menu()%')),
-      }))
-    )),
+    method('openPopup', 
+      parentCtx => parentCtx.run({$: 'menu.openContextMenu',
+        popupStyle: {$: 'call', param: 'popupStyle'},
+        menu: () => parentCtx.run({$: 'If', condition: '%$innerMenu%', then: '%$innerMenu.menu()%', Else: '%$$model.menu()%'}),
+      })
+    ),
     method('closePopup', dialog.closeDialogById('%$optionsParentId%')),
     method('openNewPopup', runActions(action.runBEMethod('closePopup'), action.runBEMethod('openPopup'))),
     frontEnd.onDestroy(action.runBEMethod('closePopup')),
     menu.passMenuKeySource(),
     frontEnd.flow(source.findMenuKeySource(), rx.filter('%keyCode%==39'), sink.BEMethod('openPopup')),
     frontEnd.flow(source.findMenuKeySource(), rx.filter(inGroup(list(37,27),'%keyCode%')), sink.BEMethod('closePopup')),
-  )
+  ),
+  requires: [{$: 'menu.openContextMenu'}, {$: 'call'}, {$: 'If'}]
 })
 
 jb.component('menu.initMenuOption', {
@@ -9238,7 +9368,7 @@ jb.component('menu.selection', {
       const elem = parent.children[cmp.state.selected]
       if (elem) {
         elem.classList.add('selected')
-        elem.scrollIntoViewIfNeeded()
+        jb.ui.scrollIntoView(elem)
       }
     }),
     frontEnd.method('setSelected', ({data},{cmp}) => {
@@ -9507,6 +9637,42 @@ jb.component('picklist.init', {
   )
 })
 
+// jb.component('picklist.allowAsynchOptions', {
+//   type: 'feature',
+//   description: 'allows the picklist options be reactive or promise',
+//   impl: features(
+//     calcProp({
+//       id: 'options', 
+//       priority: 5, phase: 5,
+//       value: (ctx,{$state},{}) => {
+//         const val = $state.options || ctx.cmpCtx.vars.$model.options()
+//         if (Array.isArray(val)) return val
+//         const res = []
+//         res.delayed = val
+//         return res
+//       },
+//     }),
+//     followUp.flow(
+//       source.any(({},{$state,$props}) => {
+//         if ($state.options) return []
+//         return $props.options.delayed || []
+//       }),
+//       rx.log('followUp allowAsynchValue'),
+//       sink.action((ctx,{cmp}) => {
+//         const origCtx = cmp.originatingCtx()
+//         const recalcCtx = origCtx.ctx({
+//             vars: {$refreshElemCall: true, $cmpId: cmp.cmpId, $cmpVer: cmp.ver+1},
+//             profile: {...origCtx.profile, options: () => ctx.data}, path: ''
+//           })
+//         debugger
+//         const vdom = jb.ui.h(recalcCtx.runItself())
+//         // const elem = jb.ui.elemOfCmp(recalcCtx,cmp.cmpId)
+//         // jb.ui.applyNewVdom(elem, vdom, {ctx: recalcCtx})
+//       })
+//     ),
+//   )
+// })
+
 jb.component('picklist.allowAsynchOptions', {
   type: 'feature',
   description: 'allows a text value to be reactive or promise',
@@ -9514,21 +9680,44 @@ jb.component('picklist.allowAsynchOptions', {
     calcProp({
       id: 'options', 
       priority: 5, phase: 5,
-      value: ({},{$state,$model},{}) => {
-        const val = $state.options || $model.options()
-        if (Array.isArray(val)) return val
-        const res = []
-        res.delayed = val
+      value: (ctx,{$state,$model,picklistModel},{}) => {
+        const model = picklistModel || $model
+        let res
+        if ($state.refresh && $state.options && $state.refreshSource == 'dataArrived') {
+          res = $state.options
+          jb.log('picklist options using state',{res,ctx,$state})
+        } else if ($state.refresh && $state.options) {
+          res = $state.options
+          const options = model.options()
+          if (jb.utils.isPromise(options) || jb.callbag.isCallbag(options))
+            res.delayed = options
+          jb.log('picklist options use state and calc recalc asynch options',{res,ctx,$state}) // avoid flickering
+        } else {
+          const options = model.options()
+          if (jb.utils.isPromise(options) || jb.callbag.isCallbag(options)) {
+            res = []
+            res.delayed = options
+          } else {
+            res = options
+          }
+          jb.log('picklist options calc options',{res,ctx,$state})
+        }
+        if (picklistModel) // support styleByControl
+          picklistModel.options = res
         return res
       },
     }),
     followUp.flow(
-      source.any(({},{$state,$props}) => {
-        if ($state.options) return []
-        return $props.options.delayed || $props.options
-      }),
-      rx.log('followUp allowAsynchValue'),
-      sink.refreshCmp(firstSucceeding('%data%','%%'))
+      source.any(({},{$state,$props}) => $props.options.delayed || []),
+      rx.log('picklist followUp allowAsynchValue'),
+      sink.refreshCmp(({data}) => data.data || jb.path(data,'0.options') && data[0] || data // %data% for rx, %0/options% - for pipe array result
+      // sink.refreshCmp(ctx => {
+      //   const data = ctx.data
+      //   const res = data.data || jb.path(data,'0.options') && data[0] || data
+      //   jb.log('picklist followUp refresh cmp with new state',{ctx, res})
+      //   return res
+      // }
+      , obj(prop('refreshSource','dataArrived')))
     ),
   )
 })
@@ -9628,8 +9817,6 @@ jb.component('picklist.initGroups', {
 })
 ;
 
-// var {multiSelect, removeFromArray, addToArray } = jb.ns('multiSelect')
-
 jb.component('multiSelect', {
     type: 'control',
     description: 'select list of options, check multiple',
@@ -9655,7 +9842,7 @@ jb.component('multiSelect.modelAsBooleanRef',{
         return { $jb_val: val => val === undefined ? has() : val === true ? add() : remove() }
 
         function has() { return jb.val(ref).indexOf(code) != -1 }
-        function add() { if (!has(code)) jb.push(ref, code,ctx) }
+        function add() { if (!has(code)) jb.db.push(ref, code,ctx) }
         function remove() { 
             const index = jb.val(ref).indexOf(code)
             index != -1 && jb.db.splice(ref,[[index,1]],ctx)
@@ -9734,7 +9921,7 @@ jb.component('multiSelect.chips', {
 ;
 
 jb.component('defaultTheme', {
-  impl: ctx => jb.ui.addStyleElem(ctx,`
+  impl: ctx => jb.ui.insertOrUpdateStyleElem(ctx,`
     body {
       /* vscode compatible with light theme */
       --jb-font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif;
@@ -9929,10 +10116,11 @@ jb.component('editableNumber.mdcSliderNoText', {
         ])
       ]),
     features: [
+      frontEnd.requireExternalLibrary(['material-components-web.js','css/font.css','css/material.css']),
       field.databind(),
       slider.init(),
       frontEnd.init((ctx,{cmp}) => {
-        cmp.mdcSlider = new jb.ui.material.MDCSlider(cmp.base)
+        cmp.mdcSlider = new jb.frame.mdc.slider.MDCSlider(cmp.base)
         cmp.mdcSlider.listen('MDCSlider:change', () => ctx.run(action.runBEMethod('assignIgnoringUnits', ()=> cmp.mdcSlider.value)))
       }),
       frontEnd.onRefresh((ctx,{cmp,el}) => {
@@ -9998,7 +10186,7 @@ jb.component('winUtils.gotoUrl', {
   impl: (ctx,url,target) => {
 		var _target = (target == 'new tab') ? '_blank' : '_self';
 		if (!ctx.probe)
-			window.open(url,_target);
+      globalThis.window.open(url,_target);
 	}
 })
 
@@ -10048,6 +10236,7 @@ jb.component('editableText.picklistHelper', {
   params: [
     {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true},
     {id: 'picklistStyle', type: 'picklist.style', dynamic: true, defaultValue: picklist.labelList()},
+    {id: 'picklistFeatures', type: 'feature[]', flattenArray: true, dynamic: true},
     {id: 'showHelper', as: 'boolean', dynamic: true, defaultValue: notEmpty('%value%'), description: 'show/hide helper according to input content', type: 'boolean'},
     {id: 'autoOpen', as: 'boolean', type: 'boolean'},
     {id: 'onEnter', type: 'action', dynamic: true, defaultValue: writeValue('%$$model/databind%','%$selectedOption%')},
@@ -10060,9 +10249,9 @@ jb.component('editableText.picklistHelper', {
     variable('helperCmp', '%$cmp%'),
     method('openPopup', openDialog({
         style: dialog.popup(), content: picklist({
-          options: pipeline('%$watchableInput%',call('options')),
+          options: (ctx,{watchableInput},{options}) => options(ctx.setData(jb.val(watchableInput))),
           databind: '%$selectedOption%',
-          features: watchRef('%$watchableInput%'),
+          features: [ watchRef('%$watchableInput%'), '%$picklistFeatures()%'],
           style: call('picklistStyle')
         }),
         features: [
@@ -10082,7 +10271,7 @@ jb.component('editableText.picklistHelper', {
         const input = jb.ui.findIncludeSelf(cmp.base,'input,textarea')[0];
         return { input: { value: input.value, selectionStart: input.selectionStart}}
     }),
-    method('onEnter', action.if(ctx => ctx.run(dialog.isOpen('%$popupId%')), runActions(call('onEnter'),dialog.closeDialogById('%$popupId%')))),
+    method('onEnter', action.if(dialog.isOpen('%$popupId%'), runActions(call('onEnter'),dialog.closeDialogById('%$popupId%')))),
     method('onEsc', action.if(dialog.isOpen('%$popupId%'), runActions(call('onEsc'),dialog.closeDialogById('%$popupId%')))),
     feature.serviceRegistey(),
     frontEnd.selectionKeySourceService(),
@@ -10115,7 +10304,7 @@ jb.component('editableText.setInputState', {
 
 jb.component('editableText.addUserEvent', {
   type: 'rx',
-  impl: rx.innerPipe(frontEnd.addUserEvent(), rx.map('%$ev/input%'))
+  impl: rx.innerPipe(rx.userEventVar(), rx.map('%$ev/input%'))
 })
 
 jb.component('editableText.helperPopup', {
@@ -10140,9 +10329,11 @@ jb.component('editableText.helperPopup', {
     })),
     variable('helperCmp', '%$cmp%'),
     method('closePopup', dialog.closeDialogById('%$popupId%')),
-    method('refresh', If(call('showHelper'),
-      If(dialog.isOpen('%$popupId%'), touch('%$watchableInput%'), action.runBEMethod('openPopup')),
-      action.runBEMethod('closePopup')
+    method('refresh', runActions(
+      If(call('showHelper'),
+        If(not(dialog.isOpen('%$popupId%')), action.runBEMethod('openPopup')),
+        action.runBEMethod('closePopup')
+      )
     )),
     frontEnd.enrichUserEvent(({},{cmp}) => {
         const input = jb.ui.findIncludeSelf(cmp.base,'input,textarea')[0];
@@ -10163,10 +10354,8 @@ jb.component('editableText.helperPopup', {
  )
 });
 
-// var {mdcStyle} = jb.ns('mdcStyle')
-
 jb.extension('mdIcons', {
-  require: ['/dist/md-icons.js']
+  $requireLibs: ['/dist/md-icons.js']
 })
 
 jb.component('mdcStyle.initDynamic', {
@@ -10261,31 +10450,6 @@ jb.component('text.chip', {
     })
 })
   
-;[1,2,3,4,5,6].map(level=>jb.component(`header.h${level}`, {
-    type: 'text.style',
-    impl: customStyle({
-      template: (cmp,{text},h) => h(`h${level}`,{},text),
-      features: text.bindText()
-    })
-}))
-  
-  
-;[1,2,3,4,5,6].map(level=>jb.component(`header.mdcHeadline${level}`, {
-    type: 'text.style',
-    impl: customStyle({
-      template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--headline${level}`},text),
-      features: text.bindText()
-    })
-}))
-  
-;[1,2].map(level=>jb.component(`header.mdcSubtitle${level}`, {
-    type: 'text.style',
-    impl: customStyle({
-      template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--subtitle${level}`},text),
-      features: text.bindText()
-    })
-}))
-
 jb.component('header.mdcHeaderWithIcon', {
   type: 'text.style',
   params: [
@@ -10312,24 +10476,56 @@ jb.component('text.alignToBottom', {
   })
 })
 
-;[1,2].map(level=>jb.component(`text.mdcBody${level}`, {
+jb.defComponents('1,2,3,4,5,6'.split(','), 
+  level=> jb.component(`header.h${level}`, ({
     type: 'text.style',
+    params: [
+      { id: 'level', as: 'string', defaultValue: level }
+    ],
     impl: customStyle({
-      template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--body${level}`},text),
+      template: (cmp,{text,level},h) => h(`h${level}`,{},text),
       features: text.bindText()
     })
-}))
+})))
+
+jb.component('text.h2WithClass', {
+  type: 'text.style:0',
+  params: [
+    {id: 'clz', as: 'string'},
+  ],
+  impl: customStyle({
+    template: (cmp,{text,clz},h) => h('h2',{class: clz},text),
+    features: text.bindText()
+  })
+})
+
+jb.defComponents('1,2,3,4,5,6'.split(','), 
+  level=> jb.component(`header.mdcHeadline${level}`, 
+    ({type: 'text.style', impl: {$: 'text.h2WithClass', clz: `mdc-typography mdc-typography--headline${level}`}})
+))
+
+jb.defComponents('1,2'.split(','), 
+  level=> jb.component(`header.mdcSubtitle${level}`, 
+    ({type: 'text.style', impl: {$: 'text.h2WithClass', clz: `header.mdcSubtitle${level}`}})
+))
+
+jb.defComponents('1,2'.split(','), 
+  level => jb.component(`header.mdcBody${level}`, 
+    ({type: 'text.style', impl: {$: 'text.h2WithClass', clz: `mdc-typography mdc-typography--body${level}`}})
+))
 ;
 
-jb.ui.chooseIconWithRaised = (icons,raised) => {
-  if (!icons) return []
-  const raisedIcon = icons.filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'raised')[0]
-  const otherIcons = (raisedIcon && icons.filter(cmp=>cmp && cmp.ctx.vars.$model.position != 'raised') || icons)
-    .filter(cmp=>cmp && cmp.ctx.vars.$model.position != 'post')
-  if (raised)
-    return raisedIcon ? [raisedIcon] : otherIcons
-  return otherIcons
-}
+jb.extension('ui','button', {
+  chooseIconWithRaised(icons,raised) {
+    if (!icons) return []
+    const raisedIcon = icons.filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'raised')[0]
+    const otherIcons = (raisedIcon && icons.filter(cmp=>cmp && cmp.ctx.vars.$model.position != 'raised') || icons)
+      .filter(cmp=>cmp && cmp.ctx.vars.$model.position != 'post')
+    if (raised)
+      return raisedIcon ? [raisedIcon] : otherIcons
+    return otherIcons
+  }
+})
 
 jb.component('button.href', {
   type: 'button.style',
@@ -10816,8 +11012,8 @@ jb.component('group.tabs', {
               raised: '%$tabIndex% == %$selectedTab%',
               // watchRef breaks mdcTabBar animation
               features: [
-                ctx => ctx.cmpCtx.params.barStyle.profile.$ !== 'group.mdcTabBar' && watchRef('%$selectedTab%'),
-                ctx => ctx.run(features((ctx.vars.tab.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x)))
+                ctx => ctx.cmpCtx.params.barStyle.profile.$ !== 'group.mdcTabBar' && {$: 'watchRef', ref: '%$selectedTab%'},
+                ctx => ctx.run({ $: 'features', features: (ctx.vars.tab.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x) }),
               ]
             }),
             itemVariable: 'tab',
@@ -10871,7 +11067,7 @@ jb.component('group.accordion', {
                 css.width('%$width%'),
                 css('{justify-content: left}'),
                 watchRef('%$selectedTab%'),
-                ctx => ctx.run(features((ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x)))
+                ctx => ctx.run({ $: 'features', features: (ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x) }),
               ]
             }),
             group({
@@ -10908,7 +11104,7 @@ jb.component('group.sections', {
             text({
               text: '%$section/field()/title()%',
               style: call('titleStyle'),
-              features: ctx => ctx.run(features((ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x)))
+              features: ctx => ctx.run({ $: 'features', features: (ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x) }),
             }),
             group({style: call('innerGroupStyle'), controls: '%$section%'})
           ]
@@ -11286,7 +11482,7 @@ jb.component('propertySheet.titlesLeft', {
   ],
   impl: customStyle({
     template: (cmp,{ctrls,titleStyle,titleText},h) => h('div',{}, ctrls.flatMap(ctrl=>[
-        h(cmp.ctx.run(text({text: ctx => titleText(ctx.setData(ctrl.field().title())), style: ctx => titleStyle(ctx)}))),
+        h(cmp.ctx.run({$: 'text' ,text: ctx => titleText(ctx.setData(ctrl.field().title())), style: ctx => titleStyle(ctx)})),
         h(ctrl)
       ])
     ),
@@ -11305,9 +11501,9 @@ jb.component('propertySheet.titlesAbove', {
   impl: customStyle({
     template: (cmp,{ctrls,titleStyle,titleText},h) => h('div',{ style: {'grid-template-columns': ctrls.map(()=>'auto').join(' ')}}, [
         ...ctrls.map(ctrl=>
-          h(cmp.ctx.run(text({
+          h(cmp.ctx.run({$: 'text', 
             text: ctx => titleText(ctx.setData(ctrl.field().title())), 
-            style: ctx => titleStyle(ctx)})))), 
+            style: ctx => titleStyle(ctx)}))), 
         ...ctrls.map(ctrl=>h(ctrl))
       ]
     ),
@@ -11456,12 +11652,7 @@ jb.component('editableBoolean.mdcCheckBox', {
       editableBoolean.initToggle(),
       field.databind(), 
       css('~ .mdc-checkbox__checkmark { top: -9px}')
-      // frontEnd((ctx,{cmp}) => {
-      //   // svg refresh bug (maybe a jb-react bug)
-      //   const bck = cmp.base.querySelector('.mdc-checkbox__background')
-      //   bck.outerHTML = ''+ bck.outerHTML
-      // })
-    ]
+     ]
   })
 })
 
@@ -11483,8 +11674,29 @@ jb.component('editableBoolean.picklist', {
   )
 });
 
-(function() {
-// var { tree } = jb.ns('tree')
+jb.extension('ui', 'tree', {
+	TreeRenderer: class TreeRenderer {
+		constructor(args) {
+			Object.assign(this,args)
+		}
+		renderTree() {
+			const {model,h} = this
+			if (this.noHead)
+				return h('div',{}, model.children(model.rootPath).map(childPath=> this.renderNode(childPath)))
+			return this.renderNode(model.rootPath)
+		}
+		renderNode(path) {
+			const {expanded,model,h} = this
+			const disabled = model.disabled && model.disabled(path) ? 'jb-disabled' : ''
+			const selected = path == this.selected ? 'selected' : ''
+			const clz = ['treenode', model.isArray(path) ? 'jb-array-node': '',disabled, selected].filter(x=>x).join(' ')
+			const children = expanded[path] && model.children(path).length ? [h('div.treenode-children', {} ,
+				model.children(path).map(childPath=>this.renderNode(childPath)))] : []
+	
+			return h('div',{class: clz, path, ...expanded[path] ? {expanded: true} :{} }, [ this.renderLine(path), ...children ] )
+		}
+	}
+})
 
 jb.component('tree', {
   type: 'control',
@@ -11559,7 +11771,7 @@ jb.component('tree.plain', {
 				h('span',{class: 'treenode-label'}, model.title(path,!expanded[path])),
 			])
 		}
-		return new TreeRenderer({model,expanded,h,showIcon,noHead,renderLine,selected}).renderTree(cmp.renderProps.model.rootPath)
+		return new jb.ui.TreeRenderer({model,expanded,h,showIcon,noHead,renderLine,selected}).renderTree(cmp.renderProps.model.rootPath)
 	},
 	css: `|>.treenode-children { padding-left: 10px; min-height: 7px }
 	|>.treenode-label { margin-top: -1px }
@@ -11602,7 +11814,7 @@ jb.component('tree.expandBox', {
 				h('span.treenode-label',{}, model.title(path,!expanded[path])),
 			])
 		}
-		return new TreeRenderer({model,expanded,h,showIcon,noHead,renderLine,selected}).renderTree(cmp.renderProps.model.rootPath)
+		return new jb.ui.TreeRenderer({model,expanded,h,showIcon,noHead,renderLine,selected}).renderTree(cmp.renderProps.model.rootPath)
 	  },
 	  css: ({},{},{lineWidth}) => `|>.treenode-children { padding-left: 10px; min-height: 7px }
 	|>.treenode-label { margin-top: -2px }
@@ -11629,31 +11841,6 @@ jb.component('tree.expandBox', {
 		features: tree.initTree()
 	}),
 })
-
-// helper for styles
-class TreeRenderer {
-	constructor(args) {
-		Object.assign(this,args)
-	}
-	renderTree() {
-		const {model,h} = this
-		if (this.noHead)
-			return h('div',{}, model.children(model.rootPath).map(childPath=> this.renderNode(childPath)))
-		return this.renderNode(model.rootPath)
-	}
-	renderNode(path) {
-		const {expanded,model,h} = this
-		const disabled = model.disabled && model.disabled(path) ? 'jb-disabled' : ''
-		const selected = path == this.selected ? 'selected' : ''
-		const clz = ['treenode', model.isArray(path) ? 'jb-array-node': '',disabled, selected].filter(x=>x).join(' ')
-		const children = expanded[path] && model.children(path).length ? [h('div.treenode-children', {} ,
-			model.children(path).map(childPath=>this.renderNode(childPath)))] : []
-
-		return h('div',{class: clz, path, ...expanded[path] ? {expanded: true} :{} }, [ this.renderLine(path), ...children ] )
-	}
-}
-
-// ******** tree features
 
 jb.component('tree.selection', {
 	type: 'feature',
@@ -11682,7 +11869,7 @@ jb.component('tree.selection', {
 		  .forEach(elem=>elem.classList.remove('selected'))
 		Array.from(jb.ui.findIncludeSelf(cmp.base,'.treenode'))
 		  .filter(elem=> elem.getAttribute('path') == cmp.state.selected)
-		  .forEach(elem=> {elem.classList.add('selected'); elem.scrollIntoViewIfNeeded()})
+		  .forEach(elem=> {elem.classList.add('selected'); jb.ui.scrollIntoView(elem)})
 	  }),
 	  frontEnd.method('setSelected', ({data},{cmp}) => {
 		cmp.base.state.selected = cmp.state.selected = data
@@ -11744,7 +11931,7 @@ jb.component('tree.keyboardSelection', {
 		}
 	  }),
 	  frontEnd.prop('onkeydown', rx.pipe(
-		  source.frontEndEvent('keydown'), rx.filter(not('%ctrlKey%')), rx.filter(not('%altKey%')), frontEnd.addUserEvent() )),
+		  source.frontEndEvent('keydown'), rx.filter(not('%ctrlKey%')), rx.filter(not('%altKey%')), rx.userEventVar() )),
 	  frontEnd.flow('%$cmp.onkeydown%', rx.filter('%keyCode%==13'), rx.filter('%$cmp.state.selected%'), sink.BEMethod('onEnter','%$cmp.state.selected%') ),
 	  frontEnd.flow('%$cmp.onkeydown%', rx.filter(inGroup(list(38,40),'%keyCode%')),
 		rx.map(tree.nextSelected(If('%keyCode%==40',1,-1))), 
@@ -11758,7 +11945,7 @@ jb.component('tree.keyboardSelection', {
 		)),
 		rx.filter(({data}) => (data.ctrlKey || data.altKey || data.keyCode == 46) // Delete
 			  && (data.keyCode != 17 && data.keyCode != 18)), // ctrl or alt alone
-		frontEnd.addUserEvent(),
+		rx.userEventVar(),
 		sink.BEMethod('runShortcut','%$ev%',obj(prop('path','%$cmp.state.selected%')))
 	  ),
 	  frontEnd.flow(source.frontEndEvent('click'), sink.FEMethod('regainFocus')),
@@ -11923,8 +12110,6 @@ jb.component('tree.moveItem', {
 		function refToPath(ref) { return ref && ref.path ? ref.path().join('~') : '' }
 	}
 })
-
-})()
 ;
 
 // var { tableTree, tree } = jb.ns('tableTree,tree')
@@ -12272,7 +12457,7 @@ jb.component('tree.json', {
 jb.component('prettyPrint', {
   params: [
     {id: 'profile', defaultValue: '%%'},
-    {id: 'forceFlat', as: 'boolean', type: 'boolean'},
+    {id: 'forceFlat', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,profile) => jb.utils.prettyPrint(jb.val(profile),{ ...ctx.params, comps: jb.studio.previewjb.comps})
 })
@@ -12287,6 +12472,7 @@ jb.extension('utils', 'prettyPrint', {
   },
   prettyPrintComp(compId,comp,settings={}) {
     if (comp) {
+      //const comp = Object.assign({}, _comp,{location: null})
       return `jb.component('${compId}', ${jb.utils.prettyPrint(comp,{ initialPath: compId, ...settings })})`
     }
   },
@@ -12307,7 +12493,7 @@ jb.extension('utils', 'prettyPrint', {
     if (!val || typeof val !== 'object')
       return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
 
-    const res = valueToMacro({path: initialPath, line:0, col: 0, depth :1}, val)
+    const res = valueToMacro({path: initialPath, line:0, col: 0, depth :1}, val, forceFlat)
     res.text = res.text.replace(jb.utils.fixedNLRegExp,'\n')
     return res
 
@@ -12325,23 +12511,25 @@ jb.extension('utils', 'prettyPrint', {
     function joinVals(ctx, innerVals, open, close, flat, isArray) {
       const {path, depth} = ctx
       const _open = typeof open === 'string' ? [{prop: '!open', item: open}] : open
-      const openResult = processList(ctx,[..._open, {prop: '!open-newline', item: () => newLine()}])
-      const arrayOrObj = isArray? 'array' : 'obj'
+      const arrayOrProfile = isArray? 'array' : 'profile'
+      const openResult = processList(ctx,[..._open, {prop: `!open-${arrayOrProfile}`, item: () => newLine()}])
 
       const beforeClose = innerVals.reduce((acc,{innerPath, val}, index) => {
-        const noColon = valueToMacro(ctx, val, flat).noColon // used to serialize function memeber
+        const fixedPropName = valueToMacro(ctx, val, flat).fixedPropName // used to serialize function memeber
+        const semanticPrefix = isArray ? `array-prefix-${index}` : 'prop'
+        const semanticSeparator = isArray ? `array-separator-${index}` : `obj-separator-${index}`
         return processList(acc,[
-          {prop: `!${arrayOrObj}-prefix-${index}`, item: isArray ? '' : fixPropName(innerPath) + (noColon ? '' : ': ')},
+          {prop: `${innerPath}~!${semanticPrefix}`, item: isArray ? '' : fixedPropName || (fixPropName(innerPath) + ': ')},
           {prop: '!value', item: ctx => {
               const ctxWithPath = { ...ctx, path: [path,innerPath].join('~'), depth: depth +1 }
               return {...ctxWithPath, ...valueToMacro(ctxWithPath, val, flat)}
             }
           },
-          {prop: `!${arrayOrObj}-separator-${index}`, item: () => index === innerVals.length-1 ? '' : ',' + (flat ? ' ' : newLine())},
+          {prop: `!${semanticSeparator}`, item: () => index === innerVals.length-1 ? '' : ',' + (flat ? ' ' : newLine())},
         ])}
       , {...openResult, unflat: false} )
-      const _close = typeof close === 'string' ? [{prop: '!close', item: close}] : close
-      const result = processList(beforeClose, [{prop: '!close-newline', item: () => newLine(-1)}, ..._close])
+      const _close = typeof close === 'string' ? [{prop: `!close-${arrayOrProfile}`, item: close}] : close
+      const result = processList(beforeClose, [{prop: `!close-${arrayOrProfile}`, item: () => newLine(-1)}, ..._close])
 
       const unflat = shouldNotFlat(result)
       if ((forceFlat || !unflat) && !flat)
@@ -12407,8 +12595,7 @@ jb.extension('utils', 'prettyPrint', {
       const twoFirstArgs = keys.length == 2 && params.length >= 2 && profile[params[0].id] && profile[params[1].id]
       if ((params.length < 3 && comp.macroByValue !== false) || comp.macroByValue || oneFirstArg || twoFirstArgs) {
         const args = systemProps.concat(params.map(param=>({innerPath: param.id, val: propOfProfile(param.id)})))
-        for(let i=0;i<5;i++)
-          if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
+        while (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop() // cut the undefined's at the end
         return joinVals(ctx, args, openProfileByValueGroup, closeProfileByValueGroup, flat, true)
       }
       const remarkProp = profile.remark ? [{innerPath: 'remark', val: profile.remark} ] : []
@@ -12425,6 +12612,18 @@ jb.extension('utils', 'prettyPrint', {
       }
     }
 
+    function serializeFunction(func) {
+      let asStr = func.toString().trim().replace(/^'([a-zA-Z_\-0-9]+)'/,'$1')
+      if (func.fixedName)
+        asStr = asStr.replace(/initExtension[^(]*\(/,`${func.fixedName}(`)
+      const asynch = asStr.indexOf('async') == 0 ? 'async ' : ''
+      const noPrefix = asStr.slice(asynch.length)
+      const funcName = func.fixedName || func.name
+      const header = noPrefix.indexOf(`${funcName}(`) == 0 ? funcName : noPrefix.indexOf(`function ${funcName}(`) == 0 ? `function ${funcName}` : ''
+      const fixedPropName = header ? `${asynch}${header}` : ''
+      return { text: asStr.slice(header.length+asynch.length).replace(/\n/g,jb.utils.fixedNL), fixedPropName, map: {} }
+    }
+
     function valueToMacro({path, line, col, depth}, val, flat) {
       const ctx = {path, line, col, depth}
       let result = doValueToMacro()
@@ -12434,14 +12633,11 @@ jb.extension('utils', 'prettyPrint', {
 
       function doValueToMacro() {
         if (Array.isArray(val)) return arrayToMacro(ctx, val, flat);
-        if (val === null) return 'null';
-        if (val === undefined) return 'undefined';
-        if (typeof val === 'object') return profileToMacro(ctx, val, flat);
-        if (typeof val === 'function') {
-          const asStr = val.toString().trim().replace(/^'([a-zA-Z_\-0-9]+)'/,'$1')
-          const header = asStr.indexOf(`${val.name}(`) == 0 ? val.name : asStr.indexOf(`function ${val.name}(`) == 0 ? `function ${val.name}` : ''
-          return { text: asStr.slice(header.length).replace(/\n/g,jb.utils.fixedNL), noColon: header ? true : false, map: {} }
-        }
+        if (val === null) return 'null'
+        if (val === undefined) return 'undefined'
+        if (typeof val === 'object') return profileToMacro(ctx, val, flat)
+        if (typeof val === 'function') return serializeFunction(val)
+    
         if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
           return processList(ctx,[
             {prop: '!value-text-start', item: "'"},
@@ -12461,8 +12657,8 @@ jb.extension('utils', 'prettyPrint', {
 
     function arrayToMacro(ctx, array, flat) {
       const vals = array.map((val,i) => ({innerPath: i, val}))
-      const openArray = [{prop:'!open-array', item:'['}]
-      const closeArray = [{prop:'!close-array', item:']'}]
+      const openArray = [{prop:'!open-array-char', item:'['}]
+      const closeArray = [{prop:'!close-array-char', item:']'}]
 
       return joinVals(ctx, vals, openArray, closeArray, flat, true)
     }
@@ -12477,7 +12673,7 @@ jb.extension('remoteCtx', {
         const profText = jb.utils.prettyPrint(ctx.profile)
         const vars = jb.objFromEntries(jb.entries(ctx.vars).filter(e => e[0] == '$disableLog' || profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
-        const data = profText.match(/({data})|(ctx.data)|(%%)/) && jb.remoteCtx.stripData(ctx.data) 
+        const data = jb.remoteCtx.usingData(profText) && jb.remoteCtx.stripData(ctx.data) 
         const params = jb.objFromEntries(jb.entries(isJS ? ctx.params: jb.entries(jb.path(ctx.cmpCtx,'params')))
             .filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
@@ -12492,14 +12688,20 @@ jb.extension('remoteCtx', {
              return jb.remoteCtx.stripFunction(data)
         if (data instanceof jb.core.jbCtx)
              return jb.remoteCtx.stripCtx(data)
+        if (Array.isArray(data) && data.length > 100)
+            jb.logError('stripData slicing large array',{data})
         if (Array.isArray(data))
              return data.slice(0,100).map(x=>jb.remoteCtx.stripData(x))
+        if (typeof data == 'object' && ['DOMRect'].indexOf(data.constructor.name) != -1)
+            return jb.objFromEntries(Object.keys(data.__proto__).map(k=>[k,data[k]]))
         if (typeof data == 'object' && ['VNode','Object','Array'].indexOf(data.constructor.name) == -1)
             return { $$: data.constructor.name}
         if (typeof data == 'object' && data.comps)
             return { uri : data.uri}
         if (typeof data == 'object')
-             return jb.objFromEntries(jb.entries(data).filter(e=> typeof e[1] != 'function').map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
+             return jb.objFromEntries(jb.entries(data)
+                .filter(e=> data.$ || typeof e[1] != 'function') // if not a profile, block functions
+                .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
     },
     stripFunction(f) {
         const {profile,runCtx,path,param,srcPath} = f
@@ -12510,14 +12712,15 @@ jb.extension('remoteCtx', {
             .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
         const params = jb.objFromEntries(jb.entries(jb.path(runCtx.cmpCtx,'params')).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
-        return Object.assign({$: 'runCtx', id: runCtx.id, path: [srcPath,path].filter(x=>x).join('~'), param, profile: profNoJS, data: jb.remoteCtx.stripData(runCtx.data), vars}, 
+        const usingData = jb.remoteCtx.usingData(profText); //profText.match(/\bdata\b/) || profText.match(/%[^$]/)
+        return Object.assign({$: 'runCtx', id: runCtx.id, path: [srcPath,path].filter(x=>x).join('~'), param, profile: profNoJS, data: usingData ? jb.remoteCtx.stripData(runCtx.data) : null, vars}, 
             Object.keys(params).length ? {cmpCtx: {params} } : {})
     },
     serailizeCtx(ctx) { return JSON.stringify(jb.remoteCtx.stripCtx(ctx)) },
     deStrip(data) {
         if (typeof data == 'string' && data.match(/^__JBART_FUNC:/))
             return eval(data.slice(14))
-        const stripedObj = typeof data == 'object' && jb.objFromEntries(jb.entries(data).map(e=>[e[0],jb.remoteCtx.deStrip(e[1])]))
+        const stripedObj = data && typeof data == 'object' && jb.objFromEntries(jb.entries(data).map(e=>[e[0],jb.remoteCtx.deStrip(e[1])]))
         if (stripedObj && data.$ == 'runCtx')
             return (ctx2,data2) => (new jb.core.jbCtx().ctx({...stripedObj})).extendVars(ctx2,data2).runItself()
         if (Array.isArray(data))
@@ -12561,6 +12764,7 @@ jb.extension('remoteCtx', {
             jb.logException(e,'eval profile',{code})
         }        
     },
+    usingData: profText => profText.match(/({data})|(ctx.data)|(%[^$])/)
 })
 
 ;
@@ -12569,9 +12773,9 @@ jb.extension('remoteCtx', {
 interface jbm : {
      uri : string // devtools•logPanel, studio•preview•debugView, •debugView
      parent : jbm // null means root
-     remoteExec(profile: any, ,{timeout,oneway}) : Promise | void
+     remoteExec(profile: any ,{timeout,oneway}) : Promise | void
      createCallbagSource(stripped ctx of cb_source) : cb
-     createCalllbagOperator(stripped ctx of cb_operator) : (source => cb)
+     createCallbagOperator(stripped ctx of cb_operator, {profText}) : (source => cb)
 }
 jbm interface can be implemented on the actual jb object or a jbm proxy via port
 
@@ -12588,8 +12792,6 @@ implementatios over frame(window,worker), websocket, connection
 Routing is implemented by remoteRoutingPort, first calclating the routing path, and sending to the message hop by hop to the destination.
 The routing path is reversed to create response message
 */
-
-//var { rx,source,jbm,remote,net,pipe, aggregate } = jb.ns('rx,source,jbm,remote,net')
 
 jb.extension('cbHandler', {
     initExtension() {
@@ -12612,10 +12814,16 @@ jb.extension('cbHandler', {
     },
     removeEntry(ids,m) {
         jb.log(`remote remove cb handlers at ${jb.uri}`,{ids,m})
-        jb.delay(1000).then(()=>
-            jb.asArray(ids).filter(x=>x).forEach(id => delete jb.cbHandler.map[id]))
+        jb.delay(10).then(()=> // TODO: BUGGY delay - not sure why the delay is needed - test: remoteTest.workerByUri
+            jb.asArray(ids).filter(x=>x).forEach(id => delete jb.cbHandler.map[id])
+        )
+    },
+    terminate() {
+        const keys = Object.keys(jb.cbHandler.map)
+        keys.forEach(id => typeof jb.cbHandler.map[id] == 'function' && jb.cbHandler.map[id](2)) // close connetions - may cause problems in tests
+        keys.forEach(id => delete jb.cbHandler.map[id])
     }
-}),
+})
 
 jb.extension('net', {
     reverseRoutingProps(routingMsg) {
@@ -12630,6 +12838,10 @@ jb.extension('net', {
         return { ...rPath, ...diableLog}
     },
     handleOrRouteMsg(from,to,handler,m, {blockContentScriptLoop} = {}) {
+        if (jb.frame.terminated) {
+            jb.log(`remote messsage arrived to terminated ${from}`,{from,to, m})
+            return
+        }
 //            jb.log(`remote handle or route at ${from}`,{m})
         if (blockContentScriptLoop && m.routingPath && m.routingPath.join(',').indexOf([from,to].join(',')) != -1) return
         const arrivedToDest = m.routingPath && m.routingPath.slice(-1)[0] === jb.uri || (m.to == from && m.from == to)
@@ -12655,14 +12867,14 @@ jb.extension('net', {
 
 jb.extension('jbm', {
     initExtension() {
-        Object.assign(this, { childJbms: {}, networkPeers: {} })
         Object.assign(jb, {
             uri: jb.uri || jb.frame.jbUri,
             ports: {},
             remoteExec: sctx => jb.codeLoader.bringMissingCode(sctx).then(()=>jb.remoteCtx.deStrip(sctx)()),
             createCallbagSource: sctx => jb.remoteCtx.deStrip(sctx)(),
-            createCalllbagOperator: sctx => jb.remoteCtx.deStrip(sctx)(),
-        })        
+            createCallbagOperator: sctx => jb.remoteCtx.deStrip(sctx)(),
+        })
+        return { childJbms: {}, networkPeers: {}, notifyChildReady: {} }
     },
     portFromFrame(frame,to,options) {
         if (jb.ports[to]) return jb.ports[to]
@@ -12689,7 +12901,7 @@ jb.extension('jbm', {
                     port.postMessage({$:'CB.createSource', remoteRun, cbId })
                     return (t,d) => outboundMsg({cbId,t,d})
                 },
-                createCalllbagOperator(remoteRun) {
+                createCallbagOperator(remoteRun) {
                     return source => {
                         const sourceId = jb.cbHandler.addToLookup(Object.assign(source,{remoteRun}))
                         const cbId = jb.cbHandler.newId()
@@ -12712,7 +12924,7 @@ jb.extension('jbm', {
                             handlers[cbId] && reject(err)
                         }, timeout)
                         handlers[cbId] = {resolve,reject,remoteRun, timer}
-                        jb.log('remote exec request',{remoteRun,port,oneway})
+                        jb.log('remote exec request',{remoteRun,port,oneway,cbId})
                         port.postMessage({$:'CB.exec', remoteRun, cbId, isAction, timeout })
                     })
                 }
@@ -12763,23 +12975,22 @@ jb.extension('jbm', {
                 port.postMessage({$:'CB', cbId,t, d: t == 0 ? (talkback = jb.cbHandler.addToLookup(d)) : jb.remoteCtx.stripCBVars(d), ...jb.net.reverseRoutingProps(routingMsg) }) 
             }
         }
-        function handleCBCommnad(cmd) {
+        async function handleCBCommnad(cmd) {
             const {$,sourceId,cbId,isAction} = cmd
-            jb.codeLoader.bringMissingCode(cmd.remoteRun)
-                .then(()=>{
-                    jb.log('run cmd from remote',{cmd})
-                    return jb.remoteCtx.deStrip(cmd.remoteRun)()
-                })
-                .then( result => {
-                    if ($ == 'CB.createSource' && typeof result == 'function')
-                        jb.cbHandler.map[cbId] = result
-                    else if ($ == 'CB.createOperator' && typeof result == 'function')
-                        jb.cbHandler.map[cbId] = result(remoteCB(sourceId, cbId,cmd) )
-                    else if ($ == 'CB.exec')
-                        port.postMessage({$:'execResult', cbId, result: isAction ? {} : jb.remoteCtx.stripData(result) , ...jb.net.reverseRoutingProps(cmd) })
-
-            }).catch(err=> $ == 'CB.exec' && 
-                port.postMessage({$:'execResult', cbId, result: { type: 'error', err}, ...jb.net.reverseRoutingProps(cmd) }))
+            try {
+            if (jb.codeLoader.loadingCode)
+                await jb.exec({$: 'waitFor', timeout: 500, check: () => !jb.codeLoader.loadingCode })
+                await jb.codeLoader.bringMissingCode(cmd.remoteRun)
+                const result = await jb.remoteCtx.deStrip(cmd.remoteRun)()
+                if ($ == 'CB.createSource' && typeof result == 'function')
+                    jb.cbHandler.map[cbId] = result
+                else if ($ == 'CB.createOperator' && typeof result == 'function')
+                    jb.cbHandler.map[cbId] = result(remoteCB(sourceId, cbId,cmd) )
+                else if ($ == 'CB.exec')
+                    port.postMessage({$:'execResult', cbId, result: isAction ? {} : jb.remoteCtx.stripData(result) , ...jb.net.reverseRoutingProps(cmd) })
+            } catch(err) { 
+                $ == 'CB.exec' && port.postMessage({$:'execResult', cbId, result: { type: 'error', err}, ...jb.net.reverseRoutingProps(cmd) })
+            }
         }
     },
     pathOfDistFolder() {
@@ -12788,112 +12999,144 @@ jb.extension('jbm', {
         return pathOfDistFolder && pathOfDistFolder() || location && location.href.match(/^[^:]*/)[0] + `://${location.host}/dist`
     },
     initDevToolsDebugge() {
-        if (self.jbRunningTests && !self.jbSingleTest) return
+        if (jb.test && jb.test.runningTests && !jb.test.singleTest) 
+            return jb.logError('jbart devtools is disables for multiple tests')
         if (!jb.jbm.networkPeers['devtools']) {
             jb.jbm.connectToPanel = panelUri => new jb.core.jbCtx().setVar('$disableLog',true).run(remote.action({
                     action: {$: 'jbm.connectToPanel', panelUri}, 
                     jbm: jbm.byUri('devtools'),
                     oneway: true
                 })) // called directly by initPanel
-            jb.jbm.networkPeers['devtools'] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'devtools',{blockContentScriptLoop: true}))
-            self.postMessage({initDevToolsPeerOnDebugge: {uri: jb.uri, distPath: jb.jbm.pathOfDistFolder(), spyParam: jb.path(jb,'spy.spyParam')}}, '*')
+            jb.jbm.networkPeers['devtools'] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(globalThis,'devtools',{blockContentScriptLoop: true}))
+            globalThis.postMessage({initDevToolsPeerOnDebugge: {uri: jb.uri, distPath: jb.jbm.pathOfDistFolder(), spyParam: jb.path(jb,'spy.spyParam')}}, '*')
         }
-    }            
+    },
+    terminateChild(id) {
+        if (!jb.jbm.childJbms[id]) return
+        const childJbm = jb.jbm.childJbms[id]
+        childJbm.terminated = true
+        jb.log('remote terminate child', {id})
+        Object.keys(jb.ports).filter(x=>x.indexOf(childJbm.uri) == 0)
+            .forEach(uri=>delete jb.ports[uri])
+        delete jb.jbm.childJbms[id]
+        childJbm.remoteExec(jb.remoteCtx.stripJS(() => {jb.cbHandler.terminate(); terminated = true; if (typeof close1 == 'function') close() } ), {oneway: true} )
+    },
+    terminateAllChildren() {
+        Object.keys(jb.jbm.childJbms).forEach(id=>jb.jbm.terminateChild(id))
+    }
+})
+
+jb.component('startup.codeLoaderServer', {
+    type: 'startupCode',
+    params: [
+        { id: 'projects' , as: 'array' },
+        { id: 'init' , type: 'action', dynamic: true },
+    ],
+    impl: ({vars}, projects, init) => `(function() { 
+jb_modules = { core: ${JSON.stringify(jb_modules.core)} };
+${jbInit.toString()}
+${jbSupervisedLoad.toString()}
+return jbInit('${vars.uri}',${JSON.stringify({projects, baseUrl: vars.baseUrl, multipleInFrame: vars.multipleJbmsInFrame})})
+    .then(jb => { jb.exec(${JSON.stringify(init.profile || {})}); return jb })
+})()`
+})
+
+jb.component('startup.codeLoaderClient', {
+    type: 'startupCode',
+    impl: ({vars}) => vars.multipleJbmsInFrame ? `(function () {
+const jb = { uri: '${vars.uri}'}
+globalThis.jbLoadingPhase = 'libs'
+${jb.codeLoader.clientCode()};
+jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
+globalThis.jbLoadingPhase = 'appFiles'
+return jb
+})()
+` : `jb = { uri: '${vars.uri}'}
+jbLoadingPhase = 'libs'
+${jb.codeLoader.clientCode()};
+spy = jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
+`
 })
 
 jb.component('jbm.worker', {
     type: 'jbm',
     params: [
         {id: 'id', as: 'string', defaultValue: 'w1' },
+        {id: 'init' , type: 'action', dynamic: true },
+        {id: 'startupCode', type: 'startupCode', dynamic: true, defaultValue: startup.codeLoaderClient() },
         {id: 'networkPeer', as: 'boolean', description: 'used for testing' },
     ],    
-    impl: ({},name,networkPeer) => {
+    impl: (ctx,name,init,startupCode,networkPeer) => {
         const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
         if (childsOrNet[name]) return childsOrNet[name]
         const workerUri = networkPeer ? name : `${jb.uri}•${name}`
         const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
+        const code = startupCode(ctx.setVars({uri: workerUri, multipleJbmsInFrame: false}))
         const workerCode = `
-jb = { uri: '${workerUri}'}
-jbLoadingPhase = 'libs'
-${jb.codeLoader.startupCode()};
-spy = jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
+jbInWorker = true
+jb_modules = { core: ${JSON.stringify(jb_modules.core)} };
+${jbInit.toString()}
+${jbSupervisedLoad.toString()}
+function jb_loadFile(url, baseUrl) { 
+    baseUrl = baseUrl || location.origin || ''
+    return Promise.resolve(importScripts(baseUrl+url)) 
+}
+${code};
 jb.codeLoaderJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
 jbLoadingPhase = 'appFiles'
 //# sourceURL=${workerUri}-startup.js
 `
-        const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
-        return childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
-    }
-})
-
-jb.component('jbm.worker1', {
-    type: 'jbm',
-    params: [
-        {id: 'id', as: 'string', defaultValue: 'w1' },
-        {id: 'networkPeer', as: 'boolean', description: 'used for testing' },
-    ],    
-    impl: ({},name,networkPeer) => {
-        const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
-        if (childsOrNet[name]) return childsOrNet[name]
-        const workerUri = networkPeer ? name : `${jb.uri}•${name}`
-        const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
-        
-        const workerCode = `
-importScripts(location.origin+'/src/loader/jb-loader.js')
-jb_codeLoaderClient('${workerUri}').then(() => {
-spy = jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
-jb.codeLoaderJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
-})
-//# sourceURL=${workerUri}-startup.js
-`
-        const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
-        return childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
-
-        function jb_codeLoaderClient() {
-            'core/jb-core,core/core-utils,core/jb-expression,core/jb-macro,misc/spy'.split(',').map(x=>`/src/${x}.js`).forEach(url=> importScripts(location.origin+url))
-            var { If,not,contains,writeValue,obj,prop,rx,source,sink,call,jbm,remote,pipe,log,net,aggregate,list } = jb.macro.ns('If,not,contains,writeValue,obj,prop,rx,source,sink,call,jbm,remote,pipe,log,net,aggregate,list') // ns use in modules
-            'loader/code-loader,core/jb-common,misc/jb-callbag,misc/rx-comps,misc/pretty-print,misc/remote-context,misc/jbm,misc/remote'.split(',').map(x=>`/src/${x}.js`).forEach(url=> importScripts(location.origin+url))
-        }        
+        const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name, type: 'application/javascript'})))
+        childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
+        childsOrNet[name].worker = worker
+        const result = Promise.resolve(init(ctx.setVar('jbm',childsOrNet[name]))).then(()=>childsOrNet[name])
+        result.uri = workerUri
+        return result
     }
 })
 
 jb.component('jbm.child', {
-    type: 'jbm',
-    params: [
-        {id: 'id', as: 'string', mandatory: true},
-        {id: 'codeLoaderUri', as: 'string', description: 'default is parent codeLoaderJbm'},
-    ],    
-    impl: ({},name) => {
+  type: 'jbm',
+  params: [
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'startupCode', type: 'startupCode', dynamic: true, defaultValue: startup.codeLoaderClient()},
+    {id: 'init', type: 'action', dynamic: true}
+  ],
+  impl: (ctx,name,startUpCode,init) => {
         if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
         const childUri = `${jb.uri}•${name}`
-        const child = jb.frame.eval(`(function () {
-const jb = { uri: '${childUri}'}
-self.jbLoadingPhase = 'libs'
-${jb.codeLoader.startupCode()};
-self.jbLoadingPhase = 'appFiles'
-return jb
-})()
+        const code = startUpCode(ctx.setVars({uri: childUri, multipleJbmsInFrame: true}))
+        const _child = jb.frame.eval(`${code}
 //# sourceURL=${childUri}-startup.js
 `)
-        jb.jbm.childJbms[name] = child
-        child.parent = jb
-        child.codeLoaderJbm = jb.codeLoaderJbm || jb // TODO: use codeLoaderUri
-        child.ports[jb.uri] = {
-            from: child.uri, to: jb.uri,
-            postMessage: m => 
-                jb.net.handleOrRouteMsg(jb.uri,child.uri,jb.ports[child.uri].handler,m),
-            onMessage: { addListener: handler => child.ports[jb.uri].handler = handler }, // only one handler
+        jb.jbm.childJbms[name] = _child
+        const result = Promise.resolve(_child).then(child=>{
+            initChild(child)
+            return Promise.resolve(init(ctx.setVar('jbm',child))).then(()=>child)
+        })
+        result.uri = childUri
+        return result
+
+        function initChild(child) {
+            child.spy.initSpy({spyParam: jb.spy.spyParam})
+            jb.jbm.childJbms[name] = child
+            child.parent = jb
+            child.codeLoaderJbm = jb.codeLoaderJbm || jb // TODO: use codeLoaderUri
+            child.ports[jb.uri] = {
+                from: child.uri, to: jb.uri,
+                postMessage: m => 
+                    jb.net.handleOrRouteMsg(jb.uri,child.uri,jb.ports[child.uri].handler,m),
+                onMessage: { addListener: handler => child.ports[jb.uri].handler = handler }, // only one handler
+            }
+            child.jbm.extendPortToJbmProxy(child.ports[jb.uri])
+            jb.ports[child.uri] = {
+                from: jb.uri,to: child.uri,
+                postMessage: m => 
+                    child.net.handleOrRouteMsg(child.uri,jb.uri,child.ports[jb.uri].handler ,m),
+                onMessage: { addListener: handler => jb.ports[child.uri].handler = handler }, // only one handler
+            }
+            jb.jbm.extendPortToJbmProxy(jb.ports[child.uri])
         }
-        child.jbm.extendPortToJbmProxy(child.ports[jb.uri])
-        jb.ports[child.uri] = {
-            from: jb.uri,to: child.uri,
-            postMessage: m => 
-                child.net.handleOrRouteMsg(child.uri,jb.uri,child.ports[jb.uri].handler ,m),
-            onMessage: { addListener: handler => jb.ports[child.uri].handler = handler }, // only one handler
-        }
-        jb.jbm.extendPortToJbmProxy(jb.ports[child.uri])
-        jb.spy && child.spy.initSpy({spyParam: jb.spy.spyParam})
-        return child
     }
 })
 
@@ -12905,6 +13148,8 @@ jb.component('jbm.byUri', {
     impl: ({},_uri) => {
         const uri = _uri()
         if (uri == jb.uri) return jb
+        const childJbm = Object.values(jb.jbm.childJbms).find(x=>x.uri == uri)
+        if (childJbm) return childJbm
         return calcNeighbourJbm(uri) || jb.jbm.extendPortToJbmProxy(remoteRoutingPort(jb.uri, uri),{doNotinitCommandListener: true})
 
         function remoteRoutingPort(from,to) {
@@ -12949,9 +13194,17 @@ jb.component('jbm.byUri', {
     }
 })
 
-jb.component('jbm.same', {
+jb.component('jbm.self', {
     type: 'jbm',
     impl: () => jb
+})
+
+jb.component('jbm.terminateChild', {
+    type: 'action',
+    params: [
+        {id: 'id', as: 'string'}
+    ],
+    impl: (ctx,id) => jb.jbm.terminateChild(id)
 })
 ;
 
@@ -12960,7 +13213,7 @@ jb.component('source.remote', {
     macroByValue: true,
     params: [
       {id: 'rx', type: 'rx', dynamic: true },
-      {id: 'jbm', type: 'jbm', defaultValue: jbm.same() },
+      {id: 'jbm', type: 'jbm', defaultValue: jbm.self() },
     ],
     impl: (ctx,rx,jbm) => {
         if (!jbm)
@@ -12977,20 +13230,34 @@ jb.component('remote.operator', {
     macroByValue: true,
     params: [
       {id: 'rx', type: 'rx', dynamic: true },
-      {id: 'jbm', type: 'jbm', defaultValue: jbm.same()},
+      {id: 'jbm', type: 'jbm', defaultValue: jbm.self()},
     ],
     impl: (ctx,rx,jbm) => {
         if (!jbm)
             return jb.logError('remote.operator - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
         const stripedRx = jbm.callbag ? rx : jb.remoteCtx.stripFunction(rx)
+        const profText = jb.utils.prettyPrint(rx.profile)
+        let counter = 0
+        const varsMap = {}
+        const cleanDataObjVars = jb.callbag.map(dataObj => {
+            if (typeof dataObj != 'object' || !dataObj.vars) return dataObj
+            const vars = { ...jb.objFromEntries(jb.entries(dataObj.vars).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))), messageId: ++counter } 
+            varsMap[counter] = dataObj.vars
+            return { data: dataObj.data, vars}
+        })
+        const restoreDataObjVars = jb.callbag.map(dataObj => {
+            const origVars = varsMap[dataObj.vars.messageId] 
+            varsMap[dataObj.messageId] = null
+            return {data: dataObj.data, vars: Object.assign(origVars,dataObj.vars) }
+        })
+
         if (jb.utils.isPromise(jbm)) {
             jb.log('jbm as promise in remote operator, adding request buffer', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
-            return source => {
-                const buffer = jb.callbag.replay(5)(source)
-                return jb.callbag.pipe(jb.callbag.fromPromise(jbm),jb.callbag.concatMap(_jbm=> _jbm.createCalllbagOperator(stripedRx)(buffer)))
-            }
+            return source => jb.callbag.pipe(jb.callbag.fromPromise(jbm),
+                    jb.callbag.concatMap(_jbm=> jb.callbag.pipe(
+                        source, jb.callbag.replay(5), cleanDataObjVars, _jbm.createCallbagOperator(stripedRx), restoreDataObjVars)))
         }
-        return jbm.createCalllbagOperator(stripedRx)
+        return source => jb.callbag.pipe(source, cleanDataObjVars, jbm.createCallbagOperator(stripedRx), restoreDataObjVars)
     }
 })
 
@@ -12999,14 +13266,18 @@ jb.component('remote.action', {
     description: 'exec a script on a remote node and returns a promise if not oneWay',
     params: [
       {id: 'action', dynamic: true },
-      {id: 'jbm', type: 'jbm', defaultValue: jbm.same()},
+      {id: 'jbm', type: 'jbm', defaultValue: jbm.self()},
       {id: 'oneway', as: 'boolean', description: 'do not wait for the respone' },
       {id: 'timeout', as: 'number', defaultValue: 10000 },
     ],
     impl: (ctx,action,jbm,oneway,timeout) => {
         if (!jbm)
             return jb.logError('remote.action - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
-        return Promise.resolve(jbm).then(_jbm => _jbm.remoteExec(jb.remoteCtx.stripFunction(action),{timeout,oneway,isAction: true}))
+        return Promise.resolve(jbm).then(_jbm => {
+            if (!_jbm || !_jbm.remoteExec)
+                return jb.logError('remote.action - can not resolve jbm', {in: jb.uri, jbm, _jbm, jbmProfile: ctx.profile.jbm, jb, ctx})
+            return _jbm.remoteExec(jb.remoteCtx.stripFunction(action),{timeout,oneway,isAction: true})
+        })
     }
 })
 
@@ -13015,7 +13286,7 @@ jb.component('remote.data', {
     macroByValue: true,
     params: [
       {id: 'data', dynamic: true },
-      {id: 'jbm', type: 'jbm', defaultValue: jbm.same()},
+      {id: 'jbm', type: 'jbm', defaultValue: jbm.self()},
       {id: 'timeout', as: 'number', defaultValue: 10000 },
     ],
     impl: (ctx,data,jbm,timeout) => {
@@ -13030,17 +13301,47 @@ jb.component('remote.initShadowData', {
     description: 'shadow watchable data on remote jbm',
     params: [
       {id: 'src', as: 'ref' },
-      {id: 'jbm', type: 'jbm'},
+      {id: 'jbm', type: 'jbm'}
     ],
     impl: rx.pipe(
         source.watchableData({ref: '%$src%', includeChildren: 'yes'}),
         rx.map(obj(prop('op','%op%'), prop('path',({data}) => jb.db.pathOfRef(data.ref)))),
-        rx.log('test op'),
-        sink.action(remote.action( 
-            ctx => jb.db.doOp(jb.db.refOfPath(ctx.data.path), ctx.data.op, ctx),
-            '%$jbm%')
-        )
+        sink.action(remote.action( remote.updateShadowData('%%'), '%$jbm%'))
     )
+})
+
+jb.component('remote.shadowResource', {
+    type: 'action',
+    description: 'shadow watchable data on remote jbm',
+    params: [
+      {id: 'resourceId', as: 'string' },
+      {id: 'jbm', type: 'jbm'},
+    ],
+    impl: runActions(
+        Var('resourceCopy', '%${%$resourceId%}%'),
+        remote.action(addComponent({id: '%$resourceId%', value: '%$resourceCopy%', type: 'watchableData' }),'%$jbm%'),
+        rx.pipe(
+            source.watchableData({ref: '%${%$resourceId%}%', includeChildren: 'yes'}),
+            rx.map(obj(prop('op','%op%'), prop('path',({data}) => jb.db.pathOfRef(data.ref)))),
+            sink.action(remote.action( remote.updateShadowData('%%'), '%$jbm%')
+        ))
+    )
+})
+
+jb.component('remote.updateShadowData', {
+    type: 'action:0',
+    description: 'internal - update shadow on remote jbm',
+    params: [
+        {id: 'entry' },
+    ],
+    impl: (ctx,entry) => {
+        jb.log('shadowData update',{op: entry.op, ctx})
+        const ref = jb.db.refOfPath(entry.path)
+        if (!ref)
+            jb.logError('shadowData path not found at destination',{path: entry.path, ctx})
+        else
+            jb.db.doOp(ref, entry.op, ctx)
+    }
 })
 
 jb.component('remote.copyPassiveData', {
@@ -13083,9 +13384,19 @@ jb.component('net.listAll', {
         )
         ,jbm.byUri(net.getRootParentUri())
     )
-});
+})
 
-// var {rx, remote, widget, jbm} = jb.ns('remote,rx,widget,jbm')
+jb.component('dataResource.yellowPages', { watchableData: {}})
+
+jb.component('remote.useYellowPages', {
+    type: 'action',
+    impl: runActions(
+        Var('yp','%$yellowPages%'),
+        remote.action(({},{yp}) => jb.component('dataResource.yellowPages', { watchableData: yp }), '%$jbm%'),
+        remote.initShadowData('%$yellowPages%', '%$jbm%'),
+    )
+})
+;
 
 jb.component('widget.frontEndCtrl', {
     type: 'control',
@@ -13116,10 +13427,13 @@ jb.component('widget.newId', {
 
 jb.component('action.frontEndDelta', {
     type: 'action',
-    impl: async ctx => {
-        const {delta,css,widgetId,cmpId,assumedVdom} = ctx.data
+    params: [
+        {id: 'event', defaultValue: '%%'}
+    ],
+    impl: async (ctx,ev) => {
+        const {delta,css,widgetId,cmpId,assumedVdom} = ev
         if (css) 
-            return !ctx.vars.headlessWidget && jb.ui.addStyleElem(ctx,css)
+            return !ctx.vars.headlessWidget && jb.ui.insertOrUpdateStyleElem(ctx,css,ev.elemId, {classId: ev.classId})
         await jb.codeLoader.getCodeFromRemote(jb.codeLoader.treeShakeFrontendFeatures(pathsOfFEFeatures(delta)))
         await jb.codeLoader.loadFELibsDirectly(feLibs(delta))
         const ctxToUse = ctx.setVars({headlessWidget: false, FEwidgetId: widgetId})
@@ -13149,6 +13463,32 @@ jb.component('action.frontEndDelta', {
     }
 })
 
+jb.component('remote.distributedWidget', {
+    type: 'action',
+    params: [
+      {id: 'control', type: 'control', dynamic: true },
+      {id: 'backend', type: 'jbm', defaultValue: jbm.self() },
+      {id: 'frontend', type: 'jbm' },
+      {id: 'selector', as: 'string', defaultValue: 'body', description: 'root selector to put widget in. e.g. #main' },
+    ],
+    impl: remote.action(runActions(
+        Var('widgetId', widget.newId()),
+        Var('frontEndUri', '%$frontend/uri%'),
+        remote.action(action.renderXwidget('%$selector%','%$widgetId%'), jbm.byUri('%$frontEndUri%') ),
+        rx.pipe(
+            source.remote(
+                rx.pipe(
+                    source.callbag(() => jb.ui.widgetUserRequests),
+                    rx.log('remote widget userReq'),
+                    rx.filter('%widgetId% == %$widgetId%'),
+                    rx.takeWhile(({data}) => data.$$ != 'destroy',true),
+             ), jbm.byUri('%$frontEndUri%') ),
+            widget.headless('%$control()%','%$widgetId%'),
+            sink.action(remote.action(action.frontEndDelta('%%'), jbm.byUri('%$frontEndUri%')))
+        )
+    ), '%$backend%')
+})
+
 jb.component('remote.widget', {
     type: 'control',
     params: [
@@ -13162,12 +13502,12 @@ jb.component('remote.widget', {
             source.callbag(() => jb.ui.widgetUserRequests),
             rx.log('remote widget userReq'),
             rx.filter('%widgetId% == %$widgetId%'),
-            rx.takeWhile(({data}) => data.$ != 'destroy',true),
+            rx.takeWhile(({data}) => data.$$ != 'destroy',true),
             //source.frontEndUserEvent('%$widgetId%'),
             rx.log('remote widget sent to headless'),
             remote.operator(widget.headless(call('control'),'%$widgetId%'), '%$jbm%'),
             rx.log('remote widget arrived from headless'),
-            sink.action(action.frontEndDelta('%$widgetId%')),
+            sink.action(action.frontEndDelta('%%')),
         )
     })
 })
@@ -13183,32 +13523,12 @@ jb.component('action.renderXwidget', {
     dependency: widget.frontEndCtrl()
 })
 
-jb.component('remote.widgetFrontEnd', {
-    type: 'action',
-    params: [
-      {id: 'control', type: 'control', dynamic: true },
-      {id: 'jbm', type: 'jbm' },
-      {id: 'selector', as: 'string', defaultValue: 'body', description: 'root selector to put widget in. e.g. #main' },
-    ],
-    impl: runActions(
-        Var('widgetId', widget.newId()),
-        remote.action(action.renderXwidget('%$selector%','%$widgetId%'), '%$jbm%' ),
-        rx.pipe(
-            source.remote(
-                rx.pipe(
-                    source.callbag(() => jb.ui.widgetUserRequests),
-                    rx.log('remote widget userReq'),
-                    rx.filter('%widgetId% == %$widgetId%'),
-                    rx.takeWhile(({data}) => data.$ != 'destroy',true),
-             ), '%$jbm%' ),
-            widget.headless('%$control()%','%$widgetId%'),
-            sink.action(remote.action(action.frontEndDelta('%$widgetId%'),'%$jbm%'))
-        )
-    )
-})
-
 jb.extension('ui','headless', {
-    initExtension_phase1100() { // 1100 is after ui phase (100)
+    $phase: 1100,
+    $requireFuncs: 'jb.ui.render',
+
+    initExtension() { // 1100 is after ui phase (100)
+        // for loader : jb.ui.render( 
         return {
             widgetRenderingSrc: jb.callbag.replay(100)(jb.ui.renderingUpdates),
             headless: {},
@@ -13217,16 +13537,18 @@ jb.extension('ui','headless', {
     createHeadlessWidget(widgetId, ctrl,ctx,{recover} = {}) {
         const ctxToUse = jb.ui.extendWithServiceRegistry(ctx.setVars(
             {...(recover && { recover: true}), headlessWidget: true, headlessWidgetId: widgetId }))
-        const cmp = ctrl(ctxToUse)
-        const top = jb.ui.h(cmp)
-        const body = jb.ui.h('div',{ widgetTop: true, headless: true, widgetId, ...(ctx.vars.remoteUri && { remoteUri: ctx.vars.remoteUri })},top)
         if (jb.ui.headless[widgetId]) {
             if (!recover) jb.logError('headless widgetId already exists',{widgetId,ctx})
-            jb.ui.unmount(jb.ui.headless[widgetId])
+            jb.ui.destroyHeadless(widgetId)
         }
-        if (recover && !jb.ui.headless[widgetId])
-            jb.logError('headless recover no existing widget',{widgetId,ctx})
-        jb.ui.headless[widgetId] = { body }
+        const cmp = ctrl(ctxToUse)
+        jb.ui.headless[widgetId] = {} // used by styles
+        const top = jb.ui.h(cmp)
+        const body = jb.ui.h('div',{ widgetTop: true, headless: true, widgetId, ...(ctx.vars.remoteUri && { remoteUri: ctx.vars.remoteUri })},top)
+        top.parentNode = body
+        jb.ui.headless[widgetId].body = body
+        // if (recover && !jb.ui.headless[widgetId])
+        //     jb.logError('headless recover no existing widget',{widgetId,ctx})
         jb.log('headless widget created',{widgetId,body})
         const delta = { children: {resetAll : true, toAppend: [jb.ui.stripVdom(top)]} }
         jb.ui.renderingUpdates.next({widgetId, delta })
@@ -13241,7 +13563,7 @@ jb.extension('ui','headless', {
         } else if (userReq.$ == 'recoverWidget') {
             jb.log('recover headless widget',{userReq})
             //createHeadlessWidget({ recover: true })
-        } else if (userReq.$ == 'destroy') {
+        } else if (userReq.$$ == 'destroy') {
             jb.log('destroy headless widget request',{widgetId: userReq.widgetId,userReq})
             jb.ui.BECmpsDestroyNotification.next({cmps: userReq.cmps, destroyLocally: true})
             if (userReq.destroyWidget) jb.delay(1).then(()=> {
@@ -13250,6 +13572,10 @@ jb.extension('ui','headless', {
                 }) // the delay is needed for tests
             sink(2)
         }
+    },
+    destroyHeadless(widgetId) {
+        jb.ui.unmount(jb.ui.headless[widgetId])
+        delete jb.ui.headless[widgetId]
     }
 })
 
@@ -13266,7 +13592,7 @@ jb.component('widget.headless', {
             if (start !== 0) return
             const talkback = []
             sink(0, function headless(t, d) {
-                if (t == 1 && d == null)
+                if (t == 1 && (d == undefined || d == null))
                     talkback.forEach(tb=>tb(1))
             })
             filteredSrc(0, function headless(t, d) {
@@ -13409,7 +13735,7 @@ jb.component('editableText.codemirror', {
 	})),
 	frontEnd.var('_enableFullScreen', '%$enableFullScreen%'),
 	method('onCtrlEnter', call('onCtrlEnter')),
-	textEditor.cmEnrichUserEvent(),
+	codeEditor.cmEnrichUserEvent(),
     frontEnd.init( (ctx,vars) => ! jb.ui.hasClass(vars.el, 'jb-textarea-alternative-for-codemirror')
 		 && jb.codemirror.injectCodeMirror(ctx,vars)),
 	frontEnd.onRefresh(({},{text,cmp}) => cmp.editor.setValue(text)),
@@ -13456,7 +13782,7 @@ jb.component('codemirror.lineNumbers', {
 	}})),
 })
 
-jb.component('textEditor.cmEnrichUserEvent', {
+jb.component('codeEditor.cmEnrichUserEvent', {
     type: 'feature',
     params: [
       {id: 'cmSelector', as: 'string', description: 'used for external buttons'}
@@ -13726,436 +14052,60 @@ jb.component('tableTree.dragAndDrop', {
 
 ;
 
-// var { textEditor} = jb.ns('textEditor');
-
-jb.extension('textEditor', {
-    getSinglePathChange(diff, currentVal) {
-        return pathAndValueOfSingleChange(diff,'',currentVal)
-    
-        function pathAndValueOfSingleChange(obj, pathSoFar, currentVal) {
-            if (currentVal === undefined || (typeof obj !== 'object' && obj !== undefined))
-                return { innerPath: pathSoFar, innerValue: obj }
-            const entries = jb.entries(obj)
-            if (entries.length != 1) // if not single returns empty answer
-                return {}
-            return pathAndValueOfSingleChange(entries[0][1],pathSoFar+'~'+entries[0][0],currentVal[entries[0][0]])
-        }
-    },
-    setStrValue(value, ref, ctx) {
-        const notPrimitive = value.match(/^\s*[a-zA-Z0-9\._]*\(/) || value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
-        const newVal = notPrimitive ? jb.utils.eval(value,ref.handler.frame()) : value;
-        if (newVal === Symbol.for('parseError'))
-            return
-        // I had a guess that ',' at the end of line means editing, YET, THIS GUESS DID NOT WORK WELL ...
-        // if (typeof newVal === 'object' && value.match(/,\s*}/m))
-        //     return
-        const currentVal = jb.val(ref)
-        if (newVal && typeof newVal === 'object' && typeof currentVal === 'object') {
-            const diff = jb.utils.objectDiff(newVal,currentVal)
-            if (Object.keys(diff).length == 0) return // no diffs
-            const {innerPath, innerValue} = jb.textEditor.getSinglePathChange(diff,currentVal) // one diff
-            if (innerPath) {
-                const fullInnerPath = ref.handler.pathOfRef(ref).concat(innerPath.slice(1).split('~'))
-                return jb.db.writeValue(ref.handler.refOfPath(fullInnerPath),innerValue,ctx)
-            }
-        }
-        if (newVal !== undefined) { // many diffs
-            currentVal && currentVal[jb.core.location] && typeof newVal == 'object' && (newVal[jb.core.location] = currentVal[jb.core.location])
-            jb.db.writeValue(ref,newVal,ctx)
-        }
-    },
-    lineColToOffset(text,{line,col}) {
-        return text.split('\n').slice(0,line).reduce((sum,line)=> sum+line.length+1,0) + col
-    },
-    offsetToLineCol(text,offset) {
-        return { line: (text.slice(0,offset).match(/\n/g) || []).length || 0,
-            col: offset - text.slice(0,offset).lastIndexOf('\n') }
-    },
-    pathOfPosition(ref,_pos) {
-        const offset = !Number(_pos) ? jb.textEditor.lineColToOffset(ref.text, _pos) : _pos
-        const found = jb.entries(ref.locationMap).find(e=> e[1].offset_from <= offset && offset < e[1].offset_to)
-        if (found)
-            return {path: found[0], offset: offset - found[1].offset_from}
-    },
-    enrichMapWithOffsets(text,locationMap) {
-        const lines = text.split('\n')
-        const accLines = []
-        lines.reduce((acc,line) => {
-            accLines.push(acc)
-            return acc + line.length+1;
-        }, 0)
-        return Object.keys(locationMap).reduce((acc,k) => Object.assign(acc, {[k] : {
-            positions: locationMap[k],
-            offset_from: accLines[locationMap[k][0]] + locationMap[k][1],
-            offset_to: accLines[locationMap[k][2]] + locationMap[k][3]
-        }}), {})
-    },
-    refreshEditor(cmp,_path) {
-        const editor = cmp.editor
-        const data_ref = cmp.ctx.vars.$model.databind()
-        const text = jb.tostring(data_ref)
-        const pathWithOffset = _path ? {path: _path+'~!value',offset:1} : jb.textEditor.pathOfPosition(data_ref, editor.getCursorPos())
-        editor.setValue(text)
-        if (pathWithOffset) {
-            const _pos = data_ref.locationMap[pathWithOffset.path]
-            const pos = _pos && _pos.positions
-            if (pos)
-                editor.setSelectionRange({line: pos[0], col: pos[1] + (pathWithOffset.offset || 0)})
-        }
-        editor.focus && jb.delay(10).then(()=>editor.focus())
-    },
-    getSuggestions(fileContent, pos, jbToUse = jb) {
-        const lines = fileContent.split('\n')
-        const closestComp = lines.slice(0,pos.line+1).reverse().findIndex(line => line.match(/^jb.component\(/))
-        if (closestComp == -1) return []
-        const componentHeaderIndex = pos.line - closestComp
-        const compId = (lines[componentHeaderIndex].match(/'([^']+)'/)||['',''])[1]
-        if (!compId) return []
-        const linesFromComp = lines.slice(componentHeaderIndex)
-        const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
-        const nextjbComponent = lines.slice(componentHeaderIndex+1).findIndex(line => line.match(/^jb.component/))
-        if (nextjbComponent != -1 && nextjbComponent < compLastLine)
-          return jb.logError('textEditor - can not find end of component', {compId, linesFromComp})
-        const linesOfComp = linesFromComp.slice(0,compLastLine+1)
-        const compSrc = linesOfComp.join('\n')
-        if (jb.utils.eval(compSrc,jbToUse.frame) === Symbol.for('parseError'))
-            return []
-        const {text, map} = jb.utils.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
-        const locationMap = jb.textEditor.enrichMapWithOffsets(text, map)
-        const srcForImpl = '{\n'+compSrc.slice((/^  /m.exec(compSrc) || {}).index,-1)
-        const cursorOffset = jb.textEditor.lineColToOffset(srcForImpl, {line: pos.line - componentHeaderIndex, col: pos.col})
-        const path = jb.textEditor.pathOfPosition({text, locationMap}, cursorOffset)
-        return { path, suggestions: new jbToUse.jbCtx().run(sourceEditor.suggestions(path.path)) }
-    },
-    getPosOfPath(path,jbToUse = jb) {
-        const compId = path.split('~')[0]
-        const {map} = jb.utils.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
-        return map[path]
-    },
-    getPathOfPos(compId,pos,jbToUse = jb) {
-        const { text, map } = jb.utils.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
-        map.cursor = [pos.line,pos.col,pos.line,pos.col]
-        const locationMap = jb.textEditor.enrichMapWithOffsets(text, map)
-        const res = jb.textEditor.pathOfPosition({text, locationMap}, locationMap.cursor.offset_from )
-        return res && res.path.split('~!')[0]
-    },
-    closestComp(fileContent, pos) {
-        const lines = fileContent.split('\n')
-        const closestComp = lines.slice(0,pos.line+1).reverse().findIndex(line => line.match(/^jb.component\(/))
-        if (closestComp == -1) return {}
-        const componentHeaderIndex = pos.line - closestComp
-        const compId = (lines[componentHeaderIndex].match(/'([^']+)'/)||['',''])[1]
-        const linesFromComp = lines.slice(componentHeaderIndex)
-        const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
-        const nextjbComponent = lines.slice(componentHeaderIndex+1).findIndex(line => line.match(/^jb.component/))
-        if (nextjbComponent != -1 && nextjbComponent < compLastLine) {
-          jb.logError('textEditor - can not find end of component', { compId, linesFromComp })
-          return {}
-        }
-        const compSrc = linesFromComp.slice(0,compLastLine+1).join('\n')
-        return {compId, compSrc, componentHeaderIndex, compLastLine}
-    },
-    formatComponent(fileContent, pos, jbToUse = jb) {
-        const {compId, compSrc, componentHeaderIndex, compLastLine} = jb.textEditor.closestComp(fileContent, pos)
-        if (!compId) return {}
-        if (jb.utils.eval(compSrc,jbToUse.frame) === Symbol.for('parseError'))
-            return []
-        return {text: jb.utils.prettyPrintComp(compId,jbToUse.comps[compId],{comps: jbToUse.comps}) + '\n',
-            from: {line: componentHeaderIndex, col: 0}, to: {line: componentHeaderIndex+compLastLine+1, col: 0} }
-    },
-    posFromCM: pos => pos && ({line: pos.line, col: pos.ch}),
-    cm_hint(cmEditor) {
-        const cursor = cmEditor.getDoc().getCursor()
-        return {
-            from: cursor, to: cursor,
-            list: jb.textEditor.getSuggestions(cmEditor.getValue(),posFromCM(cursor)).suggestions
-        }
-    }    
+jb.extension('watchableComps', 'studio', {
+	$phase: 40,
+	initExtension() {
+		  jb.studio.scriptChange && jb.utils.subscribe(jb.watchableComps.handler.resourceChange, e => jb.watchableComps.scriptChangeHnadler(e))
+  	},
+	scriptChangeHnadler(e) {
+		jb.log('watchable studio script changed',{ctx: e.srcCtx,e})
+		jb.studio.scriptChange.next(e)
+		writeValueToDataResource(e.path,e.newVal)
+		if (jb.studio.isStudioCmp(e.path[0]))
+			jb.studio.refreshStudioComponent(e.path)
+		jb.studio.lastStudioActivity = new Date().getTime()
+		e.srcCtx.run(writeValue('%$studio/lastStudioActivity%',() => jb.studio.lastStudioActivity))
+	
+		jb.studio.highlightByScriptPath(e.path)
+	
+		function writeValueToDataResource(path,value) {
+			if (path.length > 1 && ['watchableData','passiveData'].indexOf(path[1]) != -1) {
+				const resource = jb.db.removeDataResourcePrefix(path[0])
+				const dataPath = '%$' + [resource, ...path.slice(2)].map(x=>isNaN(+x) ? x : `[${x}]`).join('/') + '%'
+				return jb.exec(writeValue(dataPath,_=>value))
+			}
+		}
+	},  
 })
 
-jb.component('watchableAsText', {
-  type: 'data',
-  params: [
-    {id: 'ref', as: 'ref', dynamic: true},
-    {id: 'oneWay', as: 'boolean', defaultValue: true, type: 'boolean'}
-  ],
-  impl: (ctx,refF,oneWay) => ({
-        oneWay,
-        getRef() {
-            return this.ref || (this.ref = refF())
-        },
-        handler: jb.db.simpleValueByRefHandler,
-        getVal() {
-            return jb.val(this.getRef())
-        },
-        prettyPrintWithPositions() {
-            const ref = this.getRef()
-            if (!ref) {
-                jb.logError('no ref at watchableAsText',{ctx})
-                this.text = ''
-                this.locationMap = {}
-                return
-            }
-            const initialPath = ref.handler.pathOfRef(ref).join('~')
-            const res = jb.utils.prettyPrintWithPositions(this.getVal() || '',{initialPath, comps: ref.jbToUse && ref.jbToUse.comps})
-            this.locationMap = jb.textEditor.enrichMapWithOffsets(res.text, res.map)
-            this.text = res.text.replace(/\s*(\]|\})$/,'\n$1')
-        },
-        writeFullValue(newVal) {
-            jb.db.writeValue(this.getRef(),newVal,ctx)
-            this.prettyPrintWithPositions()
-        },
-        $jb_val(value) { try {
-            if (value === undefined) {
-                this.prettyPrintWithPositions()
-                return this.text
-            } else {
-                jb.textEditor.setStrValue(value,this.getRef(),ctx)
-                this.prettyPrintWithPositions() // refreshing location map
-            }
-        } catch(e) {
-            jb.logException(e,'watchable-obj-as-text-ref',{ctx})
-        }},
-
-        $jb_observable(cmp) {
-            return jb.watchable.refObservable(this.getRef(),{cmp, includeChildren: 'yes'})
-        }
-    })
-})
-
-// jb.component('textEditor.withCursorPath', {
-//   type: 'action',
-//   params: [
-//     {id: 'action', type: 'action', dynamic: true, mandatory: true},
-//     {id: 'selector', as: 'string', defaultValue: '#editor'}
-//   ],
-//   impl: (ctx,action,selector) => {
-//         let editor = ctx.vars.editor
-//         if (!editor) {
-//             const elem = selector ? jb.ui.widgetBody(ctx).querySelector(selector) : jb.ui.widgetBody(ctx);
-//             editor = jb.path(elem,'_component.editor')
-//         }
-//         if (editor && editor.getCursorPos)
-//             action(editor.ctx().setVars({
-//                 cursorPath: jb.textEditor.pathOfPosition(editor.data_ref, editor.getCursorPos()).path,
-//                 cursorCoord: editor.cursorCoords()
-//             }))
-//     }
-// })
-
-jb.component('textEditor.isDirty', {
-  impl: ctx => {
-        try {
-            return ctx.vars.editor().isDirty()
-        } catch (e) {}
-    }
-})
-
-// jb.component('text-editor.watch-source-changes', { /* textEditor.watchSourceChanges */
-//   type: 'feature',
-//   params: [
-
-//   ],
-//   impl: ctx => ({ init: cmp => {
-//       try {
-//         const text_ref = cmp.state.databindRef
-//         const data_ref = text_ref.getRef()
-//         jb.db.isWatchable(data_ref) && jb.watchable.refObservable(data_ref,{cmp,srcCtx: cmp.ctx, includeChildren: 'yes'})
-//             .subscribe(e => {
-//             const path = e.path
-//             const editor = cmp.editor
-//             const locations = cmp.state.databindRef.locationMap
-//             const loc = locations[path.concat('!value').join('~')]
-//             const newVal = jb.utils.prettyPrint(e.newVal)
-//             editor.replaceRange(newVal, {line: loc[0], col:loc[1]}, {line: loc[2], col: loc[3]})
-//             const newEndPos = jb.utils.advanceLineCol({line: loc[0], col:loc[1]}, newVal)
-//             editor.markText({line: loc[0], col:loc[1]}, {line: newEndPos.line, col: newEndPos.col},{
-//                 className: 'jb-highlight-comp-changed'
-//             })
-//             })
-//         } catch (e) {}
-//     }})
-// })
-
-jb.component('textEditor.cursorPath', {
-    params: [
-        {id: 'watchableAsText', as: 'ref', mandatory: true, description: 'the same that was used for databind'},
-        {id: 'cursorPos', dynamic: true, defaultValue: '%$ev/selectionStart%'},
-    ],  
-    impl: (ctx,ref,pos) => jb.path(jb.textEditor.pathOfPosition(ref, pos()),'path') || ''
-})
-
-jb.component('textarea.initTextareaEditor', {
-  type: 'feature',
-  impl: features(
-      textEditor.enrichUserEvent(),
-      frontEnd.method('replaceRange',({data},{cmp}) => {
-          const {text, from, to} = data
-          const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
-          const _to = jb.textEditor.lineColToOffset(cmp.base.value,to)
-          cmp.base.value = cmp.base.value.slice(0,_from) + text + cmp.base.value.slice(_to)
-      }),
-      frontEnd.method('setSelectionRange',({data},{cmp}) => {
-        const from = data.from || data
-        const to = data.to || from
-        const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
-        const _to = to && jb.textEditor.lineColToOffset(cmp.base.value,to) || _from
-        cmp.base.setSelectionRange(_from,_to)
-      })
-    )
-})
-
-jb.component('textEditor.enrichUserEvent', {
-    type: 'feature',
-    params: [
-      {id: 'textEditorSelector', as: 'string', description: 'used for external buttons'}
-    ],
-    impl: features(
-		frontEnd.var('textEditorSelector','%$textEditorSelector%'),
-        frontEnd.enrichUserEvent((ctx,{cmp,textEditorSelector}) => {
-            const elem = textEditorSelector ? jb.ui.widgetBody(ctx).querySelector(textEditorSelector) : cmp.base
-            return elem && {
-                outerHeight: jb.ui.outerHeight(elem), 
-                outerWidth: jb.ui.outerWidth(elem), 
-                clientRect: elem.getBoundingClientRect(),
-                text: elem.value,
-                selectionStart: jb.textEditor.offsetToLineCol(elem.value,elem.selectionStart)
-            }
-        })
-    )
-})
-  
-
-//   frontEnd.init((ctx,{cmp}) => {
-//         const data_ref = ctx.vars.$model.databind()
-//         jb.val(data_ref) // calc text
-//         cmp.editor = {
-//             ctx: () => cmp.ctx,
-//             data_ref,
-//             getCursorPos: () => offsetToLineCol(cmp.base.value,cmp.base.selectionStart),
-//             cursorCoords: () => {},
-//             markText: () => {},
-//             replaceRange: (text, from, to) => {
-//                 const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
-//                 const _to = jb.textEditor.lineColToOffset(cmp.base.value,to)
-//                 cmp.base.value = cmp.base.value.slice(0,_from) + text + cmp.base.value.slice(_to)
-//             },
-//             setSelectionRange: (from, to) => {
-//                 const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
-//                 const _to = to && jb.textEditor.lineColToOffset(cmp.base.value,to) || _from
-//                 cmp.base.setSelectionRange(_from,_to)
-//             },
-//         }
-//         if (cmp.ctx.vars.editorContainer)
-//             cmp.ctx.vars.editorContainer.editorCmp = cmp
-//     }
-//   )
-// });
-
-// var { studio } = jb.ns('studio');
-//eval(jb.macro.importAll());
 
 jb.extension('studio', 'path', {
-  initExtension() {
-		return {
-			compsHistory: [],
-			scriptChange: jb.callbag.subject(),
-			previewjb: jb
-		}
-  },
+  initExtension() { return { 
+	  previewjb: jb,
+	  scriptChange: jb.callbag.subject()
+  }},
   execInStudio: (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.core.jbCtx().run(...args),
-  compsRefOfjbm(jbm, {historyWin, compsRefId} = {historyWin: 5, compsRefId: 'comps'}) {
-	function compsRef(val,opEvent,{source}= {}) {
-		if (typeof val == 'undefined')
-			return jbm.comps
-		else {
-			if (historyWin) updateHistory(val,opEvent,source)
-			jbm.comps = val
-		}
-	}
-	compsRef.id = compsRefId
-	return compsRef
-
-	function updateHistory(val, opEvent, source) {
-		const history = jb.studio.compsHistory
-		val.$jb_selectionPreview = opEvent && opEvent.srcCtx && opEvent.srcCtx.vars.selectionPreview
-		if (!val.$jb_selectionPreview && source != 'probe') {
-			history.push({before: jbm.comps, after: val, opEvent: opEvent, undoIndex: jb.studio.undoIndex})
-			if (history.length > historyWin)
-			jb.studio.compsHistory = history.slice(-1*historyWin)
-		}
-		if (opEvent)
-			jb.studio.undoIndex = history.length
-	}
-  },
-  scriptChangeHandler(e) {
-	jb.log('watchable studio script changed',{ctx: e.srcCtx,e})
-	jb.studio.scriptChange.next(e)
-	writeValueToDataResource(e.path,e.newVal)
-	if (jb.studio.isStudioCmp(e.path[0]))
-		jb.studio.refreshStudioComponent(e.path)
-	jb.studio.lastStudioActivity = new Date().getTime()
-	e.srcCtx.run(writeValue('%$studio/lastStudioActivity%',() => jb.studio.lastStudioActivity))
-
-	jb.studio.highlightByScriptPath && jb.studio.highlightByScriptPath(e.path)
-
-	function writeValueToDataResource(path,value) {
-		if (path.length > 1 && ['watchableData','passiveData'].indexOf(path[1]) != -1) {
-			const resource = jb.db.removeDataResourcePrefix(path[0])
-			const dataPath = '%$' + [resource, ...path.slice(2)].map(x=>isNaN(+x) ? x : `[${x}]`).join('/') + '%'
-			return jb.studio.previewjb.exec(writeValue(dataPath,_=>value))
-		}
-	}		
-  },
-
-  initLocalCompsRefHandler(compsRef,{ compIdAsReferred, initUIObserver } = {}) {
-	if (jb.studio.compsRefHandler) return
-    jb.studio.compsRefHandler = new jb.watchable.WatchableValueByRef(compsRef)
-	jb.db.addWatchableHandler(jb.studio.compsRefHandler)
-	initUIObserver && jb.ui.subscribeToRefChange(jb.studio.compsRefHandler)
-    compIdAsReferred && jb.studio.compsRefHandler.makeWatchable(compIdAsReferred)
-	jb.callbag.subscribe(e=>jb.studio.scriptChangeHandler(e))(jb.studio.compsRefHandler.resourceChange)
-  },
-  
-  initReplaceableCompsRefHandler(compsRef, {allowedTypes}) {
-  	// CompsRefHandler may need to be replaced when reloading the preview iframe
- 	const {pipe,subscribe,takeUntil} = jb.callbag
-	const oldHandler = jb.studio.compsRefHandler
-	jb.db.removeWatchableHandler(oldHandler)	
-	oldHandler && oldHandler.stopListening.next(1)
-	jb.studio.compsRefHandler = new jb.watchable.WatchableValueByRef(compsRef)
-	jb.db.addWatchableHandler(jb.studio.compsRefHandler)
-	jb.ui.subscribeToRefChange(jb.studio.compsRefHandler)
-	jb.studio.compsRefHandler.allowedTypes = jb.studio.compsRefHandler.allowedTypes.concat(allowedTypes)
-	jb.studio.compsRefHandler.stopListening = jb.callbag.subject()
-
-	pipe(jb.studio.compsRefHandler.resourceChange,
-		takeUntil(jb.studio.compsRefHandler.stopListening),
-		subscribe(e=>jb.studio.scriptChangeHandler(e))
-	)
-  },
-
   // adaptors
-  val: v => jb.studio.compsRefHandler.val(v),
-  writeValue: (ref,value,ctx) => jb.studio.compsRefHandler.writeValue(ref,value,ctx),
-  objectProperty: (obj,prop) => jb.studio.compsRefHandler.objectProperty(obj,prop),
-  splice: (ref,args,ctx) => jb.studio.compsRefHandler.splice(ref,args,ctx),
-  push: (ref,value,ctx) => jb.studio.compsRefHandler.push(ref,value,ctx),
-  merge: (ref,value,ctx) => jb.studio.compsRefHandler.merge(ref,value,ctx),
-  isRef: ref => jb.studio.compsRefHandler.isRef(ref),
-  asRef: obj => jb.studio.compsRefHandler.asRef(obj),
-  //refreshRef: ref => jb.studio.compsRefHandler.refresh(ref),
+  val: v => jb.watchableComps.handler.val(v),
+  writeValue: (ref,value,ctx) => jb.watchableComps.handler.writeValue(ref,value,ctx),
+  objectProperty: (obj,prop) => jb.watchableComps.handler.objectProperty(obj,prop),
+  splice: (ref,args,ctx) => jb.watchableComps.handler.splice(ref,args,ctx),
+  push: (ref,value,ctx) => jb.watchableComps.handler.push(ref,value,ctx),
+  merge: (ref,value,ctx) => jb.watchableComps.handler.merge(ref,value,ctx),
+  isRef: ref => jb.watchableComps.handler.isRef(ref),
+  asRef: obj => jb.watchableComps.handler.asRef(obj),
+  //refreshRef: ref => jb.watchableComps.handler.refresh(ref),
   refOfPath: (path,silent) => {
 		const _path = path.split('~')
-		jb.studio.compsRefHandler.makeWatchable && jb.studio.compsRefHandler.makeWatchable(_path[0])
-		const ref = jb.studio.compsRefHandler.refOfPath(_path,silent)
+		jb.watchableComps.handler.makeWatchable && jb.watchableComps.handler.makeWatchable(_path[0])
+		const ref = jb.watchableComps.handler.refOfPath(_path,silent)
 		if (!ref) return
-		ref.jbToUse = jb.studio.previewjb
+		ref.jbToUse = jb
 		return ref
   },
   parentPath: path => path.split('~').slice(0,-1).join('~'),
   parents: path => path.split('~').reduce((acc,last,i) => acc.concat(i ? [acc[acc.length-1],last].join('~') : last),[]).reverse(),
-  valOfPath: path => jb.path(jb.studio.previewjb.comps,path.split('~')),
+  valOfPath: path => jb.path(jb.comps,path.split('~')),
   compNameOfPath: (path,silent) => {
     if (path.indexOf('~') == -1)
       return 'jbComponent'
@@ -14164,8 +14114,8 @@ jb.extension('studio', 'path', {
   	return jb.utils.compName(prof) || jb.utils.compName(prof,jb.studio.paramDef(path))
   },
   paramDef: path => {
-	if (!jb.studio.parentPath(path)) // no param def for root
-		return;
+	if (!jb.studio.parentPath(path))
+		return { type: jb.path(jb.comps[path],'type')};
 	if (!isNaN(Number(path.split('~').pop()))) // array elements
 		path = jb.studio.parentPath(path);
 	// const parent_prof = jb.studio.valOfPath(jb.studio.parentPath(path),true);
@@ -14180,8 +14130,8 @@ jb.extension('studio', 'path', {
   compOfPath: (path,silent) => jb.studio.getComp(jb.studio.compNameOfPath(path,silent)),
   paramsOfPath: (path,silent) => jb.utils.compParams(jb.studio.compOfPath(path,silent)),
   writeValueOfPath: (path,value,ctx) => jb.studio.writeValue(jb.studio.refOfPath(path),value,ctx),
-  getComp: id => jb.studio.previewjb.comps[id],
-  compAsStr: id => jb.utils.prettyPrintComp(id,jb.studio.getComp(id),{comps: jb.studio.previewjb.comps}),
+  getComp: id => jb.comps[id],
+  compAsStr: id => jb.utils.prettyPrintComp(id,jb.studio.getComp(id)),
   isStudioCmp: id => jb.path(jb.comps,[id,jb.core.project]) == 'studio'
 })
 
@@ -14214,11 +14164,10 @@ jb.extension('studio', {
 		// if (jb.studio.paramTypeOfPath(path) == 'data')
 		// 	return jb.studio.writeValueOfPath(path,'')
 		const param = jb.studio.paramDef(path)
-		let result = param.defaultValue || {$: ''}
-		if (jb.studio.paramTypeOfPath(path).indexOf('data') != -1)
-			result = ''
-		if ((param.type ||'').indexOf('[') != -1)
-			result = []
+		const paramType = jb.studio.paramTypeOfPath(path)
+		const result = param.defaultValue ? JSON.parse(JSON.stringify(param.defaultValue))
+			: (paramType.indexOf('data') != -1 || jb.frame.jbInvscode) ? '' : {$: ''}
+		
 		jb.studio.writeValueOfPath(path,result,srcCtx)
 	},
 	clone(profile) {
@@ -14312,7 +14261,7 @@ jb.extension('studio', {
 			if (index === undefined)
 				jb.studio.push(jb.studio.refOfPath(path),[toAdd],srcCtx)
 			else
-				jb.studio.splice(jb.studio.refOfPath(path),[[val.length,0,toAdd]],srcCtx)
+				jb.studio.splice(jb.studio.refOfPath(path),[[index,0,toAdd]],srcCtx)
 		}
 		else if (!val) {
 			jb.studio.writeValueOfPath(path,toAdd,srcCtx)
@@ -14428,40 +14377,38 @@ jb.component('studio.getOrCreateCompInArray', {
 			return `${path}~${existingFeature}`
 		  } else {
 			const length = arrayVal.length
-			jb.push(arrayRef,{$: compName},ctx)
+			jb.db.push(arrayRef,{$: compName},ctx)
 			return `${path}~${length}`
 		  }
 		}
 	}
 })
 
-jb.component('studio.writableCompsService', {
-	type: 'service',
-	impl: () => ({ init: 
-		() => jb.studio.initLocalCompsRefHandler(jb.studio.compsRefOfjbm(jb), {compIdAsReferred: '', initUIObserver: true} )
-	})
-})
+jb.component('studio.isCssPath', {
+    type: 'boolean',
+    description: 'check if the script will change only css and not html',
+    params: [
+        {id: 'path'}
+    ],
+    impl: (ctx, path) => {
+        const compPath = pathOfCssFeature(path)
+        return compPath && (jb.studio.compNameOfPath(compPath) || '').match(/^(css|layout)/)
 
-jb.component('studio.initLocalCompsRefHandler', {
-  type: 'action',
-  params: [
-    {id: 'compIdAsReferred', as: 'string', description: 'comp to make watchable' },
-    {id: 'initUIObserver', as: 'boolean', description: 'enable watchRef on comps' },
-    {id: 'compsRefId', as: 'string', defaultValue: 'comps'},
-  ],
-  impl: ({}, compIdAsReferred,initUIObserver,compsRefId) =>
-	jb.studio.initLocalCompsRefHandler(jb.studio.compsRefOfjbm(jb, {historyWin: 5, compsRefId }), {compIdAsReferred, initUIObserver} )
+        function pathOfCssFeature(path) {
+            const featureIndex = path.lastIndexOf('features')
+            if (featureIndex == -1) {
+              const layoutIndex = path.lastIndexOf('layout')
+              return layoutIndex != -1 && path.slice(0,layoutIndex+1).join('~')
+            }
+            const array = Array.isArray(jb.studio.valOfPath(path.slice(0,featureIndex+1).join('~')))
+            return path.slice(0,featureIndex+(array?2:1)).join('~')
+        }
+    }
 })
 
 jb.component('jbm.vDebugger', {
     type: 'jbm',
-    impl: pipe(
-        remote.action(runActions(
-			studio.initLocalCompsRefHandler(),
-			() => jb.studio.previewjb = jb.parent
-		), jbm.child('vDebugger')),
-        jbm.child('vDebugger')
-    )
+    impl: jbm.child('vDebugger', startup.codeLoaderServer('studio'))
 })
 ;
 
@@ -14525,41 +14472,41 @@ jb.component('studio.profilesOfPT', {
 jb.component('studio.categoriesOfType', {
   params: [
     {id: 'type', as: 'string', mandatory: true},
-    {id: 'path', as: 'string'}
   ],
-  impl: (ctx,_type,path) => {
-		var comps = jb.studio.previewjb.comps;
-		var pts = jb.studio.PTsOfType(_type);
-		var categories = jb.utils.unique([].concat.apply([],pts.map(pt=>
-			(comps[pt].category||'').split(',').map(c=>c.split(':')[0])
-				.concat(pt.indexOf('.') != -1 ? pt.split('.')[0] : [])
-				.filter(x=>x).filter(c=>c!='all')
-			))).map(c=>({
-					code: c,
-					pts: ptsOfCategory(c)
-				}));
-		var res = categories.concat({code: 'all', pts: ptsOfCategory('all') });
-		return res;
+  impl: (ctx,type) => {
+		const comps = jb.comps;
+		const pts = jb.studio.PTsOfType(type);
+		const categories = jb.utils.unique([
+      'common',
+      ...pts.flatMap(pt=> [
+        ...(comps[pt].category||'').split(',').map(c=>c.split(':')[0]),
+				...(pt.indexOf('.') != -1 ? pt.split('.').slice(0,1) : []),
+        ].filter(x=>x)),
+      'all'])
+			.map(c=>({	code: c, pts: ptsOfCategory(c) }))
+      .filter(c=>c.pts.length)
+		return categories
 
 		function ptsOfCategory(category) {
-			var pts_with_marks = pts.filter(pt=>
-					category == 'all' || pt.split('.')[0] == category ||
-					(comps[pt].category||'').split(',').map(x=>x.split(':')[0]).indexOf(category) != -1)
-				.map(pt=>({
+			const pts_with_marks = pts.filter(pt=>
+					category == 'all' 
+          || pt.split('.')[0] == category 
+          || (comps[pt].category||'').split(',').map(x=>x.split(':')[0]).indexOf(category) != -1
+          || category == 'common' && pt.indexOf('.') == -1 && !comps[pt].category 
+        ).map(pt=>({
 					pt: pt,
 					mark: (comps[pt].category||'').split(',')
 						.filter(c=>c.indexOf(category) == 0)
-						.map(c=>Number(c.split(':')[1] || 50))[0]
+						.map(c=>Number(c.split(':')[1] || 50))[0] || 50
 				}))
-				.map(x=> {
-					if (x.mark == null)
-						x.mark = 50;
-					return x;
-				})
-				.filter(x=>x.mark != 0);
-			pts_with_marks.sort((c1,c2)=>c2.mark-c1.mark);
-			var out = pts_with_marks.map(pt=>pt.pt);
-			return out;
+				// .map(x=> {
+				// 	if (x.mark == null)
+				// 		x.mark = 50;
+				// 	return x
+				// })
+				.filter(x=>x.mark != 0)
+			pts_with_marks.sort((c1,c2)=>c2.mark-c1.mark)
+			return pts_with_marks.map(pt=>pt.pt)
 		}
 	}
 })
@@ -14739,7 +14686,7 @@ jb.component('studio.wrapWithGroup', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>		jb.studio.wrapWithGroup(path,ctx)
+  impl: (ctx,path) =>	jb.studio.wrapWithGroup(path,ctx)
 })
 
 jb.component('studio.addProperty', {
@@ -14915,44 +14862,75 @@ jb.component('studio.cmpsOfProject', {
 
 ;
 
-// var { chromeDebugger,eventTracker } = jb.ns('chromeDebugger,eventTracker')
+jb.component('studio.eventTracker', {
+  params: [
+    {id: 'spy', dynamic: true, defaultValue: () => jb.path(jb.parent,'spy') }
+  ],
+  type: 'control',
+  impl: group({
+    controls: group({
+      controls: [
+        eventTracker.toolbar('%$spy()%'),
+        table({
+          items: eventTracker.eventItems('%$spy()%','%$eventTracker/eventTrackerQuery%'),
+          controls: [
+            text('%index%'),
+            eventTracker.uiComp(),
+            eventTracker.callbagMessage(),
+            eventTracker.testResult(),
+            text({ text: '%logNames%', features: feature.byCondition(
+              inGroup(list('exception','error'), '%logNames%'),
+              css.color('var(--jb-error-fg)')
+            )}),
+            studio.lowFootprintObj('%err%','err'),
+            studio.objExpandedAsText('%stack%','stack'),
 
-Object.assign(jb.ui, {
-  getSpy: () => jb.path(jb.parent,'spy') || {}
-})
-
-jb.component('studio.openEventTracker', {
-  type: 'action',
-  impl: openDialog({
-    style: dialog.studioFloating({id: 'event-tracker', width: '700', height: '400'}),
-    content: studio.eventTracker(),
-    title: 'Spy',
-    features: dialogFeature.resizer()
-  })
-})
-
-jb.component('eventTracker.getSpy', {
-  impl: () => jb.ui.getSpy()
-})
-
-jb.component('eventTracker.codeSize', {
-  impl: ()=> jb.parent.codeLoader.totalCodeSize ? Math.floor(jb.parent.codeLoader.totalCodeSize/1000) + 'k' : ''
-})
-
-jb.component('eventTracker.clearSpyLog', {
-  type: 'action',
-  impl: runActions(
-    Var('items', eventTracker.eventItems()),
-    (ctx, {items}) => {
-      const lastGroupIndex = items.length - items.reverse().findIndex(x=>x.index == '---')
-      if (lastGroupIndex >= items.length)
-        jb.spy.clear(jb.ui.getSpy(ctx))
-      else
-        jb.ui.getSpy(ctx).logs.splice(0,lastGroupIndex-1)
+            controlWithCondition('%m%',text('%m/$%: %m/t%, %m/cbId%')),
+  //          studio.objExpandedAsText('%m/d%','payload'),
+            studio.lowFootprintObj('%delta%','delta'),
+            studio.lowFootprintObj('%vdom%','vdom'),
+            studio.lowFootprintObj('%ref%','ref'),
+            studio.lowFootprintObj('%value%','value'),
+            studio.lowFootprintObj('%val%','val'),
+            studio.lowFootprintObj('%focusChanged%','focusChanged'),
+            studio.sourceCtxView('%srcCtx%'),
+            studio.sourceCtxView('%cmp/ctx%'),
+            studio.sourceCtxView('%ctx%'),
+          ],
+          style: table.plain(true),
+          visualSizeLimit: 80,
+          lineFeatures: [
+            watchRef({ref: '%$cmpExpanded/{%$index%}%', allowSelfRefresh: true}),
+            watchRef({ref: '%$payloadExpanded/{%$index%}%', allowSelfRefresh: true}),
+            watchRef({ref: '%$testResultExpanded/{%$index%}%', allowSelfRefresh: true}),
+            table.enableExpandToEndOfRow()
+          ],               
+          features: [
+            watchable('cmpExpanded', obj()),
+            watchable('payloadExpanded', obj()),
+            watchable('testResultExpanded', obj()),
+            itemlist.infiniteScroll(5),
+            itemlist.selection({
+              onSelection: runActions(({data}) => { jb.frame.console.log(data) }, eventTracker.highlightEvent('%%'))
+            }),
+            itemlist.keyboardSelection({}),
+            eventTracker.watchSpy('%$spy()%',500),
+          ]
+        })
+      ],
+      features: id('event-tracker'),
+    }),
+    features: [
+      variable('$disableLog',true),
+      watchable('eventTracker',obj())
+    ]
   })
 })
 
 jb.component('eventTracker.toolbar', {
+  params: [
+    {id: 'spy' }
+  ],
   type: 'control',
   impl: group({
     layout: layout.horizontal('2'),
@@ -14968,16 +14946,9 @@ jb.component('eventTracker.toolbar', {
       divider({style: divider.vertical()}),
       text({
         title: 'counts',
-        text: pipeline(
-            Var('logs', pipeline(
-              eventTracker.getSpy(),
-              '%logs%',
-              //filter(eventTracker.isNotDebuggerEvent())
-            )),
-           '%$events/length%/%$logs/length%'
-        ),
+        text: '%$events/length%/%$spy/logs/length%',
         features: [
-          variable('events', eventTracker.eventItems('%$eventTracker/eventTrackerQuery%')),
+          variable('events', eventTracker.eventItems('%$spy%','%$eventTracker/eventTrackerQuery%')),
           feature.hoverTitle('filtered events / total'),
           css('cursor: default'),
           css.padding({top: '5', left: '5'})
@@ -14986,7 +14957,7 @@ jb.component('eventTracker.toolbar', {
       divider({style: divider.vertical()}),
       button({
         title: 'clear',
-        action: runActions(eventTracker.clearSpyLog(), refreshControlById('event-tracker')),
+        action: runActions(eventTracker.clearSpyLog('%$spy%'), refreshControlById('event-tracker')),
         style: chromeDebugger.icon(),
         features: feature.hoverTitle('clear')
       }),
@@ -15010,11 +14981,11 @@ jb.component('eventTracker.toolbar', {
           css.width('300')
         ]
       }),
-      eventTracker.eventTypes()
+      eventTracker.eventTypes('%$spy%')
     ],
     features: [
       chromeDebugger.colors(),
-      eventTracker.watchSpy(100)
+      eventTracker.watchSpy('%$spy%',100)
     ]
   }),
 })
@@ -15080,7 +15051,7 @@ jb.component('eventTracker.testResult', {
         editableBoolean({databind: '%$testResultExpanded/{%$index%}%', style: chromeDebugger.toggleStyle()}),
         text({
           vars: Var('color',If('%success%','--jb-success-fg','--jb-error-fg')),
-          text: If('%success%','✓ check test reuslt','⚠ check test reuslt'),
+          text: If('%success%','✓ check test result','⚠ check test result'),
           features: css.color('var(%$color%)')
         }),
       ]
@@ -15100,94 +15071,36 @@ jb.component('eventTracker.testResult', {
   )
 })
 
-jb.component('studio.eventTracker', {
-  type: 'control',
-  impl: group({
-    controls: group({
-      controls: [
-        eventTracker.toolbar(),
-        table({
-          items: eventTracker.eventItems('%$eventTracker/eventTrackerQuery%'),
-          controls: [
-            text('%index%'),
-            eventTracker.uiComp(),
-            eventTracker.callbagMessage(),
-            eventTracker.testResult(),
-            text({ text: '%logNames%', features: feature.byCondition(
-              inGroup(list('exception','error'), '%logNames%'),
-              css.color('var(--jb-error-fg)')
-            )}),
-            studio.lowFootprintObj('%err%','err'),
-            studio.objExpandedAsText('%stack%','stack'),
-
-            controlWithCondition('%m%',text('%m/$%: %m/t%, %m/cbId%')),
-  //          studio.objExpandedAsText('%m/d%','payload'),
-            studio.lowFootprintObj('%delta%','delta'),
-            studio.lowFootprintObj('%vdom%','vdom'),
-            studio.lowFootprintObj('%ref%','ref'),
-            studio.lowFootprintObj('%value%','value'),
-            studio.lowFootprintObj('%val%','val'),
-            studio.lowFootprintObj('%focusChanged%','focusChanged'),
-            studio.sourceCtxView('%srcCtx%'),
-            studio.sourceCtxView('%cmp/ctx%'),
-            studio.sourceCtxView('%ctx%'),
-          ],
-          style: table.plain(true),
-          visualSizeLimit: 80,
-          lineFeatures: [
-            watchRef({ref: '%$cmpExpanded/{%$index%}%', allowSelfRefresh: true}),
-            watchRef({ref: '%$payloadExpanded/{%$index%}%', allowSelfRefresh: true}),
-            watchRef({ref: '%$testResultExpanded/{%$index%}%', allowSelfRefresh: true}),
-            table.enableExpandToEndOfRow()
-          ],               
-          features: [
-            watchable('cmpExpanded', obj()),
-            watchable('payloadExpanded', obj()),
-            watchable('testResultExpanded', obj()),
-            itemlist.infiniteScroll(5),
-            itemlist.selection({
-              onSelection: runActions(({data}) => jb.frame.console.log(data), eventTracker.highlightEvent('%%'))
-            }),
-            itemlist.keyboardSelection({}),
-            eventTracker.watchSpy(500),
-          ]
-        })
-      ],
-      features: id('event-tracker'),
-    }),
-    features: [
-      variable('$disableLog',true),
-      watchable('eventTracker',obj())
-    ]
-  })
-})
-
 jb.component('eventTracker.watchSpy',{
   type: 'feature',
   params: [
-    { id: 'delay', defaultValue: 3000}
+    {id: 'spy' },
+    {id: 'delay', defaultValue: 3000}
   ],
-  impl: followUp.watchObservable(source.callbag(ctx => jb.ui.getSpy(ctx)._obs),'%$delay%')
+  impl: followUp.watchObservable(source.callbag('%$spy/_obs%','%$delay%'))
 })
 
 jb.component('eventTracker.eventTypes', {
+  params: [
+    {id: 'spy' }
+  ],  
   type: 'control',
   impl: picklist({
     databind: '%$eventTracker/spyLogs%',
     options: picklist.options({
-      options: ctx => jb.entries(jb.ui.getSpy(ctx).counters),
-      code: '%0%',
-      text: '%0% (%1%)'
+      options: properties('%$spy/counters%'),
+      code: '%id%',
+      text: '%id% (%val%)'
     }),
     features: [
       chromeDebugger.colors(),
       picklist.onChange(
-        ctx => {
-        const loc = jb.ui.getSpy(ctx).locations[ctx.data].split(':')
+        (ctx,{},{spy}) => {
+        const loc = spy.locations[ctx.data].split(':')
         const col = +loc.pop()
         const line = (+loc.pop())-1
         const location = [loc.join(':'),line,col]
-        jb.log('eventTracker openResource',{ctx,loc: jb.ui.getSpy(ctx).locations[ctx.data], location})
+        jb.log('eventTracker openResource',{ctx,loc: spy.locations[ctx.data], location})
         loc && parent.postMessage({ runProfile: {$: 'chromeDebugger.openResource', location }})
       }
       )
@@ -15270,10 +15183,11 @@ jb.component('studio.slicedString', {
 
 jb.component('eventTracker.eventItems', {
   params: [
+    {id: 'spy', dynamic: true},
     {id: 'query', as: 'string' },
   ],
-  impl: (ctx,query) => {
-    const spy = jb.ui.getSpy(ctx)
+  impl: (ctx,_spy, query) => {
+    const spy = _spy()
     if (!spy) return []
     //const checkEv = jb.comps['eventTracker.isNotDebuggerEvent'].impl // efficiency syntax
     //spy.logs = spy.logs.filter(data=> checkEv({data}))
@@ -15503,7 +15417,40 @@ jb.component('chromeDebugger.toggleStyle', {
   type: 'editable-boolean.style',
   impl: editableBoolean.expandCollapseWithUnicodeChars()
 })
-;
+
+jb.component('studio.openEventTracker', {
+  type: 'action',
+  impl: openDialog({
+    style: dialog.studioFloating({id: 'event-tracker', width: '700', height: '400'}),
+    content: studio.eventTracker(),
+    title: 'Spy',
+    features: dialogFeature.resizer()
+  })
+})
+
+jb.component('eventTracker.getParentSpy', {
+  impl: () => jb.path(jb.parent,'spy') || {}
+})
+
+jb.component('eventTracker.codeSize', {
+  impl: ()=> jb.parent.codeLoader.totalCodeSize ? Math.floor(jb.parent.codeLoader.totalCodeSize/1000) + 'k' : ''
+})
+
+jb.component('eventTracker.clearSpyLog', {
+  type: 'action',
+  params: [
+    {id: 'spy' }
+  ],
+  impl: runActions(
+    Var('items', eventTracker.eventItems('%$spy%')),
+    (ctx, {items}, {spy}) => {
+      const lastGroupIndex = items.length - items.reverse().findIndex(x=>x.index == '---')
+      if (lastGroupIndex >= items.length)
+        jb.spy.clear(spy)
+      else
+        spy.logs.splice(0,lastGroupIndex-1)
+  })
+});
 
 // jb.ns('chromeDebugger')
 
@@ -15554,7 +15501,7 @@ jb.component('studio.compInspector', {
     features: [
       variable('cmpId', firstSucceeding('%$$state.cmpId%', '%$inspectedProps.cmpId%')),
       variable('frameUri', firstSucceeding('%$$state.frameUri%', '%$inspectedProps.frameUri%')),
-      variable('frameOfElem', ({},{frameUri}) => [self,self.parent,...Array.from(frames)].filter(x=>x.jb.uri == frameUri)[0]),
+      variable('frameOfElem', ({},{frameUri}) => [globalThis,globalThis.parent,...Array.from(frames)].filter(x=>x.jb.uri == frameUri)[0]),
       variable('elem', ({},{cmpId,frameOfElem}) => frameOfElem && frameOfElem.document.querySelector(`[cmp-id="${cmpId}"]`)),
       variable('inspectedCmp', ({},{frameOfElem, elem}) => 
             jb.path(elem && frameOfElem && frameOfElem.jb.ctxDictionary[elem.getAttribute('full-cmp-ctx')],'vars.cmp')),
@@ -15581,7 +15528,7 @@ jb.component('studio.eventsOfComp', {
           layout: layout.horizontal('2'),
           controls: [
             text({
-                text: pipeline(eventTracker.getSpy(), '%$events/length%/%logs/length%'),
+                text: pipeline(eventTracker.getParentSpy(), '%$events/length%/%logs/length%'),
                 title: 'counts',
                 features: [css.padding({top: '5', left: '5'})]
             }),              
@@ -15606,7 +15553,7 @@ jb.component('studio.eventsOfComp', {
                 css.width('300')
               ]
             }),
-            eventTracker.eventTypes()
+            eventTracker.eventTypes(eventTracker.getParentSpy())
           ],
           features: css.color({background: 'var(--jb-menubar-inactive-bg)'})
         }),
@@ -15650,9 +15597,9 @@ jb.component('studio.eventsOfComp', {
         id('cmp-event-tracker'),
         variable({
           name: 'events',
-          value: pipeline(eventTracker.eventItems('%$studio/eventTrackerCmpQuery%'),filter('%cmp/cmpId%==%$cmpId%'))
+          value: pipeline(eventTracker.eventItems(eventTracker.getParentSpy(),'%$studio/eventTrackerCmpQuery%'),filter('%cmp/cmpId%==%$cmpId%'))
         }),
-        eventTracker.watchSpy(1000),
+        eventTracker.watchSpy(eventTracker.getParentSpy(), 1000),
       ]
     })
 })

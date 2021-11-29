@@ -1,4 +1,13 @@
-fork tests - simple, ensure active source is stoped
+//# jbLoadComponents:pipeline,xx
+codeLoaderServer --watchFiles
+  - reloadCode request
+runOneTest - cut show dependency to ui
+
 remote.dispatcher
-rx.bufferUntil(cb)
-source.waitFor()
+  multiple data test - nodejs/ multiple nodejs
+  multiple tests puppeteer (capabilities match)
+
+data tests with dispatcher
+preview of studio in nodejs
+preview of vsccode in nodejs
+

@@ -9,34 +9,34 @@ var jb_modules = {
   ],
 }
 
-async function jb_codeLoaderServer(uri, {projects, baseUrl, multipleInFrame, loadFileFunc, getAllCodeFunc }) {
-  // multipleInFrame is used for multiple jbms in the same frame
+async function jbInit(uri, {projects, baseUrl, multipleInFrame, loadFileFunc, fileSymbolsFunc }) {
+  // multipleInFrame is used in jbm.child
   const isWorker = typeof jbInWorker != 'undefined'
   baseUrl = baseUrl || isWorker && typeof location != 'undefined' && location.origin || ''
   jb_loadFile = loadFileFunc || (multipleInFrame ? jb_loadFileIntoClosure : jb_loadFileToFrame)
-  getAllCode = getAllCodeFunc || getAllCodeFromHttp
+  fileSymbols = fileSymbolsFunc || fileSymbolsFromHttp
   const jb = { uri }
   if (!multipleInFrame)
     globalThis.jb = jb
   const coreFiles= jb_modules.core.map(x=>`/${x}`)
   await coreFiles.reduce((pr,url) => pr.then(()=> jb_loadFile(url,baseUrl,jb)), Promise.resolve())
-  jb.noCodeLoader = false
+  jb.noSupervisedLoad = false
 
-  const src = [...await getAllCode('src','','puppeteer|pptr-|pack-|jb-loader')].filter(x=>coreFiles.indexOf(x.path) == -1)
-  const projectsCode = await projects.reduce( async (acc,project) => [...await acc, ...await getAllCode(`projects/${project}`)], [])
+  const src = [...await fileSymbols('src','','puppeteer|pptr-|pack-|jb-loader')].filter(x=>coreFiles.indexOf(x.path) == -1)
+  const projectsCode = await projects.reduce( async (acc,project) => [...await acc, ...await fileSymbols(`projects/${project}`)], [])
 
-  await jb_evalCode([...src,...projectsCode],{jb, jb_loadFile, baseUrl})
+  await jbSupervisedLoad([...src,...projectsCode],{jb, jb_loadFile, baseUrl})
 
   jb.codeLoader.loadModules = async function(modules) { // helper function
-    const modulesCode = await modules.reduce( async (acc,dir) => [...await acc, ...await getAllCode(dir)], [])
-    await jb_evalCode(modulesCode,{jb, jb_loadFile, baseUrl})      
+    const modulesCode = await modules.reduce( async (acc,dir) => [...await acc, ...await fileSymbols(dir)], [])
+    await jbSupervisedLoad(modulesCode,{jb, jb_loadFile, baseUrl})      
   }
   return jb
 
-  async function getAllCodeFromHttp(path,include,exclude) {
+  async function fileSymbolsFromHttp(path,include,exclude) {
     const inc = include ? `&include=${include}` : ''
     const exc = exclude ? `&exclude=${exclude}` : ''
-    return fetch(`${baseUrl}?op=getAllCode&path=${path}${inc}${exc}`).then(x=>x.json())
+    return fetch(`${baseUrl}?op=fileSymbols&path=${path}${inc}${exc}`).then(x=>x.json())
   }
 
   async function jb_loadFileIntoClosure(url, baseUrl,jb) {
@@ -66,7 +66,7 @@ async function jb_codeLoaderServer(uri, {projects, baseUrl, multipleInFrame, loa
   }  
 }
 
-async function jb_evalCode(loadedCode, {jb, jb_loadFile, baseUrl} = {}) {
+async function jbSupervisedLoad(loadedCode, {jb, jb_loadFile, baseUrl} = {}) {
   const ns = jb.utils.unique([...loadedCode,{ns: ['Var','remark']}].flatMap(x=>x.ns))
   const libs = jb.utils.unique(loadedCode.flatMap(x=>x.libs))
   ns.forEach(id=> jb.macro.registerProxy(id))
@@ -80,7 +80,7 @@ async function jb_codeLoaderClient(uri,baseUrl) {
   globalThis.jb = { uri }
   const coreFiles= jb_modules.core.map(x=>`/${x}`)
   await coreFiles.reduce((pr,url) => pr.then(()=> jb_loadFile(url,baseUrl)), Promise.resolve())
-  jb.noCodeLoader = false
+  jb.noSupervisedLoad = false
   var { If,not,contains,writeValue,obj,prop,rx,source,sink,call,jbm,remote,pipe,log,net,aggregate,list,runActions,Var,http } = 
     jb.macro.ns('If,not,contains,writeValue,obj,prop,rx,source,sink,call,jbm,remote,pipe,log,net,aggregate,list,runActions,Var,http') // ns use in modules
   await 'loader/code-loader,core/jb-common,misc/jb-callbag,misc/rx-comps,misc/pretty-print,misc/remote-context,misc/jbm,misc/remote,misc/net'.split(',').map(x=>`/src/${x}.js`)

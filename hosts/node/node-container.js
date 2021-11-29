@@ -1,6 +1,6 @@
 const fs = require('fs')
 const jbBaseUrl = __dirname.replace(/\\/g,'/').replace(/\/hosts\/node$/,'').replace(/\/bin\/jbman$/,'')
-const { log, getProcessArgument} = require(`${jbBaseUrl}/bin/utils.js`)
+const { log, getProcessArgument, jbGetJSFromUrl} = require(`${jbBaseUrl}/bin/utils.js`)
 
 let settings = { verbose: getProcessArgument('verbose') }
 try {
@@ -8,19 +8,31 @@ try {
   log('settings',settings)
 } catch(e) {}
 
-global.jbInNode = true
-const uri = `node${pid}`
-global.jb = { uri }
-global.jbLoadingPhase = 'libs'
-require(`http:${settings.ports.codeLoader}/codeloader-client.js`)
-
-process.on('message', (m, socket) => {
-  if (m.$ != 'initSocket') return
-  jb.jbm.extendPortToJbmProxy(jb.jbm.portFromNodeSocket(socket,m.clientUri))
-  socket.send({$: 'ready', serverUri: uri})
+process.on('message', m => {
+  log('node - received from parent',m)
+  if (m.$ == 'createJbm') {
+    jb.ports[m.clientUri] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromNodeChildProcess(process,m.clientUri))
+    log('new node ready')
+    process.send({$: 'ready', serverUri: jb.uri})
+  }
 })
 
-spy = jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
-global.jbLoadingPhase = 'appFiles'
+async function run() {
+  global.jbInNode = true
+  const uri = `node${process.pid}`
+  global.jb = { uri }
+  global.jbLoadingPhase = 'libs'
+  await jbGetJSFromUrl(`http://localhost:${settings.ports.codeLoader}/codeloader-client.js`)
+  await jbGetJSFromUrl(`http://localhost:${settings.ports.codeLoader}/jb-test.js?ids=-jbm.portFromNodeChildProcess`)
+
+  spy = jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
+  global.jbLoadingPhase = 'appFiles'
+
+  log('new node started')
+  process.send({$: 'readyForInit', serverUri: uri})
+}
+
+run().then(console.log('new jbm node loaded'))
+
 
 

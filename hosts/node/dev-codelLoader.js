@@ -7,7 +7,7 @@ module.exports = {
         try {
             const loaderCode = fs.readFileSync(`${jbBaseUrl}/src/loader/jb-loader.js`) + '\n//# sourceURL=jb-loader.js'
             vm.runInThisContext(loaderCode)
-            return jb_codeLoaderServer(uri, { projects, loadFileFunc, getAllCodeFunc })
+            return jbInit(uri, { projects, loadFileFunc, fileSymbolsFunc })
         } catch (e) {
             console.log('error loading jb-loader',e)
         }
@@ -16,14 +16,14 @@ module.exports = {
 
 function loadFileFunc(url) {
     try {
-        console.log(`loading ${url}`)
+        // console.log(`loading ${url}`)
         require(jbBaseUrl+url)
     } catch (e) {
-        console.log(`error loading ${url}`,e)
+        //console.log(`error loading ${url}`,e)
     }
 }
 
-function getAllCodeFunc(path, _include, _exclude) {
+function fileSymbolsFunc(path, _include, _exclude) {
     const include = _include && new RegExp(_include)
     const exclude = _exclude && new RegExp(_exclude)
     return Promise.resolve(getFilesInDir(path).filter(f => f.match(/\.js/)).map(path => fileContent(path)))

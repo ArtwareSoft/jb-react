@@ -63,7 +63,10 @@ jb.extension('callbag', {
   map: f => source => (start, sink) => {
       if (start !== 0) return
       source(0, function map(t, d) {
-          sink(t, t === 1 ? f(d) : d)
+        if (t == 1 && d != null) 
+          sink(1,f(d))
+        else
+          sink(t, d)
       })
   },
   throwError: (condition,err) => source => (start, sink) => {
@@ -811,7 +814,7 @@ jb.extension('callbag', {
       if (start !== 0) return
       let waiting = 0, end, endD, endSent
       source(0, function delay(t,d) {
-          if (t == 1 && d && !end) {
+          if (t == 1 && d != null && !end) {
             let id = setTimeout(()=> {
               waiting--
               clearTimeout(id)

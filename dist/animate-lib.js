@@ -2,8 +2,8 @@ if (typeof jbmFactory == 'undefined') jbmFactory = {};
 jbmFactory['animate'] = function(jb) {
   jb.importAllMacros && eval(jb.importAllMacros());
 /*
- * anime.js v3.1.0
- * (c) 2019 Julian Garnier
+ * anime.js v3.2.1
+ * (c) 2020 Julian Garnier
  * Released under the MIT license
  * animejs.com
  */
@@ -35,7 +35,7 @@ var defaultTweenSettings = {
   round: 0
 };
 
-var validTransforms = ['translateX', 'translateY', 'translateZ', 'rotate', 'rotateX', 'rotateY', 'rotateZ', 'scale', 'scaleX', 'scaleY', 'scaleZ', 'skew', 'skewX', 'skewY', 'perspective'];
+var validTransforms = ['translateX', 'translateY', 'translateZ', 'rotate', 'rotateX', 'rotateY', 'rotateZ', 'scale', 'scaleX', 'scaleY', 'scaleZ', 'skew', 'skewX', 'skewY', 'perspective', 'matrix', 'matrix3d'];
 
 // Caching
 
@@ -68,11 +68,12 @@ var is = {
   str: function (a) { return typeof a === 'string'; },
   fnc: function (a) { return typeof a === 'function'; },
   und: function (a) { return typeof a === 'undefined'; },
+  nil: function (a) { return is.und(a) || a === null; },
   hex: function (a) { return /(^#[0-9A-F]{6}$)|(^#[0-9A-F]{3}$)/i.test(a); },
   rgb: function (a) { return /^rgb/.test(a); },
   hsl: function (a) { return /^hsl/.test(a); },
   col: function (a) { return (is.hex(a) || is.rgb(a) || is.hsl(a)); },
-  key: function (a) { return !defaultInstanceSettings.hasOwnProperty(a) && !defaultTweenSettings.hasOwnProperty(a) && a !== 'targets' && a !== 'keyframes'; }
+  key: function (a) { return !defaultInstanceSettings.hasOwnProperty(a) && !defaultTweenSettings.hasOwnProperty(a) && a !== 'targets' && a !== 'keyframes'; },
 };
 
 // Easings
@@ -137,7 +138,7 @@ function spring(string, duration) {
 function steps(steps) {
   if ( steps === void 0 ) steps = 10;
 
-  return function (t) { return Math.round(t * steps) * (1 / steps); };
+  return function (t) { return Math.ceil((minMax(t, 0.000001, 1)) * steps) * (1 / steps); };
 }
 
 // BezierEasing https://github.com/gre/bezier-easing
@@ -263,6 +264,8 @@ var penner = (function () {
     eases['easeOut' + name] = function (a, b) { return function (t) { return 1 - easeIn(a, b)(1 - t); }; };
     eases['easeInOut' + name] = function (a, b) { return function (t) { return t < 0.5 ? easeIn(a, b)(t * 2) / 2 : 
       1 - easeIn(a, b)(t * -2 + 2) / 2; }; };
+    eases['easeOutIn' + name] = function (a, b) { return function (t) { return t < 0.5 ? (1 - easeIn(a, b)(1 - t * 2)) / 2 : 
+      (easeIn(a, b)(t * 2 - 1) + 1) / 2; }; };
   });
 
   return eases;
@@ -445,7 +448,7 @@ function getCSSValue(el, prop, unit) {
 }
 
 function getAnimationType(el, prop) {
-  if (is.dom(el) && !is.inp(el) && (getAttribute(el, prop) || (is.svg(el) && el[prop]))) { return 'attribute'; }
+  if (is.dom(el) && !is.inp(el) && (!is.nil(getAttribute(el, prop)) || (is.svg(el) && el[prop]))) { return 'attribute'; }
   if (is.dom(el) && arrayContains(validTransforms, prop)) { return 'transform'; }
   if (is.dom(el) && (prop !== 'transform' && getCSSValue(el, prop))) { return 'css'; }
   if (el[prop] != null) { return 'object'; }
@@ -583,8 +586,10 @@ function getParentSvg(pathEl, svgData) {
     viewBox: viewBox,
     x: viewBox[0] / 1,
     y: viewBox[1] / 1,
-    w: width / viewBox[2],
-    h: height / viewBox[3]
+    w: width,
+    h: height,
+    vW: viewBox[2],
+    vH: viewBox[3]
   }
 }
 
@@ -601,7 +606,7 @@ function getPath(path, percent) {
   }
 }
 
-function getPathProgress(path, progress) {
+function getPathProgress(path, progress, isPathTargetInsideSVG) {
   function point(offset) {
     if ( offset === void 0 ) offset = 0;
 
@@ -612,9 +617,11 @@ function getPathProgress(path, progress) {
   var p = point();
   var p0 = point(-1);
   var p1 = point(+1);
+  var scaleX = isPathTargetInsideSVG ? 1 : svg.w / svg.vW;
+  var scaleY = isPathTargetInsideSVG ? 1 : svg.h / svg.vH;
   switch (path.property) {
-    case 'x': return (p.x - svg.x) * svg.w;
-    case 'y': return (p.y - svg.y) * svg.h;
+    case 'x': return (p.x - svg.x) * scaleX;
+    case 'y': return (p.y - svg.y) * scaleY;
     case 'angle': return Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180 / Math.PI;
   }
 }
@@ -750,6 +757,7 @@ function normalizeTweens(prop, animatable) {
     tween.end = tween.start + tween.delay + tween.duration + tween.endDelay;
     tween.easing = parseEasings(tween.easing, tween.duration);
     tween.isPath = is.pth(tweenValue);
+    tween.isPathTargetInsideSVG = tween.isPath && is.svg(animatable.target);
     tween.isColor = is.col(tween.from.original);
     if (tween.isColor) { tween.round = 1; }
     previousTween = tween;
@@ -855,50 +863,57 @@ function createNewInstance(params) {
 // Core
 
 var activeInstances = [];
-var pausedInstances = [];
-var raf;
 
 var engine = (function () {
-  function play() { 
-    raf = requestAnimationFrame(step);
-  }
-  function step(t) {
-    var activeInstancesLength = activeInstances.length;
-    if (activeInstancesLength) {
-      var i = 0;
-      while (i < activeInstancesLength) {
-        var activeInstance = activeInstances[i];
-        if (!activeInstance.paused) {
-          activeInstance.tick(t);
-        } else {
-          var instanceIndex = activeInstances.indexOf(activeInstance);
-          if (instanceIndex > -1) {
-            activeInstances.splice(instanceIndex, 1);
-            activeInstancesLength = activeInstances.length;
-          }
-        }
-        i++;
-      }
-      play();
-    } else {
-      raf = cancelAnimationFrame(raf);
+  var raf;
+
+  function play() {
+    if (!raf && (!isDocumentHidden() || !anime.suspendWhenDocumentHidden) && activeInstances.length > 0) {
+      raf = requestAnimationFrame(step);
     }
   }
+  function step(t) {
+    // memo on algorithm issue:
+    // dangerous iteration over mutable `activeInstances`
+    // (that collection may be updated from within callbacks of `tick`-ed animation instances)
+    var activeInstancesLength = activeInstances.length;
+    var i = 0;
+    while (i < activeInstancesLength) {
+      var activeInstance = activeInstances[i];
+      if (!activeInstance.paused) {
+        activeInstance.tick(t);
+        i++;
+      } else {
+        activeInstances.splice(i, 1);
+        activeInstancesLength--;
+      }
+    }
+    raf = i > 0 ? requestAnimationFrame(step) : undefined;
+  }
+
+  function handleVisibilityChange() {
+    if (!anime.suspendWhenDocumentHidden) { return; }
+
+    if (isDocumentHidden()) {
+      // suspend ticks
+      raf = cancelAnimationFrame(raf);
+    } else { // is back to active tab
+      // first adjust animations to consider the time that ticks were suspended
+      activeInstances.forEach(
+        function (instance) { return instance ._onDocumentVisibility(); }
+      );
+      engine();
+    }
+  }
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+  }
+
   return play;
 })();
 
-function handleVisibilityChange() {
-  if (document.hidden) {
-    activeInstances.forEach(function (ins) { return ins.pause(); });
-    pausedInstances = activeInstances.slice(0);
-    anime.running = activeInstances = [];
-  } else {
-    pausedInstances.forEach(function (ins) { return ins.play(); });
-  }
-}
-
-if (typeof document !== 'undefined') {
-  document.addEventListener('visibilitychange', handleVisibilityChange);
+function isDocumentHidden() {
+  return !!document && document.hidden;
 }
 
 // Public Instance
@@ -976,7 +991,7 @@ function anime(params) {
         if (!tween.isPath) {
           value = fromNumber + (eased * (toNumber - fromNumber));
         } else {
-          value = getPathProgress(tween.value, eased * toNumber);
+          value = getPathProgress(tween.value, eased * toNumber, tween.isPathTargetInsideSVG);
         }
         if (round) {
           if (!(tween.isColor && n > 2)) {
@@ -1105,6 +1120,9 @@ function anime(params) {
     setAnimationsProgress(instance.reversed ? instance.duration : 0);
   };
 
+  // internal method (for engine) to adjust animation timings before restoring engine ticks (rAF)
+  instance._onDocumentVisibility = resetTime;
+
   // Set Value helper
 
   instance.set = function(targets, properties) {
@@ -1133,17 +1151,23 @@ function anime(params) {
     instance.paused = false;
     activeInstances.push(instance);
     resetTime();
-    if (!raf) { engine(); }
+    engine();
   };
 
   instance.reverse = function() {
     toggleInstanceDirection();
+    instance.completed = instance.reversed ? false : true;
     resetTime();
   };
 
   instance.restart = function() {
     instance.reset();
     instance.play();
+  };
+
+  instance.remove = function(targets) {
+    var targetsArray = parseTargets(targets);
+    removeTargetsFromInstance(targetsArray, instance);
   };
 
   instance.reset();
@@ -1164,20 +1188,24 @@ function removeTargetsFromAnimations(targetsArray, animations) {
   }
 }
 
-function removeTargets(targets) {
+function removeTargetsFromInstance(targetsArray, instance) {
+  var animations = instance.animations;
+  var children = instance.children;
+  removeTargetsFromAnimations(targetsArray, animations);
+  for (var c = children.length; c--;) {
+    var child = children[c];
+    var childAnimations = child.animations;
+    removeTargetsFromAnimations(targetsArray, childAnimations);
+    if (!childAnimations.length && !child.children.length) { children.splice(c, 1); }
+  }
+  if (!animations.length && !children.length) { instance.pause(); }
+}
+
+function removeTargetsFromActiveInstances(targets) {
   var targetsArray = parseTargets(targets);
   for (var i = activeInstances.length; i--;) {
     var instance = activeInstances[i];
-    var animations = instance.animations;
-    var children = instance.children;
-    removeTargetsFromAnimations(targetsArray, animations);
-    for (var c = children.length; c--;) {
-      var child = children[c];
-      var childAnimations = child.animations;
-      removeTargetsFromAnimations(targetsArray, childAnimations);
-      if (!childAnimations.length && !child.children.length) { children.splice(c, 1); }
-    }
-    if (!animations.length && !children.length) { instance.pause(); }
+    removeTargetsFromInstance(targetsArray, instance);
   }
 }
 
@@ -1267,10 +1295,12 @@ function timeline(params) {
   return tl;
 }
 
-anime.version = '3.1.0';
+anime.version = '3.2.1';
 anime.speed = 1;
+// TODO:#review: naming, documentation
+anime.suspendWhenDocumentHidden = true;
 anime.running = activeInstances;
-anime.remove = removeTargets;
+anime.remove = removeTargetsFromActiveInstances;
 anime.get = getOriginalTargetValue;
 anime.set = setTargetsValue;
 anime.convertPx = convertPxToUnit;
@@ -1281,6 +1311,8 @@ anime.timeline = timeline;
 anime.easing = parseEasings;
 anime.penner = penner;
 anime.random = function (min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; };
+
+
 ;
 
 // jb.ns('animation')

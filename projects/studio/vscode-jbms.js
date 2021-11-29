@@ -59,8 +59,8 @@ jb.component('jbm.vscodeWebView', {
     <meta charset="UTF-8">
     <script>
     jb_modules = { core: ${JSON.stringify(jb_modules.core)} };
-    ${jb_codeLoaderServer.toString()}
-    ${jb_evalCode.toString()}
+    ${jbInit.toString()}
+    ${jbSupervisedLoad.toString()}
 
     jb = { uri: '${webViewUri}'}
     ${code};
@@ -115,9 +115,9 @@ jb.component('jbm.vscodeWebView', {
 
 //     <script>
 //     jb_modules = { core: ${JSON.stringify(jb_modules.core)} };
-//     ${jb_codeLoaderServer.toString()}
-//     ${jb_evalCode.toString()}
-//     jb_codeLoaderServer('${webViewUri}',{ baseUrl: '${_jbBaseUrl}', projects: ${projects} }).then(()=>{
+//     ${jbInit.toString()}
+//     ${jbSupervisedLoad.toString()}
+//     jbInit('${webViewUri}',{ baseUrl: '${_jbBaseUrl}', projects: ${projects} }).then(()=>{
 //         jb.parent = jb.jbm.extendPortToJbmProxy(jb.vscode.portFromWebViewToExt('${webViewUri}','${jb.uri}'))
 //         jb.exec(defaultTheme())
 //         self.spy = jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
@@ -156,8 +156,8 @@ jb.component('jbm.vscodeWebView', {
 // global.jbInWorker = true
 // global.importScripts = global.require
 // jb_modules = { core: ${JSON.stringify(jb_modules.core)} };
-// ${jb_codeLoaderServer.toString()}
-// ${jb_evalCode.toString()}
+// ${jbInit.toString()}
+// ${jbSupervisedLoad.toString()}
 // function jb_loadFile(url, baseUrl) { 
 //     baseUrl = baseUrl || location.origin || ''
 //     return Promise.resolve(importScripts(baseUrl+url)) 

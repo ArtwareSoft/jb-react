@@ -13,7 +13,7 @@ Object.assign(jb, {
     const phase =  extension.$phase || { core: 1, utils: 5, db: 10, watchable: 20}[libId] || 100
     lib.__extensions[extId] = { libId, phase, init: extension.initExtension, initialized, requireLibs: extension.$requireLibs, requireFuncs: extension.$requireFuncs }
 
-    if (jb.noCodeLoader && extension.initExtension) {
+    if (jb.noSupervisedLoad && extension.initExtension) {
       Object.assign(lib, extension.initExtension.apply(lib))
       lib.__extensions[extId].initialized = true
     }
@@ -66,7 +66,7 @@ Object.assign(jb, {
     })
     comp[jb.core.loadingPhase] = jb.frame.jbLoadingPhase
   },
-  noCodeLoader: true
+  noSupervisedLoad: true
 })
 
 jb.extension('core', {

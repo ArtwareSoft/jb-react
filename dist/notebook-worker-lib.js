@@ -1,110 +1,60 @@
 if (typeof jbmFactory == 'undefined') jbmFactory = {};
 jbmFactory['notebook-worker'] = function(jb) {
   jb.importAllMacros && eval(jb.importAllMacros());
-// var { studio } = jb.ns('studio');
-//eval(jb.macro.importAll());
+jb.extension('watchableComps', 'studio', {
+	$phase: 40,
+	initExtension() {
+		  jb.studio.scriptChange && jb.utils.subscribe(jb.watchableComps.handler.resourceChange, e => jb.watchableComps.scriptChangeHnadler(e))
+  	},
+	scriptChangeHnadler(e) {
+		jb.log('watchable studio script changed',{ctx: e.srcCtx,e})
+		jb.studio.scriptChange.next(e)
+		writeValueToDataResource(e.path,e.newVal)
+		if (jb.studio.isStudioCmp(e.path[0]))
+			jb.studio.refreshStudioComponent(e.path)
+		jb.studio.lastStudioActivity = new Date().getTime()
+		e.srcCtx.run(writeValue('%$studio/lastStudioActivity%',() => jb.studio.lastStudioActivity))
+	
+		jb.studio.highlightByScriptPath(e.path)
+	
+		function writeValueToDataResource(path,value) {
+			if (path.length > 1 && ['watchableData','passiveData'].indexOf(path[1]) != -1) {
+				const resource = jb.db.removeDataResourcePrefix(path[0])
+				const dataPath = '%$' + [resource, ...path.slice(2)].map(x=>isNaN(+x) ? x : `[${x}]`).join('/') + '%'
+				return jb.exec(writeValue(dataPath,_=>value))
+			}
+		}
+	},  
+})
+
 
 jb.extension('studio', 'path', {
-  initExtension() {
-		return {
-			compsHistory: [],
-			scriptChange: jb.callbag.subject(),
-			previewjb: jb
-		}
-  },
+  initExtension() { return { 
+	  previewjb: jb,
+	  scriptChange: jb.callbag.subject()
+  }},
   execInStudio: (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.core.jbCtx().run(...args),
-  compsRefOfjbm(jbm, {historyWin, compsRefId} = {historyWin: 5, compsRefId: 'comps'}) {
-	function compsRef(val,opEvent,{source}= {}) {
-		if (typeof val == 'undefined')
-			return jbm.comps
-		else {
-			if (historyWin) updateHistory(val,opEvent,source)
-			jbm.comps = val
-		}
-	}
-	compsRef.id = compsRefId
-	return compsRef
-
-	function updateHistory(val, opEvent, source) {
-		const history = jb.studio.compsHistory
-		val.$jb_selectionPreview = opEvent && opEvent.srcCtx && opEvent.srcCtx.vars.selectionPreview
-		if (!val.$jb_selectionPreview && source != 'probe') {
-			history.push({before: jbm.comps, after: val, opEvent: opEvent, undoIndex: jb.studio.undoIndex})
-			if (history.length > historyWin)
-			jb.studio.compsHistory = history.slice(-1*historyWin)
-		}
-		if (opEvent)
-			jb.studio.undoIndex = history.length
-	}
-  },
-  scriptChangeHandler(e) {
-	jb.log('watchable studio script changed',{ctx: e.srcCtx,e})
-	jb.studio.scriptChange.next(e)
-	writeValueToDataResource(e.path,e.newVal)
-	if (jb.studio.isStudioCmp(e.path[0]))
-		jb.studio.refreshStudioComponent(e.path)
-	jb.studio.lastStudioActivity = new Date().getTime()
-	e.srcCtx.run(writeValue('%$studio/lastStudioActivity%',() => jb.studio.lastStudioActivity))
-
-	jb.studio.highlightByScriptPath && jb.studio.highlightByScriptPath(e.path)
-
-	function writeValueToDataResource(path,value) {
-		if (path.length > 1 && ['watchableData','passiveData'].indexOf(path[1]) != -1) {
-			const resource = jb.db.removeDataResourcePrefix(path[0])
-			const dataPath = '%$' + [resource, ...path.slice(2)].map(x=>isNaN(+x) ? x : `[${x}]`).join('/') + '%'
-			return jb.studio.previewjb.exec(writeValue(dataPath,_=>value))
-		}
-	}		
-  },
-
-  initLocalCompsRefHandler(compsRef,{ compIdAsReferred, initUIObserver } = {}) {
-	if (jb.studio.compsRefHandler) return
-    jb.studio.compsRefHandler = new jb.watchable.WatchableValueByRef(compsRef)
-	jb.db.addWatchableHandler(jb.studio.compsRefHandler)
-	initUIObserver && jb.ui.subscribeToRefChange(jb.studio.compsRefHandler)
-    compIdAsReferred && jb.studio.compsRefHandler.makeWatchable(compIdAsReferred)
-	jb.callbag.subscribe(e=>jb.studio.scriptChangeHandler(e))(jb.studio.compsRefHandler.resourceChange)
-  },
-  
-  initReplaceableCompsRefHandler(compsRef, {allowedTypes}) {
-  	// CompsRefHandler may need to be replaced when reloading the preview iframe
- 	const {pipe,subscribe,takeUntil} = jb.callbag
-	const oldHandler = jb.studio.compsRefHandler
-	jb.db.removeWatchableHandler(oldHandler)	
-	oldHandler && oldHandler.stopListening.next(1)
-	jb.studio.compsRefHandler = new jb.watchable.WatchableValueByRef(compsRef)
-	jb.db.addWatchableHandler(jb.studio.compsRefHandler)
-	jb.ui.subscribeToRefChange(jb.studio.compsRefHandler)
-	jb.studio.compsRefHandler.allowedTypes = jb.studio.compsRefHandler.allowedTypes.concat(allowedTypes)
-	jb.studio.compsRefHandler.stopListening = jb.callbag.subject()
-
-	pipe(jb.studio.compsRefHandler.resourceChange,
-		takeUntil(jb.studio.compsRefHandler.stopListening),
-		subscribe(e=>jb.studio.scriptChangeHandler(e))
-	)
-  },
-
   // adaptors
-  val: v => jb.studio.compsRefHandler.val(v),
-  writeValue: (ref,value,ctx) => jb.studio.compsRefHandler.writeValue(ref,value,ctx),
-  objectProperty: (obj,prop) => jb.studio.compsRefHandler.objectProperty(obj,prop),
-  splice: (ref,args,ctx) => jb.studio.compsRefHandler.splice(ref,args,ctx),
-  push: (ref,value,ctx) => jb.studio.compsRefHandler.push(ref,value,ctx),
-  merge: (ref,value,ctx) => jb.studio.compsRefHandler.merge(ref,value,ctx),
-  isRef: ref => jb.studio.compsRefHandler.isRef(ref),
-  asRef: obj => jb.studio.compsRefHandler.asRef(obj),
-  //refreshRef: ref => jb.studio.compsRefHandler.refresh(ref),
+  val: v => jb.watchableComps.handler.val(v),
+  writeValue: (ref,value,ctx) => jb.watchableComps.handler.writeValue(ref,value,ctx),
+  objectProperty: (obj,prop) => jb.watchableComps.handler.objectProperty(obj,prop),
+  splice: (ref,args,ctx) => jb.watchableComps.handler.splice(ref,args,ctx),
+  push: (ref,value,ctx) => jb.watchableComps.handler.push(ref,value,ctx),
+  merge: (ref,value,ctx) => jb.watchableComps.handler.merge(ref,value,ctx),
+  isRef: ref => jb.watchableComps.handler.isRef(ref),
+  asRef: obj => jb.watchableComps.handler.asRef(obj),
+  //refreshRef: ref => jb.watchableComps.handler.refresh(ref),
   refOfPath: (path,silent) => {
 		const _path = path.split('~')
-		jb.studio.compsRefHandler.makeWatchable && jb.studio.compsRefHandler.makeWatchable(_path[0])
-		const ref = jb.studio.compsRefHandler.refOfPath(_path,silent)
+		jb.watchableComps.handler.makeWatchable && jb.watchableComps.handler.makeWatchable(_path[0])
+		const ref = jb.watchableComps.handler.refOfPath(_path,silent)
 		if (!ref) return
-		ref.jbToUse = jb.studio.previewjb
+		ref.jbToUse = jb
 		return ref
   },
   parentPath: path => path.split('~').slice(0,-1).join('~'),
   parents: path => path.split('~').reduce((acc,last,i) => acc.concat(i ? [acc[acc.length-1],last].join('~') : last),[]).reverse(),
-  valOfPath: path => jb.path(jb.studio.previewjb.comps,path.split('~')),
+  valOfPath: path => jb.path(jb.comps,path.split('~')),
   compNameOfPath: (path,silent) => {
     if (path.indexOf('~') == -1)
       return 'jbComponent'
@@ -113,8 +63,8 @@ jb.extension('studio', 'path', {
   	return jb.utils.compName(prof) || jb.utils.compName(prof,jb.studio.paramDef(path))
   },
   paramDef: path => {
-	if (!jb.studio.parentPath(path)) // no param def for root
-		return;
+	if (!jb.studio.parentPath(path))
+		return { type: jb.path(jb.comps[path],'type')};
 	if (!isNaN(Number(path.split('~').pop()))) // array elements
 		path = jb.studio.parentPath(path);
 	// const parent_prof = jb.studio.valOfPath(jb.studio.parentPath(path),true);
@@ -129,8 +79,8 @@ jb.extension('studio', 'path', {
   compOfPath: (path,silent) => jb.studio.getComp(jb.studio.compNameOfPath(path,silent)),
   paramsOfPath: (path,silent) => jb.utils.compParams(jb.studio.compOfPath(path,silent)),
   writeValueOfPath: (path,value,ctx) => jb.studio.writeValue(jb.studio.refOfPath(path),value,ctx),
-  getComp: id => jb.studio.previewjb.comps[id],
-  compAsStr: id => jb.utils.prettyPrintComp(id,jb.studio.getComp(id),{comps: jb.studio.previewjb.comps}),
+  getComp: id => jb.comps[id],
+  compAsStr: id => jb.utils.prettyPrintComp(id,jb.studio.getComp(id)),
   isStudioCmp: id => jb.path(jb.comps,[id,jb.core.project]) == 'studio'
 })
 
@@ -163,11 +113,10 @@ jb.extension('studio', {
 		// if (jb.studio.paramTypeOfPath(path) == 'data')
 		// 	return jb.studio.writeValueOfPath(path,'')
 		const param = jb.studio.paramDef(path)
-		let result = param.defaultValue || {$: ''}
-		if (jb.studio.paramTypeOfPath(path).indexOf('data') != -1)
-			result = ''
-		if ((param.type ||'').indexOf('[') != -1)
-			result = []
+		const paramType = jb.studio.paramTypeOfPath(path)
+		const result = param.defaultValue ? JSON.parse(JSON.stringify(param.defaultValue))
+			: (paramType.indexOf('data') != -1 || jb.frame.jbInvscode) ? '' : {$: ''}
+		
 		jb.studio.writeValueOfPath(path,result,srcCtx)
 	},
 	clone(profile) {
@@ -261,7 +210,7 @@ jb.extension('studio', {
 			if (index === undefined)
 				jb.studio.push(jb.studio.refOfPath(path),[toAdd],srcCtx)
 			else
-				jb.studio.splice(jb.studio.refOfPath(path),[[val.length,0,toAdd]],srcCtx)
+				jb.studio.splice(jb.studio.refOfPath(path),[[index,0,toAdd]],srcCtx)
 		}
 		else if (!val) {
 			jb.studio.writeValueOfPath(path,toAdd,srcCtx)
@@ -377,40 +326,38 @@ jb.component('studio.getOrCreateCompInArray', {
 			return `${path}~${existingFeature}`
 		  } else {
 			const length = arrayVal.length
-			jb.push(arrayRef,{$: compName},ctx)
+			jb.db.push(arrayRef,{$: compName},ctx)
 			return `${path}~${length}`
 		  }
 		}
 	}
 })
 
-jb.component('studio.writableCompsService', {
-	type: 'service',
-	impl: () => ({ init: 
-		() => jb.studio.initLocalCompsRefHandler(jb.studio.compsRefOfjbm(jb), {compIdAsReferred: '', initUIObserver: true} )
-	})
-})
+jb.component('studio.isCssPath', {
+    type: 'boolean',
+    description: 'check if the script will change only css and not html',
+    params: [
+        {id: 'path'}
+    ],
+    impl: (ctx, path) => {
+        const compPath = pathOfCssFeature(path)
+        return compPath && (jb.studio.compNameOfPath(compPath) || '').match(/^(css|layout)/)
 
-jb.component('studio.initLocalCompsRefHandler', {
-  type: 'action',
-  params: [
-    {id: 'compIdAsReferred', as: 'string', description: 'comp to make watchable' },
-    {id: 'initUIObserver', as: 'boolean', description: 'enable watchRef on comps' },
-    {id: 'compsRefId', as: 'string', defaultValue: 'comps'},
-  ],
-  impl: ({}, compIdAsReferred,initUIObserver,compsRefId) =>
-	jb.studio.initLocalCompsRefHandler(jb.studio.compsRefOfjbm(jb, {historyWin: 5, compsRefId }), {compIdAsReferred, initUIObserver} )
+        function pathOfCssFeature(path) {
+            const featureIndex = path.lastIndexOf('features')
+            if (featureIndex == -1) {
+              const layoutIndex = path.lastIndexOf('layout')
+              return layoutIndex != -1 && path.slice(0,layoutIndex+1).join('~')
+            }
+            const array = Array.isArray(jb.studio.valOfPath(path.slice(0,featureIndex+1).join('~')))
+            return path.slice(0,featureIndex+(array?2:1)).join('~')
+        }
+    }
 })
 
 jb.component('jbm.vDebugger', {
     type: 'jbm',
-    impl: pipe(
-        remote.action(runActions(
-			studio.initLocalCompsRefHandler(),
-			() => jb.studio.previewjb = jb.parent
-		), jbm.child('vDebugger')),
-        jbm.child('vDebugger')
-    )
+    impl: jbm.child('vDebugger', startup.codeLoaderServer('studio'))
 })
 ;
 
@@ -496,7 +443,7 @@ jb.component('nb.control', {
 
         group({
             controls: studio.jbEditorInteliTree('%$path%~control'),
-            features: studio.jbEditorContainer('comp-in-jb-editor')
+            //features: studio.jbEditorContainer('comp-in-jb-editor')
         }))
 })
 
@@ -509,14 +456,7 @@ jb.component('nb.data', {
     ],
     impl: studio.notebookElem(text('%$value%'), studio.jbEditor('%$path%~value') )
 })
-
-jb.component('nb.javascript', {
-    type: 'nb.elem',
-    params: [
-        {id: 'code', as: 'string'}
-    ],
-    impl: studio.notebookElem(nb.evalCode('%$code%'), studio.editableSource('%$path%~code') )
-});
+;
 
 
 };

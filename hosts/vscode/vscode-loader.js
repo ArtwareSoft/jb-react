@@ -26,7 +26,7 @@ function loadCodeLoaderServer() {
     try {
         const loaderCode = fs.readFileSync(`${jbBaseUrl}/src/loader/jb-loader.js`) + '\n//# sourceURL=jb-loader.js'
         vm.runInThisContext(loaderCode)
-        return jb_codeLoaderServer('vscode', { projects: ['studio'], loadFileFunc, getAllCodeFunc })
+        return jbInit('vscode', { projects: ['studio'], loadFileFunc, fileSymbolsFunc })
     } catch (e) {
         vscodeNS.window.showErrorMessage(`error loading jb-loader: ${JSON.stringify(e || '')}`)
     }
@@ -42,7 +42,7 @@ function loadFileFunc(url) {
     return Promise.resolve()
 }
 
-function getAllCodeFunc(path, _include, _exclude) {
+function fileSymbolsFunc(path, _include, _exclude) {
     const include = _include && new RegExp(_include)
     const exclude = _exclude && new RegExp(_exclude)
     return Promise.resolve(getFilesInDir(path).filter(f => f.match(/\.js/)).map(path => fileContent(path)))
@@ -70,7 +70,7 @@ function getAllCodeFunc(path, _include, _exclude) {
 }
 
 async function loadProjectsCode(projects) {
-    const projectsCode = await projects.reduce( async (acc,project) => [...await acc, ...await getAllCodeFunc(`projects/${project}`)], [])
-    await jb_evalCode(projectsCode,{jb, jb_loadFile: loadFileFunc})
+    const projectsCode = await projects.reduce( async (acc,project) => [...await acc, ...await fileSymbolsFunc(`projects/${project}`)], [])
+    await jbSupervisedLoad(projectsCode,{jb, jb_loadFile: loadFileFunc})
 }
 

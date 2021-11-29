@@ -239,9 +239,15 @@ const base_get_handlers = {
     const htmlFileName = fs.existsSync(path) ? path : `${projectDirectory(project)}/index.html`
     return file_type_handlers.html(req,res,htmlFileName);
   }
-};
+}
 
 const op_get_handlers = {
+    createJbm: (req,res,path) => {
+      const params = ['clientUri','modules','treeShake','spyParam']
+      const servlet = child.spawn('node',['./node-servlet.js', ...params.map(p=>getURLParam(req,p) && `-${p}:${getURLParam(req,p)}`).filter(x=>x)],{cwd: 'hosts/node'})
+      res.setHeader('Content-Type', 'application/json; charset=utf8')
+      servlet.stdout.on('data', data => res.end(data))
+    },
     runCmd: function(req,res,path) {
       if (!settings.allowCmd) return endWithFailure(res,'no permission to run cmd. allowCmd in jbart.json');
 
@@ -307,7 +313,7 @@ const op_get_handlers = {
         }
       });
     },
-    getAllCode: function(req,res) {
+    fileSymbols: function(req,res) {
       const path = getURLParam(req,'path')
       const include = getURLParam(req,'include') && new RegExp(getURLParam(req,'include'))
       const exclude = getURLParam(req,'exclude') && new RegExp(getURLParam(req,'exclude'))
@@ -524,9 +530,12 @@ function getProcessArgument(argName) {
   return '';
 }
 
-http.createServer(serve).listen(settings.port);
+http.createServer(serve).listen(settings.port)
+http.createServer(serve).listen(settings.ports.nodeContainer)
 
 if (process.cwd().indexOf('jb-react') != -1)
   console.log(`hello-world url: http://localhost:${settings.port}/project/studio/helloWorld`)
 else
   console.log(`studio url: http://localhost:${settings.port}/studio-bin`)
+
+console.log(`nodeContainer url: http://localhost:${settings.ports.nodeContainer}/?op=createJbm&clientUri=mukki`)

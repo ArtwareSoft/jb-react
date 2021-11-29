@@ -26,14 +26,28 @@ jb.component('remote.operator', {
         if (!jbm)
             return jb.logError('remote.operator - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
         const stripedRx = jbm.callbag ? rx : jb.remoteCtx.stripFunction(rx)
+        const profText = jb.utils.prettyPrint(rx.profile)
+        let counter = 0
+        const varsMap = {}
+        const cleanDataObjVars = jb.callbag.map(dataObj => {
+            if (typeof dataObj != 'object' || !dataObj.vars) return dataObj
+            const vars = { ...jb.objFromEntries(jb.entries(dataObj.vars).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))), messageId: ++counter } 
+            varsMap[counter] = dataObj.vars
+            return { data: dataObj.data, vars}
+        })
+        const restoreDataObjVars = jb.callbag.map(dataObj => {
+            const origVars = varsMap[dataObj.vars.messageId] 
+            varsMap[dataObj.messageId] = null
+            return {data: dataObj.data, vars: Object.assign(origVars,dataObj.vars) }
+        })
+
         if (jb.utils.isPromise(jbm)) {
             jb.log('jbm as promise in remote operator, adding request buffer', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
-            return source => {
-                const buffer = jb.callbag.replay(5)(source)
-                return jb.callbag.pipe(jb.callbag.fromPromise(jbm),jb.callbag.concatMap(_jbm=> _jbm.createCalllbagOperator(stripedRx)(buffer)))
-            }
+            return source => jb.callbag.pipe(jb.callbag.fromPromise(jbm),
+                    jb.callbag.concatMap(_jbm=> jb.callbag.pipe(
+                        source, jb.callbag.replay(5), cleanDataObjVars, _jbm.createCallbagOperator(stripedRx), restoreDataObjVars)))
         }
-        return jbm.createCalllbagOperator(stripedRx)
+        return source => jb.callbag.pipe(source, cleanDataObjVars, jbm.createCallbagOperator(stripedRx), restoreDataObjVars)
     }
 })
 

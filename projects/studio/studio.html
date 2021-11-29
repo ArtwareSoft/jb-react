@@ -15,7 +15,7 @@
 <body style="margin:0">
 <div id="main" style="background-color: var(--jb-editor-background);width:1280px; margin-left: 2px"> </div>
 <script>
-	jb_codeLoaderServer('studio',{ projects: ['studio',location.pathname.split('/')[3]] }).then(()=>{
+	jbInit('studio',{ projects: ['studio',location.pathname.split('/')[3]] }).then(()=>{
     jb.exec(defaultTheme()),
     jb.spy.initSpyByUrl && jb.spy.initSpyByUrl()
     jb.ui.renderWidget(({$: 'studio.main'}), main)

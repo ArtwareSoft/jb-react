@@ -4,7 +4,7 @@ interface jbm : {
      parent : jbm // null means root
      remoteExec(profile: any ,{timeout,oneway}) : Promise | void
      createCallbagSource(stripped ctx of cb_source) : cb
-     createCalllbagOperator(stripped ctx of cb_operator) : (source => cb)
+     createCallbagOperator(stripped ctx of cb_operator, {profText}) : (source => cb)
 }
 jbm interface can be implemented on the actual jb object or a jbm proxy via port
 
@@ -101,7 +101,7 @@ jb.extension('jbm', {
             ports: {},
             remoteExec: sctx => jb.codeLoader.bringMissingCode(sctx).then(()=>jb.remoteCtx.deStrip(sctx)()),
             createCallbagSource: sctx => jb.remoteCtx.deStrip(sctx)(),
-            createCalllbagOperator: sctx => jb.remoteCtx.deStrip(sctx)(),
+            createCallbagOperator: sctx => jb.remoteCtx.deStrip(sctx)(),
         })
         return { childJbms: {}, networkPeers: {}, notifyChildReady: {} }
     },
@@ -121,22 +121,6 @@ jb.extension('jbm', {
         jb.ports[to] = port
         return port
     },
-    portFromNodeSocket(socket,to,options) {
-        if (jb.ports[to]) return jb.ports[to]
-        const from = jb.uri
-        const port = {
-            socket, from, to,
-            postMessage: _m => {
-                const m = {from, to,..._m}
-                jb.log(`remote sent from ${from} to ${to}`,{m})
-                socket.send(m) 
-            },
-            onMessage: { addListener: handler => socket.on('message', m => jb.net.handleOrRouteMsg(from,to,handler,m,options)) },
-            onDisconnect: { addListener: handler => { port.disconnectHandler = handler} }
-        }
-        jb.ports[to] = port
-        return port
-    },    
     extendPortToJbmProxy(port,{doNotinitCommandListener} = {}) {
         if (port && !port.createCalllbagSource) {
             Object.assign(port, {
@@ -146,7 +130,7 @@ jb.extension('jbm', {
                     port.postMessage({$:'CB.createSource', remoteRun, cbId })
                     return (t,d) => outboundMsg({cbId,t,d})
                 },
-                createCalllbagOperator(remoteRun) {
+                createCallbagOperator(remoteRun) {
                     return source => {
                         const sourceId = jb.cbHandler.addToLookup(Object.assign(source,{remoteRun}))
                         const cbId = jb.cbHandler.newId()
@@ -279,9 +263,9 @@ jb.component('startup.codeLoaderServer', {
     ],
     impl: ({vars}, projects, init) => `(function() { 
 jb_modules = { core: ${JSON.stringify(jb_modules.core)} };
-${jb_codeLoaderServer.toString()}
-${jb_evalCode.toString()}
-return jb_codeLoaderServer('${vars.uri}',${JSON.stringify({projects, baseUrl: vars.baseUrl, multipleInFrame: vars.multipleJbmsInFrame})})
+${jbInit.toString()}
+${jbSupervisedLoad.toString()}
+return jbInit('${vars.uri}',${JSON.stringify({projects, baseUrl: vars.baseUrl, multipleInFrame: vars.multipleJbmsInFrame})})
     .then(jb => { jb.exec(${JSON.stringify(init.profile || {})}); return jb })
 })()`
 })
@@ -320,8 +304,8 @@ jb.component('jbm.worker', {
         const workerCode = `
 jbInWorker = true
 jb_modules = { core: ${JSON.stringify(jb_modules.core)} };
-${jb_codeLoaderServer.toString()}
-${jb_evalCode.toString()}
+${jbInit.toString()}
+${jbSupervisedLoad.toString()}
 function jb_loadFile(url, baseUrl) { 
     baseUrl = baseUrl || location.origin || ''
     return Promise.resolve(importScripts(baseUrl+url)) 
@@ -437,27 +421,6 @@ jb.component('jbm.byUri', {
             return [jb.parent, ...Object.values(jb.jbm.childJbms), ...Object.values(jb.jbm.networkPeers)].filter(x=>x).find(x=>x.uri == uri)
         }
     }
-})
-
-jb.component('jbm.remoteNode', {
-    type: 'jbm',
-    params: [
-        {id: 'containerHost', as: 'string', dynamic: true, default: 'localhost'},
-        {id: 'init', type: 'action', dynamic: true}
-    ],
-    impl: ({},containerHost) => new Promise( (resolve,reject) => {
-        jb.websocket.connectAsClient('nodeContainer', containerHost, port=> {
-            port.onMessage.addListener(m => {
-                if (m.$ == 'ready') {
-                    port.from = uri
-                    port.to = m.serverUri
-                    const remoteNode = jb.jbm.extendPortToJbmProxy(port)
-                    Promise.resolve(init(ctx.setVar('jbm',remoteNode))).then(resolve(remoteNode))
-                }
-            })
-            port.send({$: 'createJbm', clientUri: uri})
-        })
-    })
 })
 
 jb.component('jbm.self', {

@@ -24,7 +24,7 @@ var jb_modules = {
     'src/misc/rx-comps.js',
   ],
   watchable: [
-    'src/ui/watchable/watchable.js',
+    'src/misc/watchable.js',
   ],
   'ui-common-css': [
     'css/font.css',
@@ -32,7 +32,7 @@ var jb_modules = {
   ],
   'ui-common': [
     'src/misc/rx-comps.js',
-    'src/ui/watchable/watchable.js',
+    'src/misc/watchable.js',
     'src/ui/core/jb-react.js',
     'src/ui/core/vdom.js',
     'src/ui/core/ui-comp.js',
@@ -108,7 +108,7 @@ var jb_modules = {
     'node_modules/codemirror/addon/mode/overlay.js',
     'node_modules/codemirror/addon/display/placeholder.js',
     'node_modules/codemirror/addon/selection/mark-selection.js',
-    'node_modules/codemirror/addon/formatting/formatting.js',
+//    'node_modules/codemirror/addon/formatting/formatting.js',
     'node_modules/codemirror/mode/gfm/gfm.js',
     'node_modules/codemirror/lib/util/formatting.js',
     'dist/mark.js',
@@ -135,7 +135,7 @@ var jb_modules = {
     'node_modules/codemirror/mode/jsx/jsx.js',
     'node_modules/codemirror/mode/htmlmixed/htmlmixed.js',
     'node_modules/codemirror/addon/hint/show-hint.js',
-    'node_modules/codemirror/addon/formatting/formatting.js',
+//    'node_modules/codemirror/addon/formatting/formatting.js',
 
     'node_modules/codemirror/addon/dialog/dialog.js',
     'node_modules/codemirror/addon/search/searchcursor.js',
@@ -221,18 +221,19 @@ var jb_modules = {
   'parsing': [ 'src/misc/parsing.js' ],
   'notebook-worker': [ 'projects/studio/studio-path.js','src/ui/notebook/notebook-common.js'],
   studio: [
-    'dist/material.js', 'src/ui/watchable/text-editor.js',
+    'dist/material.js', 
+    'src/misc/editor/code-editor.js',
     'src/misc/parsing.js',
-    'styles', 'path','utils', 'preview','popups','url','model-components', 'completion', 'undo','tgp-model', 'new-profile',
+    'styles', 'path','utils', 'preview','popups','url','model-components', 'completion','tgp-model', 'new-profile',
     'suggestions', 'properties','jb-editor-styles','edit-source','jb-editor','pick','h-to-jsx','style-editor',
-    'references','properties-menu','save','open-project','tree',
+    'properties-menu','save','open-project','tree',
     'data-browse', 'new-project','event-tracker', 'comp-inspector','toolbar','search', 'main', 'component-header', 
     'hosts', 'probe', 'watch-ref-viewer', 'content-editable', 'position-thumbs', 'html-to-ctrl', 'pick-icon', 
     'inplace-edit', 'grid-editor', 'sizes-editor', 'refactor', 'vscode', 'pptr', 'chrome-debugger',
 
     'src/ui/notebook/notebook-common.js', 'notebook',
   ],
-})
+}
 
 const JBART_DIR = __dirname + '/../';
 
@@ -272,7 +273,7 @@ const studioFiles = filesOfModules('common,ui-common,ui-tree,dragula,codemirror,
     .concat(jb_modules.studio.map(file => file.match(/\//) ? file : 'projects/studio/studio-' + file + '.js'));
 const studioCssFiles = ['/css/styles.css','css/font.css','/projects/studio/css/studio.css']
   .concat(filesOfModules('codemirror-css,material-css')).filter(x=>x.match(/.css$/));
-const vDebuggerFiles = [...filesOfModules('common,ui-common,ui-tree,remote,remote-widget,codemirror-backend'), '/src/ui/tree/table-tree.js','src/ui/watchable/text-editor.js',
+const vDebuggerFiles = [...filesOfModules('common,ui-common,ui-tree,remote,remote-widget,codemirror-backend'), '/src/ui/tree/table-tree.js',
  ...['path','model-components','event-tracker','comp-inspector'].map(x=>`/projects/studio/studio-${x}.js`)]
 
 

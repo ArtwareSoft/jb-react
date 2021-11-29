@@ -1,9 +1,6 @@
 if (typeof jbmFactory == 'undefined') jbmFactory = {};
 jbmFactory['rx'] = function(jb) {
   jb.importAllMacros && eval(jb.importAllMacros());
-// var { If, call, rx,sink,source } = jb.ns('rx,sink,source')
-// ************ sources
-
 jb.component('source.data', {
   type: 'rx',
   params: [
@@ -72,7 +69,8 @@ jb.component('rx.pipe', {
   params: [
     {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
   ],
-  impl: (ctx,elems) => jb.callbag.pipe(...jb.callbag.injectSniffers(elems(ctx).filter(x=>x),ctx))
+  impl: (ctx,elems) => 
+    jb.callbag.pipe(...jb.callbag.injectSniffers(elems(ctx).filter(x=>x),ctx))
 })
 
 jb.component('rx.merge', {
@@ -90,11 +88,21 @@ jb.component('rx.merge', {
 jb.component('rx.innerPipe', {
   type: 'rx',
   category: 'operator',
-  description: 'inner reactive pipeline without source',
+  description: 'composite operator, inner reactive pipeline without source',
   params: [
     {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, templateValue: []},
   ],
   impl: (ctx,elems) => source => jb.callbag.pipe(source, ...elems)
+})
+
+jb.component('rx.fork', {
+  type: 'rx',
+  category: 'operator',
+  description: 'separate operator with same source data',
+  params: [
+    {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, templateValue: []},
+  ],
+  impl: (ctx,elems) => jb.callbag.fork(...elems)
 })
 
 jb.component('rx.startWith', {
@@ -110,7 +118,7 @@ jb.component('rx.startWith', {
 jb.component('rx.var', {
   type: 'rx',
   category: 'operator',
-  description: 'define a variable that can be used later in the pipe',
+  description: 'define an immutable variable that can be used later in the pipe',
   params: [
     {id: 'name', as: 'string', dynamic: true, mandatory: true, description: 'if empty, does nothing'},
     {id: 'value', dynamic: true, defaultValue: '%%', mandatory: true},
@@ -119,6 +127,23 @@ jb.component('rx.var', {
     if (start != 0) return 
     return source(0, function Var(t, d) {
       sink(t, t === 1 ? d && {data: d.data, vars: {...d.vars, [name()]: value(d)}} : d)
+    })
+  }, null)
+})
+
+jb.component('rx.resource', {
+  type: 'rx',
+  category: 'operator',
+  description: 'define a static mutable variable that can be used later in the pipe',
+  params: [
+    {id: 'name', as: 'string', dynamic: true, mandatory: true, description: 'if empty, does nothing'},
+    {id: 'value', dynamic: true, mandatory: true},
+  ],
+  impl: If('%$name%', (ctx,{},{name,value}) => source => (start, sink) => {
+    if (start != 0) return
+    const val = value()
+    return source(0, function Var(t, d) {
+      sink(t, t === 1 ? d && {data: d.data, vars: {...d.vars, [name()]: val}} : d)
     })
   }, null)
 })
@@ -548,6 +573,51 @@ jb.component('action.subjectError', {
         {id: 'error', dynamic: true, mandatory: true },
     ],
     impl: (ctx,subject,error) => subject.trigger.error(error())
+})
+
+// ********** queue 
+jb.component('rx.queue', {
+  type: 'data',
+  description: 'message queue',
+  category: 'variable',
+  params: [
+      {id: 'items', as: 'array' },
+  ],
+  impl: (ctx,items) => ({ items: items.slice(0), subject: jb.callbag.subject(), mkmk: 5 }) 
+})
+
+jb.component('source.queue', {
+  type: 'rx',
+  params: [
+      {id: 'queue', mandatory: true },
+  ],
+  impl: rx.merge(source.data('%$queue/items%'), '%$queue/subject%')
+})
+
+jb.component('action.addToQueue', {
+  type: 'action',
+  params: [
+      {id: 'queue', mandatory: true },
+      {id: 'item', dynamic: true, defaultValue: '%%' },
+  ],
+  impl: (ctx,queue,item) => {
+    const toAdd = item(ctx)
+    queue.items.push(toAdd)
+    queue.subject.next(ctx.dataObj(toAdd)) 
+  }
+})
+
+jb.component('action.removeFromQueue', {
+  type: 'action',
+  params: [
+      {id: 'queue', mandatory: true },
+      {id: 'item', dynamic: true, defaultValue: '%%' },
+  ],
+  impl: (ctx,queue,item) => {
+		const index = queue.items.indexOf(item(ctx))
+		if (index != -1)
+      queue.items.splice(index,1)
+  }
 })
 ;
 

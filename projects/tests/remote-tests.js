@@ -14,7 +14,6 @@
 //     })))
 // })
 
-
 jb.component('remoteTest.childJbm', {
   impl: dataTest({
     calculate: pipe(jbm.child('tst'), remote.data('hello', '%%')),
@@ -246,6 +245,34 @@ jb.component('remoteTest.remoteParam', {
           rx.take(1)
     ),
     expectedResult: equals(5)
+  })
+})
+
+jb.component('remoteTest.remoteVar', {
+  impl: dataTest({
+    timeout: 5000,
+      calculate: rx.pipe(
+          source.data(1),
+          rx.var('retVal',5),
+          remote.operator(rx.map('%$retVal%'), jbm.worker()),
+          rx.take(1)
+    ),
+    expectedResult: equals(5)
+  })
+})
+
+jb.component('remoteTest.remoteVarCleanAndRestore', {
+  impl: dataTest({
+    timeout: 5000,
+      calculate: rx.pipe(
+          source.data(1),
+          rx.var('notPassed',5),
+          remote.operator(rx.map(ctx=> ctx.vars['not'+'Passed'] || 3), jbm.worker()),
+          rx.log('test 0'),
+          rx.map('%%-%$notPassed%'),
+          rx.take(1)
+    ),
+    expectedResult: equals('3-5')
   })
 })
 
@@ -608,6 +635,40 @@ jb.component('eventTracker.uiTest.vDebugger', {
   })
 })
 
+jb.component('remoteTest.dispatcher.child', {
+  impl: dataTest({
+    timeout: 1000,
+    runBefore: jbm.child('dispatch'),
+    calculate: pipe(rx.pipe(
+        source.data(list(1,2)), 
+        remote.dispatch('a-%%', dispatch.singleJbm(jbm.byUri('tests•dispatch'))),
+        rx.take(2)
+      ), join(',')),
+    expectedResult: equals('a-1,a-2')
+  })
+})
+
+jb.component('remoteTest.dispatcher.worker', {
+  impl: dataTest({
+    timeout: 1000,
+    runBefore: jbm.worker('dispatchW'),
+    calculate: pipe(rx.pipe(
+        source.data(list(1,2)), 
+        remote.dispatch('a-%%', dispatch.singleJbm(jbm.byUri('tests•dispatchW'))),
+        rx.take(2)
+      ), join(',')),
+    expectedResult: equals('a-1,a-2')
+  })
+})
+
+jb.component('remoteTest.nodeContainer', {
+  impl: dataTest({
+    calculate: pipe(jbm.nodeContainer(), remote.data('hello', '%%')),
+    expectedResult: equals('hello'),
+    timeout: 3000
+  })
+})
+
 // jb.component('remoteWidgetTest.recoverAfterError', {
 //   impl: uiTest({
 //     timeout: 3000,
@@ -627,4 +688,43 @@ jb.component('eventTracker.uiTest.vDebugger', {
 //     expectedResult: contains('delta error true')
 //   })
 // })
+
+jb.component('remoteTest.nodeContainer.runTest', {
+  impl: dataTest({
+    vars: [
+//      Var('testsToRun',list('dataTest.ctx.expOfRefWithBooleanType')),
+      Var('testsToRun',list('dataTest.join','dataTest.ctx.expOfRefWithBooleanType')),
+      Var('servlet', jbm.nodeContainer(list('studio','tests')))
+    ],
+    calculate: pipe(rx.pipe( 
+      source.data('%$testsToRun%'),
+      rx.log('test'),
+      remote.operator(rx.mapPromise(async ({data}) => {
+        return jb.test.runOneTest(data) 
+      }), '%$servlet%'),
+      rx.log('test'),
+      ),'%success%',
+      join(',')),    
+
+    expectedResult: equals('true,true'),
+    timeout: 3000
+  })
+})
+
+jb.component('remoteTest.testResults', {
+  impl: dataTest({
+    vars: [
+//      Var('testsToRun',list('dataTest.ctx.expOfRefWithBooleanType')),
+      Var('testsToRun',list('dataTest.join','dataTest.ctx.expOfRefWithBooleanType')),
+      Var('servlet', jbm.nodeContainer(list('studio','tests')))
+    ],
+    calculate: rx.pipe( 
+      source.testsResults('%$testsToRun%','%$servlet%'),
+      rx.log('test result')
+    ),
+    expectedResult: equals('true,true'),
+    timeout: 3000
+  })
+})
+
 

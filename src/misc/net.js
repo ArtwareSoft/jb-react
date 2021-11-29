@@ -7,7 +7,7 @@ jb.component('http.get', {
     {id: 'useProxy', as: 'string', options: ',localhost-server,cloud'}
   ],
   impl: (ctx,_url,_json,useProxy) => {
-    jb.urlProxy = jb.urlProxy || (typeof window !== 'undefined' && location.href.match(/^[^:]*/)[0] || 'http') + '://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
+    jb.urlProxy = jb.urlProxy || (typeof window !== 'undefined' && jb.frame.location.href.match(/^[^:]*/)[0] || 'http') + '://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
     jb.cacheKiller = jb.cacheKiller || 1
     if (ctx.probe)
 			return jb.http_get_cache[_url];
@@ -18,7 +18,7 @@ jb.component('http.get', {
     else if (useProxy == 'cloud')
       url = `//jbart5-server.appspot.com/?op=fetch&req={url:"${url}"}&cacheKiller=${jb.cacheKiller++}`
 
-		return fetch(url, {mode: 'cors'})
+		return jb.frame.fetch(url, {mode: 'cors'})
 			  .then(r => json ? r.json() : r.text())
 				.then(res=> jb.http_get_cache ? (jb.http_get_cache[url] = res) : res)
 			  .catch(e => jb.logException(e,'http.get',{ctx}) || [])
@@ -45,7 +45,7 @@ jb.component('http.fetch', {
       body: (typeof body == 'string' || body == null) ? body : JSON.stringify(body)
     }
 
-    const reqStr = encodeURIComponent(JSON.stringify(reqObj))
+    const reqStr = jb.frame.encodeURIComponent(JSON.stringify(reqObj))
 		if (ctx.probe)
 			return jb.http_get_cache[reqStr];
 
@@ -56,20 +56,9 @@ jb.component('http.fetch', {
     else if (proxy == 'cloud-test-local')
       reqObj.url = `http://localhost:8080/fetch?req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
 
-    return fetch(reqObj.url, proxy ? {mode: 'cors'} : reqObj)
+    return jb.frame.fetch(reqObj.url, proxy ? {mode: 'cors'} : reqObj)
 			  .then(r => json ? r.json() : r.text())
 				.then(res=> jb.http_get_cache ? (jb.http_get_cache[reqStr] = res) : res)
 			  .catch(e => jb.logException(e,'http.fetch',{ctx}) || [])
 	}
-})
-
-jb.extension('websocket', {
-    connect(service,host,handler) {
-        if (jb.frame.jbInNode) {
-            const webSocketClient = new jb.frame.require('websocket').client()
-            webSocketClient.on('connectFailed', err => log(`webSocketClient connectFailed : ${err.toString() }`))
-            webSocketClient.on('connect', socket => handler(jb.jbm. jb.jbm.portFromNodeSocket(socket,'')))
-            webSocketClient.connect(`ws://${host}:${settings.ports[service]}`, 'echo-protocol')    
-        }
-    }
 })
