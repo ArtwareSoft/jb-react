@@ -38,7 +38,7 @@ jb.component('remote.operator', {
         const restoreDataObjVars = jb.callbag.map(dataObj => {
             const origVars = varsMap[dataObj.vars.messageId] 
             varsMap[dataObj.messageId] = null
-            return {data: dataObj.data, vars: Object.assign(origVars,dataObj.vars) }
+            return origVars ? {data: dataObj.data, vars: Object.assign(origVars,dataObj.vars) } : dataObj
         })
 
         if (jb.utils.isPromise(jbm)) {

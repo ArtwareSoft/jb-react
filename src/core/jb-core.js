@@ -64,7 +64,6 @@ Object.assign(jb, {
       if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
         p.type = 'boolean'
     })
-    comp[jb.core.loadingPhase] = jb.frame.jbLoadingPhase
   },
   noSupervisedLoad: true
 })

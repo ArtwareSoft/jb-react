@@ -146,12 +146,12 @@ jb.component('jbm.vscodeWebView', {
 //     params: [
 //         {id: 'id', as: 'string' },
 //         {id: 'init' , type: 'action', dynamic: true },
-//         {id: 'startupCode', type: 'startupCode', dynamic: true, defaultValue: startup.treeShakeClient() },
+//         {id: 'initJbCode', type: 'initJbCode', dynamic: true, defaultValue: initJb.treeShakeClient() },
 //     ],    
-//     impl: (ctx,name,init,startupCode) => {
+//     impl: (ctx,name,init,initJbCode) => {
 //         if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
 //         const workerUri = `${jb.uri}•${name}`
-//         const code = startupCode(ctx.setVars({uri: workerUri, multipleJbmsInFrame: false}))
+//         const code = initJbCode(ctx.setVars({uri: workerUri, multipleJbmsInFrame: false}))
 //         const workerCode = `
 // global.jbInWorker = true
 // global.importScripts = global.require
@@ -168,7 +168,7 @@ jb.component('jbm.vscodeWebView', {
 // const { parentPort} = require('worker_threads')
 // jb.treeShakeJbm = jb.parent = jb.ports['${jb.uri}'] = jb.jbm.extendPortToJbmProxy(portFromWorkerToExt(parentPort,'${workerUri}','${jb.uri}'))
 // //jb.delay(3000).then(()=>{debugger})
-// //# sourceURL=${workerUri}-startup.js
+// //# sourceURL=${workerUri}-initJb.js
 // `
 //         const worker = new Worker(workerCode, {eval: true, stdout: true})
 //         worker.on('exit', e=> console.log('worker exit'))

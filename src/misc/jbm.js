@@ -255,36 +255,23 @@ jb.extension('jbm', {
     }
 })
 
-jb.component('startup.treeShakeServer', {
-    type: 'startupCode',
+jb.component('initJb.loadModules', {
+    type: 'initJbCode',
+    description: 'returns code that can be wrapped as Promise.resolve(${code}).then(jb=>...)',
     params: [
-        { id: 'projects' , as: 'array' },
-        { id: 'init' , type: 'action', dynamic: true },
+        { id: 'modules' , as: 'array' },
     ],
-    impl: ({vars}, projects, init) => `(function() { 
-jb_modules = { core: ${JSON.stringify(jb_modules.core)} };
-${jbInit.toString()}
-${jbSupervisedLoad.toString()}
-return jbInit('${vars.uri}',${JSON.stringify({projects, baseUrl: vars.baseUrl, multipleInFrame: vars.multipleJbmsInFrame})})
-    .then(jb => { jb.exec(${JSON.stringify(init.profile || {})}); return jb })
-})()`
+    impl: ({vars}, modules) => 
+    `jbInit('${vars.uri}',${JSON.stringify({projects: modules, baseUrl: vars.baseUrl, multipleInFrame: vars.multipleJbmsInFrame})})`
 })
 
-jb.component('startup.treeShakeClient', {
-    type: 'startupCode',
-    impl: ({vars}) => vars.multipleJbmsInFrame ? `(function () {
+jb.component('initJb.treeShakeClient', {
+    type: 'initJbCode',
+    impl: ({vars}) => `(() => {
 const jb = { uri: '${vars.uri}'}
-globalThis.jbLoadingPhase = 'libs'
 ${jb.treeShake.clientCode()};
-jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
-globalThis.jbLoadingPhase = 'appFiles'
 return jb
-})()
-` : `jb = { uri: '${vars.uri}'}
-jbLoadingPhase = 'libs'
-${jb.treeShake.clientCode()};
-spy = jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
-`
+})()`
 })
 
 jb.component('jbm.worker', {
@@ -292,15 +279,15 @@ jb.component('jbm.worker', {
     params: [
         {id: 'id', as: 'string', defaultValue: 'w1' },
         {id: 'init' , type: 'action', dynamic: true },
-        {id: 'startupCode', type: 'startupCode', dynamic: true, defaultValue: startup.treeShakeClient() },
+        {id: 'initJbCode', type: 'initJbCode', dynamic: true, defaultValue: initJb.treeShakeClient() },
         {id: 'networkPeer', as: 'boolean', description: 'used for testing' },
     ],    
-    impl: (ctx,name,init,startupCode,networkPeer) => {
+    impl: (ctx,name,init,initJbCodeF,networkPeer) => {
         const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
         if (childsOrNet[name]) return childsOrNet[name]
         const workerUri = networkPeer ? name : `${jb.uri}•${name}`
         const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
-        const code = startupCode(ctx.setVars({uri: workerUri, multipleJbmsInFrame: false}))
+        const initJbCode = initJbCodeF(ctx.setVars({uri: workerUri, multipleJbmsInFrame: false}))
         const workerCode = `
 jbInWorker = true
 jb_modules = { core: ${JSON.stringify(jb_modules.core)} };
@@ -310,15 +297,26 @@ function jb_loadFile(url, baseUrl) {
     baseUrl = baseUrl || location.origin || ''
     return Promise.resolve(importScripts(baseUrl+url)) 
 }
-${code};
-jb.treeShakeJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
-jbLoadingPhase = 'appFiles'
-//# sourceURL=${workerUri}-startup.js
+Promise.resolve(${initJbCode})
+    .then(jb => {
+        globalThis.jb = jb;
+        jb.treeShakeJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
+        self.postMessage({ $: 'workerReady' })
+    })
+//# sourceURL=${workerUri}-initJb.js
 `
         const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name, type: 'application/javascript'})))
-        childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
-        childsOrNet[name].worker = worker
-        const result = Promise.resolve(init(ctx.setVar('jbm',childsOrNet[name]))).then(()=>childsOrNet[name])
+        const result = new Promise(resolve=> {
+            worker.addEventListener('message', async function f1(m) {
+                if (m.data.$ == 'workerReady') {
+                    worker.removeEventListener('message',f1)
+                    childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
+                    childsOrNet[name].worker = worker
+                    await init(ctx.setVar('jbm',childsOrNet[name]))
+                    resolve(childsOrNet[name])
+                }
+            })
+        })
         result.uri = workerUri
         return result
     }
@@ -328,15 +326,15 @@ jb.component('jbm.child', {
   type: 'jbm',
   params: [
     {id: 'id', as: 'string', mandatory: true},
-    {id: 'startupCode', type: 'startupCode', dynamic: true, defaultValue: startup.treeShakeClient()},
+    {id: 'initJbCode', type: 'initJbCode', dynamic: true, defaultValue: initJb.treeShakeClient()},
     {id: 'init', type: 'action', dynamic: true}
   ],
-  impl: (ctx,name,startUpCode,init) => {
+  impl: (ctx,name,initJbCodeF,init) => {
         if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
         const childUri = `${jb.uri}•${name}`
-        const code = startUpCode(ctx.setVars({uri: childUri, multipleJbmsInFrame: true}))
-        const _child = jb.frame.eval(`${code}
-//# sourceURL=${childUri}-startup.js
+        const initJbCode = initJbCodeF(ctx.setVars({uri: childUri, multipleJbmsInFrame: true}))
+        const _child = jb.frame.eval(`${initJbCode}
+//# sourceURL=${childUri}-initJb.js
 `)
         jb.jbm.childJbms[name] = _child
         const result = Promise.resolve(_child).then(child=>{

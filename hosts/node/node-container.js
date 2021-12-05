@@ -1,6 +1,6 @@
 const fs = require('fs')
 const jbBaseUrl = __dirname.replace(/\\/g,'/').replace(/\/hosts\/node$/,'').replace(/\/bin\/jbman$/,'')
-const { log, getProcessArgument, jbGetJSFromUrl} = require(`${jbBaseUrl}/bin/utils.js`)
+const { log, getProcessArgument, jbGetJSFromUrl} = require(`${jbBaseUrl}/hosts/node/node-utils.js`)
 
 let settings = { verbose: getProcessArgument('verbose') }
 try {
@@ -18,15 +18,12 @@ process.on('message', m => {
 })
 
 async function run() {
-  global.jbInNode = true
-  const uri = `node${process.pid}`
+    const uri = `node${process.pid}`
   global.jb = { uri }
-  global.jbLoadingPhase = 'libs'
   await jbGetJSFromUrl(`http://localhost:${settings.ports.treeShake}/treeShake-client.js`)
   await jbGetJSFromUrl(`http://localhost:${settings.ports.treeShake}/jb-test.js?ids=-jbm.portFromNodeChildProcess`)
 
   spy = jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
-  global.jbLoadingPhase = 'appFiles'
 
   log('new node started')
   process.send({$: 'readyForInit', serverUri: uri})

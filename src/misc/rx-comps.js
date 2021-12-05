@@ -51,6 +51,14 @@ jb.component('source.promise', {
   impl: (ctx,promise) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromPromise(promise))
 })
 
+jb.component('source.promises', {
+  type: 'rx',
+  params: [
+    {id: 'promises', type: 'data[]', mandatory: true},
+  ],
+  impl: (ctx,promises) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromPromise(promises))
+})
+
 jb.component('source.interval', {
   type: 'rx',
   params: [

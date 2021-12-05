@@ -73,7 +73,7 @@ async function jbSupervisedLoad(loadedCode, {jb, jb_loadFile, baseUrl} = {}) {
   await loadedCode.map(x=>x.path).reduce((pr,url) => pr.then(()=> jb_loadFile(url,baseUrl,jb)), Promise.resolve())
   jb.treeShake.baseUrl = baseUrl
   await jb.initializeLibs(libs)
-  Object.values(jb.comps).forEach(comp => jb.macro.fixProfile(comp))
+  Object.keys(jb.comps).forEach(comp => jb.macro.fixProfile(jb.comps[comp],comp))
 }
 
 async function jb_treeShakeClient(uri,baseUrl) {
@@ -86,5 +86,7 @@ async function jb_treeShakeClient(uri,baseUrl) {
   await 'loader/code-loader,core/jb-common,misc/jb-callbag,misc/rx-comps,misc/pretty-print,misc/remote-context,misc/jbm,misc/remote,misc/net'.split(',').map(x=>`/src/${x}.js`)
     .reduce((pr,url)=> pr.then(() => jb_loadFile(url,baseUrl)), Promise.resolve())
   await jb.initializeLibs('core,callbag,utils,jbm,net,cbHandler,treeShake,websocket'.split(','))
-  Object.values(jb.comps).forEach(comp => jb.macro.fixProfile(comp))
+  Object.keys(jb.comps).forEach(comp => jb.macro.fixProfile(jb.comps[comp],comp))
 }
+
+if (typeof module != 'undefined') module.exports = { jbInit }

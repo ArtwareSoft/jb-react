@@ -15,7 +15,7 @@ var jb_modules = {
     'src/core/jb-expression.js',
     'src/core/db.js',
     'src/core/jb-macro.js',
-    'src/loader/code-loader.js',
+    'src/loader/tree-shake.js',
     'src/misc/spy.js',
     'src/core/jb-common.js',
     'src/misc/jb-callbag.js',

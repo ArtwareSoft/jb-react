@@ -20,7 +20,7 @@ jb.component('workerPreviewTest.basic', {
 })
 
 jb.component('workerPreviewTest.changeScript', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     renderDOM: true,
     timeout: 5000,
     runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
@@ -30,7 +30,12 @@ jb.component('workerPreviewTest.changeScript', {
         preview.remoteWidget()
       ],
     }),
-    action: runActions(
+    userInputRx: rx.pipe(
+      source.promise(uiAction.waitForSelector('[cmp-pt="text"]')),
+      rx.map(userInput.click()),
+    ),
+    checkResultRx: () => jb.ui.renderingUpdates,    
+    action1: runActions(
       uiAction.waitForSelector('[cmp-pt="text"]'),
       uiAction.click('button'),
       uiAction.waitForSelector('[cmp-ver="2"]'),
@@ -85,7 +90,7 @@ jb.component('workerPreviewTest.changeCss', {
 })
 
 jb.component('workerPreviewTest.suggestions', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     renderDOM: true,
     timeout: 5000,
     runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
@@ -95,7 +100,14 @@ jb.component('workerPreviewTest.suggestions', {
         studio.propertyPrimitive('sampleProject.main~impl~controls~text')
       ],
     }),
-    action: runActions(
+    checkResultRx: () => jb.ui.renderingUpdates,    
+    userInputRx: rx.pipe(
+      source.promise(uiAction.waitForSelector('[cmp-pt="text"]')),
+      rx.flatMap(source.data(list(
+        userInput.setText('hello %','input'),
+        userInput.keyboardEvent({ selector: 'input', type: 'keyup', keyCode: ()=> '%'.charCodeAt(0) }))))
+    ),
+    action1: runActions(
       uiAction.waitForSelector('[cmp-pt="text"]'),
       uiAction.waitForSelector('input'),
       uiAction.setText('hello %','input'),

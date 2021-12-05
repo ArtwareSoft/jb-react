@@ -29,6 +29,15 @@ jb.component('remoteTest.childWorker', {
   })
 })
 
+jb.component('remoteTest.childWorker.initJb.loadModules', {
+  impl: dataTest({
+    calculate: pipe(jbm.worker({id: 'itemlists', initJbCode: initJb.loadModules('itemlists')}), 
+      remote.data(pipeline({$: 'itemlists.manyItems', howMany: 3 },'%id%', join(',')), '%%')),
+    expectedResult: equals('1,2,3'),
+    timeout: 3000
+  })
+})
+
 jb.component('remoteTest.remote.data', {
   impl: dataTest({
     timeout: 3000,
@@ -704,8 +713,8 @@ jb.component('remoteTest.nodeContainer.runTest', {
       }), '%$servlet%'),
       rx.log('test'),
       ),'%success%',
-      join(',')),    
-
+      join(',')
+    ),
     expectedResult: equals('true,true'),
     timeout: 3000
   })
@@ -718,11 +727,13 @@ jb.component('remoteTest.testResults', {
       Var('testsToRun',list('dataTest.join','dataTest.ctx.expOfRefWithBooleanType')),
       Var('servlet', jbm.nodeContainer(list('studio','tests')))
     ],
-    calculate: rx.pipe( 
+    calculate: pipe(rx.pipe(
       source.testsResults('%$testsToRun%','%$servlet%'),
-      rx.log('test result')
-    ),
-    expectedResult: equals('true,true'),
+      rx.log('test')
+      ), '%id%-%started%-%success%',
+      join(',')
+    ),    
+    expectedResult: equals('dataTest.join-true-,dataTest.join--true,dataTest.ctx.expOfRefWithBooleanType-true-,dataTest.ctx.expOfRefWithBooleanType--true'),
     timeout: 3000
   })
 })

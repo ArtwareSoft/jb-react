@@ -2,9 +2,8 @@ const fs = require('fs')
 const http = require('http')
 const WebSocketServer = require('websocket').server
 const child = require('child_process')
-global.jbInNode = true
 const jbBaseUrl = __dirname.replace(/\\/g,'/').replace(/\/hosts\/node$/,'').replace(/\/bin\/jbman$/,'');
-const { log, getProcessArgument, getURLParam} = require(`${jbBaseUrl}/bin/utils.js`)
+const { log, getProcessArgument, getURLParam} = require(`${jbBaseUrl}/hosts/node/node-utils.js`)
 const nodeContainerUrl = `${jbBaseUrl}/hosts/node/node-container.js`
 
 let settings = { verbose: getProcessArgument('verbose') }

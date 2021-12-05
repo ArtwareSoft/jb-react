@@ -1,7 +1,8 @@
-//# jbLoadComponents:pipeline,xx
-codeLoaderServer --watchFiles
-  - reloadCode request
-runOneTest - cut show dependency to ui
+worker with loadModules - 'pipeline'
+
+fix studio layers
+  utils, abstractions, visual-comps, apps
+
 
 remote.dispatcher
   multiple data test - nodejs/ multiple nodejs

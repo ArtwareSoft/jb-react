@@ -448,24 +448,35 @@ jb.extension('callbag', {
       else if (elem.addListener) elem.addListener(event, handler, options)
       else throw new Error('cannot add listener to elem. No method found.')
   },
-  fromPromise: promise => (start, sink) => {
-      if (start !== 0) return
-      let ended = false
-      const onfulfilled = val => {
-        if (ended) return
-        sink(1, val)
-        if (ended) return
-        sink(2)
-      }
-      const onrejected = (err = new Error()) => {
-        if (ended) return
-        sink(2, err)
-      }
-      Promise.resolve(promise).then(onfulfilled, onrejected)
-      sink(0, function fromPromise(t, d) {
-        if (t === 2) ended = true
-      })
-  },
+  // fromPromise: promise => (start, sink) => {
+  //     if (start !== 0) return
+  //     let ended = false
+  //     const onfulfilled = val => {
+  //       if (ended) return
+  //       sink(1, val)
+  //       if (ended) return
+  //       sink(2)
+  //     }
+  //     const onrejected = (err = new Error()) => {
+  //       if (ended) return
+  //       sink(2, err)
+  //     }
+  //     Promise.resolve(promise).then(onfulfilled, onrejected)
+  //     sink(0, function fromPromise(t, d) {
+  //       if (t === 2) ended = true
+  //     })
+  // },
+  fromPromise: promises => (start, sink) => {
+    if (start !== 0) return
+    let endedBySink = false
+    jb.asArray(promises).reduce( (acc, pr) =>
+      acc.then(() => !endedBySink && Promise.resolve(pr).then(res => sink(1,res)).catch(err=>sink(2,err)) )
+    , Promise.resolve()).then(() => !endedBySink && sink(2))
+
+    sink(0, function fromPromises(t, d) {
+        if (t === 2) endedBySink = true
+    })
+  },  
   subject() {
       let sinks = []
       function subj(t, d) {

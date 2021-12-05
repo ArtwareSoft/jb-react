@@ -70,12 +70,12 @@ jb.extension('macro', {
             return { $: cmpId, [params[0].id]: args[0], [params[1].id]: args[1] }
         debugger;
     },
-    fixProfile(profile) {
+    fixProfile(profile,origin) {
         if (!profile || !profile.constructor || ['Object','Array'].indexOf(profile.constructor.name) == -1) return
-        Object.values(profile).forEach(v=>jb.macro.fixProfile(v))
+        Object.values(profile).forEach(v=>jb.macro.fixProfile(v,origin))
         if (profile.$byValue) {
           if (!jb.comps[profile.$])
-            return jb.logError('fixProfile - missing component', {compId: profile.$, profile})
+            return jb.logError('fixProfile - missing component', {compId: profile.$, origin, profile})
           Object.assign(profile, jb.macro.argsToProfile(profile.$, profile.$byValue))
           delete profile.$byValue
         }

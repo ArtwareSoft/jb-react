@@ -314,6 +314,13 @@ jb.component('rxTest.flatMapActiveActive', {
   })
 })
 
+jb.component('rxTest.promises', {
+  impl: dataTest({
+    calculate: pipe( source.promises(delay(1,1), delay(1,2)) , join(',')),
+    expectedResult: equals('1,2')
+  })
+})
+
 jb.component('rxTest.mapPromiseActiveSource', {
   impl: dataTest({
     calculate: rx.pipe(

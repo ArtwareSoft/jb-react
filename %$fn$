@@ -1,4 +1,0 @@
-jb.component('studioTest.changingComp', {
-  impl: 904,
-  location: null
-})

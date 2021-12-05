@@ -869,9 +869,10 @@ jb.component('runActionOnItems', {
 jb.component('delay', {
   type: 'action,data',
   params: [
-    {id: 'mSec', as: 'number', defaultValue: 1}
+    {id: 'mSec', as: 'number', defaultValue: 1},
+    {id: 'res', defaultValue: '%%' }
   ],
-  impl: (ctx,mSec) => jb.delay(mSec).then(() => ctx.data)
+  impl: ({},mSec,res) => jb.delay(mSec).then(() => res)
 })
 
 jb.component('onNextTimer', {

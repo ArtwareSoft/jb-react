@@ -320,7 +320,9 @@ jb.extension('test', {
 		jb.test.runningTests = true
 
 		if (remoteTests) {
-			jb.exec({$: 'tests.runner', tests: () => tests.map(e=>e[0]), jbm: jbm.worker({startupCode: startup.treeShakeServer(['studio','tests'])}), rootElemId: 'remoteTests'})
+			jb.exec({$: 'tests.runner', 
+				jbm: jbm.worker({initJbCode: initJb.loadModules(['studio','tests'])}), 
+				tests: () => tests.map(e=>e[0]), rootElemId: 'remoteTests'})
 			return
 		}
 
