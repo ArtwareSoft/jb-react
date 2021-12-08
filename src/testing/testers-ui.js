@@ -45,7 +45,7 @@ jb.component('test.dataTestView', {
       button({
         vars: [Var('color', If('%success%', '--jb-success-fg', '--jb-error-fg'))],
         title: If('%success%', '✓ %$testId%', '⚠ %$testId%'),
-        action: vscode.gotoUrl('http://localhost:8082/projects/tests/tests.html?test=%$testId%&show&spy=test'),
+        action: () => jb.frame.studio.host.openUrlInBrowser('http://localhost:8082/projects/tests/tests.html?test=%$testId%&show&spy=test'),
         style: button.href(),
         features: css.color('var(%$color%)')
       }),
@@ -91,7 +91,7 @@ jb.component('test.uiTestRunner', {
           Var('color', If('%success%', '--jb-success-fg', '--jb-error-fg')),
         ],
         title: If('%success%', '✓ %$testId%', '⚠ %$testId%'),
-        action: vscode.gotoUrl('http://localhost:8082/projects/tests/tests.html?test=%$testId%&show&spy=test'),
+        action: () => jb.frame.studio.host.openUrlInBrowser('http://localhost:8082/projects/tests/tests.html?test=%$testId%&show&spy=test'),
         style: button.href(),
         features: css.color('var(%$color%)')
       }),

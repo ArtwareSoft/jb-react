@@ -90,24 +90,25 @@ jb.component('workerPreviewTest.changeCss', {
 })
 
 jb.component('workerPreviewTest.suggestions', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
     renderDOM: true,
     timeout: 5000,
     runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
     control: group({
       controls: [
-        preview.remoteWidget(),
+        preview.remoteWidget(jbm.wPreview('w0Preview')),
         studio.propertyPrimitive('sampleProject.main~impl~controls~text')
       ],
     }),
     checkResultRx: () => jb.ui.renderingUpdates,    
-    userInputRx: rx.pipe(
-      source.promise(uiAction.waitForSelector('[cmp-pt="text"]')),
-      rx.flatMap(source.data(list(
-        userInput.setText('hello %','input'),
-        userInput.keyboardEvent({ selector: 'input', type: 'keyup', keyCode: ()=> '%'.charCodeAt(0) }))))
+    userInputRx: source.promises(
+      uiAction.waitForSelector('[cmp-pt="text"]'),
+      uiAction.waitForSelector('input'),
+      userInput.setText('hello %','input'),
+      userInput.keyboardEvent({ selector: 'input', type: 'keyup', keyCode: ()=> '%'.charCodeAt(0) }),
+      //uiAction.waitForSelector('.jb-dialog .jb-item'),
     ),
-    action1: runActions(
+    action: runActions(
       uiAction.waitForSelector('[cmp-pt="text"]'),
       uiAction.waitForSelector('input'),
       uiAction.setText('hello %','input'),
@@ -125,7 +126,7 @@ jb.component('workerPreviewTest.suggestions.select', {
     runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
     control: group({
       controls: [
-        preview.remoteWidget(),
+        preview.remoteWidget(jbm.wPreview('w1Preview')),
         studio.propertyPrimitive('sampleProject.main~impl~controls~text')
       ],
     }),
@@ -163,7 +164,7 @@ jb.component('workerPreviewTest.suggestions.filtered', {
     runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
     control: group({
       controls: [
-        preview.remoteWidget(),
+        preview.remoteWidget(jbm.wPreview('w2Preview')),
         studio.propertyPrimitive('sampleProject.main~impl~controls~text')
       ],
     }),

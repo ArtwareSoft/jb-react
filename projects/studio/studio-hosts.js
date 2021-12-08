@@ -37,6 +37,8 @@ jb.extension('studio', 'hosts', {
         projectUrlInStudio: project => `/project/studio/${project}`,
         // preview
         jbLoader: jb.frame.location ? jb.frame.location.origin + '/src/loader/jb-loader.js' : '',
+        openUrlInBrowser: url => jb.exec({$: 'winUtils.gotoUrl', url }),
+        gotoPath: (path,semanticPart) => {}
     }),
     vscodeDevHost: () => ({
         name: 'vscodeDevHost',
@@ -53,7 +55,11 @@ jb.extension('studio', 'hosts', {
         projectUrlInStudio: project => `/project/studio/${project}`,
         pathOfDistFolder: () => `${jb.frame.jbBaseProjUrl}/dist`,
         jbLoader: `${jb.frame.jbBaseProjUrl}/src/loader/jb-loader.js`,
-        projectsDir: () => `${decodeURIComponent(jb.frame.jbBaseProjUrl).split('/file///').pop()}/projects`
+        projectsDir: () => `${decodeURIComponent(jb.frame.jbBaseProjUrl).split('/file///').pop()}/projects`,
+        openUrlInBrowser: url => jb.exec({$: 'remote.action', 
+            action: () => { debugger; jb.frame.vscodeNS.env.openExternal(jb.frame.vscodeNS.Uri.parse(url)) }, 
+            jbm: {$: 'jbm.byUri', uri: 'vscode' }}),
+        gotoPath: (path,semanticPart) => jb.vscode.gotoPath(path,semanticPart)
     }),
 
     vscodeUserHost: () => ({

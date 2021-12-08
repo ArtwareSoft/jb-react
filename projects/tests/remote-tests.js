@@ -418,9 +418,9 @@ jb.component('remoteWidgetTest.buttonClick', {
       }),
       jbm.worker()
     ),
-    userInputRx: rx.pipe(
-      source.promise(uiAction.waitForSelector('button')),
-      rx.map(userInput.click()),
+    userInputRx: source.promises(
+      uiAction.waitForSelector('button'),
+      userInput.click(),
     ),
     checkResultRx: () => jb.ui.renderingUpdates,
     expectedResult: contains('danny')

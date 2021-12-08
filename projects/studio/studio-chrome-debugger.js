@@ -26,40 +26,44 @@ jb.extension('chromeDebugger', {
         })
     },
     async initPanel(panelId, panelFrame) {
-        const spyParam = await this.evalAsPromise(`self.jb && jb.path(jb,'spy.spyParam') || ''`)
+        const {initPanelPortListenser, evalAsPromise, renderOnPanel} = jb.chromeDebugger
+        const spyParam = await evalAsPromise(`self.jb && jb.path(jb,'spy.spyParam') || ''`)
+        jb.log(`chromeDebugger spyParam`,{spyParam, panelId})
         self.spy = jb.spy.initSpy({spyParam})
-        this.initPanelPortListenser(panelId, panelFrame)
+        initPanelPortListenser(panelId, panelFrame)
         jb.log(`chromeDebugger invoking initDevTools on debugee`,{panelId})
-        await this.evalAsPromise(`self.jb && jb.jbm && jb.jbm.initDevToolsDebugge()`)
+        await evalAsPromise(`self.jb && jb.jbm && jb.jbm.initDevToolsDebugge()`)
+        jb.log(`chromeDebugger waiting for jb.jbm.connectToPanel on debugee`,{panelId})
         await jb.exec(pipe(rx.pipe( // wait for the content-script to inject jb.jbm.connectToPanel into the debuggee
             source.interval(500), 
-            rx.flatMap(source.promise(this.evalAsPromise(`self.jb && jb.jbm && jb.jbm.connectToPanel`))),
-            rx.filter(x=>x),
+            rx.mapPromise(() => evalAsPromise(`self.jb && jb.jbm && typeof jb.jbm.connectToPanel`)),
+            rx.log('chromeDebugger wait for connectToPanel'),
+            rx.filter('%%==function'),
             rx.take(1)
         )))
         jb.log(`chromeDebugger invoking connectToPanel on debugee`,{panelId})
-        await this.evalAsPromise(`self.jb && jb.jbm.connectToPanel('${jb.uri}')`)
+        await evalAsPromise(`self.jb && jb.jbm.connectToPanel('${jb.uri}')`)
         await jb.exec(waitFor(() => jb.parent))
-        await this.renderOnPanel(panelId, panelFrame)
+        await renderOnPanel(panelId, panelFrame)
     },
 
     async renderOnPanel(panelId,panelFrame) {
-        const debugeeUri = await this.evalAsPromise('typeof jb != "undefined" && jb.uri')
+        const debugeeUri = await jb.chromeDebugger.evalAsPromise('typeof jb != "undefined" && jb.uri')
 
         jb.log(`chromeDebugger panel starting ${panelId}Ctrl ${debugeeUri}`)
         if (panelId == 'comp') 
         chrome.devtools.panels.elements.onSelectionChanged.addListener( async () => {
-            const inspectedProps = await this.selectedProps()
+            const inspectedProps = await jb.chromeDebugger.selectedProps()
             const elem = document.querySelector('[widgettop="true"]>*')
             inspectedProps && inspectedProps.cmpId && elem && jb.ui.runBEMethod(elem,'refreshAfterDebuggerSelection',inspectedProps)
         })
         if (panelId == 'card') 
             chrome.devtools.panels.elements.onSelectionChanged.addListener(async () => {
-                await this.markSelected()
+                await jb.chromeDebugger.markSelected()
                 const elem = document.querySelector('[widgettop="true"]>*')
                 elem && jb.ui.runBEMethod(elem,'refreshAfterDebuggerSelection')
         })
-        const inspectedProps = await this.selectedProps()
+        const inspectedProps = await jb.chromeDebugger.selectedProps()
         const profile = {$: `chromeDebugger.${panelId}Ctrl`, inspectedProps, uri: debugeeUri}
         jb.log(`chromeDebugger renderOnPanel firstRun ${panelId}`,{profile,inspectedProps, debugeeUri,panelFrame})
         jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry().setVar('$disableLog',true).run(profile)),panelFrame.document.body)
@@ -68,8 +72,8 @@ jb.extension('chromeDebugger', {
         return new Promise( (resolve,rej) => chrome.devtools.inspectedWindow.eval(code,(res,err) => err ? rej(err) : resolve(res)))
     },
     markSelected() {
-        this.selectionCounter = this.selectionCounter || 1
-        return this.evalAsPromise(`$0 && $0.setAttribute && $0.setAttribute("jb-selected-by-debugger","${this.selectionCounter++}");`)
+        jb.chromeDebugger.selectionCounter = jb.chromeDebugger.selectionCounter || 1
+        return jb.chromeDebugger.evalAsPromise(`$0 && $0.setAttribute && $0.setAttribute("jb-selected-by-debugger","${jb.chromeDebugger.selectionCounter++}");`)
     },
     async selectedProps() {
         function buildPropsObj() {
@@ -81,8 +85,8 @@ jb.extension('chromeDebugger', {
                 frameUri: [self,...Array.from(frames)].filter(x=>x.document == $0.ownerDocument).map(x=>x.jb.uri)[0]
             } : {}
         }
-        await this.markSelected()
-        return this.evalAsPromise(`(${buildPropsObj.toString()})()`)
+        await jb.chromeDebugger.markSelected()
+        return jb.chromeDebugger.evalAsPromise(`(${buildPropsObj.toString()})()`)
     },
 })
 

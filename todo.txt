@@ -1,8 +1,9 @@
-worker with loadModules - 'pipeline'
-
-fix studio layers
-  utils, abstractions, visual-comps, apps
-
+fix logs in chrome debugger
+clean depenedency errors
+  vscode.gotoUrl
+  notebook
+  
+enrich spy logs with rules
 
 remote.dispatcher
   multiple data test - nodejs/ multiple nodejs
@@ -11,4 +12,9 @@ remote.dispatcher
 data tests with dispatcher
 preview of studio in nodejs
 preview of vsccode in nodejs
+
+add import or using command
+fix studio layers
+  utils, abstractions, visual-comps, apps
+
 

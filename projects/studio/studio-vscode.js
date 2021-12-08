@@ -260,14 +260,6 @@ jb.component('vscode.logsCtrl', {
   })
 })
 
-jb.component('vscode.gotoUrl', {    
-  type: 'action',
-  params: [
-    {id: 'url', as: 'string'}
-  ],
-  impl: remote.action(({},{},{url}) => { debugger; vscodeNS.env.openExternal(vscodeNS.Uri.parse(url)) }, jbm.byUri('vscode')),
-})
-
 jb.component('vscode.openQuickPickMenu', {
   type: 'action',
   params: [

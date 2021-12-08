@@ -1,6 +1,9 @@
 jb.component('jbm.wPreview', {
     type: 'jbm',
-    impl: jbm.worker({id: 'wPreview', init: studio.initPreview()})
+    params: [
+        {id: 'id', defaultValue: 'wPreview' }
+    ],    
+    impl: jbm.worker({id: '%$id%', init: studio.initPreview()})
 })
 
 jb.component('jbm.preview', {
@@ -34,8 +37,11 @@ jb.component('studio.initPreview', {
 })
 
 jb.component('preview.remoteWidget', {
+    params: [
+        {id: 'jbm', defaultValue: jbm.wPreview() }
+    ],    
     type: 'control',
-    impl: remote.widget( preview.control(), jbm.preview() )
+    impl: remote.widget( preview.control(), '%$jbm%' )
 })
 
 jb.component('studio.refreshPreview', {

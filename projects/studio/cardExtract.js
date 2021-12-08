@@ -1,5 +1,3 @@
-var { chromeDebugger } = jb.macro.ns('chromeDebugger');
-
 jb.component('cardExtract.showOptions', {
     params: [
       {id: 'inspectorProps'}
@@ -17,7 +15,7 @@ jb.component('cardExtract.showOptions', {
         variable('selectedInDebugger', () => parent.document.querySelector('[jb-selected-by-debugger]')),
         variable('ctrlProfile', studio.htmlToControl('%$selectedInDebugger%')),
         variable('flattenedProfile', ({},{ctrlProfile}) => jb.cardExtract.flattenControlToGrid(ctrlProfile,parent.document.body)),
-        chromeDebugger.refreshAfterSelection()
+//        chromeDebugger.refreshAfterSelection()
       ]
     })
 })

@@ -331,7 +331,15 @@ const op_get_handlers = {
         const content = fs.readFileSync(path,'utf-8')
         return { path : path.slice(1),
           ns: unique(content.split('\n').map(l=>(l.match(/^jb.component\('([^']+)/) || ['',''])[1]).filter(x=>x).map(x=>x.split('.')[0])),
-          libs: unique(content.split('\n').map(l=>(l.match(/^jb.extension\('([^']+)/) || ['',''])[1]).filter(x=>x).map(x=>x.split('.')[0]))
+          libs: unique(content.split('\n').map(l=>(l.match(/^jb.extension\('([^']+)/) || ['',''])[1]).filter(x=>x).map(x=>x.split('.')[0])),
+          imports: unique(content.split('\n').map(l=>(l.match(/^jb.import\(([^)]+)/) || ['',''])[1]).filter(x=>x).map(x=>parseImport(x))),
+        }
+      }
+      function parseImport(str) {
+        try {
+          return JSON.parse(`[${str}]`.replace(/'/g,'"'))
+        } catch (error) {
+          return [{error}]
         }
       }
       function unique(list) {

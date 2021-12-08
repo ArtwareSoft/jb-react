@@ -80,6 +80,7 @@ jb.component('uiTest', {
 				rx.log('userInput'),
 				rx.takeUntil('%$$testFinished%'),
 				userInput.eventToRequest(),
+				rx.filter(({data}) => data.$ == 'runCtxAction'),
 				rx.log('userRequest'),
 				sink.action(({data}) => jb.ui.widgetUserRequests.next(data))
 			)

@@ -9,7 +9,7 @@ jb.component('studio.gotoPath', {
     runActions(
       dialog.closeDialog(),
       writeValue('%$studio/profile_path%', '%$path%'),
-      action.if(studio.inVscode(), vscode.gotoPath('%$path%','%$semanticPart%'))
+      action.if(studio.inVscode(), ({},{},{path,semanticPart}) => jb.studio.host.gotoPath(path,semanticPart))
     )
   )
 })

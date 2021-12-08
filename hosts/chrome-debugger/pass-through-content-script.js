@@ -4,8 +4,10 @@ self.addEventListener('message', m => { // debugge asking to be debugged. Panel 
         const {spyParam, uri, distPath} = m.data.initDevToolsPeerOnDebugge
         const debuggeUri = uri
         console.log('chromeDebugger devtools gateway attached to debuggeUri',debuggeUri)
+        const baseUrl = 'http://localhost:8082'
 
-        if (debuggeUri) jbTreeShakeClient('devtools','http://localhost:8082').then(() => {
+        if (debuggeUri) jb_loadFile('/src/loader/jb-loader.js',baseUrl).then(() => jbInit('devtools',{baseUrl, loadFileFunc: jb_loadFile})).then(jb => {
+            self.jb = jb
             self.spy = jb.spy.initSpy({spyParam})
             
             jb.component('jbm.connectToPanel', {
@@ -53,31 +55,38 @@ function portFromDevToolsPort(dtport,to) {
     return port
 }
 
-var jb_modules = {
-    'core': [
-      'src/core/jb-core.js',
-      'src/core/core-utils.js',
-      'src/core/jb-expression.js',
-      'src/core/db.js',
-      'src/core/jb-macro.js',
-      'src/misc/spy.js',
-    ]
-}
-
-async function jbTreeShakeClient(uri,baseUrl) {
-  self.jb = { uri }
-  const coreFiles= jb_modules.core.map(x=>`/${x}`)
-  await coreFiles.reduce((pr,url) => pr.then(()=> jb_loadFile(url,baseUrl)), Promise.resolve())
-  jb.noSupervisedLoad = false
-  var { If,not,contains,writeValue,obj,prop,rx,source,sink,call,jbm,startup,remote,pipe,log,net,aggregate,list,runActions,Var } = 
-    jb.macro.ns('If,not,contains,writeValue,obj,prop,rx,source,sink,call,jbm,startup,remote,pipe,log,net,aggregate,list,runActions,Var') // ns use in modules
-  await 'loader/code-loader,core/jb-common,misc/jb-callbag,misc/rx-comps,misc/pretty-print,misc/remote-context,misc/jbm,misc/remote'.split(',').map(x=>`/src/${x}.js`)
-    .reduce((pr,url)=> pr.then(() => jb_loadFile(url,baseUrl)), Promise.resolve())
-  await jb.initializeLibs('core,callbag,utils,jbm,net,cbHandler,treeShake'.split(','))
-  Object.values(jb.comps).filter(cmp => typeof cmp.impl == 'object').forEach(cmp => jb.macro.fixProfile(cmp.impl,jb.comps[cmp.impl.$]))  
-}        
-
 async function jb_loadFile(url, baseUrl) {
   baseUrl = baseUrl || ''
+  console.log('jb_loadFile',url)
   await fetch(baseUrl+url).then(ret => ret.text()).then(code=>self.eval(`${code}//# sourceURL=${url}?devtools`))
 }  
+
+// var jb_modules = {
+//     'core': [
+//       'src/core/jb-core.js',
+//       'src/core/core-utils.js',
+//       'src/core/jb-expression.js',
+//       'src/core/db.js',
+//       'src/core/jb-macro.js',
+//       'src/misc/spy.js',
+//     ]
+// }
+
+// async function loadJb(baseUrl) {
+//     await jb_loadFile('src/loader/jb-loader.js',baseUrl)
+//     globalThis.jb = await jbInit(uri,{baseUrl})
+// }
+
+// async function jbTreeShakeClient(uri,baseUrl) {
+//   self.jb = { uri }
+//   const coreFiles= jb_modules.core.map(x=>`/${x}`)
+//   await coreFiles.reduce((pr,url) => pr.then(()=> jb_loadFile(url,baseUrl)), Promise.resolve())
+//   jb.noSupervisedLoad = false
+//   var { If,not,contains,writeValue,obj,prop,rx,source,sink,call,jbm,startup,remote,pipe,log,net,aggregate,list,runActions,Var } = 
+//     jb.macro.ns('If,not,contains,writeValue,obj,prop,rx,source,sink,call,jbm,startup,remote,pipe,log,net,aggregate,list,runActions,Var') // ns use in modules
+//   await 'loader/code-loader,core/jb-common,misc/jb-callbag,misc/rx-comps,misc/pretty-print,misc/remote-context,misc/jbm,misc/remote'.split(',').map(x=>`/src/${x}.js`)
+//     .reduce((pr,url)=> pr.then(() => jb_loadFile(url,baseUrl)), Promise.resolve())
+//   await jb.initializeLibs('core,callbag,utils,jbm,net,cbHandler,treeShake'.split(','))
+//   Object.values(jb.comps).filter(cmp => typeof cmp.impl == 'object').forEach(cmp => jb.macro.fixProfile(cmp.impl,jb.comps[cmp.impl.$]))  
+// }        
+

@@ -9,7 +9,7 @@ var jb_modules = {
   ],
 }
 
-async function jbInit(uri, {projects, baseUrl, multipleInFrame, loadFileFunc, fileSymbolsFunc }) {
+async function jbInit(uri, {projects, plugins, baseUrl, multipleInFrame, loadFileFunc, fileSymbolsFunc }) {
   // multipleInFrame is used in jbm.child
   const isWorker = typeof jbInWorker != 'undefined'
   baseUrl = baseUrl || isWorker && typeof location != 'undefined' && location.origin || ''
@@ -22,16 +22,30 @@ async function jbInit(uri, {projects, baseUrl, multipleInFrame, loadFileFunc, fi
   await coreFiles.reduce((pr,url) => pr.then(()=> jb_loadFile(url,baseUrl,jb)), Promise.resolve())
   jb.noSupervisedLoad = false
 
-  const src = [...await fileSymbols('src','','puppeteer|pptr-|pack-|jb-loader')].filter(x=>coreFiles.indexOf(x.path) == -1)
-  const projectsCode = await projects.reduce( async (acc,project) => [...await acc, ...await fileSymbols(`projects/${project}`)], [])
+  const _srcSymbols = await fileSymbols('src','','pack-|jb-loader')
+  const srcSymbols = _srcSymbols.filter(x=>coreFiles.indexOf(x.path) == -1)
+//  const allSymbols = [...srcSymbols, ...await fileSymbols('projects'),...await fileSymbols('plugins')]
+//  const allSymbolsHash = jb.objFromEntries(allSymbols.map(x=>[x.path,x]))
+  const topRequiredModules = [...(projects || []).map(x => `projects/${x}`), ...(plugins || []).map(x => `plugins/${x}`)]
+  //const requiredSymbols = allSymbols.filter(x=> topRequiredModules.reduce((acc,m) => acc || x.path.indexOf(m) == 1, false))
+  //const requiredSymbols = treeShake(topRequiredSymbols,{})
+  
+  const symbols = await topRequiredModules.reduce( async (acc,dir) => [...await acc, ...await fileSymbols(dir)], [])
+  await jbSupervisedLoad([...srcSymbols,...symbols],{jb, jb_loadFile, baseUrl})
 
-  await jbSupervisedLoad([...src,...projectsCode],{jb, jb_loadFile, baseUrl})
-
-  jb.treeShake.loadModules = async function(modules) { // helper function
-    const modulesCode = await modules.reduce( async (acc,dir) => [...await acc, ...await fileSymbols(dir)], [])
-    await jbSupervisedLoad(modulesCode,{jb, jb_loadFile, baseUrl})      
-  }
+  // jb.treeShake.loadModules = async function(modules) { // helper function
+  //   const symbols = await modules.reduce( async (acc,dir) => [...await acc, ...await fileSymbols(dir)], [])
+  //   await jbSupervisedLoad(symbols,{jb, jb_loadFile, baseUrl})      
+  // }
   return jb
+
+  // function treeShake(ids, existing) {
+  //   const _ids = ids.filter(x=>!existing[x])
+  //   const dependent = jb.utils.unique(_ids.flatMap(id =>jb.path(allSymbolsHash[id],'import.1')||[]).filter(x=>!existing[x]))
+  //   if (!dependent.length) return _ids
+  //   const existingExtended = { ...existing,  ...jb.objFromEntries(_ids.map(x=>[x,true])) }
+  //   return [ ..._ids, ...jb.treeShake.treeShake(dependent, existingExtended)]
+  // }
 
   async function fileSymbolsFromHttp(path,include,exclude) {
     const inc = include ? `&include=${include}` : ''
@@ -66,11 +80,11 @@ async function jbInit(uri, {projects, baseUrl, multipleInFrame, loadFileFunc, fi
   }  
 }
 
-async function jbSupervisedLoad(loadedCode, {jb, jb_loadFile, baseUrl} = {}) {
-  const ns = jb.utils.unique([...loadedCode,{ns: ['Var','remark']}].flatMap(x=>x.ns))
-  const libs = jb.utils.unique(loadedCode.flatMap(x=>x.libs))
+async function jbSupervisedLoad(symbols, {jb, jb_loadFile, baseUrl} = {}) {
+  const ns = jb.utils.unique([...symbols.flatMap(x=>x.ns || []),'Var','remark'])
+  const libs = jb.utils.unique(symbols.flatMap(x=>x.libs))
   ns.forEach(id=> jb.macro.registerProxy(id))
-  await loadedCode.map(x=>x.path).reduce((pr,url) => pr.then(()=> jb_loadFile(url,baseUrl,jb)), Promise.resolve())
+  await symbols.reduce((pr,symbol) => pr.then(()=> jb_loadFile(symbol.path,baseUrl,jb)), Promise.resolve())
   jb.treeShake.baseUrl = baseUrl
   await jb.initializeLibs(libs)
   Object.keys(jb.comps).forEach(comp => jb.macro.fixProfile(jb.comps[comp],comp))
