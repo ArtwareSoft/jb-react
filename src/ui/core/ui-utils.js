@@ -29,8 +29,9 @@ jb.extension('ui', {
     widgetBody(ctx) {
       const {elemToTest,tstWidgetId,headlessWidget,FEwidgetId, headlessWidgetId} = ctx.vars
       const top = elemToTest ||
-        tstWidgetId && jb.path(jb.ui.headless[tstWidgetId],'body') ||
-        headlessWidget && jb.path(jb.ui.headless[headlessWidgetId],'body') ||
+        tstWidgetId && jb.path(jb,`ui.headless.${tstWidgetId}.body`) ||
+        tstWidgetId && jb.path(jb,`parent.ui.headless.${tstWidgetId}.body`) ||
+        headlessWidget && jb.path(jb,`ui.headless.${headlessWidgetId}.body`) ||
         jb.path(jb.frame.document,'body')
       return FEwidgetId ? jb.ui.findIncludeSelf(top,`[widgetid="${FEwidgetId}"]`)[0] : top
     },

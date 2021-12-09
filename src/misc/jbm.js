@@ -297,7 +297,8 @@ importScripts(location.origin+'/src/loader/jb-loader.js');
 Promise.resolve(${initJbCode})
     .then(jb => {
         globalThis.jb = jb;
-        jb.treeShakeJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
+        jb.spy.initSpy({spyParam: "${jb.spy.spyParam}"});
+        jb.treeShake.codeServerJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
         self.postMessage({ $: 'workerReady' })
     })
 //# sourceURL=${workerUri}-initJb.js
@@ -345,7 +346,7 @@ jb.component('jbm.child', {
             child.spy.initSpy({spyParam: jb.spy.spyParam})
             jb.jbm.childJbms[name] = child
             child.parent = jb
-            child.treeShakeJbm = jb.treeShakeJbm || jb // TODO: use codeLoaderUri
+            child.treeShake.codeServerJbm = jb.treeShake.codeServerJbm || jb // TODO: use codeLoaderUri
             child.ports[jb.uri] = {
                 from: child.uri, to: jb.uri,
                 postMessage: m => 

@@ -358,6 +358,9 @@ jb.extension('ui', 'react', {
     },
     render(vdom,parentElem,prepend) {
         jb.log('render',{vdom,parentElem,prepend})
+        if (jb.path(parentElem,'constructor.name') == 'VNode')
+            return parentElem.appendChild(vdom)
+
         const res = doRender(vdom,parentElem)
         vdomDiffCheckForDebug()
         jb.ui.refreshFrontEnd(res, {content: vdom })
@@ -365,7 +368,7 @@ jb.extension('ui', 'react', {
 
         function doRender(vdom,parentElem) {
             jb.log('dom createElement',{tag: vdom.tag, vdom,parentElem})
-            const elem = jb.ui.createElement(parentElem.ownerDocument, vdom.tag)
+            const elem = createElement(parentElem.ownerDocument, vdom.tag)
             jb.entries(vdom.attributes).forEach(e=>jb.ui.setAtt(elem,e[0],e[1]))
             jb.asArray(vdom.children).map(child=> doRender(child,elem)).forEach(el=>elem.appendChild(el))
             prepend ? parentElem.prepend(elem) : parentElem.appendChild(elem)
@@ -377,11 +380,11 @@ jb.extension('ui', 'react', {
             if (checkResultingVdom && Object.keys(diff).length)
                 jb.logError('render diff',{diff,checkResultingVdom,vdom})
         }
-    },
-    createElement(doc,tag) {
-        tag = tag || 'div'
-        return (['svg','circle','ellipse','image','line','mesh','path','polygon','polyline','rect','text'].indexOf(tag) != -1) ?
-            doc.createElementNS("http://www.w3.org/2000/svg", tag) : doc.createElement(tag)
+        function createElement(doc,tag) {
+            tag = tag || 'div'
+            return (['svg','circle','ellipse','image','line','mesh','path','polygon','polyline','rect','text'].indexOf(tag) != -1) ?
+                doc.createElementNS("http://www.w3.org/2000/svg", tag) : doc.createElement(tag)
+        } 
     },
     handleCmpEvent(ev, specificMethod) {
         specificMethod = specificMethod == 'true' ? true : specificMethod
@@ -574,6 +577,8 @@ jb.extension('ui', 'react', {
         if (actualElem instanceof jb.ui.VNode) {
             jb.ui.applyDeltaToVDom(actualElem, actualdelta)
             jb.ui.renderingUpdates.next({delta,cmpId,widgetId: ctx.vars.headlessWidgetId})
+            if (jb.path(jb,'parent.uri') == 'tests') // used for distributedWidget tests
+                jb.parent.ui.renderingUpdates.next({delta})
         } else if (actualElem) {
             jb.ui.applyDeltaToDom(actualElem, actualdelta)
             jb.ui.refreshFrontEnd(actualElem, {content: delta})

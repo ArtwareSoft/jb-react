@@ -18,7 +18,7 @@ Object.assign(jb, {
       lib.__extensions[extId].initialized = true
     }
   },
-  initializeLibs(libs) {
+  async initializeLibs(libs) {
     libs.flatMap(l => Object.values(jb[l].__extensions)).sort((x,y) => x.phase - y.phase )
       .filter(ext => ext.init && !ext.initialized)
       .forEach(ext => {
@@ -26,7 +26,11 @@ Object.assign(jb, {
           Object.assign(jb[ext.libId], ext.init.apply(jb[ext.libId]))
       })
     const libsToLoad = libs.flatMap(l => Object.values(jb[l].__extensions)).flatMap(ext => ext.requireLibs || []).filter(url => !jb.frame.jb.__requiredLoaded[url])
-    return Promise.all(libsToLoad.map( url => Promise.resolve(jbloadJSFile(url,jb,{noSymbols: true})).then(() => jb.frame.jb.__requiredLoaded[url] = true) ))
+    try {
+      await Promise.all(libsToLoad.map( url => Promise.resolve(jbloadJSFile(url,jb,{noSymbols: true})).then(() => jb.frame.jb.__requiredLoaded[url] = true) ))
+    } catch (e) {
+      jb.logException(e,'error loading external library')
+    }
   },
 
   component(id,comp) {

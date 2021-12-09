@@ -118,9 +118,13 @@ jb.component('action.renderXwidget', {
         {id: 'selector', as: 'string', defaultValue: 'body' },
         {id: 'widgetId', as: 'string' },
     ],
-    impl: ({},selector,widgetId) => 
-        jb.ui.renderWidget({$: 'widget.frontEndCtrl', widgetId: widgetId}, document.querySelector(selector)),
-    dependency: widget.frontEndCtrl()
+    impl: (ctx,selector,widgetId) => {
+        const elem = selector ? jb.ui.widgetBody(ctx).querySelector(selector) : jb.ui.widgetBody(ctx)
+        if (!elem)
+            return jb.logError('renderXwidget - can not find top elem',{body: jb.ui.widgetBody(ctx), ctx,selector})
+        jb.ui.renderWidget({$: 'widget.frontEndCtrl', widgetId: widgetId}, elem)
+    },
+    dependency: [ widget.frontEndCtrl() ]
 })
 
 jb.extension('ui','headless', {

@@ -67,7 +67,7 @@ jb.component('jbm.vscodeWebView', {
 
     jb.baseUrl = '${_jbBaseUrl}'
     spy = jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
-    jb.treeShakeJbm = jb.parent = jb.ports['${jb.uri}'] = jb.jbm.extendPortToJbmProxy(jb.vscode.portFromWebViewToExt('${webViewUri}','${jb.uri}'))
+    jb.treeShake.codeServerJbm = jb.parent = jb.ports['${jb.uri}'] = jb.jbm.extendPortToJbmProxy(jb.vscode.portFromWebViewToExt('${webViewUri}','${jb.uri}'))
     jb.parent.remoteExec(jb.remoteCtx.stripJS(() => jb.jbm.notifyChildReady['${webViewUri}']() ), {oneway: true} )
     </script>
     <link rel="stylesheet" type="text/css" href="${_jbBaseUrl}/dist/css/material.css"/>
@@ -166,7 +166,7 @@ jb.component('jbm.vscodeWebView', {
 
 // function ${jb.vscode.portFromWorkerToExt.toString()}
 // const { parentPort} = require('worker_threads')
-// jb.treeShakeJbm = jb.parent = jb.ports['${jb.uri}'] = jb.jbm.extendPortToJbmProxy(portFromWorkerToExt(parentPort,'${workerUri}','${jb.uri}'))
+// jb.treeShake.codeServerJbm = jb.parent = jb.ports['${jb.uri}'] = jb.jbm.extendPortToJbmProxy(portFromWorkerToExt(parentPort,'${workerUri}','${jb.uri}'))
 // //jb.delay(3000).then(()=>{debugger})
 // //# sourceURL=${workerUri}-initJb.js
 // `

@@ -89,6 +89,8 @@ jb.component('preview.handleScriptChangeOnPreview', {
 
         const headlessWidgetId = Object.keys(jb.ui.headless)[0]
         const headless = jb.ui.headless[headlessWidgetId]
+        if (!headless)
+            return jb.logError(`handleScriptChangeOnPreview - missing headless ${headlessWidgetId} at ${jb.uri}`, {path, ctx})
         if (cssOnlyChange) {
             let featureIndex = path.lastIndexOf('features')
             if (featureIndex == -1) featureIndex = path.lastIndexOf('layout')

@@ -57,6 +57,10 @@ jb.extension('ui', {
         hasClass(clz) {
             return (jb.path(this,'attributes.class') || '').split(' ').indexOf(clz) != -1
         }
+        appendChild(vdom) {
+            this.children.push(vdom)
+            return this
+        }
         querySelector(...args) {
             return this.querySelectorAll(...args)[0]
         }

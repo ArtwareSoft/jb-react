@@ -338,7 +338,7 @@ jb.component('remoteWidgetTest.button', {
   })
 })
 
-jb.component('remoteWidgetTest.FE.button', {
+jb.component('remoteWidgetTest.distributedWidget.FETest', {
   impl: uiFrontEndTest({
     renderDOM: true,
     timeout: 3000,
@@ -352,6 +352,30 @@ jb.component('remoteWidgetTest.FE.button', {
       uiAction.waitForSelector('button')
     ),
     control: group({controls: [], features: css.class('xRoot')}),
+    expectedResult: contains('hello')
+  })
+})
+
+jb.component('remoteWidgetTest.distributedWidget', {
+  impl: uiTest({
+    timeout: 3000,
+    control: group({
+      controls:button({title: 'click', 
+        action: runActions(
+          jbm.child('jbxServer'),
+          remote.action(remote.distributedWidget({ 
+            control: text('hello world'), 
+            frontend: jbm.byUri('tests•jbxServer'), 
+            selector: '.xRoot' 
+          }), jbm.worker()),
+      )}), 
+      features: css.class('xRoot')}
+    ),
+    userInputRx: rx.pipe(
+      source.promise(uiAction.waitForSelector('button')),
+      rx.map(userInput.click()),
+    ),
+    checkResultRx: () => jb.ui.renderingUpdates,
     expectedResult: contains('hello')
   })
 })
