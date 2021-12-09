@@ -1,5 +1,5 @@
 const fs = require('fs')
-const jbBaseUrl = __dirname.replace(/\\/g,'/').replace(/\/hosts\/node$/,'').replace(/\/bin\/jbman$/,'')
+global.jbBaseUrl = __dirname.replace(/\\/g,'/').replace(/\/hosts\/node$/,'').replace(/\/bin\/jbman$/,'')
 const { log, getProcessArgument, jbGetJSFromUrl} = require(`${jbBaseUrl}/hosts/node/node-utils.js`)
 
 let settings = { verbose: getProcessArgument('verbose') }

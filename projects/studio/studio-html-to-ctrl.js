@@ -218,7 +218,7 @@ jb.ui.htmlToControl = function(html,ctx) {
 
         function extractStyle() {
             if (jb.comps[pt+'.htmlTag']) // group & text
-                return jb.frame[pt].htmlTag(tag)
+                return jb.macro.proxies[pt].htmlTag(tag)
             else if (tag == 'button')
                 return button.native()
             else if (tag == 'a')

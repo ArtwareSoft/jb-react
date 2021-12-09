@@ -207,8 +207,10 @@ jb.extension('jbm', {
         async function handleCBCommnad(cmd) {
             const {$,sourceId,cbId,isAction} = cmd
             try {
-            if (jb.treeShake.loadingCode)
-                await jb.exec({$: 'waitFor', timeout: 500, check: () => !jb.treeShake.loadingCode })
+                if (Object.keys(jb.treeShake.loadingCode).length) {
+                    jb.log('remote waiting for loadingCode',{cmd, loading: Object.keys(jb.treeShake.loadingCode)})
+                    await jb.exec({$: 'waitFor', timeout: 100, check: () => !Object.keys(jb.treeShake.loadingCode).length })
+                }
                 await jb.treeShake.bringMissingCode(cmd.remoteRun)
                 const result = await jb.remoteCtx.deStrip(cmd.remoteRun)()
                 if ($ == 'CB.createSource' && typeof result == 'function')
@@ -267,8 +269,8 @@ jb.component('initJb.loadModules', {
 
 jb.component('initJb.treeShakeClient', {
     type: 'initJbCode',
-    impl: ({vars}) => `(() => {
-const jb = { uri: '${vars.uri}'}
+    impl: ({vars}) => `(async () => {
+const jb = { uri: '${vars.uri}', baseUrl: typeof jbBaseUrl != 'undefined' ? jbBaseUrl : ''}
 ${jb.treeShake.clientCode()};
 return jb
 })()`
@@ -289,14 +291,9 @@ jb.component('jbm.worker', {
         const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
         const initJbCode = initJbCodeF(ctx.setVars({uri: workerUri, multipleJbmsInFrame: false}))
         const workerCode = `
-jbInWorker = true
-jb_modules = { core: ${JSON.stringify(jb_modules.core)} };
-${jbInit.toString()}
-${jbSupervisedLoad.toString()}
-function jb_loadFile(url, baseUrl) { 
-    baseUrl = baseUrl || location.origin || ''
-    return Promise.resolve(importScripts(baseUrl+url)) 
-}
+jbBaseUrl = location.origin || '';
+importScripts(location.origin+'/src/loader/jb-loader.js');
+
 Promise.resolve(${initJbCode})
     .then(jb => {
         globalThis.jb = jb;

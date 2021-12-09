@@ -18,7 +18,7 @@
  <script>
 	jbInit('tests', {projects: ['studio','tests']})
 		.then(()=>{
-			jb.exec(defaultTheme()),
+			jb.exec({$: 'defaultTheme'})
 			jb.spy.initSpyByUrl()
 			const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
 			const params = { 

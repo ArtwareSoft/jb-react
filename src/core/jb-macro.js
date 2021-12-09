@@ -5,6 +5,7 @@ Object.assign(jb, {
 jb.extension('macro', {
     initExtension() {
         return { proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro')}
+        // for loader jb.macro.importAll()
     },
     ns: nsIds => {
         nsIds.split(',').forEach(nsId => jb.macro.registerProxy(nsId))
@@ -86,7 +87,8 @@ jb.extension('macro', {
         if (jb.frame[proxyId])
             return jb.logError(`register macro proxy: ${proxyId} + ' is reserved by system or libs. please use a different name`,{obj:jb.frame[proxyId]})
         
-        jb.frame[proxyId] = jb.macro.proxies[proxyId] = jb.macro.newProxy(proxyId)
+        jb.macro.proxies[proxyId] = jb.macro.newProxy(proxyId)
+        //jb.frame[proxyId] = jb.macro.proxies[proxyId]
     }
 })
 

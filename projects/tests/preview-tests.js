@@ -21,7 +21,6 @@ jb.component('workerPreviewTest.basic', {
 
 jb.component('workerPreviewTest.changeScript', {
   impl: uiTest({
-    renderDOM: true,
     timeout: 5000,
     runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
     control: group({
@@ -34,12 +33,26 @@ jb.component('workerPreviewTest.changeScript', {
       source.promise(uiAction.waitForSelector('[cmp-pt="text"]')),
       rx.map(userInput.click()),
     ),
-    checkResultRx: () => jb.ui.renderingUpdates,    
-    action1: runActions(
-      uiAction.waitForSelector('[cmp-pt="text"]'),
-      uiAction.click('button'),
-      uiAction.waitForSelector('[cmp-ver="2"]'),
-    ),    
+    checkResultRx: () => jb.ui.renderingUpdates,       
+    expectedResult: contains('world')
+  })
+})
+
+jb.component('workerPreviewTest.nodePreview', {
+  impl: uiTest({
+    timeout: 5000,
+    runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
+    control: group({
+      controls: [
+        button({title: 'change script', action: writeValue(studio.ref('sampleProject.main~impl~controls~text'),'world') }),
+        preview.remoteWidget(jbm.nodePreview())
+      ],
+    }),
+    userInputRx: rx.pipe(
+      source.promise(uiAction.waitForSelector('[cmp-pt="text"]')),
+      rx.map(userInput.click()),
+    ),
+    checkResultRx: () => jb.ui.renderingUpdates,       
     expectedResult: contains('world')
   })
 })

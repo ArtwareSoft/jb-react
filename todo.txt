@@ -1,8 +1,3 @@
-fix logs in chrome debugger
-clean depenedency errors
-  vscode.gotoUrl
-  notebook
-  
 enrich spy logs with rules
 
 remote.dispatcher
@@ -13,8 +8,5 @@ data tests with dispatcher
 preview of studio in nodejs
 preview of vsccode in nodejs
 
-add import or using command
-fix studio layers
-  utils, abstractions, visual-comps, apps
-
+add std ns for common.js
 

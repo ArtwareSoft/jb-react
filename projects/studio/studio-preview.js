@@ -6,6 +6,11 @@ jb.component('jbm.wPreview', {
     impl: jbm.worker({id: '%$id%', init: studio.initPreview()})
 })
 
+jb.component('jbm.nodePreview', {
+    type: 'jbm',
+    impl: jbm.nodeContainer({init: studio.initPreview()})
+})
+
 jb.component('jbm.preview', {
     type: 'jbm',
     impl: If('%$yellowPages/preview%',jbm.byUri('%$yellowPages/preview%'), jbm.wPreview())

@@ -65,7 +65,7 @@ jb.component('jbm.vscodeWebView', {
     jb = { uri: '${webViewUri}'}
     ${code};
 
-    jb.treeShake.baseUrl = '${_jbBaseUrl}'
+    jb.baseUrl = '${_jbBaseUrl}'
     spy = jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
     jb.treeShakeJbm = jb.parent = jb.ports['${jb.uri}'] = jb.jbm.extendPortToJbmProxy(jb.vscode.portFromWebViewToExt('${webViewUri}','${jb.uri}'))
     jb.parent.remoteExec(jb.remoteCtx.stripJS(() => jb.jbm.notifyChildReady['${webViewUri}']() ), {oneway: true} )

@@ -9,6 +9,7 @@ global.jbBaseUrl = __dirname.match(/extensions/) ? workspaceDir : __dirname.repl
 global.jbInvscode = true
 global.loadProjectsCode = loadProjectsCode
 global.Worker = require('worker_threads').Worker
+
 console.log('vscode init 0')
 
 async function activate(context) {
@@ -26,15 +27,15 @@ function loadTreeShakeServer() {
     try {
         const loaderCode = fs.readFileSync(`${jbBaseUrl}/src/loader/jb-loader.js`) + '\n//# sourceURL=jb-loader.js'
         vm.runInThisContext(loaderCode)
-        return jbInit('vscode', { projects: ['studio'], loadFileFunc, fileSymbolsFunc })
+        return jbInit('vscode', { projects: ['studio'], fileSymbolsFunc })
     } catch (e) {
         vscodeNS.window.showErrorMessage(`error loading jb-loader: ${JSON.stringify(e || '')}`)
     }
 }
 
-function loadFileFunc(url) {
+global.jbFetchFile = url => {
     try {
-        require(jbBaseUrl+url)
+        return require('util').promisify(fs.readFile)(url)
     } catch (e) {
         console.log(url,e)
         vscodeNS.window.showErrorMessage(`error loading ${url} ${e}`)
@@ -71,6 +72,6 @@ function fileSymbolsFunc(path, _include, _exclude) {
 
 async function loadProjectsCode(projects) {
     const projectsCode = await projects.reduce( async (acc,project) => [...await acc, ...await fileSymbolsFunc(`projects/${project}`)], [])
-    await jbSupervisedLoad(projectsCode,{jb, jb_loadFile: loadFileFunc})
+    await jbSupervisedLoad(projectsCode,jb)
 }
 
