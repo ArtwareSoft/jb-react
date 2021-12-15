@@ -1,9 +1,17 @@
-fix errors in test runs
-  port - removeEventListeners
-  run FETest in jb.child
 enrich spy logs with rules
   cb message beautifier
-log UI with bread crums
+  log UI with bread crums
+
+studio modules
+  tgp
+  codeEditor - studio
+  sandbox
+  sboxUI
+
+plugin
+  tgp
+sboxUI studio
+
 
 
 remote.dispatcher
