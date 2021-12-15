@@ -133,6 +133,11 @@ jb.extension('ui', {
             return vdom
         }
     },
+    vdomToHtml(vdom) {
+        const childern = (vdom.children || []).map(x=>jb.ui.vdomToHtml(x)).join('')
+        return `<${vdom.tag} ${jb.entries(vdom.attributes).map(([k,v]) => k+'="' +v + '"').join(' ')} ${childern?'':'/'}>
+            ${childern ? childern + '</' + vdom.tag +'>' :''}`
+    },
     cloneVNode(vdom) {
         return jb.ui.unStripVdom(JSON.parse(JSON.stringify(jb.ui.stripVdom(vdom))))
     },

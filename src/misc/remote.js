@@ -31,7 +31,7 @@ jb.component('remote.operator', {
         const varsMap = {}
         const cleanDataObjVars = jb.callbag.map(dataObj => {
             if (typeof dataObj != 'object' || !dataObj.vars) return dataObj
-            const vars = { ...jb.objFromEntries(jb.entries(dataObj.vars).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))), messageId: ++counter } 
+            const vars = { ...jb.objFromEntries(jb.entries(dataObj.vars).filter(e => jb.remoteCtx.shouldPassVar(e[0],profText))), messageId: ++counter } 
             varsMap[counter] = dataObj.vars
             return { data: dataObj.data, vars}
         })

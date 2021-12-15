@@ -57,7 +57,7 @@ jb.component('workerPreviewTest.nodePreview', {
   })
 })
 
-jb.component('workerPreviewTest.addCss', {
+jb.component('FETest.workerPreview.addCss', {
   impl: uiFrontEndTest({
     renderDOM: true,
     timeout: 5000,
@@ -78,7 +78,7 @@ jb.component('workerPreviewTest.addCss', {
   })
 })
 
-jb.component('workerPreviewTest.changeCss', {
+jb.component('FETest.workerPreview.changeCss', {
   impl: uiFrontEndTest({
     renderDOM: true,
     timeout: 5000,
@@ -113,14 +113,6 @@ jb.component('workerPreviewTest.suggestions', {
         studio.propertyPrimitive('sampleProject.main~impl~controls~text')
       ],
     }),
-    checkResultRx: () => jb.ui.renderingUpdates,    
-    userInputRx: source.promises(
-      uiAction.waitForSelector('[cmp-pt="text"]'),
-      uiAction.waitForSelector('input'),
-      userInput.setText('hello %','input'),
-      userInput.keyboardEvent({ selector: 'input', type: 'keyup', keyCode: ()=> '%'.charCodeAt(0) }),
-      //uiAction.waitForSelector('.jb-dialog .jb-item'),
-    ),
     action: runActions(
       uiAction.waitForSelector('[cmp-pt="text"]'),
       uiAction.waitForSelector('input'),

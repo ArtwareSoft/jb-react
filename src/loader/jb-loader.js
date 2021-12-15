@@ -36,8 +36,11 @@ async function jbInit(uri, {projects, plugins, baseUrl, multipleInFrame, fileSym
 async function jbloadJSFile(url,jb,{noSymbols} = {}) {
   globalThis.jbFetchFile = globalThis.jbFetchFile || (path => globalThis.fetch(path).then(x=>x.text()))
   const code = await jbFetchFile(jb.baseUrl+url)
-  if (noSymbols)
+  if (noSymbols) try {
     return globalThis.eval(`${code}//# sourceURL=${url}?${jb.uri}`)
+  } catch (e) {
+    jb.logException(e,`eval lib ${url}`,{code})
+  }
   const funcId = '__'+url.replace(/[^a-zA-Z0-9]/g,'_')
     globalThis.eval(`function ${funcId}(jb) {${jb.macro ? jb.macro.importAll(): ''}; ${code}
   }//# sourceURL=${url}?${jb.uri}`)

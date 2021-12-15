@@ -1,4 +1,10 @@
+fix errors in test runs
+  port - removeEventListeners
+  run FETest in jb.child
 enrich spy logs with rules
+  cb message beautifier
+log UI with bread crums
+
 
 remote.dispatcher
   multiple data test - nodejs/ multiple nodejs
@@ -10,3 +16,5 @@ preview of vsccode in nodejs
 
 add std ns for common.js
 
+post in 
+ https://stackoverflow.com/questions/376373/pretty-printing-xml-with-javascript

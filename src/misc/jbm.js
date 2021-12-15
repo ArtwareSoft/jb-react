@@ -29,8 +29,14 @@ jb.extension('cbHandler', {
     newId: () => jb.uri + ':' + (jb.cbHandler.counter++),
     get: id => jb.cbHandler.map[id],
     getAsPromise(id,t) { 
+        if (jb.cbHandler.map[id] && jb.cbHandler.map[id].terminated)
+            return Promise.resolve(() => () => {})
         return jb.exec({$: 'waitFor', check: ()=> jb.cbHandler.map[id], interval: 5, times: 10})
-            .catch(err => jb.logError('cbLookUp - can not find cb',{id, in: jb.uri}))
+            .catch(err => {
+                if (!jb.terminated)
+                    jb.logError('cbLookUp - can not find cb',{id, in: jb.uri})
+                return () => {}
+            })
             .then(cb => {
                 if (t == 2) jb.cbHandler.removeEntry(id)
                 return cb
@@ -41,16 +47,16 @@ jb.extension('cbHandler', {
         jb.cbHandler.map[id] = cb
         return id 
     },
-    removeEntry(ids,m) {
+    removeEntry(ids,m,delay=10) {
         jb.log(`remote remove cb handlers at ${jb.uri}`,{ids,m})
-        jb.delay(10).then(()=> // TODO: BUGGY delay - not sure why the delay is needed - test: remoteTest.workerByUri
-            jb.asArray(ids).filter(x=>x).forEach(id => delete jb.cbHandler.map[id])
+        jb.delay(delay).then(()=> // TODO: BUGGY delay - not sure why the delay is needed - test: remoteTest.workerByUri
+            jb.asArray(ids).filter(x=>x).forEach(id => {
+                jb.cbHandler.map[id].terminated = true
+            } )
         )
     },
     terminate() {
-        const keys = Object.keys(jb.cbHandler.map)
-        keys.forEach(id => typeof jb.cbHandler.map[id] == 'function' && jb.cbHandler.map[id](2)) // close connetions - may cause problems in tests
-        keys.forEach(id => delete jb.cbHandler.map[id])
+        Object.keys(jb.cbHandler.map).forEach(k=>delete jb.cbHandler[k])
     }
 })
 
@@ -67,7 +73,7 @@ jb.extension('net', {
         return { ...rPath, ...diableLog}
     },
     handleOrRouteMsg(from,to,handler,m, {blockContentScriptLoop} = {}) {
-        if (jb.frame.terminated) {
+        if (jb.terminated) {
             jb.log(`remote messsage arrived to terminated ${from}`,{from,to, m})
             return
         }
@@ -109,14 +115,21 @@ jb.extension('jbm', {
         if (jb.ports[to]) return jb.ports[to]
         const from = jb.uri
         const port = {
-            frame, from, to,
+            frame, from, to, handlers: [],
             postMessage: _m => {
                 const m = {from, to,..._m}
                 jb.log(`remote sent from ${from} to ${to}`,{m})
                 frame.postMessage(m) 
             },
-            onMessage: { addListener: handler => frame.addEventListener('message', m => jb.net.handleOrRouteMsg(from,to,handler,m.data,options)) },
-            onDisconnect: { addListener: handler => { port.disconnectHandler = handler} }
+            onMessage: { addListener: handler => { 
+                function h(m) { jb.net.handleOrRouteMsg(from,to,handler,m.data,options) }
+                port.handlers.push(h); 
+                return frame.addEventListener('message', h) 
+            }},
+            onDisconnect: { addListener: handler => { port.disconnectHandler = handler} },
+            terminate() {
+                port.handlers.forEach(h=>frame.removeEventListener('message',h))
+            }
         }
         jb.ports[to] = port
         return port
@@ -148,8 +161,9 @@ jb.extension('jbm', {
                         const handlers = jb.cbHandler.map
                         const cbId = jb.cbHandler.newId()
                         const timer = setTimeout(() => {
+                            if (!handlers[cbId] || handlers[cbId].terminated) return
                             const err = { type: 'error', desc: 'remote exec timeout', remoteRun, timeout }
-                            jb.logError('remote exec timeout',err)
+                            jb.logError('remote exec timeout',{timer, uri: jb.uri, h: handlers[cbId]})
                             handlers[cbId] && reject(err)
                         }, timeout)
                         handlers[cbId] = {resolve,reject,remoteRun, timer}
@@ -165,6 +179,7 @@ jb.extension('jbm', {
 
         function initCommandListener() {
             port.onMessage.addListener(m => {
+                if (jb.terminated) return // TODO: removeEventListener
                 jb.log('remote command listener',{m})
                 if ((m.$ || '').indexOf('CB.') == 0)
                     handleCBCommnad(m)
@@ -181,10 +196,11 @@ jb.extension('jbm', {
         function inboundMsg(m) { 
             const {cbId,t,d} = m
             if (t == 2) jb.cbHandler.removeEntry(cbId,m)
-            return jb.cbHandler.getAsPromise(cbId,t).then(cb=> cb && cb(t, t == 0 ? remoteCB(d,cbId,m) : d)) 
+            return jb.cbHandler.getAsPromise(cbId,t).then(cb=> !jb.terminated && cb && cb(t, t == 0 ? remoteCB(d,cbId,m) : d)) 
         }
         function inboundExecResult(m) { 
             jb.cbHandler.getAsPromise(m.cbId).then(h=>{
+                if (jb.terminated) return
                 if (!h) 
                     return jb.logError('remote exec result arrived with no handler',{cbId:m.cbId, m})
                 clearTimeout(h.timer)
@@ -247,13 +263,22 @@ jb.extension('jbm', {
         const childJbm = jb.jbm.childJbms[id]
         childJbm.terminated = true
         jb.log('remote terminate child', {id})
-        Object.keys(jb.ports).filter(x=>x.indexOf(childJbm.uri) == 0)
-            .forEach(uri=>delete jb.ports[uri])
+        Object.keys(jb.ports).filter(x=>x.indexOf(childJbm.uri) == 0).forEach(uri=>{
+                if (jb.ports[uri].terminate)
+                    jb.ports[uri].terminate()
+                delete jb.ports[uri]
+            })
         delete jb.jbm.childJbms[id]
         childJbm.remoteExec(jb.remoteCtx.stripJS(() => {jb.cbHandler.terminate(); terminated = true; if (typeof close1 == 'function') close() } ), {oneway: true} )
+        return childJbm.remoteExec(jb.remoteCtx.stripJS(() => {
+            jb.cbHandler.terminate(); 
+            jb.terminated = true;
+            jb.delay(100).then(() => typeof close == 'function' && close()) // close worker
+            return 'terminated' 
+        }), { oneway: true} )
     },
     terminateAllChildren() {
-        Object.keys(jb.jbm.childJbms).forEach(id=>jb.jbm.terminateChild(id))
+        return Promise.all( Object.keys(jb.jbm.childJbms).map(id=>jb.jbm.terminateChild(id)))
     }
 })
 

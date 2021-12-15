@@ -23,7 +23,7 @@ jb.component('uiTest.treeRightClick', {
   })
 })
 
-jb.component('uiTest.treeDD.betweenBranches', {
+jb.component('FETest.treeDD.betweenBranches', {
   impl: uiFrontEndTest({
     control: tree({
       nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
@@ -41,7 +41,7 @@ jb.component('uiTest.treeDD.betweenBranches', {
   })
 })
 
-jb.component('uiTest.treeDD.sameArray', {
+jb.component('FETest.treeDD.sameArray', {
   impl: uiFrontEndTest({
     control: tree({
       nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
@@ -59,7 +59,7 @@ jb.component('uiTest.treeDD.sameArray', {
   })
 })
 
-jb.component('uiTest.treeDDAndBack', {
+jb.component('FETest.treeDDAndBack', {
   impl: uiFrontEndTest({
     control: tree({
       nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
@@ -80,7 +80,7 @@ jb.component('uiTest.treeDDAndBack', {
   })
 })
 
-jb.component('uiTest.treeDDTwice', {
+jb.component('FETest.treeDDTwice', {
   impl: uiFrontEndTest({
     control: tree({
       nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
@@ -101,7 +101,7 @@ jb.component('uiTest.treeDDTwice', {
   })
 })
 
-jb.component('uiTest.treeDDAfterLast', {
+jb.component('FETest.treeDDAfterLast', {
   impl: uiFrontEndTest({
     control: tree({
       nodeModel: tree.json('%$personWithChildren%', 'Homer'),
@@ -119,7 +119,7 @@ jb.component('uiTest.treeDDAfterLast', {
   })
 })
 
-jb.component('uiTest.treeDD.boundedSelection', {
+jb.component('FETest.treeDD.boundedSelection', {
   impl: uiFrontEndTest({
     control: group({ controls: 
       tree({

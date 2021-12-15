@@ -48,8 +48,7 @@ function portFromDevToolsPort(dtport,to) {
             dtport.postMessage(m) 
         },
         onMessage: { addListener: handler => 
-            dtport.onMessage.addListener(m => 
-                jb.net.handleOrRouteMsg(from,to,handler,m)) },
+            dtport.onMessage.addListener(m => jb.net.handleOrRouteMsg(from,to,handler,m)) },
         onDisconnect: { addListener: handler => { dtport.onDisconnect.addListener(handler)} }
     }
     return port

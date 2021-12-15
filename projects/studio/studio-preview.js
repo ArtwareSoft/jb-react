@@ -36,7 +36,7 @@ jb.component('studio.initPreview', {
             rx.map(obj(prop('op','%op%'), prop('path','%path%'))),
             rx.log('preview change script'),
             rx.var('cssOnlyChange',studio.isCssPath('%path%')),
-            sink.action(remote.action( preview.handleScriptChangeOnPreview('%$cssOnlyChange%'), '%$jbm%'))
+            sink.action(remote.action( {action: preview.handleScriptChangeOnPreview('%$cssOnlyChange%'), jbm: '%$jbm%', oneway: true}))
         )
     ),
 })
@@ -83,7 +83,7 @@ jb.component('preview.handleScriptChangeOnPreview', {
         const handler = jb.watchableComps.handler
         if (path[0] == 'probeTest.label1') return
         if (!jb.comps[path[0]])
-            return jb.logError('handleScriptChangeOnPreview - missing comp', {path, ctx})
+            return jb.logError(`handleScriptChangeOnPreview - missing comp ${path[0]}`, {path, ctx})
         handler.makeWatchable(path[0])
         handler.doOp(handler.refOfPath(path), op, ctx)
 

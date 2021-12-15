@@ -43,6 +43,10 @@ jb.extension('ui', 'react', {
                     jb.ui.runCtxAction(jb.ctxDictionary[ctxIdToRun])
                 } ))
         })(jb.ui.BECmpsDestroyNotification)
+
+        jb.spy.registerEnrichers([
+            r => jb.spy.findProp(r,'delta') && ({ props: {delta: jb.ui.beautifyDelta(jb.spy.findProp(r,'delta')) }})
+        ])   
     },
     h(cmpOrTag,attributes,children) {
         if (cmpOrTag instanceof jb.ui.VNode) return cmpOrTag // Vdom
@@ -263,6 +267,21 @@ jb.extension('ui', 'react', {
         }
 
         Object.assign(elem.attributes,delta.attributes)
+    },
+	beautifyXml(xml) {
+		return xml.trim().split(/>\s*</).reduce( (acc, node) => {
+			const pad = Math.max(0,acc[1] + (node.match( /^\w[^>]*[^\/]/ ) ? 1 :node.match( /^\/\w/ ) ? -1 : 0))
+			return [acc[0] + new Array(pad).join('  ') + '<' + node + '>\n', pad]
+		}, ['',0])[0].slice(1,-2)
+	},    
+    beautifyDelta(delta) {
+        const childs = delta.children
+        const childrenAtts = childs && ['sameOrder','resetAll','deleteCmp'].filter(p=>childs[p]).map(p=>p+'="' + childs[p] +'"').join(' ')
+        const childrenArr = childs.length ? Array.from(Array(childs.length).keys()).map(i=>childs[i]) : []
+        const children = (childrenAtts || childrenArr.length) && `<children ${childrenAtts||''}>${childrenArr.map(ch=>jb.ui.vdomToHtml(ch)).join('')}</children>`
+        const toAppend = childs && childs.toAppend && `<toAppend>${childs.toAppend.map(ch=>jb.ui.vdomToHtml(ch)).join('')}</toAppend>`
+        return jb.ui.beautifyXml(`<delta ${jb.entries(delta.attributes).map(([k,v]) => k+'="' +v + '"').join(' ')}>
+            ${[children,toAppend].filter(x=>x).join('')}</delta>`)
     },
     setAtt(elem,att,val) {
         if (val == '__undefined') val = null
@@ -577,7 +596,7 @@ jb.extension('ui', 'react', {
         if (actualElem instanceof jb.ui.VNode) {
             jb.ui.applyDeltaToVDom(actualElem, actualdelta)
             jb.ui.renderingUpdates.next({delta,cmpId,widgetId: ctx.vars.headlessWidgetId})
-            if (jb.path(jb,'parent.uri') == 'tests') // used for distributedWidget tests
+            if (ctx.vars.uiTest && jb.path(jb,'parent.uri') == 'tests' && jb.path(jb,'parent.ui.renderingUpdates')) // used for distributedWidget tests
                 jb.parent.ui.renderingUpdates.next({delta})
         } else if (actualElem) {
             jb.ui.applyDeltaToDom(actualElem, actualdelta)

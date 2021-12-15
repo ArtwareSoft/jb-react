@@ -80,7 +80,7 @@ jb.component('uiTest', {
 				rx.log('userInput'),
 				rx.takeUntil('%$$testFinished%'),
 				userInput.eventToRequest(),
-				rx.filter(({data}) => data.$ == 'runCtxAction'),
+				rx.filter(({data}) => data && data.$ == 'runCtxAction'),
 				rx.log('userRequest'),
 				sink.action(({data}) => jb.ui.widgetUserRequests.next(data))
 			)
@@ -100,7 +100,7 @@ jb.component('uiTest', {
 			rx.takeUntil('%$$testFinished%'),
 			rx.var('html',uiTest.vdomResultAsHtml()),
 			rx.var('success', pipeline('%$html%', call('expectedResult'), last())),
-			rx.log('check test result', obj(prop('success','%$success%'), prop('html','%$html%'))),
+			rx.log('check ui test result', obj(prop('success','%$success%'), prop('html','%$html%'))),
 			rx.filter('%$success%'), // if failure wait for the next delta
 			rx.map('%$success%'),
 			rx.take(1),
@@ -155,7 +155,7 @@ jb.component('uiFrontEndTest', {
 				const resultHtml = elemToTest.outerHTML
 				const expectedResultRes = expectedResult(ctx.setData(resultHtml))
 				const success = !! (expectedResultRes && !reason)
-				jb.log('check test result',{testID, success, reason, html: resultHtml})
+				jb.log('check FE test result',{testID, success, reason, html: resultHtml})
 				const result = { id: testID, success, reason, renderDOM}
 				// default cleanup
 				if (!show) { //} && !singleTest) {
@@ -212,11 +212,19 @@ jb.component('uiTest.applyVdomDiff', {
 })
 
 jb.extension('test', {
-	initExtension() { return { success_counter: 0, fail_counter: 0, startTime: new Date().getTime() } },
+	initExtension() { 
+		jb.test.initSpyEnrichers()
+		return { success_counter: 0, fail_counter: 0, startTime: new Date().getTime() } 
+	},
 	goto_editor: id => fetch(`/?op=gotoSource&comp=${id}`),
 	hide_success_lines: () => jb.frame.document.querySelectorAll('.success').forEach(e=>e.style.display = 'none'),
 	profileSingleTest: testID => new jb.core.jbCtx().setVars({testID}).run({$: testID}),
-
+	initSpyEnrichers() {
+		jb.spy.registerEnrichers([
+			r => r.logNames == 'check test result' && ({ props: {success: r.success, data: r.expectedResultCtx.data, id: r.expectedResultCtx.vars.testId }}),
+			r => r.logNames == 'check ui test result' && ({ props: {success: r.success, html: jb.ui.beautifyXml(r.html), data: r.data, id: r.testId }})
+		])
+	},
 	runInner(propName, ctx) {
 		const profile = ctx.profile
 		return profile[propName] && ctx.runInner(profile[propName],{type: 'data'}, propName)
@@ -233,7 +241,7 @@ jb.extension('test', {
 	runInStudio(profile) {
 		return profile && jb.ui.parentFrameJb().exec(profile)
 	},
-	cleanBeforeRun() {
+	async cleanBeforeRun() {
 		jb.db.watchableHandlers.forEach(h=>h.dispose())
 		jb.db.watchableHandlers = [new jb.watchable.WatchableValueByRef(jb.watchable.resourcesRef)];
 		jb.entries(JSON.parse(jb.test.initial_resources || '{}')).filter(e=>e[0] != 'studio').forEach(e=>jb.db.resource(e[0],e[1]))
@@ -245,8 +253,8 @@ jb.extension('test', {
 		}
 		if (!jb.spy.log) jb.spy.initSpy({spyParam: 'test'})
 		jb.spy.clear()
-		//jb.jbm.terminateAllChildren()
-		jb.ui.garbageCollectCtxDictionary(true,true)
+		// await jb.jbm.terminateAllChildren()
+		// jb.ui.garbageCollectCtxDictionary(true,true)
 	},
 	countersErrors(expectedCounters,allowError) {
 		if (!jb.spy.log) return ''
@@ -274,13 +282,18 @@ jb.extension('test', {
 		const tstCtx = jb.ui.extendWithServiceRegistry()
 			.setVars({ testID, singleTest: jb.test.singleTest, $testFinished })
 		const start = new Date().getTime()
-		!doNotcleanBeforeRun && jb.test.cleanBeforeRun()
+//		console.log('start clean before',{testID})
+		await !doNotcleanBeforeRun && jb.test.cleanBeforeRun()
+//		console.log('end clean before',{testID})
 		jb.log('start test',{testID})
 		const res = await tstCtx.run({$:testID})
 		$testFinished.next(1)
 		$testFinished.complete()
 		res.duration = new Date().getTime() - start
 		jb.log('end test',{testID,res})
+		await jb.jbm.terminateAllChildren()
+		jb.ui.garbageCollectCtxDictionary(true,true)
+
 		res.show = () => {
 			const profile = jb.comps[testID]
 			if (!profile.impl.control) return

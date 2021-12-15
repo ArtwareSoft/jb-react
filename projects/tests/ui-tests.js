@@ -549,7 +549,7 @@ jb.component('uiTest.itemlistWithSelect', {
   })
 })
 
-jb.component('uiTest.itemlistWithSelect.click', {
+jb.component('FETest.itemlistWithSelect.click', {
   impl: uiFrontEndTest({
     control: itemlist({
       items: '%$people%',
@@ -561,7 +561,7 @@ jb.component('uiTest.itemlistWithSelect.click', {
   })
 })
 
-jb.component('uiTest.itemlistDD', {
+jb.component('FETest.itemlistDD', {
   impl: uiFrontEndTest({
     renderDOM: true,
     control: group({
@@ -850,7 +850,7 @@ jb.component('uiTest.itemlistContainerSearchCtrl', {
           itemlist.selection({autoSelectFirst: true}),
           itemlist.keyboardSelection({
             autoFocus: true,
-            onEnter: writeValue('%$person/selected%', '%name%')
+            onEnter: writeValue('%$res/selected%', '%name%')
           })
         ]
       })
@@ -867,11 +867,14 @@ jb.component('uiTest.itemlistContainerSearch', {
   })
 })
 
-jb.component('uiTest.itemlistContainerSearchEnterOnLi', {
+jb.component('FETest.itemlistContainerSearchEnterOnLi', {
   impl: uiFrontEndTest({
+    renderDOM: true,
+    vars: Var('res',obj()),
     control: uiTest.itemlistContainerSearchCtrl(),
+    //userInput: userInput.keyboardEvent({selector: '.jb-itemlist', type: 'keydown', keyCode: 13}),
     action: uiAction.keyboardEvent({selector: '.jb-itemlist', type: 'keydown', keyCode: 13}),
-    expectedResult: ctx => ctx.run(equals('%$person/selected%', 'Homer Simpson'))
+    expectedResult: equals('%$res/selected%', 'Homer Simpson')
   })
 })
 
@@ -973,7 +976,7 @@ jb.component('uiTest.editableTextInGroup', {
   })
 })
 
-jb.component('uiTest.onKey', {
+jb.component('FETest.onKey', {
   impl: uiFrontEndTest({
     control: editableText({title: 'name', databind: '%$person/name%',
       features: [id('inp'), feature.onKey('ctrl-Enter', openDialog({title: 'hello'}))]
@@ -1730,14 +1733,13 @@ jb.component('menuTest.pulldown.inner', {
   impl: uiTest({
     control: menu.control({menu: menuTest.menu1(), style: menuStyle.pulldown({})}),
     userInput: userInput.click('[$text="File"]','openPopup'),
-    expectedResult: contains(['File', 'Edit', 'dynamic-1', 'dynamic-3'])
+    expectedResult: and(contains('Open'),contains(['File', 'Edit', 'dynamic-1', 'dynamic-3']))
   })
 })
 
 jb.component('menuTest.contextMenu', {
   impl: uiTest({
     control: menu.control({menu: menuTest.menu1()}),
-    action: ctx => jb.delay(1),
     expectedResult: contains(['File', 'Edit'])
   })
 })

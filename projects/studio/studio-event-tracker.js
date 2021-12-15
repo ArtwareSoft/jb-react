@@ -327,7 +327,7 @@ jb.component('eventTracker.eventItems', {
     if (!spy) return []
     //const checkEv = jb.comps['eventTracker.isNotDebuggerEvent'].impl // efficiency syntax
     //spy.logs = spy.logs.filter(data=> checkEv({data}))
-    const items = jb.spy.search(query,{spy})
+    const items = jb.spy.search(query,{spy, enrich: false})
       
     jb.log('eventTracker items',{ctx,spy,query,items})
     const itemsWithTimeBreak = items.reduce((acc,item,i) => i && item.time - items[i-1].time > 100 ? 

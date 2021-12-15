@@ -1,13 +1,13 @@
 jb.extension('remoteCtx', {
     initExtension() {
-        return { allwaysPassVars: ['tstWidgetId','disableLog']}
+        return { allwaysPassVars: ['tstWidgetId','disableLog','uiTest']}
     },
     stripCtx(ctx) {
         if (!ctx) return null
         const isJS = typeof ctx.profile == 'function'
         const profText = jb.utils.prettyPrint(ctx.profile)
         const vars = jb.objFromEntries(jb.entries(ctx.vars)
-            .filter(e => jb.remoteCtx.allwaysPassVars.indexOf(e[0]) != -1 || profText.match(new RegExp(`\\b${e[0]}\\b`)))
+            .filter(e => jb.remoteCtx.shouldPassVar(e[0],profText))
             .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
         const data = jb.remoteCtx.usingData(profText) && jb.remoteCtx.stripData(ctx.data) 
         const params = jb.objFromEntries(jb.entries(isJS ? ctx.params: jb.entries(jb.path(ctx.cmpCtx,'params')))
@@ -44,7 +44,7 @@ jb.extension('remoteCtx', {
         if (!profile || !runCtx) return jb.remoteCtx.stripJS(f)
         const profText = jb.utils.prettyPrint(profile)
         const profNoJS = jb.remoteCtx.stripJSFromProfile(profile)
-        const vars = jb.objFromEntries(jb.entries(runCtx.vars).filter(e => jb.remoteCtx.allwaysPassVars.indexOf(e[0]) != -1 || profText.match(new RegExp(`\\b${e[0]}\\b`)))
+        const vars = jb.objFromEntries(jb.entries(runCtx.vars).filter(e => jb.remoteCtx.shouldPassVar(e[0],profText))
             .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
         const params = jb.objFromEntries(jb.entries(jb.path(runCtx.cmpCtx,'params')).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
@@ -100,6 +100,7 @@ jb.extension('remoteCtx', {
             jb.logException(e,'eval profile',{code})
         }        
     },
+    shouldPassVar: (varName, profText) => jb.remoteCtx.allwaysPassVars.indexOf(varName) != -1 || profText.match(new RegExp(`\\b${varName}\\b`)),
     usingData: profText => profText.match(/({data})|(ctx.data)|(%[^$])/)
 })
 

@@ -47,6 +47,19 @@ jb.component('uiAction.waitForSelector', {
   impl: waitFor((ctx,{},{selector}) => jb.ui.elemOfSelector(selector,ctx))
 })
 
+jb.component('uiAction.waitForFESelector', {
+  type: 'action',
+  params: [
+    {id: 'selector', as: 'string' },
+  ],
+  impl: waitFor((ctx,{},{selector}) => {
+    const elem = jb.ui.elemOfSelector(selector,ctx)
+    const cmpElem = elem && jb.ui.closestCmpElem(elem)
+    if (!cmpElem) return false
+    return !cmpElem.getAttribute('interactive') || jb.path(cmpElem,'_component.state.frontEndStatus') == 'ready'
+  })
+})
+
 jb.component('uiAction.waitForCompReady', {
   type: 'action',
   params: [
@@ -66,7 +79,7 @@ jb.component('uiAction.scrollBy', {
         {id: 'scrollBy', as: 'number'},
       ],
       impl: runActions(
-        uiAction.waitForSelector('%$selector%'),
+        uiAction.waitForFESelector('%$selector%'),
         (ctx,{elemToTest},{selector,scrollBy}) => {
           const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : elemToTest
           elem && elem.scrollBy(scrollBy,scrollBy)
@@ -81,13 +94,15 @@ jb.component('uiAction.setText', {
       {id: 'value', as: 'string', mandatory: true},
       {id: 'selector', as: 'string', defaultValue: 'input,textarea'}
     ],
-    impl: (ctx,value,selector) => {
-          const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : ctx.vars.elemToTest;
+    impl: runActions(
+      uiAction.waitForFESelector('%$selector%'),
+      (ctx,{elemToTest},{value,selector}) => {
+          const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : elemToTest;
           jb.ui.findIncludeSelf(elem,'input,textarea').forEach(e=>e.value= value)
           const ev = { type: 'blur', currentTarget: elem, target: {value}}
           jb.log('test setText',{ev,elem,selector,ctx})
           jb.ui.handleCmpEvent(ev)
-      }
+      })
 })
 
 jb.component('uiAction.click', {
@@ -96,7 +111,7 @@ jb.component('uiAction.click', {
       {id: 'selector', as: 'string'},
     ],
     impl: runActions(
-      uiAction.waitForSelector('%$selector%'),
+      uiAction.waitForFESelector('%$selector%'),
       (ctx,{elemToTest},{selector}) => {
         const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : elemToTest
         jb.log('test click',{elem,selector,ctx})
@@ -112,8 +127,15 @@ jb.component('uiAction.keyboardEvent', {
       {id: 'keyCode', as: 'number'},
       {id: 'ctrl', as: 'string', options: ['ctrl', 'alt']}
     ],
-    impl: (ctx,selector,type,keyCode,ctrl) => {
-        const elem = selector ? ctx.vars.elemToTest.querySelector(selector) : ctx.vars.elemToTest
+    impl: runActions(
+      uiAction.waitForFESelector('%$selector%'),
+      (ctx,{elemToTest},{selector,type,keyCode,ctrl}) => {
+        // const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : ctx.vars.elemToTest
+        // const ev = ({ selector, type, keyCode , currentTarget: elem, target: elem, ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt'})
+        // jb.log('test keyboardEvent',{ev,elem,selector,ctx})
+        // jb.ui.handleCmpEvent(ev)
+
+        const elem = selector ? ctx.vars.elemToTest.querySelector(selector) : elemToTest
         if (!elem) return
         const e = new KeyboardEvent(type,{ ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt' })
         Object.defineProperty(e, 'keyCode', { get : _ => keyCode })
@@ -121,5 +143,5 @@ jb.component('uiAction.keyboardEvent', {
         jb.log('test keyboardEvent',{e,elem,selector,type,keyCode,ctx})
         elem.dispatchEvent(e)
         //return jb.delay(1);
-      }
+      })
 })

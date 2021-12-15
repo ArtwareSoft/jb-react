@@ -4,6 +4,7 @@ jb.extension('spy', {
 		// jb.spy._log() -- for codeLoader
 		return {
 			logs: [],
+			enrichers: [],
 			settings: { 
 				includeLogs: 'exception,error',
 				stackFilter: /spy|jb_spy|Object.log|rx-comps|jb-core|node_modules/i,
@@ -30,7 +31,14 @@ jb.extension('spy', {
 		return jb.spy
 		// for loader - jb.spy.clear(), jb.spy.search()
 	},
-
+	registerEnrichers(enrichers) {
+		jb.spy.enrichers = [...jb.spy.enrichers, ...jb.asArray(enrichers)]
+	},
+	findProp(o,prop,maxDepth=1) {
+		if (maxDepth < 1) return o[prop]
+		return o[prop] 
+			|| Object.keys(o).reduce((found,k) => found || (o[k] && typeof o[k] == 'object' && jb.spy.findProp(o[k],prop,maxDepth-1)), false)
+	},
 	memoryUsage: () => jb.path(jb.frame,'performance.memory.usedJSHeapSize'),
 	// observable() { 
 	// 	const _jb = jb.path(jb,'studio.studiojb') || jb
@@ -142,11 +150,11 @@ jb.extension('spy', {
 			return [...set1,...set2]
 		}
 	},
-	search(query,{ slice, spy } = {slice: -1000, spy: jb.spy}) { // e.g., dialog core | menu !keyboard  
+	search(query = '',{ slice, spy, enrich } = {slice: -1000, spy: jb.spy, enrich: true}) { // e.g., dialog core | menu !keyboard  
 		const _or = query.split(/,|\|/)
 		return _or.reduce((acc,exp) => 
 			unify(acc, exp.split(' ').reduce((acc,logNameExp) => filter(acc,logNameExp), spy.logs.slice(slice))) 
-		,[])
+		,[]).map(x=>enrich ? jb.spy.enrichRecord(x) : x)
 
 		function filter(set,exp) {
 			return (exp[0] == '!') 
@@ -157,6 +165,20 @@ jb.extension('spy', {
 			let res = [...set1,...set2].sort((x,y) => x.index < y.index)
 			return res.filter((r,i) => i == 0 || res[i-1].index != r.index) // unique
 		}
-	}
+	},
+	enrichRecord(rec) {
+		if (!rec.$ext) {
+			rec.$ext = { sections: [], props: {}}
+			;(jb.spy.enrichers||[]).forEach(f=> {
+				const ext = f(rec)
+				if (ext) {
+					ext.sections && (rec.$ext.sections = [...rec.$ext.sections, ...ext.sections])
+					ext.props && Object.assign(rec.$ext.props, ext.props)
+				}
+			})
+		}
+		return {log: rec.logNames, ...rec.$ext.props, 
+			...jb.objFromEntries(Object.keys(rec).filter(k=>!rec.$ext.props[k]).map(k=>[k,rec[k]])) }
+	},
 })
 
