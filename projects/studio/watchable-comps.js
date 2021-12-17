@@ -1,11 +1,6 @@
 jb.extension('watchableComps', {
   $phase: 30,
   initExtension() {
-      // const compsRef = val => typeof val == 'undefined' ? jb.comps : (jb.comps = val);
-      // compsRef.id = 'comps'
-      // const handler = new jb.watchable.WatchableValueByRef(compsRef)
-      // jb.db.addWatchableHandler(handler)
-      // jb.utils.subscribe(handler.resourceChange, e => source.next(e))
       return { source: jb.callbag.subject() }
   },
   startWatch() {
@@ -17,8 +12,7 @@ jb.extension('watchableComps', {
     jb.db.addWatchableHandler(handler)
     jb.utils.subscribe(handler.resourceChange, e => jb.watchableComps.source.next(e))
     return handler
-  },
-	forceLoad() {}
+  }
 })
 
 jb.extension('watchableComps', 'history', {

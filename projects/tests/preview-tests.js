@@ -88,16 +88,16 @@ jb.component('FETest.workerPreview.changeCss', {
     ),
     control: group({
       controls: [
-        button({title: 'change script', action: writeValue(studio.ref('sampleProject.main~impl~controls~features~1'),() => css('color: red')) }),
+        button({title: 'change script', action: writeValue(studio.ref('sampleProject.main~impl~controls~features~1'),() => css('color: blue')) }),
         preview.remoteWidget()
       ],
     }),
     action: runActions(
       uiAction.waitForSelector('#sampleText'),
       uiAction.click('button'),
-      waitFor(()=>Array.from(document.querySelectorAll('head>style')).find(x=>x.innerText.match(/color: red/)))
+      waitFor(()=>Array.from(document.querySelectorAll('head>style')).find(x=>x.innerText.match(/color: blue/)))
     ),    
-    expectedResult: () => getComputedStyle(document.querySelector('#sampleText')).color == 'rgb(255, 0, 0)',
+    expectedResult: () => getComputedStyle(document.querySelector('#sampleText')).color == 'rgb(0, 0, 255)',
     cleanUp: () => Array.from(document.querySelectorAll('head>style')).filter(x=>x.innerText.match(/tests•wPreview/)).forEach(x=>x.remove())
   })
 })

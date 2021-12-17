@@ -27,7 +27,7 @@ jb.component('studio.initPreview', {
             ({},{circuit}) => jb.component('dataResource.studio', { watchableData: { jbEditor: {}, scriptChangeCounter: 0, circuit } }),
             ({},{dataResources}) => { 
                 jb.ctxByPath = {}; 
-                // for code loader: jb.watchableComps.forceLoad(); jb.ui.createHeadlessWidget()
+                // for code loader: jb.ui.createHeadlessWidget()
              }, 
         ), '%$jbm%'),
         remote.initShadowData('%$studio%', '%$jbm%'),
