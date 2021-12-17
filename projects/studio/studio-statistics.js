@@ -1,7 +1,7 @@
 jb.extension('studio', 'statistics', {
   $phase: 50,
   initExtension() {
-    jb.utils.subscribe(jb.watchableComps.handler.resourceChange, () => jb.studio.statistics = {})
+    jb.utils.subscribe(jb.watchableComps.source, () => jb.studio.statistics = {})
     return { statistics: {} }
   },
   calcRefs() {

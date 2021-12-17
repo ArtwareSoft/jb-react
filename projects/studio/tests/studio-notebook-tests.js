@@ -13,7 +13,7 @@ jb.component('notebookTest.compToShadow', {
 //     ),
 //     calculate: remote.data(
 //       pipe(rx.pipe(
-//         studio.scriptChange(),
+//         watchableComps.scriptChange(),
 //         rx.log('test'),
 //         rx.map('%newVal%'),
 //         rx.take(1)

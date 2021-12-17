@@ -32,7 +32,7 @@ jb.component('studio.initPreview', {
         ), '%$jbm%'),
         remote.initShadowData('%$studio%', '%$jbm%'),
         rx.pipe(
-            source.callbag(() => jb.watchableComps.handler.resourceChange),
+            source.callbag(() => jb.watchableComps.source),
             rx.map(obj(prop('op','%op%'), prop('path','%path%'))),
             rx.log('preview change script'),
             rx.var('cssOnlyChange',studio.isCssPath('%path%')),
@@ -80,7 +80,7 @@ jb.component('preview.handleScriptChangeOnPreview', {
     ],
     impl: (ctx, cssOnlyChange) => {
         const {op, path} = ctx.data
-        const handler = jb.watchableComps.handler
+        const handler = jb.watchableComps.startWatch()
         if (path[0] == 'probeTest.label1') return
         if (!jb.comps[path[0]])
             return jb.logError(`handleScriptChangeOnPreview - missing comp ${path[0]}`, {path, ctx})

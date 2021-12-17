@@ -13,7 +13,13 @@ global.Worker = require('worker_threads').Worker
 console.log('vscode init 0')
 
 async function activate(context) {
-    global.jb = await loadTreeShakeServer()
+    try {
+        const loaderCode = fs.readFileSync(`${jbBaseUrl}/src/loader/jb-loader.js`) + '\n//# sourceURL=jb-loader.js'
+        vm.runInThisContext(loaderCode)
+        global.jb = await jbInit('vscode', { projects: ['studio'], fileSymbolsFunc })
+    } catch (e) {
+        return vscodeNS.window.showErrorMessage(`error loading jb-loader: ${JSON.stringify(e || '')}`)
+    }
     console.log('vscode init')
     await jb.vscode.init()
 
@@ -23,15 +29,15 @@ async function activate(context) {
 }
 exports.activate = activate
 
-function loadTreeShakeServer() {
-    try {
-        const loaderCode = fs.readFileSync(`${jbBaseUrl}/src/loader/jb-loader.js`) + '\n//# sourceURL=jb-loader.js'
-        vm.runInThisContext(loaderCode)
-        return jbInit('vscode', { projects: ['studio'], fileSymbolsFunc })
-    } catch (e) {
-        vscodeNS.window.showErrorMessage(`error loading jb-loader: ${JSON.stringify(e || '')}`)
-    }
-}
+// function loadTreeShakeServer() {
+//     try {
+//         const loaderCode = fs.readFileSync(`${jbBaseUrl}/src/loader/jb-loader.js`) + '\n//# sourceURL=jb-loader.js'
+//         vm.runInThisContext(loaderCode)
+//         return jbInit('vscode', { projects: ['studio'], fileSymbolsFunc })
+//     } catch (e) {
+//         vscodeNS.window.showErrorMessage(`error loading jb-loader: ${JSON.stringify(e || '')}`)
+//     }
+// }
 
 global.jbFetchFile = url => {
     try {

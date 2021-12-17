@@ -1,11 +1,22 @@
 jb.extension('watchableComps', {
   $phase: 30,
   initExtension() {
-        const compsRef = val => typeof val == 'undefined' ? jb.comps : (jb.comps = val);
-        compsRef.id = 'comps'
-        const handler = new jb.watchable.WatchableValueByRef(compsRef)
-        jb.db.addWatchableHandler(handler)
-        return { handler }
+      // const compsRef = val => typeof val == 'undefined' ? jb.comps : (jb.comps = val);
+      // compsRef.id = 'comps'
+      // const handler = new jb.watchable.WatchableValueByRef(compsRef)
+      // jb.db.addWatchableHandler(handler)
+      // jb.utils.subscribe(handler.resourceChange, e => source.next(e))
+      return { source: jb.callbag.subject() }
+  },
+  startWatch() {
+    if (jb.watchableComps.handler)
+      return jb.watchableComps.handler
+    const compsRef = val => typeof val == 'undefined' ? jb.comps : (jb.comps = val);
+    compsRef.id = 'comps'
+    const handler = jb.watchableComps.handler = new jb.watchable.WatchableValueByRef(compsRef)
+    jb.db.addWatchableHandler(handler)
+    jb.utils.subscribe(handler.resourceChange, e => jb.watchableComps.source.next(e))
+    return handler
   },
 	forceLoad() {}
 })
@@ -13,7 +24,7 @@ jb.extension('watchableComps', {
 jb.extension('watchableComps', 'history', {
 	$phase: 50,
   initExtension() {
-    jb.utils.subscribe(jb.watchableComps.handler.resourceChange, e => jb.watchableComps.updateHistory(e))
+    jb.utils.subscribe(jb.watchableComps.source, e => jb.watchableComps.updateHistory(e))
     return {
         undoIndex: 0,
         lastSaveIndex: 0,
@@ -49,17 +60,16 @@ jb.extension('watchableComps', 'history', {
       jb.watchableComps.handler.resourceVersions = version.opEvent.resourceVersionsBefore
     }
   }
-//  jb.watchableComps.handler.resourceChange.next(opEvent) ???
+//  jb.watchableComps.source.next(opEvent) ???
 })
 
 jb.extension('watchableComps', 'studio', {
 	$phase: 50,
 	initExtension() {
-		  jb.studio.scriptChange && jb.utils.subscribe(jb.watchableComps.handler.resourceChange, e => jb.watchableComps.scriptChangeHnadler(e))      
+		  jb.utils.subscribe(jb.watchableComps.source, e => jb.watchableComps.scriptChangeHnadler(e))      
   },
 	scriptChangeHnadler(e) {
 		jb.log('watchable studio script changed',{ctx: e.srcCtx,e})
-		jb.studio.scriptChange.next(e)
 		writeValueToDataResource(e.path,e.newVal)
 		if (jb.studio.isStudioCmp(e.path[0]))
 			jb.studio.refreshStudioComponent(e.path)
@@ -125,9 +135,9 @@ jb.component('watchableComps.scriptHistoryItems', {
   impl: ctx => jb.watchableComps.compsHistory
 })
 
-jb.component('studio.scriptChange', {
+jb.component('watchableComps.scriptChange', {
 	type: 'rx',
-	impl: source.callbag(() => jb.studio.scriptChange)
+	impl: source.callbag(() => jb.watchableComps.source)
 })
 
 jb.component('studio.scriptHistory', {
@@ -154,7 +164,7 @@ jb.component('studio.scriptHistory', {
       })
     ],
     features: [
-      followUp.watchObservable(studio.scriptChange(), 500),
+      followUp.watchObservable(watchableComps.scriptChange(), 500),
       css.height({height: '400', overflow: 'auto', minMax: 'max'})
     ]
   })

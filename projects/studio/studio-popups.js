@@ -126,7 +126,7 @@ jb.component('studioDialogFeature.studioPopupLocation', {
 
 jb.component('studioDialogFeature.refreshTitle', {
   type: 'dialog-feature',
-  impl: frontEnd.flow(studio.scriptChange(), rx.takeUntil( '%$cmp.destroyed%' ), sink.FEMethod('recalcTitle'))
+  impl: frontEnd.flow(watchableComps.scriptChange(), rx.takeUntil( '%$cmp.destroyed%' ), sink.FEMethod('recalcTitle'))
 })
 
 jb.component('studio.codeMirrorMode', {

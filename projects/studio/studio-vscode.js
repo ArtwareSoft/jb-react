@@ -102,7 +102,7 @@ jb.extension('vscode', {
             return loadProjectsCode(projects)
     },
     applyDeltaFromStudio() {
-        jb.utils.subscribe(jb.watchableComps.handler.resourceChange, async e => {
+        jb.utils.subscribe(jb.watchableComps.source, async e => {
             const compId = e.path[0]
             const comp = jb.comps[compId]
             try {

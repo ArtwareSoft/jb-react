@@ -42,7 +42,7 @@ jb.component('remote.initShadowComponent', {
         studio.initLocalCompsRefHandler({compIdAsReferred: '%$compId%', initUIObserver: '%$initUIObserver%'}),
       ), '%$jbm%'),
       rx.pipe(
-          studio.scriptChange(),
+          watchableComps.scriptChange(),
           rx.filter(equals('%path/0%','%$compId%')),
           rx.map(obj(prop('path','%path%'),prop('op','%op%'))),
           sink.action(remote.action( ctx =>

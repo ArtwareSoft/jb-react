@@ -1,8 +1,9 @@
 jb.extension('studio', 'path', {
   $phase: 40,
-  initExtension() { return { 
+  initExtension() { 
+	jb.watchableComps.startWatch()
+	  return { 
 		previewjb: jb,
-		scriptChange: jb.callbag.subject()
   }},
   execInStudio: (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.core.jbCtx().run(...args),
   // adaptors

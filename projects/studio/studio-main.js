@@ -153,7 +153,7 @@ jb.component('studio.ctxCounters', {
     text: ctx => (jb.frame.performance && performance.memory && performance.memory.usedJSHeapSize / 1000000)  + 'M',
     features: [
       css('{ position: absolute; bottom: 0; right: 0; }'),
-      followUp.watchObservable(studio.scriptChange(), 500)
+      followUp.watchObservable(watchableComps.scriptChange(), 500)
     ]
   })
 })

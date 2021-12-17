@@ -136,10 +136,10 @@ jb.component('studio.watchScriptChanges', {
     {id: 'path', as: 'string', description: 'under this path, empty means any path'},
     {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
   ],
-  impl: watchRef({ref: '%$studio/lastStudioActivity%', allowSelfRefresh: '%$allowSelfRefresh%'}) //followUp.flow(studio.scriptChange(), rx.log('watch script refresh'), sink.refreshCmp())
+  impl: watchRef({ref: '%$studio/lastStudioActivity%', allowSelfRefresh: '%$allowSelfRefresh%'}) //followUp.flow(watchableComps.scriptChange(), rx.log('watch script refresh'), sink.refreshCmp())
 })
 
 jb.component('studio.watchComponents', {
   type: 'feature',
-  impl: followUp.flow(studio.scriptChange(), rx.filter('%path/length%==1'), sink.refreshCmp())
+  impl: followUp.flow(watchableComps.scriptChange(), rx.filter('%path/length%==1'), sink.refreshCmp())
 })
