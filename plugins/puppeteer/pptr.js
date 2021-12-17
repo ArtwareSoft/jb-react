@@ -1,4 +1,3 @@
-// var {pptr} = jb.ns('pptr,rx')
 
 jb.component('pptr.newPage', {
   type: 'rx,pptr',
@@ -131,31 +130,30 @@ jb.component('pptr.elementWithText', {
 //     ],
 //     impl: pptr.mapPromise((ctx,{},{propName}) => jb.pptr.runMethod(ctx,'evaluate',eval(`x => x && x.${propName} `))),
 // })
+jb.component('pptr.waitForFunction', {
+    type: 'rx,pptr',
+    params: [
+        {id: 'condition', as: 'string' },
+        {id: 'noReturnValue', as: 'boolean' },
+        {id: 'polling', type: 'pptr.polling', defaultValue: pptr.raf() },
+        {id: 'timeout', as: 'number', defaultValue: 5000, description: '0 to disable, maximum time to wait for in milliseconds' },
+    ],
+    impl: If('%$noReturnValue%', 
+        pptr.doPromise((ctx,{},{condition,polling,timeout}) => jb.pptr.runMethod(ctx,'waitForFunction',condition,{polling, timeout})),
+        pptr.mapPromise((ctx,{},{condition,polling,timeout}) => jb.pptr.runMethod(ctx,'waitForFunction',condition,{polling, timeout})))
+})
 
-// jb.component('pptr.waitForFunction', {
-//     type: 'rx,pptr',
-//     params: [
-//         {id: 'condition', as: 'string' },
-//         {id: 'noReturnValue', as: 'boolean' },
-//         {id: 'polling', type: 'pptr.polling', defaultValue: pptr.raf() },
-//         {id: 'timeout', as: 'number', defaultValue: 5000, description: '0 to disable, maximum time to wait for in milliseconds' },
-//     ],
-//     impl: If('%$noReturnValue%', 
-//         pptr.doPromise((ctx,{},{condition,polling,timeout}) => jb.pptr.runMethod(ctx,'waitForFunction',condition,{polling, timeout})),
-//         pptr.mapPromise((ctx,{},{condition,polling,timeout}) => jb.pptr.runMethod(ctx,'waitForFunction',condition,{polling, timeout})))
-// })
-
-// jb.component('pptr.evaluate', {
-//   type: 'rx,pptr',
-//   description: 'evaluate javascript expression',
-//   params: [
-//     {id: 'expression', as: 'string', mandatory: true},
-//     {id: 'noReturnValue', as: 'boolean' },
-//   ],
-//   impl: If('%$noReturnValue%', 
-//     pptr.doPromise((ctx,{},{condition,polling,timeout}) => jb.pptr.runMethod(ctx,'evaluate',condition,{polling, timeout})),
-//     pptr.mapPromise((ctx,{},{condition,polling,timeout}) => jb.pptr.runMethod(ctx,'evaluate',condition,{polling, timeout})))
-// })
+jb.component('pptr.evaluate', {
+  type: 'rx,pptr',
+  description: 'evaluate javascript expression',
+  params: [
+    {id: 'expression', as: 'string', mandatory: true},
+    {id: 'noReturnValue', as: 'boolean' },
+  ],
+  impl: If('%$noReturnValue%', 
+    pptr.doPromise((ctx,{},{condition,polling,timeout}) => jb.pptr.runMethod(ctx,'evaluate',condition,{polling, timeout})),
+    pptr.mapPromise((ctx,{},{condition,polling,timeout}) => jb.pptr.runMethod(ctx,'evaluate',condition,{polling, timeout})))
+})
 
 
 jb.component('pptr.mouseClick', {

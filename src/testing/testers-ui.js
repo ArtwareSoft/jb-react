@@ -23,7 +23,7 @@ jb.component('test.showTestInStudio', {
 			const spyParam = jb.utils.unique([...spy.spyParam.split(','),'test']).join(',')
 			jb.spy.initSpy({spyParam})
 			jb.spy.clear()
-			const res = await jb.test.runOneTest(testId,{doNotcleanBeforeRun: true})
+			const res = await jb.test.runOneTest(testId,{doNotcleanBeforeRun: true, show: true})
 			jb.db.watchableHandlers.forEach((h,i) =>{
 				h.resources(watchablesBefore[i].resources)
 				h.objToPath = watchablesBefore[i].objToPath

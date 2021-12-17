@@ -1,6 +1,6 @@
 jb.component('sampleProject.main', {
   impl: group({
-    controls: text('hello'),
+    controls: text({text: 'hello', features: [id('sampleText')] }),
     features: [
 //      group.wait(delay(100)),
       variable('var1','world'),
@@ -64,16 +64,16 @@ jb.component('FETest.workerPreview.addCss', {
     runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
     control: group({
       controls: [
-        button({title: 'change script', action: writeValue(studio.ref('sampleProject.main~impl~controls~features'),() => css('color: red')) }),
+        button({title: 'change script', action: writeValue(studio.ref('sampleProject.main~impl~controls~features~1'),() => css('color: red')) }),
         preview.remoteWidget()
       ],
     }),
     action: runActions(
-      uiAction.waitForSelector('[cmp-pt="text"]'),
+      uiAction.waitForSelector('#sampleText'),
       uiAction.click('button'),
       waitFor(()=>Array.from(document.querySelectorAll('head>style')).find(x=>x.innerText.match(/tests•wPreview/)))
     ),    
-    expectedResult: () => getComputedStyle(document.querySelector('[cmp-pt="text"]')).color == 'rgb(255, 0, 0)',
+    expectedResult: () => getComputedStyle(document.querySelector('#sampleText')).color == 'rgb(255, 0, 0)',
     cleanUp: () => Array.from(document.querySelectorAll('head>style')).filter(x=>x.innerText.match(/tests•wPreview/)).forEach(x=>x.remove())
   })
 })
@@ -84,21 +84,21 @@ jb.component('FETest.workerPreview.changeCss', {
     timeout: 5000,
     runBefore: runActions(
       writeValue('%$studio/circuit%','sampleProject.main'),
-      writeValue(studio.ref('sampleProject.main~impl~controls~features'),() => css('color: green'))
+      writeValue(studio.ref('sampleProject.main~impl~controls~features~1'),() => css('color: green'))
     ),
     control: group({
       controls: [
-        button({title: 'change script', action: writeValue(studio.ref('sampleProject.main~impl~controls~features'),() => css('color: red')) }),
+        button({title: 'change script', action: writeValue(studio.ref('sampleProject.main~impl~controls~features~1'),() => css('color: red')) }),
         preview.remoteWidget()
       ],
     }),
     action: runActions(
-      uiAction.waitForSelector('[cmp-pt="text"]'),
+      uiAction.waitForSelector('#sampleText'),
       uiAction.click('button'),
       waitFor(()=>Array.from(document.querySelectorAll('head>style')).find(x=>x.innerText.match(/color: red/)))
     ),    
-    expectedResult: () => getComputedStyle(document.querySelector('[cmp-pt="text"]')).color == 'rgb(255, 0, 0)',
-    cleanUp: () => Array.from(document.querySelectorAll('head>style')).filter(x=>x.innerText.match(/tests•preview/)).forEach(x=>x.remove())
+    expectedResult: () => getComputedStyle(document.querySelector('#sampleText')).color == 'rgb(255, 0, 0)',
+    cleanUp: () => Array.from(document.querySelectorAll('head>style')).filter(x=>x.innerText.match(/tests•wPreview/)).forEach(x=>x.remove())
   })
 })
 

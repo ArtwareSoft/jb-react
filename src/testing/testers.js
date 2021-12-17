@@ -289,7 +289,8 @@ jb.extension('test', {
 		$testFinished.complete()
 		res.duration = new Date().getTime() - start
 		jb.log('end test',{testID,res})
-		await jb.jbm.terminateAllChildren()
+		if (!jb.test.singleTest)
+			await jb.jbm.terminateAllChildren()
 		jb.ui.garbageCollectCtxDictionary(true,true)
 
 		res.show = () => {

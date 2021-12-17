@@ -43,7 +43,7 @@ jb.component('studio.properties', {
         commonFields: [
           group({
             controls: studio.propField('%path%', '%expanded%'),
-            features: [field.columnWidth('300'), studio.disabledSupport('%path%')]
+            features: [field.columnWidth('300'), css.conditionalClass('jb-disabled', studio.disabled('%$path%'))]
           }),
           group({
             controls: studio.propertyToolbar('%path%'),

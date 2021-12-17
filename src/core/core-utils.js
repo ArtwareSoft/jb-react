@@ -84,6 +84,7 @@ jb.extension('utils', { // jb core utils
 jb.extension('utils', { // generic utils
     isEmpty: o => Object.keys(o).length === 0,
     isObject: o => o != null && typeof o === 'object',
+    isPrimitiveValue: val => ['string','boolean','number'].indexOf(typeof val) != -1,
     tryWrapper(f,msg,ctx) { try { return f() } catch(e) { jb.logException(e,msg,{ctx}) }},
     flattenArray(items) {
       let out = [];

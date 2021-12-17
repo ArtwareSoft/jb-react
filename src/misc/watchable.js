@@ -8,10 +8,13 @@ jb.extension('watchable', {
 
   initExtension() {
     jb.watchable.jbId = Symbol("jbId") // used in constructor
+    jb.watchable.initResourcesRef()
+    return {isProxy: Symbol.for("isProxy"), originalVal: Symbol.for("originalVal"), targetVal: Symbol.for("targetVal") }
+  },
+  initResourcesRef() {
     jb.watchable.resourcesRef.id = 'resources' // for loader: jb.watchable.resourcesRef()
     jb.db.watchableHandlers.push(new jb.watchable.WatchableValueByRef(jb.watchable.resourcesRef))
     jb.db.isWatchableFunc[0] = jb.watchable.isWatchable // for loader: jb.db.isWatchable(), jb.watchable.isWatchable()
-    return {isProxy: Symbol.for("isProxy"), originalVal: Symbol.for("originalVal"), targetVal: Symbol.for("targetVal") }
   },
   WatchableValueByRef: class WatchableValueByRef {
     constructor(resources) {

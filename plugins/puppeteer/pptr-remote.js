@@ -1,20 +1,16 @@
-// jb.ns('pptr,remote')
-
-Object.assign(jb.remote.remoteClassNames,{Browser: true, Page: true})
-
-jb.pptr = {
-    initCallbagServer() { // server side
-        global._handlers = {}
-        global.addEventListener = (event,handler) => {
+jb.extension('pptr', 'remote', {
+    initServer() { // server side
+        globalThis._handlers = {}
+        globalThis.addEventListener = (event,handler) => {
           _handlers[event] = _handlers[event] || []
           _handlers[event].push(handler)
         }        
-        global.postMessage = m => global.wsWithjBart.send(m)
-        global.postObj = m => global.wsWithjBart.send(JSON.stringify(jb.remote.prepareForClone(m)))
+        globalThis.postMessage = m => globalThis.wsWithjBart.send(m)
+        globalThis.postObj = m => globalThis.wsWithjBart.send(JSON.stringify(jb.remote.prepareForClone(m)))
 
         const {pipe,fromEvent,filter,map} = jb.callbag
-        global.messageSource = pipe(
-            fromEvent('message',global),
+        globalThis.messageSource = pipe(
+            fromEvent('message',globalThis),
             map(m=>JSON.parse(m)),
             filter(m=>!m.loadCode && !m.require),
             map(m=> jb.remote.evalFunctions(m))
@@ -54,7 +50,7 @@ jb.pptr = {
             return null
         })
     }
-}
+})
 
 jb.component('pptr.runMethodOnPptr', {
     type: 'rx,pptr',
@@ -140,7 +136,7 @@ jb.component('pptr.mapPromise', {
     params: [
       {id: 'func', dynamic: true },
     ],
-    impl: If(remote.onServer(), rx.mapPromise(ctx => ctx.cmpCtx.run('%$func%')), remote.innerRx(rx.mapPromise('%$func%'),pptr.server()))
+    impl: If(remote.onServer(), rx.mapPromise(ctx => ctx.cmpCtx.run('%$func%')), remote.operator(rx.mapPromise('%$func%'),pptr.server()))
 })
 
 jb.component('pptr.doPromise', {
@@ -148,6 +144,6 @@ jb.component('pptr.doPromise', {
     params: [
       {id: 'func', dynamic: true },
     ],
-    impl: If(remote.onServer(), rx.doPromise('%$func%'), remote.innerRx(rx.doPromise('%$func%'),pptr.server()))
+    impl: If(remote.onServer(), rx.doPromise('%$func%'), remote.operator(rx.doPromise('%$func%'),pptr.server()))
 })
 

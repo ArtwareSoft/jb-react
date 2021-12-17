@@ -1,34 +1,8 @@
-jb.extension('watchableComps', 'studio', {
-	$phase: 40,
-	initExtension() {
-		  jb.studio.scriptChange && jb.utils.subscribe(jb.watchableComps.handler.resourceChange, e => jb.watchableComps.scriptChangeHnadler(e))
-  	},
-	scriptChangeHnadler(e) {
-		jb.log('watchable studio script changed',{ctx: e.srcCtx,e})
-		jb.studio.scriptChange.next(e)
-		writeValueToDataResource(e.path,e.newVal)
-		if (jb.studio.isStudioCmp(e.path[0]))
-			jb.studio.refreshStudioComponent(e.path)
-		jb.studio.lastStudioActivity = new Date().getTime()
-		e.srcCtx.run(writeValue('%$studio/lastStudioActivity%',() => jb.studio.lastStudioActivity))
-	
-		jb.studio.highlightByScriptPath(e.path)
-	
-		function writeValueToDataResource(path,value) {
-			if (path.length > 1 && ['watchableData','passiveData'].indexOf(path[1]) != -1) {
-				const resource = jb.db.removeDataResourcePrefix(path[0])
-				const dataPath = '%$' + [resource, ...path.slice(2)].map(x=>isNaN(+x) ? x : `[${x}]`).join('/') + '%'
-				return jb.exec(writeValue(dataPath,_=>value))
-			}
-		}
-	},  
-})
-
-
 jb.extension('studio', 'path', {
+  $phase: 40,
   initExtension() { return { 
-	  previewjb: jb,
-	  scriptChange: jb.callbag.subject()
+		previewjb: jb,
+		scriptChange: jb.callbag.subject()
   }},
   execInStudio: (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.core.jbCtx().run(...args),
   // adaptors
@@ -277,11 +251,6 @@ jb.component('studio.nameOfRef', {
     {id: 'ref', defaultValue: '%%', mandatory: true}
   ],
   impl: (ctx,ref) => jb.studio.nameOfRef(ref)
-})
-
-jb.component('studio.scriptChange', {
-	type: 'rx',
-	impl: source.callbag(() => jb.studio.scriptChange)
 })
 
 jb.component('studio.boolRef', {

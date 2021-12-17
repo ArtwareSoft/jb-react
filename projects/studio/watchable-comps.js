@@ -6,12 +6,12 @@ jb.extension('watchableComps', {
         const handler = new jb.watchable.WatchableValueByRef(compsRef)
         jb.db.addWatchableHandler(handler)
         return { handler }
-    },
-	  forceLoad() {}
+  },
+	forceLoad() {}
 })
 
 jb.extension('watchableComps', 'history', {
-	$phase: 40,
+	$phase: 50,
   initExtension() {
     jb.utils.subscribe(jb.watchableComps.handler.resourceChange, e => jb.watchableComps.updateHistory(e))
     return {
@@ -50,6 +50,32 @@ jb.extension('watchableComps', 'history', {
     }
   }
 //  jb.watchableComps.handler.resourceChange.next(opEvent) ???
+})
+
+jb.extension('watchableComps', 'studio', {
+	$phase: 50,
+	initExtension() {
+		  jb.studio.scriptChange && jb.utils.subscribe(jb.watchableComps.handler.resourceChange, e => jb.watchableComps.scriptChangeHnadler(e))      
+  },
+	scriptChangeHnadler(e) {
+		jb.log('watchable studio script changed',{ctx: e.srcCtx,e})
+		jb.studio.scriptChange.next(e)
+		writeValueToDataResource(e.path,e.newVal)
+		if (jb.studio.isStudioCmp(e.path[0]))
+			jb.studio.refreshStudioComponent(e.path)
+		jb.studio.lastStudioActivity = new Date().getTime()
+		e.srcCtx.run(writeValue('%$studio/lastStudioActivity%',() => jb.studio.lastStudioActivity))
+	
+		jb.studio.highlightByScriptPath(e.path)
+	
+		function writeValueToDataResource(path,value) {
+			if (path.length > 1 && ['watchableData','passiveData'].indexOf(path[1]) != -1) {
+				const resource = jb.db.removeDataResourcePrefix(path[0])
+				const dataPath = '%$' + [resource, ...path.slice(2)].map(x=>isNaN(+x) ? x : `[${x}]`).join('/') + '%'
+				return jb.exec(writeValue(dataPath,_=>value))
+			}
+		}
+	},  
 })
 
 jb.component('watchableComps.changedComps', {
@@ -97,6 +123,11 @@ jb.component('watchableComps.redo', {
 
 jb.component('watchableComps.scriptHistoryItems', {
   impl: ctx => jb.watchableComps.compsHistory
+})
+
+jb.component('studio.scriptChange', {
+	type: 'rx',
+	impl: source.callbag(() => jb.studio.scriptChange)
 })
 
 jb.component('studio.scriptHistory', {

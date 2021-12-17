@@ -8,9 +8,16 @@ studio modules
   sandbox
   sboxUI
 
-plugin
+plugins
   tgp
-sboxUI studio
+
+
+dist -> 
+use bower for
+  Fuse
+  codeMirror
+  mdc
+  mdc icons
 
 
 
