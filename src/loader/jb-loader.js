@@ -19,7 +19,7 @@ async function jbInit(uri, {projects, baseUrl, multipleInFrame, fileSymbolsFunc 
   jb.noSupervisedLoad = false
 
   const srcSymbols = await fileSymbols('src','','pack-|jb-loader').then(x=>x.filter(x=>coreFiles.indexOf(x.path) == -1))
-  const topRequiredModules = [...(projects || []).map(x => `projects/${x}`)]
+  const topRequiredModules = ['plugins', ...(projects || []).map(x => `projects/${x}`)]
   
   const symbols = await topRequiredModules.reduce( async (acc,dir) => [...await acc, ...await fileSymbols(dir)], [])
   await jbSupervisedLoad([...srcSymbols,...symbols],jb)
