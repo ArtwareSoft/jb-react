@@ -134,8 +134,8 @@ jb.component('studio.jbEditorMenu', {
           studio.addVariable('%$path%~$vars')
         ],
         showCondition: and(
-          isEmpty(studio.val('%$path%~$vars')),
-          isOfType('object', studio.val('%$path%'))
+          isEmpty(tgp.val('%$path%~$vars')),
+          isOfType('object', tgp.val('%$path%'))
         )
       }),
       studio.styleEditorOptions('%$path%'),
@@ -239,12 +239,12 @@ jb.component('studio.jbEditorMenu', {
               title: 'Remark',
               modal: 'true',
               features: [
-                watchable('remark', studio.val('%$path%~remark')),
+                watchable('remark', tgp.val('%$path%~remark')),
                 dialogFeature.nearLauncherPosition({}),
                 dialogFeature.autoFocusOnFirstInput()
               ]
             }),
-            showCondition: isOfType('object', studio.val('%$path%'))
+            showCondition: isOfType('object', tgp.val('%$path%'))
           }),
           menu.action({
             title: 'Javascript',
@@ -255,7 +255,7 @@ jb.component('studio.jbEditorMenu', {
           menu.action({
             title: 'Delete',
             action: runActions(
-              action.if(and(matchRegex('vars~[0-9]+~val$','%$path%'), isEmpty(studio.val('%$path%'))), 
+              action.if(and(matchRegex('vars~[0-9]+~val$','%$path%'), isEmpty(tgp.val('%$path%'))), 
                 writeValue('%$studio/jbEditor/selected%', studio.parentPath(studio.parentPath('%$path%')))),
               studio.delete('%$path%'),
             ),

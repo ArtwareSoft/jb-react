@@ -53,7 +53,7 @@ jb.component('studio.openJbEditProperty', {
         })
       ),
       action.switchCase(
-        isOfType('function', studio.val('%$actualPath%')),
+        isOfType('function', tgp.val('%$actualPath%')),
         studio.editSource('%$actualPath%')
       ),
       action.switchCase(

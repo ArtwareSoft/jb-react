@@ -17,7 +17,7 @@ jb.component('studio.pptrToolbar', {
       group.firstSucceeding(),
       studio.watchPath({path: '%$path%', includeChildren: 'yes', recalcVars: true}),
       variable({name: 'paramDef', value: studio.paramDef('%$path%')}),
-      variable({name: 'val', value: studio.val('%$path%')})
+      variable({name: 'val', value: tgp.val('%$path%')})
     ]
   })
 })

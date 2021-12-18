@@ -258,9 +258,9 @@ jb.extension('jbm', {
             globalThis.postMessage({initDevToolsPeerOnDebugge: {uri: jb.uri, distPath: jb.jbm.pathOfDistFolder(), spyParam: jb.path(jb,'spy.spyParam')}}, '*')
         }
     },
-    terminateChild(id) {
+    async terminateChild(id) {
         if (!jb.jbm.childJbms[id]) return
-        const childJbm = jb.jbm.childJbms[id]
+        const childJbm = await jb.jbm.childJbms[id]
         childJbm.terminated = true
         jb.log('remote terminate child', {id})
         Object.keys(jb.ports).filter(x=>x.indexOf(childJbm.uri) == 0).forEach(uri=>{
@@ -313,9 +313,14 @@ jb.component('jbm.worker', {
         const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
         if (childsOrNet[name]) return childsOrNet[name]
         const workerUri = networkPeer ? name : `${jb.uri}•${name}`
-        const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
-        const initJbCode = initJbCodeF(ctx.setVars({uri: workerUri, multipleJbmsInFrame: false}))
-        const workerCode = `
+        const result = childsOrNet[name] = new Promise(createWorker)
+        result.uri = workerUri
+        return result
+
+        function createWorker(resolve) {
+            const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
+            const initJbCode = initJbCodeF(ctx.setVars({uri: workerUri, multipleJbmsInFrame: false}))
+            const workerCode = `
 jbBaseUrl = location.origin || '';
 importScripts(location.origin+'/src/loader/jb-loader.js');
 
@@ -328,8 +333,7 @@ Promise.resolve(${initJbCode})
     })
 //# sourceURL=${workerUri}-initJb.js
 `
-        const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name, type: 'application/javascript'})))
-        const result = new Promise(resolve=> {
+            const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name, type: 'application/javascript'})))
             worker.addEventListener('message', async function f1(m) {
                 if (m.data.$ == 'workerReady') {
                     worker.removeEventListener('message',f1)
@@ -339,9 +343,7 @@ Promise.resolve(${initJbCode})
                     resolve(childsOrNet[name])
                 }
             })
-        })
-        result.uri = workerUri
-        return result
+        }
     }
 })
 

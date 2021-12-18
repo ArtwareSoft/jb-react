@@ -177,7 +177,7 @@ jb.component('studio.selectProfile', {
         ]
       }),
       text({
-        text: pipeline('%$itemlistCntrData/selected%', studio.val('%%'), '%description%'),
+        text: pipeline('%$itemlistCntrData/selected%', tgp.val('%%'), '%description%'),
         style: text.span()
       })
     ],
@@ -194,7 +194,7 @@ jb.component('studio.selectProfile', {
           studio.categoriesMarks('%$type%', '%$path%')
         )
       }),
-      watchable('SelectedCategory',If(studio.val('%$path%'), 'all', '%$Categories[0]/code%')),
+      watchable('SelectedCategory',If(tgp.val('%$path%'), 'all', '%$Categories[0]/code%')),
       group.itemlistContainer({initialSelection: studio.compName('%$path%')}),
       css.width('400')
     ]
@@ -254,7 +254,7 @@ jb.component('studio.pickProfile', {
     {id: 'path', as: 'string'}
   ],
   impl: button({
-    title: prettyPrint(studio.val('%$path%'), true),
+    title: prettyPrint(tgp.val('%$path%'), true),
     action: studio.openPickProfile('%$path%'),
     style: button.selectProfileStyle(),
     features: [studio.watchPath({path: '%$path%', includeChildren: 'yes'}), css.opacity(0.7)]
@@ -293,7 +293,7 @@ jb.component('studio.openPickProfile', {
       dialogFeature.closeWhenClickingOutside(),
       dialogFeature.autoFocusOnFirstInput(),
       css.padding({right: '20'}),
-      feature.initValue('%$dialogData/originalVal%', studio.val('%$path%')),
+      feature.initValue('%$dialogData/originalVal%', tgp.val('%$path%')),
       dialogFeature.onClose(
         action.if(not('%%'), studio.setComp('%$path%', '%$dialogData/originalVal%'))
       )

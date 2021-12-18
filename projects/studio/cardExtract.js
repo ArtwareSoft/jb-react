@@ -60,7 +60,7 @@ jb.component('cardExtract.selectStyle', {
               controlItems: pipeline(
                 cardExtract.suggestedStyles('%$extractedCtrl%', '%$targetPath%'),
                 ctx => {
-              const clone = JSON.parse(JSON.stringify(ctx.run(studio.val('%$targetPath%'))))
+              const clone = JSON.parse(JSON.stringify(ctx.run(tgp.val('%$targetPath%'))))
               const length = JSON.stringify(ctx.exp('%%')).length
               return { ...clone, style: ctx.exp('%%'), length }
           }

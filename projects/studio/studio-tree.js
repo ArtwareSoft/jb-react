@@ -13,7 +13,7 @@ jb.component('studio.treeMenu', {
           mode: 'insert-control',
           onClose: studio.gotoLastEdit()
         }),
-        showCondition: equals(pipeline(studio.val('%$path%'), '%$%'), 'table')
+        showCondition: equals(pipeline(tgp.val('%$path%'), '%$%'), 'table')
       }),
       menu.action({
         title: 'Insert',

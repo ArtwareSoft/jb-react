@@ -193,13 +193,13 @@ jb.component('studio.propField', {
         group.firstSucceeding(),
         studio.watchPath({path: '%$path%', includeChildren: 'yes', recalcVars: true}),
         variable({name: 'paramDef', value: studio.paramDef('%$path%')}),
-        variable({name: 'val', value: studio.val('%$path%')})
+        variable({name: 'val', value: tgp.val('%$path%')})
       ]
     }),
     features: [
       feature.keyboardShortcut('Ctrl+I', studio.openJbEditor('%$path%')),
       If(
-        not(isOfType('string,number,boolean,undefined', studio.val('%$path%'))),
+        not(isOfType('string,number,boolean,undefined', tgp.val('%$path%'))),
         studio.watchPath({
           path: '%$path%',
           includeChildren: 'structure',
@@ -229,7 +229,7 @@ jb.component('studio.propertyScript', {
   ],
   impl: group({
     controls: button({
-      title: prettyPrint(studio.val('%$path%'), true),
+      title: prettyPrint(tgp.val('%$path%'), true),
       action: studio.openJbEditor('%$path%'),
       style: button.studioScript()
     }),
@@ -324,7 +324,7 @@ jb.component('studio.rawColorPicker', {
   impl: group({
     controls:
       button({
-      title: prettyPrint(studio.val('%$path%'), true),
+      title: prettyPrint(tgp.val('%$path%'), true),
       style: button.studioScript(),
       action: (ctx,{cmp},{path}) => {
           const parent = document.createElement('div')
@@ -351,7 +351,7 @@ jb.component('studio.colorPicker', {
   ],
   impl: group({
     controls: button({
-      title: prettyPrint(studio.val('%$path%'), true),
+      title: prettyPrint(tgp.val('%$path%'), true),
       action: openDialog({
         style: dialog.studioJbEditorPopup(),
         content: itemlist({

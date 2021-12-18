@@ -6,6 +6,7 @@ jb.extension('watchableComps', {
   startWatch() {
     if (jb.watchableComps.handler)
       return jb.watchableComps.handler
+    jb.log('watchableComps startWatch',{})
     const compsRef = val => typeof val == 'undefined' ? jb.comps : (jb.comps = val);
     compsRef.id = 'comps'
     const handler = jb.watchableComps.handler = new jb.watchable.WatchableValueByRef(compsRef)
@@ -13,6 +14,12 @@ jb.extension('watchableComps', {
     jb.utils.subscribe(handler.resourceChange, e => jb.watchableComps.source.next(e))
     return handler
   }
+})
+
+jb.component('watchableComps.scriptChange', {
+	type: 'rx',
+  category: 'source',
+	impl: source.callbag(() => jb.watchableComps.source),
 })
 
 jb.extension('watchableComps', 'history', {
@@ -28,6 +35,7 @@ jb.extension('watchableComps', 'history', {
   },
   updateLastSave() { jb.watchableComps.lastSaveIndex = jb.watchableComps.undoIndex },
   updateHistory(opEvent) {
+      jb.log('watchableComps update history',{e})
       if (jb.path(opEvent.srcCtx,'vars.selectionPreview') || jb.path(opEvent.srcCtx,'probe')) 
         return
 
@@ -54,7 +62,6 @@ jb.extension('watchableComps', 'history', {
       jb.watchableComps.handler.resourceVersions = version.opEvent.resourceVersionsBefore
     }
   }
-//  jb.watchableComps.source.next(opEvent) ???
 })
 
 jb.extension('watchableComps', 'studio', {
@@ -63,7 +70,7 @@ jb.extension('watchableComps', 'studio', {
 		  jb.utils.subscribe(jb.watchableComps.source, e => jb.watchableComps.scriptChangeHnadler(e))      
   },
 	scriptChangeHnadler(e) {
-		jb.log('watchable studio script changed',{ctx: e.srcCtx,e})
+		jb.log('watchableComps studio handler',{ctx: e.srcCtx,e})
 		writeValueToDataResource(e.path,e.newVal)
 		if (jb.studio.isStudioCmp(e.path[0]))
 			jb.studio.refreshStudioComponent(e.path)
@@ -127,11 +134,6 @@ jb.component('watchableComps.redo', {
 
 jb.component('watchableComps.scriptHistoryItems', {
   impl: ctx => jb.watchableComps.compsHistory
-})
-
-jb.component('watchableComps.scriptChange', {
-	type: 'rx',
-	impl: source.callbag(() => jb.watchableComps.source)
 })
 
 jb.component('studio.scriptHistory', {

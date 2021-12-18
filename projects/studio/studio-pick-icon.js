@@ -91,7 +91,7 @@ jb.component('studio.pickIcon', {
   ],
   impl: group({
     controls: button({
-      title: prettyPrint(studio.val('%$path%'), true),
+      title: prettyPrint(tgp.val('%$path%'), true),
       action: studio.openPickIcon('%$path%'),
       style: button.studioScript(),
     }),

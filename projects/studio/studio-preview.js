@@ -19,6 +19,7 @@ jb.component('jbm.preview', {
 jb.component('studio.initPreview', {
     type: 'action',
     impl: runActions(
+        log('init preview', () => ({uri: jb.uri})),
         Var('dataResources',() => jb.studio.projectCompsAsEntries().map(e=>e[0]).filter(x=>x.match(/^dataResource/)).map(x=> ({$: x}))),
         Var('circuit', '%$studio/circuit%'),
         writeValue('%$yellowPages/preview%', '%$jbm/uri%'),
@@ -32,9 +33,13 @@ jb.component('studio.initPreview', {
         ), '%$jbm%'),
         remote.initShadowData('%$studio%', '%$jbm%'),
         rx.pipe(
-            source.callbag(() => jb.watchableComps.source),
-            rx.map(obj(prop('op','%op%'), prop('path','%path%'))),
+            source.callbag(() => {
+                jb.log('init preview watchableComps source',{})
+                return jb.watchableComps.source
+            }),
+//            watchableComps.scriptChange(),
             rx.log('preview change script'),
+            rx.map(obj(prop('op','%op%'), prop('path','%path%'))),
             rx.var('cssOnlyChange',studio.isCssPath('%path%')),
             sink.action(remote.action( {action: preview.handleScriptChangeOnPreview('%$cssOnlyChange%'), jbm: '%$jbm%', oneway: true}))
         )

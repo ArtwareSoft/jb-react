@@ -585,7 +585,8 @@ jb.extension('ui', 'react', {
             const actualVdom = jb.ui.elemToVdom(elem)
             const diff = jb.ui.vdomDiff(assumedVdom,actualVdom)
             if (Object.keys(diff).length) {
-                jb.logError('wrong assumed vdom',{actualVdom, assumedVdom, diff, delta, ctx, cmpId, elem})
+                const actual = jb.ui.vdomToHtml(actualVdom),assumed = jb.ui.vdomToHtml(assumedVdom),dif = jb.utils.prettyPrint(diff)
+                jb.logError('wrong assumed vdom',{actual, assumed, dif, actualVdom, assumedVdom, diff, delta, ctx, cmpId, elem})
                 return { recover: true, reason: { diff, description: 'wrong assumed vdom'} }
             }
         }

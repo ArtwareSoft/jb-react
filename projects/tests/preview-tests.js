@@ -197,7 +197,6 @@ jb.component('jbEditorTest.basic', {
     expectedResult: contains('hello'),
     timeout: 1000
   }),
-  location: null
 })
 
 // jb.component('jbEditorTest.onWorker', {

@@ -202,12 +202,12 @@ jb.component('codeEditor.editMenu', {
           style: dialog.popup(),
           id: 'add property',
           features: [
-            watchable('remark', studio.val('%$path%~remark')),
+            watchable('remark', tgp.val('%$path%~remark')),
             dialogFeature.nearLauncherPosition(),
             dialogFeature.autoFocusOnFirstInput()
           ]
         }),
-        showCondition: isOfType('object', studio.val('%$path%'))
+        showCondition: isOfType('object', tgp.val('%$path%'))
       }),
       menu.action({
         title: 'Javascript',
@@ -219,7 +219,7 @@ jb.component('codeEditor.editMenu', {
         title: 'Delete',
         action: runActions(
           action.if(
-            and(matchRegex('vars~[0-9]+~val$', '%$path%'), isEmpty(studio.val('%$path%'))),
+            and(matchRegex('vars~[0-9]+~val$', '%$path%'), isEmpty(tgp.val('%$path%'))),
             writeValue('%$studio/jbEditor/selected%', studio.parentPath(studio.parentPath('%$path%')))
           ),
           studio.delete('%$path%')

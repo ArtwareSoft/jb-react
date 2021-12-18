@@ -53,7 +53,7 @@ jb.extension('studio', 'path', {
   writeValueOfPath: (path,value,ctx) => jb.studio.writeValue(jb.studio.refOfPath(path),value,ctx),
   getComp: id => jb.comps[id],
   compAsStr: id => jb.utils.prettyPrintComp(id,jb.studio.getComp(id)),
-  isStudioCmp: id => jb.path(jb.comps,[id,jb.core.project]) == 'studio'
+  isStudioCmp: id => (jb.path(jb.comps,[id,jb.core.location,0]) || '').indexOf('projects/studio') != -1
 })
 
 // write operations with logic
@@ -106,7 +106,7 @@ jb.extension('studio', {
 		const prop = path.split('~').pop()
 		const val = jb.studio.valOfPath(path)
 		const parent_ref = jb.studio.refOfPath(jb.studio.parentPath(path))
-		if (parent_ref && Array.isArray(jb.studio.val(parent_ref)))
+		if (parent_ref && Array.isArray(jb.tgp.val(parent_ref)))
 			jb.studio.splice(parent_ref,[[Number(prop), 0,jb.studio.clone(val)]],srcCtx)
 	},
 	disabled(path) {

@@ -11,7 +11,7 @@ jb.component('sourceEditor.propOptions', {
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) =>  {
-    const val = jb.studio.val(path) || {}
+    const val = jb.tgp.val(path) || {}
     return jb.studio.paramsOfPath(path).filter(p=> val[p.id] === undefined)
       .map(param=> Object.assign(param,{ text: param.id }))
   }
@@ -245,7 +245,7 @@ jb.component('studio.openEditProperty', {
                   data.case(equals('open-sugar', '%$pathType%'), 0),
                   data.case(
                     equals('close-sugar', '%$pathType%'),
-                    count(studio.val('%$sugarArrayPath%'))
+                    count(tgp.val('%$sugarArrayPath%'))
                   )
                 ]
               )
@@ -299,7 +299,7 @@ jb.component('studio.openEditProperty', {
       action.switchCase(
         and(startsWith('close', '%$pathType%'), studio.isArrayType('%$actualPath%')),
         studio.openNewProfileDialog({
-          vars: [Var('length', count(studio.val('%$actualPath%')))],
+          vars: [Var('length', count(tgp.val('%$actualPath%')))],
           path: '%$actualPath%',
           type: studio.paramType('%$actualPath%'),
           index: '%$length%',
