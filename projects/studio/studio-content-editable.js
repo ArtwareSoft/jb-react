@@ -30,7 +30,7 @@ jb.ui.contentEditable = {
     jb.ui.focus(el,'contentEditable activate',ctx)
   },
   scriptRef(cmp,prop) {
-    const ref = jb.studio.refOfPath(cmp.originatingCtx().path + '~' + prop)
+    const ref = jb.tgp.ref(cmp.originatingCtx().path + '~' + prop)
     const val = jb.val(ref)
     return typeof val === 'string' && cmp.ctx.exp(val) === val && ref
   },

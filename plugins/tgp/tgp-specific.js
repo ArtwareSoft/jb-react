@@ -12,12 +12,12 @@ jb.extension('tgp', 'specific', {
 		const prop = jb.tgp.controlParams(path)[0]
 		if (!prop)
 			return jb.logError('getOrCreateControlArrayRef: no control param',{path,srcCtx})
-		let ref = jb.tgp.refOfPath(path+'~'+prop)
+		let ref = jb.tgp.ref(path+'~'+prop)
 		if (val[prop] === undefined)
 			jb.db.writeValue(ref,[],srcCtx)
 		else if (!Array.isArray(val[prop])) // wrap
 			jb.db.writeValue(ref,[val[prop]],srcCtx)
-		ref = jb.tgp.refOfPath(path+'~'+prop)
+		ref = jb.tgp.ref(path+'~'+prop)
 		return ref
 	}
 })

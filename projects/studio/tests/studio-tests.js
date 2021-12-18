@@ -5,7 +5,7 @@ jb.component('studioTest.save', {
             (ctx,{newVal}) => {
                 jb.watchableComps.undoIndex = 0
                 jb.watchableComps.compsHistory = []
-                jb.watchableComps.handler.writeValue(jb.studio.refOfPath('studioTest.changingComp~impl'),newVal,ctx)
+                jb.watchableComps.handler.writeValue(jb.tgp.ref('studioTest.changingComp~impl'),newVal,ctx)
             }
         ),
         calculate: pipe(

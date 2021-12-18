@@ -130,7 +130,7 @@ jb.extension('studio', {
 					.concat(this.innerProfiles(path) || [])
 		}
 		move(from,to,ctx) {
-			return jb.db.move(jb.studio.refOfPath(from),jb.studio.refOfPath(to),ctx)
+			return jb.db.move(jb.tgp.ref(from),jb.tgp.ref(to),ctx)
 		}
 		disabled(path) {
 			return jb.studio.disabled(path)

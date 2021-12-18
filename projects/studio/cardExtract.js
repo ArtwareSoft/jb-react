@@ -81,7 +81,7 @@ jb.component('cardExtract.selectStyle', {
                     title: 'select (%$__option/length%)',
                     action: runActions(
                       Var('styleSuffix', If(equals('%$__option/style/$%', 'group'), '', '~style')),
-                      writeValue(studio.ref('%$targetPath%%$styleSuffix%'), '%$__option/style%'),
+                      writeValue(tgp.ref('%$targetPath%%$styleSuffix%'), '%$__option/style%'),
                       dialog.closeDialog()
                     ),
                     features: css('position: absolute; top: 0; left: 30px;')

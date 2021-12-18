@@ -50,7 +50,7 @@ jb.extension('studio', 'path', {
   },
   compOfPath: (path,silent) => jb.studio.getComp(jb.studio.compNameOfPath(path,silent)),
   paramsOfPath: (path,silent) => jb.utils.compParams(jb.studio.compOfPath(path,silent)),
-  writeValueOfPath: (path,value,ctx) => jb.studio.writeValue(jb.studio.refOfPath(path),value,ctx),
+  writeValueOfPath: (path,value,ctx) => jb.studio.writeValue(jb.tgp.ref(path),value,ctx),
   getComp: id => jb.comps[id],
   compAsStr: id => jb.utils.prettyPrintComp(id,jb.studio.getComp(id)),
   isStudioCmp: id => (jb.path(jb.comps,[id,jb.core.location,0]) || '').indexOf('projects/studio') != -1
@@ -66,7 +66,7 @@ jb.extension('studio', {
 		const parent = jb.studio.valOfPath(jb.studio.parentPath(path))
 		if (Array.isArray(parent)) {
 			const index = Number(prop)
-			jb.studio.splice(jb.studio.refOfPath(jb.studio.parentPath(path)),[[index, 1]],srcCtx)
+			jb.studio.splice(jb.tgp.ref(jb.studio.parentPath(path)),[[index, 1]],srcCtx)
 		} else {
 			jb.studio.writeValueOfPath(path,undefined,srcCtx)
 		}
@@ -105,7 +105,7 @@ jb.extension('studio', {
 	duplicateArrayItem(path,srcCtx) {
 		const prop = path.split('~').pop()
 		const val = jb.studio.valOfPath(path)
-		const parent_ref = jb.studio.refOfPath(jb.studio.parentPath(path))
+		const parent_ref = jb.tgp.ref(jb.studio.parentPath(path))
 		if (parent_ref && Array.isArray(jb.tgp.val(parent_ref)))
 			jb.studio.splice(parent_ref,[[Number(prop), 0,jb.studio.clone(val)]],srcCtx)
 	},
@@ -116,7 +116,7 @@ jb.extension('studio', {
 	toggleDisabled(path,srcCtx) {
 		const prof = jb.studio.valOfPath(path)
 		if (prof && typeof prof == 'object' && !Array.isArray(prof))
-			jb.studio.writeValue(jb.studio.refOfPath(path+'~$disabled'),prof.$disabled ? null : true,srcCtx)
+			jb.studio.writeValue(jb.tgp.ref(path+'~$disabled'),prof.$disabled ? null : true,srcCtx)
 	},
 	newProfile(comp,compName) {
 		const result = { $: compName }
@@ -139,7 +139,7 @@ jb.extension('studio', {
 			if (currentVal && currentVal[p.id] !== undefined)
 				result[p.id] = currentVal[p.id]
 		})
-		jb.studio.writeValue(jb.studio.refOfPath(path),result,srcCtx)
+		jb.studio.writeValue(jb.tgp.ref(path),result,srcCtx)
 	},
 
 	insertControl(path,compToInsert,srcCtx) {
@@ -166,13 +166,13 @@ jb.extension('studio', {
    	moveFixDestination(from,to,srcCtx) {
 		if (isNaN(Number(to.split('~').slice(-1)))) {
             if (jb.studio.valOfPath(to) === undefined)
-				jb.db.writeValue(jb.studio.refOfPath(to),[],srcCtx)
+				jb.db.writeValue(jb.tgp.ref(to),[],srcCtx)
 			if (!Array.isArray(jb.studio.valOfPath(to)))
-				jb.db.writeValue(jb.studio.refOfPath(to),[jb.studio.valOfPath(to)],srcCtx)
+				jb.db.writeValue(jb.tgp.ref(to),[jb.studio.valOfPath(to)],srcCtx)
 
             to += '~' + jb.studio.valOfPath(to).length
 		}
-		return jb.db.move(jb.studio.refOfPath(from),jb.studio.refOfPath(to),srcCtx)
+		return jb.db.move(jb.tgp.ref(from),jb.tgp.ref(to),srcCtx)
 	},
 
 	addArrayItem(path,{toAdd,srcCtx, index} = {}) {
@@ -180,9 +180,9 @@ jb.extension('studio', {
 		toAdd = toAdd === undefined ? {$:''} : toAdd
 		if (Array.isArray(val)) {
 			if (index === undefined)
-				jb.studio.push(jb.studio.refOfPath(path),[toAdd],srcCtx)
+				jb.studio.push(jb.tgp.ref(path),[toAdd],srcCtx)
 			else
-				jb.studio.splice(jb.studio.refOfPath(path),[[index,0,toAdd]],srcCtx)
+				jb.studio.splice(jb.tgp.ref(path),[[index,0,toAdd]],srcCtx)
 		}
 		else if (!val) {
 			jb.studio.writeValueOfPath(path,toAdd,srcCtx)
@@ -202,12 +202,12 @@ jb.extension('studio', {
 		const prop = jb.studio.controlParams(path)[0]
 		if (!prop)
 			return jb.logError('getOrCreateControlArrayRef: no control param',{path,srcCtx})
-		let ref = jb.studio.refOfPath(path+'~'+prop)
+		let ref = jb.tgp.ref(path+'~'+prop)
 		if (val[prop] === undefined)
 			jb.db.writeValue(ref,[],srcCtx)
 		else if (!Array.isArray(val[prop])) // wrap
 			jb.db.writeValue(ref,[val[prop]],srcCtx)
-		ref = jb.studio.refOfPath(path+'~'+prop)
+		ref = jb.tgp.ref(path+'~'+prop)
 		return ref
 	},
 
@@ -233,11 +233,11 @@ jb.extension('studio', {
 
 // ******* components ***************
 
-jb.component('studio.ref', {
+jb.component('tgp.ref', {
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
-  impl: (ctx,path) => jb.studio.refOfPath(path)
+  impl: (ctx,path) => jb.tgp.ref(path)
 })
 
 jb.component('studio.pathOfRef', {
@@ -261,9 +261,9 @@ jb.component('studio.boolRef', {
   impl: (ctx,path) => ({
         $jb_val(value) {
             if (value === undefined)
-                return jb.toboolean(jb.studio.refOfPath(path))
+                return jb.toboolean(jb.tgp.ref(path))
             else
-				jb.db.writeValue(jb.studio.refOfPath(path),!!value,ctx)
+				jb.db.writeValue(jb.tgp.ref(path),!!value,ctx)
         }
 	})
 })
@@ -275,7 +275,7 @@ jb.component('studio.getOrCreateCompInArray', {
 		{id: 'compName', as: 'string', mandatory: true}
 	],
 	impl: (ctx,path,compName) => {
-		let arrayRef = jb.studio.refOfPath(path)
+		let arrayRef = jb.tgp.ref(path)
 		let arrayVal = jb.val(arrayRef)
 		if (!arrayVal) {
 		  jb.db.writeValue(arrayRef,{$: compName},ctx)
@@ -285,7 +285,7 @@ jb.component('studio.getOrCreateCompInArray', {
 		} else {
 		  if (!Array.isArray(arrayVal)) { // If a different comp, wrap with array
 			jb.db.writeValue(arrayRef,[arrayVal],ctx)
-			arrayRef = jb.studio.refOfPath(path)
+			arrayRef = jb.tgp.ref(path)
 			arrayVal = jb.val(arrayRef)
 		  }
 		  const existingFeature = arrayVal.findIndex(f=>f.$ == compName)

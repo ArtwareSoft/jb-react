@@ -207,7 +207,7 @@ jb.component('studio.addVariable', {
             features: [
               feature.onEnter(
                 runActions(
-                  addToArray(studio.ref('%$path%'), obj(prop('$','Var'),prop('name','%$dialogData/name%'),prop('value',''))),
+                  addToArray(tgp.ref('%$path%'), obj(prop('$','Var'),prop('name','%$dialogData/name%'),prop('value',''))),
                   dialog.closeDialog(),
                   tree.regainFocus()
                 )

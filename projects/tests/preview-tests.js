@@ -25,7 +25,7 @@ jb.component('workerPreviewTest.changeScript', {
     runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
     control: group({
       controls: [
-        button({title: 'change script', action: writeValue(studio.ref('sampleProject.main~impl~controls~text'),'world') }),
+        button({title: 'change script', action: writeValue(tgp.ref('sampleProject.main~impl~controls~text'),'world') }),
         preview.remoteWidget()
       ],
     }),
@@ -44,7 +44,7 @@ jb.component('workerPreviewTest.nodePreview', {
     runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
     control: group({
       controls: [
-        button({title: 'change script', action: writeValue(studio.ref('sampleProject.main~impl~controls~text'),'world') }),
+        button({title: 'change script', action: writeValue(tgp.ref('sampleProject.main~impl~controls~text'),'world') }),
         preview.remoteWidget(jbm.nodePreview())
       ],
     }),
@@ -64,7 +64,7 @@ jb.component('FETest.workerPreview.addCss', {
     runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
     control: group({
       controls: [
-        button({title: 'change script', action: writeValue(studio.ref('sampleProject.main~impl~controls~features~1'),() => css('color: red')) }),
+        button({title: 'change script', action: writeValue(tgp.ref('sampleProject.main~impl~controls~features~1'),() => css('color: red')) }),
         preview.remoteWidget()
       ],
     }),
@@ -84,11 +84,11 @@ jb.component('FETest.workerPreview.changeCss', {
     timeout: 5000,
     runBefore: runActions(
       writeValue('%$studio/circuit%','sampleProject.main'),
-      writeValue(studio.ref('sampleProject.main~impl~controls~features~1'),() => css('color: green'))
+      writeValue(tgp.ref('sampleProject.main~impl~controls~features~1'),() => css('color: green'))
     ),
     control: group({
       controls: [
-        button({title: 'change script', action: writeValue(studio.ref('sampleProject.main~impl~controls~features~1'),() => css('color: blue')) }),
+        button({title: 'change script', action: writeValue(tgp.ref('sampleProject.main~impl~controls~features~1'),() => css('color: blue')) }),
         preview.remoteWidget()
       ],
     }),

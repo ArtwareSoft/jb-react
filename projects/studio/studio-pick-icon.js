@@ -6,7 +6,7 @@ jb.component('studio.openPickIcon', {
   impl: openDialog({
     style: dialog.studioFloating({}),
     content: group({
-      vars: [Var('type', property('type', studio.ref(studio.parentPath('%$path%'))))],
+      vars: [Var('type', property('type', tgp.ref(studio.parentPath('%$path%'))))],
       controls: [
         group({
           layout: layout.horizontal(),
@@ -63,14 +63,14 @@ jb.component('studio.openPickIcon', {
             itemlist.infiniteScroll(),
             itemlist.selection({
               onDoubleClick: runActions(
-                writeValue(studio.ref('%$path%'), '%%'),
+                writeValue(tgp.ref('%$path%'), '%%'),
                 delay(),
                 dialog.closeDialog()
               )
             }),
             itemlist.keyboardSelection({
               onEnter: runActions(
-                writeValue(studio.ref('%$path%'), '%%'),
+                writeValue(tgp.ref('%$path%'), '%%'),
                 delay(),
                 dialog.closeDialog()
               )

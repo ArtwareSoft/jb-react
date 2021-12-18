@@ -32,8 +32,8 @@ Object.assign(jb.ui, {
   getOrCreateSizesRef(gridPath,axis,ctx) {
     const sizesProp = `${axis.toLowerCase().slice(0,-1)}Sizes`
     if (!jb.studio.valOfPath(`${gridPath}~layout~${sizesProp}`))
-      ctx.run(writeValue(studio.ref(`${gridPath}~layout~${sizesProp}`), { [sizesProp]: list(100) }))
-    return jb.studio.refOfPath(`${gridPath}~layout~${sizesProp}~items`)
+      ctx.run(writeValue(tgp.ref(`${gridPath}~layout~${sizesProp}`), { [sizesProp]: list(100) }))
+    return jb.tgp.ref(`${gridPath}~layout~${sizesProp}~items`)
   },
 })
 
@@ -116,7 +116,7 @@ jb.component('gridEditor.openGridLineThumb', {
         gridEditor.addRemoveTabPopup('%$axis%'),
         gridEditor.dragableGridLineThumb('%$axis%'),
         watchRef({
-          ref: studio.ref('%$gridPath%~layout'),
+          ref: tgp.ref('%$gridPath%~layout'),
           includeChildren: 'yes',
           cssOnly: true
         }),
@@ -244,7 +244,7 @@ jb.component('gridEditor.dragableGridLineThumb', {
 //         return newPos + fixBack - startPos
 //     }
 //     function setGridPosScript(val, axis, i, ctx) {
-//         const ref = jb.studio.refOfPath(`${gridPath}~layout~${axis.toLowerCase().slice(0,-1)}Sizes~items~${i}`)
+//         const ref = jb.tgp.ref(`${gridPath}~layout~${axis.toLowerCase().slice(0,-1)}Sizes~items~${i}`)
 //         jb.db.writeValue(ref,val,ctx)
 //     }
 //   })
@@ -283,8 +283,8 @@ jb.component('gridEditor.openGridItemThumbs', {
           return `>span { display: none; position: absolute; white-space: nowrap; padding: 7px; color: var(--jb-statusBar-foreground); background: var(--jb-statusBar-background); opacity: 1; top: ${elemRect.height- 7 }px}`
         }),
         css('{cursor: grab; box-shadow: 3px 3px; var(--jb-statusBar-background); opacity: 0.2; display: flex; flex-flow: row-reverse} ~:hover {opacity: 0.7}' ),
-        watchRef({ ref: studio.ref('%$gridPath%'), includeChildren: 'yes' }),
-        //followUp.flow(source.watchableData({ ref: studio.ref('%$gridPath%'), includeChildren: 'yes' }), sink.refreshCmp() )
+        watchRef({ ref: tgp.ref('%$gridPath%'), includeChildren: 'yes' }),
+        //followUp.flow(source.watchableData({ ref: tgp.ref('%$gridPath%'), includeChildren: 'yes' }), sink.refreshCmp() )
         // followUp.onDataChange(,
         //   action: (ctx,{cmp}) => jb.delay(1).then(()=> cmp.refresh(null,{srcCtx: ctx.cmpCtx}))
         // })
@@ -299,7 +299,7 @@ jb.component('gridEditor.dragableGridItemThumb', {
     method('setGridArea', writeValue(
       pipeline(
         studio.getOrCreateCompInArray('%$gridItemElem/_component/ctx/path%~features','css.gridArea'), 
-        '%css%', studio.ref('%%')
+        '%css%', tgp.ref('%%')
       ), '%%' 
     )),
     frontEnd.var('inplaceElemPath',({},{inplaceElem})=> jb.ui.ctxOfElem(inplaceElem).path),
@@ -381,7 +381,7 @@ jb.component('gridEditor.dragableGridItemThumb', {
 //       const gridAreaRef = ctx.run(pipeline(
 //         studio.getOrCreateCompInArray('%$gridItemElem/_component/ctx/path%~features','css.gridArea'), 
 //         '%css%', 
-//         studio.ref('%%')))     //{as: 'ref'})
+//         tgp.ref('%%')))     //{as: 'ref'})
 //       spanBase && [0,1].forEach(i=>{
 //           spanBase[i] = Math.min(spanBase[i],vals[i])
 //           vals[i] = Math.max(spanBase[i],vals[i])

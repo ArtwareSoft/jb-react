@@ -150,7 +150,7 @@ jb.component('studio.openMultilineEdit', {
   impl: openDialog({
     style: dialog.studioMultilineEdit(),
     content: editableText({
-      databind: studio.ref('%$path%'),
+      databind: tgp.ref('%$path%'),
       style: editableText.codemirror({mode: studio.codeMirrorMode('%$path%')})
     })
   })

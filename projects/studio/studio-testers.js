@@ -103,7 +103,7 @@ jb.component('pathChangeTest', {
     const failure = (part,reason) => ({ id: testId, title: testId + '- ' + part, success:false, reason: reason });
     const success = _ => ({ id: testId, title: testId, success: true });
 
-    const pathRef = jb.studio.refOfPath(path);
+    const pathRef = jb.tgp.ref(path);
     action();
     
     const res_path = pathRef.path().join('~');

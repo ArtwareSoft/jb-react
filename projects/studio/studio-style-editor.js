@@ -113,7 +113,7 @@ jb.component('studio.styleEditor', {
                     ]
                   }),
                   title: 'Paste html / jsx',
-                  onOK: writeValue(studio.ref('%$path%~template'), studio.jsxToH('%$jsx%')),
+                  onOK: writeValue(tgp.ref('%$path%~template'), studio.jsxToH('%$jsx%')),
                   features: [variable({name: 'jsx', value: 'paste your jsx here', watchable: 'true'})]
                 }),
                 style: button.mdc()

@@ -184,7 +184,7 @@ jb.component('studio.compNameRef', {
 					jb.studio.setComp(path,value,ctx)
 			},
 			$jb_observable: cmp =>
-				jb.watchable.refObservable(jb.studio.refOfPath(path),{cmp, includeChildren: 'yes'})
+				jb.watchable.refObservable(jb.tgp.ref(path),{cmp, includeChildren: 'yes'})
 	})
 })
 
@@ -194,7 +194,7 @@ jb.component('studio.profileAsText', {
     {id: 'path', as: 'string'},
     {id: 'oneWay', as: 'boolean', defaultValue: true, type: 'boolean'},
   ],
-  impl: watchableAsText(studio.ref('%$path%'),'%$oneWay%')
+  impl: watchableAsText(tgp.ref('%$path%'),'%$oneWay%')
 })
 
 jb.component('studio.profileAsStringByref', {
@@ -214,7 +214,7 @@ jb.component('studio.profileAsStringByref', {
 			}
 		},
 		$jb_observable: cmp =>
-			jb.watchable.refObservable(jb.studio.refOfPath(ctx.params.path()),{cmp})
+			jb.watchable.refObservable(jb.tgp.ref(ctx.params.path()),{cmp})
 	})
 })
 

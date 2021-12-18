@@ -40,7 +40,7 @@ jb.component('studio.paste', {
     {id: 'path', as: 'string'}
   ],
   impl: (ctx, path) =>
-    jb.studio.clipboard && jb.db.writeValue(jb.studio.refOfPath(path), jb.studio.clipboard, ctx)
+    jb.studio.clipboard && jb.db.writeValue(jb.tgp.ref(path), jb.studio.clipboard, ctx)
 })
 
 jb.component('studio.projectId', {
@@ -126,7 +126,7 @@ jb.component('studio.watchPath', {
     {id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority'}
   ],
   impl: (ctx,path) => ({
-	  watchRef: {refF: () => jb.studio.refOfPath(path), ...ctx.params},
+	  watchRef: {refF: () => jb.tgp.ref(path), ...ctx.params},
   })
 })
 

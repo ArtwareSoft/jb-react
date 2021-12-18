@@ -85,7 +85,7 @@ jb.component('studio.jbEditorMenu', {
                 style: editableText.mdcInput({}),
                 features: [
                   feature.onEnter(
-                    writeValue(studio.ref('%$path%~%$name%'), ''),
+                    writeValue(tgp.ref('%$path%~%$name%'), ''),
                     dialog.closeDialog(true),
                     tree.redraw(),
                     tree.regainFocus()
@@ -128,7 +128,7 @@ jb.component('studio.jbEditorMenu', {
       menu.action({
         title: 'Variables',
         action: [
-          writeValue(studio.ref('%$path%~$vars'), list()),
+          writeValue(tgp.ref('%$path%~$vars'), list()),
           writeValue('%$studio/jbEditor/selected%', '%$path%~$vars'),
           tree.redraw(),
           studio.addVariable('%$path%~$vars')
@@ -226,7 +226,7 @@ jb.component('studio.jbEditorMenu', {
                     style: editableText.mdcInput({}),
                     features: [
                       feature.onEnter(
-                        writeValue(studio.ref('%$path%~remark'), '%$remark%'),
+                        writeValue(tgp.ref('%$path%~remark'), '%$remark%'),
                         dialog.closeDialog(true),
                         tree.redraw(),
                         tree.regainFocus()

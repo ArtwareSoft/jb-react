@@ -56,7 +56,7 @@ jb.component('studio.calcExtractComponent', {
         }
         if (activate) {
             ctx.run(studio.newComp({compName, compContent: () => newComp, file}));
-            jb.db.writeValue(jb.studio.refOfPath(path),
+            jb.db.writeValue(jb.tgp.ref(path),
                 {$: compName, ...jb.objFromEntries(newComp.params.map(p=>[p.id,`%$${p.id}%`]))},ctx)
         }
 

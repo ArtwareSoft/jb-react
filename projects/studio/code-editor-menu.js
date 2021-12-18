@@ -190,7 +190,7 @@ jb.component('codeEditor.editMenu', {
                 title: 'remark',
                 databind: '%$remark%',
                 style: editableText.mdcInput(),
-                features: [feature.onEnter(writeValue(studio.ref('%$path%~remark'), '%$remark%'))]
+                features: [feature.onEnter(writeValue(tgp.ref('%$path%~remark'), '%$remark%'))]
               })
             ],
             features: css.padding({

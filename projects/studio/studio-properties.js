@@ -243,7 +243,7 @@ jb.component('studio.propertyNumbericCss', {
     {id: 'path', as: 'string'}
   ],
   impl: editableNumber({
-    databind: studio.ref('%$path%'),
+    databind: tgp.ref('%$path%'),
     style: editableNumber.slider(),
     max: 20,
     features: css('~ .text-input {width: 40px} ~ .slider-input { width: 100% }')
@@ -256,7 +256,7 @@ jb.component('studio.propertyNumbericZeroToOne', {
     {id: 'path', as: 'string'}
   ],
   impl: editableNumber({
-    databind: studio.ref('%$path%'),
+    databind: tgp.ref('%$path%'),
     style: editableNumber.slider(),
     step: 0.1,
     max: 1,
@@ -270,7 +270,7 @@ jb.component('studio.propertyBoolean', {
     {id: 'path', as: 'string'}
   ],
   impl: editableBoolean({
-    databind: studio.ref('%$path%'),
+    databind: tgp.ref('%$path%'),
     style: editableBoolean.mdcSlideToggle(),
     features: css('{flex-direction: row;     display: flex;} ~ label {padding-left: 10px }')
   })
@@ -282,7 +282,7 @@ jb.component('studio.propertyEnum', {
     {id: 'path', as: 'string'}
   ],
   impl: picklist({
-    databind: studio.ref('%$path%'),
+    databind: tgp.ref('%$path%'),
     options: studio.enumOptions('%$path%'),
     style: picklist.nativeMdLookOpen(),
     features: [
@@ -334,7 +334,7 @@ jb.component('studio.rawColorPicker', {
           const picker = new Picker({
             parent,
             color: jb.studio.valOfPath(path),
-            onChange: color => ctx.run(writeValue(studio.ref(path),color.rgbaString)),
+            onChange: color => ctx.run(writeValue(tgp.ref(path),color.rgbaString)),
             onDone: () => { picker.destroy(); document.body.removeChild(parent) }
           })
           picker.show()
@@ -371,7 +371,7 @@ jb.component('studio.colorPicker', {
             features: css.width('300')
           }),
           features: itemlist.selection({
-            onSelection: writeValue(studio.ref('%$path%'), 'var(--%varName%)')
+            onSelection: writeValue(tgp.ref('%$path%'), 'var(--%varName%)')
           })
         }),
         features: studio.nearLauncherPosition()

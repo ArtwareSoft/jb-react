@@ -29,7 +29,7 @@ jb.component('nb.notebook', {
             remote.widget(group({controls: (ctx,{path}) => {
                       const ret = jb.core.run( new jb.core.jbCtx(ctx, { profile: jb.studio.valOfPath(path), forcePath: path, path: 'control' }), {type: 'control'})
                       return ret.result(ctx)
-                  }, features: followUp.flow(source.watchableData(studio.ref('%$path%'), 'yes'), sink.refreshCmp())}), jbm.notebookWorker())
+                  }, features: followUp.flow(source.watchableData(tgp.ref('%$path%'), 'yes'), sink.refreshCmp())}), jbm.notebookWorker())
           ],
           features: [hidden(not('%$editMode%')), watchRef('%$editMode%')]
         })

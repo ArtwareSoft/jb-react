@@ -47,7 +47,7 @@ jb.extension('vscode', {
             const ctx = new jb.core.jbCtx({},{vars: {headlessWidget: true, fromVsCode: true}})
             const {compId, compSrc} = jb.codeEditor.closestComp(editor.document.getText(), {line: editor.selection.active.line})
             if (compId) {
-                const compRef = jb.studio.refOfPath(compId)
+                const compRef = jb.tgp.ref(compId)
                 const newVal = '({' + compSrc.split('\n').slice(1).join('\n')
                 jb.codeEditor.setStrValue(newVal, compRef, ctx)
             }

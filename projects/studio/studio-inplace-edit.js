@@ -131,7 +131,7 @@ jb.component('inplaceEdit.toolbar', {
 
 Object.assign(jb.ui, {
   setOrCreateArrayComp(path,newComp) {
-    let arrayRef = jb.studio.refOfPath(path)
+    let arrayRef = jb.tgp.ref(path)
     let arrayVal = jb.val(arrayRef)
     if (!arrayVal) {
       jb.db.writeValue(arrayRef,newComp,ctx)
@@ -140,7 +140,7 @@ Object.assign(jb.ui, {
     } else {
       if (!Array.isArray(arrayVal)) { // wrap with array
         jb.db.writeValue(arrayRef,[arrayVal],ctx)
-        arrayRef = jb.studio.refOfPath(path)
+        arrayRef = jb.tgp.ref(path)
         arrayVal = jb.val(arrayRef)
       }
       const existingFeature = arrayVal.findIndex(f=>f.$ == newComp.$)
@@ -152,7 +152,7 @@ Object.assign(jb.ui, {
 
     function writeToExistingComp(compPath) {
       Object.keys(newComp).filter(prop=>prop != '$').forEach(prop=>
-        jb.db.writeValue(jb.studio.refOfPath(`${compPath}~${prop}`),newComp[prop],ctx))
+        jb.db.writeValue(jb.tgp.ref(`${compPath}~${prop}`),newComp[prop],ctx))
     }
   },
   setPositionScript(el,fullProp,value,ctx) {

@@ -9,7 +9,7 @@ jb.component('notebookTest.compToShadow', {
 //     runBefore: pipe(
 //       jbm.worker('notebook'),
 //       remote.initShadowComponent({compId: 'notebookTest.compToShadow', jbm: jbm.byUri('tests•notebook')}),
-//       () => { jb.exec(runActions(delay(1), writeValue(studio.ref('notebookTest.compToShadow~impl'),'Dan'))) } // writeValue after calculate
+//       () => { jb.exec(runActions(delay(1), writeValue(tgp.ref('notebookTest.compToShadow~impl'),'Dan'))) } // writeValue after calculate
 //     ),
 //     calculate: remote.data(
 //       pipe(rx.pipe(

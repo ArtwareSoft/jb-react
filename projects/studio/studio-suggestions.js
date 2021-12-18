@@ -144,7 +144,7 @@ jb.component('studio.propertyPrimitive', {
     {id: 'path', as: 'string'},
   ],
   impl: editableText({
-      databind: studio.ref('%$path%'),
+      databind: tgp.ref('%$path%'),
       style: editableText.studioPrimitiveText(),
       features: [
         feature.onKey('Right', studio.applyOption('/')),
@@ -216,7 +216,7 @@ jb.component('studio.jbFloatingInput', {
             updateOnBlur: true,
             style: editableText.floatingInput(),
             features: [
-              watchRef({ref: studio.ref('%$path%'), strongRefresh: true}),
+              watchRef({ref: tgp.ref('%$path%'), strongRefresh: true}),
               feature.onKey('Right', studio.applyOption('/')),
               feature.onKey('Enter', runActions(studio.applyOption(), dialog.closeDialogById('studio-jb-editor-popup'), tree.regainFocus())),
               feature.onKey('Esc', runActions(dialog.closeDialogById('studio-jb-editor-popup'), tree.regainFocus())),
