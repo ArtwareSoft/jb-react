@@ -1,3 +1,9 @@
+remote suggestions test
+suggestions options should fork
+  studio for =
+  preview for %$
+
+
 Suggestions in helloWorld - add test?
 wrap with pipeline does not work - add test?
 

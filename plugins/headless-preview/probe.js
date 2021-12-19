@@ -133,6 +133,7 @@ jb.extension('probe', {
         return Promise.resolve(x)
     },
 	closestCtxOfLastRun(probePath) {
+        if (!jb.ctxByPath) return
 		let path = probePath.split('~')
         if (jb.tgp.isExtraElem(probePath)) {
             if (probePath.match(/items~0$/)) {
@@ -190,7 +191,7 @@ jb.component('probe.runCircuit', {
         function closestTestCtx(path) {
             const _ctx = new jb.core.jbCtx()
             const compId = path.split('~')[0]
-            const statistics = jb.exec(studio.componentStatistics(compId))
+            const statistics = jb.exec(tgp.componentStatistics(compId))
             const test = jb.path(jb.comps[compId],'impl.expectedResult') ? compId 
                 : (statistics.referredBy||[]).find(refferer=>jb.tgp.isOfType(refferer,'test'))
             if (test)
@@ -205,7 +206,8 @@ jb.component('probe.runCircuit', {
                 .filter(e => [e.path, ...(e.callStack ||[])].filter(x=>x).some(p => p.indexOf(path) == 0))
             return candidates.sort((e2,e1) => 1000* (e1.path.length - e2.path.length) + (+e1.ctxId.match(/[0-9]+/)[0] - +e2.ctxId.match(/[0-9]+/)[0]) )[0] || {}
         }        
-    }
+    },
+    requires: tgp.componentStatistics()
 })
 
 

@@ -112,7 +112,7 @@ jb.component('studio.pages', {
             databind: '%$studio/page%',
             onSelection: runActions(
               writeValue('%$studio/profile_path%', '%$studio/page%'),
-              writeValue('%$studio/circuit%', studio.circuitOptions('%$studio/page%')),
+              writeValue('%$studio/circuit%', tgp.circuitOptions('%$studio/page%')),
             ),
             autoSelectFirst: true
           }),

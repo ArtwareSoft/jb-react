@@ -4,23 +4,20 @@ jb.component('suggestionsTest', {
     {id: 'expression', as: 'string'},
     {id: 'selectionStart', as: 'number', defaultValue: -1},
     {id: 'path', as: 'string', defaultValue: 'suggestionsTest.defaultProbe~impl~text'},
-    {id: 'expectedResult', type: 'boolean', dynamic: true, as: 'boolean'}
+    {id: 'expectedResult', type: 'boolean', dynamic: true, as: 'boolean'},
+    {id: 'forceLocal', as: 'boolean', defaultValue: true}
   ],
   impl: dataTest({
-    calculate: ctx => {
-      const params = ctx.cmpCtx.params;
-      const selectionStart = params.selectionStart == -1 ? params.expression.length : params.selectionStart;
-
-      const circuit = params.path.split('~')[0];
-      const probeRes = new jb.probe.Probe(new jb.core.jbCtx(ctx,{ profile: { $: circuit }, comp: circuit, path: '', data: null }))
-        .runCircuit(params.path);
-      return probeRes.then(res=>{
-        const probeCtx = res.result[0] && res.result[0].in;
-        const {options} = new jb.studio.suggestions({ value: params.expression, selectionStart: selectionStart })
-          .calcOptions(probeCtx.setVar('people-array',ctx.exp('%$people-array%')),probeCtx.path);
-        return JSON.stringify(JSON.stringify(options.map(x=>x.text)));
-      })
-    },
+    calculate: pipe(
+      studio.suggestionsFromRemote({
+        path: '%$path%', forceLocal: '%$forceLocal%',
+        input: obj(prop('value','%$expression%'), prop('selectionStart', 
+          ({},{},{expression, selectionStart}) => selectionStart == -1 ? expression.length : selectionStart))
+      }),
+      log('suggestions test',obj(prop('result','%%'))),
+      '%options/text%',
+      join(',')
+    ),
     expectedResult: call('expectedResult')
   })
 })

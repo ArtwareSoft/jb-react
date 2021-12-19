@@ -12,9 +12,7 @@ jb.component('peopleArray', {
 
 jb.component('suggestionsTest.defaultProbe', {
   type: 'control',
-  impl: text(
-    ''
-  )
+  impl: text({text: '', features: []})
 })
 
 jb.component('suggestionsTest.simpleVars', {
@@ -31,10 +29,19 @@ jb.component('suggestionsTest.varsFilter', {
   })
 })
 
+jb.component('suggestionsTest.varsFilter.remote', {
+  impl: suggestionsTest({
+    forceLocal: false,
+    expression: '%$p',
+    expectedResult: and(contains('$people'), not(contains('$win')))
+  })
+})
+
 jb.component('suggestionsTest.component', {
   impl: suggestionsTest({
-    expression: '=pi',
-    expectedResult: contains('pipeline')
+    path: 'suggestionsTest.defaultProbe~impl~features~0',
+    expression: '=watc',
+    expectedResult: contains('watchRef')
   })
 })
 

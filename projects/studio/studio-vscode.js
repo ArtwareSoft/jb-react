@@ -83,7 +83,7 @@ jb.extension('vscode', {
             jb.db.writeValue(ctx.exp('%$studio/jbEditor/selected%','ref'), fixedPath ,ctx)
             semanticPath && jb.db.writeValue(ctx.exp('%$studio/semanticPath%','ref'), semanticPath.path ,ctx)
 
-            const circuitOptions = jb.studio.circuitOptions(fixedPath.split('~')[0])
+            const circuitOptions = jb.tgp.circuitOptions(fixedPath.split('~')[0])
             if (circuitOptions && circuitOptions[0])
                 jb.db.writeValue(ctx.exp('%$studio/circuit%','ref'), circuitOptions[0] ,ctx)
             const profilePath = (fixedPath.match(/^[^~]+~impl/) || [])[0]

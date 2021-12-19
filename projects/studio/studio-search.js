@@ -5,9 +5,9 @@ jb.component('studio.searchList', {
   ],
   impl: table({
     items: pipeline(
-      studio.allComps(),
+      tgp.allComps(),
       itemlistContainer.filter(),
-      studio.componentStatistics('%%')
+      tgp.componentStatistics('%%')
     ),
     controls: [
       control.icon({
@@ -33,7 +33,7 @@ jb.component('studio.searchList', {
         title: '%refCount%',
         action: menu.openContextMenu({
           menu: menu.menu({
-            options: [studio.gotoReferencesOptions('%id%', studio.references('%id%'))]
+            options: [studio.gotoReferencesOptions('%id%', tgp.references('%id%'))]
           })
         }),
         style: button.href(),

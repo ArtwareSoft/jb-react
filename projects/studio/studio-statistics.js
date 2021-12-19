@@ -1,112 +1,3 @@
-jb.extension('studio', 'statistics', {
-  $phase: 50,
-  initExtension() {
-    //jb.utils.subscribe(jb.watchableComps.source, () => jb.studio.statistics = {})
-    return { statistics: {} }
-  },
-  calcRefs() {
-    if (Object.keys(jb.studio.statistics).length) return
-    const refs = {}, comps = jb.comps;
-
-    Object.keys(comps).filter(k=>comps[k]).forEach(k=>
-      refs[k] = {
-        refs: calcRefs(comps[k].impl).filter((x,index,_self)=>_self.indexOf(x) === index),
-        by: []
-    })
-    Object.keys(comps).filter(k=>comps[k]).forEach(k=>
-      refs[k].refs.forEach(cross=>
-        refs[cross] && refs[cross].by.push(k))
-    )
-    jb.studio.statistics = refs
-
-    function calcRefs(profile) {
-      if (profile == null || typeof profile != 'object') return [];
-      return Object.values(profile).reduce((res,v)=> [...res,...calcRefs(v)], [jb.utils.compName(profile)])
-    }    
-  },
-  circuitOptions(cmpId) {
-    jb.studio.calcRefs()
-    const candidates = {[cmpId]: true}
-    while (expand()) {}
-    const comps = Object.keys(candidates).filter(k => (jb.comps[k].params || []).length == 0)
-    return comps.sort((x,y) => mark(y) - mark(x))
-
-    function mark(cmpId) {
-      if (cmpId.match(/test|tst/i)) return 10
-      return 0
-    }
-
-    function expand() {
-      const length_before = Object.keys(candidates).length
-      Object.keys(candidates).forEach(k=> 
-        jb.studio.statistics[candidates[k]] && (jb.studio.statistics[candidates[k]].by || []).forEach(caller=>candidates[caller] = true))
-      return Object.keys(candidates).length > length_before
-    }
-  }
-})
-
-jb.component('studio.circuitOptions', {
-  params: [
-    {id: 'path'}
-  ],
-  impl: (ctx,path) => jb.studio.circuitOptions(path.split('~')[0])
-})
-
-jb.component('studio.allComps', {
-  type: 'data',
-  impl: () => Object.keys(jb.comps)
-})
-
-jb.component('studio.componentStatistics', {
-  type: 'data',
-  params: [
-    {id: 'cmpId', as: 'string', defaultValue: '%%'}
-  ],
-  impl: (ctx,cmpId) => {
-	  jb.studio.calcRefs()
-
-    const cmp = jb.comps[cmpId], refs = jb.studio.statistics
-    if (!cmp) return {}
-    const asStr = '' //jb.utils.prettyPrint(cmp.impl || '',{comps: jb.comps})
-
-    return {
-      id: cmpId,
-      file: (cmp[jb.core.location] || [])[0],
-      lineInFile: +(cmp[jb.core.location] ||[])[1],
-      linesOfCode: (asStr.match(/\n/g)||[]).length,
-      refs: refs[cmpId].refs,
-      referredBy: refs[cmpId].by,
-      type: cmp.type || 'data',
-      implType: typeof cmp.impl,
-      refCount: refs[cmpId].by.length,
-      size: asStr.length
-    }
-	}
-})
-
-jb.component('studio.references', {
-  type: 'data',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: (ctx,path) => {
-	  if (path.indexOf('~') != -1) return [];
-
-    var res = jb.entries(jb.comps)
-    	.map(e=>({id: e[0], refs: refs(e[1].impl,`${e[0]}~impl`)}))
-      .filter(e=>e.refs.length > 0)
-    return res;
-
-    function refs(profile, parentPath) {
-    	if (profile && typeof profile == 'object') {
-        var subResult = Object.keys(profile).reduce((res,prop)=>
-      		res.concat(refs(profile[prop],`${parentPath}~${prop}`)) ,[]);
-      	return (profile.$ == path ? [parentPath] : []).concat(subResult);
-      }
-      return [];
-    }
-	}
-})
 
 jb.component('studio.gotoReferencesOptions', {
   type: 'menu.option',
@@ -141,7 +32,7 @@ jb.component('studio.gotoReferencesButton', {
     {id: 'path', as: 'string'}
   ],
   impl: controlWithCondition(
-    Var('refs', studio.references('%$path%')),
+    Var('refs', tgp.references('%$path%')),
     Var(
         'noOfReferences',
         ctx => ctx.vars.refs.reduce((total,refsInObj)=>total+refsInObj.refs.length,0)
@@ -164,7 +55,7 @@ jb.component('studio.gotoReferencesMenu', {
   impl: If({
     condition: '%$noOfReferences% > 0',
     vars: [
-      Var('refs', studio.references('%$path%')),
+      Var('refs', tgp.references('%$path%')),
       Var('noOfReferences', ctx => ctx.vars.refs.reduce((total,refsInObj)=>total+refsInObj.refs.length,0))
     ],
     then: menu.menu({
@@ -183,15 +74,15 @@ jb.component('studio.componentsList', {
         treeModel: tree.jsonReadOnly(studio.cmpsOfProjectByFiles(), ''),
         leafFields: [
           text({
-            text: pipeline(studio.componentStatistics('%val%'), '%size%'),
+            text: pipeline(tgp.componentStatistics('%val%'), '%size%'),
             title: 'size',
             features: [field.columnWidth('80')]
           }),
           button({
-            title: pipeline(studio.componentStatistics('%val%'), '%refCount%.', split('.')),
+            title: pipeline(tgp.componentStatistics('%val%'), '%refCount%.', split('.')),
             action: menu.openContextMenu({
               menu: menu.menu({
-                options: [studio.gotoReferencesOptions('%val%', studio.references('%val%'))]
+                options: [studio.gotoReferencesOptions('%val%', tgp.references('%val%'))]
               })
             }),
             style: button.href(),

@@ -21,10 +21,14 @@ jb.extension('studio', 'suggestions', {
         this.base = this.exp.slice(0,-1-this.tail.length) + '%';
         this.inputVal = input.value.slice(0,100);
         this.inputPos = input.selectionStart
+
         function rev(str) {
           return str.split('').reverse().join('');
         }
+      }
 
+      jbm() {
+        return (['%','%$','/','.'].indexOf(this.tailSymbol) != -1) ? jb.exec(jbm.preview()) : jb
       }
 
       suggestionsRelevant() {
@@ -34,7 +38,7 @@ jb.extension('studio', 'suggestions', {
 
       calcVars(probeCtx) {
         const resources = jb.entries(jb.comps)
-              .filter(e=>! jb.comps[e[0]])
+//              .filter(e=>! jb.comps[e[0]])
               .filter(e=>e[1].watchableData  !== undefined || e[1].passiveData  !== undefined)
               .map(e=>[jb.db.removeDataResourcePrefix(e[0]),e[1]])
         return jb.entries(Object.assign({},(probeCtx.cmpCtx||{}).params,probeCtx.vars))
@@ -95,20 +99,24 @@ jb.extension('studio', 'suggestions', {
   }
 })
 
-jb.component('studio.suggestions', {
-  params: [
-    {id: 'path', as: 'string'},
-    {id: 'expressionOnly', as: 'boolean'}
-  ],
-  impl: (ctx,path,expressionOnly) => new jb.studio.suggestions(jb.val(ctx.data), expressionOnly)
-      .calcOptions(jb.probe.closestCtxOfLastRun(path),path)
-})
-
 jb.component('studio.shouldShowSuggestions', {
   params: [
     {id: 'expressionOnly', as: 'boolean'}
   ],
   impl: (ctx,expressionOnly) => new jb.studio.suggestions(jb.val(ctx.data), expressionOnly).suggestionsRelevant()
+})
+
+jb.component('studio.suggestionsFromRemote', {
+  params: [
+    {id: 'path', as: 'string'},
+    {id: 'expressionOnly', as: 'boolean'},
+    {id: 'input', defaultValue: '%%'},
+    {id: 'forceLocal', as: 'boolean'}
+  ],
+  impl: remote.data(
+    ({},{},{path,expressionOnly,input}) => new jb.studio.suggestions(jb.val(input), expressionOnly)
+      .calcOptions(jb.probe.closestCtxOfLastRun(path),path),
+    ({},{},{input,forceLocal}) => forceLocal ? jb : new jb.studio.suggestions(jb.val(input)).jbm())
 })
 
 jb.component('studio.applyOption', {
@@ -151,7 +159,7 @@ jb.component('studio.propertyPrimitive', {
         feature.onKey('Right', studio.applyOption('/')),
         editableText.picklistHelper({
           showHelper: studio.shouldShowSuggestions(true),
-          options: remote.data(studio.suggestions('%$path%',true), jbm.preview()),
+          options: studio.suggestionsFromRemote('%$path%',true),
           picklistFeatures: picklist.allowAsynchOptions(),
           picklistStyle: studio.suggestionList(),
           onEnter: studio.applyOption()
@@ -223,7 +231,7 @@ jb.component('studio.jbFloatingInput', {
               feature.onKey('Esc', runActions(dialog.closeDialogById('studio-jb-editor-popup'), tree.regainFocus())),
               editableText.picklistHelper({
                 showHelper: studio.shouldShowSuggestions(),
-                options: remote.data(studio.suggestions('%$path%'), jbm.preview()),
+                options: studio.suggestionsFromRemote('%$path%'),
                 picklistFeatures: picklist.allowAsynchOptions(),
                 picklistStyle: studio.suggestionList(),
               }),
