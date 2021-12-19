@@ -133,7 +133,7 @@ jb.component('cardExtract.suggestedStyles', {
     ],
     impl: (ctx,extractedCtrl,targetPath) => {
           const options = ctx.exp('%$studio/pattern/options%') || { flattenToGrid: false }
-          const target = jb.studio.valOfPath(targetPath)
+          const target = jb.tgp.valOfPath(targetPath)
           const previewCtx = jb.cardExtract.closestCtxInPreview(ctx,ctx.exp('%$targetPath%'))
           return jb.stylePatterns[target.$] && jb.stylePatterns[target.$](ctx,extractedCtrl,target,previewCtx,options) || {}
       }
@@ -163,7 +163,7 @@ jb.extension('cardExtract', {
     cleanUnmappedParams(ctx,ctrl,matches) {
       if (!ctx.exp('%$studio/patterns/deleteUnmapped%')) return ctrl
       const usedPaths = {}
-      matches.forEach(match => jb.studio.pathParents(match.src.path,true).forEach(path=>usedPaths[path] = true))
+      matches.forEach(match => jb.tgp.pathParents(match.src.path,true).forEach(path=>usedPaths[path] = true))
       return cleanCtrl(ctrl,'')
   
       function cleanCtrl(ctrl,path) {
@@ -234,7 +234,7 @@ jb.extension('cardExtract', {
       return Xs.filter((pos,i) => i == 0 || keepList.has(pos) || Xs[i] - Xs[i-1] > 8)
     }
     function featuresFromParents(param) {
-      const _parents = jb.studio.pathParents(param.path).reverse()
+      const _parents = jb.tgp.pathParents(param.path).reverse()
       const features = [
         ...(_parents[0].features || []),
         ..._parents.slice(1).reduce((features, path) => [...features,
@@ -254,7 +254,7 @@ jb.extension('cardExtract', {
   
     function calcPadding() {
       srcParams.filter(p=>p.type != 'image').forEach(param=>{
-        const parentPaths = jb.studio.pathParents(param.path)
+        const parentPaths = jb.tgp.pathParents(param.path)
         const idx = parentPaths.findIndex(path=>{ 
           const parentCtrl = jb.cardExtract.pathToObj(ctrl,path)
           return Array.isArray(parentCtrl.controls) && parentCtrl.controls.length >1
@@ -296,7 +296,7 @@ jb.extension('stylePatterns', {
             const boundedCtrl = JSON.parse(JSON.stringify(extractedCtrl))
             const overridePath = [...text.path.split('~'),'text']
             jb.path(boundedCtrl,overridePath,value) // set value
-            return jb.studio.pathParents(text.path,true).map(path => {
+            return jb.tgp.pathParents(text.path,true).map(path => {
                 const ctrl = jb.cardExtract.pathToObj(boundedCtrl, path)
                 return styleByControl(ctrl,'textModel')
             })

@@ -31,7 +31,7 @@ Object.assign(jb.ui, {
   },
   getOrCreateSizesRef(gridPath,axis,ctx) {
     const sizesProp = `${axis.toLowerCase().slice(0,-1)}Sizes`
-    if (!jb.studio.valOfPath(`${gridPath}~layout~${sizesProp}`))
+    if (!jb.tgp.valOfPath(`${gridPath}~layout~${sizesProp}`))
       ctx.run(writeValue(tgp.ref(`${gridPath}~layout~${sizesProp}`), { [sizesProp]: list(100) }))
     return jb.tgp.ref(`${gridPath}~layout~${sizesProp}~items`)
   },
@@ -298,7 +298,7 @@ jb.component('gridEditor.dragableGridItemThumb', {
   impl: features(
     method('setGridArea', writeValue(
       pipeline(
-        studio.getOrCreateCompInArray('%$gridItemElem/_component/ctx/path%~features','css.gridArea'), 
+        tgp.getOrCreateCompInArray('%$gridItemElem/_component/ctx/path%~features','css.gridArea'), 
         '%css%', tgp.ref('%%')
       ), '%%' 
     )),
@@ -379,7 +379,7 @@ jb.component('gridEditor.dragableGridItemThumb', {
 
 //     function setGridAreaValsInScript(vals) {
 //       const gridAreaRef = ctx.run(pipeline(
-//         studio.getOrCreateCompInArray('%$gridItemElem/_component/ctx/path%~features','css.gridArea'), 
+//         tgp.getOrCreateCompInArray('%$gridItemElem/_component/ctx/path%~features','css.gridArea'), 
 //         '%css%', 
 //         tgp.ref('%%')))     //{as: 'ref'})
 //       spanBase && [0,1].forEach(i=>{

@@ -1,14 +1,14 @@
+
 jb.extension('probe', {
     initExtension() { return { probeCounter: 0 } },
     Probe: class Probe {
         constructor(ctx, noGaps) {
             this.noGaps = noGaps
 
-            this.context = ctx.ctx({})
+            this.circuitCtx = ctx.ctx({})
             this.probe = {}
-            this.context.probe = this
-            this.context.profile = jb.studio.valOfPath(this.context.path) || this.context.profile // recalc latest version of profile
-            this.circuit = this.context.profile
+            this.circuitCtx.probe = this
+            this.circuitCtx.profile = jb.tgp.valOfPath(this.circuitCtx.path) || this.circuitCtx.profile // recalc latest version of profile
             this.id = ++jb.probe.probeCounter
         }
 
@@ -22,11 +22,6 @@ jb.extension('probe', {
             this.pathToTrace = pathToTrace
             const initial_resources = jb.db.resources
             const initial_comps = jb.watchableComps.handler.resources()
-            if (jb.studio.probeDisabled) {
-                this.completed = false
-                this.remark = 'probe disabled'
-                return jb.probe.resolve(this)
-            }
 
             return this.simpleRun()
             // .catch(e => jb.logException(e,'probe run'))
@@ -53,15 +48,14 @@ jb.extension('probe', {
         }
 
         simpleRun() {
-            const st = jb.studio
-            return jb.probe.resolve(this.context.runItself()).then(res=>{
+            return jb.probe.resolve(this.circuitCtx.runItself()).then(res=>{
                 if (res && res.renderVdom) {
                     const vdom = res.renderVdom()
                     return ({props: res.renderProps, vdom , cmp: res})
                 }
-                else if (jb.studio.isCompNameOfType(jb.utils.compName(this.circuit),'table-field')) {
-                    const item = this.context.vars.$probe_item
-                    const index = this.context.vars.$probe_index
+                else if (jb.tgp.isCompNameOfType(jb.utils.compName(this.circuitCtx.profile),'table-field')) {
+                    const item = this.circuitCtx.vars.$probe_item
+                    const index = this.circuitCtx.vars.$probe_index
                     return res.control ? res.control(item) : res.fieldData(item,index)
                 }
                 return res
@@ -71,12 +65,11 @@ jb.extension('probe', {
         handleGaps(formerGap) {
             if (this.result.length > 0 || this.noGaps)
                 return
-            const st = jb.studio
             // find closest path
-            let _path = jb.studio.parentPath(this.pathToTrace),breakingProp=''
+            let _path = jb.tgp.parentPath(this.pathToTrace),breakingProp=''
             while (!this.probe[_path] && _path.indexOf('~') != -1) {
                 breakingProp = _path.split('~').pop()
-                _path = jb.studio.parentPath(_path)
+                _path = jb.tgp.parentPath(_path)
             }
             if (!this.probe[_path] || formerGap == _path) { // can not break through the gap
                 this.closestPath = _path
@@ -88,19 +81,19 @@ jb.extension('probe', {
             // check if parent ctx returns object with method name of breakprop as in dialog.onOK
             const parentCtx = this.probe[_path][0].in, breakingPath = _path+'~'+breakingProp
             const obj = this.probe[_path][0].out
-            const compName = jb.studio.compNameOfPath(breakingPath)
+            const compName = jb.tgp.compNameOfPath(breakingPath)
             if (jb.comps[`${compName}.probe`])
                 return jb.probe.resolve(parentCtx.runInner({...parentCtx.profile[breakingProp], $: `${compName}.probe`},
-                    jb.studio.paramDef(breakingPath),breakingProp))
+                    jb.tgp.paramDef(breakingPath),breakingProp))
                         .then(_=>this.handleGaps(_path))
 
-            const hasSideEffect = jb.comps[compName] && (jb.comps[jb.studio.compNameOfPath(breakingPath)].type ||'').indexOf('has-side-effects') != -1
+            const hasSideEffect = jb.comps[compName] && (jb.comps[jb.tgp.compNameOfPath(breakingPath)].type ||'').indexOf('has-side-effects') != -1
             if (obj && !hasSideEffect && obj[breakingProp] && typeof obj[breakingProp] == 'function')
                 return jb.probe.resolve(obj[breakingProp]())
                     .then(_=>this.handleGaps(_path))
 
             if (!hasSideEffect)
-                return jb.probe.resolve(parentCtx.runInner(parentCtx.profile[breakingProp],jb.studio.paramDef(breakingPath),breakingProp))
+                return jb.probe.resolve(parentCtx.runInner(parentCtx.profile[breakingProp],jb.tgp.paramDef(breakingPath),breakingProp))
                     .then(_=>this.handleGaps(_path))
 
             // could not solve the gap
@@ -139,16 +132,30 @@ jb.extension('probe', {
         if (jb.callbag.isCallbag(x)) return x
         return Promise.resolve(x)
     },
-    findElemsByPathCondition: condition => Object.values(jb.ui.headless).flatMap(x=>x.body.querySelectorAll('[jb-ctx]'))
-        .map(elem =>({elem, path: jb.path(elem,'debug.path'), callStack: jb.path(elem,'debug.callStack'), ctxId: elem.getAttribute('jb-ctx') }))
-        .filter(e => [e.path, ...(e.callStack ||[])].filter(x=>x).some(path => condition(path))),
-    closestCtxInPreview(_path) {
-        const candidates = jb.probe.findElemsByPathCondition(p => p.indexOf(path) == 0)
-        return candidates.sort((e2,e1) => 1000* (e1.path.length - e2.path.length) + (+e1.ctxId.match(/[0-9]+/)[0] - +e2.ctxId.match(/[0-9]+/)[0]) )[0] || {}
-    }
+	closestCtxOfLastRun(pathToTrace) {
+		let path = pathToTrace.split('~')
+        if (jb.tgp.isExtraElem(pathToTrace)) {
+            if (pathToTrace.match(/items~0$/)) {
+                const pipelineCtx = jb.ctxByPath[path.slice(0,-2).join('~')]
+                if (pipelineCtx)
+                    return pipelineCtx.setVars(pipelineCtx.profile.$vars || {})
+            } else if (pathToTrace.match(/items~[1-9][0-9]*$/)) {
+                const formerIndex = Number(pathToTrace.match(/items~([1-9][0-9]*)$/)[1])-1
+                path[path.length-1] = formerIndex
+            }
+        }
+
+        const res = jb.tgp.parents(path.join('~')).map(path=>jb.ctxByPath[path]).find(x=>x)
+		// for (;path.length > 0 && !jb.ctxByPath[path.join('~')];path.pop());
+		// if (path.length)
+		// 	res = jb.ctxByPath[path.join('~')]
+			
+		if ((jb.path(res,'profile.$') ||'').indexOf('rx.') != 0) // ignore rx ctxs
+			return res
+	},    
 })
 
-jb.component('studio.probe', {
+jb.component('probe.runCircuit', {
   type: 'data',
   params: [
     {id: 'path', as: 'string', dynamic: true}
@@ -161,24 +168,43 @@ jb.component('studio.probe', {
             return { result: jb.cbLogByPath[path] }
         let circuitCtx = null
         if (jb.path(jb.comps,[path.split('~')[0],'testData']))
-            circuitCtx = jb.studio.closestTestCtx(path)
+            circuitCtx = closestTestCtx(path)
         if (!circuitCtx)
             circuitCtx = jb.ctxDictionary[ctx.exp('%$studio/pickSelectionCtxId%')]
-        if (!circuitCtx) {
-            const circuitInPreview = jb.probe.closestCtxInPreview(path)
-            circuitCtx = circuitInPreview && circuitInPreview.ctx
+        if (!circuitCtx && jb.path(jb.ui,'headless')) {
+            const circuitElem = closestElemWithCtx(path)
+            circuitCtx = circuitElem && jb.ctxDictionary[circuitElem.ctxId]
         }
         if (!circuitCtx)
-            circuitCtx = jb.studio.closestCtxOfLastRun(path)
+            circuitCtx = jb.probe.closestCtxOfLastRun(path)
         if (!circuitCtx)
-            circuitCtx = jb.studio.closestTestCtx(path)
+            circuitCtx = closestTestCtx(path)
         if (!circuitCtx) {
             const circuit = jb.tostring(ctx.exp('%$studio/jbEditor/circuit%') || ctx.exp('%$studio/project%') && ctx.run(studio.currentPagePath()))
             circuitCtx = new jb.core.jbCtx(new jb.core.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} )
         }
-        if (circuitCtx)
-            jb.studio.highlightCtx(circuitCtx.id)
+        // if (circuitCtx)
+        //     jb.studio.highlightCtx(circuitCtx.id) // fix: show send it to the view
         return new jb.probe.Probe(circuitCtx).runCircuit(path)
+
+        function closestTestCtx(path) {
+            const _ctx = new jb.core.jbCtx()
+            const compId = path.split('~')[0]
+            const statistics = jb.exec(studio.componentStatistics(compId))
+            const test = jb.path(jb.comps[compId],'impl.expectedResult') ? compId 
+                : (statistics.referredBy||[]).find(refferer=>jb.tgp.isOfType(refferer,'test'))
+            if (test)
+                return _ctx.ctx({ profile: {$: test}, comp: test, path: ''})
+            const testData = jb.comps[compId].testData
+            if (testData)
+                return _ctx.ctx({profile: pipeline(testData, {$: compId}), path: '' })
+        }
+        function closestElemWithCtx(path) {
+            const candidates = Object.values(jb.ui.headless).flatMap(x=>x.body.querySelectorAll('[jb-ctx]'))
+                .map(elem =>({elem, path: jb.path(elem,'debug.path'), callStack: jb.path(elem,'debug.callStack'), ctxId: elem.getAttribute('jb-ctx') }))
+                .filter(e => [e.path, ...(e.callStack ||[])].filter(x=>x).some(p => p.indexOf(path) == 0))
+            return candidates.sort((e2,e1) => 1000* (e1.path.length - e2.path.length) + (+e1.ctxId.match(/[0-9]+/)[0] - +e2.ctxId.match(/[0-9]+/)[0]) )[0] || {}
+        }        
     }
 })
 

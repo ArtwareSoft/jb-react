@@ -544,10 +544,11 @@ jb.component('data.test1', {
   impl: '%$first%-%$second%'
 })
 
-jb.component('dataTest.prettyPrintPositions', {
+jb.component('dataTest.prettyPrintPositions.shouldNotFlat', {
   impl: dataTest(
     pipeline(
       () => jb.utils.prettyPrintWithPositions(group({title: '2.0', controls: text('my label')})),
+      log('test'),
       '%map/~controls~text~!value%',
       join()
     ),
@@ -614,10 +615,10 @@ jb.component('dataTest.prettyPrint.funcDefaults', {
   impl: dataTest(() => jb.utils.prettyPrint({ aB(c,{b} = {}) {3} }), and(not(contains('aB:')), contains('aB(c,{b} = {}) {3}')))
 })
 
-jb.component('dataTest.codeEditor.getPosOfPath', {
+jb.component('dataTest.tgpTextEditor.getPosOfPath', {
   impl: dataTest(
     pipeline(
-      () => jb.codeEditor.getPosOfPath('dataTest.codeEditor.getPosOfPath~impl~expectedResult~!profile'),
+      () => jb.tgpTextEditor.getPosOfPath('dataTest.tgpTextEditor.getPosOfPath~impl~expectedResult~!profile'),
       slice(0, 2),
       join()
     ),

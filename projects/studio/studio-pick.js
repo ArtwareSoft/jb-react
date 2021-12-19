@@ -27,7 +27,7 @@ jb.component('studio.pickAndOpen', {
 jb.component('studio.pickTitle', {
    type: 'control',
    impl: text({
-        text: studio.shortTitle('%$dialogData/path%'),
+        text: tgp.shortTitle('%$dialogData/path%'),
         features: css('display: block; margin-top: -20px; background: white')
    })
 })

@@ -1,3 +1,51 @@
+
+jb.extension('studio', {
+	ControlTree: class ControlTree {
+		constructor(rootPath) {
+			this.rootPath = rootPath;
+			this.refHandler = jb.watchableComps.handler;
+		}
+		title(path) {
+			const val = jb.tgp.valOfPath(path);
+			if (path &&  (val == null || Array.isArray(val) && val.length == 0) && path.match(/~controls$/))
+				return jb.ui.h('a',{style: {cursor: 'pointer', 'text-decoration': 'underline'}, onclick: 'newControl' },'add new');
+      const title = jb.tgp.shortTitle(path)
+      if (title == 'control-with-condition')
+        return jb.ui.h('div',{},[this.title(path+'~control'),jb.ui.h('span',{class:'treenode-val'},'conditional') ]);
+      return title
+		}
+		// differnt from children() == 0, beacuse in the control tree you can drop into empty group
+		isArray(path) {
+			return this.children(path).length > 0;
+		}
+		children(path,nonRecursive) {
+			return [].concat.apply([],jb.tgp.controlParams(path).map(prop=>path + '~' + prop)
+					.map(innerPath=> {
+						const val = jb.tgp.valOfPath(innerPath);
+						if (Array.isArray(val) && val.length > 0)
+						return jb.tgp.arrayChildren(innerPath,true);
+						return [innerPath]
+					}))
+					.concat(nonRecursive ? [] : this.innerControlPaths(path));
+		}
+		move(from,to,ctx) {
+			return jb.tgp.moveFixDestination(from,to,ctx)
+		}
+		disabled(path) {
+			return jb.tgp.isDisabled(path)
+		}
+		icon(path) {
+			return jb.tgp.icon(path)
+		}
+
+		// private
+		innerControlPaths(path) {
+			return ['action~content','action~menu'] // add more inner paths here
+				.map(x=>path+'~'+x).filter(p=>jb.tgp.isControlType(jb.tgp.paramType(p)))
+		}
+	},
+})
+
 jb.component('studio.treeMenu', {
   type: 'menu.option',
   params: [
@@ -27,14 +75,14 @@ jb.component('studio.treeMenu', {
       menu.action({
         title: 'Wrap with group',
         action: runActions(
-          studio.wrapWithGroup('%$path%'),
+          tgp.wrapWithGroup('%$path%'),
           writeValue('%$studio/profile_path%', '%$path%~controls~0'), 
           tree.regainFocus()
         )
       }),
       menu.action({
         title: 'Duplicate',
-        action: studio.duplicateControl('%$path%'),
+        action: tgp.duplicateControl('%$path%'),
         shortcut: 'Ctrl+D'
       }),
       menu.separator(),
@@ -50,7 +98,7 @@ jb.component('studio.treeMenu', {
         shortcut: 'Ctrl+J'
       }),
       menu.action({
-        vars: [Var('compName', studio.compName('%$path%'))],
+        vars: [Var('compName', tgp.compName('%$path%'))],
         title: 'Goto %$compName%',
         action: runActions(
           writeValue('%$studio/profile_path%', '%$compName%~impl'),
@@ -64,13 +112,13 @@ jb.component('studio.treeMenu', {
       menu.endWithSeparator({options: studio.gotoReferencesOptions('%$path%')}),
       menu.action({
         title: 'Delete',
-        action: studio.delete('%$path%'),
+        action: tgp.delete('%$path%'),
         icon: icon('delete'),
         shortcut: 'Delete'
       }),
       menu.action({
-        title: If(studio.disabled('%$path%'),'Enable','Disable'),
-        action: studio.toggleDisabled('%$path%'),
+        title: If(tgp.isDisabled('%$path%'),'Enable','Disable'),
+        action: tgp.toggleDisabled('%$path%'),
         icon: icon('do_not_disturb'),
         shortcut: 'Ctrl+X'
       }),

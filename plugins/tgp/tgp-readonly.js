@@ -81,7 +81,6 @@ jb.extension('tgp', 'readOnly', {
 		return res;
 	},
 	PTsOfPath: path => jb.tgp.PTsOfType(jb.tgp.paramType(path)),
-	profilesOfPT: pt => jb.entries(jb.comps).filter(c=> c[1].impl.$ == pt).map(c=>c[0]),
 	propName(path) {
 		if (!isNaN(Number(path.split('~').pop()))) // array elements
 			return jb.tgp.parentPath(path).split('~').pop().replace(/s$/,'');
@@ -119,13 +118,7 @@ jb.extension('tgp', 'readOnly', {
 		if (Array.isArray(parentVal))
 			return parentVal.length == (path.match(/~([0-9]+)$/) || ['',-1])[1]
 	},
-	asArrayChildren(path) { // support the case of single element - used by properties features
-		const val = jb.tgp.valOfPath(path)
-		if (Array.isArray(val))
-			return jb.tgp.arrayChildren(path,true)
-		else if (val)
-			return [path]
-	},
+
 	summary(path) {
 		const val = jb.tgp.valOfPath(path);
 		if (path.match(/~cases~[0-9]*$/))
@@ -185,19 +178,29 @@ jb.extension('tgp', 'readOnly', {
 
 		return '';
 	},
+	isDisabled: path => jb.path(jb.tgp.valOfPath(path),'$disabled'),
+	moreParams: path => jb.tgp.paramsOfPath(path).filter(p=>jb.tgp.valOfPath(path+'~'+p.id) == null), // && !p.mandatory)
 })
 
 
 // ******* components ***************
 
-jb.defComponents(('isArrayType,parentPath,paramType,shortTitle,summary,asArrayChildren,compName,paramDef,enumOptions,'
-+'propName,moreParams,disabled').split(','), f => jb.component(`tgp.${f}`, { 
+jb.defComponents(
+'isArrayType,parentPath,shortTitle,summary,isDisabled,enumOptions,propName,paramDef,paramType,moreParams,paramsOfPath'
+	.split(','), f => jb.component(`tgp.${f}`, { 
 	params: [
 		{id: 'path', as: 'string', mandatory: true}
 	  ],
 	  impl: ({},path) => jb.tgp[f](path),
 	  require: `jb.tgp.${f}()`
 }))
+
+jb.component('tgp.compName', {
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) => jb.tgp.compNameOfPath(path) || ''
+})
 
 jb.component('tgp.val', {
   params: [
@@ -226,13 +229,6 @@ jb.component('tgp.PTsOfType', {
     {id: 'type', as: 'string', mandatory: true}
   ],
   impl: (ctx,_type) => jb.tgp.PTsOfType(_type)
-})
-
-jb.component('tgp.profilesOfPT', {
-  params: [
-    {id: 'PT', as: 'string', mandatory: true}
-  ],
-  impl: (ctx, pt) => jb.tgp.profilesOfPT(pt)
 })
 
 jb.component('tgp.categoriesOfType', {
@@ -277,22 +273,6 @@ jb.component('tgp.categoriesOfType', {
 	}
 })
 
-jb.component('tgp.hasParam', {
-  params: [
-    {id: 'path', as: 'string'},
-    {id: 'param', as: 'string'}
-  ],
-  impl: (ctx,path,param) =>	jb.tgp.paramDef(path+'~'+param)
-})
-
-jb.component('tgp.nonControlChildren', {
-  params: [
-    {id: 'path', as: 'string'},
-    {id: 'includeFeatures', as: 'boolean', type: 'boolean'}
-  ],
-  impl: (ctx,path,includeFeatures) =>	jb.tgp.nonControlChildren(path,includeFeatures)
-})
-
 jb.component('tgp.iconOfType', {
   type: 'data',
   params: [
@@ -312,12 +292,12 @@ jb.component('tgp.iconOfType', {
 	}
 })
 
-jb.component('tgp.macroName', {
+jb.component('tgp.titleToId', {
   type: 'data',
   params: [
     {id: 'name', as: 'string', defaultValue: '%%'}
   ],
-  impl: (ctx,name) => jb.macro.titleToId(name)
+  impl: ({},name) => jb.macro.titleToId(name)
 })
 
 jb.component('tgp.canWrapWithArray', {

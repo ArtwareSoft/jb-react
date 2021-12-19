@@ -11,7 +11,7 @@ jb.component('studio.searchList', {
     ),
     controls: [
       control.icon({
-        icon: studio.iconOfType('%type%'),
+        icon: tgp.iconOfType('%type%'),
         features: [
           css.opacity('0.3'),
           css.padding({top: '5', left: '5'})

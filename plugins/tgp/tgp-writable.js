@@ -7,7 +7,7 @@ jb.extension('tgp', 'writable', {
 		ref.jbToUse = jb
 		return ref
 	},
-	val: v => jb.watchableComps.handler.val(v),
+	valOfRef: ref => jb.watchableComps.handler.val(ref),
 	objectProperty: (obj,prop) => jb.watchableComps.handler.objectProperty(obj,prop),
 	isRef: ref => jb.watchableComps.handler.isRef(ref),
 	asRef: obj => jb.watchableComps.handler.asRef(obj),
@@ -27,10 +27,14 @@ jb.extension('tgp', 'writable', {
 		if (typeof profile !== 'object') return profile
 		return jb.tgp.evalProfile(jb.utils.prettyPrint(profile,{noMacros: true}))
 	},
-	disabled(path) {
-		const prof = jb.tgp.valOfPath(path)
-		return prof && typeof prof == 'object' && prof.$disabled
-	},
+	evalProfile(prof_str) {
+		try {
+			return jb.frame.eval('('+prof_str+')')
+			//return (jb.studio.previewWindow || window).eval('('+prof_str+')')
+		} catch (e) {
+			jb.logException(e,'eval profile',{prof_str})
+		}
+	},	
 	newProfile(comp,compName) {
 		const result = { $: compName }
 		jb.utils.compParams(comp).forEach(p=>{
@@ -72,7 +76,7 @@ jb.extension('tgp', 'writable', {
 		const val = jb.tgp.valOfPath(path)
 		toAdd = toAdd === undefined ? {$:''} : toAdd
 		if (Array.isArray(val)) {
-			if (index === undefined)
+			if (index === undefined || index == -1)
 				jb.tgp.push(jb.tgp.ref(path),[toAdd],srcCtx)
 			else
 				jb.tgp.splice(jb.tgp.ref(path),[[index,0,toAdd]],srcCtx)
@@ -114,6 +118,37 @@ jb.component('tgp.boolRef', {
 	})
 })
 
+jb.component('tgp.profileValueAsText', {
+  type: 'data',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) => ({
+		$jb_path: () => path.split('~'),
+			$jb_val: function(value) {
+				if (value == undefined) {
+					const val = jb.tgp.valOfPath(path);
+					if (val == null)
+						return '';
+					if (jb.utils.isPrimitiveValue(val))
+						return '' + val
+					if (jb.tgp.compNameOfPath(path))
+						return '=' + jb.tgp.compNameOfPath(path)
+				}
+				else if (value.indexOf('=') != 0)
+					jb.tgp.writeValueOfPath(path, valToWrite(value),ctx);
+
+        function valToWrite(val) {
+          const type = (jb.tgp.paramDef(path) || {}).as
+          if (type == 'number' && Number(val)) return +val
+          if (type == 'boolean')
+            return val === 'true' ? true : val === 'false' ? false : '' + val
+          return '' + val
+        }
+      }
+    })
+})
+
 jb.component('tgp.getOrCreateCompInArray', {
 	type: 'data',
 	params: [
@@ -146,75 +181,6 @@ jb.component('tgp.getOrCreateCompInArray', {
 	}
 })
 
-jb.component('tgp.compNameRef', {
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: (ctx,path) => ({
-			$jb_path: () => path.split('~'),
-			$jb_val: function(value) {
-				if (typeof value == 'undefined')
-					return jb.tgp.compNameOfPath(path);
-				else
-					jb.tgp.setComp(path,value,ctx)
-			},
-			$jb_observable: cmp =>
-				jb.watchable.refObservable(jb.tgp.ref(path),{cmp, includeChildren: 'yes'})
-	})
-})
-
-jb.component('tgp.profileAsStringByref', {
-  type: 'data',
-  params: [
-    {id: 'path', as: 'string', dynamic: true}
-  ],
-  impl: ctx => ({
-		$jb_path: () => path.split('~'),
-		$jb_val: function(value) {
-			var path = ctx.params.path();
-			if (!path) return '';
-			if (typeof value == 'undefined') {
-				return jb.tgp.valOfPath(path) || '';
-			} else {
-				jb.tgp.writeValueOfPath(path, value,ctx);
-			}
-		},
-		$jb_observable: cmp =>
-			jb.watchable.refObservable(jb.tgp.ref(ctx.params.path()),{cmp})
-	})
-})
-
-jb.component('tgp.profileValueAsText', {
-  type: 'data',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: (ctx,path) => ({
-		$jb_path: () => path.split('~'),
-			$jb_val: function(value) {
-				if (value == undefined) {
-					const val = jb.tgp.valOfPath(path);
-					if (val == null)
-						return '';
-					if (jb.utils.isPrimitiveValue(val))
-						return '' + val
-					if (jb.tgp.compNameOfPath(path))
-						return '=' + jb.tgp.compNameOfPath(path)
-				}
-				else if (value.indexOf('=') != 0)
-					jb.tgp.writeValueOfPath(path, valToWrite(value),ctx);
-
-        function valToWrite(val) {
-          const type = (jb.tgp.paramDef(path) || {}).as
-          if (type == 'number' && Number(val)) return +val
-          if (type == 'boolean')
-            return val === 'true' ? true : val === 'false' ? false : '' + val
-          return '' + val
-        }
-      }
-    })
-})
-
 jb.component('tgp.wrap', {
   type: 'action',
   params: [
@@ -238,10 +204,10 @@ jb.component('tgp.addProperty', {
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => {
-		// if (jb.tgp.paramTypeOfPath(path) == 'data')
+		// if (jb.tgp.paramType(path) == 'data')
 		// 	return jb.tgp.writeValueOfPath(path,'')
 		const param = jb.tgp.paramDef(path)
-		const paramType = jb.tgp.paramTypeOfPath(path)
+		const paramType = jb.tgp.paramType(path)
 		const result = param.defaultValue ? JSON.parse(JSON.stringify(param.defaultValue))
 			: (paramType.indexOf('data') != -1 || jb.frame.jbInvscode) ? '' : {$: ''}
 		
@@ -258,17 +224,9 @@ jb.component('tgp.duplicateArrayItem', {
 		const prop = path.split('~').pop()
 		const val = jb.tgp.valOfPath(path)
 		const parent_ref = jb.tgp.ref(jb.tgp.parentPath(path))
-		if (parent_ref && Array.isArray(jb.tgp.val(parent_ref)))
+		if (parent_ref && Array.isArray(jb.tgp.valOfRef(parent_ref)))
 			jb.tgp.splice(parent_ref,[[Number(prop), 0,jb.tgp.clone(val)]],ctx)
 	}
-})
-
-jb.component('tgp.newArrayItem', {
-  type: 'action',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: (ctx,path) => jb.tgp.addArrayItem(path,{srcCtx: ctx})
 })
 
 jb.component('tgp.addArrayItem', {
@@ -278,9 +236,7 @@ jb.component('tgp.addArrayItem', {
     {id: 'toAdd', as: 'single'},
     {id: 'index', as: 'number', defaultValue: -1}
   ],
-  impl: (ctx,path,toAdd,index) =>
-    index == -1 ? jb.tgp.addArrayItem(path, {srcCtx: ctx, toAdd})
-      : jb.tgp.addArrayItem(path, {srcCtx: ctx, toAdd, index})
+  impl: (srcCtx,path,toAdd,index) => jb.tgp.addArrayItem(path, {srcCtx, toAdd , index})
 })
 
 jb.component('tgp.wrapWithArray', {

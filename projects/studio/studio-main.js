@@ -101,7 +101,7 @@ jb.component('studio.pages', {
       }),
       itemlist({
         title: '',
-        items: pipeline(studio.cmpsOfProject(), filter(studio.isOfType('%%', 'control'))),
+        items: pipeline(studio.cmpsOfProject(), filter(tgp.isOfType('%%', 'control'))),
         controls: text({
           text: pipeline(suffix('.'), extractSuffix('.')),
           features: css.class('studio-page')
@@ -130,7 +130,7 @@ jb.component('studio.pages', {
         features: [css('{margin: 5px}'), feature.hoverTitle('new function')]
       }),
       itemlist({
-        items: pipeline(studio.cmpsOfProject(), filter(studio.isOfType('%%', 'data'))),
+        items: pipeline(studio.cmpsOfProject(), filter(tgp.isOfType('%%', 'data'))),
         controls: text({
           text: pipeline(suffix('.'), extractSuffix('.')),
           style: text.alignToBottom(),
@@ -294,16 +294,6 @@ jb.component('studio.mainMenu', {
           menu.action({
             title: 'Inteliscript Editor',
             action: studio.openJbEditor({path: studio.currentProfilePath()})
-          }),
-          menu.action({
-            title: 'Disable probe',
-            action: ctx => jb.studio.probeDisabled = true,
-            showCondition: ctx => !jb.studio.probeDisabled
-          }),
-          menu.action({
-            title: 'Enable probe',
-            action: ctx => jb.studio.probeDisabled = false,
-            showCondition: ctx => jb.studio.probeDisabled
           })
         ]
       }),
@@ -436,7 +426,7 @@ jb.component('studio.pathHyperlink', {
       button({
         title: ctx => {
 	  		const path = ctx.cmpCtx.params.path;
-	  		const title = jb.studio.shortTitle(path) || '',compName = jb.studio.compNameOfPath(path) || '';
+	  		const title = jb.tgp.shortTitle(path) || '',compName = jb.tgp.compNameOfPath(path) || '';
 	  		return title == compName ? title : compName + ' ' + title;
 	  	},
         action: runActions(writeValue('%$studio/profile_path%', '%$path%'), studio.openControlTree()),

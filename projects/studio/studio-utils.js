@@ -26,7 +26,7 @@ jb.component('studio.copy', {
   ],
   impl: (ctx, path) => {
     try {
-      const val = jb.studio.valOfPath(path)
+      const val = jb.tgp.valOfPath(path)
       jb.studio.clipboard = typeof val == 'string' ? val : eval('(' + jb.utils.prettyPrint(val,{noMacros: true}) + ')')
     } catch(e) {
       jb.logException(e,'copy',{ctx})
@@ -142,4 +142,20 @@ jb.component('studio.watchScriptChanges', {
 jb.component('studio.watchComponents', {
   type: 'feature',
   impl: followUp.flow(watchableComps.scriptChange(), rx.filter('%path/length%==1'), sink.refreshCmp())
+})
+
+jb.extension('studio', 'project', {
+	projectFiles: () => jb.exec('%$studio/projectSettings/jsFiles%'),
+	projectCompsAsEntries: () => {
+		const project = jb.exec('%$studio/project%')
+		return jb.entries(jb.comps).filter(([id,comp]) => comp[jb.core.location][0].indexOf(project) != -1)
+			.filter(([id,comp]) => !comp.internal)
+	},
+})
+
+jb.component('studio.cmpsOfProject', {
+  type: 'data',
+  impl: () => 
+    jb.studio.projectCompsAsEntries().filter(e=>e[1].impl).map(e=>e[0]),
+  testData: 'sampleData'
 })

@@ -205,7 +205,7 @@ jb.component('studio.componentsList', {
               content: group({}),
               title: 'delete %$compId%',
               onOK: runActions(
-                studio.delete('%$compId%'),
+                tgp.delete('%$compId%'),
                 ctx => delete jb.studio.comps[ctx.vars.compId],
                 refreshControlById('component-list')
               ),

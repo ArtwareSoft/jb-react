@@ -86,7 +86,7 @@ jb.extension('utils', 'prettyPrint', {
 
       function shouldNotFlat(result) {
         const long = result.text.replace(/\n\s*/g,'').split(jb.utils.fixedNL)[0].length > colWidth
-        if (!jb.path(jb,'studio.valOfPath'))
+        if (!jb.path(jb,'tgp.valOfPath'))
           return result.unflat || long
         const val = jb.path(comps,path.split('~')) 
         const paramProps = path.match(/~params~[0-9]+$/)

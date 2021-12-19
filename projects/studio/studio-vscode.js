@@ -45,11 +45,11 @@ jb.extension('vscode', {
         vscodeNS.workspace.onDidSaveTextDocument(() => { // update component of active selection
             const editor = vscodeNS.window.activeTextEditor
             const ctx = new jb.core.jbCtx({},{vars: {headlessWidget: true, fromVsCode: true}})
-            const {compId, compSrc} = jb.codeEditor.closestComp(editor.document.getText(), {line: editor.selection.active.line})
+            const {compId, compSrc} = jb.tgpTextEditor.closestComp(editor.document.getText(), {line: editor.selection.active.line})
             if (compId) {
                 const compRef = jb.tgp.ref(compId)
                 const newVal = '({' + compSrc.split('\n').slice(1).join('\n')
-                jb.codeEditor.setStrValue(newVal, compRef, ctx)
+                jb.tgpTextEditor.setStrValue(newVal, compRef, ctx)
             }
             const ref = ctx.exp('%$studio/scriptChangeCounter%','ref')
             jb.db.writeValue(ref, +(jb.val(ref)||0)+1 ,ctx)
@@ -69,7 +69,7 @@ jb.extension('vscode', {
         const linesFromComp = lines.slice(componentHeaderIndex)
         const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
         const actualText = lines.slice(componentHeaderIndex,componentHeaderIndex+compLastLine+1).join('\n')
-        return { compId, ...jb.codeEditor.getPathOfPos(compId, {line: line-componentHeaderIndex,col}, actualText) }
+        return { compId, ...jb.tgpTextEditor.getPathOfPos(compId, {line: line-componentHeaderIndex,col}, actualText) }
     },
     watchCursorChange() {
         vscodeNS.window.onDidChangeTextEditorSelection(jb.vscode.updatePosVariables)
@@ -190,13 +190,13 @@ jb.extension('vscode', {
             let path = semanticPath.path.split('~!')[0]
             const semanticPart = semanticPath.path.split('~!')[1]
             const menu = menuType(path,semanticPart)
-            jb.exec({$: 'vscode.openQuickPickMenu', menu: {$: `codeEditor.${menu}`, path, semanticPart }, path })
+            jb.exec({$: 'vscode.openQuickPickMenu', menu: {$: `tgpTextEditor.${menu}`, path, semanticPart }, path })
         }
 
         function menuType(path,semanticPart) {
-            if (jb.studio.paramDef(path).options)
+            if (jb.tgp.paramDef(path).options)
                 return 'selectEnum'
-            const profile = jb.studio.valOfPath(path)
+            const profile = jb.tgp.valOfPath(path)
             const params = jb.path(jb.comps[(profile||{}).$],'params') || []
             const firstParamIsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
             
@@ -211,7 +211,7 @@ jb.extension('vscode', {
         const fn = jb.comps[compId][jb.core.location][0]
         const doc = await vscodeNS.workspace.openTextDocument(fn)
         const editor = await vscodeNS.window.showTextDocument(doc)
-        const pos = jb.codeEditor.getPosOfPath(`${path}~!${semanticPart}`)
+        const pos = jb.tgpTextEditor.getPosOfPath(`${path}~!${semanticPart}`)
         const line =pos[0] + Number(jb.comps[compId][jb.core.location][1]) - 1
         //if (line < editor.visibleRanges[0].start.line || line > editor.visibleRanges[0].end.line)
             editor.revealRange(new vscodeNS.Range(line, 0,line, 0), vscodeNS.TextEditorRevealType.InCenterIfOutsideViewport)
@@ -276,7 +276,7 @@ jb.component('vscode.openQuickPickMenu', {
         if (option && option.action)
             option.action()
         if (!option && quickPick.value) {
-            jb.studio.writeValueOfPath(path,quickPick.value,ctx)
+            jb.tgp.writeValueOfPath(path,quickPick.value,ctx)
         }
         quickPick.dispose()
     })

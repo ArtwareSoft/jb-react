@@ -65,7 +65,7 @@ jb.component('sizesEditor.widthHeight', {
           writeValue('%$studio/profile_path%', '%$path%'),
           studio.openProperties(
               true,
-              studio.getOrCreateCompInArray('%$path%~features', 'css.%$prop%')
+              tgp.getOrCreateCompInArray('%$path%~features', 'css.%$prop%')
             ),
           dialog.closeDialog()
         ),
@@ -87,7 +87,7 @@ jb.component('sizesEditor.prop', {
       writeValue('%$studio/profile_path%', '%$path%'),
       studio.openProperties(
           true,
-          studio.getOrCreateCompInArray('%$path%~features', 'css.%$prop%')
+          tgp.getOrCreateCompInArray('%$path%~features', 'css.%$prop%')
         ),
       dialog.closeDialog()
     ),
@@ -117,7 +117,7 @@ jb.component('sizesEditor.editor', {
                 writeValue('%$studio/profile_path%', '%$path%'),
                 studio.openProperties(
                     true,
-                    studio.getOrCreateCompInArray('%$path%~features', 'css.%level%')
+                    tgp.getOrCreateCompInArray('%$path%~features', 'css.%level%')
                   ),
                 dialog.closeDialog()
               ),

@@ -102,17 +102,16 @@ jb.component('studio.templateAsJsx', {
   ],
   impl: ctx => ({
 		$jb_val: function(value) {
-			const st = jb.studio;
 			const path = ctx.params.path();
 			if (!path) return;
 			if (typeof value == 'undefined') {
-				const func = st.valOfPath(path);
+				const func = jb.tgp.valOfPath(path);
 				if (typeof func == 'function')
             		return jb.studio.hToJSX(func.toString().split('=>').slice(1).join('=>') );
 			} else {
 				const funcStr = jb.studio.jsxToH(value);
 				if (funcStr)
-            		st.writeValueOfPath(path,st.evalProfile('(cmp,state,h) => ' + funcStr) );
+            		jb.tgp.writeValueOfPath(path,jb.tgp.evalProfile('(cmp,state,h) => ' + funcStr) );
 			}
 		},
 		$jb_observable: cmp =>

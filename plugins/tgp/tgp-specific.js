@@ -39,22 +39,22 @@ jb.component('tgp.insertControl', {
   impl: (ctx,compToInsert,path) => {
     let newCtrl = compToInsert
     if (typeof compToInsert == 'string') {
-        const comp = compToInsert && jb.studio.getComp(compToInsert)
+        const comp = compToInsert && jb.tgp.getComp(compToInsert)
         if (!compToInsert || !comp) return
-        newCtrl = jb.studio.newProfile(comp,compToInsert)
+        newCtrl = jb.tgp.newProfile(comp,compToInsert)
     }
 
     // find group parent that can insert the control
     if (path.indexOf('~') == -1)
         path = path + '~impl'
     let group_path = path
-    while (jb.studio.controlParams(group_path).length == 0 && group_path)
-        group_path = jb.studio.parentPath(group_path)
-    const group_ref = jb.studio.getOrCreateControlArrayRef(group_path,ctx)
-    if (group_path == jb.studio.parentPath(jb.studio.parentPath(path)))
-        jb.studio.splice(group_ref,[[Number(path.split('~').pop())+1, 0,newCtrl]],ctx)
+    while (jb.tgp.controlParams(group_path).length == 0 && group_path)
+        group_path = jb.tgp.parentPath(group_path)
+    const group_ref = jb.tgp.getOrCreateControlArrayRef(group_path,ctx)
+    if (group_path == jb.tgp.parentPath(jb.tgp.parentPath(path)))
+        jb.tgp.splice(group_ref,[[Number(path.split('~').pop())+1, 0,newCtrl]],ctx)
     else if (group_ref)
-        jb.studio.push(group_ref,[newCtrl],ctx)	}
+        jb.tgp.push(group_ref,[newCtrl],ctx)	}
 })
 
 jb.component('tgp.duplicateControl', {

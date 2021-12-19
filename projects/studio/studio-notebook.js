@@ -177,7 +177,7 @@ jb.component('nb.nbElemToolbar', {
       }),
       button({
         title: 'Delete',
-        action: studio.delete('%$path%'),
+        action: tgp.delete('%$path%'),
         style: button.mdcIcon(icon('delete'), '20')
       })
     ]

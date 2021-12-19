@@ -433,7 +433,7 @@ jb.component('studio.singleSourceCtxView', {
           title: ({},{},{srcCtx}) => {
             if (!srcCtx) return ''
             const path = srcCtx.path || ''
-            const profile = path && jb.studio.valOfPath(path)
+            const profile = path && jb.tgp.valOfPath(path)
             const pt = profile && profile.$ || ''
             const ret = `${path.split('~')[0]}:${pt}`
             return ret.replace(/feature\./g,'').replace(/front.nd\./g,'').replace(/\.action/g,'')
@@ -489,7 +489,7 @@ jb.component('eventTracker.compInspector', {
         }),
         editableText({
             title: 'source',
-            databind: studio.profileAsText('%$cmp/ctx/path%'),
+            databind: tgp.profileAsText('%$cmp/ctx/path%'),
             style: editableText.codemirror({height: '100'}),
             features: codemirror.fold()            
         }),

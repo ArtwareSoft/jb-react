@@ -42,23 +42,22 @@ jb.component('studio.calcExtractComponent', {
 		{id: 'activate', as: 'boolean' },
 	],
 	impl: (ctx,path,compName,description,file,activate) => {
-        const st = jb.studio
-        const parentComp = st.getComp(path.split('~')[0])
-        const parentParams = parentComp.params || []
-		const impl = st.clone(st.valOfPath(path))
-		const usedParams = parentParams.map(p=> ({ ...p, fRegExp: new RegExp(`\\b${p.id}\\b`), sRegExp: new RegExp(`%\\$${p.id}`) }))
-            .filter(p=>usesParam(p,impl))
-        const newComp = {
-            ...(parentComp.type && { type: parentComp.type }),
-            ...(description && { description }),
-            params: usedParams.map(p=> st.clone(parentParams.filter(pr => pr.id == p.id)[0])),
-            impl
-        }
-        if (activate) {
-            ctx.run(studio.newComp({compName, compContent: () => newComp, file}));
-            jb.db.writeValue(jb.tgp.ref(path),
-                {$: compName, ...jb.objFromEntries(newComp.params.map(p=>[p.id,`%$${p.id}%`]))},ctx)
-        }
+    const parentComp = jb.tgp.getComp(path.split('~')[0])
+    const parentParams = parentComp.params || []
+    const impl = jb.tgp.clone(jb.tgp.valOfPath(path))
+    const usedParams = parentParams.map(p=> ({ ...p, fRegExp: new RegExp(`\\b${p.id}\\b`), sRegExp: new RegExp(`%\\$${p.id}`) }))
+        .filter(p=>usesParam(p,impl))
+    const newComp = {
+        ...(parentComp.type && { type: parentComp.type }),
+        ...(description && { description }),
+        params: usedParams.map(p=> jb.tgp.clone(parentParams.filter(pr => pr.id == p.id)[0])),
+        impl
+    }
+    if (activate) {
+        ctx.run(studio.newComp({compName, compContent: () => newComp, file}));
+        jb.db.writeValue(jb.tgp.ref(path),
+            {$: compName, ...jb.objFromEntries(newComp.params.map(p=>[p.id,`%$${p.id}%`]))},ctx)
+    }
 
 		return { compName, ...newComp}
 
@@ -161,22 +160,21 @@ jb.component('studio.calcExtractParam', {
 		{id: 'activate', as: 'boolean' },
 	],
 	impl: (ctx,path,id,description,activate) => {
-        const st = jb.studio
         const compName = path.split('~')[0]
-        const parentComp = st.getComp(compName)
-        const type = ((st.paramDef(path) || {}).type || '').split('[')[0]
+        const parentComp = jb.tgp.getComp(compName)
+        const type = ((jb.tgp.paramDef(path) || {}).type || '').split('[')[0]
         const paramToAdd = {
             id,
             ...(type && { type }),
             ...(type == 'action' && { dynamic: true }),
-            defaultValue: st.valOfPath(path),
+            defaultValue: jb.tgp.valOfPath(path),
             ...(description && { description })
         }
         const newParams = [...(jb.utils.compParams(parentComp) || []), paramToAdd]
 
         if (activate) {
-            jb.db.writeValue(st.refOfPath(`${compName}~params`),newParams, ctx),
-            jb.db.writeValue(st.refOfPath(path), `%$${id}%`,ctx)
+            jb.db.writeValue(jb.tgp.refOfPath(`${compName}~params`),newParams, ctx),
+            jb.db.writeValue(jb.tgp.refOfPath(path), `%$${id}%`,ctx)
         }
 
 		return paramToAdd
@@ -241,11 +239,7 @@ jb.component('studio.canMakeLocal', {
 	params: [
         {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()},
     ],
-    impl: (ctx,path) => {
-        const st = jb.studio
-        const comp = st.compOfPath(path);
-        return comp && typeof comp.impl == 'object'
-    }
+    impl: ({},path) => jb.utils.isObject(jb.path(jb.tgp.compOfPath(path),'impl'))
 })
 
 jb.component('studio.calcMakeLocal', {
@@ -255,10 +249,9 @@ jb.component('studio.calcMakeLocal', {
       {id: 'activate', as: 'boolean' },
     ],
     impl: (ctx,path,activate) => {
-        const st = jb.studio
-        const comp = st.compOfPath(path)
-        const valToReplace = st.valOfPath(path)
-        const impl = st.clone(comp.impl)
+        const comp = jb.tgp.compOfPath(path)
+        const valToReplace = jb.tgp.valOfPath(path)
+        const impl = jb.tgp.clone(comp.impl)
         const params = (comp.params || []).map(p=> ({ ...p, 
             fRegExp: new RegExp(`\\b${p.id}\\b`), 
             sRegExp: new RegExp(`%\\$${p.id}`),
@@ -280,7 +273,7 @@ jb.component('studio.calcMakeLocal', {
         const res = { ...(varsToAdd.length && {$vars: varsToAdd}), $basedOn: valToReplace.$, ...impl }
 
         if (activate)
-            st.writeValueOfPath(path,res,ctx)
+            jb.tgp.writeValueOfPath(path,res,ctx)
         return res
         
         function paramVal(p) {
@@ -324,7 +317,7 @@ jb.component('studio.calcMakeLocal', {
                   const f = e[1].toString()
                   const header = f.split('=>')[0]
                   if (header.match(/,\s*({[^}]*)(}\s*,{)([^}]*})\s*\)/)) {
-                      const fixedFunc = st.evalProfile( [
+                      const fixedFunc = jb.tgp.evalProfile( [
                           header.replace(/,\s*({[^}]*)(}\s*,{)([^}]*})\s*\)/,',$1,$3)').replace(/{,/g,'{'),
                           '=>',
                           f.split('=>')[1]

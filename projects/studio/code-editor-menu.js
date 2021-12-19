@@ -1,4 +1,4 @@
-jb.component('codeEditor.selectPT1', {
+jb.component('tgpTextEditor.selectPT1', {
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'},
@@ -6,23 +6,23 @@ jb.component('codeEditor.selectPT1', {
   ],
   impl: menu.menu({
     options: menu.dynamicOptions(
-      ({},{},{path}) => jb.studio.PTsOfPath(path).map(compName=> {
+      ({},{},{path}) => jb.tgp.PTsOfPath(path).map(compName=> {
         const name = compName.substring(compName.indexOf('.')+1)
         const ns = compName.substring(0,compName.indexOf('.'))
 				const mark = [ ((jb.comps[compName].type || '').match(':([0-9]*)') || ['','50'])[1],
           ...(jb.comps[compName].category||'').split(',').map(x=>(x.match(':([0-9]*)') || ['','50'])[1])].filter(x=>x).sort()[0] || 50
-        return {compName, title: ns ? `${name} (${ns})` : name, description: jb.studio.getComp(compName).description || '', mark}
+        return {compName, title: ns ? `${name} (${ns})` : name, description: jb.tgp.getComp(compName).description || '', mark}
       }).filter(x=>x.mark).sort((x,y) => y.mark - x.mark),
       menu.action({
         title: '%title%',
         description: '%description%',
-        action: codeEditor.setSelectedPT({path: '%$path%', semanticPart: '%$semanticPart%', compName: '%compName%'}),
+        action: tgpTextEditor.setSelectedPT({path: '%$path%', semanticPart: '%$semanticPart%', compName: '%compName%'}),
       })
     )
   })
 })
 
-jb.component('codeEditor.setSelectedPT', {
+jb.component('tgpTextEditor.setSelectedPT', {
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'},
@@ -30,7 +30,7 @@ jb.component('codeEditor.setSelectedPT', {
     {id: 'compName', as: 'string'},
   ],
   impl: (ctx,path,semanticPart,compName) => {
-    const profile = jb.studio.valOfPath(path)
+    const profile = jb.tgp.valOfPath(path)
     const params = jb.path(jb.comps[(profile||{}).$],'params') || []
     const firstParamIsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
     const semanticIndex = semanticPart.match(/[0-9]+$/)
@@ -38,61 +38,61 @@ jb.component('codeEditor.setSelectedPT', {
       path = [path,params[0].id].join('~')
       if (Array.isArray(profile)) {
         const index = semanticPart == 'open-array' ? 0 : semanticIndex ? +semanticIndex[0]+1 : profile.length
-        jb.studio.addArrayItem(path,{toAdd: {$: compName}, srcCtx: ctx, index})
+        jb.tgp.addArrayItem(path,{toAdd: {$: compName}, srcCtx: ctx, index})
       } else if (firstParamIsArray || semanticIndex) {
         const ar = profile[params[0].id]
         const lastIndex = Array.isArray(ar) ? ar.length : 1
         const index = ar == null ? undefined : semanticPart == 'open-array' ? 0 : semanticIndex ? +semanticIndex[0]+1 : lastIndex
-        jb.studio.addArrayItem(path,{toAdd: {$: compName}, srcCtx: ctx, index})
+        jb.tgp.addArrayItem(path,{toAdd: {$: compName}, srcCtx: ctx, index})
       } else {
-        jb.studio.setComp(path, compName, ctx)
+        jb.tgp.setComp(path, compName, ctx)
     }
   }
 })
 
-jb.component('codeEditor.selectPT', {
+jb.component('tgpTextEditor.selectPT', {
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'},
     {id: 'semanticPart', as: 'string'}
   ],
   impl: menu.menu({
-    vars: Var('type',studio.paramType('%$path%')),
+    vars: Var('type',tgp.paramType('%$path%')),
     options: menu.dynamicOptions(pipeline(
       picklist.sortedOptions(
-        studio.categoriesOfType('%$type%'),
+        tgp.categoriesOfType('%$type%'),
         studio.categoriesMarks('%$type%', '%$path%')
       ),
       studio.flattenCategories()
     ),
     menu.action({
         title: '%text%',
-        action: codeEditor.setSelectedPT({path: '%$path%', semanticPart: '%$semanticPart%', compName: '%compName%'}),
+        action: tgpTextEditor.setSelectedPT({path: '%$path%', semanticPart: '%$semanticPart%', compName: '%compName%'}),
         description: '%description%'
       })
     )
   })
 })
 
-jb.component('codeEditor.selectEnum', {
+jb.component('tgpTextEditor.selectEnum', {
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'},
   ],
   impl: menu.menu({
     options: menu.dynamicOptions(
-      ({},{},{path}) => jb.studio.paramDef(path).options.split(','), 
+      ({},{},{path}) => jb.tgp.paramDef(path).options.split(','), 
       menu.action('%%', (ctx,{},{path}) => jb.studio.writeValueOfPath(path,ctx.data,ctx)))
   })
 })
 
-jb.component('codeEditor.editMenu', {
+jb.component('tgpTextEditor.editMenu', {
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: menu.menu(
-    studio.shortTitle('%$path%'),
+    tgp.shortTitle('%$path%'),
     [
       menu.action({
         title: 'Add variable',
@@ -101,11 +101,11 @@ jb.component('codeEditor.editMenu', {
       }),
       menu.endWithSeparator(
         menu.dynamicOptions(
-          studio.moreParams('%$path%'),
+          tgp.moreParams('%$path%'),
           menu.action({ 
             title: '%id%', 
             description: '%description%',
-            action: runActions(studio.addProperty('%$path%~%id%'), studio.gotoPath('%$path%~%id%', 'value'))
+            action: runActions(tgp.addProperty('%$path%~%id%'), studio.gotoPath('%$path%~%id%', 'value'))
           })
         )
       ),
@@ -113,7 +113,7 @@ jb.component('codeEditor.editMenu', {
       menu.endWithSeparator(
         [
           menu.action({
-            vars: [Var('compName', studio.compName('%$path%'))],
+            vars: [Var('compName', tgp.compName('%$path%'))],
             title: 'Goto %$compName%',
             action: studio.gotoPath('%$compName%', 'open'),
             showCondition: '%$compName%'
@@ -168,9 +168,9 @@ jb.component('codeEditor.editMenu', {
       menu.studioWrapWithArray('%$path%'),
       menu.action({
         title: 'Duplicate',
-        action: studio.duplicateArrayItem('%$path%'),
+        action: tgp.duplicateArrayItem('%$path%'),
         shortcut: 'Ctrl+D',
-        showCondition: studio.isArrayItem('%$path%')
+        showCondition: tgp.isArrayItem('%$path%')
       }),
       menu.separator(),
       studio.gotoReferencesMenu(
@@ -220,16 +220,16 @@ jb.component('codeEditor.editMenu', {
         action: runActions(
           action.if(
             and(matchRegex('vars~[0-9]+~val$', '%$path%'), isEmpty(tgp.val('%$path%'))),
-            writeValue('%$studio/jbEditor/selected%', studio.parentPath(studio.parentPath('%$path%')))
+            writeValue('%$studio/jbEditor/selected%', tgp.parentPath(tgp.parentPath('%$path%')))
           ),
-          studio.delete('%$path%')
+          tgp.delete('%$path%')
         ),
         icon: icon('delete'),
         shortcut: 'Delete'
       }),
       menu.action({
-        title: If(studio.disabled('%$path%'), 'Enable', 'Disable'),
-        action: studio.toggleDisabled('%$path%'),
+        title: If(tgp.isDisabled('%$path%'), 'Enable', 'Disable'),
+        action: tgp.toggleDisabled('%$path%'),
         icon: icon('do_not_disturb'),
         shortcut: 'Ctrl+X'
       }),

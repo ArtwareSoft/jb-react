@@ -12,7 +12,7 @@ jb.component('studio.copyDataResourceToComp', {
     {id: 'name', as: 'string'}
   ],
   impl: writeValue(
-    studio.profileAsText('%$path%'),
+    tgp.profileAsText('%$path%'),
     (ctx,vars,{name}) => jb.utils.prettyPrint(new jb.core.jbCtx().exp('%$'+name+'%'))
   )
 })
@@ -28,7 +28,7 @@ jb.component('studio.openResource', {
     openDialog({
         style: dialog.editSourceStyle({id: 'editDataResource', width: 600}),
         content: editableText({
-          databind: studio.profileAsText('%$path%'),
+          databind: tgp.profileAsText('%$path%'),
           style: editableText.studioCodemirrorTgp(),
         }),
         title: pipeline(studio.watchableOrPassive('%$path%'), 'Edit %$name% (%%)'),
@@ -115,7 +115,7 @@ jb.component('studio.openNewDataSource', {
     title: 'New Data Source',
     onOK: runActions(
       Var('watchableOrPassive', If('%$dialogData/watchable%', 'watchable', 'passive')),
-      Var('name', studio.macroName('%$dialogData/name%')),
+      Var('name', tgp.titleToId('%$dialogData/name%')),
       If(
           not('%$dialogData/file%'),
           runActions(

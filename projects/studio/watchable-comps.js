@@ -144,10 +144,10 @@ jb.component('studio.scriptHistory', {
         items: watchableComps.scriptHistoryItems(),
         controls: [
           button({
-              title: studio.nameOfRef('%opEvent/ref%'),
-              action: studio.gotoPath(studio.pathOfRef('%opEvent/ref%')),
+              title: tgp.nameOfRef('%opEvent/ref%'),
+              action: studio.gotoPath(tgp.pathOfRef('%opEvent/ref%')),
               style: button.href(),
-              features: feature.hoverTitle(studio.pathOfRef('%opEvent/ref%'))
+              features: feature.hoverTitle(tgp.pathOfRef('%opEvent/ref%'))
           }),
           text(prettyPrint('%opEvent/oldVal%')),
           text(prettyPrint('%opEvent/newVal%')),

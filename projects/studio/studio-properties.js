@@ -1,32 +1,34 @@
-jb.component('studio.openProperties', {
-  type: 'action',
-  params: [
-    {id: 'focus', type: 'boolean', as: 'boolean'},
-    {id: 'innerPath', as: 'string'}
-  ],
-  impl: runActions(
-    Var('path', studio.currentProfilePath()),
-    action.if(
-        studio.compName('%$path%'),
-        openDialog({
-          style: dialog.studioFloating({id: 'studio-properties', width: '520'}),
-          content: studio.properties({path: '%$path%', innerPath: '%$innerPath%', focus: '%$focus%'}),
-          title: pipeline(
-            {
-                '$': 'object',
-                title: studio.shortTitle('%$path%'),
-                comp: studio.compName('%$path%')
-              },
-            If(equals('%comp%', '%title%'), '%comp%', '%comp% %title%'),
-            'Properties of %%'
-          ),
-          features: [
-            feature.keyboardShortcut('Ctrl+Left', studio.openControlTree()),
-            dialogFeature.resizer()
-          ]
-        })
-      )
-  )
+jb.extension('studio', {
+	PropertiesTree: class PropertiesTree {
+		constructor(rootPath) {
+			this.rootPath = rootPath;
+			this.refHandler = jb.watchableComps.handler;
+		}
+		isArray(path) {
+			return this.children(path).length > 0;
+		}
+		children(path) {
+			if (jb.tgp.isOfType(path,'data'))
+				return []
+			if (Array.isArray(jb.tgp.valOfPath(path)))
+				return jb.tgp.arrayChildren(path,false)
+			return jb.tgp.paramsOfPath(path)
+				.filter(p=>!jb.tgp.isControlType(p.type))
+				.map(prop=>path + '~' + prop.id)
+		}
+		val(path) {
+			return jb.tgp.valOfPath(path)
+		}
+		move(from,to,ctx) {
+			return jb.tgp.moveFixDestination(from,to,ctx)
+		}
+		disabled(path) {
+			return jb.tgp.isDisabled(path)
+		}
+		icon(path) {
+			return jb.tgp.icon(path)
+		}
+	},
 })
 
 jb.component('studio.properties', {
@@ -43,7 +45,7 @@ jb.component('studio.properties', {
         commonFields: [
           group({
             controls: studio.propField('%path%', '%expanded%'),
-            features: [field.columnWidth('300'), css.conditionalClass('jb-disabled', studio.disabled('%$path%'))]
+            features: [field.columnWidth('300'), css.conditionalClass('jb-disabled', tgp.isDisabled('%$path%'))]
           }),
           group({
             controls: studio.propertyToolbar('%path%'),
@@ -59,13 +61,13 @@ jb.component('studio.properties', {
           text: ({data}) => {
             const path = data.path
             const prop = path.split('~').pop()
-            if (Array.isArray(jb.studio.valOfPath(path)))
-              return `${prop} (${jb.studio.valOfPath(path).length})`
+            if (Array.isArray(jb.tgp.valOfPath(path)))
+              return `${prop} (${jb.tgp.valOfPath(path).length})`
             if (isNaN(Number(prop)))
               return prop
             return Number(prop) + 1
           },
-          features: [feature.hoverTitle(pipeline(studio.paramDef('%path%'), '%description%'))]
+          features: [feature.hoverTitle(pipeline(tgp.paramDef('%path%'), '%description%'))]
         }),
         style: tableTree.plain({hideHeaders: true, gapWidth: 100, noItemsCtrl: text('')}),
         features: [
@@ -93,20 +95,20 @@ jb.component('studio.properties', {
             action: studio.openNewProfileDialog({path: '%$path%~features', type: 'feature'}),
             style: button.href(),
             features: [
-              feature.if(studio.isOfType('%$path%~features', 'feature')),
+              feature.if(tgp.isOfType('%$path%~features', 'feature')),
               css.margin({top: '20', left: '5'}),
               css.width('100%')
             ]
           }),
           button({
             title: 'new icon',
-            action: studio.getOrCreateCompInArray('%$path%~features', 'feature.icon'),
+            action: tgp.getOrCreateCompInArray('%$path%~features', 'feature.icon'),
             style: button.mdcIcon(undefined, '24'),
             features: feature.icon({icon: 'Creation', type: 'mdi', size: '16'})
           }),
           button({
             title: 'new css',
-            action: studio.getOrCreateCompInArray('%$path%~features', 'css'),
+            action: tgp.getOrCreateCompInArray('%$path%~features', 'css'),
             style: button.mdcIcon(undefined, '24'),
             features: feature.icon({icon: 'LanguageCss3', type: 'mdi', size: '16'})
           }),
@@ -134,13 +136,13 @@ jb.component('studio.propField', {
     {id: 'expanded', as: 'boolean', type: 'boolean'}
   ],
   impl: group({
-    title: studio.propName('%$path%'),
+    title: tgp.propName('%$path%'),
     controls: group({
       controls: [
         controlWithCondition(
           and(
-            inGroup(list('feature.icon','icon','control.icon'),studio.compName(studio.parentPath('%$path%'))),
-            equals('icon',pipeline(studio.paramDef('%$path%'), '%id%'))
+            inGroup(list('feature.icon','icon','control.icon'),tgp.compName(tgp.parentPath('%$path%'))),
+            equals('icon',pipeline(tgp.paramDef('%$path%'), '%id%'))
           ),
           studio.pickIcon('%$path%')
         ),
@@ -158,13 +160,13 @@ jb.component('studio.propField', {
         ),
         controlWithCondition(
           and(
-            studio.isOfType('%$path%', 'data,boolean'),
+            tgp.isOfType('%$path%', 'data,boolean'),
             not(isOfType('string,number,boolean,undefined', '%$val%'))
           ),
           studio.propertyScript('%$path%')
         ),
         controlWithCondition(
-          and(studio.isOfType('%$path%', 'action'), isOfType('array', '%$val%')),
+          and(tgp.isOfType('%$path%', 'action'), isOfType('array', '%$val%')),
           studio.propertyScript('%$path%')
         ),
         controlWithCondition('%$paramDef/options%', studio.propertyEnum('%$path%')),
@@ -176,14 +178,14 @@ jb.component('studio.propField', {
           studio.propertyBoolean('%$path%')
         ),
         controlWithCondition(
-          studio.isOfType('%$path%', 'data,boolean'),
+          tgp.isOfType('%$path%', 'data,boolean'),
           studio.propertyPrimitive('%$path%')
         ),
         controlWithCondition(
           or(
             '%$expanded%',
             isEmpty('%$val%'),
-            not(studio.isOfType('%$path%', 'data,boolean'))
+            not(tgp.isOfType('%$path%', 'data,boolean'))
           ),
           studio.pickProfile('%$path%')
         ),
@@ -192,7 +194,7 @@ jb.component('studio.propField', {
       features: [
         group.firstSucceeding(),
         studio.watchPath({path: '%$path%', includeChildren: 'yes', recalcVars: true}),
-        variable({name: 'paramDef', value: studio.paramDef('%$path%')}),
+        variable({name: 'paramDef', value: tgp.paramDef('%$path%')}),
         variable({name: 'val', value: tgp.val('%$path%')})
       ]
     }),
@@ -283,7 +285,7 @@ jb.component('studio.propertyEnum', {
   ],
   impl: picklist({
     databind: tgp.ref('%$path%'),
-    options: studio.enumOptions('%$path%'),
+    options: tgp.enumOptions('%$path%'),
     style: picklist.nativeMdLookOpen(),
     features: [
       css.width({width: '100', minMax: 'min'}),
@@ -311,7 +313,7 @@ jb.component('studio.editAs',{
     {id: 'anyParamIds', as: 'string'},
   ],
   impl: or(
-    Var('paramDef',studio.paramDef('%$path%')),
+    Var('paramDef',tgp.paramDef('%$path%')),
     equals('%$paramDef/editAs%','%$type%'),
     inGroup(split({text: '%$anyParamIds%'}),'%$paramDef/id%')),
 })
@@ -333,7 +335,7 @@ jb.component('studio.rawColorPicker', {
           document.body.appendChild(parent)
           const picker = new Picker({
             parent,
-            color: jb.studio.valOfPath(path),
+            color: jb.tgp.valOfPath(path),
             onChange: color => ctx.run(writeValue(tgp.ref(path),color.rgbaString)),
             onDone: () => { picker.destroy(); document.body.removeChild(parent) }
           })
@@ -388,4 +390,35 @@ jb.component('studio.colorVariables', {
     return Array.from(doc.querySelectorAll('style')).map(x=>x.innerHTML).join('\n').split('\n').filter(x=>x.match(/--/)).filter(x=>!x.match(/font/)).map(x=>x.split(':')[0].trim().slice(2))
       .map(varName=> ({ varName, color : jb.ui.valueOfCssVar(varName,doc.body) }))
     }
+})
+
+jb.component('studio.openProperties', {
+  type: 'action',
+  params: [
+    {id: 'focus', type: 'boolean', as: 'boolean'},
+    {id: 'innerPath', as: 'string'}
+  ],
+  impl: runActions(
+    Var('path', studio.currentProfilePath()),
+    action.if(
+        tgp.compName('%$path%'),
+        openDialog({
+          style: dialog.studioFloating({id: 'studio-properties', width: '520'}),
+          content: studio.properties({path: '%$path%', innerPath: '%$innerPath%', focus: '%$focus%'}),
+          title: pipeline(
+            {
+                '$': 'object',
+                title: tgp.shortTitle('%$path%'),
+                comp: tgp.compName('%$path%')
+              },
+            If(equals('%comp%', '%title%'), '%comp%', '%comp% %title%'),
+            'Properties of %%'
+          ),
+          features: [
+            feature.keyboardShortcut('Ctrl+Left', studio.openControlTree()),
+            dialogFeature.resizer()
+          ]
+        })
+      )
+  )
 })

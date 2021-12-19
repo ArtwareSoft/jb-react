@@ -1,24 +1,20 @@
+Suggestions in helloWorld - add test?
+wrap with pipeline does not work - add test?
+
+find a good place for
+  findElemsByPathCondition
+  closestCtxInPreview(path)
+clipboard
+probe & preview & highlight
+
+
 enrich spy logs with rules
   cb message beautifier
   log UI with bread crums
 
 studio modules
-  tgp
-  codeEditor - studio
-  sandbox
+  sandbox = preview
   sboxUI
-
-plugins
-  tgp
-
-
-dist -> 
-use bower for
-  Fuse
-  codeMirror
-  mdc
-  mdc icons
-
 
 
 remote.dispatcher

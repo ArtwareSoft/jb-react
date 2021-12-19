@@ -21,13 +21,13 @@ jb.component('studio.openPropertyMenu', {
   ],
   impl: menu.openContextMenu({
     menu: menu.menu({
-      vars: [Var('compName', studio.compName('%$path%'))],
+      vars: [Var('compName', tgp.compName('%$path%'))],
       options: [
         studio.styleEditorOptions('%$path%'),
         menu.action({
           title: 'multiline edit',
           action: studio.openMultilineEdit('%$path%'),
-          showCondition: equals(pipeline(studio.paramDef('%$path%'), '%as%'), 'string')
+          showCondition: equals(pipeline(tgp.paramDef('%$path%'), '%as%'), 'string')
         }),
         menu.action({
           title: 'Goto %$compName%',
@@ -49,13 +49,13 @@ jb.component('studio.openPropertyMenu', {
         studio.gotoEditorOptions('%$path%'),
         menu.action({
           title: 'Delete',
-          action: studio.delete('%$path%'),
+          action: tgp.delete('%$path%'),
           icon: icon('delete'),
           shortcut: 'Delete'
         }),
         menu.action({
-          title: data.if(studio.disabled('%$path%'), 'Enable', 'Disable'),
-          action: studio.toggleDisabled('%$path%'),
+          title: data.if(tgp.isDisabled('%$path%'), 'Enable', 'Disable'),
+          action: tgp.toggleDisabled('%$path%'),
           icon: icon('do_not_disturb'),
           shortcut: 'Ctrl+X'
         })
@@ -103,7 +103,7 @@ jb.component('studio.jbEditorMenu', {
             dialogFeature.autoFocusOnFirstInput()
           ]
         }),
-        showCondition: equals(studio.compName('%$path%'), 'object')
+        showCondition: equals(tgp.compName('%$path%'), 'object')
       }),
       menu.action({
         title: 'Add variable',
@@ -112,11 +112,11 @@ jb.component('studio.jbEditorMenu', {
       }),
       menu.endWithSeparator({
         options: menu.dynamicOptions(
-          studio.moreParams('%$path%'),
+          tgp.moreParams('%$path%'),
           menu.action({
             title: '%id%',
             action: runActions(
-              studio.addProperty('%$path%~%id%'),
+              tgp.addProperty('%$path%~%id%'),
               tree.redraw(),
               dialog.closeDialog(),
               writeValue('%$studio/jbEditor/selected%', '%$path%~%id%'),
@@ -144,14 +144,14 @@ jb.component('studio.jbEditorMenu', {
           menu.action({
             title: 'Goto parent',
             action: studio.openJbEditor({
-              path: studio.parentPath('%$path%'),
-              fromPath: studio.parentPath('%$fromPath%')
+              path: tgp.parentPath('%$path%'),
+              fromPath: tgp.parentPath('%$fromPath%')
             }),
             shortcut: 'Ctrl+P',
             showCondition: contains({text: '~', allText: '%$root%'})
           }),
           menu.action({
-            vars: [Var('compName', studio.compName('%$path%'))],
+            vars: [Var('compName', tgp.compName('%$path%'))],
             title: 'Goto %$compName%',
             action: studio.openJbEditor({path: '%$compName%', fromPath: '%$path%'}),
             showCondition: '%$compName%'
@@ -194,9 +194,9 @@ jb.component('studio.jbEditorMenu', {
       menu.studioWrapWithArray('%$path%'),
       menu.action({
         title: 'Duplicate',
-        action: studio.duplicateArrayItem('%$path%'),
+        action: tgp.duplicateArrayItem('%$path%'),
         shortcut: 'Ctrl+D',
-        showCondition: studio.isArrayItem('%$path%')
+        showCondition: tgp.isArrayItem('%$path%')
       }),
       menu.separator(),
       menu.action({
@@ -256,15 +256,15 @@ jb.component('studio.jbEditorMenu', {
             title: 'Delete',
             action: runActions(
               action.if(and(matchRegex('vars~[0-9]+~val$','%$path%'), isEmpty(tgp.val('%$path%'))), 
-                writeValue('%$studio/jbEditor/selected%', studio.parentPath(studio.parentPath('%$path%')))),
-              studio.delete('%$path%'),
+                writeValue('%$studio/jbEditor/selected%', tgp.parentPath(tgp.parentPath('%$path%')))),
+              tgp.delete('%$path%'),
             ),
             icon: icon('delete'),
             shortcut: 'Delete'
           }),
           menu.action({
-            title: If(studio.disabled('%$path%'), 'Enable','Disable'),
-            action: studio.toggleDisabled('%$path%'),
+            title: If(tgp.isDisabled('%$path%'), 'Enable','Disable'),
+            action: tgp.toggleDisabled('%$path%'),
             icon: icon('do_not_disturb'),
             shortcut: 'Ctrl+X'
           }),

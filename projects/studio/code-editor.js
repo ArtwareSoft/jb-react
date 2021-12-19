@@ -1,4 +1,4 @@
-jb.extension('codeEditor', {
+jb.extension('tgpTextEditor', {
     getSinglePathChange(diff, currentVal) {
         return pathAndValueOfSingleChange(diff,'',currentVal)
     
@@ -23,7 +23,7 @@ jb.extension('codeEditor', {
         if (newVal && typeof newVal === 'object' && typeof currentVal === 'object') {
             const diff = jb.utils.objectDiff(newVal,currentVal)
             if (Object.keys(diff).length == 0) return // no diffs
-            const {innerPath, innerValue} = jb.codeEditor.getSinglePathChange(diff,currentVal) // one diff
+            const {innerPath, innerValue} = jb.tgpTextEditor.getSinglePathChange(diff,currentVal) // one diff
             if (innerPath) {
                 const fullInnerPath = ref.handler.pathOfRef(ref).concat(innerPath.slice(1).split('~'))
                 return jb.db.writeValue(ref.handler.refOfPath(fullInnerPath),innerValue,ctx)
@@ -42,9 +42,9 @@ jb.extension('codeEditor', {
             col: offset - text.slice(0,offset).lastIndexOf('\n') }
     },
     pathOfPosition(ref,_pos) {
-        const offset = !Number(_pos) ? jb.codeEditor.lineColToOffset(ref.text, _pos) : _pos
-        const charBefore = jb.codeEditor.pathOfOffset(offset-1,ref.locationMap)
-        const found = (jb.path(charBefore,'0') || '').match(/~!open-by-value/) ? charBefore : jb.codeEditor.pathOfOffset(offset,ref.locationMap)
+        const offset = !Number(_pos) ? jb.tgpTextEditor.lineColToOffset(ref.text, _pos) : _pos
+        const charBefore = jb.tgpTextEditor.pathOfOffset(offset-1,ref.locationMap)
+        const found = (jb.path(charBefore,'0') || '').match(/~!open-by-value/) ? charBefore : jb.tgpTextEditor.pathOfOffset(offset,ref.locationMap)
         if (found)
             return {path: found[0], offset: offset - found[1].offset_from}
     },
@@ -69,7 +69,7 @@ jb.extension('codeEditor', {
         const editor = cmp.editor
         const data_ref = cmp.ctx.vars.$model.databind()
         const text = jb.tostring(data_ref)
-        const pathWithOffset = _path ? {path: _path+'~!value',offset:1} : jb.codeEditor.pathOfPosition(data_ref, editor.getCursorPos())
+        const pathWithOffset = _path ? {path: _path+'~!value',offset:1} : jb.tgpTextEditor.pathOfPosition(data_ref, editor.getCursorPos())
         editor.setValue(text)
         if (pathWithOffset) {
             const _pos = data_ref.locationMap[pathWithOffset.path]
@@ -83,16 +83,16 @@ jb.extension('codeEditor', {
         if (!semanticPath) return []
         const path = semanticPath.path.split('~!')[0]
         const semantic = semanticPath.path.split('~!').pop()
-        const profile = jb.studio.valOfPath(path)
+        const profile = jb.tgp.valOfPath(path)
         const prop = profile && typeof profile == 'object' && (semantic.match(/-by-value|-separator-|-profile/) || semantic == 'value')
-        const options = prop ? jb.studio.paramsOfPath(path).filter(p=>jb.studio.valOfPath(path+'~'+p.id) == null)
+        const options = prop ? jb.tgp.paramsOfPath(path).filter(p=>jb.tgp.valOfPath(path+'~'+p.id) == null)
             .map(p=> addProperty(p, path + '~' + p.id))
             : []
         return options
 
         function addProperty(prop,path) { return {
             label: prop.id,
-            action: {$: 'studio.addProperty', path }
+            action: {$: 'tgp.addProperty', path }
         }}
     },
     getPosOfPath(path) {
@@ -105,8 +105,8 @@ jb.extension('codeEditor', {
             return { needsFormat: true }
         const { text, map } = jb.utils.prettyPrintWithPositions(jb.comps[compId],{initialPath: compId, comps: jb.comps})
         map.cursor = [pos.line,pos.col,pos.line,pos.col]
-        const locationMap = jb.codeEditor.enrichMapWithOffsets(text, map)
-        const semanticPath = jb.codeEditor.pathOfPosition({text, locationMap}, locationMap.cursor.offset_from )
+        const locationMap = jb.tgpTextEditor.enrichMapWithOffsets(text, map)
+        const semanticPath = jb.tgpTextEditor.pathOfPosition({text, locationMap}, locationMap.cursor.offset_from )
         return { semanticPath, path: semanticPath && semanticPath.path.split('~!')[0] }
     },
     closestComp(fileContent, pos) {
@@ -119,14 +119,14 @@ jb.extension('codeEditor', {
         const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
         const nextjbComponent = lines.slice(componentHeaderIndex+1).findIndex(line => line.match(/^jb.component/))
         if (nextjbComponent != -1 && nextjbComponent < compLastLine) {
-          jb.logError('codeEditor - can not find end of component', { compId, linesFromComp })
+          jb.logError('tgpTextEditor - can not find end of component', { compId, linesFromComp })
           return {}
         }
         const compSrc = linesFromComp.slice(0,compLastLine+1).join('\n')
         return {compId, compSrc, componentHeaderIndex, compLastLine}
     },
     formatComponent(fileContent, pos) {
-        const {compId, compSrc, componentHeaderIndex, compLastLine} = jb.codeEditor.closestComp(fileContent, pos)
+        const {compId, compSrc, componentHeaderIndex, compLastLine} = jb.tgpTextEditor.closestComp(fileContent, pos)
         if (!compId) return {}
         if (jb.utils.eval(compSrc,jb.frame) === Symbol.for('parseError'))
             return []
@@ -138,12 +138,21 @@ jb.extension('codeEditor', {
         const cursor = cmEditor.getDoc().getCursor()
         return {
             from: cursor, to: cursor,
-            list: jb.codeEditor.getSuggestions(cmEditor.getValue(),posFromCM(cursor)).suggestions
+            list: jb.tgpTextEditor.getSuggestions(cmEditor.getValue(),posFromCM(cursor)).suggestions
         }
-    }    
+    }
 })
 
-jb.component('watchableAsText', {
+jb.component('tgp.profileAsText', {
+  type: 'data',
+  params: [
+    {id: 'path', as: 'string'},
+    {id: 'oneWay', as: 'boolean', defaultValue: true, type: 'boolean'},
+  ],
+  impl: tgpTextEditor.watchableAsText(tgp.ref('%$path%'),'%$oneWay%')
+})
+
+jb.component('tgpTextEditor.watchableAsText', {
   type: 'data',
   params: [
     {id: 'ref', as: 'ref', dynamic: true},
@@ -168,7 +177,7 @@ jb.component('watchableAsText', {
             }
             const initialPath = ref.handler.pathOfRef(ref).join('~')
             const res = jb.utils.prettyPrintWithPositions(this.getVal() || '',{initialPath, comps: jb.comps})
-            this.locationMap = jb.codeEditor.enrichMapWithOffsets(res.text, res.map)
+            this.locationMap = jb.tgpTextEditor.enrichMapWithOffsets(res.text, res.map)
             this.text = res.text.replace(/\s*(\]|\})$/,'\n$1')
         },
         writeFullValue(newVal) {
@@ -180,7 +189,7 @@ jb.component('watchableAsText', {
                 this.prettyPrintWithPositions()
                 return this.text
             } else {
-                jb.codeEditor.setStrValue(value,this.getRef(),ctx)
+                jb.tgpTextEditor.setStrValue(value,this.getRef(),ctx)
                 this.prettyPrintWithPositions() // refreshing location map
             }
         } catch(e) {
@@ -193,7 +202,7 @@ jb.component('watchableAsText', {
     })
 })
 
-jb.component('codeEditor.withCursorPath', {
+jb.component('tgpTextEditor.withCursorPath', {
   type: 'action',
   params: [
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
@@ -208,13 +217,13 @@ jb.component('codeEditor.withCursorPath', {
         debugger
         if (editor && editor.getCursorPos)
             action(editor.ctx().setVars({
-                cursorPath: jb.codeEditor.pathOfPosition(editor.data_ref, editor.getCursorPos()).path,
+                cursorPath: jb.tgpTextEditor.pathOfPosition(editor.data_ref, editor.getCursorPos()).path,
                 cursorCoord: editor.cursorCoords()
             }))
     }
 })
 
-jb.component('codeEditor.isDirty', {
+jb.component('tgpTextEditor.isDirty', {
   impl: ctx => {
         try {
             return ctx.vars.editor().isDirty()
@@ -222,7 +231,7 @@ jb.component('codeEditor.isDirty', {
     }
 })
 
-// jb.component('text-editor.watch-source-changes', { /* codeEditor.watchSourceChanges */
+// jb.component('text-editor.watch-source-changes', { /* tgpTextEditor.watchSourceChanges */
 //   type: 'feature',
 //   params: [
 
@@ -248,35 +257,35 @@ jb.component('codeEditor.isDirty', {
 //     }})
 // })
 
-jb.component('codeEditor.cursorPath', {
+jb.component('tgpTextEditor.cursorPath', {
     params: [
         {id: 'watchableAsText', as: 'ref', mandatory: true, description: 'the same that was used for databind'},
         {id: 'cursorPos', dynamic: true, defaultValue: '%$ev/selectionStart%'},
     ],  
-    impl: (ctx,ref,pos) => jb.path(jb.codeEditor.pathOfPosition(ref, pos()),'path') || ''
+    impl: (ctx,ref,pos) => jb.path(jb.tgpTextEditor.pathOfPosition(ref, pos()),'path') || ''
 })
 
 jb.component('textarea.initTextareaEditor', {
   type: 'feature',
   impl: features(
-      codeEditor.enrichUserEvent(),
+      tgpTextEditor.enrichUserEvent(),
       frontEnd.method('replaceRange',({data},{cmp}) => {
           const {text, from, to} = data
-          const _from = jb.codeEditor.lineColToOffset(cmp.base.value,from)
-          const _to = jb.codeEditor.lineColToOffset(cmp.base.value,to)
+          const _from = jb.tgpTextEditor.lineColToOffset(cmp.base.value,from)
+          const _to = jb.tgpTextEditor.lineColToOffset(cmp.base.value,to)
           cmp.base.value = cmp.base.value.slice(0,_from) + text + cmp.base.value.slice(_to)
       }),
       frontEnd.method('setSelectionRange',({data},{cmp}) => {
         const from = data.from || data
         const to = data.to || from
-        const _from = jb.codeEditor.lineColToOffset(cmp.base.value,from)
-        const _to = to && jb.codeEditor.lineColToOffset(cmp.base.value,to) || _from
+        const _from = jb.tgpTextEditor.lineColToOffset(cmp.base.value,from)
+        const _to = to && jb.tgpTextEditor.lineColToOffset(cmp.base.value,to) || _from
         cmp.base.setSelectionRange(_from,_to)
       })
     )
 })
 
-jb.component('codeEditor.enrichUserEvent', {
+jb.component('tgpTextEditor.enrichUserEvent', {
     type: 'feature',
     params: [
       {id: 'textEditorSelector', as: 'string', description: 'used for external buttons'}
@@ -290,7 +299,7 @@ jb.component('codeEditor.enrichUserEvent', {
                 outerWidth: jb.ui.outerWidth(elem), 
                 clientRect: elem.getBoundingClientRect(),
                 text: elem.value,
-                selectionStart: jb.codeEditor.offsetToLineCol(elem.value,elem.selectionStart)
+                selectionStart: jb.tgpTextEditor.offsetToLineCol(elem.value,elem.selectionStart)
             }
         })
     )
@@ -307,13 +316,13 @@ jb.component('codeEditor.enrichUserEvent', {
 //             cursorCoords: () => {},
 //             markText: () => {},
 //             replaceRange: (text, from, to) => {
-//                 const _from = jb.codeEditor.lineColToOffset(cmp.base.value,from)
-//                 const _to = jb.codeEditor.lineColToOffset(cmp.base.value,to)
+//                 const _from = jb.tgpTextEditor.lineColToOffset(cmp.base.value,from)
+//                 const _to = jb.tgpTextEditor.lineColToOffset(cmp.base.value,to)
 //                 cmp.base.value = cmp.base.value.slice(0,_from) + text + cmp.base.value.slice(_to)
 //             },
 //             setSelectionRange: (from, to) => {
-//                 const _from = jb.codeEditor.lineColToOffset(cmp.base.value,from)
-//                 const _to = to && jb.codeEditor.lineColToOffset(cmp.base.value,to) || _from
+//                 const _from = jb.tgpTextEditor.lineColToOffset(cmp.base.value,from)
+//                 const _to = to && jb.tgpTextEditor.lineColToOffset(cmp.base.value,to) || _from
 //                 cmp.base.setSelectionRange(_from,_to)
 //             },
 //         }

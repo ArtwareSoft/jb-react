@@ -27,7 +27,7 @@ jb.component('nb.notebook', {
           title: 'preview',
           controls: [
             remote.widget(group({controls: (ctx,{path}) => {
-                      const ret = jb.core.run( new jb.core.jbCtx(ctx, { profile: jb.studio.valOfPath(path), forcePath: path, path: 'control' }), {type: 'control'})
+                      const ret = jb.core.run( new jb.core.jbCtx(ctx, { profile: jb.tgp.valOfPath(path), forcePath: path, path: 'control' }), {type: 'control'})
                       return ret.result(ctx)
                   }, features: followUp.flow(source.watchableData(tgp.ref('%$path%'), 'yes'), sink.refreshCmp())}), jbm.notebookWorker())
           ],
@@ -62,7 +62,7 @@ jb.component('nb.markdown', {
         markdown('%$markdown%'),
 //        remote.widget(markdown(pipeline('%$profileContent%','%markdown%')), jbm.notebookWorker()),
         editableText({
-            databind: studio.profileAsText('%$path%~markdown'),
+            databind: tgp.profileAsText('%$path%~markdown'),
             style: editableText.markdown(),
         }),
     )

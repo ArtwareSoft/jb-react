@@ -1,386 +1,162 @@
-jb.extension('studio', {
-	PropertiesTree: class PropertiesTree {
-		constructor(rootPath) {
-			this.rootPath = rootPath;
-			this.refHandler = jb.watchableComps.handler;
-		}
-		isArray(path) {
-			return this.children(path).length > 0;
-		}
-		children(path) {
-			if (jb.studio.isOfType(path,'data'))
-				return []
-			if (Array.isArray(jb.studio.valOfPath(path)))
-				return jb.studio.arrayChildren(path,false)
-			return jb.studio.paramsOfPath(path)
-				.filter(p=>!jb.studio.isControlType(p.type))
-				.map(prop=>path + '~' + prop.id)
-		}
-		val(path) {
-			return jb.studio.valOfPath(path)
-		}
-		move(from,to,ctx) {
-			return jb.studio.moveFixDestination(from,to,ctx)
-		}
-		disabled(path) {
-			return jb.studio.disabled(path)
-		}
-		icon(path) {
-			return jb.studio.icon(path)
-		}
-	},
-	ControlTree: class ControlTree{
-		constructor(rootPath) {
-			this.rootPath = rootPath;
-			this.refHandler = jb.watchableComps.handler;
-		}
-		title(path,collapsed) {
-			const val = jb.studio.valOfPath(path);
-			if (path &&  (val == null || Array.isArray(val) && val.length == 0) && path.match(/~controls$/))
-				return jb.ui.h('a',{style: {cursor: 'pointer', 'text-decoration': 'underline'}, onclick: 'newControl' },'add new');
-			return this.fixTitles(jb.studio.shortTitle(path),path,collapsed)
-		}
-		// differnt from children() == 0, beacuse in the control tree you can drop into empty group
-		isArray(path) {
-			return this.children(path).length > 0;
-		}
-		children(path,nonRecursive) {
-			return [].concat.apply([],jb.studio.controlParams(path).map(prop=>path + '~' + prop)
-					.map(innerPath=> {
-						const val = jb.studio.valOfPath(innerPath);
-						if (Array.isArray(val) && val.length > 0)
-						return jb.studio.arrayChildren(innerPath,true);
-						return [innerPath]
-					}))
-					.concat(nonRecursive ? [] : this.innerControlPaths(path));
-		}
-		move(from,to,ctx) {
-			return jb.studio.moveFixDestination(from,to,ctx)
-		}
-		disabled(path) {
-			return jb.studio.disabled(path)
-		}
-		icon(path) {
-			return jb.studio.icon(path)
-		}
+	// nonControlChildren: (path,includeFeatures) =>
+	// 	jb.tgp.paramsOfPath(path).filter(p=>!jb.studio.isControlType(p.type))
+	// 		.filter(p=>includeFeatures || p.id != 'features')
+	// 		.map(p=>path + '~' + p.id),
 
-		// private
-		innerControlPaths(path) {
-			return ['action~content','action~menu'] // add more inner paths here
-				.map(x=>path+'~'+x).filter(p=>jb.studio.isControlType(jb.studio.paramTypeOfPath(p)))
-		}
-		fixTitles(title,path) {
-			if (title == 'control-with-condition')
-				return jb.ui.h('div',{},[this.title(path+'~control'),jb.ui.h('span',{class:'treenode-val'},'conditional') ]);
-			return title;
-		}
-	},
-	jbEditorTree: class jbEditorTree {
-		constructor(rootPath,includeCompHeader) {
-			this.rootPath = rootPath;
-			this.refHandler = jb.watchableComps.handler;
-			this.includeCompHeader= includeCompHeader;
-		}
-		title(path, collapsed) {
-			let val = jb.studio.valOfPath(path)
-			let compName = jb.studio.compNameOfPath(path)
-			if (path.indexOf('~') == -1)
-				compName = 'jbComponent'
-			if (path.match(/^[^~]+~params~[0-9]+$/))
-				compName = 'jbParam'
-			if (compName && compName.match(/case$/))
-				compName = 'case'
-			let prop = path.split('~').pop()
-			if (!isNaN(Number(prop))) // array value - title as a[i]
-				prop = path.split('~').slice(-2)
-					.map(x=>x.replace(/\$pipeline/,'').replace(/\$obj/,''))
-					.join('[') + ']'
-			if (path.match(/\$vars~[0-9]+~val$/))
-				prop = jb.studio.valOfPath(jb.studio.parentPath(path)).name
-			let summary = ''
-			if (collapsed && typeof val == 'object')
-				summary = ': ' + jb.studio.summary(path).substr(0,20)
-			// if (path.match(/\$vars~[0-9]+$/))
-			//  	summary = jb.studio.summary(path+'~val') || jb.studio.compNameOfPath(path+'~val')
-			if (typeof val == 'function')
-				val = val.toString()
+	// arrayChildren(path,noExtraElem) {
+	// 	const val = jb.tgp.valOfPath(path)
+	// 	if (!Array.isArray(val)) return []
+	// 	return Object.getOwnPropertyNames(val)
+	// 			.filter(x=> x.indexOf('$jb_') != 0)
+	// 			.filter(x=> !(noExtraElem && x =='length'))
+	// 			.map(x=>x=='length'? val.length : x) // extra elem
+	// 			.map(k=> path +'~'+k)
+	// },
+	// isExtraElem(path) {
+	// 	const parentVal = jb.tgp.valOfPath(jb.tgp.parentPath(path));
+	// 	if (Array.isArray(parentVal))
+	// 		return parentVal.length == (path.match(/~([0-9]+)$/) || ['',-1])[1]
+	// },
+	// asArrayChildren(path) { // support the case of single element - used by properties features
+	// 	const val = jb.tgp.valOfPath(path)
+	// 	if (Array.isArray(val))
+	// 		return jb.studio.arrayChildren(path,true)
+	// 	else if (val)
+	// 		return [path]
+	// },
+	// isControlType: type => (type||'').split('[')[0].match(/^(control|options|menu.option|table-field|d3g.pivot)$/),
+	// controlParams: path => jb.tgp.paramsOfPath(path).filter(p=>jb.studio.isControlType(p.type)).map(p=>p.id),
 
-			// if (path.match(/\$vars~[0-9]+~val$/))
-			// 	return jb.ui.h('div',{},[val.name ,jb.ui.h('span',{class:'treenode-val', title: summary},jb.ui.limitStringLength(summary,50))]);
-			if (compName)
-				return jb.ui.h('div',{},[prop,jb.ui.h('span',{class:'treenode-val', title: compName+summary},jb.ui.limitStringLength(compName+summary,50))]);
-			else if (prop === '$vars')
-				return jb.ui.h('div',{},['vars',jb.ui.h('span',{class:'treenode-val', title: summary},jb.ui.limitStringLength(summary,50))]);
-			else if (['string','boolean','number'].indexOf(typeof val) != -1)
-				return jb.ui.h('div',{},[prop,jb.ui.h('span',{class:'treenode-val', title: ''+val},jb.ui.limitStringLength(''+val,50))]);
-
-			return prop + (Array.isArray(val) ? ` (${val.length})` : '');
-		}
-		isArray(path) {
-			return this.children(path).length > 0;
-		}
-		children(path) {
-			const val = jb.studio.valOfPath(path)
-			if (!val) return []
-			return ( /\$vars$/.test(path) ? [] : jb.studio.arrayChildren(path) || [])
-	//        .concat((this.includeCompHeader && this.compHeader(path,val)) || [])
-					.concat(this.vars(path,val) || [])
-	//				.concat(this.sugarChildren(path,val) || [])
-					.concat(this.specialCases(path,val) || [])
-					.concat(this.innerProfiles(path) || [])
-		}
-		move(from,to,ctx) {
-			return jb.db.move(jb.tgp.ref(from),jb.tgp.ref(to),ctx)
-		}
-		disabled(path) {
-			return jb.studio.disabled(path)
-		}
-		icon(path) {
-			return jb.studio.icon(path)
-		}
-
-		// private
-		// sugarChildren(path,val) {
-		// 	const compName = jb.utils.compName(val)
-		// 	if (!compName) return
-		// 	const sugarPath = path + '~$' +compName
-		// 	const sugarVal = jb.studio.valOfPath(sugarPath)
-		// 	if (Array.isArray(sugarVal)) // sugar array. e.g. $pipeline: [ .. ]
-		// 		return jb.studio.arrayChildren(sugarPath)
-		// 	else if (sugarVal)
-		// 		return [sugarPath]
-		// }
-		innerProfiles(path) {
-	//		if (this.sugarChildren(path,val)) return [];
-			if (!this.includeCompHeader && path.indexOf('~') == -1)
-				path = path + '~impl';
-			
-			return jb.studio.paramsOfPath(path).map(p=> ({ path: path + '~' + p.id, param: p}))
-					.filter(e=>jb.studio.valOfPath(e.path) !== undefined || e.param.mandatory)
-					.flatMap(({path})=> Array.isArray(jb.studio.valOfPath(path)) ? jb.studio.arrayChildren(path) : [path])
-		}
-		vars(path,val) {
-			if (path.match(/\$vars$/))
-				return jb.studio.arrayChildren(path,true).map(p=>p+'~val')
-			if (Array.isArray(jb.path(val,'$vars')))
-				return [path+'~$vars']
-		}
-
-		specialCases(path,val) {
-			if (jb.utils.compName(val) == 'object')
-				return Object.getOwnPropertyNames(val)
-					.filter(p=>p!='$')
-					.filter(p=>p.indexOf('$jb_') != 0)
-					.map(p=>path+'~'+p);
-			if (jb.utils.compName(val) == 'if')
-				return ['then','else']
-			return []
-		}
-	},
-	jbEditorMoreParams: path => jb.studio.paramsOfPath(path)
-			.filter(p=>jb.studio.valOfPath(path+'~'+p.id) == null), // && !p.mandatory)
-
-	nonControlChildren: (path,includeFeatures) =>
-		jb.studio.paramsOfPath(path).filter(p=>!jb.studio.isControlType(p.type))
-			.filter(p=>includeFeatures || p.id != 'features')
-			.map(p=>path + '~' + p.id),
-
-	arrayChildren(path,noExtraElem) {
-		const val = jb.studio.valOfPath(path)
-		if (!Array.isArray(val)) return []
-		return Object.getOwnPropertyNames(val)
-				.filter(x=> x.indexOf('$jb_') != 0)
-				.filter(x=> !(noExtraElem && x =='length'))
-				.map(x=>x=='length'? val.length : x) // extra elem
-				.map(k=> path +'~'+k)
-	},
-	isExtraElem(path) {
-		const parentVal = jb.studio.valOfPath(jb.studio.parentPath(path));
-		if (Array.isArray(parentVal))
-			return parentVal.length == (path.match(/~([0-9]+)$/) || ['',-1])[1]
-	},
-	asArrayChildren(path) { // support the case of single element - used by properties features
-		const val = jb.studio.valOfPath(path)
-		if (Array.isArray(val))
-			return jb.studio.arrayChildren(path,true)
-		else if (val)
-			return [path]
-	},
-	isControlType: type => (type||'').split('[')[0].match(/^(control|options|menu.option|table-field|d3g.pivot)$/),
-	controlParams: path => jb.studio.paramsOfPath(path).filter(p=>jb.studio.isControlType(p.type)).map(p=>p.id),
-
-	summary(path) {
-		const val = jb.studio.valOfPath(path);
-		if (path.match(/~cases~[0-9]*$/))
-			return jb.studio.summary(path+'~condition')
-		if (typeof val == 'string')
-			return val
-		if (val == null || typeof val != 'object') 
-			return '';
-		if (path.match(/~\$vars$/))
-			return jb.asArray(val).map(x=>x.name).join(', ')
-		return jb.studio.paramsOfPath(path).map(x=>x.id)
-				.filter(p=> p != '$')
-				.filter(p=> p.indexOf('$jb_') != 0)
-				.map(p=>val[p])
-				.filter(v=>typeof v != 'object')
-				.join(', ');
-	},
-
-	shortTitle(path) {
-		if (path == '') return '';
-		if (path.indexOf('~') == -1)
-			return path;
-		if (path.match(/~impl$/))
-			return path.split('~')[0];
-
-		const val = jb.studio.valOfPath(path);
-		const fieldTitle = jb.asArray(val && val.features).filter(x=>x.$ == 'field.title').map(x=>x.title)[0]
-		return fieldTitle || (val && typeof val.title == 'string' && val.title) || (val && val.Name) || (val && val.remark) || (val && jb.studio.compNameOfPath(path)) || path.split('~').pop();
-	},
-	icon(path) {
-		if (jb.studio.parentPath(path)) {
-			const parentVal = jb.studio.valOfPath(jb.studio.parentPath(path));
-			if (Array.isArray(parentVal) && path.split('~').pop() == parentVal.length)
-				return 'add';
-		}
-		if (jb.studio.paramTypeOfPath(path) == 'control') {
-			if (jb.studio.valOfPath(path+'~style',true) && jb.studio.compNameOfPath(path+'~style') == 'layout.horizontal')
-				return 'view_column'
-			return 'folder_open'; //'view_headline' , 'folder_open'
-		}
-		const comp2icon = {
-			label: 'font_download',
-			button: 'crop_landscape',
-			tab: 'tab',
-			image: 'insert_photo',
-			'custom-control': 'build',
-			'editable-text': 'data_usage',
-			'editable-boolean': 'radio_button',
-			'editable-number': 'donut_large',
-		}
-		const compName = jb.studio.compNameOfPath(path);
-		if (comp2icon[compName])
-			return comp2icon[compName];
-
-		if (jb.studio.isOfType(path,'action'))
-			return 'play_arrow'
-
-		return '';
-	},
-	projectFiles: () => jb.exec('%$studio/projectSettings/jsFiles%'),
-	projectCompsAsEntries: () => {
-		const project = jb.exec('%$studio/project%')
-		return jb.entries(jb.comps).filter(([id,comp]) => comp[jb.core.location][0].indexOf(project) != -1)
-			.filter(([id,comp]) => !comp.internal)
-	},
-	isArrayType: path => ((jb.studio.paramDef(path)||{}).type||'').indexOf('[]') != -1,
-	isOfType(path,type) {
-		const types = type.split(',')
-		if (types.length > 1)
-			return types.some(t=>jb.studio.isOfType(path,t))
-		if (path.match(/~impl$/)) path = path.replace('~impl','')
-    	if (path.indexOf('~') == -1)
-		  return jb.studio.isCompNameOfType(path,type)
-		const paramDef = jb.studio.paramDef(path) || {}
-		if (type == 'style' && (paramDef.type || '').indexOf('.style') != -1)
-			return true
-		return (paramDef.type || 'data').split(',')
-			.map(x=>x.split('[')[0]).filter(_t=>type.split(',').indexOf(_t) != -1).length
-	},
-	PTsOfType(type) {
-		const single = /([^\[]*)(\[\])?/;
-		const types = [].concat.apply([],(type||'').split(',')
-			.map(x=>
-				x.match(single)[1])
-			.map(x=>
-				x=='data' ? ['data','aggregator','boolean'] : [x]));
-		const comp_arr = types.map(t=>
-			jb.entries(jb.comps)
-				.filter(c=> jb.studio.isCompObjOfType(c[1],t))
-				.map(c=>c[0]));
-		return comp_arr.reduce((all,ar)=>all.concat(ar),[]);
-	},
-	isCompNameOfType(name,type) {
-		const comp = name && jb.comps[name];
-		if (comp) {
-			while (jb.comps[name] && !(jb.comps[name].type || jb.comps[name].typePattern) && jb.utils.compName(jb.comps[name].impl))
-				name = jb.utils.compName(jb.comps[name].impl);
-			return jb.comps[name] && jb.studio.isCompObjOfType(jb.comps[name],type);
-		}
-	},
-	isCompObjOfType: (compObj,type) => (compObj.type||'data').split(',').indexOf(type) != -1
-		|| (compObj.typePattern && compObj.typePattern(type)),
-
-	// single first param type
-	paramTypeOfPath(path) {
-		const res = ((jb.studio.paramDef(path) || {}).type || 'data').split(',')[0].split('[')[0];
-		if (res == '$asParent' || res == '*')
-			return jb.studio.paramTypeOfPath(jb.studio.parentPath(path));
-		return res;
-	},
-	PTsOfPath: path => jb.studio.PTsOfType(jb.studio.paramTypeOfPath(path)),
-	profilesOfPT: pt => jb.entries(jb.comps).filter(c=> c[1].impl.$ == pt).map(c=>c[0]),
-	propName(path) {
-		if (!isNaN(Number(path.split('~').pop()))) // array elements
-			return jb.studio.parentPath(path).split('~').pop().replace(/s$/,'');
-
-		const paramDef = jb.studio.paramDef(path);
-		if (!paramDef) return '';
-		const val = jb.studio.valOfPath(path);
-		if ((paramDef.type ||'').indexOf('[]') != -1) {
-			const length = jb.studio.arrayChildren(path).length;
-			if (length)
-				return path.split('~').pop() + ' (' + length + ')';
-		}
-
-		return path.split('~').pop();
-	},
-
-	closestCtxOfLastRun(pathToTrace) {
-		let path = pathToTrace.split('~'),res
-		if (pathToTrace.match(/items~0$/) && jb.studio.isExtraElem(pathToTrace)) {
-				const pipelineCtx = jb.ctxByPath[path.slice(0,-2).join('~')]
-				if (pipelineCtx)
-					res = pipelineCtx.setVars(pipelineCtx.profile.$vars || {})
-			}
-		else if (pathToTrace.match(/items~[1-9][0-9]*$/) && jb.studio.isExtraElem(pathToTrace)) {
-            const formerIndex = Number(pathToTrace.match(/items~([1-9][0-9]*)$/)[1])-1
-			path[path.length-1] = formerIndex
-        }
-
-		for (;path.length > 0 && !jb.ctxByPath[path.join('~')];path.pop());
-		if (path.length)
-			res = jb.ctxByPath[path.join('~')]
-			
-		if ((jb.path(res,'profile.$') ||'').indexOf('rx.') != 0) // ignore rx ctxs
-			return res
-	},
-
-	// cbLogAsCallbag(ctx,log) {
-	// 	const {fromIter} = ctx.frame().jb.callbag
-	// 	return fromIter(log ? log.result : [])
+	// summary(path) {
+	// 	const val = jb.tgp.valOfPath(path);
+	// 	if (path.match(/~cases~[0-9]*$/))
+	// 		return jb.tgp.summary(path+'~condition')
+	// 	if (typeof val == 'string')
+	// 		return val
+	// 	if (val == null || typeof val != 'object') 
+	// 		return '';
+	// 	if (path.match(/~\$vars$/))
+	// 		return jb.asArray(val).map(x=>x.name).join(', ')
+	// 	return jb.tgp.paramsOfPath(path).map(x=>x.id)
+	// 			.filter(p=> p != '$')
+	// 			.filter(p=> p.indexOf('$jb_') != 0)
+	// 			.map(p=>val[p])
+	// 			.filter(v=>typeof v != 'object')
+	// 			.join(', ');
 	// },
 
-	closestTestCtx(pathToTrace) {
-		const _ctx = new jb.core.jbCtx()
-		const compId = pathToTrace.split('~')[0]
-		const statistics = jb.exec(studio.componentStatistics(compId))
-		const test = jb.path(jb.comps[compId],'impl.expectedResult') ? compId 
-			: (statistics.referredBy||[]).find(refferer=>jb.studio.isOfType(refferer,'test'))
-		if (test)
-			return _ctx.ctx({ profile: {$: test}, comp: test, path: ''})
-		const testData = jb.comps[compId].testData
-		if (testData)
-			return _ctx.ctx({profile: pipeline(testData, {$: compId}), path: '' })
-	},
-	pathParents(path,includeThis) {
-		const result = ['']
-		path.split('~').reduce((acc,p) => {
-			const path = [acc,p].filter(x=>x).join('~')
-			result.push(path)
-			return path
-		} ,'')
-		return result.reverse().slice(includeThis ? 0 : 1)
-	}
-})
+	// shortTitle(path) {
+	// 	if (path == '') return '';
+	// 	if (path.indexOf('~') == -1)
+	// 		return path;
+	// 	if (path.match(/~impl$/))
+	// 		return path.split('~')[0];
+
+	// 	const val = jb.tgp.valOfPath(path);
+	// 	const fieldTitle = jb.asArray(val && val.features).filter(x=>x.$ == 'field.title').map(x=>x.title)[0]
+	// 	return fieldTitle || (val && typeof val.title == 'string' && val.title) || (val && val.Name) || (val && val.remark) || (val && jb.tgp.compNameOfPath(path)) || path.split('~').pop();
+	// },
+	// icon(path) {
+	// 	if (jb.tgp.parentPath(path)) {
+	// 		const parentVal = jb.tgp.valOfPath(jb.tgp.parentPath(path));
+	// 		if (Array.isArray(parentVal) && path.split('~').pop() == parentVal.length)
+	// 			return 'add';
+	// 	}
+	// 	if (jb.studio.paramType(path) == 'control') {
+	// 		if (jb.tgp.valOfPath(path+'~style',true) && jb.tgp.compNameOfPath(path+'~style') == 'layout.horizontal')
+	// 			return 'view_column'
+	// 		return 'folder_open'; //'view_headline' , 'folder_open'
+	// 	}
+	// 	const comp2icon = {
+	// 		label: 'font_download',
+	// 		button: 'crop_landscape',
+	// 		tab: 'tab',
+	// 		image: 'insert_photo',
+	// 		'custom-control': 'build',
+	// 		'editable-text': 'data_usage',
+	// 		'editable-boolean': 'radio_button',
+	// 		'editable-number': 'donut_large',
+	// 	}
+	// 	const compName = jb.tgp.compNameOfPath(path);
+	// 	if (comp2icon[compName])
+	// 		return comp2icon[compName];
+
+	// 	if (jb.tgp.isOfType(path,'action'))
+	// 		return 'play_arrow'
+
+	// 	return '';
+	// },
+	// isArrayType: path => ((jb.tgp.paramDef(path)||{}).type||'').indexOf('[]') != -1,
+	// isOfType(path,type) {
+	// 	const types = type.split(',')
+	// 	if (types.length > 1)
+	// 		return types.some(t=>jb.tgp.isOfType(path,t))
+	// 	if (path.match(/~impl$/)) path = path.replace('~impl','')
+    // 	if (path.indexOf('~') == -1)
+	// 	  return jb.studio.isCompNameOfType(path,type)
+	// 	const paramDef = jb.tgp.paramDef(path) || {}
+	// 	if (type == 'style' && (paramDef.type || '').indexOf('.style') != -1)
+	// 		return true
+	// 	return (paramDef.type || 'data').split(',')
+	// 		.map(x=>x.split('[')[0]).filter(_t=>type.split(',').indexOf(_t) != -1).length
+	// },
+	// PTsOfType(type) {
+	// 	const single = /([^\[]*)(\[\])?/;
+	// 	const types = [].concat.apply([],(type||'').split(',')
+	// 		.map(x=>
+	// 			x.match(single)[1])
+	// 		.map(x=>
+	// 			x=='data' ? ['data','aggregator','boolean'] : [x]));
+	// 	const comp_arr = types.map(t=>
+	// 		jb.entries(jb.comps)
+	// 			.filter(c=> jb.studio.isCompObjOfType(c[1],t))
+	// 			.map(c=>c[0]));
+	// 	return comp_arr.reduce((all,ar)=>all.concat(ar),[]);
+	// },
+	// isCompNameOfType(name,type) {
+	// 	const comp = name && jb.comps[name];
+	// 	if (comp) {
+	// 		while (jb.comps[name] && !(jb.comps[name].type || jb.comps[name].typePattern) && jb.utils.compName(jb.comps[name].impl))
+	// 			name = jb.utils.compName(jb.comps[name].impl);
+	// 		return jb.comps[name] && jb.studio.isCompObjOfType(jb.comps[name],type);
+	// 	}
+	// },
+	// isCompObjOfType: (compObj,type) => (compObj.type||'data').split(',').indexOf(type) != -1
+	// 	|| (compObj.typePattern && compObj.typePattern(type)),
+
+	// // single first param type
+	// paramType(path) {
+	// 	const res = ((jb.tgp.paramDef(path) || {}).type || 'data').split(',')[0].split('[')[0];
+	// 	if (res == '$asParent' || res == '*')
+	// 		return jb.studio.paramType(jb.tgp.parentPath(path));
+	// 	return res;
+	// },
+	// PTsOfPath: path => jb.tgp.PTsOfType(jb.studio.paramType(path)),
+	// profilesOfPT: pt => jb.entries(jb.comps).filter(c=> c[1].impl.$ == pt).map(c=>c[0]),
+	// propName(path) {
+	// 	if (!isNaN(Number(path.split('~').pop()))) // array elements
+	// 		return jb.tgp.parentPath(path).split('~').pop().replace(/s$/,'');
+
+	// 	const paramDef = jb.tgp.paramDef(path);
+	// 	if (!paramDef) return '';
+	// 	const val = jb.tgp.valOfPath(path);
+	// 	if ((paramDef.type ||'').indexOf('[]') != -1) {
+	// 		const length = jb.studio.arrayChildren(path).length;
+	// 		if (length)
+	// 			return path.split('~').pop() + ' (' + length + ')';
+	// 	}
+
+	// 	return path.split('~').pop();
+	// },
+
+// 	pathParents(path,includeThis) {
+// 		const result = ['']
+// 		path.split('~').reduce((acc,p) => {
+// 			const path = [acc,p].filter(x=>x).join('~')
+// 			result.push(path)
+// 			return path
+// 		} ,'')
+// 		return result.reverse().slice(includeThis ? 0 : 1)
+// 	}
+// })
+

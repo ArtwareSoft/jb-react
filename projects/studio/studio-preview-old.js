@@ -161,9 +161,9 @@
 //   function fixInvalidUrl() {
 //     if (location.pathname.indexOf('/project/studio/') != 0) return;
 //     var profile_path = location.pathname.split('/project/studio/').pop().split('/')[2] || '';
-//     if (!profile_path || jb.studio.valOfPath(profile_path,true) != null) return;
-//     while (profile_path && jb.studio.valOfPath(profile_path,true) == null)
-//       profile_path = jb.studio.parentPath(profile_path);
+//     if (!profile_path || jb.tgp.valOfPath(profile_path,true) != null) return;
+//     while (profile_path && jb.tgp.valOfPath(profile_path,true) == null)
+//       profile_path = jb.tgp.parentPath(profile_path);
 //     window.location.pathname = location.pathname.split('/').slice(0,-1).concat([profile_path]).join('/')
 //   }
 // }

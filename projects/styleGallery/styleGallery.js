@@ -3,7 +3,7 @@ jb.component('styleGallery.loadStyles', {
     {id: 'component', as: 'string'}
   ],
   impl: runActionOnItem(
-      remote.data(jb.studio.PTsOfType('%$component%') ,() => jb.parent),
+      remote.data(jb.tgp.PTsOfType('%$component%') ,() => jb.parent),
       treeShake.getCodeFromRemote('%%')
   )
 })
@@ -13,7 +13,7 @@ jb.component('styleGallery.stylesOfUiComponent', {
     {id: 'ctrl', as: 'string'}
   ],
   impl: (ctx,ctrl) => 
-      jb.studio.PTsOfType(ctrl).filter(x=>['customStyle','styleByControl','styleWithFeatures'].indexOf(x) == -1).sort()
+      jb.tgp.PTsOfType(ctrl).filter(x=>['customStyle','styleByControl','styleWithFeatures'].indexOf(x) == -1).sort()
 })
 
 jb.component('styleGallery.variations', {
@@ -80,7 +80,7 @@ jb.defComponents('button,text,editableText,editableNumber,editableBoolean,group,
     params: [
       {id: 'ctrl', as: 'string', defaultValue: ctrl}
     ],
-    require: [ {$: ctrl}, {$: 'feature.icon'}, ...(jb.studio.PTsOfType(jb.comps[ctrl].params.find(p=>p.id =='style').type).map(style=>({$: style})) )],
+    require: [ {$: ctrl}, {$: 'feature.icon'}, ...(jb.tgp.PTsOfType(jb.comps[ctrl].params.find(p=>p.id =='style').type).map(style=>({$: style})) )],
     impl: group({
   //    features: group.wait(styleGallery.loadStyles('%$ctrl%')),
       layout: layout.grid({

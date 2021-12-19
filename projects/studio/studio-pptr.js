@@ -8,7 +8,7 @@ jb.component('studio.pptrToolbar', {
     controls: [
       controlWithCondition('%val.$%==pptr.session%', text('run icon')),
       controlWithCondition(
-        studio.isOfType('%$path%', 'pptr'),
+        tgp.isOfType('%$path%', 'pptr'),
         text('runninng indicator')
       ),
       text('')
@@ -16,7 +16,7 @@ jb.component('studio.pptrToolbar', {
     features: [
       group.firstSucceeding(),
       studio.watchPath({path: '%$path%', includeChildren: 'yes', recalcVars: true}),
-      variable({name: 'paramDef', value: studio.paramDef('%$path%')}),
+      variable({name: 'paramDef', value: tgp.paramDef('%$path%')}),
       variable({name: 'val', value: tgp.val('%$path%')})
     ]
   })

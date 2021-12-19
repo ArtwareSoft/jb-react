@@ -23,7 +23,7 @@ jb.component('studio.compInspector', {
         studio.eventsOfComp('%$inspectedCmp/cmpId%'),
         editableText({
             title: 'source',
-            databind: studio.profileAsText('%$inspectedCtx/path%'),
+            databind: tgp.profileAsText('%$inspectedCtx/path%'),
             style: editableText.codemirror({height: '100'}),
             features: codemirror.fold()
         }),

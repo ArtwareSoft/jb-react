@@ -185,7 +185,7 @@ jb.component('studio.selectProfile', {
       css.margin({top: '10', left: '20'}),
       variable({
         name: 'unsortedCategories',
-        value: studio.categoriesOfType('%$type%')
+        value: tgp.categoriesOfType('%$type%')
       }),
       variable({
         name: 'Categories',
@@ -195,7 +195,7 @@ jb.component('studio.selectProfile', {
         )
       }),
       watchable('SelectedCategory',If(tgp.val('%$path%'), 'all', '%$Categories[0]/code%')),
-      group.itemlistContainer({initialSelection: studio.compName('%$path%')}),
+      group.itemlistContainer({initialSelection: tgp.compName('%$path%')}),
       css.width('400')
     ]
   })
@@ -217,17 +217,17 @@ jb.component('studio.openNewProfileDialog', {
         [
           action.switchCase(
             '%$mode% == \"insert-control\"',
-            studio.insertControl('%%', '%$path%')
+            tgp.insertControl('%%', '%$path%')
           ),
           action.switchCase(
             '%$mode% == \"insert\"',
-            studio.addArrayItem({
+            tgp.addArrayItem({
               path: '%$path%',
               toAdd: studio.newProfile('%%'),
               index: '%$index%'
             })
           ),
-          action.switchCase('%$mode% == \"update\"', studio.setComp('%$path%', '%%'))
+          action.switchCase('%$mode% == \"update\"', tgp.setComp('%$path%', '%%'))
         ]
       ),
       type: '%$type%',
@@ -271,21 +271,21 @@ jb.component('studio.openPickProfile', {
     content: group({
       controls: [
         studio.selectProfile({
-          onSelect: studio.setComp('%$path%', '%%'),
+          onSelect: tgp.setComp('%$path%', '%%'),
           onBrowse: action.if(
             or(
-              equals('layout', studio.paramType('%$path%')),
-              endsWith('.style', studio.paramType('%$path%'))
+              equals('layout', tgp.paramType('%$path%')),
+              endsWith('.style', tgp.paramType('%$path%'))
             ),
-            studio.setComp('%$path%', '%%')
+            tgp.setComp('%$path%', '%%')
           ),
-          type: studio.paramType('%$path%'),
+          type: tgp.paramType('%$path%'),
           path: '%$path%'
         }),
         studio.properties('%$path%')
       ]
     }),
-    title: pipeline(studio.paramType('%$path%'), 'select %%'),
+    title: pipeline(tgp.paramType('%$path%'), 'select %%'),
     features: [
       css.height({height: '520', overflow: 'hidden', minMax: 'min'}),
       css.width({width: '450', overflow: 'hidden'}),
@@ -295,7 +295,7 @@ jb.component('studio.openPickProfile', {
       css.padding({right: '20'}),
       feature.initValue('%$dialogData/originalVal%', tgp.val('%$path%')),
       dialogFeature.onClose(
-        action.if(not('%%'), studio.setComp('%$path%', '%$dialogData/originalVal%'))
+        action.if(not('%%'), tgp.setComp('%$path%', '%$dialogData/originalVal%'))
       )
     ]
   })
@@ -306,7 +306,7 @@ jb.component('studio.openNewPage', {
   impl: studio.openNewProfile({
     title: 'New Reusable Control (page)',
     onOK: runActions(
-      Var('compName', studio.macroName('%$dialogData/name%')),
+      Var('compName', tgp.titleToId('%$dialogData/name%')),
       studio.newComp({
         compName: '%$compName%',
         compContent:  asIs({type: 'control', impl: group({})}),
@@ -325,7 +325,7 @@ jb.component('studio.openNewFunction', {
   impl: studio.openNewProfile({
     title: 'New Function',
     onOK: runActions(
-      Var('compName', studio.macroName('%$dialogData/name%')),
+      Var('compName', tgp.titleToId('%$dialogData/name%')),
       studio.newComp({
           compName: '%$compName%',
           compContent: asIs({type: 'data', impl: pipeline(''), testData: 'sampleData'}),
@@ -395,7 +395,7 @@ jb.component('studio.insertCompOption', {
   ],
   impl: menu.action({
     title: '%$title%',
-    action: studio.insertControl('%$comp%')
+    action: tgp.insertControl('%$comp%')
   })
 })
 
@@ -417,7 +417,7 @@ jb.component('studio.insertControlMenu', {
                 features: [
                   css.height('80'),
                   studio.dropHtml(
-                    runActions(studio.insertControl('%$newCtrl%'), dialog.closeDialog())
+                    runActions(tgp.insertControl('%$newCtrl%'), dialog.closeDialog())
                   )
                 ]
               }),
@@ -433,7 +433,7 @@ jb.component('studio.insertControlMenu', {
           title: 'Drop html from any web site',
           onOK: action.if(
             '%$studio/htmlToPaste%',
-            studio.insertControl(studio.htmlToControl('%$studio/htmlToPaste%'))
+            tgp.insertControl(studio.htmlToControl('%$studio/htmlToPaste%'))
           ),
           features: dialogFeature.dragTitle()
         }),
@@ -466,7 +466,7 @@ jb.component('studio.newProfile', {
   params: [
     {id: 'compName', as: 'string'}
   ],
-  impl: (ctx,compName) => jb.studio.newProfile(jb.studio.getComp(compName), compName)
+  impl: (ctx,compName) => jb.tgp.newProfile(jb.tgp.getComp(compName), compName)
 })
 
 jb.component('studio.newComp', {
@@ -479,7 +479,7 @@ jb.component('studio.newComp', {
     jb.component(compName, jb.frame.JSON.parse(JSON.stringify({...compContent, type: '_'})))
     const path = (jb.frame.jbBaseProjUrl || '') + jb.studio.host.pathOfJsFile(ctx.exp('%$studio/project%'), file)
     jb.comps[compName][jb.core.location] = [path,'new']
-    jb.studio.writeValue(jb.tgp.ref(`${compName}~type`),compContent.type || '',ctx)
+    jb.tgp.writeValue(jb.tgp.ref(`${compName}~type`),compContent.type || '',ctx)
   }
 })
 

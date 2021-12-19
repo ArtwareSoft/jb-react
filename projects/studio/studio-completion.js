@@ -61,7 +61,7 @@ jb.extension('studioCompletion', {
         const type = jb.comps[parentPt] ? 
             (jb.utils.compParams(jb.comps[parentPt]).filter(p=>p.id == currentProp)[0] || {}).type || 'data' 
             : defaultType
-        return jb.studio.PTsOfType(type).map(pt=>({ type: 'pt', displayText: pt}));
+        return jb.tgp.PTsOfType(type).map(pt=>({ type: 'pt', displayText: pt}));
 
         function findMatchingBlockBackwards(str) {
             let depth = 0;

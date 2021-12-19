@@ -195,7 +195,7 @@ jb.component('probeTest.label1', {
 jb.component('pathChangeTest.wrap', {
   impl: pathChangeTest({
     path: 'probeTest.label1~impl',
-    action: studio.wrapWithGroup('probeTest.label1~impl'),
+    action: tgp.wrapWithGroup('probeTest.label1~impl'),
     expectedPathAfter: 'probeTest.label1~impl~controls~0'
   })
 })

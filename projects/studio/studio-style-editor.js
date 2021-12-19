@@ -38,8 +38,8 @@ jb.component('studio.openStyleMenu', {
         menu.action({
           title: 'Format css',
           action: writeValue(
-            studio.profileAsText('%$styleSource/path%~css'),
-            studio.formatCss(studio.profileAsText('%$styleSource/path%~css'))
+            tgp.profileAsText('%$styleSource/path%~css'),
+            studio.formatCss(tgp.profileAsText('%$styleSource/path%~css'))
           )
         })
       ]
@@ -63,7 +63,7 @@ jb.component('studio.styleEditor', {
             controls: [
               editableText({
                 title: 'css',
-                databind: studio.profileAsStringByref('%$path%~css'),
+                databind: tgp.profileAsText('%$path%~css'),
                 style: editableText.codemirror({
                   cm_settings: '',
                   enableFullScreen: false,
@@ -91,7 +91,7 @@ jb.component('studio.styleEditor', {
             controls: [
               editableText({
                 title: 'template',
-                databind: studio.profileAsText('%$path%~template'),
+                databind: tgp.profileAsText('%$path%~template'),
                 style: editableText.codemirror({
                   cm_settings: '',
                   height: '400',
@@ -175,7 +175,7 @@ jb.component('studio.styleEditorOptions', {
     {id: 'path', as: 'string'}
   ],
   impl: menu.endWithSeparator({
-    vars: [Var('compName', studio.compName('%$path%'))],
+    vars: [Var('compName', tgp.compName('%$path%'))],
     options: [
       menu.action({
         title: 'Style editor',

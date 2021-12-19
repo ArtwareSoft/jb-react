@@ -50,10 +50,10 @@ jb.extension('studio', 'suggestions', {
         probeCtx = probeCtx || new jb.core.jbCtx();
 
         if (this.inputVal.indexOf('=') == 0 && !this.expressionOnly)
-          options = jb.studio.PTsOfPath(path).map(compName=> {
+          options = jb.tgp.PTsOfPath(path).map(compName=> {
                 var name = compName.substring(compName.indexOf('.')+1);
                 var ns = compName.substring(0,compName.indexOf('.'));
-                return jb.studio.compOption(path, compName, compName, ns ? `${name} (${ns})` : name, jb.studio.getComp(compName).description || '')
+                return jb.studio.compOption(path, compName, compName, ns ? `${name} (${ns})` : name, jb.tgp.getComp(compName).description || '')
             })
         else if (this.tailSymbol == '%')
           options = [].concat.apply([],jb.toarray(probeCtx.exp('%%'))
@@ -77,16 +77,17 @@ jb.extension('studio', 'suggestions', {
       }
   },
   valueOption(toPaste,value,pos,tail,input) {
-    return { type: 'value', toPaste,value,pos,tail, text: toPaste + valAsText(value), input, code: toPaste }
+    const text = toPaste + valAsText(value)
+    return { type: 'value', toPaste,value,pos,tail, text, input, code: toPaste }
 
     function valAsText(val) {
       if (typeof val == 'string' && val.length > 20)
-        return ` (${val.substring(0,20)}...)`;
-      else if (typeof val == 'string' || typeof val == 'number' || typeof val == 'boolean')
-        return ` (${val})`;
+        return ` (${val.substring(0,20)}...)`
+      else if (jb.utils.isPrimitiveValue(val))
+        return ` (${val})`
       else if (Array.isArray(val))
         return ` (${val.length} items)`
-      return ``;
+      return ''
     }
   },
   compOption(path, toPaste,value,text,description) {
@@ -100,7 +101,7 @@ jb.component('studio.suggestions', {
     {id: 'expressionOnly', as: 'boolean'}
   ],
   impl: (ctx,path,expressionOnly) => new jb.studio.suggestions(jb.val(ctx.data), expressionOnly)
-      .calcOptions(jb.studio.closestCtxOfLastRun(path),path)
+      .calcOptions(jb.probe.closestCtxOfLastRun(path),path)
 })
 
 jb.component('studio.shouldShowSuggestions', {
@@ -131,7 +132,7 @@ jb.component('studio.applyOption', {
         if (toPaste.match(/%$/))
           ctx.run(writeValue('%$$model/databind()%', newVal))        
       } else if (option.type == 'comp') {
-        jb.studio.setComp(option.path, option.toPaste, ctx);
+        jb.tgp.setComp(option.path, option.toPaste, ctx);
         return ctx.run(runActions(dialog.closeDialogById('studio-jb-editor-popup'),
             studio.expandAndSelectFirstChildInJbEditor()))        
       }
@@ -175,20 +176,20 @@ jb.component('studio.jbFloatingInput', {
       }),
       button({
         title: 'set to false',
-        action: writeValue(studio.boolRef('%$path%'), false),
+        action: writeValue(tgp.boolRef('%$path%'), false),
         style: button.mdcIcon(icon({icon: 'cancel', type: 'mdc'}), '24'),
         features: [
-          feature.if(studio.isOfType('%$path%', 'boolean')),
+          feature.if(tgp.isOfType('%$path%', 'boolean')),
           css.margin('26'),
           css.width('38')
         ]
       }),
       button({
         title: 'set to true',
-        action: writeValue(studio.boolRef('%$path%'), true),
+        action: writeValue(tgp.boolRef('%$path%'), true),
         style: button.mdcIcon(icon({icon: 'done', type: 'mdc'}), '24'),
         features: [
-          feature.if(studio.isOfType('%$path%', 'boolean')),
+          feature.if(tgp.isOfType('%$path%', 'boolean')),
           css.margin('26'),
           css.width('38')
         ]
@@ -198,8 +199,8 @@ jb.component('studio.jbFloatingInput', {
         action: studio.openPickIcon('%$path%'),
         style: button.mdcIcon(),
         features: [
-          feature.if(and(inGroup(list('feature.icon','icon'), studio.compName(studio.parentPath('%$path%'))),
-              equals('icon', pipeline(studio.paramDef('%$path%'), '%id%'))
+          feature.if(and(inGroup(list('feature.icon','icon'), tgp.compName(tgp.parentPath('%$path%'))),
+              equals('icon', pipeline(tgp.paramDef('%$path%'), '%id%'))
           )),
           css.transformScale({x: '1', y: '0.8'}),
           css.margin('15'),
@@ -211,8 +212,8 @@ jb.component('studio.jbFloatingInput', {
         layout: layout.vertical(),
         controls: [
           editableText({
-            title: studio.propName('%$path%'),
-            databind: studio.profileValueAsText('%$path%'),
+            title: tgp.propName('%$path%'),
+            databind: tgp.profileValueAsText('%$path%'),
             updateOnBlur: true,
             style: editableText.floatingInput(),
             features: [
@@ -231,7 +232,7 @@ jb.component('studio.jbFloatingInput', {
             ]
           }),
           text({
-            text: pipeline(studio.paramDef('%$path%'), '%description%'),
+            text: pipeline(tgp.paramDef('%$path%'), '%description%'),
             features: css('color: grey')
           })
         ],

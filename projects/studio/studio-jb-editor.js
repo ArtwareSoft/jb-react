@@ -1,3 +1,109 @@
+
+jb.extension('studio', 'jbEditor', {
+	jbEditorTree: class jbEditorTree {
+		constructor(rootPath,includeCompHeader) {
+			this.rootPath = rootPath;
+			this.refHandler = jb.watchableComps.handler;
+			this.includeCompHeader= includeCompHeader;
+		}
+		title(path, collapsed) {
+			let val = jb.tgp.valOfPath(path)
+			let compName = jb.tgp.compNameOfPath(path)
+			if (path.indexOf('~') == -1)
+				compName = 'jbComponent'
+			if (path.match(/^[^~]+~params~[0-9]+$/))
+				compName = 'jbParam'
+			if (compName && compName.match(/case$/))
+				compName = 'case'
+			let prop = path.split('~').pop()
+			if (!isNaN(Number(prop))) // array value - title as a[i]
+				prop = path.split('~').slice(-2)
+					.map(x=>x.replace(/\$pipeline/,'').replace(/\$obj/,''))
+					.join('[') + ']'
+			if (path.match(/\$vars~[0-9]+~val$/))
+				prop = jb.tgp.valOfPath(jb.tgp.parentPath(path)).name
+			let summary = ''
+			if (collapsed && typeof val == 'object')
+				summary = ': ' + jb.tgp.summary(path).substr(0,20)
+			// if (path.match(/\$vars~[0-9]+$/))
+			//  	summary = jb.tgp.summary(path+'~val') || jb.tgp.compNameOfPath(path+'~val')
+			if (typeof val == 'function')
+				val = val.toString()
+
+			// if (path.match(/\$vars~[0-9]+~val$/))
+			// 	return jb.ui.h('div',{},[val.name ,jb.ui.h('span',{class:'treenode-val', title: summary},jb.ui.limitStringLength(summary,50))]);
+			if (compName)
+				return jb.ui.h('div',{},[prop,jb.ui.h('span',{class:'treenode-val', title: compName+summary},jb.ui.limitStringLength(compName+summary,50))]);
+			else if (prop === '$vars')
+				return jb.ui.h('div',{},['vars',jb.ui.h('span',{class:'treenode-val', title: summary},jb.ui.limitStringLength(summary,50))]);
+			else if (['string','boolean','number'].indexOf(typeof val) != -1)
+				return jb.ui.h('div',{},[prop,jb.ui.h('span',{class:'treenode-val', title: ''+val},jb.ui.limitStringLength(''+val,50))]);
+
+			return prop + (Array.isArray(val) ? ` (${val.length})` : '');
+		}
+		isArray(path) {
+			return this.children(path).length > 0;
+		}
+		children(path) {
+			const val = jb.tgp.valOfPath(path)
+			if (!val) return []
+			return ( /\$vars$/.test(path) ? [] : jb.tgp.arrayChildren(path) || [])
+	//        .concat((this.includeCompHeader && this.compHeader(path,val)) || [])
+					.concat(this.vars(path,val) || [])
+	//				.concat(this.sugarChildren(path,val) || [])
+					.concat(this.specialCases(path,val) || [])
+					.concat(this.innerProfiles(path) || [])
+		}
+		move(from,to,ctx) {
+			return jb.db.move(jb.tgp.ref(from),jb.tgp.ref(to),ctx)
+		}
+		disabled(path) {
+			return jb.tgp.isDisabled(path)
+		}
+		icon(path) {
+			return jb.tgp.icon(path)
+		}
+
+		// private
+		// sugarChildren(path,val) {
+		// 	const compName = jb.utils.compName(val)
+		// 	if (!compName) return
+		// 	const sugarPath = path + '~$' +compName
+		// 	const sugarVal = jb.tgp.valOfPath(sugarPath)
+		// 	if (Array.isArray(sugarVal)) // sugar array. e.g. $pipeline: [ .. ]
+		// 		return jb.tgp.arrayChildren(sugarPath)
+		// 	else if (sugarVal)
+		// 		return [sugarPath]
+		// }
+		innerProfiles(path) {
+	//		if (this.sugarChildren(path,val)) return [];
+			if (!this.includeCompHeader && path.indexOf('~') == -1)
+				path = path + '~impl';
+			
+			return jb.tgp.paramsOfPath(path).map(p=> ({ path: path + '~' + p.id, param: p}))
+					.filter(e=>jb.tgp.valOfPath(e.path) !== undefined || e.param.mandatory)
+					.flatMap(({path})=> Array.isArray(jb.tgp.valOfPath(path)) ? jb.tgp.arrayChildren(path) : [path])
+		}
+		vars(path,val) {
+			if (path.match(/\$vars$/))
+				return jb.tgp.arrayChildren(path,true).map(p=>p+'~val')
+			if (Array.isArray(jb.path(val,'$vars')))
+				return [path+'~$vars']
+		}
+
+		specialCases(path,val) {
+			if (jb.utils.compName(val) == 'object')
+				return Object.getOwnPropertyNames(val)
+					.filter(p=>p!='$')
+					.filter(p=>p.indexOf('$jb_') != 0)
+					.map(p=>path+'~'+p);
+			if (jb.utils.compName(val) == 'if')
+				return ['then','else']
+			return []
+		}
+	},
+})
+
 jb.component('studio.jbEditor', {
   type: 'control',
   params: [
@@ -24,10 +130,10 @@ jb.component('studio.openJbEditProperty', {
   ],
   impl: action.switch(
     Var('actualPath', studio.jbEditorPathForEdit('%$path%')),
-    Var('paramDef', studio.paramDef('%$actualPath%')),
+    Var('paramDef', tgp.paramDef('%$actualPath%')),
     [
       action.switchCase(ctx => 
-        console.log('open property', ctx.run({$: 'studio.isOfType', path: '%$actualPath%', type: 'data,boolean'}), ctx)),
+        console.log('open property', ctx.run({$: 'tgp.isOfType', path: '%$actualPath%', type: 'data,boolean'}), ctx)),
       action.switchCase(endsWith('$vars', '%$path%'), studio.addVariable('%$path%')),
       action.switchCase(
         '%$paramDef/options%',
@@ -57,7 +163,7 @@ jb.component('studio.openJbEditProperty', {
         studio.editSource('%$actualPath%')
       ),
       action.switchCase(
-        studio.isOfType('%$actualPath%', 'data,boolean'),
+        tgp.isOfType('%$actualPath%', 'data,boolean'),
         openDialog({
           style: dialog.studioJbEditorPopup(),
           content: studio.jbFloatingInput('%$actualPath%'),
@@ -68,14 +174,14 @@ jb.component('studio.openJbEditProperty', {
         })
       ),
       action.switchCase(
-        Var('ptsOfType', studio.PTsOfType(studio.paramType('%$actualPath%'))),
+        Var('ptsOfType', tgp.PTsOfType(tgp.paramType('%$actualPath%'))),
         '%$ptsOfType/length% == 1',
-        studio.setComp('%$path%', '%$ptsOfType[0]%')
+        tgp.setComp('%$path%', '%$ptsOfType[0]%')
       )
     ],
     studio.openNewProfileDialog({
       path: '%$actualPath%',
-      type: studio.paramType('%$actualPath%'),
+      type: tgp.paramType('%$actualPath%'),
       mode: 'update',
       onClose: tree.regainFocus()
     })
@@ -164,11 +270,11 @@ jb.component('menu.studioWrapWith', {
     {id: 'components', as: 'array'}
   ],
   impl: menu.dynamicOptions(
-    If(studio.isOfType('%$path%', '%$type%'),'%$components%',list()),
+    If(tgp.isOfType('%$path%', '%$type%'),'%$components%',list()),
     menu.action({
       title: 'Wrap with %%',
       action: runActions(
-        studio.wrap('%$path%', '%%'),
+        tgp.wrap('%$path%', '%%'),
         studio.expandAndSelectFirstChildInJbEditor()
       )
     })
@@ -180,11 +286,11 @@ jb.component('menu.studioWrapWithArray', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: If(studio.canWrapWithArray('%$path%'),
+  impl: If(tgp.canWrapWithArray('%$path%'),
     menu.action({
       title: 'Wrap with array',
       action: runActions(
-        studio.wrapWithArray('%$path%'),
+        tgp.wrapWithArray('%$path%'),
         studio.expandAndSelectFirstChildInJbEditor()
       )
     }),[])
@@ -258,7 +364,7 @@ jb.component('studio.jbEditorPathForEdit', {
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => {
-    const ar = jb.studio.valOfPath(path)
+    const ar = jb.tgp.valOfPath(path)
     return Array.isArray(ar) ? path + '~' + ar.length : path
   }
 })
@@ -273,5 +379,13 @@ jb.component('studio.openJbEditorMenu', {
     menu: studio.jbEditorMenu('%$path%', '%$root%'),
     features: dialogFeature.onClose(tree.regainFocus())
   })
+})
+
+jb.component('studio.jbEditorNodes', {
+  type: 'tree.node-model',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) =>	new jb.studio.jbEditorTree(path,true)
 })
 

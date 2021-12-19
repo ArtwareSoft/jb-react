@@ -1,9 +1,3 @@
-jb.component('studio.probeResults', {
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: pipe(studio.probe('%$path%'), '%result%')
-})
 
 jb.component('studio.dataBrowse', {
   type: 'control',
@@ -230,4 +224,11 @@ jb.component('studio.probeDataView', {
       watchRef({ref: '%$studio/refreshProbe%', strongRefresh: true})
     ]
   }), jbm.preview() )
+})
+
+jb.component('studio.probeResults', {
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: pipe(probe.runCircuit('%$path%'), '%result%')
 })

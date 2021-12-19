@@ -342,7 +342,7 @@ jb.component('uiTest.watchRefArrayDeleteWithRunActionOnItems', {
 jb.component('uiTest.watchableAsText', {
   impl: uiFrontEndTest({
     control: group({
-      vars: Var('watchedText', watchableAsText('%$watchablePeople%')),
+      vars: Var('watchedText', tgpTextEditor.watchableAsText('%$watchablePeople%')),
       controls: [
         editableText({
           databind: '%$watchedText%',
@@ -351,7 +351,7 @@ jb.component('uiTest.watchableAsText', {
             id('editor'),
             feature.onKey(
               'Alt-P',
-              writeValue('%$path%', codeEditor.cursorPath('%$watchedText%'))
+              writeValue('%$path%', tgpTextEditor.cursorPath('%$watchedText%'))
             ),
             textarea.initTextareaEditor(),
             watchRef({ ref: '%$watchablePeople%', includeChildren: 'yes'})
@@ -359,10 +359,10 @@ jb.component('uiTest.watchableAsText', {
         }),
         button({
           title: 'show path of cursor',
-          action: writeValue('%$path%', codeEditor.cursorPath('%$watchedText%')),
+          action: writeValue('%$path%', tgpTextEditor.cursorPath('%$watchedText%')),
           features: [
             id('show-path'),
-            codeEditor.enrichUserEvent('#editor'),
+            tgpTextEditor.enrichUserEvent('#editor'),
           ]
         }),
         button({
@@ -388,7 +388,7 @@ jb.component('uiTest.watchableAsText', {
 jb.component('uiTest.watchableAsTextWrite', {
   impl: uiTest({
     control: editableText({
-      databind: watchableAsText('%$watchablePeople%'),
+      databind: tgpTextEditor.watchableAsText('%$watchablePeople%'),
       style: editableText.textarea({rows: 30, cols: 80}),
       features: [id('editor'), watchRef({ ref: '%$watchablePeople%', allowSelfRefresh: true})],
     }),
@@ -400,7 +400,7 @@ jb.component('uiTest.watchableAsTextWrite', {
 jb.component('uiTest.watchableAsTextWriteObjectInArray', {
   impl: uiTest({
     control: editableText({
-      databind: watchableAsText('%$watchablePeople%'),
+      databind: tgpTextEditor.watchableAsText('%$watchablePeople%'),
       style: editableText.textarea({rows: 30, cols: 80}),
       features: [id('editor'), watchRef({ ref: '%$watchablePeople%', allowSelfRefresh: true})],
     }),
@@ -412,7 +412,7 @@ jb.component('uiTest.watchableAsTextWriteObjectInArray', {
 jb.component('uiTest.watchableAsTextWriteSetObjectToArray', {
   impl: uiTest({
     control: editableText({
-      databind: watchableAsText('%$emptyArray%'),
+      databind: tgpTextEditor.watchableAsText('%$emptyArray%'),
       style: editableText.textarea({rows: 30, cols: 80}),
       features: [id('editor'), watchRef({ ref: '%$watchablePeople%', allowSelfRefresh: true})],
     }),

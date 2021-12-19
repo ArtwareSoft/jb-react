@@ -6,7 +6,7 @@ jb.component('studio.openPickIcon', {
   impl: openDialog({
     style: dialog.studioFloating({}),
     content: group({
-      vars: [Var('type', property('type', tgp.ref(studio.parentPath('%$path%'))))],
+      vars: [Var('type', property('type', tgp.ref(tgp.parentPath('%$path%'))))],
       controls: [
         group({
           layout: layout.horizontal(),

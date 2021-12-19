@@ -12,8 +12,8 @@ jb.component('inplaceEdit.activate', {
         if (!el) debugger
         return el
     }),
-    Var('parentGroup', ctx => jb.studio.pathParents(ctx.exp('%$path%'), true).find(path=>jb.studio.compNameOfPath(path) == 'group')),
-    Var('parentLayout', studio.compName('%$parentGroup%~layout')),
+    Var('parentGroup', ctx => jb.tgp.pathParents(ctx.exp('%$path%'), true).find(path=>jb.tgp.compNameOfPath(path) == 'group')),
+    Var('parentLayout', tgp.compName('%$parentGroup%~layout')),
     action.if( '%$parentLayout% == layout.grid', inplaceEdit.openGridEditor('%$parentGroup%')),
     writeValue('%$studio/profile_path%', '%$path%'),
     openDialog({
@@ -83,7 +83,7 @@ jb.component('inplaceEdit.toolbar', {
       button({
         title: 'Change Style',
         action: action.if(
-          equals(studio.compName('%$path%'), 'image'),
+          equals(tgp.compName('%$path%'), 'image'),
           studio.openProperties(),
           studio.openPickProfile('%$path%~style')
         ),
@@ -108,7 +108,7 @@ jb.component('inplaceEdit.toolbar', {
         vars: [
           Var(
             'parentLayout',
-            ctx => jb.studio.parents(ctx.run('%$path%')).find(path=> jb.studio.compNameOfPath(path) == 'group') + '~layout'
+            ctx => jb.tgp.parents(ctx.run('%$path%')).find(path=> jb.tgp.compNameOfPath(path) == 'group') + '~layout'
           )
         ],
         title: 'Layout',
@@ -122,7 +122,7 @@ jb.component('inplaceEdit.toolbar', {
       }),
       button({
         title: 'Delete',
-        action: studio.delete('%$path%'),
+        action: tgp.delete('%$path%'),
         style: button.mdcIcon(icon('delete'), '20')
       })
     ]

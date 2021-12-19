@@ -11,8 +11,8 @@ jb.component('sourceEditor.propOptions', {
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) =>  {
-    const val = jb.tgp.val(path) || {}
-    return jb.studio.paramsOfPath(path).filter(p=> val[p.id] === undefined)
+    const val = jb.tgp.valOfPath(path) || {}
+    return jb.tgp.paramsOfPath(path).filter(p=> val[p.id] === undefined)
       .map(param=> Object.assign(param,{ text: param.id }))
   }
 })
@@ -28,7 +28,7 @@ jb.component('sourceEditor.firstParamAsArrayPath', {
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => {
-    const params = jb.studio.paramsOfPath(path)
+    const params = jb.tgp.paramsOfPath(path)
     const firstParamIsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
     return firstParamIsArray ? path + '~' + params[0].id : path
   }
@@ -43,7 +43,7 @@ jb.component('studio.filePosOfPath', {
       const loc = jb.comps[comp][jb.core.location]
       const fn = jb.studio.host.locationToPath(loc[0])
       const lineOfComp = (+loc[1]) || 0
-      const pos = jb.codeEditor.getPosOfPath(path+'~!profile') || [0,0,0,0]
+      const pos = jb.tgpTextEditor.getPosOfPath(path+'~!profile') || [0,0,0,0]
       pos[0] += lineOfComp; pos[2] += lineOfComp
       return {path,comp,loc,fn, pos}
   }
@@ -75,15 +75,15 @@ jb.component('studio.editableSource', {
     {id: 'height', as: 'number'}
   ],
   impl: editableText({
-    databind: studio.profileAsText('%$path%'),
+    databind: tgp.profileAsText('%$path%'),
     style: editableText.codemirror({
       height: '%$height%',
       cm_settings: {
         extraKeys: {
           Enter: action.if(
-            codeEditor.isDirty(),
+            tgpTextEditor.isDirty(),
             runActions(sourceEditor.storeToRef(), sourceEditor.refreshEditor()),
-            codeEditor.withCursorPath(studio.openEditProperty('%$cursorPath%'))
+            tgpTextEditor.withCursorPath(studio.openEditProperty('%$cursorPath%'))
           )
         }
       }
@@ -103,7 +103,7 @@ jb.component('studio.editSource', {
   impl: If('%$studio/vscode%', studio.gotoSource('%$path%'), openDialog({
     style: dialog.editSourceStyle({id: 'editor', width: 600}),
     content: studio.editableSource('%$path%'),
-    title: studio.shortTitle('%$path%'),
+    title: tgp.shortTitle('%$path%'),
     features: [
       css('.jb-dialog-content-parent {overflow-y: hidden}'),
       dialogFeature.resizer(true)
@@ -157,7 +157,7 @@ jb.component('studio.gotoEditorSecondary', {
     vars: [Var('baseComp', split({separator: '~', text: '%$path%', part: 'first'}))],
     title: 'Goto editor: %$baseComp%',
     action: studio.gotoSource('%$baseComp%'),
-    showCondition: notEquals(studio.compName('%$path%'), '%$baseComp%')
+    showCondition: notEquals(tgp.compName('%$path%'), '%$baseComp%')
   })
 })
 
@@ -167,10 +167,10 @@ jb.component('studio.gotoEditorFirst', {
     {id: 'path', as: 'string'}
   ],
   impl: menu.action({
-    title: pipeline(studio.compName('%$path%'), 'Goto editor: %%'),
-    action: studio.gotoSource(studio.compName('%$path%')),
+    title: pipeline(tgp.compName('%$path%'), 'Goto editor: %%'),
+    action: studio.gotoSource(tgp.compName('%$path%')),
     shortcut: 'Alt+E',
-    showCondition: notEmpty(studio.compName('%$path%'))
+    showCondition: notEmpty(tgp.compName('%$path%'))
   })
 })
 
@@ -192,8 +192,8 @@ jb.component('studio.openEditProperty', {
   impl: action.switch(
     Var('pathType', split({separator: '~!', text: '%$path%', part: 'last'})),
     Var('actualPath', split({separator: '~!', text: '%$path%', part: 'first'})),
-    Var('parentPath', studio.parentPath('%$actualPath%')),
-    Var('paramDef', studio.paramDef('%$actualPath%')),
+    Var('parentPath', tgp.parentPath('%$actualPath%')),
+    Var('paramDef', tgp.paramDef('%$actualPath%')),
     [
       action.switchCase(
         or(
@@ -235,7 +235,7 @@ jb.component('studio.openEditProperty', {
         })
       ),
       action.switchCase(
-        studio.isOfType('%$actualPath%', 'data,boolean'),
+        tgp.isOfType('%$actualPath%', 'data,boolean'),
         runActions(
           Var('sugarArrayPath', sourceEditor.firstParamAsArrayPath('%$actualPath%')),
           Var(
@@ -260,7 +260,7 @@ jb.component('studio.openEditProperty', {
             ),
           action.if(
               endsWith('-sugar', '%$pathType%'),
-              studio.addArrayItem({path: '%$sugarArrayPath%', toAdd: '', index: '%$index%'})
+              tgp.addArrayItem({path: '%$sugarArrayPath%', toAdd: '', index: '%$index%'})
             ),
           openDialog({
               style: dialog.studioJbEditorPopup(),
@@ -279,29 +279,29 @@ jb.component('studio.openEditProperty', {
         )
       ),
       action.switchCase(
-        Var('ptsOfType', studio.PTsOfType(studio.paramType('%$actualPath%'))),
+        Var('ptsOfType', tgp.PTsOfType(tgp.paramType('%$actualPath%'))),
         '%$ptsOfType/length% == 1',
         runActions(
-          studio.setComp('%$path%', '%$ptsOfType[0]%'),
+          tgp.setComp('%$path%', '%$ptsOfType[0]%'),
           sourceEditor.refreshEditor()
         )
       ),
       action.switchCase(
-        and(startsWith('open', '%$pathType%'), studio.isArrayType('%$actualPath%')),
+        and(startsWith('open', '%$pathType%'), tgp.isArrayType('%$actualPath%')),
         studio.openNewProfileDialog({
           path: '%$actualPath%',
-          type: studio.paramType('%$actualPath%'),
+          type: tgp.paramType('%$actualPath%'),
           index: 0,
           mode: 'insert',
           onClose: sourceEditor.refreshEditor('%$actualPath%~0')
         })
       ),
       action.switchCase(
-        and(startsWith('close', '%$pathType%'), studio.isArrayType('%$actualPath%')),
+        and(startsWith('close', '%$pathType%'), tgp.isArrayType('%$actualPath%')),
         studio.openNewProfileDialog({
           vars: [Var('length', count(tgp.val('%$actualPath%')))],
           path: '%$actualPath%',
-          type: studio.paramType('%$actualPath%'),
+          type: tgp.paramType('%$actualPath%'),
           index: '%$length%',
           mode: 'insert',
           onClose: sourceEditor.refreshEditor('%$actualPath%~%$length%')
@@ -310,7 +310,7 @@ jb.component('studio.openEditProperty', {
       action.switchCase(
         and(
           startsWith('array-separator', '%$pathType%'),
-          studio.isArrayType('%$actualPath%')
+          tgp.isArrayType('%$actualPath%')
         ),
         studio.openNewProfileDialog({
           vars: [
@@ -318,7 +318,7 @@ jb.component('studio.openEditProperty', {
             Var('nextSiblingPath', pipeline(list('%$actualPath%', '%$index%'), join('~')))
           ],
           path: '%$actualPath%',
-          type: studio.paramType('%$actualPath%'),
+          type: tgp.paramType('%$actualPath%'),
           index: '%$index%',
           mode: 'insert',
           onClose: sourceEditor.refreshEditor('%$nextSiblingPath%')
@@ -327,7 +327,7 @@ jb.component('studio.openEditProperty', {
     ],
     studio.openNewProfileDialog({
       path: '%$actualPath%',
-      type: studio.paramType('%$actualPath%'),
+      type: tgp.paramType('%$actualPath%'),
       mode: 'update',
       onClose: sourceEditor.refreshEditor('%$actualPath%')
     })
@@ -341,7 +341,7 @@ jb.component('studio.openEditProperty', {
 //   impl: If(
 //     Var('pathType', split({separator: '~!', text: '%$path%', part: 'last'})),
 //     Var('actualPath', split({separator: '~!', text: '%$path%', part: 'first'})),
-//     Var('paramDef', studio.paramDef('%$actualPath%')),
+//     Var('paramDef', tgp.paramDef('%$actualPath%')),
 //     or(
 //       startsWith('obj-separator', '%$pathType%'),
 //       inGroup(
@@ -349,11 +349,11 @@ jb.component('studio.openEditProperty', {
 //           '%$pathType%'
 //         )
 //     ),
-//     pipeline(studio.paramsOfPath('%$actualPath%'), '%id%'),
+//     pipeline(tgp.paramsOfPath('%$actualPath%'), '%id%'),
 //     If(
 //       '%$paramDef/options%',
 //       split({separator: ',', text: '%$paramDef/options%', part: 'all'}),
-//       studio.PTsOfType(firstSucceeding('%$paramDef/type%', 'data'))
+//       tgp.PTsOfType(firstSucceeding('%$paramDef/type%', 'data'))
 //     )
 //   )
 // })
@@ -366,7 +366,7 @@ jb.component('sourceEditor.addProp', {
   impl: group({
     controls: [
       editableText({
-        title: pipeline(studio.compName('%$path%'), '%% properties'),
+        title: pipeline(tgp.compName('%$path%'), '%% properties'),
         databind: '%$suggestionData/text%',
         style: editableText.floatingInput(),
         features: [
