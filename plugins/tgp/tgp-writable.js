@@ -153,15 +153,15 @@ jb.component('tgp.getOrCreateCompInArray', {
 	type: 'data',
 	params: [
 		{id: 'path', as: 'string', mandatory: true},
-		{id: 'compName', as: 'string', mandatory: true}
+		{id: 'compId', as: 'string', mandatory: true}
 	],
-	impl: (ctx,path,compName) => {
+	impl: (ctx,path,compId) => {
 		let arrayRef = jb.tgp.ref(path)
 		let arrayVal = jb.val(arrayRef)
 		if (!arrayVal) {
-		  jb.db.writeValue(arrayRef,{$: compName},ctx)
+		  jb.db.writeValue(arrayRef,{$: compId},ctx)
 		  return path
-		} else if (!Array.isArray(arrayVal) && arrayVal.$ == compName) {
+		} else if (!Array.isArray(arrayVal) && arrayVal.$ == compId) {
 		  return path
 		} else {
 		  if (!Array.isArray(arrayVal)) { // If a different comp, wrap with array
@@ -169,12 +169,12 @@ jb.component('tgp.getOrCreateCompInArray', {
 			arrayRef = jb.tgp.ref(path)
 			arrayVal = jb.val(arrayRef)
 		  }
-		  const existingFeature = arrayVal.findIndex(f=>f.$ == compName)
+		  const existingFeature = arrayVal.findIndex(f=>f.$ == compId)
 		  if (existingFeature != -1) {
 			return `${path}~${existingFeature}`
 		  } else {
 			const length = arrayVal.length
-			jb.db.push(arrayRef,{$: compName},ctx)
+			jb.db.push(arrayRef,{$: compId},ctx)
 			return `${path}~${length}`
 		  }
 		}
@@ -185,14 +185,14 @@ jb.component('tgp.wrap', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
-    {id: 'comp', as: 'string'}
+    {id: 'compId', as: 'string', mandatory: true}
   ],
   impl: (ctx,path,compId) => {
         const comp = jb.tgp.getComp(compId)
         const compositeParam = jb.utils.compParams(comp).filter(p=>p.composite)[0]
         if (compositeParam) {
             const singleOrArray = compositeParam.type.indexOf('[') == -1 ? jb.tgp.valOfPath(path) : [jb.tgp.valOfPath(path)]
-            const result = { $: comp, [compositeParam.id]: singleOrArray}
+            const result = { $: compId, [compositeParam.id]: singleOrArray}
             jb.tgp.writeValueOfPath(path,result,ctx)
         }
     }

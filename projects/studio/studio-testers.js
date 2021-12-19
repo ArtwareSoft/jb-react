@@ -64,7 +64,7 @@ jb.component('studioProbeTest', {
     jb.cbLogByPath = {}
     const probeRes = new jb.probe.Probe(new jb.core.jbCtx(ctx,{ profile: circuit.profile, forcePath: testId+ '~impl~circuit', path: '' } ))
       .runCircuit(full_path)
-    return probeRes.then(res=> jb.cbLogByPath[res.pathToTrace] || res)
+    return probeRes.then(res=> jb.cbLogByPath[res.probePath] || res)
     .then(res=> {
       jb.cbLogByPath = null
       try {

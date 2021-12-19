@@ -10,6 +10,9 @@ jb.component('studio.dataBrowse', {
     controls: [
       group({
         controls: [
+          controlWithCondition(isNull('%$obj%'), text('null')),
+          controlWithCondition(({},{obj}) => obj == null, text('null')),
+          controlWithCondition(({},{obj}) => Array.isArray(obj) && obj.length == 1 && obj[0] == null, text('[null]')),
           controlWithCondition(isOfType('string,boolean,number', '%$obj%'), text('%$obj%')),
           controlWithCondition(isOfType('function', '%$obj%'), text( ({data}) => data.name || 'func' )),
           // controlWithCondition('%$obj.snifferResult%', studio.showRxSniffer('%$obj%')),
@@ -37,7 +40,6 @@ jb.component('studio.dataBrowse', {
               ]
             })
           ),
-          controlWithCondition(isNull('%$obj%'), text('null')),
           tree({
             nodeModel: tree.jsonReadOnly('%$obj%', '%$title%'),
             style: tree.expandBox({}),
@@ -173,6 +175,9 @@ jb.component('studio.showRxSniffer', {
 })
 
 jb.component('studio.probeDataView', {
+  params: [
+    { id: 'circuitPath', as: 'string'}
+  ],
   type: 'control',
   impl: remote.widget( group({
     controls: group({
@@ -186,13 +191,13 @@ jb.component('studio.probeDataView', {
             items: '%$probeResult%',
             controls: [
               group({
-                title: 'in (%$probeResult/length%)',
-                controls: studio.dataBrowse(({data}) => jb.val(jb.path(data, 'in.data'))),
-                features: css.width({width: '300', minMax: 'max'})
+                title: 'in (%in/length%)',
+                controls: studio.dataBrowse('%in%'), //({data}) => jb.val(jb.path(data, '0.in.data'))),
+                features: [css.width({width: '300', minMax: 'max'})]
               }),
               group({
                 title: 'out',
-                controls: studio.dataBrowse('%$probeResult/out%'),
+                controls: studio.dataBrowse('%out%'),
                 features: field.columnWidth(100)
               })
             ],
@@ -206,12 +211,12 @@ jb.component('studio.probeDataView', {
             ]
           })
         ],
-        features: group.firstSucceeding()
+        features: [group.firstSucceeding(), log('probe result',obj(prop('res','%$probeResult%'))) ]
       }),
       features: [
         feature.if('%$studio/jbEditor/selected%'),
         group.wait({
-          for: studio.probeResults('%$studio/jbEditor/selected%'),
+          for: studio.probeResults('%$circuitPath%','%$studio/jbEditor/selected%'),
           loadingControl: text('...'),
           varName: 'probeResult',
           passRx: true
@@ -228,7 +233,8 @@ jb.component('studio.probeDataView', {
 
 jb.component('studio.probeResults', {
   params: [
-    {id: 'path', as: 'string'}
+    { id: 'circuitPath', as: 'string'},
+    { id: 'probePath', as: 'string'}
   ],
-  impl: pipe(probe.runCircuit('%$path%'), '%result%')
+  impl: pipe(probe.runCircuit('%$circuitPath%','%$probePath%'), '%result%')
 })

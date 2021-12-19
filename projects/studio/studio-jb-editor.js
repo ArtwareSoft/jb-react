@@ -115,7 +115,7 @@ jb.component('studio.jbEditor', {
     controls: [
       studio.jbEditorInteliTree('%$path%'),
       group({
-        controls: studio.probeDataView(),
+        controls: studio.probeDataView('%$path%'),
         features: [feature.if(not('%$studio/hideProbe%')), watchRef('%$studio/hideProbe%')]
       })
     ],

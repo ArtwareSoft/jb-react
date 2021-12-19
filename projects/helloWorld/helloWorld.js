@@ -20,7 +20,7 @@ jb.component('helloWorld.main', {
   type: 'control',
   impl: group({
     controls: [
-      text({text: 'hello world'}),
+      text(pipeline('hello world', list('a', 'b'), '%%1')),
       image({
         url: 'https://freesvg.org/img/UN-CONSTRUCTION-2.png',
         width: 77,

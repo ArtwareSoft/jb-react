@@ -12,14 +12,14 @@ jb.extension('probe', {
             this.id = ++jb.probe.probeCounter
         }
 
-        runCircuit(pathToTrace,maxTime) {
+        runCircuit(probePath,maxTime) {
             this.maxTime = maxTime || 50
             this.startTime = new Date().getTime()
-            jb.log('probe run circuit',{pathToTrace, probe: this})
+            jb.log('probe run circuit',{probePath, probe: this})
             this.result = []
             this.result.visits = 0
-            this.probe[pathToTrace] = this.result
-            this.pathToTrace = pathToTrace
+            this.probe[probePath] = this.result
+            this.probePath = probePath
             const initial_resources = jb.db.resources
             const initial_comps = jb.watchableComps.handler.resources()
 
@@ -36,7 +36,7 @@ jb.extension('probe', {
                 .then(() =>{
                     this.completed = true
                     this.totalTime = new Date().getTime()-this.startTime
-                    jb.log('probe completed',{pathToTrace, probe: this})
+                    jb.log('probe completed',{probePath, probe: this})
                     // make values out of ref
                     this.result.forEach(obj=> { obj.out = jb.val(obj.out) ; obj.in.data = jb.val(obj.in.data)})
                     if (jb.db.resources.studio.project) { // studio and probe development
@@ -66,7 +66,7 @@ jb.extension('probe', {
             if (this.result.length > 0 || this.noGaps)
                 return
             // find closest path
-            let _path = jb.tgp.parentPath(this.pathToTrace),breakingProp=''
+            let _path = jb.tgp.parentPath(this.probePath),breakingProp=''
             while (!this.probe[_path] && _path.indexOf('~') != -1) {
                 breakingProp = _path.split('~').pop()
                 _path = jb.tgp.parentPath(_path)
@@ -132,15 +132,15 @@ jb.extension('probe', {
         if (jb.callbag.isCallbag(x)) return x
         return Promise.resolve(x)
     },
-	closestCtxOfLastRun(pathToTrace) {
-		let path = pathToTrace.split('~')
-        if (jb.tgp.isExtraElem(pathToTrace)) {
-            if (pathToTrace.match(/items~0$/)) {
+	closestCtxOfLastRun(probePath) {
+		let path = probePath.split('~')
+        if (jb.tgp.isExtraElem(probePath)) {
+            if (probePath.match(/items~0$/)) {
                 const pipelineCtx = jb.ctxByPath[path.slice(0,-2).join('~')]
                 if (pipelineCtx)
                     return pipelineCtx.setVars(pipelineCtx.profile.$vars || {})
-            } else if (pathToTrace.match(/items~[1-9][0-9]*$/)) {
-                const formerIndex = Number(pathToTrace.match(/items~([1-9][0-9]*)$/)[1])-1
+            } else if (probePath.match(/items~[1-9][0-9]*$/)) {
+                const formerIndex = Number(probePath.match(/items~([1-9][0-9]*)$/)[1])-1
                 path[path.length-1] = formerIndex
             }
         }
@@ -158,34 +158,34 @@ jb.extension('probe', {
 jb.component('probe.runCircuit', {
   type: 'data',
   params: [
-    {id: 'path', as: 'string', dynamic: true}
+    { id: 'circuitPath', as: 'string'},
+    { id: 'probePath', as: 'string'}
   ],
-  impl: (ctx,pathF) => {
-        const path = pathF()
-        jb.log('new probe',{ctx,path})
-        if (!path) return
-        if (jb.cbLogByPath && jb.cbLogByPath[path])
-            return { result: jb.cbLogByPath[path] }
+  impl: (ctx,circuitPath,probePath) => {
+        jb.log('new probe',{ctx,circuitPath,probePath})
+        if (!probePath) return
+        if (jb.cbLogByPath && jb.cbLogByPath[probePath])
+            return { result: jb.cbLogByPath[probePath] }
         let circuitCtx = null
-        if (jb.path(jb.comps,[path.split('~')[0],'testData']))
-            circuitCtx = closestTestCtx(path)
+        if (jb.path(jb.comps,[circuitPath.split('~')[0],'testData']))
+            circuitCtx = closestTestCtx(circuitPath)
         if (!circuitCtx)
             circuitCtx = jb.ctxDictionary[ctx.exp('%$studio/pickSelectionCtxId%')]
         if (!circuitCtx && jb.path(jb.ui,'headless')) {
-            const circuitElem = closestElemWithCtx(path)
+            const circuitElem = closestElemWithCtx(circuitPath)
             circuitCtx = circuitElem && jb.ctxDictionary[circuitElem.ctxId]
         }
         if (!circuitCtx)
-            circuitCtx = jb.probe.closestCtxOfLastRun(path)
+            circuitCtx = jb.probe.closestCtxOfLastRun(circuitPath)
         if (!circuitCtx)
-            circuitCtx = closestTestCtx(path)
+            circuitCtx = closestTestCtx(circuitPath)
         if (!circuitCtx) {
             const circuit = jb.tostring(ctx.exp('%$studio/jbEditor/circuit%') || ctx.exp('%$studio/project%') && ctx.run(studio.currentPagePath()))
             circuitCtx = new jb.core.jbCtx(new jb.core.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} )
         }
         // if (circuitCtx)
         //     jb.studio.highlightCtx(circuitCtx.id) // fix: show send it to the view
-        return new jb.probe.Probe(circuitCtx).runCircuit(path)
+        return new jb.probe.Probe(circuitCtx).runCircuit(probePath)
 
         function closestTestCtx(path) {
             const _ctx = new jb.core.jbCtx()
