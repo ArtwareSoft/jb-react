@@ -59,7 +59,7 @@ jb.component('dialogFeature.studioPick', {
     method('hoverOnElem', (ctx,{}) => {
       const el = ctx.data
       Object.assign(ctx.vars.dialogData,{ elem: el, path: jb.path(el,'debug.path') })
-      ctx.run(mutable.toggleBooleanValue('%$studio/refreshPick%')) // trigger for refreshing the dialog
+      ctx.run(toggleBooleanValue('%$studio/refreshPick%')) // trigger for refreshing the dialog
     }),
     method('endPick', runActions(
       writeValue('%$studio/pickSelectionCtxId%', '%$dialogData.ctx.id%'),

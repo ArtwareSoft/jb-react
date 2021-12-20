@@ -123,7 +123,7 @@ jb.component('button.mdcFloatingAction', {
   impl: customStyle({
     template: (cmp,{title,withTitle,raised},h) =>
       h('button',{ class: ['mdc-fab',raised && 'raised mdc-icon-button--on'].filter(x=>x).join(' ') ,
-          title, tabIndex: -1, onclick:  true}, [
+          title, tabIndex: -1, onclick: true}, [
             h('div',{ class: 'mdc-fab__ripple'}),
             ...jb.ui.chooseIconWithRaised(cmp.icon,raised).filter(x=>x).map(h).map(vdom=>
                 vdom.addClass('mdc-fab__icon').setAttribute('title',vdom.getAttribute('title') || title)),

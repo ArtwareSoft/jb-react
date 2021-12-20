@@ -26,25 +26,29 @@ jb.extension('chromeDebugger', {
         })
     },
     async initPanel(panelId, panelFrame) {
-        const {initPanelPortListenser, evalAsPromise, renderOnPanel} = jb.chromeDebugger
-        const spyParam = await evalAsPromise(`self.jb && jb.path(jb,'spy.spyParam') || ''`)
-        jb.log(`chromeDebugger spyParam`,{spyParam, panelId})
-        self.spy = jb.spy.initSpy({spyParam})
-        initPanelPortListenser(panelId, panelFrame)
-        jb.log(`chromeDebugger invoking initDevTools on debugee`,{panelId})
-        await evalAsPromise(`self.jb && jb.jbm && jb.jbm.initDevToolsDebugge()`)
-        jb.log(`chromeDebugger waiting for jb.jbm.connectToPanel on debugee`,{panelId})
-        await jb.exec(pipe(rx.pipe( // wait for the content-script to inject jb.jbm.connectToPanel into the debuggee
-            source.interval(500), 
-            rx.mapPromise(() => evalAsPromise(`self.jb && jb.jbm && typeof jb.jbm.connectToPanel`)),
-            rx.log('chromeDebugger wait for connectToPanel'),
-            rx.filter('%%==function'),
-            rx.take(1)
-        )))
-        jb.log(`chromeDebugger invoking connectToPanel on debugee`,{panelId})
-        await evalAsPromise(`self.jb && jb.jbm.connectToPanel('${jb.uri}')`)
-        await jb.exec(waitFor(() => jb.parent))
-        await renderOnPanel(panelId, panelFrame)
+        try {
+            const {initPanelPortListenser, evalAsPromise, renderOnPanel} = jb.chromeDebugger
+            const spyParam = await evalAsPromise(`self.jb && jb.path(jb,'spy.spyParam') || ''`)
+            jb.log(`chromeDebugger spyParam`,{spyParam, panelId})
+            self.spy = jb.spy.initSpy({spyParam})
+            initPanelPortListenser(panelId, panelFrame)
+            jb.log(`chromeDebugger invoking initDevTools on debugee`,{panelId})
+            await evalAsPromise(`self.jb && jb.jbm && jb.jbm.initDevToolsDebugge()`)
+            jb.log(`chromeDebugger waiting for jb.jbm.connectToPanel func on debugee`,{panelId})
+            await jb.exec(pipe(rx.pipe( // wait for the content-script to inject jb.jbm.connectToPanel into the debuggee
+                source.interval(500), 
+                rx.mapPromise(() => evalAsPromise(`self.jb && jb.jbm && typeof jb.jbm.connectToPanel`)),
+                rx.log('chromeDebugger wait for connectToPanel func on debuggee'),
+                rx.filter('%%==function'),
+                rx.take(1)
+            )))
+            jb.log(`chromeDebugger invoking connectToPanel on debugee`,{panelId})
+            await evalAsPromise(`self.jb && jb.jbm.connectToPanel('${jb.uri}')`)
+            await jb.exec(waitFor(() => jb.parent))
+            await renderOnPanel(panelId, panelFrame)
+        } catch (e) {
+            jb.logException(e,`init panel failure ${panelId}`,{panelFrame})
+        }
     },
 
     async renderOnPanel(panelId,panelFrame) {

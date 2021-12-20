@@ -148,7 +148,7 @@ jb.component('studio.openJbEditProperty', {
               feature.onEnter(
                 dialog.closeDialog(true),
                 tree.regainFocus(),
-                mutable.toggleBooleanValue('%$studio/refreshProbe%')
+                toggleBooleanValue('%$studio/refreshProbe%')
               )
             ]
           }),
@@ -169,7 +169,7 @@ jb.component('studio.openJbEditProperty', {
           content: studio.jbFloatingInput('%$actualPath%'),
           features: [
             dialogFeature.autoFocusOnFirstInput(),
-            dialogFeature.onClose(mutable.toggleBooleanValue('%$studio/refreshProbe%'))
+            dialogFeature.onClose(toggleBooleanValue('%$studio/refreshProbe%'))
           ]
         })
       ),
@@ -237,7 +237,7 @@ jb.component('studio.openComponentInJbEditor', {
           action: studio.openJbEditorMenu('%$studio/jbEditor/selected%', '%$path%'),
           style: button.mdcIcon('menu')
         }),
-        title: studio.pathHyperlink('%$compPath%', 'Inteliscript'),
+        title: studio.jbEditorTitle('%$compPath%', 'Inteliscript'),
         features: dialogFeature.resizer()
       })
   )
@@ -352,7 +352,7 @@ jb.component('studio.openJbEditor', {
       action: studio.openJbEditorMenu('%$path%', '%$path%'),
       style: button.mdcIcon('menu')
     }),
-    title: studio.pathHyperlink('%$path%', 'Inteliscript'),
+    title: studio.jbEditorTitle('%$path%', 'Inteliscript'),
     features: dialogFeature.resizer()
   })
 })
@@ -389,3 +389,52 @@ jb.component('studio.jbEditorNodes', {
   impl: (ctx,path) =>	new jb.studio.jbEditorTree(path,true)
 })
 
+jb.component('studio.jbEditorTitle', {
+  type: 'control',
+  params: [
+    {id: 'path', as: 'string', mandatory: true},
+    {id: 'prefix', as: 'string'}
+  ],
+  impl: group({
+    layout: layout.horizontal('9'),
+    controls: [
+      text('%$prefix%'),
+      button({
+        title: ctx => {
+          const path = ctx.cmpCtx.params.path
+          const title = jb.tgp.shortTitle(path) || '',compName = jb.tgp.compNameOfPath(path) || ''
+          return title == compName ? title : compName + ' ' + title
+        },
+        action: runActions(writeValue('%$studio/profile_path%', '%$path%'), studio.openControlTree()),
+        style: button.href(),
+        features: feature.hoverTitle('%$path%')
+      }),
+      menu.control({
+        menu: menu.menu({
+          options: [
+            menu.action({
+              title: 'pick context',
+              action: studio.pick(),
+              icon: icon({icon: 'Selection', type: 'mdi'})
+            })
+          ],
+          icon: icon('undo')
+        }),
+        style: menuStyle.toolbar(),
+        features: css.margin({left: '100'})
+      }),
+      editableBoolean({
+        databind: '%$studio/hideProbe%',
+        style: editableBoolean.buttonXV({
+          yesIcon: icon({icon: 'ArrowCollapseRight', type: 'mdi'}),
+          noIcon: icon({icon: 'ArrowCollapseLeft', type: 'mdi'}),
+          buttonStyle: button.mdcFloatingAction('40', true)
+        }),
+        title: 'hide input-output',
+        textForTrue: 'hide probe',
+        textForFalse: 'show probe',
+        features: css('transform: translate(-10px,-10px) scale(0.5,0.5)')
+      })
+    ]
+  })
+})

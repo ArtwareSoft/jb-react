@@ -1220,7 +1220,7 @@ jb.component('uiTest.editableBoolean.buttonXV', {
       style: editableBoolean.buttonXV({
         yesIcon: icon({icon: 'location_searching', type: 'mdc'}),
         noIcon: icon({icon: 'location_disabled', type: 'mdc'}),
-        buttonStyle: button.mdcFloatingAction('40', true)
+        buttonStyle: button.mdcFloatingAction('40')
       }),
     }),
     expectedResult: true
@@ -1719,6 +1719,18 @@ jb.component('menuTest.menu1', {
       menu.menu({title: 'Edit', options: [menu.action('Copy'), menu.action('Paste')]}),
       menu.dynamicOptions(list(1, 2, 3), menu.action('dynamic-%%'))
     ]
+  })
+})
+
+jb.component('menuTest.toolbar', {
+  impl: uiTest({
+    control: menu.control({menu: menu.menu({
+      options: [
+        menu.action({ title: 'select', action: () => console.log('select'), icon: icon({icon: 'Selection', type: 'mdi'}) })
+      ],
+      icon: icon('undo')
+    }), style: menuStyle.toolbar()}),
+    expectedResult: contains('toolbar')
   })
 })
 

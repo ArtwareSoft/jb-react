@@ -461,10 +461,34 @@ jb.component('menuStyle.icon', {
   params: [
     {id: 'buttonSize', as: 'number', defaultValue: 20 },
   ],
-  impl: styleWithFeatures(
-      button.mdcIcon('%$menuModel/leaf/icon%','%$buttonSize%'),
-      feature.onEvent('click', '%$menuModel.action()%')
-  )
+  impl: styleByControl(button({
+    action: '%$menuModel/action()%',
+    style: button.mdcFloatingAction({withTitle: false, buttonSize: '%$buttonSize%'}), 
+    features: (ctx,{menuModel},{buttonSize}) => 
+        ctx.run({$: 'feature.icon', ...menuModel.leaf.icon, title: menuModel.title, size: buttonSize * 24/40 })
+  }))
+})
+
+jb.component('menuStyle.icon3', {
+  type: 'menu-option.style',
+  params: [
+    {id: 'buttonSize', as: 'number', defaultValue: 20 },
+  ],
+  impl: customStyle({
+    template: (cmp,{icon,title,shortcut},h) => h('div.line noselect', { onmousedown: 'closeAndActivate' },[
+        h(cmp.ctx.run({$: 'control.icon', ...icon, size: 20})),
+				h('span.title',{},title),
+				h('span.shortcut',{},shortcut),
+        h('div.mdc-line-ripple'),
+		]),
+    css: `{ display: flex; cursor: pointer; font1: 13px Arial; height: 24px}
+				.selected { color: var(--jb-menubar-selection-fg); background: var(--jb-menubar-selection-bg) }
+				>i { padding: 3px 8px 0 3px }
+				>span { padding-top: 3px }
+				>.title { display: block; text-align: left; white-space: nowrap; }
+				>.shortcut { margin-left: auto; text-align: right; padding-right: 15px }`,
+    features: [menu.initMenuOption(), feature.mdcRippleEffect()]
+  })
 })
 
 jb.component('menuStyle.iconMenu', {

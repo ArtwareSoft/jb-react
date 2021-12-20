@@ -180,7 +180,7 @@ jb.extension('jbm', {
         function initCommandListener() {
             port.onMessage.addListener(m => {
                 if (jb.terminated) return // TODO: removeEventListener
-                jb.log('remote command listener',{m})
+                jb.log(`remote command from ${m.from} ${m.$}`,{m})
                 if ((m.$ || '').indexOf('CB.') == 0)
                     handleCBCommnad(m)
                 else if (m.$ == 'CB')
@@ -245,17 +245,21 @@ jb.extension('jbm', {
         const location = jb.path(jb.studio,'studioWindow.location') || jb.path(jb.frame,'location')
         return pathOfDistFolder && pathOfDistFolder() || location && location.href.match(/^[^:]*/)[0] + `://${location.host}/dist`
     },
-    initDevToolsDebugge() {
+    async initDevToolsDebugge() {
         if (jb.test && jb.test.runningTests && !jb.test.singleTest) 
             return jb.logError('jbart devtools is disables for multiple tests')
         if (!jb.jbm.networkPeers['devtools']) {
-            jb.jbm.connectToPanel = panelUri => new jb.core.jbCtx().setVar('$disableLog',true).run(remote.action({
+            jb.jbm.networkPeers['devtools'] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(globalThis,'devtools',{blockContentScriptLoop: true}))
+            globalThis.postMessage({initDevToolsPeerOnDebugge: {uri: jb.uri, distPath: jb.jbm.pathOfDistFolder(), spyParam: jb.path(jb,'spy.spyParam')}}, '*')
+            await jb.exec({$: 'waitFor', check: ()=> jb.jbm.devtoolsInitialized, interval: 500, times: 10})
+            jb.log(`chromeDebugger devtools initialized. adding connectToPanel func on debugee`,{uri: jb.uri})
+            jb.jbm.connectToPanel = panelUri => {
+                jb.log(`chromeDebugger invoking connectToPanel comp ${panelUri} on devltools`,{uri: jb.uri})
+                new jb.core.jbCtx().setVar('$disableLog',true).run(remote.action({
                     action: {$: 'jbm.connectToPanel', panelUri}, 
                     jbm: jbm.byUri('devtools'),
                     oneway: true
-                })) // called directly by initPanel
-            jb.jbm.networkPeers['devtools'] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(globalThis,'devtools',{blockContentScriptLoop: true}))
-            globalThis.postMessage({initDevToolsPeerOnDebugge: {uri: jb.uri, distPath: jb.jbm.pathOfDistFolder(), spyParam: jb.path(jb,'spy.spyParam')}}, '*')
+                })) } // will be called directly by initPanel using eval
         }
     },
     async terminateChild(id) {

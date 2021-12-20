@@ -368,7 +368,7 @@ jb.component('removeFromArray', {
 	}
 })
 
-jb.component('mutable.toggleBooleanValue', {
+jb.component('toggleBooleanValue', {
   type: 'action',
   params: [
     {id: 'of', as: 'ref'}

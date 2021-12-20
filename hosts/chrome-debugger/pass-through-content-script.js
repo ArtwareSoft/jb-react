@@ -1,4 +1,5 @@
-self.addEventListener('message', m => { // debugge asking to be debugged. Panel initiated the process by invoking jb.jbm.initDevToolsDebugge on debugee
+self.addEventListener('message', m => { 
+    // debugge asking to be debugged. Panel initiated the process by invoking jb.jbm.initDevToolsDebugge on debugee
     if (m.data && m.data.initDevToolsPeerOnDebugge) {
         if (self.jb) return
         const {spyParam, uri, distPath} = m.data.initDevToolsPeerOnDebugge
@@ -34,6 +35,8 @@ self.addEventListener('message', m => { // debugge asking to be debugged. Panel 
                 }
             })
             jb.jbm.networkPeers[debuggeUri] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,debuggeUri,{blockContentScriptLoop: true}))
+            jb.log('chromeDebugger devtools jbm initialized',{uri: jb.uri})
+            jb.jbm.networkPeers[debuggeUri].remoteExec(jb.remoteCtx.stripJS(() => jb.jbm.devtoolsInitialized = true), { oneway: true} )
         })
     }
 })

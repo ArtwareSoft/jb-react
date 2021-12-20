@@ -1,4 +1,5 @@
-// var {nb,studio,widget,markdown} = jb.ns('nb,studio,widget,markdown')
+
+var {studio} = jb.macro.ns('studio')
 
 jb.component('nb.notebook', {
   type: 'control',
@@ -44,7 +45,7 @@ jb.component('nb.notebook', {
   })
 })
 
-jb.component('studio.notebookElem', {
+jb.component('nb.notebookElem', {
     type: 'nb.elem',
     params: [
         { id: 'result', type: 'control', dynamic: true},
@@ -58,7 +59,7 @@ jb.component('nb.markdown', {
     params: [
         {id: 'markdown', as: 'string'}
     ],
-    impl: studio.notebookElem(
+    impl: nb.notebookElem(
         markdown('%$markdown%'),
 //        remote.widget(markdown(pipeline('%$profileContent%','%markdown%')), jbm.notebookWorker()),
         editableText({
@@ -68,28 +69,28 @@ jb.component('nb.markdown', {
     )
 })
 
-jb.component('nb.control', {
-    type: 'nb.elem',
-    params: [
-        {id: 'control', type: 'control', dynamic: true}
-    ],
-    impl: studio.notebookElem(
-        '%$control()%',
-        // (ctx,{profileContent,path}) =>
-        //     jb.core.run( new jb.core.jbCtx(ctx, { profile: profileContent.control, forcePath: path, path: 'control' }), {type: 'control'}),
+// jb.component('nb.control', {
+//     type: 'nb.elem',
+//     params: [
+//         {id: 'control', type: 'control', dynamic: true}
+//     ],
+//     impl: nb.notebookElem(
+//         '%$control()%',
+//         // (ctx,{profileContent,path}) =>
+//         //     jb.core.run( new jb.core.jbCtx(ctx, { profile: profileContent.control, forcePath: path, path: 'control' }), {type: 'control'}),
 
-        group({
-            controls: studio.jbEditorInteliTree('%$path%~control'),
-            //features: studio.jbEditorContainer('comp-in-jb-editor')
-        }))
-})
+//         group({
+//             controls: studio.jbEditorInteliTree('%$path%~control'),
+//             //features: studio.jbEditorContainer('comp-in-jb-editor')
+//         }))
+// })
 
-jb.component('nb.data', {
-    type: 'nb.elem',
-    params: [
-        {id: 'name', as: 'string', mandatory: true},
-        {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
-        {id: 'watchable', as: 'boolean', type: 'boolean', description: 'E.g., selected item variable'}
-    ],
-    impl: studio.notebookElem(text('%$value%'), studio.jbEditor('%$path%~value') )
-})
+// jb.component('nb.data', {
+//     type: 'nb.elem',
+//     params: [
+//         {id: 'name', as: 'string', mandatory: true},
+//         {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
+//         {id: 'watchable', as: 'boolean', type: 'boolean', description: 'E.g., selected item variable'}
+//     ],
+//     impl: nb.notebookElem(text('%$value%'), studio.jbEditor('%$path%~value') )
+// })

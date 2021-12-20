@@ -1,26 +1,16 @@
-remote suggestions test
-suggestions options should fork
-  studio for =
-  preview for %$
+errors in inteli with people
+  %$people% and then % does not work - 
+    maybe the circuit is not reruned
+    maybe the preview script is not updated
+  tree focus back on error
 
 
-Suggestions in helloWorld - add test?
-wrap with pipeline does not work - add test?
-
-find a good place for
-  findElemsByPathCondition
-  closestCtxInPreview(path)
-clipboard
-probe & preview & highlight
-
+studio.pick
+  feature.initValue of dialog ctxId prop
 
 enrich spy logs with rules
   cb message beautifier
   log UI with bread crums
-
-studio modules
-  sandbox = preview
-  sboxUI
 
 
 remote.dispatcher

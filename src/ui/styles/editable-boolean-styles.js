@@ -67,28 +67,26 @@ jb.component('editableBoolean.buttonXV', {
   params: [
     {id: 'yesIcon', type: 'icon', mandatory: true, defaultValue: icon('check')},
     {id: 'noIcon', type: 'icon', mandatory: true, defaultValue: icon('close') },
-    {id: 'buttonStyle', type: 'button.style', mandatory: true, defaultValue: button.mdcFloatingAction() }
+    {id: 'buttonStyle', type: 'button.style', dynamic: true, mandatory: true, defaultValue: button.mdcFloatingAction() }
   ],
-  impl: styleWithFeatures(call('buttonStyle'), features(
-      editableBoolean.initToggle(),
-      htmlAttribute('onclick','toggle'),
-      ctx => ctx.run({...ctx.cmpCtx.params[jb.toboolean(ctx.vars.$model.databind()) ? 'yesIcon' : 'noIcon' ], 
-        title: ctx.exp('%$$model/title%'), $: 'feature.icon'}),
-    ))
-})
-
-jb.component('editableBoolean.iconWithSlash', {
-  type: 'editable-boolean.style',
-  params: [
-    {id: 'buttonSize', as: 'number', defaultValue: 40, description: 'button size is larger than the icon size, usually at the rate of 40/24' },
-  ],
-  impl: styleWithFeatures(button.mdcIcon({buttonSize: '%$buttonSize%'}), features(
-      Var('strokeColor', css.valueOfCssVar('mdc-theme-on-secondary')),
-      editableBoolean.initToggle(),
-      htmlAttribute('onclick','toggle'),
-      htmlAttribute('title','%$$model/title%'),
-      css(If('%$$model/databind%','',`background-repeat: no-repeat; background-image: url("data:image/svg+xml;utf8,<svg width='%$buttonSize%' height='%$buttonSize%' viewBox='0 0 %$buttonSize% %$buttonSize%' xmlns='http://www.w3.org/2000/svg'><line x1='0' y1='0' x2='%$buttonSize%' y2='%$buttonSize%' style='stroke:%$strokeColor%;stroke-width:2' /></svg>")`))
-    ))
+  impl: styleByControl(button({
+        title: If('%$editableBooleanModel/databind()%','%$editableBooleanModel/textForTrue()%','%$editableBooleanModel/textForFalse()%' ),
+        style: call('buttonStyle'),
+        action: runActions(
+          writeValue('%$editableBooleanModel/databind()%',not('%$editableBooleanModel/databind()%')),
+          refreshIfNotWatchable('%$editableBooleanModel/databind()%')
+        ),
+        features: [
+          (ctx,{editableBooleanModel},{yesIcon,noIcon}) => {
+            const icon = jb.val(editableBooleanModel.databind()) ? yesIcon : noIcon
+            const title = jb.val(editableBooleanModel.databind()) ? editableBooleanModel.textForTrue() : editableBooleanModel.textForFalse()
+            return ctx.run({$: 'feature.icon', ...icon, title})
+          },
+          watchRef({ref: '%$editableBooleanModel/databind()%', strongRefresh: true, allowSelfRefresh: true})
+        ]
+      }),
+    'editableBooleanModel'
+  )
 })
 
 jb.component('editableBoolean.mdcSlideToggle', {

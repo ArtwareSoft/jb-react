@@ -40,7 +40,7 @@ jb.component('dialog.init', {
 		calcProp('contentComp', '%$$model/content%'),
 		calcProp('hasMenu', '%$$model/menu/profile%'),
 		calcProp('menuComp', '%$$model/menu%'),
-		feature.initValue('%$$dialog/cmpId%','%$cmp/cmpId%'),
+		feature.initValue({to: '%$$dialog/cmpId%', value: '%$cmp/cmpId%', alsoWhenNotEmpty: true}),
 		htmlAttribute('id','%$$dialog/id%'),
 
 		method('dialogCloseOK', dialog.closeDialog(true)),

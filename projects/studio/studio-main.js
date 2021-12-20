@@ -425,40 +425,14 @@ jb.component('studio.pathHyperlink', {
       text('%$prefix%'),
       button({
         title: ctx => {
-	  		const path = ctx.cmpCtx.params.path;
-	  		const title = jb.tgp.shortTitle(path) || '',compName = jb.tgp.compNameOfPath(path) || '';
-	  		return title == compName ? title : compName + ' ' + title;
-	  	},
+          const path = ctx.cmpCtx.params.path
+          const title = jb.tgp.shortTitle(path) || '',compName = jb.tgp.compNameOfPath(path) || ''
+          return title == compName ? title : compName + ' ' + title
+        },
         action: runActions(writeValue('%$studio/profile_path%', '%$path%'), studio.openControlTree()),
         style: button.href(),
         features: feature.hoverTitle('%$path%')
       }),
-      menu.control({
-        menu: menu.menu({
-          options: [
-            menu.action({
-              title: 'pick context',
-              action: studio.pick(),
-              icon: icon({icon: 'Selection', type: 'mdi'})
-            })
-          ],
-          icon: icon('undo')
-        }),
-        style: menuStyle.toolbar(),
-        features: css.margin({left: '100'})
-      }),
-      editableBoolean({
-        databind: '%$studio/hideProbe%',
-        style: editableBoolean.buttonXV({
-          yesIcon: icon({icon: 'ArrowCollapseRight', type: 'mdi'}),
-          noIcon: icon({icon: 'ArrowCollapseLeft', type: 'mdi'}),
-          buttonStyle: button.mdcFloatingAction('40', true)
-        }),
-        title: 'hide input-output',
-        textForTrue: 'hide probe',
-        textForFalse: 'show probe',
-        features: css('transform: translate(-10px,-10px) scale(0.5,0.5)')
-      })
     ]
   })
 })
