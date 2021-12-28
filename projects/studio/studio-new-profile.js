@@ -328,7 +328,7 @@ jb.component('studio.openNewFunction', {
       Var('compName', tgp.titleToId('%$dialogData/name%')),
       studio.newComp({
           compName: '%$compName%',
-          compContent: asIs({type: 'data', impl: pipeline(''), testData: 'sampleData'}),
+          compContent: asIs({type: 'data', impl: pipeline('')}),
           file: '%$dialogData/file%'
       }),
       writeValue('%$studio/profile_path%', '%$compName%'),

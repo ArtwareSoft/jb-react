@@ -306,7 +306,7 @@ jb.extension('test', {
 		}		
 		return res
 	},
-	async runTests({testType,specificTest,show,pattern,notPattern,take,remoteTests}) {
+	async runTests({testType,specificTest,show,pattern,notPattern,take,remoteTests,repo}) {
 		const {pipe, fromIter, subscribe,concatMap, fromPromise } = jb.callbag 
 		let index = 1
 
@@ -325,7 +325,7 @@ jb.extension('test', {
 	//		.filter(e=>!e[0].match(/^remoteTest|inPlaceEditTest|patternsTest/) && ['uiTest','dataTest'].indexOf(e[1].impl.$) != -1) // || includeHeavy || specificTest || !e[1].impl.heavy )
 	//		.sort((a,b) => (a[0] > b[0]) ? 1 : ((b[0] > a[0]) ? -1 : 0))
 		tests.forEach(e => e.group = e[0].split('.')[0].split('Test')[0])
-		const priority = 'net,data,ui,rx,remote,studio'.split(',').reverse().join(',')
+		const priority = 'net,data,ui,rx,suggestionsTest,remote,studio'.split(',').reverse().join(',')
 		const groups = jb.utils.unique(tests.map(e=>e.group)).sort((x,y) => priority.indexOf(x) - priority.indexOf(y))
 		tests.sort((y,x) => groups.indexOf(x.group) - groups.indexOf(y.group))
 		tests = tests.slice(0,take)
@@ -359,7 +359,7 @@ jb.extension('test', {
 				jb.test.usedJSHeapSize = (jb.path(jb.frame,'performance.memory.usedJSHeapSize' || 0) / 1000000)
 				jb.test.updateTestHeader(jb.frame.document, jb.test)
 
-				jb.ui.addHTML(document.body, jb.test.testResultHtml(res));
+				jb.ui.addHTML(document.body, jb.test.testResultHtml(res, repo));
 				if (!res.renderDOM && show) res.show()
 				if (jb.ui && tests.length >1) {
 					jb.cbLogByPath = {}
@@ -367,15 +367,16 @@ jb.extension('test', {
 				}
 		}))
   	},
-	testResultHtml(res) {
+	testResultHtml(res, repo) {
 		const baseUrl = window.location.href.split('/tests.html')[0]
 		const studioUrl = `http://localhost:8082/project/studio/${res.id}?host=test`
 		const matchLogs = 'remote,itemlist,refresh'.split(',')
 		const matchLogsMap = jb.entries({ui: ['uiComp'], widget: ['uiComp','widget'] })
 		const spyLogs = ['test', ...(matchLogs.filter(x=>res.id.toLowerCase().indexOf(x) != -1)), 
 			...(matchLogsMap.flatMap( ([k,logs]) =>res.id.toLowerCase().indexOf(k) != -1 ? logs : []))]
+		const repoInUrl = repo ? `&repo=${repo}` : ''
 		return `<div class="${res.success ? 'success' : 'failure'}"">
-			<a href="${baseUrl}/tests.html?test=${res.id}&show&spy=${spyLogs.join(',')}" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
+			<a href="${baseUrl}/tests.html?test=${res.id}${repoInUrl}&show&spy=${spyLogs.join(',')}" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
 			<span> ${res.duration}mSec</span> 
 			<a class="test-button" href="javascript:jb.test.goto_editor('${res.id}')">src</a>
 			<a class="test-button" href="${studioUrl}">studio</a>

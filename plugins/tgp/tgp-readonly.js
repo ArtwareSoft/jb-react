@@ -192,7 +192,7 @@ jb.defComponents(
 		{id: 'path', as: 'string', mandatory: true}
 	  ],
 	  impl: ({},path) => jb.tgp[f](path),
-	  require: `jb.tgp.${f}()`
+	  require: {$: `jb.tgp.${f}` }
 }))
 
 jb.component('tgp.compName', {

@@ -34,7 +34,6 @@ Object.assign(jb, {
   },
 
   component(id,comp) {
-    // todo: move functionality to onAddComponent hook
     if (!jb.core.location) jb.initializeLibs(['core'])
     if (comp.location) {
         comp[jb.core.location] =  comp.location
@@ -52,14 +51,18 @@ Object.assign(jb, {
       }
     }
 
-    if (comp.watchableData !== undefined) {
-      jb.comps[jb.db.addDataResourcePrefix(id)] = comp
-      return jb.db.resource(jb.db.removeDataResourcePrefix(id),comp.watchableData)
-    }
-    if (comp.passiveData !== undefined) {
-      jb.comps[jb.db.addDataResourcePrefix(id)] = comp
-      return jb.db.passive(jb.db.removeDataResourcePrefix(id),comp.passiveData)
-    }
+    const h = jb.core.onAddComponent.find(x=>x.match(id,comp))
+    if (h && h.register)
+      return h.register(id,comp)
+
+    // if (comp.watchableData !== undefined) {
+    //   jb.comps[jb.db.addDataResourcePrefix(id)] = comp
+    //   return jb.db.resource(jb.db.removeDataResourcePrefix(id),comp.watchableData)
+    // }
+    // if (comp.passiveData !== undefined) {
+    //   jb.comps[jb.db.addDataResourcePrefix(id)] = comp
+    //   return jb.db.passive(jb.db.removeDataResourcePrefix(id),comp.passiveData)
+    // }
     jb.comps[id] = comp;
 
     // fix as boolean params to have type: 'boolean'
@@ -76,14 +79,15 @@ jb.extension('core', {
     Object.assign(jb, {
       frame: globalThis,
       comps: {}, ctxDictionary: {},
-      __requiredLoaded: {}
+      __requiredLoaded: {},
     })
     return {
       ctxCounter: 0,
       project: Symbol.for('project'),
       location: Symbol.for('location'),
       loadingPhase: Symbol.for('loadingPhase'),
-      jstypes: jb.core._jsTypes()
+      jstypes: jb.core._jsTypes(),
+      onAddComponent: []
     }
   },
   run(ctx,parentParam,settings) {

@@ -368,6 +368,24 @@ jb.component('removeFromArray', {
 	}
 })
 
+jb.component('getOrCreate', {
+  type: 'data',
+  description: 'memoize, cache, calculate value if empty and assign for next time',
+  category: 'mutable:80',
+  params: [
+    {id: 'writeTo', as: 'ref', mandatory: true},
+    {id: 'calcValue', dynamic: true},
+  ],
+  impl: async (ctx,writeTo,calcValue) => {
+    let val = jb.val(writeTo)
+    if (val == null) {
+      val = await calcValue()
+      jb.db.writeValue(writeTo,val,ctx)
+    }
+    return val
+	}
+})
+
 jb.component('toggleBooleanValue', {
   type: 'action',
   params: [

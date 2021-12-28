@@ -1,14 +1,16 @@
+probe fixes
+  mainCircuit
+  preview and studio/circuit
+  pipe extra array elem
+
 errors in inteli with people
-  %$people% and then % does not work - 
-    maybe the circuit is not reruned
-    maybe the preview script is not updated
   tree focus back on error
 
-
-studio.pick
-  feature.initValue of dialog ctxId prop
+cbLogByPath
+  replace with ctx.dataObj - when to initialize???
 
 enrich spy logs with rules
+  FE test result
   cb message beautifier
   log UI with bread crums
 

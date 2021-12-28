@@ -1,7 +1,7 @@
-jb.extension('studio', 'suggestions', {
+jb.extension('suggestions', {
     $requireLibs: ['/dist/fuse.js'],
     initExtension() {
-      return { hideInSuggestions: 'cmp,widgetId,headlessWidget,headlessWidgetId'.split(',')}
+      return { cache: {}, hideInSuggestions: 'cmp,widgetId,headlessWidget,headlessWidgetId'.split(',')}
     },
 
     suggestions: class suggestions {
@@ -43,8 +43,8 @@ jb.extension('studio', 'suggestions', {
               .map(e=>[jb.db.removeDataResourcePrefix(e[0]),e[1]])
         return jb.entries(Object.assign({},(probeCtx.cmpCtx||{}).params,probeCtx.vars))
             .concat(resources)
-            .filter(x=>jb.studio.hideInSuggestions.indexOf(x[0]) == -1)
-            .map(x=> jb.studio.valueOption('$'+x[0],jb.val(x[1]),this.pos,this.tail,this.input))
+            .filter(x=>jb.suggestions.hideInSuggestions.indexOf(x[0]) == -1)
+            .map(x=> jb.suggestions.valueOption('$'+x[0],jb.val(x[1]),this.pos,this.tail,this.input))
             .filter(x=> x.toPaste.indexOf('$$') != 0)
             // .filter(x=> x.toPaste.indexOf(':') == -1)
       }
@@ -57,18 +57,18 @@ jb.extension('studio', 'suggestions', {
           options = jb.tgp.PTsOfPath(path).map(compName=> {
                 var name = compName.substring(compName.indexOf('.')+1);
                 var ns = compName.substring(0,compName.indexOf('.'));
-                return jb.studio.compOption(path, compName, compName, ns ? `${name} (${ns})` : name, jb.tgp.getComp(compName).description || '')
+                return jb.suggestions.compOption(path, compName, compName, ns ? `${name} (${ns})` : name, jb.tgp.getComp(compName).description || '')
             })
         else if (this.tailSymbol == '%')
           options = [].concat.apply([],jb.toarray(probeCtx.exp('%%'))
-            .map(x => jb.entries(x).map(x=> jb.studio.valueOption(x[0],x[1],this.pos,this.tail,this.input))))
+            .map(x => jb.entries(x).map(x=> jb.suggestions.valueOption(x[0],x[1],this.pos,this.tail,this.input))))
             .concat(this.calcVars(probeCtx))
         else if (this.tailSymbol == '%$')
           options = this.calcVars(probeCtx)
         else if (this.tailSymbol == '/' || this.tailSymbol == '.')
           options = [].concat.apply([],
             jb.toarray(probeCtx.exp(this.base))
-              .map(x=>jb.entries(x).map(x=> jb.studio.valueOption(x[0],x[1],this.pos,this.tail,this.input))) )
+              .map(x=>jb.entries(x).map(x=> jb.suggestions.valueOption(x[0],x[1],this.pos,this.tail,this.input))) )
 
         options = jb.utils.unique(options,x=>x.toPaste)
         if (this.tail != '' && jb.frame.Fuse)
@@ -99,27 +99,70 @@ jb.extension('studio', 'suggestions', {
   }
 })
 
-jb.component('studio.shouldShowSuggestions', {
+jb.component('suggestions.shouldShow', {
   params: [
     {id: 'expressionOnly', as: 'boolean'}
   ],
-  impl: (ctx,expressionOnly) => new jb.studio.suggestions(jb.val(ctx.data), expressionOnly).suggestionsRelevant()
+  impl: (ctx,expressionOnly) => new jb.suggestions.suggestions(jb.val(ctx.data), expressionOnly).suggestionsRelevant()
 })
 
-jb.component('studio.suggestionsFromRemote', {
+jb.component('suggestions.optionsByProbeCtx', {
   params: [
-    {id: 'path', as: 'string'},
+    {id: 'probePath', as: 'string'},
+    {id: 'expressionOnly', as: 'boolean'},
+    {id: 'input' },
+    {id: 'probeCtx' },
+  ],
+  impl: (ctx,probePath,expressionOnly,input,probeCtx) => 
+    new jb.suggestions.suggestions(jb.val(input), expressionOnly).calcOptions(probeCtx,probePath),
+  macroByValue: true
+})
+
+jb.component('suggestions.lastRunCtxRef', {
+  params: [
+    {id: 'sessionId', as: 'string', mandatory: true}
+  ],
+  impl: (ctx,sessionId) => ({ $jb_val(value) {
+      if (value === undefined)
+          return jb.suggestions.cache[sessionId]
+      else {
+        jb.suggestions.cache = {}
+        jb.suggestions.cache[sessionId] = value
+      }
+  }})
+})
+
+jb.component('suggestions.memoizeAndCalc', {
+  params: [
+    {id: 'circuitPath', as: 'string'},
+    {id: 'probePath', as: 'string'},
     {id: 'expressionOnly', as: 'boolean'},
     {id: 'input', defaultValue: '%%'},
-    {id: 'forceLocal', as: 'boolean'}
+    {id: 'sessionId', as: 'string', defaultValue: '%$$dialog.cmpId%', description: 'run probe only once per session'},
   ],
-  impl: remote.data(
-    ({},{},{path,expressionOnly,input}) => new jb.studio.suggestions(jb.val(input), expressionOnly)
-      .calcOptions(jb.probe.closestCtxOfLastRun(path),path),
-    ({},{},{input,forceLocal}) => forceLocal ? jb : new jb.studio.suggestions(jb.val(input)).jbm())
+  impl: pipe(
+          getOrCreate(suggestions.lastRunCtxRef('%$sessionId%')
+            , pipe(probe.runCircuit('%$circuitPath%','%$probePath%'),log('memoize suggestions'),'%result.0.in%')),
+          suggestions.optionsByProbeCtx('%$probePath%','%$expressionOnly%','%$input%','%%')
+      ),
+  macroByValue: true,
 })
 
-jb.component('studio.applyOption', {
+jb.component('suggestions.calcFromRemote', {
+  params: [
+    {id: 'probePath', as: 'string'},
+    {id: 'expressionOnly', as: 'boolean'},
+    {id: 'input', defaultValue: '%%'},
+    {id: 'forceLocal', as: 'boolean', description: 'do not use remote preview'},
+    {id: 'sessionId', as: 'string', defaultValue: '%$$dialog.cmpId%', description: 'run probe only once per session'},
+  ],
+  impl: remote.data({
+    data: suggestions.memoizeAndCalc('%$circuitPath%','%$probePath%','%$expressionOnly%','%$input%','%$sessionId%'),
+    jbm: ({},{},{input,forceLocal}) => forceLocal ? jb : new jb.suggestions.suggestions(jb.val(input)).jbm()
+  })
+})
+
+jb.component('suggestions.applyOption', {
   type: 'action',
   params: [
     {id: 'toAdd', as: 'string', description: '% or /', defaultValue: '%'},
@@ -156,13 +199,13 @@ jb.component('studio.propertyPrimitive', {
       databind: tgp.ref('%$path%'),
       style: editableText.studioPrimitiveText(),
       features: [
-        feature.onKey('Right', studio.applyOption('/')),
+        feature.onKey('Right', suggestions.applyOption('/')),
         editableText.picklistHelper({
-          showHelper: studio.shouldShowSuggestions(true),
-          options: studio.suggestionsFromRemote('%$path%',true),
+          showHelper: suggestions.shouldShow(true),
+          options: suggestions.calcFromRemote('%$path%',true),
           picklistFeatures: picklist.allowAsynchOptions(),
           picklistStyle: studio.suggestionList(),
-          onEnter: studio.applyOption()
+          onEnter: suggestions.applyOption()
         }),
       ]
   })
@@ -226,12 +269,12 @@ jb.component('studio.jbFloatingInput', {
             style: editableText.floatingInput(),
             features: [
               watchRef({ref: tgp.ref('%$path%'), strongRefresh: true}),
-              feature.onKey('Right', studio.applyOption('/')),
-              feature.onKey('Enter', runActions(studio.applyOption(), dialog.closeDialogById('studio-jb-editor-popup'), tree.regainFocus())),
+              feature.onKey('Right', suggestions.applyOption('/')),
+              feature.onKey('Enter', runActions(suggestions.applyOption(), dialog.closeDialogById('studio-jb-editor-popup'), tree.regainFocus())),
               feature.onKey('Esc', runActions(dialog.closeDialogById('studio-jb-editor-popup'), tree.regainFocus())),
               editableText.picklistHelper({
-                showHelper: studio.shouldShowSuggestions(),
-                options: studio.suggestionsFromRemote('%$path%'),
+                showHelper: suggestions.shouldShow(),
+                options: suggestions.calcFromRemote('%$path%'),
                 picklistFeatures: picklist.allowAsynchOptions(),
                 picklistStyle: studio.suggestionList(),
               }),

@@ -19,12 +19,15 @@ jb.extension('ui', {
             
             this.attributes = attributes
                 
-            if (typeof cmpOrTag === 'string' && cmpOrTag.indexOf('#') != -1)
-                debugger
-            if (typeof cmpOrTag === 'string' && cmpOrTag.indexOf('.') != -1) {
+            if (typeof cmpOrTag == 'string' && cmpOrTag.indexOf('.') != -1) {
                 this.addClass(cmpOrTag.split('.').pop().trim())
                 cmpOrTag = cmpOrTag.split('.')[0]
             }
+            if (typeof cmpOrTag == 'string' && cmpOrTag.indexOf('#') != -1)
+                debugger
+            if (typeof cmpOrTag != 'string' && !jb.path(cmpOrTag,'$'))
+                debugger
+
             if (children != null)
                 children.forEach(ch=>ch.parentNode = this)
             Object.assign(this,{...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,...(children && {children}) })

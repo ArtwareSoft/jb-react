@@ -18,20 +18,40 @@ try {
 } catch(e) {}
 
 // define projects not under /jbart/projects directory
-let sites = null;
+let repos = {}
+try { repos = JSON.parse(fs.readFileSync(`./repos.json`)) } catch (e) {}
+
 const projectstDir = settings.devHost ? 'projects' : './'
 const rootName = process.cwd().split('/').pop().split('\\').pop()
 const jbReactDir = fs.existsSync('node_modules/jb-react/') ? 'node_modules/jb-react/' : './'
 
 function projectDirectory(project) {
-    sites = sites || externalSites() || {};
-    const site = Object.keys(sites).filter(site=>project.indexOf(site+'-') != -1)[0];
-    const res = site ? `${sites[site]}/${project.substring(site.length+1)}` : `${settings.http_dir}${projectstDir}/${rootName == project ? '' : project}`;
-    return res;
+    const repo = Object.keys(repos).filter(repo=>project.indexOf(repo+'-') != -1)[0]
+    const res = repo ? `${repos[repo]}/${project.substring(repo.length+1)}` : `${settings.http_dir}${projectstDir}/${rootName == project ? '' : project}`;
+    return res
+}
 
-    function externalSites() {
-      try { return JSON.parse(fs.readFileSync(`./sites.json`)) } catch (e) {}
-    }
+function unRepo(path) {
+  return Object.keys(repos).reduce((res,k) => res.indexOf(repos[k]) == 0 ? `/${k}${res.split(repos[k]).pop()}` : res, path)
+}
+
+function calcFullPath(path) {
+  if (Object.keys(repos).indexOf(path.split('/')[0]) != -1) {
+    const repo = path.split('/')[0]
+    return [repos[repo], ...path.split('/').slice(1)].join('/')
+  }
+  const project_match = path.match(/^projects\/([^/]*)(.*)/);
+  if (project_match)
+    return projectDirectory(project_match[1]) + project_match[2]
+  if (!settings.devHost) {
+    const bin_match = path.match(/^bin\/(.*)/);
+    if (bin_match)
+        return `${jbReactDir}bin/${bin_match[1]}`
+    const dist_match = path.match(/^dist\/(.*)/);
+    if (dist_match)
+        return `${jbReactDir}dist/${dist_match[1]}`
+  }
+  return settings.http_dir + path;
 }
 
 // Http server
@@ -74,21 +94,6 @@ function serve(req, res) {
 supported_ext =  ['js','gif','png','jpg','html','xml','css','xtml','txt','json','bmp','woff','jsx','prj','woff2','map','ico','svg'];
 for(i=0;i<supported_ext.length;i++)
   file_type_handlers[supported_ext[i]] = function(req, res,path) { serveFile(req,res,path); };
-
-function calcFullPath(path) {
-  const project_match = path.match(/^projects\/([^/]*)(.*)/);
-  if (project_match)
-    return projectDirectory(project_match[1]) + project_match[2]
-  if (!settings.devHost) {
-    const bin_match = path.match(/^bin\/(.*)/);
-    if (bin_match)
-        return `${jbReactDir}bin/${bin_match[1]}`
-    const dist_match = path.match(/^dist\/(.*)/);
-    if (dist_match)
-        return `${jbReactDir}dist/${dist_match[1]}`
-  }
-  return settings.http_dir + path;
-}
 
 function serveFile(req,res,path) {
 //  console.log(path,full_path);
@@ -291,13 +296,13 @@ const op_get_handlers = {
     },
     ls: function(req,res) {
       const path = getURLParam(req,'path');
-      const full_path = settings.http_dir + path;
+      const full_path = calcFullPath(path)
       res.setHeader('Content-Type', 'application/json; charset=utf8');
       res.end(JSON.stringify({entries: fs.readdirSync(full_path)}));
     },
     getFile: function(req,res) {
       const path = getURLParam(req,'path');
-      const full_path = settings.http_dir + path;
+      const full_path = calcFullPath(path)
       fs.readFile(_path(full_path), function (err, content) {
         if (err) {
           if (err.errno === 34)
@@ -318,7 +323,7 @@ const op_get_handlers = {
       const include = getURLParam(req,'include') && new RegExp(getURLParam(req,'include'))
       const exclude = getURLParam(req,'exclude') && new RegExp(getURLParam(req,'exclude'))
       res.setHeader('Content-Type', 'application/json;charset=utf8');
-      res.end(JSON.stringify(getFilesInDir(settings.http_dir + path).filter(f=>f.match(/\.js/)).map(path => fileContent(path))))
+      res.end(JSON.stringify(getFilesInDir(calcFullPath(path)).filter(f=>f.match(/\.js/)).map(path => fileContent(path))))
 
       function getFilesInDir(dirPath) {
         return fs.readdirSync(dirPath).sort((x,y) => x == y ? 0 : x < y ? -1 : 1).reduce( (acc, file) => {
@@ -327,9 +332,10 @@ const op_get_handlers = {
           return fs.statSync(path).isDirectory() ? [...acc, ...getFilesInDir(path)] : [...acc, path]
         }, [])
       }
-      function fileContent(path) {
-        const content = fs.readFileSync(path,'utf-8')
-        return { path : path.slice(1),
+      function fileContent(_path) {
+        const content = fs.readFileSync(_path,'utf-8')
+        const path = unRepo(_path)
+        return { path : path.match(/^\./) ? path.slice(1) : path,
           ns: unique(content.split('\n').map(l=>(l.match(/^jb.component\('([^']+)/) || ['',''])[1]).filter(x=>x).map(x=>x.split('.')[0])),
           libs: unique(content.split('\n').map(l=>(l.match(/^jb.extension\('([^']+)/) || ['',''])[1]).filter(x=>x).map(x=>x.split('.')[0])),
           imports: unique(content.split('\n').map(l=>(l.match(/^jb.import\(([^)]+)/) || ['',''])[1]).filter(x=>x).map(x=>parseImport(x))),

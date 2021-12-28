@@ -155,7 +155,5 @@ jb.extension('studio', 'project', {
 
 jb.component('studio.cmpsOfProject', {
   type: 'data',
-  impl: () => 
-    jb.studio.projectCompsAsEntries().filter(e=>e[1].impl).map(e=>e[0]),
-  testData: 'sampleData'
+  impl: () => jb.studio.projectCompsAsEntries().filter(e=>e[1].impl).map(e=>e[0]),
 })

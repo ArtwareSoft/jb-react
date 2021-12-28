@@ -8,6 +8,24 @@ jb.component('person', { watchableData: {
 }
 })
 
+jb.component('probeTest.extraElement.pipeline', {
+  impl: studioProbeTest({
+    circuit: pipeline('%$people%'),
+    probePath: 'items~1',
+    allowClosestPath: true,
+    expectedResult: equals('%0.in.data.name%','Homer Simpson')
+  })
+})
+
+jb.component('probeTest.extraElement.pipe', {
+  impl: studioProbeTest({
+    circuit: pipe('%$people%',delay(1)),
+    probePath: 'items~2',
+    allowClosestPath: true,
+    expectedResult: equals('%0.in.data.name%','Homer Simpson')
+  })
+})
+
 jb.component('probeTest.singleControl', {
   impl: studioProbeTest({
     circuit: group({controls: text('hello')}),
@@ -106,10 +124,11 @@ jb.component('probeTest.pipelineOneElemJsonFormat', {
   })
 })
 
-jb.component('probeTest.actionsSugar', {
+jb.component('probeTest.gap.actionsArray', {
   impl: studioProbeTest({
     circuit: group({controls: button({title: 'hello', action: [winUtils.gotoUrl('google')]})}),
-    probePath: 'controls~action~0',
+    allowClosestPath: true,
+    probePath: 'controls~action~0~url',
     expectedVisits: 1
   })
 })
@@ -223,8 +242,7 @@ jb.component('probeTest.pathSrcThrough.call', {
     calculate: ctx => {
    	 var probe1 = new jb.probe.Probe(new jb.core.jbCtx(ctx,{ profile: {$: 'test.pathSrcCaller'}, comp: 'test.pathSrcCaller', path: '' } ),true)
       .runCircuit('test.pathSrc-comp~impl~items~1');
-    return probe1.then(res=>
-    	''+res.result.visits)
+    return probe1.then(res=> ''+res.result.visits)
    },
     expectedResult: contains('0')
   })
@@ -235,8 +253,7 @@ jb.component('probeTest.pathSrcThrough.call2', {
     calculate: ctx => {
    	 var probe1 = new jb.probe.Probe(new jb.core.jbCtx(ctx,{ profile: {$: 'test.pathSrcCaller'}, comp: 'test.pathSrcCaller', path: '' } ),true)
       .runCircuit('test.pathSrcCaller~impl~items~1');
-    return probe1.then(res=>
-    	''+res.result.visits)
+    return probe1.then(res=> ''+res.result.visits)
    },
     expectedResult: contains('1')
   })

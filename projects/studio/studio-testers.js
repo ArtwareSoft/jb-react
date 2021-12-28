@@ -1,3 +1,4 @@
+
 jb.component('suggestionsTest', {
   type: 'test',
   params: [
@@ -8,9 +9,11 @@ jb.component('suggestionsTest', {
     {id: 'forceLocal', as: 'boolean', defaultValue: true}
   ],
   impl: dataTest({
+    runBefore: writeValue('%$studio/circuit%',''),
     calculate: pipe(
-      studio.suggestionsFromRemote({
-        path: '%$path%', forceLocal: '%$forceLocal%',
+      suggestions.calcFromRemote({
+        circuitPath: 'suggestionsTest.defaultProbe',
+        probePath: '%$path%', forceLocal: '%$forceLocal%',
         input: obj(prop('value','%$expression%'), prop('selectionStart', 
           ({},{},{expression, selectionStart}) => selectionStart == -1 ? expression.length : selectionStart))
       }),
@@ -48,9 +51,10 @@ jb.component('studioProbeTest', {
     {id: 'probePath', as: 'string'},
     {id: 'allowClosestPath', as: 'boolean', type: 'boolean'},
     {id: 'expectedVisits', as: 'number', defaultValue: -1},
-    {id: 'expectedOutResult', type: 'boolean', dynamic: true, defaultValue: true}
+    {id: 'expectedOutResult', type: 'boolean', dynamic: true, defaultValue: true},
+    {id: 'expectedResult', type: 'boolean', dynamic: true, defaultValue: true}
   ],
-  impl: (ctx,circuit,probePath,allowClosestPath,expectedVisits,expectedOutResult)=> {
+  impl: async (ctx,circuit,probePath,allowClosestPath,expectedVisits,expectedOutResult,expectedResult)=> {
     //st.initTests()
 
     const testId = ctx.vars.testID;
@@ -59,12 +63,11 @@ jb.component('studioProbeTest', {
 
     const full_path = testId + '~impl~circuit~' + probePath;
     jb.cbLogByPath = {}
-    const probeRes = new jb.probe.Probe(new jb.core.jbCtx(ctx,{ profile: circuit.profile, forcePath: testId+ '~impl~circuit', path: '' } ))
+    const res1 = await new jb.probe.Probe(new jb.core.jbCtx(ctx,{ profile: circuit.profile, forcePath: testId+ '~impl~circuit', path: '' } ))
       .runCircuit(full_path)
-    return probeRes.then(res=> jb.cbLogByPath[res.probePath] || res)
-    .then(res=> {
-      jb.cbLogByPath = null
-      try {
+    const res = await (jb.cbLogByPath[res1.probePath] || res1)
+    jb.cbLogByPath = null
+    try {
         if (expectedVisits == 0 && res.closestPath)
           return success();
         if (!allowClosestPath && res.closestPath)
@@ -76,12 +79,14 @@ jb.component('studioProbeTest', {
         const resData = res.callbagLog && res.result || res.result[0].out
         if (!expectedOutResult(ctx.setData(resData)))
             return failure('wrong out result ' + JSON.stringify(resData))
-      } catch(e) {
-        jb.logException(e,'jb-path-test',{ctx})
-        return failure('exception')
-      }
-      return success();
-    })
+        if (!expectedResult(ctx.setData(res.result)))
+            return failure('wrong result ' + JSON.stringify(res.result))
+            
+        return success();
+    } catch(e) {
+      jb.logException(e,'jb-path-test',{ctx})
+      return failure('exception')
+    }
   }
 })
 

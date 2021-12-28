@@ -6,7 +6,6 @@ jb.component('jbComponent', {
     {id: 'description', as: 'string'},
     {id: 'params', type: 'jbParam[]', defaultValue: [{id: '', as: ''}]},
     {id: 'impl', type: '*', dynamicType: '%type%', mandatory: true},
-    {id: 'testData', description: 'used as input in inteliscript'}
   ],
   impl: ctx => ctx.params
 })

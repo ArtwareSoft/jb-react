@@ -126,10 +126,12 @@ jb.component('studio.jbEditor', {
 jb.component('studio.openJbEditProperty', {
   type: 'action',
   params: [
+    {id: 'circuitPath', as: 'string'},
     {id: 'path', as: 'string'}
   ],
   impl: action.switch(
     Var('actualPath', studio.jbEditorPathForEdit('%$path%')),
+    Var('circuitPath', '%$circuitPath%'),
     Var('paramDef', tgp.paramDef('%$actualPath%')),
     [
       action.switchCase(ctx => 
@@ -204,7 +206,7 @@ jb.component('studio.jbEditorInteliTree', {
         onRightClick: studio.openJbEditorMenu('%%', '%$path%')
       }),
       tree.keyboardSelection({
-        onEnter: studio.openJbEditProperty('%$studio/jbEditor/selected%'),
+        onEnter: studio.openJbEditProperty('%$path%','%$studio/jbEditor/selected%'),
         onRightClickOfExpanded: studio.openJbEditorMenu('%%', '%$path%'),
         autoFocus: true,
         applyMenuShortcuts: studio.jbEditorMenu('%%', '%$path%')

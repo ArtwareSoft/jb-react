@@ -120,7 +120,7 @@ jb.component('studio.jbEditorMenu', {
               tree.redraw(),
               dialog.closeDialog(),
               writeValue('%$studio/jbEditor/selected%', '%$path%~%id%'),
-              studio.openJbEditProperty('%$path%~%id%')
+              studio.openJbEditProperty('%$path%','%$path%~%id%')
             )
           })
         )

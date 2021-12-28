@@ -102,10 +102,11 @@ jb.component('FETest.workerPreview.changeCss', {
   })
 })
 
-jb.component('workerPreviewTest.suggestions', {
+jb.component('FETest.workerPreviewTest.suggestions', {
   impl: uiFrontEndTest({
     renderDOM: true,
     timeout: 5000,
+//    vars: Var('circuitPath','sampleProject.main'),
     runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
     control: group({
       controls: [

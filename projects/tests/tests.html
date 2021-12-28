@@ -16,17 +16,18 @@
 	<div id="testElem"> </div>
 	<div id="show"> </div>
  <script>
-	jbInit('tests', {projects: ['studio','tests']})
+	const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
+	const repos = (urlQuery('repo') || '').split(',').filter(x=>x)
+	jbInit('tests', {projects: ['studio','tests'], repos })
 		.then(()=>{
 			jb.exec({$: 'defaultTheme'})
 			jb.spy.initSpyByUrl()
-			const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
 			const params = { 
 				testType: '',
 				show: location.href.indexOf('&show') != -1,
 				specificTest: urlQuery('test'),
 				notPattern: urlQuery('not'),
-				...jb.objFromEntries(['rerun','pattern','take','remoteTests'].map(x=>[x,urlQuery(x)]))
+				...jb.objFromEntries(['repo','rerun','pattern','take','remoteTests'].map(x=>[x,urlQuery(x)]))
 			}
 			console.log(params)
 			jb.test.runTests(params)

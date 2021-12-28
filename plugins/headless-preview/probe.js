@@ -12,7 +12,7 @@ jb.extension('probe', {
             this.id = ++jb.probe.probeCounter
         }
 
-        runCircuit(probePath,maxTime) {
+        async runCircuit(probePath,maxTime) {
             this.maxTime = maxTime || 50
             this.startTime = new Date().getTime()
             jb.log('probe run circuit',{probePath, probe: this})
@@ -23,28 +23,33 @@ jb.extension('probe', {
             const initial_resources = jb.db.resources
             const initial_comps = jb.watchableComps.handler.resources()
 
-            return this.simpleRun()
-            // .catch(e => jb.logException(e,'probe run'))
-                .then( res =>
-                this.handleGaps())
-                .catch(e => jb.logException(e,'probe run',{probe: this}))
-                .then(() => // resolve all top promises in result.out
-                (this.result || []).reduce((pr,item,i) =>
-                    pr.then(_=>jb.probe.resolve(item.out)).then(resolved=> this.result[i].out =resolved),
-                jb.probe.resolve())
-                )
-                .then(() =>{
-                    this.completed = true
-                    this.totalTime = new Date().getTime()-this.startTime
-                    jb.log('probe completed',{probePath, probe: this})
-                    // make values out of ref
-                    this.result.forEach(obj=> { obj.out = jb.val(obj.out) ; obj.in.data = jb.val(obj.in.data)})
-                    if (jb.db.resources.studio.project) { // studio and probe development
-                        jb.db.watchableValueByRef && jb.db.watchableValueByRef.resources(initial_resources,null,{source: 'probe'})
-                        initial_comps && jb.watchableComps.handler.resources(initial_comps,null,{source: 'probe'})
-                    }
-                    return this
-                })
+            try {
+                if (jb.tgp.isExtraElem(probePath) && !probePath.match(/~0$/)) {
+                    const formerIndex = Number(probePath.match(/~([0-9]*)$/)[1])-1
+                    this.probePath = probePath.replace(/[0-9]*$/,formerIndex)
+                    this.extraElem = true
+                }
+                await this.simpleRun()
+                await this.handleGaps()
+
+                await (this.result || []).reduce((pr,item,i) =>
+                    pr.then(_=>jb.probe.resolve(item.out)).then(resolved=> this.result[i].out =resolved), Promise.resolve())
+                this.completed = true
+                this.totalTime = new Date().getTime()-this.startTime
+                jb.log('probe completed',{probePath, probe: this})
+                // ref to values
+                this.result.forEach(obj=> { obj.out = jb.val(obj.out) ; obj.in.data = jb.val(obj.in.data)})
+                if (this.extraElem)
+                    this.result.forEach(obj=> obj.in.data = obj.out)
+
+                if (jb.db.resources.studio.project) { // studio and probe development
+                    jb.db.watchableValueByRef && jb.db.watchableValueByRef.resources(initial_resources,null,{source: 'probe'})
+                    initial_comps && jb.watchableComps.handler.resources(initial_comps,null,{source: 'probe'})
+                }
+                return this
+            } catch (e) {
+                jb.logException(e,'probe run',{probe: this})
+            }
         }
 
         simpleRun() {
@@ -79,6 +84,7 @@ jb.extension('probe', {
             if (!breakingProp) return
 
             // check if parent ctx returns object with method name of breakprop as in dialog.onOK
+            // TODO: generalized for all actions - breaking props may be non action props
             const parentCtx = this.probe[_path][0].in, breakingPath = _path+'~'+breakingProp
             const obj = this.probe[_path][0].out
             const compName = jb.tgp.compNameOfPath(breakingPath)
@@ -92,9 +98,12 @@ jb.extension('probe', {
                 return jb.probe.resolve(obj[breakingProp]())
                     .then(_=>this.handleGaps(_path))
 
-            if (!hasSideEffect)
-                return jb.probe.resolve(parentCtx.runInner(parentCtx.profile[breakingProp],jb.tgp.paramDef(breakingPath),breakingProp))
-                    .then(_=>this.handleGaps(_path))
+            if (!hasSideEffect) {
+                const innerProf = parentCtx.profile[breakingProp]
+                if (innerProf.$)
+                    return jb.probe.resolve(parentCtx.runInner(innerProf,jb.tgp.paramDef(breakingPath),breakingProp))
+                        .then(_=>this.handleGaps(_path))
+            }
 
             // could not solve the gap
             this.closestPath = _path
@@ -153,52 +162,56 @@ jb.extension('probe', {
 			
 		if ((jb.path(res,'profile.$') ||'').indexOf('rx.') != 0) // ignore rx ctxs
 			return res
-	},    
+	},
 })
 
 jb.component('probe.runCircuit', {
   type: 'data',
   params: [
     { id: 'circuitPath', as: 'string'},
-    { id: 'probePath', as: 'string'}
+    { id: 'probePath', as: 'string'},    
   ],
-  impl: (ctx,circuitPath,probePath) => {
+  impl: async (ctx,circuitPath,probePath) => {
         jb.log('new probe',{ctx,circuitPath,probePath})
-        if (!probePath) return
-        if (jb.cbLogByPath && jb.cbLogByPath[probePath])
-            return { result: jb.cbLogByPath[probePath] }
+        if (!probePath) 
+            return jb.logError(`no probe path`, {ctx,circuitPath})
+        // if (jb.cbLogByPath && jb.cbLogByPath[probePath])
+        //     return { result: jb.cbLogByPath[probePath] }
         let circuitCtx = null
-        if (jb.path(jb.comps,[circuitPath.split('~')[0],'testData']))
-            circuitCtx = closestTestCtx(circuitPath)
         if (!circuitCtx)
             circuitCtx = jb.ctxDictionary[ctx.exp('%$studio/pickSelectionCtxId%')]
+        if (!circuitCtx)
+            circuitCtx = jb.probe.closestCtxOfLastRun(circuitPath)
         if (!circuitCtx && jb.path(jb.ui,'headless')) {
             const circuitElem = closestElemWithCtx(circuitPath)
             circuitCtx = circuitElem && jb.ctxDictionary[circuitElem.ctxId]
         }
-        if (!circuitCtx)
-            circuitCtx = jb.probe.closestCtxOfLastRun(circuitPath)
-        if (!circuitCtx)
-            circuitCtx = closestTestCtx(circuitPath)
-        if (!circuitCtx) {
-            const circuit = jb.tostring(ctx.exp('%$studio/jbEditor/circuit%') || ctx.exp('%$studio/project%') && ctx.run(studio.currentPagePath()))
-            circuitCtx = new jb.core.jbCtx(new jb.core.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} )
+        const circuitPath2 = circuitPath || probePath
+        const circuitComp = circuitPath2.split('~')[0]
+        if (circuitComp) {
+            await jb.treeShake.bringMissingCode({$: circuitComp})
+            circuitCtx = findMainCircuit(circuitPath2)
         }
         // if (circuitCtx)
         //     jb.studio.highlightCtx(circuitCtx.id) // fix: show send it to the view
+        if (!circuitCtx)
+            return jb.logError(`probe can not infer circuitCtx from ${circuitPath} and ${probePath}`, )
         return new jb.probe.Probe(circuitCtx).runCircuit(probePath)
 
-        function closestTestCtx(path) {
+        function findMainCircuit(path) {
             const _ctx = new jb.core.jbCtx()
-            const compId = path.split('~')[0]
-            const statistics = jb.exec(tgp.componentStatistics(compId))
-            const test = jb.path(jb.comps[compId],'impl.expectedResult') ? compId 
-                : (statistics.referredBy||[]).find(refferer=>jb.tgp.isOfType(refferer,'test'))
-            if (test)
-                return _ctx.ctx({ profile: {$: test}, comp: test, path: ''})
-            const testData = jb.comps[compId].testData
-            if (testData)
-                return _ctx.ctx({profile: pipeline(testData, {$: compId}), path: '' })
+            const cmpId = path.split('~')[0]
+            const statistics = jb.exec({$: 'tgp.componentStatistics', cmpId})
+            const comp = ctx.exp('%$studio/circuit%') 
+                || (jb.path(jb.comps[cmpId],'impl.expectedResult') ? cmpId 
+                    : (statistics.referredBy||[]).find(refferer=>jb.tgp.isOfType(refferer,'test'))) 
+                || cmpId
+            if (comp) {
+                const res = _ctx.ctx({ profile: {$: comp}, comp, path: ''})
+                if (jb.tgp.isOfType(comp,'control'))
+                    return jb.ui.extendWithServiceRegistry(res)
+                return res
+            }
         }
         function closestElemWithCtx(path) {
             const candidates = Object.values(jb.ui.headless).flatMap(x=>x.body.querySelectorAll('[jb-ctx]'))
@@ -207,7 +220,7 @@ jb.component('probe.runCircuit', {
             return candidates.sort((e2,e1) => 1000* (e1.path.length - e2.path.length) + (+e1.ctxId.match(/[0-9]+/)[0] - +e2.ctxId.match(/[0-9]+/)[0]) )[0] || {}
         }        
     },
-    requires: tgp.componentStatistics()
+    require: {$: 'tgp.componentStatistics'}
 })
 
 

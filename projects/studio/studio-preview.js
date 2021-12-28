@@ -66,7 +66,7 @@ jb.component('preview.control', {
             const _circuit = ctx.exp('%$studio/circuit%')
             const circuit = (jb.path(jb.comps[_circuit],'impl.$') || '').match(/Test/) ? { $: 'test.showTestInStudio', testId: _circuit} : { $: _circuit }
             jb.log('preview circuit',{circuit, ctx})
-            return circuit && ctx.run(circuit)
+            return circuit && circuit.$ && ctx.run(circuit)
         },
         features: [ 
             If(ctx => !jb.comps[ctx.exp('%$studio/circuit%')], group.wait(treeShake.getCodeFromRemote('%$studio/circuit%'))),

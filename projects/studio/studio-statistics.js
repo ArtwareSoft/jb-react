@@ -145,6 +145,5 @@ jb.component('studio.cmpsOfProjectByFiles', {
       '%[0]%',
       aggregate(dynamicObject({items: '%%', propertyName: '%%', value: '%%'}))
     )
-  }),
-  testData: 'sampleData'
+  })
 })

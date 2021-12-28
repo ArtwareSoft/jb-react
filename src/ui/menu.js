@@ -69,7 +69,7 @@ jb.component('menu.action', {
 			},
 			ctx: ctx.setVar('menuDepth', (ctx.vars.menuDepth || 0)+1)
 		}),
-  require: key.eventMatchKey()
+  require: {$: 'key.eventMatchKey' }
 })
 
 // ********* controls ************
@@ -283,7 +283,7 @@ jb.component('menu.selectionKeySourceService', {
       el.onkeydown = e => {
         if ([37,38,39,40,13,27].indexOf(e.keyCode) != -1) {
           jb.log('menuKeySource',{ctx,cmp,e})
-          el.keydown_src.next(ctx.dataObj(e))
+          el.keydown_src.next(ctx.cmpCtx.dataObj(e))
           return false // stop propagation
         }
         return true

@@ -1,3 +1,25 @@
+jb.extension('db', 'onAddComponent', {
+  $phase :2,
+  initExtension() { 
+    jb.core.onAddComponent.push({ 
+      match:(id,comp) => comp.watchableData !== undefined,
+      register: (id,comp) => {
+        jb.comps[jb.db.addDataResourcePrefix(id)] = comp
+        return jb.db.resource(jb.db.removeDataResourcePrefix(id),comp.watchableData)  
+      }
+    })
+    jb.core.onAddComponent.push({ 
+      match:(id,comp) => comp.passiveData !== undefined,
+      register: (id,comp) => {
+        jb.comps[jb.db.addDataResourcePrefix(id)] = comp
+        return jb.db.resource(jb.db.removeDataResourcePrefix(id),comp.passiveData)  
+      }
+    })
+  },
+  removeDataResourcePrefix: id => id.indexOf('dataResource.') == 0 ? id.slice('dataResource.'.length) : id,
+  addDataResourcePrefix: id => id.indexOf('dataResource.') == 0 ? id : 'dataResource.' + id,
+})
+
 jb.extension('db', {
     initExtension() { return { 
         passiveSym: Symbol.for('passive'),
@@ -97,7 +119,5 @@ jb.extension('db', {
     isValid: ref => jb.db.safeRefCall(ref, h=>h.isValid(ref)),
     pathOfRef: ref => jb.db.safeRefCall(ref, h=>h.pathOfRef(ref)),
     refOfPath: path => jb.db.watchableHandlers.reduce((res,h) => res || h.refOfPath(path),null),
-    removeDataResourcePrefix: id => id.indexOf('dataResource.') == 0 ? id.slice('dataResource.'.length) : id,
-    addDataResourcePrefix: id => id.indexOf('dataResource.') == 0 ? id : 'dataResource.' + id,
 })
 

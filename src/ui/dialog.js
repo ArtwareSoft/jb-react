@@ -437,7 +437,7 @@ jb.component('dialog.popup', {
   })
 })
 
-jb.component('dialog.transparent-popup', {
+jb.component('dialog.transparentPopup', {
 	type: 'dialog.style',
 	impl: customStyle({
 	  template: ({},{contentComp},h) => h('div.jb-dialog jb-popup',{},h(contentComp)),
