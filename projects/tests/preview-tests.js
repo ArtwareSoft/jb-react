@@ -125,7 +125,7 @@ jb.component('FETest.workerPreviewTest.suggestions', {
   })
 })
 
-jb.component('workerPreviewTest.suggestions.select', {
+jb.component('FETest.workerPreviewTest.suggestions.select', {
   impl: uiFrontEndTest({
     renderDOM: true,
     timeout: 5000,
@@ -163,7 +163,7 @@ jb.component('workerPreviewTest.suggestions.select', {
 //   })
 // })
 
-jb.component('workerPreviewTest.suggestions.filtered', {
+jb.component('FETest.workerPreviewTest.suggestions.filtered', {
   impl: uiFrontEndTest({
     renderDOM: true,
     timeout: 5000,
@@ -182,6 +182,21 @@ jb.component('workerPreviewTest.suggestions.filtered', {
       uiAction.waitForSelector('.jb-dialog .jb-item'),
     ),    
     expectedResult: not(contains('$xx'))
+  })
+})
+
+jb.component('FETest.workerPreviewTest.editableSource', {
+  impl: uiFrontEndTest({
+    renderDOM: true,
+    timeout: 5000,
+    runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
+    control: group({
+      controls: [
+        studio.editableSource('sampleProject.main~impl',300),
+        // preview.remoteWidget(), preview.remoteInOut
+      ],
+    }),
+    expectedResult: true
   })
 })
 

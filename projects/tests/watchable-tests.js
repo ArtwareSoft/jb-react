@@ -353,7 +353,7 @@ jb.component('uiTest.watchableAsText', {
               'Alt-P',
               writeValue('%$path%', tgpTextEditor.cursorPath('%$watchedText%'))
             ),
-            textarea.initTextareaEditor(),
+            tgpTextEditor.init(),
             watchRef({ ref: '%$watchablePeople%', includeChildren: 'yes'})
           ]
         }),

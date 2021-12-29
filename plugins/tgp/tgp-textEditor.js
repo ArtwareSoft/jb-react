@@ -1,3 +1,45 @@
+
+jb.component('tgpTextEditor.init', {
+  type: 'feature',
+  impl: features(
+    tgpTextEditor.enrichUserEvent(),
+    frontEnd.method('replaceRange',({data},{cmp}) => {
+        const {text, from, to} = data
+        const _from = jb.tgpTextEditor.lineColToOffset(cmp.base.value,from)
+        const _to = jb.tgpTextEditor.lineColToOffset(cmp.base.value,to)
+        cmp.base.value = cmp.base.value.slice(0,_from) + text + cmp.base.value.slice(_to)
+    }),
+    frontEnd.method('setSelectionRange',({data},{cmp}) => {
+        const from = data.from || data
+        const to = data.to || from
+        const _from = jb.tgpTextEditor.lineColToOffset(cmp.base.value,from)
+        const _to = to && jb.tgpTextEditor.lineColToOffset(cmp.base.value,to) || _from
+        cmp.base.setSelectionRange(_from,_to)
+    }),
+    method('onChangeSelection', (ctx,{cmp, ev, $model}) => {
+        jb.tgpTextEditor.updatePosVariables(ev)
+    }),
+    feature.userEventProps('ctrlKey,altKey'),
+  
+    frontEnd.init(({},{cmp}) => {
+        //const data_ref = ctx.vars.$model.databind()
+        //jb.val(data_ref) // calc text
+        cmp.tgpTextEditor = {
+            replaceRange: (text, from, to) => {
+                const _from = jb.tgpTextEditor.lineColToOffset(cmp.base.value,from)
+                const _to = jb.tgpTextEditor.lineColToOffset(cmp.base.value,to)
+                cmp.base.value = cmp.base.value.slice(0,_from) + text + cmp.base.value.slice(_to)
+            },
+            setSelectionRange: (from, to) => {
+                const _from = jb.tgpTextEditor.lineColToOffset(cmp.base.value,from)
+                const _to = to && jb.tgpTextEditor.lineColToOffset(cmp.base.value,to) || _from
+                cmp.base.setSelectionRange(_from,_to)
+            },
+        }
+    })
+    )
+})
+
 jb.extension('tgpTextEditor', {
     getSinglePathChange(diff, currentVal) {
         return pathAndValueOfSingleChange(diff,'',currentVal)
@@ -133,6 +175,118 @@ jb.extension('tgpTextEditor', {
         return {text: jb.utils.prettyPrintComp(compId,jb.comps[compId],{comps: jb.comps}) + '\n',
             from: {line: componentHeaderIndex, col: 0}, to: {line: componentHeaderIndex+compLastLine+1, col: 0} }
     },
+
+    calcActiveEditorPath(editorEvent) {
+        const {line,col} = editorEvent.selectionStart
+        const lines = editorEvent.text.split('\n')
+        const closestComp = lines.slice(0,line+1).reverse().findIndex(line => line.match(/^jb.component\(/))
+        if (closestComp == -1) return { // TODO: snippet
+
+        }
+        const componentHeaderIndex = line - closestComp
+        const compId = (lines[componentHeaderIndex].match(/'([^']+)'/)||['',''])[1]
+        const linesFromComp = lines.slice(componentHeaderIndex)
+        const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
+        const actualText = lines.slice(componentHeaderIndex,componentHeaderIndex+compLastLine+1).join('\n')
+        return { compId, ...jb.tgpTextEditor.getPathOfPos(compId, {line: line-componentHeaderIndex,col}, actualText) }
+    },
+    updatePosVariables(editorEvent) {
+        const { compId, path, semanticPath } = jb.tgpTextEditor.calcActiveEditorPath(editorEvent)
+        //vscodeNS.commands.executeCommand('setContext', 'jbart.inComponent', !!(compId || path))
+        const fixedPath = path || compId && `${compId}~impl`
+        if (fixedPath) {
+            const ctx = new jb.core.jbCtx({},{vars: {headlessWidget: true, fromTgpTextEditor: true}})
+            jb.db.writeValue(ctx.exp('%$studio/jbEditor/selected%','ref'), fixedPath ,ctx)
+            semanticPath && jb.db.writeValue(ctx.exp('%$studio/semanticPath%','ref'), semanticPath.path ,ctx)
+
+            const circuitOptions = jb.tgp.circuitOptions(fixedPath.split('~')[0])
+            if (circuitOptions && circuitOptions[0])
+                jb.db.writeValue(ctx.exp('%$studio/circuit%','ref'), circuitOptions[0] ,ctx)
+            const profilePath = (fixedPath.match(/^[^~]+~impl/) || [])[0]
+            if (profilePath)
+                jb.db.writeValue(ctx.exp('%$studio/profile_path%','ref'), profilePath ,ctx)
+        }
+    },
+    componentTextInEditor(fileContent, compId) {
+        const lines = fileContent.split('\n').map(x=>x.replace(/[\s]*$/,''))
+        const lineOfComp = lines.findIndex(line=> line.indexOf(`jb.component('${compId}'`) == 0)
+        if (lineOfComp == -1) return {}
+        const linesFromComp = lines.slice(lineOfComp)
+        const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
+        const nextjbComponent = lines.slice(lineOfComp+1).findIndex(line => line.match(/^jb.component/))
+        if (nextjbComponent != -1 && nextjbComponent < compLastLine)
+          return jb.logError('can not find end of component', {compId, linesFromComp})
+        return { lineOfComp, content: linesFromComp.slice(0,compLastLine+1).join('\n') }
+    },
+    deltaFileContent(fileContent, {compId,comp}) {
+        const { lineOfComp, content} = jb.vscode.componentTextInEditor(fileContent,compId)
+        const newCompContent = comp ? jb.utils.prettyPrintComp(compId,comp,{comps: jb.comps}) : ''
+        const justCreatedComp = !content.length && comp[jb.core.location][1] == 'new'
+        if (justCreatedComp) {
+          comp[jb.core.location][1] == lines.length
+          return { range: {start: { line: lines.length, character: 0}, end: {line: lines.length, character: 0} } , newText: '\n\n' + newCompContent }
+        }
+        const {common, oldText, newText} = calcDiff(content, newCompContent)
+        const commonStartSplit = common.split('\n')
+        // using vscode terminology
+        const start = {line: lineOfComp + commonStartSplit.length - 1, character: commonStartSplit.slice(-1)[0].length }
+        const end = { line: start.line + oldText.split('\n').length -1, 
+          character : (oldText.split('\n').length-1 ? 0 : start.character) + oldText.split('\n').pop().length }
+        return { range: {start, end} , newText }
+      
+        // the diff is continuous, so we cut the common parts at the begining and end 
+        function calcDiff(oldText,newText)  {
+          let i=0;j=0;
+          while(newText[i] == oldText[i] && i < newText.length) i++
+          const common = oldText.slice(0,i)
+          oldText = oldText.slice(i); newText = newText.slice(i);
+          while(newText[newText.length-j] == oldText[oldText.length-j] && j < newText.length) j++ // calc backwards from the end
+          return {firstDiff: i, common, oldText: oldText.slice(0,-j+1), newText: newText.slice(0,-j+1)}
+        }
+    },
+    async applyEdits(editorEvent, edits) {
+    },
+   // commands
+    async formatComponent(editorEvent) {
+        const { compId, needsFormat } = jb.tgpTextEditor.calcActiveEditorPath(editorEvent)
+        if (needsFormat) {
+            try {
+                const oldLocation = jb.comps[compId][jb.core.location]
+                jb.frame.eval(jb.tgpTextEditor.componentTextInEditor(editorEvent.text,compId).content || '')
+                jb.comps[compId][jb.core.location] = oldLocation
+            } catch (e) {
+                return jb.logError('can not parse profile', {e, compId})
+            }
+            const comp = jb.comps[compId]
+            const edits = [jb.tgpTextEditor.deltaFileContent(editorEvent.text, {compId,comp})].filter(x=>x)
+            jb.tgpTextEditor.applyEdits(editorEvent, edits)
+        }
+    },
+    onEnter(editorEvent) {
+        const { semanticPath, needsFormat } = jb.tgpTextEditor.calcActiveEditorPath(editorEvent)
+        if (needsFormat)
+            jb.tgpTextEditor.formatComponent(editorEvent)
+        else if (semanticPath) {
+            let path = semanticPath.path.split('~!')[0]
+            const semanticPart = semanticPath.path.split('~!')[1]
+            const menu = menuType(path,semanticPart)
+            jb.exec({$: 'tgpEditor.openQuickPickMenu', menu: {$: `tgpTextEditor.${menu}`, path, semanticPart }, path })
+        }
+
+        function menuType(path,semanticPart) {
+            if (jb.tgp.paramDef(path).options)
+                return 'selectEnum'
+            const profile = jb.tgp.valOfPath(path)
+            const params = jb.path(jb.comps[(profile||{}).$],'params') || []
+            const firstParamIsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
+            
+            const editMenu = ['value','value-text','prop'].indexOf(semanticPart) != -1 
+                || !firstParamIsArray && semanticPart.match(/-by-value|obj-separator-|profile|-sugar/)
+
+            return editMenu ? 'editMenu' : 'selectPT'
+        }
+    },
+
     posFromCM: pos => pos && ({line: pos.line, col: pos.ch}),
     cm_hint(cmEditor) {
         const cursor = cmEditor.getDoc().getCursor()
@@ -265,26 +419,6 @@ jb.component('tgpTextEditor.cursorPath', {
     impl: (ctx,ref,pos) => jb.path(jb.tgpTextEditor.pathOfPosition(ref, pos()),'path') || ''
 })
 
-jb.component('textarea.initTextareaEditor', {
-  type: 'feature',
-  impl: features(
-      tgpTextEditor.enrichUserEvent(),
-      frontEnd.method('replaceRange',({data},{cmp}) => {
-          const {text, from, to} = data
-          const _from = jb.tgpTextEditor.lineColToOffset(cmp.base.value,from)
-          const _to = jb.tgpTextEditor.lineColToOffset(cmp.base.value,to)
-          cmp.base.value = cmp.base.value.slice(0,_from) + text + cmp.base.value.slice(_to)
-      }),
-      frontEnd.method('setSelectionRange',({data},{cmp}) => {
-        const from = data.from || data
-        const to = data.to || from
-        const _from = jb.tgpTextEditor.lineColToOffset(cmp.base.value,from)
-        const _to = to && jb.tgpTextEditor.lineColToOffset(cmp.base.value,to) || _from
-        cmp.base.setSelectionRange(_from,_to)
-      })
-    )
-})
-
 jb.component('tgpTextEditor.enrichUserEvent', {
     type: 'feature',
     params: [
@@ -306,28 +440,12 @@ jb.component('tgpTextEditor.enrichUserEvent', {
 })
   
 
-//   frontEnd.init((ctx,{cmp}) => {
-//         const data_ref = ctx.vars.$model.databind()
-//         jb.val(data_ref) // calc text
-//         cmp.editor = {
-//             ctx: () => cmp.ctx,
-//             data_ref,
-//             getCursorPos: () => offsetToLineCol(cmp.base.value,cmp.base.selectionStart),
-//             cursorCoords: () => {},
-//             markText: () => {},
-//             replaceRange: (text, from, to) => {
-//                 const _from = jb.tgpTextEditor.lineColToOffset(cmp.base.value,from)
-//                 const _to = jb.tgpTextEditor.lineColToOffset(cmp.base.value,to)
-//                 cmp.base.value = cmp.base.value.slice(0,_from) + text + cmp.base.value.slice(_to)
-//             },
-//             setSelectionRange: (from, to) => {
-//                 const _from = jb.tgpTextEditor.lineColToOffset(cmp.base.value,from)
-//                 const _to = to && jb.tgpTextEditor.lineColToOffset(cmp.base.value,to) || _from
-//                 cmp.base.setSelectionRange(_from,_to)
-//             },
-//         }
-//         if (cmp.ctx.vars.editorContainer)
-//             cmp.ctx.vars.editorContainer.editorCmp = cmp
-//     }
-//   )
-// })
+jb.component('tgpTextEditor.openQuickPickMenu', {
+    type: 'action',
+    params: [
+      {id: 'menu', type: 'menu.option', dynamic: true, mandatory: true},
+      {id: 'path', as: 'string', mandatory: true},
+      {id: 'editorEvent', mandatory: true},
+    ],
+    impl: menu.openContextMenu({menu: '%$menu%', features: []})
+})

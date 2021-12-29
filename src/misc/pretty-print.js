@@ -92,9 +92,9 @@ jb.extension('utils', 'prettyPrint', {
         const paramProps = path.match(/~params~[0-9]+$/)
         const paramsParent = path.match(/~params$/)
         const ctrls = path.match(/~controls$/) && Array.isArray(val)
-        const moreThanTwoVals = innerVals.length > 2 && !isArray
+        //const moreThanThreeVals = innerVals.length > 3 && !isArray
         const top = !path.match(/~/g)
-        return !paramProps && (result.unflat || paramsParent || moreThanTwoVals || top || ctrls || long)
+        return !paramProps && (result.unflat || paramsParent || top || ctrls || long)
       }
       function fixPropName(prop) {
         return prop.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/) ? prop : `'${prop}'`

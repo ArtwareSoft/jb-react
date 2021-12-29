@@ -133,9 +133,18 @@ jb.extension('ui', 'react', {
         }
     },
 
-    applyNewVdom(elem,vdomAfter,{strongRefresh, ctx} = {}) {
+    applyNewVdom(elem,vdomAfter,{strongRefresh, ctx, delta} = {}) {
         const widgetId = jb.ui.headlessWidgetId(elem)
         jb.log('applyNew vdom',{widgetId,elem,vdomAfter,strongRefresh, ctx})
+        if (delta) { // used only by $runFEMethod
+            const cmpId = elem.getAttribute('cmp-id')
+            jb.log('applyNew vdom runFEMethod',{elem,cmpId,delta, ctx})
+            if (widgetId)
+                jb.ui.renderingUpdates.next({delta,cmpId,widgetId})
+            else
+                jb.ui.applyDeltaToDom(elem,delta)
+            return
+        }
         if (widgetId) {
             const cmpId = elem.getAttribute('cmp-id')
             const delta = jb.ui.compareVdom(elem,vdomAfter,ctx)
@@ -310,6 +319,9 @@ jb.extension('ui', 'react', {
                 elem[id] = JSON.parse(val) || ''
             } catch (e) {}
             jb.log(`dom set data ${id}`,{elem,att,val})
+        } else if (att === '$runFEMethod') {
+            const {method, data, vars} = JSON.parse(val)
+            elem._component && elem._component.runFEMethod(method,data,vars)
         } else if (att === '$focus') {
             elem.setAttribute('__focus',val || 'no source')
             jb.ui.focus(elem,val)

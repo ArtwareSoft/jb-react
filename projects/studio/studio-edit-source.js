@@ -80,15 +80,17 @@ jb.component('studio.editableSource', {
       height: '%$height%',
       cm_settings: {
         extraKeys: {
-          Enter: action.if(
+          aaa: action.if(
             tgpTextEditor.isDirty(),
             runActions(sourceEditor.storeToRef(), sourceEditor.refreshEditor()),
             tgpTextEditor.withCursorPath(studio.openEditProperty('%$cursorPath%'))
-          )
+          ),
+          Enter: tgpTextEditor.withCursorPath(studio.openEditProperty('%$cursorPath%'))
         }
       }
     }),
     features: [
+      tgpTextEditor.init(),
       css.height({height: '%$height%', minMax: 'max'}),
       feature.onKey('Ctrl-I', studio.openJbEditor('%$path%'))
     ]

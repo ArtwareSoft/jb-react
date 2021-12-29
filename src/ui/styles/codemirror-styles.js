@@ -1,3 +1,4 @@
+
 jb.extension('codemirror', {
 	injectCodeMirror(ctx,{text,cmp,el,cm_settings,_enableFullScreen,formatText}) {
 		if (cmp.editor) return

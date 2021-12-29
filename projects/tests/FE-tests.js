@@ -1,3 +1,4 @@
+
 jb.component('FETest.distributedWidget', {
   impl: uiFrontEndTest({
     renderDOM: true,
@@ -185,5 +186,24 @@ jb.component('FETest.remoteWidget.refresh', {
       rx.flatMap(source.remote(source.promise(waitFor(count(widget.headlessWidgets()))), jbm.worker())),
     ),    
     expectedResult: contains('hello')
+  })
+})
+
+jb.component('FETest.runFEMethod', {
+  impl: uiFrontEndTest({
+    renderDOM: true,
+    action: uiAction.click('button'),
+    control: group({controls: [
+      button({title: 'change', action: runFEMethod({ selector: '#input1', method: 'changeText', data: 'world'})}),
+      editableText({ 
+        style: editableText.input(), 
+        databind: '%$person/name%', 
+        features: [
+          id('input1'),
+          frontEnd.method('changeText', ({data},{el}) => el.value = data )
+        ]
+      })
+    ]}),
+    expectedResult: contains('world')
   })
 })

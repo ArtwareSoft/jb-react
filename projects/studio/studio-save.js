@@ -50,7 +50,7 @@ jb.component('studio.newFileContent', {
   impl: (ctx, fileContent, comps) => {
     let lines = fileContent.split('\n').map(x=>x.replace(/[\s]*$/,''))
     const compsToUpdate = comps.filter(({id})=>lines.findIndex(line=> line.indexOf(`jb.component('${id}'`) == 0) != -1)
-    const compsToAdd = comps.filter(e=>e[1]).filter(({id})=>lines.findIndex(line=> line.indexOf(`jb.component('${id}'`) == 0) == -1)
+    const compsToAdd = comps.filter(e=>e.comp).filter(({id})=>lines.findIndex(line=> line.indexOf(`jb.component('${id}'`) == 0) == -1)
     compsToUpdate.forEach(({id,comp})=>{
       const lineOfComp = lines.findIndex(line=> line.indexOf(`jb.component('${id}'`) == 0)
       const linesFromComp = lines.slice(lineOfComp)

@@ -158,9 +158,7 @@ jb.component('zipArrays', {
   params: [
     {id: 'value', description: 'array of arrays', as: 'array', mandatory: true}
   ],
-  impl: (ctx,value) =>
-    value[0].map((x,i)=>
-      value.map(line=>line[i]))
+  impl: (ctx,value) => value[0].map((x,i)=> value.map(line=>line[i]))
 })
 
 jb.component('removeSections', {
