@@ -336,6 +336,11 @@ jb.component('dialogFeature.autoFocusOnFirstInput', {
   )
 })
 
+jb.component('popup.regainCanvasFocus', {
+	type: 'action',
+	impl: action.focusOnCmp('regain focus','%$popupLauncherCanvas/cmpId%')
+})
+
 jb.component('dialogFeature.cssClassOnLaunchingElement', {
   type: 'dialog-feature',
   description: 'launching element toggles class "dialog-open" if the dialog is open',

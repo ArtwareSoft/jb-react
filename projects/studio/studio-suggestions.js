@@ -28,7 +28,7 @@ jb.extension('suggestions', {
       }
 
       jbm() {
-        return (['%','%$','/','.'].indexOf(this.tailSymbol) != -1) ? jb.exec(jbm.preview()) : jb
+        return (['%','%$','/','.'].indexOf(this.tailSymbol) != -1) ? jb.exec(jbm.wProbe()) : jb
       }
 
       suggestionsRelevant() {
@@ -134,7 +134,6 @@ jb.component('suggestions.lastRunCtxRef', {
 
 jb.component('suggestions.memoizeAndCalc', {
   params: [
-    {id: 'circuitPath', as: 'string'},
     {id: 'probePath', as: 'string'},
     {id: 'expressionOnly', as: 'boolean'},
     {id: 'input', defaultValue: '%%'},
@@ -142,7 +141,7 @@ jb.component('suggestions.memoizeAndCalc', {
   ],
   impl: pipe(
           getOrCreate(suggestions.lastRunCtxRef('%$sessionId%')
-            , pipe(probe.runCircuit('%$circuitPath%','%$probePath%'),log('memoize suggestions'),'%result.0.in%')),
+            , pipe(probe.runCircuit('%$probePath%'),log('memoize suggestions'),'%result.0.in%')),
           suggestions.optionsByProbeCtx('%$probePath%','%$expressionOnly%','%$input%','%%')
       ),
   macroByValue: true,
@@ -157,7 +156,7 @@ jb.component('suggestions.calcFromRemote', {
     {id: 'sessionId', as: 'string', defaultValue: '%$$dialog.cmpId%', description: 'run probe only once per session'},
   ],
   impl: remote.data({
-    data: suggestions.memoizeAndCalc('%$circuitPath%','%$probePath%','%$expressionOnly%','%$input%','%$sessionId%'),
+    data: suggestions.memoizeAndCalc('%$probePath%','%$expressionOnly%','%$input%','%$sessionId%'),
     jbm: ({},{},{input,forceLocal}) => forceLocal ? jb : new jb.suggestions.suggestions(jb.val(input)).jbm()
   })
 })

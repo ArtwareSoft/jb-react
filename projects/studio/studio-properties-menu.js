@@ -9,7 +9,9 @@ jb.component('studio.gotoPath', {
     runActions(
       dialog.closeDialog(),
       writeValue('%$studio/profile_path%', '%$path%'),
-      action.if(studio.inVscode(), ({},{},{path,semanticPart}) => jb.studio.host.gotoPath(path,semanticPart))
+      //action.if(studio.inVscode(), ({},{},{path,semanticPart}) => jb.studio.host.gotoPath(path,semanticPart)),
+      ({},{},{path,semanticPart}) => jb.workspace.gotoPathRequest.next({path,semanticPart}),
+      popup.regainCanvasFocus()
     )
   )
 })
@@ -88,7 +90,7 @@ jb.component('studio.jbEditorMenu', {
                     writeValue(tgp.ref('%$path%~%$name%'), ''),
                     dialog.closeDialog(true),
                     tree.redraw(),
-                    tree.regainFocus()
+                    popup.regainCanvasFocus()
                   )
                 ]
               })
@@ -107,7 +109,7 @@ jb.component('studio.jbEditorMenu', {
       }),
       menu.action({
         title: 'Add variable',
-        action: studio.addVariable('%$path%'),
+        action: runActions(studio.addVariable('%$path%'), studio.gotoPath('%$path%~%id%','value')),
         showCondition: endsWith('~$vars', '%$path%')
       }),
       menu.endWithSeparator({
@@ -120,7 +122,8 @@ jb.component('studio.jbEditorMenu', {
               tree.redraw(),
               dialog.closeDialog(),
               writeValue('%$studio/jbEditor/selected%', '%$path%~%id%'),
-              studio.openJbEditProperty('%$path%','%$path%~%id%')
+              studio.gotoPath('%$path%~%id%','value'),
+              studio.openJbEditProperty('%$path%~%id%')
             )
           })
         )
@@ -131,7 +134,8 @@ jb.component('studio.jbEditorMenu', {
           writeValue(tgp.ref('%$path%~$vars'), list()),
           writeValue('%$studio/jbEditor/selected%', '%$path%~$vars'),
           tree.redraw(),
-          studio.addVariable('%$path%~$vars')
+          studio.addVariable('%$path%~$vars'),
+          studio.gotoPath('%$path%~$vars','value')
         ],
         showCondition: and(
           isEmpty(tgp.val('%$path%~$vars')),
@@ -229,7 +233,7 @@ jb.component('studio.jbEditorMenu', {
                         writeValue(tgp.ref('%$path%~remark'), '%$remark%'),
                         dialog.closeDialog(true),
                         tree.redraw(),
-                        tree.regainFocus()
+                        popup.regainCanvasFocus()
                       )
                     ]
                   })

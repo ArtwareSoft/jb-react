@@ -104,6 +104,12 @@ jb.extension('utils', { // generic utils
       else if (typeof v === 'function')
         return jb.callbag.isCallbag(v)
     },
+    resolveDelayed(delayed, synchCallbag) {
+      if (jb.utils.isPromise(delayed))
+        return Promise.resolve(delayed)
+      if (! jb.asArray(delayed).find(v=> jb.callbag.isCallbag(v) || jb.utils.isPromise(v))) return delayed
+      return jb.utils.toSynchArray(delayed, synchCallbag)
+    },
     toSynchArray(item, synchCallbag) {
       if (jb.utils.isPromise(item))
         return item.then(x=>[x])
@@ -172,7 +178,7 @@ jb.extension('utils', { // generic utils
       if (!jb.frame.sessionStorage) return
       return val == undefined ? JSON.parse(jb.frame.sessionStorage.getItem(id)) : jb.frame.sessionStorage.setItem(id,JSON.stringify(val))
     },
-    eval: (str,frame) => { try { return (frame || jb.frame).eval('('+str+')') } catch (e) { return Symbol.for('parseError') } },
+    eval: (str,frame) => { try { return (frame || jb.frame).eval(`(function() { ${jb.macro.importAll()}; return (${str}) })()`) } catch (e) { return Symbol.for('parseError') } },
 })
 
 // common generic promoted for easy usage

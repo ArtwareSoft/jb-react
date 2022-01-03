@@ -12,7 +12,7 @@ jb.extension('db', 'onAddComponent', {
       match:(id,comp) => comp.passiveData !== undefined,
       register: (id,comp) => {
         jb.comps[jb.db.addDataResourcePrefix(id)] = comp
-        return jb.db.resource(jb.db.removeDataResourcePrefix(id),comp.passiveData)  
+        return jb.db.passive(jb.db.removeDataResourcePrefix(id),comp.passiveData)  
       }
     })
   },

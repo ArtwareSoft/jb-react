@@ -90,14 +90,19 @@ jb.component('group.wait', {
         },
         priority: ctx => jb.path(ctx.vars.$state,'dataArrived') ? 0: 10
     }),
-    followUp.action((ctx,{cmp},{varName,passRx}) => !cmp.state.dataArrived && !cmp.state.error &&
-        Promise.resolve(jb.utils.toSynchArray(ctx.cmpCtx.params.for(),!passRx))
-        .then(data => cmp.refresh({ dataArrived: true }, {
+    followUp.action( async (ctx,{cmp},{varName,passRx}) => {
+      try {
+        if (!cmp.state.dataArrived && !cmp.state.error) {
+          const data = await jb.utils.resolveDelayed(ctx.cmpCtx.params.for(), !passRx)
+          cmp.refresh({ dataArrived: true }, {
             srcCtx: ctx.cmpCtx,
             extendCtx: ctx => ctx.setVar(varName,data).setData(data)
-          }))
-          .catch(e=> cmp.refresh({error: JSON.stringify(e)}))
-      )
+          })
+        }
+      } catch(e) {
+        cmp.refresh({error: JSON.stringify(e)})
+      }
+    })
   )
 })
 

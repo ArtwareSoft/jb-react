@@ -139,9 +139,9 @@ jb.component('inPlaceEditTest.text', {
 
 jb.component('inPlaceEditTest.grid', {
   impl: uiFrontEndTest({
+    renderDOM: true,
     runBefore: ctx => jb.studio.previewWindow = window,
     cleanUp: ctx => jb.studio.previewWindow = null,
-    renderDOM: true,
     control: test.wixIslandGridCtrl(),
     action: runActions(inplaceEdit.activate('test.wixIslandGridCtrl~impl'),delay(10)),
     expectedResult: contains('div')

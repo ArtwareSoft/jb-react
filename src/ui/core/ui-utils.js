@@ -7,8 +7,8 @@ jb.extension('ui', {
           || jb.path(jb,['studio','studioWindow','jb','studio','lastStudioActivity'])
 
         jb.log('focus request',{srcCtx, logTxt, timeDiff: now - lastStudioActivity, elem,srcCtx})
-        if (jb.studio.previewjb == jb && jb.path(jb.ui.parentFrameJb(),'resources.studio.project') != 'studio-helper' && lastStudioActivity && now - lastStudioActivity < 1000)
-            return
+        // if (jb.studio.previewjb == jb && jb.path(jb.ui.parentFrameJb(),'resources.studio.project') != 'studio-helper' && lastStudioActivity && now - lastStudioActivity < 1000)
+        //     return
         jb.log('focus dom',{elem,srcCtx,logTxt})
         jb.delay(1).then(() => elem.focus())
     },
@@ -62,8 +62,6 @@ jb.extension('ui', {
 })
 
 // ***************** inter-cmp services
-
-// var { feature, action } = jb.ns('feature')
 
 jb.component('feature.serviceRegistey', {
   type: 'feature',

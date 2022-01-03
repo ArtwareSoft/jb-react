@@ -9,24 +9,34 @@ jb.component('sampleProject.main', {
   })
 })
 
+jb.component('sampleComp.ctrlWithPipeline', {
+  impl: group({
+    controls: text(pipeline(list('hello','%$var1%'), join(' '))),
+    features: [
+      variable('var1','world'),
+      variable('xx','xx')
+    ]
+  })
+})
+
 jb.component('workerPreviewTest.basic', {
   impl: uiTest({
     timeout: 1000,
-    runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
+    runBefore: writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
     checkResultRx: () => jb.ui.renderingUpdates,
-    control: preview.remoteWidget(),
+    control: probe.remoteMainCircuitView(),
     expectedResult: contains('hello')
   })
 })
 
 jb.component('workerPreviewTest.changeScript', {
   impl: uiTest({
-    timeout: 5000,
-    runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
+    timeout: 1000,
+    runBefore: writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
     control: group({
       controls: [
         button({title: 'change script', action: writeValue(tgp.ref('sampleProject.main~impl~controls~text'),'world') }),
-        preview.remoteWidget()
+        probe.remoteMainCircuitView()
       ],
     }),
     userInputRx: rx.pipe(
@@ -41,11 +51,11 @@ jb.component('workerPreviewTest.changeScript', {
 jb.component('workerPreviewTest.nodePreview', {
   impl: uiTest({
     timeout: 5000,
-    runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
+    runBefore: writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
     control: group({
       controls: [
         button({title: 'change script', action: writeValue(tgp.ref('sampleProject.main~impl~controls~text'),'world') }),
-        preview.remoteWidget(jbm.nodePreview())
+        probe.remoteMainCircuitView(jbm.nodeProbe())
       ],
     }),
     userInputRx: rx.pipe(
@@ -61,20 +71,20 @@ jb.component('FETest.workerPreview.addCss', {
   impl: uiFrontEndTest({
     renderDOM: true,
     timeout: 5000,
-    runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
+    runBefore: writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
     control: group({
       controls: [
         button({title: 'change script', action: writeValue(tgp.ref('sampleProject.main~impl~controls~features~1'),() => css('color: red')) }),
-        preview.remoteWidget()
+        probe.remoteMainCircuitView()
       ],
     }),
     action: runActions(
       uiAction.waitForSelector('#sampleText'),
       uiAction.click('button'),
-      waitFor(()=>Array.from(document.querySelectorAll('head>style')).find(x=>x.innerText.match(/tests•wPreview/)))
+      waitFor(()=>Array.from(document.querySelectorAll('head>style')).find(x=>x.innerText.match(/tests•wProbe/)))
     ),    
     expectedResult: () => getComputedStyle(document.querySelector('#sampleText')).color == 'rgb(255, 0, 0)',
-    cleanUp: () => Array.from(document.querySelectorAll('head>style')).filter(x=>x.innerText.match(/tests•wPreview/)).forEach(x=>x.remove())
+    cleanUp: () => Array.from(document.querySelectorAll('head>style')).filter(x=>x.innerText.match(/tests•wProbe/)).forEach(x=>x.remove())
   })
 })
 
@@ -83,13 +93,13 @@ jb.component('FETest.workerPreview.changeCss', {
     renderDOM: true,
     timeout: 5000,
     runBefore: runActions(
-      writeValue('%$studio/circuit%','sampleProject.main'),
+      writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
       writeValue(tgp.ref('sampleProject.main~impl~controls~features~1'),() => css('color: green'))
     ),
     control: group({
       controls: [
         button({title: 'change script', action: writeValue(tgp.ref('sampleProject.main~impl~controls~features~1'),() => css('color: blue')) }),
-        preview.remoteWidget()
+        probe.remoteMainCircuitView()
       ],
     }),
     action: runActions(
@@ -98,7 +108,7 @@ jb.component('FETest.workerPreview.changeCss', {
       waitFor(()=>Array.from(document.querySelectorAll('head>style')).find(x=>x.innerText.match(/color: blue/)))
     ),    
     expectedResult: () => getComputedStyle(document.querySelector('#sampleText')).color == 'rgb(0, 0, 255)',
-    cleanUp: () => Array.from(document.querySelectorAll('head>style')).filter(x=>x.innerText.match(/tests•wPreview/)).forEach(x=>x.remove())
+    cleanUp: () => Array.from(document.querySelectorAll('head>style')).filter(x=>x.innerText.match(/tests•wProbe/)).forEach(x=>x.remove())
   })
 })
 
@@ -106,11 +116,10 @@ jb.component('FETest.workerPreviewTest.suggestions', {
   impl: uiFrontEndTest({
     renderDOM: true,
     timeout: 5000,
-//    vars: Var('circuitPath','sampleProject.main'),
-    runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
+    runBefore: writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
     control: group({
       controls: [
-        preview.remoteWidget(jbm.wPreview('w0Preview')),
+        probe.remoteMainCircuitView(),
         studio.propertyPrimitive('sampleProject.main~impl~controls~text')
       ],
     }),
@@ -129,10 +138,10 @@ jb.component('FETest.workerPreviewTest.suggestions.select', {
   impl: uiFrontEndTest({
     renderDOM: true,
     timeout: 5000,
-    runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
+    runBefore: writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
     control: group({
       controls: [
-        preview.remoteWidget(jbm.wPreview('w1Preview')),
+        probe.remoteMainCircuitView(),
         studio.propertyPrimitive('sampleProject.main~impl~controls~text')
       ],
     }),
@@ -152,10 +161,10 @@ jb.component('FETest.workerPreviewTest.suggestions.select', {
 
 // jb.component('workerPreviewTest.suggestions2', {
 //   impl: uiTest({
-//     runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
+//     runBefore: writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
 //     control: group({
 //       controls: [
-//         preview.remoteWidget(),
+//         probe.remoteMainCircuitView(),
 //         studio.propertyPrimitive('sampleProject.main~impl~controls~text')
 //       ],
 //     }),
@@ -167,10 +176,10 @@ jb.component('FETest.workerPreviewTest.suggestions.filtered', {
   impl: uiFrontEndTest({
     renderDOM: true,
     timeout: 5000,
-    runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
+    runBefore: writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
     control: group({
       controls: [
-        preview.remoteWidget(jbm.wPreview('w2Preview')),
+        probe.remoteMainCircuitView(),
         studio.propertyPrimitive('sampleProject.main~impl~controls~text')
       ],
     }),
@@ -185,30 +194,15 @@ jb.component('FETest.workerPreviewTest.suggestions.filtered', {
   })
 })
 
-jb.component('FETest.workerPreviewTest.editableSource', {
-  impl: uiFrontEndTest({
-    renderDOM: true,
-    timeout: 5000,
-    runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
-    control: group({
-      controls: [
-        studio.editableSource('sampleProject.main~impl',300),
-        // preview.remoteWidget(), preview.remoteInOut
-      ],
-    }),
-    expectedResult: true
-  })
-})
-
 jb.component('jbEditorTest.basic', {
   impl: uiTest({
     control: group({
       controls: [
-        preview.remoteWidget(),
+        probe.remoteMainCircuitView(),
         studio.jbEditor('sampleProject.main~impl')
       ]
     }),
-    runBefore: writeValue('%$studio/circuit%', 'sampleProject.main'),
+    runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
     checkResultRx: () => jb.ui.renderingUpdates,
     expectedResult: contains('hello'),
     timeout: 1000
@@ -220,7 +214,7 @@ jb.component('jbEditorTest.basic', {
 //     renderDOM: true,
 //     timeout: 5000,
 //     runBefore: runActions(
-//       writeValue('%$studio/circuit%','sampleProject.main'),
+//       writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
 //       remote.action(() => jb.component('dataResource.studio', { watchableData: {
 //         jbEditor: { 
 //           circuit: 'sampleProject.main',
@@ -229,7 +223,7 @@ jb.component('jbEditorTest.basic', {
 //     ),
 //     control: group({
 //       controls: [
-//         preview.remoteWidget(),
+//         probe.remoteMainCircuitView(),
 //         remote.widget(
 //           controlWithFeatures(
 //             studio.jbEditorInteliTree('sampleProject.main~impl'),{
@@ -265,11 +259,11 @@ jb.component('previewTest.childJbm', {
   impl: uiTest({
     timeout: 1000,
     runBefore: runActions(
-      jbm.child({id: 'wPreview', init: studio.initPreview()}),
-      writeValue('%$studio/circuit%','sampleProject.main'),
+      jbm.child({id: 'childPreview', init: probe.initRemoteProbe()}),
+      writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
     ),
     checkResultRx: () => jb.ui.renderingUpdates,
-    control: preview.remoteWidget(),
+    control: probe.remoteMainCircuitView(jbm.child('childPreview')),
     expectedResult: contains('hello')
   })
 })

@@ -15,7 +15,14 @@
 		"Other"
 	],
 	"icon": "logo128.png",
-	"keywords": ["javascript", "visual programming", "visual", "html5", "web development", "css"],
+	"keywords": [
+		"javascript",
+		"visual programming",
+		"visual",
+		"html5",
+		"web development",
+		"css"
+	],
 	"repository": "https://github.com/Artwaresoft/jb-react",
 	"activationEvents": [
 		"onView:jbart.jbEditor",
@@ -26,29 +33,47 @@
 	"contributes": {
 		"viewsContainers": {
 			"activitybar": [
-			  {
-				"id": "jbart",
-				"title": "jBart",
-				"icon": "logo128.png"
-			  }
+				{
+					"id": "jbart",
+					"title": "jBart",
+					"icon": "logo128.png"
+				}
 			]
-		},		
+		},
 		"views": {
 			"jbart": [
-				{ "id": "jbart.jbEditor", "type": "webview", "name": "inteliscript"	},
-				{ "id": "jbart.logs", "type": "webview", "name": "logs" },
-				{ "id": "jbart.preview", "type": "webview", "name": "preview" }				
+				{
+					"id": "jbart.jbEditor",
+					"type": "webview",
+					"name": "inteliscript"
+				},
+				{
+					"id": "jbart.logs",
+					"type": "webview",
+					"name": "logs"
+				},
+				{
+					"id": "jbart.preview",
+					"type": "webview",
+					"name": "preview"
+				}
 			]
 		},
 		"commands": [
-			{ "command": "jbart.formatComponent", "title": "format jBart component" }
+			{
+				"command": "jbart.formatComponent",
+				"title": "format jBart component"
+			}
 		],
 		"keybindings": [
-			{ "command": "jbart.onEnter", "key": "Ctrl+Enter", "when": "jbart.inComponent" }
-		]		
+			{
+				"command": "jbart.onEnter",
+				"key": "Ctrl+Enter",
+				"when": "jbart.inComponent"
+			}
+		]
 	},
-	"scripts": {
-	},
+	"scripts": {},
 	"dependencies": {},
 	"devDependencies": {
 		"@types/node": "^12.12.0",

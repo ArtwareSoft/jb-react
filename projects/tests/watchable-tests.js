@@ -341,6 +341,7 @@ jb.component('uiTest.watchRefArrayDeleteWithRunActionOnItems', {
 
 jb.component('uiTest.watchableAsText', {
   impl: uiFrontEndTest({
+    //renderDOM: true,
     control: group({
       vars: Var('watchedText', tgpTextEditor.watchableAsText('%$watchablePeople%')),
       controls: [
@@ -353,7 +354,7 @@ jb.component('uiTest.watchableAsText', {
               'Alt-P',
               writeValue('%$path%', tgpTextEditor.cursorPath('%$watchedText%'))
             ),
-            tgpTextEditor.init(),
+            textarea.initTgpTextEditor(),
             watchRef({ ref: '%$watchablePeople%', includeChildren: 'yes'})
           ]
         }),
@@ -362,7 +363,7 @@ jb.component('uiTest.watchableAsText', {
           action: writeValue('%$path%', tgpTextEditor.cursorPath('%$watchedText%')),
           features: [
             id('show-path'),
-            tgpTextEditor.enrichUserEvent('#editor'),
+            textarea.enrichUserEvent('#editor'),
           ]
         }),
         button({
@@ -378,7 +379,8 @@ jb.component('uiTest.watchableAsText', {
       ]
     }),
     action: runActions(
-      ctx => jb.ui.cmpOfSelector('#editor',ctx).runFEMethod('setSelectionRange',{line: 2, col: 20}),
+      waitFor(ctx => jb.ui.cmpOfSelector('#editor',ctx) ),
+      runFEMethod({ selector: '#editor', method: 'setSelectionRange', data: {$: 'object', from: 22} }),
       uiAction.click('#show-path')
     ),
     expectedResult: contains('watchablePeople~0~name~!value')

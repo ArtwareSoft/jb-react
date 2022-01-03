@@ -1,3 +1,4 @@
+
 jb.component('widget.frontEndCtrl', {
     type: 'control',
     params: [
@@ -95,20 +96,23 @@ jb.component('remote.widget', {
       {id: 'control', type: 'control', dynamic: true },
       {id: 'jbm', type: 'jbm' },
     ],
-    impl: controlWithFeatures({
-        vars: Var('widgetId', widget.newId('%$jbm%')),
-        control: widget.frontEndCtrl('%$widgetId%'),
-        features: followUp.flow(
-            source.callbag(() => jb.ui.widgetUserRequests),
-            rx.log('remote widget userReq'),
-            rx.filter('%widgetId% == %$widgetId%'),
-            rx.takeWhile(({data}) => data.$$ != 'destroy',true),
-            //source.frontEndUserEvent('%$widgetId%'),
-            rx.log('remote widget sent to headless'),
-            remote.operator(widget.headless(call('control'),'%$widgetId%'), '%$jbm%'),
-            rx.log('remote widget arrived from headless'),
-            sink.action(action.frontEndDelta('%%')),
-        )
+    impl: group({ 
+        controls: controlWithFeatures({
+            vars: Var('widgetId', widget.newId('%$resolvedJbm%')),
+            control: widget.frontEndCtrl('%$widgetId%'),
+            features: followUp.flow(
+                source.callbag(() => jb.ui.widgetUserRequests),
+                rx.log('remote widget userReq'),
+                rx.filter('%widgetId% == %$widgetId%'),
+                rx.takeWhile(({data}) => data.$$ != 'destroy',true),
+                //source.frontEndUserEvent('%$widgetId%'),
+                rx.log('remote widget sent to headless'),
+                remote.operator(widget.headless(call('control'),'%$widgetId%'), '%$resolvedJbm%'),
+                rx.log('remote widget arrived from headless'),
+                sink.action(action.frontEndDelta('%%')),
+            )
+        }),
+        features: group.wait({for: '%$jbm%', varName: 'resolvedJbm'})
     })
 })
 
@@ -145,6 +149,7 @@ jb.extension('ui','headless', {
             if (!recover) jb.logError('headless widgetId already exists',{widgetId,ctx})
             jb.ui.destroyHeadless(widgetId)
         }
+        console.log('createHeadlessWidget', widgetId, ctrl.runCtx.path)
         const cmp = ctrl(ctxToUse)
         jb.ui.headless[widgetId] = {} // used by styles
         const top = jb.ui.h(cmp)

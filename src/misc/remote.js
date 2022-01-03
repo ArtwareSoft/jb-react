@@ -100,6 +100,19 @@ jb.component('remote.initShadowData', {
     )
 })
 
+jb.component('remote.copyPassiveData', {
+    type: 'action',
+    description: 'shadow watchable data on remote jbm',
+    params: [
+      {id: 'resourceId', as: 'string' },
+      {id: 'jbm', type: 'jbm'},
+    ],
+    impl: runActions(
+        Var('resourceCopy', '%${%$resourceId%}%'),
+        remote.action(addComponent({id: '%$resourceId%', value: '%$resourceCopy%', type: 'passiveData' }),'%$jbm%')
+    )
+})
+
 jb.component('remote.shadowResource', {
     type: 'action',
     description: 'shadow watchable data on remote jbm',
@@ -109,13 +122,16 @@ jb.component('remote.shadowResource', {
     ],
     impl: runActions(
         Var('resourceCopy', '%${%$resourceId%}%'),
-        remote.action(addComponent({id: '%$resourceId%', value: '%$resourceCopy%', type: 'watchableData' }),'%$jbm%'),
+        remote.action(runActions(
+            () => 'for loader - jb.watchable.initResourcesRef(',
+            addComponent({id: '%$resourceId%', value: '%$resourceCopy%', type: 'watchableData' }))
+        ,'%$jbm%'),
         rx.pipe(
             source.watchableData({ref: '%${%$resourceId%}%', includeChildren: 'yes'}),
             rx.map(obj(prop('op','%op%'), prop('path',({data}) => jb.db.pathOfRef(data.ref)))),
             sink.action(remote.action( remote.updateShadowData('%%'), '%$jbm%')
         ))
-    )
+    ),
 })
 
 jb.component('remote.updateShadowData', {
@@ -124,27 +140,14 @@ jb.component('remote.updateShadowData', {
     params: [
         {id: 'entry' },
     ],
-    impl: (ctx,entry) => {
-        jb.log('shadowData update',{op: entry.op, ctx})
-        const ref = jb.db.refOfPath(entry.path)
+    impl: (ctx,{path,op}) => {
+        jb.log('shadowData update',{op, ctx})
+        const ref = jb.db.refOfPath(path)
         if (!ref)
-            jb.logError('shadowData path not found at destination',{path: entry.path, ctx})
+            jb.logError('shadowData path not found at destination',{path, ctx})
         else
-            jb.db.doOp(ref, entry.op, ctx)
+            jb.db.doOp(ref, op, ctx)
     }
-})
-
-jb.component('remote.copyPassiveData', {
-    type: 'action',
-    description: 'copy passive data to remote jbm',
-    params: [
-      {id: 'jbm', type: 'jbm'},
-    ],
-    impl: runActions(
-        Var('passiveData', () => jb.db.passive()),
-        remote.action( (ctx,passiveData) => Object.keys(passiveData).forEach(k=>jb.db.passive(k,passiveData[k])),
-            '%$jbm%')
-    )
 })
 
 /*** net comps */

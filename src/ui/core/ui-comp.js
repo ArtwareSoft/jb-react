@@ -58,8 +58,9 @@ jb.extension('ui','comp', {
     JbComponent : class JbComponent {
         constructor(ctx,id,ver) {
             this.ctx = ctx // used to calc features
-            const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId || ''
-            this.cmpId = id || (widgetId ? (widgetId+'-'+(jb.ui.cmpCounter++)) : ''+(jb.ui.cmpCounter++))
+            //const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId || ''
+            this.cmpId = `${jb.uri}-${jb.ui.cmpCounter++}`
+            //id || (widgetId ? (widgetId+'-'+(jb.ui.cmpCounter++)) : ''+(jb.ui.cmpCounter++))
             this.ver = ver || 1
             this.eventObservables = []
             this.cssLines = []

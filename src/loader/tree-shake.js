@@ -45,6 +45,7 @@ jb.extension('treeShake', {
             ...(obj.$ ? [obj.$] : []),
             ...vals.filter(x=> x && typeof x == 'object').flatMap(x => jb.treeShake.dependentOnObj(x, onlyMissing)),
             ...vals.filter(x=> x && typeof x == 'function').flatMap(x => jb.treeShake.dependentOnFunc(x, onlyMissing)),
+            ...vals.filter(x=> x && typeof x == 'string' && x.indexOf('%$') != -1).flatMap(x => jb.treeShake.dependentResources(x, onlyMissing)),
             ...vals.filter(x=> x && typeof x == 'string' && x.indexOf('__JBART_FUNC') == 0).flatMap(x => jb.treeShake.dependentOnFunc(x, onlyMissing)),
         ].filter(id=> !onlyMissing || jb.treeShake.missing(id)).filter(x=> x!= 'runCtx')
     },
@@ -59,6 +60,11 @@ jb.extension('treeShake', {
         //jb.log('treeShake dependent on func',{f: func.name || funcStr, funcDefs, funcUsage})
         return [ ...(func.__initFunc ? [func.__initFunc] : []), ...funcDefs, ...funcUsage, ...extraComps]
             .filter(x=>!x.match(/^#frame\./)).filter(id=> !onlyMissing || jb.treeShake.missing(id))
+    },
+    dependentResources(str, onlyMissing) {
+        return Array.from(str.matchAll(/%\$([^%\.\/]*)/g)).map(x=>`dataResource.${x[1]}`)
+            .filter(id => jb.comps[id])
+            .filter(id=> !onlyMissing || jb.treeShake.missing(id))
     },
     code(ids) {
         jb.log('treeShake code',{ids})

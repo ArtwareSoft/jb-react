@@ -72,7 +72,6 @@ jb.component('studio.properties', {
         }),
         style: tableTree.plain({hideHeaders: true, gapWidth: 100, noItemsCtrl: text('')}),
         features: [
-          variable('%$circuitPath%','%$path%'),
           css(
             `>tbody>tr>td.headline { vertical-align: inherit; margin-bottom: 7px; }
             >tbody>tr>td>span>i { margin-bottom: 8px }`

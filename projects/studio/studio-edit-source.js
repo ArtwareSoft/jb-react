@@ -1,3 +1,4 @@
+
 jb.component('sourceEditor.refreshEditor', {
   type: 'action',
   params: [
@@ -90,7 +91,7 @@ jb.component('studio.editableSource', {
       }
     }),
     features: [
-      tgpTextEditor.init(),
+      codemirror.initTgpTextEditor(),
       css.height({height: '%$height%', minMax: 'max'}),
       feature.onKey('Ctrl-I', studio.openJbEditor('%$path%'))
     ]

@@ -9,10 +9,9 @@ jb.component('suggestionsTest', {
     {id: 'forceLocal', as: 'boolean', defaultValue: true}
   ],
   impl: dataTest({
-    runBefore: writeValue('%$studio/circuit%',''),
+    runBefore: remote.copyPassiveData('people', jbm.wProbe()), //writeValue('%$studio/circuit%',''),
     calculate: pipe(
       suggestions.calcFromRemote({
-        circuitPath: 'suggestionsTest.defaultProbe',
         probePath: '%$path%', forceLocal: '%$forceLocal%',
         input: obj(prop('value','%$expression%'), prop('selectionStart', 
           ({},{},{expression, selectionStart}) => selectionStart == -1 ? expression.length : selectionStart))

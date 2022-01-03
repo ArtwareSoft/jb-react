@@ -1142,7 +1142,7 @@ jb.component('addComponent', {
     {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
     {id: 'type', options:'watchableData,passiveData,comp', mandatory: true },
   ],
-  impl: (ctx,id,value,type) => jb.component(id(), type == 'comp' ? value() : {[type]: value() } )
+  impl: (ctx,id,value,type) => jb.component(id(), type == 'comp' ? value() : {[type]: value() } ),
 })
 
 jb.component('loadLibs', {

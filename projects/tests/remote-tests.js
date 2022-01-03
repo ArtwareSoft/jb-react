@@ -142,7 +142,16 @@ jb.component('remoteTest.networkGateway', {
   })
 })
 
-jb.component('remoteTest.shadowResource', {
+jb.component('remoteTest.shadowResource.initWatchable', {
+  impl: dataTest({
+    timeout: 5000,
+    runBefore: remote.shadowResource('person', jbm.worker()),
+    calculate: remote.data(() => jb.watchable != null,jbm.worker()),
+    expectedResult: equals(true)
+  })
+})
+
+jb.component('remoteTest.shadowResource.watchable', {
   impl: dataTest({
     timeout: 5000,
     runBefore: runActions(
@@ -334,6 +343,18 @@ jb.component('remoteWidgetTest.button', {
     timeout: 3000,
     checkResultRx: () => jb.ui.renderingUpdates,
     control: remote.widget(button('hello world'), jbm.worker()),
+    expectedResult: contains('hello world')
+  })
+})
+
+jb.component('remoteWidgetTest.group.wait', {
+  impl: uiTest({
+    timeout: 3000,
+    checkResultRx: () => jb.ui.renderingUpdates,
+    control: remote.widget(group({
+      controls: button('hello world'),
+      features: group.wait(treeShake.getCodeFromRemote('sampleProject.main')),
+    }), jbm.worker()),
     expectedResult: contains('hello world')
   })
 })

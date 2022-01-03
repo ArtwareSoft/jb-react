@@ -16,6 +16,8 @@ jb.extension('ui', {
             if (children != null)
                 children = children.filter(x=>x).map(item=> typeof item == 'string' ? jb.ui.h('span',{$text: item}) : item)
             if (children && children.length == 0) children = null
+            if (!Array.isArray(children || []))
+                jb.logError('vdom - children must be array',{cmpOrTag, _attributes, _children})
             
             this.attributes = attributes
                 
@@ -33,7 +35,7 @@ jb.extension('ui', {
             Object.assign(this,{...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,...(children && {children}) })
         }
         getAttribute(att) {
-            const res = (this.attributes || {})[att]
+            const res = (this.attributes || {})[att.toLowerCase()]
             return res == null ? res : (''+res)
         }
         setAttribute(att,val) {
@@ -137,7 +139,10 @@ jb.extension('ui', {
         }
     },
     vdomToHtml(vdom) {
-        const childern = (vdom.children || []).map(x=>jb.ui.vdomToHtml(x)).join('')
+        let childs = (vdom.children || [])
+        if (!Array.isArray(childs))
+            childs = childs.length ? Array.from(Array(childs.length).keys()).map(i=>childs[i]) : []
+        const childern = childs.map(x=>jb.ui.vdomToHtml(x)).join('')
         return `<${vdom.tag} ${jb.entries(vdom.attributes).map(([k,v]) => k+'="' +v + '"').join(' ')} ${childern?'':'/'}>
             ${childern ? childern + '</' + vdom.tag +'>' :''}`
     },

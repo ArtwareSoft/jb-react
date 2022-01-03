@@ -1,14 +1,10 @@
+
 jb.component('jbm.wPreview', {
     type: 'jbm',
     params: [
         {id: 'id', defaultValue: 'wPreview' }
     ],    
     impl: jbm.worker({id: '%$id%', init: studio.initPreview()})
-})
-
-jb.component('jbm.nodePreview', {
-    type: 'jbm',
-    impl: jbm.nodeContainer({init: studio.initPreview()})
 })
 
 jb.component('jbm.preview', {
@@ -21,17 +17,19 @@ jb.component('studio.initPreview', {
     impl: runActions(
         log('init preview', () => ({uri: jb.uri})),
         Var('dataResources',() => jb.studio.projectCompsAsEntries().map(e=>e[0]).filter(x=>x.match(/^dataResource/)).map(x=> ({$: x}))),
-        Var('circuit', '%$studio/circuit%'),
-        writeValue('%$yellowPages/preview%', '%$jbm/uri%'),
-        remote.action(runActions(
-            treeShake.getCodeFromRemote('%$circuit%'),
-            ({},{circuit}) => jb.component('dataResource.studio', { watchableData: { jbEditor: {}, scriptChangeCounter: 0, circuit } }),
-            ({},{dataResources}) => { 
-                jb.ctxByPath = {}; 
-                // for code loader: jb.ui.createHeadlessWidget()
-             }, 
-        ), '%$jbm%'),
-        remote.initShadowData('%$studio%', '%$jbm%'),
+        // Var('circuit', '%$studio/circuit%'),
+        // writeValue('%$yellowPages/preview%', '%$jbm/uri%'),
+        // remote.action(runActions(
+        //     treeShake.getCodeFromRemote('%$circuit%'),
+        //     ({},{circuit}) => jb.component('dataResource.studio', { watchableData: { jbEditor: {}, scriptChangeCounter: 0, circuit } }),
+        //     ({},{dataResources}) => { 
+        //         jb.ctxByPath = {}; 
+        //         // for code loader: jb.ui.createHeadlessWidget()
+        //      }, 
+        // ), '%$jbm%'),
+        // remote.initShadowData('%$studio%', '%$jbm%'),
+        remote.shadowResource('studio', '%$jbm%'),
+        remote.shadowResource('probe', '%$jbm%'),
         rx.pipe(
             source.callbag(() => {
                 jb.log('init preview watchableComps source',{})
@@ -40,8 +38,8 @@ jb.component('studio.initPreview', {
 //            watchableComps.scriptChange(),
             rx.log('preview change script'),
             rx.map(obj(prop('op','%op%'), prop('path','%path%'))),
-            rx.var('cssOnlyChange',studio.isCssPath('%path%')),
-            sink.action(remote.action( {action: preview.handleScriptChangeOnPreview('%$cssOnlyChange%'), jbm: '%$jbm%', oneway: true}))
+            rx.var('cssOnlyChange',tgp.isCssPath('%path%')),
+            sink.action(remote.action( {action: probe.handleScriptChangeOnPreview('%$cssOnlyChange%'), jbm: '%$jbm%', oneway: true}))
         )
     ),
 })
@@ -70,44 +68,11 @@ jb.component('preview.control', {
         },
         features: [ 
             If(ctx => !jb.comps[ctx.exp('%$studio/circuit%')], group.wait(treeShake.getCodeFromRemote('%$studio/circuit%'))),
-            watchRef('%$studio/scriptChangeCounter%'),
+            watchRef('%$probe/scriptChangeCounter%'),
             variable('$previewMode',true)
         ]
     }),
     require: {$: 'test.showTestInStudio'}
 })
 
-jb.component('preview.handleScriptChangeOnPreview', {
-    type: 'action',
-    description: 'preview script change handler',
-    params: [
-        {id: 'cssOnlyChange', as: 'boolean' }
-    ],
-    impl: (ctx, cssOnlyChange) => {
-        const {op, path} = ctx.data
-        const handler = jb.watchableComps.startWatch()
-        if (path[0] == 'probeTest.label1') return
-        if (!jb.comps[path[0]])
-            return jb.logError(`handleScriptChangeOnPreview - missing comp ${path[0]}`, {path, ctx})
-        handler.makeWatchable(path[0])
-        handler.doOp(handler.refOfPath(path), op, ctx)
-
-        const headlessWidgetId = Object.keys(jb.ui.headless)[0]
-        const headless = jb.ui.headless[headlessWidgetId]
-        if (!headless)
-            return jb.logError(`handleScriptChangeOnPreview - missing headless ${headlessWidgetId} at ${jb.uri}`, {path, ctx})
-        if (cssOnlyChange) {
-            let featureIndex = path.lastIndexOf('features')
-            if (featureIndex == -1) featureIndex = path.lastIndexOf('layout')
-            const ctrlPath = path.slice(0, featureIndex).join('~')
-            const elems = headless.body.querySelectorAll('[jb-ctx]')
-                .map(elem=>({elem, path: jb.path(JSON.parse(elem.attributes.$__debug),'path') }))
-                .filter(e => e.path == ctrlPath)
-            elems.forEach(e=>jb.ui.refreshElem(e.elem,null,{cssOnly: e.elem.attributes.class ? true : false}))           
-        } else {
-            const ref = ctx.exp('%$studio/scriptChangeCounter%','ref')
-            jb.db.writeValue(ref, +jb.val(ref)+1 ,ctx.setVars({headlessWidget: true}))
-        }
-    }
-})
 

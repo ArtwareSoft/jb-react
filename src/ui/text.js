@@ -1,3 +1,4 @@
+
 jb.component('text', {
   type: 'control',
   category: 'control:100,common:100',

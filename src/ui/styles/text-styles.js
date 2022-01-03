@@ -98,3 +98,15 @@ jb.defComponents('1,2'.split(','),
   level => jb.component(`header.mdcBody${level}`, 
     ({type: 'text.style', impl: {$: 'text.h2WithClass', clz: `mdc-typography mdc-typography--body${level}`}})
 ))
+
+jb.component('text.textarea', {
+  type: 'text.style',
+  params: [
+    {id: 'rows', as: 'number', defaultValue: 4},
+    {id: 'cols', as: 'number', defaultValue: 120},
+  ],
+  impl: customStyle({
+    template: (cmp,{text,rows,cols},h) => h('textarea', { rows: rows, cols: cols, value: text}),
+      features: text.bindText()
+  })
+})

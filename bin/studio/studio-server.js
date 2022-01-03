@@ -40,6 +40,11 @@ function calcFullPath(path) {
     const repo = path.split('/')[0]
     return [repos[repo], ...path.split('/').slice(1)].join('/')
   }
+  if (Object.keys(repos).indexOf(path.split('/')[1]) != -1 && path.split('/')[0] == '.') {
+    const repo = path.split('/')[1]
+    return [repos[repo], ...path.split('/').slice(2)].join('/')
+  }
+
   const project_match = path.match(/^projects\/([^/]*)(.*)/);
   if (project_match)
     return projectDirectory(project_match[1]) + project_match[2]

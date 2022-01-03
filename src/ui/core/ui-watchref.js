@@ -23,6 +23,8 @@ jb.extension('ui', 'watchRef', {
         jb.log('refresh check observable elements',{originatingCmpId,elemsToCheck,e,srcCtx:e.srcCtx})
         elemsToCheck.forEach(({elem, top},i) => {
             const cmpId = elem.getAttribute('cmp-id')
+            if (cmpId.indexOf('-') != -1 && cmpId.split('-')[0] != jb.uri)
+                return
 //            if (elem instanceof jb.ui.VNode ? headlessElemDetached(elem) : !jb.ui.parents(elem).find(el=>el == top))
             if (!jb.ui.parents(elem).find(el=>el == top))
                 return jb.log('observable elem was detached in refresh process',{originatingCmpId,cmpId,elem})

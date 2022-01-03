@@ -1,7 +1,9 @@
-probe fixes
-  mainCircuit
-  preview and studio/circuit
-  pipe extra array elem
+workspace
+  suggestions
+  pass tests
+  refactor codemirror
+  refactor vsccode
+remote codeMirror
 
 errors in inteli with people
   tree focus back on error

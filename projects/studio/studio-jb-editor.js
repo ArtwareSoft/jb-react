@@ -115,7 +115,7 @@ jb.component('studio.jbEditor', {
     controls: [
       studio.jbEditorInteliTree('%$path%'),
       group({
-        controls: studio.probeDataView('%$path%'),
+        controls: probe.inOutView('%$studio/jbEditor/selected%'),
         features: [feature.if(not('%$studio/hideProbe%')), watchRef('%$studio/hideProbe%')]
       })
     ],
@@ -126,12 +126,10 @@ jb.component('studio.jbEditor', {
 jb.component('studio.openJbEditProperty', {
   type: 'action',
   params: [
-    {id: 'circuitPath', as: 'string'},
     {id: 'path', as: 'string'}
   ],
   impl: action.switch(
     Var('actualPath', studio.jbEditorPathForEdit('%$path%')),
-    Var('circuitPath', '%$circuitPath%'),
     Var('paramDef', tgp.paramDef('%$actualPath%')),
     [
       action.switchCase(ctx => 
@@ -149,14 +147,14 @@ jb.component('studio.openJbEditProperty', {
               feature.onEsc(dialog.closeDialog(true)),
               feature.onEnter(
                 dialog.closeDialog(true),
-                tree.regainFocus(),
+                popup.regainCanvasFocus(),
                 toggleBooleanValue('%$studio/refreshProbe%')
               )
             ]
           }),
           features: [
             dialogFeature.autoFocusOnFirstInput(),
-            dialogFeature.onClose(tree.regainFocus())
+            dialogFeature.onClose(popup.regainCanvasFocus())
           ]
         })
       ),
@@ -185,7 +183,7 @@ jb.component('studio.openJbEditProperty', {
       path: '%$actualPath%',
       type: tgp.paramType('%$actualPath%'),
       mode: 'update',
-      onClose: tree.regainFocus()
+      onClose: popup.regainCanvasFocus()
     })
   )
 })
@@ -206,7 +204,7 @@ jb.component('studio.jbEditorInteliTree', {
         onRightClick: studio.openJbEditorMenu('%%', '%$path%')
       }),
       tree.keyboardSelection({
-        onEnter: studio.openJbEditProperty('%$path%','%$studio/jbEditor/selected%'),
+        onEnter: studio.openJbEditProperty('%$studio/jbEditor/selected%'),
         onRightClickOfExpanded: studio.openJbEditorMenu('%%', '%$path%'),
         autoFocus: true,
         applyMenuShortcuts: studio.jbEditorMenu('%%', '%$path%')
@@ -277,7 +275,8 @@ jb.component('menu.studioWrapWith', {
       title: 'Wrap with %%',
       action: runActions(
         tgp.wrap('%$path%', '%%'),
-        studio.expandAndSelectFirstChildInJbEditor()
+        studio.expandAndSelectFirstChildInJbEditor(),
+        studio.gotoPath('%$path%','close-array'),
       )
     })
   )
@@ -293,7 +292,8 @@ jb.component('menu.studioWrapWithArray', {
       title: 'Wrap with array',
       action: runActions(
         tgp.wrapWithArray('%$path%'),
-        studio.expandAndSelectFirstChildInJbEditor()
+        studio.expandAndSelectFirstChildInJbEditor(),
+        studio.gotoPath('%$path%','close-array'),
       )
     }),[])
 })
@@ -317,7 +317,7 @@ jb.component('studio.addVariable', {
                 runActions(
                   addToArray(tgp.ref('%$path%'), obj(prop('$','Var'),prop('name','%$dialogData/name%'),prop('value',''))),
                   dialog.closeDialog(),
-                  tree.regainFocus()
+                  popup.regainCanvasFocus()
                 )
               )
             ]
@@ -379,7 +379,7 @@ jb.component('studio.openJbEditorMenu', {
   ],
   impl: menu.openContextMenu({
     menu: studio.jbEditorMenu('%$path%', '%$root%'),
-    features: dialogFeature.onClose(tree.regainFocus())
+    features: dialogFeature.onClose(popup.regainCanvasFocus())
   })
 })
 

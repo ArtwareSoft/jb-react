@@ -52,7 +52,7 @@ jb.extension('ui', 'frontend', {
                 else 
                     jb.log(`frontend uiComp run method ${method}`,{cmp: {...this}, srcCtx , ...feMEthod.frontEndMethod,el,ctxToUse})
                 const res = ctxToUse.run(feMEthod.frontEndMethod.action)
-                if (_flow) this.flows.push(res)
+                if (_flow && res) this.flows.push(res)
             }, `frontEnd-${method}`,this.ctx))
         }
         enrichUserEvent(ev, userEvent) {

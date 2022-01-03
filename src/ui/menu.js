@@ -171,7 +171,7 @@ jb.component('menu.initPopupMenu', {
     frontEnd.flow(source.findMenuKeySource(), rx.filter('%keyCode%==39'), sink.BEMethod('openPopup')),
     frontEnd.flow(source.findMenuKeySource(), rx.filter(inGroup(list(37,27),'%keyCode%')), sink.BEMethod('closePopup')),
   ),
-  requires: [{$: 'menu.openContextMenu'}, {$: 'call'}, {$: 'If'}]
+  require: [{$: 'menu.openContextMenu'}, {$: 'call'}, {$: 'If'}]
 })
 
 jb.component('menu.initMenuOption', {

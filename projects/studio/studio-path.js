@@ -294,27 +294,6 @@ jb.extension('studio', {
 // 	}
 // })
 
-jb.component('studio.isCssPath', {
-    type: 'boolean',
-    description: 'check if the script will change only css and not html',
-    params: [
-        {id: 'path'}
-    ],
-    impl: (ctx, path) => {
-        const compPath = pathOfCssFeature(path)
-        return compPath && (jb.tgp.compNameOfPath(compPath) || '').match(/^(css|layout)/)
-
-        function pathOfCssFeature(path) {
-            const featureIndex = path.lastIndexOf('features')
-            if (featureIndex == -1) {
-              const layoutIndex = path.lastIndexOf('layout')
-              return layoutIndex != -1 && path.slice(0,layoutIndex+1).join('~')
-            }
-            const array = Array.isArray(jb.tgp.valOfPath(path.slice(0,featureIndex+1).join('~')))
-            return path.slice(0,featureIndex+(array?2:1)).join('~')
-        }
-    }
-})
 
 jb.component('jbm.vDebugger', {
     type: 'jbm',

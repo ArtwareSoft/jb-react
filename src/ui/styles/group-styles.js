@@ -71,6 +71,7 @@ jb.component('group.tabs', {
     {id: 'tabStyle', type: 'button.style', dynamic: true, defaultValue: button.mdcTab()},
     {id: 'barStyle', type: 'group.style', dynamic: true, defaultValue: group.mdcTabBar()},
     {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()},
+    {id: 'selectedTabRef', as : 'ref', description: 'watchable numeric' },
   ],
   impl: styleByControl(
     group({
@@ -100,7 +101,9 @@ jb.component('group.tabs', {
           features: watchRef('%$selectedTab%')
         })
       ],
-      features: watchable('selectedTab', 0),
+      features: feature.byCondition('%$selectedTabRef%', 
+          ({}, {}, {selectedTabRef}) => ({ extendCtx: ctx => ctx.setVar('selectedTab',selectedTabRef ) }),
+          watchable('selectedTab', 0)),
     }),
     'tabsModel'
   )

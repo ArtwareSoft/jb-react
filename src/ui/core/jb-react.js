@@ -252,30 +252,77 @@ jb.extension('ui', 'react', {
     applyDeltaToVDom(elem,delta) {
         if (!elem) return
         jb.log('applyDelta vdom',{elem,delta})
-        // supports only append/delete
-        if (delta.children) {
-            const toAppend = delta.children.toAppend || []
-            const {resetAll, deleteCmp} = delta.children
+        const children = delta.children
+        if (children) {
+            const childrenArr = children.length ? Array.from(Array(children.length).keys()).map(i=>children[i]) : []
+            let childElems = elem.children || []
+            const {toAppend,deleteCmp,sameOrder,resetAll} = children
+
             if (resetAll) {
-                elem.children && elem.children.forEach(ch => ch.parentNode = null)
-                elem.children = []
+                childElems.forEach(ch => {
+                    jb.ui.unmount(ch)
+                    ch.parentNode = null
+                })
+                childElems = []
             }
             if (deleteCmp) {
-                const index = elem.children.findIndex(ch=>ch.getAttribute('cmp-id') == deleteCmp)
-                if (index != -1) {
-                    elem.children[index] && (elem.children[index].parentNode = null)
-                    elem.children.splice(index,1)
+                while ((index = childElems.findIndex(ch=>ch.getAttribute('cmp-id') == deleteCmp)) != -1) {
+                    childElems[index] && (childElems[index].parentNode = null)
+                    jb.ui.unmount(childElems.splice(index,1)[0])
                 }
             }
-            toAppend.forEach(ch => { 
-                elem.children = elem.children || []
-                elem.children.push(jb.ui.unStripVdom(ch,elem))
+            childrenArr.forEach((e,i) => {
+                if (!e) {
+                    !sameOrder && (childElems[i].setAttribute('__afterIndex',''+i))
+                } else if (e.$$ == 'delete') {
+                    jb.ui.unmount(childElems.splice(i,1)[0])
+                    jb.log('removeChild dom',{childElem: childElems[i],e,elem,delta})
+                } else {
+                    jb.ui.applyDeltaToVDom(childElems[i],e)
+                    !sameOrder && (childElems[i].setAttribute('__afterIndex',e.__afterIndex))
+                }
             })
-            Object.keys(delta.children).filter(x=>!isNaN(x)).forEach(index=>
-                    jb.ui.applyDeltaToVDom(elem.children[+index],delta.children[index]))
+            ;(toAppend||[]).forEach(e=>{
+                const newElem = jb.ui.unStripVdom(e,elem)
+                jb.log('appendChild dom',{newElem,e,elem,delta})
+                !sameOrder && (newElem.setAttribute('__afterIndex',e.__afterIndex))
+                childElems.push(newElem)
+            })
+            if (sameOrder === false) {
+                childElems.sort((x,y) => Number(x.getAttribute('__afterIndex')) - Number(y.getAttribute('__afterIndex')))
+                    .forEach(el=> {
+                        const index = Number(el.getAttribute('__afterIndex'))
+                        if (childElems[index] != el)
+                            childElems.splice(index,0,el) //childElems.insertBefore(el, childElems[index])
+                        el.removeAttribute('__afterIndex')
+                    })
+            }
+            // remove leftover text nodes in mixed
+            elem.children = childElems.filter(ch=>ch.tag != '#text')
         }
-
         Object.assign(elem.attributes,delta.attributes)
+
+        // if (delta.children) {
+        //     const toAppend = delta.children.toAppend || []
+        //     const {resetAll, deleteCmp} = delta.children
+        //     if (resetAll) {
+        //         elem.children && elem.children.forEach(ch => ch.parentNode = null)
+        //         elem.children = []
+        //     }
+        //     if (deleteCmp) {
+        //         const index = elem.children.findIndex(ch=>ch.getAttribute('cmp-id') == deleteCmp)
+        //         if (index != -1) {
+        //             elem.children[index] && (elem.children[index].parentNode = null)
+        //             elem.children.splice(index,1)
+        //         }
+        //     }
+        //     toAppend.forEach(ch => { 
+        //         elem.children = elem.children || []
+        //         elem.children.push(jb.ui.unStripVdom(ch,elem))
+        //     })
+        //     Object.keys(delta.children).filter(x=>!isNaN(x)).forEach(index=>
+        //             jb.ui.applyDeltaToVDom(elem.children[+index],delta.children[index]))
+        // }
     },
 	beautifyXml(xml) {
 		return xml.trim().split(/>\s*</).reduce( (acc, node) => {

@@ -91,7 +91,7 @@ jb.component('uiTest', {
 					source.callbag(()=>jb.ui.widgetUserRequests),
 					rx.takeUntil('%$$testFinished%'),
 					rx.log('userRequest from widgetUserRequests'),
-					widget.headless('%$control()%', '%$tstWidgetId%'),
+					widget.headless(call('control'), '%$tstWidgetId%'),
 					rx.log('uiDelta from headless'),
 					rx.delay(1),
 				),

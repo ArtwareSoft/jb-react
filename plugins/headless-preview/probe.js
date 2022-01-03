@@ -1,8 +1,61 @@
 
+jb.component('probe', { watchableData: { path : '',  defaultMainCircuit: '', scriptChangeCounter: 1} })
+
 jb.extension('probe', {
-    initExtension() { return { probeCounter: 0 } },
+    initExtension() { return { 
+        probeCounter: 0,
+        singleVisitPaths: {},
+        singleVisitCounters: {}
+    }},
+    async calcCircuit(ctx, probePath, defaultMainCircuit) {
+        jb.log('prob calc circuit',{ctx, probePath})
+        if (!probePath) 
+            return jb.logError(`calcCircuitPath : no probe path`, {ctx,probePath, defaultMainCircuit})
+        let circuitCtx = jb.ctxDictionary[ctx.exp('%$workspace/pickSelectionCtxId%')]
+        if (circuitCtx) return { reason: 'pickSelection', circuitCtx }
+
+        circuitCtx = jb.probe.closestCtxWithSingleVisit(probePath)
+        if (circuitCtx) return { reason: 'closestCtxWithSingleVisit', circuitCtx }
+
+        if (jb.path(jb.ui,'headless')) {
+            const circuitElem = closestElemWithCtx(probePath)
+            circuitCtx = circuitElem && jb.ctxDictionary[circuitElem.ctxId]
+            if (circuitCtx) return { reason: 'closestElemWithCtx', circuitCtx }
+        }
+        circuitCtx = await findMainCircuit(probePath)
+        if (circuitCtx) return { reason: 'mainCircuit', circuitCtx }
+
+        return circuitCtx
+
+        async function findMainCircuit(path) {
+            const _ctx = new jb.core.jbCtx()
+            const cmpId = path.split('~')[0]
+            await jb.treeShake.getCodeFromRemote([cmpId])
+            // #jbLoadComponents: tgp.componentStatistics
+            const statistics = jb.exec({$: 'tgp.componentStatistics', cmpId})
+            const comp = defaultMainCircuit || _ctx.exp('%$studio/circuit%') || (jb.path(jb.comps[cmpId],'impl.expectedResult') ? cmpId 
+                    : (statistics.referredBy||[]).find(refferer=>jb.tgp.isOfType(refferer,'test'))) 
+                || cmpId
+            if (comp) {
+                await jb.treeShake.getCodeFromRemote([comp])
+                const res = _ctx.ctx({ profile: {$: comp}, comp, path: ''})
+                if (jb.tgp.isOfType(comp,'control'))
+                    return jb.ui.extendWithServiceRegistry(res)
+                if (jb.tgp.isOfType(comp,'test'))
+                    return jb.ui.extendWithServiceRegistry(res).setVars(
+                        { testID: cmpId, singleTest: true, $testFinished: jb.callbag.subject() })
+                return res
+            }
+        }
+        function closestElemWithCtx(path) {
+            const candidates = Object.values(jb.ui.headless).flatMap(x=>x.body.querySelectorAll('[jb-ctx]'))
+                .map(elem =>({elem, path: jb.path(elem,'debug.path'), callStack: jb.path(elem,'debug.callStack'), ctxId: elem.getAttribute('jb-ctx') }))
+                .filter(e => [e.path, ...(e.callStack ||[])].filter(x=>x).some(p => p.indexOf(path) == 0))
+            return candidates.sort((e2,e1) => 1000* (e1.path.length - e2.path.length) + (+e1.ctxId.match(/[0-9]+/)[0] - +e2.ctxId.match(/[0-9]+/)[0]) )[0] || {}
+        }        
+    },
     Probe: class Probe {
-        constructor(ctx, noGaps) {
+        constructor(ctx, noGaps, defaultMainCircuit) {
             this.noGaps = noGaps
 
             this.circuitCtx = ctx.ctx({})
@@ -10,6 +63,7 @@ jb.extension('probe', {
             this.circuitCtx.probe = this
             this.circuitCtx.profile = jb.tgp.valOfPath(this.circuitCtx.path) || this.circuitCtx.profile // recalc latest version of profile
             this.id = ++jb.probe.probeCounter
+            this.defaultMainCircuit = defaultMainCircuit
         }
 
         async runCircuit(probePath,maxTime) {
@@ -29,8 +83,18 @@ jb.extension('probe', {
                     this.probePath = probePath.replace(/[0-9]*$/,formerIndex)
                     this.extraElem = true
                 }
-                await this.simpleRun()
-                await this.handleGaps()
+                this.active = true
+                try {
+                    this.cleanSignleVisits()
+                    await this.simpleRun()
+                    await this.handleGaps()
+                } finally {
+                    const testFinished = this.circuitCtx.vars.$testFinished
+                    if (testFinished) {
+                        testFinished.next(1)
+                        testFinished.complete()
+                    }                    
+                }
 
                 await (this.result || []).reduce((pr,item,i) =>
                     pr.then(_=>jb.probe.resolve(item.out)).then(resolved=> this.result[i].out =resolved), Promise.resolve())
@@ -42,29 +106,40 @@ jb.extension('probe', {
                 if (this.extraElem)
                     this.result.forEach(obj=> obj.in.data = obj.out)
 
-                if (jb.db.resources.studio.project) { // studio and probe development
+                if (jb.path(jb.db.resources,'studio.project')) { // studio and probe development
                     jb.db.watchableValueByRef && jb.db.watchableValueByRef.resources(initial_resources,null,{source: 'probe'})
                     initial_comps && jb.watchableComps.handler.resources(initial_comps,null,{source: 'probe'})
                 }
                 return this
             } catch (e) {
                 jb.logException(e,'probe run',{probe: this})
+            } finally {
+                this.active = false
             }
         }
 
-        simpleRun() {
-            return jb.probe.resolve(this.circuitCtx.runItself()).then(res=>{
-                if (res && res.renderVdom) {
-                    const vdom = res.renderVdom()
-                    return ({props: res.renderProps, vdom , cmp: res})
-                }
-                else if (jb.tgp.isCompNameOfType(jb.utils.compName(this.circuitCtx.profile),'table-field')) {
-                    const item = this.circuitCtx.vars.$probe_item
-                    const index = this.circuitCtx.vars.$probe_index
-                    return res.control ? res.control(item) : res.fieldData(item,index)
-                }
-                return res
-            })
+        cleanSignleVisits() {
+            if (this.defaultMainCircuit == this.circuitCtx.path)
+                jb.probe.singleVisitCounters = {}
+            Object.keys(jb.probe.singleVisitCounters).forEach(k=>k.indexOf(this.probePath) == 0 && (jb.probe.singleVisitCounters[k] = 0))
+        }
+
+        async simpleRun() {
+            const res1 = this.circuitCtx.runItself()
+            jb.log('probe simple run result',{probe: this, res1})
+            const res2 = await res1
+            const res = await jb.probe.resolve(res2)
+
+            jb.log('probe simple run resolved',{probe: this, res})
+            if (res && res.renderVdom) {
+                const vdom = res.renderVdom()
+                return ({props: res.renderProps, vdom , cmp: res})
+            }
+            else if (jb.tgp.isCompNameOfType(jb.utils.compName(this.circuitCtx.profile),'table-field')) {
+                const item = this.circuitCtx.vars.$probe_item
+                const index = this.circuitCtx.vars.$probe_index
+                return res.control ? res.control(item) : res.fieldData(item,index)
+            }
         }
 
         handleGaps(formerGap) {
@@ -112,14 +187,19 @@ jb.extension('probe', {
 
         // called from jb_run
         record(ctx,out) {
+            jb.probe.singleVisitPaths[ctx.path] = ctx
+            jb.probe.singleVisitCounters[ctx.path] = (jb.probe.singleVisitCounters[ctx.path] || 0) + 1
+            if (!this.active || this.probePath.indexOf(ctx.path) != 0) return
+    
             if (this.id < jb.probe.probeCounter) {
-                this.stopped = true
+                jb.log('probe probeCounter is larger than current',{ctx, probe: this,id, counter: jb.probe.probeCounter})
+                this.active = false
                 return
             }
             const now = new Date().getTime()
-            if (!this.outOfTime && now - this.startTime > this.maxTime && !ctx.vars.testID) {
+            if (now - this.startTime > this.maxTime && !ctx.vars.testID) {
                 jb.log('probe timeout',{ctx, probe: this,now})
-                this.outOfTime = true
+                this.active = false
                 //throw 'out of time';
             }
             const path = ctx.path
@@ -141,12 +221,12 @@ jb.extension('probe', {
         if (jb.callbag.isCallbag(x)) return x
         return Promise.resolve(x)
     },
-	closestCtxOfLastRun(probePath) {
-        if (!jb.ctxByPath) return
+	closestCtxWithSingleVisit(probePath) {
 		let path = probePath.split('~')
         if (jb.tgp.isExtraElem(probePath)) {
             if (probePath.match(/items~0$/)) {
-                const pipelineCtx = jb.ctxByPath[path.slice(0,-2).join('~')]
+                const pipelinePath = path.slice(0,-2).join('~')
+                const pipelineCtx = jb.probe.singleVisitCounters[pipelinePath] == 1 && jb.probe.singleVisitPaths[pipelinePath]
                 if (pipelineCtx)
                     return pipelineCtx.setVars(pipelineCtx.profile.$vars || {})
             } else if (probePath.match(/items~[1-9][0-9]*$/)) {
@@ -155,72 +235,102 @@ jb.extension('probe', {
             }
         }
 
-        const res = jb.tgp.parents(path.join('~')).map(path=>jb.ctxByPath[path]).find(x=>x)
-		// for (;path.length > 0 && !jb.ctxByPath[path.join('~')];path.pop());
-		// if (path.length)
-		// 	res = jb.ctxByPath[path.join('~')]
+        const res = jb.tgp.parents(path.join('~'))
+            .filter(path=>jb.probe.singleVisitCounters[path] == 1)
+            .map(path=>jb.probe.singleVisitPaths[path])
+            .filter(ctx=>(jb.path(ctx,'profile.$') ||'').indexOf('rx.') != 0)
+            [0]
 			
-		if ((jb.path(res,'profile.$') ||'').indexOf('rx.') != 0) // ignore rx ctxs
-			return res
+	    return res
 	},
 })
 
 jb.component('probe.runCircuit', {
   type: 'data',
   params: [
-    { id: 'circuitPath', as: 'string'},
-    { id: 'probePath', as: 'string'},    
+    { id: 'probePath', as: 'string', defaultValue: '%$probe/path%'},
+    { id: 'defaultMainCircuit', as: 'string', defaultValue: '%$probe/defaultMainCircuit%'},
   ],
-  impl: async (ctx,circuitPath,probePath) => {
-        jb.log('new probe',{ctx,circuitPath,probePath})
-        if (!probePath) 
-            return jb.logError(`no probe path`, {ctx,circuitPath})
-        // if (jb.cbLogByPath && jb.cbLogByPath[probePath])
-        //     return { result: jb.cbLogByPath[probePath] }
-        let circuitCtx = null
-        if (!circuitCtx)
-            circuitCtx = jb.ctxDictionary[ctx.exp('%$studio/pickSelectionCtxId%')]
-        if (!circuitCtx)
-            circuitCtx = jb.probe.closestCtxOfLastRun(circuitPath)
-        if (!circuitCtx && jb.path(jb.ui,'headless')) {
-            const circuitElem = closestElemWithCtx(circuitPath)
-            circuitCtx = circuitElem && jb.ctxDictionary[circuitElem.ctxId]
-        }
-        const circuitPath2 = circuitPath || probePath
-        const circuitComp = circuitPath2.split('~')[0]
-        if (circuitComp) {
-            await jb.treeShake.bringMissingCode({$: circuitComp})
-            circuitCtx = findMainCircuit(circuitPath2)
-        }
-        // if (circuitCtx)
-        //     jb.studio.highlightCtx(circuitCtx.id) // fix: show send it to the view
-        if (!circuitCtx)
-            return jb.logError(`probe can not infer circuitCtx from ${circuitPath} and ${probePath}`, )
-        return new jb.probe.Probe(circuitCtx).runCircuit(probePath)
-
-        function findMainCircuit(path) {
-            const _ctx = new jb.core.jbCtx()
-            const cmpId = path.split('~')[0]
-            const statistics = jb.exec({$: 'tgp.componentStatistics', cmpId})
-            const comp = ctx.exp('%$studio/circuit%') 
-                || (jb.path(jb.comps[cmpId],'impl.expectedResult') ? cmpId 
-                    : (statistics.referredBy||[]).find(refferer=>jb.tgp.isOfType(refferer,'test'))) 
-                || cmpId
-            if (comp) {
-                const res = _ctx.ctx({ profile: {$: comp}, comp, path: ''})
-                if (jb.tgp.isOfType(comp,'control'))
-                    return jb.ui.extendWithServiceRegistry(res)
-                return res
-            }
-        }
-        function closestElemWithCtx(path) {
-            const candidates = Object.values(jb.ui.headless).flatMap(x=>x.body.querySelectorAll('[jb-ctx]'))
-                .map(elem =>({elem, path: jb.path(elem,'debug.path'), callStack: jb.path(elem,'debug.callStack'), ctxId: elem.getAttribute('jb-ctx') }))
-                .filter(e => [e.path, ...(e.callStack ||[])].filter(x=>x).some(p => p.indexOf(path) == 0))
-            return candidates.sort((e2,e1) => 1000* (e1.path.length - e2.path.length) + (+e1.ctxId.match(/[0-9]+/)[0] - +e2.ctxId.match(/[0-9]+/)[0]) )[0] || {}
-        }        
+  impl: async (ctx,probePath,defaultMainCircuit) => {
+        jb.log('probe start run circuit',{ctx,probePath,defaultMainCircuit})
+        const circuit = await jb.probe.calcCircuit(ctx, probePath, defaultMainCircuit)
+        if (!circuit)
+            return jb.logError(`probe can not infer circuitCtx from ${probePath}`, )
+        return new jb.probe.Probe(circuit.circuitCtx,defaultMainCircuit).runCircuit(probePath)
     },
     require: {$: 'tgp.componentStatistics'}
 })
 
+jb.component('probe.calcCircuitPath', {
+    type: 'data',
+    params: [
+      { id: 'probePath', as: 'string'},
+      { id: 'defaultMainCircuit', as: 'string'},
+    ],
+    impl: async (ctx, probePath, defaultMainCircuit) => {
+        const circuit = await jb.probe.calcCircuit(ctx, probePath, defaultMainCircuit)
+        return circuit && { reason: circuit.reason, path: circuit.circuitCtx.path } || {}
+    }
+})
 
+jb.component('jbm.wProbe', {
+    type: 'jbm',
+    params: [
+        {id: 'id', defaultValue: 'wProbe' }
+    ],    
+    impl: jbm.worker({id: '%$id%', init: probe.initRemoteProbe()})
+})
+
+jb.component('jbm.nodeProbe', {
+    type: 'jbm',
+    impl: jbm.nodeContainer({init: probe.initRemoteProbe()})
+})
+
+jb.component('probe.initRemoteProbe', {
+    type: 'action',
+    impl: runActions(
+        remote.shadowResource('probe', '%$jbm%'),
+        rx.pipe(
+            watchableComps.scriptChange(),
+            rx.log('preview change script'),
+            rx.map(obj(prop('op','%op%'), prop('path','%path%'))),
+            rx.var('cssOnlyChange',tgp.isCssPath('%path%')),
+            sink.action(remote.action( {action: probe.handleScriptChangeOnPreview('%$cssOnlyChange%'), jbm: '%$jbm%', oneway: true}))
+        )
+    ),
+})
+
+jb.component('probe.handleScriptChangeOnPreview', {
+    type: 'action',
+    description: 'preview script change handler',
+    params: [
+        {id: 'cssOnlyChange', as: 'boolean' }
+    ],
+    impl: (ctx, cssOnlyChange) => {
+        const {op, path} = ctx.data
+        const handler = jb.watchableComps.startWatch()
+        if (path[0] == 'probeTest.label1') return
+        if (!jb.comps[path[0]])
+            return jb.logError(`handleScriptChangeOnPreview - missing comp ${path[0]}`, {path, ctx})
+        handler.makeWatchable(path[0])
+        jb.log('probe handleScriptChangeOnPreview doOp',{ctx,op,path})
+        handler.doOp(handler.refOfPath(path), op, ctx)
+
+        const headlessWidgetId = Object.keys(jb.ui.headless)[0]
+        const headless = jb.ui.headless[headlessWidgetId]
+        if (!headless)
+            return jb.logError(`handleScriptChangeOnPreview - missing headless ${headlessWidgetId} at ${jb.uri}`, {path, ctx})
+        if (cssOnlyChange) {
+            let featureIndex = path.lastIndexOf('features')
+            if (featureIndex == -1) featureIndex = path.lastIndexOf('layout')
+            const ctrlPath = path.slice(0, featureIndex).join('~')
+            const elems = headless.body.querySelectorAll('[jb-ctx]')
+                .map(elem=>({elem, path: jb.path(JSON.parse(elem.attributes.$__debug),'path') }))
+                .filter(e => e.path == ctrlPath)
+            elems.forEach(e=>jb.ui.refreshElem(e.elem,null,{cssOnly: e.elem.attributes.class ? true : false}))           
+        } else {
+            const ref = ctx.exp('%$probe/scriptChangeCounter%','ref')
+            jb.db.writeValue(ref, +jb.val(ref)+1 ,ctx.setVars({headlessWidget: true}))
+        }
+    }
+})

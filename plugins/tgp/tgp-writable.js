@@ -209,7 +209,7 @@ jb.component('tgp.addProperty', {
 		const param = jb.tgp.paramDef(path)
 		const paramType = jb.tgp.paramType(path)
 		const result = param.defaultValue ? JSON.parse(JSON.stringify(param.defaultValue))
-			: (paramType.indexOf('data') != -1 || jb.frame.jbInvscode) ? '' : {$: ''}
+			: (paramType.indexOf('data') != -1 || jb.frame.jbInvscode) ? '' : {$: 'TBD'}
 		
 		jb.tgp.writeValueOfPath(path,result,ctx)
 	}
@@ -291,3 +291,6 @@ jb.component('tgp.toggleDisabled', {
     }
 })
 
+jb.component('TBD', {
+  impl: 'TBD'
+})

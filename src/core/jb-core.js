@@ -92,14 +92,13 @@ jb.extension('core', {
   },
   run(ctx,parentParam,settings) {
     //  ctx.profile && jb.log('core request', [ctx.id,...arguments])
-      if (ctx.probe && ctx.probe.outOfTime)
-        return
-      if (jb.ctxByPath) jb.ctxByPath[ctx.path] = ctx
+      if (ctx.probe && !ctx.probe.active) return
       const runner = () => jb.core.doRun(...arguments)
       Object.defineProperty(runner, 'name', { value: `${ctx.path} ${ctx.profile && ctx.profile.$ ||''}-prepare param` })
       let res = runner(...arguments)
-      if (ctx.probe && ctx.probe.probePath.indexOf(ctx.path) == 0)
+      if (ctx.probe)
           res = ctx.probe.record(ctx,res) || res
+      
     //  ctx.profile && jb.log('core result', [ctx.id,res,ctx,parentParam,settings])
       if (typeof res == 'function') jb.utils.assignDebugInfoToFunc(res,ctx)
       return res

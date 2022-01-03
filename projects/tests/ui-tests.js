@@ -1,31 +1,3 @@
-jb.component('uiTest.label', {
-  impl: uiTest({
-    control: text('hello world'),
-    expectedResult: contains('hello world')
-  })
-})
-
-jb.component('uiTest.label0', {
-  impl: uiTest({
-    control: text(0),
-    expectedResult: contains('>0<')
-  })
-})
-
-jb.component('uiTest.html', {
-  impl: uiTest({
-    control: html({html: '<p>hello world</p>'}),
-    expectedResult: contains('>hello world</p>')
-  })
-})
-
-jb.component('uiTest.html.inIframe', {
-  impl: uiTest({
-    control: html({html: '<p>hello world</p>', style: html.inIframe()}),
-    expectedResult: contains('iframe')
-  })
-})
-
 jb.component('uiTest.group', {
   impl: uiTest({
     control: group({
@@ -36,6 +8,22 @@ jb.component('uiTest.group', {
     }),
     expectedResult: contains(['hello world', '2'])
   })
+})
+
+jb.component('uiTest.label', {
+  impl: uiTest({control: text({text: 'hello world', title: ''}), expectedResult: contains('hello world')})
+})
+
+jb.component('uiTest.label0', {
+  impl: uiTest({control: text(0), expectedResult: contains('>0<')})
+})
+
+jb.component('uiTest.html', {
+  impl: uiTest({control: html('<p>hello world</p>'), expectedResult: contains('>hello world</p>')})
+})
+
+jb.component('uiTest.html.inIframe', {
+  impl: uiTest({control: html({html: '<p>hello world</p>', style: html.inIframe()}), expectedResult: contains('iframe')})
 })
 
 jb.component('uiTest.controls', {

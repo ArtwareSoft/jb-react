@@ -3,6 +3,7 @@ jb.extension('tgp', 'readOnly', {
 	parentPath: path => path.split('~').slice(0,-1).join('~'),
 	parents: path => path.split('~').reduce((acc,last,i) => acc.concat(i ? [acc[acc.length-1],last].join('~') : last),[]).reverse(),
 	valOfPath: path => jb.path(jb.comps,path.split('~')),
+	firstChildOfPath: path => [path,Object.keys(jb.tgp.valOfPath(path) || {}).find(x=>x != '$')].filter(x=>x).join('~'),
 	compNameOfPath: (path,silent) => {
 	  if (path.indexOf('~') == -1)
 		return 'jbComponent'
@@ -186,7 +187,7 @@ jb.extension('tgp', 'readOnly', {
 // ******* components ***************
 
 jb.defComponents(
-'isArrayType,parentPath,shortTitle,summary,isDisabled,enumOptions,propName,paramDef,paramType,moreParams,paramsOfPath'
+'isArrayType,parentPath,shortTitle,summary,isDisabled,enumOptions,propName,paramDef,paramType,moreParams,paramsOfPath,firstChildOfPath'
 	.split(','), f => jb.component(`tgp.${f}`, { 
 	params: [
 		{id: 'path', as: 'string', mandatory: true}

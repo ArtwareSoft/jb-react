@@ -22,31 +22,30 @@ jb.component('tgpTextEditor.selectPT1', {
   })
 })
 
-jb.component('tgpTextEditor.setSelectedPT', {
-  type: 'menu.option',
+jb.component('tgpTextEditor.prepareSetPT', {
+  type: 'data',
   params: [
     {id: 'path', as: 'string'},
     {id: 'semanticPart', as: 'string'},
     {id: 'compName', as: 'string'},
   ],
-  impl: (ctx,path,semanticPart,compName) => {
-    const profile = jb.tgp.valOfPath(path)
+  impl: (ctx,_path,semanticPart,compName) => {
+    const profile = jb.tgp.valOfPath(_path)
     const params = jb.path(jb.comps[(profile||{}).$],'params') || []
     const firstParamIsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
     const semanticIndex = semanticPart.match(/[0-9]+$/)
-    if (firstParamIsArray)
-      path = [path,params[0].id].join('~')
-      if (Array.isArray(profile)) {
-        const index = semanticPart == 'open-array' ? 0 : semanticIndex ? +semanticIndex[0]+1 : profile.length
-        jb.tgp.addArrayItem(path,{toAdd: {$: compName}, srcCtx: ctx, index})
-      } else if (firstParamIsArray || semanticIndex) {
+    const openArray = semanticPart.indexOf('open-array') == 0
+    const path = firstParamIsArray ? [_path,params[0].id].join('~') : _path
+    if (Array.isArray(profile)) {
+        const index = openArray ? 0 : semanticIndex ? +semanticIndex[0]+1 : profile.length
+        return { path: [path,index].join('~'), do: () => jb.tgp.addArrayItem(path,{toAdd: {$: compName}, srcCtx: ctx, index}) }
+    } else if (firstParamIsArray || semanticIndex) {
         const ar = profile[params[0].id]
         const lastIndex = Array.isArray(ar) ? ar.length : 1
-        const index = ar == null ? undefined : semanticPart == 'open-array' ? 0 : semanticIndex ? +semanticIndex[0]+1 : lastIndex
-        jb.tgp.addArrayItem(path,{toAdd: {$: compName}, srcCtx: ctx, index})
-      } else {
-        jb.tgp.setComp(path, compName, ctx)
+        const index = ar == null ? undefined : openArray ? 0 : semanticIndex ? +semanticIndex[0]+1 : lastIndex
+        return { path: [path,index].join('~'), do: () => jb.tgp.addArrayItem(path,{toAdd: {$: compName}, srcCtx: ctx, index}) }
     }
+    return { path, do: () => jb.tgp.setComp(path, compName, ctx) }
   }
 })
 
@@ -67,7 +66,11 @@ jb.component('tgpTextEditor.selectPT', {
     ),
     menu.action({
         title: '%text%',
-        action: tgpTextEditor.setSelectedPT({path: '%$path%', semanticPart: '%$semanticPart%', compName: '%compName%'}),
+        action: runActions(
+          Var('prepareSetPT', tgpTextEditor.prepareSetPT({path: '%$path%', semanticPart: '%$semanticPart%', compName: '%compName%'})),
+          '%$prepareSetPT/do()%',
+          studio.gotoPath('%$prepareSetPT/path%', 'open-profile')
+        ),
         description: '%description%'
       })
     )
@@ -105,7 +108,7 @@ jb.component('tgpTextEditor.editMenu', {
           menu.action({ 
             title: '%id%', 
             description: '%description%',
-            action: runActions(tgp.addProperty('%$path%~%id%'), studio.gotoPath('%$path%~%id%', 'value'))
+            action: runActions(tgp.addProperty('%$path%~%id%'), studio.gotoPath('%$path%~%id%', 'value-text'))
           })
         )
       ),
