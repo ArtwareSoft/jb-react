@@ -197,11 +197,13 @@ jb.component('studio.jbEditorInteliTree', {
     nodeModel: studio.jbEditorNodes('%$path%'),
     style: tree.expandBox({showIcon: true, lineWidth: '800px'}),
     features: [
+      variable('popupLauncherCanvas','%$cmp%'),
       css.class('jb-editor'),
       tree.selection({
         databind: '%$studio/jbEditor/selected%',
         autoSelectFirst: true,
-        onRightClick: studio.openJbEditorMenu('%%', '%$path%')
+        onRightClick: studio.openJbEditorMenu('%%', '%$path%'),
+        onSelection: writeValue('%$probe/path%','%%')
       }),
       tree.keyboardSelection({
         onEnter: studio.openJbEditProperty('%$studio/jbEditor/selected%'),

@@ -269,8 +269,8 @@ jb.component('studio.jbFloatingInput', {
             features: [
               watchRef({ref: tgp.ref('%$path%'), strongRefresh: true}),
               feature.onKey('Right', suggestions.applyOption('/')),
-              feature.onKey('Enter', runActions(suggestions.applyOption(), dialog.closeDialogById('studio-jb-editor-popup'), tree.regainFocus())),
-              feature.onKey('Esc', runActions(dialog.closeDialogById('studio-jb-editor-popup'), tree.regainFocus())),
+              feature.onKey('Enter', runActions(suggestions.applyOption(), dialog.closeDialogById('studio-jb-editor-popup'), popup.regainCanvasFocus())),
+              feature.onKey('Esc', runActions(dialog.closeDialogById('studio-jb-editor-popup'), popup.regainCanvasFocus())),
               editableText.picklistHelper({
                 showHelper: suggestions.shouldShow(),
                 options: suggestions.calcFromRemote('%$path%'),

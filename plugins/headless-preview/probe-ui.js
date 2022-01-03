@@ -7,7 +7,7 @@ jb.component('probe.inOutView', {
         controls: [
             text({
                 text: prettyPrint('%$probe%'), 
-                style: text.textarea({rows: 20}),
+                style: text.textarea({rows: 20, cols: 10}),
             }),           
             group({
             controls: group({

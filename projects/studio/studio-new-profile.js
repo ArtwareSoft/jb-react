@@ -315,7 +315,7 @@ jb.component('studio.openNewPage', {
       writeValue('%$studio/profile_path%', '%$compName%~impl'),
       writeValue('%$studio/circuit%', '%$compName%'),
       studio.openControlTree(),
-      tree.regainFocus(),
+      popup.regainCanvasFocus(),
     )
   })
 })

@@ -16,7 +16,10 @@ jb.component('studio.initPreview', {
     type: 'action',
     impl: runActions(
         log('init preview', () => ({uri: jb.uri})),
-        Var('dataResources',() => jb.studio.projectCompsAsEntries().map(e=>e[0]).filter(x=>x.match(/^dataResource/)).map(x=> ({$: x}))),
+        Var('dataResources',() => jb.studio.projectCompsAsEntries().map(e=>e[0]).filter(x=>x.match(/^dataResource/)).join(',')),
+        remote.action(treeShake.getCodeFromRemote('%$dataResources%'),'%$jbm%'),
+
+//        Var('dataResources',() => jb.studio.projectCompsAsEntries().map(e=>e[0]).filter(x=>x.match(/^dataResource/)).map(x=> ({$: x}))),
         // Var('circuit', '%$studio/circuit%'),
         // writeValue('%$yellowPages/preview%', '%$jbm/uri%'),
         // remote.action(runActions(

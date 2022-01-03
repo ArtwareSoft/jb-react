@@ -380,7 +380,7 @@ jb.component('frontEnd.selectionKeySourceService', {
       el.onkeydown = e => {
         if ([38,40,13,27].indexOf(e.keyCode) != -1) {
           console.log('key source',e)
-          el.keydown_src.next(ctx.cmpCtx.dataObj(e))
+          el.keydown_src.next((ctx.cmpCtx || ctx).dataObj(e))
           return false // stop propagation
         }
         return true

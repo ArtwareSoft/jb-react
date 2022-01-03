@@ -5,8 +5,7 @@ workspace
   refactor vsccode
 remote codeMirror
 
-errors in inteli with people
-  tree focus back on error
+preview => remoteMainCircuitView
 
 cbLogByPath
   replace with ctx.dataObj - when to initialize???
@@ -16,6 +15,7 @@ enrich spy logs with rules
   cb message beautifier
   log UI with bread crums
 
+test=inPlaceEditTest.grid
 
 remote.dispatcher
   multiple data test - nodejs/ multiple nodejs

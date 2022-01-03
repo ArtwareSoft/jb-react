@@ -289,6 +289,8 @@ jb.component('jbm.nodeProbe', {
 jb.component('probe.initRemoteProbe', {
     type: 'action',
     impl: runActions(
+        Var('dataResources',() => jb.studio.projectCompsAsEntries().map(e=>e[0]).filter(x=>x.match(/^dataResource/)).join(',')),
+        remote.action(treeShake.getCodeFromRemote('%$dataResources%'),'%$jbm%'),
         remote.shadowResource('probe', '%$jbm%'),
         rx.pipe(
             watchableComps.scriptChange(),

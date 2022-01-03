@@ -77,7 +77,7 @@ jb.component('studio.treeMenu', {
         action: runActions(
           tgp.wrapWithGroup('%$path%'),
           writeValue('%$studio/profile_path%', '%$path%~controls~0'), 
-          tree.regainFocus()
+          popup.regainCanvasFocus()
         )
       }),
       menu.action({
@@ -157,7 +157,7 @@ jb.component('studio.openTreeMenu', {
   ],
   impl: menu.openContextMenu({
     menu: studio.treeMenu('%$path%'),
-    features: dialogFeature.onClose(tree.regainFocus())
+    features: dialogFeature.onClose(popup.regainCanvasFocus())
   })
 })
 
@@ -178,6 +178,7 @@ jb.component('studio.controlTree', {
         nodeModel: studio.controlTreeNodes(),
         style: tree.expandBox(true),
         features: [
+          variable('popupLauncherCanvas','%$cmp%'),
           tree.selection({
             databind: '%$studio/profile_path%',
             autoSelectFirst: true,

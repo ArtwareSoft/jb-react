@@ -237,6 +237,7 @@ jb.extension('workspace', {
             return jb.logError(`goto path - can not find pos for path ${path}`, {semanticPart})
         const line = pos[0] + Number(jb.comps[compId][jb.core.location][1]) - 1
         const uri = jb.comps[compId][jb.core.location][0]
+        if (!jb.workspace.openDocs[uri]) return
         const offset = jb.tgpTextEditor.lineColToOffset(jb.workspace.openDocs[uri].text, {line, col: pos[1]})
         jb.workspace.gotoOffsetRequest.next({from: offset, to: offset, path, uri})
         //if (line < editor.visibleRanges[0].start.line || line > editor.visibleRanges[0].end.line)

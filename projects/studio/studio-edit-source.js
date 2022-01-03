@@ -387,7 +387,7 @@ jb.component('sourceEditor.addProp', {
           //   popupStyle: dialog.popup(),
           //   showHelper: true,
           //   autoOpen: true,
-          //   onEsc: [dialog.closeDialogById('studio-jb-editor-popup'), tree.regainFocus()]
+          //   onEsc: [dialog.closeDialogById('studio-jb-editor-popup'), popup.regainCanvasFocus()()]
           // })
         ]
       }),
