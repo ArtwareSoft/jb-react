@@ -25,7 +25,7 @@ jb.extension('workspace', {
                 },
             }
     }},
-    contentChanged(text, docUri,ctx) {
+    contentChanged(text, docUri,ctx, change) {
         jb.workspace.activeUri = docUri
         jb.workspace.openDocs[docUri].text = text
 
@@ -226,6 +226,17 @@ jb.extension('workspace', {
 
             return editMenu ? 'editMenu' : 'selectPT'
         }
+    },
+    diagnostics({textDocument,docUri,pos}) {
+        return [{
+            severity: jb.workspace.DiagnosticSeverity.Warning,
+            range: {
+                start: textDocument.positionAt(10),
+                end: textDocument.positionAt(15)
+            },
+            message: `message`,
+            source: 'ex'
+        }];
     },
     gotoPath({path,semanticPart} = {}) {
         path = path || jb.exec('%$workspace/selectedPath%')

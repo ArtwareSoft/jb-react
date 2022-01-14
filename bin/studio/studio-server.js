@@ -96,56 +96,79 @@ function serve(req, res) {
 }
 
 // static file handlers
-supported_ext =  ['js','gif','png','jpg','html','xml','css','xtml','txt','json','bmp','woff','jsx','prj','woff2','map','ico','svg'];
+supported_ext =  ['js','gif','png','jpg','html','xml','css','xtml','txt','json','bmp','woff','jsx','prj','woff2','ttf','map','ico','svg','wasm'];
 for(i=0;i<supported_ext.length;i++)
   file_type_handlers[supported_ext[i]] = function(req, res,path) { serveFile(req,res,path); };
 
-function serveFile(req,res,path) {
-//  console.log(path,full_path);
+function serveFile(req,res,path,_try = 0) {
+//  console.log(path,full_path)
   const full_path = calcFullPath(path).replace(/![^!]+!/,'')
-  const extension = path.split('.').pop();
+  const extension = path.split('.').pop()
   if (settings.verbose) console.log('reading file ',full_path)
 
-
-  fs.readFile(_path(full_path), function (err, content) {
+  fs.stat(_path(full_path), (err, stat) => {
     if (err) {
-      if (err.errno === 34)
-        res.statusCode = 404;
-      else
-        res.statusCode = 500;
-      return endWithFailure(res,'Can not read file ' + full_path + ' ' + err);
+      res.statusCode = 500
+      return endWithFailure(res,'file status code 500 ' + full_path + ' ' + err)
     } else {
-      fs.stat(_path(full_path), function (err, stat) {
-        if (err) {
-          res.statusCode = 500;
-          return endWithFailure(res,'file status code 500 ' + full_path + ' ' + err);
-        } else {
-          res.setHeader('Cache-Control','max-age: 0, must-revalidate,no-cache');
-          const etag = stat.size + '-' + Date.parse(stat.mtime);
-          res.setHeader('Last-Modified', stat.mtime);
+      res.setHeader('Cache-Control','max-age: 0, must-revalidate,no-cache')
+      const etag = stat.size + '-' + Date.parse(stat.mtime)
+      res.setHeader('Last-Modified', stat.mtime)
 
-          if (extension == 'json') res.setHeader('Content-Type', 'application/json;charset=utf8');
-          if (extension == 'css') res.setHeader('Content-Type', 'text/css');
-          if (extension == 'xml') res.setHeader('Content-Type', 'application/xml;charset=utf8');
-          if (extension == 'js') res.setHeader('Content-Type', 'application/javascript;charset=utf8');
-          if (extension == 'woff') res.setHeader('Content-Type', 'application/x-font-woff');
-          if (extension == 'woff2') res.setHeader('Content-Type', 'application/x-font-woff2');
-          if (extension == 'svg') res.setHeader('Content-Type', 'image/svg+xml');
+      if (extension == 'json') res.setHeader('Content-Type', 'application/json;charset=utf8')
+      if (extension == 'css') res.setHeader('Content-Type', 'text/css')
+      if (extension == 'xml') res.setHeader('Content-Type', 'application/xml;charset=utf8')
+      if (extension == 'js') res.setHeader('Content-Type', 'application/javascript;charset=utf8')
+      if (extension == 'woff') res.setHeader('Content-Type', 'application/x-font-woff')
+      if (extension == 'woff2') res.setHeader('Content-Type', 'application/x-font-woff2')
+      if (extension == 'ttf') res.setHeader('Content-Type', 'application/x-font-ttf')
+      if (extension == 'svg') res.setHeader('Content-Type', 'image/svg+xml')
+      
+      if (req.headers['if-none-match'] === etag) {
+        console.log(`return 304 for ${full_path}`)
+        res.statusCode = 304
+        res.end()
+      } else {
+        console.log('serving content',full_path,req.headers['if-none-match'],etag)
+        fs.readFile(_path(full_path), (err, content) => {
+          if (content == '')
+            console.log(`suspecious empty content for ${full_path}, try ${_try}`)
 
-          if (req.headers['if-none-match'] === etag) {
-            res.statusCode = 304;
-            res.end();
+          if (err) {
+            if (err.errno === 34)
+              res.statusCode = 404
+            else
+              res.statusCode = 500
+            return endWithFailure(res,'Can not read file ' + full_path + ' ' + err)
           } else {
-            res.setHeader('Content-Length', Buffer.byteLength(content, 'utf8'));
-            res.setHeader('ETag', etag);
-            res.statusCode = 200;
-            res.end(content);
+            res.setHeader('Content-Length', Buffer.byteLength(content, 'utf8'))
+            res.setHeader('ETag', etag)
+            res.statusCode = 200
+            res.end(content)
           }
-        }
-      })
+        })
+      }
     }
-  });
+  })
 }
+
+//   fs.readFile(_path(full_path), function (err, content) {
+//     //console.log('concurrent_reads',concurrent_reads)
+//     if (content == '')
+//       console.log(`suspecious empty content for ${full_path}, try ${_try}`)
+//     if (err) {
+//       if (err.errno === 34)
+//         res.statusCode = 404;
+//       else
+//         res.statusCode = 500;
+//       return endWithFailure(res,'Can not read file ' + full_path + ' ' + err);
+//     } else {
+//       if (content == '' && _try < 4) {
+//         console.log(`suspecious empty content for ${full_path}, try ${_try}`)
+//         return serveFile(req,res,path,_try+1)
+//       }
+//   });
+// }
 
 const op_post_handlers = {
     saveComp: function(req, res,body,path) {
