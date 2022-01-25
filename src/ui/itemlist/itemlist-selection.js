@@ -1,4 +1,3 @@
-// var {runActionOnItem, isRef, inGroup, list } = jb.macro
 
 jb.component('itemlist.selection', {
   type: 'feature',

@@ -88,7 +88,7 @@ jb.component('studio.lastEdit', {
   ],
   impl: (ctx,justNow) => {
 		const now = new Date().getTime();
-		const lastEvent = jb.watchableComps.compsHistory.slice(-1).map(x=>x.opEvent).filter(x=>x)
+		const lastEvent = jb.scriptHistory.compsHistory.slice(-1).map(x=>x.opEvent).filter(x=>x)
       .filter(r=>	!justNow || now - r.timeStamp < 1000)[0]
     if (!lastEvent) return
     const insertedIndex = jb.path(lastEvent.op.$splice,'0.2') && jb.path(lastEvent.op.$splice,'0.0')
@@ -148,6 +148,7 @@ jb.extension('studio', 'project', {
 	projectFiles: () => jb.exec('%$studio/projectSettings/jsFiles%'),
 	projectCompsAsEntries: () => {
 		const project = jb.exec('%$studio/project%')
+    if (!project) return []
 		return jb.entries(jb.comps).filter(([id,comp]) => comp[jb.core.location][0].indexOf(project) != -1)
 			.filter(([id,comp]) => !comp.internal)
 	},

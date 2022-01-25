@@ -1,8 +1,8 @@
 
-jb.extension('watchableComps', 'studio', {
+jb.extension('studio','watchableComps', {
 	$phase: 50,
 	initExtension() {
-		  jb.utils.subscribe(jb.watchableComps.source, e => jb.watchableComps.scriptChangeHnadler(e))      
+		  jb.utils.subscribe(jb.watchableComps.source, e => jb.studio.scriptChangeHnadler(e))      
   },
 	scriptChangeHnadler(e) {
 		jb.log('watchableComps studio handler',{ctx: e.srcCtx,e})

@@ -3,8 +3,8 @@ jb.component('studioTest.save', {
         vars: Var('newVal', () => Math.floor(Math.random() * 1000 )),
         runBefore: runActions(
             (ctx,{newVal}) => {
-                jb.watchableComps.undoIndex = 0
-                jb.watchableComps.compsHistory = []
+                jb.scriptHistory.undoIndex = 0
+                jb.scriptHistory.compsHistory = []
                 jb.watchableComps.handler.writeValue(jb.tgp.ref('studioTest.changingComp~impl'),newVal,ctx)
             }
         ),

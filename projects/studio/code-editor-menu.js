@@ -29,6 +29,7 @@ jb.component('tgpTextEditor.prepareSetPT', {
     {id: 'semanticPart', as: 'string'},
     {id: 'compName', as: 'string'},
   ],
+  macroByValue: true,
   impl: (ctx,_path,semanticPart,compName) => {
     const profile = jb.tgp.valOfPath(_path)
     const params = jb.path(jb.comps[(profile||{}).$],'params') || []
@@ -45,7 +46,7 @@ jb.component('tgpTextEditor.prepareSetPT', {
         const index = ar == null ? undefined : openArray ? 0 : semanticIndex ? +semanticIndex[0]+1 : lastIndex
         return { path: [path,index].join('~'), do: () => jb.tgp.addArrayItem(path,{toAdd: {$: compName}, srcCtx: ctx, index}) }
     }
-    return { path, do: () => jb.tgp.setComp(path, compName, ctx) }
+    return { innerPath: path, do: () => jb.tgp.setComp(path, compName, ctx) }
   }
 })
 
@@ -69,7 +70,7 @@ jb.component('tgpTextEditor.selectPT', {
         action: runActions(
           Var('prepareSetPT', tgpTextEditor.prepareSetPT({path: '%$path%', semanticPart: '%$semanticPart%', compName: '%compName%'})),
           '%$prepareSetPT/do()%',
-          studio.gotoPath('%$prepareSetPT/path%', 'open-profile')
+          studio.gotoPath('%$prepareSetPT/innerPath%', 'open-profile')
         ),
         description: '%description%'
       })

@@ -2,7 +2,12 @@
 jb.extension('tgp', 'readOnly', {
 	parentPath: path => path.split('~').slice(0,-1).join('~'),
 	parents: path => path.split('~').reduce((acc,last,i) => acc.concat(i ? [acc[acc.length-1],last].join('~') : last),[]).reverse(),
-	valOfPath: path => jb.path(jb.comps,path.split('~')),
+	valOfPath: path => { 
+		const res = jb.path(jb.comps,path.split('~'))
+        if (res && res[jb.macro.isMacro])
+            return res()
+		return res
+	},
 	firstChildOfPath: path => [path,Object.keys(jb.tgp.valOfPath(path) || {}).find(x=>x != '$')].filter(x=>x).join('~'),
 	compNameOfPath: (path,silent) => {
 	  if (path.indexOf('~') == -1)
@@ -35,7 +40,11 @@ jb.extension('tgp', 'readOnly', {
 		return '' + val
 	},
 	pathSummary: path => path.replace(/~controls~/g,'~').replace(/~impl~/g,'~').replace(/^[^\.]*./,''),
-
+	firstParamIsArray: path => {
+		const profile = jb.tgp.valOfPath(path)
+		const params = jb.path(jb.comps[(profile||{}).$],'params') || []
+        return params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
+	},
 	isArrayType: path => ((jb.tgp.paramDef(path)||{}).type||'').indexOf('[]') != -1,
 	isOfType(path,type) {
 		const types = type.split(',')
@@ -51,28 +60,29 @@ jb.extension('tgp', 'readOnly', {
 			.map(x=>x.split('[')[0]).filter(_t=>type.split(',').indexOf(_t) != -1).length
 	},
 	PTsOfType(type) {
-		const single = /([^\[]*)(\[\])?/;
-		const types = [].concat.apply([],(type||'').split(',')
-			.map(x=>
-				x.match(single)[1])
-			.map(x=>
-				x=='data' ? ['data','aggregator','boolean'] : [x]));
-		const comp_arr = types.map(t=>
-			jb.entries(jb.comps)
-				.filter(c=> jb.tgp.isCompObjOfType(c[1],t))
-				.map(c=>c[0]));
-		return comp_arr.reduce((all,ar)=>all.concat(ar),[]);
+		const single = /([^\[]*)(\[\])?/
+		const types = (type||'').split(',').map(x=>x.match(single)[1])
+			.flatMap(x=> x=='data' ? ['data','aggregator','boolean'] : [x])
+		const comp_arr = types.map(t=> jb.entries(jb.comps).filter(c=> jb.tgp.isCompObjOfType(c[1],t)).map(c=>c[0]))
+		const res = [].concat(...comp_arr)
+		res.sort((c1,c2) => jb.tgp.markOfComp(c2) - jb.tgp.markOfComp(c1))
+		return res
+	},
+	markOfComp(name) {
+		return +(((jb.comps[name].category||'').match(/common:([0-9]+)/)||[0,0])[1])
 	},
 	isCompNameOfType(name,type) {
-		const comp = name && jb.comps[name];
+		const comp = name && jb.comps[name]
 		if (comp) {
 			while (jb.comps[name] && !(jb.comps[name].type || jb.comps[name].typePattern) && jb.utils.compName(jb.comps[name].impl))
 				name = jb.utils.compName(jb.comps[name].impl);
-			return jb.comps[name] && jb.tgp.isCompObjOfType(jb.comps[name],type);
+			return jb.comps[name] && jb.tgp.isCompObjOfType(jb.comps[name],type)
 		}
 	},
-	isCompObjOfType: (compObj,type) => (compObj.type||'data').split(',').indexOf(type) != -1
-		|| (compObj.typePattern && compObj.typePattern(type)),
+	isCompObjOfType: (compObj,type) => {
+		const compType = !compObj.type && typeof compObj.impl == 'function' ? 'data' : compObj.type || ''
+		return compType.split(',').includes(type) || (compObj.typePattern && compObj.typePattern(type))
+	},
 
 	// single first param type
 	paramType(path) {
@@ -181,13 +191,19 @@ jb.extension('tgp', 'readOnly', {
 	},
 	isDisabled: path => jb.path(jb.tgp.valOfPath(path),'$disabled'),
 	moreParams: path => jb.tgp.paramsOfPath(path).filter(p=>jb.tgp.valOfPath(path+'~'+p.id) == null), // && !p.mandatory)
+	canWrapWithArray: path => {
+		const type = jb.tgp.paramDef(path) ? (jb.tgp.paramDef(path).type || '') : ''
+		const val = jb.tgp.valOfPath(path)
+		const parentVal = jb.tgp.valOfPath(jb.tgp.parentPath(path))
+		return type.includes('[') && !Array.isArray(val) && !Array.isArray(parentVal)
+	}
 })
 
 
 // ******* components ***************
 
 jb.defComponents(
-'isArrayType,parentPath,shortTitle,summary,isDisabled,enumOptions,propName,paramDef,paramType,moreParams,paramsOfPath,firstChildOfPath'
+'isArrayType,parentPath,shortTitle,summary,isDisabled,enumOptions,propName,paramDef,paramType,moreParams,paramsOfPath,firstChildOfPath,canWrapWithArray'
 	.split(','), f => jb.component(`tgp.${f}`, { 
 	params: [
 		{id: 'path', as: 'string', mandatory: true}
@@ -299,14 +315,6 @@ jb.component('tgp.titleToId', {
     {id: 'name', as: 'string', defaultValue: '%%'}
   ],
   impl: ({},name) => jb.macro.titleToId(name)
-})
-
-jb.component('tgp.canWrapWithArray', {
-  type: 'boolean',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: (ctx,path) => jb.tgp.paramDef(path) && (jb.tgp.paramDef(path).type || '').indexOf('[') != -1 && !Array.isArray(jb.tgp.valOfPath(path))
 })
 
 jb.component('tgp.isArrayItem', {

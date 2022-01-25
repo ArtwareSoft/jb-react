@@ -79,7 +79,7 @@ jb.extension('studio', 'jbEditor', {
 	//		if (this.sugarChildren(path,val)) return [];
 			if (!this.includeCompHeader && path.indexOf('~') == -1)
 				path = path + '~impl';
-			
+
 			return jb.tgp.paramsOfPath(path).map(p=> ({ path: path + '~' + p.id, param: p}))
 					.filter(e=>jb.tgp.valOfPath(e.path) !== undefined || e.param.mandatory)
 					.flatMap(({path})=> Array.isArray(jb.tgp.valOfPath(path)) ? jb.tgp.arrayChildren(path) : [path])
@@ -111,11 +111,12 @@ jb.component('studio.jbEditor', {
   ],
   impl: group({
     title: 'main',
-    layout: layout.horizontalFixedSplit({leftWidth: '350px', rightWidth: '100%'}),
+    layout: layout.horizontalFixedSplit('350px', '100%'),
     controls: [
       studio.jbEditorInteliTree('%$path%'),
       group({
-        controls: probe.inOutView('%$studio/jbEditor/selected%'),
+        title: '',
+        controls: probe.inOutView(),
         features: [feature.if(not('%$studio/hideProbe%')), watchRef('%$studio/hideProbe%')]
       })
     ],
@@ -132,7 +133,7 @@ jb.component('studio.openJbEditProperty', {
     Var('actualPath', studio.jbEditorPathForEdit('%$path%')),
     Var('paramDef', tgp.paramDef('%$actualPath%')),
     [
-      action.switchCase(ctx => 
+      action.switchCase(ctx =>
         console.log('open property', ctx.run({$: 'tgp.isOfType', path: '%$actualPath%', type: 'data,boolean'}), ctx)),
       action.switchCase(endsWith('$vars', '%$path%'), studio.addVariable('%$path%')),
       action.switchCase(

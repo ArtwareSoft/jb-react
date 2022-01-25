@@ -57,9 +57,9 @@ jb.component('studio.initNotebookSaveService', {
     impl: ctx => {
         const st = jb.studio
         st.changedComps = () => {
-            if (!jb.watchableComps.compsHistory || !jb.watchableComps.compsHistory.length) return []
+            if (!jb.scriptHistory.compsHistory || !jb.scriptHistory.compsHistory.length) return []
 
-            const changedComps = jb.utils.unique(jb.watchableComps.compsHistory.map(e=>jb.path(e,'opEvent.path.0')))
+            const changedComps = jb.utils.unique(jb.scriptHistory.compsHistory.map(e=>jb.path(e,'opEvent.path.0')))
             return changedComps.map(id=>[id,jb.comps[id]])
         }
     }

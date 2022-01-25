@@ -10,12 +10,12 @@ jb.component('sampleComp.ctrlWithPipeline', {
   })
 })
 
-jb.component('FETest.workspace.IDE', {
-  impl: uiFrontEndTest({
-    renderDOM: true,
-    timeout: 5000,
-    runBefore: workspace.openDoc('/projects/tests/ui-tests.js'),
-    control: workspace.IDE(),
-    expectedResult: true
-  })
-})
+// jb.component('FETest.workspace.IDE', {
+//   impl: uiFrontEndTest({
+//     renderDOM: true,
+//     timeout: 5000,
+//     runBefore: workspace.openDoc('/projects/tests/ui-tests.js'),
+//     control: workspace.IDE(),
+//     expectedResult: true
+//   })
+// })

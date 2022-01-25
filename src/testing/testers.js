@@ -52,12 +52,12 @@ jb.component('dataTest', {
 jb.component('uiTest', {
 	type: 'test',
 	params: [
-	  {id: 'control', type: 'control', dynamic: true},
+	  {id: 'control', type: 'control', dynamic: true, mandatory: true},
 	  {id: 'runBefore', type: 'action', dynamic: true},
-	  {id: 'userInput', type: 'user-input[]', as: 'array' },
+	  {id: 'userInput', type: 'user-input[]', as: 'array', description: 'user actions' },
 	  {id: 'userInputRx', type: 'rx', dynamic: true },
 	  {id: 'checkResultRx', type: 'rx' },
-	  {id: 'expectedResult', type: 'boolean', dynamic: true},
+	  {id: 'expectedResult', type: 'boolean', dynamic: true, mandatory: true},
 	  {id: 'allowError', as: 'boolean', dynamic: true},
 	  {id: 'timeout', as: 'number', defaultValue: 200},
 	  {id: 'cleanUp', type: 'action', dynamic: true},
@@ -347,6 +347,7 @@ jb.extension('test', {
 				if (e[1].impl.timeout && e[1].impl.timeout > 1000)
 					await jb.delay(5)
 				const testID = e[0]
+				//if (testID == 'previewTest.childJbm') debugger
 				document.getElementById('progress').innerHTML = `<div id=${testID}>${index++}: ${testID} started</div>`
 				console.log('starting ' + testID )
 				const res = await jb.test.runOneTest(testID)

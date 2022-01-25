@@ -11,7 +11,7 @@ jb.component('studio.saveComponents', {
     sink.action(({},{fn,fileContent,comps}) => {
       if (fileContent) {
         jb.studio.host.showInformationMessage('file ' + fn + ' updated with components :' + comps.map(e=>e[0]).join(', '))
-        jb.watchableComps.updateLastSave()
+        jb.scriptHistory.updateLastSave()
       } else {
         jb.studio.host.showError('error saving: ' + (typeof e == 'string' ? e : e.message || e.e || e.desc))
         jb.logException(e,'error while saving ' + e.id,{ctx}) || []  

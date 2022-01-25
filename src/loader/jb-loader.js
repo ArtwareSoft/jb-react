@@ -9,7 +9,7 @@ var jb_modules = {
   ],
 }
 
-async function jbInit(uri, {projects, plugins, repos, baseUrl, multipleInFrame, fileSymbolsFunc }) {
+async function jbInit(uri, {projects, plugins, repos, baseUrl, multipleInFrame, fileSymbolsFunc, doNotLoadLibs }) {
   fileSymbols = fileSymbolsFunc || fileSymbolsFromHttp
   const jb = { uri, baseUrl: baseUrl !== undefined ? baseUrl : typeof globalThis.jbBaseUrl != 'undefined' ? globalThis.jbBaseUrl : '' }
   if (!multipleInFrame) // multipleInFrame is used in jbm.child
@@ -22,7 +22,7 @@ async function jbInit(uri, {projects, plugins, repos, baseUrl, multipleInFrame, 
   const topRequiredModules = ['default-plugins', ...(repos || []).map(repo => `${repo}/plugins`), ...(plugins || []).map(x => `plugins/${x}`), ...(projects || []).map(x => `projects/${x}`)]
   
   const symbols = await topRequiredModules.reduce( async (acc,dir) => [...await acc, ...await fileSymbols(dir,'','pack-')], [])
-  await jbSupervisedLoad([...srcSymbols,...symbols],jb)
+  await jbSupervisedLoad([...srcSymbols,...symbols],jb,doNotLoadLibs)
 
   return jb
 
@@ -47,13 +47,13 @@ async function jbloadJSFile(url,jb,{noSymbols} = {}) {
     globalThis[funcId](jb)
 }
 
-async function jbSupervisedLoad(symbols, jb) {
+async function jbSupervisedLoad(symbols, jb, doNotLoadLibs) {
   const ns = jb.utils.unique([...symbols.flatMap(x=>x.ns || []),'Var','remark'])
   const libs = jb.utils.unique(symbols.flatMap(x=>x.libs))
   ns.forEach(id=> jb.macro.registerProxy(id))
   await symbols.reduce((pr,symbol) => pr.then(()=> jbloadJSFile(symbol.path,jb)), Promise.resolve())
 //  jb.treeShake.baseUrl = baseUrl !== undefined ? baseUrl : typeof globalThis.jbBaseUrl != 'undefined' ? globalThis.jbBaseUrl : ''
-  await jb.initializeLibs(libs)
+  !doNotLoadLibs && await jb.initializeLibs(libs)
   Object.keys(jb.comps).forEach(comp => jb.macro.fixProfile(jb.comps[comp],comp))
 }
 

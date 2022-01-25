@@ -1,4 +1,7 @@
 jb.extension('tgp', 'writable', {
+	initExtension() {
+		jb.watchableComps.startWatch()
+	},
 	ref: (path,silent) => {
 		const _path = path.split('~')
 		jb.watchableComps.handler.makeWatchable && jb.watchableComps.handler.makeWatchable(_path[0])
@@ -35,11 +38,12 @@ jb.extension('tgp', 'writable', {
 			jb.logException(e,'eval profile',{prof_str})
 		}
 	},	
-	newProfile(comp,compName) {
+	newProfile(comp,compName,path) {
+		const currentVal = path && jb.tgp.valOfPath(path)
 		const result = { $: compName }
 		jb.utils.compParams(comp).forEach(p=>{
 			if (p.composite)
-				result[p.id] = []
+				result[p.id] = currentVal == null ? [] : jb.asArray(currentVal)
 			if (p.templateValue)
 				result[p.id] = JSON.parse(JSON.stringify(p.templateValue))
 		})

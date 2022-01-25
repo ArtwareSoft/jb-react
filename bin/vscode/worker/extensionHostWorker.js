@@ -15169,7 +15169,7 @@ define(__m[112/*vs/editor/common/config/editorOptions*/], __M([0/*require*/,1/*e
         lineNumbers: register(new EditorRenderLineNumbersOption()),
         lineNumbersMinChars: register(new EditorIntOption(60 /* lineNumbersMinChars */, 'lineNumbersMinChars', 5, 1, 300)),
         linkedEditing: register(new EditorBooleanOption(61 /* linkedEditing */, 'linkedEditing', false, { description: nls.localize(203, null) })),
-        links: register(new EditorBooleanOption(62 /* links */, 'links', true, { description: nls.localize(204, null) })),
+        links: register(new EditorBooleanOption(62 /* links */, 'links', false, { description: nls.localize(204, null) })),
         matchBrackets: register(new EditorStringEnumOption(63 /* matchBrackets */, 'matchBrackets', 'always', ['always', 'near', 'never'], { description: nls.localize(205, null) })),
         minimap: register(new EditorMinimap()),
         mouseStyle: register(new EditorStringEnumOption(65 /* mouseStyle */, 'mouseStyle', 'text', ['text', 'default', 'copy'])),

@@ -20,6 +20,20 @@ allExtensionsJsons.push({
 		],
 		"browser": "./jbart-serverless-lsp.js",
 		"contributes": {
+			"commands": [
+				{
+					"command": "jbart.applyEditAndGotoPath",
+					"title": "apply edit from item and goto result path"
+				},
+				{
+					"command": "jbart.gotoPath",
+					"title": "goto path"
+				},
+				{
+					"command": "jbart.formatComponent",
+					"title": "format component"
+				},
+			],
 			"languages": [
 				{
 					"id": "jbart",

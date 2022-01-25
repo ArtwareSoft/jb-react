@@ -256,16 +256,6 @@ jb.extension('watchable', {
         return obj[prop]; // not reffable
       }
     }
-    writeValue(ref,value,srcCtx) {
-      if (!ref || !this.isRef(ref) || !this.pathOfRef(ref))
-        return jb.logError('writeValue: err in ref', {srcCtx, ref, value})
-
-      jb.log('watchable writeValue',{ref,value,ref,srcCtx})
-      if (ref.$jb_val)
-        return ref.$jb_val(value)
-      if (this.val(ref) === value) return
-      return this.doOp(ref,{$set: this.createSecondaryLink(value)},srcCtx)
-    }
     createSecondaryLink(val) {
       if (val && typeof val === 'object' && !val[jb.watchable.isProxy]) {
         const ref = this.asRef(val,true);
@@ -277,9 +267,26 @@ jb.extension('watchable', {
       }
       return val
     }
+    // operation API    
+    writeValue(ref,value,srcCtx) {
+      if (!ref || !this.isRef(ref) || !this.pathOfRef(ref))
+        return jb.logError('writeValue: err in ref', {srcCtx, ref, value})
+
+      jb.log('watchable writeValue',{ref,value,ref,srcCtx})
+      if (ref.$jb_val)
+        return ref.$jb_val(value)
+      if (this.val(ref) === value) return
+      return this.doOp(ref,{$set: this.createSecondaryLink(value)},srcCtx)
+    }
     splice(ref,args,srcCtx) {
       return this.doOp(ref,{$splice: args },srcCtx)
     }
+    push(ref,value,srcCtx) {
+      return this.doOp(ref,{$push: this.createSecondaryLink(value)},srcCtx)
+    }
+    merge(ref,value,srcCtx) {
+      return this.doOp(ref,{$merge: this.createSecondaryLink(value)},srcCtx)
+    }    
     move(fromRef,toRef,srcCtx) {
       const fromPath = this.pathOfRef(fromRef), toPath = this.pathOfRef(toRef);
       const sameArray = fromPath.slice(0,-1).join('~') == toPath.slice(0,-1).join('~');
@@ -340,12 +347,7 @@ jb.extension('watchable', {
         (this.transactionEventsLog || []).forEach(opEvent=>this.resourceChange.next(opEvent))
       delete this.transactionEventsLog
     }
-    push(ref,value,srcCtx) {
-      return this.doOp(ref,{$push: this.createSecondaryLink(value)},srcCtx)
-    }
-    merge(ref,value,srcCtx) {
-      return this.doOp(ref,{$merge: this.createSecondaryLink(value)},srcCtx)
-    }
+
     getOrCreateObservable({ref,srcCtx,includeChildren,cmp}) {
         const subject = jb.callbag.subject()
         const ctx = cmp && cmp.ctx || srcCtx || { path: ''}

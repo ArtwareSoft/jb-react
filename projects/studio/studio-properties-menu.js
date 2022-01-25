@@ -1,3 +1,4 @@
+
 jb.component('studio.gotoPath', {
   type: 'action',
   params: [
@@ -10,7 +11,7 @@ jb.component('studio.gotoPath', {
       dialog.closeDialog(),
       writeValue('%$studio/profile_path%', '%$path%'),
       //action.if(studio.inVscode(), ({},{},{path,semanticPart}) => jb.studio.host.gotoPath(path,semanticPart)),
-      ({},{},{path,semanticPart}) => jb.workspace.gotoPathRequest.next({path,semanticPart}),
+      ({},{},{path,semanticPart}) => jb.workspace.gotoPathRequest && jb.workspace.gotoPathRequest.next({path,semanticPart}),
       popup.regainCanvasFocus()
     )
   )

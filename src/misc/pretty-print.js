@@ -92,9 +92,9 @@ jb.extension('utils', 'prettyPrint', {
         const paramProps = path.match(/~params~[0-9]+$/)
         const paramsParent = path.match(/~params$/)
         const ctrls = path.match(/~controls$/) && Array.isArray(val)
-        //const moreThanThreeVals = innerVals.length > 3 && !isArray
+        const moreThanTwoVals = innerVals.length > 2 && !isArray
         const top = !path.match(/~/g)
-        return !paramProps && (result.unflat || paramsParent || top || ctrls || long)
+        return !paramProps && (result.unflat || paramsParent || top || ctrls || long || moreThanTwoVals)
       }
       function fixPropName(prop) {
         return prop.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/) ? prop : `'${prop}'`
@@ -180,6 +180,7 @@ jb.extension('utils', 'prettyPrint', {
         if (val === null) return 'null'
         if (val === undefined) return 'undefined'
         if (typeof val === 'object') return profileToMacro(ctx, val, flat)
+        if (typeof val === 'function' && val[jb.macro.isMacro]) return profileToMacro(ctx, val(), flat)
         if (typeof val === 'function') return serializeFunction(val)
     
         if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)

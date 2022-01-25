@@ -4,9 +4,9 @@
 // // var { waitFor, prettyPrint } = jb.macro
 
 // st.changedComps = () => {
-//   if (!jb.watchableComps.compsHistory || !jb.watchableComps.compsHistory.length) return []
+//   if (!jb.scriptHistory.compsHistory || !jb.scriptHistory.compsHistory.length) return []
 
-//   const changedComps = jb.utils.unique(jb.watchableComps.compsHistory.map(e=>jb.path(e,'opEvent.path.0')))
+//   const changedComps = jb.utils.unique(jb.scriptHistory.compsHistory.map(e=>jb.path(e,'opEvent.path.0')))
 //     .filter(id=> st.previewjb.comps[id] !== st.serverComps[id])
 //   return changedComps.map(id=>[id,st.previewjb.comps[id]])
 // }

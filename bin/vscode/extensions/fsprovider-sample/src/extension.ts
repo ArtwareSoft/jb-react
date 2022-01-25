@@ -36,20 +36,29 @@ export function activate(context: vscode.ExtensionContext) {
             return;
         }
         initialized = true;
-        const jbFile = `jb.component('uiTest.group', {
-    impl: uiTest({
-        control: group({
-        controls: [
-            text('hello world'),
-            text('2')
-        ]
-        }),
-        expectedResult: contains(['hello world', '2'])
-    })
+        const uiTests = 
+`jb.component('uiTest.dummy', {
+  impl: uiTest({control: text({text: 'hello world', title: ''}), expectedResult: contains('hello world')})
+})
+
+jb.component('uiTest.group2', {
+  impl: uiTest({
+    control: group({
+      controls: [
+        text('hello world'),
+        text('2')
+      ]
+    }),
+    expectedResult: contains(['hello world', '2'])
+  })
 })`
 
         // most common files types
-        memFs.writeFile(vscode.Uri.parse(`memfs:/sample.jb`), Buffer.from(jbFile), { create: true, overwrite: true });
+        // /projects/tests/ui-tests.js
+        memFs.createDirectory(vscode.Uri.parse(`memfs:/projects/`))
+        memFs.createDirectory(vscode.Uri.parse(`memfs:/projects/tests`))
+
+        memFs.writeFile(vscode.Uri.parse(`memfs:/projects/tests/ui-tests2.jb`), Buffer.from(uiTests), { create: true, overwrite: true });
         memFs.writeFile(vscode.Uri.parse(`memfs:/file.txt`), Buffer.from('#aaaaaa'), { create: true, overwrite: true });
         // memFs.writeFile(vscode.Uri.parse(`memfs:/file.html`), Buffer.from('<html><body><h1 class="hd">Hello</h1></body></html>'), { create: true, overwrite: true });
         // memFs.writeFile(vscode.Uri.parse(`memfs:/file.js`), Buffer.from('console.log("JavaScript")'), { create: true, overwrite: true });

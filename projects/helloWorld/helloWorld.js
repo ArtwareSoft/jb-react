@@ -1,7 +1,7 @@
 jb.component('dataResource.people', {
   watchableData: [
     {
-      name: 'Homer asdas',
+      name: 'Homer',
       age: 42,
       male: false,
       children: [{name: 'Bart'}, {name: 'Lisa'}, {name: 'Maggie'}]

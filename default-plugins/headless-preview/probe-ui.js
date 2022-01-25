@@ -4,11 +4,7 @@ jb.component('probe.inOutView', {
   impl: group({ 
     controls: remote.widget( group({
         layout: layout.horizontal(),
-        controls: [
-            text({
-                text: prettyPrint('%$probe%'), 
-                style: text.textarea({rows: 20, cols: 10}),
-            }),           
+        controls: [      
             group({
             controls: group({
                 controls: [

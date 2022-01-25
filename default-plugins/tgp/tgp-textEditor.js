@@ -4,19 +4,19 @@ jb.extension('tgpTextEditor', {
         return pathAndValueOfSingleChange(diff,'',currentVal)
     
         function pathAndValueOfSingleChange(obj, pathSoFar, currentVal) {
-            if (currentVal === undefined || (typeof obj !== 'object' && obj !== undefined))
+            if (jb.utils.isPrimitiveValue(currentVal) || currentVal === undefined || (typeof obj !== 'object' && obj !== undefined))
                 return { innerPath: pathSoFar, innerValue: obj }
             const entries = jb.entries(obj)
-            if (entries.length != 1 || Object.values(jb.path(entries,'0.1')||{})[0]== '__undefined') // if not single returns empty answer
+            if (entries.length != 1 || Object.values(jb.path(entries,'0.1')||{})[0]== '__undefined') // if not single key returns empty answer
                 return {}
             return pathAndValueOfSingleChange(entries[0][1],pathSoFar+'~'+entries[0][0],currentVal[entries[0][0]])
         }
     },
     setStrValue(value, ref, ctx) {
         const notPrimitive = value.match(/^\s*[a-zA-Z0-9\._]*\(/) || value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
-        const newVal = notPrimitive ? jb.utils.eval(value,ref.handler.frame()) : value;
-        if (newVal === Symbol.for('parseError'))
-            return
+        const { res, err } = notPrimitive ? jb.utils.eval(value) : value
+        if (err) return
+        const newVal = notPrimitive ? res : value
         // I had a guess that ',' at the end of line means editing, YET, THIS GUESS DID NOT WORK WELL ...
         // if (typeof newVal === 'object' && value.match(/,\s*}/m))
         //     return
@@ -47,15 +47,17 @@ jb.extension('tgpTextEditor', {
     },
     pathOfPosition(ref,pos) {
         const offset = !Number(pos) ? jb.tgpTextEditor.lineColToOffset(ref.text, pos) : pos
-        const charBefore = jb.tgpTextEditor.pathOfOffset(offset-1,ref.locationMap)
-        let res = jb.tgpTextEditor.pathOfOffset(offset,ref.locationMap)
+        console.log('cursor offset', offset)
+        const charBefore = jb.tgpTextEditor.pathOfOffset(offset-1,ref.locationMap)[0]
+        const allPaths = jb.tgpTextEditor.pathOfOffset(offset,ref.locationMap)
+        let res = allPaths[0]
         if ((jb.path(charBefore,'0') || '').match(/~!open-by-value/) || (jb.path(res,'0') || '').match(/~!prop/))
             res = charBefore
-        return res && {path: res[0], offset: offset - res[1].offset_from}
+        return res && {path: res[0], offset: offset - res[1].offset_from, allPaths}
     },
     pathOfOffset(offset,locationMap) {
         const entries = jb.entries(locationMap).filter(e=> e[1].offset_from <= offset && offset <= e[1].offset_to).filter(x=>x[0] != 'cursor')
-        return entries.sort((x,y) => (x[1].offset_to - x[1].offset_from) - (y[1].offset_to - y[1].offset_from) )[0] // smallest selection
+        return entries.sort((x,y) => (x[1].offset_to - x[1].offset_from) - (y[1].offset_to - y[1].offset_from) ) // smallest selection
     },
     enrichMapWithOffsets(text,locationMap) {
         const lines = text.split('\n')
@@ -84,31 +86,15 @@ jb.extension('tgpTextEditor', {
         }
         editor.focus && jb.delay(10).then(()=>editor.focus())
     },
-    getSuggestions(semanticPath) {
-        if (!semanticPath) return []
-        const path = semanticPath.path.split('~!')[0]
-        const semantic = semanticPath.path.split('~!').pop()
-        const profile = jb.tgp.valOfPath(path)
-        const prop = profile && typeof profile == 'object' && (semantic.match(/-by-value|-separator-|-profile/) || semantic == 'value')
-        const options = prop ? jb.tgp.paramsOfPath(path).filter(p=>jb.tgp.valOfPath(path+'~'+p.id) == null)
-            .map(p=> addProperty(p, path + '~' + p.id))
-            : []
-        return options
-
-        function addProperty(prop,path) { return {
-            label: prop.id,
-            action: {$: 'tgp.addProperty', path }
-        }}
-    },
-    getPosOfPath(path) {
+    getPosOfPath(path, semanticPart) {
         const compId = path.split('~')[0]
         const {map} = jb.utils.prettyPrintWithPositions(jb.comps[compId],{initialPath: compId, comps: jb.comps})
-        return map[path]
+        const res = jb.asArray(semanticPart).map(s=>map[`${path}~!${s}`]).find(x=>x)
+        //if (!res) debugger
+        return res
     },
-    getPathOfPos(compId,pos,actualText) {
-        if (jb.utils.prettyPrintComp(compId,jb.comps[compId]) != actualText)
-            return { needsFormat: true }
-        const { text, map } = jb.utils.prettyPrintWithPositions(jb.comps[compId],{initialPath: compId, comps: jb.comps})
+    getPathOfPos(comp, compId,pos) {
+        const { text, map } = jb.utils.prettyPrintWithPositions(comp || jb.comps[compId],{initialPath: compId, comps: jb.comps})
         map.cursor = [pos.line,pos.col,pos.line,pos.col]
         const locationMap = jb.tgpTextEditor.enrichMapWithOffsets(text, map)
         if (!locationMap.cursor.offset_from)
@@ -116,29 +102,131 @@ jb.extension('tgpTextEditor', {
         const semanticPath = jb.tgpTextEditor.pathOfPosition({text, locationMap}, locationMap.cursor.offset_from )
         return { semanticPath, path: semanticPath && semanticPath.path.split('~!')[0] }
     },
-    getPathsOfPos(compId,pos,actualText) { // debug
-        if (jb.utils.prettyPrintComp(compId,jb.comps[compId]) != actualText)
-            return { needsFormat: true }
-        const { text, map } = jb.utils.prettyPrintWithPositions(jb.comps[compId],{initialPath: compId, comps: jb.comps})
-        map.cursor = [pos.line,pos.col,pos.line,pos.col]
-        const locationMap = jb.tgpTextEditor.enrichMapWithOffsets(text, map)
-        if (!locationMap.cursor.offset_from)
-            return {}
-        return jb.tgpTextEditor.pathsOfPosition({text, locationMap}, locationMap.cursor.offset_from )
-    },
-    pathsOfPosition(ref,pos) { // debug
-        const offset = !Number(pos) ? jb.tgpTextEditor.lineColToOffset(ref.text, pos) : pos
-        return {offset, relevant: jb.entries(ref.locationMap).filter(([path,r]) => r.offset_from -1 <= offset && offset <= r.offset_to)
-            .map(([path,r]) => `${r.offset_from}-${r.offset_to} ${path}`) }
-    },    
-    posFromCM: pos => pos && ({line: pos.line, col: pos.ch}),
-    cm_hint(cmEditor) {
-        const cursor = cmEditor.getDoc().getCursor()
-        return {
-            from: cursor, to: cursor,
-            list: jb.tgpTextEditor.getSuggestions(cmEditor.getValue(),posFromCM(cursor)).suggestions
+    // getPathsOfPos(compId,pos,actualText) { // debug
+    //     if (jb.utils.prettyPrintComp(compId,jb.comps[compId]) != actualText)
+    //         return { needsFormat: true }
+    //     const { text, map } = jb.utils.prettyPrintWithPositions(jb.comps[compId],{initialPath: compId, comps: jb.comps})
+    //     map.cursor = [pos.line,pos.col,pos.line,pos.col]
+    //     const locationMap = jb.tgpTextEditor.enrichMapWithOffsets(text, map)
+    //     if (!locationMap.cursor.offset_from)
+    //         return {}
+    //     return jb.tgpTextEditor.pathsOfPosition({text, locationMap}, locationMap.cursor.offset_from )
+    // },
+    // pathsOfPosition(ref,pos) { // debug
+    //     const offset = !Number(pos) ? jb.tgpTextEditor.lineColToOffset(ref.text, pos) : pos
+    //     return {offset, relevant: jb.entries(ref.locationMap).filter(([path,r]) => r.offset_from -1 <= offset && offset <= r.offset_to)
+    //         .map(([path,r]) => `${r.offset_from}-${r.offset_to} ${path}`) }
+    // },
+    closestComp(fileContent, cursorLine) {
+        const lines = fileContent.split('\n')
+        const closestComp = lines.slice(0,cursorLine+1).reverse().findIndex(line => line.match(/^jb.component\(/))
+        if (closestComp == -1) return {}
+        const componentHeaderIndex = cursorLine - closestComp
+        const compId = (lines[componentHeaderIndex].match(/'([^']+)'/)||['',''])[1]
+        const linesFromComp = lines.slice(componentHeaderIndex)
+        const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
+        const nextjbComponent = lines.slice(componentHeaderIndex+1).findIndex(line => line.match(/^jb.component/))
+        if (nextjbComponent != -1 && nextjbComponent < compLastLine) {
+          jb.logError('workspace - can not find end of component', { compId, linesFromComp })
+          return {}
         }
-    }
+        const compSrc = linesFromComp.slice(0,compLastLine+1).join('\n')
+        return {compId, compSrc, componentHeaderIndex, compLastLine}
+    },    
+    fileContentToCompText(fileContent,compId) {
+        const lines = fileContent.split('\n')
+        const start = lines.findIndex(line => line.indexOf(`jb.component\('${compId}'`) == 0)
+        if (start == -1)
+            return jb.logError('fileContentToCompText - can not find compId',{fileContent,compId})
+        const end = lines.slice(start).findIndex(line => line.match(/^}\)\s*$/))
+        if (end == -1)
+            return jb.logError('fileContentToCompText - can not find close comp',{fileContent,compId})
+        return { compText: lines.slice(start,start+end+1).join('\n'), compLine: start }
+    },
+    fixEditedComp(compText, {line, col} = {}) {
+        //console.log('fixEditedComp', compText,line,col)
+        let fixedText = null, lastSrc = null, lastException = null
+        const originalComp = tryCompile(compText.replace(/^jb\.component/,''))
+        let fixedComp = originalComp
+        if (!fixedComp && line != undefined) {
+            const lines = lastSrc.split('\n')
+            const fixedLine = fixLineAtCursor(lines[line],col)
+            if (fixedLine != lines[line])
+                fixedComp = tryCompile(lastSrc.split('\n').map((l,i) => i == line ? fixedLine : l).join('\n'))
+        }
+        if (!fixedComp)
+            return jb.logException(lastException,'fixEditedComp - can not fix compText', {lastSrc})
+        return {fixedText: `jb.component${fixedText}`, fixedComp, originalComp }
+
+        function fixLineAtCursor(line,pos) {
+            const rest = line.slice(pos)
+            const to = pos + (rest.match(/^[a-zA-Z0-9$_\.]+/)||[''])[0].length
+            const from = pos - (line.slice(0,pos).match(/[a-zA-Z0-9$_\.]+$/)||[''])[0].length
+            const word = line.slice(from,to)
+            const noCommaNoParan = rest.match(/^[a-zA-Z0-9$_\.]*\s*$/)
+            const func = rest.match(/^[a-zA-Z0-9$_\.]*\s*\(/)
+            const replaceWith = noCommaNoParan ? 'TBD(),' : func ? isValidFunc(word) ? word : 'TBD' : 'TBD()'
+            return line.slice(0,from) + replaceWith + line.slice(to)
+        }
+        function isValidFunc(f) {
+            return f.trim() != '' && (jb.macro.proxies[f] || jb.frame[f])
+        }
+
+        function tryCompile(src) {
+            lastSrc = src
+            try {
+                const res = jb.frame.eval(`(function() { ${jb.macro.importAll()}; return ${src} })()`)
+                fixedText = src
+                return res
+            } catch (e) {
+                lastException = e
+            }    
+        }
+    },
+    deltaFileContent(fileContent, {compId,comp}) {
+        const { compLine, compText} = jb.tgpTextEditor.fileContentToCompText(fileContent,compId)
+        const newCompContent = comp ? jb.utils.prettyPrintComp(compId,comp,{comps: jb.comps}) : ''
+        const justCreatedComp = !compText.length && comp[jb.core.location][1] == 'new'
+        if (justCreatedComp) {
+          comp[jb.core.location][1] == lines.length
+          return { range: {start: { line: lines.length, col: 0}, end: {line: lines.length, col: 0} } , newText: '\n\n' + newCompContent }
+        }
+        const {common, oldText, newText} = calcDiff(compText, newCompContent)
+        const commonStartSplit = common.split('\n')
+        const start = {line: compLine + commonStartSplit.length - 1, col: commonStartSplit.slice(-1)[0].length }
+        const end = { line: start.line + oldText.split('\n').length -1, 
+          col : (oldText.split('\n').length-1 ? 0 : start.col) + oldText.split('\n').pop().length }
+        return { range: {start, end} , newText }
+      
+        // the diff is continuous, so we cut the common parts at the begining and end 
+        function calcDiff(oldText,newText)  {
+          let i=0;j=0;
+          while(newText[i] == oldText[i] && i < newText.length) i++
+          const common = oldText.slice(0,i)
+          oldText = oldText.slice(i); newText = newText.slice(i);
+          while(newText[newText.length-j] == oldText[oldText.length-j] && j < newText.length) j++ // calc backwards from the end
+          return {firstDiff: i, common, oldText: oldText.slice(0,-j+1), newText: newText.slice(0,-j+1)}
+        }
+    },
+    formatComponent() {
+        const { compId, needsFormat } = jb.tgpTextEditor.calcActiveEditorPath()
+        if (needsFormat) {
+            const { compText} = jb.tgpTextEditor.fileContentToCompText(jb.tgpTextEditor.host.docText(),compId)
+            const {err} = jb.utils.eval(compText)
+            if (err)
+                return jb.logError('can not parse comp', {compId, err})
+            const comp = jb.comps[compId]
+            return [jb.tgpTextEditor.deltaFileContent(jb.tgpTextEditor.host.docText(), {compId,comp})].filter(x=>x)
+        }
+    },
+    updateCurrentCompFromEditor() {
+        const {compId, compSrc} = jb.tgpTextEditor.closestComp(jb.tgpTextEditor.host.docText(), jb.tgpTextEditor.host.cursorLine())
+        const {err} = jb.utils.eval(compSrc)
+        if (err)
+          return jb.logError('can not parse comp', {compId, err})
+    },
+    posFromCM: pos => pos && ({line: pos.line, col: pos.ch}),
+
 })
 
 jb.component('tgp.profileAsText', {
@@ -263,4 +351,3 @@ jb.component('tgpTextEditor.cursorPath', {
     impl: (ctx,ref,pos) => jb.path(jb.tgpTextEditor.pathOfPosition(ref, pos()),'path') || ''
 })
 
-  

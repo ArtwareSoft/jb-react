@@ -1,7 +1,7 @@
 jb.extension('suggestions', {
     $requireLibs: ['/dist/fuse.js'],
     initExtension() {
-      return { cache: {}, hideInSuggestions: 'cmp,widgetId,headlessWidget,headlessWidgetId'.split(',')}
+      return { cache: {}, hideInSuggestions: 'cmp,widgetId,headlessWidget,headlessWidgetId,probe'.split(',')}
     },
 
     suggestions: class suggestions {
