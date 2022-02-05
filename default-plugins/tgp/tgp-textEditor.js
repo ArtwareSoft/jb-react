@@ -155,7 +155,7 @@ jb.extension('tgpTextEditor', {
                 fixedComp = tryCompile(lastSrc.split('\n').map((l,i) => i == line ? fixedLine : l).join('\n'))
         }
         if (!fixedComp)
-            return jb.logException(lastException,'fixEditedComp - can not fix compText', {lastSrc})
+            return { compilationFailure: true} // jb.logException(lastException,'fixEditedComp - can not fix compText', {lastSrc})
         return {fixedText: `jb.component${fixedText}`, fixedComp, originalComp }
 
         function fixLineAtCursor(line,pos) {
@@ -183,7 +183,8 @@ jb.extension('tgpTextEditor', {
             }    
         }
     },
-    deltaFileContent(fileContent, {compId,comp}) {
+    deltaFileContent(fileContent, compId) {
+        const comp = jb.comps[compId]
         const { compLine, compText} = jb.tgpTextEditor.fileContentToCompText(fileContent,compId)
         const newCompContent = comp ? jb.utils.prettyPrintComp(compId,comp,{comps: jb.comps}) : ''
         const justCreatedComp = !compText.length && comp[jb.core.location][1] == 'new'
@@ -215,8 +216,7 @@ jb.extension('tgpTextEditor', {
             const {err} = jb.utils.eval(compText)
             if (err)
                 return jb.logError('can not parse comp', {compId, err})
-            const comp = jb.comps[compId]
-            return [jb.tgpTextEditor.deltaFileContent(jb.tgpTextEditor.host.docText(), {compId,comp})].filter(x=>x)
+            return jb.tgpTextEditor.deltaFileContent(jb.tgpTextEditor.host.docText(), compId)
         }
     },
     updateCurrentCompFromEditor() {

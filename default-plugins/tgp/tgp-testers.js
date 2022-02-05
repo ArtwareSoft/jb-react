@@ -38,31 +38,37 @@ jb.component('tgp.completionActionTest', {
       {id: 'expectedTextAtSelection', description: '{ start: , end: }' },
       {id: 'expectedCursorPos' , description: 'e.g. 1,12'},
     ],
-    impl: async (ctx, compText,completionToActivate, expectedEdit, expectedTextAtSelection, expectedCursorPos)=> {
-        const testId = ctx.vars.testID;
-        jb.workspace.initJbWorkspaceAsHost()
-        const parts = compText.split('__')
-        const offset = parts[0].length
-        const code = parts.join('')
-        jb.utils.eval(code)
-        jb.tgpTextEditor.host.initDoc('dummy.js',code)
-        
-        const inCompPos = jb.tgpTextEditor.offsetToLineCol(code,offset)
-        jb.tgpTextEditor.host.selectRange(inCompPos)
-        const item = jb.tgpTextEditor.provideCompletionItems(ctx).find(x=>x.label == completionToActivate)
-        if (!item)
-            return { id: testId, title: testId, success: false, reason: `completion not found - ${completionToActivate}` }
-
-        const actualEdit = await jb.tgpTextEditor.applyEditAndGotoPath(item,ctx)
-        console.log(jb.utils.prettyPrint(actualEdit.edit))
-        const editsSuccess = Object.keys(jb.utils.objectDiff(actualEdit.edit,expectedEdit)).length == 0
-        const selectionSuccess  = expectedTextAtSelection == null || jb.tgpTextEditor.host.getTextAtSelection() == expectedTextAtSelection
-        const actualCursorPos = [jb.tgpTextEditor.host.cursorLine(),jb.tgpTextEditor.host.cursorCol()].join(',')
-        const cursorPosSuccess = !expectedCursorPos || expectedCursorPos == actualCursorPos
-        const reason = (editsSuccess ? '' : 'wrong expected edit') + 
-            (selectionSuccess ? '' : `wrong expected selection "${expectedTextAtSelection}" instead of "${jb.tgpTextEditor.host.getTextAtSelection}"`) +
-            (cursorPosSuccess ? '' : `wrong cursor pos ${actualCursorPos} instead of ${expectedCursorPos}`)
-
-        return { id: testId, title: testId, success: !reason, reason }        
-    }
+    impl: dataTest({
+        calculate: async (ctx,{}, {compText,completionToActivate, expectedEdit, expectedTextAtSelection, expectedCursorPos })=> {
+            jb.workspace.initJbWorkspaceAsHost()
+            const parts = compText.split('__')
+            const offset = parts[0].length
+            const code = parts.join('')
+            jb.utils.eval(code)
+            jb.tgpTextEditor.host.initDoc('dummy.js',code)
+            
+            const inCompPos = jb.tgpTextEditor.offsetToLineCol(code,offset)
+            jb.tgpTextEditor.host.selectRange(inCompPos)
+            const item = jb.tgpTextEditor.provideCompletionItems(ctx).find(x=>x.label == completionToActivate)
+            if (!item)
+                return { testFailure: `completion not found - ${completionToActivate}` }
+    
+            await jb.tgpTextEditor.applyCompChange(item,ctx)
+            await jb.delay(1) // wait for cursoe change
+            const actualEdit = jb.tgpTextEditor.lastEdit
+            console.log(jb.utils.prettyPrint(actualEdit.edit))
+            const editsSuccess = Object.keys(jb.utils.objectDiff(actualEdit.edit,expectedEdit)).length == 0
+            const selectionSuccess  = expectedTextAtSelection == null || jb.tgpTextEditor.host.getTextAtSelection() == expectedTextAtSelection
+            const actualCursorPos = [jb.tgpTextEditor.host.cursorLine(),jb.tgpTextEditor.host.cursorCol()].join(',')
+            const cursorPosSuccess = !expectedCursorPos || expectedCursorPos == actualCursorPos
+    
+            const testFailure = (editsSuccess ? '' : 'wrong expected edit') + 
+                (selectionSuccess ? '' : `wrong expected selection "${expectedTextAtSelection}" instead of "${jb.tgpTextEditor.host.getTextAtSelection}"`) +
+                (cursorPosSuccess ? '' : `wrong cursor pos ${actualCursorPos} instead of ${expectedCursorPos}`)
+    
+            return { testFailure }        
+        },
+        expectedResult: not('%testFailure%')
+    })
+    
 })

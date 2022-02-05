@@ -19,18 +19,18 @@ jb.component('dataTest', {
 		const _timeout = ctx.vars.singleTest ? Math.max(1000,timeout) : timeout
 		const id = ctx.vars.testID
 		return Promise.race([ 
-			jb.delay(_timeout).then(()=>[{runErr: 'timeout'}]), 
+			jb.delay(_timeout).then(()=>[{testFailure: 'timeout'}]), 
 			Promise.resolve(runBefore())
 			  .then(_ => calculate())
 			  .then(v => jb.utils.toSynchArray(v,true))
 			]).then(value => {
-				  const runErr = jb.path(value,'0.runErr')
+				  const testFailure = jb.path(value,'0.testFailure') || jb.path(value,'testFailure')
 				  const countersErr = jb.test.countersErrors(expectedCounters,allowError)
 				  const expectedResultCtx = new jb.core.jbCtx(ctx,{ data: value })
 				  const expectedResultRes = expectedResult(expectedResultCtx)
-				  const success = !! (expectedResultRes && !countersErr && !runErr)
-				  jb.log('check test result',{success,expectedResultRes, runErr, countersErr, expectedResultCtx})
-				  const result = { id, success, reason: countersErr || runErr }
+				  const success = !! (expectedResultRes && !countersErr && !testFailure)
+				  jb.log('check test result',{success,expectedResultRes, testFailure, countersErr, expectedResultCtx})
+				  const result = { id, success, reason: countersErr || testFailure }
 				  return result
 			  })
 			  .catch(e=> {

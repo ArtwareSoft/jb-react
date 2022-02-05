@@ -6,24 +6,18 @@ jb.extension('workspace', {
         if (jb.path('jb.tgpTextEditor.host.type') == 'jbWorkspace') return
         jb.tgpTextEditor.host = {
             type: 'jbWorkspace',
-            async applyEdits(_edits,uri) {
+            async applyEdit(edit,uri) {
                 jb.tgpTextEditor.cache = {}
                 const docUri = uri || jb.workspace.activeUri
                 const docText = jb.workspace.openDocs[docUri].text
-                const edits = jb.asArray(_edits).map(({range, newText}) => ({
-                        text: newText,
-                        from: jb.tgpTextEditor.lineColToOffset(docText, range.start),
-                        to: jb.tgpTextEditor.lineColToOffset(docText,range.end)
-                    })).sort((x,y) => x.from - y.from)
-
-                if (edits.length > 1) debugger // TODO - check sort order - end to begining
-                edits.forEach(({from, to, text}) => {
-                    const docText = jb.workspace.openDocs[docUri].text
-                    jb.workspace.openDocs[docUri].text = docText.slice(0,from) + text + docText.slice(to)
-                })
+                const from = jb.tgpTextEditor.lineColToOffset(docText, edit.range.start)
+                const to = jb.tgpTextEditor.lineColToOffset(docText,edit.range.end)
+                jb.workspace.openDocs[docUri].text = docText.slice(0,from) + edit.newText + docText.slice(to)
+                jb.tgpTextEditor.lastEdit = { edit , uri }
             },
             selectRange(start,end) {
                 jb.workspace.openDocs[jb.workspace.activeUri].selection = { start, end: end || start }
+                jb.tgpTextEditor.host.selectionSource.next({start,end})
             },
             getTextAtSelection() {
                 const selection = jb.workspace.openDocs[jb.workspace.activeUri].selection
@@ -50,7 +44,8 @@ jb.extension('workspace', {
             initDoc(uri,text, selection = { start:{line:0,col:0}, end:{line:0,col:0} }) {
                 jb.workspace.openDocs[uri] = { text, selection}
                 jb.workspace.activeUri = uri
-            },        
+            },
+            selectionSource: jb.callbag.subject()      
         }
     },
     initExtension() { 
@@ -63,7 +58,7 @@ jb.extension('workspace', {
             onOpenDoc: jb.callbag.subject(),
             onChangeSelection: jb.callbag.subject(),
             gotoOffsetRequest: jb.callbag.subject(),
-            applyEditsRequest: jb.callbag.subject(),
+            applyEditRequest: jb.callbag.subject(),
             gotoPathRequest,
 
             openDocs: {},
@@ -109,7 +104,7 @@ jb.extension('workspace', {
     //         if (fileContent == null) return
     //         const edits = [jb.tgpTextEditor.deltaFileContent(fileContent, {compId,comp})].filter(x=>x).filter(x=>x.newText).filter(x=>x.newText.length < 10000)
     //         if (!edits.length) return
-    //         jb.workspace.applyEdits(edits,uri)
+    //         jb.workspace.applyEdit(edits,uri)
     //         if (uri == jb.workspace.activeUri) {
     //         //     //jb.workspace.openDoc(uri)
     //             //jb.workspace.gotoPath({path: ev.path.join('~'), semanticPart: 'value'})
@@ -135,7 +130,7 @@ jb.extension('workspace', {
     //         }
     //         const comp = jb.comps[compId]
     //         const edits = [jb.tgpTextEditor.deltaFileContent(text, {compId,comp})].filter(x=>x)
-    //         jb.workspace.applyEdits(edits)
+    //         jb.workspace.applyEdit(edits)
     //         jb.workspace.gotoPath()
     //     }
     // },

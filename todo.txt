@@ -1,3 +1,14 @@
+templateValue -> snippet value
+ctrl-up in array
+obj-prop scenario
+var scenario
+wrap with group inside group 
+no paran if no params - e.g. itemlist.ulLi
+
+reformat
+  maybe activate the command with completionEvent
+
+
 workspace
   suggestions
   pass tests
@@ -29,3 +40,8 @@ add std ns for common.js
 
 post in 
  https://stackoverflow.com/questions/376373/pretty-printing-xml-with-javascript
+
+
+path can be exact or
+  too inner '__ads'
+  too outer x(__y())

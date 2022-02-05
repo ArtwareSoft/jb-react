@@ -741,19 +741,19 @@ jb.extension('callbag', {
         isActive: () => talkback && !done
       }
   },
-  toPromise: sinkSrc => {
-      return new Promise((resolve, reject) => {
-        jb.callbag.subscribe({
-          next: resolve,
-          error: reject,
-          complete: () => {
-            const err = new Error('No elements in sequence.')
-            err.code = 'NO_ELEMENTS'
-            reject(err)
-          },
-        })(jb.callbag.last(sinkSrc))
-      })
-  },
+  // toPromise: sinkSrc => {
+  //     return new Promise((resolve, reject) => {
+  //       jb.callbag.subscribe({
+  //         next: resolve,
+  //         error: reject,
+  //         complete: () => {
+  //           const err = new Error('No elements in sequence.')
+  //           err.code = 'NO_ELEMENTS'
+  //           reject(err)
+  //         },
+  //       })(jb.callbag.last(sinkSrc))
+  //     })
+  // },
   toPromiseArray: sinkSrc => {
       const res = []
       let talkback

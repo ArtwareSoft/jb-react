@@ -20,7 +20,7 @@ async function activate(context) {
     // TODO: change to load the whole Project
     jb.frame.eval(jb.macro.importAll() + ';' + jb.tgpTextEditor.host.docText() || '')
 
-    ;['gotoPath','applyEditAndGotoPath','formatComponent'].forEach(cmd => vscodeNS.commands.registerCommand(`jbart.${cmd}`, jb.tgpTextEditor[cmd]))
+    ;['gotoPath','applyCompChange','formatComponent'].forEach(cmd => vscodeNS.commands.registerCommand(`jbart.${cmd}`, jb.tgpTextEditor[cmd]))
 
     const ctx = new jb.core.jbCtx({},{vars: {}, path:'vscode.completion'})
 

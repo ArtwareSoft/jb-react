@@ -22,8 +22,8 @@ allExtensionsJsons.push({
 		"contributes": {
 			"commands": [
 				{
-					"command": "jbart.applyEditAndGotoPath",
-					"title": "apply edit from item and goto result path"
+					"command": "jbart.applyCompChange",
+					"title": "apply component change from text editor"
 				},
 				{
 					"command": "jbart.gotoPath",

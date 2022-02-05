@@ -3,14 +3,12 @@ jb.extension('vscode', {
     initVscodeAsHost() {
         jb.tgpTextEditor.cache = {}
         jb.tgpTextEditor.host = {
-            async applyEdits(edits,uri) {
-                if (!edits) return
+            async applyEdit(edit,uri) {
                 uri = uri || vscodeNS.window.activeTextEditor.document.uri
                 const wEdit = new vscodeNS.WorkspaceEdit()
-                wEdit.set(uri, jb.asArray(edits).map(edit=>({...edit, range: {
-                    start: jb.vscode.toVscodeFormat(edit.range.start), end: jb.vscode.toVscodeFormat(edit.range.end)  
-                } })))
+                wEdit.replace(uri, { start: jb.vscode.toVscodeFormat(edit.range.start), end: jb.vscode.toVscodeFormat(edit.range.end) }, edit.newText)
                 await vscodeNS.workspace.applyEdit(wEdit)
+                jb.tgpTextEditor.lastEdit = { edit , uri }
             },
             selectRange(start,end) {
                 end = end || start
@@ -41,6 +39,7 @@ jb.extension('vscode', {
         }
         vscodeNS.workspace.onDidChangeTextDocument(() => {
             jb.tgpTextEditor.cache = {}
+            jb.tgpTextEditor.updateCurrentCompFromEditor()
         })        
         vscodeNS.window.onDidChangeTextEditorSelection(() => {
             const { semanticPath } = jb.tgpTextEditor.calcActiveEditorPath()
@@ -150,27 +149,27 @@ jb.extension('vscode', {
         // if (projects.length)
         //     return loadProjectsCode(projects)
     },
-    applyDeltaFromStudio() {
-        jb.utils.subscribe(jb.watchableComps.source, async e => {
-            const compId = e.path[0]
-            const comp = jb.comps[compId]
-            try {
-                const fn = comp[jb.core.location][0].toLowerCase()
-                const doc = vscodeNS.workspace.textDocuments.find(doc => doc.uri.path.toLowerCase().slice(0,-1) == fn.slice(0,-1))
-                if (!doc) return // todo: open file and try again
-                const fileContent = doc.getText()
-                if (fileContent == null) return
-                const edits = [jb.tgpTextEditor.deltaFileContent(fileContent, {compId,comp})].filter(x=>x).filter(x=>x.newText.length < 10000)
-                console.log('edits', edits)
-                const edit = new vscodeNS.WorkspaceEdit()
-                edit.set(doc.uri, edits)                
-                await vscodeNS.workspace.applyEdit(edit)
-                //await jb.vscode.gotoPath(e.path.join('~'),'value')
-            } catch (e) {
-                jb.logException(e,'error while saving ' + compId,{compId, comp, fn}) || []
-            }   
-        })
-    }, 
+    // applyDeltaFromStudio() {
+    //     jb.utils.subscribe(jb.watchableComps.source, async e => {
+    //         const compId = e.path[0]
+    //         const comp = jb.comps[compId]
+    //         try {
+    //             const fn = comp[jb.core.location][0].toLowerCase()
+    //             const doc = vscodeNS.workspace.textDocuments.find(doc => doc.uri.path.toLowerCase().slice(0,-1) == fn.slice(0,-1))
+    //             if (!doc) return // todo: open file and try again
+    //             const fileContent = doc.getText()
+    //             if (fileContent == null) return
+    //             const edits = [jb.tgpTextEditor.deltaFileContent(fileContent, {compId,comp})].filter(x=>x).filter(x=>x.newText.length < 10000)
+    //             console.log('edits', edits)
+    //             const edit = new vscodeNS.WorkspaceEdit()
+    //             edit.set(doc.uri, edits)                
+    //             await vscodeNS.workspace.applyEdit(edit)
+    //             //await jb.vscode.gotoPath(e.path.join('~'),'value')
+    //         } catch (e) {
+    //             jb.logException(e,'error while saving ' + compId,{compId, comp, fn}) || []
+    //         }   
+    //     })
+    // }, 
 })
 
 jb.component('studio.inVscode',{

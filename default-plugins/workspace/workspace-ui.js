@@ -29,8 +29,8 @@ jb.component('workspace.IDE', {
                         sink.action(runFEMethod({selector:'#activeEditor', method: 'setSelectionRange', data: '%%'}))
                     ),
                     followUp.flow(
-                        source.callbag(() => jb.workspace.applyEditsRequest),
-                        sink.action(runFEMethod({selector:'#activeEditor', method: 'applyEdits', data: '%%'}))
+                        source.callbag(() => jb.workspace.applyEditRequest),
+                        sink.action(runFEMethod({selector:'#activeEditor', method: 'applyEdit', data: '%%'}))
                     ),
                 ]
             }),
@@ -147,7 +147,7 @@ jb.component('textarea.initTgpTextEditor', {
   type: 'feature',
   impl: features(
         textarea.enrichUserEvent(),
-        frontEnd.method('applyEdits',({data},{docUri, el}) => {
+        frontEnd.method('applyEdit',({data},{docUri, el}) => {
             const {edits, uri} = data
             if (uri != docUri) return
             ;(edits || []).forEach(({text, from, to}) => {

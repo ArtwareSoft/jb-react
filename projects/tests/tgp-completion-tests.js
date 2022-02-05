@@ -39,15 +39,15 @@ __      ]
  })
 })
 
-jb.component('completionTest.createPipeline', {
+jb.component('completionTest.createPipelineFromComp', {
   impl: tgp.completionActionTest({
-    compText: "jb.component('x', {\n  impl: uiTest(text(T__BD()))\n})",
+    compText: "jb.component('x', {\n  impl: uiTest(text(__split()))\n})",
     completionToActivate: 'pipeline',
     expectedEdit: () => ({
-        range: {start: {line: 1, col: 20}, end: {line: 1, col: 24}},
-        newText: 'pipeline(TBD()'
+        range: {start: {line: 1, col: 20}, end: {line: 1, col: 26}},
+        newText: 'pipeline(split()'
       }),
-    expectedCursorPos: '1,29'
+    expectedCursorPos: '1,36'
  })
 })
 
@@ -65,7 +65,7 @@ jb.component('completionTest.paramsAndProfiles2', {
  })
 })
 
-jb.component('completionTest.createPipelineAndWrap', {
+jb.component('completionTest.createPipelineFromString', {
   impl: tgp.completionActionTest({
     compText: "jb.component('x', {\n  impl: uiTest(text(__'aa'))\n})",
     completionToActivate: 'pipeline',
@@ -73,11 +73,11 @@ jb.component('completionTest.createPipelineAndWrap', {
         range: {start: {line: 1, col: 20}, end: {line: 1, col: 24}},
         newText: "pipeline('aa')"
       }),
-    expectedCursorPos: '1,30'
+    expectedCursorPos: '1,33'
  })
 })
 
-jb.component('completionTest.createProfileFromString', {
+jb.component('completionTest.createPipelineFromEmptyString', {
   impl: tgp.completionActionTest({
     compText: "jb.component('x', {\n  impl: uiTest(text({text: 'hello world', title: __''}))\n})",
     completionToActivate: 'pipeline',
@@ -85,7 +85,7 @@ jb.component('completionTest.createProfileFromString', {
         range: {start: {line: 1, col: 20}, end: {line: 1, col: 52}},
         newText: "'hello world', pipeline('')"
       }),
-    expectedCursorPos: '1,45'
+    expectedCursorPos: '1,46'
  })
 })
 
@@ -97,7 +97,7 @@ jb.component('completionTest.splitInsidePipeline', {
         range: {start: {line: 1, col: 29}, end: {line: 1, col: 29}},
         newText: 'split()'
       }),
-    expectedCursorPos: '1,36'
+    expectedCursorPos: '1,35'
  })
 })
 
@@ -119,31 +119,36 @@ jb.component('completionTest.dynamicFormat', {
     userInput: TBD(),
     expectedResult: contains('hello world')
   `}),
-    expectedCursorPos: '3,15'
+  expectedCursorPos: '3,15'
  })
 })
 
-jb.component('completionTest.wrapWithGroup', {
-  impl: tgp.completionActionTest({
-    compText: "jb.component('x', {\n  impl: uiTest(t__ext())\n})",
-    completionToActivate: 'wrap with group',
-    expectedEdit: () => ({
-        range: {start: {line: 1, col: 15}, end: {line: 1, col: 20}},
-        newText: 'group({controls: [text()]}'
-      }),
-    expectedCursorPos: '2,4'
- })
-})
+// jb.component('completionTest.wrapWithGroup', {
+//   impl: tgp.completionActionTest({
+//     compText: "jb.component('x', {\n  impl: uiTest(__text())\n})",
+//     completionToActivate: 'group',
+//     expectedEdit: () => ({
+//         range: {start: {line: 1, col: 15}, end: {line: 1, col: 20}},
+//         newText: 'group({controls: [text()]}'
+//       }),
+//     expectedCursorPos: '2,4'
+//  })
+// })
 
 jb.component('completionTest.wrapWithGroup', {
   impl: tgp.completionActionTest({
-    compText: "jb.component('x', {\n  impl: uiTest(t__ext())\n})",
+    compText: "jb.component('x', {\n  impl: uiTest(__text())\n})",
     completionToActivate: 'group',
     expectedEdit: () => ({
-        range: {start: {line: 1, col: 15}, end: {line: 1, col: 20}},
-        newText: 'group({controls: [text()]}'
-      }),
-    expectedCursorPos: '2,12'
+        range: {start: {line: 1, col: 15}, end: {line: 1, col: 21}},
+        newText: `
+    group({
+      controls: [
+        text()
+      ]
+    })
+  `}),
+    expectedCursorPos: '6,4'
  })
 })
 
@@ -155,6 +160,6 @@ jb.component('completionTest.wrapWithArray', {
         range: {start: {line: 1, col: 41}, end: {line: 1, col: 43}},
         newText: "['']"
       }),
-    expectedCursorPos: '1,41'
+    expectedCursorPos: '1,44'
  })
 })
