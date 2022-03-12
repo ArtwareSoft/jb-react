@@ -83,27 +83,31 @@ jb.extension('tgp', 'readOnly', {
 		return compType.split(',').includes(type) || (compObj.typePattern && compObj.typePattern(type))
 	},
 
-	// single first param type
-	paramType(path) {
-		const res = ((jb.tgp.paramDef(path) || {}).type || 'data').split(',')[0].split('[')[0];
-		if (res == '$asParent' || res == '*')
-			return jb.tgp.paramType(jb.tgp.parentPath(path));
-		return res;
+	paramTypes: path => ((jb.tgp.paramDef(path) || {}).type || 'data').split(',')
+		.map(t=>t.split('[')[0])
+		.map(t=> t == '$asParent' || t == '*' ? jb.tgp.paramType(jb.tgp.parentPath(path)) : t),
+	paramType: path => jb.tgp.paramTypes(path)[0],
+	PTsOfPath: path => {
+		const types = jb.tgp.paramTypes(path)
+		if (types.length == 1)
+			return jb.tgp.PTsOfType(types[0])
+		const pts = jb.utils.unique(types.flatMap(t=>jb.tgp.PTsOfType(t)))
+		pts.sort((c1,c2) => jb.tgp.markOfComp(c2) - jb.tgp.markOfComp(c1))
+		return pts
 	},
-	PTsOfPath: path => jb.tgp.PTsOfType(jb.tgp.paramType(path)),
 	propName(path) {
 		if (!isNaN(Number(path.split('~').pop()))) // array elements
-			return jb.tgp.parentPath(path).split('~').pop().replace(/s$/,'');
+			return jb.tgp.parentPath(path).split('~').pop().replace(/s$/,'')
 
-		const paramDef = jb.tgp.paramDef(path);
-		if (!paramDef) return '';
+		const paramDef = jb.tgp.paramDef(path)
+		if (!paramDef) return ''
 		if ((paramDef.type ||'').indexOf('[]') != -1) {
-			const length = jb.tgp.arrayChildren(path).length;
+			const length = jb.tgp.arrayChildren(path).length
 			if (length)
-				return path.split('~').pop() + ' (' + length + ')';
+				return path.split('~').pop() + ' (' + length + ')'
 		}
 
-		return path.split('~').pop();
+		return path.split('~').pop()
 	},
 	pathParents(path,includeThis) {
 		const result = ['']

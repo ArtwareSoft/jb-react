@@ -1,4 +1,6 @@
-close vsccode plugin
+specific features
+  fix all ui-features types
+
 
 
 vscode plugin 
@@ -7,6 +9,17 @@ vscode plugin
   var scenario
   boolean value should suggest - true, false
   no paran if no params - e.g. itemlist.ulLi
+
+data types
+  1. type system
+  2. data wizards working on input
+    structured
+      - path - (specific/all/filter by/group by)
+    semi structured
+      - property search
+      - itemlists search
+UI styles extraction
+
 
 improve the type system
   support data types for pipelines

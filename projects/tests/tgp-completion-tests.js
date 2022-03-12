@@ -163,3 +163,14 @@ jb.component('completionTest.wrapWithArray', {
     expectedCursorPos: '1,44'
  })
 })
+
+jb.component('uiTest.editableText.emptyData', {
+  impl: uiTest(button({title: '', features: []}))
+})
+
+jb.component('completionTest.buttonFeature', {
+  impl: tgp.completionOptionsTest({
+    compText: "jb.component('x', {\n  impl: uiTest(button({title: '', features: [__]}))\n})",
+    expectedSelections:['method','button.ctrlAction']
+ })
+})
