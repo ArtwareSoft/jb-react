@@ -157,6 +157,7 @@ jb.component('zbl', {
   type: 'control',
   impl: group({
     layout: layout.flex({direction: 'column', spacing: '21'}),
+    style: table.trTd(),
     controls: [
       button({
         title: 'hello',

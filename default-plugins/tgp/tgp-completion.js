@@ -204,7 +204,7 @@ jb.extension('tgpTextEditor', 'completion', {
                 command: { command: 'jbart.applyCompChange', arguments: [item,ctx] }
             }))
             console.log('provide',semanticPath, items)
-            return items;
+            return items
         }
     },
     async applyCompChange(item,ctx) {
@@ -246,6 +246,16 @@ jb.extension('tgpTextEditor', 'completion', {
             const emptyString = docText.slice(offset,offset+newText.length).indexOf("''")
             if (emptyString != -1)
                 await jb.tgpTextEditor.host.selectRange(jb.tgpTextEditor.offsetToLineCol(docText,offset+emptyString+1))
+        }
+    },
+    moveUp() { 
+
+    },
+    moveInArray(diff) {
+        const { semanticPath, needsFormat } = jb.tgpTextEditor.calcActiveEditorPath()
+        if (needsFormat)
+            jb.tgpTextEditor.host.applyEdit(jb.tgpTextEditor.formatComponent())
+        else if (semanticPath) {
         }
     }
 })

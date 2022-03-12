@@ -186,12 +186,12 @@ jb.component('uiTest.vdomResultAsHtml', {
 })
 
 jb.component('uiTest.applyVdomDiff', {
-	type: 'test',
-	params: [
-		{id: 'controlBefore', type: 'control', dynamic: true},
-		{id: 'control', type: 'control', dynamic: true}
-	],
-	impl: function(ctx,controlBefore,control) {
+  type: 'test',
+  params: [
+    {id: 'controlBefore', type: 'control', dynamic: true},
+    {id: 'control', type: 'control', dynamic: true}
+  ],
+  impl: function(ctx,controlBefore,control) {
 		console.log('starting ' + ctx.vars.testID)
 		const show = new URL(location.href).searchParams.get('show') !== null
 
@@ -322,6 +322,7 @@ jb.extension('test', {
 	//		.filter(e=> !e[0].match(/throw/)) // tests that throw exceptions and stop the debugger
 			.filter(e=>!pattern || e[0].match(pattern))
 			.filter(e=>!notPattern || !e[0].match(notPattern))
+			.filter(e=> jb.path(e[1].impl,'expectedResult') !== true)
 	//		.filter(e=>!e[0].match(/^remoteTest|inPlaceEditTest|patternsTest/) && ['uiTest','dataTest'].indexOf(e[1].impl.$) != -1) // || includeHeavy || specificTest || !e[1].impl.heavy )
 	//		.sort((a,b) => (a[0] > b[0]) ? 1 : ((b[0] > a[0]) ? -1 : 0))
 		tests.forEach(e => e.group = e[0].split('.')[0].split('Test')[0])

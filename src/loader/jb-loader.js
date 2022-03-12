@@ -9,8 +9,8 @@ var jb_modules = {
   ],
 }
 
-async function jbInit(uri, {projects, plugins, repos, baseUrl, multipleInFrame, fileSymbolsFunc, doNotLoadLibs }) {
-  fileSymbols = fileSymbolsFunc || fileSymbolsFromHttp
+async function jbInit(uri, {projects, plugins, repos, baseUrl, multipleInFrame, doNotLoadLibs }) {
+  const fileSymbols = globalThis.jbFileSymbols || fileSymbolsFromHttp
   const jb = { uri, baseUrl: baseUrl !== undefined ? baseUrl : typeof globalThis.jbBaseUrl != 'undefined' ? globalThis.jbBaseUrl : '' }
   if (!multipleInFrame) // multipleInFrame is used in jbm.child
     globalThis.jb = jb

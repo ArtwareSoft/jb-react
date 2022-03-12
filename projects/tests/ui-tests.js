@@ -31,20 +31,17 @@ jb.component('uiTest.controls', {
     control: group({
       controls: [
         text('hello'),
-        controls(text('-1-'),controlWithCondition('1==2',text('-1.5-')), text('-2-')),
-        text('world'),
+        controls(text('-1-'), controlWithCondition('1==2', text('-1.5-')), text('-2-')),
+        text('world')
       ]
     }),
-    expectedResult: contains(['hello','-1-','-2-','world'])
+    expectedResult: contains(['hello', '-1-', '-2-', 'world'])
   })
 })
 
 jb.component('uiTest.waitForWithPipe', {
   impl: uiTest({
-    control: group({
-      controls: text('%%'),
-      features: group.wait({for: pipe(delay(1), 'hello')})
-    }),
+    control: group({controls: text('%%'), features: group.wait(pipe(delay(1), 'hello'))}),
     expectedResult: and(contains('hello'), not(contains('loading'))),
     expectedCounters: {'init uiComp': 4}
   })
@@ -52,12 +49,9 @@ jb.component('uiTest.waitForWithPipe', {
 
 jb.component('uiTest.waitForRx', {
   impl: uiTest({
-    control: group({
-      controls: text('%%'),
-      features: group.wait({for: rx.pipe(source.interval(10), rx.take(1), rx.map('hello'))})
-    }),
+    control: group({controls: text('%%'), features: group.wait(rx.pipe(source.interval(10), rx.take(1), rx.map('hello')))}),
     expectedResult: and(contains('hello'), not(contains('loading'))),
-    expectedCounters:  {'init uiComp': 4}
+    expectedCounters: {'init uiComp': 4}
   })
 })
 
@@ -104,10 +98,7 @@ jb.component('uiTest.asynchLabel', {
 
 jb.component('uiTest.waitForWithVar', {
   impl: uiTest({
-    control: group({
-      controls: text('%$txt%'),
-      features: group.wait({for: pipe(delay(1), 'hello'), varName: 'txt'})
-    }),
+    control: group({controls: text('%$txt%'), features: group.wait({for: pipe(delay(1), 'hello'), varName: 'txt'})}),
     expectedResult: contains('hello')
   })
 })
@@ -125,24 +116,22 @@ jb.component('uiTest.waitForWithVar', {
 // })
 
 jb.component('uiTest.button', {
-  impl: uiTest({
-    control: button({title: 'btn1', action: ctx => alert(1)}),
-    expectedResult: contains('btn1')
-  })
+  impl: uiTest({control: button('btn1', ctx => alert(1)), expectedResult: contains('btn1')})
 })
 
 jb.component('uiTest.button.mdcIcon', {
   impl: uiTest({
-    control: button({title: 'btn1', action: ctx => alert(1), style: button.mdcIcon(icon('build'))}),
+    control: button({
+      title: 'btn1',
+      action: ctx => alert(1),
+      style: button.mdcIcon(icon('build'))
+    }),
     expectedResult: contains('build')
   })
 })
 
 jb.component('uiTest.icon.mdi', {
-  impl: uiTest({
-    control: control.icon({ type: 'mdi', icon: 'Yoga' }),
-    expectedResult: contains('svg')
-  })
+  impl: uiTest({control: control.icon({icon: 'Yoga', type: 'mdi'}), expectedResult: contains('svg')})
 })
 
 jb.component('uiTest.group2', {
@@ -169,13 +158,7 @@ jb.component('uiTest.editableText', {
 })
 
 jb.component('uiTest.editableText.emptyData', {
-  impl: uiTest({
-    control: editableText({
-      title: 'name',
-      databind: '%$person/name1%',
-    }),
-    expectedResult: not(contains('undefined'))
-  })
+  impl: uiTest({control: editableText('name', '%$person/name1%'), expectedResult: not(contains('undefined'))})
 })
 
 jb.component('uiTest.editableTextEmpty', {

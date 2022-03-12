@@ -1,5 +1,6 @@
 {
     "gtkTitleBar.mode": "dark",
     "workbench.preferredDarkColorTheme": "Yaru Dark",
-    "workbench.preferredLightColorTheme": "Yaru Dark"
+    "workbench.preferredLightColorTheme": "Yaru Dark",
+    "editor.suggestSelection": "first"
 }

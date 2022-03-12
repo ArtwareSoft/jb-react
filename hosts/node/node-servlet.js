@@ -4,6 +4,7 @@ const http = require('http')
 
 global.jbBaseUrl = __dirname.replace(/\\/g,'/').replace(/\/hosts\/node$/,'')
 const { fileSymbolsFunc, getProcessArgument, jbGetJSFromUrl} = require(`${jbBaseUrl}/hosts/node/node-utils.js`)
+global.jbFileSymbols = fileSymbolsFunc
 
 let settings = { verbose: getProcessArgument('verbose') }
 try {
@@ -54,7 +55,7 @@ async function run() {
   } else {
     const { jbInit } = require(`${jbBaseUrl}/src/loader/jb-loader.js`)
     const modules = (getProcessArgument('modules') || '').split(',').filter(x=>x)
-    global.jb = await jbInit(uri,{ projects: modules, fileSymbolsFunc})
+    global.jb = await jbInit(uri,{ projects: modules })
   }
   spy = jb.spy.initSpy({spyParam: getProcessArgument('spyParam') || 'remote'})
 

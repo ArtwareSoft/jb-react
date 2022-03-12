@@ -1,20 +1,95 @@
-templateValue -> snippet value
-ctrl-up in array
-obj-prop scenario
-var scenario
-wrap with group inside group 
-no paran if no params - e.g. itemlist.ulLi
-
-reformat
-  maybe activate the command with completionEvent
+close vsccode plugin
 
 
-workspace
-  suggestions
-  pass tests
-  refactor codemirror
-  refactor vsccode
-remote codeMirror
+vscode plugin 
+  ctrl-up in array
+  obj-prop scenario
+  var scenario
+  boolean value should suggest - true, false
+  no paran if no params - e.g. itemlist.ulLi
+
+improve the type system
+  support data types for pipelines
+    string
+    object
+    semi-structured string HTML, JSON, XML
+    number - math  
+    column
+    table
+  how
+    static - in->out 
+    dynamic - use probe to detect
+    add inOut prop => 'T->T' , 'string->number', 'number->number'
+
+  support specific feature/styles
+frameworks
+  tests
+    products
+      testsRunner
+      singleTestRunner
+    plugins
+      tests
+      templates
+    common
+      dataTest
+      actionTest
+  studio
+    products
+      preview
+      inPlaceEditor
+      inteliScript
+    building-blocks
+    templates
+    plugins - not well designed
+      commands
+      menuOptions
+      toolbarElements
+  probe
+    products
+      runCircuit
+      IO
+    building-blocks - 0
+    templates - 0
+    plugins
+      handleGaps
+  
+  remote
+    dependencies - data-action,rx
+    plugins
+      jbm
+    common
+  rx - library
+    contributes-tests
+    contributes-UI
+      itemlistFeature - itemlist.incrementalFromRx
+    contributes-studio
+      inteliView
+    abstractions
+      callbag
+      cbOperator
+    common
+  ui
+    dependencies - data-action/abstractions
+    abstractions
+      control
+      style
+      feature
+    common
+    internal
+    misc
+      tree
+      d3
+  data-action
+    abstractions data,action
+    common
+    misc
+      parsing
+
+
+
+    
+
+
 
 preview => remoteMainCircuitView
 

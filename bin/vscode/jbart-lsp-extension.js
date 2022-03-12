@@ -33,7 +33,25 @@ allExtensionsJsons.push({
 					"command": "jbart.formatComponent",
 					"title": "format component"
 				},
+				{
+					"command": "jbart.moveUp",
+					"title": "move item up in array"
+				},
+				{
+					"command": "jbart.moveDown",
+					"title": "move item down in array"
+				},
 			],
+			"keybindings": [
+				{
+					"command": "jbart.moveUp",
+					"key": "ctrl+Up",
+				},
+				{
+					"command": "jbart.moveDown",
+					"key": "ctrl+Down",
+				}
+			],			
 			"languages": [
 				{
 					"id": "jbart",

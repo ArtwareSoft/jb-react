@@ -43,7 +43,7 @@ jb.extension('tgp', 'writable', {
 		const result = { $: compName }
 		jb.utils.compParams(comp).forEach(p=>{
 			if (p.composite)
-				result[p.id] = currentVal == null ? [] : jb.asArray(currentVal)
+				result[p.id] = currentVal == null  || Array.isArray(currentVal) ? [] : jb.asArray(currentVal)
 			if (p.templateValue)
 				result[p.id] = JSON.parse(JSON.stringify(p.templateValue))
 		})

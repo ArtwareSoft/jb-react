@@ -54,12 +54,21 @@ jb.extension('utils', {
   }
 })
 
+jb.extension('tgp', {
+  'pipeline-inputMatch': (input,profile) => jb.tgp.inputMatch(input,profile.items[0]),
+  'pipeline-outputOptions': (input,profile) => profile.items.reduce((input,item) => jb.tgp.outputOptions(input,item), input),
+  'pipeline-innerInputMatch-items': ({input, inputPath, index}) => {
+    const inputBefore = jb.tgp.calcOutputOptions(input, index ? `${inputPath}~items~${index-1}` : inputPath)
+    return jb.tgp.calcOutputOptions(index ? `${inputPath}~items~${index-1}` : inputPath)
+  }
+})
+
 jb.component('pipeline', {
   type: 'data',
   category: 'common:100',
   description: 'map data arrays one after the other, do not wait for promises and rx',
   params: [
-    {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true, description: 'click "=" for functions list'}
+    {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true, description: 'click \"=\" for functions list' }
   ],
   impl: ctx => jb.utils.calcPipe(ctx,'$pipeline')
 })

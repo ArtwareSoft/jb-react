@@ -1,19 +1,26 @@
 
 jb.component('FETest.distributedWidget', {
   impl: uiFrontEndTest({
-    renderDOM: true,
-    timeout: 3000,
+    control: group({
+      controls: [
+        
+      ],
+      features: css.class('xRoot')
+    }),
     action: runActions(
       jbm.child('jbxServer'),
-      remote.action(remote.distributedWidget({ 
-        control: button('hello world'), 
-        frontend: jbm.byUri('tests•jbxServer'), 
-        selector: '.xRoot' 
-      } ), jbm.worker()),
+      remote.action(
+        remote.distributedWidget({
+          control: button('hello world'),
+          frontend: jbm.byUri('tests•jbxServer'),
+          selector: '.xRoot'
+        }),
+        jbm.worker()
+      ),
       uiAction.waitForSelector('button')
     ),
-    control: group({controls: [], features: css.class('xRoot')}),
-    expectedResult: contains('hello')
+    expectedResult: contains('hello'),
+    renderDOM: true
   })
 })
 

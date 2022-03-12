@@ -63,8 +63,7 @@ jb.extension('tgp', 'readOnly', {
 		const single = /([^\[]*)(\[\])?/
 		const types = (type||'').split(',').map(x=>x.match(single)[1])
 			.flatMap(x=> x=='data' ? ['data','aggregator','boolean'] : [x])
-		const comp_arr = types.map(t=> jb.entries(jb.comps).filter(c=> jb.tgp.isCompObjOfType(c[1],t)).map(c=>c[0]))
-		const res = [].concat(...comp_arr)
+		const res = types.flatMap(t=> jb.entries(jb.comps).filter(c=> jb.tgp.isCompObjOfType(c[1],t)).map(c=>c[0]))
 		res.sort((c1,c2) => jb.tgp.markOfComp(c2) - jb.tgp.markOfComp(c1))
 		return res
 	},

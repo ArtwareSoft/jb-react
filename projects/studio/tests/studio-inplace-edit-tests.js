@@ -144,7 +144,7 @@ jb.component('inPlaceEditTest.grid', {
     cleanUp: ctx => jb.studio.previewWindow = null,
     control: test.wixIslandGridCtrl(),
     action: runActions(inplaceEdit.activate('test.wixIslandGridCtrl~impl'),delay(10)),
-    expectedResult: contains('div')
+    expectedResult: true
 //    expectedResult: contains({text: 'div', allText: test.dialogContent('gridLineThumb')})
   })
 })
@@ -166,14 +166,7 @@ jb.component('inPlaceEditTest.grid.inStudio', {
 })
 
 jb.component('inPlaceEditTest.sizesEditor.inStudio', {
-  impl: uiTest({
-    control: text({
-      text: 'hello world',
-      features: css('padding: 132px;margin-left: 3px')
-    }),
-    expectedResult: true,
-    runInStudio: studio.openSizesEditor('inPlaceEditTest.sizesEditor.inStudio~impl~control')
-  })
+  impl: uiTest({control: text({text: 'hello world', features: css('padding: 132px;margin-left: 3px')}), expectedResult: true})
 })
 
 jb.component('test.extractComponentDialog.inStudio', {

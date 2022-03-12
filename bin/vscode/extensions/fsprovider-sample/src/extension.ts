@@ -59,6 +59,7 @@ jb.component('uiTest.group2', {
         memFs.createDirectory(vscode.Uri.parse(`memfs:/projects/tests`))
 
         memFs.writeFile(vscode.Uri.parse(`memfs:/projects/tests/ui-tests2.jb`), Buffer.from(uiTests), { create: true, overwrite: true });
+        memFs.writeFile(vscode.Uri.parse(`memfs:/projects/tests/ui-tests3.js`), Buffer.from(uiTests), { create: true, overwrite: true });
         memFs.writeFile(vscode.Uri.parse(`memfs:/file.txt`), Buffer.from('#aaaaaa'), { create: true, overwrite: true });
         // memFs.writeFile(vscode.Uri.parse(`memfs:/file.html`), Buffer.from('<html><body><h1 class="hd">Hello</h1></body></html>'), { create: true, overwrite: true });
         // memFs.writeFile(vscode.Uri.parse(`memfs:/file.js`), Buffer.from('console.log("JavaScript")'), { create: true, overwrite: true });
