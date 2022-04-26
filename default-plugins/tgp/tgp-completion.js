@@ -207,6 +207,21 @@ jb.extension('tgpTextEditor', 'completion', {
             return items
         }
     },
+    async provideDefinition(ctx) {
+        const { semanticPath, needsFormat } = jb.tgpTextEditor.calcActiveEditorPath()
+        if (needsFormat) {
+            jb.tgpTextEditor.host.applyEdit(jb.tgpTextEditor.formatComponent())
+            return
+        }
+        if (!semanticPath) return
+        const path = semanticPath.allPaths.map(x=>x[0]).filter(x=>x.match('~!profile$')).map(x=>x.split('~!')[0])[0]
+        const comp = path && jb.tgp.compNameOfPath(path)
+        if (!comp) return
+        const loc = jb.comps[comp][jb.core.location]
+        const lineOfComp = (+loc[1]) || 0
+        const uri = vscodeNS.Uri.file(`/home/shaiby/projects/jb-react${loc[0]}`)
+        return new vscodeNS.Location(uri, new vscodeNS.Position(lineOfComp, 0))
+    },    
     async applyCompChange(item,ctx) {
         if (!item.extend) debugger
         try {

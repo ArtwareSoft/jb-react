@@ -169,6 +169,7 @@ jb.component('followUp.flow', {
   impl: followUp.action(
     runActions(
       Var('followUpCmp', '%$cmp%'),
+      //registerCmpFLow(rx.pipe('%$elems()%'), '%$cmp%'),
       Var('pipeToRun', rx.pipe('%$elems()%')),
       (ctx,{cmp,pipeToRun}) => {
         jb.ui.followUps[cmp.cmpId] = jb.ui.followUps[cmp.cmpId] || []
@@ -177,6 +178,15 @@ jb.component('followUp.flow', {
     )
   )
 })
+
+// jb.component('registerCmpFLow', {
+//   type: 'action',
+//   params: [
+//     {id: 'cmp'},
+
+//   ],
+//   impl: 
+// })
 
 jb.component('watchRef', {
   type: 'feature',

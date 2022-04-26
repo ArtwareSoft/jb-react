@@ -6,13 +6,13 @@ jb.component('button', {
     {id: 'action', type: 'action', mandatory: true, dynamic: true},
     {id: 'style', type: 'button.style', defaultValue: button.mdc(), dynamic: true},
     {id: 'raised', as: 'boolean', dynamic: true },
-    {id: 'features', type: 'feature,button-feature[]', dynamic: true}
+    {id: 'features', type: 'feature,button.feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
 jb.component('button.initAction', {
-  type: 'button-feature',
+  type: 'button.feature',
   category: 'button:0',
   impl: features(
     watchAndCalcModelProp('title'),
@@ -26,12 +26,12 @@ jb.component('button.initAction', {
         $model.action(ctx)
     }),
     feature.userEventProps('ctrlKey,altKey'),
-    () => ({studioFeatures :{$: 'feature.contentEditable', param: 'title' }}),
+    () => ({studioFeatures :{$: 'feature.contentEditable', param: 'title' }})
   )
 })
 
 jb.component('button.ctrlAction', {
-  type: 'button-feature',
+  type: 'button.feature',
   category: 'button:70',
   description: 'action to perform on control+click',
   params: [
@@ -41,7 +41,7 @@ jb.component('button.ctrlAction', {
 })
 
 jb.component('button.altAction', {
-  type: 'button-feature',
+  type: 'button.feature',
   category: 'button:70',
   description: 'action to perform on alt+click',
   params: [

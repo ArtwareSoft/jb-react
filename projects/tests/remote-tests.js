@@ -557,20 +557,12 @@ jb.component('remoteTest.nodeContainer', {
 jb.component('remoteTest.nodeContainer.runTest', {
   impl: dataTest({
     vars: [
-//      Var('testsToRun',list('dataTest.ctx.expOfRefWithBooleanType')),
-      Var('testsToRun',list('dataTest.join','dataTest.ctx.expOfRefWithBooleanType')),
-      Var('servlet', jbm.nodeContainer(list('studio','tests')))
+      Var('testsToRun', list('dataTest.join', 'dataTest.ctx.expOfRefWithBooleanType')),
+      Var('servlet', jbm.nodeContainer(list('studio', 'tests')))
     ],
-    calculate: pipe(rx.pipe( 
-      source.data('%$testsToRun%'),
-      rx.log('test'),
-      remote.operator(rx.mapPromise(async ({data}) => {
+    calculate: pipe(rx.pipe(source.data('%$testsToRun%'), rx.log('test'), remote.operator(rx.mapPromise(({data}) => {
         return jb.test.runOneTest(data) 
-      }), '%$servlet%'),
-      rx.log('test'),
-      ),'%success%',
-      join(',')
-    ),
+      }), '%$servlet%'), rx.log('test')), '%success%', join(',')),
     expectedResult: equals('true,true'),
     timeout: 3000
   })

@@ -42,6 +42,7 @@ jb.component('studio.filePosOfPath', {
   impl: (ctx,path) => {
       const comp = path.split('~')[0]
       const loc = jb.comps[comp][jb.core.location]
+      debugger
       const fn = jb.studio.host.locationToPath(loc[0])
       const lineOfComp = (+loc[1]) || 0
       const pos = jb.tgpTextEditor.getPosOfPath(path,'profile') || [0,0,0,0]

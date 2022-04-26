@@ -31,6 +31,7 @@
     "puppeteer-server": "node src/misc/puppeteer/pptr-server.js",
     "helloWorld": "start http://localhost:8082/project/studio/helloWorld",
     "test": "start http://localhost:8082/projects/tests/tests.html",
+    "vscode-helper": "start http://localhost:8082/bin/vscode/vscode.html",
     "pub": "yarn build-libs && git commit -am build-lib",
     "vscode-package": "vsce package",
     "copy-projects-to-template": "node bin/copy-projects-to-template.js"

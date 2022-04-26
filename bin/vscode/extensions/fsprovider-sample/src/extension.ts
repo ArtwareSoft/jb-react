@@ -37,7 +37,11 @@ export function activate(context: vscode.ExtensionContext) {
         }
         initialized = true;
         const uiTests = 
-`jb.component('uiTest.dummy', {
+`function aa() {}
+
+aa()
+
+jb.component('uiTest.dummy', {
   impl: uiTest({control: text({text: 'hello world', title: ''}), expectedResult: contains('hello world')})
 })
 
