@@ -1,0 +1,53 @@
+{
+	"name": "tgp-lang",
+	"displayName": "TGP Language",
+	"description": "TGP language service",
+	"version": "0.8.1",
+	"publisher": "artwaresoft",
+	"license": "MIT",
+	"engines": {
+		"vscode": "^1.50.0"
+	},
+	"icon": "logo128.png",
+	"repository": "https://github.com/Artwaresoft/jb-react",
+	"activationEvents": [
+		"onLanguage:javascript"
+	],	
+	"main": "vscode-tgp-lang.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "jbart.applyCompChange",
+				"title": "apply component change from text editor"
+			},
+			{
+				"command": "jbart.gotoPath",
+				"title": "goto path"
+			},
+			{
+				"command": "jbart.formatComponent",
+				"title": "format component"
+			},
+			{
+				"command": "jbart.moveUp",
+				"title": "move item up in array"
+			},
+			{
+				"command": "jbart.moveDown",
+				"title": "move item down in array"
+			}
+		],
+		"keybindings": [
+			{
+				"command": "jbart.moveUp",
+				"key": "ctrl+Up",
+				"when": "editorTextFocus"
+			},
+			{
+				"command": "jbart.moveDown",
+				"key": "ctrl+Down",
+				"when": "editorTextFocus"
+			}
+		]
+	}
+}
