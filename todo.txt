@@ -1,3 +1,5 @@
+goto jb.xxx.fxx
+
 gotoDef bug 
   button.init in button.mdc
 

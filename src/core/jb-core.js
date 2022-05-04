@@ -11,7 +11,9 @@ Object.assign(jb, {
     })
     funcs.forEach(k=>lib[k] = extension[k])
     const phase =  extension.$phase || { core: 1, utils: 5, db: 10, watchable: 20}[libId] || 100
-    lib.__extensions[extId] = { libId, phase, init: extension.initExtension, initialized, requireLibs: extension.$requireLibs, requireFuncs: extension.$requireFuncs }
+    lib.__extensions[extId] = { libId, phase, init: extension.initExtension, initialized, 
+      requireLibs: extension.$requireLibs, requireFuncs: extension.$requireFuncs, funcs,
+      location: jb.calcSourceLocation(new Error().stack.split(/\r|\n/).slice(2)) }
 
     if (jb.noSupervisedLoad && extension.initExtension) {
       Object.assign(lib, extension.initExtension.apply(lib))
@@ -33,36 +35,30 @@ Object.assign(jb, {
     }
   },
 
+  calcSourceLocation(errStack) {
+    try {
+        const line = errStack.map(x=>x.trim()).filter(x=>x && !x.match(/^Error/) && !x.match(/at Object.component/)).shift()
+        const location = line ? (line.split('at ').pop().split('eval (').pop().split(' (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
+        //comp[jb.core.project] = comp[jb.core.location][0].split('?')[1]
+        location[0] = location[0].split('?')[0]
+        return location
+    } catch(e) {
+      console.log(e)
+    }      
+  },
   component(id,comp) {
     if (!jb.core.location) jb.initializeLibs(['core'])
     if (comp.location) {
-        comp[jb.core.location] =  comp.location
+        comp[jb.core.location] = comp.location
         delete comp.location
     } else {
-      try {
-//        if (jb.frame.jbInvscode) debugger
-        const errStack = new Error().stack.split(/\r|\n/).map(x=>x.trim())
-        const line = errStack.filter(x=>x && !x.match(/^Error/) && !x.match(/at Object.component/)).shift()
-        comp[jb.core.location] = line ? (line.split('at ').pop().split('eval (').pop().split(' (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
-        comp[jb.core.project] = comp[jb.core.location][0].split('?')[1]
-        comp[jb.core.location][0] = comp[jb.core.location][0].split('?')[0]
-      } catch(e) {
-        console.log(e)
-      }
+        comp[jb.core.location] = jb.calcSourceLocation(new Error().stack.split(/\r|\n/))
     }
 
     const h = jb.core.onAddComponent.find(x=>x.match(id,comp))
     if (h && h.register)
       return h.register(id,comp)
 
-    // if (comp.watchableData !== undefined) {
-    //   jb.comps[jb.db.addDataResourcePrefix(id)] = comp
-    //   return jb.db.resource(jb.db.removeDataResourcePrefix(id),comp.watchableData)
-    // }
-    // if (comp.passiveData !== undefined) {
-    //   jb.comps[jb.db.addDataResourcePrefix(id)] = comp
-    //   return jb.db.passive(jb.db.removeDataResourcePrefix(id),comp.passiveData)
-    // }
     jb.comps[id] = comp;
 
     // fix as boolean params to have type: 'boolean'

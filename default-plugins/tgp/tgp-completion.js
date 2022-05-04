@@ -169,7 +169,9 @@ jb.extension('tgpTextEditor', 'completion', {
         const line = jb.tgpTextEditor.host.cursorLine()
         const lines = jb.tgpTextEditor.host.docText().split('\n')
         const closestComp = lines.slice(0,line+1).reverse().findIndex(line => line.match(/^jb.component\(/))
-        if (closestComp == -1) return {}
+        if (closestComp == -1) return {
+            inExtension: lines.slice(0,line+1).some(line => line.match(/^jb.extension\(/))
+        }
         const componentHeaderIndex = line - closestComp
         const compId = (lines[componentHeaderIndex].match(/'([^']+)'/)||['',''])[1]
         const inCompPos = {line: line-componentHeaderIndex, col : jb.tgpTextEditor.host.cursorCol() }
@@ -208,19 +210,35 @@ jb.extension('tgpTextEditor', 'completion', {
         }
     },
     async provideDefinition(ctx) {
-        const { semanticPath, needsFormat } = jb.tgpTextEditor.calcActiveEditorPath()
+        const { semanticPath, needsFormat, inExtension } = jb.tgpTextEditor.calcActiveEditorPath()
         if (needsFormat) {
             jb.tgpTextEditor.host.applyEdit(jb.tgpTextEditor.formatComponent())
             return
+        } else if (semanticPath) {
+            const path = semanticPath.allPaths.map(x=>x[0]).filter(x=>x.match('~!profile$')).map(x=>x.split('~!')[0])[0]
+            const comp = path && jb.tgp.compNameOfPath(path)
+            if (!comp) return
+            const loc = jb.comps[comp][jb.core.location]
+            return locationInFile(loc)
+            // const lineOfComp = (+loc[1]) || 0
+            // const uri = vscodeNS.Uri.file(jbBaseUrl + loc[0]) // /home/shaiby/projects/jb-react
+            // return new vscodeNS.Location(uri, new vscodeNS.Position(lineOfComp, 0))
+        } else if (inExtension) {
+            const line = jb.tgpTextEditor.host.docText().split('\n')[jb.tgpTextEditor.host.cursorLine()]
+            const [,lib,func] = line.match(/jb\.([a-zA-Z_0-9]+)\.([a-zA-Z_0-9]+)/) || ['','','']
+            if (lib && jb.path(jb,[lib,'__extensions'])) {
+                const loc = Object.values(jb[lib].__extensions).filter(ext=>ext.funcs.includes(func)).map(ext=>ext.location)[0]
+                const lineOfExt = (+loc[1]) || 0
+                const fileContent = await jbFetchFile(jbBaseUrl + loc[0])
+                const lines = ('' + fileContent).split('\n').slice(lineOfExt)
+                const funcHeader = new RegExp(`${func}\\s*:|(${func}\\s*\\([^{]+{)`)
+                const lineOfFunc = lines.findIndex(l=>l.match(funcHeader))
+                return locationInFile([loc[0], lineOfExt + lineOfFunc])
+            }
         }
-        if (!semanticPath) return
-        const path = semanticPath.allPaths.map(x=>x[0]).filter(x=>x.match('~!profile$')).map(x=>x.split('~!')[0])[0]
-        const comp = path && jb.tgp.compNameOfPath(path)
-        if (!comp) return
-        const loc = jb.comps[comp][jb.core.location]
-        const lineOfComp = (+loc[1]) || 0
-        const uri = vscodeNS.Uri.file(`/home/shaiby/projects/jb-react${loc[0]}`)
-        return new vscodeNS.Location(uri, new vscodeNS.Position(lineOfComp, 0))
+        function locationInFile(loc) {
+            return loc && new vscodeNS.Location(vscodeNS.Uri.file(jbBaseUrl + loc[0]), new vscodeNS.Position((+loc[1]) || 0, 0))
+        }
     },    
     async applyCompChange(item,ctx) {
         if (!item.extend) debugger
@@ -264,7 +282,10 @@ jb.extension('tgpTextEditor', 'completion', {
         }
     },
     moveUp() { 
-
+        debugger
+    },
+    moveDown() { 
+        debugger
     },
     moveInArray(diff) {
         const { semanticPath, needsFormat } = jb.tgpTextEditor.calcActiveEditorPath()

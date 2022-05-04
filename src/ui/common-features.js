@@ -25,7 +25,7 @@ jb.component('watchAndCalcModelProp', {
     {id: 'prop', as: 'string', mandatory: true},
     {id: 'transformValue', dynamic: true, defaultValue: '%%'},
     {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
-    {id: 'defaultValue' },
+    {id: 'defaultValue'}
   ],
   impl: ctx => ({watchAndCalcModelProp: ctx.params})
 })
