@@ -1,11 +1,11 @@
 
 jb.component('tgp.completionOptionsTest', {
-    type: 'test',
-    params: [
-      {id: 'compText', as: 'string', description: 'use __ for completion points'},
-      {id: 'expectedSelections', as: 'array', description: 'label a selection that should exist in the menu. one for each point'},
-    ],
-    impl: (ctx,compText,expectedSelections)=> {
+  type: 'test',
+  params: [
+    {id: 'compText', as: 'string', description: 'use __ for completion points'},
+    {id: 'expectedSelections', as: 'array', description: 'label a selection that should exist in the menu. one for each point'}
+  ],
+  impl: (ctx,compText,expectedSelections)=> {
         jb.workspace.initJbWorkspaceAsHost()
         const parts = compText.split('__')
         const offsets = parts.reduce((acc,part) => [...acc, acc.pop()+part.length] , [0] ).slice(1,-1)

@@ -117,22 +117,20 @@ jb.extension('utils', 'prettyPrint', {
       const macro = jb.macro.titleToId(id)
 
       const params = comp.params || []
-      const firstParamIsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
+      const singleParamAsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
       const vars = (profile.$vars || []).map(({name,val},i) => ({innerPath: `$vars~${i}`, val: {$: 'Var', name, val }}))
       const remark = profile.remark ? [{innerPath: 'remark', val: {$remark: profile.remark}} ] : []
       const systemProps = vars.concat(remark)
       const openProfileByValueGroup = [{prop: '!profile', item: macro}, {prop:'!open-by-value', item:'('}]
       const closeProfileByValueGroup = [{prop:'!close-by-value', item:')'}]
-      const openProfileSugarGroup = [{prop: '!profile', item: macro}, {prop:'!open-sugar', item:'('}]
-      const closeProfileSugarGroup = [{prop:'!close-sugar', item: ')'}]
       const openProfileGroup = [{prop: '!profile', item: macro}, {prop:'!open-profile', item:'({'}]
       const closeProfileGroup = [{prop:'!close-profile', item:'})'}]
 
-      if (firstParamIsArray) { // pipeline, or, and, plus
+      if (singleParamAsArray) { // pipeline, or, and, plus
         const vars = (profile.$vars || []).map(({name,val}) => ({$: 'Var', name, val }))
         const args = vars.concat(jb.asArray(profile[params[0].id]))
           .map((val,i) => ({innerPath: params[0].id + '~' + i, val}))
-        return joinVals(ctx, args, openProfileSugarGroup, closeProfileSugarGroup, flat, true)
+        return joinVals(ctx, args, openProfileByValueGroup, closeProfileByValueGroup, flat, true)
       }
       const keys = Object.keys(profile).filter(x=>x != '$')
       const oneFirstArg = keys.length === 1 && params[0] && params[0].id == keys[0]

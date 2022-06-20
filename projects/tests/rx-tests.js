@@ -83,17 +83,11 @@ jb.component('rxTest.enrichWithPrevious', {
 })
 
 jb.component('rxTest.toArray.empty', {
-  impl: dataTest({
-    calculate: rx.pipe( source.data(list()),rx.toArray(),rx.map(({data}) => data.join(','))),    
-    expectedResult: equals([])
-  })
+  impl: dataTest(rx.pipe(source.data(list()), rx.toArray()), equals([]))
 })
 
 jb.component('rxTest.toArray.active', {
-  impl: dataTest({
-    calculate: rx.pipe( source.interval(1), rx.take(4),rx.log('test 1'),rx.toArray(),rx.log('test 2'),rx.map(({data}) => data.join(','))),    
-    expectedResult: equals('0,1,2,3')
-  })
+  impl: dataTest(rx.pipe(source.interval(1), rx.take(4), rx.toArray(), rx.map(join())), equals('0,1,2,3'))
 })
 
 jb.component('rxTest.pipeInsidePipeWithConcatMap', {

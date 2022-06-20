@@ -1,0 +1,23 @@
+{
+    "provider": "provider1",
+    "modules": {
+        "lib": { "files": "lib/*.js" }
+    },
+    "plugins": {
+        "lib" : { "files": "lib/*.js", "version": "0.8" },
+        "ui" : { "files": "fw/*.js" },
+        "app" : { "files": "app/app.js", 
+            "dependencies" : {
+                "provider1/lib": "",
+                "provider1/ui": "",
+                "provider2/formatting": ""
+            } 
+        },
+        "appWithSample" : { "files": "app/*.js", "dependencies" : {
+            "provider1/lib": ""
+        } }
+    },
+    "aliases": {
+        "format": "provider2.data.format"
+    }
+}

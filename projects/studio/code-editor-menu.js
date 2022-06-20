@@ -33,14 +33,14 @@ jb.component('tgpTextEditor.prepareSetPT', {
   impl: (ctx,_path,semanticPart,compName) => {
     const profile = jb.tgp.valOfPath(_path)
     const params = jb.path(jb.comps[(profile||{}).$],'params') || []
-    const firstParamIsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
+    const singleParamAsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
     const semanticIndex = semanticPart.match(/[0-9]+$/)
     const openArray = semanticPart.indexOf('open-array') == 0
-    const path = firstParamIsArray ? [_path,params[0].id].join('~') : _path
+    const path = singleParamAsArray ? [_path,params[0].id].join('~') : _path
     if (Array.isArray(profile)) {
         const index = openArray ? 0 : semanticIndex ? +semanticIndex[0]+1 : profile.length
         return { path: [path,index].join('~'), do: () => jb.tgp.addArrayItem(path,{toAdd: {$: compName}, srcCtx: ctx, index}) }
-    } else if (firstParamIsArray || semanticIndex) {
+    } else if (singleParamAsArray || semanticIndex) {
         const ar = profile[params[0].id]
         const lastIndex = Array.isArray(ar) ? ar.length : 1
         const index = ar == null ? undefined : openArray ? 0 : semanticIndex ? +semanticIndex[0]+1 : lastIndex

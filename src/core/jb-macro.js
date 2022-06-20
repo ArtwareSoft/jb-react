@@ -1,10 +1,11 @@
 Object.assign(jb, {
-    defComponents: (items,def) => items.forEach(item=>def(item))
+    defComponents: (items,def) => items.forEach(item=>def(item)),
+    defOperator: (id, {detect, extractAliases, registerComp}) => operators.push({id, detect, extractAliases, registerComp})
 })
 
 jb.extension('macro', {
     initExtension() {
-        return { proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro')}
+        return { proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro') }
         // for loader jb.macro.importAll()
     },
     ns: nsIds => {
@@ -56,8 +57,8 @@ jb.extension('macro', {
         if (!comp)
             return { $: cmpId, $byValue: args }
         const params = comp.params || []
-        const firstParamIsArray = (params[0] && params[0].type || '').indexOf('[]') != -1
-        if (params.length == 1 && firstParamIsArray) // pipeline, or, and, plus
+        const singleParamAsArray = (params[0] && params[0].type || '').indexOf('[]') != -1
+        if (params.length == 1 && singleParamAsArray) // pipeline, or, and, plus
             return { $: cmpId, [params[0].id]: args }
         const macroByProps = args.length == 1 && typeof args[0] === 'object' &&
             (params[0] && args[0][params[0].id] || params[1] && args[0][params[1].id])

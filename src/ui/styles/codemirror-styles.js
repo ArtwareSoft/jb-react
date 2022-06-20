@@ -2,8 +2,10 @@
 jb.extension('codemirror', {
 	injectCodeMirror(ctx,{text,cmp,el,cm_settings,_enableFullScreen,formatText}) {
 		if (cmp.editor) return
-		if (text == null)
-			return jb.logError('codemirror - no binding to text',{ctx, cmp})
+		if (text == null) {
+			jb.logError('codemirror - no binding to text',{ctx, cmp})
+			text = 'error'
+		}
 		const _extraKeys = { ...cm_settings.extraKeys, ...jb.path(cmp.extraCmSettings,'extraKeys')}
 		const extraKeys = jb.objFromEntries(jb.entries(_extraKeys).map(e=>[
 			e[0], (''+e[1]).replace(/\s/g,'').indexOf('()=>') == 0 ? e[1]

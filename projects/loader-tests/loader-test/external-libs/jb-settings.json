@@ -1,0 +1,11 @@
+{
+    "provider": "provider2",
+    "modules": {
+    },
+    "plugins": {
+        "formatting" : { "files": "*.js", "version": "0.8" }
+    },
+    "aliases": {
+
+    }
+}

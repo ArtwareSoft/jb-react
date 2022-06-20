@@ -1152,6 +1152,7 @@ jb.component('addComponent', {
     {id: 'type', options:'watchableData,passiveData,comp', mandatory: true },
   ],
   impl: (ctx,id,value,type) => jb.component(id(), type == 'comp' ? value() : {[type]: value() } ),
+  require: () => jb.db.addDataResourcePrefix()
 })
 
 jb.component('loadLibs', {

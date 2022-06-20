@@ -91,21 +91,22 @@ jb.component('completionTest.createPipelineFromEmptyString', {
 
 jb.component('completionTest.splitInsidePipeline', {
   impl: tgp.completionActionTest({
-    compText: "jb.component('x', {\n  impl: uiTest(text(pipeline(__)))\n})",
+    compText: `jb.component('x', {
+  impl: uiTest(text(pipeline(__)))
+})`,
     completionToActivate: 'split',
     expectedEdit: () => ({
         range: {start: {line: 1, col: 29}, end: {line: 1, col: 29}},
         newText: 'split()'
       }),
-    expectedCursorPos: '1,35'
- })
+    expectedCursorPos: '1,36'
+  })
 })
 
 jb.component('completionTest.splitPart', {
-  impl: tgp.completionOptionsTest({
-    compText:"jb.component('x', {\n  impl: uiTest(text(pipeline(split(__))))\n})",
-    expectedSelections:['part']
- })
+  impl: tgp.completionOptionsTest(`jb.component('x', {
+  impl: uiTest(text(pipeline(split(__))))
+})`, ['part'])
 })
 
 jb.component('completionTest.dynamicFormat', {
@@ -169,8 +170,22 @@ jb.component('uiTest.editableText.emptyData', {
 })
 
 jb.component('completionTest.buttonFeature', {
-  impl: tgp.completionOptionsTest({
-    compText: "jb.component('x', {\n  impl: uiTest(button({title: '', features: [__]}))\n})",
-    expectedSelections:['method','button.ctrlAction']
- })
+  impl: tgp.completionOptionsTest(
+    `jb.component('x', {
+  impl: uiTest(button({title: '', features: [__]}))
+})`,
+    ['method', 'button.ctrlAction']
+  )
+})
+
+jb.component('completionTest.singleParamAsArray.rx', {
+  impl: tgp.completionOptionsTest(`jb.component('x', {
+  impl: dataTest(rx.pipe(__))
+})`, ['source.data'])
+})
+
+jb.component('completionTest.singleParamAsArray.data', {
+  impl: tgp.completionOptionsTest(`jb.component('x', {
+  impl: dataTest(pipeline(__))
+})`, ['split'])
 })

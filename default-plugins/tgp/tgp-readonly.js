@@ -40,10 +40,10 @@ jb.extension('tgp', 'readOnly', {
 		return '' + val
 	},
 	pathSummary: path => path.replace(/~controls~/g,'~').replace(/~impl~/g,'~').replace(/^[^\.]*./,''),
-	firstParamIsArray: path => {
+	singleParamAsArray: path => {
 		const profile = jb.tgp.valOfPath(path)
 		const params = jb.path(jb.comps[(profile||{}).$],'params') || []
-        return params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
+        return params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1 && params[0]
 	},
 	isArrayType: path => ((jb.tgp.paramDef(path)||{}).type||'').indexOf('[]') != -1,
 	isOfType(path,type) {

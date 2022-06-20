@@ -30,8 +30,8 @@ jb.component('sourceEditor.firstParamAsArrayPath', {
   ],
   impl: (ctx,path) => {
     const params = jb.tgp.paramsOfPath(path)
-    const firstParamIsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
-    return firstParamIsArray ? path + '~' + params[0].id : path
+    const singleParamAsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
+    return singleParamAsArray ? path + '~' + params[0].id : path
   }
 })
 

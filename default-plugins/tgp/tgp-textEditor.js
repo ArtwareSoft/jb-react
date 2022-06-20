@@ -90,7 +90,10 @@ jb.extension('tgpTextEditor', {
         const compId = path.split('~')[0]
         const {map} = jb.utils.prettyPrintWithPositions(jb.comps[compId],{initialPath: compId, comps: jb.comps})
         const res = jb.asArray(semanticPart).map(s=>map[`${path}~!${s}`]).find(x=>x)
-        //if (!res) debugger
+        if (!res) {
+            const parentPath = jb.tgp.parentPath(path)
+            return jb.asArray(semanticPart).map(s=>map[`${parentPath}~!${s}`]).find(x=>x)
+        }
         return res
     },
     getPathOfPos(comp, compId,pos) {

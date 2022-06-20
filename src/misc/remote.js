@@ -123,7 +123,7 @@ jb.component('remote.shadowResource', {
     impl: runActions(
         Var('resourceCopy', '%${%$resourceId%}%'),
         remote.action(runActions(
-            () => 'for loader - jb.watchable.initResourcesRef(',
+            () => 'for loader - jb.watchable.initResourcesRef()',
             addComponent({id: '%$resourceId%', value: '%$resourceCopy%', type: 'watchableData' }))
         ,'%$jbm%'),
         rx.pipe(

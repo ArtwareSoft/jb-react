@@ -19,11 +19,12 @@ jb.extension('tgp', 'completion', {
         if (!paramDef) debugger
         
         let res = []
+        const singleParamAsArray = jb.tgp.singleParamAsArray(path)
         if (paramDef.options) {
             res = jb.tgp.selectEnumCompletions(path, ctx)        
-        } else if (jb.tgp.firstParamIsArray(path)) {
-            res = jb.tgp.newPTCompletions(path, arrayIndex, ctx)
-        } else if (allSemantics.reduce((acc,s) => acc || s.match(/-by-value|obj-separator-|-sugar|-profile/), false )) {
+        } else if (singleParamAsArray) {
+            res = jb.tgp.newPTCompletions(`${path}~${singleParamAsArray.id}`, arrayIndex, ctx)
+        } else if (allSemantics.reduce((acc,s) => acc || s.match(/-by-value|obj-separator-|-profile/), false )) {
             res = jb.tgp.paramCompletions(path, ctx)
             const textStart = semanticPath.allPaths.find(x=>x[0].match(/~!value-text-start$/))
             if (textStart)
@@ -115,19 +116,19 @@ jb.extension('tgp', 'completion', {
         const arrayIndex = _arrayIndex == -1 ? null : _arrayIndex
 		const profile = jb.tgp.valOfPath(_path)
         const params = jb.path(jb.comps[(profile||{}).$],'params') || []
-        const firstParamIsArray = jb.tgp.firstParamIsArray(_path)
-		let path = firstParamIsArray ? `${_path}~${params[0].id}` : _path
+        const singleParamAsArray = jb.tgp.singleParamAsArray(_path)
+		let path = singleParamAsArray ? `${_path}~${params[0].id}` : _path
 		let index = null
         if (Array.isArray(profile)) {
             index = arrayIndex != null ? arrayIndex : profile.length
-        } else if (firstParamIsArray || arrayIndex != null) {
+        } else if (singleParamAsArray || arrayIndex != null) {
 			const ar = profile[params[0].id]
 			const lastIndex = Array.isArray(ar) ? ar.length : 1
 			index = ar == null ? 0 : arrayIndex != null ? arrayIndex : lastIndex
 		}
         const toAdd = jb.tgp.newProfile(jb.tgp.getComp(compName),compName,path)
         const result = index != null ? jb.tgp.addArrayItemOp(path,{toAdd, index,srcCtx}) : jb.tgp.writeValueOfPathOp(path,toAdd,srcCtx)
-        result.resultSemantics = ['close-profile','close-by-value','close-sugar']
+        result.resultSemantics = ['close-profile','close-by-value']
         return result
 	},
     wrapWithArrayOp(path,srcCtx) {

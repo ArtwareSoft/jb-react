@@ -153,21 +153,16 @@ jb.component('remoteTest.shadowResource.initWatchable', {
 
 jb.component('remoteTest.shadowResource.watchable', {
   impl: dataTest({
-    timeout: 5000,
-    runBefore: runActions(
-      remote.shadowResource('person', jbm.worker()),
-      () => { jb.exec(runActions(delay(1), writeValue('%$person/name%','Dan'))) } // writeValue after calculate
-    ),
     calculate: remote.data(
-      pipe(rx.pipe(
-        source.watchableData('%$person/name%'),
-        rx.log('test'),
-        rx.map('%newVal%'),
-        rx.take(1)
-      )), 
+      pipe(rx.pipe(source.watchableData('%$person/name%'), rx.log('test'), rx.map('%newVal%'), rx.take(1))),
       jbm.worker()
     ),
-    expectedResult: equals('Dan')
+    expectedResult: equals('Dan'),
+    runBefore: runActions(
+      remote.shadowResource('person', jbm.worker()), 
+    () => { jb.exec(runActions(delay(1), writeValue('%$person/name%','Dan'))) },// writeValue after calculate
+    ),
+    timeout: 5000
   })
 })
 

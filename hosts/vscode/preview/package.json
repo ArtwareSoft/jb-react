@@ -1,8 +1,8 @@
 {
-	"name": "tgp-lang",
-	"displayName": "TGP Language",
-	"description": "TGP language service",
-	"version": "0.8.2",
+	"name": "jbart-preview",
+	"displayName": "jBart Preview",
+	"description": "displays specialized preview for input/output, tests & controls",
+	"version": "0.1",
 	"publisher": "artwaresoft",
 	"license": "MIT",
 	"engines": {
@@ -13,7 +13,7 @@
 	"activationEvents": [
 		"onLanguage:javascript"
 	],	
-	"main": "vscode-tgp-lang.js",
+	"main": "vscode-preview.js",
 	"contributes": {
 		"commands": [
 			{
