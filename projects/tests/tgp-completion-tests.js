@@ -189,3 +189,17 @@ jb.component('completionTest.singleParamAsArray.data', {
   impl: dataTest(pipeline(__))
 })`, ['split'])
 })
+
+jb.component('completionTest.actionReplaceTBD', {
+  impl: tgp.completionActionTest({
+    compText: `jb.component('x', {
+  impl: uiTest(button('x', remote.action(__TBD())))
+})`,
+    completionToActivate: 'move',
+    expectedEdit: () => ({
+        range: {start: {line: 1, col: 41}, end: {line: 1, col: 44}},
+        newText: 'move'
+      }),
+    expectedCursorPos: '1,46'
+  })
+})

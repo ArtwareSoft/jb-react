@@ -1,5 +1,22 @@
 
 jb.extension('tgpTextEditor', {
+    eval: (code , {overrideLocation, doNotFixProfile } = {}) => { 
+      try {
+        const compId = (code.match(/jb.component\('([^']*)/)||[null,null])[1]
+        const oldLocation = compId && jb.comps[compId] && jb.comps[compId][jb.core.location]
+        const res = jb.frame.eval(`(function() { ${jb.macro.importAll()}; return (${code}) })()`) 
+        if (compId) {
+          if (!overrideLocation)
+            jb.comps[compId][jb.core.location] = oldLocation
+          if (!doNotFixProfile)
+            jb.macro.fixProfile(jb.comps[compId],compId)
+        }
+        return { res, compId }
+      } 
+      catch (e) { 
+        return {err: e}
+      } 
+    },    
     getSinglePathChange(diff, currentVal) {
         return pathAndValueOfSingleChange(diff,'',currentVal)
     
@@ -14,7 +31,7 @@ jb.extension('tgpTextEditor', {
     },
     setStrValue(value, ref, ctx) {
         const notPrimitive = value.match(/^\s*[a-zA-Z0-9\._]*\(/) || value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
-        const { res, err } = notPrimitive ? jb.utils.eval(value) : value
+        const { res, err } = notPrimitive ? jb.tgpTextEditor.eval(value) : value
         if (err) return
         const newVal = notPrimitive ? res : value
         // I had a guess that ',' at the end of line means editing, YET, THIS GUESS DID NOT WORK WELL ...
@@ -216,7 +233,7 @@ jb.extension('tgpTextEditor', {
         const { compId, needsFormat } = jb.tgpTextEditor.calcActiveEditorPath()
         if (needsFormat) {
             const { compText} = jb.tgpTextEditor.fileContentToCompText(jb.tgpTextEditor.host.docText(),compId)
-            const {err} = jb.utils.eval(compText)
+            const {err} = jb.tgpTextEditor.eval(compText)
             if (err)
                 return jb.logError('can not parse comp', {compId, err})
             return jb.tgpTextEditor.deltaFileContent(jb.tgpTextEditor.host.docText(), compId)
@@ -224,7 +241,7 @@ jb.extension('tgpTextEditor', {
     },
     updateCurrentCompFromEditor() {
         const {compId, compSrc} = jb.tgpTextEditor.closestComp(jb.tgpTextEditor.host.docText(), jb.tgpTextEditor.host.cursorLine())
-        const {err} = jb.utils.eval(compSrc)
+        const {err} = jb.tgpTextEditor.eval(compSrc)
         if (err)
           return jb.logError('can not parse comp', {compId, err})
     },
@@ -354,3 +371,6 @@ jb.component('tgpTextEditor.cursorPath', {
     impl: (ctx,ref,pos) => jb.path(jb.tgpTextEditor.pathOfPosition(ref, pos()),'path') || ''
 })
 
+jb.component('TBD', {
+  impl: 'TBD'
+})

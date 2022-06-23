@@ -163,7 +163,8 @@ jb.extension('utils', 'prettyPrint', {
       const funcName = func.fixedName || func.name
       const header = noPrefix.indexOf(`${funcName}(`) == 0 ? funcName : noPrefix.indexOf(`function ${funcName}(`) == 0 ? `function ${funcName}` : ''
       const fixedPropName = header ? `${asynch}${header}` : ''
-      return { text: asStr.slice(header.length+asynch.length).replace(/\n/g,jb.utils.fixedNL), fixedPropName, map: {} }
+      const text = (fixedPropName ? '' : asynch) + asStr.slice(header.length+asynch.length).replace(/\n/g,jb.utils.fixedNL)
+      return { text, fixedPropName, map: {} }
     }
 
     function valueToMacro({path, line, col, depth}, val, flat) {

@@ -55,7 +55,7 @@ jb.component('remote.action', {
     type: 'action',
     description: 'exec a script on a remote node and returns a promise if not oneWay',
     params: [
-      {id: 'action', dynamic: true },
+      {id: 'action', type: 'action', dynamic: true },
       {id: 'jbm', type: 'jbm', defaultValue: jbm.self()},
       {id: 'oneway', as: 'boolean', description: 'do not wait for the respone' },
       {id: 'timeout', as: 'number', defaultValue: 10000 },

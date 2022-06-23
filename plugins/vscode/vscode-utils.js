@@ -177,6 +177,17 @@ jb.component('studio.inVscode',{
     impl: () => jb.frame.jbInvscode
 })
 
+jb.component('vscode.previewCtrl', {
+  type: 'control',
+  impl: group({
+    controls: [
+      text('circuit: %$studio/circuit%'),
+      preview.control()
+    ],
+    features: watchRef('%$studio/circuit%')
+  })
+})
+
 // DO NOT DELETE - vscode views should be fixed and moved
 // jb.component('vscode.jbEditorCtrl', {
 //   type: 'control',

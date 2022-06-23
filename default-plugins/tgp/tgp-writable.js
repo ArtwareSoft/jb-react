@@ -294,7 +294,3 @@ jb.component('tgp.toggleDisabled', {
             jb.tgp.writeValue(jb.tgp.ref(path+'~$disabled'),prof.$disabled ? null : true,ctx)
     }
 })
-
-jb.component('TBD', {
-  impl: 'TBD'
-})

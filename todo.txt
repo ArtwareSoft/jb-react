@@ -1,5 +1,16 @@
+missing async in profile serialization
+
+completion
+  jb.utils.eval should return { ..., compIds}
+  fix remote.action(TBD()) bug
+
+fix tgp modules with two jbms
+extension-webView API
+  cursorPos(path,row,line), fileChanged(path,ln)
+
 gotoDef bug 
   button.init in button.mdc
+
 
 specific features
   fix all ui-features types

@@ -177,21 +177,7 @@ jb.extension('utils', { // generic utils
     sessionStorage(id,val) {
       if (!jb.frame.sessionStorage) return
       return val == undefined ? JSON.parse(jb.frame.sessionStorage.getItem(id)) : jb.frame.sessionStorage.setItem(id,JSON.stringify(val))
-    },
-    eval: (code => { 
-      try {
-        const compId = (code.match(/jb.component\('([^']*)/)||[null,null])[1]
-        const oldLocation = compId && jb.comps[compId] && jb.comps[compId][jb.core.location]
-        const res = jb.frame.eval(`(function() { ${jb.macro.importAll()}; return (${code}) })()`) 
-        if (compId) {
-          jb.comps[compId][jb.core.location] = oldLocation
-        }
-        return { res }
-      } 
-      catch (e) { 
-        return {err: e}
-      } 
-    }),
+    }
 })
 
 // common generic promoted for easy usage

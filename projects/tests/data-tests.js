@@ -612,6 +612,10 @@ jb.component('dataTest.prettyPrint.async', {
   impl: dataTest(() => jb.utils.prettyPrint({ async a() {3} }), and(not(contains('a:')), contains('async a() {3}')))
 })
 
+jb.component('dataTest.prettyPrint.asyncInProfile', {
+  impl: dataTest(() => jb.utils.prettyPrint(dataTest(async () => {5})), and(not(contains('a:')), contains('async () => {5}')))
+})
+
 jb.component('dataTest.prettyPrint.funcDefaults', {
   impl: dataTest(() => jb.utils.prettyPrint({ aB(c,{b} = {}) {3} }), and(not(contains('aB:')), contains('aB(c,{b} = {}) {3}')))
 })
@@ -642,5 +646,3 @@ jb.component('dataTest.firstSucceeding.withEmptyString', {
 jb.component('dataTest.DefaultValueComp', {
   impl: dataTest(test.withDefaultValueComp(), equals(5))
 })
-
-

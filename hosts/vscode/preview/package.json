@@ -15,37 +15,30 @@
 	],	
 	"main": "vscode-preview.js",
 	"contributes": {
+		"viewsContainers": {
+			"activitybar": [
+			  {
+				"id": "jbart",
+				"title": "jBart",
+				"icon": "logo128.png"
+			  }
+			]
+		},		
+		"views": {
+			"jbart": [
+				{ "id": "jbart.preview", "type": "webview", "name": "preview" }				
+			]
+		},		
 		"commands": [
 			{
-				"command": "jbart.applyCompChange",
-				"title": "apply component change from text editor"
-			},
-			{
-				"command": "jbart.gotoPath",
-				"title": "goto path"
-			},
-			{
-				"command": "jbart.formatComponent",
-				"title": "format component"
-			},
-			{
-				"command": "jbart.moveUp",
-				"title": "move item up in array"
-			},
-			{
-				"command": "jbart.moveDown",
-				"title": "move item down in array"
+				"command": "jbart.openPreviewPanel",
+				"title": "activate or rerun preview"
 			}
 		],
 		"keybindings": [
 			{
-				"command": "jbart.moveUp",
-				"key": "ctrl+Up",
-				"when": "editorTextFocus"
-			},
-			{
-				"command": "jbart.moveDown",
-				"key": "ctrl+Down",
+				"command": "jbart.openPreviewPanel",
+				"key": "ctrl+Alt+P",
 				"when": "editorTextFocus"
 			}
 		]

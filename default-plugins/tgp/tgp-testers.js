@@ -10,7 +10,7 @@ jb.component('tgp.completionOptionsTest', {
         const parts = compText.split('__')
         const offsets = parts.reduce((acc,part) => [...acc, acc.pop()+part.length] , [0] ).slice(1,-1)
         const code = parts.join('')
-        jb.utils.eval(code)
+        jb.tgpTextEditor.eval(code)
         jb.tgpTextEditor.host.initDoc('dummy.js',code)
         
         const result = offsets.map(offset=>jb.tgpTextEditor.offsetToLineCol(code,offset)).map((inCompPos,i) => {
@@ -30,25 +30,29 @@ jb.component('tgp.completionOptionsTest', {
 })
   
 jb.component('tgp.completionActionTest', {
-    type: 'test',
-    params: [
-      {id: 'compText', as: 'string', description: 'use $$ for completion point'},
-      {id: 'completionToActivate', as: 'string', description: 'label of completion to activate'},
-      {id: 'expectedEdit', description: '{ range: , newText:}'  },
-      {id: 'expectedTextAtSelection', description: '{ start: , end: }' },
-      {id: 'expectedCursorPos' , description: 'e.g. 1,12'},
-    ],
-    impl: dataTest({
-        calculate: async (ctx,{}, {compText,completionToActivate, expectedEdit, expectedTextAtSelection, expectedCursorPos })=> {
+  type: 'test',
+  params: [
+    {id: 'compText', as: 'string', description: 'use __ for completion point'},
+    {id: 'completionToActivate', as: 'string', description: 'label of completion to activate'},
+    {id: 'expectedEdit', description: '{ range: , newText:}'},
+    {id: 'expectedTextAtSelection', description: '{ start: , end: }'},
+    {id: 'expectedCursorPos', description: 'e.g. 1,12'}
+  ],
+  impl: dataTest(async (ctx,{}, {compText,completionToActivate, expectedEdit, expectedTextAtSelection, expectedCursorPos }) => {
             jb.workspace.initJbWorkspaceAsHost()
             const parts = compText.split('__')
             const offset = parts[0].length
             const code = parts.join('')
-            jb.utils.eval(code)
+            jb.tgpTextEditor.eval(code)
+            Object.keys(jb.comps).forEach(comp => jb.macro.fixProfile(jb.comps[comp],comp))
+
             jb.tgpTextEditor.host.initDoc('dummy.js',code)
             
             const inCompPos = jb.tgpTextEditor.offsetToLineCol(code,offset)
             jb.tgpTextEditor.host.selectRange(inCompPos)
+            const { needsFormat } = jb.tgpTextEditor.calcActiveEditorPath()
+            if (needsFormat)
+                return { testFailure: `bad comp format` }
             const item = jb.tgpTextEditor.provideCompletionItems(ctx).find(x=>x.label == completionToActivate)
             if (!item)
                 return { testFailure: `completion not found - ${completionToActivate}` }
@@ -67,8 +71,5 @@ jb.component('tgp.completionActionTest', {
                 (cursorPosSuccess ? '' : `wrong cursor pos ${actualCursorPos} instead of ${expectedCursorPos}`)
     
             return { testFailure }        
-        },
-        expectedResult: not('%testFailure%')
-    })
-    
+        }, not('%testFailure%'))
 })
