@@ -1,12 +1,10 @@
-missing async in profile serialization
-
-completion
-  jb.utils.eval should return { ..., compIds}
-  fix remote.action(TBD()) bug
 
 fix tgp modules with two jbms
+  what about watchable comps. should be in the editor!!
 extension-webView API
   cursorPos(path,row,line), fileChanged(path,ln)
+
+742hkyqxZSVHsD
 
 gotoDef bug 
   button.init in button.mdc

@@ -20,12 +20,7 @@ jb.component('helloWorld.main', {
   type: 'control',
   impl: group({
     controls: [
-      text(pipeline('%$people/name%', join())),
-      image({url: 'https://freesvg.org/img/UN-CONSTRUCTION-2.png', width: 77, height: 100})
+      text('Hello World'),
     ]
   })
-})
-
-jb.component('x', {
-  impl: {a: 1, b: 2}
 })
