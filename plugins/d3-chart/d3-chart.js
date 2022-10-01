@@ -8,7 +8,7 @@ jb.component('d3g.chartScatter', {
     {id: 'title', as: 'string'},
     {id: 'items', as: 'array', dynamic: true, mandatory: true},
     {id: 'frame', type: 'd3g.frame', defaultValue: d3g.frame({width: 1400, height: 500, top: 30, right: 50, bottom: 40, left: 60})},
-    {id: 'pivots', type: 'd3g.pivot[]', templateValue: [], mandatory: true, dynamic: true, description: 'potential axis of the chart'},
+    {id: 'pivots', type: 'd3g.axis[]', templateValue: [], mandatory: true, dynamic: true, description: 'potential axis of the chart'},
     {id: 'itemTitle', as: 'string', dynamic: true},
     {id: 'onSelectItem', type: 'action', dynamic: true},
     {id: 'onSelectAxisValue', type: 'action', dynamic: true},
@@ -74,7 +74,7 @@ jb.component('d3Scatter.init', {
     calcProp({id: 'pivots', value: ctx => ctx.exp('%$$model/pivots%')}),
     calcProp({
         id: 'emptyPivot',
-        value: d3g.pivot({title: 'empty', value: list('0', '1')})
+        value: d3g.axis({title: 'empty', value: list('0', '1')})
       }),
     calcProp({
         id: 'x',

@@ -18,7 +18,7 @@
  <script>
 	const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
 	const repos = (urlQuery('repo') || '').split(',').filter(x=>x)
-	jbInit('tests', {projects: ['studio','tests'], repos })
+	jbInit('tests', {projects: ['studio','tests'], plugins: ['space'], repos })
 		.then(()=>{
 			jb.exec({$: 'defaultTheme'})
 			jb.spy.initSpyByUrl()

@@ -4,7 +4,7 @@ jb.component('text', {
   category: 'control:100,common:100',
   params: [
     {id: 'text', as: 'ref', mandatory: true, templateValue: 'my text', dynamic: true},
-    {id: 'title', as: 'ref', mandatory: true, dynamic: true},
+    {id: 'title', as: 'ref', dynamic: true},
     {id: 'style', type: 'text.style', defaultValue: text.span(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],

@@ -2,17 +2,13 @@ jb.component('studio.main', {
   type: 'control',
   impl: group({
     controls: [
-      controlWithCondition('%$studio/vscode%', studio.vscode()),
+      controlWithCondition(studio.isTest(), studio.test()),
       controlWithCondition(studio.isNotebook(), studio.notebook()),
-      studio.jbart(),
+      studio.jbart()
     ],
-    features: [
-      group.wait(ctx => jb.studio.host.settings()
+    features: [group.wait(ctx => jb.studio.host.settings()
         .then(settings => ctx.run(writeValue('%$studio/settings%',
-          Object.assign(ctx.exp('%$studio/settings%'), typeof settings == 'string' ? JSON.parse(settings) : {}))))
-      , text('')),
-      group.firstSucceeding(),
-    ]
+          Object.assign(ctx.exp('%$studio/settings%'), typeof settings == 'string' ? JSON.parse(settings) : {})))), text('')), group.firstSucceeding()]
   })
 })
 
@@ -21,28 +17,67 @@ jb.component('studio.isNotebook',{
   impl: () => jb.path(self,'location.pathname').indexOf('/notebook') == 0
 })
 
+jb.component('studio.isTest', {
+  type: 'boolean',
+  impl: () => /host=test/.test(jb.path(globalThis,'location.href')||'')
+})
+
 jb.component('studio.jbart', {
   type: 'control',
   impl: group({
     controls: [
       studio.topBar(),
       group({
-        controls: preview.remoteWidget(), // probe.remoteMainCircuitView()
+        controls: preview.remoteWidget(),
         features: [
           watchRef('%$studio/page%'),
-          watchRef({ref: '%$studio/preview%', includeChildren: 'yes'}),
-          css.height({height: '%$studio/preview/height%', overflow: 'auto', minMax: 'max'}),
-          css.width({width: '%$studio/preview/width%', overflow: 'auto', minMax: 'max'})
+          watchRef('%$studio/preview%', 'yes'),
+          css.height({
+            height: '%$studio/preview/height%',
+            overflow: 'auto',
+            minMax: 'max'
+          }),
+          css.width({
+            width: '%$studio/preview/width%',
+            overflow: 'auto',
+            minMax: 'max'
+          })
         ]
       }),
       studio.pages(),
       studio.ctxCounters()
     ],
-    features: [
-      feature.requireService(urlHistory.mapStudioUrlToResource('studio'))
-    ]
+    features: [feature.requireService(urlHistory.mapStudioUrlToResource('studio'))]
   })
 })
+
+jb.component('studio.test', {
+  type: 'control',
+  impl: group({
+    controls: [
+      studio.topBar(),
+      group({
+        controls: preview.remoteWidget(),
+        features: [
+          watchRef('%$studio/preview%', 'yes'),
+          css.height({
+            height: '%$studio/preview/height%',
+            overflow: 'auto',
+            minMax: 'max'
+          }),
+          css.width({
+            width: '%$studio/preview/width%',
+            overflow: 'auto',
+            minMax: 'max'
+          })
+        ]
+      }),
+      studio.ctxCounters()
+    ],
+  })
+})
+
+
 
 // jb.component('studio.jbartOld', {
 //   type: 'control',
@@ -76,14 +111,19 @@ jb.component('studio.previewWidget', {
 
 jb.component('dataResource.studio', {
   watchableData: {
-    project: '', // (jb.path(jb.frame,'location.pathname') ||'').split('/')[3] || '',
+    circuit: /host=test/.test(jb.path(globalThis,'location.href')||'') ? (jb.path(globalThis,'location.pathname')||'').split('/')[3] : '',
+    project: '',
     page: '',
-    profile_path: '',
+    profile_path: /host=test/.test(jb.path(globalThis,'location.href')||'') ? (jb.path(globalThis,'location.pathname')||'').split('/')[3] : '',
     pickSelectionCtxId: '',
     jbEditor: {},
-    preview: {width: 1280, height: 520, zoom: jb.frame.jbInvscode ? 8 : 10},
+    preview: {
+      width: 1280,
+      height: 520,
+      zoom: 10
+    },
     settings: {contentEditable: false, activateWatchRefViewer: true},
-    vscode: jb.frame.jbInvscode
+    vscode: undefined
   }
 })
 

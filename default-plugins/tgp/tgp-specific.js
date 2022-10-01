@@ -4,7 +4,7 @@ jb.extension('tgp', 'specific', {
 			.filter(p=>includeFeatures || p.id != 'features')
 			.map(p=>path + '~' + p.id),
 
-	isControlType: type => (type||'').split('[')[0].match(/^(control|options|menu.option|table-field|d3g.pivot)$/),
+	isControlType: type => (type||'').split('[')[0].match(/^(control|options|menu.option|table-field|d3g.axis)$/),
 	controlParams: path => jb.tgp.paramsOfPath(path).filter(p=>jb.tgp.isControlType(p.type)).map(p=>p.id),
 
 	getOrCreateControlArrayRef(path,srcCtx) {

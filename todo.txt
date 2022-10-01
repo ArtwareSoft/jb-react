@@ -1,4 +1,5 @@
 
+fix edit test in studio
 fix tgp modules with two jbms
   what about watchable comps. should be in the editor!!
 extension-webView API

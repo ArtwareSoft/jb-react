@@ -6,7 +6,7 @@ jb.component('d3g.histogram', {
   params: [
     {id: 'title', as: 'string'},
     {id: 'items', as: 'array', dynamic: true, mandatory: true},
-    {id: 'pivot', type: 'd3g.pivot', mandatory: true, dynamic: true},
+    {id: 'pivot', type: 'd3g.axis', mandatory: true, dynamic: true},
     {id: 'frame', type: 'd3g.frame', defaultValue: d3g.frame({width: 1400, height: 500, top: 30, right: 50, bottom: 40, left: 60})},
     {id: 'itemTitle', as: 'string', dynamic: true},
     {id: 'ticks', as: 'number', defaultValue: 5},

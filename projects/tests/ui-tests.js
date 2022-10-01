@@ -11,7 +11,7 @@ jb.component('uiTest.group', {
 })
 
 jb.component('uiTest.label', {
-  impl: uiTest({control: text({text: 'hello world', title: ''}), expectedResult: contains('hello world')})
+  impl: uiTest({control: text('hello world'), expectedResult: contains('hello world')})
 })
 
 jb.component('uiTest.label0', {
@@ -454,8 +454,8 @@ jb.component('uiTest.itemlistPrimitiveArrayItemShouldBeRef', {
   impl: uiTest({
     timeout: 100,
     vars: Var('isResultRef', obj(prop('answer',false))),
-    control: itemlist({items: '%$personWithPrimitiveChildren/childrenNames%', 
-      controls: ctx => { 
+    control: itemlist({items: '%$personWithPrimitiveChildren/childrenNames%',
+      controls: ctx => {
         ctx.run(writeValue('%$isResultRef/answer%', () => !!jb.db.isRef(ctx.data)))
         return ctx.run(text('%%'))
       }
@@ -624,8 +624,8 @@ jb.component('uiTest.table.MDInplace', {
             ],
             layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'})
           }),
-          controlWithCondition('%$sectionExpanded/{%$index%}%', group({ 
-            controls: text('inner text'), 
+          controlWithCondition('%$sectionExpanded/{%$index%}%', group({
+            controls: text('inner text'),
             features: feature.expandToEndOfRow('%$sectionExpanded/{%$index%}%')
           })),
           text('%age%'),
@@ -648,7 +648,7 @@ jb.component('uiTest.table.MDInplace.withScroll', {
         lineFeatures: [
           watchRef({ref: '%$sectionExpanded/{%$index%}%', allowSelfRefresh: true}),
           table.enableExpandToEndOfRow()
-        ],        
+        ],
         visualSizeLimit: 2,
         controls: [
           group({
@@ -658,8 +658,8 @@ jb.component('uiTest.table.MDInplace.withScroll', {
             ],
             layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'})
           }),
-          controlWithCondition('%$sectionExpanded/{%$index%}%', group({ 
-            controls: text('inner text'), 
+          controlWithCondition('%$sectionExpanded/{%$index%}%', group({
+            controls: text('inner text'),
             features: feature.expandToEndOfRow('%$sectionExpanded/{%$index%}%')
           })),
           text('%age%'),
@@ -667,12 +667,12 @@ jb.component('uiTest.table.MDInplace.withScroll', {
         ],
         features: [
           css.height({height: '40', overflow: 'scroll'}),
-          itemlist.infiniteScroll(2),  
+          itemlist.infiniteScroll(2),
         ]
       }),
       features: watchable('sectionExpanded',obj()),
     }),
-    action: runActions( 
+    action: runActions(
       uiAction.scrollBy('.jb-itemlist',100),
       uiAction.waitForSelector('.jb-items-parent:nth-child(2)'),
       uiAction.click('i','toggle'),
@@ -708,7 +708,7 @@ jb.component('uiTest.itemlistMDAutoSelectFirst', {
 
 jb.component('uiTest.itemlistMDAutoSelectFirst.ProxyBug', {
   impl: uiFrontEndTest({
-//    renderDOM: true,    
+//    renderDOM: true,
     control: group({
       controls: [
         itemlist({
@@ -728,7 +728,7 @@ jb.component('uiTest.itemlistMDAutoSelectFirst.ProxyBug', {
         })
       ]
     }),
-    action: 
+    action:
       uiAction.keyboardEvent({selector: 'ul', type: 'keydown', keyCode: 40}),
     expectedResult: contains('Homer')
   })
@@ -923,7 +923,7 @@ jb.component('uiTest.BEOnDestroy', {
     control: text('%$person/name%'),
     action: runActions(
       openDialog({
-        id:'dlg', 
+        id:'dlg',
         content: text({text: 'in dialog',
           features: onDestroy(writeValue('%$person/name%','dialog closed'))
         })
@@ -959,9 +959,9 @@ jb.component('FETest.onKey', {
 
 jb.component('uiTest.editableText.blockSelfRefresh', {
   impl: uiTest({
-    control: group({ 
+    control: group({
       controls: editableText({title: 'name', databind: '%$person/name%', features: id('inp')}),
-      features: watchRef('%$person/name%') 
+      features: watchRef('%$person/name%')
     }),
     userInput: userInput.setText('hello','#inp'),
     expectedResult: true,
@@ -971,9 +971,9 @@ jb.component('uiTest.editableText.blockSelfRefresh', {
 
 jb.component('uiTest.editableText.allowSelfRefresh', {
   impl: uiTest({
-    control: group({ 
+    control: group({
       controls: editableText({title: 'name', databind: '%$person/name%'}),
-      features: watchRef({ref: '%$person/name%', allowSelfRefresh: true}) 
+      features: watchRef({ref: '%$person/name%', allowSelfRefresh: true})
     }),
     userInput: userInput.setText('hello'),
     expectedResult: contains('hello'),
@@ -1022,8 +1022,8 @@ jb.component('uiTest.editableText.picklistHelperWithChangingOptions', {
 
 jb.component('uiTest.editableText.richPicklistHelperWithWatchingGroup', {
   impl: uiTest({
-    control: 
-    group({ controls: 
+    control:
+    group({ controls:
       editableText({title: 'name', databind: '%$person/name%',
         features: editableText.picklistHelper({
           options: picklist.optionsByComma(If(test.getSelectionChar(),'1,2,3,4','a,b,c,ddd')),
@@ -1031,7 +1031,7 @@ jb.component('uiTest.editableText.richPicklistHelperWithWatchingGroup', {
           autoOpen: true,
         })
       }),
-    features: watchRef('%$person/name%') 
+    features: watchRef('%$person/name%')
   }),
     expectedResult: contains('ddd')
   })
@@ -1051,13 +1051,13 @@ jb.component('uiTest.editableText.richPicklistHelper.setInput', {
         })
       ]
     }),
-    action: runActions( 
+    action: runActions(
       uiAction.keyboardEvent({selector: '#inp', type: 'keyup', keyCode: 37}),
       uiAction.waitForSelector('.jb-popup'),
       uiAction.keyboardEvent({selector: '#inp', type: 'keydown', keyCode: 40}),
       uiAction.keyboardEvent({selector: '#inp', type: 'keyup', keyCode: 13}),
       () => jb.delay(10).then(()=> jb.frame.scrollTo(0,0)) // scroll to top bg
-    ),    
+    ),
     expectedResult: contains('1111</input-val>')
   })
 })
@@ -1486,7 +1486,7 @@ jb.component('uiTest.picklistHelper.delayedOptions', {
       databind: '%$person/name%',
       features: editableText.picklistHelper({
           showHelper: true,
-          options: pipe(delay(1), 
+          options: pipe(delay(1),
             (obj(prop('options', picklist.optionsByComma(() => [1,2,3].map(() => Math.floor(Math.random() *10 )).join(',')))))
           ),
           picklistFeatures: picklist.allowAsynchOptions(),
@@ -1753,7 +1753,7 @@ jb.component('uiTest.refreshControlById.withButton', {
     control: group({ controls: [
       text({ text: '%$person1/name%', features: id('t1') }),
       button({
-        title: 'refresh', 
+        title: 'refresh',
         action: runActions(writeValue('%$person1/name%','Dan'),refreshControlById('t1'))
       })
     ]}),
@@ -2137,12 +2137,12 @@ jb.component('uiTest.infiniteScroll.twice', {
         css.width('100')
       ]
     }),
-    action: runActions( 
+    action: runActions(
       uiAction.scrollBy('.jb-itemlist',80),
       uiAction.waitForSelector('ul>:nth-child(8)'),
       uiAction.scrollBy('.jb-itemlist',10),
       uiAction.waitForSelector('ul>:nth-child(10)')
-    ),    
+    ),
     expectedResult: contains('>10<')
   })
 })

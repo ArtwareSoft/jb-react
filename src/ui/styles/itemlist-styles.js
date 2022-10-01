@@ -29,11 +29,8 @@ jb.component('itemlist.div', {
   params: [
     {id: 'spacing', as: 'number', defaultValue: 0}
   ],
-  impl: customStyle({
-    template: ({},{ctrls},h) => h('div.jb-itemlist',{},
-        ctrls.map((ctrl) => h('div.jb-item', {}, ctrl.map(singleCtrl=>h(singleCtrl))))),
-    features: itemlist.init()
-  })
+  impl: customStyle({template: ({},{ctrls},h) => h('div.jb-itemlist',{},
+        ctrls.map((ctrl) => h('div.jb-item', {}, ctrl.map(singleCtrl=>h(singleCtrl))))), features: itemlist.init()})
 })
 
 jb.component('itemlist.horizontal', {
