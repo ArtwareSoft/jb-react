@@ -192,7 +192,7 @@ jb.extension('probe', {
             if (!this.active || this.probePath.indexOf(ctx.path) != 0) return
     
             if (this.id < jb.probe.probeCounter) {
-                jb.log('probe probeCounter is larger than current',{ctx, probe: this,id, counter: jb.probe.probeCounter})
+                jb.log('probe probeCounter is larger than current',{ctx, probe: this, counter: jb.probe.probeCounter})
                 this.active = false
                 return
             }
@@ -294,7 +294,7 @@ jb.component('probe.initRemoteProbe', {
         remote.shadowResource('probe', '%$jbm%'),
         rx.pipe(
             watchableComps.scriptChange(),
-            rx.log('preview change script'),
+            rx.log('preview probe change script'),
             rx.map(obj(prop('op','%op%'), prop('path','%path%'))),
             rx.var('cssOnlyChange',tgp.isCssPath('%path%')),
             sink.action(remote.action( {action: probe.handleScriptChangeOnPreview('%$cssOnlyChange%'), jbm: '%$jbm%', oneway: true}))
@@ -303,12 +303,12 @@ jb.component('probe.initRemoteProbe', {
 })
 
 jb.component('probe.handleScriptChangeOnPreview', {
-    type: 'action',
-    description: 'preview script change handler',
-    params: [
-        {id: 'cssOnlyChange', as: 'boolean' }
-    ],
-    impl: (ctx, cssOnlyChange) => {
+  type: 'action',
+  description: 'preview script change handler',
+  params: [
+    {id: 'cssOnlyChange', as: 'boolean', type: 'boolean'}
+  ],
+  impl: (ctx, cssOnlyChange) => {
         const {op, path} = ctx.data
         const handler = jb.watchableComps.startWatch()
         if (path[0] == 'probeTest.label1') return
@@ -332,7 +332,9 @@ jb.component('probe.handleScriptChangeOnPreview', {
             elems.forEach(e=>jb.ui.refreshElem(e.elem,null,{cssOnly: e.elem.attributes.class ? true : false}))           
         } else {
             const ref = ctx.exp('%$probe/scriptChangeCounter%','ref')
-            jb.db.writeValue(ref, +jb.val(ref)+1 ,ctx.setVars({headlessWidget: true}))
+            const newVal = +jb.val(ref)+1
+            jb.db.writeValue(ref, newVal ,ctx.setVars({headlessWidget: true}))
+            jb.log('probe handleScriptChangeOnPreview increaseScriptChangeCounter',{ctx,newVal})
         }
     }
 })

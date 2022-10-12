@@ -25,7 +25,7 @@ jb.component('studio.initPreview', {
                 jb.log('init preview watchableComps source',{})
                 return jb.watchableComps.source
             }),
-      rx.log('preview change script'),
+      rx.log('studio preview change script'),
       rx.map(obj(prop('op', '%op%'), prop('path', '%path%'))),
       rx.var('cssOnlyChange', tgp.isCssPath('%path%')),
       sink.action(

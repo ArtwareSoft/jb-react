@@ -35,7 +35,7 @@ jb.component('calcProp', {
   description: 'define a variable to be used in the rendering calculation process',
   params: [
     {id: 'id', as: 'string', mandatory: true},
-    {id: 'value', mandatory: true, dynamic: true, description: 'when empty value is taken from model'},
+    {id: 'value', mandatory: true, dynamic: true, description: 'when empty, value is taken from model'},
     {id: 'priority', as: 'number', defaultValue: 1, description: 'if same prop was defined elsewhere decides who will override. range 1-1000'},
     {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'},
     {id: 'defaultValue' },

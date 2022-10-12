@@ -95,6 +95,8 @@ jb.extension('tgp', 'readOnly', {
 		pts.sort((c1,c2) => jb.tgp.markOfComp(c2) - jb.tgp.markOfComp(c1))
 		return pts
 	},
+	enumOptions: path => ((jb.tgp.paramDef(path) || {}).options ||'').split(',')
+		.map(x=> ({code: x.split(':')[0],text: x.split(':')[0]})),
 	propName(path) {
 		if (!isNaN(Number(path.split('~').pop()))) // array elements
 			return jb.tgp.parentPath(path).split('~').pop().replace(/s$/,'')

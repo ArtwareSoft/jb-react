@@ -356,7 +356,6 @@ jb.component('studio.colorPicker', {
     controls: button({
       title: prettyPrint(tgp.val('%$path%'), true),
       action: openDialog({
-        style: dialog.studioJbEditorPopup(),
         content: itemlist({
           title: '',
           items: studio.colorVariables(),
@@ -367,28 +366,28 @@ jb.component('studio.colorPicker', {
               control.icon({
                 icon: 'MoonFull',
                 type: 'mdi',
-                features: css('~ svg { fill: %color% }')
+                features: css('~ svg { fill: %color%; stroke: black }')
               }),
               text('%varName%')
             ],
             features: css.width('300')
           }),
-          features: itemlist.selection({
-            onSelection: writeValue(tgp.ref('%$path%'), 'var(--%varName%)')
-          })
+          features: itemlist.selection({onSelection: writeValue(tgp.ref('%$path%'), 'var(--%varName%)')})
         }),
+        style: dialog.studioJbEditorPopup(),
         features: studio.nearLauncherPosition()
       }),
       style: button.studioScript()
     }),
-    features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
+    features: studio.watchPath('%$path%', 'yes')
   })
 })
 
 jb.component('studio.colorVariables', {
   impl: ctx => {
     const doc = jb.frame.document
-    return Array.from(doc.querySelectorAll('style')).map(x=>x.innerHTML).join('\n').split('\n').filter(x=>x.match(/--/)).filter(x=>!x.match(/font/)).map(x=>x.split(':')[0].trim().slice(2))
+    if (!doc) return []
+    return ((doc.querySelector('[elemId="__defaultTheme"]') || {}).textContent || '').split('\n').filter(x=>x.match(/--/)).filter(x=>!x.match(/font/)).map(x=>x.split(':')[0].trim().slice(2))
       .map(varName=> ({ varName, color : jb.ui.valueOfCssVar(varName,doc.body) }))
     }
 })

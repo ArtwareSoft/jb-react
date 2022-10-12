@@ -3,7 +3,7 @@ jb.extension('treeShake', {
         return {
             clientComps: ['#extension','#core.run','#component','#jbm.extendPortToJbmProxy','#jbm.portFromFrame','#spy.initSpy','#treeShake.getCodeFromRemote','#cbHandler.terminate','treeShake.getCode','waitFor'],
             existingFEPaths: {},
-            loadedFElibs: {},
+            FELibLoaderPromises: {},
             loadingCode: {},
             server: jb.frame.jbInit,
             serverUrl: jb.frame.jbTreeShakeServerUrl,
@@ -164,12 +164,15 @@ jb.extension('treeShake', {
         return jb.utils.unique(jb.treeShake.treeShake(_paths,jb.treeShake.existing()).map(path=>path.split('~')[0]).filter(id=>jb.treeShake.missing(id)))
     },
     async loadFELibsDirectly(libs) {
+        if (!libs.length) return
         if (typeof document == 'undefined') {
             debugger
             return jb.logError('can not load front end libs to a frame without a document')
         }
-        const _libs = jb.utils.unique(libs).filter(lib=>! jb.treeShake.loadedFElibs[lib])
-        return _libs.reduce((pr,lib) => pr.then(()=> loadFile(lib)).then(()=> jb.treeShake.loadedFElibs[lib] = true), Promise.resolve())
+        const libsToLoad = jb.utils.unique(libs)//.filter(lib=>! jb.treeShake.FELibsToLoad[lib])
+        libsToLoad.forEach(lib=> jb.treeShake.FELibLoaderPromises[lib] = jb.treeShake.FELibLoaderPromises[lib] || loadFile(lib) )
+        jb.log('FELibs toLoad',{libsToLoad})
+        return libsToLoad.reduce((pr,lib) => pr.then(()=> jb.treeShake.FELibLoaderPromises[lib]), Promise.resolve())
 
         function loadFile(lib) {
             return new Promise(resolve => {

@@ -71,7 +71,7 @@ jb.component('defaultTheme', {
       --jb-dropdown-shadow: #a8a8a8;
       --jb-tree-value: red;
       --jb-expandbox-bg: green;
- `)
+ `,'__defaultTheme')
 })
 
 jb.component('group.theme', {

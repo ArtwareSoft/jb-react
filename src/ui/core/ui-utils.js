@@ -71,9 +71,9 @@ jb.component('feature.serviceRegistey', {
 jb.component('service.registerBackEndService', {
   type: 'data',
   params: [
-    {id: 'id', as: 'string', mandatory: true, dynamic: true },
-    {id: 'service', mandatory: true, dynamic: true },
-    {id: 'allowOverride', as: 'boolean' },
+    {id: 'id', as: 'string', mandatory: true, dynamic: true},
+    {id: 'service', mandatory: true, dynamic: true},
+    {id: 'allowOverride', as: 'boolean', type: 'boolean'}
   ],
   impl: feature.init((ctx,{$serviceRegistry},{id,service,allowOverride}) => {
     const _id = id(ctx), _service = service(ctx)
@@ -82,7 +82,6 @@ jb.component('service.registerBackEndService', {
       jb.logError('overridingService ${_id}',{id: _id, service: $serviceRegistry.services[_id], service: _service,ctx})
     $serviceRegistry.services[_id] = _service
   })
-  // feature.initValue({to: '%$$serviceRegistry/services/{%$id()%}%', value: '%$service()%', alsoWhenNotEmpty: true}),
 })
 
 
@@ -152,7 +151,8 @@ jb.extension('ui', {
           document.head.appendChild(elem)
         }
         elem.setAttribute('src',`${classId || ''} ${ctx.path}`)
-        elem.innerText = innerText
+        jb.log('css update',{innerText,elemId})
+        elem.textContent = innerText
       }
     },
     valueOfCssVar(varName,parent) {
