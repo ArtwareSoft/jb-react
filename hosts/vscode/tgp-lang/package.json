@@ -2,7 +2,7 @@
 	"name": "tgp-lang",
 	"displayName": "TGP Language",
 	"description": "TGP language service",
-	"version": "0.8.3",
+	"version": "0.8.4",
 	"publisher": "artwaresoft",
 	"license": "MIT",
 	"engines": {

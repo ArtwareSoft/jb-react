@@ -113,20 +113,20 @@ jb.component('uiTest', {
 })  
 
 jb.component('uiFrontEndTest', {
-	type: 'test',
-	params: [
-	  {id: 'control', type: 'control', dynamic: true},
-	  {id: 'runBefore', type: 'action', dynamic: true},
-	  {id: 'action', type: 'action', dynamic: true},
-	  {id: 'expectedResult', as: 'boolean', dynamic: true},
-	  {id: 'allowError', as: 'boolean', dynamic: true},
-	  {id: 'cleanUp', type: 'action', dynamic: true},
-	  {id: 'expectedCounters', as: 'single'},
-	  {id: 'renderDOM', type: 'boolean', descrition: 'render the vdom under the document dom' },
-	  {id: 'runInPreview', type: 'action', dynamic: true, descrition: 'not for test mode'},
-	  {id: 'runInStudio', type: 'action', dynamic: true, descrition: 'not for test mode'},
-	],
-	impl: (_ctx,control,runBefore,action,expectedResult,allowError,cleanUp,expectedCounters,renderDOM) => {
+  type: 'test',
+  params: [
+    {id: 'control', type: 'control', dynamic: true},
+    {id: 'runBefore', type: 'action', dynamic: true},
+    {id: 'action', type: 'action', dynamic: true},
+    {id: 'expectedResult', as: 'boolean', dynamic: true, type: 'boolean'},
+    {id: 'allowError', as: 'boolean', dynamic: true, type: 'boolean'},
+    {id: 'cleanUp', type: 'action', dynamic: true},
+    {id: 'expectedCounters', as: 'single'},
+    {id: 'renderDOM', type: 'boolean', descrition: 'render the vdom under the document dom'},
+    {id: 'runInPreview', type: 'action', dynamic: true, descrition: 'not for test mode'},
+    {id: 'runInStudio', type: 'action', dynamic: true, descrition: 'not for test mode'}
+  ],
+  impl: (_ctx,control,runBefore,action,expectedResult,allowError,cleanUp,expectedCounters,renderDOM) => {
 		const {testID, singleTest} = _ctx.vars
 		//return Promise.resolve({ id: testID, success: true})
 		const elemToTest = document.createElement('div')
@@ -251,13 +251,13 @@ jb.extension('test', {
 			jb.watchableComps.handler.resources(jb.test.initial_comps)
 			jb.db.watchableHandlers.push(jb.watchableComps.handler)
 		}
-		if (!jb.spy.log) jb.spy.initSpy({spyParam: 'test'})
+		if (!jb.spy.enabled) jb.spy.initSpy({spyParam: 'test'})
 		jb.spy.clear()
 		// await jb.jbm.terminateAllChildren()
 		// jb.ui.garbageCollectCtxDictionary(true,true)
 	},
 	countersErrors(expectedCounters,allowError) {
-		if (!jb.spy.log) return ''
+		if (!jb.spy.enabled) return ''
 		const exception = jb.spy.logs.find(r=>r.logNames.indexOf('exception') != -1)
 		const error = jb.spy.logs.find(r=>r.logNames.indexOf('error') != -1)
 		if (exception) return exception.err

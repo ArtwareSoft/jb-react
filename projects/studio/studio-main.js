@@ -73,7 +73,7 @@ jb.component('studio.test', {
         ]
       }),
       studio.ctxCounters()
-    ],
+    ]
   })
 })
 

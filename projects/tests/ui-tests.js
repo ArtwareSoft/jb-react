@@ -43,6 +43,7 @@ jb.component('uiTest.waitForWithPipe', {
   impl: uiTest({
     control: group({controls: text('%%'), features: group.wait(pipe(delay(1), 'hello'))}),
     expectedResult: and(contains('hello'), not(contains('loading'))),
+    checkResultRx: () => jb.ui.renderingUpdates,
     expectedCounters: {'init uiComp': 4}
   })
 })

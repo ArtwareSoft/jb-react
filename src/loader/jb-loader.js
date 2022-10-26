@@ -8,6 +8,7 @@ var jb_modules = {
     'src/misc/spy.js',
   ],
 }
+var jb_plugins = ['space','vega','threejs'];
 
 async function jbInit(uri, {projects, plugins, repos, baseUrl, multipleInFrame, doNoInitLibs }) {
   const fileSymbols = globalThis.jbFileSymbols || fileSymbolsFromHttp

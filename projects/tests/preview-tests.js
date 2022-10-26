@@ -1,11 +1,7 @@
 jb.component('sampleProject.main', {
   impl: group({
-    controls: text({text: 'hello', features: [id('sampleText')] }),
-    features: [
-//      group.wait(delay(100)),
-      variable('var1','world'),
-      variable('xx','xx')
-    ]
+    controls: text({text: 'hello', features: [id('sampleText')]}),
+    features: [variable('var1', 'world'), variable('xx', 'xx')]
   })
 })
 
@@ -174,23 +170,26 @@ jb.component('FETest.workerPreviewTest.suggestions.select', {
 
 jb.component('FETest.workerPreviewTest.suggestions.filtered', {
   impl: uiFrontEndTest({
-    renderDOM: true,
-    timeout: 5000,
-    runBefore: writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
     control: group({
       controls: [
         probe.remoteMainCircuitView(),
         studio.propertyPrimitive('sampleProject.main~impl~controls~text')
-      ],
+      ]
     }),
+    runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
     action: runActions(
-      uiAction.waitForSelector('[cmp-pt="text"]'),
+      uiAction.waitForSelector('[cmp-pt=\"text\"]'),
       uiAction.waitForSelector('input'),
-      uiAction.setText('hello %$var1','input'),
-      uiAction.keyboardEvent({ selector: 'input', type: 'keyup', keyCode: ()=> '%'.charCodeAt(0) }),
-      uiAction.waitForSelector('.jb-dialog .jb-item'),
-    ),    
-    expectedResult: not(contains('$xx'))
+      uiAction.setText('hello %$var1', 'input'),
+      uiAction.keyboardEvent({
+        selector: 'input',
+        type: 'keyup',
+        keyCode: ()=> '%'.charCodeAt(0)
+      }),
+      uiAction.waitForSelector('.jb-dialog .jb-item')
+    ),
+    expectedResult: not(contains('$xx')),
+    renderDOM: true
   })
 })
 
@@ -255,15 +254,31 @@ jb.component('jbEditorTest.basic', {
 //   })
 // })
 
-jb.component('previewTest.childJbm', {
+jb.component('probeTest.childJbm', {
   impl: uiTest({
-    timeout: 1000,
+    control: probe.remoteMainCircuitView(jbm.child('childProbe')),
     runBefore: runActions(
-      jbm.child({id: 'childPreview', init: probe.initRemoteProbe()}),
-      writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
+      jbm.child({id: 'childProbe', init: probe.initRemoteProbe()}),
+      writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main')
     ),
     checkResultRx: () => jb.ui.renderingUpdates,
-    control: probe.remoteMainCircuitView(jbm.child('childPreview')),
-    expectedResult: contains('hello')
+    expectedResult: contains('hello'),
+    timeout: 1000
   })
 })
+
+// jb.component('previewTest.childPreview', {
+//   impl: uiTest({
+//     control: preview.remoteWidget(jbm.childPreview()),
+//     runBefore: writeValue('%$studio/circuit%', 'uiTest.label'),
+//     expectedResult: contains('hello')
+//   })
+// })
+
+// jb.component('previewTest.uiFrontEndTest', {
+//   impl: uiTest({
+//     control: preview.remoteWidget(jbm.childPreview()),
+//     runBefore: writeValue('%$studio/circuit%', 'FETest.runFEMethod'),
+//     expectedResult: contains('change')
+//   })
+// })

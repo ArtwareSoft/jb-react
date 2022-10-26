@@ -1,6 +1,6 @@
 // core utils promoted for easy usage
 Object.assign(jb, {
-    log(logName, record, options) { jb.spy && jb.spy.log && jb.spy.log(logName, record, options) },
+    log(logName, record, options) { jb.spy && jb.spy.enabled && jb.spy.log(logName, record, options) },
     logError(err,logObj) {
       jb.frame.console && jb.frame.console.error('%c Error: ','color: red', err, logObj)
       jb.log('error',{err , ...logObj})

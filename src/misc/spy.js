@@ -1,7 +1,7 @@
 jb.extension('spy', {
-	$requireFuncs: 'jb.spy._log',
+	$requireFuncs: 'jb.spy.log',
 	initExtension() {
-		// jb.spy._log() -- for codeLoader
+		// jb.spy.log() -- for codeLoader
 		return {
 			logs: [],
 			enrichers: [],
@@ -24,7 +24,7 @@ jb.extension('spy', {
 	initSpy({spyParam}) {
 		if (!spyParam) return
 		jb.spy.spyParam = spyParam
-		jb.spy.log = jb.spy._log // actually enables logging
+		jb.spy.enabled = true
 		if (jb.frame) jb.frame.spy = jb.spy // for console use
 		jb.spy.includeLogsInitialized = false
 		jb.spy._obs = jb.callbag.subject()
@@ -64,7 +64,7 @@ jb.extension('spy', {
 		return jb.spy.spyParam === 'all' || typeof record == 'object' && 
 			logNames.split(' ').reduce( (acc,logName)=>acc || jb.spy.includeLogs[logName],false)
 	},
-	_log(logNames, _record, {takeFrom, funcTitle, modifier} = {}) {
+	log(logNames, _record, {takeFrom, funcTitle, modifier} = {}) {
 		if (!jb.spy.includeLogsInitialized) jb.spy.calcIncludeLogsFromSpyParam(jb.spy.spyParam)
 		jb.spy.updateCounters(logNames)
 		jb.spy.updateLocations(logNames,takeFrom)

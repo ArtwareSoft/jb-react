@@ -1,15 +1,15 @@
 
 jb.component('jbm.wPreview', {
-    type: 'jbm',
-    params: [
-        {id: 'id', defaultValue: 'wPreview' }
-    ],    
-    impl: jbm.worker({id: '%$id%', init: studio.initPreview()})
+  type: 'jbm',
+  params: [
+    {id: 'id', defaultValue: 'wPreview'}
+  ],
+  impl: jbm.worker('%$id%', studio.initPreview())
 })
 
 jb.component('jbm.preview', {
-    type: 'jbm',
-    impl: If('%$yellowPages/preview%',jbm.byUri('%$yellowPages/preview%'), jbm.wPreview())
+  type: 'jbm',
+  impl: If('%$yellowPages/preview%', jbm.byUri('%$yellowPages/preview%'), jbm.wPreview())
 })
 
 jb.component('studio.initPreview', {
@@ -40,11 +40,11 @@ jb.component('studio.initPreview', {
 })
 
 jb.component('preview.remoteWidget', {
-    params: [
-        {id: 'jbm', defaultValue: jbm.wPreview() }
-    ],    
-    type: 'control',
-    impl: remote.widget( preview.control(), '%$jbm%' )
+  params: [
+    {id: 'jbm', type: 'jbm', defaultValue: jbm.wPreview()}
+  ],
+  type: 'control',
+  impl: remote.widget(preview.control(), '%$jbm%')
 })
 
 jb.component('studio.refreshPreview', {

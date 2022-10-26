@@ -16,7 +16,7 @@
 <div id="main" style="background-color: var(--jb-editor-background);width:1280px; margin-left: 2px"> </div>
 <script>
   const project = /host=test/.test(location.href) ? 'tests' : location.pathname.split('/')[3]
-	jbInit('studio',{ projects: ['studio', project], plugins: ['space'] }).then(()=>{
+	jbInit('studio',{ projects: ['studio', project], plugins: jb_plugins }).then(()=>{
     jb.spy.initSpyByUrl && jb.spy.initSpyByUrl()
     jb.exec({$: 'defaultTheme'})
     jb.ui.renderWidget(({$: 'studio.main'}), main)

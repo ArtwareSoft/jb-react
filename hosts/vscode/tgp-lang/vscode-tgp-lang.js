@@ -12,7 +12,7 @@ globalThis.jbFileSymbols = fileSymbolsFunc // function defined below
  
 async function activate(context) {
     // TODO: change to load the Project instead of studio and tests
-    globalThis.jb = globalThis.jb || (globalThis.jbInit && await jbInit('jbart-lsp-server',{projects: ['studio','tests'], plugins: ['vscode','space'], doNoInitLibs: true}))
+    globalThis.jb = globalThis.jb || (globalThis.jbInit && await jbInit('jbart-lsp-server',{projects: ['studio','tests'], plugins: ['vscode', ...jb_plugins], doNoInitLibs: true}))
     jb.initializeLibs(['utils','watchable','immutable','watchableComps','tgp','tgpTextEditor','vscode'])
     jb.vscode.initVscodeAsHost()
     // try {
