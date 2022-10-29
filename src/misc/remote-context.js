@@ -52,10 +52,10 @@ jb.extension('remoteCtx', {
         return Object.assign({$: 'runCtx', id: runCtx.id, path: [srcPath,path].filter(x=>x).join('~'), param, profile: profNoJS, data: usingData ? jb.remoteCtx.stripData(runCtx.data) : null, vars}, 
             Object.keys(params).length ? {cmpCtx: {params} } : {})
     },
-    serailizeCtx(ctx) { return JSON.stringify(jb.remoteCtx.stripCtx(ctx)) },
+    //serailizeCtx(ctx) { return JSON.stringify(jb.remoteCtx.stripCtx(ctx)) },
     deStrip(data) {
-        if (typeof data == 'string' && data.match(/^__JBART_FUNC:/))
-            return eval(data.slice(14))
+        if (typeof data == 'string' && data.match(/^@js@/))
+            return eval(data.slice(4))
         const stripedObj = data && typeof data == 'object' && jb.objFromEntries(jb.entries(data).map(e=>[e[0],jb.remoteCtx.deStrip(e[1])]))
         if (stripedObj && data.$ == 'runCtx')
             return (ctx2,data2) => (new jb.core.jbCtx().ctx({...stripedObj})).extendVars(ctx2,data2).runItself()
@@ -72,7 +72,7 @@ jb.extension('remoteCtx', {
     },
     stripJSFromProfile(profile) {
         if (typeof profile == 'function')
-            return `__JBART_FUNC: ${profile.toString()}`
+            return `@js@${profile.toString()}`
         else if (Array.isArray(profile))
             return profile.map(val => jb.remoteCtx.stripJS(val))
         else if (typeof profile == 'object')
@@ -80,7 +80,7 @@ jb.extension('remoteCtx', {
         return profile
     },
     stripJS(val) {
-        return typeof val == 'function' ? `__JBART_FUNC: ${val.toString()}` : jb.remoteCtx.stripData(val)
+        return typeof val == 'function' ? `@js@${val.toString()}` : jb.remoteCtx.stripData(val)
     },
     serializeCmp(compId) {
         if (!jb.comps[compId])

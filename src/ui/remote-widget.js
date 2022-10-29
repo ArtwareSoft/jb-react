@@ -70,7 +70,7 @@ jb.component('remote.distributedWidget', {
       {id: 'control', type: 'control', dynamic: true },
       {id: 'backend', type: 'jbm', defaultValue: jbm.self() },
       {id: 'frontend', type: 'jbm' },
-      {id: 'selector', as: 'string', defaultValue: 'body', description: 'root selector to put widget in. e.g. #main' },
+      {id: 'selector', as: 'string', description: 'root selector to put widget in. e.g. #main' },
     ],
     impl: remote.action(runActions(
         Var('widgetId', widget.newId()),
@@ -117,18 +117,18 @@ jb.component('remote.widget', {
 })
 
 jb.component('action.renderXwidget', {
-    type: 'action',
-    params: [
-        {id: 'selector', as: 'string', defaultValue: 'body' },
-        {id: 'widgetId', as: 'string' },
-    ],
-    impl: (ctx,selector,widgetId) => {
+  type: 'action',
+  params: [
+    {id: 'selector', as: 'string'},
+    {id: 'widgetId', as: 'string'}
+  ],
+  impl: (ctx,selector,widgetId) => {
         const elem = selector ? jb.ui.widgetBody(ctx).querySelector(selector) : jb.ui.widgetBody(ctx)
         if (!elem)
             return jb.logError('renderXwidget - can not find top elem',{body: jb.ui.widgetBody(ctx), ctx,selector})
         jb.ui.renderWidget({$: 'widget.frontEndCtrl', widgetId: widgetId}, elem)
     },
-    dependency: [ widget.frontEndCtrl() ]
+  dependency: [widget.frontEndCtrl()]
 })
 
 jb.extension('ui','headless', {

@@ -58,7 +58,7 @@ jb.component('dialogFeature.studioPick', {
 
     method('hoverOnElem', (ctx,{}) => {
       const el = ctx.data
-      Object.assign(ctx.vars.dialogData,{ elem: el, path: jb.path(el,'debug.path') })
+      Object.assign(ctx.vars.dialogData,{ elem: el, path: jb.path(el,'debug.path') || '' })
       ctx.run(toggleBooleanValue('%$studio/refreshPick%')) // trigger for refreshing the dialog
     }),
     method('endPick', runActions(
@@ -133,7 +133,7 @@ jb.extension('studio','pick', {
     const mousePos = { x: e.pageX - window.pageXOffset, y: e.pageY  - window.pageYOffset }
     const elems = window.document.elementsFromPoint(mousePos.x, mousePos.y);
     const results = jb.utils.unique(elems.flatMap(el=>jb.ui.parents(el,{includeSelf: true}))
-        .filter(el => el && el.getAttribute && el.getAttribute('jb-ctx') && predicate(jb.path(el,'debug.path'))))
+        .filter(el => el && el.getAttribute && el.getAttribute('jb-ctx') && predicate(jb.path(el,'debug.path') || '')))
         // .map( el => ({el, ctxId: checkCtxId(el.getAttribute('pick-ctx')) || checkCtxId(el.getAttribute('jb-ctx')) }))
         // .filter(({ctxId}) =>  ctxId), ({ctxId}) => ctxId)
     if (results.length == 0) return [];

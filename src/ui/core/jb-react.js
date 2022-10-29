@@ -550,7 +550,6 @@ jb.extension('ui', 'react', {
             jb.ui.runCtxActionAndUdateCmpState(ctx,data,vars)
         }
     },
-    resourceChange: () => jb.db.useResourcesHandler(h=>h.resourceChange),
     ctrl(origCtx,options) {
         const styleByControl = jb.path(origCtx,'cmpCtx.profile.$') == 'styleByControl'
         const $state = (origCtx.vars.$refreshElemCall || styleByControl) ? origCtx.vars.$state : {}

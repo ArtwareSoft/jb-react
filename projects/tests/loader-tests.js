@@ -6,24 +6,23 @@ jb.component('loaderTest.treeShake', {
 })
 
 jb.component('loaderTest.treeShake.itemlist', {
-  impl: dataTest({
-    calculate: pipeline(() => jb.treeShake.treeShake(['itemlist'],{}), join(',')),
-    expectedResult: and(contains('writeValue'),contains('#ui.vdomDiff'))
-  })
+  impl: dataTest(
+    pipeline(() => jb.treeShake.treeShake(['itemlist'],{}), join(',')),
+    and(contains('writeValue'), contains('#ui.vdomDiff'))
+  )
 })
 
 jb.component('loaderTest.treeShake.big', {
-  impl: dataTest({
-    calculate: pipeline(() => jb.treeShake.code(jb.treeShake.treeShake('widget.headless,call,editableText,editableText.codemirror'.split(','),{}))),
-    expectedResult: contains('jb.ui.h')
-  })
+  impl: dataTest(
+    pipeline(
+      () => jb.treeShake.code(jb.treeShake.treeShake('widget.headless,call,editableText,editableText.codemirror'.split(','),{}))
+    ),
+    contains('jb.ui.h')
+  )
 })
 
 jb.component('loaderTest.treeShake.funcDef', {
-  impl: dataTest({
-    calculate: pipeline(() => jb.treeShake.treeShake(['#utils.toSynchArray'],{}), join(',')),
-    expectedResult: contains('#callbag.fromIter')
-  })
+  impl: dataTest(pipeline(() => jb.treeShake.treeShake(['#utils.toSynchArray'],{}), join(',')), contains('#callbag.fromIter'))
 })
 
 jb.component('loaderTest.runOnWorker', {
@@ -33,4 +32,12 @@ jb.component('loaderTest.runOnWorker', {
     calculate: remote.data(pipeline('hello'), jbm.byUri('tests•dynaWorker')),
     expectedResult: '%%==hello'
   })
+})
+
+jb.component('test.compWithEscInFunc', {
+  impl: () => '\\'
+})
+
+jb.component('loaderTest.treeShake.compToStrEsc', {
+  impl: dataTest(ctx => jb.treeShake.compToStr('test.compWithEscInFunc'), notContains('\\\\\\'))
 })

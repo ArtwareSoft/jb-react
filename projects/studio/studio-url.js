@@ -52,7 +52,7 @@ jb.component('urlHistory.mapStudioUrlToResource', {
         const {pipe, fromIter, subscribe,merge,create,map,filter} = jb.callbag
         const browserUrlEm = create(obs=> jb.ui.location.listen(x=> obs(x)))
 
-        const databindEm = pipe(jb.ui.resourceChange(),
+        const databindEm = pipe(jb.db.useResourcesHandler(h=>h.resourceChange),
             filter(e=> e.path[0] == resource && params.indexOf(e.path[1]) != -1),
             map(_=> jb.db.resource(resource)),
             filter(obj=> obj[params[0]]),

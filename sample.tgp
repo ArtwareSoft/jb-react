@@ -1,0 +1,102 @@
+dsl core;
+type data;
+type action;
+
+plus = comp {
+  category: 'math:80',
+  params: [
+    { x, type: number, mandatory: true },
+    { y, type: number, mandatory: true },
+  ],
+  impl : () => x + y
+}
+
+dsl studio;
+using dsl core;
+
+openProperties = comp {
+  type: action,
+  params: [
+    { #focus, type: boolean },
+    { #innerPath, type: string }
+  ],
+  contextVars: [
+      { #path, type: string }
+  ],
+  impl: {
+    path = currentProfilePath();
+    tgp.compName(path) && openDialog {
+        style: studioFloating {id: 'studio-properties', width: 520},
+        content: studio.properties {path, innerPath, focus},
+        title: pipeline(
+            {
+                title: tgp.shortTitle(path),
+                comp: tgp.compName(path)
+            },
+            comp == title ? comp : '%comp% %title%',
+            'Properties of %%'
+        ),
+        features: [
+            feature.keyboardShortcut('Ctrl+Left', studio.openControlTree()),
+            dialogFeature.resizer()
+        ]
+    }
+  )
+})
+
+kinds of blocks: {
+    {#key1, !mandatory, path, ...otherObj, [aa]: 3, [...entries] } <=> { id: 'key1', mandatory: true, path: path }
+    profile
+        profName { prop1: val1, prop2: val2, prop3}
+        profName { x1<sticky> = xxx(); prop1: val1, prop2: val2, prop3}
+    simple object
+        like in param, or object def 
+        no comp name before
+        first param with no value means { id: 'xx' }
+        param with no values later means { mandatory: true }
+        supports { ...xx}
+    executionBlock - tgp data and actions
+    executionBlock - js
+
+bnf:
+profile: byValue | byName
+byValue: profileName '(' (varExp ';')* ( valueExp ',' )+ valueExp ')'
+dataProfile: profile ofType data
+actionProfile: profile ofType action
+dataExp: 
+    primitiveVal | objExp | arrayExp | varName | paramName | dataProfile | pipelineExp | jsExp
+    | (dataExp '||')* dataExp
+
+pipelineExp: 
+    ( pipeElem '|' )+ dataExp InObjContext // map - all vars and params need $ prefix
+    ( pipeElem '*|' )+ dataExp InObjContext // flatmap
+    ( pipeElem '-|' )+ boolExp InObjContext // filter
+    ( pipeElem '+|' )+ objExp InObjContext// enrich props/cols
+    ( pipeElem '>|' )+ dataExp // aggregate
+
+pipeElem:
+
+
+people -| name.length < 20 | phones = phone >| join(',') | `${name} ${phones}`
+people -| name.length < 20 | `${name} ${phone >| join(',')}`
+
+people -| beginsWith(name, 'aa') && age > 33
+countries = people >| groupBy(country) +| { avg: items.salary >| avg }
+people >| { 
+    people,
+    countries: groupBy(country) +| { avg: items.salary >| avg } 
+}
+
+
+actionExp: 
+    actionProfile | runActionsExp | actionIfExp | actionIfElseExp | jsExp
+{ action1() ; action2 (x,y); bool && action3(), bool ? action3() : action4(), bool ? action3 bool2 ? action4 bool3 ? action5 : action6;
+ (param1,param2; var1, var2) => jsCode }
+
+
+boolExp: 
+    profile ofType boolean | 
+    boolExp || boolExp | boolExp && boolExp | '(' boolExp ')'
+    dataExp == dataExp | dataExp > dataExp ..
+
+

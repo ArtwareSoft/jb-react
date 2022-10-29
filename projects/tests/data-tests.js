@@ -424,7 +424,7 @@ jb.component('dataTest.assign', {
 })
 
 jb.component('dataTest.obj', {
-  impl: dataTest(pipeline(obj(prop('a', 1), prop('b', 2)), '%a%-%b%', {'$': 'object', res: '%%'}, '%res%'), contains('1-2'))
+  impl: dataTest(pipeline(obj(prop('a', 1), prop('b', 2)), '%a%-%b%', '\n%%\n', {'$': 'object', res: '%%'}, '%res%'), contains('1-2'))
 })
 
 jb.component('dataTest.prettyPrintMacro', {

@@ -46,7 +46,7 @@ jb.extension('treeShake', {
             ...vals.filter(x=> x && typeof x == 'object').flatMap(x => jb.treeShake.dependentOnObj(x, onlyMissing)),
             ...vals.filter(x=> x && typeof x == 'function').flatMap(x => jb.treeShake.dependentOnFunc(x, onlyMissing)),
             ...vals.filter(x=> x && typeof x == 'string' && x.indexOf('%$') != -1).flatMap(x => jb.treeShake.dependentResources(x, onlyMissing)),
-            ...vals.filter(x=> x && typeof x == 'string' && x.indexOf('__JBART_FUNC') == 0).flatMap(x => jb.treeShake.dependentOnFunc(x, onlyMissing)),
+            ...vals.filter(x=> x && typeof x == 'string' && x.indexOf('@js@') == 0).flatMap(x => jb.treeShake.dependentOnFunc(x, onlyMissing)),
         ].filter(id=> !onlyMissing || jb.treeShake.missing(id)).filter(x=> x!= 'runCtx')
     },
     dependentOnFunc(func, onlyMissing) {
@@ -72,12 +72,13 @@ jb.extension('treeShake', {
         const cmps = ids.filter(cmpId => jb.comps[cmpId])
         const topLevel = jb.utils.unique(funcs.filter(x=>x.match(/#[a-zA-Z0-9_]+$/))).map(x=>x.slice(1))
         const topLevelCode = topLevel.length && `Object.assign(jb, ${jb.utils.prettyPrint(jb.objFromEntries(topLevel.map(x=>[x,jb.path(jb,x)])))}\n)` || ''
-        const libsFuncs = jb.utils.unique(funcs.filter(x=>!x.match(/#[a-zA-Z0-9_]+$/))).map(x=>x.slice(1))
+        const libsFuncs1 = jb.utils.unique(funcs.filter(x=>!x.match(/#[a-zA-Z0-9_]+$/))).map(x=>x.slice(1))
             .filter(x=>jb.path(jb,x)).map(funcId =>({funcId, lib: funcId.split('.')[0], ext: jb.path(jb,funcId).extId}))
             .filter(x=>!x.funcId.match(/\.__extensions/))
-        const noExt = libsFuncs.filter(x=>!x.ext)
-        if (noExt.length)
-            debugger
+        const libsFuncs = libsFuncs1.filter(x=>x.ext)
+        const withoutExt = libsFuncs1.filter(x=>!x.ext).map(x=>x.funcId).join(', ')
+        if (withoutExt)
+            jb.log('treeshake lib functions defined out of extension', {withoutExt})
         const extensions = jb.utils.unique(libsFuncs.map(x=>`${x.lib}#${x.ext}`)).map(x=>x.split('#'))
         const libsCode = extensions.map(([lib,ext]) => {
             const extObj = {
@@ -104,7 +105,8 @@ jb.extension('treeShake', {
         const compWithLocation = { ...jb.comps[cmpId], location : jb.comps[cmpId][jb.core.location]}
         const content = JSON.stringify(compWithLocation,
             (k,v) => typeof v === 'function' ? '@@FUNC'+v.toString()+'FUNC@@' : v,2)
-                .replace(/"@@FUNC([^@]+)FUNC@@"/g, (_,str) => str.replace(/\\\\n/g,'@@__N').replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n').replace(/\\t/g,'').replace(/@@__N/g,'\\\\n') )
+                .replace(/"@@FUNC([^@]+)FUNC@@"/g, (_,str) => str.replace(/\\\\n/g,'@@__N').replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n').replace(/\\t/g,'')
+                    .replace(/@@__N/g,'\\\\n').replace(/\\\\/g,'\\') )
         return `jb.component('${cmpId}', ${content})`
     },
     async bringMissingCode(obj) {
