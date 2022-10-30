@@ -364,15 +364,15 @@ jb.component('frontEnd.selectionKeySourceService', {
   type: 'feature',
   description: 'assign cmp.selectionKeySource with observable for meta-keys, also stops propagation !!!',
   params: [
-    {id: 'autoFocs', as: 'boolean' },
+    {id: 'autoFocs', as: 'boolean', type: 'boolean'}
   ],
   impl: features(
     service.registerBackEndService({
       id: 'selectionKeySource',
-      service: obj(prop('cmpId', '%$cmp/cmpId%')), 
-      allowOverride: true 
+      service: obj(prop('cmpId', '%$cmp/cmpId%')),
+      allowOverride: true
     }),
-    frontEnd.var('autoFocs','%$autoFocs%'),
+    frontEnd.var('autoFocs', '%$autoFocs%'),
     frontEnd.prop('selectionKeySource', (ctx,{cmp,el,autoFocs}) => {
       if (el.keydown_src) return
       const {pipe, takeUntil,subject} = jb.callbag
@@ -386,7 +386,7 @@ jb.component('frontEnd.selectionKeySourceService', {
         return true
       }
       if (autoFocs)
-        jb.ui.focus(el,'selectionKeySource')
+        jb.ui.focus(el,'selectionKeySource',ctx)
       jb.log('register selectionKeySource',{cmp,cmp,el,ctx})
       return pipe(el.keydown_src, takeUntil(cmp.destroyed))
     })

@@ -52,7 +52,7 @@ jb.component('inplaceEdit.openToolbarOfLastEdit', {
   impl: ctx => {
       const path = ctx.run(studio.lastEdit())
       jb.delay(500).then(()=>{
-        const _window = jb.studio.previewWindow;
+        const _window = jb.studio.previewWindow();
         const el = Array.from(_window.document.querySelectorAll('[jb-ctx]'))
           .filter(e=> jb.path(_window.jb.ctxDictionary[e.getAttribute('jb-ctx')],'path') == path)[0]
         if (el)

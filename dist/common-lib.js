@@ -14,52 +14,54 @@ Object.assign(jb, {
     })
     funcs.forEach(k=>lib[k] = extension[k])
     const phase =  extension.$phase || { core: 1, utils: 5, db: 10, watchable: 20}[libId] || 100
-    lib.__extensions[extId] = { libId, phase, init: extension.initExtension, initialized, requireLibs: extension.$requireLibs, requireFuncs: extension.$requireFuncs }
+    lib.__extensions[extId] = { libId, phase, init: extension.initExtension, initialized, 
+      requireLibs: extension.$requireLibs, requireFuncs: extension.$requireFuncs, funcs,
+      location: jb.calcSourceLocation(new Error().stack.split(/\r|\n/).slice(2)) }
 
     if (jb.noSupervisedLoad && extension.initExtension) {
       Object.assign(lib, extension.initExtension.apply(lib))
       lib.__extensions[extId].initialized = true
     }
   },
-  initializeLibs(libs) {
+  async initializeLibs(libs) {
     libs.flatMap(l => Object.values(jb[l].__extensions)).sort((x,y) => x.phase - y.phase )
       .filter(ext => ext.init && !ext.initialized)
       .forEach(ext => {
           ext.initialized = true
           Object.assign(jb[ext.libId], ext.init.apply(jb[ext.libId]))
       })
-    const baseUrl = jb.path(jb.codeLoader,'baseUrl')
     const libsToLoad = libs.flatMap(l => Object.values(jb[l].__extensions)).flatMap(ext => ext.requireLibs || []).filter(url => !jb.frame.jb.__requiredLoaded[url])
-    return Promise.all(libsToLoad.map( url => Promise.resolve(jb_loadFile(url,baseUrl,jb)).then(() => jb.frame.jb.__requiredLoaded[url] = true) ))
+    try {
+      await Promise.all(libsToLoad.map( url => Promise.resolve(jbloadJSFile(url,jb,{noSymbols: true})).then(() => jb.frame.jb.__requiredLoaded[url] = true) ))
+    } catch (e) {
+      jb.logException(e,'error loading external library')
+    }
   },
 
+  calcSourceLocation(errStack) {
+    try {
+        const line = errStack.map(x=>x.trim()).filter(x=>x && !x.match(/^Error/) && !x.match(/at Object.component/)).shift()
+        const location = line ? (line.split('at ').pop().split('eval (').pop().split(' (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
+        //comp[jb.core.project] = comp[jb.core.location][0].split('?')[1]
+        location[0] = location[0].split('?')[0]
+        return location
+    } catch(e) {
+      console.log(e)
+    }      
+  },
   component(id,comp) {
-    // todo: move functionality to onAddComponent hook
     if (!jb.core.location) jb.initializeLibs(['core'])
     if (comp.location) {
-        comp[jb.core.location] =  comp.location
+        comp[jb.core.location] = comp.location
         delete comp.location
     } else {
-      try {
-//        if (jb.frame.jbInvscode) debugger
-        const errStack = new Error().stack.split(/\r|\n/).map(x=>x.trim())
-        const line = errStack.filter(x=>x && !x.match(/^Error/) && !x.match(/at Object.component/)).shift()
-        comp[jb.core.location] = line ? (line.split('at ').pop().split('eval (').pop().split(' (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
-        comp[jb.core.project] = comp[jb.core.location][0].split('?')[1]
-        comp[jb.core.location][0] = comp[jb.core.location][0].split('?')[0]
-      } catch(e) {
-        console.log(e)
-      }
+        comp[jb.core.location] = jb.calcSourceLocation(new Error().stack.split(/\r|\n/))
     }
 
-    if (comp.watchableData !== undefined) {
-      jb.comps[jb.db.addDataResourcePrefix(id)] = comp
-      return jb.db.resource(jb.db.removeDataResourcePrefix(id),comp.watchableData)
-    }
-    if (comp.passiveData !== undefined) {
-      jb.comps[jb.db.addDataResourcePrefix(id)] = comp
-      return jb.db.passive(jb.db.removeDataResourcePrefix(id),comp.passiveData)
-    }
+    const h = jb.core.onAddComponent.find(x=>x.match(id,comp))
+    if (h && h.register)
+      return h.register(id,comp)
+
     jb.comps[id] = comp;
 
     // fix as boolean params to have type: 'boolean'
@@ -67,7 +69,6 @@ Object.assign(jb, {
       if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
         p.type = 'boolean'
     })
-    comp[jb.core.loadingPhase] = jb.frame.jbLoadingPhase
   },
   noSupervisedLoad: true
 })
@@ -77,26 +78,26 @@ jb.extension('core', {
     Object.assign(jb, {
       frame: globalThis,
       comps: {}, ctxDictionary: {},
-      __requiredLoaded: {}
+      __requiredLoaded: {},
     })
     return {
       ctxCounter: 0,
       project: Symbol.for('project'),
       location: Symbol.for('location'),
       loadingPhase: Symbol.for('loadingPhase'),
-      jstypes: jb.core._jsTypes()
+      jstypes: jb.core._jsTypes(),
+      onAddComponent: []
     }
   },
   run(ctx,parentParam,settings) {
     //  ctx.profile && jb.log('core request', [ctx.id,...arguments])
-      if (ctx.probe && ctx.probe.outOfTime)
-        return
-      if (jb.ctxByPath) jb.ctxByPath[ctx.path] = ctx
+      if (ctx.probe && !ctx.probe.active) return
       const runner = () => jb.core.doRun(...arguments)
       Object.defineProperty(runner, 'name', { value: `${ctx.path} ${ctx.profile && ctx.profile.$ ||''}-prepare param` })
       let res = runner(...arguments)
-      if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
+      if (ctx.probe)
           res = ctx.probe.record(ctx,res) || res
+      
     //  ctx.profile && jb.log('core result', [ctx.id,res,ctx,parentParam,settings])
       if (typeof res == 'function') jb.utils.assignDebugInfoToFunc(res,ctx)
       return res
@@ -347,10 +348,17 @@ jb.extension('core', {
 
 // core utils promoted for easy usage
 Object.assign(jb, {
-    log(logName, record, options) { jb.spy && jb.spy.log && jb.spy.log(logName, record, options) },
+    log(logName, record, options) { jb.spy && jb.spy.enabled && jb.spy.log(logName, record, options) },
+    assert(cond, logObj, err) { 
+      if (cond) return
+      jb.spy && jb.spy.enabled && jb.logError(err,logObj);
+      return true
+    },
     logError(err,logObj) {
-      jb.frame.console && jb.frame.console.error('%c Error: ','color: red', err, logObj)
-      jb.log('error',{err , ...logObj})
+      const ctx = jb.path(logObj,'ctx')
+      const stack = ctx && jb.utils.callStack(ctx)
+      jb.frame.console && jb.frame.console.error('%c Error: ','color: red', err, stack, logObj)
+      jb.log('error',{err , ...logObj, stack })
     },
     logException(e,err,logObj) {
       jb.frame.console && jb.frame.console.log('%c Exception: ','color: red', err, e, logObj)
@@ -417,7 +425,7 @@ jb.extension('utils', { // jb core utils
       const ctxStack=[]; 
       for(let innerCtx=ctx; innerCtx; innerCtx = innerCtx.cmpCtx) 
         ctxStack.push(innerCtx)
-      return ctxStack.map(ctx=>ctx.callerPath)
+      return [ctx.path, ...ctxStack.map(ctx=>ctx.callerPath).slice(1)]
     },    
     addDebugInfo(f,ctx) { f.ctx = ctx; return f},
     assignDebugInfoToFunc(func, ctx) {
@@ -431,6 +439,7 @@ jb.extension('utils', { // jb core utils
 jb.extension('utils', { // generic utils
     isEmpty: o => Object.keys(o).length === 0,
     isObject: o => o != null && typeof o === 'object',
+    isPrimitiveValue: val => ['string','boolean','number'].indexOf(typeof val) != -1,
     tryWrapper(f,msg,ctx) { try { return f() } catch(e) { jb.logException(e,msg,{ctx}) }},
     flattenArray(items) {
       let out = [];
@@ -449,6 +458,12 @@ jb.extension('utils', { // generic utils
         return jb.utils.isPromise(v)
       else if (typeof v === 'function')
         return jb.callbag.isCallbag(v)
+    },
+    resolveDelayed(delayed, synchCallbag) {
+      if (jb.utils.isPromise(delayed))
+        return Promise.resolve(delayed)
+      if (! jb.asArray(delayed).find(v=> jb.callbag.isCallbag(v) || jb.utils.isPromise(v))) return delayed
+      return jb.utils.toSynchArray(delayed, synchCallbag)
     },
     toSynchArray(item, synchCallbag) {
       if (jb.utils.isPromise(item))
@@ -517,8 +532,7 @@ jb.extension('utils', { // generic utils
     sessionStorage(id,val) {
       if (!jb.frame.sessionStorage) return
       return val == undefined ? JSON.parse(jb.frame.sessionStorage.getItem(id)) : jb.frame.sessionStorage.setItem(id,JSON.stringify(val))
-    },
-    eval: (str,frame) => { try { return (frame || jb.frame).eval('('+str+')') } catch (e) { return Symbol.for('parseError') } },
+    }
 })
 
 // common generic promoted for easy usage
@@ -709,6 +723,28 @@ jb.extension('expression', {
 })
 ;
 
+jb.extension('db', 'onAddComponent', {
+  $phase :2,
+  initExtension() { 
+    jb.core.onAddComponent.push({ 
+      match:(id,comp) => comp.watchableData !== undefined,
+      register: (id,comp) => {
+        jb.comps[jb.db.addDataResourcePrefix(id)] = comp
+        return jb.db.resource(jb.db.removeDataResourcePrefix(id),comp.watchableData)  
+      }
+    })
+    jb.core.onAddComponent.push({ 
+      match:(id,comp) => comp.passiveData !== undefined,
+      register: (id,comp) => {
+        jb.comps[jb.db.addDataResourcePrefix(id)] = comp
+        return jb.db.passive(jb.db.removeDataResourcePrefix(id),comp.passiveData)  
+      }
+    })
+  },
+  removeDataResourcePrefix: id => id.indexOf('dataResource.') == 0 ? id.slice('dataResource.'.length) : id,
+  addDataResourcePrefix: id => id.indexOf('dataResource.') == 0 ? id : 'dataResource.' + id,
+})
+
 jb.extension('db', {
     initExtension() { return { 
         passiveSym: Symbol.for('passive'),
@@ -808,19 +844,19 @@ jb.extension('db', {
     isValid: ref => jb.db.safeRefCall(ref, h=>h.isValid(ref)),
     pathOfRef: ref => jb.db.safeRefCall(ref, h=>h.pathOfRef(ref)),
     refOfPath: path => jb.db.watchableHandlers.reduce((res,h) => res || h.refOfPath(path),null),
-    removeDataResourcePrefix: id => id.indexOf('dataResource.') == 0 ? id.slice('dataResource.'.length) : id,
-    addDataResourcePrefix: id => id.indexOf('dataResource.') == 0 ? id : 'dataResource.' + id,
 })
 
 ;
 
 Object.assign(jb, {
-    defComponents: (items,def) => items.forEach(item=>def(item))
+    defComponents: (items,def) => items.forEach(item=>def(item)),
+    defOperator: (id, {detect, extractAliases, registerComp}) => operators.push({id, detect, extractAliases, registerComp})
 })
 
 jb.extension('macro', {
     initExtension() {
-        return { proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro')}
+        return { proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro') }
+        // for loader jb.macro.importAll()
     },
     ns: nsIds => {
         nsIds.split(',').forEach(nsId => jb.macro.registerProxy(nsId))
@@ -871,8 +907,8 @@ jb.extension('macro', {
         if (!comp)
             return { $: cmpId, $byValue: args }
         const params = comp.params || []
-        const firstParamIsArray = (params[0] && params[0].type || '').indexOf('[]') != -1
-        if (params.length == 1 && firstParamIsArray) // pipeline, or, and, plus
+        const singleParamAsArray = (params[0] && params[0].type || '').indexOf('[]') != -1
+        if (params.length == 1 && singleParamAsArray) // pipeline, or, and, plus
             return { $: cmpId, [params[0].id]: args }
         const macroByProps = args.length == 1 && typeof args[0] === 'object' &&
             (params[0] && args[0][params[0].id] || params[1] && args[0][params[1].id])
@@ -886,12 +922,12 @@ jb.extension('macro', {
             return { $: cmpId, [params[0].id]: args[0], [params[1].id]: args[1] }
         debugger;
     },
-    fixProfile(profile) {
+    fixProfile(profile,origin) {
         if (!profile || !profile.constructor || ['Object','Array'].indexOf(profile.constructor.name) == -1) return
-        Object.values(profile).forEach(v=>jb.macro.fixProfile(v))
+        Object.values(profile).forEach(v=>jb.macro.fixProfile(v,origin))
         if (profile.$byValue) {
           if (!jb.comps[profile.$])
-            return jb.logError('fixProfile - missing component', {compId: profile.$, profile})
+            return jb.logError(`fixProfile - missing component ${profile.$} at ${origin}`, {compId: profile.$, origin, profile})
           Object.assign(profile, jb.macro.argsToProfile(profile.$, profile.$byValue))
           delete profile.$byValue
         }
@@ -902,7 +938,8 @@ jb.extension('macro', {
         if (jb.frame[proxyId])
             return jb.logError(`register macro proxy: ${proxyId} + ' is reserved by system or libs. please use a different name`,{obj:jb.frame[proxyId]})
         
-        jb.frame[proxyId] = jb.macro.proxies[proxyId] = jb.macro.newProxy(proxyId)
+        jb.macro.proxies[proxyId] = jb.macro.newProxy(proxyId)
+        //jb.frame[proxyId] = jb.macro.proxies[proxyId]
     }
 })
 
@@ -929,15 +966,17 @@ jb.component('remark', {
   macro: (result, self) => Object.assign(result,{ remark: self.remark })
 });
 
-jb.extension('codeLoader', {
+jb.extension('treeShake', {
     initExtension() {
         return {
-            clientComps: ['#extension','#core.run','#component','#jbm.extendPortToJbmProxy','#jbm.portFromFrame','#spy.initSpy','#codeLoader.getCodeFromRemote','#cbHandler.terminate','codeLoader.getCode','waitFor'],
+            clientComps: ['#extension','#core.run','#component','#jbm.extendPortToJbmProxy','#jbm.portFromFrame','#spy.initSpy','#treeShake.getCodeFromRemote','#cbHandler.terminate','treeShake.getCode','waitFor'],
             existingFEPaths: {},
-            loadedFElibs: {},
+            FELibLoaderPromises: {},
+            loadingCode: {},
             server: jb.frame.jbInit,
-            serverUrl: jb.frame.jbCodeLoaderServerUrl,
-            getJSFromUrl: jb.frame.jbGetJSFromUrl
+            serverUrl: jb.frame.jbTreeShakeServerUrl,
+            getJSFromUrl: jb.frame.jbGetJSFromUrl,
+            baseUrl: typeof jb.frame.jbBaseUrl != 'undefined' ? jb.frame.jbBaseUrl : ''
         }
     },
     existing() {
@@ -948,23 +987,23 @@ jb.extension('codeLoader', {
     },
     treeShake(ids, existing) {
         const _ids = ids.filter(x=>!existing[x])
-        const dependent = jb.utils.unique(_ids.flatMap(id => jb.codeLoader.dependent(id).filter(x=>!existing[x])))
+        const dependent = jb.utils.unique(_ids.flatMap(id => jb.treeShake.dependent(id).filter(x=>!existing[x])))
         const idsWithoutPartial = jb.utils.unique(_ids.map(id=>id.split('~')[0]))
         if (!dependent.length) return idsWithoutPartial
         const existingExtended = jb.objFromEntries([...Object.keys(existing), ..._ids ].map(x=>[x,true]) )
-        return [ ...idsWithoutPartial, ...jb.codeLoader.treeShake(dependent, existingExtended)]
+        return [ ...idsWithoutPartial, ...jb.treeShake.treeShake(dependent, existingExtended)]
     },
     dependent(id) {
         const func = id[0] == '#' && id.slice(1)
         if (func && jb.path(jb,func) !== undefined)
-            return jb.codeLoader.dependentOnFunc(jb.path(jb,func))
+            return jb.treeShake.dependentOnFunc(jb.path(jb,func))
         else if (jb.comps[id])
-            return jb.codeLoader.dependentOnObj(jb.comps[id])
+            return jb.treeShake.dependentOnObj(jb.comps[id])
         else if (id.match(/~/)) 
             return [jb.path(jb.comps,id.split('~'))].filter(x=>x)
-                .flatMap(obj=> typeof obj === 'function' ? jb.codeLoader.dependentOnFunc(obj) : jb.codeLoader.dependentOnObj(obj))
+                .flatMap(obj=> typeof obj === 'function' ? jb.treeShake.dependentOnFunc(obj) : jb.treeShake.dependentOnObj(obj))
         else
-            jb.logError('codeLoader: can not find comp', {id})
+            jb.logError('treeShake: can not find comp', {id})
         return []
     },
     dependentOnObj(obj, onlyMissing) {
@@ -972,10 +1011,11 @@ jb.extension('codeLoader', {
         const vals = Object.keys(obj).filter(k=>!obj.$ || isRemote.indexOf(`${obj.$}:${k}`) == -1).map(k=>obj[k])
         return [
             ...(obj.$ ? [obj.$] : []),
-            ...vals.filter(x=> x && typeof x == 'object').flatMap(x => jb.codeLoader.dependentOnObj(x, onlyMissing)),
-            ...vals.filter(x=> x && typeof x == 'function').flatMap(x => jb.codeLoader.dependentOnFunc(x, onlyMissing)),
-            ...vals.filter(x=> x && typeof x == 'string' && x.indexOf('__JBART_FUNC') == 0).flatMap(x => jb.codeLoader.dependentOnFunc(x, onlyMissing)),
-        ].filter(id=> !onlyMissing || jb.codeLoader.missing(id)).filter(x=> x!= 'runCtx')
+            ...vals.filter(x=> x && typeof x == 'object').flatMap(x => jb.treeShake.dependentOnObj(x, onlyMissing)),
+            ...vals.filter(x=> x && typeof x == 'function').flatMap(x => jb.treeShake.dependentOnFunc(x, onlyMissing)),
+            ...vals.filter(x=> x && typeof x == 'string' && x.indexOf('%$') != -1).flatMap(x => jb.treeShake.dependentResources(x, onlyMissing)),
+            ...vals.filter(x=> x && typeof x == 'string' && x.indexOf('@js@') == 0).flatMap(x => jb.treeShake.dependentOnFunc(x, onlyMissing)),
+        ].filter(id=> !onlyMissing || jb.treeShake.missing(id)).filter(x=> x!= 'runCtx')
     },
     dependentOnFunc(func, onlyMissing) {
         if (!func) debugger
@@ -985,22 +1025,28 @@ jb.extension('codeLoader', {
             .flatMap(({lib,funcs}) => funcs.map(f=>`#${lib}.${f.trim()}`))
         const funcUsage = [...funcStr.matchAll(/\bjb\.([a-zA-Z0-9_]+)\.?([a-zA-Z0-9_]*)\(/g)].map(e=>e[2] ? `#${e[1]}.${e[2]}` : `#${e[1]}`)
         const extraComps = [...funcStr.matchAll(/\/\/.?#jbLoadComponents:([ ,\.\-#a-zA-Z0-9_]*)/g)].map(e=>e[1]).flatMap(x=>x.split(',')).map(x=>x.trim()).filter(x=>x)
-        //jb.log('codeLoader dependent on func',{f: func.name || funcStr, funcDefs, funcUsage})
+        //jb.log('treeShake dependent on func',{f: func.name || funcStr, funcDefs, funcUsage})
         return [ ...(func.__initFunc ? [func.__initFunc] : []), ...funcDefs, ...funcUsage, ...extraComps]
-            .filter(x=>!x.match(/^#frame\./)).filter(id=> !onlyMissing || jb.codeLoader.missing(id))
+            .filter(x=>!x.match(/^#frame\./)).filter(id=> !onlyMissing || jb.treeShake.missing(id))
+    },
+    dependentResources(str, onlyMissing) {
+        return Array.from(str.matchAll(/%\$([^%\.\/]*)/g)).map(x=>`dataResource.${x[1]}`)
+            .filter(id => jb.comps[id])
+            .filter(id=> !onlyMissing || jb.treeShake.missing(id))
     },
     code(ids) {
-        jb.log('codeLoader code',{ids})
+        jb.log('treeShake code',{ids})
         const funcs = ids.filter(cmpId => !jb.comps[cmpId])
         const cmps = ids.filter(cmpId => jb.comps[cmpId])
         const topLevel = jb.utils.unique(funcs.filter(x=>x.match(/#[a-zA-Z0-9_]+$/))).map(x=>x.slice(1))
         const topLevelCode = topLevel.length && `Object.assign(jb, ${jb.utils.prettyPrint(jb.objFromEntries(topLevel.map(x=>[x,jb.path(jb,x)])))}\n)` || ''
-        const libsFuncs = jb.utils.unique(funcs.filter(x=>!x.match(/#[a-zA-Z0-9_]+$/))).map(x=>x.slice(1))
+        const libsFuncs1 = jb.utils.unique(funcs.filter(x=>!x.match(/#[a-zA-Z0-9_]+$/))).map(x=>x.slice(1))
             .filter(x=>jb.path(jb,x)).map(funcId =>({funcId, lib: funcId.split('.')[0], ext: jb.path(jb,funcId).extId}))
             .filter(x=>!x.funcId.match(/\.__extensions/))
-        const noExt = libsFuncs.filter(x=>!x.ext)
-        if (noExt.length)
-            debugger
+        const libsFuncs = libsFuncs1.filter(x=>x.ext)
+        const withoutExt = libsFuncs1.filter(x=>!x.ext).map(x=>x.funcId).join(', ')
+        if (withoutExt)
+            jb.log('treeshake lib functions defined out of extension', {withoutExt})
         const extensions = jb.utils.unique(libsFuncs.map(x=>`${x.lib}#${x.ext}`)).map(x=>x.split('#'))
         const libsCode = extensions.map(([lib,ext]) => {
             const extObj = {
@@ -1015,29 +1061,33 @@ jb.extension('codeLoader', {
             return `jb.extension('${lib}', '${ext}', ${extCode})`
         }).join('\n\n')
 
-        const compsCode = cmps.map(cmpId =>jb.codeLoader.compToStr(cmpId)).join('\n\n')
+        const compsCode = cmps.map(cmpId =>jb.treeShake.compToStr(cmpId)).join('\n\n')
             //jb.utils.prettyPrintComp(cmpId,jb.comps[cmpId],{noMacros: true})).join('\n\n')
-        return [topLevelCode,libsCode,compsCode,`jb.initializeLibs([${jb.utils.unique(libsFuncs.map(x=>x.lib)).map(l=>"'"+l+"'").join(',')}])`].join(';\n\n')
+        return [
+            topLevelCode,libsCode,compsCode,
+            `await jb.initializeLibs([${jb.utils.unique(libsFuncs.map(x=>x.lib)).map(l=>"'"+l+"'").join(',')}])`,
+        ].join(';\n')
 
     },
     compToStr(cmpId) {
         const compWithLocation = { ...jb.comps[cmpId], location : jb.comps[cmpId][jb.core.location]}
         const content = JSON.stringify(compWithLocation,
             (k,v) => typeof v === 'function' ? '@@FUNC'+v.toString()+'FUNC@@' : v,2)
-                .replace(/"@@FUNC([^@]+)FUNC@@"/g, (_,str) => str.replace(/\\\\n/g,'@@__N').replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n').replace(/\\t/g,'').replace(/@@__N/g,'\\\\n') )
+                .replace(/"@@FUNC([^@]+)FUNC@@"/g, (_,str) => str.replace(/\\\\n/g,'@@__N').replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n').replace(/\\t/g,'')
+                    .replace(/@@__N/g,'\\\\n').replace(/\\\\/g,'\\') )
         return `jb.component('${cmpId}', ${content})`
     },
     async bringMissingCode(obj) {
         const missing = getMissingProfiles(obj)
         if (missing.length) 
-            jb.log('codeLoader bring missing code',{obj, missing})
-        return Promise.resolve(jb.codeLoader.getCodeFromRemote(missing))
+            jb.log('treeShake bring missing code',{obj, missing})
+        return Promise.resolve(jb.treeShake.getCodeFromRemote(missing))
 
         function getMissingProfiles(obj) {
             if (obj && typeof obj == 'object') 
-                return jb.codeLoader.dependentOnObj(obj,true)
+                return jb.treeShake.dependentOnObj(obj,true)
             else if (typeof obj == 'function') 
-                return jb.codeLoader.dependentOnFunc(obj,true)
+                return jb.treeShake.dependentOnFunc(obj,true)
             return []
         }
     },
@@ -1045,55 +1095,60 @@ jb.extension('codeLoader', {
         return !(jb.comps[id] || id[0] == '#' && jb.path(jb, id.slice(1)))
     },
     async getCodeFromRemote(_ids) {
-        const ids = _ids.filter(id => jb.codeLoader.missing(id))
+        const ids = _ids.filter(id => jb.treeShake.missing(id))
         if (!ids.length) return
-        const vars = { ids: ids.join(','), existing: jb.codeLoader.existing().join(',') }
-        if (jb.codeLoader.serverUrl) {
-            const url = `${jbCodeLoaderServerUrl}/jb-${ids[0]}-x.js?ids=${vars.ids}&existing=${vars.existing}`.replace(/#/g,'-')
-            console.log(`codeLoader: ${url}`)
-            jb.log('codeLoader getCode',{url,ids})
-            return await jb['codeLoader'].getJSFromUrl(url)
+        const vars = { ids: ids.join(','), existing: jb.treeShake.existing().join(',') }
+        if (jb.treeShake.serverUrl) {
+            const url = `${jbTreeShakeServerUrl}/jb-${ids[0]}-x.js?ids=${vars.ids}&existing=${vars.existing}`.replace(/#/g,'-')
+            console.log(`treeShake: ${url}`)
+            jb.log('treeShake getCode',{url,ids})
+            return await jb['treeShake'].getJSFromUrl(url)
         }
 
         const stripedCode = {
             $: 'runCtx', path: '', vars,
-            profile: {$: 'codeLoader.getCode'}
+            profile: {$: 'treeShake.getCode'}
         }
-        jb.log('codeLoader request code from remote',{ids, stripedCode})
-        jb.codeLoader.loadingCode = true
-        return jb.codeLoaderJbm && jb.codeLoaderJbm['remoteExec'](stripedCode)
-            .then(code=> {
-                jb.log('codeLoader code arrived from remote',{ids, stripedCode, length: code.length, url: `${jb.uri}-${ids[0]}-x.js`, lines: 1+(code.match(/\n/g) || []).length })
+        jb.log('treeShake request code from remote',{ids, stripedCode})
+        jb.treeShake.loadingCode[vars.ids] = true
+        if (!jb.treeShake.codeServerJbm)
+            jb.logError(`treeShake - missing codeServer jbm at ${jb.uri}`,{ids})
+        return jb.treeShake.codeServerJbm && jb.treeShake.codeServerJbm['remoteExec'](stripedCode)
+            .then(async code=> {
+                jb.log('treeShake code arrived from remote',{ids, stripedCode, length: code.length, url: `${jb.uri}-${ids[0]}-x.js`, lines: 1+(code.match(/\n/g) || []).length })
                 try {
-                    jb.codeLoader.totalCodeSize = (jb.codeLoader.totalCodeSize || 0) + code.length
-                    eval(`(function(jb) {${code}})(jb)\n//# sourceURL=${jb.uri}-${ids[0]}-x.js` )
+                    jb.treeShake.totalCodeSize = (jb.treeShake.totalCodeSize || 0) + code.length
+                    await eval(`(async function(jb) {${code}})(jb)\n//# sourceURL=${jb.uri}-${ids[0]}-x.js` )
                 } catch(error) {
-                    jb.log('codeLoader eval error from remote',{error, ids, stripedCode})
+                    jb.log('treeShake eval error from remote',{error, ids, stripedCode})
                 } finally {
-                    jb.codeLoader.loadingCode = false
+                    delete jb.treeShake.loadingCode[vars.ids]
                 }
             })
     },
-    clientCode: () => jb.codeLoader.code(jb.codeLoader.treeShake(jb.codeLoader.clientComps,{})),
+    clientCode: () => jb.treeShake.code(jb.treeShake.treeShake(jb.treeShake.clientComps,{})),
     treeShakeFrontendFeatures(paths) { // treeshake the code of the FRONTEND features without the backend part
-        const _paths = paths.filter(path=>! jb.codeLoader.existingFEPaths[path]) // performance - avoid tree shake if paths were processed before 
+        const _paths = paths.filter(path=>! jb.treeShake.existingFEPaths[path]) // performance - avoid tree shake if paths were processed before 
         if (!_paths.length) return []
-        paths.forEach(path=>jb.codeLoader.existingFEPaths[path] = true)
-        return jb.utils.unique(jb.codeLoader.treeShake(_paths,jb.codeLoader.existing()).map(path=>path.split('~')[0]).filter(id=>jb.codeLoader.missing(id)))
+        paths.forEach(path=>jb.treeShake.existingFEPaths[path] = true)
+        return jb.utils.unique(jb.treeShake.treeShake(_paths,jb.treeShake.existing()).map(path=>path.split('~')[0]).filter(id=>jb.treeShake.missing(id)))
     },
     async loadFELibsDirectly(libs) {
+        if (!libs.length) return
         if (typeof document == 'undefined') {
             debugger
             return jb.logError('can not load front end libs to a frame without a document')
         }
-        const _libs = jb.utils.unique(libs).filter(lib=>! jb.codeLoader.loadedFElibs[lib])
-        return _libs.reduce((pr,lib) => pr.then(()=> loadFile(lib)).then(()=> jb.codeLoader.loadedFElibs[lib] = true), Promise.resolve())
+        const libsToLoad = jb.utils.unique(libs)//.filter(lib=>! jb.treeShake.FELibsToLoad[lib])
+        libsToLoad.forEach(lib=> jb.treeShake.FELibLoaderPromises[lib] = jb.treeShake.FELibLoaderPromises[lib] || loadFile(lib) )
+        jb.log('FELibs toLoad',{libsToLoad})
+        return libsToLoad.reduce((pr,lib) => pr.then(()=> jb.treeShake.FELibLoaderPromises[lib]), Promise.resolve())
 
         function loadFile(lib) {
             return new Promise(resolve => {
                 const type = lib.indexOf('.css') == -1 ? 'script' : 'link'
                 var s = document.createElement(type)
-                s.setAttribute(type == 'script' ? 'src' : 'href',`${jb.codeLoader.baseUrl||''}/dist/${lib}`)
+                s.setAttribute(type == 'script' ? 'src' : 'href',`${jb.treeShake.baseUrl||''}/dist/${lib}`)
                 if (type == 'script') 
                     s.setAttribute('charset','utf8') 
                 else 
@@ -1105,37 +1160,38 @@ jb.extension('codeLoader', {
     },
 })
 
-jb.component('codeLoader.getCode', {
+jb.component('treeShake.getCode', {
     impl: ({vars}) => {
-        const treeShake = jb.codeLoader.treeShake(vars.ids.split(','),jb.objFromEntries(vars.existing.split(',').map(x=>[x,true])))
-        jb.log('codeLoader treeshake',{...vars, treeShake})
-        return jb.codeLoader.code(treeShake)
+        const treeShake = jb.treeShake.treeShake(vars.ids.split(','),jb.objFromEntries(vars.existing.split(',').map(x=>[x,true])))
+        jb.log('treeShake treeshake',{...vars, treeShake})
+        return jb.treeShake.code(treeShake)
     }
 })
 
 // code loader client
 
-jb.component('codeLoader.getCodeFromRemote', {
+jb.component('treeShake.getCodeFromRemote', {
     params: [
         {id: 'ids'}
     ],
-    impl: async (ctx,ids) => ids && jb.codeLoader.getCodeFromRemote(ids.split(','))
+    impl: async (ctx,ids) => ids && jb.treeShake.getCodeFromRemote(ids.split(','))
 })
 
-jb.component('codeLoader.setCodeLoaderJbm', {
-    params: [
-        {id: 'codeLoaderUri' }
-    ],
-    impl: (ctx, uri) => jb.codeLoaderJbm = ctx.run({$: 'jbm.byUri', uri}),
-    require: {$ : 'jbm.byUri'}
-});
+// jb.component('treeShake.settreeShakeJbm', {
+//     params: [
+//         {id: 'treeShakeUri' }
+//     ],
+//     impl: (ctx, uri) => jb.treeShake.codeServerJbm = ctx.run({$: 'jbm.byUri', uri}),
+//     require: {$ : 'jbm.byUri'}
+// });
 
 jb.extension('spy', {
-	$requireFuncs: 'jb.spy._log',
+	$requireFuncs: 'jb.spy.log',
 	initExtension() {
-		// jb.spy._log() -- for codeLoader
+		// jb.spy.log() -- for codeLoader
 		return {
 			logs: [],
+			enrichers: [],
 			settings: { 
 				includeLogs: 'exception,error',
 				stackFilter: /spy|jb_spy|Object.log|rx-comps|jb-core|node_modules/i,
@@ -1155,14 +1211,21 @@ jb.extension('spy', {
 	initSpy({spyParam}) {
 		if (!spyParam) return
 		jb.spy.spyParam = spyParam
-		jb.spy.log = jb.spy._log // actually enables logging
+		jb.spy.enabled = true
 		if (jb.frame) jb.frame.spy = jb.spy // for console use
 		jb.spy.includeLogsInitialized = false
 		jb.spy._obs = jb.callbag.subject()
 		return jb.spy
 		// for loader - jb.spy.clear(), jb.spy.search()
 	},
-
+	registerEnrichers(enrichers) {
+		jb.spy.enrichers = [...jb.spy.enrichers, ...jb.asArray(enrichers)]
+	},
+	findProp(o,prop,maxDepth=1) {
+		if (maxDepth < 1) return o[prop]
+		return o[prop] 
+			|| Object.keys(o).reduce((found,k) => found || (o[k] && typeof o[k] == 'object' && jb.spy.findProp(o[k],prop,maxDepth-1)), false)
+	},
 	memoryUsage: () => jb.path(jb.frame,'performance.memory.usedJSHeapSize'),
 	// observable() { 
 	// 	const _jb = jb.path(jb,'studio.studiojb') || jb
@@ -1188,7 +1251,7 @@ jb.extension('spy', {
 		return jb.spy.spyParam === 'all' || typeof record == 'object' && 
 			logNames.split(' ').reduce( (acc,logName)=>acc || jb.spy.includeLogs[logName],false)
 	},
-	_log(logNames, _record, {takeFrom, funcTitle, modifier} = {}) {
+	log(logNames, _record, {takeFrom, funcTitle, modifier} = {}) {
 		if (!jb.spy.includeLogsInitialized) jb.spy.calcIncludeLogsFromSpyParam(jb.spy.spyParam)
 		jb.spy.updateCounters(logNames)
 		jb.spy.updateLocations(logNames,takeFrom)
@@ -1204,7 +1267,8 @@ jb.extension('spy', {
 			time: now.getTime(),
 			mem: jb.spy.memoryUsage() / 1000000,
 			activeElem: jb.path(jb.frame.document,'activeElement'),
-			$attsOrder: _record && Object.keys(_record)
+			$attsOrder: _record && Object.keys(_record),
+			stack: _record.ctx && jb.utils.callStack(_record.ctx)
 		}
 		if (jb.spy.logs.length > 0 && jb.path(jb.frame.document,'activeElement') != jb.spy.logs[index-1].activeElem) {
 			jb.spy.logs[index-1].logNames += ' focus'
@@ -1274,11 +1338,11 @@ jb.extension('spy', {
 			return [...set1,...set2]
 		}
 	},
-	search(query,{ slice, spy } = {slice: -1000, spy: jb.spy}) { // e.g., dialog core | menu !keyboard  
+	search(query = '',{ slice, spy, enrich } = {slice: -1000, spy: jb.spy, enrich: true}) { // e.g., dialog core | menu !keyboard  
 		const _or = query.split(/,|\|/)
 		return _or.reduce((acc,exp) => 
 			unify(acc, exp.split(' ').reduce((acc,logNameExp) => filter(acc,logNameExp), spy.logs.slice(slice))) 
-		,[])
+		,[]).map(x=>enrich ? jb.spy.enrichRecord(x) : x)
 
 		function filter(set,exp) {
 			return (exp[0] == '!') 
@@ -1289,7 +1353,21 @@ jb.extension('spy', {
 			let res = [...set1,...set2].sort((x,y) => x.index < y.index)
 			return res.filter((r,i) => i == 0 || res[i-1].index != r.index) // unique
 		}
-	}
+	},
+	enrichRecord(rec) {
+		if (!rec.$ext) {
+			rec.$ext = { sections: [], props: {}}
+			;(jb.spy.enrichers||[]).forEach(f=> {
+				const ext = f(rec)
+				if (ext) {
+					ext.sections && (rec.$ext.sections = [...rec.$ext.sections, ...ext.sections])
+					ext.props && Object.assign(rec.$ext.props, ext.props)
+				}
+			})
+		}
+		return {log: rec.logNames, ...rec.$ext.props, 
+			...jb.objFromEntries(Object.keys(rec).filter(k=>!rec.$ext.props[k]).map(k=>[k,rec[k]])) }
+	},
 })
 
 ;
@@ -1350,12 +1428,21 @@ jb.extension('utils', {
   }
 })
 
+jb.extension('tgp', {
+  'pipeline-inputMatch': (input,profile) => jb.tgp.inputMatch(input,profile.items[0]),
+  'pipeline-outputOptions': (input,profile) => profile.items.reduce((input,item) => jb.tgp.outputOptions(input,item), input),
+  'pipeline-innerInputMatch-items': ({input, inputPath, index}) => {
+    const inputBefore = jb.tgp.calcOutputOptions(input, index ? `${inputPath}~items~${index-1}` : inputPath)
+    return jb.tgp.calcOutputOptions(index ? `${inputPath}~items~${index-1}` : inputPath)
+  }
+})
+
 jb.component('pipeline', {
   type: 'data',
   category: 'common:100',
   description: 'map data arrays one after the other, do not wait for promises and rx',
   params: [
-    {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true, description: 'click "=" for functions list'}
+    {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true, description: 'click \"=\" for functions list' }
   ],
   impl: ctx => jb.utils.calcPipe(ctx,'$pipeline')
 })
@@ -1664,7 +1751,25 @@ jb.component('removeFromArray', {
 	}
 })
 
-jb.component('mutable.toggleBooleanValue', {
+jb.component('getOrCreate', {
+  type: 'data',
+  description: 'memoize, cache, calculate value if empty and assign for next time',
+  category: 'mutable:80',
+  params: [
+    {id: 'writeTo', as: 'ref', mandatory: true},
+    {id: 'calcValue', dynamic: true},
+  ],
+  impl: async (ctx,writeTo,calcValue) => {
+    let val = jb.val(writeTo)
+    if (val == null) {
+      val = await calcValue()
+      jb.db.writeValue(writeTo,val,ctx)
+    }
+    return val
+	}
+})
+
+jb.component('toggleBooleanValue', {
   type: 'action',
   params: [
     {id: 'of', as: 'ref'}
@@ -2165,9 +2270,10 @@ jb.component('runActionOnItems', {
 jb.component('delay', {
   type: 'action,data',
   params: [
-    {id: 'mSec', as: 'number', defaultValue: 1}
+    {id: 'mSec', as: 'number', defaultValue: 1},
+    {id: 'res', defaultValue: '%%' }
   ],
-  impl: (ctx,mSec) => jb.delay(mSec).then(() => ctx.data)
+  impl: ({},mSec,res) => jb.delay(mSec).then(() => res)
 })
 
 jb.component('onNextTimer', {
@@ -2419,7 +2525,8 @@ jb.component('addComponent', {
     {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
     {id: 'type', options:'watchableData,passiveData,comp', mandatory: true },
   ],
-  impl: (ctx,id,value,type) => jb.component(id(), type == 'comp' ? value() : {[type]: value() } )
+  impl: (ctx,id,value,type) => jb.component(id(), type == 'comp' ? value() : {[type]: value() } ),
+  require: () => jb.db.addDataResourcePrefix()
 })
 
 jb.component('loadLibs', {
@@ -2895,24 +3002,35 @@ jb.extension('callbag', {
       else if (elem.addListener) elem.addListener(event, handler, options)
       else throw new Error('cannot add listener to elem. No method found.')
   },
-  fromPromise: promise => (start, sink) => {
-      if (start !== 0) return
-      let ended = false
-      const onfulfilled = val => {
-        if (ended) return
-        sink(1, val)
-        if (ended) return
-        sink(2)
-      }
-      const onrejected = (err = new Error()) => {
-        if (ended) return
-        sink(2, err)
-      }
-      Promise.resolve(promise).then(onfulfilled, onrejected)
-      sink(0, function fromPromise(t, d) {
-        if (t === 2) ended = true
-      })
-  },
+  // fromPromise: promise => (start, sink) => {
+  //     if (start !== 0) return
+  //     let ended = false
+  //     const onfulfilled = val => {
+  //       if (ended) return
+  //       sink(1, val)
+  //       if (ended) return
+  //       sink(2)
+  //     }
+  //     const onrejected = (err = new Error()) => {
+  //       if (ended) return
+  //       sink(2, err)
+  //     }
+  //     Promise.resolve(promise).then(onfulfilled, onrejected)
+  //     sink(0, function fromPromise(t, d) {
+  //       if (t === 2) ended = true
+  //     })
+  // },
+  fromPromise: promises => (start, sink) => {
+    if (start !== 0) return
+    let endedBySink = false
+    jb.asArray(promises).reduce( (acc, pr) =>
+      acc.then(() => !endedBySink && Promise.resolve(pr).then(res => sink(1,res)).catch(err=>sink(2,err)) )
+    , Promise.resolve()).then(() => !endedBySink && sink(2))
+
+    sink(0, function fromPromises(t, d) {
+        if (t === 2) endedBySink = true
+    })
+  },  
   subject() {
       let sinks = []
       function subj(t, d) {
@@ -3177,19 +3295,19 @@ jb.extension('callbag', {
         isActive: () => talkback && !done
       }
   },
-  toPromise: sinkSrc => {
-      return new Promise((resolve, reject) => {
-        jb.callbag.subscribe({
-          next: resolve,
-          error: reject,
-          complete: () => {
-            const err = new Error('No elements in sequence.')
-            err.code = 'NO_ELEMENTS'
-            reject(err)
-          },
-        })(jb.callbag.last(sinkSrc))
-      })
-  },
+  // toPromise: sinkSrc => {
+  //     return new Promise((resolve, reject) => {
+  //       jb.callbag.subscribe({
+  //         next: resolve,
+  //         error: reject,
+  //         complete: () => {
+  //           const err = new Error('No elements in sequence.')
+  //           err.code = 'NO_ELEMENTS'
+  //           reject(err)
+  //         },
+  //       })(jb.callbag.last(sinkSrc))
+  //     })
+  // },
   toPromiseArray: sinkSrc => {
       const res = []
       let talkback

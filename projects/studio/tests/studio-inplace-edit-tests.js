@@ -127,8 +127,8 @@ jb.component('test.wixIslandGridCtrl', {
 
 jb.component('inPlaceEditTest.text', {
   impl: uiFrontEndTest({
-    runBefore: ctx => jb.studio.previewWindow = window,
-    cleanUp: ctx => jb.studio.previewWindow = null,
+    // runBefore: ctx => jb.studio.previewWindow = window,
+    // cleanUp: ctx => jb.studio.previewWindow = null,
     renderDOM: true,
     control: text({ text: 'hello world'}),
     action: runActions(inplaceEdit.activate('inPlaceEditTest.text~impl~control'),delay(10)),
@@ -140,8 +140,8 @@ jb.component('inPlaceEditTest.text', {
 jb.component('inPlaceEditTest.grid', {
   impl: uiFrontEndTest({
     renderDOM: true,
-    runBefore: ctx => jb.studio.previewWindow = window,
-    cleanUp: ctx => jb.studio.previewWindow = null,
+    // runBefore: ctx => jb.studio.previewWindow = window,
+    // cleanUp: ctx => jb.studio.previewWindow = null,
     control: test.wixIslandGridCtrl(),
     action: runActions(inplaceEdit.activate('test.wixIslandGridCtrl~impl'),delay(10)),
     expectedResult: true

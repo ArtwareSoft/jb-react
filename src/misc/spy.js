@@ -80,7 +80,8 @@ jb.extension('spy', {
 			time: now.getTime(),
 			mem: jb.spy.memoryUsage() / 1000000,
 			activeElem: jb.path(jb.frame.document,'activeElement'),
-			$attsOrder: _record && Object.keys(_record)
+			$attsOrder: _record && Object.keys(_record),
+			stack: _record.ctx && jb.utils.callStack(_record.ctx)
 		}
 		if (jb.spy.logs.length > 0 && jb.path(jb.frame.document,'activeElement') != jb.spy.logs[index-1].activeElem) {
 			jb.spy.logs[index-1].logNames += ' focus'

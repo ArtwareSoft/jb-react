@@ -11,10 +11,13 @@ jb.extension('watchable', {
 
   initExtension() {
     jb.watchable.jbId = Symbol("jbId") // used in constructor
+    jb.watchable.initResourcesRef()
+    return {isProxy: Symbol.for("isProxy"), originalVal: Symbol.for("originalVal"), targetVal: Symbol.for("targetVal") }
+  },
+  initResourcesRef() {
     jb.watchable.resourcesRef.id = 'resources' // for loader: jb.watchable.resourcesRef()
     jb.db.watchableHandlers.push(new jb.watchable.WatchableValueByRef(jb.watchable.resourcesRef))
     jb.db.isWatchableFunc[0] = jb.watchable.isWatchable // for loader: jb.db.isWatchable(), jb.watchable.isWatchable()
-    return {isProxy: Symbol.for("isProxy"), originalVal: Symbol.for("originalVal"), targetVal: Symbol.for("targetVal") }
   },
   WatchableValueByRef: class WatchableValueByRef {
     constructor(resources) {
@@ -256,16 +259,6 @@ jb.extension('watchable', {
         return obj[prop]; // not reffable
       }
     }
-    writeValue(ref,value,srcCtx) {
-      if (!ref || !this.isRef(ref) || !this.pathOfRef(ref))
-        return jb.logError('writeValue: err in ref', {srcCtx, ref, value})
-
-      jb.log('watchable writeValue',{ref,value,ref,srcCtx})
-      if (ref.$jb_val)
-        return ref.$jb_val(value)
-      if (this.val(ref) === value) return
-      return this.doOp(ref,{$set: this.createSecondaryLink(value)},srcCtx)
-    }
     createSecondaryLink(val) {
       if (val && typeof val === 'object' && !val[jb.watchable.isProxy]) {
         const ref = this.asRef(val,true);
@@ -277,9 +270,26 @@ jb.extension('watchable', {
       }
       return val
     }
+    // operation API    
+    writeValue(ref,value,srcCtx) {
+      if (!ref || !this.isRef(ref) || !this.pathOfRef(ref))
+        return jb.logError('writeValue: err in ref', {srcCtx, ref, value})
+
+      jb.log('watchable writeValue',{ref,value,ref,srcCtx})
+      if (ref.$jb_val)
+        return ref.$jb_val(value)
+      if (this.val(ref) === value) return
+      return this.doOp(ref,{$set: this.createSecondaryLink(value)},srcCtx)
+    }
     splice(ref,args,srcCtx) {
       return this.doOp(ref,{$splice: args },srcCtx)
     }
+    push(ref,value,srcCtx) {
+      return this.doOp(ref,{$push: this.createSecondaryLink(value)},srcCtx)
+    }
+    merge(ref,value,srcCtx) {
+      return this.doOp(ref,{$merge: this.createSecondaryLink(value)},srcCtx)
+    }    
     move(fromRef,toRef,srcCtx) {
       const fromPath = this.pathOfRef(fromRef), toPath = this.pathOfRef(toRef);
       const sameArray = fromPath.slice(0,-1).join('~') == toPath.slice(0,-1).join('~');
@@ -340,12 +350,7 @@ jb.extension('watchable', {
         (this.transactionEventsLog || []).forEach(opEvent=>this.resourceChange.next(opEvent))
       delete this.transactionEventsLog
     }
-    push(ref,value,srcCtx) {
-      return this.doOp(ref,{$push: this.createSecondaryLink(value)},srcCtx)
-    }
-    merge(ref,value,srcCtx) {
-      return this.doOp(ref,{$merge: this.createSecondaryLink(value)},srcCtx)
-    }
+
     getOrCreateObservable({ref,srcCtx,includeChildren,cmp}) {
         const subject = jb.callbag.subject()
         const ctx = cmp && cmp.ctx || srcCtx || { path: ''}

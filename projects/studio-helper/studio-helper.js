@@ -1,5 +1,5 @@
 // jb.ns('studioHelper,d3g,dataTest,pptr')
-jb.studio.previewWindow = jb.frame
+//jb.studio.previewWindow() = jb.frame
 jb.studio.inspectedJb = jb.ui.parentFrameJb()
 
 jb.component('dataTest.parseProjectHtml', {
@@ -42,14 +42,15 @@ jb.component('studioHelper.compInspector', {
     title: '',
     layout: layout.vertical(3),
     controls: [
-      itemlist({items: list(1, 2, 3), controls: text('%%'), features: [id('itemlist1'), itemlist.selection({})]}),
-      group({
-        controls: studio.compInspector(() => ({
+      itemlist({
+        items: list(1, 2, 3),
+        controls: text('%%'),
+        features: [id('itemlist1'), itemlist.selection()]
+      }),
+      group({controls: studio.compInspector(() => ({
           cmpId: document.querySelector('#itemlist1').getAttribute('cmp-id'),
           frameUri: 'preview'
-        })),
-        features: group.wait(delay(10))
-      })
+        })), features: group.wait(delay(10))})
     ]
   })
 })

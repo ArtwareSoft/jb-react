@@ -14,52 +14,54 @@ Object.assign(jb, {
     })
     funcs.forEach(k=>lib[k] = extension[k])
     const phase =  extension.$phase || { core: 1, utils: 5, db: 10, watchable: 20}[libId] || 100
-    lib.__extensions[extId] = { libId, phase, init: extension.initExtension, initialized, requireLibs: extension.$requireLibs, requireFuncs: extension.$requireFuncs }
+    lib.__extensions[extId] = { libId, phase, init: extension.initExtension, initialized, 
+      requireLibs: extension.$requireLibs, requireFuncs: extension.$requireFuncs, funcs,
+      location: jb.calcSourceLocation(new Error().stack.split(/\r|\n/).slice(2)) }
 
     if (jb.noSupervisedLoad && extension.initExtension) {
       Object.assign(lib, extension.initExtension.apply(lib))
       lib.__extensions[extId].initialized = true
     }
   },
-  initializeLibs(libs) {
+  async initializeLibs(libs) {
     libs.flatMap(l => Object.values(jb[l].__extensions)).sort((x,y) => x.phase - y.phase )
       .filter(ext => ext.init && !ext.initialized)
       .forEach(ext => {
           ext.initialized = true
           Object.assign(jb[ext.libId], ext.init.apply(jb[ext.libId]))
       })
-    const baseUrl = jb.path(jb.codeLoader,'baseUrl')
     const libsToLoad = libs.flatMap(l => Object.values(jb[l].__extensions)).flatMap(ext => ext.requireLibs || []).filter(url => !jb.frame.jb.__requiredLoaded[url])
-    return Promise.all(libsToLoad.map( url => Promise.resolve(jb_loadFile(url,baseUrl,jb)).then(() => jb.frame.jb.__requiredLoaded[url] = true) ))
+    try {
+      await Promise.all(libsToLoad.map( url => Promise.resolve(jbloadJSFile(url,jb,{noSymbols: true})).then(() => jb.frame.jb.__requiredLoaded[url] = true) ))
+    } catch (e) {
+      jb.logException(e,'error loading external library')
+    }
   },
 
+  calcSourceLocation(errStack) {
+    try {
+        const line = errStack.map(x=>x.trim()).filter(x=>x && !x.match(/^Error/) && !x.match(/at Object.component/)).shift()
+        const location = line ? (line.split('at ').pop().split('eval (').pop().split(' (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
+        //comp[jb.core.project] = comp[jb.core.location][0].split('?')[1]
+        location[0] = location[0].split('?')[0]
+        return location
+    } catch(e) {
+      console.log(e)
+    }      
+  },
   component(id,comp) {
-    // todo: move functionality to onAddComponent hook
     if (!jb.core.location) jb.initializeLibs(['core'])
     if (comp.location) {
-        comp[jb.core.location] =  comp.location
+        comp[jb.core.location] = comp.location
         delete comp.location
     } else {
-      try {
-//        if (jb.frame.jbInvscode) debugger
-        const errStack = new Error().stack.split(/\r|\n/).map(x=>x.trim())
-        const line = errStack.filter(x=>x && !x.match(/^Error/) && !x.match(/at Object.component/)).shift()
-        comp[jb.core.location] = line ? (line.split('at ').pop().split('eval (').pop().split(' (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
-        comp[jb.core.project] = comp[jb.core.location][0].split('?')[1]
-        comp[jb.core.location][0] = comp[jb.core.location][0].split('?')[0]
-      } catch(e) {
-        console.log(e)
-      }
+        comp[jb.core.location] = jb.calcSourceLocation(new Error().stack.split(/\r|\n/))
     }
 
-    if (comp.watchableData !== undefined) {
-      jb.comps[jb.db.addDataResourcePrefix(id)] = comp
-      return jb.db.resource(jb.db.removeDataResourcePrefix(id),comp.watchableData)
-    }
-    if (comp.passiveData !== undefined) {
-      jb.comps[jb.db.addDataResourcePrefix(id)] = comp
-      return jb.db.passive(jb.db.removeDataResourcePrefix(id),comp.passiveData)
-    }
+    const h = jb.core.onAddComponent.find(x=>x.match(id,comp))
+    if (h && h.register)
+      return h.register(id,comp)
+
     jb.comps[id] = comp;
 
     // fix as boolean params to have type: 'boolean'
@@ -67,7 +69,6 @@ Object.assign(jb, {
       if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
         p.type = 'boolean'
     })
-    comp[jb.core.loadingPhase] = jb.frame.jbLoadingPhase
   },
   noSupervisedLoad: true
 })
@@ -77,26 +78,26 @@ jb.extension('core', {
     Object.assign(jb, {
       frame: globalThis,
       comps: {}, ctxDictionary: {},
-      __requiredLoaded: {}
+      __requiredLoaded: {},
     })
     return {
       ctxCounter: 0,
       project: Symbol.for('project'),
       location: Symbol.for('location'),
       loadingPhase: Symbol.for('loadingPhase'),
-      jstypes: jb.core._jsTypes()
+      jstypes: jb.core._jsTypes(),
+      onAddComponent: []
     }
   },
   run(ctx,parentParam,settings) {
     //  ctx.profile && jb.log('core request', [ctx.id,...arguments])
-      if (ctx.probe && ctx.probe.outOfTime)
-        return
-      if (jb.ctxByPath) jb.ctxByPath[ctx.path] = ctx
+      if (ctx.probe && !ctx.probe.active) return
       const runner = () => jb.core.doRun(...arguments)
       Object.defineProperty(runner, 'name', { value: `${ctx.path} ${ctx.profile && ctx.profile.$ ||''}-prepare param` })
       let res = runner(...arguments)
-      if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
+      if (ctx.probe)
           res = ctx.probe.record(ctx,res) || res
+      
     //  ctx.profile && jb.log('core result', [ctx.id,res,ctx,parentParam,settings])
       if (typeof res == 'function') jb.utils.assignDebugInfoToFunc(res,ctx)
       return res
@@ -347,10 +348,17 @@ jb.extension('core', {
 
 // core utils promoted for easy usage
 Object.assign(jb, {
-    log(logName, record, options) { jb.spy && jb.spy.log && jb.spy.log(logName, record, options) },
+    log(logName, record, options) { jb.spy && jb.spy.enabled && jb.spy.log(logName, record, options) },
+    assert(cond, logObj, err) { 
+      if (cond) return
+      jb.spy && jb.spy.enabled && jb.logError(err,logObj);
+      return true
+    },
     logError(err,logObj) {
-      jb.frame.console && jb.frame.console.error('%c Error: ','color: red', err, logObj)
-      jb.log('error',{err , ...logObj})
+      const ctx = jb.path(logObj,'ctx')
+      const stack = ctx && jb.utils.callStack(ctx)
+      jb.frame.console && jb.frame.console.error('%c Error: ','color: red', err, stack, logObj)
+      jb.log('error',{err , ...logObj, stack })
     },
     logException(e,err,logObj) {
       jb.frame.console && jb.frame.console.log('%c Exception: ','color: red', err, e, logObj)
@@ -417,7 +425,7 @@ jb.extension('utils', { // jb core utils
       const ctxStack=[]; 
       for(let innerCtx=ctx; innerCtx; innerCtx = innerCtx.cmpCtx) 
         ctxStack.push(innerCtx)
-      return ctxStack.map(ctx=>ctx.callerPath)
+      return [ctx.path, ...ctxStack.map(ctx=>ctx.callerPath).slice(1)]
     },    
     addDebugInfo(f,ctx) { f.ctx = ctx; return f},
     assignDebugInfoToFunc(func, ctx) {
@@ -431,6 +439,7 @@ jb.extension('utils', { // jb core utils
 jb.extension('utils', { // generic utils
     isEmpty: o => Object.keys(o).length === 0,
     isObject: o => o != null && typeof o === 'object',
+    isPrimitiveValue: val => ['string','boolean','number'].indexOf(typeof val) != -1,
     tryWrapper(f,msg,ctx) { try { return f() } catch(e) { jb.logException(e,msg,{ctx}) }},
     flattenArray(items) {
       let out = [];
@@ -449,6 +458,12 @@ jb.extension('utils', { // generic utils
         return jb.utils.isPromise(v)
       else if (typeof v === 'function')
         return jb.callbag.isCallbag(v)
+    },
+    resolveDelayed(delayed, synchCallbag) {
+      if (jb.utils.isPromise(delayed))
+        return Promise.resolve(delayed)
+      if (! jb.asArray(delayed).find(v=> jb.callbag.isCallbag(v) || jb.utils.isPromise(v))) return delayed
+      return jb.utils.toSynchArray(delayed, synchCallbag)
     },
     toSynchArray(item, synchCallbag) {
       if (jb.utils.isPromise(item))
@@ -517,8 +532,7 @@ jb.extension('utils', { // generic utils
     sessionStorage(id,val) {
       if (!jb.frame.sessionStorage) return
       return val == undefined ? JSON.parse(jb.frame.sessionStorage.getItem(id)) : jb.frame.sessionStorage.setItem(id,JSON.stringify(val))
-    },
-    eval: (str,frame) => { try { return (frame || jb.frame).eval('('+str+')') } catch (e) { return Symbol.for('parseError') } },
+    }
 })
 
 // common generic promoted for easy usage
@@ -709,6 +723,28 @@ jb.extension('expression', {
 })
 ;
 
+jb.extension('db', 'onAddComponent', {
+  $phase :2,
+  initExtension() { 
+    jb.core.onAddComponent.push({ 
+      match:(id,comp) => comp.watchableData !== undefined,
+      register: (id,comp) => {
+        jb.comps[jb.db.addDataResourcePrefix(id)] = comp
+        return jb.db.resource(jb.db.removeDataResourcePrefix(id),comp.watchableData)  
+      }
+    })
+    jb.core.onAddComponent.push({ 
+      match:(id,comp) => comp.passiveData !== undefined,
+      register: (id,comp) => {
+        jb.comps[jb.db.addDataResourcePrefix(id)] = comp
+        return jb.db.passive(jb.db.removeDataResourcePrefix(id),comp.passiveData)  
+      }
+    })
+  },
+  removeDataResourcePrefix: id => id.indexOf('dataResource.') == 0 ? id.slice('dataResource.'.length) : id,
+  addDataResourcePrefix: id => id.indexOf('dataResource.') == 0 ? id : 'dataResource.' + id,
+})
+
 jb.extension('db', {
     initExtension() { return { 
         passiveSym: Symbol.for('passive'),
@@ -808,19 +844,19 @@ jb.extension('db', {
     isValid: ref => jb.db.safeRefCall(ref, h=>h.isValid(ref)),
     pathOfRef: ref => jb.db.safeRefCall(ref, h=>h.pathOfRef(ref)),
     refOfPath: path => jb.db.watchableHandlers.reduce((res,h) => res || h.refOfPath(path),null),
-    removeDataResourcePrefix: id => id.indexOf('dataResource.') == 0 ? id.slice('dataResource.'.length) : id,
-    addDataResourcePrefix: id => id.indexOf('dataResource.') == 0 ? id : 'dataResource.' + id,
 })
 
 ;
 
 Object.assign(jb, {
-    defComponents: (items,def) => items.forEach(item=>def(item))
+    defComponents: (items,def) => items.forEach(item=>def(item)),
+    defOperator: (id, {detect, extractAliases, registerComp}) => operators.push({id, detect, extractAliases, registerComp})
 })
 
 jb.extension('macro', {
     initExtension() {
-        return { proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro')}
+        return { proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro') }
+        // for loader jb.macro.importAll()
     },
     ns: nsIds => {
         nsIds.split(',').forEach(nsId => jb.macro.registerProxy(nsId))
@@ -871,8 +907,8 @@ jb.extension('macro', {
         if (!comp)
             return { $: cmpId, $byValue: args }
         const params = comp.params || []
-        const firstParamIsArray = (params[0] && params[0].type || '').indexOf('[]') != -1
-        if (params.length == 1 && firstParamIsArray) // pipeline, or, and, plus
+        const singleParamAsArray = (params[0] && params[0].type || '').indexOf('[]') != -1
+        if (params.length == 1 && singleParamAsArray) // pipeline, or, and, plus
             return { $: cmpId, [params[0].id]: args }
         const macroByProps = args.length == 1 && typeof args[0] === 'object' &&
             (params[0] && args[0][params[0].id] || params[1] && args[0][params[1].id])
@@ -886,12 +922,12 @@ jb.extension('macro', {
             return { $: cmpId, [params[0].id]: args[0], [params[1].id]: args[1] }
         debugger;
     },
-    fixProfile(profile) {
+    fixProfile(profile,origin) {
         if (!profile || !profile.constructor || ['Object','Array'].indexOf(profile.constructor.name) == -1) return
-        Object.values(profile).forEach(v=>jb.macro.fixProfile(v))
+        Object.values(profile).forEach(v=>jb.macro.fixProfile(v,origin))
         if (profile.$byValue) {
           if (!jb.comps[profile.$])
-            return jb.logError('fixProfile - missing component', {compId: profile.$, profile})
+            return jb.logError(`fixProfile - missing component ${profile.$} at ${origin}`, {compId: profile.$, origin, profile})
           Object.assign(profile, jb.macro.argsToProfile(profile.$, profile.$byValue))
           delete profile.$byValue
         }
@@ -902,7 +938,8 @@ jb.extension('macro', {
         if (jb.frame[proxyId])
             return jb.logError(`register macro proxy: ${proxyId} + ' is reserved by system or libs. please use a different name`,{obj:jb.frame[proxyId]})
         
-        jb.frame[proxyId] = jb.macro.proxies[proxyId] = jb.macro.newProxy(proxyId)
+        jb.macro.proxies[proxyId] = jb.macro.newProxy(proxyId)
+        //jb.frame[proxyId] = jb.macro.proxies[proxyId]
     }
 })
 
@@ -930,11 +967,12 @@ jb.component('remark', {
 });
 
 jb.extension('spy', {
-	$requireFuncs: 'jb.spy._log',
+	$requireFuncs: 'jb.spy.log',
 	initExtension() {
-		// jb.spy._log() -- for codeLoader
+		// jb.spy.log() -- for codeLoader
 		return {
 			logs: [],
+			enrichers: [],
 			settings: { 
 				includeLogs: 'exception,error',
 				stackFilter: /spy|jb_spy|Object.log|rx-comps|jb-core|node_modules/i,
@@ -954,14 +992,21 @@ jb.extension('spy', {
 	initSpy({spyParam}) {
 		if (!spyParam) return
 		jb.spy.spyParam = spyParam
-		jb.spy.log = jb.spy._log // actually enables logging
+		jb.spy.enabled = true
 		if (jb.frame) jb.frame.spy = jb.spy // for console use
 		jb.spy.includeLogsInitialized = false
 		jb.spy._obs = jb.callbag.subject()
 		return jb.spy
 		// for loader - jb.spy.clear(), jb.spy.search()
 	},
-
+	registerEnrichers(enrichers) {
+		jb.spy.enrichers = [...jb.spy.enrichers, ...jb.asArray(enrichers)]
+	},
+	findProp(o,prop,maxDepth=1) {
+		if (maxDepth < 1) return o[prop]
+		return o[prop] 
+			|| Object.keys(o).reduce((found,k) => found || (o[k] && typeof o[k] == 'object' && jb.spy.findProp(o[k],prop,maxDepth-1)), false)
+	},
 	memoryUsage: () => jb.path(jb.frame,'performance.memory.usedJSHeapSize'),
 	// observable() { 
 	// 	const _jb = jb.path(jb,'studio.studiojb') || jb
@@ -987,7 +1032,7 @@ jb.extension('spy', {
 		return jb.spy.spyParam === 'all' || typeof record == 'object' && 
 			logNames.split(' ').reduce( (acc,logName)=>acc || jb.spy.includeLogs[logName],false)
 	},
-	_log(logNames, _record, {takeFrom, funcTitle, modifier} = {}) {
+	log(logNames, _record, {takeFrom, funcTitle, modifier} = {}) {
 		if (!jb.spy.includeLogsInitialized) jb.spy.calcIncludeLogsFromSpyParam(jb.spy.spyParam)
 		jb.spy.updateCounters(logNames)
 		jb.spy.updateLocations(logNames,takeFrom)
@@ -1003,7 +1048,8 @@ jb.extension('spy', {
 			time: now.getTime(),
 			mem: jb.spy.memoryUsage() / 1000000,
 			activeElem: jb.path(jb.frame.document,'activeElement'),
-			$attsOrder: _record && Object.keys(_record)
+			$attsOrder: _record && Object.keys(_record),
+			stack: _record.ctx && jb.utils.callStack(_record.ctx)
 		}
 		if (jb.spy.logs.length > 0 && jb.path(jb.frame.document,'activeElement') != jb.spy.logs[index-1].activeElem) {
 			jb.spy.logs[index-1].logNames += ' focus'
@@ -1073,11 +1119,11 @@ jb.extension('spy', {
 			return [...set1,...set2]
 		}
 	},
-	search(query,{ slice, spy } = {slice: -1000, spy: jb.spy}) { // e.g., dialog core | menu !keyboard  
+	search(query = '',{ slice, spy, enrich } = {slice: -1000, spy: jb.spy, enrich: true}) { // e.g., dialog core | menu !keyboard  
 		const _or = query.split(/,|\|/)
 		return _or.reduce((acc,exp) => 
 			unify(acc, exp.split(' ').reduce((acc,logNameExp) => filter(acc,logNameExp), spy.logs.slice(slice))) 
-		,[])
+		,[]).map(x=>enrich ? jb.spy.enrichRecord(x) : x)
 
 		function filter(set,exp) {
 			return (exp[0] == '!') 
@@ -1088,7 +1134,21 @@ jb.extension('spy', {
 			let res = [...set1,...set2].sort((x,y) => x.index < y.index)
 			return res.filter((r,i) => i == 0 || res[i-1].index != r.index) // unique
 		}
-	}
+	},
+	enrichRecord(rec) {
+		if (!rec.$ext) {
+			rec.$ext = { sections: [], props: {}}
+			;(jb.spy.enrichers||[]).forEach(f=> {
+				const ext = f(rec)
+				if (ext) {
+					ext.sections && (rec.$ext.sections = [...rec.$ext.sections, ...ext.sections])
+					ext.props && Object.assign(rec.$ext.props, ext.props)
+				}
+			})
+		}
+		return {log: rec.logNames, ...rec.$ext.props, 
+			...jb.objFromEntries(Object.keys(rec).filter(k=>!rec.$ext.props[k]).map(k=>[k,rec[k]])) }
+	},
 })
 
 ;

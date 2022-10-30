@@ -48,7 +48,7 @@ jb.component('sizesEditor.cssSizes', {
 jb.component('sizesEditor.computedContent', {
     type: 'control',
     impl:ctx => {
-        const style = jb.studio.previewWindow.getComputedStyle(ctx.vars.inplaceElem)
+        const style = jb.studio.previewWindow().getComputedStyle(ctx.vars.inplaceElem)
         return style[jb.macro.titleToId(ctx.exp('%level%-%side%'))]
     }
 })
@@ -60,7 +60,7 @@ jb.component('sizesEditor.widthHeight', {
         {id:'top', as: 'string'},
     ],
     impl: button({
-        title: (ctx,{},{prop}) => `${prop}: ` + jb.studio.previewWindow.getComputedStyle(ctx.vars.inplaceElem)[prop],
+        title: (ctx,{},{prop}) => `${prop}: ` + jb.studio.previewWindow().getComputedStyle(ctx.vars.inplaceElem)[prop],
         action: runActions(
           writeValue('%$studio/profile_path%', '%$path%'),
           studio.openProperties(

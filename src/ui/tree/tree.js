@@ -220,24 +220,26 @@ jb.component('tree.selection', {
 })
   
 jb.component('tree.keyboardSelection', {
-	type: 'feature',
-	macroByValue: false,
-	params: [
-		{id: 'onKeyboardSelection', type: 'action', dynamic: true},
-		{id: 'onEnter', type: 'action', dynamic: true},
-		{id: 'onRightClickOfExpanded', type: 'action', dynamic: true},
-		{id: 'autoFocus', type: 'boolean'},
-		{id: 'applyMenuShortcuts', type: 'menu.option', dynamic: true}
-	],
-	impl: features(
-	  htmlAttribute('tabIndex',0),
-	  method('onEnter', call('onEnter')),
-	  method('runShortcut', (ctx,{path},{applyMenuShortcuts}) => {
-		  const shortCut = applyMenuShortcuts(ctx.setData(path))
-		  shortCut && shortCut.runShortcut(ctx.data) 
-	  }),
-	  method('expand', (ctx,{cmp,$props,$state},{onRightClickOfExpanded}) => {
+  type: 'feature',
+  macroByValue: false,
+  params: [
+    {id: 'onKeyboardSelection', type: 'action', dynamic: true},
+    {id: 'onEnter', type: 'action', dynamic: true},
+    {id: 'onRightClickOfExpanded', type: 'action', dynamic: true},
+    {id: 'autoFocus', type: 'boolean'},
+    {id: 'applyMenuShortcuts', type: 'menu.option', dynamic: true}
+  ],
+  impl: features(
+    htmlAttribute('tabIndex', 0),
+    method('onEnter', call('onEnter')),
+    method('runShortcut', (ctx,{path},{applyMenuShortcuts}) => {
+		if (jb.assert(path,{ctx},'missing path in tree')) return;
+		const shortCut = applyMenuShortcuts(ctx.setData(path))
+		shortCut && shortCut.runShortcut(ctx.data) 
+	}),
+    method('expand', (ctx,{cmp,$props,$state},{onRightClickOfExpanded}) => {
 		const {expanded} = $state, selected = ctx.data
+		if (jb.assert(selected,{ctx},'missing selected in expand tree')) return;
 		$state.selected = selected
 		if ($props.model.isArray(selected) && !expanded[selected]) {
 			expanded[selected] = true
@@ -245,39 +247,43 @@ jb.component('tree.keyboardSelection', {
 		} else {
 			onRightClickOfExpanded(ctx.setData(selected))
 		}
-	  }),
-	  method('collapse', ({data},{cmp,$state}) => {
-		const {expanded} = $state, selected = data
+	}),
+    method('collapse', (ctx,{cmp,$state}) => {
+		const {expanded} = $state, selected = ctx.data
+		if (jb.assert(selected,{ctx},'missing selected in collapse tree')) return;
 		$state.selected = selected
-		if (expanded[selected]) {
+		if (Object.keys(expanded).some(x=>x.indexOf(selected == 0))) {
 			delete expanded[selected]
 			cmp.refresh($state)
 		}
-	  }),
-	  frontEnd.prop('onkeydown', rx.pipe(
-		  source.frontEndEvent('keydown'), rx.filter(not('%ctrlKey%')), rx.filter(not('%altKey%')), rx.userEventVar() )),
-	  frontEnd.flow('%$cmp.onkeydown%', rx.filter('%keyCode%==13'), rx.filter('%$cmp.state.selected%'), sink.BEMethod('onEnter','%$cmp.state.selected%') ),
-	  frontEnd.flow('%$cmp.onkeydown%', rx.filter(inGroup(list(38,40),'%keyCode%')),
-		rx.map(tree.nextSelected(If('%keyCode%==40',1,-1))), 
-		sink.subjectNext('%$cmp.selectionEmitter%')
-	  ),
-	  frontEnd.flow('%$cmp.onkeydown%', rx.filter('%keyCode%==39'), sink.BEMethod('expand','%$cmp.state.selected%')),
-	  frontEnd.flow('%$cmp.onkeydown%', rx.filter('%keyCode%==37'), sink.BEMethod('collapse','%$cmp.state.selected%')),
-	  frontEnd.flow(
-		source.callbag(({},{cmp}) => 
+	}),
+    frontEnd.prop(
+      'onkeydown',
+      rx.pipe(source.frontEndEvent('keydown'), rx.filter(not('%ctrlKey%')), rx.filter(not('%altKey%')), rx.userEventVar())
+    ),
+    frontEnd.flow(
+      '%$cmp.onkeydown%',
+      rx.filter('%keyCode%==13'),
+      rx.filter('%$cmp.state.selected%'),
+      sink.BEMethod('onEnter', '%$cmp.state.selected%')
+    ),
+    frontEnd.flow(
+      '%$cmp.onkeydown%',
+      rx.filter(inGroup(list(38, 40), '%keyCode%')),
+      rx.map(tree.nextSelected(If('%keyCode%==40', 1, -1))),
+      sink.subjectNext('%$cmp.selectionEmitter%')
+    ),
+    frontEnd.flow('%$cmp.onkeydown%', rx.filter('%keyCode%==39'), sink.BEMethod('expand', '%$cmp.state.selected%')),
+    frontEnd.flow('%$cmp.onkeydown%', rx.filter('%keyCode%==37'), sink.BEMethod('collapse', '%$cmp.state.selected%')),
+    frontEnd.flow(source.callbag(({},{cmp}) => 
 		  	jb.callbag.create(obs=> cmp.base.onkeydown = ev => { obs(ev); return false } // stop propagation
-		)),
-		rx.filter(({data}) => (data.ctrlKey || data.altKey || data.keyCode == 46) // Delete
-			  && (data.keyCode != 17 && data.keyCode != 18)), // ctrl or alt alone
-		rx.userEventVar(),
-		sink.BEMethod('runShortcut','%$ev%',obj(prop('path','%$cmp.state.selected%')))
-	  ),
-	  frontEnd.flow(source.frontEndEvent('click'), sink.FEMethod('regainFocus')),
-
-	  frontEnd.method('regainFocus', action.focusOnCmp('tree regain focus')),
-	  frontEnd.var('autoFocus','%$autoFocus%'),
-	  frontEnd.init(If('%$autoFocus%', action.focusOnCmp('tree autofocus') )),
-	)
+		)), rx.filter(({data}) => (data.ctrlKey || data.altKey || data.keyCode == 46) // Delete
+			  && (data.keyCode != 17 && data.keyCode != 18)), rx.userEventVar(), sink.BEMethod('runShortcut', '%$ev%', obj(prop('path', '%$cmp.state.selected%')))),
+    frontEnd.flow(source.frontEndEvent('click'), sink.FEMethod('regainFocus')),
+    frontEnd.method('regainFocus', action.focusOnCmp('tree regain focus')),
+    frontEnd.var('autoFocus', '%$autoFocus%'),
+    frontEnd.init(If('%$autoFocus%', action.focusOnCmp('tree autofocus')))
+  )
 })
 
 jb.component('tree.dragAndDrop', {

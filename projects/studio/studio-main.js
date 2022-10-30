@@ -393,7 +393,7 @@ jb.component('studio.topBar', {
         features: css('padding-left: 18px; width: 100%; ')
       })
     ],
-    features: [css('height: 73px; border-bottom: 1px #d9d9d9 solid;')]
+    features: [css('height: 48px; border-bottom: 1px #d9d9d9 solid;')]
   })
 })
 

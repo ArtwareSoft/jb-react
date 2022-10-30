@@ -13,7 +13,7 @@ jb.extension('ui', 'react', {
             if (!e.widgetId && e.cmpId && typeof document != 'undefined') {
                 const elem = document.querySelector(`[cmp-id="${e.cmpId}"]`)
                 if (elem) {
-                    jb.ui.applyDeltaToDom(elem, e.delta)
+                    jb.ui.applyDeltaToDom(elem, e.delta, e.ctx)
                     jb.ui.refreshFrontEnd(elem, {content: e.delta})
                 }
             }
@@ -142,7 +142,7 @@ jb.extension('ui', 'react', {
             if (widgetId)
                 jb.ui.renderingUpdates.next({delta,cmpId,widgetId})
             else
-                jb.ui.applyDeltaToDom(elem,delta)
+                jb.ui.applyDeltaToDom(elem,delta, ctx)
             return
         }
         if (widgetId) {
@@ -161,7 +161,7 @@ jb.extension('ui', 'react', {
         const active = jb.ui.activeElement() === elem
         if (vdomAfter.tag != elem.tagName.toLowerCase() || strongRefresh) {
             jb.ui.unmount(elem)
-            const newElem = jb.ui.render(vdomAfter,elem.parentElement)
+            const newElem = jb.ui.render(vdomAfter,elem.parentElement,{ctx})
             elem.parentElement.replaceChild(newElem,elem)
             jb.log('replaceTop vdom',{newElem,elem})
             elem = newElem
@@ -169,7 +169,7 @@ jb.extension('ui', 'react', {
             const vdomBefore = elem instanceof jb.ui.VNode ? elem : jb.ui.elemToVdom(elem)
             const delta = jb.ui.compareVdom(vdomBefore,vdomAfter,ctx)
             jb.log('apply delta top dom',{vdomBefore,vdomAfter,active,elem,vdomAfter,strongRefresh, delta, ctx})
-            jb.ui.applyDeltaToDom(elem,delta)
+            jb.ui.applyDeltaToDom(elem,delta,ctx)
         }
         jb.ui.refreshFrontEnd(elem, {content: vdomAfter})
         if (active) jb.ui.focus(elem,'apply Vdom diff',ctx)
@@ -190,8 +190,8 @@ jb.extension('ui', 'react', {
         }
     },
 
-    applyDeltaToDom(elem,delta) {
-        jb.log('applyDelta dom',{elem,delta})
+    applyDeltaToDom(elem,delta,ctx) {
+        jb.log('applyDelta dom',{elem,delta,ctx})
         const children = delta.children
         if (children) {
             const childrenArr = children.length ? Array.from(Array(children.length).keys()).map(i=>children[i]) : []
@@ -210,15 +210,15 @@ jb.extension('ui', 'react', {
                 } else if (e.$$ == 'delete') {
                     jb.ui.unmount(childElems[i])
                     elem.removeChild(childElems[i])
-                    jb.log('removeChild dom',{childElem: childElems[i],e,elem,delta})
+                    jb.log('removeChild dom',{childElem: childElems[i],e,elem,delta,ctx})
                 } else {
-                    jb.ui.applyDeltaToDom(childElems[i],e)
+                    jb.ui.applyDeltaToDom(childElems[i],e,ctx)
                     !sameOrder && (childElems[i].setAttribute('__afterIndex',e.__afterIndex))
                 }
             })
             ;(toAppend||[]).forEach(e=>{
-                const newElem = jb.ui.render(e,elem)
-                jb.log('appendChild dom',{newElem,e,elem,delta})
+                const newElem = jb.ui.render(e,elem,{ctx})
+                jb.log('appendChild dom',{newElem,e,elem,delta,ctx})
                 !sameOrder && (newElem.setAttribute('__afterIndex',e.__afterIndex))
             })
             if (sameOrder === false) {
@@ -236,22 +236,22 @@ jb.extension('ui', 'react', {
                 Array.from(elem.childNodes).filter(ch=>ch.nodeName == '#text')
                     .forEach(ch=>{
                         elem.removeChild(ch)
-                        jb.log('removeChild dom leftover',{ch,elem,delta})
+                        jb.log('removeChild dom leftover',{ch,elem,delta,ctx})
                     })
         }
         jb.entries(delta.attributes)
             .filter(e=> !(e[0] === '$text' && elem.firstElementChild) ) // elem with $text should not have children
-            .forEach(e=> jb.ui.setAtt(elem,e[0],e[1]))
+            .forEach(e=> jb.ui.setAtt(elem,e[0],e[1]),ctx)
         
         function removeChild(toDelete) {
             jb.ui.unmount(toDelete)
             elem.removeChild(toDelete)
-            jb.log('removeChild dom',{toDelete,elem,delta})
+            jb.log('removeChild dom',{toDelete,elem,delta,ctx})
         }
     },
-    applyDeltaToVDom(elem,delta) {
+    applyDeltaToVDom(elem,delta,ctx) {
         if (!elem) return
-        jb.log('applyDelta vdom',{elem,delta})
+        jb.log('applyDelta vdom',{elem,delta,ctx})
         const children = delta.children
         if (children) {
             const childrenArr = children.length ? Array.from(Array(children.length).keys()).map(i=>children[i]) : []
@@ -276,7 +276,7 @@ jb.extension('ui', 'react', {
                     !sameOrder && (childElems[i].setAttribute('__afterIndex',''+i))
                 } else if (e.$$ == 'delete') {
                     jb.ui.unmount(childElems.splice(i,1)[0])
-                    jb.log('removeChild dom',{childElem: childElems[i],e,elem,delta})
+                    jb.log('removeChild dom',{childElem: childElems[i],e,elem,delta,ctx})
                 } else {
                     jb.ui.applyDeltaToVDom(childElems[i],e)
                     !sameOrder && (childElems[i].setAttribute('__afterIndex',e.__afterIndex))
@@ -284,7 +284,7 @@ jb.extension('ui', 'react', {
             })
             ;(toAppend||[]).forEach(e=>{
                 const newElem = jb.ui.unStripVdom(e,elem)
-                jb.log('appendChild dom',{newElem,e,elem,delta})
+                jb.log('appendChild dom',{newElem,e,elem,delta,ctx})
                 !sameOrder && (newElem.setAttribute('__afterIndex',e.__afterIndex))
                 childElems.push(newElem)
             })
@@ -301,28 +301,6 @@ jb.extension('ui', 'react', {
             elem.children = childElems.filter(ch=>ch.tag != '#text')
         }
         Object.assign(elem.attributes,delta.attributes)
-
-        // if (delta.children) {
-        //     const toAppend = delta.children.toAppend || []
-        //     const {resetAll, deleteCmp} = delta.children
-        //     if (resetAll) {
-        //         elem.children && elem.children.forEach(ch => ch.parentNode = null)
-        //         elem.children = []
-        //     }
-        //     if (deleteCmp) {
-        //         const index = elem.children.findIndex(ch=>ch.getAttribute('cmp-id') == deleteCmp)
-        //         if (index != -1) {
-        //             elem.children[index] && (elem.children[index].parentNode = null)
-        //             elem.children.splice(index,1)
-        //         }
-        //     }
-        //     toAppend.forEach(ch => { 
-        //         elem.children = elem.children || []
-        //         elem.children.push(jb.ui.unStripVdom(ch,elem))
-        //     })
-        //     Object.keys(delta.children).filter(x=>!isNaN(x)).forEach(index=>
-        //             jb.ui.applyDeltaToVDom(elem.children[+index],delta.children[index]))
-        // }
     },
 	beautifyXml(xml) {
 		return xml.trim().split(/>\s*</).reduce( (acc, node) => {
@@ -339,11 +317,11 @@ jb.extension('ui', 'react', {
         return jb.ui.beautifyXml(`<delta ${jb.entries(delta.attributes).map(([k,v]) => k+'="' +v + '"').join(' ')}>
             ${[children,toAppend].filter(x=>x).join('')}</delta>`)
     },
-    setAtt(elem,att,val) {
+    setAtt(elem,att,val,ctx) {
         if (val == '__undefined') val = null
         if (att[0] !== '$' && val == null) {
             elem.removeAttribute(att)
-            jb.log('dom change remove',{elem,att,val})
+            jb.log('dom change remove',{elem,att,val,ctx})
         } else if (att.indexOf('on-') == 0 && val != null && !elem[`registeredTo-${att}`]) {
             elem.addEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev,val))
             elem[`registeredTo-${att}`] = true
@@ -354,24 +332,24 @@ jb.extension('ui', 'react', {
             elem.setAttribute(att,val)
             jb.delay(1).then(()=> { // browser bug?
                 elem.checked = true
-                jb.log('dom set checked',{elem,att,val})
+                jb.log('dom set checked',{elem,att,val,ctx})
             })
         } else if (att.indexOf('$__input') === 0) {
             try {
-                setInput(JSON.parse(val))
+                setInput(JSON.parse(val),ctx)
             } catch(e) {}
         } else if (att.indexOf('$__') === 0) {
             const id = att.slice(3)
             try {
                 elem[id] = JSON.parse(val) || ''
             } catch (e) {}
-            jb.log(`dom set data ${id}`,{elem,att,val})
+            jb.log(`dom set data ${id}`,{elem,att,val,ctx})
         } else if (att === '$runFEMethod') {
             const {method, data, vars} = JSON.parse(val)
             elem._component && elem._component.runFEMethod(method,data,vars)
         } else if (att === '$focus') {
             elem.setAttribute('__focus',val || 'no source')
-            jb.ui.focus(elem,val)
+            jb.ui.focus(elem,val,ctx)
         } else if (att === '$scrollDown' && val) {
             elem.__appScroll = true
             elem.scrollTop = elem.scrollTop = elem.scrollHeight - elem.clientHeight - 1
@@ -379,33 +357,33 @@ jb.extension('ui', 'react', {
             delete elem.__appScroll
         } else if (att === '$text') {
             elem.innerText = val || ''
-            jb.log('dom set text',{elem,att,val})
+            jb.log('dom set text',{elem,att,val,ctx})
         } else if (att === '$html') {
             elem.innerHTML = val || ''
-            jb.log('dom set html',{elem,att,val})
+            jb.log('dom set html',{elem,att,val,ctx})
         } else if (att === 'style' && typeof val === 'object') {
             elem.setAttribute(att,jb.entries(val).map(e=>`${e[0]}:${e[1]}`).join(';'))
-            jb.log('dom set style',{elem,att,val})
+            jb.log('dom set style',{elem,att,val,ctx})
         } else if (att == 'value' && elem.tagName.match(/select|input|textarea/i) ) {
             const active = document.activeElement === elem
             if (elem.value == val) return
             elem.value = val
             if (active && document.activeElement !== elem) { debugger; elem.focus() }
-            jb.log('dom set elem value',{elem,att,val})
+            jb.log('dom set elem value',{elem,att,val,ctx})
         } else {
             elem.setAttribute(att,val)
-            //jb.log('dom set att',{elem,att,val}) to many calls
+            //jb.log('dom set att',{elem,att,val,ctx}) too many calls
         }
 
-        function setInput({assumedVal,newVal,selectionStart}) {
+        function setInput({assumedVal,newVal,selectionStart},ctx) {
             const el = jb.ui.findIncludeSelf(elem,'input,textarea')[0]
-            jb.log('dom set input check',{el, assumedVal,newVal,selectionStart})
+            jb.log('dom set input check',{el, assumedVal,newVal,selectionStart,ctx})
             if (!el)
-                return jb.logError('setInput: can not find input under elem',{elem})
+                return jb.logError('setInput: can not find input under elem',{elem,ctx})
             if (assumedVal != el.value) 
-                return jb.logError('setInput: assumed val is not as expected',{ assumedVal, value: el.value, el })
+                return jb.logError('setInput: assumed val is not as expected',{ assumedVal, value: el.value, el,ctx })
             const active = document.activeElement === el
-            jb.log('dom set input',{el, assumedVal,newVal,selectionStart})
+            jb.log('dom set input',{el, assumedVal,newVal,selectionStart,ctx})
             el.value = newVal
             if (typeof selectionStart == 'number') 
                 el.selectionStart = selectionStart
@@ -434,7 +412,7 @@ jb.extension('ui', 'react', {
                 destroyWidget: jb.ui.findIncludeSelf(elem,`[widgetid="${widgetId}"]`).length,
         }))
     },
-    render(vdom,parentElem,prepend) {
+    render(vdom,parentElem,{prepend,ctx} = {}) {
         jb.log('render',{vdom,parentElem,prepend})
         if (jb.path(parentElem,'constructor.name') == 'VNode')
             return parentElem.appendChild(vdom)
@@ -447,7 +425,7 @@ jb.extension('ui', 'react', {
         function doRender(vdom,parentElem) {
             jb.log('dom createElement',{tag: vdom.tag, vdom,parentElem})
             const elem = createElement(parentElem.ownerDocument, vdom.tag)
-            jb.entries(vdom.attributes).forEach(e=>jb.ui.setAtt(elem,e[0],e[1]))
+            jb.entries(vdom.attributes).forEach(e=>jb.ui.setAtt(elem,e[0],e[1],ctx))
             jb.asArray(vdom.children).map(child=> doRender(child,elem)).forEach(el=>elem.appendChild(el))
             prepend ? parentElem.prepend(elem) : parentElem.appendChild(elem)
             return elem
@@ -653,12 +631,12 @@ jb.extension('ui', 'react', {
         const actualdelta = bySelector ? delta._$bySelector[bySelector] : delta
         jb.log('applyDelta uiComp',{cmpId, delta, ctx, elem, bySelector, actualElem})
         if (actualElem instanceof jb.ui.VNode) {
-            jb.ui.applyDeltaToVDom(actualElem, actualdelta)
-            jb.ui.renderingUpdates.next({delta,cmpId,widgetId: ctx.vars.headlessWidgetId})
+            jb.ui.applyDeltaToVDom(actualElem, actualdelta,ctx)
+            jb.ui.renderingUpdates.next({delta,cmpId,widgetId: ctx.vars.headlessWidgetId,ctx})
             if (ctx.vars.uiTest && jb.path(jb,'parent.uri') == 'tests' && jb.path(jb,'parent.ui.renderingUpdates')) // used for distributedWidget tests
-                jb.parent.ui.renderingUpdates.next({delta})
+                jb.parent.ui.renderingUpdates.next({delta,ctx})
         } else if (actualElem) {
-            jb.ui.applyDeltaToDom(actualElem, actualdelta)
+            jb.ui.applyDeltaToDom(actualElem, actualdelta, ctx)
             jb.ui.refreshFrontEnd(actualElem, {content: delta})
         }
     },

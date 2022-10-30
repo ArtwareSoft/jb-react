@@ -5,6 +5,18 @@ jb.extension('three', {
     return new Promise(resolve => {
       new THREE.ObjectLoader().parse(json,obj => resolve(obj),() =>{}, err => resolve(err))
     })
+  },
+  createMesh(ctx, geometryId, noOfParams) {
+    const geometry = new THREE[geometryId](...Object.values(ctx.params).slice(0,noOfParams))
+    const meshParams = {}
+    ;(ctx.params.meshParams() || []).forEach(f=> {
+      if (f.assign)
+        jb.path(meshParams,f.assign[0],f.assign[1])
+      if (f.setGeometry)
+        f.setGeometry(geometry) 
+    })
+    const mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial(meshParams) )
+    return mesh
   }
 })
 
@@ -12,10 +24,10 @@ jb.component('three.control', {
   type: 'control',
   params: [
     {id: 'scene', type: 'three.scene', defaultValue: three.sampleScene()},
-    {id: 'camera', type: 'three.camera', defaultValue: three.perspectiveCamera({position: three.point(0,0,5) })},
-    {id: 'controls', type: 'three.control[]' },
+    {id: 'camera', type: 'three.camera', defaultValue: three.perspectiveCamera(three.point(0, 0, 5))},
+    {id: 'controls', type: 'three.control[]'},
     {id: 'style', type: 'three.style', defaultValue: three.style(), dynamic: true},
-    {id: 'features', type: 'feature,three.feature[]', dynamic: true}
+    {id: 'features', type: 'three.feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
 })
@@ -30,14 +42,15 @@ jb.component('three.OrbitControls', {
   })
 })
 
-jb.component('three.rotateCube', {
+jb.component('three.rotate', {
   type: 'three.feature',
-  impl: frontEnd.method('initRotateCube', ctx => {
+  impl: frontEnd.method('initRotate', ctx => {
     const { animations, scene } = ctx.vars
     animations.push(() => {
-      const cube = scene.children[0]
-      cube.rotation.x += 0.01;
-      cube.rotation.y += 0.01;      
+      const elem = scene.children[0]
+      if(!elem) return
+      elem.rotation.x += 0.01;
+      elem.rotation.y += 0.01;      
     })
   })
 })
@@ -59,32 +72,24 @@ jb.component('three.style', {
         camera.position.fromArray(cameraPos)
         camera.updateProjectionMatrix()
         const scene = await jb.three.parseObject(sceneJson)
-        const cube = scene.children[0]
   
         const renderer = new THREE.WebGLRenderer()
         renderer.setSize( window.innerWidth, window.innerHeight )
+		    renderer.domElement.setAttribute('jb_external','true')
+
         el.appendChild( renderer.domElement )
 
         const initMEthods = cmp.base.frontEndMethods.map(x=>x.method).filter(x=>x.match(/init.+/))
         initMEthods.forEach(m=>cmp.runFEMethod(m,{},{animations, camera, scene, renderer}))
-  
-        //const controls = new THREE.OrbitControls( camera, renderer.domElement )
-        // const geometry = new THREE.BoxGeometry( 1, 1, 1 )
-        // const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } )
-        // const cube = new THREE.Mesh( geometry, material )
-        // scene.add( cube );
 
-        
+        // const elem = scene.children[0]
+        // elem.geometry.scale(0.5,0.5,0.5)
+  
         renderer.render( scene, camera )
   
         function animate() {
           requestAnimationFrame( animate );
           animations.forEach(f=>f())
-          //controls.update();
-  
-          // cube.rotation.x += 0.01;
-          // cube.rotation.y += 0.01;
-  
           renderer.render( scene, camera );
         };
         animate();
@@ -122,52 +127,61 @@ jb.component('three.point', {
 jb.component('three.scene', {
   type: 'three.scene',
   params: [
-    {id: 'mesh', type: 'three.mesh[]', mandatory: true}
+    {id: 'elements', type: 'three.element[]', mandatory: true}
   ],
-  impl: (ctx,mesh) => {
+  impl: (ctx,elements) => {
     const res = new THREE.Scene()
-    mesh.forEach(m=>res.add(m))
+    elements.forEach(m=>res.add(m))
     return res
   }
 })
 
-jb.component('three.mesh', {
-  type: 'three.mesh',
-  params: [
-    {id: 'geometry', type: 'three.geometry', defaultValue: three.sphere(), mandatory: true  },
-    {id: 'material', type: 'three.material', defaultValue: three.basicMaterial()}
-  ],
-  impl: ctx => new THREE.Mesh( ...Object.values(ctx.params) )
-})
-
 jb.component('three.box', {
-  type: 'three.geometry',
+  type: 'three.element',
   params: [
     {id: 'width', as: 'number', defaultValue: 1},
     {id: 'height', as: 'number', defaultValue: 1},
-    {id: 'depth', as: 'number', defaultValue: 1}
+    {id: 'depth', as: 'number', defaultValue: 1},
+    {id: 'meshParams', type: 'three.meshParam[]', dynamic: true}
   ],
   macroByValue: true,
-  impl: ctx => new THREE.BoxGeometry(...Object.values(ctx.params))
+  impl: ctx => jb.three.createMesh(ctx, 'BoxGeometry',3)
 })
 
 jb.component('three.sphere', {
-  type: 'three.geometry',
+  type: 'three.element',
   params: [
     {id: 'radius', as: 'number', defaultValue: 1},
+    {id: 'meshParams', type: 'three.meshParam[]', dynamic: true},
   ],
-  impl: ctx => new THREE.BoxGeometry(...Object.values(ctx.params))
+  impl: ctx => jb.three.createMesh(ctx, 'SphereGeometry',1)
 })
 
-jb.component('three.basicMaterial', {
-  type: 'three.material',
+jb.component('three.color', {
+  type: 'three.meshParam',
   params: [
-    {id: 'color', description: 'hex or string', defaultValue: 65280}
+    {id: 'color', description: '#hex or name', defaultValue: 'red'}
   ],
-  impl: ctx => new THREE.MeshBasicMaterial(ctx.params)
+  impl: (ctx,color) => ({ assign: ['color',  new THREE.Color(color) ] })
+})
+
+jb.component('three.positionZ', {
+  type: 'three.meshParam',
+  params: [
+    {id: 'z', as: 'number', defaultValue: 1},
+  ],
+  impl: ctx => ({ assign: ['position.z', new THREE.MeshBasicMaterial(ctx.params)] })
+})
+
+jb.component('three.scale', {
+  type: 'three.meshParam',
+  params: [
+    {id: 'factor', as: 'number', defaultValue: 1}
+  ],
+  impl: (ctx, f) => ({ setGeometry: geometry => geometry.scale(f,f,f) })
 })
 
 jb.component('three.sampleScene', {
   type: 'three.scene',
-  impl: three.scene(three.mesh(three.box()))
+  impl: three.scene(three.sphere())
 })

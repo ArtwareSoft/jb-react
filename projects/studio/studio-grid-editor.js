@@ -3,7 +3,7 @@
 Object.assign(jb.ui, {
   getGridVals(el,axis) {
     const prop = `gridTemplate${axis}`
-    const grid = jb.studio.previewWindow.getComputedStyle(el)[prop] || '' // <tt>78.2969px 74px 83px 120px 16px</tt>
+    const grid = jb.studio.previewWindow().getComputedStyle(el)[prop] || '' // <tt>78.2969px 74px 83px 120px 16px</tt>
     return grid.replace(/<\/?tt>/g,'').replace(/px /,' ').replace(/px/g,'').split(' ').map(x=>+(x.trim()))
   },
   calcGridAccVals(inplaceElem) { return {
@@ -204,9 +204,9 @@ jb.component('gridEditor.dragableGridLineThumb', {
 //     cmp.mousedownEm = jb.ui.fromEvent(cmp, 'mousedown')
 //     let mouseUpEm = jb.ui.fromEvent(cmp, 'mouseup', document)
 //     let mouseMoveEm = jb.ui.fromEvent(cmp, 'mousemove', document)
-//     if (jb.studio.previewWindow) {
-//       mouseUpEm = merge(mouseUpEm, jb.ui.fromEvent(cmp, 'mouseup', jb.studio.previewWindow.document))
-//       mouseMoveEm = merge(mouseMoveEm, jb.ui.fromEvent(cmp, 'mousemove', jb.studio.previewWindow.document))
+//     if (jb.studio.previewWindow()) {
+//       mouseUpEm = merge(mouseUpEm, jb.ui.fromEvent(cmp, 'mouseup', jb.studio.previewWindow().document))
+//       mouseMoveEm = merge(mouseMoveEm, jb.ui.fromEvent(cmp, 'mousemove', jb.studio.previewWindow().document))
 //     }
 //     let startPos = 0, base = 0, accVals
 //     pipe(cmp.mousedownEm,
@@ -347,9 +347,9 @@ jb.component('gridEditor.dragableGridItemThumb', {
 //     cmp.mousedownEm = jb.ui.fromEvent(cmp, 'mousedown')
 //     let mouseUpEm = jb.ui.fromEvent(cmp, 'mouseup', document)
 //     let mouseMoveEm = jb.ui.fromEvent(cmp, 'mousemove', document)
-//     if (jb.studio.previewWindow) {
-//       mouseUpEm = merge(mouseUpEm, jb.ui.fromEvent(cmp, 'mouseup', jb.studio.previewWindow.document))
-//       mouseMoveEm = merge(mouseMoveEm, jb.ui.fromEvent(cmp, 'mousemove', jb.studio.previewWindow.document))
+//     if (jb.studio.previewWindow()) {
+//       mouseUpEm = merge(mouseUpEm, jb.ui.fromEvent(cmp, 'mouseup', jb.studio.previewWindow().document))
+//       mouseMoveEm = merge(mouseMoveEm, jb.ui.fromEvent(cmp, 'mousemove', jb.studio.previewWindow().document))
 //     }
 //     let spanBase,screenToClient
 //     const gridRect = inplaceElem.getBoundingClientRect()

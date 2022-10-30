@@ -174,8 +174,8 @@ jb.component('uiTest.vdomResultAsHtml', {
 	impl: ctx => {
 		const widget = jb.ui.headless[ctx.vars.tstWidgetId]
 		if (!widget) return ''
-		if (typeof document == 'undefined')
-			return widget.body.outerHTML()
+		if (typeof document == 'undefined') // in worker
+			return widget.body ? widget.body.outerHTML() : ''
 		const elemToTest = document.createElement('div')
 		elemToTest.ctxForFE = ctx.setVars({elemToTest})
 		jb.ui.render(widget.body, elemToTest)

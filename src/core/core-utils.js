@@ -1,9 +1,16 @@
 // core utils promoted for easy usage
 Object.assign(jb, {
     log(logName, record, options) { jb.spy && jb.spy.enabled && jb.spy.log(logName, record, options) },
+    assert(cond, logObj, err) { 
+      if (cond) return
+      jb.spy && jb.spy.enabled && jb.logError(err,logObj);
+      return true
+    },
     logError(err,logObj) {
-      jb.frame.console && jb.frame.console.error('%c Error: ','color: red', err, logObj)
-      jb.log('error',{err , ...logObj})
+      const ctx = jb.path(logObj,'ctx')
+      const stack = ctx && jb.utils.callStack(ctx)
+      jb.frame.console && jb.frame.console.error('%c Error: ','color: red', err, stack, logObj)
+      jb.log('error',{err , ...logObj, stack })
     },
     logException(e,err,logObj) {
       jb.frame.console && jb.frame.console.log('%c Exception: ','color: red', err, e, logObj)
@@ -70,7 +77,7 @@ jb.extension('utils', { // jb core utils
       const ctxStack=[]; 
       for(let innerCtx=ctx; innerCtx; innerCtx = innerCtx.cmpCtx) 
         ctxStack.push(innerCtx)
-      return ctxStack.map(ctx=>ctx.callerPath)
+      return [ctx.path, ...ctxStack.map(ctx=>ctx.callerPath).slice(1)]
     },    
     addDebugInfo(f,ctx) { f.ctx = ctx; return f},
     assignDebugInfoToFunc(func, ctx) {

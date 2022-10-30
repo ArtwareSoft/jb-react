@@ -1,4 +1,5 @@
 const fs = require('fs');
+const { exit } = require('process');
 
 var jb_modules = {
   'core': [
@@ -162,33 +163,33 @@ var jb_modules = {
     'node_modules/codemirror/theme/solarized.css',
     'node_modules/codemirror/addon/hint/show-hint.css',
   ],
-  animate: [
-    'node_modules/animejs/lib/anime.js',
-    'src/ui/animation/animation.js'
-  ],
-  cards: [
-    'src/ui/cards/cards.js',
-    'src/ui/cards/cards-styles.js',
-    'src/ui/cards/cards-adapters.js',
-  ],
-  'cards-sample-data': [
-    'src/ui/cards/sample-data/wix-blog.js',
-    'src/ui/cards/sample-data/wordpress-angrybirds.js',
-  ],
-  'd3': [
-    'node_modules/d3/dist/d3.js',
-    'src/ui/d3-chart/d3-math.js',
-    'src/ui/d3-chart/d3-chart.js',
-    'src/ui/d3-chart/d3-histogram.js',
-  ],
-  'vega-lite': [
-    'dist/vega-lite.js', 
-    'src/ui/vega/jb-vega-lite.js'
-  ],    
-  'statistics': [
-    'dist/jstat.js', 
-    'src/misc/jb-stat.js'
-  ],    
+  // animate: [
+  //   'node_modules/animejs/lib/anime.js',
+  //   'src/ui/animation/animation.js'
+  // ],
+  // cards: [
+  //   'src/ui/cards/cards.js',
+  //   'src/ui/cards/cards-styles.js',
+  //   'src/ui/cards/cards-adapters.js',
+  // ],
+  // 'cards-sample-data': [
+  //   'src/ui/cards/sample-data/wix-blog.js',
+  //   'src/ui/cards/sample-data/wordpress-angrybirds.js',
+  // ],
+  // 'd3': [
+  //   'node_modules/d3/dist/d3.js',
+  //   'src/ui/d3-chart/d3-math.js',
+  //   'src/ui/d3-chart/d3-chart.js',
+  //   'src/ui/d3-chart/d3-histogram.js',
+  // ],
+  // 'vega-lite': [
+  //   'dist/vega-lite.js', 
+  //   'src/ui/vega/jb-vega-lite.js'
+  // ],    
+  // 'statistics': [
+  //   'dist/jstat.js', 
+  //   'src/misc/jb-stat.js'
+  // ],    
   'dragula': [
       'dist/dragula.js',
       'dist/css/dragula.css',
@@ -202,10 +203,10 @@ var jb_modules = {
   'md-icons': [
     'dist/mdi-lib.js',
   ],
-  babel: [
-    'node_modules/babel-standalone/babel.js',
-    'dist/babel-ext.js'
-  ],
+  // babel: [
+  //   'node_modules/babel-standalone/babel.js',
+  //   'dist/babel-ext.js'
+  // ],
   'material': [
     'dist/material.js',
   ],
@@ -217,7 +218,7 @@ var jb_modules = {
   'pretty-print': [ 'src/misc/pretty-print.js' ],
   'object-encoder': [ 'src/misc/object-encoder.js' ],
   'xml': [ 'src/misc/xml.js' ],
-  'jison': [ 'dist/jb-jison.js', 'src/misc/jison.js' ],
+//  'jison': [ 'dist/jb-jison.js', 'src/misc/jison.js' ],
   'parsing': [ 'src/misc/parsing.js' ],
   'notebook-worker': [ 'projects/studio/studio-path.js','src/ui/notebook/notebook-common.js'],
   studio: [
@@ -276,6 +277,11 @@ const studioCssFiles = ['/css/styles.css','css/font.css','/projects/studio/css/s
 const vDebuggerFiles = [...filesOfModules('common,ui-common,ui-tree,remote,remote-widget,codemirror-backend'), '/src/ui/tree/table-tree.js',
  ...['path','model-components','event-tracker','comp-inspector'].map(x=>`/projects/studio/studio-${x}.js`)]
 
+concatFiles(filesOfModules('ui-common-css'),'css/ui-common.css')
+concatFiles(filesOfModules('codemirror-css'),'css/codemirror.css')
+concatFiles(studioCssFiles,'../bin/studio/css/studio-all.css')
+
+exit(1)
 
 'core,common,ui-common,watchable,animate,d3,cards,cards-sample-data,pretty-print,parsing,xml,puppeteer,rx,md-icons,remote,remote-widget,codemirror-backend,markdown,notebook-worker'
   .split(',').forEach(m=>packLibrary(m,jb_modules[m]))

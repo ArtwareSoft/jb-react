@@ -535,8 +535,8 @@ jb.component('remoteTest.nodeContainer', {
 //     control: remote.widget( 
 //       button({ title: 'generate delta error %$recover%',
 //         style: button.native(),
-//         action: ({},{widgetId}) => 
-//           jb.ui.renderingUpdates.next({widgetId, delta: { }, cmpId: 'wrongId'})
+//         action: (ctx,{widgetId}) => 
+//           jb.ui.renderingUpdates.next({widgetId, delta: { }, cmpId: 'wrongId',ctx})
 //       }), 
 //       jbm.worker()
 //     ),

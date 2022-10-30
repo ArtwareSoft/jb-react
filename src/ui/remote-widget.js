@@ -160,7 +160,7 @@ jb.extension('ui','headless', {
         //     jb.logError('headless recover no existing widget',{widgetId,ctx})
         jb.log('headless widget created',{widgetId,body})
         const delta = { children: {resetAll : true, toAppend: [jb.ui.stripVdom(top)]} }
-        jb.ui.renderingUpdates.next({widgetId, delta })
+        jb.ui.renderingUpdates.next({widgetId, delta, ctx })
     },
     handleUserReq(userReq, sink) {
         jb.log('headless widget handle userRequset',{widgetId: userReq.widgetId,userReq})

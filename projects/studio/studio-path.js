@@ -214,7 +214,7 @@ jb.extension('studio', {
 
 	// evalProfile(prof_str) {
 	// 	try {
-	// 		return (jb.studio.previewWindow || window).eval('('+prof_str+')')
+	// 		return (jb.studio.previewWindow() || window).eval('('+prof_str+')')
 	// 	} catch (e) {
 	// 		jb.logException(e,'eval profile',{prof_str})
 	// 	}

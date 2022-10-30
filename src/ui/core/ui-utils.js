@@ -1,15 +1,15 @@
 jb.extension('ui', {
-    focus(elem,logTxt,srcCtx) {
+    focus(elem,logTxt,ctx) {
         if (!elem) debugger
         // block the preview from stealing the studio focus
         const now = new Date().getTime()
         const lastStudioActivity = jb.studio.lastStudioActivity 
           || jb.path(jb,['studio','studioWindow','jb','studio','lastStudioActivity'])
 
-        jb.log('focus request',{srcCtx, logTxt, timeDiff: now - lastStudioActivity, elem,srcCtx})
+        jb.log('focus request',{ctx, logTxt, timeDiff: now - lastStudioActivity, elem})
         // if (jb.studio.previewjb == jb && jb.path(jb.ui.parentFrameJb(),'resources.studio.project') != 'studio-helper' && lastStudioActivity && now - lastStudioActivity < 1000)
         //     return
-        jb.log('focus dom',{elem,srcCtx,logTxt})
+        jb.log('focus dom',{elem,ctx,logTxt})
         jb.delay(1).then(() => elem.focus())
     },
     withUnits: v => (v === '' || v === undefined) ? '' : (''+v||'').match(/[^0-9]$/) ? v : `${v}px`,
@@ -52,7 +52,7 @@ jb.extension('ui', {
           jb.callbag.fromEvent(event, elem || cmp.base, options),
           jb.callbag.takeUntil(cmp.destroyed)
     ),
-    renderWidget: (profile,topElem,ctx) => jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry(ctx).run(profile)),topElem),
+    renderWidget: (profile,topElem,ctx) => jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry(ctx).run(profile)),topElem,{ctx}),
     extendWithServiceRegistry(_ctx) {
       const ctx = _ctx || new jb.core.jbCtx()
       return ctx.setVar('$serviceRegistry',{baseCtx: ctx, parentRegistry: ctx.vars.$serviceRegistry, services: {}})
@@ -271,5 +271,5 @@ jb.component('renderWidget', {
     {id: 'control', type: 'control', dynamic: true, mandatory: true},
     {id: 'selector', as: 'string', defaultValue: 'body'}
   ],
-  impl: (ctx, control, selector) => jb.ui.render(jb.ui.h(control(jb.ui.extendWithServiceRegistry(ctx))), document.querySelector(selector))
+  impl: (ctx, control, selector) => jb.ui.render(jb.ui.h(control(jb.ui.extendWithServiceRegistry(ctx))), document.querySelector(selector), {ctx})
 })

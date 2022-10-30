@@ -16,7 +16,8 @@ jb.extension('studio', {
     // el.style.animation = '';
     // jb.delay(100).then(()=>	el.style.animation = 'slide_from_top 5s ease')
     jb.delay(6000).then(()=> el.style.marginTop = '-50px')
-  }
+  },
+  previewWindow: () => jb.frame
 })
 
 jb.component('studio.copy', {

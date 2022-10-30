@@ -3,7 +3,7 @@ jb.component('defaultTheme', {
     body {
       /* vscode compatible with light theme */
       --jb-font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif;
-      --jb-font-size: 13px;
+      --jb-font-size: 16px;
       --jb-font-weight: normal;
       --jb-fg: #616161;
     

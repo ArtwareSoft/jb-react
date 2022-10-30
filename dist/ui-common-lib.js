@@ -54,6 +54,14 @@ jb.component('source.promise', {
   impl: (ctx,promise) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromPromise(promise))
 })
 
+jb.component('source.promises', {
+  type: 'rx',
+  params: [
+    {id: 'promises', type: 'data[]', mandatory: true},
+  ],
+  impl: (ctx,promises) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromPromise(promises))
+})
+
 jb.component('source.interval', {
   type: 'rx',
   params: [
@@ -631,10 +639,13 @@ jb.extension('watchable', {
 
   initExtension() {
     jb.watchable.jbId = Symbol("jbId") // used in constructor
+    jb.watchable.initResourcesRef()
+    return {isProxy: Symbol.for("isProxy"), originalVal: Symbol.for("originalVal"), targetVal: Symbol.for("targetVal") }
+  },
+  initResourcesRef() {
     jb.watchable.resourcesRef.id = 'resources' // for loader: jb.watchable.resourcesRef()
     jb.db.watchableHandlers.push(new jb.watchable.WatchableValueByRef(jb.watchable.resourcesRef))
     jb.db.isWatchableFunc[0] = jb.watchable.isWatchable // for loader: jb.db.isWatchable(), jb.watchable.isWatchable()
-    return {isProxy: Symbol.for("isProxy"), originalVal: Symbol.for("originalVal"), targetVal: Symbol.for("targetVal") }
   },
   WatchableValueByRef: class WatchableValueByRef {
     constructor(resources) {
@@ -876,16 +887,6 @@ jb.extension('watchable', {
         return obj[prop]; // not reffable
       }
     }
-    writeValue(ref,value,srcCtx) {
-      if (!ref || !this.isRef(ref) || !this.pathOfRef(ref))
-        return jb.logError('writeValue: err in ref', {srcCtx, ref, value})
-
-      jb.log('watchable writeValue',{ref,value,ref,srcCtx})
-      if (ref.$jb_val)
-        return ref.$jb_val(value)
-      if (this.val(ref) === value) return
-      return this.doOp(ref,{$set: this.createSecondaryLink(value)},srcCtx)
-    }
     createSecondaryLink(val) {
       if (val && typeof val === 'object' && !val[jb.watchable.isProxy]) {
         const ref = this.asRef(val,true);
@@ -897,9 +898,26 @@ jb.extension('watchable', {
       }
       return val
     }
+    // operation API    
+    writeValue(ref,value,srcCtx) {
+      if (!ref || !this.isRef(ref) || !this.pathOfRef(ref))
+        return jb.logError('writeValue: err in ref', {srcCtx, ref, value})
+
+      jb.log('watchable writeValue',{ref,value,ref,srcCtx})
+      if (ref.$jb_val)
+        return ref.$jb_val(value)
+      if (this.val(ref) === value) return
+      return this.doOp(ref,{$set: this.createSecondaryLink(value)},srcCtx)
+    }
     splice(ref,args,srcCtx) {
       return this.doOp(ref,{$splice: args },srcCtx)
     }
+    push(ref,value,srcCtx) {
+      return this.doOp(ref,{$push: this.createSecondaryLink(value)},srcCtx)
+    }
+    merge(ref,value,srcCtx) {
+      return this.doOp(ref,{$merge: this.createSecondaryLink(value)},srcCtx)
+    }    
     move(fromRef,toRef,srcCtx) {
       const fromPath = this.pathOfRef(fromRef), toPath = this.pathOfRef(toRef);
       const sameArray = fromPath.slice(0,-1).join('~') == toPath.slice(0,-1).join('~');
@@ -960,12 +978,7 @@ jb.extension('watchable', {
         (this.transactionEventsLog || []).forEach(opEvent=>this.resourceChange.next(opEvent))
       delete this.transactionEventsLog
     }
-    push(ref,value,srcCtx) {
-      return this.doOp(ref,{$push: this.createSecondaryLink(value)},srcCtx)
-    }
-    merge(ref,value,srcCtx) {
-      return this.doOp(ref,{$merge: this.createSecondaryLink(value)},srcCtx)
-    }
+
     getOrCreateObservable({ref,srcCtx,includeChildren,cmp}) {
         const subject = jb.callbag.subject()
         const ctx = cmp && cmp.ctx || srcCtx || { path: ''}
@@ -1118,7 +1131,7 @@ jb.extension('ui', 'react', {
             if (!e.widgetId && e.cmpId && typeof document != 'undefined') {
                 const elem = document.querySelector(`[cmp-id="${e.cmpId}"]`)
                 if (elem) {
-                    jb.ui.applyDeltaToDom(elem, e.delta)
+                    jb.ui.applyDeltaToDom(elem, e.delta, e.ctx)
                     jb.ui.refreshFrontEnd(elem, {content: e.delta})
                 }
             }
@@ -1148,6 +1161,10 @@ jb.extension('ui', 'react', {
                     jb.ui.runCtxAction(jb.ctxDictionary[ctxIdToRun])
                 } ))
         })(jb.ui.BECmpsDestroyNotification)
+
+        jb.spy.registerEnrichers([
+            r => jb.spy.findProp(r,'delta') && ({ props: {delta: jb.ui.beautifyDelta(jb.spy.findProp(r,'delta')) }})
+        ])   
     },
     h(cmpOrTag,attributes,children) {
         if (cmpOrTag instanceof jb.ui.VNode) return cmpOrTag // Vdom
@@ -1234,9 +1251,18 @@ jb.extension('ui', 'react', {
         }
     },
 
-    applyNewVdom(elem,vdomAfter,{strongRefresh, ctx} = {}) {
+    applyNewVdom(elem,vdomAfter,{strongRefresh, ctx, delta} = {}) {
         const widgetId = jb.ui.headlessWidgetId(elem)
         jb.log('applyNew vdom',{widgetId,elem,vdomAfter,strongRefresh, ctx})
+        if (delta) { // used only by $runFEMethod
+            const cmpId = elem.getAttribute('cmp-id')
+            jb.log('applyNew vdom runFEMethod',{elem,cmpId,delta, ctx})
+            if (widgetId)
+                jb.ui.renderingUpdates.next({delta,cmpId,widgetId})
+            else
+                jb.ui.applyDeltaToDom(elem,delta, ctx)
+            return
+        }
         if (widgetId) {
             const cmpId = elem.getAttribute('cmp-id')
             const delta = jb.ui.compareVdom(elem,vdomAfter,ctx)
@@ -1253,7 +1279,7 @@ jb.extension('ui', 'react', {
         const active = jb.ui.activeElement() === elem
         if (vdomAfter.tag != elem.tagName.toLowerCase() || strongRefresh) {
             jb.ui.unmount(elem)
-            const newElem = jb.ui.render(vdomAfter,elem.parentElement)
+            const newElem = jb.ui.render(vdomAfter,elem.parentElement,{ctx})
             elem.parentElement.replaceChild(newElem,elem)
             jb.log('replaceTop vdom',{newElem,elem})
             elem = newElem
@@ -1261,7 +1287,7 @@ jb.extension('ui', 'react', {
             const vdomBefore = elem instanceof jb.ui.VNode ? elem : jb.ui.elemToVdom(elem)
             const delta = jb.ui.compareVdom(vdomBefore,vdomAfter,ctx)
             jb.log('apply delta top dom',{vdomBefore,vdomAfter,active,elem,vdomAfter,strongRefresh, delta, ctx})
-            jb.ui.applyDeltaToDom(elem,delta)
+            jb.ui.applyDeltaToDom(elem,delta,ctx)
         }
         jb.ui.refreshFrontEnd(elem, {content: vdomAfter})
         if (active) jb.ui.focus(elem,'apply Vdom diff',ctx)
@@ -1282,8 +1308,8 @@ jb.extension('ui', 'react', {
         }
     },
 
-    applyDeltaToDom(elem,delta) {
-        jb.log('applyDelta dom',{elem,delta})
+    applyDeltaToDom(elem,delta,ctx) {
+        jb.log('applyDelta dom',{elem,delta,ctx})
         const children = delta.children
         if (children) {
             const childrenArr = children.length ? Array.from(Array(children.length).keys()).map(i=>children[i]) : []
@@ -1302,15 +1328,15 @@ jb.extension('ui', 'react', {
                 } else if (e.$$ == 'delete') {
                     jb.ui.unmount(childElems[i])
                     elem.removeChild(childElems[i])
-                    jb.log('removeChild dom',{childElem: childElems[i],e,elem,delta})
+                    jb.log('removeChild dom',{childElem: childElems[i],e,elem,delta,ctx})
                 } else {
-                    jb.ui.applyDeltaToDom(childElems[i],e)
+                    jb.ui.applyDeltaToDom(childElems[i],e,ctx)
                     !sameOrder && (childElems[i].setAttribute('__afterIndex',e.__afterIndex))
                 }
             })
             ;(toAppend||[]).forEach(e=>{
-                const newElem = jb.ui.render(e,elem)
-                jb.log('appendChild dom',{newElem,e,elem,delta})
+                const newElem = jb.ui.render(e,elem,{ctx})
+                jb.log('appendChild dom',{newElem,e,elem,delta,ctx})
                 !sameOrder && (newElem.setAttribute('__afterIndex',e.__afterIndex))
             })
             if (sameOrder === false) {
@@ -1328,52 +1354,92 @@ jb.extension('ui', 'react', {
                 Array.from(elem.childNodes).filter(ch=>ch.nodeName == '#text')
                     .forEach(ch=>{
                         elem.removeChild(ch)
-                        jb.log('removeChild dom leftover',{ch,elem,delta})
+                        jb.log('removeChild dom leftover',{ch,elem,delta,ctx})
                     })
         }
         jb.entries(delta.attributes)
             .filter(e=> !(e[0] === '$text' && elem.firstElementChild) ) // elem with $text should not have children
-            .forEach(e=> jb.ui.setAtt(elem,e[0],e[1]))
+            .forEach(e=> jb.ui.setAtt(elem,e[0],e[1]),ctx)
         
         function removeChild(toDelete) {
             jb.ui.unmount(toDelete)
             elem.removeChild(toDelete)
-            jb.log('removeChild dom',{toDelete,elem,delta})
+            jb.log('removeChild dom',{toDelete,elem,delta,ctx})
         }
     },
-    applyDeltaToVDom(elem,delta) {
+    applyDeltaToVDom(elem,delta,ctx) {
         if (!elem) return
-        jb.log('applyDelta vdom',{elem,delta})
-        // supports only append/delete
-        if (delta.children) {
-            const toAppend = delta.children.toAppend || []
-            const {resetAll, deleteCmp} = delta.children
+        jb.log('applyDelta vdom',{elem,delta,ctx})
+        const children = delta.children
+        if (children) {
+            const childrenArr = children.length ? Array.from(Array(children.length).keys()).map(i=>children[i]) : []
+            let childElems = elem.children || []
+            const {toAppend,deleteCmp,sameOrder,resetAll} = children
+
             if (resetAll) {
-                elem.children && elem.children.forEach(ch => ch.parentNode = null)
-                elem.children = []
+                childElems.forEach(ch => {
+                    jb.ui.unmount(ch)
+                    ch.parentNode = null
+                })
+                childElems = []
             }
             if (deleteCmp) {
-                const index = elem.children.findIndex(ch=>ch.getAttribute('cmp-id') == deleteCmp)
-                if (index != -1) {
-                    elem.children[index] && (elem.children[index].parentNode = null)
-                    elem.children.splice(index,1)
+                while ((index = childElems.findIndex(ch=>ch.getAttribute('cmp-id') == deleteCmp)) != -1) {
+                    childElems[index] && (childElems[index].parentNode = null)
+                    jb.ui.unmount(childElems.splice(index,1)[0])
                 }
             }
-            toAppend.forEach(ch => { 
-                elem.children = elem.children || []
-                elem.children.push(jb.ui.unStripVdom(ch,elem))
+            childrenArr.forEach((e,i) => {
+                if (!e) {
+                    !sameOrder && (childElems[i].setAttribute('__afterIndex',''+i))
+                } else if (e.$$ == 'delete') {
+                    jb.ui.unmount(childElems.splice(i,1)[0])
+                    jb.log('removeChild dom',{childElem: childElems[i],e,elem,delta,ctx})
+                } else {
+                    jb.ui.applyDeltaToVDom(childElems[i],e)
+                    !sameOrder && (childElems[i].setAttribute('__afterIndex',e.__afterIndex))
+                }
             })
-            Object.keys(delta.children).filter(x=>!isNaN(x)).forEach(index=>
-                    jb.ui.applyDeltaToVDom(elem.children[+index],delta.children[index]))
+            ;(toAppend||[]).forEach(e=>{
+                const newElem = jb.ui.unStripVdom(e,elem)
+                jb.log('appendChild dom',{newElem,e,elem,delta,ctx})
+                !sameOrder && (newElem.setAttribute('__afterIndex',e.__afterIndex))
+                childElems.push(newElem)
+            })
+            if (sameOrder === false) {
+                childElems.sort((x,y) => Number(x.getAttribute('__afterIndex')) - Number(y.getAttribute('__afterIndex')))
+                    .forEach(el=> {
+                        const index = Number(el.getAttribute('__afterIndex'))
+                        if (childElems[index] != el)
+                            childElems.splice(index,0,el) //childElems.insertBefore(el, childElems[index])
+                        el.removeAttribute('__afterIndex')
+                    })
+            }
+            // remove leftover text nodes in mixed
+            elem.children = childElems.filter(ch=>ch.tag != '#text')
         }
-
         Object.assign(elem.attributes,delta.attributes)
     },
-    setAtt(elem,att,val) {
+	beautifyXml(xml) {
+		return xml.trim().split(/>\s*</).reduce( (acc, node) => {
+			const pad = Math.max(0,acc[1] + (node.match( /^\w[^>]*[^\/]/ ) ? 1 :node.match( /^\/\w/ ) ? -1 : 0))
+			return [acc[0] + new Array(pad).join('  ') + '<' + node + '>\n', pad]
+		}, ['',0])[0].slice(1,-2)
+	},    
+    beautifyDelta(delta) {
+        const childs = delta.children
+        const childrenAtts = childs && ['sameOrder','resetAll','deleteCmp'].filter(p=>childs[p]).map(p=>p+'="' + childs[p] +'"').join(' ')
+        const childrenArr = childs.length ? Array.from(Array(childs.length).keys()).map(i=>childs[i]) : []
+        const children = (childrenAtts || childrenArr.length) && `<children ${childrenAtts||''}>${childrenArr.map(ch=>jb.ui.vdomToHtml(ch)).join('')}</children>`
+        const toAppend = childs && childs.toAppend && `<toAppend>${childs.toAppend.map(ch=>jb.ui.vdomToHtml(ch)).join('')}</toAppend>`
+        return jb.ui.beautifyXml(`<delta ${jb.entries(delta.attributes).map(([k,v]) => k+'="' +v + '"').join(' ')}>
+            ${[children,toAppend].filter(x=>x).join('')}</delta>`)
+    },
+    setAtt(elem,att,val,ctx) {
         if (val == '__undefined') val = null
         if (att[0] !== '$' && val == null) {
             elem.removeAttribute(att)
-            jb.log('dom change remove',{elem,att,val})
+            jb.log('dom change remove',{elem,att,val,ctx})
         } else if (att.indexOf('on-') == 0 && val != null && !elem[`registeredTo-${att}`]) {
             elem.addEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev,val))
             elem[`registeredTo-${att}`] = true
@@ -1384,21 +1450,24 @@ jb.extension('ui', 'react', {
             elem.setAttribute(att,val)
             jb.delay(1).then(()=> { // browser bug?
                 elem.checked = true
-                jb.log('dom set checked',{elem,att,val})
+                jb.log('dom set checked',{elem,att,val,ctx})
             })
         } else if (att.indexOf('$__input') === 0) {
             try {
-                setInput(JSON.parse(val))
+                setInput(JSON.parse(val),ctx)
             } catch(e) {}
         } else if (att.indexOf('$__') === 0) {
             const id = att.slice(3)
             try {
                 elem[id] = JSON.parse(val) || ''
             } catch (e) {}
-            jb.log(`dom set data ${id}`,{elem,att,val})
+            jb.log(`dom set data ${id}`,{elem,att,val,ctx})
+        } else if (att === '$runFEMethod') {
+            const {method, data, vars} = JSON.parse(val)
+            elem._component && elem._component.runFEMethod(method,data,vars)
         } else if (att === '$focus') {
             elem.setAttribute('__focus',val || 'no source')
-            jb.ui.focus(elem,val)
+            jb.ui.focus(elem,val,ctx)
         } else if (att === '$scrollDown' && val) {
             elem.__appScroll = true
             elem.scrollTop = elem.scrollTop = elem.scrollHeight - elem.clientHeight - 1
@@ -1406,33 +1475,33 @@ jb.extension('ui', 'react', {
             delete elem.__appScroll
         } else if (att === '$text') {
             elem.innerText = val || ''
-            jb.log('dom set text',{elem,att,val})
+            jb.log('dom set text',{elem,att,val,ctx})
         } else if (att === '$html') {
             elem.innerHTML = val || ''
-            jb.log('dom set html',{elem,att,val})
+            jb.log('dom set html',{elem,att,val,ctx})
         } else if (att === 'style' && typeof val === 'object') {
             elem.setAttribute(att,jb.entries(val).map(e=>`${e[0]}:${e[1]}`).join(';'))
-            jb.log('dom set style',{elem,att,val})
+            jb.log('dom set style',{elem,att,val,ctx})
         } else if (att == 'value' && elem.tagName.match(/select|input|textarea/i) ) {
             const active = document.activeElement === elem
             if (elem.value == val) return
             elem.value = val
             if (active && document.activeElement !== elem) { debugger; elem.focus() }
-            jb.log('dom set elem value',{elem,att,val})
+            jb.log('dom set elem value',{elem,att,val,ctx})
         } else {
             elem.setAttribute(att,val)
-            //jb.log('dom set att',{elem,att,val}) to many calls
+            //jb.log('dom set att',{elem,att,val,ctx}) too many calls
         }
 
-        function setInput({assumedVal,newVal,selectionStart}) {
+        function setInput({assumedVal,newVal,selectionStart},ctx) {
             const el = jb.ui.findIncludeSelf(elem,'input,textarea')[0]
-            jb.log('dom set input check',{el, assumedVal,newVal,selectionStart})
+            jb.log('dom set input check',{el, assumedVal,newVal,selectionStart,ctx})
             if (!el)
-                return jb.logError('setInput: can not find input under elem',{elem})
+                return jb.logError('setInput: can not find input under elem',{elem,ctx})
             if (assumedVal != el.value) 
-                return jb.logError('setInput: assumed val is not as expected',{ assumedVal, value: el.value, el })
+                return jb.logError('setInput: assumed val is not as expected',{ assumedVal, value: el.value, el,ctx })
             const active = document.activeElement === el
-            jb.log('dom set input',{el, assumedVal,newVal,selectionStart})
+            jb.log('dom set input',{el, assumedVal,newVal,selectionStart,ctx})
             el.value = newVal
             if (typeof selectionStart == 'number') 
                 el.selectionStart = selectionStart
@@ -1461,8 +1530,11 @@ jb.extension('ui', 'react', {
                 destroyWidget: jb.ui.findIncludeSelf(elem,`[widgetid="${widgetId}"]`).length,
         }))
     },
-    render(vdom,parentElem,prepend) {
+    render(vdom,parentElem,{prepend,ctx} = {}) {
         jb.log('render',{vdom,parentElem,prepend})
+        if (jb.path(parentElem,'constructor.name') == 'VNode')
+            return parentElem.appendChild(vdom)
+
         const res = doRender(vdom,parentElem)
         vdomDiffCheckForDebug()
         jb.ui.refreshFrontEnd(res, {content: vdom })
@@ -1470,8 +1542,8 @@ jb.extension('ui', 'react', {
 
         function doRender(vdom,parentElem) {
             jb.log('dom createElement',{tag: vdom.tag, vdom,parentElem})
-            const elem = jb.ui.createElement(parentElem.ownerDocument, vdom.tag)
-            jb.entries(vdom.attributes).forEach(e=>jb.ui.setAtt(elem,e[0],e[1]))
+            const elem = createElement(parentElem.ownerDocument, vdom.tag)
+            jb.entries(vdom.attributes).forEach(e=>jb.ui.setAtt(elem,e[0],e[1],ctx))
             jb.asArray(vdom.children).map(child=> doRender(child,elem)).forEach(el=>elem.appendChild(el))
             prepend ? parentElem.prepend(elem) : parentElem.appendChild(elem)
             return elem
@@ -1482,11 +1554,11 @@ jb.extension('ui', 'react', {
             if (checkResultingVdom && Object.keys(diff).length)
                 jb.logError('render diff',{diff,checkResultingVdom,vdom})
         }
-    },
-    createElement(doc,tag) {
-        tag = tag || 'div'
-        return (['svg','circle','ellipse','image','line','mesh','path','polygon','polyline','rect','text'].indexOf(tag) != -1) ?
-            doc.createElementNS("http://www.w3.org/2000/svg", tag) : doc.createElement(tag)
+        function createElement(doc,tag) {
+            tag = tag || 'div'
+            return (['svg','circle','ellipse','image','line','mesh','path','polygon','polyline','rect','text'].indexOf(tag) != -1) ?
+                doc.createElementNS("http://www.w3.org/2000/svg", tag) : doc.createElement(tag)
+        } 
     },
     handleCmpEvent(ev, specificMethod) {
         specificMethod = specificMethod == 'true' ? true : specificMethod
@@ -1574,7 +1646,6 @@ jb.extension('ui', 'react', {
             jb.ui.runCtxActionAndUdateCmpState(ctx,data,vars)
         }
     },
-    resourceChange: () => jb.db.useResourcesHandler(h=>h.resourceChange),
     ctrl(origCtx,options) {
         const styleByControl = jb.path(origCtx,'cmpCtx.profile.$') == 'styleByControl'
         const $state = (origCtx.vars.$refreshElemCall || styleByControl) ? origCtx.vars.$state : {}
@@ -1668,7 +1739,8 @@ jb.extension('ui', 'react', {
             const actualVdom = jb.ui.elemToVdom(elem)
             const diff = jb.ui.vdomDiff(assumedVdom,actualVdom)
             if (Object.keys(diff).length) {
-                jb.logError('wrong assumed vdom',{actualVdom, assumedVdom, diff, delta, ctx, cmpId, elem})
+                const actual = jb.ui.vdomToHtml(actualVdom),assumed = jb.ui.vdomToHtml(assumedVdom),dif = jb.utils.prettyPrint(diff)
+                jb.logError('wrong assumed vdom',{actual, assumed, dif, actualVdom, assumedVdom, diff, delta, ctx, cmpId, elem})
                 return { recover: true, reason: { diff, description: 'wrong assumed vdom'} }
             }
         }
@@ -1677,10 +1749,12 @@ jb.extension('ui', 'react', {
         const actualdelta = bySelector ? delta._$bySelector[bySelector] : delta
         jb.log('applyDelta uiComp',{cmpId, delta, ctx, elem, bySelector, actualElem})
         if (actualElem instanceof jb.ui.VNode) {
-            jb.ui.applyDeltaToVDom(actualElem, actualdelta)
-            jb.ui.renderingUpdates.next({delta,cmpId,widgetId: ctx.vars.headlessWidgetId})
+            jb.ui.applyDeltaToVDom(actualElem, actualdelta,ctx)
+            jb.ui.renderingUpdates.next({delta,cmpId,widgetId: ctx.vars.headlessWidgetId,ctx})
+            if (ctx.vars.uiTest && jb.path(jb,'parent.uri') == 'tests' && jb.path(jb,'parent.ui.renderingUpdates')) // used for distributedWidget tests
+                jb.parent.ui.renderingUpdates.next({delta,ctx})
         } else if (actualElem) {
-            jb.ui.applyDeltaToDom(actualElem, actualdelta)
+            jb.ui.applyDeltaToDom(actualElem, actualdelta, ctx)
             jb.ui.refreshFrontEnd(actualElem, {content: delta})
         }
     },
@@ -1748,21 +1822,26 @@ jb.extension('ui', {
             if (children != null)
                 children = children.filter(x=>x).map(item=> typeof item == 'string' ? jb.ui.h('span',{$text: item}) : item)
             if (children && children.length == 0) children = null
+            if (!Array.isArray(children || []))
+                jb.logError('vdom - children must be array',{cmpOrTag, _attributes, _children})
             
             this.attributes = attributes
                 
-            if (typeof cmpOrTag === 'string' && cmpOrTag.indexOf('#') != -1)
-                debugger
-            if (typeof cmpOrTag === 'string' && cmpOrTag.indexOf('.') != -1) {
+            if (typeof cmpOrTag == 'string' && cmpOrTag.indexOf('.') != -1) {
                 this.addClass(cmpOrTag.split('.').pop().trim())
                 cmpOrTag = cmpOrTag.split('.')[0]
             }
+            if (typeof cmpOrTag == 'string' && cmpOrTag.indexOf('#') != -1)
+                debugger
+            if (typeof cmpOrTag != 'string' && !jb.path(cmpOrTag,'$'))
+                debugger
+
             if (children != null)
                 children.forEach(ch=>ch.parentNode = this)
             Object.assign(this,{...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,...(children && {children}) })
         }
         getAttribute(att) {
-            const res = (this.attributes || {})[att]
+            const res = (this.attributes || {})[att.toLowerCase()]
             return res == null ? res : (''+res)
         }
         setAttribute(att,val) {
@@ -1788,6 +1867,10 @@ jb.extension('ui', {
         }
         hasClass(clz) {
             return (jb.path(this,'attributes.class') || '').split(' ').indexOf(clz) != -1
+        }
+        appendChild(vdom) {
+            this.children.push(vdom)
+            return this
         }
         querySelector(...args) {
             return this.querySelectorAll(...args)[0]
@@ -1860,6 +1943,14 @@ jb.extension('ui', {
             ;(vdom.children || []).forEach(ch=>_unStripVdom(ch,vdom))
             return vdom
         }
+    },
+    vdomToHtml(vdom) {
+        let childs = (vdom.children || [])
+        if (!Array.isArray(childs))
+            childs = childs.length ? Array.from(Array(childs.length).keys()).map(i=>childs[i]) : []
+        const childern = childs.map(x=>jb.ui.vdomToHtml(x)).join('')
+        return `<${vdom.tag} ${jb.entries(vdom.attributes).map(([k,v]) => k+'="' +v + '"').join(' ')} ${childern?'':'/'}>
+            ${childern ? childern + '</' + vdom.tag +'>' :''}`
     },
     cloneVNode(vdom) {
         return jb.ui.unStripVdom(JSON.parse(JSON.stringify(jb.ui.stripVdom(vdom))))
@@ -1960,8 +2051,9 @@ jb.extension('ui','comp', {
     JbComponent : class JbComponent {
         constructor(ctx,id,ver) {
             this.ctx = ctx // used to calc features
-            const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId || ''
-            this.cmpId = id || (widgetId ? (widgetId+'-'+(jb.ui.cmpCounter++)) : ''+(jb.ui.cmpCounter++))
+            this.cmpId = id || `${jb.uri}-${jb.ui.cmpCounter++}`
+            //const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId || ''
+            //id || (widgetId ? (widgetId+'-'+(jb.ui.cmpCounter++)) : ''+(jb.ui.cmpCounter++))
             this.ver = ver || 1
             this.eventObservables = []
             this.cssLines = []
@@ -1991,7 +2083,7 @@ jb.extension('ui','comp', {
                 if (this.state[e.prop] != undefined) return // we have the value in the state, probably asynch value so do not calc again
                 const modelProp = this.ctx.vars.$model[e.prop]
                 if (!modelProp)
-                    return jb.logError(`calcRenderProps: missing model prop "${e.prop}"`, {cmp: this, model: this.ctx.vars.$model, ctx: this.ctx})
+                    return jb.logError(`calcRenderProps: missing model prop for watchAndCalc "${e.prop}"`, {cmp: this, model: this.ctx.vars.$model, ctx: this.ctx})
                 const ref = modelProp(this.ctx)
                 if (jb.db.isWatchable(ref))
                     this.toObserve.push({id: e.prop, cmp: this, ref,...e})
@@ -2194,17 +2286,17 @@ jb.extension('ui','comp', {
 ;
 
 jb.extension('ui', {
-    focus(elem,logTxt,srcCtx) {
+    focus(elem,logTxt,ctx) {
         if (!elem) debugger
         // block the preview from stealing the studio focus
         const now = new Date().getTime()
         const lastStudioActivity = jb.studio.lastStudioActivity 
           || jb.path(jb,['studio','studioWindow','jb','studio','lastStudioActivity'])
 
-        jb.log('focus request',{srcCtx, logTxt, timeDiff: now - lastStudioActivity, elem,srcCtx})
-        if (jb.studio.previewjb == jb && jb.path(jb.ui.parentFrameJb(),'resources.studio.project') != 'studio-helper' && lastStudioActivity && now - lastStudioActivity < 1000)
-            return
-        jb.log('focus dom',{elem,srcCtx,logTxt})
+        jb.log('focus request',{ctx, logTxt, timeDiff: now - lastStudioActivity, elem})
+        // if (jb.studio.previewjb == jb && jb.path(jb.ui.parentFrameJb(),'resources.studio.project') != 'studio-helper' && lastStudioActivity && now - lastStudioActivity < 1000)
+        //     return
+        jb.log('focus dom',{elem,ctx,logTxt})
         jb.delay(1).then(() => elem.focus())
     },
     withUnits: v => (v === '' || v === undefined) ? '' : (''+v||'').match(/[^0-9]$/) ? v : `${v}px`,
@@ -2224,8 +2316,9 @@ jb.extension('ui', {
     widgetBody(ctx) {
       const {elemToTest,tstWidgetId,headlessWidget,FEwidgetId, headlessWidgetId} = ctx.vars
       const top = elemToTest ||
-        tstWidgetId && jb.path(jb.ui.headless[tstWidgetId],'body') ||
-        headlessWidget && jb.path(jb.ui.headless[headlessWidgetId],'body') ||
+        tstWidgetId && jb.path(jb,`ui.headless.${tstWidgetId}.body`) ||
+        tstWidgetId && jb.path(jb,`parent.ui.headless.${tstWidgetId}.body`) ||
+        headlessWidget && jb.path(jb,`ui.headless.${headlessWidgetId}.body`) ||
         jb.path(jb.frame.document,'body')
       return FEwidgetId ? jb.ui.findIncludeSelf(top,`[widgetid="${FEwidgetId}"]`)[0] : top
     },
@@ -2246,7 +2339,7 @@ jb.extension('ui', {
           jb.callbag.fromEvent(event, elem || cmp.base, options),
           jb.callbag.takeUntil(cmp.destroyed)
     ),
-    renderWidget: (profile,topElem,ctx) => jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry(ctx).run(profile)),topElem),
+    renderWidget: (profile,topElem,ctx) => jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry(ctx).run(profile)),topElem,{ctx}),
     extendWithServiceRegistry(_ctx) {
       const ctx = _ctx || new jb.core.jbCtx()
       return ctx.setVar('$serviceRegistry',{baseCtx: ctx, parentRegistry: ctx.vars.$serviceRegistry, services: {}})
@@ -2257,8 +2350,6 @@ jb.extension('ui', {
 
 // ***************** inter-cmp services
 
-// var { feature, action } = jb.ns('feature')
-
 jb.component('feature.serviceRegistey', {
   type: 'feature',
   impl: () => ({extendCtx: ctx => jb.ui.extendWithServiceRegistry(ctx) })
@@ -2267,9 +2358,9 @@ jb.component('feature.serviceRegistey', {
 jb.component('service.registerBackEndService', {
   type: 'data',
   params: [
-    {id: 'id', as: 'string', mandatory: true, dynamic: true },
-    {id: 'service', mandatory: true, dynamic: true },
-    {id: 'allowOverride', as: 'boolean' },
+    {id: 'id', as: 'string', mandatory: true, dynamic: true},
+    {id: 'service', mandatory: true, dynamic: true},
+    {id: 'allowOverride', as: 'boolean', type: 'boolean'}
   ],
   impl: feature.init((ctx,{$serviceRegistry},{id,service,allowOverride}) => {
     const _id = id(ctx), _service = service(ctx)
@@ -2278,7 +2369,6 @@ jb.component('service.registerBackEndService', {
       jb.logError('overridingService ${_id}',{id: _id, service: $serviceRegistry.services[_id], service: _service,ctx})
     $serviceRegistry.services[_id] = _service
   })
-  // feature.initValue({to: '%$$serviceRegistry/services/{%$id()%}%', value: '%$service()%', alsoWhenNotEmpty: true}),
 })
 
 
@@ -2348,7 +2438,8 @@ jb.extension('ui', {
           document.head.appendChild(elem)
         }
         elem.setAttribute('src',`${classId || ''} ${ctx.path}`)
-        elem.innerText = innerText
+        jb.log('css update',{innerText,elemId})
+        elem.textContent = innerText
       }
     },
     valueOfCssVar(varName,parent) {
@@ -2467,12 +2558,12 @@ jb.component('renderWidget', {
     {id: 'control', type: 'control', dynamic: true, mandatory: true},
     {id: 'selector', as: 'string', defaultValue: 'body'}
   ],
-  impl: (ctx, control, selector) => jb.ui.render(jb.ui.h(control(jb.ui.extendWithServiceRegistry(ctx))), document.querySelector(selector))
+  impl: (ctx, control, selector) => jb.ui.render(jb.ui.h(control(jb.ui.extendWithServiceRegistry(ctx))), document.querySelector(selector), {ctx})
 });
 
 jb.extension('ui', 'frontend', {
     refreshFrontEnd(elem, {content} = {}) {
-        jb.codeLoader.loadFELibsDirectly(jb.ui.feLibs(content)).then(()=> 
+        jb.treeShake.loadFELibsDirectly(jb.ui.feLibs(content)).then(()=> 
             jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> 
                 el._component ? el._component.newVDomApplied() : new jb.ui.frontEndCmp(el)))
     },
@@ -2524,7 +2615,7 @@ jb.extension('ui', 'frontend', {
                 else 
                     jb.log(`frontend uiComp run method ${method}`,{cmp: {...this}, srcCtx , ...feMEthod.frontEndMethod,el,ctxToUse})
                 const res = ctxToUse.run(feMEthod.frontEndMethod.action)
-                if (_flow) this.flows.push(res)
+                if (_flow && res) this.flows.push(res)
             }, `frontEnd-${method}`,this.ctx))
         }
         enrichUserEvent(ev, userEvent) {
@@ -2591,6 +2682,8 @@ jb.extension('ui', 'watchRef', {
         jb.log('refresh check observable elements',{originatingCmpId,elemsToCheck,e,srcCtx:e.srcCtx})
         elemsToCheck.forEach(({elem, top},i) => {
             const cmpId = elem.getAttribute('cmp-id')
+            if (cmpId.indexOf('-') != -1 && cmpId.split('-')[0] != jb.uri)
+                return
 //            if (elem instanceof jb.ui.VNode ? headlessElemDetached(elem) : !jb.ui.parents(elem).find(el=>el == top))
             if (!jb.ui.parents(elem).find(el=>el == top))
                 return jb.log('observable elem was detached in refresh process',{originatingCmpId,cmpId,elem})
@@ -2673,7 +2766,7 @@ jb.component('watchAndCalcModelProp', {
     {id: 'prop', as: 'string', mandatory: true},
     {id: 'transformValue', dynamic: true, defaultValue: '%%'},
     {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
-    {id: 'defaultValue' },
+    {id: 'defaultValue'}
   ],
   impl: ctx => ({watchAndCalcModelProp: ctx.params})
 })
@@ -2683,7 +2776,7 @@ jb.component('calcProp', {
   description: 'define a variable to be used in the rendering calculation process',
   params: [
     {id: 'id', as: 'string', mandatory: true},
-    {id: 'value', mandatory: true, dynamic: true, description: 'when empty value is taken from model'},
+    {id: 'value', mandatory: true, dynamic: true, description: 'when empty, value is taken from model'},
     {id: 'priority', as: 'number', defaultValue: 1, description: 'if same prop was defined elsewhere decides who will override. range 1-1000'},
     {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'},
     {id: 'defaultValue' },
@@ -2817,6 +2910,7 @@ jb.component('followUp.flow', {
   impl: followUp.action(
     runActions(
       Var('followUpCmp', '%$cmp%'),
+      //registerCmpFLow(rx.pipe('%$elems()%'), '%$cmp%'),
       Var('pipeToRun', rx.pipe('%$elems()%')),
       (ctx,{cmp,pipeToRun}) => {
         jb.ui.followUps[cmp.cmpId] = jb.ui.followUps[cmp.cmpId] || []
@@ -2825,6 +2919,15 @@ jb.component('followUp.flow', {
     )
   )
 })
+
+// jb.component('registerCmpFLow', {
+//   type: 'action',
+//   params: [
+//     {id: 'cmp'},
+
+//   ],
+//   impl: 
+// })
 
 jb.component('watchRef', {
   type: 'feature',
@@ -3065,7 +3168,23 @@ jb.component('feature.userEventProps', {
   ],
   impl: (ctx, prop) => ({userEventProps: prop })
 })
-;
+
+jb.component('runFEMethod', {
+  type: 'action',
+  description: 'invoke FE Method from the backend. used with library objects like codemirror',
+  params: [
+    {id: 'selector', as: 'string' },    
+    {id: 'method',as :'string'},
+    {id: 'data' },
+    {id: 'vars' },
+  ],
+  impl: (ctx, selector, method, data, vars) => {
+    const elem = jb.ui.elemOfSelector(selector,ctx)
+    const cmpElem = elem && jb.ui.closestCmpElem(elem)
+    const delta = { attributes: { $runFEMethod: JSON.stringify({method, data, vars}) } }
+    cmpElem && jb.ui.applyNewVdom(cmpElem,null,{ ctx, delta } )
+  }
+});
 
 // var { rx,key,frontEnd,sink,service, replace } = jb.ns('rx,key,frontEnd,sink,service')
 
@@ -3433,15 +3552,15 @@ jb.component('frontEnd.selectionKeySourceService', {
   type: 'feature',
   description: 'assign cmp.selectionKeySource with observable for meta-keys, also stops propagation !!!',
   params: [
-    {id: 'autoFocs', as: 'boolean' },
+    {id: 'autoFocs', as: 'boolean', type: 'boolean'}
   ],
   impl: features(
     service.registerBackEndService({
       id: 'selectionKeySource',
-      service: obj(prop('cmpId', '%$cmp/cmpId%')), 
-      allowOverride: true 
+      service: obj(prop('cmpId', '%$cmp/cmpId%')),
+      allowOverride: true
     }),
-    frontEnd.var('autoFocs','%$autoFocs%'),
+    frontEnd.var('autoFocs', '%$autoFocs%'),
     frontEnd.prop('selectionKeySource', (ctx,{cmp,el,autoFocs}) => {
       if (el.keydown_src) return
       const {pipe, takeUntil,subject} = jb.callbag
@@ -3449,13 +3568,13 @@ jb.component('frontEnd.selectionKeySourceService', {
       el.onkeydown = e => {
         if ([38,40,13,27].indexOf(e.keyCode) != -1) {
           console.log('key source',e)
-          el.keydown_src.next(ctx.dataObj(e))
+          el.keydown_src.next((ctx.cmpCtx || ctx).dataObj(e))
           return false // stop propagation
         }
         return true
       }
       if (autoFocs)
-        jb.ui.focus(el,'selectionKeySource')
+        jb.ui.focus(el,'selectionKeySource',ctx)
       jb.log('register selectionKeySource',{cmp,cmp,el,ctx})
       return pipe(el.keydown_src, takeUntil(cmp.destroyed))
     })
@@ -3747,12 +3866,13 @@ jb.defComponents('layout,typography,detailedBorder,detailedColor,gridArea'.split
 
 ;
 
+
 jb.component('text', {
   type: 'control',
   category: 'control:100,common:100',
   params: [
     {id: 'text', as: 'ref', mandatory: true, templateValue: 'my text', dynamic: true},
-    {id: 'title', as: 'ref', mandatory: true, templateValue: 'my title', dynamic: true},
+    {id: 'title', as: 'ref', dynamic: true},
     {id: 'style', type: 'text.style', defaultValue: text.span(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
@@ -3900,14 +4020,19 @@ jb.component('group.wait', {
         },
         priority: ctx => jb.path(ctx.vars.$state,'dataArrived') ? 0: 10
     }),
-    followUp.action((ctx,{cmp},{varName,passRx}) => !cmp.state.dataArrived && !cmp.state.error &&
-        Promise.resolve(jb.utils.toSynchArray(ctx.cmpCtx.params.for(),!passRx))
-        .then(data => cmp.refresh({ dataArrived: true }, {
+    followUp.action( async (ctx,{cmp},{varName,passRx}) => {
+      try {
+        if (!cmp.state.dataArrived && !cmp.state.error) {
+          const data = await jb.utils.resolveDelayed(ctx.cmpCtx.params.for(), !passRx)
+          cmp.refresh({ dataArrived: true }, {
             srcCtx: ctx.cmpCtx,
             extendCtx: ctx => ctx.setVar(varName,data).setData(data)
-          }))
-          .catch(e=> cmp.refresh({error: JSON.stringify(e)}))
-      )
+          })
+        }
+      } catch(e) {
+        cmp.refresh({error: JSON.stringify(e)})
+      }
+    })
   )
 })
 
@@ -4152,13 +4277,13 @@ jb.component('button', {
     {id: 'action', type: 'action', mandatory: true, dynamic: true},
     {id: 'style', type: 'button.style', defaultValue: button.mdc(), dynamic: true},
     {id: 'raised', as: 'boolean', dynamic: true },
-    {id: 'features', type: 'feature[]', dynamic: true}
+    {id: 'features', type: 'feature,button.feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
 jb.component('button.initAction', {
-  type: 'feature',
+  type: 'button.feature',
   category: 'button:0',
   impl: features(
     watchAndCalcModelProp('title'),
@@ -4172,12 +4297,12 @@ jb.component('button.initAction', {
         $model.action(ctx)
     }),
     feature.userEventProps('ctrlKey,altKey'),
-    () => ({studioFeatures :{$: 'feature.contentEditable', param: 'title' }}),
+    () => ({studioFeatures :{$: 'feature.contentEditable', param: 'title' }})
   )
 })
 
 jb.component('button.ctrlAction', {
-  type: 'feature',
+  type: 'button.feature',
   category: 'button:70',
   description: 'action to perform on control+click',
   params: [
@@ -4187,7 +4312,7 @@ jb.component('button.ctrlAction', {
 })
 
 jb.component('button.altAction', {
-  type: 'feature',
+  type: 'button.feature',
   category: 'button:70',
   description: 'action to perform on alt+click',
   params: [
@@ -4557,7 +4682,7 @@ jb.component('dialog.init', {
 		calcProp('contentComp', '%$$model/content%'),
 		calcProp('hasMenu', '%$$model/menu/profile%'),
 		calcProp('menuComp', '%$$model/menu%'),
-		feature.initValue('%$$dialog/cmpId%','%$cmp/cmpId%'),
+		feature.initValue({to: '%$$dialog/cmpId%', value: '%$cmp/cmpId%', alsoWhenNotEmpty: true}),
 		htmlAttribute('id','%$$dialog/id%'),
 
 		method('dialogCloseOK', dialog.closeDialog(true)),
@@ -4853,6 +4978,11 @@ jb.component('dialogFeature.autoFocusOnFirstInput', {
   )
 })
 
+jb.component('popup.regainCanvasFocus', {
+	type: 'action',
+	impl: action.focusOnCmp('regain focus','%$popupLauncherCanvas/cmpId%')
+})
+
 jb.component('dialogFeature.cssClassOnLaunchingElement', {
   type: 'dialog-feature',
   description: 'launching element toggles class "dialog-open" if the dialog is open',
@@ -4954,7 +5084,7 @@ jb.component('dialog.popup', {
   })
 })
 
-jb.component('dialog.transparent-popup', {
+jb.component('dialog.transparentPopup', {
 	type: 'dialog.style',
 	impl: customStyle({
 	  template: ({},{contentComp},h) => h('div.jb-dialog jb-popup',{},h(contentComp)),
@@ -5039,7 +5169,6 @@ jb.component('dialogs.defaultStyle', {
 })
 ;
 
-// var {itemlist} = jb.ns('itemlist,itemlistContainer')
 
 jb.component('itemlist', {
   description: 'list, dynamic group, collection, repeat',
@@ -5083,7 +5212,6 @@ jb.component('itemlist.init', {
 })
 ;
 
-// var {runActionOnItem, isRef, inGroup, list } = jb.macro
 
 jb.component('itemlist.selection', {
   type: 'feature',
@@ -5596,21 +5724,19 @@ jb.component('search.searchInAllProperties', {
 })
 
 jb.component('search.fuse', {
-	type: 'search-in',
-	description: 'fuse.js search https://fusejs.io/api/options.html#basic-options',
-	params: [
-		{ id: 'keys', as: 'array', defaultValue: list('id','name'), description: 'List of keys that will be searched. This supports nested paths, weighted search, searching in arrays of strings and objects' },
-		{ id: 'findAllMatches', as: 'boolean', defaultValue: false, description: 'When true, the matching function will continue to the end of a search pattern even if a perfect match has already been located in the string' },
-		{ id: 'isCaseSensitive', as: 'boolean', defaultValue: false },
-		{ id: 'minMatchCharLength', as: 'number', defaultValue: 1, description: 'Only the matches whose length exceeds this value will be returned. (For instance, if you want to ignore single character matches in the result, set it to 2)' },
-		{ id: 'shouldSort', as: 'boolean', defaultValue: true, description: 'Whether to sort the result list, by score' },
-		{ id: 'location', as: 'number', defaultValue: 0, description: 'Determines approximately where in the text is the pattern expected to be found' },
-		{ id: 'threshold', as: 'number', defaultValue: 0.6, description: 'At what point does the match algorithm give up. A threshold of 0.0 requires a perfect match (of both letters and location), a threshold of 1.0 would match anything' },
-		{ id: 'distance', as: 'number', defaultValue: 100, description: 'Determines how close the match must be to the fuzzy location (specified by location). An exact letter match which is distance characters away from the fuzzy location would score as a complete mismatch' },
-//		{ id: 'includeScore', as: 'boolean', defaultValue: false },
-//		{ id: 'includeMatches', as: 'boolean', defaultValue: false },
-	],
-	impl: ctx => ({ fuseOptions: true, ...ctx.params})
+  type: 'search-in',
+  description: 'fuse.js search https://fusejs.io/api/options.html#basic-options',
+  params: [
+    {id: 'keys', as: 'array', defaultValue: list('id', 'name'), description: 'List of keys that will be searched. This supports nested paths, weighted search, searching in arrays of strings and objects'},
+    {id: 'findAllMatches', as: 'boolean', defaultValue: false, description: 'When true, the matching function will continue to the end of a search pattern even if a perfect match has already been located in the string', type: 'boolean'},
+    {id: 'isCaseSensitive', as: 'boolean', defaultValue: false, type: 'boolean'},
+    {id: 'minMatchCharLength', as: 'number', defaultValue: 1, description: 'Only the matches whose length exceeds this value will be returned. (For instance, if you want to ignore single character matches in the result, set it to 2)'},
+    {id: 'shouldSort', as: 'boolean', defaultValue: true, description: 'Whether to sort the result list, by score', type: 'boolean'},
+    {id: 'location', as: 'number', defaultValue: 0, description: 'Determines approximately where in the text is the pattern expected to be found'},
+    {id: 'threshold', as: 'number', defaultValue: 0.6, description: 'At what point does the match algorithm give up. A threshold of 0.0 requires a perfect match (of both letters and location), a threshold of 1.0 would match anything'},
+    {id: 'distance', as: 'number', defaultValue: 100, description: 'Determines how close the match must be to the fuzzy location (specified by location). An exact letter match which is distance characters away from the fuzzy location would score as a complete mismatch'}
+  ],
+  impl: ctx => ({ fuseOptions: true, ...ctx.params})
 })
 ;
 
@@ -5813,7 +5939,7 @@ jb.component('menu.action', {
 			},
 			ctx: ctx.setVar('menuDepth', (ctx.vars.menuDepth || 0)+1)
 		}),
-  require: key.eventMatchKey()
+  require: {$: 'key.eventMatchKey' }
 })
 
 // ********* controls ************
@@ -5915,7 +6041,7 @@ jb.component('menu.initPopupMenu', {
     frontEnd.flow(source.findMenuKeySource(), rx.filter('%keyCode%==39'), sink.BEMethod('openPopup')),
     frontEnd.flow(source.findMenuKeySource(), rx.filter(inGroup(list(37,27),'%keyCode%')), sink.BEMethod('closePopup')),
   ),
-  requires: [{$: 'menu.openContextMenu'}, {$: 'call'}, {$: 'If'}]
+  require: [{$: 'menu.openContextMenu'}, {$: 'call'}, {$: 'If'}]
 })
 
 jb.component('menu.initMenuOption', {
@@ -6027,7 +6153,7 @@ jb.component('menu.selectionKeySourceService', {
       el.onkeydown = e => {
         if ([37,38,39,40,13,27].indexOf(e.keyCode) != -1) {
           jb.log('menuKeySource',{ctx,cmp,e})
-          el.keydown_src.next(ctx.dataObj(e))
+          el.keydown_src.next((ctx.cmpCtx || ctx).dataObj(e))
           return false // stop propagation
         }
         return true
@@ -6205,10 +6331,34 @@ jb.component('menuStyle.icon', {
   params: [
     {id: 'buttonSize', as: 'number', defaultValue: 20 },
   ],
-  impl: styleWithFeatures(
-      button.mdcIcon('%$menuModel/leaf/icon%','%$buttonSize%'),
-      feature.onEvent('click', '%$menuModel.action()%')
-  )
+  impl: styleByControl(button({
+    action: '%$menuModel/action()%',
+    style: button.mdcFloatingAction({withTitle: false, buttonSize: '%$buttonSize%'}), 
+    features: (ctx,{menuModel},{buttonSize}) => 
+        ctx.run({$: 'feature.icon', ...menuModel.leaf.icon, title: menuModel.title, size: buttonSize * 24/40 })
+  }))
+})
+
+jb.component('menuStyle.icon3', {
+  type: 'menu-option.style',
+  params: [
+    {id: 'buttonSize', as: 'number', defaultValue: 20 },
+  ],
+  impl: customStyle({
+    template: (cmp,{icon,title,shortcut},h) => h('div.line noselect', { onmousedown: 'closeAndActivate' },[
+        h(cmp.ctx.run({$: 'control.icon', ...icon, size: 20})),
+				h('span.title',{},title),
+				h('span.shortcut',{},shortcut),
+        h('div.mdc-line-ripple'),
+		]),
+    css: `{ display: flex; cursor: pointer; font1: 13px Arial; height: 24px}
+				.selected { color: var(--jb-menubar-selection-fg); background: var(--jb-menubar-selection-bg) }
+				>i { padding: 3px 8px 0 3px }
+				>span { padding-top: 3px }
+				>.title { display: block; text-align: left; white-space: nowrap; }
+				>.shortcut { margin-left: auto; text-align: right; padding-right: 15px }`,
+    features: [menu.initMenuOption(), feature.mdcRippleEffect()]
+  })
 })
 
 jb.component('menuStyle.iconMenu', {
@@ -6616,7 +6766,7 @@ jb.component('defaultTheme', {
       --jb-dropdown-shadow: #a8a8a8;
       --jb-tree-value: red;
       --jb-expandbox-bg: green;
- `)
+ `,'__defaultTheme')
 })
 
 jb.component('group.theme', {
@@ -7136,7 +7286,18 @@ jb.defComponents('1,2'.split(','),
   level => jb.component(`header.mdcBody${level}`, 
     ({type: 'text.style', impl: {$: 'text.h2WithClass', clz: `mdc-typography mdc-typography--body${level}`}})
 ))
-;
+
+jb.component('text.textarea', {
+  type: 'text.style',
+  params: [
+    {id: 'rows', as: 'number', defaultValue: 4},
+    {id: 'cols', as: 'number', defaultValue: 120},
+  ],
+  impl: customStyle({
+    template: (cmp,{text,rows,cols},h) => h('textarea', { rows: rows, cols: cols, value: text}),
+      features: text.bindText()
+  })
+});
 
 jb.extension('ui','button', {
   chooseIconWithRaised(icons,raised) {
@@ -7202,19 +7363,16 @@ jb.component('button.native', {
 jb.component('button.mdc', {
   type: 'button.style',
   params: [
-    {id: 'noRipple', as: 'boolean'},
-    {id: 'noTitle', as: 'boolean'}
+    {id: 'noRipple', as: 'boolean', type: 'boolean'},
+    {id: 'noTitle', as: 'boolean', type: 'boolean'}
   ],
-  impl: customStyle({
-    template: (cmp,{title,raised,noRipple,noTitle},h) => h('button',{
+  impl: customStyle({template: (cmp,{title,raised,noRipple,noTitle},h) => h('button',{
       class: ['mdc-button',raised && 'raised mdc-button--raised'].filter(x=>x).join(' '), onclick: true},[
       ...[!noRipple && h('div.mdc-button__ripple')],
       ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-button__icon')),
       ...[!noTitle && h('span.mdc-button__label',{},title)],
       ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-button__icon')),
-    ]),
-    features: [button.initAction(), mdcStyle.initDynamic()]
-  })
+    ]), features: [button.initAction(), mdcStyle.initDynamic()]})
 })
 
 jb.component('button.mdcChipAction', {
@@ -7234,23 +7392,21 @@ jb.component('button.mdcChipAction', {
 
 jb.component('button.plainIcon', {
   type: 'button.style',
-  impl: customStyle({
-    template: (cmp,{title,raised},h) =>
-      jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=> vdom.setAttribute('title',vdom.getAttribute('title') || title))[0],
-    features: button.initAction()
-  })
+  impl: customStyle({template: (cmp,{title,raised},h) =>
+      jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=> vdom.setAttribute('title',vdom.getAttribute('title') || title))[0], features: button.initAction()})
 })
 
 jb.component('button.mdcIcon', {
   type: 'button.style,icon.style',
   params: [
-    {id: 'icon', type: 'icon' },
-    {id: 'buttonSize', as: 'number', defaultValue: 40, description: 'button size is larger than the icon size, usually at the rate of 40/24' },
+    {id: 'icon', type: 'icon'},
+    {id: 'buttonSize', as: 'number', defaultValue: 40, description: 'button size is larger than the icon size, usually at the rate of 40/24'}
   ],
-  impl: styleWithFeatures(button.mdcFloatingAction({withTitle: false, buttonSize: '%$buttonSize%'}), features(
-      ((ctx,{},{icon}) => icon && ctx.run({$: 'feature.icon', ...icon, title: '%$model.title%',
-        size: ({},{},{buttonSize}) => buttonSize * 24/40 })),
-    ))
+  impl: styleWithFeatures(
+    button.mdcFloatingAction('%$buttonSize%', false),
+    features((ctx,{},{icon}) => icon && ctx.run({$: 'feature.icon', ...icon, title: '%$model.title%',
+        size: ({},{},{buttonSize}) => buttonSize * 24/40 }))
+  )
 })
 
 jb.component('button.mdcFloatingAction', {
@@ -7258,25 +7414,21 @@ jb.component('button.mdcFloatingAction', {
   description: 'fab icon',
   params: [
     {id: 'buttonSize', as: 'number', defaultValue: 60, description: 'mini is 40'},
-    {id: 'withTitle', as: 'boolean'}
+    {id: 'withTitle', as: 'boolean', type: 'boolean'}
   ],
-  impl: customStyle({
-    template: (cmp,{title,withTitle,raised},h) =>
+  impl: customStyle({template: (cmp,{title,withTitle,raised},h) =>
       h('button',{ class: ['mdc-fab',raised && 'raised mdc-icon-button--on'].filter(x=>x).join(' ') ,
-          title, tabIndex: -1, onclick:  true}, [
+          title, tabIndex: -1, onclick: true}, [
             h('div',{ class: 'mdc-fab__ripple'}),
             ...jb.ui.chooseIconWithRaised(cmp.icon,raised).filter(x=>x).map(h).map(vdom=>
                 vdom.addClass('mdc-fab__icon').setAttribute('title',vdom.getAttribute('title') || title)),
             ...[withTitle && h('span',{ class: 'mdc-fab__label'},title)].filter(x=>x)
-      ]),
-    features: [button.initAction(), mdcStyle.initDynamic(), css('~.mdc-fab {width: %$buttonSize%px; height: %$buttonSize%px;}')]
-  })
+      ]), features: [button.initAction(), mdcStyle.initDynamic(), css('~.mdc-fab {width: %$buttonSize%px; height: %$buttonSize%px;}')]})
 })
 
 jb.component('button.mdcTab', {
   type: 'button.style',
-  impl: customStyle({
-    template: (cmp,{title,raised},h) =>
+  impl: customStyle({template: (cmp,{title,raised},h) =>
       h('button.mdc-tab',{ class: raised ? 'mdc-tab--active' : '',tabIndex: -1, role: 'tab', onclick: true}, [
         h('span.mdc-tab__content',{}, [
           ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-tab__icon')),
@@ -7285,23 +7437,27 @@ jb.component('button.mdcTab', {
         ]),
         h('span',{ class: ['mdc-tab-indicator', raised && 'mdc-tab-indicator--active'].filter(x=>x).join(' ') }, h('span',{ class: 'mdc-tab-indicator__content mdc-tab-indicator__content--underline'})),
         h('span.mdc-tab__ripple'),
-      ]),
-    features: [button.initAction(), mdcStyle.initDynamic()]
-  })
+      ]), features: [button.initAction(), mdcStyle.initDynamic()]})
 })
 
 jb.component('button.mdcHeader', {
   type: 'button.style',
   params: [
-    {id: 'stretch', as: 'boolean'},
+    {id: 'stretch', as: 'boolean', type: 'boolean'}
   ],
-  impl: styleWithFeatures(button.mdcTab(), css(pipeline(
-    Var('contentWidth',If('%$stretch%', 'width: 100%;','')),
-    `
+  impl: styleWithFeatures(
+    button.mdcTab(),
+    css(
+      pipeline(
+        Var('contentWidth', If('%$stretch%', 'width: 100%;', '')),
+        `
     {width: 100%; border-bottom: 1px solid black; margin-bottom: 7px; padding: 0}
     ~ .mdc-tab__content { %$contentWidth% display: flex; align-content: space-between;}
     ~ .mdc-tab__text-label { width: 100% }
-  `)))
+  `
+      )
+    )
+  )
 })
 
 
@@ -7620,6 +7776,7 @@ jb.component('group.tabs', {
     {id: 'tabStyle', type: 'button.style', dynamic: true, defaultValue: button.mdcTab()},
     {id: 'barStyle', type: 'group.style', dynamic: true, defaultValue: group.mdcTabBar()},
     {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()},
+    {id: 'selectedTabRef', as : 'ref', description: 'watchable numeric' },
   ],
   impl: styleByControl(
     group({
@@ -7649,7 +7806,9 @@ jb.component('group.tabs', {
           features: watchRef('%$selectedTab%')
         })
       ],
-      features: watchable('selectedTab', 0),
+      features: feature.byCondition('%$selectedTabRef%', 
+          ({}, {}, {selectedTabRef}) => ({ extendCtx: ctx => ctx.setVar('selectedTab',selectedTabRef ) }),
+          watchable('selectedTab', 0)),
     }),
     'tabsModel'
   )
@@ -7838,11 +7997,8 @@ jb.component('itemlist.div', {
   params: [
     {id: 'spacing', as: 'number', defaultValue: 0}
   ],
-  impl: customStyle({
-    template: ({},{ctrls},h) => h('div.jb-itemlist',{},
-        ctrls.map((ctrl) => h('div.jb-item', {}, ctrl.map(singleCtrl=>h(singleCtrl))))),
-    features: itemlist.init()
-  })
+  impl: customStyle({template: ({},{ctrls},h) => h('div.jb-itemlist',{},
+        ctrls.map((ctrl) => h('div.jb-item', {}, ctrl.map(singleCtrl=>h(singleCtrl))))), features: itemlist.init()})
 })
 
 jb.component('itemlist.horizontal', {
@@ -8205,28 +8361,26 @@ jb.component('editableBoolean.buttonXV', {
   params: [
     {id: 'yesIcon', type: 'icon', mandatory: true, defaultValue: icon('check')},
     {id: 'noIcon', type: 'icon', mandatory: true, defaultValue: icon('close') },
-    {id: 'buttonStyle', type: 'button.style', mandatory: true, defaultValue: button.mdcFloatingAction() }
+    {id: 'buttonStyle', type: 'button.style', dynamic: true, mandatory: true, defaultValue: button.mdcFloatingAction() }
   ],
-  impl: styleWithFeatures(call('buttonStyle'), features(
-      editableBoolean.initToggle(),
-      htmlAttribute('onclick','toggle'),
-      ctx => ctx.run({...ctx.cmpCtx.params[jb.toboolean(ctx.vars.$model.databind()) ? 'yesIcon' : 'noIcon' ], 
-        title: ctx.exp('%$$model/title%'), $: 'feature.icon'}),
-    ))
-})
-
-jb.component('editableBoolean.iconWithSlash', {
-  type: 'editable-boolean.style',
-  params: [
-    {id: 'buttonSize', as: 'number', defaultValue: 40, description: 'button size is larger than the icon size, usually at the rate of 40/24' },
-  ],
-  impl: styleWithFeatures(button.mdcIcon({buttonSize: '%$buttonSize%'}), features(
-      Var('strokeColor', css.valueOfCssVar('mdc-theme-on-secondary')),
-      editableBoolean.initToggle(),
-      htmlAttribute('onclick','toggle'),
-      htmlAttribute('title','%$$model/title%'),
-      css(If('%$$model/databind%','',`background-repeat: no-repeat; background-image: url("data:image/svg+xml;utf8,<svg width='%$buttonSize%' height='%$buttonSize%' viewBox='0 0 %$buttonSize% %$buttonSize%' xmlns='http://www.w3.org/2000/svg'><line x1='0' y1='0' x2='%$buttonSize%' y2='%$buttonSize%' style='stroke:%$strokeColor%;stroke-width:2' /></svg>")`))
-    ))
+  impl: styleByControl(button({
+        title: If('%$editableBooleanModel/databind()%','%$editableBooleanModel/textForTrue()%','%$editableBooleanModel/textForFalse()%' ),
+        style: call('buttonStyle'),
+        action: runActions(
+          writeValue('%$editableBooleanModel/databind()%',not('%$editableBooleanModel/databind()%')),
+          refreshIfNotWatchable('%$editableBooleanModel/databind()%')
+        ),
+        features: [
+          (ctx,{editableBooleanModel},{yesIcon,noIcon}) => {
+            const icon = jb.val(editableBooleanModel.databind()) ? yesIcon : noIcon
+            const title = jb.val(editableBooleanModel.databind()) ? editableBooleanModel.textForTrue() : editableBooleanModel.textForFalse()
+            return ctx.run({$: 'feature.icon', ...icon, title})
+          },
+          watchRef({ref: '%$editableBooleanModel/databind()%', strongRefresh: true, allowSelfRefresh: true})
+        ]
+      }),
+    'editableBooleanModel'
+  )
 })
 
 jb.component('editableBoolean.mdcSlideToggle', {
