@@ -289,22 +289,19 @@ jb.component('tree.keyboardSelection', {
 jb.component('tree.dragAndDrop', {
   type: 'feature',
   impl: features(
-	frontEnd.requireExternalLibrary(['dragula.js','css/dragula.css']),
-	htmlAttribute('tabIndex',0),
-	method('moveItem', tree.moveItem('%from%','%to%')),
-	frontEnd.flow(
-		source.frontEndEvent('keydown'), 
-		rx.filter('%ctrlKey%'),
-		rx.filter(inGroup(list(38,40),'%keyCode%')),
-		rx.map(obj(
-			prop('from', tree.nextSelected(0)),
-			prop('to', tree.nextSelected(If('%keyCode%==40',1,-1)))
-		)),
-		rx.filter(tree.sameParent('%from%','%to%')),     
-		sink.BEMethod('moveItem','%%')
-	),
-	frontEnd.onRefresh( (ctx,{cmp}) => cmp.drake.containers = jb.ui.find(cmp.base,'.jb-array-node>.treenode-children')),
-	frontEnd.init( (ctx,{cmp}) => {
+    frontEnd.requireExternalLibrary(['dragula.js', 'css/dragula.css']),
+    htmlAttribute('tabIndex', 0),
+    method('moveItem', tree.moveItem('%from%', '%to%')),
+    frontEnd.flow(
+      source.frontEndEvent('keydown'),
+      rx.filter('%ctrlKey%'),
+      rx.filter(inGroup(list(38, 40), '%keyCode%')),
+      rx.map(obj(prop('from', tree.nextSelected(0)), prop('to', tree.nextSelected(If('%keyCode%==40', 1, -1))))),
+      rx.filter(tree.sameParent('%from%', '%to%')),
+      sink.BEMethod('moveItem', '%%')
+    ),
+    frontEnd.onRefresh((ctx,{cmp}) => cmp.drake.containers = jb.ui.find(cmp.base,'.jb-array-node>.treenode-children')),
+    frontEnd.init((ctx,{cmp}) => {
 		const drake = cmp.drake = dragula([], {
 			moves: el => jb.ui.matches(el,'.jb-array-node>.treenode-children>div')
 		})
