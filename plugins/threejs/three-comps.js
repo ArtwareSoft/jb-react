@@ -10,12 +10,18 @@ jb.extension('three', {
     const geometry = new THREE[geometryId](...Object.values(ctx.params).slice(0,noOfParams))
     const meshParams = {}
     ;(ctx.params.meshParams() || []).forEach(f=> {
-      if (f.assign)
-        jb.path(meshParams,f.assign[0],f.assign[1])
       if (f.setGeometry)
         f.setGeometry(geometry) 
-    })
+    })    
+    ;(ctx.params.meshParams() || []).forEach(f=> {
+      if (f.initParam)
+        jb.path(meshParams,f.initParam[0],f.initParam[1]) 
+    })    
     const mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial(meshParams) )
+    ;(ctx.params.meshParams() || []).forEach(f=> {
+      if (f.assign)
+        jb.path(mesh,f.assign[0],f.assign[1])
+    })
     return mesh
   }
 })
@@ -60,18 +66,15 @@ jb.component('three.style', {
   impl: customStyle({
     template: ({},{},h) => h('div',{}),
     features: [
-      frontEnd.var('sceneJson', ({},{$model}) => $model.scene.toJSON()),
-      frontEnd.var('cameraJson', ({},{$model}) => $model.camera.toJSON()),
-      frontEnd.var('cameraPos', ({},{$model}) => $model.camera.position.toArray()),
+      frontEnd.var('profilePath', ({},{$model}) => $model.ctx.path),
       frontEnd.requireExternalLibrary(['three.js']),
       frontEnd.requireExternalLibrary(['three-OrbitControls.js']),
-      frontEnd.init(async ({},{cmp, el,sceneJson,cameraJson,cameraPos}) => {
+      frontEnd.init(async ({},{el, cmp, profilePath }) => {
+        const profile = profilePath.split('~').reduce((acc,p) => acc[p], jb.comps)
+        const camera = jb.exec(profile.camera)
+        const scene = jb.exec(profile.scene)
+
         const animations = []
-        const camera = await jb.three.parseObject(cameraJson)
-        camera.aspect = window.innerWidth / window.innerHeight
-        camera.position.fromArray(cameraPos)
-        camera.updateProjectionMatrix()
-        const scene = await jb.three.parseObject(sceneJson)
   
         const renderer = new THREE.WebGLRenderer()
         renderer.setSize( window.innerWidth, window.innerHeight )
@@ -79,8 +82,10 @@ jb.component('three.style', {
 
         el.appendChild( renderer.domElement )
 
-        const initMEthods = cmp.base.frontEndMethods.map(x=>x.method).filter(x=>x.match(/init.+/))
-        initMEthods.forEach(m=>cmp.runFEMethod(m,{},{animations, camera, scene, renderer}))
+        jb.delay(1).then(() => {
+          const initMEthods = cmp.base.frontEndMethods.map(x=>x.method).filter(x=>x.match(/init.+/))
+          initMEthods.forEach(m=>cmp.runFEMethod(m,{},{animations, camera, scene, renderer}))
+        })
 
         // const elem = scene.children[0]
         // elem.geometry.scale(0.5,0.5,0.5)
@@ -162,15 +167,16 @@ jb.component('three.color', {
   params: [
     {id: 'color', description: '#hex or name', defaultValue: 'red'}
   ],
-  impl: (ctx,color) => ({ assign: ['color',  new THREE.Color(color) ] })
+  impl: (ctx,color) => ({ initParam: ['color',  new THREE.Color(color) ] })
 })
 
-jb.component('three.positionZ', {
+jb.component('three.assign', {
   type: 'three.meshParam',
   params: [
-    {id: 'z', as: 'number', defaultValue: 1},
+    {id: 'to', as: 'string', options: 'position.z,position.y,position.x', mandatory: true},
+    {id: 'val', as: 'number', defaultValue: 1, mandatory: true}
   ],
-  impl: ctx => ({ assign: ['position.z', new THREE.MeshBasicMaterial(ctx.params)] })
+  impl: (ctx,to,val) => ({ assign: [to, val] })
 })
 
 jb.component('three.scale', {

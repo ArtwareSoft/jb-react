@@ -360,18 +360,8 @@ jb.component('studio.topBar', {
       }),
       group({
         title: 'title and menu',
-        layout: layout.vertical('11'),
         controls: [
           text({text: 'message', style: text.studioMessage()}),
-          text({
-            text: replace({
-              find: '_',
-              replace: ' ',
-              text: '%$studio/project%'
-            }),
-            style: text.htmlTag('div'),
-            features: [css('{ font: 20px Arial; margin-left: 6px; margin-top: 6px}'), watchRef('%$studio/project%')]
-          }),
           group({
             title: 'menu and toolbar',
             layout: layout.flex({spacing: '160'}),
@@ -379,14 +369,14 @@ jb.component('studio.topBar', {
               menu.control({
                 menu: studio.mainMenu(),
                 style: menuStyle.pulldown(),
-                features: [id('mainMenu'), css.height('30')]
+                features: [id('mainMenu'), css.height('30'), css.margin('18')]
               }),
               group({
                 title: 'toolbar',
                 controls: studio.toolbar(),
-                features: css.margin('-10')
+                features: css.margin('8')
               }),
-              controlWithFeatures(studio.searchComponent(), [css.margin('-10', '-100')])
+              controlWithFeatures(studio.searchComponent(), [css.margin('8', '-100')])
             ]
           })
         ],

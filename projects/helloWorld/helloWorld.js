@@ -20,7 +20,7 @@ jb.component('helloWorld.main', {
   type: 'control',
   impl: group({
     controls: [
-      text('Hello World'),
+      text('Hello World')
     ]
   })
 })

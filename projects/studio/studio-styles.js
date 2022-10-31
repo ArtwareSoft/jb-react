@@ -122,10 +122,11 @@ jb.component('text.studioMessage', {
   impl: customStyle({
     template: (cmp,{text},h) => h('span.studio-message',{}, text),
     css: `{ position: absolute;
-      z-index: 10000,
-      color: white;  padding: 10px;  background: #327DC8;
+      z-index: 10000;
+      color: white;  padding: 20px;  background: #327DC8;
       width: 1000px;
       margin-top: -100px;
+      animation-fill-mode: forwards;
       }`,
     features: text.bindText()
   })

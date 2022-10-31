@@ -2,15 +2,15 @@ jb.component('studio.saveComponents', {
   type: 'action,has-side-effects',
   impl: rx.pipe(
     source.data(pipeline(watchableComps.changedComps(), studio.filePathOfComp('%comp%'), unique())),
-    rx.var('fn','%%'),
+    rx.var('fn', '%%'),
     rx.var('comps', pipeline(watchableComps.changedComps(), filter(equals('%$fn%', studio.filePathOfComp('%comp%'))))),
     rx.mapPromise(studio.getFileContent('%$fn%')),
-    rx.var('fileContent','%%'),
-    rx.doPromise( studio.saveFile('%$fn%', studio.newFileContent('%$fileContent%','%$comps%'))),
+    rx.var('fileContent', '%%'),
+    rx.doPromise(studio.saveFile('%$fn%', studio.newFileContent('%$fileContent%', '%$comps%'))),
     rx.catchError(),
     sink.action(({},{fn,fileContent,comps}) => {
       if (fileContent) {
-        jb.studio.host.showInformationMessage('file ' + fn + ' updated with components :' + comps.map(e=>e[0]).join(', '))
+        jb.studio.host.showInformationMessage('file ' + fn + ' updated with components :' + comps.map(c=>c.id).join(', '))
         jb.scriptHistory.updateLastSave()
       } else {
         jb.studio.host.showError('error saving: ' + (typeof e == 'string' ? e : e.message || e.e || e.desc))

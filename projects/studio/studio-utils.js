@@ -9,13 +9,7 @@ jb.extension('studio', {
       inner.textContent = m.text;
       el.appendChild(inner)
     })
-    jb.studio.animateMessage(el)
-  },
-  animateMessage (el) {
-    el.style.marginTop = 0;
-    // el.style.animation = '';
-    // jb.delay(100).then(()=>	el.style.animation = 'slide_from_top 5s ease')
-    jb.delay(6000).then(()=> el.style.marginTop = '-50px')
+    el.style.animation = 'slide_from_top 5s ease'
   },
   previewWindow: () => jb.frame
 })
