@@ -1,7 +1,7 @@
 jb.component('source.data', {
   type: 'rx',
   params: [
-    {id: 'data', mandatory: true },
+    {id: 'data', mandatory: true}
   ],
   impl: (ctx,data) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromIter(jb.toarray(data)))
 })
@@ -252,7 +252,8 @@ jb.component('rx.mapPromise', {
   params: [
     {id: 'func', dynamic: true, mandatory: true}
   ],
-  impl: (ctx,func) => jb.callbag.mapPromise(ctx2 => Promise.resolve(func(ctx2)).then(data => ({vars: ctx2.vars || {}, data})))
+  impl: (ctx,func) => jb.callbag.mapPromise(ctx2 => Promise.resolve(func(ctx2)).then(data => ({vars: ctx2.vars || {}, data}))
+    .catch(err => ({vars: {...ctx2.vars, err }, data: err})) )
 })
 
 jb.component('rx.filter', {

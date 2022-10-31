@@ -6,17 +6,7 @@ jb.component('studio.saveComponents', {
     rx.var('comps', pipeline(watchableComps.changedComps(), filter(equals('%$fn%', studio.filePathOfComp('%comp%'))))),
     rx.mapPromise(studio.getFileContent('%$fn%')),
     rx.var('fileContent', '%%'),
-    rx.doPromise(studio.saveFile('%$fn%', studio.newFileContent('%$fileContent%', '%$comps%'))),
-    rx.catchError(),
-    sink.action(({},{fn,fileContent,comps}) => {
-      if (fileContent) {
-        jb.studio.host.showInformationMessage('file ' + fn + ' updated with components :' + comps.map(c=>c.id).join(', '))
-        jb.scriptHistory.updateLastSave()
-      } else {
-        jb.studio.host.showError('error saving: ' + (typeof e == 'string' ? e : e.message || e.e || e.desc))
-        jb.logException(e,'error while saving ' + e.id,{ctx}) || []  
-      }
-    })
+    sink.action(studio.saveFile('%$fn%', studio.newFileContent('%$fileContent%', '%$comps%'))),
   )
 })
 
@@ -35,13 +25,22 @@ jb.component('studio.getFileContent', {
 })
 
 jb.component('studio.saveFile', {
+  type: 'action,has-side-effects',
   params: [
-    { id: 'filePath', as: 'string' },
-    { id: 'content', as: 'string' }
+    {id: 'filePath', as: 'string'},
+    {id: 'content', as: 'string'}
   ],
-  impl: (ctx,filePath,content) => jb.studio.host.saveFile(filePath, content)
+  impl: (ctx,filePath,content) =>
+    jb.studio.host.saveFile(filePath, content).then(() => {
+      jb.studio.host.showInformationMessage(`file saved ${filePath}`)
+      jb.scriptHistory.updateLastSave()
+    }).catch(err => {
+      jb.studio.host.showError(`error saving ${filePath}: ` + (typeof err == 'string' ? err : err.message || err.desc))
+      jb.logError(`error saving ${filePath}`,{filePath, err, ctx})
+    })
 })
 
+// jb.studio.host.saveFile(filePath, content)
 jb.component('studio.newFileContent', {
   params: [
     { id: 'fileContent', as: 'string' },

@@ -9,7 +9,9 @@ jb.extension('studio', {
       inner.textContent = m.text;
       el.appendChild(inner)
     })
-    el.style.animation = 'slide_from_top 5s ease'
+    el.style['animation-fill-mode'] = 'forward'
+    el.style.animation = ''
+    jb.delay(1).then(()=> el.style.animation = 'slide_from_top 5s ease')
   },
   previewWindow: () => jb.frame
 })

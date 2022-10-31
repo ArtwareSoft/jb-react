@@ -316,14 +316,7 @@ jb.component('rxTest.promises', {
 })
 
 jb.component('rxTest.mapPromiseActiveSource', {
-  impl: dataTest({
-    calculate: rx.pipe(
-          source.interval(1),
-          rx.take(1),
-          rx.mapPromise(({data}) =>jb.delay(1,data+2)),
-        ),
-    expectedResult: equals(2)
-  })
+  impl: dataTest(rx.pipe(source.interval(1), rx.take(1), rx.mapPromise(({data}) =>jb.delay(1,data+2))), equals(2))
 })
 
 jb.component('rxTest.rawMapPromiseTwice', {
@@ -343,6 +336,25 @@ jb.component('rxTest.mapPromiseTwice', {
           rx.mapPromise(({data}) =>jb.delay(1,data+2)),
         ),
     expectedResult: equals('4')
+  })
+})
+
+jb.component('rxTest.mapPromiseWithError', {
+  impl: dataTest({
+    calculate: rx.pipe(source.data(0), rx.var('aa', 'aa'), 
+      rx.mapPromise( () => new Promise((res,rej) => { rej('error') })), 
+      rx.map('%$aa%-%$err%-%%')
+    ),
+    expectedResult: equals('aa-error-error'),
+    allowError: true,
+  })
+})
+
+jb.component('rxTest.mapPromiseWithError2', {
+  impl: dataTest({
+    calculate: rx.pipe(source.data(0), rx.var('aa', 'aa'), rx.mapPromise(async () => {throw 'error'}), rx.map('%$aa%-%$err%-%%')),
+    expectedResult: equals('aa-error-error'),
+    allowError: true
   })
 })
 
