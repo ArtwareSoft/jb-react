@@ -399,7 +399,7 @@ const op_get_handlers = {
         return gotoFile(path.split(':')[0],path.split(':')[1])
 
       const comp = getURLParam(req,'comp');
-      const files = walk('projects').concat(walk('src'));
+      const files = walk('projects').concat(walk('src')).concat(walk('plugins'));
       files.filter(x=>x.match(/\.(ts|js)$/))
         .forEach(srcPath=>{
                 const source = ('' + fs.readFileSync(srcPath)).split('\n');

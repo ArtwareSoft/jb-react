@@ -211,9 +211,10 @@ jb.defComponents(
 'isArrayType,parentPath,shortTitle,summary,isDisabled,enumOptions,propName,paramDef,paramType,moreParams,paramsOfPath,firstChildOfPath,canWrapWithArray'
 	.split(','), f => jb.component(`tgp.${f}`, { 
 	params: [
-		{id: 'path', as: 'string', mandatory: true}
+		{id: 'path', as: 'string', mandatory: true},
+		{id: 'func', as: 'string', defaultValue: f}
 	  ],
-	  impl: ({},path) => jb.tgp[f](path),
+	  impl: ({},path,f) => jb.tgp[f](path),
 	  require: {$: `jb.tgp.${f}` }
 }))
 

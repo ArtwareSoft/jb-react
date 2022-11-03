@@ -47,6 +47,13 @@ jb.component('remoteTest.remote.data', {
   })
 })
 
+jb.component('remoteTest.remote.data.defComponents', {
+  impl: dataTest({
+    calculate: remote.data(pipeline('1.5', math.floor()), jbm.worker()),
+    expectedResult: equals(1),
+  })
+})
+
 jb.component('remoteTest.remote.action', {
   impl: dataTest({
     timeout: 3000,

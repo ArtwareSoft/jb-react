@@ -142,11 +142,11 @@ jb.component('vega.filter', {
 })
 
 jb.component('vega.filterExpression', {
-    type: 'vega.boolean',
-    params: [
-        {id: 'filter', as: 'string', mandatory: true, description: 'e.g: datum.x>2' },
-    ],
-    impl: (ctx,filter) => ({ filter })
+  type: 'vega.boolean',
+  params: [
+    {id: 'filter', as: 'string', mandatory: true, description: 'e.g: datum.x>2'}
+  ],
+  impl: (ctx,filter) => ({ filter })
 })
 
 jb.defComponents('equal,lt,lte,gt,gte'.split(','),
@@ -155,8 +155,9 @@ jb.defComponents('equal,lt,lte,gt,gte'.split(','),
         params: [
             {id: 'field', as: 'string', mandatory: true },
             {id: 'value', as: 'string', mandatory: true },
+            {id: 'op', as: 'string', defaultValue: op}
         ],
-        impl: (ctx,field,value) => ({ field, [op]: value })
+        impl: (ctx,field,value,op) => ({ field, [op]: value })
 })))
 
 jb.defComponents('range,oneOf'.split(','),
@@ -165,8 +166,9 @@ jb.defComponents('range,oneOf'.split(','),
     params: [
         {id: 'field', as: 'string', mandatory: true },
         {id: 'values', as: 'array', mandatory: true },
+        {id: 'op', as: 'string', defaultValue: op}
     ],
-    impl: (ctx,field,values) => ({ field, [op]: values })
+    impl: (ctx,field,values,op) => ({ field, [op]: values })
 })))
 
 jb.component('vega.inSelection', {

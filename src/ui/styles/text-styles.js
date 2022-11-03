@@ -76,12 +76,9 @@ jb.defComponents('1,2,3,4,5,6'.split(','),
 jb.component('text.h2WithClass', {
   type: 'text.style:0',
   params: [
-    {id: 'clz', as: 'string'},
+    {id: 'clz', as: 'string'}
   ],
-  impl: customStyle({
-    template: (cmp,{text,clz},h) => h('h2',{class: clz},text),
-    features: text.bindText()
-  })
+  impl: customStyle({template: (cmp,{text,clz},h) => h('h2',{class: clz},text), features: text.bindText()})
 })
 
 jb.defComponents('1,2,3,4,5,6'.split(','), 

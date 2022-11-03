@@ -102,9 +102,10 @@ jb.component('tgp.ref', {
 
 jb.defComponents('pathOfRef,nameOfRef'.split(','), f => jb.component(`tgp.${f}`, { 
 	params: [
-		{id: 'ref', defaultValue: '%%', mandatory: true}
+		{id: 'ref', defaultValue: '%%', mandatory: true},
+		{id: 'func', as: 'string', defaultValue: f}
 	  ],
-	impl: ({},ref) => jb.tgp[f](ref),
+	impl: ({},ref,f) => jb.tgp[f](ref),
 	require: {$: `jb.tgp.${f}` }
 }))
 

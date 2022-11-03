@@ -199,15 +199,18 @@ jb.component('math.minus', {
   category: 'math:80',
   params: [
     {id: 'x', as: 'number', mandatory: true},
-    {id: 'y', as: 'number', mandatory: true},
+    {id: 'y', as: 'number', mandatory: true}
   ],
   impl: ({},x,y) => x - y
 })
 
-'abs,acos,acosh,asin,asinh,atan,atan2,atanh,cbrt,ceil,clz32,cos,cosh,exp,expm1,floor,fround,hypot,log2,random,round,sign,sin,sinh,sqrt,tan,tanh,trunc'
-  .split(',').forEach(f=>jb.component(`math.${f}`, {
+jb.defComponents('abs,acos,acosh,asin,asinh,atan,atan2,atanh,cbrt,ceil,clz32,cos,cosh,exp,expm1,floor,fround,hypot,log2,random,round,sign,sin,sinh,sqrt,tan,tanh,trunc'
+  .split(','), f => jb.component(`math.${f}`, {
     category: 'math:70',
-    impl: ctx => Math[f](ctx.data)
+    params: [
+      {id: 'func', as: 'string', defaultValue: f}
+    ],
+    impl: ({data},f) => Math[f](data)
   })
 )
 

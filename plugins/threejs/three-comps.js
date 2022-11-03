@@ -132,13 +132,22 @@ jb.component('three.point', {
 jb.component('three.scene', {
   type: 'three.scene',
   params: [
-    {id: 'elements', type: 'three.element[]', mandatory: true}
+    {id: 'elements', type: 'three.element[]', dynamic: true, flattenArray: true, mandatory: true}
   ],
   impl: (ctx,elements) => {
     const res = new THREE.Scene()
-    elements.forEach(m=>res.add(m))
+    elements().forEach(m=>res.add(m))
     return res
   }
+})
+
+jb.component('three.elementsFromItems', {
+  type: 'three.element',
+  params: [
+    {id: 'items', type: 'data', dynamic: true, mandatory: true},
+    {id: 'genericElement', type: 'three.element', dynamic: true, mandatory: true}
+  ],
+  impl: pipeline('%$items()%', '%$genericElement()%' )
 })
 
 jb.component('three.box', {
