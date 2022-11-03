@@ -433,12 +433,12 @@ jb.component('studio.jbEditorTitle', {
         style: editableBoolean.buttonXV({
           yesIcon: icon({icon: 'ArrowCollapseRight', type: 'mdi'}),
           noIcon: icon({icon: 'ArrowCollapseLeft', type: 'mdi'}),
-          buttonStyle: button.mdcFloatingAction('40', true)
+          buttonStyle: button.mdcFloatingAction(20, true)
         }),
         title: 'hide input-output',
         textForTrue: 'hide probe',
         textForFalse: 'show probe',
-        features: css('transform: translate(-10px,-10px) scale(0.5,0.5)')
+        features: css('>*>svg { transform: scale(0.5,0.5) }')
       })
     ]
   })

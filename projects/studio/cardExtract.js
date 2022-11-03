@@ -21,53 +21,54 @@ jb.component('cardExtract.showOptions', {
 })
   
 jb.component('cardExtract.selectStyle', {
-    type: 'control',
-    params: [
-      {id: 'extractedCtrl'},
-      {id: 'targetPath', as: 'string'}
-    ],
-    impl: group({
-      controls: [
-        editableBoolean({
-          databind: '%$studio/patterns/deleteUnmapped%',
-          style: editableBoolean.mdcSlideToggle(),
-          textForTrue: 'delete unmapped',
-          textForFalse: 'keep unmapped'
-        }),
-        group({
-          controls: group({
-            layout: layout.grid({columnSizes: list('600'), columnGap: '10px', rowGap: '10px'}),
-            style: group.sections({
-              titleStyle: header.mdcHeadline6(),
-              sectionStyle: styleWithFeatures(
-                group.div(),
-                [
-                  css.padding({left: '10', bottom: '20'}),
-                  css.boxShadow({
-                    blurRadius: '2',
-                    spreadRadius: '0',
-                    shadowColor: '#000000',
-                    opacity: 0.5,
-                    horizontal: '2',
-                    vertical: '2'
-                  }),
-                  css('position: relative')
-                ]
-              ),
-              innerGroupStyle: styleWithFeatures(group.div(), [css.padding({top: '20', right: '20'})])
-            }),
-            controls: dynamicControls({
-              controlItems: pipeline(
-                cardExtract.suggestedStyles('%$extractedCtrl%', '%$targetPath%'),
-                ctx => {
+  type: 'control',
+  params: [
+    {id: 'extractedCtrl'},
+    {id: 'targetPath', as: 'string'}
+  ],
+  impl: group({
+    controls: [
+      editableBoolean({
+        databind: '%$studio/patterns/deleteUnmapped%',
+        style: editableBoolean.mdcSlideToggle(),
+        textForTrue: 'delete unmapped',
+        textForFalse: 'keep unmapped'
+      }),
+      group({
+        controls: group({
+          layout: layout.grid({
+            columnSizes: list('600'),
+            columnGap: '10px',
+            rowGap: '10px'
+          }),
+          style: group.sections({
+            titleStyle: header.mdcHeadline6(),
+            sectionStyle: styleWithFeatures(
+              group.div(),
+              [
+                css.padding({left: '10', bottom: '20'}),
+                css.boxShadow({
+                  blurRadius: '2',
+                  spreadRadius: '0',
+                  shadowColor: '#000000',
+                  opacity: 0.5,
+                  horizontal: '2',
+                  vertical: '2'
+                }),
+                css('position: relative')
+              ]
+            ),
+            innerGroupStyle: styleWithFeatures(group.div(), [css.padding({top: '20', right: '20'})])
+          }),
+          controls: dynamicControls({
+            controlItems: pipeline(cardExtract.suggestedStyles('%$extractedCtrl%', '%$targetPath%'), ctx => {
               const clone = JSON.parse(JSON.stringify(ctx.run(tgp.val('%$targetPath%'))))
               const length = JSON.stringify(ctx.exp('%%')).length
               return { ...clone, style: ctx.exp('%%'), length }
-          }
-              ),
-              genericControl: group({
-                controls: [
-                  ctx => {
+          }),
+            genericControl: group({
+              controls: [
+                ctx => {
                     const previewCtx = jb.cardExtract.closestCtxInPreview(ctx,ctx.exp('%$targetPath%'))
                     jb.path(jb,'studio.previewjb.ui.workerStyleElems.preview',[])
                     const cmp = jb.ui.extendWithServiceRegistry(new jb.studio.previewjb.core.jbCtx()).ctx(previewCtx)
@@ -77,32 +78,32 @@ jb.component('cardExtract.selectStyle', {
                     jb.path(jb,'studio.previewjb.ui.workerStyleElems.preview',[])
                     return vdom
                 },
-                  button({
-                    title: 'select (%$__option/length%)',
-                    action: runActions(
-                      Var('styleSuffix', If(equals('%$__option/style/$%', 'group'), '', '~style')),
-                      writeValue(tgp.ref('%$targetPath%%$styleSuffix%'), '%$__option/style%'),
-                      dialog.closeDialog()
-                    ),
-                    features: css('position: absolute; top: 0; left: 30px;')
-                  })
-                ]
-              }),
-              itemVariable: '__option'
+                button({
+                  title: 'select (%$__option/length%)',
+                  action: runActions(
+                    Var('styleSuffix', If(equals('%$__option/style/$%', 'group'), '', '~style')),
+                    writeValue(tgp.ref('%$targetPath%%$styleSuffix%'), '%$__option/style%'),
+                    dialog.closeDialog()
+                  ),
+                  features: css('position: absolute; top: 0; left: 30px;')
+                })
+              ]
             }),
-            features: css.height('600')
+            itemVariable: '__option'
           }),
-          features: [
-            watchRef({
-              ref: '%$studio/patterns%',
-              includeChildren: 'yes',
-              allowSelfRefresh: true
-            }),
-            css.height({height: '600', overflow: 'auto'})
-          ]
-        })
-      ]
-    })
+          features: css.height('600')
+        }),
+        features: [
+          watchRef({
+            ref: '%$studio/patterns%',
+            includeChildren: 'yes',
+            allowSelfRefresh: true
+          }),
+          css.height('600', 'auto')
+        ]
+      })
+    ]
+  })
 })
   
 jb.component('cardExtract.flattenControlToGrid', {

@@ -195,7 +195,7 @@ box-sizing: border-box;
 
 /* dialog: jb-default-dialog */
 .jb-default-dialog { position: absolute; top: 40px; left: 40px; background: #F9F9F9; border: 1px solid #BEBEBE; box-shadow: 0 0px 9px #ccc; min-width: 300px; min-height: 50px; overflow: auto;}
-.jb-default-dialog>.dialog-title { text-align: left; background: #fff no-repeat 5px 10px; font-size 13px; font-weight: bold;
+.jb-default-dialog>.dialog-title { text-align: left; background: #fff no-repeat 5px 10px; font-size: 13px; font-weight: bold;
 padding: 10px 10px 10px 27px; color: #6D6E71; min-height: 12px; border-bottom: 1px solid #BEBEBE; text-transform: capitalize;}
 .jb-default-dialog>.dialog-close { position: absolute; cursor: pointer; right: 4px; top: 4px; font: 21px sans-serif; border: none; background: transparent; color: #000; text-shadow: 0 1px 0 #fff; font-weight: 700; opacity: .2;}
 .jb-default-dialog>.dialog-close:hover { opacity: .5; }
@@ -301,7 +301,7 @@ border: 1px solid rgb(213, 213, 213);}
   visibility: hidden;
   opacity: 0;
   transition: visibility 0s ease-in-out 3s, opacity 3s;
-//  -webkit-transition: opacity 3s ease-in-out;
+  -webkit-transition: opacity 3s ease-in-out;
 }
 
 .jb-fade-3s {

@@ -124,7 +124,7 @@ body { /* a copy - the master is in theme.js */
 }
 .pulldown-main-menu { position: absolute; top: 31px; left: 8px; display: -webkit-box1; -webkit-box-orient1: horizontal; }
 .pulldown-top-menu-item {
-  cursor: pointer; font-size: var(--jb-font-size); padding: 5px 7px; color1: var(--jb-menu-fg);  background: var(--jb-menu-bg); -webkit-user-select: none;
+  cursor: pointer; font-size: var(--jb-font-size); padding: 5px 7px; background: var(--jb-menu-bg); user-select: none;
   display: block;  border: none; text-align: left;
 }
 .pulldown-top-menu-item:hover { color: var(--jb-menubar-selection-fg); background: var(--jb-menubar-selection-bg) }
@@ -145,7 +145,7 @@ body { /* a copy - the master is in theme.js */
 
 .pulldown-mainmenu-popup .pulldown-menu-remove-top-border { background: var(--jb-menu-bg); height: 3px; position: absolute; top: -2px; left: 0; }
 /* .pulldown-menu-item */
-.pulldown-menu-item { -webkit-user-select: none;  padding: 6px 10px 6px 29px; font-size: var(--jb-font-size); display: block; 
+.pulldown-menu-item { user-select: none;  padding: 6px 10px 6px 29px; font-size: var(--jb-font-size); display: block; 
   background: var(--jb-menu-bg);  border: none; width: 100%; text-align: left; cursor: pointer; position: relative;}
 .pulldown-menu-item:hover { color: var(--jb-menubar-selection-fg); background: var(--jb-menubar-selection-bg) }
 .pulldown-menu-item1:focus { outline: none; }
