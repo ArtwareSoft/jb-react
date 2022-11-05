@@ -3,8 +3,11 @@ jb.component('threeTest.basic', {
   impl: uiTest({
     control: three.control({
       scene: three.scene(
-        three.box('2', '3', '3', [three.color('blue'), three.scale(0.5), three.assign('position.y', 1)]),
-        three.elementsFromItems(list('1', '2', '3'), three.box(1, 1, 1, three.assign('position.y', '%%')))
+        three.elementsFromItems(
+          pipeline(range(), math.div('%%', 10)),
+          three.sphere(0.05, [three.assign('position.z', '%%'), three.assign('position.y', 1), three.assign('position.x', -1)])
+        ),
+        three.allDirectionsLight()
       ),
       camera: three.perspectiveCamera(three.point(0, 0, 5)),
       features: [three.OrbitControls()]

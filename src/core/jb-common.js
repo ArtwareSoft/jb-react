@@ -192,7 +192,7 @@ jb.component('math.plus', {
     {id: 'x', as: 'number', mandatory: true },
     {id: 'y', as: 'number', mandatory: true },
   ],
-  impl: ({},x,y) => x + y
+  impl: ({},x,y) => +x + +y
 })
 
 jb.component('math.minus', {
@@ -201,8 +201,27 @@ jb.component('math.minus', {
     {id: 'x', as: 'number', mandatory: true},
     {id: 'y', as: 'number', mandatory: true}
   ],
-  impl: ({},x,y) => x - y
+  impl: ({},x,y) => +x - +y
 })
+
+jb.component('math.mul', {
+  category: 'math:80',
+  params: [
+    {id: 'x', as: 'number', mandatory: true},
+    {id: 'y', as: 'number', mandatory: true}
+  ],
+  impl: ({},x,y) => +x * +y
+})
+
+jb.component('math.div', {
+  category: 'math:80',
+  params: [
+    {id: 'x', as: 'number', mandatory: true},
+    {id: 'y', as: 'number', mandatory: true}
+  ],
+  impl: ({},x,y) => +x / +y
+})
+
 
 jb.defComponents('abs,acos,acosh,asin,asinh,atan,atan2,atanh,cbrt,ceil,clz32,cos,cosh,exp,expm1,floor,fround,hypot,log2,random,round,sign,sin,sinh,sqrt,tan,tanh,trunc'
   .split(','), f => jb.component(`math.${f}`, {

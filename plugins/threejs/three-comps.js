@@ -7,7 +7,7 @@ jb.extension('three', {
     })
   },
   createMesh(ctx, geometryId, noOfParams) {
-    const geometry = new THREE[geometryId](...Object.values(ctx.params).slice(0,noOfParams))
+    const geometry = new THREE[`${geometryId}Geometry`](...Object.values(ctx.params).slice(0,noOfParams))
     const meshParams = {}
     ;(ctx.params.meshParams() || []).forEach(f=> {
       if (f.setGeometry)
@@ -16,8 +16,15 @@ jb.extension('three', {
     ;(ctx.params.meshParams() || []).forEach(f=> {
       if (f.initParam)
         jb.path(meshParams,f.initParam[0],f.initParam[1]) 
-    })    
-    const mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial(meshParams) )
+    })
+    const material = new THREE.MeshPhongMaterial( {
+    //  color: 0xa0adaf,
+    //  shininess: 10,
+    //  specular: 0x111111,
+      ...meshParams
+    } );
+    //const material = new THREE.MeshBasicMaterial(meshParams)
+    const mesh = new THREE.Mesh(geometry, material)
     ;(ctx.params.meshParams() || []).forEach(f=> {
       if (f.assign)
         jb.path(mesh,f.assign[0],f.assign[1])
@@ -31,6 +38,7 @@ jb.component('three.control', {
   params: [
     {id: 'scene', type: 'three.scene', defaultValue: three.sampleScene()},
     {id: 'camera', type: 'three.camera', defaultValue: three.perspectiveCamera(three.point(0, 0, 5))},
+    {id: 'lights', type: 'three.light[]', dynamic: true, flattenArray: true},
     {id: 'controls', type: 'three.control[]'},
     {id: 'style', type: 'three.style', defaultValue: three.style(), dynamic: true},
     {id: 'features', type: 'three.feature[]', dynamic: true}
@@ -73,12 +81,15 @@ jb.component('three.style', {
         const profile = profilePath.split('~').reduce((acc,p) => acc[p], jb.comps)
         const camera = jb.exec(profile.camera)
         const scene = jb.exec(profile.scene)
+        const lights = jb.exec(profile.lights)()
 
+        lights.forEach(m=>scene.add(m))        
         const animations = []
   
         const renderer = new THREE.WebGLRenderer()
-        renderer.setSize( window.innerWidth, window.innerHeight )
-		    renderer.domElement.setAttribute('jb_external','true')
+        renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+        renderer.domElement.setAttribute('jb_external','true')
 
         el.appendChild( renderer.domElement )
 
@@ -88,7 +99,7 @@ jb.component('three.style', {
         })
 
         // const elem = scene.children[0]
-        // elem.geometry.scale(0.5,0.5,0.5)
+        // elem.geometry.scale(0.5,0.5,0.5)       
   
         renderer.render( scene, camera )
   
@@ -135,9 +146,9 @@ jb.component('three.scene', {
     {id: 'elements', type: 'three.element[]', dynamic: true, flattenArray: true, mandatory: true}
   ],
   impl: (ctx,elements) => {
-    const res = new THREE.Scene()
-    elements().forEach(m=>res.add(m))
-    return res
+    const scene = new THREE.Scene()
+    elements().forEach(m=>scene.add(m))
+    return scene
   }
 })
 
@@ -159,16 +170,25 @@ jb.component('three.box', {
     {id: 'meshParams', type: 'three.meshParam[]', dynamic: true}
   ],
   macroByValue: true,
-  impl: ctx => jb.three.createMesh(ctx, 'BoxGeometry',3)
+  impl: ctx => jb.three.createMesh(ctx, 'Box',3)
 })
 
 jb.component('three.sphere', {
   type: 'three.element',
   params: [
     {id: 'radius', as: 'number', defaultValue: 1},
-    {id: 'meshParams', type: 'three.meshParam[]', dynamic: true},
+    {id: 'meshParams', type: 'three.meshParam[]', dynamic: true}
   ],
-  impl: ctx => jb.three.createMesh(ctx, 'SphereGeometry',1)
+  impl: ctx => jb.three.createMesh(ctx, 'Sphere',1)
+})
+
+jb.component('three.meshParams', {
+  type: 'three.meshParam',
+  description: 'list of features, auto flattens',
+  params: [
+    {id: 'meshParams', type: 'three.meshParam[]', as: 'array', composite: true}
+  ],
+  impl: ({},meshParams) => meshParams.flatMap(x=> Array.isArray(x) ? x: [x])
 })
 
 jb.component('three.color', {
@@ -188,6 +208,16 @@ jb.component('three.assign', {
   impl: (ctx,to,val) => ({ assign: [to, val] })
 })
 
+jb.component('three.position', {
+  params: [
+    {id: 'x', as: 'number'},
+    {id: 'y', as: 'number'},
+    {id: 'z', as: 'number'}
+  ],
+  impl: three.meshParams([three.assign('position.z', '%%'), three.assign('position.y', 1), three.assign('position.x', -1)])
+})
+
+
 jb.component('three.scale', {
   type: 'three.meshParam',
   params: [
@@ -199,4 +229,83 @@ jb.component('three.scale', {
 jb.component('three.sampleScene', {
   type: 'three.scene',
   impl: three.scene(three.sphere())
+})
+
+
+// ****** light
+
+jb.component('three.lights', {
+  type: 'three.light',
+  params: [
+    {id: 'lights', type: 'three.light[]', as: 'array', composite: true}
+  ],
+  impl: ({},lights) => lights.flatMap(x=> Array.isArray(x) ? x: [x])
+})
+
+jb.component('three.allDirectionsLight', {
+  type: 'three.light',
+  params: [
+    {id: 'params', type: 'three.lightParam[]', dynamic: true}
+  ],
+  impl: (ctx,params) => {
+    const ambientLight = new THREE.AmbientLight( 0x000000 );
+    const light1 = new THREE.PointLight( 0xff0000, 1, 0 );
+    light1.position.set( 0, 200, 0 );
+    const light2 = new THREE.PointLight( 0x00ff00, 1, 0 );
+    light2.position.set( 100, 200, 100 );
+    const light3 = new THREE.PointLight( 0x0000ff, 1, 0 );
+    light3.position.set( - 100, - 200, - 100 );
+    return [ambientLight,light1,light2,light3]
+  }
+})
+
+jb.component('three.ambientLight', {
+  type: 'three.light',
+  description: 'globally illuminates all objects equally. No shadow',
+  params: [
+    {id: 'position', type: 'three.point', defaultValue: three.point(0, 0, 0)},
+    {id: 'color', description: '#hex or name', defaultValue: 0xaaaaaa },
+    {id: 'intensity', defaultValue: 1},
+    {id: 'params', type: 'three.lightParam[]', dynamic: true}
+  ],
+  impl: (ctx,position,color,intensity, params) => {
+    const light = new THREE.AmbientLight(new THREE.Color(color).getHex(), intensity)
+    ;(params() || []).forEach(f=> {
+      if (f.assign)
+        jb.path(light,f.assign[0],f.assign[1])
+    })    
+    light.position.set(...Object.values(position)).normalize()
+    return light
+  }
+})
+
+jb.component('three.pointLight', {
+  type: 'three.light',
+  description: 'emitted from a single point to all directions. lightbulb.',
+  params: [
+    {id: 'position', type: 'three.point', defaultValue: three.point(0, 0, 0)},
+    {id: 'color', description: '#hex or name', defaultValue: 0xaaaaaa },
+    {id: 'intensity', defaultValue: 1},
+    {id: 'distance', description: 'max range. 0 unlimited', defaultValue: 0},
+    {id: 'decay', defaultValue: 1},
+    {id: 'params', type: 'three.lightParam[]', dynamic: true}
+  ],
+  impl: (ctx,position,color,intensity,distance,decay, params) => {
+    const light = new THREE.PointLight(new THREE.Color(color).getHex(), intensity,distance,decay)
+    ;(params() || []).forEach(f=> {
+      if (f.assign)
+        jb.path(light,f.assign[0],f.assign[1])
+    })    
+    light.position.set(...Object.values(position)).normalize()
+    return light
+  }
+})
+
+jb.component('three.light.assign', {
+  type: 'three.lightParam',
+  params: [
+    {id: 'to', as: 'string', options: 'position.z,position.y,position.x', mandatory: true},
+    {id: 'val', as: 'number', defaultValue: 1, mandatory: true}
+  ],
+  impl: (ctx,to,val) => ({ assign: [to, val] })
 })
