@@ -9,7 +9,7 @@ jb.extension('tgpTextEditor', {
           if (!overrideLocation)
             jb.comps[compId][jb.core.location] = oldLocation
           if (!doNotFixProfile)
-            jb.macro.fixProfile(jb.comps[compId],compId)
+            jb.macro.resolveProfile(jb.comps[compId],{id: compId})
         }
         return { res, compId }
       } 

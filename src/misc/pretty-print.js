@@ -105,7 +105,7 @@ jb.extension('utils', 'prettyPrint', {
       const id = [jb.utils.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
       const comp = comps[id]
       if (comp)
-        jb.macro.fixProfile(profile)
+        jb.macro.resolveProfile(profile,{id})
       if (noMacros || !id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
         const props = Object.keys(profile)
         if (props.indexOf('$') > 0) { // make the $ first

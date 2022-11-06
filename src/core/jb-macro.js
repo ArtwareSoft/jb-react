@@ -20,7 +20,7 @@ jb.extension('macro', {
         get: (o, p) => p === jb.macro.isMacro? true : jb.macro.getInnerMacro(id, p),
         apply: function (target, thisArg, allArgs) {
             const { args, system } = jb.macro.splitSystemArgs(allArgs)
-            return Object.assign(jb.macro.argsToProfile(id, args), system)
+            return { $: id, $byValue: args, ...system }
         }
     }),
     getInnerMacro(ns, innerId) {
@@ -29,13 +29,14 @@ jb.extension('macro', {
             const out = { $: `${ns}.${innerId}` }
             if (args.length == 0)
                 Object.assign(out)
-            else if (args.length == 1 && typeof args[0] == 'object' && !Array.isArray(args[0]) && !jb.utils.compName(args[0])) // params by name
+            else if (jb.macro.isParamsByNameArgs(args))
                 Object.assign(out, args[0])
             else
                 Object.assign(out, { $byValue: args })
             return Object.assign(out, system)
         }
-    },    
+    },
+    isParamsByNameArgs : args => args.length == 1 && typeof args[0] == 'object' && !Array.isArray(args[0]) && !jb.utils.compName(args[0]),    
     splitSystemArgs(allArgs) {
         const args = [], system = {} // system props: constVar, remark
         allArgs.forEach(arg => {
@@ -50,8 +51,7 @@ jb.extension('macro', {
         }
         return { args, system }
     },
-    argsToProfile(cmpId, args) {
-        const comp = jb.comps[cmpId]
+    argsToProfile(cmpId, comp, args) { // todo - fix dsl type
         if (args.length == 0)
             return { $: cmpId }        
         if (!comp)
@@ -72,15 +72,22 @@ jb.extension('macro', {
             return { $: cmpId, [params[0].id]: args[0], [params[1].id]: args[1] }
         debugger;
     },
-    fixProfile(profile,origin) {
-        if (!profile || !profile.constructor || ['Object','Array'].indexOf(profile.constructor.name) == -1) return
-        Object.values(profile).forEach(v=>jb.macro.fixProfile(v,origin))
-        if (profile.$byValue) {
-          if (!jb.comps[profile.$])
-            return jb.logError(`fixProfile - missing component ${profile.$} at ${origin}`, {compId: profile.$, origin, profile})
-          Object.assign(profile, jb.macro.argsToProfile(profile.$, profile.$byValue))
-          delete profile.$byValue
+    resolveProfile(profile, { id, dslType } = {}) {
+        doResolve(profile, dslType || profile[jb.core.RT] && profile[jb.core.RT].dslType || profile.type)
+        function doResolve(prof, dslType) {
+            if (!prof || !prof.constructor || ['Object','Array'].indexOf(prof.constructor.name) == -1) return
+            Object.values(prof).forEach(v=>doResolve(v))
+            if (prof.$byValue) {
+                const castType = jb.macro.isParamsByNameArgs(prof.$byValue) && jb.path(prof.$byValue,'0.castType')
+                const comp = jb.utils.getComp(prof.$, castType || dslType)
+                if (!comp)
+                    return jb.logError(`resolveProfile - can not resolve ${prof.$} at ${id}`, {compId: prof.$, id, prof, profile})
+                Object.assign(prof, jb.macro.argsToProfile(prof.$, comp, prof.$byValue), castType ? {castType} : null)
+
+                delete prof.$byValue
+            }
         }
+        return profile
     },    
     registerProxy: id => {
         const proxyId = jb.macro.titleToId(id.split('.')[0])

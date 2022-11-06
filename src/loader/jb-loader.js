@@ -55,21 +55,8 @@ async function jbSupervisedLoad(symbols, jb, doNoInitLibs) {
   await symbols.reduce((pr,symbol) => pr.then(()=> jbloadJSFile(symbol.path,jb)), Promise.resolve())
 //  jb.treeShake.baseUrl = baseUrl !== undefined ? baseUrl : typeof globalThis.jbBaseUrl != 'undefined' ? globalThis.jbBaseUrl : ''
   !doNoInitLibs && await jb.initializeLibs(libs)
-  Object.keys(jb.comps).forEach(comp => jb.macro.fixProfile(jb.comps[comp],comp))
+  Object.keys(jb.comps).forEach(comp => jb.macro.resolveProfile(jb.comps[comp],{id: comp }))
 }
-
-// async function jb_treeShakeClient(uri,baseUrl,loadJBFile) {
-//   globalThis.jb = { uri }
-//   const coreFiles= jb_modules.core.map(x=>`/${x}`)
-//   await coreFiles.reduce((pr,url) => pr.then(()=> loadJBFile(url,baseUrl,globalThis.jb)), Promise.resolve())
-//   jb.noSupervisedLoad = false
-//   var { If,not,contains,writeValue,obj,prop,rx,source,sink,call,jbm,remote,pipe,log,net,aggregate,list,runActions,Var,http } = 
-//     jb.macro.ns('If,not,contains,writeValue,obj,prop,rx,source,sink,call,jbm,remote,pipe,log,net,aggregate,list,runActions,Var,http') // ns use in modules
-//   await 'loader/code-loader,core/jb-common,misc/jb-callbag,misc/rx-comps,misc/pretty-print,misc/remote-context,misc/jbm,misc/remote,misc/net'.split(',').map(x=>`/src/${x}.js`)
-//     .reduce((pr,url)=> pr.then(() => loadJBFile(url,baseUrl,jb)), Promise.resolve())
-//   await jb.initializeLibs('core,callbag,utils,jbm,net,cbHandler,treeShake,websocket'.split(','))
-//   Object.keys(jb.comps).forEach(comp => jb.macro.fixProfile(jb.comps[comp],comp))
-// }
 
 if (typeof module != 'undefined') module.exports = { jbInit }
 globalThis.jbloadJSFile = jbloadJSFile

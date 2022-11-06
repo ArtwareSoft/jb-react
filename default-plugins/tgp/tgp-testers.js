@@ -44,7 +44,7 @@ jb.component('tgp.completionActionTest', {
             const offset = parts[0].length
             const code = parts.join('')
             jb.tgpTextEditor.eval(code)
-            Object.keys(jb.comps).forEach(comp => jb.macro.fixProfile(jb.comps[comp],comp))
+            Object.keys(jb.comps).forEach(id => jb.macro.resolveProfile(jb.comps[id],{id}))
 
             jb.tgpTextEditor.host.initDoc('dummy.js',code)
             

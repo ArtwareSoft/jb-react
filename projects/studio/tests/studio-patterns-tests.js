@@ -322,42 +322,38 @@ jb.component('studioTest.dragTargetCard', {
 jb.component('patternsTest.suggestedStyles.text', {
   impl: dataTest({
     vars: [
-      Var('extractedCtrl', () => extractedCtrlSimpleText),
+      Var('extractedCtrl', () => jb.macro.resolveProfile(extractedCtrlSimpleText)),
       Var('targetPath', 'studioTest.dragTargetText~impl'),
-      Var('top',obj())
+      Var('top', obj())
     ],
-    calculate: pipeline(
-      cardExtract.suggestedStyles('%$extractedCtrl%', '%$targetPath%'),
-      '%control/$%',
-      join(',')
-    ),
+    calculate: pipeline(cardExtract.suggestedStyles('%$extractedCtrl%', '%$targetPath%'), '%control/$%', join(',')),
+    expectedResult: equals('text,group'),
     runBefore: ctx => {
       const top = document.createElement('div')
       jb.ui.renderWidget({$: 'studioTest.dragTargetText'},top)
       document.body.appendChild(top)
       ctx.vars.top.res = top
     },
-    cleanUp: ctx => document.body.removeChild(ctx.vars.top.res),
-    expectedResult: equals('text,group')
+    cleanUp: ctx => document.body.removeChild(ctx.vars.top.res)
   })
 })
 
 jb.component('patternsTest.selectStyle.text', {
   impl: uiTest({
     vars: [
-      Var('extractedCtrl', () => extractedCtrlSimpleText),
+      Var('extractedCtrl', () => jb.macro.resolveProfile(extractedCtrlSimpleText)),
       Var('targetPath', 'studioTest.dragTargetText~impl'),
-      Var('top',obj())
+      Var('top', obj())
     ],
-    control: cardExtract.selectStyle('%$extractedCtrl%','%$targetPath%'),
+    control: cardExtract.selectStyle('%$extractedCtrl%', '%$targetPath%'),
     runBefore: ctx => {
       const top = document.createElement('div')
       jb.ui.renderWidget({$: 'studioTest.dragTargetText'},top)
       document.body.appendChild(top)
       ctx.vars.top.res = top
-    },    
-    cleanUp: ctx => document.body.removeChild(ctx.vars.top.res),
-    expectedResult: contains('paste here')
+    },
+    expectedResult: contains('paste here'),
+    cleanUp: ctx => document.body.removeChild(ctx.vars.top.res)
   })
 })
 

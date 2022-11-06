@@ -47,6 +47,8 @@ Object.assign(jb, {
     }      
   },
   component(id,comp) {
+    comp[jb.core.RT] = comp[jb.core.RT] || {}
+
     if (!jb.core.location) jb.initializeLibs(['core'])
     if (comp.location) {
         comp[jb.core.location] = comp.location
@@ -59,13 +61,24 @@ Object.assign(jb, {
     if (h && h.register)
       return h.register(id,comp)
 
-    jb.comps[id] = comp;
+    const typeWithDsl = jb.utils.dslSplitType(comp.type)
+    if (typeWithDsl.length > 1)
+      jb.path(jb.dsls, [...typeWithDsl,id], comp )
+    else
+      jb.comps[id] = comp
 
-    // fix as boolean params to have type: 'boolean'
-    (comp.params || []).forEach(p=> {
+    ;(comp.params || []).forEach(p=> {
+      // fix as boolean params to have type: 'boolean'
       if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
-        p.type = 'boolean'
+        p.type = 'boolean';
+      // fix param types the have same dsl as profile
+      if (typeWithDsl.length > 1 && (p.type || '').indexOf('<') == -1 && ['data','action'].indexOf(p.type) == -1)
+        p[jb.core.RT] = { dslType : `${p.type}<${typeWithDsl[0]}>` }
     })
+  },
+  type(id, settings) {
+    const typeWithDsl = jb.utils.dslSplitType(id)
+    jb.path(jb.dsls, [...typeWithDsl,'$settings'], settings)
   },
   noSupervisedLoad: true
 })
@@ -74,7 +87,7 @@ jb.extension('core', {
   initExtension() {
     Object.assign(jb, {
       frame: globalThis,
-      comps: {}, ctxDictionary: {},
+      comps: {}, ctxDictionary: {}, dsls: {},
       __requiredLoaded: {},
     })
     return {
@@ -82,6 +95,7 @@ jb.extension('core', {
       project: Symbol.for('project'),
       location: Symbol.for('location'),
       loadingPhase: Symbol.for('loadingPhase'),
+      RT: Symbol.for('RT'),
       jstypes: jb.core._jsTypes(),
       onAddComponent: []
     }
@@ -221,11 +235,15 @@ jb.extension('core', {
     const comp_name = jb.utils.compName(profile,parentParam)
     if (!comp_name)
       return { type: 'asIs' }
-    const comp = jb.comps[comp_name];
+    const dslType = profile.castType || parentParam && (parentParam[jb.core.RT] && parentParam[jb.core.RT].dslType || parentParam.type)
+    if (profile.$byValue)
+      jb.macro.resolveProfile(profile,{ id: ctx.path, dslType })
+
+    profile[jb.core.RT] = profile[jb.core.RT] || {}
+    const comp = profile[jb.core.RT].comp = (profile[jb.core.RT].comp || jb.utils.getComp(comp_name, dslType ))
     if (!comp && comp_name) { jb.logError('component ' + comp_name + ' is not defined', {ctx}); return { type:'null' } }
     if (comp.impl == null) { jb.logError('component ' + comp_name + ' has no implementation', {ctx}); return { type:'null' } }
 
-    jb.macro.fixProfile(profile)
     const resCtx = Object.assign(new jb.core.jbCtx(ctx,{}), {parentParam, params: {}})
     const preparedParams = jb.core.prepareParams(comp_name,comp,profile,resCtx);
     if (typeof comp.impl === 'function') {

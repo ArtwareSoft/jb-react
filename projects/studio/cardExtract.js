@@ -128,11 +128,11 @@ jb.component('cardExtract.extractStyle', {
 })
   
 jb.component('cardExtract.suggestedStyles', {
-    params: [
-      {id: 'extractedCtrl'},
-      {id: 'targetPath', as: 'string'}
-    ],
-    impl: (ctx,extractedCtrl,targetPath) => {
+  params: [
+    {id: 'extractedCtrl'},
+    {id: 'targetPath', as: 'string'}
+  ],
+  impl: (ctx,extractedCtrl,targetPath) => {
           const options = ctx.exp('%$studio/pattern/options%') || { flattenToGrid: false }
           const target = jb.tgp.valOfPath(targetPath)
           const previewCtx = jb.cardExtract.closestCtxInPreview(ctx,ctx.exp('%$targetPath%'))
@@ -299,7 +299,7 @@ jb.extension('stylePatterns', {
             jb.path(boundedCtrl,overridePath,value) // set value
             return jb.tgp.pathParents(text.path,true).map(path => {
                 const ctrl = jb.cardExtract.pathToObj(boundedCtrl, path)
-                return styleByControl(ctrl,'textModel')
+                return jb.macro.resolveProfile(styleByControl(ctrl,'textModel'))
             })
         })
         return options

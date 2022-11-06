@@ -46,7 +46,12 @@ jb.extension('utils', { // jb core utils
     compName(profile,parentParam) {
         if (!profile || Array.isArray(profile)) return
         return profile.$ || jb.utils.singleInType(parentParam)
-    },  
+    },
+    getComp(id, type) {
+      const typeWithDsl = jb.utils.dslSplitType(type)
+      return typeWithDsl.length > 1 ? jb.path(jb.dsls, [...typeWithDsl,id]) : jb.comps[id]
+    },
+    dslSplitType: typeExp => typeExp ? typeExp.split(/<|>/).map(x=>x.trim(x)).filter(x=>x).reverse() : [],
     compParams(comp) {
       if (!comp || !comp.params)
         return []
