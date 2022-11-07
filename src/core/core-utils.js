@@ -49,7 +49,9 @@ jb.extension('utils', { // jb core utils
     },
     getComp(id, type) {
       const typeWithDsl = jb.utils.dslSplitType(type)
-      return typeWithDsl.length > 1 ? jb.path(jb.dsls, [...typeWithDsl,id]) : jb.comps[id]
+      const allTypes = [typeWithDsl, ...jb.asArray(jb.path(jb.dsls, [...typeWithDsl,'$settings','includes'])).map(x=>jb.utils.dslSplitType(x))]
+      const comps = allTypes.map(typeWithDsl => typeWithDsl.length > 1 ? jb.path(jb.dsls, [...typeWithDsl,id]) : jb.comps[id])
+      return comps.find(x=>x)
     },
     dslSplitType: typeExp => typeExp ? typeExp.split(/<|>/).map(x=>x.trim(x)).filter(x=>x).reverse() : [],
     compParams(comp) {

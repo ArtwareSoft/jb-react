@@ -129,19 +129,19 @@ jb.component('testType2InInnerDsl', {
     {id: 'myDsl', type: 'myType2<myDsl>'},
     {id: 'innerDsl', type: 'myType2<myDsl.inner>'}
   ],
-  impl: join({items: list('%$myDsl%', '%$innerDsl%')})
+  impl: '%$myDsl%,%$innerDsl%'
 })
 
-// jb.component('dslTest.typeIncludes', {
-//   impl: dataTest(
-//     testType2InInnerDsl({
-//       typeCast: 'data<myDsl.inner>',
-//       myDsl: cmpAtMyDsl(),
-//       innerDsl: cmpAtInnerDsl()
-//     }),
-//     equals('myDsl,innerDsl')
-//   )
-// })
+jb.component('dslTest.typeIncludes', {
+  impl: dataTest(
+    testType2InInnerDsl({
+      typeCast: 'data<myDsl.inner>',
+      myDsl: cmpAtMyDsl(),
+      innerDsl: cmpAtMyDsl()
+    }),
+    equals('myDsl,myDsl')
+  )
+})
 
 // multiple engine tests
 
