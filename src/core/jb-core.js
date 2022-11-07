@@ -39,7 +39,7 @@ Object.assign(jb, {
     try {
         const line = errStack.map(x=>x.trim()).filter(x=>x && !x.match(/^Error/) && !x.match(/at Object.component/)).shift()
         const location = line ? (line.split('at ').pop().split('eval (').pop().split(' (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
-        //comp[jb.core.project] = comp[jb.core.location][0].split('?')[1]
+        //comp[jb.core.project] = comp[jb.core.CT].location[0].split('?')[1]
         location[0] = location[0].split('?')[0]
         return location
     } catch(e) {
@@ -47,14 +47,15 @@ Object.assign(jb, {
     }      
   },
   component(id,comp) {
-    comp[jb.core.RT] = comp[jb.core.RT] || {}
+    const CT = jb.core.CT
+    if (!jb.core.location) jb.initializeLibs(['core']) // this line must be first
+    comp[CT] = comp[CT] || {};
 
-    if (!jb.core.location) jb.initializeLibs(['core'])
     if (comp.location) {
-        comp[jb.core.location] = comp.location
+        comp[CT].location = comp.location
         delete comp.location
     } else {
-        comp[jb.core.location] = jb.calcSourceLocation(new Error().stack.split(/\r|\n/))
+        comp[CT].location = jb.calcSourceLocation(new Error().stack.split(/\r|\n/))
     }
 
     const h = jb.core.onAddComponent.find(x=>x.match(id,comp))
@@ -63,7 +64,14 @@ Object.assign(jb, {
 
     const typeWithDsl = jb.utils.dslSplitType(comp.type)
     if (typeWithDsl.length > 1)
-      jb.path(jb.dsls, [...typeWithDsl,id], comp )
+      Object.assign(comp[CT], { dsl: typeWithDsl[0], typeId: typeWithDsl[1], dslType: comp.type})
+    if (comp[CT].dsl && comp.impl && typeof comp.impl == 'object') {
+      comp.impl[CT] = comp.impl[CT] || {}
+      Object.assign(comp.impl[CT], { dslType: comp.type})
+    }
+
+    if (comp[CT].dsl)
+      jb.path(jb.dsls, [comp[CT].dsl, comp[CT].typeId,id], comp )
     else
       jb.comps[id] = comp
 
@@ -71,9 +79,13 @@ Object.assign(jb, {
       // fix as boolean params to have type: 'boolean'
       if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
         p.type = 'boolean';
-      // fix param types the have same dsl as profile
-      if (typeWithDsl.length > 1 && (p.type || '').indexOf('<') == -1 && ['data','action'].indexOf(p.type) == -1)
-        p[jb.core.RT] = { dslType : `${p.type}<${typeWithDsl[0]}>` }
+      // calc dslType
+      if (comp[CT].dsl && (p.type || '').indexOf('<') == -1 && ['data','action'].indexOf(p.type) == -1)
+        p[CT] = { dslType : `${p.type}<${comp[CT].dsl}>` }
+      else if ((p.type || '').indexOf('<') != -1)
+        p[CT] = { dslType : p.type }
+      if (p[CT] && p.defaultValue && typeof p.defaultValue == 'object')
+        p.defaultValue[CT] = { ...p[CT] }
     })
   },
   type(id, settings) {
@@ -95,7 +107,7 @@ jb.extension('core', {
       project: Symbol.for('project'),
       location: Symbol.for('location'),
       loadingPhase: Symbol.for('loadingPhase'),
-      RT: Symbol.for('RT'),
+      CT: Symbol.for('CT'), // compile time
       jstypes: jb.core._jsTypes(),
       onAddComponent: []
     }
@@ -175,7 +187,7 @@ jb.extension('core', {
   prepareParams(comp_name,comp,profile,ctx) {
     return jb.utils.compParams(comp)
       .filter(param=> !param.ignore)
-      .map((param) => {
+      .map(param => {
         const p = param.id
         let val = profile[p], path =p
         const valOrDefault = val !== undefined ? val : (param.defaultValue !== undefined ? param.defaultValue : null)
@@ -209,48 +221,49 @@ jb.extension('core', {
     })
   },
   prepare(ctx,parentParam) {
-    const profile = ctx.profile;
-    const profile_jstype = typeof profile;
-    const parentParam_type = parentParam && parentParam.type;
-    const jstype = parentParam && parentParam.as;
-    const isArray = Array.isArray(profile);
+    const profile = ctx.profile
+    const profile_jstype = typeof profile
+    const parentParam_type = parentParam && parentParam.type
+    const jstype = parentParam && parentParam.as
+    const isArray = Array.isArray(profile)
 
-    if (profile_jstype === 'string' && parentParam_type === 'boolean') return { type: 'booleanExp' };
-    if (profile_jstype === 'boolean' || profile_jstype === 'number' || parentParam_type == 'asIs') return { type: 'asIs' };// native primitives
-    if (profile_jstype === 'object' && jstype === 'object') return { type: 'object' };
-    if (profile_jstype === 'string') return { type: 'expression' };
-    if (profile_jstype === 'function') return { type: 'function' };
-    if (profile_jstype === 'object' && (profile instanceof RegExp)) return { type: 'asIs' };
-    if (profile == null) return { type: 'asIs' };
+    if (profile_jstype === 'string' && parentParam_type === 'boolean') return { type: 'booleanExp' }
+    if (profile_jstype === 'boolean' || profile_jstype === 'number' || parentParam_type == 'asIs') return { type: 'asIs' }// native primitives
+    if (profile_jstype === 'object' && jstype === 'object') return { type: 'object' }
+    if (profile_jstype === 'string') return { type: 'expression' }
+    if (profile_jstype === 'function') return { type: 'function' }
+    if (profile_jstype === 'object' && (profile instanceof RegExp)) return { type: 'asIs' }
+    if (profile == null) return { type: 'asIs' }
 
     if (isArray) {
-      if (!profile.length) return { type: 'null' };
+      if (!profile.length) return { type: 'null' }
       if (!parentParam || !parentParam.type || parentParam.type === 'data' ) //  as default for array
-        return { type: 'list' };
+        return { type: 'list' }
       if (parentParam_type === 'action' || parentParam_type === 'action[]' && profile.isArray) {
-        profile.sugar = true;
-        return { type: 'runActions' };
+        profile.sugar = true
+        return { type: 'runActions' }
       }
     }
     const comp_name = jb.utils.compName(profile,parentParam)
     if (!comp_name)
       return { type: 'asIs' }
-    const dslType = profile.castType || parentParam && (parentParam[jb.core.RT] && parentParam[jb.core.RT].dslType || parentParam.type)
+    const CT = jb.core.CT
+    const dslType = profile.typeCast || profile[CT] && profile[CT].dslType || parentParam && (parentParam[CT] && parentParam[CT].dslType);
     if (profile.$byValue)
       jb.macro.resolveProfile(profile,{ id: ctx.path, dslType })
 
-    profile[jb.core.RT] = profile[jb.core.RT] || {}
-    const comp = profile[jb.core.RT].comp = (profile[jb.core.RT].comp || jb.utils.getComp(comp_name, dslType ))
+    profile[CT] = profile[CT] || {}
+    const comp = profile[CT].comp = (profile[CT].comp || jb.utils.getComp(comp_name, dslType ))
     if (!comp && comp_name) { jb.logError('component ' + comp_name + ' is not defined', {ctx}); return { type:'null' } }
     if (comp.impl == null) { jb.logError('component ' + comp_name + ' has no implementation', {ctx}); return { type:'null' } }
 
     const resCtx = Object.assign(new jb.core.jbCtx(ctx,{}), {parentParam, params: {}})
-    const preparedParams = jb.core.prepareParams(comp_name,comp,profile,resCtx);
+    const preparedParams = jb.core.prepareParams(comp_name,comp,profile,resCtx)
     if (typeof comp.impl === 'function') {
-      Object.defineProperty(comp.impl, 'name', { value: comp_name }) // comp_name.replace(/[^a-zA-Z0-9]/g,'_')
-      return { type: 'profile', impl: comp.impl, ctx: resCtx, preparedParams: preparedParams }
+      Object.defineProperty(comp.impl, 'name', { value: comp_name })
+      return { type: 'profile', impl: comp.impl, ctx: resCtx, preparedParams }
     } else
-      return { type:'profile', ctx: new jb.core.jbCtx(resCtx,{profile: comp.impl, comp: comp_name, path: ''}), preparedParams: preparedParams };
+      return { type:'profile', ctx: new jb.core.jbCtx(resCtx,{profile: comp.impl, comp: comp_name, path: ''}), preparedParams }
   },
   castToParam: (value,param) => jb.core.tojstype(value,param ? param.as : null),
   tojstype: (v,jstype) => (!jstype || !jb.core.jstypes[jstype]) ? v : jb.core.jstypes[jstype](v),

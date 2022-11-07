@@ -48,6 +48,7 @@ jb.extension('macro', {
         if (args.length == 1 && typeof args[0] === 'object') {
             jb.asArray(args[0].vars).forEach(arg => jb.comps[arg.$].macro(system, arg))
             args[0].remark && jb.comps.remark.macro(system, args[0])
+            args[0].typeCast && jb.comps.typeCast.macro(system, args[0])
         }
         return { args, system }
     },
@@ -73,22 +74,47 @@ jb.extension('macro', {
         debugger;
     },
     resolveProfile(profile, { id, dslType } = {}) {
-        doResolve(profile, dslType || profile[jb.core.RT] && profile[jb.core.RT].dslType || profile.type)
+        const CT = jb.core.CT
+        doResolve(profile, dslType || profile[CT] && profile[CT].dslType)
         function doResolve(prof, dslType) {
             if (!prof || !prof.constructor || ['Object','Array'].indexOf(prof.constructor.name) == -1) return
-            Object.values(prof).forEach(v=>doResolve(v))
-            if (prof.$byValue) {
-                const castType = jb.macro.isParamsByNameArgs(prof.$byValue) && jb.path(prof.$byValue,'0.castType')
-                const comp = jb.utils.getComp(prof.$, castType || dslType)
-                if (!comp)
-                    return jb.logError(`resolveProfile - can not resolve ${prof.$} at ${id}`, {compId: prof.$, id, prof, profile})
-                Object.assign(prof, jb.macro.argsToProfile(prof.$, comp, prof.$byValue), castType ? {castType} : null)
-
+            const comp = jb.utils.getComp(prof.$, prof.typeCast || dslType)
+            if (prof.$byValue && comp) {
+                Object.assign(prof, jb.macro.argsToProfile(prof.$, comp, prof.$byValue))
                 delete prof.$byValue
+                prof[CT] = prof[CT] || {}
+                prof[CT].comp = comp
+                ;(comp.params || []).forEach(p=> doResolve(prof[p.id], p[CT] && p[CT].dslType))
+            } else if (prof.$byValue && !comp) {
+                return jb.logError(`resolveProfile - can not resolve ${prof.$} at ${id} expected type ${dslType}`, {compId: prof.$, id, prof, expectedType: dslType, profile})
+            } else {
+                Object.values(prof).forEach(v=>doResolve(v))
             }
         }
         return profile
-    },    
+    },
+    resolveProfile(profile, { id, dslType } = {}) {
+        const CT = jb.core.CT
+        doResolve(profile, dslType || profile[CT] && profile[CT].dslType)
+        function doResolve(prof, dslType) {
+            if (!prof || !prof.constructor || ['Object','Array'].indexOf(prof.constructor.name) == -1) return
+            const comp = jb.utils.getComp(prof.$, prof.typeCast || dslType)
+            if (prof.$byValue && comp) {
+                Object.assign(prof, jb.macro.argsToProfile(prof.$, comp, prof.$byValue))
+                delete prof.$byValue
+                prof[CT] = prof[CT] || {}
+                prof[CT].comp = comp
+
+                ;(comp.params || []).forEach(p=> doResolve(prof[p.id], p[CT] && p[CT].dslType))
+                doResolve(prof.$vars)
+            } else if (prof.$byValue && !comp) {
+                return jb.logError(`resolveProfile - can not resolve ${prof.$} at ${id} expected type ${dslType}`, {compId: prof.$, id, prof, expectedType: dslType, profile})
+            } else {
+                Object.values(prof).forEach(v=>doResolve(v))
+            }
+        }
+        return profile
+    },
     registerProxy: id => {
         const proxyId = jb.macro.titleToId(id.split('.')[0])
         if (jb.frame[proxyId] && jb.frame[proxyId][jb.macro.isMacro]) return
@@ -120,5 +146,14 @@ jb.component('remark', {
   params: [
     {id: 'remark', as: 'string', mandatory: true}
   ],
-  macro: (result, self) => Object.assign(result,{ remark: self.remark })
+  macro: (result, self) => Object.assign(result,{ remark: self.remark || self.$byValue[0] })
+})
+
+jb.component('typeCast', {
+  type: 'system',
+  isSystem: true,
+  params: [
+    {id: 'typeCast', as: 'string', mandatory: true, description: 'e.g. type1<myDsl>'}
+  ],
+  macro: (result, self) => Object.assign(result,{ typeCast: self.typeCast || self.$byValue[0]})
 })

@@ -119,8 +119,10 @@ jb.extension('utils', 'prettyPrint', {
       const params = comp.params || []
       const singleParamAsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
       const vars = (profile.$vars || []).map(({name,val},i) => ({innerPath: `$vars~${i}`, val: {$: 'Var', name, val }}))
-      const remark = profile.remark ? [{innerPath: 'remark', val: {$remark: profile.remark}} ] : []
-      const systemProps = vars.concat(remark)
+      const systemProps = [...vars, 
+          ...profile.remark ? [{innerPath: 'remark', val: {$remark: profile.remark}} ] : [],
+          ...profile.typeCast ? [{innerPath: 'typeCast', val: {$typeCast: profile.typeCast}} ] : [],
+      ]
       const openProfileByValueGroup = [{prop: '!profile', item: macro}, {prop:'!open-by-value', item:'('}]
       const closeProfileByValueGroup = [{prop:'!close-by-value', item:')'}]
       const openProfileGroup = [{prop: '!profile', item: macro}, {prop:'!open-profile', item:'({'}]
@@ -140,8 +142,11 @@ jb.extension('utils', 'prettyPrint', {
         while (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop() // cut the undefined's at the end
         return joinVals(ctx, args, openProfileByValueGroup, closeProfileByValueGroup, flat, true)
       }
-      const remarkProp = profile.remark ? [{innerPath: 'remark', val: profile.remark} ] : []
-      const systemPropsInObj = remarkProp.concat(vars.length ? [{innerPath: 'vars', val: vars.map(x=>x.val)}] : [])
+      const systemPropsInObj = [
+        ...profile.remark ? [{innerPath: 'remark', val: profile.remark} ] : [],
+        ...profile.typeCast ? [{innerPath: 'typeCast', val: profile.typeCast} ] : [],
+        ...vars.length ? [{innerPath: 'vars', val: vars.map(x=>x.val)}] : []
+      ]
       const args = systemPropsInObj.concat(params.filter(param=>propOfProfile(param.id) !== undefined)
           .map(param=>({innerPath: param.id, val: propOfProfile(param.id)})))
       const open = args.length ? openProfileGroup : openProfileByValueGroup
@@ -149,8 +154,9 @@ jb.extension('utils', 'prettyPrint', {
       return joinVals(ctx, args, open, close, flat, false)
 
       function propOfProfile(paramId) {
-        const isFirst = params[0] && params[0].id == paramId
-        return isFirst && profile['$'+id] || profile[paramId]
+        return profile[paramId]
+        // const isFirst = params[0] && params[0].id == paramId
+        // return isFirst && profile['$'+id] || profile[paramId]
       }
     }
 

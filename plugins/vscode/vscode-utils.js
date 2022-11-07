@@ -154,7 +154,7 @@ jb.extension('vscode', {
     //         const compId = e.path[0]
     //         const comp = jb.comps[compId]
     //         try {
-    //             const fn = comp[jb.core.location][0].toLowerCase()
+    //             const fn = comp[jb.core.CT].location[0].toLowerCase()
     //             const doc = vscodeNS.workspace.textDocuments.find(doc => doc.uri.path.toLowerCase().slice(0,-1) == fn.slice(0,-1))
     //             if (!doc) return // todo: open file and try again
     //             const fileContent = doc.getText()

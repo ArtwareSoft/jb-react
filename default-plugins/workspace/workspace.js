@@ -97,7 +97,7 @@ jb.extension('workspace', {
     //     const compId = ev.path[0]
     //     const comp = jb.comps[compId]
     //     try {
-    //         const uri = comp[jb.core.location][0]
+    //         const uri = comp[jb.core.CT].location[0]
     //         const doc = jb.workspace.openDocs[uri]
     //         if (!doc) return // todo: open file and try again
     //         const fileContent = doc.text

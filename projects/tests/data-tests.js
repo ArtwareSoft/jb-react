@@ -457,19 +457,16 @@ jb.component('dataTest.varsCases', {
 })
 
 jb.component('dataTest.prettyPrintMacroVars', {
-  impl: dataTest({
-    calculate: ctx => { try {
+  impl: dataTest(ctx => { try {
       const testToTest = 'dataTest.varsCases'
       const compTxt = jb.utils.prettyPrintComp(testToTest.replace(/varsCases/,'varsCases2'), jb.comps[testToTest])
       eval(compTxt)
       return ctx.run(dataTest.asArrayBug()) // checks for error
-        .then(({success}) => success)
+        .then(({success}) => success && compTxt)
       } catch(e) {
         return false
       }
-    },
-    expectedResult: '%%'
-  })
+    }, contains("vars: [Var('items', [{id: 1}, {id: 2}])]"))
 })
 
 jb.component('dataTest.macroNs', {

@@ -14,7 +14,7 @@ jb.component('studio.filePathOfComp', {
   params: [
     { id: 'comp' }
   ],
-  impl: (ctx,comp) => jb.studio.host.locationToPath(comp[jb.core.location][0])
+  impl: (ctx,comp) => jb.studio.host.locationToPath(comp[jb.core.CT].location[0])
 })
 
 jb.component('studio.getFileContent', {

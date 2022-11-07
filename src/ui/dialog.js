@@ -28,7 +28,7 @@ jb.component('openDialog', {
 jb.component('openDialog.probe', {
 	type: 'control:0',
 	params: jb.comps.openDialog.params,
-	impl: ctx => jb.ui.ctrl(ctx.setVar('$dialog',{}), {$: 'dialog.init'}).renderVdom(),
+	impl: ctx => jb.ui.ctrl(ctx.setVar('$dialog',{}), dialog.init()).renderVdom(),
 	require: {$: 'dialog.init'}
 })
 
@@ -59,8 +59,8 @@ jb.component('dialog.buildComp', {
 })
 
 jb.component('dialog.createDialogTopIfNeeded', {
-	type: 'action',
-	impl: (ctx) => {
+  type: 'action',
+  impl: (ctx) => {
 		const widgetBody = jb.ui.widgetBody(ctx)
 		if (widgetBody.querySelector(':scope>.jb-dialogs')) return
 		const vdom = ctx.run({$: 'dialog.dialogTop'}).renderVdomAndFollowUp()
@@ -75,7 +75,7 @@ jb.component('dialog.createDialogTopIfNeeded', {
 			jb.log('dialog dom createTop',{vdom,widgetBody})
 		}
 	},
-	require: {$: 'dialog.dialogTop'}
+  require: dialog.dialogTop()
 })
 
 jb.component('dialog.closeDialog', {

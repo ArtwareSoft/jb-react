@@ -163,10 +163,12 @@ jb.extension('probe', {
             const parentCtx = this.probe[_path][0].in, breakingPath = _path+'~'+breakingProp
             const obj = this.probe[_path][0].out
             const compName = jb.tgp.compNameOfPath(breakingPath)
-            if (jb.comps[`${compName}.probe`])
+            if (jb.comps[`${compName}.probe`]) {
+                parentCtx.profile[breakingProp][jb.core.CT] = { ...parentCtx.profile[breakingProp][jb.core.CT], comp: null }
                 return jb.probe.resolve(parentCtx.runInner({...parentCtx.profile[breakingProp], $: `${compName}.probe`},
                     jb.tgp.paramDef(breakingPath),breakingProp))
                         .then(_=>this.handleGaps(_path))
+            }
 
             const hasSideEffect = jb.comps[compName] && (jb.comps[jb.tgp.compNameOfPath(breakingPath)].type ||'').indexOf('has-side-effects') != -1
             if (obj && !hasSideEffect && obj[breakingProp] && typeof obj[breakingProp] == 'function')
@@ -187,6 +189,8 @@ jb.extension('probe', {
 
         // called from jb_run
         record(ctx,out) {
+            console.log(ctx.path)
+            if (ctx.path == 'probeTest.insideOpenDialog~impl~circuit~action~content') debugger
             jb.probe.singleVisitPaths[ctx.path] = ctx
             jb.probe.singleVisitCounters[ctx.path] = (jb.probe.singleVisitCounters[ctx.path] || 0) + 1
             if (!this.active || this.probePath.indexOf(ctx.path) != 0) return

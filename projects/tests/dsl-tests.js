@@ -28,7 +28,7 @@ jb.component('testDslClientInMyDsl', {
     {id: 'myDsl', type: 'myType<myDsl>'},
     {id: 'innerDsl', type: 'myType<myDsl.inner>'}
   ],
-  impl: join({items: list('%$defaultDsl%', '%$myDsl%', '%$innerDsl%')})
+  impl: '%$defaultDsl%,%$myDsl%,%$innerDsl%'
 })
 
 jb.component('testDslClientInInnerDsl', {
@@ -38,7 +38,7 @@ jb.component('testDslClientInInnerDsl', {
     {id: 'myDsl', type: 'myType<myDsl>'},
     {id: 'innerDsl', type: 'myType<myDsl.inner>'}
   ],
-  impl: join({items: list('%$defaultDsl%', '%$myDsl%', '%$innerDsl%')})
+  impl: '%$defaultDsl%,%$myDsl%,%$innerDsl%'
 })
 
 jb.component('dslTest.sameIdDifferentDsls', {
@@ -57,7 +57,7 @@ jb.component('dslTest.sameIdDifferentDsls', {
 jb.component('dslTest.defaultDSLInParamType', {
   impl: dataTest(
     testDslClientInMyDsl({
-      castType: 'data<myDsl>',
+      typeCast: 'data<myDsl>',
       defaultDsl: cmp1(),
       myDsl: cmp1(),
       innerDsl: cmp1()
@@ -69,7 +69,7 @@ jb.component('dslTest.defaultDSLInParamType', {
 jb.component('dslTest.defaultInnerDSLInParamType', {
   impl: dataTest(
     testDslClientInInnerDsl({
-      castType: 'data<myDsl.inner>',
+      typeCast: 'data<myDsl.inner>',
       defaultDsl: cmp1(),
       myDsl: cmp1(),
       innerDsl: cmp1()
@@ -78,6 +78,37 @@ jb.component('dslTest.defaultInnerDSLInParamType', {
   )
 })
 
+// resolve impl in global profile
+
+jb.component('resolveImpl', {
+  type: 'myType<myDsl>',
+  impl: cmp1()
+})
+
+jb.component('dslTest.resolveImpl', {
+  impl: dataTest(
+    resolveImpl(typeCast('myType<myDsl>')),
+    equals('myDsl')
+  )
+})
+
+// resolve default values in params
+
+jb.component('resolveDefaultValues', {
+  type: 'myType<myDsl>',
+  params: [
+    {id: 'fullTypeName', type: 'myType<myDsl>', defaultValue: cmp1()},
+    {id: 'relativeTypeName', type: 'myType', defaultValue: cmp1()}
+  ],
+  impl: '%$fullTypeName%,%$relativeTypeName%'
+})
+
+jb.component('dslTest.resolveDefaultValues', {
+  impl: dataTest(
+    resolveDefaultValues(typeCast('myType<myDsl>')),
+    equals('myDsl,myDsl')
+  )
+})
 
 // type includes tests
 jb.type('myType2<myDsl.inner>', { includes: 'myType2<myDsl>'})
@@ -101,18 +132,10 @@ jb.component('testType2InInnerDsl', {
   impl: join({items: list('%$myDsl%', '%$innerDsl%')})
 })
 
-jb.component('testType2InInnerDsl', {
-  type: 'data<myDsl.inner>',
-  params: [
-    {id: 'innerDsl', type: 'myType2<myDsl.inner>'}
-  ],
-  impl: '%$innerDsl%'
-})
-
-// jb.component('dslTest.typeSettingsInclude', {
+// jb.component('dslTest.typeIncludes', {
 //   impl: dataTest(
 //     testType2InInnerDsl({
-//       castType: 'data<myDsl.inner>',
+//       typeCast: 'data<myDsl.inner>',
 //       myDsl: cmpAtMyDsl(),
 //       innerDsl: cmpAtInnerDsl()
 //     }),

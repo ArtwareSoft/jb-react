@@ -49,7 +49,7 @@ async function jbloadJSFile(url,jb,{noSymbols} = {}) {
 }
 
 async function jbSupervisedLoad(symbols, jb, doNoInitLibs) {
-  const ns = jb.utils.unique([...symbols.flatMap(x=>x.ns || []),'Var','remark'])
+  const ns = jb.utils.unique([...symbols.flatMap(x=>x.ns || []),'Var','remark','typeCast'])
   const libs = jb.utils.unique(symbols.flatMap(x=>x.libs))
   ns.forEach(id=> jb.macro.registerProxy(id))
   await symbols.reduce((pr,symbol) => pr.then(()=> jbloadJSFile(symbol.path,jb)), Promise.resolve())

@@ -207,9 +207,9 @@ jb.extension('tgpTextEditor', {
         const comp = jb.comps[compId]
         const { compLine, compText} = jb.tgpTextEditor.fileContentToCompText(fileContent,compId)
         const newCompContent = comp ? jb.utils.prettyPrintComp(compId,comp,{comps: jb.comps}) : ''
-        const justCreatedComp = !compText.length && comp[jb.core.location][1] == 'new'
+        const justCreatedComp = !compText.length && comp[jb.core.CT].location[1] == 'new'
         if (justCreatedComp) {
-          comp[jb.core.location][1] == lines.length
+          comp[jb.core.CT].location[1] == lines.length
           return { range: {start: { line: lines.length, col: 0}, end: {line: lines.length, col: 0} } , newText: '\n\n' + newCompContent }
         }
         const {common, oldText, newText} = calcDiff(compText, newCompContent)
