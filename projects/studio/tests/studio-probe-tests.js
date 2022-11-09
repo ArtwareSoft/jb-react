@@ -241,7 +241,7 @@ jb.component('probeTest.pathSrcThrough.call', {
   impl: dataTest({
     calculate: ctx => {
    	 var probe1 = new jb.probe.Probe(new jb.core.jbCtx(ctx,{ profile: {$: 'test.pathSrcCaller'}, comp: 'test.pathSrcCaller', path: '' } ),true)
-      .runCircuit('test.pathSrc-comp~impl~items~1');
+      .runCircuit('test.pathSrcComp~impl~items~1');
     return probe1.then(res=> ''+res.result.visits)
    },
     expectedResult: contains('0')

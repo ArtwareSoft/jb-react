@@ -74,26 +74,6 @@ jb.extension('macro', {
         debugger;
     },
     resolveProfile(profile, { id, dslType } = {}) {
-        const CT = jb.core.CT
-        doResolve(profile, dslType || profile[CT] && profile[CT].dslType)
-        function doResolve(prof, dslType) {
-            if (!prof || !prof.constructor || ['Object','Array'].indexOf(prof.constructor.name) == -1) return
-            const comp = jb.utils.getComp(prof.$, prof.typeCast || dslType)
-            if (prof.$byValue && comp) {
-                Object.assign(prof, jb.macro.argsToProfile(prof.$, comp, prof.$byValue))
-                delete prof.$byValue
-                prof[CT] = prof[CT] || {}
-                prof[CT].comp = comp
-                ;(comp.params || []).forEach(p=> doResolve(prof[p.id], p[CT] && p[CT].dslType))
-            } else if (prof.$byValue && !comp) {
-                return jb.logError(`resolveProfile - can not resolve ${prof.$} at ${id} expected type ${dslType}`, {compId: prof.$, id, prof, expectedType: dslType, profile})
-            } else {
-                Object.values(prof).forEach(v=>doResolve(v))
-            }
-        }
-        return profile
-    },
-    resolveProfile(profile, { id, dslType } = {}) {
         if (id && id.indexOf('~') == -1)
             jb.utils.resolveCompType(id, profile, profile.type)
         const CT = jb.core.CT
@@ -117,13 +97,13 @@ jb.extension('macro', {
                 Object.values(prof).forEach(v=>doResolve(v))
             }
         }
-        if (id && id.indexOf('~') == -1 && profile[CT] && !profile[CT].dslType) { // global profile with no type
-            const compCT = jb.path(profile.impl,[CT,'comp',CT])
-            if (compCT) {
-                profile[CT].dslType = compCT.dslType
-                if (compCT.dsl) {
-                    Object.assign(profile[CT], {dsl: compCT.dsl, typeId: compCT.typeId })
-                    jb.path(jb.dsls, [compCT.dsl, compCT.typeId,id], profile )
+        if (id && id.indexOf('~') == -1 && profile[CT] && !profile[CT].dslType) { // global profile with no type should use type from imp
+            const implCT = jb.path(profile.impl,[CT,'comp',CT])
+            if (implCT) {
+                profile[CT].dslType = implCT.dslType
+                if (implCT.dsl) {
+                    Object.assign(profile[CT], {dsl: implCT.dsl, typeId: implCT.typeId })
+                    jb.comps[`${implCT.typeId}<${implCT.dsl}>${id}`] = profile
                 }
             }
         }

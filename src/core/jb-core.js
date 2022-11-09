@@ -66,10 +66,6 @@ Object.assign(jb, {
       jb.comps[id] = comp
     return comp
   },
-  type(id, settings) {
-    const typeWithDsl = jb.utils.dslSplitType(id)
-    jb.path(jb.dsls, [...typeWithDsl,'$settings'], settings)
-  },
   noSupervisedLoad: true
 })
 

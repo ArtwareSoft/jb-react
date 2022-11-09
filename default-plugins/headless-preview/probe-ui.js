@@ -138,12 +138,12 @@ jb.component('probe.mainCircuitView', {
     impl: group({
         controls: ctx => { 
             const _circuit = ctx.exp('%$probe/defaultMainCircuit%')
-            const circuit = (jb.path(jb.comps[_circuit],'impl.$') || '').match(/Test/) ? { $: 'test.showTestInStudio', testId: _circuit} : { $: _circuit }
+            const circuit = (jb.path(jb.utils.getComp(_circuit),'impl.$') || '').match(/Test/) ? { $: 'test.showTestInStudio', testId: _circuit} : { $: _circuit }
             jb.log('probe circuit',{circuit, ctx})
             return circuit && circuit.$ && ctx.run(circuit)
         },
         features: [ 
-            If(ctx => !jb.comps[ctx.exp('%$probe/defaultMainCircuit%')], group.wait(treeShake.getCodeFromRemote('%$probe/defaultMainCircuit%'))),
+            If(ctx => !jb.utils.getComp(ctx.exp('%$probe/defaultMainCircuit%')), group.wait(treeShake.getCodeFromRemote('%$probe/defaultMainCircuit%'))),
             watchRef('%$probe/scriptChangeCounter%'),
             variable('$previewMode',true)
         ]

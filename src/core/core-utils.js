@@ -45,8 +45,9 @@ jb.extension('utils', { // jb core utils
     },
     compName(profile,parentParam) {
         if (!profile || Array.isArray(profile)) return
-        const dslType = jb.path(profile,[jb.core.CT, 'dslType']) || ''
-        return (dslType.indexOf('<') == -1 ? '' : dslType) + (profile.$ || jb.utils.singleInType(parentParam) || '')
+        const dslType = jb.path(profile,[jb.core.CT, 'comp', jb.core.CT, 'dslType']) || ''
+        const id = profile.$ || jb.utils.singleInType(parentParam) || ''
+        return id && (dslType.indexOf('<') == -1 ? '' : dslType) + id
     },
     resolveCompType(id, comp, type) {
       const CT = jb.core.CT
@@ -78,14 +79,13 @@ jb.extension('utils', { // jb core utils
           p.defaultValue[CT] = { ...p[CT] }
       })
     
-      if (dsl)
-        jb.path(jb.dsls, [dsl, comp[CT].typeId,id], comp )
-      else
-        jb.comps[id] = comp
+      const dslPrefix = dsl ? `${comp[CT].typeId}<${dsl}>` : ''
+      jb.comps[dslPrefix + id] = comp
     },
     getComp: (id, type) => {
-      const res = id && (type || ''). split(',').map(t=>jb.utils.dslSplitType(t))
-          .map(typeWithDsl => typeWithDsl.length > 1 ? jb.path(jb.dsls, [...typeWithDsl,id]) : (jb.comps[id] || geUnresolved(id))).find(x=>x)
+      const res = id && (type || ''). split(',').map(t => t.indexOf('<') == -1 ? id : t+id)
+        .map(fullId => jb.comps[fullId] || geUnresolved(id)).find(x=>x)
+      
       if (id && !res)
         jb.logError(`utils getComp - can not find comp for id ${id}`,{id,type})
       return res

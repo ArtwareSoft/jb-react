@@ -3,9 +3,9 @@ jb.extension('tgp', 'readOnly', {
 	parentPath: path => path.split('~').slice(0,-1).join('~'),
 	parents: path => path.split('~').reduce((acc,last,i) => acc.concat(i ? [acc[acc.length-1],last].join('~') : last),[]).reverse(),
 	valOfPath: path => { 
-		const res = jb.path(jb.comps,path.split('~'))
+		const res = jb.path(jb.utils.getComp(path.split('~')[0]),path.split('~').slice(1))
         if (res && res[jb.macro.isMacro])
-            return res()
+        	return res()
 		return res
 	},
 	firstChildOfPath: path => [path,Object.keys(jb.tgp.valOfPath(path) || {}).find(x=>x != '$')].filter(x=>x).join('~'),
@@ -61,18 +61,9 @@ jb.extension('tgp', 'readOnly', {
 		const single = /([^\[]*)(\[\])?/
 		const types = (type||'').split(',').map(x=>x.match(single)[1])
 			.flatMap(x=> x=='data' ? ['data','aggregator','boolean'] : [x])
-		const res = types.flatMap(t=> PTsofSingleType(t) )
+		const res = types.flatMap(t=> jb.entries(jb.comps).filter(c=> jb.tgp.isCompObjOfType(c[1],t)).map(c=>c[0]) )
 		res.sort((c1,c2) => jb.tgp.markOfComp(c2) - jb.tgp.markOfComp(c1))
 		return res
-
-		function PTsofSingleType(t) {
-			if (t.indexOf('<') != -1) {
-				const dsl = t.split('<')[1].slice('>')[0], typeId = t.split('<')[0];
-				return Object.keys(jb.path(jb.dsls,[dsl,typeId])).map(id=> `${t}${id}`)
-			} else {
-				return jb.entries(jb.comps).filter(c=> jb.tgp.isCompObjOfType(c[1],t)).map(c=>c[0])
-			}
-		}
 	},
 	markOfComp(id) {
 		return +(((jb.tgp.getComp(id).category||'').match(/common:([0-9]+)/)||[0,0])[1])
@@ -88,6 +79,7 @@ jb.extension('tgp', 'readOnly', {
 		}
 	},
 	isCompObjOfType: (compObj,type) => {
+		if (compObj[jb.core.CT].dslType == type) return true
 		const compType = !compObj.type && typeof compObj.impl == 'function' ? 'data' : compObj.type || ''
 		return compType.split(',').includes(type) || (compObj.typePattern && compObj.typePattern(type))
 	},

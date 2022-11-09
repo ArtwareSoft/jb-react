@@ -33,7 +33,7 @@ jb.extension('probe', {
             await jb.treeShake.getCodeFromRemote([cmpId])
             // #jbLoadComponents: tgp.componentStatistics
             const statistics = jb.exec({$: 'tgp.componentStatistics', cmpId})
-            const comp = defaultMainCircuit || _ctx.exp('%$studio/circuit%') || (jb.path(jb.comps[cmpId],'impl.expectedResult') ? cmpId 
+            const comp = defaultMainCircuit || _ctx.exp('%$studio/circuit%') || (jb.path(jb.utils.getComp(cmpId),'impl.expectedResult') ? cmpId 
                     : (statistics.referredBy||[]).find(refferer=>jb.tgp.isOfType(refferer,'test'))) 
                 || cmpId
             if (comp) {
@@ -163,14 +163,14 @@ jb.extension('probe', {
             const parentCtx = this.probe[_path][0].in, breakingPath = _path+'~'+breakingProp
             const obj = this.probe[_path][0].out
             const compName = jb.tgp.compNameOfPath(breakingPath)
-            if (jb.comps[`${compName}.probe`]) {
+            if (jb.utils.getComp(`${compName}.probe`)) {
                 parentCtx.profile[breakingProp][jb.core.CT] = { ...parentCtx.profile[breakingProp][jb.core.CT], comp: null }
                 return jb.probe.resolve(parentCtx.runInner({...parentCtx.profile[breakingProp], $: `${compName}.probe`},
                     jb.tgp.paramDef(breakingPath),breakingProp))
                         .then(_=>this.handleGaps(_path))
             }
 
-            const hasSideEffect = jb.comps[compName] && (jb.comps[jb.tgp.compNameOfPath(breakingPath)].type ||'').indexOf('has-side-effects') != -1
+            const hasSideEffect = jb.utils.getComp(compName) && (jb.utils.getComp(jb.tgp.compNameOfPath(breakingPath)).type ||'').indexOf('has-side-effects') != -1
             if (obj && !hasSideEffect && obj[breakingProp] && typeof obj[breakingProp] == 'function')
                 return jb.probe.resolve(obj[breakingProp]())
                     .then(_=>this.handleGaps(_path))
@@ -322,7 +322,7 @@ jb.component('probe.handleScriptChangeOnPreview', {
         const {op, path} = ctx.data
         const handler = jb.watchableComps.startWatch()
         if (path[0] == 'probeTest.label1') return
-        if (!jb.comps[path[0]])
+        if (!jb.utils.getComp(path[0]))
             return jb.logError(`handleScriptChangeOnPreview - missing comp ${path[0]}`, {path, ctx})
         handler.makeWatchable(path[0])
         jb.log('probe handleScriptChangeOnPreview doOp',{ctx,op,path})

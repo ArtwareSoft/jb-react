@@ -427,10 +427,6 @@ jb.component('dataTest.obj', {
   impl: dataTest(pipeline(obj(prop('a', 1), prop('b', 2)), '%a%-%b%', '\n%%\n', {'$': 'object', res: '%%'}, '%res%'), contains('1-2'))
 })
 
-jb.component('dataTest.prettyPrintMacro', {
-  impl: dataTest(prettyPrint(ctx => jb.comps['dataTest.obj'].impl), contains(["prop('a', 1)", ctx => "res: '%%'"]))
-})
-
 jb.component('dataTest.activateMethod', {
   impl: dataTest({
     vars: [Var('o1', () => ({ f1: () => ({a:5}) }))],
@@ -454,19 +450,6 @@ jb.component('dataTest.varsCases', {
     calculate: pipeline(Var('sep', '-'), '%$items/id%', '%% %$sep%', join()),
     expectedResult: equals('1 -,2 -')
   })
-})
-
-jb.component('dataTest.prettyPrintMacroVars', {
-  impl: dataTest(ctx => { try {
-      const testToTest = 'dataTest.varsCases'
-      const compTxt = jb.utils.prettyPrintComp(testToTest.replace(/varsCases/,'varsCases2'), jb.comps[testToTest])
-      eval(compTxt)
-      return ctx.run(dataTest.asArrayBug()) // checks for error
-        .then(({success}) => success && compTxt)
-      } catch(e) {
-        return false
-      }
-    }, contains("vars: [Var('items', [{id: 1}, {id: 2}])]"))
 })
 
 jb.component('dataTest.macroNs', {
@@ -526,108 +509,6 @@ jb.component('dataTest.stringPassiveVar', {
   })
 })
 
-jb.component('dataTest.forwardMacro', {
-  impl: dataTest(data.test1('a', 'b'), equals('a-b'))
-})
-
-jb.component('dataTest.forwardMacroByValue', {
-  impl: dataTest(data.test1('a', 'b'), equals('a-b'))
-})
-
-jb.component('data.test1', {
-  params: [
-    {id: 'first'},
-    {id: 'second'}
-  ],
-  impl: '%$first%-%$second%'
-})
-
-jb.component('dataTest.prettyPrintPositions.shouldNotFlat', {
-  impl: dataTest(
-    pipeline(
-      () => jb.utils.prettyPrintWithPositions(group({title: '2.0', controls: text('my label')})),
-      log('test'),
-      '%map/~controls~text~!value%',
-      join()
-    ),
-    equals('2,17,2,27')
-  )
-})
-
-jb.component('dataTest.prettyPrintPositions.closeArray', {
-  impl: dataTest(
-    pipeline(
-      () => jb.utils.prettyPrintWithPositions(group({controls: [text('my label'), text('my label')]} ), {colWidth: 30} ),
-      '%map/~controls~!close-array%',
-      join()
-    ),
-    equals('3,20,4,2')
-  )
-})
-
-
-jb.component('dataTest.prettyPrintPositions.separator', {
-  impl: dataTest(
-    pipeline(() => jb.utils.prettyPrintWithPositions({a: 1, b: 2}), '%map/~!obj-separator-0%', join()),
-    equals('1,6,2,2')
-  )
-})
-
-jb.component('dataTest.prettyPrintPositionsInnerFlat', {
-  impl: dataTest(pipeline(() => jb.utils.prettyPrintWithPositions(
-      group({
-        title: 'main',
-        controls: [
-          group({title: '2.0', controls: text('my label')}),
-          text('1.00')
-        ]
-      })
-      ), '%map/~controls~0~controls~text~!value%', join()), equals('2,49,2,59'))
-})
-
-jb.component('dataTest.prettyPrintPathInPipeline', {
-  impl: dataTest(pipeline(() => jb.utils.prettyPrintWithPositions(
-        pipeline('main')
-      ), '%map/~items~0~!value[0]%'), equals(1))
-})
-
-jb.component('dataTest.prettyPrintArray', {
-  impl: dataTest(pipeline(() => jb.utils.prettyPrintWithPositions(
-        group({controls:[]})
-      ), '%map/~controls~!value[0]%'), equals(1))
-})
-
-jb.component('dataTest.prettyPrint.contains', {
-  impl: dataTest(pipeline(() => jb.utils.prettyPrintWithPositions( {$contains: 'hello'}), '%text%'), contains('hello'))
-})
-
-jb.component('dataTest.prettyPrint.byValue.cutTailingUndefinedArgs', {
-  impl: dataTest(() => jb.utils.prettyPrint(css.boxShadow({inset: false})), notContains('undefined'))
-})
-
-jb.component('dataTest.prettyPrint.async', {
-  impl: dataTest(() => jb.utils.prettyPrint({ async a() {3} }), and(not(contains('a:')), contains('async a() {3}')))
-})
-
-jb.component('dataTest.prettyPrint.asyncInProfile', {
-  impl: dataTest(() => jb.utils.prettyPrint(dataTest(async () => {5})), and(not(contains('a:')), contains('async () => {5}')))
-})
-
-jb.component('dataTest.prettyPrint.funcDefaults', {
-  impl: dataTest(() => jb.utils.prettyPrint({ aB(c,{b} = {}) {3} }), and(not(contains('aB:')), contains('aB(c,{b} = {}) {3}')))
-})
-
-jb.component('dataTest.tgpTextEditor.getPosOfPath', {
-  impl: dataTest(
-    pipeline(
-      () => jb.tgpTextEditor.getPosOfPath('dataTest.tgpTextEditor.getPosOfPath~impl~expectedResult','profile'),
-      slice(0, 2),
-      join()
-    ),
-    equals('7,4')
-  )
-})
-
 jb.component('dataTest.evalExpression', {
   impl: dataTest(evalExpression('1+1'), equals(2))
 })
@@ -643,3 +524,17 @@ jb.component('dataTest.firstSucceeding.withEmptyString', {
 jb.component('dataTest.DefaultValueComp', {
   impl: dataTest(test.withDefaultValueComp(), equals(5))
 })
+
+
+jb.component('dataTest.tgpTextEditor.getPosOfPath', {
+  impl: dataTest(
+    pipeline(
+      () => jb.tgpTextEditor.getPosOfPath('dataTest.tgpTextEditor.getPosOfPath~impl~expectedResult','profile'),
+      slice(0, 2),
+      join()
+    ),
+    equals('7,4')
+  )
+})
+
+

@@ -77,7 +77,7 @@ jb.extension('tgp', 'completion', {
     },
     newPTCompletions(path, arrayIndex, ctx) {
         const options = jb.tgp.PTsOfPath(path).map(compName=>{
-            const comp = jb.comps[compName]
+            const comp = jb.utils.getComp(compName)
             return {
                 kind: 2,
                 compName,
@@ -118,7 +118,7 @@ jb.extension('tgp', 'completion', {
 	setPTOp(_path, _arrayIndex, compName,srcCtx) {
         const arrayIndex = _arrayIndex == -1 ? null : _arrayIndex
 		const profile = jb.tgp.valOfPath(_path)
-        const params = jb.path(jb.comps[(profile||{}).$],'params') || []
+        const params = jb.tgp.paramsOfPath(_path)
         const singleParamAsArray = jb.tgp.singleParamAsArray(_path)
 		let path = singleParamAsArray ? `${_path}~${params[0].id}` : _path
 		let index = null
@@ -222,7 +222,7 @@ jb.extension('tgpTextEditor', 'completion', {
             const path = semanticPath.allPaths.map(x=>x[0]).filter(x=>x.match('~!profile$')).map(x=>x.split('~!')[0])[0]
             const comp = path && jb.tgp.compNameOfPath(path)
             if (!comp) return
-            const loc = jb.comps[comp][jb.core.location]
+            const loc = jb.utils.getComp(comp)[jb.core.location]
             return locationInFile(loc)
             // const lineOfComp = (+loc[1]) || 0
             // const uri = vscodeNS.Uri.file(jbBaseUrl + loc[0]) // /home/shaiby/projects/jb-react
@@ -251,7 +251,7 @@ jb.extension('tgpTextEditor', 'completion', {
             const handler = jb.watchableComps.startWatch()
             const {path, op}  = textEditorFollowUp
             const compId = path.split('~')[0]
-            if (!jb.comps[compId])
+            if (!jb.utils.getComp(compId))
                 return jb.logError(`handleScriptChangeOnPreview - missing comp ${compId}`, {path, ctx})
             handler.makeWatchable(compId)
             handler.doOp(handler.refOfPath(path.split('~')), op, ctx.setVar('textEditorFollowUp',textEditorFollowUp))

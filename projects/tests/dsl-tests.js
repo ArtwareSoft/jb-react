@@ -162,11 +162,28 @@ jb.component('dslTest.inheritTypeFromImp', {
 
 // multiple engine tests
 
+// macro test
+
+jb.component('macroTest.dsl.simple', {
+  impl: dataTest(
+    () => jb.utils.prettyPrintComp('cmpAtMyDsl',jb.utils.getComp('t<myDsl>cmpAtMyDsl')),
+    and(contains("type: 't<myDsl>'"), notContains('$'))
+  )
+})
+
+jb.component('macroTest.dsl.inherit', {
+  impl: dataTest({
+    calculate: () => jb.utils.prettyPrintComp('inheritTypeFromImp',jb.utils.getComp('t<myDsl>inheritTypeFromImp')),
+    expectedResult: and(notContains('t<myDsl>'), notContains('$')),
+    allowError: true
+  })
+})
+
 
 // completion tests
 
 jb.component('dslTest.basicType', {
   impl: tgp.completionOptionsTest(`jb.component('x', {
-  impl: uiTest(text(pipeline(__)))
+  impl: dataTest(text(pipeline(__)))
 })`, ['split'])
 })
