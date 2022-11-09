@@ -45,13 +45,55 @@ jb.extension('utils', { // jb core utils
     },
     compName(profile,parentParam) {
         if (!profile || Array.isArray(profile)) return
-        return profile.$ || jb.utils.singleInType(parentParam)
+        const dslType = jb.path(profile,[jb.core.CT, 'dslType']) || ''
+        return (dslType.indexOf('<') == -1 ? '' : dslType) + (profile.$ || jb.utils.singleInType(parentParam) || '')
     },
-    getComp(id, type) {
+    resolveCompType(id, comp, type) {
+      const CT = jb.core.CT
+      if (!comp[CT]) {
+        //jb.logError(`no compCT for ${id}` ,{id, comp, type})
+        comp[CT] = comp[CT] || {}
+      }
+
+      comp[CT].dslType = type
       const typeWithDsl = jb.utils.dslSplitType(type)
-      const allTypes = [typeWithDsl, ...jb.asArray(jb.path(jb.dsls, [...typeWithDsl,'$settings','includes'])).map(x=>jb.utils.dslSplitType(x))]
-      const comps = allTypes.map(typeWithDsl => typeWithDsl.length > 1 ? jb.path(jb.dsls, [...typeWithDsl,id]) : jb.comps[id])
-      return comps.find(x=>x)
+      if (typeWithDsl.length > 1)
+        Object.assign(comp[CT], { dsl: typeWithDsl[0], typeId: typeWithDsl[1]})
+      const dsl = comp[CT].dsl
+
+      if (dsl && comp.impl && typeof comp.impl == 'object') {
+        comp.impl[CT] = comp.impl[CT] || {}
+        Object.assign(comp.impl[CT], { dslType: type, dsl})
+      }
+      ;(comp.params || []).forEach(p=> {
+        // fix as boolean params to have type: 'boolean'
+        if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
+          p.type = 'boolean';
+        // calc dslType
+        const dslType = (p.type || '').split(',')
+          .map(t=> dsl && t.indexOf('<') == -1 && ['data','action'].indexOf(t) == -1 ? `${t}<${dsl}>` : t)
+          .join(',') || 'data'
+        p[CT] = { dslType, originalType: p.type}
+        if (p[CT] && p.defaultValue && typeof p.defaultValue == 'object')
+          p.defaultValue[CT] = { ...p[CT] }
+      })
+    
+      if (dsl)
+        jb.path(jb.dsls, [dsl, comp[CT].typeId,id], comp )
+      else
+        jb.comps[id] = comp
+    },
+    getComp: (id, type) => {
+      const res = id && (type || ''). split(',').map(t=>jb.utils.dslSplitType(t))
+          .map(typeWithDsl => typeWithDsl.length > 1 ? jb.path(jb.dsls, [...typeWithDsl,id]) : (jb.comps[id] || geUnresolved(id))).find(x=>x)
+      if (id && !res)
+        jb.logError(`utils getComp - can not find comp for id ${id}`,{id,type})
+      return res
+
+      function geUnresolved(id) {
+        const comp = jb.utils.geUnresolvedProfile(id)
+        return comp && jb.macro.resolveProfile(comp,{id})
+      }
     },
     dslSplitType: typeExp => typeExp ? typeExp.split(/<|>/).map(x=>x.trim(x)).filter(x=>x).reverse() : [],
     compParams(comp) {
@@ -59,6 +101,7 @@ jb.extension('utils', { // jb core utils
         return []
       return Array.isArray(comp.params) ? comp.params : entries(comp.params).map(x=>Object.assign(x[1],{id: x[0]}))
     },
+    geUnresolvedProfile: _id => (jb.core.unresolvedProfiles.find(({id}) => id == _id) || {}).comp,
     resolveFinishedPromise(val) {
       if (val && typeof val == 'object' && val._state == 1) // finished promise
         return val._result

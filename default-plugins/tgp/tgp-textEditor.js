@@ -1,16 +1,10 @@
 
 jb.extension('tgpTextEditor', {
-    eval: (code , {overrideLocation, doNotFixProfile } = {}) => { 
+    eval: code => { 
       try {
         const compId = (code.match(/jb.component\('([^']*)/)||[null,null])[1]
-        const oldLocation = compId && jb.comps[compId] && jb.comps[compId][jb.core.location]
-        const res = jb.frame.eval(`(function() { ${jb.macro.importAll()}; return (${code}) })()`) 
-        if (compId) {
-          if (!overrideLocation)
-            jb.comps[compId][jb.core.location] = oldLocation
-          if (!doNotFixProfile)
-            jb.macro.resolveProfile(jb.comps[compId],{id: compId})
-        }
+        const res = jb.frame.eval(`(function() { ${jb.macro.importAll()}; const jbKeepCompLocation = true; return (${code}) })()`) 
+        res && jb.macro.resolveProfile(res,{id: compId})
         return { res, compId }
       } 
       catch (e) { 

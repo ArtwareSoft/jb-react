@@ -14,6 +14,13 @@
 //     })))
 // })
 
+jb.component('itemlists.manyItems', {
+  params: [
+    {id: 'howMany', as: 'number', defaultValue: 1000 }
+  ],
+  impl: pipeline(range(1, '%$howMany%'), obj(prop('id','%%'), prop('name','%%-%%'), prop('group', ({data}) => Math.floor(Number(data) /10))))
+})
+
 jb.component('remoteTest.childJbm', {
   impl: dataTest({
     calculate: pipe(jbm.child('tst'), remote.data('hello', '%%')),

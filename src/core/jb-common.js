@@ -517,7 +517,7 @@ jb.component('extend', {
   impl: (ctx,properties) =>
 		Object.assign({}, ctx.data, jb.objFromEntries(properties.map(p=>[p.title, jb.core.tojstype(p.val(ctx),p.type)])))
 })
-jb.component('assign', jb.comps.extend)
+jb.component('assign', jb.utils.geUnresolvedProfile('extend'))
 
 jb.component('extendWithIndex', {
   type: 'aggregator',

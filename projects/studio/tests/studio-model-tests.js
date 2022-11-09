@@ -6,20 +6,6 @@ jb.component('studioTest.categoriesOfType', {
   })
 })
 
-jb.component('studioTest.isOfTypeArray', {
-  impl: dataTest({
-    calculate: tgp.isOfType('studio-data-test.list-for-tests~impl~items~0', 'data'),
-    expectedResult: '%%'
-  })
-})
-
-jb.component('studioTest.paramTypeArray', {
-  impl: dataTest({
-    calculate: tgp.paramType('studio-data-test.list-for-tests~items~0'),
-    expectedResult: '%% == \"data\"'
-  })
-})
-
 jb.component('test.simplePipeline', {
   type: 'data',
   impl: pipeline(

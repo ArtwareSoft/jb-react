@@ -1,26 +1,3 @@
-jb.component('tgpTextEditor.selectPT1', {
-  type: 'menu.option',
-  params: [
-    {id: 'path', as: 'string'},
-    {id: 'semanticPart', as: 'string'}
-  ],
-  impl: menu.menu({
-    options: menu.dynamicOptions(
-      ({},{},{path}) => jb.tgp.PTsOfPath(path).map(compName=> {
-        const name = compName.substring(compName.indexOf('.')+1)
-        const ns = compName.substring(0,compName.indexOf('.'))
-				const mark = [ ((jb.comps[compName].type || '').match(':([0-9]*)') || ['','50'])[1],
-          ...(jb.comps[compName].category||'').split(',').map(x=>(x.match(':([0-9]*)') || ['','50'])[1])].filter(x=>x).sort()[0] || 50
-        return {compName, title: ns ? `${name} (${ns})` : name, description: jb.tgp.getComp(compName).description || '', mark}
-      }).filter(x=>x.mark).sort((x,y) => y.mark - x.mark),
-      menu.action({
-        title: '%title%',
-        description: '%description%',
-        action: tgpTextEditor.setSelectedPT({path: '%$path%', semanticPart: '%$semanticPart%', compName: '%compName%'}),
-      })
-    )
-  })
-})
 
 jb.component('tgpTextEditor.prepareSetPT', {
   type: 'data',

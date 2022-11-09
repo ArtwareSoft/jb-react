@@ -1,4 +1,3 @@
-// var {inplaceEdit,sizesEditor} = jb.ns('inplaceEdit,sizesEditor')
 
 jb.component('inplaceEdit.activate', {
   type: 'action',
@@ -13,7 +12,7 @@ jb.component('inplaceEdit.activate', {
         return el
     }),
     Var('parentGroup', ctx => jb.tgp.pathParents(ctx.exp('%$path%'), true).find(path=>jb.tgp.compNameOfPath(path) == 'group')),
-    Var('parentLayout', tgp.compName('%$parentGroup%~layout')),
+    Var('parentLayout', If('%$parentGroup%', tgp.compName('%$parentGroup%~layout'))),
     action.if( '%$parentLayout% == layout.grid', inplaceEdit.openGridEditor('%$parentGroup%')),
     writeValue('%$studio/profile_path%', '%$path%'),
     openDialog({

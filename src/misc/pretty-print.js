@@ -103,9 +103,10 @@ jb.extension('utils', 'prettyPrint', {
 
     function profileToMacro(ctx, profile,flat) {
       const id = [jb.utils.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
-      const comp = comps[id]
-      if (comp)
-        jb.macro.resolveProfile(profile,{id})
+      const comp = jb.utils.getComp(id)
+      if (comp && profile.$byValue)
+        jb.macro.resolveProfile(profile)
+        
       if (noMacros || !id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
         const props = Object.keys(profile)
         if (props.indexOf('$') > 0) { // make the $ first

@@ -36,21 +36,12 @@ jb.component('remote.dispatch', {
 })
 
 jb.component('dispatch.singleJbm', {
-    type: 'dispatch.server',
-    params: [
-      {id: 'jbm', type: 'jbm', mandatory: true },
-      {id: 'capabilities', type: 'dispatch.capabilities[]', as: 'array', mandatory: true},
-    ],
-    impl: ctx => ctx.params
+  type: 'dispatch.server',
+  params: [
+    {id: 'jbm', type: 'jbm', mandatory: true},
+    {id: 'capabilities', type: 'dispatch.capabilities[]', as: 'array', mandatory: true}
+  ],
+  impl: ctx => ctx.params
 })
 
-jb.component('dispatch.cluster', {
-    type: 'dispatch.server',
-    params: [
-      {id: 'jbm.container', type: 'jbm.container', defaultValue: jbm.NodeConainer(), mandatory: true },
-      {id: 'capabilities', type: 'dispatch.capabilities[]', as: 'array', mandatory: true},
-      {id: 'noOfNodes', as: 'number', defaultValue: 3, mandatory: true },
-    ],
-    impl: ({}, container,capabilities, noOfNodes) =>  Array.from(Array(noOfNodes).keys()).map(()=>({jbm: container.createJbm(), capabilities}))
-})
 

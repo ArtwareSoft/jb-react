@@ -12,27 +12,26 @@ jb.extension('tgp', 'readOnly', {
 	compNameOfPath: (path,silent) => {
 	  if (path.indexOf('~') == -1)
 		return 'jbComponent'
-	  if (path.match(/~\$vars$/)) return
+	  if (path.match(/~\$vars$/)) 
+	  	return
 	  const prof = jb.tgp.valOfPath(path,silent)
-		return jb.utils.compName(prof) || jb.utils.compName(prof,jb.tgp.paramDef(path))
+	  return jb.utils.compName(prof) || jb.utils.compName(prof,jb.tgp.paramDef(path))
 	},
 	paramDef: path => {
 	  if (!jb.tgp.parentPath(path))
-		  return { type: jb.path(jb.comps[path],'type')};
+		  return jb.tgp.getComp(path)
 	  if (!isNaN(Number(path.split('~').pop()))) // array elements
-		  path = jb.tgp.parentPath(path);
-	  // const parent_prof = jb.tgp.valOfPath(jb.tgp.parentPath(path),true);
-	  // const comp = parent_prof && jb.tgp.getComp(jb.utils.compName(parent_prof));
-	  const comp = jb.tgp.compOfPath(jb.tgp.parentPath(path),true);
-	  const params = jb.utils.compParams(comp);
-	  const paramName = path.split('~').pop();
+		  path = jb.tgp.parentPath(path)
+	  const comp = jb.tgp.compOfPath(jb.tgp.parentPath(path),true)
+	  const params = jb.utils.compParams(comp)
+	  const paramName = path.split('~').pop()
 	  if (paramName.indexOf('$') == 0) // sugar
-		  return params[0];
-	  return params.filter(p=>p.id==paramName)[0];
+		  return params[0]
+	  return params.find(p=>p.id==paramName)
 	},
 	compOfPath: (path,silent) => jb.tgp.getComp(jb.tgp.compNameOfPath(path,silent)),
 	paramsOfPath: (path,silent) => jb.utils.compParams(jb.tgp.compOfPath(path,silent)),
-	getComp: id => jb.comps[id],
+	getComp: id => id && id.indexOf('<') != -1 && jb.utils.getComp(id.split('>')[1], id.split('>')[1] + '>') || jb.utils.getComp(id),
 	compAsStr: id => jb.utils.prettyPrintComp(id,jb.tgp.getComp(id)),
 	valSummary: val => {
 		if (val && typeof val == 'object')
@@ -41,8 +40,7 @@ jb.extension('tgp', 'readOnly', {
 	},
 	pathSummary: path => path.replace(/~controls~/g,'~').replace(/~impl~/g,'~').replace(/^[^\.]*./,''),
 	singleParamAsArray: path => {
-		const profile = jb.tgp.valOfPath(path)
-		const params = jb.path(jb.comps[(profile||{}).$],'params') || []
+		const params = jb.path(jb.tgp.compOfPath(path),'params') || []
         return params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1 && params[0]
 	},
 	isArrayType: path => ((jb.tgp.paramDef(path)||{}).type||'').indexOf('[]') != -1,
@@ -63,14 +61,25 @@ jb.extension('tgp', 'readOnly', {
 		const single = /([^\[]*)(\[\])?/
 		const types = (type||'').split(',').map(x=>x.match(single)[1])
 			.flatMap(x=> x=='data' ? ['data','aggregator','boolean'] : [x])
-		const res = types.flatMap(t=> jb.entries(jb.comps).filter(c=> jb.tgp.isCompObjOfType(c[1],t)).map(c=>c[0]))
+		const res = types.flatMap(t=> PTsofSingleType(t) )
 		res.sort((c1,c2) => jb.tgp.markOfComp(c2) - jb.tgp.markOfComp(c1))
 		return res
+
+		function PTsofSingleType(t) {
+			if (t.indexOf('<') != -1) {
+				const dsl = t.split('<')[1].slice('>')[0], typeId = t.split('<')[0];
+				return Object.keys(jb.path(jb.dsls,[dsl,typeId])).map(id=> `${t}${id}`)
+			} else {
+				return jb.entries(jb.comps).filter(c=> jb.tgp.isCompObjOfType(c[1],t)).map(c=>c[0])
+			}
+		}
 	},
-	markOfComp(name) {
-		return +(((jb.comps[name].category||'').match(/common:([0-9]+)/)||[0,0])[1])
+	markOfComp(id) {
+		return +(((jb.tgp.getComp(id).category||'').match(/common:([0-9]+)/)||[0,0])[1])
 	},
 	isCompNameOfType(name,type) {
+		if (name.indexOf('<') != -1)
+			return name.split('<')[0] === type
 		const comp = name && jb.comps[name]
 		if (comp) {
 			while (jb.comps[name] && !(jb.comps[name].type || jb.comps[name].typePattern) && jb.utils.compName(jb.comps[name].impl))
@@ -83,10 +92,10 @@ jb.extension('tgp', 'readOnly', {
 		return compType.split(',').includes(type) || (compObj.typePattern && compObj.typePattern(type))
 	},
 
-	paramTypes: path => ((jb.tgp.paramDef(path) || {}).type || 'data').split(',')
+	paramTypes: path => (jb.path(jb.tgp.paramDef(path),[jb.core.CT,'dslType']) || '').split(',')
 		.map(t=>t.split('[')[0])
-		.map(t=> t == '$asParent' || t == '*' ? jb.tgp.paramType(jb.tgp.parentPath(path)) : t),
-	paramType: path => jb.tgp.paramTypes(path)[0],
+		.map(t=> t == '$asParent' ? jb.tgp.paramType(jb.tgp.parentPath(path)) : t),
+	paramType: path => jb.tgp.paramDef(path) ? jb.tgp.paramTypes(path)[0] : '',
 	PTsOfPath: path => {
 		const types = jb.tgp.paramTypes(path)
 		if (types.length == 1)
@@ -170,7 +179,7 @@ jb.extension('tgp', 'readOnly', {
 			if (Array.isArray(parentVal) && path.split('~').pop() == parentVal.length)
 				return 'add';
 		}
-		if (jb.tgp.paramType(path) == 'control') {
+		if (jb.tgp.isOfType(path,'control')) {
 			if (jb.tgp.valOfPath(path+'~style',true) && jb.tgp.compNameOfPath(path+'~style') == 'layout.horizontal')
 				return 'view_column'
 			return 'folder_open'; //'view_headline' , 'folder_open'
@@ -215,7 +224,7 @@ jb.defComponents(
 		{id: 'func', as: 'string', defaultValue: f}
 	  ],
 	  impl: ({},path,f) => jb.tgp[f](path),
-	  require: {$: `jb.tgp.${f}` }
+	  require: `() => #jb.tgp.${f}()`
 }))
 
 jb.component('tgp.compName', {

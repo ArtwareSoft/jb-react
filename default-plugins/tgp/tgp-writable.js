@@ -106,7 +106,7 @@ jb.defComponents('pathOfRef,nameOfRef'.split(','), f => jb.component(`tgp.${f}`,
 		{id: 'func', as: 'string', defaultValue: f}
 	  ],
 	impl: ({},ref,f) => jb.tgp[f](ref),
-	require: {$: `jb.tgp.${f}` }
+	require: `() => #jb.tgp.${f}()`
 }))
 
 jb.component('tgp.boolRef', {

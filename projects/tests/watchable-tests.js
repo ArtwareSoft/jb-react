@@ -391,8 +391,8 @@ jb.component('uiTest.watchableAsTextWrite', {
   impl: uiTest({
     control: editableText({
       databind: tgpTextEditor.watchableAsText('%$watchablePeople%'),
-      style: editableText.textarea({rows: 30, cols: 80}),
-      features: [id('editor'), watchRef({ ref: '%$watchablePeople%', allowSelfRefresh: true})],
+      style: editableText.textarea(30, 80),
+      features: [id('editor'), watchRef({ref: '%$watchablePeople%', allowSelfRefresh: true})]
     }),
     userInput: userInput.setText('hello', '#editor'),
     expectedResult: equals('%$watchablePeople%', 'hello')

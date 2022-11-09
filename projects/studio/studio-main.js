@@ -3,7 +3,7 @@ jb.component('studio.main', {
   impl: group({
     controls: [
       controlWithCondition(studio.isTest(), studio.test()),
-      controlWithCondition(studio.isNotebook(), studio.notebook()),
+//      controlWithCondition(studio.isNotebook(), studio.notebook()),
       studio.jbart()
     ],
     features: [group.wait(ctx => jb.studio.host.settings()
@@ -203,17 +203,17 @@ jb.component('studio.sampleProject', {
   params: [
     {id: 'project', as: 'string'}
   ],
-  impl: menu.action({
-    title: '%$project%',
-    action: action.if(
+  impl: menu.action(
+    '%$project%',
+    action.if(
       studio.inVscode(),
-      studio.reOpenStudio(pipeline(studio.projectsDir(),'%%/%$project%/%$project%.js'), 0),
+      studio.reOpenStudio(pipeline(studio.projectsDir(), '%%/%$project%/%$project%.js'), 0),
       winUtils.gotoUrl(
         'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/%$project%&project=%$project%',
         'new tab'
       )
     )
-  })
+  )
 })
 
 jb.component('studio.mainMenu', {

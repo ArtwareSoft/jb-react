@@ -16,7 +16,10 @@ jb.extension('tgp', 'completion', {
         const arrayIndex = jb.tgp.calcArrayIndex(semanticPath)
         const allSemantics = semanticPath.allPaths.map(x=>x[0]).filter(x=>x.indexOf(path+'~!') == 0).map(x=>x.split('~!').pop())
         const paramDef = jb.tgp.paramDef(path)
-        if (!paramDef) debugger
+        if (!paramDef) {
+            jb.logError('provideCompletionItems - can not find paramDef',{path, semanticPath, ctx})
+            return []
+        }
         
         let res = []
         const singleParamAsArray = jb.tgp.singleParamAsArray(path)

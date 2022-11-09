@@ -127,25 +127,20 @@ jb.component('test.wixIslandGridCtrl', {
 
 jb.component('inPlaceEditTest.text', {
   impl: uiFrontEndTest({
-    // runBefore: ctx => jb.studio.previewWindow = window,
-    // cleanUp: ctx => jb.studio.previewWindow = null,
-    renderDOM: true,
-    control: text({ text: 'hello world'}),
-    action: runActions(inplaceEdit.activate('inPlaceEditTest.text~impl~control'),delay(10)),
+    control: text('hello world'),
+    action: runActions(inplaceEdit.activate('inPlaceEditTest.text~impl~control'), delay(10)),
     expectedResult: contains('view_quilt'),
-    //contains({text: 'view_quilt', allText: test.dialogContent('inplace-edit-toolbar')})
+    renderDOM: true
   })
 })
 
 jb.component('inPlaceEditTest.grid', {
   impl: uiFrontEndTest({
-    renderDOM: true,
-    // runBefore: ctx => jb.studio.previewWindow = window,
-    // cleanUp: ctx => jb.studio.previewWindow = null,
     control: test.wixIslandGridCtrl(),
-    action: runActions(inplaceEdit.activate('test.wixIslandGridCtrl~impl'),delay(10)),
-    expectedResult: true
-//    expectedResult: contains({text: 'div', allText: test.dialogContent('gridLineThumb')})
+    action: runActions(inplaceEdit.activate('test.wixIslandGridCtrl~impl'), delay(10)),
+    expectedResult: contains('gridLineThumb'),
+    allowError: true,
+    renderDOM: true
   })
 })
 

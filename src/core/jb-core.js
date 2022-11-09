@@ -47,8 +47,8 @@ Object.assign(jb, {
     }      
   },
   component(id,comp) {
-    const CT = jb.core.CT
     if (!jb.core.location) jb.initializeLibs(['core']) // this line must be first
+    const CT = jb.core.CT
     comp[CT] = comp[CT] || {};
 
     if (comp.location) {
@@ -61,32 +61,10 @@ Object.assign(jb, {
     const h = jb.core.onAddComponent.find(x=>x.match(id,comp))
     if (h && h.register)
       return h.register(id,comp)
-
-    const typeWithDsl = jb.utils.dslSplitType(comp.type)
-    if (typeWithDsl.length > 1)
-      Object.assign(comp[CT], { dsl: typeWithDsl[0], typeId: typeWithDsl[1], dslType: comp.type})
-    if (comp[CT].dsl && comp.impl && typeof comp.impl == 'object') {
-      comp.impl[CT] = comp.impl[CT] || {}
-      Object.assign(comp.impl[CT], { dslType: comp.type})
-    }
-
-    if (comp[CT].dsl)
-      jb.path(jb.dsls, [comp[CT].dsl, comp[CT].typeId,id], comp )
-    else
+    jb.core.unresolvedProfiles.push({id,comp})
+    if (comp.isSystem)
       jb.comps[id] = comp
-
-    ;(comp.params || []).forEach(p=> {
-      // fix as boolean params to have type: 'boolean'
-      if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
-        p.type = 'boolean';
-      // calc dslType
-      if (comp[CT].dsl && (p.type || '').indexOf('<') == -1 && ['data','action'].indexOf(p.type) == -1)
-        p[CT] = { dslType : `${p.type}<${comp[CT].dsl}>` }
-      else if ((p.type || '').indexOf('<') != -1)
-        p[CT] = { dslType : p.type }
-      if (p[CT] && p.defaultValue && typeof p.defaultValue == 'object')
-        p.defaultValue[CT] = { ...p[CT] }
-    })
+    return comp
   },
   type(id, settings) {
     const typeWithDsl = jb.utils.dslSplitType(id)
@@ -109,7 +87,8 @@ jb.extension('core', {
       loadingPhase: Symbol.for('loadingPhase'),
       CT: Symbol.for('CT'), // compile time
       jstypes: jb.core._jsTypes(),
-      onAddComponent: []
+      onAddComponent: [],
+      unresolvedProfiles: []
     }
   },
   run(ctx,parentParam,settings) {

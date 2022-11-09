@@ -32,12 +32,9 @@ jb.component('jbEditorTest.cmp5JsonFormat', {
 //   })
 // })
 
-jb.component('jbEditorTest.actionsSugarExample2JsonFormat', {
-  impl: button({
-    title: 'hello',
-    action: runActions({'$': 'goto-url', url: 'google'})
-  })
-})
+// jb.component('jbEditorTest.actionsSugarExample2JsonFormat', {
+//   impl: button('hello', runActions(winUtils.gotoUrl('google')))
+// })
 
 jb.component('jbEditorTest.extraElemInList', {
   impl: jbEditorChildrenTest({

@@ -111,35 +111,52 @@ jb.component('dslTest.resolveDefaultValues', {
 })
 
 // type includes tests
-jb.type('myType2<myDsl.inner>', { includes: 'myType2<myDsl>'})
+//jb.type('myType2<myDsl.inner>', { includes: 'myType2<myDsl>'})
 
 jb.component('cmpAtMyDsl', {
-  type: 'myType2<myDsl>',
+  type: 't<myDsl>',
   impl: 'myDsl'
 })
 
 jb.component('cmpAtInnerDsl', {
-  type: 'myType2<myDsl.inner>',
+  type: 't<myDsl.inner>',
   impl: 'innerDsl'
 })
 
-jb.component('testType2InInnerDsl', {
+jb.component('testMultiTypes', {
   type: 'data<myDsl.inner>',
   params: [
-    {id: 'myDsl', type: 'myType2<myDsl>'},
-    {id: 'innerDsl', type: 'myType2<myDsl.inner>'}
+    {id: 'x1', type: 't<myDsl>,t<myDsl.inner>'},
+    {id: 'x2', type: 't<myDsl.inner>,t<myDsl>'},
+    {id: 'x3', type: 't<myDsl>,t'},
+    {id: 'x4', type: 't,t<myDsl>'},
   ],
-  impl: '%$myDsl%,%$innerDsl%'
+  impl: '%$x1%,%$x2%,%$x3%,%$x4%'
 })
 
-jb.component('dslTest.typeIncludes', {
+jb.component('dslTest.multiTypes', {
   impl: dataTest(
-    testType2InInnerDsl({
+    testMultiTypes({
       typeCast: 'data<myDsl.inner>',
-      myDsl: cmpAtMyDsl(),
-      innerDsl: cmpAtMyDsl()
+      x1: cmpAtInnerDsl(),
+      x2: cmpAtMyDsl(),
+      x3: cmpAtInnerDsl(),
+      x4: cmpAtMyDsl(),
     }),
-    equals('myDsl,myDsl')
+    equals('innerDsl,myDsl,innerDsl,myDsl')
+  )
+})
+
+// inherit type from imp
+
+jb.component('inheritTypeFromImp', {
+  impl: cmpAtMyDsl()
+})
+
+jb.component('dslTest.inheritTypeFromImp', {
+  impl: dataTest(
+    inheritTypeFromImp(typeCast('t<myDsl>')),
+    equals('myDsl')
   )
 })
 
@@ -148,9 +165,8 @@ jb.component('dslTest.typeIncludes', {
 
 // completion tests
 
-// jb.component('dslTest.basicType', {
-//   impl: tgp.completionOptionsTest({
-//     compText: "jb.component('x', {\n  impl: uiTest(text(pipeline(__)))\n})",
-//     expectedSelections:['split']
-//  })
-// })
+jb.component('dslTest.basicType', {
+  impl: tgp.completionOptionsTest(`jb.component('x', {
+  impl: uiTest(text(pipeline(__)))
+})`, ['split'])
+})

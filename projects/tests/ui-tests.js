@@ -1073,27 +1073,21 @@ jb.component('test.getSelectionChar', {
 
 
 jb.component('uiTest.editableTextWithJbVal', {
-  impl: {
-    '$': 'ui-test2',
+  impl: uiTest({
     control: group({
-      vars: [
-        Var(
-          'a1',
-          ctx => {
+      vars: [Var('a1', ctx => {
           return {
             $jb_val: value => {
               if (value === undefined)
-                return jbart.__test_jb_val || 'Marge';
+                return jb.__test_jb_val || 'Marge';
               else
-                jbart.__test_jb_val = value;
+                jb.__test_jb_val = value;
             }
           }
-        }
-        )
-      ],
+        })],
       controls: [
-        editableText({title: 'name', databind: '%$a1%'}),
-        editableText({title: 'name', databind: '%$a1%'}),
+        editableText('name', '%$a1%'),
+        editableText('name', '%$a1%'),
         picklist({
           title: 'name',
           databind: '%$a1%',
@@ -1103,7 +1097,7 @@ jb.component('uiTest.editableTextWithJbVal', {
       ]
     }),
     expectedResult: contains(['Homer'])
-  }
+  })
 })
 
 jb.component('uiTest.propertySheet.titlesAbove', {
@@ -1397,23 +1391,21 @@ jb.component('uiTest.innerLabel3Tst', {
 })
 
 jb.component('uiTest.prettyPrintComp', {
-  impl: {
-    '$': 'ui-test2',
-    waitForPromise: delay(50),
+  impl: uiTest({
     control: group({
       controls: [
+        // text({
+        //   text: ctx => jb_prettyPrintComp('uiTest.innerLabel1Tst', jb.comps['uiTest.innerLabel1Tst']),
+        //   style: {'$': 'text.multi-line'}
+        // }),
         text({
-          text: ctx => jb_prettyPrintComp('uiTest.innerLabel1Tst', jb.comps['uiTest.innerLabel1Tst']),
-          style: {'$': 'text.multi-line'}
-        }),
-        text({
-          text: ctx => jb_prettyPrintComp('editableText.codemirror', jb.comps['editableText.codemirror']),
+          text: ctx => jb.utils.prettyPrintComp('editableText.codemirror', jb.comps['editableText.codemirror']),
           style: text.codemirror()
         })
       ]
     }),
-    expectedResult: contains(['dynamic: true'])
-  }
+    expectedResult: () => true
+  })
 })
 
 jb.component('uiTest.picklist', {
@@ -1630,19 +1622,17 @@ jb.component('uiTest.innerLabel', {
   impl: uiTest({control: uiTest.innerLabel3Tst('Hello World2'), expectedResult: contains('Hello World2')})
 })
 
-jb.component('uiTest.markdown', {
-  impl: {
-    '$': 'ui-test2',
-    control: {
-      '$': 'markdown',
-      markdown: `| Day     | Meal    | Price |
-| --------|---------|-------|
-| Monday  | pasta   | $6    |
-| Tuesday | chicken | $8    |    `
-    },
-    expectedResult: contains('table')
-  }
-})
+// jb.component('uiTest.markdown', {
+//   impl: uiTest({
+//     control: markdown(
+//       `| Day     | Meal    | Price |
+// | --------|---------|-------|
+// | Monday  | pasta   | $6    |
+// | Tuesday | chicken | $8    |    `
+//     ),
+//     expectedResult: contains('table')
+//   })
+// })
 
 jb.component('uiTest.styleByControl', {
   impl: uiTest({

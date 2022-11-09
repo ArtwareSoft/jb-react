@@ -55,7 +55,8 @@ async function jbSupervisedLoad(symbols, jb, doNoInitLibs) {
   await symbols.reduce((pr,symbol) => pr.then(()=> jbloadJSFile(symbol.path,jb)), Promise.resolve())
 //  jb.treeShake.baseUrl = baseUrl !== undefined ? baseUrl : typeof globalThis.jbBaseUrl != 'undefined' ? globalThis.jbBaseUrl : ''
   !doNoInitLibs && await jb.initializeLibs(libs)
-  Object.keys(jb.comps).forEach(comp => jb.macro.resolveProfile(jb.comps[comp],{id: comp }))
+  jb.core.unresolvedProfiles.forEach(({comp,id}) => jb.macro.resolveProfile(comp,{id}))
+  jb.core.unresolvedProfiles = []
 }
 
 if (typeof module != 'undefined') module.exports = { jbInit }
