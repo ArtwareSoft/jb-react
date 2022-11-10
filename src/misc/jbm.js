@@ -286,14 +286,14 @@ jb.extension('jbm', {
     }
 })
 
-jb.component('initJb.loadModules', {
-    type: 'initJbCode',
-    description: 'returns code that can be wrapped as Promise.resolve(${code}).then(jb=>...)',
-    params: [
-        { id: 'modules' , as: 'array' },
-    ],
-    impl: ({vars}, modules) => 
-    `jbInit('${vars.uri}',${JSON.stringify({projects: modules, baseUrl: vars.baseUrl, multipleInFrame: vars.multipleJbmsInFrame})})`
+jb.component('initJb.usingProjects', {
+  type: 'initJbCode',
+  description: 'returns code that can be wrapped as Promise.resolve(${code}).then(jb=>...)',
+  params: [
+    {id: 'projects', as: 'array'}
+  ],
+  impl: ({vars}, projects) => 
+    `jbInit('${vars.uri}',${JSON.stringify({projects, baseUrl: vars.baseUrl, multipleInFrame: vars.multipleJbmsInFrame})})`
 })
 
 jb.component('initJb.treeShakeClient', {
@@ -462,3 +462,4 @@ jb.component('jbm.terminateChild', {
     ],
     impl: (ctx,id) => jb.jbm.terminateChild(id)
 })
+

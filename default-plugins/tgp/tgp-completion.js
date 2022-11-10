@@ -81,8 +81,8 @@ jb.extension('tgp', 'completion', {
             return {
                 kind: 2,
                 compName,
-                label: compName,
-                detail: comp.description,
+                label: compName.split('>').pop(),
+                detail: comp.description || compName.indexOf('>') != -1 && compName.split('>')[0] + '>',
                 extend: () => jb.tgp.setPTOp(path,arrayIndex,compName, ctx),
             }
         })

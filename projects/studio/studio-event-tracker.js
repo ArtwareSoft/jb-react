@@ -569,7 +569,10 @@ jb.component('eventTracker.getParentSpy', {
 })
 
 jb.component('eventTracker.codeSize', {
-  impl: ()=> jb.parent.treeShake.totalCodeSize ? Math.floor(jb.parent.treeShake.totalCodeSize/1000) + 'k' : ''
+  impl: ()=> {
+    const _jb = jb.parent || jb
+    return _jb.treeShake.totalCodeSize ? Math.floor(_jb.treeShake.totalCodeSize/1000) + 'k' : ''
+  }
 })
 
 jb.component('eventTracker.clearSpyLog', {

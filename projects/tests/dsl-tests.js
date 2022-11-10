@@ -135,19 +135,18 @@ jb.component('testMultiTypes', {
 })
 
 jb.component('dslTest.multiTypes', {
-  impl: dataTest(
-    testMultiTypes({
+  impl: dataTest({
+    calculate: testMultiTypes({
       typeCast: 'data<myDsl.inner>',
       x1: cmpAtInnerDsl(),
       x2: cmpAtMyDsl(),
       x3: cmpAtInnerDsl(),
-      x4: cmpAtMyDsl(),
+      x4: cmpAtMyDsl()
     }),
-    equals('innerDsl,myDsl,innerDsl,myDsl')
-  )
+    expectedResult: equals('innerDsl,myDsl,innerDsl,myDsl'),
+    runBefore: TBD()
+  })
 })
-
-// inherit type from imp
 
 jb.component('inheritTypeFromImp', {
   impl: cmpAtMyDsl()
@@ -160,10 +159,7 @@ jb.component('dslTest.inheritTypeFromImp', {
   )
 })
 
-// multiple engine tests
-
-// macro test
-
+// macro tests
 jb.component('macroTest.dsl.simple', {
   impl: dataTest(
     () => jb.utils.prettyPrintComp('cmpAtMyDsl',jb.utils.getComp('t<myDsl>cmpAtMyDsl')),
@@ -172,18 +168,17 @@ jb.component('macroTest.dsl.simple', {
 })
 
 jb.component('macroTest.dsl.inherit', {
-  impl: dataTest({
-    calculate: () => jb.utils.prettyPrintComp('inheritTypeFromImp',jb.utils.getComp('t<myDsl>inheritTypeFromImp')),
-    expectedResult: and(notContains('t<myDsl>'), notContains('$')),
-    allowError: true
-  })
+  impl: dataTest(
+    () => jb.utils.prettyPrintComp('inheritTypeFromImp',jb.utils.getComp('t<myDsl>inheritTypeFromImp')),
+    and(notContains('t<myDsl>'), notContains('$'))
+  )
 })
 
-
-// completion tests
-
-jb.component('dslTest.basicType', {
-  impl: tgp.completionOptionsTest(`jb.component('x', {
-  impl: dataTest(text(pipeline(__)))
-})`, ['split'])
+jb.component('macroTest.dsl.typeCast', {
+  impl: dataTest(
+    () => jb.utils.prettyPrintComp('dslTest.multiTypes',jb.utils.getComp('dslTest.multiTypes')),
+    and(contains("typeCast: 'data<myDsl.inner>'"), notContains('$'))
+  )
 })
+
+// TODO: multi engine tests

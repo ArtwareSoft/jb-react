@@ -296,6 +296,6 @@ jb.extension('studio', {
 
 
 jb.component('jbm.vDebugger', {
-    type: 'jbm',
-    impl: jbm.child('vDebugger', initJb.loadModules('studio'))
+  type: 'jbm',
+  impl: jbm.child('vDebugger', initJb.usingProjects('studio'))
 })

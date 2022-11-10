@@ -36,10 +36,12 @@ jb.component('remoteTest.childWorker', {
   })
 })
 
-jb.component('remoteTest.childWorker.initJb.loadModules', {
+jb.component('remoteTest.childWorker.initJb.usingProjects', {
   impl: dataTest({
-    calculate: pipe(jbm.worker({id: 'itemlists', initJbCode: initJb.loadModules('itemlists')}), 
-      remote.data(pipeline({$: 'itemlists.manyItems', howMany: 3 },'%id%', join(',')), '%%')),
+    calculate: pipe(
+      jbm.worker({id: 'itemlists', initJbCode: initJb.usingProjects('itemlists')}),
+      remote.data(pipeline({'$': 'itemlists.manyItems', howMany: 3}, '%id%', join(',')), '%%')
+    ),
     expectedResult: equals('1,2,3'),
     timeout: 3000
   })
@@ -477,16 +479,13 @@ jb.component('remoteWidgetTest.html', {
 
 jb.component('eventTracker.worker.vDebugger', {
   impl: uiTest({
-    timeout: 5000,
-    runBefore: remote.action(
-      runActions(
-        () => jb.spy.initSpy({spyParam: 'remote,log1'}),
-        log('log1',obj(prop('hello','world'))),
-        jbm.vDebugger()
-      ),
-      jbm.worker()),
     control: remote.widget(studio.eventTracker(), jbm.byUri('tests•w1•vDebugger')),
+    runBefore: remote.action(
+      runActions(() => jb.spy.initSpy({spyParam: 'remote,log1'}), log('log1', obj(prop('hello', 'world'))), jbm.vDebugger()),
+      jbm.worker()
+    ),
     expectedResult: contains('log1'),
+    timeout: 5000
   })
 })
 

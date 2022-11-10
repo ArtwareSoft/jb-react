@@ -335,7 +335,7 @@ jb.extension('test', {
 
 		if (remoteTests) {
 			jb.exec({$: 'tests.runner', 
-				jbm: jbm.worker({initJbCode: initJb.loadModules(['studio','tests'])}), 
+				jbm: jbm.worker({initJbCode: initJb.usingProjects(['studio','tests'])}), 
 				tests: () => tests.map(e=>e[0]), rootElemId: 'remoteTests'})
 			return
 		}
