@@ -1,7 +1,7 @@
 jb.extension('treeShake', {
     initExtension() {
         return {
-            clientComps: ['#extension','#core.run','#component','#jbm.extendPortToJbmProxy','#jbm.portFromFrame','#spy.initSpy','#treeShake.getCodeFromRemote','#cbHandler.terminate','treeShake.getCode','waitFor'],
+            clientComps: ['#extension','#core.run','#component','#jbm.extendPortToJbmProxy','#jbm.portFromFrame','#spy.initSpy','#treeShake.getCodeFromRemote','#cbHandler.terminate','treeShake.getCode','waitFor','runCtx'],
             existingFEPaths: {},
             FELibLoaderPromises: {},
             loadingCode: {},
@@ -98,11 +98,12 @@ jb.extension('treeShake', {
         return [
             topLevelCode,libsCode,compsCode,
             `await jb.initializeLibs([${jb.utils.unique(libsFuncs.map(x=>x.lib)).map(l=>"'"+l+"'").join(',')}])`,
+            'jb.utils.resolveLoadedProfiles()'
         ].join(';\n')
 
     },
     compToStr(cmpId) {
-        const compWithLocation = { ...jb.comps[cmpId], location : jb.comps[cmpId][jb.core.location]}
+        const compWithLocation = { ...jb.comps[cmpId], location : jb.comps[cmpId][jb.core.CT].location}
         const content = JSON.stringify(compWithLocation,
             (k,v) => typeof v === 'function' ? '@@FUNC'+v.toString()+'FUNC@@' : v,2)
                 .replace(/"@@FUNC([^@]+)FUNC@@"/g, (_,str) => str.replace(/\\\\n/g,'@@__N').replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n').replace(/\\t/g,'')

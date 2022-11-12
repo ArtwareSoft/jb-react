@@ -73,42 +73,6 @@ jb.extension('macro', {
             return { $: cmpId, [params[0].id]: args[0], [params[1].id]: args[1] }
         debugger;
     },
-    resolveProfile(profile, { id, dslType } = {}) {
-        if (id && id.indexOf('~') == -1)
-            jb.utils.resolveCompType(id, profile, profile.type)
-        const CT = jb.core.CT
-        doResolve(profile, dslType || profile[CT] && profile[CT].dslType)
-        function doResolve(prof, _dslType) {
-            if (!prof || !prof.constructor || ['Object','Array'].indexOf(prof.constructor.name) == -1) return
-            const dslType = prof.typeCast || jb.path(prof,[CT,'dslType']) || _dslType
-            const comp = jb.utils.getComp(prof.$, dslType)
-            if (prof.$byValue && comp) {
-                Object.assign(prof, jb.macro.argsToProfile(prof.$, comp, prof.$byValue))
-                delete prof.$byValue
-                prof[CT] = prof[CT] || {}
-                prof[CT].comp = comp
-
-                ;(comp.params || []).forEach(p=> doResolve(prof[p.id], p[CT] && p[CT].dslType))
-                doResolve(prof.$vars)
-            } else if (prof.$byValue && !comp) {
-                return jb.logError(`resolveProfile - can not resolve ${prof.$} at ${id} expected type ${dslType}`, 
-                    {compId: prof.$, id, prof, expectedType: dslType, profile})
-            } else {
-                Object.values(prof).forEach(v=>doResolve(v))
-            }
-        }
-        if (id && id.indexOf('~') == -1 && profile[CT] && !profile[CT].dslType) { // global profile with no type should use type from imp
-            const implCT = jb.path(profile.impl,[CT,'comp',CT])
-            if (implCT) {
-                profile[CT].dslType = implCT.dslType
-                if (implCT.dsl) {
-                    Object.assign(profile[CT], {dsl: implCT.dsl, typeId: implCT.typeId })
-                    jb.comps[`${implCT.typeId}<${implCT.dsl}>${id}`] = profile
-                }
-            }
-        }
-        return profile
-    },
     registerProxy: id => {
         const proxyId = jb.macro.titleToId(id.split('.')[0])
         if (jb.frame[proxyId] && jb.frame[proxyId][jb.macro.isMacro]) return

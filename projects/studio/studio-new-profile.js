@@ -478,7 +478,7 @@ jb.component('studio.newComp', {
   impl: (ctx, compName, compContent,file) => {
     jb.component(compName, jb.frame.JSON.parse(JSON.stringify({...compContent, type: '_'})))
     const path = (jb.frame.jbBaseProjUrl || '') + jb.studio.host.pathOfJsFile(ctx.exp('%$studio/project%'), file)
-    jb.comps[compName][jb.core.location] = [path,'new']
+    jb.comps[compName][jb.core.CT].location = [path,'new']
     jb.tgp.writeValue(jb.tgp.ref(`${compName}~type`),compContent.type || '',ctx)
   }
 })

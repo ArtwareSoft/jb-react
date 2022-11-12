@@ -58,7 +58,7 @@ jb.extension('remoteCtx', {
             return eval(data.slice(4))
         const stripedObj = data && typeof data == 'object' && jb.objFromEntries(jb.entries(data).map(e=>[e[0],jb.remoteCtx.deStrip(e[1])]))
         if (stripedObj && data.$ == 'runCtx')
-            return (ctx2,data2) => (new jb.core.jbCtx().ctx({...stripedObj})).extendVars(ctx2,data2).runItself()
+            return (ctx2,data2) => (new jb.core.jbCtx().ctx(jb.utils.resolveDetachedProfile(stripedObj))).extendVars(ctx2,data2).runItself()
         if (Array.isArray(data))
             return data.map(x=>jb.remoteCtx.deStrip(x))
         return stripedObj || data
@@ -86,21 +86,17 @@ jb.extension('remoteCtx', {
         if (!jb.comps[compId])
             return jb.logError('no component of id ',{compId}),''
         return jb.utils.prettyPrint({compId, ...jb.comps[compId],
-            location: jb.comps[compId][jb.core.location], loadingPhase: jb.comps[compId][jb.core.loadingPhase]} )
-    },
-    deSerializeCmp(code) {
-        if (!code) return
-        try {
-            const cmp = eval(`(function() { ${jb.macro.importAll()}; return ${code} })()`)
-            const res = {...cmp, [jb.core.location]: cmp.location, [jb.core.loadingPhase]: cmp.loadingPhase }
-            delete res.location
-            delete res.loadingPhase
-            jb.comps[res.compId] = res
-        } catch (e) {
-            jb.logException(e,'eval profile',{code})
-        }        
+            location: jb.comps[compId][jb.core.CT].location } )
     },
     shouldPassVar: (varName, profText) => jb.remoteCtx.allwaysPassVars.indexOf(varName) != -1 || profText.match(new RegExp(`\\b${varName}\\b`)),
     usingData: profText => profText.match(/({data})|(ctx.data)|(%[^$])/)
 })
 
+jb.component('runCtx',{
+    params: [
+        {id: 'path', as: 'string'},
+        {id: 'vars' },
+        {id: 'profile' },
+    ],
+    impl: () => {}
+})

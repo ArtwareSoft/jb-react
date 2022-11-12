@@ -72,8 +72,8 @@ jb.component('tgp.componentStatistics', {
 
     return {
       id: cmpId,
-      file: (cmp[jb.core.location] || [])[0],
-      lineInFile: +(cmp[jb.core.location] ||[])[1],
+      file: (cmp[jb.core.CT].location || [])[0],
+      lineInFile: +(cmp[jb.core.CT].location ||[])[1],
       linesOfCode: (asStr.match(/\n/g)||[]).length,
       refs: refs[cmpId].refs,
       referredBy: refs[cmpId].by,

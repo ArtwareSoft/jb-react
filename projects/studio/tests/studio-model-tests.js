@@ -143,15 +143,11 @@ jb.component('test.referee', {
 })
 
 jb.component('test.referer1', {
-  impl: {
-    '$pipline': [test.referee()]
-  }
+  impl: pipeline(test.referee())
 })
 
 jb.component('test.referer2', {
-  impl: {
-    '$pipline': [test.referee(), test.referee()]
-  }
+  impl: pipeline(test.referee(), test.referee())
 })
 
 jb.component('studioUiTest.gotoReferencesButton', {

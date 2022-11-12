@@ -105,7 +105,7 @@ jb.extension('utils', 'prettyPrint', {
       const fullId = [jb.utils.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
       const comp = fullId && jb.utils.getComp(fullId)
       if (comp && profile.$byValue)
-        jb.macro.resolveProfile(profile)
+        jb.utils.resolveDetachedProfile(profile)
       const id = fullId.split('>').pop()
         
       if (noMacros || !id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is

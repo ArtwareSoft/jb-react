@@ -1,11 +1,11 @@
 
 jb.extension('tgpTextEditor', {
-    eval: code => { 
+    evalProfileDef: code => { 
       try {
-        const compId = (code.match(/jb.component\('([^']*)/)||[null,null])[1]
-        const res = jb.frame.eval(`(function() { ${jb.macro.importAll()}; const jbKeepCompLocation = true; return (${code}) })()`) 
-        res && jb.macro.resolveProfile(res,{id: compId})
-        return { res, compId }
+        jb.core.unresolvedProfiles = []
+        const res = jb.frame.eval(`(function() { ${jb.macro.importAll()}; return (${code}) })()`)
+        res && jb.utils.resolveLoadedProfiles({keepLocation: true})
+        return { res, compId : jb.path(res,[jb.core.CT,'fullId']) }
       } 
       catch (e) { 
         return {err: e}
@@ -25,7 +25,7 @@ jb.extension('tgpTextEditor', {
     },
     setStrValue(value, ref, ctx) {
         const notPrimitive = value.match(/^\s*[a-zA-Z0-9\._]*\(/) || value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
-        const { res, err } = notPrimitive ? jb.tgpTextEditor.eval(value) : value
+        const { res, err } = notPrimitive ? jb.tgpTextEditor.evalProfileDef(value) : value
         if (err) return
         const newVal = notPrimitive ? res : value
         // I had a guess that ',' at the end of line means editing, YET, THIS GUESS DID NOT WORK WELL ...
@@ -42,7 +42,7 @@ jb.extension('tgpTextEditor', {
             }
         }
         if (newVal !== undefined) { // many diffs
-            currentVal && currentVal[jb.core.location] && typeof newVal == 'object' && (newVal[jb.core.location] = currentVal[jb.core.location])
+            currentVal && currentVal[jb.core.CT] && currentVal[jb.core.CT].location && typeof newVal == 'object' && (newVal[jb.core.CT].location = currentVal[jb.core.CT].location)
             jb.db.writeValue(ref,newVal,ctx)
         }
     },
@@ -159,14 +159,14 @@ jb.extension('tgpTextEditor', {
     },
     fixEditedComp(compText, {line, col} = {}) {
         //console.log('fixEditedComp', compText,line,col)
-        let fixedText = null, lastSrc = null, lastException = null
-        const originalComp = tryCompile(compText.replace(/^jb\.component/,''))
+        let fixedText = null, lastSrc = null
+        const originalComp = jb.tgpTextEditor.evalProfileDef(compText.replace(/^jb\.component/,'')).res
         let fixedComp = originalComp
         if (!fixedComp && line != undefined) {
             const lines = lastSrc.split('\n')
             const fixedLine = fixLineAtCursor(lines[line],col)
             if (fixedLine != lines[line])
-                fixedComp = tryCompile(lastSrc.split('\n').map((l,i) => i == line ? fixedLine : l).join('\n'))
+                fixedComp = jb.tgpTextEditor.evalProfileDef(lastSrc.split('\n').map((l,i) => i == line ? fixedLine : l).join('\n')).res
         }
         if (!fixedComp)
             return { compilationFailure: true} // jb.logException(lastException,'fixEditedComp - can not fix compText', {lastSrc})
@@ -184,17 +184,6 @@ jb.extension('tgpTextEditor', {
         }
         function isValidFunc(f) {
             return f.trim() != '' && (jb.macro.proxies[f] || jb.frame[f])
-        }
-
-        function tryCompile(src) {
-            lastSrc = src
-            try {
-                const res = jb.frame.eval(`(function() { ${jb.macro.importAll()}; return ${src} })()`)
-                fixedText = src
-                return res
-            } catch (e) {
-                lastException = e
-            }    
         }
     },
     deltaFileContent(fileContent, compId) {
@@ -227,7 +216,7 @@ jb.extension('tgpTextEditor', {
         const { compId, needsFormat } = jb.tgpTextEditor.calcActiveEditorPath()
         if (needsFormat) {
             const { compText} = jb.tgpTextEditor.fileContentToCompText(jb.tgpTextEditor.host.docText(),compId)
-            const {err} = jb.tgpTextEditor.eval(compText)
+            const {err} = jb.tgpTextEditor.evalProfileDef(compText)
             if (err)
                 return jb.logError('can not parse comp', {compId, err})
             return jb.tgpTextEditor.deltaFileContent(jb.tgpTextEditor.host.docText(), compId)
@@ -235,7 +224,7 @@ jb.extension('tgpTextEditor', {
     },
     updateCurrentCompFromEditor() {
         const {compId, compSrc} = jb.tgpTextEditor.closestComp(jb.tgpTextEditor.host.docText(), jb.tgpTextEditor.host.cursorLine())
-        const {err} = jb.tgpTextEditor.eval(compSrc)
+        const {err} = jb.tgpTextEditor.evalProfileDef(compSrc)
         if (err)
           return jb.logError('can not parse comp', {compId, err})
     },

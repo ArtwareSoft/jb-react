@@ -31,7 +31,7 @@ jb.extension('tgp', 'readOnly', {
 	},
 	compOfPath: (path,silent) => jb.tgp.getComp(jb.tgp.compNameOfPath(path,silent)),
 	paramsOfPath: (path,silent) => jb.utils.compParams(jb.tgp.compOfPath(path,silent)),
-	getComp: id => id && id.indexOf('<') != -1 && jb.utils.getComp(id.split('>')[1], id.split('>')[1] + '>') || jb.utils.getComp(id),
+	getComp: id => jb.utils.getComp(id),
 	compAsStr: id => jb.utils.prettyPrintComp(id,jb.tgp.getComp(id)),
 	valSummary: val => {
 		if (val && typeof val == 'object')

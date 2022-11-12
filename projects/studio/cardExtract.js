@@ -299,7 +299,7 @@ jb.extension('stylePatterns', {
             jb.path(boundedCtrl,overridePath,value) // set value
             return jb.tgp.pathParents(text.path,true).map(path => {
                 const ctrl = jb.cardExtract.pathToObj(boundedCtrl, path)
-                return jb.macro.resolveProfile(styleByControl(ctrl,'textModel'))
+                return jb.utils.resolveDetachedProfile(styleByControl(ctrl,'textModel'))
             })
         })
         return options

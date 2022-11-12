@@ -222,7 +222,7 @@ jb.extension('tgpTextEditor', 'completion', {
             const path = semanticPath.allPaths.map(x=>x[0]).filter(x=>x.match('~!profile$')).map(x=>x.split('~!')[0])[0]
             const comp = path && jb.tgp.compNameOfPath(path)
             if (!comp) return
-            const loc = jb.utils.getComp(comp)[jb.core.location]
+            const loc = jb.utils.getComp(comp)[jb.core.CT].location
             return locationInFile(loc)
             // const lineOfComp = (+loc[1]) || 0
             // const uri = vscodeNS.Uri.file(jbBaseUrl + loc[0]) // /home/shaiby/projects/jb-react

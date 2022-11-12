@@ -10,10 +10,10 @@ Object.assign(jb, {
       extension[k].__initFunc = extension.initExtension && `#${libId}.__extensions.${extId}.init`
     })
     funcs.forEach(k=>lib[k] = extension[k])
+    const location = jb.calcSourceLocation(new Error().stack.split(/\r|\n/).slice(2)).location
     const phase =  extension.$phase || { core: 1, utils: 5, db: 10, watchable: 20}[libId] || 100
     lib.__extensions[extId] = { libId, phase, init: extension.initExtension, initialized, 
-      requireLibs: extension.$requireLibs, requireFuncs: extension.$requireFuncs, funcs,
-      location: jb.calcSourceLocation(new Error().stack.split(/\r|\n/).slice(2)) }
+      requireLibs: extension.$requireLibs, requireFuncs: extension.$requireFuncs, funcs, location }
 
     if (jb.noSupervisedLoad && extension.initExtension) {
       Object.assign(lib, extension.initExtension.apply(lib))
@@ -39,33 +39,33 @@ Object.assign(jb, {
     try {
         const line = errStack.map(x=>x.trim()).filter(x=>x && !x.match(/^Error/) && !x.match(/at Object.component/)).shift()
         const location = line ? (line.split('at ').pop().split('eval (').pop().split(' (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
-        //comp[jb.core.project] = comp[jb.core.CT].location[0].split('?')[1]
         location[0] = location[0].split('?')[0]
-        return location
+        const dsl = (line.match(/\$\$dsl_([^$]+)\$/) || [])[1]
+        return dsl ? { location, dsl } : { location }
     } catch(e) {
       console.log(e)
     }      
   },
   component(id,comp) {
-    if (!jb.core.location) jb.initializeLibs(['core']) // this line must be first
+    if (!jb.core.CT) jb.initializeLibs(['core']) // this line must be first
     const CT = jb.core.CT
     comp[CT] = comp[CT] || {};
 
-    if (comp.location) {
-        comp[CT].location = comp.location
-        delete comp.location
-    } else {
-        comp[CT].location = jb.calcSourceLocation(new Error().stack.split(/\r|\n/))
-    }
+    const { location, dsl } = 0 || jb.calcSourceLocation(new Error().stack.split(/\r|\n/)) // 0 || to avoid treeshake bug
+    comp[CT].location = comp.location || location
+    delete comp.location
 
     const h = jb.core.onAddComponent.find(x=>x.match(id,comp))
     if (h && h.register)
       return h.register(id,comp)
-    jb.core.unresolvedProfiles.push({id,comp})
+    comp.impl = comp.impl || (({params}) => params)
+
+    jb.core.unresolvedProfiles.push({id,comp,dsl})
     if (comp.isSystem)
       jb.comps[id] = comp
     return comp
   },
+  dsl() {},
   noSupervisedLoad: true
 })
 
@@ -78,9 +78,6 @@ jb.extension('core', {
     })
     return {
       ctxCounter: 0,
-      project: Symbol.for('project'),
-      location: Symbol.for('location'),
-      loadingPhase: Symbol.for('loadingPhase'),
       CT: Symbol.for('CT'), // compile time
       jstypes: jb.core._jsTypes(),
       onAddComponent: [],
@@ -222,13 +219,10 @@ jb.extension('core', {
     const comp_name = jb.utils.compName(profile,parentParam)
     if (!comp_name)
       return { type: 'asIs' }
-    const CT = jb.core.CT
-    const dslType = profile.typeCast || profile[CT] && profile[CT].dslType || parentParam && (parentParam[CT] && parentParam[CT].dslType);
     if (profile.$byValue)
-      jb.macro.resolveProfile(profile,{ id: ctx.path, dslType })
+      jb.logError(`core: prepare - unresolved profile at ${ctx.path}`, {profile, ctx})
 
-    profile[CT] = profile[CT] || {}
-    const comp = profile[CT].comp = (profile[CT].comp || jb.utils.getComp(comp_name, dslType ))
+    const comp = profile[jb.core.CT].comp
     if (!comp && comp_name) { jb.logError('component ' + comp_name + ' is not defined', {ctx}); return { type:'null' } }
     if (comp.impl == null) { jb.logError('component ' + comp_name + ' has no implementation', {ctx}); return { type:'null' } }
 
@@ -269,7 +263,7 @@ jb.extension('core', {
       }
     }
     run(profile,parentParam) {
-      return jb.core.run(new jb.core.jbCtx(this,{ profile: profile, comp: profile.$ , path: ''}), parentParam)
+      return jb.core.run(new jb.core.jbCtx(this,{ profile: jb.utils.resolveDetachedProfile(profile), comp: profile.$ , path: ''}), parentParam)
     }
     exp(exp,jstype) { return jb.expression.calc(exp, this, {as: jstype}) }
     setVars(vars) { return new jb.core.jbCtx(this,{vars: vars}) }

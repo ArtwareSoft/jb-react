@@ -322,7 +322,7 @@ jb.component('studioTest.dragTargetCard', {
 jb.component('patternsTest.suggestedStyles.text', {
   impl: dataTest({
     vars: [
-      Var('extractedCtrl', () => jb.macro.resolveProfile(extractedCtrlSimpleText)),
+      Var('extractedCtrl', () => jb.utils.resolveDetachedProfile(extractedCtrlSimpleText)),
       Var('targetPath', 'studioTest.dragTargetText~impl'),
       Var('top', obj())
     ],
@@ -341,7 +341,7 @@ jb.component('patternsTest.suggestedStyles.text', {
 jb.component('patternsTest.selectStyle.text', {
   impl: uiTest({
     vars: [
-      Var('extractedCtrl', () => jb.macro.resolveProfile(extractedCtrlSimpleText)),
+      Var('extractedCtrl', () => jb.utils.resolveDetachedProfile(extractedCtrlSimpleText)),
       Var('targetPath', 'studioTest.dragTargetText~impl'),
       Var('top', obj())
     ],

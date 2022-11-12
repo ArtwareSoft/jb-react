@@ -10,7 +10,7 @@ jb.component('tgp.completionOptionsTest', {
         const parts = compText.split('__')
         const offsets = parts.reduce((acc,part) => [...acc, acc.pop()+part.length] , [0] ).slice(1,-1)
         const code = parts.join('')
-        jb.tgpTextEditor.eval(code)
+        jb.tgpTextEditor.evalProfileDef(code)
         jb.tgpTextEditor.host.initDoc('dummy.js',code)
         
         const result = offsets.map(offset=>jb.tgpTextEditor.offsetToLineCol(code,offset)).map((inCompPos,i) => {
@@ -43,9 +43,8 @@ jb.component('tgp.completionActionTest', {
             const parts = compText.split('__')
             const offset = parts[0].length
             const code = parts.join('')
-            jb.tgpTextEditor.eval(code)
-            jb.core.unresolvedProfiles.forEach(({comp,id}) => jb.macro.resolveProfile(comp,{id}))
-            jb.core.unresolvedProfiles = []
+            jb.tgpTextEditor.evalProfileDef(code)
+            jb.utils.resolveLoadedProfiles()
 
             jb.tgpTextEditor.host.initDoc('dummy.js',code)
             

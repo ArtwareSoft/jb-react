@@ -121,10 +121,10 @@ jb.extension('workspace', {
     //         if (!doc) return
     //         const text = doc.getText()
     //         try {
-    //             const oldLocation = jb.comps[compId][jb.core.location]
+    //             const oldLocation = jb.comps[compId][jb.core.CT].location
     //             // TODO: implement in childJbm
     //             jb.frame.eval(jb.macro.importAll() + ';' + jb.tgpTextEditor.fileContentToCompText(text,compId).compText || '')
-    //             jb.comps[compId][jb.core.location] = oldLocation
+    //             jb.comps[compId][jb.core.CT].location = oldLocation
     //         } catch (e) {
     //             return jb.logError('can not parse profile', {e, compId})
     //         }

@@ -27,7 +27,7 @@ jb.component('openDialog', {
 
 jb.component('openDialog.probe', {
 	type: 'control:0',
-	params: jb.utils.geUnresolvedProfile('openDialog').params,
+	params: jb.utils.getUnresolvedProfile('openDialog').params,
 	impl: ctx => jb.ui.ctrl(ctx.setVar('$dialog',{}), dialog.init()).renderVdom(),
 	require: {$: 'dialog.init'}
 })

@@ -110,9 +110,6 @@ jb.component('dslTest.resolveDefaultValues', {
   )
 })
 
-// type includes tests
-//jb.type('myType2<myDsl.inner>', { includes: 'myType2<myDsl>'})
-
 jb.component('cmpAtMyDsl', {
   type: 't<myDsl>',
   impl: 'myDsl'
@@ -148,17 +145,6 @@ jb.component('dslTest.multiTypes', {
   })
 })
 
-jb.component('inheritTypeFromImp', {
-  impl: cmpAtMyDsl()
-})
-
-jb.component('dslTest.inheritTypeFromImp', {
-  impl: dataTest(
-    inheritTypeFromImp(typeCast('t<myDsl>')),
-    equals('myDsl')
-  )
-})
-
 // macro tests
 jb.component('macroTest.dsl.simple', {
   impl: dataTest(
@@ -169,8 +155,8 @@ jb.component('macroTest.dsl.simple', {
 
 jb.component('macroTest.dsl.inherit', {
   impl: dataTest(
-    () => jb.utils.prettyPrintComp('inheritTypeFromImp',jb.utils.getComp('t<myDsl>inheritTypeFromImp')),
-    and(notContains('t<myDsl>'), notContains('$'))
+    () => jb.utils.prettyPrintComp('israel',jb.utils.getComp('state<location>israel')),
+    and(notContains('state<location>'), notContains('$'))
   )
 })
 
@@ -179,6 +165,24 @@ jb.component('macroTest.dsl.typeCast', {
     () => jb.utils.prettyPrintComp('dslTest.multiTypes',jb.utils.getComp('dslTest.multiTypes')),
     and(contains("typeCast: 'data<myDsl.inner>'"), notContains('$'))
   )
+})
+
+jb.component('dslTest.inheritTypeFromImp', {
+  impl: dataTest(
+    pipeline(israel(typeCast('state<location>')),'%capital/name%'),
+    equals('Jerusalem')
+  )
+})
+
+jb.component('dslTest.jbDsl.dslType', {
+  impl: dataTest({calculate: '', expectedResult: () => jb.utils.getComp('city<location>city')[jb.core.CT].dslType == 'city<location>'})
+})
+
+jb.component('dslTest.jbDsl.inheritDslType', {
+  impl: dataTest({
+    calculate: '',
+    expectedResult: () => jb.utils.getComp('state<location>israel')[jb.core.CT].dslType == 'state<location>'
+  })
 })
 
 // TODO: multi engine tests

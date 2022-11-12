@@ -34,29 +34,31 @@ async function jbInit(uri, {projects, plugins, repos, baseUrl, multipleInFrame, 
   }
 }
 
-async function jbloadJSFile(url,jb,{noSymbols} = {}) {
+async function jbloadJSFile(url,jb,{noSymbols, fileSymbols} = {}) {
   globalThis.jbFetchFile = globalThis.jbFetchFile || (path => globalThis.fetch(path).then(x=>x.text()))
   const code = await jbFetchFile(jb.baseUrl+url)
   if (noSymbols) try {
     return globalThis.eval(`${code}//# sourceURL=${url}?${jb.uri}`)
   } catch (e) {
-    jb.logException(e,`eval lib ${url}`,{code})
+    return jb.logException(e,`eval lib ${url}`,{code})
   }
-  const funcId = '__'+url.replace(/[^a-zA-Z0-9]/g,'_')
-    globalThis.eval(`function ${funcId}(jb) {${jb.macro ? jb.macro.importAll(): ''}; ${code}
+  const dsl = fileSymbols && fileSymbols.dsl ? `$$dsl_${fileSymbols.dsl}$` : ''
+  const prefixCode = jb.macro && jb.macro.importAll()
+  const funcId = '__'+dsl+url.replace(/[^a-zA-Z0-9]/g,'_')
+
+  globalThis.eval(`function ${funcId}(jb) {${prefixCode}; ${code}
   }//# sourceURL=${url}?${jb.uri}`)
-    globalThis[funcId](jb)
+  globalThis[funcId](jb)
 }
 
 async function jbSupervisedLoad(symbols, jb, doNoInitLibs) {
   const ns = jb.utils.unique([...symbols.flatMap(x=>x.ns || []),'Var','remark','typeCast'])
   const libs = jb.utils.unique(symbols.flatMap(x=>x.libs))
   ns.forEach(id=> jb.macro.registerProxy(id))
-  await symbols.reduce((pr,symbol) => pr.then(()=> jbloadJSFile(symbol.path,jb)), Promise.resolve())
+  await symbols.reduce((pr,fileSymbols) => pr.then(()=> jbloadJSFile(fileSymbols.path,jb,{fileSymbols})), Promise.resolve())
 //  jb.treeShake.baseUrl = baseUrl !== undefined ? baseUrl : typeof globalThis.jbBaseUrl != 'undefined' ? globalThis.jbBaseUrl : ''
   !doNoInitLibs && await jb.initializeLibs(libs)
-  jb.core.unresolvedProfiles.forEach(({comp,id}) => jb.macro.resolveProfile(comp,{id}))
-  jb.core.unresolvedProfiles = []
+  jb.utils.resolveLoadedProfiles()
 }
 
 if (typeof module != 'undefined') module.exports = { jbInit }
