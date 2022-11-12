@@ -1607,13 +1607,12 @@ jb.component('uiTest.tabs', {
 jb.component('uiTest.group.accordion', {
   impl: uiTest({
     control: group({
-      style: group.accordion({}),
+      style: group.accordion(),
       controls: [
         group({title: 'tab1', controls: text('in tab1')}),
         group({title: 'tab2', controls: text('in tab2')})
       ]
     }),
-    action: delay(1),
     expectedResult: contains(['tab1', 'in tab1', 'tab2'])
   })
 })

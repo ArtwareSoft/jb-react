@@ -142,7 +142,7 @@ jb.extension('utils', { // jb core utils
       const CT = jb.core.CT
       if (!topComp) return
       ;(topComp.params || []).forEach(p=> doResolve(p.defaultValue))
-      //if (topComp[CT].fullId =='macroTest.dsl.inherit') debugger
+      //if (topComp[CT].fullId =='state<loc>israel') debugger
       doResolve(topComp.impl)
 
       function doResolve(prof, expectedType) {
@@ -154,8 +154,10 @@ jb.extension('utils', { // jb core utils
           if (prof.$byValue && comp) {
               Object.assign(prof, jb.macro.argsToProfile(prof.$, comp, prof.$byValue))
               delete prof.$byValue
-              ;(comp.params || []).forEach(p=> doResolve(prof[p.id], jb.path(p,[CT,'dslType'])))
+              ;(comp.params || []).forEach(p=> doResolve(prof[p.id], (jb.path(p,[CT,'dslType']) ||'').replace(/\[\]/,'') ))
               doResolve(prof.$vars)
+          } else if (Array.isArray(prof) && expectedType) {
+              prof.forEach(v=>doResolve(v, expectedType))
           } else if (prof.$byValue && !comp) {
               return jb.logError(`resolveProfile - can not resolve ${prof.$} at ${topComp[CT].fullId} expected type ${dslType || 'unknown'}`, 
                   {compId: prof.$, prof, expectedType, dslType, topComp})

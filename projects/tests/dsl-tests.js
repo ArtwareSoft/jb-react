@@ -155,8 +155,8 @@ jb.component('macroTest.dsl.simple', {
 
 jb.component('macroTest.dsl.inherit', {
   impl: dataTest(
-    () => jb.utils.prettyPrintComp('israel',jb.utils.getComp('state<location>israel')),
-    and(notContains('state<location>'), notContains('$'))
+    () => jb.utils.prettyPrintComp('israel',jb.utils.getComp('state<loc>israel')),
+    and(notContains('state<loc>'), notContains('$'))
   )
 })
 
@@ -169,20 +169,24 @@ jb.component('macroTest.dsl.typeCast', {
 
 jb.component('dslTest.inheritTypeFromImp', {
   impl: dataTest(
-    pipeline(israel(typeCast('state<location>')),'%capital/name%'),
+    pipeline(israel(typeCast('state<loc>')),'%capital/name%'),
     equals('Jerusalem')
   )
 })
 
 jb.component('dslTest.jbDsl.dslType', {
-  impl: dataTest({calculate: '', expectedResult: () => jb.utils.getComp('city<location>city')[jb.core.CT].dslType == 'city<location>'})
+  impl: dataTest({calculate: '', expectedResult: () => jb.utils.getComp('city<loc>city')[jb.core.CT].dslType == 'city<loc>'})
 })
 
 jb.component('dslTest.jbDsl.inheritDslType', {
   impl: dataTest({
     calculate: '',
-    expectedResult: () => jb.utils.getComp('state<location>israel')[jb.core.CT].dslType == 'state<location>'
+    expectedResult: () => jb.utils.getComp('state<loc>israel')[jb.core.CT].dslType == 'state<loc>'
   })
 })
+
+// jb.component('dslTest.jbDsl.usingCtrl', {
+//   impl: uiTest(loc.control(israel()), contains(['Jersusalem','tel aviv']))
+// })
 
 // TODO: multi engine tests
