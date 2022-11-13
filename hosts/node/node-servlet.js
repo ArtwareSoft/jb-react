@@ -53,9 +53,9 @@ async function run() {
     await jbGetJSFromUrl(`${jbTreeShakeServerUrl}/treeShake-client.js`)
     await jbGetJSFromUrl(`${jbTreeShakeServerUrl}/jb-port.js?ids=-nodeContainer.portFromNodeWebSocket`)
   } else {
-    const { jbInit } = require(`${jbBaseUrl}/src/loader/jb-loader.js`)
+    const { jbInit, jb_plugins } = require(`${jbBaseUrl}/src/loader/jb-loader.js`)
     const modules = (getProcessArgument('modules') || '').split(',').filter(x=>x)
-    global.jb = await jbInit(uri,{ projects: modules })
+    global.jb = await jbInit(uri,{ projects: modules, plugins: jb_plugins })
   }
   spy = jb.spy.initSpy({spyParam: getProcessArgument('spyParam') || 'remote'})
 

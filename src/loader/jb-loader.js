@@ -8,9 +8,9 @@ var jb_modules = {
     'src/misc/spy.js',
   ],
 }
-var jb_plugins = ['space','vega']; // list of plugins to be used by studio
+var jb_plugins = ['data-browser','headless-preview','tgp','watchable-comps', 'workspace', 'space','vega',]; // list of plugins to be used by studio
 
-async function jbInit(uri, {projects, plugins, repos, baseUrl, multipleInFrame, doNoInitLibs }) {
+async function jbInit(uri, {projects, plugins, baseUrl, multipleInFrame, doNoInitLibs }) {
   const fileSymbols = globalThis.jbFileSymbols || fileSymbolsFromHttp
   const jb = { uri, baseUrl: baseUrl !== undefined ? baseUrl : typeof globalThis.jbBaseUrl != 'undefined' ? globalThis.jbBaseUrl : '' }
   if (!multipleInFrame) // multipleInFrame is used in jbm.child
@@ -20,7 +20,7 @@ async function jbInit(uri, {projects, plugins, repos, baseUrl, multipleInFrame, 
   jb.noSupervisedLoad = false
 
   const srcSymbols = await fileSymbols('src','','pack-|jb-loader').then(x=>x.filter(x=>coreFiles.indexOf(x.path) == -1))
-  const topRequiredModules = ['default-plugins', ...(repos || []).map(repo => `${repo}/plugins`), ...(plugins || []).map(x => `plugins/${x}`), ...(projects || []).map(x => `projects/${x}`)]
+  const topRequiredModules = ['default-plugins', ...(plugins || []).map(x => `plugins/${x}`), ...(projects || []).map(x => `projects/${x}`)]
   
   const symbols = await topRequiredModules.reduce( async (acc,dir) => [...await acc, ...await fileSymbols(dir,'','pack-')], [])
   await jbSupervisedLoad([...srcSymbols,...symbols],jb,doNoInitLibs)
@@ -58,5 +58,5 @@ async function jbSupervisedLoad(symbols, jb, doNoInitLibs) {
   jb.utils.resolveLoadedProfiles()
 }
 
-if (typeof module != 'undefined') module.exports = { jbInit }
+if (typeof module != 'undefined') module.exports = { jbInit, jb_plugins }
 globalThis.jbloadJSFile = jbloadJSFile

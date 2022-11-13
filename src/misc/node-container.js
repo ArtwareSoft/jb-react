@@ -68,13 +68,13 @@ jb.extension('nodeContainer', {
 })
 
 jb.component('jbm.nodeContainer', {
-    type: 'jbm',
-    params: [
-        {id: 'modules', as: 'array', dynamic: true},
-        {id: 'host', as: 'string', dynamic: true, defaultValue: 'localhost'},
-        {id: 'init', type: 'action', dynamic: true}
-    ],
-    impl: (ctx,modules,host,init) => new Promise( async resolve => {
+  type: 'jbm',
+  params: [
+    {id: 'modules', as: 'array', dynamic: true},
+    {id: 'host', as: 'string', dynamic: true, defaultValue: 'localhost'},
+    {id: 'init', type: 'action', dynamic: true}
+  ],
+  impl: (ctx,modules,host,init) => new Promise( async resolve => {
         const modulesParam = modules.length ? `&modules=${modules().join(',')}` : ''
         const servlet = await jb.frame.fetch(`/?op=createJbm&clientUri=${jb.uri}${modulesParam}&spyParam=${jb.spy.spyParam}`, {mode: 'cors'}).then(r => r.json())
         const port = await jb.nodeContainer.connect(`ws://${host()}:${servlet.port}`,servlet.uri,ctx)

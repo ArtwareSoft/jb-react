@@ -293,7 +293,7 @@ jb.component('initJb.usingProjects', {
     {id: 'projects', as: 'array'}
   ],
   impl: ({vars}, projects) => 
-    `jbInit('${vars.uri}',${JSON.stringify({projects, baseUrl: vars.baseUrl, multipleInFrame: vars.multipleJbmsInFrame})})`
+    `jbInit('${vars.uri}',${JSON.stringify({projects, plugins: jb_plugins, baseUrl: vars.baseUrl, multipleInFrame: vars.multipleJbmsInFrame})})`
 })
 
 jb.component('initJb.treeShakeClient', {
