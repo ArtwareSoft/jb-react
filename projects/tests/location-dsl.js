@@ -1,4 +1,4 @@
-jb.dsl('loc')
+jb.dsl('location')
 
 jb.component('city' ,{
   type: 'city',
@@ -11,7 +11,7 @@ jb.component('state', {
   type: 'state',
   params: [
     {id: 'capital', type: 'city'},
-    {id: 'moreCities', type: 'city[]'}
+    {id: 'cities', type: 'city[]'}
   ],
   impl: ({params}) => params
 })
@@ -20,16 +20,15 @@ jb.component('israel', {
   impl: state(city('Jerusalem'), [city('Eilat'), city('Tel Aviv')])
 })
 
-// jb.component('loc.control', {
-//   type: 'control<>',
-//   params: [
-//     {id: 'state', type: 'state'}
-//   ],
-//   impl: group({
-//     controls: [
-//       text({text: '%$state/capital/name%', style: header.h2()}),
-//       itemlist({items: '%$state/cities%', controls: text('%name%')})
-//     ]
-//   })
-// })
-
+jb.component('location.control', {
+  type: 'control<>',
+  params: [
+    {id: 'state', type: 'state<location>'}
+  ],
+  impl: group({
+    controls: [
+      text({text: '%$state/capital/name%', style: header.h2()}),
+      itemlist({items: '%$state/cities%', controls: text('%name%')})
+    ]
+  })
+})

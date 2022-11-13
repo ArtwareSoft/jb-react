@@ -133,7 +133,7 @@ jb.component('uiFrontEndTest', {
 		const ctx = _ctx.setVars({elemToTest})
 		elemToTest.ctxForFE = ctx
 		elemToTest.setAttribute('id','jb-testResult')
-		const show = new URL(location.href).searchParams.get('show') !== null
+		const show = new URL(jb.frame.location.href).searchParams.get('show') !== null
 		return Promise.resolve(runBefore())
 			.then(() => {
 				try {
@@ -193,7 +193,7 @@ jb.component('uiTest.applyVdomDiff', {
   ],
   impl: function(ctx,controlBefore,control) {
 		console.log('starting ' + ctx.vars.testID)
-		const show = new URL(location.href).searchParams.get('show') !== null
+		const show = new URL(jb.frame.location.href).searchParams.get('show') !== null
 
 		const elem = document.createElement('div');
 		const vdomBefore = jb.ui.h(controlBefore(ctx))
@@ -365,12 +365,12 @@ jb.extension('test', {
 				if (!res.renderDOM && show) res.show()
 				if (jb.ui && tests.length >1) {
 					jb.cbLogByPath = {}
-					window.scrollTo(0,0)
+					jb.frame.scrollTo(0,0)
 				}
 		}))
   	},
 	testResultHtml(res, repo) {
-		const baseUrl = window.location.href.split('/tests.html')[0]
+		const baseUrl = jb.frame.location.href.split('/tests.html')[0]
 		const studioUrl = `http://localhost:8082/project/studio/${res.id}?host=test`
 		const matchLogs = 'remote,itemlist,refresh'.split(',')
 		const matchLogsMap = jb.entries({ui: ['uiComp'], widget: ['uiComp','widget'] })

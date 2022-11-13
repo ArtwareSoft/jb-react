@@ -76,8 +76,8 @@ jb.extension('macro', {
     registerProxy: id => {
         const proxyId = jb.macro.titleToId(id.split('.')[0])
         if (jb.frame[proxyId] && jb.frame[proxyId][jb.macro.isMacro]) return
-        if (jb.frame[proxyId])
-            return jb.logError(`register macro proxy: ${proxyId} + ' is reserved by system or libs. please use a different name`,{obj:jb.frame[proxyId]})
+        // if (jb.frame[proxyId])
+        //     return jb.logError(`register macro proxy: ${proxyId} ' is reserved by system or libs. please use a different name`,{obj:jb.frame[proxyId]})
         
         jb.macro.proxies[proxyId] = jb.macro.newProxy(proxyId)
         //jb.frame[proxyId] = jb.macro.proxies[proxyId]

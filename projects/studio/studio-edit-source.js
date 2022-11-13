@@ -63,7 +63,7 @@ jb.component('studio.gotoSource', {
         jb.vscode['openEditor'](filePos)
       else if (chromeDebugger)
         parent.postMessage({ runProfile: {$: 'chromeDebugger.openResource', 
-          location: [ location.origin + '/' + filePos.fn, filePos.pos[0], filePos.pos[1]] }})
+          location: [ jb.frame.location.origin + '/' + filePos.fn, filePos.pos[0], filePos.pos[1]] }})
       else
         fetch(`/?op=gotoSource&comp=${filePos.path.split('~')[0]}`)
   })

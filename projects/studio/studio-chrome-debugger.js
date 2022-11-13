@@ -19,7 +19,7 @@ jb.extension('chromeDebugger', {
                     port.onMessage.addListener(m => jb.net.handleOrRouteMsg(from,to,handler,m)) }  
                 },
             }
-            port.onDisconnect.addListener(()=> jb.delay(2000).then(() => location.reload()))
+            port.onDisconnect.addListener(()=> jb.delay(2000).then(() => jb.frame.location.reload()))
 
             jb.jbm.gateway = jb.ports['devtools'] = jb.parent = jb.jbm.extendPortToJbmProxy(jbPort)
             jb.log('chromeDebugger panel connected to devtools',{jbPort})

@@ -242,7 +242,7 @@ jb.extension('jbm', {
     },
     pathOfDistFolder() {
         const pathOfDistFolder = jb.path(jb.studio,'studiojb.studio.host.pathOfDistFolder')
-        const location = jb.path(jb.studio,'studioWindow.location') || jb.path(jb.frame,'location')
+        const location = jb.path(jb.frame,'location')
         return pathOfDistFolder && pathOfDistFolder() || location && location.href.match(/^[^:]*/)[0] + `://${location.host}/dist`
     },
     async initDevToolsDebugge() {

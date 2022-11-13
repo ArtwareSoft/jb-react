@@ -61,12 +61,13 @@ jb.extension('utils', { // jb core utils
       const CT = jb.core.CT
       if (!comp[CT]) comp[CT] = comp[CT] || { id }
       const type = comp.type || ''
-      const dsl = comp[CT].dsl = type.indexOf('<') != -1 && type.split(/<|>/)[1] || dslFromContext
+      const dslOfType = type.indexOf('<') != -1 ? type.split(/<|>/)[1] : undefined // to cover t1<> dsl == ''
+      const dsl = comp[CT].dsl = dslOfType !== undefined ? dslOfType : dslFromContext
       const unresolvedType = comp[CT].idOfUnresolvedType = ! type && id
       if (comp.impl && typeof comp.impl == 'object')
         comp.impl[CT] = { dsl }
       if (!unresolvedType) {
-        const dslType = comp[CT].dslType = dsl && type.indexOf('<') == -1 ? `${type}<${dsl}>` : type
+        const dslType = comp[CT].dslType = (dsl && type.indexOf('<') == -1 ? `${type}<${dsl}>` : type).replace(/\<\>/g,'')
         comp[CT].fullId = (dsl ? dslType : '') + id
         const oldComp = jb.comps[comp[CT].fullId]
         jb.comps[comp[CT].fullId] = comp
@@ -127,6 +128,7 @@ jb.extension('utils', { // jb core utils
         Object.assign(prof[CT], {comp, dslType})
       }
       function registerWithType(dslType) {
+        if (!comp[CT].idOfUnresolvedType) return dslType
         comp[CT].fullId = (comp[CT].dsl ? dslType : '') + comp[CT].idOfUnresolvedType
         const oldComp = jb.comps[comp[CT].fullId]
         jb.comps[comp[CT].fullId] = comp

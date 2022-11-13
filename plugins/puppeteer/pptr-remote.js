@@ -74,11 +74,11 @@ jb.component('pptr.start', {
 })
 
 jb.component('pptr.server', {
-    type: 'remote',
-    params: [
-        {id: 'libs', as: 'array', defaultValue: ['common','remote','rx','puppeteer'] },
-    ],
-    impl: (ctx,libs) => {
+  type: 'remote',
+  params: [
+    {id: 'libs', as: 'array', defaultValue: ['common', 'remote', 'rx', 'puppeteer']}
+  ],
+  impl: (ctx,libs) => {
         if (jb.pptr.pptrServer) return jb.pptr.pptrServer
         return jb.pptr.connect().then(socket=>sendCode(socket)).then(([socket]) => {
             jb.pptr.pptrServer = socket
@@ -114,9 +114,9 @@ jb.component('pptr.server', {
                 if (host) {
                     const moduleFileName = host.locationToPath(`${host.pathOfDistFolder()}/${lib}.js`)
                     return host.getFile(moduleFileName).then(loadCode => socket.postObj({ loadCode, moduleFileName }))
-                } else if (typeof fetch != 'undefined' && typeof location != 'undefined' ) {
-                    const moduleFileName = location.href.match(/^[^:]*/)[0] + `://${location.host}/dist/${lib}.js`
-                    return fetch(moduleFileName).then(x=>x.text()).then(loadCode => socket.postObj({ loadCode, moduleFileName }))
+                } else if (globalThis.fetch && globalThis.location) {
+                    const moduleFileName = globalThis.location.href.match(/^[^:]*/)[0] + `://${globalThis.location.host}/dist/${lib}.js`
+                    return globalThis.fetch(moduleFileName).then(x=>x.text()).then(loadCode => socket.postObj({ loadCode, moduleFileName }))
                 }
             }
         }

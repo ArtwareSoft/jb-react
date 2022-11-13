@@ -127,7 +127,7 @@ jb.extension('projectHosts', {
     initExtension() { 
         jb.frame.aa_jsonp_callback = x => x
         return {
-        jbProxy: jb.frame.location && (location.href.match(/^[^:]*/)[0] + '://jbartdb.appspot.com/jbart_db.js?op=proxy&url='),
+        jbProxy: jb.frame.location && (jb.frame.location.href.match(/^[^:]*/)[0] + '://jbartdb.appspot.com/jbart_db.js?op=proxy&url='),
         jsFiddle: {
             fetchProjectSettings(jsFiddleid,project) {
                 return jb.projectHosts.getUrlContent(`http://jsfiddle.net/${jsFiddleid}`)

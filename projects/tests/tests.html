@@ -24,7 +24,7 @@
 			jb.spy.initSpyByUrl()
 			const params = { 
 				testType: '',
-				show: location.href.indexOf('&show') != -1,
+				show: window.location.href.indexOf('&show') != -1,
 				specificTest: urlQuery('test'),
 				notPattern: urlQuery('not'),
 				...jb.objFromEntries(['repo','rerun','pattern','take','remoteTests'].map(x=>[x,urlQuery(x)]))

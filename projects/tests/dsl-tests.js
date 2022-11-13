@@ -155,8 +155,8 @@ jb.component('macroTest.dsl.simple', {
 
 jb.component('macroTest.dsl.inherit', {
   impl: dataTest(
-    () => jb.utils.prettyPrintComp('israel',jb.utils.getComp('state<loc>israel')),
-    and(notContains('state<loc>'), notContains('$'))
+    () => jb.utils.prettyPrintComp('israel',jb.utils.getComp('state<location>israel')),
+    and(notContains('state<location>'), notContains('$'))
   )
 })
 
@@ -169,24 +169,42 @@ jb.component('macroTest.dsl.typeCast', {
 
 jb.component('dslTest.inheritTypeFromImp', {
   impl: dataTest(
-    pipeline(israel(typeCast('state<loc>')),'%capital/name%'),
+    pipeline(israel(typeCast('state<location>')),'%capital/name%'),
     equals('Jerusalem')
   )
 })
 
 jb.component('dslTest.jbDsl.dslType', {
-  impl: dataTest({calculate: '', expectedResult: () => jb.utils.getComp('city<loc>city')[jb.core.CT].dslType == 'city<loc>'})
+  impl: dataTest({calculate: '', expectedResult: () => jb.utils.getComp('city<location>city')[jb.core.CT].dslType == 'city<location>'})
 })
 
 jb.component('dslTest.jbDsl.inheritDslType', {
   impl: dataTest({
     calculate: '',
-    expectedResult: () => jb.utils.getComp('state<loc>israel')[jb.core.CT].dslType == 'state<loc>'
+    expectedResult: () => jb.utils.getComp('state<location>israel')[jb.core.CT].dslType == 'state<location>'
   })
 })
 
-// jb.component('dslTest.jbDsl.usingCtrl', {
-//   impl: uiTest(loc.control(israel()), contains(['Jersusalem','tel aviv']))
+jb.component('completionTest.dslTest.usingCtrl', {
+  impl: tgp.completionOptionsTest(
+    "jb.component('x', {\n  impl: uiTest(__TBD())\n})",
+    ['location.control']
+  )
+})
+
+jb.component('completionTest.dslTest.usingCtrl2', {
+  impl: tgp.completionOptionsTest(
+    "jb.component('x', {\n  impl: uiTest(location.control(__TBD()))\n})",
+    ['israel']
+  )
+})
+
+jb.component('dslTest.jbDsl.usingCtrl', {
+  impl: uiTest({control: location.control(israel()), expectedResult: contains('Jerusalem')})
+})
+
+// jb.component('dslTest.jbDsl.usingCtrl2', {
+//   impl: uiTest(itemlist({controls: location.control(state(city()))}))
 // })
 
 // TODO: multi engine tests
