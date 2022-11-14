@@ -49,7 +49,7 @@ jb.component('preview.remoteWidget', {
 
 jb.component('studio.refreshPreview', {
   type: 'action',
-  impl: {}
+  impl: ''
 })
 
 jb.component('preview.control', {

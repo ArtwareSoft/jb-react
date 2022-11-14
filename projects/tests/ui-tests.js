@@ -1517,7 +1517,7 @@ jb.component('uiTest.picklist.mdcSelect', {
 jb.component('uiTest.fieldTitleOfLabel', {
   impl: uiTest({
     control: group({
-      style: propertySheet.titlesLeft({}),
+      style: propertySheet.titlesLeft(),
       controls: text({text: '%$personWithAddress/address/city%', features: field.title('City')})
     }),
     expectedResult: contains('City')
@@ -1525,25 +1525,25 @@ jb.component('uiTest.fieldTitleOfLabel', {
 })
 
 jb.component('uiTest.picklistSort', {
-  impl: dataTest({
-    calculate: pipeline(
+  impl: dataTest(
+    pipeline(
       picklist.sortedOptions(
-          picklist.optionsByComma('a,b,c,d'),
-          pipeline(
-            'c:100,d:50,b:0,a:20',
-            split(','),
-            {
-                '$': 'object',
-                code: split({separator: ':', part: 'first'}),
-                mark: split({separator: ':', part: 'second'})
-              }
-          )
-        ),
+        picklist.optionsByComma('a,b,c,d'),
+        pipeline(
+          'c:100,d:50,b:0,a:20',
+          split(','),
+          {
+            '$': 'object',
+            code: split({separator: ':', part: 'first'}),
+            mark: split({separator: ':', part: 'second'})
+          }
+        )
+      ),
       '%text%',
-      join({})
+      join()
     ),
-    expectedResult: contains('c,d,a')
-  })
+    contains('c,d,a')
+  )
 })
 
 jb.component('uiTest.picklistGroups', {

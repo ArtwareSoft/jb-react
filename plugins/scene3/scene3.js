@@ -35,8 +35,7 @@ jb.extension('scene3', {
 })
 
 jb.component('scene3.control', {
-  dsl: '',
-  type: 'control',
+  type: 'control<>',
   params: [
     {id: 'scene', type: 'scene<scene3>', defaultValue: sampleScene()},
     {id: 'camera', type: 'camera<scene3>', defaultValue: perspectiveCamera(point(0, 0, 5))},
@@ -49,8 +48,7 @@ jb.component('scene3.control', {
 })
 
 jb.component('OrbitControls', {
-  dsl: '',
-  type: 'feature',
+  type: 'feature<>',
   impl: frontEnd.method('initOrbitControls', ctx => {
     console.log('OrbitControls')
     const { animations, camera, renderer } = ctx.vars
@@ -60,8 +58,7 @@ jb.component('OrbitControls', {
 })
 
 jb.component('rotate', {
-  dsl: '',
-  type: 'feature',
+  type: 'feature<>',
   impl: frontEnd.method('initRotate', ctx => {
     const { animations, scene } = ctx.vars
     animations.push(() => {
@@ -74,8 +71,9 @@ jb.component('rotate', {
 })
 
 jb.component('generic', {
-  type: 'style<',
+  type: 'style<scene3>',
   impl: customStyle({
+    typeCast: 'style',
     template: ({},{},h) => h('div',{}),
     features: [
       frontEnd.var('profilePath', ({},{$model}) => $model.ctx.path),

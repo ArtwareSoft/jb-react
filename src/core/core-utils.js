@@ -156,15 +156,17 @@ jb.extension('utils', { // jb core utils
           if (prof.$byValue && comp) {
               Object.assign(prof, jb.macro.argsToProfile(prof.$, comp, prof.$byValue))
               delete prof.$byValue
-              ;(comp.params || []).forEach(p=> doResolve(prof[p.id], (jb.path(p,[CT,'dslType']) ||'').replace(/\[\]/,'') ))
-              doResolve(prof.$vars)
-          } else if (Array.isArray(prof) && expectedType) {
-              prof.forEach(v=>doResolve(v, expectedType))
-          } else if (prof.$byValue && !comp) {
+          }
+          if (Array.isArray(prof)) {
+            prof.forEach(v=>doResolve(v, expectedType))
+          } else if (comp && prof.$ != 'asIs') {
+            ;(comp.params || []).forEach(p=> doResolve(prof[p.id], (jb.path(p,[CT,'dslType']) ||'').replace(/\[\]/,'') ))
+            doResolve(prof.$vars)
+            if (prof.$ == 'object')
+              Object.values(prof).forEach(v=>doResolve(v))
+          } else if (!comp && prof.$) {
               return jb.logError(`resolveProfile - can not resolve ${prof.$} at ${topComp[CT].fullId} expected type ${dslType || 'unknown'}`, 
                   {compId: prof.$, prof, expectedType, dslType, topComp})
-          } else {
-            Object.values(prof).forEach(v=>doResolve(v))
           }
       }
     },

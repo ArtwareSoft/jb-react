@@ -65,7 +65,6 @@ jb.component('studio.styleEditor', {
                 title: 'css',
                 databind: tgp.profileAsText('%$path%~css'),
                 style: editableText.codemirror({
-                  cm_settings: '',
                   enableFullScreen: false,
                   height: '300',
                   mode: 'css',
@@ -78,7 +77,6 @@ jb.component('studio.styleEditor', {
                 title: 'template',
                 databind: pipeline(studio.templateAsJsx('%$path%~template'), prettyPrint('%%')),
                 style: editableText.codemirror({
-                  cm_settings: '',
                   height: '200',
                   mode: 'jsx',
                   onCtrlEnter: studio.refreshPreview()
@@ -93,7 +91,6 @@ jb.component('studio.styleEditor', {
                 title: 'template',
                 databind: tgp.profileAsText('%$path%~template'),
                 style: editableText.codemirror({
-                  cm_settings: '',
                   height: '400',
                   mode: 'javascript',
                   onCtrlEnter: studio.refreshPreview()

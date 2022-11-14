@@ -77,23 +77,12 @@ jb.component('studio.editableSource', {
   ],
   impl: editableText({
     databind: tgp.profileAsText('%$path%'),
-    style: editableText.codemirror({
-      height: '%$height%',
-      cm_settings: {
-        extraKeys: {
-          aaa: action.if(
-            tgpTextEditor.isDirty(),
-            runActions(sourceEditor.storeToRef(), sourceEditor.refreshEditor()),
-            tgpTextEditor.withCursorPath(studio.openEditProperty('%$cursorPath%'))
-          ),
-          Enter: tgpTextEditor.withCursorPath(studio.openEditProperty('%$cursorPath%'))
-        }
-      }
-    }),
+    style: editableText.codemirror({height: '%$height%'}),
     features: [
       codemirror.initTgpTextEditor(),
       css.height({height: '%$height%', minMax: 'max'}),
-      feature.onKey('Ctrl-I', studio.openJbEditor('%$path%'))
+      feature.onKey('Ctrl-I', studio.openJbEditor('%$path%')),
+      feature.onKey('Enter', studio.openEditProperty('%$cursorPath%'))
     ]
   })
 })

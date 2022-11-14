@@ -8,7 +8,8 @@ var jb_modules = {
     'src/misc/spy.js',
   ],
 }
-var jb_plugins = ['data-browser','headless-preview','tgp','watchable-comps', 'workspace', 'space','vega',]; // list of plugins to be used by studio
+
+var jb_plugins = ['data-browser','headless-preview','tgp','watchable-comps', 'workspace', 'space','vega']; // list of plugins to be used by studio
 
 async function jbInit(uri, {projects, plugins, baseUrl, multipleInFrame, doNoInitLibs }) {
   const fileSymbols = globalThis.jbFileSymbols || fileSymbolsFromHttp
@@ -20,7 +21,7 @@ async function jbInit(uri, {projects, plugins, baseUrl, multipleInFrame, doNoIni
   jb.noSupervisedLoad = false
 
   const srcSymbols = await fileSymbols('src','','pack-|jb-loader').then(x=>x.filter(x=>coreFiles.indexOf(x.path) == -1))
-  const topRequiredModules = ['default-plugins', ...(plugins || []).map(x => `plugins/${x}`), ...(projects || []).map(x => `projects/${x}`)]
+  const topRequiredModules = [...(plugins || []).map(x => `plugins/${x}`), ...(projects || []).map(x => `projects/${x}`)]
   
   const symbols = await topRequiredModules.reduce( async (acc,dir) => [...await acc, ...await fileSymbols(dir,'','pack-')], [])
   await jbSupervisedLoad([...srcSymbols,...symbols],jb,doNoInitLibs)

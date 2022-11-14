@@ -101,14 +101,6 @@ jb.component('studio.test', {
 //   })
 // })
 
-jb.component('studio.previewWidget', {
-  type: 'control',
-  params: [
-    {id: 'style', type: 'preview-style', dynamic: true}
-  ],
-  impl: {}
-})
-
 jb.component('dataResource.studio', {
   watchableData: {
     circuit: /host=test/.test(jb.path(globalThis,'location.href')||'') ? (jb.path(globalThis,'location.pathname')||'').split('/')[3] : '',

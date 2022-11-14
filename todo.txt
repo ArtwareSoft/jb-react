@@ -1,53 +1,67 @@
 
-fix edit test in studio
-fix tgp modules with two jbms
-  what about watchable comps. should be in the editor!!
-extension-webView API
-  cursorPos(path,row,line), fileChanged(path,ln)
+logViews
+  code loading
+  remote data, flow
+  ui flows
+  ui rendering
+  data mapping
+  vdom data mapping
 
-742hkyqxZSVHsD
-
-gotoDef bug 
-  button.init in button.mdc
-
-
-specific features
-  fix all ui-features types
-
-start working on the amta project
-
-vscode plugin 
+vscode plugin
+  ctrl-alt-D - debug info
   ctrl-up in array
   obj-prop scenario
   var scenario
   boolean value should suggest - true, false
   no paran if no params - e.g. itemlist.ulLi
 
-data types
-  1. type system
-  2. data wizards working on input
-    structured
-      - path - (specific/all/filter by/group by)
-    semi structured
-      - property search
-      - itemlists search
-UI styles extraction
+html extraction
+  UI styles extraction
+  data extraction
 
+dsls
+  applicationFrame
+  flow
+  vega
+  scene3
+  dataAnalysis
+  ui
+    ui.frame
+    ui.doc
+    ui.tree (node type)
+    ui.form
+    ui.dialog ?
+    ui.3d
+    ui.chart
+    ui.animation
+    ui.search
+
+  ui.inplaceEditor
+    ui.textEditor
+      syntax, highlight, completion
+    ui.PropertiesEditor
+      scriptTree, scriptTreeEditor, node, property, operation, 
+  
+  datatypes dsl
+    structure (doc)
+    relational
+    column
+  mapping dsls
+    template
+  parsing dsls
+    yacc/lex
+    extract
+  structure editor dsl
+  text editor dsl
+  structure browser dsl
+  studio dsl - script, preview, context
+  tgp-writable
+      scriptTree, scriptTreeEditor, node  
+  db watchable data
 
 improve the type system
   support data types for pipelines
-    string
-    object
-    semi-structured string HTML, JSON, XML
-    number - math  
-    column
-    table
-  how
-    static - in->out 
-    dynamic - use probe to detect
-    add inOut prop => 'T->T' , 'string->number', 'number->number'
-
-  support specific feature/styles
+  
 frameworks
   tests
     products
@@ -137,12 +151,7 @@ data tests with dispatcher
 preview of studio in nodejs
 preview of vsccode in nodejs
 
-add std ns for common.js
-
 post in 
  https://stackoverflow.com/questions/376373/pretty-printing-xml-with-javascript
 
 
-path can be exact or
-  too inner '__ads'
-  too outer x(__y())

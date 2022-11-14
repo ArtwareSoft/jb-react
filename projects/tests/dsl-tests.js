@@ -112,7 +112,9 @@ jb.component('dslTest.resolveDefaultValues', {
 
 jb.component('cmpAtMyDsl', {
   type: 't<myDsl>',
-  impl: 'myDsl'
+  params: [ 
+    { id: 'x', as: 'string' }],
+  impl: 'myDsl%$x%'
 })
 
 jb.component('cmpAtInnerDsl', {
@@ -131,6 +133,13 @@ jb.component('testMultiTypes', {
   impl: '%$x1%,%$x2%,%$x3%,%$x4%'
 })
 
+jb.component('test.helperByName', {
+  params: [
+    {id: 'x1', type: 'data<myDsl.inner>'}
+  ],
+  impl: '%$x1%'
+})
+
 jb.component('dslTest.multiTypes', {
   impl: dataTest({
     calculate: testMultiTypes({
@@ -138,18 +147,21 @@ jb.component('dslTest.multiTypes', {
       x1: cmpAtInnerDsl(),
       x2: cmpAtMyDsl(),
       x3: cmpAtInnerDsl(),
-      x4: cmpAtMyDsl()
+      x4: cmpAtMyDsl('50')
     }),
-    expectedResult: equals('innerDsl,myDsl,innerDsl,myDsl'),
-    runBefore: TBD()
+    expectedResult: equals('innerDsl,myDsl,innerDsl,myDsl50')
   })
+})
+
+jb.component('dslTest.resolveByName', {
+  impl: dataTest(test.helperByName(testMultiTypes({x4:cmpAtMyDsl(20)})), equals(',,,myDsl20'))
 })
 
 // macro tests
 jb.component('macroTest.dsl.simple', {
   impl: dataTest(
     () => jb.utils.prettyPrintComp('cmpAtMyDsl',jb.utils.getComp('t<myDsl>cmpAtMyDsl')),
-    and(contains("type: 't<myDsl>'"), notContains('$'))
+    and(contains("type: 't<myDsl>'"), notContains("'$"))
   )
 })
 
