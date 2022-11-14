@@ -169,7 +169,7 @@ jb.extension('utils', { // jb core utils
                   {compId: prof.$, prof, expectedType, dslType, topComp})
           }
       }
-    },
+    },    
     resolveDetachedProfile(prof, expectedType) {
       const CT = jb.core.CT
       if (!prof || !prof.constructor || ['Object','Array'].indexOf(prof.constructor.name) == -1) 
@@ -186,7 +186,11 @@ jb.extension('utils', { // jb core utils
           return jb.logError(`resolveDetachedProfile - can not resolve ${prof.$} expected type ${dslType || 'unknown'}`, 
               {compId: prof.$, prof, expectedType, dslType })
       } else {
-        Object.values(prof).forEach(v=>jb.utils.resolveDetachedProfile(v))
+        Object.keys(prof).forEach(key=> {
+          const p = (comp && comp.params || []).find(p=>p.id == key)
+          const type = p && (jb.path(p,[CT,'dslType']) ||'').replace(/\[\]/,'')
+          jb.utils.resolveDetachedProfile(prof[key],  type)
+        })
       }
       return prof
     },    
