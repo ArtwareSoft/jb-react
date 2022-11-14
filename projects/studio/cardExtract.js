@@ -107,24 +107,27 @@ jb.component('cardExtract.selectStyle', {
 })
   
 jb.component('cardExtract.flattenControlToGrid', {
-    type: 'control',
-    params: [
-      {id: 'ctrl'},
-    ],
-    impl: ctx => jb.exec(jb.cardExtract.flattenControlToGrid(ctx.params.ctrl))
+  type: 'control',
+  params: [
+    {id: 'ctrl'}
+  ],
+  impl: ctx => {
+    const ctrl = jb.cardExtract.flattenControlToGrid(ctx.params.ctrl)
+    return jb.ui.extendWithServiceRegistry(ctx).run(ctrl)
+  }
 })
   
 jb.component('cardExtract.extractStyle', {
-    type: 'action',
-    params: [
-      {id: 'extractedCtrl'},
-      {id: 'targetPath', as: 'string'}
-    ],
-    impl: openDialog({
-      content: cardExtract.selectStyle('%$extractedCtrl%', '%$targetPath%'),
-      title: 'select style',
-      features: dialogFeature.uniqueDialog('unique')
-    })
+  type: 'action',
+  params: [
+    {id: 'extractedCtrl'},
+    {id: 'targetPath', as: 'string'}
+  ],
+  impl: openDialog({
+    title: 'select style',
+    content: cardExtract.selectStyle('%$extractedCtrl%', '%$targetPath%'),
+    features: dialogFeature.uniqueDialog('unique')
+  })
 })
   
 jb.component('cardExtract.suggestedStyles', {
@@ -178,12 +181,11 @@ jb.extension('cardExtract', {
           return controls && { ...ctrl, controls }
       }
     },
-    flattenControlToGrid(ctrl,parentElem) {
+    flattenControlToGrid(ctrl,parentElem,ctx) {
       // render the extracted ctrl to calculate sizes and sort options
       parentElem = parentElem || document.body
       const top = document.createElement('div')
-      jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry().run(ctrl)),top)    
-      //jb.ui.renderWidget(ctrl,top)
+      jb.ui.renderWidget(ctrl,top,ctx)
       top.style.position = 'relative'
       parentElem.appendChild(top)
       const topRect = top.getBoundingClientRect()
@@ -307,7 +309,7 @@ jb.extension('stylePatterns', {
     group(ctx, extractedCtrl, target, previewCtx, options = {}) {
         // render the extracted ctrl to calculate sizes and sort options
         const top = document.createElement('div')
-        jb.ui.renderWidget(extractedCtrl,top)
+        jb.ui.renderWidget(extractedCtrl,top,ctx)
         top.style.position = 'relative'
         document.body.appendChild(top)
 

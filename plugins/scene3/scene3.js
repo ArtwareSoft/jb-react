@@ -42,7 +42,7 @@ jb.component('scene3.control', {
     {id: 'lights', type: 'light<scene3>[]', dynamic: true, flattenArray: true},
     {id: 'controls', type: 'control<scene3>[]'},
     {id: 'style', type: 'style<scene3>', defaultValue: generic(), dynamic: true},
-    {id: 'features', type: 'feature<scene3>[]', dynamic: true}
+    {id: 'features', type: 'feature<>[],feature<scene3>[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
 })
@@ -81,9 +81,10 @@ jb.component('generic', {
       frontEnd.requireExternalLibrary(['three-OrbitControls.js']),
       frontEnd.init(async ({},{el, cmp, profilePath }) => {
         const profile = profilePath.split('~').reduce((acc,p) => acc[p], jb.comps)
-        const camera = jb.exec(profile.camera)
-        const scene = jb.exec(profile.scene)
-        const lights = jb.exec(profile.lights)()
+        const params = jb.comps['scene3.control'].params
+        const camera = jb.exec(profile.camera, params.find(p=>p.id == 'camera'))
+        const scene = jb.exec(profile.scene, params.find(p=>p.id == 'scene'))
+        const lights = jb.exec(profile.lights, params.find(p=>p.id == 'lights'))
 
         lights.forEach(m=>scene.add(m))        
         const animations = []
@@ -157,10 +158,10 @@ jb.component('scene', {
 jb.component('elementsFromItems', {
   type: 'element',
   params: [
-    {id: 'items', type: 'data', dynamic: true, mandatory: true},
+    {id: 'items', type: 'data<>', dynamic: true, mandatory: true},
     {id: 'genericElement', type: 'element', dynamic: true, mandatory: true}
   ],
-  impl: pipeline('%$items()%', '%$genericElement()%' )
+  impl: pipeline(typeCast('element'), '%$items()%', '%$genericElement()%' )
 })
 
 jb.component('box', {
@@ -172,7 +173,7 @@ jb.component('box', {
     {id: 'meshParams', type: 'meshParam[]', dynamic: true}
   ],
   macroByValue: true,
-  impl: ctx => jb.three.createMesh(ctx, 'Box',3)
+  impl: ctx => jb.scene3.createMesh(ctx, 'Box',3)
 })
 
 jb.component('sphere', {
@@ -181,7 +182,7 @@ jb.component('sphere', {
     {id: 'radius', as: 'number', defaultValue: 1},
     {id: 'meshParams', type: 'meshParam[]', dynamic: true}
   ],
-  impl: ctx => jb.three.createMesh(ctx, 'Sphere',1)
+  impl: ctx => jb.scene3.createMesh(ctx, 'Sphere',1)
 })
 
 jb.component('meshParams', {

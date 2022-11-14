@@ -263,7 +263,7 @@ jb.extension('core', {
       }
     }
     run(profile,parentParam) {
-      return jb.core.run(new jb.core.jbCtx(this,{ profile: jb.utils.resolveDetachedProfile(profile), comp: profile.$ , path: ''}), parentParam)
+      return jb.core.run(new jb.core.jbCtx(this,{ profile: jb.utils.resolveDetachedProfile(profile, jb.path(parentParam,'type')), comp: profile.$ , path: ''}), parentParam)
     }
     exp(exp,jstype) { return jb.expression.calc(exp, this, {as: jstype}) }
     setVars(vars) { return new jb.core.jbCtx(this,{vars: vars}) }

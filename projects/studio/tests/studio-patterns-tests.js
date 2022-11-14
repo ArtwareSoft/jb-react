@@ -447,10 +447,7 @@ jb.component('patternsTest.selectStyleDeleteUnmapped.card2', {
 })
 
 jb.component('patternsTest.flattenControlToGrid.card2', {
-  impl: uiTest({
-    control: cardExtract.flattenControlToGrid(() => extractedCtrlCard2),
-    expectedResult: contains('Disney in 1946'),
-  })
+  impl: uiTest({control: cardExtract.flattenControlToGrid(() => extractedCtrlCard2), expectedResult: contains('Disney in 1946')})
 })
 
 jb.component('patternsTest.flattenControlToGrid.card1', {

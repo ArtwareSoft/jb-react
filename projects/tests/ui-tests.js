@@ -1986,10 +1986,11 @@ jb.component('uiTest.validator', {
           databind: '%$person/project%',
           features: [id('fld'), validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid project name')]
         })
-      ],
+      ]
     }),
     userInput: userInput.setText('a b', '#fld'),
-    expectedResult: contains('invalid project name')
+    expectedResult: contains('invalid project name'),
+    allowError: true,
   })
 })
 

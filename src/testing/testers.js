@@ -69,7 +69,7 @@ jb.component('uiTest', {
 			Var('tstWidgetId', ({},{testID}) => `${jb.uri}-${testID.replace(/\./g,'_')}`)
 		],
 		timeout: '%$timeout%',
-		allowError: '%$allowError%',
+		allowError: '%$allowError()%',
 		runBefore: runActions(
 			call('runBefore'), 
 			rx.pipe(

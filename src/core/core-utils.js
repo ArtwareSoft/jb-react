@@ -160,7 +160,7 @@ jb.extension('utils', { // jb core utils
           if (Array.isArray(prof)) {
             prof.forEach(v=>doResolve(v, expectedType))
           } else if (comp && prof.$ != 'asIs') {
-            ;(comp.params || []).forEach(p=> doResolve(prof[p.id], (jb.path(p,[CT,'dslType']) ||'').replace(/\[\]/,'') ))
+            ;(comp.params || []).forEach(p=> doResolve(prof[p.id], (jb.path(p,[CT,'dslType']) ||'').replace(/\[\]/g,'') ))
             doResolve(prof.$vars)
             if (prof.$ == 'object')
               Object.values(prof).forEach(v=>doResolve(v))
@@ -174,6 +174,10 @@ jb.extension('utils', { // jb core utils
       const CT = jb.core.CT
       if (!prof || !prof.constructor || ['Object','Array'].indexOf(prof.constructor.name) == -1) 
         return prof
+      if (Array.isArray(prof)) {
+          prof.forEach(v=>jb.utils.resolveDetachedProfile(v, expectedType))
+          return prof
+      }
       const dslType = prof.typeCast || expectedType
       const comp = jb.utils.getComp(prof.$, { types: dslType })
       prof[CT] = {comp, dslType}
@@ -188,14 +192,16 @@ jb.extension('utils', { // jb core utils
       } else {
         Object.keys(prof).forEach(key=> {
           const p = (comp && comp.params || []).find(p=>p.id == key)
-          const type = p && (jb.path(p,[CT,'dslType']) ||'').replace(/\[\]/,'')
+          const type = p && (jb.path(p,[CT,'dslType']) ||'').replace(/\[\]/g,'')
           jb.utils.resolveDetachedProfile(prof[key],  type)
         })
       }
       return prof
     },    
     getComp: (id, {types, dsl, silent} = {}) => {
-      const res = id && (types || '').split(',').map(t => t.indexOf('<') == -1 ? id : t+id)
+      const res = id && (types || '').split(',')
+        .map(t=>t.replace(/<>|\[\]/g,''))
+        .map(t => t.indexOf('<') == -1 ? id : t+id)
         .map(fullId => jb.comps[fullId]).find(x=>x) || (!types && dsl && guessInDsl())
       
       if (id && !res && !silent)

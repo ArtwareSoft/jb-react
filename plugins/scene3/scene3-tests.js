@@ -1,4 +1,3 @@
-
 jb.component('scene3Test.basic', {
   impl: uiTest({
     control: scene3.control({
@@ -6,13 +5,12 @@ jb.component('scene3Test.basic', {
         elementsFromItems(
           pipeline(range(), math.div('%%', 10)),
           sphere(0.05, [assign('position.z', '%%'), assign('position.y', 1), assign('position.x', -1)])
-        ),
-        allDirectionsLight()
+        )
       ),
       camera: perspectiveCamera(point(0, 0, 5)),
-      lights: [],
+      lights: allDirectionsLight(),
       features: [OrbitControls()]
     }),
-    expectedResult: equals(1, 1)
+    expectedResult: contains('cmp-id')
   })
 })
