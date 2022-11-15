@@ -42,7 +42,7 @@ jb.extension('treeShake', {
         const isRemote = 'source.remote:rx,remote.operator:rx,remote.action:action,remote.data:data' // code run in remote is not dependent
         const vals = Object.keys(obj).filter(k=>!obj.$ || isRemote.indexOf(`${obj.$}:${k}`) == -1).map(k=>obj[k])
         return [
-            ...(obj.$ ? [obj.$] : []),
+            ...(obj.$ ? [jb.path(obj,[jb.core.CT,'comp',jb.core.CT,'fullId']) || obj.$] : []),
             ...vals.filter(x=> x && typeof x == 'object').flatMap(x => jb.treeShake.dependentOnObj(x, onlyMissing)),
             ...vals.filter(x=> x && typeof x == 'function').flatMap(x => jb.treeShake.dependentOnFunc(x, onlyMissing)),
             ...vals.filter(x=> x && typeof x == 'string' && x.indexOf('%$') != -1).flatMap(x => jb.treeShake.dependentResources(x, onlyMissing)),
@@ -103,12 +103,13 @@ jb.extension('treeShake', {
 
     },
     compToStr(cmpId) {
-        const compWithLocation = { ...jb.comps[cmpId], location : jb.comps[cmpId][jb.core.CT].location}
-        const content = JSON.stringify(compWithLocation,
+        const ct = jb.comps[cmpId][jb.core.CT]
+        const compWithCTData = { ...jb.comps[cmpId], location : ct.location, type: ct.dslType}
+        const content = JSON.stringify(compWithCTData,
             (k,v) => typeof v === 'function' ? '@@FUNC'+v.toString()+'FUNC@@' : v,2)
                 .replace(/"@@FUNC([^@]+)FUNC@@"/g, (_,str) => str.replace(/\\\\n/g,'@@__N').replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n').replace(/\\t/g,'')
                     .replace(/@@__N/g,'\\\\n').replace(/\\\\/g,'\\') )
-        return `jb.component('${cmpId}', ${content})`
+        return `jb.component('${cmpId.split('>').pop()}', ${content})`
     },
     async bringMissingCode(obj) {
         const missing = getMissingProfiles(obj)

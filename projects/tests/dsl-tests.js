@@ -215,6 +215,10 @@ jb.component('dslTest.jbDsl.usingCtrl', {
   impl: uiTest({control: location.control(israel()), expectedResult: contains('Jerusalem')})
 })
 
+jb.component('dslTest.treeShake', {
+  impl: dataTest(pipeline(() => jb.treeShake.treeShake(['state<location>israel'],[]), count()), equals(3))
+})
+
 // jb.component('dslTest.jbDsl.usingCtrl2', {
 //   impl: uiTest(itemlist({controls: location.control(state(city()))}))
 // })
