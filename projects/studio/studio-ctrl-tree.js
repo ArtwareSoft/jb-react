@@ -99,7 +99,7 @@ jb.component('studio.treeMenu', {
       }),
       menu.action({
         vars: [Var('compName', tgp.compName('%$path%'))],
-        title: 'Goto %$compName%',
+        title: pipeline(tgp.shortCompName('%$path%'), 'Goto %%'), 
         action: runActions(
           writeValue('%$studio/profile_path%', '%$compName%~impl'),
           studio.openControlTree(),

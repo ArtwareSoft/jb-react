@@ -163,14 +163,14 @@ jb.extension('probe', {
             const parentCtx = this.probe[_path][0].in, breakingPath = _path+'~'+breakingProp
             const obj = this.probe[_path][0].out
             const compName = jb.tgp.compNameOfPath(breakingPath)
-            if (jb.utils.getComp(`${compName}.probe`)) {
+            if (jb.utils.getComp(`${compName}.probe`,{silent:true})) {
                 parentCtx.profile[breakingProp][jb.core.CT] = { ...parentCtx.profile[breakingProp][jb.core.CT], comp: null }
                 return jb.probe.resolve(parentCtx.runInner(jb.utils.resolveDetachedProfile({...parentCtx.profile[breakingProp], $: `${compName}.probe`}),
                     jb.tgp.paramDef(breakingPath),breakingProp))
                         .then(_=>this.handleGaps(_path))
             }
 
-            const hasSideEffect = jb.utils.getComp(compName) && (jb.utils.getComp(jb.tgp.compNameOfPath(breakingPath)).type ||'').indexOf('has-side-effects') != -1
+            const hasSideEffect = jb.utils.getComp(compName,{silent:true}) && (jb.utils.getComp(jb.tgp.compNameOfPath(breakingPath)).type ||'').indexOf('has-side-effects') != -1
             if (obj && !hasSideEffect && obj[breakingProp] && typeof obj[breakingProp] == 'function')
                 return jb.probe.resolve(obj[breakingProp]())
                     .then(_=>this.handleGaps(_path))

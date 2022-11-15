@@ -95,7 +95,7 @@ jb.component('tgpTextEditor.editMenu', {
         [
           menu.action({
             vars: [Var('compName', tgp.compName('%$path%'))],
-            title: 'Goto %$compName%',
+            title: pipeline(tgp.shortCompName('%$path%'), 'Goto %%'), 
             action: studio.gotoPath('%$compName%', 'open'),
             showCondition: '%$compName%'
           }),

@@ -53,19 +53,17 @@ jb.component('studio.filePosOfPath', {
 jb.component('studio.gotoSource', {
   type: 'action',
   params: [
-    {id: 'path', as: 'string' },
-    {id: 'chromeDebugger', as: 'boolean' },
+    {id: 'path', as: 'string'},
+    {id: 'chromeDebugger', as: 'boolean', type: 'boolean'}
   ],
-  impl: runActions(
-    Var('filePos',studio.filePosOfPath('%$path%')),
-    ({},{filePos},{chromeDebugger}) => {
+  impl: runActions(Var('filePos', studio.filePosOfPath('%$path%')), ({},{filePos},{chromeDebugger}) => {
       if (jb.frame.jbInvscode)
         jb.vscode['openEditor'](filePos)
       else if (chromeDebugger)
         parent.postMessage({ runProfile: {$: 'chromeDebugger.openResource', 
           location: [ jb.frame.location.origin + '/' + filePos.fn, filePos.pos[0], filePos.pos[1]] }})
       else
-        fetch(`/?op=gotoSource&comp=${filePos.path.split('~')[0]}`)
+        fetch(`/?op=gotoSource&path=${filePos.fn}:${filePos.pos[0]}`)
   })
 })
 
@@ -146,8 +144,25 @@ jb.component('studio.gotoEditorSecondary', {
     {id: 'path', as: 'string'}
   ],
   impl: menu.action({
-    vars: [Var('baseComp', split({separator: '~', text: '%$path%', part: 'first'}))],
-    title: 'Goto editor: %$baseComp%',
+    vars: [
+      Var(
+        'baseComp',
+        split({
+          separator: '~',
+          text: '%$path%',
+          part: 'first'
+        })
+      ),
+      Var(
+        'shortBaseComp',
+        split({
+          separator: '>',
+          text: '%$baseComp%',
+          part: 'last'
+        })
+      )
+    ],
+    title: 'Goto editor: %$shortBaseComp%',
     action: studio.gotoSource('%$baseComp%'),
     showCondition: notEquals(tgp.compName('%$path%'), '%$baseComp%')
   })
@@ -159,7 +174,7 @@ jb.component('studio.gotoEditorFirst', {
     {id: 'path', as: 'string'}
   ],
   impl: menu.action({
-    title: pipeline(tgp.compName('%$path%'), 'Goto editor: %%'),
+    title: pipeline(tgp.shortCompName('%$path%'), 'Goto editor: %%'), 
     action: studio.gotoSource(tgp.compName('%$path%')),
     shortcut: 'Alt+E',
     showCondition: notEmpty(tgp.compName('%$path%'))

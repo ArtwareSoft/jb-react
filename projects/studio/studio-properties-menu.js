@@ -33,7 +33,7 @@ jb.component('studio.openPropertyMenu', {
           showCondition: equals(pipeline(tgp.paramDef('%$path%'), '%as%'), 'string')
         }),
         menu.action({
-          title: 'Goto %$compName%',
+          title: pipeline(tgp.shortCompName('%$path%'), 'Goto %%'), 
           action: studio.gotoPath('%$compName%'),
           showCondition: '%$compName%'
         }),
@@ -157,7 +157,7 @@ jb.component('studio.jbEditorMenu', {
           }),
           menu.action({
             vars: [Var('compName', tgp.compName('%$path%'))],
-            title: 'Goto %$compName%',
+            title: pipeline(tgp.shortCompName('%$path%'), 'Goto %%'), 
             action: studio.openJbEditor({path: '%$compName%', fromPath: '%$path%'}),
             showCondition: '%$compName%'
           }),

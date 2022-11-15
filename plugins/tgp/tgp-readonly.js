@@ -17,6 +17,7 @@ jb.extension('tgp', 'readOnly', {
 	  const prof = jb.tgp.valOfPath(path,silent)
 	  return jb.utils.compName(prof) || jb.utils.compName(prof,jb.tgp.paramDef(path))
 	},
+	shortCompNameOfPath: (path,silent) => (jb.tgp.compNameOfPath(path,silent) || '').split('>').pop(),
 	paramDef: path => {
 	  if (!jb.tgp.parentPath(path))
 		  return jb.tgp.getComp(path)
@@ -163,7 +164,7 @@ jb.extension('tgp', 'readOnly', {
 
 		const val = jb.tgp.valOfPath(path);
 		const fieldTitle = jb.asArray(val && val.features).filter(x=>x.$ == 'field.title').map(x=>x.title)[0]
-		return fieldTitle || (val && typeof val.title == 'string' && val.title) || (val && val.Name) || (val && val.remark) || (val && jb.tgp.compNameOfPath(path)) || path.split('~').pop();
+		return fieldTitle || (val && typeof val.title == 'string' && val.title) || (val && val.Name) || (val && val.remark) || (val && jb.tgp.shortCompNameOfPath(path)) || path.split('~').pop();
 	},
 	icon(path) {
 		if (jb.tgp.parentPath(path)) {
@@ -224,6 +225,13 @@ jb.component('tgp.compName', {
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => jb.tgp.compNameOfPath(path) || ''
+})
+
+jb.component('tgp.shortCompName', {
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) => jb.tgp.shortCompNameOfPath(path)
 })
 
 jb.component('tgp.val', {

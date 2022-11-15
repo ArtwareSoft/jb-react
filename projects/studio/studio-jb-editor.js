@@ -8,7 +8,7 @@ jb.extension('studio', 'jbEditor', {
 		}
 		title(path, collapsed) {
 			let val = jb.tgp.valOfPath(path)
-			let compName = jb.tgp.compNameOfPath(path)
+			let compName = jb.tgp.shortCompNameOfPath(path)
 			if (path.indexOf('~') == -1)
 				compName = 'jbComponent'
 			if (path.match(/^[^~]+~params~[0-9]+$/))
@@ -26,7 +26,7 @@ jb.extension('studio', 'jbEditor', {
 			if (collapsed && typeof val == 'object')
 				summary = ': ' + jb.tgp.summary(path).substr(0,20)
 			// if (path.match(/\$vars~[0-9]+$/))
-			//  	summary = jb.tgp.summary(path+'~val') || jb.tgp.compNameOfPath(path+'~val')
+			//  	summary = jb.tgp.summary(path+'~val') || jb.tgp.shortCompNameOfPath(path+'~val')
 			if (typeof val == 'function')
 				val = val.toString()
 
@@ -63,20 +63,7 @@ jb.extension('studio', 'jbEditor', {
 		icon(path) {
 			return jb.tgp.icon(path)
 		}
-
-		// private
-		// sugarChildren(path,val) {
-		// 	const compName = jb.utils.compName(val)
-		// 	if (!compName) return
-		// 	const sugarPath = path + '~$' +compName
-		// 	const sugarVal = jb.tgp.valOfPath(sugarPath)
-		// 	if (Array.isArray(sugarVal)) // sugar array. e.g. $pipeline: [ .. ]
-		// 		return jb.tgp.arrayChildren(sugarPath)
-		// 	else if (sugarVal)
-		// 		return [sugarPath]
-		// }
 		innerProfiles(path) {
-	//		if (this.sugarChildren(path,val)) return [];
 			if (!this.includeCompHeader && path.indexOf('~') == -1)
 				path = path + '~impl';
 
@@ -407,7 +394,7 @@ jb.component('studio.jbEditorTitle', {
       button({
         title: ctx => {
           const path = ctx.cmpCtx.params.path
-          const title = jb.tgp.shortTitle(path) || '',compName = jb.tgp.compNameOfPath(path) || ''
+          const title = jb.tgp.shortTitle(path) || '',compName = jb.tgp.shortCompNameOfPath(path) || ''
           return title == compName ? title : compName + ' ' + title
         },
         action: runActions(writeValue('%$studio/profile_path%', '%$path%'), studio.openControlTree()),

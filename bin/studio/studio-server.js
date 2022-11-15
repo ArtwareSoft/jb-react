@@ -408,14 +408,14 @@ const op_get_handlers = {
       files.filter(x=>x.match(/\.(ts|js)$/))
         .forEach(srcPath=>{
                 const source = ('' + fs.readFileSync(srcPath)).split('\n');
-                source.map((line,no)=> {
+                source.map((line,lineNum)=> {
                   if (line.indexOf(`component('${comp}'`) != -1 || line.indexOf(`/* ${comp} */`) != -1) {
-                    gotoFile(srcPath,no)
+                    gotoFile(srcPath,lineNum)
                   }
                 })
         })
-      function gotoFile(srcPath,no) {
-        const cmd = settings.open_source_cmd + srcPath+':'+ ((+no)+1);
+      function gotoFile(srcPath,lineNum) {
+        const cmd = settings.open_source_cmd + srcPath+':'+ ((+lineNum)+1);
         console.log(cmd);
         child.exec(cmd,{});
         endWithSuccess(res,'open editor cmd: ' + cmd);
