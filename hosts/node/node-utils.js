@@ -12,10 +12,14 @@ global.jbFetchFile = url => {
     return Promise.resolve()
 }
 
-function fileSymbolsFunc(path, _include, _exclude) {
+async function fileSymbolsFunc(path, _include, _exclude) {
     const include = _include && new RegExp(_include)
     const exclude = _exclude && new RegExp(_exclude)
-    return Promise.resolve(getFilesInDir(path).filter(f => f.match(/\.js/)).map(path => fileContent(path))).catch(e=>[])
+    try {
+        return getFilesInDir(path).filter(f => f.match(/\.js/)).map(path => fileContent(path))
+    } catch(e) {
+        return []
+    }
 
     function getFilesInDir(dirPath) {
         return fs.readdirSync(`${jbBaseUrl}/${dirPath}`).sort((x, y) => x == y ? 0 : x < y ? -1 : 1).reduce((acc, file) => {

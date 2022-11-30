@@ -1,4 +1,3 @@
-// var { mdcStyle,table } = jb.ns('mdcStyle,table')
 
 jb.component('table', {
   description: 'list, dynamic group, collection, repeat',
@@ -7,7 +6,7 @@ jb.component('table', {
   params: [
     {id: 'title', as: 'string'},
     {id: 'items', as: 'array', dynamic: true, mandatory: true},
-    {id: 'controls', type: 'control[]', mandatory: true, dynamic: true},
+    {id: 'controls', type: 'control[]', description: 'fields', mandatory: true, dynamic: true},
     {id: 'style', type: 'table.style', defaultValue: table.plain()},
     {id: 'itemVariable', as: 'string', defaultValue: 'item'},
     {id: 'visualSizeLimit', as: 'number', defaultValue: 100, description: 'by default itemlist is limmited to 100 shown items'},

@@ -49,12 +49,12 @@ jb.extension('tgp', 'writable', {
 		})
 		return result
 	},
-	setComp(path,compName,srcCtx) {
-		const comp = compName && jb.tgp.getComp(compName)
-		if (!compName || !comp) return
+	setComp(path,id,srcCtx) {
+		const comp = id && jb.tgp.getComp(id)
+		if (!id || !comp) return
 		const params = jb.utils.compParams(comp)
 
-		const result = jb.tgp.newProfile(comp,compName)
+		const result = jb.tgp.newProfile(comp,id)
 		const currentVal = jb.tgp.valOfPath(path)
 		params.forEach(p=>{
 			if (currentVal && currentVal[p.id] !== undefined)
@@ -260,9 +260,9 @@ jb.component('tgp.setComp', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
-    {id: 'comp', as: 'single'}
+    {id: 'id', as: 'single'}
   ],
-  impl: (ctx,path,comp) => jb.tgp.setComp(path, comp,ctx)
+  impl: (ctx,path,id) => jb.tgp.setComp(path, id,ctx)
 })
 
 jb.component('tgp.delete', {

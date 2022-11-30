@@ -1,7 +1,7 @@
-// jb.ns('d3g,d3Scatter,d3Histogram')
+jb.ns('d3')
 
-jb.component('d3g.histogram', {
-  type: 'control',
+jb.component('d3.histogram', {
+  type: 'control<>',
   category: 'group:80,common:70',
   params: [
     {id: 'title', as: 'string'},
@@ -14,9 +14,7 @@ jb.component('d3g.histogram', {
     {id: 'style', type: 'd3g.histogram-style', dynamic: true, defaultValue: {'$': 'd3-histogram.plain'}},
     {id: 'features', type: 'd3-feature[]', dynamic: true, flattenArray: true}
   ],
-  impl: ctx => jb.ui.ctrl(ctx,{
-        featuresOptions: ctx.params.axes()
-      })
+  impl: ctx => jb.ui.ctrl(ctx, { featuresOptions: ctx.params.axes() })
 })
 
 jb.component('d3Histogram.plain', {

@@ -2,7 +2,7 @@ jb.dsl('scene3')
 
 jb.extension('scene3', {
   $requireLibs: ['/dist/three.js'],
-  parseObject(json) {
+  parseObject(json) { // may be needed for BE-FE
     return new Promise(resolve => {
       new THREE.ObjectLoader().parse(json,obj => resolve(obj),() =>{}, err => resolve(err))
     })
@@ -38,7 +38,7 @@ jb.component('scene3.control', {
   type: 'control<>',
   params: [
     {id: 'scene', type: 'scene<scene3>', defaultValue: sampleScene()},
-    {id: 'camera', type: 'camera<scene3>', defaultValue: perspectiveCamera(point(0, 0, 5))},
+    {id: 'camera', type: 'camera<scene3>', defaultValue: perspectiveCamera()},
     {id: 'lights', type: 'light<scene3>[]', dynamic: true, flattenArray: true},
     {id: 'controls', type: 'control<scene3>[]'},
     {id: 'style', type: 'style<scene3>', defaultValue: generic(), dynamic: true},
@@ -120,15 +120,18 @@ jb.component('generic', {
 jb.component('perspectiveCamera', {
   type: 'camera',
   params: [
-    {id: 'position', type: 'point', defaultValue: point(0,0,0)},
+    {id: 'position', type: 'point', defaultValue: point(1, 1, 10)},
+    {id: 'lookAt', type: 'point', defaultValue: point(1, 1, 0)},
     {id: 'vertical', description: 'from bottom to top of view, in degrees. Default is 50°', as: 'number', defaultValue: 50},
     {id: 'nearPlane', description: 'camera clips between near and far. distance to near plane', as: 'number', defaultValue: 0.1},
-    {id: 'farPlane', description: 'camera clips between near and far. distance to far plane', as: 'number', defaultValue: 2000},
+    {id: 'farPlane', description: 'camera clips between near and far. distance to far plane', as: 'number', defaultValue: 2000}
   ],
-  impl: (ctx,position,vertical,nearPlane,farPlane) => {
-    const res = new THREE.PerspectiveCamera( vertical, 1, nearPlane, farPlane )
-    res.position.fromArray(Object.values(position))
-    return res
+  impl: (ctx,position,lookAt,vertical,nearPlane,farPlane) => {
+    const camera = new THREE.PerspectiveCamera( vertical, 1, nearPlane, farPlane )
+    camera.position.fromArray(Object.values(position))
+    camera.lookAt(lookAt)
+    
+    return camera
   }
 })
 
@@ -172,7 +175,6 @@ jb.component('box', {
     {id: 'depth', as: 'number', defaultValue: 1},
     {id: 'meshParams', type: 'meshParam[]', dynamic: true}
   ],
-  macroByValue: true,
   impl: ctx => jb.scene3.createMesh(ctx, 'Box',3)
 })
 

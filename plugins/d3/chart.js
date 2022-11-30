@@ -1,39 +1,42 @@
-// jb.ns('d3g,d3Scatter,d3Histogram')
+jb.dsl('d3')
 
-jb.component('d3g.chartScatter', {
-  type: 'control',
+jb.extension('d3', {
+  $requireLibs: ['/dist/d3.js'],
+})
+
+jb.component('d3.scatter', {
+  type: 'control<>',
   description: 'chart, graph, diagram by d3',
   category: 'chart:80',
   params: [
     {id: 'title', as: 'string'},
     {id: 'items', as: 'array', dynamic: true, mandatory: true},
-    {id: 'frame', type: 'd3g.frame', defaultValue: d3g.frame({width: 1400, height: 500, top: 30, right: 50, bottom: 40, left: 60})},
-    {id: 'pivots', type: 'd3g.axis[]', templateValue: [], mandatory: true, dynamic: true, description: 'potential axis of the chart'},
+    {id: 'frame', type: 'frame<d3>', defaultValue: frame({width: 1400, height: 500, top: 30, right: 50, bottom: 40, left: 60})},
+    {id: 'pivots', type: 'axis<d3>[]', templateValue: [], mandatory: true, dynamic: true, description: 'potential axis of the chart'},
     {id: 'itemTitle', as: 'string', dynamic: true},
     {id: 'onSelectItem', type: 'action', dynamic: true},
     {id: 'onSelectAxisValue', type: 'action', dynamic: true},
     {id: 'visualSizeLimit', as: 'number', defaultValue: 1000},
-    {id: 'style', type: 'd3g.scatter-style', dynamic: true, defaultValue: d3Scatter.plain()},
-    {id: 'features', type: 'feature[]', dynamic: true, flattenArray: true}
+    {id: 'style', type: 'scatter.style<d3.scatter>', dynamic: true, defaultValue: circles()},
+    {id: 'features', type: 'feature<>[],feature<d3.scatter>[]', dynamic: true}
   ],
-  impl: ctx =>
-    	jb.ui.ctrl(ctx)
+  impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('d3Scatter.plain', {
-  type: 'd3g.scatter-style',
+jb.component('circles', {
+  type: 'style<d3.scatter>',
   impl: customStyle({
     template: (cmp,{items, frame,xPivot,yPivot,rPivot,colorPivot,itemTitle},h) =>
       h('svg',{width: frame.width, height: frame.height, onclick: true},
     	  h('g', { transform: `translate(${frame.left},${frame.top})` },
     		[
-    			h('g',{ axisIndex: 0, class: 'x axis', transform: 'translate(0,' + frame.innerHeight + ')'}),
-    			h('g',{ axisIndex: 1, class: 'y axis', transform: 'translate(0,0)'}),
-    			h('text', { class: 'label', x: 10, y: 10}, yPivot.title),
-    			h('text', { class: 'label', x: frame.innerWidth, y: frame.innerHeight - 10, 'text-anchor': 'end'}, xPivot.title),
-    			h('text', { class: 'note', x: frame.innerWidth, y: frame.height - frame.top, 'text-anchor': 'end' }, '' + items.length + ' items'),
+    			h('g.axis',{ axisIndex: 0, class: 'x', transform: 'translate(0,' + frame.innerHeight + ')'}),
+    			h('g.axis',{ axisIndex: 1, class: 'y', transform: 'translate(0,0)'}),
+    			h('text.label', { x: 10, y: 10}, yPivot.title),
+    			h('text.label', { x: frame.innerWidth, y: frame.innerHeight - 10, 'text-anchor': 'end'}, xPivot.title),
+    			h('text.note', { x: frame.innerWidth, y: frame.height - frame.top, 'text-anchor': 'end' }, '' + items.length + ' items'),
     		].concat(
-    		items.map((item,index)=> h('circle',{
+    		items.map((item,index)=> h('circle', {
     			class: 'bubble', index,
     			cx: xPivot.scale(xPivot.valFunc(item)),
     			cy: yPivot.scale(yPivot.valFunc(item)),
@@ -54,13 +57,14 @@ jb.component('d3Scatter.plain', {
 >g>.bubble:hover text {opacity: 1 }
 >g>.bubble:hover circle {	fill-opacity: 1 }
 `,
-    features: d3Scatter.init()
+    features: initScatter()
   })
 })
 
-jb.component('d3Scatter.init', {
-  type: 'feature',
+jb.component('initScatter', {
+  type: 'feature<d3.scatter>',
   impl: features(
+    frontEnd.requireExternalLibrary(['d3.js']),
     calcProp({
         id: 'items',
         value: (ctx,{cmp,$model,itemlistCntr}) => {
@@ -104,13 +108,13 @@ jb.component('d3Scatter.init', {
       res.colorPivot.scale = d3.scaleOrdinal(d3.schemeAccent); //.domain(cmp.colorPivot.domain);
       return res
     }),
-    feature.init( (ctx,{cmp}) => {
+    frontEnd.init( ({},{el, cmp}) => {
       cmp.base.innerHTML = cmp.base.innerHTML +'' // ???
       const renderProps = cmp.ctx.runItself().calcRenderProps()
       d3.select(cmp.base.querySelector('.x.axis')).call(d3.axisBottom().scale(renderProps.xPivot.scale));
       d3.select(cmp.base.querySelector('.y.axis')).call(d3.axisLeft().scale(renderProps.yPivot.scale));
 
-      cmp.clicked = ({event,ctx,cmp}) => {
+      el.clicked = ({event,ctx,cmp}) => {
         const {pivots,items} = renderProps
         const elem = event.target
         const index = elem.getAttribute('index')
@@ -130,8 +134,8 @@ jb.component('d3Scatter.init', {
   )
 })
 
-jb.component('d3g.frame', {
-  type: 'd3g.frame',
+jb.component('frame', {
+  type: 'frame<d3>',
   params: [
     {id: 'width', as: 'number', defaultValue: 900},
     {id: 'height', as: 'number', defaultValue: 600},
@@ -140,8 +144,5 @@ jb.component('d3g.frame', {
     {id: 'bottom', as: 'number', defaultValue: 20},
     {id: 'left', as: 'number', defaultValue: 20}
   ],
-  impl: ctx => Object.assign({},ctx.params,{
-			innerWidth: ctx.params.width - ctx.params.left - ctx.params.right,
-			innerHeight: ctx.params.height - ctx.params.top - ctx.params.bottom,
-	})
+  impl: ({params}) => ({...params, innerWidth: params.width-params.left-params.right,	innerHeight: params.height-params.top-params.bottom })
 })

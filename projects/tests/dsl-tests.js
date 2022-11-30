@@ -187,13 +187,13 @@ jb.component('dslTest.inheritTypeFromImp', {
 })
 
 jb.component('dslTest.jbDsl.dslType', {
-  impl: dataTest({calculate: '', expectedResult: () => jb.utils.getComp('city<location>city')[jb.core.CT].dslType == 'city<location>'})
+  impl: dataTest(() => jb.utils.getComp('settlement<location>city')[jb.core.CT].dslType, equals('settlement<location>'))
 })
 
 jb.component('dslTest.jbDsl.inheritDslType', {
   impl: dataTest({
-    calculate: '',
-    expectedResult: () => jb.utils.getComp('state<location>israel')[jb.core.CT].dslType == 'state<location>'
+    calculate: () => jb.utils.getComp('state<location>israel')[jb.core.CT].dslType,
+    expectedResult: equals('state<location>')
   })
 })
 
@@ -205,10 +205,9 @@ jb.component('completionTest.dslTest.usingCtrl', {
 })
 
 jb.component('completionTest.dslTest.usingCtrl2', {
-  impl: tgp.completionOptionsTest(
-    "jb.component('x', {\n  impl: uiTest(location.control(__TBD()))\n})",
-    ['israel']
-  )
+  impl: tgp.completionOptionsTest(`jb.component('x', {
+  impl: uiTest(location.control(__TBD()))
+})`, ['israel'])
 })
 
 jb.component('dslTest.jbDsl.usingCtrl', {
@@ -216,11 +215,15 @@ jb.component('dslTest.jbDsl.usingCtrl', {
 })
 
 jb.component('dslTest.treeShake', {
-  impl: dataTest(pipeline(() => jb.treeShake.treeShake(['state<location>israel'],[]), count()), equals(3))
+  impl: dataTest(pipeline(() => jb.treeShake.treeShake(['state<location>israel'],[]), join()), contains('eilat'))
 })
 
-// jb.component('dslTest.jbDsl.usingCtrl2', {
-//   impl: uiTest(itemlist({controls: location.control(state(city()))}))
+// jb.component('dslTest.setComp', {
+//   impl: dataTest({
+//     calculate: pipeline(israel(typeCast('state<location>')), '%capital/name%'),
+//     expectedResult: equals('nokdim'),
+//     //runBefore: tgp.setComp('state<location>israel~impl~capital', 'settlement<location>nokdim')
+//   })
 // })
 
 // TODO: multi engine tests

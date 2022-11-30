@@ -116,7 +116,7 @@ jb.extension('utils', { // jb core utils
       return 'unknown'
 
       function resolveImpl(prof) {
-        const dslType = prof.typeCast || jb.path(prof,[CT,'dslType'])
+        const dslType = prof.$typeCast || jb.path(prof,[CT,'dslType'])
         let comp = jb.utils.getComp(prof.$, { types: dslType, dsl: jb.path(prof,[CT,'dsl']), silent: true })
         if (!comp) {
           jb.utils.resolveUnTypedProfile(jb.utils.getUnresolvedProfile(prof.$), depth-1)
@@ -149,7 +149,7 @@ jb.extension('utils', { // jb core utils
 
       function doResolve(prof, expectedType) {
           if (!prof || !prof.constructor || ['Object','Array'].indexOf(prof.constructor.name) == -1) return
-          const dslType = prof.typeCast || jb.path(prof,[CT,'dslType']) ||  expectedType
+          const dslType = prof.$typeCast || jb.path(prof,[CT,'dslType']) ||  expectedType
           const comp = jb.utils.getComp(prof.$, { types: dslType, dsl: jb.path(prof,[CT,'dsl']) })
           prof[CT] = prof[CT] || {}
           Object.assign(prof[CT], {comp, dslType})
@@ -178,7 +178,7 @@ jb.extension('utils', { // jb core utils
           prof.forEach(v=>jb.utils.resolveDetachedProfile(v, expectedType))
           return prof
       }
-      const dslType = prof.typeCast || expectedType
+      const dslType = prof.$typeCast || expectedType
       const comp = jb.utils.getComp(prof.$, { types: dslType })
       prof[CT] = {comp, dslType}
       if (prof.$byValue && comp) {
@@ -197,7 +197,7 @@ jb.extension('utils', { // jb core utils
         })
       }
       return prof
-    },    
+    },
     getComp: (id, {types, dsl, silent} = {}) => {
       const res = id && (types || '').split(',')
         .map(t=>t.replace(/<>|\[\]/g,''))

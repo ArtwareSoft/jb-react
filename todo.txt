@@ -1,3 +1,22 @@
+fix setComp with ns - do test like studioTest.jbEditorMove
+
+dataVisualiztion
+  axis
+  pivot
+  scale
+  domain
+
+dataAnalysis
+  column
+  groupBy
+  table
+R 
+  vector (col)
+  array(dimentions)
+  list (hetrogenic)
+  dataFrame (table, list of same size vectors + list of strings (col names) )
+
+passing vars to worker jbm
 
 logViews
   code loading

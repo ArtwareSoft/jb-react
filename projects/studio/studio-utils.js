@@ -109,7 +109,7 @@ jb.component('studio.compSource', {
 })
 
 jb.component('studio.unMacro', {
-  impl: ({data}) => data && data.replace(/([A-Z])/g, (all, s) => ' ' + s.toLowerCase()),
+  impl: ({data}) => data && data.split('>').pop().replace(/([A-Z])/g, (all, s) => ' ' + s.toLowerCase()),
 })
 
 jb.component('studio.watchPath', {

@@ -3,6 +3,8 @@ Object.assign(jb, {
     defOperator: (id, {detect, extractAliases, registerComp}) => operators.push({id, detect, extractAliases, registerComp})
 })
 
+// debugger eval(jb.macro.importAll().replace(/, location/,''))
+
 jb.extension('macro', {
     initExtension() {
         return { proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro') }
@@ -26,14 +28,19 @@ jb.extension('macro', {
     getInnerMacro(ns, innerId) {
         return (...allArgs) => {
             const { args, system } = jb.macro.splitSystemArgs(allArgs)
-            const out = { $: `${ns}.${innerId}` }
-            if (args.length == 0)
-                Object.assign(out)
-            else if (jb.macro.isParamsByNameArgs(args))
-                Object.assign(out, args[0])
-            else
-                Object.assign(out, { $byValue: args })
-            return Object.assign(out, system)
+            // const out = { $: `${ns}.${innerId}` }
+            // if (args.length == 0)
+            //     Object.assign(out)
+            // else if (jb.macro.isParamsByNameArgs(args))
+            //     Object.assign(out, args[0])
+            // else
+            //     Object.assign(out, { $byValue: args })
+            // return Object.assign(out, system)
+
+            return { $: `${ns}.${innerId}`, 
+                ...(args.length == 0 ? {} : jb.macro.isParamsByNameArgs(args) ? args[0] : { $byValue: args }),
+                ...system
+            }
         }
     },
     isParamsByNameArgs : args => args.length == 1 && typeof args[0] == 'object' && !Array.isArray(args[0]) && !jb.utils.compName(args[0]),    
@@ -113,5 +120,5 @@ jb.component('typeCast', {
   params: [
     {id: 'typeCast', as: 'string', mandatory: true, description: 'e.g. type1<myDsl>'}
   ],
-  macro: (result, self) => Object.assign(result,{ typeCast: self.typeCast || self.$byValue[0]})
+  macro: (result, self) => Object.assign(result,{ $typeCast: self.typeCast || self.$byValue[0]})
 })

@@ -163,7 +163,7 @@ jb.component('suggestions.calcFromRemote', {
 jb.component('suggestions.applyOption', {
   type: 'action',
   params: [
-    {id: 'toAdd', as: 'string', description: '% or /', defaultValue: '%'},
+    {id: 'toAdd', as: 'string', description: '% or /', defaultValue: '%'}
   ],
   impl: (ctx,toAdd) => {
       const option = jb.val(ctx.vars.selectedOption)
