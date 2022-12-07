@@ -10,8 +10,8 @@ var jb_modules = {
 }
 var jb_plugins = ['data-browser','headless-preview','tgp','watchable-comps', 'workspace', 'space','vega', 'zui']; // list of plugins to be used by studio
 
-async function jbInit(uri, {projects, plugins, baseUrl, multipleInFrame, doNoInitLibs }) {
-  const fileSymbols = globalThis.jbFileSymbols || fileSymbolsFromHttp
+async function jbInit(uri, {projects, plugins, baseUrl, multipleInFrame, doNoInitLibs, useFileSymbolsFromBuild }) {
+  const fileSymbols = useFileSymbolsFromBuild && fileSymbolsFromBuild || globalThis.jbFileSymbols || fileSymbolsFromHttp
   const jb = { uri, baseUrl: baseUrl !== undefined ? baseUrl : typeof globalThis.jbBaseUrl != 'undefined' ? globalThis.jbBaseUrl : '' }
   if (!multipleInFrame) // multipleInFrame is used in jbm.child
     globalThis.jb = jb
@@ -56,6 +56,20 @@ async function jbSupervisedLoad(symbols, jb, doNoInitLibs) {
   await symbols.reduce((pr,fileSymbols) => pr.then(()=> jbloadJSFile(fileSymbols.path,jb,{fileSymbols})), Promise.resolve())
   !doNoInitLibs && await jb.initializeLibs(libs)
   jb.utils.resolveLoadedProfiles()
+}
+
+var jbLoadedSymbols = null
+async function fileSymbolsFromBuild(path,_include,_exclude) {
+  const include = _include && new RegExp(_include), exclude = _exclude && new RegExp(_exclude)
+
+  if (!jbLoadedSymbols) {
+    jbLoadedSymbols = [
+      ...await fetch(`${jb.baseUrl}/dist/symbols/src.json`).then(x=>x.json()),
+      ...await fetch(`${jb.baseUrl}/dist/symbols/plugins.json`).then(x=>x.json()),
+      ...await fetch(`${jb.baseUrl}/dist/symbols/projects.json`).then(x=>x.json()),
+    ];
+  }
+  return jbLoadedSymbols.filter(e=>e.path.indexOf(path+'/') == 1 && !(include && !include.test(e.path) || exclude && exclude.test(e.path)))
 }
 
 if (typeof module != 'undefined') module.exports = { jbInit, jb_plugins }
