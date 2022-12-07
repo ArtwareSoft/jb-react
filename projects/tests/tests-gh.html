@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<base target="_top" href="https://artwaresoft.github.io/jb-react/" />
+<script type="text/javascript" src="/src/loader/jb-loader.js"></script>
+<link rel="stylesheet" type="text/css" href="/bin/studio/css/studio-all.css"/>
+<style>
+	.test-button { opacity: 0 }
+	.test-button:hover { opacity: 1 }
+</style>
+</head>
+<body>
+	<div id="remoteTests"> </div>
+
+	<div id="mem"> </div>
+	<div id="testElem"> </div>
+	<div id="show"> </div>
+ <script>
+	const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
+	jbInit('tests', {projects: ['studio','tests'], plugins: jb_plugins })
+		.then(()=>{
+			jb.exec({$: 'defaultTheme'})
+			jb.spy.initSpyByUrl()
+			const params = { 
+				testType: '',
+				show: window.location.href.indexOf('&show') != -1,
+				specificTest: urlQuery('test'),
+				notPattern: urlQuery('not'),
+				...jb.objFromEntries(['repo','rerun','pattern','take','remoteTests'].map(x=>[x,urlQuery(x)]))
+			}
+			console.log(params)
+			jb.test.runTests(params)
+		})
+  </script>
+</body>
+</html>
