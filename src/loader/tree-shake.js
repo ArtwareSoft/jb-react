@@ -8,7 +8,6 @@ jb.extension('treeShake', {
             server: jb.frame.jbInit,
             serverUrl: jb.frame.jbTreeShakeServerUrl,
             getJSFromUrl: jb.frame.jbGetJSFromUrl,
-            baseUrl: typeof jb.frame.jbBaseUrl != 'undefined' ? jb.frame.jbBaseUrl : ''
         }
     },
     existing() {
@@ -182,7 +181,7 @@ jb.extension('treeShake', {
             return new Promise(resolve => {
                 const type = lib.indexOf('.css') == -1 ? 'script' : 'link'
                 var s = document.createElement(type)
-                s.setAttribute(type == 'script' ? 'src' : 'href',`${jb.treeShake.baseUrl||''}/dist/${lib}`)
+                s.setAttribute(type == 'script' ? 'src' : 'href',`${jb.baseUrl||''}/dist/${lib}`)
                 if (type == 'script') 
                     s.setAttribute('charset','utf8') 
                 else 

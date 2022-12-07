@@ -54,7 +54,8 @@ async function jbSupervisedLoad(symbols, jb, doNoInitLibs) {
   const ns = jb.utils.unique([...symbols.flatMap(x=>x.ns || []),'Var','remark','typeCast'])
   const libs = jb.utils.unique(symbols.flatMap(x=>x.libs))
   ns.forEach(id=> jb.macro.registerProxy(id))
-  await symbols.reduce((pr,fileSymbols) => pr.then(()=> jbloadJSFile(fileSymbols.path,jb,{fileSymbols})), Promise.resolve())
+  await Promise.all(symbols.map(fileSymbols=> jbloadJSFile(fileSymbols.path,jb,{fileSymbols})))
+  //await symbols.reduce((pr,fileSymbols) => pr.then(()=> jbloadJSFile(fileSymbols.path,jb,{fileSymbols})), Promise.resolve())
   !doNoInitLibs && await jb.initializeLibs(libs)
   jb.utils.resolveLoadedProfiles()
 }
