@@ -10,12 +10,12 @@ var jb_modules = {
 }
 var jb_plugins = ['data-browser','headless-preview','tgp','watchable-comps', 'workspace', 'space','vega', 'zui']; // list of plugins to be used by studio
 
-async function jbInit(uri, {projects, plugins, baseUrl, multipleInFrame, doNoInitLibs, useFileSymbolsFromBuild }) {
+async function jbInit(uri, {projects, plugins, baseUrl, multipleInFrame, doNoInitLibs, useFileSymbolsFromBuild, urlBaseChanged }) {
   const fileSymbols = useFileSymbolsFromBuild && fileSymbolsFromBuild || globalThis.jbFileSymbols || fileSymbolsFromHttp
   const jb = { uri, baseUrl: baseUrl !== undefined ? baseUrl : typeof globalThis.jbBaseUrl != 'undefined' ? globalThis.jbBaseUrl : '' }
   if (!multipleInFrame) // multipleInFrame is used in jbm.child
     globalThis.jb = jb
-  const coreFiles= jb_modules.core.map(x=>`/${x}`)
+  const coreFiles= jb_modules.core.map(x=>`${urlBaseChanged ? '' : '/'}${x}`)
   await coreFiles.reduce((pr,url) => pr.then(()=> jbloadJSFile(url,jb)), Promise.resolve())
   jb.noSupervisedLoad = false
 
