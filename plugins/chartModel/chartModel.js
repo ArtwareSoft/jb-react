@@ -5,7 +5,7 @@ jb.component('chartModel', {
   category: 'itemlist:80',
   params: [
     {id: 'pivots', type: 'field<chartModel>[]', dynamic: true, flattenArray: true, defaultValue: []},
-    {id: 'axes', type: 'axis<chartModel>[]', dynamic: true, flattenArray: true, defaultValue: all() },
+    {id: 'axes', type: 'axis<chartModel>[]', dynamic: true, flattenArray: true },
     {id: 'matchingRules', type: 'rule<chartModel>[]', dynamic: true, flattenArray: true, defaultValue: byFields() }
   ],
   impl: calcProp('pivots','%$pivots()%')
@@ -42,6 +42,7 @@ jb.component('byFields', {
 jb.component('scatter', {
   type: 'style<d3.scatter>',
   impl: customStyle({
+    typeCast: 'style',
     template: (cmp,{items, frame,axes,itemsNote, itemTitle},h) =>
       h('svg',{width: frame.width, height: frame.height, onclick: true},
     	  h('g.chart', { transform: `translate(${frame.left},${frame.top})` },
@@ -70,7 +71,7 @@ jb.component('scatter', {
 >.chart>.bubble:hover circle {	fill-opacity: 1 }
 `,
     features: [
-      initScatter(),
+      //initScatter(),
       css('%$props/axes/shape/css%')
     ]
   })

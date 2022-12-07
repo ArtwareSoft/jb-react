@@ -1,7 +1,7 @@
 jb.dsl('chartModel')
 
 jb.extension('d3', {
-  $requireLibs: ['/dist/d3-scale.js'],
+  $requireLibs: ['/dist/d3-scale.js','/dist/d3-color.js','/dist/d3-interpolate.js'],
   lib: () => jb.frame.d3
 })
 
