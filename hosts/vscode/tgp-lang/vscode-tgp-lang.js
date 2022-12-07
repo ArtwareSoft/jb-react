@@ -8,11 +8,14 @@ console.log('jbBaseUrl',jbBaseUrl)
 const loaderCode = fs.readFileSync(`${jbBaseUrl}/src/loader/jb-loader.js`) + '\n//# sourceURL=jb-loader.js'
 require('vm').runInThisContext(loaderCode)
 globalThis.jbFetchFile = url => require('util').promisify(fs.readFile)(url)
+globalThis.jbFetchJson = url => (require('util').promisify(fs.readFile)(url)).then(x=>JSON.parse(x))
 globalThis.jbFileSymbols = fileSymbolsFunc // function defined below
  
 async function activate(context) {
     // TODO: change to load the Project instead of studio and tests
-    globalThis.jb = globalThis.jb || (globalThis.jbInit && await jbInit('jbart-lsp-server',{projects: ['studio','tests'], plugins: ['vscode', ...jb_plugins], doNoInitLibs: true}))
+    globalThis.jb = globalThis.jb || (globalThis.jbInit && await jbInit('jbart-lsp-server',{
+        projects: ['studio','tests'], plugins: ['vscode', ...jb_plugins], doNoInitLibs: true, useFileSymbolsFromBuild: true
+    }))
     jb.initializeLibs(['utils','watchable','immutable','watchableComps','tgp','tgpTextEditor','vscode'])
     jb.vscode.initVscodeAsHost()
     // try {

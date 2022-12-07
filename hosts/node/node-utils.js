@@ -11,6 +11,8 @@ global.jbFetchFile = url => {
     }
     return Promise.resolve()
 }
+global.jbFetchJson = url => jbFetchFile(url).then(x=>JSON.parse(x))
+
 
 async function fileSymbolsFunc(path, _include, _exclude) {
     const include = _include && new RegExp(_include)
