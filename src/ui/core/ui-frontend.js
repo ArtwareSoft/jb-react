@@ -1,8 +1,11 @@
 jb.extension('ui', 'frontend', {
     refreshFrontEnd(elem, {content} = {}) {
         jb.treeShake.loadFELibsDirectly(jb.ui.feLibs(content)).then(()=> 
-            jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> 
-                el._component ? el._component.newVDomApplied() : new jb.ui.frontEndCmp(el)))
+            jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> {
+                const coLocation = jb.ui.parents(elem,{includeSelf: true}).find(elem=>elem.getAttribute && elem.getAttribute('colocation') == 'true')
+                const coLocationCtx = coLocation && jb.ctxDictionary[elem.getAttribute('jb-ctx')]
+                return el._component ? el._component.newVDomApplied() : new jb.ui.frontEndCmp(el,coLocationCtx) 
+            }))
     },
     feLibs(obj) {
         if (!obj || typeof obj != 'object') return []
@@ -11,9 +14,9 @@ jb.extension('ui', 'frontend', {
         return Object.keys(obj).filter(k=> ['parentNode','attributes'].indexOf(k) == -1).flatMap(k =>jb.ui.feLibs(obj[k]))
     },
     frontEndCmp: class frontEndCmp {
-        constructor(elem, keepState) {
-            this.ctx = jb.ui.parents(elem,{includeSelf: true}).map(elem=>elem.ctxForFE).filter(x=>x)[0] || new jb.core.jbCtx()
-            this.state = { ...elem.state, ...(keepState && jb.path(elem._component,'state')), frontEndStatus: 'initializing' }
+        constructor(elem, coLocationCtx) {
+            this.ctx = jb.ui.parents(elem,{includeSelf: true}).map(elem=>elem.ctxForFE).filter(x=>x)[0] || coLocationCtx || new jb.core.jbCtx()
+            this.state = { ...elem.state, frontEndStatus: 'initializing' }
             this.base = elem
             this.cmpId = elem.getAttribute('cmp-id')
             this.ver= elem.getAttribute('cmp-ver')

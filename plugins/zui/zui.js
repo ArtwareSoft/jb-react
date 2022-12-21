@@ -3,7 +3,7 @@ jb.dsl('zui')
 jb.component('zui.control', {
   type: 'control<>',
   params: [
-    {id: 'style', type: 'style<zui>', defaultValue: gpu(), dynamic: true},
+    {id: 'style', type: 'style<zui>', defaultValue: {'$': 'gpu', '$byValue': []}, dynamic: true},
     {id: 'features', type: 'feature<>[],feature<zui>[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
@@ -16,7 +16,9 @@ jb.component('gpu', {
       template: ({},{},h) => h('canvas',{width: 600, height: 460}),
       features: [
         frontEnd.requireExternalLibrary(['d3-scale.js','d3-color.js','d3-interpolate.js']),
-        frontEnd.init(({},{cmp, el}) => jb.zui.gpu(el, cmp) ),
+        frontEnd.init(({},{cmp, el}) => {
+            jb.zui.gpu(el, cmp) 
+        }),
         frontEnd.flow(
             source.frontEndEvent('wheel'),
             rx.log('zoom'),
@@ -28,12 +30,13 @@ jb.component('gpu', {
             })
         ),
 		frontEnd.flow(
-            source.frontEndEvent('mousedown'),
-            //rx.log('move start'),
+            source.frontEndEvent('pointerdown'),
+            rx.log('move start'),
             rx.var('prevPos',obj()),
             rx.flatMap(rx.pipe(
-              source.event('mousemove'),
-              rx.takeWhile('%buttons%!=0')
+              source.event('pointermove'),
+              rx.takeUntil(source.event('pointerup'))
+              //rx.takeWhile('%buttons%!=0')
             )),
             rx.log('move'),
             sink.action(({},{cmp, prevPos, sourceEvent}) => {
@@ -184,6 +187,27 @@ jb.extension('zui', {
         const vertexNumComponents = 2;
         const vertexCount = vertexArray.length/vertexNumComponents;       
         
+        cmp.handleZoomEvent = ({$,p,v,dz}) => {
+            if ($ == 'pan') {
+                currentPos[0] += v[0]/500
+                currentPos[1] -= v[1]/500
+            }
+            if ($ == 'zoom') {
+                const [dx,dy] = [p.x/currentScale,p.y/(currentScale*aspectRatio)]
+                currentScale *= dz
+                currentPos[0] *= dz
+                currentPos[1] *= dz
+                console.log(currentScale,dz,dx,dy)
+                const [dxl,dyl] = [Math.sign(dx)*Math.log(Math.abs(dx)), Math.sign(dy)*Math.log(Math.abs(dy))]
+                currentPos[0] -= Math.sign(dz-1)*currentScale*dxl/(DIM)
+                currentPos[1] += Math.sign(dz-1)*currentScale*dyl/(DIM)
+                if (currentScale < 1) {
+                    currentScale = 1.0
+                    currentPos = [-0.5,-0.5]
+                }    
+            }
+            animateScene()
+        }
         cmp.zoom = (dz, centerOffset) => {
             const [dx,dy] = [centerOffset.x/currentScale,centerOffset.y/(currentScale*aspectRatio)]
             currentScale *= dz

@@ -83,6 +83,13 @@ jb.component('frontEnd.method', {
     impl: (ctx,method,action) => ({ frontEndMethod: { method, path: ctx.path, action: action.profile} })
 })
 
+jb.component('frontEnd.coLocation', {
+  type: 'feature',
+  category: 'front-end',
+  description: 'front end can use backend variables',
+  impl: () => ({ coLocation: true })
+})
+
 jb.component('frontEnd.requireExternalLibrary', {
   type: 'feature',
   category: 'front-end',

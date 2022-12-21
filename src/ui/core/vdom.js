@@ -150,7 +150,7 @@ jb.extension('ui', {
         return jb.ui.unStripVdom(JSON.parse(JSON.stringify(jb.ui.stripVdom(vdom))))
     },
     vdomDiff(newObj,orig) {
-        const ignoreRegExp = /\$|checked|style|value|parentNode|frontend|__|widget|on-|remoteuri|width|height|top|left|aria-|tabindex/
+        const ignoreRegExp = /\$|checked|style|value|parentNode|frontend|__|widget|on-|remoteuri|width|height|top|left|aria-|tabindex|colocation/
         const ignoreValue = /__undefined/
         const ignoreClasses = /selected|mdc-[a-z\-0-9]+/
         return doDiff(newObj,orig)

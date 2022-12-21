@@ -58,7 +58,7 @@ jb.component('tgp.completionActionTest', {
                 return { testFailure: `completion not found - ${completionToActivate}` }
     
             await jb.tgpTextEditor.applyCompChange(item,ctx)
-            await jb.delay(1) // wait for cursoe change
+            await jb.delay(1) // wait for cursor change
             const actualEdit = jb.tgpTextEditor.lastEdit
             console.log(jb.utils.prettyPrint(actualEdit.edit))
             const editsSuccess = Object.keys(jb.utils.objectDiff(actualEdit.edit,expectedEdit)).length == 0

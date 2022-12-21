@@ -12,7 +12,7 @@ jb.extension('ui','comp', {
         return {
             lifeCycle: new Set('init,extendCtx,templateModifier,followUp,destroy'.split(',')),
             arrayProps: new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,frontEndLib,frontEndVar,eventHandler'.split(',')),
-            singular: new Set('template,calcRenderProps,toolbar,styleParams,ctxForPick'.split(',')),
+            singular: new Set('template,calcRenderProps,toolbar,styleParams,ctxForPick,coLocation'.split(',')),
             cmpCounter: 1,
             cssHashCounter: 0,
             cssElemCounter: 0,
@@ -134,6 +134,7 @@ jb.extension('ui','comp', {
             const eventhandlers = (this.eventHandler||[]).map(h=>`${h.event}-${jb.ui.preserveCtx(h.ctx.setVars({cmp: this}))}`).join(',')
             const originators = this.originators.map(ctx=>jb.ui.preserveCtx(ctx)).join(',')
             const usereventprops = (this.userEventProps||[]).join(',')
+            const colocation = this.coLocation
             const frontEndMethods = (this.frontEndMethod || []).map(h=>({method: h.method, path: h.path}))
             const frontEndLibs = (this.frontEndLib || [])
             const frontEndVars = this.frontEndVar && jb.objFromEntries(this.frontEndVar.map(h=>[h.id, jb.val(h.value(this.calcCtx))]))
@@ -151,6 +152,7 @@ jb.extension('ui','comp', {
                     eventhandlers && {eventhandlers},
                     originators && {originators},
                     usereventprops && {usereventprops},
+                    colocation && {colocation},
                     frontEndLibs.length && {$__frontEndLibs : JSON.stringify(frontEndLibs)},
                     frontEndMethods.length && {$__frontEndMethods : JSON.stringify(frontEndMethods) },
                     frontEndMethods.length && {interactive : 'true'}, 

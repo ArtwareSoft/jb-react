@@ -214,3 +214,20 @@ jb.component('FETest.runFEMethod', {
     expectedResult: contains('world')
   })
 })
+
+jb.component('FETest.coLocation', {
+  impl: uiFrontEndTest({
+    vars: Var('toChange',obj()),
+    action: uiAction.click('button'),
+    control: button({
+      title: 'change', 
+      action: runFEMethod({ selector: '#btn', method: 'changeDB' }),
+      features: [
+        frontEnd.coLocation(),
+        id('btn'),
+        frontEnd.method('changeDB', writeValue('%$toChange.x%',3))
+      ]
+    }),
+    expectedResult: equals('%$toChange/x%',3)
+  })
+})
