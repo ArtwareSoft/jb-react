@@ -76,15 +76,20 @@ jb.component('generic', {
     typeCast: 'style',
     template: ({},{},h) => h('div',{}),
     features: [
-      frontEnd.var('profilePath', ({},{$model}) => $model.ctx.path),
+      frontEnd.coLocation(),
+      //frontEnd.var('profilePath', ({},{$model}) => $model.ctx.path),
       frontEnd.requireExternalLibrary(['three.js']),
       frontEnd.requireExternalLibrary(['three-OrbitControls.js']),
-      frontEnd.init(async ({},{el, cmp, profilePath }) => {
-        const profile = profilePath.split('~').reduce((acc,p) => acc[p], jb.comps)
-        const params = jb.comps['scene3.control'].params
-        const camera = jb.exec(profile.camera, params.find(p=>p.id == 'camera'))
-        const scene = jb.exec(profile.scene, params.find(p=>p.id == 'scene'))
-        const lights = jb.exec(profile.lights, params.find(p=>p.id == 'lights'))
+      frontEnd.init(async ({},{el, $model, cmp, profilePath }) => {
+        if (!$model) return
+        // const profile = profilePath.split('~').reduce((acc,p) => acc[p], jb.comps)
+        // const params = jb.comps['scene3.control'].params
+        // const camera = jb.exec(profile.camera, params.find(p=>p.id == 'camera'))
+        // const scene = jb.exec(profile.scene, params.find(p=>p.id == 'scene'))
+        // const lights = jb.exec(profile.lights, params.find(p=>p.id == 'lights'))
+
+        const { camera, scene } = $model
+        const lights = $model.lights()
 
         lights.forEach(m=>scene.add(m))        
         const animations = []
