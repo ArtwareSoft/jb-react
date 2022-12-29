@@ -17,6 +17,7 @@ jb.component('multiStageStyle', {
   impl: customStyle({
     typeCast: 'style',
     template: ({},{},h) => h('canvas',{width: 600, height: 460}),
+    css: '{ touch-action: none; }',
     features: [
       calcProps((ctx,{$model})=> {
         const items = $model.items()
@@ -50,15 +51,16 @@ jb.component('multiStageStyle', {
       frontEnd.prop('zuiEvents', rx.subject()),
       frontEnd.flow(
         source.frontEndEvent('pointerdown'),
+        rx.log('zui pointerdown'),
         rx.var('pid', '%pointerId%'),
         rx.do(({},{cmp,pid}) => cmp.addPointer(pid)),
         rx.flatMap(
           rx.mergeConcat(
             rx.pipe(
-              source.event('pointermove'),
+              rx.merge(source.event('pointermove'),source.frontEndEvent('pointerup')),
               rx.filter('%$pid%==%pointerId%'),
               rx.do(({data},{cmp,pid}) => cmp.updatePointer(pid,data)),
-              rx.takeUntil(rx.pipe(source.frontEndEvent('pointerup'), rx.filter('%$pid%==%pointerId%')))
+              rx.takeWhile('%type%==pointermove')
             ),
             rx.pipe(
               source.interval(100),
@@ -153,6 +155,7 @@ jb.extension('zui','multiStage', {
       removePointer(pid) { this.pointers.splice(this.pointers.findIndex(x=>x.pid == pid), 1)} ,
       updatePointer(pid,sourceEvent) {
         const pointer = this.pointers.find(x=>x.pid == pid)
+        if (!pointer) return
         pointer.dt = sourceEvent.timeStamp - (pointer.time || 0)
         pointer.time = sourceEvent.timeStamp
         const [x,y] = [sourceEvent.offsetX, sourceEvent.offsetY]
@@ -163,7 +166,7 @@ jb.extension('zui','multiStage', {
         pointer.sourceEvent = sourceEvent
 
         const otherPointer = this.pointers.length > 1 && this.pointers.find(x=>x.pid != pid)
-        if (otherPointer) {
+        if (otherPointer && otherPointer.p) {
             const gap = Math.hypot(...[0,1].map(axis => Math.abs(pointer.p[axis] - otherPointer.p[axis])))
             otherPointer.dgap = pointer.dgap = gap - (pointer.gap || 0)
             otherPointer.gap = pointer.gap = gap
@@ -188,7 +191,7 @@ jb.extension('zui','multiStage', {
       },
       hasVelocity(pid) {
         const pointer = this.pointers.find(x=>x.pid == pid)
-        return pointer.v[0] != 0 || pointer.v[1] != 0
+        return pointer && (pointer.v[0] != 0 || pointer.v[1] != 0)
       }
     })
   }
