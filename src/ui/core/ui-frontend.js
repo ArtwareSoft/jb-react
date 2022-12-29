@@ -3,7 +3,7 @@ jb.extension('ui', 'frontend', {
         jb.treeShake.loadFELibsDirectly(jb.ui.feLibs(content)).then(()=> 
             jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> {
                 const coLocation = jb.ui.parents(elem,{includeSelf: true}).find(elem=>elem.getAttribute && elem.getAttribute('colocation') == 'true')
-                const coLocationCtx = coLocation && jb.ctxDictionary[elem.getAttribute('jb-ctx')]
+                const coLocationCtx = coLocation && jb.ctxDictionary[elem.getAttribute('full-cmp-ctx')]
                 return el._component ? el._component.newVDomApplied() : new jb.ui.frontEndCmp(el,coLocationCtx) 
             }))
     },
@@ -15,7 +15,7 @@ jb.extension('ui', 'frontend', {
     },
     frontEndCmp: class frontEndCmp {
         constructor(elem, coLocationCtx) {
-            this.ctx = jb.ui.parents(elem,{includeSelf: true}).map(elem=>elem.ctxForFE).filter(x=>x)[0] || coLocationCtx || new jb.core.jbCtx()
+            this.ctx = coLocationCtx || jb.ui.parents(elem,{includeSelf: true}).map(elem=>elem.ctxForFE).filter(x=>x)[0] || new jb.core.jbCtx()
             this.state = { ...elem.state, frontEndStatus: 'initializing' }
             this.base = elem
             this.cmpId = elem.getAttribute('cmp-id')
@@ -31,6 +31,7 @@ jb.extension('ui', 'frontend', {
                 elem.addEventListener(event, ev => jb.ui.handleCmpEvent(ev,ctxId))
             })
             this.state.frontEndStatus = 'ready'
+            this.props = coLocationCtx && this.ctx.vars.$props
         }
         runFEMethod(method,data,_vars,silent) {
             if (this.state.frontEndStatus != 'ready' && ['init','calcProps'].indexOf(method) == -1)

@@ -163,13 +163,13 @@ jb.extension('tgpTextEditor', {
         const originalComp = jb.tgpTextEditor.evalProfileDef(compText.replace(/^jb\.component/,'')).res
         let fixedComp = originalComp
         if (!fixedComp && line != undefined) {
-            const lines = lastSrc.split('\n')
+            const lines = compText.split('\n')
             const fixedLine = fixLineAtCursor(lines[line],col)
             if (fixedLine != lines[line])
-                fixedComp = jb.tgpTextEditor.evalProfileDef(lastSrc.split('\n').map((l,i) => i == line ? fixedLine : l).join('\n')).res
+                fixedComp = jb.tgpTextEditor.evalProfileDef(compText.split('\n').map((l,i) => i == line ? fixedLine : l).join('\n')).res
         }
         if (!fixedComp)
-            return { compilationFailure: true} // jb.logException(lastException,'fixEditedComp - can not fix compText', {lastSrc})
+            return { compilationFailure: true} // jb.logException(lastException,'fixEditedComp - can not fix compText', {compText})
         return {fixedText: `jb.component${fixedText}`, fixedComp, originalComp }
 
         function fixLineAtCursor(line,pos) {

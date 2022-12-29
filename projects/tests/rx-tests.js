@@ -653,6 +653,16 @@ jb.component('rxTest.race', {
   })
 })
 
+jb.component('rxTest.mergeConcat', {
+  impl: dataTest(
+    pipe(
+      rx.pipe(rx.mergeConcat(rx.pipe(source.data('a'), rx.delay(40)), rx.pipe(source.data('b'), rx.delay(20))), rx.take(2)),
+      join(',')
+    ),
+    '%%==a,b'
+  )
+})
+
 jb.component('rxTest.timeoutLimit', {
   impl: dataTest({
     calculate: rx.pipe(

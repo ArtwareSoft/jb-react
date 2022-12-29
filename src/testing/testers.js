@@ -169,19 +169,22 @@ jb.component('uiFrontEndTest', {
 })
 
 jb.component('uiTest.vdomResultAsHtml', {
-	params: [
-	],
-	impl: ctx => {
+  params: [
+    
+  ],
+  impl: ctx => {
 		const widget = jb.ui.headless[ctx.vars.tstWidgetId]
 		if (!widget) return ''
 		if (typeof document == 'undefined') // in worker
 			return widget.body ? widget.body.outerHTML() : ''
-		const elemToTest = document.createElement('div')
-		elemToTest.ctxForFE = ctx.setVars({elemToTest})
-		jb.ui.render(widget.body, elemToTest)
-		Array.from(elemToTest.querySelectorAll('input,textarea')).forEach(e=> e.parentNode && 
-			jb.ui.addHTML(e.parentNode,`<input-val style="display:none">${e.value}</input-val>`))		
-		return elemToTest.outerHTML
+		return widget.body.children.map(vdom => {
+			const elemToTest = document.createElement('div')
+			elemToTest.ctxForFE = ctx.setVars({elemToTest})
+			jb.ui.render(vdom, elemToTest)
+			Array.from(elemToTest.querySelectorAll('input,textarea')).forEach(e=> e.parentNode && 
+				jb.ui.addHTML(e.parentNode,`<input-val style="display:none">${e.value}</input-val>`))		
+			return elemToTest.outerHTML	
+		}).join('\n')
 	}
 })
 

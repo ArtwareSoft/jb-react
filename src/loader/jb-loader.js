@@ -8,7 +8,7 @@ var jb_modules = {
     'src/misc/spy.js',
   ],
 }
-var jb_plugins = ['data-browser','headless-preview','tgp','watchable-comps', 'workspace', 'space','vega', 'zui','scene3']; // list of plugins to be used by studio
+var jb_plugins = ['data-browser','headless-preview','tgp','watchable-comps', 'workspace', 'chart-model','vega', 'zui','scene3']; // list of plugins to be used by studio
 
 async function jbInit(uri, {projects, plugins, baseUrl, multipleInFrame, doNoInitLibs, useFileSymbolsFromBuild }) {
   const fileSymbols = useFileSymbolsFromBuild && fileSymbolsFromBuild || globalThis.jbFileSymbols || fileSymbolsFromHttp

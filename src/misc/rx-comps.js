@@ -79,13 +79,23 @@ jb.component('rx.pipe', {
 })
 
 jb.component('rx.merge', {
-    type: 'rx',
-    category: 'source',
-    description: 'merge callbags sources (or any)',
-    params: [
-      {id: 'sources', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: [] },
-    ],
-    impl: (ctx,sources) => jb.callbag.merge(...sources(ctx))
+  type: 'rx',
+  category: 'source',
+  description: 'merge callbags sources (or any)',
+  params: [
+    {id: 'sources', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
+  ],
+  impl: (ctx,sources) => jb.callbag.merge(...sources(ctx))
+})
+
+jb.component('rx.mergeConcat', {
+  type: 'rx',
+  category: 'source',
+  description: 'merge sources while keeping the order of sources',
+  params: [
+    {id: 'sources', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
+  ],
+  impl: rx.pipe(source.data(ctx => ctx.cmpCtx.params.sources.profile), rx.concatMap(ctx => ctx.run(ctx.data)))
 })
 
 // ******** operators *****

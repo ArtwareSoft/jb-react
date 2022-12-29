@@ -3,7 +3,7 @@ jb.dsl('zui')
 jb.component('zui.control', {
   type: 'control<>',
   params: [
-    {id: 'style', type: 'style<zui>', defaultValue: {'$': 'gpu', '$byValue': []}, dynamic: true},
+    {id: 'style', type: 'style<zui>', defaultValue: gpu(), dynamic: true},
     {id: 'features', type: 'feature<>[],feature<zui>[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)

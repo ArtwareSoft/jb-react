@@ -167,56 +167,57 @@ jb.component('tree.expandBox', {
 })
 
 jb.component('tree.selection', {
-	type: 'feature',
-	params: [
-	  {id: 'databind', as: 'ref', dynamic: true},
-	  {id: 'onSelection', type: 'action', dynamic: true},
-	  {id: 'onRightClick', type: 'action', dynamic: true},
-	  {id: 'autoSelectFirst', type: 'boolean'},
-	],
-	impl: features(
-	  tree.expandPath(tree.parentPath('%$databind()%')),
-	  method('onSelection', runActions( If(isRef('%$databind()%'),writeValue('%$databind()%','%%')), call('onSelection'))),
-	  method('onRightClick', runActions( If(isRef('%$databind()%'),writeValue('%$databind()%','%%')), call('onRightClick'))),
-	  userStateProp({
-		  id: 'selected',
-		  phase: 20, // after other props
-		  value: (ctx,{$props,$state},{databind, autoSelectFirst}) => jb.val(databind()) || $state.selected || 
-			(autoSelectFirst && $props.noHead ? $props.model.children($props.model.rootPath)[0] : $props.model.rootPath )
-	  }),
-	  followUp.flow(source.data('%$$props/selected%'),
-	  	rx.filter(and('%$autoSelectFirst%',not('%$$state/refresh%'))),
-		sink.BEMethod('onSelection')
-	  ),
-	  frontEnd.method('applyState', ({},{cmp}) => {
+  type: 'feature',
+  params: [
+    {id: 'databind', as: 'ref', dynamic: true},
+    {id: 'onSelection', type: 'action', dynamic: true},
+    {id: 'onRightClick', type: 'action', dynamic: true},
+    {id: 'autoSelectFirst', type: 'boolean'}
+  ],
+  impl: features(
+    tree.expandPath(tree.parentPath('%$databind()%')),
+    method('onSelection', runActions(If(isRef('%$databind()%'), writeValue('%$databind()%', '%%')), call('onSelection'))),
+    method('onRightClick', runActions(If(isRef('%$databind()%'), writeValue('%$databind()%', '%%')), call('onRightClick'))),
+    userStateProp({
+      id: 'selected',
+      value: (ctx,{$props,$state},{databind, autoSelectFirst}) => jb.val(databind()) || $state.selected || 
+			(autoSelectFirst && $props.noHead ? $props.model.children($props.model.rootPath)[0] : $props.model.rootPath ),
+      phase: 20
+    }),
+    followUp.flow(
+      source.data('%$$props/selected%'),
+      rx.filter(and('%$autoSelectFirst%', not('%$$state/refresh%'))),
+      sink.BEMethod('onSelection')
+    ),
+    frontEnd.method('applyState', ({},{cmp}) => {
 		Array.from(jb.ui.findIncludeSelf(cmp.base,'.treenode.selected'))
 		  .forEach(elem=>elem.classList.remove('selected'))
 		Array.from(jb.ui.findIncludeSelf(cmp.base,'.treenode'))
 		  .filter(elem=> elem.getAttribute('path') == cmp.state.selected)
 		  .forEach(elem=> {elem.classList.add('selected'); jb.ui.scrollIntoView(elem)})
 	  }),
-	  frontEnd.method('setSelected', ({data},{cmp}) => {
+    frontEnd.method('setSelected', ({data},{cmp}) => {
 		cmp.base.state.selected = cmp.state.selected = data
 		cmp.runFEMethod('applyState')
 	  }),
-  
-	  frontEnd.prop('selectionEmitter', rx.subject()),
-	  frontEnd.flow(
-		source.frontEndEvent('contextmenu'), 
-		rx.map(tree.pathOfElem('%target%')), rx.filter('%%'), 
-		sink.action(runActions(action.runFEMethod('setSelected'), action.runBEMethod('onDoubleClick')))
-	  ),
-	  frontEnd.flow(
-		  rx.merge( 
-			rx.pipe(source.frontEndEvent('click'), rx.map(tree.pathOfElem('%target%')), rx.filter('%%')),
-			source.subject('%$cmp.selectionEmitter%')
-		  ),
-		  rx.filter('%%'),
-		  rx.filter(({data},{cmp}) => cmp.state.selected != data),
-		  rx.distinctUntilChanged(),
-		  sink.action(runActions(action.runFEMethod('setSelected'), action.runBEMethod('onSelection')))
-	  )
-	)
+    frontEnd.prop('selectionEmitter', rx.subject()),
+    frontEnd.flow(
+      source.frontEndEvent('contextmenu'),
+      rx.map(tree.pathOfElem('%target%')),
+      rx.filter('%%'),
+      sink.action(runActions(action.runFEMethod('setSelected'), action.runBEMethod('onDoubleClick')))
+    ),
+    frontEnd.flow(
+      rx.merge(
+        rx.pipe(source.frontEndEvent('click'), rx.map(tree.pathOfElem('%target%')), rx.filter('%%')),
+        source.subject('%$cmp.selectionEmitter%')
+      ),
+      rx.filter('%%'),
+      rx.filter(({data},{cmp}) => cmp.state.selected != data),
+      rx.distinctUntilChanged(),
+      sink.action(runActions(action.runFEMethod('setSelected'), action.runBEMethod('onSelection')))
+    )
+  )
 })
   
 jb.component('tree.keyboardSelection', {
