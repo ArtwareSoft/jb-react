@@ -107,6 +107,29 @@ jb.extension('zui','multiStage', {
     const DIM = props.DIM, w = el.offsetWidth, h = el.offsetHeight
 
     Object.assign(cmp, {
+      updatePointer(pid,sourceEvent) {
+        const pointer = this.pointers.find(x=>x.pid == pid)
+        if (!pointer) return
+        pointer.dt = sourceEvent.timeStamp - (pointer.time || 0)
+        pointer.time = sourceEvent.timeStamp
+        const [x,y] = [sourceEvent.offsetX, sourceEvent.offsetY]
+        const v = pointer.dt > 500 ? [0,0] : [x - pointer.p[0], y - pointer.p[1]]
+        pointer.vAvg = pointer.v * 0.8 + v *0.2
+        pointer.v = v
+        pointer.p = [x,y]
+        pointer.sourceEvent = sourceEvent
+
+        const otherPointer = this.pointers.length > 1 && this.pointers.find(x=>x.pid != pid)
+        if (otherPointer && otherPointer.p) {
+            const gap = Math.hypot(...[0,1].map(axis => Math.abs(pointer.p[axis] - otherPointer.p[axis])))
+            const dgap = gap - (pointer.gap || 0)
+            if (dgap > 20) {
+              otherPointer.dgap = pointer.dgap = gap - (pointer.gap || 0)
+              otherPointer.gap = pointer.gap = gap
+            }
+        }
+        jb.log('zui update pointers', {v: `[${pointer.v[0]},${pointer.v[1]}]` , pointer, otherPointer, cmp})
+      },      
       zoomEventFromPointers() {
           return cmp.pointers.length == 0 ? [] : cmp.pointers[1] 
               ? [{ p: avg('p'), v: avg('v'), dz: cmp.pointers[0].dgap > 0 ? 0.92 : 1.08 }]
@@ -153,26 +176,6 @@ jb.extension('zui','multiStage', {
       findPointer(pid) { return this.pointers.find(x=>x.pid == pid) },
       addPointer(pid) { this.pointers.push({pid}); },
       removePointer(pid) { this.pointers.splice(this.pointers.findIndex(x=>x.pid == pid), 1)} ,
-      updatePointer(pid,sourceEvent) {
-        const pointer = this.pointers.find(x=>x.pid == pid)
-        if (!pointer) return
-        pointer.dt = sourceEvent.timeStamp - (pointer.time || 0)
-        pointer.time = sourceEvent.timeStamp
-        const [x,y] = [sourceEvent.offsetX, sourceEvent.offsetY]
-        const v = pointer.dt > 500 ? [0,0] : [x - pointer.p[0], y - pointer.p[1]]
-        pointer.vAvg = pointer.v * 0.8 + v *0.2
-        pointer.v = v
-        pointer.p = [x,y]
-        pointer.sourceEvent = sourceEvent
-
-        const otherPointer = this.pointers.length > 1 && this.pointers.find(x=>x.pid != pid)
-        if (otherPointer && otherPointer.p) {
-            const gap = Math.hypot(...[0,1].map(axis => Math.abs(pointer.p[axis] - otherPointer.p[axis])))
-            otherPointer.dgap = pointer.dgap = gap - (pointer.gap || 0)
-            otherPointer.gap = pointer.gap = gap
-        }
-        jb.log('zui update pointers', {v: `[${pointer.v[0]},${pointer.v[1]}]` , pointer, otherPointer, cmp})
-      },
       applyFriction(pid) {
         const pointer = this.pointers.find(x=>x.pid == pid)
         if (!pointer) return []
