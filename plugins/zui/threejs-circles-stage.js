@@ -78,10 +78,6 @@ jb.component('threejsCircles', {
             const scene = new THREE.Scene()
             renderer.setClearColor(0x333333)
             const camera = new THREE.PerspectiveCamera( 75, aspectRatio, 0.1, 1000 );
-            // const [x,y] = center
-            // camera.position.z = zoom
-            // camera.position.x = x
-            // camera.position.y = y
 
             const points = new Array(items.length)
             const pointsBuffer = new Float32Array( 3*items.length )
@@ -108,8 +104,10 @@ jb.component('threejsCircles', {
                     //sizeAttenuation: false
             })
             scene.add(new THREE.Points(geometry,material))
-			const cube = new THREE.Mesh( new THREE.BoxGeometry( 1, 1, 1 ), new THREE.MeshBasicMaterial( { color: 0x00ff00 } ) );
-			scene.add( cube );
+			const cube = new THREE.Mesh( new THREE.BoxGeometry( 1, 1, 1 ), new THREE.MeshBasicMaterial( { color: 0x00ff00 } ) )
+			scene.add( cube )
+            renderer.setAnimationLoop(() => renderer.render(scene, camera))
+            jb.delay(100).then(() => renderer.setAnimationLoop(null))
 
             return { renderer, scene, camera }
         },
