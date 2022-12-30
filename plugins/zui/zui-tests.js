@@ -3,6 +3,14 @@ jb.component('zuiTest.basic', {
 })
 
 jb.component('zuiTest.multiStage', {
-  impl: uiTest({control: zui.multiStage({items: '%$phones%', stages: [threejsCircles()]}), expectedResult: contains('cmp-id')})
+  impl: uiTest({
+    control: group({
+      controls: [
+        text('1'),
+        zui.multiStage({items: '%$phones%', stages: [threejsCircles()]})
+      ]
+    }),
+    expectedResult: contains('cmp-id')
+  })
 })
 

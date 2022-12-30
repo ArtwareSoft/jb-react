@@ -2,8 +2,8 @@ jb.extension('ui', 'frontend', {
     refreshFrontEnd(elem, {content} = {}) {
         jb.treeShake.loadFELibsDirectly(jb.ui.feLibs(content)).then(()=> 
             jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> {
-                const coLocation = jb.ui.parents(elem,{includeSelf: true}).find(elem=>elem.getAttribute && elem.getAttribute('colocation') == 'true')
-                const coLocationCtx = coLocation && jb.ctxDictionary[elem.getAttribute('full-cmp-ctx')]
+                const coLocation = jb.ui.parents(el,{includeSelf: true}).find(_elem=>_elem.getAttribute && _elem.getAttribute('colocation') == 'true')
+                const coLocationCtx = coLocation && jb.ctxDictionary[el.getAttribute('full-cmp-ctx')]
                 return el._component ? el._component.newVDomApplied() : new jb.ui.frontEndCmp(el,coLocationCtx) 
             }))
     },
