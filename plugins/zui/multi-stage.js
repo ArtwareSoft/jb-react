@@ -123,9 +123,11 @@ jb.extension('zui','multiStage', {
         if (otherPointer && otherPointer.p) {
             const gap = Math.hypot(...[0,1].map(axis => Math.abs(pointer.p[axis] - otherPointer.p[axis])))
             const dgap = gap - (pointer.gap || 0)
-            if (dgap > 20) {
-              otherPointer.dgap = pointer.dgap = gap - (pointer.gap || 0)
+            if (Math.abs(dgap) > 10) { // ignore small movemements
+              otherPointer.dgap = pointer.dgap = dgap
               otherPointer.gap = pointer.gap = gap
+            } else {
+              otherPointer.dgap = pointer.dgap = 0
             }
         }
         jb.log('zui update pointers', {v: `[${pointer.v[0]},${pointer.v[1]}]` , pointer, otherPointer, cmp})
