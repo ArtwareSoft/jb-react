@@ -663,6 +663,17 @@ jb.component('rxTest.mergeConcat', {
   )
 })
 
+jb.component('rxTest.delay', {
+  impl: dataTest(
+    pipe(
+      remark('flaky - need to be checked manually'),
+      rx.pipe(source.data([1,2,3]), rx.delay(40), rx.log('test')),
+      join(',')
+    ),
+    '%%==1,2,3'
+  )
+})
+
 jb.component('rxTest.timeoutLimit', {
   impl: dataTest({
     calculate: rx.pipe(

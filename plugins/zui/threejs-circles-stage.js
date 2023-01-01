@@ -72,7 +72,7 @@ jb.component('threejsCircles', {
                 }
             }
         },
-        prepareGPU({ glCanvas, aspectRatio, itemsPositions, zoom, center }) {
+        prepareGPU({ glCanvas, aspectRatio, itemsPositions }) {
             const renderer = new THREE.WebGLRenderer({ canvas: glCanvas, antialias: true })
             const items = itemsPositions.sparse
             const scene = new THREE.Scene()
@@ -96,17 +96,19 @@ jb.component('threejsCircles', {
             geometry.setAttribute("color", new THREE.BufferAttribute(colorBuffer,3))
             geometry.setDrawRange(0,items.length)
             const material = new THREE.PointsMaterial({
-                    vertexColors: true,
-                    color: "white",
-                    size: 1.2,
-                    transparent: true,
-                    map: this.circleSprite
-                    //sizeAttenuation: false
+                vertexColors: true,
+                color: "white",
+                size: 3,
+                transparent: true,
+                map: this.circleSprite
+                //sizeAttenuation: false
             })
             scene.add(new THREE.Points(geometry,material))
-			const cube = new THREE.Mesh( new THREE.BoxGeometry( 1, 1, 1 ), new THREE.MeshBasicMaterial( { color: 0x00ff00 } ) )
-			scene.add( cube )
-            renderer.setAnimationLoop(() => renderer.render(scene, camera))
+			// const cube = new THREE.Mesh( new THREE.BoxGeometry( 1, 1, 1 ), new THREE.MeshBasicMaterial( { color: 0x00ff00 } ) )
+			// scene.add( cube )
+
+            // we need this code to show the sprite on first draw...
+            renderer.setAnimationLoop((x) => renderer.render(scene, camera))
             jb.delay(100).then(() => renderer.setAnimationLoop(null))
 
             return { renderer, scene, camera }

@@ -57,21 +57,23 @@ jb.component('multiStageStyle', {
         rx.flatMap(
           rx.mergeConcat(
             rx.pipe(
-              rx.merge(source.event('pointermove'),source.frontEndEvent('pointerup')),
+              rx.merge(source.event('pointermove'), source.frontEndEvent('pointerup')),
               rx.filter('%$pid%==%pointerId%'),
               rx.do(({data},{cmp,pid}) => cmp.updatePointer(pid,data)),
-              rx.takeWhile('%type%==pointermove')
+              rx.takeWhile('%type%==pointermove'),
+              rx.flatMap(source.data(({},{cmp}) => cmp.zoomEventFromPointers()))
             ),
             rx.pipe(
-              source.interval(100),
-              rx.do(({},{cmp,pid}) => cmp.applyFriction(pid)),
-              rx.log('zui momentum'),
-              rx.takeWhile(({},{cmp,pid}) => cmp.hasVelocity(pid))
+              source.data(({},{cmp,pid}) => cmp.momentumEvents(pid)),
+              rx.take(1),
+              rx.var('delay', '%delay%'),
+              rx.flatMap(rx.pipe(source.data('%events%'))),
+              rx.delay('%$delay%'),
+              rx.log('momentum zui')
             ),
             rx.pipe(source.data(1), rx.do(({data},{cmp}) => cmp.removePointer(data.pointerId)))
           )
         ),
-        rx.flatMap(source.data(({},{cmp}) => cmp.zoomEventFromPointers())),
         rx.do(({data},{cmp}) => cmp.updateZoomState(data)),
         sink.subjectNext('%$cmp.zuiEvents%')
       ),
@@ -110,46 +112,44 @@ jb.extension('zui','multiStage', {
       updatePointer(pid,sourceEvent) {
         const pointer = this.pointers.find(x=>x.pid == pid)
         if (!pointer) return
-        pointer.dt = sourceEvent.timeStamp - (pointer.time || 0)
+        const dt = pointer.dt = sourceEvent.timeStamp - (pointer.time || 0)
         pointer.time = sourceEvent.timeStamp
-        const [x,y] = [sourceEvent.offsetX, sourceEvent.offsetY]
-        const v = pointer.dt > 500 ? [0,0] : [x - pointer.p[0], y - pointer.p[1]]
-        pointer.vAvg = pointer.v * 0.8 + v *0.2
+        const [x,y] = [sourceEvent.offsetX, sourceEvent.offsetY];
+        const dp = (!pointer.p) ? [0,0] : [x - pointer.p[0], y - pointer.p[1]]
+        const v = dt == 0 ? [0,0] : [0,1].map(axis => dp[axis]/dt)
+        pointer.vAvg = pointer.v ? [0,1].map(axis=> pointer.v[axis] * 0.8 + v[axis] *0.2) : v
         pointer.v = v
+        pointer.dp = dp
         pointer.p = [x,y]
         pointer.sourceEvent = sourceEvent
 
         const otherPointer = this.pointers.length > 1 && this.pointers.find(x=>x.pid != pid)
         if (otherPointer && otherPointer.p) {
             const gap = Math.hypot(...[0,1].map(axis => Math.abs(pointer.p[axis] - otherPointer.p[axis])))
-            const dgap = gap - (pointer.gap || 0)
-            if (Math.abs(dgap) > 10) { // ignore small movemements
-              otherPointer.dgap = pointer.dgap = dgap
-              otherPointer.gap = pointer.gap = gap
-            } else {
-              otherPointer.dgap = pointer.dgap = 0
-            }
+            const dscale = (gap == 0  || pointer.gap == 0) ? 1 : pointer.gap / gap
+            otherPointer.dscale = pointer.dscale = dscale
+            otherPointer.gap = pointer.gap = gap
         }
         jb.log('zui update pointers', {v: `[${pointer.v[0]},${pointer.v[1]}]` , pointer, otherPointer, cmp})
       },      
       zoomEventFromPointers() {
           return cmp.pointers.length == 0 ? [] : cmp.pointers[1] 
-              ? [{ p: avg('p'), v: avg('v'), dz: cmp.pointers[0].dgap > 0 ? 0.92 : 1.08 }]
-              : [{ v: cmp.pointers[0].v }]
+              ? [{ p: avg('p'), dp: avg('dp'), v: avg('v'), dz: cmp.pointers[0].dscale }]
+              : [{ v: cmp.pointers[0].v, dp: cmp.pointers[0].dp }]
       
           function avg(att) {
             const pointers = cmp.pointers.filter(p=>p[att])
             return [0,1].map(axis => pointers.reduce((sum,p) => sum + p[att][axis], 0) / pointers.length)
           }
       },
-      updateZoomState({ dz, v }) {
+      updateZoomState({ dz, dp }) {
         if (dz)
           props.zoom *= dz
-        if (v)
-          props.center = [props.center[0] - v[0]/w*props.zoom, props.center[1] + v[1]/h*props.zoom]
+        if (dp)
+          props.center = [props.center[0] - dp[0]/w*props.zoom, props.center[1] + dp[1]/h*props.zoom]
 
         Object.assign(props, cmp.currentStage())
-        jb.log('zui event',{dz, v, zoom: props.zoom, center: props.center, cmp})
+        jb.log('zui event',{dz, dp, zoom: props.zoom, center: props.center, cmp})
       },
       currentStage() {
           const zoom = props.zoom
@@ -178,6 +178,21 @@ jb.extension('zui','multiStage', {
       findPointer(pid) { return this.pointers.find(x=>x.pid == pid) },
       addPointer(pid) { this.pointers.push({pid}); },
       removePointer(pid) { this.pointers.splice(this.pointers.findIndex(x=>x.pid == pid), 1)} ,
+      momentumEvents(pid) {
+        const pointer = this.pointers.find(x=>x.pid == pid)
+        if (!pointer) return { delay: 0, events: [] }
+        const target = [limitJump(w,500*pointer.vAvg[0]), limitJump(h,500*pointer.vAvg[1])]
+        const n = 50
+        const dps = Array.from(new Array(n).keys()).map( i => smoth(i,n))
+        return { delay: 5, events: dps.map(dp=>({dp})) }
+
+        function limitJump(limit,value) {
+          return Math.sign(value) * Math.min(Math.abs(value),limit)
+        }
+        function smoth(i,n) {
+          return [0,1].map(axis => target[axis] * (Math.sin((i+1)/n*Math.PI/2) - Math.sin(i/n*Math.PI/2)))
+        }
+      },
       applyFriction(pid) {
         const pointer = this.pointers.find(x=>x.pid == pid)
         if (!pointer) return []

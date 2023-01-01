@@ -823,27 +823,38 @@ jb.extension('callbag', {
   },
   delay: duration => source => (start, sink) => {
       if (start !== 0) return
-      let waiting = 0, end, endD, endSent
+      let working = false, talkback
+      const queue = []
       source(0, function delay(t,d) {
-          if (t == 1 && d != null && !end) {
-            let id = setTimeout(()=> {
-              waiting--
-              clearTimeout(id)
-              sink(1,d)
-              if (end && !endSent) {
-                endSent = true
-                sink(2,endD)
-              }
-            }, typeof duration == 'function' ? duration() : duration)
-            waiting++
-          } else if (t == 2) {
-            end = true
-            endD = d
-            if (!waiting) sink (t,d)
-          } else {
-            sink(t,d)
-          }
+        if (t === 0) talkback = d
+        if (t > 0) {
+          queue.push({t,d})
+          workOnQueue()
+        }
       })
+      sink(0, function delay(t,d) {
+        if (t == 1 && !d && talkback)
+          talkback(1)
+        if (t == 2) {
+          queue.splice(0,queue.length)
+          talkback && talkback(t,d)
+        }
+      })
+
+      function workOnQueue() {
+        if (!working && queue.length > 0)
+          workOnInput(queue.splice(0,1)[0])
+      }
+
+      function workOnInput({t,d}) {
+        const id = setTimeout(()=> {
+          clearTimeout(id)
+          sink(t,d)
+          working = false
+          workOnQueue()
+        }, typeof duration == 'function' ? duration() : duration)
+        working = true
+      }
   },
   skip: max => source => (start, sink) => {
       if (start !== 0) return

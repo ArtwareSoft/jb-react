@@ -6,7 +6,7 @@ jb.component('zuiTest.multiStage', {
   impl: uiTest({
     control: group({
       controls: [
-        text('1'),
+        text('2'),
         zui.multiStage({items: '%$phones%', stages: [threejsCircles()]})
       ]
     }),
