@@ -6,7 +6,7 @@ jb.component('zui.multiStage', {
     {id: 'title', as: 'string'},
     {id: 'items', as: 'array', dynamic: true, mandatory: true},
     {id: 'stages', type: 'stage<zui>[]', mandatory: true, dynamic: true},
-    {id: 'style', type: 'multiStageStyle<zui>', dynamic: true, defaultValue: multiStageStyle() },
+    {id: 'style', type: 'multiStageStyle<zui>', dynamic: true, defaultValue: multiStageStyle()},
     {id: 'features', type: 'feature[]', dynamic: true, flattenArray: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
@@ -44,7 +44,7 @@ jb.component('multiStageStyle', {
             const props = cmp.props = $props
             const gl = null //el.getContext('webgl')
             Object.assign(props, { glCanvas: el, gl, aspectRatio: el.width/el.height })
-            jb.zui.initCmp(cmp,props,props.stages, el)
+            jb.zui.initStageCmp(cmp,props,props.stages, el)
             await Promise.all(props.stages.map(st=>st.prepare && st.prepare()).filter(x=>x))
             cmp.firstRender()
       }),
@@ -105,7 +105,7 @@ jb.component('multiStageStyle', {
 })
 
 jb.extension('zui','multiStage', {
-  initCmp(cmp,props,stages,el) {
+  initStageCmp(cmp,props,stages,el) {
     const DIM = props.DIM, w = el.offsetWidth, h = el.offsetHeight
 
     Object.assign(cmp, {

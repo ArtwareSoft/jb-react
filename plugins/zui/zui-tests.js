@@ -14,3 +14,17 @@ jb.component('zuiTest.multiStage', {
   })
 })
 
+jb.component('zuiTest.multiLayer', {
+  impl: uiTest({
+    control: group({
+      controls: [
+        text('2'),
+        zui.multiLayer({
+          items: '%$phones%',
+          layers: [summaryLabel(), nativeCircles()]
+        })
+      ]
+    }),
+    expectedResult: contains('cmp-id')
+  })
+})
