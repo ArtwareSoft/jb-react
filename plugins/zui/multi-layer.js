@@ -261,8 +261,18 @@ jb.extension('zui','multiLayer', {
       image.onload = () => {
         gl.bindTexture(gl.TEXTURE_2D, texture)
         gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image)
-        gl.generateMipmap(gl.TEXTURE_2D) // power of 2
+        if (isPowerOf2(image.width) && isPowerOf2(image.height)) {
+          gl.generateMipmap(gl.TEXTURE_2D);
+        } else {
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        }
         resolve(texture)
+
+        function isPowerOf2(value) {
+          return (value & (value - 1)) === 0
+        }
       }
       image.src = url
     })
@@ -275,7 +285,7 @@ jb.component('nativeCircles', {
     
   ],
   impl: ctx => ({
-        fromZoom: 256, toZoom: 8,
+        fromZoom: 8, toZoom: 8,
         async prepare({gl}) {
           this.pointTexture = await jb.zui.imageToTexture(gl, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAAZiS0dEAAAAAAAA+UO7fwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9sHDgwCEMBJZu0AAAAdaVRYdENvbW1lbnQAAAAAAENyZWF0ZWQgd2l0aCBHSU1QZC5lBwAABM5JREFUWMO1V0tPG2cUPZ4Hxh6DazIOrjFNqJs0FIMqWFgWQkatsmvVbtggKlSVRVf5AWz4AWz4AUSKEChll19QJYSXkECuhFxsHjEhxCYm+DWGMZ5HF72DJq4bAzFXurI0M/I5997v3u9cC65vTJVn2lX/xHINQOYSBLTLEuIuCWw4Z3IGAEvf6ASmVHjNzHCXBG4A0AjACsAOwEbO0nsFQBnAGYASAIl+ZRMR7SolMEdsByD09fV5R0ZGgg8ePPjW5/N1iqLYpuu6RZblciKR2I9Go69evnwZnZ+fjwI4IS8AKBIRzeQfJWCANwKwh0KhtrGxsYehUOin1tbW+zzP23ietzY2NnIAoGmaLsuyUiqVyvl8XtrY2NiamZn589mzZxsAUgCOAeQAnFI2tI+VxIjaAeDzoaGh7xYWFuZOTk6OZVk+12uYqqq6JEnn0Wg0OT4+/geAXwGEAdwDIFJQXC1wO4DWR48e/RCPxxclSSroVzRFUbSDg4P848ePFwH8DuAhkWih83TRQWxFOXgAwvDwcOfo6OhvXV1d39tsNtuVBwTDWBwOh1UUxVsMw1hXVlbSdCgNV43uYSvrHg6H24aHh38eHBz85TrgF9FYLHA4HLzH43FvbW2d7u/vG+dANp8FpqIlbd3d3V8Fg8EfBUFw4BONZVmL3+9vHhkZCQL4AoAHgJPK8G+yzC0XDofdoVAo5PP5vkadTBAEtr+/39ff3x8gAp/RPOEqx2qjx+NpvXv3bk9DQ0NDvQgwDIOWlhZrMBj8kgi0UJdxRgYMArzL5XJ7vd57qLPZ7Xamp6fnNgBXtQxcjFuHw+Hyer3t9SYgCAITCAScAJoBNNEY/08GOFVVrfVMv7kMNDntFD1vjIAPrlRN0xjckOm6biFQ3jwNPwDMZrOnqVTqfb3Bi8Wivru7W/VCYkwPlKOjo0IikXh7EwQikYgE4Nw0CfXKDCipVCoTj8df3QABbW1tLUc6oUgkFPMkVACUNjc337148eKvw8PDbJ2jP1taWkoCyNDVXDSECmNSK4qiKNLq6urW8+fPI/UicHx8rD59+jSVy+WOAKSJhKENwFItLtoxk8mwsixzHR0dHe3t7c5PAU+n09rs7OzJkydPYqVSaQfANoDXALIk31S2smU1TWMPDg7K5XKZ7+3t9TudTut1U7+wsFCcmJiIpdPpbQBxADsAknQWymYCOukBHYCuKApisdhpMpnURFEU79y503TVyKenpzOTk5M7e3t7MQKPV0Zv1gNm+awB0MvlshqLxfLb29uyJElWURSbXC4XXyvqxcXFs6mpqeTc3Nzu3t7e3wQcA7BPZ8Cov1pNlJplmQtAG8MwHV6v95tAINA5MDBwPxAIuLu6upr8fr/VAN3c3JQjkcjZ+vp6fnl5+d2bN29SuVzuNYAEpf01CdRChUL+X1VskHACuA3Ay3Fcu9vt7nA6nZ7m5uYWQRCaNE3jVVW15PP580KhIGUymWw2m00DOAJwSP4WwPtq4LX2Ao6USxNlQyS/RcQcdLGwlNIz6vEMAaZpNzCk2Pll94LK/cDYimxERiBwG10sxjgvEZBE0UpE6vxj+0Ct5bTaXthgEhRmja8QWNkkPGsuIpfdjpkK+cZUWTC0KredVmtD/gdlSl6EG4AMvQAAAABJRU5ErkJggg==')
         },
@@ -286,7 +296,7 @@ jb.component('nativeCircles', {
             
                 void main() {
                   gl_Position = vec4((itemPos - center) / zoom, 0.0, 1.0);
-                  gl_PointSize = 3.0 + 1.0 * log(256.0/zoom[0]);
+                  gl_PointSize = 30.0 + 1.0 * log(8.0/zoom[0]);
                 }`,
                 `precision highp float;
                 uniform sampler2D pointTexture;
@@ -337,41 +347,81 @@ jb.component('summaryLabel', {
     
   ],
   impl: ctx => ({
-        fromZoom: 16, toZoom: 8,
+        fromZoom: 16, toZoom: 8, noOfChars: 64,
         async prepare({gl}) {
           this.charSetTexture = await jb.zui.imageToTexture(gl,this.createCharSetImage())
         },
         createCharSetImage() {
-            const txt = 'abcdefghijklmnopqrstuvqxyz0123456789!@#$%'
+            const fontSize = 16
+            const txt = ' abcdefghijklmnopqrstuvwxyz0123456789!@#$%012345678901234567890123'
             const canvas = document.createElement('canvas')
             canvas.id = 'canvas'
-            canvas.width = 16 * 64
-            canvas.height = 16
+            canvas.width = this.noOfChars * fontSize
+            canvas.height = fontSize
             document.body.appendChild(canvas)
             const ctx = canvas.getContext('2d')
-            ctx.font = '16px Courier'
+            ctx.font = `${fontSize}px monospace`
             ctx.textBaseline = 'top'
             ctx.textAlign = 'left'
             ctx.fillStyle = 'black'
-            ctx.fillText(txt,0,0)
+            Array.from(new Array(txt.length).keys()).forEach(i=> ctx.fillText(txt[i],i*10,0))
 
             return canvas.toDataURL('image/png')
         },
         prepareGPU({ gl, DIM, itemsPositions }) {
-            const src = [`attribute vec2 itemPos;
+            const src = [`
+                attribute vec2 vertexPos;
+                attribute vec2 inRectanglePos;
+                attribute vec4 text1;
+                attribute vec4 text2;
+                                
                 uniform vec2 zoom;
                 uniform vec2 center;
-            
+                varying vec2 vInRectanglePos;
+                varying vec4 v_text1;
+                varying vec4 v_text2;
+                
                 void main() {
-                  gl_Position = vec4((itemPos - center) / zoom, 0.0, 1.0);
-                }`,
+                  v_text1 = text1;
+                  v_text2 = text2;
+                  vInRectanglePos = inRectanglePos;
+                  gl_Position = vec4((vertexPos - center) / zoom, 0.0, 1.0);
+                }
+                
+                `,
                 `precision highp float;
                 uniform sampler2D charSetTexture;
                 uniform vec4 globalColor;
-                uniform int charIndex;
-    
+                varying vec2 vInRectanglePos;
+                varying vec4 v_text1;
+                varying vec4 v_text2;
+            
+                float calcCharCode() {
+                  vec4 vec = v_text1;
+                  float posx = vInRectanglePos.x;
+                  if (vInRectanglePos.x >= 0.5) {
+                    vec = v_text2;
+                    posx = posx - 0.5;
+                  }
+                  posx = posx * 2.0;
+                  float flt = vec[0];
+                  for(int i=0;i<4;++i)
+                    if (int(floor(posx*4.0)) == i)
+                      flt = vec[i];
+                  if (mod(posx*4.0 , 1.0) < 0.5)
+                     return floor(flt/256.0);
+                  return mod(flt,256.0);
+                }
+
                 void main() {
-                    gl_FragColor = globalColor;
+                  float charCode = calcCharCode();
+                  if (charCode < 0.0)
+                    charCode = 1.0;
+                  float charBase = charCode * 10.0 / 1024.0;
+                  float inCharPos = mod(vInRectanglePos.x * 16.0, 1.0) * 10.0 / 1024.0;
+                  vec2 texturePos = vec2(charBase + inCharPos, vInRectanglePos.y);
+
+                  gl_FragColor = texture2D( charSetTexture, texturePos * vec2(1.0, -1.0));
                 }`
             ]
 
@@ -382,24 +432,22 @@ jb.component('summaryLabel', {
               [[1,0], [0.1,0.4]], // right
             ]
             const { mat,sparse } = itemsPositions
-            const textBoxes = sparse.map(([x,y]) =>calcTextPositions(x,y)).flatMap(([x,y]) => [x-1.2,y-0.2, x+1.2,y-0.2, x-1.2,y+0.2, x+1.2,y+0.2])
-            const indices = textBoxes.flatMap((p,i) => i % 4 == 0 ? [i,i+1,i+2, i+1,i+2,i+3] : [])
-
-            const vertexArray = new Float32Array(textBoxes.map(x=>1.0*x))
+            const [boxW, boxH] = [2.4/2, 0.4/2]
+            const textBoxTriangles = sparse.map(([x,y,color, summaryLabel]) => [...calcTextPositions(x,y), textAs8Floats(summaryLabel)])
+              .flatMap(([x,y,summaryLabel]) => {
+                const [p1,p2,p3,p4] = [[x-boxW,y-boxH, 0,0], [x+boxW,y-boxH, 1,0], [x-boxW,y+boxH, 0,1], [x+boxW,y+boxH ,1,1]].map(x=>[...x,...summaryLabel])
+                return [p1,p2,p3, p2,p3,p4]
+              })
+            const vertexArray = new Float32Array(textBoxTriangles.flatMap(v=> v.map(x=>1.0*x)))
+            const vertexCount = vertexArray.length / 4
 
             const buffers = {
-              indices,
+              vertexCount,
               vertexBuffer: gl.createBuffer(),
-              indexBuffer: gl.createBuffer(),
-              shaderProgram: jb.zui.buildShaderProgram(gl, src),
-              vertexNumComponents: 2,
-              vertexCount: vertexArray.length/2,
+              shaderProgram: jb.zui.buildShaderProgram(gl, src)
             }    
             gl.bindBuffer(gl.ARRAY_BUFFER, buffers.vertexBuffer)
             gl.bufferData(gl.ARRAY_BUFFER, vertexArray, gl.STATIC_DRAW)
-
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indexBuffer)
-            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW)
 
             return buffers
 
@@ -416,30 +464,60 @@ jb.component('summaryLabel', {
               }
               return [-1,-1]
             }
+
+            function textAs8Floats(txt) {
+              const view = new DataView(new ArrayBuffer(4))
+              const SummaryLength = 16
+              const text = txt.slice(0,SummaryLength)
+              const pad = Array.from(new Array(Math.ceil((SummaryLength-text.length)/2)).keys()).map(()=>0)
+              const txtChars = [...pad, ...Array.from(text.toLowerCase())
+                .map(x=>x.match(/[a-z]/) ? x[0].charCodeAt(0)-97+1 : x.match(/[0-9]/) ? x[0].charCodeAt(0)-48+27 : 0), ...pad]
+                .slice(0,SummaryLength)
+              // const txtChars = Array.from(text.toLowerCase()).map(x=>x[0].charCodeAt(0)).map(x=>x-97+1).map(x=>x<0 ? 0 : x).slice(0,SummaryLength)                
+              // console.log(text, txtChars)
+              const floats = Array.from(new Array(Math.ceil(SummaryLength/2)).keys())
+                .map(i => twoCharsToFloat(txtChars.slice(i*2,i*2+2)))
+              console.log(floats)
+              return floats
+
+              function twoCharsToFloat([char1, char2]) {
+                return char1 * 256 + char2
+              }
+            }
         },
-        renderGPUFrame({ gl, aspectRatio, zoom, center}, { indices, vertexBuffer, indexBuffer, shaderProgram, vertexNumComponents }) {
+        renderGPUFrame({ gl, aspectRatio, zoom, center}, 
+            { vertexCount, vertexBuffer, shaderProgram }) {
             gl.useProgram(shaderProgram)
           
             gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'zoom'), [zoom, zoom/aspectRatio])
             gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'center'), center)
             gl.uniform4fv(gl.getUniformLocation(shaderProgram, 'globalColor'), [1.0, 0.0, 0.0, 1.0])
-          
+
+            const vertexPos = gl.getAttribLocation(shaderProgram, 'vertexPos')
             gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
-            const itemPos = gl.getAttribLocation(shaderProgram, 'itemPos')
+            gl.enableVertexAttribArray(vertexPos)
+            gl.vertexAttribPointer(vertexPos, 2, gl.FLOAT, false, 12* Float32Array.BYTES_PER_ELEMENT, 0)
 
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
-            gl.enableVertexAttribArray(itemPos)
-            gl.vertexAttribPointer(itemPos, vertexNumComponents, gl.FLOAT, false, 0, 0)
+            const inRectanglePos = gl.getAttribLocation(shaderProgram, 'inRectanglePos')
+            gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
+            gl.enableVertexAttribArray(inRectanglePos)
+            gl.vertexAttribPointer(inRectanglePos, 2, gl.FLOAT, false,  12* Float32Array.BYTES_PER_ELEMENT, 2* Float32Array.BYTES_PER_ELEMENT)
 
+            const text1 = gl.getAttribLocation(shaderProgram, 'text1')
+            gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
+            gl.enableVertexAttribArray(text1)
+            gl.vertexAttribPointer(text1, 4, gl.FLOAT, false,  12* Float32Array.BYTES_PER_ELEMENT, 4* Float32Array.BYTES_PER_ELEMENT)
+            const text2 = gl.getAttribLocation(shaderProgram, 'text2')
+            gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
+            gl.enableVertexAttribArray(text2)
+            gl.vertexAttribPointer(text2, 4, gl.FLOAT, false,  12* Float32Array.BYTES_PER_ELEMENT, 8* Float32Array.BYTES_PER_ELEMENT)
 
             gl.activeTexture(gl.TEXTURE0)
             gl.bindTexture(gl.TEXTURE_2D, this.charSetTexture)
             gl.uniform1i(gl.getUniformLocation(shaderProgram, 'charSetTexture'), 0)
 
-//            gl.uniform1i(gl.getUniformLocation(program, 'charIndex'), 10);
-
-            gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
-//            gl.drawArrays(gl.POINTS, 0, vertexCount)
+            gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
+            gl.drawArrays(gl.TRIANGLES, 0, vertexCount)
         }
   })
 })
