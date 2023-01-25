@@ -68,7 +68,7 @@ jb.component('nativeCircles', {
                 }
             }
         },
-        prepareGPU({ gl, DIM, itemsPositions }) {
+        prepareGPU({ gl, itemsPositions }) {
             const src = [`attribute vec2 aVertexPosition;
                 uniform vec2 uScalingFactor;
                 uniform vec2 center;

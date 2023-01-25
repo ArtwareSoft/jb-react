@@ -4,6 +4,8 @@ jb.component('zui.multiLayer', {
   type: 'control<>',
   params: [
     {id: 'title', as: 'string'},
+    {id: 'boardSize', as: 'number', defaultValue: 256},
+    {id: 'initialZoom', as: 'number', description: 'in terms of board window. empty is all board'},
     {id: 'items', as: 'array', dynamic: true, mandatory: true},
     {id: 'layers', type: 'layer<zui>[]', mandatory: true, dynamic: true},
     {id: 'style', type: 'multiLayerStyle<zui>', dynamic: true, defaultValue: multiLayerStyle()},
@@ -21,8 +23,8 @@ jb.component('multiLayerStyle', {
     features: [
       calcProps((ctx,{$model})=> {
         const items = $model.items()
-        // TODO: move to model
-        const DIM = 256
+        const DIM = $model.boardSize
+        const zoom = +($model.initialZoom || DIM)
         const _greens = jb.d3.lib().scaleSequential(jb.frame.d3.interpolateLab('green','white'))
         const greens = x => jb.frame.d3.color(_greens(x))
         const pivots = { x: pivot('price'), y: pivot('hits') }
@@ -31,7 +33,7 @@ jb.component('multiLayerStyle', {
 
         return {
             DIM, layers, items, pivots, summaryLabel, scales: { greens }, 
-            center: [DIM* 0.5, DIM* 0.5], stage: 0 , zoom: DIM
+            center: [DIM* 0.5, DIM* 0.5], stage: 0 , zoom
         }
 
         function pivot(att) {
@@ -279,12 +281,12 @@ jb.extension('zui','multiLayer', {
   },
 })
 
-jb.component('nativeCircles', {
+jb.component('circles', {
   type: 'layer',
   params: [
-    
+    {id: 'circleSize', as: 'string', defaultValue : '10.0 + 2.0 * log(8.0/zoom[0])'},
   ],
-  impl: ctx => ({
+  impl: (ctx,circleSize) => ({
         fromZoom: 8, toZoom: 8,
         async prepare({gl}) {
           this.pointTexture = await jb.zui.imageToTexture(gl, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAAZiS0dEAAAAAAAA+UO7fwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9sHDgwCEMBJZu0AAAAdaVRYdENvbW1lbnQAAAAAAENyZWF0ZWQgd2l0aCBHSU1QZC5lBwAABM5JREFUWMO1V0tPG2cUPZ4Hxh6DazIOrjFNqJs0FIMqWFgWQkatsmvVbtggKlSVRVf5AWz4AWz4AUSKEChll19QJYSXkECuhFxsHjEhxCYm+DWGMZ5HF72DJq4bAzFXurI0M/I5997v3u9cC65vTJVn2lX/xHINQOYSBLTLEuIuCWw4Z3IGAEvf6ASmVHjNzHCXBG4A0AjACsAOwEbO0nsFQBnAGYASAIl+ZRMR7SolMEdsByD09fV5R0ZGgg8ePPjW5/N1iqLYpuu6RZblciKR2I9Go69evnwZnZ+fjwI4IS8AKBIRzeQfJWCANwKwh0KhtrGxsYehUOin1tbW+zzP23ietzY2NnIAoGmaLsuyUiqVyvl8XtrY2NiamZn589mzZxsAUgCOAeQAnFI2tI+VxIjaAeDzoaGh7xYWFuZOTk6OZVk+12uYqqq6JEnn0Wg0OT4+/geAXwGEAdwDIFJQXC1wO4DWR48e/RCPxxclSSroVzRFUbSDg4P848ePFwH8DuAhkWih83TRQWxFOXgAwvDwcOfo6OhvXV1d39tsNtuVBwTDWBwOh1UUxVsMw1hXVlbSdCgNV43uYSvrHg6H24aHh38eHBz85TrgF9FYLHA4HLzH43FvbW2d7u/vG+dANp8FpqIlbd3d3V8Fg8EfBUFw4BONZVmL3+9vHhkZCQL4AoAHgJPK8G+yzC0XDofdoVAo5PP5vkadTBAEtr+/39ff3x8gAp/RPOEqx2qjx+NpvXv3bk9DQ0NDvQgwDIOWlhZrMBj8kgi0UJdxRgYMArzL5XJ7vd57qLPZ7Xamp6fnNgBXtQxcjFuHw+Hyer3t9SYgCAITCAScAJoBNNEY/08GOFVVrfVMv7kMNDntFD1vjIAPrlRN0xjckOm6biFQ3jwNPwDMZrOnqVTqfb3Bi8Wivru7W/VCYkwPlKOjo0IikXh7EwQikYgE4Nw0CfXKDCipVCoTj8df3QABbW1tLUc6oUgkFPMkVACUNjc337148eKvw8PDbJ2jP1taWkoCyNDVXDSECmNSK4qiKNLq6urW8+fPI/UicHx8rD59+jSVy+WOAKSJhKENwFItLtoxk8mwsixzHR0dHe3t7c5PAU+n09rs7OzJkydPYqVSaQfANoDXALIk31S2smU1TWMPDg7K5XKZ7+3t9TudTut1U7+wsFCcmJiIpdPpbQBxADsAknQWymYCOukBHYCuKApisdhpMpnURFEU79y503TVyKenpzOTk5M7e3t7MQKPV0Zv1gNm+awB0MvlshqLxfLb29uyJElWURSbXC4XXyvqxcXFs6mpqeTc3Nzu3t7e3wQcA7BPZ8Cov1pNlJplmQtAG8MwHV6v95tAINA5MDBwPxAIuLu6upr8fr/VAN3c3JQjkcjZ+vp6fnl5+d2bN29SuVzuNYAEpf01CdRChUL+X1VskHACuA3Ay3Fcu9vt7nA6nZ7m5uYWQRCaNE3jVVW15PP580KhIGUymWw2m00DOAJwSP4WwPtq4LX2Ao6USxNlQyS/RcQcdLGwlNIz6vEMAaZpNzCk2Pll94LK/cDYimxERiBwG10sxjgvEZBE0UpE6vxj+0Ct5bTaXthgEhRmja8QWNkkPGsuIpfdjpkK+cZUWTC0KredVmtD/gdlSl6EG4AMvQAAAABJRU5ErkJggg==')
@@ -296,7 +298,7 @@ jb.component('nativeCircles', {
             
                 void main() {
                   gl_Position = vec4((itemPos - center) / zoom, 0.0, 1.0);
-                  gl_PointSize = 30.0 + 1.0 * log(8.0/zoom[0]);
+                  gl_PointSize = ${circleSize};
                 }`,
                 `precision highp float;
                 uniform sampler2D pointTexture;
@@ -344,10 +346,10 @@ jb.component('nativeCircles', {
 jb.component('summaryLabel', {
   type: 'layer',
   params: [
-    
+    {id: 'noOfChars', as: 'number', defaultValue: 16}
   ],
-  impl: ctx => ({
-        fromZoom: 16, toZoom: 8, noOfChars: 64,
+  impl: (ctx, noOfChars) => ({
+        fromZoom: 16, toZoom: 8, charSetSize: 64,
         async prepare({gl}) {
           this.charSetTexture = await jb.zui.imageToTexture(gl,this.createCharSetImage())
         },
@@ -356,7 +358,7 @@ jb.component('summaryLabel', {
             const txt = ' abcdefghijklmnopqrstuvwxyz0123456789!@#$%012345678901234567890123'
             const canvas = document.createElement('canvas')
             canvas.id = 'canvas'
-            canvas.width = this.noOfChars * fontSize
+            canvas.width = this.charSetSize * fontSize
             canvas.height = fontSize
             document.body.appendChild(canvas)
             const ctx = canvas.getContext('2d')
@@ -425,7 +427,7 @@ jb.component('summaryLabel', {
                 }`
             ]
 
-            const helperMat = [
+            const textPosMatrix = [
               [[-1,-1], [0,-0.25]], // below
               [[-1,1], [0,0.25] ], // above [-1.5,0.1]
               [[-3,0], [-1.6,-0.1]], // left
@@ -451,30 +453,28 @@ jb.component('summaryLabel', {
 
             return buffers
 
+            // specials algorithm to avoid collapase of texts, 
             function calcTextPositions(x,y) {
               for(let i=0;i<4;i++) {
                 let empty = true
                 for(let j=0;j<3;j++)
-                  if (mat[DIM*(y + helperMat[i][0][1]) + x+helperMat[i][0][0]+j]) empty = false;
+                  if (mat[DIM*(y + textPosMatrix[i][0][1]) + x+textPosMatrix[i][0][0]+j]) empty = false;
                 if (empty) {
                   for(let j=0;j<3;j++)
-                    mat[DIM*(y + helperMat[i][0][1]) + x+helperMat[i][0][0]+j] = true;
-                  return [x+helperMat[i][1][0], y+helperMat[i][1][1]]
+                    mat[DIM*(y + textPosMatrix[i][0][1]) + x+textPosMatrix[i][0][0]+j] = true;
+                  return [x+textPosMatrix[i][1][0], y+textPosMatrix[i][1][1]]
                 }
               }
               return [-1,-1]
             }
 
             function textAs8Floats(txt) {
-              const view = new DataView(new ArrayBuffer(4))
               const SummaryLength = 16
               const text = txt.slice(0,SummaryLength)
               const pad = Array.from(new Array(Math.ceil((SummaryLength-text.length)/2)).keys()).map(()=>0)
               const txtChars = [...pad, ...Array.from(text.toLowerCase())
                 .map(x=>x.match(/[a-z]/) ? x[0].charCodeAt(0)-97+1 : x.match(/[0-9]/) ? x[0].charCodeAt(0)-48+27 : 0), ...pad]
                 .slice(0,SummaryLength)
-              // const txtChars = Array.from(text.toLowerCase()).map(x=>x[0].charCodeAt(0)).map(x=>x-97+1).map(x=>x<0 ? 0 : x).slice(0,SummaryLength)                
-              // console.log(text, txtChars)
               const floats = Array.from(new Array(Math.ceil(SummaryLength/2)).keys())
                 .map(i => twoCharsToFloat(txtChars.slice(i*2,i*2+2)))
               console.log(floats)

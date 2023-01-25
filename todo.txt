@@ -1,10 +1,15 @@
 zui
-  for each item check if there is a place for text and calc the text as sprite
-    8px font - 10? chars
-    prefer below - 2*3 places
-    after check: right, left, above - in these cases it needs 3*4 empty places.
-  show the text at the same size of the point (circle size = 3 letters - size > 24 = 8 * 3)
+  change no of chars with zoom  move pivots to model
+  implement separate column for text
+  add color
+  add icon
+  add fromTo zoom parameters
+  use items id as original index - separate column
+  implement attraction forces to point with gpu. use atan and two neighbours
 
+
+fix completion bugs
+  refresh key - build symbols and reload
 
 fix setComp with ns - do test like studioTest.jbEditorMove
 

@@ -19,11 +19,20 @@ jb.component('zuiTest.multiLayer', {
     control: group({
       controls: [
         text('2'),
-        zui.multiLayer({
-          items: '%$phones%',
-          layers: [summaryLabel(), nativeCircles()]
-        })
+        zui.multiLayer({items: pipeline('%$phones%',slice(0, 10)), layers: [summaryLabel(), circles()]})
       ]
+    }),
+    expectedResult: contains('cmp-id')
+  })
+})
+
+jb.component('zuiTest.summaryLabel', {
+  impl: uiTest({
+    control: zui.multiLayer({
+      boardSize: 16,
+      initialZoom: 4,
+      items: pipeline('%$phones%', slice(0, 10)),
+      layers: [summaryLabel(), circles('30.0')]
     }),
     expectedResult: contains('cmp-id')
   })
