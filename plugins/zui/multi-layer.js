@@ -8,6 +8,7 @@ jb.component('zui.multiLayer', {
     {id: 'initialZoom', as: 'number', description: 'in terms of board window. empty is all board'},
     {id: 'items', as: 'array', dynamic: true, mandatory: true},
     {id: 'layers', type: 'layer<zui>[]', mandatory: true, dynamic: true},
+    {id: 'onChange', type: 'action<>', dynamic: true } ,
     {id: 'style', type: 'multiLayerStyle<zui>', dynamic: true, defaultValue: multiLayerStyle()},
     {id: 'features', type: 'feature[]', dynamic: true, flattenArray: true}
   ],
@@ -24,6 +25,7 @@ jb.component('multiLayerStyle', {
       calcProps((ctx,{$model})=> {
         const items = $model.items()
         const DIM = $model.boardSize
+        const onChange = $model.onChange.profile && $model.onChange
         const zoom = +($model.initialZoom || DIM)
         const _greens = jb.d3.lib().scaleSequential(jb.frame.d3.interpolateLab('green','white'))
         const greens = x => jb.frame.d3.color(_greens(x))
@@ -32,7 +34,7 @@ jb.component('multiLayerStyle', {
         const summaryLabel = item => `${item.title} (${item.price}, ${item.hits})`
 
         return {
-            DIM, layers, items, pivots, summaryLabel, scales: { greens }, 
+            DIM, layers, items, pivots, summaryLabel, scales: { greens }, onChange,
             center: [DIM* 0.5, DIM* 0.5], stage: 0 , zoom
         }
 
@@ -52,6 +54,8 @@ jb.component('multiLayerStyle', {
             jb.zui.initLayerCmp(cmp,props)
             await Promise.all(props.layers.map(layer =>layer.prepare && layer.prepare(props)).filter(x=>x))
             props.itemsPositions = jb.zui.calcItemsPositions(props)
+            if (cmp.ctx.vars.zuiCtx)
+              cmp.ctx.vars.zuiCtx.props = props
 
             jb.zui.clearCanvas(props)
             cmp.firstRender()
@@ -143,11 +147,14 @@ jb.extension('zui','multiLayer', {
         jb.log('zui event',{dz, dp, zoom: props.zoom, center: props.center, cmp})
       },
       render() {
+        props.layers.forEach(layer => layer.calcExtraRenderingProps && Object.assign(props, layer.calcExtraRenderingProps(props)))
         props.layers.forEach(layer => layer.renderGPUFrame(props, layer.buffers))
+        props.onChange && props.onChange(props)
       },
       firstRender() {
         props.layers.forEach(layer => {
             layer.buffers = layer.prepareGPU(props)
+            layer.calcExtraRenderingProps && Object.assign(props, layer.calcExtraRenderingProps(props))
             layer.renderGPUFrame(props, layer.buffers)
         })
       },
@@ -350,6 +357,7 @@ jb.component('summaryLabel', {
   ],
   impl: (ctx, noOfChars) => ({
         fromZoom: 16, toZoom: 8, charSetSize: 64,
+        txt_fields: ['2','4','8','16_0','16_1','32_0','32_1','32_2','32_3'],
         async prepare({gl}) {
           this.charSetTexture = await jb.zui.imageToTexture(gl,this.createCharSetImage())
         },
@@ -371,59 +379,84 @@ jb.component('summaryLabel', {
             return canvas.toDataURL('image/png')
         },
         prepareGPU({ gl, DIM, itemsPositions }) {
-            const src = [`
+          const txt_fields = this.txt_fields
+          const src = [`
                 attribute vec2 vertexPos;
                 attribute vec2 inRectanglePos;
-                attribute vec4 text1;
-                attribute vec4 text2;
+                ${txt_fields.map(fld => `attribute vec4 _text_${fld};`).join('\n')}
                                 
                 uniform vec2 zoom;
                 uniform vec2 center;
-                varying vec2 vInRectanglePos;
-                varying vec4 v_text1;
-                varying vec4 v_text2;
+                uniform vec2 boxSize;
+                uniform float canvasWidth;
+                varying vec2 boxBase;
+                
+                ${txt_fields.map(fld => `varying vec4 text_${fld};`).join('\n')}
                 
                 void main() {
-                  v_text1 = text1;
-                  v_text2 = text2;
-                  vInRectanglePos = inRectanglePos;
+                  ${txt_fields.map(fld => `text_${fld} = _text_${fld};`).join('\n')}
+                  boxBase = (vertexPos - boxSize*vec2(0.5, 0.5) - center) / zoom;
                   gl_Position = vec4((vertexPos - center) / zoom, 0.0, 1.0);
+                  gl_PointSize = boxSize[0] * canvasWidth;
                 }
                 
                 `,
                 `precision highp float;
                 uniform sampler2D charSetTexture;
-                uniform vec4 globalColor;
-                varying vec2 vInRectanglePos;
-                varying vec4 v_text1;
-                varying vec4 v_text2;
-            
-                float calcCharCode() {
-                  vec4 vec = v_text1;
-                  float posx = vInRectanglePos.x;
-                  if (vInRectanglePos.x >= 0.5) {
-                    vec = v_text2;
-                    posx = posx - 0.5;
+                uniform int strLen;
+                uniform float charWidth;
+                uniform vec2 boxSize;
+                varying vec2 boxBase;
+                ${txt_fields.map(fld => `varying vec4 text_${fld};\n`).join('\n')}
+
+                vec4 getTextVec(float x) {
+                  if (strLen == 2) return text_2;
+                  if (strLen == 4) return text_4;
+                  if (strLen == 8) return text_8;
+                  if (strLen == 16) {
+                    if (x < 0.5) return text_16_0;
+                    return text_16_1;
                   }
-                  posx = posx * 2.0;
-                  float flt = vec[0];
-                  for(int i=0;i<4;++i)
-                    if (int(floor(posx*4.0)) == i)
-                      flt = vec[i];
-                  if (mod(posx*4.0 , 1.0) < 0.5)
+                  if (strLen == 32) {
+                    if (x < 0.25) return text_32_0;
+                    if (x < 0.5) return text_32_1;
+                    if (x < 0.75) return text_32_2;
+                    return text_32_3;
+                  }
+                }
+                
+                float getIndexInVec(float x) {
+                  if (strLen == 2) return 0.0;
+                  if (strLen == 4) return floor(x * 2.0);
+                  if (strLen == 8) return floor(x * 4.0);
+                  if (strLen == 16) return floor(mod(x,0.5) * 8.0);
+                  if (strLen == 32) return floor(mod(x,0.25) * 16.0);
+                }
+
+                float calcCharCode(float x) {
+                  int index = 0;
+                  int idx = int(getIndexInVec(x));
+                  vec4 vec = getTextVec(x);
+                  float flt = 0.0;
+                  for(int i=0;i<4;i++)
+                    if (idx == i) flt = vec[i];
+
+                  if (mod(x*float(strLen)/2.0 , 1.0) < 0.5)
                      return floor(flt/256.0);
                   return mod(flt,256.0);
                 }
 
                 void main() {
-                  float charCode = calcCharCode();
-                  if (charCode < 0.0)
-                    charCode = 1.0;
-                  float charBase = charCode * 10.0 / 1024.0;
-                  float inCharPos = mod(vInRectanglePos.x * 16.0, 1.0) * 10.0 / 1024.0;
-                  vec2 texturePos = vec2(charBase + inCharPos, vInRectanglePos.y);
+                  vec2 inBoxPos = (vec2(gl_FragCoord.x,gl_FragCoord.y) - boxBase) / boxSize;
+                  if (inBoxPos[0] < 0.0 || inBoxPos[0] > 1.0) { //|| inBoxPos[1] < 0.0 || inBoxPos[1] > 1.0) {
+                    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+                    return;
+                  }
+                  gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+                  // float inCharPos = mod(inBoxPos[0] * float(strLen), 1.0);
+                  // vec2 texturePos = vec2((calcCharCode(inBoxPos[0]) + inCharPos) * charWidth, inBoxPos[1]);
 
-                  gl_FragColor = texture2D( charSetTexture, texturePos * vec2(1.0, -1.0));
+                  // gl_FragColor = texture2D( charSetTexture, texturePos * vec2(1.0, -1.0));
                 }`
             ]
 
@@ -434,17 +467,13 @@ jb.component('summaryLabel', {
               [[1,0], [0.1,0.4]], // right
             ]
             const { mat,sparse } = itemsPositions
-            const [boxW, boxH] = [2.4/2, 0.4/2]
-            const textBoxTriangles = sparse.map(([x,y,color, summaryLabel]) => [...calcTextPositions(x,y), textAs8Floats(summaryLabel)])
-              .flatMap(([x,y,summaryLabel]) => {
-                const [p1,p2,p3,p4] = [[x-boxW,y-boxH, 0,0], [x+boxW,y-boxH, 1,0], [x-boxW,y+boxH, 0,1], [x+boxW,y+boxH ,1,1]].map(x=>[...x,...summaryLabel])
-                return [p1,p2,p3, p2,p3,p4]
-              })
-            const vertexArray = new Float32Array(textBoxTriangles.flatMap(v=> v.map(x=>1.0*x)))
-            const vertexCount = vertexArray.length / 4
+            const textBoxNodes = sparse.map(([x,y,color, summaryLabel]) => [...calcTextPositions(x,y) , ...textsAsFloats(summaryLabel)])
+            const vertexArray = new Float32Array(textBoxNodes.flatMap(v=> v.map(x=>1.0*x)))
+            const floatsInVertex = 2 + 31
+            const vertexCount = vertexArray.length / floatsInVertex
 
             const buffers = {
-              vertexCount,
+              vertexCount, floatsInVertex,
               vertexBuffer: gl.createBuffer(),
               shaderProgram: jb.zui.buildShaderProgram(gl, src)
             }    
@@ -452,7 +481,7 @@ jb.component('summaryLabel', {
             gl.bufferData(gl.ARRAY_BUFFER, vertexArray, gl.STATIC_DRAW)
 
             return buffers
-
+        
             // specials algorithm to avoid collapase of texts, 
             function calcTextPositions(x,y) {
               for(let i=0;i<4;i++) {
@@ -468,56 +497,63 @@ jb.component('summaryLabel', {
               return [-1,-1]
             }
 
-            function textAs8Floats(txt) {
-              const SummaryLength = 16
-              const text = txt.slice(0,SummaryLength)
-              const pad = Array.from(new Array(Math.ceil((SummaryLength-text.length)/2)).keys()).map(()=>0)
-              const txtChars = [...pad, ...Array.from(text.toLowerCase())
-                .map(x=>x.match(/[a-z]/) ? x[0].charCodeAt(0)-97+1 : x.match(/[0-9]/) ? x[0].charCodeAt(0)-48+27 : 0), ...pad]
-                .slice(0,SummaryLength)
-              const floats = Array.from(new Array(Math.ceil(SummaryLength/2)).keys())
-                .map(i => twoCharsToFloat(txtChars.slice(i*2,i*2+2)))
-              console.log(floats)
-              return floats
+            function textsAsFloats(text) { // 31 floats = 1 + 2 + 4 + (4+4) + (4+4+4+4)
+              const words = text.split(' ').filter(x=>x)
+              const text2 = words.length < 2 ? text.slice(0,2) : words.slice(0,2).map(x=>x[0].toUpperCase()).join('')
+              const text4 = words.length < 2 ? text.slice(0,4) : [words[0][0], words[1].slice(0,2)].join('-')
+              const ret = [...encode(text2,2),...encode(text4,4) ,...encode(text.slice(0,8),8), ...encode(text.slice(0,16),16) , ...encode(text.slice(0,32),32) ]
+              return ret
 
-              function twoCharsToFloat([char1, char2]) {
+              function encode(text,size) {
+                const pad = '                  '.slice(0,Math.ceil((size-text.length)/2))
+                const txtChars = charset((pad + text + pad).slice(0,size))
+                const floats = Array.from(new Array(Math.ceil(size/2)).keys())
+                    .map(i => twoCharsToFloat(txtChars[i*2],txtChars[i*2+1]))
+                return floats
+              }
+              function charset(text) {
+                return Array.from(text).map(x=>x.match(/[a-z]/) ? x[0].charCodeAt(0)-97+1 : x.match(/[0-9]/) ? x[0].charCodeAt(0)-48+27 : 0)
+              }
+              function twoCharsToFloat(char1, char2) {
                 return char1 * 256 + char2
               }
             }
         },
-        renderGPUFrame({ gl, aspectRatio, zoom, center}, 
-            { vertexCount, vertexBuffer, shaderProgram }) {
+        calcExtraRenderingProps({zoom}) {
+          const strLen = 2 ** (6 - Math.max(1, Math.min(5,Math.floor(Math.log(zoom)/Math.log(2)))))
+          const boxSize = [0.1 * strLen, 0.4/2]
+          return {strLen, boxSize}
+        },
+        renderGPUFrame({ glCanvas, gl, aspectRatio, zoom, center, strLen, boxSize} , { vertexCount, floatsInVertex, vertexBuffer, shaderProgram }) {
             gl.useProgram(shaderProgram)
-          
+
             gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'zoom'), [zoom, zoom/aspectRatio])
             gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'center'), center)
-            gl.uniform4fv(gl.getUniformLocation(shaderProgram, 'globalColor'), [1.0, 0.0, 0.0, 1.0])
-
+            gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'boxSize'), boxSize)
+            gl.uniform1i(gl.getUniformLocation(shaderProgram, 'strLen'), strLen)
+            gl.uniform1f(gl.getUniformLocation(shaderProgram, 'canvasWidth'), glCanvas.width)
+            
             const vertexPos = gl.getAttribLocation(shaderProgram, 'vertexPos')
             gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
             gl.enableVertexAttribArray(vertexPos)
-            gl.vertexAttribPointer(vertexPos, 2, gl.FLOAT, false, 12* Float32Array.BYTES_PER_ELEMENT, 0)
+            gl.vertexAttribPointer(vertexPos, 2, gl.FLOAT, false, floatsInVertex* Float32Array.BYTES_PER_ELEMENT, 0)
 
-            const inRectanglePos = gl.getAttribLocation(shaderProgram, 'inRectanglePos')
-            gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
-            gl.enableVertexAttribArray(inRectanglePos)
-            gl.vertexAttribPointer(inRectanglePos, 2, gl.FLOAT, false,  12* Float32Array.BYTES_PER_ELEMENT, 2* Float32Array.BYTES_PER_ELEMENT)
-
-            const text1 = gl.getAttribLocation(shaderProgram, 'text1')
-            gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
-            gl.enableVertexAttribArray(text1)
-            gl.vertexAttribPointer(text1, 4, gl.FLOAT, false,  12* Float32Array.BYTES_PER_ELEMENT, 4* Float32Array.BYTES_PER_ELEMENT)
-            const text2 = gl.getAttribLocation(shaderProgram, 'text2')
-            gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
-            gl.enableVertexAttribArray(text2)
-            gl.vertexAttribPointer(text2, 4, gl.FLOAT, false,  12* Float32Array.BYTES_PER_ELEMENT, 8* Float32Array.BYTES_PER_ELEMENT)
+            const sizes = [1,2,4, 4,4, 4,4,4,4]
+            let offset = 2
+            this.txt_fields.forEach((id,i) =>{
+              const text1 = gl.getAttribLocation(shaderProgram, `_text_${id}`)
+              gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
+              gl.enableVertexAttribArray(text1)
+              gl.vertexAttribPointer(text1, sizes[i], gl.FLOAT, false,  floatsInVertex* Float32Array.BYTES_PER_ELEMENT, offset* Float32Array.BYTES_PER_ELEMENT)
+              offset += sizes[i]  
+            })
 
             gl.activeTexture(gl.TEXTURE0)
             gl.bindTexture(gl.TEXTURE_2D, this.charSetTexture)
             gl.uniform1i(gl.getUniformLocation(shaderProgram, 'charSetTexture'), 0)
 
             gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
-            gl.drawArrays(gl.TRIANGLES, 0, vertexCount)
+            gl.drawArrays(gl.POINTS, 0, vertexCount)
         }
   })
 })
