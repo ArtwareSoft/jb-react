@@ -57,33 +57,37 @@ jb.component('zuiTest.summaryLabel', {
   })
 })
 
-// jb.component('zuiTest.itemlist', {
-//   impl: uiTest({
-//     control: group({
-//       controls: [
-//         group({
-//           style: propertySheet.titlesLeft(),
-//           controls: [
-//             text('%$zuiCtx/props/DIM%', 'DIM'),
-//             text('%$zuiCtx/props/zoom%', 'zoom'),
-//             text('%$zuiCtx/props/strLen%', 'strLen'),
-//             text('%$zuiCtx/props/center[0]% , %$zuiCtx/props/center[1]%', 'center'),
-//             text('%$zuiCtx/props/boxSize[0]% , %$zuiCtx/props/boxSize[1]%', 'boxSize'),
-//             text('%$zuiCtx/props/circleSize%', 'circleSize px'),
-//             text('%$zuiCtx/props/textSquareInPixels%', 'textSquare px')
-//           ],
-//           features: id('propSheet')
-//         }),
-//         zui.itemlist({
-//           itemView: text(),
-//           boardSize: 256,
-//           initialZoom: 256,
-//           items: pipeline('%$phones%', slice(0, 10000)),
-//           onChange: refreshControlById('propSheet')
-//         })
-//       ],
-//       features: variable('zuiCtx', obj())
-//     }),
-//     expectedResult: contains('cmp-id')
-//   })
-// })
+jb.component('zuiTest.itemlist', {
+  impl: uiTest({
+    control: group({
+      controls: [
+        group({
+          style: propertySheet.titlesLeft(),
+          controls: [
+            text('%$zuiCtx/props/DIM%', 'DIM'),
+            text('%$zuiCtx/props/zoom%', 'zoom'),
+            text('%$zuiCtx/props/strLen%', 'strLen'),
+            text('%$zuiCtx/props/center[0]% , %$zuiCtx/props/center[1]%', 'center'),
+            text('%$zuiCtx/props/boxSize[0]% , %$zuiCtx/props/boxSize[1]%', 'boxSize'),
+            text('%$zuiCtx/props/circleSize%', 'circleSize px'),
+            text('%$zuiCtx/props/textSquareInPixels%', 'textSquare px')
+          ],
+          features: id('propSheet')
+        }),
+        zui.itemlist({
+          itemView: group({
+            controls: [
+              text('my text')
+            ]
+          }),
+          boardSize: 256,
+          initialZoom: 256,
+          items: pipeline('%$phones%', slice(0, 10000)),
+          onChange: refreshControlById('propSheet')
+        })
+      ],
+      features: variable('zuiCtx', obj())
+    }),
+    expectedResult: contains('cmp-id')
+  })
+})

@@ -220,12 +220,30 @@ jb.component('completionTest.dslTest.top', {
   })
 })
 
-// jb.component('completionTest.dslTest.nameOverride', {
-//   impl: tgp.completionOptionsTest(`jb.component('x', {
-//   type: 'state<location>',    
-//   impl: state(pipeline(__))
-// })`, ['checkNameOverride'])
-// })
+jb.component('completionTest.dslTest.createProp', {
+  impl: tgp.completionActionTest({
+    compText: `jb.component('x', {
+  impl: state(__)
+})`,
+    completionToActivate: 'capital',
+    expectedEdit: () => ({
+        range: {start: {line: 2, col: 14}, end: {line: 2, col: 14}},
+        newText: 'TBD()'
+      }),
+    expectedCursorPos: '2,14',
+    dsl: 'location'
+  })
+})
+
+jb.component('completionTest.dslTest.nameOverride', {
+  impl: tgp.completionOptionsTest({
+    compText: `jb.component('x', {
+  impl: state(pipeline(__))
+})`,
+    expectedSelections: ['checkNameOverride'],
+    dsl: 'location'
+  })
+})
 
 jb.component('dslTest.jbDsl.usingCtrl', {
   impl: uiTest({control: location.control(israel()), expectedResult: contains('Jerusalem')})
@@ -233,11 +251,6 @@ jb.component('dslTest.jbDsl.usingCtrl', {
 
 jb.component('dslTest.treeShake', {
   impl: dataTest(pipeline(() => jb.treeShake.treeShake(['state<location>israel'],[]), join()), contains('eilat'))
-})
-
-jb.component('xxx', {
-  type: 'state<location>',
-  impl: state()
 })
 
 // jb.component('dslTest.setComp', {

@@ -52,8 +52,7 @@ jb.component('tgp.completionActionTest', {
             jb.utils.resolveLoadedProfiles()
             jb.tgpTextEditor.host.initDoc('dummy.js', dslLine+code)
 
-            
-            const inCompPos = jb.tgpTextEditor.offsetToLineCol(code,offset+dslLine.length)
+            const inCompPos = jb.tgpTextEditor.offsetToLineCol(dslLine+code,offset)
             jb.tgpTextEditor.host.selectRange(inCompPos)
             const { needsFormat } = jb.tgpTextEditor.calcActiveEditorPath()
             if (needsFormat)

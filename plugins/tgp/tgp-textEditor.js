@@ -154,13 +154,14 @@ jb.extension('tgpTextEditor', {
             .map(l=>( l.match(/^jb.dsl\('([^']+)/) || ['',''])[1])[0] || ''
     }, 
     fileContentToCompText(fileContent,compId) {
+        const shortId = compId.split('>').pop()
         const lines = fileContent.split('\n')
-        const start = lines.findIndex(line => line.indexOf(`jb.component\('${compId}'`) == 0)
+        const start = lines.findIndex(line => line.indexOf(`jb.component\('${shortId}'`) == 0)
         if (start == -1)
-            return jb.logError('fileContentToCompText - can not find compId',{fileContent,compId})
+            return jb.logError('fileContentToCompText - can not find compId',{fileContent,shortId})
         const end = lines.slice(start).findIndex(line => line.match(/^}\)\s*$/))
         if (end == -1)
-            return jb.logError('fileContentToCompText - can not find close comp',{fileContent,compId})
+            return jb.logError('fileContentToCompText - can not find close comp',{fileContent,shortId})
         return { compText: lines.slice(start,start+end+1).join('\n'), compLine: start }
     },
     fixEditedComp(compText, {line, col} = {},dsl) {
@@ -196,8 +197,9 @@ jb.extension('tgpTextEditor', {
     },
     deltaFileContent(fileContent, compId) {
         const comp = jb.comps[compId]
-        const { compLine, compText} = jb.tgpTextEditor.fileContentToCompText(fileContent,compId)
-        const newCompContent = comp ? jb.utils.prettyPrintComp(compId,comp,{comps: jb.comps}) : ''
+        const shortId = compId.split('>').pop()
+        const { compLine, compText} = jb.tgpTextEditor.fileContentToCompText(fileContent,shortId)
+        const newCompContent = comp ? jb.utils.prettyPrintComp(shortId,comp,{comps: jb.comps}) : ''
         const justCreatedComp = !compText.length && comp[jb.core.CT].location[1] == 'new'
         if (justCreatedComp) {
           comp[jb.core.CT].location[1] == lines.length

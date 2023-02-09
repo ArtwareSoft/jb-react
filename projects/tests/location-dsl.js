@@ -27,6 +27,10 @@ jb.component('israel', {
   impl: state(jerusalem(), [eilat(), city('Tel Aviv')])
 })
 
+jb.component('israel2', {
+  impl: state()
+})
+
 jb.component('jerusalem', {
   impl: city('Jerusalem')
 })
