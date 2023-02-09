@@ -172,6 +172,7 @@ jb.extension('tgpTextEditor', 'completion', {
     calcActiveEditorPath() {
         const line = jb.tgpTextEditor.host.cursorLine()
         const lines = jb.tgpTextEditor.host.docText().split('\n')
+        const dsl = jb.tgpTextEditor.dsl(lines)
         const closestComp = lines.slice(0,line+1).reverse().findIndex(line => line.match(/^jb.component\(/))
         if (closestComp == -1) return {
             inExtension: lines.slice(0,line+1).some(line => line.match(/^jb.extension\(/))
@@ -179,19 +180,19 @@ jb.extension('tgpTextEditor', 'completion', {
         const componentHeaderIndex = line - closestComp
         const compId = (lines[componentHeaderIndex].match(/'([^']+)'/)||['',''])[1]
         const inCompPos = {line: line-componentHeaderIndex, col : jb.tgpTextEditor.host.cursorCol() }
-        const {fixedComp, needsFormat, compilationFailure} = calcCompVars() // jb.tgpTextEditor.cache[compId] || calcCompVars()
+        const {fixedComp, needsFormat, compilationFailure} = jb.tgpTextEditor.cache[`${dsl}-${compId}`] || calcCompVars()
         if (compilationFailure) 
             return jb.tgpTextEditor.lastActivePath
         if (needsFormat)
-            return { compId, needsFormat: true }
-        jb.tgpTextEditor.cache[compId] = {fixedComp }
-        return jb.tgpTextEditor.lastActivePath = { compId, ...jb.tgpTextEditor.getPathOfPos(fixedComp, compId, inCompPos) }
+            return { dsl, compId, needsFormat: true }
+        jb.tgpTextEditor.cache[`${dsl}-${compId}`] = {fixedComp }
+        return jb.tgpTextEditor.lastActivePath = { dsl, compId, ...jb.tgpTextEditor.getPathOfPos(fixedComp, inCompPos) }
 
         function calcCompVars() {
             const linesFromComp = lines.slice(componentHeaderIndex)
             const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
             const actualText = lines.slice(componentHeaderIndex,componentHeaderIndex+compLastLine+1).join('\n')
-            const {fixedComp, originalComp, compilationFailure } = jb.tgpTextEditor.fixEditedComp(actualText,inCompPos)
+            const {fixedComp, originalComp, compilationFailure } = jb.tgpTextEditor.fixEditedComp(actualText,inCompPos,dsl)
             if (compilationFailure) return {compilationFailure}
             if (originalComp && actualText != jb.utils.prettyPrintComp(compId,originalComp))
                 return { needsFormat: true }

@@ -1,9 +1,10 @@
 
 jb.extension('tgpTextEditor', {
-    evalProfileDef: code => { 
+    evalProfileDef: (code, dsl) => { 
       try {
         jb.core.unresolvedProfiles = []
-        const res = jb.frame.eval(`(function() { ${jb.macro.importAll()}; return (${code}) })()`)
+        const funcId = dsl ? `$$dsl_${dsl}$` : ''
+        const res = jb.frame.eval(`(function ${funcId}() { ${jb.macro.importAll()}; return (${code}) })()`)
         res && jb.utils.resolveLoadedProfiles({keepLocation: true})
         return { res, compId : jb.path(res,[jb.core.CT,'fullId']) }
       } 
@@ -107,8 +108,8 @@ jb.extension('tgpTextEditor', {
         }
         return res
     },
-    getPathOfPos(comp, compId,pos) {
-        const { text, map } = jb.utils.prettyPrintWithPositions(comp || jb.comps[compId],{initialPath: compId, comps: jb.comps})
+    getPathOfPos(comp, pos) {
+        const { text, map } = jb.utils.prettyPrintWithPositions(comp ,{initialPath: comp[jb.core.CT].fullId, comps: jb.comps})
         map.cursor = [pos.line,pos.col,pos.line,pos.col]
         const locationMap = jb.tgpTextEditor.enrichMapWithOffsets(text, map)
         if (!locationMap.cursor.offset_from)
@@ -133,6 +134,7 @@ jb.extension('tgpTextEditor', {
     // },
     closestComp(fileContent, cursorLine) {
         const lines = fileContent.split('\n')
+        const dsl = jb.tgpTextEditor.dsl(lines)
         const closestComp = lines.slice(0,cursorLine+1).reverse().findIndex(line => line.match(/^jb.component\(/))
         if (closestComp == -1) return {}
         const componentHeaderIndex = cursorLine - closestComp
@@ -145,8 +147,12 @@ jb.extension('tgpTextEditor', {
           return {}
         }
         const compSrc = linesFromComp.slice(0,compLastLine+1).join('\n')
-        return {compId, compSrc, componentHeaderIndex, compLastLine}
-    },    
+        return {dsl, compId, compSrc, componentHeaderIndex, compLastLine}
+    },
+    dsl(lines) {
+        return lines.filter(l=>l.match(/^jb\.dsl/))
+            .map(l=>( l.match(/^jb.dsl\('([^']+)/) || ['',''])[1])[0] || ''
+    }, 
     fileContentToCompText(fileContent,compId) {
         const lines = fileContent.split('\n')
         const start = lines.findIndex(line => line.indexOf(`jb.component\('${compId}'`) == 0)
@@ -157,16 +163,18 @@ jb.extension('tgpTextEditor', {
             return jb.logError('fileContentToCompText - can not find close comp',{fileContent,compId})
         return { compText: lines.slice(start,start+end+1).join('\n'), compLine: start }
     },
-    fixEditedComp(compText, {line, col} = {}) {
+    fixEditedComp(compText, {line, col} = {},dsl) {
         //console.log('fixEditedComp', compText,line,col)
         let fixedText = null, lastSrc = null
-        const originalComp = jb.tgpTextEditor.evalProfileDef(compText).res
+        const originalComp = jb.tgpTextEditor.evalProfileDef(compText,dsl).res
         let fixedComp = originalComp
         if (!fixedComp && line != undefined) {
             const lines = compText.split('\n')
             const fixedLine = fixLineAtCursor(lines[line],col)
-            if (fixedLine != lines[line])
-                fixedComp = jb.tgpTextEditor.evalProfileDef(compText.split('\n').map((l,i) => i == line ? fixedLine : l).join('\n')).res
+            if (fixedLine != lines[line]) {
+                const fixedCompText = compText.split('\n').map((l,i) => i == line ? fixedLine : l).join('\n')
+                fixedComp = jb.tgpTextEditor.evalProfileDef(fixedCompText, dsl).res
+            }
         }
         if (!fixedComp)
             return { compilationFailure: true} // jb.logException(lastException,'fixEditedComp - can not fix compText', {compText})
@@ -213,18 +221,18 @@ jb.extension('tgpTextEditor', {
         }
     },
     formatComponent() {
-        const { compId, needsFormat } = jb.tgpTextEditor.calcActiveEditorPath()
+        const { compId, needsFormat, dsl } = jb.tgpTextEditor.calcActiveEditorPath()
         if (needsFormat) {
             const { compText} = jb.tgpTextEditor.fileContentToCompText(jb.tgpTextEditor.host.docText(),compId)
-            const {err} = jb.tgpTextEditor.evalProfileDef(compText)
+            const {err} = jb.tgpTextEditor.evalProfileDef(compText,dsl)
             if (err)
                 return jb.logError('can not parse comp', {compId, err})
             return jb.tgpTextEditor.deltaFileContent(jb.tgpTextEditor.host.docText(), compId)
         }
     },
     updateCurrentCompFromEditor() {
-        const {compId, compSrc} = jb.tgpTextEditor.closestComp(jb.tgpTextEditor.host.docText(), jb.tgpTextEditor.host.cursorLine())
-        const {err} = jb.tgpTextEditor.evalProfileDef(compSrc)
+        const {compId, compSrc, dsl} = jb.tgpTextEditor.closestComp(jb.tgpTextEditor.host.docText(), jb.tgpTextEditor.host.cursorLine())
+        const {err} = jb.tgpTextEditor.evalProfileDef(compSrc, dsl)
         if (err)
           return jb.logError('can not parse comp', {compId, err})
     },

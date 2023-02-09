@@ -210,12 +210,15 @@ jb.component('completionTest.dslTest.usingCtrl2', {
 })`, ['israel'])
 })
 
-// jb.component('completionTest.dslTest.top', {
-//   impl: tgp.completionOptionsTest(`jb.component('xxxx', {
-//   type: 'state<location>',    
-//   impl: state(__)
-// })`, ['capital'])
-// })
+jb.component('completionTest.dslTest.top', {
+  impl: tgp.completionOptionsTest({
+    compText: `jb.component('x', {
+  impl: state(__)
+})`,
+    expectedSelections: ['capital'],
+    dsl: 'location'
+  })
+})
 
 // jb.component('completionTest.dslTest.nameOverride', {
 //   impl: tgp.completionOptionsTest(`jb.component('x', {
@@ -232,10 +235,10 @@ jb.component('dslTest.treeShake', {
   impl: dataTest(pipeline(() => jb.treeShake.treeShake(['state<location>israel'],[]), join()), contains('eilat'))
 })
 
-// jb.component('xxx', {
-//   type: 'state<location>',
-//   impl: state(pipeline())
-// })
+jb.component('xxx', {
+  type: 'state<location>',
+  impl: state()
+})
 
 // jb.component('dslTest.setComp', {
 //   impl: dataTest({
