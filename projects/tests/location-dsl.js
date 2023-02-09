@@ -39,6 +39,13 @@ jb.component('nokdim', {
   impl: village('Nokdim')
 })
 
+jb.component('pipeline', {
+  params: [
+    {id: 'checkNameOverride'}
+  ],
+  impl: village()
+})
+
 jb.component('location.control', {
   type: 'control<>',
   params: [

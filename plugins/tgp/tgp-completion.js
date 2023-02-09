@@ -179,7 +179,7 @@ jb.extension('tgpTextEditor', 'completion', {
         const componentHeaderIndex = line - closestComp
         const compId = (lines[componentHeaderIndex].match(/'([^']+)'/)||['',''])[1]
         const inCompPos = {line: line-componentHeaderIndex, col : jb.tgpTextEditor.host.cursorCol() }
-        const {fixedComp, needsFormat, compilationFailure} = jb.tgpTextEditor.cache[compId] || calcCompVars()
+        const {fixedComp, needsFormat, compilationFailure} = calcCompVars() // jb.tgpTextEditor.cache[compId] || calcCompVars()
         if (compilationFailure) 
             return jb.tgpTextEditor.lastActivePath
         if (needsFormat)

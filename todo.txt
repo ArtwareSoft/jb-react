@@ -1,11 +1,32 @@
 zui
-  change no of chars with zoom  move pivots to model
+  add image
+  text 32 as two lines
+  change no of chars with zoom  
+  move pivots to model
   implement separate column for text
   add color
   add icon
   add fromTo zoom parameters
   use items id as original index - separate column
   implement attraction forces to point with gpu. use atan and two neighbours
+
+Image BW compration
+  16X32x4 - text 16*vec4
+  32x32X2 - bits - 1024
+  5+5+2+10 - 2^22 - 4MB
+objects density - same zoom level
+  object size (circle) show be the same
+  max strLen for all densities - 8 grids?
+  life game to decide strlen for each node. trade real estate near the point
+    character grid. each cell has a price. objects own the text cells around and can trade.
+
+  input for strLen
+  object can define min-max space needed for description
+  value of information (market place)
+  shared information market place
+  objects have budget and can move or pay to other objects to be smaller
+  life game to form groups - what is the repres
+  shared information and index (e.g Apple - A)
 
 
 fix completion bugs
@@ -158,7 +179,12 @@ frameworks
       parsing
 
 
-
+scoped components
+  components that can be used only inside other components
+all pivots can be defined as scoped
+compDef({id: 'aa', type: '', params: [
+  param({ })
+]})
     
 
 

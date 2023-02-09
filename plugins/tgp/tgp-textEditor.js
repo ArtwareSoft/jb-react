@@ -160,7 +160,7 @@ jb.extension('tgpTextEditor', {
     fixEditedComp(compText, {line, col} = {}) {
         //console.log('fixEditedComp', compText,line,col)
         let fixedText = null, lastSrc = null
-        const originalComp = jb.tgpTextEditor.evalProfileDef(compText.replace(/^jb\.component/,'')).res
+        const originalComp = jb.tgpTextEditor.evalProfileDef(compText).res
         let fixedComp = originalComp
         if (!fixedComp && line != undefined) {
             const lines = compText.split('\n')
