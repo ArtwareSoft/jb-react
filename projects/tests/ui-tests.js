@@ -1394,12 +1394,8 @@ jb.component('uiTest.prettyPrintComp', {
   impl: uiTest({
     control: group({
       controls: [
-        // text({
-        //   text: ctx => jb_prettyPrintComp('uiTest.innerLabel1Tst', jb.comps['uiTest.innerLabel1Tst']),
-        //   style: {'$': 'text.multi-line'}
-        // }),
         text({
-          text: ctx => jb.utils.prettyPrintComp('editableText.codemirror', jb.comps['editableText.codemirror']),
+          text: ctx => jb.utils.prettyPrintComp('uiTest.codeMirror', jb.comps['uiTest.codeMirror']),
           style: text.codemirror()
         })
       ]

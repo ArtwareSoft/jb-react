@@ -73,7 +73,7 @@ jb.extension('core', {
   initExtension() {
     Object.assign(jb, {
       frame: globalThis,
-      comps: {}, ctxDictionary: {}, dsls: {},
+      comps: {}, ctxDictionary: {},
       __requiredLoaded: {},
     })
     return {

@@ -12,7 +12,7 @@ jb.component('macroTest.vars', {
         } catch(e) {
           return false
         }
-      }, contains("vars: [Var('items', [{id: 1}, {id: 2}])]"))
+      }, contains("[\n      Var('items', [{id: 1}, {id: 2}])\n    ]"))
 })
   
 jb.component('macroTest.Positions.shouldNotFlat', {
@@ -55,7 +55,7 @@ jb.component('macroTest.Positions.InnerFlat', {
             text('1.00')
           ]
         })
-        ), '%map/~controls~0~controls~text~!value%', join()), equals('2,49,2,59'))
+        ), '%map/~controls~0~controls~text~!value%', join()), equals('3,40,3,50'))
 })
   
 jb.component('macroTest.PathInPipeline', {

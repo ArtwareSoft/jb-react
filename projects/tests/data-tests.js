@@ -446,7 +446,9 @@ jb.component('dataTest.asArrayBug', {
 
 jb.component('dataTest.varsCases', {
   impl: dataTest({
-    vars: [Var('items', [{id: 1}, {id: 2}])],
+    vars: [
+      Var('items', [{id: 1}, {id: 2}])
+    ],
     calculate: pipeline(Var('sep', '-'), '%$items/id%', '%% %$sep%', join()),
     expectedResult: equals('1 -,2 -')
   })

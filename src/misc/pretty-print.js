@@ -46,7 +46,9 @@ jb.extension('utils', 'prettyPrint', {
         const toAdd = typeof item === 'function' ? item(acc) : item
         const toAddStr = toAdd.text || toAdd, toAddMap = toAdd.map || {}, toAddPath = toAdd.path || ctx.path
         const startPos = jb.utils.advanceLineCol(acc,''), endPos = jb.utils.advanceLineCol(acc,toAddStr)
-        const map = { ...acc.map, ...toAddMap, [[toAddPath,prop].join('~')]: [startPos.line, startPos.col, endPos.line, endPos.col] }
+        const posArray = [startPos.line, startPos.col, endPos.line, endPos.col]
+        posArray.toAddStr = toAddStr
+        const map = { ...acc.map, ...toAddMap, [[toAddPath,prop].join('~')]: posArray }
         return { text: acc.text + toAddStr, map, unflat: acc.unflat || toAdd.unflat, ...endPos}
       }, {text: '', map: {}, ...ctx})
       return {...ctx, ...res}
@@ -59,7 +61,8 @@ jb.extension('utils', 'prettyPrint', {
       const openResult = processList(ctx,[..._open, {prop: `!open-${arrayOrProfile}`, item: () => newLine()}])
 
       const beforeClose = innerVals.reduce((acc,{innerPath, val}, index) => {
-        const fixedPropName = valueToMacro(ctx, val, flat).fixedPropName // used to serialize function memeber
+        const ctxWithPath = { ...ctx, path: [path,innerPath].join('~'), depth: depth +1 }
+        const fixedPropName = valueToMacro(ctxWithPath, val, flat).fixedPropName // used to serialize function memeber
         const semanticPrefix = isArray ? `array-prefix-${index}` : 'prop'
         const semanticSeparator = isArray ? `array-separator-${index}` : `obj-separator-${index}`
         return processList(acc,[
@@ -91,10 +94,16 @@ jb.extension('utils', 'prettyPrint', {
         const val = jb.path(comps,path.split('~')) 
         const paramProps = path.match(/~params~[0-9]+$/)
         const paramsParent = path.match(/~params$/)
-        const ctrls = path.match(/~controls$/) && Array.isArray(val)
+//        const ctrls = path.match(/~controls$/) && Array.isArray(val)
         const moreThanTwoVals = innerVals.length > 2 && !isArray
         const top = !path.match(/~/g)
-        return !paramProps && (result.unflat || paramsParent || top || ctrls || long || moreThanTwoVals)
+        const singleParamAsArray = val && jb.tgp.singleParamAsArray(path)
+        const longInnerValInArray = !singleParamAsArray && innerVals.reduce((longFound,{},i) => 
+          longFound || ((result.map[`${path}~${i}~!value`] || {}).toAddStr || '').length > 20 , false)
+        const res = !paramProps && (result.unflat || paramsParent || top || long || moreThanTwoVals || longInnerValInArray)
+        // if (res != !!(res || ctrls))
+        //   debugger
+        return res // || ctrls 
       }
       function fixPropName(prop) {
         return prop.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/) ? prop : `'${prop}'`

@@ -77,8 +77,10 @@ jb.component('zuiTest.itemlist', {
         }),
         zui.itemlist({
           itemView: group({
-            controls: [
-              text('my text')
+            layout: verticalOneByOne(),
+            views: [
+              text(adaptableText({att: 'title', priority: 1})),
+              text(numeric({att: 'price', priority: 2}))
             ]
           }),
           boardSize: 256,
@@ -87,7 +89,9 @@ jb.component('zuiTest.itemlist', {
           onChange: refreshControlById('propSheet')
         })
       ],
-      features: variable('zuiCtx', obj())
+      features: [
+        variable('zuiCtx', obj())
+      ]
     }),
     expectedResult: contains('cmp-id')
   })

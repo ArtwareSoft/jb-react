@@ -171,8 +171,8 @@ jb.extension('tgpTextEditor', {
         let fixedComp = originalComp
         if (!fixedComp && line != undefined) {
             const lines = compText.split('\n')
-            const fixedLine = fixLineAtCursor(lines[line],col)
-            if (fixedLine != lines[line]) {
+            const fixedLine = lines[line] && fixLineAtCursor(lines[line],col)
+            if (lines[line] && fixedLine != lines[line]) {
                 const fixedCompText = compText.split('\n').map((l,i) => i == line ? fixedLine : l).join('\n')
                 fixedComp = jb.tgpTextEditor.evalProfileDef(fixedCompText, dsl).res
             }

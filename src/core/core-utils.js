@@ -82,12 +82,14 @@ jb.extension('utils', { // jb core utils
       }
 
       ;(comp.params || []).forEach(p=> {
+        const _dsl = dslFromContext || dsl
         // fix as boolean params to have type: 'boolean'
         if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
           p.type = 'boolean';
         const dslType = (p.type || '').split(',')
-          .map(t=> dsl && t.indexOf('<') == -1 && ['data','action'].indexOf(t) == -1 ? `${t}<${dsl}>` : t)
-          .join(',') || 'data'
+          .map(t => t || 'data')
+          .map(t=> _dsl && t.indexOf('<') == -1 && ['data','action'].indexOf(t) == -1 ? `${t}<${_dsl}>` : t)
+          .join(',')
         p[CT] = { dslType, originalType: p.type}
         if (p.defaultValue && typeof p.defaultValue == 'object')
           p.defaultValue[CT] = { ...p[CT] }

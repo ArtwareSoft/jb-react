@@ -28,7 +28,7 @@ jb.component('completionTest.pt', {
   impl: uiTest({
     control: group({
       controls: [__
-__        text('hello world'),__
+__        text('hello world in the largest'),__
 __        text('2')__
 __      ]
     }),
@@ -141,15 +141,9 @@ jb.component('completionTest.wrapWithGroup', {
     compText: "jb.component('x', {\n  impl: uiTest(__text())\n})",
     completionToActivate: 'group',
     expectedEdit: () => ({
-        range: {start: {line: 1, col: 15}, end: {line: 1, col: 21}},
-        newText: `
-    group({
-      controls: [
-        text()
-      ]
-    })
-  `}),
-    expectedCursorPos: '6,4'
+        range: {start: {line: 1, col: 15}, end: {line: 1, col: 20}},
+        newText: `group({controls: [text()]}`}),
+    expectedCursorPos: '1,40'
  })
 })
 
