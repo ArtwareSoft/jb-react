@@ -116,7 +116,7 @@ jb.extension('zui','multiLayer', {
             layer.calcExtraRenderingProps && Object.assign(props, layer.calcExtraRenderingProps(props))
             layer.renderGPUFrame(props, layer.buffers)
         })
-        //props.onChange && props.onChange(props)
+        //props.onChange && props.onChange(props) - test
       }
     })
   },
@@ -293,32 +293,7 @@ jb.extension('zui','multiLayer', {
       }
       image.src = url
     })
-  },
-  textsAsFloats(text) { // 31 floats = 1 + 2 + 4 + (4+4) + (4+4+4+4)
-    const words = text.split(' ').filter(x=>x)
-    const text2 = words.length < 2 ? text.slice(0,2) : words.slice(0,2).map(x=>x[0].toUpperCase()).join('')
-    const text4 = words.length < 2 ? text.slice(0,4) : [words[0].slice(0,1), words[1].slice(0,2)].join(' ')
-    const text8 = words.length < 2 ? text.slice(0,8) : [words[0].slice(0,3), words[1].slice(0,4)].join(' ')
-    const ret = [...encode(text2,2),...encode(text4,4) ,...encode(text8,8), ...encode(text.slice(0,16),16) , ...encode(text.slice(0,32),32) ]
-    return ret
-
-    function encode(text,size) {
-      const pad = '                  '.slice(0,Math.ceil((size-text.length)/2))
-      const txtChars = charset((pad + text + pad).slice(0,size))
-      const floats = Array.from(new Array(Math.ceil(size/2)).keys())
-          .map(i => twoCharsToFloat(txtChars[i*2],txtChars[i*2+1]))
-      return floats
-    }
-    function charset(text) {
-      return Array.from(text).map(x=>
-        x.match(/[a-z]/) ? x[0].charCodeAt(0)-97+1 : 
-        x.match(/[A-Z]/) ? x[0].charCodeAt(0)-65+42 : 
-        x.match(/[0-9]/) ? x[0].charCodeAt(0)-48+27 : 0)
-    }
-    function twoCharsToFloat(char1, char2) {
-      return char1 * 256 + char2
-    }
-  }  
+  } 
 })
 
 jb.component('circles', {
@@ -404,7 +379,6 @@ jb.component('summaryLabel', {
             const fontSize = 16
             const txt = ' abcdefghijklmnopqrstuvwxyz0123456789!@#$%ABCDEFGHIJKLMNOPQRSTUVWXYZ'
             const canvas = document.createElement('canvas')
-            canvas.id = 'canvas'
             canvas.width = this.charSetSize * fontSize
             canvas.height = fontSize
             document.body.appendChild(canvas)
@@ -415,7 +389,9 @@ jb.component('summaryLabel', {
             ctx.fillStyle = 'black'
             Array.from(new Array(txt.length).keys()).forEach(i=> ctx.fillText(txt[i],i*10,0))
 
-            return canvas.toDataURL('image/png')
+            const dataUrl = canvas.toDataURL('image/png')
+            document.body.removeChild(canvas)
+            return dataUrl
         },
         prepareGPU({ gl, DIM, itemsPositions }) {
           const txt_fields = this.txt_fields
@@ -509,9 +485,9 @@ jb.component('summaryLabel', {
               [[1,0], [0.1,0.4]], // right
             ]
             const { mat,sparse } = itemsPositions
-            const summaryLabel = item => `${item.title} (${item.price}, ${item.hits})`
-            const textBoxNodes = sparse.map(([item, x,y,color]) => 
-                [...calcTextPositions(x,y) , ...jb.zui.textsAsFloats(summaryLabel(item))])
+            const itemLabel = item => `${item.title} (${item.price}, ${item.hits})`
+            const textBoxNodes = sparse.map(([item, x,y]) => 
+                [...calcTextPositions(x,y) , ...jb.zui.texts2to32AsFloats(jb.zui.textSummaries2to32(itemLabel(item)))])
             const vertexArray = new Float32Array(textBoxNodes.flatMap(v=> v.map(x=>1.0*x)))
             const floatsInVertex = 2 + 31
             const vertexCount = vertexArray.length / floatsInVertex
