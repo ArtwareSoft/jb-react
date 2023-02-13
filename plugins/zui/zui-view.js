@@ -38,7 +38,7 @@ jb.component('itemlistStyle', {
       frontEnd.coLocation(),
       frontEnd.init(async ({},{cmp, el, $props}) => {
             const props = cmp.props = $props
-            const gl = el.getContext('webgl', { alpha: true, premultipliedAlpha: true }) //el.getContext('webgl')
+            const gl = el.getContext('webgl', { alpha: true, premultipliedAlpha: true })
             gl.enable(gl.BLEND)
             gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
@@ -98,9 +98,11 @@ jb.extension('zui','view', {
     props.elems.forEach(elem => elem.buffers = elem.prepareGPU(props))
     Object.assign(cmp, {
       render() {
-        const elems = props.elems.filter(el=>el.inScene(zoom))
-        elems.forEach(elem => elem.calcExtraRenderingProps && Object.assign(props, elem.calcExtraRenderingProps(props)))
-        elems.forEach(elem => elem.renderGPUFrame(props, elem.buffers))
+        const { zoom, glCanvas,elems } = props
+        itemView.layout(glCanvas.width/ zoom, glCanvas.height/ zoom)
+        const visibleElems = elems.filter(el=>el.width && el.height)
+        visibleElems.forEach(elem => elem.calcExtraRenderingProps && Object.assign(props, elem.calcExtraRenderingProps(props)))
+        visibleElems.forEach(elem => elem.renderGPUFrame(props, elem.buffers))
         props.onChange && props.onChange(props)
       },
     })
@@ -216,14 +218,8 @@ jb.extension('zui','text', {
             }`
         ]
 
-        const textPosMatrix = [
-          [[-1,-1], [0,-0.25]], // below
-          [[-1,1], [0,0.25] ], // above [-1.5,0.1]
-          [[-3,0], [-1.6,-0.1]], // left
-          [[1,0], [0.1,0.4]], // right
-        ]
         const { mat,sparse } = itemsPositions
-        const textBoxNodes = sparse.map(([x,y,color, summaryLabel]) => [...calcTextPositions(x,y) , ...jb.zui.textsAsFloats(summaryLabel)])
+        const textBoxNodes = sparse.map(([x,y,color, summaryLabel]) => [x,y, ...jb.zui.textsAsFloats(summaryLabel)])
         const vertexArray = new Float32Array(textBoxNodes.flatMap(v=> v.map(x=>1.0*x)))
         const floatsInVertex = 2 + 31
         const vertexCount = vertexArray.length / floatsInVertex
@@ -237,21 +233,6 @@ jb.extension('zui','text', {
         gl.bufferData(gl.ARRAY_BUFFER, vertexArray, gl.STATIC_DRAW)
 
         return buffers
-    
-        // specials algorithm to avoid collapse of texts, 
-        function calcTextPositions(x,y) {
-          for(let i=0;i<4;i++) {
-            let empty = true
-            for(let j=0;j<3;j++)
-              if (mat[DIM*(y + textPosMatrix[i][0][1]) + x+textPosMatrix[i][0][0]+j]) empty = false;
-            if (empty) {
-              for(let j=0;j<3;j++)
-                mat[DIM*(y + textPosMatrix[i][0][1]) + x+textPosMatrix[i][0][0]+j] = true;
-              return [x+textPosMatrix[i][1][0], y+textPosMatrix[i][1][1]]
-            }
-          }
-          return [-1,-1]
-        }
     },
     calcExtraRenderingProps({zoom, glCanvas}) {
       const gridSizeInPixels = glCanvas.width/ zoom
@@ -310,7 +291,6 @@ jb.component('text', {
     const view = {
       pivots: () => prop.pivots(),
       zuiElems: () => [jb.zui.textZuiElem],
-      rt: {}
     }
     features().forEach(f=>f.enrichView(view))
     view.height = view.height || 16
@@ -331,35 +311,39 @@ jb.component('group', {
     const views = viewsF()
     views.byPriority = views.slice(0).sort((x,y) => (x.priority || 0) - (y.priority || 0) )
     
-
-    return {
+    const view = {
       pivots: () => views.flatMap(v=>v.pivots()),
       zuiElems: () => views.flatMap(v=>v.zuiElems()),
-      layout: size => layout(size, views),
-      rt: {}
+      layout: (width,height) => layout.layout(width,height, views),
     }
+    features().forEach(f=>f.enrichView(view))
+    return view
   }
 })
 
 jb.component('verticalOneByOne', {
   type: 'layout',
   impl: ctx => ({
-    layout(size, views) {
-      let sizeLeft = size
+    layout(width,height, views) {
+      let sizeLeft = height
       views.byPriority.forEach(v=>{
         if (sizeLeft == 0) {
-          v.rt.height = 0
+          setElemsHeight(v,0)
         } else if (sizeLeft > v.height) {
-          v.rt.height = v.height
+          setElemsHeight(v, v.height)
           sizeLeft -= v.height
         } else if (sizeLeft > v.enterHeight) {
-          v.rt.height = sizeLeft
+          setElemsHeight(v, sizeLeft)
           sizeLeft = 0
         } else {
-          v.rt.height = 0
+          setElemsHeight(v, 0)
           sizeLeft = 0
         }
       })
+
+      function setElemsHeight(v, height) {
+        v.zuiElems().forEach(e=>e.height = height)
+      }
     }
   })
 })

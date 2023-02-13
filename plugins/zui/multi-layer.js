@@ -6,9 +6,10 @@ jb.component('zui.multiLayer', {
     {id: 'title', as: 'string'},
     {id: 'boardSize', as: 'number', defaultValue: 256},
     {id: 'initialZoom', as: 'number', description: 'in terms of board window. empty is all board'},
+    {id: 'initialCenter', as: 'string', description: 'e.g, 2,3'},
     {id: 'items', as: 'array', dynamic: true, mandatory: true},
     {id: 'layers', type: 'layer<zui>[]', mandatory: true, dynamic: true},
-    {id: 'onChange', type: 'action<>', dynamic: true } ,
+    {id: 'onChange', type: 'action<>', dynamic: true},
     {id: 'style', type: 'multiLayerStyle<zui>', dynamic: true, defaultValue: multiLayerStyle()},
     {id: 'features', type: 'feature[]', dynamic: true, flattenArray: true}
   ],
@@ -27,15 +28,15 @@ jb.component('multiLayerStyle', {
         const DIM = $model.boardSize
         const onChange = $model.onChange.profile && $model.onChange
         const zoom = +($model.initialZoom || DIM)
+        const center = $model.initialCenter ? $model.initialCenter.split(',').map(x=>+x) : [DIM* 0.5, DIM* 0.5]
         const _greens = jb.d3.lib().scaleSequential(jb.frame.d3.interpolateLab('green','white'))
         const greens = x => jb.frame.d3.color(_greens(x))
         const pivots = { x: pivot('price'), y: pivot('hits') }
         const layers = $model.layers()
-        const summaryLabel = item => `${item.title} (${item.price}, ${item.hits})`
 
         return {
-            DIM, ZOOM_LIMIT: [1, DIM*2], layers, items, pivots, summaryLabel, scales: { greens }, onChange,
-            center: [DIM* 0.5, DIM* 0.5], stage: 0 , zoom
+            DIM, ZOOM_LIMIT: [1, DIM*2], layers, items, pivots, scales: { greens }, onChange,
+            center, stage: 0 , zoom
         }
 
         function pivot(att) {
@@ -187,7 +188,7 @@ jb.extension('zui','multiLayer', {
       },
     })
   },
-  calcItemsPositions({items, pivots, scales, summaryLabel, DIM}) {
+  calcItemsPositions({items, pivots, scales, DIM}) {
       const mat = Array(DIM**2)
       items.forEach(item => {
         const [x,y] = [Math.floor(DIM*pivots.x.scale(item)), Math.floor(DIM*pivots.y.scale(item))]
@@ -197,7 +198,7 @@ jb.extension('zui','multiLayer', {
       repulsion()
 
       return { mat, sparse: Array.from(Array(DIM**2).keys()).filter(i=>mat[i]).map(i=>
-          [i%DIM, Math.floor(i/DIM), scales.greens(pivots.x.scale(mat[i][0])), summaryLabel(mat[i][0]) ]) 
+          [mat[i][0], i%DIM, Math.floor(i/DIM), scales.greens(pivots.x.scale(mat[i][0])) ]) 
       }
 
       function repulsion() {
@@ -349,7 +350,7 @@ jb.component('circles', {
                 }`
             ]
              
-            const vertexArray = new Float32Array(itemsPositions.sparse.flatMap(x=>x.slice(0,2)).map(x=>1.0*x))
+            const vertexArray = new Float32Array(itemsPositions.sparse.flatMap(x=>x.slice(1,3)).map(x=>1.0*x))
 
             const buffers = {
                 vertexBuffer: gl.createBuffer(),
@@ -393,7 +394,7 @@ jb.component('summaryLabel', {
   params: [
     {id: 'noOfChars', as: 'number', defaultValue: 16}
   ],
-  impl: (ctx, noOfChars) => ({
+  impl: () => ({
         fromZoom: 16, toZoom: 8, charSetSize: 64,
         txt_fields: ['2','4','8','16_0','16_1','32_0','32_1','32_2','32_3'],
         async prepare({gl}) {
@@ -508,7 +509,9 @@ jb.component('summaryLabel', {
               [[1,0], [0.1,0.4]], // right
             ]
             const { mat,sparse } = itemsPositions
-            const textBoxNodes = sparse.map(([x,y,color, summaryLabel]) => [...calcTextPositions(x,y) , ...jb.zui.textsAsFloats(summaryLabel)])
+            const summaryLabel = item => `${item.title} (${item.price}, ${item.hits})`
+            const textBoxNodes = sparse.map(([item, x,y,color]) => 
+                [...calcTextPositions(x,y) , ...jb.zui.textsAsFloats(summaryLabel(item))])
             const vertexArray = new Float32Array(textBoxNodes.flatMap(v=> v.map(x=>1.0*x)))
             const floatsInVertex = 2 + 31
             const vertexCount = vertexArray.length / floatsInVertex

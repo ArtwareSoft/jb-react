@@ -45,7 +45,8 @@ jb.component('zuiTest.summaryLabel', {
         }),
         zui.multiLayer({
           boardSize: 256,
-          initialZoom: 256,
+          initialZoom: 4,
+          initialCenter: '158,135',
           items: pipeline('%$phones%', slice(0, 10000)),
           layers: [summaryLabel(), circles()],
           onChange: refreshControlById('propSheet')
