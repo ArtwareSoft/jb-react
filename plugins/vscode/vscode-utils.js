@@ -1,6 +1,7 @@
 jb.extension('vscode', {
     initExtension() { return { loadedProjects : {} } },
-    initVscodeAsHost() {
+    initVscodeAsHost(context) {
+        jb.vscode.initLogs(context)
         jb.tgpTextEditor.cache = {}
         jb.tgpTextEditor.host = {
             async applyEdit(edit,uri) {
@@ -10,41 +11,36 @@ jb.extension('vscode', {
                 await vscodeNS.workspace.applyEdit(wEdit)
                 jb.tgpTextEditor.lastEdit = { edit , uri }
             },
-            selectRange(start,end) {
+            async selectRange(start,end) {
                 end = end || start
                 const editor = vscodeNS.window.activeTextEditor
                 const line = start.line
                 editor.revealRange(new vscodeNS.Range(line, 0,line, 0), vscodeNS.TextEditorRevealType.InCenterIfOutsideViewport)
                 editor.selection = new vscodeNS.Selection(line, start.col, end.line, end.col)
             },
+            async docTextAndCursor() {
+                const editor = vscodeNS.window.activeTextEditor
+                return { docText: editor.document.getText(),
+                    cursorLine: editor.selection.active.line,
+                    cursorCol: editor.selection.active.character
+                }
+            },
+            async execCommand(cmd) {
+                vscodeNS.commands.executeCommand(cmd)
+            },
             getTextAtSelection() {
                 return vscodeNS.window.activeTextEditor.document.getText(vscodeNS.window.activeTextEditor.selection)
             },
-            getSelectionRange() {
-                const res = vscodeNS.window.activeTextEditor.selection
-                return { start: jb.vscode.tojBartFormat(res.start), end: jb.vscode.tojBartFormat(res.end)}
-            },
-            docText() {
-                return vscodeNS.window.activeTextEditor.document.getText()
-            },
-            cursorLine() {
-                return vscodeNS.window.activeTextEditor.selection.active.line
-            },
-            cursorCol() {
-                return vscodeNS.window.activeTextEditor.selection.active.character
-            },
-            execCommand(cmd) {
-                vscodeNS.commands.executeCommand(cmd)
-            }
         }
         vscodeNS.workspace.onDidChangeTextDocument(() => {
             jb.tgpTextEditor.cache = {}
             jb.tgpTextEditor.updateCurrentCompFromEditor()
         })        
-        vscodeNS.window.onDidChangeTextEditorSelection(() => {
-            const { semanticPath } = jb.tgpTextEditor.calcActiveEditorPath()
-            console.log('update pos', semanticPath)            
-        })
+        // vscodeNS.window.onDidChangeTextEditorSelection( async () => {
+        //     if (!jb.tgpTextEditor.watchCursor) return
+        //     const { semanticPath } = await jb.tgpTextEditor.calcActiveEditorPath()
+        //     console.log('update pos', semanticPath)            
+        // })
         vscodeNS.workspace.onDidSaveTextDocument(() => {
             jb.tgpTextEditor.updateCurrentCompFromEditor()
         })
@@ -100,14 +96,16 @@ jb.extension('vscode', {
         vscodeNS.workspace.onDidChangeTextDocument(() => {
             jb.vscode.cache = {}
         })
-        vscodeNS.workspace.onDidSaveTextDocument(() => { // update component of active selection
-            const ctx = new jb.core.jbCtx({},{vars: {headlessWidget: true, fromVsCode: true}})
-            const {compId, compSrc} = jb.tgpTextEditor.closestComp(jb.tgpTextEditor.host.getText(), {line: jb.tgpTextEditor.host.cursorLine()})
-            if (compId) {
-                const compRef = jb.tgp.ref(compId)
-                const newVal = '({' + compSrc.split('\n').slice(1).join('\n')
-                jb.tgpTextEditor.setStrValue(newVal, compRef, ctx)
-            }
+        vscodeNS.workspace.onDidSaveTextDocument( async () => { // update component of active selection
+            await updateCurrentCompFromEditor()
+            // const ctx = new jb.core.jbCtx({},{vars: {headlessWidget: true, fromVsCode: true}})
+            // const {docText, cursorLine } = await jb.tgpTextEditor.host.docTextAndCursor()
+            // const {compId, compSrc, dsl} = jb.tgpTextEditor.closestComp(docText, cursorLine)
+            // if (compId) {
+            //     const compRef = jb.tgp.ref(compId)
+            //     const newVal = '({' + compSrc.split('\n').slice(1).join('\n')
+            //     jb.tgpTextEditor.setStrValue(newVal, compRef, ctx)
+            // }
             const ref = ctx.exp('%$studio/scriptChangeCounter%','ref')
             jb.db.writeValue(ref, +(jb.val(ref)||0)+1 ,ctx)
         })
@@ -149,6 +147,13 @@ jb.extension('vscode', {
         // if (projects.length)
         //     return loadProjectsCode(projects)
     },
+    async initLogs() {
+        const outputChannel = jb.vscode.OutputChannel = vscodeNS.window.createOutputChannel('jbart')
+        outputChannel.appendLine('Hello jBart vscode')
+        outputChannel.show()
+        // const fromWorker = await jb.exec({$: 'vscode.workerTst'})
+        // outputChannel.appendLine(fromWorker); 
+    }
     // applyDeltaFromStudio() {
     //     jb.utils.subscribe(jb.watchableComps.source, async e => {
     //         const compId = e.path[0]
@@ -186,6 +191,11 @@ jb.component('vscode.previewCtrl', {
     ],
     features: watchRef('%$studio/circuit%')
   })
+})
+
+jb.component('vscode.workerTst', {
+  type: 'data',
+  impl: remote.data('hello from worker', jbm.vscodeFork('vscodeFork'))
 })
 
 // DO NOT DELETE - vscode views should be fixed and moved
@@ -263,4 +273,8 @@ jb.component('vscode.gotoPath', {
     {id: 'semanticPart', as: 'string' }
   ],
   impl: (ctx,path,semanticPart) => jb.vscode.gotoPath(path,semanticPart)
+})
+
+jb.component('vscode.provideCompletionItems', {
+  impl: pipe(() => jb.tgpTextEditor.host.completionInput(), remote.data(tgpEditor.provideCompletionItems(), jbm.langServerJbm()))
 })

@@ -39,6 +39,24 @@ jb.extension('vscode', 'ports', {
         },
         onMessage: { addListener: handler => worker.on('message', m => jb.net.handleOrRouteMsg(from,to,handler,m)) },
     }},
+    portFromForkToExt(parentProcess,from,to) { return {
+        parentProcess, from, to,
+        postMessage: _m => {
+            const m = {from, to,..._m}
+            jb.log(`remote sent from ${from} to ${to}`,{m})
+            parentProcess.send(m) 
+        },
+        onMessage: { addListener: handler => parentProcess.on('message', m => jb.net.handleOrRouteMsg(from,to,handler,m)) },
+    }},
+    portFromExtensionToFork(child,from,to) { return {
+        child, from, to,
+        postMessage: _m => {
+            const m = {from, to,..._m}
+            jb.log(`remote sent from ${from} to ${to}`,{m})
+            child.send(m) 
+        },
+        onMessage: { addListener: handler => child.on('message', m => jb.net.handleOrRouteMsg(from,to,handler,m)) },
+    }},   
 })
 
 jb.component('jbm.vscodeWebView', {
@@ -141,44 +159,101 @@ jb.component('jbm.vscodeWebView', {
 //     }
 // })
 
-// jb.component('jbm.vscodeWorker', {
-//     type: 'jbm',
-//     params: [
-//         {id: 'id', as: 'string' },
-//         {id: 'init' , type: 'action', dynamic: true },
-//         {id: 'initJbCode', type: 'initJbCode', dynamic: true, defaultValue: initJb.treeShakeClient() },
-//     ],    
-//     impl: (ctx,name,init,initJbCode) => {
-//         if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
-//         const workerUri = `${jb.uri}•${name}`
-//         const code = initJbCode(ctx.setVars({uri: workerUri, multipleJbmsInFrame: false}))
-//         const workerCode = `
-// global.jbInWorker = true
-// global.importScripts = global.require
-// jb_modules = { core: ${JSON.stringify(jb_modules.core)} };
-// ${jbInit.toString()}
-// ${jbSupervisedLoad.toString()}
-// function jb_loadFile(url, baseUrl) { 
-//     baseUrl = baseUrl || location.origin || ''
-//     return Promise.resolve(importScripts(baseUrl+url)) 
-// }
-// ${code};
+jb.component('initJb.vcodeCompletionWorker', {
+  type: 'initJbCode',
+  impl: ({vars}) => {
+    const f = async () => { 
+        globalThis.jb = await jbInit('URI',{
+            projects: ['studio','tests'], plugins: ['vscode', ...jb_plugins], doNoInitLibs: true, useFileSymbolsFromBuild: true
+        })
+        await jb.initializeLibs(['utils','watchable','immutable','watchableComps','tgp','tgpTextEditor','vscode','jbm','cbHandler','treeShake'])
+    }
+    const func = f.toString().replace(/URI/,vars.uri)
+    return `(${func})()`
+    }
+})
 
-// function ${jb.vscode.portFromWorkerToExt.toString()}
-// const { parentPort} = require('worker_threads')
-// jb.treeShake.codeServerJbm = jb.parent = jb.ports['${jb.uri}'] = jb.jbm.extendPortToJbmProxy(portFromWorkerToExt(parentPort,'${workerUri}','${jb.uri}'))
-// //jb.delay(3000).then(()=>{debugger})
-// //# sourceURL=${workerUri}-initJb.js
-// `
-//         const worker = new Worker(workerCode, {eval: true, stdout: true})
-//         worker.on('exit', e=> console.log('worker exit'))
-//         worker.on('error', e=> console.log('error in worker', e))
-//         jb.jbm.childJbms[name] = jb.ports[workerUri] = jb.jbm.extendPortToJbmProxy(jb.vscode.portFromExtensionToWorker(worker,jb.uri,workerUri))
-//         const result = Promise.resolve(init(ctx.setVar('jbm',jb.jbm.childJbms[name]))).then(()=>jb.jbm.childJbms[name])
-//         result.uri = workerUri
-//         return result
-//     }
-// })
+jb.component('jbm.vscodeFork', {
+  type: 'jbm',
+  params: [
+    {id: 'id', as: 'string', defaultValue: 'server'},
+    {id: 'init', type: 'action', dynamic: true},
+    {id: 'initJbCode', type: 'initJbCode', dynamic: true, defaultValue: initJb.vcodeCompletionWorker()}
+  ],
+  impl: async (ctx,name,init,initJbCode) => {
+        if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
+        const forkUri = `${jb.uri}•${name}`
+        const initJBCode = initJbCode(ctx.setVars({uri: forkUri, multipleJbmsInFrame: false}))
+
+        const workerCode = `
+const fs = require('fs')
+const util = require('util')
+const vm = require('vm')
+globalThis.jbInWorker = true
+process.send('forkJbmLog: start-loading')  
+
+globalThis.jbBaseUrl = '${jbBaseUrl}'
+globalThis.jbFetchFile = url => util.promisify(fs.readFile)(url)
+globalThis.jbFetchJson = url => (util.promisify(fs.readFile)(url)).then(x=>JSON.parse(x))
+const { fileSymbolsFunc, jbGetJSFromUrl} = require(jbBaseUrl+ '/hosts/node/node-utils.js')
+globalThis.jbFileSymbols = fileSymbolsFunc
+globalThis.jbGetJSFromUrl = jbGetJSFromUrl
+
+const { jbInit, jb_plugins } = require(jbBaseUrl+ '/src/loader/jb-loader.js')
+globalThis.jbInit = jbInit
+globalThis.jb_plugins = jb_plugins
+
+;(async () => {
+  await ${initJBCode};
+  jb.treeShake.codeServerJbm = jb.parent = jb.ports['${jb.uri}'] = jb.jbm.extendPortToJbmProxy(portFromForkToExt(process,'${forkUri}','${jb.uri}'))
+  process.send('jbm-loaded')  
+  function ${jb.vscode.portFromForkToExt.toString()}
+})()
+
+//# sourceURL=${forkUri}-initJb.js
+        `
+        const fork = vsChild.fork(`${vsPluginDir}/minimal-child.js`,[],{execArgv:['--inspect-brk']})
+        fork.send(`eval:${workerCode}`);
+
+        // child.on('message', e=> {
+        //   debugger
+        //   console.log('worker', e)
+        // })
+
+        fork.on('exit', e=> console.log('fork exit'))
+        fork.on('error', e=> console.log('error in fork', e))
+        jb.jbm.childJbms[name] = jb.ports[forkUri] = 
+            jb.jbm.extendPortToJbmProxy(jb.vscode.portFromExtensionToFork(fork,jb.uri,forkUri))
+        jb.jbm.childJbms[name].uri = forkUri
+        jb.jbm.childJbms[name].kill = fork.kill
+
+        await new Promise(resolve=>{
+          function jbmLoadedHandler(message) {
+            if (message == 'jbm-loaded') {
+              fork.off('message', jbmLoadedHandler)
+              resolve()
+            }
+          }
+          fork.on('message', jbmLoadedHandler);          
+        })
+
+        await init(ctx.setVar('jbm',jb.jbm.childJbms[name]))
+        return jb.jbm.childJbms[name]
+    }
+})
+
+jb.component('jbm.langServerJbm', {
+  type: 'jbm',
+  impl: async () => {
+        if (! jb.vscode.langServerJbm || jb.vscode.restartLangServer) {
+            jb.vscode.restartLangServer = false
+            if (jb.path(jb.vscode.langServerJbm,'kill'))
+                jb.vscode.langServerJbm.kill()
+            jb.vscode.langServerJbm = await jb.exec({$:'jbm.vscodeFork'})
+        }
+        return jb.vscode.langServerJbm
+  }
+})
 
 jb.component('vscode.openPreviewPanelOld', {
   type: 'action',

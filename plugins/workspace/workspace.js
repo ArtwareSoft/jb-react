@@ -15,32 +15,26 @@ jb.extension('workspace', {
                 jb.workspace.openDocs[docUri].text = docText.slice(0,from) + edit.newText + docText.slice(to)
                 jb.tgpTextEditor.lastEdit = { edit , uri }
             },
-            selectRange(start,end) {
+            async selectRange(start,end) {
                 jb.workspace.openDocs[jb.workspace.activeUri].selection = { start, end: end || start }
                 jb.tgpTextEditor.host.selectionSource.next({start,end})
             },
-            getTextAtSelection() {
+            async getTextAtSelection() {
                 const selection = jb.workspace.openDocs[jb.workspace.activeUri].selection
                 const docText = jb.workspace.openDocs[jb.workspace.activeUri].text
                 const from = jb.tgpTextEditor.lineColToOffset(docText, selection.start)
                 const to = jb.tgpTextEditor.lineColToOffset(docText, selection.start)
                 return docText.slice(from,to)
             },
-            getSelectionRange() {
-                return jb.workspace.openDocs[jb.workspace.activeUri].selection
+            async docTextAndCursor() {
+                const doc = jb.workspace.openDocs[jb.workspace.activeUri]
+                return { docText: doc.text, cursorLine: doc.selection.start.line, cursorCol: doc.selection.start.col}
             },
-            docText() {
-                return jb.workspace.openDocs[jb.workspace.activeUri].text
-            },
-            cursorLine() {
-                return jb.workspace.openDocs[jb.workspace.activeUri].selection.start.line
-            },
-            cursorCol() {
-                return jb.workspace.openDocs[jb.workspace.activeUri].selection.start.col
-            },
-            execCommand(cmd) {
+            async execCommand(cmd) {
                 console.log('exec command', cmd)
             },
+            
+            // testers only use
             initDoc(uri,text, selection = { start:{line:0,col:0}, end:{line:0,col:0} }) {
                 jb.workspace.openDocs[uri] = { text, selection}
                 jb.workspace.activeUri = uri

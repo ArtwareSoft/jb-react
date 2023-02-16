@@ -6,7 +6,7 @@ jb.component('tgp.completionOptionsTest', {
     {id: 'expectedSelections', as: 'array', description: 'label a selection that should exist in the menu. one for each point'},
     {id: 'dsl', as: 'string'}
   ],
-  impl: (ctx,compText,expectedSelections,dsl)=> {
+  impl: async (ctx,compText,expectedSelections,dsl)=> {
         jb.workspace.initJbWorkspaceAsHost()
         const parts = compText.split('__')
         const dslLine = dsl ? `jb.dsl('${dsl}')\n` : ''
@@ -15,16 +15,18 @@ jb.component('tgp.completionOptionsTest', {
         jb.tgpTextEditor.evalProfileDef(code,dsl)
         jb.tgpTextEditor.host.initDoc('dummy.js', dslLine+code)
         
-        const result = offsets.map(offset=>jb.tgpTextEditor.offsetToLineCol(dslLine+code,offset)).map((inCompPos,i) => {
+        const result = await offsets.map(offset=>jb.tgpTextEditor.offsetToLineCol(dslLine+code,offset))
+          .reduce(async (errors, inCompPos,i) => {
+            const _errors = await errors
             jb.tgpTextEditor.host.selectRange(inCompPos)
-            const options = jb.tgpTextEditor.provideCompletionItems(ctx)
+            const options = await jb.tgpTextEditor.provideCompletionItems(ctx)
             if (!options)
                 return `no options at index ${i}`
             const res = options.map(x=>x.label).includes(expectedSelections[i])
             if (!res)
                 return `${expectedSelections[i]} not found at index ${i}`
-            return ''
-        }).join('-')
+            return _errors + ''
+        }, '')
 
         const testId = ctx.vars.testID;
         return { id: testId, title: testId, success: result.match(/^-*$/), reason: result }
@@ -54,20 +56,22 @@ jb.component('tgp.completionActionTest', {
 
             const inCompPos = jb.tgpTextEditor.offsetToLineCol(dslLine+code,offset)
             jb.tgpTextEditor.host.selectRange(inCompPos)
-            const { needsFormat } = jb.tgpTextEditor.calcActiveEditorPath()
+            const { needsFormat } = await jb.tgpTextEditor.calcActiveEditorPath()
             if (needsFormat)
                 return { testFailure: `bad comp format` }
-            const item = jb.tgpTextEditor.provideCompletionItems(ctx).find(x=>x.label == completionToActivate)
+            const items = await jb.tgpTextEditor.provideCompletionItems(ctx)
+            const item = items.find(x=>x.label == completionToActivate)
             if (!item)
                 return { testFailure: `completion not found - ${completionToActivate}` }
     
             await jb.tgpTextEditor.applyCompChange(item,ctx)
             await jb.delay(1) // wait for cursor change
+            const {cursorLine, cursorCol } = await jb.tgpTextEditor.host.docTextAndCursor()
+            const actualCursorPos = [cursorLine, cursorCol].join(',')
             const actualEdit = jb.tgpTextEditor.lastEdit
             console.log(jb.utils.prettyPrint(actualEdit.edit))
             const editsSuccess = Object.keys(jb.utils.objectDiff(actualEdit.edit,expectedEdit)).length == 0
             const selectionSuccess  = expectedTextAtSelection == null || jb.tgpTextEditor.host.getTextAtSelection() == expectedTextAtSelection
-            const actualCursorPos = [jb.tgpTextEditor.host.cursorLine(),jb.tgpTextEditor.host.cursorCol()].join(',')
             const cursorPosSuccess = !expectedCursorPos || expectedCursorPos == actualCursorPos
     
             const testFailure = (editsSuccess ? '' : 'wrong expected edit') + 

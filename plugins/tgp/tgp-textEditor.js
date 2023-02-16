@@ -222,18 +222,20 @@ jb.extension('tgpTextEditor', {
           return {firstDiff: i, common, oldText: oldText.slice(0,-j+1), newText: newText.slice(0,-j+1)}
         }
     },
-    formatComponent() {
-        const { compId, needsFormat, dsl } = jb.tgpTextEditor.calcActiveEditorPath()
+    async formatComponent() {
+        const { compId, needsFormat, dsl } = await jb.tgpTextEditor.calcActiveEditorPath()
         if (needsFormat) {
-            const { compText} = jb.tgpTextEditor.fileContentToCompText(jb.tgpTextEditor.host.docText(),compId)
+            const {docText } = await jb.tgpTextEditor.host.docTextAndCursor()
+            const { compText} = jb.tgpTextEditor.fileContentToCompText(docText,compId)
             const {err} = jb.tgpTextEditor.evalProfileDef(compText,dsl)
             if (err)
                 return jb.logError('can not parse comp', {compId, err})
-            return jb.tgpTextEditor.deltaFileContent(jb.tgpTextEditor.host.docText(), compId)
+            return jb.tgpTextEditor.deltaFileContent(docText, compId)
         }
     },
-    updateCurrentCompFromEditor() {
-        const {compId, compSrc, dsl} = jb.tgpTextEditor.closestComp(jb.tgpTextEditor.host.docText(), jb.tgpTextEditor.host.cursorLine())
+    async updateCurrentCompFromEditor() {
+        const {docText, cursorLine } = await jb.tgpTextEditor.host.docTextAndCursor()
+        const {compId, compSrc, dsl} = jb.tgpTextEditor.closestComp(docText, cursorLine)
         const {err} = jb.tgpTextEditor.evalProfileDef(compSrc, dsl)
         if (err)
           return jb.logError('can not parse comp', {compId, err})

@@ -1,5 +1,7 @@
 
 globalThis.vscodeNS = require('vscode')
+globalThis.vsChild = require('child_process')
+globalThis.vsPluginDir = __dirname
 
 const fs = require('fs')
 const workspaceDir = (vscodeNS.workspace.workspaceFolders || []).map(ws=>ws.uri.path).filter(path=>path.match(/jb-react/))[0]
@@ -18,17 +20,15 @@ async function activate(context) {
     }))
     jb.initializeLibs(['utils','watchable','immutable','watchableComps','tgp','tgpTextEditor','vscode'])
     jb.vscode.initVscodeAsHost()
-    // try {
-    //     jb.frame.eval(jb.macro.importAll() + ';' + jb.tgpTextEditor.host.docText() || '')
-    // } catch(e) {}
 
     ;['gotoPath','applyCompChange','formatComponent','moveUp','moveDown'].forEach(cmd => vscodeNS.commands.registerCommand(`jbart.${cmd}`, jb.tgpTextEditor[cmd]))
 
     const ctx = new jb.core.jbCtx({},{vars: {}, path: 'vscode.tgpLang'})
 
 	context.subscriptions.push(vscodeNS.languages.registerCompletionItemProvider('javascript', {
-		provideCompletionItems() {
+		async provideCompletionItems() {
             try {
+                await jb.delay(2)
                 return jb.tgpTextEditor.provideCompletionItems(ctx)
             } catch(e) {
                 jb.logException(e,'provide completions')

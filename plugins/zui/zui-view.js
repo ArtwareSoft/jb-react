@@ -1,18 +1,19 @@
 jb.dsl('zui')
 
 jb.component('zui.itemlist', {
-    type: 'control<>',
-    params: [
-        {id: 'itemView', type: 'view', mandatory: true, dynamic: true},
-        {id: 'title', as: 'string'},
-        {id: 'boardSize', as: 'number', defaultValue: 256},
-        {id: 'initialZoom', as: 'number', description: 'in terms of board window. empty is all board'},
-        {id: 'items', as: 'array', dynamic: true, mandatory: true},
-        {id: 'onChange', type: 'action<>', dynamic: true } ,
-        {id: 'style', type: 'itemlistStyle<zui>', dynamic: true, defaultValue: itemlistStyle()},
-        {id: 'features', type: 'feature[]', dynamic: true, flattenArray: true}
-    ],
-    impl: ctx => jb.ui.ctrl(ctx)
+  type: 'control<>',
+  params: [
+    {id: 'itemView', type: 'view', mandatory: true, dynamic: true},
+    {id: 'title', as: 'string'},
+    {id: 'boardSize', as: 'number', defaultValue: 256},
+    {id: 'initialZoom', as: 'number', description: 'in terms of board window. empty is all board'},
+    {id: 'items', as: 'array', dynamic: true, mandatory: true},
+    {id: 'itemProps', type: 'itemProp[]', dynamic: true, flattenArray: true},
+    {id: 'onChange', type: 'action<>', dynamic: true},
+    {id: 'style', type: 'itemlistStyle<zui>', dynamic: true, defaultValue: itemlistStyle()},
+    {id: 'features', type: 'feature<>[]', dynamic: true, flattenArray: true}
+  ],
+  impl: ctx => jb.ui.ctrl(ctx)
 })
   
 jb.component('itemlistStyle', {
@@ -24,11 +25,14 @@ jb.component('itemlistStyle', {
     features: [
       calcProps((ctx,{$model})=> {
         const items = $model.items()
-        const itemView = $model.itemView(ctx.setVars({items}))
+        const ctxWithItems = ctx.setVars({items})
+        const itemProps = $model.itemProps(ctxWithItems)
+        const itemView = $model.itemView(ctxWithItems.setVars({itemProps}))
         const DIM = $model.boardSize
         const onChange = $model.onChange.profile && $model.onChange
         const zoom = +($model.initialZoom || DIM)
-        const pivots = itemView.pivots()
+        const pivotsFromItemProps = itemProps.flatMap(prop=>prop.pivots())
+        const pivots = [...pivotsFromItemProps, ...itemView.pivots().filter(p=>! pivotsFromItemProps.find(_p => _p.att == p.att)) ]
         const elems = itemView.zuiElems()
 
         return {
@@ -43,10 +47,10 @@ jb.component('itemlistStyle', {
             gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
             Object.assign(props, { glCanvas: el, gl, aspectRatio: el.width/el.height })
+            props.itemsPositions = jb.zui.calcItemsPositions(props) // todo - model
             jb.zui.initZuiCmp(cmp,props)
             jb.zui.initViewCmp(cmp,props)
             await Promise.all(props.elems.map(elem =>elem.prepare && elem.prepare(props)).filter(x=>x))
-            props.itemsPositions = jb.zui.calcItemsPositions(props) // todo - model
             if (cmp.ctx.vars.zuiCtx)
               cmp.ctx.vars.zuiCtx.props = props
 
@@ -100,13 +104,77 @@ jb.extension('zui','view', {
     Object.assign(cmp, {
       render() {
         const { zoom, glCanvas,elems } = props
-        itemView.layout(glCanvas.width/ zoom, glCanvas.height/ zoom)
+        const [width, height] = [glCanvas.width/ zoom, glCanvas.height/ zoom]
+        itemView.layout({zoom,width,height})
         const visibleElems = elems.filter(el=>el.width && el.height)
         visibleElems.forEach(elem => elem.calcExtraRenderingProps && Object.assign(props, elem.calcExtraRenderingProps(props)))
         visibleElems.forEach(elem => elem.renderGPUFrame(props, elem.buffers))
         props.onChange && props.onChange(props)
       },
     })
+  }
+})
+
+jb.extension('zui','circle', {
+  cirlceZuiElem: {
+    async prepare({gl}) {
+      this.pointTexture = await jb.zui.imageToTexture(gl, 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAAZiS0dEAAAAAAAA+UO7fwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9sHDgwCEMBJZu0AAAAdaVRYdENvbW1lbnQAAAAAAENyZWF0ZWQgd2l0aCBHSU1QZC5lBwAABM5JREFUWMO1V0tPG2cUPZ4Hxh6DazIOrjFNqJs0FIMqWFgWQkatsmvVbtggKlSVRVf5AWz4AWz4AUSKEChll19QJYSXkECuhFxsHjEhxCYm+DWGMZ5HF72DJq4bAzFXurI0M/I5997v3u9cC65vTJVn2lX/xHINQOYSBLTLEuIuCWw4Z3IGAEvf6ASmVHjNzHCXBG4A0AjACsAOwEbO0nsFQBnAGYASAIl+ZRMR7SolMEdsByD09fV5R0ZGgg8ePPjW5/N1iqLYpuu6RZblciKR2I9Go69evnwZnZ+fjwI4IS8AKBIRzeQfJWCANwKwh0KhtrGxsYehUOin1tbW+zzP23ietzY2NnIAoGmaLsuyUiqVyvl8XtrY2NiamZn589mzZxsAUgCOAeQAnFI2tI+VxIjaAeDzoaGh7xYWFuZOTk6OZVk+12uYqqq6JEnn0Wg0OT4+/geAXwGEAdwDIFJQXC1wO4DWR48e/RCPxxclSSroVzRFUbSDg4P848ePFwH8DuAhkWih83TRQWxFOXgAwvDwcOfo6OhvXV1d39tsNtuVBwTDWBwOh1UUxVsMw1hXVlbSdCgNV43uYSvrHg6H24aHh38eHBz85TrgF9FYLHA4HLzH43FvbW2d7u/vG+dANp8FpqIlbd3d3V8Fg8EfBUFw4BONZVmL3+9vHhkZCQL4AoAHgJPK8G+yzC0XDofdoVAo5PP5vkadTBAEtr+/39ff3x8gAp/RPOEqx2qjx+NpvXv3bk9DQ0NDvQgwDIOWlhZrMBj8kgi0UJdxRgYMArzL5XJ7vd57qLPZ7Xamp6fnNgBXtQxcjFuHw+Hyer3t9SYgCAITCAScAJoBNNEY/08GOFVVrfVMv7kMNDntFD1vjIAPrlRN0xjckOm6biFQ3jwNPwDMZrOnqVTqfb3Bi8Wivru7W/VCYkwPlKOjo0IikXh7EwQikYgE4Nw0CfXKDCipVCoTj8df3QABbW1tLUc6oUgkFPMkVACUNjc337148eKvw8PDbJ2jP1taWkoCyNDVXDSECmNSK4qiKNLq6urW8+fPI/UicHx8rD59+jSVy+WOAKSJhKENwFItLtoxk8mwsixzHR0dHe3t7c5PAU+n09rs7OzJkydPYqVSaQfANoDXALIk31S2smU1TWMPDg7K5XKZ7+3t9TudTut1U7+wsFCcmJiIpdPpbQBxADsAknQWymYCOukBHYCuKApisdhpMpnURFEU79y503TVyKenpzOTk5M7e3t7MQKPV0Zv1gNm+awB0MvlshqLxfLb29uyJElWURSbXC4XXyvqxcXFs6mpqeTc3Nzu3t7e3wQcA7BPZ8Cov1pNlJplmQtAG8MwHV6v95tAINA5MDBwPxAIuLu6upr8fr/VAN3c3JQjkcjZ+vp6fnl5+d2bN29SuVzuNYAEpf01CdRChUL+X1VskHACuA3Ay3Fcu9vt7nA6nZ7m5uYWQRCaNE3jVVW15PP580KhIGUymWw2m00DOAJwSP4WwPtq4LX2Ao6USxNlQyS/RcQcdLGwlNIz6vEMAaZpNzCk2Pll94LK/cDYimxERiBwG10sxjgvEZBE0UpE6vxj+0Ct5bTaXthgEhRmja8QWNkkPGsuIpfdjpkK+cZUWTC0KredVmtD/gdlSl6EG4AMvQAAAABJRU5ErkJggg==')
+    },
+    prepareGPU({ gl, itemsPositions }) {
+        const src = [`attribute vec2 itemPos;
+            uniform vec2 zoom;
+            uniform vec2 center;
+            uniform float circleSize;
+        
+            void main() {
+              gl_Position = vec4((itemPos - center) / zoom * vec2(2.0,2.0), 0.0, 1.0);
+              gl_PointSize = circleSize;
+            }`,
+            `precision highp float;
+            uniform sampler2D pointTexture;
+            uniform vec4 globalColor;
+
+            void main() {
+                gl_FragColor = globalColor * texture2D( pointTexture, gl_PointCoord );
+            }`
+        ]
+         
+        const vertexArray = new Float32Array(itemsPositions.sparse.flatMap(x=>x.slice(1,3)).map(x=>1.0*x))
+
+        const buffers = {
+            vertexBuffer: gl.createBuffer(),
+            shaderProgram: jb.zui.buildShaderProgram(gl, src),
+            vertexNumComponents: 2,
+            vertexCount: vertexArray.length/2,
+        }    
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffers.vertexBuffer)
+        gl.bufferData(gl.ARRAY_BUFFER, vertexArray, gl.STATIC_DRAW)
+
+        return buffers        
+    },
+    calcExtraRenderingProps({zoom, DIM}) {
+      const circleSize = circleSizeF(ctx.setData({zoom, DIM}))
+      return {circleSize}
+    },        
+    renderGPUFrame({ gl, aspectRatio, zoom, center, circleSize}, { vertexBuffer, shaderProgram, vertexNumComponents, vertexCount }) {
+        gl.useProgram(shaderProgram)
+      
+        gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'zoom'), [zoom, zoom/aspectRatio])
+        gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'center'), center)
+        gl.uniform1f(gl.getUniformLocation(shaderProgram, 'circleSize'), circleSize)
+        gl.uniform4fv(gl.getUniformLocation(shaderProgram, 'globalColor'), [0.1, 0.7, 0.2, 1.0])
+      
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
+        const itemPos = gl.getAttribLocation(shaderProgram, 'itemPos')
+        gl.enableVertexAttribArray(itemPos)
+        gl.vertexAttribPointer(itemPos, vertexNumComponents, gl.FLOAT, false, 0, 0)
+
+        gl.activeTexture(gl.TEXTURE0)
+        gl.bindTexture(gl.TEXTURE_2D, this.pointTexture)
+        gl.uniform1i(gl.getUniformLocation(shaderProgram, 'pointTexture'), 0)
+
+       gl.drawArrays(gl.POINTS, 0, vertexCount)
+    }
   }
 })
 
@@ -317,17 +385,40 @@ jb.component('text', {
   type: 'view',
   params: [
     {id: 'prop', type: 'itemProp'},
-    {id: 'features', type: 'feature[]', dynamic: true, flattenArray: true}
+    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true}
   ],
   impl: (ctx,prop, features) => {
     const zuiElem = jb.zui.textZuiElem(prop)
     const view = {
       pivots: () => prop.pivots(),
       zuiElems: () => [zuiElem],
+      priority: prop.priority,
+      preferedHeight: () => 16
     }
     features().forEach(f=>f.enrichView(view))
-    view.height = view.height || 16
-    view.enterHeight = view.enterHeight || Math.floor(view.height/2)
+    view.enterHeight = view.enterHeight || Math.floor(view.preferedHeight()/2)
+    return view
+  }
+})
+
+jb.component('circle', {
+  type: 'view',
+  params: [
+    {id: 'prop', type: 'itemProp'},
+    {id: 'circleSize', dynamic: true, defaultValue: ({data}) => 10 + 2 * Math.log(data.DIM/data.zoom)},
+    {id: 'colorScale', type: 'color_scale'},
+    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true},
+  ],
+  impl: (ctx,prop, circleSizeF, colorScale, features) => {
+    const zuiElem = jb.zui.circleZuiElement(circleSizeF,colorScale)
+    const view = {
+      pivots: () => prop.pivots(),
+      zuiElems: () => [zuiElem],
+      priority: prop.priority,
+      preferedHeight: layoutProps => circleSizeF(ctx.setData(layoutProps)),
+      enterHeight: 1
+    }
+    features().forEach(f=>f.enrichView(view))
     return view
   }
 })
@@ -337,8 +428,8 @@ jb.component('group', {
   params: [
     {id: 'title', as: 'string'},
     {id: 'layout', type: 'layout', defaultValue: verticalOneByOne() },
-    {id: 'views', type: 'view[]', dynamic: true },
-    {id: 'features', type: 'feature[]', dynamic: true, flattenArray: true}
+    {id: 'views', mandatory: true, type: 'view[]', dynamic: true },
+    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true}
   ],
   impl: (ctx,title,layout,viewsF,features) => { 
     const views = viewsF()
@@ -347,7 +438,7 @@ jb.component('group', {
     const view = {
       pivots: () => views.flatMap(v=>v.pivots()),
       zuiElems: () => views.flatMap(v=>v.zuiElems()),
-      layout: (width,height) => layout.layout(width,height, views),
+      layout: layoutProps => layout.layout(layoutProps, views),
     }
     features().forEach(f=>f.enrichView(view))
     return view
@@ -357,14 +448,15 @@ jb.component('group', {
 jb.component('verticalOneByOne', {
   type: 'layout',
   impl: ctx => ({
-    layout(width,height, views) {
-      let sizeLeft = height
+    layout(layoutProps, views) {
+      let sizeLeft = layoutProps.height
+      const viewPreferedHeight = v.preferedHeight(layoutProps)
       views.byPriority.forEach(v=>{
         if (sizeLeft == 0) {
           setElemsHeight(v,0)
-        } else if (sizeLeft > v.height) {
-          setElemsHeight(v, v.height)
-          sizeLeft -= v.height
+        } else if (sizeLeft > viewPreferedHeight) {
+          setElemsHeight(v, viewPreferedHeight)
+          sizeLeft -= viewPreferedHeight
         } else if (sizeLeft > v.enterHeight) {
           setElemsHeight(v, sizeLeft)
           sizeLeft = 0
@@ -388,14 +480,5 @@ jb.component('horizontalOneByOne', {
   impl: ctx => ctx.params
 })
 
-jb.component('priorty', {
-  type: 'feature',
-  params: [
-    {id: 'priority', as: 'number', description: 'scene enter order'}
-  ],
-  impl: (ctx,priority) => ({
-    enrichView(v) { v.priority = priority}
-  })
-})
 
 

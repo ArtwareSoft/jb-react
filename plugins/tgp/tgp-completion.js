@@ -156,10 +156,10 @@ jb.extension('tgpTextEditor', 'completion', {
                 if (!ev.srcCtx.vars.textEditorFollowUp) return
                 const {path, resultPath, resultSemantics, resultOffset} = ev.srcCtx.vars.textEditorFollowUp
                 const compId = path.split('~')[0]
-                const fileContent = jb.tgpTextEditor.host.docText()
-                const {compText} = jb.tgpTextEditor.fileContentToCompText(fileContent,compId)
+                const {docText } = await jb.tgpTextEditor.host.docTextAndCursor()
+                const {compText} = jb.tgpTextEditor.fileContentToCompText(docText,compId)
                 if (!compText) return
-                const edit = jb.tgpTextEditor.deltaFileContent(fileContent, compId)
+                const edit = jb.tgpTextEditor.deltaFileContent(docText, compId)
                 await jb.tgpTextEditor.host.applyEdit(edit)
                 const cursorPos = await jb.tgpTextEditor.gotoPath(resultPath || path, resultSemantics, resultOffset)
                 if (cursorPos)
@@ -169,19 +169,19 @@ jb.extension('tgpTextEditor', 'completion', {
             }
         })
     },
-    calcActiveEditorPath() {
-        const line = jb.tgpTextEditor.host.cursorLine()
-        const lines = jb.tgpTextEditor.host.docText().split('\n')
+    async calcActiveEditorPath() {
+        const {docText, cursorLine, cursorCol } = await jb.tgpTextEditor.host.docTextAndCursor()
+        const lines = docText.split('\n')
         const dsl = jb.tgpTextEditor.dsl(lines)
-        const closestComp = lines.slice(0,line+1).reverse().findIndex(line => line.match(/^jb.component\(/))
+        const closestComp = lines.slice(0,cursorLine+1).reverse().findIndex(line => line.match(/^jb.component\(/))
         if (closestComp == -1) return {
-            inExtension: lines.slice(0,line+1).some(line => line.match(/^jb.extension\(/))
+            inExtension: lines.slice(0,cursorLine+1).some(line => line.match(/^jb.extension\(/))
         }
-        const componentHeaderIndex = line - closestComp
+        const componentHeaderIndex = cursorLine - closestComp
         if (!lines[componentHeaderIndex])
             return jb.tgpTextEditor.lastActivePath || {}
         const compId = (lines[componentHeaderIndex].match(/'([^']+)'/)||['',''])[1]
-        const inCompPos = {line: line-componentHeaderIndex, col : jb.tgpTextEditor.host.cursorCol() }
+        const inCompPos = {line: cursorLine-componentHeaderIndex, col: cursorCol }
         const {fixedComp, needsFormat, compilationFailure} = jb.tgpTextEditor.cache[`${dsl}-${compId}`] || calcCompVars()
         if (compilationFailure) 
             return jb.tgpTextEditor.lastActivePath || {}
@@ -201,11 +201,12 @@ jb.extension('tgpTextEditor', 'completion', {
             return {fixedComp}
         }
     },
-    provideCompletionItems(ctx) {
-        const { semanticPath, needsFormat } = jb.tgpTextEditor.calcActiveEditorPath()
-        if (needsFormat)
-            jb.tgpTextEditor.host.applyEdit(jb.tgpTextEditor.formatComponent())
-        else if (semanticPath) {
+    async provideCompletionItems(ctx) {
+        const { semanticPath, needsFormat } = await jb.tgpTextEditor.calcActiveEditorPath()
+        if (needsFormat) {
+            const delta = await jb.tgpTextEditor.formatComponent()
+            jb.tgpTextEditor.host.applyEdit(delta)
+        } else if (semanticPath) {
             const items = jb.tgp.provideCompletionItems(semanticPath,ctx)
             items.forEach((item,i) => Object.assign(item, {
                 insertText: '',
@@ -217,9 +218,10 @@ jb.extension('tgpTextEditor', 'completion', {
         }
     },
     async provideDefinition(ctx) {
-        const { semanticPath, needsFormat, inExtension } = jb.tgpTextEditor.calcActiveEditorPath()
+        const { semanticPath, needsFormat, inExtension } = await jb.tgpTextEditor.calcActiveEditorPath()
         if (needsFormat) {
-            jb.tgpTextEditor.host.applyEdit(jb.tgpTextEditor.formatComponent())
+            const delta = await jb.tgpTextEditor.formatComponent()
+            jb.tgpTextEditor.host.applyEdit(delta)
             return
         } else if (semanticPath) {
             const path = semanticPath.allPaths.map(x=>x[0]).filter(x=>x.match('~!profile$')).map(x=>x.split('~!')[0])[0]
@@ -231,8 +233,9 @@ jb.extension('tgpTextEditor', 'completion', {
             // const uri = vscodeNS.Uri.file(jbBaseUrl + loc[0]) // /home/shaiby/projects/jb-react
             // return new vscodeNS.Location(uri, new vscodeNS.Position(lineOfComp, 0))
         } else if (inExtension) {
-            const line = jb.tgpTextEditor.host.docText().split('\n')[jb.tgpTextEditor.host.cursorLine()]
-            const [,lib,func] = line.match(/jb\.([a-zA-Z_0-9]+)\.([a-zA-Z_0-9]+)/) || ['','','']
+            const {docText, cursorLine } = await jb.tgpTextEditor.host.docTextAndCursor()
+            const textLine = docText.split('\n')[cursorLine]
+            const [,lib,func] = textLine.match(/jb\.([a-zA-Z_0-9]+)\.([a-zA-Z_0-9]+)/) || ['','','']
             if (lib && jb.path(jb,[lib,'__extensions'])) {
                 const loc = Object.values(jb[lib].__extensions).filter(ext=>ext.funcs.includes(func)).map(ext=>ext.location)[0]
                 const lineOfExt = (+loc[1]) || 0
@@ -265,7 +268,8 @@ jb.extension('tgpTextEditor', 'completion', {
     },
     async gotoPath(path,semantics, offset) {
         const compId = path.split('~')[0]
-        const { compLine } = jb.tgpTextEditor.fileContentToCompText(jb.tgpTextEditor.host.docText(),compId)
+        const {docText } = await jb.tgpTextEditor.host.docTextAndCursor()
+        const { compLine } = jb.tgpTextEditor.fileContentToCompText(docText,compId)
         const pos = jb.tgpTextEditor.getPosOfPath(path,semantics)
         console.log('goto path',semantics, pos)
         if (!pos)
@@ -273,15 +277,15 @@ jb.extension('tgpTextEditor', 'completion', {
         const line = pos[0] + compLine
         const col = pos[1] + (offset ? offset : 0)
         const cursorPos = {line,col}
-        jb.tgpTextEditor.host.selectRange(cursorPos)
+        await jb.tgpTextEditor.host.selectRange(cursorPos)
         return cursorPos
     },
     async selectNextEditPosition(newText,cursorPos) {
         if (!cursorPos) debugger
-        const docText = jb.tgpTextEditor.host.docText() 
+        const {docText } = await jb.tgpTextEditor.host.docTextAndCursor() 
         const offset = jb.tgpTextEditor.lineColToOffset(docText, cursorPos)
         if (docText.slice(offset,offset+4) == 'TBD(' || docText.slice(offset-1,offset+1) == '()') {
-            jb.tgpTextEditor.host.execCommand('editor.action.triggerSuggest')
+            await jb.tgpTextEditor.host.execCommand('editor.action.triggerSuggest')
         } else {
             const emptyString = docText.slice(offset,offset+newText.length).indexOf("''")
             if (emptyString != -1)
@@ -294,8 +298,8 @@ jb.extension('tgpTextEditor', 'completion', {
     moveDown() { 
         debugger
     },
-    moveInArray(diff) {
-        const { semanticPath, needsFormat } = jb.tgpTextEditor.calcActiveEditorPath()
+    async moveInArray(diff) {
+        const { semanticPath, needsFormat } = await jb.tgpTextEditor.calcActiveEditorPath()
         if (needsFormat)
             jb.tgpTextEditor.host.applyEdit(jb.tgpTextEditor.formatComponent())
         else if (semanticPath) {

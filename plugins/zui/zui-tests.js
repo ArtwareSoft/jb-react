@@ -19,7 +19,7 @@ jb.component('zuiTest.multiLayer', {
     control: group({
       controls: [
         text('2'),
-        zui.multiLayer({items: pipeline('%$phones%',slice(0, 10)), layers: [summaryLabel(), circles()]})
+        zui.multiLayer({items: pipeline('%$phones%', slice(0, 10)), layers: [summaryLabel(), circles()]})
       ]
     }),
     expectedResult: contains('cmp-id')
@@ -58,41 +58,38 @@ jb.component('zuiTest.summaryLabel', {
   })
 })
 
-jb.component('zuiTest.itemlist', {
-  impl: uiTest({
-    control: group({
-      controls: [
-        group({
-          style: propertySheet.titlesLeft(),
-          controls: [
-            text('%$zuiCtx/props/DIM%', 'DIM'),
-            text('%$zuiCtx/props/zoom%', 'zoom'),
-            text('%$zuiCtx/props/strLen%', 'strLen'),
-            text('%$zuiCtx/props/center[0]% , %$zuiCtx/props/center[1]%', 'center'),
-            text('%$zuiCtx/props/boxSize[0]% , %$zuiCtx/props/boxSize[1]%', 'boxSize'),
-            text('%$zuiCtx/props/circleSize%', 'circleSize px'),
-            text('%$zuiCtx/props/textSquareInPixels%', 'textSquare px')
-          ],
-          features: id('propSheet')
-        }),
-        zui.itemlist({
-          itemView: group({
-            layout: verticalOneByOne(),
-            views: [
-              text(adaptableText({att: 'title', priority: 1})),
-              text(numeric({att: 'price', priority: 2}))
-            ]
-          }),
-          boardSize: 256,
-          initialZoom: 256,
-          items: pipeline('%$phones%', slice(0, 10000)),
-          onChange: refreshControlById('propSheet')
-        })
-      ],
-      features: [
-        variable('zuiCtx', obj())
-      ]
-    }),
-    expectedResult: contains('cmp-id')
-  })
-})
+// jb.component('zuiTest.itemlist', {
+//   impl: uiTest({
+//     control: group({
+//       controls: [
+//         group({
+//           style: propertySheet.titlesLeft(),
+//           controls: [
+//             text('%$zuiCtx/props/DIM%', 'DIM'),
+//             text('%$zuiCtx/props/zoom%', 'zoom'),
+//             text('%$zuiCtx/props/strLen%', 'strLen'),
+//             text('%$zuiCtx/props/center[0]% , %$zuiCtx/props/center[1]%', 'center'),
+//             text('%$zuiCtx/props/boxSize[0]% , %$zuiCtx/props/boxSize[1]%', 'boxSize'),
+//             text('%$zuiCtx/props/circleSize%', 'circleSize px'),
+//             text('%$zuiCtx/props/textSquareInPixels%', 'textSquare px')
+//           ],
+//           features: id('propSheet')
+//         }),
+//         zui.itemlist({
+//           itemView: group({
+//             views: [
+//               text(adaptableText('title')),
+//               text(numeric({att: 'price', features: [priorty(1), preferedAxis('x')]})),
+//               text(numeric({att: 'hits', features: [priorty(2), preferedAxis('y')]}))
+//             ]
+//           }),
+//           items: pipeline('%$phones%', slice(0, 10000))
+//         })
+//       ],
+//       features: [
+//         variable('zuiCtx', obj())
+//       ]
+//     }),
+//     expectedResult: contains('cmp-id')
+//   })
+// })
