@@ -31,9 +31,9 @@ jb.component('suggestionsTest.varsFilter', {
 
 jb.component('suggestionsTest.varsFilter.remote', {
   impl: suggestionsTest({
-    forceLocal: false,
     expression: '%$p',
-    expectedResult: and(contains('$people'), not(contains('$win')))
+    expectedResult: and(contains('$people'), not(contains('$win'))),
+    forceLocal: false
   })
 })
 

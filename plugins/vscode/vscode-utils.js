@@ -1,6 +1,6 @@
 jb.extension('vscode', {
     initExtension() { return { loadedProjects : {} } },
-    initVscodeAsHost(context) {
+    initVscodeAsHost({context, parentUri}) {
         jb.vscode.initLogs(context)
         jb.tgpTextEditor.cache = {}
         jb.tgpTextEditor.host = {
@@ -18,9 +18,9 @@ jb.extension('vscode', {
                 editor.revealRange(new vscodeNS.Range(line, 0,line, 0), vscodeNS.TextEditorRevealType.InCenterIfOutsideViewport)
                 editor.selection = new vscodeNS.Selection(line, start.col, end.line, end.col)
             },
-            async docTextAndCursor() {
+            async docTextAndCursor({maxSize} = {}) {
                 const editor = vscodeNS.window.activeTextEditor
-                return { docText: editor.document.getText(),
+                return { docText: maxSize ? editor.document.getText().slice(0,maxSize) : editor.document.getText(),
                     cursorLine: editor.selection.active.line,
                     cursorCol: editor.selection.active.character
                 }
@@ -28,10 +28,25 @@ jb.extension('vscode', {
             async execCommand(cmd) {
                 vscodeNS.commands.executeCommand(cmd)
             },
-            getTextAtSelection() {
-                return vscodeNS.window.activeTextEditor.document.getText(vscodeNS.window.activeTextEditor.selection)
-            },
+            // getTextAtSelection() {
+            //     return vscodeNS.window.activeTextEditor.document.getText(vscodeNS.window.activeTextEditor.selection)
+            // },
         }
+
+        if (parentUri) {
+            const ctx = new jb.core.jbCtx({},{vars: {}, path: 'vscode.tgpLang'})        
+            jb.tgpTextEditor.vscodeProxy = {
+                applyEdit: async (edit,uri) => ctx.setData({edit,uri}).run( 
+                    remote.action(({data}) => jb.tgpTextEditor.host.applyEdit(data.edit, data.uri), jbm.byUri(()=> parentUri))),
+                selectRange: async (start,end) => ctx.setData({start,end}).run( 
+                    remote.action(({data}) => jb.tgpTextEditor.host.selectRange(data.start, data.end), jbm.byUri(()=> parentUri))),
+                docTextAndCursor: async () => ctx.run(remote.data(() => jb.tgpTextEditor.host.docTextAndCursor({maxSize: 10000}), jbm.byUri(()=> parentUri))),
+                execCommand: async (cmd) => ctx.setData(cmd).run( 
+                    remote.action(({data}) => jb.tgpTextEditor.host.execCommand(data), jbm.byUri(()=> parentUri))),
+            }        
+        }
+
+
         vscodeNS.workspace.onDidChangeTextDocument(() => {
             jb.tgpTextEditor.cache = {}
             jb.tgpTextEditor.updateCurrentCompFromEditor()
@@ -273,8 +288,4 @@ jb.component('vscode.gotoPath', {
     {id: 'semanticPart', as: 'string' }
   ],
   impl: (ctx,path,semanticPart) => jb.vscode.gotoPath(path,semanticPart)
-})
-
-jb.component('vscode.provideCompletionItems', {
-  impl: pipe(() => jb.tgpTextEditor.host.completionInput(), remote.data(tgpEditor.provideCompletionItems(), jbm.langServerJbm()))
 })

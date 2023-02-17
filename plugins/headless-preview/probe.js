@@ -276,11 +276,11 @@ jb.component('probe.calcCircuitPath', {
 })
 
 jb.component('jbm.wProbe', {
-    type: 'jbm',
-    params: [
-        {id: 'id', defaultValue: 'wProbe' }
-    ],    
-    impl: jbm.worker({id: '%$id%', init: probe.initRemoteProbe()})
+  type: 'jbm',
+  params: [
+    {id: 'id', defaultValue: 'wProbe'}
+  ],
+  impl: jbm.worker('%$id%', probe.initRemoteProbe())
 })
 
 jb.component('jbm.nodeProbe', {

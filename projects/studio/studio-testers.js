@@ -6,21 +6,24 @@ jb.component('suggestionsTest', {
     {id: 'selectionStart', as: 'number', defaultValue: -1},
     {id: 'path', as: 'string', defaultValue: 'suggestionsTest.defaultProbe~impl~text'},
     {id: 'expectedResult', type: 'boolean', dynamic: true, as: 'boolean'},
-    {id: 'forceLocal', as: 'boolean', defaultValue: true}
+    {id: 'forceLocal', as: 'boolean', defaultValue: true, type: 'boolean'}
   ],
   impl: dataTest({
-    runBefore: remote.copyPassiveData('people', jbm.wProbe()), //writeValue('%$studio/circuit%',''),
     calculate: pipe(
       suggestions.calcFromRemote({
-        probePath: '%$path%', forceLocal: '%$forceLocal%',
-        input: obj(prop('value','%$expression%'), prop('selectionStart', 
-          ({},{},{expression, selectionStart}) => selectionStart == -1 ? expression.length : selectionStart))
+        probePath: '%$path%',
+        input: obj(
+          prop('value', '%$expression%'),
+          prop('selectionStart', ({},{},{expression, selectionStart}) => selectionStart == -1 ? expression.length : selectionStart)
+        ),
+        forceLocal: '%$forceLocal%'
       }),
-      log('suggestions test',obj(prop('result','%%'))),
+      log('suggestions test', obj(prop('result', '%%'))),
       '%options/text%',
       join(',')
     ),
-    expectedResult: call('expectedResult')
+    expectedResult: call('expectedResult'),
+    runBefore: remote.copyPassiveData('people', jbm.wProbe())
   })
 })
 

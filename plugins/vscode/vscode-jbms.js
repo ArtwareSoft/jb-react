@@ -177,15 +177,20 @@ jb.component('jbm.vscodeFork', {
   type: 'jbm',
   params: [
     {id: 'id', as: 'string', defaultValue: 'server'},
-    {id: 'init', type: 'action', dynamic: true},
     {id: 'initJbCode', type: 'initJbCode', dynamic: true, defaultValue: initJb.vcodeCompletionWorker()}
   ],
-  impl: async (ctx,name,init,initJbCode) => {
-        if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
-        const forkUri = `${jb.uri}•${name}`
-        const initJBCode = initJbCode(ctx.setVars({uri: forkUri, multipleJbmsInFrame: false}))
+  impl: (ctx,name,initJbCode) => {
+    debugger
+    if (jb.jbm.childJbms[name] && !jb.vscode.restartLangServer) 
+      return jb.jbm.childJbms[name]
+    jb.vscode.restartLangServer = false
+    if (jb.path(jb.jbm.childJbms[name],'kill'))
+      jb.jbm.childJbms[name].kill()
 
-        const workerCode = `
+    const forkUri = `${jb.uri}•${name}`
+    const initJBCode = initJbCode(ctx.setVars({uri: forkUri, multipleJbmsInFrame: false}))
+
+    const workerCode = `
 const fs = require('fs')
 const util = require('util')
 const vm = require('vm')
@@ -206,19 +211,16 @@ globalThis.jb_plugins = jb_plugins
 ;(async () => {
   await ${initJBCode};
   jb.treeShake.codeServerJbm = jb.parent = jb.ports['${jb.uri}'] = jb.jbm.extendPortToJbmProxy(portFromForkToExt(process,'${forkUri}','${jb.uri}'))
+  await jb.vscode.initVscodeAsHost({parentUri:'${jb.uri}'})
   process.send('jbm-loaded')  
   function ${jb.vscode.portFromForkToExt.toString()}
 })()
 
 //# sourceURL=${forkUri}-initJb.js
         `
-        const fork = vsChild.fork(`${vsPluginDir}/minimal-child.js`,[],{execArgv:['--inspect-brk']})
+        const fork = vsChild.fork(`${vsPluginDir}/minimal-child.js`,[],{execArgv:['--inspect']})
+        console.log('fork',fork)
         fork.send(`eval:${workerCode}`);
-
-        // child.on('message', e=> {
-        //   debugger
-        //   console.log('worker', e)
-        // })
 
         fork.on('exit', e=> console.log('fork exit'))
         fork.on('error', e=> console.log('error in fork', e))
@@ -227,7 +229,7 @@ globalThis.jb_plugins = jb_plugins
         jb.jbm.childJbms[name].uri = forkUri
         jb.jbm.childJbms[name].kill = fork.kill
 
-        await new Promise(resolve=>{
+        const res = new Promise(resolve=>{
           function jbmLoadedHandler(message) {
             if (message == 'jbm-loaded') {
               fork.off('message', jbmLoadedHandler)
@@ -235,24 +237,14 @@ globalThis.jb_plugins = jb_plugins
             }
           }
           fork.on('message', jbmLoadedHandler);          
+        }).then( () => {
+          debugger
+          console.log('fork after init')
+          return jb.jbm.childJbms[name]
         })
-
-        await init(ctx.setVar('jbm',jb.jbm.childJbms[name]))
-        return jb.jbm.childJbms[name]
+        res.uri = forkUri
+        return res
     }
-})
-
-jb.component('jbm.langServerJbm', {
-  type: 'jbm',
-  impl: async () => {
-        if (! jb.vscode.langServerJbm || jb.vscode.restartLangServer) {
-            jb.vscode.restartLangServer = false
-            if (jb.path(jb.vscode.langServerJbm,'kill'))
-                jb.vscode.langServerJbm.kill()
-            jb.vscode.langServerJbm = await jb.exec({$:'jbm.vscodeFork'})
-        }
-        return jb.vscode.langServerJbm
-  }
 })
 
 jb.component('vscode.openPreviewPanelOld', {
@@ -324,3 +316,6 @@ jb.component('vscode.showInXWebView', {
   )
 })
 
+jb.component('vscode.provideCompletionItemsFromFork', {
+  impl: remote.data(ctx => jb.tgpTextEditor.provideCompletionItems(ctx), jbm.langServerJbm())
+})

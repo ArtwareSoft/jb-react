@@ -18,18 +18,18 @@ async function activate(context) {
     globalThis.jb = globalThis.jb || (globalThis.jbInit && await jbInit('jbart-lsp-server',{
         projects: ['studio','tests'], plugins: ['vscode', ...jb_plugins], doNoInitLibs: true, useFileSymbolsFromBuild: true
     }))
-    jb.initializeLibs(['utils','watchable','immutable','watchableComps','tgp','tgpTextEditor','vscode'])
-    jb.vscode.initVscodeAsHost()
+    await jb.initializeLibs(['utils','watchable','immutable','watchableComps','tgp','tgpTextEditor','vscode','jbm','cbHandler'])
+    await jb.vscode.initVscodeAsHost({context})
 
     ;['gotoPath','applyCompChange','formatComponent','moveUp','moveDown'].forEach(cmd => vscodeNS.commands.registerCommand(`jbart.${cmd}`, jb.tgpTextEditor[cmd]))
 
     const ctx = new jb.core.jbCtx({},{vars: {}, path: 'vscode.tgpLang'})
+    ctx.run({$: 'vscode.provideCompletionItemsFromFork'}) // for testing
 
 	context.subscriptions.push(vscodeNS.languages.registerCompletionItemProvider('javascript', {
 		async provideCompletionItems() {
             try {
-                await jb.delay(2)
-                return jb.tgpTextEditor.provideCompletionItems(ctx)
+                return ctx.run({$: 'vscode.provideCompletionItemsFromFork'})
             } catch(e) {
                 jb.logException(e,'provide completions')
             }
