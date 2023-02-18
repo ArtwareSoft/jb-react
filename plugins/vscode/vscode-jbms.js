@@ -180,7 +180,6 @@ jb.component('jbm.vscodeFork', {
     {id: 'initJbCode', type: 'initJbCode', dynamic: true, defaultValue: initJb.vcodeCompletionWorker()}
   ],
   impl: (ctx,name,initJbCode) => {
-    debugger
     if (jb.jbm.childJbms[name] && !jb.vscode.restartLangServer) 
       return jb.jbm.childJbms[name]
     jb.vscode.restartLangServer = false
@@ -210,8 +209,9 @@ globalThis.jb_plugins = jb_plugins
 
 ;(async () => {
   await ${initJBCode};
+  jb.spy.initSpy({spyParam: 'remote,vscode'})
   jb.treeShake.codeServerJbm = jb.parent = jb.ports['${jb.uri}'] = jb.jbm.extendPortToJbmProxy(portFromForkToExt(process,'${forkUri}','${jb.uri}'))
-  await jb.vscode.initVscodeAsHost({parentUri:'${jb.uri}'})
+  await jb.vscode.initVscodeAsHost({extentionUri:'${jb.uri}'})
   process.send('jbm-loaded')  
   function ${jb.vscode.portFromForkToExt.toString()}
 })()
@@ -238,7 +238,6 @@ globalThis.jb_plugins = jb_plugins
           }
           fork.on('message', jbmLoadedHandler);          
         }).then( () => {
-          debugger
           console.log('fork after init')
           return jb.jbm.childJbms[name]
         })
@@ -317,5 +316,5 @@ jb.component('vscode.showInXWebView', {
 })
 
 jb.component('vscode.provideCompletionItemsFromFork', {
-  impl: remote.data(ctx => jb.tgpTextEditor.provideCompletionItems(ctx), jbm.langServerJbm())
+  impl: remote.data(ctx => jb.tgpTextEditor.provideCompletionItems(ctx), jbm.vscodeFork())
 })

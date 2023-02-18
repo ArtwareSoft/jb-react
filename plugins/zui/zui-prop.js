@@ -61,7 +61,7 @@ jb.component('numeric', {
 })
 
 jb.component('priorty', {
-  type: 'prop_feature,view_feature',
+  type: 'prop_feature',
   params: [
     {id: 'priority', mandatory: true, as: 'number', description: 'scene enter order'}
   ],

@@ -1,6 +1,23 @@
 jb.extension('vscode', {
     initExtension() { return { loadedProjects : {} } },
-    initVscodeAsHost({context, parentUri}) {
+    async initVscodeAsHost({context, extentionUri}) {
+        jb.log('vscode initVscodeAsHost', {context, extentionUri})
+        if (extentionUri) {
+            const ctx = new jb.core.jbCtx({},{vars: {}, path: 'vscode.tgpLangSrvr'})
+            jb.tgpTextEditor.host = {
+                extentionUri,
+                serverUri: jb.uri,
+                applyEdit: async (edit,uri) => ctx.setData({edit,uri}).run( 
+                    remote.action(({data}) => jb.tgpTextEditor.host.applyEdit(data.edit, data.uri), jbm.byUri(()=> extentionUri))),
+                selectRange: async (start,end) => ctx.setData({start,end}).run( 
+                    remote.action(({data}) => jb.tgpTextEditor.host.selectRange(data.start, data.end), jbm.byUri(()=> extentionUri))),
+                docTextAndCursor: async () => ctx.run(remote.data(() => 
+                    jb.tgpTextEditor.host.docTextAndCursor({maxSize: 10000}), jbm.byUri(()=> extentionUri))),
+                execCommand: async (cmd) => ctx.setData(cmd).run( 
+                    remote.action(({data}) => jb.tgpTextEditor.host.execCommand(data), jbm.byUri(()=> extentionUri))),
+            }
+            return        
+        }
         jb.vscode.initLogs(context)
         jb.tgpTextEditor.cache = {}
         jb.tgpTextEditor.host = {
@@ -8,6 +25,8 @@ jb.extension('vscode', {
                 uri = uri || vscodeNS.window.activeTextEditor.document.uri
                 const wEdit = new vscodeNS.WorkspaceEdit()
                 wEdit.replace(uri, { start: jb.vscode.toVscodeFormat(edit.range.start), end: jb.vscode.toVscodeFormat(edit.range.end) }, edit.newText)
+                jb.log('vscode applyEdit',{wEdit, edit,uri})
+                jb.tgpTextEditor.lastEdit = edit.newText
                 await vscodeNS.workspace.applyEdit(wEdit)
                 jb.tgpTextEditor.lastEdit = { edit , uri }
             },
@@ -33,32 +52,25 @@ jb.extension('vscode', {
             // },
         }
 
-        if (parentUri) {
-            const ctx = new jb.core.jbCtx({},{vars: {}, path: 'vscode.tgpLang'})        
-            jb.tgpTextEditor.vscodeProxy = {
-                applyEdit: async (edit,uri) => ctx.setData({edit,uri}).run( 
-                    remote.action(({data}) => jb.tgpTextEditor.host.applyEdit(data.edit, data.uri), jbm.byUri(()=> parentUri))),
-                selectRange: async (start,end) => ctx.setData({start,end}).run( 
-                    remote.action(({data}) => jb.tgpTextEditor.host.selectRange(data.start, data.end), jbm.byUri(()=> parentUri))),
-                docTextAndCursor: async () => ctx.run(remote.data(() => jb.tgpTextEditor.host.docTextAndCursor({maxSize: 10000}), jbm.byUri(()=> parentUri))),
-                execCommand: async (cmd) => ctx.setData(cmd).run( 
-                    remote.action(({data}) => jb.tgpTextEditor.host.execCommand(data), jbm.byUri(()=> parentUri))),
-            }        
-        }
-
-
-        vscodeNS.workspace.onDidChangeTextDocument(() => {
+        vscodeNS.workspace.onDidChangeTextDocument(({contentChanges}) => {
+            if (contentChanges && contentChanges.length == 0) return
             jb.tgpTextEditor.cache = {}
-            jb.tgpTextEditor.updateCurrentCompFromEditor()
+            jb.log('vscode onDidChangeTextDocument clean cache',{contentChanges})
+            if (jb.path(contentChanges,'0.text') == jb.tgpTextEditor.lastEdit) {
+                jb.tgpTextEditor.lastEdit = ''
+            } else {
+                jb.tgpTextEditor.updateCurrentCompFromEditor()
+            }
         })        
         // vscodeNS.window.onDidChangeTextEditorSelection( async () => {
         //     if (!jb.tgpTextEditor.watchCursor) return
         //     const { semanticPath } = await jb.tgpTextEditor.calcActiveEditorPath()
         //     console.log('update pos', semanticPath)            
         // })
-        vscodeNS.workspace.onDidSaveTextDocument(() => {
-            jb.tgpTextEditor.updateCurrentCompFromEditor()
-        })
+        // vscodeNS.workspace.onDidSaveTextDocument(() => {
+        //     jb.tgpTextEditor.cache = {}
+        //     jb.tgpTextEditor.updateCurrentCompFromEditor()
+        // })
     },
     toVscodeFormat(pos) {
         return { line: pos.line, character: pos.col }

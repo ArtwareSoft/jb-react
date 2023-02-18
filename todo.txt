@@ -1,3 +1,8 @@
+completion
+  cache by full compId
+    compText
+    map
+
 zui
   add image
   text 32 as two lines

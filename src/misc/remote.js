@@ -164,7 +164,7 @@ jb.component('net.listSubJbms', {
     )
 })
 
-jb.component('net.getRootParentUri', {
+jb.component('net.getRootextentionUri', {
     impl: () => jb.uri.split('•')[0]
 })
 
@@ -175,7 +175,7 @@ jb.component('net.listAll', {
             remote.data(net.listSubJbms(),'%%'),
             aggregate(list(net.listSubJbms() ,'%%'))
         )
-        ,jbm.byUri(net.getRootParentUri())
+        ,jbm.byUri(net.getRootextentionUri())
     )
 })
 

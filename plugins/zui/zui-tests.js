@@ -58,38 +58,56 @@ jb.component('zuiTest.summaryLabel', {
   })
 })
 
-// jb.component('zuiTest.itemlist', {
-//   impl: uiTest({
-//     control: group({
-//       controls: [
-//         group({
-//           style: propertySheet.titlesLeft(),
-//           controls: [
-//             text('%$zuiCtx/props/DIM%', 'DIM'),
-//             text('%$zuiCtx/props/zoom%', 'zoom'),
-//             text('%$zuiCtx/props/strLen%', 'strLen'),
-//             text('%$zuiCtx/props/center[0]% , %$zuiCtx/props/center[1]%', 'center'),
-//             text('%$zuiCtx/props/boxSize[0]% , %$zuiCtx/props/boxSize[1]%', 'boxSize'),
-//             text('%$zuiCtx/props/circleSize%', 'circleSize px'),
-//             text('%$zuiCtx/props/textSquareInPixels%', 'textSquare px')
-//           ],
-//           features: id('propSheet')
-//         }),
-//         zui.itemlist({
-//           itemView: group({
-//             views: [
-//               text(adaptableText('title')),
-//               text(numeric({att: 'price', features: [priorty(1), preferedAxis('x')]})),
-//               text(numeric({att: 'hits', features: [priorty(2), preferedAxis('y')]}))
-//             ]
-//           }),
-//           items: pipeline('%$phones%', slice(0, 10000))
-//         })
-//       ],
-//       features: [
-//         variable('zuiCtx', obj())
-//       ]
-//     }),
-//     expectedResult: contains('cmp-id')
-//   })
-// })
+jb.component('zuiTest.itemlist', {
+  impl: uiTest({
+    control: group({
+      controls: [
+        zui.itemlist({
+          itemView: group({
+            views: [
+              text(adaptableText('title')),
+              circle({prop: preDefined('hits'), circleSize: ''}),
+              group({
+                layout: horizontalOneByOne(),
+                views: [
+                  text(numeric('price')),
+                  text(numeric('hits'))
+                ]
+              })
+            ]
+          }),
+          items: pipeline('%$phones%', slice(0, 10000)),
+          itemProps: [
+            numeric('hits'),
+            numeric({att: 'price', features: priorty(1)})
+          ]
+        })
+      ],
+      features: [
+        variable('zuiCtx', obj())
+      ]
+    }),
+    expectedResult: contains('cmp-id')
+  })
+})
+
+jb.component('zuiTest.itemlist22', {
+  impl: uiTest({
+    control: group({
+      controls: [
+        zui.itemlist({
+          itemView: group({
+            views: [
+              text(preDefined(''), TBD()),
+              text(adaptableText({att: '', calc: ''})),
+              circle(TBD()),
+              group({views: [circle(), text(), text(TBD(), TBD())]})
+            ]
+          }),
+          items: pipeline('%$phones%', slice(0, 10000))
+        })
+      ]
+    }),
+    expectedResult: contains('cmp-id')
+  })
+})

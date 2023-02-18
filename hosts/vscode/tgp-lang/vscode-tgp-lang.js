@@ -15,21 +15,23 @@ globalThis.jbFileSymbols = fileSymbolsFunc // function defined below
  
 async function activate(context) {
     // TODO: change to load the Project instead of studio and tests
-    globalThis.jb = globalThis.jb || (globalThis.jbInit && await jbInit('jbart-lsp-server',{
+    globalThis.jb = globalThis.jb || (globalThis.jbInit && await jbInit('jbart-lsp-ext',{
         projects: ['studio','tests'], plugins: ['vscode', ...jb_plugins], doNoInitLibs: true, useFileSymbolsFromBuild: true
     }))
-    await jb.initializeLibs(['utils','watchable','immutable','watchableComps','tgp','tgpTextEditor','vscode','jbm','cbHandler'])
+    await jb.initializeLibs(['utils','watchable','immutable','watchableComps','tgp','tgpTextEditor','vscode','jbm','cbHandler','treeShake'])
+    jb.spy.initSpy({spyParam: 'remote,vscode'})
     await jb.vscode.initVscodeAsHost({context})
 
-    ;['gotoPath','applyCompChange','formatComponent','moveUp','moveDown'].forEach(cmd => vscodeNS.commands.registerCommand(`jbart.${cmd}`, jb.tgpTextEditor[cmd]))
+    ;['gotoPath','applyCompChange','moveUp','moveDown'].forEach(cmd => vscodeNS.commands.registerCommand(`jbart.${cmd}`, jb.tgpTextEditor[cmd]))
 
     const ctx = new jb.core.jbCtx({},{vars: {}, path: 'vscode.tgpLang'})
-    ctx.run({$: 'vscode.provideCompletionItemsFromFork'}) // for testing
+    //ctx.run({$: 'vscode.provideCompletionItemsFromFork'}) // for testing
 
 	context.subscriptions.push(vscodeNS.languages.registerCompletionItemProvider('javascript', {
 		async provideCompletionItems() {
             try {
-                return ctx.run({$: 'vscode.provideCompletionItemsFromFork'})
+                return jb.tgpTextEditor.provideCompletionItems(ctx)
+                //return ctx.run({$: 'vscode.provideCompletionItemsFromFork'})
             } catch(e) {
                 jb.logException(e,'provide completions')
             }

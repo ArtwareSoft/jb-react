@@ -200,21 +200,24 @@ jb.extension('utils', { // jb core utils
       }
       return prof
     },
-    getComp: (id, {types, dsl, silent} = {}) => {
+    getCompByShortIdAndDsl(shortId,dsl) {
+      const pattern = `<${dsl}>${shortId}`
+      const options = Object.keys(jb.comps).filter(fullId =>fullId.indexOf(pattern) != -1)
+      if (options.length == 1)
+        return jb.comps[options[0]]
+      else if (options.length > 1)
+        jb.logError('getCompByShortIdAndDsl - several options', {dsl,shortId,options})
+    },
+    getComp(id, {types, dsl, silent} = {}) {
+      if (id == 'TBD') return jb.comps[id]
       const res = id && (types || '').split(',')
         .map(t=>t.replace(/<>|\[\]/g,''))
         .map(t => t.indexOf('<') == -1 ? id : t+id)
-        .map(fullId => jb.comps[fullId]).find(x=>x) || (!types && dsl && guessInDsl())
+        .map(fullId => jb.comps[fullId]).find(x=>x) || (!types && dsl && jb.utils.getCompByShortIdAndDsl(id,dsl))
       
       if (id && !res && !silent)
         jb.logError(`utils getComp - can not find comp for id ${id}`,{id, types, dsl})
       return res
-
-      function guessInDsl() {
-        const options = Object.keys(jb.comps).filter(fullId =>fullId.indexOf(`<${dsl}>${id}`) != -1)
-        if (options.length == 1)
-          return jb.comps[options[0]]
-      }
     },
     compParams(comp) {
       if (!comp || !comp.params)

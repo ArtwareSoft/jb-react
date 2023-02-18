@@ -17,7 +17,7 @@ jb.extension('utils', 'prettyPrint', {
   prettyPrintComp(compId,comp,settings={}) {
     if (comp) {
       //const comp = Object.assign({}, _comp,{location: null})
-      return `jb.component('${compId}', ${jb.utils.prettyPrint(comp,{ initialPath: jb.utils.compName(comp) || compId, ...settings })})`
+      return `jb.component('${compId.split('>').pop()}', ${jb.utils.prettyPrint(comp,{ initialPath: jb.utils.compName(comp) || compId, ...settings })})`
     }
   },
   

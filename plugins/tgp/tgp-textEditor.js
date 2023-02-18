@@ -59,7 +59,7 @@ jb.extension('tgpTextEditor', {
     },
     pathOfPosition(ref,pos) {
         const offset = !Number(pos) ? jb.tgpTextEditor.lineColToOffset(ref.text, pos) : pos
-        console.log('cursor offset', offset)
+        jb.log('tgpEditor pathOfPosition - cursor offset', {ref, pos, offset })
         const charBefore = jb.tgpTextEditor.pathOfOffset(offset-1,ref.locationMap)[0]
         const allPaths = jb.tgpTextEditor.pathOfOffset(offset,ref.locationMap)
         let res = allPaths[0]
@@ -100,7 +100,7 @@ jb.extension('tgpTextEditor', {
     },
     getPosOfPath(path, semanticPart) {
         const compId = path.split('~')[0]
-        const {map} = jb.utils.prettyPrintWithPositions(jb.comps[compId],{initialPath: compId, comps: jb.comps})
+        const {map} = jb.tgpTextEditor.cache[compId] || jb.utils.prettyPrintWithPositions(jb.comps[compId],{initialPath: compId})
         const res = jb.asArray(semanticPart).map(s=>map[`${path}~!${s}`]).find(x=>x)
         if (!res) {
             const parentPath = jb.tgp.parentPath(path)
@@ -108,8 +108,7 @@ jb.extension('tgpTextEditor', {
         }
         return res
     },
-    getPathOfPos(comp, pos) {
-        const { text, map } = jb.utils.prettyPrintWithPositions(comp ,{initialPath: comp[jb.core.CT].fullId, comps: jb.comps})
+    getPathOfPos(pos, text, map) {
         map.cursor = [pos.line,pos.col,pos.line,pos.col]
         const locationMap = jb.tgpTextEditor.enrichMapWithOffsets(text, map)
         if (!locationMap.cursor.offset_from)
@@ -165,7 +164,7 @@ jb.extension('tgpTextEditor', {
         return { compText: lines.slice(start,start+end+1).join('\n'), compLine: start }
     },
     fixEditedComp(compText, {line, col} = {},dsl) {
-        //console.log('fixEditedComp', compText,line,col)
+        jb.log('tgpEditor fixEditedComp', compText,line,col)
         let fixedText = null, lastSrc = null
         const originalComp = jb.tgpTextEditor.evalProfileDef(compText,dsl).res
         let fixedComp = originalComp
@@ -195,17 +194,17 @@ jb.extension('tgpTextEditor', {
             return f.trim() != '' && (jb.macro.proxies[f] || jb.frame[f])
         }
     },
-    deltaFileContent(fileContent, compId) {
+    deltaFileContent(fileContent, compId, newCompContent) {
         const comp = jb.comps[compId]
         const shortId = compId.split('>').pop()
         const { compLine, compText} = jb.tgpTextEditor.fileContentToCompText(fileContent,shortId)
-        const newCompContent = comp ? jb.utils.prettyPrintComp(shortId,comp,{comps: jb.comps}) : ''
-        const justCreatedComp = !compText.length && comp[jb.core.CT].location[1] == 'new'
+        const compContent = compText.slice(compText.indexOf('{'),-1)
+        const justCreatedComp = !compContent.length && comp[jb.core.CT].location[1] == 'new'
         if (justCreatedComp) {
           comp[jb.core.CT].location[1] == lines.length
           return { range: {start: { line: lines.length, col: 0}, end: {line: lines.length, col: 0} } , newText: '\n\n' + newCompContent }
         }
-        const {common, oldText, newText} = calcDiff(compText, newCompContent)
+        const {common, oldText, newText} = calcDiff(compContent, newCompContent || '')
         const commonStartSplit = common.split('\n')
         const start = {line: compLine + commonStartSplit.length - 1, col: commonStartSplit.slice(-1)[0].length }
         const end = { line: start.line + oldText.split('\n').length -1, 
@@ -222,21 +221,20 @@ jb.extension('tgpTextEditor', {
           return {firstDiff: i, common, oldText: oldText.slice(0,-j+1), newText: newText.slice(0,-j+1)}
         }
     },
-    async formatComponent() {
-        const { compId, needsFormat, dsl } = await jb.tgpTextEditor.calcActiveEditorPath()
+    formatComponent({ compId, needsFormat, dsl, text, docText }) {
         if (needsFormat) {
-            const {docText } = await jb.tgpTextEditor.host.docTextAndCursor()
-            const { compText} = jb.tgpTextEditor.fileContentToCompText(docText,compId)
+            const { compText } = jb.tgpTextEditor.fileContentToCompText(docText,compId)
+            if (text)
+                return jb.tgpTextEditor.deltaFileContent(docText, compId, text)
             const {err} = jb.tgpTextEditor.evalProfileDef(compText,dsl)
             if (err)
-                return jb.logError('can not parse comp', {compId, err})
-            return jb.tgpTextEditor.deltaFileContent(docText, compId)
+                return jb.logError('can not parse comp', {compId, err, compText})
         }
     },
     async updateCurrentCompFromEditor() {
         const {docText, cursorLine } = await jb.tgpTextEditor.host.docTextAndCursor()
         const {compId, compSrc, dsl} = jb.tgpTextEditor.closestComp(docText, cursorLine)
-        const {err} = jb.tgpTextEditor.evalProfileDef(compSrc, dsl)
+        const {err} = compSrc ? jb.tgpTextEditor.evalProfileDef(compSrc, dsl) : {}
         if (err)
           return jb.logError('can not parse comp', {compId, err})
     },

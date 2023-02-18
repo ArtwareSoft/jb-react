@@ -236,6 +236,7 @@ jb.extension('jbm', {
                 else if ($ == 'CB.exec')
                     port.postMessage({$:'execResult', cbId, result: isAction ? {} : jb.remoteCtx.stripData(result) , ...jb.net.reverseRoutingProps(cmd) })
             } catch(err) { 
+                jb.logException(err,'remote handleCBCommnad',{cmd})
                 $ == 'CB.exec' && port.postMessage({$:'execResult', cbId, result: { type: 'error', err}, ...jb.net.reverseRoutingProps(cmd) })
             }
         }

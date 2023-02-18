@@ -76,7 +76,7 @@ jb.extension('macro', {
             return { $: cmpId, ...args[0] }
         if (args.length == 1 && params.length)
             return { $: cmpId, [params[0].id]: args[0] }
-        if (args.length == 2 && params.length > 1)
+        if (args.length >= 2 && params.length > 1)
             return { $: cmpId, [params[0].id]: args[0], [params[1].id]: args[1] }
         debugger;
     },

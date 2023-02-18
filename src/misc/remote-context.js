@@ -1,6 +1,6 @@
 jb.extension('remoteCtx', {
     initExtension() {
-        return { allwaysPassVars: ['tstWidgetId','disableLog','uiTest']}
+        return { allwaysPassVars: ['tstWidgetId','disableLog','uiTest'], MAX_ARRAY_LENGTH: 300, MAX_OBJ_DEPTH: 30}
     },
     stripCtx(ctx) {
         if (!ctx) return null
@@ -17,17 +17,22 @@ jb.extension('remoteCtx', {
             isJS ? {params,vars} : Object.keys(params).length ? {cmpCtx: {params} } : {} )
         return res
     },
-    stripData(data) {
+    stripData(data, { top, depth} = {}) {
         if (data == null) return
         if (['string','boolean','number'].indexOf(typeof data) != -1) return data
         if (typeof data == 'function')
              return jb.remoteCtx.stripFunction(data)
         if (data instanceof jb.core.jbCtx)
              return jb.remoteCtx.stripCtx(data)
-        if (Array.isArray(data) && data.length > 100)
+        if (depth > jb.remoteCtx.MAX_OBJ_DEPTH) {
+             jb.logError('stripData too deep object, maybe recursive',{top, depth, data})
+             return
+        }
+ 
+        if (Array.isArray(data) && data.length > jb.remoteCtx.MAX_ARRAY_LENGTH)
             jb.logError('stripData slicing large array',{data})
         if (Array.isArray(data))
-             return data.slice(0,100).map(x=>jb.remoteCtx.stripData(x))
+             return data.slice(0,jb.remoteCtx.MAX_ARRAY_LENGTH).map(x=>jb.remoteCtx.stripData(x, {depth: (depth || 0) +1, top: top || data }))
         if (typeof data == 'object' && ['DOMRect'].indexOf(data.constructor.name) != -1)
             return jb.objFromEntries(Object.keys(data.__proto__).map(k=>[k,data[k]]))
         if (typeof data == 'object' && ['VNode','Object','Array'].indexOf(data.constructor.name) == -1)
@@ -37,7 +42,7 @@ jb.extension('remoteCtx', {
         if (typeof data == 'object')
              return jb.objFromEntries(jb.entries(data)
                 .filter(e=> data.$ || typeof e[1] != 'function') // if not a profile, block functions
-                .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
+                .map(e=>[e[0],jb.remoteCtx.stripData(e[1], {depth: (depth || 0) +1, top: top || data } )]))
     },
     stripFunction(f) {
         const {profile,runCtx,path,param,srcPath} = f
