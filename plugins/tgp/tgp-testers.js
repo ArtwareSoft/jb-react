@@ -83,3 +83,30 @@ jb.component('tgp.completionActionTest', {
     not('%testFailure%')
   )
 })
+
+ jb.component('tgp.fixEditedCompTest', {
+  type: 'test',
+  params: [
+    {id: 'compText', as: 'string', description: 'use __ for completion point'},
+    {id: 'expectedFixedComp', as: 'string'},
+    {id: 'dsl', as: 'string'}
+  ],
+  impl: async (ctx,compText,expectedFixedComp,dsl) => {
+      jb.workspace.initJbWorkspaceAsHost()
+      const parts = compText.split('__')
+      const dslLine = dsl ? `jb.dsl('${dsl}')\n` : ''
+      const offset = parts[0].length +dslLine.length
+      const code = parts.join('')
+      jb.tgpTextEditor.evalProfileDef(code,dsl)
+      jb.utils.resolveLoadedProfiles()
+      jb.tgpTextEditor.host.initDoc('dummy.js', dslLine+code)
+
+      const inCompPos = jb.tgpTextEditor.offsetToLineCol(dslLine+code,offset)
+      jb.tgpTextEditor.host.selectRange(inCompPos)
+      const { fixedCompText } = await jb.tgpTextEditor.calcActiveEditorPath()
+      const testId = ctx.vars.testID;
+      const success = fixedCompText == expectedFixedComp
+      const reason = !success && fixedCompText
+      return { id: testId, title: testId, success, reason }
+    }
+})

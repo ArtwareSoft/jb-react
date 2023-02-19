@@ -30,8 +30,8 @@ async function activate(context) {
 	context.subscriptions.push(vscodeNS.languages.registerCompletionItemProvider('javascript', {
 		async provideCompletionItems() {
             try {
-                return jb.tgpTextEditor.provideCompletionItems(ctx)
-                //return ctx.run({$: 'vscode.provideCompletionItemsFromFork'})
+                //return jb.tgpTextEditor.provideCompletionItems(ctx)
+                return ctx.run({$: 'vscode.provideCompletionItemsFromFork'})
             } catch(e) {
                 jb.logException(e,'provide completions')
             }

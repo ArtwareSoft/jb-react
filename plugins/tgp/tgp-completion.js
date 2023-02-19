@@ -189,6 +189,8 @@ jb.extension('tgpTextEditor', 'completion', {
         if (!compId)
             return { error: 'can not determine compId', shortId , dsl}
         const inCompPos = {line: cursorLine-compLine, col: cursorCol }
+        if (jb.tgpTextEditor.cache[compId] && new Date().getTime() - jb.tgpTextEditor.cache[compId].time > 1000)
+            jb.tgpTextEditor.cache[compId] = null
         const compProps = jb.tgpTextEditor.cache[compId] || calcCompProps()
         const { compilationFailure, needsFormat, text, map } = compProps
         const docProps = { docText, compLine, inCompPos }
@@ -201,13 +203,15 @@ jb.extension('tgpTextEditor', 'completion', {
             const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
             const actualText = lines.slice(compLine+1,compLine+compLastLine+1).join('\n').slice(0,-1)
             const {text, map} = jb.utils.prettyPrintWithPositions(jb.comps[compId],{initialPath: compId})
-            if (actualText == text.slice(2))
-                return {comp : jb.comps[compId], text, map, dsl, compId, shortId} 
-            // const {fixedComp, originalComp, compilationFailure } = jb.tgpTextEditor.fixEditedComp(actualText,inCompPos,dsl)
-            // if (compilationFailure) return {compilationFailure}
-            // if (originalComp && actualText.slice(actualText.indexOf('\n')) != text.slice(text.indexOf('\n'))) // jb.utils.prettyPrintComp(compId,originalComp))
-            return { needsFormat: true, text, map, dsl, compId, shortId}
-//            return {comp: fixedComp, text, map}
+            const props = { time: new Date().getTime(), text, map, dsl, compId, shortId, comp : jb.comps[compId] }
+            if (actualText != text.slice(2)) {
+                const compText = lines.slice(compLine,compLine+compLastLine+1).join('\n')
+                const fixProps = jb.tgpTextEditor.fixEditedComp(compId, compText,inCompPos,dsl)
+                if (fixProps.fixedComp)
+                    jb.comps[compId] = fixProps.fixedComp
+                Object.assign(props, {needsFormat: true, ...fixProps, comp : jb.comps[compId]})
+            }
+            return props
         }
     },
     async provideCompletionItems(ctx) {
@@ -218,12 +222,13 @@ jb.extension('tgpTextEditor', 'completion', {
             jb.tgpTextEditor.host.applyEdit(jb.tgpTextEditor.formatComponent(props))
         else if (semanticPath) {
             const items = jb.tgp.provideCompletionItems(semanticPath,ctx)
+            const serverUri = jb.tgpTextEditor.host.serverUri
             items.forEach((item,i) => Object.assign(item, {
                 compLine,
                 insertText: '',
                 sortText: ('0000'+i).slice(-4),
                 command: { command: 'jbart.applyCompChange' , 
-                    arguments: jb.tgpTextEditor.host.serverUri ? [Object.assign({serverUri},item) ] :  [item,ctx] 
+                    arguments: serverUri ? [Object.assign({serverUri, extendCode: item.extend.toString()},item) ] :  [item,ctx] 
                 }
             }))
             //console.log('provide',semanticPath, items)
@@ -294,7 +299,7 @@ jb.extension('tgpTextEditor', 'completion', {
         }
     },
     async applyCompChange(item,ctx) {
-        if (!item.extend) debugger
+        ctx = ctx || new jb.core.jbCtx({},{vars: {}, path: 'vscode.applyCompChange'})
         const { edit, cursorPos } = item.serverUri ? await remoteCalcEditAndPos() : await jb.tgpTextEditor.calcEditAndGotoPos(item,ctx)       
         try {
             await jb.tgpTextEditor.host.applyEdit(edit)
@@ -311,8 +316,10 @@ jb.extension('tgpTextEditor', 'completion', {
         }
 
         function remoteCalcEditAndPos() {
-            return ctx.setData(item).run(remote.action( ctx => { 
-                return jb.tgpTextEditor.calcEditAndGotoPos(ctx.data,ctx)
+            return ctx.setData(item).run(remote.data( ctx => { 
+                const item = ctx.data
+                item.extend = eval('x = function ' +item.extendCode)
+                return jb.tgpTextEditor.calcEditAndGotoPos(item,ctx)
             }, jbm.byUri(()=> item.serverUri) ))
         }
     },

@@ -16,10 +16,9 @@ jb.component('completionTest.pipeline', {
 })
 
 jb.component('completionTest.pipeline2', {
-  impl: tgp.completionOptionsTest({
-    compText: "jb.component('x', {\n  impl: uiTest(text(pipeline(__'')))\n})",
-    expectedSelections:['split']
- })
+  impl: tgp.completionOptionsTest(`jb.component('x', {
+  impl: uiTest(text(pipeline(__'')))
+})`, ['split'])
 })
 
 jb.component('completionTest.pt', {
@@ -196,4 +195,28 @@ jb.component('completionTest.actionReplaceTBD', {
       }),
     expectedCursorPos: '1,46'
   })
+})
+
+jb.component('completionTest.fixEditedSample', {
+  impl: pipeline()
+})
+
+jb.component('completionTest.fixEditedCompSpaces', {
+  impl: tgp.fixEditedCompTest(
+    `jb.component('completionTest.fixEditedSample' ,{ impl: pipeline(__) 
+})`,
+    `jb.component('completionTest.fixEditedSample', {
+  impl: pipeline()
+})`
+  )
+})
+
+jb.component('completionTest.fixEditedCompWrongName', {
+  impl: tgp.fixEditedCompTest(
+    `jb.component('completionTest.fixEditedSample' ,{ impl: pipeline(__a) 
+})`,
+    `jb.component('completionTest.fixEditedSample', {
+  impl: pipeline(TBD())
+})`
+  )
 })

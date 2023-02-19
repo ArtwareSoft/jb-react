@@ -177,7 +177,7 @@ jb.extension('vscode', {
     async initLogs() {
         const outputChannel = jb.vscode.OutputChannel = vscodeNS.window.createOutputChannel('jbart')
         outputChannel.appendLine('Hello jBart vscode')
-        outputChannel.show()
+        //outputChannel.show()
         // const fromWorker = await jb.exec({$: 'vscode.workerTst'})
         // outputChannel.appendLine(fromWorker); 
     }

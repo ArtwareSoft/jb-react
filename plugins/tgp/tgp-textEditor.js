@@ -163,11 +163,9 @@ jb.extension('tgpTextEditor', {
             return jb.logError('fileContentToCompText - can not find close comp',{fileContent,shortId})
         return { compText: lines.slice(start,start+end+1).join('\n'), compLine: start }
     },
-    fixEditedComp(compText, {line, col} = {},dsl) {
+    fixEditedComp(compId, compText, {line, col} = {},dsl) {
         jb.log('tgpEditor fixEditedComp', compText,line,col)
-        let fixedText = null, lastSrc = null
-        const originalComp = jb.tgpTextEditor.evalProfileDef(compText,dsl).res
-        let fixedComp = originalComp
+        let fixedComp = jb.tgpTextEditor.evalProfileDef(compText,dsl).res
         if (!fixedComp && line != undefined) {
             const lines = compText.split('\n')
             const fixedLine = lines[line] && fixLineAtCursor(lines[line],col)
@@ -178,7 +176,8 @@ jb.extension('tgpTextEditor', {
         }
         if (!fixedComp)
             return { compilationFailure: true} // jb.logException(lastException,'fixEditedComp - can not fix compText', {compText})
-        return {fixedText: `jb.component${fixedText}`, fixedComp, originalComp }
+        const {text, map} = jb.utils.prettyPrintWithPositions(fixedComp,{initialPath: compId})
+        return { fixedCompText: `jb.component('${compId}', ${text})`, fixedComp, text, map }
 
         function fixLineAtCursor(line,pos) {
             const rest = line.slice(pos)

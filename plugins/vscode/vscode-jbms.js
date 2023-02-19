@@ -209,7 +209,7 @@ globalThis.jb_plugins = jb_plugins
 
 ;(async () => {
   await ${initJBCode};
-  jb.spy.initSpy({spyParam: 'remote,vscode'})
+  globalThis.spy = jb.spy.initSpy({spyParam: 'remote,vscode'})
   jb.treeShake.codeServerJbm = jb.parent = jb.ports['${jb.uri}'] = jb.jbm.extendPortToJbmProxy(portFromForkToExt(process,'${forkUri}','${jb.uri}'))
   await jb.vscode.initVscodeAsHost({extentionUri:'${jb.uri}'})
   process.send('jbm-loaded')  

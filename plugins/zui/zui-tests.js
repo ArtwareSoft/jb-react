@@ -6,6 +6,10 @@ jb.component('zuiTest.multiStage', {
   impl: uiTest({
     control: group({
       controls: [
+        button('click me', writeValue('')),
+        button('click me', writeValue()),
+        button('click me', TBD()),
+        button('click me'),
         text('2'),
         zui.multiStage({items: '%$phones%', stages: [threejsCircles()]})
       ]
@@ -65,6 +69,86 @@ jb.component('zuiTest.itemlist', {
         zui.itemlist({
           itemView: group({
             views: [
+              text(
+                numeric({
+                  att: '',
+                  calc: '',
+                  features: [priorty()]
+                })
+              ),
+              text(adaptableText('title')),
+              circle({prop: preDefined('hits'), circleSize: ''}),
+              text(
+                numeric({
+                  att: '',
+                  calc: '',
+                  features: [priorty()]
+                })
+              ),
+              text(adaptableText('title')),
+              circle({prop: preDefined('hits'), circleSize: ''}),
+              text(
+                numeric({
+                  att: '',
+                  calc: '',
+                  features: [priorty()]
+                })
+              ),
+              text(adaptableText('title')),
+              circle({prop: preDefined('hits'), circleSize: ''}),
+              text(preDefined()),
+              text(
+                numeric({
+                  att: '',
+                  calc: '',
+                  features: [priorty()]
+                })
+              ),
+              text(adaptableText('title')),
+              circle({prop: preDefined('hits'), circleSize: ''}),
+              text(
+                numeric({
+                  att: '',
+                  calc: '',
+                  features: [priorty()]
+                })
+              ),
+              text(adaptableText('title')),
+              circle({prop: preDefined('hits'), circleSize: ''}),
+              text(
+                numeric({
+                  att: '',
+                  calc: '',
+                  features: [priorty()]
+                })
+              ),
+              text(adaptableText('title')),
+              circle({prop: preDefined('hits'), circleSize: ''}),
+              text(
+                numeric({
+                  att: '',
+                  calc: '',
+                  features: [priorty()]
+                })
+              ),
+              text(adaptableText('title')),
+              circle({prop: preDefined('hits'), circleSize: ''}),
+              text(
+                numeric({
+                  att: '',
+                  calc: '',
+                  features: [priorty()]
+                })
+              ),
+              text(adaptableText('title')),
+              circle({prop: preDefined('hits'), circleSize: ''}),
+              text(
+                numeric({
+                  att: '',
+                  calc: '',
+                  features: [priorty()]
+                })
+              ),
               text(adaptableText('title')),
               circle({prop: preDefined('hits'), circleSize: ''}),
               group({
