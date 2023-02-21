@@ -259,8 +259,7 @@ jb.extension('tgpTextEditor', 'completion', {
             const path = semanticPath.allPaths.map(x=>x[0]).filter(x=>x.match('~!profile$')).map(x=>x.split('~!')[0])[0]
             const comp = path && jb.tgp.compNameOfPath(path)
             if (!comp) return
-            const loc = jb.utils.getComp(comp)[jb.core.CT].location
-            return locationInFile(loc)
+            return jb.utils.getComp(comp)[jb.core.CT].location
             // const lineOfComp = (+loc[1]) || 0
             // const uri = vscodeNS.Uri.file(jbBaseUrl + loc[0]) // /home/shaiby/projects/jb-react
             // return new vscodeNS.Location(uri, new vscodeNS.Position(lineOfComp, 0))
@@ -275,11 +274,8 @@ jb.extension('tgpTextEditor', 'completion', {
                 const lines = ('' + fileContent).split('\n').slice(lineOfExt)
                 const funcHeader = new RegExp(`${func}\\s*:|(${func}\\s*\\([^{]+{)`)
                 const lineOfFunc = lines.findIndex(l=>l.match(funcHeader))
-                return locationInFile([loc[0], lineOfExt + lineOfFunc])
+                return [loc[0], lineOfExt + lineOfFunc]
             }
-        }
-        function locationInFile(loc) {
-            return loc && new vscodeNS.Location(vscodeNS.Uri.file(jbBaseUrl + loc[0]), new vscodeNS.Position((+loc[1]) || 0, 0))
         }
     },
     calcEditAndGotoPos(docText, item, ctx) {

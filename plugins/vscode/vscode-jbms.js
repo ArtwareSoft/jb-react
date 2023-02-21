@@ -314,11 +314,3 @@ jb.component('vscode.showInXWebView', {
     })
   )
 })
-
-jb.component('vscode.provideCompletionItemsFromFork', {
-  impl: remote.data(ctx => jb.tgpTextEditor.provideCompletionItems(ctx.data, ctx), jbm.vscodeFork())
-})
-
-jb.component('vscode.provideDefinitionFromFork', {
-  impl: remote.data(ctx => jb.tgpTextEditor.provideDefinition(ctx.data, ctx), jbm.vscodeFork())
-})

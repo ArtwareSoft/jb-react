@@ -71,12 +71,12 @@ jb.extension('vscode', {
         else
             return jb.tgpTextEditor.provideCompletionItems(docProps)
     },
-    provideDefinition(docProps) {
-        if (jb.vscode.useFork)
-            return jb.vscode.ctx.setData(docProps).run(
+    async provideDefinition(docProps) {
+        const loc = jb.vscode.useFork ? await jb.vscode.ctx.setData(docProps).run(
                 remote.data(ctx => jb.tgpTextEditor.provideDefinition(ctx.data, ctx), jbm.vscodeFork()))
-        else
-            return jb.tgpTextEditor.provideDefinition(docProps)
+        : jb.tgpTextEditor.provideDefinition(docProps)
+        
+        return loc && new vscodeNS.Location(vscodeNS.Uri.file(jbBaseUrl + loc[0]), new vscodeNS.Position((+loc[1]) || 0, 0))
     },    
     toVscodeFormat(pos) {
         return { line: pos.line, character: pos.col }
