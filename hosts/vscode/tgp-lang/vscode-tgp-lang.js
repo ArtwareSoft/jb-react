@@ -24,14 +24,12 @@ async function activate(context) {
 
     ;['gotoPath','applyCompChange','moveUp','moveDown'].forEach(cmd => vscodeNS.commands.registerCommand(`jbart.${cmd}`, jb.tgpTextEditor[cmd]))
 
-    const ctx = new jb.core.jbCtx({},{vars: {}, path: 'vscode.tgpLang'})
-    //ctx.run({$: 'vscode.provideCompletionItemsFromFork'}) // for testing
-
 	context.subscriptions.push(vscodeNS.languages.registerCompletionItemProvider('javascript', {
-		async provideCompletionItems() {
+		provideCompletionItems() {
             try {
-                //return jb.tgpTextEditor.provideCompletionItems(ctx)
-                return ctx.run({$: 'vscode.provideCompletionItemsFromFork'})
+                const docProps = jb.tgpTextEditor.host.docTextAndCursor()
+                jb.log('vscode provideCompletionItems request',{docProps})
+                return jb.vscode.provideCompletionItems(docProps)
             } catch(e) {
                 jb.logException(e,'provide completions')
             }
@@ -40,7 +38,7 @@ async function activate(context) {
 	context.subscriptions.push(vscodeNS.languages.registerDefinitionProvider('javascript', {
 		provideDefinition() {
             try {
-                return jb.tgpTextEditor.provideDefinition(ctx)
+                return jb.vscode.provideDefinition(jb.tgpTextEditor.host.docTextAndCursor())
             } catch(e) {
                 jb.logException(e,'provide definition')
             }

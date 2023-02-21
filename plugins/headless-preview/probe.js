@@ -250,8 +250,8 @@ jb.extension('probe', {
 jb.component('probe.runCircuit', {
   type: 'data',
   params: [
-    { id: 'probePath', as: 'string', defaultValue: '%$probe/path%'},
-    { id: 'defaultMainCircuit', as: 'string', defaultValue: '%$probe/defaultMainCircuit%'},
+    {id: 'probePath', as: 'string', defaultValue: '%$probe/path%'},
+    {id: 'defaultMainCircuit', as: 'string', defaultValue: '%$probe/defaultMainCircuit%'}
   ],
   impl: async (ctx,probePath,defaultMainCircuit) => {
         jb.log('probe start run circuit',{ctx,probePath,defaultMainCircuit})
@@ -260,7 +260,7 @@ jb.component('probe.runCircuit', {
             return jb.logError(`probe can not infer circuitCtx from ${probePath}`, )
         return new jb.probe.Probe(circuit.circuitCtx,defaultMainCircuit).runCircuit(probePath)
     },
-    require: {$: 'tgp.componentStatistics'}
+  require: tgp.componentStatistics()
 })
 
 jb.component('probe.calcCircuitPath', {

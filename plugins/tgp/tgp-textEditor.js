@@ -165,19 +165,21 @@ jb.extension('tgpTextEditor', {
     },
     fixEditedComp(compId, compText, {line, col} = {},dsl) {
         jb.log('tgpEditor fixEditedComp', compText,line,col)
-        let fixedComp = jb.tgpTextEditor.evalProfileDef(compText,dsl).res
-        if (!fixedComp && line != undefined) {
+        let comp = jb.tgpTextEditor.evalProfileDef(compText,dsl).res
+        let compChanged = false
+        if (!comp && line != undefined) {
             const lines = compText.split('\n')
             const fixedLine = lines[line] && fixLineAtCursor(lines[line],col)
             if (lines[line] && fixedLine != lines[line]) {
                 const fixedCompText = compText.split('\n').map((l,i) => i == line ? fixedLine : l).join('\n')
-                fixedComp = jb.tgpTextEditor.evalProfileDef(fixedCompText, dsl).res
+                comp = jb.tgpTextEditor.evalProfileDef(fixedCompText, dsl).res
             }
+            compChanged = true
         }
-        if (!fixedComp)
+        if (!comp)
             return { compilationFailure: true} // jb.logException(lastException,'fixEditedComp - can not fix compText', {compText})
-        const {text, map} = jb.utils.prettyPrintWithPositions(fixedComp,{initialPath: compId})
-        return { fixedCompText: `jb.component('${compId}', ${text})`, fixedComp, text, map }
+        const {text, map} = jb.utils.prettyPrintWithPositions(comp,{initialPath: compId})
+        return { compChanged,  fixedCompText: `jb.component('${compId}', ${text})`, comp, text, map }
 
         function fixLineAtCursor(line,pos) {
             const rest = line.slice(pos)
@@ -230,12 +232,14 @@ jb.extension('tgpTextEditor', {
                 return jb.logError('can not parse comp', {compId, err, compText})
         }
     },
-    async updateCurrentCompFromEditor() {
-        const {docText, cursorLine } = await jb.tgpTextEditor.host.docTextAndCursor()
+    updateCurrentCompFromEditor(docProps) {
+        const {docText, cursorLine } = docProps
         const {compId, compSrc, dsl} = jb.tgpTextEditor.closestComp(docText, cursorLine)
         const {err} = compSrc ? jb.tgpTextEditor.evalProfileDef(compSrc, dsl) : {}
         if (err)
           return jb.logError('can not parse comp', {compId, err})
+        const ref = ctx.exp('%$studio/scriptChangeCounter%','ref')
+        jb.db.writeValue(ref, +(jb.val(ref)||0)+1 ,ctx)          
     },
     posFromCM: pos => pos && ({line: pos.line, col: pos.ch}),
 

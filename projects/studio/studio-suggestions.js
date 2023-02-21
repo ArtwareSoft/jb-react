@@ -43,7 +43,7 @@ jb.extension('suggestions', {
         return jb.entries(Object.assign({},(probeCtx.cmpCtx||{}).params,probeCtx.vars))
             .concat(resources)
             .filter(x=>jb.suggestions.hideInSuggestions.indexOf(x[0]) == -1)
-            .map(x=> jb.suggestions.valueOption('$'+x[0],jb.val(x[1]),this.pos,this.tail,this.input))
+            .map(x=> jb.suggestions.valueOption('$'+x[0],jb.val(x[1]),this.pos,this.tail,this.input,this.base))
             .filter(x=> x.toPaste.indexOf('$$') != 0)
             // .filter(x=> x.toPaste.indexOf(':') == -1)
       }
@@ -60,14 +60,14 @@ jb.extension('suggestions', {
             })
         else if (this.tailSymbol == '%')
           options = [].concat.apply([],jb.toarray(probeCtx.exp('%%'))
-            .map(x => jb.entries(x).map(x=> jb.suggestions.valueOption(x[0],x[1],this.pos,this.tail,this.input))))
+            .map(x => jb.entries(x).map(x=> jb.suggestions.valueOption(x[0],x[1],this.pos,this.tail,this.input,this.base))))
             .concat(this.calcVars(probeCtx))
         else if (this.tailSymbol == '%$')
           options = this.calcVars(probeCtx)
         else if (this.tailSymbol == '/' || this.tailSymbol == '.')
           options = [].concat.apply([],
             jb.toarray(probeCtx.exp(this.base))
-              .map(x=>jb.entries(x).map(x=> jb.suggestions.valueOption(x[0],x[1],this.pos,this.tail,this.input))) )
+              .map(x=>jb.entries(x).map(x=> jb.suggestions.valueOption(x[0],x[1],this.pos,this.tail,this.input,this.base))) )
 
         options = jb.utils.unique(options,x=>x.toPaste)
         if (this.tail != '' && jb.frame.Fuse)
@@ -79,17 +79,18 @@ jb.extension('suggestions', {
         return {optionsHash, options}
       }
   },
-  valueOption(toPaste,value,pos,tail,input) {
-    const text = toPaste + valAsText(value)
-    return { type: 'value', toPaste,value,pos,tail, text, input, code: toPaste }
+  valueOption(toPaste,value,pos,tail,input,base) {
+    const detail = valAsText(value)
+    const text = [toPaste,detail ? `(${detail})`: ''].filter(x=>x).join(' ')
+    return { type: 'value', toPaste,value,pos,tail, text, input, code: toPaste, detail, base }
 
     function valAsText(val) {
       if (typeof val == 'string' && val.length > 20)
-        return ` (${val.substring(0,20)}...)`
+        return `${val.substring(0,20)}...`
       else if (jb.utils.isPrimitiveValue(val))
-        return ` (${val})`
+        return val
       else if (Array.isArray(val))
-        return ` (${val.length} items)`
+        return `${val.length} items`
       return ''
     }
   },
@@ -134,30 +135,32 @@ jb.component('suggestions.lastRunCtxRef', {
 jb.component('suggestions.memoizeAndCalc', {
   params: [
     {id: 'probePath', as: 'string'},
-    {id: 'expressionOnly', as: 'boolean'},
+    {id: 'expressionOnly', as: 'boolean', type: 'boolean'},
     {id: 'input', defaultValue: '%%'},
-    {id: 'sessionId', as: 'string', defaultValue: '%$$dialog.cmpId%', description: 'run probe only once per session'},
+    {id: 'sessionId', as: 'string', defaultValue: '%$$dialog.cmpId%', description: 'run probe only once per session'}
   ],
   impl: pipe(
-          getOrCreate(suggestions.lastRunCtxRef('%$sessionId%')
-            , pipe(probe.runCircuit('%$probePath%'),log('memoize suggestions'),'%result.0.in%')),
-          suggestions.optionsByProbeCtx('%$probePath%','%$expressionOnly%','%$input%','%%')
-      ),
-  macroByValue: true,
+    getOrCreate(
+      suggestions.lastRunCtxRef('%$sessionId%'),
+      pipe(probe.runCircuit('%$probePath%'), log('memoize suggestions'), '%result.0.in%')
+    ),
+    suggestions.optionsByProbeCtx('%$probePath%', '%$expressionOnly%', '%$input%', '%%')
+  ),
+  macroByValue: true
 })
 
 jb.component('suggestions.calcFromRemote', {
   params: [
     {id: 'probePath', as: 'string'},
-    {id: 'expressionOnly', as: 'boolean'},
+    {id: 'expressionOnly', as: 'boolean', type: 'boolean'},
     {id: 'input', defaultValue: '%%'},
-    {id: 'forceLocal', as: 'boolean', description: 'do not use remote preview'},
-    {id: 'sessionId', as: 'string', defaultValue: '%$$dialog.cmpId%', description: 'run probe only once per session'},
+    {id: 'forceLocal', as: 'boolean', description: 'do not use remote preview', type: 'boolean'},
+    {id: 'sessionId', as: 'string', defaultValue: '%$$dialog.cmpId%', description: 'run probe only once per session'}
   ],
-  impl: remote.data({
-    data: suggestions.memoizeAndCalc('%$probePath%','%$expressionOnly%','%$input%','%$sessionId%'),
-    jbm: ({},{},{input,forceLocal}) => forceLocal ? jb : new jb.suggestions.suggestions(jb.val(input)).jbm()
-  })
+  impl: remote.data(
+    suggestions.memoizeAndCalc('%$probePath%', '%$expressionOnly%', '%$input%', '%$sessionId%'),
+    ({},{},{input,forceLocal}) => forceLocal ? jb : new jb.suggestions.suggestions(jb.val(input)).jbm()
+  )
 })
 
 jb.component('suggestions.applyOption', {
@@ -191,21 +194,21 @@ jb.component('suggestions.applyOption', {
 jb.component('studio.propertyPrimitive', {
   type: 'control',
   params: [
-    {id: 'path', as: 'string'},
+    {id: 'path', as: 'string'}
   ],
   impl: editableText({
-      databind: tgp.ref('%$path%'),
-      style: editableText.studioPrimitiveText(),
-      features: [
-        feature.onKey('Right', suggestions.applyOption('/')),
-        editableText.picklistHelper({
-          showHelper: suggestions.shouldShow(true),
-          options: suggestions.calcFromRemote('%$path%',true),
-          picklistFeatures: picklist.allowAsynchOptions(),
-          picklistStyle: studio.suggestionList(),
-          onEnter: suggestions.applyOption()
-        }),
-      ]
+    databind: tgp.ref('%$path%'),
+    style: editableText.studioPrimitiveText(),
+    features: [
+      feature.onKey('Right', suggestions.applyOption('/')),
+      editableText.picklistHelper({
+        options: suggestions.calcFromRemote('%$path%', true),
+        picklistStyle: studio.suggestionList(),
+        picklistFeatures: picklist.allowAsynchOptions(),
+        showHelper: suggestions.shouldShow(true),
+        onEnter: suggestions.applyOption()
+      })
+    ]
   })
 })
 
@@ -220,12 +223,11 @@ jb.component('studio.jbFloatingInput', {
       control.icon({
         icon: 'FunctionVariant',
         title: "hit '=' to calculate with function",
-        //type: 'mdi',
         features: [css.margin('25')]
       }),
       button({
         title: 'set to false',
-        action: writeValue(tgp.boolRef('%$path%'), false),
+        action: writeValue({to: tgp.boolRef('%$path%'), value: false}),
         style: button.mdcIcon(icon({icon: 'cancel', type: 'mdc'}), '24'),
         features: [
           feature.if(tgp.isOfType('%$path%', 'boolean')),
@@ -248,10 +250,13 @@ jb.component('studio.jbFloatingInput', {
         action: studio.openPickIcon('%$path%'),
         style: button.mdcIcon(),
         features: [
-          feature.if(and(inGroup(list('feature.icon','icon'), tgp.compName(tgp.parentPath('%$path%'))),
+          feature.if(
+            and(
+              inGroup(list('feature.icon', 'icon'), tgp.compName(tgp.parentPath('%$path%'))),
               equals('icon', pipeline(tgp.paramDef('%$path%'), '%id%'))
-          )),
-          css.transformScale({x: '1', y: '0.8'}),
+            )
+          ),
+          css.transformScale('1', '0.8'),
           css.margin('15'),
           feature.icon('all_out')
         ]
@@ -268,22 +273,22 @@ jb.component('studio.jbFloatingInput', {
             features: [
               watchRef({ref: tgp.ref('%$path%'), strongRefresh: true}),
               feature.onKey('Right', suggestions.applyOption('/')),
-              feature.onKey('Enter', runActions(suggestions.applyOption(), dialog.closeDialogById('studio-jb-editor-popup'), popup.regainCanvasFocus())),
+              feature.onKey(
+                'Enter',
+                runActions(suggestions.applyOption(), dialog.closeDialogById('studio-jb-editor-popup'), popup.regainCanvasFocus())
+              ),
               feature.onKey('Esc', runActions(dialog.closeDialogById('studio-jb-editor-popup'), popup.regainCanvasFocus())),
               editableText.picklistHelper({
-                showHelper: suggestions.shouldShow(),
                 options: suggestions.calcFromRemote('%$path%'),
-                picklistFeatures: picklist.allowAsynchOptions(),
                 picklistStyle: studio.suggestionList(),
+                picklistFeatures: picklist.allowAsynchOptions(),
+                showHelper: suggestions.shouldShow()
               }),
               css.width('100%'),
               css('~ input { padding-top: 30px !important}')
             ]
           }),
-          text({
-            text: pipeline(tgp.paramDef('%$path%'), '%description%'),
-            features: css('color: grey')
-          })
+          text({text: pipeline(tgp.paramDef('%$path%'), '%description%'), features: css('color: grey')})
         ],
         features: css.width('100%')
       })
@@ -300,32 +305,37 @@ jb.component('studio.suggestionList', {
   impl: styleByControl(
     itemlist({
       items: '%$picklistModel/options%',
-      visualSizeLimit: 30,
       controls: text({
         text: pipeline('%text%', studio.unMacro()),
         features: [
           css.padding({left: '3', right: '2'}),
-          feature.hoverTitle(
-            pipeline(ctx => jb.comps[ctx.data.toPaste], '%description%')
-          )
+          feature.hoverTitle(pipeline(ctx => jb.comps[ctx.data.toPaste], '%description%'))
         ]
-      }),      
+      }),
+      visualSizeLimit: 30,
       features: [
         itemlist.selection({
           databind: '%$picklistModel/databind%',
-//          selectedToDatabind: '%code%',
-//          databindToSelected: ctx => ctx.vars.picklistModel.options().find(o=>o.code == ctx.data),
-          onDoubleClick: runActions(
-            Var('cmp','%$helperCmp%'),
-            action.runBEMethod('onEnter')
-          )
+          onDoubleClick: runActions(Var('cmp', '%$helperCmp%'), action.runBEMethod('onEnter'))
         }),
         itemlist.keyboardSelection(false),
-        css.height({height: '500', overflow: 'scroll', minMax: 'max'}),
-        css.width({width: '300', overflow: 'auto', minMax: 'min'}),
+        css.height({
+          height: '500',
+          overflow: 'scroll',
+          minMax: 'max'
+        }),
+        css.width({
+          width: '300',
+          overflow: 'auto',
+          minMax: 'min'
+        }),
         css('{ position: absolute; z-index:1000; background: var(--jb-dropdown-bg) }'),
-        css.border({width: '1', color: 'var(--jb-dropdown-border)' }),
-        css.padding({top: '2', left: '3', selector: 'li'}),
+        css.border({width: '1', color: 'var(--jb-dropdown-border)'}),
+        css.padding({
+          top: '2',
+          left: '3',
+          selector: 'li'
+        }),
         itemlist.infiniteScroll()
       ]
     }),

@@ -49,7 +49,7 @@ jb.component('zuiTest.summaryLabel', {
         }),
         zui.multiLayer({
           boardSize: 256,
-          initialZoom: 4,
+          initialZoom: 2,
           initialCenter: '158,135',
           items: pipeline('%$phones%', slice(0, 10000)),
           layers: [summaryLabel(), circles()],
@@ -68,99 +68,19 @@ jb.component('zuiTest.itemlist', {
       controls: [
         zui.itemlist({
           itemView: group({
+            layout: verticalOneByOne(),
             views: [
-              text(
-                numeric({
-                  att: '',
-                  calc: '',
-                  features: [priorty()]
-                })
-              ),
-              text(adaptableText('title')),
-              circle({prop: preDefined('hits'), circleSize: ''}),
-              text(
-                numeric({
-                  att: '',
-                  calc: '',
-                  features: [priorty()]
-                })
-              ),
-              text(adaptableText('title')),
-              circle({prop: preDefined('hits'), circleSize: ''}),
-              text(
-                numeric({
-                  att: '',
-                  calc: '',
-                  features: [priorty()]
-                })
-              ),
-              text(adaptableText('title')),
-              circle({prop: preDefined('hits'), circleSize: ''}),
-              text(preDefined()),
-              text(
-                numeric({
-                  att: '',
-                  calc: '',
-                  features: [priorty()]
-                })
-              ),
-              text(adaptableText('title')),
-              circle({prop: preDefined('hits'), circleSize: ''}),
-              text(
-                numeric({
-                  att: '',
-                  calc: '',
-                  features: [priorty()]
-                })
-              ),
-              text(adaptableText('title')),
-              circle({prop: preDefined('hits'), circleSize: ''}),
-              text(
-                numeric({
-                  att: '',
-                  calc: '',
-                  features: [priorty()]
-                })
-              ),
-              text(adaptableText('title')),
-              circle({prop: preDefined('hits'), circleSize: ''}),
-              text(
-                numeric({
-                  att: '',
-                  calc: '',
-                  features: [priorty()]
-                })
-              ),
-              text(adaptableText('title')),
-              circle({prop: preDefined('hits'), circleSize: ''}),
-              text(
-                numeric({
-                  att: '',
-                  calc: '',
-                  features: [priorty()]
-                })
-              ),
-              text(adaptableText('title')),
-              circle({prop: preDefined('hits'), circleSize: ''}),
-              text(
-                numeric({
-                  att: '',
-                  calc: '',
-                  features: [priorty()]
-                })
-              ),
-              text(adaptableText('title')),
-              circle({prop: preDefined('hits'), circleSize: ''}),
+              text(adaptableText({att: 'title', features: priorty(1)})),
               group({
                 layout: horizontalOneByOne(),
                 views: [
-                  text(numeric('price')),
-                  text(numeric('hits'))
+                  text(numeric({att: 'price', features: priorty(2)})),
+                  text(numeric({att: 'hits', features: priorty(3)}))
                 ]
               })
             ]
           }),
-          items: pipeline('%$phones%', slice(0, 10000)),
+          items: '%$phones%',
           itemProps: [
             numeric('hits'),
             numeric({att: 'price', features: priorty(1)})
@@ -169,27 +89,6 @@ jb.component('zuiTest.itemlist', {
       ],
       features: [
         variable('zuiCtx', obj())
-      ]
-    }),
-    expectedResult: contains('cmp-id')
-  })
-})
-
-jb.component('zuiTest.itemlist22', {
-  impl: uiTest({
-    control: group({
-      controls: [
-        zui.itemlist({
-          itemView: group({
-            views: [
-              text(preDefined(''), TBD()),
-              text(adaptableText({att: '', calc: ''})),
-              circle(TBD()),
-              group({views: [circle(), text(), text(TBD(), TBD())]})
-            ]
-          }),
-          items: pipeline('%$phones%', slice(0, 10000))
-        })
       ]
     }),
     expectedResult: contains('cmp-id')

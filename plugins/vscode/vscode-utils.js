@@ -1,20 +1,14 @@
 jb.extension('vscode', {
-    initExtension() { return { loadedProjects : {} } },
+    initExtension() { return { loadedProjects : {}, useFork: true, ctx: new jb.core.jbCtx({},{vars: {}, path: 'vscode.tgpLang'})} },
     async initVscodeAsHost({context, extentionUri}) {
         jb.log('vscode initVscodeAsHost', {context, extentionUri})
-        if (extentionUri) {
+        if (extentionUri) { // the lang server
+            jb.vscode.useFork = false // avoid potential bug
             const ctx = new jb.core.jbCtx({},{vars: {}, path: 'vscode.tgpLangSrvr'})
-            jb.tgpTextEditor.host = {
-                extentionUri,
+            jb.tgpTextEditor.host = { // limited tgpEditor host at the server
                 serverUri: jb.uri,
                 applyEdit: async (edit,uri) => ctx.setData({edit,uri}).run( 
                     remote.action(({data}) => jb.tgpTextEditor.host.applyEdit(data.edit, data.uri), jbm.byUri(()=> extentionUri))),
-                selectRange: async (start,end) => ctx.setData({start,end}).run( 
-                    remote.action(({data}) => jb.tgpTextEditor.host.selectRange(data.start, data.end), jbm.byUri(()=> extentionUri))),
-                docTextAndCursor: async () => ctx.run(remote.data(() => 
-                    jb.tgpTextEditor.host.docTextAndCursor({maxSize: 10000}), jbm.byUri(()=> extentionUri))),
-                execCommand: async (cmd) => ctx.setData(cmd).run( 
-                    remote.action(({data}) => jb.tgpTextEditor.host.execCommand(data), jbm.byUri(()=> extentionUri))),
             }
             return        
         }
@@ -28,16 +22,15 @@ jb.extension('vscode', {
                 jb.log('vscode applyEdit',{wEdit, edit,uri})
                 jb.tgpTextEditor.lastEdit = edit.newText
                 await vscodeNS.workspace.applyEdit(wEdit)
-                jb.tgpTextEditor.lastEdit = { edit , uri }
             },
-            async selectRange(start,end) {
+            selectRange(start,end) {
                 end = end || start
                 const editor = vscodeNS.window.activeTextEditor
                 const line = start.line
                 editor.revealRange(new vscodeNS.Range(line, 0,line, 0), vscodeNS.TextEditorRevealType.InCenterIfOutsideViewport)
                 editor.selection = new vscodeNS.Selection(line, start.col, end.line, end.col)
             },
-            async docTextAndCursor({maxSize} = {}) {
+            docTextAndCursor({maxSize} = {}) {
                 const editor = vscodeNS.window.activeTextEditor
                 return { docText: maxSize ? editor.document.getText().slice(0,maxSize) : editor.document.getText(),
                     cursorLine: editor.selection.active.line,
@@ -47,9 +40,6 @@ jb.extension('vscode', {
             async execCommand(cmd) {
                 vscodeNS.commands.executeCommand(cmd)
             },
-            // getTextAtSelection() {
-            //     return vscodeNS.window.activeTextEditor.document.getText(vscodeNS.window.activeTextEditor.selection)
-            // },
         }
 
         vscodeNS.workspace.onDidChangeTextDocument(({contentChanges}) => {
@@ -59,19 +49,35 @@ jb.extension('vscode', {
             if (jb.path(contentChanges,'0.text') == jb.tgpTextEditor.lastEdit) {
                 jb.tgpTextEditor.lastEdit = ''
             } else {
-                jb.tgpTextEditor.updateCurrentCompFromEditor()
+                jb.vscode.updateCurrentCompFromEditor()
             }
-        })        
-        // vscodeNS.window.onDidChangeTextEditorSelection( async () => {
-        //     if (!jb.tgpTextEditor.watchCursor) return
-        //     const { semanticPath } = await jb.tgpTextEditor.calcActiveEditorPath()
-        //     console.log('update pos', semanticPath)            
+        })      
+        // vscodeNS.window.onDidChangeTextEditorSelection( async () => {           
         // })
         // vscodeNS.workspace.onDidSaveTextDocument(() => {
-        //     jb.tgpTextEditor.cache = {}
-        //     jb.tgpTextEditor.updateCurrentCompFromEditor()
         // })
     },
+    updateCurrentCompFromEditor() {
+        const docProps = jb.tgpTextEditor.host.docTextAndCursor()
+        if (jb.vscode.useFork)
+            return ctx.setData(docProps).run(remote.action(ctx => jb.tgpTextEditor.updateCurrentCompFromEditor(ctx.data), jbm.vscodeFork()))
+        else
+            jb.tgpTextEditor.updateCurrentCompFromEditor()
+    },
+    provideCompletionItems(docProps) {
+        if (jb.vscode.useFork)
+            return jb.vscode.ctx.setData(docProps).run(
+                remote.data(ctx => jb.tgpTextEditor.provideCompletionItems(ctx.data, ctx), jbm.vscodeFork()))
+        else
+            return jb.tgpTextEditor.provideCompletionItems(docProps)
+    },
+    provideDefinition(docProps) {
+        if (jb.vscode.useFork)
+            return jb.vscode.ctx.setData(docProps).run(
+                remote.data(ctx => jb.tgpTextEditor.provideDefinition(ctx.data, ctx), jbm.vscodeFork()))
+        else
+            return jb.tgpTextEditor.provideDefinition(docProps)
+    },    
     toVscodeFormat(pos) {
         return { line: pos.line, character: pos.col }
     },
@@ -123,18 +129,8 @@ jb.extension('vscode', {
         vscodeNS.workspace.onDidChangeTextDocument(() => {
             jb.vscode.cache = {}
         })
-        vscodeNS.workspace.onDidSaveTextDocument( async () => { // update component of active selection
-            await updateCurrentCompFromEditor()
-            // const ctx = new jb.core.jbCtx({},{vars: {headlessWidget: true, fromVsCode: true}})
-            // const {docText, cursorLine } = await jb.tgpTextEditor.host.docTextAndCursor()
-            // const {compId, compSrc, dsl} = jb.tgpTextEditor.closestComp(docText, cursorLine)
-            // if (compId) {
-            //     const compRef = jb.tgp.ref(compId)
-            //     const newVal = '({' + compSrc.split('\n').slice(1).join('\n')
-            //     jb.tgpTextEditor.setStrValue(newVal, compRef, ctx)
-            // }
-            const ref = ctx.exp('%$studio/scriptChangeCounter%','ref')
-            jb.db.writeValue(ref, +(jb.val(ref)||0)+1 ,ctx)
+        vscodeNS.workspace.onDidSaveTextDocument( () => { // update component of active selection
+            jb.vscode.updateCurrentCompFromEditor(jb.tgpTextEditor.host.docTextAndCursor())
         })
         vscodeNS.workspace.onDidOpenTextDocument(({fileName}) => 
             fileName.split(jbBaseUrl).pop().match(/projects[/]([^/]*)/) && jb.vscode.loadOpenedProjects())
@@ -142,8 +138,8 @@ jb.extension('vscode', {
     watchCursorChange() {
     //    vscodeNS.window.onDidChangeTextEditorSelection(jb.vscode.updatePosVariables)
     },
-    // updatePosVariables() {
-    //     const { compId, path, semanticPath } = jb.tgpTextEditor.calcActiveEditorPath()
+    // updatePosVariables(docProps) {
+    //     const { compId, path, semanticPath } = jb.tgpTextEditor.calcActiveEditorPath(docProps)
     //     if (!path) return
     //     console.log('update pos', semanticPath)
     //     vscodeNS.commands.executeCommand('setContext', 'jbart.inComponent', !!(compId || path))

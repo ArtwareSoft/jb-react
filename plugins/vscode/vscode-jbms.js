@@ -166,7 +166,7 @@ jb.component('initJb.vcodeCompletionWorker', {
         globalThis.jb = await jbInit('URI',{
             projects: ['studio','tests'], plugins: ['vscode', ...jb_plugins], doNoInitLibs: true, useFileSymbolsFromBuild: true
         })
-        await jb.initializeLibs(['utils','watchable','immutable','watchableComps','tgp','tgpTextEditor','vscode','jbm','cbHandler','treeShake'])
+        await jb.initializeLibs(['utils','watchable','immutable','watchableComps','tgp','tgpTextEditor','vscode','jbm','cbHandler','treeShake','suggestions','probe','studio'])
     }
     const func = f.toString().replace(/URI/,vars.uri)
     return `(${func})()`
@@ -316,5 +316,9 @@ jb.component('vscode.showInXWebView', {
 })
 
 jb.component('vscode.provideCompletionItemsFromFork', {
-  impl: remote.data(ctx => jb.tgpTextEditor.provideCompletionItems(ctx), jbm.vscodeFork())
+  impl: remote.data(ctx => jb.tgpTextEditor.provideCompletionItems(ctx.data, ctx), jbm.vscodeFork())
+})
+
+jb.component('vscode.provideDefinitionFromFork', {
+  impl: remote.data(ctx => jb.tgpTextEditor.provideDefinition(ctx.data, ctx), jbm.vscodeFork())
 })

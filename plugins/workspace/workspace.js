@@ -13,20 +13,13 @@ jb.extension('workspace', {
                 const from = jb.tgpTextEditor.lineColToOffset(docText, edit.range.start)
                 const to = jb.tgpTextEditor.lineColToOffset(docText,edit.range.end)
                 jb.workspace.openDocs[docUri].text = docText.slice(0,from) + edit.newText + docText.slice(to)
-                jb.tgpTextEditor.lastEdit = { edit , uri }
+                jb.tgpTextEditor.lastEditForTester = { edit , uri }
             },
-            async selectRange(start,end) {
+            selectRange(start,end) {
                 jb.workspace.openDocs[jb.workspace.activeUri].selection = { start, end: end || start }
                 jb.tgpTextEditor.host.selectionSource.next({start,end})
             },
-            async getTextAtSelection() {
-                const selection = jb.workspace.openDocs[jb.workspace.activeUri].selection
-                const docText = jb.workspace.openDocs[jb.workspace.activeUri].text
-                const from = jb.tgpTextEditor.lineColToOffset(docText, selection.start)
-                const to = jb.tgpTextEditor.lineColToOffset(docText, selection.start)
-                return docText.slice(from,to)
-            },
-            async docTextAndCursor() {
+            docTextAndCursor() {
                 const doc = jb.workspace.openDocs[jb.workspace.activeUri]
                 return { docText: doc.text, cursorLine: doc.selection.start.line, cursorCol: doc.selection.start.col}
             },
@@ -39,7 +32,14 @@ jb.extension('workspace', {
                 jb.workspace.openDocs[uri] = { text, selection}
                 jb.workspace.activeUri = uri
             },
-            selectionSource: jb.callbag.subject()      
+            selectionSource: jb.callbag.subject(),
+            async getTextAtSelection() {
+                const selection = jb.workspace.openDocs[jb.workspace.activeUri].selection
+                const docText = jb.workspace.openDocs[jb.workspace.activeUri].text
+                const from = jb.tgpTextEditor.lineColToOffset(docText, selection.start)
+                const to = jb.tgpTextEditor.lineColToOffset(docText, selection.start)
+                return docText.slice(from,to)
+            },            
         }
     },
     initExtension() { 

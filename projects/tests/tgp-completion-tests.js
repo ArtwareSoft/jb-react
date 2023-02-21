@@ -220,3 +220,86 @@ jb.component('completionTest.fixEditedCompWrongName', {
 })`
   )
 })
+
+jb.component('completionTest.people', {
+  impl: tgp.completionOptionsTest(`jb.component('x', {
+  impl: dataTest('%$peopleArray/__')
+})`, ['people (3 items)'])
+})
+
+jb.component('completionTest.person', {
+  impl: tgp.completionOptionsTest(`jb.component('x', {
+  impl: dataTest('%$__')
+})`, ['$person'])
+})
+
+jb.component('completionTest.writePerson', {
+  impl: tgp.completionActionTest({
+    compText: `jb.component('x', {
+  impl: dataTest('%$__')
+})`,
+    completionToActivate: '$person',
+    expectedEdit: () => ({
+      range: {start: {line: 1, col: 20}, end: {line: 1, col: 20}},
+      newText: 'person/'
+    }),
+    expectedCursorPos: '1,27'
+  })
+})
+
+jb.component('completionTest.writePersonInner', {
+  impl: tgp.completionActionTest({
+    compText: `jb.component('x', {
+  impl: dataTest('%$p__er')
+})`,
+    completionToActivate: '$person',
+    expectedEdit: () => ({
+      range: {start: {line: 1, col: 23}, end: {line: 1, col: 23}},
+      newText: 'son/'
+    }),
+    expectedCursorPos: '1,27'
+  })
+})
+
+jb.component('completionTest.writePersonInner2', {
+  impl: tgp.completionActionTest({
+    compText: `jb.component('x', {
+  impl: dataTest('%$per__')
+})`,
+    completionToActivate: '$person',
+    expectedEdit: () => ({
+      range: {start: {line: 1, col: 23}, end: {line: 1, col: 23}},
+      newText: 'son/'
+    }),
+    expectedCursorPos: '1,27'
+  })
+})
+
+jb.component('completionTest.writePersonName', {
+  impl: tgp.completionActionTest({
+    compText: `jb.component('x', {
+  impl: dataTest('%$person/__')
+})`,
+    completionToActivate: 'name (Homer Simpson)',
+    expectedEdit: () => ({
+      range: {start: {line: 1, col: 27}, end: {line: 1, col: 27}},
+      newText: 'name%'
+    }),
+    expectedCursorPos: '1,33'
+  })
+})
+
+jb.component('completionTest.writePreviewValue', {
+  impl: tgp.completionActionTest({
+    compText: `jb.component('x', {
+  impl: dataTest('%$peopleArray/__')
+})`,
+    completionToActivate: 'people (3 items)',
+    expectedEdit: () => ({
+        range: {start: {line: 1, col: 32}, end: {line: 1, col: 32}},
+        newText: 'people/'
+      }),
+    expectedCursorPos: '1,39'
+  })
+})
+

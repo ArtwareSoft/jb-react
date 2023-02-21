@@ -23,10 +23,7 @@ jb.component('suggestionsTest.simpleVars', {
 })
 
 jb.component('suggestionsTest.varsFilter', {
-  impl: suggestionsTest({
-    expression: '%$p',
-    expectedResult: and(contains('$people'), not(contains('$win')))
-  })
+  impl: suggestionsTest({expression: '%$p', expectedResult: and(contains('$people'), not(contains('$win')))})
 })
 
 jb.component('suggestionsTest.varsFilter.remote', {
@@ -46,10 +43,7 @@ jb.component('suggestionsTest.component', {
 })
 
 jb.component('suggestionsTest.insideArray', {
-  impl: suggestionsTest({
-    expression: '%$peopleArray/',
-    expectedResult: and(contains('people'), not(contains('$people')))
-  })
+  impl: suggestionsTest({expression: '%$peopleArray/', expectedResult: and(contains('people'), not(contains('$people')))})
 })
 
 jb.component('suggestionsTest.1', {

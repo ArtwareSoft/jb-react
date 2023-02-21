@@ -19,7 +19,7 @@ jb.component('tgp.completionOptionsTest', {
           .reduce(async (errors, inCompPos,i) => {
             const _errors = await errors
             jb.tgpTextEditor.host.selectRange(inCompPos)
-            const options = await jb.tgpTextEditor.provideCompletionItems(ctx)
+            const options = await jb.tgpTextEditor.provideCompletionItems(jb.tgpTextEditor.host.docTextAndCursor(), ctx)
             if (!options)
                 return `no options at index ${i}`
             const res = options.map(x=>x.label).includes(expectedSelections[i])
@@ -56,19 +56,19 @@ jb.component('tgp.completionActionTest', {
 
             const inCompPos = jb.tgpTextEditor.offsetToLineCol(dslLine+code,offset)
             jb.tgpTextEditor.host.selectRange(inCompPos)
-            const { needsFormat } = await jb.tgpTextEditor.calcActiveEditorPath()
+            const { needsFormat } = jb.tgpTextEditor.calcActiveEditorPath(jb.tgpTextEditor.host.docTextAndCursor())
             if (needsFormat)
                 return { testFailure: `bad comp format` }
-            const items = await jb.tgpTextEditor.provideCompletionItems(ctx)
+            const items = await jb.tgpTextEditor.provideCompletionItems(jb.tgpTextEditor.host.docTextAndCursor(), ctx)
             const item = items.find(x=>x.label == completionToActivate)
             if (!item)
                 return { testFailure: `completion not found - ${completionToActivate}` }
     
             await jb.tgpTextEditor.applyCompChange(item,ctx)
             await jb.delay(1) // wait for cursor change
-            const {cursorLine, cursorCol } = await jb.tgpTextEditor.host.docTextAndCursor()
+            const {cursorLine, cursorCol } = jb.tgpTextEditor.host.docTextAndCursor()
             const actualCursorPos = [cursorLine, cursorCol].join(',')
-            const actualEdit = jb.tgpTextEditor.lastEdit
+            const actualEdit = jb.tgpTextEditor.lastEditForTester
             console.log(jb.utils.prettyPrint(actualEdit.edit))
             const editsSuccess = Object.keys(jb.utils.objectDiff(actualEdit.edit,expectedEdit)).length == 0
             const selectionSuccess  = expectedTextAtSelection == null || jb.tgpTextEditor.host.getTextAtSelection() == expectedTextAtSelection
@@ -103,7 +103,7 @@ jb.component('tgp.completionActionTest', {
 
       const inCompPos = jb.tgpTextEditor.offsetToLineCol(dslLine+code,offset)
       jb.tgpTextEditor.host.selectRange(inCompPos)
-      const { fixedCompText } = await jb.tgpTextEditor.calcActiveEditorPath()
+      const { fixedCompText } = await jb.tgpTextEditor.calcActiveEditorPath(jb.tgpTextEditor.host.docTextAndCursor())
       const testId = ctx.vars.testID;
       const success = fixedCompText == expectedFixedComp
       const reason = !success && fixedCompText
