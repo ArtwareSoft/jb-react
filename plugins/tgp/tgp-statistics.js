@@ -29,12 +29,16 @@ jb.extension('tgp', 'statistics', {
       jb.tgp.calcRefs()
       const candidates = {[cmpId]: true}
       while (expand()) {}
-      const comps = Object.keys(candidates).filter(k => (jb.comps[k].params || []).length == 0)
+      const comps = Object.keys(candidates).filter(cmpId => noOpenParams(cmpId))
       return comps.sort((x,y) => mark(y) - mark(x))
   
       function mark(cmpId) {
         if (cmpId.match(/test|tst/i)) return 10
         return 0
+      }
+
+      function noOpenParams(cmpId) {
+        return (jb.comps[cmpId].params || []).filter(p=>!p.defaultValue).length == 0
       }
   
       function expand() {
@@ -66,7 +70,8 @@ jb.component('tgp.componentStatistics', {
   impl: (ctx,cmpId) => {
 	  jb.tgp.calcRefs()
 
-    const cmp = jb.comps[cmpId], refs = jb.tgp.statistics
+    const cmp = jb.comps[cmpId]
+    const cmpRefs = jb.tgp.statistics[cmpId] || {}
     if (!cmp) return {}
     const asStr = '' //jb.utils.prettyPrint(cmp.impl || '',{comps: jb.comps})
 
@@ -75,11 +80,11 @@ jb.component('tgp.componentStatistics', {
       file: (cmp[jb.core.CT].location || [])[0],
       lineInFile: +(cmp[jb.core.CT].location ||[])[1],
       linesOfCode: (asStr.match(/\n/g)||[]).length,
-      refs: refs[cmpId].refs,
-      referredBy: refs[cmpId].by,
+      refs: cmpRefs.refs,
+      referredBy: cmpRefs.by,
       type: cmp.type || 'data',
       implType: typeof cmp.impl,
-      refCount: refs[cmpId].by.length,
+      refCount: jb.path(cmpRefs.by,'length'),
       size: asStr.length
     }
 	}

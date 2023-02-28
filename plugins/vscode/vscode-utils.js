@@ -1,5 +1,8 @@
 jb.extension('vscode', {
-    initExtension() { return { loadedProjects : {}, useFork: true, ctx: new jb.core.jbCtx({},{vars: {}, path: 'vscode.tgpLang'})} },
+    initExtension() { return { 
+        loadedProjects : {}, useFork: true, 
+        ctx: new jb.core.jbCtx({},{vars: {}, path: 'vscode.tgpLang'})
+    } },
     async initVscodeAsHost({context, extentionUri}) {
         jb.log('vscode initVscodeAsHost', {context, extentionUri})
         if (extentionUri) { // the lang server
@@ -12,7 +15,6 @@ jb.extension('vscode', {
             }
             return        
         }
-        jb.vscode.initLogs(context)
         jb.tgpTextEditor.cache = {}
         jb.tgpTextEditor.host = {
             async applyEdit(edit,uri) {
@@ -42,6 +44,9 @@ jb.extension('vscode', {
             },
         }
 
+        await jb.exec(jbm.vscodeFork())
+        jb.vscode.log('fork initialized')
+
         vscodeNS.workspace.onDidChangeTextDocument(({contentChanges}) => {
             if (contentChanges && contentChanges.length == 0) return
             jb.tgpTextEditor.cache = {}
@@ -57,6 +62,10 @@ jb.extension('vscode', {
         // vscodeNS.workspace.onDidSaveTextDocument(() => {
         // })
     },
+    log(logName) {
+        jb.vscode.stdout = jb.vscode.stdout || vscodeNS.window.createOutputChannel('jbart')
+        jb.vscode.stdout.appendLine(logName)
+    },
     updateCurrentCompFromEditor() {
         const docProps = jb.tgpTextEditor.host.docTextAndCursor()
         if (jb.vscode.useFork)
@@ -65,6 +74,7 @@ jb.extension('vscode', {
             jb.tgpTextEditor.updateCurrentCompFromEditor()
     },
     provideCompletionItems(docProps) {
+        jb.vscode.stdout.appendLine('provideCompletionItems')
         if (jb.vscode.useFork)
             return jb.vscode.ctx.setData(docProps).run(
                 remote.data(ctx => jb.tgpTextEditor.provideCompletionItems(ctx.data, ctx), jbm.vscodeFork()))
@@ -72,10 +82,10 @@ jb.extension('vscode', {
             return jb.tgpTextEditor.provideCompletionItems(docProps)
     },
     async provideDefinition(docProps) {
-        const loc = jb.vscode.useFork ? await jb.vscode.ctx.setData(docProps).run(
+        const _loc = jb.vscode.useFork ? jb.vscode.ctx.setData(docProps).run(
                 remote.data(ctx => jb.tgpTextEditor.provideDefinition(ctx.data, ctx), jbm.vscodeFork()))
         : jb.tgpTextEditor.provideDefinition(docProps)
-        
+        const loc = await _loc
         return loc && new vscodeNS.Location(vscodeNS.Uri.file(jbBaseUrl + loc[0]), new vscodeNS.Position((+loc[1]) || 0, 0))
     },    
     toVscodeFormat(pos) {
@@ -170,13 +180,6 @@ jb.extension('vscode', {
         // if (projects.length)
         //     return loadProjectsCode(projects)
     },
-    async initLogs() {
-        const outputChannel = jb.vscode.OutputChannel = vscodeNS.window.createOutputChannel('jbart')
-        outputChannel.appendLine('Hello jBart vscode')
-        //outputChannel.show()
-        // const fromWorker = await jb.exec({$: 'vscode.workerTst'})
-        // outputChannel.appendLine(fromWorker); 
-    }
     // applyDeltaFromStudio() {
     //     jb.utils.subscribe(jb.watchableComps.source, async e => {
     //         const compId = e.path[0]

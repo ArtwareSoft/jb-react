@@ -155,7 +155,7 @@ jb.extension('ui','comp', {
                     colocation && {colocation},
                     frontEndLibs.length && {$__frontEndLibs : JSON.stringify(frontEndLibs)},
                     frontEndMethods.length && {$__frontEndMethods : JSON.stringify(frontEndMethods) },
-                    frontEndMethods.length && {interactive : 'true'}, 
+                    (frontEndMethods.length + frontEndLibs.length || eventhandlers)  && {interactive : 'true'}, 
                     frontEndVars && { $__vars : JSON.stringify(frontEndVars)},
                     this.state && { $__state : JSON.stringify(this.state)},
                     { $__debug: JSON.stringify({ path: (this.ctxForPick || this.calcCtx).path, callStack: jb.utils.callStack(this.calcCtx) }) },
@@ -234,7 +234,8 @@ jb.extension('ui','comp', {
             return this.itemfieldCache.get(item)
         }
         orig(ctx) {
-            if (jb.comps[ctx.profile && ctx.profile.$].type.split(/,|-/).indexOf('control') == -1)
+            const comp = ctx.profile && ctx.profile.$ && jb.comps[ctx.profile.$]
+            if (comp && (comp.type || '').split(/,|-/).indexOf('control') == -1)
                 debugger
             this.originators.push(ctx)
             return this

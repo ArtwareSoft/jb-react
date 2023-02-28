@@ -72,14 +72,16 @@ jb.component('remote.action', {
 })
 
 jb.component('remote.data', {
-    description: 'calc a script on a remote node and returns a promise',
-    macroByValue: true,
-    params: [
-      {id: 'data', dynamic: true },
-      {id: 'jbm', type: 'jbm', defaultValue: jbm.self()},
-      {id: 'timeout', as: 'number', defaultValue: 10000 },
-    ],
-    impl: (ctx,data,jbm,timeout) => {
+  description: 'calc a script on a remote node and returns a promise',
+  macroByValue: true,
+  params: [
+    {id: 'data', dynamic: true},
+    {id: 'jbm', type: 'jbm', defaultValue: jbm.self()},
+    {id: 'timeout', as: 'number', defaultValue: 10000}
+  ],
+  impl: (ctx,data,jbm,timeout) => {
+        if (jbm == jb)
+            return data()
         if (!jbm)
             return jb.logError('remote.data - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
         return Promise.resolve(jbm).then(_jbm=> _jbm.remoteExec(jb.remoteCtx.stripFunction(data),{timeout}))
@@ -101,16 +103,23 @@ jb.component('remote.initShadowData', {
 })
 
 jb.component('remote.copyPassiveData', {
-    type: 'action',
-    description: 'shadow watchable data on remote jbm',
-    params: [
-      {id: 'resourceId', as: 'string' },
-      {id: 'jbm', type: 'jbm'},
-    ],
-    impl: runActions(
-        Var('resourceCopy', '%${%$resourceId%}%'),
-        remote.action(addComponent({id: '%$resourceId%', value: '%$resourceCopy%', type: 'passiveData' }),'%$jbm%')
+  type: 'action',
+  description: 'shadow watchable data on remote jbm',
+  params: [
+    {id: 'resourceId', as: 'string'},
+    {id: 'jbm', type: 'jbm'}
+  ],
+  impl: runActions(
+    Var('resourceCopy', '%${%$resourceId%}%'),
+    remote.action(
+      addComponent({
+        id: '%$resourceId%',
+        value: '%$resourceCopy%',
+        type: 'passiveData'
+      }),
+      '%$jbm%'
     )
+  )
 })
 
 jb.component('remote.shadowResource', {

@@ -222,7 +222,7 @@ jb.extension('core', {
     if (profile.$byValue)
       jb.logError(`core: prepare - unresolved profile at ${ctx.path}`, {profile, ctx})
 
-    const comp = profile[jb.core.CT].comp
+    const comp = jb.path(profile[jb.core.CT],'comp')
     if (!comp && comp_name) { jb.logError('component ' + comp_name + ' is not defined', {ctx}); return { type:'null' } }
     if (comp.impl == null) { jb.logError('component ' + comp_name + ' has no implementation', {ctx}); return { type:'null' } }
 

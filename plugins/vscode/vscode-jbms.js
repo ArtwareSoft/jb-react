@@ -182,13 +182,17 @@ jb.component('jbm.vscodeFork', {
   impl: (ctx,name,initJbCode) => {
     if (jb.jbm.childJbms[name] && !jb.vscode.restartLangServer) 
       return jb.jbm.childJbms[name]
-    jb.vscode.restartLangServer = false
-    if (jb.path(jb.jbm.childJbms[name],'kill'))
-      jb.jbm.childJbms[name].kill()
-
     const forkUri = `${jb.uri}•${name}`
-    const initJBCode = initJbCode(ctx.setVars({uri: forkUri, multipleJbmsInFrame: false}))
+    if (jb.vscode.restartLangServer) {
+      debugger
+      if (jb.path(jb.jbm.childJbms[name],'kill'))
+        jb.jbm.childJbms[name].kill()
+      delete jb.jbm.childJbms[name]
+      delete jb.ports[forkUri]
+      jb.vscode.restartLangServer = false
+    }
 
+    const initJBCode = initJbCode(ctx.setVars({uri: forkUri, multipleJbmsInFrame: false}))
     const workerCode = `
 const fs = require('fs')
 const util = require('util')

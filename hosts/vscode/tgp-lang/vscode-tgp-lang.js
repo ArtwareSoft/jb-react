@@ -22,7 +22,7 @@ async function activate(context) {
     jb.spy.initSpy({spyParam: 'remote,vscode'})
     await jb.vscode.initVscodeAsHost({context})
 
-    ;['gotoPath','applyCompChange','moveUp','moveDown'].forEach(cmd => vscodeNS.commands.registerCommand(`jbart.${cmd}`, jb.tgpTextEditor[cmd]))
+    ;['gotoPath','restartLangServer','applyCompChange','moveUp','moveDown'].forEach(cmd => vscodeNS.commands.registerCommand(`jbart.${cmd}`, jb.tgpTextEditor[cmd]))
 
 	context.subscriptions.push(vscodeNS.languages.registerCompletionItemProvider('javascript', {
 		provideCompletionItems() {

@@ -248,7 +248,7 @@ jb.component('studio.openResponsivePhonePopup', {
               title: 'desktop',
               action: runActions(
                 writeValue('%$studio/preview/width%', '1280'),
-                writeValue('%$studio/preview/height%', '520')
+                writeValue('%$studio/preview/height%', '100%')
               ),
               style: button.mdcFloatingAction(true),
               features: feature.icon({icon: 'desktop_mac', type: 'mdc'})

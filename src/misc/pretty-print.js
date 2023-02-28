@@ -12,6 +12,7 @@ jb.extension('utils', 'prettyPrint', {
       emptyLineWithSpaces: Array.from(new Array(200)).map(_=>' ').join(''),
       fixedNLRegExp: new RegExp(`__fixedNL${''}__`,'g'), // avoid self replacement
       fixedNL: `__fixedNL${''}__`, // avoid self replacement
+      anyNewLine: new RegExp(`\n|__fixedNL${''}__`)
     }
   },
   prettyPrintComp(compId,comp,settings={}) {
@@ -27,17 +28,17 @@ jb.extension('utils', 'prettyPrint', {
   },
   
   advanceLineCol({line,col},text) {
-    const noOfLines = (text.match(/\n/g) || '').length
-    const newCol = noOfLines ? text.match(/\n(.*)$/)[1].length : col + text.length
+    const noOfLines = (text.match(/\n/g) || '').length + (text.match(jb.utils.fixedNLRegExp) || '').length
+    const newCol = noOfLines ? text.split(jb.utils.anyNewLine).pop().length : col + text.length
     return { line: line + noOfLines, col: newCol }
   },
 
-  prettyPrintWithPositions(val,{colWidth=120,tabSize=2,initialPath='',noMacros,comps,forceFlat} = {}) {
+  prettyPrintWithPositions(val,{colWidth=120,tabSize=2,initialPath='',noMacros,comps,forceFlat, depth} = {}) {
     comps = comps || jb.comps
     if (!val || typeof val !== 'object')
       return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
 
-    const res = valueToMacro({path: initialPath, line:0, col: 0, depth :1}, val, forceFlat)
+    const res = valueToMacro({path: initialPath, line:0, col: 0, depth : depth || 1}, val, forceFlat)
     res.text = res.text.replace(jb.utils.fixedNLRegExp,'\n')
     return res
 
@@ -56,6 +57,8 @@ jb.extension('utils', 'prettyPrint', {
 
     function joinVals(ctx, innerVals, open, close, flat, isArray) {
       const {path, depth} = ctx
+      if (depth > 100)
+        throw `prettyprint structure too deep ${path} ${depth}`
       const _open = typeof open === 'string' ? [{prop: '!open', item: open}] : open
       const arrayOrProfile = isArray? 'array' : 'profile'
       const openResult = processList(ctx,[..._open, {prop: `!open-${arrayOrProfile}`, item: () => newLine()}])
@@ -194,6 +197,7 @@ jb.extension('utils', 'prettyPrint', {
       function doValueToMacro() {
         if (Array.isArray(val)) return arrayToMacro(ctx, val, flat);
         if (val === null) return 'null'
+        if (val == globalThis) return 'err'
         if (val === undefined) return 'undefined'
         if (typeof val === 'object') return profileToMacro(ctx, val, flat)
         if (typeof val === 'function' && val[jb.macro.isMacro]) return profileToMacro(ctx, val(), flat)

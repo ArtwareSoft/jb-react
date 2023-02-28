@@ -558,7 +558,7 @@ jb.extension('ui', 'react', {
         if (!forceNow)
             return jb.delay(1000).then(()=>jb.ui.garbageCollectCtxDictionary(true))
    
-        const used = 'jb-ctx,full-cmp-ctx,pick-ctx,props-ctx,methods,frontEnd,originators'.split(',')
+        const used = 'jb-ctx,full-cmp-ctx,pick-ctx,props-ctx,methods,frontEnd,originators,eventhandlers'.split(',')
             .flatMap(att=>querySelectAllWithWidgets(`[${att}]`)
                 .flatMap(el => el.getAttribute(att).split(',').map(x=>Number(x.split('-').pop())).filter(x=>x)))
                     .sort((x,y)=>x-y)
@@ -572,6 +572,7 @@ jb.extension('ui', 'react', {
                 lastUsedIndex++;
             if (used[lastUsedIndex] != dict[i]) {
                 removedCtxs.push(dict[i])
+                if (dict[i] == 850) debugger
                 delete jb.ctxDictionary[''+dict[i]]
             }
         }
@@ -621,7 +622,7 @@ jb.extension('ui', 'react', {
             const actualVdom = jb.ui.elemToVdom(elem)
             const diff = jb.ui.vdomDiff(assumedVdom,actualVdom)
             if (Object.keys(diff).length) {
-                const actual = jb.ui.vdomToHtml(actualVdom),assumed = jb.ui.vdomToHtml(assumedVdom),dif = jb.utils.prettyPrint(diff)
+                const actual = jb.ui.vdomToHtml(actualVdom),assumed = jb.ui.vdomToHtml(assumedVdom),dif = diff // jb.utils.prettyPrint(diff)
                 jb.logError('wrong assumed vdom',{actual, assumed, dif, actualVdom, assumedVdom, diff, delta, ctx, cmpId, elem})
                 return { recover: true, reason: { diff, description: 'wrong assumed vdom'} }
             }

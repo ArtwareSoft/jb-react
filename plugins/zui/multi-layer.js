@@ -198,8 +198,7 @@ jb.extension('zui','multiLayer', {
       repulsion()
 
       return { mat, sparse: Array.from(Array(DIM**2).keys()).filter(i=>mat[i]).map(i=>
-          [mat[i][0], i%DIM, Math.floor(i/DIM), scales.greens(pivots.x.scale(mat[i][0])) ]) 
-      }
+          [mat[i][0], i%DIM, Math.floor(i/DIM)] ) } //, scales.greens(pivots.x.scale(mat[i][0])) ])   }
 
       function repulsion() {
           for (let i=0;i<DIM**2;i++)

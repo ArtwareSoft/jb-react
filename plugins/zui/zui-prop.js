@@ -21,18 +21,20 @@ jb.component('adaptableText', {
     {id: 'features', type: 'prop_feature[]', dynamic: true, flattenArray: true}
   ],
   impl: (ctx, att, calc, features) => {
+    const items = ctx.vars.items
     if (calc.profile) // calculated attribute
-      ctx.vars.items.forEach(i=> i[att] = calc(ctx.setData(i)))
+      items.forEach(i=> i[att] = calc(ctx.setData(i)))
 
     const prop = {
+      att,
       val: item => item.att,
       textSummaries2to32: item => jb.zui.textSummaries2to32(item[att]),
       pivots() { // create scale by string sort
           items.sort((i1,i2) => i1[att].localeCompare(i2) ).forEach((x,i) => x[`scale_${att}`] = i/items.length)
-          return [{ att, scale: x => x[`scale_${att}`] }]
+          return [{ att, scale: x => x[`scale_${att}`] , preferedAxis: this.preferedAxis }]
       }
     }
-    features.forEach(f=>f.enrich(prop))
+    features().forEach(f=>f.enrich(prop))
     return prop
   }
 })
@@ -45,17 +47,19 @@ jb.component('numeric', {
     {id: 'features', type: 'prop_feature[]', dynamic: true, flattenArray: true}
   ],
   impl: (ctx, att, calc, features) => {
+    const items = ctx.vars.items
     if (calc.profile) // calculated attribute
-      ctx.vars.items.forEach(i=> i[att] = calc(ctx.setData(i)))
+      items.forEach(i=> i[att] = calc(ctx.setData(i)))
 
     const prop = {
+      att,
       val: item => item.att,
       pivots() { // create scale by order
           items.sort((i1,i2) => i2[att] - i1[att] ).forEach((x,i) => x[`scale_${att}`] = i/items.length)
-          return [{ att, scale: x => x[`scale_${att}`] }]
+          return [{ att, scale: x => x[`scale_${att}`], preferedAxis: this.preferedAxis }]
       }
     }
-    features.forEach(f=>f.enrich(prop))
+    features().forEach(f=>f.enrich(prop))
     return prop
   }
 })

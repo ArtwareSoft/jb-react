@@ -1,5 +1,10 @@
 
 jb.extension('tgpTextEditor', {
+    initExtension() { 
+        return { 
+            enriched: Symbol.for('enriched'), 
+        } 
+    },    
     evalProfileDef: (code, dsl) => { 
       try {
         jb.core.unresolvedProfiles = []
@@ -72,6 +77,8 @@ jb.extension('tgpTextEditor', {
         return entries.sort((x,y) => (x[1].offset_to - x[1].offset_from) - (y[1].offset_to - y[1].offset_from) ) // smallest selection
     },
     enrichMapWithOffsets(text,locationMap) {
+        if (locationMap[jb.tgpTextEditor.enriched])
+            return locationMap
         const lines = text.split('\n')
         const accLines = []
         lines.reduce((acc,line) => {
@@ -82,7 +89,7 @@ jb.extension('tgpTextEditor', {
             positions: locationMap[k],
             offset_from: accLines[locationMap[k][0]] + locationMap[k][1],
             offset_to: accLines[locationMap[k][2]] + locationMap[k][3]
-        }}), {})
+        }}), { [jb.tgpTextEditor.enriched]: true})
     },
     refreshEditor(cmp,_path) {
         const editor = cmp.editor

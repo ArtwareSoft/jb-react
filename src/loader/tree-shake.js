@@ -1,7 +1,9 @@
 jb.extension('treeShake', {
     initExtension() {
         return {
-            clientComps: ['#extension','#core.run','#component','#jbm.extendPortToJbmProxy','#jbm.portFromFrame','#spy.initSpy','#treeShake.getCodeFromRemote','#cbHandler.terminate','treeShake.getCode','waitFor','runCtx'],
+            clientComps: ['#extension','#core.run','#component','#jbm.extendPortToJbmProxy','#jbm.portFromFrame',
+                '#db.addDataResourcePrefix','#db.removeDataResourcePrefix',
+                '#spy.initSpy','#treeShake.getCodeFromRemote','#cbHandler.terminate','treeShake.getCode','waitFor','runCtx'],
             existingFEPaths: {},
             FELibLoaderPromises: {},
             loadingCode: {},
@@ -204,10 +206,10 @@ jb.component('treeShake.getCode', {
 // code loader client
 
 jb.component('treeShake.getCodeFromRemote', {
-    params: [
-        {id: 'ids'}
-    ],
-    impl: async (ctx,ids) => ids && jb.treeShake.getCodeFromRemote(ids.split(','))
+  params: [
+    {id: 'ids'}
+  ],
+  impl: async (ctx,ids) => ids && jb.treeShake.getCodeFromRemote(ids.split(','))
 })
 
 // jb.component('treeShake.settreeShakeJbm', {

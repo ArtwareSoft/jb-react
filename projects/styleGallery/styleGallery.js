@@ -1,9 +1,18 @@
+
+jb.extension('styleGallery', {
+  getAllStyles(cmpId) {
+    const comp = jb.comps[cmpId] || jb.core.unresolvedProfiles.find(x=>x.id==cmpId).comp
+    const styleType = comp.params.find(p=>p.id =='style').type
+    return jb.core.unresolvedProfiles.filter(c=> jb.tgp.isCompObjOfType(c.comp,styleType)).map(x=>({$: x.id}))
+  }
+})
+
 jb.component('styleGallery.loadStyles', {
   params: [
     {id: 'component', as: 'string'}
   ],
   impl: runActionOnItem(
-      remote.data(jb.tgp.PTsOfType('%$component%') ,() => jb.parent),
+      remote.data(tgp.PTsOfType('%$component%') ,() => jb.parent),
       treeShake.getCodeFromRemote('%%')
   )
 })
@@ -70,7 +79,8 @@ jb.component('styleGallery.controlVariations', {
     }].flatMap(prof=>[(variations[ctrl]|| {prop: 'x', values:[1]})]
       .flatMap(e=> e.values.map(val => ({...prof, [e.prop] : val }))))
       .map(profile=> ctx.run(profile))
-  })
+  }),
+  require: [{$:'picklist.options'}]
 })
 
 
@@ -80,7 +90,7 @@ jb.defComponents('button,text,editableText,editableNumber,editableBoolean,group,
     params: [
       {id: 'ctrl', as: 'string', defaultValue: ctrl}
     ],
-    require: [ {$: ctrl}, {$: 'feature.icon'}, ...(jb.tgp.PTsOfType(jb.comps[ctrl].params.find(p=>p.id =='style').type).map(style=>({$: style})) )],
+    require: [ {$: ctrl}, {$: 'feature.icon'}, ...jb.styleGallery.getAllStyles(ctrl) ],
     impl: group({
   //    features: group.wait(styleGallery.loadStyles('%$ctrl%')),
       layout: layout.grid({

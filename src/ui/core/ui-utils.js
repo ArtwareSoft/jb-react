@@ -16,8 +16,8 @@ jb.extension('ui', {
     propWithUnits: (prop,v) => (v === '' || v === undefined) ? '' : `${prop}: ` + ((''+v||'').match(/[^0-9]$/) ? v : `${v}px`) + ';',
     fixCssLine: css => css.indexOf('\n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css,
     preserveCtx(ctx) {
-        jb.ctxDictionary[ctx.id] = ctx
-        return ''+ctx.id
+      jb.ctxDictionary[ctx.id] = ctx
+      return ''+ctx.id
     },
     inStudio() { return jb.studio && jb.studio.studioWindow },
     parentFrameJb() {

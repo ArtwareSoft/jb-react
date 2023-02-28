@@ -5,6 +5,7 @@ jb.component('editableText.markdown', {
       {id: 'debounceTime', as: 'number', defaultValue: 300},
     ],
     impl: features(
+      frontEnd.requireExternalLibrary(['simplemde.js','css/simplemde.css']),
       calcProp('text','%$$model/databind()%'),
       frontEnd.var('text', '%$$props/text%'),
       () => ({ template: ({},{},h) => h('div.simple-mde') }),

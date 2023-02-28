@@ -62,7 +62,7 @@ jb.component('dialog.createDialogTopIfNeeded', {
   type: 'action',
   impl: (ctx) => {
 		const widgetBody = jb.ui.widgetBody(ctx)
-		if (widgetBody.querySelector(':scope>.jb-dialogs')) return
+		if (!widgetBody || widgetBody.querySelector(':scope>.jb-dialogs')) return
 		const vdom = ctx.run({$: 'dialog.dialogTop'}).renderVdomAndFollowUp()
 		if (ctx.vars.headlessWidget && widgetBody instanceof jb.ui.VNode) {
 			jb.log('dialog headless createTop',{vdom,widgetBody})

@@ -100,7 +100,7 @@ jb.component('picklist.studioEnum', {
   type: 'picklist.style',
   impl: customStyle({
     template: (cmp,state,h) => h('select', { value: state.databind, onchange: true },
-          state.options.map(option=>h('option',{value: option.code},option.text))
+          (state.options || []).map(option=>h('option',{value: option.code},option.text))
         ),
     css: `
 { display: block; padding: 0; width: 150px; font-size: 12px; height: 23px;
@@ -113,7 +113,7 @@ jb.component('picklist.studioEnum', {
 	box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); }
 ::placeholder { color: #999; opacity: 1; }
     `,
-    features: field.databind()
+    features: [field.databind(), picklist.init()]
   })
 })
 

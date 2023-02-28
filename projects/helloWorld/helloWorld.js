@@ -20,7 +20,51 @@ jb.component('helloWorld.main', {
   type: 'control',
   impl: group({
     controls: [
-      text(' Hello World43534534')
+      group({
+        title: '',
+        style: group.sections(text.span()),
+        controls: [
+          group({
+            title: 'group1',
+            style: propertySheet.titlesAbove({spacing: '4'}),
+            controls: [
+              text({
+                text: ' Hello %$people.name%',
+                title: 'aaaa',
+                style: text.chip(),
+                features: feature.icon('account_balance')
+              })
+            ],
+            features: feature.icon('account_box')
+          }),
+          group({
+            title: 'group2',
+            style: propertySheet.titlesAbove({titleStyle: header.mdcSubtitle2(), spacing: '4'}),
+            controls: [
+              text({
+                text: ' Hello %$people.name%',
+                title: 'aaaa',
+                style: text.chip(),
+                features: feature.icon('account_balance')
+              })
+            ],
+            features: feature.icon('account_box')
+          })
+        ]
+      })
     ]
   })
+})
+
+jb.component('helloWorld.main2', {
+  type: 'control',
+  impl: group({
+    controls: [
+      text('World')
+    ]
+  })
+})
+
+jb.component('helloWorld.data1', {
+  impl: pipeline('a')
 })

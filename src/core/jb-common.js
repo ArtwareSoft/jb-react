@@ -19,7 +19,7 @@ jb.component('call', {
  	}
 })
 
-jb.extension('utils', {
+jb.extension('utils', 'pipe', {
   calcPipe(ctx,ptName,passRx) {
     let start = jb.toarray(ctx.data)
     if (start.length == 0) start = [null]

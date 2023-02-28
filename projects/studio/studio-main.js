@@ -27,6 +27,7 @@ jb.component('studio.jbart', {
   impl: group({
     controls: [
       studio.topBar(),
+      //studio.pages(),
       group({
         controls: preview.remoteWidget(),
         features: [
@@ -44,10 +45,11 @@ jb.component('studio.jbart', {
           })
         ]
       }),
-      studio.pages(),
       studio.ctxCounters()
     ],
-    features: [feature.requireService(urlHistory.mapStudioUrlToResource('studio'))]
+    features: [
+      feature.requireService(urlHistory.mapStudioUrlToResource('studio'))
+    ]
   })
 })
 
@@ -111,7 +113,7 @@ jb.component('dataResource.studio', {
     jbEditor: {},
     preview: {
       width: 1280,
-      height: 520,
+      height: '100%',
       zoom: 10
     },
     settings: {contentEditable: false, activateWatchRefViewer: true},
@@ -129,28 +131,32 @@ jb.component('studio.pages', {
         title: 'new page',
         action: studio.openNewPage(),
         style: button.mdcIcon(icon('add'), 16),
-        features: [css('{margin: 5px}'), feature.hoverTitle('new page')]
+        features: [
+          css('{margin: 5px}'),
+          feature.hoverTitle('new page')
+        ]
       }),
       itemlist({
         title: '',
         items: pipeline(studio.cmpsOfProject(), filter(tgp.isOfType('%%', 'control'))),
-        controls: text({
-          text: pipeline(suffix('.'), extractSuffix('.')),
-          features: css.class('studio-page')
-        }),
+        controls: text({text: pipeline(suffix('.'), extractSuffix('.')), features: css.class('studio-page')}),
         style: itemlist.horizontal(),
         features: [
           itemlist.selection({
             databind: '%$studio/page%',
             onSelection: runActions(
               writeValue('%$studio/profile_path%', '%$studio/page%'),
-              writeValue('%$studio/circuit%', tgp.circuitOptions('%$studio/page%')),
+              writeValue('%$studio/circuit%', tgp.circuitOptions('%$studio/page%'))
             ),
             autoSelectFirst: true
           }),
           css.class('studio-pages-items'),
           studio.watchComponents(),
-          css.width({width: '1200', overflow: 'auto', minMax: 'max'}),
+          css.width({
+            width: '1200',
+            overflow: 'auto',
+            minMax: 'max'
+          }),
           css('align-items: center;')
         ]
       }),
@@ -159,22 +165,30 @@ jb.component('studio.pages', {
         title: 'new function',
         action: studio.openNewFunction(),
         style: button.mdcIcon(icon({icon: 'add', type: 'mdc'}), '16'),
-        features: [css('{margin: 5px}'), feature.hoverTitle('new function')]
+        features: [
+          css('{margin: 5px}'),
+          feature.hoverTitle('new function')
+        ]
       }),
       itemlist({
         items: pipeline(studio.cmpsOfProject(), filter(tgp.isOfType('%%', 'data'))),
-        controls: text({
-          text: pipeline(suffix('.'), extractSuffix('.')),
-          style: text.alignToBottom(),
-          features: feature.onEvent('click', studio.openJbEditor('%%'))
-        }),
+        controls: text({text: pipeline(suffix('.'), extractSuffix('.')), features: feature.onEvent('click', studio.openJbEditor('%%'))}),
         style: itemlist.horizontal(),
-        features: [id('functions'), css.class('studio-pages-items'), studio.watchComponents()]
+        features: [
+          id('functions'),
+          css.class('studio-pages-items'),
+          css('align-items: center;'),
+          studio.watchComponents()
+        ]
       })
     ],
     features: [
-      css.class('studio-pages'),
-      //group.wait({for: studio.waitForPreviewIframe(), loadingControl: text({})})
+      css.class('studio-pages1'),
+      css.border({
+        width: '1',
+        side: 'bottom',
+        color: 'var(--jb-dropdown-border)'
+      })
     ]
   })
 })
@@ -210,22 +224,22 @@ jb.component('studio.sampleProject', {
 
 jb.component('studio.mainMenu', {
   type: 'menu.option',
-  impl: menu.menu({
-    title: 'main',
-    options: [
-      menu.menu({
-        title: 'File',
-        options: [
-          menu.menu({
-            title: 'Sample Projects',
-            options: [
+  impl: menu.menu(
+    'main',
+    [
+      menu.menu(
+        'File',
+        [
+          menu.menu(
+            'Sample Projects',
+            [
               studio.sampleProject('styleGallery'),
               studio.sampleProject('itemlists'),
               studio.sampleProject('todomvc'),
               studio.sampleProject('htmlParsing'),
               studio.sampleProject('cardsDemo')
             ]
-          }),
+          ),
           menu.action({
             title: 'New Project',
             action: studio.openNewProject(),
@@ -249,38 +263,30 @@ jb.component('studio.mainMenu', {
             icon: icon('save'),
             showCondition: not(studio.inVscode())
           }),
-          // menu.action({
-          //   title: 'Source ...',
-          //   action: studio.viewAllFiles(studio.currentProfilePath()),
-          //   showCondition: not(studio.inVscode())
-          // }),
           menu.action({
             title: 'Github helper...',
             action: studio.githubHelper(),
             showCondition: not(studio.inVscode())
           }),
-          menu.action({
-            title: 'Settings...',
-            action: openDialog({
-              style: dialog.dialogOkCancel(),
-              content: studio.projectSettings(),
+          menu.action(
+            'Settings...',
+            openDialog({
               title: 'Project Settings',
+              content: studio.projectSettings(),
+              style: dialog.dialogOkCancel(),
               onOK: runActions(
-                writeValue(
-                    '%$studio/projectSettings/libs%',
-                    pipeline('%$studio/libsAsArray%', join(','))
-                  ),
+                writeValue('%$studio/projectSettings/libs%', pipeline('%$studio/libsAsArray%', join(','))),
                 studio.saveProjectSettings(),
                 studio.refreshPreview()
               ),
               features: dialogFeature.dragTitle()
             })
-          })
+          )
         ]
-      }),
-      menu.menu({
-        title: 'Edit',
-        options: [
+      ),
+      menu.menu(
+        'Edit',
+        [
           menu.action({
             title: 'Undo',
             action: watchableComps.undo(),
@@ -306,33 +312,47 @@ jb.component('studio.mainMenu', {
             showCondition: studio.canExtractParam()
           })
         ]
-      }),
-      menu.menu({
-        title: 'View',
-        options: [
-          menu.action({
-            title: 'Components...',
-            action: openDialog({
-              style: dialog.studioFloating({}),
-              content: studio.componentsList(),
+      ),
+      menu.menu(
+        'View',
+        [
+          menu.action(
+            'Components...',
+            openDialog({
               title: 'components',
+              content: studio.componentsList(),
+              style: dialog.studioFloating(),
               features: css.width('600')
             })
-          }),
-          menu.action({title: 'Refresh Preview', action: studio.refreshPreview()}),
-          menu.action({title: 'Redraw Studio', action: studio.redrawStudio()}),
-          menu.action({title: 'Edit source', action: studio.editSource()}),
-          menu.action({title: 'Outline', action: studio.openControlTree()}),
-          menu.action({
-            title: 'Inteliscript Editor',
-            action: studio.openJbEditor({path: studio.currentProfilePath()})
-          })
+          ),
+          menu.action('Refresh Preview', studio.refreshPreview()),
+          menu.action('Redraw Studio', studio.redrawStudio()),
+          menu.action('Edit source', studio.editSource()),
+          menu.action('Outline', studio.openControlTree()),
+          menu.action('Inteliscript Editor', studio.openJbEditor(studio.currentProfilePath())),
+          menu.separator(),
+          menu.dynamicOptions(
+            studio.cmpsOfProject(),
+            menu.action(
+              pipeline(
+                Var('type', data.if(tgp.isOfType('%%', 'control'), 'page', 'component')),
+                suffix('.'),
+                extractSuffix('.'),
+                '%% (%$type%)'
+              ),
+              runActions(
+                writeValue('%$studio/page%', '%%'),
+                writeValue('%$studio/profile_path%', '%%'),
+                writeValue('%$studio/circuit%', tgp.circuitOptions('%%'))
+              )
+            )
+          )
         ]
-      }),
+      ),
       studio.insertControlMenu(),
       studio.dataResourceMenu()
     ]
-  })
+  )
 })
 
 jb.component('studio.baseStudioUrl', {
@@ -346,9 +366,13 @@ jb.component('studio.topBar', {
     layout: layout.flex({alignItems: 'start', spacing: ''}),
     controls: [
       image({
-        url: pipeline(studio.baseStudioUrl(), '%%css/jbartlogo.png'),
+        url: pipeline({'$': 'studio.baseStudioUrl'}, '%%css/jbartlogo.png'),
         width: '',
-        features: [css.margin('5', '5'), css.width({width: '80', minMax: 'min'}), css.height('100')]
+        features: [
+          css.margin('5', '5'),
+          css.width({width: '80', minMax: 'min'}),
+          css.height('100')
+        ]
       }),
       group({
         title: 'title and menu',
@@ -359,7 +383,7 @@ jb.component('studio.topBar', {
             layout: layout.flex({spacing: '160'}),
             controls: [
               menu.control({
-                menu: studio.mainMenu(),
+                menu: {'$': 'studio.mainMenu'},
                 style: menuStyle.pulldown(),
                 features: [id('mainMenu'), css.height('30'), css.margin('18')]
               }),
@@ -368,14 +392,21 @@ jb.component('studio.topBar', {
                 controls: studio.toolbar(),
                 features: css.margin('8')
               }),
-              controlWithFeatures(studio.searchComponent(), [css.margin('8', '-100')])
+              controlWithFeatures(
+                studio.searchComponent(),
+                [
+                  css.margin('8', '-100')
+                ]
+              )
             ]
           })
         ],
         features: css('padding-left: 18px; width: 100%; ')
       })
     ],
-    features: [css('height: 48px; border-bottom: 1px #d9d9d9 solid;')]
+    features: [
+      css('height: 48px; border-bottom: 1px #d9d9d9 solid;')
+    ]
   })
 })
 

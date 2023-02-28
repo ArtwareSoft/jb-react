@@ -1,3 +1,12 @@
+jb.extension('test', 'completion', {
+	initExtension() {
+		return { uniqueNameCounter: 0 } 
+	},
+	fixToUniqueName(code) {
+    const cmpId = 'CmpltnTst'+jb.test.uniqueNameCounter++
+    return code.replace(/jb.component\('x',/,`jb.component('${cmpId}',`)
+  }
+})
 
 jb.component('tgp.completionOptionsTest', {
   type: 'test',
@@ -8,11 +17,11 @@ jb.component('tgp.completionOptionsTest', {
   ],
   impl: async (ctx,compText,expectedSelections,dsl)=> {
         jb.workspace.initJbWorkspaceAsHost()
-        const parts = compText.split('__')
+        const parts = jb.test.fixToUniqueName(compText).split('__')
         const dslLine = dsl ? `jb.dsl('${dsl}')\n` : ''
         const offsets = parts.reduce((acc,part) => [...acc, acc.pop()+part.length] , [0] ).slice(1,-1).map(x=>x+dslLine.length)
         const code = parts.join('')
-        jb.tgpTextEditor.evalProfileDef(code,dsl)
+//        jb.tgpTextEditor.evalProfileDef(code,dsl)
         jb.tgpTextEditor.host.initDoc('dummy.js', dslLine+code)
         
         const result = await offsets.map(offset=>jb.tgpTextEditor.offsetToLineCol(dslLine+code,offset))
@@ -46,11 +55,10 @@ jb.component('tgp.completionActionTest', {
   impl: dataTest(
     async (ctx,{}, {compText,completionToActivate, expectedEdit, expectedTextAtSelection, expectedCursorPos,dsl }) => {
             jb.workspace.initJbWorkspaceAsHost()
-            const parts = compText.split('__')
+            const parts = jb.test.fixToUniqueName(compText).split('__')
             const dslLine = dsl ? `jb.dsl('${dsl}')\n` : ''
             const offset = parts[0].length +dslLine.length
             const code = parts.join('')
-            jb.tgpTextEditor.evalProfileDef(code,dsl)
             jb.utils.resolveLoadedProfiles()
             jb.tgpTextEditor.host.initDoc('dummy.js', dslLine+code)
 
@@ -93,11 +101,10 @@ jb.component('tgp.completionActionTest', {
   ],
   impl: async (ctx,compText,expectedFixedComp,dsl) => {
       jb.workspace.initJbWorkspaceAsHost()
-      const parts = compText.split('__')
+      const parts = jb.test.fixToUniqueName(compText).split('__')
       const dslLine = dsl ? `jb.dsl('${dsl}')\n` : ''
       const offset = parts[0].length +dslLine.length
       const code = parts.join('')
-      jb.tgpTextEditor.evalProfileDef(code,dsl)
       jb.utils.resolveLoadedProfiles()
       jb.tgpTextEditor.host.initDoc('dummy.js', dslLine+code)
 
@@ -110,3 +117,4 @@ jb.component('tgp.completionActionTest', {
       return { id: testId, title: testId, success, reason }
     }
 })
+

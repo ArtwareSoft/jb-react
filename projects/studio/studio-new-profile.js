@@ -58,7 +58,7 @@ jb.component('studio.categoriesMarks', {
 
 jb.component('studio.flattenCategories', {
   type: 'aggregator',
-  impl: ctx => 
+  impl: ctx =>
     ctx.data.filter(cat=>cat.code != 'all')
       .flatMap(category=> [{text: `---${category.code}---`}, ...category.pts.map(text => ({text, compName: text, description: jb.comps[text].description}))])
 })
@@ -400,13 +400,30 @@ jb.component('studio.insertCompOption', {
 })
 
 jb.component('studio.insertControlMenu', {
-  impl: menu.menu({
-    title: 'Insert',
-    options: [
+  impl: menu.menu(
+    'Insert',
+    [
+      menu.menu(
+        'Control',
+        [
+          studio.insertCompOption('Label', 'label'),
+          studio.insertCompOption('Button', 'button')
+        ]
+      ),
+      menu.menu(
+        'Input',
+        [
+          studio.insertCompOption('Editable Text', 'editable-text'),
+          studio.insertCompOption('Editable Number', 'editable-number'),
+          studio.insertCompOption('Editable Boolean', 'editable-boolean')
+        ]
+      ),
+      menu.action('More...', studio.openNewProfileDialog({type: 'control', mode: 'insert-control'})),
+      menu.separator(),
       menu.action({
         title: 'Drop html from any web site',
         action: openDialog({
-          style: dialog.dialogOkCancel(),
+          title: 'Drop html from any web site',
           content: group({
             layout: layout.vertical(),
             controls: [
@@ -416,50 +433,32 @@ jb.component('studio.insertControlMenu', {
                 raised: '',
                 features: [
                   css.height('80'),
-                  studio.dropHtml(
-                    runActions(tgp.insertControl('%$newCtrl%'), dialog.closeDialog())
-                  )
+                  studio.dropHtml(runActions(tgp.insertControl('%$newCtrl%'), dialog.closeDialog()))
                 ]
               }),
               editableText({
                 title: 'paste html here',
                 databind: '%$studio/htmlToPaste%',
-                style: editableText.textarea({rows: '3', cols: '80'}),
+                style: editableText.textarea('3', '80'),
                 features: htmlAttribute('placeholder', 'or paste html here')
               })
             ],
-            features: [css.width('400'), css.padding({left: '4', right: '4'})]
+            features: [
+              css.width('400'),
+              css.padding({left: '4', right: '4'})
+            ]
           }),
-          title: 'Drop html from any web site',
-          onOK: action.if(
-            '%$studio/htmlToPaste%',
-            tgp.insertControl(studio.htmlToControl('%$studio/htmlToPaste%'))
-          ),
+          style: dialog.dialogOkCancel(),
+          onOK: action.if('%$studio/htmlToPaste%', tgp.insertControl(studio.htmlToControl('%$studio/htmlToPaste%'))),
           features: dialogFeature.dragTitle()
         }),
         shortcut: ''
       }),
-      menu.menu({
-        title: 'Control',
-        options: [
-          studio.insertCompOption('Label', 'label'),
-          studio.insertCompOption('Button', 'button')
-        ]
-      }),
-      menu.menu({
-        title: 'Input',
-        options: [
-          studio.insertCompOption('Editable Text', 'editable-text'),
-          studio.insertCompOption('Editable Number', 'editable-number'),
-          studio.insertCompOption('Editable Boolean', 'editable-boolean')
-        ]
-      }),
-      menu.action({
-        title: 'More...',
-        action: studio.openNewProfileDialog({type: 'control', mode: 'insert-control'})
-      })
+      menu.separator(),
+      menu.action('New Page (Control)', studio.openNewPage()),
+      menu.action('New Function', studio.openNewFunction())
     ]
-  })
+  )
 })
 
 jb.component('studio.newProfile', {

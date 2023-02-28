@@ -32,7 +32,7 @@ Object.assign(jb, {
     exp: (...args) => new jb.core.jbCtx().exp(...args),
 })
 
-jb.extension('utils', { // jb core utils
+jb.extension('utils', 'core',{
     profileType(profile) {
         if (!profile) return ''
         if (typeof profile == 'string') return 'data'
@@ -261,7 +261,7 @@ jb.extension('utils', { // jb core utils
     subscribe: (source,listener) => jb.callbag.subscribe(listener)(source),
 })
 
-jb.extension('utils', { // generic utils
+jb.extension('utils', 'generic', {
     isEmpty: o => Object.keys(o).length === 0,
     isObject: o => o != null && typeof o === 'object',
     isPrimitiveValue: val => ['string','boolean','number'].indexOf(typeof val) != -1,

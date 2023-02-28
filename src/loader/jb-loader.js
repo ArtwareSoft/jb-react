@@ -43,6 +43,7 @@ async function jbloadJSFile(url,jb,{noSymbols, fileSymbols} = {}) {
   const funcId = '__'+dsl+url.replace(/[^a-zA-Z0-9]/g,'_')
   const wrappedCode = noSymbols ? code : `function ${funcId}(jb) {${prefixCode}; ${code}\n}`
   try {
+    //console.log(`loading ${url}`)
     globalThis.eval(`${wrappedCode}//# sourceURL=${url}?${jb.uri}`)
     !noSymbols && globalThis[funcId](jb)
   } catch (e) {

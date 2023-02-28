@@ -197,22 +197,33 @@ jb.component('studio.openEditProperty', {
     {id: 'path', as: 'string'}
   ],
   impl: action.switch(
-    Var('pathType', split({separator: '~!', text: '%$path%', part: 'last'})),
-    Var('actualPath', split({separator: '~!', text: '%$path%', part: 'first'})),
+    Var(
+      'pathType',
+      split({
+        separator: '~!',
+        text: '%$path%',
+        part: 'last'
+      })
+    ),
+    Var(
+      'actualPath',
+      split({
+        separator: '~!',
+        text: '%$path%',
+        part: 'first'
+      })
+    ),
     Var('parentPath', tgp.parentPath('%$actualPath%')),
     Var('paramDef', tgp.paramDef('%$actualPath%')),
     [
       action.switchCase(
         or(
           startsWith('obj-separator', '%$pathType%'),
-          inGroup(
-              list('close-profile', 'open-profile', 'open-by-value', 'close-by-value'),
-              '%$pathType%'
-            )
+          inGroup(list('close-profile', 'open-profile', 'open-by-value', 'close-by-value'), '%$pathType%')
         ),
         openDialog({
-          style: dialog.studioJbEditorPopup(),
           content: sourceEditor.addProp('%$actualPath%'),
+          style: dialog.studioJbEditorPopup(),
           features: [
             studio.nearLauncherPosition(),
             dialogFeature.autoFocusOnFirstInput(),
@@ -224,16 +235,16 @@ jb.component('studio.openEditProperty', {
       action.switchCase(
         '%$paramDef/options%',
         openDialog({
-          style: dialog.studioJbEditorPopup(),
           content: group({
             controls: [
               studio.jbFloatingInputRich('%$actualPath%')
             ],
             features: [
               feature.onEsc(dialog.closeDialog(true)),
-              feature.onEnter(dialog.closeDialog(true), sourceEditor.refreshEditor())
+              feature.onEnter(dialog.closeDialog(true))
             ]
           }),
+          style: dialog.studioJbEditorPopup(),
           features: [
             studio.nearLauncherPosition(),
             dialogFeature.autoFocusOnFirstInput(),
@@ -246,52 +257,40 @@ jb.component('studio.openEditProperty', {
         runActions(
           Var('sugarArrayPath', sourceEditor.firstParamAsArrayPath('%$actualPath%')),
           Var(
-              'index',
-              data.switch(
-                [
-                  data.case(equals('open-sugar', '%$pathType%'), 0),
-                  data.case(
-                    equals('close-sugar', '%$pathType%'),
-                    count(tgp.val('%$sugarArrayPath%'))
-                  )
-                ]
-              )
-            ),
-          Var(
-              'actualPathHere',
-              data.if(
-                endsWith('-sugar', '%$pathType%'),
-                '%$sugarArrayPath%~%$index%',
-                '%$actualPath%'
-              )
-            ),
-          action.if(
-              endsWith('-sugar', '%$pathType%'),
-              tgp.addArrayItem({path: '%$sugarArrayPath%', toAdd: '', index: '%$index%'})
-            ),
-          openDialog({
-              style: dialog.studioJbEditorPopup(),
-              content: studio.jbFloatingInput('%$actualPathHere%'),
-              features: [
-                dialogFeature.autoFocusOnFirstInput(),
-                studio.nearLauncherPosition(),
-                dialogFeature.onClose(
-                  runActions(
-                    toggleBooleanValue('%$studio/jb_preview_result_counter%'),
-                    sourceEditor.refreshEditor()
-                  )
-                )
+            'index',
+            data.switch(
+              [
+                data.case(equals('open-sugar', '%$pathType%'), 0),
+                data.case(equals('close-sugar', '%$pathType%'), count(tgp.val('%$sugarArrayPath%')))
               ]
+            )
+          ),
+          Var('actualPathHere', data.if(endsWith('-sugar', '%$pathType%'), '%$sugarArrayPath%~%$index%', '%$actualPath%')),
+          action.if(
+            endsWith('-sugar', '%$pathType%'),
+            tgp.addArrayItem({
+              path: '%$sugarArrayPath%',
+              toAdd: '',
+              index: '%$index%'
             })
+          ),
+          openDialog({
+            content: studio.jbFloatingInput('%$actualPathHere%'),
+            style: dialog.studioJbEditorPopup(),
+            features: [
+              dialogFeature.autoFocusOnFirstInput(),
+              studio.nearLauncherPosition(),
+              dialogFeature.onClose(
+                runActions(toggleBooleanValue('%$studio/jb_preview_result_counter%'), sourceEditor.refreshEditor())
+              )
+            ]
+          })
         )
       ),
       action.switchCase(
         Var('ptsOfType', tgp.PTsOfType(tgp.paramType('%$actualPath%'))),
         '%$ptsOfType/length% == 1',
-        runActions(
-          tgp.setComp('%$path%', '%$ptsOfType[0]%'),
-          sourceEditor.refreshEditor()
-        )
+        runActions(tgp.setComp('%$path%', '%$ptsOfType[0]%'), sourceEditor.refreshEditor())
       ),
       action.switchCase(
         and(startsWith('open', '%$pathType%'), tgp.isArrayType('%$actualPath%')),
@@ -306,7 +305,9 @@ jb.component('studio.openEditProperty', {
       action.switchCase(
         and(startsWith('close', '%$pathType%'), tgp.isArrayType('%$actualPath%')),
         studio.openNewProfileDialog({
-          vars: [Var('length', count(tgp.val('%$actualPath%')))],
+          vars: [
+            Var('length', count(tgp.val('%$actualPath%')))
+          ],
           path: '%$actualPath%',
           type: tgp.paramType('%$actualPath%'),
           index: '%$length%',
@@ -315,10 +316,7 @@ jb.component('studio.openEditProperty', {
         })
       ),
       action.switchCase(
-        and(
-          startsWith('array-separator', '%$pathType%'),
-          tgp.isArrayType('%$actualPath%')
-        ),
+        and(startsWith('array-separator', '%$pathType%'), tgp.isArrayType('%$actualPath%')),
         studio.openNewProfileDialog({
           vars: [
             Var('index', (ctx,{actualPath}) => +actualPath.split('~').pop()+1),

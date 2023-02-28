@@ -4,18 +4,18 @@ jb.component('tests.main', { // needed for loading the 'virtual' tests project
 })
 
 jb.component('dataTest', {
-	type: 'test',
-	params: [
-	  {id: 'calculate', dynamic: true},
-	  {id: 'expectedResult', type: 'boolean', dynamic: true},
-	  {id: 'runBefore', type: 'action', dynamic: true},
-	  {id: 'timeout', as: 'number', defaultValue: 200},
-	  {id: 'allowError', as: 'boolean', dynamic: true},
-	  {id: 'cleanUp', type: 'action', dynamic: true},
-	  {id: 'expectedCounters', as: 'single'},
-	  {id: 'useResource', as: 'string'},
-	],
-	impl: function(ctx,calculate,expectedResult,runBefore,timeout,allowError,cleanUp,expectedCounters) {
+  type: 'test',
+  params: [
+    {id: 'calculate', dynamic: true},
+    {id: 'expectedResult', type: 'boolean', dynamic: true},
+    {id: 'runBefore', type: 'action', dynamic: true},
+    {id: 'timeout', as: 'number', defaultValue: 200},
+    {id: 'allowError', as: 'boolean', dynamic: true, type: 'boolean'},
+    {id: 'cleanUp', type: 'action', dynamic: true},
+    {id: 'expectedCounters', as: 'single'},
+    {id: 'useResource', as: 'string'}
+  ],
+  impl: function(ctx,calculate,expectedResult,runBefore,timeout,allowError,cleanUp,expectedCounters) {
 		const _timeout = ctx.vars.singleTest ? Math.max(1000,timeout) : timeout
 		const id = ctx.vars.testID
 		return Promise.race([ 
