@@ -1107,6 +1107,15 @@ jb.component('formatDate', {
   impl: (ctx,date) => new Date(date).toLocaleDateString(undefined, jb.objFromEntries(jb.entries(ctx.params).filter(e=>e[1])))
 })
 
+jb.component('formatNumber', {
+  description: 'using toLocaleDateString',
+  params: [
+    {id: 'precision', as: 'number', defaultValue: '2', description: '10.33'},
+    {id: 'num', defaultValue: '%%' },
+  ],
+  impl: (ctx,precision,x) => +((typeof x == 'number') ? x.toFixed(+precision) : x)
+})
+
 jb.component('getSessionStorage', {
   params: [
     { id: 'id', as: 'string' }

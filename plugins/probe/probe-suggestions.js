@@ -177,10 +177,10 @@ jb.component('probe.suggestionsByCmd', {
         "-spy:probe"]
 
     const command = `node --inspect-brk jb.js ${args.map(x=>`'${x}'`).join(' ')}`
-    if (jb.frame.jbRunCommandLine) {
+    if (jb.frame.jbForkNode) {
         let res = null
         try {
-          res = await jbRunCommandLine(args)
+          res = await jbForkNode(args)
         } catch (e) {
           jb.logException(e,'suggestionsByCmd',{command})
         }

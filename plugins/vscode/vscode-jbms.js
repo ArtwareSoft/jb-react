@@ -186,6 +186,9 @@ jb.component('jbm.vscodeFork', {
     if (jb.vscode.restartLangServer) {
       if (jb.path(jb.jbm.childJbms[name],'kill'))
         jb.jbm.childJbms[name].kill()
+      const killThemAll = "ps -aux | grep tgp-lang | cut -d ' ' -f 5 | xargs kill"
+      jb.frame.jbRunShell && jb.frame.jbRunShell(killThemAll)
+
       delete jb.jbm.childJbms[name]
       delete jb.ports[forkUri]
       jb.vscode.restartLangServer = false
@@ -210,7 +213,7 @@ globalThis.jb_plugins = jb_plugins
 
 ;(async () => {
   await ${initJBCode};
-  globalThis.spy = jb.spy.initSpy({spyParam: 'remote,vscode'})
+  globalThis.spy = jb.spy.initSpy({spyParam: 'remote,vscode,completion,tgpTextEditor'})
   jb.treeShake.codeServerJbm = jb.parent = jb.ports['${jb.uri}'] = jb.jbm.extendPortToJbmProxy(portFromForkToExt(process,'${forkUri}','${jb.uri}'))
   await jb.vscode.initVscodeAsHost({extentionUri:'${jb.uri}'})
   process.send('jbm-loaded')  
@@ -223,7 +226,7 @@ globalThis.jb_plugins = jb_plugins
         console.log('fork',fork)
         fork.send(`eval:${workerCode}`);
 
-        fork.on('exit', e=> console.log('fork exit'))
+        fork.on('exit', code => console.log(`fork exit ${code}`))
         fork.on('error', e=> console.log('error in fork', e))
         jb.jbm.childJbms[name] = jb.ports[forkUri] = 
             jb.jbm.extendPortToJbmProxy(jb.vscode.portFromExtensionToFork(fork,jb.uri,forkUri))
@@ -248,23 +251,6 @@ globalThis.jb_plugins = jb_plugins
     }
 })
 
-jb.component('vscode.openPreviewPanelOld', {
-  type: 'action',
-  params: [
-    {id: 'id', as: 'string'},
-    {id: 'panel'}
-  ],
-  impl: jbm.vscodeWebView({
-      id: '%$id%', 
-      panel: '%$panel%', 
-      init: runActions(
-          remote.useYellowPages(),
-          studio.initPreview(),
-          remote.action(renderWidget(vscode.previewCtrl(),'#main'), '%$jbm%')
-        )
-    })
-})
-
 jb.component('vscode.openPreviewPanel', {
   type: 'action',
   params: [
@@ -276,22 +262,6 @@ jb.component('vscode.openPreviewPanel', {
     panel: '%$panel%',
     init: remote.action(renderWidget(text('hello'), '#main'), '%$jbm%')
   })
-})
-
-jb.component('vscode.openLogsPanel', {
-  type: 'action',
-  params: [
-    {id: 'id', as: 'string'},
-    {id: 'panel'}
-  ],
-  impl: vscode.showInXWebView({
-      id: '%$id%', 
-      panel: '%$panel%', 
-      backend: pipe(
-        remote.data(jbm.child('logs'), jbm.preview()),
-        jbm.byUri('%uri%'),
-        first()
-    )})
 })
 
 jb.component('vscode.showInXWebView', {

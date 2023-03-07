@@ -54,7 +54,7 @@ async function run() {
   } else {
     const { jbInit, jb_plugins } = require(`${jbBaseUrl}/src/loader/jb-loader.js`)
     const modules = (getProcessArgument('modules') || '').split(',').filter(x=>x)
-    global.jb = await jbInit(uri,{ projects: modules, plugins: jb_plugins, useFileSymbolsFromBuild: true })
+    global.jb = await jbInit(uri,{ projects: modules, plugins: jb_plugins })
   }
   spy = jb.spy.initSpy({spyParam: getProcessArgument('spyParam') || 'remote'})
 

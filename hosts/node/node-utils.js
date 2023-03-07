@@ -75,7 +75,7 @@ global.jbGetJSFromUrl = async url => {
     vm.runInThisContext(code, url)
 }
 
-global.jbRunCommandLine = async args => {
+global.jbForkNode = async args => {
     return new Promise((resolve) => {
         const proc = require('child_process').spawn('node',[`${jbBaseUrl}/bin/jb.js`, ...args] ,{cwd: jbBaseUrl})
         let res = ''
@@ -88,3 +88,5 @@ global.jbRunCommandLine = async args => {
         })
     })
 }
+
+global.jbRunShell = cmd => require('child_process').exec(cmd) 

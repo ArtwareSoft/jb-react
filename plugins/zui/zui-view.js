@@ -1,5 +1,14 @@
 jb.dsl('zui')
 
+jb.component('zui.debugProps', {
+  type: 'control<>',
+  impl: group({
+    style: propertySheet.titlesLeft(),
+    controls: [text('2'), text('1'), text('4'), text('5'), text('6'), text('7'), text('3'), text('8')],
+    features: id('debugProps')
+  })
+})
+
 jb.component('zui.itemlist', {
   type: 'control<>',
   params: [
@@ -240,23 +249,5 @@ jb.component('horizontalOneByOne', {
   params: [
   ],
   impl: ctx => ctx.params
-})
-
-jb.component('zui.debugProps', {
-  type: 'control<>',
-  impl: group({
-    style: propertySheet.titlesLeft(),
-    controls: [
-      text('%$zuiCtx/props/DIM%', 'DIM'),
-      text('%$zuiCtx/props/zoom%', 'zoom'),
-      text('%$zuiCtx/props/textSquareInPixels%', 'textSquare px'),
-      text('%$zuiCtx/props/strLen%', 'strLen'),
-      text('%$zuiCtx/props/center[0]% , %$zuiCtx/props/center[1]%', 'center'),
-      text('%$zuiCtx/props/boxSize[0]% , %$zuiCtx/props/boxSize[1]%', 'boxSize'),
-      text('%$zuiCtx/props/circleSize%', 'circleSize px'),
-      text('%$zuiCtx/props/pos10[0]%,%$zuiCtx/props/pos10[1]%', 'circle pos px')
-    ],
-    features: id('debugProps')
-  })
 })
 

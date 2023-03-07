@@ -49,7 +49,6 @@ jb.extension('vscode', {
 
         vscodeNS.workspace.onDidChangeTextDocument(({document, reason, contentChanges}) => {
             if (!contentChanges || contentChanges.length == 0) return
-            debugger
             if (!document.uri.toString().match(/^file:/)) return
             jb.tgpTextEditor.cache = {}
             jb.log('vscode onDidChangeTextDocument clean cache',{document, reason, contentChanges})
@@ -94,8 +93,6 @@ jb.extension('vscode', {
                 remote.data(ctx => jb.tgpTextEditor.provideCompletionItems(ctx.data, ctx), jbm.vscodeFork()))
             const count = (ret || []).length
             const docSize = docProps.docText.length
-            if (count == 1)
-                debugger
             jb.vscode.stdout.appendLine(`provideCompletionItems ${docSize} -> ${count} from fork ${fork.pid}`)
             return ret
         } else {
@@ -109,6 +106,17 @@ jb.extension('vscode', {
         const loc = await _loc
         return loc && new vscodeNS.Location(vscodeNS.Uri.file(jbBaseUrl + loc[0]), new vscodeNS.Position((+loc[1]) || 0, 0))
     },    
+    async moveInArray(docPropsWithDiff) {
+        if (jb.vscode.useFork) {
+            const fork = await jb.exec(jbm.vscodeFork())
+            const {edit, cursorPos} = await jb.vscode.ctx.setData(docPropsWithDiff).run(
+                remote.data(ctx => jb.tgpTextEditor.moveInArray(ctx.data, ctx), jbm.vscodeFork()))
+            const json = JSON.stringify(edit)
+            jb.vscode.stdout.appendLine(`moveInArray ${json.length} from fork ${fork.pid}`)
+            await jb.tgpTextEditor.host.applyEdit(edit)
+            cursorPos && jb.tgpTextEditor.host.selectRange(cursorPos)
+        }
+    },
     toVscodeFormat(pos) {
         return { line: pos.line, character: pos.col }
     },
@@ -121,7 +129,6 @@ jb.extension('vscode', {
         jb.vscode.watchFileChange()
         jb.vscode.watchCursorChange()
         jb.vscode.updatePosVariables()
-        //jb.vscode.applyDeltaFromStudio()
     },
     createWebViewProvider(id,extensionUri) { 
         jb.log('vscode create webview provider',{id,extensionUri})
@@ -169,25 +176,6 @@ jb.extension('vscode', {
     watchCursorChange() {
     //    vscodeNS.window.onDidChangeTextEditorSelection(jb.vscode.updatePosVariables)
     },
-    // updatePosVariables(docProps) {
-    //     const { compId, path, semanticPath } = jb.tgpTextEditor.calcActiveEditorPath(docProps)
-    //     if (!path) return
-    //     console.log('update pos', semanticPath)
-    //     vscodeNS.commands.executeCommand('setContext', 'jbart.inComponent', !!(compId || path))
-    //     const fixedPath = path || compId && `${compId}~impl`
-    //     if (fixedPath) {
-    //         const ctx = new jb.core.jbCtx({},{vars: {headlessWidget: true, fromVsCode: true}})
-    //         jb.db.writeValue(ctx.exp('%$studio/jbEditor/selected%','ref'), fixedPath ,ctx)
-    //         semanticPath && jb.db.writeValue(ctx.exp('%$studio/semanticPath%','ref'), semanticPath.path ,ctx)
-
-    //         const circuitOptions = jb.tgp.circuitOptions(fixedPath.split('~')[0])
-    //         if (circuitOptions && circuitOptions[0])
-    //             jb.db.writeValue(ctx.exp('%$studio/circuit%','ref'), circuitOptions[0] ,ctx)
-    //         const profilePath = (fixedPath.match(/^[^~]+~impl/) || [])[0]
-    //         if (profilePath)
-    //             jb.db.writeValue(ctx.exp('%$studio/profile_path%','ref'), profilePath ,ctx)
-    //     }
-    // },
     openedProjects() {
         return jb.utils.unique(vscodeNS.workspace.textDocuments
             .map(doc => (doc.fileName.split(jbBaseUrl).pop().match(/projects[/]([^/]*)/) || ['',''])[1]))
@@ -195,90 +183,9 @@ jb.extension('vscode', {
     loadOpenedProjects() {
         const doc = vscodeNS.window.activeTextEditor.document
         jb.frame.eval(jb.macro.importAll() + ';' + doc.getText() || '')
-        // const projects = jb.vscode.openedProjects().filter(p=>p && p != 'studio' && !jb.vscode.loadedProjects[p])
-        // projects.forEach(p=> jb.vscode.loadedProjects[p] = true)
-
-        // if (projects.length)
-        //     return loadProjectsCode(projects)
     },
-    // applyDeltaFromStudio() {
-    //     jb.utils.subscribe(jb.watchableComps.source, async e => {
-    //         const compId = e.path[0]
-    //         const comp = jb.comps[compId]
-    //         try {
-    //             const fn = comp[jb.core.CT].location[0].toLowerCase()
-    //             const doc = vscodeNS.workspace.textDocuments.find(doc => doc.uri.path.toLowerCase().slice(0,-1) == fn.slice(0,-1))
-    //             if (!doc) return // todo: open file and try again
-    //             const fileContent = doc.getText()
-    //             if (fileContent == null) return
-    //             const edits = [jb.tgpTextEditor.deltaFileContent(fileContent, {compId,comp})].filter(x=>x).filter(x=>x.newText.length < 10000)
-    //             console.log('edits', edits)
-    //             const edit = new vscodeNS.WorkspaceEdit()
-    //             edit.set(doc.uri, edits)                
-    //             await vscodeNS.workspace.applyEdit(edit)
-    //             //await jb.vscode.gotoPath(e.path.join('~'),'value')
-    //         } catch (e) {
-    //             jb.logException(e,'error while saving ' + compId,{compId, comp, fn}) || []
-    //         }   
-    //     })
-    // }, 
 })
 
-jb.component('studio.inVscode',{
-    type: 'boolean',
-    impl: () => jb.frame.jbInvscode
-})
-
-jb.component('vscode.previewCtrl', {
-  type: 'control',
-  impl: group({
-    controls: [
-      text('circuit: %$studio/circuit%'),
-      preview.control()
-    ],
-    features: watchRef('%$studio/circuit%')
-  })
-})
-
-jb.component('vscode.workerTst', {
-  type: 'data',
-  impl: remote.data('hello from worker', jbm.vscodeFork('vscodeFork'))
-})
-
-// DO NOT DELETE - vscode views should be fixed and moved
-// jb.component('vscode.jbEditorCtrl', {
-//   type: 'control',
-//   impl: group({
-//     controls: [
-//       text('profile path: %$studio/profile_path%'),
-//       text(' selected: %$studio/jbEditor/selected%'),
-//       text(' semantic: %$studio/semanticPath%'),
-//       studio.jbEditorInteliTree('%$studio/profile_path%')
-//     ],
-//     features: [watchRef('%$studio/profile_path%'), watchRef('%$studio/scriptChangeCounter%')]
-//   })
-// })
-
-// jb.component('vscode.previewCtrl', {
-//   type: 'control',
-//   impl: group({
-//     controls: [
-//       text('circuit: %$studio/circuit%'),
-//       preview.control()
-//     ],
-//     features: watchRef('%$studio/circuit%')
-//   })
-// })
-
-// jb.component('vscode.logsCtrl', {
-//   type: 'control',
-//   impl: group({
-//     controls: [
-//       text('logs'),
-//       studio.eventTracker()
-//     ]
-//   })
-// })
 
 jb.component('vscode.openQuickPickMenu', {
   type: 'action',
@@ -320,4 +227,9 @@ jb.component('vscode.gotoPath', {
     {id: 'semanticPart', as: 'string' }
   ],
   impl: (ctx,path,semanticPart) => jb.vscode.gotoPath(path,semanticPart)
+})
+
+jb.component('vscode.workerTst', {
+  type: 'data',
+  impl: remote.data('hello from worker', jbm.vscodeFork('vscodeFork'))
 })

@@ -251,7 +251,7 @@ jb.extension('tgpTextEditor', 'completion', {
         const { semanticPath, reformatEdits, compLine, error } = props
         const serverUri = jb.tgpTextEditor.host.serverUri
         if (reformatEdits) {
-            const item = { kind: 4, id: 'reformat', label: 'reformat', extend() { }, sortText: '0001',
+            const item = { kind: 4, id: 'reformat', insertText: '',label: 'reformat', extend() { }, sortText: '0001',
                 command: { command: 'jbart.applyCompChange' , arguments: [{
                     cursorPos: {line: docProps.cursorLine, col: docProps.cursorCol},
                     edit: reformatEdits
@@ -365,18 +365,38 @@ jb.extension('tgpTextEditor', 'completion', {
     restartLangServer() {
         jb.vscode && (jb.vscode.restartLangServer = true)
     },
-    moveUp() { 
-        debugger
+    moveUp() {
+        jb.vscode && jb.vscode.moveInArray({ diff: -1, ...jb.tgpTextEditor.host.docTextAndCursor()})
     },
     moveDown() { 
-        debugger
+        jb.vscode && jb.vscode.moveInArray({ diff: 1, ...jb.tgpTextEditor.host.docTextAndCursor()})
     },
-    async moveInArray(docProps, diff) {
-        const props = await jb.tgpTextEditor.calcActiveEditorPath(docProps)
-        const { semanticPath, reformatEdits } = props
-        if (reformatEdits)
-            jb.tgpTextEditor.host.applyEdit(reformatEdits)
-        else if (semanticPath) {
+    async moveInArray(docPropsWithDiff,ctx) {
+        const { diff, docText } = docPropsWithDiff
+        const props = await jb.tgpTextEditor.calcActiveEditorPath(docPropsWithDiff, {clearCache: true})
+        const { reformatEdits, compId, semanticPath } = props        
+        if (!reformatEdits && semanticPath) {
+            const rev = semanticPath.path.split('~').reverse()
+            const indexOfElem = rev.findIndex(x=>x.match(/^[0-9]+$/))
+            if (indexOfElem != -1) {
+                const path = rev.slice(indexOfElem).reverse()
+                const from = path.join('~')
+                const to = [...path.slice(0,-1), (+path.slice(-1)[0])+diff].join('~')
+                jb.tgp.moveFixDestination(from,to,ctx)
+                const newText = jb.utils.prettyPrintWithPositions(jb.comps[compId],{initialPath: compId}).text
+                const edit = jb.tgpTextEditor.deltaFileContent(docText, compId, newText)
+                jb.log('tgpTextEditor moveInArray',{ from, to, newText, edit, ...props})
+                return { edit, cursorPos: calcNewPos(to) }
+            }
         }
+        return { error : 'moveInArray - array elem was not found', ...props}
+
+        function calcNewPos(path) {
+            const { compLine } = jb.tgpTextEditor.cache[compId]
+            const pos = jb.tgpTextEditor.getPosOfPath(path,'value')
+            if (!pos)
+                return jb.logError('moveInArray can not find path', {path})
+            return {line: pos[0] + compLine,col: pos[1]}
+        }        
     }
 })
