@@ -32,7 +32,7 @@ Object.assign(jb, {
     exp: (...args) => new jb.core.jbCtx().exp(...args),
 })
 
-jb.extension('utils', 'core',{
+jb.extension('utils', 'core', {
     profileType(profile) {
         if (!profile) return ''
         if (typeof profile == 'string') return 'data'

@@ -290,15 +290,14 @@ const op_get_handlers = {
       if (!cwd) return endWithFailure(res,'missing dir param in url');
       cwd += '/';
 
-      child.exec(cmd,cwd ? { cwd: cwd } : {},function (error, stdout, stderr) {
+      child.exec(cmd,cwd ? { cwd } : {},function (error, stdout, stderr) {
         if (error) {
             res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify({type:'error', desc:'Can not run cmd', cmd: cmd, stdout: stdout, stderr: stderr, exitcode: error }));
+            res.end(JSON.stringify({type:'error', desc:'Can not run cmd', cmd: cmd, stdout, stderr, exitcode: error }));
         } else {
           const out = {
             type: 'success',
-            outfiles: {},
-            stdout: stdout, stderr: stderr
+            outfiles: {}, stdout,stderr
           };
           (getURLParam(req,'outfiles') || '').split(',').forEach(function(outfile) {
               let content = '';

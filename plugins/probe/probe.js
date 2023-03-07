@@ -7,10 +7,10 @@ jb.extension('probe', {
         singleVisitPaths: {},
         singleVisitCounters: {}
     }},
-    async calcCircuit(ctx, probePath, defaultMainCircuit) {
-        jb.log('prob calc circuit',{ctx, probePath})
+    async calcCircuit(ctx, probePath) {
+        jb.log('probe calc circuit',{ctx, probePath})
         if (!probePath) 
-            return jb.logError(`calcCircuitPath : no probe path`, {ctx,probePath, defaultMainCircuit})
+            return jb.logError(`calcCircuitPath : no probe path`, {ctx,probePath})
         let circuitCtx = jb.ctxDictionary[ctx.exp('%$workspace/pickSelectionCtxId%')]
         if (circuitCtx) return { reason: 'pickSelection', circuitCtx }
 
@@ -31,17 +31,17 @@ jb.extension('probe', {
             const _ctx = new jb.core.jbCtx()
             const cmpId = path.split('~')[0]
             await jb.treeShake.getCodeFromRemote([cmpId])
-            // #jbLoadComponents: tgp.componentStatistics
-            const statistics = jb.exec({$: 'tgp.componentStatistics', cmpId})
-            const comp = defaultMainCircuit || _ctx.exp('%$studio/circuit%') || (jb.path(jb.utils.getComp(cmpId),'impl.expectedResult') ? cmpId 
-                    : (statistics.referredBy||[]).find(refferer=>jb.tgp.isOfType(refferer,'test'))) 
-                || cmpId
-            if (comp) {
-                await jb.treeShake.getCodeFromRemote([comp])
-                const res = _ctx.ctx({ profile: {$: comp}, comp, path: ''})
-                if (jb.tgp.isOfType(comp,'control'))
+            const circuitCmpId = jb.path(jb.utils.getComp(cmpId),'circuit')
+                    || _ctx.exp('%$studio/circuit%') 
+                    || _ctx.exp('%$probe/defaultMainCircuit%') 
+                    || jb.path(jb.utils.getComp(cmpId),'impl.expectedResult') && cmpId // test
+                    || findTest(cmpId) || cmpId
+            if (circuitCmpId) {
+                await jb.treeShake.getCodeFromRemote([circuitCmpId])
+                const res = _ctx.ctx({ profile: {$: circuitCmpId}, comp : circuitCmpId, path: ''})
+                if (jb.tgp.isOfType(circuitCmpId,'control'))
                     return jb.ui.extendWithServiceRegistry(res)
-                if (jb.tgp.isOfType(comp,'test'))
+                if (jb.tgp.isOfType(circuitCmpId,'test'))
                     return jb.ui.extendWithServiceRegistry(res).setVars(
                         { testID: cmpId, singleTest: true, $testFinished: jb.callbag.subject() })
                 return res
@@ -52,10 +52,18 @@ jb.extension('probe', {
                 .map(elem =>({elem, path: jb.path(elem,'debug.path'), callStack: jb.path(elem,'debug.callStack'), ctxId: elem.getAttribute('jb-ctx') }))
                 .filter(e => [e.path, ...(e.callStack ||[])].filter(x=>x).some(p => p.indexOf(path) == 0))
             return candidates.sort((e2,e1) => 1000* (e1.path.length - e2.path.length) + (+e1.ctxId.match(/[0-9]+/)[0] - +e2.ctxId.match(/[0-9]+/)[0]) )[0] || {}
-        }        
+        }
+        function findTest(cmpId) {
+            // #jbLoadComponents: tgp.componentStatistics
+            const statistics = jb.exec({$: 'tgp.componentStatistics', cmpId})
+            const lookFor = cmpId.split('.').pop()
+            const tests = (statistics.referredBy||[]).filter(refferer=>jb.tgp.isCompNameOfType(refferer,'test'))
+            const testWithSameName = tests.filter(id=>id.indexOf(lookFor) != -1)[0]
+            return testWithSameName || tests[0]
+        }
     },
     Probe: class Probe {
-        constructor(ctx, noGaps, defaultMainCircuit) {
+        constructor(ctx, noGaps) {
             this.noGaps = noGaps
 
             this.circuitCtx = ctx.ctx({})
@@ -63,7 +71,6 @@ jb.extension('probe', {
             this.circuitCtx.probe = this
             this.circuitCtx.profile = jb.tgp.valOfPath(this.circuitCtx.path) || this.circuitCtx.profile // recalc latest version of profile
             this.id = ++jb.probe.probeCounter
-            this.defaultMainCircuit = defaultMainCircuit
         }
 
         async runCircuit(probePath,maxTime) {
@@ -251,26 +258,24 @@ jb.component('probe.runCircuit', {
   type: 'data',
   params: [
     {id: 'probePath', as: 'string', defaultValue: '%$probe/path%'},
-    {id: 'defaultMainCircuit', as: 'string', defaultValue: '%$probe/defaultMainCircuit%'}
   ],
-  impl: async (ctx,probePath,defaultMainCircuit) => {
-        jb.log('probe start run circuit',{ctx,probePath,defaultMainCircuit})
-        const circuit = await jb.probe.calcCircuit(ctx, probePath, defaultMainCircuit)
+  impl: async (ctx,probePath) => {
+        jb.log('probe start run circuit',{ctx,probePath})
+        const circuit = await jb.probe.calcCircuit(ctx, probePath)
         if (!circuit)
             return jb.logError(`probe can not infer circuitCtx from ${probePath}`, )
-        return new jb.probe.Probe(circuit.circuitCtx,defaultMainCircuit).runCircuit(probePath)
+        return new jb.probe.Probe(circuit.circuitCtx).runCircuit(probePath)
     },
   require: tgp.componentStatistics()
 })
 
 jb.component('probe.calcCircuitPath', {
-    type: 'data',
-    params: [
-      { id: 'probePath', as: 'string'},
-      { id: 'defaultMainCircuit', as: 'string'},
-    ],
-    impl: async (ctx, probePath, defaultMainCircuit) => {
-        const circuit = await jb.probe.calcCircuit(ctx, probePath, defaultMainCircuit)
+  type: 'data',
+  params: [
+    {id: 'probePath', as: 'string'},
+  ],
+  impl: async (ctx, probePath) => {
+        const circuit = await jb.probe.calcCircuit(ctx, probePath)
         return circuit && { reason: circuit.reason, path: circuit.circuitCtx.path } || {}
     }
 })

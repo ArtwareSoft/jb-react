@@ -1,6 +1,6 @@
 const fs = require('fs')
 global.jbBaseUrl = __dirname.replace(/\\/g,'/').replace(/\/hosts\/node$/,'').replace(/\/bin\/jbman$/,'')
-const { log, getProcessArgument, jbGetJSFromUrl} = require(`${jbBaseUrl}/hosts/node/node-utils.js`)
+const { log, getProcessArgument } = require(`${jbBaseUrl}/hosts/node/node-utils.js`)
 
 let settings = { verbose: getProcessArgument('verbose') }
 try {
@@ -18,7 +18,7 @@ process.on('message', m => {
 })
 
 async function run() {
-    const uri = `node${process.pid}`
+  const uri = `node${process.pid}`
   global.jb = { uri }
   await jbGetJSFromUrl(`http://localhost:${settings.ports.treeShake}/treeShake-client.js`)
   await jbGetJSFromUrl(`http://localhost:${settings.ports.treeShake}/jb-test.js?ids=-jbm.portFromNodeChildProcess`)

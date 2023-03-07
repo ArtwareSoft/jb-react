@@ -205,9 +205,9 @@ jb.component('completionTest.fixEditedCompSpaces', {
   impl: tgp.fixEditedCompTest(
     `jb.component('completionTest.fixEditedSample' ,{ impl: pipeline(__) 
 })`,
-    `jb.component('completionTest.fixEditedSample', {
+    `{
   impl: pipeline()
-})`
+}`
   )
 })
 

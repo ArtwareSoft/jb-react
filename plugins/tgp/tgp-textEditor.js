@@ -125,7 +125,7 @@ jb.extension('tgpTextEditor', {
     },
     // getPathsOfPos(compId,pos,actualText) { // debug
     //     if (jb.utils.prettyPrintComp(compId,jb.comps[compId]) != actualText)
-    //         return { needsFormat: true }
+    //         return { reformatEdits: true }
     //     const { text, map } = jb.utils.prettyPrintWithPositions(jb.comps[compId],{initialPath: compId, comps: jb.comps})
     //     map.cursor = [pos.line,pos.col,pos.line,pos.col]
     //     const locationMap = jb.tgpTextEditor.enrichMapWithOffsets(text, map)
@@ -171,22 +171,19 @@ jb.extension('tgpTextEditor', {
         return { compText: lines.slice(start,start+end+1).join('\n'), compLine: start }
     },
     fixEditedComp(compId, compText, {line, col} = {},dsl) {
-        jb.log('tgpEditor fixEditedComp', compText,line,col)
-        let comp = jb.tgpTextEditor.evalProfileDef(compText,dsl).res
-        let compChanged = false
-        if (!comp && line != undefined) {
-            const lines = compText.split('\n')
-            const fixedLine = lines[line] && fixLineAtCursor(lines[line],col)
-            if (lines[line] && fixedLine != lines[line]) {
-                const fixedCompText = compText.split('\n').map((l,i) => i == line ? fixedLine : l).join('\n')
-                comp = jb.tgpTextEditor.evalProfileDef(fixedCompText, dsl).res
+        const lines = compText.split('\n')
+        const currentLine = lines[line]
+        const fixedLine = currentLine && fixLineAtCursor(currentLine,col)
+        if (currentLine && fixedLine != currentLine) {
+            const fixedCompText = lines.map((l,i) => i == line ? fixedLine : l).join('\n')
+            const comp = jb.tgpTextEditor.evalProfileDef(fixedCompText, dsl).res
+            if (comp) {
+                jb.comps[compId] = comp
+                const {text, map} = jb.utils.prettyPrintWithPositions(comp,{initialPath: compId})
+                return { fixedComp: true, fixedCompText: `jb.component('${compId}', ${text})`, comp, text, map }
             }
-            compChanged = true
         }
-        if (!comp)
-            return { compilationFailure: true} // jb.logException(lastException,'fixEditedComp - can not fix compText', {compText})
-        const {text, map} = jb.utils.prettyPrintWithPositions(comp,{initialPath: compId})
-        return { compChanged,  fixedCompText: `jb.component('${compId}', ${text})`, comp, text, map }
+        return { compilationFailure: true}
 
         function fixLineAtCursor(line,pos) {
             const rest = line.slice(pos)
@@ -229,17 +226,17 @@ jb.extension('tgpTextEditor', {
           return {firstDiff: i, common, oldText: oldText.slice(0,-j+1), newText: newText.slice(0,-j+1)}
         }
     },
-    formatComponent({ compId, needsFormat, dsl, text, docText }) {
-        if (needsFormat) {
-            const { compText } = jb.tgpTextEditor.fileContentToCompText(docText,compId)
-            if (text)
-                return jb.tgpTextEditor.deltaFileContent(docText, compId, text)
-            const {err} = jb.tgpTextEditor.evalProfileDef(compText,dsl)
-            if (err)
-                return jb.logError('can not parse comp', {compId, err, compText})
-        }
-    },
-    updateCurrentCompFromEditor(docProps) {
+    // formatComponent({ compId, reformatEdits, dsl, text, docText }) {
+    //     if (reformatEdits) {
+    //         const { compText } = jb.tgpTextEditor.fileContentToCompText(docText,compId)
+    //         if (text)
+    //             return jb.tgpTextEditor.deltaFileContent(docText, compId, text)
+    //         const {err} = jb.tgpTextEditor.evalProfileDef(compText,dsl)
+    //         if (err)
+    //             return jb.logError('can not parse comp', {compId, err, compText})
+    //     }
+    // },
+    updateCurrentCompFromEditor(docProps,ctx) {
         const {docText, cursorLine } = docProps
         const {compId, compSrc, dsl} = jb.tgpTextEditor.closestComp(docText, cursorLine)
         const {err} = compSrc ? jb.tgpTextEditor.evalProfileDef(compSrc, dsl) : {}

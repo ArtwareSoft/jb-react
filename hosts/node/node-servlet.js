@@ -3,8 +3,7 @@ const WebSocketServer = require('websocket').server
 const http = require('http')
 
 global.jbBaseUrl = __dirname.replace(/\\/g,'/').replace(/\/hosts\/node$/,'')
-const { fileSymbolsFunc, getProcessArgument, jbGetJSFromUrl} = require(`${jbBaseUrl}/hosts/node/node-utils.js`)
-global.jbFileSymbols = fileSymbolsFunc
+const { getProcessArgument} = require(`${jbBaseUrl}/hosts/node/node-utils.js`)
 
 let settings = { verbose: getProcessArgument('verbose') }
 try {

@@ -1,6 +1,43 @@
 
 jb.component('zui.itemPreview', {
   type: 'control',
+  impl: group({
+    style: group.sections(header.h3()),
+    controls: [
+      dynamicControls({
+        controlItems: pipeline('%$zuiCtx/props/zuiState%', keys()),
+        genericControl: group({
+          title: tgp.shortCompName('%$path%'),
+          style: propertySheet.titlesAbove(),
+          controls: dynamicControls({
+            controlItems: pipeline('%$zuiCtx/props/zuiState%', property('%$path%'), entries()),
+            genericControl: text(zui.formatValue('%$prop/1%'), '%$prop/0%'),
+            itemVariable: 'prop'
+          }),
+          features: css.margin({left: '30px'})
+        }),
+        itemVariable: 'path'
+      })
+    ],
+    features: [id('itemPreview'), css.width('400')]
+  }),
+  circuit1: 'zuiTest.itemlist'
+})
+
+jb.component('zui.formatValue', {
+  params: [
+    {id: 'val'}
+  ],
+  impl: (ctx,val) => {
+    return Array.isArray(val) ? val.map(x=>format(x)).join(',') : format(val)
+    function format(x) {
+      return (typeof x == 'number') ? x.toFixed(2) : x
+    }
+  }
+})
+
+jb.component('zui.itemPreviewOld', {
+  type: 'control',
   params: [
     {id: 'parentCompId', as: 'string'}
   ],

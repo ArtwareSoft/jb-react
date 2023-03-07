@@ -23,12 +23,13 @@ jb.component('tgp.completionOptionsTest', {
         const code = parts.join('')
 //        jb.tgpTextEditor.evalProfileDef(code,dsl)
         jb.tgpTextEditor.host.initDoc('dummy.js', dslLine+code)
+        const ctxForTest = ctx.setVars({forceLocalSuggestions: true})
         
         const result = await offsets.map(offset=>jb.tgpTextEditor.offsetToLineCol(dslLine+code,offset))
           .reduce(async (errors, inCompPos,i) => {
             const _errors = await errors
             jb.tgpTextEditor.host.selectRange(inCompPos)
-            const options = await jb.tgpTextEditor.provideCompletionItems(jb.tgpTextEditor.host.docTextAndCursor(), ctx)
+            const options = await jb.tgpTextEditor.provideCompletionItems(jb.tgpTextEditor.host.docTextAndCursor(), ctxForTest)
             if (!options)
                 return `no options at index ${i}`
             const res = options.map(x=>x.label).includes(expectedSelections[i])
@@ -61,13 +62,14 @@ jb.component('tgp.completionActionTest', {
             const code = parts.join('')
             jb.utils.resolveLoadedProfiles()
             jb.tgpTextEditor.host.initDoc('dummy.js', dslLine+code)
+            const ctxForTest = ctx.setVars({forceLocalSuggestions: true})
 
             const inCompPos = jb.tgpTextEditor.offsetToLineCol(dslLine+code,offset)
             jb.tgpTextEditor.host.selectRange(inCompPos)
-            const { needsFormat } = jb.tgpTextEditor.calcActiveEditorPath(jb.tgpTextEditor.host.docTextAndCursor())
-            if (needsFormat)
+            const { reformatEdits } = jb.tgpTextEditor.calcActiveEditorPath(jb.tgpTextEditor.host.docTextAndCursor())
+            if (reformatEdits)
                 return { testFailure: `bad comp format` }
-            const items = await jb.tgpTextEditor.provideCompletionItems(jb.tgpTextEditor.host.docTextAndCursor(), ctx)
+            const items = await jb.tgpTextEditor.provideCompletionItems(jb.tgpTextEditor.host.docTextAndCursor(), ctxForTest)
             const item = items.find(x=>x.label == completionToActivate)
             if (!item)
                 return { testFailure: `completion not found - ${completionToActivate}` }
@@ -110,10 +112,10 @@ jb.component('tgp.completionActionTest', {
 
       const inCompPos = jb.tgpTextEditor.offsetToLineCol(dslLine+code,offset)
       jb.tgpTextEditor.host.selectRange(inCompPos)
-      const { fixedCompText } = await jb.tgpTextEditor.calcActiveEditorPath(jb.tgpTextEditor.host.docTextAndCursor())
+      const { formattedText, fixedCompText } = await jb.tgpTextEditor.calcActiveEditorPath(jb.tgpTextEditor.host.docTextAndCursor())
       const testId = ctx.vars.testID;
-      const success = fixedCompText == expectedFixedComp
-      const reason = !success && fixedCompText
+      const success = formattedText == expectedFixedComp || fixedCompText == expectedFixedComp
+      const reason = !success && formattedText
       return { id: testId, title: testId, success, reason }
     }
 })

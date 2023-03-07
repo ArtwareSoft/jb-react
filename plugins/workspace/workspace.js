@@ -108,8 +108,8 @@ jb.extension('workspace', {
     //     }   
     // },
     // async formatComponent() {
-    //     const { compId, needsFormat } = jb.workspace.calcActiveTextEditorPath()
-    //     if (needsFormat) {
+    //     const { compId, reformatEdits } = jb.workspace.calcActiveTextEditorPath()
+    //     if (reformatEdits) {
     //         const editor = jb.workspace.activeTextEditor
     //         const doc = editor && editor.document
     //         if (!doc) return

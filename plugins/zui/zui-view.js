@@ -53,8 +53,10 @@ jb.component('itemlistStyle', {
           jb.zui.initZuiCmp(cmp,props)
           jb.zui.initViewCmp(cmp,props)
           await Promise.all(props.elems.map(elem =>elem.prepare && elem.prepare(props)).filter(x=>x))
-          if (cmp.ctx.vars.zuiCtx)
+          if (cmp.ctx.vars.zuiCtx) {
             cmp.ctx.vars.zuiCtx.props = props
+            cmp.ctx.vars.zuiCtx.zuiState = props.zuiState
+          }
 
           jb.zui.clearCanvas(props)
           cmp.render()
@@ -109,10 +111,7 @@ jb.extension('zui','view', {
         const { itemView, zoom, glCanvas,elems, zuiState } = props
         const [width, height, top, left] = [glCanvas.width/ zoom, glCanvas.height/ zoom,0,0]
         itemView.layout({zoom,width,height,top, left})
-        const visibleElems = elems.filter(el=> { 
-          const { width, height } = el.state()
-          return width && height
-        })
+        const visibleElems = elems.filter(el=> jb.zui.isVisible(el))
         visibleElems.forEach(elem => elem.calcElemProps && elem.calcElemProps(props) )
         visibleElems.forEach(elem => elem.renderGPUFrame(props, elem.buffers))
         props.onChange && props.onChange(props)
@@ -123,6 +122,10 @@ jb.extension('zui','view', {
   viewState(ctx) {
     const {zuiState} = ctx.vars
     return zuiState[ctx.path] = zuiState[ctx.path] || {}
+  },
+  isVisible(el) {
+    const { width, height } = el.state()
+    return width && height    
   }
 })
 
@@ -136,6 +139,7 @@ jb.component('text', {
     const zuiElem = jb.zui.textZuiElem(ctx)
     const view = {
       title: 'text',
+      state: () => jb.zui.viewState(ctx),
       pivots: () => prop.pivots(),
       zuiElems: () => [zuiElem],
       priority: prop.priority || 0,
@@ -161,6 +165,7 @@ jb.component('circle', {
     const zuiElem = jb.zui.circleZuiElem(ctx)
     const view = {
       title: 'circle',
+      state: () => jb.zui.viewState(ctx),
       pivots: () => prop.pivots(),
       zuiElems: () => [zuiElem],
       priority: prop.priority || 0,
@@ -186,6 +191,8 @@ jb.component('group', {
     views.byPriority = views.slice(0).sort((x,y) => y.priority-x.priority )
     
     const view = {
+      title: 'group',
+      state: () => jb.zui.viewState(ctx),
       pivots: () => views.flatMap(v=>v.pivots()),
       zuiElems: () => views.flatMap(v=>v.zuiElems()),
       layout: layoutProps => Object.assign(jb.zui.viewState(ctx), layout.layout(layoutProps, views)),
@@ -202,27 +209,28 @@ jb.component('verticalOneByOne', {
       const {height, top} = layoutProps
       let sizeLeft = height, accTop = top
       views.byPriority.forEach(v=>{
+        const state = v.state()
         const viewPreferedHeight = v.preferedHeight(layoutProps)
         if (sizeLeft == 0) {
-          setElemsHeight(v,0)
+          state.height = 0
         } else if (sizeLeft > viewPreferedHeight) {
-          setElemsHeight(v, viewPreferedHeight)
+          state.height = viewPreferedHeight
           sizeLeft -= viewPreferedHeight
         } else if (sizeLeft > v.enterHeight) {
-          setElemsHeight(v, sizeLeft)
+          state.height = sizeLeft
           sizeLeft = 0
         } else {
-          setElemsHeight(v, 0)
+          state.height = 0
           sizeLeft = 0
         }
         v.layout({...layoutProps, height: null})
       })
-      return layoutProps
 
-      function setElemsHeight(v, height) {
-        v.zuiElems().forEach(e=> Object.assign(e.state() ,{height,top: accTop}))
+      views.filter(v=>jb.zui.isVisible(v)).forEach(v=>{
+        v.state().top = accTop
         accTop += height
-      }
+      })
+      return layoutProps
     }
   })
 })

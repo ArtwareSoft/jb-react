@@ -1,3 +1,4 @@
+
 jb.component('zuiTest.basic', {
   impl: uiTest({control: zui.control(), expectedResult: contains('cmp-id')})
 })
@@ -49,9 +50,8 @@ jb.component('zuiTest.summaryLabel', {
 jb.component('zuiTest.itemlist', {
   impl: uiFrontEndTest({
     control: group({
+      layout: layout.horizontal(),
       controls: [
-        zui.debugProps(),
-        zui.itemPreview('zuiTest.itemlist'),
         zui.itemlist({
           itemView: group(
             verticalOneByOne(),
@@ -65,8 +65,9 @@ jb.component('zuiTest.itemlist', {
             numeric({att: 'price', features: preferedAxis('x')}),
             numeric({att: 'hits', features: preferedAxis('y')})
           ],
-          onChange: runActions(refreshControlById('debugProps'), refreshControlById('itemPreview'))
-        })
+          onChange: refreshControlById('itemPreview')
+        }),
+        zui.itemPreview(),
       ],
       features: [
         variable('zuiCtx', obj())
@@ -74,5 +75,47 @@ jb.component('zuiTest.itemlist', {
     }),
     action: uiAction.waitForSelector("canvas[zui-rendered='true']"),
     expectedResult: contains('zui-rendered')
+  })
+})
+
+jb.component('zuiState', {
+  passiveData: {
+  'zuiTest.itemlist~impl~control~controls~2~itemView': {
+    zoom: 512,
+    width: 1.171875,
+    height: 0.8984375,
+    top: 0,
+    left: 0
+  },
+  'zuiTest.itemlist~impl~control~controls~2~itemView~views~1': {
+    height: 0.8984375,
+    width: 1.171875,
+    top: 0,
+    left: 0,
+    circleSize: 8.61370563888011,
+    circlePos: [0, 0]
+  },
+  'zuiTest.itemlist~impl~control~controls~2~itemView~views~0': {
+    height: 0,
+    width: 1.171875,
+    top: 0,
+    left: 0,
+    strLen: 2,
+    boxSize: [0.04309413075697204, 0.08618826151394408],
+    textSquareInPixels: 96.96179420318708,
+    charWidthInTexture: 0.009765625
+  }
+}
+})
+
+jb.component('zuiTest.itemPreview', {
+  impl: uiTest({
+    control: group({
+      vars: [
+        Var('zuiCtx', obj(prop('props',obj(prop('zuiState', '%$zuiState%')))))
+      ],
+      controls: zui.itemPreview('zuiTest.itemlist~impl~control~controls~2~itemView')
+    }),
+    expectedResult: contains('circlePos')
   })
 })

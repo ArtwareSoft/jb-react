@@ -1,7 +1,27 @@
 {
     "version": "0.2.0",
     "configurations": [
-
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "jb",
+            "program": "${workspaceFolder}/bin/jb",
+            "args": ["-main:split(\"-\")", "%text:rak-lo-%$v2%","%part:but first","%v1:pipeline('bb',first())","%v2:#%$v1%#"],
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "jb with wrap",
+            "program": "${workspaceFolder}/bin/jb",
+            "args": ["-main:split(\"-\")", "%text:rak-lo-%$v1%","%part:but first","%v1:bb","-wrap:pipeline(MAIN ,\"#%%#\")"],
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "probe",
+            "program": "${workspaceFolder}/bin/jb",
+            "args": ["-main:probe.runCircuit()", "%probePath:zui.itemPreview~impl~title","-wrap:pipeline(MAIN ,\"%%\")"],
+        },
 
         {
             "type": "node",
@@ -32,10 +52,7 @@
             ],
             "env": {
                 "NODE_ENV": "development"
-            },
-            "console": false,
-            "sourceMaps": false,
-            "outDir": null
+            }
         },
         {
             "name": "studio-server",
@@ -52,10 +69,7 @@
             ],
             "env": {
                 "NODE_ENV": "development"
-            },
-            "console": false,
-            "sourceMaps": false,
-            "outDir": null
+            }
         },
         {
             "name": "Launch",
@@ -72,10 +86,7 @@
             ],
             "env": {
                 "NODE_ENV": "development"
-            },
-            "console": false,
-            "sourceMaps": false,
-            "outDir": null
+            }
         },
         {
             "name": "Attach",
@@ -85,7 +96,6 @@
             "address": "localhost",
             "restart": false,
             "sourceMaps": false,
-            "outDir": null,
             "localRoot": "${workspaceRoot}",
             "remoteRoot": null
         }

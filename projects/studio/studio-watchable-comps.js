@@ -12,7 +12,7 @@ jb.extension('studio','watchableComps', {
 		jb.studio.lastStudioActivity = new Date().getTime()
 		e.srcCtx.run(writeValue('%$studio/lastStudioActivity%',() => jb.studio.lastStudioActivity))
 	
-		jb.studio.highlightByScriptPath(e.path)
+		jb.frame.document && jb.studio.highlightByScriptPath(e.path) // TODO: define live preview as separate extension
 	
 		function writeValueToDataResource(path,value) {
 			if (path.length > 1 && ['watchableData','passiveData'].indexOf(path[1]) != -1) {

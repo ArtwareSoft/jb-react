@@ -44,13 +44,15 @@ jb.extension('vscode', {
             },
         }
 
-        await jb.exec(jbm.vscodeFork())
-        jb.vscode.log('fork initialized')
+        const fork = await jb.exec(jbm.vscodeFork())
+        jb.vscode.log(`fork ${fork.pid} initialized`)
 
-        vscodeNS.workspace.onDidChangeTextDocument(({contentChanges}) => {
-            if (contentChanges && contentChanges.length == 0) return
+        vscodeNS.workspace.onDidChangeTextDocument(({document, reason, contentChanges}) => {
+            if (!contentChanges || contentChanges.length == 0) return
+            debugger
+            if (!document.uri.toString().match(/^file:/)) return
             jb.tgpTextEditor.cache = {}
-            jb.log('vscode onDidChangeTextDocument clean cache',{contentChanges})
+            jb.log('vscode onDidChangeTextDocument clean cache',{document, reason, contentChanges})
             if (jb.path(contentChanges,'0.text') == jb.tgpTextEditor.lastEdit) {
                 jb.tgpTextEditor.lastEdit = ''
             } else {
@@ -66,20 +68,39 @@ jb.extension('vscode', {
         jb.vscode.stdout = jb.vscode.stdout || vscodeNS.window.createOutputChannel('jbart')
         jb.vscode.stdout.appendLine(logName)
     },
-    updateCurrentCompFromEditor() {
+    async updateCurrentCompFromEditor() {
         const docProps = jb.tgpTextEditor.host.docTextAndCursor()
-        if (jb.vscode.useFork)
-            return ctx.setData(docProps).run(remote.action(ctx => jb.tgpTextEditor.updateCurrentCompFromEditor(ctx.data), jbm.vscodeFork()))
-        else
-            jb.tgpTextEditor.updateCurrentCompFromEditor()
+        // check validity
+        const {docText, cursorLine } = docProps
+        const {compId, compSrc, dsl} = jb.tgpTextEditor.closestComp(docText, cursorLine)
+        const {err} = compSrc ? jb.tgpTextEditor.evalProfileDef(compSrc, dsl) : {}
+        if (err) {
+            jb.vscode.stdout.appendLine(`updateCurrentCompFromEditor compile error ${JSON.stringify(err)}`)
+            return jb.logError('can not parse comp', {compId, err})
+        }
+
+        if (jb.vscode.useFork) {
+            const fork = await jb.exec(jbm.vscodeFork())
+            jb.vscode.stdout.appendLine(`updateCurrentCompFromEditor with fork ${fork.pid}`)
+            return jb.vscode.ctx.setData(docProps).run(remote.action(ctx => jb.tgpTextEditor.updateCurrentCompFromEditor(ctx.data,ctx), jbm.vscodeFork()))
+        } else {
+            jb.tgpTextEditor.updateCurrentCompFromEditor(docProps,jb.vscode.ctx)
+        }
     },
-    provideCompletionItems(docProps) {
-        jb.vscode.stdout.appendLine('provideCompletionItems')
-        if (jb.vscode.useFork)
-            return jb.vscode.ctx.setData(docProps).run(
+    async provideCompletionItems(docProps) {
+        if (jb.vscode.useFork) {
+            const fork = await jb.exec(jbm.vscodeFork())
+            const ret = await jb.vscode.ctx.setData(docProps).run(
                 remote.data(ctx => jb.tgpTextEditor.provideCompletionItems(ctx.data, ctx), jbm.vscodeFork()))
-        else
+            const count = (ret || []).length
+            const docSize = docProps.docText.length
+            if (count == 1)
+                debugger
+            jb.vscode.stdout.appendLine(`provideCompletionItems ${docSize} -> ${count} from fork ${fork.pid}`)
+            return ret
+        } else {
             return jb.tgpTextEditor.provideCompletionItems(docProps)
+        }
     },
     async provideDefinition(docProps) {
         const _loc = jb.vscode.useFork ? jb.vscode.ctx.setData(docProps).run(

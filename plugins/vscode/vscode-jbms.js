@@ -166,7 +166,7 @@ jb.component('initJb.vcodeCompletionWorker', {
         globalThis.jb = await jbInit('URI',{
             projects: ['studio','tests'], plugins: ['vscode', ...jb_plugins], doNoInitLibs: true, useFileSymbolsFromBuild: true
         })
-        await jb.initializeLibs(['utils','watchable','immutable','watchableComps','tgp','tgpTextEditor','vscode','jbm','cbHandler','treeShake','suggestions','probe','studio'])
+        await jb.initializeLibs(['utils','watchable','immutable','watchableComps','tgp','tgpTextEditor','vscode','jbm','cbHandler','treeShake'])
     }
     const func = f.toString().replace(/URI/,vars.uri)
     return `(${func})()`
@@ -184,7 +184,6 @@ jb.component('jbm.vscodeFork', {
       return jb.jbm.childJbms[name]
     const forkUri = `${jb.uri}•${name}`
     if (jb.vscode.restartLangServer) {
-      debugger
       if (jb.path(jb.jbm.childJbms[name],'kill'))
         jb.jbm.childJbms[name].kill()
       delete jb.jbm.childJbms[name]
@@ -203,9 +202,7 @@ process.send('forkJbmLog: start-loading')
 globalThis.jbBaseUrl = '${jbBaseUrl}'
 globalThis.jbFetchFile = url => util.promisify(fs.readFile)(url)
 globalThis.jbFetchJson = url => (util.promisify(fs.readFile)(url)).then(x=>JSON.parse(x))
-const { fileSymbolsFunc, jbGetJSFromUrl} = require(jbBaseUrl+ '/hosts/node/node-utils.js')
-globalThis.jbFileSymbols = fileSymbolsFunc
-globalThis.jbGetJSFromUrl = jbGetJSFromUrl
+require(jbBaseUrl+ '/hosts/node/node-utils.js')
 
 const { jbInit, jb_plugins } = require(jbBaseUrl+ '/src/loader/jb-loader.js')
 globalThis.jbInit = jbInit
@@ -232,6 +229,7 @@ globalThis.jb_plugins = jb_plugins
             jb.jbm.extendPortToJbmProxy(jb.vscode.portFromExtensionToFork(fork,jb.uri,forkUri))
         jb.jbm.childJbms[name].uri = forkUri
         jb.jbm.childJbms[name].kill = fork.kill
+        jb.jbm.childJbms[name].pid = fork.pid
 
         const res = new Promise(resolve=>{
           function jbmLoadedHandler(message) {
@@ -242,7 +240,7 @@ globalThis.jb_plugins = jb_plugins
           }
           fork.on('message', jbmLoadedHandler);          
         }).then( () => {
-          console.log('fork after init')
+          console.log(`fork ${fork.pid} after init`)
           return jb.jbm.childJbms[name]
         })
         res.uri = forkUri

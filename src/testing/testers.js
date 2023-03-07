@@ -127,6 +127,8 @@ jb.component('uiFrontEndTest', {
     {id: 'runInStudio', type: 'action', dynamic: true, descrition: 'not for test mode'}
   ],
   impl: (_ctx,control,runBefore,action,expectedResult,allowError,cleanUp,expectedCounters,renderDOM) => {
+		if (typeof document == 'undefined')
+			return _ctx.run({..._ctx.profile, $: 'uiTest'})
 		const {testID, singleTest} = _ctx.vars
 		//return Promise.resolve({ id: testID, success: true})
 		const elemToTest = document.createElement('div')

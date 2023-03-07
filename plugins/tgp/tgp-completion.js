@@ -17,7 +17,7 @@ jb.extension('tgp', 'completion', {
         const allSemantics = semanticPath.allPaths.map(x=>x[0]).filter(x=>x.indexOf(path+'~!') == 0).map(x=>x.split('~!').pop())
         const paramDef = jb.tgp.paramDef(path)
         if (!paramDef) {
-            jb.logError('provideCompletionItems - can not find paramDef',{path, semanticPath, ctx})
+            jb.logError('tgpTextEditor completion - can not find paramDef',{path, semanticPath, ctx})
             return []
         }
         
@@ -37,7 +37,7 @@ jb.extension('tgp', 'completion', {
                 res = [...res,...jb.tgp.newPTCompletions(singleValueProfile[0].split('~!')[0], arrayIndex)]
         } else if (arrayIndex != null || allSemantics.includes('prop') || allSemantics.includes('profile')) {
             res = jb.tgp.newPTCompletions(path, arrayIndex)
-        } else if (allSemantics.includes('value-text') && paramDef[jb.core.CT].dslType == 'data') {
+        } else if (allSemantics.includes('value-text') && jb.tgp.isOfType(path,'data')) {
             res = await jb.tgp.dataCompletions({semanticPath, inCompPos, text, compLine}, path, ctx)
         } else if (allSemantics.includes('value')) {
             res = jb.tgp.paramCompletions(path)
@@ -65,8 +65,10 @@ jb.extension('tgp', 'completion', {
         const text_pos = jb.path(semanticPath.allPaths.filter(x=>x[0].match(/value-text$/)),'0.1')
         const { positions } = text_pos
         const input = { value: text.slice(text_pos.offset_from, text_pos.offset_to), selectionStart: cursor - text_pos.offset_from }
-        const suggestions = await ctx.setData(input).run({$: 'suggestions.memoizeAndCalc', probePath : path, expressionOnly: true, sessionId: path})
-        return jb.path(suggestions,'0.options').map(option => {
+
+        const suggestions = await ctx.setData(input).run({$: 'probe.suggestionsByCmd', 
+            probePath : path, expressionOnly: true })
+        return (jb.path(suggestions,'0.options') || []).map(option => {
             const { pos, toPaste, tail, text } = option
             const primiteVal = typeof option.value != 'object'
             const suffix = primiteVal ? '%' : '/'
@@ -189,7 +191,7 @@ jb.extension('tgpTextEditor', 'completion', {
             host: null,
         } 
     },
-    calcActiveEditorPath(docProps) {
+    calcActiveEditorPath(docProps,{clearCache} = {}) {
         const {docText, cursorLine, cursorCol } = docProps
         const lines = docText.split('\n')
         const dsl = jb.tgpTextEditor.dsl(lines)
@@ -208,17 +210,17 @@ jb.extension('tgpTextEditor', 'completion', {
             calcCompProps()
         if (!compId || !jb.comps[compId])
             return { error: 'can not determine compId', compId, shortId , dsl}
-        if (jb.tgpTextEditor.cache[compId] && new Date().getTime() - jb.tgpTextEditor.cache[compId].time > 5000)
+        if (clearCache)
             jb.tgpTextEditor.cache[compId] = null
         const compProps = jb.tgpTextEditor.cache[compId] || calcCompProps()
-        const { compilationFailure, needsFormat, text, map } = compProps
+        const { compilationFailure, reformatEdits, text, map } = compProps
         const extraDocProps = { docText, compLine, inCompPos, cursorLine, cursorCol }
         jb.tgpTextEditor.cache[compId] = { ...extraDocProps, ...compProps ,
-            ...(compilationFailure || needsFormat) ? {} : jb.tgpTextEditor.getPathOfPos(inCompPos, text, map) }
+            ...(compilationFailure || reformatEdits) ? {} : jb.tgpTextEditor.getPathOfPos(inCompPos, text, map) }
         return jb.tgpTextEditor.cache[compId]
 
-        function calcCompProps() {
-            jb.log('vscode calcActiveEditorPath calComp props', {})
+        function calcCompProps() { // reformatEdits, compilationFailure, fixedComp
+            jb.log('completion calcActiveEditorPath calComp props', {})
             const linesFromComp = lines.slice(compLine)
             const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
             const actualText = lines.slice(compLine+1,compLine+compLastLine+1).join('\n').slice(0,-1)
@@ -226,24 +228,33 @@ jb.extension('tgpTextEditor', 'completion', {
             const props = { time: new Date().getTime(), text, map, dsl, compId, shortId, comp : jb.comps[compId] }
             if (actualText != (text||'').slice(2)) {
                 const compText = lines.slice(compLine,compLine+compLastLine+1).join('\n')
-                const fixProps = jb.tgpTextEditor.fixEditedComp(compId, compText,inCompPos,dsl)
-                if (fixProps.comp)
-                    jb.comps[compId] = fixProps.comp
-                Object.assign(props, {needsFormat: true, ...fixProps, comp : jb.comps[compId]})
+                let actualComp = jb.tgpTextEditor.evalProfileDef(compText,dsl).res
+                if (actualComp) {
+                    jb.comps[compId] = actualComp
+                    const formattedText = jb.utils.prettyPrintWithPositions(jb.comps[compId],{initialPath: compId}).text
+                    if (formattedText == text) 
+                        Object.assign(props, {formattedText, reformatEdits: jb.tgpTextEditor.deltaFileContent(docText, compId, formattedText)})
+                    else
+                        Object.assign(props, {scriptWasFoundDifferent: true, comp: actualComp}) // new comp
+                } else { // not compiles
+                    const fixProps = jb.tgpTextEditor.fixEditedComp(compId, compText,inCompPos,dsl)
+                    // compilationFailure or fixedComp
+                    Object.assign(props, { ...fixProps, comp : jb.comps[compId]})    
+                }
             }
             return props
         }
     },
     async provideCompletionItems(docProps, ctx) {
-        const props = jb.tgpTextEditor.calcActiveEditorPath(docProps)
-        jb.log('vscode calcActiveEditorPath',props)
-        const { semanticPath, needsFormat, compLine, error } = props
+        const props = jb.tgpTextEditor.calcActiveEditorPath(docProps, {clearCache: true})
+        jb.log('completion calcActiveEditorPath',props)
+        const { semanticPath, reformatEdits, compLine, error } = props
         const serverUri = jb.tgpTextEditor.host.serverUri
-        if (needsFormat) {
+        if (reformatEdits) {
             const item = { kind: 4, id: 'reformat', label: 'reformat', extend() { }, sortText: '0001',
                 command: { command: 'jbart.applyCompChange' , arguments: [{
                     cursorPos: {line: docProps.cursorLine, col: docProps.cursorCol},
-                    edit: jb.tgpTextEditor.formatComponent(props)
+                    edit: reformatEdits
                 }] },
             }
             return [item]
@@ -257,17 +268,17 @@ jb.extension('tgpTextEditor', 'completion', {
                     arguments: serverUri ? [Object.assign({serverUri, extendCode: item.extend.toString()},item) ] :  [item,ctx] 
                 }
             }))
-            jb.log('vscode completion items',{items, ...docProps, ...props, ctx})
+            jb.log('completion completion items',{items, ...docProps, ...props, ctx})
             return items
         } else if (error) {
-            jb.logError('vscode completion',props)
+            jb.logError('completion provideCompletionItems', props)
         }
     },
     async provideDefinition(docProps, ctx) {
-        const props = jb.tgpTextEditor.calcActiveEditorPath(docProps)
-        const { semanticPath, needsFormat, inExtension, error } = props
-        if (needsFormat)
-            jb.tgpTextEditor.host.applyEdit(jb.tgpTextEditor.formatComponent(props))
+        const props = jb.tgpTextEditor.calcActiveEditorPath(docProps, {clearCache: true})
+        const { semanticPath, reformatEdits, inExtension, error } = props
+        if (reformatEdits)
+            jb.tgpTextEditor.host.applyEdit(reformatEdits)
         else if (semanticPath) {
             const path = semanticPath.allPaths.map(x=>x[0]).filter(x=>x.match('~!profile$')).map(x=>x.split('~!')[0])[0]
             const comp = path && jb.tgp.compNameOfPath(path)
@@ -275,7 +286,7 @@ jb.extension('tgpTextEditor', 'completion', {
         } else if (inExtension) {
             return provide_func_location()
         } else if (error) {
-            jb.logError('vscode def',props)
+            jb.logError('completion provideDefinition',props)
         }
 
         async function provide_func_location() {
@@ -298,7 +309,7 @@ jb.extension('tgpTextEditor', 'completion', {
         const {op, path, resultPath, resultSemantics, resultOffset} = itemProps
         const compId = path.split('~')[0]
         if (!jb.utils.getComp(compId))
-            return jb.logError(`handleScriptChangeOnPreview - missing comp ${compId}`, {path, ctx})
+            return jb.logError(`completion handleScriptChangeOnPreview - missing comp ${compId}`, {path, ctx})
         const handler = jb.watchableComps.startWatch()
         handler.makeWatchable(compId)
         handler.doOp(handler.refOfPath(path.split('~')), op, ctx)
@@ -313,9 +324,9 @@ jb.extension('tgpTextEditor', 'completion', {
         function calcNewPos() {
             const { compLine, text } = jb.tgpTextEditor.cache[compId]
             const pos = jb.tgpTextEditor.getPosOfPath(resultPath || path,resultSemantics)
-            jb.log('vscode calcNewPos',{resultSemantics, pos})
+            jb.log('completion calcNewPos',{resultSemantics, pos})
             if (!pos)
-                return jb.logError('vscode calcNewPos can not find path', {resultSemantics})
+                return jb.logError('completion calcNewPos can not find path', {resultSemantics})
             const inCompPos = {line: pos[0],col: pos[1]}
             const offset = jb.tgpTextEditor.lineColToOffset(text, inCompPos)
             const TBD = (text.slice(offset,offset+4) == 'TBD(' || text.slice(offset-1,offset+1) == '()')
@@ -327,7 +338,7 @@ jb.extension('tgpTextEditor', 'completion', {
     },
     async applyCompChange(item,ctx) {
         if (item.id == 'reformat') return
-        ctx = ctx || new jb.core.jbCtx({},{vars: {}, path: 'vscode.applyCompChange'})
+        ctx = ctx || new jb.core.jbCtx({},{vars: {}, path: 'completion.applyCompChange'})
         const { docText } = jb.tgpTextEditor.host.docTextAndCursor()
         const { edit, cursorPos } = item.edit ? item : item.serverUri ? await remoteCalcEditAndPos() : await jb.tgpTextEditor.calcEditAndGotoPos(docText,item,ctx)       
         try {
@@ -352,7 +363,7 @@ jb.extension('tgpTextEditor', 'completion', {
         }
     },
     restartLangServer() {
-        jb.vscode.restartLangServer = true
+        jb.vscode && (jb.vscode.restartLangServer = true)
     },
     moveUp() { 
         debugger
@@ -362,9 +373,9 @@ jb.extension('tgpTextEditor', 'completion', {
     },
     async moveInArray(docProps, diff) {
         const props = await jb.tgpTextEditor.calcActiveEditorPath(docProps)
-        const { semanticPath, needsFormat } = props
-        if (needsFormat)
-            jb.tgpTextEditor.host.applyEdit(jb.tgpTextEditor.formatComponent(props))
+        const { semanticPath, reformatEdits } = props
+        if (reformatEdits)
+            jb.tgpTextEditor.host.applyEdit(reformatEdits)
         else if (semanticPath) {
         }
     }

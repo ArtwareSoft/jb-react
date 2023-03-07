@@ -1,7 +1,12 @@
 const fs = require('fs')
-global.jbBaseUrl = __dirname.replace(/\\/g,'/').replace(/\/hosts\/node$/,'')
+if (!global.jbBaseUrl) {
+    const underJbReact = (__dirname.match(/projects\/jb-react(.*)$/) || [''])[1]
+    global.jbBaseUrl = underJbReact != null ? __dirname.slice(0,-1*underJbReact.length) : '.'
+}
+globalThis.jbFetchFile = url => util.promisify(fs.readFile)(url)
+globalThis.jbFetchJson = url => (util.promisify(fs.readFile)(url)).then(x=>JSON.parse(x))
 
-module.exports = { fileSymbolsFunc, jbGetJSFromUrl, getProcessArgument, getURLParam, log }
+module.exports = { getProcessArgument, getURLParam, log}
 
 global.jbFetchFile = url => {
     try {
@@ -13,8 +18,7 @@ global.jbFetchFile = url => {
 }
 global.jbFetchJson = url => jbFetchFile(url).then(x=>JSON.parse(x))
 
-
-async function fileSymbolsFunc(path, _include, _exclude) {
+global.jbFileSymbols = async (path, _include, _exclude) => {
     const include = _include && new RegExp(_include)
     const exclude = _exclude && new RegExp(_exclude)
     try {
@@ -64,9 +68,23 @@ function getURLParam(req,name) {
 
 function log(...args) { console.log(...args) }
 
-async function jbGetJSFromUrl(url) { 
+global.jbGetJSFromUrl = async url => { 
     const vm = require('vm'), fetch = require('node-fetch')
     const response = await fetch(url)
     const code = await response.text()
     vm.runInThisContext(code, url)
+}
+
+global.jbRunCommandLine = async args => {
+    return new Promise((resolve) => {
+        const proc = require('child_process').spawn('node',[`${jbBaseUrl}/bin/jb.js`, ...args] ,{cwd: jbBaseUrl})
+        let res = ''
+        proc.stdout.on('error', err => resolve({err}))
+        proc.stdout.on('data', data => res +=data)
+        proc.stdout.on('end', data => {
+            if (data)
+                res +=data
+            resolve(res)
+        })
+    })
 }

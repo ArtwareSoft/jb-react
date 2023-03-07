@@ -149,7 +149,7 @@ jb.extension('ui','headless', {
             if (!recover) jb.logError('headless widgetId already exists',{widgetId,ctx})
             jb.ui.destroyHeadless(widgetId)
         }
-        console.log('createHeadlessWidget', widgetId, ctrl.runCtx.path)
+        jb.log('create headless widget', {widgetId, path: ctrl.runCtx.path})
         const cmp = ctrl(ctxToUse)
         jb.ui.headless[widgetId] = {} // used by styles
         const top = jb.ui.h(cmp)

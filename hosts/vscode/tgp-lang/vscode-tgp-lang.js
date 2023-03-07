@@ -3,15 +3,21 @@ globalThis.vscodeNS = require('vscode')
 globalThis.vsChild = require('child_process')
 globalThis.vsPluginDir = __dirname
 
-const fs = require('fs')
+//const fs = require('fs')
 const workspaceDir = (vscodeNS.workspace.workspaceFolders || []).map(ws=>ws.uri.path).filter(path=>path.match(/jb-react/))[0]
 global.jbBaseUrl = __dirname.match(/extensions/) ? workspaceDir : __dirname.replace(/\/hosts\/vscode\/tgp-lang$/,'')    
 console.log('jbBaseUrl',jbBaseUrl)
-const loaderCode = fs.readFileSync(`${jbBaseUrl}/src/loader/jb-loader.js`) + '\n//# sourceURL=jb-loader.js'
-require('vm').runInThisContext(loaderCode)
-globalThis.jbFetchFile = url => require('util').promisify(fs.readFile)(url)
-globalThis.jbFetchJson = url => (require('util').promisify(fs.readFile)(url)).then(x=>JSON.parse(x))
-globalThis.jbFileSymbols = fileSymbolsFunc // function defined below
+require(jbBaseUrl+ '/hosts/node/node-utils.js')
+
+const { jbInit, jb_plugins } = require(jbBaseUrl+ '/src/loader/jb-loader.js')
+globalThis.jbInit = jbInit
+globalThis.jb_plugins = jb_plugins
+
+// const loaderCode = fs.readFileSync(`${jbBaseUrl}/src/loader/jb-loader.js`) + '\n//# sourceURL=jb-loader.js'
+// require('vm').runInThisContext(loaderCode)
+// globalThis.jbFetchFile = url => require('util').promisify(fs.readFile)(url)
+// globalThis.jbFetchJson = url => (require('util').promisify(fs.readFile)(url)).then(x=>JSON.parse(x))
+// globalThis.jbFileSymbols = fileSymbolsFunc // function defined below
  
 async function activate(context) {
     // TODO: change to load the Project instead of studio and tests

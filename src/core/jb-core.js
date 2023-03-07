@@ -29,9 +29,10 @@ Object.assign(jb, {
       })
     const libsToLoad = libs.flatMap(l => Object.values(jb[l].__extensions)).flatMap(ext => ext.requireLibs || []).filter(url => !jb.frame.jb.__requiredLoaded[url])
     try {
-      await Promise.all(libsToLoad.map( url => Promise.resolve(jbloadJSFile(url,jb,{noSymbols: true})).then(() => jb.frame.jb.__requiredLoaded[url] = true) ))
+      await Promise.all(libsToLoad.map( url => Promise.resolve(jbloadJSFile(url,jb,{noSymbols: true}))
+        .then(() => jb.frame.jb.__requiredLoaded[url] = true) ))
     } catch (e) {
-      jb.logException(e,'error loading external library')
+      jb.logException(e,'initializeLibs: error loading external library', {libsToLoad, libs})
     }
   },
 
