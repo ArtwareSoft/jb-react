@@ -23,3 +23,17 @@ jb.component('zui.itemPreview', {
   }),
   circuit1: 'zuiTest.itemlist'
 })
+
+jb.component('zui.stateOfItemView', {
+  params: [
+    {id: 'itemView', type: 'view<zui>', dynamic: true, mandatory: true},
+    {id: 'pos', as: 'string', description: 'top,left,width,height', defaultValue: '0,0,100,100'},
+    {id: 'zoom', as: 'number', defaultValue: 4},
+    {id: 'DIM', as: 'number', defaultValue: 128},
+  ],
+  impl: pipeline(Var('zuiState', obj()), Var('$props',({},{},{zoom,DIM}) => ({zoom, DIM})),
+    (ctx,{},{itemView,pos,zoom}) => {
+      const [top, left,width,height] = pos
+      return itemView(ctx).layout({zoom,top, left,width,height})
+    }, '%$zuiState%')
+})

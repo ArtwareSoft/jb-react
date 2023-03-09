@@ -8,11 +8,12 @@ jb.component('studioTest.categoriesOfType', {
 
 jb.component('test.simplePipeline', {
   type: 'data',
-  impl: pipeline(
-    'x',
-    'y',
-    'z'
-  )
+  impl: pipeline('x', 'y', 'z')
+})
+
+jb.component('test.cmpWithVars', {
+  type: 'data',
+  impl: pipeline(Var('v1', 'hello'), 'x', 'y', 'z')
 })
 
 jb.component('test.moveInTree', {
@@ -22,13 +23,17 @@ jb.component('test.moveInTree', {
       text('a'),
       text('b'),
       text('c'),
-      group({}),
-      group({
-        controls: [
-
-        ]
-      })
+      group(),
+      group({controls: []})
     ]
+  })
+})
+
+jb.component('studioTest.setCompInVars', {
+  impl: dataTest({
+    calculate: tgp.val('test.cmpWithVars~impl~$vars~0~val'),
+    expectedResult: equals(({data}) => data.$,'pipeline'),
+    runBefore: tgp.setComp('test.cmpWithVars~impl~$vars~0~val', 'pipeline')
   })
 })
 
@@ -133,9 +138,7 @@ jb.component('test.setSugarCompOverride2', {
 // })
 
 jb.component('test.profileAsTextExample', {
-  impl: text(
-    'a'
-  )
+  impl: text('a')
 })
 
 jb.component('test.referee', {

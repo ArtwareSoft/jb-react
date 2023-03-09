@@ -228,7 +228,8 @@ jb.extension('jbm', {
                     await jb.exec({$: 'waitFor', timeout: 100, check: () => !Object.keys(jb.treeShake.loadingCode).length })
                 }
                 await jb.treeShake.bringMissingCode(cmd.remoteRun)
-                const result = await jb.remoteCtx.deStrip(cmd.remoteRun)()
+                const deStrip = jb.remoteCtx.deStrip(cmd.remoteRun)
+                const result = await (typeof deStrip == 'function' ? deStrip() : deStrip)
                 if ($ == 'CB.createSource' && typeof result == 'function')
                     jb.cbHandler.map[cbId] = result
                 else if ($ == 'CB.createOperator' && typeof result == 'function')

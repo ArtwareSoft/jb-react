@@ -54,6 +54,7 @@ jb.extension('macro', {
         })
         if (args.length == 1 && typeof args[0] === 'object') {
             jb.asArray(args[0].vars).forEach(arg => jb.comps[arg.$].macro(system, arg))
+            delete args[0].vars
             args[0].remark && jb.comps.remark.macro(system, args[0])
             args[0].typeCast && jb.comps.typeCast.macro(system, args[0])
         }

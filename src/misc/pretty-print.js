@@ -109,6 +109,7 @@ jb.extension('utils', 'prettyPrint', {
         return res // || ctrls 
       }
       function fixPropName(prop) {
+        if (prop == '$vars') return 'vars'
         return prop.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/) ? prop : `'${prop}'`
       }
     }
@@ -152,26 +153,20 @@ jb.extension('utils', 'prettyPrint', {
       const oneFirstArg = keys.length === 1 && params[0] && params[0].id == keys[0]
       const twoFirstArgs = keys.length == 2 && params.length >= 2 && profile[params[0].id] && profile[params[1].id]
       if ((params.length < 3 && comp.macroByValue !== false) || comp.macroByValue || oneFirstArg || twoFirstArgs) {
-        const args = systemProps.concat(params.map(param=>({innerPath: param.id, val: propOfProfile(param.id)})))
+        const args = systemProps.concat(params.map(param=>({innerPath: param.id, val: profile[param.id]})))
         while (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop() // cut the undefined's at the end
         return joinVals(ctx, args, openProfileByValueGroup, closeProfileByValueGroup, flat, true)
       }
       const systemPropsInObj = [
         ...profile.remark ? [{innerPath: 'remark', val: profile.remark} ] : [],
         ...profile.typeCast ? [{innerPath: 'typeCast', val: profile.$typeCast} ] : [],
-        ...vars.length ? [{innerPath: 'vars', val: vars.map(x=>x.val)}] : []
+        ...vars.length ? [{innerPath: '$vars', val: vars.map(x=>x.val)}] : []
       ]
-      const args = systemPropsInObj.concat(params.filter(param=>propOfProfile(param.id) !== undefined)
-          .map(param=>({innerPath: param.id, val: propOfProfile(param.id)})))
+      const args = systemPropsInObj.concat(params.filter(param=>profile[param.id] !== undefined)
+          .map(param=>({innerPath: param.id, val: profile[param.id]})))
       const open = args.length ? openProfileGroup : openProfileByValueGroup
       const close = args.length ? closeProfileGroup : closeProfileByValueGroup
       return joinVals(ctx, args, open, close, flat, false)
-
-      function propOfProfile(paramId) {
-        return profile[paramId]
-        // const isFirst = params[0] && params[0].id == paramId
-        // return isFirst && profile['$'+id] || profile[paramId]
-      }
     }
 
     function serializeFunction(func) {

@@ -1,4 +1,3 @@
-
 jb.component('zuiTest.basic', {
   impl: uiTest({control: zui.control(), expectedResult: contains('cmp-id')})
 })
@@ -67,7 +66,7 @@ jb.component('zuiTest.itemlist', {
           ],
           onChange: refreshControlById('itemPreview')
         }),
-        zui.itemPreview(),
+        zui.itemPreview()
       ],
       features: [
         variable('zuiCtx', obj())
@@ -108,7 +107,7 @@ jb.component('zuiState', {
 }
 })
 
-jb.component('zuiTest.itemPreview', {
+jb.component('zuiTest.itemPreviewOld', {
   impl: uiTest({
     control: group({
       vars: [
@@ -119,3 +118,56 @@ jb.component('zuiTest.itemPreview', {
     expectedResult: contains('circlePos')
   })
 })
+
+jb.component('zuiTest.itemPreview', {
+  impl: uiTest({
+    control: group({
+      vars: [
+        Var(
+          'zuiState',
+          zui.stateOfItemView(
+            group(
+              verticalOneByOne(),
+              [
+                text(adaptableText('title')),
+                circle(numeric('price')),
+                group({
+                  views: [
+                    text(numeric('price')),
+                    text(numeric('hits'))
+                  ]
+                })
+              ]
+            )
+          )
+        ),
+        Var('zuiCtx', obj(prop('props', obj(prop('zuiState', '%$zuiState%')))))
+      ],
+      controls: zui.itemPreview()
+    }),
+    expectedResult: contains('zoom')
+  })
+})
+
+// jb.component('zuiTest.itemViewData', {
+//   impl: uiTest({
+//     control: itemlist({
+//       items: zui.itemViewData(
+//         group(
+//           verticalOneByOne(),
+//           [
+//             text(adaptableText('title')),
+//             circle(numeric('price')),
+//             group({
+//               views: [
+//                 text(numeric('price')),
+//                 text(numeric('hits'))
+//               ]
+//             })
+//           ]
+//         )
+//       )
+//     }),
+//     expectedResult: contains('circlePos')
+//   })
+// })

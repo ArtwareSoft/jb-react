@@ -25,6 +25,8 @@ jb.extension('tgp', 'completion', {
         const singleParamAsArray = jb.tgp.singleParamAsArray(path)
         if (paramDef.options) {
             res = jb.tgp.selectEnumCompletions(path)        
+        } else if (path.match(/~\$vars~[0-9]+~val$/)) {
+            res = jb.tgp.newPTCompletions(path)
         } else if (singleParamAsArray) {
             res = jb.tgp.newPTCompletions(`${path}~${singleParamAsArray.id}`, arrayIndex)
         } else if (allSemantics.reduce((acc,s) => acc || s.match(/-by-value|obj-separator-|-profile/), false )) {
@@ -158,21 +160,25 @@ jb.extension('tgp', 'completion', {
 		}
 	},
 	setPTOp(_path, _arrayIndex, compName,srcCtx) {
-        const arrayIndex = _arrayIndex == -1 ? null : _arrayIndex
-		const profile = jb.tgp.valOfPath(_path)
-        const params = jb.tgp.paramsOfPath(_path)
-        const singleParamAsArray = jb.tgp.singleParamAsArray(_path)
-		let path = singleParamAsArray ? `${_path}~${params[0].id}` : _path
-		let index = null
-        if (Array.isArray(profile)) {
-            index = arrayIndex != null ? arrayIndex : profile.length
-        } else if (singleParamAsArray || arrayIndex != null) {
-			const ar = profile[params[0].id]
-			const lastIndex = Array.isArray(ar) ? ar.length : 1
-			index = ar == null ? 0 : arrayIndex != null ? arrayIndex : lastIndex
-		}
+        let index = null, path = _path
+        if (! _path.match(/~\$vars~[0-9]+~val$/)) {
+            const arrayIndex = _arrayIndex == -1 ? null : _arrayIndex
+            const profile = jb.tgp.valOfPath(_path)
+            const params = jb.tgp.paramsOfPath(_path)
+            const singleParamAsArray = jb.tgp.singleParamAsArray(_path)
+            path = singleParamAsArray ? `${_path}~${params[0].id}` : _path
+            let index = null
+            if (Array.isArray(profile)) {
+                index = arrayIndex != null ? arrayIndex : profile.length
+            } else if (singleParamAsArray || arrayIndex != null) {
+                const ar = profile[params[0].id]
+                const lastIndex = Array.isArray(ar) ? ar.length : 1
+                index = ar == null ? 0 : arrayIndex != null ? arrayIndex : lastIndex
+            }
+        }
         const toAdd = jb.tgp.newProfile(jb.tgp.getComp(compName),compName,path)
-        const result = index != null ? jb.tgp.addArrayItemOp(path,{toAdd, index,srcCtx}) : jb.tgp.writeValueOfPathOp(path,toAdd,srcCtx)
+        const result = index != null ? jb.tgp.addArrayItemOp(path,{toAdd, index,srcCtx}) 
+            : jb.tgp.writeValueOfPathOp(path,toAdd,srcCtx)
         result.resultSemantics = ['close-profile','close-by-value']
         return result
 	},

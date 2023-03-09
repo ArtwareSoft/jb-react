@@ -14,7 +14,19 @@ jb.component('macroTest.vars', {
         }
       }, contains("[\n      Var('items', [{id: 1}, {id: 2}])\n    ]"))
 })
-  
+
+jb.component('macroTest.varsPath', {
+  impl: dataTest(
+    pipeline(
+      () => jb.utils.prettyPrintWithPositions(split({vars: [Var('a', 'b')]})),
+      log('test'),
+      '%map/~$vars~0~val~!value%',
+      join()
+    ),
+    equals('1,18,1,21')
+  )
+})
+
 jb.component('macroTest.Positions.shouldNotFlat', {
   impl: dataTest(
     pipeline(

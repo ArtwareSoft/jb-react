@@ -88,6 +88,18 @@ jb.component('completionTest.createPipelineFromEmptyString', {
  })
 })
 
+jb.component('completionTest.insideVar', {
+  impl: tgp.completionActionTest({
+    compText: "jb.component('x', {\n  impl: dataTest({vars: [Var('a', __'b')]})\n})",
+    completionToActivate: 'pipeline',
+    expectedEdit: () => ({
+        range: {start: {line: 1, col: 18}, end: {line: 1, col: 39}},
+        newText: `\n    vars: [\n      Var('a', pipeline('b'))\n    ]\n  `
+      }),
+    expectedCursorPos: '3,27'
+ })
+})
+
 jb.component('completionTest.splitInsidePipeline', {
   impl: tgp.completionActionTest({
     compText: `jb.component('x', {

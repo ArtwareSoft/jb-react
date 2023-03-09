@@ -219,7 +219,7 @@ jb.component('verticalOneByOne', {
       let sizeLeft = height, accTop = top
       views.byPriority.forEach(v=>{
         const state = v.state()
-        const viewPreferedHeight = v.preferedHeight(layoutProps)
+        const viewPreferedHeight = v.preferedHeight ? v.preferedHeight(layoutProps) : 0
         if (sizeLeft == 0) {
           state.height = 0
         } else if (sizeLeft > viewPreferedHeight) {

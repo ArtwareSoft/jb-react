@@ -54,7 +54,7 @@ jb.extension('tgp', 'writable', {
 		if (!id || !comp) return
 		const params = jb.utils.compParams(comp)
 
-		const result = jb.tgp.newProfile(comp,id)
+		const result = jb.tgp.newProfile(comp,id,path)
 		const currentVal = jb.tgp.valOfPath(path)
 		params.forEach(p=>{
 			if (currentVal && currentVal[p.id] !== undefined)
