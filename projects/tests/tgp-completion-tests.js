@@ -25,12 +25,10 @@ jb.component('completionTest.pt', {
   impl: tgp.completionOptionsTest({
     compText:`jb.component('x', {
   impl: uiTest({
-    control: group({
-      controls: [__
+    control: group({controls: [__
 __        text('hello world in the largest'),__
 __        text('2')__
-__      ]
-    }),
+__      ]}),
     expectedResult: __contains(['hello world', '2'])
   })
 })`,
@@ -49,6 +47,21 @@ jb.component('completionTest.createPipelineFromComp', {
     expectedCursorPos: '1,36'
  })
 })
+
+jb.component('completionTest.addToArray', {
+  impl: tgp.completionActionTest({
+    compText: `jb.component('x', {
+  impl: uiTest(group({controls: [button('')__]}))\n})`,
+    completionToActivate: 'button',
+    expectedEdit: () => ({
+        range: {start: {line: 1, col: 43}, end: {line: 1, col: 43}},
+        newText: ", button('click me')"
+      }),
+    expectedCursorPos: '1,62'
+  })
+})
+
+impl: uiTest(group({controls: [button('')]}))
 
 jb.component('completionTest.paramsAndProfiles', {
   impl: tgp.completionOptionsTest({
@@ -93,10 +106,10 @@ jb.component('completionTest.insideVar', {
     compText: "jb.component('x', {\n  impl: dataTest({vars: [Var('a', __'b')]})\n})",
     completionToActivate: 'pipeline',
     expectedEdit: () => ({
-        range: {start: {line: 1, col: 18}, end: {line: 1, col: 39}},
-        newText: `\n    vars: [\n      Var('a', pipeline('b'))\n    ]\n  `
+        range: {start: {line: 1, col: 34}, end: {line: 1, col: 37}},
+        newText: `pipeline('b')`
       }),
-    expectedCursorPos: '3,27'
+    expectedCursorPos: '1,46'
  })
 })
 

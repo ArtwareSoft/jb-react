@@ -32,10 +32,8 @@ jb.component('tgp.completionOptionsTest', {
             const options = await jb.tgpTextEditor.provideCompletionItems(jb.tgpTextEditor.host.docTextAndCursor(), ctxForTest)
             if (!options)
                 return `no options at index ${i}`
-            const res = options.map(x=>x.label).includes(expectedSelections[i])
-            if (!res)
-                return `${expectedSelections[i]} not found at index ${i}`
-            return _errors + ''
+            const res = options.map(x=>x.label).includes(expectedSelections[i]) ? '' : ` ${expectedSelections[i]} not found at index ${i}`
+            return _errors + res
         }, '')
 
         const testId = ctx.vars.testID;

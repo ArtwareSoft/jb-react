@@ -13,8 +13,8 @@ jb.extension('tgp', 'completion', {
     },
     async provideCompletionItems({semanticPath, inCompPos, text, compLine}, ctx) {
         const path = semanticPath.path.split('~!')[0]
-        const arrayIndex = jb.tgp.calcArrayIndex(semanticPath)
         const allSemantics = semanticPath.allPaths.map(x=>x[0]).filter(x=>x.indexOf(path+'~!') == 0).map(x=>x.split('~!').pop())
+        const arrayIndex = jb.tgp.calcArrayIndex(semanticPath,allSemantics)
         const paramDef = jb.tgp.paramDef(path)
         if (!paramDef) {
             jb.logError('tgpTextEditor completion - can not find paramDef',{path, semanticPath, ctx})
@@ -56,10 +56,10 @@ jb.extension('tgp', 'completion', {
                 extend(ctx) { return jb.tgp.wrapWithArrayOp(this.path,ctx) },
             } : null).filter(x=>x).slice(0,1)
     },
-    calcArrayIndex(semanticPath) {
+    calcArrayIndex(semanticPath, allSemantics) {
         const separatorIndex = (semanticPath.path.match(/separator-([0-9]+)$/) || ['',null])[1]
-        const openArray = semanticPath.path.split('~!')[1].indexOf('open-array') == 0
-        const closeArray = semanticPath.path.split('~!')[1].indexOf('close-array') == 0
+        const openArray = allSemantics.indexOf('open-array') != -1
+        const closeArray = allSemantics.indexOf('close-array') != -1
         return openArray ? 0 : closeArray ? -1 : separatorIndex ? (+separatorIndex+1) : null
     },
     async dataCompletions({semanticPath, inCompPos, text, compLine}, path , ctx) {
@@ -167,14 +167,15 @@ jb.extension('tgp', 'completion', {
             const params = jb.tgp.paramsOfPath(_path)
             const singleParamAsArray = jb.tgp.singleParamAsArray(_path)
             path = singleParamAsArray ? `${_path}~${params[0].id}` : _path
-            let index = null
-            if (Array.isArray(profile)) {
+            index = null
+            if (Array.isArray(profile))
                 index = arrayIndex != null ? arrayIndex : profile.length
-            } else if (singleParamAsArray || arrayIndex != null) {
-                const ar = profile[params[0].id]
-                const lastIndex = Array.isArray(ar) ? ar.length : 1
-                index = ar == null ? 0 : arrayIndex != null ? arrayIndex : lastIndex
-            }
+            
+            // else if (profile != null && (singleParamAsArray || arrayIndex != null)) {
+            //     // const ar = profile[params[0].id]
+            //     // const lastIndex = Array.isArray(ar) ? ar.length : 1
+            //     // index = ar == null ? 0 : arrayIndex != null ? arrayIndex : lastIndex
+            // }
         }
         const toAdd = jb.tgp.newProfile(jb.tgp.getComp(compName),compName,path)
         const result = index != null ? jb.tgp.addArrayItemOp(path,{toAdd, index,srcCtx}) 

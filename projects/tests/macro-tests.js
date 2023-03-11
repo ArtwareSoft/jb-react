@@ -53,7 +53,7 @@ jb.component('macroTest.Positions.closeArray', {
   
 jb.component('macroTest.Positions.separator', {
   impl: dataTest(
-    pipeline(() => jb.utils.prettyPrintWithPositions({a: 1, b: 2}), '%map/~!obj-separator-0%', join()),
+    pipeline(() => jb.utils.prettyPrintWithPositions({a: 1, b: 2}), log('test'), '%map/~!obj-separator-0%', join()),
     equals('1,6,2,2')
   )
 })

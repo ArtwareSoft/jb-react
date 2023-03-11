@@ -4,12 +4,10 @@ jb.component('zuiTest.basic', {
 
 jb.component('zuiTest.multiStage', {
   impl: uiTest({
-    control: group({
-      controls: [
+    control: group({controls: [
         text('2'),
         zui.multiStage({items: '%$phones%', stages: [threejsCircles()]})
-      ]
-    }),
+      ]}),
     expectedResult: contains('cmp-id')
   })
 })
@@ -72,7 +70,9 @@ jb.component('zuiTest.itemlist', {
         variable('zuiCtx', obj())
       ]
     }),
-    action: uiAction.waitForSelector("canvas[zui-rendered='true']"),
+    action: uiAction.waitForSelector(
+      "canvas[zui-rendered='true']"
+    ),
     expectedResult: contains('zui-rendered')
   })
 })

@@ -1323,18 +1323,19 @@ jb.component('uiTest.editableBoolean.expandCollapseWithDefaultVal', {
 
 jb.component('uiTest.editableBoolean.expandCollapseWithDefaultCollapse', {
   impl: uiFrontEndTest({
-    renderDOM: true,
     control: uiTest.expandCollapseWithDefaultCollapse(),
-    expectedResult: not(contains('inner text'))
+    expectedResult: not(contains('inner text')),
+    renderDOM: true
   })
 })
 
 jb.component('uiTest.codeMirror', {
   impl: uiFrontEndTest({
-    renderDOM: true,
     control: group({
       vars: [
-        Var('js', {'$': 'object', text: 'function f1() { \nreturn 15 \n}'}),
+        Var('js', {'$': 'object', text: `function f1() { 
+return 15 
+}`}),
         Var('css', {'$': 'object', text: '{ width: 15px; }'}),
         Var('html', {'$': 'object', text: '<div><span>hello</span></div>'})
       ],
@@ -1352,14 +1353,12 @@ jb.component('uiTest.codeMirror', {
             codemirror.lineNumbers()
           ]
         }),
-        editableText({
-          databind: '%$html/text%',
-          style: editableText.codemirror({mode: 'htmlmixed'})
-        })
+        editableText({databind: '%$html/text%', style: editableText.codemirror({mode: 'htmlmixed'})})
       ]
     }),
     action: uiAction.waitForSelector('.CodeMirror'),
-    expectedResult: contains(['function', 'f1', '15'])
+    expectedResult: contains(['function', 'f1', 15]),
+    renderDOM: true
   })
 })
 
@@ -1367,18 +1366,14 @@ jb.component('uiTest.innerLabel1Tst', {
   params: [
     {id: 'title', mandatory: true, dynamic: true}
   ],
-  impl: text({
-    text: call('title')
-  })
+  impl: text(call('title'))
 })
 
 jb.component('uiTest.innerLabel2Tst', {
   params: [
     {id: 'title', mandatory: true, dynamic: true}
   ],
-  impl: uiTest.innerLabel1Tst(
-    call('title')
-  )
+  impl: uiTest.innerLabel1Tst(call('title'))
 })
 
 jb.component('uiTest.innerLabel3Tst', {
@@ -1409,7 +1404,7 @@ jb.component('uiTest.picklist', {
     control: group({
       controls: [
         group({
-          style: propertySheet.titlesLeft({}),
+          style: propertySheet.titlesLeft(),
           controls: picklist({
             title: 'city',
             databind: '%$personWithAddress/address/city%',
