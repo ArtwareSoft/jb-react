@@ -572,7 +572,6 @@ jb.extension('ui', 'react', {
                 lastUsedIndex++;
             if (used[lastUsedIndex] != dict[i]) {
                 removedCtxs.push(dict[i])
-                if (dict[i] == 850) debugger
                 delete jb.ctxDictionary[''+dict[i]]
             }
         }

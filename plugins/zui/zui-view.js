@@ -135,57 +135,7 @@ jb.extension('zui','view', {
   isVisible(el) {
     const { width, height } = el.state()
     return width && height    
-  }
-})
-
-jb.component('text', {
-  type: 'view',
-  params: [
-    {id: 'prop', type: 'itemProp', mandatory: true},
-    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true}
-  ],
-  impl: (ctx,prop, features) => {
-    const zuiElem = jb.zui.textZuiElem(ctx)
-    const view = {
-      title: 'text',
-      state: () => jb.zui.viewState(ctx),
-      pivots: () => prop.pivots(),
-      zuiElems: () => [zuiElem],
-      priority: prop.priority || 0,
-      preferedHeight: () => 16,
-      layout: (layoutProps) => ['width','height','top','left'].forEach(p=> 
-        layoutProps[p] != null && (jb.zui.viewState(ctx)[p] = layoutProps[p]))
-    }
-    features().forEach(f=>f.enrichView(view))
-    view.enterHeight = view.enterHeight || Math.floor(view.preferedHeight()/2)
-    return view
-  }
-})
-
-jb.component('circle', {
-  type: 'view',
-  params: [
-    {id: 'prop', type: 'itemProp', mandatory: true},
-    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true},
-    {id: 'circleSize', dynamic: true, defaultValue: ({vars}) => 10 + 2 * Math.log(vars.$props.DIM/vars.$props.zoom)},
-    {id: 'colorScale', type: 'color_scale'}
-  ],
-  impl: (ctx,prop,features) => { 
-    const zuiElem = jb.zui.circleZuiElem(ctx)
-    const view = {
-      title: 'circle',
-      state: () => jb.zui.viewState(ctx),
-      pivots: () => prop.pivots(),
-      zuiElems: () => [zuiElem],
-      priority: prop.priority || 0,
-      preferedHeight: layoutProps => ctx.params.circleSize(ctx.setData(layoutProps)),
-      enterHeight: 0.01,
-      layout: (layoutProps) => ['width','height','top','left'].forEach(p=> 
-        layoutProps[p] != null && (jb.zui.viewState(ctx)[p] = layoutProps[p]))
-    }
-    features().forEach(f=>f.enrichView(view))
-    return view
-  }
+  },
 })
 
 jb.component('group', {
@@ -206,7 +156,7 @@ jb.component('group', {
       zuiElems: () => views.flatMap(v=>v.zuiElems()),
       layout: layoutProps => Object.assign(jb.zui.viewState(ctx), layout.layout(layoutProps, views)),
     }
-    features().forEach(f=>f.enrichView(view))
+    features().forEach(f=>f.enrich(view))
     return view
   }
 })
@@ -251,3 +201,12 @@ jb.component('horizontalOneByOne', {
   impl: ctx => ctx.params
 })
 
+jb.component('priorty', {
+  type: 'view_feature',
+  params: [
+    {id: 'priority', mandatory: true, as: 'number', description: 'scene enter order'}
+  ],
+  impl: (ctx,priority) => ({
+    enrich(obj) { obj.priority = priority}
+  })
+})

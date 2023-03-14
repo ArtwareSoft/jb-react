@@ -164,7 +164,7 @@ jb.component('initJb.vcodeCompletionWorker', {
   impl: ({vars}) => {
     const f = async () => { 
         globalThis.jb = await jbInit('URI',{
-            projects: ['studio','tests'], plugins: ['vscode', ...jb_plugins], doNoInitLibs: true, useFileSymbolsFromBuild: true
+            projects: ['studio','tests'], plugins: ['vscode', ...jb_plugins], doNoInitLibs: true
         })
         await jb.initializeLibs(['utils','watchable','immutable','watchableComps','tgp','tgpTextEditor','vscode','jbm','cbHandler','treeShake'])
     }
