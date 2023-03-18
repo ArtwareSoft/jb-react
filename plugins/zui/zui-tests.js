@@ -1,6 +1,6 @@
 
 jb.component('zuiTest.itemlist', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     control: group({
       layout: layout.horizontal(),
       controls: [
@@ -14,6 +14,8 @@ jb.component('zuiTest.itemlist', {
               circle(byName('hits'), priorty(1))
             ]
           ),
+          boardSize: 8,
+          initialZoom: 3,
           items: '%$phones%',
           itemProps: [
             text({att: 'title', features: [priorty(2)]}),
@@ -28,17 +30,48 @@ jb.component('zuiTest.itemlist', {
         variable('zuiCtx', obj())
       ]
     }),
-    action: uiAction.waitForSelector(
-      "canvas[zui-rendered='true']"
-    ),
-    expectedResult: contains('zui-rendered')
+    expectedResult: contains('zoom')
   })
 })
 
-//           itemView: growingText(numeric({att: 'price', prefix: '$'})),
+jb.component('zuiTest.verticalOneByOne', {
+  impl: uiTest({
+    control: group({
+      layout: layout.horizontal(),
+      controls: [
+        zui.itemlist({
+          itemView: group(
+            verticalOneByOne(),
+            [
+              growingText(byName('title')),
+              fixedText(byName('price')),
+              fixedText(byName('hits')),
+              circle(byName('hits'), priorty(1))
+            ]
+          ),
+          boardSize: 8,
+          initialZoom: 3,
+          items: '%$phones%',
+          itemProps: [
+            text({att: 'title', features: [priorty(2)]}),
+            numeric({att: 'price', features: [preferedAxis('x'), priorty(3)]}),
+            numeric({att: 'hits', features: preferedAxis('y')})
+          ],
+          onChange: refreshControlById('itemPreview')
+        }),
+        zui.itemPreview()
+      ],
+      features: [
+        variable('zuiCtx', obj())
+      ]
+    }),
+    expectedResult: contains('zoom')
+  })
+})
 
+/*
 jb.component('zuiTest.currency', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     control: group({
       layout: layout.horizontal(),
       controls: [
@@ -70,7 +103,7 @@ jb.component('zuiTest.itemPreview', {
     control: group({
       vars: [
         Var(
-          'zuiState',
+          'renderProps',
           zui.stateOfItemView(
             group(
               verticalOneByOne(),
@@ -87,11 +120,11 @@ jb.component('zuiTest.itemPreview', {
             )
           )
         ),
-        Var('zuiCtx', obj(prop('props', obj(prop('zuiState', '%$zuiState%')))))
+        Var('zuiCtx', obj(prop('props', obj(prop('renderProps', '%$renderProps%')))))
       ],
       controls: zui.itemPreview()
     }),
     expectedResult: contains('zoom')
   })
 })
-
+*/

@@ -134,27 +134,33 @@ jb.component('probe.showRxSniffer', {
 })
 
 jb.component('probe.mainCircuitView', {
-    type: 'control',
-    impl: group({
-        controls: ctx => { 
+  type: 'control',
+  impl: group({
+    controls: ctx => { 
             const _circuit = ctx.exp('%$probe/defaultMainCircuit%')
             const circuit = (jb.path(jb.utils.getComp(_circuit),'impl.$') || '').match(/Test/) ? { $: 'test.showTestInStudio', testId: _circuit} : { $: _circuit }
             jb.log('probe circuit',{circuit, ctx})
             return circuit && circuit.$ && ctx.run(circuit)
         },
-        features: [ 
-            If(ctx => !jb.utils.getComp(ctx.exp('%$probe/defaultMainCircuit%')), group.wait(treeShake.getCodeFromRemote('%$probe/defaultMainCircuit%'))),
-            watchRef('%$probe/scriptChangeCounter%'),
-            variable('$previewMode',true)
-        ]
-    }),
-    require: {$: 'test.showTestInStudio'}
+    features: [
+      If(
+        ctx => !jb.utils.getComp(ctx.exp('%$probe/defaultMainCircuit%')),
+        group.wait(treeShake.getCodeFromRemote('%$probe/defaultMainCircuit%'))
+      ),
+      watchRef('%$probe/scriptChangeCounter%'),
+      variable('$previewMode', true)
+    ]
+  }),
+  require: [
+    test.showTestInStudio(),
+    { $: 'sampleProject.main' }
+  ]
 })
 
 jb.component('probe.remoteMainCircuitView', {
-    params: [
-        {id: 'jbm', defaultValue: jbm.wProbe() }
-    ],    
-    type: 'control',
-    impl: remote.widget( probe.mainCircuitView(), '%$jbm%' )
+  params: [
+    {id: 'jbm', defaultValue: jbm.wProbe()}
+  ],
+  type: 'control',
+  impl: remote.widget(probe.mainCircuitView(), '%$jbm%')
 })

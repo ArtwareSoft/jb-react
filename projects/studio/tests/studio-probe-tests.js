@@ -206,9 +206,7 @@ jb.component('probeTest.filterNoSugar', {
 
 jb.component('probeTest.label1', {
   type: 'control',
-  impl: text({
-
-  })
+  impl: text()
 })
 
 jb.component('pathChangeTest.wrap', {
@@ -223,18 +221,18 @@ jb.component('test.pathSrcComp', {
   params: [
     {id: 'items', dynamic: true}
   ],
-  impl: list(
-    call('items')
-  )
+  impl: list(call('items'))
+})
+
+jb.component('test.probePipeline', {
+  impl: pipeline(list('a', 'b'), '%%', join())
 })
 
 jb.component('test.pathSrcCaller', {
   params: [
     {id: 'items', dynamic: true}
   ],
-  impl: test.pathSrcComp(
-    ['a', 'b']
-  )
+  impl: test.pathSrcComp(['a', 'b'])
 })
 
 jb.component('probeTest.pathSrcThrough.call', {
@@ -257,6 +255,16 @@ jb.component('probeTest.pathSrcThrough.call2', {
    },
     expectedResult: contains('1')
   })
+})
+
+jb.component('probeTest.runCircuit', {
+  impl: dataTest(
+    pipe(
+      probe.runCircuit('test.probePipeline~impl~items~1'),
+      ({data}) => data.result.visits
+    ),
+    equals(2)
+  )
 })
 
 

@@ -11,7 +11,7 @@ jb.extension('tgp', 'completion', {
             }
         }
     },
-    async provideCompletionItems({semanticPath, inCompPos, text, compLine}, ctx) {
+    async provideCompletionItems({semanticPath, inCompPos, text, compLine, filePath}, ctx) {
         const path = semanticPath.path.split('~!')[0]
         const allSemantics = semanticPath.allPaths.map(x=>x[0]).filter(x=>x.indexOf(path+'~!') == 0).map(x=>x.split('~!').pop())
         const arrayIndex = jb.tgp.calcArrayIndex(semanticPath,allSemantics)
@@ -40,7 +40,7 @@ jb.extension('tgp', 'completion', {
         } else if (arrayIndex != null || allSemantics.includes('prop') || allSemantics.includes('profile')) {
             res = jb.tgp.newPTCompletions(path, arrayIndex)
         } else if (allSemantics.includes('value-text') && jb.tgp.isOfType(path,'data')) {
-            res = await jb.tgp.dataCompletions({semanticPath, inCompPos, text, compLine}, path, ctx)
+            res = await jb.tgp.dataCompletions({semanticPath, inCompPos, text, compLine, filePath}, path, ctx)
         } else if (allSemantics.includes('value')) {
             res = jb.tgp.paramCompletions(path)
         }
@@ -58,21 +58,22 @@ jb.extension('tgp', 'completion', {
     },
     calcArrayIndex(semanticPath, allSemantics) {
         const separatorIndex = (semanticPath.path.match(/separator-([0-9]+)$/) || ['',null])[1]
-        const openArray = allSemantics.indexOf('open-array') != -1
-        const closeArray = allSemantics.indexOf('close-array') != -1
+        const openArray = allSemantics.includes('open-array')
+        const closeArray = allSemantics.includes('close-array')
         return openArray ? 0 : closeArray ? -1 : separatorIndex ? (+separatorIndex+1) : null
     },
-    async dataCompletions({semanticPath, inCompPos, text, compLine}, path , ctx) {
+    async dataCompletions({semanticPath, inCompPos, text, compLine, filePath}, path , ctx) {
         const cursor = jb.tgpTextEditor.lineColToOffset(text, inCompPos)
         const text_pos = jb.path(semanticPath.allPaths.filter(x=>x[0].match(/value-text$/)),'0.1')
         const { positions } = text_pos
         const input = { value: text.slice(text_pos.offset_from, text_pos.offset_to), selectionStart: cursor - text_pos.offset_from }
 
-        const suggestions = await ctx.setData(input).run({$: 'probe.suggestionsByCmd', 
+        const { plugins, projects } = jb.utils.pluginsOfFilePath(filePath)
+        const suggestions = await ctx.setData(input).run({$: 'probe.suggestionsByCmd', plugins, projects,
             probePath : path, expressionOnly: true })
         return (jb.path(suggestions,'0.options') || []).map(option => {
             const { pos, toPaste, tail, text } = option
-            const primiteVal = typeof option.value != 'object'
+            const primiteVal = option.valueType != 'object'
             const suffix = primiteVal ? '%' : '/'
             const newText = toPaste + suffix
             const line = positions[0] + compLine
@@ -266,7 +267,7 @@ jb.extension('tgpTextEditor', 'completion', {
             }
             return [item]
         } else if (semanticPath) {
-            const items = await jb.tgp.provideCompletionItems(props, ctx)
+            const items = await jb.tgp.provideCompletionItems({...docProps,...props}, ctx)
             items.forEach((item,i) => Object.assign(item, {
                 compLine,
                 insertText: '',
@@ -284,19 +285,20 @@ jb.extension('tgpTextEditor', 'completion', {
     async provideDefinition(docProps, ctx) {
         const props = jb.tgpTextEditor.calcActiveEditorPath(docProps, {clearCache: true})
         const { semanticPath, reformatEdits, inExtension, error } = props
-        if (reformatEdits)
+        const allSemantics = semanticPath ? semanticPath.allPaths.map(x=>x[0].split('~!').pop()) : []
+        if (reformatEdits) {
             jb.tgpTextEditor.host.applyEdit(reformatEdits)
-        else if (semanticPath) {
+        } else if (inExtension || allSemantics.includes('function')) {
+            return provideFuncLocation()
+        } else if (semanticPath) {
             const path = semanticPath.allPaths.map(x=>x[0]).filter(x=>x.match('~!profile$')).map(x=>x.split('~!')[0])[0]
             const comp = path && jb.tgp.compNameOfPath(path)
-            return comp ? jb.utils.getComp(comp)[jb.core.CT].location : provide_func_location()
-        } else if (inExtension) {
-            return provide_func_location()
+            return comp ? jb.utils.getComp(comp)[jb.core.CT].location : provideFuncLocation()
         } else if (error) {
             jb.logError('completion provideDefinition',props)
         }
 
-        async function provide_func_location() {
+        async function provideFuncLocation() {
             const {docText, cursorLine } = docProps
             const textLine = docText.split('\n')[cursorLine]
             const [,lib,func] = textLine.match(/jb\.([a-zA-Z_0-9]+)\.([a-zA-Z_0-9]+)/) || ['','','']
@@ -305,7 +307,7 @@ jb.extension('tgpTextEditor', 'completion', {
                 const lineOfExt = (+loc[1]) || 0
                 const fileContent = await jbFetchFile(jbBaseUrl + loc[0])
                 const lines = ('' + fileContent).split('\n').slice(lineOfExt)
-                const funcHeader = new RegExp(`${func}\\s*:|${func}\\s*\\(`) //[^{]+{)`)
+                const funcHeader = new RegExp(`[^\.]${func}\\s*:|[^\.]${func}\\s*\\(`) //[^{]+{)`)
                 const lineOfFunc = lines.findIndex(l=>l.match(funcHeader))
                 return [loc[0], lineOfExt + lineOfFunc]
             }

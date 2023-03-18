@@ -36,7 +36,8 @@ jb.extension('vscode', {
                 const editor = vscodeNS.window.activeTextEditor
                 return { docText: maxSize ? editor.document.getText().slice(0,maxSize) : editor.document.getText(),
                     cursorLine: editor.selection.active.line,
-                    cursorCol: editor.selection.active.character
+                    cursorCol: editor.selection.active.character,
+                    filePath: editor.document.uri.path
                 }
             },
             async execCommand(cmd) {

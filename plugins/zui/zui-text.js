@@ -10,17 +10,15 @@ jb.component('growingText', {
   impl: (ctx,prop, features) => {
     const zuiElem = jb.zui.text2_32ZuiElem(ctx)
     const view = {
-      title: 'text',
-      state: () => jb.zui.viewState(ctx),
-      pivots: () => prop.pivots(),
-      zuiElems: () => [zuiElem],
-      priority: prop.priority || 10,
-      preferedHeight: () => 16,
-      layout: (layoutProps) => ['width','height','top','left'].forEach(p=> 
-        layoutProps[p] != null && (jb.zui.viewState(ctx)[p] = layoutProps[p]))
+        layoutSizes: ({size,zoom}) => [2*10,16, size[0]-2*10,16, 0,0 ],
+        state: () => jb.zui.viewState(ctx),
+        path: ctx.path,
+        pivots: () => prop.pivots(),
+        zuiElems: () => [zuiElem],
+        priority: prop.priority || 10,
     }
     features().forEach(f=>f.enrich(view))
-    view.enterHeight = view.enterHeight || Math.floor(view.preferedHeight()/2)
+    //view.enterHeight = view.enterHeight || Math.floor(view.preferedHeight()/2)
     return view
   }
 })
@@ -33,20 +31,18 @@ jb.component('fixedText', {
     {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true},
     {id: 'length', as: 'number', description: '<= 8', defaultValue: 6},
   ],
-  impl: (ctx,prop, features) => {
+  impl: (ctx,prop, features,length) => {
     const zuiElem = jb.zui.text8ZuiElem(ctx)
     const view = {
-      title: 'text',
+      layoutSizes: () => [length*10,16, 0,0, 0,0 ],
+      path: ctx.path,
       state: () => jb.zui.viewState(ctx),
       pivots: () => prop.pivots(),
       zuiElems: () => [zuiElem],
       priority: prop.priority || 10,
-      preferedHeight: () => 16,
-      layout: (layoutProps) => ['width','height','top','left'].forEach(p=> 
-        layoutProps[p] != null && (jb.zui.viewState(ctx)[p] = layoutProps[p]))
     }
     features().forEach(f=>f.enrich(view))
-    view.enterHeight = view.enterHeight || Math.floor(view.preferedHeight()/2)
+    //view.enterHeight = view.enterHeight || Math.floor(view.preferedHeight()/2)
     return view
   }
 })
@@ -338,7 +334,7 @@ jb.extension('zui','text8', {
           const { gl, itemsPositions } = props
         
           const textBoxNodes = itemsPositions.sparse.map(([item, x,y]) => 
-              [x,y, jb.zui.textAsFloats(viewCtx.params.prop.asText(item), viewCtx.params.length)])
+              [x,y, ...jb.zui.textAsFloats(viewCtx.params.prop.asText(item), viewCtx.params.length)])
           const vertexArray = new Float32Array(textBoxNodes.flatMap(v=> v.map(x=>1.0*x)))
           const floatsInVertex = 2 + 4
           const vertexCount = vertexArray.length / floatsInVertex
@@ -395,7 +391,6 @@ jb.extension('zui','text8', {
     }),
   
     textAsFloats(_text, length) {
-        length = 8
       const text = _text.slice(0,length)
       const pad = '                  '.slice(0,Math.ceil((length-text.length)/2))
       const txtChars = jb.zui.charsetEncodeAscii((pad + text + pad).slice(0,length))

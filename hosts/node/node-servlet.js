@@ -42,8 +42,8 @@ function createWSServer() {
 }
 
 async function run() {
-  const hostname = require('os').hostname()
-  const uri = `${hostname}-${process.pid}`
+  const hostname = require('os').hostname().replace(/-/g,'_')
+  const uri = `${hostname}_${process.pid}`
   if (getProcessArgument('treeShake')) {
     global.jbTreeShakeServerUrl = `http://localhost:${settings.ports.treeShake}`
     global.jbGetJSFromUrl = jbGetJSFromUrl

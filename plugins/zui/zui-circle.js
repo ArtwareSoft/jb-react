@@ -12,14 +12,11 @@ jb.component('circle', {
     const zuiElem = jb.zui.circleZuiElem(ctx)
     const view = {
       title: 'circle',
+      layoutSizes: itemViewSize => [0.01,0.01, 4,4, 0,0 ],
       state: () => jb.zui.viewState(ctx),
       pivots: () => prop.pivots(),
       zuiElems: () => [zuiElem],
       priority: prop.priority || 0,
-      preferedHeight: layoutProps => ctx.params.circleSize(ctx.setData(layoutProps)),
-      enterHeight: 0.01,
-      layout: (layoutProps) => ['width','height','top','left'].forEach(p=> 
-        layoutProps[p] != null && (jb.zui.viewState(ctx)[p] = layoutProps[p]))
     }
     features().forEach(f=>f.enrich(view))
     return view

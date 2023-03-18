@@ -27,7 +27,7 @@
     "pretty-for-specific-files": "node bin/tgp-pretty -file:studio-helper -filesToLoad:projects/studio-helper/studio-helper.js",
     "pretty-for-d3": "node bin/tgp-pretty -file:itemlist -filesToLoad:projects/itemlists/itemlists.js -modules:d3",
     "studio": "npm run studio-server & npm run helloWorld",
-    "studio-server": "node bin/studio/studio-server.js",
+    "studio-server": "node --inspect=7000 bin/studio/studio-server.js",
     "code-server": "node bin/code-loader/treeShake-server.js -modules=studio,test",
     "puppeteer-server": "node src/misc/puppeteer/pptr-server.js",
     "helloWorld": "start http://localhost:8082/project/studio/helloWorld",

@@ -222,7 +222,7 @@ globalThis.jb_plugins = jb_plugins
 
 //# sourceURL=${forkUri}-initJb.js
         `
-        const fork = vsChild.fork(`${vsPluginDir}/minimal-child.js`,[],{execArgv:['--inspect']})
+        const fork = vsChild.fork(`${vsPluginDir}/minimal-child.js`,[],{execArgv:['--inspect=7001']})
         console.log('fork',fork)
         fork.send(`eval:${workerCode}`);
 

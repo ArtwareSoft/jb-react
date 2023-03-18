@@ -253,7 +253,6 @@ jb.extension('utils', 'prettyPrint', {
       const innerVals = props[path].innerVals || []
       const flat = forceFlat || (len < colWidth && !shouldNotFlat())
       const arrayOrProfile = isArray? 'array' : 'profile'
-      //const openResult = processList(ctx,[...jb.asArray(open), {prop: `!open-${arrayOrProfile}`, item: newLine()}])
 
       const vals = innerVals.reduce((acc,{innerPath}, index) => {
         const fullInnerPath = [path,innerPath].join('~')
@@ -278,8 +277,6 @@ jb.extension('utils', 'prettyPrint', {
         ...jb.asArray(close).map(x=>({...x, path})),
 
       ]
-//      return processList(ctx, itemsToProcess)
-//        beforeClose, [{prop: `!close-${arrayOrProfile}`, item: newLine(-1)}, ...jb.asArray(close)])
 
       function newLine(offset = 0) {
         return flat ? '' : '\n' + jb.utils.emptyLineWithSpaces.slice(0,(depth+offset)*tabSize)
@@ -291,10 +288,10 @@ jb.extension('utils', 'prettyPrint', {
         const moreThanTwoVals = innerVals.length > 2 && !isArray
         const top = !path.match(/~/g)
         const _longInnerValInArray = !singleParamAsArray && longInnerValInArray
-        const res = !paramProps && (paramsParent || top || moreThanTwoVals || _longInnerValInArray)
-        if (!res)
-          console.log('should flat ' + path)
-        return res
+        return !paramProps && (paramsParent || top || moreThanTwoVals || _longInnerValInArray)
+        // if (!res)
+        //   console.log('should flat ' + path)
+        // return res
       }
       function fixPropName(prop) {
         if (prop == '$vars') return 'vars'

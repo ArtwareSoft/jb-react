@@ -1,7 +1,7 @@
-const fs = require('fs')
-const util = require('util')
+// const fs = require('fs')
+// const util = require('util')
 
-const [main,plugins,projects,wrap,base_dir,spy,uri,dsl,libsToinit,verbose] = 
+const [main,_plugins,_projects,wrap,base_dir,spy,uri,dsl,libsToinit,verbose] = 
     ['main','plugins','projects','wrap','base_dir','spy','uri','dsl','libsToinit','verbose']
         .map(x=>getProcessArgument(x))
 
@@ -34,6 +34,8 @@ globalThis.jbInit = jbInit
 globalThis.jb_plugins = jb_plugins
 
 ;(async () => {
+    const projects = _projects ? _projects.split(',') : null
+    const plugins = _plugins ? _plugins.split(',') : null
     globalThis.jb = await jbInit(uri||'main', {
         projects, plugins: plugins || jb_plugins, doNoInitLibs: libsToinit ? true: false //, useFileSymbolsFromBuild: true
     })
@@ -63,7 +65,7 @@ globalThis.jb_plugins = jb_plugins
 
     const result = await jb.utils.resolveDelayed(new jb.core.jbCtx().setVars(vars).run({$: compId}))
     try {
-        console.log(JSON.stringify(result))
+        console.log(JSON.stringify(jb.remoteCtx.stripData(result)))
     } catch(err) {
         return console.log(JSON.stringify({error: { desc: 'can not stringify result', err }}))
     }

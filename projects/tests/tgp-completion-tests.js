@@ -255,7 +255,7 @@ jb.component('completionTest.people', {
 jb.component('completionTest.person', {
   impl: tgp.completionOptionsTest(`jb.component('x', {
   impl: dataTest('%$__')
-})`, ['$person'])
+})`, ['$person (1 prop)'])
 })
 
 jb.component('completionTest.writePerson', {
@@ -263,7 +263,7 @@ jb.component('completionTest.writePerson', {
     compText: `jb.component('x', {
   impl: dataTest('%$__')
 })`,
-    completionToActivate: '$person',
+    completionToActivate: '$person (1 prop)',
     expectedEdit: () => ({
       range: {start: {line: 1, col: 20}, end: {line: 1, col: 20}},
       newText: 'person/'
@@ -277,7 +277,7 @@ jb.component('completionTest.writePersonInner', {
     compText: `jb.component('x', {
   impl: dataTest('%$p__er')
 })`,
-    completionToActivate: '$person',
+    completionToActivate: '$person (1 prop)',
     expectedEdit: () => ({
       range: {start: {line: 1, col: 23}, end: {line: 1, col: 23}},
       newText: 'son/'
@@ -291,7 +291,7 @@ jb.component('completionTest.writePersonInner2', {
     compText: `jb.component('x', {
   impl: dataTest('%$per__')
 })`,
-    completionToActivate: '$person',
+    completionToActivate: '$person (1 prop)',
     expectedEdit: () => ({
       range: {start: {line: 1, col: 23}, end: {line: 1, col: 23}},
       newText: 'son/'

@@ -49,9 +49,12 @@ jb.extension('probe', 'suggestions', {
             // .filter(x=> x.toPaste.indexOf(':') == -1)
       }
 
-      calcOptions(probeCtx,path) {
+      calcOptions(probeObj, path) {
+        const probeCtx = jb.path(probeObj,'result.0.in') || new jb.core.jbCtx()
+        const visits = probeObj.simpleVisits
+        const circuitPath = probeObj.circuitCtx.path
+
         let options = []
-        probeCtx = probeCtx || new jb.core.jbCtx()
         const nonOptionProps = [this.pos,this.tail,this.input,this.base]
 
         if (this.inputVal.indexOf('=') == 0 && !this.expressionOnly)
@@ -69,9 +72,15 @@ jb.extension('probe', 'suggestions', {
           options = [...innerPropsOptions(baseVal), ...indexOptions(baseVal)]
         }
 
-        options = jb.utils.unique(options,x=>x.toPaste)
+        options = [
+          jb.probe.valueOption('#circuit', circuitPath,nonOptionProps),
+          jb.probe.valueOption('#visits',''+visits,nonOptionProps),
+          jb.probe.valueOption('#data', probeCtx.data,nonOptionProps),
+          ...jb.utils.unique(options,x=>x.toPaste)
+        ]        
         if (this.tail != '' && jb.frame.Fuse)
           options = new jb.frame.Fuse(options,{keys: ['toPaste','description']}).search(this.tail || '').map(x=>x.item)
+
 
         const optionsHash = options.map(o=>o.toPaste).join(',')
         jb.log('suggestions calc',{ sugg: this, options,probeCtx,path })
@@ -85,27 +94,29 @@ jb.extension('probe', 'suggestions', {
           return jb.toarray(baseVal).slice(0,2)
             .flatMap(x=>jb.entries(x).map(x=> jb.probe.valueOption(x[0],x[1],nonOptionProps)))
         }
-  
       }
-
   },
   valueOption(toPaste,value,[pos,tail,input,base]) {
     const detail = valAsText(value)
     const text = [toPaste,detail ? `(${detail})`: ''].filter(x=>x).join(' ')
-    return { type: 'value', toPaste,value,pos,tail, text, input, code: toPaste, detail, base }
+    return { type: 'value', toPaste, valueType: typeof value, pos,tail, text, input, code: toPaste, detail, base }
 
     function valAsText(val) {
-      if (typeof val == 'string' && val.length > 20)
-        return `${val.substring(0,20)}...`
+      if (typeof val == 'string' && val.length > 30)
+        return `${val.substring(0,30)}...`
       else if (jb.utils.isPrimitiveValue(val))
-        return val
+        return ''+val
+      else if (val == null)
+        return 'null'
       else if (Array.isArray(val))
-        return `${val.length} items`
-      return ''
+        return `${val.length} item${val.length != 1 ? 's' : ''}`
+      else if (val && typeof val == 'object')
+        return `${Object.keys(val).length} prop${Object.keys(val).length != 1 ? 's' : ''}`
+      return typeof value
     }
   },
   compOption(path, toPaste,value,text,description) {
-    return {type: 'comp', path, toPaste,value,text,description, code: toPaste}
+    return {type: 'comp', path, toPaste,valueType: typeof value,text,description, code: toPaste}
   }
 })
 
@@ -116,15 +127,15 @@ jb.component('suggestions.shouldShow', {
   impl: (ctx,expressionOnly) => new jb.probe.suggestions(jb.val(ctx.data), expressionOnly).suggestionsRelevant()
 })
 
-jb.component('suggestions.optionsByProbeCtx', {
+jb.component('suggestions.optionsByProbeResult', {
   params: [
     {id: 'probePath', as: 'string'},
     {id: 'expressionOnly', as: 'boolean'},
     {id: 'input' },
-    {id: 'probeCtx' },
+    {id: 'probeObj' },
   ],
-  impl: (ctx,probePath,expressionOnly,input,probeCtx) => 
-    new jb.probe.suggestions(jb.val(input), expressionOnly).calcOptions(probeCtx,probePath),
+  impl: (ctx,probePath,expressionOnly,input,probeObj) => 
+    new jb.probe.suggestions(jb.val(input), expressionOnly).calcOptions(probeObj,probePath),
   macroByValue: true
 })
 
@@ -152,17 +163,17 @@ jb.component('probe.suggestions', {
   impl: pipe(
     getOrCreate(
       suggestions.lastRunCtxRef('%$sessionId%'),
-      pipe(probe.runCircuit('%$probePath%'), log('memoize suggestions'), '%result.0.in%')
+      pipe(probe.runCircuit('%$probePath%'), log('memoize suggestions'))
     ),
-    suggestions.optionsByProbeCtx('%$probePath%', '%$expressionOnly%', '%$input%', '%%')
+    suggestions.optionsByProbeResult('%$probePath%', '%$expressionOnly%', '%$input%', '%%')
   ),
   macroByValue: true
 })
 
 jb.component('probe.suggestionsByCmd', {
   params: [
-    {id: 'plugins', as: 'string'},
-    {id: 'projects', as: 'string'},
+    {id: 'plugins', as: 'array'},
+    {id: 'projects', as: 'array'},
     {id: 'probePath', as: 'string'},
     {id: 'expressionOnly', as: 'boolean', type: 'boolean'},
     {id: 'input', defaultValue: '%%', description: '{value, selectionStart}'}
@@ -170,13 +181,15 @@ jb.component('probe.suggestionsByCmd', {
   impl: async (ctx,plugins,projects,probePath,expressionOnly,input) => {
     if (ctx.vars.forceLocalSuggestions)
       return ctx.run({...ctx.profile, $: 'probe.suggestions', sessionId: probePath})
-    const args = ["-main:probe.suggestions()",
-        `%probePath:${probePath}`,`%plugins:${plugins}`,`%projects:${projects}`,
-        `%input:()=>({value: "${input.value}", selectionStart: "${input.selectionStart}"})`,
+    const args = ["-main:probe.suggestions()",`-plugins:${plugins.join(',')}`,`-projects:${projects.join(',')}`,
+        `%probePath:${probePath}`,`%input:()=>({value: "${input.value}", selectionStart: "${input.selectionStart}"})`,
         `%expressionOnly:${expressionOnly}`,
         "-spy:probe"]
 
     const command = `node --inspect-brk jb.js ${args.map(x=>`'${x}'`).join(' ')}`
+    ctx.setData(`suggestionsByCmd: ${command}`).run(remote.action({ action: ({data}) => { jb.vscode.stdout.appendLine(data) }, 
+      jbm: () => jb.parent, oneway: true }))
+
     if (jb.frame.jbForkNode) {
         let res = null
         try {

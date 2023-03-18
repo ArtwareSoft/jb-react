@@ -277,7 +277,10 @@ const base_get_handlers = {
 const op_get_handlers = {
     createJbm: (req,res,path) => {
       const params = ['clientUri','modules','treeShake','spyParam']
-      const servlet = child.spawn('node',['./node-servlet.js', ...params.map(p=>getURLParam(req,p) && `-${p}:${getURLParam(req,p)}`).filter(x=>x)],{cwd: 'hosts/node'})
+      const servlet = child.spawn('node',[
+        ...(getURLParam(req,'inspect') ? [`--inspect=${getURLParam(req,'inspect')}`] : []),
+        './node-servlet.js',
+        ...params.map(p=>getURLParam(req,p) && `-${p}:${getURLParam(req,p)}`).filter(x=>x)],{cwd: 'hosts/node'})
       res.setHeader('Content-Type', 'application/json; charset=utf8')
       servlet.stdout.on('data', data => res.end(data))
     },

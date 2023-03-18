@@ -72,11 +72,12 @@ jb.component('jbm.nodeContainer', {
   params: [
     {id: 'modules', as: 'array', dynamic: true},
     {id: 'host', as: 'string', dynamic: true, defaultValue: 'localhost'},
-    {id: 'init', type: 'action', dynamic: true}
+    {id: 'init', type: 'action', dynamic: true},
+    {id: 'inspect', as: 'number'}
   ],
-  impl: async (ctx,modules,host,init) => {
+  impl: async (ctx,modules,host,init,inspect) => {
         const modulesParam = modules.length ? `&modules=${modules().join(',')}` : ''
-        const servlet = await jb.frame.fetch(`/?op=createJbm&clientUri=${jb.uri}${modulesParam}&spyParam=${jb.spy.spyParam}`, {mode: 'cors'}).then(r => r.json())
+        const servlet = await jb.frame.fetch(`/?op=createJbm&clientUri=${jb.uri}${modulesParam}&spyParam=${jb.spy.spyParam}${inspect? `&inspect=${inspect}` :''}`, {mode: 'cors'}).then(r => r.json())
         const port = await jb.nodeContainer.connect(`ws://${host()}:${servlet.port}`,servlet.uri,ctx)
         const remoteNode = jb.jbm.childJbms[servlet.uri] = jb.jbm.extendPortToJbmProxy(port)
         await init(ctx.setVar('jbm',remoteNode))

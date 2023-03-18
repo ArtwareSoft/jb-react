@@ -223,7 +223,7 @@ jb.extension('jbm', {
         async function handleCBCommnad(cmd) {
             const {$,sourceId,cbId,isAction} = cmd
             try {
-                if (Object.keys(jb.treeShake.loadingCode).length) {
+                if (Object.keys(jb.treeShake.loadingCode || {}).length) {
                     jb.log('remote waiting for loadingCode',{cmd, loading: Object.keys(jb.treeShake.loadingCode)})
                     await jb.exec({$: 'waitFor', timeout: 100, check: () => !Object.keys(jb.treeShake.loadingCode).length })
                 }

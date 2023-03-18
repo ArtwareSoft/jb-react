@@ -68,7 +68,7 @@ jb.extension('zui','utils', {
       },
     })
   },  
-  calcItemsPositions({items, pivots, scales, DIM}) {
+  calcItemsPositions({items, pivots, DIM}) {
       const mat = Array(DIM**2)
       items.forEach(item => {
         const [x,y] = [Math.floor(DIM*pivots.x.scale(item)), Math.floor(DIM*pivots.y.scale(item))]

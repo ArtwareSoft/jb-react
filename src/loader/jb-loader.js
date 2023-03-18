@@ -37,7 +37,7 @@ async function jbInit(uri, {projects, plugins, baseUrl, multipleInFrame, doNoIni
 async function jbloadJSFile(url,jb,{noSymbols, fileSymbols} = {}) {
   globalThis.jbFetchFile = globalThis.jbFetchFile || (path => globalThis.fetch(path).then(x=>x.text()))
   const fullUrl = jb.baseUrl.match(/\/$/) ? jb.baseUrl+url.replace(/^\//,'') : jb.baseUrl+url
-  const code = await jbFetchFile(fullUrl)
+  const code = '' + await jbFetchFile(fullUrl)
   const dsl = fileSymbols && fileSymbols.dsl ? `$$dsl_${fileSymbols.dsl}$` : ''
   const prefixCode = jb.macro && jb.macro.importAll()
   const funcId = '__'+dsl+url.replace(/[^a-zA-Z0-9]/g,'_')

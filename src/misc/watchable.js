@@ -87,6 +87,7 @@ jb.extension('watchable', {
       }
     }
     makeWatchable(resName) {
+      jb.log('make watchable',{resName})
       const resource = this.resources()[resName]
       if (!this.objToPath.has(resource))
         this.addObjToMap(resource,[resName])

@@ -23,7 +23,8 @@ jb.extension('probe', {
             if (circuitCtx) return { reason: 'closestElemWithCtx', circuitCtx }
         }
         circuitCtx = await findMainCircuit(probePath)
-        if (circuitCtx) return { reason: 'mainCircuit', circuitCtx }
+        if (circuitCtx) 
+            return { reason: 'mainCircuit', circuitCtx }
 
         return circuitCtx
 
@@ -136,6 +137,7 @@ jb.extension('probe', {
             jb.log('probe simple run result',{probe: this, res1})
             const res2 = await res1
             const res = await jb.probe.resolve(res2)
+            this.simpleVisits = jb.path(this.probe[this.probePath],'visits')
 
             jb.log('probe simple run resolved',{probe: this, res})
             if (res && res.renderVdom) {
@@ -257,13 +259,15 @@ jb.extension('probe', {
 jb.component('probe.runCircuit', {
   type: 'data',
   params: [
-    {id: 'probePath', as: 'string', defaultValue: '%$probe/path%'},
+    {id: 'probePath', as: 'string', defaultValue: '%$probe/path%'}
   ],
   impl: async (ctx,probePath) => {
         jb.log('probe start run circuit',{ctx,probePath})
         const circuit = await jb.probe.calcCircuit(ctx, probePath)
         if (!circuit)
             return jb.logError(`probe can not infer circuitCtx from ${probePath}`, )
+        jb.utils.resolveDetachedProfile(circuit.circuitCtx.profile)
+
         return new jb.probe.Probe(circuit.circuitCtx).runCircuit(probePath)
     },
   require: tgp.componentStatistics()
@@ -289,8 +293,8 @@ jb.component('jbm.wProbe', {
 })
 
 jb.component('jbm.nodeProbe', {
-    type: 'jbm',
-    impl: jbm.nodeContainer({init: probe.initRemoteProbe()})
+  type: 'jbm',
+  impl: jbm.nodeContainer({init: probe.initRemoteProbe()})
 })
 
 jb.component('probe.initRemoteProbe', {

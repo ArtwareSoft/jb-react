@@ -17,74 +17,75 @@ jb.component('sampleComp.ctrlWithPipeline', {
 
 jb.component('workerPreviewTest.basic', {
   impl: uiTest({
-    timeout: 1000,
-    runBefore: writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
-    checkResultRx: () => jb.ui.renderingUpdates,
     control: probe.remoteMainCircuitView(),
-    expectedResult: contains('hello')
+    runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
+    checkResultRx: () => jb.ui.renderingUpdates,
+    expectedResult: contains('hello'),
+    timeout: 1000
   })
 })
 
 jb.component('workerPreviewTest.changeScript', {
   impl: uiTest({
-    timeout: 1000,
-    runBefore: writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
     control: group({
       controls: [
-        button({title: 'change script', action: writeValue(tgp.ref('sampleProject.main~impl~controls~text'),'world') }),
+        button('change script', writeValue(tgp.ref('sampleProject.main~impl~controls~text'), 'world')),
         probe.remoteMainCircuitView()
-      ],
+      ]
     }),
-    userInputRx: rx.pipe(
-      source.promise(uiAction.waitForSelector('[cmp-pt="text"]')),
-      rx.map(userInput.click()),
-    ),
-    checkResultRx: () => jb.ui.renderingUpdates,       
-    expectedResult: contains('world')
+    runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
+    userInputRx: rx.pipe(source.promise(uiAction.waitForSelector('#sampleText')), rx.map(userInput.click())),
+    checkResultRx: () => jb.ui.renderingUpdates,
+    expectedResult: contains('world'),
+    timeout: 1000
   })
 })
 
 jb.component('workerPreviewTest.nodePreview', {
   impl: uiTest({
-    timeout: 5000,
-    runBefore: writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
     control: group({
       controls: [
-        button({title: 'change script', action: writeValue(tgp.ref('sampleProject.main~impl~controls~text'),'world') }),
-        probe.remoteMainCircuitView(jbm.nodeProbe())
-      ],
+        button('change script', writeValue(tgp.ref('sampleProject.main~impl~controls~text'), 'world')),
+        probe.remoteMainCircuitView(jbm.nodeContainer({modules: list('studio', 'tests'), init: probe.initRemoteProbe()}))
+      ]
     }),
-    userInputRx: rx.pipe(
-      source.promise(uiAction.waitForSelector('[cmp-pt="text"]')),
-      rx.map(userInput.click()),
-    ),
-    checkResultRx: () => jb.ui.renderingUpdates,       
-    expectedResult: contains('world')
+    runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
+    userInputRx: rx.pipe(source.promise(uiAction.waitForSelector('#sampleText')), rx.map(userInput.click())),
+    checkResultRx: () => jb.ui.renderingUpdates,
+    expectedResult: contains('world'),
+    timeout: 5000
   })
 })
 
 jb.component('FETest.workerPreview.addCss', {
   impl: uiFrontEndTest({
-    renderDOM: true,
-    timeout: 5000,
-    runBefore: writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
     control: group({
       controls: [
-        button({title: 'change script', action: writeValue(tgp.ref('sampleProject.main~impl~controls~features~1'),() => css('color: red')) }),
+        button(
+          'change script',
+          writeValue(
+            tgp.ref('sampleProject.main~impl~controls~features~1'),
+            () => css('color: red')
+          )
+        ),
         probe.remoteMainCircuitView()
-      ],
+      ]
     }),
+    runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
     action: runActions(
       uiAction.waitForSelector('#sampleText'),
       uiAction.click('button'),
-      waitFor(()=>Array.from(document.querySelectorAll('head>style')).find(x=>x.innerText.match(/tests•wProbe/)))
-    ),    
+      waitFor(
+        ()=>Array.from(document.querySelectorAll('head>style')).find(x=>x.innerText.match(/tests•wProbe/))
+      )
+    ),
     expectedResult: () => getComputedStyle(document.querySelector('#sampleText')).color == 'rgb(255, 0, 0)',
-    cleanUp: () => Array.from(document.querySelectorAll('head>style')).filter(x=>x.innerText.match(/tests•wProbe/)).forEach(x=>x.remove())
+    cleanUp: () => Array.from(document.querySelectorAll('head>style')).filter(x=>x.innerText.match(/tests•wProbe/)).forEach(x=>x.remove()),
+    renderDOM: true
   })
 })
 
-jb.component('FETest.workerPreview.changeCss', {
+jb.component('FETest.workerPreviewTest.changeCss', {
   impl: uiFrontEndTest({
     renderDOM: true,
     timeout: 5000,
@@ -132,26 +133,31 @@ jb.component('FETest.workerPreviewTest.suggestions', {
 
 jb.component('FETest.workerPreviewTest.suggestions.select', {
   impl: uiFrontEndTest({
-    renderDOM: true,
-    timeout: 5000,
-    runBefore: writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
-    control: group({
-      controls: [
-        probe.remoteMainCircuitView(),
-        studio.propertyPrimitive('sampleProject.main~impl~controls~text')
-      ],
-    }),
+    control: group({controls: [
+        studio.propertyPrimitive('sampleProject.main~impl~controls~text'),
+        probe.remoteMainCircuitView()
+      ]}),
+    runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
     action: runActions(
-      uiAction.waitForSelector('[cmp-pt="text"]'),
+      uiAction.waitForSelector('#sampleText'),
       uiAction.waitForSelector('input'),
-      uiAction.setText('hello %$v','input'),
-      uiAction.keyboardEvent({ selector: 'input', type: 'keyup', keyCode: '%'.charCodeAt(0) }),
+      uiAction.setText('hello %$var1', 'input'),
+      uiAction.keyboardEvent({
+        selector: 'input',
+        type: 'keyup',
+        keyCode: 37
+      }),
       uiAction.waitForSelector('.jb-dialog .jb-item'),
       uiAction.click('.jb-dialog .jb-item:first-child'),
-      uiAction.keyboardEvent({ selector: 'input', type: 'keyup', keyCode: 13 }),
-      uiAction.waitForSelector('[cmp-ver="3"]'),
-    ),    
-    expectedResult: contains('hello world')
+      uiAction.keyboardEvent({
+        selector: 'input',
+        type: 'keyup',
+        keyCode: 13
+      }),
+      uiAction.waitForSelector('[cmp-ver=\"3\"]')
+    ),
+    expectedResult: contains('hello world'),
+    renderDOM: true
   })
 })
 
@@ -178,7 +184,7 @@ jb.component('FETest.workerPreviewTest.suggestions.filtered', {
     }),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
     action: runActions(
-      uiAction.waitForSelector('[cmp-pt=\"text\"]'),
+      uiAction.waitForSelector('#sampleText'),
       uiAction.waitForSelector('input'),
       uiAction.setText('hello %$var1', 'input'),
       uiAction.keyboardEvent({

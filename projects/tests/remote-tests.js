@@ -124,13 +124,13 @@ jb.component('remoteTest.workerByUri', {
 
 jb.component('remoteTest.workerToWorker', {
   impl: dataTest({
-    timeout: 5000,
-    runBefore: runActions(jbm.worker(), jbm.worker('w2')),
-    calculate: source.remote(rx.pipe(
-        source.data('hello'), 
-        remote.operator(rx.map('%% world'), jbm.byUri('tests•w2'))
-      ), jbm.byUri('tests•w1')),
-    expectedResult: equals('hello world')
+    calculate: source.remote(
+      rx.pipe(source.data('hello'), rx.map('%%'), remote.operator(rx.map('%% world'), jbm.byUri('tests•w2'))),
+      jbm.byUri('tests•w1')
+    ),
+    expectedResult: equals('hello world'),
+    runBefore: runActions(jbm.worker('w1'), jbm.worker('w2')),
+    timeout: 5000
   })
 })
 
@@ -139,7 +139,8 @@ jb.component('remoteTest.networkToWorker', {
     timeout: 5000,
     runBefore: runActions(jbm.worker({id: 'peer1', networkPeer: true}), jbm.worker('w2')),
     calculate: source.remote(rx.pipe(
-        source.data('hello'), 
+        source.data('hello'),
+        rx.map('%%'),
         remote.operator(rx.map('%% world'), jbm.byUri('tests•w2'))
       ), jbm.byUri('peer1')),
     expectedResult: equals('hello world')
@@ -151,7 +152,8 @@ jb.component('remoteTest.networkGateway', {
     timeout: 5000,
     runBefore: runActions(jbm.worker({id: 'peer1', networkPeer: true}), jbm.worker({id: 'peer2', networkPeer: true})),
     calculate: source.remote(rx.pipe(
-        source.data('hello'), 
+        source.data('hello'),
+        rx.map('%%'),
         remote.operator(rx.map('%% world'), jbm.byUri('peer2'))
       ), jbm.byUri('peer1')),
     expectedResult: equals('hello world')
@@ -579,17 +581,13 @@ jb.component('remoteTest.nodeContainer.runTest', {
 jb.component('remoteTest.testResults', {
   impl: dataTest({
     vars: [
-//      Var('testsToRun',list('dataTest.ctx.expOfRefWithBooleanType')),
-      Var('testsToRun',list('dataTest.join','dataTest.ctx.expOfRefWithBooleanType')),
-      Var('servlet', jbm.nodeContainer(list('studio','tests')))
+      Var('testsToRun', list('dataTest.join', 'dataTest.ctx.expOfRefWithBooleanType')),
+      Var('servlet', jbm.nodeContainer(list('studio', 'tests')))
     ],
-    calculate: pipe(rx.pipe(
-      source.testsResults('%$testsToRun%','%$servlet%'),
-      rx.log('test')
-      ), '%id%-%started%-%success%',
-      join(',')
-    ),    
-    expectedResult: equals('dataTest.join-true-,dataTest.join--true,dataTest.ctx.expOfRefWithBooleanType-true-,dataTest.ctx.expOfRefWithBooleanType--true'),
+    calculate: pipe(rx.pipe(source.testsResults('%$testsToRun%', '%$servlet%'), rx.log('test')), '%id%-%started%-%success%', join(',')),
+    expectedResult: equals(
+      'dataTest.join-true-,dataTest.join--true,dataTest.ctx.expOfRefWithBooleanType-true-,dataTest.ctx.expOfRefWithBooleanType--true'
+    ),
     timeout: 3000
   })
 })
