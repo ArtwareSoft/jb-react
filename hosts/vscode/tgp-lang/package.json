@@ -6,15 +6,35 @@
 	"publisher": "artwaresoft",
 	"license": "MIT",
 	"engines": {
-		"vscode": "^1.50.0"
+		"vscode": "^1.75.1"
 	},
 	"icon": "logo128.png",
 	"repository": "https://github.com/Artwaresoft/jb-react",
 	"activationEvents": [
 		"onLanguage:javascript"
-	],	
+	],
+	"dependencies": {
+		"net": "",
+		"ws": "",
+		"http": "",
+		"node-fetch": ""
+	},	
 	"main": "vscode-tgp-lang.js",
 	"contributes": {
+		"viewsContainers": {
+			"activitybar": [
+			  {
+				"id": "jbart",
+				"title": "jBart",
+				"icon": "logo128.png"
+			  }
+			]
+		},		
+		"views": {
+			"jbart": [
+				{ "id": "jbart.main", "type": "webview", "name": "main" }				
+			]
+		},
 		"commands": [
 			{
 				"command": "jbart.applyCompChange",
@@ -35,6 +55,14 @@
 			{
 				"command": "jbart.moveDown",
 				"title": "move item down in array"
+			},
+			{
+				"command": "jbart.openPreviewPanel",
+				"title": "open or rerun preview"
+			},
+			{
+				"command": "jbart.openProbeResultPanel",
+				"title": "inspect probe result input output"
 			}
 		],
 		"keybindings": [
@@ -46,6 +74,16 @@
 			{
 				"command": "jbart.moveDown",
 				"key": "ctrl+Down",
+				"when": "editorTextFocus"
+			},
+			{
+				"command": "jbart.openPreviewPanel",
+				"key": "ctrl+Alt+P",
+				"when": "editorTextFocus"
+			},
+			{
+				"command": "jbart.openProbeResultPanel",
+				"key": "ctrl+Alt+I",
 				"when": "editorTextFocus"
 			}
 		]

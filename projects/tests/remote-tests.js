@@ -568,7 +568,7 @@ jb.component('remoteTest.nodeContainer.runTest', {
   impl: dataTest({
     vars: [
       Var('testsToRun', list('dataTest.join', 'dataTest.ctx.expOfRefWithBooleanType')),
-      Var('servlet', jbm.nodeContainer(list('studio', 'tests')))
+      Var('servlet', jbm.nodeContainer({id:'tester', projects: list('studio', 'tests'), inspect: 7010 }))
     ],
     calculate: pipe(rx.pipe(source.data('%$testsToRun%'), rx.log('test'), remote.operator(rx.mapPromise(({data}) => {
         return jb.test.runOneTest(data) 
@@ -582,7 +582,7 @@ jb.component('remoteTest.testResults', {
   impl: dataTest({
     vars: [
       Var('testsToRun', list('dataTest.join', 'dataTest.ctx.expOfRefWithBooleanType')),
-      Var('servlet', jbm.nodeContainer(list('studio', 'tests')))
+      Var('servlet', jbm.nodeContainer('tester', list('studio', 'tests')))
     ],
     calculate: pipe(rx.pipe(source.testsResults('%$testsToRun%', '%$servlet%'), rx.log('test')), '%id%-%started%-%success%', join(',')),
     expectedResult: equals(

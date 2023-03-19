@@ -60,33 +60,31 @@ jb.extension('vscode', 'ports', {
 })
 
 jb.component('jbm.vscodeWebView', {
-    type: 'jbm',
-    params: [
-        {id: 'id', as: 'string' },
-        {id: 'panel' },
-        {id: 'init' , type: 'action', dynamic: true },
-    ],    
-    impl: (ctx,name,panel, init) => {
+  type: 'jbm',
+  params: [
+    {id: 'id', as: 'string'},
+    {id: 'panel'},
+    {id: 'init', type: 'action', dynamic: true}
+  ],
+  impl: (ctx,name,panel, init) => {
         if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
         const webViewUri = `${jb.uri}•${name}`
         const _jbBaseUrl = 'http://localhost:8082'
-        const code = jb.treeShake.code(jb.treeShake.treeShake([...jb.treeShake.clientComps,'#vscode.portFromWebViewToExt'],{}))
         const html = `<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
+    <script type="text/javascript" src="${_jbBaseUrl}/src/loader/jb-loader.js"></script>
     <script>
-    jb_modules = { core: ${JSON.stringify(jb_modules.core)} };
-    ${jbInit.toString()}
-    ${jbSupervisedLoad.toString()}
+    globalThis.jbBaseUrl = '${_jbBaseUrl}'
+    ;(async () => {
+      await jbInit('${webViewUri}',{ projects: [], plugins: jb_plugins })
+      globalThis.spy = jb.spy.initSpy({spyParam: 'remote,vscode'})
+      jb.treeShake.codeServerJbm = jb.parent = jb.ports['${jb.uri}'] = jb.jbm.extendPortToJbmProxy(jb.vscode.portFromWebViewToExt('${webViewUri}','${jb.uri}'))
+      jb.parent.remoteExec(jb.remoteCtx.stripJS(() => jb.jbm.notifyChildReady['${webViewUri}']() ), {oneway: true} )
+      function ${jb.vscode.portFromWebViewToExt.toString()}
+    })()
 
-    jb = { uri: '${webViewUri}'}
-    ${code};
-
-    jb.baseUrl = '${_jbBaseUrl}'
-    spy = jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
-    jb.treeShake.codeServerJbm = jb.parent = jb.ports['${jb.uri}'] = jb.jbm.extendPortToJbmProxy(jb.vscode.portFromWebViewToExt('${webViewUri}','${jb.uri}'))
-    jb.parent.remoteExec(jb.remoteCtx.stripJS(() => jb.jbm.notifyChildReady['${webViewUri}']() ), {oneway: true} )
     </script>
     <link rel="stylesheet" type="text/css" href="${_jbBaseUrl}/dist/css/material.css"/>
 
@@ -96,7 +94,7 @@ jb.component('jbm.vscodeWebView', {
     
 </head>
 <body class="vscode-studio">
-    <div id="main"></div>
+    <div id="main">Empty</div>
 </body>
 </html>`
         jb.jbm.childJbms[name] = jb.ports[webViewUri] = jb.jbm.extendPortToJbmProxy(
@@ -159,130 +157,104 @@ jb.component('jbm.vscodeWebView', {
 //     }
 // })
 
-jb.component('initJb.vcodeCompletionWorker', {
-  type: 'initJbCode',
-  impl: ({vars}) => {
-    const f = async () => { 
-        globalThis.jb = await jbInit('URI',{
-            projects: ['studio','tests'], plugins: ['vscode', ...jb_plugins], doNoInitLibs: true
-        })
-        await jb.initializeLibs(['utils','watchable','immutable','watchableComps','tgp','tgpTextEditor','vscode','jbm','cbHandler','treeShake'])
-    }
-    const func = f.toString().replace(/URI/,vars.uri)
-    return `(${func})()`
-    }
-})
+  // jb.component('initJb.vcodeCompletionWorker', {
+  //   type: 'initJbCode',
+  //   impl: ({vars}) => {
+  //     const f = async () => { 
+  //         globalThis.jb = await jbInit('URI', {
+  //             projects: ['studio','tests'], plugins: ['vscode', ...jb_plugins], doNoInitLibs: true
+  //         })
+  //         await jb.initializeLibs(['utils','watchable','immutable','watchableComps','tgp','tgpTextEditor','vscode','jbm','cbHandler','treeShake'])
+  //     }
+  //     const func = f.toString().replace(/URI/,vars.uri)
+  //     return `(${func})()`
+  //     }
+  // })
 
-jb.component('jbm.vscodeFork', {
-  type: 'jbm',
-  params: [
-    {id: 'id', as: 'string', defaultValue: 'server'},
-    {id: 'initJbCode', type: 'initJbCode', dynamic: true, defaultValue: initJb.vcodeCompletionWorker()}
-  ],
-  impl: (ctx,name,initJbCode) => {
-    if (jb.jbm.childJbms[name] && !jb.vscode.restartLangServer) 
-      return jb.jbm.childJbms[name]
-    const forkUri = `${jb.uri}•${name}`
-    if (jb.vscode.restartLangServer) {
-      if (jb.path(jb.jbm.childJbms[name],'kill'))
-        jb.jbm.childJbms[name].kill()
-      const killThemAll = "ps -aux | grep tgp-lang | cut -d ' ' -f 5 | xargs kill"
-      jb.frame.jbRunShell && jb.frame.jbRunShell(killThemAll)
+  // jb.component('jbm.vscodeFork', {
+  //   type: 'jbm',
+  //   params: [
+  //     {id: 'id', as: 'string', defaultValue: 'server'},
+  //     {id: 'initJbCode', type: 'initJbCode', dynamic: true, defaultValue: initJb.vcodeCompletionWorker()}
+  //   ],
+  //   impl: (ctx,name,initJbCode) => {
+  //     if (jb.jbm.childJbms[name] && !jb.vscode.restartLangServer) 
+  //       return jb.jbm.childJbms[name]
+  //     const forkUri = `${jb.uri}•${name}`
+  //     if (jb.vscode.restartLangServer) {
+  //       if (jb.path(jb.jbm.childJbms[name],'kill'))
+  //         jb.jbm.childJbms[name].kill()
+  //       const killThemAll = "ps -aux | grep tgp-lang | cut -d ' ' -f 5 | xargs kill"
+  //       jb.frame.jbRunShell && jb.frame.jbRunShell(killThemAll)
 
-      delete jb.jbm.childJbms[name]
-      delete jb.ports[forkUri]
-      jb.vscode.restartLangServer = false
-    }
+  //       delete jb.jbm.childJbms[name]
+  //       delete jb.ports[forkUri]
+  //       jb.vscode.restartLangServer = false
+  //     }
 
-    const initJBCode = initJbCode(ctx.setVars({uri: forkUri, multipleJbmsInFrame: false}))
-    const workerCode = `
-const fs = require('fs')
-const util = require('util')
-const vm = require('vm')
-globalThis.jbInWorker = true
-process.send('forkJbmLog: start-loading')  
+  //     const initJBCode = initJbCode(ctx.setVars({uri: forkUri, multipleJbmsInFrame: false}))
 
-globalThis.jbBaseUrl = '${jbBaseUrl}'
-globalThis.jbFetchFile = url => util.promisify(fs.readFile)(url)
-globalThis.jbFetchJson = url => (util.promisify(fs.readFile)(url)).then(x=>JSON.parse(x))
-require(jbBaseUrl+ '/hosts/node/node-utils.js')
+  //   const workerCode = `
+  // const fs = require('fs')
+  // const util = require('util')
+  // const vm = require('vm')
+  // globalThis.jbInWorker = true
+  // process.send('forkJbmLog: start-loading')  
 
-const { jbInit, jb_plugins } = require(jbBaseUrl+ '/src/loader/jb-loader.js')
-globalThis.jbInit = jbInit
-globalThis.jb_plugins = jb_plugins
+  // globalThis.jbBaseUrl = '${jbBaseUrl}'
+  // globalThis.jbFetchFile = url => util.promisify(fs.readFile)(url)
+  // globalThis.jbFetchJson = url => (util.promisify(fs.readFile)(url)).then(x=>JSON.parse(x))
+  // require(jbBaseUrl+ '/hosts/node/node-utils.js')
 
-;(async () => {
-  await ${initJBCode};
-  globalThis.spy = jb.spy.initSpy({spyParam: 'remote,vscode,completion,tgpTextEditor'})
-  jb.treeShake.codeServerJbm = jb.parent = jb.ports['${jb.uri}'] = jb.jbm.extendPortToJbmProxy(portFromForkToExt(process,'${forkUri}','${jb.uri}'))
-  await jb.vscode.initVscodeAsHost({extentionUri:'${jb.uri}'})
-  process.send('jbm-loaded')  
-  function ${jb.vscode.portFromForkToExt.toString()}
-})()
+  // const { jbInit, jb_plugins } = require(jbBaseUrl+ '/src/loader/jb-loader.js')
+  // globalThis.jbInit = jbInit
+  // globalThis.jb_plugins = jb_plugins
 
-//# sourceURL=${forkUri}-initJb.js
-        `
-        const fork = vsChild.fork(`${vsPluginDir}/minimal-child.js`,[],{execArgv:['--inspect=7001']})
-        console.log('fork',fork)
-        fork.send(`eval:${workerCode}`);
+  // ;(async () => {
+  //   await ${initJBCode};
+  //   globalThis.spy = jb.spy.initSpy({spyParam: 'remote,vscode,completion,tgpTextEditor'})
+  //   jb.treeShake.codeServerJbm = jb.parent = jb.ports['${jb.uri}'] = jb.jbm.extendPortToJbmProxy(portFromForkToExt(process,'${forkUri}','${jb.uri}'))
+  //   await jb.vscode.initServer('${jb.uri}')
+  //   process.send('jbm-loaded')  
+  //   function ${jb.vscode.portFromForkToExt.toString()}
+  // })()
 
-        fork.on('exit', code => console.log(`fork exit ${code}`))
-        fork.on('error', e=> console.log('error in fork', e))
-        jb.jbm.childJbms[name] = jb.ports[forkUri] = 
-            jb.jbm.extendPortToJbmProxy(jb.vscode.portFromExtensionToFork(fork,jb.uri,forkUri))
-        jb.jbm.childJbms[name].uri = forkUri
-        jb.jbm.childJbms[name].kill = fork.kill
-        jb.jbm.childJbms[name].pid = fork.pid
+  // //# sourceURL=${forkUri}-initJb.js
+  //         `
+  //         const fork = vsChild.fork(`${vsPluginDir}/minimal-child.js`,['--inspect=7010'])
 
-        const res = new Promise(resolve=>{
-          function jbmLoadedHandler(message) {
-            if (message == 'jbm-loaded') {
-              fork.off('message', jbmLoadedHandler)
-              resolve()
-            }
-          }
-          fork.on('message', jbmLoadedHandler);          
-        }).then( () => {
-          console.log(`fork ${fork.pid} after init`)
-          return jb.jbm.childJbms[name]
-        })
-        res.uri = forkUri
-        return res
-    }
-})
+  //         const res = new Promise(resolve=>{
+  //           console.log('fork',fork)
+  //           fork.send(`eval:${workerCode}`);
+    
+  //           jb.jbm.childJbms[name] = jb.ports[forkUri] = 
+  //               jb.jbm.extendPortToJbmProxy(jb.vscode.portFromExtensionToFork(fork,jb.uri,forkUri))
+  //           jb.jbm.childJbms[name].uri = forkUri
+  //           jb.jbm.childJbms[name].kill = fork.kill
+  //           jb.jbm.childJbms[name].pid = fork.pid  
 
-jb.component('vscode.openPreviewPanel', {
-  type: 'action',
-  params: [
-    {id: 'id', as: 'string'},
-    {id: 'panel'}
-  ],
-  impl: jbm.vscodeWebView({
-    id: '%$id%',
-    panel: '%$panel%',
-    init: remote.action(renderWidget(text('hello'), '#main'), '%$jbm%')
-  })
-})
+  //           fork.on('exit', (code,ev) => {
+  //             console.log(`fork exit ${code} ${ev}`)
+  //             resolve()
+  //           })
+  //           fork.on('error', e=> {
+  //             console.log('error in fork', e)
+  //             resolve()
+  //           })
 
-jb.component('vscode.showInXWebView', {
-  type: 'action',
-  params: [
-    {id: 'id', as: 'string'},
-    {id: 'panel'},
-    {id: 'backend', type: 'jbm', defaultValue: jbm.self() }
-  ],
-  impl: runActionOnItem(
-    Var('profToRun', obj(prop('$', 'vscode.%$id%Ctrl'))),
-    jbm.vscodeWebView({
-      id: '%$id%',
-      panel: '%$panel%',
-      init: runActions(remote.useYellowPages(), remote.action(defaultTheme(), '%$jbm%'))
-    }),
-    remote.distributedWidget({
-      control: (ctx,{profToRun}) => ctx.run(profToRun),
-      backend: '%$backend%',
-      frontend: '%%',
-      selector: '#main'
-    })
-  )
-})
+  //           function jbmLoadedHandler(message) {
+  //             if (message == 'jbm-loaded') {
+  //               fork.off('message', jbmLoadedHandler)
+  //               resolve()
+  //             }
+  //           }
+  //           fork.on('message', jbmLoadedHandler);          
+  //         }).then( () => {
+  //           console.log(`fork ${fork.pid} after init`)
+  //           return jb.jbm.childJbms[name]
+  //         })
+  //         res.uri = forkUri
+  //         return res
+  //     }
+  // })
+

@@ -21,12 +21,16 @@ Object.assign(jb, {
     }
   },
   async initializeLibs(libs) {
+    try {
     libs.flatMap(l => Object.values(jb[l].__extensions)).sort((x,y) => x.phase - y.phase )
       .filter(ext => ext.init && !ext.initialized)
-      .forEach(ext => {
-          ext.initialized = true
+      .forEach(ext => {          
           Object.assign(jb[ext.libId], ext.init.apply(jb[ext.libId]))
+          ext.initialized = true
       })
+    } catch (e) {
+      jb.logException(e,'initializeLibs: error initializing libs', {libs})
+    }
     const libsToLoad = libs.flatMap(l => Object.values(jb[l].__extensions)).flatMap(ext => ext.requireLibs || []).filter(url => !jb.frame.jb.__requiredLoaded[url])
     try {
       await Promise.all(libsToLoad.map( url => Promise.resolve(jbloadJSFile(url,jb,{noSymbols: true}))

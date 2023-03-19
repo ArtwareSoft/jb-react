@@ -23,7 +23,7 @@ async function jbInit(uri, {projects, plugins, baseUrl, multipleInFrame, doNoIni
   const topRequiredModules = [...(plugins || []).map(x => `plugins/${x}`), ...(projects || []).map(x => `projects/${x}`)]
   
   const symbols = await topRequiredModules.reduce( async (acc,dir) => [...await acc, ...await fileSymbols(dir,'','pack-')], [])
-  await jbSupervisedLoad([...srcSymbols,...symbols],jb,doNoInitLibs)
+  await jbSupervisedLoad(jb.utils.unique([...srcSymbols,...symbols],x=>x.path),jb,doNoInitLibs)
 
   return jb
 

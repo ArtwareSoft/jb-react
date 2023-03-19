@@ -282,6 +282,10 @@ jb.extension('tgpTextEditor', 'completion', {
             jb.logError('completion provideCompletionItems', props)
         }
     },
+    async providePath(docProps) {
+        const {semanticPath} = jb.tgpTextEditor.calcActiveEditorPath(docProps, {clearCache: true})
+        return semanticPath.path.split('~!')[0]
+    },
     async provideDefinition(docProps, ctx) {
         const props = jb.tgpTextEditor.calcActiveEditorPath(docProps, {clearCache: true})
         const { semanticPath, reformatEdits, inExtension, error } = props
@@ -370,15 +374,6 @@ jb.extension('tgpTextEditor', 'completion', {
                 return jb.tgpTextEditor.calcEditAndGotoPos(docText,item,ctx)
             }, jbm.byUri(()=> item.serverUri) ))
         }
-    },
-    restartLangServer() {
-        jb.vscode && (jb.vscode.restartLangServer = true)
-    },
-    moveUp() {
-        jb.vscode && jb.vscode.moveInArray({ diff: -1, ...jb.tgpTextEditor.host.docTextAndCursor()})
-    },
-    moveDown() { 
-        jb.vscode && jb.vscode.moveInArray({ diff: 1, ...jb.tgpTextEditor.host.docTextAndCursor()})
     },
     async moveInArray(docPropsWithDiff,ctx) {
         const { diff, docText } = docPropsWithDiff

@@ -5,8 +5,8 @@ const {commands,ViewColumn,Uri,workspace, WorkspaceEdit} = vscode
 const fs = require("fs")
 
 function activate(context) {
-    const startCommnad = { $: 'vscode.openjbEditor'}
-    context.subscriptions.push(commands.registerCommand('jb.studio.openJbEditor', () => reopen(context,startCommnad)))
+    const startCommand = { $: 'vscode.openjbEditor'}
+    context.subscriptions.push(commands.registerCommand('jb.studio.openJbEditor', () => reopen(context,startCommand)))
     context.subscriptions.push(commands.registerCommand('jb.studio.openProperties', () => reopen(context)))
 }
 exports.activate = activate;

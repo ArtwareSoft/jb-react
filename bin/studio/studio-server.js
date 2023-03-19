@@ -276,13 +276,17 @@ const base_get_handlers = {
 
 const op_get_handlers = {
     createJbm: (req,res,path) => {
-      const params = ['clientUri','modules','treeShake','spyParam']
+      const params = ['uri', 'clientUri','projects','treeShake','spyParam','completionServer','tcp']
+      const args = params.map(p=>getURLParam(req,p) && `-${p}:${getURLParam(req,p)}`).filter(x=>x)
       const servlet = child.spawn('node',[
         ...(getURLParam(req,'inspect') ? [`--inspect=${getURLParam(req,'inspect')}`] : []),
         './node-servlet.js',
-        ...params.map(p=>getURLParam(req,p) && `-${p}:${getURLParam(req,p)}`).filter(x=>x)],{cwd: 'hosts/node'})
+        ...args],{cwd: 'hosts/node'})
       res.setHeader('Content-Type', 'application/json; charset=utf8')
       servlet.stdout.on('data', data => res.end(data))
+      const command = `node --inspect-brk ../hosts/node/node-servlet.js ${args.map(x=>`'${x}'`).join(' ')}`
+      servlet.on('exit', (code,ev) => res.end(JSON.stringify({command, exit: `exit ${''+code} ${''+ev}}`})))
+      servlet.on('error', (e) => res.end(JSON.stringify({command, error: `${''+e}`})))
     },
     runCmd: function(req,res,path) {
       if (!settings.allowCmd) return endWithFailure(res,'no permission to run cmd. allowCmd in jbart.json');

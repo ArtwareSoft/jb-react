@@ -151,6 +151,9 @@ jb.extension('spy', {
 			return [...set1,...set2]
 		}
 	},
+	noPing() {
+		return this.logs.filter(x=>![x.remoteRun, jb.path(x.m,'remoteRun'),jb.path(x.m,'result')].find(t => t == 'ping'))
+	},
 	search(query = '',{ slice, spy, enrich } = {slice: -1000, spy: jb.spy, enrich: true}) { // e.g., dialog core | menu !keyboard  
 		const _or = query.split(/,|\|/)
 		return _or.reduce((acc,exp) => 
