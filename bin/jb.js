@@ -8,7 +8,7 @@ const [main,_plugins,_projects,wrap,base_dir,spy,uri,dsl,libsToinit,verbose] =
 if (!main) {
     console.log(`usage: jb.js 
     -main:button("hello") // mandatory. profile to run
-    -wrap:pipeline(MAIN,prune()) // optional. profile that wraps the 'main' profile and will be run instead
+    -wrap:prune(MAIN) // optional. profile that wraps the 'main' profile and will be run instead
     -plugins:zui,ui  // optional. plugins to use. default is all stable plugins
     -projects:studio,test  // optional
     -base_dir: // base dir under which to look for /plugins and /projects . defualt is '.' or projects/jb-react
@@ -65,7 +65,7 @@ globalThis.jb_plugins = jb_plugins
 
     const result = await jb.utils.resolveDelayed(new jb.core.jbCtx().setVars(vars).run({$: compId}))
     try {
-        console.log(JSON.stringify(jb.remoteCtx.stripData(result)))
+        console.log(JSON.stringify(jb.remoteCtx.stripData({...result})))
     } catch(err) {
         return console.log(JSON.stringify({error: { desc: 'can not stringify result', err }}))
     }

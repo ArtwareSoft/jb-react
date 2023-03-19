@@ -13,12 +13,6 @@
 	"activationEvents": [
 		"onLanguage:javascript"
 	],
-	"dependencies": {
-		"net": "",
-		"ws": "",
-		"http": "",
-		"node-fetch": ""
-	},	
 	"main": "vscode-tgp-lang.js",
 	"contributes": {
 		"viewsContainers": {

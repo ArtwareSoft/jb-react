@@ -117,6 +117,28 @@ jb.extension('probe', 'suggestions', {
   },
   compOption(path, toPaste,value,text,description) {
     return {type: 'comp', path, toPaste,valueType: typeof value,text,description, code: toPaste}
+  },
+  pruneResult(res) {
+    const MAX_ARRAY = 100
+    const result = res.result.slice(0,MAX_ARRAY).map(x=>({in: pruneCtx(x.in), out: pruneObj(x.out,0)}))
+    res.result.length > MAX_ARRAY && (result.actualLength = res.result.length)
+    return { simpleVisits: res.simpleVisits, circuitCtx: pruneCtx(res.circuitCtx), result }
+
+    function pruneObj(obj, depth =0) {
+      if (depth > 4) return
+      if (Array.isArray(obj)) {
+        const result = obj.slice(0,100).map(x=>pruneObj(x,depth +1))
+        obj.length > MAX_ARRAY && (result.actualLength = obj.length)
+        return result
+      }
+      if (obj && typeof obj == 'object') {
+        return jb.objFromEntries(Object.keys(obj).map(k=>[k,pruneObj(obj[k] ,depth +1)]))
+      }
+      return obj
+    }
+    function pruneCtx(ctx) {
+      return { data: pruneObj(ctx.data,0), vars: pruneObj(ctx.vars,0), path: ctx.path }
+    }
   }
 })
 
@@ -190,10 +212,10 @@ jb.component('probe.suggestionsByCmd', {
     ctx.setData(`suggestionsByCmd: ${command}`).run(remote.action({ action: ({data}) => { jb.vscode.stdout.appendLine(data) }, 
       jbm: () => jb.parent, oneway: true }))
 
-    if (jb.frame.jbForkNode) {
+    if (jb.frame.jbSpawn) {
         let res = null
         try {
-          res = await jbForkNode(args)
+          res = await jbSpawn(args)
         } catch (e) {
           jb.logException(e,'suggestionsByCmd',{command})
         }
@@ -218,6 +240,13 @@ jb.component('suggestions.calcFromRemote', {
     probe.suggestions('%$probePath%', '%$expressionOnly%', '%$input%', '%$sessionId%'),
     ({},{},{input,forceLocal}) => forceLocal ? jb : new jb.probe.suggestions(jb.val(input)).jbm()
   )
+})
+
+jb.component('probe.pruneResult', {
+  params: [
+    {id: 'probeResult', defaultValue: '%%'}
+  ],
+  impl: (ctx,probeResult) => jb.probe.pruneResult(probeResult)
 })
 
 jb.component('suggestions.applyOption', {

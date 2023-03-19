@@ -415,6 +415,9 @@ jb.component('dataTest.if.filters', {
   impl: dataTest(pipeline('%$personWithChildren/children%', If(equals('%name%', 'Bart'), 'funny'), count()), equals(1))
 })
 
+jb.component('dataTest.pipelineMultiple', {
+  impl: dataTest(pipeline(list(1, 2), join()), '1,2')
+})
 
 jb.component('dataTest.assign', {
   impl: dataTest(

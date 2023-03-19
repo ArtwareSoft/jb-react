@@ -75,7 +75,7 @@ global.jbGetJSFromUrl = async url => {
     vm.runInThisContext(code, url)
 }
 
-global.jbForkNode = async args => {
+global.jbSpawn = async args => {
     return new Promise((resolve) => {
         const proc = require('child_process').spawn('node',[`${jbBaseUrl}/bin/jb.js`, ...args] ,{cwd: jbBaseUrl})
         let res = ''

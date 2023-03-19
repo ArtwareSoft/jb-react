@@ -67,18 +67,20 @@ jb.component('probe.inOutView', {
 
 jb.component('probe.probeResView', {
   type: 'control',
+  params: [
+    {id: 'probeRes', defaultValue: '%%'}
+  ],
   impl: group({
-    layout: layout.horizontal(),
     controls: [
       group({
         style: propertySheet.titlesAbove(),
         controls: [
-          text('%simpleVisits%', 'visits'),
-          text('%circuitCtx.path%', 'circuit')
+          text('%$probeRes/simpleVisits%', 'visits'),
+          text('%$probeRes/circuitCtx.path%', 'circuit')
         ]
       }),
       table({
-        items: '%result%',
+        items: '%$probeRes/result%',
         controls: [
           group({
             title: 'in (%in/length%)',

@@ -271,5 +271,12 @@ jb.component('renderWidget', {
     {id: 'control', type: 'control', dynamic: true, mandatory: true},
     {id: 'selector', as: 'string', defaultValue: 'body'}
   ],
-  impl: (ctx, control, selector) => jb.ui.render(jb.ui.h(control(jb.ui.extendWithServiceRegistry(ctx))), document.querySelector(selector), {ctx})
+  impl: (ctx, control, selector) => {
+    const el = document.querySelector(selector)
+    if (!el)
+      return jb.logError('renderWidget can not find element for selector', {selector})
+    jb.ui.unmount(el)
+    el.innerHTML = ''
+    jb.ui.render(jb.ui.h(control(jb.ui.extendWithServiceRegistry(ctx))), el, {ctx})
+  }
 })

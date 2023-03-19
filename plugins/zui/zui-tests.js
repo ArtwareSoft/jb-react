@@ -1,4 +1,8 @@
 
+jb.component('dataTest.pipelineMultiple', {
+  impl: dataTest(pipeline(list(1, 2), join()), '1,2')
+})
+
 jb.component('zuiTest.itemlist', {
   impl: uiTest({
     control: group({

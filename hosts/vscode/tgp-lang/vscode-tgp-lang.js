@@ -1,10 +1,8 @@
 
 globalThis.vscodeNS = require('vscode')
 globalThis.vsChild = require('child_process')
-globalThis.vsWS = require('websocket')
 globalThis.vsNet = require('net')
 globalThis.vsHttp = require('http')
-globalThis.vsFetch = require('node-fetch')
 
 globalThis.vsPluginDir = __dirname
 
@@ -32,8 +30,8 @@ async function activate(context) {
     ;['moveUp','moveDown','openProbeResultPanel']
             .forEach(cmd => vscodeNS.commands.registerCommand(`jbart.${cmd}`, jb.vscode[cmd]))
     
-    // ;['main'].forEach(viewId => context.subscriptions.push(
-    //     vscodeNS.window.registerWebviewViewProvider(`jbart.${viewId}`, jb.vscode.createWebViewProvider(viewId,context.extensionUri))))
+    ;['main'].forEach(viewId => context.subscriptions.push(
+        vscodeNS.window.registerWebviewViewProvider(`jbart.${viewId}`, jb.vscode.createWebViewProvider(viewId,context.extensionUri))))
 
 	context.subscriptions.push(vscodeNS.languages.registerCompletionItemProvider('javascript', {
 		provideCompletionItems() {

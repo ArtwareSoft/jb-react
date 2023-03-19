@@ -14,7 +14,7 @@ jb.extension('vscode', 'utils', {
         }
     },
     async initVscodeAsHost({context}) {
-        jb.logVscode('init',1)
+        jb.logVscode('init')
         jb.log('vscode initVscodeAsHost', {context})
         jb.tgpTextEditor.cache = {}
         jb.tgpTextEditor.host = {
@@ -45,9 +45,8 @@ jb.extension('vscode', 'utils', {
                 vscodeNS.commands.executeCommand(cmd)
             },
         }
-        jb.logVscode('init',2)
-        jb.vscode.log(`init`)
         await jb.exec(vscode.completionServer())
+        jb.vscode.log(`completion server loaded`)
 
         vscodeNS.workspace.onDidChangeTextDocument(({document, reason, contentChanges}) => {
             if (!contentChanges || contentChanges.length == 0) return
@@ -82,8 +81,8 @@ jb.extension('vscode', 'utils', {
         }
 
         if (jb.vscode.useCompletionServer) {
-            const fork = await jb.exec(vscode.completionServer())
-            jb.vscode.stdout.appendLine(`updateCurrentCompFromEditor with fork ${fork.pid}`)
+            await jb.exec(vscode.completionServer())
+            jb.vscode.stdout.appendLine(`updateCurrentCompFromEditor`)
             return jb.vscode.ctx.setData(docProps).run(remote.action(ctx => jb.tgpTextEditor.updateCurrentCompFromEditor(ctx.data,ctx), vscode.completionServer()))
         } else {
             jb.tgpTextEditor.updateCurrentCompFromEditor(docProps,jb.vscode.ctx)
@@ -91,12 +90,12 @@ jb.extension('vscode', 'utils', {
     },
     async provideCompletionItems(docProps) {
         if (jb.vscode.useCompletionServer) {
-            const fork = await jb.exec(vscode.completionServer())
+            await jb.exec(vscode.completionServer())
             const ret = await jb.vscode.ctx.setData(docProps).run(
                 remote.data(ctx => jb.tgpTextEditor.provideCompletionItems(ctx.data, ctx), vscode.completionServer()))
             const count = (ret || []).length
             const docSize = docProps.docText.length
-            jb.vscode.stdout.appendLine(`provideCompletionItems ${docSize} -> ${count} from fork ${fork.pid}`)
+            jb.vscode.stdout.appendLine(`provideCompletionItems ${docSize} -> ${count}`)
             return ret
         } else {
             return jb.tgpTextEditor.provideCompletionItems(docProps)
@@ -121,20 +120,23 @@ jb.extension('vscode', 'utils', {
     },
     async openProbeResultPanel() {
         const docProps = jb.tgpTextEditor.host.docTextAndCursor()
+        jb.vscode.log('start openProbeResultPanel')
         const probePath = await jb.vscode.ctx.setData(docProps).run(
             remote.data(ctx => jb.tgpTextEditor.providePath(ctx.data, ctx), vscode.completionServer()))
-        debugger
+        jb.vscode.log('openProbeResultPanel 2',probePath)
         const probeRes = await jb.vscode.ctx.run({$: 'probe.probeByCmd', filePath: docProps.filePath, probePath})
+        jb.vscode.log('openProbeResultPanel 3',probeRes)
+        jb.log('vscode openProbeResultPanel',{probeRes, probePath})
         jb.vscode.panels.main.render('probe.probeResView',probeRes)
     },
 
     async moveInArray(docPropsWithDiff) {
         if (jb.vscode.useCompletionServer) {
-            const fork = await jb.exec(vscode.completionServer())
+            await jb.exec(vscode.completionServer())
             const {edit, cursorPos} = await jb.vscode.ctx.setData(docPropsWithDiff).run(
                 remote.data(ctx => jb.tgpTextEditor.moveInArray(ctx.data, ctx), vscode.completionServer()))
             const json = JSON.stringify(edit)
-            jb.vscode.stdout.appendLine(`moveInArray ${json.length} from fork ${fork.pid}`)
+            jb.vscode.stdout.appendLine(`moveInArray ${json.length}`)
             await jb.tgpTextEditor.host.applyEdit(edit)
             cursorPos && jb.tgpTextEditor.host.selectRange(cursorPos)
         }
@@ -158,21 +160,22 @@ jb.extension('vscode', 'utils', {
             render(ctrlId, data) {
                 this.ctrlId = ctrlId
                 this.data = data
-                doShow()    
+                this.show()
             },
             async show() {
-                await jb.jbm.terminateChild(id)
-                if (this.ctrlId) {
-                    const jbm = await jb.exec(jbm.vscodeWebView({ id, panel}))
-                    jb.vscode.ctx.setData(this.data).run(
-                        remote.action(renderWidget({$: this.ctrlId}, '#main'), ()=> jbm))
+                jb.log('vscode show main',{data: this.data, ctrlId: this.ctrlId})
+                //await jb.jbm.terminateChild(id)
+                if (this.ctrlId && this.panel) {
+                    const _jbm = await jb.exec(jbm.vscodeWebView({ id, panel: () => this.panel}))
+                    await jb.vscode.ctx.setData(this.data).run(
+                        remote.action(renderWidget({$: this.ctrlId, probeRes: '%%'}, '#main'), ()=> _jbm))
                 }    
             }
-        }        
+        }
         return {
             async resolveWebviewView(panel, context, _token) {
                 jb.log('vscode resolve webView',{id,extensionUri,context,panel})
-                this._panel = panel
+                jb.vscode.panels[id].panel = this._panel = panel
                 panel.webview.options = {
                     enableScripts: true,
                     localResourceRoots: [extensionUri]
@@ -181,10 +184,10 @@ jb.extension('vscode', 'utils', {
                 panel.onDidChangeVisibility(() => { 
                     jb.log('vscode webview panel changed vis',{visible: panel.visible, id,extensionUri})
                     if (panel.visible)
-                    jb.vscode.panels[id].show()
+                        jb.vscode.panels[id].show()
                 })
                 panel.webview.html = ''
-                //await jb.exec(jbm.vscodeWebView({ id, panel}))
+                jb.vscode.panels[id].show()
             }
     }},
     api() {
@@ -214,31 +217,16 @@ jb.extension('vscode', 'utils', {
     },
     fetch(url) {
         return new Promise(resolve => {
-            const options = {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
-                }}
-        
-            const req = vsHttp.request(url, options, res => {
+            const req = vsHttp.request(url, { method: 'GET', headers: {'Content-Type': 'application/json' }}, res => {
                 let data = ''
-            
-                res.on('data', chunk => {
-                    data += chunk
-                })
-            
-                res.on('end', () => {
-                    resolve(JSON.parse(data))
-                })
-                req.on('error', error => {
-                    resolve({error})
-                })
+                res.on('data', chunk => data += chunk)
+                res.on('end', () => resolve(JSON.parse(data)))
+                req.on('error', error => resolve({error}))
             })
             req.end()
         })
     }
 })
-
 
 jb.component('vscode.openQuickPickMenu', {
   type: 'action',
@@ -284,32 +272,37 @@ jb.component('vscode.gotoPath', {
 
 jb.component('vscode.completionServer', {
   type: 'jbm',
-  impl: jbm.nodeContainer({id:'completionServer', projects: list('studio','tests'), inspect1: 7010, completionServer: true, 
-    urlBase: 'http://localhost:8082' })
+  impl: jbm.nodeContainer({
+    id: 'completionServer',
+    projects: list('studio', 'tests'),
+    inspect: 7010,
+    completionServer: true,
+    urlBase: 'http://localhost:8082'
+  })
 })
 
 jb.component('probe.probeByCmd', {
   params: [
     {id: 'filePath', as: 'string'},
-    {id: 'probePath', as: 'string'},
+    {id: 'probePath', as: 'string'}
   ],
   impl: async (ctx,filePath,probePath) => {
     const { plugins, projects } = jb.utils.pluginsOfFilePath(filePath)
     const args = ["-main:probe.runCircuit()",`-plugins:${(plugins||[]).join(',')}`,`-projects:${(projects||[]).join(',')}`,
-        `%probePath:${probePath}`, "-spy:probe"]
+        `%probePath:${probePath}`, "-spy:probe", "-wrap:pipe(MAIN, probe.pruneResult(),first())"]
 
     const command = `node --inspect-brk jb.js ${args.map(x=>`'${x}'`).join(' ')}`
     jb.vscode.stdout.appendLine(`probeByCmd: ${command}`)
 
-    if (jb.frame.jbForkNode) {
+    if (jb.frame.jbSpawn) {
         let res = null
         try {
-          res = await jbForkNode(args)
+          res = await jbSpawn(args)
         } catch (e) {
           jb.logException(e,'probeByCmd',{command})
         }
         try {
-          return JSON.parse(res)
+          return {...JSON.parse(res), [jb.core.OnlyData]: true }
         } catch (err) {
           jb.logError('probeByCmd probe can not parse result returned from command line',{res, command, err})
         }

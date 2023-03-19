@@ -84,6 +84,7 @@ jb.extension('core', {
     return {
       ctxCounter: 0,
       CT: Symbol.for('CT'), // compile time
+      OnlyData: Symbol.for('OnlyData'),
       jstypes: jb.core._jsTypes(),
       onAddComponent: [],
       unresolvedProfiles: []

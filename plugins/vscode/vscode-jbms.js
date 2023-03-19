@@ -79,7 +79,7 @@ jb.component('jbm.vscodeWebView', {
     globalThis.jbBaseUrl = '${_jbBaseUrl}'
     ;(async () => {
       await jbInit('${webViewUri}',{ projects: [], plugins: jb_plugins })
-      globalThis.spy = jb.spy.initSpy({spyParam: 'remote,vscode'})
+      globalThis.spy = jb.spy.initSpy({spyParam: 'remote,vscode,treeShake'})
       jb.treeShake.codeServerJbm = jb.parent = jb.ports['${jb.uri}'] = jb.jbm.extendPortToJbmProxy(jb.vscode.portFromWebViewToExt('${webViewUri}','${jb.uri}'))
       jb.parent.remoteExec(jb.remoteCtx.stripJS(() => jb.jbm.notifyChildReady['${webViewUri}']() ), {oneway: true} )
       function ${jb.vscode.portFromWebViewToExt.toString()}
@@ -94,7 +94,7 @@ jb.component('jbm.vscodeWebView', {
     
 </head>
 <body class="vscode-studio">
-    <div id="main">Empty</div>
+    <div id="main"></div>
 </body>
 </html>`
         jb.jbm.childJbms[name] = jb.ports[webViewUri] = jb.jbm.extendPortToJbmProxy(

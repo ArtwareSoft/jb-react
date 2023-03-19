@@ -38,12 +38,13 @@ jb.extension('remoteCtx', {
         if (typeof data == 'object' && ['DOMRect'].indexOf(data.constructor.name) != -1)
             return jb.objFromEntries(Object.keys(data.__proto__).map(k=>[k,data[k]]))
         if (typeof data == 'object' && ['VNode','Object','Array'].indexOf(data.constructor.name) == -1)
-            return { $$: data.constructor.name}
+            return { $$: data.constructor.name }
         if (typeof data == 'object' && data.comps)
             return { uri : data.uri}
         if (typeof data == 'object')
              return jb.objFromEntries(jb.entries(data)
                 .filter(e=> data.$ || typeof e[1] != 'function') // if not a profile, block functions
+//                .map(e=>e[0] == '$' ? [e[0], jb.path(data,[jb.core.CT,'comp',jb.core.CT,'fullId']) || e[1]] : e)
                 .map(e=>[e[0],jb.remoteCtx.stripData(e[1], innerDepthAndPath(e[0]) )]))
 
     },

@@ -107,8 +107,8 @@ jb.component('jbm.nodeContainer', {
     {id: 'host', as: 'string', dynamic: true, defaultValue: 'localhost'},
     {id: 'init', type: 'action', dynamic: true},
     {id: 'inspect', as: 'number'},
-    {id: 'completionServer', as: 'boolean'},
-    {id: 'urlBase', as: 'string' }
+    {id: 'completionServer', as: 'boolean', type: 'boolean'},
+    {id: 'urlBase', as: 'string'}
   ],
   impl: async (ctx,name,projects,host,init,inspect,completionServer,urlBase) => {
         jb.log('vscode jbm nodeContainer',{ctx,name})
@@ -125,7 +125,7 @@ jb.component('jbm.nodeContainer', {
             `-clientUri:${jb.uri}`,
             `-projects:${projects.join(',')}`,
             ...(completionServer ? [`-completionServer:true`] : []),
-            ...(globalThis.vsFetch ? [`-tcp:true`] : []),
+            ...(globalThis.vsHttp ? [`-tcp:true`] : []),
             `-spyParam:${jb.spy.spyParam}`]
 
         let servlet = await startServlet(args)
@@ -134,7 +134,7 @@ jb.component('jbm.nodeContainer', {
         if (!servlet.uri)
             return jb.logError('jbm nodeContainer bad response from server',{ctx, servlet})
         
-        const port = await (globalThis.vsFetch ? jb.nodeContainer.connectFromTcpClient(host(),servlet.port,servlet.uri,ctx)
+        const port = await (globalThis.vsHttp ? jb.nodeContainer.connectFromTcpClient(host(),servlet.port,servlet.uri,ctx)
             : jb.nodeContainer.connectFromBrowser(`ws://${host()}:${servlet.port}`,servlet.uri,ctx))
         const jbm = jb.jbm.childJbms[name] = jb.jbm.extendPortToJbmProxy(port)
         await init(ctx.setVar('jbm',jbm))

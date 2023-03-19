@@ -52,9 +52,7 @@ jb.component('probeTest.usingGlobal', {
 
 jb.component('test.innerLabel', {
   type: 'control',
-  impl: text(
-    'hello'
-  )
+  impl: text('hello')
 })
 
 jb.component('test.innerLabelTemplate', {
@@ -62,9 +60,7 @@ jb.component('test.innerLabelTemplate', {
   params: [
     {id: 'ctrl', type: 'control', dynamic: true}
   ],
-  impl: group({
-    controls: call('ctrl')
-  })
+  impl: group({controls: call('ctrl')})
 })
 
 jb.component('test.innerLabelTemplateStaticParam', {
@@ -72,11 +68,7 @@ jb.component('test.innerLabelTemplateStaticParam', {
   params: [
     {id: 'param1', type: 'string'}
   ],
-  impl: group({
-    controls: [
-
-    ]
-  })
+  impl: group({controls: []})
 })
 
 jb.component('probeTest.staticInnerInTemplate', {
@@ -89,8 +81,18 @@ jb.component('probeTest.staticInnerInTemplate', {
 
 jb.component('probeTest.labelText', {
   impl: studioProbeTest({
-    circuit: text(ctx => 'hello'),
+    circuit: text(
+      ctx => 'hello'
+    ),
     probePath: 'text',
+    expectedVisits: 1
+  })
+})
+
+jb.component('probeTest.pipelineMultiple', {
+  impl: studioProbeTest({
+    circuit: pipeline(list(1,2),join()),
+    probePath: 'items~1',
     expectedVisits: 1
   })
 })
@@ -110,25 +112,13 @@ jb.component('probeTest.pipelineNoSugar', {
   })
 })
 
-// jb.component('probeTest.pipelineSugarJsonFormat', {
-//   impl: studioProbeTest({
-//     circuit: group({controls: text({text: {$pipeline: ['hello'] } })}) ,
-//     probePath: 'controls~text~$pipeline~0'
-//   })
-// })
-
-jb.component('probeTest.pipelineOneElemJsonFormat', {
-  impl: studioProbeTest({
-    circuit: group({controls: text({text: {$: 'pipeline', items: 'hello' }})}),
-    probePath: 'controls~text~items'
-  })
-})
-
 jb.component('probeTest.gap.actionsArray', {
   impl: studioProbeTest({
-    circuit: group({controls: button({title: 'hello', action: [winUtils.gotoUrl('google')]})}),
-    allowClosestPath: true,
+    circuit: group({controls: button('hello', [
+          winUtils.gotoUrl('google')
+        ])}),
     probePath: 'controls~action~0~url',
+    allowClosestPath: true,
     expectedVisits: 1
   })
 })
