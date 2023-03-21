@@ -1,21 +1,20 @@
-// const fs = require('fs')
-// const util = require('util')
 
-const [main,_plugins,_projects,wrap,base_dir,spy,uri,dsl,libsToinit,verbose] = 
-    ['main','plugins','projects','wrap','base_dir','spy','uri','dsl','libsToinit','verbose']
+const [main,_plugins,_projects,wrap,base_dir,_spy,_spyParam,uri,dsl,libsToinit,verbose] = 
+    ['main','plugins','projects','wrap','base_dir','spy','spyParam','uri','dsl','libsToinit','verbose']
         .map(x=>getProcessArgument(x))
 
 if (!main) {
     console.log(`usage: jb.js 
     -main:button("hello") // mandatory. profile to run
     -wrap:prune(MAIN) // optional. profile that wraps the 'main' profile and will be run instead
-    -plugins:zui,ui  // optional. plugins to use. default is all stable plugins
+    -plugins:zui,ui  // optional. plugins to use. default is all stable plugins, + will add to stable
     -projects:studio,test  // optional
     -base_dir: // base dir under which to look for /plugins and /projects . defualt is '.' or projects/jb-react
-    -spy:uiComp // optional. log events to spy
+    -spy:remote // optional. log events to spy
+    -spyParam:remote // optional. same as spy
     -uri:main // optional. jbm uri default is "main"
     -dsl:myDsl // optional. dsl of the main profile default is ""
-    -libsToinit:lib1,lib2 // optional. default is to init all libs in loaded projects/plugins
+    -libsToinit:lib1,lib2 // advanced. default is to init all libs in loaded projects/plugins
     -verbose // show params, vars, and generated tgp code
     %v1:val // variable values
     %p1:val||script // param values
@@ -37,7 +36,7 @@ globalThis.jb_plugins = jb_plugins
     const projects = _projects ? _projects.split(',') : null
     const plugins = _plugins ? _plugins.split(',') : null
     globalThis.jb = await jbInit(uri||'main', {
-        projects, plugins: plugins || jb_plugins, doNoInitLibs: libsToinit ? true: false //, useFileSymbolsFromBuild: true
+        projects, plugins: plugins || jb_plugins, doNoInitLibs: libsToinit ? true: false
     })
     try {
         await libsToinit && jb.initializeLibs(libsToinit.split(','))
@@ -45,7 +44,8 @@ globalThis.jb_plugins = jb_plugins
         return console.log(JSON.stringify({error: { desc: 'error while initializing libraries', libsToinit, err }}))
     }
 
-    globalThis.spy = spy && jb.spy.initSpy({spyParam: spy})
+    const spyParam = _spy || _spyParam
+    globalThis.spy = spyParam && jb.spy.initSpy({spyParam})
     const {params, vars} = calcParamsAndVars()
     if (verbose)
         console.log(JSON.stringify({params, vars}))

@@ -118,3 +118,23 @@ jb.component('tgp.completionActionTest', {
     }
 })
 
+jb.component('tgp.dummyDocProps', {
+  params: [
+    {id: 'compText', as: 'string', description: 'use __ for completion point'},
+    {id: 'dsl', as: 'string'}
+  ],
+  impl: (ctx,compText,dsl) => {
+    jb.workspace.initJbWorkspaceAsHost()
+    const parts = jb.test.fixToUniqueName(compText).split('__')
+    const dslLine = dsl ? `jb.dsl('${dsl}')\n` : ''
+    const offset = parts[0].length +dslLine.length
+    const code = parts.join('')
+    jb.utils.resolveLoadedProfiles()
+    jb.tgpTextEditor.host.initDoc('dummy.js', dslLine+code)
+
+    const inCompPos = jb.tgpTextEditor.offsetToLineCol(dslLine+code,offset)
+    jb.tgpTextEditor.host.selectRange(inCompPos)
+    const { docText, cursorCol, cursorLine} = jb.tgpTextEditor.calcActiveEditorPath(jb.tgpTextEditor.host.docTextAndCursor())
+    return { docText, cursorCol, cursorLine}
+  }
+})

@@ -741,7 +741,7 @@ jb.component('unique', {
 jb.component('log', {
   params: [
     {id: 'logName', as: 'string', mandatory: 'true' },
-    {id: 'logObj', as: 'single' }
+    {id: 'logObj', as: 'single', defaultValue: '%%' }
   ],
   impl: (ctx,log,logObj) => { jb.log(log,{...logObj,ctx}); return ctx.data }
 })
@@ -1113,7 +1113,7 @@ jb.component('formatNumber', {
     {id: 'precision', as: 'number', defaultValue: '2', description: '10.33'},
     {id: 'num', defaultValue: '%%' },
   ],
-  impl: (ctx,precision,x) => +((typeof x == 'number') ? x.toFixed(+precision) : x)
+  impl: (ctx,precision,x) => typeof x == 'number' ? +x.toFixed(+precision) : x
 })
 
 jb.component('getSessionStorage', {

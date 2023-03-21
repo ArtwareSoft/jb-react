@@ -257,7 +257,6 @@ jb.extension('tgpTextEditor', 'completion', {
         const props = jb.tgpTextEditor.calcActiveEditorPath(docProps, {clearCache: true})
         jb.log('completion calcActiveEditorPath',props)
         const { semanticPath, reformatEdits, compLine, error } = props
-        const serverUri = jb.tgpTextEditor.host.serverUri
         if (reformatEdits) {
             const item = { kind: 4, id: 'reformat', insertText: '',label: 'reformat', extend() { }, sortText: '0001',
                 command: { command: 'jbart.applyCompChange' , arguments: [{
@@ -273,7 +272,7 @@ jb.extension('tgpTextEditor', 'completion', {
                 insertText: '',
                 sortText: ('0000'+i).slice(-4),
                 command: { command: 'jbart.applyCompChange' , 
-                    arguments: serverUri ? [Object.assign({serverUri, extendCode: item.extend.toString()},item) ] :  [item,ctx] 
+                    arguments: [Object.assign({extendCode: item.extend.toString(), serverUri: jb.uri},item) ]
                 }
             }))
             jb.log('completion completion items',{items, ...docProps, ...props, ctx})
@@ -349,11 +348,16 @@ jb.extension('tgpTextEditor', 'completion', {
             return {TBD, line: inCompPos.line + compLine, col: inCompPos.col + (resultOffset ? resultOffset : 0) }
         }
     },
+    async editsAndCursorPos({docText,item},ctx) {
+        item.extend = eval('x = function ' +item.extendCode)
+        return jb.tgpTextEditor.calcEditAndGotoPos(docText,item,ctx)
+    },
     async applyCompChange(item,ctx) {
         if (item.id == 'reformat') return
         ctx = ctx || new jb.core.jbCtx({},{vars: {}, path: 'completion.applyCompChange'})
         const { docText } = jb.tgpTextEditor.host.docTextAndCursor()
-        const { edit, cursorPos } = item.edit ? item : item.serverUri ? await remoteCalcEditAndPos() : await jb.tgpTextEditor.calcEditAndGotoPos(docText,item,ctx)       
+        const { edit, cursorPos } = item.edit ? item : item.serverUri == 'langServer' ? 
+            await remoteCalcEditAndPos() : await jb.tgpTextEditor.calcEditAndGotoPos(docText,item,ctx)
         try {
             await jb.tgpTextEditor.host.applyEdit(edit)
             if (cursorPos) {
@@ -368,11 +372,7 @@ jb.extension('tgpTextEditor', 'completion', {
         }
 
         function remoteCalcEditAndPos() {
-            return ctx.setData({docText, item}).run(remote.data( ctx => { 
-                const {docText, item} = ctx.data
-                item.extend = eval('x = function ' +item.extendCode)
-                return jb.tgpTextEditor.calcEditAndGotoPos(docText,item,ctx)
-            }, jbm.byUri(()=> item.serverUri) ))
+            return ctx.setData({docText, item}).run(tgp.editsAndCursorPosFromServer())
         }
     },
     async moveInArray(docPropsWithDiff,ctx) {

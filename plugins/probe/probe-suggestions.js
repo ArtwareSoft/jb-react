@@ -222,6 +222,7 @@ jb.component('probe.suggestionsByCmd', {
         try {
           return JSON.parse(res)
         } catch (err) {
+          debugger
           jb.logError('suggestionsByCmd probe can not parse result returned from command line',{res, command, err})
         }
     }

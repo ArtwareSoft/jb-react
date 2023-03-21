@@ -5,14 +5,15 @@ jb.component('growingText', {
   type: 'view',
   params: [
     {id: 'prop', type: 'itemProp', mandatory: true},
-    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true},
+    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true}
   ],
   impl: (ctx,prop, features) => {
     const zuiElem = jb.zui.text2_32ZuiElem(ctx)
     const view = {
+        title: `growingText - ${prop.att}`,
         layoutSizes: ({size,zoom}) => [2*10,16, size[0]-2*10,16, 0,0 ],
         state: () => jb.zui.viewState(ctx),
-        path: ctx.path,
+        ctxPath: ctx.path,
         pivots: () => prop.pivots(),
         zuiElems: () => [zuiElem],
         priority: prop.priority || 10,
@@ -34,8 +35,9 @@ jb.component('fixedText', {
   impl: (ctx,prop, features,length) => {
     const zuiElem = jb.zui.text8ZuiElem(ctx)
     const view = {
+      title: `fixedText - ${prop.att}`,
       layoutSizes: () => [length*10,16, 0,0, 0,0 ],
-      path: ctx.path,
+      ctxPath: ctx.path,
       state: () => jb.zui.viewState(ctx),
       pivots: () => prop.pivots(),
       zuiElems: () => [zuiElem],

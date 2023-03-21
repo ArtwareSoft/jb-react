@@ -5,13 +5,18 @@ jb.component('circle', {
   params: [
     {id: 'prop', type: 'itemProp', mandatory: true},
     {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true},
-    {id: 'circleSize', dynamic: true, defaultValue: ({vars}) => 10 + 2 * Math.log(vars.$props.DIM/vars.$props.zoom)},
+    {
+      id: 'circleSize',
+      dynamic: true,
+      defaultValue: ({vars}) => 10 + 2 * Math.log(vars.$props.DIM/vars.$props.zoom)
+    },
     {id: 'colorScale', type: 'color_scale'}
   ],
   impl: (ctx,prop,features) => { 
     const zuiElem = jb.zui.circleZuiElem(ctx)
     const view = {
       title: 'circle',
+      ctxPath: ctx.path,
       layoutSizes: itemViewSize => [0.01,0.01, 4,4, 0,0 ],
       state: () => jb.zui.viewState(ctx),
       pivots: () => prop.pivots(),

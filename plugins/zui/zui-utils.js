@@ -1,5 +1,5 @@
 
-jb.extension('zui','utils', {
+jb.extension('zui','FE-utils', {
   initZuiCmp(cmp,props) {
     const w = props.glCanvas.offsetWidth, h = props.glCanvas.offsetHeight
 
@@ -67,60 +67,6 @@ jb.extension('zui','utils', {
         }
       },
     })
-  },  
-  calcItemsPositions({items, pivots, DIM}) {
-      const mat = Array(DIM**2)
-      items.forEach(item => {
-        const [x,y] = [Math.floor(DIM*pivots.x.scale(item)), Math.floor(DIM*pivots.y.scale(item))]
-        mat[DIM*y + x] = mat[DIM*y + x] || []
-        mat[DIM*y + x].push(item)
-      })      
-      repulsion()
-
-      return { mat, sparse: Array.from(Array(DIM**2).keys()).filter(i=>mat[i]).map(i=>
-          [mat[i][0], i%DIM, Math.floor(i/DIM)] ) } //, scales.greens(pivots.x.scale(mat[i][0])) ])   }
-
-      function repulsion() {
-          for (let i=0;i<DIM**2;i++)
-              if (mat[i] && mat[i].length > 1)
-                  spreadItems(i)
-
-          function spreadItems(i) {
-              const items = mat[i]
-              mat[i] = [items.pop()]
-              const [x,y] = [i%DIM, Math.floor(i/DIM)]
-
-              for (const [_x,_y,distance] of areaIterator(x,y)) {
-                  if (! mat[DIM*_y+ _x]) {
-                      mat[DIM*_y+ _x] = [items.pop()]
-                      if (items.length == 0) return
-                  }
-              }
-          }    
-      }
-
-      function* areaIterator(x,y) {
-          let distance = 2, tooFar = false
-          while (!tooFar) {
-              tooFar = true
-              const n = noOfNeighbours(distance)
-              for(_w=0;_w<n;_w++) {
-                  const w = _w*2*3.14/n || 0.001
-                  const nx = x + floor(distance*(Math.cos(w))), ny = y + floor(distance*(Math.sin(w)))
-                  if (nx > -1 && nx < DIM && ny > -1 && ny < DIM) {
-                      tooFar = false
-                      yield [nx,ny,distance]
-                  }
-              }
-              distance++
-          }
-          function noOfNeighbours(distance) {
-              return 4*distance
-          }
-          function floor(num) {
-              return Math.sign(num) == -1 ? Math.floor(num+1) : Math.floor(num)
-          }
-      }
   },
   buildShaderProgram(gl, sources) {
       const program = gl.createProgram()
@@ -172,4 +118,61 @@ jb.extension('zui','utils', {
       image.src = url
     })
   }   
+})
+
+jb.extension('zui','itemPositions', {
+  calcItemsPositions({items, pivots, DIM}) {
+    const mat = Array(DIM**2)
+    items.forEach(item => {
+      const [x,y] = [Math.floor(DIM*pivots.x.scale(item)), Math.floor(DIM*pivots.y.scale(item))]
+      mat[DIM*y + x] = mat[DIM*y + x] || []
+      mat[DIM*y + x].push(item)
+    })      
+    repulsion()
+
+    return { mat, sparse: Array.from(Array(DIM**2).keys()).filter(i=>mat[i]).map(i=>
+        [mat[i][0], i%DIM, Math.floor(i/DIM)] ) } //, scales.greens(pivots.x.scale(mat[i][0])) ])   }
+
+    function repulsion() {
+        for (let i=0;i<DIM**2;i++)
+            if (mat[i] && mat[i].length > 1)
+                spreadItems(i)
+
+        function spreadItems(i) {
+            const items = mat[i]
+            mat[i] = [items.pop()]
+            const [x,y] = [i%DIM, Math.floor(i/DIM)]
+
+            for (const [_x,_y,distance] of areaIterator(x,y)) {
+                if (! mat[DIM*_y+ _x]) {
+                    mat[DIM*_y+ _x] = [items.pop()]
+                    if (items.length == 0) return
+                }
+            }
+        }    
+    }
+
+    function* areaIterator(x,y) {
+        let distance = 2, tooFar = false
+        while (!tooFar) {
+            tooFar = true
+            const n = noOfNeighbours(distance)
+            for(_w=0;_w<n;_w++) {
+                const w = _w*2*3.14/n || 0.001
+                const nx = x + floor(distance*(Math.cos(w))), ny = y + floor(distance*(Math.sin(w)))
+                if (nx > -1 && nx < DIM && ny > -1 && ny < DIM) {
+                    tooFar = false
+                    yield [nx,ny,distance]
+                }
+            }
+            distance++
+        }
+        function noOfNeighbours(distance) {
+            return 4*distance
+        }
+        function floor(num) {
+            return Math.sign(num) == -1 ? Math.floor(num+1) : Math.floor(num)
+        }
+    }
+  }
 })

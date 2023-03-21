@@ -8,7 +8,7 @@ var jb_modules = {
     'src/misc/spy.js',
   ],
 }
-var jb_plugins = ['data-browser','probe','tgp','watchable-comps', 'workspace','vscode', 'chart-model','vega', 'zui','scene3']; // list of plugins to be used by studio
+var jb_plugins = ['remote','data-browser','probe','tgp','watchable-comps', 'workspace','vscode', 'chart-model','vega', 'zui','scene3']; // list of plugins to be used by studio
 
 async function jbInit(uri, {projects, plugins, baseUrl, multipleInFrame, doNoInitLibs, useFileSymbolsFromBuild }) {
   const fileSymbols = useFileSymbolsFromBuild && fileSymbolsFromBuild || globalThis.jbFileSymbols || fileSymbolsFromHttp
@@ -63,7 +63,7 @@ async function jbSupervisedLoad(symbols, jb, doNoInitLibs) {
 
 var jbLoadedSymbols = null
 async function fileSymbolsFromBuild(path,_include,_exclude) {
-  globalThis.jbFetchJson = globalThis.jbFetchJson || (path => globalThis.fetch(path).then(x=>x.json()))
+  globalThis.jbFetchJson = globalThis.jbFetchJson || (path => globalThis.fetch(path, {mode: 'cors'}).then(x=>x.json()))
   const include = _include && new RegExp(_include), exclude = _exclude && new RegExp(_exclude)
 
   if (!jbLoadedSymbols) {

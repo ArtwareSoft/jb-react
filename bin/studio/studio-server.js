@@ -276,7 +276,7 @@ const base_get_handlers = {
 
 const op_get_handlers = {
     createJbm: (req,res,path) => {
-      const params = ['uri', 'clientUri','projects','treeShake','spyParam','completionServer','tcp']
+      const params = ['uri', 'clientUri','projects','treeShake','spyParam','completionServer','tcp','inspect']
       const args = params.map(p=>getURLParam(req,p) && `-${p}:${getURLParam(req,p)}`).filter(x=>x)
       const servlet = child.spawn('node',[
         ...(getURLParam(req,'inspect') ? [`--inspect=${getURLParam(req,'inspect')}`] : []),
@@ -287,6 +287,27 @@ const op_get_handlers = {
       const command = `node --inspect-brk ../hosts/node/node-servlet.js ${args.map(x=>`'${x}'`).join(' ')}`
       servlet.on('exit', (code,ev) => res.end(JSON.stringify({command, exit: `exit ${''+code} ${''+ev}}`})))
       servlet.on('error', (e) => res.end(JSON.stringify({command, error: `${''+e}`})))
+    },
+    jb: (req,res,path) => {
+      const args = JSON.parse(getURLParam(req,'args'))
+      const command = `node --inspect-brk ../bin/jb.js ${args.map(x=>`'${x}'`).join(' ')}`
+      const inspect = args.find(x=>x.indexOf('-inspect=') == 0)
+      const cmdArgs = [
+        ...(inspect ? [`-${inspect}`] : []),
+        './jb.js',
+        ...args]
+
+      // try twice without the --inspect
+      res.setHeader('Content-Type', 'application/json; charset=utf8')
+      runServer(cmdArgs,() => runServer(cmdArgs.slice(1), 
+        (code,ev) => res.end(JSON.stringify({command, exit: `exit ${''+code} ${''+ev}}`}))))
+
+      function runServer(args,onExit) {
+        const srvr = child.spawn('node',args,{cwd: 'bin'})
+        srvr.stdout.on('data', data => res.end(data))
+        srvr.on('exit', onExit)
+        srvr.on('error', (e) => res.end(JSON.stringify({command, error: `${''+e}`})))  
+      }
     },
     runCmd: function(req,res,path) {
       if (!settings.allowCmd) return endWithFailure(res,'no permission to run cmd. allowCmd in jbart.json');
@@ -458,6 +479,10 @@ function getURLParam(req,name) {
     return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(req.url)||[,""])[1].replace(/\+/g, '%20'))||null;
   } catch(e) {}
 }
+
+// function getURLParams(req) {
+//     return decodeURIComponent(req.url).split('?').pop().split('&').map(x=>x.split('=')[0]).filter(x=>x && x!='op')
+// }
 
 function endWithFailure(res,desc) {
   res.setHeader('Content-Type', 'application/json');

@@ -16,6 +16,7 @@ if (!clientUri) {
     console.log('{"err":"missing clientUri"}')
     exit(1)
 }
+const inspect = getProcessArgument('projects')
 
 function createWSServer() {
     return new Promise(resolve => {
@@ -28,10 +29,10 @@ function createWSServer() {
         
         new WebSocketServer({ httpServer: nodeServer }).on('request', request => {
             const client = request.accept('echo-protocol', request.origin)
-            jb.treeShake.codeServerJbm = jb.parent = jb.ports[clientUri] = jb.jbm.extendPortToJbmProxy(jb.nodeContainer.portFromNodeWebSocket(client,clientUri))
-            // setInterval(()=>// kill itself if parent not answering
-            //     jb.parent.remoteExec('ping',{timeout:10000}).catch(err=> err.timeout &&  process.exit(1))
-            // ,10000)
+            jb.treeShake.codeServerJbm = jb.parent = jb.ports[clientUri] = jb.jbm.extendPortToJbmProxy(jb.nodeContainer.portFromNodeWebSocket(client,clientUri));
+            !inspect && setInterval(()=>// kill itself if parent not answering
+                jb.parent.remoteExec('ping',{timeout:10000}).catch(err=> err.timeout &&  process.exit(1))
+            ,10000)
         })
         nodeServer.listen({port}, () => resolve(nodeServer.address().port))
     })
@@ -45,12 +46,14 @@ function pickRandomPort() {
 function createTCPServer() {
   return new Promise(resolve => {
       const port = pickRandomPort()
+      jb.log('remote try to create tcp server on port',{port})
       const nodeServer = net.createServer(port => {
+        jb.log('remote create tcp server on port',{port})
         jb.treeShake.codeServerJbm = jb.parent = jb.ports[clientUri] 
           = jb.jbm.extendPortToJbmProxy(jb.nodeContainer.portFromTcpSocket(port,clientUri));
-        // setInterval(()=>// kill itself if parent not answering
-        //     jb.parent.remoteExec('ping',{timeout:10000}).catch(err=> err.timeout &&  process.exit(1))
-        // ,10000)          
+          !inspect && setInterval(()=>// kill itself if parent not answering
+            jb.parent.remoteExec('ping',{timeout:10000}).catch(err=> err.timeout &&  process.exit(1))
+        ,10000)          
         resolve(port)
       })
       nodeServer.once('error', err => { // if port is used, try another random port
@@ -74,7 +77,7 @@ async function run() {
     await jbGetJSFromUrl(`${jbTreeShakeServerUrl}/jb-port.js?ids=-nodeContainer.portFromNodeWebSocket`)
   } else if (getProcessArgument('completionServer')) {
     const { jbInit, jb_plugins } = require(`${jbBaseUrl}/src/loader/jb-loader.js`)
-    global.jb = await jbInit(uri,{ projects, plugins: ['vscode', ...jb_plugins], doNoInitLibs: true })
+    global.jb = await jbInit(uri,{ projects, plugins: jb_plugins, doNoInitLibs: true })
     await jb.initializeLibs(['utils','watchable','immutable','watchableComps','tgp','tgpTextEditor','vscode','jbm','cbHandler','treeShake'])
     await jb.vscode.initServer(getProcessArgument('clientUri'))
   } else {
@@ -85,7 +88,8 @@ async function run() {
 
   const tcp = getProcessArgument('tcp')
   const port = await (tcp ? createTCPServer() : createWSServer())
-  process.stdout.write(JSON.stringify({...(tcp ? {tcp} : {}), port,uri,clientUri})) // returns the connection details to stdout
+  const pid = process.pid
+  process.stdout.write(JSON.stringify({...(tcp ? {tcp} : {}), port,uri,clientUri,pid})) // returns the connection details to stdout
   // kill itself if not initialized
   setTimeout(() => {Object.keys(jb.ports).length == 0 && process.exit(1)}, 30000 )
 }

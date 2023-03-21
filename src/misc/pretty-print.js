@@ -37,183 +37,11 @@ jb.extension('utils', 'prettyPrint', {
     if (!val || typeof val !== 'object')
       return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
 
-    //const res = valueToMacro({path: initialPath, line:0, col: 0, depth : depth || 1}, val, forceFlat)
-
     calcValueProps(val,initialPath)
-    const tokens = calcTokens(initialPath)
+    const tokens = calcTokens(initialPath, depth || 1, forceFlat)
     const res = aggregateTokens(tokens,{line:0, col: 0})
     res.text = res.text.replace(jb.utils.fixedNLRegExp,'\n')
     return res
-
-    function processList(ctx,items) {
-      const res = items.reduce((acc,{prop, item}) => {
-        const toAdd = typeof item === 'function' ? item(acc) : item
-        const toAddStr = toAdd.text || toAdd, toAddMap = toAdd.map || {}, toAddPath = toAdd.path || ctx.path
-        const startPos = jb.utils.advanceLineCol(acc,''), endPos = jb.utils.advanceLineCol(acc,toAddStr)
-        const posArray = [startPos.line, startPos.col, endPos.line, endPos.col]
-        posArray.toAddStr = toAddStr
-        const map = { ...acc.map, ...toAddMap, [[toAddPath,prop].join('~')]: posArray }
-        return { text: acc.text + toAddStr, map, unflat: acc.unflat || toAdd.unflat, ...endPos}
-      }, {text: '', map: {}, ...ctx})
-      return {...ctx, ...res}
-    }
-
-    function joinVals(ctx, innerVals, open, close, flat, isArray) {
-      const {path, depth} = ctx
-      if (depth > 100)
-        throw `prettyprint structure too deep ${path} ${depth}`
-      const _open = typeof open === 'string' ? [{prop: '!open', item: open}] : open
-      const arrayOrProfile = isArray? 'array' : 'profile'
-      const openResult = processList(ctx,[..._open, {prop: `!open-${arrayOrProfile}`, item: () => newLine()}])
-
-      const beforeClose = innerVals.reduce((acc,{innerPath, val}, index) => {
-        const ctxWithPath = { ...ctx, path: [path,innerPath].join('~'), depth: depth +1 }
-        const fixedPropName = valueToMacro(ctxWithPath, val, flat).fixedPropName // used to serialize function memeber
-        const semanticPrefix = isArray ? `array-prefix-${index}` : 'prop'
-        const semanticSeparator = isArray ? `array-separator-${index}` : `obj-separator-${index}`
-        return processList(acc,[
-          {prop: `${innerPath}~!${semanticPrefix}`, item: isArray ? '' : fixedPropName || (fixPropName(innerPath) + ': ')},
-          {prop: '!value', item: ctx => {
-              const ctxWithPath = { ...ctx, path: [path,innerPath].join('~'), depth: depth +1 }
-              return {...ctxWithPath, ...valueToMacro(ctxWithPath, val, flat)}
-            }
-          },
-          {prop: `!${semanticSeparator}`, item: () => index === innerVals.length-1 ? '' : ',' + (flat ? ' ' : newLine())},
-        ])}
-      , {...openResult, unflat: false} )
-      const _close = typeof close === 'string' ? [{prop: `!close-${arrayOrProfile}`, item: close}] : close
-      const result = processList(beforeClose, [{prop: `!close-${arrayOrProfile}`, item: () => newLine(-1)}, ..._close])
-
-      const unflat = shouldNotFlat(result)
-      if ((forceFlat || !unflat) && !flat)
-        return joinVals(ctx, innerVals, open, close, true, isArray)
-      return {...result, unflat}
-
-      function newLine(offset = 0) {
-        return flat ? '' : '\n' + jb.utils.emptyLineWithSpaces.slice(0,(depth+offset)*tabSize)
-      }
-
-      function shouldNotFlat(result) {
-        const long = result.text.replace(/\n\s*/g,'').split(jb.utils.fixedNL)[0].length > colWidth
-        if (!jb.path(jb,'tgp.valOfPath'))
-          return result.unflat || long
-        const val = jb.path(jb.comps,path.split('~')) 
-        const paramProps = path.match(/~params~[0-9]+$/)
-        const paramsParent = path.match(/~params$/)
-//        const ctrls = path.match(/~controls$/) && Array.isArray(val)
-        const moreThanTwoVals = innerVals.length > 2 && !isArray
-        const top = !path.match(/~/g)
-        const singleParamAsArray = val && jb.tgp.singleParamAsArray(path)
-        const longInnerValInArray = !singleParamAsArray && innerVals.reduce((longFound,{},i) => 
-          longFound || ((result.map[`${path}~${i}~!value`] || {}).toAddStr || '').length > 20 , false)
-        const res = !paramProps && (result.unflat || paramsParent || top || long || moreThanTwoVals || longInnerValInArray)
-        // if (res != !!(res || ctrls))
-        //   debugger
-        return res // || ctrls 
-      }
-      function fixPropName(prop) {
-        if (prop == '$vars') return 'vars'
-        return prop.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/) ? prop : `'${prop}'`
-      }
-    }
-
-    function profileToMacro(ctx, profile,flat) {
-      const fullId = [jb.utils.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
-      const comp = fullId && jb.utils.getComp(fullId)
-      if (comp && profile.$byValue)
-        jb.utils.resolveDetachedProfile(profile)
-      const id = fullId.split('>').pop()
-        
-      if (noMacros || !id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
-        const props = Object.keys(profile)
-        if (props.indexOf('$') > 0) { // make the $ first
-          props.splice(props.indexOf('$'),1);
-          props.unshift('$');
-        }
-        return joinVals(ctx, props.map(prop=>({innerPath: prop, val: profile[prop]})), '{', '}', flat, false)
-      }
-      const macro = jb.macro.titleToId(id)
-
-      const params = comp.params || []
-      const singleParamAsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
-      const vars = (profile.$vars || []).map(({name,val},i) => ({innerPath: `$vars~${i}`, val: {$: 'Var', name, val }}))
-      const systemProps = [...vars, 
-          ...profile.remark ? [{innerPath: 'remark', val: {$remark: profile.remark}} ] : [],
-          ...profile.typeCast ? [{innerPath: 'typeCast', val: {$typeCast: profile.$typeCast}} ] : [],
-      ]
-      const openProfileByValueGroup = [{prop: '!profile', item: macro}, {prop:'!open-by-value', item:'('}]
-      const closeProfileByValueGroup = [{prop:'!close-by-value', item:')'}]
-      const openProfileGroup = [{prop: '!profile', item: macro}, {prop:'!open-profile', item:'({'}]
-      const closeProfileGroup = [{prop:'!close-profile', item:'})'}]
-
-      if (singleParamAsArray) { // pipeline, or, and, plus
-        const vars = (profile.$vars || []).map(({name,val}) => ({$: 'Var', name, val }))
-        const args = vars.concat(jb.asArray(profile[params[0].id]))
-          .map((val,i) => ({innerPath: params[0].id + '~' + i, val}))
-        return joinVals(ctx, args, openProfileByValueGroup, closeProfileByValueGroup, flat, true)
-      }
-      const keys = Object.keys(profile).filter(x=>x != '$')
-      const oneFirstArg = keys.length === 1 && params[0] && params[0].id == keys[0]
-      const twoFirstArgs = keys.length == 2 && params.length >= 2 && profile[params[0].id] && profile[params[1].id]
-      if ((params.length < 3 && comp.macroByValue !== false) || comp.macroByValue || oneFirstArg || twoFirstArgs) {
-        const args = systemProps.concat(params.map(param=>({innerPath: param.id, val: profile[param.id]})))
-        while (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop() // cut the undefined's at the end
-        return joinVals(ctx, args, openProfileByValueGroup, closeProfileByValueGroup, flat, true)
-      }
-      const systemPropsInObj = [
-        ...profile.remark ? [{innerPath: 'remark', val: profile.remark} ] : [],
-        ...profile.typeCast ? [{innerPath: 'typeCast', val: profile.$typeCast} ] : [],
-        ...vars.length ? [{innerPath: '$vars', val: vars.map(x=>x.val)}] : []
-      ]
-      const args = systemPropsInObj.concat(params.filter(param=>profile[param.id] !== undefined)
-          .map(param=>({innerPath: param.id, val: profile[param.id]})))
-      const open = args.length ? openProfileGroup : openProfileByValueGroup
-      const close = args.length ? closeProfileGroup : closeProfileByValueGroup
-      return joinVals(ctx, args, open, close, flat, false)
-    }
-
-    function valueToMacro({path, line, col, depth}, val, flat) {
-      const ctx = {path, line, col, depth}
-      let result = doValueToMacro()
-      if (typeof result === 'string')
-        result = { text: result, map: {}}
-      return result
-
-      function doValueToMacro() {
-        if (Array.isArray(val)) return arrayToMacro(ctx, val, flat);
-        if (val === null) return 'null'
-        if (val == globalThis) return 'err'
-        if (val === undefined) return 'undefined'
-        if (typeof val === 'object') return profileToMacro(ctx, val, flat)
-        if (typeof val === 'function' && val[jb.macro.isMacro]) return profileToMacro(ctx, val(), flat)
-        if (typeof val === 'function') return serializeFunction(val)
-    
-        if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
-          return processList(ctx,[
-            {prop: '!value-text-start', item: "'"},
-            {prop: '!value-text', item: JSON.stringify(val).slice(1,-1)},
-            {prop: '!value-text-end', item: "'"},
-          ])
-        else if (typeof val === 'string' && val.indexOf('\n') != -1)
-          return processList(ctx,[
-            {prop: '!value-text-start', item: "`"},
-            {prop: '!value-text', item: val.replace(/`/g,'\\`')},
-            {prop: '!value-text-end', item: "`"},
-          ])
-        else
-          return JSON.stringify(val) || 'undefined'; // primitives or symbol
-      }
-    }
-
-    function arrayToMacro(ctx, array, flat) {
-      const vals = array.map((val,i) => ({innerPath: i, val}))
-      const openArray = [{prop:'!open-array-char', item:'['}]
-      const closeArray = [{prop:'!close-array-char', item:']'}]
-
-      return joinVals(ctx, vals, openArray, closeArray, flat, true)
-    }
-
-// new
 
     function aggregateTokens(tokens, initialPos = { line: 0, col: 0 }) {
       const map = {}, paths = {}
@@ -263,7 +91,7 @@ jb.extension('utils', 'prettyPrint', {
           ...acc,
           {prop: `!${semanticPrefix}`, path: fullInnerPath, item: isArray ? '' : fixedPropName || (fixPropName(innerPath) + ': ')},
           {prop: '!value', item: '', path: fullInnerPath },
-          ...calcTokens(fullInnerPath, (depth || 0) +1, forceFlat),
+          ...calcTokens(fullInnerPath, flat ? depth : depth +1, forceFlat),
           {prop: '!value', item: '', path: fullInnerPath, end: true },
           {prop: `!${semanticSeparator}`, path, item: index === innerVals.length-1 ? '' : ',' + (flat ? ' ' : newLine())},
         ]

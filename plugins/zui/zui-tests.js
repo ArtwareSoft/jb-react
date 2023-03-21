@@ -1,8 +1,4 @@
 
-jb.component('dataTest.pipelineMultiple', {
-  impl: dataTest(pipeline(list(1, 2), join()), '1,2')
-})
-
 jb.component('zuiTest.itemlist', {
   impl: uiTest({
     control: group({
@@ -13,9 +9,11 @@ jb.component('zuiTest.itemlist', {
             verticalOneByOne(),
             [
               growingText(byName('title')),
-              fixedText(byName('price')),
-              fixedText(byName('hits')),
-              circle(byName('hits'), priorty(1))
+              circle(byName('hits'), priorty(1)),
+              group(horizontalOneByOne(), [
+                fixedText(byName('price')),
+                fixedText(byName('hits'))
+              ])
             ]
           ),
           boardSize: 8,

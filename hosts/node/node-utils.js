@@ -1,4 +1,6 @@
 const fs = require('fs')
+globalThis.jbNet = require('net')
+globalThis.jbHttp = require('http')
 if (!global.jbBaseUrl) {
     const underJbReact = (__dirname.match(/projects\/jb-react(.*)$/) || [''])[1]
     global.jbBaseUrl = underJbReact != null ? __dirname.slice(0,-1*underJbReact.length) : '.'
@@ -17,6 +19,26 @@ global.jbFetchFile = url => {
     return Promise.resolve()
 }
 global.jbFetchJson = url => jbFetchFile(url).then(x=>JSON.parse(x))
+
+globalThis.jbFetchUrl = (url,_options) => {
+    return new Promise((resolve,reject) => {
+        const body = _options && _options.body
+        const headers = {'Content-Type': 'application/json' }
+        if (body)
+            Object.assign(headers,{ 'Content-Length': Buffer.byteLength(body) })
+
+        const options = _options ? { ..._options, headers} : { method: 'GET', headers  }
+
+        const req = (globalThis.vsHttp || require('http')).request(url,options, res => {
+            let data = ''
+            res.on('data', chunk => data += chunk)
+            res.on('end', () => resolve({text: () => ''+data, json: () => JSON.parse(data)}))
+            req.on('error', error => reject({error}))
+        })
+        body && req.write(body)
+        req.end()
+    })
+}
 
 global.jbFileSymbols = async (path, _include, _exclude) => {
     const include = _include && new RegExp(_include)
@@ -75,12 +97,13 @@ global.jbGetJSFromUrl = async url => {
     vm.runInThisContext(code, url)
 }
 
-global.jbSpawn = async args => {
+global.jbSpawn = async (args, {doNotWaitForEnd} = {}) => {
     return new Promise((resolve) => {
+        const command = `node --inspect-brk jb.js ${args.map(x=>`'${x}'`).join(' ')}`
         const proc = require('child_process').spawn('node',[`${jbBaseUrl}/bin/jb.js`, ...args] ,{cwd: jbBaseUrl})
         let res = ''
         proc.stdout.on('error', err => resolve({err}))
-        proc.stdout.on('data', data => res +=data)
+        proc.stdout.on('data', data => doNotWaitForEnd ? resolve(''+data) : (res +=data))
         proc.stdout.on('end', data => {
             if (data)
                 res +=data

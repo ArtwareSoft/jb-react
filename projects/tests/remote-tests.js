@@ -568,11 +568,29 @@ jb.component('remoteTest.nodeContainer.runTest', {
   impl: dataTest({
     vars: [
       Var('testsToRun', list('dataTest.join', 'dataTest.ctx.expOfRefWithBooleanType')),
-      Var('servlet', jbm.nodeContainer({id:'tester', projects: list('studio', 'tests'), inspect: 7010 }))
+      Var('servlet', jbm.nodeContainer({
+        id: 'tester',
+        projects: list('studio', 'tests'),
+        inspect: 7010
+      }))
     ],
-    calculate: pipe(rx.pipe(source.data('%$testsToRun%'), rx.log('test'), remote.operator(rx.mapPromise(({data}) => {
+    calculate: pipe(
+      rx.pipe(
+        source.data('%$testsToRun%'),
+        rx.log('test'),
+        remote.operator(
+          rx.mapPromise(
+            ({data}) => {
         return jb.test.runOneTest(data) 
-      }), '%$servlet%'), rx.log('test')), '%success%', join(',')),
+      }
+          ),
+          '%$servlet%'
+        ),
+        rx.log('test')
+      ),
+      '%success%',
+      join(',')
+    ),
     expectedResult: equals('true,true'),
     timeout: 3000
   })
@@ -591,5 +609,20 @@ jb.component('remoteTest.testResults', {
     timeout: 3000
   })
 })
+
+// jb.component('remoteTest.tcp', {
+//   impl: dataTest({
+//     vars: [
+//       Var('s1', jbm.nodeContainer({id: 's1', inspect: 7010, spyParam: 'remote'})),
+//     ],
+//     calculate: remote.data(pipe(
+//       jbm.nodeContainer({id: 's2', tcp: true, urlBase: 'http://localhost:8082', spyParam: 'remote', inspect: 7011}),
+//       remote.data('hello from s2 via tcp', '%%'))
+//         ,'%$s1%'),
+//     expectedResult: equals('hello from s2 via tcp'),
+//     timeout: 3000
+//   })
+// })
+
 
 

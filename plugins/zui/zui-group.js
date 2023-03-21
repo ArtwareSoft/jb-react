@@ -4,7 +4,7 @@ jb.component('group', {
   type: 'view',
   params: [
     {id: 'layout', type: 'layout', defaultValue: verticalOneByOne()},
-    {id: 'views', mandatory: true, type: 'view[]', dynamic: true},
+    {id: 'views', mandatory: true, type: 'view[]', dynamic: true, composite: true},
     {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true},
   ],
   impl: (ctx,layout,viewsF,features) => {
@@ -14,7 +14,8 @@ jb.component('group', {
     const view = {
       title: 'group',
       children: views,
-      path: ctx.path,
+      ctxPath: ctx.path,
+      ...layout,
       state: () => jb.zui.viewState(ctx),
       pivots: () => views.flatMap(v=>v.pivots()),
       zuiElems: () => views.flatMap(v=>v.zuiElems()),
@@ -27,43 +28,12 @@ jb.component('group', {
 
 jb.component('verticalOneByOne', {
   type: 'layout',
-  impl: ctx => ({
-    layout(layoutProps, views) {
-      debugger
-      const {height, top} = layoutProps
-      let sizeLeft = height, accTop = top
-      views.byPriority.forEach(v=>{
-        const state = v.state()
-        const viewPreferedHeight = v.preferedHeight ? v.preferedHeight(layoutProps) : 0
-        if (sizeLeft == 0) {
-          state.height = 0
-        } else if (sizeLeft > viewPreferedHeight) {
-          state.height = viewPreferedHeight
-          sizeLeft -= viewPreferedHeight
-        } else if (sizeLeft > v.enterHeight) {
-          state.height = sizeLeft
-          sizeLeft = 0
-        } else {
-          state.height = 0
-          sizeLeft = 0
-        }
-        v.layout({...layoutProps, height: null})
-      })
-
-      views.filter(v=>jb.zui.isVisible(v)).forEach(v=>{
-        v.state().top = accTop
-        accTop += height
-      })
-      return layoutProps
-    }
-  })
+  impl: () => ({ axis:  1 })
 })
 
 jb.component('horizontalOneByOne', {
   type: 'layout',
-  params: [
-  ],
-  impl: ctx => ctx.params
+  impl: () => ({ axis:  0 })
 })
 
 jb.component('priorty', {
@@ -75,3 +45,34 @@ jb.component('priorty', {
     enrich(obj) { obj.priority = priority}
   })
 })
+
+
+    // layout(layoutProps, views) {
+    //   debugger
+    //   const {height, top} = layoutProps
+    //   let sizeLeft = height, accTop = top
+    //   views.byPriority.forEach(v=>{
+    //     const state = v.state()
+    //     const viewPreferedHeight = v.preferedHeight ? v.preferedHeight(layoutProps) : 0
+    //     if (sizeLeft == 0) {
+    //       state.height = 0
+    //     } else if (sizeLeft > viewPreferedHeight) {
+    //       state.height = viewPreferedHeight
+    //       sizeLeft -= viewPreferedHeight
+    //     } else if (sizeLeft > v.enterHeight) {
+    //       state.height = sizeLeft
+    //       sizeLeft = 0
+    //     } else {
+    //       state.height = 0
+    //       sizeLeft = 0
+    //     }
+    //     v.layout({...layoutProps, height: null})
+    //   })
+
+    //   views.filter(v=>jb.zui.isVisible(v)).forEach(v=>{
+    //     v.state().top = accTop
+    //     accTop += height
+    //   })
+    //   return layoutProps
+    // }
+//  })

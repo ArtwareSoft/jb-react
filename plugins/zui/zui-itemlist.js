@@ -32,7 +32,7 @@ jb.component('itemlistStyle', {
         const DIM = $model.boardSize
         const items = $model.items()
         const zoom = +($model.initialZoom || DIM)
-        const renderProps = {itemView: { size: [width,height], zoom }}
+        const renderProps = {itemView: { size: [width/zoom,height/zoom], zoom }}
         const ctxWithItems = ctx.setVars({items, renderProps})
         const itemProps = $model.itemProps(ctxWithItems)
         const itemView = $model.itemView(ctxWithItems.setVars({itemProps}))
@@ -137,7 +137,7 @@ jb.extension('zui','itemlist', {
 //    props.elems.forEach(elem => elem.specificProps && Object.assign(props, elem.specificProps(props)))
     props.elems.forEach(elem => elem.buffers = elem.prepareGPU(props))
     Object.assign(props, jb.zui.prepareItemView(props.itemView))
-    Object.assign(cmp, {
+    Object.assign(cmp, { 
       render() {
         const { itemView, zoom, glCanvas,elems, renderProps } = props
         const [width, height] = [glCanvas.width/ zoom, glCanvas.height/ zoom]
@@ -146,7 +146,7 @@ jb.extension('zui','itemlist', {
         const visibleElems = elems.filter(el=> jb.zui.isVisible(el))
         visibleElems.forEach(elem => elem.calcElemProps && elem.calcElemProps(props) )
         visibleElems.forEach(elem => elem.renderGPUFrame(props, elem.buffers))
-        console.log('renderProps', renderProps)
+        console.log('renderProps', zoom, renderProps)
       },
     })
   },
@@ -154,99 +154,4 @@ jb.extension('zui','itemlist', {
     const {renderProps} = ctx.vars
     return renderProps[ctx.path] = renderProps[ctx.path] || {}
   },
-  isVisible(el) {
-    const { width, height } = el.state()
-    return width && height    
-  },
-  // relevant for all zoom levels
-  prepareItemView(itemView) {
-    return {
-      minSizes: calcMin(itemView).sort((r1,r2) => r1.priority - r2.priority)
-    }
-    function calcMin(view, parentAxis = 1) {
-      return view.children ? aggregateMinRecs(view.children.map(v => calcMin(v, view.layoutAxis))) 
-        : [{p: view.priority, path: view.path, min: view.layoutSizes({size:[0,0],zoom:1}).slice(0,2) }]
-
-      function aggregateMinRecs(childRecords) {
-        if (parentAxis == view.layoutAxis)           // in the layout axis all records.
-          return childRecords.flatMap(ar=>ar)
-        // in the perpendicular axis - take only highest priority. bug - shadows lower priority and less demand
-        return childRecords.flatMap(ar=>ar.sort((x,y) => x.priority < y.priority).slice(-1))
-      }
-    }
-  },
-  layoutView(itemView,renderProps,{minSizes}) {
-    const itemViewSize = renderProps.itemView.size
-    const {residualForPref, filteredViews} = allocateMinAndFilter()
-
-
-    //calcLayoutNeeds(itemView)
-    // const residualForPref = allocateMin(itemView)
-    // const residualForMax = allocatePref(itemView,residualForPref)
-    // allocateMax(itemView,residualForMax)
-
-    function allocateMinAndFilter() {
-      const viewPathsCount = {}
-      ;[0,1].map(axis => minSizes.reduce((residual,item) => {
-          const toAlloc = item.min[axis]
-          if (toAlloc < residual) {
-            viewPathsCount[item.path] = (viewPathsCount[item.path] || 0) + 1
-            return residual - toAlloc
-          }
-       }, itemViewSize[axis]))
-      const filteredViews = jb.objFromEntries(Object.keys(viewPathsCount).filter(k=>viewPathsCount[k] == 2).map(k=>[k,1]))
-      Object.keys(filteredViews).slice(0).forEach(k=>{ // add parent groups as filtered
-        k.split('~').slice(1,-1).reduce((acc,key) => {
-          const path = `${acc}~${key}`
-          filteredViews[path] = true
-          return path
-        },k.split('~')[0])
-      })
-      const filteredMinSizes = minSizes.filter(r=>filteredViews[r.path])
-      const residualForPref = [0,1].map(axis => filteredMinSizes.reduce((residual,item) => {
-          const toAlloc = item.min[axis]
-          if (toAlloc < residual) {
-            assignRenderPropsWithAxis(item.path,axis, 'allocMin', toAlloc)
-            // if (isGroupChangingAxis(item.view)) {
-            //   allocateMinAndFilter(item.view)
-            // }
-            return residual - toAlloc
-          }
-        }, itemViewSize[axis]))
-      
-      return {residualForPref, filteredViews}
-    }
-
-    function calcLayoutNeeds(view, type) { // bottom up
-      const needs = view.children ? view.children.filter(v=>filteredViews[v.path]).reduce( (acc,v) => {
-        const needs = calcLayoutNeeds(v)
-        ;['min', 'pref', 'max'].forEach(t=> {
-          if (acc[t]) acc[t] = [...jb.asArray(acc[t]),...needs[t]] 
-        })
-        return acc
-      } , {}) : calcLeafNeeds(view, view.layoutSizes(itemViewSizes))
-      return assignRenderProps(view.path,{needs})
-    }
-
-    function calcLeafNeeds(view, [minX, minY, prefX,PrefY, maxX,MaxY]) {
-      const p = view.priority, path = view.path
-      return { 
-        min: {p, size: [minX, minY], path}, 
-        ...(prefX || PrefY) ? {pref: {p, size: [prefX,PrefY], path}} : {}, 
-        ...(maxX || MaxY) ? {max: { size: [maxX,MaxY], path}} : {}, 
-      }
-    }
-
-    function assignRenderProps(path,obj) {
-      return renderProps[path] = Object.assign(renderProps[path] || {},obj)
-    }
-
-    function assignRenderPropsWithAxis(path, axis, prop, val) {
-      renderProps[path] = renderProps[path] || { prop: []}
-      renderProps[path][prop] = renderProps[path][prop] || []
-      renderProps[path][prop][axis] = val        
-    }
-
-
-  }
 })

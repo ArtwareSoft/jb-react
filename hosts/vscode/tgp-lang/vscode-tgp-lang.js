@@ -17,17 +17,16 @@ globalThis.jb_plugins = jb_plugins
  
 async function activate(context) {
     globalThis.jb = globalThis.jb || (globalThis.jbInit && await jbInit('jbart-lsp-ext', {
-        plugins: ['vscode', 'tgp'], doNoInitLibs: true
+        plugins: ['vscode', 'tgp','remote'], doNoInitLibs: true
     }))
     await jb.initializeLibs(['utils','treeShake','remoteCtx','jbm','cbHandler','tgpTextEditor','vscode','nodeContainer'])
     jb.spy.initSpy({spyParam: 'remote,vscode'})
-    jb.logVscode = console.log
     await jb.vscode.initVscodeAsHost({context})
 
-    ;['gotoPath','restartLangServer','applyCompChange']
+    ;['applyCompChange']
         .forEach(cmd => vscodeNS.commands.registerCommand(`jbart.${cmd}`, jb.tgpTextEditor[cmd]))
 
-    ;['moveUp','moveDown','openProbeResultPanel']
+    ;['moveUp','moveDown','openProbeResultPanel','restartLangServer']
             .forEach(cmd => vscodeNS.commands.registerCommand(`jbart.${cmd}`, jb.vscode[cmd]))
     
     ;['main'].forEach(viewId => context.subscriptions.push(

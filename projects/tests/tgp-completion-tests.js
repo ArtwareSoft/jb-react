@@ -26,9 +26,9 @@ jb.component('completionTest.pt', {
     compText:`jb.component('x', {
   impl: uiTest({
     control: group({controls: [__
-__        text('hello world in the largest'),__
-__        text('2')__
-__      ]}),
+__      text('hello world in the largest'),__
+__      text('2')__
+__    ]}),
     expectedResult: __contains(['hello world', '2'])
   })
 })`,
@@ -328,3 +328,36 @@ jb.component('completionTest.writePreviewValue', {
   })
 })
 
+//    runBefore: tgp.startLangServer(),
+jb.component('remoteTest.langServer.Completions', {
+  impl: dataTest(
+    pipe(
+      Var('docProps', tgp.dummyDocProps(`jb.component('x', {
+  impl: dataTest(pipeline(__))
+})`)),
+      '1',
+      tgp.getCompletionItemsFromServer('%$docProps%'),
+      log('test'),
+      count()
+    ),
+    '%% > 10'
+  )
+})
+
+jb.component('remoteTest.langServer.editsAndCursorPos', {
+  impl: dataTest({
+    vars: [
+      Var('docProps', tgp.dummyDocProps(`jb.component('x', {
+  impl: dataTest(pipeline(__))
+})`))
+    ],
+    calculate: pipe(
+      tgp.getCompletionItemsFromServer('%$docProps%'),
+      filter(equals('%label%', 'split')),
+      tgp.editsAndCursorPosFromServer('%$docProps/docText%', '%command/arguments/0%'),
+      log('test'),
+      '%edit/newText%'
+    ),
+    expectedResult: '%%==split()'
+  })
+})
