@@ -10,7 +10,12 @@ jb.component('zui.itemPreview', {
           title: pipeline('%$path%', '%%-%$zuiCtx/props/renderProps/{%%}/title%'),
           style: propertySheet.titlesAbove(),
           controls: dynamicControls({
-            controlItems: pipeline('%$zuiCtx/props/renderProps%', property('%$path%'), properties()),
+            controlItems: pipeline(
+              '%$zuiCtx/props/renderProps%',
+              property('%$path%'),
+              properties(),
+              filter(not(inGroup(list('path', 'title', 'axis'), '%id%')))
+            ),
             genericControl: text(pipeline('%$prop/val%', formatNumber(), join()), '%$prop/id%'),
             itemVariable: 'prop'
           }),
@@ -23,9 +28,6 @@ jb.component('zui.itemPreview', {
   }),
   circuit: 'zuiTest.itemlist'
 })
-
-//genericControl: text(pipeline('%$prop/val%', formatNumber(), join()), '%$prop/id%'),
-
 
 jb.component('zui.stateOfItemView', {
   params: [

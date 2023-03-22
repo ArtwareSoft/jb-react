@@ -22,21 +22,25 @@ global.jbFetchJson = url => jbFetchFile(url).then(x=>JSON.parse(x))
 
 globalThis.jbFetchUrl = (url,_options) => {
     return new Promise((resolve,reject) => {
-        const body = _options && _options.body
-        const headers = {'Content-Type': 'application/json' }
-        if (body)
-            Object.assign(headers,{ 'Content-Length': Buffer.byteLength(body) })
+        try {
+            const body = _options && _options.body
+            const headers = {'Content-Type': 'application/json' }
+            if (body)
+                Object.assign(headers,{ 'Content-Length': Buffer.byteLength(body) })
 
-        const options = _options ? { ..._options, headers} : { method: 'GET', headers  }
+            const options = _options ? { ..._options, headers} : { method: 'GET', headers  }
 
-        const req = (globalThis.vsHttp || require('http')).request(url,options, res => {
-            let data = ''
-            res.on('data', chunk => data += chunk)
-            res.on('end', () => resolve({text: () => ''+data, json: () => JSON.parse(data)}))
-            req.on('error', error => reject({error}))
-        })
-        body && req.write(body)
-        req.end()
+            const req = (globalThis.vsHttp || require('http')).request(url,options, res => {
+                let data = ''
+                res.on('data', chunk => data += chunk)
+                res.on('end', () => resolve({text: () => ''+data, json: () => JSON.parse(data)}))
+                req.on('error', error => reject({error}))
+            })
+            body && req.write(body)
+            req.end()
+        } catch(e) {
+            reject(e)
+        }
     })
 }
 

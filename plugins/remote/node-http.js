@@ -101,10 +101,10 @@ jb.component('node.startHttpServer', {
             jb.log('remote http service already up',{port})
             if (restart) {
               jb.log('remote http terminating existing service',{port})
-              await (await globalThis.jbFetchUrl(`http://localhost:${port}/?op=terminate`)).json()
-              await jb.delay(1000)
-              const res = await start()
-              resolve(res)
+              try {
+                await (await globalThis.jbFetchUrl(`http://localhost:${port}/?op=terminate`)).json()
+              } catch(e) {}
+              resolve(await start())
             } else { // use current server
               jb.log('remote http try to redirect to existing service',{port})
               const details = await (await globalThis.jbFetchUrl(`http://localhost:${port}/?op=details`)).json()

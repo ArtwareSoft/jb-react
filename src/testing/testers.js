@@ -171,9 +171,6 @@ jb.component('uiFrontEndTest', {
 })
 
 jb.component('uiTest.vdomResultAsHtml', {
-  params: [
-    
-  ],
   impl: ctx => {
 		const widget = jb.ui.headless[ctx.vars.tstWidgetId]
 		if (!widget) return ''
@@ -182,7 +179,7 @@ jb.component('uiTest.vdomResultAsHtml', {
 		return widget.body.children.map(vdom => {
 			const elemToTest = document.createElement('div')
 			elemToTest.ctxForFE = ctx.setVars({elemToTest})
-			jb.ui.render(vdom, elemToTest)
+			jb.ui.render(vdom, elemToTest,{doNotRefreshFrontEnd: true})
 			Array.from(elemToTest.querySelectorAll('input,textarea')).forEach(e=> e.parentNode && 
 				jb.ui.addHTML(e.parentNode,`<input-val style="display:none">${e.value}</input-val>`))		
 			return elemToTest.outerHTML	

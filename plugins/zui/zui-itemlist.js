@@ -141,12 +141,14 @@ jb.extension('zui','itemlist', {
       render() {
         const { itemView, zoom, glCanvas,elems, renderProps } = props
         const [width, height] = [glCanvas.width/ zoom, glCanvas.height/ zoom]
+        Object.keys(renderProps).forEach(k=>delete renderProps[k])
         renderProps.itemView = { size: [width,height], zoom }
         jb.zui.layoutView(itemView, renderProps, props)
         const visibleElems = elems.filter(el=> jb.zui.isVisible(el))
         visibleElems.forEach(elem => elem.calcElemProps && elem.calcElemProps(props) )
         visibleElems.forEach(elem => elem.renderGPUFrame(props, elem.buffers))
-        console.log('renderProps', zoom, renderProps)
+        props.onChange()
+        //console.log('renderProps', zoom, renderProps)
       },
     })
   },

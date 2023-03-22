@@ -106,9 +106,16 @@ jb.extension('vscode', 'utils', {
         return loc && new vscodeNS.Location(vscodeNS.Uri.file(jbBaseUrl + loc[0]), new vscodeNS.Position((+loc[1]) || 0, 0))
     },
     // commands
-    restartLangServer() {
-        jb.log('vscode restart lang server',{})
-        jb.nodeContainer.toRestart = ['completionServer']
+    async restartLangServer() {
+        jb.vscode.log('vscode restart lang server',{})
+        const port = jb.path(jb.nodeContainer.servers,'langServer.port') || 8085
+        jb.log('remote http terminating existing service',{port})
+        try {
+            globalThis.jbFetchUrl(`http://localhost:${port}/?op=terminate`)
+        } catch(e) {}
+        await jb.exec(tgp.startLangServer())
+        const pid = jb.path(jb.nodeContainer.servers,'langServer.pid')
+        jb.vscode.log(`lang server started @${pid}`)
     },    
     moveUp() {
         return jb.vscode.moveInArray({ diff: -1, ...jb.tgpTextEditor.host.docTextAndCursor()})

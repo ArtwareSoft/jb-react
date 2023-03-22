@@ -26,8 +26,9 @@ jb.extension('zui','layout', {
     const axes = [itemView.axis,itemView.axis ? 0 : 1]
     const residue = axes.map(axis => allocMinSizes(minRecords[axis],renderProps.itemView.size[axis]))
     const records = axes.map(axis => minRecords[axis].filter(r=>r.alloc))
-    records[0].forEach(r=>renderProps[r.path] = r)
-    records[1].forEach(r=> Object.keys(r).filter(k=>typeof r[k] == 'number').forEach(k=>renderProps[r.path][k] += `,${r[k]}`))
+    records[0].forEach(r=>renderProps[r.path] = JSON.parse(JSON.stringify(r)))
+    records[1].forEach(r=> Object.keys(r).filter(k=>typeof r[k] == 'number')
+      .forEach(k=>renderProps[r.path][k] += `,${r[k]}`))
 
 //    console.log(residue,minRecords)
 //    debugger

@@ -361,3 +361,14 @@ jb.component('remoteTest.langServer.editsAndCursorPos', {
     expectedResult: '%%==split()'
   })
 })
+
+// jb.component('remoteTest.langServer.restart', {
+//   impl: dataTest({
+//     calculate: pipeline(
+//       () => jb.path(jb.nodeContainer.servers,'langServer.pid'),
+//       log('test')
+//     ),
+//     expectedResult: equals(5),
+//     runBefore: runActions(tgp.startLangServer(), tgp.startLangServer(true))
+//   })
+// })

@@ -412,14 +412,14 @@ jb.extension('ui', 'react', {
                 destroyWidget: jb.ui.findIncludeSelf(elem,`[widgetid="${widgetId}"]`).length,
         }))
     },
-    render(vdom,parentElem,{prepend,ctx} = {}) {
+    render(vdom,parentElem,{prepend,ctx,doNotRefreshFrontEnd} = {}) {
         jb.log('render',{vdom,parentElem,prepend})
         if (jb.path(parentElem,'constructor.name') == 'VNode')
             return parentElem.appendChild(vdom)
 
         const res = doRender(vdom,parentElem)
         vdomDiffCheckForDebug()
-        jb.ui.refreshFrontEnd(res, {content: vdom })
+        !doNotRefreshFrontEnd && jb.ui.refreshFrontEnd(res, {content: vdom })
         return res
 
         function doRender(vdom,parentElem) {
