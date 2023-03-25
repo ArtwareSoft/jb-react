@@ -5,26 +5,66 @@ jb.component('zui.itemPreview', {
     style: group.sections(header.h3()),
     controls: [
       dynamicControls({
-        controlItems: pipeline('%$zuiCtx/props/renderProps%', keys()),
+        controlItems: pipeline('%$zuiCtx/props/renderProps%', properties()),
         genericControl: group({
-          title: pipeline('%$path%', '%%-%$zuiCtx/props/renderProps/{%%}/title%'),
+          title: pipeline('%$renderProp/val/path% - %$renderProp/val/title%'),
           style: propertySheet.titlesAbove(),
           controls: dynamicControls({
-            controlItems: pipeline(
-              '%$zuiCtx/props/renderProps%',
-              property('%$path%'),
-              properties(),
-              filter(not(inGroup(list('path', 'title', 'axis'), '%id%')))
-            ),
+            controlItems: pipeline('%$renderProp/val%', properties(), filter(not(inGroup(list('path', 'title', 'axis'), '%id%')))),
             genericControl: text(pipeline('%$prop/val%', formatNumber(), join()), '%$prop/id%'),
             itemVariable: 'prop'
           }),
           features: css.margin({left: '30px'})
         }),
-        itemVariable: 'path'
+        itemVariable: 'renderProp'
       })
     ],
-    features: [id('itemPreview'), css.width('400')]
+    features: [css.width('400'), id('itemPreview')]
+  }),
+  circuit: 'zuiTest.itemlist'
+})
+
+jb.component('zui.visualItemPreview', {
+  type: 'control',
+  impl: group({
+    controls: [
+      dynamicControls({
+        controlItems: pipeline('%$zuiCtx/props/renderProps%', values(), filter('%size/1%'), filter('%title% != group')),
+        genericControl: text({
+          text: '%$box/title%',
+          style: text.span(),
+          features: [
+            css.width('%$box/size/0%px'),
+            css.height('%$box/size/1%px'),
+            feature.onHover(
+              openDialog({
+                title: '%$box/path% - %$box/title%',
+                content: group({
+                  style: propertySheet.titlesAbove(),
+                  controls: dynamicControls({
+                    controlItems: pipeline('%$box%', properties(), filter(not(inGroup(list('path', 'title', 'axis'), '%id%')))),
+                    genericControl: text(pipeline('%$prop/val%', formatNumber(), join()), '%$prop/id%'),
+                    itemVariable: 'prop'
+                  }),
+                  features: css.margin({left: '30px'})
+                }),
+                features: [
+                  dialogFeature.nearLauncherPosition(),
+                  dialogFeature.uniqueDialog('zui-preview')
+                ]
+              })
+            ),
+            css('position: absolute; background: red; opacity: 0.5; left: %$box/pos/0%px; top: %$box/pos/1%px')
+          ]
+        }),
+        itemVariable: 'box'
+      })
+    ],
+    features: [
+      css.width('400'),
+      id('itemPreview'),
+      css('position: relative')
+    ]
   }),
   circuit: 'zuiTest.itemlist'
 })

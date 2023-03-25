@@ -88,7 +88,7 @@ jb.component('node.startHttpServer', {
         jb.log('remote http service result',{service, result})
         jb.http.endWithSuccess(res, result)
       } else {
-        jb.logError('can not find service',{req,res,services})
+        jb.logError('can not find service',{url: req.url, req,res,services})
         jb.http.endWithFailure(res,'no service for this request')
       }
     }

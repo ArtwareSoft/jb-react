@@ -123,6 +123,14 @@ jb.extension('vscode', 'utils', {
     moveDown() { 
         return jb.vscode.moveInArray({ diff: 1, ...jb.tgpTextEditor.host.docTextAndCursor()})
     },
+    async moveInArray(docPropsWithDiff) {
+        const {edit, cursorPos} = await jb.exec(tgp.moveInArrayEditsFromServer({docProps: () => docPropsWithDiff }))
+        const json = JSON.stringify(edit)
+        jb.vscode.stdout.appendLine(`moveInArray ${json.length}`)
+        await jb.tgpTextEditor.host.applyEdit(edit)
+        cursorPos && jb.tgpTextEditor.host.selectRange(cursorPos)
+    },
+
     async openProbeResultPanel() {
         const docProps = jb.tgpTextEditor.host.docTextAndCursor()
         jb.vscode.log('start openProbeResultPanel')
@@ -134,17 +142,6 @@ jb.extension('vscode', 'utils', {
         jb.vscode.panels.main.render('probe.probeResView',probeRes)
     },
 
-    async moveInArray(docPropsWithDiff) {
-        if (jb.vscode.useCompletionServer) {
-            await jb.exec(vscode.completionServer())
-            const {edit, cursorPos} = await jb.vscode.ctx.setData(docPropsWithDiff).run(
-                remote.data(ctx => jb.tgpTextEditor.moveInArray(ctx.data, ctx), vscode.completionServer()))
-            const json = JSON.stringify(edit)
-            jb.vscode.stdout.appendLine(`moveInArray ${json.length}`)
-            await jb.tgpTextEditor.host.applyEdit(edit)
-            cursorPos && jb.tgpTextEditor.host.selectRange(cursorPos)
-        }
-    },
     toVscodeFormat(pos) {
         return { line: pos.line, character: pos.col }
     },

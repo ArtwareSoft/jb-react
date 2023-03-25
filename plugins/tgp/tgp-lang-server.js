@@ -4,7 +4,7 @@ jb.component('tgp.langServices', {
   params: [
   ],
   impl: ctx => ({
-    match: req => ['provideCompletionItems','editsAndCursorPos','provideDefinition','providePath'].indexOf(jb.http.getURLParam(req,'op')) != -1,
+    match: req => ['provideCompletionItems','editsAndCursorPos','provideDefinition','providePath','moveInArrayEdits'].indexOf(jb.http.getURLParam(req,'op')) != -1,
     usePostData: true,
     serve: async (req,body,res) => jb.tgpTextEditor[jb.http.getURLParam(req,'op')](JSON.parse(body), ctx)
   })
@@ -37,6 +37,14 @@ jb.component('tgp.getPathFromServer', {
     {id: 'baseUrl', as: 'string', defaultValue: 'http://localhost:8085/'},
   ],
   impl: pipe(http.fetch({url:'%$baseUrl%?op=providePath', method: 'POST', body: '%$docProps%', json: true}), '%result%', first())
+})
+
+jb.component('tgp.moveInArrayEditsFromServer', {
+  params: [
+    {id: 'docProps'},
+    {id: 'baseUrl', as: 'string', defaultValue: 'http://localhost:8085/'},
+  ],
+  impl: pipe(http.fetch({url:'%$baseUrl%?op=moveInArrayEdits', method: 'POST', body: '%$docProps%', json: true}), '%result%', first())
 })
 
 jb.component('tgp.editsAndCursorPosFromServer', {

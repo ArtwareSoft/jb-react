@@ -140,6 +140,15 @@ jb.component('keys', {
   impl: ({},obj) => Object.keys(obj && typeof obj === 'object' ? obj : {})
 })
 
+jb.component('values', {
+  type: 'data',
+  description: 'Object.keys',
+  params: [
+    {id: 'obj', defaultValue: '%%', as: 'single'}
+  ],
+  impl: ({},obj) => Object.values(obj && typeof obj === 'object' ? obj : {})
+})
+
 jb.component('properties', {
   description: 'object entries as id,val',
   type: 'data',

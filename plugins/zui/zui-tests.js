@@ -2,7 +2,7 @@
 jb.component('zuiTest.itemlist', {
   impl: uiTest({
     control: group({
-      layout: layout.horizontal(),
+      layout: layout.flex({direction: 'row', wrap: 'wrap'}),
       controls: [
         zui.itemlist({
           itemView: group(
@@ -16,9 +16,10 @@ jb.component('zuiTest.itemlist', {
               ])
             ]
           ),
-          boardSize: 8,
-          initialZoom: 3,
-          items: '%$phones%',
+          boardSize: 16,
+          initialZoom: 2,
+          center: '3.7,6.6',
+          items: pipeline('%$phones%', slice(0, 10)),
           itemProps: [
             text({att: 'title', features: [priorty(2)]}),
             numeric({att: 'price', features: [preferedAxis('x'), priorty(3)]}),
@@ -26,13 +27,13 @@ jb.component('zuiTest.itemlist', {
           ],
           onChange: refreshControlById('itemPreview')
         }),
-        zui.itemPreview()
+        zui.visualItemPreview()
       ],
       features: [
         variable('zuiCtx', obj())
       ]
     }),
-    expectedResult: contains('zoom')
+    expectedResult: contains('-')
   })
 })
 

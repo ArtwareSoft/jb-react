@@ -1,3 +1,4 @@
+
 jb.dsl('zui')
 
 jb.component('zui.itemlist', {
@@ -7,6 +8,7 @@ jb.component('zui.itemlist', {
     {id: 'title', as: 'string'},
     {id: 'boardSize', as: 'number', defaultValue: 256},
     {id: 'initialZoom', as: 'number', description: 'in terms of board window. empty is all board'},
+    {id: 'center', as: 'string', description: 'e.g., 2,7'},
     {id: 'items', as: 'array', dynamic: true, mandatory: true},
     {id: 'itemProps', type: 'itemProp[]', dynamic: true, flattenArray: true},
     {id: 'onChange', type: 'action<>', dynamic: true},
@@ -32,6 +34,7 @@ jb.component('itemlistStyle', {
         const DIM = $model.boardSize
         const items = $model.items()
         const zoom = +($model.initialZoom || DIM)
+        const center = $model.center ? $model.center.split(',').map(x=>+x) : [DIM* 0.5, DIM* 0.5]
         const renderProps = {itemView: { size: [width/zoom,height/zoom], zoom }}
         const ctxWithItems = ctx.setVars({items, renderProps})
         const itemProps = $model.itemProps(ctxWithItems)
@@ -43,7 +46,7 @@ jb.component('itemlistStyle', {
         const elems = itemView.zuiElems()
         const itemsPositions = jb.zui.calcItemsPositions({items, pivots, DIM})
         const props = {
-          DIM, ZOOM_LIMIT: [1, DIM*2], itemView, elems, items, pivots, onChange, center: [DIM* 0.5, DIM* 0.5]
+          DIM, ZOOM_LIMIT: [1, DIM*2], itemView, elems, items, pivots, onChange, center
             , zoom, renderProps, itemsPositions,
             ...jb.zui.prepareItemView(itemView)
         }
@@ -117,6 +120,7 @@ jb.component('itemlistStyle', {
         sink.subjectNext('%$cmp.zuiEvents%')
       ),
       frontEnd.flow(source.subject('%$cmp.zuiEvents%'), sink.action('%$cmp.render()%')),
+      frontEnd.flow(source.subject('%$cmp.zuiEvents%'), rx.debounceTime(100), sink.action('%$cmp.onChange()%')),
       frontEnd.flow(
         source.frontEndEvent('wheel'),
         rx.log('zui wheel'),
@@ -137,22 +141,29 @@ jb.extension('zui','itemlist', {
 //    props.elems.forEach(elem => elem.specificProps && Object.assign(props, elem.specificProps(props)))
     props.elems.forEach(elem => elem.buffers = elem.prepareGPU(props))
     Object.assign(props, jb.zui.prepareItemView(props.itemView))
+    const renderPropsCache = {}
     Object.assign(cmp, { 
       render() {
-        const { itemView, zoom, glCanvas,elems, renderProps } = props
+        const { zoom, glCanvas,elems, renderProps, itemView } = props
         const [width, height] = [glCanvas.width/ zoom, glCanvas.height/ zoom]
-        Object.keys(renderProps).forEach(k=>delete renderProps[k])
-        renderProps.itemView = { size: [width,height], zoom }
-        jb.zui.layoutView(itemView, renderProps, props)
+        if (renderPropsCache[zoom]) {
+          Object.assign(renderProps,renderPropsCache[zoom])
+        } else {
+          Object.keys(renderProps).forEach(k=>delete renderProps[k])
+          renderProps.itemView = { size: [width,height], zoom }
+          jb.zui.layoutView(itemView, renderProps, props)
+          renderPropsCache[zoom] = JSON.parse(JSON.stringify(renderProps))
+        }
         const visibleElems = elems.filter(el=> jb.zui.isVisible(el))
         visibleElems.forEach(elem => elem.calcElemProps && elem.calcElemProps(props) )
         visibleElems.forEach(elem => elem.renderGPUFrame(props, elem.buffers))
-        props.onChange()
+        //props.onChange()
         //console.log('renderProps', zoom, renderProps)
       },
+      onChange: () => props.onChange()
     })
   },
-  viewState(ctx) {
+  renderProps(ctx) {
     const {renderProps} = ctx.vars
     return renderProps[ctx.path] = renderProps[ctx.path] || {}
   },

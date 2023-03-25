@@ -11,15 +11,14 @@ jb.component('growingText', {
     const zuiElem = jb.zui.text2_32ZuiElem(ctx)
     const view = {
         title: `growingText - ${prop.att}`,
-        layoutSizes: ({size,zoom}) => [2*10,16, size[0]-2*10,16, 0,0 ],
-        state: () => jb.zui.viewState(ctx),
+        layoutSizes: ({size}) => [2*10,16, (jb.zui.floorLog2(size[0]/10)-2)*10,0, 0,0 ],
+        renderProps: () => jb.zui.renderProps(ctx),
         ctxPath: ctx.path,
         pivots: () => prop.pivots(),
         zuiElems: () => [zuiElem],
         priority: prop.priority || 10,
     }
     features().forEach(f=>f.enrich(view))
-    //view.enterHeight = view.enterHeight || Math.floor(view.preferedHeight()/2)
     return view
   }
 })
@@ -38,7 +37,7 @@ jb.component('fixedText', {
       title: `fixedText - ${prop.att}`,
       layoutSizes: () => [length*10,16, 0,0, 0,0 ],
       ctxPath: ctx.path,
-      state: () => jb.zui.viewState(ctx),
+      renderProps: () => jb.zui.renderProps(ctx),
       pivots: () => prop.pivots(),
       zuiElems: () => [zuiElem],
       priority: prop.priority || 10,
@@ -85,7 +84,7 @@ jb.extension('zui','ascii', {
 
 jb.extension('zui','text_2_32', {
   text2_32ZuiElem: viewCtx => ({
-      state: () => jb.zui.viewState(viewCtx),
+      renderProps: () => jb.zui.renderProps(viewCtx),
       txt_fields: ['2','4','8','16_0','16_1','32_0','32_1','32_2','32_3'],
       async prepare({gl}) {
         this.charSetTexture = await jb.zui.imageToTexture(gl, jb.zui.asciiCharSetImage())
@@ -97,18 +96,19 @@ jb.extension('zui','text_2_32', {
         attribute vec2 inRectanglePos;
         ${txt_fields.map(fld => `attribute vec4 _text_${fld};`).join('\n')}
                         
-        uniform vec2 zoom;
-        uniform vec2 center;
-        uniform vec2 canvasSize;
+        uniform vec2 zoom; // DIM units
+        uniform vec2 center; // DIM units
+        uniform vec2 itemViewPos; // [0..1] Units 
         uniform float textSquareInPixels;
+        uniform vec2 gridSizeInPixels;
         varying vec2 npos;
         
         ${txt_fields.map(fld => `varying vec4 text_${fld};`).join('\n')}
         
         void main() {
           ${txt_fields.map(fld => `text_${fld} = _text_${fld};`).join('\n')}
-          vec2 _npos = vec2(2.0,2.0) * (vertexPos - center) / zoom;
-          gl_Position = vec4(_npos , 0.0, 1.0);
+          vec2 _npos = vec2(2.0,2.0) * (itemViewPos + (vertexPos - center) / zoom);
+          gl_Position = vec4(_npos, 0.0, 1.0);
           npos = _npos;
           gl_PointSize = textSquareInPixels;
         }`
@@ -164,6 +164,8 @@ jb.extension('zui','text_2_32', {
         }
   
         void main() {
+          gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0);
+          return;
           vec2 coord = vec2(2.0,2.0) * gl_FragCoord.xy / canvasSize - vec2(1.0,1.0);
           vec2 boxBaseDist = coord - (npos - boxSize*vec2(0.5,0.5));
           vec2 inBoxPos = boxBaseDist / boxSize;
@@ -196,26 +198,30 @@ jb.extension('zui','text_2_32', {
           return buffers
       },
       calcElemProps({zoom, glCanvas}) {
-        const gridSizeInPixels = glCanvas.width/ zoom
-        const strLen = 2**Math.floor(Math.log(gridSizeInPixels/10)/Math.log(2))
+        const gridSizeInPixels = [glCanvas.width/ zoom, glCanvas.height/ zoom]
+        const strLen = 2**Math.floor(Math.log(gridSizeInPixels[0]/10)/Math.log(2))
         //const textWidth =  2 -> 1, 4->1, 8-> , 16 32 -> 2.4
         const textSquareInPixels = 3 * glCanvas.width / zoom
         const boxSizeWidthFactor = strLen == 2 ? 0.8 : strLen == 4 ? 1 : strLen == 8 ? 2 : strLen == 16 ? 1.5 : 0.5 
         const boxSizeHeightFactor = strLen == 2 ? 4 : strLen == 4 ? 2 : strLen == 8 ? 1 : strLen == 16 ? 0.5 : 0.25 
         const boxSize = [boxSizeWidthFactor / zoom, boxSizeHeightFactor * 0.4 / zoom]
         const charWidthInTexture=  1/ (jb.zui.asciiCharSetSize * 1.6)
-        Object.assign(jb.zui.viewState(viewCtx), {strLen, boxSize, textSquareInPixels, charWidthInTexture})
+        const itemViewPos = [0,1].map(axis => this.renderProps().pos[axis] / gridSizeInPixels[axis])
+        Object.assign(jb.zui.renderProps(viewCtx), {itemViewPos, strLen, boxSize, gridSizeInPixels, textSquareInPixels, charWidthInTexture})
       },
       renderGPUFrame({ glCanvas, gl, aspectRatio, zoom, center} , { vertexCount, floatsInVertex, vertexBuffer, shaderProgram }) {
           gl.useProgram(shaderProgram)
 
-          const {strLen, boxSize, textSquareInPixels, charWidthInTexture} = jb.zui.viewState(viewCtx)
+          const {itemViewPos, gridSizeInPixels, strLen, boxSize, textSquareInPixels, charWidthInTexture} = jb.zui.renderProps(viewCtx)
   
           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'zoom'), [zoom, zoom/aspectRatio]) // DIM units
           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'center'), center) // DIM units
+          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'itemViewPos'), itemViewPos) // [0..1] units
           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'boxSize'), boxSize) // [-1..1] units
           gl.uniform1i(gl.getUniformLocation(shaderProgram, 'strLen'), strLen)
           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'canvasSize'), [glCanvas.width, glCanvas.height])
+          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'gridSizeInPixels'), gridSizeInPixels)
+
           gl.uniform1f(gl.getUniformLocation(shaderProgram, 'textSquareInPixels'), textSquareInPixels) // in pixels
           gl.uniform1f(gl.getUniformLocation(shaderProgram, 'charWidthInTexture'), charWidthInTexture) // 0-1
           
@@ -269,7 +275,7 @@ jb.extension('zui','text_2_32', {
 
 jb.extension('zui','text8', {
   text8ZuiElem: viewCtx => ({
-      state: () => jb.zui.viewState(viewCtx),
+      renderProps: () => jb.zui.renderProps(viewCtx),
       async prepare({gl}) {
         this.charSetTexture = await jb.zui.imageToTexture(gl,jb.zui.asciiCharSetImage())
       },
@@ -281,14 +287,14 @@ jb.extension('zui','text8', {
                         
         uniform vec2 zoom;
         uniform vec2 center;
-        uniform vec2 canvasSize;
+        uniform vec2 itemViewPos; // [0..1] Units 
         uniform float textSquareInPixels;
         varying vec2 npos;
         varying vec4 text;
         
         void main() {
           text = _text;
-          vec2 _npos = vec2(2.0,2.0) * (vertexPos - center) / zoom;
+          vec2 _npos = vec2(2.0,2.0) * (itemViewPos + (vertexPos - center) / zoom);
           gl_Position = vec4(_npos , 0.0, 1.0);
           npos = _npos;
           gl_PointSize = textSquareInPixels;
@@ -352,21 +358,25 @@ jb.extension('zui','text8', {
           return buffers
       },
       calcElemProps({zoom, glCanvas}) {
+        const gridSizeInPixels = [glCanvas.width/ zoom, glCanvas.height/ zoom]
+        const itemViewPos = [0,1].map(axis => this.renderProps().pos[axis] / gridSizeInPixels[axis])
         const strLen = 8
         const textSquareInPixels = 3 * glCanvas.width / zoom
         const boxSizeWidthFactor = 2
         const boxSizeHeightFactor = 1
         const boxSize = [boxSizeWidthFactor / zoom, boxSizeHeightFactor * 0.4 / zoom]
         const charWidthInTexture=  1/ (jb.zui.asciiCharSetSize * 1.6)
-        Object.assign(jb.zui.viewState(viewCtx), {strLen, boxSize, textSquareInPixels, charWidthInTexture})
+        Object.assign(jb.zui.renderProps(viewCtx), {itemViewPos, strLen, boxSize, textSquareInPixels, charWidthInTexture})
       },
       renderGPUFrame({ glCanvas, gl, aspectRatio, zoom, center} , { vertexCount, floatsInVertex, vertexBuffer, shaderProgram }) {
           gl.useProgram(shaderProgram)
 
-          const {strLen, boxSize, textSquareInPixels, charWidthInTexture} = jb.zui.viewState(viewCtx)
+          const {itemViewPos, strLen, boxSize, textSquareInPixels, charWidthInTexture} = jb.zui.renderProps(viewCtx)
   
           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'zoom'), [zoom, zoom/aspectRatio]) // DIM units
           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'center'), center) // DIM units
+          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'itemViewPos'), itemViewPos) // [0..1] units
+          
           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'boxSize'), boxSize) // [-1..1] units
           gl.uniform1i(gl.getUniformLocation(shaderProgram, 'strLen'), strLen)
           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'canvasSize'), [glCanvas.width, glCanvas.height])

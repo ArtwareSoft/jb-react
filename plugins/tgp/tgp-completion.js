@@ -290,7 +290,7 @@ jb.extension('tgpTextEditor', 'completion', {
         const { semanticPath, reformatEdits, inExtension, error } = props
         const allSemantics = semanticPath ? semanticPath.allPaths.map(x=>x[0].split('~!').pop()) : []
         if (reformatEdits) {
-            jb.tgpTextEditor.host.applyEdit(reformatEdits)
+            return // maybe should return error
         } else if (inExtension || allSemantics.includes('function')) {
             return provideFuncLocation()
         } else if (semanticPath) {
@@ -375,7 +375,7 @@ jb.extension('tgpTextEditor', 'completion', {
             return ctx.setData({docText, item}).run(tgp.editsAndCursorPosFromServer())
         }
     },
-    async moveInArray(docPropsWithDiff,ctx) {
+    async moveInArrayEdits(docPropsWithDiff,ctx) {
         const { diff, docText } = docPropsWithDiff
         const props = await jb.tgpTextEditor.calcActiveEditorPath(docPropsWithDiff, {clearCache: true})
         const { reformatEdits, compId, semanticPath } = props        
