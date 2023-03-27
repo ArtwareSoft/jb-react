@@ -119,8 +119,6 @@ jb.component('itemlistStyle', {
         ),
         sink.subjectNext('%$cmp.zuiEvents%')
       ),
-      frontEnd.flow(source.subject('%$cmp.zuiEvents%'), sink.action('%$cmp.render()%')),
-      frontEnd.flow(source.subject('%$cmp.zuiEvents%'), rx.debounceTime(100), sink.action('%$cmp.onChange()%')),
       frontEnd.flow(
         source.frontEndEvent('wheel'),
         rx.log('zui wheel'),
@@ -131,15 +129,18 @@ jb.component('itemlistStyle', {
           ({data},{cmp}) => cmp.updateZoomState(data)
         ),
         sink.subjectNext('%$cmp.zuiEvents%')
-      )
+      ),
+      frontEnd.flow(source.subject('%$cmp.zuiEvents%'), sink.action('%$cmp.render()%')),
+      frontEnd.flow(source.subject('%$cmp.zuiEvents%'), rx.debounceTime(100), sink.action('%$cmp.onChange()%'))
     ]
   })
 })
 
 jb.extension('zui','itemlist', {
   initItemlistCmp(cmp,props) {
+    const debugElems = [jb.zui.mark4PointsZuiElem(), jb.zui.markGridAreaZuiElem()]
 //    props.elems.forEach(elem => elem.specificProps && Object.assign(props, elem.specificProps(props)))
-    props.elems.forEach(elem => elem.buffers = elem.prepareGPU(props))
+    ;[...debugElems, ...props.elems].forEach(elem => elem.buffers = elem.prepareGPU(props))
     Object.assign(props, jb.zui.prepareItemView(props.itemView))
     const renderPropsCache = {}
     Object.assign(cmp, { 
@@ -154,7 +155,7 @@ jb.extension('zui','itemlist', {
           jb.zui.layoutView(itemView, renderProps, props)
           renderPropsCache[zoom] = JSON.parse(JSON.stringify(renderProps))
         }
-        const visibleElems = elems.filter(el=> jb.zui.isVisible(el))
+        const visibleElems = [...debugElems, ...elems.filter(el=> jb.zui.isVisible(el))]
         visibleElems.forEach(elem => elem.calcElemProps && elem.calcElemProps(props) )
         visibleElems.forEach(elem => elem.renderGPUFrame(props, elem.buffers))
         //props.onChange()

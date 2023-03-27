@@ -18,11 +18,15 @@ jb.component('zuiTest.itemlist', {
           ),
           boardSize: 16,
           initialZoom: 2,
-          center: '3.7,6.6',
+          center: '2.7,7.8',
           items: pipeline('%$phones%', slice(0, 10)),
           itemProps: [
             text({att: 'title', features: [priorty(2)]}),
-            numeric({att: 'price', features: [preferedAxis('x'), priorty(3)]}),
+            numeric({
+              att: 'price',
+              prefix: '$',
+              features: [preferedAxis('x'), priorty(3)]
+            }),
             numeric({att: 'hits', features: preferedAxis('y')})
           ],
           onChange: refreshControlById('itemPreview')
@@ -36,6 +40,18 @@ jb.component('zuiTest.itemlist', {
     expectedResult: contains('-')
   })
 })
+
+// itemView: group(
+//   verticalOneByOne(),
+//   [
+//     growingText(byName('title')),
+//     circle(byName('hits'), priorty(1)),
+//     group(horizontalOneByOne(), [
+//       fixedText(byName('price')),
+//       fixedText(byName('hits'))
+//     ])
+//   ]
+// ),
 
 jb.component('zuiTest.verticalOneByOne', {
   impl: uiTest({

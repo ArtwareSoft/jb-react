@@ -24,10 +24,25 @@ jb.component('zui.itemPreview', {
   circuit: 'zuiTest.itemlist'
 })
 
+jb.component('zui.itemViewProps', {
+  type: 'control',
+  impl: group({
+    style: propertySheet.titlesAbove(),
+    controls: dynamicControls({
+      controlItems: pipeline('%$zuiCtx/props/renderProps/itemView%', properties()),
+      genericControl: text(pipeline('%$prop/val%', formatNumber(), join()), '%$prop/id%'),
+      itemVariable: 'prop'
+    }),
+    features: css.margin({left: '30px'})
+  }),
+  circuit: 'zuiTest.itemlist'
+})
+
 jb.component('zui.visualItemPreview', {
   type: 'control',
   impl: group({
     controls: [
+      zui.itemViewProps(),
       dynamicControls({
         controlItems: pipeline('%$zuiCtx/props/renderProps%', values(), filter('%size/1%'), filter('%title% != group')),
         genericControl: text({

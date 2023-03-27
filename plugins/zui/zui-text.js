@@ -29,7 +29,7 @@ jb.component('fixedText', {
   params: [
     {id: 'prop', type: 'itemProp', mandatory: true},
     {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true},
-    {id: 'length', as: 'number', description: '<= 8', defaultValue: 6},
+    {id: 'length', as: 'number', description: '<= 8', defaultValue: 8},
   ],
   impl: (ctx,prop, features,length) => {
     const zuiElem = jb.zui.text8ZuiElem(ctx)
@@ -50,19 +50,23 @@ jb.component('fixedText', {
 
 jb.extension('zui','ascii', {
     initExtension() {
+        const fontSize = 16, asciiCharSetSize = 128
         return { 
-            asciiCharSet: ' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~',
-            asciiCharSetSize: 128,        
+            asciiCharSet: ' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~    ',
+            asciiCharSetSize,
+            fontSize,
+            charSetTextureSize: [asciiCharSetSize * 10,fontSize]
         }
     },
     asciiCharSetImage() {
-        const fontSize = 16
+        if (jb.zui.asciiCharSetDataUrl)
+          return jb.zui.asciiCharSetDataUrl
         const canvas = document.createElement('canvas')
-        canvas.width = jb.zui.asciiCharSetSize * fontSize
-        canvas.height = fontSize
+        canvas.width = jb.zui.charSetTextureSize[0]
+        canvas.height = jb.zui.charSetTextureSize[1]
         document.body.appendChild(canvas)
         const ctx = canvas.getContext('2d')
-        ctx.font = `550 ${fontSize}px monospace`
+        ctx.font = `500 ${jb.zui.fontSize}px monospace`
         ctx.fontWeight = 'bold'
         ctx.textBaseline = 'top'
         ctx.textAlign = 'left'
@@ -71,7 +75,7 @@ jb.extension('zui','ascii', {
         Array.from(new Array(charSet.length).keys()).forEach(i=> ctx.fillText(charSet[i],i*10,0))
         const dataUrl = canvas.toDataURL('image/png')
         document.body.removeChild(canvas)
-        return dataUrl
+        return jb.zui.asciiCharSetDataUrl = dataUrl
     },
     charsetEncodeAscii(text) {
         return Array.from(text).map(x=> {
@@ -79,7 +83,6 @@ jb.extension('zui','ascii', {
             return code == -1 ? 0 : code
         })
     }
-
 })
 
 jb.extension('zui','text_2_32', {
@@ -89,95 +92,156 @@ jb.extension('zui','text_2_32', {
       async prepare({gl}) {
         this.charSetTexture = await jb.zui.imageToTexture(gl, jb.zui.asciiCharSetImage())
       },
-      vertexShaderCode() { 
-      const txt_fields = this.txt_fields
-      return `
-        attribute vec2 vertexPos;
-        attribute vec2 inRectanglePos;
-        ${txt_fields.map(fld => `attribute vec4 _text_${fld};`).join('\n')}
-                        
-        uniform vec2 zoom; // DIM units
-        uniform vec2 center; // DIM units
-        uniform vec2 itemViewPos; // [0..1] Units 
-        uniform float textSquareInPixels;
-        uniform vec2 gridSizeInPixels;
-        varying vec2 npos;
-        
-        ${txt_fields.map(fld => `varying vec4 text_${fld};`).join('\n')}
-        
-        void main() {
-          ${txt_fields.map(fld => `text_${fld} = _text_${fld};`).join('\n')}
-          vec2 _npos = vec2(2.0,2.0) * (itemViewPos + (vertexPos - center) / zoom);
-          gl_Position = vec4(_npos, 0.0, 1.0);
-          npos = _npos;
-          gl_PointSize = textSquareInPixels;
-        }`
+      vertexShaderCode() {
+        const txt_fields = this.txt_fields
+        return jb.zui.vertexShaderCode({
+          id: 'text_2_32',
+          code: txt_fields.map(fld => `attribute vec4 _text_${fld};varying vec4 text_${fld};`).join('\n'), 
+          main: txt_fields.map(fld => `text_${fld} = _text_${fld};`).join('\n')
+        })
       },
+      // return `
+      //   attribute vec2 vertexPos;
+      //   attribute vec2 inRectanglePos;
+      //   ${txt_fields.map(fld => `attribute vec4 _text_${fld};`).join('\n')}
+                        
+      //   uniform vec2 zoom; // DIM units
+      //   uniform vec2 center; // DIM units
+      //   uniform vec2 itemViewPos; // [0..1] Units 
+      //   uniform float textSquareInPixels;
+      //   uniform vec2 gridSizeInPixels;
+      //   varying vec2 npos;
+        
+      //   ${txt_fields.map(fld => `varying vec4 text_${fld};`).join('\n')}
+        
+      //   void main() {
+      //     ${txt_fields.map(fld => `text_${fld} = _text_${fld};`).join('\n')}
+      //     vec2 _npos = vec2(2.0,2.0) * (itemViewPos + (vertexPos - center) / zoom);
+      //     gl_Position = vec4(_npos, 0.0, 1.0);
+      //     npos = _npos;
+      //     gl_PointSize = textSquareInPixels;
+      //   }`
+      // },
 
       fragementShaderCode() { 
       const txt_fields = this.txt_fields
-      return `precision highp float;
-        uniform sampler2D charSetTexture;
-        uniform vec2 zoom;
-        uniform int strLen;
-        uniform vec2 canvasSize;
-        uniform vec2 boxSize;
-        uniform float charWidthInTexture;
-        varying vec2 npos;
-        ${txt_fields.map(fld => `varying vec4 text_${fld};\n`).join('\n')}
-  
-        vec4 getTextVec(float x) {
-          if (strLen <= 2) return text_2;
-          if (strLen <= 4) return text_4;
-          if (strLen <= 8) return text_8;
-          if (strLen <= 16) {
-            if (x < 0.5) return text_16_0;
-            return text_16_1;
+        return jb.zui.fragementShaderCode({code: 
+          `uniform sampler2D charSetTexture;
+          uniform float charWidthInTexture;
+          uniform vec2 charSetTextureSize;
+          uniform int strLen;
+          ${txt_fields.map(fld => `varying vec4 text_${fld};\n`).join('\n')}
+          
+          vec4 getTextVec(float x) {
+            if (strLen <= 2) return text_2;
+            if (strLen <= 4) return text_4;
+            if (strLen <= 8) return text_8;
+            if (strLen <= 16) {
+              if (x < 0.5) return text_16_0;
+              return text_16_1;
+            }
+            if (strLen <= 32) {
+              if (x < 0.25) return text_32_0;
+              if (x < 0.5) return text_32_1;
+              if (x < 0.75) return text_32_2;
+              return text_32_3;
+            }
           }
-          if (strLen <= 32) {
-            if (x < 0.25) return text_32_0;
-            if (x < 0.5) return text_32_1;
-            if (x < 0.75) return text_32_2;
-            return text_32_3;
+          
+          float getIndexInVec(float x) {
+            if (strLen <= 2) return 0.0;
+            if (strLen <= 4) return floor(x * 2.0);
+            if (strLen <= 8) return floor(x * 4.0);
+            if (strLen <= 16) return floor(mod(x,0.5) * 8.0);
+            if (strLen <= 32) return floor(mod(x,0.25) * 16.0);
           }
-        }
-        
-        float getIndexInVec(float x) {
-          if (strLen <= 2) return 0.0;
-          if (strLen <= 4) return floor(x * 2.0);
-          if (strLen <= 8) return floor(x * 4.0);
-          if (strLen <= 16) return floor(mod(x,0.5) * 8.0);
-          if (strLen <= 32) return floor(mod(x,0.25) * 16.0);
-        }
-  
-        float calcCharCode(float x) {
-          int index = 0;
-          int idx = int(getIndexInVec(x));
-          vec4 vec = getTextVec(x);
-          float flt = 0.0;
-          for(int i=0;i<4;i++)
-            if (idx == i) flt = vec[i];
-  
-          if (mod(x*float(strLen)/2.0 , 1.0) < 0.5)
-            return floor(flt/256.0);
-          return mod(flt,256.0);
-        }
-  
-        void main() {
-          gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0);
-          return;
-          vec2 coord = vec2(2.0,2.0) * gl_FragCoord.xy / canvasSize - vec2(1.0,1.0);
-          vec2 boxBaseDist = coord - (npos - boxSize*vec2(0.5,0.5));
-          vec2 inBoxPos = boxBaseDist / boxSize;
-          if (inBoxPos[0] < 0.0 || inBoxPos[0] > 1.0 || inBoxPos[1] < 0.0 || inBoxPos[1] > 1.0) {
-            gl_FragColor = vec4(0.0, 0.0, 1.0, 0.0);
-            return;                    
-          }
-          float inCharPos = mod(inBoxPos[0] * float(strLen), 1.0);
-          vec2 texturePos = vec2((calcCharCode(inBoxPos[0]) + inCharPos) * charWidthInTexture, inBoxPos[1]);
-          gl_FragColor = texture2D( charSetTexture, texturePos * vec2(1.0, -1.0));
-        }`
+    
+          float calcCharCode(float x) {
+            int index = 0;
+            int idx = int(getIndexInVec(x));
+            vec4 vec = getTextVec(x);
+            float flt = 0.0;
+            for(int i=0;i<4;i++)
+              if (idx == i) flt = vec[i];
+    
+            if (mod(x*float(strLen)/2.0 , 1.0) < 0.5)
+              return floor(flt/256.0);
+            return mod(flt,256.0);
+          }`, 
+          main:`
+            float fStrLen = float(strLen);
+            float inCharPos = mod(rInElem[0] * fStrLen, 1.0);
+            float charCode = calcCharCode(rInElem[0]);    
+            float inCharPosPx = mod(inElem[0], charWidthInTexture);
+            vec2 texturePos = vec2(charCode * charWidthInTexture + inCharPosPx, inElem[1]) / charSetTextureSize;
+
+            gl_FragColor = texture2D( charSetTexture, texturePos);
+            //gl_FragColor = vec4(getIndexInVec(rInElem[0])/4.0,0.0, 0.0, 1.0);
+          `}
+        )
       },
+      // return `precision highp float;
+      //   uniform sampler2D charSetTexture;
+      //   uniform vec2 zoom;
+      //   uniform int strLen;
+      //   uniform vec2 canvasSize;
+      //   uniform vec2 boxSize;
+      //   uniform float charWidthInTexture;
+      //   varying vec2 npos;
+      //   ${txt_fields.map(fld => `varying vec4 text_${fld};\n`).join('\n')}
+  
+      //   vec4 getTextVec(float x) {
+      //     if (strLen <= 2) return text_2;
+      //     if (strLen <= 4) return text_4;
+      //     if (strLen <= 8) return text_8;
+      //     if (strLen <= 16) {
+      //       if (x < 0.5) return text_16_0;
+      //       return text_16_1;
+      //     }
+      //     if (strLen <= 32) {
+      //       if (x < 0.25) return text_32_0;
+      //       if (x < 0.5) return text_32_1;
+      //       if (x < 0.75) return text_32_2;
+      //       return text_32_3;
+      //     }
+      //   }
+        
+      //   float getIndexInVec(float x) {
+      //     if (strLen <= 2) return 0.0;
+      //     if (strLen <= 4) return floor(x * 2.0);
+      //     if (strLen <= 8) return floor(x * 4.0);
+      //     if (strLen <= 16) return floor(mod(x,0.5) * 8.0);
+      //     if (strLen <= 32) return floor(mod(x,0.25) * 16.0);
+      //   }
+  
+      //   float calcCharCode(float x) {
+      //     int index = 0;
+      //     int idx = int(getIndexInVec(x));
+      //     vec4 vec = getTextVec(x);
+      //     float flt = 0.0;
+      //     for(int i=0;i<4;i++)
+      //       if (idx == i) flt = vec[i];
+  
+      //     if (mod(x*float(strLen)/2.0 , 1.0) < 0.5)
+      //       return floor(flt/256.0);
+      //     return mod(flt,256.0);
+      //   }
+  
+      //   void main() {
+      //     // gl_FragColor = vec4(1.0, 1.0, 0.0, 0.5);
+      //     // return;
+      //     vec2 coord = vec2(2.0,2.0) * gl_FragCoord.xy / canvasSize - vec2(1.0,1.0);
+      //     vec2 boxBaseDist = coord - (npos - boxSize*vec2(0.5,0.5));
+      //     vec2 inBoxPos = boxBaseDist / boxSize;
+      //     if (inBoxPos[0] < 0.0 || inBoxPos[0] > 1.0 || inBoxPos[1] < 0.0 || inBoxPos[1] > 1.0) {
+      //       gl_FragColor = vec4(0.0, 0.0, 1.0, 0.0);
+      //       return;                    
+      //     }
+      //     float inCharPos = mod(inBoxPos[0] * float(strLen), 1.0);
+      //     vec2 texturePos = vec2((calcCharCode(inBoxPos[0]) + inCharPos) * charWidthInTexture, inBoxPos[1]);
+      //     gl_FragColor = texture2D( charSetTexture, texturePos * vec2(1.0, -1.0));
+      //   }`
+      // },
       prepareGPU(props) {
           const { gl, itemsPositions } = props
           const textBoxNodes = itemsPositions.sparse.map(([item, x,y]) => 
@@ -198,37 +262,29 @@ jb.extension('zui','text_2_32', {
           return buffers
       },
       calcElemProps({zoom, glCanvas}) {
-        const gridSizeInPixels = [glCanvas.width/ zoom, glCanvas.height/ zoom]
-        const strLen = 2**Math.floor(Math.log(gridSizeInPixels[0]/10)/Math.log(2))
-        //const textWidth =  2 -> 1, 4->1, 8-> , 16 32 -> 2.4
-        const textSquareInPixels = 3 * glCanvas.width / zoom
-        const boxSizeWidthFactor = strLen == 2 ? 0.8 : strLen == 4 ? 1 : strLen == 8 ? 2 : strLen == 16 ? 1.5 : 0.5 
-        const boxSizeHeightFactor = strLen == 2 ? 4 : strLen == 4 ? 2 : strLen == 8 ? 1 : strLen == 16 ? 0.5 : 0.25 
-        const boxSize = [boxSizeWidthFactor / zoom, boxSizeHeightFactor * 0.4 / zoom]
-        const charWidthInTexture=  1/ (jb.zui.asciiCharSetSize * 1.6)
-        const itemViewPos = [0,1].map(axis => this.renderProps().pos[axis] / gridSizeInPixels[axis])
-        Object.assign(jb.zui.renderProps(viewCtx), {itemViewPos, strLen, boxSize, gridSizeInPixels, textSquareInPixels, charWidthInTexture})
+        Object.assign(jb.zui.renderProps(viewCtx), {strLen: jb.zui.floorLog2(glCanvas.width/ (zoom *10))})
       },
-      renderGPUFrame({ glCanvas, gl, aspectRatio, zoom, center} , { vertexCount, floatsInVertex, vertexBuffer, shaderProgram }) {
+      renderGPUFrame({ glCanvas, gl, zoom, center} , { vertexCount, floatsInVertex, vertexBuffer, shaderProgram }) {
           gl.useProgram(shaderProgram)
 
-          const {itemViewPos, gridSizeInPixels, strLen, boxSize, textSquareInPixels, charWidthInTexture} = jb.zui.renderProps(viewCtx)
-  
-          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'zoom'), [zoom, zoom/aspectRatio]) // DIM units
-          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'center'), center) // DIM units
-          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'itemViewPos'), itemViewPos) // [0..1] units
-          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'boxSize'), boxSize) // [-1..1] units
-          gl.uniform1i(gl.getUniformLocation(shaderProgram, 'strLen'), strLen)
+          const {size, pos, strLen} = this.renderProps()
+          console.log('strlen',strLen, zoom)
+ 
+          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'zoom'), [zoom, zoom])
+          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'center'), center)
           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'canvasSize'), [glCanvas.width, glCanvas.height])
-          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'gridSizeInPixels'), gridSizeInPixels)
+          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'gridSizeInPixels'), [glCanvas.width/ zoom, glCanvas.height/ zoom])
+          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'pos'), pos)
+          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'size'), size)
 
-          gl.uniform1f(gl.getUniformLocation(shaderProgram, 'textSquareInPixels'), textSquareInPixels) // in pixels
-          gl.uniform1f(gl.getUniformLocation(shaderProgram, 'charWidthInTexture'), charWidthInTexture) // 0-1
+          gl.uniform1i(gl.getUniformLocation(shaderProgram, 'strLen'), strLen)
+          gl.uniform1f(gl.getUniformLocation(shaderProgram, 'charWidthInTexture'), 10)
+          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'charSetTextureSize'), jb.zui.charSetTextureSize)
           
-          const vertexPos = gl.getAttribLocation(shaderProgram, 'vertexPos')
+          const itemPos = gl.getAttribLocation(shaderProgram, 'itemPostext_2_32')
           gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
-          gl.enableVertexAttribArray(vertexPos)
-          gl.vertexAttribPointer(vertexPos, 2, gl.FLOAT, false, floatsInVertex* Float32Array.BYTES_PER_ELEMENT, 0)
+          gl.enableVertexAttribArray(itemPos)
+          gl.vertexAttribPointer(itemPos, 2, gl.FLOAT, false, floatsInVertex* Float32Array.BYTES_PER_ELEMENT, 0)
   
           const sizes = [1,2,4, 4,4, 4,4,4,4]
           let offset = 2
@@ -279,39 +335,14 @@ jb.extension('zui','text8', {
       async prepare({gl}) {
         this.charSetTexture = await jb.zui.imageToTexture(gl,jb.zui.asciiCharSetImage())
       },
-
-      vertexShaderCode() { return `
-        attribute vec2 vertexPos;
-        attribute vec2 inRectanglePos;
-        attribute vec4 _text;
-                        
-        uniform vec2 zoom;
-        uniform vec2 center;
-        uniform vec2 itemViewPos; // [0..1] Units 
-        uniform float textSquareInPixels;
-        varying vec2 npos;
-        varying vec4 text;
-        
-        void main() {
-          text = _text;
-          vec2 _npos = vec2(2.0,2.0) * (itemViewPos + (vertexPos - center) / zoom);
-          gl_Position = vec4(_npos , 0.0, 1.0);
-          npos = _npos;
-          gl_PointSize = textSquareInPixels;
-        }`
-      },
-
-      fragementShaderCode() { 
-      return `precision highp float;
+      vertexShaderCode: () => jb.zui.vertexShaderCode({id: 'text8',code: 'attribute vec4 _text;varying vec4 text;', main:'text = _text;'}),
+      fragementShaderCode: () => jb.zui.fragementShaderCode({code: 
+        `varying vec4 text;
         uniform sampler2D charSetTexture;
-        uniform vec2 zoom;
-        uniform int strLen;
-        uniform vec2 canvasSize;
-        uniform vec2 boxSize;
         uniform float charWidthInTexture;
-        varying vec2 npos;
-        varying vec4 text;
-    
+        uniform vec2 charSetTextureSize;
+        uniform int strLen;
+        
         float calcCharCode(float x) {
           int index = 0;
           int idx = int(floor(x * 4.0));
@@ -323,21 +354,18 @@ jb.extension('zui','text8', {
           if (mod(x*float(strLen)/2.0 , 1.0) < 0.5)
             return floor(flt/256.0);
           return mod(flt,256.0);
-        }
-  
-        void main() {
-          vec2 coord = vec2(2.0,2.0) * gl_FragCoord.xy / canvasSize - vec2(1.0,1.0);
-          vec2 boxBaseDist = coord - (npos - boxSize*vec2(0.5,0.5));
-          vec2 inBoxPos = boxBaseDist / boxSize;
-          if (inBoxPos[0] < 0.0 || inBoxPos[0] > 1.0 || inBoxPos[1] < 0.0 || inBoxPos[1] > 1.0) {
-            gl_FragColor = vec4(0.0, 0.0, 1.0, 0.0);
-            return;                    
-          }
-          float inCharPos = mod(inBoxPos[0] * float(strLen), 1.0);
-          vec2 texturePos = vec2((calcCharCode(inBoxPos[0]) + inCharPos) * charWidthInTexture, inBoxPos[1]);
-          gl_FragColor = texture2D( charSetTexture, texturePos * vec2(1.0, -1.0));
-        }`
-      },
+        }        
+        `, 
+        main:`
+          float fStrLen = float(strLen);
+          float inCharPos = mod(rInElem[0] * fStrLen, 1.0);
+          float charCode = calcCharCode(rInElem[0]);    
+          float inCharPosPx = mod(inElem[0], charWidthInTexture);
+          vec2 texturePos = vec2(charCode * charWidthInTexture + inCharPosPx, inElem[1]) / charSetTextureSize;
+
+          gl_FragColor = texture2D( charSetTexture, texturePos);
+        `}
+      ),
       prepareGPU(props) {
           const { gl, itemsPositions } = props
         
@@ -357,36 +385,26 @@ jb.extension('zui','text8', {
   
           return buffers
       },
-      calcElemProps({zoom, glCanvas}) {
-        const gridSizeInPixels = [glCanvas.width/ zoom, glCanvas.height/ zoom]
-        const itemViewPos = [0,1].map(axis => this.renderProps().pos[axis] / gridSizeInPixels[axis])
-        const strLen = 8
-        const textSquareInPixels = 3 * glCanvas.width / zoom
-        const boxSizeWidthFactor = 2
-        const boxSizeHeightFactor = 1
-        const boxSize = [boxSizeWidthFactor / zoom, boxSizeHeightFactor * 0.4 / zoom]
-        const charWidthInTexture=  1/ (jb.zui.asciiCharSetSize * 1.6)
-        Object.assign(jb.zui.renderProps(viewCtx), {itemViewPos, strLen, boxSize, textSquareInPixels, charWidthInTexture})
-      },
-      renderGPUFrame({ glCanvas, gl, aspectRatio, zoom, center} , { vertexCount, floatsInVertex, vertexBuffer, shaderProgram }) {
+      renderGPUFrame({ glCanvas, gl, zoom, center} , { vertexCount, floatsInVertex, vertexBuffer, shaderProgram }) {
           gl.useProgram(shaderProgram)
 
-          const {itemViewPos, strLen, boxSize, textSquareInPixels, charWidthInTexture} = jb.zui.renderProps(viewCtx)
-  
-          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'zoom'), [zoom, zoom/aspectRatio]) // DIM units
-          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'center'), center) // DIM units
-          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'itemViewPos'), itemViewPos) // [0..1] units
-          
-          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'boxSize'), boxSize) // [-1..1] units
-          gl.uniform1i(gl.getUniformLocation(shaderProgram, 'strLen'), strLen)
+          const {size, pos} = this.renderProps()
+ 
+          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'zoom'), [zoom, zoom])
+          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'center'), center)
           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'canvasSize'), [glCanvas.width, glCanvas.height])
-          gl.uniform1f(gl.getUniformLocation(shaderProgram, 'textSquareInPixels'), textSquareInPixels) // in pixels
-          gl.uniform1f(gl.getUniformLocation(shaderProgram, 'charWidthInTexture'), charWidthInTexture) // 0-1
+          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'gridSizeInPixels'), [glCanvas.width/ zoom, glCanvas.height/ zoom])
+          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'pos'), pos)
+          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'size'), size)
+
+          gl.uniform1i(gl.getUniformLocation(shaderProgram, 'strLen'), 8)
+          gl.uniform1f(gl.getUniformLocation(shaderProgram, 'charWidthInTexture'), 10)
+          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'charSetTextureSize'), jb.zui.charSetTextureSize)
           
-          const vertexPos = gl.getAttribLocation(shaderProgram, 'vertexPos')
+          const itemPos = gl.getAttribLocation(shaderProgram, 'itemPostext8')
           gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
-          gl.enableVertexAttribArray(vertexPos)
-          gl.vertexAttribPointer(vertexPos, 2, gl.FLOAT, false, floatsInVertex* Float32Array.BYTES_PER_ELEMENT, 0)
+          gl.enableVertexAttribArray(itemPos)
+          gl.vertexAttribPointer(itemPos, 2, gl.FLOAT, false, floatsInVertex* Float32Array.BYTES_PER_ELEMENT, 0)
 
           const text = gl.getAttribLocation(shaderProgram, '_text')
           gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
