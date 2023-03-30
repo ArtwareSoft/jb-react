@@ -12,6 +12,7 @@ jb.component('growingText', {
     const view = {
         title: `growingText - ${prop.att}`,
         layoutSizes: ({size}) => [2*10,16, (jb.zui.floorLog2(size[0]/10)-2)*10,0, 0,0 ],
+        fitPrefered: axis => axis == 0 ? alloc => (jb.zui.floorLog2(alloc/10)-2)*10 : false,
         renderProps: () => jb.zui.renderProps(ctx),
         ctxPath: ctx.path,
         pivots: () => prop.pivots(),
@@ -100,29 +101,6 @@ jb.extension('zui','text_2_32', {
           main: txt_fields.map(fld => `text_${fld} = _text_${fld};`).join('\n')
         })
       },
-      // return `
-      //   attribute vec2 vertexPos;
-      //   attribute vec2 inRectanglePos;
-      //   ${txt_fields.map(fld => `attribute vec4 _text_${fld};`).join('\n')}
-                        
-      //   uniform vec2 zoom; // DIM units
-      //   uniform vec2 center; // DIM units
-      //   uniform vec2 itemViewPos; // [0..1] Units 
-      //   uniform float textSquareInPixels;
-      //   uniform vec2 gridSizeInPixels;
-      //   varying vec2 npos;
-        
-      //   ${txt_fields.map(fld => `varying vec4 text_${fld};`).join('\n')}
-        
-      //   void main() {
-      //     ${txt_fields.map(fld => `text_${fld} = _text_${fld};`).join('\n')}
-      //     vec2 _npos = vec2(2.0,2.0) * (itemViewPos + (vertexPos - center) / zoom);
-      //     gl_Position = vec4(_npos, 0.0, 1.0);
-      //     npos = _npos;
-      //     gl_PointSize = textSquareInPixels;
-      //   }`
-      // },
-
       fragementShaderCode() { 
       const txt_fields = this.txt_fields
         return jb.zui.fragementShaderCode({code: 
@@ -173,75 +151,13 @@ jb.extension('zui','text_2_32', {
             float inCharPos = mod(rInElem[0] * fStrLen, 1.0);
             float charCode = calcCharCode(rInElem[0]);    
             float inCharPosPx = mod(inElem[0], charWidthInTexture);
-            vec2 texturePos = vec2(charCode * charWidthInTexture + inCharPosPx, inElem[1]) / charSetTextureSize;
+            vec2 texturePos = vec2(charCode * charWidthInTexture + inCharPosPx, size[1] - inElem[1]) / charSetTextureSize;
 
             gl_FragColor = texture2D( charSetTexture, texturePos);
             //gl_FragColor = vec4(getIndexInVec(rInElem[0])/4.0,0.0, 0.0, 1.0);
           `}
         )
       },
-      // return `precision highp float;
-      //   uniform sampler2D charSetTexture;
-      //   uniform vec2 zoom;
-      //   uniform int strLen;
-      //   uniform vec2 canvasSize;
-      //   uniform vec2 boxSize;
-      //   uniform float charWidthInTexture;
-      //   varying vec2 npos;
-      //   ${txt_fields.map(fld => `varying vec4 text_${fld};\n`).join('\n')}
-  
-      //   vec4 getTextVec(float x) {
-      //     if (strLen <= 2) return text_2;
-      //     if (strLen <= 4) return text_4;
-      //     if (strLen <= 8) return text_8;
-      //     if (strLen <= 16) {
-      //       if (x < 0.5) return text_16_0;
-      //       return text_16_1;
-      //     }
-      //     if (strLen <= 32) {
-      //       if (x < 0.25) return text_32_0;
-      //       if (x < 0.5) return text_32_1;
-      //       if (x < 0.75) return text_32_2;
-      //       return text_32_3;
-      //     }
-      //   }
-        
-      //   float getIndexInVec(float x) {
-      //     if (strLen <= 2) return 0.0;
-      //     if (strLen <= 4) return floor(x * 2.0);
-      //     if (strLen <= 8) return floor(x * 4.0);
-      //     if (strLen <= 16) return floor(mod(x,0.5) * 8.0);
-      //     if (strLen <= 32) return floor(mod(x,0.25) * 16.0);
-      //   }
-  
-      //   float calcCharCode(float x) {
-      //     int index = 0;
-      //     int idx = int(getIndexInVec(x));
-      //     vec4 vec = getTextVec(x);
-      //     float flt = 0.0;
-      //     for(int i=0;i<4;i++)
-      //       if (idx == i) flt = vec[i];
-  
-      //     if (mod(x*float(strLen)/2.0 , 1.0) < 0.5)
-      //       return floor(flt/256.0);
-      //     return mod(flt,256.0);
-      //   }
-  
-      //   void main() {
-      //     // gl_FragColor = vec4(1.0, 1.0, 0.0, 0.5);
-      //     // return;
-      //     vec2 coord = vec2(2.0,2.0) * gl_FragCoord.xy / canvasSize - vec2(1.0,1.0);
-      //     vec2 boxBaseDist = coord - (npos - boxSize*vec2(0.5,0.5));
-      //     vec2 inBoxPos = boxBaseDist / boxSize;
-      //     if (inBoxPos[0] < 0.0 || inBoxPos[0] > 1.0 || inBoxPos[1] < 0.0 || inBoxPos[1] > 1.0) {
-      //       gl_FragColor = vec4(0.0, 0.0, 1.0, 0.0);
-      //       return;                    
-      //     }
-      //     float inCharPos = mod(inBoxPos[0] * float(strLen), 1.0);
-      //     vec2 texturePos = vec2((calcCharCode(inBoxPos[0]) + inCharPos) * charWidthInTexture, inBoxPos[1]);
-      //     gl_FragColor = texture2D( charSetTexture, texturePos * vec2(1.0, -1.0));
-      //   }`
-      // },
       prepareGPU(props) {
           const { gl, itemsPositions } = props
           const textBoxNodes = itemsPositions.sparse.map(([item, x,y]) => 
@@ -261,14 +177,15 @@ jb.extension('zui','text_2_32', {
   
           return buffers
       },
-      calcElemProps({zoom, glCanvas}) {
-        Object.assign(jb.zui.renderProps(viewCtx), {strLen: jb.zui.floorLog2(glCanvas.width/ (zoom *10))})
+      calcElemProps() {
+        const renderProps = jb.zui.renderProps(viewCtx)
+        Object.assign(renderProps, {strLen: jb.zui.floorLog2(renderProps.size[0]/10)})
       },
       renderGPUFrame({ glCanvas, gl, zoom, center} , { vertexCount, floatsInVertex, vertexBuffer, shaderProgram }) {
           gl.useProgram(shaderProgram)
 
           const {size, pos, strLen} = this.renderProps()
-          console.log('strlen',strLen, zoom)
+//          console.log('strlen',strLen, zoom, size[0])
  
           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'zoom'), [zoom, zoom])
           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'center'), center)
@@ -361,7 +278,7 @@ jb.extension('zui','text8', {
           float inCharPos = mod(rInElem[0] * fStrLen, 1.0);
           float charCode = calcCharCode(rInElem[0]);    
           float inCharPosPx = mod(inElem[0], charWidthInTexture);
-          vec2 texturePos = vec2(charCode * charWidthInTexture + inCharPosPx, inElem[1]) / charSetTextureSize;
+          vec2 texturePos = vec2(charCode * charWidthInTexture + inCharPosPx, size[1] - inElem[1]) / charSetTextureSize;
 
           gl_FragColor = texture2D( charSetTexture, texturePos);
         `}

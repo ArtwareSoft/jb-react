@@ -1,44 +1,28 @@
 
 jb.extension('zui','layout', {
   isVisible(el) {
-    return jb.path(el.renderProps(),'size')
+    return jb.path(el.renderProps(),'visible')
   },
   floorLog2(size) {
     return 2**Math.floor(Math.log(size)/Math.log(2))
   },
-  // relevant for all zoom levels
   prepareItemView(itemView) {
     const shortPaths = calcShortPaths(itemView, '')
-    const axes = [0,1] //[itemView.axis,itemView.axis ? 0 : 1]
+    const axes = [0,1]
     const records = axes.map(axis => calcMinRecord(itemView, axis).sort((r1,r2) => r1.p - r2.p))
-    const overlaps = axes.map(axis => records[axis].map(x=>x.overlap).map(id => {
-          const recs =  records[axis].filter(x=> id == x.overlap) 
-          return { id, recs, p: recs.reduce((sum,r) => sum + r.p,0) / records.length }
-    }).sort((r1,r2) => r1.p - r2.p))
 
-    // notFirstInView - used to allocate spaces for non first
-    axes.map(axis => {
-      const notFirstInView = {}
-      records[axis].map(r=>{
-        const parentPath = r.path.split('~').slice(0,-1).join('~')
-        r.notFirstInView = notFirstInView[parentPath] ? 1 : 0
-        notFirstInView[parentPath] = 1
-      })
-    })
+    return { records, shortPaths }
 
-    return { records, overlaps, shortPaths }
-
-    function calcMinRecord(view, layoutAxis, overlap) {
+    function calcMinRecord(view, layoutAxis) {
       if (!view.children) {
         return [{
-          overlap: overlap === 0 ? view.shortPath : overlap, 
           p: view.priority || 10000, 
           path: view.shortPath, 
           axis: layoutAxis, title: view.title,
+          fitPrefered: view.fitPrefered && view.fitPrefered(layoutAxis),
           min: view.layoutSizes({size:[0,0],zoom:1})[layoutAxis] }]
         }
-      const childOverlap = layoutAxis == view.axis ? 0 : (view.shortPath || 'top')
-      return view.children.flatMap(childView => calcMinRecord(childView,layoutAxis,childOverlap))
+      return view.children.flatMap(childView => calcMinRecord(childView,layoutAxis))
     }
 
     function calcShortPaths(view, shortPath) {
@@ -48,67 +32,42 @@ jb.extension('zui','layout', {
         (acc, childView,i) => ({...acc, ...calcShortPaths(childView, [shortPath,''+i].filter(x=>x!='').join('~'))}),{})
     }
   },
-  layoutView(itemView, renderProps,{records, overlaps, shortPaths}) {
+  layoutView(itemView, renderProps,{records, shortPaths}) {
     const axes = [0,1]
     const spaceSize = 10
     const minRecords = records
     const { size, zoom } = renderProps.itemView
-    axes.map(axis => records[axis].forEach(r=> ['prefered','max','alloc','allocPref','allocMax','size'].forEach(k=> delete r[k])))
+    const sizeVec = buildSizeVec(itemView)
 
-    axes.map(axis => allocMinSizes(minRecords[axis], size[axis]))
+    axes.map(axis => records[axis].forEach(r=> ['prefered','max','alloc','size'].forEach(k=> delete r[k])))
+
+    axes.map(axis => allocMinSizes(axis, minRecords[axis]))
     const filteredOut = {}
     axes.map(axis => minRecords[axis].map(r=> !r.alloc && (filteredOut[r.path] = true)))
     axes.map(axis => minRecords[axis].filter(r=>filteredOut[r.path]).map(r=>delete r['alloc']))
     const shownRecords = axes.map(axis => minRecords[axis].filter(r=>!filteredOut[r.path]))
-    // alloc min again with only the filtered records
-    const residueForPrefered = renderProps.itemView.residueForPrefered  = 
-      axes.map(axis => allocMinSizes(shownRecords[axis],size[axis]))
+    axes.map(axis => shownRecords[axis].map(r=>{
+      jb.path(renderProps,[toCtxPath(r.path),'visible'],true)
+      jb.path(renderProps,[toCtxPath(r.path),'title'],r.title)
+    }))
 
-    // calc overlaps needs for prefered and max
     axes.map(axis => shownRecords[axis].forEach(r=>extendRecordNeeds(r)))
-    axes.map(axis => overlaps[axis].forEach(overlap=> {
-      overlap.maxPref = overlap.recs.reduce((max,r) => Math.max(max,r.prefered || 0),0)
-      overlap.maxMax = overlap.recs.reduce((max,r) => Math.max(max,r.max || 0),0)
-    }))
+    axes.map(axis => allocMore(axis,shownRecords[axis],'prefered'))
+    axes.map(axis => allocMore(axis,shownRecords[axis],'max'))
 
-    const residueForMax = renderProps.itemView.residueForMax = 
-      axes.map(axis => allocPrefredSizes(overlaps[axis],residueForPrefered[axis]))
-    renderProps.itemView.residueForMargins = 
-      axes.map(axis => allocMaxSizes(overlaps[axis],residueForMax[axis]))
-
-    // calc sizes into render props
-    axes.map(axis => shownRecords[axis].map(r=> {
-      r.size = r.alloc + (r.allocPref || 0) + (r.allocMax || 0)
-      const rProp = renderProps[toCtxPath(r.path)] = renderProps[toCtxPath(r.path)] || {title: shortPaths[r.path].title, path: r.path, size: []}
-      rProp.size[axis] = r.size
-    }))
-    //minRecords[0].forEach(r=>renderProps[toCtxPath(r.path)] = {title: shortPaths[r.path].title, path: r.path})
     calcGroupsSize(itemView) // bottom up
-    calcChildMargins(itemView,[0,0],size,true) // top down
-    calcPositions(itemView,[0,0])
+    assignCenterPositions(itemView,[0,0],size)
+    writeRecordPropsForDebug()
 
-    // write to renderProps
-    const calcSizeProps = ['overlap','p','min','alloc','prefered','max','allocPref']
-    const posProps = ['size','margin','pos']
-
-    ;[
-//      ...calcSizeProps, 
-//      ...posProps
-    ].forEach(p=>minRecords[0].forEach((r,i) => {
-      (r[p] != null) && jb.path(renderProps,[toCtxPath(r.path),p],`${fixVal(r[p])},${fixVal(minRecords[1][i][p])}`)
-    }))
-
-    function allocMinSizes(records,total) {
-      const overlaps = {}
-      return records.reduce((residue,r) => {
-        const actualReq = Math.max(0, r.min - (overlaps[r.path] || 0)) + r.notFirstInView * spaceSize
-        if (actualReq < residue) {
+    function allocMinSizes(axis,records) {
+      records.map(r=>{
+        const allocatedSize = renderProps[toCtxPath(r.path)].size
+        allocatedSize[axis] = r.min
+        if (calcTotalSize(axis) > size[axis])
+          allocatedSize[axis] = 0
+        else
           r.alloc = r.min
-          residue -= actualReq
-          overlaps[r.path] = (overlaps[r.path] || 0) + actualReq
-        }
-        return residue
-      }, total)
+      })
     }
 
     function extendRecordNeeds(rec) {
@@ -118,74 +77,35 @@ jb.extension('zui','layout', {
       rec.max = layoutSizes[4+rec.axis]
     }
 
-    function allocPrefredSizes(overlaps,total) {
-      return overlaps.reduce((residue,overlap) => {
-        const actualReq = Math.min(overlap.maxPref,residue)
-        if (actualReq) {
-          residue -= actualReq
-          overlap.allocPref = actualReq
-          overlap.recs.forEach(r=> r.allocPref = Math.min(actualReq, r.prefered))
-        }
-        return residue
-      }, total)      
-    }
-
-    function allocMaxSizes(overlaps,total) {
-      return overlaps.reduce((residue,overlap) => {
-        const actualReq = Math.min(overlap.maxMax,residue)
-        if (actualReq) {
-          residue -= actualReq
-          overlap.allocMax = actualReq
-          overlap.recs.forEach(r=> r.allocMax = Math.min(actualReq, r.max))
-        }
-        return residue
-      }, total)      
-    }
-
-    function calcGroupsSize(view) { // bottom up
-      renderProps[view.ctxPath] = renderProps[view.ctxPath] || {title: view.title, path: view.shortPath }
-      const visibleChildren = (view.children ||[]).filter(child=>child.children || jb.path(renderProps[child.ctxPath],'size.0'))
-      visibleChildren.map(child => calcGroupsSize(child))
-      if (!renderProps[view.ctxPath].size)
-        renderProps[view.ctxPath].size = [0,1].map(axis=> 
-          visibleChildren.reduce((acc,child,i) => (i ? spaceSize : 0) + acc + renderProps[child.ctxPath].size[axis],0 ))
-    }
-
-    function calcChildMargins(view,margins,availableSize,firstViewInAxis) {
-      renderProps[view.ctxPath] = renderProps[view.ctxPath] || {}
-      renderProps[view.ctxPath].margins = margins
-      const main = view.axis, other = view.axis == 0 ? 1: 0
-      const visibleChildren = (view.children ||[]).filter(child=>jb.path(renderProps[child.ctxPath],'size.0'))
-      const spaceSum = spaceSize * Math.max(0,visibleChildren.length-1)
-      visibleChildren.map((child,i) => {
-        const childSize = axes.map(axis => renderProps[child.ctxPath].size[axis])
-        const childResidue = axes.map(axis => availableSize[axis] - childSize[axis])
-        const childMargins = []
-        childMargins[main] = firstViewInAxis && i == 0 ? (childResidue[main] - spaceSum)/2 : spaceSize
-        childMargins[other] = childResidue[other]/2
-        const firstViewInAxisForChild = child.axis == main ? false: true
-        const availableSizeForChild = [...availableSize]
-        if (child.axis == view.axis)
-          availableSizeForChild[main] = childSize[main]
-        else
-          availableSizeForChild[other] = childSize[other]
-
-        calcChildMargins(child,childMargins,availableSizeForChild,firstViewInAxisForChild)
+    function allocMore(axis,records,prop) {
+      records.map(r=>{
+        const allocatedSize = renderProps[toCtxPath(r.path)].size
+        const allocatedBefore = allocatedSize[axis]
+        allocatedSize[axis] += r[prop]
+        if (calcTotalSize(axis) > size[axis])
+          allocatedSize[axis] = allocatedBefore
       })
     }
 
-    function calcPositions(view,basePos) {
-      const main = view.axis, other = view.axis == 0 ? 1: 0
-      const rProps = renderProps[view.ctxPath] 
-      rProps.pos = [basePos[0] + rProps.margins[0], basePos[1] + rProps.margins[1]]
-      const visibleChildren = (view.children ||[]).filter(child=>jb.path(renderProps[child.ctxPath],'size.0'))
-      visibleChildren.reduce((posAcc, child) => {
+    function calcGroupsSize(view) { // bottom up
+      if (!view.children) return
+      view.children.map(ch=>calcGroupsSize(ch))
+      const rProps = renderProps[view.ctxPath]
+      rProps.size = axes.map(axis=> axis == view.layoutAxis ? sumMax(rProps.sizeVec,axis) : maxSum(rProps.sizeVec,axis))
+    }
+
+    function assignCenterPositions(view,basePos,availableSize) {
+      renderProps[view.ctxPath].pos = basePos
+      if (!view.children) return
+      const main = view.layoutAxis, other = view.layoutAxis == 0 ? 1: 0
+      const visibleChildren = view.children.filter(child=>!filteredOut[child.shortPath])
+      visibleChildren.reduce((posInMain, child,i) => {
+        const childSize = renderProps[child.ctxPath].size
         const childPos = []
-        childPos[main] = posAcc
-        childPos[other] = basePos[other]
-        calcPositions(child,childPos)
-        const childProps = renderProps[child.ctxPath]
-        return posAcc + childProps.size[main] + childProps.margins[main]
+        childPos[main] = posInMain + (i ? 0 : (availableSize[main] - renderProps[view.ctxPath].size[main]) / 2)
+        childPos[other] = basePos[other] + (availableSize[other] - childSize[other]) / 2
+        assignCenterPositions(child,childPos,childSize)
+        return childPos[main] + childSize[main] + spaceSize
       },basePos[main])
     }
 
@@ -194,6 +114,31 @@ jb.extension('zui','layout', {
     }
     function fixVal(v) {
       return typeof v == 'number' ? v.toFixed(2) : v
+    }
+    function sumMax(v,axis) {
+      let firstView = true
+      return v.reduce((sum,elem) => {
+          const size = Array.isArray(elem[axis]) ? maxSum(elem,axis) : elem[axis]
+          const space = (firstView || !size) ? 0 : spaceSize
+          if (size) firstView=false
+          return sum + size + space
+        },0)
+    }
+    function maxSum(v,axis) {
+      return v.reduce((max,elem) => Math.max(max, Array.isArray(elem[axis]) ? sumMax(elem,axis) : (elem[axis] || 0)),0)
+    }
+    function buildSizeVec(v) {
+      jb.path(renderProps,[v.ctxPath,'title'], v.title)
+      return jb.path(renderProps,[v.ctxPath,'sizeVec'], 
+        v.children.map(ch=> ch.children ? buildSizeVec(ch) : jb.path(renderProps,[ch.ctxPath,'size'],[0,0])))
+    }
+    function calcTotalSize(axis) {
+      return axis == itemView.layoutAxis ? sumMax(sizeVec,axis) : maxSum(sizeVec,axis)
+    }    
+    function writeRecordPropsForDebug() {
+      ['size','p','min','prefered','max'].forEach(p=>minRecords[0].forEach((r,i) => {
+        (r[p] != null) && jb.path(renderProps,[toCtxPath(r.path),p],`${fixVal(r[p])},${fixVal(minRecords[1][i][p])}`)
+      }))
     }
   }
 })

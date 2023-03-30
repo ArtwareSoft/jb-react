@@ -138,8 +138,9 @@ jb.component('itemlistStyle', {
 
 jb.extension('zui','itemlist', {
   initItemlistCmp(cmp,props) {
-    const debugElems = [jb.zui.mark4PointsZuiElem(), jb.zui.markGridAreaZuiElem()]
-//    props.elems.forEach(elem => elem.specificProps && Object.assign(props, elem.specificProps(props)))
+    const debugElems = [jb.zui.mark4PointsZuiElem(), 
+      // jb.zui.markGridAreaZuiElem()
+    ]
     ;[...debugElems, ...props.elems].forEach(elem => elem.buffers = elem.prepareGPU(props))
     Object.assign(props, jb.zui.prepareItemView(props.itemView))
     const renderPropsCache = {}

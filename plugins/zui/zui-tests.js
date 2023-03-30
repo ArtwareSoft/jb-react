@@ -17,7 +17,7 @@ jb.component('zuiTest.itemlist', {
             ]
           ),
           boardSize: 16,
-          initialZoom: 2,
+          initialZoom: 4.5,
           center: '2.7,7.8',
           items: pipeline('%$phones%', slice(0, 10)),
           itemProps: [

@@ -121,15 +121,20 @@ jb.extension('zui','FE-utils', {
   vertexShaderCode: ({code,main,id} = {}) => `attribute vec2 itemPos${id};
     uniform vec2 zoom;
     uniform vec2 center;
+    uniform vec2 canvasSize;
     uniform vec2 gridSizeInPixels;
-    varying vec2 npos;
+    uniform vec2 pos;
+    uniform vec2 size;
+    varying vec2 elemTopLeftCoord;
     ${code||''}
 
     void main() {
-      vec2 _npos = (itemPos${id} - center) / zoom;
-      gl_Position = vec4( _npos * 2.0 - 1.0, 0.0, 1.0);
-      npos = _npos;
-      gl_PointSize = gridSizeInPixels[1] * 2.0;
+      vec2 elemCenter = pos+size/2.0;
+      vec2 elemCenterOffset = vec2(elemCenter[0],-1.0* elemCenter[1])/canvasSize;
+      vec2 npos = (itemPos${id} +vec2(-0.5,+0.5) - center) / zoom + elemCenterOffset;
+      gl_Position = vec4( npos * 2.0 - 1.0, 0.0, 1.0);
+      elemTopLeftCoord = npos * canvasSize - size/2.0;
+      gl_PointSize = max(size[0],size[1]) * 1.0;
       ${main||''}
     }`,
     fragementShaderCode: ({code,main} = {}) => `precision highp float;
@@ -138,28 +143,16 @@ jb.extension('zui','FE-utils', {
     uniform vec2 pos;
     uniform vec2 size;
     uniform vec2 gridSizeInPixels;
-    varying vec2 npos;
+    varying vec2 elemTopLeftCoord;
     ${code||''}
 
-    vec2 inElemPos() {
-      vec2 itemCoord = npos * canvasSize;
-      vec2 _inItemPos = gl_FragCoord.xy - itemCoord + 0.5 * gridSizeInPixels;
-      vec2 inItemPos = vec2(_inItemPos[0],gridSizeInPixels[1]-_inItemPos[1]); // flip Y axis
-      if (inItemPos[0] >= gridSizeInPixels[0] || inItemPos[0] < 0.0) return vec2(-1.0,-1.0);
-      if (inItemPos[1] >= gridSizeInPixels[1] || inItemPos[1] < 0.0) return vec2(-1.0,-1.0);
-      vec2 inElemPos = inItemPos- pos;
-      if (inElemPos[0] >= size[0] || inElemPos[0] < 0.0) return vec2(-1.0,-1.0);
-      if (inElemPos[1] >= size[1] || inElemPos[1] < 0.0) return vec2(-1.0,-1.0);
-  
-      return inElemPos;
-    }
-
     void main() {
-      vec2 inElem = inElemPos();
-      if (inElem[0] == -1.0) return;
+      vec2 inElem = gl_FragCoord.xy - elemTopLeftCoord;
+      if (inElem[0] >= size[0] || inElem[0] < 0.0 || inElem[1] >= size[1] || inElem[1] < 0.0) return;
       vec2 rInElem = inElem/size;
-      bool isInElem = (rInElem[0] < 0.9 && rInElem[0] > 0.1 && rInElem[1] < 0.9 && rInElem[1] > 0.1 );
+      //bool isInElem = (rInElem[0] < 0.9 && rInElem[0] > 0.1 && rInElem[1] < 0.9 && rInElem[1] > 0.1 );
       //if (!isInElem) return;
+      //gl_FragColor = vec4(rInElem, 0.0, 1.0);
       ${main||''}
     }`
 })
@@ -214,7 +207,10 @@ jb.extension('zui','debug', {
   }),
   markGridAreaZuiElem: () => ({
     prepareGPU({ gl, itemsPositions }) {
-        const src = [jb.zui.vertexShaderCode({id: 'markGrid'}), jb.zui.fragementShaderCode({main: 'gl_FragColor = vec4(inElem/size,0.0, 1.0);'})] 
+        const src = [
+          jb.zui.vertexShaderCode({id: 'markGrid'}), 
+          jb.zui.fragementShaderCode({main: 'gl_FragColor = vec4(inElem/size,0.0, 1.0);'})
+        ] 
         const vertexArray = new Float32Array(itemsPositions.sparse.flatMap(x=>x.slice(1,3)).map(x=>1.0*x))
 
         const buffers = {
@@ -237,13 +233,13 @@ jb.extension('zui','debug', {
         gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'gridSizeInPixels'), gridSizeInPixels)
         gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'canvasSize'), [glCanvas.width, glCanvas.height])
         gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'pos'), [0.2*gridSizeInPixels[0],0.7*gridSizeInPixels[1]])
-        gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'size'), [0.0*gridSizeInPixels[0],0.0*gridSizeInPixels[1]])
+        gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'size'), [0.6*gridSizeInPixels[0],0.2*gridSizeInPixels[1]])
 
         gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
         const itemPos = gl.getAttribLocation(shaderProgram, 'itemPosmarkGrid')
         gl.enableVertexAttribArray(itemPos)
         gl.vertexAttribPointer(itemPos, vertexNumComponents, gl.FLOAT, false, 0, 0)
-       gl.drawArrays(gl.POINTS, 0, vertexCount)
+        gl.drawArrays(gl.POINTS, 0, vertexCount)
     }
   })
 })

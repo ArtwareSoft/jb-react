@@ -27,12 +27,12 @@ jb.component('group', {
 
 jb.component('verticalOneByOne', {
   type: 'layout',
-  impl: () => ({ axis:  1 })
+  impl: () => ({ layoutAxis:  1 })
 })
 
 jb.component('horizontalOneByOne', {
   type: 'layout',
-  impl: () => ({ axis:  0 })
+  impl: () => ({ layoutAxis:  0 })
 })
 
 jb.component('priorty', {
