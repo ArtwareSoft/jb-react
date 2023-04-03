@@ -27,6 +27,7 @@
 				show: window.location.href.indexOf('&show') != -1,
 				specificTest: urlQuery('test'),
 				notPattern: urlQuery('not'),
+				showOnlyTest: urlQuery('show') == 'onlyTest',
 				...jb.objFromEntries(['repo','rerun','pattern','take','remoteTests'].map(x=>[x,urlQuery(x)]))
 			}
 			console.log(params)
