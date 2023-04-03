@@ -76,6 +76,7 @@ jb.component('zui.visualItemPreview', {
       })
     ],
     features: [
+      feature.if(() => !jb.ui.isMobile()),
       css.width('400'),
       id('itemPreview'),
       css('position: relative')

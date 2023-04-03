@@ -21,21 +21,22 @@ jb.component('zui.itemlist', {
 jb.component('itemlistStyle', {
   type: 'itemlistStyle',
   params: [
-    {id: 'width', as: 'number', defaultValue: 600},
-    {id: 'height', as: 'number', defaultValue: 460}
+    {id: 'width', as: 'string', defaultValue: '100%'},
+    {id: 'height', as: 'string', defaultValue: '600'}
   ],
   impl: customStyle({
     typeCast: 'style',
-    template: ({},{width,height},h) => h('canvas',{width, height}),
+    template: ({},{width,height},h) => h('canvas', jb.zui.calcWidthHeight(width, height)),
     css: '{ touch-action: none; }',
     features: [
       calcProps(
         (ctx,{$model,zuiCtx},{width,height})=> {
+        const sizeInPx = jb.zui.calcWidthHeight(width, height)
         const DIM = $model.boardSize
         const items = $model.items()
         const zoom = +($model.initialZoom || DIM)
         const center = $model.center ? $model.center.split(',').map(x=>+x) : [DIM* 0.5, DIM* 0.5]
-        const renderProps = {itemView: { size: [width/zoom,height/zoom], zoom }}
+        const renderProps = {itemView: { size: [sizeInPx.width/zoom,sizeInPx.height/zoom], zoom }}
         const ctxWithItems = ctx.setVars({items, renderProps})
         const itemProps = $model.itemProps(ctxWithItems)
         const itemView = $model.itemView(ctxWithItems.setVars({itemProps}))
@@ -168,4 +169,12 @@ jb.extension('zui','itemlist', {
     const {renderProps} = ctx.vars
     return renderProps[ctx.path] = renderProps[ctx.path] || {}
   },
+  calcWidthHeight(width, height) {
+    if (width == '100%' && typeof window != 'undefined') 
+      return {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      }
+    return {width: +width, height: +height}
+  }
 })

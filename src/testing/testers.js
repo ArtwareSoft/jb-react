@@ -279,7 +279,7 @@ jb.extension('test', {
 			return (jb.comps[name] && jb.comps[name].type || '').indexOf(type) == 0
 		}
 	},
-	async runOneTest(testID,{doNotcleanBeforeRun} = {}) {
+	async runOneTest(testID,{doNotcleanBeforeRun, showOnlyTest} = {}) {
 		const $testFinished = jb.callbag.subject()
 		const tstCtx = jb.ui.extendWithServiceRegistry()
 			.setVars({ testID, singleTest: jb.test.singleTest, $testFinished })
@@ -303,12 +303,14 @@ jb.extension('test', {
 			const ctxToRun = jb.ui.extendWithServiceRegistry(new jb.core.jbCtx(tstCtx,{ profile: profile.impl.control , forcePath: testID+ '~impl~control', path: '' } ))
 			const elem = doc.createElement('div')
 			elem.className = 'show'
+			if (showOnlyTest)
+				doc.body.innerHTML = ''
 			doc.body.appendChild(elem)
 			jb.ui.render(jb.ui.h(ctxToRun.runItself()),elem)    
 		}		
 		return res
 	},
-	async runTests({testType,specificTest,show,pattern,notPattern,take,remoteTests,repo}) {
+	async runTests({testType,specificTest,show,pattern,notPattern,take,remoteTests,repo,showOnlyTest}) {
 		const {pipe, fromIter, subscribe,concatMap, fromPromise } = jb.callbag 
 		let index = 1
 
@@ -353,7 +355,7 @@ jb.extension('test', {
 				//if (testID == 'previewTest.childJbm') debugger
 				document.getElementById('progress').innerHTML = `<div id=${testID}>${index++}: ${testID} started</div>`
 				console.log('starting ' + testID )
-				const res = await jb.test.runOneTest(testID)
+				const res = await jb.test.runOneTest(testID,{showOnlyTest})
 				console.log('end      ' + testID, res)
 				document.getElementById('progress').innerHTML = `<div id=${testID}>${testID} finished</div>`
 				return res

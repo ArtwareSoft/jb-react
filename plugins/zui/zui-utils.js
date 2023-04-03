@@ -24,8 +24,10 @@ jb.extension('zui','FE-utils', {
             otherPointer.gap = pointer.gap = gap
         }
         jb.log('zui update pointers', {v: `[${pointer.v[0]},${pointer.v[1]}]` , pointer, otherPointer, cmp})
-        if (this.pointers.length > 2)
+        if (this.pointers.length > 2) {
             jb.logError('zui more than 2 pointers', {pointers: this.pointers})
+            this.pointers = []
+        }
       },      
       zoomEventFromPointers() {
           return cmp.pointers.length == 0 ? [] : cmp.pointers[1] 
@@ -38,8 +40,9 @@ jb.extension('zui','FE-utils', {
           }
       },
       updateZoomState({ dz, dp }) {
+        const factor = jb.ui.isMobile() ? 1.2 : 3
         if (dz)
-          props.zoom *= dz**3
+          props.zoom *= dz**factor
         if (dp)
           props.center = [props.center[0] - dp[0]/w*props.zoom, props.center[1] + dp[1]/h*props.zoom]
 

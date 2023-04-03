@@ -20,6 +20,7 @@ jb.extension('ui', {
       return ''+ctx.id
     },
     inStudio() { return jb.studio && jb.studio.studioWindow },
+    isMobile: () => typeof navigator != 'undefined' && /Mobi|Android/i.test(navigator.userAgent),
     parentFrameJb() {
       try {
         return jb.frame.parent && jb.frame.parent.jb
