@@ -40,8 +40,8 @@ jb.component('itemlistStyle', {
         const itemProps = $model.itemProps(ctxWithItems)
         const itemView = $model.itemView(ctxWithItems.setVars({itemProps}))
         const onChange = $model.onChange.profile && $model.onChange
-        const pivotsFromItemProps = itemProps.flatMap(prop=>prop.pivots())
-        const pivots = [...pivotsFromItemProps, ...itemView.pivots().filter(p=>! pivotsFromItemProps.find(_p => _p.att == p.att)) ]
+        const pivotsFromItemProps = itemProps.flatMap(prop=>prop.pivots({DIM}))
+        const pivots = [...pivotsFromItemProps, ...itemView.pivots({DIM}).filter(p=>! pivotsFromItemProps.find(_p => _p.att == p.att)) ]
         pivots.forEach(p=>{if (p.preferedAxis) pivots[p.preferedAxis] = p})
         const elems = itemView.zuiElems()
         const itemsPositions = jb.zui.calcItemsPositions({items, pivots, DIM})
@@ -138,7 +138,8 @@ jb.component('itemlistStyle', {
 
 jb.extension('zui','itemlist', {
   initItemlistCmp(cmp,props) {
-    const debugElems = [jb.zui.mark4PointsZuiElem(), 
+    const debugElems = [
+      //jb.zui.mark4PointsZuiElem(), 
       // jb.zui.markGridAreaZuiElem()
     ]
     ;[...debugElems, ...props.elems].forEach(elem => elem.buffers = elem.prepareGPU(props))
@@ -146,7 +147,7 @@ jb.extension('zui','itemlist', {
     const renderPropsCache = {}
     Object.assign(cmp, { 
       render() {
-        const { zoom, glCanvas,elems, renderProps, itemView } = props
+        const { zoom, glCanvas,elems, renderProps, itemView, center } = props
         const [width, height] = [glCanvas.width/ zoom, glCanvas.height/ zoom]
         if (renderPropsCache[zoom]) {
           Object.assign(renderProps,renderPropsCache[zoom])
@@ -159,8 +160,6 @@ jb.extension('zui','itemlist', {
         const visibleElems = [...debugElems, ...elems.filter(el=> jb.zui.isVisible(el))]
         visibleElems.forEach(elem => elem.calcElemProps && elem.calcElemProps(props) )
         visibleElems.forEach(elem => elem.renderGPUFrame(props, elem.buffers))
-        //props.onChange()
-        //console.log('renderProps', zoom, renderProps)
       },
       onChange: () => props.onChange()
     })

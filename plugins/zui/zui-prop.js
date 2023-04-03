@@ -57,10 +57,11 @@ jb.component('numeric', {
       att,
       val: item => item[att],
       asText: item => prefix + item[att] + suffix,
-//      textSummaries2to32: item => jb.zui.textSummaries2to32(prefix + item[att]),
-      pivots() { // create scale by order
+      pivots({DIM} = {}) { // create scale by order
+          const spaceFactor = Math.floor(DIM / Math.sqrt(items.length))
           items.sort((i1,i2) => i2[att] - i1[att] ).forEach((x,i) => x[`scale_${att}`] = i/items.length)
-          return [{ att, scale: x => x[`scale_${att}`], preferedAxis: this.preferedAxis }]
+          const range = [items[0][att] || 0,items.slice(-1)[0][att] || 0]
+          return [{ att, spaceFactor, scale: x => x[`scale_${att}`], linearScale: item=> ((+item[att] || 0)-range[0])/(range[1]-range[0]) , preferedAxis: this.preferedAxis }]
       }
     }
     features().forEach(f=>f.enrich(prop))
@@ -86,4 +87,27 @@ jb.component('preferedAxis', {
   impl: (ctx,axis) => ({
     enrich(obj) { obj.preferedAxis = axis}
   })
+})
+
+jb.component('colorScale', {
+  type: 'prop_feature',
+  params: [
+    {id: 'colorScale', mandatory: true, type: 'color_scale', defaultValue: green() }
+  ],
+  impl: (ctx,colorScale) => ({
+    enrich(obj) { obj.colorScale = colorScale}
+  })
+})
+
+jb.component('red', {
+  type: 'color_scale',
+  impl: () => x => [x,0,0]
+})
+jb.component('green', {
+  type: 'color_scale',
+  impl: () => x => [0,x,0]
+})
+jb.component('blue', {
+  type: 'color_scale',
+  impl: () => x => [0,0,x]
 })

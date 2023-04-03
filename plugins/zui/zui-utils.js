@@ -132,8 +132,8 @@ jb.extension('zui','FE-utils', {
       vec2 elemCenter = pos+size/2.0;
       vec2 elemCenterOffset = vec2(elemCenter[0],-1.0* elemCenter[1])/canvasSize;
       vec2 npos = (itemPos${id} +vec2(-0.5,+0.5) - center) / zoom + elemCenterOffset;
-      gl_Position = vec4( npos * 2.0 - 1.0, 0.0, 1.0);
-      elemTopLeftCoord = npos * canvasSize - size/2.0;
+      gl_Position = vec4( npos * 2.0, 0.0, 1.0);
+      elemTopLeftCoord = (npos + 0.5) * canvasSize - size/2.0;
       gl_PointSize = max(size[0],size[1]) * 1.0;
       ${main||''}
     }`,
@@ -165,7 +165,7 @@ jb.extension('zui','debug', {
             uniform vec2 center;
         
             void main() {
-              gl_Position = vec4( ((itemPosmark4Points - center) / zoom) * 2.0 - 1.0, 0.0, 1.0);
+              gl_Position = vec4( ((itemPosmark4Points - center) / zoom) * 2.0, 0.0, 1.0);
               gl_PointSize = 5.0;
             }`,
             `precision highp float;
@@ -248,7 +248,7 @@ jb.extension('zui','itemPositions', {
   calcItemsPositions({items, pivots, DIM}) {
     const mat = Array(DIM**2)
     items.forEach(item => {
-      const [x,y] = [Math.floor(DIM*pivots.x.scale(item)), Math.floor(DIM*pivots.y.scale(item))]
+      const [x,y] = [Math.floor(DIM*pivots.x.scale(item)*pivots.x.spaceFactor), Math.floor(DIM*pivots.y.scale(item)*pivots.y.spaceFactor)]
       mat[DIM*y + x] = mat[DIM*y + x] || []
       mat[DIM*y + x].push(item)
     })      

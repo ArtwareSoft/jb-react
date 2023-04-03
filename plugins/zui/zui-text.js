@@ -5,7 +5,8 @@ jb.component('growingText', {
   type: 'view',
   params: [
     {id: 'prop', type: 'itemProp', mandatory: true},
-    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true}
+    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true},
+    {id: 'backgroundColorByProp', as: 'boolean' }
   ],
   impl: (ctx,prop, features) => {
     const zuiElem = jb.zui.text2_32ZuiElem(ctx)
@@ -15,7 +16,7 @@ jb.component('growingText', {
         fitPrefered: axis => axis == 0 ? alloc => (jb.zui.floorLog2(alloc/10)-2)*10 : false,
         renderProps: () => jb.zui.renderProps(ctx),
         ctxPath: ctx.path,
-        pivots: () => prop.pivots(),
+        pivots: (s) => prop.pivots(s),
         zuiElems: () => [zuiElem],
         priority: prop.priority || 10,
     }
@@ -31,6 +32,7 @@ jb.component('fixedText', {
     {id: 'prop', type: 'itemProp', mandatory: true},
     {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true},
     {id: 'length', as: 'number', description: '<= 8', defaultValue: 8},
+    {id: 'backgroundColorByProp', as: 'boolean' },
   ],
   impl: (ctx,prop, features,length) => {
     const zuiElem = jb.zui.text8ZuiElem(ctx)
@@ -39,7 +41,7 @@ jb.component('fixedText', {
       layoutSizes: () => [length*10,16, 0,0, 0,0 ],
       ctxPath: ctx.path,
       renderProps: () => jb.zui.renderProps(ctx),
-      pivots: () => prop.pivots(),
+      pivots: (s) => prop.pivots(s),
       zuiElems: () => [zuiElem],
       priority: prop.priority || 10,
     }

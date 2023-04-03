@@ -37,12 +37,15 @@ jb.extension('zui','layout', {
     const spaceSize = 10
     const minRecords = records
     const { size, zoom } = renderProps.itemView
-    const sizeVec = buildSizeVec(itemView)
+    initSizes(itemView)
+    const sizeVec = axes.map(axis => buildSizeVec(itemView,axis))
 
     axes.map(axis => records[axis].forEach(r=> ['prefered','max','alloc','size'].forEach(k=> delete r[k])))
 
     axes.map(axis => allocMinSizes(axis, minRecords[axis]))
     const filteredOut = {}
+    calcGroupsSize(itemView)
+    filterFirstToFit(itemView)
     axes.map(axis => minRecords[axis].map(r=> !r.alloc && (filteredOut[r.path] = true)))
     axes.map(axis => minRecords[axis].filter(r=>filteredOut[r.path]).map(r=>delete r['alloc']))
     const shownRecords = axes.map(axis => minRecords[axis].filter(r=>!filteredOut[r.path]))
@@ -91,7 +94,7 @@ jb.extension('zui','layout', {
       if (!view.children) return
       view.children.map(ch=>calcGroupsSize(ch))
       const rProps = renderProps[view.ctxPath]
-      rProps.size = axes.map(axis=> axis == view.layoutAxis ? sumMax(rProps.sizeVec,axis) : maxSum(rProps.sizeVec,axis))
+      rProps.size = axes.map(axis=> calcSizeOfVec(rProps.sizeVec[axis],axis))
     }
 
     function assignCenterPositions(view,basePos,availableSize) {
@@ -115,26 +118,49 @@ jb.extension('zui','layout', {
     function fixVal(v) {
       return typeof v == 'number' ? v.toFixed(2) : v
     }
-    function sumMax(v,axis) {
-      let firstView = true
-      return v.reduce((sum,elem) => {
-          const size = Array.isArray(elem[axis]) ? maxSum(elem,axis) : elem[axis]
-          const space = (firstView || !size) ? 0 : spaceSize
-          if (size) firstView=false
-          return sum + size + space
-        },0)
+    function calcSizeOfVec(sizeVec,axis) {
+      return sizeVec.sumMax ? sumMax(sizeVec) : maxSum(sizeVec)
+      function sumMax(v) {
+        let firstView = true
+        return v.elems.reduce((sum,elem) => {
+            const size = typeof elem[axis] == 'number' ? elem[axis] : calcSizeOfVec(elem,axis)
+            const space = (firstView || !size) ? 0 : spaceSize
+            if (size) firstView=false
+            return sum + size + space
+          },0)
+      }
+      function maxSum(v) {
+        return v.elems.reduce((max,elem) => Math.max(max, typeof elem[axis] == 'number' ? elem[axis] : calcSizeOfVec(elem,axis)),0)
+      }
     }
-    function maxSum(v,axis) {
-      return v.reduce((max,elem) => Math.max(max, Array.isArray(elem[axis]) ? sumMax(elem,axis) : (elem[axis] || 0)),0)
-    }
-    function buildSizeVec(v) {
+    function initSizes(v) {
       jb.path(renderProps,[v.ctxPath,'title'], v.title)
-      return jb.path(renderProps,[v.ctxPath,'sizeVec'], 
-        v.children.map(ch=> ch.children ? buildSizeVec(ch) : jb.path(renderProps,[ch.ctxPath,'size'],[0,0])))
+      jb.path(renderProps,[v.ctxPath,'sizeVec'], [])
+      v.children.map(ch=> ch.children ? initSizes(ch) : jb.path(renderProps,[ch.ctxPath,'size'],[0,0]))
+    }
+    function buildSizeVec(v,axis) {
+      const sumMax = (axis == v.layoutAxis) && !v.firstToFit
+      return renderProps[v.ctxPath].sizeVec[axis] = {
+        sumMax, elems: v.children.map(ch=> ch.children ? buildSizeVec(ch,axis) : renderProps[ch.ctxPath].size)
+      }
+      // keeping the size vec and not size[axis] beacuse it is used "by reference"
     }
     function calcTotalSize(axis) {
-      return axis == itemView.layoutAxis ? sumMax(sizeVec,axis) : maxSum(sizeVec,axis)
-    }    
+      return calcSizeOfVec(sizeVec[axis],axis)
+    }
+    function filterFirstToFit(view) {
+      if (!view.children) return
+      if (!view.firstToFit) return view.children.map(ch =>filterFirstToFit(ch))
+      view.children.reduce((foundFit, ch) => {
+        if (foundFit) filteredOutView(ch)
+        const size = renderProps[ch.ctxPath].size
+        return foundFit || size[0] != 0 && size[1] != 0
+      } ,false)
+    }
+    function filteredOutView(view) {
+      filteredOut[view.shortPath] = true
+      ;(view.children||[]).map(ch => filteredOutView(ch))
+    }
     function writeRecordPropsForDebug() {
       ['size','p','min','prefered','max'].forEach(p=>minRecords[0].forEach((r,i) => {
         (r[p] != null) && jb.path(renderProps,[toCtxPath(r.path),p],`${fixVal(r[p])},${fixVal(minRecords[1][i][p])}`)
