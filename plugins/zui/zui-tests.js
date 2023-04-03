@@ -13,10 +13,7 @@ jb.component('zuiTest.itemlist', {
                     fixedText({prop: byName('price'), backgroundColorByProp: true}),
                     circle(byName('price'))
                   ]),
-                  firstToFit([
-                    fixedText({prop: byName('rating'), backgroundColorByProp: true}),
-                    circle(byName('rating'))
-                  ])
+                  fixedText({prop: byName('rating'), backgroundColorByProp: true})
                 ],
                 horizontal()
               ),

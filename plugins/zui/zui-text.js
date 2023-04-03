@@ -10,7 +10,7 @@ jb.component('growingText', {
   ],
   impl: (ctx,prop, features) => {
     const zuiElem = jb.zui.text2_32ZuiElem(ctx)
-    const view = {
+    const view = zuiElem.view = {
         title: `growingText - ${prop.att}`,
         layoutSizes: ({size}) => [2*10,16, (jb.zui.floorLog2(size[0]/10)-2)*10,0, 0,0 ],
         fitPrefered: axis => axis == 0 ? alloc => (jb.zui.floorLog2(alloc/10)-2)*10 : false,
@@ -36,7 +36,7 @@ jb.component('fixedText', {
   ],
   impl: (ctx,prop, features,length) => {
     const zuiElem = jb.zui.text8ZuiElem(ctx)
-    const view = {
+    const view = zuiElem.view = {
       title: `fixedText - ${prop.att}`,
       layoutSizes: () => [length*10,16, 0,0, 0,0 ],
       ctxPath: ctx.path,
@@ -45,8 +45,10 @@ jb.component('fixedText', {
       zuiElems: () => [zuiElem],
       priority: prop.priority || 10,
     }
+    if (prop.colorScale)
+      view.backgroundColorByProp = {prop,colorScale: prop.colorScale}
+
     features().forEach(f=>f.enrich(view))
-    //view.enterHeight = view.enterHeight || Math.floor(view.preferedHeight()/2)
     return view
   }
 })
@@ -254,9 +256,13 @@ jb.extension('zui','text8', {
       async prepare({gl}) {
         this.charSetTexture = await jb.zui.imageToTexture(gl,jb.zui.asciiCharSetImage())
       },
-      vertexShaderCode: () => jb.zui.vertexShaderCode({id: 'text8',code: 'attribute vec4 _text;varying vec4 text;', main:'text = _text;'}),
+      vertexShaderCode: () => jb.zui.vertexShaderCode({id: 'text8',
+        code: `attribute vec4 _text; varying vec4 text;
+        attribute vec3 _backgroundColor; varying vec3 backgroundColor;`, 
+        main:'text = _text; backgroundColor = _backgroundColor;'
+      }),
       fragementShaderCode: () => jb.zui.fragementShaderCode({code: 
-        `varying vec4 text;
+        `varying vec4 text; varying vec3 backgroundColor;
         uniform sampler2D charSetTexture;
         uniform float charWidthInTexture;
         uniform vec2 charSetTextureSize;
@@ -282,16 +288,38 @@ jb.extension('zui','text8', {
           float inCharPosPx = mod(inElem[0], charWidthInTexture);
           vec2 texturePos = vec2(charCode * charWidthInTexture + inCharPosPx, size[1] - inElem[1]) / charSetTextureSize;
 
-          gl_FragColor = texture2D( charSetTexture, texturePos);
+          vec4 texel = texture2D(charSetTexture, texturePos);
+          if (texel.a < 0.2) {
+            gl_FragColor = vec4(backgroundColor, 1.0);
+          } else {
+            float bgLuminance = dot(backgroundColor, vec3(0.299, 0.587, 0.114));
+            float whiteLuminance = dot(vec3(1.0), vec3(0.299, 0.587, 0.114));
+            float blackLuminance = dot(vec3(0.0), vec3(0.299, 0.587, 0.114));
+            float whiteContrast = abs(bgLuminance - whiteLuminance);
+            float blackContrast = abs(bgLuminance - blackLuminance);
+            vec3 fontColor = (whiteContrast > blackContrast) ? vec3(1.0) : vec3(0.0);
+            gl_FragColor = vec4(fontColor, 1.0);
+          }
+          // float luminance = dot(texel.rgb, vec3(0.299, 0.587, 0.114));
+          // vec3 inverted_color = mix(vec3(1.0), vec3(0.0), step(luminance, 0.5) * step(dot(backgroundColor, vec3(1.0)) , 1.5));
+          // gl_FragColor = vec4(inverted_color, 1.0);
+
+          //gl_FragColor = vec4(vec3(0.0,1.0,0.0) * texture2D( charSetTexture, texturePos)[3] ,1.0);
         `}
       ),
       prepareGPU(props) {
-          const { gl, itemsPositions } = props
-        
+          const { gl, itemsPositions, DIM } = props
+
+          const backgroundColor = this.view.backgroundColorByProp || { colorScale: x => [0,x,0], prop: {pivots: () => [ {scale: () => 1 }]}}
+          const itemToColor01 = backgroundColor.prop.pivots({DIM})[0].scale
+
           const textBoxNodes = itemsPositions.sparse.map(([item, x,y]) => 
-              [x,y, ...jb.zui.textAsFloats(viewCtx.params.prop.asText(item), viewCtx.params.length)])
+              [x,y, 
+                ...jb.zui.textAsFloats(viewCtx.params.prop.asText(item), viewCtx.params.length),
+                ...backgroundColor.colorScale(itemToColor01(item))
+              ])
           const vertexArray = new Float32Array(textBoxNodes.flatMap(v=> v.map(x=>1.0*x)))
-          const floatsInVertex = 2 + 4
+          const floatsInVertex = 2 + 4 + 3
           const vertexCount = vertexArray.length / floatsInVertex
   
           const buffers = {
@@ -329,7 +357,11 @@ jb.extension('zui','text8', {
           gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
           gl.enableVertexAttribArray(text)
           gl.vertexAttribPointer(text, 4, gl.FLOAT, false,  floatsInVertex* Float32Array.BYTES_PER_ELEMENT, 2* Float32Array.BYTES_PER_ELEMENT)
- 
+
+          const background = gl.getAttribLocation(shaderProgram, '_backgroundColor')
+          gl.enableVertexAttribArray(background)
+          gl.vertexAttribPointer(background, 3, gl.FLOAT, false, floatsInVertex* Float32Array.BYTES_PER_ELEMENT, 6* Float32Array.BYTES_PER_ELEMENT)
+          
           gl.activeTexture(gl.TEXTURE0)
           gl.bindTexture(gl.TEXTURE_2D, this.charSetTexture)
           gl.uniform1i(gl.getUniformLocation(shaderProgram, 'charSetTexture'), 0)

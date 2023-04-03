@@ -41,14 +41,13 @@ jb.extension('zui','circle', {
               main: 'gl_FragColor = vec4(backgroundColor,1.0) * texture2D( pointTexture, inElem/size );'
             })] 
            
-          const backgroundColor = this.view.backgroundColorByProp || { colorScale: x => [0,x,0], prop: {pivots: () => [ {scale: () => 0 }]}}
+          const backgroundColor = this.view.backgroundColorByProp || { colorScale: x => [0,x,0], prop: {pivots: () => [ {scale: () => 1 }]}}
           const itemToColor01 = backgroundColor.prop.pivots({DIM})[0].scale
 
           const circleNodes = itemsPositions.sparse.map(([item, x,y]) => [x,y, ...backgroundColor.colorScale(itemToColor01(item))])
-          console.log(circleNodes.map(x=>x.slice(2,4).join(',')))
           const vertexArray = new Float32Array(circleNodes.flatMap(v=> v.map(x=>1.0*x)))
 
-          const floatsInVertex = 5
+          const floatsInVertex = 2 + 3
           const vertexCount = vertexArray.length / floatsInVertex
 
           const buffers = {
