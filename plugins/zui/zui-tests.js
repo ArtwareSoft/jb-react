@@ -7,6 +7,7 @@ jb.component('zuiTest.itemlist', {
         zui.itemlist({
           itemView: group(
             [
+              growingText(byName('name')),
               group(
                 [
                   firstToFit([
@@ -17,14 +18,13 @@ jb.component('zuiTest.itemlist', {
                 ],
                 horizontal()
               ),
-              growingText(byName('name')),
-              image('/hotels/images/6001-400/%image%.webp'),
+              //image('/hotels/images/600-400/%image%.webp'),
               growingText(text({att: 'distanceLabel', features: priorty(4)}))
             ]
           ),
-          boardSize: 32,
-          initialZoom: 4.5,
-          center: '2.7,7.8',
+          boardSize: 64,
+          initialZoom: 8,
+          center: '11,24',
           items: pipeline('%$hotels%'),
           itemProps: [
             numeric({
@@ -37,8 +37,8 @@ jb.component('zuiTest.itemlist', {
             }),
             numeric({att: 'rating', features: [priorty(2), colorScale(red())]}),
             text({att: 'name', features: priorty(3)}),
-            numeric({att: 'lat', features: preferedAxis('x')}),
-            numeric({att: 'long', features: preferedAxis('y')})
+            geo({att: 'lat', features: preferedAxis('y')}),
+            geo({att: 'long', features: preferedAxis('x')})
           ],
           onChange: refreshControlById('itemPreview')
         }),

@@ -46,6 +46,9 @@ jb.extension('zui','FE-utils', {
         if (dp)
           props.center = [props.center[0] - dp[0]/w*props.zoom, props.center[1] + dp[1]/h*props.zoom]
 
+        props.center[0] = Math.min(props.DIM,Math.max(0,props.center[0]))
+        props.center[1] = Math.min(props.DIM,Math.max(0,props.center[1]))
+
         props.zoom = Math.max(props.ZOOM_LIMIT[0],Math.min(props.zoom, props.ZOOM_LIMIT[1]))
 
         jb.log('zui event',{dz, dp, zoom: props.zoom, center: props.center, cmp})
@@ -187,11 +190,12 @@ jb.extension('zui','itemPositions', {
       const [x,y] = [Math.floor(DIM*pivots.x.scale(item)*pivots.x.spaceFactor), Math.floor(DIM*pivots.y.scale(item)*pivots.y.spaceFactor)]
       mat[DIM*y + x] = mat[DIM*y + x] || []
       mat[DIM*y + x].push(item)
+      item.xy = [x,y].join(',');
     })      
     repulsion()
 
     return { mat, sparse: Array.from(Array(DIM**2).keys()).filter(i=>mat[i]).map(i=>
-        [mat[i][0], i%DIM, Math.floor(i/DIM)] ) } //, scales.greens(pivots.x.scale(mat[i][0])) ])   }
+        [mat[i][0], i%DIM, Math.floor(i/DIM)] ) }
 
     function repulsion() {
         for (let i=0;i<DIM**2;i++)

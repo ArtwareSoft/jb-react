@@ -30,8 +30,9 @@ jb.component('text', {
       val: item => item[att],
       asText: item => item[att],
       pivots() { // create scale by string sort
-          items.sort((i1,i2) => i1[att].localeCompare(i2) ).forEach((x,i) => x[`scale_${att}`] = i/items.length)
-          return [{ att, scale: x => x[`scale_${att}`] , preferedAxis: this.preferedAxis }]
+        return []
+          // items.sort((i1,i2) => i1[att].localeCompare(i2[att]) ).forEach((x,i) => x[`scale_${att}`] = i/items.length)
+          // return [{ att, scale: x => x[`scale_${att}`] , preferedAxis: this.preferedAxis }]
       }
     }
     features().forEach(f=>f.enrich(prop))
@@ -62,6 +63,32 @@ jb.component('numeric', {
           items.sort((i1,i2) => i2[att] - i1[att] ).forEach((x,i) => x[`scale_${att}`] = i/items.length)
           const range = [items[0][att] || 0,items.slice(-1)[0][att] || 0]
           return [{ att, spaceFactor, scale: x => x[`scale_${att}`], linearScale: item=> ((+item[att] || 0)-range[0])/(range[1]-range[0]) , preferedAxis: this.preferedAxis }]
+      }
+    }
+    features().forEach(f=>f.enrich(prop))
+    return prop
+  }
+})
+
+jb.component('geo', {
+  type: 'itemProp',
+  params: [
+    {id: 'att', as: 'string'},
+    {id: 'features', type: 'prop_feature[]', dynamic: true, flattenArray: true}
+  ],
+  impl: (ctx, att, features) => {
+    const items = ctx.vars.items
+
+    const prop = {
+      att,
+      val: item => item[att],
+      asText: item => ''+item[att],
+      pivots({DIM} = {}) { // create scale by order
+          //const spaceFactor = Math.floor(DIM / Math.sqrt(items.length))
+          items.sort((i1,i2) => i1[att] - i2[att] )
+          const from = items[0][att], to = items[items.length-1][att], range = to - from
+          items.forEach((x) => x[`scale_${att}`] = (x[att] - from) / range)
+          return [{ att, spaceFactor:1, scale: x => x[`scale_${att}`], linearScale: item=> ((+item[att] || 0)-range[0])/(range[1]-range[0]) , preferedAxis: this.preferedAxis }]
       }
     }
     features().forEach(f=>f.enrich(prop))

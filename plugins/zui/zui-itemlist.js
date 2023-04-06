@@ -33,7 +33,7 @@ jb.component('itemlistStyle', {
         (ctx,{$model,zuiCtx},{width,height})=> {
         const sizeInPx = jb.zui.calcWidthHeight(width, height)
         const DIM = $model.boardSize
-        const items = $model.items()
+        const items = jb.utils.unique( $model.items(), x => x.name)
         const zoom = +($model.initialZoom || DIM)
         const center = $model.center ? $model.center.split(',').map(x=>+x) : [DIM* 0.5, DIM* 0.5]
         const renderProps = {itemView: { size: [sizeInPx.width/zoom,sizeInPx.height/zoom], zoom }}
