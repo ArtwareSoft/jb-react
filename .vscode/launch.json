@@ -1,11 +1,19 @@
 {
     "version": "0.2.0",
     "configurations": [
+
         {
             "type": "node",
             "request": "launch",
             "name": "jb",
             "program": "${workspaceFolder}/bin/jb",
+            "args": ["-main:split(\"-\")", "%text:rak-lo-%$v2%","%part:but first","%v1:pipeline('bb',first())","%v2:#%$v1%#"],
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "download",
+            "program": "${workspaceFolder}/bin/download-images",
             "args": ["-main:split(\"-\")", "%text:rak-lo-%$v2%","%part:but first","%v1:pipeline('bb',first())","%v2:#%$v1%#"],
         },
         {

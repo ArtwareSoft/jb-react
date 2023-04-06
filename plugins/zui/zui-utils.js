@@ -26,7 +26,7 @@ jb.extension('zui','FE-utils', {
         jb.log('zui update pointers', {v: `[${pointer.v[0]},${pointer.v[1]}]` , pointer, otherPointer, cmp})
         if (this.pointers.length > 2) {
             jb.logError('zui more than 2 pointers', {pointers: this.pointers})
-            this.pointers = []
+            this.pointers = this.pointers.slice(-2)
         }
       },      
       zoomEventFromPointers() {
@@ -52,8 +52,27 @@ jb.extension('zui','FE-utils', {
       },
       pointers: [],
       findPointer(pid) { return this.pointers.find(x=>x.pid == pid) },
-      addPointer(pid) { !this.findPointer(pid) && this.pointers.push({pid}); },
-      removePointer(pid) { this.pointers.splice(this.pointers.findIndex(x=>x.pid == pid), 1)} ,
+      removeOldPointers() {
+        const now = new Date().getTime()
+        this.pointers = this.pointers.filter(pointer => now - pointer.time < 2000)
+      },
+      addPointer(pid) { 
+        if (this.findPointer(pid))
+          return jb.logError('zui pointer already exists', {pid})
+        if (this.pointers.length > 1)
+          this.removeOldPointers()
+        if (this.pointers.length > 1)
+          return jb.logError('zui pointer tring to add thirs pointer', {pid})
+
+        this.pointers.push({pid})
+      },
+      removePointer(pid) {
+        console.log('removePointer',pid,this.pointers)
+        const found = this.pointers.findIndex(x=>x.pid == pid)
+        console.log(found)
+        if (found != -1)
+          this.pointers.splice(found, 1)
+      } ,
       momentumEvents(pid) {
         const pointer = this.pointers.find(x=>x.pid == pid)
         if (!pointer) return { delay: 0, events: [] }
@@ -158,93 +177,6 @@ jb.extension('zui','FE-utils', {
       //gl_FragColor = vec4(rInElem, 0.0, 1.0);
       ${main||''}
     }`
-})
-
-jb.extension('zui','debug', {
-  mark4PointsZuiElem: () => ({
-    prepareGPU({ gl, itemsPositions }) {
-        const src = [`attribute vec2 itemPosmark4Points;
-            uniform vec2 zoom;
-            uniform vec2 center;
-        
-            void main() {
-              gl_Position = vec4( ((itemPosmark4Points - center) / zoom) * 2.0, 0.0, 1.0);
-              gl_PointSize = 5.0;
-            }`,
-            `precision highp float;
-            void main() {
-              gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0);
-              return;
-            }`
-        ]
-         
-        const vertexArray = new Float32Array(itemsPositions.sparse.flatMap(x=>{
-          const _base = x.slice(1,3)
-          const base = [0,1].map(axis=>_base[axis]-0.5)
-          return [...base, base[0],base[1]+1, base[0]+1,base[1], base[0]+1,base[1]+1]
-        }).map(x=>1.0*x))
-
-        const buffers = {
-            vertexBuffer: gl.createBuffer(),
-            shaderProgram: jb.zui.buildShaderProgram(gl, src),
-            vertexNumComponents: 2,
-            vertexCount: vertexArray.length/2,
-        }    
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffers.vertexBuffer)
-        gl.bufferData(gl.ARRAY_BUFFER, vertexArray, gl.STATIC_DRAW)
-
-        return buffers        
-    },
-    renderGPUFrame({ gl, zoom, center}, { vertexBuffer, shaderProgram, vertexNumComponents, vertexCount }) {
-        gl.useProgram(shaderProgram)
-      
-        gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'zoom'), [zoom, zoom] )
-        gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'center'), center)
-      
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
-        const itemPos = gl.getAttribLocation(shaderProgram, 'itemPosmark4Points')
-        gl.enableVertexAttribArray(itemPos)
-        gl.vertexAttribPointer(itemPos, vertexNumComponents, gl.FLOAT, false, 0, 0)
-       gl.drawArrays(gl.POINTS, 0, vertexCount)
-    }
-  }),
-  markGridAreaZuiElem: () => ({
-    prepareGPU({ gl, itemsPositions }) {
-        const src = [
-          jb.zui.vertexShaderCode({id: 'markGrid'}), 
-          jb.zui.fragementShaderCode({main: 'gl_FragColor = vec4(inElem/size,0.0, 1.0);'})
-        ] 
-        const vertexArray = new Float32Array(itemsPositions.sparse.flatMap(x=>x.slice(1,3)).map(x=>1.0*x))
-
-        const buffers = {
-            vertexBuffer: gl.createBuffer(),
-            shaderProgram: jb.zui.buildShaderProgram(gl, src),
-            vertexNumComponents: 2,
-            vertexCount: vertexArray.length/2,
-        }    
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffers.vertexBuffer)
-        gl.bufferData(gl.ARRAY_BUFFER, vertexArray, gl.STATIC_DRAW)
-
-        return buffers        
-    },
-    renderGPUFrame({ gl, glCanvas, zoom, center}, { vertexBuffer, shaderProgram, vertexNumComponents, vertexCount }) {
-        gl.useProgram(shaderProgram)
-        const gridSizeInPixels = [glCanvas.width/ zoom, glCanvas.height/ zoom]
-      
-        gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'zoom'), [zoom, zoom] )
-        gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'center'), center)
-        gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'gridSizeInPixels'), gridSizeInPixels)
-        gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'canvasSize'), [glCanvas.width, glCanvas.height])
-        gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'pos'), [0.2*gridSizeInPixels[0],0.7*gridSizeInPixels[1]])
-        gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'size'), [0.6*gridSizeInPixels[0],0.2*gridSizeInPixels[1]])
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
-        const itemPos = gl.getAttribLocation(shaderProgram, 'itemPosmarkGrid')
-        gl.enableVertexAttribArray(itemPos)
-        gl.vertexAttribPointer(itemPos, vertexNumComponents, gl.FLOAT, false, 0, 0)
-        gl.drawArrays(gl.POINTS, 0, vertexCount)
-    }
-  })
 })
 
 jb.extension('zui','itemPositions', {

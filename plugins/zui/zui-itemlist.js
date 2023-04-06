@@ -67,8 +67,7 @@ jb.component('itemlistStyle', {
 
           Object.assign(props, { glCanvas: el, gl, aspectRatio: el.width/el.height })
           jb.zui.initZuiCmp(cmp,props)
-          jb.zui.initItemlistCmp(cmp,props)
-          await Promise.all(props.elems.map(elem =>elem.prepare && elem.prepare(props)).filter(x=>x))
+          await jb.zui.initItemlistCmp(cmp,props)
 
           jb.zui.clearCanvas(props)
           cmp.render()
@@ -110,7 +109,7 @@ jb.component('itemlistStyle', {
             rx.pipe(
               source.data(1),
               rx.do(
-                ({data},{cmp}) => cmp.removePointer(data.pointerId)
+                ({},{cmp,pid}) => cmp.removePointer(pid)
               )
             )
           )
@@ -138,11 +137,13 @@ jb.component('itemlistStyle', {
 })
 
 jb.extension('zui','itemlist', {
-  initItemlistCmp(cmp,props) {
+  async initItemlistCmp(cmp,props) {
     const debugElems = [
+      jb.zui.showTouchPointers(cmp),
       //jb.zui.mark4PointsZuiElem(), 
       // jb.zui.markGridAreaZuiElem()
     ]
+    await Promise.all(props.elems.map(elem =>elem.prepare && elem.prepare(props)).filter(x=>x))
     ;[...debugElems, ...props.elems].forEach(elem => elem.buffers = elem.prepareGPU(props))
     Object.assign(props, jb.zui.prepareItemView(props.itemView))
     const renderPropsCache = {}
