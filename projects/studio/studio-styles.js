@@ -22,18 +22,18 @@ jb.component('editableText.floatingInput', {
     css(`~ .mdc-text-field { width: 100%; margin-right: 13px;}`))
 })
 
-jb.studio.codeMirrorUtils = Object.assign(jb.studio.codeMirrorUtils || {}, {
-  incNumberAtCursor(editor, {inc}) {
-    const cur = editor.getCursor(), token = editor.getTokenAt(cur);
-    if (!isNaN(+token.string)) {
-      const prefix = editor.getTokenAt(CodeMirror.Pos(cur.line, cur.ch - token.string.length)).string;
-      const val = prefix == '-' ? (prefix + token.string) : token.string;
-      const newVal = `${(+val)+inc}`;
-      if (prefix == '-')
-        token.start--;
-      editor.replaceRange(newVal, CodeMirror.Pos(cur.line, token.start), CodeMirror.Pos(cur.line, token.end))
+jb.extension('studio', 'codeMirror', {
+    incNumberAtCursor(editor, {inc}) {
+      const cur = editor.getCursor(), token = editor.getTokenAt(cur);
+      if (!isNaN(+token.string)) {
+        const prefix = editor.getTokenAt(CodeMirror.Pos(cur.line, cur.ch - token.string.length)).string;
+        const val = prefix == '-' ? (prefix + token.string) : token.string;
+        const newVal = `${(+val)+inc}`;
+        if (prefix == '-')
+          token.start--;
+        editor.replaceRange(newVal, CodeMirror.Pos(cur.line, token.start), CodeMirror.Pos(cur.line, token.end))
+      }
     }
-  }
 })
 
 jb.component('editableText.studioCodemirrorTgp', {
@@ -43,10 +43,10 @@ jb.component('editableText.studioCodemirrorTgp', {
       '$': 'object',
       extraKeys: {
         'Alt-Left': editor => {
-          jb.studio.codeMirrorUtils.incNumberAtCursor(editor, {inc:-1})
+          jb.studio.incNumberAtCursor(editor, {inc:-1})
         },
         'Alt-Right': editor => {
-          jb.studio.codeMirrorUtils.incNumberAtCursor(editor, {inc:1})
+          jb.studio.incNumberAtCursor(editor, {inc:1})
         }
       }
     },
