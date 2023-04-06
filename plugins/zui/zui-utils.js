@@ -137,6 +137,7 @@ jb.extension('zui','FE-utils', {
           return (value & (value - 1)) === 0
         }
       }
+      image.onerror = () => resolve(texture)
       image.src = url
     })
   },

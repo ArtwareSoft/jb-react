@@ -18,7 +18,7 @@ jb.component('zuiTest.itemlist', {
                 horizontal()
               ),
               growingText(byName('name')),
-              image('/hotels/images/600-400/%image%.webp'),
+              image('/hotels/images/6001-400/%image%.webp'),
               growingText(text({att: 'distanceLabel', features: priorty(4)}))
             ]
           ),
