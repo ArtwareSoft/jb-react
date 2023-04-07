@@ -171,9 +171,6 @@ jb.extension('zui','itemlist', {
         visibleElems.forEach(elem => elem.renderGPUFrame(props, elem.buffers))
       },
       onChange: () => props.onChange(),
-      resize: () => {
-        debugger
-      }
     })
   },
   renderProps(ctx) {
@@ -181,15 +178,10 @@ jb.extension('zui','itemlist', {
     return renderProps[ctx.path] = renderProps[ctx.path] || {}
   },
   calcWidthHeight(width, height) {
-    if (width == '100%' && typeof screen != 'undefined') 
+    if (width == '100%' && (typeof screen != 'undefined' || typeof window != 'undefined'))
       return {
-        width: screen.width,
-        height: screen.height,
-      }
-    if (width == '100%' && typeof window != 'undefined') 
-      return {
-        width: window.innerWidth,
-        height: window.innerHeight,
+        width: typeof screen != 'undefined' ? screen.width : window.innerWidth,
+        height: typeof screen != 'undefined' ? screen.height : window.innerHeight,
       }
     return {width: +width, height: +height}
   }

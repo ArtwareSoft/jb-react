@@ -134,9 +134,9 @@ jb.component('FETest.workerPreviewTest.suggestions', {
 jb.component('FETest.workerPreviewTest.suggestions.select', {
   impl: uiFrontEndTest({
     control: group({controls: [
-        studio.propertyPrimitive('sampleProject.main~impl~controls~text'),
-        probe.remoteMainCircuitView()
-      ]}),
+      studio.propertyPrimitive('sampleProject.main~impl~controls~text'),
+      probe.remoteMainCircuitView()
+    ]}),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
     action: runActions(
       uiAction.waitForSelector('#sampleText'),
@@ -157,6 +157,25 @@ jb.component('FETest.workerPreviewTest.suggestions.select', {
       uiAction.waitForSelector('[cmp-ver=\"3\"]')
     ),
     expectedResult: contains('hello world'),
+    renderDOM: true
+  })
+})
+
+jb.component('FETest.workerPreviewTest.suggestions.selectPopup', {
+  impl: uiFrontEndTest({
+    control: group({controls: [
+      studio.propertyPrimitive('sampleProject.main~impl~controls~text'),
+      probe.remoteMainCircuitView()
+    ]}),
+    runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
+    action: runActions(
+      uiAction.waitForSelector('#sampleText'),
+      uiAction.waitForSelector('input'),
+      uiAction.setText('hello %$', 'input'),
+      uiAction.keyboardEvent({ selector: 'input', type: 'keyup',  keyCode: 37 }), // %
+      uiAction.waitForSelector('.jb-dialog .jb-item')
+    ),
+    expectedResult: contains('(world)'),
     renderDOM: true
   })
 })

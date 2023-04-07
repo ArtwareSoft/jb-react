@@ -222,5 +222,5 @@ jb.component('widget.headless', {
 })
 
 jb.component('widget.headlessWidgets', {
-    impl: () => Object.keys(jb.ui.headless)
+    impl: () => Object.keys(jb.ui.headless || {})
 })

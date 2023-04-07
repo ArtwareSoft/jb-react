@@ -1,4 +1,3 @@
-// var {picklist} = jb.ns('picklist')
 
 jb.component('picklist', {
   type: 'control',
@@ -23,42 +22,6 @@ jb.component('picklist.init', {
   )
 })
 
-// jb.component('picklist.allowAsynchOptions', {
-//   type: 'feature',
-//   description: 'allows the picklist options be reactive or promise',
-//   impl: features(
-//     calcProp({
-//       id: 'options', 
-//       priority: 5, phase: 5,
-//       value: (ctx,{$state},{}) => {
-//         const val = $state.options || ctx.cmpCtx.vars.$model.options()
-//         if (Array.isArray(val)) return val
-//         const res = []
-//         res.delayed = val
-//         return res
-//       },
-//     }),
-//     followUp.flow(
-//       source.any(({},{$state,$props}) => {
-//         if ($state.options) return []
-//         return $props.options.delayed || []
-//       }),
-//       rx.log('followUp allowAsynchValue'),
-//       sink.action((ctx,{cmp}) => {
-//         const origCtx = cmp.originatingCtx()
-//         const recalcCtx = origCtx.ctx({
-//             vars: {$refreshElemCall: true, $cmpId: cmp.cmpId, $cmpVer: cmp.ver+1},
-//             profile: {...origCtx.profile, options: () => ctx.data}, path: ''
-//           })
-//         debugger
-//         const vdom = jb.ui.h(recalcCtx.runItself())
-//         // const elem = jb.ui.elemOfCmp(recalcCtx,cmp.cmpId)
-//         // jb.ui.applyNewVdom(elem, vdom, {ctx: recalcCtx})
-//       })
-//     ),
-//   )
-// })
-
 jb.component('picklist.allowAsynchOptions', {
   type: 'feature',
   description: 'allows a text value to be reactive or promise',
@@ -70,14 +33,17 @@ jb.component('picklist.allowAsynchOptions', {
         const model = picklistModel || $model
         let res
         if ($state.refresh && $state.options && $state.refreshSource == 'dataArrived') {
+          console.log('state dataArrived',$state)
           res = $state.options
           jb.log('picklist options using state',{res,ctx,$state})
-        } else if ($state.refresh && $state.options) {
-          res = $state.options
-          const options = model.options()
+        } else if ($state.refresh && $state.options) { 
+          // could not write test to cover it - suggestions.selectPopup does not cover it
+          console.log('state no dataArrived',$state)
+          res = $state.options // show these options while recalcing model options
+          const options = model.options() // recalc options
           if (jb.utils.isPromise(options) || jb.callbag.isCallbag(options))
             res.delayed = options
-          jb.log('picklist options use state and calc recalc asynch options',{res,ctx,$state}) // avoid flickering
+          jb.log('picklist options use state and recalc asynch options',{res,ctx,$state}) // avoid flickering
         } else {
           const options = model.options()
           if (jb.utils.isPromise(options) || jb.callbag.isCallbag(options)) {
@@ -96,13 +62,7 @@ jb.component('picklist.allowAsynchOptions', {
     followUp.flow(
       source.any(({},{$state,$props}) => $props.options.delayed || []),
       rx.log('picklist followUp allowAsynchValue'),
-      sink.refreshCmp(({data}) => data.data || jb.path(data,'0.options') && data[0] || data // %data% for rx, %0/options% - for pipe array result
-      // sink.refreshCmp(ctx => {
-      //   const data = ctx.data
-      //   const res = data.data || jb.path(data,'0.options') && data[0] || data
-      //   jb.log('picklist followUp refresh cmp with new state',{ctx, res})
-      //   return res
-      // }
+      sink.refreshCmp(({data}) => data.data || jb.path(data,'0.options') && data[0] || data
       , obj(prop('refreshSource','dataArrived')))
     ),
   )

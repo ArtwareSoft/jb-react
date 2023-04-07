@@ -35,7 +35,7 @@ jb.component('text.allowAsynchValue', {
       source.any(If('%$$state/{%$propId%}%','','%$$props/{%$propId%}%')),
       rx.log('followUp allowAsynchValue'),
       rx.map(({data}) => jb.ui.toVdomOrStr(data)),
-      sink.refreshCmp( ctx => ctx.run(obj(prop('%$propId%','%%'))))
+      sink.refreshCmp(obj(prop('%$propId%','%%')))
     ),
   )
 })
