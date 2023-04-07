@@ -74,7 +74,7 @@ jb.extension('ui', 'frontend', {
             if (this._deleted) return
             Object.assign(this.state, state)
             this.base.state = this.state
-            ui.refreshElem(this.base,this.state,options)
+            jb.ui.refreshElem(this.base,this.state,options)
         }
         refreshFE(state) {
             if (this._deleted) return

@@ -130,6 +130,13 @@ jb.component('itemlistStyle', {
         ),
         sink.subjectNext('%$cmp.zuiEvents%')
       ),
+      frontEnd.flow(
+        source.event(
+          'resize',
+          () => jb.frame.window
+        ),
+        sink.refreshCmp('', obj(prop('strongRefresh', true)))
+      ),
       frontEnd.flow(source.subject('%$cmp.zuiEvents%'), sink.action('%$cmp.render()%')),
       frontEnd.flow(source.subject('%$cmp.zuiEvents%'), rx.debounceTime(100), sink.action('%$cmp.onChange()%'))
     ]
@@ -163,7 +170,10 @@ jb.extension('zui','itemlist', {
         visibleElems.forEach(elem => elem.calcElemProps && elem.calcElemProps(props) )
         visibleElems.forEach(elem => elem.renderGPUFrame(props, elem.buffers))
       },
-      onChange: () => props.onChange()
+      onChange: () => props.onChange(),
+      resize: () => {
+        debugger
+      }
     })
   },
   renderProps(ctx) {
@@ -171,6 +181,11 @@ jb.extension('zui','itemlist', {
     return renderProps[ctx.path] = renderProps[ctx.path] || {}
   },
   calcWidthHeight(width, height) {
+    if (width == '100%' && typeof screen != 'undefined') 
+      return {
+        width: screen.width,
+        height: screen.height,
+      }
     if (width == '100%' && typeof window != 'undefined') 
       return {
         width: window.innerWidth,
