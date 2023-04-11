@@ -2,9 +2,9 @@ const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
 
-const baseUrl = ''// look in ta1.txt;
+const baseUrl = 'https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256/';
 const imageList = hotelsData();
-const baseDir = '/home/shaiby/projects/hotels/images/600-400/';
+const baseDir = '/home/shaiby/projects/hotels/images/256-256/';
 
 // loop through each image in the list
 imageList.forEach(item => {

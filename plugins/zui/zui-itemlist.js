@@ -35,7 +35,7 @@ jb.component('itemlistStyle', {
         const DIM = $model.boardSize
         const items = jb.utils.unique( $model.items(), x => x.name)
         const zoom = +($model.initialZoom || DIM)
-        const center = $model.center ? $model.center.split(',').map(x=>+x) : [DIM* 0.5, DIM* 0.5]
+        const tCenter = $model.center ? $model.center.split(',').map(x=>+x) : [DIM* 0.5, DIM* 0.5]
         const renderProps = {itemView: { size: [sizeInPx.width/zoom,sizeInPx.height/zoom], zoom }}
         const ctxWithItems = ctx.setVars({items, renderProps})
         const itemProps = $model.itemProps(ctxWithItems)
@@ -47,8 +47,8 @@ jb.component('itemlistStyle', {
         const elems = itemView.zuiElems()
         const itemsPositions = jb.zui.calcItemsPositions({items, pivots, DIM})
         const props = {
-          DIM, ZOOM_LIMIT: [1, DIM*2], itemView, elems, items, pivots, onChange, center
-            , zoom, renderProps, itemsPositions,
+          DIM, ZOOM_LIMIT: [1, DIM*2], itemView, elems, items, pivots, onChange, tCenter, center: [],
+            tZoom: zoom, renderProps, itemsPositions,
             ...jb.zui.prepareItemView(itemView)
         }
         if (zuiCtx) 
@@ -60,6 +60,7 @@ jb.component('itemlistStyle', {
       frontEnd.coLocation(),
       frontEnd.init(
         async ({},{cmp, el, $props}) => {
+          document.body.style.overflow = "hidden"
           const props = cmp.props = $props
           const gl = el.getContext('webgl', { alpha: true, premultipliedAlpha: true })
           gl.enable(gl.BLEND)
@@ -120,10 +121,15 @@ jb.component('itemlistStyle', {
         sink.subjectNext('%$cmp.zuiEvents%')
       ),
       frontEnd.flow(
-        source.frontEndEvent('wheel'),
+        source.event(
+          'wheel',
+          () => jb.frame.document,
+          obj(prop('capture', true))
+        ),
+        rx.takeUntil('%$cmp.destroyed%'),
         rx.log('zui wheel'),
         rx.map(
-          ({},{sourceEvent}) => ({ dz: sourceEvent.deltaY > 0 ? 1.1 : sourceEvent.deltaY < 0 ? 0.9 : 1 })
+          ({},{sourceEvent}) => ({ dz: sourceEvent.deltaY > 0 ? 1.1 : sourceEvent.deltaY < 0 ? 1/1.1 : 1 })
         ),
         rx.do(
           ({data},{cmp}) => cmp.updateZoomState(data)
@@ -137,7 +143,7 @@ jb.component('itemlistStyle', {
         ),
         sink.refreshCmp('', obj(prop('strongRefresh', true)))
       ),
-      frontEnd.flow(source.subject('%$cmp.zuiEvents%'), sink.action('%$cmp.render()%')),
+      frontEnd.flow(source.animationFrame(), sink.action('%$cmp.render()%')),
       frontEnd.flow(source.subject('%$cmp.zuiEvents%'), rx.debounceTime(100), sink.action('%$cmp.onChange()%'))
     ]
   })
@@ -150,13 +156,15 @@ jb.extension('zui','itemlist', {
       //jb.zui.mark4PointsZuiElem(), 
       // jb.zui.markGridAreaZuiElem()
     ]
-    await Promise.all(props.elems.map(elem =>elem.prepare && elem.prepare(props)).filter(x=>x))
+    await Promise.all(props.elems.map(elem =>elem.asyncPrepare && elem.asyncPrepare(props)).filter(x=>x))
     ;[...debugElems, ...props.elems].forEach(elem => elem.buffers = elem.prepareGPU(props))
     Object.assign(props, jb.zui.prepareItemView(props.itemView))
     const renderPropsCache = {}
     Object.assign(cmp, { 
       render() {
-        const { zoom, glCanvas,elems, renderProps, itemView, center } = props
+        if (cmp.calcAnimationStep(props)) return
+        const { glCanvas,elems, renderProps, itemView, zoom } = props
+
         const [width, height] = [glCanvas.width/ zoom, glCanvas.height/ zoom]
         if (renderPropsCache[zoom]) {
           Object.assign(renderProps,renderPropsCache[zoom])

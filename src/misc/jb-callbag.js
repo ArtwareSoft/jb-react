@@ -448,24 +448,19 @@ jb.extension('callbag', {
       else if (elem.addListener) elem.addListener(event, handler, options)
       else throw new Error('cannot add listener to elem. No method found.')
   },
-  // fromPromise: promise => (start, sink) => {
-  //     if (start !== 0) return
-  //     let ended = false
-  //     const onfulfilled = val => {
-  //       if (ended) return
-  //       sink(1, val)
-  //       if (ended) return
-  //       sink(2)
-  //     }
-  //     const onrejected = (err = new Error()) => {
-  //       if (ended) return
-  //       sink(2, err)
-  //     }
-  //     Promise.resolve(promise).then(onfulfilled, onrejected)
-  //     sink(0, function fromPromise(t, d) {
-  //       if (t === 2) ended = true
-  //     })
-  // },
+  fromCallbackFunc: (register, unRegister) => (start, sink) => {
+    if (start !== 0) return
+    let handler = register(fromCallback)
+    function fromCallback() { 
+      sink(1,0)
+      handler = register(fromCallback)
+    }    
+  
+    sink(0, function fromCallback(t) {
+      if (t !== 2) return
+      unRegister(handler)
+    })
+  },  
   fromPromise: promises => (start, sink) => {
     if (start !== 0) return
     let endedBySink = false
@@ -852,7 +847,7 @@ jb.extension('callbag', {
           sink(t,d)
           working = false
           workOnQueue()
-        }, typeof duration == 'function' ? duration() : duration)
+        }, jb.callbag.valueFromfunctionOrConstant(duration,d))
         working = true
       }
   },
@@ -950,4 +945,7 @@ jb.extension('callbag', {
   },  
   log: name => jb.callbag.Do(x=>console.log(name,x)),
   jbLog: (name,...params) => jb.callbag.Do(data => jb.log(name,{data,...params})),
+  valueFromfunctionOrConstant(val,data) {
+    return typeof val == 'function' ? val(val.runCtx && val.runCtx.setData(data)) : val
+  }
 })

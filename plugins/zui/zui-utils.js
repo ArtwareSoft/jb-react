@@ -39,19 +39,41 @@ jb.extension('zui','FE-utils', {
             return [0,1].map(axis => pointers.reduce((sum,p) => sum + p[att][axis], 0) / pointers.length)
           }
       },
+      calcAnimationStep(props) {
+        const { tZoom, tCenter } = props
+        let { zoom, center } = props
+        if ( zoom == tZoom && center[0] == tCenter[0] && center[1] == tCenter[1]) 
+          return true // no rendering
+        // used at initialiation
+        zoom = zoom || tZoom
+        ;[0,1].forEach(axis=>center[axis] = center[axis] == null ? tCenter[axis] : center[axis])
+
+        // zoom gets closer to targetZoom, when 1% close assign its value
+        zoom = zoom + (tZoom - zoom) / 4
+        if (!tZoom || Math.abs((zoom-tZoom)/tZoom) < 0.01) 
+          zoom = tZoom
+        ;[0,1].forEach(axis=> {
+          center[axis] = center[axis] + (tCenter[axis] - center[axis]) / 4
+          if (!tCenter[axis] || Math.abs((center[axis]-tCenter[axis])/tCenter[axis]) < 0.01) 
+            center[axis] = tCenter[axis]
+        })
+        
+        props.zoom = zoom;
+        console.log('animate',{zoom,center: center.join(',')})
+      },            
       updateZoomState({ dz, dp }) {
         const factor = jb.ui.isMobile() ? 1.2 : 3
         if (dz)
-          props.zoom *= dz**factor
+          props.tZoom *= dz**factor
         if (dp)
-          props.center = [props.center[0] - dp[0]/w*props.zoom, props.center[1] + dp[1]/h*props.zoom]
+          props.tCenter = [props.tCenter[0] - dp[0]/w*props.tZoom, props.tCenter[1] + dp[1]/h*props.tZoom]
 
-        props.center[0] = Math.min(props.DIM,Math.max(0,props.center[0]))
-        props.center[1] = Math.min(props.DIM,Math.max(0,props.center[1]))
+        props.tCenter[0] = Math.min(props.DIM,Math.max(0,props.tCenter[0]))
+        props.tCenter[1] = Math.min(props.DIM,Math.max(0,props.tCenter[1]))
 
-        props.zoom = Math.max(props.ZOOM_LIMIT[0],Math.min(props.zoom, props.ZOOM_LIMIT[1]))
+        props.tZoom = Math.max(props.ZOOM_LIMIT[0],Math.min(props.tZoom, props.ZOOM_LIMIT[1]))
 
-        jb.log('zui event',{dz, dp, zoom: props.zoom, center: props.center, cmp})
+        jb.log('zui event',{dz, dp, tZoom: props.tZoom, tCenter: props.tCenter, cmp})
       },
       pointers: [],
       findPointer(pid) { return this.pointers.find(x=>x.pid == pid) },
@@ -111,7 +133,7 @@ jb.extension('zui','FE-utils', {
       gl.linkProgram(program)
     
       if (!gl.getProgramParameter(program, gl.LINK_STATUS))
-        jb.logError('Error linking shader program:', {desc: gl.getProgramInfoLog(program), shaderInfo})
+        jb.logError('Error linking shader program:', {desc: gl.getProgramInfoLog(program), vtx: sources[0], fgm: sources[1]})
     
       return program
   },
@@ -140,7 +162,7 @@ jb.extension('zui','FE-utils', {
           return (value & (value - 1)) === 0
         }
       }
-      image.onerror = () => resolve(texture)
+      image.onerror = () => { debugger; resolve(texture) }
       image.src = url
     })
   },

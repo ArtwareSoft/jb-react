@@ -87,6 +87,11 @@ jb.extension('zui','ascii', {
             const code = jb.zui.asciiCharSet.indexOf(x)
             return code == -1 ? 0 : code
         })
+    },
+    async asciiCharSetTexture(gl) {
+      if (!jb.zui._asciiCharSetTexture)
+        jb.zui._asciiCharSetTexture = jb.zui.imageToTexture(gl, jb.zui.asciiCharSetImage())
+      return jb.zui._asciiCharSetTexture
     }
 })
 
@@ -94,8 +99,8 @@ jb.extension('zui','text_2_32', {
   text2_32ZuiElem: viewCtx => ({
       renderProps: () => jb.zui.renderProps(viewCtx),
       txt_fields: ['2','4','8','16_0','16_1','32_0','32_1','32_2','32_3'],
-      async prepare({gl}) {
-        this.charSetTexture = await jb.zui.imageToTexture(gl, jb.zui.asciiCharSetImage())
+      async asyncPrepare({gl}) {
+        this.charSetTexture = await jb.zui.asciiCharSetTexture(gl)
       },
       vertexShaderCode() {
         const txt_fields = this.txt_fields
@@ -253,8 +258,8 @@ jb.extension('zui','text_2_32', {
 jb.extension('zui','text8', {
   text8ZuiElem: viewCtx => ({
       renderProps: () => jb.zui.renderProps(viewCtx),
-      async prepare({gl}) {
-        this.charSetTexture = await jb.zui.imageToTexture(gl,jb.zui.asciiCharSetImage())
+      async asyncPrepare({gl}) {
+        this.charSetTexture = await jb.zui.asciiCharSetTexture(gl)
       },
       vertexShaderCode: () => jb.zui.vertexShaderCode({id: 'text8',
         code: `attribute vec4 _text; varying vec4 text;

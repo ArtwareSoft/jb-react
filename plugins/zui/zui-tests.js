@@ -18,12 +18,12 @@ jb.component('zuiTest.itemlist', {
                 ],
                 horizontal()
               ),
-              //image('/hotels/images/600-400/%image%.webp'),
-              growingText(text({att: 'distanceLabel', features: priorty(4)}))
+//              image('/hotels/images/256-256%image%.webp'),
+//              growingText(text({att: 'distanceLabel', features: priorty(4)}))
             ]
           ),
           boardSize: 64,
-          initialZoom: 8,
+          initialZoom: 2,
           center: '11,24',
           items: pipeline('%$hotels%'),
           itemProps: [
