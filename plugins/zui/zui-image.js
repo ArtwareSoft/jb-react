@@ -42,7 +42,7 @@ jb.extension('zui','image', {
       renderProps: () => jb.zui.renderProps(viewCtx),
       async asyncPrepare({gl, itemsPositions, DIM}) {
         jb.zui.createAtlasSplit({mat: itemsPositions.mat , maxItemsInGroup : 15, DIM, ctx: viewCtx,view: this.view })
-        //await jb.zui.prepareAtlasTextures(this.atlasGroups,{gl,ctx: viewCtx,view: this.view })
+        await jb.zui.prepareAtlasTextures(this.atlasGroups,{gl,ctx: viewCtx,view: this.view })
 
         this.atlasGroups = await jb.frame.fetch(jb.baseUrl+'/dist/atlas-img256-dim64.json').then(r=>r.json())
         await Promise.all(this.atlasGroups.map(async g=>g.texture = await jb.zui.imageToTexture(gl, g.dataUrl)))
@@ -218,6 +218,7 @@ jb.extension('zui','atlas', {
     //await atlasGroups.reduce(async (pr,g) => { await pr; await createAtlasTexture(g) } , Promise.resolve())
     await Promise.all(atlasGroups.map(g => createAtlasTexture(g)))
     const fileContent = JSON.stringify(atlasGroups,null,2)
+    debugger
     return
 
     async function createAtlasTexture(group) {
@@ -225,10 +226,12 @@ jb.extension('zui','atlas', {
       const canvas = document.createElement('canvas');
       canvas.width = 1024; canvas.height = 1024;
       const cnvCtx = canvas.getContext('2d');
-      await Promise.all(group.items.map( ({imageIndex,url}) => {
+      await Promise.all(group.items.map( imageItem => {
+        const {imageIndex,url} = imageItem
         return new Promise(resolve => {
           const image = new Image()
           image.onload = () => {
+            imageItem.size = [ image.naturalWidth, image.naturalHeight ]
             cnvCtx.drawImage(image, 256 * Math.floor(imageIndex / 4), 256 * (imageIndex % 4))
             resolve()
           }

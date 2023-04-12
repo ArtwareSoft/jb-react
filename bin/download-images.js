@@ -1,4 +1,5 @@
 const fetch = require('node-fetch');
+const imageSize = require('image-size');
 const fs = require('fs');
 const path = require('path');
 
