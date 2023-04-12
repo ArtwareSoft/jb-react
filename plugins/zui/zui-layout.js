@@ -16,11 +16,9 @@ jb.extension('zui','layout', {
     function calcMinRecord(view, layoutAxis) {
       if (!view.children) {
         return [{
-          p: view.priority || 10000, 
-          path: view.shortPath, 
+          p: view.priority || 10000, path: view.shortPath, 
           axis: layoutAxis, title: view.title,
-          fitPrefered: view.fitPrefered && view.fitPrefered(layoutAxis),
-          min: view.layoutSizes({size:[0,0],zoom:1})[layoutAxis] }]
+          min: view.sizeNeeds({round: 0, available:[0,0]})[layoutAxis] }]
         }
       return view.children.flatMap(childView => calcMinRecord(childView,layoutAxis))
     }
@@ -32,11 +30,11 @@ jb.extension('zui','layout', {
         (acc, childView,i) => ({...acc, ...calcShortPaths(childView, [shortPath,''+i].filter(x=>x!='').join('~'))}),{})
     }
   },
-  layoutView(itemView, renderProps,{records, shortPaths}) {
+  layoutView(itemView, renderProps,{records, shortPaths, zoom}) {
     const axes = [0,1]
     const spaceSize = 10
     const minRecords = records
-    const { size, zoom } = renderProps.itemView
+    const { size } = renderProps.itemView
     initSizes(itemView)
     const sizeVec = axes.map(axis => buildSizeVec(itemView,axis))
 
@@ -46,19 +44,36 @@ jb.extension('zui','layout', {
     const filteredOut = {}
     calcGroupsSize(itemView)
     filterFirstToFit(itemView)
-    axes.map(axis => minRecords[axis].map(r=> !r.alloc && (filteredOut[r.path] = true)))
-    axes.map(axis => minRecords[axis].filter(r=>filteredOut[r.path]).map(r=>delete r['alloc']))
-    const shownRecords = axes.map(axis => minRecords[axis].filter(r=>!filteredOut[r.path]))
-    axes.map(axis => shownRecords[axis].map(r=>{
-      jb.path(renderProps,[toCtxPath(r.path),'visible'],true)
-      jb.path(renderProps,[toCtxPath(r.path),'title'],r.title)
-    }))
 
-    axes.map(axis => shownRecords[axis].forEach(r=>extendRecordNeeds(r)))
-    axes.map(axis => allocMore(axis,shownRecords[axis],'prefered'))
-    axes.map(axis => allocMore(axis,shownRecords[axis],'max'))
+    const shownViews = calcShownViews(itemView).sort((v1,v2) => (v1.priority || 10000) - (v2.priority || 10000))
+    shownViews.map(v=> {
+      jb.path(renderProps,[v.ctxPath,'title'],v.title)
+      jb.path(renderProps,[v.ctxPath,'visible'],true)
+    })
+    const rounds = shownViews.reduce((max,v) => Math.max(max,v.layoutRounds),0)
+    for(let round=1;round<rounds;round++) {
+      const otherAxis = itemView.layoutAxis ? 0 : 1
+      const residu = itemView.children.map(ch=> size[otherAxis] - renderProps[ch.ctxPath].size[otherAxis])
+      const resideInLayoutAxis = size[itemView.layoutAxis] - calcTotalSize(itemView.layoutAxis)
 
-    calcGroupsSize(itemView) // bottom up
+      shownViews.map(view=>{
+        if (view.layoutRounds <= round) return
+        const currentSize = renderProps[view.ctxPath].size
+        const available = []
+        available[otherAxis] = currentSize[otherAxis] + residu[view.shortPath.match(/^[0-9]+/)[0]]
+        available[itemView.layoutAxis] = currentSize[itemView.layoutAxis] + resideInLayoutAxis
+        const newSize = view.sizeNeeds({round, available, zoom })
+        if (newSize[0] == 0 && newSize[1] == 0 || newSize[0] == currentSize[0] && newSize[1] == currentSize[1])
+          return
+        const oldSize = [currentSize[0],currentSize[1]]
+        axes.map(axis=>renderProps[view.ctxPath].size[axis] = newSize[axis])
+
+        if (calcTotalSize(0) > size[0] || calcTotalSize(1) > size[1])
+          axes.map(axis=>renderProps[view.ctxPath].size[axis] = oldSize[axis])
+      })
+    }
+
+    calcGroupsSize(itemView)
     assignCenterPositions(itemView,[0,0],size)
     writeRecordPropsForDebug()
 
@@ -70,23 +85,6 @@ jb.extension('zui','layout', {
           allocatedSize[axis] = 0
         else
           r.alloc = r.min
-      })
-    }
-
-    function extendRecordNeeds(rec) {
-      const view = shortPaths[rec.path]
-      const layoutSizes = view.layoutSizes({size,zoom})
-      rec.prefered = layoutSizes[2+rec.axis]
-      rec.max = layoutSizes[4+rec.axis]
-    }
-
-    function allocMore(axis,records,prop) {
-      records.map(r=>{
-        const allocatedSize = renderProps[toCtxPath(r.path)].size
-        const allocatedBefore = allocatedSize[axis]
-        allocatedSize[axis] += r[prop]
-        if (calcTotalSize(axis) > size[axis])
-          allocatedSize[axis] = allocatedBefore
       })
     }
 
@@ -156,6 +154,13 @@ jb.extension('zui','layout', {
         const size = renderProps[ch.ctxPath].size
         return foundFit || size[0] != 0 && size[1] != 0
       } ,false)
+    }
+    function calcShownViews(view) {
+      const size = renderProps[view.ctxPath].size
+      if (filteredOut[view.shortPath] || size[0] == 0 || size[1] == 0) return []
+      if (view.children)
+        return view.children.flatMap(ch=>calcShownViews(ch))
+      return [view]
     }
     function filteredOutView(view) {
       filteredOut[view.shortPath] = true

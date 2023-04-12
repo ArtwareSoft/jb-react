@@ -4,21 +4,30 @@ jb.component('image', {
   type: 'view',
   params: [
     {id: 'url', as: 'string', dynamic: 'true', description: '%% is item' },
-    {id: 'preferedSize', as: 'string', defaultValue: '400,600' },
+    {id: 'preferedSize', as: 'string', defaultValue: '400,400' },
     {id: 'minSize', as: 'string', defaultValue: '30,30' },
     {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true},
   ],
   impl: (ctx,url,preferedSize,minSize,features) => { 
     const zuiElem = jb.zui.image(ctx)
+    const size = minSize.split(',').map(x=>+x)
+    const ratio = size[1]/size[0]
     const view = zuiElem.view = {
       id: jb.zui.imageViewCounter++,
       url,
+      layoutRounds: 3, // todo: greedyness
+      sizeNeeds: ({round, available }) => {
+        if (round == 0) return minSize.split(',').map(x=>+x)
+        if (round == 1) return preferedSize.split(',').map(x=>+x)
+        if (available[0]*ratio < available[1])
+          return [available[0], available[0]*ratio]
+        return [available[1]/ratio, available[1]]
+      },
       title: 'image',
       ctxPath: ctx.path,
-      layoutSizes: ({size}) => [ ...minSize.split(',').map(x=>+x), ...preferedSize.split(',').map(x=>+x), 0,0],
       pivots: (s) => [],
       zuiElems: () => [zuiElem],
-      priority: prop.priority || 0,
+      priority: 0,
     }
     features().forEach(f=>f.enrich(view))
     return view
@@ -44,11 +53,22 @@ jb.extension('zui','image', {
 
           const src = [jb.zui.vertexShaderCode({
             id:'image',
-            code: `attribute vec2 image; 
+            code: `attribute vec2 image; attribute float vertexIndex;
             uniform int atlasIdToUnit[4];
             varying float imageIndex; 
             varying float unit;`,
-            main: `imageIndex = image[1]; unit = float(atlasIdToUnit[int(image[0])]);`
+            main: `imageIndex = image[1]; unit = float(atlasIdToUnit[int(image[0])]);
+            vec2 nSize = (size/2.0)/canvasSize;
+            vec2 lSize = (vec2(size[0],-1.0*size[1])/2.0)/canvasSize;
+            vec2 vertexPos = npos+nSize;
+            if (vertexIndex == 1.0 || vertexIndex == 3.0)
+              vertexPos = npos+lSize;
+            else if (vertexIndex == 2.0 || vertexIndex == 4.0)
+              vertexPos = npos-lSize;
+            else if (vertexIndex == 5.0)
+              vertexPos = npos-nSize;
+            gl_Position = vec4( vertexPos * 2.0, 0.0, 1.0);
+            `
             }), 
             jb.zui.fragementShaderCode({
               code: `${[0,1,2,3].map(i=>`uniform sampler2D atlas${i};`).join('')}
@@ -70,14 +90,16 @@ jb.extension('zui','image', {
               main: `vec2 ratio = vec2(3.0,5.0);
               vec2 imageTopLeft = vec2( int(imageIndex/5.0), int(mod(imageIndex,5.0)) );
 
-              gl_FragColor = getTexturePixel((imageTopLeft + inElem/size)/ratio);`
+              gl_FragColor = getTexturePixel((imageTopLeft + vec2(rInElem[0], 1.0 - rInElem[1])) /ratio);`
             })] 
            
-          const imageNodes = itemsPositions.sparse.map(([item, x,y]) => 
-            [x,y,item[`atlas_${viewId}`].atlas, item[`atlas_${viewId}`].imageIndex ])
+          const imageNodes = itemsPositions.sparse.map(([item, x,y]) => {
+            const image = [item[`atlas_${viewId}`].atlas, item[`atlas_${viewId}`].imageIndex ]
+            return [0,1,2,3,4,5].flatMap(i=>[x,y,...image,i])
+          })            
           const vertexArray = new Float32Array(imageNodes.flatMap(v=>v).map(x=>1.0*x))
 
-          const floatsInVertex = 4
+          const floatsInVertex = 5
           const vertexCount = vertexArray.length / floatsInVertex
 
           const buffers = {
@@ -111,6 +133,10 @@ jb.extension('zui','image', {
           gl.enableVertexAttribArray(image)
           gl.vertexAttribPointer(image, 2, gl.FLOAT, false, floatsInVertex* Float32Array.BYTES_PER_ELEMENT, 2* Float32Array.BYTES_PER_ELEMENT)
 
+          const vertexIndex = gl.getAttribLocation(shaderProgram, 'vertexIndex')
+          gl.enableVertexAttribArray(vertexIndex)
+          gl.vertexAttribPointer(vertexIndex, 1, gl.FLOAT, false, floatsInVertex* Float32Array.BYTES_PER_ELEMENT, 4* Float32Array.BYTES_PER_ELEMENT)
+
           const atlass = jb.zui.atalesToUseWithUnits(this.atlasGroups,{zoom,center})
           atlass.forEach(atlas => {
             gl.activeTexture(gl['TEXTURE'+(4+atlas.unitIndex)])
@@ -119,7 +145,7 @@ jb.extension('zui','image', {
           })
           gl.uniform1iv(gl.getUniformLocation(shaderProgram, 'atlasIdToUnit'), this.atlasGroups.map(at=>at.unitIndex))
   
-         gl.drawArrays(gl.POINTS, 0, vertexCount)
+         gl.drawArrays(gl.TRIANGLES, 0, vertexCount)
       }
     })
 })

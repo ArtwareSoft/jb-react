@@ -12,8 +12,9 @@ jb.component('growingText', {
     const zuiElem = jb.zui.text2_32ZuiElem(ctx)
     const view = zuiElem.view = {
         title: `growingText - ${prop.att}`,
-        layoutSizes: ({size}) => [2*10,16, (jb.zui.floorLog2(size[0]/10)-2)*10,0, 0,0 ],
-        fitPrefered: axis => axis == 0 ? alloc => (jb.zui.floorLog2(alloc/10)-2)*10 : false,
+        layoutRounds: 4,
+        sizeNeeds: ({round, available }) => [2**(round+2) *10,16],
+//        layoutSizes: ({size}) => [2*10,16, (jb.zui.floorLog2(size[0]/10)-2)*10,0, 0,0 ],
         renderProps: () => jb.zui.renderProps(ctx),
         ctxPath: ctx.path,
         pivots: (s) => prop.pivots(s),
@@ -38,7 +39,9 @@ jb.component('fixedText', {
     const zuiElem = jb.zui.text8ZuiElem(ctx)
     const view = zuiElem.view = {
       title: `fixedText - ${prop.att}`,
-      layoutSizes: () => [length*10,16, 0,0, 0,0 ],
+      layoutRounds: 1,
+      sizeNeeds: () => [length*10,16],
+//      layoutSizes: () => [length*10,16, 0,0, 0,0 ],
       ctxPath: ctx.path,
       renderProps: () => jb.zui.renderProps(ctx),
       pivots: (s) => prop.pivots(s),

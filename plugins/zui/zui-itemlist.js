@@ -60,7 +60,7 @@ jb.component('itemlistStyle', {
       frontEnd.coLocation(),
       frontEnd.init(
         async ({},{cmp, el, $props}) => {
-          document.body.style.overflow = "hidden"
+          //document.body.style.overflow = "hidden"
           const props = cmp.props = $props
           const gl = el.getContext('webgl', { alpha: true, premultipliedAlpha: true })
           gl.enable(gl.BLEND)

@@ -18,13 +18,13 @@ jb.component('zuiTest.itemlist', {
                 ],
                 horizontal()
               ),
-//              image('/hotels/images/256-256%image%.webp'),
+              image('/hotels/images/256-256%image%.webp'),
 //              growingText(text({att: 'distanceLabel', features: priorty(4)}))
             ]
           ),
           boardSize: 64,
-          initialZoom: 2,
-          center: '11,24',
+          initialZoom: 2.3,
+          center: '11.250771189536731,23.093061441630162',
           items: pipeline('%$hotels%'),
           itemProps: [
             numeric({
@@ -45,6 +45,7 @@ jb.component('zuiTest.itemlist', {
         zui.visualItemPreview()
       ],
       features: [
+        //frontEnd.init(async () => { document.body.style.overflow = 'hidden'}),
         variable('zuiCtx', obj())
       ]
     }),

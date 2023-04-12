@@ -11,7 +11,11 @@ jb.component('circle', {
     const view = zuiElem.view = {
       title: 'circle',
       ctxPath: ctx.path,
-      layoutSizes: ({size}) => [1,1, 4,4, 10 + 0.1*jb.zui.floorLog2(size[0]),10 + 0.1*jb.zui.floorLog2(size[0])],
+      layoutRounds: 2,
+      sizeNeeds: ({round, available }) => round == 0 ? [5,5] : // round == 1 ? [available[1],available[1]] : 
+        [10 + 0.1*jb.zui.floorLog2(available[1]),10 + 0.1*jb.zui.floorLog2(available[1])],
+
+//      layoutSizes: ({size}) => [1,1, 4,4, 10 + 0.1*jb.zui.floorLog2(size[0]),10 + 0.1*jb.zui.floorLog2(size[0])],
       pivots: (s) => prop ? prop.pivots(s): [],
       zuiElems: () => [zuiElem],
       priority: prop.priority || 0,
