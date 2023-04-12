@@ -42,7 +42,7 @@ jb.extension('zui','image', {
       renderProps: () => jb.zui.renderProps(viewCtx),
       async asyncPrepare({gl, itemsPositions, DIM}) {
         jb.zui.createAtlasSplit({mat: itemsPositions.mat , maxItemsInGroup : 15, DIM, ctx: viewCtx,view: this.view })
-        await jb.zui.prepareAtlasTextures(this.atlasGroups,{gl,ctx: viewCtx,view: this.view })
+        //await jb.zui.prepareAtlasTextures(this.atlasGroups,{gl,ctx: viewCtx,view: this.view })
 
         this.atlasGroups = await jb.frame.fetch(jb.baseUrl+'/dist/atlas-img256-dim64.json').then(r=>r.json())
         await Promise.all(this.atlasGroups.map(async g=>g.texture = await jb.zui.imageToTexture(gl, g.dataUrl)))

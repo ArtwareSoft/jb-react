@@ -42,6 +42,7 @@ jb.extension('zui','FE-utils', {
       calcAnimationStep(props) {
         const { tZoom, tCenter } = props
         let { zoom, center } = props
+        const SPEED = jb.ui.isMobile() ? 1 : 4
         if ( zoom == tZoom && center[0] == tCenter[0] && center[1] == tCenter[1]) 
           return true // no rendering
         // used at initialiation
@@ -49,11 +50,11 @@ jb.extension('zui','FE-utils', {
         ;[0,1].forEach(axis=>center[axis] = center[axis] == null ? tCenter[axis] : center[axis])
 
         // zoom gets closer to targetZoom, when 1% close assign its value
-        zoom = zoom + (tZoom - zoom) / 4
+        zoom = zoom + (tZoom - zoom) / SPEED
         if (!tZoom || Math.abs((zoom-tZoom)/tZoom) < 0.01) 
           zoom = tZoom
         ;[0,1].forEach(axis=> {
-          center[axis] = center[axis] + (tCenter[axis] - center[axis]) / 4
+          center[axis] = center[axis] + (tCenter[axis] - center[axis]) / SPEED
           if (!tCenter[axis] || Math.abs((center[axis]-tCenter[axis])/tCenter[axis]) < 0.01) 
             center[axis] = tCenter[axis]
         })
