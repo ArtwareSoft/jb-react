@@ -13,8 +13,7 @@ jb.component('growingText', {
     const view = zuiElem.view = {
         title: `growingText - ${prop.att}`,
         layoutRounds: 4,
-        sizeNeeds: ({round, available }) => [2**(round+2) *10,16],
-//        layoutSizes: ({size}) => [2*10,16, (jb.zui.floorLog2(size[0]/10)-2)*10,0, 0,0 ],
+        sizeNeeds: ({round }) => [2**(round+2) *10,16],
         renderProps: () => jb.zui.renderProps(ctx),
         ctxPath: ctx.path,
         pivots: (s) => prop.pivots(s),
@@ -35,20 +34,19 @@ jb.component('fixedText', {
     {id: 'length', as: 'number', description: '<= 8', defaultValue: 8},
     {id: 'backgroundColorByProp', as: 'boolean' },
   ],
-  impl: (ctx,prop, features,length) => {
+  impl: (ctx,prop, features,length, backgroundColorByProp) => {
     const zuiElem = jb.zui.text8ZuiElem(ctx)
     const view = zuiElem.view = {
       title: `fixedText - ${prop.att}`,
       layoutRounds: 1,
       sizeNeeds: () => [length*10,16],
-//      layoutSizes: () => [length*10,16, 0,0, 0,0 ],
       ctxPath: ctx.path,
       renderProps: () => jb.zui.renderProps(ctx),
       pivots: (s) => prop.pivots(s),
       zuiElems: () => [zuiElem],
       priority: prop.priority || 10,
     }
-    if (prop.colorScale)
+    if (prop.colorScale && backgroundColorByProp)
       view.backgroundColorByProp = {prop,colorScale: prop.colorScale}
 
     features().forEach(f=>f.enrich(view))
@@ -295,6 +293,10 @@ jb.extension('zui','text8', {
           float charCode = calcCharCode(rInElem[0]);    
           float inCharPosPx = mod(inElem[0], charWidthInTexture);
           vec2 texturePos = vec2(charCode * charWidthInTexture + inCharPosPx, size[1] - inElem[1]) / charSetTextureSize;
+          if (backgroundColor[0] == -1.0) {
+            gl_FragColor = texture2D( charSetTexture, texturePos);
+            return;
+          }
 
           vec4 texel = texture2D(charSetTexture, texturePos);
           if (texel.a < 0.2) {
@@ -318,7 +320,7 @@ jb.extension('zui','text8', {
       prepareGPU(props) {
           const { gl, itemsPositions, DIM } = props
 
-          const backgroundColor = this.view.backgroundColorByProp || { colorScale: x => [0,x,0], prop: {pivots: () => [ {scale: () => 1 }]}}
+          const backgroundColor = this.view.backgroundColorByProp || { colorScale: x => [-1,-1,-1], prop: {pivots: () => [ {scale: () => 1 }]}}
           const itemToColor01 = backgroundColor.prop.pivots({DIM})[0].scale
 
           const textBoxNodes = itemsPositions.sparse.map(([item, x,y]) => 

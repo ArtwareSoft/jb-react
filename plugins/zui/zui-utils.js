@@ -58,16 +58,19 @@ jb.extension('zui','FE-utils', {
           if (!tCenter[axis] || Math.abs((center[axis]-tCenter[axis])/tCenter[axis]) < 0.01) 
             center[axis] = tCenter[axis]
         })
+        //;[0,1].forEach(axis=>center[axis] = Math.floor(center[axis]))
         
         props.zoom = zoom;
-        console.log('animate',{zoom,center: center.join(',')})
+
+        console.log('animate',{zoom,tCenter: tCenter.join(','), center: center.join(',')})
       },            
       updateZoomState({ dz, dp }) {
         const factor = jb.ui.isMobile() ? 1.2 : 3
         if (dz)
           props.tZoom *= dz**factor
+        const tZoomF = Math.floor(props.tZoom)
         if (dp)
-          props.tCenter = [props.tCenter[0] - dp[0]/w*props.tZoom, props.tCenter[1] + dp[1]/h*props.tZoom]
+          props.tCenter = [props.tCenter[0] - dp[0]/w*tZoomF, props.tCenter[1] + dp[1]/h*tZoomF]
 
         props.tCenter[0] = Math.min(props.DIM,Math.max(0,props.tCenter[0]))
         props.tCenter[1] = Math.min(props.DIM,Math.max(0,props.tCenter[1]))

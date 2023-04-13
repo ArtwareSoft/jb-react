@@ -47,7 +47,7 @@ jb.component('itemlistStyle', {
         const elems = itemView.zuiElems()
         const itemsPositions = jb.zui.calcItemsPositions({items, pivots, DIM})
         const props = {
-          DIM, ZOOM_LIMIT: [1, DIM*2], itemView, elems, items, pivots, onChange, tCenter, center: [],
+          DIM, ZOOM_LIMIT: [1, jb.ui.isMobile() ? DIM: DIM*2], itemView, elems, items, pivots, onChange, tCenter, center: [],
             tZoom: zoom, renderProps, itemsPositions,
             ...jb.zui.prepareItemView(itemView)
         }

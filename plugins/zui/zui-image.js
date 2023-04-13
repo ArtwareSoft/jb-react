@@ -5,7 +5,7 @@ jb.component('image', {
   params: [
     {id: 'url', as: 'string', dynamic: 'true', description: '%% is item' },
     {id: 'preferedSize', as: 'string', defaultValue: '400,400' },
-    {id: 'minSize', as: 'string', defaultValue: '30,30' },
+    {id: 'minSize', as: 'string', defaultValue: '64,64' },
     {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true},
   ],
   impl: (ctx,url,preferedSize,minSize,features) => { 
@@ -41,8 +41,8 @@ jb.extension('zui','image', {
     image: viewCtx => ({
       renderProps: () => jb.zui.renderProps(viewCtx),
       async asyncPrepare({gl, itemsPositions, DIM}) {
-        jb.zui.createAtlasSplit({mat: itemsPositions.mat , maxItemsInGroup : 15, DIM, ctx: viewCtx,view: this.view })
-        //await jb.zui.prepareAtlasTextures(this.atlasGroups,{gl,ctx: viewCtx,view: this.view })
+        const groups = jb.zui.createAtlasSplit({mat: itemsPositions.mat , maxItemsInGroup : 15, DIM, ctx: viewCtx,view: this.view })
+        //await jb.zui.prepareAtlasGroups(groups,{gl,ctx: viewCtx,view: this.view })
 
         this.atlasGroups = await jb.frame.fetch(jb.baseUrl+'/dist/atlas-img256-dim64.json').then(r=>r.json())
         await Promise.all(this.atlasGroups.map(async g=>g.texture = await jb.zui.imageToTexture(gl, g.dataUrl)))
@@ -53,11 +53,21 @@ jb.extension('zui','image', {
 
           const src = [jb.zui.vertexShaderCode({
             id:'image',
-            code: `attribute vec2 image; attribute float vertexIndex;
-            uniform int atlasIdToUnit[4];
-            varying float imageIndex; 
-            varying float unit;`,
-            main: `imageIndex = image[1]; unit = float(atlasIdToUnit[int(image[0])]);
+            code: `attribute float atlasId;
+            attribute float vertexIndex;
+            attribute vec2 _imagePos;
+            attribute float _ratio;
+            uniform int atlasIdToUnit[20];
+            uniform int atlasIdToHeight[20];
+            varying float ratio;
+            varying vec2 imagePos;
+            varying float unit;
+            varying vec2 atlasSize;
+            `,
+            main: `imagePos = _imagePos; 
+            ratio = _ratio; 
+            unit = float(atlasIdToUnit[int(atlasId)]);
+            atlasSize = vec2(1024.0, float(atlasIdToHeight[int(atlasId)]));
             vec2 nSize = (size/2.0)/canvasSize;
             vec2 lSize = (vec2(size[0],-1.0*size[1])/2.0)/canvasSize;
             vec2 vertexPos = npos+nSize;
@@ -72,8 +82,10 @@ jb.extension('zui','image', {
             }), 
             jb.zui.fragementShaderCode({
               code: `${[0,1,2,3].map(i=>`uniform sampler2D atlas${i};`).join('')}
-              varying float imageIndex; 
+              varying vec2 imagePos;
+              varying float ratio;
               varying float unit;
+              varying vec2 atlasSize;
 
               vec4 getTexturePixel(vec2 texCoord) {
                 if (unit == 0.0) {
@@ -82,24 +94,24 @@ jb.extension('zui','image', {
                   return texture2D(atlas1, texCoord);
                 } else if (unit == 2.0) {
                   return texture2D(atlas2, texCoord);
-                } else {
+                } else if (unit == 3.0){
                   return texture2D(atlas3, texCoord);
                 }
               }
               `,
-              main: `vec2 ratio = vec2(3.0,5.0);
-              vec2 imageTopLeft = vec2( int(imageIndex/5.0), int(mod(imageIndex,5.0)) );
-
-              gl_FragColor = getTexturePixel((imageTopLeft + vec2(rInElem[0], 1.0 - rInElem[1])) /ratio);`
+              main: `gl_FragColor = getTexturePixel(vec2(imagePos[0] + 256.0*rInElem[0], 
+                imagePos[1] + 256.0*ratio*(1.0 - rInElem[1])) /atlasSize);`
             })] 
            
           const imageNodes = itemsPositions.sparse.map(([item, x,y]) => {
-            const image = [item[`atlas_${viewId}`].atlas, item[`atlas_${viewId}`].imageIndex ]
-            return [0,1,2,3,4,5].flatMap(i=>[x,y,...image,i])
+            const atlas = item[`atlas_${viewId}`].atlas, imageIndex = item[`atlas_${viewId}`].imageIndex
+            const imageInAtals = this.atlasGroups[atlas].items[imageIndex]
+            const imageRatio = imageInAtals.size[0] ? (imageInAtals.size[1]/ imageInAtals.size[0]) : 0
+            return [0,1,2,3,4,5].flatMap(i=>[x,y,i,atlas,imageRatio, ...imageInAtals.pos])
           })            
           const vertexArray = new Float32Array(imageNodes.flatMap(v=>v).map(x=>1.0*x))
 
-          const floatsInVertex = 5
+          const floatsInVertex = 7
           const vertexCount = vertexArray.length / floatsInVertex
 
           const buffers = {
@@ -129,21 +141,33 @@ jb.extension('zui','image', {
           gl.enableVertexAttribArray(itemPos)
           gl.vertexAttribPointer(itemPos, 2, gl.FLOAT, false, floatsInVertex* Float32Array.BYTES_PER_ELEMENT, 0)
 
-          const image = gl.getAttribLocation(shaderProgram, 'image')
-          gl.enableVertexAttribArray(image)
-          gl.vertexAttribPointer(image, 2, gl.FLOAT, false, floatsInVertex* Float32Array.BYTES_PER_ELEMENT, 2* Float32Array.BYTES_PER_ELEMENT)
-
           const vertexIndex = gl.getAttribLocation(shaderProgram, 'vertexIndex')
           gl.enableVertexAttribArray(vertexIndex)
-          gl.vertexAttribPointer(vertexIndex, 1, gl.FLOAT, false, floatsInVertex* Float32Array.BYTES_PER_ELEMENT, 4* Float32Array.BYTES_PER_ELEMENT)
+          gl.vertexAttribPointer(vertexIndex, 1, gl.FLOAT, false, floatsInVertex* Float32Array.BYTES_PER_ELEMENT, 2* Float32Array.BYTES_PER_ELEMENT)
+
+          const atlasId = gl.getAttribLocation(shaderProgram, 'atlasId')
+          gl.enableVertexAttribArray(atlasId)
+          gl.vertexAttribPointer(atlasId, 1, gl.FLOAT, false, floatsInVertex* Float32Array.BYTES_PER_ELEMENT, 3* Float32Array.BYTES_PER_ELEMENT)
+
+          const ratio = gl.getAttribLocation(shaderProgram, '_ratio')
+          gl.enableVertexAttribArray(ratio)
+          gl.vertexAttribPointer(ratio, 1, gl.FLOAT, false, floatsInVertex* Float32Array.BYTES_PER_ELEMENT, 4* Float32Array.BYTES_PER_ELEMENT)
+
+          const imagePos = gl.getAttribLocation(shaderProgram, '_imagePos')
+          gl.enableVertexAttribArray(imagePos)
+          gl.vertexAttribPointer(imagePos, 2, gl.FLOAT, false, floatsInVertex* Float32Array.BYTES_PER_ELEMENT, 5* Float32Array.BYTES_PER_ELEMENT)
+
 
           const atlass = jb.zui.atalesToUseWithUnits(this.atlasGroups,{zoom,center})
           atlass.forEach(atlas => {
-            gl.activeTexture(gl['TEXTURE'+(4+atlas.unitIndex)])
+            gl.activeTexture(gl['TEXTURE'+(1+atlas.unitIndex)])
             gl.bindTexture(gl.TEXTURE_2D, atlas.texture)
-            gl.uniform1i(gl.getUniformLocation(shaderProgram, `atlas${atlas.unitIndex}`), 4+atlas.unitIndex)
+            gl.uniform1i(gl.getUniformLocation(shaderProgram, `atlas${atlas.unitIndex}`), 1+atlas.unitIndex)
           })
-          gl.uniform1iv(gl.getUniformLocation(shaderProgram, 'atlasIdToUnit'), this.atlasGroups.map(at=>at.unitIndex))
+          const atlasIdToUnit = this.atlasGroups.map(at=>at.unitIndex)
+          console.log(atlasIdToUnit)
+          gl.uniform1iv(gl.getUniformLocation(shaderProgram, 'atlasIdToUnit'), atlasIdToUnit)
+          gl.uniform1iv(gl.getUniformLocation(shaderProgram, 'atlasIdToHeight'), this.atlasGroups.map(at=>at.totalHeight))
   
          gl.drawArrays(gl.TRIANGLES, 0, vertexCount)
       }
@@ -214,43 +238,52 @@ jb.extension('zui','atlas', {
       }
     }
   },
-  async prepareAtlasTextures(atlasGroups,{gl}) {
-    //await atlasGroups.reduce(async (pr,g) => { await pr; await createAtlasTexture(g) } , Promise.resolve())
-    await Promise.all(atlasGroups.map(g => createAtlasTexture(g)))
+  async prepareAtlasGroups(atlasGroups) {
+    await atlasGroups.reduce(async (pr,g) => { await pr; await prepareAtlas(g) } , Promise.resolve())
     const fileContent = JSON.stringify(atlasGroups,null,2)
     debugger
     return
 
-    async function createAtlasTexture(group) {
-      console.log('create atlas for group',group)
+    async function prepareAtlas(group) {
+      const images = await loadImages(group)
+      images.sort((i1,i2) => i1.imageItem.size[1] - i2.imageItem.size[1])
+      const lines = Array.from(new Array(Math.ceil(images.length/4)).keys())
+      const linesHeight = lines.map(line => [0,1,2,3].reduce((max,i) => Math.max(max, images[line*4+i] ? images[line*4+i].imageItem.size[1] : 0),0))
+      const totalHeight = group.totalHeight = linesHeight.reduce((sum,h) => sum + h, 0)
       const canvas = document.createElement('canvas');
-      canvas.width = 1024; canvas.height = 1024;
+      canvas.width = 1024; canvas.height = totalHeight;
       const cnvCtx = canvas.getContext('2d');
-      await Promise.all(group.items.map( imageItem => {
-        const {imageIndex,url} = imageItem
-        return new Promise(resolve => {
+      images.map(({image,imageItem},i)=> {
+        const left = 256 * (i % 4)
+        const top = linesHeight.slice(0,Math.floor(i/4)).reduce((sum,h) => sum + h, 0)
+        cnvCtx.drawImage(image, left, top)
+        imageItem.pos = [left,top]
+      })
+      group.dataUrl = canvas.toDataURL('image/png')
+    }
+
+
+    async function loadImages(group) {
+      return group.items.reduce( async (pr,imageItem) => {
+        const before = await pr
+        const curr = await new Promise(resolve => {
           const image = new Image()
           image.onload = () => {
             imageItem.size = [ image.naturalWidth, image.naturalHeight ]
-            cnvCtx.drawImage(image, 256 * Math.floor(imageIndex / 4), 256 * (imageIndex % 4))
-            resolve()
+            resolve({image,imageItem})
           }
-          image.onerror = (e) =>  {
-            debugger
-            resolve()
-          }
-          image.src = url
+          image.onerror = (e) =>  { debugger; resolve({image,imageItem}) }
+          image.src = imageItem.url
         })
-      }))
-      group.dataUrl = canvas.toDataURL('image/png')
-      //group.texture = await jb.zui.imageToTexture(gl, dataUrl)
+        return [...before, curr]
+      }, Promise.resolve([]))
     }
   },
 
   atalesToUseWithUnits(atlasGroups,{zoom,center}) {
     // TODO: write effeciently with no object allocations (just primitives or fixed arrays Uint32Array on stack)
     const atlasOfCenter = atlasGroups.find(g=> between(center[0],g.left,g.right) && between(center[1],g.top,g.bottom))
-    const screenRange = [0,1].map(axis=> [center[axis] - zoom[axis]/2, center[axis] + zoom[axis]/2])
+    const screenRange = [0,1].map(axis=> [center[axis] - zoom/2, center[axis] + zoom/2])
     const atlases = [atlasOfCenter, ... zoom < 10 ? 
         atlasGroups.filter(g=> g != atlasOfCenter && 
           intersect(screenRange[0],[g.left,g.right]) && 

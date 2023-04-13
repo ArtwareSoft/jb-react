@@ -19,7 +19,8 @@ jb.component('zuiTest.itemlist', {
                 horizontal()
               ),
               image('/hotels/images/256-256%image%.webp'),
-//              growingText(text({att: 'distanceLabel', features: priorty(4)}))
+              fixedText({prop: text({att: 'x', calc: ' '})}),
+              fixedText({prop: text({att: 'x', calc: ' '})})
             ]
           ),
           boardSize: 64,
@@ -37,15 +38,14 @@ jb.component('zuiTest.itemlist', {
             }),
             numeric({att: 'rating', features: [priorty(2), colorScale(red())]}),
             text({att: 'name', features: priorty(3)}),
-            geo({att: 'lat', features: preferedAxis('y')}),
-            geo({att: 'long', features: preferedAxis('x')})
+            geo('lat', preferedAxis('y')),
+            geo('long', preferedAxis('x'))
           ],
           onChange: refreshControlById('itemPreview')
         }),
         zui.visualItemPreview()
       ],
       features: [
-        //frontEnd.init(async () => { document.body.style.overflow = 'hidden'}),
         variable('zuiCtx', obj())
       ]
     }),
