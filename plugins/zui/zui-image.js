@@ -5,7 +5,7 @@ jb.component('image', {
   params: [
     {id: 'url', as: 'string', dynamic: 'true', description: '%% is item' },
     {id: 'preferedSize', as: 'string', defaultValue: '400,400' },
-    {id: 'minSize', as: 'string', defaultValue: '64,64' },
+    {id: 'minSize', as: 'string', defaultValue: '32,32' },
     {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true},
   ],
   impl: (ctx,url,preferedSize,minSize,features) => { 

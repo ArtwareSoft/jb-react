@@ -10,17 +10,24 @@ jb.component('zuiTest.itemlist', {
               growingText(byName('name')),
               group(
                 [
-                  firstToFit([
-                    fixedText({prop: byName('price'), backgroundColorByProp: true}),
-                    circle(byName('price'))
-                  ]),
-                  fixedText({prop: byName('rating'), backgroundColorByProp: true})
+                  firstToFit(
+                    [
+                      fixedText({prop: byName('price'), length: 8}),
+                      fixedText({
+                        prop: byName('price'),
+                        length: 4,
+                        backgroundColorByProp: true
+                      }),
+                      circle(byName('price'))
+                    ]
+                  ),
+                  fixedText({prop: byName('rating'), length: 4})
                 ],
                 horizontal()
               ),
               image('/hotels/images/256-256%image%.webp'),
-              fixedText({prop: text({att: 'x', calc: ' '})}),
-              fixedText({prop: text({att: 'x', calc: ' '})})
+              fixedText(text('x', ' ')),
+              fixedText(text('x', ' '))
             ]
           ),
           boardSize: 64,

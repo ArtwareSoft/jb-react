@@ -273,8 +273,26 @@ jb.extension('zui','text8', {
         uniform float charWidthInTexture;
         uniform vec2 charSetTextureSize;
         uniform int strLen;
-        
+
+        float getIndexInVec(float x) {
+          if (strLen <= 2) return 0.0;
+          if (strLen <= 4) return floor(x * 2.0);
+          if (strLen <= 8) return floor(x * 4.0);
+        }
+  
         float calcCharCode(float x) {
+          int index = 0;
+          int idx = int(getIndexInVec(x));
+          vec4 vec = text;
+          float flt = 0.0;
+          for(int i=0;i<4;i++)
+            if (idx == i) flt = vec[i];
+  
+          if (mod(x*float(strLen)/2.0 , 1.0) < 0.5)
+            return floor(flt/256.0);
+          return mod(flt,256.0);
+        }        
+        float calcCharCode2(float x) {
           int index = 0;
           int idx = int(floor(x * 4.0));
           vec4 vec = text;
@@ -310,11 +328,6 @@ jb.extension('zui','text8', {
             vec3 fontColor = (whiteContrast > blackContrast) ? vec3(1.0) : vec3(0.0);
             gl_FragColor = vec4(fontColor, 1.0);
           }
-          // float luminance = dot(texel.rgb, vec3(0.299, 0.587, 0.114));
-          // vec3 inverted_color = mix(vec3(1.0), vec3(0.0), step(luminance, 0.5) * step(dot(backgroundColor, vec3(1.0)) , 1.5));
-          // gl_FragColor = vec4(inverted_color, 1.0);
-
-          //gl_FragColor = vec4(vec3(0.0,1.0,0.0) * texture2D( charSetTexture, texturePos)[3] ,1.0);
         `}
       ),
       prepareGPU(props) {
@@ -354,7 +367,7 @@ jb.extension('zui','text8', {
           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'pos'), pos)
           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'size'), size)
 
-          gl.uniform1i(gl.getUniformLocation(shaderProgram, 'strLen'), 8)
+          gl.uniform1i(gl.getUniformLocation(shaderProgram, 'strLen'), viewCtx.params.length)
           gl.uniform1f(gl.getUniformLocation(shaderProgram, 'charWidthInTexture'), 10)
           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'charSetTextureSize'), jb.zui.charSetTextureSize)
           
@@ -386,7 +399,7 @@ jb.extension('zui','text8', {
       const pad = '                  '.slice(0,Math.ceil((length-text.length)/2))
       const txtChars = jb.zui.charsetEncodeAscii((pad + text + pad).slice(0,length))
       const floats = Array.from(new Array(4).keys())
-          .map(i => twoCharsToFloat(txtChars[i*2],txtChars[i*2+1]))
+          .map(i => twoCharsToFloat(txtChars[i*2],txtChars[i*2+1])).map(x=> isNaN(x) ? 0 :x) 
       return floats
 
       function twoCharsToFloat(char1, char2) {
