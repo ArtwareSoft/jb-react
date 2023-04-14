@@ -4,7 +4,7 @@ jb.dsl('zui')
 jb.component('zui.itemlist', {
   type: 'control<>',
   params: [
-    {id: 'itemView', type: 'view', mandatory: true, dynamic: true},
+    {id: 'itemView', type: 'view<zui>', mandatory: true, dynamic: true},
     {id: 'title', as: 'string'},
     {id: 'boardSize', as: 'number', defaultValue: 256},
     {id: 'initialZoom', as: 'number', description: 'in terms of board window. empty is all board'},
@@ -26,7 +26,7 @@ jb.component('itemlistStyle', {
   ],
   impl: customStyle({
     typeCast: 'style',
-    template: ({},{width,height},h) => h('canvas', jb.zui.calcWidthHeight(width, height)),
+    template: ({},{width,height},h) => h('canvas', {...jb.zui.calcWidthHeight(width, height), zuiBackEndForTest:true }),
     css: '{ touch-action: none; }',
     features: [
       calcProps(
@@ -48,7 +48,7 @@ jb.component('itemlistStyle', {
         const itemsPositions = jb.zui.calcItemsPositions({items, pivots, DIM})
         const props = {
           DIM, ZOOM_LIMIT: [1, jb.ui.isMobile() ? DIM: DIM*2], itemView, elems, items, pivots, onChange, tCenter, center: [],
-            tZoom: zoom, renderProps, itemsPositions,
+            tZoom: zoom, renderProps, itemsPositions, width,height,
             ...jb.zui.prepareItemView(itemView)
         }
         if (zuiCtx) 
@@ -58,6 +58,19 @@ jb.component('itemlistStyle', {
       }
       ),
       frontEnd.coLocation(),
+      frontEnd.method(
+        'refreshCanvas',
+        async ({},{cmp, el, $props}) => {
+          const props = cmp.props = $props
+          const sizeInPx = jb.zui.calcWidthHeight(props.width, props.height)
+          el.width = sizeInPx.width;
+          el.height = sizeInPx.height;
+          jb.zui.clearCanvas(props)
+          Object.assign(props, { aspectRatio: el.width/el.height })
+          await jb.delay(1)
+          cmp.render({},true)
+        }
+      ),
       frontEnd.init(
         async ({},{cmp, el, $props}) => {
           //document.body.style.overflow = "hidden"
@@ -141,13 +154,15 @@ jb.component('itemlistStyle', {
           'resize',
           () => jb.frame.window
         ),
-        sink.refreshCmp('', obj(prop('strongRefresh', true)))
+        sink.FEMethod('refreshCanvas')
       ),
       frontEnd.flow(source.animationFrame(), sink.action('%$cmp.render()%')),
       frontEnd.flow(source.subject('%$cmp.zuiEvents%'), rx.debounceTime(100), sink.action('%$cmp.onChange()%'))
     ]
   })
 })
+
+// sink.refreshCmp('', obj(prop('strongRefresh', true)))
 
 jb.extension('zui','itemlist', {
   async initItemlistCmp(cmp,props) {
@@ -161,12 +176,12 @@ jb.extension('zui','itemlist', {
     Object.assign(props, jb.zui.prepareItemView(props.itemView))
     const renderPropsCache = {}
     Object.assign(cmp, { 
-      render() {
-        if (cmp.calcAnimationStep(props)) return
+      render(ctx,force) {
+        if (cmp.calcAnimationStep(props) && !force) return
         const { glCanvas,elems, renderProps, itemView, zoom } = props
 
         const [width, height] = [glCanvas.width/ zoom, glCanvas.height/ zoom]
-        if (renderPropsCache[zoom]) {
+        if (renderPropsCache[zoom] && !force) {
           Object.assign(renderProps,renderPropsCache[zoom])
         } else {
           Object.keys(renderProps).forEach(k=>delete renderProps[k])

@@ -58,7 +58,6 @@ jb.extension('zui','FE-utils', {
           if (!tCenter[axis] || Math.abs((center[axis]-tCenter[axis])/tCenter[axis]) < 0.01) 
             center[axis] = tCenter[axis]
         })
-        //;[0,1].forEach(axis=>center[axis] = Math.floor(center[axis]))
         
         props.zoom = zoom;
 
@@ -72,8 +71,8 @@ jb.extension('zui','FE-utils', {
         if (dp)
           props.tCenter = [props.tCenter[0] - dp[0]/w*tZoomF, props.tCenter[1] + dp[1]/h*tZoomF]
 
-        props.tCenter[0] = Math.min(props.DIM,Math.max(0,props.tCenter[0]))
-        props.tCenter[1] = Math.min(props.DIM,Math.max(0,props.tCenter[1]))
+        ;[0,1].forEach(axis=>props.tCenter[axis] = Math.min(props.DIM,Math.max(0,props.tCenter[axis])))
+
 
         props.tZoom = Math.max(props.ZOOM_LIMIT[0],Math.min(props.tZoom, props.ZOOM_LIMIT[1]))
 
@@ -143,7 +142,7 @@ jb.extension('zui','FE-utils', {
   },
   clearCanvas({gl, glCanvas}) {
     gl.viewport(0, 0, glCanvas.width, glCanvas.height)
-    gl.clearColor(0.8, 0.9, 1.0, 1.0)
+    gl.clearColor(1.0, 1.0, 1.0, 1.0)
     gl.clear(gl.COLOR_BUFFER_BIT)    
   },  
   async imageToTexture(gl, url) {

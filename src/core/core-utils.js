@@ -62,7 +62,7 @@ jb.extension('utils', 'core', {
       if (!comp[CT]) comp[CT] = comp[CT] || { id }
       const type = comp.type || ''
       const dslOfType = type.indexOf('<') != -1 ? type.split(/<|>/)[1] : undefined // to cover t1<> dsl == ''
-      const dsl = comp[CT].dsl = dslOfType !== undefined ? dslOfType : dslFromContext
+      const dsl = comp[CT].dsl = dslOfType !== undefined ? dslOfType : (comp.dsl || dslFromContext)
       const unresolvedType = comp[CT].idOfUnresolvedType = ! type && id
       if (comp.impl && typeof comp.impl == 'object')
         comp.impl[CT] = { dsl }

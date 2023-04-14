@@ -1,3 +1,3 @@
 jb.component('studioTest.changingComp', {
-  impl: 845
+  impl: 846
 })

@@ -61,3 +61,28 @@ jb.component('zuiTest.itemlist', {
 })
 
 
+jb.component('hotels', { passiveData:
+  [
+      {
+          "name": "Sheraton Tel Aviv",
+          "price": 603,
+          "rating": "8.1",
+          "type": "Hotel",
+          "lat": 32.08148956298828,
+          "long": 34.768218994140625,
+          "distanceLabel": "right by the beach",
+          "imagesCount": 195,
+          "image": "/itemimages/32/20/322036_v3"
+      },
+      {
+          "name": "Lighthouse Tel Aviv By Brown",
+          "price": 163,
+          "rating": "7.9",
+          "type": "Hotel",
+          "lat": 32.07344055175781,
+          "long": 34.76831817626953,
+          "distanceLabel": "0.2 miles away from the beach",
+          "imagesCount": 99,
+          "image": "/itemimages/31/43/3143319_v6"
+      },
+]})

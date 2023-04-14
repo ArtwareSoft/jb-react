@@ -41,6 +41,7 @@ jb.extension('treeShake', {
     },
     dependentOnObj(obj, onlyMissing) {
         if (obj[jb.core.OnlyData]) return []
+        if (obj.$ == 'circle') debugger
         const isRemote = 'source.remote:rx,remote.operator:rx,remote.action:action,remote.data:data' // code run in remote is not dependent
         const vals = Object.keys(obj).filter(k=>!obj.$ || isRemote.indexOf(`${obj.$}:${k}`) == -1).map(k=>obj[k])
         return [
@@ -106,7 +107,7 @@ jb.extension('treeShake', {
     },
     compToStr(cmpId) {
         const ct = jb.comps[cmpId][jb.core.CT]
-        const compWithCTData = { ...jb.comps[cmpId], location : ct.location, type: ct.dslType}
+        const compWithCTData = { ...jb.comps[cmpId], location : ct.location, type: ct.dslType, dsl: ct.dsl}
         const content = JSON.stringify(compWithCTData,
             (k,v) => typeof v === 'function' ? '@@FUNC'+v.toString()+'FUNC@@' : v,2)
                 .replace(/"@@FUNC([^@]+)FUNC@@"/g, (_,str) => str.replace(/\\\\n/g,'@@__N').replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n').replace(/\\t/g,'')

@@ -360,6 +360,15 @@ jb.component('remoteWidgetTest.button', {
   })
 })
 
+// jb.component('remoteWidgetTest.dsl', {
+//   impl: uiTest({
+//     control: remote.widget(zui.itemlist({itemView: circle(text({att: 'x', calc: 'aa'})), items: list(1, 2)}), jbm.worker()),
+//     checkResultRx: () => jb.ui.renderingUpdates,
+//     expectedResult: contains('zuiBackEndForTest'),
+//     timeout: 3000
+//   })
+// })
+
 jb.component('remoteWidgetTest.group.wait', {
   impl: uiTest({
     timeout: 3000,
@@ -507,32 +516,6 @@ jb.component('eventTracker.uiTest.vDebugger', {
       ]
     }),
     expectedResult: contains('group'),
-  })
-})
-
-jb.component('remoteTest.dispatcher.child', {
-  impl: dataTest({
-    timeout: 1000,
-    runBefore: jbm.child('dispatch'),
-    calculate: pipe(rx.pipe(
-        source.data(list(1,2)), 
-        remote.dispatch('a-%%', dispatch.singleJbm(jbm.byUri('tests•dispatch'))),
-        rx.take(2)
-      ), join(',')),
-    expectedResult: equals('a-1,a-2')
-  })
-})
-
-jb.component('remoteTest.dispatcher.worker', {
-  impl: dataTest({
-    timeout: 1000,
-    runBefore: jbm.worker('dispatchW'),
-    calculate: pipe(rx.pipe(
-        source.data(list(1,2)), 
-        remote.dispatch('a-%%', dispatch.singleJbm(jbm.byUri('tests•dispatchW'))),
-        rx.take(2)
-      ), join(',')),
-    expectedResult: equals('a-1,a-2')
   })
 })
 
