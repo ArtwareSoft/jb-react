@@ -45,7 +45,7 @@ jb.component('itemlistStyle', {
         const pivots = [...pivotsFromItemProps, ...itemView.pivots({DIM}).filter(p=>! pivotsFromItemProps.find(_p => _p.att == p.att)) ]
         pivots.forEach(p=>{if (p.preferedAxis) pivots[p.preferedAxis] = p})
         const elems = itemView.zuiElems()
-        const itemsPositions = jb.zui.calcItemsPositions({items, pivots, DIM})
+        const itemsPositions = pivots.x && pivots.y && jb.zui.calcItemsPositions({items, pivots, DIM})
         const props = {
           DIM, ZOOM_LIMIT: [1, jb.ui.isMobile() ? DIM: DIM*2], itemView, elems, items, pivots, onChange, tCenter, center: [],
             tZoom: zoom, renderProps, itemsPositions, width,height,
@@ -53,7 +53,7 @@ jb.component('itemlistStyle', {
         }
         if (zuiCtx) 
           zuiCtx.props = props
-        jb.zui.layoutView(itemView, renderProps, props)
+        itemsPositions && jb.zui.layoutView(itemView, renderProps, props)
         return props
       }
       ),
@@ -201,11 +201,16 @@ jb.extension('zui','itemlist', {
     return renderProps[ctx.path] = renderProps[ctx.path] || {}
   },
   calcWidthHeight(width, height) {
-    if (width == '100%' && (typeof screen != 'undefined' || typeof window != 'undefined'))
-      return {
-        width: typeof screen != 'undefined' ? screen.width : window.innerWidth,
-        height: typeof screen != 'undefined' ? screen.height : window.innerHeight,
+    if (width == '100%') {
+      if (typeof screen != 'undefined' || typeof window != 'undefined') {
+        return {
+          width: typeof screen != 'undefined' ? screen.width : window.innerWidth,
+          height: typeof screen != 'undefined' ? screen.height : window.innerHeight,
+        }
+      } else { // headless
+        return { width: 600, height}
       }
+    }
     return {width: +width, height: +height}
   }
 })

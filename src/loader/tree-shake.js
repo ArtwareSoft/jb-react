@@ -41,11 +41,10 @@ jb.extension('treeShake', {
     },
     dependentOnObj(obj, onlyMissing) {
         if (obj[jb.core.OnlyData]) return []
-        if (obj.$ == 'circle') debugger
         const isRemote = 'source.remote:rx,remote.operator:rx,remote.action:action,remote.data:data' // code run in remote is not dependent
         const vals = Object.keys(obj).filter(k=>!obj.$ || isRemote.indexOf(`${obj.$}:${k}`) == -1).map(k=>obj[k])
         return [
-            ...(obj.$ ? [jb.path(obj,[jb.core.CT,'comp',jb.core.CT,'fullId']) || obj.$] : []),
+            ...(obj.$ ? [jb.path(obj,[jb.core.CT,'comp',jb.core.CT,'fullId']) || `${obj.$dslType || ''}${obj.$}`] : []),
             ...vals.filter(x=> x && typeof x == 'object').flatMap(x => jb.treeShake.dependentOnObj(x, onlyMissing)),
             ...vals.filter(x=> x && typeof x == 'function').flatMap(x => jb.treeShake.dependentOnFunc(x, onlyMissing)),
             ...vals.filter(x=> x && typeof x == 'string' && x.indexOf('%$') != -1).flatMap(x => jb.treeShake.dependentResources(x, onlyMissing)),

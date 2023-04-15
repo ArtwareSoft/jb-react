@@ -7,6 +7,7 @@ jb.component('image', {
     {id: 'preferedSize', as: 'string', defaultValue: '400,400' },
     {id: 'minSize', as: 'string', defaultValue: '32,32' },
     {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true},
+    {id: 'build', type: 'imageBuild' },
   ],
   impl: (ctx,url,preferedSize,minSize,features) => { 
     const zuiElem = jb.zui.image(ctx)
@@ -311,7 +312,14 @@ jb.extension('zui','atlas', {
     function between(x,from,to) {
       return x >= from && x <= to
     }
-
   }
+})
 
+jb.component('imageBuild',{
+  type: 'imageBuild',
+  params: [
+    { id: 'partition', as: 'string', dynamic: true},
+    { id: 'buildDir' , dynamic: true}
+  ],
+  impl: ctx=> ctx.params
 })

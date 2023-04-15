@@ -360,15 +360,6 @@ jb.component('remoteWidgetTest.button', {
   })
 })
 
-// jb.component('remoteWidgetTest.dsl', {
-//   impl: uiTest({
-//     control: remote.widget(zui.itemlist({itemView: circle(text({att: 'x', calc: 'aa'})), items: list(1, 2)}), jbm.worker()),
-//     checkResultRx: () => jb.ui.renderingUpdates,
-//     expectedResult: contains('zuiBackEndForTest'),
-//     timeout: 3000
-//   })
-// })
-
 jb.component('remoteWidgetTest.group.wait', {
   impl: uiTest({
     timeout: 3000,

@@ -51,6 +51,7 @@ jb.extension('remoteCtx', {
     stripFunction(f) {
         const {profile,runCtx,path,param,srcPath} = f
         if (!profile || !runCtx) return jb.remoteCtx.stripJS(f)
+        injectDSLType(profile)
         const profText = jb.utils.prettyPrint(profile)
         const profNoJS = jb.remoteCtx.stripJSFromProfile(profile)
         const vars = jb.objFromEntries(jb.entries(runCtx.vars).filter(e => jb.remoteCtx.shouldPassVar(e[0],profText))
@@ -60,6 +61,13 @@ jb.extension('remoteCtx', {
         const usingData = jb.remoteCtx.usingData(profText); //profText.match(/\bdata\b/) || profText.match(/%[^$]/)
         return Object.assign({$: 'runCtx', id: runCtx.id, path: [srcPath,path].filter(x=>x).join('~'), param, profile: profNoJS, data: usingData ? jb.remoteCtx.stripData(runCtx.data) : null, vars}, 
             Object.keys(params).length ? {cmpCtx: {params} } : {})
+
+        function injectDSLType(prof) {
+            if (prof.$dslType) return
+            if (prof[jb.core.CT] && prof[jb.core.CT].dslType.indexOf('<') != -1)
+                prof.$dslType = prof[jb.core.CT].dslType
+            Object.values(prof).filter(x=>x && typeof x == 'object').forEach(x=>injectDSLType(x))
+        }
     },
     //serailizeCtx(ctx) { return JSON.stringify(jb.remoteCtx.stripCtx(ctx)) },
     deStrip(data) {

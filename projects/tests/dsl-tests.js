@@ -249,6 +249,10 @@ jb.component('dslTest.jbDsl.usingCtrl', {
   impl: uiTest({control: location.control(israel()), expectedResult: contains('Jerusalem')})
 })
 
+jb.component('remoteTest.dsl', {
+  impl: uiTest({control: remote.widget(location.control(israel()), jbm.worker()), expectedResult: contains('Jerusalem')})
+})
+
 jb.component('dslTest.treeShake', {
   impl: dataTest(pipeline(() => jb.treeShake.treeShake(['state<location>israel'],[]), join()), contains('eilat'))
 })
