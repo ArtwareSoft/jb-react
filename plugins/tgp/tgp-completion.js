@@ -204,7 +204,7 @@ jb.extension('tgpTextEditor', 'completion', {
         const lines = docText.split('\n')
         const dsl = jb.tgpTextEditor.dsl(lines)
         const reversedLines = lines.slice(0,cursorLine+1).reverse()
-        const compLine = cursorLine - reversedLines.findIndex(line => line.match(/^jb.(component|extension)\(/))
+        const compLine = cursorLine - reversedLines.findIndex(line => line.match(/^(jb.)?(component|extension)\(/))
         if (compLine > cursorLine) return {}
         if (lines[compLine].match('^jb.extension')) return {
             inExtension: true

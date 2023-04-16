@@ -1,17 +1,17 @@
 jb.dsl('chartModel')
 
-jb.component('chartModel', {
+component('chartModel', {
   type: 'feature<>',
   category: 'itemlist:80',
   params: [
-    {id: 'pivots', type: 'field<chartModel>[]', dynamic: true, flattenArray: true, defaultValue: []},
-    {id: 'axes', type: 'axis<chartModel>[]', dynamic: true, flattenArray: true },
-    {id: 'matchingRules', type: 'rule<chartModel>[]', dynamic: true, flattenArray: true, defaultValue: byFields() }
+    {id: 'pivots', type: 'field[]', dynamic: true, flattenArray: true, defaultValue: []},
+    {id: 'axes', type: 'axis[]', dynamic: true, flattenArray: true },
+    {id: 'matchingRules', type: 'rule[]', dynamic: true, flattenArray: true, defaultValue: byFields() }
   ],
   impl: calcProp('pivots','%$pivots()%')
 })
 
-jb.component('field', {
+component('field', {
   type: 'field',
   params: [
     {id: 'preferedAxis', as: 'string', options:'x,y,shape,radius,fillColor,lineColor,lineFormat'},
@@ -23,7 +23,7 @@ jb.component('field', {
   impl: ({params}) => ({ ...params, title: params.title || ('' + jb.path(params,['data','profile'])).match(/([^%]*)%$/) || ['',''](1) })
 })
 
-jb.component('byFields', {
+component('byFields', {
   type: 'rule',
   impl: ctx => {
     const { items, fields, axes, frame } = {}
@@ -39,7 +39,7 @@ jb.component('byFields', {
   }
 })
 
-jb.component('scatter', {
+component('scatter', {
   type: 'style<d3.scatter>',
   impl: customStyle({
     typeCast: 'style',

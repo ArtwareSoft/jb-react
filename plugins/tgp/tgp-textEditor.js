@@ -8,8 +8,8 @@ jb.extension('tgpTextEditor', {
     evalProfileDef: (code, dsl) => { 
       try {
         jb.core.unresolvedProfiles = []
-        const funcId = dsl ? `$$dsl_${dsl}$` : ''
-        const res = jb.frame.eval(`(function ${funcId}() { ${jb.macro.importAll()}; return (${code}) })()`)
+        const context = { ...jb.macro.proxies, component: (...args) => jb.component(...args, dsl) }
+        const res = new Function(Object.keys(context), `return ${code}`).apply(null, Object.values(context))
         res && jb.utils.resolveLoadedProfiles({keepLocation: true})
         return { res, compId : jb.path(res,[jb.core.CT,'fullId']) }
       } 
@@ -141,13 +141,13 @@ jb.extension('tgpTextEditor', {
     closestComp(fileContent, cursorLine) {
         const lines = fileContent.split('\n')
         const dsl = jb.tgpTextEditor.dsl(lines)
-        const closestComp = lines.slice(0,cursorLine+1).reverse().findIndex(line => line.match(/^jb.component\(/))
+        const closestComp = lines.slice(0,cursorLine+1).reverse().findIndex(line => line.match(/^(jb.)?component\(/))
         if (closestComp == -1) return {}
         const componentHeaderIndex = cursorLine - closestComp
         const compId = (lines[componentHeaderIndex].match(/'([^']+)'/)||['',''])[1]
         const linesFromComp = lines.slice(componentHeaderIndex)
         const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
-        const nextjbComponent = lines.slice(componentHeaderIndex+1).findIndex(line => line.match(/^jb.component/))
+        const nextjbComponent = lines.slice(componentHeaderIndex+1).findIndex(line => line.match(/^(jb.)?component/))
         if (nextjbComponent != -1 && nextjbComponent < compLastLine) {
           jb.logError('workspace - can not find end of component', { compId, linesFromComp })
           return {}
@@ -162,7 +162,7 @@ jb.extension('tgpTextEditor', {
     fileContentToCompText(fileContent,compId) {
         const shortId = compId.split('>').pop()
         const lines = fileContent.split('\n')
-        const start = lines.findIndex(line => line.indexOf(`jb.component\('${shortId}'`) == 0)
+        const start = jb.utils.indexOfCompDeclarationInTextLines(lines,shortId)
         if (start == -1)
             return jb.logError('fileContentToCompText - can not find compId',{fileContent,shortId})
         const end = lines.slice(start).findIndex(line => line.match(/^}\)\s*$/))
@@ -180,7 +180,7 @@ jb.extension('tgpTextEditor', {
             if (comp) {
                 jb.comps[compId] = comp
                 const {text, map} = jb.utils.prettyPrintWithPositions(comp,{initialPath: compId})
-                return { fixedComp: true, fixedCompText: `jb.component('${compId}', ${text})`, comp, text, map }
+                return { fixedComp: true, fixedCompText: `component('${compId}', ${text})`, comp, text, map }
             }
         }
         return { compilationFailure: true}

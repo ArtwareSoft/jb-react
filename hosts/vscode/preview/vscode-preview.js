@@ -38,7 +38,7 @@ function fileSymbolsFunc(path, _include, _exclude) {
         return {
             dsl: unique(content.split('\n').map(l=>(l.match(/^jb.dsl\('([^']+)/) || ['',''])[1]).filter(x=>x).map(x=>x.split('.')[0]))[0],
             path: '/' + path,
-            ns: unique(content.split('\n').map(l => (l.match(/^jb.component\('([^']+)/) || ['', ''])[1]).filter(x => x).map(x => x.split('.')[0])),
+            ns: unique(content.split('\n').map(l => (l.match(/^(jb.)?component\('([^']+)/) || ['', ''])[2]).filter(x => x).map(x => x.split('.')[0])),
             libs: unique(content.split('\n').map(l => (l.match(/^jb.extension\('([^']+)/) || ['', ''])[1]).filter(x => x).map(x => x.split('.')[0]))
         }
     }

@@ -8,7 +8,8 @@
   <div id="main"> </div>
   <script>
 	jbInit('zuiDemo', {projects: ['zuiDemo'], plugins: ['zui'], useFileSymbolsFromBuild: false, noTests: true })
-		.then(()=>{
+		.then(jb=>{
+      globalThis.jb = jb
       jb.spy.initSpyByUrl && jb.spy.initSpyByUrl()
       jb.exec({$: 'defaultTheme'})
       jb.ui.renderWidget(({$: 'zuiDemo.main'}), main)

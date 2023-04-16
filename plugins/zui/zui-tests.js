@@ -1,5 +1,5 @@
 
-jb.component('zuiTest.itemlist', {
+component('zuiTest.itemlist', {
   impl: uiTest({
     control: group({
       layout: layout.flex({direction: 'row', wrap: 'wrap'}),
@@ -25,7 +25,7 @@ jb.component('zuiTest.itemlist', {
                 ],
                 horizontal()
               ),
-              image('/hotels/images/256-256%image%.webp'),
+              image({url: '/hotels/images/256-256%image%.webp', build: imageBuild('mainImage-64-256px')}),
               fixedText(text('x', ' ')),
               fixedText(text('x', ' '))
             ]
@@ -61,7 +61,7 @@ jb.component('zuiTest.itemlist', {
 })
 
 
-jb.component('hotels', { passiveData:
+component('hotels', { passiveData:
   [
       {
           "name": "Sheraton Tel Aviv",
@@ -86,3 +86,7 @@ jb.component('hotels', { passiveData:
           "image": "/itemimages/31/43/3143319_v6"
       },
 ]})
+
+// component('zuiTest.build', {
+//   impl: dataTest({runBefore: buildPartition('zuiTest.itemlist')})
+// })

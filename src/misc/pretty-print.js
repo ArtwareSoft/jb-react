@@ -17,7 +17,7 @@ jb.extension('utils', 'prettyPrint', {
   },
   prettyPrintComp(compId,comp,settings={}) {
     if (comp) {
-      return `jb.component('${compId.split('>').pop()}', ${jb.utils.prettyPrint(comp,{ initialPath: jb.utils.compName(comp) || compId, ...settings })})`
+      return `component('${compId.split('>').pop()}', ${jb.utils.prettyPrint(comp,{ initialPath: jb.utils.compName(comp) || compId, ...settings })})`
     }
   },
   

@@ -13,15 +13,15 @@ var jb_plugins = ['remote','testing','data-browser','probe','tgp','watchable-com
 async function jbInit(uri, {projects, plugins, baseUrl, multipleInFrame, doNoInitLibs, useFileSymbolsFromBuild, noTests }) {
   const fileSymbols = useFileSymbolsFromBuild && fileSymbolsFromBuild || globalThis.jbFileSymbols || fileSymbolsFromHttp
   const jb = { uri, baseUrl: baseUrl !== undefined ? baseUrl : typeof globalThis.jbBaseUrl != 'undefined' ? globalThis.jbBaseUrl : '' }
-  if (!multipleInFrame) // multipleInFrame is used in jbm.child
-    globalThis.jb = jb
+  // if (!multipleInFrame) // multipleInFrame is used in jbm.child
+  //   globalThis.jb = jb
   const coreFiles= jb_modules.core.map(x=>`/${x}`)
   await coreFiles.reduce((pr,url) => pr.then(()=> jbloadJSFile(url,jb)), Promise.resolve())
   jb.noSupervisedLoad = false
 
   const srcSymbols = await fileSymbols('src','','pack-|jb-loader').then(x=>x.filter(x=>coreFiles.indexOf(x.path) == -1))
   const topRequiredModules = [...(plugins || []).map(x => `plugins/${x}`), ...(projects || []).map(x => `projects/${x}`)]
-  
+
   const nonSrcSymbols = await topRequiredModules.reduce( async (acc,dir) => [...await acc, ...await fileSymbols(dir,'','pack-')], [])
   const symbols = jb.utils.unique([...srcSymbols,...nonSrcSymbols],x=>x.path).filter(x=>!(noTests && x.path.match(/tests/)))
 
@@ -39,18 +39,27 @@ async function jbInit(uri, {projects, plugins, baseUrl, multipleInFrame, doNoIni
 async function jbloadJSFile(url,jb,{noSymbols, fileSymbols} = {}) {
   globalThis.jbFetchFile = globalThis.jbFetchFile || (path => globalThis.fetch(path).then(x=>x.text()))
   const fullUrl = jb.baseUrl.match(/\/$/) ? jb.baseUrl+url.replace(/^\//,'') : jb.baseUrl+url
-  const code = '' + await jbFetchFile(fullUrl)
-  const dsl = fileSymbols && fileSymbols.dsl ? `$$dsl_${fileSymbols.dsl}$` : ''
-  const prefixCode = jb.macro && jb.macro.importAll()
-  const funcId = '__'+dsl+url.replace(/[^a-zA-Z0-9]/g,'_')
-  const wrappedCode = noSymbols ? code : `function ${funcId}(jb) {${prefixCode}; ${code}\n}`
-  try {
-    //console.log(`loading ${url}`)
-    globalThis.eval(`${wrappedCode}//# sourceURL=${url}?${jb.uri}`)
-    !noSymbols && globalThis[funcId](jb)
-  } catch (e) {
-    return jb.logException(e,`jbloadJSFile lib ${url}`,{wrappedCode, code})
+  const _code = await jbFetchFile(fullUrl)
+  const code = `${_code}//# sourceURL=${url}?${jb.uri}`
+  const context = { jb, ...(jb.macro && !noSymbols ? jb.macro.proxies : {}),
+    component: (...args) => jb.component(...args,fileSymbols && fileSymbols.dsl)
   }
+  try {
+    new Function(Object.keys(context), code).apply(null, Object.values(context))
+  } catch (e) {
+    return jb.logException(e,`jbloadJSFile lib ${url}`,{context, code})
+  }
+  // const dsl = fileSymbols && fileSymbols.dsl ? `$$dsl_${fileSymbols.dsl}$` : ''
+  // const prefixCode = jb.macro && jb.macro.importAll()
+  // const funcId = '__'+dsl+url.replace(/[^a-zA-Z0-9]/g,'_')
+  // const wrappedCode = noSymbols ? code : `function ${funcId}(jb) {${prefixCode}; ${code}\n}`
+  // try {
+  //   //console.log(`loading ${url}`)
+  //   globalThis.eval(`${wrappedCode}//# sourceURL=${url}?${jb.uri}`)
+  //   !noSymbols && globalThis[funcId](jb)
+  // } catch (e) {
+  //   return jb.logException(e,`jbloadJSFile lib ${url}`,{wrappedCode, code})
+  // }
 }
 
 async function jbSupervisedLoad(symbols, jb, doNoInitLibs) {

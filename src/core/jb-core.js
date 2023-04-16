@@ -21,6 +21,7 @@ Object.assign(jb, {
     }
   },
   async initializeLibs(libs) {
+    const jb = this
     try {
     libs.flatMap(l => Object.values(jb[l].__extensions)).sort((x,y) => x.phase - y.phase )
       .filter(ext => ext.init && !ext.initialized)
@@ -31,10 +32,10 @@ Object.assign(jb, {
     } catch (e) {
       jb.logException(e,'initializeLibs: error initializing libs', {libs})
     }
-    const libsToLoad = libs.flatMap(l => Object.values(jb[l].__extensions)).flatMap(ext => ext.requireLibs || []).filter(url => !jb.frame.jb.__requiredLoaded[url])
+    const libsToLoad = libs.flatMap(l => Object.values(jb[l].__extensions)).flatMap(ext => ext.requireLibs || []).filter(url => !jb.__requiredLoaded[url])
     try {
       await Promise.all(libsToLoad.map( url => Promise.resolve(jbloadJSFile(url,jb,{noSymbols: true}))
-        .then(() => jb.frame.jb.__requiredLoaded[url] = true) ))
+        .then(() => jb.__requiredLoaded[url] = true) ))
     } catch (e) {
       jb.logException(e,'initializeLibs: error loading external library', {libsToLoad, libs})
     }
@@ -42,21 +43,21 @@ Object.assign(jb, {
 
   calcSourceLocation(errStack) {
     try {
-        const line = errStack.map(x=>x.trim()).filter(x=>x && !x.match(/^Error/) && !x.match(/at Object.component/)).shift()
+        const line = errStack.map(x=>x.trim()).filter(x=>x && !x.match(/^Error/) && !x.match(/at Object.component|at component/)).shift()
         const location = line ? (line.split('at ').pop().split('eval (').pop().split(' (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
         location[0] = location[0].split('?')[0]
-        const dsl = (line.match(/\$\$dsl_([^$]+)\$/) || [])[1]
-        return dsl ? { location, dsl } : { location }
+        if (location[0].match(/jb-loader.js/)) debugger
+        return { location }
     } catch(e) {
       console.log(e)
     }      
   },
-  component(id,comp) {
+  component(id,comp,dsl) {
     if (!jb.core.CT) jb.initializeLibs(['core']) // this line must be first
     const CT = jb.core.CT
     comp[CT] = comp[CT] || {};
 
-    const { location, dsl } = 0 || jb.calcSourceLocation(new Error().stack.split(/\r|\n/)) // 0 || to avoid treeshake bug
+    const { location } = 0 || jb.calcSourceLocation(new Error().stack.split(/\r|\n/)) // 0 || to avoid treeshake bug
     comp[CT].location = comp.location || location
     delete comp.location
 

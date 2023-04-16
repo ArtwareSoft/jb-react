@@ -1,6 +1,6 @@
 jb.dsl('zui')
 
-jb.component('growingText', {
+component('growingText', {
   description: 'text growing from 2 to 32 according to zoom',
   type: 'view',
   params: [
@@ -25,7 +25,7 @@ jb.component('growingText', {
   }
 })
 
-jb.component('fixedText', {
+component('fixedText', {
   description: 'fixed length text',
   type: 'view',
   params: [

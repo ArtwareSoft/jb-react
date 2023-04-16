@@ -15,9 +15,8 @@ jb.extension('macro', {
         return jb.macro.proxies
     },    
     titleToId: id => id.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
-    importAll: () => ['var { ',
-        jb.utils.unique(Object.keys(jb.macro.proxies).map(x=>x.split('_')[0])).join(', '), 
-    '} = jb.macro.proxies;'].join(''),
+//    proxiesKeys: () => jb.utils.unique(Object.keys(jb.macro.proxies).map(x=>x.split('_')[0])),
+    importAll: () => `var { '${Object.keys(jb.macro.proxies).join(', ')}} = jb.macro.proxies;`,
     newProxy: id => new Proxy(() => 0, {
         get: (o, p) => p === jb.macro.isMacro? true : jb.macro.getInnerMacro(id, p),
         apply: function (target, thisArg, allArgs) {
@@ -82,7 +81,7 @@ jb.extension('macro', {
         debugger;
     },
     registerProxy: id => {
-        const proxyId = jb.macro.titleToId(id.split('.')[0])
+        const proxyId = jb.macro.titleToId(id.split('.')[0]).split('_')[0]
         if (jb.frame[proxyId] && jb.frame[proxyId][jb.macro.isMacro]) return
         // if (jb.frame[proxyId])
         //     return jb.logError(`register macro proxy: ${proxyId} ' is reserved by system or libs. please use a different name`,{obj:jb.frame[proxyId]})

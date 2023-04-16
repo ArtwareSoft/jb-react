@@ -48,13 +48,13 @@ jb.component('studio.newFileContent', {
   ],
   impl: (ctx, fileContent, comps) => {
     let lines = fileContent.split('\n').map(x=>x.replace(/[\s]*$/,''))
-    const compsToUpdate = comps.filter(({id})=>lines.findIndex(line=> line.indexOf(`jb.component('${id}'`) == 0) != -1)
-    const compsToAdd = comps.filter(e=>e.comp).filter(({id})=>lines.findIndex(line=> line.indexOf(`jb.component('${id}'`) == 0) == -1)
+    const compsToUpdate = comps.filter(({id})=>jb.utils.indexOfCompDeclarationInTextLines(lines,id) != -1)
+    const compsToAdd = comps.filter(e=>e.comp).filter(({id})=> jb.utils.indexOfCompDeclarationInTextLines(lines,id) == -1)
     compsToUpdate.forEach(({id,comp})=>{
-      const lineOfComp = lines.findIndex(line=> line.indexOf(`jb.component('${id}'`) == 0)
+      const lineOfComp = jb.utils.indexOfCompDeclarationInTextLines(lines,id)
       const linesFromComp = lines.slice(lineOfComp)
       const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
-      const nextjbComponent = lines.slice(lineOfComp+1).findIndex(line => line.match(/^jb.component/))
+      const nextjbComponent = lines.slice(lineOfComp+1).findIndex(line => line.match(/^(jb.)?component/))
       if (nextjbComponent != -1 && nextjbComponent < compLastLine)
         return jb.logError('can not find end of component', {fn,id, linesFromComp})
       const newComp = comp ? jb.utils.prettyPrintComp(id,comp,{comps: jb.comps}).split('\n') : []

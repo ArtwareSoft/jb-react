@@ -240,7 +240,7 @@ jb.component('completionTest.fixEditedCompWrongName', {
   impl: tgp.fixEditedCompTest(
     `jb.component('completionTest.fixEditedSample' ,{ impl: pipeline(__a) 
 })`,
-    `jb.component('completionTest.fixEditedSample', {
+    `component('completionTest.fixEditedSample', {
   impl: pipeline(TBD())
 })`
   )
@@ -328,7 +328,6 @@ jb.component('completionTest.writePreviewValue', {
   })
 })
 
-//    runBefore: tgp.startLangServer(),
 jb.component('remoteTest.langServer.Completions', {
   impl: dataTest(
     pipe(
@@ -369,6 +368,9 @@ jb.component('remoteTest.langServer.editsAndCursorPos', {
 //       log('test')
 //     ),
 //     expectedResult: equals(5),
-//     runBefore: runActions(tgp.startLangServer(), tgp.startLangServer(true))
+//     runBefore: tgp.startLangServer(),
+//     //runBefore: runActions(tgp.startLangServer(), tgp.startLangServer(true))
 //   })
 // })
+
+//    runBefore: tgp.startLangServer(),

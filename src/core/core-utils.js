@@ -262,6 +262,12 @@ jb.extension('utils', 'core', {
     pluginsOfFilePath(path) {
       const project = path && (path.split('jb-react').pop().match(/projects\/([^/]+)\//) || ['',null])[1]
       return { projects: project == 'tests' ? ['studio','tests'] : [project].filter(x=>x) }
+    },
+    indexOfCompDeclarationInTextLines(lines,id) {
+      return lines.findIndex(line=> {
+        const index = line.indexOf(`component('${id}'`)
+        return index == 0 || index == 3
+      })
     }
 })
 

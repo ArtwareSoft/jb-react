@@ -212,7 +212,7 @@ jb.component('completionTest.dslTest.usingCtrl2', {
 
 jb.component('completionTest.dslTest.top', {
   impl: tgp.completionOptionsTest({
-    compText: `jb.component('x', {
+    compText: `component('x', {
   impl: state(__)
 })`,
     expectedSelections: ['capital'],
@@ -222,7 +222,7 @@ jb.component('completionTest.dslTest.top', {
 
 jb.component('completionTest.dslTest.createProp', {
   impl: tgp.completionActionTest({
-    compText: `jb.component('x', {
+    compText: `component('x', {
   impl: state(__)
 })`,
     completionToActivate: 'capital',
@@ -237,7 +237,7 @@ jb.component('completionTest.dslTest.createProp', {
 
 jb.component('completionTest.dslTest.nameOverride', {
   impl: tgp.completionOptionsTest({
-    compText: `jb.component('x', {
+    compText: `component('x', {
   impl: state(pipeline(__))
 })`,
     expectedSelections: ['checkNameOverride'],

@@ -1,20 +1,20 @@
 jb.dsl('location')
 
-jb.component('city' , {
+component('city' , {
   type: 'settlement',
   params: [
     { id: 'name', as: 'string'}
   ]
 })
 
-jb.component('village' , {
+component('village' , {
   type: 'settlement',
   params: [
     { id: 'name', as: 'string'}
   ]
 })
 
-jb.component('state', {
+component('state', {
   type: 'state',
   params: [
     {id: 'capital', type: 'settlement'},
@@ -23,34 +23,34 @@ jb.component('state', {
   impl: ({params}) => params
 })
 
-jb.component('israel', {
+component('israel', {
   impl: state(jerusalem(), [eilat(), city('Tel Aviv')])
 })
 
-jb.component('israel2', {
+component('israel2', {
   impl: state()
 })
 
-jb.component('jerusalem', {
+component('jerusalem', {
   impl: city('Jerusalem')
 })
 
-jb.component('eilat', {
+component('eilat', {
   impl: city('Eilat')
 })
 
-jb.component('nokdim', {
+component('nokdim', {
   impl: village('Nokdim')
 })
 
-jb.component('pipeline', {
+component('pipeline', {
   params: [
     {id: 'checkNameOverride'}
   ],
   impl: village()
 })
 
-jb.component('location.control', {
+component('location.control', {
   type: 'control<>',
   params: [
     {id: 'state', type: 'state<location>'}

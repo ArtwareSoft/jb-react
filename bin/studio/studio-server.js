@@ -396,7 +396,7 @@ const op_get_handlers = {
         const path = unRepo(_path)
         return { path : path.match(/^\./) ? path.slice(1) : path,
           dsl: unique(content.split('\n').map(l=>(l.match(/^jb.dsl\('([^']+)/) || ['',''])[1]).filter(x=>x).map(x=>x.split('.')[0]))[0],
-          ns: unique(content.split('\n').map(l=>(l.match(/^jb.component\('([^']+)/) || ['',''])[1]).filter(x=>x).map(x=>x.split('.')[0])),
+          ns: unique(content.split('\n').map(l=>(l.match(/^(jb.)?component\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0])),
           libs: unique(content.split('\n').map(l=>(l.match(/^jb.extension\('([^']+)/) || ['',''])[1]).filter(x=>x).map(x=>x.split('.')[0])),
           imports: unique(content.split('\n').map(l=>(l.match(/^jb.import\(([^)]+)/) || ['',''])[1]).filter(x=>x).map(x=>parseImport(x))),
         }

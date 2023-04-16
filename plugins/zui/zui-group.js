@@ -20,7 +20,7 @@ jb.extension('zui','layout', {
   }
 })
 
-jb.component('group', {
+component('group', {
   type: 'view',
   params: [
     {id: 'views', mandatory: true, type: 'view[]', dynamic: true, composite: true},
@@ -30,7 +30,7 @@ jb.component('group', {
   impl: ctx => jb.zui.initGroup(ctx)
 })
 
-jb.component('allOrNone', {
+component('allOrNone', {
   type: 'view',
   params: [
     {id: 'views', mandatory: true, type: 'view[]', dynamic: true, composite: true},
@@ -40,7 +40,7 @@ jb.component('allOrNone', {
   impl: ctx => Object.assign(jb.zui.initGroup(ctx), {title: 'allOrNone', allOrNone: true })
 })
 
-jb.component('firstToFit', {
+component('firstToFit', {
   type: 'view',
   params: [
     {id: 'views', mandatory: true, type: 'view[]', dynamic: true, composite: true},
@@ -50,12 +50,12 @@ jb.component('firstToFit', {
   impl: ctx => Object.assign(jb.zui.initGroup(ctx), {title: 'firstToFit', firstToFit: true })
 })
 
-jb.component('vertical', {
+component('vertical', {
   type: 'layout',
   impl: () => ({ layoutAxis:  1 })
 })
 
-jb.component('horizontal', {
+component('horizontal', {
   type: 'layout',
   impl: () => ({ layoutAxis:  0 })
 })

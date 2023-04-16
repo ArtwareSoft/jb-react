@@ -4,15 +4,15 @@ jb.extension('d3', {
   $requireLibs: ['/dist/d3.js'],
 })
 
-jb.component('d3.scatter', {
+component('d3.scatter', {
   type: 'control<>',
   description: 'chart, graph, diagram by d3',
   category: 'chart:80',
   params: [
     {id: 'title', as: 'string'},
     {id: 'items', as: 'array', dynamic: true, mandatory: true},
-    {id: 'frame', type: 'frame<d3>', defaultValue: frame({width: 1400, height: 500, top: 30, right: 50, bottom: 40, left: 60})},
-    {id: 'pivots', type: 'axis<d3>[]', templateValue: [], mandatory: true, dynamic: true, description: 'potential axis of the chart'},
+    {id: 'frame', type: 'frame', defaultValue: frame({width: 1400, height: 500, top: 30, right: 50, bottom: 40, left: 60})},
+    {id: 'pivots', type: 'axis[]', templateValue: [], mandatory: true, dynamic: true, description: 'potential axis of the chart'},
     {id: 'itemTitle', as: 'string', dynamic: true},
     {id: 'onSelectItem', type: 'action', dynamic: true},
     {id: 'onSelectAxisValue', type: 'action', dynamic: true},
@@ -23,7 +23,7 @@ jb.component('d3.scatter', {
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('circles', {
+component('circles', {
   type: 'style<d3.scatter>',
   impl: customStyle({
     template: (cmp,{items, frame,xPivot,yPivot,rPivot,colorPivot,itemTitle},h) =>
@@ -61,7 +61,7 @@ jb.component('circles', {
   })
 })
 
-jb.component('initScatter', {
+component('initScatter', {
   type: 'feature<d3.scatter>',
   impl: features(
     frontEnd.requireExternalLibrary(['d3.js']),
@@ -134,8 +134,8 @@ jb.component('initScatter', {
   )
 })
 
-jb.component('frame', {
-  type: 'frame<d3>',
+component('frame', {
+  type: 'frame',
   params: [
     {id: 'width', as: 'number', defaultValue: 900},
     {id: 'height', as: 'number', defaultValue: 600},

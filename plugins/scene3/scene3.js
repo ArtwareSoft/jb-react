@@ -34,7 +34,7 @@ jb.extension('scene3', {
   }
 })
 
-jb.component('scene3.control', {
+component('scene3.control', {
   type: 'control<>',
   params: [
     {id: 'scene', type: 'scene<scene3>', defaultValue: sampleScene()},
@@ -47,7 +47,7 @@ jb.component('scene3.control', {
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('OrbitControls', {
+component('OrbitControls', {
   type: 'feature<>',
   impl: frontEnd.method('initOrbitControls', ctx => {
     console.log('OrbitControls')
@@ -57,7 +57,7 @@ jb.component('OrbitControls', {
   })
 })
 
-jb.component('rotate', {
+component('rotate', {
   type: 'feature<>',
   impl: frontEnd.method('initRotate', ctx => {
     const { animations, scene } = ctx.vars
@@ -70,7 +70,7 @@ jb.component('rotate', {
   })
 })
 
-jb.component('generic', {
+component('generic', {
   type: 'style<scene3>',
   impl: customStyle({
     typeCast: 'style',
@@ -116,7 +116,7 @@ jb.component('generic', {
   })
 })
 
-jb.component('perspectiveCamera', {
+component('perspectiveCamera', {
   type: 'camera',
   params: [
     {id: 'position', type: 'point', defaultValue: point(1, 1, 10)},
@@ -134,7 +134,7 @@ jb.component('perspectiveCamera', {
   }
 })
 
-jb.component('point', {
+component('point', {
   type: 'point',
   params: [
     {id: 'x', as: 'number'},
@@ -145,7 +145,7 @@ jb.component('point', {
   impl: ctx => new THREE.Vector3(...Object.values(ctx.params))
 })
 
-jb.component('scene', {
+component('scene', {
   type: 'scene',
   params: [
     {id: 'elements', type: 'element[]', dynamic: true, flattenArray: true, mandatory: true}
@@ -157,7 +157,7 @@ jb.component('scene', {
   }
 })
 
-jb.component('elementsFromItems', {
+component('elementsFromItems', {
   type: 'element',
   params: [
     {id: 'items', type: 'data<>', dynamic: true, mandatory: true},
@@ -166,7 +166,7 @@ jb.component('elementsFromItems', {
   impl: pipeline(typeCast('element'), '%$items()%', '%$genericElement()%' )
 })
 
-jb.component('box', {
+component('box', {
   type: 'element',
   params: [
     {id: 'width', as: 'number', defaultValue: 1},
@@ -177,7 +177,7 @@ jb.component('box', {
   impl: ctx => jb.scene3.createMesh(ctx, 'Box',3)
 })
 
-jb.component('sphere', {
+component('sphere', {
   type: 'element',
   params: [
     {id: 'radius', as: 'number', defaultValue: 1},
@@ -186,7 +186,7 @@ jb.component('sphere', {
   impl: ctx => jb.scene3.createMesh(ctx, 'Sphere',1)
 })
 
-jb.component('meshParams', {
+component('meshParams', {
   type: 'meshParam',
   description: 'list of features, auto flattens',
   params: [
@@ -195,7 +195,7 @@ jb.component('meshParams', {
   impl: ({},meshParams) => meshParams.flatMap(x=> Array.isArray(x) ? x: [x])
 })
 
-jb.component('color', {
+component('color', {
   type: 'meshParam',
   params: [
     {id: 'color', description: '#hex or name', defaultValue: 'red'}
@@ -203,7 +203,7 @@ jb.component('color', {
   impl: (ctx,color) => ({ initParam: ['color',  new THREE.Color(color) ] })
 })
 
-jb.component('assign', {
+component('assign', {
   type: 'meshParam',
   params: [
     {id: 'to', as: 'string', options: 'position.z,position.y,position.x', mandatory: true},
@@ -212,7 +212,7 @@ jb.component('assign', {
   impl: (ctx,to,val) => ({ assign: [to, val] })
 })
 
-jb.component('position', {
+component('position', {
   params: [
     {id: 'x', as: 'number'},
     {id: 'y', as: 'number'},
@@ -222,7 +222,7 @@ jb.component('position', {
 })
 
 
-jb.component('scale', {
+component('scale', {
   type: 'meshParam',
   params: [
     {id: 'factor', as: 'number', defaultValue: 1}
@@ -230,7 +230,7 @@ jb.component('scale', {
   impl: (ctx, f) => ({ setGeometry: geometry => geometry.scale(f,f,f) })
 })
 
-jb.component('sampleScene', {
+component('sampleScene', {
   type: 'scene',
   impl: scene(sphere())
 })
@@ -238,7 +238,7 @@ jb.component('sampleScene', {
 
 // ****** light
 
-jb.component('lights', {
+component('lights', {
   type: 'light',
   params: [
     {id: 'lights', type: 'light[]', as: 'array', composite: true}
@@ -246,7 +246,7 @@ jb.component('lights', {
   impl: ({},lights) => lights.flatMap(x=> Array.isArray(x) ? x: [x])
 })
 
-jb.component('allDirectionsLight', {
+component('allDirectionsLight', {
   type: 'light',
   params: [
     {id: 'params', type: 'lightParam[]', dynamic: true}
@@ -263,7 +263,7 @@ jb.component('allDirectionsLight', {
   }
 })
 
-jb.component('ambientLight', {
+component('ambientLight', {
   type: 'light',
   description: 'globally illuminates all objects equally. No shadow',
   params: [
@@ -283,7 +283,7 @@ jb.component('ambientLight', {
   }
 })
 
-jb.component('pointLight', {
+component('pointLight', {
   type: 'light',
   description: 'emitted from a single point to all directions. lightbulb.',
   params: [
@@ -305,7 +305,7 @@ jb.component('pointLight', {
   }
 })
 
-jb.component('assign', {
+component('assign', {
   type: 'lightParam',
   params: [
     {id: 'to', as: 'string', options: 'position.z,position.y,position.x', mandatory: true},

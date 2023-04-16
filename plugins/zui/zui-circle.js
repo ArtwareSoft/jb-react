@@ -1,6 +1,6 @@
 jb.dsl('zui')
 
-jb.component('circle', {
+component('circle', {
   type: 'view',
   params: [
     {id: 'prop', type: 'itemProp' },

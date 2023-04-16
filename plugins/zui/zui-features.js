@@ -1,6 +1,6 @@
 jb.dsl('zui')
 
-jb.component('priorty', {
+component('priorty', {
   type: 'view_feature',
   params: [
     {id: 'priority', mandatory: true, as: 'number', description: 'scene enter order'}
@@ -10,7 +10,7 @@ jb.component('priorty', {
   })
 })
 
-jb.component('backgroundColorByProp', {
+component('backgroundColorByProp', {
   type: 'view_feature',
   params: [
     {id: 'prop', type: 'itemProp', mandatory: true},
@@ -21,7 +21,7 @@ jb.component('backgroundColorByProp', {
   })
 })
 
-jb.component('borderTypeByProp', {
+component('borderTypeByProp', {
   type: 'view_feature',
   params: [
     {id: 'prop', type: 'itemProp', mandatory: true},

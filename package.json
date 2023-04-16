@@ -35,7 +35,9 @@
     "vscode-helper": "start http://localhost:8082/bin/vscode/vscode.html",
     "pub": "yarn build-libs && git commit -am build-lib",
     "vscode-package": "nvm use 16 & vsce package",
-    "copy-projects-to-template": "node bin/copy-projects-to-template.js"
+    "copy-projects-to-template": "node bin/copy-projects-to-template.js",
+    "build-atlas": "node --inspect bin/jb.js -verbose '-main:buildPartition()' -projects:zuiDemo %cmpId:zuiDemo.main %buildDir:projects/zuiDemo/build",
+    "start-lang-server": "node --inspect-brk jb.js '-inspect=7015' '-main:node.startHttpServer()' '%services:[tgp.langServices()]' '-uri:langServer' '%port:8085' '-plugins:' '-projects:studio,tests' '-libsToinit:utils,watchable,immutable,watchableComps,tgp,tgpTextEditor,vscode,jbm,cbHandler,treeShake' '-spyParam:vscode,tgpEditor,completion,remote'"
   },
   "bin": {
     "studio": "bin/studio"
@@ -48,6 +50,7 @@
   "devDependencies": {
     "@mdi/js": "^4.9.95",
     "animejs": "^3.1.0",
+    "canvas": "^2.11.2",
     "codemirror": "^5.25.2",
     "concurrently": "^2.2.0",
     "copyfiles": "^2.2.0",

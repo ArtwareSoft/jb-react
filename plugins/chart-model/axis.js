@@ -1,5 +1,6 @@
-  
-jb.component('axes', {
+jb.dsl('chartModel')
+
+component('axes', {
     type: 'axis',
     params: [
       {id: 'axes', type: 'axis[]', as: 'array', composite: true}
@@ -7,36 +8,36 @@ jb.component('axes', {
     impl: (ctx,axes) => axes.flatMap(x=> Array.isArray(x) ? x: [x])
 })
   
-jb.component('x', {
+component('x', {
     type: 'axis',
     impl: ctx => ({ id: 'x', ...ctx.params })
 })
   
-jb.component('y', {
+component('y', {
     type: 'axis',
     impl: ctx => ({ id: 'y', ...ctx.params })
 })
   
-jb.component('z', {
+component('z', {
     type: 'axis',
     impl: ctx => ({ id: 'z', ...ctx.params })
 })
   
-jb.component('fillColor', {
+component('fillColor', {
     type: 'axis',
     params: [
     ],
     impl: ctx => ({ id: 'fillColor', ...ctx.params })
 })
   
-jb.component('lineColor', {
+component('lineColor', {
     type: 'axis',
     params: [
     ],
     impl: ctx => ({ id: 'lineColor', ...ctx.params })
 })
   
-jb.component('lineFormat', {
+component('lineFormat', {
   type: 'axis',
   params: [
     
@@ -44,7 +45,7 @@ jb.component('lineFormat', {
   impl: ctx => ({ id: 'lineFormat', ...ctx.params })
 })
   
-jb.component('shape', {
+component('shape', {
   type: 'axis',
   params: [
     
@@ -52,7 +53,7 @@ jb.component('shape', {
   impl: ctx => ({ id: 'shape', ...ctx.params })
 })
   
-jb.component('radius', {
+component('radius', {
     type: 'axis',
     params: [
       

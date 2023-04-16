@@ -5,17 +5,17 @@ jb.extension('d3', {
   lib: () => jb.frame.d3
 })
 
-jb.component('linear', {
+component('linear', {
   type: 'scale',
   impl: ctx => jb.d3.lib().scaleLinear()
 })
 
-jb.component('sqrt', {
+component('sqrt', {
   type: 'scale',
   impl: ctx => jb.d3.lib().scaleSqrt()
 })
 
-jb.component('band', {
+component('band', {
   type: 'scale',
   params: [
     {id: 'paddingInner', as: 'number', defaultValue: 1, description: 'range [0,1]'},
@@ -25,7 +25,7 @@ jb.component('band', {
   impl: (ctx,paddingInner,paddingOuter,align) => jb.d3.lib().scaleBand().paddingInner(paddingInner).paddingOuter(paddingOuter).align(align)
 })
 
-jb.component('ordinalColors', {
+component('ordinalColors', {
   type: 'scale',
   params: [
     {id: 'scale', as: 'string', options: 'schemeCategory10,schemeAccent,schemePaired,schemeDark2,schemeSet3', defaultValue: 'schemeAccent'}
@@ -33,7 +33,7 @@ jb.component('ordinalColors', {
   impl: (ctx,scale) => jb.d3.lib().scaleOrdinal(jb.frame.d3[scale])
 })
 
-jb.component('interpolateColors', {
+component('interpolateColors', {
   type: 'scale',
   params: [
     {id: 'scale', as: 'string', options: 'Blues,Greens,Greys,Oranges,Reds,Turbo,Magma,Warm,Cool,Rainbow,BrBG,PRGn,PiYG,RdBu', defaultValue: 'Blues'}
@@ -42,7 +42,7 @@ jb.component('interpolateColors', {
 })
 
 // *** range
-jb.component('auto', {
+component('auto', {
   type: 'range',
   impl: ({vars}) => {
         const { yAxis, xAxis, rAxis, frame } = vars || {}
@@ -56,7 +56,7 @@ jb.component('auto', {
     }
 })
 
-jb.component('fromTo', {
+component('fromTo', {
   type: 'range',
   params: [
     {id: 'from', as: 'number'},
@@ -66,7 +66,7 @@ jb.component('fromTo', {
 })
 
 // *** domain
-jb.component('byValues', {
+component('byValues', {
   type: 'domain',
   impl: ctx => {
     const vals = jb.utils.unique(ctx.vars.items.map(x=>ctx.vars.valFunc(x)))

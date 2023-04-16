@@ -18,7 +18,8 @@
  <script>
 	const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
 	jbInit('tests', {projects: ['studio','tests'], plugins: jb_plugins, useFileSymbolsFromBuild: false })
-		.then(()=>{
+		.then(jb =>{
+			globalThis.jb = jb
 			jb.exec({$: 'defaultTheme'})
 			jb.spy.initSpyByUrl()
 			const params = { 

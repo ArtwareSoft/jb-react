@@ -1,7 +1,6 @@
-
 jb.dsl('zui')
 
-jb.component('zui.itemlist', {
+component('zui.itemlist', {
   type: 'control<>',
   params: [
     {id: 'itemView', type: 'view<zui>', mandatory: true, dynamic: true},
@@ -18,7 +17,7 @@ jb.component('zui.itemlist', {
   impl: ctx => jb.ui.ctrl(ctx)
 })
   
-jb.component('itemlistStyle', {
+component('itemlistStyle', {
   type: 'itemlistStyle',
   params: [
     {id: 'width', as: 'string', defaultValue: '100%'},
@@ -157,12 +156,11 @@ jb.component('itemlistStyle', {
         sink.FEMethod('refreshCanvas')
       ),
       frontEnd.flow(source.animationFrame(), sink.action('%$cmp.render()%')),
-      frontEnd.flow(source.subject('%$cmp.zuiEvents%'), rx.debounceTime(100), sink.action('%$cmp.onChange()%'))
+      frontEnd.flow(source.subject('%$cmp.zuiEvents%'), rx.debounceTime(100), sink.action('%$cmp.onChange()%')),
+      method('buildPartition', jb.zui.buildPartitionFromItemList)
     ]
   })
 })
-
-// sink.refreshCmp('', obj(prop('strongRefresh', true)))
 
 jb.extension('zui','itemlist', {
   async initItemlistCmp(cmp,props) {

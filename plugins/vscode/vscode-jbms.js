@@ -78,7 +78,7 @@ jb.component('jbm.vscodeWebView', {
     <script>
     globalThis.jbBaseUrl = '${_jbBaseUrl}'
     ;(async () => {
-      await jbInit('${webViewUri}',{ projects: [], plugins: jb_plugins })
+      globalThis.jb = await jbInit('${webViewUri}',{ projects: [], plugins: jb_plugins })
       globalThis.spy = jb.spy.initSpy({spyParam: 'remote,vscode,treeShake'})
       jb.treeShake.codeServerJbm = jb.parent = jb.ports['${jb.uri}'] = jb.jbm.extendPortToJbmProxy(jb.vscode.portFromWebViewToExt('${webViewUri}','${jb.uri}'))
       jb.parent.remoteExec(jb.remoteCtx.stripJS(() => jb.jbm.notifyChildReady['${webViewUri}']() ), {oneway: true} )

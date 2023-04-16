@@ -1,6 +1,6 @@
 jb.dsl('zui')
 
-jb.component('byName', {
+component('byName', {
   type: 'itemProp',
   params: [
     {id: 'att', as: 'string', mandatory: true, defaultValue: ''},
@@ -13,7 +13,7 @@ jb.component('byName', {
   }
 })
 
-jb.component('text', {
+component('text', {
   type: 'itemProp',
   params: [
     {id: 'att', as: 'string', mandatory: true},
@@ -40,7 +40,7 @@ jb.component('text', {
   }
 })
 
-jb.component('numeric', {
+component('numeric', {
   type: 'itemProp',
   params: [
     {id: 'att', as: 'string'},
@@ -70,7 +70,7 @@ jb.component('numeric', {
   }
 })
 
-jb.component('geo', {
+component('geo', {
   type: 'itemProp',
   params: [
     {id: 'att', as: 'string'},
@@ -96,7 +96,7 @@ jb.component('geo', {
   }
 })
 
-jb.component('priorty', {
+component('priorty', {
   type: 'prop_feature',
   params: [
     {id: 'priority', mandatory: true, as: 'number', description: 'scene enter order'}
@@ -106,7 +106,7 @@ jb.component('priorty', {
   })
 })
 
-jb.component('preferedAxis', {
+component('preferedAxis', {
   type: 'prop_feature',
   params: [
     {id: 'axis', mandatory: true, as: 'string', options: 'x,y'}
@@ -116,7 +116,7 @@ jb.component('preferedAxis', {
   })
 })
 
-jb.component('colorScale', {
+component('colorScale', {
   type: 'prop_feature',
   params: [
     {id: 'colorScale', mandatory: true, type: 'color_scale', defaultValue: green() }
@@ -126,15 +126,15 @@ jb.component('colorScale', {
   })
 })
 
-jb.component('red', {
+component('red', {
   type: 'color_scale',
   impl: () => x => [x,0,0]
 })
-jb.component('green', {
+component('green', {
   type: 'color_scale',
   impl: () => x => [0,x,0]
 })
-jb.component('blue', {
+component('blue', {
   type: 'color_scale',
   impl: () => x => [0,0,x]
 })

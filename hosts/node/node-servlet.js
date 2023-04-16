@@ -72,7 +72,7 @@ async function run() {
     global.jbTreeShakeServerUrl = `http://localhost:${settings.ports.treeShake}`
     global.jbGetJSFromUrl = jbGetJSFromUrl
 
-    global.jb = { uri }
+    //global.jb = { uri }
     await jbGetJSFromUrl(`${jbTreeShakeServerUrl}/treeShake-client.js`)
     await jbGetJSFromUrl(`${jbTreeShakeServerUrl}/jb-port.js?ids=-nodeContainer.portFromNodeWebSocket`)
   } else if (getProcessArgument('completionServer')) {

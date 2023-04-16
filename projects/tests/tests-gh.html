@@ -20,7 +20,8 @@
 	const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
 	jbInit('tests', {projects: ['studio','tests'], plugins: jb_plugins, 
 		baseUrl: 'https://artwaresoft.github.io/jb-react/', useFileSymbolsFromBuild: true })
-		.then(()=>{
+		.then(jb=>{
+			globalThis.jb = jb
 			jb.exec({$: 'defaultTheme'})
 			jb.spy.initSpyByUrl()
 			const params = { 

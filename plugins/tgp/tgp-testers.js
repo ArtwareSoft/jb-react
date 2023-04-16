@@ -4,7 +4,7 @@ jb.extension('test', 'completion', {
 	},
 	fixToUniqueName(code) {
     const cmpId = 'CmpltnTst'+jb.test.uniqueNameCounter++
-    return code.replace(/jb.component\('x',/,`jb.component('${cmpId}',`)
+    return code.replace(/component\('x',/,`component('${cmpId}',`)
   }
 })
 
@@ -16,29 +16,30 @@ jb.component('tgp.completionOptionsTest', {
     {id: 'dsl', as: 'string'}
   ],
   impl: async (ctx,compText,expectedSelections,dsl)=> {
-        jb.workspace.initJbWorkspaceAsHost()
-        const parts = jb.test.fixToUniqueName(compText).split('__')
-        const dslLine = dsl ? `jb.dsl('${dsl}')\n` : ''
-        const offsets = parts.reduce((acc,part) => [...acc, acc.pop()+part.length] , [0] ).slice(1,-1).map(x=>x+dslLine.length)
-        const code = parts.join('')
+      const testId = ctx.vars.testID
+      if (testId == 'completionTest.dslTest.nameOverride') debugger
+      jb.workspace.initJbWorkspaceAsHost()
+      const parts = jb.test.fixToUniqueName(compText).split('__')
+      const dslLine = dsl ? `jb.dsl('${dsl}')\n` : ''
+      const offsets = parts.reduce((acc,part) => [...acc, acc.pop()+part.length] , [0] ).slice(1,-1).map(x=>x+dslLine.length)
+      const code = parts.join('')
 //        jb.tgpTextEditor.evalProfileDef(code,dsl)
-        jb.tgpTextEditor.host.initDoc('dummy.js', dslLine+code)
-        const ctxForTest = ctx.setVars({forceLocalSuggestions: true})
-        
-        const result = await offsets.map(offset=>jb.tgpTextEditor.offsetToLineCol(dslLine+code,offset))
-          .reduce(async (errors, inCompPos,i) => {
-            const _errors = await errors
-            jb.tgpTextEditor.host.selectRange(inCompPos)
-            const options = await jb.tgpTextEditor.provideCompletionItems(jb.tgpTextEditor.host.docTextAndCursor(), ctxForTest)
-            if (!options)
-                return `no options at index ${i}`
-            const res = options.map(x=>x.label).includes(expectedSelections[i]) ? '' : ` ${expectedSelections[i]} not found at index ${i}`
-            return _errors + res
-        }, '')
+      jb.tgpTextEditor.host.initDoc('dummy.js', dslLine+code)
+      const ctxForTest = ctx.setVars({forceLocalSuggestions: true})
+      
+      const result = await offsets.map(offset=>jb.tgpTextEditor.offsetToLineCol(dslLine+code,offset))
+        .reduce(async (errors, inCompPos,i) => {
+          const _errors = await errors
+          jb.tgpTextEditor.host.selectRange(inCompPos)
+          const options = await jb.tgpTextEditor.provideCompletionItems(jb.tgpTextEditor.host.docTextAndCursor(), ctxForTest)
+          if (!options)
+              return `no options at index ${i}`
+          const res = options.map(x=>x.label).includes(expectedSelections[i]) ? '' : ` ${expectedSelections[i]} not found at index ${i}`
+          return _errors + res
+      }, '')
 
-        const testId = ctx.vars.testID;
-        return { id: testId, title: testId, success: result.match(/^-*$/), reason: result }
-    }
+      return { id: testId, title: testId, success: result.match(/^-*$/), reason: result }
+  }
 })
   
 jb.component('tgp.completionActionTest', {

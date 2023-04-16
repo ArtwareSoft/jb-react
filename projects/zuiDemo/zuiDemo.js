@@ -25,7 +25,7 @@ jb.component('zuiDemo.main', {
               ],
               horizontal()
             ),
-            image('/hotels/images/256-256%image%.webp'),
+            image({url: '/hotels/images/256-256%image%.webp', build: imageBuild('mainImage-64-256px')}),
             fixedText(text('x', ' ')),
             fixedText(text('x', ' '))
           ]

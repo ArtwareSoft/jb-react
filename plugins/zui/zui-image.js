@@ -1,6 +1,6 @@
 jb.dsl('zui')
 
-jb.component('image', {
+component('image', {
   type: 'view',
   params: [
     {id: 'url', as: 'string', dynamic: 'true', description: '%% is item' },
@@ -9,7 +9,7 @@ jb.component('image', {
     {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true},
     {id: 'build', type: 'imageBuild' },
   ],
-  impl: (ctx,url,preferedSize,minSize,features) => { 
+  impl: (ctx,url,preferedSize,minSize,features,build) => { 
     const zuiElem = jb.zui.image(ctx)
     const size = minSize.split(',').map(x=>+x)
     const ratio = size[1]/size[0]
@@ -29,6 +29,7 @@ jb.component('image', {
       pivots: (s) => [],
       zuiElems: () => [zuiElem],
       priority: 0,
+      build
     }
     features().forEach(f=>f.enrich(view))
     return view
@@ -281,6 +282,42 @@ jb.extension('zui','atlas', {
     }
   },
 
+  async prepareAtlasGroupsNodsjs(atlasGroups,partitionDir) {
+    const code = 'console.log(myVar1, myVar2);debugger //# sourceURL=myScript.js';
+const context = { myVar1: 'Hello', myVar2: 'world' };
+const myFunction = new Function(Object.keys(context), code);
+myFunction.apply(null, Object.values(context)); // logs 'Hello world' to the console
+
+    debugger
+    const { createCanvas, loadImage } = require('canvas');
+    const fs = require('fs')
+
+    await atlasGroups.reduce(async (pr,g) => { await pr; await prepareAtlas(g) } , Promise.resolve())
+    fs.writeFileSync(`${partitionDir}groups.json`, JSON.stringify(atlasGroups,null,2));
+
+    async function prepareAtlas(group) {
+      const images = await Promise.all(group.items.map( async imageItem => {
+        const image = await loadImage(imageItem.url)
+        imageItem.size = [ image.naturalWidth, image.naturalHeight ]
+        return { image, imageItem }
+      }))
+      
+      images.sort((i1,i2) => i1.imageItem.size[1] - i2.imageItem.size[1])
+      const lines = Array.from(new Array(Math.ceil(images.length/4)).keys())
+      const linesHeight = lines.map(line => [0,1,2,3].reduce((max,i) => Math.max(max, images[line*4+i] ? images[line*4+i].imageItem.size[1] : 0),0))
+      const totalHeight = group.totalHeight = linesHeight.reduce((sum,h) => sum + h, 0)
+      const canvas = createCanvas(1024, totalHeight);
+      const cnvCtx = canvas.getContext('2d');
+      images.map(({image,imageItem},i)=> {
+        const left = 256 * (i % 4)
+        const top = linesHeight.slice(0,Math.floor(i/4)).reduce((sum,h) => sum + h, 0)
+        cnvCtx.drawImage(image, left, top)
+        imageItem.pos = [left,top]
+      })
+      fs.writeFileSync(`${partitionDir}atlas_${group.id}.png`, canvas.toBuffer('image/png'))
+    }
+  },  
+
   atalesToUseWithUnits(atlasGroups,{zoom,center}) {
     // TODO: write effeciently with no object allocations (just primitives or fixed arrays Uint32Array on stack)
     const atlasOfCenter = atlasGroups.find(g=> between(center[0],g.left,g.right) && between(center[1],g.top,g.bottom))
@@ -312,14 +349,48 @@ jb.extension('zui','atlas', {
     function between(x,from,to) {
       return x >= from && x <= to
     }
+  },
+  buildPartition({cmpId, buildDir, imageSize}) {
+    const itemlistProf = findItemlist(jb.comps[cmpId])
+    const cmp = itemlistProf && jb.exec(itemlistProf)
+    cmp.calcRenderProps()
+    cmp.runBEMethod('buildPartition','',{buildDir, imageSize})
+
+    function findItemlist(obj) {
+      if (!obj || typeof obj != 'object') return
+      if (obj.$ == 'zui.itemlist') return obj
+      return Object.values(obj).map(v=>findItemlist(v)).filter(x=>x)[0]
+    }
+  },
+  async buildPartitionFromItemList(ctx, {$props, buildDir, imageSize}) {
+    const {itemView, itemsPositions, DIM} = $props
+    await Promise.all(viewsForBuild(itemView).map(async view =>{
+      const partitionDir = `${buildDir}/${view.title}${imageSize}dim${DIM}`
+      const groups = jb.zui.createAtlasSplit({mat: itemsPositions.mat , maxItemsInGroup : 15, DIM, ctx,view })
+      await jb.zui.prepareAtlasGroupsNodsjs(groups, partitionDir)
+    }))
+
+    function viewsForBuild(view) {
+      if (view.build) return [view]
+      return (view.children || []).reduce( (acc, childView) => [...acc, ...viewsForBuild(childView)],[])
+    }
   }
 })
 
-jb.component('imageBuild',{
+component('imageBuild',{
   type: 'imageBuild',
   params: [
     { id: 'partition', as: 'string', dynamic: true},
-    { id: 'buildDir' , dynamic: true}
   ],
   impl: ctx=> ctx.params
+})
+
+component('buildPartition',{
+  type: 'action<>',
+  params: [
+    { id: 'cmpId', as: 'string'},
+    { id: 'buildDir', as: 'string'},
+    { id: 'imageSize', as: 'string', defaultValue: '256'}
+  ],
+  impl: ctx => jb.zui.buildPartition(ctx.params)
 })

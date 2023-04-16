@@ -1,5 +1,5 @@
 
-jb.component('zui.itemPreview', {
+component('zui.itemPreview', {
   type: 'control',
   impl: group({
     style: group.sections(header.h3()),
@@ -24,7 +24,7 @@ jb.component('zui.itemPreview', {
   circuit: 'zuiTest.itemlist'
 })
 
-jb.component('zui.itemViewProps', {
+component('zui.itemViewProps', {
   type: 'control',
   impl: group({
     style: propertySheet.titlesAbove(),
@@ -38,7 +38,7 @@ jb.component('zui.itemViewProps', {
   circuit: 'zuiTest.itemlist'
 })
 
-jb.component('zui.visualItemPreview', {
+component('zui.visualItemPreview', {
   type: 'control',
   impl: group({
     controls: [
@@ -85,7 +85,7 @@ jb.component('zui.visualItemPreview', {
   circuit: 'zuiTest.itemlist'
 })
 
-jb.component('zui.stateOfItemView', {
+component('zui.stateOfItemView', {
   params: [
     {id: 'itemView', type: 'view<zui>', dynamic: true, mandatory: true},
     {id: 'pos', as: 'string', description: 'top,left,width,height', defaultValue: '0,0,100,100'},

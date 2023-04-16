@@ -48,6 +48,8 @@ jb.component('node.startRemoteHttpServer', {
             ...(libsToinit ? [`-libsToinit:${libsToinit.join(',')}`] : []),
             `-spyParam:${spyParam}`]
 
+      const command = `node --inspect-brk jb.js ${args.map(x=>`'${x}'`).join(' ')}`
+      debugger
       let spawnRes = null
       if (globalThis.jbSpawn) { // node or vscode
         const resText = await jbSpawn(args,{doNotWaitForEnd: true})
