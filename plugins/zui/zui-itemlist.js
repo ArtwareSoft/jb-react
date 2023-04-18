@@ -194,7 +194,7 @@ jb.extension('zui','itemlist', {
         visibleElems.forEach(elem => elem.calcElemProps && elem.calcElemProps(props) )
         visibleElems.forEach(elem => elem.renderGPUFrame(props, elem.buffers))
       },
-      onChange: () => props.onChange(),
+      onChange: () => props.onChange && props.onChange(),
     })
 
     function addRefreshToViews(view) {
