@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script type="text/javascript" src="/src/loader/jb-loader.js"></script>
+</head>
+<body style="margin:0">
+  <div id="main"> </div>
+  <script>
+	jbInit('zuiDemo', {projects: ['zuiDemo'], plugins: ['zui'], 
+    baseUrl: 'https://artwaresoft.github.io/jb-react/', useFileSymbolsFromBuild: true,
+    noTests: true })
+		.then(jb=>{
+      globalThis.jb = jb
+      jb.spy.initSpyByUrl && jb.spy.initSpyByUrl()
+      jb.exec({$: 'defaultTheme'})
+      jb.ui.renderWidget(({$: 'zuiDemo.main'}), main)
+		})
+  </script>
+</body>
+</html>
+
