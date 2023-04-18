@@ -41,7 +41,9 @@ async function jbloadJSFile(url,jb,{noSymbols, fileSymbols} = {}) {
   const fullUrl = jb.baseUrl.match(/\/$/) ? jb.baseUrl+url.replace(/^\//,'') : jb.baseUrl+url
   const _code = await jbFetchFile(fullUrl)
   const code = `${_code}//# sourceURL=${url}?${jb.uri}`
-  const context = { jb, ...(jb.macro && !noSymbols ? jb.macro.proxies : {}),
+  const context = { jb, 
+    require: typeof require != 'undefined' && require,
+    ...(jb.macro && !noSymbols ? jb.macro.proxies : {}),
     component: (...args) => jb.component(...args,fileSymbols && fileSymbols.dsl)
   }
   try {

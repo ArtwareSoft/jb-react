@@ -1,5 +1,10 @@
 
 jb.extension('zui','FE-utils', {
+  initExtension() {
+    const NO_OF_UNITS = 8
+    const boundTextures = Array.from(new Array(NO_OF_UNITS).keys()).map(i=>({i, lru : 0}))
+    return { atlasTexturePool: {}, boundTextures, textureAllocationCounter: 0 }
+  },
   initZuiCmp(cmp,props) {
     const w = props.glCanvas.offsetWidth, h = props.glCanvas.offsetHeight
 
@@ -59,9 +64,7 @@ jb.extension('zui','FE-utils', {
             center[axis] = tCenter[axis]
         })
         
-        props.zoom = zoom;
-
-        console.log('animate',{zoom,tCenter: tCenter.join(','), center: center.join(',')})
+        props.zoom = zoom
       },            
       updateZoomState({ dz, dp }) {
         const factor = jb.ui.isMobile() ? 1.2 : 3
@@ -145,30 +148,33 @@ jb.extension('zui','FE-utils', {
     gl.clearColor(1.0, 1.0, 1.0, 1.0)
     gl.clear(gl.COLOR_BUFFER_BIT)    
   },  
-  async imageToTexture(gl, url) {
+  async imageToTexture(gl, url, group) {
+    const isPowerOf2 = value => (value & (value - 1)) === 0
     return new Promise( resolve => {
       const texture = gl.createTexture()
       const image = new Image()
+      if (group) group.image = image
       image.onload = () => {
         gl.bindTexture(gl.TEXTURE_2D, texture)
         gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image)
         if (isPowerOf2(image.width) && isPowerOf2(image.height)) {
-          gl.generateMipmap(gl.TEXTURE_2D);
+          gl.generateMipmap(gl.TEXTURE_2D)
         } else {
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
         }
         resolve(texture)
-
-        function isPowerOf2(value) {
-          return (value & (value - 1)) === 0
-        }
       }
-      image.onerror = () => { debugger; resolve(texture) }
+      image.onerror = () => resolve(texture)
       image.src = url
     })
   },
+  allocateSingleTextureUnit(view) {
+    const lru = jb.zui.textureAllocationCounter
+    const freeTexture = jb.zui.boundTextures.find(rec=>rec.view == view) || jb.zui.boundTextures.filter(rec => rec.lru != lru).sort((r1,r2) => r1.lru - r2.lru)[0]
+    return Object.assign(freeTexture, {lru, view})
+  },  
   vertexShaderCode: ({code,main,id} = {}) => `attribute vec2 itemPos${id};
     uniform vec2 zoom;
     uniform vec2 center;
@@ -215,12 +221,17 @@ jb.extension('zui','itemPositions', {
       const [x,y] = [Math.floor(DIM*pivots.x.scale(item)*pivots.x.spaceFactor), Math.floor(DIM*pivots.y.scale(item)*pivots.y.spaceFactor)]
       mat[DIM*y + x] = mat[DIM*y + x] || []
       mat[DIM*y + x].push(item)
-      item.xy = [x,y].join(',');
+      item.originalXY = [x,y].join(',')
     })      
     repulsion()
+    const sparse = Array.from(Array(DIM**2).keys()).filter(i=>mat[i]).map(i=> {
+      const item = mat[i][0]
+      const [x,y] = [i%DIM, Math.floor(i/DIM)]
+      item.xy = [x,y].join(',')
+      return [item, x,y] 
+    })
 
-    return { mat, sparse: Array.from(Array(DIM**2).keys()).filter(i=>mat[i]).map(i=>
-        [mat[i][0], i%DIM, Math.floor(i/DIM)] ) }
+    return { mat, sparse }
 
     function repulsion() {
         for (let i=0;i<DIM**2;i++)

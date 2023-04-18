@@ -133,5 +133,39 @@ jb.extension('zui','debug', {
         gl.vertexAttribPointer(itemPos, vertexNumComponents, gl.FLOAT, false, 0, 0)
         gl.drawArrays(gl.POINTS, 0, vertexCount)
     }
-  })
+  }),
+  displayImageContent(image) {
+    const canvas = document.createElement('canvas');
+    canvas.width = image.width;
+    canvas.height = image.height;
+  
+    // Read the texture data into the canvas
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    document.body.appendChild(canvas);
+  },  
+  displayTextureContent(gl, texture, width, height) {
+    // Create a framebuffer and attach the texture to it
+    const framebuffer = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+  
+    // Create a canvas element
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+  
+    // Read the texture data into the canvas
+    const ctx = canvas.getContext('2d');
+    const imgData = ctx.createImageData(width, height);
+    gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, imgData.data);
+    ctx.putImageData(imgData, 0, 0);
+  
+    // Add the canvas to the DOM
+    document.body.appendChild(canvas);
+  
+    // Cleanup
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.deleteFramebuffer(framebuffer);
+  }  
 })

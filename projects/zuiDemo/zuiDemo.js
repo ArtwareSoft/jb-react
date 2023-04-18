@@ -25,9 +25,11 @@ jb.component('zuiDemo.main', {
               ],
               horizontal()
             ),
-            image({url: '/hotels/images/256-256%image%.webp', build: imageBuild('mainImage-64-256px')}),
-            fixedText(text('x', ' ')),
-            fixedText(text('x', ' '))
+            image('../hotels/images/256-256%image%.webp'),
+            fixedText(text('space', ' ')),
+            fixedText(text('space', ' ')),
+//            fixedText(text('xy')),
+//            fixedText(text('imageDebug'))
           ]
         ),
         boardSize: 64,
@@ -48,9 +50,9 @@ jb.component('zuiDemo.main', {
           geo('lat', preferedAxis('y')),
           geo('long', preferedAxis('x'))
         ],
-        onChange: refreshControlById('itemPreview')
+        //onChange: refreshControlById('itemPreview')
       }),
-      zui.visualItemPreview()
+      //zui.visualItemPreview()
     ],
     features: [
       variable('zuiCtx', obj())

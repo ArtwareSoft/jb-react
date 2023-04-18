@@ -223,9 +223,10 @@ jb.extension('zui','text_2_32', {
             offset += sizes[i]  
           })
   
-          gl.activeTexture(gl.TEXTURE0)
+          const {i} = jb.zui.allocateSingleTextureUnit('charSetTexture')
+          gl.activeTexture(gl['TEXTURE'+i])
           gl.bindTexture(gl.TEXTURE_2D, this.charSetTexture)
-          gl.uniform1i(gl.getUniformLocation(shaderProgram, 'charSetTexture'), 0)
+          gl.uniform1i(gl.getUniformLocation(shaderProgram, 'charSetTexture'), i)
   
           gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
           gl.drawArrays(gl.POINTS, 0, vertexCount)
@@ -385,9 +386,10 @@ jb.extension('zui','text8', {
           gl.enableVertexAttribArray(background)
           gl.vertexAttribPointer(background, 3, gl.FLOAT, false, floatsInVertex* Float32Array.BYTES_PER_ELEMENT, 6* Float32Array.BYTES_PER_ELEMENT)
           
-          gl.activeTexture(gl.TEXTURE0)
+          const {i} = jb.zui.allocateSingleTextureUnit('charSetTexture')
+          gl.activeTexture(gl['TEXTURE'+i])
           gl.bindTexture(gl.TEXTURE_2D, this.charSetTexture)
-          gl.uniform1i(gl.getUniformLocation(shaderProgram, 'charSetTexture'), 0)
+          gl.uniform1i(gl.getUniformLocation(shaderProgram, 'charSetTexture'), i)
   
           gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
           gl.drawArrays(gl.POINTS, 0, vertexCount)

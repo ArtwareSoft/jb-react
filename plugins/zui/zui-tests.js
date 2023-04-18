@@ -25,7 +25,7 @@ component('zuiTest.itemlist', {
                 ],
                 horizontal()
               ),
-              image({url: '/hotels/images/256-256%image%.webp', build: imageBuild('mainImage-64-256px')}),
+              image('../hotels/images/256-256%image%.webp'),
               fixedText(text('x', ' ')),
               fixedText(text('x', ' '))
             ]

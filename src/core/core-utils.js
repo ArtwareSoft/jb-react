@@ -19,9 +19,7 @@ Object.assign(jb, {
     val(ref) {
       if (ref == null || typeof ref != 'object') return ref
       const handler = jb.db.refHandler(ref)
-      if (handler)
-        return handler.val(ref)
-      return ref
+      return handler ? handler.val(ref) : ref
     },
     tostring: value => jb.core.tojstype(value,'string'),
     toarray: value => jb.core.tojstype(value,'array'),
@@ -268,7 +266,8 @@ jb.extension('utils', 'core', {
         const index = line.indexOf(`component('${id}'`)
         return index == 0 || index == 3
       })
-    }
+    },
+    calcDirectory: dir => dir[0] != '/' ? `${jb.baseUrl}/${dir}` : dir,
 })
 
 jb.extension('utils', 'generic', {

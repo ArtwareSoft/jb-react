@@ -8,7 +8,7 @@ jb.extension('tgpTextEditor', {
     evalProfileDef: (code, dsl) => { 
       try {
         jb.core.unresolvedProfiles = []
-        const context = { ...jb.macro.proxies, component: (...args) => jb.component(...args, dsl) }
+        const context = { jb, ...jb.macro.proxies, component: (...args) => jb.component(...args, dsl) }
         const res = new Function(Object.keys(context), `return ${code}`).apply(null, Object.values(context))
         res && jb.utils.resolveLoadedProfiles({keepLocation: true})
         return { res, compId : jb.path(res,[jb.core.CT,'fullId']) }

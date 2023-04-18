@@ -173,6 +173,8 @@ jb.extension('zui','itemlist', {
     ;[...debugElems, ...props.elems].forEach(elem => elem.buffers = elem.prepareGPU(props))
     Object.assign(props, jb.zui.prepareItemView(props.itemView))
     const renderPropsCache = {}
+    addRefreshToViews(props.itemView)
+
     Object.assign(cmp, { 
       render(ctx,force) {
         if (cmp.calcAnimationStep(props) && !force) return
@@ -188,11 +190,17 @@ jb.extension('zui','itemlist', {
           renderPropsCache[zoom] = JSON.parse(JSON.stringify(renderProps))
         }
         const visibleElems = [...debugElems, ...elems.filter(el=> jb.zui.isVisible(el))]
+        jb.zui.textureAllocationCounter++
         visibleElems.forEach(elem => elem.calcElemProps && elem.calcElemProps(props) )
         visibleElems.forEach(elem => elem.renderGPUFrame(props, elem.buffers))
       },
       onChange: () => props.onChange(),
     })
+    
+    function addRefreshToViews(view) {
+      view.refresh = () => cmp.render({},true)
+      view.children && view.children.map(ch=>addRefreshToViews(ch))
+    }
   },
   renderProps(ctx) {
     const {renderProps} = ctx.vars
