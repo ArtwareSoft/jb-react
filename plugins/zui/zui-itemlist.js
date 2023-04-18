@@ -157,7 +157,7 @@ component('itemlistStyle', {
       ),
       frontEnd.flow(source.animationFrame(), sink.action('%$cmp.render()%')),
       frontEnd.flow(source.subject('%$cmp.zuiEvents%'), rx.debounceTime(100), sink.action('%$cmp.onChange()%')),
-      method('buildPartition', jb.zui.buildPartitionFromItemList)
+      method('buildPartition', () => jb.zui.buildPartitionFromItemList() )
     ]
   })
 })
@@ -196,7 +196,7 @@ jb.extension('zui','itemlist', {
       },
       onChange: () => props.onChange(),
     })
-    
+
     function addRefreshToViews(view) {
       view.refresh = () => cmp.render({},true)
       view.children && view.children.map(ch=>addRefreshToViews(ch))
