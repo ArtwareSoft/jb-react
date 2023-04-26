@@ -522,6 +522,10 @@ jb.component('dataTest.firstSucceeding', {
   impl: dataTest(firstSucceeding(evalExpression('1/0'), 2, 1), equals(2))
 })
 
+jb.component('dataTest.unique', {
+  impl: dataTest(pipeline('%$people%', unique('%male%'), count()), equals(2))
+})
+
 jb.component('dataTest.firstSucceeding.withEmptyString', {
   impl: dataTest(firstSucceeding('', 'a', 'b'), equals('a'))
 })

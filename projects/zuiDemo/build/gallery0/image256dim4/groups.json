@@ -1,0 +1,316 @@
+[
+  {
+    "id": 0,
+    "items": [
+      {
+        "x": 0,
+        "y": 1,
+        "imageIndex": 0,
+        "url": "https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256/partnerimages/14/33/1433844390.webp",
+        "size": [
+          256,
+          171
+        ],
+        "pos": [
+          512,
+          0
+        ]
+      },
+      {
+        "x": 1,
+        "y": 0,
+        "imageIndex": 1,
+        "url": "https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256/partnerimages/14/33/1433844342.webp",
+        "size": [
+          256,
+          171
+        ],
+        "pos": [
+          768,
+          0
+        ]
+      },
+      {
+        "x": 1,
+        "y": 1,
+        "imageIndex": 2,
+        "url": "https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256/partnerimages/14/33/1433844364.webp",
+        "size": [
+          256,
+          171
+        ],
+        "pos": [
+          0,
+          171
+        ]
+      },
+      {
+        "x": 0,
+        "y": 2,
+        "imageIndex": 3,
+        "url": "https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256/partnerimages/66/63/66637386.webp",
+        "size": [
+          256,
+          169
+        ],
+        "pos": [
+          256,
+          0
+        ]
+      },
+      {
+        "x": 1,
+        "y": 2,
+        "imageIndex": 4,
+        "url": "https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256/partnerimages/13/16/1316611754.webp",
+        "size": [
+          256,
+          171
+        ],
+        "pos": [
+          256,
+          171
+        ]
+      },
+      {
+        "x": 2,
+        "y": 0,
+        "imageIndex": 5,
+        "url": "https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256/partnerimages/14/33/1433844384.webp",
+        "size": [
+          256,
+          171
+        ],
+        "pos": [
+          512,
+          171
+        ]
+      },
+      {
+        "x": 2,
+        "y": 1,
+        "imageIndex": 6,
+        "url": "https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256/partnerimages/14/33/1433844362.webp",
+        "size": [
+          256,
+          171
+        ],
+        "pos": [
+          768,
+          171
+        ]
+      },
+      {
+        "x": 2,
+        "y": 2,
+        "imageIndex": 7,
+        "url": "https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256/partnerimages/13/16/1316611750.webp",
+        "size": [
+          256,
+          171
+        ],
+        "pos": [
+          0,
+          342
+        ]
+      },
+      {
+        "x": 0,
+        "y": 3,
+        "imageIndex": 8,
+        "url": "https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256/partnerimages/66/63/66637396.webp",
+        "size": [
+          256,
+          168
+        ],
+        "pos": [
+          0,
+          0
+        ]
+      },
+      {
+        "x": 1,
+        "y": 3,
+        "imageIndex": 9,
+        "url": "https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256/partnerimages/33/74/337480938.webp",
+        "size": [
+          256,
+          171
+        ],
+        "pos": [
+          256,
+          342
+        ]
+      },
+      {
+        "x": 2,
+        "y": 3,
+        "imageIndex": 10,
+        "url": "https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256/partnerimages/13/16/1316611676.webp",
+        "size": [
+          256,
+          171
+        ],
+        "pos": [
+          512,
+          342
+        ]
+      }
+    ],
+    "top": 0,
+    "left": 0,
+    "bottom": 4,
+    "right": 2,
+    "totalHeight": 513
+  },
+  {
+    "id": 1,
+    "items": [
+      {
+        "x": 2,
+        "y": 1,
+        "imageIndex": 0,
+        "url": "https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256/partnerimages/14/33/1433844362.webp",
+        "size": [
+          256,
+          171
+        ],
+        "pos": [
+          768,
+          0
+        ]
+      },
+      {
+        "x": 3,
+        "y": 0,
+        "imageIndex": 1,
+        "url": "https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256/partnerimages/14/33/1433844340.webp",
+        "size": [
+          256,
+          171
+        ],
+        "pos": [
+          0,
+          171
+        ]
+      },
+      {
+        "x": 3,
+        "y": 1,
+        "imageIndex": 2,
+        "url": "https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256/partnerimages/14/33/1433844346.webp",
+        "size": [
+          256,
+          171
+        ],
+        "pos": [
+          256,
+          171
+        ]
+      },
+      {
+        "x": 2,
+        "y": 2,
+        "imageIndex": 3,
+        "url": "https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256/partnerimages/13/16/1316611750.webp",
+        "size": [
+          256,
+          171
+        ],
+        "pos": [
+          512,
+          171
+        ]
+      },
+      {
+        "x": 3,
+        "y": 2,
+        "imageIndex": 4,
+        "url": "https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256/partnerimages/66/63/66637398.webp",
+        "size": [
+          256,
+          164
+        ],
+        "pos": [
+          0,
+          0
+        ]
+      },
+      {
+        "x": 4,
+        "y": 0,
+        "imageIndex": 5,
+        "url": "https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256/partnerimages/14/33/1433844390.webp",
+        "size": [
+          256,
+          171
+        ],
+        "pos": [
+          768,
+          171
+        ]
+      },
+      {
+        "x": 4,
+        "y": 1,
+        "imageIndex": 6,
+        "url": "https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256/partnerimages/66/63/66637386.webp",
+        "size": [
+          256,
+          169
+        ],
+        "pos": [
+          512,
+          0
+        ]
+      },
+      {
+        "x": 4,
+        "y": 2,
+        "imageIndex": 7,
+        "url": "https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256/partnerimages/66/63/66637396.webp",
+        "size": [
+          256,
+          168
+        ],
+        "pos": [
+          256,
+          0
+        ]
+      },
+      {
+        "x": 2,
+        "y": 3,
+        "imageIndex": 8,
+        "url": "https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256/partnerimages/13/16/1316611676.webp",
+        "size": [
+          256,
+          171
+        ],
+        "pos": [
+          0,
+          342
+        ]
+      },
+      {
+        "x": 3,
+        "y": 3,
+        "imageIndex": 9,
+        "url": "https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256/partnerimages/33/74/337480936.webp",
+        "size": [
+          256,
+          171
+        ],
+        "pos": [
+          256,
+          342
+        ]
+      }
+    ],
+    "top": 0,
+    "left": 2,
+    "bottom": 4,
+    "right": 4,
+    "totalHeight": 513
+  }
+]

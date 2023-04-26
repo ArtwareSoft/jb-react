@@ -1,54 +1,17 @@
-completion
-  cache by full compId
-    compText
-    map
 
 zui
-  add image
-  text 32 as two lines
-  change no of chars with zoom  
-  move pivots to model
-  implement separate column for text
-  add color
-  add icon
-  add fromTo zoom parameters
-  use items id as original index - separate column
-  implement attraction forces to point with gpu. use atan and two neighbours
 
-Image BW compration
-  16X32x4 - text 16*vec4
-  32x32X2 - bits - 1024
-  5+5+2+10 - 2^22 - 4MB
-objects density - same zoom level
-  object size (circle) show be the same
-  max strLen for all densities - 8 grids?
-  life game to decide strlen for each node. trade real estate near the point
-    character grid. each cell has a price. objects own the text cells around and can trade.
-
-  input for strLen
-  object can define min-max space needed for description
-  value of information (market place)
-  shared information market place
-  objects have budget and can move or pay to other objects to be smaller
-  life game to form groups - what is the repres
-  shared information and index (e.g Apple - A)
+zui gridView
+  build manual test
+  calc relative zoom and center
+  integrate layout
+  present elems
+  lazy elem preparation
+zui BE-FE
+  rewrite itemlist to separate FE and BE features
+    each view may need help beacuse of the props
 
 
-fix completion bugs
-  refresh key - build symbols and reload
-
-fix setComp with ns - do test like studioTest.jbEditorMove
-
-dataVisualiztion
-  axis
-  pivot
-  scale
-  domain
-
-dataAnalysis
-  column
-  groupBy
-  table
 R 
   vector (col)
   array(dimentions)

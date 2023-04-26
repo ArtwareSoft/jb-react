@@ -32,7 +32,7 @@ component('itemlistStyle', {
         (ctx,{$model,zuiCtx},{width,height})=> {
         const sizeInPx = jb.zui.calcWidthHeight(width, height)
         const DIM = $model.boardSize
-        const items = jb.utils.unique( $model.items(), x => x.name)
+        const items = $model.items() // jb.utils.unique( $model.items(), x => x.name)
         const zoom = +($model.initialZoom || DIM)
         const tCenter = $model.center ? $model.center.split(',').map(x=>+x) : [DIM* 0.5, DIM* 0.5]
         const renderProps = {itemView: { size: [sizeInPx.width/zoom,sizeInPx.height/zoom], zoom }}
@@ -157,7 +157,7 @@ component('itemlistStyle', {
       ),
       frontEnd.flow(source.animationFrame(), sink.action('%$cmp.render()%')),
       frontEnd.flow(source.subject('%$cmp.zuiEvents%'), rx.debounceTime(100), sink.action('%$cmp.onChange()%')),
-      method('buildPartition', () => jb.zui.buildPartitionFromItemList() )
+      method('buildPartition', (...args) => jb.zui.buildPartitionFromItemList(...args) )
     ]
   })
 })
@@ -166,7 +166,7 @@ jb.extension('zui','itemlist', {
   async initItemlistCmp(cmp,props) {
     const debugElems = [
       jb.zui.showTouchPointers(cmp),
-      //jb.zui.mark4PointsZuiElem(), 
+      jb.zui.mark4PointsZuiElem(), 
       // jb.zui.markGridAreaZuiElem()
     ]
     await Promise.all(props.elems.map(elem =>elem.asyncPrepare && elem.asyncPrepare(props)).filter(x=>x))

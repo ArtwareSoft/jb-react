@@ -109,7 +109,7 @@ jb.extension('zui','image', {
             })] 
            
           const imageNodes = itemsPositions.sparse.map(([item, x,y]) => {
-            const {atlas, pos, size} = this.view.xyToImage[[x,y].join(',')]
+            const {atlas, pos, size} = this.view.xyToImage[[x,y].join(',')] || {atlas:0, pos: [0,0], size: [10,10]}
             item.imageDebug = `${atlas}-${pos.join(',')}`
             const imageRatio = size[0] ? (size[1]/ size[0]) : 0
             return [0,1,2,3,4,5].flatMap(i=>[x,y,i,atlas,imageRatio, ...pos])
@@ -205,7 +205,7 @@ jb.extension('zui','atlasPool', {
     const readyGroups = visualGroups.filter(g=>jb.zui.atlasTexturePool[`${pid}-${g.id}`])
 
     const boundTextureByGroup = {}
-    boundTextures.forEach(rec =>rec.group && (boundTextureByGroup[rec.group] = rec))
+    boundTextures.forEach(rec =>rec.group != null && (boundTextureByGroup[rec.group] = rec))
     readyGroups.map(g=> boundTextureByGroup[g.id] && Object.assign(boundTextureByGroup[g.id], {lru, view}))
     const freeTextures = boundTextures.filter(rec => rec.lru != lru).sort((r1,r2) => r1.lru - r2.lru)
     const groupsToBind = readyGroups.filter(g=>! boundTextureByGroup[g.id])
@@ -213,11 +213,11 @@ jb.extension('zui','atlasPool', {
     // bind
     groupsToBind.map((g,i) => {
       if (!freeTextures[i])
-        return jb.logError('no free units. can not bind group',{g})
+        return jb.logError(`no free units. can not bind group ${g.id}`,{g, boundTextures: boundTextures.slice(0), freeTextures: freeTextures.slice(0)})
       Object.assign(freeTextures[i], {group: g.id, lru, view})
     })
     const newBoundTextureByGroup = {}
-    boundTextures.forEach(rec =>rec.group && (newBoundTextureByGroup[rec.group] = rec))
+    boundTextures.forEach(rec =>rec.group != null && (newBoundTextureByGroup[rec.group] = rec))
     const atlasIdToUnit = view.atlasGroups.map(g=> jb.path(newBoundTextureByGroup,[g.id,'i']))
 
     return atlasIdToUnit
@@ -367,21 +367,22 @@ jb.extension('zui','buildAtlas', {
     const { createCanvas, loadImage } = require('canvas')
     const sharp = require('sharp')
     const fs = require('fs')
+    const fetch = require('node-fetch')
 
     await atlasGroups.reduce(async (pr,g) => { await pr; await prepareAtlas(g) } , Promise.resolve())
     fs.writeFileSync(`${partitionDir}/groups.json`, JSON.stringify(atlasGroups,null,2));
 
     async function prepareAtlas(group) {
       const images = await Promise.all(group.items.map( async imageItem => {
-        const imagePath = jb.utils.calcDirectory(imageItem.url)
         try {
-          const imageBuffer = fs.readFileSync(imagePath)
+          const response = await fetch(imageItem.url)
+          const imageBuffer = await response.buffer()
           const _image = await sharp(imageBuffer).png().toBuffer()
           const image = await loadImage(_image)
           imageItem.size = [ image.naturalWidth, image.naturalHeight ]
           return { image, imageItem }
         } catch(e) {
-          console.log(e, imagePath, imageItem.url)
+          console.log(e, imageItem.url)
         }
       }))
       
@@ -400,11 +401,11 @@ jb.extension('zui','buildAtlas', {
       fs.writeFileSync(`${partitionDir}/atlas_${group.id}.png`, canvas.toBuffer('image/png'))
     }
   },
-  buildPartition({cmpId}) {
+  async buildPartition({cmpId}) {
     const itemlistProf = findItemlist(jb.comps[cmpId])
     const cmp = itemlistProf && jb.exec(itemlistProf)
     cmp.calcRenderProps()
-    cmp.runBEMethod('buildPartition')
+    await cmp.runBEMethod('buildPartition')
 
     function findItemlist(obj) {
       if (!obj || typeof obj != 'object') return

@@ -96,6 +96,34 @@ component('geo', {
   }
 })
 
+component('xyByIndex', {
+  type: 'itemProp',
+  params: [
+    {id: 'features', type: 'prop_feature[]', dynamic: true, flattenArray: true}
+  ],
+  impl: (ctx,features) => {
+    const items = ctx.vars.items
+    const dim = Math.ceil(Math.sqrt(items.length))
+    items.map((item,i) => {item.x = (i % dim)/dim; item.y = Math.floor(i / dim)/dim })
+
+    const prop = {
+      val: item => [item.x,item.y],
+      asText: item => [item.x,item.y].join(','),
+      pivots({DIM} = {}) { // create scale by order
+        const spaceFactor = Math.floor(DIM / dim)
+        if (spaceFactor == 0)
+          jb.logError('xyByIndex, DIM too low',{DIM,dim,ctx})
+        return [
+            { att: 'x', spaceFactor , scale: item => item.x, preferedAxis: 'x' },
+            { att: 'y', spaceFactor , scale: item => item.y, preferedAxis: 'y' }            
+        ]
+      }
+    }
+    features().forEach(f=>f.enrich(prop))
+    return prop
+  }
+})
+
 component('priorty', {
   type: 'prop_feature',
   params: [

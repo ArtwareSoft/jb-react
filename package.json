@@ -36,8 +36,8 @@
     "pub": "yarn build-libs && git commit -am build-lib",
     "vscode-package": "nvm use 16 & vsce package",
     "copy-projects-to-template": "node bin/copy-projects-to-template.js",
-    "build-atlas": "node --inspect bin/jb.js -verbose '-main:buildPartition()' -projects:zuiDemo %cmpId:zuiDemo.main %buildDir:projects/zuiDemo/build",
-    "start-lang-server": "node --inspect-brk jb.js '-inspect=7015' '-main:node.startHttpServer()' '%services:[tgp.langServices()]' '-uri:langServer' '%port:8085' '-plugins:' '-projects:studio,tests' '-libsToinit:utils,watchable,immutable,watchableComps,tgp,tgpTextEditor,vscode,jbm,cbHandler,treeShake' '-spyParam:vscode,tgpEditor,completion,remote'"
+    "build-atlas": "node --inspect bin/jb.js -verbose '-main:buildPartition()' -projects:zuiDemo %cmpId:zuiDemo.main",
+    "start-lang-server": "node --inspect-brk bin/jb.js '-inspect=7015' '-main:node.startHttpServer()' '%services:[tgp.langServices()]' '-uri:langServer' '%port:8085' '-plugins:' '-projects:studio,tests' '-libsToinit:utils,watchable,immutable,watchableComps,tgp,tgpTextEditor,vscode,jbm,cbHandler,treeShake' '-spyParam:vscode,tgpEditor,completion,remote'"
   },
   "bin": {
     "studio": "bin/studio"
@@ -61,6 +61,7 @@
     "eslint-config-google": "^0.11.0",
     "history": "^4.6.1",
     "material-design-lite": "^1.3.0",
+    "openai": "^3.2.1",
     "pretty": "^2.0.0",
     "sharp": "^0.32.0",
     "uglifyjs-webpack-plugin": "^0.4.6",

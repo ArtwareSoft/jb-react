@@ -35,6 +35,9 @@ jb.extension('zui','layout', {
     const spaceSize = 10
     const minRecords = records
     const { size } = renderProps.itemView
+    if (!itemView.children)
+      return renderProps[itemView.ctxPath] = {size}
+
     initSizes(itemView)
     const sizeVec = axes.map(axis => buildSizeVec(itemView,axis))
 
@@ -50,13 +53,14 @@ jb.extension('zui','layout', {
       jb.path(renderProps,[v.ctxPath,'title'],v.title)
       jb.path(renderProps,[v.ctxPath,'visible'],true)
     })
-    const rounds = shownViews.reduce((max,v) => Math.max(max,v.layoutRounds),0)
+    const primitiveShownViews = shownViews.filter(v=>!v.children)
+    const rounds = primitiveShownViews.reduce((max,v) => Math.max(max,v.layoutRounds),0)
     for(let round=1;round<rounds;round++) {
       const otherAxis = itemView.layoutAxis ? 0 : 1
       const residu = itemView.children.map(ch=> size[otherAxis] - renderProps[ch.ctxPath].size[otherAxis])
       const resideInLayoutAxis = size[itemView.layoutAxis] - calcTotalSize(itemView.layoutAxis)
 
-      shownViews.map(view=>{
+      primitiveShownViews.map(view=>{
         if (view.layoutRounds <= round) return
         const currentSize = renderProps[view.ctxPath].size
         const available = []
@@ -99,7 +103,7 @@ jb.extension('zui','layout', {
       renderProps[view.ctxPath].pos = basePos
       if (!view.children) return
       const main = view.layoutAxis, other = view.layoutAxis == 0 ? 1: 0
-      const visibleChildren = view.children.filter(child=>!filteredOut[child.shortPath])
+      const visibleChildren = view.children.filter(v=>jb.path(renderProps,[v.ctxPath,'visible']))
       visibleChildren.reduce((posInMain, child,i) => {
         const childSize = renderProps[child.ctxPath].size
         const childPos = []
@@ -159,7 +163,7 @@ jb.extension('zui','layout', {
       const size = renderProps[view.ctxPath].size
       if (filteredOut[view.shortPath] || size[0] == 0 || size[1] == 0) return []
       if (view.children)
-        return view.children.flatMap(ch=>calcShownViews(ch))
+        return [view, ...view.children.flatMap(ch=>calcShownViews(ch))]
       return [view]
     }
     function filteredOutView(view) {

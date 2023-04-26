@@ -24,6 +24,31 @@ component('zui.itemPreview', {
   circuit: 'zuiTest.itemlist'
 })
 
+component('zui.itemPreviewTable', {
+  type: 'control',
+  impl: group({
+    style: group.sections(header.h3()),
+    controls: [
+      dynamicControls({
+        controlItems: pipeline('%$zuiCtx/props/renderProps%', properties()),
+        genericControl: group({
+          //title: pipeline('%$renderProp/val/path% - %$renderProp/val/title%'),
+          style: propertySheet.titlesAbove(),
+          controls: dynamicControls({
+            controlItems: pipeline('%$renderProp/val%', properties(), filter(not(inGroup(list('axis'), '%id%')))),
+            genericControl: text(pipeline('%$prop/val%', formatNumber(), join()), '%$prop/id%'),
+            itemVariable: 'prop'
+          }),
+          features: css.margin({left: '30px'})
+        }),
+        itemVariable: 'renderProp'
+      })
+    ],
+    features: [css.width('400'), id('itemPreview')]
+  }),
+  circuit: 'zuiTest.itemlist'
+})
+
 component('zui.itemViewProps', {
   type: 'control',
   impl: group({

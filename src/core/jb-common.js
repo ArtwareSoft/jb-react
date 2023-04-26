@@ -1214,6 +1214,3 @@ jb.component('loadAppFiles', {
   impl: ({},jsFiles) => 
     jb_loadProject({ uri: jb.uri, baseUrl: jb.baseUrl, libs: '', jsFiles })
 })
-
-// widely used in system code
-// var { Var,remark,not,and,or,contains,writeValue,obj,prop,log,pipeline,filter,firstSucceeding,runActions,list,waitFor } = jb.macro
