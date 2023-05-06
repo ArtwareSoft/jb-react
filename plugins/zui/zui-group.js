@@ -11,9 +11,7 @@ jb.extension('zui','layout', {
       children: _views,
       ctxPath: ctx.path,
       ...layout,
-      renderProps: () => jb.zui.renderProps(ctx),
       pivots: () => _views.flatMap(v=>v.pivots()),
-      zuiElems: () => _views.flatMap(v=>v.zuiElems()),
     }
     viewFeatures().forEach(f=>f.enrich(view))
     return view

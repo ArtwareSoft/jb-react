@@ -28,195 +28,244 @@ component('itemlistStyle', {
     template: ({},{width,height},h) => h('canvas', {...jb.zui.calcWidthHeight(width, height), zuiBackEndForTest:true }),
     css: '{ touch-action: none; }',
     features: [
-      calcProps(
-        (ctx,{$model,zuiCtx},{width,height})=> {
-        const sizeInPx = jb.zui.calcWidthHeight(width, height)
+      calcProps((ctx,{$model,zuiCtx},{width,height})=> {
         const DIM = $model.boardSize
-        const items = $model.items() // jb.utils.unique( $model.items(), x => x.name)
+        const items = $model.items()
         const zoom = +($model.initialZoom || DIM)
         const tCenter = $model.center ? $model.center.split(',').map(x=>+x) : [DIM* 0.5, DIM* 0.5]
-        const renderProps = {itemView: { size: [sizeInPx.width/zoom,sizeInPx.height/zoom], zoom }}
-        const ctxWithItems = ctx.setVars({items, renderProps})
+        const ctxWithItems = ctx.setVars({items})
         const itemProps = $model.itemProps(ctxWithItems)
         const itemView = $model.itemView(ctxWithItems.setVars({itemProps}))
-        const onChange = $model.onChange.profile && $model.onChange
         const pivotsFromItemProps = itemProps.flatMap(prop=>prop.pivots({DIM}))
         const pivots = [...pivotsFromItemProps, ...itemView.pivots({DIM}).filter(p=>! pivotsFromItemProps.find(_p => _p.att == p.att)) ]
         pivots.forEach(p=>{if (p.preferedAxis) pivots[p.preferedAxis] = p})
-        const elems = itemView.zuiElems()
         const itemsPositions = pivots.x && pivots.y && jb.zui.calcItemsPositions({items, pivots, DIM})
+        jb.zui.prepareItemView(itemView)
         const props = {
-          DIM, ZOOM_LIMIT: [1, jb.ui.isMobile() ? DIM: DIM*2], itemView, elems, items, pivots, onChange, tCenter, center: [],
-            tZoom: zoom, renderProps, itemsPositions, width,height,
-            ...jb.zui.prepareItemView(itemView)
+          DIM, center: [], tCenter, tZoom: zoom, itemsPositions, itemView //width,height,
         }
         if (zuiCtx) 
           zuiCtx.props = props
-        itemsPositions && jb.zui.layoutView(itemView, renderProps, props)
+        // if (itemsPositions) { // emulate layout in BE for tests
+        //        jb.zui.prepareItemView(itemView)
+
+        //   const sizeInPx = jb.zui.calcWidthHeight(width, height)
+        //   const elemsLayout = {itemView: { size: [sizeInPx.width/zoom,sizeInPx.height/zoom], zoom }}
+        //   const itemView = $model.itemView(ctxWithItems.setVars({itemProps}))
+        //   jb.zui.layoutView(itemView, elemsLayout, props)
+        // }
         return props
-      }
-      ),
-      frontEnd.coLocation(),
-      frontEnd.method(
-        'refreshCanvas',
-        async ({},{cmp, el, $props}) => {
-          const props = cmp.props = $props
-          const sizeInPx = jb.zui.calcWidthHeight(props.width, props.height)
+      }),
+      frontEnd.var('itemPropsProfile', ({},{$model}) => $model.itemProps.profile),
+      frontEnd.var('itemViewProfile', ({},{$model}) => $model.itemView.profile),
+      frontEnd.prop('itemView', (ctx,{itemPropsProfile, itemViewProfile}) => {
+        const itemProps = ctx.run(itemPropsProfile, {type: 'itemProp[]<zui>' })
+        return ctx.setVars({itemProps}).run(itemViewProfile,{ type: 'view<zui>'})
+      }),
+      frontEnd.varsFromBEProps(['DIM', 'records', 'shortPaths', 'center', 'tCenter', 'tZoom']),
+      frontEnd.prop('ZOOM_LIMIT', ({},{DIM}) => [1, jb.ui.isMobile() ? DIM: DIM*2]),
+      frontEnd.prop('debugElems', () => [
+          //jb.zui.showTouchPointers(),
+          //jb.zui.mark4PointsZuiElem(), 
+          // jb.zui.markGridAreaZuiElem()
+      ]),
+      frontEnd.method('refreshCanvas', async ({},{cmp, el}) => {
+          const sizeInPx = cmp.calcWidthHeight(cmp.width, cmp.height)
           el.width = sizeInPx.width;
           el.height = sizeInPx.height;
-          jb.zui.clearCanvas(props)
-          Object.assign(props, { aspectRatio: el.width/el.height })
+          cmp.clearCanvas()
+          cmp.aspectRatio = el.width/el.height
           await jb.delay(1)
-          cmp.render({},true)
-        }
-      ),
-      frontEnd.init(
-        async ({},{cmp, el, $props}) => {
+          cmp.elemsLayoutCache = {}
+          cmp.renderRequest = true
+      }),
+      frontEnd.init(async ({},vars) => {
           //document.body.style.overflow = "hidden"
-          const props = cmp.props = $props
-          const gl = el.getContext('webgl', { alpha: true, premultipliedAlpha: true })
+          const {cmp, el} = vars
+          cmp.glCanvas = el
+          const gl = cmp.gl = el.getContext('webgl', { alpha: true, premultipliedAlpha: true })
           gl.enable(gl.BLEND)
           gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
-          Object.assign(props, { glCanvas: el, gl, aspectRatio: el.width/el.height })
-          jb.zui.initZuiCmp(cmp,props)
-          await jb.zui.initItemlistCmp(cmp,props)
+          jb.zui.initZuiCmp(vars,el,gl)
+          await jb.zui.initItemlistCmp(vars)
 
-          jb.zui.clearCanvas(props)
-          cmp.render()
+          cmp.clearCanvas()
+          cmp.renderRequest = true
           el.setAttribute('zui-rendered',true) // for tests
-      }
-      ),
+          cmp.updateZoomState({ dz :1, dp:0 })
+      }),
       frontEnd.prop('zuiEvents', rx.subject()),
+      frontEnd.prop('exposedView', rx.subject()),
       frontEnd.flow(
         source.frontEndEvent('pointerdown'),
         rx.log('zui pointerdown'),
         rx.var('pid', '%pointerId%'),
-        rx.do(
-          ({},{cmp,pid}) => cmp.addPointer(pid)
-        ),
+        rx.do(({},{cmp,pid}) => cmp.addPointer(pid)),
         rx.flatMap(
           rx.mergeConcat(
             rx.pipe(
               rx.merge(source.event('pointermove'), source.frontEndEvent('pointerup')),
               rx.filter('%$pid%==%pointerId%'),
-              rx.do(
-                ({data},{cmp,pid}) => cmp.updatePointer(pid,data)
-              ),
+              rx.do(({data},{cmp,pid}) => cmp.updatePointer(pid,data)),
               rx.takeWhile('%type%==pointermove'),
-              rx.flatMap(
-                source.data(
-                  ({},{cmp}) => cmp.zoomEventFromPointers()
-                )
-              )
+              rx.flatMap(source.data(({},{cmp}) => cmp.zoomEventFromPointers()))
             ),
             rx.pipe(
-              source.data(
-                ({},{cmp,pid}) => cmp.momentumEvents(pid)
-              ),
+              source.data(({},{cmp,pid}) => cmp.momentumEvents(pid)),
               rx.var('delay', '%delay%'),
               rx.flatMap(rx.pipe(source.data('%events%'))),
               rx.delay('%$delay%'),
               rx.log('momentum zui')
             ),
-            rx.pipe(
-              source.data(1),
-              rx.do(
-                ({},{cmp,pid}) => cmp.removePointer(pid)
-              )
-            )
+            rx.pipe(source.data(1), rx.do(({},{cmp,pid}) => cmp.removePointer(pid)))
           )
         ),
-        rx.do(
-          ({data},{cmp}) => cmp.updateZoomState(data)
-        ),
+        rx.do(({data},{cmp}) => cmp.updateZoomState(data)),
         sink.subjectNext('%$cmp.zuiEvents%')
       ),
       frontEnd.flow(
-        source.event(
-          'wheel',
-          () => jb.frame.document,
-          obj(prop('capture', true))
-        ),
+        source.event('wheel', () => jb.frame.document, obj(prop('capture', true))),
         rx.takeUntil('%$cmp.destroyed%'),
         rx.log('zui wheel'),
-        rx.map(
-          ({},{sourceEvent}) => ({ dz: sourceEvent.deltaY > 0 ? 1.1 : sourceEvent.deltaY < 0 ? 1/1.1 : 1 })
-        ),
-        rx.do(
-          ({data},{cmp}) => cmp.updateZoomState(data)
-        ),
+        rx.map(({},{sourceEvent}) => ({ dz: sourceEvent.deltaY > 0 ? 1.1 : sourceEvent.deltaY < 0 ? 1/1.1 : 1 })),
+        rx.do(({data},{cmp}) => cmp.updateZoomState(data)),
         sink.subjectNext('%$cmp.zuiEvents%')
       ),
+      frontEnd.flow(source.event('resize', () => jb.frame.window), sink.FEMethod('refreshCanvas')),
       frontEnd.flow(
-        source.event(
-          'resize',
-          () => jb.frame.window
-        ),
-        sink.FEMethod('refreshCanvas')
+        source.animationFrame(),
+        rx.flatMap(source.data('%$cmp.animationStep()%')),
+        rx.do(({},{cmp}) => cmp.renderCounter++),
+        rx.flatMap(source.data('%$cmp.layoutViews()%')),
+        rx.do(action.subjectNext('%$cmp.exposedView%')),
+        rx.map(({data},{cmp})=> jb.zui.viewOfId(cmp.itemView,data)),
+        rx.map('%zuiElem%'),
+        rx.filter('%ready%'),
+        rx.do('%calcExtraProps()%'),
+        sink.action('%$cmp.renderGPUFrame()%')
       ),
-      frontEnd.flow(source.animationFrame(), sink.action('%$cmp.render()%')),
-      frontEnd.flow(source.subject('%$cmp.zuiEvents%'), rx.debounceTime(100), sink.action('%$cmp.onChange()%')),
-      method('buildPartition', (...args) => jb.zui.buildPartitionFromItemList(...args) )
+      method('onChange', '%$$model/onChange()%'),
+      method('calcElemBuffers', (...args) => jb.zui.calcElemBuffers(...args)),
+      frontEnd.flow(source.subject('%$cmp.zuiEvents%'), rx.debounceTime(100), sink.BEMethod('onChange')),
+      frontEnd.flow(
+        source.subject('%$cmp.exposedView%'),
+        rx.distinct(),
+        rx.mapPromise(dataMethodFromBackend('calcElemBuffers', '%%')),
+        rx.mapPromise((ctx,vars) => jb.zui.bindBuffers(ctx,vars)),
+        sink.action(writeValue('%$cmp/renderRequest%', true))
+      ),
+      method('buildPartition', (...args) => jb.zui.buildPartitionFromItemList(...args))
     ]
   })
 })
 
-jb.extension('zui','itemlist', {
-  async initItemlistCmp(cmp,props) {
-    const debugElems = [
-      jb.zui.showTouchPointers(cmp),
-      jb.zui.mark4PointsZuiElem(), 
-      // jb.zui.markGridAreaZuiElem()
-    ]
-    await Promise.all(props.elems.map(elem =>elem.asyncPrepare && elem.asyncPrepare(props)).filter(x=>x))
-    ;[...debugElems, ...props.elems].forEach(elem => elem.buffers = elem.prepareGPU(props))
-    Object.assign(props, jb.zui.prepareItemView(props.itemView))
-    const renderPropsCache = {}
-    addRefreshToViews(props.itemView)
+jb.extension('zui','itemlist-BE', {
+  prepareItemView(itemView) {
+    const shortPaths = calcShortPaths(itemView, '')
+    const axes = [0,1]
+    const records = axes.map(axis => calcMinRecord(itemView, axis).sort((r1,r2) => r1.p - r2.p))
 
-    Object.assign(cmp, { 
-      render(ctx,force) {
-        if (cmp.calcAnimationStep(props) && !force) return
-        const { glCanvas,elems, renderProps, itemView, zoom } = props
+    return { records, shortPaths }
 
-        const [width, height] = [glCanvas.width/ zoom, glCanvas.height/ zoom]
-        if (renderPropsCache[zoom] && !force) {
-          Object.assign(renderProps,renderPropsCache[zoom])
-        } else {
-          Object.keys(renderProps).forEach(k=>delete renderProps[k])
-          renderProps.itemView = { size: [width,height], zoom }
-          jb.zui.layoutView(itemView, renderProps, props)
-          renderPropsCache[zoom] = JSON.parse(JSON.stringify(renderProps))
+    function calcMinRecord(view, layoutAxis) {
+      if (!view.children) {
+        return [{
+          p: view.priority || 10000, path: view.shortPath, 
+          axis: layoutAxis, title: view.title,
+          min: view.sizeNeeds({round: 0, available:[0,0]})[layoutAxis] }]
         }
-        const visibleElems = [...debugElems, ...elems.filter(el=> jb.zui.isVisible(el))]
-        jb.zui.textureAllocationCounter++
-        visibleElems.forEach(elem => elem.calcElemProps && elem.calcElemProps(props) )
-        visibleElems.forEach(elem => elem.renderGPUFrame(props, elem.buffers))
-      },
-      onChange: () => props.onChange && props.onChange(),
-    })
+      return view.children.flatMap(childView => calcMinRecord(childView,layoutAxis))
+    }
 
-    function addRefreshToViews(view) {
-      view.refresh = () => cmp.render({},true)
-      view.children && view.children.map(ch=>addRefreshToViews(ch))
+    function calcShortPaths(view, shortPath) {
+      view.id = view.shortPath = shortPath
+      if (!view.children) return { [shortPath]: view.ctxPath }
+      return view.children.reduce(
+        (acc, childView,i) => ({...acc, ...calcShortPaths(childView, [shortPath,''+i].filter(x=>x!='').join('~'))}),{})
     }
   },
-  renderProps(ctx) {
-    const {renderProps} = ctx.vars
-    return renderProps[ctx.path] = renderProps[ctx.path] || {}
+  async calcElemBuffers({data},{$props}) {
+    const viewId = data
+    const view = jb.zui.viewOfId($props.itemView,viewId)
+    const buffers = await view && view.zuiElem && view.zuiElem.calcBuffers(view, $props)
+    return { viewId, buffers }
+  }
+})
+
+jb.extension('zui','itemlist-FE', {
+  viewOfId(view, id) {
+    if (view.id == id) return view
+    return (view.children||[]).find(ch=>jb.zui.viewOfId(ch,id))
+  },
+  async bindBuffers(ctx, {cmp}) {
+    const {gl} = cmp
+    const {viewId, buffers} = ctx.data[0]
+    const view = jb.zui.viewOfId(cmp.itemView,viewId)
+    const elem = view.zuiElem
+    if (!elem) return
+    elem.buffers = await buffers
+    ;(elem.bindBuffers || cmp.bindBuffers)(elem, cmp, elem.buffers)
+    if (!elem.prepared && elem.asyncPrepare)
+      await elem.asyncPrepare({ ... cmp, view, ...ctx.vars})
+
+    elem.buffers.vertexBuffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, elem.buffers.vertexBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, elem.buffers.vertexArray, gl.STATIC_DRAW)
+    elem.ready = true
+  },
+  async initItemlistCmp(vars) {
+    const NO_OF_UNITS = 8
+    const {cmp} = vars
+    Object.assign(cmp, { 
+      ...jb.zui.prepareItemView(cmp.itemView),
+      layoutViews() {
+        // state
+        //   userEvent -> tZoom + time -> zoom -> elemsLayout - calculated, cached by zoom
+        //   userEvent -> tCenter + time -> center
+          
+        const {zoom } = cmp.state
+        const {glCanvas, elemsLayoutCache} = cmp
+        if (elemsLayoutCache[zoom]) {
+          cmp.state.elemsLayout = elemsLayoutCache[zoom]
+        } else {
+          const [width, height] = [glCanvas.width/ zoom, glCanvas.height/ zoom]
+          cmp.state.elemsLayout = { itemViewSize: [width,height] }
+          cmp.state.elemsLayout.shownViews = jb.zui.layoutView(cmp,vars)
+          elemsLayoutCache[zoom] = JSON.parse(JSON.stringify(cmp.state.elemsLayout))
+        }
+        return cmp.state.elemsLayout.shownViews
+      },
+      renderGPUFrame(ctx) {
+        const elem = ctx.data
+        const {cmp} = ctx.vars
+        const { glCanvas, gl } = cmp
+        const { elemsLayout, zoom, center } = cmp.state
+        const { vertexCount, floatsInVertex, vertexBuffer, src } = elem.buffers
+        const shaderProgram = jb.zui.buildShaderProgram(gl, src)
+        gl.useProgram(shaderProgram)
+        const elemLayout = elem.view ? elemsLayout[elem.view.ctxPath] : {}
+        const {size, pos } = elemLayout
+        return elem.renderGPUFrame({...ctx.vars, cmp, shaderProgram, glCanvas, gl, zoom, center, elemLayout, vertexCount, floatsInVertex, vertexBuffer, size, pos})
+      },
+
+      elemsLayoutCache: {},
+      atlasTexturePool: {},
+      renderCounter: 0,
+      boundTextures: Array.from(new Array(NO_OF_UNITS).keys()).map(i=>({i, lru : 0})),
+      calcWidthHeight(width, height) {
+        if (width == '100%') {
+            return {
+              width: typeof screen != 'undefined' ? screen.width : window.innerWidth,
+              height: typeof screen != 'undefined' ? screen.height : window.innerHeight,
+            }
+        }
+        return {width: +width, height: +height}
+      }      
+    })
   },
   calcWidthHeight(width, height) {
-    if (width == '100%') {
-      if (typeof screen != 'undefined' || typeof window != 'undefined') {
-        return {
-          width: typeof screen != 'undefined' ? screen.width : window.innerWidth,
-          height: typeof screen != 'undefined' ? screen.height : window.innerHeight,
-        }
-      } else { // headless
-        return { width: 600, height}
-      }
-    }
+    if (width == '100%') width = 600
     return {width: +width, height: +height}
   }
 })

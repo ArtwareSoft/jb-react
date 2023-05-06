@@ -371,6 +371,16 @@ jb.component('rx.distinctUntilChanged', {
   //prev && cur && prev.data == cur.data)
 })
 
+jb.component('rx.distinct', {
+  type: 'rx',
+  description: 'filters unique values', 
+  category: 'filter',
+  params: [
+    {id: 'key', as: 'string', dynamic: true, defaultValue: '%%'},
+  ],
+  impl: (ctx,keyFunc) => jb.callbag.distinct(jb.utils.addDebugInfo(ctx2 => keyFunc(ctx2),ctx))
+})
+
 jb.component('rx.catchError', {
     type: 'rx',
     category: 'error',

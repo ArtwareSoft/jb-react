@@ -131,16 +131,6 @@ jb.component('templateModifier', {
   impl: (ctx,value) => ({ templateModifier: (vdom,cmp) => value(cmp.calcCtx.setVars({vdom, ...cmp.renderProps })) })
 })
 
-jb.component('frontEnd.var', {
-  type: 'feature',
-  description: 'calculate in the BE and pass to frontEnd',
-  params: [
-    {id: 'id', as: 'string', mandatory: true},
-    {id: 'value', mandatory: true, dynamic: true}
-  ],
-  impl: ctx => ({ frontEndVar: ctx.params })
-})
-
 jb.component('features', {
   type: 'feature',
   description: 'list of features, auto flattens',

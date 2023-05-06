@@ -82,6 +82,24 @@ jb.extension('callbag', {
       }
     })
   },
+  distinct: keyFunc => source => (start, sink) => {
+    if (start !== 0) return
+    let prev = {}, talkback
+    source(0, function distinct(t,d) {
+        if (t === 0) talkback = d
+        if (t == 1) {
+          const key = keyFunc(d)
+          if (typeof key == 'string') {
+            if (prev[key]) {
+                talkback && talkback(1)
+                return
+            }
+            prev[key] = true
+          }
+        }
+        sink(t, d)
+    })
+  },  
   distinctUntilChanged: compare => source => (start, sink) => {
       compare = compare || ((prev, cur) => prev === cur)
       if (start !== 0) return

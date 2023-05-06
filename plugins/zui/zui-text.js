@@ -14,10 +14,9 @@ component('growingText', {
         title: `growingText - ${prop.att}`,
         layoutRounds: 4,
         sizeNeeds: ({round }) => [2**(round+2) *10,16],
-        renderProps: () => jb.zui.renderProps(ctx),
         ctxPath: ctx.path,
         pivots: (s) => prop.pivots(s),
-        zuiElems: () => [zuiElem],
+        zuiElem: zuiElem,
         priority: prop.priority || 10,
     }
     features().forEach(f=>f.enrich(view))
@@ -41,9 +40,8 @@ component('fixedText', {
       layoutRounds: 1,
       sizeNeeds: () => [length*10,16],
       ctxPath: ctx.path,
-      renderProps: () => jb.zui.renderProps(ctx),
       pivots: (s) => prop.pivots(s),
-      zuiElems: () => [zuiElem],
+      zuiElem,
       priority: prop.priority || 10,
     }
     if (prop.colorScale && backgroundColorByProp)
@@ -98,7 +96,6 @@ jb.extension('zui','ascii', {
 
 jb.extension('zui','text_2_32', {
   text2_32ZuiElem: viewCtx => ({
-      renderProps: () => jb.zui.renderProps(viewCtx),
       txt_fields: ['2','4','8','16_0','16_1','32_0','32_1','32_2','32_3'],
       async asyncPrepare({gl}) {
         this.charSetTexture = await jb.zui.asciiCharSetTexture(gl)
@@ -168,8 +165,7 @@ jb.extension('zui','text_2_32', {
           `}
         )
       },
-      prepareGPU(props) {
-          const { gl, itemsPositions } = props
+      calcBuffers(view, {itemsPositions }) {
           const textBoxNodes = itemsPositions.sparse.map(([item, x,y]) => 
               [x,y, ...jb.zui.texts2to32AsFloats(
                 jb.zui.textSummaries2to32(viewCtx.params.prop.asText(item)))])
@@ -177,24 +173,21 @@ jb.extension('zui','text_2_32', {
           const floatsInVertex = 2 + 31
           const vertexCount = vertexArray.length / floatsInVertex
   
-          const buffers = {
-            vertexCount, floatsInVertex,
-            vertexBuffer: gl.createBuffer(),
-            shaderProgram: jb.zui.buildShaderProgram(gl, [this.vertexShaderCode(props), this.fragementShaderCode(props)])
+          return {
+            vertexArray, vertexCount, floatsInVertex,
+            src: [this.vertexShaderCode(), this.fragementShaderCode()]
           }    
-          gl.bindBuffer(gl.ARRAY_BUFFER, buffers.vertexBuffer)
-          gl.bufferData(gl.ARRAY_BUFFER, vertexArray, gl.STATIC_DRAW)
-  
-          return buffers
       },
-      calcElemProps() {
-        const renderProps = jb.zui.renderProps(viewCtx)
-        Object.assign(renderProps, {strLen: jb.zui.floorLog2(renderProps.size[0]/10)})
-      },
-      renderGPUFrame({ glCanvas, gl, zoom, center} , { vertexCount, floatsInVertex, vertexBuffer, shaderProgram }) {
-          gl.useProgram(shaderProgram)
 
-          const {size, pos, strLen} = this.renderProps()
+      // frontEnd
+      calcExtraProps({vars}) {
+        const { cmp } = vars
+        const elemLayoutProps = cmp.state.elemsLayout[this.view.ctxPath]
+        Object.assign(elemLayoutProps, {strLen: jb.zui.floorLog2(elemLayoutProps.size[0]/10)})
+      },
+      renderGPUFrame({cmp, shaderProgram, glCanvas, gl, zoom, center, elemLayout, vertexCount, floatsInVertex, vertexBuffer, size, pos}) {
+        const {strLen } = elemLayout
+
 //          console.log('strlen',strLen, zoom, size[0])
  
           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'zoom'), [zoom, zoom])
@@ -223,7 +216,7 @@ jb.extension('zui','text_2_32', {
             offset += sizes[i]  
           })
   
-          const {i} = jb.zui.allocateSingleTextureUnit('charSetTexture')
+          const {i} = jb.zui.allocateSingleTextureUnit({view: 'charSetTexture',cmp})
           gl.activeTexture(gl['TEXTURE'+i])
           gl.bindTexture(gl.TEXTURE_2D, this.charSetTexture)
           gl.uniform1i(gl.getUniformLocation(shaderProgram, 'charSetTexture'), i)
@@ -259,7 +252,6 @@ jb.extension('zui','text_2_32', {
 
 jb.extension('zui','text8', {
   text8ZuiElem: viewCtx => ({
-      renderProps: () => jb.zui.renderProps(viewCtx),
       async asyncPrepare({gl}) {
         this.charSetTexture = await jb.zui.asciiCharSetTexture(gl)
       },
@@ -331,10 +323,8 @@ jb.extension('zui','text8', {
           }
         `}
       ),
-      prepareGPU(props) {
-          const { gl, itemsPositions, DIM } = props
-
-          const backgroundColor = this.view.backgroundColorByProp || { colorScale: x => [-1,-1,-1], prop: {pivots: () => [ {scale: () => 1 }]}}
+      calcBuffers(view, {itemsPositions, DIM }) {
+          const backgroundColor = view.backgroundColorByProp || { colorScale: x => [-1,-1,-1], prop: {pivots: () => [ {scale: () => 1 }]}}
           const itemToColor01 = backgroundColor.prop.pivots({DIM})[0].scale
 
           const textBoxNodes = itemsPositions.sparse.map(([item, x,y]) => 
@@ -346,20 +336,12 @@ jb.extension('zui','text8', {
           const floatsInVertex = 2 + 4 + 3
           const vertexCount = vertexArray.length / floatsInVertex
   
-          const buffers = {
-            vertexCount, floatsInVertex,
-            vertexBuffer: gl.createBuffer(),
-            shaderProgram: jb.zui.buildShaderProgram(gl, [this.vertexShaderCode(props), this.fragementShaderCode(props)])
+          return {
+            vertexArray, vertexCount, floatsInVertex,
+            src: [this.vertexShaderCode(), this.fragementShaderCode()]
           }    
-          gl.bindBuffer(gl.ARRAY_BUFFER, buffers.vertexBuffer)
-          gl.bufferData(gl.ARRAY_BUFFER, vertexArray, gl.STATIC_DRAW)
-  
-          return buffers
       },
-      renderGPUFrame({ glCanvas, gl, zoom, center} , { vertexCount, floatsInVertex, vertexBuffer, shaderProgram }) {
-          gl.useProgram(shaderProgram)
-
-          const {size, pos} = this.renderProps()
+      renderGPUFrame({cmp, shaderProgram, glCanvas, gl, zoom, center, elemsLayout, vertexCount, floatsInVertex, vertexBuffer, size, pos}) {
  
           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'zoom'), [zoom, zoom])
           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'center'), center)
@@ -386,7 +368,7 @@ jb.extension('zui','text8', {
           gl.enableVertexAttribArray(background)
           gl.vertexAttribPointer(background, 3, gl.FLOAT, false, floatsInVertex* Float32Array.BYTES_PER_ELEMENT, 6* Float32Array.BYTES_PER_ELEMENT)
           
-          const {i} = jb.zui.allocateSingleTextureUnit('charSetTexture')
+          const {i} = jb.zui.allocateSingleTextureUnit({view: 'charSetTexture',cmp})
           gl.activeTexture(gl['TEXTURE'+i])
           gl.bindTexture(gl.TEXTURE_2D, this.charSetTexture)
           gl.uniform1i(gl.getUniformLocation(shaderProgram, 'charSetTexture'), i)
@@ -397,7 +379,7 @@ jb.extension('zui','text8', {
     }),
   
     textAsFloats(_text, length) {
-      const text = _text.slice(0,length)
+      const text = (_text || 'null').slice(0,length)
       const pad = '                  '.slice(0,Math.ceil((length-text.length)/2))
       const txtChars = jb.zui.charsetEncodeAscii((pad + text + pad).slice(0,length))
       const floats = Array.from(new Array(4).keys())

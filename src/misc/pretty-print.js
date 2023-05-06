@@ -72,14 +72,14 @@ jb.extension('utils', 'prettyPrint', {
     function calcTokens(path, depth = 1, forceFlat) {
       if (depth > 100)
         throw `prettyprint structure too deep ${path}`
-      const { open, close, isArray, len, singleParamAsArray, longInnerValInArray, item, list } = props[path]
+      const { open, close, isArray, len, singleParamAsArray, longInnerValInArray, singleFunc, nameValuePattern, item, list } = props[path]
       if (item != null) 
         return [props[path]].map(x=>({...x, path}))
       if (list != null)
         return props[path].list.map(x=>({...x, path}))
 
       const innerVals = props[path].innerVals || []
-      const flat = forceFlat || (len < colWidth && !shouldNotFlat())
+      const flat = forceFlat || singleFunc || nameValuePattern || (len < colWidth && !shouldNotFlat())
       const arrayOrProfile = isArray? 'array' : 'profile'
 
       const vals = innerVals.reduce((acc,{innerPath}, index) => {
@@ -137,7 +137,7 @@ jb.extension('utils', 'prettyPrint', {
       const header = noPrefix.indexOf(`${funcName}(`) == 0 ? funcName : noPrefix.indexOf(`function ${funcName}(`) == 0 ? `function ${funcName}` : ''
       const fixedPropName = header ? `${asynch}${header}` : ''
       const text = (fixedPropName ? '' : asynch) + asStr.slice(header.length+asynch.length).replace(/\n/g,jb.utils.fixedNL)
-      return { item: text, fixedPropName, prop: '!function' }
+      return { item: text, fixedPropName, prop: '!function', len: text.length }
     }
 
     function calcProfileProps(profile, path) {
@@ -185,9 +185,11 @@ jb.extension('utils', 'prettyPrint', {
       if ((params.length < 3 && comp.macroByValue !== false) || comp.macroByValue || oneFirstArg || twoFirstArgs) {
         const args = systemProps.concat(params.map(param=>({innerPath: param.id, val: profile[param.id]})))
         while (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop() // cut the undefined's at the end
+        const nameValuePattern = args.length == 2 && typeof args[0].val == 'string'
+        const singleFunc = args.length == 1 && typeof args[0].val == 'function'
         const len = macro.length + args.reduce((len,elem) => 
           len + calcValueProps(elem.val,`${path}~${elem.innerPath}`).len + 2, 2)
-        return openCloseProps(path, openProfileByValueGroup, closeProfileByValueGroup, {len, innerVals: args, isArray: true })
+        return openCloseProps(path, openProfileByValueGroup, closeProfileByValueGroup, {len, innerVals: args, isArray: true, nameValuePattern, singleFunc })
       }
       const systemPropsInObj = [
         ...profile.remark ? [{innerPath: 'remark', val: profile.remark} ] : [],
@@ -265,8 +267,7 @@ jb.extension('utils', 'prettyPrint', {
       return props[path] = {open,close, ..._props}
     }
     function funcProps(func,path) {
-      const _props = serializeFunction(func)
-      return props[path] = {..._props, len: _props.item.len}
+      return props[path] = serializeFunction(func)
     }
   }
 })

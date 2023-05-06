@@ -26,6 +26,43 @@ jb.component('widget.newId', {
     }
 })
 
+jb.component('jbm.backEnd', {
+    type: 'jbm',
+    params: [
+        {id: 'elem', defaultValue: '%$cmp/el%' },
+    ],
+    impl: (ctx,elem) => {
+        const widgetId = jb.ui.frontendWidgetId(elem)
+        return widgetId && jb.ui.frontendWidgets[widgetId] || jb
+    }
+})
+
+jb.component('dataMethodFromBackend', {
+  type: 'data',
+  description: 'activated on FE to get data from BE, assuming $cmp variable',
+  macroByValue: true,
+  params: [
+    {id: 'method', as: 'string'},
+    {id: 'data', defaultValue: '%%' },
+    {id: 'vars' }
+  ],
+  impl: pipe(
+    Var(
+      'ctxIdToRun',
+      (ctx,{cmp},{method,data})=>{
+      const elem = cmp && cmp.base 
+      if (!elem)
+        return jb.logError(`frontEnd.dataMethodFromBackend, no elem found`, {method})
+      const ctxIdToRun = jb.ui.ctxIdOfMethod(elem,method)
+      if (!ctxIdToRun)
+        return jb.logError(`no method in cmp: ${method}`, {elem})
+      return ctxIdToRun
+    }
+    ),
+    remote.data(backend.dataMethod({ctxIdToRun: '%$ctxIdToRun%', method: '%$method%', data: '%$data%'}), jbm.backEnd())
+  )
+})
+
 jb.component('action.frontEndDelta', {
     type: 'action',
     params: [
@@ -128,7 +165,9 @@ jb.component('action.renderXwidget', {
             return jb.logError('renderXwidget - can not find top elem',{body: jb.ui.widgetBody(ctx), ctx,selector})
         jb.ui.renderWidget({$: 'widget.frontEndCtrl', widgetId: widgetId}, elem)
     },
-  dependency: [widget.frontEndCtrl()]
+  dependency: [
+    widget.frontEndCtrl()
+  ]
 })
 
 jb.extension('ui','headless', {

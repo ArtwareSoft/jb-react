@@ -1,14 +1,17 @@
 
 jb.extension('zui','FE-utils', {
-  initExtension() {
-    const NO_OF_UNITS = 8
-    const boundTextures = Array.from(new Array(NO_OF_UNITS).keys()).map(i=>({i, lru : 0}))
-    return { atlasTexturePool: {}, boundTextures, textureAllocationCounter: 0 }
-  },
-  initZuiCmp(cmp,props) {
-    const w = props.glCanvas.offsetWidth, h = props.glCanvas.offsetHeight
+  initZuiCmp(vars,glCanvas,gl) {
+    const {cmp, DIM} = vars
+    const {ZOOM_LIMIT, state} = cmp
+    state.center = vars.tCenter
+    const w = glCanvas.offsetWidth, h = glCanvas.offsetHeight
 
     Object.assign(cmp, {
+      clearCanvas() {
+        gl.viewport(0, 0, glCanvas.width, glCanvas.height)
+        gl.clearColor(1.0, 1.0, 1.0, 1.0)
+        gl.clear(gl.COLOR_BUFFER_BIT)    
+      },
       updatePointer(pid,sourceEvent) {
         const pointer = this.pointers.find(x=>x.pid == pid)
         if (!pointer) return
@@ -44,17 +47,34 @@ jb.extension('zui','FE-utils', {
             return [0,1].map(axis => pointers.reduce((sum,p) => sum + p[att][axis], 0) / pointers.length)
           }
       },
-      calcAnimationStep(props) {
-        const { tZoom, tCenter } = props
-        let { zoom, center } = props
-        const SPEED = jb.ui.isMobile() ? 1 : 4
+      updateZoomState({ dz, dp }) {
+        let tZoom =  state.tZoom || vars.tZoom, tCenter = state.tCenter || vars.tCenter
+        const factor = jb.ui.isMobile() ? 1.2 : 3
+        if (dz)
+          tZoom *= dz**factor
+        const tZoomF = Math.floor(tZoom)
+        if (dp)
+          tCenter = [tCenter[0] - dp[0]/w*tZoomF, tCenter[1] + dp[1]/h*tZoomF]
+
+        ;[0,1].forEach(axis=>tCenter[axis] = Math.min(DIM,Math.max(0,tCenter[axis])))
+
+
+        tZoom = Math.max(ZOOM_LIMIT[0],Math.min(tZoom, ZOOM_LIMIT[1]))
+        state.tZoom = tZoom
+        state.tCenter = tCenter
+
+        jb.log('zui event',{dz, dp, tZoom, tCenter, cmp})
+      },      
+      animationStep() {
+        let { tZoom, tCenter, zoom, center } = state
         if ( zoom == tZoom && center[0] == tCenter[0] && center[1] == tCenter[1]) 
-          return true // no rendering
+          return [] // no rendering
         // used at initialiation
         zoom = zoom || tZoom
         ;[0,1].forEach(axis=>center[axis] = center[axis] == null ? tCenter[axis] : center[axis])
 
         // zoom gets closer to targetZoom, when 1% close assign its value
+        const SPEED = jb.ui.isMobile() ? 1 : 4
         zoom = zoom + (tZoom - zoom) / SPEED
         if (!tZoom || Math.abs((zoom-tZoom)/tZoom) < 0.01) 
           zoom = tZoom
@@ -64,23 +84,9 @@ jb.extension('zui','FE-utils', {
             center[axis] = tCenter[axis]
         })
         
-        props.zoom = zoom
+        state.zoom = zoom
+        return [state]
       },            
-      updateZoomState({ dz, dp }) {
-        const factor = jb.ui.isMobile() ? 1.2 : 3
-        if (dz)
-          props.tZoom *= dz**factor
-        const tZoomF = Math.floor(props.tZoom)
-        if (dp)
-          props.tCenter = [props.tCenter[0] - dp[0]/w*tZoomF, props.tCenter[1] + dp[1]/h*tZoomF]
-
-        ;[0,1].forEach(axis=>props.tCenter[axis] = Math.min(props.DIM,Math.max(0,props.tCenter[axis])))
-
-
-        props.tZoom = Math.max(props.ZOOM_LIMIT[0],Math.min(props.tZoom, props.ZOOM_LIMIT[1]))
-
-        jb.log('zui event',{dz, dp, tZoom: props.tZoom, tCenter: props.tCenter, cmp})
-      },
       pointers: [],
       findPointer(pid) { return this.pointers.find(x=>x.pid == pid) },
       removeOldPointers() {
@@ -119,6 +125,16 @@ jb.extension('zui','FE-utils', {
           return [0,1].map(axis => target[axis] * (Math.sin((i+1)/n*Math.PI/2) - Math.sin(i/n*Math.PI/2)))
         }
       },
+      bindBuffers(elem, {gl}, {vertexArray, vertexCount, floatsInVertex, src}) {
+        const vertexBuffer = gl.createBuffer()
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
+        gl.bufferData(gl.ARRAY_BUFFER, vertexArray, gl.STATIC_DRAW)
+
+        Object.assign(elem, {
+          shaderProgram: jb.zui.buildShaderProgram(gl, src),
+          vertexBuffer, vertexCount, floatsInVertex
+        })
+      },
     })
   },
   buildShaderProgram(gl, sources) {
@@ -143,11 +159,7 @@ jb.extension('zui','FE-utils', {
     
       return program
   },
-  clearCanvas({gl, glCanvas}) {
-    gl.viewport(0, 0, glCanvas.width, glCanvas.height)
-    gl.clearColor(1.0, 1.0, 1.0, 1.0)
-    gl.clear(gl.COLOR_BUFFER_BIT)    
-  },  
+
   async imageToTexture(gl, url, group) {
     const isPowerOf2 = value => (value & (value - 1)) === 0
     return new Promise( resolve => {
@@ -170,9 +182,9 @@ jb.extension('zui','FE-utils', {
       image.src = url
     })
   },
-  allocateSingleTextureUnit(view) {
-    const lru = jb.zui.textureAllocationCounter
-    const freeTexture = jb.zui.boundTextures.find(rec=>rec.view == view) || jb.zui.boundTextures.filter(rec => rec.lru != lru).sort((r1,r2) => r1.lru - r2.lru)[0]
+  allocateSingleTextureUnit({view,cmp}) {
+    const lru = cmp.renderCounter
+    const freeTexture = cmp.boundTextures.find(rec=>rec.view == view) || cmp.boundTextures.filter(rec => rec.lru != lru).sort((r1,r2) => r1.lru - r2.lru)[0]
     return Object.assign(freeTexture, {lru, view})
   },  
   vertexShaderCode: ({code,main,id} = {}) => `attribute vec2 itemPos${id};

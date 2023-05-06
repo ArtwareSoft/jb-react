@@ -1,6 +1,8 @@
 
 zui
 
+ TODO: try to remove dynamic of action.runBEMethod.method and run tests
+
 zui gridView
   build manual test
   calc relative zoom and center

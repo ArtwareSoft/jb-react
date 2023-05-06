@@ -12,7 +12,7 @@ component('zuiTest.gallery', {
                 build: imageBuild('projects/zuiDemo/build/gallery0')
               }),
               fixedText(text('xy')),
-              fixedText(text('imageDebug'))  
+              //fixedText(text('imageDebug'))  
             ]
           ),
           boardSize: 4,
@@ -60,17 +60,6 @@ component('zuiTest.itemlist', {
                 url: 'https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp',
                 build: imageBuild('projects/zuiDemo/build/top')
               }),
-              // firstToFit(
-              //   [
-              //     zui.gridView({
-              //       items: '%gallery%',
-              //       DIM: '4',
-              //       itemView: image('https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%%.webp'),
-              //       itemProps: [geo(), TBD()]
-              //     }),
-              //     image('../hotels/images/256-256%image%.webp')
-              //   ]
-              // ),
               fixedText(text('x', ' ')),
               fixedText(text('x', ' '))
             ]
@@ -105,6 +94,72 @@ component('zuiTest.itemlist', {
   })
 })
 
+component('zuiTest.nested', {
+  impl: uiTest({
+    control: group({
+      layout: layout.flex({direction: 'row', wrap: 'wrap'}),
+      controls: [
+        zui.itemlist({
+          itemView: group(
+            [
+              circle(byName('price')),
+              growingText(byName('name')),
+              zui.gridView({
+                items: pipeline('%$hotels/0/gallery%', obj(prop('image', '%%'))),
+                itemView: group(
+                  [
+                    image({
+                      url: 'https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp',
+                      build: imageBuild('projects/zuiDemo/build/gallery0')
+                    }),
+                    fixedText(text('xy')),
+                    fixedText(text('imageDebug'))
+                  ]
+                ),
+                itemProps: xyByIndex()
+              })
+            ]
+          ),
+          boardSize: 64,
+          initialZoom: 3.821267725000016,
+          center: '1.3130639001816125,0.9833333333333321',
+          items: pipeline('%$hotels%'),
+          itemProps: [
+            numeric({
+              att: 'price',
+              prefix: '$',
+              features: [
+                priorty(1),
+                colorScale(green())
+              ]
+            }),
+            numeric({att: 'rating', features: [priorty(2), colorScale(red())]}),
+            text({att: 'name', features: priorty(3)}),
+            geo('lat', preferedAxis('y')),
+            geo('long', preferedAxis('x'))
+          ],
+          onChange: refreshControlById('itemPreview')
+        }),
+        zui.visualItemPreview()
+      ],
+      features: [
+        variable('zuiCtx', obj())
+      ]
+    }),
+    expectedResult: contains('-')
+  })
+})
+              // firstToFit(
+              //   [
+              //     zui.gridView({
+              //       items: '%gallery%',
+              //       DIM: '4',
+              //       itemView: image('https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%%.webp'),
+              //       itemProps: [geo(), TBD()]
+              //     }),
+              //     image('../hotels/images/256-256%image%.webp')
+              //   ]
+              // ),
 
 component('hotels', { passiveData:
   [

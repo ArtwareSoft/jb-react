@@ -5,18 +5,18 @@ component('zui.itemPreview', {
     style: group.sections(header.h3()),
     controls: [
       dynamicControls({
-        controlItems: pipeline('%$zuiCtx/props/renderProps%', properties()),
+        controlItems: pipeline('%$zuiCtx/props/elemsLayoutProps%', properties()),
         genericControl: group({
-          title: pipeline('%$renderProp/val/path% - %$renderProp/val/title%'),
+          title: pipeline('%$elemLayoutProps/val/path% - %$elemLayoutProps/val/title%'),
           style: propertySheet.titlesAbove(),
           controls: dynamicControls({
-            controlItems: pipeline('%$renderProp/val%', properties(), filter(not(inGroup(list('path', 'title', 'axis'), '%id%')))),
+            controlItems: pipeline('%$elemLayoutProps/val%', properties(), filter(not(inGroup(list('path', 'title', 'axis'), '%id%')))),
             genericControl: text(pipeline('%$prop/val%', formatNumber(), join()), '%$prop/id%'),
             itemVariable: 'prop'
           }),
           features: css.margin({left: '30px'})
         }),
-        itemVariable: 'renderProp'
+        itemVariable: 'elemLayoutProps'
       })
     ],
     features: [css.width('400'), id('itemPreview')]
@@ -30,18 +30,18 @@ component('zui.itemPreviewTable', {
     style: group.sections(header.h3()),
     controls: [
       dynamicControls({
-        controlItems: pipeline('%$zuiCtx/props/renderProps%', properties()),
+        controlItems: pipeline('%$zuiCtx/props/elemsLayoutProps%', properties()),
         genericControl: group({
-          //title: pipeline('%$renderProp/val/path% - %$renderProp/val/title%'),
+          //title: pipeline('%$elemLayoutProps/val/path% - %$elemLayoutProps/val/title%'),
           style: propertySheet.titlesAbove(),
           controls: dynamicControls({
-            controlItems: pipeline('%$renderProp/val%', properties(), filter(not(inGroup(list('axis'), '%id%')))),
+            controlItems: pipeline('%$elemLayoutProps/val%', properties(), filter(not(inGroup(list('axis'), '%id%')))),
             genericControl: text(pipeline('%$prop/val%', formatNumber(), join()), '%$prop/id%'),
             itemVariable: 'prop'
           }),
           features: css.margin({left: '30px'})
         }),
-        itemVariable: 'renderProp'
+        itemVariable: 'elemLayoutProps'
       })
     ],
     features: [css.width('400'), id('itemPreview')]
@@ -54,7 +54,7 @@ component('zui.itemViewProps', {
   impl: group({
     style: propertySheet.titlesAbove(),
     controls: dynamicControls({
-      controlItems: pipeline('%$zuiCtx/props/renderProps/itemView%', properties()),
+      controlItems: pipeline('%$zuiCtx/props/elemsLayoutProps/itemView%', properties()),
       genericControl: text(pipeline('%$prop/val%', formatNumber(), join()), '%$prop/id%'),
       itemVariable: 'prop'
     }),
@@ -69,7 +69,7 @@ component('zui.visualItemPreview', {
     controls: [
       zui.itemViewProps(),
       dynamicControls({
-        controlItems: pipeline('%$zuiCtx/props/renderProps%', values(), filter('%size/1%'), filter('%title% != group')),
+        controlItems: pipeline('%$zuiCtx/props/elemsLayoutProps%', values(), filter('%size/1%'), filter('%title% != group')),
         genericControl: text({
           text: '%$box/title%',
           style: text.span(),
@@ -117,9 +117,9 @@ component('zui.stateOfItemView', {
     {id: 'zoom', as: 'number', defaultValue: 4},
     {id: 'DIM', as: 'number', defaultValue: 128},
   ],
-  impl: pipeline(Var('renderProps', obj()), Var('$props',({},{},{zoom,DIM}) => ({zoom, DIM})),
+  impl: pipeline(Var('elemsLayoutProps', obj()), Var('$props',({},{},{zoom,DIM}) => ({zoom, DIM})),
     (ctx,{},{itemView,pos,zoom}) => {
       const [top, left,width,height] = pos
       return itemView(ctx).layout({zoom,top, left,width,height})
-    }, '%$renderProps%')
+    }, '%$elemsLayoutProps%')
 })

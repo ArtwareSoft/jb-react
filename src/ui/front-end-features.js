@@ -1,4 +1,21 @@
-// var { rx,key,frontEnd,sink,service, replace } = jb.ns('rx,key,frontEnd,sink,service')
+jb.component('frontEnd.var', {
+  type: 'feature',
+  description: 'calculate in the BE and pass to frontEnd',
+  params: [
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'value', mandatory: true, dynamic: true}
+  ],
+  impl: ctx => ({ frontEndVar: ctx.params })
+})
+
+jb.component('frontEnd.varsFromBEProps', {
+  type: 'feature',
+  description: 'calculate in the BE and pass to frontEnd',
+  params: [
+    {id: 'idList', as: 'array', mandatory: true},
+  ],
+  impl: ({},idList) => idList.map(id => ({ frontEndVar: {id, value: ctx => ctx.vars.$props[id]} }))
+})
 
 jb.component('action.runBEMethod', {
     type: 'action',
@@ -10,6 +27,25 @@ jb.component('action.runBEMethod', {
       {id: 'vars', dynamic: true },
     ],
     impl: (ctx,method,data,vars) => jb.ui.runBEMethodInAnyContext(ctx,method(),data(),vars())
+})
+
+jb.component('backend.dataMethod', {
+  type: 'data',
+  description: 'activated on BE',
+  params: [
+    {id: 'ctxIdToRun', as: 'string'},
+    {id: 'method', as: 'string'},
+    {id: 'data', defaultValue: '%%'},
+    {id: 'vars'}
+  ],
+  impl: (_ctx,ctxIdToRun,method,data,vars) => {
+    const ctx = jb.ctxDictionary[ctxIdToRun]
+    if (!ctx)
+        return jb.logError(`no ctx found for data method: ${method}`, {ctxIdToRun, data, vars})
+
+    jb.log(`backend data method request: ${method}`,{cmp: ctx.vars.cmp, method,ctx, data,vars})
+    return ctx.setData(data).setVars(vars).runInner(ctx.profile.action,'action','action') // dirty: action should be data
+  }
 })
 
 jb.component('action.runFEMethod', {

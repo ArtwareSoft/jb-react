@@ -70,6 +70,30 @@ jb.component('macroTest.Positions.InnerFlat', {
         ), '%map/~controls~0~controls~text~!value%', join()), equals('3,40,3,50'))
 })
   
+
+jb.component('macroTest.nameValuePattern', {
+  impl: dataTest(
+    pipeline(
+      () => jb.utils.prettyPrintWithPositions(frontEnd.var('itemPropsProfile', ({},{$model}) => 
+        $model.itemProps.profile)),
+      '%map/~value~!value%',
+      join()
+    ),
+    equals('0,33,1,32')
+  )
+})
+
+jb.component('macroTest.singleFunc', {
+  impl: dataTest(
+    pipeline(
+      () => jb.utils.prettyPrintWithPositions(frontEnd.init(({},{}) => 5)),
+      '%map/~action~!value%',
+      join()
+    ),
+    equals('0,14,0,26')
+  )
+})
+
 jb.component('macroTest.PathInPipeline', {
     impl: dataTest(pipeline(() => jb.utils.prettyPrintWithPositions(
           pipeline('main')

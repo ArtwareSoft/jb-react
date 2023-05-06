@@ -21,7 +21,7 @@
     "webpack": "node_modules/.bin/webpack",
     "build": "node_modules/.bin/webpack & node bin/build-libs & npm run ts",
     "build-libs": "node bin/build-libs",
-    "build-symbols": "node bin/build-symbols.js",
+    "build--": "node bin/build-symbols.js",
     "ts": "node bin/tgp2ts srcDir:bin/studio -out:dist/jbart",
     "pretty": "node bin/tgp-pretty -file:studio/.*",
     "pretty-for-specific-files": "node bin/tgp-pretty -file:studio-helper -filesToLoad:projects/studio-helper/studio-helper.js",
