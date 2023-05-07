@@ -74,7 +74,7 @@ jb.component('jbm.vscodeWebView', {
 <html>
 <head>
     <meta charset="UTF-8">
-    <script type="text/javascript" src="${_jbBaseUrl}/src/loader/jb-loader.js"></script>
+    <script type="text/javascript" src="${_jbBaseUrl}/plugins/loader/jb-loader.js"></script>
     <script>
     globalThis.jbBaseUrl = '${_jbBaseUrl}'
     ;(async () => {
@@ -206,7 +206,7 @@ jb.component('jbm.vscodeWebView', {
   // globalThis.jbFetchJson = url => (util.promisify(fs.readFile)(url)).then(x=>JSON.parse(x))
   // require(jbBaseUrl+ '/hosts/node/node-utils.js')
 
-  // const { jbInit, jb_plugins } = require(jbBaseUrl+ '/src/loader/jb-loader.js')
+  // const { jbInit, jb_plugins } = require(jbBaseUrl+ '/plugins/loader/jb-loader.js')
   // globalThis.jbInit = jbInit
   // globalThis.jb_plugins = jb_plugins
 

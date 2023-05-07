@@ -6,7 +6,7 @@ jb.component('htmlDev', { passiveData: `<!DOCTYPE html>
     startTime = new Date().getTime();
   </script>
 <!-- start-jb-scripts -->
-<script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,material"></script>
+<script type="text/javascript" src="/plugins/loader/jb-loader.js" modules="common,ui-common,material"></script>
 <script type="text/javascript" src="/projects/sample1/sample1.js"></script>
 
 <!-- end-jb-scripts -->

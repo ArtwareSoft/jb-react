@@ -11,7 +11,7 @@ global.jbBaseUrl = __dirname.match(/extensions/) ? workspaceDir : __dirname.repl
 console.log('jbBaseUrl',jbBaseUrl)
 require(jbBaseUrl+ '/hosts/node/node-utils.js')
 
-const { jbInit, jb_plugins } = require(jbBaseUrl+ '/src/loader/jb-loader.js')
+const { jbInit, jb_plugins } = require(jbBaseUrl+ '/plugins/loader/jb-loader.js')
 globalThis.jbInit = jbInit
 globalThis.jb_plugins = jb_plugins
  

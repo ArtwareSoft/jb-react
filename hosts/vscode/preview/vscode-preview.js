@@ -5,7 +5,7 @@ const fs = require('fs')
 const workspaceDir = (vscodeNS.workspace.workspaceFolders || []).map(ws=>ws.uri.path).filter(path=>path.match(/jb-react/))[0]
 global.jbBaseUrl = __dirname.match(/extensions/) ? workspaceDir : __dirname.replace(/\/hosts\/vscode\/preview$/,'')    
 console.log('jbBaseUrl',jbBaseUrl)
-const loaderCode = fs.readFileSync(`${jbBaseUrl}/src/loader/jb-loader.js`) + '\n//# sourceURL=jb-loader.js'
+const loaderCode = fs.readFileSync(`${jbBaseUrl}/plugins/loader/jb-loader.js`) + '\n//# sourceURL=jb-loader.js'
 require('vm').runInThisContext(loaderCode)
 globalThis.jbFetchFile = url => require('util').promisify(fs.readFile)(url)
 globalThis.jbFileSymbols = fileSymbolsFunc // function defined below

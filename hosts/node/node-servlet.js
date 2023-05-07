@@ -76,12 +76,12 @@ async function run() {
     await jbGetJSFromUrl(`${jbTreeShakeServerUrl}/treeShake-client.js`)
     await jbGetJSFromUrl(`${jbTreeShakeServerUrl}/jb-port.js?ids=-nodeContainer.portFromNodeWebSocket`)
   } else if (getProcessArgument('completionServer')) {
-    const { jbInit, jb_plugins } = require(`${jbBaseUrl}/src/loader/jb-loader.js`)
+    const { jbInit, jb_plugins } = require(`${jbBaseUrl}/plugins/loader/jb-loader.js`)
     global.jb = await jbInit(uri,{ projects, plugins: jb_plugins, doNoInitLibs: true })
     await jb.initializeLibs(['utils','watchable','immutable','watchableComps','tgp','tgpTextEditor','vscode','jbm','cbHandler','treeShake'])
     await jb.vscode.initServer(getProcessArgument('clientUri'))
   } else {
-    const { jbInit, jb_plugins } = require(`${jbBaseUrl}/src/loader/jb-loader.js`)
+    const { jbInit, jb_plugins } = require(`${jbBaseUrl}/plugins/loader/jb-loader.js`)
     global.jb = await jbInit(uri,{ projects, plugins: jb_plugins })
   }
   spy = jb.spy.initSpy({spyParam: getProcessArgument('spyParam') || 'remote'})

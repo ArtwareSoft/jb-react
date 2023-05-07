@@ -328,7 +328,7 @@ jb.component('jbm.worker', {
             const initJbCode = initJbCodeF(ctx.setVars({uri: workerUri, multipleJbmsInFrame: false}))
             const workerCode = `
 jbBaseUrl = location.origin || '';
-importScripts(location.origin+'/src/loader/jb-loader.js');
+importScripts(location.origin+'/plugins/loader/jb-loader.js');
 
 Promise.resolve(${initJbCode})
     .then(jb => {

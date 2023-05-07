@@ -36,7 +36,7 @@ jb.extension('studio', 'hosts', {
         // goto project
         projectUrlInStudio: project => `/project/studio/${project}`,
         // preview
-        jbLoader: jb.frame.location ? jb.frame.location.origin + '/src/loader/jb-loader.js' : '',
+        jbLoader: jb.frame.location ? jb.frame.location.origin + '/plugins/loader/jb-loader.js' : '',
         openUrlInBrowser: url => jb.exec({$: 'winUtils.gotoUrl', url }),
         gotoPath: (path,semanticPart) => {}
     }),
@@ -54,7 +54,7 @@ jb.extension('studio', 'hosts', {
         pathOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
         projectUrlInStudio: project => `/project/studio/${project}`,
         pathOfDistFolder: () => `${jb.frame.jbBaseProjUrl}/dist`,
-        jbLoader: `${jb.frame.jbBaseProjUrl}/src/loader/jb-loader.js`,
+        jbLoader: `${jb.frame.jbBaseProjUrl}/plugins/loader/jb-loader.js`,
         projectsDir: () => `${decodeURIComponent(jb.frame.jbBaseProjUrl).split('/file///').pop()}/projects`,
         openUrlInBrowser: url => jb.exec({$: 'remote.action', 
             action: () => { debugger; jb.frame.vscodeNS.env.openExternal(jb.frame.vscodeNS.Uri.parse(url)) }, 
@@ -94,7 +94,7 @@ jb.extension('studio', 'hosts', {
         // goto project
         projectUrlInStudio(project) { return `${this.baseUrl}/project/studio/${project}` },
         // preview
-        jbLoader() { return `${this.baseUrl}/src/loader/jb-loader.js` },
+        jbLoader() { return `${this.baseUrl}/plugins/loader/jb-loader.js` },
     }),
 
     userLocalHost: () => ({ 

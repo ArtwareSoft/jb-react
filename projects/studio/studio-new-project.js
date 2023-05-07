@@ -16,7 +16,7 @@ jb.component('studio.newProject', {
     jsFiles: ['%$project%.js'],
   }
   </script>
-  <script type="text/javascript" src="/src/loader/jb-loader.js"></script>
+  <script type="text/javascript" src="/plugins/loader/jb-loader.js"></script>
 </head>
 <body>
   <script>

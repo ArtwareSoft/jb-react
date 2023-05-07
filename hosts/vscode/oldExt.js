@@ -92,7 +92,7 @@ class jBartStudio {
         const studioBin = `<script type="text/javascript" src="${jbModuleUrl}/bin/studio/studio-all.js"></script>
         <link rel="stylesheet" type="text/css" href="${jbModuleUrl}/bin/studio/css/studio-all.css"/>`
 
-        const studioDev = `<script type="text/javascript" src="${jbBaseProjUrl}/src/loader/jb-loader.js"
+        const studioDev = `<script type="text/javascript" src="${jbBaseProjUrl}/plugins/loader/jb-loader.js"
         modules="common,ui-common,material,ui-tree,dragula,codemirror,pretty-print,studio,history,animate,md-icons,fuse" suffix="?studio"></script>
     <link rel="stylesheet" type="text/css" href="${jbBaseProjUrl}/projects/studio/css/studio.css"/>`
         const jbStartCommand = this.startCommand ? JSON.stringify({...this.startCommand, activeEditorPosition: this.calcActiveEditorPosition()}) : "''"

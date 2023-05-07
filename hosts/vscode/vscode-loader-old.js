@@ -14,7 +14,7 @@ console.log('vscode init 0')
 
 async function activate(context) {
     try {
-        const loaderCode = fs.readFileSync(`${jbBaseUrl}/src/loader/jb-loader.js`) + '\n//# sourceURL=jb-loader.js'
+        const loaderCode = fs.readFileSync(`${jbBaseUrl}/plugins/loader/jb-loader.js`) + '\n//# sourceURL=jb-loader.js'
         vm.runInThisContext(loaderCode)
         global.jb = await jbInit('vscode', { projects: ['studio'], fileSymbolsFunc })
     } catch (e) {
@@ -31,7 +31,7 @@ exports.activate = activate
 
 // function loadTreeShakeServer() {
 //     try {
-//         const loaderCode = fs.readFileSync(`${jbBaseUrl}/src/loader/jb-loader.js`) + '\n//# sourceURL=jb-loader.js'
+//         const loaderCode = fs.readFileSync(`${jbBaseUrl}/plugins/loader/jb-loader.js`) + '\n//# sourceURL=jb-loader.js'
 //         vm.runInThisContext(loaderCode)
 //         return jbInit('vscode', { projects: ['studio'], fileSymbolsFunc })
 //     } catch (e) {

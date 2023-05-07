@@ -7,7 +7,7 @@ self.addEventListener('message', m => {
         console.log('chromeDebugger devtools gateway attached to debuggeUri',debuggeUri)
         const baseUrl = 'http://localhost:8082'
 
-        if (debuggeUri) jb_loadFile('/src/loader/jb-loader.js',baseUrl).then(() => jbInit('devtools',{baseUrl})).then(jb => {
+        if (debuggeUri) jb_loadFile('/plugins/loader/jb-loader.js',baseUrl).then(() => jbInit('devtools',{baseUrl})).then(jb => {
             self.jb = jb
             self.spy = jb.spy.initSpy({spyParam})
             
