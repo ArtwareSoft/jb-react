@@ -1,6 +1,6 @@
 var jb_plugins = [
   'common','rx','tree-shake','pretty-print','watchable',
-  'remote','testing','data-browser',
+  'remote','testing','data-browser','ui',
   'probe','tgp','watchable-comps', 'workspace','vscode', 
   'chart-model','vega', 'zui','scene3','parsing','statistics','xml','jison'
 ];
