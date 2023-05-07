@@ -1,21 +1,16 @@
-var jb_modules = {
-  'core': [
-    'src/core/jb-core.js',
-    'src/core/core-utils.js',
-    'src/core/jb-expression.js',
-    'src/core/db.js',
-    'src/core/jb-macro.js',
-    'src/misc/spy.js',
-  ],
-}
-var jb_plugins = ['tree-shake','remote','testing','data-browser','probe','tgp','watchable-comps', 'workspace','vscode', 'chart-model','vega', 'zui','scene3']; // list of plugins to be used by studio
+var jb_plugins = [
+  'common','rx','tree-shake','pretty-print','watchable',
+  'remote','testing','data-browser',
+  'probe','tgp','watchable-comps', 'workspace','vscode', 
+  'chart-model','vega', 'zui','scene3','parsing','statistics','xml','jison'
+];
 
 async function jbInit(uri, {projects, plugins, baseUrl, multipleInFrame, doNoInitLibs, useFileSymbolsFromBuild, noTests }) {
   const fileSymbols = useFileSymbolsFromBuild && fileSymbolsFromBuild || globalThis.jbFileSymbols || fileSymbolsFromHttp
   const jb = { uri, baseUrl: baseUrl !== undefined ? baseUrl : typeof globalThis.jbBaseUrl != 'undefined' ? globalThis.jbBaseUrl : '' }
   if (!multipleInFrame) // multipleInFrame is used in jbm.child
     globalThis.jb = jb
-  const coreFiles= jb_modules.core.map(x=>`/${x}`)
+  const coreFiles= ['jb-core','core-utils','jb-expression','db','jb-macro','spy'].map(x=>`/plugins/core/${x}.js`)
   await coreFiles.reduce((pr,url) => pr.then(()=> jbloadJSFile(url,jb)), Promise.resolve())
   jb.noSupervisedLoad = false
 
