@@ -1,3 +1,4 @@
+jb.import('remote,ui')
 
 jb.component('widget.frontEndCtrl', {
     type: 'control',

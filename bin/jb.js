@@ -1,6 +1,6 @@
 
-const [main,_plugins,_projects,wrap,base_dir,_spy,_spyParam,uri,dsl,libsToinit,verbose] = 
-    ['main','plugins','projects','wrap','base_dir','spy','spyParam','uri','dsl','libsToinit','verbose']
+const [main,_plugins,_projects,wrap,base_dir,_spy,_spyParam,uri,dsl,libsToinit,verbose,loadTests] = 
+    ['main','plugins','projects','wrap','base_dir','spy','spyParam','uri','dsl','libsToinit','verbose','loadTests']
         .map(x=>getProcessArgument(x))
 
 if (!main) {
@@ -16,6 +16,7 @@ if (!main) {
     -dsl:myDsl // optional. dsl of the main profile default is ""
     -libsToinit:lib1,lib2 // advanced. default is to init all libs in loaded projects/plugins
     -verbose // show params, vars, and generated tgp code
+    -loadTests // load and use tests
     %v1:val // variable values
     %p1:val||script // param values
 `)
@@ -28,7 +29,7 @@ const underJbReact = (__dirname.match(/projects\/jb-react(.*)$/) || [''])[1]
 global.jbBaseUrl = base_dir || underJbReact != null ? __dirname.slice(0,-1*underJbReact.length) : '.'
 require(jbBaseUrl+ '/hosts/node/node-utils.js')
 
-const { jbInit, jb_plugins } = require(jbBaseUrl+ '/src/loader/jb-loader.js')
+const { jbInit, jb_plugins } = require(jbBaseUrl+ '/plugins/loader/jb-loader.js')
 globalThis.jbInit = jbInit
 globalThis.jb_plugins = jb_plugins
 
@@ -36,7 +37,7 @@ globalThis.jb_plugins = jb_plugins
     const projects = _projects ? _projects.split(',') : null
     const plugins = _plugins ? _plugins.split(',') : null
     globalThis.jb = await jbInit(uri||'main', {
-        projects, plugins: plugins || jb_plugins, doNoInitLibs: libsToinit ? true: false
+        projects, plugins: plugins || jb_plugins, loadTests, doNoInitLibs: libsToinit ? true: false
     })
     try {
         await libsToinit && jb.initializeLibs(libsToinit.split(','))

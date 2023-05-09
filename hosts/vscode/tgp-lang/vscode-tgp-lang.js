@@ -17,9 +17,11 @@ globalThis.jb_plugins = jb_plugins
  
 async function activate(context) {
     globalThis.jb = globalThis.jb || (globalThis.jbInit && await jbInit('jbart-lsp-ext', {
-        plugins: ['vscode', 'tgp','remote'], doNoInitLibs: true
+        plugins: ['common','rx','tree-shake','pretty-print','watchable','ui','vscode', 'tgp','remote','remote-widget']
+        , doNoInitLibs: true, noTests: true
     }))
-    await jb.initializeLibs(['utils','treeShake','remoteCtx','jbm','cbHandler','tgpTextEditor','vscode','nodeContainer'])
+    await jb.initializeLibs(['utils','treeShake','remoteCtx','jbm','cbHandler'
+        ,'tgpTextEditor','vscode','nodeContainer'])
     jb.spy.initSpy({spyParam: 'remote,vscode'})
     await jb.vscode.initVscodeAsHost({context})
 

@@ -16,7 +16,7 @@ var jb_modules = {
     'src/core/jb-expression.js',
     'src/core/db.js',
     'src/core/jb-macro.js',
-    'src/loader/tree-shake.js',
+    'plugins/loadertree-shake.js',
     'src/misc/spy.js',
     'src/core/jb-common.js',
     'src/misc/jb-callbag.js',
@@ -299,7 +299,7 @@ packLibrary('studio-all',studioFiles);
 packLibrary('vDebugger',vDebuggerFiles);
 //fixExports('studio-all-lib.js')
 
-concatFiles(['/src/loader/jb-loader.js'],'jb-loader.js');
+concatFiles(['/plugins/loader/jb-loader.js'],'jb-loader.js');
 concatFiles(['/src/testing/testers.js'],'testers.js');
 
 concatFiles(filesOfModules('ui-common-css'),'css/ui-common.css')

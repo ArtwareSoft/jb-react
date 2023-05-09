@@ -43747,7 +43747,7 @@ jb.component('studio.newProject', {
     jsFiles: ['%$project%.js'],
   }
   </script>
-  <script type="text/javascript" src="/src/loader/jb-loader.js"></script>
+  <script type="text/javascript" src="/plugins/loader/jb-loader.js"></script>
 </head>
 <body>
   <script>
@@ -45475,7 +45475,7 @@ jb.extension('studio', 'hosts', {
         // goto project
         projectUrlInStudio: project => `/project/studio/${project}`,
         // preview
-        jbLoader: jb.frame.location ? jb.frame.location.origin + '/src/loader/jb-loader.js' : '',
+        jbLoader: jb.frame.location ? jb.frame.location.origin + '/plugins/loader/jb-loader.js' : '',
     }),
     vscodeDevHost: () => ({
         name: 'vscodeDevHost',
@@ -45491,7 +45491,7 @@ jb.extension('studio', 'hosts', {
         pathOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
         projectUrlInStudio: project => `/project/studio/${project}`,
         pathOfDistFolder: () => `${jb.frame.jbBaseProjUrl}/dist`,
-        jbLoader: `${jb.frame.jbBaseProjUrl}/src/loader/jb-loader.js`,
+        jbLoader: `${jb.frame.jbBaseProjUrl}/plugins/loader/jb-loader.js`,
         projectsDir: () => `${decodeURIComponent(jb.frame.jbBaseProjUrl).split('/file///').pop()}/projects`
     }),
 
@@ -45527,7 +45527,7 @@ jb.extension('studio', 'hosts', {
         // goto project
         projectUrlInStudio(project) { return `${this.baseUrl}/project/studio/${project}` },
         // preview
-        jbLoader() { return `${this.baseUrl}/src/loader/jb-loader.js` },
+        jbLoader() { return `${this.baseUrl}/plugins/loader/jb-loader.js` },
     }),
 
     userLocalHost: () => ({ 

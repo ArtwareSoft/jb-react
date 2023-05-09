@@ -210,18 +210,18 @@ jb.component('rxTest.reduceJoin', {
   })
 })
 
-jb.component('studioHelper.jbEditor.callbag', {
-  type: 'control',
-  impl: group({
-    controls: [
-      studio.jbEditor('dataTest.callbag.pipe~impl')
-    ],
-    features: [
-      css('{ height: 200px; padding: 50px }'),
-      //studio.jbEditorContainer({id: 'helper', initialSelection: 'dataTest.callbag.pipe~impl~calculate~items~0~elems~0', circuit: 'dataTest.callbag.pipe'})
-    ]
-  })
-})
+// jb.component('studioHelper.jbEditor.callbag', {
+//   type: 'control',
+//   impl: group({
+//     controls: [
+//       studio.jbEditor('dataTest.callbag.pipe~impl')
+//     ],
+//     features: [
+//       css('{ height: 200px; padding: 50px }'),
+//       //studio.jbEditorContainer({id: 'helper', initialSelection: 'dataTest.callbag.pipe~impl~calculate~items~0~elems~0', circuit: 'dataTest.callbag.pipe'})
+//     ]
+//   })
+// })
 
 jb.component('rxTest.rawFlatMapPassivePassive', {
   impl: dataTest({

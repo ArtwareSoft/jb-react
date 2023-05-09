@@ -8773,7 +8773,7 @@ jb={extension: () => {}}
 if (typeof importScripts != 'undefined') {
     self.importScripts = importScripts.native
     self.fetch = fetch.native
-    importScripts(location.origin+'/src/loader/jb-loader.js')
+    importScripts(location.origin+'/plugins/loader/jb-loader.js')
 }
 
 jbInit('jbart-lsp-server',{}).then(jb=>{

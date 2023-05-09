@@ -4,10 +4,10 @@ globalThis.vscodeNS = vscode
 if (importScripts.native) { // browser worker
     jbBaseUrl = location.origin || ''
     jbFetchFile = fetch.native && (path => fetch.native(path).then(x=>x.text()))
-    importScripts.native(location.origin+'/src/loader/jb-loader.js')
+    importScripts.native(location.origin+'/plugins/loader/jb-loader.js')
 } else { // nodejs
     jbBaseUrl = __dirname.replace(/\/hosts\/vscode$/,'')
-    const loaderCode = require('fs').readFileSync(`${jbBaseUrl}/src/loader/jb-loader.js`) + '\n//# sourceURL=jb-loader.js'
+    const loaderCode = require('fs').readFileSync(`${jbBaseUrl}/plugins/loader/jb-loader.js`) + '\n//# sourceURL=jb-loader.js'
     require('vm').runInThisContext(loaderCode)
     jbFetchFile = url => require('util').promisify(require('fs').readFile)(url)
     // define fileSymbolsFunc      

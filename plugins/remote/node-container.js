@@ -76,11 +76,12 @@ jb.component('jbm.nodeContainer', {
     {id: 'projects', as: 'array'},
     {id: 'host', as: 'string', dynamic: true, defaultValue: 'localhost'},
     {id: 'init', type: 'action', dynamic: true},
+    {id: 'loadTests', as: 'boolean'},
     {id: 'inspect', as: 'number'},
     {id: 'urlBase', as: 'string'},
     {id: 'spyParam', as: 'string'},
   ],
-  impl: async (ctx,name,projects,host,init,inspect,urlBase,spyParam) => {
+  impl: async (ctx,name,projects,host,init,loadTests,inspect,urlBase,spyParam) => {
         jb.log('vscode remote jbm nodeContainer',{ctx,name})
         const servletUri = `${jb.uri}__${name}`
         const restart = (jb.nodeContainer.toRestart||[]).indexOf(name)
@@ -94,6 +95,7 @@ jb.component('jbm.nodeContainer', {
         const args = [
             ...(inspect ? [`-inspect=${inspect}`] : []),
             ...(name ? [`-uri:${servletUri}`] : []),
+            `-loadTests:${loadTests}`,
             `-clientUri:${jb.uri}`,
             `-projects:${projects.join(',')}`,
             `-spyParam:${spyParam}`]

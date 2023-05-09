@@ -1,3 +1,4 @@
+jb.import('remote-widget')
 
 jb.component('probe.inOutView', {
   type: 'control',
@@ -197,7 +198,7 @@ jb.component('probe.mainCircuitView', {
     ]
   }),
   require: [
-    test.showTestInStudio(),
+    {$: 'test.showTestInStudio' },
     { $: 'sampleProject.main' }
   ]
 })

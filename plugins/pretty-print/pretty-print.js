@@ -185,7 +185,7 @@ jb.extension('utils', 'prettyPrint', {
       if ((params.length < 3 && comp.macroByValue !== false) || comp.macroByValue || oneFirstArg || twoFirstArgs) {
         const args = systemProps.concat(params.map(param=>({innerPath: param.id, val: profile[param.id]})))
         while (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop() // cut the undefined's at the end
-        const nameValuePattern = args.length == 2 && typeof args[0].val == 'string'
+        const nameValuePattern = args.length == 2 && typeof args[0].val == 'string' && typeof args[1].val == 'function'
         const singleFunc = args.length == 1 && typeof args[0].val == 'function'
         const len = macro.length + args.reduce((len,elem) => 
           len + calcValueProps(elem.val,`${path}~${elem.innerPath}`).len + 2, 2)

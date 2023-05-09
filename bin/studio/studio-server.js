@@ -276,7 +276,7 @@ const base_get_handlers = {
 
 const op_get_handlers = {
     createJbm: (req,res,path) => {
-      const params = ['uri', 'clientUri','projects','treeShake','spyParam','completionServer','tcp','inspect']
+      const params = ['uri', 'clientUri','projects','treeShake','spyParam','loadTests','inspect']
       const args = params.map(p=>getURLParam(req,p) && `-${p}:${getURLParam(req,p)}`).filter(x=>x)
       const servlet = child.spawn('node',[
         ...(getURLParam(req,'inspect') ? [`--inspect=${getURLParam(req,'inspect')}`] : []),
@@ -431,7 +431,7 @@ const op_get_handlers = {
         return gotoFile(path.split(':')[0],path.split(':')[1])
 
       const comp = getURLParam(req,'comp');
-      const files = walk('projects').concat(walk('src')).concat(walk('plugins'));
+      const files = walk('projects').concat(walk('plugins'));
       files.filter(x=>x.match(/\.(ts|js)$/))
         .forEach(srcPath=>{
                 const source = ('' + fs.readFileSync(srcPath)).split('\n');

@@ -1,3 +1,9 @@
+plugins
+  all testing in plugins
+  demo parts in plugins
+  no test project - move to testing plugin
+  studio server - refactor with jb.js node-http & http-service plugin
+  createjbm - refactor use jb.js
 
 zui
 

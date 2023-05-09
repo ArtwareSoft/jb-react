@@ -10,7 +10,8 @@
   const github = location.href.match(/artwaresoft.github.io\/jb-react\//) ?
   { baseUrl: 'https://artwaresoft.github.io/jb-react/', useFileSymbolsFromBuild: true } : {}
 
-	jbInit('zuiDemo', {projects: ['zuiDemo'], plugins: ['zui','remote'], useFileSymbolsFromBuild: false, noTests: true, ...github })
+	jbInit('zuiDemo', {projects: ['zuiDemo'], plugins: [
+  'common','rx','tree-shake','pretty-print','watchable','ui','zui','remote','remote-widget'], useFileSymbolsFromBuild: false, noTests: true, ...github })
 		.then(jb=>{
       globalThis.jb = jb
       jb.spy.initSpyByUrl && jb.spy.initSpyByUrl()

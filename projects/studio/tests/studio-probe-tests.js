@@ -1,5 +1,3 @@
-// var {studioProbeTest, pathChangeTest} = jb.ns('rx')
-
 jb.component('person', { watchableData: {
 	name: "Homer Simpson",
 	male: true,

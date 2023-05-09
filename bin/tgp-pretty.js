@@ -2,7 +2,7 @@ jb = require('../src/core/jb-core.js')
 //require('../src/misc/spy.js')
 const {getProcessArgument} = require('./utils.js')
 const fs = require('fs');
-require('../src/loader/jb-loader.js');
+require('../plugins/loader/jb-loader.js');
 
 const JBART_DIR = '../';
 const modulesToLoad = 'common,ui-common,ui-tree,codemirror-styles,animate,testers,pretty-print,studio,studio-tests,parsing,object-encoder,cards,md-icons,remote,d3'

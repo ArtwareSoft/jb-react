@@ -183,10 +183,6 @@ jb.component('completionTest.wrapWithArray', {
  })
 })
 
-jb.component('uiTest.editableText.emptyData', {
-  impl: uiTest(button({title: '', features: []}))
-})
-
 jb.component('completionTest.buttonFeature', {
   impl: tgp.completionOptionsTest(
     `jb.component('x', {

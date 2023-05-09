@@ -72,6 +72,7 @@ Object.assign(jb, {
     return comp
   },
   dsl() {},
+  import() {},
   noSupervisedLoad: true
 })
 

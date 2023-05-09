@@ -1,11 +1,11 @@
 var jb_plugins = [
-  'common','rx','tree-shake','pretty-print','watchable',
-  'remote','testing','data-browser','ui',
+  'common','rx','tree-shake','pretty-print','watchable','ui',
+  'remote','testing','data-browser','remote-widget',
   'probe','tgp','watchable-comps', 'workspace','vscode', 
   'chart-model','vega', 'zui','scene3','parsing','statistics','xml','jison'
 ];
 
-async function jbInit(uri, {projects, plugins, baseUrl, multipleInFrame, doNoInitLibs, useFileSymbolsFromBuild, noTests }) {
+async function jbInit(uri, {projects, plugins, baseUrl, multipleInFrame, doNoInitLibs, useFileSymbolsFromBuild, loadTests }) {
   const fileSymbols = useFileSymbolsFromBuild && fileSymbolsFromBuild || globalThis.jbFileSymbols || fileSymbolsFromHttp
   const jb = { uri, baseUrl: baseUrl !== undefined ? baseUrl : typeof globalThis.jbBaseUrl != 'undefined' ? globalThis.jbBaseUrl : '' }
   if (!multipleInFrame) // multipleInFrame is used in jbm.child
@@ -14,11 +14,12 @@ async function jbInit(uri, {projects, plugins, baseUrl, multipleInFrame, doNoIni
   await coreFiles.reduce((pr,url) => pr.then(()=> jbloadJSFile(url,jb)), Promise.resolve())
   jb.noSupervisedLoad = false
 
-  const srcSymbols = await fileSymbols('src','','pack-|jb-loader').then(x=>x.filter(x=>coreFiles.indexOf(x.path) == -1))
-  const topRequiredModules = [...(plugins || []).map(x => `plugins/${x}`), ...(projects || []).map(x => `projects/${x}`)]
+  const _plugins = loadTests ? ['testing', ...plugins] : plugins
+  const topRequiredModules = [...(_plugins || []).map(x => `plugins/${x}`), ...(projects || []).map(x => `projects/${x}`) ]
 
-  const nonSrcSymbols = await topRequiredModules.reduce( async (acc,dir) => [...await acc, ...await fileSymbols(dir,'','pack-')], [])
-  const symbols = jb.utils.unique([...srcSymbols,...nonSrcSymbols],x=>x.path).filter(x=>!(noTests && x.path.match(/tests/)))
+  const coreTests = loadTests? (await fileSymbols('plugins/core')).filter(x=>x.path.match(/tests/)) : [] // do not load core files again!
+  const _symbols = [...coreTests, ...await topRequiredModules.reduce( async (acc,dir) => [...await acc, ...await fileSymbols(dir,'','pack-')], [])]
+  const symbols = jb.utils.unique(_symbols,x=>x.path).filter(x=>loadTests || !x.path.match(/tests|tester/))
 
   await jbSupervisedLoad(symbols,jb,doNoInitLibs)
 

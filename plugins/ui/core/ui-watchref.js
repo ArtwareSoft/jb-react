@@ -1,3 +1,5 @@
+jb.import('watchable,common')
+
 jb.extension('ui', 'watchRef', {
     $phase: 100,
     $requireFuncs: 'jb.watchable.WatchableValueByRef',

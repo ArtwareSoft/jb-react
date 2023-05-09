@@ -17,7 +17,7 @@ try {
 
 const treeShake = http.createServer( async (req, res) => {
     console.log(req.url)
-    const { jbInit } = require(`${jbBaseUrl}/src/loader/jb-loader.js`)
+    const { jbInit } = require(`${jbBaseUrl}/plugins/loader/jb-loader.js`)
     const { loadFileFunc, fileSymbolsFunc } = require(`${jbBaseUrl}/hosts/node/node-utils.js`)
     const modules = (getProcessArgument('modules') || '').split(',').filter(x=>x)
     const jb = await jbInit('treeShakeWorking',{ projects: modules, loadFileFunc, fileSymbolsFunc})

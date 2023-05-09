@@ -1,4 +1,3 @@
-
 jb.extension('probe', 'suggestions', {
     $requireLibs: ['/dist/fuse.js'],
     initExtension() {

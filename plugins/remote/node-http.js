@@ -35,21 +35,22 @@ jb.component('node.startRemoteHttpServer', {
     {id: 'libsToinit', as: 'array', description: 'advanced. initlialize only part of the libs, used by lang server'},
     {id: 'spyParam', as: 'string'},
     {id: 'restart', as: 'boolean'},
+    {id: 'loadTests', as: 'boolean', defaultValue: true},
   ],
-  impl: async (ctx,id,port,plugins,projects,services,inspect,libsToinit,spyParam, restart) => {
+  impl: async (ctx,id,port,plugins,projects,services,inspect,libsToinit,spyParam, restart,loadTests) => {
       const args = [
             ...(inspect ? [`-inspect=${inspect}`] : []),
             '-main:node.startHttpServer()',
             `%services:${jb.utils.prettyPrint(services.profile,{forceFlat: true})}`,
             `-uri:${id}`, `%port:${port}`,
             ...(restart? [`%restart:true`] : []),
+            ...(loadTests ? [`-loadTests:true`] : []),
             ...(plugins ? [`-plugins:${plugins.join(',')}`] : []),
             ...(projects ? [`-projects:${projects.join(',')}`] : []),
             ...(libsToinit ? [`-libsToinit:${libsToinit.join(',')}`] : []),
             `-spyParam:${spyParam}`]
 
       const command = `node --inspect-brk jb.js ${args.map(x=>`'${x}'`).join(' ')}`
-      debugger
       let spawnRes = null
       if (globalThis.jbSpawn) { // node or vscode
         const resText = await jbSpawn(args,{doNotWaitForEnd: true})

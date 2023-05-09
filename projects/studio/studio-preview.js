@@ -67,7 +67,7 @@ jb.component('preview.control', {
       variable('$previewMode', true)
     ]
   }),
-  require: test.showTestInStudio()
+  require: {$: 'test.showTestInStudio' }
 })
 
 

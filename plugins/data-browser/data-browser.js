@@ -1,3 +1,4 @@
+jb.import('ui')
 
 jb.component('ui.dataBrowse', {
   type: 'control',

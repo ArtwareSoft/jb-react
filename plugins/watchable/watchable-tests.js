@@ -1,4 +1,3 @@
-// jb.ns('remote')
 
 jb.component('uiTest.checkBoxWithCalculatedAndWatchRef', {
   impl: uiFrontEndTest({
@@ -459,7 +458,7 @@ jb.component('uiTest.spliceAndWatchRefWithoutIncludeChildren', {
     control: itemlist({
       items: '%$watchablePeople%',
       controls: text('%name%'),
-      features: watchRef({ref: '%$watchablePeople%', includeChildren: 'no'})
+      features: watchRef('%$watchablePeople%', 'no')
     }),
     action: writeValue('%$watchablePeople[0]/name%', 'mukki'),
     expectedResult: contains('mukki'),
@@ -469,17 +468,16 @@ jb.component('uiTest.spliceAndWatchRefWithoutIncludeChildren', {
 
 jb.component('uiTest.frontEnd.onDestroy', {
   impl: uiFrontEndTest({
-    vars: Var('res',obj()),
+    vars: [Var('res', obj())],
     control: group({
-      controls: controlWithCondition('%$person/name%!=mukki', text({
-        text: 'hello',
-        style: text.codemirror(),
-        features: frontEnd.onDestroy(writeValue('%$res/destroyed%','ya'))
-      })),
+      controls: controlWithCondition(
+        '%$person/name%!=mukki',
+        text({text: 'hello', features: frontEnd.onDestroy(writeValue('%$res/destroyed%', 'ya'))})
+      ),
       features: watchRef('%$person/name%')
     }),
     action: writeValue('%$person/name%', 'mukki'),
-    expectedResult: equals('%$res/destroyed%','ya'),
+    expectedResult: equals('%$res/destroyed%', 'ya')
   })
 })
 
