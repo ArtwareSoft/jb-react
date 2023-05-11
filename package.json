@@ -36,8 +36,8 @@
     "pub": "yarn build-libs && git commit -am build-lib",
     "vscode-package": "nvm use 16 & vsce package",
     "copy-projects-to-template": "node bin/copy-projects-to-template.js",
-    "build-atlas": "node --inspect bin/jb.js -verbose '-main:buildPartition()' -projects:zuiDemo %cmpId:zuiDemo.main",
-    "start-lang-server": "node --inspect-brk bin/jb.js '-loadTests:true' '-inspect=7015' '-main:node.startHttpServer()' '%services:[tgp.langServices()]' '-uri:langServer' '%port:8085' '-plugins:' '-projects:studio,tests' '-libsToinit:utils,watchable,immutable,watchableComps,tgp,tgpTextEditor,vscode,jbm,cbHandler,treeShake' '-spyParam:vscode,tgpEditor,completion,remote'"
+    "build-atlas": "node --inspect hosts/node/jb.js -verbose '-main:buildPartition()' -projects:zuiDemo %cmpId:zuiDemo.main",
+    "start-lang-server": "node --inspect-brk ../hosts/node/jb.js '-loadTests:true' '-inspect=7015' '-main:node.startHttpServer()' '%services:[tgp.langServices()]' '-uri:langServer' '%port:8085' '-plugins:' '-projects:studio,tests' '-libsToinit:utils,watchable,immutable,watchableComps,tgp,tgpTextEditor,vscode,jbm,cbHandler,treeShake' '-spyParam:vscode,tgpEditor,completion,remote'"
   },
   "bin": {
     "studio": "bin/studio"

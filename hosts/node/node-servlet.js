@@ -1,14 +1,14 @@
 const fs = require('fs')
 const WebSocketServer = require('websocket').server
-const http = require('http')
-const net = require('net')
+//const http = require('http')
 
-global.jbBaseUrl = __dirname.replace(/\\/g,'/').replace(/\/hosts\/node$/,'')
-const { getProcessArgument} = require(`${jbBaseUrl}/hosts/node/node-utils.js`)
+//global.jbBaseUrl = __dirname.replace(/\\/g,'/').replace(/\/hosts\/node$/,'')
+const { jbHost } = require('./node-host.js')
+const { getProcessArgument } = jbHost
 
 let settings = { verbose: getProcessArgument('verbose') }
 try {
-  Object.assign(settings,JSON.parse(fs.readFileSync(`${jbBaseUrl}/jbart.json`)))
+  Object.assign(settings,JSON.parse(fs.readFileSync(`${jbHost.jbReactDir}/jbart.json`)))
 } catch(e) {}
 
 const clientUri = getProcessArgument('clientUri')
@@ -21,7 +21,7 @@ const inspect = false; //getProcessArgument('inspect')
 function createWSServer() {
     return new Promise(resolve => {
         const port = pickRandomPort()
-        const nodeServer = http.createServer()
+        const nodeServer = jbHost.http.createServer()
         nodeServer.once('error', err => { // if port is used, try another random port
             if (err.code === 'EADDRINUSE')
                 createWSServer().then(port=>resolve(port))
@@ -60,7 +60,7 @@ async function run() {
   //   await jb.initializeLibs(['utils','watchable','immutable','watchableComps','tgp','tgpTextEditor','vscode','jbm','cbHandler','treeShake'])
   //   await jb.vscode.initServer(getProcessArgument('clientUri'))
   } else {
-    const { jbInit, jb_plugins } = require(`${jbBaseUrl}/plugins/loader/jb-loader.js`)
+    const { jbInit, jb_plugins } = require(`${jbHost.jbReactDir}/plugins/loader/jb-loader.js`)
     global.jb = await jbInit(uri,{ projects, plugins: jb_plugins, loadTests: getProcessArgument('loadTests') })
   }
   spy = jb.spy.initSpy({spyParam: getProcessArgument('spyParam') || 'remote'})

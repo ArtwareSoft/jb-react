@@ -11,8 +11,7 @@ component('zuiTest.gallery', {
                 url: 'https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp',
                 build: imageBuild('projects/zuiDemo/build/gallery0')
               }),
-              fixedText(text('xy')),
-              //fixedText(text('imageDebug'))  
+              fixedText(text('xy'))
             ]
           ),
           boardSize: 4,

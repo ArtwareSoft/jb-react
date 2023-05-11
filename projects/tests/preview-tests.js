@@ -46,7 +46,7 @@ jb.component('workerPreviewTest.nodePreview', {
     control: group({
       controls: [
         button('change script', writeValue(tgp.ref('sampleProject.main~impl~controls~text'), 'world')),
-        probe.remoteMainCircuitView(jbm.nodeContainer({projects: list('studio', 'tests'), init: probe.initRemoteProbe()}))
+        probe.remoteMainCircuitView(jbm.remoteNodeWorker({projects: list('studio', 'tests'), init: probe.initRemoteProbe()}))
       ]
     }),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),

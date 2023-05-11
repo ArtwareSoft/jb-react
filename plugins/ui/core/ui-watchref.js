@@ -1,4 +1,4 @@
-jb.import('watchable,common')
+jb.using('watchable,common')
 
 jb.extension('ui', 'watchRef', {
     $phase: 100,

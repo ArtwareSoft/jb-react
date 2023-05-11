@@ -76,7 +76,7 @@ jb.component('jbm.vscodeWebView', {
     <meta charset="UTF-8">
     <script type="text/javascript" src="${_jbBaseUrl}/plugins/loader/jb-loader.js"></script>
     <script>
-    globalThis.jbBaseUrl = '${_jbBaseUrl}'
+    jbHost.baseUrl = '${_jbBaseUrl}'
     ;(async () => {
       globalThis.jb = await jbInit('${webViewUri}',{ projects: [], plugins: jb_plugins })
       globalThis.spy = jb.spy.initSpy({spyParam: 'remote,vscode,treeShake'})
@@ -100,7 +100,7 @@ jb.component('jbm.vscodeWebView', {
         jb.jbm.childJbms[name] = jb.ports[webViewUri] = jb.jbm.extendPortToJbmProxy(
             jb.vscode.portFromExtensionToWebView(panel.webview, jb.uri, webViewUri))
         const result = new Promise(resolve=> jb.jbm.notifyChildReady[webViewUri] = resolve)
-            .then(() => jb.log('vscode jbm webview ready',{name}))
+            .then(()=> jb.log('vscode jbm webview ready',{name}))
             .then(()=>init(ctx.setVar('jbm',jb.jbm.childJbms[name])))
             .then(()=>jb.jbm.childJbms[name])
         result.uri = webViewUri
@@ -204,7 +204,7 @@ jb.component('jbm.vscodeWebView', {
   // globalThis.jbBaseUrl = '${jbBaseUrl}'
   // globalThis.jbFetchFile = url => util.promisify(fs.readFile)(url)
   // globalThis.jbFetchJson = url => (util.promisify(fs.readFile)(url)).then(x=>JSON.parse(x))
-  // require(jbBaseUrl+ '/hosts/node/node-utils.js')
+  // require(jbBaseUrl+ '/hosts/node/node-host.js')
 
   // const { jbInit, jb_plugins } = require(jbBaseUrl+ '/plugins/loader/jb-loader.js')
   // globalThis.jbInit = jbInit

@@ -103,7 +103,7 @@ jb.extension('vscode', 'utils', {
     },
     async provideDefinition(docProps) {
         const loc = await jb.exec(tgp.getDefinitionFromServer({docProps: () => docProps }))
-        return loc && new vscodeNS.Location(vscodeNS.Uri.file(jbBaseUrl + loc[0]), new vscodeNS.Position((+loc[1]) || 0, 0))
+        return loc && new vscodeNS.Location(vscodeNS.Uri.file(jbHost.jbReactDir + loc[0]), new vscodeNS.Position((+loc[1]) || 0, 0))
     },
     // commands
     async restartLangServer() {
@@ -111,7 +111,7 @@ jb.extension('vscode', 'utils', {
         const port = jb.path(jb.nodeContainer.servers,'langServer.port') || 8085
         jb.log('remote http terminating existing service',{port})
         try {
-            globalThis.jbFetchUrl(`http://localhost:${port}/?op=terminate`)
+            jbHost.fetch(`http://localhost:${port}/?op=terminate`)
         } catch(e) {}
         await jb.exec(tgp.startLangServer())
         const pid = jb.path(jb.nodeContainer.servers,'langServer.pid')
@@ -195,27 +195,27 @@ jb.extension('vscode', 'utils', {
         jb.vscode._api = jb.vscode._api || (typeof acquireVsCodeApi != 'undefined' ? acquireVsCodeApi() : null)
         return jb.vscode._api
     },   
-    watchFileChange() {
-        vscodeNS.workspace.onDidChangeTextDocument(() => {
-            jb.vscode.cache = {}
-        })
-        vscodeNS.workspace.onDidSaveTextDocument( () => { // update component of active selection
-            jb.vscode.updateCurrentCompFromEditor(jb.tgpTextEditor.host.docTextAndCursor())
-        })
-        vscodeNS.workspace.onDidOpenTextDocument(({fileName}) => 
-            fileName.split(jbBaseUrl).pop().match(/projects[/]([^/]*)/) && jb.vscode.loadOpenedProjects())
-    },
+    // watchFileChange() {
+    //     vscodeNS.workspace.onDidChangeTextDocument(() => {
+    //         jb.vscode.cache = {}
+    //     })
+    //     vscodeNS.workspace.onDidSaveTextDocument( () => { // update component of active selection
+    //         jb.vscode.updateCurrentCompFromEditor(jb.tgpTextEditor.host.docTextAndCursor())
+    //     })
+    //     vscodeNS.workspace.onDidOpenTextDocument(({fileName}) => 
+    //         fileName.split(jbBaseUrl).pop().match(/projects[/]([^/]*)/) && jb.vscode.loadOpenedProjects())
+    // },
     watchCursorChange() {
     //    vscodeNS.window.onDidChangeTextEditorSelection(jb.vscode.updatePosVariables)
     },
-    openedProjects() {
-        return jb.utils.unique(vscodeNS.workspace.textDocuments
-            .map(doc => (doc.fileName.split(jbBaseUrl).pop().match(/projects[/]([^/]*)/) || ['',''])[1]))
-    },
-    loadOpenedProjects() {
-        const doc = vscodeNS.window.activeTextEditor.document
-        jb.frame.eval(jb.macro.importAll() + ';' + doc.getText() || '')
-    }
+    // openedProjects() {
+    //     return jb.utils.unique(vscodeNS.workspace.textDocuments
+    //         .map(doc => (doc.fileName.split(jbBaseUrl).pop().match(/projects[/]([^/]*)/) || ['',''])[1]))
+    // },
+    // loadOpenedProjects() {
+    //     const doc = vscodeNS.window.activeTextEditor.document
+    //     jb.frame.eval(jb.macro.importAll() + ';' + doc.getText() || '')
+    // }
 })
 
 jb.component('vscode.openQuickPickMenu', {
@@ -262,7 +262,7 @@ jb.component('vscode.gotoPath', {
 
 jb.component('vscode.completionServer', {
   type: 'jbm',
-  impl: jbm.nodeContainer({
+  impl: jbm.remoteNodeWorker({
     id: 'completionServer',
     projects: list('studio', 'tests'),
     inspect: 7010,
@@ -282,13 +282,13 @@ jb.component('probe.probeByCmd', {
     const args = ["-main:probe.runCircuit()",`-plugins:${(plugins||[]).join(',')}`,`-projects:${(projects||[]).join(',')}`,
         `%probePath:${probePath}`, "-spy:probe", "-wrap:pipe(MAIN, probe.pruneResult(),first())"]
 
-    const command = `node --inspect-brk jb.js ${args.map(x=>`'${x}'`).join(' ')}`
+    const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(x=>`'${x}'`).join(' ')}`
     jb.vscode.stdout.appendLine(`probeByCmd: ${command}`)
 
-    if (jb.frame.jbSpawn) {
+    if (jbHost.spawn) {
         let res = null
         try {
-          res = await jbSpawn(args)
+          res = await jbHost.spawn(args)
         } catch (e) {
           jb.logException(e,'probeByCmd',{command})
         }

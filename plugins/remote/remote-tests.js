@@ -354,7 +354,7 @@ jb.component('remoteTest.dynamicProfileFunc', {
 
 jb.component('remoteTest.nodeContainer', {
   impl: dataTest({
-    calculate: pipe(jbm.nodeContainer(), remote.data('hello', '%%')),
+    calculate: pipe(jbm.remoteNodeWorker(), remote.data('hello', '%%')),
     expectedResult: equals('hello'),
     timeout: 3000
   })
@@ -384,7 +384,7 @@ jb.component('remoteTest.nodeContainer.runTest', {
   impl: dataTest({
     vars: [
       Var('testsToRun', list('dataTest.join', 'dataTest.ctx.expOfRefWithBooleanType')),
-      Var('servlet', jbm.nodeContainer({
+      Var('servlet', jbm.remoteNodeWorker({
         id: 'tester',
         loadTests: true,
         projects: list('studio', 'tests'),
@@ -417,7 +417,7 @@ jb.component('remoteTest.testResults', {
   impl: dataTest({
     vars: [
       Var('testsToRun', list('dataTest.join', 'dataTest.ctx.expOfRefWithBooleanType')),
-      Var('servlet', jbm.nodeContainer('tester', list('studio', 'tests')))
+      Var('servlet', jbm.remoteNodeWorker('tester', list('studio', 'tests')))
     ],
     calculate: pipe(rx.pipe(source.testsResults('%$testsToRun%', '%$servlet%'), rx.log('test')), '%id%-%started%-%success%', join(',')),
     expectedResult: equals(
@@ -430,10 +430,10 @@ jb.component('remoteTest.testResults', {
 // jb.component('remoteTest.tcp', {
 //   impl: dataTest({
 //     vars: [
-//       Var('s1', jbm.nodeContainer({id: 's1', inspect: 7010, spyParam: 'remote'})),
+//       Var('s1', jbm.remoteNodeWorker({id: 's1', inspect: 7010, spyParam: 'remote'})),
 //     ],
 //     calculate: remote.data(pipe(
-//       jbm.nodeContainer({id: 's2', tcp: true, urlBase: 'http://localhost:8082', spyParam: 'remote', inspect: 7011}),
+//       jbm.remoteNodeWorker({id: 's2', tcp: true, urlBase: 'http://localhost:8082', spyParam: 'remote', inspect: 7011}),
 //       remote.data('hello from s2 via tcp', '%%'))
 //         ,'%$s1%'),
 //     expectedResult: equals('hello from s2 via tcp'),

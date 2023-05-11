@@ -1,5 +1,5 @@
 jb.dsl('d3')
-jb.import('ui')
+jb.using('ui')
 
 jb.extension('d3', {
   $requireLibs: ['/dist/d3.js'],

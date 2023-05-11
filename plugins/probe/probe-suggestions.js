@@ -207,14 +207,14 @@ jb.component('probe.suggestionsByCmd', {
         `%expressionOnly:${expressionOnly}`,
         "-spy:probe"]
 
-    const command = `node --inspect-brk jb.js ${args.map(x=>`'${x}'`).join(' ')}`
+    const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(x=>`'${x}'`).join(' ')}`
     ctx.setData(`suggestionsByCmd: ${command}`).run(remote.action({ action: ({data}) => { jb.vscode.stdout.appendLine(data) }, 
       jbm: () => jb.parent, oneway: true }))
 
-    if (jb.frame.jbSpawn) {
+    if (jbHost.spawn) {
         let res = null
         try {
-          res = await jbSpawn(args)
+          res = await jbHost.spawn(args)
         } catch (e) {
           jb.logException(e,'suggestionsByCmd',{command})
         }

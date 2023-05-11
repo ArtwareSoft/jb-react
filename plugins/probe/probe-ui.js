@@ -1,4 +1,4 @@
-jb.import('remote-widget')
+jb.using('remote-widget')
 
 jb.component('probe.inOutView', {
   type: 'control',

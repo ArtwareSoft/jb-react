@@ -1,25 +1,31 @@
-
 globalThis.vscodeNS = require('vscode')
-globalThis.vsChild = require('child_process')
-globalThis.vsNet = require('net')
-globalThis.vsHttp = require('http')
+//globalThis.vsChild = require('child_process')
+//globalThis.vsHttp = require('http')
+function findjbReact() {
+    const underJbReact = (__dirname.match(/projects\/jb-react(.*)$/) || [''])[1]
+    if (underJbReact)
+        return __dirname.slice(0,-1*underJbReact.length)
+    const workspaceDir = (vscodeNS.workspace.workspaceFolders || []).map(ws=>ws.uri.path).filter(path=>path.match(/jb-react/))[0]
+    if (__dirname.match(/extensions/)) 
+        return workspaceDir
+    return __dirname.replace(/\/hosts\/vscode\/tgp-lang$/,'')            
+    // const dir2 = [...__dirname.split('/').slice(0,__dirname.split('/').indexOf('projects')), 'jb-react'].join('/')
+    // if (fs.statSync(dir2).isDirectory())
+    //     return dir2
+}
 
-globalThis.vsPluginDir = __dirname
+// const workspaceDir = (vscodeNS.workspace.workspaceFolders || []).map(ws=>ws.uri.path).filter(path=>path.match(/jb-react/))[0]
+// global.jbBaseUrl = __dirname.match(/extensions/) ? workspaceDir : __dirname.replace(/\/hosts\/vscode\/tgp-lang$/,'')    
+// console.log('jbBaseUrl',jbBaseUrl)
+const { jbHost } = require(findjbReact() + '/hosts/node/node-host.js')
 
-const workspaceDir = (vscodeNS.workspace.workspaceFolders || []).map(ws=>ws.uri.path).filter(path=>path.match(/jb-react/))[0]
-global.jbBaseUrl = __dirname.match(/extensions/) ? workspaceDir : __dirname.replace(/\/hosts\/vscode\/tgp-lang$/,'')    
-console.log('jbBaseUrl',jbBaseUrl)
-require(jbBaseUrl+ '/hosts/node/node-utils.js')
-
-const { jbInit, jb_plugins } = require(jbBaseUrl+ '/plugins/loader/jb-loader.js')
-globalThis.jbInit = jbInit
-globalThis.jb_plugins = jb_plugins
+const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
+const plugins = ['common','rx','tree-shake','pretty-print','watchable','ui','vscode', 'tgp','remote','remote-widget']
+// globalThis.jbInit = jbInit
+// globalThis.jb_plugins = jb_plugins
  
 async function activate(context) {
-    globalThis.jb = globalThis.jb || (globalThis.jbInit && await jbInit('jbart-lsp-ext', {
-        plugins: ['common','rx','tree-shake','pretty-print','watchable','ui','vscode', 'tgp','remote','remote-widget']
-        , doNoInitLibs: true, noTests: true
-    }))
+    globalThis.jb = await jbInit('jbart-lsp-ext', { plugins, doNoInitLibs: true, noTests: true })
     await jb.initializeLibs(['utils','treeShake','remoteCtx','jbm','cbHandler'
         ,'tgpTextEditor','vscode','nodeContainer'])
     jb.spy.initSpy({spyParam: 'remote,vscode'})

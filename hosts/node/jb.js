@@ -1,3 +1,4 @@
+const { jbHost } = require('./node-host.js')
 
 const [main,_plugins,_projects,wrap,base_dir,_spy,_spyParam,uri,dsl,libsToinit,verbose,loadTests] = 
     ['main','plugins','projects','wrap','base_dir','spy','spyParam','uri','dsl','libsToinit','verbose','loadTests']
@@ -25,13 +26,12 @@ if (!main) {
 if (verbose)
     console.log(JSON.stringify(process.argv))
 
-const underJbReact = (__dirname.match(/projects\/jb-react(.*)$/) || [''])[1]
-global.jbBaseUrl = base_dir || underJbReact != null ? __dirname.slice(0,-1*underJbReact.length) : '.'
-require(jbBaseUrl+ '/hosts/node/node-utils.js')
+// const underJbReact = (__dirname.match(/projects\/jb-react(.*)$/) || [''])[1]
+// global.jbBaseUrl = base_dir || underJbReact != null ? __dirname.slice(0,-1*underJbReact.length) : '.'
 
-const { jbInit, jb_plugins } = require(jbBaseUrl+ '/plugins/loader/jb-loader.js')
-globalThis.jbInit = jbInit
-globalThis.jb_plugins = jb_plugins
+const { jbInit, jb_plugins } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
+// globalThis.jbInit = jbInit
+// globalThis.jb_plugins = jb_plugins
 
 ;(async () => {
     const projects = _projects ? _projects.split(',') : null
@@ -119,20 +119,6 @@ function evalProfileDef(code, dsl) {
       return {err: e}
     } 
 }
-
-// function evalProfileDef(code, dsl) { 
-//     try {
-//         jb.core.unresolvedProfiles = []
-//         const funcId = dsl ? `$$dsl_${dsl}$` : ''
-//         jb.frame.eval(`(function ${funcId}() { ${jb.macro.importAll()}; ${code} })()`)
-//         const compId = jb.core.unresolvedProfiles.slice(-1)[0].id
-//         jb.utils.resolveLoadedProfiles()
-//         return { compId }
-//     } 
-//     catch (e) { 
-//         return {err: e}
-//     } 
-// }  
 
 function resolveMacros(code, dsl) { 
     try {

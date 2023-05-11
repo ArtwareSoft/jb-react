@@ -1,4 +1,4 @@
-
+jb.using('ui')
 jb.extension('zui','FE-utils', {
   initZuiCmp(vars,glCanvas,gl) {
     const {cmp, DIM} = vars

@@ -290,7 +290,7 @@ const op_get_handlers = {
     },
     jb: (req,res,path) => {
       const args = JSON.parse(getURLParam(req,'args'))
-      const command = `node --inspect-brk ../bin/jb.js ${args.map(x=>`'${x}'`).join(' ')}`
+      const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(x=>`'${x}'`).join(' ')}`
       const inspect = args.find(x=>x.indexOf('-inspect=') == 0)
       const cmdArgs = [
         ...(inspect ? [`-${inspect}`] : []),
@@ -303,8 +303,8 @@ const op_get_handlers = {
         (code,ev) => res.end(JSON.stringify({command, exit: `exit ${''+code} ${''+ev}}`}))))
 
       function runServer(args,onExit) {
-        const srvr = child.spawn('node',args,{cwd: 'bin'})
-        srvr.stdout.on('data', data => res.end(data))
+        const srvr = child.spawn('node',args,{cwd: 'hosts/node'})
+        srvr.stdout.on('data', data => res.end(data)) // !! only first portion of result will be returned
         srvr.on('exit', onExit)
         srvr.on('error', (e) => res.end(JSON.stringify({command, error: `${''+e}`})))  
       }
@@ -398,14 +398,7 @@ const op_get_handlers = {
           dsl: unique(content.split('\n').map(l=>(l.match(/^jb.dsl\('([^']+)/) || ['',''])[1]).filter(x=>x).map(x=>x.split('.')[0]))[0],
           ns: unique(content.split('\n').map(l=>(l.match(/^(jb.)?component\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0])),
           libs: unique(content.split('\n').map(l=>(l.match(/^jb.extension\('([^']+)/) || ['',''])[1]).filter(x=>x).map(x=>x.split('.')[0])),
-          imports: unique(content.split('\n').map(l=>(l.match(/^jb.import\(([^)]+)/) || ['',''])[1]).filter(x=>x).map(x=>parseImport(x))),
-        }
-      }
-      function parseImport(str) {
-        try {
-          return JSON.parse(`[${str}]`.replace(/'/g,'"'))
-        } catch (error) {
-          return [{error}]
+          using: unique(content.split('\n').map(l=>(l.match(/^jb.using\('([^']+)/) || ['',''])[1]).filter(x=>x).flatMap(x=>x.split(',').map(x=>x.trim()))),
         }
       }
       function unique(list) {

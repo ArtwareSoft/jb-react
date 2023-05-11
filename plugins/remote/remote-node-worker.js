@@ -68,9 +68,8 @@ jb.extension('nodeContainer', {
     }
 })
 
-jb.component('jbm.nodeContainer', {
+jb.component('jbm.remoteNodeWorker', {
   type: 'jbm',
-  description: 'node worker',
   params: [
     {id: 'id', as: 'string', mandatory: true},
     {id: 'projects', as: 'array'},
@@ -118,9 +117,8 @@ jb.component('jbm.nodeContainer', {
 
         function startServlet(args) {
             const url = `${urlBase}/?op=createJbm${args.map(x=>`${x.replace(/:/,'=').replace(/^-/,'&')}`).join('')}`
-            if (globalThis.jbFetchUrl)
-                return globalThis.jbFetchUrl(url).then(r => r.json())
-            return jb.frame.fetch(url, {mode: 'cors'}).then(r => r.json())
+            return jbHost.fetch(url).then(r => r.json())
+//            return jb.frame.fetch(url, {mode: 'cors'}).then(r => r.json())
         }
     }
 })
@@ -154,7 +152,7 @@ jb.component('jbm.spawn', {
             `-projects:${projects.join(',')}`,
 //            ...(completionServer ? [`-completionServer:true`] : []),
             `-spyParam:${jb.spy.spyParam}`]
-        const child = (globalThis.vsChild || require('child_process')).spawn('node', args, {cwd: globalThis.jbBaseUrl+'/hosts/node'})
+        const child = jbHost.child_process.spawn('node', args, {cwd: jbHost.jbReactDir+'/hosts/node'})
 
         const command = `node --inspect-brk jb.js ${args.map(x=>`'${x}'`).join(' ')}`
         jb.vscode.stdout && jb.vscode.stdout.appendLine(command)

@@ -301,7 +301,7 @@ jb.component('initJb.usingProjects', {
 jb.component('initJb.treeShakeClient', {
     type: 'initJbCode',
     impl: ({vars}) => `(async () => {
-const jb = { uri: '${vars.uri}', baseUrl: typeof jbBaseUrl != 'undefined' ? jbBaseUrl : ''}
+const jb = { uri: '${vars.uri}' }
 ${jb.treeShake.clientCode()};
 return jb
 })()`
@@ -327,7 +327,7 @@ jb.component('jbm.worker', {
             const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
             const initJbCode = initJbCodeF(ctx.setVars({uri: workerUri, multipleJbmsInFrame: false}))
             const workerCode = `
-jbBaseUrl = location.origin || '';
+//jbBaseUrl = location.origin || '';
 importScripts(location.origin+'/plugins/loader/jb-loader.js');
 
 Promise.resolve(${initJbCode})

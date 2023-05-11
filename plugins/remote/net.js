@@ -56,7 +56,7 @@ jb.component('http.fetch', {
     else if (proxy == 'cloud-test-local')
       reqObj.url = `http://localhost:8080/fetch?req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
 
-    return (globalThis.jbFetchUrl || jb.frame.fetch)(reqObj.url, proxy ? {mode: 'cors'} : reqObj)
+    return jbHost.fetch(reqObj.url, proxy ? {mode: 'cors'} : reqObj)
 			  .then(r => json ? r.json() : r.text())
 				.then(res=> jb.http_get_cache ? (jb.http_get_cache[reqStr] = res) : res)
 			  .catch(e => jb.logException(e,'http.fetch',{ctx}) || [])

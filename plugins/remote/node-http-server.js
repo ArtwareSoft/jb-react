@@ -50,10 +50,10 @@ jb.component('node.startRemoteHttpServer', {
             ...(libsToinit ? [`-libsToinit:${libsToinit.join(',')}`] : []),
             `-spyParam:${spyParam}`]
 
-      const command = `node --inspect-brk jb.js ${args.map(x=>`'${x}'`).join(' ')}`
+      const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(x=>`'${x}'`).join(' ')}`
       let spawnRes = null
-      if (globalThis.jbSpawn) { // node or vscode
-        const resText = await jbSpawn(args,{doNotWaitForEnd: true})
+      if (jbHost.spawn) { // node or vscode
+        const resText = await jbHost.spawn(args,{doNotWaitForEnd: true})
         try {
           spawnRes = await JSON.parse(resText) 
         } catch(e) {
@@ -82,7 +82,7 @@ jb.component('node.startHttpServer', {
     return await start()
 
     async function serve(req, res) {
-      jb.log('remote http serve',{req,res})
+      jb.log('remote http server',{req,res})
       res.setHeader("Access-Control-Allow-Origin", "*")
       const service = services.find(s=>s.match(req))
       if (service) {
@@ -98,19 +98,19 @@ jb.component('node.startHttpServer', {
 
     function start() {
       return new Promise(resolve=> {
-        const server = (globalThis.vsHttp || globalThis.jbHttp).createServer(serve)
+        const server = jbHost.http.createServer(serve)
         server.once('error', async err => {
           if (err.code === 'EADDRINUSE') {
             jb.log('remote http service already up',{port})
             if (restart) {
               jb.log('remote http terminating existing service',{port})
               try {
-                await (await globalThis.jbFetchUrl(`http://localhost:${port}/?op=terminate`)).json()
+                await (await jbHost.fetch(`http://localhost:${port}/?op=terminate`)).json()
               } catch(e) {}
               resolve(await start())
             } else { // use current server
               jb.log('remote http try to redirect to existing service',{port})
-              const details = await (await globalThis.jbFetchUrl(`http://localhost:${port}/?op=details`)).json()
+              const details = await (await jbHost.fetch(`http://localhost:${port}/?op=details`)).json()
               jb.log('remote http redirect to existing service',{port, ...details})
               resolve(details.result)
             }

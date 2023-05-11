@@ -294,7 +294,7 @@ jb.component('jbm.wProbe', {
 
 jb.component('jbm.nodeProbe', {
   type: 'jbm',
-  impl: jbm.nodeContainer({init: probe.initRemoteProbe()})
+  impl: jbm.remoteNodeWorker({init: probe.initRemoteProbe()})
 })
 
 jb.component('probe.initRemoteProbe', {
