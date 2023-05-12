@@ -141,6 +141,16 @@ jb.extension('vscode', 'utils', {
         jb.log('vscode openProbeResultPanel',{probeRes, probePath})
         jb.vscode.panels.main.render('probe.probeResView',probeRes)
     },
+    async openLiveProbeResultPanel() {
+        const docProps = jb.tgpTextEditor.host.docTextAndCursor()
+        jb.vscode.log('start openProbeResultPanel')
+        const probePath = await jb.exec(tgp.getPathFromServer({docProps: () => docProps }))
+        jb.vscode.log('openProbeResultPanel 2',probePath)
+        const probeRes = await jb.vscode.ctx.run({$: 'probe.probeByCmd', filePath: docProps.filePath, probePath})
+        jb.vscode.log('openProbeResultPanel 3',probeRes)
+        jb.log('vscode openProbeResultPanel',{probeRes, probePath})
+        jb.vscode.panels.main.render('probe.probeResView',probeRes)
+    },
 
     toVscodeFormat(pos) {
         return { line: pos.line, character: pos.col }
@@ -260,18 +270,6 @@ jb.component('vscode.gotoPath', {
   impl: (ctx,path,semanticPart) => jb.vscode.gotoPath(path,semanticPart)
 })
 
-jb.component('vscode.completionServer', {
-  type: 'jbm',
-  impl: jbm.remoteNodeWorker({
-    id: 'completionServer',
-    projects: list('studio', 'tests'),
-    inspect: 7010,
-    completionServer: true,
-    urlBase: 'http://localhost:8082',
-    spyParam: 'vscode,completion,remote'
-  })
-})
-
 jb.component('probe.probeByCmd', {
   params: [
     {id: 'filePath', as: 'string'},
@@ -280,7 +278,7 @@ jb.component('probe.probeByCmd', {
   impl: async (ctx,filePath,probePath) => {
     const { plugins, projects } = jb.utils.pluginsOfFilePath(filePath)
     const args = ["-main:probe.runCircuit()",`-plugins:${(plugins||[]).join(',')}`,`-projects:${(projects||[]).join(',')}`,
-        `%probePath:${probePath}`, "-spy:probe", "-wrap:pipe(MAIN, probe.pruneResult(),first())"]
+        `%probePath:${probePath}`, "-spy:probe", "-loadTests:true", "-wrap:pipe(MAIN, probe.pruneResult(),first())"]
 
     const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(x=>`'${x}'`).join(' ')}`
     jb.vscode.stdout.appendLine(`probeByCmd: ${command}`)

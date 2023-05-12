@@ -1,12 +1,17 @@
 jb.extension('nodeContainer', {
     initExtension() { return { toRestart: [], servers: {} } },
     connectFromBrowser: (url,serverUri,ctx) => new Promise( resolve => {
-        const socket = new jb.frame.WebSocket(url,'echo-protocol')
+        const socket = new jbHost.WebSocket_Browser(url,'echo-protocol')
         socket.onopen = () => resolve(jb.nodeContainer.portFromBrowserWebSocket(socket,serverUri))
         socket.onerror = err => { jb.logError('websocket error',{err,ctx}); resolve() }
     }),
+    connectFromVSCodeClient: (url,serverUri,ctx) => new Promise( resolve => {
+        const client = new jbHost.WebSocket_WS(url)
+        client.on('error', err => {jb.logError('websocket client - connection failed',{ctx,err}); resolve() })
+        client.on('open', () => resolve(jb.nodeContainer.portFromVSCodeWebSocket(client,serverUri)))
+    }),
     connectFromNodeClient: (url,serverUri,ctx) => new Promise( resolve => {
-        const client = new (globalThis.vsWS || jb.frame.require('websocket')).client()
+        const client = new jb.frame.require('websocket').client()
         client.on('connectFailed', err => {jb.logError('websocket client - connection failed',{ctx,err}); resolve() })
         client.on('connect', socket => {
           if (!socket.connected) {
@@ -18,6 +23,22 @@ jb.extension('nodeContainer', {
         })
         client.connect(url, 'echo-protocol')  
     }),
+    portFromVSCodeWebSocket(socket,to,options) {
+        if (jb.ports[to]) return jb.ports[to]
+        const from = jb.uri
+        const port = {
+            socket, from, to,
+            postMessage: _m => {
+                const m = {from, to,..._m}
+                jb.log(`remote sent from ${from} to ${to}`,{m})
+                socket.send(JSON.stringify(m))
+            },
+            onMessage: { addListener: handler => socket.on('message', m => jb.net.handleOrRouteMsg(from,to,handler,JSON.parse(m.utf8Data),options)) },
+            onDisconnect: { addListener: handler => { port.disconnectHandler = handler} }
+        }
+        jb.ports[to] = port
+        return port
+    },    
     portFromNodeWebSocket(socket,to,options) {
         if (jb.ports[to]) return jb.ports[to]
         const from = jb.uri
@@ -77,10 +98,11 @@ jb.component('jbm.remoteNodeWorker', {
     {id: 'init', type: 'action', dynamic: true},
     {id: 'loadTests', as: 'boolean'},
     {id: 'inspect', as: 'number'},
-    {id: 'urlBase', as: 'string'},
+    {id: 'studioServerUrl', as: 'string'},
     {id: 'spyParam', as: 'string'},
+    {id: 'restartSource', type: 'rx', description: 'rx event to restrat'}
   ],
-  impl: async (ctx,name,projects,host,init,loadTests,inspect,urlBase,spyParam) => {
+  impl: async (ctx,name,projects,host,init,loadTests,inspect,studioServerUrl,spyParam) => {
         jb.log('vscode remote jbm nodeContainer',{ctx,name})
         const servletUri = `${jb.uri}__${name}`
         const restart = (jb.nodeContainer.toRestart||[]).indexOf(name)
@@ -107,7 +129,9 @@ jb.component('jbm.remoteNodeWorker', {
         if (!childDetails.uri)
             return jb.logError('jbm nodeContainer bad response from server',{ctx, childDetails})
         
-        const port = await jb.nodeContainer.connectFromBrowser(`ws://${host()}:${childDetails.port}`,childDetails.uri,ctx)
+        const method = 'connectFrom' + (jbHost.WebSocket_WS ? 'VSCodeClient' 
+            : jbHost.WebSocket_Browser ? 'Browser' : 'NodeClient')
+        const port = await jb.nodeContainer[method](`ws://${host()}:${childDetails.port}`,childDetails.uri,ctx)
         jb.log('vscode remote connected to port',{ctx,childDetails})
 
         const jbm = jb.jbm.childJbms[name] = jb.ports[servletUri] = jb.jbm.extendPortToJbmProxy(port)
@@ -116,7 +140,7 @@ jb.component('jbm.remoteNodeWorker', {
         return jbm
 
         function startServlet(args) {
-            const url = `${urlBase}/?op=createJbm${args.map(x=>`${x.replace(/:/,'=').replace(/^-/,'&')}`).join('')}`
+            const url = `${studioServerUrl}/?op=createJbm${args.map(x=>`${x.replace(/:/,'=').replace(/^-/,'&')}`).join('')}`
             return jbHost.fetch(url).then(r => r.json())
 //            return jb.frame.fetch(url, {mode: 'cors'}).then(r => r.json())
         }

@@ -59,6 +59,56 @@ jb.extension('vscode', 'ports', {
     }},   
 })
 
+jb.component('vscode.completionServer', {
+  type: 'jbm',
+  impl: jbm.remoteNodeWorker({
+    id: 'completionServer',
+    projects: list('studio', 'tests'),
+    loadTests: true,
+    inspect: 7010,
+    studioServerUrl: 'http://localhost:8082',
+    spyParam: 'vscode,completion,remote'
+  })
+})
+
+jb.component('jbm.vscodeRemoteProbe', {
+  type: 'jbm',
+  params: [
+    {id: 'filePath', as: 'ref'},
+    {id: 'probePath', as: 'ref'}
+  ],
+  impl: jbm.remoteNodeWorker({
+    id: 'remoteProbe',
+    projects: tgp.pluginsOfFilePath('%$filePath%'),
+    restart: source.watchableData('%$filePath%'),
+    init: vscode.initRemoteProbe('%$probePath%'),
+    loadTests: true,
+    inspect: 7011,
+    studioServerUrl: 'http://localhost:8082',
+    spyParam: 'vscode,remote'
+  })
+})
+
+jb.component('vscode.initRemoteProbe', {
+  type: 'action',
+  impl: runActions(
+    remote.shadowResource('probe', '%$jbm%'),
+    rx.pipe(
+      vscode.scriptChange(),
+      rx.log('vscode preview probe change script'),
+      rx.map(obj(prop('op', '%op%'), prop('path', '%path%'))),
+      rx.var('cssOnlyChange', tgp.isCssPath('%path%')),
+      sink.action(
+        remote.action({
+          action: probe.handleScriptChangeOnPreview('%$cssOnlyChange%'),
+          jbm: '%$jbm%',
+          oneway: true
+        })
+      )
+    )
+  )
+})
+
 jb.component('jbm.vscodeWebView', {
   type: 'jbm',
   params: [

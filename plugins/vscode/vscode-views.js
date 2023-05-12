@@ -1,4 +1,11 @@
 
+jb.component('vscode.liveProbe', {
+  type: 'control',
+  params: [
+  ],
+  impl: probe.inOutView()
+})
+
 jb.component('vscode.openPreviewPanel', {
   type: 'action',
   params: [
@@ -30,7 +37,7 @@ jb.component('vscode.showInXWebView', {
   params: [
     {id: 'id', as: 'string'},
     {id: 'panel'},
-    {id: 'backend', type: 'jbm', defaultValue: jbm.self() }
+    {id: 'backend', type: 'jbm', defaultValue: jbm.self()}
   ],
   impl: runActionOnItem(
     Var('profToRun', obj(prop('$', 'vscode.%$id%Ctrl'))),

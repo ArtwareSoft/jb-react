@@ -327,8 +327,9 @@ jb.component('jbm.worker', {
             const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
             const initJbCode = initJbCodeF(ctx.setVars({uri: workerUri, multipleJbmsInFrame: false}))
             const workerCode = `
-//jbBaseUrl = location.origin || '';
+
 importScripts(location.origin+'/plugins/loader/jb-loader.js');
+jbHost.baseUrl = location.origin || '';
 
 Promise.resolve(${initJbCode})
     .then(jb => {

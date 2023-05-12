@@ -13,20 +13,27 @@
 	"activationEvents": [
 		"onLanguage:javascript"
 	],
+	"dependencies": {
+		"ws": "^8.13.0"
+	},
 	"main": "vscode-tgp-lang.js",
 	"contributes": {
 		"viewsContainers": {
 			"activitybar": [
-			  {
-				"id": "jbart",
-				"title": "jBart",
-				"icon": "logo128.png"
-			  }
+				{
+					"id": "jbart",
+					"title": "jBart",
+					"icon": "logo128.png"
+				}
 			]
-		},		
+		},
 		"views": {
 			"jbart": [
-				{ "id": "jbart.main", "type": "webview", "name": "main" }				
+				{
+					"id": "jbart.main",
+					"type": "webview",
+					"name": "main"
+				}
 			]
 		},
 		"commands": [
@@ -37,7 +44,7 @@
 			{
 				"command": "jbart.restartLangServer",
 				"title": "restart tgp lang completion server"
-			},			
+			},
 			{
 				"command": "jbart.gotoPath",
 				"title": "goto path"

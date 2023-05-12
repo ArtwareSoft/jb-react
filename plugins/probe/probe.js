@@ -292,11 +292,6 @@ jb.component('jbm.wProbe', {
   impl: jbm.worker('%$id%', probe.initRemoteProbe())
 })
 
-jb.component('jbm.nodeProbe', {
-  type: 'jbm',
-  impl: jbm.remoteNodeWorker({init: probe.initRemoteProbe()})
-})
-
 jb.component('probe.initRemoteProbe', {
   type: 'action',
   impl: runActions(

@@ -7,13 +7,16 @@ var jb_plugins = [
 
 globalThis.jbHost = globalThis.jbHost || { // browserHost - studioServer,worker and static
   fetch: (...args) => globalThis.fetch(...args),
-  isStatic: globalThis.location && globalThis.location.origin.indexOf('localhost') == -1,
-  isWorker: globalThis.importScripts != null,
-  baseUrl: globalThis.importScripts ? location.origin : '',
+  // isStatic: globalThis.location && globalThis.location.origin.indexOf('localhost') == -1,
+  // isVsCodeView: globalThis.location && globalThis.location.origin == 'vscode-file://vscode-app',
+  // isWorker: globalThis.importScripts != null,
+  baseUrl: '',
+  fetchOptions: {}, // {mode: 'cores'}
   log(...args) { console.log (...args) },
-
+  WebSocket_Browser: globalThis.WebSocket,
+  
   defaultCodePackage: {
-    _fetch(path) { return fetch(jbHost.baseUrl + path, jbHost.isStatic ? {mode: 'cores'} : {}) },
+    _fetch(path) { return fetch(jbHost.baseUrl + path, jbHost.fetchOptions) },
     fetchFile(path) { return this._fetch(path).then(x=>x.text()) },
     fetchJSON(path) { return this._fetch(path).then(x=>x.json()) },
     fileSymbols(path,useFileSymbolsFromBuild) { return useFileSymbolsFromBuild ? this.fileSymbolsFromStaticFileServer(path) 
@@ -33,7 +36,7 @@ globalThis.jbHost = globalThis.jbHost || { // browserHost - studioServer,worker 
   }
 }
 
-async function jbInit(uri, {projects, plugins, baseUrl, multipleInFrame, doNoInitLibs, useFileSymbolsFromBuild, loadTests }) {
+async function jbInit(uri, {projects, plugins, loadTests, multipleInFrame, doNoInitLibs, useFileSymbolsFromBuild }) {
   const jb = { 
     uri, 
     async loadCode({codePackge, projects, plugins, doNoInitLibs, loadTests}) {

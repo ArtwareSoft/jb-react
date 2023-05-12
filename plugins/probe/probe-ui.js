@@ -2,6 +2,9 @@ jb.using('remote-widget')
 
 jb.component('probe.inOutView', {
   type: 'control',
+  params: [
+    {id: 'remoteJbm', type: 'jbm', defaultValue: jbm.wProbe() }
+  ],
   impl: group({
     controls: remote.widget(
       group({
@@ -61,7 +64,7 @@ jb.component('probe.inOutView', {
           })
         ]
       }),
-      jbm.wProbe()
+      '%$remoteJbm%'
     )
   })
 })

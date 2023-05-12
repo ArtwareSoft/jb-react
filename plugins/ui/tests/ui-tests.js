@@ -11,19 +11,19 @@ jb.component('uiTest.group', {
 })
 
 jb.component('uiTest.label', {
-  impl: uiTest({control: text('hello world'), expectedResult: contains('hello world')})
+  impl: uiTest({ control: text('hello world'), expectedResult: contains('hello world') })
 })
 
 jb.component('uiTest.label0', {
-  impl: uiTest({control: text(0), expectedResult: contains('>0<')})
+  impl: uiTest({ control: text(0), expectedResult: contains('>0<') })
 })
 
 jb.component('uiTest.html', {
-  impl: uiTest({control: html('<p>hello world</p>'), expectedResult: contains('>hello world</p>')})
+  impl: uiTest({ control: html('<p>hello world</p>'), expectedResult: contains('>hello world</p>') })
 })
 
 jb.component('uiTest.html.inIframe', {
-  impl: uiTest({control: html({html: '<p>hello world</p>', style: html.inIframe()}), expectedResult: contains('iframe')})
+  impl: uiTest({ control: html({ html: '<p>hello world</p>', style: html.inIframe() }), expectedResult: contains('iframe') })
 })
 
 jb.component('uiTest.controls', {
@@ -41,18 +41,18 @@ jb.component('uiTest.controls', {
 
 jb.component('uiTest.waitForWithPipe', {
   impl: uiTest({
-    control: group({controls: text('%%'), features: group.wait(pipe(delay(1), 'hello'))}),
+    control: group({ controls: text('%%'), features: group.wait(pipe(delay(1), 'hello')) }),
     expectedResult: and(contains('hello'), not(contains('loading'))),
     checkResultRx: () => jb.ui.renderingUpdates,
-    expectedCounters: {'init uiComp': 4}
+    expectedCounters: { 'init uiComp': 4 }
   })
 })
 
 jb.component('uiTest.waitForRx', {
   impl: uiTest({
-    control: group({controls: text('%%'), features: group.wait(rx.pipe(source.interval(10), rx.take(1), rx.map('hello')))}),
+    control: group({ controls: text('%%'), features: group.wait(rx.pipe(source.interval(10), rx.take(1), rx.map('hello'))) }),
     expectedResult: and(contains('hello'), not(contains('loading'))),
-    expectedCounters: {'init uiComp': 4}
+    expectedCounters: { 'init uiComp': 4 }
   })
 })
 
@@ -91,15 +91,15 @@ jb.component('uiTest.waitForRx', {
 
 jb.component('uiTest.asynchLabel', {
   impl: uiTest({
-    control: text({text: pipe(delay(1), 'hello'), features: text.allowAsynchValue()}),
+    control: text({ text: pipe(delay(1), 'hello'), features: text.allowAsynchValue() }),
     expectedResult: contains('hello'),
-    expectedCounters: {'start renderVdom': 2, 'refresh uiComp !request': 1},
+    expectedCounters: { 'start renderVdom': 2, 'refresh uiComp !request': 1 },
   })
 })
 
 jb.component('uiTest.waitForWithVar', {
   impl: uiTest({
-    control: group({controls: text('%$txt%'), features: group.wait({for: pipe(delay(1), 'hello'), varName: 'txt'})}),
+    control: group({ controls: text('%$txt%'), features: group.wait({ for: pipe(delay(1), 'hello'), varName: 'txt' }) }),
     expectedResult: contains('hello')
   })
 })
@@ -117,7 +117,7 @@ jb.component('uiTest.waitForWithVar', {
 // })
 
 jb.component('uiTest.button', {
-  impl: uiTest({control: button('btn1', ctx => alert(1)), expectedResult: contains('btn1')})
+  impl: uiTest({ control: button('btn1', ctx => alert(1)), expectedResult: contains('btn1') })
 })
 
 jb.component('uiTest.button.mdcIcon', {
@@ -132,7 +132,7 @@ jb.component('uiTest.button.mdcIcon', {
 })
 
 jb.component('uiTest.icon.mdi', {
-  impl: uiTest({control: control.icon({icon: 'Yoga', type: 'mdi'}), expectedResult: contains('svg')})
+  impl: uiTest({ control: control.icon({ icon: 'Yoga', type: 'mdi' }), expectedResult: contains('svg') })
 })
 
 jb.component('uiTest.group2', {
@@ -159,7 +159,7 @@ jb.component('uiTest.editableText', {
 })
 
 jb.component('uiTest.editableText.emptyData', {
-  impl: uiTest({control: editableText('name', '%$person/name1%'), expectedResult: not(contains('undefined'))})
+  impl: uiTest({ control: editableText('name', '%$person/name1%'), expectedResult: not(contains('undefined')) })
 })
 
 jb.component('uiTest.editableTextEmpty', {
@@ -191,7 +191,7 @@ jb.component('uiTest.editableText.xButton', {
       databind: '%$person/name%',
       features: editableText.xButton()
     }),
-    expectedResult: contains({text: ['×', 'input', 'Homer Simpson'], inOrder: false})
+    expectedResult: contains({ text: ['×', 'input', 'Homer Simpson'], inOrder: false })
   })
 })
 
@@ -281,7 +281,7 @@ jb.component('uiTest.codeMirrorDialogResizer', {
       action: openDialog({
         content: editableText({
           databind: '%$person/name%',
-          style: editableText.codemirror({mode: 'javascript'})
+          style: editableText.codemirror({ mode: 'javascript' })
         }),
         title: 'resizer',
         features: [dialogFeature.nearLauncherPosition({}), dialogFeature.resizer(true)]
@@ -297,7 +297,7 @@ jb.component('uiTest.codeMirrorDialogResizerOkCancel', {
       'click me',
       openDialog({
         title: 'resizer',
-        content: editableText({databind: '%$person/name%', style: editableText.codemirror({mode: 'javascript'})}),
+        content: editableText({ databind: '%$person/name%', style: editableText.codemirror({ mode: 'javascript' }) }),
         style: dialog.dialogOkCancel(),
         features: [dialogFeature.nearLauncherPosition(), dialogFeature.resizer(true)]
       })
@@ -310,7 +310,7 @@ jb.component('uiTest.renderable', {
   impl: uiTest({
     control: button({
       title: 'click me',
-      action: openDialog({content: text('jbart'), title: text('hello as label')})
+      action: openDialog({ content: text('jbart'), title: text('hello as label') })
     }),
     userInput: userInput.click('button'),
     expectedResult: contains('hello as label')
@@ -362,7 +362,7 @@ jb.component('uiTest.dialogCleanupBug', {
   impl: uiFrontEndTest({
     control: button({
       title: 'click me',
-      action: openDialog({id: 'hello', content: text('world'), title: 'hello'})
+      action: openDialog({ id: 'hello', content: text('world'), title: 'hello' })
     }),
     action: runActions(uiAction.click('button'), delay(1), dialog.closeAll(), delay(1)),
     expectedResult: isEmpty(dialog.shownDialogs())
@@ -403,7 +403,7 @@ jb.component('uiTest.groupFlex', {
 
 jb.component('uiTest.buttonClick', {
   impl: uiTest({
-    control: button({title: 'Click Me', action: writeValue('%$person/name%', 'mukki')}),
+    control: button({ title: 'Click Me', action: writeValue('%$person/name%', 'mukki') }),
     userInput: userInput.click('button'),
     checkResultRx: source.watchableData('%$person/name%'),
     expectedResult: equals('%$person/name%', 'mukki')
@@ -412,7 +412,7 @@ jb.component('uiTest.buttonClick', {
 
 jb.component('uiTest.buttonX', {
   impl: uiTest({
-    control: button({title: 'Click Me', action: () => alert(1), style: button.x()}),
+    control: button({ title: 'Click Me', action: () => alert(1), style: button.x() }),
     expectedResult: contains('×')
   })
 })
@@ -426,7 +426,7 @@ jb.component('uiTest.resource', {
 
 jb.component('uiTest.featuresCss', {
   impl: uiFrontEndTest({
-    control: text({text: 'Hello World', features: css('color: red')}),
+    control: text({ text: 'Hello World', features: css('color: red') }),
     expectedResult: ctx => {
       const elem = jb.ui.widgetBody(ctx)
       document.body.appendChild(elem)
@@ -439,23 +439,24 @@ jb.component('uiTest.featuresCss', {
 
 jb.component('uiTest.itemlist', {
   impl: uiTest({
-    control: itemlist({items: '%$people%', controls: text('%$item.name% - %name%')}),
+    control: itemlist({ items: '%$people%', controls: text('%$item.name% - %name%') }),
     expectedResult: contains(['Homer Simpson - Homer Simpson', 'Bart Simpson - Bart Simpson'])
   })
 })
 
 jb.component('uiTest.itemlistPrimitiveArray', {
   impl: uiTest({
-    control: itemlist({items: '%$personWithPrimitiveChildren/childrenNames%', controls: text('%%')}),
-    expectedResult: contains(['Bart','Lisa','Maggie'])
+    control: itemlist({ items: '%$personWithPrimitiveChildren/childrenNames%', controls: text('%%') }),
+    expectedResult: contains(['Bart', 'Lisa', 'Maggie'])
   })
 })
 
 jb.component('uiTest.itemlistPrimitiveArrayItemShouldBeRef', {
   impl: uiTest({
     timeout: 100,
-    vars: Var('isResultRef', obj(prop('answer',false))),
-    control: itemlist({items: '%$personWithPrimitiveChildren/childrenNames%',
+    vars: Var('isResultRef', obj(prop('answer', false))),
+    control: itemlist({
+      items: '%$personWithPrimitiveChildren/childrenNames%',
       controls: ctx => {
         ctx.run(writeValue('%$isResultRef/answer%', () => !!jb.db.isRef(ctx.data)))
         return ctx.run(text('%%'))
@@ -515,7 +516,7 @@ jb.component('uiTest.itemlistWithSelect', {
     control: itemlist({
       items: '%$people%',
       controls: text('%$item.name% - %name%'),
-      features: itemlist.selection({ autoSelectFirst: true})
+      features: itemlist.selection({ autoSelectFirst: true })
     }),
     expectedResult: contains(['Homer Simpson - Homer Simpson', 'Bart Simpson - Bart Simpson'])
   })
@@ -526,10 +527,10 @@ jb.component('FETest.itemlistWithSelect.click', {
     control: itemlist({
       items: '%$people%',
       controls: text('%$item.name% - %name%'),
-      features: itemlist.selection({ autoSelectFirst: true})
+      features: itemlist.selection({ autoSelectFirst: true })
     }),
     action: uiAction.click('ul>li:nth-child(2)'),
-    expectedResult: contains(['Homer Simpson - Homer Simpson','selected','Bart Simpson - Bart Simpson'])
+    expectedResult: contains(['Homer Simpson - Homer Simpson', 'selected', 'Bart Simpson - Bart Simpson'])
   })
 })
 
@@ -540,7 +541,7 @@ jb.component('FETest.itemlistDD', {
       controls: [
         itemlist({
           items: '%$watchablePeople%',
-          controls: text({text: '%name%', features: css.class('drag-handle')}),
+          controls: text({ text: '%name%', features: css.class('drag-handle') }),
           features: [
             itemlist.selection({
               databind: '%$globals/selectedPerson%',
@@ -570,7 +571,7 @@ jb.component('FETest.itemlistDD', {
 
 jb.component('uiTest.itemlistBasic', {
   impl: uiTest({
-    control: itemlist({items: '%$people%', controls: text('%name%')}),
+    control: itemlist({ items: '%$people%', controls: text('%name%') }),
     expectedResult: contains(['Homer Simpson', 'Bart Simpson'])
   })
 })
@@ -586,7 +587,7 @@ jb.component('uiTest.itemlistAddButton', {
         }),
         button({
           title: 'add',
-          action: addToArray('%$watchablePeople%',obj(prop('name','maggie')))
+          action: addToArray('%$watchablePeople%', obj(prop('name', 'maggie')))
         })
       ]
     }),
@@ -599,12 +600,12 @@ jb.component('uiTest.table.expandToEndOfRow', {
     control: table({
       items: '%$people%',
       controls: [
-        text({ text: '%name%', features: feature.expandToEndOfRow('%name%==Homer Simpson')}),
+        text({ text: '%name%', features: feature.expandToEndOfRow('%name%==Homer Simpson') }),
         text('%age%')
       ],
       lineFeatures: table.enableExpandToEndOfRow()
     }),
-    expectedResult: and(contains('colspan="'),not(contains('>42<')))
+    expectedResult: and(contains('colspan="'), not(contains('>42<')))
   })
 })
 
@@ -614,16 +615,16 @@ jb.component('uiTest.table.MDInplace', {
       controls: table({
         items: '%$people%',
         lineFeatures: [
-          watchRef({ref: '%$sectionExpanded/{%$index%}%', allowSelfRefresh: true}),
+          watchRef({ ref: '%$sectionExpanded/{%$index%}%', allowSelfRefresh: true }),
           table.enableExpandToEndOfRow()
         ],
         controls: [
           group({
             controls: [
-              editableBoolean({databind: '%$sectionExpanded/{%$index%}%', style: editableBoolean.expandCollapse()}),
+              editableBoolean({ databind: '%$sectionExpanded/{%$index%}%', style: editableBoolean.expandCollapse() }),
               text('%name%'),
             ],
-            layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'})
+            layout: layout.flex({ justifyContent: 'start', direction: 'row', alignItems: 'center' })
           }),
           controlWithCondition('%$sectionExpanded/{%$index%}%', group({
             controls: text('inner text'),
@@ -635,8 +636,8 @@ jb.component('uiTest.table.MDInplace', {
       }),
       features: watchable('sectionExpanded', obj()),
     }),
-    userInput: userInput.click('i','toggle'),
-    expectedResult: and(contains(['colspan="','inner text']),not(contains('>42<')))
+    userInput: userInput.click('i', 'toggle'),
+    expectedResult: and(contains(['colspan="', 'inner text']), not(contains('>42<')))
   })
 })
 
@@ -647,17 +648,17 @@ jb.component('uiTest.table.MDInplace.withScroll', {
       controls: table({
         items: '%$people%',
         lineFeatures: [
-          watchRef({ref: '%$sectionExpanded/{%$index%}%', allowSelfRefresh: true}),
+          watchRef({ ref: '%$sectionExpanded/{%$index%}%', allowSelfRefresh: true }),
           table.enableExpandToEndOfRow()
         ],
         visualSizeLimit: 2,
         controls: [
           group({
             controls: [
-              editableBoolean({databind: '%$sectionExpanded/{%$index%}%', style: editableBoolean.expandCollapse()}),
+              editableBoolean({ databind: '%$sectionExpanded/{%$index%}%', style: editableBoolean.expandCollapse() }),
               text('%name%'),
             ],
-            layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'})
+            layout: layout.flex({ justifyContent: 'start', direction: 'row', alignItems: 'center' })
           }),
           controlWithCondition('%$sectionExpanded/{%$index%}%', group({
             controls: text('inner text'),
@@ -667,18 +668,18 @@ jb.component('uiTest.table.MDInplace.withScroll', {
           text('%age%')
         ],
         features: [
-          css.height({height: '40', overflow: 'scroll'}),
+          css.height({ height: '40', overflow: 'scroll' }),
           itemlist.infiniteScroll(2),
         ]
       }),
-      features: watchable('sectionExpanded',obj()),
+      features: watchable('sectionExpanded', obj()),
     }),
     action: runActions(
-      uiAction.scrollBy('.jb-itemlist',100),
+      uiAction.scrollBy('.jb-itemlist', 100),
       uiAction.waitForSelector('.jb-items-parent:nth-child(2)'),
-      uiAction.click('i','toggle'),
+      uiAction.click('i', 'toggle'),
     ),
-    expectedResult: and(contains(['colspan="','inner text','Bart']),not(contains('>42<')), not(contains(['inner text','inner text'])))
+    expectedResult: and(contains(['colspan="', 'inner text', 'Bart']), not(contains('>42<')), not(contains(['inner text', 'inner text'])))
   })
 })
 
@@ -709,7 +710,7 @@ jb.component('uiTest.itemlistMDAutoSelectFirst', {
 
 jb.component('uiTest.itemlistMDAutoSelectFirst.ProxyBug', {
   impl: uiFrontEndTest({
-//    renderDOM: true,
+    //    renderDOM: true,
     control: group({
       controls: [
         itemlist({
@@ -730,7 +731,7 @@ jb.component('uiTest.itemlistMDAutoSelectFirst.ProxyBug', {
       ]
     }),
     action:
-      uiAction.keyboardEvent({selector: 'ul', type: 'keydown', keyCode: 40}),
+      uiAction.keyboardEvent({ selector: 'ul', type: 'keydown', keyCode: 40 }),
     expectedResult: contains('Homer')
   })
 })
@@ -768,12 +769,12 @@ jb.component('uiTest.itemlistSelection.databind', {
         }),
         button({
           title: 'select Marge',
-          action: writeValue('%$globals/selectedPerson%','%$people/1/name%')
+          action: writeValue('%$globals/selectedPerson%', '%$people/1/name%')
         })
       ]
     }),
     userInput: userInput.click('button'),
-    expectedResult: contains(['li','li','selected','Marge'])
+    expectedResult: contains(['li', 'li', 'selected', 'Marge'])
   })
 })
 
@@ -804,7 +805,7 @@ jb.component('uiTest.itemlistMDOfRefs.refChangeBug', {
       uiAction.click('#itemlist>li:nth-Child(3)'),
       uiAction.click('#itemlist>li:nth-Child(2)'),
       delay(1)
-      ),
+    ),
     expectedResult: contains(['Marge Simpson', 'Marge Simpson - watchable selected'])
   })
 })
@@ -813,13 +814,13 @@ jb.component('uiTest.itemlistContainerSearchCtrl', {
   type: 'control',
   impl: group({
     controls: [
-      itemlistContainer.search({features: id('search')}),
+      itemlistContainer.search({ features: id('search') }),
       itemlist({
-        items: pipeline('%$people%',itemlistContainer.filter()),
+        items: pipeline('%$people%', itemlistContainer.filter()),
         controls: text(text.highlight('%name%', '%$itemlistCntrData/search_pattern%')),
         features: [
           watchRef('%$itemlistCntrData/search_pattern%'),
-          itemlist.selection({autoSelectFirst: true}),
+          itemlist.selection({ autoSelectFirst: true }),
           itemlist.keyboardSelection({
             autoFocus: true,
             onEnter: writeValue('%$res/selected%', '%name%')
@@ -842,10 +843,10 @@ jb.component('uiTest.itemlistContainerSearch', {
 jb.component('FETest.itemlistContainerSearchEnterOnLi', {
   impl: uiFrontEndTest({
     renderDOM: true,
-    vars: Var('res',obj()),
+    vars: Var('res', obj()),
     control: uiTest.itemlistContainerSearchCtrl(),
     //userInput: userInput.keyboardEvent({selector: '.jb-itemlist', type: 'keydown', keyCode: 13}),
-    action: uiAction.keyboardEvent({selector: '.jb-itemlist', type: 'keydown', keyCode: 13}),
+    action: uiAction.keyboardEvent({ selector: '.jb-itemlist', type: 'keydown', keyCode: 13 }),
     expectedResult: equals('%$res/selected%', 'Homer Simpson')
   })
 })
@@ -855,7 +856,7 @@ jb.component('uiTest.secondaryLinkSetBug', {
     control: itemlist({
       items: '%$people%',
       controls: text('%name%'),
-      features: itemlist.selection({databind: '%$globals/selected%', autoSelectFirst: true})
+      features: itemlist.selection({ databind: '%$globals/selected%', autoSelectFirst: true })
     }),
     action: runActions(
       writeValue('%$globals/selected%', '%$people[1]%'),
@@ -870,9 +871,9 @@ jb.component('uiTest.itemlistWithTableStyle', {
     control: table({
       items: '%$watchablePeople%',
       controls: [
-        text({text: '%$index%', title: 'index', features: field.columnWidth(40)}),
-        text({text: '%name%', title: 'name', features: field.columnWidth(300)}),
-        text({text: '%age%', title: 'age'})
+        text({ text: '%$index%', title: 'index', features: field.columnWidth(40) }),
+        text({ text: '%name%', title: 'name', features: field.columnWidth(300) }),
+        text({ text: '%age%', title: 'age' })
       ],
       features: [
         itemlist.selection({
@@ -888,7 +889,7 @@ jb.component('uiTest.itemlistWithTableStyle', {
 jb.component('test.personName', {
   type: 'control',
   params: [
-    { id: 'person'}
+    { id: 'person' }
   ],
   impl: text('%$person/name%')
 })
@@ -924,9 +925,10 @@ jb.component('uiTest.BEOnDestroy', {
     control: text('%$person/name%'),
     action: runActions(
       openDialog({
-        id:'dlg',
-        content: text({text: 'in dialog',
-          features: onDestroy(writeValue('%$person/name%','dialog closed'))
+        id: 'dlg',
+        content: text({
+          text: 'in dialog',
+          features: onDestroy(writeValue('%$person/name%', 'dialog closed'))
         })
       }),
       dialog.closeDialogById('dlg')
@@ -939,8 +941,8 @@ jb.component('uiTest.editableTextInGroup', {
   impl: uiTest({
     control: group({
       controls: [
-        editableText({title: 'name', databind: '%$person/name%'}),
-        editableText({title: 'name', databind: '%$person/name%'}),
+        editableText({ title: 'name', databind: '%$person/name%' }),
+        editableText({ title: 'name', databind: '%$person/name%' }),
         text('%$person/name%')
       ]
     }),
@@ -950,10 +952,11 @@ jb.component('uiTest.editableTextInGroup', {
 
 jb.component('FETest.onKey', {
   impl: uiFrontEndTest({
-    control: editableText({title: 'name', databind: '%$person/name%',
-      features: [id('inp'), feature.onKey('ctrl-Enter', openDialog({title: 'hello'}))]
+    control: editableText({
+      title: 'name', databind: '%$person/name%',
+      features: [id('inp'), feature.onKey('ctrl-Enter', openDialog({ title: 'hello' }))]
     }),
-    action: uiAction.keyboardEvent({selector: '#inp', type: 'keydown', keyCode: 13, ctrl: 'ctrl'}),
+    action: uiAction.keyboardEvent({ selector: '#inp', type: 'keydown', keyCode: 13, ctrl: 'ctrl' }),
     expectedResult: contains('hello')
   })
 })
@@ -961,30 +964,31 @@ jb.component('FETest.onKey', {
 jb.component('uiTest.editableText.blockSelfRefresh', {
   impl: uiTest({
     control: group({
-      controls: editableText({title: 'name', databind: '%$person/name%', features: id('inp')}),
+      controls: editableText({ title: 'name', databind: '%$person/name%', features: id('inp') }),
       features: watchRef('%$person/name%')
     }),
-    userInput: userInput.setText('hello','#inp'),
+    userInput: userInput.setText('hello', '#inp'),
     expectedResult: true,
-    expectedCounters: {'start renderVdom': 2}
+    expectedCounters: { 'start renderVdom': 2 }
   })
 })
 
 jb.component('uiTest.editableText.allowSelfRefresh', {
   impl: uiTest({
     control: group({
-      controls: editableText({title: 'name', databind: '%$person/name%'}),
-      features: watchRef({ref: '%$person/name%', allowSelfRefresh: true})
+      controls: editableText({ title: 'name', databind: '%$person/name%' }),
+      features: watchRef({ ref: '%$person/name%', allowSelfRefresh: true })
     }),
     userInput: userInput.setText('hello'),
     expectedResult: contains('hello'),
-    expectedCounters: {'start renderVdom': 4}
+    expectedCounters: { 'start renderVdom': 4 }
   })
 })
 
 jb.component('uiTest.editableTextHelper', {
   impl: uiTest({
-    control: editableText({title: 'name', databind: '%$person/name%',
+    control: editableText({
+      title: 'name', databind: '%$person/name%',
       features: editableText.helperPopup({
         control: text('--%value%--'),
         autoOpen: true
@@ -1000,7 +1004,7 @@ jb.component('uiTest.editableText.picklistHelper', {
       title: 'name',
       databind: '%$person/name%',
       style: editableText.mdcInput(),
-      features: editableText.picklistHelper({options: picklist.optionsByComma('1,2,333'), autoOpen: true})
+      features: editableText.picklistHelper({ options: picklist.optionsByComma('1,2,333'), autoOpen: true })
     }),
     expectedResult: contains('333')
   })
@@ -1024,16 +1028,18 @@ jb.component('uiTest.editableText.picklistHelperWithChangingOptions', {
 jb.component('uiTest.editableText.richPicklistHelperWithWatchingGroup', {
   impl: uiTest({
     control:
-    group({ controls:
-      editableText({title: 'name', databind: '%$person/name%',
-        features: editableText.picklistHelper({
-          options: picklist.optionsByComma(If(test.getSelectionChar(),'1,2,3,4','a,b,c,ddd')),
-          showHelper: notEquals(test.getSelectionChar(),'b'),
-          autoOpen: true,
-        })
+      group({
+        controls:
+          editableText({
+            title: 'name', databind: '%$person/name%',
+            features: editableText.picklistHelper({
+              options: picklist.optionsByComma(If(test.getSelectionChar(), '1,2,3,4', 'a,b,c,ddd')),
+              showHelper: notEquals(test.getSelectionChar(), 'b'),
+              autoOpen: true,
+            })
+          }),
+        features: watchRef('%$person/name%')
       }),
-    features: watchRef('%$person/name%')
-  }),
     expectedResult: contains('ddd')
   })
 })
@@ -1043,21 +1049,22 @@ jb.component('uiTest.editableText.richPicklistHelper.setInput', {
     timeout: 1000,
     allowError: true,
     renderDOM: true,
-    control: editableText({title: 'name', databind: '%$person/name%',
+    control: editableText({
+      title: 'name', databind: '%$person/name%',
       features: [
         id('inp'),
         editableText.picklistHelper({
           options: picklist.optionsByComma('1111,2,3,4'),
-          onEnter: editableText.setInputState({newVal: '%$selectedOption%', assumedVal: '%value%'})
+          onEnter: editableText.setInputState({ newVal: '%$selectedOption%', assumedVal: '%value%' })
         })
       ]
     }),
     action: runActions(
-      uiAction.keyboardEvent({selector: '#inp', type: 'keyup', keyCode: 37}),
+      uiAction.keyboardEvent({ selector: '#inp', type: 'keyup', keyCode: 37 }),
       uiAction.waitForSelector('.jb-popup'),
-      uiAction.keyboardEvent({selector: '#inp', type: 'keydown', keyCode: 40}),
-      uiAction.keyboardEvent({selector: '#inp', type: 'keyup', keyCode: 13}),
-      () => jb.delay(10).then(()=> jb.frame.scrollTo(0,0)) // scroll to top bg
+      uiAction.keyboardEvent({ selector: '#inp', type: 'keydown', keyCode: 40 }),
+      uiAction.keyboardEvent({ selector: '#inp', type: 'keyup', keyCode: 13 }),
+      () => jb.delay(10).then(() => jb.frame.scrollTo(0, 0)) // scroll to top bg
     ),
     expectedResult: contains('1111</input-val>')
   })
@@ -1065,9 +1072,9 @@ jb.component('uiTest.editableText.richPicklistHelper.setInput', {
 
 jb.component('test.getSelectionChar', {
   impl: ctx => {
-    const input = ctx.vars.$state.input || jb.path(ctx.vars.ev,'input') || {value:'', selectionStart:0}
+    const input = ctx.vars.$state.input || jb.path(ctx.vars.ev, 'input') || { value: '', selectionStart: 0 }
     const selectionStart = input.selectionStart || 0
-    return input.value.slice(selectionStart, selectionStart+1)
+    return input.value.slice(selectionStart, selectionStart + 1)
   }
 })
 
@@ -1076,15 +1083,15 @@ jb.component('uiTest.editableTextWithJbVal', {
   impl: uiTest({
     control: group({
       vars: [Var('a1', ctx => {
-          return {
-            $jb_val: value => {
-              if (value === undefined)
-                return jb.__test_jb_val || 'Marge';
-              else
-                jb.__test_jb_val = value;
-            }
+        return {
+          $jb_val: value => {
+            if (value === undefined)
+              return jb.__test_jb_val || 'Marge';
+            else
+              jb.__test_jb_val = value;
           }
-        })],
+        }
+      })],
       controls: [
         editableText('name', '%$a1%'),
         editableText('name', '%$a1%'),
@@ -1103,11 +1110,11 @@ jb.component('uiTest.editableTextWithJbVal', {
 jb.component('uiTest.propertySheet.titlesAbove', {
   impl: uiTest({
     control: group({
-          style: propertySheet.titlesAbove(),
-          controls: [
-            editableText({title: 'name', databind: '%$person/name%'}),
-            editableText({title: 'address', databind: '%$person/age%'})
-          ]
+      style: propertySheet.titlesAbove(),
+      controls: [
+        editableText({ title: 'name', databind: '%$person/name%' }),
+        editableText({ title: 'address', databind: '%$person/age%' })
+      ]
     }),
     expectedResult: contains('Homer')
   })
@@ -1116,19 +1123,19 @@ jb.component('uiTest.propertySheet.titlesAbove', {
 jb.component('uiTest.propertySheet.titlesLeft', {
   impl: uiTest({
     control: group({
-          style: propertySheet.titlesLeft({}),
-          controls: [
-            editableText({
-              title: 'name',
-              databind: '%$person/name%',
-              style: editableText.input()
-            }),
-            editableText({
-              title: 'address',
-              databind: '%$person/age%',
-              style: editableText.input()
-            })
-          ]
+      style: propertySheet.titlesLeft({}),
+      controls: [
+        editableText({
+          title: 'name',
+          databind: '%$person/name%',
+          style: editableText.input()
+        }),
+        editableText({
+          title: 'address',
+          databind: '%$person/age%',
+          style: editableText.input()
+        })
+      ]
     }),
     expectedResult: contains('Homer')
   })
@@ -1149,7 +1156,7 @@ jb.component('uiTest.editableNumber', {
           title: 'age',
           style: editableNumber.slider()
         }),
-        editableNumber({databind: '%$person/age%', title: 'age'}),
+        editableNumber({ databind: '%$person/age%', title: 'age' }),
         text('%$person/age%')
       ]
     }),
@@ -1184,8 +1191,8 @@ jb.component('uiTest.editableBoolean.buttonXV', {
     control: editableBoolean({
       databind: '%$person/male%',
       style: editableBoolean.buttonXV({
-        yesIcon: icon({icon: 'location_searching', type: 'mdc'}),
-        noIcon: icon({icon: 'location_disabled', type: 'mdc'}),
+        yesIcon: icon({ icon: 'location_searching', type: 'mdc' }),
+        noIcon: icon({ icon: 'location_disabled', type: 'mdc' }),
         buttonStyle: button.mdcFloatingAction('40')
       }),
     }),
@@ -1234,9 +1241,9 @@ jb.component('uiTest.editableBoolean.allStyles', {
 jb.component('uiTest.editableBoolean.mdcSlideToggle', {
   impl: uiTest({
     control: editableBoolean({
-          databind: '%$person/male%',
-          style: editableBoolean.mdcSlideToggle(),
-          title: 'male'
+      databind: '%$person/male%',
+      style: editableBoolean.mdcSlideToggle(),
+      title: 'male'
     }),
     expectedResult: contains('male')
   })
@@ -1303,12 +1310,12 @@ jb.component('uiTest.expandCollapseWithDefaultCollapse', {
             features: [feature.if('%$expanded%'), watchRef('%$expanded%')]
           })
         ],
-        features: [watchRef('%$default%'), feature.initValue({to: '%$expanded%', value: '%$default%', alsoWhenNotEmpty: true})]
+        features: [watchRef('%$default%'), feature.initValue({ to: '%$expanded%', value: '%$default%', alsoWhenNotEmpty: true })]
       })
     ],
     features: [
-      watchable('expanded',() => null),
-      watchable('default',false)
+      watchable('expanded', () => null),
+      watchable('default', false)
     ]
   })
 })
@@ -1333,27 +1340,28 @@ jb.component('uiTest.codeMirror', {
   impl: uiFrontEndTest({
     control: group({
       vars: [
-        Var('js', {'$': 'object', text: `function f1() { 
+        Var('js', {
+          '$': 'object', text: `function f1() { 
 return 15 
 }`}),
-        Var('css', {'$': 'object', text: '{ width: 15px; }'}),
-        Var('html', {'$': 'object', text: '<div><span>hello</span></div>'})
+        Var('css', { '$': 'object', text: '{ width: 15px; }' }),
+        Var('html', { '$': 'object', text: '<div><span>hello</span></div>' })
       ],
       controls: [
         editableText({
           databind: '%$js/text%',
-          style: editableText.codemirror({mode: 'javascript'}),
+          style: editableText.codemirror({ mode: 'javascript' }),
           features: codemirror.fold()
         }),
         editableText({
           databind: '%$css/text%',
-          style: editableText.codemirror({mode: 'css'}),
+          style: editableText.codemirror({ mode: 'css' }),
           features: [
             codemirror.fold(),
             codemirror.lineNumbers()
           ]
         }),
-        editableText({databind: '%$html/text%', style: editableText.codemirror({mode: 'htmlmixed'})})
+        editableText({ databind: '%$html/text%', style: editableText.codemirror({ mode: 'htmlmixed' }) })
       ]
     }),
     action: uiAction.waitForSelector('.CodeMirror'),
@@ -1364,21 +1372,21 @@ return 15
 
 jb.component('uiTest.innerLabel1Tst', {
   params: [
-    {id: 'title', mandatory: true, dynamic: true}
+    { id: 'title', mandatory: true, dynamic: true }
   ],
   impl: text(call('title'))
 })
 
 jb.component('uiTest.innerLabel2Tst', {
   params: [
-    {id: 'title', mandatory: true, dynamic: true}
+    { id: 'title', mandatory: true, dynamic: true }
   ],
   impl: uiTest.innerLabel1Tst(call('title'))
 })
 
 jb.component('uiTest.innerLabel3Tst', {
   params: [
-    {id: 'title', mandatory: true, dynamic: true}
+    { id: 'title', mandatory: true, dynamic: true }
   ],
   impl: uiTest.innerLabel2Tst(
     call('title')
@@ -1427,7 +1435,7 @@ jb.component('uiTest.picklist.delayedOptions', {
           controls: picklist({
             title: 'city',
             databind: '%$personWithAddress/address/city%',
-            options: source.data(obj(prop('options',picklist.optionsByComma('Springfield,New York,Tel Aviv,London')))),
+            options: source.data(obj(prop('options', picklist.optionsByComma('Springfield,New York,Tel Aviv,London')))),
             features: picklist.allowAsynchOptions()
           })
         }),
@@ -1457,7 +1465,7 @@ jb.component('uiTest.picklist.delayedOptions.StyleByControlBug.Promise', {
       title: 'city',
       style: picklist.labelList(),
       databind: '%$personWithAddress/address/city%',
-      options: pipe(delay(1),(obj(prop('options', picklist.optionsByComma('Springfield,New York,Tel Aviv,London'))))),
+      options: pipe(delay(1), (obj(prop('options', picklist.optionsByComma('Springfield,New York,Tel Aviv,London'))))),
       features: picklist.allowAsynchOptions()
     }),
     expectedResult: contains(['Springfield', 'New York'])
@@ -1469,12 +1477,12 @@ jb.component('uiTest.picklistHelper.delayedOptions', {
     control: editableText({
       databind: '%$person/name%',
       features: editableText.picklistHelper({
-          showHelper: true,
-          options: pipe(delay(1),
-            (obj(prop('options', picklist.optionsByComma(() => [1,2,3].map(() => Math.floor(Math.random() *10 )).join(',')))))
-          ),
-          picklistFeatures: picklist.allowAsynchOptions(),
-          picklistStyle: picklist.labelList(),
+        showHelper: true,
+        options: pipe(delay(1),
+          (obj(prop('options', picklist.optionsByComma(() => [1, 2, 3].map(() => Math.floor(Math.random() * 10)).join(',')))))
+        ),
+        picklistFeatures: picklist.allowAsynchOptions(),
+        picklistStyle: picklist.labelList(),
       }),
     }),
     expectedResult: true
@@ -1509,7 +1517,7 @@ jb.component('uiTest.fieldTitleOfLabel', {
   impl: uiTest({
     control: group({
       style: propertySheet.titlesLeft(),
-      controls: text({text: '%$personWithAddress/address/city%', features: field.title('City')})
+      controls: text({ text: '%$personWithAddress/address/city%', features: field.title('City') })
     }),
     expectedResult: contains('City')
   })
@@ -1525,8 +1533,8 @@ jb.component('uiTest.picklistSort', {
           split(','),
           {
             '$': 'object',
-            code: split({separator: ':', part: 'first'}),
-            mark: split({separator: ':', part: 'second'})
+            code: split({ separator: ':', part: 'first' }),
+            mark: split({ separator: ':', part: 'second' })
           }
         )
       ),
@@ -1587,8 +1595,8 @@ jb.component('uiTest.tabs', {
     control: group({
       style: group.tabs(),
       controls: [
-        group({title: 'tab1', controls: text('in tab1')}),
-        group({title: 'tab2', controls: text('in tab2')})
+        group({ title: 'tab1', controls: text('in tab1') }),
+        group({ title: 'tab2', controls: text('in tab2') })
       ]
     }),
     expectedResult: and(contains(['tab1', 'in tab1']), contains('tab2'), not(contains('in tab2')))
@@ -1600,8 +1608,8 @@ jb.component('uiTest.group.accordion', {
     control: group({
       style: group.accordion(),
       controls: [
-        group({title: 'tab1', controls: text('in tab1')}),
-        group({title: 'tab2', controls: text('in tab2')})
+        group({ title: 'tab1', controls: text('in tab1') }),
+        group({ title: 'tab2', controls: text('in tab2') })
       ]
     }),
     expectedResult: contains(['tab1', 'in tab1', 'tab2'])
@@ -1609,7 +1617,7 @@ jb.component('uiTest.group.accordion', {
 })
 
 jb.component('uiTest.innerLabel', {
-  impl: uiTest({control: uiTest.innerLabel3Tst('Hello World2'), expectedResult: contains('Hello World2')})
+  impl: uiTest({ control: uiTest.innerLabel3Tst('Hello World2'), expectedResult: contains('Hello World2') })
 })
 
 // jb.component('uiTest.markdown', {
@@ -1665,10 +1673,10 @@ jb.component('menuTest.menu1', {
             title: 'Bookmarks',
             options: [menu.action('Google'), menu.action('Facebook')]
           }),
-          menu.menu({title: 'Friends', options: [menu.action('Dave'), menu.action('Dan')]})
+          menu.menu({ title: 'Friends', options: [menu.action('Dave'), menu.action('Dan')] })
         ]
       }),
-      menu.menu({title: 'Edit', options: [menu.action('Copy'), menu.action('Paste')]}),
+      menu.menu({ title: 'Edit', options: [menu.action('Copy'), menu.action('Paste')] }),
       menu.dynamicOptions(list(1, 2, 3), menu.action('dynamic-%%'))
     ]
   })
@@ -1676,51 +1684,53 @@ jb.component('menuTest.menu1', {
 
 jb.component('menuTest.toolbar', {
   impl: uiTest({
-    control: menu.control({menu: menu.menu({
-      options: [
-        menu.action({ title: 'select', action: () => console.log('select'), icon: icon({icon: 'Selection', type: 'mdi'}) })
-      ],
-      icon: icon('undo')
-    }), style: menuStyle.toolbar()}),
+    control: menu.control({
+      menu: menu.menu({
+        options: [
+          menu.action({ title: 'select', action: () => console.log('select'), icon: icon({ icon: 'Selection', type: 'mdi' }) })
+        ],
+        icon: icon('undo')
+      }), style: menuStyle.toolbar()
+    }),
     expectedResult: contains('toolbar')
   })
 })
 
 jb.component('menuTest.pulldown', {
   impl: uiTest({
-    control: menu.control({menu: menuTest.menu1(), style: menuStyle.pulldown({})}),
+    control: menu.control({ menu: menuTest.menu1(), style: menuStyle.pulldown({}) }),
     expectedResult: contains(['File', 'Edit', 'dynamic-1', 'dynamic-3'])
   })
 })
 
 jb.component('menuTest.pulldown.inner', {
   impl: uiTest({
-    control: menu.control({menu: menuTest.menu1(), style: menuStyle.pulldown({})}),
-    userInput: userInput.click('[$text="File"]','openPopup'),
-    expectedResult: and(contains('Open'),contains(['File', 'Edit', 'dynamic-1', 'dynamic-3']))
+    control: menu.control({ menu: menuTest.menu1(), style: menuStyle.pulldown({}) }),
+    userInput: userInput.click('[$text="File"]', 'openPopup'),
+    expectedResult: and(contains('Open'), contains(['File', 'Edit', 'dynamic-1', 'dynamic-3']))
   })
 })
 
 jb.component('menuTest.contextMenu', {
   impl: uiTest({
-    control: menu.control({menu: menuTest.menu1()}),
+    control: menu.control({ menu: menuTest.menu1() }),
     expectedResult: contains(['File', 'Edit'])
   })
 })
 
 jb.component('menuTest.openContextMenu', {
   impl: uiTest({
-    control: button({title: 'open', action: menu.openContextMenu({menu: menuTest.menu1()})}),
+    control: button({ title: 'open', action: menu.openContextMenu({ menu: menuTest.menu1() }) }),
     expectedResult: contains('open')
   })
 })
 
 jb.component('uiTest.refreshControlById.text', {
   impl: uiFrontEndTest({
-    vars: Var('person1', () => ({name: 'Homer'})), // none watchable var
+    vars: Var('person1', () => ({ name: 'Homer' })), // none watchable var
     control: text({ text: '%$person1/name%', features: id('t1') }),
     action: runActions(
-      writeValue('%$person1/name%','Dan'),
+      writeValue('%$person1/name%', 'Dan'),
       refreshControlById('t1'),
     ),
     expectedResult: contains('Dan')
@@ -1730,14 +1740,16 @@ jb.component('uiTest.refreshControlById.text', {
 jb.component('uiTest.refreshControlById.withButton', {
   impl: uiFrontEndTest({
     renderDOM: true,
-    vars: Var('person1', () => ({name: 'Homer'})), // none watchable var
-    control: group({ controls: [
-      text({ text: '%$person1/name%', features: id('t1') }),
-      button({
-        title: 'refresh',
-        action: runActions(writeValue('%$person1/name%','Dan'),refreshControlById('t1'))
-      })
-    ]}),
+    vars: Var('person1', () => ({ name: 'Homer' })), // none watchable var
+    control: group({
+      controls: [
+        text({ text: '%$person1/name%', features: id('t1') }),
+        button({
+          title: 'refresh',
+          action: runActions(writeValue('%$person1/name%', 'Dan'), refreshControlById('t1'))
+        })
+      ]
+    }),
     action: uiAction.click('button'),
     expectedResult: contains('Dan')
   })
@@ -1748,12 +1760,12 @@ jb.component('uiTest.refreshByStateChange', {
     control: group({
       controls: [
         text('%$name%'),
-        button('click', ctx => jb.ui.runBEMethod(jb.ui.find(ctx,'#g1')[0],'refresh'))
+        button('click', ctx => jb.ui.runBEMethod(jb.ui.find(ctx, '#g1')[0], 'refresh'))
       ],
       features: [
         id('g1'),
-        variable('name','name: %$$state/name%'),
-        method('refresh', action.refreshCmp(obj(prop('name','Dan'))))
+        variable('name', 'name: %$$state/name%'),
+        method('refresh', action.refreshCmp(obj(prop('name', 'Dan'))))
       ]
     }),
     userInput: userInput.click('button'),
@@ -1767,12 +1779,12 @@ jb.component('uiTest.refreshWithStyleByCtrl', {
       style: group.sections(),
       controls: [
         text('%$name%'),
-        button('click', ctx => jb.ui.runBEMethod(jb.ui.find(ctx,'#g1')[0],'refresh'))
+        button('click', ctx => jb.ui.runBEMethod(jb.ui.find(ctx, '#g1')[0], 'refresh'))
       ],
       features: [
         id('g1'),
         variable('name', ctx => ctx.exp('name: %$$state/name%')),
-        method('refresh', action.refreshCmp(obj(prop('name','Dan'))))
+        method('refresh', action.refreshCmp(obj(prop('name', 'Dan'))))
       ]
     }),
     userInput: userInput.click('button'),
@@ -1782,7 +1794,7 @@ jb.component('uiTest.refreshWithStyleByCtrl', {
 
 jb.component('uiTest.rawVdom', {
   impl: uiTest({
-    control: ctx => jb.ui.h('div',{},'hello world'),
+    control: ctx => jb.ui.h('div', {}, 'hello world'),
     expectedResult: contains('hello world')
   })
 })
@@ -1804,7 +1816,7 @@ jb.component('uiTest.control.firstSucceeding', {
           features: group.firstSucceeding()
         })
       ],
-      features: [variable({name: 'gender', value: 'male'})]
+      features: [variable({ name: 'gender', value: 'male' })]
     }),
     expectedResult: and(contains(['male', 'male2']), not(contains('second-succeeding')))
   })
@@ -1814,7 +1826,7 @@ jb.component('uiTest.control.firstSucceedingInnerVar', {
   impl: uiTest({
     control: group({
       controls: controlWithCondition('%$innerVar% == \"5\"', text('innerVar')),
-      features: [group.firstSucceeding(), variable({name: 'innerVar', value: '5'})]
+      features: [group.firstSucceeding(), variable({ name: 'innerVar', value: '5' })]
     }),
     expectedResult: contains('innerVar')
   })
@@ -1850,7 +1862,7 @@ jb.component('uiTest.firstSucceedingWatchableSample', {
   type: 'control',
   impl: group({
     controls: [
-      editableText({databind: '%$gender%'}),
+      editableText({ databind: '%$gender%' }),
       button({
         title: 'female',
         action: writeValue('%$gender%', 'female'),
@@ -1874,7 +1886,7 @@ jb.component('uiTest.firstSucceedingWatchableSample', {
         features: [group.firstSucceeding(), watchRef('%$gender%')]
       })
     ],
-    features: watchable('gender','male')
+    features: watchable('gender', 'male')
   })
 })
 
@@ -1883,7 +1895,7 @@ jb.component('uiTest.firstSucceeding.watchRefreshOnCtrlChange', {
     control: uiTest.firstSucceedingWatchableSample(),
     userInput: userInput.click('#female'),
     expectedResult: contains('not male'),
-    expectedCounters: {'start renderVdom': 9}
+    expectedCounters: { 'start renderVdom': 9 }
   })
 })
 
@@ -1892,7 +1904,7 @@ jb.component('uiTest.firstSucceeding.sameDoesNotRecreate', {
     control: uiTest.firstSucceedingWatchableSample(),
     userInput: [userInput.click('#female'), userInput.click('#zee')],
     expectedResult: contains('not male'),
-    expectedCounters: {'start renderVdom': 9}
+    expectedCounters: { 'start renderVdom': 9 }
   })
 })
 
@@ -1910,7 +1922,7 @@ jb.component('uiTest.watchRef.recalcVars', {
     control: text({
       text: '%$changed%',
       features: [
-        variable({name: 'changed', value: '--%$person/name%--'}),
+        variable({ name: 'changed', value: '--%$person/name%--' }),
         watchRef('%$person/name%')
       ]
     }),
@@ -1939,7 +1951,7 @@ jb.component('uiTest.checkBoxWithText', {
 jb.component('uiTest.hiddenRefBug', {
   impl: uiTest({
     control: group({
-      controls: text({text: 'hey', features: hidden('%$hidden%')}),
+      controls: text({ text: 'hey', features: hidden('%$hidden%') }),
       features: watchable('hidden', false)
     }),
     expectedResult: contains('display:none')
@@ -1987,8 +1999,8 @@ jb.component('uiTest.validator', {
 
 jb.component('uiTest.watchableVariableAsProxy', {
   impl: uiTest({
-    control: group({features: watchable('link', '%$person%')}),
-    expectedResult: ctx => jb.db.resources[Object.keys(jb.db.resources).filter(x=>x.match(/link:[0-9]*/))[0]][Symbol.for("isProxy")]
+    control: group({ features: watchable('link', '%$person%') }),
+    expectedResult: ctx => jb.db.resources[Object.keys(jb.db.resources).filter(x => x.match(/link:[0-9]*/))[0]][Symbol.for("isProxy")]
   })
 })
 
@@ -2043,10 +2055,10 @@ jb.component('uiTest.watchableWriteViaLink', {
 
 jb.component('uiTest.watchableParentRefreshMaskChildren', {
   impl: uiFrontEndTest({
-    control: group({controls: text('%$person/name%'), features: watchRef('%$person/name%')}),
+    control: group({ controls: text('%$person/name%'), features: watchRef('%$person/name%') }),
     action: writeValue('%$person/name%', 'hello'),
     expectedResult: contains('hello'),
-    expectedCounters: {'refresh from observable elements': 1}
+    expectedCounters: { 'refresh from observable elements': 1 }
   })
 })
 
@@ -2062,7 +2074,7 @@ jb.component('uiTest.itemlistWithGroupWait', {
     control: itemlist({
       items: '%$items%',
       controls: text('%name%'),
-      features: group.wait({for: pipe(delay(1), ()=>[{name: 'homer'}]), varName: 'items'})
+      features: group.wait({ for: pipe(delay(1), () => [{ name: 'homer' }]), varName: 'items' })
     }),
     expectedResult: contains('homer')
   })
@@ -2079,7 +2091,7 @@ jb.component('uiTest.watchableRefToInnerElementsWhenValueIsEmpty', {
           features: id('set')
         })
       ],
-      features: watchable('selected',obj())
+      features: watchable('selected', obj())
     }),
     userInput: userInput.click('#set'),
     expectedResult: contains('hello')
@@ -2095,12 +2107,12 @@ jb.component('uiTest.infiniteScroll', {
       controls: text('%%'),
       visualSizeLimit: '7',
       features: [
-        css.height({height: '100', overflow: 'scroll'}),
+        css.height({ height: '100', overflow: 'scroll' }),
         itemlist.infiniteScroll(4),
         css.width('100')
       ]
     }),
-    action: runActions(uiAction.scrollBy('.jb-itemlist',80), uiAction.waitForSelector('ul>:nth-child(8)')),
+    action: runActions(uiAction.scrollBy('.jb-itemlist', 80), uiAction.waitForSelector('ul>:nth-child(8)')),
     expectedResult: contains('>10<')
   })
 })
@@ -2114,15 +2126,15 @@ jb.component('uiTest.infiniteScroll.twice', {
       controls: text('%%'),
       visualSizeLimit: '7',
       features: [
-        css.height({height: '100', overflow: 'scroll'}),
+        css.height({ height: '100', overflow: 'scroll' }),
         itemlist.infiniteScroll(2),
         css.width('100')
       ]
     }),
     action: runActions(
-      uiAction.scrollBy('.jb-itemlist',80),
+      uiAction.scrollBy('.jb-itemlist', 80),
       uiAction.waitForSelector('ul>:nth-child(8)'),
-      uiAction.scrollBy('.jb-itemlist',10),
+      uiAction.scrollBy('.jb-itemlist', 10),
       uiAction.waitForSelector('ul>:nth-child(10)')
     ),
     expectedResult: contains('>10<')
@@ -2137,23 +2149,23 @@ jb.component('uiTest.infiniteScroll.table', {
       controls: text('%%'),
       visualSizeLimit: '7',
       features: [
-        css.height({height: '100', overflow: 'scroll'}),
+        css.height({ height: '100', overflow: 'scroll' }),
         itemlist.infiniteScroll(4),
         css.width('100')
       ]
     }),
     action: runActions(
-      uiAction.scrollBy('.jb-itemlist',80),
+      uiAction.scrollBy('.jb-itemlist', 80),
       uiAction.waitForSelector('tbody>tr:nth-child(10)')
     ),
-    expectedResult: contains(['>10<','</tbody>'])
+    expectedResult: contains(['>10<', '</tbody>'])
   })
 })
 
 jb.component('uiTest.recursiveCtrl', {
   type: 'control',
   params: [
-    { id: 'data'}
+    { id: 'data' }
   ],
   impl: group({
     controls: [
@@ -2167,12 +2179,12 @@ jb.component('uiTest.recursiveCtrl', {
 jb.component('uiTest.eliminateRecursion', {
   impl: uiTest({
     vars: Var('recData', () => {
-      const res = {text: 'txt'}
+      const res = { text: 'txt' }
       res.child = res
       return res
     }),
     control: uiTest.recursiveCtrl('%$recData%'),
-    expectedResult: contains(['txt','txt','txt','txt','txt'])
+    expectedResult: contains(['txt', 'txt', 'txt', 'txt', 'txt'])
   })
 })
 

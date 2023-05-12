@@ -18,7 +18,7 @@ function findjbReact() {
 // global.jbBaseUrl = __dirname.match(/extensions/) ? workspaceDir : __dirname.replace(/\/hosts\/vscode\/tgp-lang$/,'')    
 // console.log('jbBaseUrl',jbBaseUrl)
 const { jbHost } = require(findjbReact() + '/hosts/node/node-host.js')
-
+jbHost.WebSocket_WS = require('ws')
 const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
 const plugins = ['common','rx','tree-shake','pretty-print','watchable','ui','vscode', 'tgp','remote','remote-widget']
 // globalThis.jbInit = jbInit

@@ -68,7 +68,7 @@
     "webp-converter": "^2.3.3",
     "webpack": "^4.31.0",
     "webpack-cli": "^3.3.2",
-    "ws": "^7.2.3"
+    "ws": "^8.13.0"
   },
   "repository": {
     "type": "git",
