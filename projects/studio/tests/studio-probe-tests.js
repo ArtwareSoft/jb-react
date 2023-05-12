@@ -1,277 +1,174 @@
-jb.component('person', { watchableData: {
-	name: "Homer Simpson",
-	male: true,
-	isMale: 'yes',
-	age: 42
-}
-})
-
-jb.component('probeTest.extraElement.pipeline', {
-  impl: studioProbeTest({
-    circuit: pipeline('%$people%'),
-    probePath: 'items~1',
-    allowClosestPath: true,
-    expectedResult: equals('%0.in.data.name%','Homer Simpson')
-  })
-})
-
-jb.component('probeTest.extraElement.pipe', {
-  impl: studioProbeTest({
-    circuit: pipe('%$people%',delay(1)),
-    probePath: 'items~2',
-    allowClosestPath: true,
-    expectedResult: equals('%0.in.data.name%','Homer Simpson')
-  })
-})
-
-jb.component('probeTest.singleControl', {
-  impl: studioProbeTest({
-    circuit: group({controls: text('hello')}),
-    probePath: 'controls',
-    expectedVisits: 1
-  })
-})
-
-jb.component('probeTest.ptByExample', {
-  impl: studioProbeTest({
-    circuit: group({controls: itemlist({items: list(1, 2), controls: text('hello')})}),
-    probePath: 'controls~controls',
-    expectedVisits: 2
-  })
-})
-
-jb.component('probeTest.usingGlobal', {
-  impl: studioProbeTest({
-    circuit: group({controls: test.innerLabel()}),
-    probePath: 'controls',
-    expectedVisits: 1
-  })
-})
-
-jb.component('test.innerLabel', {
-  type: 'control',
-  impl: text('hello')
-})
-
-jb.component('test.innerLabelTemplate', {
-  type: 'control',
-  params: [
-    {id: 'ctrl', type: 'control', dynamic: true}
-  ],
-  impl: group({controls: call('ctrl')})
-})
-
-jb.component('test.innerLabelTemplateStaticParam', {
-  type: 'control',
-  params: [
-    {id: 'param1', type: 'string'}
-  ],
-  impl: group({controls: []})
-})
-
-jb.component('probeTest.staticInnerInTemplate', {
-  impl: studioProbeTest({
-    circuit: group({controls: test.innerLabelTemplateStaticParam('hello')}),
-    probePath: 'controls~param1',
-    expectedVisits: 1
-  })
-})
-
-jb.component('probeTest.labelText', {
-  impl: studioProbeTest({
-    circuit: text(
-      ctx => 'hello'
-    ),
-    probePath: 'text',
-    expectedVisits: 1
-  })
-})
-
-jb.component('probeTest.pipelineMultiple', {
-  impl: studioProbeTest({
-    circuit: pipeline(list(1,2),join()),
-    probePath: 'items~1',
-    expectedVisits: 1
-  })
-})
-
-jb.component('probeTest.innerInTemplate', {
-  impl: studioProbeTest({
-    circuit: group({controls: test.innerLabelTemplate(text('hello'))}),
-    probePath: 'controls~ctrl~text',
-    expectedVisits: 1
-  })
-})
-
-jb.component('probeTest.pipelineNoSugar', {
-  impl: studioProbeTest({
-    circuit: group({controls: text({text: pipeline('hello')})}),
-    probePath: 'controls~text~items~0'
-  })
-})
-
-jb.component('probeTest.gap.actionsArray', {
-  impl: studioProbeTest({
-    circuit: group({controls: button('hello', [
-          winUtils.gotoUrl('google')
-        ])}),
-    probePath: 'controls~action~0~url',
-    allowClosestPath: true,
-    expectedVisits: 1
-  })
-})
-
-jb.component('probeTest.insideWriteValue', {
-  impl: studioProbeTest({
-    circuit: button({action: writeValue('%$person/name%', 'homer')}),
-    probePath: 'action~to',
-    expectedVisits: 1
-  })
-})
-
-jb.component('probeTest.insideOpenDialog', {
-  impl: studioProbeTest({
-    circuit: button({action: openDialog({content: text('hello')})}),
-    probePath: 'action~content~text',
-    expectedVisits: 1
-  })
-})
-
-jb.component('probeTest.insideOpenDialogOnOk', {
-  impl: studioProbeTest({
-    circuit: button({
-      action: openDialog({
-        content: text('hello'),
-        onOK: writeValue('%$person/name%', 'homer')
-      })
+jb.component('FETest.workerPreviewTest.suggestions', {
+  impl: uiFrontEndTest({
+    renderDOM: true,
+    timeout: 5000,
+    runBefore: writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
+    control: group({
+      controls: [
+        probe.remoteMainCircuitView(),
+        studio.propertyPrimitive('sampleProject.main~impl~controls~text')
+      ],
     }),
-    probePath: 'action~onOK~value',
-    expectedVisits: 1
+    action: runActions(
+      uiAction.waitForSelector('[cmp-pt="text"]'),
+      uiAction.waitForSelector('input'),
+      uiAction.setText('hello %','input'),
+      uiAction.keyboardEvent({ selector: 'input', type: 'keyup', keyCode: ()=> '%'.charCodeAt(0) }),
+      uiAction.waitForSelector('.jb-dialog .jb-item'),
+    ),    
+    expectedResult: contains('$var1')
   })
 })
 
-jb.component('probeTest.insideGotoUrl', {
-  impl: studioProbeTest({
-    circuit: button({action: winUtils.gotoUrl('google')}),
-    probePath: 'action~url',
-    expectedVisits: 1
+jb.component('FETest.workerPreviewTest.suggestions.select', {
+  impl: uiFrontEndTest({
+    control: group({controls: [
+      studio.propertyPrimitive('sampleProject.main~impl~controls~text'),
+      probe.remoteMainCircuitView()
+    ]}),
+    runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
+    action: runActions(
+      uiAction.waitForSelector('#sampleText'),
+      uiAction.waitForSelector('input'),
+      uiAction.setText('hello %$var1', 'input'),
+      uiAction.keyboardEvent({
+        selector: 'input',
+        type: 'keyup',
+        keyCode: 37
+      }),
+      uiAction.waitForSelector('.jb-dialog .jb-item'),
+      uiAction.click('.jb-dialog .jb-item:first-child'),
+      uiAction.keyboardEvent({
+        selector: 'input',
+        type: 'keyup',
+        keyCode: 13
+      }),
+      uiAction.waitForSelector('[cmp-ver=\"3\"]')
+    ),
+    expectedResult: contains('hello world'),
+    renderDOM: true
   })
 })
 
-jb.component('test.actionWithSideEffects', {
-  type: 'action,has-side-effects',
-  params: [
-    {id: 'text', as: 'string'}
-  ],
-  impl: _ => 0
-})
-
-jb.component('probeTest.insideActionWithSideEffects', {
-  impl: studioProbeTest({
-    circuit: button({action: test.actionWithSideEffects('hello')}),
-    probePath: 'action~text',
-    expectedVisits: 0
+jb.component('FETest.workerPreviewTest.suggestions.selectPopup', {
+  impl: uiFrontEndTest({
+    control: group({controls: [
+      studio.propertyPrimitive('sampleProject.main~impl~controls~text'),
+      probe.remoteMainCircuitView()
+    ]}),
+    runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
+    action: runActions(
+      uiAction.waitForSelector('#sampleText'),
+      uiAction.waitForSelector('input'),
+      uiAction.setText('hello %$', 'input'),
+      uiAction.keyboardEvent({ selector: 'input', type: 'keyup',  keyCode: 37 }), // %
+      uiAction.waitForSelector('.jb-dialog .jb-item')
+    ),
+    expectedResult: contains('(world)'),
+    renderDOM: true
   })
 })
 
-jb.component('probeTest.filterNoSugar', {
-  impl: studioProbeTest({
-    circuit: group({controls: text({text: pipeline('hello', filter('%% == \"hello\"'))})}),
-    probePath: 'controls~text~items~1~filter'
-  })
-})
-
-// jb.component('probeTest.callbag.sniffer', {
-//   impl: studioProbeTest({
-//     circuit: pipe(rx.pipe(source.data(list('1', '2', '3', '4')), rx.map('-%%-')), join(',')),
-//     probePath: 'items~0~elems~1',
-//     expectedOutResult: equals(
-//       pipeline(filter('%dir%==out'), '%d/data%', join(',')),
-//       '-1-,-2-,-3-,-4-'
-//     )
+// jb.component('workerPreviewTest.suggestions2', {
+//   impl: uiTest({
+//     runBefore: writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
+//     control: group({
+//       controls: [
+//         probe.remoteMainCircuitView(),
+//         studio.propertyPrimitive('sampleProject.main~impl~controls~text')
+//       ],
+//     }),
+//     expectedResult: contains('hello world')
 //   })
 // })
 
-jb.component('probeTest.label1', {
-  type: 'control',
-  impl: text()
-})
-
-jb.component('pathChangeTest.wrap', {
-  impl: pathChangeTest({
-    path: 'probeTest.label1~impl',
-    action: tgp.wrapWithGroup('probeTest.label1~impl'),
-    expectedPathAfter: 'probeTest.label1~impl~controls~0'
-  })
-})
-
-jb.component('test.pathSrcComp', {
-  params: [
-    {id: 'items', dynamic: true}
-  ],
-  impl: list(call('items'))
-})
-
-jb.component('test.probePipeline', {
-  impl: pipeline(list('a', 'b'), '%%', join())
-})
-
-jb.component('test.pathSrcCaller', {
-  params: [
-    {id: 'items', dynamic: true}
-  ],
-  impl: test.pathSrcComp(['a', 'b'])
-})
-
-jb.component('probeTest.pathSrcThrough.call', {
-  impl: dataTest({
-    calculate: ctx => {
-   	 var probe1 = new jb.probe.Probe(new jb.core.jbCtx(ctx,{ profile: {$: 'test.pathSrcCaller'}, comp: 'test.pathSrcCaller', path: '' } ),true)
-      .runCircuit('test.pathSrcComp~impl~items~1');
-    return probe1.then(res=> ''+res.result.visits)
-   },
-    expectedResult: contains('0')
-  })
-})
-
-jb.component('probeTest.pathSrcThrough.call2', {
-  impl: dataTest({
-    calculate: ctx => {
-   	 var probe1 = new jb.probe.Probe(new jb.core.jbCtx(ctx,{ profile: {$: 'test.pathSrcCaller'}, comp: 'test.pathSrcCaller', path: '' } ),true)
-      .runCircuit('test.pathSrcCaller~impl~items~1');
-    return probe1.then(res=> ''+res.result.visits)
-   },
-    expectedResult: contains('1')
-  })
-})
-
-jb.component('probeTest.runCircuit', {
-  impl: dataTest(
-    pipe(
-      probe.runCircuit('test.probePipeline~impl~items~1'),
-      ({data}) => data.result.visits
+jb.component('FETest.workerPreviewTest.suggestions.filtered', {
+  impl: uiFrontEndTest({
+    control: group({
+      controls: [
+        probe.remoteMainCircuitView(),
+        studio.propertyPrimitive('sampleProject.main~impl~controls~text')
+      ]
+    }),
+    runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
+    action: runActions(
+      uiAction.waitForSelector('#sampleText'),
+      uiAction.waitForSelector('input'),
+      uiAction.setText('hello %$var1', 'input'),
+      uiAction.keyboardEvent({
+        selector: 'input',
+        type: 'keyup',
+        keyCode: ()=> '%'.charCodeAt(0)
+      }),
+      uiAction.waitForSelector('.jb-dialog .jb-item')
     ),
-    equals(2)
-  )
+    expectedResult: not(contains('$xx')),
+    renderDOM: true
+  })
 })
 
+jb.component('jbEditorTest.basic', {
+  impl: uiTest({
+    control: group({
+      controls: [
+        probe.remoteMainCircuitView(),
+        studio.jbEditor('sampleProject.main~impl')
+      ]
+    }),
+    runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
+    checkResultRx: () => jb.ui.renderingUpdates,
+    expectedResult: contains('hello'),
+    timeout: 1000
+  }),
+})
 
-// jb.component('path-change-test.insert-comp', {
-// 	 impl :{$: 'path-change-test',
-// 	 	path: 'test.group1~impl',
-// 	 	action :{$: 'studio.insert-control', path: 'test.group1~impl', comp: 'label' },
-// 	 	expectedPathAfter: 'test.group1~impl~controls',
-// //	 	cleanUp: {$: 'watchableComps.undo'}
-// 	}
+// jb.component('jbEditorTest.onWorker', {
+//   impl: uiFrontEndTest({
+//     renderDOM: true,
+//     timeout: 5000,
+//     runBefore: runActions(
+//       writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
+//       remote.action(() => jb.component('dataResource.studio', { watchableData: {
+//         jbEditor: { 
+//           circuit: 'sampleProject.main',
+//           selected: 'sampleProject.main~impl~controls~0~text'}} 
+//         }), jbm.worker('inteli'))
+//     ),
+//     control: group({
+//       controls: [
+//         probe.remoteMainCircuitView(),
+//         remote.widget(
+//           controlWithFeatures(
+//             studio.jbEditorInteliTree('sampleProject.main~impl'),{
+//               toLoad: [
+//               () => { /* code loader: jb.watchableComps.forceLoad(); jb.ui.createHeadlessWidget() */ },
+//               {$: 'sampleProject.main'}
+//             ]})
+//         ,jbm.worker('inteli')),
+//       ],
+//     }),
+//     action: runActions(
+//       uiAction.click('[path="sampleProject.main~impl~controls~text"]'),
+//       uiAction.waitForSelector('.selected'),
+//       uiAction.keyboardEvent({ selector: '.jb-editor', type: 'keydown', keyCode: 13 }),
+//       uiAction.waitForSelector('.jb-dialog'),
+//     ),    
+//     expectedResult: contains('hello')
+//   })
 // })
 
-// jb.component('probe-test.asIs', {
-// // 	 impl :{$: 'studio-probe-test',
-// // 		circuit: {$: 'group',
-// 			controls :{$: 'label', title :{ $asIs: 'hello'} },
-// 		},
-// 		probePath : 'controls~text~$asIs',
-// 		expectedVisits: 0,
-// 		probeCheck : '%$tst% == ""'
-// 	}
+// jb.component('previewTest.childPreview', {
+//   impl: uiTest({
+//     control: preview.remoteWidget(jbm.childPreview()),
+//     runBefore: writeValue('%$studio/circuit%', 'uiTest.label'),
+//     expectedResult: contains('hello')
+//   })
+// })
+
+// jb.component('previewTest.uiFrontEndTest', {
+//   impl: uiTest({
+//     control: preview.remoteWidget(jbm.childPreview()),
+//     runBefore: writeValue('%$studio/circuit%', 'FETest.runFEMethod'),
+//     expectedResult: contains('change')
+//   })
 // })

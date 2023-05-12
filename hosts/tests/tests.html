@@ -2,9 +2,8 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<base target="_top" href="https://artwaresoft.github.io/jb-react/" />
-<script type="text/javascript" src="plugins/loader/jb-loader.js"></script>
-<link rel="stylesheet" type="text/css" href="bin/studio/css/studio-all.css"/>
+<script type="text/javascript" src="/plugins/loader/jb-loader.js"></script>
+<link rel="stylesheet" type="text/css" href="/bin/studio/css/studio-all.css"/>
 <style>
 	.test-button { opacity: 0 }
 	.test-button:hover { opacity: 1 }
@@ -18,9 +17,8 @@
 	<div id="show"> </div>
  <script>
 	const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
-	jbInit('tests', {projects: ['studio','tests'], plugins: jb_plugins, 
-		baseUrl: 'https://artwaresoft.github.io/jb-react/', useFileSymbolsFromBuild: true })
-		.then(jb=>{
+	jbInit('tests', {projects: ['studio'], plugins: jb_plugins, loadTests: true, useFileSymbolsFromBuild: false })
+		.then(jb =>{
 			globalThis.jb = jb
 			jb.exec({$: 'defaultTheme'})
 			jb.spy.initSpyByUrl()

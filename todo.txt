@@ -1,9 +1,7 @@
 plugins
-  codePackage, jbBaseUrl -> jb.codePackages[].baseUrl
-  node-loader-utils.js, web-loader-utils.js
   all testing in plugins
   no test project - move to testing plugin
-  studio server - refactor with jb.js node-http & http-service plugin
+  studio server - try to refactor with jb.js node-http & http-service plugin
   createjbm - refactor use jb.js
 
 merge node-servlet.js with node.startWebSocketServer & jb.js

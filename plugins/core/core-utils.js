@@ -259,7 +259,7 @@ jb.extension('utils', 'core', {
     subscribe: (source,listener) => jb.callbag.subscribe(listener)(source),
     pluginsOfFilePath(path) {
       const project = path && (path.split('jb-react').pop().match(/projects\/([^/]+)\//) || ['',null])[1]
-      return { projects: project == 'tests' ? ['studio','tests'] : [project].filter(x=>x) }
+      return { projects: [project].filter(x=>x) }
     },
     indexOfCompDeclarationInTextLines(lines,id) {
       return lines.findIndex(line=> {

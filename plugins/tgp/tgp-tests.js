@@ -8,3 +8,11 @@ jb.component('dataTest.tgpTextEditor.getPosOfPath', {
     equals('7,4')
   )
 })
+
+jb.component('pathChangeTest.wrap', {
+  impl: tgp.pathChangeTest({
+    path: 'probeTest.label1~impl',
+    action: tgp.wrapWithGroup('probeTest.label1~impl'),
+    expectedPathAfter: 'probeTest.label1~impl~controls~0'
+  })
+})

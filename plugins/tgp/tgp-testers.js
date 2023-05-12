@@ -93,7 +93,7 @@ jb.component('tgp.completionActionTest', {
   )
 })
 
- jb.component('tgp.fixEditedCompTest', {
+jb.component('tgp.fixEditedCompTest', {
   type: 'test',
   params: [
     {id: 'compText', as: 'string', description: 'use __ for completion point'},
@@ -137,5 +137,34 @@ jb.component('tgp.dummyDocProps', {
     jb.tgpTextEditor.host.selectRange(inCompPos)
     const { docText, cursorCol, cursorLine} = jb.tgpTextEditor.calcActiveEditorPath(jb.tgpTextEditor.host.docTextAndCursor())
     return { docText, cursorCol, cursorLine}
+  }
+})
+
+jb.component('tgp.pathChangeTest', {
+  type: 'test',
+  params: [
+    {id: 'path', as: 'string'},
+    {id: 'action', type: 'action', dynamic: true},
+    {id: 'expectedPathAfter', as: 'string'},
+    {id: 'cleanUp', type: 'action', dynamic: true}
+  ],
+  impl: (ctx,path,action,expectedPathAfter,cleanUp)=> {
+    //st.initTests();
+
+    const testId = ctx.vars.testID;
+    const failure = (part,reason) => ({ id: testId, title: testId + '- ' + part, success:false, reason: reason });
+    const success = _ => ({ id: testId, title: testId, success: true });
+
+    const pathRef = jb.tgp.ref(path);
+    action();
+    
+    const res_path = pathRef.path().join('~');
+    if (res_path != expectedPathAfter)
+      var res = { id: testId, title: testId, success: false , reason: res_path + ' instead of ' + expectedPathAfter }
+    else
+      var res = { id: testId, title: testId, success: true };
+    cleanUp();
+
+    return res;
   }
 })

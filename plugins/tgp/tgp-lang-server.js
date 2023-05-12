@@ -65,8 +65,7 @@ jb.component('tgp.startLangServer', {
     ],
     impl: node.startRemoteHttpServer({
         id: 'langServer',port:'8085',
-        projects:list('studio','tests')
-        ,services: [tgp.langServices()],inspect: '7015', 
+        services: [tgp.langServices()],inspect: '7015', 
         libsToinit: list('utils','watchable','immutable','watchableComps','tgp','tgpTextEditor','vscode','jbm','cbHandler','treeShake'),
         spyParam: 'vscode,tgpEditor,completion,remote',
         restart: '%$restart%'

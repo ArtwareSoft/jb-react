@@ -387,7 +387,7 @@ jb.component('remoteTest.nodeContainer.runTest', {
       Var('servlet', jbm.remoteNodeWorker({
         id: 'tester',
         loadTests: true,
-        projects: list('studio', 'tests'),
+        projects: list('studio'),
         inspect: 7010
       }))
     ],
@@ -417,7 +417,7 @@ jb.component('remoteTest.testResults', {
   impl: dataTest({
     vars: [
       Var('testsToRun', list('dataTest.join', 'dataTest.ctx.expOfRefWithBooleanType')),
-      Var('servlet', jbm.remoteNodeWorker('tester', list('studio', 'tests')))
+      Var('servlet', jbm.remoteNodeWorker('tester', list('studio')))
     ],
     calculate: pipe(rx.pipe(source.testsResults('%$testsToRun%', '%$servlet%'), rx.log('test')), '%id%-%started%-%success%', join(',')),
     expectedResult: equals(
