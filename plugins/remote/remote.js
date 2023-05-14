@@ -1,9 +1,11 @@
+jb.using('common,pretty-print,rx')
+
 jb.component('source.remote', {
     type: 'rx',
     macroByValue: true,
     params: [
       {id: 'rx', type: 'rx', dynamic: true },
-      {id: 'jbm', type: 'jbm', defaultValue: jbm.self() },
+      {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self() },
     ],
     impl: (ctx,rx,jbm) => {
         if (!jbm)
@@ -20,7 +22,7 @@ jb.component('remote.operator', {
     macroByValue: true,
     params: [
       {id: 'rx', type: 'rx', dynamic: true },
-      {id: 'jbm', type: 'jbm', defaultValue: jbm.self()},
+      {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self()},
     ],
     impl: (ctx,rx,jbm) => {
         if (!jbm)
@@ -56,7 +58,7 @@ jb.component('remote.action', {
     description: 'exec a script on a remote node and returns a promise if not oneWay',
     params: [
       {id: 'action', type: 'action', dynamic: true },
-      {id: 'jbm', type: 'jbm', defaultValue: jbm.self()},
+      {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self()},
       {id: 'oneway', as: 'boolean', description: 'do not wait for the respone' },
       {id: 'timeout', as: 'number', defaultValue: 10000 },
     ],
@@ -76,7 +78,7 @@ jb.component('remote.data', {
   macroByValue: true,
   params: [
     {id: 'data', dynamic: true},
-    {id: 'jbm', type: 'jbm', defaultValue: jbm.self()},
+    {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self()},
     {id: 'timeout', as: 'number', defaultValue: 10000}
   ],
   impl: (ctx,data,jbm,timeout) => {
@@ -93,7 +95,7 @@ jb.component('remote.initShadowData', {
     description: 'shadow watchable data on remote jbm',
     params: [
       {id: 'src', as: 'ref' },
-      {id: 'jbm', type: 'jbm'}
+      {id: 'jbm', type: 'jbm<jbm>'}
     ],
     impl: rx.pipe(
         source.watchableData({ref: '%$src%', includeChildren: 'yes'}),
@@ -107,7 +109,7 @@ jb.component('remote.copyPassiveData', {
   description: 'shadow watchable data on remote jbm',
   params: [
     {id: 'resourceId', as: 'string'},
-    {id: 'jbm', type: 'jbm'}
+    {id: 'jbm', type: 'jbm<jbm>'}
   ],
   impl: runActions(
     Var('resourceCopy', '%${%$resourceId%}%'),
@@ -127,7 +129,7 @@ jb.component('remote.shadowResource', {
     description: 'shadow watchable data on remote jbm',
     params: [
       {id: 'resourceId', as: 'string' },
-      {id: 'jbm', type: 'jbm'},
+      {id: 'jbm', type: 'jbm<jbm>'},
     ],
     impl: runActions(
         Var('resourceCopy', '%${%$resourceId%}%'),
@@ -184,7 +186,7 @@ jb.component('net.listAll', {
             remote.data(net.listSubJbms(),'%%'),
             aggregate(list(net.listSubJbms() ,'%%'))
         )
-        ,jbm.byUri(net.getRootextentionUri())
+        ,byUri(net.getRootextentionUri())
     )
 })
 

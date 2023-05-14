@@ -1,5 +1,3 @@
-// var { dynamicControls, css, header } = jb.ns('css')
-
 jb.component('group.htmlTag', {
   type: 'group.style',
   params: [

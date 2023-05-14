@@ -10,6 +10,6 @@ jb.extension('studio', 'path', {
 })
 
 jb.component('jbm.vDebugger', {
-  type: 'jbm',
-  impl: jbm.child('vDebugger', initJb.usingProjects('studio'))
+  type: 'jbm<jbm>',
+  impl: child({id: 'vDebugger',sourceCodeOptions: project('studio')})
 })

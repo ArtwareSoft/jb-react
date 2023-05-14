@@ -1,5 +1,3 @@
-// jb.ns('studioHelper,d3g,dataTest,pptr')
-//jb.studio.previewWindow() = jb.frame
 jb.studio.inspectedJb = jb.ui.parentFrameJb()
 
 jb.component('dataTest.parseProjectHtml', {

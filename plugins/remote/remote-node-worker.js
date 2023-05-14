@@ -1,3 +1,5 @@
+jb.dsl('jbm')
+
 jb.extension('nodeContainer', {
     initExtension() { return { toRestart: [], servers: {} } },
     connectFromBrowser: (url,serverUri,ctx) => new Promise( resolve => {
@@ -89,7 +91,7 @@ jb.extension('nodeContainer', {
     }
 })
 
-jb.component('jbm.remoteNodeWorker', {
+component('remoteNodeWorker', {
   type: 'jbm',
   params: [
     {id: 'id', as: 'string', mandatory: true},
@@ -147,7 +149,7 @@ jb.component('jbm.remoteNodeWorker', {
     }
 })
 
-jb.component('jbm.spawn', {
+component('spawn', {
     type: 'jbm',
     params: [
         {id: 'id', as: 'string', mandatory: true},

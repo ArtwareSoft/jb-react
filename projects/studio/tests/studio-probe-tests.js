@@ -132,7 +132,7 @@ jb.component('jbEditorTest.basic', {
 //         jbEditor: { 
 //           circuit: 'sampleProject.main',
 //           selected: 'sampleProject.main~impl~controls~0~text'}} 
-//         }), jbm.worker('inteli'))
+//         }), worker('inteli'))
 //     ),
 //     control: group({
 //       controls: [
@@ -144,7 +144,7 @@ jb.component('jbEditorTest.basic', {
 //               () => { /* code loader: jb.watchableComps.forceLoad(); jb.ui.createHeadlessWidget() */ },
 //               {$: 'sampleProject.main'}
 //             ]})
-//         ,jbm.worker('inteli')),
+//         ,worker('inteli')),
 //       ],
 //     }),
 //     action: runActions(

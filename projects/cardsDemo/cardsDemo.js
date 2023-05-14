@@ -1,5 +1,3 @@
-// jb.ns('cards,cardsDemo,styleGallery')
-
 jb.component('cardsDemo.main', {
   impl: group({
     layout: layout.horizontal('20'),

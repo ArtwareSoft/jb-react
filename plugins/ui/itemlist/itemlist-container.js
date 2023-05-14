@@ -1,5 +1,3 @@
-// var { search, itemlistContainer } = jb.ns('search,itemlistContainer')
-
 jb.component('group.itemlistContainer', {
   description: 'itemlist writable container to support addition, deletion and selection',
   type: 'feature',

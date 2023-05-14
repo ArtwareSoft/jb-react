@@ -64,7 +64,7 @@ jb.extension('remoteCtx', {
 
         function injectDSLType(prof) {
             if (prof.$dslType) return
-            if (prof[jb.core.CT] && prof[jb.core.CT].dslType.indexOf('<') != -1)
+            if ((jb.path(prof,[jb.core.CT,'dslType']) || '').indexOf('<') != -1)
                 prof.$dslType = prof[jb.core.CT].dslType
             Object.values(prof).filter(x=>x && typeof x == 'object').forEach(x=>injectDSLType(x))
         }

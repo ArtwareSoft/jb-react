@@ -7,8 +7,8 @@ jb.component('notebookTest.compToShadow', {
 //   impl: dataTest({
 //     timeout: 5000,
 //     runBefore: pipe(
-//       jbm.worker('notebook'),
-//       remote.initShadowComponent({compId: 'notebookTest.compToShadow', jbm: jbm.byUri('tests•notebook')}),
+//       worker('notebook'),
+//       remote.initShadowComponent({compId: 'notebookTest.compToShadow', jbm: byUri('tests•notebook')}),
 //       () => { jb.exec(runActions(delay(1), writeValue(tgp.ref('notebookTest.compToShadow~impl'),'Dan'))) } // writeValue after calculate
 //     ),
 //     calculate: remote.data(
@@ -18,7 +18,7 @@ jb.component('notebookTest.compToShadow', {
 //         rx.map('%newVal%'),
 //         rx.take(1)
 //       )), 
-//       jbm.byUri('tests•notebook')
+//       byUri('tests•notebook')
 //     ),
 //     expectedResult: equals('Dan')
 //   })

@@ -58,7 +58,7 @@ jb.extension('studio', 'hosts', {
         projectsDir: () => `${decodeURIComponent(jb.frame.jbBaseProjUrl).split('/file///').pop()}/projects`,
         openUrlInBrowser: url => jb.exec({$: 'remote.action', 
             action: () => { debugger; jb.frame.vscodeNS.env.openExternal(jb.frame.vscodeNS.Uri.parse(url)) }, 
-            jbm: {$: 'jbm.byUri', uri: 'vscode' }}),
+            jbm: {$: 'byUri(', uri: 'vscode' }}),
         gotoPath: (path,semanticPart) => jb.vscode.gotoPath(path,semanticPart)
     }),
 

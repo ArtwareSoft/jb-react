@@ -306,7 +306,8 @@ jb.component('suggestionsTest.component', {
     path: 'suggestionsTest.defaultProbe~impl~features~0',
     expression: '=watc',
     expectedResult: contains('watchRef')
-  })
+  }),
+  require :{ $: 'suggestionsTest.defaultProbe'}
 })
 
 jb.component('suggestionsTest.insideArray', {
@@ -368,7 +369,7 @@ jb.component('workerPreviewTest.nodePreview', {
     control: group({
       controls: [
         button('change script', writeValue(tgp.ref('sampleProject.main~impl~controls~text'), 'world')),
-        probe.remoteMainCircuitView(jbm.remoteNodeWorker({init: probe.initRemoteProbe()}))
+        probe.remoteMainCircuitView(remoteNodeWorker({init: probe.initRemoteProbe()}))
       ]
     }),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
@@ -435,18 +436,18 @@ jb.component('FETest.workerPreviewTest.changeCss', {
 //   impl: dataTest({
 //     runBefore: runActions(
 //       jbm.wPreview(),
-//       remote.useYellowPages(jbm.worker())
+//       remote.useYellowPages(worker())
 //     ),
-//     calculate: remote.data('%$yellowPages/preview%', jbm.worker()),
+//     calculate: remote.data('%$yellowPages/preview%', worker()),
 //     expectedResult: contains('wPreview')
 //   })
 // })
 
 jb.component('probeTest.childJbm', {
   impl: uiTest({
-    control: probe.remoteMainCircuitView(jbm.child('childProbe')),
+    control: probe.remoteMainCircuitView(child('childProbe')),
     runBefore: runActions(
-      jbm.child({id: 'childProbe', init: probe.initRemoteProbe()}),
+      jbm.start(child({id: 'childProbe', init: probe.initRemoteProbe()})),
       writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main')
     ),
     checkResultRx: () => jb.ui.renderingUpdates,

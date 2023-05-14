@@ -207,7 +207,7 @@ jb.extension('utils', 'core', {
         jb.logError('getCompByShortIdAndDsl - several options', {dsl,shortId,options})
     },
     getComp(id, {types, dsl, silent} = {}) {
-      if (id == 'TBD') return jb.comps[id]
+      if (jb.core.genericCompIds[id]) return jb.comps[id]
       const res = id && (types || '').split(',')
         .map(t=>t.replace(/<>|\[\]/g,''))
         .map(t => t.indexOf('<') == -1 ? id : t+id)

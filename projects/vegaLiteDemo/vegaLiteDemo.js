@@ -1,4 +1,3 @@
-// jb.ns('vegaLiteDemo,vega')
 sampleX = {
   "encoding": {
     "x": {"field": "a", "type": "nominal", "axis": {"labelAngle": 0}},

@@ -1,5 +1,3 @@
-// var {gridEditor} = jb.ns('gridEditor')
-
 Object.assign(jb.ui, {
   getGridVals(el,axis) {
     const prop = `gridTemplate${axis}`

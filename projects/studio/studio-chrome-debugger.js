@@ -105,7 +105,7 @@ jb.component('chromeDebugger.logsCtrl', {
                 title: 'jbm',
                 databind: '%$inspectedUri%',
                 options: pipe(
-                    remote.data(net.listSubJbms(), jbm.byUri('%$uri%')),
+                    remote.data(net.listSubJbms(), byUri('%$uri%')),
                     unique(),
                     filter(not(contains('•vDebugger'))),
                     filter(not(contains('devtools'))),
@@ -114,10 +114,10 @@ jb.component('chromeDebugger.logsCtrl', {
                 features: picklist.allowAsynchOptions(),
             }),
             group({
-                controls: remote.widget(studio.eventTracker(), jbm.byUri('%$inspectedUri%•vDebugger')),
+                controls: remote.widget(studio.eventTracker(), byUri('%$inspectedUri%•vDebugger')),
                 features: [
                     watchRef('%$inspectedUri%'),
-                    group.wait(remote.data(jbm.vDebugger(),jbm.byUri('%$inspectedUri%')))
+                    group.wait(remote.data(jbm.start(jbm.vDebugger()),byUri('%$inspectedUri%')))
                 ]
             })
         ],
@@ -135,8 +135,8 @@ jb.component('chromeDebugger.compCtrl', {
     ],
     type: 'control',
     impl: group({
-        controls: remote.widget(studio.compInspector('%$inspectedProps%'), jbm.byUri('%$uri%•vDebugger')),
-        features: group.wait(remote.data(jbm.vDebugger(),jbm.byUri('%$uri%')))
+        controls: remote.widget(studio.compInspector('%$inspectedProps%'), byUri('%$uri%•vDebugger')),
+        features: group.wait(remote.data(jbm.start(jbm.vDebugger()),byUri('%$uri%')))
     })
 })
 
@@ -145,7 +145,7 @@ jb.component('chromeDebugger.cardCtrl', {
         {id: 'uri', as: 'string'},
     ],
     type: 'control',
-    impl: remote.widget( cardExtract.showOptions(),jbm.byUri('%$uri%'))
+    impl: remote.widget( cardExtract.showOptions(),byUri('%$uri%'))
 })
 
 jb.component('chromeDebugger.openResource', {

@@ -19,6 +19,26 @@ jb.component('call', {
  	}
 })
 
+jb.component('cast', {
+  type: 'any',
+  params: [
+    {id: 'typeCast', as: 'string', mandatory: true, description: 'e.g. type1<myDsl>'},
+    {id: 'val', type: '$asParent', mandatory: true },
+  ],
+  impl: ctx => { debugger; return ctx.params.val }
+})
+
+jb.component('If', {
+  type: 'any',
+  macroByValue: true,
+  params: [
+    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true, type: 'boolean'},
+    {id: 'then', type: '$asParent', dynamic: true},
+    {id: 'Else', type: '$asParent', dynamic: true}
+  ],
+  impl: ({},cond,_then,_else) => cond() ? _then() : _else()
+})
+
 jb.extension('utils', 'pipe', {
   calcPipe(ctx,ptName,passRx) {
     let start = jb.toarray(ctx.data)
@@ -578,16 +598,6 @@ jb.component('pipeline.var', {
     {id: 'val', mandatory: true, dynamic: true, defaultValue: '%%'}
   ],
   impl: ctx => ({ [Symbol.for('Var')]: true, ...ctx.params })
-})
-
-jb.component('If', {
-  macroByValue: true,
-  params: [
-    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true, type: 'boolean'},
-    {id: 'then', dynamic: true},
-    {id: 'Else', dynamic: true}
-  ],
-  impl: ({},cond,_then,_else) => cond() ? _then() : _else()
 })
 
 jb.component('not', {

@@ -1,5 +1,3 @@
-// var {editableBoolean, refreshIfNotWatchable} = jb.ns('editableBoolean')
-
 jb.component('editableBoolean', {
   type: 'control',
   category: 'input:20',

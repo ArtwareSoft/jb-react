@@ -1,5 +1,3 @@
-// var { studioDialogFeature, runTransaction  } = jb.ns('studioDialogFeature')
-
 jb.component('dialog.editSourceStyle', {
   type: 'dialog.style',
   params: [

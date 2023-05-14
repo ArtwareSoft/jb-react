@@ -1,5 +1,3 @@
-// jb.ns('animationDemo')
-
 jb.component('animationDemo.main', {
   type: 'control',
   impl: group({

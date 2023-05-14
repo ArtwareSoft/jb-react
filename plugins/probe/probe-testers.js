@@ -8,6 +8,7 @@ jb.component('suggestionsTest', {
     {id: 'forceLocal', as: 'boolean', defaultValue: true, type: 'boolean'}
   ],
   impl: dataTest({
+    timeout: 1000,
     calculate: pipe(
       suggestions.calcFromRemote({
         probePath: '%$path%',
@@ -22,8 +23,9 @@ jb.component('suggestionsTest', {
       join(',')
     ),
     expectedResult: call('expectedResult'),
-    runBefore: remote.copyPassiveData('people', jbm.wProbe())
-  })
+    runBefore: remote.copyPassiveData('people', probeWorker())
+  }),
+  require :{ $: 'suggestionsTest.defaultProbe'}
 })
 
 jb.component('probeTest', {

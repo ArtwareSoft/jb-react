@@ -1,5 +1,3 @@
-// var { field, validation  } = jb.ns('field,validation');
-
 jb.extension('ui', 'field', {
   initExtension: () => ({field_id_counter : 0 }),
   writeFieldData(ctx,cmp,value,oneWay) {

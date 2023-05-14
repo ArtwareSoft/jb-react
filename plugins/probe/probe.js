@@ -1,4 +1,3 @@
-
 jb.component('probe', { watchableData: { path : '',  defaultMainCircuit: '', scriptChangeCounter: 1} })
 
 jb.extension('probe', {
@@ -284,12 +283,12 @@ jb.component('probe.calcCircuitPath', {
     }
 })
 
-jb.component('jbm.wProbe', {
-  type: 'jbm',
+jb.component('probeWorker', {
+  type: 'jbm<jbm>',
   params: [
     {id: 'id', defaultValue: 'wProbe'}
   ],
-  impl: jbm.worker('%$id%', probe.initRemoteProbe())
+  impl: worker('%$id%', probe.initRemoteProbe())
 })
 
 jb.component('probe.initRemoteProbe', {

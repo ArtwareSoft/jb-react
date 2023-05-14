@@ -61,7 +61,7 @@ jb.component('studio.toolbar', {
           onClose: studio.gotoLastEdit()
         }),
         style: button.mdcIcon(icon('add')),
-        features: studio.dropHtml(tgp.insertControl('%$newCtrl%'))
+        features: studio.dropHtml(tgp.insertControl('%$newCtrl%',studio.currentProfilePath()))
       }),
       button({
         title: 'Responsive',

@@ -17,7 +17,7 @@ jb.component('widget.frontEndCtrl', {
 
 jb.component('widget.newId', {
     params: [
-        {id: 'jbm', type: 'jbm', defaultValue: () => jb },
+        {id: 'jbm', type: 'jbm<jbm>', defaultValue: () => jb },
     ],
     impl: (ctx, jbm) => {
         const id = jbm.uri + '-' + ctx.id
@@ -28,7 +28,7 @@ jb.component('widget.newId', {
 })
 
 jb.component('jbm.backEnd', {
-    type: 'jbm',
+    type: 'jbm<jbm>',
     params: [
         {id: 'elem', defaultValue: '%$cmp/el%' },
     ],
@@ -106,14 +106,14 @@ jb.component('remote.distributedWidget', {
     type: 'action',
     params: [
       {id: 'control', type: 'control', dynamic: true },
-      {id: 'backend', type: 'jbm', defaultValue: jbm.self() },
-      {id: 'frontend', type: 'jbm' },
+      {id: 'backend', type: 'jbm<jbm>', defaultValue: jbm.self() },
+      {id: 'frontend', type: 'jbm<jbm>' },
       {id: 'selector', as: 'string', description: 'root selector to put widget in. e.g. #main' },
     ],
     impl: remote.action(runActions(
         Var('widgetId', widget.newId()),
         Var('frontEndUri', '%$frontend/uri%'),
-        remote.action(action.renderXwidget('%$selector%','%$widgetId%'), jbm.byUri('%$frontEndUri%') ),
+        remote.action(action.renderXwidget('%$selector%','%$widgetId%'), byUri('%$frontEndUri%') ),
         rx.pipe(
             source.remote(
                 rx.pipe(
@@ -121,9 +121,9 @@ jb.component('remote.distributedWidget', {
                     rx.log('remote widget userReq'),
                     rx.filter('%widgetId% == %$widgetId%'),
                     rx.takeWhile(({data}) => data.$$ != 'destroy',true),
-             ), jbm.byUri('%$frontEndUri%') ),
+             ), byUri('%$frontEndUri%') ),
             widget.headless('%$control()%','%$widgetId%'),
-            sink.action(remote.action(action.frontEndDelta('%%'), jbm.byUri('%$frontEndUri%')))
+            sink.action(remote.action(action.frontEndDelta('%%'), byUri('%$frontEndUri%')))
         )
     ), '%$backend%')
 })
@@ -132,7 +132,7 @@ jb.component('remote.widget', {
     type: 'control',
     params: [
       {id: 'control', type: 'control', dynamic: true },
-      {id: 'jbm', type: 'jbm' },
+      {id: 'jbm', type: 'jbm<jbm>' },
     ],
     impl: group({ 
         controls: controlWithFeatures({

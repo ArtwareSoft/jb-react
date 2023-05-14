@@ -372,5 +372,6 @@ jb.component('tgpTextEditor.cursorPath', {
 })
 
 jb.component('TBD', {
+  type: 'any',
   impl: 'TBD'
 })

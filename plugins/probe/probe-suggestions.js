@@ -27,7 +27,7 @@ jb.extension('probe', 'suggestions', {
       }
 
       jbm() {
-        return (['%','%$','/','.'].indexOf(this.tailSymbol) != -1) ? jb.exec(jbm.wProbe()) : jb
+        return (['%','%$','/','.'].indexOf(this.tailSymbol) != -1) ? jb.exec(jbm.start(probeWorker())) : jb
       }
 
       suggestionsRelevant() {

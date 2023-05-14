@@ -1,5 +1,3 @@
-// jb.ns('puppeteerDemo')
-
 jb.component('dataResource.events', {
   watchableData: [
 

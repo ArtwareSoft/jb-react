@@ -1,5 +1,3 @@
-// jb.ns('vega')
-
 jb.component('dataResource.vegaItems', {
   passiveData: [
     {"a": "A", "b": 28}, {"a": "B", "b": 55}, {"a": "C", "b": 43},

@@ -3,7 +3,7 @@ jb.using('remote-widget')
 jb.component('probe.inOutView', {
   type: 'control',
   params: [
-    {id: 'remoteJbm', type: 'jbm', defaultValue: jbm.wProbe() }
+    {id: 'remoteJbm', type: 'jbm<jbm>', defaultValue: probeWorker() }
   ],
   impl: group({
     controls: remote.widget(
@@ -208,7 +208,7 @@ jb.component('probe.mainCircuitView', {
 
 jb.component('probe.remoteMainCircuitView', {
   params: [
-    {id: 'jbm', defaultValue: jbm.wProbe()}
+    {id: 'jbm', type: 'jbm<jbm>', defaultValue: probeWorker()}
   ],
   type: 'control',
   impl: remote.widget(probe.mainCircuitView(), '%$jbm%')

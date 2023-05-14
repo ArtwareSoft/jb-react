@@ -1,5 +1,3 @@
-// var {hidden} = jb.ns('mdc-style')
-
 jb.component('editableText.input', {
   type: 'editable-text.style',
   impl: customStyle({

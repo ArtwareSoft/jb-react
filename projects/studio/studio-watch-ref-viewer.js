@@ -1,6 +1,5 @@
 (function() {
 const st = jb.studio
-// jb.ns('animation')
 
 jb.component('studio.positionOfData', {
   type: 'position',

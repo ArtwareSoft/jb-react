@@ -34,7 +34,7 @@ jb.component('tgp.insertControl', {
   type: 'action',
   params: [
     {id: 'comp', mandatory: true, description: 'comp name or comp json'},
-    {id: 'path', as: 'string', defaultValue: {$: 'studio.currentProfilePath'} }
+    {id: 'path', as: 'string'}
   ],
   impl: (ctx,compToInsert,path) => {
     let newCtrl = compToInsert

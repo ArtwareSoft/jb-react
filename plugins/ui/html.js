@@ -1,5 +1,3 @@
-// var { html } = jb.ns('html')
-
 jb.component('html', {
   type: 'control',
   description: 'rich text',

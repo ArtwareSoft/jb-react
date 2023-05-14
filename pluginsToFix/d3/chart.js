@@ -2,7 +2,6 @@ jb.dsl('d3')
 jb.using('ui')
 
 jb.extension('d3', {
-  $requireLibs: ['/dist/d3.js'],
 })
 
 component('d3.scatter', {
@@ -65,7 +64,7 @@ component('circles', {
 component('initScatter', {
   type: 'feature<d3.scatter>',
   impl: features(
-    frontEnd.requireExternalLibrary(['d3.js']),
+//    frontEnd.requireExternalLibrary(['d3.js']),
     calcProp({
         id: 'items',
         value: (ctx,{cmp,$model,itemlistCntr}) => {

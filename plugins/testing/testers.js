@@ -339,7 +339,7 @@ jb.extension('test', {
 
 		if (remoteTests) {
 			jb.exec({$: 'tests.runner', 
-				jbm: jbm.worker({initJbCode: initJb.usingProjects(['studio'])}), 
+				jbm: worker({sourceCodeOptions: project('studio')}), 
 				tests: () => tests.map(e=>e[0]), rootElemId: 'remoteTests'})
 			return
 		}
@@ -404,7 +404,7 @@ jb.component('source.testsResults', {
 	type: 'rx',
 	params: [
 		{id: 'tests', as: 'array' },
-		{id: 'jbm', type: 'jbm', defaultValue: jbm.self() },
+		{id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self() },
 	],
 	impl: source.remote(
 			rx.pipe(
@@ -418,7 +418,7 @@ jb.component('tests.runner', {
 	type: 'action',
 	params: [
 		{id: 'tests', as: 'array' },
-		{id: 'jbm', type: 'jbm', defaultValue: jbm.self() },
+		{id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self() },
 		{id: 'rootElemId', as: 'string'}
 	],
 	impl: runActions(

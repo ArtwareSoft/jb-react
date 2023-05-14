@@ -24,9 +24,7 @@ jb.component('studio.newProject', {
   </script>
 </body>
 </html>`),
-  prop('%$project%.js',`jb.ns('%$project%')
-
-`+`jb.component('%$project%.main', {
+  prop('%$project%.js',`jb.component('%$project%.main', {
   type: 'control',
   impl: group({
     controls: [button('my button')]

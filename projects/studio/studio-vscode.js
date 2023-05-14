@@ -4,22 +4,22 @@ jb.component('studio.inVscode',{
     impl: () => jb.frame.jbInvscode
 })
 
-jb.component('vscode.openPreviewPanelOld', {
-  type: 'action',
-  params: [
-    {id: 'id', as: 'string'},
-    {id: 'panel'}
-  ],
-  impl: jbm.vscodeWebView({
-      id: '%$id%', 
-      panel: '%$panel%', 
-      init: runActions(
-          remote.useYellowPages(),
-          studio.initPreview(),
-          remote.action(renderWidget(vscode.previewCtrl(),'#main'), '%$jbm%')
-        )
-    })
-})
+// jb.component('vscode.openPreviewPanelOld', {
+//   type: 'jbm<jbm>',
+//   params: [
+//     {id: 'id', as: 'string'},
+//     {id: 'panel'}
+//   ],
+//   impl: vscodeWebView({
+//       id: '%$id%', 
+//       panel: '%$panel%', 
+//       init: runActions(
+//           remote.useYellowPages(),
+//           studio.initPreview(),
+//           remote.action(renderWidget(vscode.previewCtrl(),'#main'), '%$jbm%')
+//         )
+//     })
+// })
 
 jb.component('vscode.openLogsPanel', {
   type: 'action',
@@ -30,10 +30,10 @@ jb.component('vscode.openLogsPanel', {
   impl: vscode.showInXWebView({
       id: '%$id%', 
       panel: '%$panel%', 
-      backend: pipe(
-        remote.data(jbm.child('logs'), jbm.preview()),
-        jbm.byUri('%uri%'),
-        first()
+      backend: cast('jbm<jbm>', pipe(
+        remote.data(jbm.start(child('logs')), preview()),
+        jbm.start(byUri('%uri%')),
+        first())
     )})
 })
 

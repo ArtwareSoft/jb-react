@@ -1,5 +1,3 @@
-// jb.ns('htmlParsing')
-
 jb.component('htmlParsing.main', {
   type: 'control',
   impl: group({

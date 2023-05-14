@@ -1,4 +1,3 @@
-jb.ns('d3')
 
 jb.component('d3.histogram', {
   type: 'control<>',

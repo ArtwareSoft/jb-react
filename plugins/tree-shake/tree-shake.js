@@ -1,3 +1,5 @@
+jb.using('common,remote')
+
 jb.extension('treeShake', {
     initExtension() {
         return {
@@ -147,6 +149,9 @@ jb.extension('treeShake', {
         }
         jb.log('treeShake request code from remote',{ids, stripedCode})
         jb.treeShake.loadingCode[vars.ids] = true
+        if (!jb.treeShake.codeServerJbm && jb.jbm.codeServerUri)
+            jb.treeShake.codeServerJbm = await ctx.run({$: 'byUri(', uri: jb.jbm.codeServerUri})
+
         if (!jb.treeShake.codeServerJbm)
             jb.logError(`treeShake - missing codeServer jbm at ${jb.uri}`,{ids})
         return jb.treeShake.codeServerJbm && jb.treeShake.codeServerJbm['remoteExec'](stripedCode)
@@ -217,6 +222,6 @@ jb.component('treeShake.getCodeFromRemote', {
 //     params: [
 //         {id: 'treeShakeUri' }
 //     ],
-//     impl: (ctx, uri) => jb.treeShake.codeServerJbm = ctx.run({$: 'jbm.byUri', uri}),
-//     require: {$ : 'jbm.byUri'}
+//     impl: (ctx, uri) => jb.treeShake.codeServerJbm = ctx.run({$: 'byUri(', uri}),
+//     require: {$ : 'byUri('}
 // })

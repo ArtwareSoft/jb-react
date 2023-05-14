@@ -28,8 +28,8 @@ jb.component('treeShakeTest.funcDef', {
 jb.component('treeShakeTest.runOnWorker', {
   impl: dataTest({
     timeout: 5000,
-    runBefore: jbm.worker('dynaWorker'),
-    calculate: remote.data(pipeline('hello'), jbm.byUri('tests•dynaWorker')),
+    runBefore: jbm.start(worker('dynaWorker')),
+    calculate: remote.data(pipeline('hello'), byUri('tests•dynaWorker')),
     expectedResult: '%%==hello'
   })
 })

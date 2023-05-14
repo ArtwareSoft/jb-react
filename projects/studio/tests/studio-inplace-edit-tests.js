@@ -1,5 +1,3 @@
-// jb.ns('inplaceEdit,sizesEditor')
-
 jb.component('test.helloWorldCtrl',{
   type: 'control',
   impl: text('hello world')

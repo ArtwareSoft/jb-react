@@ -1,5 +1,3 @@
-// var { css } = jb.ns('css')
-
 jb.component('css', {
   description: 'e.g. {color: red; width: 20px} or div>.myClas {color: red} ',
   type: 'feature,dialog-feature',

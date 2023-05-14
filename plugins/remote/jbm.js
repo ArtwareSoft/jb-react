@@ -1,3 +1,4 @@
+jb.dsl('jbm')
 /* jbm - a virtual jBart machine - can be implemented in same frame/sub frames/workers over the network
 interface jbm : {
      uri : string // devtools•logPanel, studio•preview•debugView, •debugView
@@ -259,7 +260,7 @@ jb.extension('jbm', {
                 jb.log(`chromeDebugger invoking connectToPanel comp ${panelUri} on devltools`,{uri: jb.uri})
                 new jb.core.jbCtx().setVar('$disableLog',true).run(remote.action({
                     action: {$: 'jbm.connectToPanel', panelUri}, 
-                    jbm: jbm.byUri('devtools'),
+                    jbm: byUri('devtools'),
                     oneway: true
                 })) } // will be called directly by initPanel using eval
         }
@@ -288,34 +289,15 @@ jb.extension('jbm', {
     }
 })
 
-jb.component('initJb.usingProjects', {
-  type: 'initJbCode',
-  description: 'returns code that can be wrapped as Promise.resolve(${code}).then(jb=>...)',
-  params: [
-    {id: 'projects', as: 'array'}
-  ],
-  impl: ({vars}, projects) => 
-    `jbInit('${vars.uri}',${JSON.stringify({projects, plugins: jb_plugins, baseUrl: vars.baseUrl, multipleInFrame: vars.multipleJbmsInFrame})})`
-})
-
-jb.component('initJb.treeShakeClient', {
-    type: 'initJbCode',
-    impl: ({vars}) => `(async () => {
-const jb = { uri: '${vars.uri}' }
-${jb.treeShake.clientCode()};
-return jb
-})()`
-})
-
-jb.component('jbm.worker', {
+component('worker', {
     type: 'jbm',
     params: [
         {id: 'id', as: 'string', defaultValue: 'w1' },
-        {id: 'init' , type: 'action', dynamic: true },
-        {id: 'initJbCode', type: 'initJbCode', dynamic: true, defaultValue: initJb.treeShakeClient() },
+        {id: 'init' , type: 'action<>', dynamic: true },
+        {id: 'sourceCodeOptions', type: 'source-code-option[]', flattenArray: true, defaultValue: treeShakeClient() },
         {id: 'networkPeer', as: 'boolean', description: 'used for testing' },
     ],    
-    impl: (ctx,name,init,initJbCodeF,networkPeer) => {
+    impl: (ctx,name,init,sourceCodeOptions,networkPeer) => {
         const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
         if (childsOrNet[name]) return childsOrNet[name]
         const workerUri = networkPeer ? name : `${jb.uri}•${name}`
@@ -325,19 +307,19 @@ jb.component('jbm.worker', {
 
         function createWorker(resolve) {
             const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
-            const initJbCode = initJbCodeF(ctx.setVars({uri: workerUri, multipleJbmsInFrame: false}))
+            const initOptions = jb.jbm.calcInitOptions(sourceCodeOptions)
             const workerCode = `
 
 importScripts(location.origin+'/plugins/loader/jb-loader.js');
 jbHost.baseUrl = location.origin || '';
 
-Promise.resolve(${initJbCode})
+Promise.resolve(jbInit('${workerUri}', ${JSON.stringify(initOptions)})
     .then(jb => {
         globalThis.jb = jb;
         jb.spy.initSpy({spyParam: "${jb.spy.spyParam}"});
         jb.treeShake.codeServerJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
         self.postMessage({ $: 'workerReady' })
-    })
+    }))
 //# sourceURL=${workerUri}-initJb.js
 `
             const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name, type: 'application/javascript'})))
@@ -354,20 +336,19 @@ Promise.resolve(${initJbCode})
     }
 })
 
-jb.component('jbm.child', {
+component('child', {
   type: 'jbm',
   params: [
     {id: 'id', as: 'string', mandatory: true},
-    {id: 'initJbCode', type: 'initJbCode', dynamic: true, defaultValue: initJb.treeShakeClient()},
+    {id: 'sourceCodeOptions', type: 'source-code-option[]', flattenArray: true, defaultValue: treeShakeClient() },
     {id: 'init', type: 'action', dynamic: true}
   ],
-  impl: (ctx,name,initJbCodeF,init) => {
+  impl: (ctx,name,sourceCodeOptions,init) => {
         if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
         const childUri = `${jb.uri}•${name}`
-        const initJbCode = initJbCodeF(ctx.setVars({uri: childUri, multipleJbmsInFrame: true}))
-        const _child = jb.frame.eval(`${initJbCode}
-//# sourceURL=${childUri}-initJb.js
-`)
+        const initOptions = jb.jbm.calcInitOptions(sourceCodeOptions)
+        const _child = jbInit(childUri, {...initOptions, multipleInFrame: true})
+
         jb.jbm.childJbms[name] = _child
         const result = Promise.resolve(_child).then(child=>{
             initChild(child)
@@ -399,7 +380,7 @@ jb.component('jbm.child', {
     }
 })
 
-jb.component('jbm.byUri', {
+component('byUri', {
     type: 'jbm',
     params: [
         { id: 'uri', as: 'string', dynamic: true}
@@ -453,13 +434,34 @@ jb.component('jbm.byUri', {
     }
 })
 
-jb.component('jbm.self', {
+component('jbm.self', {
     type: 'jbm',
     impl: () => jb
 })
 
-jb.component('jbm.terminateChild', {
-    type: 'action',
+component('parent', {
+    type: 'jbm',
+    impl: () => jb.parent
+})
+
+component('jbm.start', {
+    type: 'data<>',
+    params: [ 
+        {id: 'jbm', type: 'jbm', mandatory: true}
+    ],
+    impl: '%$jbm%'
+})
+
+component('jbm.fromData', {
+    type: 'jbm',
+    params: [ 
+        {id: 'jbm', mandatory: true}
+    ],
+    impl: '%$jbm%'
+})
+
+component('jbm.terminateChild', {
+    type: 'action<>',
     params: [
         {id: 'id', as: 'string'}
     ],

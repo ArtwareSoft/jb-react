@@ -12,7 +12,7 @@ self.addEventListener('message', m => {
             self.spy = jb.spy.initSpy({spyParam})
             
             jb.component('jbm.connectToPanel', {
-                type: 'jbm',
+                type: 'jbm<jbm>',
                 params: [
                     { id: 'panelUri', as: 'string' }
                 ],

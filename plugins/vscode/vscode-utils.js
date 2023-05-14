@@ -10,7 +10,7 @@ jb.extension('vscode', 'utils', {
         jb.tgpTextEditor.host = { // limited tgpEditor host at the server
             serverUri: jb.uri,
             applyEdit: async (edit,uri) => ctx.setData({edit,uri}).run( 
-                remote.action(({data}) => jb.tgpTextEditor.host.applyEdit(data.edit, data.uri), jbm.byUri(()=> clientUri))),
+                remote.action(({data}) => jb.tgpTextEditor.host.applyEdit(data.edit, data.uri), byUri(()=> clientUri))),
         }
     },
     async initVscodeAsHost({context}) {

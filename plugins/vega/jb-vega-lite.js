@@ -1,5 +1,3 @@
-// var {vega} = jb.ns('vega')
-
 vegaSample = {
     "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
     "description": "A simple bar chart with embedded data.",

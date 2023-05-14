@@ -1,5 +1,3 @@
-// var { divider } = jb.ns('divider')
-
 jb.component('divider', {
     type: 'control',
     params: [

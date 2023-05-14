@@ -61,6 +61,9 @@ Object.assign(jb, {
     comp[CT].location = comp.location || location
     delete comp.location
 
+    if (comp.type == 'any')
+      jb.core.genericCompIds[id] = true
+
     const h = jb.core.onAddComponent.find(x=>x.match(id,comp))
     if (h && h.register)
       return h.register(id,comp)
@@ -89,7 +92,8 @@ jb.extension('core', {
       OnlyData: Symbol.for('OnlyData'),
       jstypes: jb.core._jsTypes(),
       onAddComponent: [],
-      unresolvedProfiles: []
+      unresolvedProfiles: [],
+      genericCompIds: {}
     }
   },
   run(ctx,parentParam,settings) {

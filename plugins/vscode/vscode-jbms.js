@@ -1,3 +1,5 @@
+jb.dsl('jbm')
+
 jb.extension('vscode', 'ports', {
     portFromWebViewToExt(from,to) { return {
         from, to,
@@ -59,9 +61,9 @@ jb.extension('vscode', 'ports', {
     }},   
 })
 
-jb.component('vscode.completionServer', {
+component('completionServer', {
   type: 'jbm',
-  impl: jbm.remoteNodeWorker({
+  impl: remoteNodeWorker({
     id: 'completionServer',
     loadTests: true,
     inspect: 7010,
@@ -70,13 +72,13 @@ jb.component('vscode.completionServer', {
   })
 })
 
-// jb.component('jbm.vscodeRemoteProbe', {
+// jb.component('vscodeRemoteProbe', {
 //   type: 'jbm',
 //   params: [
 //     {id: 'filePath', as: 'ref'},
 //     {id: 'probePath', as: 'ref'}
 //   ],
-//   impl: jbm.remoteNodeWorker({
+//   impl: remoteNodeWorker({
 //     id: 'remoteProbe',
 //     projects: tgp.pluginsOfFilePath('%$filePath%'),
 //     restart: source.watchableData('%$filePath%'),
@@ -108,7 +110,7 @@ jb.component('vscode.completionServer', {
 //   )
 // })
 
-jb.component('jbm.vscodeWebView', {
+component('vscodeWebView', {
   type: 'jbm',
   params: [
     {id: 'id', as: 'string'},

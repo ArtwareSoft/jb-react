@@ -48385,7 +48385,7 @@ jb.component('chromeDebugger.logsCtrl', {
                 controls: remote.widget(studio.eventTracker(), jbm.byUri('%$inspectedUri%•vDebugger')),
                 features: [
                     watchRef('%$inspectedUri%'),
-                    group.wait(remote.data(jbm.vDebugger(),jbm.byUri('%$inspectedUri%')))
+                    group.wait(remote.data(jbm.start(jbm.vDebugger()),jbm.byUri('%$inspectedUri%')))
                 ]
             })
         ],
@@ -48404,7 +48404,7 @@ jb.component('chromeDebugger.compCtrl', {
     type: 'control',
     impl: group({
         controls: remote.widget(studio.compInspector('%$inspectedProps%'), jbm.byUri('%$uri%•vDebugger')),
-        features: group.wait(remote.data(jbm.vDebugger(),jbm.byUri('%$uri%')))
+        features: group.wait(remote.data(jbm.start(jbm.vDebugger()),jbm.byUri('%$uri%')))
     })
 })
 

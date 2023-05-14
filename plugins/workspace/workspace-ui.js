@@ -39,7 +39,7 @@ jb.component('workspace.IDE', {
         ],
       features: [
           css.height({height: '%$height%', minMax: 'max'}),
-          group.wait(jbm.wProbe())
+          group.wait(jbm.start(probeWorker()))
       ]
     })
 })
@@ -62,7 +62,7 @@ jb.component('workspace.views', {
                 group({
                     title: 'preview',
                     controls: probe.inOutView('%$workspace/selectedPath%'),
-                    //features: group.wait(remote.data('%$probe/path%', jbm.wProbe()))
+                    //features: group.wait(remote.data('%$probe/path%', probeWorker()))
                     //followUp.watchObservable(() => jb.workspace.onChangeSelection)
                 }),
             ]
@@ -95,7 +95,7 @@ jb.component('workspace.selelctionChanged', {
         writeValue('%$workspace/relevant%','%$editorPath/relevant%'),
         writeValue('%$workspace/semanticPath%','%$editorPath/semanticPath/path%'),
         writeValue('%$workspace/selectedPath%','%$editorPath/path%'),
-        writeValue('%$workspace/probeCircuit%', remote.data(probe.calcCircuitPath('%$editorPath/path%'), jbm.wProbe())),
+        writeValue('%$workspace/probeCircuit%', remote.data(probe.calcCircuitPath('%$editorPath/path%'), probeWorker())),
         //({},{},{selection}) => jb.workspace.onChangeSelection.next(selection)
     )
 })

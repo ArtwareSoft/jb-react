@@ -395,7 +395,7 @@ jb.component('studio.insertCompOption', {
   ],
   impl: menu.action({
     title: '%$title%',
-    action: tgp.insertControl('%$comp%')
+    action: tgp.insertControl('%$comp%',studio.currentProfilePath())
   })
 })
 
@@ -433,7 +433,7 @@ jb.component('studio.insertControlMenu', {
                 raised: '',
                 features: [
                   css.height('80'),
-                  studio.dropHtml(runActions(tgp.insertControl('%$newCtrl%'), dialog.closeDialog()))
+                  studio.dropHtml(runActions(tgp.insertControl('%$newCtrl%',studio.currentProfilePath()), dialog.closeDialog()))
                 ]
               }),
               editableText({
@@ -449,7 +449,8 @@ jb.component('studio.insertControlMenu', {
             ]
           }),
           style: dialog.dialogOkCancel(),
-          onOK: action.if('%$studio/htmlToPaste%', tgp.insertControl(studio.htmlToControl('%$studio/htmlToPaste%'))),
+          onOK: action.if('%$studio/htmlToPaste%', tgp.insertControl(
+            studio.htmlToControl('%$studio/htmlToPaste%'),studio.currentProfilePath() )),
           features: dialogFeature.dragTitle()
         }),
         shortcut: ''

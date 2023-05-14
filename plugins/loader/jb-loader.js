@@ -1,9 +1,10 @@
-var jb_plugins = [
-  'common','rx','tree-shake','pretty-print','watchable','ui',
-  'remote','testing','data-browser','remote-widget',
-  'probe','tgp','watchable-comps', 'workspace','vscode', 
-  'vega', 'zui','parsing','statistics','xml','jison'
-];
+var jb_plugins = null
+// [
+//   'common','rx','tree-shake','pretty-print','watchable','ui',
+//   'remote','testing','data-browser','remote-widget',
+//   'probe','tgp','watchable-comps', 'workspace','vscode', 
+//   'vega', 'zui','parsing','statistics','xml','jison'
+// ];
 
 globalThis.jbHost = globalThis.jbHost || { // browserHost - studioServer,worker and static
   fetch: (...args) => globalThis.fetch(...args),
@@ -36,7 +37,8 @@ globalThis.jbHost = globalThis.jbHost || { // browserHost - studioServer,worker 
   }
 }
 
-async function jbInit(uri, {projects, plugins, loadTests, multipleInFrame, doNoInitLibs, useFileSymbolsFromBuild }) {
+async function jbInit(uri, {projects, plugins, loadTests, multipleInFrame, doNoInitLibs,
+    useFileSymbolsFromBuild, codeServerUri, codePackages }) {
   const jb = { 
     uri, 
     async loadCode({codePackge, projects, plugins, doNoInitLibs, loadTests}) {
@@ -56,6 +58,7 @@ async function jbInit(uri, {projects, plugins, loadTests, multipleInFrame, doNoI
       const _symbols = [...coreTests, ...topPlugins.flatMap(id => jb.plugins[id].requiredSymbols), ...projectsSymbols]
       const symbols = jb.utils.unique(_symbols,x=>x.path).filter(x=>loadTests || !x.path.match(/tests|tester/))
       await supervisedLoad(symbols,jb,doNoInitLibs)
+      if (jb.jbm && codeServerUri) jb.jbm.codeServerUri = codeServerUri
       return jb        
 
       function calcPluginDependencies() {

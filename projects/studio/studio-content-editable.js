@@ -1,5 +1,3 @@
-// jb.ns('contentEditable')
-
 jb.ui.contentEditable = {
   setScriptData(ev,cmp,prop,isHtml) {
     const val = isHtml ? ev.innerHTML : ev.innerText

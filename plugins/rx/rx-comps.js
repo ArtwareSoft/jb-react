@@ -1,3 +1,5 @@
+jb.using('watchable')
+
 jb.component('source.data', {
   type: 'rx',
   params: [
