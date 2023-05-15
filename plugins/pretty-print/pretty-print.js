@@ -72,14 +72,14 @@ jb.extension('utils', 'prettyPrint', {
     function calcTokens(path, depth = 1, forceFlat) {
       if (depth > 100)
         throw `prettyprint structure too deep ${path}`
-      const { open, close, isArray, len, singleParamAsArray, longInnerValInArray, singleFunc, nameValuePattern, item, list } = props[path]
+      const { open, close, isArray, len, singleParamAsArray, primitiveArray, longInnerValInArray, singleFunc, nameValuePattern, item, list } = props[path]
       if (item != null) 
         return [props[path]].map(x=>({...x, path}))
       if (list != null)
         return props[path].list.map(x=>({...x, path}))
 
       const innerVals = props[path].innerVals || []
-      const flat = forceFlat || singleFunc || nameValuePattern || (len < colWidth && !shouldNotFlat())
+      const flat = forceFlat || singleFunc || nameValuePattern || primitiveArray || (len < colWidth && !shouldNotFlat())
       const arrayOrProfile = isArray? 'array' : 'profile'
 
       const vals = innerVals.reduce((acc,{innerPath}, index) => {
@@ -87,13 +87,14 @@ jb.extension('utils', 'prettyPrint', {
         const fixedPropName = props[fullInnerPath].fixedPropName
         const semanticPrefix = isArray ? `array-prefix-${index}` : 'prop'
         const semanticSeparator = isArray ? `array-separator-${index}` : `obj-separator-${index}`
+        const separatorWS = primitiveArray ? '' : flat ? ' ' : newLine()
         return [
           ...acc,
           {prop: `!${semanticPrefix}`, path: fullInnerPath, item: isArray ? '' : fixedPropName || (fixPropName(innerPath) + ': ')},
           {prop: '!value', item: '', path: fullInnerPath },
           ...calcTokens(fullInnerPath, flat ? depth : depth +1, forceFlat),
           {prop: '!value', item: '', path: fullInnerPath, end: true },
-          {prop: `!${semanticSeparator}`, path, item: index === innerVals.length-1 ? '' : ',' + (flat ? ' ' : newLine())},
+          {prop: `!${semanticSeparator}`, path, item: index === innerVals.length-1 ? '' : ',' + separatorWS},
         ]
       }, [])
 
@@ -206,13 +207,14 @@ jb.extension('utils', 'prettyPrint', {
     }
 
     function calcArrayProps(array, path) {
+      const primitiveArray = array.reduce((acc,item)=> acc && jb.utils.isPrimitiveValue(item), true)
       let longInnerValInArray = false
       const len = array.reduce((len,val,i) => {
         const innerLen = calcValueProps(val,`${path}~${i}`).len
         longInnerValInArray = longInnerValInArray || innerLen > 20
         return len + innerLen + 2 
       }, 2)
-      return {len, longInnerValInArray}
+      return {len, longInnerValInArray, primitiveArray}
     }
 
     function calcValueProps(val,path) {

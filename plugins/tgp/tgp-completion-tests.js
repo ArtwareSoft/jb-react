@@ -29,7 +29,7 @@ jb.component('completionTest.pt', {
 __      text('hello world in the largest'),__
 __      text('2')__
 __    ]}),
-    expectedResult: __contains(['hello world', '2'])
+    expectedResult: __contains(['hello world','2'])
   })
 })`,
     expectedSelections:['button','button','button','button','button','button','not']

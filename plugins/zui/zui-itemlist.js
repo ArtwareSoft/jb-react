@@ -62,7 +62,7 @@ component('itemlistStyle', {
         const itemProps = ctx.run(itemPropsProfile, {type: 'itemProp[]<zui>' })
         return ctx.setVars({itemProps}).run(itemViewProfile,{ type: 'view<zui>'})
       }),
-      frontEnd.varsFromBEProps(['DIM', 'records', 'shortPaths', 'center', 'tCenter', 'tZoom']),
+      frontEnd.varsFromBEProps(['DIM','records','shortPaths','center','tCenter','tZoom']),
       frontEnd.prop('ZOOM_LIMIT', ({},{DIM}) => [1, jb.ui.isMobile() ? DIM: DIM*2]),
       frontEnd.prop('debugElems', () => [
           //jb.zui.showTouchPointers(),
