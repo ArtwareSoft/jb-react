@@ -84,13 +84,13 @@ async function jbInit(uri, {projects, plugins, loadTests, multipleInFrame, doNoI
         jb.utils.resolveLoadedProfiles()
       }      
     },
-    async loadjbFile(url,jb,{noSymbols, fileSymbols, codePackage} = {}) {
+    async loadjbFile(path,jb,{noSymbols, fileSymbols, codePackage} = {}) {
       jb.loadedFiles = jb.loadedFiles || {}
-      if (jb.loadedFiles[url]) return
+      if (jb.loadedFiles[path]) return
       const package = codePackage || jbHost.defaultCodePackage
   
-      const _code = await package.fetchFile(url)
-      const code = `${_code}\n//# sourceURL=${url}?${jb.uri}`
+      const _code = await package.fetchFile(path)
+      const code = `${_code}\n//# sourceURL=${path}?${jb.uri}`
       const context = { jb, 
         require: typeof require != 'undefined' && require,
         ...(jb.macro && !noSymbols ? jb.macro.proxies : {}),
@@ -98,9 +98,9 @@ async function jbInit(uri, {projects, plugins, loadTests, multipleInFrame, doNoI
       }
       try {
         new Function(Object.keys(context), code).apply(null, Object.values(context))
-        jb.loadedFiles[url] = true
+        jb.loadedFiles[path] = true
       } catch (e) {
-        return jb.logException(e,`loadjbFile lib ${url}`,{context, code})
+        return jb.logException(e,`loadjbFile lib ${path}`,{context, code})
       }
     }
   }

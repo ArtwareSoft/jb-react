@@ -571,8 +571,3 @@ jb.component('studio.projectSettings', {
     ]
   })
 })
-
-jb.component('studio.inVscode',{
-  type: 'boolean',
-  impl: () => jb.frame.jbInvscode
-})

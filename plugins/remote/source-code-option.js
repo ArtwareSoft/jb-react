@@ -63,14 +63,6 @@ component('localPluginProvider', {
   impl: ctx => ({ localPluginProvider : ctx.params })
 })
 
-component('localPluginProvider', {
-  type: 'source-code-option',
-  params: [
-    {id: 'packages', type: 'package[]', as: 'array', defaultValue: defaultPackage() },
-  ],
-  impl: ctx => ({ localPluginProvider : ctx.params })
-})
-
 component('remotePluginProvider', {
   type: 'source-code-option',
   params: [

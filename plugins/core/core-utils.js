@@ -68,6 +68,9 @@ jb.extension('utils', 'core', {
         const dslType = comp[CT].dslType = (dsl && type.indexOf('<') == -1 ? `${type}<${dsl}>` : type).replace(/\<\>/g,'')
         comp[CT].fullId = (dsl ? dslType : '') + id
         const oldComp = jb.comps[comp[CT].fullId]
+        if (jb.comps[comp[CT].fullId] && jb.comps[comp[CT].fullId] != comp)
+          jb.logError(`comp ${comp[CT].fullId} at ${(comp[CT].location || []).join(' ')} already exists at ${(jb.comps[comp[CT].fullId][CT].location || []).join(' ')}`,
+            {oldComp: jb.comps[comp[CT].fullId], oldLocation: jb.comps[comp[CT].fullId][CT].location, newLocation: comp[CT].location})
         jb.comps[comp[CT].fullId] = comp
         
         if (keepLocation && jb.path(oldComp,[CT,'location']))
