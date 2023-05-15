@@ -1649,7 +1649,7 @@ jb.component('uiTest.picklistAsItemlist', {
         picklist({
           databind: '%$personWithAddress/address/city%',
           options: picklist.optionsByComma('Springfield,New York,Tel Aviv,London'),
-          style: picklist.labelList({})
+          style: picklist.labelList()
         }),
         text('%$personWithAddress/address/city%')
       ]

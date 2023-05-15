@@ -1,22 +1,17 @@
-refactor jbm to dsl
-codeServerJbm - assign from options
+- jbm group - resolveJbm
 jb.pluginDsl('ui')
-check compeletion with If and cast (type: 'any')
-
-component xx - already exists error at file xxx
-jb.component should evaluate in the context of plugin and DSL  private comps of other types, 
-{ $: 'button', $plugin :'ui@5.2' at the json } allow multiple version simulatinously for conversion
+- check compeletion with If and cast (type: 'any')
+- pretty print list of primitives
+- write test for remoteTest.langServer.dataCompletions
+- add component xx - already exists error at file xxx
+- implement private comps - jb.component should evaluate in the context of **plugin** and DSL  private comps of other types, 
+idea: { $: 'button', $plugin :'ui@5.2' at the json } allow multiple version simulatinously for conversion
 
 plugins
   studio server - try to refactor with jb.js node-http & http-service plugin
-  createjbm - refactor use jb.js
-  dist directory - check if to move it to plugins/xx/external
+  createjbm (node-servlet.js) - refactor use jb.js
+  dist directory - check to move it to plugins/xx/external
 
-merge node-servlet.js with node.startWebSocketServer & jb.js
-
-zui
-
- TODO: try to remove dynamic of action.runBEMethod.method and run tests
 
 zui gridView
   build manual test

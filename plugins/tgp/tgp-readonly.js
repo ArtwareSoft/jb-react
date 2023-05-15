@@ -60,7 +60,7 @@ jb.extension('tgp', 'readOnly', {
 	},
 	PTsOfType(type) {
 		const single = /([^\[]*)(\[\])?/
-		const types = (type||'').split(',').map(x=>x.match(single)[1])
+		const types = [...(type||'').split(',').map(x=>x.match(single)[1]),'any']
 			.flatMap(x=> x=='data' ? ['data','aggregator','boolean'] : [x])
 		const res = types.flatMap(t=> jb.entries(jb.comps).filter(c=> jb.tgp.isCompObjOfType(c[1],t)).map(c=>c[0]) )
 		res.sort((c1,c2) => jb.tgp.markOfComp(c2) - jb.tgp.markOfComp(c1))

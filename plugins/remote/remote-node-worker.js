@@ -149,53 +149,53 @@ component('remoteNodeWorker', {
     }
 })
 
-component('spawn', {
-    type: 'jbm',
-    params: [
-        {id: 'id', as: 'string', mandatory: true},
-        {id: 'projects', as: 'array'},
-        {id: 'init', type: 'action', dynamic: true},
-        {id: 'inspect', as: 'number'},
-        // {id: 'completionServer', as: 'boolean'},
-    ],
-    impl: async (ctx,name,projects,init,inspect) => {
-        jb.log('vscode jbm spawn',{ctx,name})
-        if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
-        const childUri = `${jb.uri}__${name}`
-        // if (jb.nodeContainer.toRestart.indexOf(name) != -1) {
-        //     if (jb.path(jb.jbm.childJbms[name],'kill'))
-        //       jb.jbm.childJbms[name].kill()
-        //     delete jb.jbm.childJbms[name]
-        //     delete jb.ports[forkUri]
-        //     jb.nodeContainer.toRestart.splice(indexOf(name),1)
-        // }
+// component('spawn', {
+//     type: 'jbm',
+//     params: [
+//         {id: 'id', as: 'string', mandatory: true},
+//         {id: 'projects', as: 'array'},
+//         {id: 'init', type: 'action', dynamic: true},
+//         {id: 'inspect', as: 'number'},
+//         // {id: 'completionServer', as: 'boolean'},
+//     ],
+//     impl: async (ctx,name,projects,init,inspect) => {
+//         jb.log('vscode jbm spawn',{ctx,name})
+//         if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
+//         const childUri = `${jb.uri}__${name}`
+//         // if (jb.nodeContainer.toRestart.indexOf(name) != -1) {
+//         //     if (jb.path(jb.jbm.childJbms[name],'kill'))
+//         //       jb.jbm.childJbms[name].kill()
+//         //     delete jb.jbm.childJbms[name]
+//         //     delete jb.ports[forkUri]
+//         //     jb.nodeContainer.toRestart.splice(indexOf(name),1)
+//         // }
 
-        const args = [
-            ...(inspect ? [`--inspect=${inspect}`] : []),            
-            './node-servlet.js',
-            `-uri:${childUri}`,
-            `-clientUri:${jb.uri}`,
-            `-projects:${projects.join(',')}`,
-//            ...(completionServer ? [`-completionServer:true`] : []),
-            `-spyParam:${jb.spy.spyParam}`]
-        const child = jbHost.child_process.spawn('node', args, {cwd: jbHost.jbReactDir+'/hosts/node'})
+//         const args = [
+//             ...(inspect ? [`--inspect=${inspect}`] : []),            
+//             './node-servlet.js',
+//             `-uri:${childUri}`,
+//             `-clientUri:${jb.uri}`,
+//             `-projects:${projects.join(',')}`,
+// //            ...(completionServer ? [`-completionServer:true`] : []),
+//             `-spyParam:${jb.spy.spyParam}`]
+//         const child = jbHost.child_process.spawn('node', args, {cwd: jbHost.jbReactDir+'/hosts/node'})
 
-        const command = `node --inspect-brk jb.js ${args.map(x=>`'${x}'`).join(' ')}`
-        jb.vscode.stdout && jb.vscode.stdout.appendLine(command)
+//         const command = `node --inspect-brk jb.js ${args.map(x=>`'${x}'`).join(' ')}`
+//         jb.vscode.stdout && jb.vscode.stdout.appendLine(command)
 
-        const childDetailsStr = await new Promise(resolve => child.stdout.on('data', data => resolve('' + data)))
-        let childDetails
-        try {
-            childDetails = JSON.parse(childDetailsStr)
-        } catch(e) {
-            jb.logError('jbm spawn can not parse child Conf', {childDetailsStr})
-        }
-        const port = await jb.nodeContainer.connectFromNodeClient(`ws://localhost:${childDetails.port}`, childDetails.uri,ctx)
-        const jbm = jb.jbm.childJbms[childDetails.uri] = jb.jbm.extendPortToJbmProxy(port)
-        jbm.kill = child.kill
-        jbm.pid = child.pid 
-        await init(ctx.setVar('jbm',jbm))
-        return jbm
-  }
-})
+//         const childDetailsStr = await new Promise(resolve => child.stdout.on('data', data => resolve('' + data)))
+//         let childDetails
+//         try {
+//             childDetails = JSON.parse(childDetailsStr)
+//         } catch(e) {
+//             jb.logError('jbm spawn can not parse child Conf', {childDetailsStr})
+//         }
+//         const port = await jb.nodeContainer.connectFromNodeClient(`ws://localhost:${childDetails.port}`, childDetails.uri,ctx)
+//         const jbm = jb.jbm.childJbms[childDetails.uri] = jb.jbm.extendPortToJbmProxy(port)
+//         jbm.kill = child.kill
+//         jbm.pid = child.pid 
+//         await init(ctx.setVar('jbm',jbm))
+//         return jbm
+//   }
+// })
 

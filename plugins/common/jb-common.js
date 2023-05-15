@@ -33,7 +33,7 @@ jb.component('If', {
   macroByValue: true,
   params: [
     {id: 'condition', as: 'boolean', mandatory: true, dynamic: true, type: 'boolean'},
-    {id: 'then', type: '$asParent', dynamic: true},
+    {id: 'then', type: '$asParent', dynamic: true, composite: true},
     {id: 'Else', type: '$asParent', dynamic: true}
   ],
   impl: ({},cond,_then,_else) => cond() ? _then() : _else()

@@ -177,7 +177,7 @@ jb.extension('vscode', 'utils', {
                 jb.log('vscode show main',{data: this.data, ctrlId: this.ctrlId})
                 //await jb.jbm.terminateChild(id)
                 if (this.ctrlId && this.panel) {
-                    const _jbm = await jb.exec(jbm.vscodeWebView({ id, panel: () => this.panel}))
+                    const _jbm = await jb.exec(jbm.start(vscodeWebView({ id, panel: () => this.panel})))
                     await jb.vscode.ctx.setData(this.data).run(
                         remote.action(renderWidget({$: this.ctrlId, probeRes: '%%'}, '#main'), ()=> _jbm))
                 }    

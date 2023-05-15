@@ -202,10 +202,9 @@ jb.component('probe.suggestionsByCmd', {
   impl: async (ctx,plugins,projects,probePath,expressionOnly,input) => {
     if (ctx.vars.forceLocalSuggestions)
       return ctx.run({...ctx.profile, $: 'probe.suggestions', sessionId: probePath})
-    const args = ["-main:probe.suggestions()",`-plugins:${plugins.join(',')}`,`-projects:${projects.join(',')}`,
+    const args = ["-main:probe.suggestions()",'-loadTests:true',`-plugins:${plugins.join(',')}`,`-projects:${projects.join(',')}`,
         `%probePath:${probePath}`,`%input:()=>({value: "${input.value}", selectionStart: "${input.selectionStart}"})`,
-        `%expressionOnly:${expressionOnly}`,
-        "-spy:probe"]
+        `%expressionOnly:${expressionOnly}`,'-spy:probe']
 
     const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(x=>`'${x}'`).join(' ')}`
     ctx.setData(`suggestionsByCmd: ${command}`).run(remote.action({ action: ({data}) => { jb.vscode.stdout.appendLine(data) }, 

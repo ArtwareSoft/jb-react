@@ -452,14 +452,6 @@ component('jbm.start', {
     impl: '%$jbm%'
 })
 
-component('jbm.fromData', {
-    type: 'jbm',
-    params: [ 
-        {id: 'jbm', mandatory: true}
-    ],
-    impl: '%$jbm%'
-})
-
 component('jbm.terminateChild', {
     type: 'action<>',
     params: [
