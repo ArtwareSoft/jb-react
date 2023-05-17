@@ -21,18 +21,39 @@ jb.component('itemlists.manyItems', {
   impl: pipeline(range(1, '%$howMany%'), obj(prop('id','%%'), prop('name','%%-%%'), prop('group', ({data}) => Math.floor(Number(data) /10))))
 })
 
-jb.component('remoteTest.childJbm', {
+jb.component('remoteTest.childSimple', {
   impl: dataTest({
     calculate: pipe(jbm.start(child('tst')), remote.data('hello', '%%')),
     expectedResult: equals('hello')
   })
 })
 
-jb.component('remoteTest.childWorker', {
+jb.component('test.addAA',{
+  type: 'rx',
+  impl: rx.map('AA%%')
+})
+
+jb.component('remoteTest.childLoadOperatorCode', {
+  impl: dataTest({
+    calculate: rx.pipe(source.data('bb'), remote.operator(test.addAA(), child('tst'))), 
+    expectedResult: equals('AAbb'),
+    timeout: 1000
+  })
+})
+
+jb.component('remoteTest.workerSimple', {
   impl: dataTest({
     calculate: pipe(jbm.start(worker()), remote.data('hello', '%%')),
     expectedResult: equals('hello'),
     timeout: 3000
+  })
+})
+
+jb.component('remoteTest.workerLoadOperatorCode', {
+  impl: dataTest({
+    calculate: rx.pipe(source.data('bb'), remote.operator(test.addAA(), worker('wtst'))),
+    expectedResult: equals('AAbb'),
+    timeout: 1000
   })
 })
 
@@ -427,6 +448,21 @@ jb.component('remoteTest.testResults', {
   })
 })
 
+jb.component('remoteTest.listSubJbms', {
+  impl: dataTest({
+    timeout: 1000,
+    runBefore: jbm.start(child('inner')),
+    calculate: pipe(net.listSubJbms(),join(',')),
+    expectedResult: contains(['tests,','tests•inner'])
+  })
+})
 
-
+jb.component('remoteTest.listAll', {
+  impl: dataTest({
+    timeout: 1000,
+    runBefore: runActions(jbm.start(worker({id: 'networkPeer', networkPeer: true})), jbm.start(child('inner'))),
+    calculate: pipe(net.listAll(),join(',')),
+    expectedResult: contains(['tests,','tests•inner','networkPeer'])
+  })
+})
 

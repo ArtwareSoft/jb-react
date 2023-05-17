@@ -75,6 +75,7 @@ Object.assign(jb, {
     return comp
   },
   dsl() {},
+  pluginDsl() {},
   using() {},
   noSupervisedLoad: true
 })

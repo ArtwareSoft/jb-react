@@ -17,7 +17,6 @@ jb.component('tgp.completionOptionsTest', {
   ],
   impl: async (ctx,compText,expectedSelections,dsl)=> {
       const testId = ctx.vars.testID
-      if (testId == 'completionTest.dslTest.nameOverride') debugger
       jb.workspace.initJbWorkspaceAsHost()
       const parts = jb.test.fixToUniqueName(compText).split('__')
       const dslLine = dsl ? `jb.dsl('${dsl}')\n` : ''

@@ -275,18 +275,18 @@ const base_get_handlers = {
 }
 
 const op_get_handlers = {
-    createJbm: (req,res,path) => {
+    createNodeWorker: (req,res,path) => {
       const params = ['uri', 'clientUri','projects','treeShake','spyParam','loadTests','inspect']
       const args = params.map(p=>getURLParam(req,p) && `-${p}:${getURLParam(req,p)}`).filter(x=>x)
-      const servlet = child.spawn('node',[
+      const nodeWorker = child.spawn('node',[
         ...(getURLParam(req,'inspect') ? [`--inspect=${getURLParam(req,'inspect')}`] : []),
-        './node-servlet.js',
+        './node-worker.js',
         ...args],{cwd: 'hosts/node'})
       res.setHeader('Content-Type', 'application/json; charset=utf8')
-      servlet.stdout.on('data', data => res.end(data))
-      const command = `node --inspect-brk ../hosts/node/node-servlet.js ${args.map(x=>`'${x}'`).join(' ')}`
-      servlet.on('exit', (code,ev) => res.end(JSON.stringify({command, exit: `exit ${''+code} ${''+ev}}`})))
-      servlet.on('error', (e) => res.end(JSON.stringify({command, error: `${''+e}`})))
+      nodeWorker.stdout.on('data', data => res.end(data))
+      const command = `node --inspect-brk ../hosts/node/node-worker.js ${args.map(x=>`'${x}'`).join(' ')}`
+      nodeWorker.on('exit', (code,ev) => res.end(JSON.stringify({command, exit: `exit ${''+code} ${''+ev}}`})))
+      nodeWorker.on('error', (e) => res.end(JSON.stringify({command, error: `${''+e}`})))
     },
     jb: (req,res,path) => {
       const args = JSON.parse(getURLParam(req,'args'))
@@ -394,8 +394,10 @@ const op_get_handlers = {
       function fileContent(_path) {
         const content = fs.readFileSync(_path,'utf-8')
         const path = unRepo(_path)
-        return { path : path.match(/^\./) ? path.slice(1) : path,
+        return { 
+          path : path.match(/^\./) ? path.slice(1) : path,
           dsl: unique(content.split('\n').map(l=>(l.match(/^jb.dsl\('([^']+)/) || ['',''])[1]).filter(x=>x).map(x=>x.split('.')[0]))[0],
+          pluginDsl: unique(content.split('\n').map(l=>(l.match(/^jb.pluginDsl\('([^']+)/) || ['',''])[1]).filter(x=>x).map(x=>x.split('.')[0]))[0],
           ns: unique(content.split('\n').map(l=>(l.match(/^(jb.)?component\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0])),
           libs: unique(content.split('\n').map(l=>(l.match(/^jb.extension\('([^']+)/) || ['',''])[1]).filter(x=>x).map(x=>x.split('.')[0])),
           using: unique(content.split('\n').map(l=>(l.match(/^jb.using\('([^']+)/) || ['',''])[1]).filter(x=>x).flatMap(x=>x.split(',').map(x=>x.trim()))),
@@ -609,4 +611,4 @@ if (process.cwd().indexOf('jb-react') != -1)
 else
   console.log(`studio url: http://localhost:${settings.port}/studio-bin`)
 
-console.log(`nodeContainer url: http://localhost:${settings.ports.nodeContainer}/?op=createJbm&clientUri=mukki`)
+console.log(`nodeContainer url: http://localhost:${settings.ports.nodeContainer}/?op=createNodeWorker&clientUri=mukki`)

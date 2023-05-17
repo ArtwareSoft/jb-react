@@ -1,3 +1,6 @@
+- suggestionsTest.varsFilter.remote - error in test (worker)
+- jbloader - use plungin dependencies as context
+-jb.callbag.mapPromise - try to rewrite it directly
 - jbm group - resolveJbm
 jb.pluginDsl('ui')
 - write test for remoteTest.langServer.dataCompletions

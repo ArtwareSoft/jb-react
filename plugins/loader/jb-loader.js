@@ -63,6 +63,12 @@ async function jbInit(uri, {projects, plugins, loadTests, multipleInFrame, doNoI
 
       function calcPluginDependencies() {
         Object.keys(jb.plugins).map(id=>calcDependency(id))
+        Object.values(jb.plugins).map(plugin=>{
+          const pluginDsls = jb.utils.unique(plugin.files.map(e=>e.pluginDsl).filter(x=>x))
+          if (pluginDsls.length > 1)
+            jb.logError(`plugin ${plugin.id} has more than one dsl`,{pluginDsls})
+          plugin.dsl = pluginDsls[0]
+        })
 
         function calcDependency(id,history={}) {
           const plugin = jb.plugins[id]
@@ -79,22 +85,27 @@ async function jbInit(uri, {projects, plugins, loadTests, multipleInFrame, doNoI
         const ns = jb.utils.unique([...symbols.flatMap(x=>x.ns || []),'Var','remark','typeCast'])
         const libs = jb.utils.unique(symbols.flatMap(x=>x.libs))
         ns.forEach(id=> jb.macro.registerProxy(id))
-        await Promise.all(symbols.map(fileSymbols=> jb.loadjbFile(fileSymbols.path,jb,{fileSymbols,codePackge})))
+        await Promise.all(symbols.map(fileSymbols=> jb.loadjbFile(fileSymbols.path,jb,{fileSymbols,codePackge,plugin: pluginOfPath(fileSymbols.path)})))
         !doNoInitLibs && await jb.initializeLibs(libs,codePackge)
         jb.utils.resolveLoadedProfiles()
-      }      
+      }
+      function pluginOfPath(path) {
+        const id = (path.match(/plugins\/([^\/]*)/) || ['',''])[1]
+        return id && jb.plugins[id]
+      }
     },
-    async loadjbFile(path,jb,{noSymbols, fileSymbols, codePackage} = {}) {
+    async loadjbFile(path,jb,{noSymbols, fileSymbols, codePackage, plugin} = {}) {
       jb.loadedFiles = jb.loadedFiles || {}
       if (jb.loadedFiles[path]) return
       const package = codePackage || jbHost.defaultCodePackage
   
       const _code = await package.fetchFile(path)
       const code = `${_code}\n//# sourceURL=${path}?${jb.uri}`
+      const dsl = fileSymbols && fileSymbols.dsl || plugin && plugin.dsl
       const context = { jb, 
         require: typeof require != 'undefined' && require,
         ...(jb.macro && !noSymbols ? jb.macro.proxies : {}),
-        component: (...args) => jb.component(...args,fileSymbols && fileSymbols.dsl)
+        component: (...args) => jb.component(...args,dsl, plugin)
       }
       try {
         new Function(Object.keys(context), code).apply(null, Object.values(context))

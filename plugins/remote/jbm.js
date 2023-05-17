@@ -1,4 +1,4 @@
-jb.dsl('jbm')
+jb.pluginDsl('jbm')
 /* jbm - a virtual jBart machine - can be implemented in same frame/sub frames/workers over the network
 interface jbm : {
      uri : string // devtools•logPanel, studio•preview•debugView, •debugView
@@ -265,19 +265,20 @@ jb.extension('jbm', {
                 })) } // will be called directly by initPanel using eval
         }
     },
-    async terminateChild(id) {
-        if (!jb.jbm.childJbms[id]) return
-        const childJbm = await jb.jbm.childJbms[id]
-        childJbm.terminated = true
+    async terminateChild(id,childsOrNet = jb.jbm.childJbms) {
+        if (!childsOrNet[id]) return
+        const childJbm = await childsOrNet[id]
+        const rjbm = await childJbm.rjbm()
+        rjbm.terminated = childJbm.terminated = true
         jb.log('remote terminate child', {id})
         Object.keys(jb.ports).filter(x=>x.indexOf(childJbm.uri) == 0).forEach(uri=>{
                 if (jb.ports[uri].terminate)
                     jb.ports[uri].terminate()
                 delete jb.ports[uri]
             })
-        delete jb.jbm.childJbms[id]
-        childJbm.remoteExec(jb.remoteCtx.stripJS(() => {jb.cbHandler.terminate(); terminated = true; if (typeof close1 == 'function') close() } ), {oneway: true} )
-        return childJbm.remoteExec(jb.remoteCtx.stripJS(() => {
+        delete childsOrNet[id]
+        rjbm.remoteExec(jb.remoteCtx.stripJS(() => {jb.cbHandler.terminate(); terminated = true; if (typeof close1 == 'function') close() } ), {oneway: true} )
+        return rjbm.remoteExec(jb.remoteCtx.stripJS(() => {
             jb.cbHandler.terminate(); 
             jb.terminated = true;
             jb.delay(100).then(() => typeof close == 'function' && close()) // close worker
@@ -285,7 +286,10 @@ jb.extension('jbm', {
         }), { oneway: true} )
     },
     terminateAllChildren() {
-        return Promise.all( Object.keys(jb.jbm.childJbms).map(id=>jb.jbm.terminateChild(id)))
+        return Promise.all([
+            ...Object.keys(jb.jbm.childJbms).map(id=>jb.jbm.terminateChild(id,jb.jbm.childJbms)),
+            ...Object.keys(jb.jbm.networkPeers).map(id=>jb.jbm.terminateChild(id,jb.jbm.networkPeers)),
+        ])
     }
 })
 
@@ -297,41 +301,47 @@ component('worker', {
         {id: 'sourceCodeOptions', type: 'source-code-option[]', flattenArray: true, defaultValue: treeShakeClient() },
         {id: 'networkPeer', as: 'boolean', description: 'used for testing' },
     ],    
-    impl: (ctx,name,init,sourceCodeOptions,networkPeer) => {
+    impl: (ctx,id,init,sourceCodeOptions,networkPeer) => {
         const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
-        if (childsOrNet[name]) return childsOrNet[name]
-        const workerUri = networkPeer ? name : `${jb.uri}•${name}`
-        const result = childsOrNet[name] = new Promise(createWorker)
-        result.uri = workerUri
-        return result
-
-        function createWorker(resolve) {
-            const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
-            const initOptions = jb.jbm.calcInitOptions(sourceCodeOptions)
-            const workerCode = `
-
+        if (childsOrNet[id]) return childsOrNet[id]
+        const workerUri = networkPeer ? id : `${jb.uri}•${id}`
+        const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
+        const initOptions = jb.jbm.calcInitOptions(sourceCodeOptions)
+        const workerCode = `
 importScripts(location.origin+'/plugins/loader/jb-loader.js');
 jbHost.baseUrl = location.origin || '';
 
 Promise.resolve(jbInit('${workerUri}', ${JSON.stringify(initOptions)})
-    .then(jb => {
-        globalThis.jb = jb;
-        jb.spy.initSpy({spyParam: "${jb.spy.spyParam}"});
-        jb.treeShake.codeServerJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
-        self.postMessage({ $: 'workerReady' })
-    }))
-//# sourceURL=${workerUri}-initJb.js
-`
-            const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name, type: 'application/javascript'})))
-            worker.addEventListener('message', async function f1(m) {
-                if (m.data.$ == 'workerReady') {
-                    worker.removeEventListener('message',f1)
-                    childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
-                    childsOrNet[name].worker = worker
-                    await init(ctx.setVar('jbm',childsOrNet[name]))
-                    resolve(childsOrNet[name])
-                }
-            })
+.then(jb => {
+    globalThis.jb = jb;
+    jb.spy.initSpy({spyParam: "${jb.spy.spyParam}"});
+    jb.treeShake.codeServerJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
+    self.postMessage({ $: 'workerReady' })
+}))
+//# sourceURL=${workerUri}-initJb.js`
+
+        return childsOrNet[id] = {
+            uri: workerUri,
+            rjbm() {
+                if (this._rjbm) return this._rjbm
+                const self = this
+                return new Promise(resolve => {
+                    const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
+                    worker.addEventListener('message', async function f1(m) {
+                        if (m.data.$ == 'workerReady') {
+                            if (self._rjbm) {
+                                resolve(self._rjbm) // race condition
+                            } else {
+                                worker.removeEventListener('message',f1)
+                                const rjbm = self._rjbm = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
+                                rjbm.worker = worker
+                                await init(ctx.setVar('jbm',childsOrNet[id]))
+                                resolve(rjbm)
+                            }
+                        }
+                    })
+                })
+            }
         }
     }
 })
@@ -343,39 +353,47 @@ component('child', {
     {id: 'sourceCodeOptions', type: 'source-code-option[]', flattenArray: true, defaultValue: treeShakeClient() },
     {id: 'init', type: 'action', dynamic: true}
   ],
-  impl: (ctx,name,sourceCodeOptions,init) => {
-        if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
-        const childUri = `${jb.uri}•${name}`
+  impl: (ctx,id,sourceCodeOptions,init) => {
+        if (jb.jbm.childJbms[id]) return jb.jbm.childJbms[id]
+        const childUri = `${jb.uri}•${id}`
         const initOptions = jb.jbm.calcInitOptions(sourceCodeOptions)
-        const _child = jbInit(childUri, {...initOptions, multipleInFrame: true})
-
-        jb.jbm.childJbms[name] = _child
-        const result = Promise.resolve(_child).then(child=>{
-            initChild(child)
-            return Promise.resolve(init(ctx.setVar('jbm',child))).then(()=>child)
-        })
-        result.uri = childUri
-        return result
+//        const _child = jbInit(childUri, {...initOptions, multipleInFrame: true})
+        // jb.jbm.childJbms[id] = _child
+        // const result = Promise.resolve(_child).then(child=>{
+        //     initChild(child)
+        //     return Promise.resolve(init(ctx.setVar('jbm',child))).then(()=>child)
+        // })
+        // result.uri = childUri
+        return jb.jbm.childJbms[id] = {
+            uri: childUri,
+            async rjbm() {
+                if (this._rjbm) return this._rjbm
+                const child = this.child = await jbInit(childUri, {...initOptions, multipleInFrame: true})
+                child.rjbm = () => this._rjbm
+                this._rjbm = initChild(child)
+                await init(ctx.setVar('jbm',child))
+                return this._rjbm
+            } 
+        }
 
         function initChild(child) {
             child.spy.initSpy({spyParam: jb.spy.spyParam})
-            jb.jbm.childJbms[name] = child
             child.parent = jb
             child.treeShake.codeServerJbm = jb.treeShake.codeServerJbm || jb // TODO: use codeLoaderUri
             child.ports[jb.uri] = {
                 from: child.uri, to: jb.uri,
                 postMessage: m => 
-                    jb.net.handleOrRouteMsg(jb.uri,child.uri,jb.ports[child.uri].handler,m),
+                    jb.net.handleOrRouteMsg(jb.uri,child.uri,jb.ports[child.uri].handler, {from: child.uri, to: jb.uri,...m}),
                 onMessage: { addListener: handler => child.ports[jb.uri].handler = handler }, // only one handler
             }
             child.jbm.extendPortToJbmProxy(child.ports[jb.uri])
             jb.ports[child.uri] = {
                 from: jb.uri,to: child.uri,
                 postMessage: m => 
-                    child.net.handleOrRouteMsg(child.uri,jb.uri,child.ports[jb.uri].handler ,m),
+                    child.net.handleOrRouteMsg(child.uri,jb.uri,child.ports[jb.uri].handler , {from: jb.uri, to: child.uri,...m}),
                 onMessage: { addListener: handler => jb.ports[child.uri].handler = handler }, // only one handler
             }
-            jb.jbm.extendPortToJbmProxy(jb.ports[child.uri])
+            return jb.jbm.extendPortToJbmProxy(jb.ports[child.uri])
         }
     }
 })
@@ -387,10 +405,13 @@ component('byUri', {
     ],
     impl: ({},_uri) => {
         const uri = _uri()
-        if (uri == jb.uri) return jb
-        const childJbm = Object.values(jb.jbm.childJbms).find(x=>x.uri == uri)
-        if (childJbm) return childJbm
-        return calcNeighbourJbm(uri) || jb.jbm.extendPortToJbmProxy(remoteRoutingPort(jb.uri, uri),{doNotinitCommandListener: true})
+        return findNeighbourJbm(uri) || {
+            uri,
+            rjbm() {
+                this._rjbm = this._rjbm || jb.jbm.extendPortToJbmProxy(remoteRoutingPort(jb.uri, uri),{doNotinitCommandListener: true})
+                return this._rjbm
+            }
+        }
 
         function remoteRoutingPort(from,to) {
             if (jb.ports[to]) return jb.ports[to]
@@ -402,8 +423,10 @@ component('byUri', {
                 routingPath.splice(1,0,jb.jbm.gateway.uri)
                 nextPort = jb.jbm.gateway
             }
-            if (!nextPort)
+            if (!nextPort) {
+                debugger
                 return jb.logError(`routing - can not find next port`,{routingPath, uri: jb.uri, from,to})
+            }
     
             const port = {
                 from, to,
@@ -428,15 +451,18 @@ component('byUri', {
             const path_to_shared_parent = i ? p1.slice(i-1) : p1.slice(i) // i == 0 means there is no shared parent, so network is used
             return [...path_to_shared_parent.reverse(),...p2.slice(i)]
         }
-        function calcNeighbourJbm(uri) {
-            return [jb.parent, ...Object.values(jb.jbm.childJbms), ...Object.values(jb.jbm.networkPeers)].filter(x=>x).find(x=>x.uri == uri)
+        function findNeighbourJbm(uri) {
+            return [jb, jb.parent, ...Object.values(jb.jbm.childJbms), ...Object.values(jb.jbm.networkPeers)].filter(x=>x).find(x=>x.uri == uri)
         }
     }
 })
 
 component('jbm.self', {
     type: 'jbm',
-    impl: () => jb
+    impl: () => {
+        jb.rjbm = jb.rjbm || (() => jb)
+        return jb
+    }
 })
 
 component('parent', {
@@ -445,18 +471,18 @@ component('parent', {
 })
 
 component('jbm.start', {
-    type: 'data<>',
+    type: 'data<>,action<>',
     params: [ 
         {id: 'jbm', type: 'jbm', mandatory: true}
     ],
-    impl: '%$jbm%'
+    impl: pipe('%$jbm%', '%rjbm()%' ,'%$jbm%',first()) // ctx => ctx.data.rjbm()
 })
 
-component('jbm.terminateChild', {
-    type: 'action<>',
-    params: [
-        {id: 'id', as: 'string'}
-    ],
-    impl: (ctx,id) => jb.jbm.terminateChild(id)
-})
+// component('jbm.terminateChild', {
+//     type: 'action<>',
+//     params: [
+//         {id: 'id', as: 'string'}
+//     ],
+//     impl: (ctx,id) => jb.jbm.terminateChild(id)
+// })
 

@@ -1,4 +1,4 @@
-jb.extension('ui', {
+jb.extension('ui','vdom', {
     VNode: class VNode {
         constructor(cmpOrTag, _attributes, _children) {
             const attributes = jb.objFromEntries(jb.entries(_attributes).map(e=>[e[0].toLowerCase(),e[1]])

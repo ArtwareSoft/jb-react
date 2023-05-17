@@ -326,7 +326,8 @@ jb.component('FETest.remoteWidget.refresh', {
     action: rx.pipe(
       source.data(0),
       rx.do(writeValue('%$person/name%', 'hello')),
-      rx.flatMap(source.remote(source.promise(waitFor(count(widget.headlessWidgets()))), worker()))
+      rx.flatMap(source.remote(source.promise(waitFor(count(widget.headlessWidgets()))), worker())),
+      rx.delay(100)
     ),
     expectedResult: contains('hello'),
     renderDOM: true

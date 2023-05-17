@@ -1,18 +1,16 @@
-jb.dsl('jbm')
-
 jb.extension('nodeContainer', {
     initExtension() { return { toRestart: [], servers: {} } },
-    connectFromBrowser: (url,serverUri,ctx) => new Promise( resolve => {
-        const socket = new jbHost.WebSocket_Browser(url,'echo-protocol')
+    connectFromBrowser: (wsUrl,serverUri,ctx) => new Promise( resolve => {
+        const socket = new jbHost.WebSocket_Browser(wsUrl,'echo-protocol')
         socket.onopen = () => resolve(jb.nodeContainer.portFromBrowserWebSocket(socket,serverUri))
         socket.onerror = err => { jb.logError('websocket error',{err,ctx}); resolve() }
     }),
-    connectFromVSCodeClient: (url,serverUri,ctx) => new Promise( resolve => {
-        const client = new jbHost.WebSocket_WS(url)
+    connectFromVSCodeClient: (wsUrl,serverUri,ctx) => new Promise( resolve => {
+        const client = new jbHost.WebSocket_WS(wsUrl)
         client.on('error', err => {jb.logError('websocket client - connection failed',{ctx,err}); resolve() })
         client.on('open', () => resolve(jb.nodeContainer.portFromVSCodeWebSocket(client,serverUri)))
     }),
-    connectFromNodeClient: (url,serverUri,ctx) => new Promise( resolve => {
+    connectFromNodeClient: (wsUrl,serverUri,ctx) => new Promise( resolve => {
         const client = new jb.frame.require('websocket').client()
         client.on('connectFailed', err => {jb.logError('websocket client - connection failed',{ctx,err}); resolve() })
         client.on('connect', socket => {
@@ -23,7 +21,7 @@ jb.extension('nodeContainer', {
             resolve(jb.nodeContainer.portFromNodeWebSocket(socket,serverUri))
           }
         })
-        client.connect(url, 'echo-protocol')  
+        client.connect(wsUrl, 'echo-protocol')  
     }),
     portFromVSCodeWebSocket(socket,to,options) {
         if (jb.ports[to]) return jb.ports[to]
@@ -96,55 +94,59 @@ component('remoteNodeWorker', {
   params: [
     {id: 'id', as: 'string', mandatory: true},
     {id: 'projects', as: 'array'},
-    {id: 'host', as: 'string', dynamic: true, defaultValue: 'localhost'},
     {id: 'init', type: 'action', dynamic: true},
     {id: 'loadTests', as: 'boolean'},
     {id: 'inspect', as: 'number'},
-    {id: 'studioServerUrl', as: 'string'},
+    {id: 'nodeContainerUrl', as: 'string', defaultValue: 'http://localhost:8082'},
     {id: 'spyParam', as: 'string'},
     {id: 'restartSource', type: 'rx', description: 'rx event to restrat'}
   ],
-  impl: async (ctx,name,projects,host,init,loadTests,inspect,studioServerUrl,spyParam) => {
-        jb.log('vscode remote jbm nodeContainer',{ctx,name})
-        const servletUri = `${jb.uri}__${name}`
-        const restart = (jb.nodeContainer.toRestart||[]).indexOf(name)
-        if (jb.jbm.childJbms[name] && restart == -1) return jb.jbm.childJbms[name]
+  impl: async (ctx,id,projects,init,loadTests,inspect,nodeContainerUrl,spyParam) => {
+        jb.log('vscode remote jbm nodeContainer',{ctx,id})
+        const nodeWorkerUri = `${jb.uri}__${id}`
+        const restart = (jb.nodeContainer.toRestart||[]).indexOf(id)
+        if (jb.jbm.childJbms[id] && restart == -1) return jb.jbm.childJbms[id]
         if (restart != -1) {
-            jb.jbm.childJbms[name].remoteExec(jb.remoteCtx.stripJS(() => process.exit(0)), { oneway: true} )
-            delete jb.jbm.childJbms[name]
-            delete jb.ports[servletUri]
+            jb.jbm.childJbms[id].remoteExec(jb.remoteCtx.stripJS(() => process.exit(0)), { oneway: true} )
+            delete jb.jbm.childJbms[id]
+            delete jb.ports[nodeWorkerUri]
             jb.nodeContainer.toRestart.splice(restart,1)
         }
         const args = [
             ...(inspect ? [`-inspect=${inspect}`] : []),
-            ...(name ? [`-uri:${servletUri}`] : []),
+            ...(id ? [`-uri:${id}`] : []),
             `-loadTests:${loadTests}`,
             `-clientUri:${jb.uri}`,
             `-projects:${projects.join(',')}`,
             `-spyParam:${spyParam}`]
 
-        let childDetails = await startServlet(args)
-        if (!childDetails.uri && args[0].indexOf('inspect') != -1) // inspect may cause problems
-            childDetails = await startServlet(args.slice(1))
-        jb.log('vscode remote jbm details',{ctx,childDetails})
+        let workerDetails = await startNodeWorker(args)
+        if (!workerDetails.uri && args[0].indexOf('inspect') != -1) // inspect may cause problems
+            workerDetails = await startNodeWorker(args.slice(1))
+        jb.log('vscode remote jbm details',{ctx,workerDetails})
 
-        if (!childDetails.uri)
-            return jb.logError('jbm nodeContainer bad response from server',{ctx, childDetails})
+        if (!workerDetails.uri)
+            return jb.logError('jbm nodeContainer bad response from server',{ctx, workerDetails})
         
         const method = 'connectFrom' + (jbHost.WebSocket_WS ? 'VSCodeClient' 
             : jbHost.WebSocket_Browser ? 'Browser' : 'NodeClient')
-        const port = await jb.nodeContainer[method](`ws://${host()}:${childDetails.port}`,childDetails.uri,ctx)
-        jb.log('vscode remote connected to port',{ctx,childDetails})
+        const port = await jb.nodeContainer[method](workerDetails.wsUrl, workerDetails.uri,ctx)
+        jb.log('vscode remote connected to port',{ctx,workerDetails})
 
-        const jbm = jb.jbm.childJbms[name] = jb.ports[servletUri] = jb.jbm.extendPortToJbmProxy(port)
-        jbm.pid = childDetails.pid
-        await init(ctx.setVar('jbm',jbm))
+        const jbm = jb.jbm.childJbms[id] = {
+            ...workerDetails,
+            async rjbm() {
+                if (this._rjbm) return this._rjbm
+                this._rjbm = jb.ports[nodeWorkerUri] = jb.jbm.extendPortToJbmProxy(port)
+                await init(ctx.setVar('jbm',jb.jbm.childJbms[id]))
+                return this._rjbm
+            }
+        }
         return jbm
 
-        function startServlet(args) {
-            const url = `${studioServerUrl}/?op=createJbm${args.map(x=>`${x.replace(/:/,'=').replace(/^-/,'&')}`).join('')}`
+        function startNodeWorker(args) {
+            const url = `${nodeContainerUrl}/?op=createNodeWorker${args.map(x=>`${x.replace(/:/,'=').replace(/^-/,'&')}`).join('')}`
             return jbHost.fetch(url).then(r => r.json())
-//            return jb.frame.fetch(url, {mode: 'cors'}).then(r => r.json())
         }
     }
 })

@@ -38,7 +38,7 @@ jb.component('eventTracker.uiTest.vDebugger', {
     timeout: 2000,
     runBefore: remote.action(
       runActions(
-        jbm.start(jbm.vDebugger()), 
+        jbm.start(jbm.vDebugger()),
         log('check test result', obj(prop('html','<div><span>aa</span></div>'), prop('success',true))),
         log('check test result', obj(prop('html','<span/>'), prop('success',false))),
       ), worker()),
@@ -48,6 +48,6 @@ jb.component('eventTracker.uiTest.vDebugger', {
         remote.widget(studio.eventTracker(), byUri('tests•w1•vDebugger')),
       ]
     }),
-    expectedResult: contains('group'),
+    expectedResult: contains('remote rec'),
   })
 })

@@ -99,10 +99,12 @@ jb.component('itemlistContainer.moreItemsButton', {
   )
 })
 
-jb.ui.extractPropFromExpression = exp => { // performance for simple cases such as %prop1%
-	if (exp.match(/^%.*%$/) && !exp.match(/[./[]/))
-		return exp.match(/^%(.*)%$/)[1]
-}
+jb.extension('ui','itemlistCtr', {
+  extractPropFromExpression: exp => { // performance for simple cases such as %prop1%
+    if (exp.match(/^%.*%$/) && !exp.match(/[./[]/))
+      return exp.match(/^%(.*)%$/)[1]
+  }
+})
 
 // match fields in pattern itemlistCntrData/FLDNAME_filter to data
 jb.component('itemlistContainer.filterField', {

@@ -24,7 +24,7 @@ function createWSServer() {
         const nodeServer = jbHost.http.createServer()
         nodeServer.once('error', err => { // if port is used, try another random port
             if (err.code === 'EADDRINUSE')
-                createWSServer().then(port=>resolve(port))
+                createWSServer().then(res=>resolve(res))
         })
         
         new WebSocketServer({ httpServer: nodeServer }).on('request', request => {
@@ -34,7 +34,7 @@ function createWSServer() {
                 jb.parent.remoteExec('ping',{timeout:10000}).catch(err=> err.timeout &&  process.exit(1))
             ,10000)
         })
-        nodeServer.listen({port}, () => resolve(nodeServer.address().port))
+        nodeServer.listen({port}, () => resolve(nodeServer.address()))
     })
 }
 
@@ -44,8 +44,8 @@ function pickRandomPort() {
 }
 
 async function run() {
-  const hostname = require('os').hostname().replace(/-/g,'_')
-  const uri = getProcessArgument('uri') || `${hostname}_${process.pid}`
+  const _host = require('os').hostname().replace(/-/g,'_')
+  const uri = getProcessArgument('uri') || `${_host}_${process.pid}`
   const projects = (getProcessArgument('projects') || '').split(',').filter(x=>x)
   if (getProcessArgument('treeShake')) {
     global.jbTreeShakeServerUrl = `http://localhost:${settings.ports.treeShake}`
@@ -65,9 +65,10 @@ async function run() {
   }
   spy = jb.spy.initSpy({spyParam: getProcessArgument('spyParam') || 'remote'})
 
-  const port = await createWSServer()
+  const { port } = await createWSServer()
   const pid = process.pid
-  process.stdout.write(JSON.stringify({port,uri,clientUri,pid})) // returns the connection details to stdout
+  const host = 'localhost'
+  process.stdout.write(JSON.stringify({port,host, uri,clientUri,pid, wsUrl: `ws://${host}:${port}`})) // returns the connection details to stdout
   // kill itself if not initialized
   setTimeout(() => {Object.keys(jb.ports).length == 0 && process.exit(1)}, 30000 )
 }

@@ -427,7 +427,7 @@ jb.extension('zui','buildAtlas', {
 component('imageBuild',{
   type: 'imageBuild',
   params: [
-    { id: 'buildDir', as: 'string', defaultValue: 'projects/zuiDemo/build'},
+    { id: 'buildDir', as: 'string', defaultValue: '/projects/zuiDemo/build'},
     { id: 'imageSize', as: 'string', defaultValue: '256'}
   ],
   impl: ctx=> ctx.params

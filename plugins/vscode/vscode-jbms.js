@@ -67,7 +67,6 @@ component('completionServer', {
     id: 'completionServer',
     loadTests: true,
     inspect: 7010,
-    studioServerUrl: 'http://localhost:8082',
     spyParam: 'vscode,completion,remote'
   })
 })
@@ -85,7 +84,7 @@ component('completionServer', {
 //     init: vscode.initRemoteProbe('%$probePath%'),
 //     loadTests: true,
 //     inspect: 7011,
-//     studioServerUrl: 'http://localhost:8082',
+//     nodeContainerUrl: 'http://localhost:8082',
 //     spyParam: 'vscode,remote'
 //   })
 // })
@@ -117,9 +116,9 @@ component('vscodeWebView', {
     {id: 'panel'},
     {id: 'init', type: 'action', dynamic: true}
   ],
-  impl: (ctx,name,panel, init) => {
-        if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
-        const webViewUri = `${jb.uri}•${name}`
+  impl: (ctx,id,panel, init) => {
+        if (jb.jbm.childJbms[id]) return jb.jbm.childJbms[id]
+        const webViewUri = `${jb.uri}•${id}`
         const _jbBaseUrl = 'http://localhost:8082'
         const html = `<!DOCTYPE html>
 <html>
@@ -148,15 +147,18 @@ component('vscodeWebView', {
     <div id="main"></div>
 </body>
 </html>`
-        jb.jbm.childJbms[name] = jb.ports[webViewUri] = jb.jbm.extendPortToJbmProxy(
-            jb.vscode.portFromExtensionToWebView(panel.webview, jb.uri, webViewUri))
-        const result = new Promise(resolve=> jb.jbm.notifyChildReady[webViewUri] = resolve)
-            .then(()=> jb.log('vscode jbm webview ready',{name}))
-            .then(()=>init(ctx.setVar('jbm',jb.jbm.childJbms[name])))
-            .then(()=>jb.jbm.childJbms[name])
-        result.uri = webViewUri
-        panel.webview.html = html
-        return result
+        return jb.jbm.childJbms[id] = {
+            uri: webViewUri,
+            async rjbm() {
+                if (this._rjbm) return this._rjbm
+                this._rjbm = jb.ports[webViewUri] = jb.jbm.extendPortToJbmProxy(
+                    jb.vscode.portFromExtensionToWebView(panel.webview, jb.uri, webViewUri))
+                panel.webview.html = html
+                await new Promise(resolve=> jb.jbm.notifyChildReady[webViewUri] = resolve)
+                jb.log('vscode jbm webview ready',{id})
+                await init(ctx.setVar('jbm',jb.jbm.childJbms[id]))
+            }
+        }
     }
 })
 

@@ -1,4 +1,4 @@
-jb.extension('ui', {
+jb.extension('ui','utils', {
     focus(elem,logTxt,ctx) {
         if (!elem) debugger
         // block the preview from stealing the studio focus
@@ -87,7 +87,7 @@ jb.component('service.registerBackEndService', {
 
 
 // ****************** html utils ***************
-jb.extension('ui', {
+jb.extension('ui', 'html', {
     outerWidth(el) {
         const style = getComputedStyle(el)
         return el.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight)

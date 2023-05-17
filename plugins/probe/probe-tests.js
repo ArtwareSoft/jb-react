@@ -369,7 +369,7 @@ jb.component('workerPreviewTest.nodePreview', {
     control: group({
       controls: [
         button('change script', writeValue(tgp.ref('sampleProject.main~impl~controls~text'), 'world')),
-        probe.remoteMainCircuitView(remoteNodeWorker({init: probe.initRemoteProbe()}))
+        probe.remoteMainCircuitView(remoteNodeWorker({id: 'nodePreview',init: probe.initRemoteProbe()}))
       ]
     }),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
@@ -448,6 +448,19 @@ jb.component('probeTest.childJbm', {
     control: probe.remoteMainCircuitView(child('childProbe')),
     runBefore: runActions(
       jbm.start(child({id: 'childProbe', init: probe.initRemoteProbe()})),
+      writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main')
+    ),
+    checkResultRx: () => jb.ui.renderingUpdates,
+    expectedResult: contains('hello'),
+    timeout: 1000
+  })
+})
+
+jb.component('probeTest.workerJbm', {
+  impl: uiTest({
+    control: probe.remoteMainCircuitView(worker('childProbe')),
+    runBefore: runActions(
+      jbm.start(worker({id: 'childProbe', init: probe.initRemoteProbe()})),
       writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main')
     ),
     checkResultRx: () => jb.ui.renderingUpdates,

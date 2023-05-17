@@ -441,7 +441,7 @@ jb.component('tests.runner', {
 	)
 })
 
-jb.extension('ui', {
+jb.extension('ui','tester', {
 	elemOfSelector: (selector,ctx) => jb.ui.widgetBody(ctx).querySelector(selector) || document.querySelector('.jb-dialogs '+ selector),
 	cmpOfSelector: (selector,ctx) => jb.path(jb.ui.elemOfSelector(selector,ctx),'_component'),
 	cssOfSelector(selector,ctx) {

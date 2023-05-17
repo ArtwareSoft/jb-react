@@ -270,7 +270,7 @@ jb.extension('utils', 'core', {
         return index == 0 || index == 3
       })
     },
-    calcDirectory: dir => dir[0] != '/' ? `${jb.baseUrl}/${dir}` : dir,
+    calcDirectory: dir => dir[0] != '/' ? `${jbHost.baseUrl}/${dir}` : dir,
 })
 
 jb.extension('utils', 'generic', {

@@ -1,5 +1,3 @@
-jb.dsl('jbm')
-
 jb.extension('jbm','source' , {
     calcInitOptions(sourceCodeOptions) {
         return jb.asArray(sourceCodeOptions).reduce((acc,option) => {
