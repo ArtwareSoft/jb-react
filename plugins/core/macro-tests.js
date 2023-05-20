@@ -1,4 +1,4 @@
-using('ui')
+using('ui,remote-widget')
 
 // component('macroTest.simple', {
 //   impl: dataTest(prettyPrint(ctx => jb.comps['dataTest.obj'].impl), contains(["prop('a', 1)", ctx => "res: '%%'"]))

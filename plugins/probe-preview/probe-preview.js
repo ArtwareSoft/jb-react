@@ -1,17 +1,31 @@
 using('probe,watchable-comps,tree-shake,remote-widget')
 
+component('probePreviewWorker', {
+  type: 'jbm<jbm>',
+  params: [
+    {id: 'id', defaultValue: 'wProbe'}
+  ],
+  impl: worker('%$id%', probe.initPreview())
+})
+
 component('suggestions.calcFromProbePreview', {
   params: [
     {id: 'probePath', as: 'string'},
     {id: 'expressionOnly', as: 'boolean', type: 'boolean'},
     {id: 'input', defaultValue: '%%'},
     {id: 'forceLocal', as: 'boolean', description: 'do not use remote preview', type: 'boolean'},
-    {id: 'sessionId', as: 'string', defaultValue: '%$$dialog.cmpId%', description: 'run probe only once per session'}
+    {id: 'sessionId', as: 'string', defaultValue: '%$$dialog.cmpId%', description: 'run probe only once per session'},
+    {id: 'require', as: 'string' }
   ],
-  impl: remote.data(
-    probe.suggestions('%$probePath%', '%$expressionOnly%', '%$input%', '%$sessionId%'),
-    If( ({},{},{input,forceLocal}) => forceLocal  || !new jb.probe.suggestions(jb.val(input)).inExpression(),jbm.self(),probePreviewWorker())
-  )
+  impl: remote.data({
+    data: probe.suggestions('%$probePath%', '%$expressionOnly%', '%$input%', '%$sessionId%'),
+    jbm: If(
+      ({},{},{input,forceLocal}) => forceLocal  || !new jb.probe.suggestions(jb.val(input)).inExpression(),
+      jbm.self(),
+      probePreviewWorker()
+    ),
+    require: '%$require%'
+  })
 })
 
 component('probe.remoteCircuitPreview', {
@@ -44,14 +58,6 @@ component('probe.circuitPreview', {
     {$: 'test.showTestInStudio' },
     {$: 'sampleProject.main' }
   ]
-})
-
-component('probePreviewWorker', {
-  type: 'jbm<jbm>',
-  params: [
-    {id: 'id', defaultValue: 'wProbe'}
-  ],
-  impl: worker('%$id%', probe.initPreview())
 })
 
 component('probe.initPreview', {

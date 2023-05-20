@@ -49,11 +49,12 @@ extension('remoteCtx', {
 
     },
     stripFunction(f) {
-        const {profile,runCtx,path,param,srcPath} = f
+        const {profile,runCtx,path,param,srcPath,require} = f
         if (!profile || !runCtx) return jb.remoteCtx.stripJS(f)
         injectDSLType(profile)
         const profText = jb.utils.prettyPrint(profile)
         const profNoJS = jb.remoteCtx.stripJSFromProfile(profile)
+        if (require) profNoJS._require = require.split(',').map(x=>x[0] == '#' ? `jb.${x.slice(1)}()` : {$: x})
         const vars = jb.objFromEntries(jb.entries(runCtx.vars).filter(e => jb.remoteCtx.shouldPassVar(e[0],profText))
             .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
         const params = jb.objFromEntries(jb.entries(jb.path(runCtx.cmpCtx,'params')).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))

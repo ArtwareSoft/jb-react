@@ -23,25 +23,22 @@ component('remoteWidgetTest.group.wait', {
 
 component('remoteWidgetTest.distributedWidget', {
   impl: uiTest({
-    timeout: 3000,
     control: group({
-      controls:button({title: 'click', 
-        action: runActions(
-          jbm.start(child('jbxServer')),
-          remote.action(remote.distributedWidget({ 
-            control: text('hello world'), 
-            frontend: byUri('tests•jbxServer'), 
-            selector: '.xRoot' 
-          }), worker()),
-      )}), 
-      features: css.class('xRoot')}
-    ),
-    userInputRx: rx.pipe(
-      source.promise(uiAction.waitForSelector('button')),
-      rx.map(userInput.click()),
-    ),
+      controls: button(
+        'click',
+        remote.distributedWidget({
+          control: text('hello world'),
+          backend: worker(),
+          frontend: child('jbxServer'),
+          selector: '.xRoot'
+        })
+      ),
+      features: css.class('xRoot')
+    }),
+    userInputRx: rx.pipe(source.promise(uiAction.waitForSelector('button')), rx.map(userInput.click())),
     checkResultRx: () => jb.ui.renderingUpdates,
-    expectedResult: contains('hello')
+    expectedResult: contains('hello'),
+    timeout: 3000
   })
 })
 
@@ -133,15 +130,12 @@ component('FETest.distributedWidget', {
   impl: uiFrontEndTest({
     control: group({controls: [], features: css.class('xRoot')}),
     action: runActions(
-      jbm.start(child('jbxServer')),
-      remote.action(
-        remote.distributedWidget({
-          control: button('hello world'),
-          frontend: byUri('tests•jbxServer'),
-          selector: '.xRoot'
-        }),
-        worker()
-      ),
+      remote.distributedWidget({
+        control: button('hello world'),
+        backend: worker(),
+        frontend: child('jbxServer'),
+        selector: '.xRoot'
+      }),
       uiAction.waitForSelector('button')
     ),
     expectedResult: contains('hello'),
@@ -153,21 +147,18 @@ component('FETest.remoteWidgetTest.changeText', {
   impl: uiFrontEndTest({
     control: group({controls: [], features: css.class('xRoot')}),
     action: runActions(
-      jbm.start(child('jbxServer')),
-      remote.action(
-        remote.distributedWidget({
-          control: group({
-            controls: [
-              text({text: 'hey %$fName%', features: watchRef('%$fName%')}),
-              editableText({databind: '%$fName%'})
-            ],
-            features: watchable('fName', 'Dan')
-          }),
-          frontend: byUri('tests•jbxServer'),
-          selector: '.xRoot'
+      remote.distributedWidget({
+        control: group({
+          controls: [
+            text({text: 'hey %$fName%', features: watchRef('%$fName%')}),
+            editableText({databind: '%$fName%'})
+          ],
+          features: watchable('fName', 'Dan')
         }),
-        worker()
-      ),
+        backend: worker(),
+        frontend: child('jbxServer'),
+        selector: '.xRoot'
+      }),
       uiAction.waitForSelector('input'),
       uiAction.setText('danny'),
       uiAction.keyboardEvent('input', 'keyup'),

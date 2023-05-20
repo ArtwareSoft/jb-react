@@ -2188,20 +2188,26 @@ component('uiTest.eliminateRecursion', {
 
 component('FETest.runFEMethod', {
   impl: uiFrontEndTest({
-    renderDOM: true,
+    control: group({
+      controls: [
+        button('change', runFEMethod({
+          selector: '#input1',
+          method: 'changeText',
+          data: 'world'
+        })),
+        editableText({
+          databind: '%$person/name%',
+          style: editableText.input(),
+          features: [
+            id('input1'),
+            frontEnd.method('changeText', ({data},{el}) => el.value = data)
+          ]
+        })
+      ]
+    }),
     action: uiAction.click('button'),
-    control: group({controls: [
-      button({title: 'change', action: runFEMethod({ selector: '#input1', method: 'changeText', data: 'world'})}),
-      editableText({ 
-        style: editableText.input(), 
-        databind: '%$person/name%', 
-        features: [
-          id('input1'),
-          frontEnd.method('changeText', ({data},{el}) => el.value = data )
-        ]
-      })
-    ]}),
-    expectedResult: contains('world')
+    expectedResult: contains('world'),
+    renderDOM: true
   })
 })
 

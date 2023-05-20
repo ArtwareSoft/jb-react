@@ -103,29 +103,35 @@ component('action.frontEndDelta', {
 })
 
 component('remote.distributedWidget', {
-    type: 'action',
-    params: [
-      {id: 'control', type: 'control', dynamic: true },
-      {id: 'backend', type: 'jbm<jbm>', defaultValue: jbm.self() },
-      {id: 'frontend', type: 'jbm<jbm>' },
-      {id: 'selector', as: 'string', description: 'root selector to put widget in. e.g. #main' },
-    ],
-    impl: remote.action(runActions(
-        Var('widgetId', widget.newId()),
-        Var('frontEndUri', '%$frontend/uri%'),
-        remote.action(action.renderXwidget('%$selector%','%$widgetId%'), byUri('%$frontEndUri%') ),
-        rx.pipe(
-            source.remote(
-                rx.pipe(
-                    source.callbag(() => jb.ui.widgetUserRequests),
-                    rx.log('remote widget userReq'),
-                    rx.filter('%widgetId% == %$widgetId%'),
-                    rx.takeWhile(({data}) => data.$$ != 'destroy',true),
-             ), byUri('%$frontEndUri%') ),
-            widget.headless('%$control()%','%$widgetId%'),
-            sink.action(remote.action(action.frontEndDelta('%%'), byUri('%$frontEndUri%')))
-        )
-    ), '%$backend%')
+  type: 'action',
+  params: [
+    {id: 'control', type: 'control', dynamic: true},
+    {id: 'backend', type: 'jbm<jbm>', defaultValue: jbm.self()},
+    {id: 'frontend', type: 'jbm<jbm>'},
+    {id: 'selector', as: 'string', description: 'root selector to put widget in. e.g. #main'}
+  ],
+  impl: runActions(
+    Var('widgetId', widget.newId()),
+    Var('frontEndUri', '%$frontend/uri%'),
+    remote.action(action.renderXwidget('%$selector%', '%$widgetId%'), byUri('%$frontEndUri%')),
+    remote.action({
+      action: rx.pipe(
+        source.remote(
+          rx.pipe(
+            source.callbag(() => jb.ui.widgetUserRequests),
+            rx.log('remote widget userReq'),
+            rx.filter('%widgetId% == %$widgetId%'),
+            rx.takeWhile(({data}) => data.$$ != 'destroy', true)
+          ),
+          byUri('%$frontEndUri%')
+        ),
+        widget.headless('%$control()%', '%$widgetId%'),
+        sink.action(remote.action(action.frontEndDelta('%%'), byUri('%$frontEndUri%')))
+      ),
+      jbm: '%$backend%',
+      require: 'action.frontEndDelta'
+    })
+  )
 })
 
 component('remote.widget', {
@@ -134,7 +140,7 @@ component('remote.widget', {
       {id: 'control', type: 'control', dynamic: true },
       {id: 'jbm', type: 'jbm<jbm>' },
     ],
-    impl: group({ 
+    impl: group({
         controls: controlWithFeatures({
             vars: Var('widgetId', widget.newId('%$resolvedJbm%')),
             control: widget.frontEndCtrl('%$widgetId%'),

@@ -175,10 +175,15 @@ extension('utils', 'prettyPrint', {
 
       if (singleParamAsArray) { // pipeline, or, and, plus
         const vars = (profile.$vars || []).map(({name,val}) => ({$: 'Var', name, val }))
-        const args = vars.concat(jb.asArray(profile[params[0].id]))
-          .map((val,i) => ({innerPath: params[0].id + '~' + i, val}))
-        return openCloseProps(path, openProfileByValueGroup, closeProfileByValueGroup, 
-          {singleParamAsArray, ...calcArrayProps(args.map(x=>x.val),`${path}~${params[0].id}`), innerVals: args, isArray: true })
+        const paramAsArray = jb.asArray(profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + '~' + i, val}))
+        const varsAsArray = vars.map((val,i) => ({innerPath: `$vars~${i}`, val}))
+        const paramsProps = calcArrayProps(paramAsArray.map(x=>x.val),`${path}~${params[0].id}`)
+        const varsProps = calcArrayProps(varsAsArray.map(x=>x.val),`${path}~$vars`)
+        return openCloseProps(path, openProfileByValueGroup, closeProfileByValueGroup, { singleParamAsArray, 
+            len: paramsProps.len+varsProps.len,
+            longInnerValInArray: paramsProps.longInnerValInArray && vars.length == 0,
+            primitiveArray: paramsProps.primitiveArray && vars.length == 0,
+            innerVals: [...varsAsArray,...paramAsArray], isArray: true })
       }
       const keys = Object.keys(profile).filter(x=>x != '$')
       const oneFirstArg = keys.length === 1 && params[0] && params[0].id == keys[0]
