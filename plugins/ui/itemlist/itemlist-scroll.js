@@ -1,4 +1,4 @@
-jb.component('itemlist.infiniteScroll', {
+component('itemlist.infiniteScroll', {
   type: 'feature',
   params: [
     {id: 'pageSize', as: 'number', defaultValue: 2}
@@ -26,7 +26,7 @@ jb.component('itemlist.infiniteScroll', {
   )
 })
 
-jb.component('itemlist.applyDeltaOfNextPage', {
+component('itemlist.applyDeltaOfNextPage', {
   type: 'action',
   params: [
     {id: 'pageSize', as: 'number', defaultValue: 2}
@@ -54,7 +54,7 @@ jb.component('itemlist.applyDeltaOfNextPage', {
   }
 })
 
-jb.component('itemlist.deltaOfItems', {
+component('itemlist.deltaOfItems', {
   impl: ctx => {
     const cmp = ctx.vars.cmp
     const newVdom = cmp.renderVdom(), oldVdom = cmp.oldVdom || {}
@@ -65,7 +65,7 @@ jb.component('itemlist.deltaOfItems', {
   }
 })
 
-jb.component('itemlist.incrementalFromRx', {
+component('itemlist.incrementalFromRx', {
   type: 'feature',
   params: [
     {id: 'prepend', as: 'boolean', boolean: 'last at top' }
@@ -79,7 +79,7 @@ jb.component('itemlist.incrementalFromRx', {
     )
 })
 
-jb.component('itemlist.calcSlicedItems', {
+component('itemlist.calcSlicedItems', {
   impl: ctx => {
     const {allItems, visualSizeLimit, items} = ctx.vars.$props
     if (items) return items

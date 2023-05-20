@@ -1,3 +1,5 @@
+using('ui')
+
 vegaSample = {
     "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
     "description": "A simple bar chart with embedded data.",
@@ -15,7 +17,7 @@ vegaSample = {
     }
 }
 
-jb.extension('vega', {
+extension('vega', {
     initExtension() {
         return { jbData: Symbol.for('jb-vega-data'), counter: 0 }
     },
@@ -27,7 +29,7 @@ jb.extension('vega', {
     namedData: spec => spec.data && spec.data[jb.vega.jbData] ? [spec.data].map(e=>[e.name, e[jb.vega.jbData]]) : []
 })
 
-jb.component('vega.interactiveChart', {
+component('vega.interactiveChart', {
   type: 'control',
   params: [
     {id: 'spec', type: 'vega.spec'},
@@ -57,7 +59,7 @@ jb.component('vega.interactiveChart', {
   })
 })
 
-jb.component('vega.spec', {
+component('vega.spec', {
   type: 'vega.spec',
   params: [
     {id: 'data', type: 'vega.data', mandatory: true},
@@ -71,7 +73,7 @@ jb.component('vega.spec', {
   impl: ctx => ctx.params
 })
 
-jb.component('vega.dataFromUrl', {
+component('vega.dataFromUrl', {
     type: 'vega.data',
     params: [
         {id: 'url', as: 'string', mandatory: true },
@@ -81,7 +83,7 @@ jb.component('vega.dataFromUrl', {
     impl: ctx => ctx.params
 })
 
-jb.component('vega.jbData', {
+component('vega.jbData', {
     type: 'vega.data',
     params: [
         {id: 'items', as: 'array', mandatory: true },
@@ -92,7 +94,7 @@ jb.component('vega.jbData', {
     }
 })
 
-jb.component('vega.namedData', {
+component('vega.namedData', {
     type: 'vega.data',
     params: [
         {id: 'name', as: 'string', mandatory: true},
@@ -102,7 +104,7 @@ jb.component('vega.namedData', {
 
 // ************ transform ***************
 
-jb.component('vega.aggregate', {
+component('vega.aggregate', {
     type: 'vega.transform',
     params: [
         {id: 'pipe', type: 'vega.aggPipeElem[]', mandatory: true },
@@ -111,7 +113,7 @@ jb.component('vega.aggregate', {
     impl: (ctx,pipe,groupby) => ({ aggregate: pipe, groupby})
 })
 
-jb.component('vega.aggPipeElem', {
+component('vega.aggPipeElem', {
     type: 'vega.aggPipeElem',
     singleInType: true,
     params: [
@@ -122,7 +124,7 @@ jb.component('vega.aggPipeElem', {
     impl: ctx => ctx.params
 })
 
-jb.component('vega.calculate', {
+component('vega.calculate', {
     type: 'vega.transform',
     params: [
         {id: 'expression', as: 'string', mandatory: true, description: 'e.g: datum.x*2' },
@@ -131,7 +133,7 @@ jb.component('vega.calculate', {
     impl: (ctx,expression,as) => ({ calculate: expression, as })
 })
 
-jb.component('vega.filter', {
+component('vega.filter', {
     type: 'vega.transform',
     params: [
         {id: 'filter', type: 'vega.boolean' },
@@ -139,7 +141,7 @@ jb.component('vega.filter', {
     impl: (ctx,filter) => filter
 })
 
-jb.component('vega.filterExpression', {
+component('vega.filterExpression', {
   type: 'vega.boolean',
   params: [
     {id: 'filter', as: 'string', mandatory: true, description: 'e.g: datum.x>2'}
@@ -147,8 +149,8 @@ jb.component('vega.filterExpression', {
   impl: (ctx,filter) => ({ filter })
 })
 
-jb.defComponents('equal,lt,lte,gt,gte'.split(','),
-    op=> jb.component(`vega.${op}`, ({
+ jb.defComponents('equal,lt,lte,gt,gte'.split(','),
+    op=> component(`vega.${op}`, ({
         type: 'vega.boolean',
         params: [
             {id: 'field', as: 'string', mandatory: true },
@@ -158,8 +160,8 @@ jb.defComponents('equal,lt,lte,gt,gte'.split(','),
         impl: (ctx,field,value,op) => ({ field, [op]: value })
 })))
 
-jb.defComponents('range,oneOf'.split(','),
-    op=> jb.component(`vega.${op}`, ({
+ jb.defComponents('range,oneOf'.split(','),
+    op=> component(`vega.${op}`, ({
         type: 'vega.boolean',
     params: [
         {id: 'field', as: 'string', mandatory: true },
@@ -169,7 +171,7 @@ jb.defComponents('range,oneOf'.split(','),
     impl: (ctx,field,values,op) => ({ field, [op]: values })
 })))
 
-jb.component('vega.inSelection', {
+component('vega.inSelection', {
   type: 'vega.boolean',
   params: [
     {id: 'selection', as: 'string', mandatory: true}
@@ -182,8 +184,8 @@ jb.component('vega.inSelection', {
 // ************ mark ***************
 // TODO: david: do one by one - more filter types: and, or, not
 
-jb.defComponents('bar,circle,square,text,rule,point,geoshape,tick,errorband'.split(','), 
-    type => jb.component(`vega.${type}`, ({
+ jb.defComponents('bar,circle,square,text,rule,point,geoshape,tick,errorband'.split(','), 
+    type => component(`vega.${type}`, ({
         type: 'vega.mark',
         params: [
             {id: 'props', type: 'vega.markProps[]', as: 'array' },
@@ -192,7 +194,7 @@ jb.defComponents('bar,circle,square,text,rule,point,geoshape,tick,errorband'.spl
         impl: (ctx,props,type) => props.length ? ({ type, ...props.reduce((acc,props) => ({...acc,...props}) ,{}) }) : type
 })))
 
-jb.component('vega.line', {
+component('vega.line', {
     type: 'vega.mark',
     params: [
         {id: 'showPoints', type: 'boolean' },
@@ -201,7 +203,7 @@ jb.component('vega.line', {
     impl: (ctx, point, props) => (point || props) ? ({type: 'line', point, ...props.reduce((acc,props) => ({...acc,...props}) ,{})}) : 'line'
 })
 
-jb.component('vega.generalMarkProps', {
+component('vega.generalMarkProps', {
     type: 'vega.markProps',
     params: [
         {id: 'aria', as: 'string' },
@@ -212,7 +214,7 @@ jb.component('vega.generalMarkProps', {
     impl: ctx => ctx.params
 })
 
-jb.component('vega.positionMarkProps', {
+component('vega.positionMarkProps', {
     type: 'vega.markProps',
     params: [
         {id: 'x', as: 'string' },
@@ -227,7 +229,7 @@ jb.component('vega.positionMarkProps', {
 // TODO: more from https://vega.github.io/vega-lite/docs/mark.html
 
 // ************ encoding ***************
-jb.component('vega.positionChannels', {
+component('vega.positionChannels', {
     type: 'vega.encoding',
     params: [
         {id: 'x', type: 'vega.channel' },
@@ -238,7 +240,7 @@ jb.component('vega.positionChannels', {
 })
 
 // ************ channel ***************
-jb.component('vega.channel', {
+component('vega.channel', {
     type: 'vega.channel',
     params: [
         {id: 'field', as: 'string', mandatory: true },

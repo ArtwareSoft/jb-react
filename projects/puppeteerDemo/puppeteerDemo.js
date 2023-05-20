@@ -1,10 +1,10 @@
-jb.component('dataResource.events', {
+component('dataResource.events', {
   watchableData: [
 
   ]
 })
 
-jb.component('puppeteerDemo.main', {
+component('puppeteerDemo.main', {
   type: 'control',
   impl: group({
     controls: [
@@ -83,11 +83,11 @@ await frame.type('input[name=q]', 'puppeteer'+String.fromCharCode(13), { delay: 
   })
 })
 
-jb.component('dataResource.query', {
+component('dataResource.query', {
   watchableData: 'vitamins'
 })
 
-jb.component('puppeteerDemo.jbart', {
+component('puppeteerDemo.jbart', {
   type: 'control',
   impl: group({
     title: '',
@@ -117,7 +117,7 @@ jb.component('puppeteerDemo.jbart', {
 })
 
 
-jb.component('puppeteerDemo.preview', {
+component('puppeteerDemo.preview', {
   type: 'control',
   impl: group({
     title: '',
@@ -156,7 +156,7 @@ jb.component('puppeteerDemo.preview', {
   })
 })
 
-jb.component('puppeteerDemo.gsmArena', {
+component('puppeteerDemo.gsmArena', {
   type: 'control',
   impl: group({
     title: '',

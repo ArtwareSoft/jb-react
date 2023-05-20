@@ -1,5 +1,9 @@
+extension('probe', 'test', {
+  runSingleTest: (...args) => jb.test && jb.test['runSingleTest'](...args),
+  runInner: (...args) => jb.test && jb.test['runInner'](...args)
+})
 
-jb.component('test.showTestInStudio', {
+component('test.showTestInStudio', {
 	type: 'control',
 	params: [
 	  {id: 'testId', as: 'string', defaultValue: 'uiTest.label'}
@@ -16,13 +20,14 @@ jb.component('test.showTestInStudio', {
 		}
 
 		async function testResult() {
+      if (!jb.test) return
 			jb.test.singleTest = true
 			const watchablesBefore = jb.db.watchableHandlers.map(h=>({resources: h.resources(), objToPath: new Map(h.objToPath)}))
 			//const spyBefore = { logs: spy.logs, spyParam: spy.spyParam}
 			const spyParam = jb.utils.unique([...spy.spyParam.split(','),'test']).join(',')
 			jb.spy.initSpy({spyParam})
 			jb.spy.clear()
-			const res = await jb.test.runOneTest(testId,{doNotcleanBeforeRun: true, show: true})
+			const res = await jb.probe.runSingleTest(testId,{doNotcleanBeforeRun: true, show: true})
 			jb.db.watchableHandlers.forEach((h,i) =>{
 				h.resources(watchablesBefore[i].resources)
 				h.objToPath = watchablesBefore[i].objToPath
@@ -33,7 +38,7 @@ jb.component('test.showTestInStudio', {
 	require: [{$: 'test.dataTestView'},{$: 'test.uiTestRunner'}]
 })
 
-jb.component('test.dataTestView', {
+component('test.dataTestView', {
   type: 'control',
   params: [
     {id: 'testId', as: 'string', defaultValue: 'ui-test.label'},
@@ -76,7 +81,7 @@ jb.component('test.dataTestView', {
   })
 })
 
-jb.component('test.uiTestRunner', {
+component('test.uiTestRunner', {
   type: 'control',
   params: [
     {id: 'testId', as: 'string', defaultValue: 'ui-test.label'},
@@ -104,6 +109,6 @@ jb.component('test.uiTestRunner', {
       })
     ],
     features: [group.wait({for: ({},{},{ctxToRun,testResult}) =>
-				Promise.resolve(jb.test.runInner('runBefore',ctxToRun)).then(() => testResult()), varName: 'result'})]
+				Promise.resolve(jb.probe.runInner('runBefore',ctxToRun)).then(() => testResult()), varName: 'result'})]
   })
 })

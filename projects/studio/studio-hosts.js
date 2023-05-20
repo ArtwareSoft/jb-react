@@ -1,4 +1,4 @@
-jb.extension('studio', 'hosts', {
+extension('studio', 'hosts', {
     initExtension() {
         const location = jb.frame.location
         const entryUrl = location && (new jb.frame.URLSearchParams(location.search).entryUrl || location.href) || ''
@@ -123,7 +123,7 @@ jb.extension('studio', 'hosts', {
     })
 })
 
-jb.extension('projectHosts', {
+extension('projectHosts', {
     initExtension() { 
         jb.frame.aa_jsonp_callback = x => x
         return {

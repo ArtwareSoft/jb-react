@@ -1,4 +1,6 @@
-jb.component('http.get', {
+using('common')
+
+component('http.get', {
   type: 'data,action',
   description: 'fetch data from external url',
   params: [
@@ -25,7 +27,7 @@ jb.component('http.get', {
 	}
 })
 
-jb.component('http.fetch', {
+component('http.fetch', {
   type: 'data,action',
   description: 'fetch, get or post data from external url',
   params: [

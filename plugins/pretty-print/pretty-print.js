@@ -1,4 +1,4 @@
-jb.component('prettyPrint', {
+component('prettyPrint', {
   params: [
     {id: 'profile', defaultValue: '%%'},
     {id: 'forceFlat', as: 'boolean', type: 'boolean'}
@@ -6,7 +6,7 @@ jb.component('prettyPrint', {
   impl: (ctx,profile) => jb.utils.prettyPrint(jb.val(profile),{ ...ctx.params })
 })
 
-jb.extension('utils', 'prettyPrint', {
+extension('utils', 'prettyPrint', {
   initExtension() {
     return {
       emptyLineWithSpaces: Array.from(new Array(200)).map(_=>' ').join(''),

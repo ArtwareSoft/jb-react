@@ -1,1 +1,1 @@
-jb.chromeDebugger.initPanel('card', self)
+ jb.chromeDebugger.initPanel('card', self)

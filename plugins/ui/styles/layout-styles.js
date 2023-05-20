@@ -1,4 +1,4 @@
-jb.component('layout.vertical', {
+component('layout.vertical', {
   type: 'layout,feature',
   params: [
     {id: 'spacing', as: 'string', defaultValue: 3}
@@ -10,7 +10,7 @@ jb.component('layout.vertical', {
   )
 })
 
-jb.component('layout.horizontal', {
+component('layout.horizontal', {
   type: 'layout,feature',
   params: [
     {id: 'spacing', as: 'string', defaultValue: 3}
@@ -21,7 +21,7 @@ jb.component('layout.horizontal', {
   )
 })
 
-jb.component('layout.horizontalFixedSplit', {
+component('layout.horizontalFixedSplit', {
   type: 'layout,feature',
   params: [
     {id: 'leftWidth', as: 'string', defaultValue: '200px', mandatory: true},
@@ -36,7 +36,7 @@ jb.component('layout.horizontalFixedSplit', {
   })
 })
 
-jb.component('layout.horizontalWrapped', {
+component('layout.horizontalWrapped', {
   type: 'layout,feature',
   params: [
     {id: 'spacing', as: 'string', defaultValue: 3}
@@ -48,7 +48,7 @@ jb.component('layout.horizontalWrapped', {
   })
 })
 
-jb.component('layout.flex', {
+component('layout.flex', {
   type: 'layout,feature',
   params: [
     {id: 'direction', as: 'string', options: ',row,row-reverse,column,column-reverse'},
@@ -65,7 +65,7 @@ jb.component('layout.flex', {
   })
 })
 
-jb.component('layout.grid', {
+component('layout.grid', {
   type: 'layout,feature',
   params: [
     {id: 'columnSizes', as: 'array', templateValue: list('auto', 'auto'), description: 'grid-template-columns, list of lengths'},
@@ -81,7 +81,7 @@ jb.component('layout.grid', {
   })
 })
 
-jb.component('flexItem.grow', {
+component('flexItem.grow', {
   type: 'feature',
   category: 'flex-item',
   params: [
@@ -90,7 +90,7 @@ jb.component('flexItem.grow', {
   impl: css('flex-grow: %$factor%')
 })
 
-jb.component('flexItem.basis', {
+component('flexItem.basis', {
   type: 'feature',
   category: 'flex-item',
   params: [
@@ -99,7 +99,7 @@ jb.component('flexItem.basis', {
   impl: css('flex-basis: %$factor%')
 })
 
-jb.component('flexItem.alignSelf', {
+component('flexItem.alignSelf', {
   type: 'feature',
   category: 'flex-item',
   params: [

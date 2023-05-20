@@ -1,4 +1,4 @@
-jb.extension('ui', 'react', {
+extension('ui', 'react', {
     initExtension() {
         Object.assign(this,{
             BECmpsDestroyNotification: jb.callbag.subject(),
@@ -681,6 +681,6 @@ jb.extension('ui', 'react', {
         }
         elem.removeAttribute('__refreshing')
         jb.ui.refreshNotification.next({cmp,ctx,elem, state, options})
-        //jb.studio.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
+        //jb .studio.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
     }
 })

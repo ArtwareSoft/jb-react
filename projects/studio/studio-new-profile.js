@@ -1,4 +1,4 @@
-jb.component('studio.categoriesMarks', {
+component('studio.categoriesMarks', {
   params: [
     {id: 'type', as: 'string'},
     {id: 'path', as: 'string'}
@@ -56,14 +56,14 @@ jb.component('studio.categoriesMarks', {
   )
 })
 
-jb.component('studio.flattenCategories', {
+component('studio.flattenCategories', {
   type: 'aggregator',
   impl: ctx =>
     ctx.data.filter(cat=>cat.code != 'all')
       .flatMap(category=> [{text: `---${category.code}---`}, ...category.pts.map(text => ({text, compName: text, description: jb.comps[text].description}))])
 })
 
-jb.component('studio.selectProfile', {
+component('studio.selectProfile', {
   type: 'control',
   params: [
     {id: 'onSelect', type: 'action', dynamic: true},
@@ -201,7 +201,7 @@ jb.component('studio.selectProfile', {
   })
 })
 
-jb.component('studio.openNewProfileDialog', {
+component('studio.openNewProfileDialog', {
   type: 'action',
   params: [
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()},
@@ -247,7 +247,7 @@ jb.component('studio.openNewProfileDialog', {
   })
 })
 
-jb.component('studio.pickProfile', {
+component('studio.pickProfile', {
   description: 'picklist for picking a profile in a context',
   type: 'control',
   params: [
@@ -261,7 +261,7 @@ jb.component('studio.pickProfile', {
   })
 })
 
-jb.component('studio.openPickProfile', {
+component('studio.openPickProfile', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -301,7 +301,7 @@ jb.component('studio.openPickProfile', {
   })
 })
 
-jb.component('studio.openNewPage', {
+component('studio.openNewPage', {
   type: 'action',
   impl: studio.openNewProfile({
     title: 'New Reusable Control (page)',
@@ -320,7 +320,7 @@ jb.component('studio.openNewPage', {
   })
 })
 
-jb.component('studio.openNewFunction', {
+component('studio.openNewFunction', {
   type: 'action',
   impl: studio.openNewProfile({
     title: 'New Function',
@@ -338,7 +338,7 @@ jb.component('studio.openNewFunction', {
   })
 })
 
-jb.component('studio.openNewProfile', {
+component('studio.openNewProfile', {
   type: 'action',
   params: [
     {id: 'title', as: 'string' },
@@ -388,7 +388,7 @@ jb.component('studio.openNewProfile', {
   })
 })
 
-jb.component('studio.insertCompOption', {
+component('studio.insertCompOption', {
   params: [
     {id: 'title', as: 'string'},
     {id: 'comp', as: 'string'}
@@ -399,7 +399,7 @@ jb.component('studio.insertCompOption', {
   })
 })
 
-jb.component('studio.insertControlMenu', {
+component('studio.insertControlMenu', {
   impl: menu.menu(
     'Insert',
     [
@@ -462,21 +462,21 @@ jb.component('studio.insertControlMenu', {
   )
 })
 
-jb.component('studio.newProfile', {
+component('studio.newProfile', {
   params: [
     {id: 'compName', as: 'string'}
   ],
   impl: (ctx,compName) => jb.tgp.newProfile(jb.tgp.getComp(compName), compName)
 })
 
-jb.component('studio.newComp', {
+component('studio.newComp', {
   params: [
     {id: 'compName', as: 'string'},
     {id: 'compContent'},
     {id: 'file', as: 'string'},
   ],
   impl: (ctx, compName, compContent,file) => {
-    jb.component(compName, jb.frame.JSON.parse(JSON.stringify({...compContent, type: '_'})))
+    component(compName, jb.frame.JSON.parse(JSON.stringify({...compContent, type: '_'})))
     const path = (jb.frame.jbBaseProjUrl || '') + jb.studio.host.pathOfJsFile(ctx.exp('%$studio/project%'), file)
     jb.comps[compName][jb.core.CT].location = [path,'new']
     jb.tgp.writeValue(jb.tgp.ref(`${compName}~type`),compContent.type || '',ctx)

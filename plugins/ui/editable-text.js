@@ -1,4 +1,4 @@
-jb.component('editableText', {
+component('editableText', {
   type: 'control',
   category: 'input:100,common:80',
   params: [
@@ -11,7 +11,7 @@ jb.component('editableText', {
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('editableText.xButton', {
+component('editableText.xButton', {
   type: 'feature',
   category: 'editableText:80',
   impl: features(

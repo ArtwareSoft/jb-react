@@ -1,6 +1,5 @@
-jb.xml = jb.xml || {}
-
-jb.xml.xmlToJson = xml => {
+extension('xml', {
+  xmlToJson: xml => {
   if (xml.nodeType == 9) // document
     return jb.xml.xmlToJson(xml.firstChild);
 
@@ -32,3 +31,4 @@ jb.xml.xmlToJson = xml => {
       return ar;
     }
 }
+})

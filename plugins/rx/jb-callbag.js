@@ -1,4 +1,4 @@
-jb.extension('callbag', {
+extension('callbag', {
   fromIter: iter => (start, sink) => {
       if (start !== 0) return
       const iterator =

@@ -1,5 +1,5 @@
 
-jb.component('studio.gotoPath', {
+component('studio.gotoPath', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -17,7 +17,7 @@ jb.component('studio.gotoPath', {
   )
 })
 
-jb.component('studio.openPropertyMenu', {
+component('studio.openPropertyMenu', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -67,7 +67,7 @@ jb.component('studio.openPropertyMenu', {
   })
 })
 
-jb.component('studio.jbEditorMenu', {
+component('studio.jbEditorMenu', {
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'},

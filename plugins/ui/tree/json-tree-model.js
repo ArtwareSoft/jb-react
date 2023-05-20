@@ -1,4 +1,4 @@
-jb.extension('tree', {
+extension('tree', {
 	ROjson: class ROjson {
 		constructor(json,rootPath) {
 			this.json = json
@@ -101,7 +101,7 @@ jb.extension('tree', {
 	}	
 })
 
-jb.component('tree.jsonReadOnly', {
+component('tree.jsonReadOnly', {
   type: 'tree.node-model',
   params: [
     {id: 'object', as: 'single', mandatory: true},
@@ -110,7 +110,7 @@ jb.component('tree.jsonReadOnly', {
   impl: ({}, json, rootPath) => new jb.tree.ROjson(json,rootPath)
 })
 
-jb.component('tree.json', {
+component('tree.json', {
   type: 'tree.node-model',
   params: [
     {id: 'object', as: 'ref', mandatory: true},

@@ -1,4 +1,4 @@
-jb.extension('studio', 'path', {
+extension('studio', 'path', {
   $phase: 40,
   initExtension() { 
 	jb.watchableComps.startWatch()
@@ -9,7 +9,7 @@ jb.extension('studio', 'path', {
   isStudioCmp: id => (jb.path(jb.comps,[id,jb.core.CT,'location',0]) || '').indexOf('projects/studio') != -1,
 })
 
-jb.component('jbm.vDebugger', {
+component('jbm.vDebugger', {
   type: 'jbm<jbm>',
   impl: child({id: 'vDebugger',sourceCodeOptions: project('studio')})
 })

@@ -1,5 +1,6 @@
+using('common,net')
 
-jb.component('tgp.langServices', {
+component('tgp.langServices', {
   type: 'http-service',
   params: [
   ],
@@ -10,7 +11,7 @@ jb.component('tgp.langServices', {
   })
 })
 
-jb.component('tgp.getCompletionItemsFromServer', {
+component('tgp.getCompletionItemsFromServer', {
   params: [
     {id: 'docProps'},
     {id: 'baseUrl', as: 'string', defaultValue: 'http://localhost:8085/'},
@@ -18,7 +19,7 @@ jb.component('tgp.getCompletionItemsFromServer', {
   impl: pipe(http.fetch({url:'%$baseUrl%?op=provideCompletionItems', method: 'POST', body: '%$docProps%', json: true}), '%result%')
 })
 
-jb.component('tgp.getDefinitionFromServer', {
+component('tgp.getDefinitionFromServer', {
   params: [
     {id: 'docProps'},
     {id: 'baseUrl', as: 'string', defaultValue: 'http://localhost:8085/'}
@@ -31,7 +32,7 @@ jb.component('tgp.getDefinitionFromServer', {
   }), '%result%')
 })
 
-jb.component('tgp.getPathFromServer', {
+component('tgp.getPathFromServer', {
   params: [
     {id: 'docProps'},
     {id: 'baseUrl', as: 'string', defaultValue: 'http://localhost:8085/'},
@@ -39,7 +40,7 @@ jb.component('tgp.getPathFromServer', {
   impl: pipe(http.fetch({url:'%$baseUrl%?op=providePath', method: 'POST', body: '%$docProps%', json: true}), '%result%', first())
 })
 
-jb.component('tgp.moveInArrayEditsFromServer', {
+component('tgp.moveInArrayEditsFromServer', {
   params: [
     {id: 'docProps'},
     {id: 'baseUrl', as: 'string', defaultValue: 'http://localhost:8085/'},
@@ -47,7 +48,7 @@ jb.component('tgp.moveInArrayEditsFromServer', {
   impl: pipe(http.fetch({url:'%$baseUrl%?op=moveInArrayEdits', method: 'POST', body: '%$docProps%', json: true}), '%result%', first())
 })
 
-jb.component('tgp.editsAndCursorPosFromServer', {
+component('tgp.editsAndCursorPosFromServer', {
   params: [
     {id: 'docText', defaultValue: '%docText%' },
     {id: 'item', defaultValue: '%item%'},
@@ -58,7 +59,7 @@ jb.component('tgp.editsAndCursorPosFromServer', {
     '%result%',first())
 })
 
-jb.component('tgp.startLangServer', {
+component('tgp.startLangServer', {
     type: 'action',
     params: [
         {id: 'restart', as: 'boolean'},

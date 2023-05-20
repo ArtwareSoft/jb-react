@@ -1,4 +1,4 @@
-jb.component('menu.menu', {
+component('menu.menu', {
   type: 'menu.option',
   params: [
     {id: 'title', as: 'string', dynamic: true, mandatory: true},
@@ -20,7 +20,7 @@ jb.component('menu.menu', {
 	})
 })
 
-jb.component('menu.dynamicOptions', {
+component('menu.dynamicOptions', {
   type: 'menu.option',
   params: [
     {id: 'items', type: 'data', as: 'array', mandatory: true, dynamic: true},
@@ -29,7 +29,7 @@ jb.component('menu.dynamicOptions', {
   impl: pipeline('%$items()%', call('genericOption'))
 })
 
-jb.component('menu.endWithSeparator', {
+component('menu.endWithSeparator', {
   type: 'menu.option',
   params: [
     {id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true},
@@ -42,12 +42,12 @@ jb.component('menu.endWithSeparator', {
   )
 })
 
-jb.component('menu.separator', {
+component('menu.separator', {
   type: 'menu.option',
   impl: obj(prop('separator',true))
 })
 
-jb.component('menu.action', {
+component('menu.action', {
   type: 'menu.option',
   params: [
     {id: 'title', as: 'string', dynamic: true, mandatory: true},
@@ -74,7 +74,7 @@ jb.component('menu.action', {
 
 // ********* controls ************
 
-jb.component('menu.control', {
+component('menu.control', {
   type: 'control,clickable,menu',
   params: [
     {id: 'menu', type: 'menu.option', dynamic: true, mandatory: true},
@@ -96,7 +96,7 @@ jb.component('menu.control', {
   require: [{$: 'features'}, {$: 'calcProp'}, {$: 'htmlAttribute'}]
 })
 
-jb.component('menu.openContextMenu', {
+component('menu.openContextMenu', {
   type: 'action',
   params: [
     {id: 'menu', type: 'menu.option', dynamic: true, mandatory: true},
@@ -115,7 +115,7 @@ jb.component('menu.openContextMenu', {
 
 // ********* styles ************
 
-jb.component('menuStyle.pulldown', {
+component('menuStyle.pulldown', {
   type: 'menu.style',
   params: [
     {id: 'innerMenuStyle', type: 'menu.style', dynamic: true, defaultValue: menuStyle.popupAsOption()},
@@ -135,7 +135,7 @@ jb.component('menuStyle.pulldown', {
   )
 })
 
-jb.component('menuStyle.contextMenu', {
+component('menuStyle.contextMenu', {
   type: 'menu.style',
   params: [
     {id: 'leafOptionStyle', type: 'menu-option.style', dynamic: true, defaultValue: menuStyle.optionLine()}
@@ -151,7 +151,7 @@ jb.component('menuStyle.contextMenu', {
   )
 })
 
-jb.component('menu.initPopupMenu', {
+component('menu.initPopupMenu', {
   type: 'feature',
   params: [
     {id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue: dialog.contextMenuPopup()}
@@ -174,7 +174,7 @@ jb.component('menu.initPopupMenu', {
   require: [{$: 'menu.openContextMenu'}, {$: 'call'}, {$: 'If'}]
 })
 
-jb.component('menu.initMenuOption', {
+component('menu.initMenuOption', {
   type: 'feature',
   impl: features(
     calcProp({id: 'title', value: '%$menuModel.leaf.title%'}),
@@ -190,7 +190,7 @@ jb.component('menu.initMenuOption', {
   )
 })
 
-jb.component('menuStyle.applyMultiLevel', {
+component('menuStyle.applyMultiLevel', {
   type: 'menu.style',
   params: [
     {id: 'menuStyle', type: 'menu.style', dynamic: true, defaultValue: menuStyle.popupAsOption()},
@@ -226,7 +226,7 @@ jb.component('menuStyle.applyMultiLevel', {
 //     })
 // })
 
-jb.component('menu.selection', {
+component('menu.selection', {
   type: 'feature',
   impl: features(
     htmlAttribute('tabIndex',0),
@@ -272,7 +272,7 @@ jb.component('menu.selection', {
   )
 })
   
-jb.component('menu.selectionKeySourceService', {
+component('menu.selectionKeySourceService', {
   type: 'feature',
   impl: If('%$$serviceRegistry/services/menuKeySource%', [], features( // regiter service only for top ctrl
     service.registerBackEndService('menuKeySource', '%$cmp/cmpId%'),
@@ -295,12 +295,12 @@ jb.component('menu.selectionKeySourceService', {
   ))
 })
 
-jb.component('menu.passMenuKeySource', {
+component('menu.passMenuKeySource', {
   type: 'feature',
   impl: frontEnd.var('menuKeySourceCmpId', '%$$serviceRegistry/services/menuKeySource%'),
 })
 
-jb.component('source.findMenuKeySource', {
+component('source.findMenuKeySource', {
   type: 'rx',
   category: 'source',
   params: [
@@ -327,7 +327,7 @@ jb.component('source.findMenuKeySource', {
   )
 })
 
-jb.component('menu.isRelevantMenu', {
+component('menu.isRelevantMenu', {
   impl: ctx => {
     const key = ctx.data.keyCode
     const el = ctx.vars.cmp.base
@@ -346,7 +346,7 @@ jb.component('menu.isRelevantMenu', {
 })
 
 
-jb.component('menuStyle.optionLine', {
+component('menuStyle.optionLine', {
   type: 'menu-option.style',
   impl: customStyle({
     template: (cmp,{icon,title,shortcut},h) => h('div.line noselect', { onmousedown: 'closeAndActivate' },[
@@ -365,7 +365,7 @@ jb.component('menuStyle.optionLine', {
   })
 })
 
-jb.component('menuStyle.popupAsOption', {
+component('menuStyle.popupAsOption', {
   type: 'menu.style',
   impl: customStyle({
     template: (cmp,{title},h) => h('div.line noselect', { onmousedown: 'closeAndActivate' },[
@@ -380,7 +380,7 @@ jb.component('menuStyle.popupAsOption', {
   })
 })
 
-jb.component('menuStyle.popupThumb', {
+component('menuStyle.popupThumb', {
   type: 'menu.style',
   description: 'used for pulldown',
   impl: customStyle({
@@ -396,7 +396,7 @@ jb.component('menuStyle.popupThumb', {
   })
 })
 
-jb.component('dialog.contextMenuPopup', {
+component('dialog.contextMenuPopup', {
   type: 'dialog.style',
   params: [
     {id: 'offsetTop', as: 'number'},
@@ -419,7 +419,7 @@ jb.component('dialog.contextMenuPopup', {
   })
 })
 
-jb.component('menuSeparator.line', {
+component('menuSeparator.line', {
   type: 'menu-separator.style',
   impl: customStyle({
     template: ({},{},h) => h('div', {separator: true}),
@@ -427,7 +427,7 @@ jb.component('menuSeparator.line', {
   })
 })
 
-jb.component('menu.notSeparator',{
+component('menu.notSeparator',{
   type: 'boolean',
   params: [
     { id: 'elem' }
@@ -437,7 +437,7 @@ jb.component('menu.notSeparator',{
 
 /***** icon menus */
 
-jb.component('menuStyle.toolbar', {
+component('menuStyle.toolbar', {
   type: 'menu.style',
   params: [
     {id: 'leafOptionStyle', type: 'menu-option.style', dynamic: true, defaultValue: menuStyle.icon()},
@@ -456,7 +456,7 @@ jb.component('menuStyle.toolbar', {
   )
 })
 
-jb.component('menuStyle.icon', {
+component('menuStyle.icon', {
   type: 'menu-option.style',
   params: [
     {id: 'buttonSize', as: 'number', defaultValue: 20 },
@@ -469,7 +469,7 @@ jb.component('menuStyle.icon', {
   }))
 })
 
-jb.component('menuStyle.icon3', {
+component('menuStyle.icon3', {
   type: 'menu-option.style',
   params: [
     {id: 'buttonSize', as: 'number', defaultValue: 20 },
@@ -491,7 +491,7 @@ jb.component('menuStyle.icon3', {
   })
 })
 
-jb.component('menuStyle.iconMenu', {
+component('menuStyle.iconMenu', {
   type: 'menu.style',
   impl: styleByControl(
       button({

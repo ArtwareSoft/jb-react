@@ -1,4 +1,4 @@
-jb.component('cardsDemo.main', {
+component('cardsDemo.main', {
   impl: group({
     layout: layout.horizontal('20'),
     controls: [
@@ -11,7 +11,7 @@ jb.component('cardsDemo.main', {
   })
 })
 
-jb.component('styleGallery.stylesOfUiComponent', {
+component('styleGallery.stylesOfUiComponent', {
   params: [
     {id: 'component', as: 'string'}
   ],
@@ -21,7 +21,7 @@ jb.component('styleGallery.stylesOfUiComponent', {
 
 'card,cardList,cardFilter'.split(',')
 .forEach(ctrl=>
-  jb.component(`cardsDemo.${ctrl}`,  { type: 'control',
+  component(`cardsDemo.${ctrl}`,  { type: 'control',
   impl: group({
     layout: layout.grid({
       columnSizes: list('600'),
@@ -52,7 +52,7 @@ jb.component('styleGallery.stylesOfUiComponent', {
   }),
 }))
 
-jb.component('cardsDemo.phone', {
+component('cardsDemo.phone', {
   type: 'control',
   impl: group({
     controls: [
@@ -74,7 +74,7 @@ jb.component('cardsDemo.phone', {
   })
 })
 
-jb.component('cardsDemo.card', {
+component('cardsDemo.card', {
   type: 'control',
   impl: group({
     layout: layout.grid({columnSizes: list('600'), columnGap: '10px', rowGap: '10px'}),
@@ -100,7 +100,7 @@ jb.component('cardsDemo.card', {
   })
 })
 
-jb.component('cardsDemo.cardList', {
+component('cardsDemo.cardList', {
   type: 'control',
   impl: group({
     layout: layout.grid({columnSizes: list('600'), columnGap: '10px', rowGap: '10px'}),

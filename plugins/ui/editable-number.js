@@ -1,4 +1,4 @@
-jb.component('editableNumber', {
+component('editableNumber', {
   type: 'control',
   category: 'input:30',
   params: [

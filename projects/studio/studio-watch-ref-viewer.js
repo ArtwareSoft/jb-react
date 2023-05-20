@@ -1,7 +1,7 @@
 (function() {
 const st = jb.studio
 
-jb.component('studio.positionOfData', {
+component('studio.positionOfData', {
   type: 'position',
   params: [
     {id: 'path', as: 'string'}
@@ -67,7 +67,7 @@ function positionsOfCtx(ctx)  {
     return elemsOfCtx(ctx).map(el => fixPreviewOffset(enrichWithCenter(jb.ui.offset(el))))
 }
 
-jb.component('studio.animateWatchRefParticle', {
+component('studio.animateWatchRefParticle', {
   type: 'action',
   params: [
     {id: 'from'},
@@ -105,7 +105,7 @@ jb.component('studio.animateWatchRefParticle', {
   })
 })
 
-jb.component('studio.animateCmpDestroy', {
+component('studio.animateCmpDestroy', {
   type: 'action',
   params: [
     {id: 'pos'}
@@ -147,7 +147,7 @@ jb.component('studio.animateCmpDestroy', {
   })
 })
 
-jb.component('studio.animateCmpRefresh', {
+component('studio.animateCmpRefresh', {
   type: 'action',
   params: [
     {id: 'pos'}
@@ -176,7 +176,7 @@ jb.component('studio.animateCmpRefresh', {
   })
 })
 
-jb.component('animate.refreshElem', {
+component('animate.refreshElem', {
   type: 'action',
   params: [
     {id: 'elem'}
@@ -214,7 +214,7 @@ function animateCtxDestroy(ctx) {
     )
 }
 
-jb.studio.activateWatchRefViewer = () => {
+studio.activateWatchRefViewer = () => {
   const {pipe,filter,subscribe} = jb.callbag
 
     if (!st.previewjb.spy)

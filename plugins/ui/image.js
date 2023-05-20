@@ -1,4 +1,4 @@
-jb.component('image', {
+component('image', {
   type: 'control,image',
   category: 'control:50,common:70',
   params: [
@@ -15,7 +15,7 @@ jb.component('image', {
   })
 })
 
-jb.component('image.widthHeight', {
+component('image.widthHeight', {
   type: 'image.resize',
   description: 'fixed size or precentage of the original',
   params: [
@@ -25,19 +25,19 @@ jb.component('image.widthHeight', {
   impl: (ctx,width,height) => [ jb.ui.withUnits(width) ||'auto',jb.ui.withUnits(height)||'auto'].join(' ')
 })
 
-jb.component('image.cover', {
+component('image.cover', {
   description: 'auto resize or crop to cover all area',
   type: 'image.resize',
   impl: 'cover'
 })
 
-jb.component('image.fullyVisible', {
+component('image.fullyVisible', {
   description: 'contain, auto resize to ensure the image is fully visible',
   type: 'image.resize',
   impl: 'contain'
 })
 
-jb.component('image.position', {
+component('image.position', {
   description: 'offset move shift original image',
   type: 'image.position',
   params: [
@@ -48,7 +48,7 @@ jb.component('image.position', {
     .filter(x=>x).map(x=>`background-position-${x}`).join(';')
 })
 
-jb.component('image.background', {
+component('image.background', {
   type: 'image.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div'),
@@ -72,7 +72,7 @@ jb.component('image.background', {
   })
 })
 
-jb.component('image.img', {
+component('image.img', {
   type: 'image.style',
   impl: customStyle({
     template: ({},{url},h) => h('img', { src: url}),

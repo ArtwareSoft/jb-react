@@ -1,4 +1,4 @@
-jb.component('uiTest.group', {
+component('uiTest.group', {
   impl: uiTest({
     control: group({
       controls: [
@@ -10,23 +10,23 @@ jb.component('uiTest.group', {
   })
 })
 
-jb.component('uiTest.label', {
+component('uiTest.label', {
   impl: uiTest({ control: text('hello world'), expectedResult: contains('hello world') })
 })
 
-jb.component('uiTest.label0', {
+component('uiTest.label0', {
   impl: uiTest({ control: text(0), expectedResult: contains('>0<') })
 })
 
-jb.component('uiTest.html', {
+component('uiTest.html', {
   impl: uiTest({ control: html('<p>hello world</p>'), expectedResult: contains('>hello world</p>') })
 })
 
-jb.component('uiTest.html.inIframe', {
+component('uiTest.html.inIframe', {
   impl: uiTest({ control: html({ html: '<p>hello world</p>', style: html.inIframe() }), expectedResult: contains('iframe') })
 })
 
-jb.component('uiTest.controls', {
+component('uiTest.controls', {
   impl: uiTest({
     control: group({
       controls: [
@@ -39,7 +39,7 @@ jb.component('uiTest.controls', {
   })
 })
 
-jb.component('uiTest.waitForWithPipe', {
+component('uiTest.waitForWithPipe', {
   impl: uiTest({
     control: group({ controls: text('%%'), features: group.wait(pipe(delay(1), 'hello')) }),
     expectedResult: and(contains('hello'), not(contains('loading'))),
@@ -48,7 +48,7 @@ jb.component('uiTest.waitForWithPipe', {
   })
 })
 
-jb.component('uiTest.waitForRx', {
+component('uiTest.waitForRx', {
   impl: uiTest({
     control: group({ controls: text('%%'), features: group.wait(rx.pipe(source.interval(10), rx.take(1), rx.map('hello'))) }),
     expectedResult: and(contains('hello'), not(contains('loading'))),
@@ -89,7 +89,7 @@ jb.component('uiTest.waitForRx', {
 //   })
 // })
 
-jb.component('uiTest.asynchLabel', {
+component('uiTest.asynchLabel', {
   impl: uiTest({
     control: text({ text: pipe(delay(1), 'hello'), features: text.allowAsynchValue() }),
     expectedResult: contains('hello'),
@@ -97,7 +97,7 @@ jb.component('uiTest.asynchLabel', {
   })
 })
 
-jb.component('uiTest.waitForWithVar', {
+component('uiTest.waitForWithVar', {
   impl: uiTest({
     control: group({ controls: text('%$txt%'), features: group.wait({ for: pipe(delay(1), 'hello'), varName: 'txt' }) }),
     expectedResult: contains('hello')
@@ -116,11 +116,11 @@ jb.component('uiTest.waitForWithVar', {
 //   })
 // })
 
-jb.component('uiTest.button', {
+component('uiTest.button', {
   impl: uiTest({ control: button('btn1', ctx => alert(1)), expectedResult: contains('btn1') })
 })
 
-jb.component('uiTest.button.mdcIcon', {
+component('uiTest.button.mdcIcon', {
   impl: uiTest({
     control: button({
       title: 'btn1',
@@ -131,11 +131,11 @@ jb.component('uiTest.button.mdcIcon', {
   })
 })
 
-jb.component('uiTest.icon.mdi', {
+component('uiTest.icon.mdi', {
   impl: uiTest({ control: control.icon({ icon: 'Yoga', type: 'mdi' }), expectedResult: contains('svg') })
 })
 
-jb.component('uiTest.group2', {
+component('uiTest.group2', {
   impl: uiTest({
     control: group({
       controls: [
@@ -147,7 +147,7 @@ jb.component('uiTest.group2', {
   })
 })
 
-jb.component('uiTest.editableText', {
+component('uiTest.editableText', {
   impl: uiTest({
     control: editableText({
       title: 'name',
@@ -158,11 +158,11 @@ jb.component('uiTest.editableText', {
   })
 })
 
-jb.component('uiTest.editableText.emptyData', {
+component('uiTest.editableText.emptyData', {
   impl: uiTest({ control: editableText('name', '%$person/name1%'), expectedResult: not(contains('undefined')) })
 })
 
-jb.component('uiTest.editableTextEmpty', {
+component('uiTest.editableTextEmpty', {
   impl: uiTest({
     control: editableText({
       title: 'name',
@@ -173,7 +173,7 @@ jb.component('uiTest.editableTextEmpty', {
   })
 })
 
-jb.component('uiTest.editableTextMdc', {
+component('uiTest.editableTextMdc', {
   impl: uiTest({
     control: editableText({
       title: 'name',
@@ -184,7 +184,7 @@ jb.component('uiTest.editableTextMdc', {
   })
 })
 
-jb.component('uiTest.editableText.xButton', {
+component('uiTest.editableText.xButton', {
   impl: uiTest({
     control: editableText({
       title: 'name',
@@ -195,7 +195,7 @@ jb.component('uiTest.editableText.xButton', {
   })
 })
 
-jb.component('uiTest.editableTextExpandable', {
+component('uiTest.editableTextExpandable', {
   impl: uiTest({
     control: editableText({
       title: 'name',
@@ -206,7 +206,7 @@ jb.component('uiTest.editableTextExpandable', {
   })
 })
 
-jb.component('uiTest.twoWayBinding', {
+component('uiTest.twoWayBinding', {
   impl: uiTest({
     control: group({
       controls: [
@@ -219,7 +219,7 @@ jb.component('uiTest.twoWayBinding', {
   })
 })
 
-jb.component('uiTest.autoFocusOnFirstInput', {
+component('uiTest.autoFocusOnFirstInput', {
   impl: uiTest({
     control: group({
       controls: [
@@ -232,7 +232,7 @@ jb.component('uiTest.autoFocusOnFirstInput', {
   })
 })
 
-jb.component('uiTest.groupHorizontal', {
+component('uiTest.groupHorizontal', {
   impl: uiTest({
     control: group({
       layout: layout.horizontal(30),
@@ -245,7 +245,7 @@ jb.component('uiTest.groupHorizontal', {
   })
 })
 
-jb.component('uiTest.layoutVertical', {
+component('uiTest.layoutVertical', {
   impl: uiTest({
     control: group({
       layout: layout.vertical(30),
@@ -258,7 +258,7 @@ jb.component('uiTest.layoutVertical', {
   })
 })
 
-jb.component('uiTest.openDialog', {
+component('uiTest.openDialog', {
   impl: uiTest({
     control: button({
       title: 'click me',
@@ -274,7 +274,7 @@ jb.component('uiTest.openDialog', {
   })
 })
 
-jb.component('uiTest.codeMirrorDialogResizer', {
+component('uiTest.codeMirrorDialogResizer', {
   impl: uiTest({
     control: button({
       title: 'click me',
@@ -291,7 +291,7 @@ jb.component('uiTest.codeMirrorDialogResizer', {
   })
 })
 
-jb.component('uiTest.codeMirrorDialogResizerOkCancel', {
+component('uiTest.codeMirrorDialogResizerOkCancel', {
   impl: uiTest({
     control: button(
       'click me',
@@ -306,7 +306,7 @@ jb.component('uiTest.codeMirrorDialogResizerOkCancel', {
   })
 })
 
-jb.component('uiTest.renderable', {
+component('uiTest.renderable', {
   impl: uiTest({
     control: button({
       title: 'click me',
@@ -317,7 +317,7 @@ jb.component('uiTest.renderable', {
   })
 })
 
-jb.component('uiTest.refreshDialog', {
+component('uiTest.refreshDialog', {
   impl: uiTest({
     control: button({
       title: 'click me',
@@ -358,7 +358,7 @@ jb.component('uiTest.refreshDialog', {
 //   })
 // })
 
-jb.component('uiTest.dialogCleanupBug', {
+component('uiTest.dialogCleanupBug', {
   impl: uiFrontEndTest({
     control: button({
       title: 'click me',
@@ -388,7 +388,7 @@ jb.component('uiTest.dialogCleanupBug', {
 //   })
 // })
 
-jb.component('uiTest.groupFlex', {
+component('uiTest.groupFlex', {
   impl: uiTest({
     control: group({
       layout: layout.flex('row'),
@@ -401,7 +401,7 @@ jb.component('uiTest.groupFlex', {
   })
 })
 
-jb.component('uiTest.buttonClick', {
+component('uiTest.buttonClick', {
   impl: uiTest({
     control: button({ title: 'Click Me', action: writeValue('%$person/name%', 'mukki') }),
     userInput: userInput.click('button'),
@@ -410,21 +410,21 @@ jb.component('uiTest.buttonClick', {
   })
 })
 
-jb.component('uiTest.buttonX', {
+component('uiTest.buttonX', {
   impl: uiTest({
     control: button({ title: 'Click Me', action: () => alert(1), style: button.x() }),
     expectedResult: contains('×')
   })
 })
 
-jb.component('uiTest.resource', {
+component('uiTest.resource', {
   impl: uiTest({
     control: button('%$person.name%'),
     expectedResult: contains('Homer')
   })
 })
 
-jb.component('uiTest.featuresCss', {
+component('uiTest.featuresCss', {
   impl: uiFrontEndTest({
     control: text({ text: 'Hello World', features: css('color: red') }),
     expectedResult: ctx => {
@@ -437,21 +437,21 @@ jb.component('uiTest.featuresCss', {
   })
 })
 
-jb.component('uiTest.itemlist', {
+component('uiTest.itemlist', {
   impl: uiTest({
     control: itemlist({ items: '%$people%', controls: text('%$item.name% - %name%') }),
     expectedResult: contains(['Homer Simpson - Homer Simpson', 'Bart Simpson - Bart Simpson'])
   })
 })
 
-jb.component('uiTest.itemlistPrimitiveArray', {
+component('uiTest.itemlistPrimitiveArray', {
   impl: uiTest({
     control: itemlist({ items: '%$personWithPrimitiveChildren/childrenNames%', controls: text('%%') }),
     expectedResult: contains(['Bart', 'Lisa', 'Maggie'])
   })
 })
 
-jb.component('uiTest.itemlistPrimitiveArrayItemShouldBeRef', {
+component('uiTest.itemlistPrimitiveArrayItemShouldBeRef', {
   impl: uiTest({
     timeout: 100,
     vars: Var('isResultRef', obj(prop('answer', false))),
@@ -466,7 +466,7 @@ jb.component('uiTest.itemlistPrimitiveArrayItemShouldBeRef', {
   })
 })
 
-jb.component('uiTest.itemlistRxSource', {
+component('uiTest.itemlistRxSource', {
   impl: uiTest({
     control: itemlist({
       items: source.data('%$people%'),
@@ -477,7 +477,7 @@ jb.component('uiTest.itemlistRxSource', {
   })
 })
 
-jb.component('uiTest.table', {
+component('uiTest.table', {
   impl: uiTest({
     control: table({
       items: '%$people%',
@@ -494,7 +494,7 @@ jb.component('uiTest.table', {
   })
 })
 
-jb.component('uiTest.itemlist.shownOnlyOnItemHover', {
+component('uiTest.itemlist.shownOnlyOnItemHover', {
   impl: uiTest({
     control: table({
       items: '%$people%',
@@ -511,7 +511,7 @@ jb.component('uiTest.itemlist.shownOnlyOnItemHover', {
   })
 })
 
-jb.component('uiTest.itemlistWithSelect', {
+component('uiTest.itemlistWithSelect', {
   impl: uiTest({
     control: itemlist({
       items: '%$people%',
@@ -522,7 +522,7 @@ jb.component('uiTest.itemlistWithSelect', {
   })
 })
 
-jb.component('FETest.itemlistWithSelect.click', {
+component('FETest.itemlistWithSelect.click', {
   impl: uiFrontEndTest({
     control: itemlist({
       items: '%$people%',
@@ -534,7 +534,7 @@ jb.component('FETest.itemlistWithSelect.click', {
   })
 })
 
-jb.component('FETest.itemlistDD', {
+component('FETest.itemlistDD', {
   impl: uiFrontEndTest({
     renderDOM: true,
     control: group({
@@ -569,14 +569,14 @@ jb.component('FETest.itemlistDD', {
   })
 })
 
-jb.component('uiTest.itemlistBasic', {
+component('uiTest.itemlistBasic', {
   impl: uiTest({
     control: itemlist({ items: '%$people%', controls: text('%name%') }),
     expectedResult: contains(['Homer Simpson', 'Bart Simpson'])
   })
 })
 
-jb.component('uiTest.itemlistAddButton', {
+component('uiTest.itemlistAddButton', {
   impl: uiTest({
     control: group({
       controls: [
@@ -595,7 +595,7 @@ jb.component('uiTest.itemlistAddButton', {
   })
 })
 
-jb.component('uiTest.table.expandToEndOfRow', {
+component('uiTest.table.expandToEndOfRow', {
   impl: uiTest({
     control: table({
       items: '%$people%',
@@ -609,7 +609,7 @@ jb.component('uiTest.table.expandToEndOfRow', {
   })
 })
 
-jb.component('uiTest.table.MDInplace', {
+component('uiTest.table.MDInplace', {
   impl: uiTest({
     control: group({
       controls: table({
@@ -641,7 +641,7 @@ jb.component('uiTest.table.MDInplace', {
   })
 })
 
-jb.component('uiTest.table.MDInplace.withScroll', {
+component('uiTest.table.MDInplace.withScroll', {
   impl: uiFrontEndTest({
     renderDOM: true,
     control: group({
@@ -683,7 +683,7 @@ jb.component('uiTest.table.MDInplace.withScroll', {
   })
 })
 
-jb.component('uiTest.itemlistMDAutoSelectFirst', {
+component('uiTest.itemlistMDAutoSelectFirst', {
   impl: uiTest({
     control: group({
       controls: [
@@ -708,7 +708,7 @@ jb.component('uiTest.itemlistMDAutoSelectFirst', {
   })
 })
 
-jb.component('uiTest.itemlistMDAutoSelectFirst.ProxyBug', {
+component('uiTest.itemlistMDAutoSelectFirst.ProxyBug', {
   impl: uiFrontEndTest({
     //    renderDOM: true,
     control: group({
@@ -736,7 +736,7 @@ jb.component('uiTest.itemlistMDAutoSelectFirst.ProxyBug', {
   })
 })
 
-jb.component('uiTest.itemlistSelection', {
+component('uiTest.itemlistSelection', {
   impl: uiTest({
     control: itemlist({
       items: '%$people%',
@@ -752,7 +752,7 @@ jb.component('uiTest.itemlistSelection', {
   })
 })
 
-jb.component('uiTest.itemlistSelection.databind', {
+component('uiTest.itemlistSelection.databind', {
   impl: uiTest({
     control: group({
       controls: [
@@ -778,7 +778,7 @@ jb.component('uiTest.itemlistSelection.databind', {
   })
 })
 
-jb.component('uiTest.itemlistMDOfRefs.refChangeBug', {
+component('uiTest.itemlistMDOfRefs.refChangeBug', {
   impl: uiFrontEndTest({
     control: group({
       controls: [
@@ -810,7 +810,7 @@ jb.component('uiTest.itemlistMDOfRefs.refChangeBug', {
   })
 })
 
-jb.component('uiTest.itemlistContainerSearchCtrl', {
+component('uiTest.itemlistContainerSearchCtrl', {
   type: 'control',
   impl: group({
     controls: [
@@ -832,7 +832,7 @@ jb.component('uiTest.itemlistContainerSearchCtrl', {
   })
 })
 
-jb.component('uiTest.itemlistContainerSearch', {
+component('uiTest.itemlistContainerSearch', {
   impl: uiTest({
     control: uiTest.itemlistContainerSearchCtrl(),
     userInput: userInput.setText('ho', '#search'),
@@ -840,7 +840,7 @@ jb.component('uiTest.itemlistContainerSearch', {
   })
 })
 
-jb.component('FETest.itemlistContainerSearchEnterOnLi', {
+component('FETest.itemlistContainerSearchEnterOnLi', {
   impl: uiFrontEndTest({
     renderDOM: true,
     vars: Var('res', obj()),
@@ -851,7 +851,7 @@ jb.component('FETest.itemlistContainerSearchEnterOnLi', {
   })
 })
 
-jb.component('uiTest.secondaryLinkSetBug', {
+component('uiTest.secondaryLinkSetBug', {
   impl: uiTest({
     control: itemlist({
       items: '%$people%',
@@ -866,7 +866,7 @@ jb.component('uiTest.secondaryLinkSetBug', {
   })
 })
 
-jb.component('uiTest.itemlistWithTableStyle', {
+component('uiTest.itemlistWithTableStyle', {
   impl: uiTest({
     control: table({
       items: '%$watchablePeople%',
@@ -886,7 +886,7 @@ jb.component('uiTest.itemlistWithTableStyle', {
   })
 })
 
-jb.component('test.personName', {
+component('test.personName', {
   type: 'control',
   params: [
     { id: 'person' }
@@ -894,7 +894,7 @@ jb.component('test.personName', {
   impl: text('%$person/name%')
 })
 
-jb.component('uiTest.itemlistWithTableStyleUsingDynamicParam', {
+component('uiTest.itemlistWithTableStyleUsingDynamicParam', {
   impl: uiTest({
     control: table({
       items: '%$watchablePeople%',
@@ -920,7 +920,7 @@ jb.component('uiTest.itemlistWithTableStyleUsingDynamicParam', {
 //   })
 // })
 
-jb.component('uiTest.BEOnDestroy', {
+component('uiTest.BEOnDestroy', {
   impl: uiFrontEndTest({
     control: text('%$person/name%'),
     action: runActions(
@@ -937,7 +937,7 @@ jb.component('uiTest.BEOnDestroy', {
   })
 })
 
-jb.component('uiTest.editableTextInGroup', {
+component('uiTest.editableTextInGroup', {
   impl: uiTest({
     control: group({
       controls: [
@@ -950,7 +950,7 @@ jb.component('uiTest.editableTextInGroup', {
   })
 })
 
-jb.component('FETest.onKey', {
+component('FETest.onKey', {
   impl: uiFrontEndTest({
     control: editableText({
       title: 'name', databind: '%$person/name%',
@@ -961,7 +961,7 @@ jb.component('FETest.onKey', {
   })
 })
 
-jb.component('uiTest.editableText.blockSelfRefresh', {
+component('uiTest.editableText.blockSelfRefresh', {
   impl: uiTest({
     control: group({
       controls: editableText({ title: 'name', databind: '%$person/name%', features: id('inp') }),
@@ -973,7 +973,7 @@ jb.component('uiTest.editableText.blockSelfRefresh', {
   })
 })
 
-jb.component('uiTest.editableText.allowSelfRefresh', {
+component('uiTest.editableText.allowSelfRefresh', {
   impl: uiTest({
     control: group({
       controls: editableText({ title: 'name', databind: '%$person/name%' }),
@@ -985,7 +985,7 @@ jb.component('uiTest.editableText.allowSelfRefresh', {
   })
 })
 
-jb.component('uiTest.editableTextHelper', {
+component('uiTest.editableTextHelper', {
   impl: uiTest({
     control: editableText({
       title: 'name', databind: '%$person/name%',
@@ -998,7 +998,7 @@ jb.component('uiTest.editableTextHelper', {
   })
 })
 
-jb.component('uiTest.editableText.picklistHelper', {
+component('uiTest.editableText.picklistHelper', {
   impl: uiTest({
     control: editableText({
       title: 'name',
@@ -1010,7 +1010,7 @@ jb.component('uiTest.editableText.picklistHelper', {
   })
 })
 
-jb.component('uiTest.editableText.picklistHelperWithChangingOptions', {
+component('uiTest.editableText.picklistHelperWithChangingOptions', {
   impl: uiTest({
     control: editableText({
       title: 'name',
@@ -1025,7 +1025,7 @@ jb.component('uiTest.editableText.picklistHelperWithChangingOptions', {
   })
 })
 
-jb.component('uiTest.editableText.richPicklistHelperWithWatchingGroup', {
+component('uiTest.editableText.richPicklistHelperWithWatchingGroup', {
   impl: uiTest({
     control:
       group({
@@ -1044,7 +1044,7 @@ jb.component('uiTest.editableText.richPicklistHelperWithWatchingGroup', {
   })
 })
 
-jb.component('uiTest.editableText.richPicklistHelper.setInput', {
+component('uiTest.editableText.richPicklistHelper.setInput', {
   impl: uiFrontEndTest({
     timeout: 1000,
     allowError: true,
@@ -1070,7 +1070,7 @@ jb.component('uiTest.editableText.richPicklistHelper.setInput', {
   })
 })
 
-jb.component('test.getSelectionChar', {
+component('test.getSelectionChar', {
   impl: ctx => {
     const input = ctx.vars.$state.input || jb.path(ctx.vars.ev, 'input') || { value: '', selectionStart: 0 }
     const selectionStart = input.selectionStart || 0
@@ -1079,7 +1079,7 @@ jb.component('test.getSelectionChar', {
 })
 
 
-jb.component('uiTest.editableTextWithJbVal', {
+component('uiTest.editableTextWithJbVal', {
   impl: uiTest({
     control: group({
       vars: [Var('a1', ctx => {
@@ -1107,7 +1107,7 @@ jb.component('uiTest.editableTextWithJbVal', {
   })
 })
 
-jb.component('uiTest.propertySheet.titlesAbove', {
+component('uiTest.propertySheet.titlesAbove', {
   impl: uiTest({
     control: group({
       style: propertySheet.titlesAbove(),
@@ -1120,7 +1120,7 @@ jb.component('uiTest.propertySheet.titlesAbove', {
   })
 })
 
-jb.component('uiTest.propertySheet.titlesLeft', {
+component('uiTest.propertySheet.titlesLeft', {
   impl: uiTest({
     control: group({
       style: propertySheet.titlesLeft({}),
@@ -1141,7 +1141,7 @@ jb.component('uiTest.propertySheet.titlesLeft', {
   })
 })
 
-jb.component('uiTest.editableNumber', {
+component('uiTest.editableNumber', {
   impl: uiTest({
     control: group({
       layout: layout.vertical(),
@@ -1164,7 +1164,7 @@ jb.component('uiTest.editableNumber', {
   })
 })
 
-jb.component('uiTest.editableNumberSlider', {
+component('uiTest.editableNumberSlider', {
   impl: uiTest({
     control: editableNumber({
       databind: '%$person/age%',
@@ -1175,7 +1175,7 @@ jb.component('uiTest.editableNumberSlider', {
   })
 })
 
-jb.component('uiTest.editableNumberSliderEmpty', {
+component('uiTest.editableNumberSliderEmpty', {
   impl: uiTest({
     control: editableNumber({
       databind: '%$person/age1%',
@@ -1186,7 +1186,7 @@ jb.component('uiTest.editableNumberSliderEmpty', {
   })
 })
 
-jb.component('uiTest.editableBoolean.buttonXV', {
+component('uiTest.editableBoolean.buttonXV', {
   impl: uiTest({
     control: editableBoolean({
       databind: '%$person/male%',
@@ -1200,7 +1200,7 @@ jb.component('uiTest.editableBoolean.buttonXV', {
   })
 })
 
-jb.component('uiTest.editableBoolean.allStyles', {
+component('uiTest.editableBoolean.allStyles', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1238,7 +1238,7 @@ jb.component('uiTest.editableBoolean.allStyles', {
   })
 })
 
-jb.component('uiTest.editableBoolean.mdcSlideToggle', {
+component('uiTest.editableBoolean.mdcSlideToggle', {
   impl: uiTest({
     control: editableBoolean({
       databind: '%$person/male%',
@@ -1249,7 +1249,7 @@ jb.component('uiTest.editableBoolean.mdcSlideToggle', {
   })
 })
 
-jb.component('uiTest.editableBooleanSettings', {
+component('uiTest.editableBooleanSettings', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1266,7 +1266,7 @@ jb.component('uiTest.editableBooleanSettings', {
   })
 })
 
-jb.component('uiTest.editableBoolean.expandCollapse', {
+component('uiTest.editableBoolean.expandCollapse', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1287,7 +1287,7 @@ jb.component('uiTest.editableBoolean.expandCollapse', {
   })
 })
 
-jb.component('uiTest.expandCollapseWithDefaultCollapse', {
+component('uiTest.expandCollapseWithDefaultCollapse', {
   type: 'control',
   impl: group({
     controls: [
@@ -1320,7 +1320,7 @@ jb.component('uiTest.expandCollapseWithDefaultCollapse', {
   })
 })
 
-jb.component('uiTest.editableBoolean.expandCollapseWithDefaultVal', {
+component('uiTest.editableBoolean.expandCollapseWithDefaultVal', {
   impl: uiTest({
     control: uiTest.expandCollapseWithDefaultCollapse(),
     userInput: userInput.click('#default', 'toggle'),
@@ -1328,7 +1328,7 @@ jb.component('uiTest.editableBoolean.expandCollapseWithDefaultVal', {
   })
 })
 
-jb.component('uiTest.editableBoolean.expandCollapseWithDefaultCollapse', {
+component('uiTest.editableBoolean.expandCollapseWithDefaultCollapse', {
   impl: uiFrontEndTest({
     control: uiTest.expandCollapseWithDefaultCollapse(),
     expectedResult: not(contains('inner text')),
@@ -1336,7 +1336,7 @@ jb.component('uiTest.editableBoolean.expandCollapseWithDefaultCollapse', {
   })
 })
 
-jb.component('uiTest.codeMirror', {
+component('uiTest.codeMirror', {
   impl: uiFrontEndTest({
     control: group({
       vars: [
@@ -1370,21 +1370,21 @@ return 15
   })
 })
 
-jb.component('uiTest.innerLabel1Tst', {
+component('uiTest.innerLabel1Tst', {
   params: [
     { id: 'title', mandatory: true, dynamic: true }
   ],
   impl: text(call('title'))
 })
 
-jb.component('uiTest.innerLabel2Tst', {
+component('uiTest.innerLabel2Tst', {
   params: [
     { id: 'title', mandatory: true, dynamic: true }
   ],
   impl: uiTest.innerLabel1Tst(call('title'))
 })
 
-jb.component('uiTest.innerLabel3Tst', {
+component('uiTest.innerLabel3Tst', {
   params: [
     { id: 'title', mandatory: true, dynamic: true }
   ],
@@ -1393,7 +1393,7 @@ jb.component('uiTest.innerLabel3Tst', {
   )
 })
 
-jb.component('uiTest.prettyPrintComp', {
+component('uiTest.prettyPrintComp', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1407,7 +1407,7 @@ jb.component('uiTest.prettyPrintComp', {
   })
 })
 
-jb.component('uiTest.picklist', {
+component('uiTest.picklist', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1426,7 +1426,7 @@ jb.component('uiTest.picklist', {
   })
 })
 
-jb.component('uiTest.picklist.delayedOptions', {
+component('uiTest.picklist.delayedOptions', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1446,7 +1446,7 @@ jb.component('uiTest.picklist.delayedOptions', {
   })
 })
 
-jb.component('uiTest.picklist.delayedOptions.StyleByControlBug', {
+component('uiTest.picklist.delayedOptions.StyleByControlBug', {
   impl: uiTest({
     control: picklist({
       title: 'city',
@@ -1459,7 +1459,7 @@ jb.component('uiTest.picklist.delayedOptions.StyleByControlBug', {
   })
 })
 
-jb.component('uiTest.picklist.delayedOptions.StyleByControlBug.Promise', {
+component('uiTest.picklist.delayedOptions.StyleByControlBug.Promise', {
   impl: uiTest({
     control: picklist({
       title: 'city',
@@ -1472,7 +1472,7 @@ jb.component('uiTest.picklist.delayedOptions.StyleByControlBug.Promise', {
   })
 })
 
-jb.component('uiTest.picklistHelper.delayedOptions', {
+component('uiTest.picklistHelper.delayedOptions', {
   impl: uiTest({
     control: editableText({
       databind: '%$person/name%',
@@ -1489,7 +1489,7 @@ jb.component('uiTest.picklistHelper.delayedOptions', {
   })
 })
 
-jb.component('uiTest.picklistRadio', {
+component('uiTest.picklistRadio', {
   impl: uiTest({
     control: picklist({
       title: 'city',
@@ -1501,7 +1501,7 @@ jb.component('uiTest.picklistRadio', {
   })
 })
 
-jb.component('uiTest.picklist.mdcSelect', {
+component('uiTest.picklist.mdcSelect', {
   impl: uiFrontEndTest({
     control: picklist({
       title: 'city',
@@ -1513,7 +1513,7 @@ jb.component('uiTest.picklist.mdcSelect', {
   })
 })
 
-jb.component('uiTest.fieldTitleOfLabel', {
+component('uiTest.fieldTitleOfLabel', {
   impl: uiTest({
     control: group({
       style: propertySheet.titlesLeft(),
@@ -1523,7 +1523,7 @@ jb.component('uiTest.fieldTitleOfLabel', {
   })
 })
 
-jb.component('uiTest.picklistSort', {
+component('uiTest.picklistSort', {
   impl: dataTest(
     pipeline(
       picklist.sortedOptions(
@@ -1545,7 +1545,7 @@ jb.component('uiTest.picklistSort', {
   )
 })
 
-jb.component('uiTest.picklistGroups', {
+component('uiTest.picklistGroups', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1567,7 +1567,7 @@ jb.component('uiTest.picklistGroups', {
   })
 })
 
-jb.component('uiTest.dynamicControls', {
+component('uiTest.dynamicControls', {
   impl: uiTest({
     control: group({
       style: propertySheet.titlesLeft(),
@@ -1578,7 +1578,7 @@ jb.component('uiTest.dynamicControls', {
   location: null
 })
 
-jb.component('uiTest.inlineControls', {
+component('uiTest.inlineControls', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1590,7 +1590,7 @@ jb.component('uiTest.inlineControls', {
   })
 })
 
-jb.component('uiTest.tabs', {
+component('uiTest.tabs', {
   impl: uiTest({
     control: group({
       style: group.tabs(),
@@ -1603,7 +1603,7 @@ jb.component('uiTest.tabs', {
   })
 })
 
-jb.component('uiTest.group.accordion', {
+component('uiTest.group.accordion', {
   impl: uiTest({
     control: group({
       style: group.accordion(),
@@ -1616,7 +1616,7 @@ jb.component('uiTest.group.accordion', {
   })
 })
 
-jb.component('uiTest.innerLabel', {
+component('uiTest.innerLabel', {
   impl: uiTest({ control: uiTest.innerLabel3Tst('Hello World2'), expectedResult: contains('Hello World2') })
 })
 
@@ -1632,7 +1632,7 @@ jb.component('uiTest.innerLabel', {
 //   })
 // })
 
-jb.component('uiTest.styleByControl', {
+component('uiTest.styleByControl', {
   impl: uiTest({
     control: text({
       text: 'Hello World',
@@ -1642,7 +1642,7 @@ jb.component('uiTest.styleByControl', {
   })
 })
 
-jb.component('uiTest.picklistAsItemlist', {
+component('uiTest.picklistAsItemlist', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1658,7 +1658,7 @@ jb.component('uiTest.picklistAsItemlist', {
   })
 })
 
-jb.component('menuTest.menu1', {
+component('menuTest.menu1', {
   impl: menu.menu({
     title: 'main',
     options: [
@@ -1680,7 +1680,7 @@ jb.component('menuTest.menu1', {
   })
 })
 
-jb.component('menuTest.toolbar', {
+component('menuTest.toolbar', {
   impl: uiTest({
     control: menu.control({
       menu: menu.menu({
@@ -1694,14 +1694,14 @@ jb.component('menuTest.toolbar', {
   })
 })
 
-jb.component('menuTest.pulldown', {
+component('menuTest.pulldown', {
   impl: uiTest({
     control: menu.control({ menu: menuTest.menu1(), style: menuStyle.pulldown({}) }),
     expectedResult: contains(['File', 'Edit', 'dynamic-1', 'dynamic-3'])
   })
 })
 
-jb.component('menuTest.pulldown.inner', {
+component('menuTest.pulldown.inner', {
   impl: uiTest({
     control: menu.control({ menu: menuTest.menu1(), style: menuStyle.pulldown({}) }),
     userInput: userInput.click('[$text="File"]', 'openPopup'),
@@ -1709,21 +1709,21 @@ jb.component('menuTest.pulldown.inner', {
   })
 })
 
-jb.component('menuTest.contextMenu', {
+component('menuTest.contextMenu', {
   impl: uiTest({
     control: menu.control({ menu: menuTest.menu1() }),
     expectedResult: contains(['File', 'Edit'])
   })
 })
 
-jb.component('menuTest.openContextMenu', {
+component('menuTest.openContextMenu', {
   impl: uiTest({
     control: button({ title: 'open', action: menu.openContextMenu({ menu: menuTest.menu1() }) }),
     expectedResult: contains('open')
   })
 })
 
-jb.component('uiTest.refreshControlById.text', {
+component('uiTest.refreshControlById.text', {
   impl: uiFrontEndTest({
     vars: Var('person1', () => ({ name: 'Homer' })), // none watchable var
     control: text({ text: '%$person1/name%', features: id('t1') }),
@@ -1735,7 +1735,7 @@ jb.component('uiTest.refreshControlById.text', {
   })
 })
 
-jb.component('uiTest.refreshControlById.withButton', {
+component('uiTest.refreshControlById.withButton', {
   impl: uiFrontEndTest({
     renderDOM: true,
     vars: Var('person1', () => ({ name: 'Homer' })), // none watchable var
@@ -1753,7 +1753,7 @@ jb.component('uiTest.refreshControlById.withButton', {
   })
 })
 
-jb.component('uiTest.refreshByStateChange', {
+component('uiTest.refreshByStateChange', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1771,7 +1771,7 @@ jb.component('uiTest.refreshByStateChange', {
   })
 })
 
-jb.component('uiTest.refreshWithStyleByCtrl', {
+component('uiTest.refreshWithStyleByCtrl', {
   impl: uiTest({
     control: group({
       style: group.sections(),
@@ -1790,14 +1790,14 @@ jb.component('uiTest.refreshWithStyleByCtrl', {
   })
 })
 
-jb.component('uiTest.rawVdom', {
+component('uiTest.rawVdom', {
   impl: uiTest({
     control: ctx => jb.ui.h('div', {}, 'hello world'),
     expectedResult: contains('hello world')
   })
 })
 
-jb.component('uiTest.control.firstSucceeding', {
+component('uiTest.control.firstSucceeding', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1820,7 +1820,7 @@ jb.component('uiTest.control.firstSucceeding', {
   })
 })
 
-jb.component('uiTest.control.firstSucceedingInnerVar', {
+component('uiTest.control.firstSucceedingInnerVar', {
   impl: uiTest({
     control: group({
       controls: controlWithCondition('%$innerVar% == \"5\"', text('innerVar')),
@@ -1830,7 +1830,7 @@ jb.component('uiTest.control.firstSucceedingInnerVar', {
   })
 })
 
-jb.component('uiTest.control.firstSucceedingDefault', {
+component('uiTest.control.firstSucceedingDefault', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1843,7 +1843,7 @@ jb.component('uiTest.control.firstSucceedingDefault', {
   })
 })
 
-jb.component('uiTest.control.firstSucceedingWithoutCondition', {
+component('uiTest.control.firstSucceedingWithoutCondition', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1856,7 +1856,7 @@ jb.component('uiTest.control.firstSucceedingWithoutCondition', {
   })
 })
 
-jb.component('uiTest.firstSucceedingWatchableSample', {
+component('uiTest.firstSucceedingWatchableSample', {
   type: 'control',
   impl: group({
     controls: [
@@ -1888,7 +1888,7 @@ jb.component('uiTest.firstSucceedingWatchableSample', {
   })
 })
 
-jb.component('uiTest.firstSucceeding.watchRefreshOnCtrlChange', {
+component('uiTest.firstSucceeding.watchRefreshOnCtrlChange', {
   impl: uiTest({
     control: uiTest.firstSucceedingWatchableSample(),
     userInput: userInput.click('#female'),
@@ -1897,7 +1897,7 @@ jb.component('uiTest.firstSucceeding.watchRefreshOnCtrlChange', {
   })
 })
 
-jb.component('uiTest.firstSucceeding.sameDoesNotRecreate', {
+component('uiTest.firstSucceeding.sameDoesNotRecreate', {
   impl: uiTest({
     control: uiTest.firstSucceedingWatchableSample(),
     userInput: [userInput.click('#female'), userInput.click('#zee')],
@@ -1915,7 +1915,7 @@ jb.component('uiTest.firstSucceeding.sameDoesNotRecreate', {
 //   })
 // })
 
-jb.component('uiTest.watchRef.recalcVars', {
+component('uiTest.watchRef.recalcVars', {
   impl: uiFrontEndTest({
     control: text({
       text: '%$changed%',
@@ -1929,7 +1929,7 @@ jb.component('uiTest.watchRef.recalcVars', {
   })
 })
 
-jb.component('uiTest.checkBoxWithText', {
+component('uiTest.checkBoxWithText', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1946,7 +1946,7 @@ jb.component('uiTest.checkBoxWithText', {
   })
 })
 
-jb.component('uiTest.hiddenRefBug', {
+component('uiTest.hiddenRefBug', {
   impl: uiTest({
     control: group({
       controls: text({ text: 'hey', features: hidden('%$hidden%') }),
@@ -1978,7 +1978,7 @@ jb.component('uiTest.hiddenRefBug', {
 //   })
 // })
 
-jb.component('uiTest.validator', {
+component('uiTest.validator', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1995,7 +1995,7 @@ jb.component('uiTest.validator', {
   })
 })
 
-jb.component('uiTest.watchableVariableAsProxy', {
+component('uiTest.watchableVariableAsProxy', {
   impl: uiTest({
     control: group({ features: watchable('link', '%$person%') }),
     expectedResult: ctx => jb.db.resources[Object.keys(jb.db.resources).filter(x => x.match(/link:[0-9]*/))[0]][Symbol.for("isProxy")]
@@ -2003,7 +2003,7 @@ jb.component('uiTest.watchableVariableAsProxy', {
 })
 
 
-jb.component('uiTest.watchableLinkWriteOriginalWatchLink', {
+component('uiTest.watchableLinkWriteOriginalWatchLink', {
   impl: uiFrontEndTest({
     control: group({
       controls: [
@@ -2017,7 +2017,7 @@ jb.component('uiTest.watchableLinkWriteOriginalWatchLink', {
   })
 })
 
-jb.component('uiTest.watchableWriteViaLink', {
+component('uiTest.watchableWriteViaLink', {
   impl: uiTest({
     control: group({
       controls: [
@@ -2051,7 +2051,7 @@ jb.component('uiTest.watchableWriteViaLink', {
 //   })
 // })
 
-jb.component('uiTest.watchableParentRefreshMaskChildren', {
+component('uiTest.watchableParentRefreshMaskChildren', {
   impl: uiFrontEndTest({
     control: group({ controls: text('%$person/name%'), features: watchRef('%$person/name%') }),
     action: writeValue('%$person/name%', 'hello'),
@@ -2060,14 +2060,14 @@ jb.component('uiTest.watchableParentRefreshMaskChildren', {
   })
 })
 
-jb.component('uiTest.watchableUrl', {
+component('uiTest.watchableUrl', {
   impl: uiTest({
     control: text('%$person/name%'),
     expectedResult: contains('observe=\"resources://2~name;person~name')
   })
 })
 
-jb.component('uiTest.itemlistWithGroupWait', {
+component('uiTest.itemlistWithGroupWait', {
   impl: uiTest({
     control: itemlist({
       items: '%$items%',
@@ -2078,7 +2078,7 @@ jb.component('uiTest.itemlistWithGroupWait', {
   })
 })
 
-jb.component('uiTest.watchableRefToInnerElementsWhenValueIsEmpty', {
+component('uiTest.watchableRefToInnerElementsWhenValueIsEmpty', {
   impl: uiTest({
     control: group({
       controls: [
@@ -2096,7 +2096,7 @@ jb.component('uiTest.watchableRefToInnerElementsWhenValueIsEmpty', {
   })
 })
 
-jb.component('uiTest.infiniteScroll', {
+component('uiTest.infiniteScroll', {
   impl: uiFrontEndTest({
     timeout: 3000,
     renderDOM: true,
@@ -2115,7 +2115,7 @@ jb.component('uiTest.infiniteScroll', {
   })
 })
 
-jb.component('uiTest.infiniteScroll.twice', {
+component('uiTest.infiniteScroll.twice', {
   impl: uiFrontEndTest({
     timeout: 3000,
     renderDOM: true,
@@ -2139,7 +2139,7 @@ jb.component('uiTest.infiniteScroll.twice', {
   })
 })
 
-jb.component('uiTest.infiniteScroll.table', {
+component('uiTest.infiniteScroll.table', {
   impl: uiFrontEndTest({
     renderDOM: true,
     control: table({
@@ -2160,7 +2160,7 @@ jb.component('uiTest.infiniteScroll.table', {
   })
 })
 
-jb.component('uiTest.recursiveCtrl', {
+component('uiTest.recursiveCtrl', {
   type: 'control',
   params: [
     { id: 'data' }
@@ -2174,7 +2174,7 @@ jb.component('uiTest.recursiveCtrl', {
   })
 })
 
-jb.component('uiTest.eliminateRecursion', {
+component('uiTest.eliminateRecursion', {
   impl: uiTest({
     vars: Var('recData', () => {
       const res = { text: 'txt' }
@@ -2186,7 +2186,7 @@ jb.component('uiTest.eliminateRecursion', {
   })
 })
 
-jb.component('FETest.runFEMethod', {
+component('FETest.runFEMethod', {
   impl: uiFrontEndTest({
     renderDOM: true,
     action: uiAction.click('button'),
@@ -2205,7 +2205,7 @@ jb.component('FETest.runFEMethod', {
   })
 })
 
-jb.component('FETest.coLocation', {
+component('FETest.coLocation', {
   impl: uiFrontEndTest({
     vars: Var('toChange',obj()),
     action: uiAction.click('button'),

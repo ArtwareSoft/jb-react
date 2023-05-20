@@ -1,6 +1,4 @@
 globalThis.vscodeNS = require('vscode')
-//globalThis.vsChild = require('child_process')
-//globalThis.vsHttp = require('http')
 function findjbReact() {
     const underJbReact = (__dirname.match(/projects\/jb-react(.*)$/) || [''])[1]
     if (underJbReact)
@@ -9,14 +7,8 @@ function findjbReact() {
     if (__dirname.match(/extensions/)) 
         return workspaceDir
     return __dirname.replace(/\/hosts\/vscode\/tgp-lang$/,'')            
-    // const dir2 = [...__dirname.split('/').slice(0,__dirname.split('/').indexOf('projects')), 'jb-react'].join('/')
-    // if (fs.statSync(dir2).isDirectory())
-    //     return dir2
 }
 
-// const workspaceDir = (vscodeNS.workspace.workspaceFolders || []).map(ws=>ws.uri.path).filter(path=>path.match(/jb-react/))[0]
-// global.jbBaseUrl = __dirname.match(/extensions/) ? workspaceDir : __dirname.replace(/\/hosts\/vscode\/tgp-lang$/,'')    
-// console.log('jbBaseUrl',jbBaseUrl)
 const { jbHost } = require(findjbReact() + '/hosts/node/node-host.js')
 jbHost.WebSocket_WS = require('ws')
 const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')

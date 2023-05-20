@@ -1,5 +1,5 @@
 
-jb.component('studio.toolbar', {
+component('studio.toolbar', {
   type: 'control',
   impl: group({
     layout: layout.horizontal('5'),

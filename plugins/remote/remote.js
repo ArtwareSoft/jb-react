@@ -1,10 +1,10 @@
-jb.using('common,pretty-print,rx')
+using('common,pretty-print,rx')
 
-jb.component('source.remote', {
-    type: 'rx',
+component('source.remote', {
+    type: 'rx<>',
     macroByValue: true,
     params: [
-      {id: 'rx', type: 'rx', dynamic: true },
+      {id: 'rx', type: 'rx<>', dynamic: true },
       {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self() },
     ],
     impl: (ctx,rx,jbm) => {
@@ -17,11 +17,11 @@ jb.component('source.remote', {
     }        
 })
 
-jb.component('remote.operator', {
-    type: 'rx',
+component('remote.operator', {
+    type: 'rx<>',
     macroByValue: true,
     params: [
-      {id: 'rx', type: 'rx', dynamic: true },
+      {id: 'rx', type: 'rx<>', dynamic: true },
       {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self()},
     ],
     impl: (ctx,rx,jbm) => {
@@ -57,8 +57,8 @@ jb.component('remote.operator', {
     }
 })
 
-jb.component('remote.action', {
-    type: 'action',
+component('remote.action', {
+    type: 'action<>',
     description: 'exec a script on a remote node and returns a promise if not oneWay',
     params: [
       {id: 'action', type: 'action', dynamic: true },
@@ -76,7 +76,7 @@ jb.component('remote.action', {
     }
 })
 
-jb.component('remote.data', {
+component('remote.data', {
   description: 'calc a script on a remote node and returns a promise',
   macroByValue: true,
   params: [
@@ -97,8 +97,8 @@ jb.component('remote.data', {
     }
 })
 
-jb.component('remote.initShadowData', {
-    type: 'action',
+component('remote.initShadowData', {
+    type: 'action<>',
     description: 'shadow watchable data on remote jbm',
     params: [
       {id: 'src', as: 'ref' },
@@ -111,8 +111,8 @@ jb.component('remote.initShadowData', {
     )
 })
 
-jb.component('remote.copyPassiveData', {
-  type: 'action',
+component('remote.copyPassiveData', {
+  type: 'action<>',
   description: 'shadow watchable data on remote jbm',
   params: [
     {id: 'resourceId', as: 'string'},
@@ -131,8 +131,8 @@ jb.component('remote.copyPassiveData', {
   )
 })
 
-jb.component('remote.shadowResource', {
-    type: 'action',
+component('remote.shadowResource', {
+    type: 'action<>',
     description: 'shadow watchable data on remote jbm',
     params: [
       {id: 'resourceId', as: 'string' },
@@ -152,8 +152,8 @@ jb.component('remote.shadowResource', {
     ),
 })
 
-jb.component('remote.updateShadowData', {
-    type: 'action:0',
+component('remote.updateShadowData', {
+    type: 'action<>:0',
     description: 'internal - update shadow on remote jbm',
     params: [
         {id: 'entry' },
@@ -170,8 +170,8 @@ jb.component('remote.updateShadowData', {
 
 /*** net comps */
 
-jb.component('net.listSubJbms', {
-    type: 'rx',
+component('net.listSubJbms', {
+    type: 'rx<>',
     category: 'source',
     impl: pipe(
         () => Object.values(jb.jbm.childJbms || {}),
@@ -182,11 +182,11 @@ jb.component('net.listSubJbms', {
     )
 })
 
-jb.component('net.getRootextentionUri', {
+component('net.getRootextentionUri', {
     impl: () => jb.uri.split('•')[0]
 })
 
-jb.component('net.listAll', {
+component('net.listAll', {
     impl: remote.data(
         pipe(
             () => Object.values(jb.jbm.networkPeers || {}),
@@ -197,13 +197,13 @@ jb.component('net.listAll', {
     )
 })
 
-jb.component('dataResource.yellowPages', { watchableData: {}})
+// component('dataResource.yellowPages', { watchableData: {}})
 
-jb.component('remote.useYellowPages', {
-    type: 'action',
-    impl: runActions(
-        Var('yp','%$yellowPages%'),
-        remote.action(({},{yp}) => jb.component('dataResource.yellowPages', { watchableData: yp }), '%$jbm%'),
-        remote.initShadowData('%$yellowPages%', '%$jbm%'),
-    )
-})
+// component('remote.useYellowPages', {
+//     type: 'action<>',
+//     impl: runActions(
+//         Var('yp','%$yellowPages%'),
+//         remote.action(({},{yp}) => component('dataResource.yellowPages', { watchableData: yp }), '%$jbm%'),
+//         remote.initShadowData('%$yellowPages%', '%$jbm%'),
+//     )
+// })

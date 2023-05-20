@@ -1,5 +1,5 @@
 
-jb.component('studio.inVscode',{
+component('studio.inVscode',{
     type: 'boolean',
     impl: () => jb.frame.jbInvscode
 })
@@ -21,32 +21,32 @@ jb.component('studio.inVscode',{
 //     })
 // })
 
-jb.component('vscode.openLogsPanel', {
-  type: 'action',
-  params: [
-    {id: 'id', as: 'string'},
-    {id: 'panel'}
-  ],
-  impl: vscode.showInXWebView({
-      id: '%$id%', 
-      panel: '%$panel%', 
-      backend: cast('jbm<jbm>', pipe(
-        remote.data(jbm.start(child('logs')), preview()),
-        jbm.start(byUri('%uri%')),
-        first())
-    )})
-})
+// component('vscode.openLogsPanel', {
+//   type: 'action',
+//   params: [
+//     {id: 'id', as: 'string'},
+//     {id: 'panel'}
+//   ],
+//   impl: vscode.showInXWebView({
+//       id: '%$id%', 
+//       panel: '%$panel%', 
+//       backend: cast('jbm<jbm>', pipe(
+//         remote.data(jbm.start(child('logs')), preview()),
+//         jbm.start(byUri('%uri%')),
+//         first())
+//     )})
+// })
 
-jb.component('vscode.previewCtrl', {
-  type: 'control',
-  impl: group({
-    controls: [
-      text('circuit: %$studio/circuit%'),
-      preview.control()
-    ],
-    features: watchRef('%$studio/circuit%')
-  })
-})
+// component('vscode.previewCtrl', {
+//   type: 'control',
+//   impl: group({
+//     controls: [
+//       text('circuit: %$studio/circuit%'),
+//       preview.control()
+//     ],
+//     features: watchRef('%$studio/circuit%')
+//   })
+// })
 
     // updatePosVariables(docProps) {
     //     const { compId, path, semanticPath } = jb.tgpTextEditor.calcActiveEditorPath(docProps)

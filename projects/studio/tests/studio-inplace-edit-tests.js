@@ -1,9 +1,10 @@
-jb.component('test.helloWorldCtrl',{
+using('ui-tests')
+component('test.helloWorldCtrl',{
   type: 'control',
   impl: text('hello world')
 })
 
-jb.component('test.wixIslandGridCtrl', {
+component('test.wixIslandGridCtrl', {
   type: 'control',
   impl: group({
     layout: layout.grid({
@@ -123,7 +124,7 @@ jb.component('test.wixIslandGridCtrl', {
   })
 })
 
-jb.component('inPlaceEditTest.text', {
+component('inPlaceEditTest.text', {
   impl: uiFrontEndTest({
     control: text('hello world'),
     action: runActions(inplaceEdit.activate('inPlaceEditTest.text~impl~control'), delay(10)),
@@ -132,7 +133,7 @@ jb.component('inPlaceEditTest.text', {
   })
 })
 
-jb.component('inPlaceEditTest.grid', {
+component('inPlaceEditTest.grid', {
   impl: uiFrontEndTest({
     control: test.wixIslandGridCtrl(),
     action: runActions(inplaceEdit.activate('test.wixIslandGridCtrl~impl'), delay(10)),
@@ -142,7 +143,7 @@ jb.component('inPlaceEditTest.grid', {
   })
 })
 
-jb.component('inPlaceEditTest.grid.inStudio', {
+component('inPlaceEditTest.grid.inStudio', {
   impl: uiTest({
     control: test.wixIslandGridCtrl(),
     runInPreview: runActions(
@@ -158,11 +159,11 @@ jb.component('inPlaceEditTest.grid.inStudio', {
   })
 })
 
-jb.component('inPlaceEditTest.sizesEditor.inStudio', {
+component('inPlaceEditTest.sizesEditor.inStudio', {
   impl: uiTest({control: text({text: 'hello world', features: css('padding: 132px;margin-left: 3px')}), expectedResult: true})
 })
 
-jb.component('test.extractComponentDialog.inStudio', {
+component('test.extractComponentDialog.inStudio', {
   params: [
     {id: 'path', as: 'string', defaultValue: 'hello world'}
   ],

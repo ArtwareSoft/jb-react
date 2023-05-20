@@ -1,4 +1,4 @@
-jb.component('group.itemlistContainer', {
+component('group.itemlistContainer', {
   description: 'itemlist writable container to support addition, deletion and selection',
   type: 'feature',
   category: 'itemlist:80,group:70',
@@ -15,7 +15,7 @@ jb.component('group.itemlistContainer', {
   )
 })
 
-jb.component('itemlistContainer.filter', {
+component('itemlistContainer.filter', {
   type: 'aggregator',
   category: 'itemlist-filter:100',
   requireService: 'dataFilters',
@@ -37,7 +37,7 @@ jb.component('itemlistContainer.filter', {
 	}
 })
 
-jb.component('itemlistContainer.search', {
+component('itemlistContainer.search', {
   type: 'control',
   category: 'itemlist-filter:100',
   requires: ctx => ctx.vars.itemlistCntr,
@@ -66,7 +66,7 @@ jb.component('itemlistContainer.search', {
   	))
 })
 
-jb.component('itemlistContainer.moreItemsButton', {
+component('itemlistContainer.moreItemsButton', {
   type: 'control',
   category: 'itemlist-filter:100',
   requires: ctx => ctx.vars.itemlistCntr,
@@ -99,7 +99,7 @@ jb.component('itemlistContainer.moreItemsButton', {
   )
 })
 
-jb.extension('ui','itemlistCtr', {
+extension('ui','itemlistCtr', {
   extractPropFromExpression: exp => { // performance for simple cases such as %prop1%
     if (exp.match(/^%.*%$/) && !exp.match(/[./[]/))
       return exp.match(/^%(.*)%$/)[1]
@@ -107,7 +107,7 @@ jb.extension('ui','itemlistCtr', {
 })
 
 // match fields in pattern itemlistCntrData/FLDNAME_filter to data
-jb.component('itemlistContainer.filterField', {
+component('itemlistContainer.filterField', {
   type: 'feature',
   category: 'itemlist:80',
   requires: ctx => ctx.vars.itemlistCntr,
@@ -132,7 +132,7 @@ jb.component('itemlistContainer.filterField', {
 	})
 })
 
-jb.component('filterType.text', {
+component('filterType.text', {
   type: 'filter-type',
   params: [
     {id: 'ignoreCase', as: 'boolean', defaultValue: true, type: 'boolean'}
@@ -154,7 +154,7 @@ jb.component('filterType.text', {
 	})
 })
 
-jb.component('filterType.exactMatch', {
+component('filterType.exactMatch', {
   type: 'filter-type',
   impl: ctx => ({
 		filter: (filter,data) =>  {
@@ -164,7 +164,7 @@ jb.component('filterType.exactMatch', {
 	})
 })
 
-jb.component('filterType.numeric', {
+component('filterType.numeric', {
   type: 'filter-type',
   impl: ctx => ({
 		filter: (filter,data) => Number(data) >= Number(filter),
@@ -172,7 +172,7 @@ jb.component('filterType.numeric', {
 	})
 })
 
-jb.component('search.searchInAllProperties', {
+component('search.searchInAllProperties', {
   type: 'search-in',
   impl: ctx => {
 		if (typeof ctx.data == 'string') return ctx.data;
@@ -181,7 +181,7 @@ jb.component('search.searchInAllProperties', {
 	}
 })
 
-jb.component('search.fuse', {
+component('search.fuse', {
   type: 'search-in',
   description: 'fuse.js search https://fusejs.io/api/options.html#basic-options',
   params: [

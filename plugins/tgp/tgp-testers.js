@@ -1,4 +1,6 @@
-jb.extension('test', 'completion', {
+using('workspace')
+
+extension('test', 'completion', {
 	initExtension() {
 		return { uniqueNameCounter: 0 } 
 	},
@@ -8,7 +10,7 @@ jb.extension('test', 'completion', {
   }
 })
 
-jb.component('tgp.completionOptionsTest', {
+component('tgp.completionOptionsTest', {
   type: 'test',
   params: [
     {id: 'compText', as: 'string', description: 'use __ for completion points'},
@@ -41,7 +43,7 @@ jb.component('tgp.completionOptionsTest', {
   }
 })
   
-jb.component('tgp.completionActionTest', {
+component('tgp.completionActionTest', {
   type: 'test',
   params: [
     {id: 'compText', as: 'string', description: 'use __ for completion point'},
@@ -92,7 +94,7 @@ jb.component('tgp.completionActionTest', {
   )
 })
 
-jb.component('tgp.fixEditedCompTest', {
+component('tgp.fixEditedCompTest', {
   type: 'test',
   params: [
     {id: 'compText', as: 'string', description: 'use __ for completion point'},
@@ -118,7 +120,7 @@ jb.component('tgp.fixEditedCompTest', {
     }
 })
 
-jb.component('tgp.dummyDocProps', {
+component('tgp.dummyDocProps', {
   params: [
     {id: 'compText', as: 'string', description: 'use __ for completion point'},
     {id: 'dsl', as: 'string'}
@@ -139,7 +141,7 @@ jb.component('tgp.dummyDocProps', {
   }
 })
 
-jb.component('tgp.pathChangeTest', {
+component('tgp.pathChangeTest', {
   type: 'test',
   params: [
     {id: 'path', as: 'string'},

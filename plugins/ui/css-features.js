@@ -1,4 +1,4 @@
-jb.component('css', {
+component('css', {
   description: 'e.g. {color: red; width: 20px} or div>.myClas {color: red} ',
   type: 'feature,dialog-feature',
   params: [
@@ -7,7 +7,7 @@ jb.component('css', {
   impl: (ctx,css) => ({css: _ctx => jb.ui.fixCssLine(css(_ctx))})
 })
 
-jb.component('css.class', {
+component('css.class', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'class', mandatory: true, as: 'string'}
@@ -15,7 +15,7 @@ jb.component('css.class', {
   impl: (ctx,clz) => ({class: clz})
 })
 
-jb.component('css.width', {
+component('css.width', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'width', mandatory: true, as: 'string', description: 'e.g. 200, 100%, calc(100% - 100px)'},
@@ -27,7 +27,7 @@ jb.component('css.width', {
     ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}width: ${jb.ui.withUnits(width)} ${overflow ? '; overflow-x:' + overflow + ';' : ''} }`})
 })
 
-jb.component('css.height', {
+component('css.height', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'height', mandatory: true, as: 'string', description: 'e.g. 200, 100%, calc(100% - 100px)'},
@@ -39,7 +39,7 @@ jb.component('css.height', {
     ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}height: ${jb.ui.withUnits(height)} ${overflow ? '; overflow-y:' + overflow : ''} }`})
 })
 
-jb.component('css.opacity', {
+component('css.opacity', {
   type: 'feature',
   params: [
     {id: 'opacity', mandatory: true, as: 'string', description: '0-1'},
@@ -49,7 +49,7 @@ jb.component('css.opacity', {
     ({css: `${ctx.params.selector} { opacity: ${opacity} }`})
 })
 
-jb.component('css.padding', {
+component('css.padding', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'top', as: 'string', description: 'e.g. 20, 20%, 0.4em'},
@@ -67,7 +67,7 @@ jb.component('css.padding', {
   }
 })
 
-jb.component('css.margin', {
+component('css.margin', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'top', as: 'string', description: 'e.g. 20, 20%, 0.4em, -20'},
@@ -85,7 +85,7 @@ jb.component('css.margin', {
   }
 })
 
-jb.component('css.marginAllSides', {
+component('css.marginAllSides', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'value', as: 'string', mandatory: true, description: 'e.g. 20, 20%, 0.4em'},
@@ -94,7 +94,7 @@ jb.component('css.marginAllSides', {
   impl: (ctx,value,selector) => ({css: `${selector} margin: ${jb.ui.withUnits(value)}`})
 })
 
-jb.component('css.marginVerticalHorizontal', {
+component('css.marginVerticalHorizontal', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'vertical', as: 'string', mandatory: true},
@@ -105,7 +105,7 @@ jb.component('css.marginVerticalHorizontal', {
     ({css: `${selector} margin: ${jb.ui.withUnits(vertical)} ${jb.ui.withUnits(horizontal)}`})
 })
 
-jb.component('css.transformRotate', {
+component('css.transformRotate', {
   type: 'feature',
   params: [
     {id: 'angle', as: 'string', description: '0-360'},
@@ -114,7 +114,7 @@ jb.component('css.transformRotate', {
   impl: (ctx,angle,selector) => ({css: `${selector} {transform:rotate(${angle}deg)}`})
 })
 
-jb.component('css.color', {
+component('css.color', {
   type: 'feature',
   params: [
     {id: 'color', as: 'string', dynamic: true},
@@ -130,7 +130,7 @@ jb.component('css.color', {
   }
 })
 
-jb.component('css.transformScale', {
+component('css.transformScale', {
   type: 'feature',
   params: [
     {id: 'x', as: 'string', description: '0-1'},
@@ -140,7 +140,7 @@ jb.component('css.transformScale', {
   impl: ctx => ({css: `${ctx.params.selector} {transform:scale(${ctx.params.x},${ctx.params.y})}`})
 })
 
-jb.component('css.transformTranslate', {
+component('css.transformTranslate', {
   type: 'feature',
   description: 'margin, move, shift, offset',
   params: [
@@ -151,17 +151,17 @@ jb.component('css.transformTranslate', {
   impl: ctx => ({css: `${ctx.params.selector} {transform:translate(${jb.ui.withUnits(ctx.params.x)},${jb.ui.withUnits(ctx.params.y)})}`})
 })
 
-jb.component('css.bold', {
+component('css.bold', {
   type: 'feature',
   impl: ctx => ({css: `{font-weight: bold}`})
 })
 
-jb.component('css.underline', {
+component('css.underline', {
   type: 'feature',
   impl: ctx => ({css: `{text-decoration: underline}`})
 })
 
-jb.component('css.boxShadow', {
+component('css.boxShadow', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'inset', as: 'boolean', description: 'the box is raised or content is depressed inside the box'},
@@ -180,7 +180,7 @@ jb.component('css.boxShadow', {
   }
 })
 
-jb.component('css.border', {
+component('css.border', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'width', as: 'string', defaultValue: '1'},
@@ -193,7 +193,7 @@ jb.component('css.border', {
     ({css: `${selector} { border${side?'-'+side:''}: ${jb.ui.withUnits(width)} ${style} ${color} }`})
 })
 
-jb.component('css.borderRadius', {
+component('css.borderRadius', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'radius', as: 'string', defaultValue: '5'},
@@ -202,7 +202,7 @@ jb.component('css.borderRadius', {
   impl: (ctx,radius,selector) => ({css: `${selector} { border-radius: ${jb.ui.withUnits(radius)}}`})
 })
 
-jb.component('css.lineClamp', {
+component('css.lineClamp', {
   type: 'feature',
   description: 'ellipsis after X lines',
   params: [
@@ -214,7 +214,7 @@ jb.component('css.lineClamp', {
   )
 })
 
-jb.component('css.valueOfCssVar',{
+component('css.valueOfCssVar',{
   description: 'value of css variable --var under element',
   params: [
     {id: 'varName', description: 'without the -- prefix'},
@@ -223,7 +223,7 @@ jb.component('css.valueOfCssVar',{
   impl: (ctx,varName,parent) => jb.ui.valueOfCssVar(varName,parent)
 })
 
-jb.component('css.conditionalClass', {
+component('css.conditionalClass', {
   type: 'feature',
   description: 'toggle class by condition',
   params: [
@@ -239,8 +239,8 @@ jb.component('css.conditionalClass', {
   })
 })
 
-jb.defComponents('layout,typography,detailedBorder,detailedColor,gridArea'.split(','), 
-  id => jb.component(`css.${id}`, ({
+ jb.defComponents('layout,typography,detailedBorder,detailedColor,gridArea'.split(','), 
+  id => component(`css.${id}`, ({
     type: 'feature:0',
     params: [
       {id: 'css', mandatory: true, as: 'string'}

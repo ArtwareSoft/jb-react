@@ -1,11 +1,11 @@
-jb.component('studio.watchableOrPassive', {
+component('studio.watchableOrPassive', {
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => path.match(/~watchable/) ? 'Watchable' : 'Passive'
 })
 
-jb.component('studio.copyDataResourceToComp', {
+component('studio.copyDataResourceToComp', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -17,7 +17,7 @@ jb.component('studio.copyDataResourceToComp', {
   )
 })
 
-jb.component('studio.openResource', {
+component('studio.openResource', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -40,7 +40,7 @@ jb.component('studio.openResource', {
   )
 })
 
-jb.component('studio.newDataSource', {
+component('studio.newDataSource', {
   type: 'control',
   impl: group({
     title: '',
@@ -107,7 +107,7 @@ jb.component('studio.newDataSource', {
   })
 })
 
-jb.component('studio.openNewDataSource', {
+component('studio.openNewDataSource', {
   type: 'action',
   impl: openDialog({
     style: dialog.dialogOkCancel(),
@@ -158,7 +158,7 @@ jb.component('studio.openNewDataSource', {
   })
 })
 
-jb.component('studio.dataResourceMenu', {
+component('studio.dataResourceMenu', {
   type: 'menu.option',
   impl: menu.menu({
     title: 'Data',

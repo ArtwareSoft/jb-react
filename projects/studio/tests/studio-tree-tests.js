@@ -1,25 +1,25 @@
 // var {jbEditorChildrenTest} = jb.macro
 
-jb.component('jbEditorTest.cmp1', {
+component('jbEditorTest.cmp1', {
   impl: list(
     'a.1',
     'b.2'
   )
 })
 
-jb.component('jbEditorTest.cmp3', {
+component('jbEditorTest.cmp3', {
   impl: list(
     
   )
 })
 
-jb.component('jbEditorTest.cmp4', {
+component('jbEditorTest.cmp4', {
   impl: list(
     'hello'
   )
 })
 
-jb.component('jbEditorTest.cmp5JsonFormat', {
+component('jbEditorTest.cmp5JsonFormat', {
   impl: text({
     text: pipeline('a', 'b')
   })
@@ -36,7 +36,7 @@ jb.component('jbEditorTest.cmp5JsonFormat', {
 //   impl: button('hello', runActions(winUtils.gotoUrl('google')))
 // })
 
-jb.component('jbEditorTest.extraElemInList', {
+component('jbEditorTest.extraElemInList', {
   impl: jbEditorChildrenTest({
     path: 'jbEditorTest.cmp1~impl~items',
     childrenType: 'jb-editor',
@@ -44,7 +44,7 @@ jb.component('jbEditorTest.extraElemInList', {
   })
 })
 
-jb.component('jbEditorTest.emptyPipelineBug', {
+component('jbEditorTest.emptyPipelineBug', {
   impl: jbEditorChildrenTest({
     path: 'jbEditorTest.cmp3~impl~items~0',
     childrenType: 'jb-editor',

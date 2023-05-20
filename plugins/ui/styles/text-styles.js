@@ -1,4 +1,4 @@
-jb.component('text.htmlTag', {
+component('text.htmlTag', {
     type: 'text.style',
     params: [
       {id: 'htmlTag', as: 'string', defaultValue: 'p', options: 'span,p,h1,h2,h3,h4,h5,div,li,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label'},
@@ -10,7 +10,7 @@ jb.component('text.htmlTag', {
     })
 })
   
-jb.component('text.noWrappingTag', {
+component('text.noWrappingTag', {
     type: 'text.style',
     category: 'text:0',
     impl: customStyle({
@@ -19,7 +19,7 @@ jb.component('text.noWrappingTag', {
     })
 })
   
-jb.component('text.span', {
+component('text.span', {
     type: 'text.style',
     impl: customStyle({
       template: (cmp,{text},h) => h('span',{},text),
@@ -27,7 +27,7 @@ jb.component('text.span', {
     })
 })
 
-jb.component('text.chip', {
+component('text.chip', {
     type: 'text.style',
     impl: customStyle({
       template: (cmp,{text},h) => h('div.jb-chip',{},h('span',{},text)),
@@ -35,7 +35,7 @@ jb.component('text.chip', {
     })
 })
   
-jb.component('header.mdcHeaderWithIcon', {
+component('header.mdcHeaderWithIcon', {
   type: 'text.style',
   params: [
     {id: 'level', options: '1,2,3,4,5,6', as: 'string', defaultValue: '1'}
@@ -52,7 +52,7 @@ jb.component('header.mdcHeaderWithIcon', {
   })
 })
 
-jb.component('text.alignToBottom', {
+component('text.alignToBottom', {
   type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('div',{},h('span',{},text)),
@@ -61,8 +61,8 @@ jb.component('text.alignToBottom', {
   })
 })
 
-jb.defComponents('1,2,3,4,5,6'.split(','), 
-  level=> jb.component(`header.h${level}`, ({
+ jb.defComponents('1,2,3,4,5,6'.split(','), 
+  level=> component(`header.h${level}`, ({
     type: 'text.style',
     params: [
       { id: 'level', as: 'string', defaultValue: level }
@@ -73,7 +73,7 @@ jb.defComponents('1,2,3,4,5,6'.split(','),
     })
 })))
 
-jb.component('text.h2WithClass', {
+component('text.h2WithClass', {
   type: 'text.style:0',
   params: [
     {id: 'clz', as: 'string'}
@@ -81,22 +81,22 @@ jb.component('text.h2WithClass', {
   impl: customStyle({template: (cmp,{text,clz},h) => h('h2',{class: clz},text), features: text.bindText()})
 })
 
-jb.defComponents('1,2,3,4,5,6'.split(','), 
-  level=> jb.component(`header.mdcHeadline${level}`, 
+ jb.defComponents('1,2,3,4,5,6'.split(','), 
+  level=> component(`header.mdcHeadline${level}`, 
     ({type: 'text.style', impl: {$: 'text.h2WithClass', clz: `mdc-typography mdc-typography--headline${level}`}})
 ))
 
-jb.defComponents('1,2'.split(','), 
-  level=> jb.component(`header.mdcSubtitle${level}`, 
+ jb.defComponents('1,2'.split(','), 
+  level=> component(`header.mdcSubtitle${level}`, 
     ({type: 'text.style', impl: {$: 'text.h2WithClass', clz: `header.mdcSubtitle${level}`}})
 ))
 
-jb.defComponents('1,2'.split(','), 
-  level => jb.component(`header.mdcBody${level}`, 
+ jb.defComponents('1,2'.split(','), 
+  level => component(`header.mdcBody${level}`, 
     ({type: 'text.style', impl: {$: 'text.h2WithClass', clz: `mdc-typography mdc-typography--body${level}`}})
 ))
 
-jb.component('text.textarea', {
+component('text.textarea', {
   type: 'text.style',
   params: [
     {id: 'rows', as: 'number', defaultValue: 4},

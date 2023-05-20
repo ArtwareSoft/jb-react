@@ -1,4 +1,6 @@
-jb.extension('watchableComps', {
+using('rx')
+
+extension('watchableComps', {
   $phase: 30,
   initExtension() {
       return { source: jb.callbag.subject() }
@@ -16,7 +18,7 @@ jb.extension('watchableComps', {
   }
 })
 
-jb.component('watchableComps.scriptChange', {
+component('watchableComps.scriptChange', {
 	type: 'rx',
   category: 'source',
 	impl: source.callbag(() => jb.watchableComps.source),

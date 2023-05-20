@@ -1,4 +1,4 @@
-jb.component('studio.saveComponents', {
+component('studio.saveComponents', {
   type: 'action,has-side-effects',
   impl: rx.pipe(
     source.data(pipeline(watchableComps.changedComps(), studio.filePathOfComp('%comp%'), unique())),
@@ -10,21 +10,21 @@ jb.component('studio.saveComponents', {
   )
 })
 
-jb.component('studio.filePathOfComp', {
+component('studio.filePathOfComp', {
   params: [
     { id: 'comp' }
   ],
   impl: (ctx,comp) => jb.studio.host.locationToPath(comp[jb.core.CT].location[0])
 })
 
-jb.component('studio.getFileContent', {
+component('studio.getFileContent', {
   params: [
     { id: 'filePath', as: 'string' }
   ],
   impl: (ctx,filePath) => jb.studio.host.getFile(filePath)
 })
 
-jb.component('studio.saveFile', {
+component('studio.saveFile', {
   type: 'action,has-side-effects',
   params: [
     {id: 'filePath', as: 'string'},
@@ -41,7 +41,7 @@ jb.component('studio.saveFile', {
 })
 
 // jb.studio.host.saveFile(filePath, content)
-jb.component('studio.newFileContent', {
+component('studio.newFileContent', {
   params: [
     { id: 'fileContent', as: 'string' },
     { id: 'comps' }
@@ -70,7 +70,7 @@ jb.component('studio.newFileContent', {
   }
 })
 
-jb.component('studio.saveProjectSettings', {
+component('studio.saveProjectSettings', {
   type: 'action,has-side-effects',
   impl: ctx => {
 //    if (!ctx.exp('%$studio/projectFolder%')) return

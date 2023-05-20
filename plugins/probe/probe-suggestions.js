@@ -1,4 +1,4 @@
-jb.extension('probe', 'suggestions', {
+extension('probe', 'suggestions', {
     $requireLibs: ['/dist/fuse.js'],
     initExtension() {
       return { cache: {}, hideInSuggestions: 'cmp,widgetId,headlessWidget,headlessWidgetId,probe'.split(',')}
@@ -26,8 +26,8 @@ jb.extension('probe', 'suggestions', {
         }
       }
 
-      jbm() {
-        return (['%','%$','/','.'].indexOf(this.tailSymbol) != -1) ? jb.exec(jbm.start(probeWorker())) : jb
+      inExpression() {
+        return (['%','%$','/','.'].indexOf(this.tailSymbol) != -1)
       }
 
       suggestionsRelevant() {
@@ -141,14 +141,14 @@ jb.extension('probe', 'suggestions', {
   }
 })
 
-jb.component('suggestions.shouldShow', {
+component('suggestions.shouldShow', {
   params: [
     {id: 'expressionOnly', as: 'boolean'}
   ],
   impl: (ctx,expressionOnly) => new jb.probe.suggestions(jb.val(ctx.data), expressionOnly).suggestionsRelevant()
 })
 
-jb.component('suggestions.optionsByProbeResult', {
+component('suggestions.optionsByProbeResult', {
   params: [
     {id: 'probePath', as: 'string'},
     {id: 'expressionOnly', as: 'boolean'},
@@ -160,7 +160,7 @@ jb.component('suggestions.optionsByProbeResult', {
   macroByValue: true
 })
 
-jb.component('suggestions.lastRunCtxRef', {
+component('suggestions.lastRunCtxRef', {
   params: [
     {id: 'sessionId', as: 'string', mandatory: true}
   ],
@@ -174,7 +174,7 @@ jb.component('suggestions.lastRunCtxRef', {
   }})
 })
 
-jb.component('probe.suggestions', {
+component('probe.suggestions', {
   params: [
     {id: 'probePath', as: 'string'},
     {id: 'expressionOnly', as: 'boolean', type: 'boolean'},
@@ -191,7 +191,7 @@ jb.component('probe.suggestions', {
   macroByValue: true
 })
 
-jb.component('probe.suggestionsByCmd', {
+component('probe.suggestionsByCmd', {
   params: [
     {id: 'plugins', as: 'array'},
     {id: 'projects', as: 'array'},
@@ -227,28 +227,14 @@ jb.component('probe.suggestionsByCmd', {
   }
 })
 
-jb.component('suggestions.calcFromRemote', {
-  params: [
-    {id: 'probePath', as: 'string'},
-    {id: 'expressionOnly', as: 'boolean', type: 'boolean'},
-    {id: 'input', defaultValue: '%%'},
-    {id: 'forceLocal', as: 'boolean', description: 'do not use remote preview', type: 'boolean'},
-    {id: 'sessionId', as: 'string', defaultValue: '%$$dialog.cmpId%', description: 'run probe only once per session'}
-  ],
-  impl: remote.data(
-    probe.suggestions('%$probePath%', '%$expressionOnly%', '%$input%', '%$sessionId%'),
-    ({},{},{input,forceLocal}) => forceLocal ? jb : new jb.probe.suggestions(jb.val(input)).jbm()
-  )
-})
-
-jb.component('probe.pruneResult', {
+component('probe.pruneResult', {
   params: [
     {id: 'probeResult', defaultValue: '%%'}
   ],
   impl: (ctx,probeResult) => jb.probe.pruneResult(probeResult)
 })
 
-jb.component('suggestions.applyOption', {
+component('suggestions.applyOption', {
   type: 'action',
   params: [
     {id: 'toAdd', as: 'string', description: '% or /', defaultValue: '%'}
@@ -270,8 +256,10 @@ jb.component('suggestions.applyOption', {
           ctx.run(writeValue('%$$model/databind()%', newVal))        
       } else if (option.type == 'comp') {
         jb.tgp.setComp(option.path, option.toPaste, ctx);
-        return ctx.run(runActions(dialog.closeDialogById('studio-jb-editor-popup'),
-            studio.expandAndSelectFirstChildInJbEditor()))        
+        return jb.studio && ctx.run(runActions(
+            { $: 'dialog.closeDialogById', id: 'studio-jb-editor-popup' },
+            { $: 'studio.expandAndSelectFirstChildInJbEditor' }
+          ))
       }
   }
 })

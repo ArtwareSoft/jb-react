@@ -1,29 +1,30 @@
+using('ui-tests')
 
-jb.component('completionTest.param', {
+component('completionTest.param', {
   impl: tgp.completionOptionsTest({
-    compText:`jb.component('x', {
+    compText:`component('x', {
   impl: uiTest(__{control: text(__{__text: 'hello world',__ title: ''__}__),__ expectedResult: contains('hello world')__})
 })`,
     expectedSelections:['runBefore','style','style','style','style','style','runBefore','runBefore']
  })
 })
 
-jb.component('completionTest.pipeline', {
+component('completionTest.pipeline', {
   impl: tgp.completionOptionsTest({
-    compText: "jb.component('x', {\n  impl: uiTest(text(pipeline(__)))\n})",
+    compText: "component('x', {\n  impl: uiTest(text(pipeline(__)))\n})",
     expectedSelections:['split']
  })
 })
 
-jb.component('completionTest.pipeline2', {
-  impl: tgp.completionOptionsTest(`jb.component('x', {
+component('completionTest.pipeline2', {
+  impl: tgp.completionOptionsTest(`component('x', {
   impl: uiTest(text(pipeline(__'')))
 })`, ['split'])
 })
 
-jb.component('completionTest.pt', {
+component('completionTest.pt', {
   impl: tgp.completionOptionsTest({
-    compText:`jb.component('x', {
+    compText:`component('x', {
   impl: uiTest({
     control: group({controls: [__
 __      text('hello world in the largest'),__
@@ -36,9 +37,9 @@ __    ]}),
  })
 })
 
-jb.component('completionTest.createPipelineFromComp', {
+component('completionTest.createPipelineFromComp', {
   impl: tgp.completionActionTest({
-    compText: "jb.component('x', {\n  impl: uiTest(text(__split()))\n})",
+    compText: "component('x', {\n  impl: uiTest(text(__split()))\n})",
     completionToActivate: 'pipeline',
     expectedEdit: () => ({
         range: {start: {line: 1, col: 20}, end: {line: 1, col: 26}},
@@ -48,9 +49,9 @@ jb.component('completionTest.createPipelineFromComp', {
  })
 })
 
-jb.component('completionTest.addToArray', {
+component('completionTest.addToArray', {
   impl: tgp.completionActionTest({
-    compText: `jb.component('x', {
+    compText: `component('x', {
   impl: uiTest(group({controls: [button('')__]}))\n})`,
     completionToActivate: 'button',
     expectedEdit: () => ({
@@ -61,25 +62,23 @@ jb.component('completionTest.addToArray', {
   })
 })
 
-impl: uiTest(group({controls: [button('')]}))
-
-jb.component('completionTest.paramsAndProfiles', {
+component('completionTest.paramsAndProfiles', {
   impl: tgp.completionOptionsTest({
-    compText:"jb.component('x', {\n  impl: uiTest(text(__''))\n})",
+    compText:"component('x', {\n  impl: uiTest(text(__''))\n})",
     expectedSelections:['pipeline']
  })
 })
 
-jb.component('completionTest.paramsAndProfiles2', {
+component('completionTest.paramsAndProfiles2', {
   impl: tgp.completionOptionsTest({
-    compText:"jb.component('x', {\n  impl: uiTest(text(__''))\n})",
+    compText:"component('x', {\n  impl: uiTest(text(__''))\n})",
     expectedSelections:['style']
  })
 })
 
-jb.component('completionTest.createPipelineFromString', {
+component('completionTest.createPipelineFromString', {
   impl: tgp.completionActionTest({
-    compText: "jb.component('x', {\n  impl: uiTest(text(__'aa'))\n})",
+    compText: "component('x', {\n  impl: uiTest(text(__'aa'))\n})",
     completionToActivate: 'pipeline',
     expectedEdit: () => ({
         range: {start: {line: 1, col: 20}, end: {line: 1, col: 24}},
@@ -89,9 +88,9 @@ jb.component('completionTest.createPipelineFromString', {
  })
 })
 
-jb.component('completionTest.createPipelineFromEmptyString', {
+component('completionTest.createPipelineFromEmptyString', {
   impl: tgp.completionActionTest({
-    compText: "jb.component('x', {\n  impl: uiTest(text({text: 'hello world', title: __''}))\n})",
+    compText: "component('x', {\n  impl: uiTest(text({text: 'hello world', title: __''}))\n})",
     completionToActivate: 'pipeline',
     expectedEdit: () => ({
         range: {start: {line: 1, col: 20}, end: {line: 1, col: 52}},
@@ -101,9 +100,9 @@ jb.component('completionTest.createPipelineFromEmptyString', {
  })
 })
 
-jb.component('completionTest.insideVar', {
+component('completionTest.insideVar', {
   impl: tgp.completionActionTest({
-    compText: "jb.component('x', {\n  impl: dataTest({vars: [Var('a', __'b')]})\n})",
+    compText: "component('x', {\n  impl: dataTest({vars: [Var('a', __'b')]})\n})",
     completionToActivate: 'pipeline',
     expectedEdit: () => ({
         range: {start: {line: 1, col: 34}, end: {line: 1, col: 37}},
@@ -113,9 +112,9 @@ jb.component('completionTest.insideVar', {
  })
 })
 
-jb.component('completionTest.splitInsidePipeline', {
+component('completionTest.splitInsidePipeline', {
   impl: tgp.completionActionTest({
-    compText: `jb.component('x', {
+    compText: `component('x', {
   impl: uiTest(text(pipeline(__)))
 })`,
     completionToActivate: 'split',
@@ -127,15 +126,15 @@ jb.component('completionTest.splitInsidePipeline', {
   })
 })
 
-jb.component('completionTest.splitPart', {
-  impl: tgp.completionOptionsTest(`jb.component('x', {
+component('completionTest.splitPart', {
+  impl: tgp.completionOptionsTest(`component('x', {
   impl: uiTest(text(pipeline(split(__))))
 })`, ['part'])
 })
 
-jb.component('completionTest.dynamicFormat', {
+component('completionTest.dynamicFormat', {
   impl: tgp.completionActionTest({
-    compText: "jb.component('x', {\n  impl: uiTest(__{control: text('my text'), expectedResult: contains('hello world')})\n})",
+    compText: "component('x', {\n  impl: uiTest(__{control: text('my text'), expectedResult: contains('hello world')})\n})",
     completionToActivate: 'userInput',
     expectedEdit: () => ({
   range: {start: {line: 1, col: 16}, end: {line: 1, col: 81}},
@@ -148,9 +147,9 @@ jb.component('completionTest.dynamicFormat', {
  })
 })
 
-// jb.component('completionTest.wrapWithGroup', {
+// component('completionTest.wrapWithGroup', {
 //   impl: tgp.completionActionTest({
-//     compText: "jb.component('x', {\n  impl: uiTest(__text())\n})",
+//     compText: "component('x', {\n  impl: uiTest(__text())\n})",
 //     completionToActivate: 'group',
 //     expectedEdit: () => ({
 //         range: {start: {line: 1, col: 15}, end: {line: 1, col: 20}},
@@ -160,9 +159,9 @@ jb.component('completionTest.dynamicFormat', {
 //  })
 // })
 
-jb.component('completionTest.wrapWithGroup', {
+component('completionTest.wrapWithGroup', {
   impl: tgp.completionActionTest({
-    compText: "jb.component('x', {\n  impl: uiTest(__text())\n})",
+    compText: "component('x', {\n  impl: uiTest(__text())\n})",
     completionToActivate: 'group',
     expectedEdit: () => ({
         range: {start: {line: 1, col: 15}, end: {line: 1, col: 20}},
@@ -171,9 +170,9 @@ jb.component('completionTest.wrapWithGroup', {
  })
 })
 
-jb.component('completionTest.wrapWithArray', {
+component('completionTest.wrapWithArray', {
   impl: tgp.completionActionTest({
-    compText: "jb.component('x', {\n  impl: uiTest({expectedResult: contains(__'')})\n})",
+    compText: "component('x', {\n  impl: uiTest({expectedResult: contains(__'')})\n})",
     completionToActivate: 'wrap with array',
     expectedEdit: () => ({
         range: {start: {line: 1, col: 41}, end: {line: 1, col: 43}},
@@ -183,30 +182,30 @@ jb.component('completionTest.wrapWithArray', {
  })
 })
 
-jb.component('completionTest.buttonFeature', {
+component('completionTest.buttonFeature', {
   impl: tgp.completionOptionsTest(
-    `jb.component('x', {
+    `component('x', {
   impl: uiTest(button({title: '', features: [__]}))
 })`,
     ['method', 'button.ctrlAction']
   )
 })
 
-jb.component('completionTest.singleParamAsArray.rx', {
-  impl: tgp.completionOptionsTest(`jb.component('x', {
+component('completionTest.singleParamAsArray.rx', {
+  impl: tgp.completionOptionsTest(`component('x', {
   impl: dataTest(rx.pipe(__))
 })`, ['source.data'])
 })
 
-jb.component('completionTest.singleParamAsArray.data', {
-  impl: tgp.completionOptionsTest(`jb.component('x', {
+component('completionTest.singleParamAsArray.data', {
+  impl: tgp.completionOptionsTest(`component('x', {
   impl: dataTest(pipeline(__))
 })`, ['split'])
 })
 
-jb.component('completionTest.actionReplaceTBD', {
+component('completionTest.actionReplaceTBD', {
   impl: tgp.completionActionTest({
-    compText: `jb.component('x', {
+    compText: `component('x', {
   impl: uiTest(button('x', remote.action(__TBD())))
 })`,
     completionToActivate: 'move',
@@ -218,13 +217,13 @@ jb.component('completionTest.actionReplaceTBD', {
   })
 })
 
-jb.component('completionTest.fixEditedSample', {
+component('completionTest.fixEditedSample', {
   impl: pipeline()
 })
 
-jb.component('completionTest.fixEditedCompSpaces', {
+component('completionTest.fixEditedCompSpaces', {
   impl: tgp.fixEditedCompTest(
-    `jb.component('completionTest.fixEditedSample' ,{ impl: pipeline(__) 
+    `component('completionTest.fixEditedSample' ,{ impl: pipeline(__) 
 })`,
     `{
   impl: pipeline()
@@ -232,9 +231,9 @@ jb.component('completionTest.fixEditedCompSpaces', {
   )
 })
 
-jb.component('completionTest.fixEditedCompWrongName', {
+component('completionTest.fixEditedCompWrongName', {
   impl: tgp.fixEditedCompTest(
-    `jb.component('completionTest.fixEditedSample' ,{ impl: pipeline(__a) 
+    `component('completionTest.fixEditedSample' ,{ impl: pipeline(__a) 
 })`,
     `component('completionTest.fixEditedSample', {
   impl: pipeline(TBD())
@@ -242,21 +241,21 @@ jb.component('completionTest.fixEditedCompWrongName', {
   )
 })
 
-jb.component('completionTest.people', {
-  impl: tgp.completionOptionsTest(`jb.component('x', {
+component('completionTest.people', {
+  impl: tgp.completionOptionsTest(`component('x', {
   impl: dataTest('%$peopleArray/__')
 })`, ['people (3 items)'])
 })
 
-jb.component('completionTest.person', {
-  impl: tgp.completionOptionsTest(`jb.component('x', {
+component('completionTest.person', {
+  impl: tgp.completionOptionsTest(`component('x', {
   impl: dataTest('%$__')
 })`, ['$person (1 prop)'])
 })
 
-jb.component('completionTest.writePerson', {
+component('completionTest.writePerson', {
   impl: tgp.completionActionTest({
-    compText: `jb.component('x', {
+    compText: `component('x', {
   impl: dataTest('%$__')
 })`,
     completionToActivate: '$person (1 prop)',
@@ -268,9 +267,9 @@ jb.component('completionTest.writePerson', {
   })
 })
 
-jb.component('completionTest.writePersonInner', {
+component('completionTest.writePersonInner', {
   impl: tgp.completionActionTest({
-    compText: `jb.component('x', {
+    compText: `component('x', {
   impl: dataTest('%$p__er')
 })`,
     completionToActivate: '$person (1 prop)',
@@ -282,9 +281,9 @@ jb.component('completionTest.writePersonInner', {
   })
 })
 
-jb.component('completionTest.writePersonInner2', {
+component('completionTest.writePersonInner2', {
   impl: tgp.completionActionTest({
-    compText: `jb.component('x', {
+    compText: `component('x', {
   impl: dataTest('%$per__')
 })`,
     completionToActivate: '$person (1 prop)',
@@ -296,9 +295,9 @@ jb.component('completionTest.writePersonInner2', {
   })
 })
 
-jb.component('completionTest.writePersonName', {
+component('completionTest.writePersonName', {
   impl: tgp.completionActionTest({
-    compText: `jb.component('x', {
+    compText: `component('x', {
   impl: dataTest('%$person/__')
 })`,
     completionToActivate: 'name (Homer Simpson)',
@@ -310,9 +309,9 @@ jb.component('completionTest.writePersonName', {
   })
 })
 
-jb.component('completionTest.writePreviewValue', {
+component('completionTest.writePreviewValue', {
   impl: tgp.completionActionTest({
-    compText: `jb.component('x', {
+    compText: `component('x', {
   impl: dataTest('%$peopleArray/__')
 })`,
     completionToActivate: 'people (3 items)',
@@ -324,10 +323,10 @@ jb.component('completionTest.writePreviewValue', {
   })
 })
 
-jb.component('remoteTest.langServer.Completions', {
+component('remoteTest.langServer.Completions', {
   impl: dataTest(
     pipe(
-      Var('docProps', tgp.dummyDocProps(`jb.component('x', {
+      Var('docProps', tgp.dummyDocProps(`component('x', {
   impl: dataTest(pipeline(__))
 })`)),
       '1',
@@ -339,10 +338,10 @@ jb.component('remoteTest.langServer.Completions', {
   )
 })
 
-jb.component('remoteTest.langServer.editsAndCursorPos', {
+component('remoteTest.langServer.editsAndCursorPos', {
   impl: dataTest({
     vars: [
-      Var('docProps', tgp.dummyDocProps(`jb.component('x', {
+      Var('docProps', tgp.dummyDocProps(`component('x', {
   impl: dataTest(pipeline(__))
 })`))
     ],
@@ -357,7 +356,7 @@ jb.component('remoteTest.langServer.editsAndCursorPos', {
   })
 })
 
-// jb.component('remoteTest.langServer.restart', {
+// component('remoteTest.langServer.restart', {
 //   impl: dataTest({
 //     calculate: pipeline(
 //       () => jb.path(jb.nodeContainer.servers,'langServer.pid'),

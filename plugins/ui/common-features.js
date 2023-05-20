@@ -1,4 +1,4 @@
-jb.component('method', {
+component('method', {
   type: 'feature',
   description: 'define backend event handler',
   params: [
@@ -8,7 +8,7 @@ jb.component('method', {
   impl: (ctx,id) => ({method: {id, ctx}})
 })
 
-jb.component('feature.onEvent', {
+component('feature.onEvent', {
   type: 'feature',
   category: 'events',
   params: [
@@ -18,7 +18,7 @@ jb.component('feature.onEvent', {
   impl: (ctx,event) => ({eventHandler: {event, ctx}})
 })
 
-jb.component('watchAndCalcModelProp', {
+component('watchAndCalcModelProp', {
   type: 'feature',
   description: 'Use a model property in the rendering and watch its changes (refresh on change)',
   params: [
@@ -30,7 +30,7 @@ jb.component('watchAndCalcModelProp', {
   impl: ctx => ({watchAndCalcModelProp: ctx.params})
 })
 
-jb.component('calcProp', {
+component('calcProp', {
   type: 'feature',
   description: 'define a variable to be used in the rendering calculation process',
   params: [
@@ -43,7 +43,7 @@ jb.component('calcProp', {
   impl: ctx => ({calcProp: {... ctx.params, index: jb.ui.propCounter++}})
 })
 
-jb.component('userStateProp', {
+component('userStateProp', {
   type: 'feature',
   description: 'define a user state (e.g., selection) that is passed to the FE and back to the BE via refresh calls. The first calculation is done at the BE and then the FE can change it',
   params: [
@@ -55,7 +55,7 @@ jb.component('userStateProp', {
   impl: ctx => ({calcProp: {... ctx.params, userStateProp: true, index: jb.ui.propCounter++}})
 })
 
-jb.component('calcProps', {
+component('calcProps', {
   type: 'feature',
   description: 'define variables to be used in the rendering calculation process',
   params: [
@@ -67,7 +67,7 @@ jb.component('calcProps', {
     })
 })
 
-jb.component('feature.initValue', {
+component('feature.initValue', {
   type: 'feature',
   category: 'lifecycle',
   description: 'set value if the value is empty, activated before calc properties',
@@ -91,7 +91,7 @@ jb.component('feature.initValue', {
   }})
 })
 
-jb.component('feature.requireService', {
+component('feature.requireService', {
   params: [
     {id: 'service', type: 'service'},
     {id: 'condition', dynamic: true, defaultValue: true},
@@ -102,7 +102,7 @@ jb.component('feature.requireService', {
   }})
 })
 
-jb.component('feature.init', {
+component('feature.init', {
   type: 'feature:0',
   category: 'lifecycle',
   description: 'activated before calc properties, use initValue or require instead',
@@ -113,7 +113,7 @@ jb.component('feature.init', {
   impl: ({},action,phase) => ({ init: { action, phase }})
 })
 
-jb.component('onDestroy', {
+component('onDestroy', {
   type: 'feature',
   category: 'lifecycle',
   params: [
@@ -122,7 +122,7 @@ jb.component('onDestroy', {
   impl: method('destroy', '%$action()%')
 })
 
-jb.component('templateModifier', {
+component('templateModifier', {
   type: 'feature',
   description: 'change the html template',
   params: [
@@ -131,7 +131,7 @@ jb.component('templateModifier', {
   impl: (ctx,value) => ({ templateModifier: (vdom,cmp) => value(cmp.calcCtx.setVars({vdom, ...cmp.renderProps })) })
 })
 
-jb.component('features', {
+component('features', {
   type: 'feature',
   description: 'list of features, auto flattens',
   params: [
@@ -140,7 +140,7 @@ jb.component('features', {
   impl: (ctx,features) => features.flatMap(x=> Array.isArray(x) ? x: [x])
 })
 
-jb.component('followUp.action', {
+component('followUp.action', {
   type: 'feature',
   description: 'runs at the backend a tick after the vdom was returned. Try to avoid it, use initValue or require instead',
   category: 'lifecycle',
@@ -150,7 +150,7 @@ jb.component('followUp.action', {
   impl: ctx => ({ followUp: { action: ctx2 => ctx.params.action(ctx2), srcCtx: ctx } })
 })
 
-jb.component('followUp.flow', {
+component('followUp.flow', {
   type: 'feature',
   description: 'rx flow at the backend after the vdom was sent. Try to avoid it, use watchRef instead',
   params: [
@@ -178,7 +178,7 @@ jb.component('followUp.flow', {
 //   impl: 
 // })
 
-jb.component('watchRef', {
+component('watchRef', {
   type: 'feature',
   category: 'watch:100',
   description: 'subscribes to data changes to refresh component',
@@ -194,7 +194,7 @@ jb.component('watchRef', {
   dependencies: () => jb.ui.subscribeToRefChange()
 })
 
-jb.component('followUp.watchObservable', {
+component('followUp.watchObservable', {
   type: 'feature',
   category: 'watch',
   description: 'subscribes to a custom observable to refresh component',
@@ -211,7 +211,7 @@ jb.component('followUp.watchObservable', {
   )
 })
 
-jb.component('followUp.onDataChange', {
+component('followUp.onDataChange', {
   type: 'feature',
   category: 'watch',
   description: 'watch observable data reference, subscribe and run action',
@@ -223,7 +223,7 @@ jb.component('followUp.onDataChange', {
   impl: followUp.flow(source.watchableData('%$ref()%', '%$includeChildren%'), sink.action(call('action')))
 })
 
-jb.component('group.data', {
+component('group.data', {
   type: 'feature',
   category: 'general:100,watch:80',
   params: [
@@ -241,7 +241,7 @@ jb.component('group.data', {
   })
 })
 
-jb.component('htmlAttribute', {
+component('htmlAttribute', {
   type: 'feature',
   description: 'set attribute to html element and give it value',
   params: [
@@ -253,7 +253,7 @@ jb.component('htmlAttribute', {
   })
 })
 
-jb.component('id', {
+component('id', {
   type: 'feature',
   description: 'adds id to html element',
   params: [
@@ -262,7 +262,7 @@ jb.component('id', {
   impl: htmlAttribute('id', '%$id()%')
 })
 
-jb.component('feature.hoverTitle', {
+component('feature.hoverTitle', {
   type: 'feature',
   description: 'set element title, usually shown by browser on hover',
   params: [
@@ -271,7 +271,7 @@ jb.component('feature.hoverTitle', {
   impl: htmlAttribute('title', '%$title%')
 })
 
-jb.component('watchable', {
+component('watchable', {
   type: 'feature',
   category: 'general:90',
   description: 'define a watchable variable',
@@ -295,7 +295,7 @@ jb.component('watchable', {
   dependencies: () => jb.ui.subscribeToRefChange()
 })
 
-jb.component('variable', {
+component('variable', {
   type: 'feature',
   category: 'general:90',
   description: 'define a constant passive variable',
@@ -306,7 +306,7 @@ jb.component('variable', {
   impl: ({}, name, value) => ({ extendCtx: ctx => ctx.setVar(name,jb.val(value(ctx))) })
 })
 
-jb.component('calculatedVar', {
+component('calculatedVar', {
   type: 'feature',
   category: 'general:60',
   description: 'defines a local variable that watches other variables with auto recalc',
@@ -336,7 +336,7 @@ jb.component('calculatedVar', {
   )
 })
 
-jb.component('feature.if', {
+component('feature.if', {
   type: 'feature',
   category: 'feature:85',
   description: 'adds/remove element to dom by condition. keywords: hidden/show',
@@ -349,7 +349,7 @@ jb.component('feature.if', {
   })
 })
 
-jb.component('hidden', {
+component('hidden', {
   type: 'feature',
   category: 'feature:85',
   description: 'display:none on element. keywords: show',
@@ -364,7 +364,7 @@ jb.component('hidden', {
   })
 })
 
-jb.component('refreshControlById', {
+component('refreshControlById', {
   type: 'action',
   params: [
     {id: 'id', as: 'string', mandatory: true},
@@ -379,7 +379,7 @@ jb.component('refreshControlById', {
   }
 })
 
-jb.component('group.autoFocusOnFirstInput', {
+component('group.autoFocusOnFirstInput', {
   type: 'feature',
   impl: templateModifier(({},{vdom}) => {
     const elem = vdom.querySelectorAll('input,textarea,select').filter(e => e.getAttribute('type') != 'checkbox')[0]
@@ -389,7 +389,7 @@ jb.component('group.autoFocusOnFirstInput', {
   })
 })
 
-jb.component('refreshIfNotWatchable', {
+component('refreshIfNotWatchable', {
   type: 'action',
   params: [
     {id: 'data'}
@@ -397,7 +397,7 @@ jb.component('refreshIfNotWatchable', {
   impl: (ctx, data) => !jb.db.isWatchable(data) && ctx.vars.cmp.refresh(null,{strongRefresh: true})
 })
 
-jb.component('feature.byCondition', {
+component('feature.byCondition', {
   type: 'feature',
   description: 'conditional feature, define feature if then else condition',
   macroByValue: true,
@@ -409,7 +409,7 @@ jb.component('feature.byCondition', {
   impl: (ctx,cond,_then,_else) =>	cond ? _then() : _else()
 })
 
-jb.component('feature.userEventProps', {
+component('feature.userEventProps', {
   type: 'feature',
   description: 'add data to the event sent from the front end',
   params: [
@@ -418,7 +418,7 @@ jb.component('feature.userEventProps', {
   impl: (ctx, prop) => ({userEventProps: prop })
 })
 
-jb.component('runFEMethod', {
+component('runFEMethod', {
   type: 'action',
   description: 'invoke FE Method from the backend. used with library objects like codemirror',
   params: [

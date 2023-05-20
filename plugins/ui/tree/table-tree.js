@@ -1,4 +1,4 @@
-jb.component('tableTree', {
+component('tableTree', {
   type: 'control',
   params: [
     {id: 'title', as: 'string'},
@@ -12,7 +12,7 @@ jb.component('tableTree', {
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('tree.modelFilter', {
+component('tree.modelFilter', {
   type: 'tree.node-model',
   description: 'filters a model by path filter predicate',
   params: [
@@ -24,7 +24,7 @@ jb.component('tree.modelFilter', {
     })
 })
 
-jb.component('tableTree.init', {
+component('tableTree.init', {
   type: 'feature',
   impl: features(
 		calcProp('model','%$$model/treeModel()%'),
@@ -99,7 +99,7 @@ jb.component('tableTree.init', {
   )
 })
 
-jb.component('tableTree.expandFirstLevel', {
+component('tableTree.expandFirstLevel', {
 	type: 'feature',
 	impl: calcProp({phase: 5, id: 'before calcProps', value: ({},{$state,$props}) => {
       if ($state.refresh) return
@@ -108,7 +108,7 @@ jb.component('tableTree.expandFirstLevel', {
     }}) 
 })
 
-jb.component('tableTree.plain', {
+component('tableTree.plain', {
   type: 'table-tree.style',
   params: [
     {id: 'hideHeaders', as: 'boolean', type: 'boolean'},
@@ -151,7 +151,7 @@ jb.component('tableTree.plain', {
   })
 })
 
-jb.component('tableTree.expandPath', {
+component('tableTree.expandPath', {
   type: 'feature',
   params: [
 	  {id: 'paths', as: 'array', descrition: 'array of paths to be expanded'}
@@ -159,7 +159,7 @@ jb.component('tableTree.expandPath', {
   impl: tree.expandPath('%$paths%')
 })
 
-jb.component('tableTree.resizer', {
+component('tableTree.resizer', {
   type: 'feature',
   impl: features(
     css('>tbody>tr>td.tt-resizer { cursor: col-resize }'),
@@ -178,7 +178,7 @@ jb.component('tableTree.resizer', {
   )
 })
 
-jb.component('tableTree.dragAndDrop', {
+component('tableTree.dragAndDrop', {
   type: 'feature',
   impl: features(
     frontEnd.requireExternalLibrary(['dragula.js','css/dragula.css']),

@@ -1,75 +1,67 @@
-jb.using('remote-widget')
+using('data-browser')
 
-jb.component('probe.inOutView', {
+component('probe.inOutView', {
   type: 'control',
-  params: [
-    {id: 'remoteJbm', type: 'jbm<jbm>', defaultValue: probeWorker() }
-  ],
   impl: group({
-    controls: remote.widget(
-      group({
-        layout: layout.horizontal(),
-        controls: [
-          group({
-            controls: group({
-              controls: [
-                controlWithCondition('%$probeResult/0/callbagLog%', probe.showRxSniffer('%$probeResult/0%')),
-                table({
-                  items: '%$probeResult%',
-                  controls: [
-                    group({
-                      title: 'in (%in/length%)',
-                      controls: ui.dataBrowse('%in%'),
-                      features: [
-                        css.width({width: '300', minMax: 'max'})
-                      ]
-                    }),
-                    group({
-                      title: 'out',
-                      controls: ui.dataBrowse('%out%'),
-                      features: field.columnWidth(100)
-                    })
-                  ],
-                  style: table.mdc(),
-                  visualSizeLimit: 7,
-                  features: [
-                    itemlist.infiniteScroll(),
-                    css.height({height: '100%', minMax: 'max'}),
-                    field.columnWidth(100),
-                    css('{white-space: normal}')
-                  ]
-                })
-              ],
-              features: [
-                group.firstSucceeding(),
-                log('probe result', obj(prop('res', '%$probeResult%')))
-              ]
-            }),
-            features: [
-              feature.if('%$probe/path%'),
-              group.wait({
-                for: pipe(probe.runCircuit('%$probe/path%'), '%result%'),
-                loadingControl: text('...'),
-                varName: 'probeResult',
-                passRx: true
+      layout: layout.horizontal(),
+      controls: [
+        group({
+          controls: group({
+            controls: [
+              controlWithCondition('%$probeResult/0/callbagLog%', probe.showRxSniffer('%$probeResult/0%')),
+              table({
+                items: '%$probeResult%',
+                controls: [
+                  group({
+                    title: 'in (%in/length%)',
+                    controls: ui.dataBrowse('%in%'),
+                    features: [
+                      css.width({width: '300', minMax: 'max'})
+                    ]
+                  }),
+                  group({
+                    title: 'out',
+                    controls: ui.dataBrowse('%out%'),
+                    features: field.columnWidth(100)
+                  })
+                ],
+                style: table.mdc(),
+                visualSizeLimit: 7,
+                features: [
+                  itemlist.infiniteScroll(),
+                  css.height({height: '100%', minMax: 'max'}),
+                  field.columnWidth(100),
+                  css('{white-space: normal}')
+                ]
               })
+            ],
+            features: [
+              group.firstSucceeding(),
+              log('probe result', obj(prop('res', '%$probeResult%')))
             ]
-          })
-        ],
-        features: [
-          watchRef({
-            ref: '%$probe%',
-            includeChildren: 'yes',
-            strongRefresh: true
-          })
-        ]
-      }),
-      '%$remoteJbm%'
-    )
-  })
+          }),
+          features: [
+            feature.if('%$probe/path%'),
+            group.wait({
+              for: pipe(probe.runCircuit('%$probe/path%'), '%result%'),
+              loadingControl: text('...'),
+              varName: 'probeResult',
+              passRx: true
+            })
+          ]
+        })
+      ],
+      features: [
+        watchRef({
+          ref: '%$probe%',
+          includeChildren: 'yes',
+          strongRefresh: true
+        })
+      ]
+    })
 })
 
-jb.component('probe.probeResView', {
+component('probe.probeResView', {
   type: 'control',
   params: [
     {id: 'probeRes', defaultValue: '%%'}
@@ -110,7 +102,7 @@ jb.component('probe.probeResView', {
   })
 })
 
-jb.component('probe.browseRx', {
+component('probe.browseRx', {
   type: 'control',
   params: [
     {id: 'rx'}
@@ -126,7 +118,7 @@ jb.component('probe.browseRx', {
   })
 })
 
-jb.component('probe.showRxSniffer', {
+component('probe.showRxSniffer', {
   type: 'control',
   params: [
     {id: 'snifferLog'}
@@ -182,34 +174,3 @@ jb.component('probe.showRxSniffer', {
    })
 })
 
-jb.component('probe.mainCircuitView', {
-  type: 'control',
-  impl: group({
-    controls: ctx => { 
-            const _circuit = ctx.exp('%$probe/defaultMainCircuit%')
-            const circuit = (jb.path(jb.utils.getComp(_circuit),'impl.$') || '').match(/Test/) ? { $: 'test.showTestInStudio', testId: _circuit} : { $: _circuit }
-            jb.log('probe circuit',{circuit, ctx})
-            return circuit && circuit.$ && ctx.run(circuit)
-        },
-    features: [
-      If(
-        ctx => !jb.utils.getComp(ctx.exp('%$probe/defaultMainCircuit%')),
-        group.wait(treeShake.getCodeFromRemote('%$probe/defaultMainCircuit%'))
-      ),
-      watchRef('%$probe/scriptChangeCounter%'),
-      variable('$previewMode', true)
-    ]
-  }),
-  require: [
-    {$: 'test.showTestInStudio' },
-    { $: 'sampleProject.main' }
-  ]
-})
-
-jb.component('probe.remoteMainCircuitView', {
-  params: [
-    {id: 'jbm', type: 'jbm<jbm>', defaultValue: probeWorker()}
-  ],
-  type: 'control',
-  impl: remote.widget(probe.mainCircuitView(), '%$jbm%')
-})

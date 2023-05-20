@@ -1,4 +1,4 @@
-jb.extension('pptr', 'remote', {
+extension('pptr', 'remote', {
     initServer() { // server side
         globalThis._handlers = {}
         globalThis.addEventListener = (event,handler) => {
@@ -52,7 +52,7 @@ jb.extension('pptr', 'remote', {
     }
 })
 
-jb.component('pptr.runMethodOnPptr', {
+component('pptr.runMethodOnPptr', {
     type: 'rx,pptr',
     description: 'run method on the current object on pptr server using pptr api',
     params: [
@@ -62,7 +62,7 @@ jb.component('pptr.runMethodOnPptr', {
     impl: pptr.mapPromise((ctx,{},{method,args}) => jb.pptr.runMethod(ctx,method,args)),
 })
 
-jb.component('pptr.start', {
+component('pptr.start', {
     type: 'rx,pptr',
     description: 'run method on the current object on pptr server using pptr api',
     params: [
@@ -73,7 +73,7 @@ jb.component('pptr.start', {
         source.remote(pptr.start('%$showBrowser%'), pptr.server()))
 })
 
-jb.component('pptr.server', {
+component('pptr.server', {
   type: 'remote',
   params: [
     {id: 'libs', as: 'array', defaultValue: ['common', 'remote', 'rx', 'puppeteer']}
@@ -123,7 +123,7 @@ jb.component('pptr.server', {
     }
 })
 
-jb.component('pptr.refreshServerCode', {
+component('pptr.refreshServerCode', {
     type: 'action',
     params: [
         {id: 'remote', type: 'remote', defaultValue: pptr.server()}
@@ -131,7 +131,7 @@ jb.component('pptr.refreshServerCode', {
     impl: (ctx,remote) => Promise.resolve(remote).then(r=>r.sendCodeToServer())
 })
 
-jb.component('pptr.mapPromise', {
+component('pptr.mapPromise', {
     type: 'rx',
     params: [
       {id: 'func', dynamic: true },
@@ -139,7 +139,7 @@ jb.component('pptr.mapPromise', {
     impl: If(remote.onServer(), rx.mapPromise(ctx => ctx.cmpCtx.run('%$func%')), remote.operator(rx.mapPromise('%$func%'),pptr.server()))
 })
 
-jb.component('pptr.doPromise', {
+component('pptr.doPromise', {
     type: 'rx',
     params: [
       {id: 'func', dynamic: true },

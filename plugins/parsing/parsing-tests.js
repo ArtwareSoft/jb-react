@@ -1,5 +1,5 @@
 
-jb.component('textToParse', {
+component('textToParse', {
   passiveData:`
 before
 #start
@@ -13,17 +13,17 @@ outside2
 `
 })
 
-jb.component('textToBreak', { passiveData: 'l1-a1-b1-c1;l2-a2-b2-c2;l3-a3-b3-c3'})
-jb.component('textToBreak2', { passiveData: 'l1-a1-b1-c1;l2|a2|b2|c2;l3-a3-b3-c3'})
+component('textToBreak', { passiveData: 'l1-a1-b1-c1;l2-a2-b2-c2;l3-a3-b3-c3'})
+component('textToBreak2', { passiveData: 'l1-a1-b1-c1;l2|a2|b2|c2;l3-a3-b3-c3'})
 
-jb.component('dataTest.stringWithSourceRef', {
+component('dataTest.stringWithSourceRef', {
   impl: dataTest({
     calculate: ctx => new jb.parsing.stringWithSourceRef(ctx,'textToBreak',6,8),
     expectedResult: '%% == b1'
   })
 })
 
-jb.component('dataTest.extractTextRepeating', {
+component('dataTest.extractTextRepeating', {
   impl: dataTest({
     calculate: pipeline(
       extractText({
@@ -38,7 +38,7 @@ jb.component('dataTest.extractTextRepeating', {
   })
 })
 
-jb.component('dataTest.extractTextIncludingStartMarker', {
+component('dataTest.extractTextIncludingStartMarker', {
   impl: dataTest({
     calculate: pipeline(
       extractText({
@@ -54,7 +54,7 @@ jb.component('dataTest.extractTextIncludingStartMarker', {
   })
 })
 
-jb.component('dataTest.extractTextIncludingEndMarker', {
+component('dataTest.extractTextIncludingEndMarker', {
   impl: dataTest({
     calculate: pipeline(
       extractText({
@@ -70,7 +70,7 @@ jb.component('dataTest.extractTextIncludingEndMarker', {
   })
 })
 
-jb.component('dataTest.extractTextExclude', {
+component('dataTest.extractTextExclude', {
   impl: dataTest({
     calculate: pipeline(
       extractText({
@@ -88,7 +88,7 @@ jb.component('dataTest.extractTextExclude', {
   })
 })
 
-jb.component('dataTest.extractTextRegex', {
+component('dataTest.extractTextRegex', {
   impl: dataTest({
     calculate: extractText({
       text: '%$textToParse%',
@@ -100,14 +100,14 @@ jb.component('dataTest.extractTextRegex', {
   })
 })
 
-jb.component('dataTest.breakText', {
+component('dataTest.breakText', {
   impl: dataTest({
     calculate: json.stringify(breakText({text: '%$textToBreak%', separators: [';', '-']})),
     expectedResult: '%% == [[\"l1\",\"a1\",\"b1\",\"c1\"],[\"l2\",\"a2\",\"b2\",\"c2\"],[\"l3\",\"a3\",\"b3\",\"c3\"]]'
   })
 })
 
-jb.component('dataTest.breakTextRegex', {
+component('dataTest.breakTextRegex', {
   impl: dataTest({
     calculate: json.stringify(
       breakText({text: '%$textToBreak2%', separators: [';', '-|\\|'], useRegex: true})
@@ -116,7 +116,7 @@ jb.component('dataTest.breakTextRegex', {
   })
 })
 
-jb.component('dataTest.zipArrays', {
+component('dataTest.zipArrays', {
   impl: dataTest({
     calculate: zipArrays(ctx => [[1,2],[10,20],[100,200]]),
     expectedResult: ({data}) => JSON.stringify(data) == JSON.stringify([[1,10,100],[2,20,200]])

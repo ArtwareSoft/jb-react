@@ -1,5 +1,5 @@
 
-jb.component('itemlist', {
+component('itemlist', {
   description: 'list, dynamic group, collection, repeat',
   type: 'control',
   category: 'group:80,common:80',
@@ -16,13 +16,13 @@ jb.component('itemlist', {
   impl: ctx => jb.ui.ctrl(ctx, ctx.params.layout)
 })
 
-jb.component('itemlist.noContainer', {
+component('itemlist.noContainer', {
   type: 'feature',
   category: 'group:20',
   impl: () => ({ extendCtx: ctx => ctx.setVars({itemlistCntr: null}) })
 })
 
-jb.component('itemlist.init', {
+component('itemlist.init', {
   type: 'feature',
   impl: features(
     calcProp('allItems', '%$$model/items%'),

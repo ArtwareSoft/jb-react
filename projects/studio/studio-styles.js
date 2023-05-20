@@ -1,4 +1,4 @@
-jb.component('editableText.studioPrimitiveText', {
+component('editableText.studioPrimitiveText', {
   type: 'editable-text.style',
   impl: customStyle({
     template: (cmp,{databind},h) => h('input', {
@@ -16,13 +16,13 @@ jb.component('editableText.studioPrimitiveText', {
   })
 })
 
-jb.component('editableText.floatingInput', {
+component('editableText.floatingInput', {
   type: 'editable-text.style',
   impl: styleWithFeatures(editableText.mdcInput(),
     css(`~ .mdc-text-field { width: 100%; margin-right: 13px;}`))
 })
 
-jb.extension('studio', 'codeMirror', {
+extension('studio', 'codeMirror', {
     incNumberAtCursor(editor, {inc}) {
       const cur = editor.getCursor(), token = editor.getTokenAt(cur);
       if (!isNaN(+token.string)) {
@@ -36,7 +36,7 @@ jb.extension('studio', 'codeMirror', {
     }
 })
 
-jb.component('editableText.studioCodemirrorTgp', {
+component('editableText.studioCodemirrorTgp', {
   type: 'editable-text.style',
   impl: editableText.codemirror({
     cm_settings: {
@@ -54,7 +54,7 @@ jb.component('editableText.studioCodemirrorTgp', {
   })
 })
 
-jb.component('button.selectProfileStyle', {
+component('button.selectProfileStyle', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title},h) => h('input', { class: 'mdc-text-field__input', type: 'text', readonly: true, title,
@@ -70,7 +70,7 @@ jb.component('button.selectProfileStyle', {
   })
 })
 
-jb.component('studio.propertyToolbarStyle', {
+component('studio.propertyToolbarStyle', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,state,h) => h('i',{class: 'material-icons', onclick: true, title: 'more...' },'more_vert'),
@@ -81,7 +81,7 @@ jb.component('studio.propertyToolbarStyle', {
   })
 })
 
-jb.component('button.studioScript', {
+component('button.studioScript', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title},h) =>
@@ -96,7 +96,7 @@ jb.component('button.studioScript', {
   })
 })
 
-jb.component('picklist.studioEnum', {
+component('picklist.studioEnum', {
   type: 'picklist.style',
   impl: customStyle({
     template: (cmp,state,h) => h('select', { value: state.databind, onchange: true },
@@ -117,7 +117,7 @@ jb.component('picklist.studioEnum', {
   })
 })
 
-jb.component('text.studioMessage', {
+component('text.studioMessage', {
   type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('span.studio-message',{}, text),
@@ -132,7 +132,7 @@ jb.component('text.studioMessage', {
   })
 })
 
-jb.component('dialog.studioMultilineEdit', {
+component('dialog.studioMultilineEdit', {
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,{contentComp},h) => h('div.jb-dialog jb-popup',{}, [

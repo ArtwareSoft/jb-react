@@ -1,10 +1,10 @@
-jb.component('phones.price', { 
+component('phones.price', { 
 	$: 'cc.scale',
 	val: '%price%',
 	lowerIsBetter: true,
 })
 
-jb.component('phones.popular', {
+component('phones.popular', {
 	impl: {$: 'cc.category',
 		domain: 'phones',
 		favor: [
@@ -24,7 +24,7 @@ jb.component('phones.popular', {
 	}
 })
 	
-jb.component('phones.kids', {
+component('phones.kids', {
 	impl: {$: 'cc.category',
 		domain: 'phones',
 		favor: [

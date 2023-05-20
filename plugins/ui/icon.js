@@ -1,5 +1,5 @@
 
-jb.component('control.icon', {
+component('control.icon', {
   type: 'control',
   category: 'control:50',
   params: [
@@ -13,13 +13,13 @@ jb.component('control.icon', {
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('icon.init', {
+component('icon.init', {
   type: 'feature',
   category: 'icon:0',
   impl: features(calcProp('icon'), calcProp('type'), calcProp('title'), calcProp('size'))
 })
 
-jb.component('icon', {
+component('icon', {
   type: 'icon',
   params: [
     {id: 'icon', as: 'string', mandatory: true},
@@ -31,7 +31,7 @@ jb.component('icon', {
   impl: ctx => ctx.params
 })
 
-jb.component('icon.material', {
+component('icon.material', {
   type: 'icon.style',
   impl: customStyle({
     template: (cmp,{icon,type,title,size},h) => type == 'mdc' ? h('i',
@@ -43,7 +43,7 @@ jb.component('icon.material', {
   })
 })
 
-jb.component('feature.icon', {
+component('feature.icon', {
   type: 'feature',
   category: 'control:50',
   params: [

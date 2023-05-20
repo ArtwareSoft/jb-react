@@ -1,4 +1,4 @@
-jb.component('multiSelect', {
+component('multiSelect', {
     type: 'control',
     description: 'select list of options, check multiple',
     category: 'input:80',
@@ -13,7 +13,7 @@ jb.component('multiSelect', {
     impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('multiSelect.modelAsBooleanRef',{
+component('multiSelect.modelAsBooleanRef',{
     params: [
         {id: 'multiSelectModel'},
         {id: 'code'},
@@ -31,7 +31,7 @@ jb.component('multiSelect.modelAsBooleanRef',{
     }
 })
 
-jb.component('multiSelect.choiceList', {
+component('multiSelect.choiceList', {
     type: 'multiSelect.style',
     params: [
       {id: 'choiceStyle', type: 'editable-boolean.style', dynamic: true, defaultValue: editableBoolean.checkboxWithLabel()},
@@ -53,7 +53,7 @@ jb.component('multiSelect.choiceList', {
     )
 })
 
-jb.component('multiSelect.chips', {
+component('multiSelect.chips', {
     type: 'multiSelect.style',
     params: [
       {id: 'chipStyle', type: 'text.style', dynamic: true, defaultValue: text.chip()},

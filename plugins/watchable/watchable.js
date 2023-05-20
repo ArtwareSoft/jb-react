@@ -3,7 +3,9 @@
 //     $jb_childProp: 'title', // used for primitive props
 // }
 
-jb.extension('watchable', {
+using('rx')
+
+extension('watchable', {
   $requireFuncs: 'jb.watchable.resourcesRef,jb.db.isWatchable,jb.watchable.isWatchable',
 
   initExtension() {
@@ -415,7 +417,7 @@ jb.extension('watchable', {
   }
 })
 
-jb.extension('immutable', {
+extension('immutable', {
   initExtension() {
     jb.immutable._commands = jb.immutable.commands()
   },
@@ -466,7 +468,7 @@ jb.extension('immutable', {
   })
 })
 
-jb.component('runTransaction', {
+component('runTransaction', {
   type: 'action',
   params: [
     {id: 'actions', type: 'action[]', ignore: true, composite: true, mandatory: true},

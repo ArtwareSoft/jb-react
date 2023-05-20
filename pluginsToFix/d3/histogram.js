@@ -1,5 +1,5 @@
 
-jb.component('d3.histogram', {
+component('d3.histogram', {
   type: 'control<>',
   category: 'group:80,common:70',
   params: [
@@ -16,7 +16,7 @@ jb.component('d3.histogram', {
   impl: ctx => jb.ui.ctrl(ctx, { featuresOptions: ctx.params.axes() })
 })
 
-jb.component('d3Histogram.plain', {
+component('d3Histogram.plain', {
   type: 'd3g.histogram-style',
   impl: customStyle({
     template: (cmp,state,h) => h('svg',{width: cmp.width, height: cmp.height},
@@ -38,7 +38,7 @@ jb.component('d3Histogram.plain', {
   })
 })
 
-jb.component('d3Histogram.init', {
+component('d3Histogram.init', {
   type: 'd3-feature',
   impl: feature.init(
     (ctx,{cmp}) => {
@@ -69,7 +69,7 @@ jb.component('d3Histogram.init', {
   )
 })
 
-jb.component('d3g.buttomAndLeftAxes', {
+component('d3g.buttomAndLeftAxes', {
   type: 'd3g.axes',
   impl: ctx => ({
       afterViewInit: cmp => {
@@ -79,7 +79,7 @@ jb.component('d3g.buttomAndLeftAxes', {
   })
 })
 
-jb.component('d3g.itemIndicator', {
+component('d3g.itemIndicator', {
   type: 'd3-feature',
   params: [
     {id: 'item', as: 'single'}

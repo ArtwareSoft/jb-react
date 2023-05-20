@@ -1,5 +1,5 @@
 
-jb.extension('http', {
+extension('http', {
     endWithFailure(res,desc) {
         res.setHeader('Content-Type', 'application/json')
         res.end(JSON.stringify({type:'error', desc:desc }))
@@ -23,7 +23,7 @@ jb.extension('http', {
     }
 })
 
-jb.component('node.startRemoteHttpServer', {
+component('node.startRemoteHttpServer', {
   type: 'action',
   params: [
     {id: 'id', as: 'string', mandatory: true},
@@ -70,7 +70,7 @@ jb.component('node.startRemoteHttpServer', {
     }
 })
 
-jb.component('node.startHttpServer', {
+component('node.startHttpServer', {
   type: 'action',
   params: [
     {id: 'port', as: 'number', mandatory: true },
@@ -122,7 +122,7 @@ jb.component('node.startHttpServer', {
   }
 })
 
-jb.component('node.terminate', {
+component('node.terminate', {
   type: 'http-service',
   params: [
   ],
@@ -132,7 +132,7 @@ jb.component('node.terminate', {
   })
 })
 
-jb.component('node.details', {
+component('node.details', {
   type: 'http-service',
   params: [
   ],

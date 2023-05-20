@@ -1,4 +1,4 @@
-jb.component('htmlParsing.main', {
+component('htmlParsing.main', {
   type: 'control',
   impl: group({
     title: '',
@@ -31,7 +31,7 @@ jb.component('htmlParsing.main', {
   })
 })
 
-jb.component('htmlParsing.deviceParser', {
+component('htmlParsing.deviceParser', {
   impl: pipeline(
     Var('input', '%%'),
     dynamicObject({
@@ -74,7 +74,7 @@ jb.component('htmlParsing.deviceParser', {
 })
 
 
-jb.component('htmlParsing.makeToDevices', {
+component('htmlParsing.makeToDevices', {
   type: 'control',
   impl: group({
     controls: [
@@ -125,7 +125,7 @@ jb.component('htmlParsing.makeToDevices', {
 })
 
 
-jb.component('htmlParsing.parseDevice', {
+component('htmlParsing.parseDevice', {
   type: 'control',
   impl: group({
     controls: [
@@ -183,13 +183,13 @@ jb.component('htmlParsing.parseDevice', {
   })
 })
 
-jb.component('dataResource.progress', {
+component('dataResource.progress', {
   watchableData: {
     
   }
 })
 
-jb.component('dataResource.sel', {
+component('dataResource.sel', {
   watchableData: {
     Technology: 'GSM / HSPA / LTE',
     '2G bands': 'GSM 850 / 900 / 1800 / 1900 - SIM 1 & SIM 2 (dual-SIM model only)',
@@ -231,7 +231,7 @@ jb.component('dataResource.sel', {
   }
 })
 
-jb.component('htmlParsing.productsParser', {
+component('htmlParsing.productsParser', {
   type: 'data',
   impl: pipeline(
     extractText({startMarkers: 'class=\"makers\"', endMarker: '</ul>'}),

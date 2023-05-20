@@ -1,4 +1,4 @@
-jb.component('frontEnd.var', {
+component('frontEnd.var', {
   type: 'feature',
   description: 'calculate in the BE and pass to frontEnd',
   params: [
@@ -8,7 +8,7 @@ jb.component('frontEnd.var', {
   impl: ctx => ({ frontEndVar: ctx.params })
 })
 
-jb.component('frontEnd.varsFromBEProps', {
+component('frontEnd.varsFromBEProps', {
   type: 'feature',
   description: 'calculate in the BE and pass to frontEnd',
   params: [
@@ -17,7 +17,7 @@ jb.component('frontEnd.varsFromBEProps', {
   impl: ({},idList) => idList.map(id => ({ frontEndVar: {id, value: ctx => ctx.vars.$props[id]} }))
 })
 
-jb.component('action.runBEMethod', {
+component('action.runBEMethod', {
     type: 'action',
     description: 'can be activated on both FE & BE, assuming $cmp variable',
     macroByValue: true,
@@ -29,7 +29,7 @@ jb.component('action.runBEMethod', {
     impl: (ctx,method,data,vars) => jb.ui.runBEMethodInAnyContext(ctx,method(),data(),vars())
 })
 
-jb.component('backend.dataMethod', {
+component('backend.dataMethod', {
   type: 'data',
   description: 'activated on BE',
   params: [
@@ -48,7 +48,7 @@ jb.component('backend.dataMethod', {
   }
 })
 
-jb.component('action.runFEMethod', {
+component('action.runFEMethod', {
   type: 'action',
   description: 'cab be activated in frontEnd only with $cmp variable',
   macroByValue: true,
@@ -60,7 +60,7 @@ jb.component('action.runFEMethod', {
   impl: (ctx,method,data,vars) => ctx.vars.cmp && ctx.vars.cmp.runFEMethod(method(),data(),vars())
 })
 
-jb.component('sink.BEMethod', {
+component('sink.BEMethod', {
     type: 'rx',
     category: 'sink',
     macroByValue: true,
@@ -72,7 +72,7 @@ jb.component('sink.BEMethod', {
     impl: sink.action((ctx,{},{method,data,vars}) => jb.ui.runBEMethodInAnyContext(ctx,method(ctx),data(ctx),vars(ctx)))
 })
 
-jb.component('sink.FEMethod', {
+component('sink.FEMethod', {
   type: 'rx',
   category: 'sink',
   macroByValue: true,
@@ -84,7 +84,7 @@ jb.component('sink.FEMethod', {
   impl: sink.action((ctx,{cmp},{method,data,vars}) => cmp && cmp.runFEMethod(method(ctx),data(ctx),vars(ctx)))
 })
 
-jb.component('action.refreshCmp', {
+component('action.refreshCmp', {
   type: 'action',
   description: 'can be activated on both FE & BE, assuming $cmp variable',
   params: [
@@ -98,7 +98,7 @@ jb.component('action.refreshCmp', {
   }
 })
 
-jb.component('sink.refreshCmp', {
+component('sink.refreshCmp', {
   type: 'rx',
   description: 'can be activated on both FE & BE, assuming $cmp variable',
   params: [
@@ -108,7 +108,7 @@ jb.component('sink.refreshCmp', {
   impl: sink.action(action.refreshCmp('%$state()%','%$options()%'))
 })
 
-jb.component('frontEnd.method', {
+component('frontEnd.method', {
     type: 'feature',
     category: 'front-end',
     description: 'register as front end method, the context is limited to cmp & state. can be run with cmp.runFEMetod(id,data,vars)',
@@ -119,14 +119,14 @@ jb.component('frontEnd.method', {
     impl: (ctx,method,action) => ({ frontEndMethod: { method, path: ctx.path, action: action.profile} })
 })
 
-jb.component('frontEnd.coLocation', {
+component('frontEnd.coLocation', {
   type: 'feature',
   category: 'front-end',
   description: 'front end can use backend variables',
   impl: () => ({ coLocation: true })
 })
 
-jb.component('frontEnd.requireExternalLibrary', {
+component('frontEnd.requireExternalLibrary', {
   type: 'feature',
   category: 'front-end',
   description: 'url or name of external library in dist path, js or css',
@@ -137,7 +137,7 @@ jb.component('frontEnd.requireExternalLibrary', {
 })
 
 
-jb.component('frontEnd.enrichUserEvent', {
+component('frontEnd.enrichUserEvent', {
   type: 'feature',
   category: 'front-end',
   description: 'the result is assigned to userEvent, can use %$cmp%, %$ev%, %$userEvent%',
@@ -147,7 +147,7 @@ jb.component('frontEnd.enrichUserEvent', {
   impl: (ctx,action) => ({ frontEndMethod: { method: 'enrichUserEvent', path: ctx.path, action: action.profile} })
 })
 
-jb.component('frontEnd.onRefresh', {
+component('frontEnd.onRefresh', {
   type: 'feature',
   category: 'front-end',
   description: 'rerun on frontend when after refresh is activated',
@@ -157,7 +157,7 @@ jb.component('frontEnd.onRefresh', {
   impl: (ctx,action) => ({ frontEndMethod: { method: 'onRefresh', path: ctx.path, action: action.profile} })
 })
 
-jb.component('frontEnd.init', {
+component('frontEnd.init', {
     type: 'feature',
     category: 'front-end',
     description: 'initializes the front end, mount, component did update. runs after props',
@@ -167,7 +167,7 @@ jb.component('frontEnd.init', {
     impl: (ctx,action) => ({ frontEndMethod: { method: 'init', path: ctx.path, action: action.profile} })
 })
 
-jb.component('frontEnd.prop', {
+component('frontEnd.prop', {
     type: 'feature',
     category: 'front-end',
     description: 'assign front end property (calculated using the limited FE context). runs before init',
@@ -179,7 +179,7 @@ jb.component('frontEnd.prop', {
       action: (_ctx,{cmp}) => cmp[id] = value(_ctx) } })
 })
 
-jb.component('frontEnd.onDestroy', {
+component('frontEnd.onDestroy', {
     type: 'feature',
     description: 'destructs the front end',
     params: [
@@ -188,7 +188,7 @@ jb.component('frontEnd.onDestroy', {
     impl: (ctx,action) => ({ frontEndMethod: { method: 'destroy', path: ctx.path, action: action.profile } })
 })
 
-jb.component('source.frontEndEvent', {
+component('source.frontEndEvent', {
     type: 'rx',
     category: 'source',
     description: 'assumes cmp in context',
@@ -199,12 +199,12 @@ jb.component('source.frontEndEvent', {
     rx.pipe(source.event('%$event%','%$cmp.base%'), rx.takeUntil('%$cmp.destroyed%'))
 })
 
-jb.component('rx.userEventVar', {
+component('rx.userEventVar', {
   type: 'rx',
   impl: rx.var('ev', ({data}) => jb.ui.buildUserEvent(data, jb.ui.closestCmpElem(data.currentTarget || data.target))),
 })
 
-jb.component('frontEnd.flow', {
+component('frontEnd.flow', {
     type: 'feature',
     category: 'front-end',
     description: 'rx flow at front end',
@@ -217,7 +217,7 @@ jb.component('frontEnd.flow', {
     }})
 })
 
-jb.component('feature.onHover', {
+component('feature.onHover', {
     type: 'feature',
     description: 'on mouse enter',
     category: 'events',
@@ -233,7 +233,7 @@ jb.component('feature.onHover', {
     )
 })
   
-jb.component('feature.classOnHover', {
+component('feature.classOnHover', {
     type: 'feature',
     description: 'set css class on mouse enter',
     category: 'events',
@@ -246,7 +246,7 @@ jb.component('feature.classOnHover', {
     )
 })
 
-jb.component('key.eventMatchKey', {
+component('key.eventMatchKey', {
     type: 'boolean',
     params: [
         {id: 'event'},
@@ -272,7 +272,7 @@ jb.component('key.eventMatchKey', {
   }
 })
 
-jb.component('key.eventToMethod', {
+component('key.eventToMethod', {
   type: 'boolean',
   params: [
       {id: 'event'},
@@ -306,7 +306,7 @@ jb.component('key.eventToMethod', {
 }
 })
 
-jb.component('feature.onKey', {
+component('feature.onKey', {
     type: 'feature',
     category: 'events',
     params: [
@@ -335,7 +335,7 @@ jb.component('feature.onKey', {
     )
 })
 
-jb.component('feature.keyboardShortcut', {
+component('feature.keyboardShortcut', {
   type: 'feature',
   category: 'events',
   params: [
@@ -359,7 +359,7 @@ jb.component('feature.keyboardShortcut', {
   )
 })
 
-jb.component('feature.globalKeyboardShortcut', {
+component('feature.globalKeyboardShortcut', {
   type: 'feature',
   category: 'events',
   description: 'listen to events at the document level even when the component is not active',
@@ -385,7 +385,7 @@ jb.component('feature.globalKeyboardShortcut', {
   )
 })
 
-jb.component('feature.onEnter', {
+component('feature.onEnter', {
     type: 'feature',
     category: 'events',
     params: [
@@ -394,7 +394,7 @@ jb.component('feature.onEnter', {
     impl: feature.onKey('Enter', call('action'))
 })
   
-jb.component('feature.onEsc', {
+component('feature.onEsc', {
     type: 'feature',
     category: 'events',
     params: [
@@ -403,7 +403,7 @@ jb.component('feature.onEsc', {
     impl: feature.onKey('Esc',call('action'))
 })
 
-jb.component('frontEnd.selectionKeySourceService', {
+component('frontEnd.selectionKeySourceService', {
   type: 'feature',
   description: 'assign cmp.selectionKeySource with observable for meta-keys, also stops propagation !!!',
   params: [
@@ -436,12 +436,12 @@ jb.component('frontEnd.selectionKeySourceService', {
   )
 })
 
-jb.component('frontEnd.passSelectionKeySource', {
+component('frontEnd.passSelectionKeySource', {
   type: 'feature',
   impl: frontEnd.var('selectionKeySourceCmpId', '%$$serviceRegistry/services/selectionKeySource/cmpId%')
 })
 
-jb.component('source.findSelectionKeySource', {
+component('source.findSelectionKeySource', {
   type: 'rx',
   category: 'source',
   description: 'used in front end, works with "selectionKeySourceService" and "passSelectionKeySource"',

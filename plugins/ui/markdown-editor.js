@@ -1,4 +1,4 @@
-jb.component('editableText.markdown', {
+component('editableText.markdown', {
     type: 'editable-text.style',
     params: [
       {id: 'simplemdeSettings', as: 'single'},

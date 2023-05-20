@@ -1,4 +1,4 @@
-jb.component('picklist.native', {
+component('picklist.native', {
   type: 'picklist.style',
   impl: customStyle({
     template: ({},{databind,options},h) => h('select', { onchange: true }, 
@@ -7,7 +7,7 @@ jb.component('picklist.native', {
   })
 })
 
-jb.component('picklist.nativePlus', {
+component('picklist.nativePlus', {
   type: 'picklist.style',
   impl: customStyle({
     template: ({},{databind,options},h) => h('select', { onchange: true }, 
@@ -23,7 +23,7 @@ jb.component('picklist.nativePlus', {
   })
 })
 
-jb.component('picklist.nativeMdLookOpen', {
+component('picklist.nativeMdLookOpen', {
   type: 'picklist.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{}, [
@@ -57,7 +57,7 @@ jb.component('picklist.nativeMdLookOpen', {
   })
 })
 
-jb.component('picklist.plusIcon', {
+component('picklist.plusIcon', {
   type: 'feature',
   categories: 'feature:0,picklist:50',
   impl: features(
@@ -67,7 +67,7 @@ jb.component('picklist.plusIcon', {
   )
 })
 
-jb.component('picklist.radio', {
+component('picklist.radio', {
   type: 'picklist.style',
   params: [
     {id: 'radioCss', as: 'string', defaultValue: '', description: 'e.g. display: none'},
@@ -83,7 +83,7 @@ jb.component('picklist.radio', {
   })
 })
 
-jb.component('picklist.mdcRadio', {
+component('picklist.mdcRadio', {
   type: 'picklist.style',
   params: [
     {id: 'text', defaultValue: '%text%', dynamic: true}
@@ -107,7 +107,7 @@ jb.component('picklist.mdcRadio', {
   })
 })
 
-jb.component('picklist.radioVertical', {
+component('picklist.radioVertical', {
   type: 'picklist.style',
   impl: styleWithFeatures(
     picklist.radio(),
@@ -115,7 +115,7 @@ jb.component('picklist.radioVertical', {
   )
 })
 
-jb.component('picklist.mdcSelect', {
+component('picklist.mdcSelect', {
   type: 'picklist.style',
   params: [
     {id: 'width', as: 'number', defaultValue: 300},
@@ -156,7 +156,7 @@ jb.component('picklist.mdcSelect', {
   })
 })
 
-jb.component('picklist.labelList', {
+component('picklist.labelList', {
   type: 'picklist.style',
   params: [
     {id: 'labelStyle', type: 'text.style', dynamic: true, defaultValue: text.span()},
@@ -183,7 +183,7 @@ jb.component('picklist.labelList', {
   )
 })
 
-jb.component('picklist.buttonList', {
+component('picklist.buttonList', {
   type: 'picklist.style',
   params: [
     {id: 'buttonStyle', type: 'button.style', dynamic: true, defaultValue: button.mdc()},
@@ -209,7 +209,7 @@ jb.component('picklist.buttonList', {
   )
 })
 
-jb.component('picklist.hyperlinks', {
+component('picklist.hyperlinks', {
   type: 'picklist.style',
   impl: picklist.buttonList({
     buttonStyle: button.href(),
@@ -218,7 +218,7 @@ jb.component('picklist.hyperlinks', {
   })
 })
 
-jb.component('picklist.groups', {
+component('picklist.groups', {
   type: 'picklist.style',
   impl: customStyle({
     template: (cmp,{databind,hasEmptyOption,groups},h) => h('select', { onchange: true },

@@ -1,4 +1,4 @@
-jb.component('htmlDev', { passiveData: `<!DOCTYPE html>
+component('htmlDev', { passiveData: `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -19,7 +19,7 @@ jb.component('htmlDev', { passiveData: `<!DOCTYPE html>
 </body>
 </html>`})
 
-jb.component('htmlUser',{ passiveData: `<!DOCTYPE html>
+component('htmlUser',{ passiveData: `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -41,7 +41,7 @@ jb.component('htmlUser',{ passiveData: `<!DOCTYPE html>
 </body>
 </html>`})
 
-jb.component('htmlCloud', { passiveData: `<!DOCTYPE html>
+component('htmlCloud', { passiveData: `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -63,52 +63,52 @@ jb.component('htmlCloud', { passiveData: `<!DOCTYPE html>
 </body>
 </html>`})
 
-jb.db.resource('person', {
-  name: "Homer Simpson",
-  male: true,
-  isMale: 'yes',
-  age: 42
-})
+// jb.db.resource('person', {
+//   name: "Homer Simpson",
+//   male: true,
+//   isMale: 'yes',
+//   age: 42
+// })
 
 
-jb.db.resource('people-array', { "people": [
-  { "name": "Homer Simpson" ,"age": 42 , "male": true},
-  { "name": "Marge Simpson" ,"age": 38 , "male": false},
-  { "name": "Bart Simpson"  ,"age": 12 , "male": true}
-  ]
-})
+// jb.db.resource('people-array', { "people": [
+//   { "name": "Homer Simpson" ,"age": 42 , "male": true},
+//   { "name": "Marge Simpson" ,"age": 38 , "male": false},
+//   { "name": "Bart Simpson"  ,"age": 12 , "male": true}
+//   ]
+// })
 
-jb.db.resource('people',[
-  { "name": "Homer Simpson" ,age: 42 , male: true},
-  { "name": "Marge Simpson" ,age: 38 , male: false},
-  { "name": "Bart Simpson"  ,age: 12 , male: true}
-]);
+// jb.db.resource('people',[
+//   { "name": "Homer Simpson" ,age: 42 , male: true},
+//   { "name": "Marge Simpson" ,age: 38 , male: false},
+//   { "name": "Bart Simpson"  ,age: 12 , male: true}
+// ]);
 
-jb.component('sampleText1',{ passiveData: '#start hello world #end'});
+component('sampleText1',{ passiveData: '#start hello world #end'});
 
-jb.component('globals', {
+component('globals', {
   watchableData: {}
 })
 
 
-jb.db.resource('group-with-custom-style',
-  {$: 'group',
-    title: 'main',
-    style : {$: 'customStyle',
-    template: `<div class="jb-group">
-        <div *ngFor="let ctrl of ctrls" class="group-item"><div *jbComp="ctrl"></div></div>
-      </div>`,
-      css: `.group-item { margin-bottom: %$spacing%px; display: block }
-        .group-item:last-child { margin-bottom:0 }`,
-    features :{$: 'group.init-group'}
-  },
-    controls : [
-    {$: 'group', title: '2.0', controls :
-       [
-      { $: 'label', text: '2.1' },
-      { $: 'button', title: '2.2' },
-      ]
-    },
-    {$: 'label', text: '1.0' },
-  ]}
-)
+// jb.db.resource('group-with-custom-style',
+//   {$: 'group',
+//     title: 'main',
+//     style : {$: 'customStyle',
+//     template: `<div class="jb-group">
+//         <div *ngFor="let ctrl of ctrls" class="group-item"><div *jbComp="ctrl"></div></div>
+//       </div>`,
+//       css: `.group-item { margin-bottom: %$spacing%px; display: block }
+//         .group-item:last-child { margin-bottom:0 }`,
+//     features :{$: 'group.init-group'}
+//   },
+//     controls : [
+//     {$: 'group', title: '2.0', controls :
+//        [
+//       { $: 'label', text: '2.1' },
+//       { $: 'button', title: '2.2' },
+//       ]
+//     },
+//     {$: 'label', text: '1.0' },
+//   ]}
+// )

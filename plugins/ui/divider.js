@@ -1,4 +1,4 @@
-jb.component('divider', {
+component('divider', {
     type: 'control',
     params: [
         { id: 'style', type: 'divider.style', defaultValue: divider.br() , dynamic: true },
@@ -8,7 +8,7 @@ jb.component('divider', {
     impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('divider.br', {
+component('divider.br', {
     type: 'divider.style',
     impl: customStyle({
         template: (cmp,state,h) => h('div'),
@@ -16,7 +16,7 @@ jb.component('divider.br', {
     })
 })
 
-jb.component('divider.vertical', {
+component('divider.vertical', {
     type: 'divider.style',
     impl: customStyle({
         template: (cmp,state,h) => h('div'),
@@ -24,7 +24,7 @@ jb.component('divider.vertical', {
     })
 })
 
-jb.component('divider.flexAutoGrow', {
+component('divider.flexAutoGrow', {
     type: 'divider.style',
     impl: customStyle({
         template: (cmp,state,h) => h('div'),

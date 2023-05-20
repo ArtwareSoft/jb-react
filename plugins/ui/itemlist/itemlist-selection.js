@@ -1,5 +1,5 @@
 
-jb.component('itemlist.selection', {
+component('itemlist.selection', {
   type: 'feature',
   params: [
     {id: 'databind', as: 'ref', defaultValue: '%$itemlistCntrData/selected%', dynamic: true},
@@ -80,7 +80,7 @@ jb.component('itemlist.selection', {
   )
 })
 
-jb.component('itemlist.keyboardSelection', {
+component('itemlist.keyboardSelection', {
   type: 'feature',
   macroByValue: false,
   params: [
@@ -112,7 +112,7 @@ jb.component('itemlist.keyboardSelection', {
   )
 })
 
-jb.component('itemlist.indexOfElem', {
+component('itemlist.indexOfElem', {
   type: 'data:0',
   description: 'also supports multiple elements',
   params: [
@@ -124,7 +124,7 @@ jb.component('itemlist.indexOfElem', {
   }
 })
 
-jb.component('itemlist.indexToData', {
+component('itemlist.indexToData', {
   type: 'data:0',
   params: [
     {id: 'index', as: 'number', defaultValue: '%%'}
@@ -132,7 +132,7 @@ jb.component('itemlist.indexToData', {
   impl: (ctx,index) => jb.val(jb.path(ctx.vars.cmp,'renderProps.items') || [])[index]
 })
 
-jb.component('itemlist.findSelectionSource', {
+component('itemlist.findSelectionSource', {
   type: 'data:0',
   impl: ctx => {
     const {cmp,itemlistCntr} = ctx.vars
@@ -142,7 +142,7 @@ jb.component('itemlist.findSelectionSource', {
   }
 })
 
-jb.component('itemlist.nextSelected', {
+component('itemlist.nextSelected', {
   type: 'data:0',
   params: [
     {id: 'diff', as: 'number'},

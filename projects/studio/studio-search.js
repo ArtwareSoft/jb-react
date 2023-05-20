@@ -1,4 +1,4 @@
-jb.component('studio.searchList', {
+component('studio.searchList', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -69,7 +69,7 @@ jb.component('studio.searchList', {
   })
 })
 
-jb.component('studio.searchComponent', {
+component('studio.searchComponent', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}

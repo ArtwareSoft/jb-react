@@ -1,6 +1,6 @@
 // var {notEmpty, touch} = jb.macro
 
-jb.component('editableText.picklistHelper', {
+component('editableText.picklistHelper', {
   type: 'feature',
   params: [
     {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true},
@@ -57,7 +57,7 @@ jb.component('editableText.picklistHelper', {
   )
 })
 
-jb.component('editableText.setInputState', {
+component('editableText.setInputState', {
   type: 'action',
   params: [
     {id: 'newVal', as: 'string' },
@@ -71,12 +71,12 @@ jb.component('editableText.setInputState', {
   } ,'%$cmp/cmpId%')
 })
 
-jb.component('editableText.addUserEvent', {
+component('editableText.addUserEvent', {
   type: 'rx',
   impl: rx.innerPipe(rx.userEventVar(), rx.map('%$ev/input%'))
 })
 
-jb.component('editableText.helperPopup', {
+component('editableText.helperPopup', {
   type: 'feature',
   params: [
     {id: 'control', type: 'control', dynamic: true, mandatory: true},

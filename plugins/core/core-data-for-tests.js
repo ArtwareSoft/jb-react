@@ -1,4 +1,4 @@
-jb.dsl('location')
+dsl('location')
 
 component('city' , {
   type: 'settlement',
@@ -50,16 +50,4 @@ component('pipeline', {
   impl: village()
 })
 
-component('location.control', {
-  type: 'control<>',
-  params: [
-    {id: 'state', type: 'state<location>'}
-  ],
-  impl: group({
-    controls: [
-      text({text: '%$state/capital/name%', style: header.h2()}),
-      itemlist({items: '%$state/cities%', controls: text('%name%')})
-    ]
-  })
-})
 

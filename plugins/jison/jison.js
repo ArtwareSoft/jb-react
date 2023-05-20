@@ -1,4 +1,4 @@
-jb.extension('jison', {
+extension('jison', {
     $requireLibs: ['/dist/jb-jison.js'],
     initExtension() {
         return { cache: {} }
@@ -6,7 +6,7 @@ jb.extension('jison', {
     forLoader() {}
 })
 
-jb.component('jison.parse', {
+component('jison.parse', {
   type: 'data',
   params: [
     {id: 'parser', type: 'jison.parser', mandatory: true, defaultValue: jison.parser([], [])},
@@ -37,7 +37,7 @@ jb.component('jison.parse', {
   }
 })
 
-jb.component('jison.parser', {
+component('jison.parser', {
   type: 'jison.parser', // singleInType: true,
   params: [
     { id: 'lex', type : 'lexer-rule[]', as : 'array', defaultValue: [] },
@@ -55,7 +55,7 @@ jb.component('jison.parser', {
   }
 })
 
-jb.component('lexer.tokens', {
+component('lexer.tokens', {
   type: 'lexer-rule',
   params: [
     {id: 'tokens', as: 'string', mandatory: true, description: 'e.g. -,+,*,%,for,=='}
@@ -65,17 +65,17 @@ jb.component('lexer.tokens', {
       [ ('|()[]{}+-*/%'.indexOf(x) == -1 ? x : `\\${x}`) ,`return '${x}'`])
 })
 
-jb.component('lexer.ignoreWhiteSpace', {
+component('lexer.ignoreWhiteSpace', {
   type: 'lexer-rule',
   impl: ctx => ['\\s+','']
 })
 
-jb.component('lexer.number', {
+component('lexer.number', {
   type: 'lexer-rule',
   impl: ctx => [`[0-9]+(?:\\.[0-9]+)?\\b`, `return 'NUMBER'`]
 })
 
-jb.component('lexer.identifier', {
+component('lexer.identifier', {
   type: 'lexer-rule',
   params: [
     { id: 'regex', as: 'string', defaultValue: '[a-zA-Z_][a-zA-Z_0-9]*'},
@@ -83,12 +83,12 @@ jb.component('lexer.identifier', {
   impl: (ctx,regex) => [regex, `return 'IDEN'`]
 })
 
-jb.component('lexer.EOF', {
+component('lexer.EOF', {
   type: 'lexer-rule',
   impl: ctx => [`$`,`return 'EOF'`]
 })
 
-jb.component('lexerRule', {
+component('lexerRule', {
   type: 'lexer-rule',
   params: [
     {id: 'regex', as: 'string', mandatory: true, description: '[a-f0-9]+'},
@@ -97,7 +97,7 @@ jb.component('lexerRule', {
   impl: (ctx,regex,result) => [regex, /^return/.test(result) ? result : `return '${result}'`]
 })
 
-jb.component('bnfExpression', {
+component('bnfExpression', {
   type: 'bnf-expression', //singleInType: true,
   params: [
     { id: 'id', as: 'string', mandatory: true},
@@ -106,7 +106,7 @@ jb.component('bnfExpression', {
   impl: ctx => ({ id: ctx.params.id, options: ctx.params.options.filter(x=>x) })
 })
 
-jb.component('expressionOption', {
+component('expressionOption', {
   type: 'expression-option', //singleInType: true,
   params: [
     { id: 'syntax', as: 'string', mandatory: true, description: 'e + e'},

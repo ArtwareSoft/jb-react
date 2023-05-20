@@ -1,5 +1,5 @@
 
-jb.component('studio.formatCss', {
+component('studio.formatCss', {
   params: [
     {id: 'css', as: 'string'}
   ],
@@ -12,7 +12,7 @@ jb.component('studio.formatCss', {
   }
 })
 
-jb.component('studio.openStyleMenu', {
+component('studio.openStyleMenu', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -47,7 +47,7 @@ jb.component('studio.openStyleMenu', {
   })
 })
 
-jb.component('studio.styleEditor', {
+component('studio.styleEditor', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -130,7 +130,7 @@ jb.component('studio.styleEditor', {
   })
 })
 
-jb.component('studio.styleSource', {
+component('studio.styleSource', {
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -146,7 +146,7 @@ jb.component('studio.styleSource', {
   }
 })
 
-jb.component('studio.openStyleEditor', {
+component('studio.openStyleEditor', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -166,7 +166,7 @@ jb.component('studio.openStyleEditor', {
   })
 })
 
-jb.component('studio.styleEditorOptions', {
+component('studio.styleEditorOptions', {
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}

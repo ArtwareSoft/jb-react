@@ -1,5 +1,5 @@
 
-jb.extension('studio','watchableComps', {
+extension('studio','watchableComps', {
 	$phase: 50,
 	initExtension() {
 		  jb.utils.subscribe(jb.watchableComps.source, e => jb.studio.scriptChangeHnadler(e))      
@@ -24,7 +24,7 @@ jb.extension('studio','watchableComps', {
 	},  
 })
 
-jb.component('studio.scriptHistory', {
+component('studio.scriptHistory', {
   type: 'control',
   impl: group({
     controls: [
@@ -54,7 +54,7 @@ jb.component('studio.scriptHistory', {
   })
 })
 
-jb.component('studio.openScriptHistory', {
+component('studio.openScriptHistory', {
   type: 'action',
   impl: openDialog({
     style: dialog.studioFloating({id: 'script-history', width: '700', height: '400'}),

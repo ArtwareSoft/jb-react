@@ -1,4 +1,4 @@
-jb.dsl('zui')
+dsl('zui')
 
 component('zui.itemlist', {
   type: 'control<>',
@@ -160,7 +160,7 @@ component('itemlistStyle', {
   })
 })
 
-jb.extension('zui','itemlist-BE', {
+extension('zui','itemlist-BE', {
   prepareItemView(itemView) {
     const shortPaths = calcShortPaths(itemView, '')
     const axes = [0,1]
@@ -193,7 +193,7 @@ jb.extension('zui','itemlist-BE', {
   }
 })
 
-jb.extension('zui','itemlist-FE', {
+extension('zui','itemlist-FE', {
   viewOfId(view, id) {
     if (view.id == id) return view
     return (view.children||[]).find(ch=>jb.zui.viewOfId(ch,id))

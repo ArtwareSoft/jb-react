@@ -1,4 +1,4 @@
-jb.component('openDialog', {
+component('openDialog', {
   type: 'action,has-side-effects',
   params: [
     {id: 'title', as: 'renderable', dynamic: true},
@@ -25,14 +25,14 @@ jb.component('openDialog', {
   }
 })
 
-jb.component('openDialog.probe', {
+component('openDialog.probe', {
 	type: 'control:0',
 	params: jb.utils.getUnresolvedProfile('openDialog').params,
 	impl: ctx => jb.ui.ctrl(ctx.setVar('$dialog',{}), dialog.init()).renderVdom(),
 	require: {$: 'dialog.init'}
 })
 
-jb.component('dialog.init', {
+component('dialog.init', {
 	type: 'feature',
 	impl: features(
 		calcProp('dummy',ctx => jb.log('dialog init uiComp', {dialog: ctx.vars.$dialog, cmp: ctx.vars.cmp,ctx})),
@@ -49,7 +49,7 @@ jb.component('dialog.init', {
 	)
 })
 
-jb.component('dialog.buildComp', {
+component('dialog.buildComp', {
 	type: 'control:0',
 	params: [
 		{id: 'dialog', defaultValue: '%$$dialog%' },
@@ -58,7 +58,7 @@ jb.component('dialog.buildComp', {
 	require: {$: 'dialog.init'}
 })
 
-jb.component('dialog.createDialogTopIfNeeded', {
+component('dialog.createDialogTopIfNeeded', {
   type: 'action',
   impl: (ctx) => {
 		const widgetBody = jb.ui.widgetBody(ctx)
@@ -78,7 +78,7 @@ jb.component('dialog.createDialogTopIfNeeded', {
   require: dialog.dialogTop()
 })
 
-jb.component('dialog.closeDialog', {
+component('dialog.closeDialog', {
 	type: 'action',
 	description: 'close parent dialog',
 	params: [
@@ -96,7 +96,7 @@ jb.component('dialog.closeDialog', {
 	))
 })
 
-jb.component('dialog.closeDialogById', {
+component('dialog.closeDialogById', {
 	type: 'action',
 	description: 'close dialog fast without checking validations and running onOK',
 	params: [
@@ -105,39 +105,39 @@ jb.component('dialog.closeDialogById', {
 	impl: action.subjectNext(dialogs.changeEmitter(), obj(prop('close',true), prop('dialogId','%$id%')))
 })
   
-jb.component('dialog.closeAll', {
+component('dialog.closeAll', {
 	type: 'action',
 	impl: runActionOnItems(dialog.shownDialogs(), dialog.closeDialogById('%%'))
 })
 
-jb.component('dialog.closeAllPopups', {
+component('dialog.closeAllPopups', {
 	type: 'action',
 	impl: runActionOnItems(dialogs.shownPopups(), dialog.closeDialogById('%%'))
 })
 
-jb.component('dialog.shownDialogs', {
+component('dialog.shownDialogs', {
 	impl: ctx => jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog').map(el=> el.getAttribute('id'))
 })
 
-jb.component('dialog.isOpen', {
+component('dialog.isOpen', {
 	params: [
 		{id: 'id', as: 'string'},
   	],
 	impl: dialogs.cmpIdOfDialog('%$id%')
 })
 
-jb.component('dialogs.cmpIdOfDialog', {
+component('dialogs.cmpIdOfDialog', {
 	params: [
 		{id: 'id', as: 'string'},
   	],
 	impl: (ctx,id) => jb.ui.find(jb.ui.widgetBody(ctx),`[id="${id}"]`).map(el=> el.getAttribute('cmp-id'))[0]
 })
 
-jb.component('dialogs.shownPopups', {
+component('dialogs.shownPopups', {
 	impl: ctx => jb.ui.find(jb.ui.widgetBody(ctx),'.jb-popup').map(el=>el.getAttribute('id'))
 })
 
-jb.component('dialogFeature.modal', {
+component('dialogFeature.modal', {
 	description: 'blocks all other screen elements',
 	type: 'dialog-feature',
 	impl: features(
@@ -147,7 +147,7 @@ jb.component('dialogFeature.modal', {
 	)
 })
 
-jb.component('dialogFeature.uniqueDialog', {
+component('dialogFeature.uniqueDialog', {
 	type: 'dialog-feature',
 	params: [
 	  {id: 'id', as: 'string'},
@@ -165,7 +165,7 @@ jb.component('dialogFeature.uniqueDialog', {
 	))
 })
 
-jb.component('source.eventIncludingPreview', {
+component('source.eventIncludingPreview', {
 	type: 'rx',
 	params: [
 		{ id: 'event', as: 'string'}],
@@ -175,7 +175,7 @@ jb.component('source.eventIncludingPreview', {
 	)
 })
 
-jb.component('dialogFeature.dragTitle', {
+component('dialogFeature.dragTitle', {
 	type: 'dialog-feature',
 	params: [
 	  {id: 'id', as: 'string'},
@@ -225,7 +225,7 @@ jb.component('dialogFeature.dragTitle', {
 	)
 })
 
-jb.component('dialog.default', {
+component('dialog.default', {
 	type: 'dialog.style',
 	impl: customStyle({
 	  template: ({},{title,contentComp},h) => h('div.jb-dialog jb-default-dialog',{},[
@@ -237,7 +237,7 @@ jb.component('dialog.default', {
 	})
 })
 
-jb.component('dialogFeature.nearLauncherPosition', {
+component('dialogFeature.nearLauncherPosition', {
   type: 'dialog-feature',
   params: [
     {id: 'offsetLeft', as: 'number', dynamic: true, defaultValue: 0},
@@ -293,7 +293,7 @@ jb.component('dialogFeature.nearLauncherPosition', {
   )
 })
 
-jb.component('dialogFeature.onClose', {
+component('dialogFeature.onClose', {
   type: 'dialog-feature',
   params: [
     {id: 'action', type: 'action', dynamic: true}
@@ -301,7 +301,7 @@ jb.component('dialogFeature.onClose', {
   impl: onDestroy(call('action'))
 })
 
-jb.component('dialogFeature.closeWhenClickingOutside', {
+component('dialogFeature.closeWhenClickingOutside', {
   type: 'dialog-feature',
   impl: features(
 	  feature.initValue('%$$dialog.isPopup%',true),
@@ -319,7 +319,7 @@ jb.component('dialogFeature.closeWhenClickingOutside', {
 	))
 })
 
-jb.component('dialogFeature.autoFocusOnFirstInput', {
+component('dialogFeature.autoFocusOnFirstInput', {
   type: 'dialog-feature',
   params: [
     {id: 'selectText', as: 'boolean', type: 'boolean'}
@@ -336,12 +336,12 @@ jb.component('dialogFeature.autoFocusOnFirstInput', {
   )
 })
 
-jb.component('popup.regainCanvasFocus', {
+component('popup.regainCanvasFocus', {
 	type: 'action',
 	impl: action.focusOnCmp('regain focus','%$popupLauncherCanvas/cmpId%')
 })
 
-jb.component('dialogFeature.cssClassOnLaunchingElement', {
+component('dialogFeature.cssClassOnLaunchingElement', {
   type: 'dialog-feature',
   description: 'launching element toggles class "dialog-open" if the dialog is open',
   impl: features(
@@ -351,7 +351,7 @@ jb.component('dialogFeature.cssClassOnLaunchingElement', {
   )
 })
 
-jb.component('dialogFeature.maxZIndexOnClick', {
+component('dialogFeature.maxZIndexOnClick', {
   type: 'dialog-feature',
   params: [
     {id: 'minZIndex', as: 'number', defaultValue: 100}
@@ -369,7 +369,7 @@ jb.component('dialogFeature.maxZIndexOnClick', {
   )
 })
 
-jb.component('dialog.dialogOkCancel', {
+component('dialog.dialogOkCancel', {
   type: 'dialog.style',
   params: [
     {id: 'okLabel', as: 'string', defaultValue: 'OK'},
@@ -390,7 +390,7 @@ jb.component('dialog.dialogOkCancel', {
   })
 })
 
-jb.component('dialogFeature.resizer', {
+component('dialogFeature.resizer', {
   type: 'dialog-feature',
   params: [
     {id: 'autoResizeInnerElement', as: 'boolean', description: 'effective element with "autoResizeInDialog" class', type: 'boolean'}
@@ -428,7 +428,7 @@ jb.component('dialogFeature.resizer', {
 	))
 })
 
-jb.component('dialog.popup', {
+component('dialog.popup', {
   type: 'dialog.style',
   impl: customStyle({
 	template: ({},{contentComp},h) => h('div.jb-dialog jb-popup',{},h(contentComp)),
@@ -442,7 +442,7 @@ jb.component('dialog.popup', {
   })
 })
 
-jb.component('dialog.transparentPopup', {
+component('dialog.transparentPopup', {
 	type: 'dialog.style',
 	impl: customStyle({
 	  template: ({},{contentComp},h) => h('div.jb-dialog jb-popup',{},h(contentComp)),
@@ -456,7 +456,7 @@ jb.component('dialog.transparentPopup', {
 	})
 })
   
-jb.component('dialog.div', {
+component('dialog.div', {
   type: 'dialog.style',
   impl: customStyle({
     template: ({},{contentComp},h) => h('div.jb-dialog jb-popup',{},h(contentComp)),
@@ -464,7 +464,7 @@ jb.component('dialog.div', {
   })
 })
 
-jb.component('dialogs.changeEmitter', {
+component('dialogs.changeEmitter', {
 	type: 'rx',
 	params: [
 		{id: 'widgetId', defaultValue: '%$headlessWidgetId%'},
@@ -479,7 +479,7 @@ jb.component('dialogs.changeEmitter', {
 	require: {$: 'rx.subject'}
 })
 
-jb.component('dialogs.destroyAllEmitters', {
+component('dialogs.destroyAllEmitters', {
 	type: 'action',
 	impl: () => Object.keys(jb.ui.dlgEmitters||{}).forEach(k=>{
 		jb.ui.dlgEmitters[k].trigger.complete()
@@ -487,7 +487,7 @@ jb.component('dialogs.destroyAllEmitters', {
 	})
 })
 
-jb.component('dialog.dialogTop', {
+component('dialog.dialogTop', {
 	type: 'control',
 	params: [
 		{id: 'style', type: 'dialogs.style', defaultValue: dialogs.defaultStyle(), dynamic: true},
@@ -495,7 +495,7 @@ jb.component('dialog.dialogTop', {
 	impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('dialogs.defaultStyle', {
+component('dialogs.defaultStyle', {
 	type: 'dialogs.style',
 	impl: customStyle({
 		template: ({},{},h) => h('div.jb-dialogs'),

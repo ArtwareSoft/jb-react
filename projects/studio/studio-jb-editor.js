@@ -1,5 +1,5 @@
 
-jb.extension('studio', 'jbEditor', {
+extension('studio', 'jbEditor', {
 	jbEditorTree: class jbEditorTree {
 		constructor(rootPath,includeCompHeader) {
 			this.rootPath = rootPath;
@@ -91,7 +91,7 @@ jb.extension('studio', 'jbEditor', {
 	},
 })
 
-jb.component('studio.jbEditor', {
+component('studio.jbEditor', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -103,7 +103,7 @@ jb.component('studio.jbEditor', {
       studio.jbEditorInteliTree('%$path%'),
       group({
         title: '',
-        controls: probe.inOutView(),
+        controls: remote.widget(probe.inOutView(),probePreviewWorker()),
         features: [feature.if(not('%$studio/hideProbe%')), watchRef('%$studio/hideProbe%')]
       })
     ],
@@ -111,7 +111,7 @@ jb.component('studio.jbEditor', {
   })
 })
 
-jb.component('studio.openJbEditProperty', {
+component('studio.openJbEditProperty', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -176,7 +176,7 @@ jb.component('studio.openJbEditProperty', {
   )
 })
 
-jb.component('studio.jbEditorInteliTree', {
+component('studio.jbEditorInteliTree', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -211,7 +211,7 @@ jb.component('studio.jbEditorInteliTree', {
   })
 })
 
-jb.component('studio.openComponentInJbEditor', {
+component('studio.openComponentInJbEditor', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -233,7 +233,7 @@ jb.component('studio.openComponentInJbEditor', {
   )
 })
 
-jb.component('studio.expandAndSelectFirstChildInJbEditor', {
+component('studio.expandAndSelectFirstChildInJbEditor', {
   type: 'action',
   impl: ctx => {
     const jbEditorElem = document.querySelector('.jb-editor')
@@ -252,7 +252,7 @@ jb.component('studio.expandAndSelectFirstChildInJbEditor', {
   }
 })
 
-jb.component('menu.studioWrapWith', {
+component('menu.studioWrapWith', {
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'},
@@ -272,7 +272,7 @@ jb.component('menu.studioWrapWith', {
   )
 })
 
-jb.component('menu.studioWrapWithArray', {
+component('menu.studioWrapWithArray', {
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}
@@ -288,7 +288,7 @@ jb.component('menu.studioWrapWithArray', {
     }),[])
 })
 
-jb.component('studio.addVariable', {
+component('studio.addVariable', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -326,7 +326,7 @@ jb.component('studio.addVariable', {
 //  )
 })
 
-jb.component('studio.openJbEditor', {
+component('studio.openJbEditor', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -349,7 +349,7 @@ jb.component('studio.openJbEditor', {
   })
 })
 
-jb.component('studio.jbEditorPathForEdit', {
+component('studio.jbEditorPathForEdit', {
   type: 'data',
   description: 'in case of array, use extra element path',
   params: [
@@ -361,7 +361,7 @@ jb.component('studio.jbEditorPathForEdit', {
   }
 })
 
-jb.component('studio.openJbEditorMenu', {
+component('studio.openJbEditorMenu', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -373,7 +373,7 @@ jb.component('studio.openJbEditorMenu', {
   })
 })
 
-jb.component('studio.jbEditorNodes', {
+component('studio.jbEditorNodes', {
   type: 'tree.node-model',
   params: [
     {id: 'path', as: 'string'}
@@ -381,7 +381,7 @@ jb.component('studio.jbEditorNodes', {
   impl: (ctx,path) =>	new jb.studio.jbEditorTree(path,true)
 })
 
-jb.component('studio.jbEditorTitle', {
+component('studio.jbEditorTitle', {
   type: 'control',
   params: [
     {id: 'path', as: 'string', mandatory: true},

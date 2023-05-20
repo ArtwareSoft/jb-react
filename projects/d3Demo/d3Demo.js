@@ -1,4 +1,4 @@
-jb.component('d3Demo.main', {
+component('d3Demo.main', {
   type: 'control',
   impl: group({
     title: '',
@@ -30,7 +30,7 @@ jb.component('d3Demo.main', {
   }),
 })
 
-jb.component('d3Demo.main', {
+component('d3Demo.main', {
   type: 'control',
   impl: group({
     controls: itemlist({

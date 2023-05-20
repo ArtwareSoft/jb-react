@@ -1,6 +1,6 @@
-jb.using('remote,ui')
+using('remote,ui')
 
-jb.component('widget.frontEndCtrl', {
+component('widget.frontEndCtrl', {
     type: 'control',
     params: [
       {id: 'widgetId', as: 'string'},
@@ -15,7 +15,7 @@ jb.component('widget.frontEndCtrl', {
     })
 })
 
-jb.component('widget.newId', {
+component('widget.newId', {
     params: [
         {id: 'jbm', type: 'jbm<jbm>', defaultValue: () => jb },
     ],
@@ -27,7 +27,7 @@ jb.component('widget.newId', {
     }
 })
 
-jb.component('jbm.backEnd', {
+component('jbm.backEnd', {
     type: 'jbm<jbm>',
     params: [
         {id: 'elem', defaultValue: '%$cmp/el%' },
@@ -38,7 +38,7 @@ jb.component('jbm.backEnd', {
     }
 })
 
-jb.component('dataMethodFromBackend', {
+component('dataMethodFromBackend', {
   type: 'data',
   description: 'activated on FE to get data from BE, assuming $cmp variable',
   macroByValue: true,
@@ -64,7 +64,7 @@ jb.component('dataMethodFromBackend', {
   )
 })
 
-jb.component('action.frontEndDelta', {
+component('action.frontEndDelta', {
     type: 'action',
     params: [
         {id: 'event', defaultValue: '%%'}
@@ -102,7 +102,7 @@ jb.component('action.frontEndDelta', {
     }
 })
 
-jb.component('remote.distributedWidget', {
+component('remote.distributedWidget', {
     type: 'action',
     params: [
       {id: 'control', type: 'control', dynamic: true },
@@ -128,7 +128,7 @@ jb.component('remote.distributedWidget', {
     ), '%$backend%')
 })
 
-jb.component('remote.widget', {
+component('remote.widget', {
     type: 'control',
     params: [
       {id: 'control', type: 'control', dynamic: true },
@@ -154,7 +154,7 @@ jb.component('remote.widget', {
     })
 })
 
-jb.component('action.renderXwidget', {
+component('action.renderXwidget', {
   type: 'action',
   params: [
     {id: 'selector', as: 'string'},
@@ -171,7 +171,7 @@ jb.component('action.renderXwidget', {
   ]
 })
 
-jb.extension('ui','headless', {
+extension('ui','headless', {
     $phase: 1100,
     $requireFuncs: 'jb.ui.render',
 
@@ -228,7 +228,7 @@ jb.extension('ui','headless', {
     }
 })
 
-jb.component('widget.headless', {
+component('widget.headless', {
     type: 'rx',
     params: [
       {id: 'control', type: 'control', dynamic: true },
@@ -261,7 +261,7 @@ jb.component('widget.headless', {
     }
 })
 
-jb.component('widget.headlessWidgets', {
+component('widget.headlessWidgets', {
     impl: () => Object.keys(jb.ui.headless || {}),
     dependency: widget.headless()
 })

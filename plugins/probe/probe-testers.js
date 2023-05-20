@@ -1,34 +1,31 @@
-jb.component('suggestionsTest', {
+component('suggestionsTest', {
   type: 'test',
   params: [
     {id: 'expression', as: 'string'},
     {id: 'selectionStart', as: 'number', defaultValue: -1},
     {id: 'path', as: 'string', defaultValue: 'suggestionsTest.defaultProbe~impl~text'},
     {id: 'expectedResult', type: 'boolean', dynamic: true, as: 'boolean'},
-    {id: 'forceLocal', as: 'boolean', defaultValue: true, type: 'boolean'}
   ],
   impl: dataTest({
     timeout: 1000,
     calculate: pipe(
-      suggestions.calcFromRemote({
+      probe.suggestions({
         probePath: '%$path%',
         input: obj(
           prop('value', '%$expression%'),
           prop('selectionStart', ({},{},{expression, selectionStart}) => selectionStart == -1 ? expression.length : selectionStart)
-        ),
-        forceLocal: '%$forceLocal%'
+        )
       }),
       log('suggestions test', obj(prop('result', '%%'))),
       '%options/text%',
       join(',')
     ),
     expectedResult: call('expectedResult'),
-    runBefore: remote.copyPassiveData('people', probeWorker())
   }),
   require :{ $: 'suggestionsTest.defaultProbe'}
 })
 
-jb.component('probeTest', {
+component('probeTest', {
   type: 'test',
   params: [
     {id: 'circuit', type: 'control', dynamic: true},

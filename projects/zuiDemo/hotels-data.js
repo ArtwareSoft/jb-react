@@ -1,6 +1,6 @@
 
 
-jb.component('hotels', { passiveData:
+component('hotels', { passiveData:
     [
         {
             "name": "Sheraton Tel Aviv",

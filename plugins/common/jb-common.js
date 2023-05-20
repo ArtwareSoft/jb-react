@@ -1,4 +1,6 @@
-jb.component('call', {
+using('core')
+
+component('call', {
   type: 'any',
   description: 'invoke dynamic parameter',
   category: 'system:50',
@@ -19,7 +21,7 @@ jb.component('call', {
  	}
 })
 
-jb.component('cast', {
+component('cast', {
   type: 'any',
   params: [
     {id: 'typeCast', as: 'string', mandatory: true, description: 'e.g. type1<myDsl>'},
@@ -28,7 +30,7 @@ jb.component('cast', {
   impl: ctx => { debugger; return ctx.params.val }
 })
 
-jb.component('If', {
+component('If', {
   type: 'any',
   macroByValue: true,
   params: [
@@ -39,7 +41,7 @@ jb.component('If', {
   impl: ({},cond,_then,_else) => cond() ? _then() : _else()
 })
 
-jb.extension('utils', 'pipe', {
+extension('utils', 'pipe', {
   calcPipe(ctx,ptName,passRx) {
     let start = jb.toarray(ctx.data)
     if (start.length == 0) start = [null]
@@ -74,16 +76,16 @@ jb.extension('utils', 'pipe', {
   }
 })
 
-jb.extension('tgp', {
-  'pipeline-inputMatch': (input,profile) => jb.tgp.inputMatch(input,profile.items[0]),
-  'pipeline-outputOptions': (input,profile) => profile.items.reduce((input,item) => jb.tgp.outputOptions(input,item), input),
-  'pipeline-innerInputMatch-items': ({input, inputPath, index}) => {
-    const inputBefore = jb.tgp.calcOutputOptions(input, index ? `${inputPath}~items~${index-1}` : inputPath)
-    return jb.tgp.calcOutputOptions(index ? `${inputPath}~items~${index-1}` : inputPath)
-  }
-})
+// extension('tgp', {
+//   'pipeline-inputMatch': (input,profile) => jb.tgp.inputMatch(input,profile.items[0]),
+//   'pipeline-outputOptions': (input,profile) => profile.items.reduce((input,item) => jb.tgp.outputOptions(input,item), input),
+//   'pipeline-innerInputMatch-items': ({input, inputPath, index}) => {
+//     const inputBefore = jb.tgp.calcOutputOptions(input, index ? `${inputPath}~items~${index-1}` : inputPath)
+//     return jb.tgp.calcOutputOptions(index ? `${inputPath}~items~${index-1}` : inputPath)
+//   }
+// })
 
-jb.component('pipeline', {
+component('pipeline', {
   type: 'data',
   category: 'common:100',
   description: 'map data arrays one after the other, do not wait for promises and rx',
@@ -93,7 +95,7 @@ jb.component('pipeline', {
   impl: ctx => jb.utils.calcPipe(ctx,'$pipeline')
 })
 
-jb.component('pipe', {
+component('pipe', {
   type: 'data',
   category: 'async:100',
   description: 'synch data, wait for promises and reactive (callbag) data',
@@ -103,7 +105,7 @@ jb.component('pipe', {
   impl: ctx => jb.utils.calcPipe(ctx,'$pipe',false)
 })
 
-jb.component('data.if', {
+component('data.if', {
   type: 'data',
   macroByValue: true,
   params: [
@@ -114,7 +116,7 @@ jb.component('data.if', {
   impl: ({},cond,_then,_else) =>	cond() ? _then() : _else()
 })
 
-jb.component('action.if', {
+component('action.if', {
   type: 'action',
   description: 'if then else',
   macroByValue: true,
@@ -126,7 +128,7 @@ jb.component('action.if', {
   impl: ({},cond,_then,_else) => jb.utils.isPromise(cond) ? Promise.resolve(cond).then(_cond=> _cond ? _then() : _else()) :	(cond ? _then() : _else())
 })
 
-jb.component('list', {
+component('list', {
   type: 'data',
   description: 'list definition, flatten internal arrays',
   params: [
@@ -135,7 +137,7 @@ jb.component('list', {
   impl: ({},items) => items.flatMap(item=>Array.isArray(item) ? item : [item])
 })
 
-jb.component('firstSucceeding', {
+component('firstSucceeding', {
   type: 'data',
   params: [
     {id: 'items', type: 'data[]', as: 'array', composite: true}
@@ -151,7 +153,7 @@ jb.component('firstSucceeding', {
 	}
 })
 
-jb.component('keys', {
+component('keys', {
   type: 'data',
   description: 'Object.keys',
   params: [
@@ -160,7 +162,7 @@ jb.component('keys', {
   impl: ({},obj) => Object.keys(obj && typeof obj === 'object' ? obj : {})
 })
 
-jb.component('values', {
+component('values', {
   type: 'data',
   description: 'Object.keys',
   params: [
@@ -169,7 +171,7 @@ jb.component('values', {
   impl: ({},obj) => Object.values(obj && typeof obj === 'object' ? obj : {})
 })
 
-jb.component('properties', {
+component('properties', {
   description: 'object entries as id,val',
   type: 'data',
   params: [
@@ -179,7 +181,7 @@ jb.component('properties', {
 			({id: id, val: obj[id], index: index}))
 })
 
-jb.component('entries', {
+component('entries', {
   description: 'object entries as array 0/1',
   type: 'data',
   params: [
@@ -188,7 +190,7 @@ jb.component('entries', {
   impl: ({},obj) => jb.entries(obj)
 })
 
-jb.component('aggregate', {
+component('aggregate', {
   type: 'aggregator',
   description: 'calc function on all items, rather then one by one',
   params: [
@@ -197,25 +199,25 @@ jb.component('aggregate', {
   impl: ({},aggregator) => aggregator()
 })
 
-jb.component('math.max', {
+component('math.max', {
   type: 'aggregator',
   category: 'math:80',
   impl: ctx => Math.max.apply(0,ctx.data)
 })
 
-jb.component('math.min', {
+component('math.min', {
   type: 'aggregator',
   category: 'math:80',
   impl: ctx => Math.max.apply(0,ctx.data)
 })
 
-jb.component('math.sum', {
+component('math.sum', {
   type: 'aggregator',
   category: 'math:80',
   impl: ctx => ctx.data.reduce((acc,item) => +item+acc, 0)
 })
 
-jb.component('math.plus', {
+component('math.plus', {
   category: 'math:80',
   params: [
     {id: 'x', as: 'number', mandatory: true },
@@ -224,7 +226,7 @@ jb.component('math.plus', {
   impl: ({},x,y) => +x + +y
 })
 
-jb.component('math.minus', {
+component('math.minus', {
   category: 'math:80',
   params: [
     {id: 'x', as: 'number', mandatory: true},
@@ -233,7 +235,7 @@ jb.component('math.minus', {
   impl: ({},x,y) => +x - +y
 })
 
-jb.component('math.mul', {
+component('math.mul', {
   category: 'math:80',
   params: [
     {id: 'x', as: 'number', mandatory: true},
@@ -242,7 +244,7 @@ jb.component('math.mul', {
   impl: ({},x,y) => +x * +y
 })
 
-jb.component('math.div', {
+component('math.div', {
   category: 'math:80',
   params: [
     {id: 'x', as: 'number', mandatory: true},
@@ -252,8 +254,8 @@ jb.component('math.div', {
 })
 
 
-jb.defComponents('abs,acos,acosh,asin,asinh,atan,atan2,atanh,cbrt,ceil,clz32,cos,cosh,exp,expm1,floor,fround,hypot,log2,random,round,sign,sin,sinh,sqrt,tan,tanh,trunc'
-  .split(','), f => jb.component(`math.${f}`, {
+ jb.defComponents('abs,acos,acosh,asin,asinh,atan,atan2,atanh,cbrt,ceil,clz32,cos,cosh,exp,expm1,floor,fround,hypot,log2,random,round,sign,sin,sinh,sqrt,tan,tanh,trunc'
+  .split(','), f => component(`math.${f}`, {
     category: 'math:70',
     params: [
       {id: 'func', as: 'string', defaultValue: f}
@@ -262,7 +264,7 @@ jb.defComponents('abs,acos,acosh,asin,asinh,atan,atan2,atanh,cbrt,ceil,clz32,cos
   })
 )
 
-jb.component('objFromEntries', {
+component('objFromEntries', {
   description: 'object from entries',
   type: 'aggregator',
   params: [
@@ -271,7 +273,7 @@ jb.component('objFromEntries', {
   impl: ({},entries) => jb.objFromEntries(entries)
 })
 
-jb.component('evalExpression', {
+component('evalExpression', {
   description: 'evaluate javascript expression',
   type: 'data',
   params: [
@@ -284,7 +286,7 @@ jb.component('evalExpression', {
   }
 })
 
-jb.component('prefix', {
+component('prefix', {
   type: 'data',
   category: 'string:90',
   params: [
@@ -294,7 +296,7 @@ jb.component('prefix', {
   impl: ({},separator,text) => (text||'').substring(0,text.indexOf(separator))
 })
 
-jb.component('suffix', {
+component('suffix', {
   type: 'data',
   category: 'string:90',
   params: [
@@ -304,7 +306,7 @@ jb.component('suffix', {
   impl: ({},separator,text) => (text||'').substring(text.lastIndexOf(separator)+separator.length)
 })
 
-jb.component('removePrefix', {
+component('removePrefix', {
   type: 'data',
   category: 'string:80',
   params: [
@@ -315,7 +317,7 @@ jb.component('removePrefix', {
 		text.indexOf(separator) == -1 ? text : text.substring(text.indexOf(separator)+separator.length)
 })
 
-jb.component('removeSuffix', {
+component('removeSuffix', {
   type: 'data',
   category: 'string:80',
   params: [
@@ -325,7 +327,7 @@ jb.component('removeSuffix', {
   impl: ({},separator,text) => text.lastIndexOf(separator) == -1 ? text : text.substring(0,text.lastIndexOf(separator))
 })
 
-jb.component('removeSuffixRegex', {
+component('removeSuffixRegex', {
   type: 'data',
   category: 'string:80',
   params: [
@@ -339,7 +341,7 @@ jb.component('removeSuffixRegex', {
 	}
 })
 
-jb.component('property', {
+component('property', {
   description: 'navigate/select/path property of object',
   category: 'common:70',
   params: [
@@ -349,7 +351,7 @@ jb.component('property', {
   impl: (ctx,prop,obj) =>	jb.db.objectProperty(obj,prop,ctx)
 })
 
-jb.component('indexOf', {
+component('indexOf', {
   category: 'common:70',
   params: [
     {id: 'array', as: 'array', mandatory: true},
@@ -358,7 +360,7 @@ jb.component('indexOf', {
   impl: ({},array,item) => array.indexOf(item)
 })
 
-jb.component('writeValue', {
+component('writeValue', {
   type: 'action',
   category: 'mutable:100',
   params: [
@@ -379,7 +381,7 @@ jb.component('writeValue', {
   }
 })
 
-jb.component('addToArray', {
+component('addToArray', {
   type: 'action',
   category: 'mutable:80',
   params: [
@@ -389,7 +391,7 @@ jb.component('addToArray', {
   impl: (ctx,array,toAdd) => jb.db.push(array, JSON.parse(JSON.stringify(toAdd)),ctx)
 })
 
-jb.component('move', {
+component('move', {
   type: 'action',
   category: 'mutable:80',
   description: 'move item in tree, activated from D&D',
@@ -400,7 +402,7 @@ jb.component('move', {
   impl: (ctx,from,_to) => jb.db.move(from,_to,ctx)
 })
 
-jb.component('splice', {
+component('splice', {
   type: 'action',
   category: 'mutable:80',
   params: [
@@ -413,7 +415,7 @@ jb.component('splice', {
 		jb.db.splice(array,[[fromIndex,noOfItemsToRemove,...itemsToAdd]],ctx)
 })
 
-jb.component('removeFromArray', {
+component('removeFromArray', {
   type: 'action',
   category: 'mutable:80',
   params: [
@@ -428,7 +430,7 @@ jb.component('removeFromArray', {
 	}
 })
 
-jb.component('getOrCreate', {
+component('getOrCreate', {
   type: 'data',
   description: 'memoize, cache, calculate value if empty and assign for next time',
   category: 'mutable:80',
@@ -446,7 +448,7 @@ jb.component('getOrCreate', {
 	}
 })
 
-jb.component('toggleBooleanValue', {
+component('toggleBooleanValue', {
   type: 'action',
   params: [
     {id: 'of', as: 'ref'}
@@ -454,7 +456,7 @@ jb.component('toggleBooleanValue', {
   impl: (ctx,_of) => jb.db.writeValue(_of,jb.val(_of) ? false : true,ctx)
 })
 
-jb.component('slice', {
+component('slice', {
   type: 'aggregator',
   params: [
     {id: 'start', as: 'number', defaultValue: 0, description: '0-based index', mandatory: true},
@@ -466,7 +468,7 @@ jb.component('slice', {
 	}
 })
 
-jb.component('sort', {
+component('sort', {
   type: 'aggregator',
   params: [
     {id: 'propertyName', as: 'string', description: 'sort by property inside object'},
@@ -487,7 +489,7 @@ jb.component('sort', {
 	}
 })
 
-jb.component('first', {
+component('first', {
   type: 'aggregator',
   params: [
     {id: 'items', as: 'array', defaultValue: '%%'}
@@ -495,7 +497,7 @@ jb.component('first', {
   impl: ({},items) => items[0]
 })
 
-jb.component('last', {
+component('last', {
   type: 'aggregator',
   params: [
     {id: 'items', as: 'array', defaultValue: '%%'}
@@ -503,7 +505,7 @@ jb.component('last', {
   impl: ({},items) => items.slice(-1)[0]
 })
 
-jb.component('count', {
+component('count', {
   type: 'aggregator',
   description: 'length, size of array',
   params: [
@@ -512,7 +514,7 @@ jb.component('count', {
   impl: ({},items) => items.length
 })
 
-jb.component('reverse', {
+component('reverse', {
   type: 'aggregator',
   params: [
     {id: 'items', as: 'array', defaultValue: '%%'}
@@ -520,7 +522,7 @@ jb.component('reverse', {
   impl: ({},items) => items.slice(0).reverse()
 })
 
-jb.component('sample', {
+component('sample', {
   type: 'aggregator',
   params: [
     {id: 'size', as: 'number', defaultValue: 300},
@@ -529,7 +531,7 @@ jb.component('sample', {
   impl: ({},size,items) =>	items.filter((x,i)=>i % (Math.floor(items.length/size) ||1) == 0)
 })
 
-jb.component('obj', {
+component('obj', {
   description: 'build object (dictionary) from props',
   category: 'common:100',
   params: [
@@ -538,7 +540,7 @@ jb.component('obj', {
   impl: (ctx,properties) => jb.objFromEntries(properties.map(p=>[p.title, jb.core.tojstype(p.val(ctx),p.type)]))
 })
 
-jb.component('dynamicObject', {
+component('dynamicObject', {
   type: 'data',
   description: 'process items into object properties',
   params: [
@@ -550,7 +552,7 @@ jb.component('dynamicObject', {
     items.reduce((obj,item)=>({ ...obj, [name(ctx.setData(item))]: value(ctx.setData(item)) }),{})
 })
 
-jb.component('extend', {
+component('extend', {
   description: 'assign and extend with calculated properties',
   params: [
     {id: 'props', type: 'prop[]', mandatory: true, defaultValue: []}
@@ -558,9 +560,9 @@ jb.component('extend', {
   impl: (ctx,properties) =>
 		Object.assign({}, ctx.data, jb.objFromEntries(properties.map(p=>[p.title, jb.core.tojstype(p.val(ctx),p.type)])))
 })
-jb.component('assign', jb.utils.getUnresolvedProfile('extend'))
+component('assign', jb.utils.getUnresolvedProfile('extend'))
 
-jb.component('extendWithIndex', {
+component('extendWithIndex', {
   type: 'aggregator',
   description: 'extend with calculated properties. %$index% is available ',
   params: [
@@ -570,7 +572,7 @@ jb.component('extendWithIndex', {
 			Object.assign({}, item, jb.objFromEntries(properties.map(p=>[p.title, jb.core.tojstype(p.val(ctx.setData(item).setVars({index:i})),p.type)]))))
 })
 
-jb.component('prop', {
+component('prop', {
   type: 'prop',
   macroByValue: true,
   params: [
@@ -581,7 +583,7 @@ jb.component('prop', {
   impl: ctx => ctx.params
 })
 
-jb.component('refProp', {
+component('refProp', {
   type: 'prop',
   description: 'value by reference allows to change or watch the value',
   params: [
@@ -591,7 +593,7 @@ jb.component('refProp', {
   impl: ctx => ({ ...ctx.params, type: 'ref' })
 })
 
-jb.component('pipeline.var', {
+component('pipeline.var', {
   type: 'aggregator',
   params: [
     {id: 'name', as: 'string', mandatory: true},
@@ -600,7 +602,7 @@ jb.component('pipeline.var', {
   impl: ctx => ({ [Symbol.for('Var')]: true, ...ctx.params })
 })
 
-jb.component('not', {
+component('not', {
   type: 'boolean',
   params: [
     {id: 'of', type: 'boolean', as: 'boolean', mandatory: true, composite: true}
@@ -608,7 +610,7 @@ jb.component('not', {
   impl: ({}, of) => !of
 })
 
-jb.component('and', {
+component('and', {
   description: 'logical and',
   type: 'boolean',
   params: [
@@ -625,7 +627,7 @@ jb.component('and', {
 	}
 })
 
-jb.component('or', {
+component('or', {
   description: 'logical or',
   type: 'boolean',
   params: [
@@ -642,7 +644,7 @@ jb.component('or', {
 	}
 })
 
-jb.component('between', {
+component('between', {
   description: 'checks if number is in range',
   type: 'boolean',
   params: [
@@ -653,7 +655,7 @@ jb.component('between', {
   impl: ({},from,to,val) => val >= from && val <= to
 })
 
-jb.component('contains', {
+component('contains', {
   type: 'boolean',
   params: [
     {id: 'text', type: 'data[]', as: 'array', mandatory: true},
@@ -671,7 +673,7 @@ jb.component('contains', {
 	}
 })
 
-jb.component('notContains', {
+component('notContains', {
   type: 'boolean',
   params: [
     {id: 'text', type: 'data[]', as: 'array', mandatory: true},
@@ -682,7 +684,7 @@ jb.component('notContains', {
   )
 })
 
-jb.component('startsWith', {
+component('startsWith', {
   description: 'begins with, includes, contains',
   type: 'boolean',
   params: [
@@ -692,7 +694,7 @@ jb.component('startsWith', {
   impl: ({},startsWith,text) => text.indexOf(startsWith) == 0
 })
 
-jb.component('endsWith', {
+component('endsWith', {
   description: 'includes, contains',
   type: 'boolean',
   params: [
@@ -703,7 +705,7 @@ jb.component('endsWith', {
 })
 
 
-jb.component('filter', {
+component('filter', {
   type: 'aggregator',
   params: [
     {id: 'filter', type: 'boolean', as: 'boolean', dynamic: true, mandatory: true}
@@ -711,7 +713,7 @@ jb.component('filter', {
   impl: (ctx,filter) =>	jb.toarray(ctx.data).filter(item =>	filter(ctx,item))
 })
 
-jb.component('matchRegex', {
+component('matchRegex', {
   description: 'validation with regular expression',
   type: 'boolean',
   params: [
@@ -721,28 +723,28 @@ jb.component('matchRegex', {
   impl: ({},regex,text) => text.match(new RegExp(regex))
 })
 
-jb.component('toUpperCase', {
+component('toUpperCase', {
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
   impl: ({},text) =>	text.toUpperCase()
 })
 
-jb.component('toLowerCase', {
+component('toLowerCase', {
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
   impl: ({},text) => text.toLowerCase()
 })
 
-jb.component('capitalize', {
+component('capitalize', {
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
   impl: ({},text) => text.charAt(0).toUpperCase() + text.slice(1)
 })
 
-jb.component('join', {
+component('join', {
   params: [
     {id: 'separator', as: 'string', defaultValue: ',', mandatory: true},
     {id: 'prefix', as: 'string'},
@@ -757,7 +759,7 @@ jb.component('join', {
 	}
 })
 
-jb.component('unique', {
+component('unique', {
   params: [
     {id: 'id', as: 'string', dynamic: true, defaultValue: '%%'},
     {id: 'items', as: 'array', defaultValue: '%%'}
@@ -769,7 +771,7 @@ jb.component('unique', {
 	}
 })
 
-jb.component('log', {
+component('log', {
   params: [
     {id: 'logName', as: 'string', mandatory: 'true' },
     {id: 'logObj', as: 'single', defaultValue: '%%' }
@@ -777,14 +779,14 @@ jb.component('log', {
   impl: (ctx,log,logObj) => { jb.log(log,{...logObj,ctx}); return ctx.data }
 })
 
-jb.component('asIs', {
+component('asIs', {
   params: [
     {id: '$asIs', ignore: true}
   ],
   impl: () => context.profile.$asIs
 })
 
-jb.component('object', {
+component('object', {
   impl: function(context) {
 		let result = {};
 		const obj = context.profile.$object || context.profile;
@@ -798,7 +800,7 @@ jb.component('object', {
 	}
 })
 
-jb.component('json.stringify', {
+component('json.stringify', {
   params: [
     {id: 'value', defaultValue: '%%'},
     {id: 'space', as: 'string', description: 'use space or tab to make pretty output'}
@@ -806,7 +808,7 @@ jb.component('json.stringify', {
   impl: ({},value,space) => JSON.stringify(jb.val(value),null,space)
 })
 
-jb.component('json.parse', {
+component('json.parse', {
   params: [
     {id: 'text', as: 'string'}
   ],
@@ -819,7 +821,7 @@ jb.component('json.parse', {
 	}
 })
 
-jb.component('split', {
+component('split', {
   description: 'breaks string using separator',
   type: 'data',
   params: [
@@ -840,7 +842,7 @@ jb.component('split', {
 	}
 })
 
-jb.component('replace', {
+component('replace', {
   type: 'data',
   params: [
     {id: 'find', as: 'string', mandatory: true},
@@ -853,7 +855,7 @@ jb.component('replace', {
     useRegex ? text.replace(new RegExp(find,regexFlags) ,replace) : text.replace(find,replace)
 })
 
-jb.component('isNull', {
+component('isNull', {
   description: 'is null or undefined',
   type: 'boolean',
   params: [
@@ -862,7 +864,7 @@ jb.component('isNull', {
   impl: ({}, obj) => jb.val(obj) == null
 })
 
-jb.component('notNull', {
+component('notNull', {
   description: 'not null or undefined',
   type: 'boolean',
   params: [
@@ -871,7 +873,7 @@ jb.component('notNull', {
   impl: ({}, obj) => jb.val(obj) != null
 })
 
-jb.component('isEmpty', {
+component('isEmpty', {
   type: 'boolean',
   params: [
     {id: 'item', as: 'single', defaultValue: '%%'}
@@ -879,7 +881,7 @@ jb.component('isEmpty', {
   impl: ({}, item) => !item || (Array.isArray(item) && item.length == 0)
 })
 
-jb.component('notEmpty', {
+component('notEmpty', {
   type: 'boolean',
   params: [
     {id: 'item', as: 'single', defaultValue: '%%'}
@@ -887,7 +889,7 @@ jb.component('notEmpty', {
   impl: ({}, item) => item && !(Array.isArray(item) && item.length == 0)
 })
 
-jb.component('equals', {
+component('equals', {
   type: 'boolean',
   params: [
     {id: 'item1', as: 'single', mandatory: true},
@@ -896,7 +898,7 @@ jb.component('equals', {
   impl: ({}, item1, item2) => item1 == item2
 })
 
-jb.component('notEquals', {
+component('notEquals', {
   type: 'boolean',
   params: [
     {id: 'item1', as: 'single', mandatory: true},
@@ -905,7 +907,7 @@ jb.component('notEquals', {
   impl: ({}, item1, item2) => item1 != item2
 })
 
-jb.component('runActions', {
+component('runActions', {
   type: 'action',
   params: [
     {id: 'actions', type: 'action[]', ignore: true, composite: true, mandatory: true}
@@ -922,7 +924,7 @@ jb.component('runActions', {
 	}
 })
 
-jb.component('runActionOnItem', {
+component('runActionOnItem', {
   type: 'action',
   params: [
     {id: 'item', mandatory: true},
@@ -932,7 +934,7 @@ jb.component('runActionOnItem', {
     : item != null && action(ctx.setData(item))
 })
 
-jb.component('runActionOnItems', {
+component('runActionOnItems', {
   type: 'action',
   macroByValue: true,
   params: [
@@ -946,7 +948,7 @@ jb.component('runActionOnItems', {
 	}
 })
 
-jb.component('delay', {
+component('delay', {
   type: 'action,data',
   params: [
     {id: 'mSec', as: 'number', defaultValue: 1},
@@ -955,7 +957,7 @@ jb.component('delay', {
   impl: ({},mSec,res) => jb.delay(mSec).then(() => res)
 })
 
-jb.component('onNextTimer', {
+component('onNextTimer', {
   description: 'run action after delay',
   type: 'action',
   params: [
@@ -965,7 +967,7 @@ jb.component('onNextTimer', {
   impl: (ctx,action,delay) => jb.delay(delay,ctx).then(()=>	action())
 })
 
-jb.component('extractPrefix', {
+component('extractPrefix', {
   type: 'data',
   params: [
     {id: 'separator', as: 'string', description: '/w- alphnumberic, /s- whitespace, ^- beginline, $-endline'},
@@ -984,7 +986,7 @@ jb.component('extractPrefix', {
 	}
 })
 
-jb.component('extractSuffix', {
+component('extractSuffix', {
   type: 'data',
   params: [
     {id: 'separator', as: 'string', description: '/w- alphnumberic, /s- whitespace, ^- beginline, $-endline'},
@@ -1003,7 +1005,7 @@ jb.component('extractSuffix', {
 	}
 })
 
-jb.component('range', {
+component('range', {
   description: 'returns a range of number, generator, numerator, numbers, index',
   type: 'data',
   params: [
@@ -1013,7 +1015,7 @@ jb.component('range', {
   impl: ({},from,to) => Array.from(Array(to-from+1).keys()).map(x=>x+from)
 })
 
-jb.component('typeOf', {
+component('typeOf', {
   type: 'data',
   params: [
     {id: 'obj', defaultValue: '%%'}
@@ -1024,7 +1026,7 @@ jb.component('typeOf', {
 	}
 })
 
-jb.component('className', {
+component('className', {
   type: 'data',
   params: [
     {id: 'obj', defaultValue: '%%'}
@@ -1035,7 +1037,7 @@ jb.component('className', {
 	}
 })
 
-jb.component('isOfType', {
+component('isOfType', {
   type: 'boolean',
   params: [
     {id: 'type', as: 'string', mandatory: true, description: 'e.g., string,boolean,array'},
@@ -1048,7 +1050,7 @@ jb.component('isOfType', {
   }
 })
 
-jb.component('inGroup', {
+component('inGroup', {
   description: 'is in list, contains in array',
   type: 'boolean',
   params: [
@@ -1058,21 +1060,21 @@ jb.component('inGroup', {
   impl: ({},group,item) =>	group.indexOf(item) != -1
 })
 
-jb.component('isRef', {
+component('isRef', {
   params: [
     {id: 'obj', mandatory: true}
   ],
   impl: ({},obj) => jb.db.isRef(obj)
 })
 
-jb.component('asRef', {
+component('asRef', {
   params: [
     {id: 'obj', mandatory: true}
   ],
   impl: ({},obj) => jb.db.asRef(obj)
 })
 
-jb.component('data.switch', {
+component('data.switch', {
   macroByValue: false,
   params: [
     {id: 'cases', type: 'data.switch-case[]', as: 'array', mandatory: true, defaultValue: []},
@@ -1086,7 +1088,7 @@ jb.component('data.switch', {
 	}
 })
 
-jb.component('data.case', {
+component('data.case', {
   type: 'data.switch-case',
 //  singleInType: true,
   params: [
@@ -1096,7 +1098,7 @@ jb.component('data.case', {
   impl: ctx => ctx.params
 })
 
-jb.component('action.switch', {
+component('action.switch', {
   type: 'action',
   params: [
     {id: 'cases', type: 'action.switch-case[]', as: 'array', mandatory: true, defaultValue: []},
@@ -1110,7 +1112,7 @@ jb.component('action.switch', {
   }
 })
 
-jb.component('action.switchCase', {
+component('action.switchCase', {
   type: 'action.switch-case',
 //  singleInType: true,
   params: [
@@ -1120,7 +1122,7 @@ jb.component('action.switchCase', {
   impl: ctx => ctx.params
 })
 
-jb.component('formatDate', {
+component('formatDate', {
   description: 'using toLocaleDateString',
   params: [
     {id: 'date', defaultValue: '%%', description: 'Date value'},
@@ -1138,7 +1140,7 @@ jb.component('formatDate', {
   impl: (ctx,date) => new Date(date).toLocaleDateString(undefined, jb.objFromEntries(jb.entries(ctx.params).filter(e=>e[1])))
 })
 
-jb.component('formatNumber', {
+component('formatNumber', {
   description: 'using toLocaleDateString',
   params: [
     {id: 'precision', as: 'number', defaultValue: '2', description: '10.33'},
@@ -1147,14 +1149,14 @@ jb.component('formatNumber', {
   impl: (ctx,precision,x) => typeof x == 'number' ? +x.toFixed(+precision) : x
 })
 
-jb.component('getSessionStorage', {
+component('getSessionStorage', {
   params: [
     { id: 'id', as: 'string' }
   ],
   impl: ({},id) => jb.utils.sessionStorage(id)
 })
 
-jb.component('action.setSessionStorage', {
+component('action.setSessionStorage', {
   params: [
     { id: 'id', as: 'string' },
     { id: 'value', dynamic: true },
@@ -1162,7 +1164,7 @@ jb.component('action.setSessionStorage', {
   impl: ({},id,value) => jb.utils.sessionStorage(id,value())
 })
 
-jb.component('waitFor',{
+component('waitFor',{
   params: [
     {id: 'check', dynamic: true},
     {id: 'interval', as: 'number', defaultValue: 14},
@@ -1205,7 +1207,7 @@ jb.component('waitFor',{
   }
 })
 
-jb.component('addComponent', {
+component('addComponent', {
   description: 'add a component or data resource',
   type: 'action',
   params: [
@@ -1213,11 +1215,11 @@ jb.component('addComponent', {
     {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
     {id: 'type', options:'watchableData,passiveData,comp', mandatory: true },
   ],
-  impl: (ctx,id,value,type) => jb.component(id(), type == 'comp' ? value() : {[type]: value() } ),
+  impl: (ctx,id,value,type) => jb.component({},'',id(), type == 'comp' ? value() : {[type]: value() } ),
   require: () => jb.db.addDataResourcePrefix()
 })
 
-jb.component('loadLibs', {
+component('loadLibs', {
   description: 'load a list of libraries into current jbm',
   type: 'action',
   params: [
@@ -1227,7 +1229,7 @@ jb.component('loadLibs', {
     jb_dynamicLoad(libs, Object.assign(jb, { loadFromDist: true}))
 })
 
-jb.component('loadAppFiles', {
+component('loadAppFiles', {
   description: 'load a list of app files into current jbm',
   type: 'action',
   params: [

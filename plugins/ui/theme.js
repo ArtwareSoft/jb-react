@@ -1,4 +1,4 @@
-jb.component('defaultTheme', {
+component('defaultTheme', {
   impl: ctx => jb.ui.insertOrUpdateStyleElem(ctx,`
     body {
       /* vscode compatible with light theme */
@@ -74,7 +74,7 @@ jb.component('defaultTheme', {
  `,'__defaultTheme')
 })
 
-jb.component('group.theme', {
+component('group.theme', {
   type: 'feature',
   params: [
     {id: 'theme', type: 'theme'}
@@ -84,7 +84,7 @@ jb.component('group.theme', {
   })
 })
 
-jb.component('theme.materialDesign', {
+component('theme.materialDesign', {
   type: 'theme',
   impl: () => ({
   	'$theme.editable-text': 'editable-text.mdc-input'

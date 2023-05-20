@@ -1,4 +1,4 @@
-jb.component('dialog.editSourceStyle', {
+component('dialog.editSourceStyle', {
   type: 'dialog.style',
   params: [
     {id: 'id', as: 'string'},
@@ -59,7 +59,7 @@ jb.component('dialog.editSourceStyle', {
   })
 })
 
-jb.component('studio.dialogParticleStyle', {
+component('studio.dialogParticleStyle', {
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
@@ -68,7 +68,7 @@ jb.component('studio.dialogParticleStyle', {
   })
 })
 
-jb.component('studioDialogFeature.studioPopupLocation', {
+component('studioDialogFeature.studioPopupLocation', {
   type: 'dialog-feature',
   impl: templateModifier( ({},{vdom}) => { 
     const id = (vdom.getAttribute('id')||'').replace(/\s/g,'_')
@@ -77,12 +77,12 @@ jb.component('studioDialogFeature.studioPopupLocation', {
   })
 })
 
-jb.component('studioDialogFeature.refreshTitle', {
+component('studioDialogFeature.refreshTitle', {
   type: 'dialog-feature',
   impl: frontEnd.flow(watchableComps.scriptChange(), rx.takeUntil( '%$cmp.destroyed%' ), sink.FEMethod('recalcTitle'))
 })
 
-jb.component('studio.codeMirrorMode', {
+component('studio.codeMirrorMode', {
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -95,7 +95,7 @@ jb.component('studio.codeMirrorMode', {
 	}
 })
 
-jb.component('studio.openMultilineEdit', {
+component('studio.openMultilineEdit', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -109,7 +109,7 @@ jb.component('studio.openMultilineEdit', {
   })
 })
 
-jb.component('dialog.studioFloating', {
+component('dialog.studioFloating', {
   type: 'dialog.style',
   params: [
     {id: 'id', as: 'string'},
@@ -164,7 +164,7 @@ jb.component('dialog.studioFloating', {
   })
 })
 
-jb.component('studio.openResponsivePhonePopup', {
+component('studio.openResponsivePhonePopup', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}

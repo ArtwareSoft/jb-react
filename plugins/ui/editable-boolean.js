@@ -1,4 +1,4 @@
-jb.component('editableBoolean', {
+component('editableBoolean', {
   type: 'control',
   category: 'input:20',
   params: [
@@ -12,7 +12,7 @@ jb.component('editableBoolean', {
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('editableBoolean.initToggle', {
+component('editableBoolean.initToggle', {
   type: 'feature',
   category: 'editableBoolean:0',
   impl: features(

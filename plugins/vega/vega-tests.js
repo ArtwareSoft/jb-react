@@ -1,4 +1,6 @@
-jb.component('dataResource.vegaItems', {
+using('ui-tests')
+
+component('dataResource.vegaItems', {
   passiveData: [
     {"a": "A", "b": 28}, {"a": "B", "b": 55}, {"a": "C", "b": 43},
     {"a": "D", "b": 91}, {"a": "E", "b": 81}, {"a": "F", "b": 53},
@@ -6,7 +8,7 @@ jb.component('dataResource.vegaItems', {
   ]
 })
 
-jb.component('vegaTest.bar', {
+component('vegaTest.bar', {
   impl: uiFrontEndTest({
     control: vega.interactiveChart(
       vega.spec({

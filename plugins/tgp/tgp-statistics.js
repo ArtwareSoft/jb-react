@@ -1,5 +1,5 @@
 
-jb.extension('tgp', 'statistics', {
+extension('tgp', 'statistics', {
     $phase: 50,
     initExtension() {
       jb.watchableComps && jb.utils.subscribe(jb.watchableComps.source, () => jb.tgp.statistics = {})
@@ -50,19 +50,19 @@ jb.extension('tgp', 'statistics', {
     }
 })
 
-jb.component('tgp.circuitOptions', {
+component('tgp.circuitOptions', {
   params: [
     {id: 'path'}
   ],
   impl: ({},path) => jb.tgp.circuitOptions(path.split('~')[0])
 })
 
-jb.component('tgp.allComps', {
+component('tgp.allComps', {
   type: 'data',
   impl: () => Object.keys(jb.comps)
 })
 
-jb.component('tgp.componentStatistics', {
+component('tgp.componentStatistics', {
   type: 'data',
   params: [
     {id: 'cmpId', as: 'string', defaultValue: '%%'}
@@ -90,7 +90,7 @@ jb.component('tgp.componentStatistics', {
 	}
 })
 
-jb.component('tgp.references', {
+component('tgp.references', {
   type: 'data',
   params: [
     {id: 'path', as: 'string'}

@@ -1,5 +1,5 @@
 
-jb.extension('zui','debug', {
+extension('zui','debug', {
   showTouchPointers: cmp => ({
     prepareGPU({ gl }) {
         const src = [`attribute vec4 pointersPos;

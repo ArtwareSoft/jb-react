@@ -1,4 +1,4 @@
-jb.component('studio.eventTracker', {
+component('studio.eventTracker', {
   params: [
     {id: 'spy', dynamic: true, defaultValue: () => jb.path(jb.parent,'spy') }
   ],
@@ -63,7 +63,7 @@ jb.component('studio.eventTracker', {
   })
 })
 
-jb.component('eventTracker.toolbar', {
+component('eventTracker.toolbar', {
   params: [
     {id: 'spy' }
   ],
@@ -126,7 +126,7 @@ jb.component('eventTracker.toolbar', {
   }),
 })
 
-jb.component('eventTracker.uiComp', {
+component('eventTracker.uiComp', {
   type: 'control',
   impl: controls(
     controlWithCondition(or('%cmp%','%elem%', '%parentElem%'), group({
@@ -153,7 +153,7 @@ jb.component('eventTracker.uiComp', {
   )
 })
 
-jb.component('eventTracker.callbagMessage', {
+component('eventTracker.callbagMessage', {
   type: 'control',
   impl: controls(
     controlWithCondition(and('%m/d%','%m/t%==1'), group({
@@ -179,7 +179,7 @@ jb.component('eventTracker.callbagMessage', {
   )
 })
 
-jb.component('eventTracker.testResult', {
+component('eventTracker.testResult', {
   type: 'control',
   impl: controls(
     controlWithCondition('%logNames%==check test result', group({
@@ -207,7 +207,7 @@ jb.component('eventTracker.testResult', {
   )
 })
 
-jb.component('eventTracker.watchSpy',{
+component('eventTracker.watchSpy',{
   type: 'feature',
   params: [
     {id: 'spy' },
@@ -216,7 +216,7 @@ jb.component('eventTracker.watchSpy',{
   impl: followUp.watchObservable(source.callbag('%$spy/_obs%','%$delay%'))
 })
 
-jb.component('eventTracker.eventTypes', {
+component('eventTracker.eventTypes', {
   params: [
     {id: 'spy' }
   ],  
@@ -244,7 +244,7 @@ jb.component('eventTracker.eventTypes', {
   })
 })
 
-jb.component('studio.objExpandedAsText', {
+component('studio.objExpandedAsText', {
   params: [
     {id: 'obj', mandatory: true },
     {id: 'title', as: 'string', mandatory: true},
@@ -266,7 +266,7 @@ jb.component('studio.objExpandedAsText', {
 })
 
 
-jb.component('studio.lowFootprintObj', {
+component('studio.lowFootprintObj', {
   type: 'control',
   params: [
     {id: 'obj', mandatory: true },
@@ -300,7 +300,7 @@ jb.component('studio.lowFootprintObj', {
   }))
 })
 
-jb.component('studio.slicedString', {
+component('studio.slicedString', {
   params: [
     {id: 'data', mandatory: true },
     {id: 'length', as: 'number', defaultValue: 30 },
@@ -317,7 +317,7 @@ jb.component('studio.slicedString', {
 //   )
 // })
 
-jb.component('eventTracker.eventItems', {
+component('eventTracker.eventItems', {
   params: [
     {id: 'spy', dynamic: true},
     {id: 'query', as: 'string' },
@@ -337,14 +337,14 @@ jb.component('eventTracker.eventItems', {
   }
 })
 
-jb.component('eventTracker.elemOfCmp', {
+component('eventTracker.elemOfCmp', {
   params: [
     {id: 'cmp' }
   ],
   impl: eventTracker.elemInInspectedJb('[cmp-id="%$cmp/cmpId%"]')
 })
 
-jb.component('eventTracker.elemInInspectedJb', {
+component('eventTracker.elemInInspectedJb', {
   params: [
     {id: 'selector' }
   ],
@@ -355,7 +355,7 @@ jb.component('eventTracker.elemInInspectedJb', {
   }
 })
 
-jb.component('eventTracker.highlightEvent', {
+component('eventTracker.highlightEvent', {
   type: 'action',
   params: [
     {id: 'event', defaultValue: '%%'}
@@ -368,7 +368,7 @@ jb.component('eventTracker.highlightEvent', {
   )
 })
 
-jb.component('eventTracker.highlightElem', {
+component('eventTracker.highlightElem', {
   type: 'action',
   params: [
     {id: 'elem'},
@@ -398,7 +398,7 @@ jb.component('eventTracker.highlightElem', {
   )
 })
 
-jb.component('eventTracker.highlightDialogStyle', {
+component('eventTracker.highlightDialogStyle', {
   type: 'dialog.style',
   impl: customStyle({
     template: ({},{contentComp},h) => h('div.jb-dialog jb-popup',{},h(contentComp)),
@@ -407,7 +407,7 @@ jb.component('eventTracker.highlightDialogStyle', {
   })
 })
 
-jb.component('studio.sourceCtxView', {
+component('studio.sourceCtxView', {
   type: 'control',
   params: [
     {id: 'srcCtx'},
@@ -424,7 +424,7 @@ jb.component('studio.sourceCtxView', {
   }))
 })
 
-jb.component('studio.singleSourceCtxView', {
+component('studio.singleSourceCtxView', {
   type: 'control',
   params: [
     {id: 'srcCtx'},
@@ -447,7 +447,7 @@ jb.component('studio.singleSourceCtxView', {
     }),
 })
 
-jb.component('studio.stackItems', {
+component('studio.stackItems', {
   params: [
     {id: 'srcCtx' },
   ],
@@ -459,7 +459,7 @@ jb.component('studio.stackItems', {
       },
 })
 
-jb.component('chromeDebugger.colors',{
+component('chromeDebugger.colors',{
   type: 'feature',
   impl: features(
     css.color({background: 'var(--jb-menubar-inactive-bg)', color: 'var(--jb-menu-fg)'}),
@@ -468,7 +468,7 @@ jb.component('chromeDebugger.colors',{
   )
 })
 
-jb.component('eventTracker.compInspector', {
+component('eventTracker.compInspector', {
   params: [
     {id: 'cmp'}
   ],
@@ -517,7 +517,7 @@ jb.component('eventTracker.compInspector', {
   })
 })
 
-jb.component('chromeDebugger.icon', {
+component('chromeDebugger.icon', {
   type: 'button.style',
   params: [
       {id: 'position', as: 'string', defaultValue: '0px 144px'}
@@ -532,7 +532,7 @@ jb.component('chromeDebugger.icon', {
   })
 })
 
-jb.component('chromeDebugger.sectionsExpandCollapse', {
+component('chromeDebugger.sectionsExpandCollapse', {
   type: 'group.style',
   impl: group.sectionsExpandCollapse({
       autoExpand: true,
@@ -549,12 +549,12 @@ jb.component('chromeDebugger.sectionsExpandCollapse', {
   })
 })
 
-jb.component('chromeDebugger.toggleStyle', {
+component('chromeDebugger.toggleStyle', {
   type: 'editable-boolean.style',
   impl: editableBoolean.expandCollapseWithUnicodeChars()
 })
 
-jb.component('studio.openEventTracker', {
+component('studio.openEventTracker', {
   type: 'action',
   impl: openDialog({
     style: dialog.studioFloating({id: 'event-tracker', width: '700', height: '400'}),
@@ -564,18 +564,18 @@ jb.component('studio.openEventTracker', {
   })
 })
 
-jb.component('eventTracker.getParentSpy', {
+component('eventTracker.getParentSpy', {
   impl: () => jb.path(jb.parent,'spy') || {}
 })
 
-jb.component('eventTracker.codeSize', {
+component('eventTracker.codeSize', {
   impl: ()=> {
     const _jb = jb.parent || jb
     return _jb.treeShake.totalCodeSize ? Math.floor(_jb.treeShake.totalCodeSize/1000) + 'k' : ''
   }
 })
 
-jb.component('eventTracker.clearSpyLog', {
+component('eventTracker.clearSpyLog', {
   type: 'action',
   params: [
     {id: 'spy' }

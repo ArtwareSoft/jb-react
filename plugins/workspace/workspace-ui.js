@@ -1,7 +1,8 @@
+using('ui,probe-preview')
 
-jb.component('workspace', { watchableData: { bottomViewIndex : 0 } })
+component('workspace', { watchableData: { bottomViewIndex : 0 } })
 
-jb.component('workspace.IDE', {
+component('workspace.IDE', {
   type: 'control',
   params: [
     {id: 'height', as: 'number', defaultValue: '300'},
@@ -34,17 +35,18 @@ jb.component('workspace.IDE', {
                     ),
                 ]
             }),
-            probe.inOutView('%$workspace/selectedPath%'),
+            remote.widget(probe.inOutView(),probePreviewWorker())
+            //probe.inOutView('%$workspace/selectedPath%'),
             //workspace.views()
         ],
       features: [
           css.height({height: '%$height%', minMax: 'max'}),
-          group.wait(jbm.start(probeWorker()))
+          group.wait(jbm.start(probePreviewWorker()))
       ]
     })
 })
 
-jb.component('workspace.views', {
+component('workspace.views', {
   type: 'control',
   params: [
     {id: 'height', as: 'number', defaultValue: '300'},
@@ -62,14 +64,14 @@ jb.component('workspace.views', {
                 group({
                     title: 'preview',
                     controls: probe.inOutView('%$workspace/selectedPath%'),
-                    //features: group.wait(remote.data('%$probe/path%', probeWorker()))
+                    //features: group.wait(remote.data('%$probe/path%', probePreviewWorker()))
                     //followUp.watchObservable(() => jb.workspace.onChangeSelection)
                 }),
             ]
       }),
 })
 
-jb.component('workspace.openDoc', {
+component('workspace.openDoc', {
     type: 'action',
     params: [
         {id: 'docUri', as: 'string'},
@@ -77,7 +79,7 @@ jb.component('workspace.openDoc', {
     impl: ({},docUri) => jb.workspace.openDoc(docUri)
 })
 
-jb.component('workspace.selelctionChanged', {
+component('workspace.selelctionChanged', {
     type: 'action',
     params: [
         {id: 'selection'},
@@ -95,12 +97,12 @@ jb.component('workspace.selelctionChanged', {
         writeValue('%$workspace/relevant%','%$editorPath/relevant%'),
         writeValue('%$workspace/semanticPath%','%$editorPath/semanticPath/path%'),
         writeValue('%$workspace/selectedPath%','%$editorPath/path%'),
-        writeValue('%$workspace/probeCircuit%', remote.data(probe.calcCircuitPath('%$editorPath/path%'), probeWorker())),
+        writeValue('%$workspace/probeCircuit%', remote.data(probe.calcCircuitPath('%$editorPath/path%'), probePreviewWorker())),
         //({},{},{selection}) => jb.workspace.onChangeSelection.next(selection)
     )
 })
 
-jb.component('workspace.openQuickPickMenu', {
+component('workspace.openQuickPickMenu', {
     type: 'action',
     params: [
       {id: 'menu', type: 'menu.option', dynamic: true, mandatory: true},
@@ -115,7 +117,7 @@ jb.component('workspace.openQuickPickMenu', {
     ]})
 })
 
-jb.component('workspace.textEditor', {
+component('workspace.textEditor', {
   type: 'control',
   params: [
     {id: 'docContent', as: 'string'},
@@ -143,7 +145,7 @@ jb.component('workspace.textEditor', {
     })
 })
 
-jb.component('textarea.initTgpTextEditor', {
+component('textarea.initTgpTextEditor', {
   type: 'feature',
   impl: features(
         textarea.enrichUserEvent(),
@@ -179,7 +181,7 @@ jb.component('textarea.initTgpTextEditor', {
     )
 })
 
-jb.component('codemirror.initTgpTextEditor', {
+component('codemirror.initTgpTextEditor', {
   type: 'feature',
   impl: features(
     codemirror.enrichUserEvent(),
@@ -213,7 +215,7 @@ jb.component('codemirror.initTgpTextEditor', {
   )
 })
 
-jb.component('textarea.enrichUserEvent', {
+component('textarea.enrichUserEvent', {
     type: 'feature',
     params: [
       {id: 'textEditorSelector', as: 'string', description: 'used for external buttons'}

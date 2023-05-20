@@ -33,7 +33,7 @@ Object.assign(jb.ui,{
   }
 })
 
-jb.component('contentEditable.effectiveProp', {
+component('contentEditable.effectiveProp', {
   type: 'control',
   params: [
     {id: 'axis', as: 'string', options: 'x,y'}
@@ -44,7 +44,7 @@ jb.component('contentEditable.effectiveProp', {
   )
 })
 
-jb.component('contentEditable.actionIcon', {
+component('contentEditable.actionIcon', {
   type: 'control',
   params: [
     {id: 'cssProp', as: 'string'}
@@ -59,7 +59,7 @@ jb.component('contentEditable.actionIcon', {
     : ''
 })
 
-jb.component('contentEditable.positionButton', {
+component('contentEditable.positionButton', {
   type: 'control',
   params: [
     {id: 'cssProp', as: 'string'},
@@ -89,7 +89,7 @@ jb.component('contentEditable.positionButton', {
   })
 })
 
-jb.component('contentEditable.positionThumbs', {
+component('contentEditable.positionThumbs', {
   type: 'control',
   params: [
     {id: 'axis', as: 'string', options: 'x,y'}
@@ -161,7 +161,7 @@ jb.component('contentEditable.positionThumbs', {
   })
 })
 
-jb.component('contentEditable.openPositionThumbs', {
+component('contentEditable.openPositionThumbs', {
   type: 'action',
   params: [
     {id: 'axis', as: 'string', options: 'x,y'}
@@ -199,7 +199,7 @@ jb.component('contentEditable.openPositionThumbs', {
   )
 })
 
-jb.component('contentEditable.writePosToScript', {
+component('contentEditable.writePosToScript', {
   type: 'action',
   impl: ctx => {
     const el = jb.ui.contentEditable.current
@@ -210,7 +210,7 @@ jb.component('contentEditable.writePosToScript', {
   }
 })
 
-jb.component('contentEditable.dragableThumb', {
+component('contentEditable.dragableThumb', {
   type: 'feature',
   params: [
     {id: 'axis', as: 'string', options: 'x,y'}
@@ -268,7 +268,7 @@ jb.component('contentEditable.dragableThumb', {
   )
 })
 
-jb.component('contentEditable.positionThumbsStyle', {
+component('contentEditable.positionThumbsStyle', {
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div.jb-dialog jb-popup',{},h(state.contentComp)),

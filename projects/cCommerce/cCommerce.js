@@ -1,5 +1,5 @@
 
-jb.component('cCommerce.main', {
+component('cCommerce.main', {
   type: 'control', 
   impl :{$: 'group', 
     controls: [
@@ -34,7 +34,7 @@ jb.component('cCommerce.main', {
   }
 })
 
-jb.component('cCommerce.scatter', {
+component('cCommerce.scatter', {
   type: 'control', 
   impl :{$: 'group', 
     controls: [
@@ -177,7 +177,7 @@ jb.component('cCommerce.scatter', {
   }
 })
 
-jb.component('cCommerce.histogram', {
+component('cCommerce.histogram', {
   type: 'control', 
   impl :{$: 'group', 
     title: 'histogram', 

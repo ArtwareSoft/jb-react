@@ -1,8 +1,10 @@
-jb.component('macroTest.simple', {
-  impl: dataTest(prettyPrint(ctx => jb.comps['dataTest.obj'].impl), contains(["prop('a', 1)", ctx => "res: '%%'"]))
-})
+using('ui')
 
-jb.component('macroTest.vars', {
+// component('macroTest.simple', {
+//   impl: dataTest(prettyPrint(ctx => jb.comps['dataTest.obj'].impl), contains(["prop('a', 1)", ctx => "res: '%%'"]))
+// })
+
+component('macroTest.vars', {
   impl: dataTest(ctx => {
     try {
       const testToTest = 'dataTest.varsCases'
@@ -16,7 +18,7 @@ jb.component('macroTest.vars', {
   }, contains("[\n      Var('items', [{id: 1}, {id: 2}])\n    ]"))
 })
 
-jb.component('macroTest.varsPath', {
+component('macroTest.varsPath', {
   impl: dataTest(
     pipeline(
       () => jb.utils.prettyPrintWithPositions(split({ vars: [Var('a', 'b')] })),
@@ -28,7 +30,7 @@ jb.component('macroTest.varsPath', {
   )
 })
 
-jb.component('macroTest.Positions.shouldNotFlat', {
+component('macroTest.Positions.shouldNotFlat', {
   impl: dataTest(
     pipeline(
       () => jb.utils.prettyPrintWithPositions(group({ title: '2.0', controls: text('my label') })),
@@ -40,7 +42,7 @@ jb.component('macroTest.Positions.shouldNotFlat', {
   )
 })
 
-jb.component('macroTest.Positions.closeArray', {
+component('macroTest.Positions.closeArray', {
   impl: dataTest(
     pipeline(
       () => jb.utils.prettyPrintWithPositions(group({ controls: [text('my label'), text('my label')] }), { colWidth: 30 }),
@@ -52,14 +54,14 @@ jb.component('macroTest.Positions.closeArray', {
 })
 
 
-jb.component('macroTest.Positions.separator', {
+component('macroTest.Positions.separator', {
   impl: dataTest(
     pipeline(() => jb.utils.prettyPrintWithPositions({ a: 1, b: 2 }), log('test'), '%map/~!obj-separator-0%', join()),
     equals('1,6,2,2')
   )
 })
 
-jb.component('macroTest.Positions.InnerFlat', {
+component('macroTest.Positions.InnerFlat', {
   impl: dataTest(pipeline(() => jb.utils.prettyPrintWithPositions(
     group({
       title: 'main',
@@ -72,7 +74,7 @@ jb.component('macroTest.Positions.InnerFlat', {
 })
 
 
-jb.component('macroTest.nameValuePattern', {
+component('macroTest.nameValuePattern', {
   impl: dataTest(
     pipeline(
       () => jb.utils.prettyPrintWithPositions(frontEnd.var('itemPropsProfile', ({ }, { $model }) =>
@@ -84,47 +86,47 @@ jb.component('macroTest.nameValuePattern', {
   )
 })
 
-jb.component('macroTest.singleFunc', {
+component('macroTest.singleFunc', {
   impl: dataTest(
     pipeline(() => jb.utils.prettyPrintWithPositions(frontEnd.init(({ }, { }) => 5)), '%map/~action~!value%', join()),
     equals('0,14,0,29')
   )
 })
 
-jb.component('macroTest.PathInPipeline', {
+component('macroTest.PathInPipeline', {
   impl: dataTest(
     pipeline(() => jb.utils.prettyPrintWithPositions(pipeline('main')), '%map/~items~0~!value%', join()),
     equals('0,9,0,15')
   )
 })
 
-jb.component('macroTest.Array', {
+component('macroTest.Array', {
   impl: dataTest(pipeline(() => jb.utils.prettyPrintWithPositions(
     group({ controls: [] })
   ), '%map/~controls~!value[0]%'), equals(1))
 })
 
-jb.component('macroTest.primitiveArray', {
+component('macroTest.primitiveArray', {
   impl: dataTest(() => jb.utils.prettyPrintWithPositions(list(1, 2, 3, 4)), equals('%text%', 'list(1,2,3,4)'))
 })
 
-jb.component('macroTest.contains', {
+component('macroTest.contains', {
   impl: dataTest(pipeline(() => jb.utils.prettyPrintWithPositions({ $contains: 'hello' }), '%text%'), contains('hello'))
 })
 
-jb.component('macroTest.byValue.cutTailingUndefinedArgs', {
+component('macroTest.byValue.cutTailingUndefinedArgs', {
   impl: dataTest(() => jb.utils.prettyPrint(css.boxShadow({ inset: false })), notContains('undefined'))
 })
 
-jb.component('macroTest.async', {
+component('macroTest.async', {
   impl: dataTest(() => jb.utils.prettyPrint({ async a() { 3 } }), and(not(contains('a:')), contains('async a() { 3 }')))
 })
 
-jb.component('macroTest.asyncInProfile', {
+component('macroTest.asyncInProfile', {
   impl: dataTest(() => jb.utils.prettyPrint(dataTest(async () => { 5 })), and(not(contains('a:')), contains('async () => { 5 }')))
 })
 
-jb.component('macroTest.funcDefaults', {
+component('macroTest.funcDefaults', {
   impl: dataTest(
     () => jb.utils.prettyPrint({ aB(c, { b } = {}) { 3 } }),
     and(not(contains('aB:')), contains('aB(c, { b } = {}) { 3 }'))

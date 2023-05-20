@@ -1,4 +1,6 @@
-jb.component('studioTest.save', {
+using('ui-tests')
+
+component('studioTest.save', {
     impl: dataTest({
         vars: Var('newVal', () => Math.floor(Math.random() * 1000 )),
         runBefore: runActions(
@@ -17,7 +19,7 @@ jb.component('studioTest.save', {
     })
 })
 
-jb.component('eventTracker.worker.vDebugger', {
+component('eventTracker.worker.vDebugger', {
   impl: uiTest({
     control: remote.widget(studio.eventTracker(), byUri('tests•w1•vDebugger')),
     runBefore: remote.action(
@@ -33,7 +35,7 @@ jb.component('eventTracker.worker.vDebugger', {
   })
 })
 
-jb.component('eventTracker.uiTest.vDebugger', {
+component('eventTracker.uiTest.vDebugger', {
   impl: uiTest({
     timeout: 2000,
     runBefore: remote.action(

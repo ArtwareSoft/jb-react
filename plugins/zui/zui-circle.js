@@ -1,4 +1,4 @@
-jb.dsl('zui')
+dsl('zui')
 
 component('circle', {
   type: 'view',
@@ -26,7 +26,7 @@ component('circle', {
   }
 })
 
-jb.extension('zui','circle', {
+extension('zui','circle', {
     circleZuiElem: () => ({
       src: [jb.zui.vertexShaderCode({
         id:'circle',

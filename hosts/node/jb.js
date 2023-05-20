@@ -110,7 +110,7 @@ function getProcessArgument(argName) {
 function evalProfileDef(code, dsl) { 
     try {
       jb.core.unresolvedProfiles = []
-      const context = { jb, ...jb.macro.proxies, component: (...args) => jb.component(...args, dsl) }
+      const context = { jb, ...jb.macro.proxies, component: (...args) => jb.component({},dsl,...args) }
       const res = new Function(Object.keys(context), `${code}`).apply(null, Object.values(context))
       const compId = jb.core.unresolvedProfiles.slice(-1)[0].id
       jb.utils.resolveLoadedProfiles()
@@ -122,7 +122,7 @@ function evalProfileDef(code, dsl) {
 
 function resolveMacros(code, dsl) { 
     try {
-        const context = { jb, ...jb.macro.proxies, component: (...args) => jb.component(...args, dsl) }
+        const context = { jb, ...jb.macro.proxies, component: (...args) => jb.component({},dsl,...args) }
         return new Function(Object.keys(context), `return ${code}`).apply(null, Object.values(context))
     } catch (e) { 
         return {err: e}

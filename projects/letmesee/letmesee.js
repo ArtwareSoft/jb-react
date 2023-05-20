@@ -1,5 +1,5 @@
 
-jb.component('letmesee.main', {
+component('letmesee.main', {
   type: 'control', 
   impl :{$: 'group', 
     style :{$: 'card.card', width: 486, shadow: '2' }, 
@@ -45,7 +45,7 @@ jb.component('letmesee.main', {
 })
 
 
-jb.component('letmesee.card', {
+component('letmesee.card', {
   type: 'control', 
   impl :{$: 'group', 
     controls: [

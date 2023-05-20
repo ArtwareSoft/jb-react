@@ -1,4 +1,4 @@
-jb.component('animationDemo.main', {
+component('animationDemo.main', {
   type: 'control',
   impl: group({
     controls: [
@@ -29,7 +29,7 @@ jb.component('animationDemo.main', {
   })
 })
 
-jb.component('animationDemo.itemlist', {
+component('animationDemo.itemlist', {
   type: 'control',
   impl: group({
     controls: [
@@ -97,7 +97,7 @@ jb.component('animationDemo.itemlist', {
   })
 })
 
-jb.component('animationDemo.particle', {
+component('animationDemo.particle', {
   type: 'control',
   impl: group({
     layout: layout.horizontal('20'),
@@ -130,7 +130,7 @@ jb.component('animationDemo.particle', {
   })
 })
 
-jb.component('animationDemo.watchRef', {
+component('animationDemo.watchRef', {
   type: 'control',
   impl: group({
     layout: layout.vertical('30'),
@@ -143,11 +143,11 @@ jb.component('animationDemo.watchRef', {
   })
 })
 
-jb.component('dataResource.name', {
+component('dataResource.name', {
   watchableData: 'Dan'
 })
 
-jb.component('dataResource.person', {
+component('dataResource.person', {
   watchableData: {
     name: 'dan11111'
   }

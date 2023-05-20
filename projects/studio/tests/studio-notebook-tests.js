@@ -1,5 +1,5 @@
 
-jb.component('notebookTest.compToShadow', {
+component('notebookTest.compToShadow', {
   impl: 'Homer'
 })
 

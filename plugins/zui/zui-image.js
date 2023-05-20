@@ -1,4 +1,4 @@
-jb.dsl('zui')
+dsl('zui')
 
 component('image', {
   type: 'view',
@@ -36,7 +36,7 @@ component('image', {
   }
 })
 
-jb.extension('zui','image', {
+extension('zui','image', {
     initExtension() {
       return { imageViewCounter : 0}
     },
@@ -172,7 +172,7 @@ jb.extension('zui','image', {
     })
 })
 
-jb.extension('zui','atlasPool', {
+extension('zui','atlasPool', {
   initExtension() {
     return { atlasTexturePool: {} }
   },
@@ -250,7 +250,7 @@ jb.extension('zui','atlasPool', {
   },
 })
 
-jb.extension('zui','buildAtlas', {
+extension('zui','buildAtlas', {
   createAtlasSplit({mat, maxItemsInGroup, DIM, view,ctx }) {
     let groupCounter = 0
     return recursiveSplit({top:0,left:0,bottom:DIM,right:DIM})

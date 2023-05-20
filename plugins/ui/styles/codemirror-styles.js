@@ -1,5 +1,5 @@
 
-jb.extension('codemirror', {
+extension('codemirror', {
 	injectCodeMirror(ctx,{text,cmp,el,cm_settings,_enableFullScreen,formatText}) {
 		if (cmp.editor) return
 		if (text == null) {
@@ -90,7 +90,7 @@ jb.extension('codemirror', {
 	}	
 })
 
-jb.component('editableText.codemirror', {
+component('editableText.codemirror', {
   type: 'editable-text.style',
   params: [
     {id: 'cm_settings', as: 'single'},
@@ -137,7 +137,7 @@ jb.component('editableText.codemirror', {
   )
 })
 
-jb.component('codemirror.textEditorKeys', {
+component('codemirror.textEditorKeys', {
 	type: 'feature',
 	impl: frontEnd.prop('extraCmSettings', ({},{cmp,el}) => ({...cmp.extraCmSettings, ...{
 		extraKeys: {
@@ -147,7 +147,7 @@ jb.component('codemirror.textEditorKeys', {
 	}})),
 })
 
-jb.component('codemirror.fold', {
+component('codemirror.fold', {
 	type: 'feature',
 	impl: frontEnd.prop('extraCmSettings', ({},{cmp}) => ({...cmp.extraCmSettings, ...{
 		extraKeys: {
@@ -159,7 +159,7 @@ jb.component('codemirror.fold', {
 	}})),
 })
 
-jb.component('codemirror.lineNumbers', {
+component('codemirror.lineNumbers', {
 	type: 'feature',
 	impl: frontEnd.prop('extraCmSettings', ({},{cmp}) => ({...cmp.extraCmSettings, ...{
 		lineNumbers: true,
@@ -167,7 +167,7 @@ jb.component('codemirror.lineNumbers', {
 	}})),
 })
 
-jb.component('codemirror.enrichUserEvent', {
+component('codemirror.enrichUserEvent', {
     type: 'feature',
     params: [
       {id: 'cmSelector', as: 'string', description: 'used for external buttons'}
@@ -188,7 +188,7 @@ jb.component('codemirror.enrichUserEvent', {
     )
 })
 
-jb.component('text.codemirror', {
+component('text.codemirror', {
   type: 'text.style',
   params: [
     {id: 'cm_settings', as: 'single'},

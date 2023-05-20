@@ -1,4 +1,4 @@
-jb.extension('ui', 'tree', {
+extension('ui', 'tree', {
 	TreeRenderer: class TreeRenderer {
 		constructor(args) {
 			Object.assign(this,args)
@@ -22,7 +22,7 @@ jb.extension('ui', 'tree', {
 	}
 })
 
-jb.component('tree', {
+component('tree', {
   type: 'control',
   params: [
     {id: 'title', as: 'string'},
@@ -33,12 +33,12 @@ jb.component('tree', {
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('tree.noHead',{
+component('tree.noHead',{
 	type: 'feature',
 	impl: features(calcProp('noHead',true))
 })
 
-jb.component('tree.initTree', {
+component('tree.initTree', {
 	type: 'feature',
 	impl: features(
 		variable('treeCmp','%$cmp%'),
@@ -62,7 +62,7 @@ jb.component('tree.initTree', {
 	)
 })
 
-jb.component('tree.expandPath', {
+component('tree.expandPath', {
 	type: 'feature',
 	params: [
 	  {id: 'paths', as: 'array', descrition: 'array of paths to be expanded'}
@@ -79,7 +79,7 @@ jb.component('tree.expandPath', {
 })
 
 // **** styles ***
-jb.component('tree.plain', {
+component('tree.plain', {
   type: 'tree.style',
   params: [
     {id: 'showIcon', as: 'boolean', type: 'boolean'},
@@ -114,7 +114,7 @@ jb.component('tree.plain', {
   })
 })
 
-jb.component('tree.expandBox', {
+component('tree.expandBox', {
   type: 'tree.style',
   params: [
     {id: 'showIcon', as: 'boolean', type: 'boolean'},
@@ -166,7 +166,7 @@ jb.component('tree.expandBox', {
 	}),
 })
 
-jb.component('tree.selection', {
+component('tree.selection', {
   type: 'feature',
   params: [
     {id: 'databind', as: 'ref', dynamic: true},
@@ -220,7 +220,7 @@ jb.component('tree.selection', {
   )
 })
   
-jb.component('tree.keyboardSelection', {
+component('tree.keyboardSelection', {
   type: 'feature',
   macroByValue: false,
   params: [
@@ -287,7 +287,7 @@ jb.component('tree.keyboardSelection', {
   )
 })
 
-jb.component('tree.dragAndDrop', {
+component('tree.dragAndDrop', {
   type: 'feature',
   impl: features(
     frontEnd.requireExternalLibrary(['dragula.js', 'css/dragula.css']),
@@ -338,7 +338,7 @@ jb.component('tree.dragAndDrop', {
   )
 })
 
-jb.component('tree.nextSelected', {
+component('tree.nextSelected', {
 	type: 'data:0',
 	descrition: 'FE action',
 	params: [
@@ -352,13 +352,13 @@ jb.component('tree.nextSelected', {
 	}
 })
 
-jb.component('tree.pathOfInteractiveItem', {
+component('tree.pathOfInteractiveItem', {
 	type: 'data',
 	descrition: 'path of the clicked/dragged item using event.target',
 	impl: tree.pathOfElem('%$ev/target%')
 })
 
-jb.component('tree.pathOfElem', {
+component('tree.pathOfElem', {
 	type: 'data:0',
 	descrition: 'FE action',
 	params: [
@@ -367,21 +367,21 @@ jb.component('tree.pathOfElem', {
 	impl: (ctx,el) => ctx.vars.cmp && ctx.vars.cmp.elemToPath && ctx.vars.cmp.elemToPath(el)
 })
 
-jb.component('tree.parentPath', {
+component('tree.parentPath', {
 	params: [
 		{id: 'path', as: 'string', defaultValue: '%%'}
 	],
 	impl: (ctx,path) => path.split('~').slice(0,-1).join('~'),
 })
 
-jb.component('tree.lastPathElement', {
+component('tree.lastPathElement', {
 	params: [
 		{id: 'path', as: 'string', defaultValue: '%%'}
 	],
 	impl: (ctx,path) => path.split('~').pop(),
 })
 
-jb.component('tree.sameParent', { 
+component('tree.sameParent', { 
 	descrition: 'check if two paths have the same parent',
 	type: 'boolean',
 	params: [
@@ -391,12 +391,12 @@ jb.component('tree.sameParent', {
 	impl: (ctx,path1,path2) => (path1.match(/(.*?)~[0-9]*$/)||[])[1] == (path2.match(/(.*?)~[0-9]*$/)||[])[1]
 })
 
-jb.component('tree.regainFocus', {
+component('tree.regainFocus', {
 	type: 'action',
 	impl: action.focusOnCmp('regain focus','%$treeCmp/cmpId%')
 })
   
-jb.component('tree.redraw', {
+component('tree.redraw', {
 	type: 'action',
 	params: [
 	  {id: 'strong', type: 'boolean', as: 'boolean'}
@@ -407,7 +407,7 @@ jb.component('tree.redraw', {
 	}
 })
   
-jb.component('tree.moveItem', {
+component('tree.moveItem', {
 	type: 'action',
 	descrition: 'move item in backend, changing also the state of selected and expanded',
 	params: [

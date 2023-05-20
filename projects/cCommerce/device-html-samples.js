@@ -1,4 +1,4 @@
-jb.component('gsm-arena-galaxy-a8', {
+component('gsm-arena-galaxy-a8', {
   passiveData: `<body>
 
 

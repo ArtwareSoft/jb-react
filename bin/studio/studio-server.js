@@ -396,11 +396,11 @@ const op_get_handlers = {
         const path = unRepo(_path)
         return { 
           path : path.match(/^\./) ? path.slice(1) : path,
-          dsl: unique(content.split('\n').map(l=>(l.match(/^jb.dsl\('([^']+)/) || ['',''])[1]).filter(x=>x).map(x=>x.split('.')[0]))[0],
-          pluginDsl: unique(content.split('\n').map(l=>(l.match(/^jb.pluginDsl\('([^']+)/) || ['',''])[1]).filter(x=>x).map(x=>x.split('.')[0]))[0],
+          dsl: unique(content.split('\n').map(l=>(l.match(/^(jb.)?dsl\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0]))[0],
+          pluginDsl: unique(content.split('\n').map(l=>(l.match(/^(jb.)?pluginDsl\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0]))[0],
           ns: unique(content.split('\n').map(l=>(l.match(/^(jb.)?component\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0])),
-          libs: unique(content.split('\n').map(l=>(l.match(/^jb.extension\('([^']+)/) || ['',''])[1]).filter(x=>x).map(x=>x.split('.')[0])),
-          using: unique(content.split('\n').map(l=>(l.match(/^jb.using\('([^']+)/) || ['',''])[1]).filter(x=>x).flatMap(x=>x.split(',').map(x=>x.trim()))),
+          libs: unique(content.split('\n').map(l=>(l.match(/^(jb.)?extension\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0])),
+          using: unique(content.split('\n').map(l=>(l.match(/^(jb.)?using\('([^']+)/) || ['',''])[2]).filter(x=>x).flatMap(x=>x.split(',').map(x=>x.trim()))),
         }
       }
       function unique(list) {

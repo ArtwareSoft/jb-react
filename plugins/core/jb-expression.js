@@ -1,4 +1,4 @@
-jb.extension('expression', {
+extension('expression', {
   calc(_exp, ctx, parentParam) {
     const jstype = parentParam && (parentParam.ref ? 'ref' : parentParam.as)
     let exp = '' + _exp

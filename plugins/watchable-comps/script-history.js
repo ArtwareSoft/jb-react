@@ -1,4 +1,4 @@
-jb.extension('scriptHistory', {
+extension('scriptHistory', {
   $phase: 50,
   initExtension() {
     jb.utils.subscribe(jb.watchableComps.source, e => jb.scriptHistory.updateHistory(e))
@@ -40,13 +40,13 @@ jb.extension('scriptHistory', {
   }
 })
 
-jb.component('watchableComps.changedComps', {
+component('watchableComps.changedComps', {
 	impl: () => jb.utils.unique((jb.scriptHistory.compsHistory || [])
 		.slice(jb.scriptHistory.lastSaveIndex)
 		.map(e=>jb.path(e,'opEvent.path.0'))).map(id=>({id, comp: jb.comps[id]})),
 })
 
-jb.component('watchableComps.undo', {
+component('watchableComps.undo', {
   type: 'action',
   impl: ctx => {
     if (jb.scriptHistory.undoIndex > 0)
@@ -54,7 +54,7 @@ jb.component('watchableComps.undo', {
   }
 })
 
-jb.component('watchableComps.cleanSelectionPreview', {
+component('watchableComps.cleanSelectionPreview', {
   type: 'action',
   impl: () => {
     if (jb.scriptHistory.compsHistory.length > 0)
@@ -62,7 +62,7 @@ jb.component('watchableComps.cleanSelectionPreview', {
   }
 })
 
-jb.component('watchableComps.revert', {
+component('watchableComps.revert', {
   type: 'action',
   params: [
     {id: 'toIndex', as: 'number'}
@@ -75,7 +75,7 @@ jb.component('watchableComps.revert', {
   }
 })
 
-jb.component('watchableComps.redo', {
+component('watchableComps.redo', {
   type: 'action',
   impl: ctx => {
     if (jb.scriptHistory.undoIndex < jb.scriptHistory.compsHistory.length)
@@ -83,6 +83,6 @@ jb.component('watchableComps.redo', {
   }
 })
 
-jb.component('watchableComps.scriptHistoryItems', {
+component('watchableComps.scriptHistoryItems', {
   impl: ctx => jb.scriptHistory.compsHistory
 })

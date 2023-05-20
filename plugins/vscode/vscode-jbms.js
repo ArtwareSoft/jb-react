@@ -1,6 +1,7 @@
-jb.dsl('jbm')
+dsl('jbm')
+using('remote')
 
-jb.extension('vscode', 'ports', {
+extension('vscode', 'ports', {
     portFromWebViewToExt(from,to) { return {
         from, to,
         postMessage: _m => { 

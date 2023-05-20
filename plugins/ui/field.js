@@ -1,4 +1,4 @@
-jb.extension('ui', 'field', {
+extension('ui', 'field', {
   initExtension: () => ({field_id_counter : 0 }),
   writeFieldData(ctx,cmp,value,oneWay) {
     if (jb.val(ctx.vars.$model.databind(cmp.ctx)) == value) return
@@ -45,7 +45,7 @@ jb.extension('ui', 'field', {
   }
 })
 
-jb.component('field.databind', {
+component('field.databind', {
   type: 'feature',
   category: 'field:0',
   params: [
@@ -91,7 +91,7 @@ jb.component('field.databind', {
   )
 })
 
-jb.component('field.onChange', {
+component('field.onChange', {
   type: 'feature',
   category: 'field:100',
   description: 'on picklist selection, text or boolean value change',
@@ -101,7 +101,7 @@ jb.component('field.onChange', {
   impl: followUp.onDataChange({ref: '%$$model/databind%', action: call('action') })
 })
 
-jb.component('field.databindText', {
+component('field.databindText', {
   type: 'feature',
   category: 'field:0',
   params: [
@@ -142,7 +142,7 @@ jb.component('field.databindText', {
 
 // ***** validation
 
-jb.component('validation', {
+component('validation', {
   type: 'feature',
   category: 'validation:100',
   params: [
@@ -152,7 +152,7 @@ jb.component('validation', {
   impl: (ctx,validCondition,errorMessage) => ({validations: {validCondition, errorMessage }})
 })
 
-jb.component('field.title', {
+component('field.title', {
   description: 'used to set table title in button and label',
   type: 'feature',
   category: 'table:80',
@@ -164,7 +164,7 @@ jb.component('field.title', {
   })
 })
 
-jb.component('field.titleCtrl', {
+component('field.titleCtrl', {
   description: 'title as control, buttons are usefull',
   type: 'feature',
   category: 'table:80',
@@ -176,7 +176,7 @@ jb.component('field.titleCtrl', {
   })
 })
 
-jb.component('field.columnWidth', {
+component('field.columnWidth', {
   description: 'used in itemlist fields',
   type: 'feature',
   category: 'table:80',

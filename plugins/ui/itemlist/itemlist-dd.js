@@ -1,6 +1,6 @@
 // var { move } = jb.macro
 
-jb.component('itemlist.dragAndDrop', {
+component('itemlist.dragAndDrop', {
   type: 'feature',
   impl: features(
     frontEnd.requireExternalLibrary(['dragula.js','css/dragula.css']),
@@ -34,7 +34,7 @@ jb.component('itemlist.dragAndDrop', {
   )
 })
 
-jb.component('source.dragulaEvent', {
+component('source.dragulaEvent', {
   type: 'rx:0',
   params: [
     {id: 'event', as: 'string'},
@@ -44,7 +44,7 @@ jb.component('source.dragulaEvent', {
     jb.callbag.create(obs=> cmp.drake.on(event, (...args) => obs(jb.objFromEntries(args.map((v,i) => [argNames[i],v]))))))
 })
 
-jb.component('itemlist.orignialIndexFromSibling', {
+component('itemlist.orignialIndexFromSibling', {
   type: 'data:0',
   params: [
     {id: 'sibling', defaultValue: '%%'}
@@ -60,7 +60,7 @@ jb.component('itemlist.orignialIndexFromSibling', {
   }
 })
 
-jb.component('itemlist.dragHandle', {
+component('itemlist.dragHandle', {
   description: 'put on the control inside the item which is used to drag the whole line',
   type: 'feature',
   impl: features(css.class('drag-handle'), css('{cursor: pointer}'))

@@ -1,4 +1,4 @@
-jb.component('editableBoolean.checkbox', {
+component('editableBoolean.checkbox', {
   type: 'editable-boolean.style',
   impl: customStyle({
     template: ({},{databind},h) => h('input', { type: 'checkbox', ...(databind && {checked: ''}) , 
@@ -7,7 +7,7 @@ jb.component('editableBoolean.checkbox', {
   })
 })
 
-jb.component('editableBoolean.checkboxWithLabel', {
+component('editableBoolean.checkboxWithLabel', {
   type: 'editable-boolean.style',
   impl: customStyle({
     template: ({},{title,databind,fieldId},h) => h('div',{},[ 
@@ -18,7 +18,7 @@ jb.component('editableBoolean.checkboxWithLabel', {
   })
 })
 
-jb.component('editableBoolean.expandCollapseWithUnicodeChars', {
+component('editableBoolean.expandCollapseWithUnicodeChars', {
   type: 'editable-boolean.style',
   params: [
     {id: 'toExpandSign', as: 'string', defaultValue: '⯈'},
@@ -32,7 +32,7 @@ jb.component('editableBoolean.expandCollapseWithUnicodeChars', {
   })
 })
 
-jb.component('editableBoolean.expandCollapse', {
+component('editableBoolean.expandCollapse', {
   type: 'editable-boolean.style',
   impl: customStyle({
     template: ({},{databind},h) => h('i',{class:'material-icons noselect', onclick: 'toggle' },
@@ -42,7 +42,7 @@ jb.component('editableBoolean.expandCollapse', {
   })
 })
 
-jb.component('editableBoolean.mdcXV', {
+component('editableBoolean.mdcXV', {
   type: 'editable-boolean.style',
   description: 'two icons',
   params: [
@@ -61,7 +61,7 @@ jb.component('editableBoolean.mdcXV', {
   })
 })
 
-jb.component('editableBoolean.buttonXV', {
+component('editableBoolean.buttonXV', {
   type: 'editable-boolean.style',
   description: 'two icons',
   params: [
@@ -89,7 +89,7 @@ jb.component('editableBoolean.buttonXV', {
   )
 })
 
-jb.component('editableBoolean.mdcSlideToggle', {
+component('editableBoolean.mdcSlideToggle', {
   type: 'editable-boolean.style',
   params: [
     {id: 'width', as: 'string', defaultValue: 80}
@@ -110,7 +110,7 @@ jb.component('editableBoolean.mdcSlideToggle', {
   })
 })
 
-jb.component('editableBoolean.mdcCheckBox', {
+component('editableBoolean.mdcCheckBox', {
   type: 'editable-boolean.style',
   params: [
     {id: 'width', as: 'string', defaultValue: 80}
@@ -139,7 +139,7 @@ jb.component('editableBoolean.mdcCheckBox', {
   })
 })
 
-jb.component('editableBoolean.picklist', {
+component('editableBoolean.picklist', {
   type: 'editable-boolean.style',
   params: [
     {id: 'picklistStyle', type: 'picklist.style', defaultValue: picklist.native(), dynamic: true },

@@ -1,5 +1,5 @@
 
-jb.extension('styleGallery', {
+extension('styleGallery', {
   getAllStyles(cmpId) {
     const comp = jb.comps[cmpId] || jb.core.unresolvedProfiles.find(x=>x.id==cmpId).comp
     const styleType = comp.params.find(p=>p.id =='style').type
@@ -7,7 +7,7 @@ jb.extension('styleGallery', {
   }
 })
 
-jb.component('styleGallery.loadStyles', {
+component('styleGallery.loadStyles', {
   params: [
     {id: 'component', as: 'string'}
   ],
@@ -17,7 +17,7 @@ jb.component('styleGallery.loadStyles', {
   )
 })
 
-jb.component('styleGallery.stylesOfUiComponent', {
+component('styleGallery.stylesOfUiComponent', {
   params: [
     {id: 'ctrl', as: 'string'}
   ],
@@ -25,13 +25,13 @@ jb.component('styleGallery.stylesOfUiComponent', {
       jb.tgp.PTsOfType(ctrl).filter(x=>['customStyle','styleByControl','styleWithFeatures'].indexOf(x) == -1).sort()
 })
 
-jb.component('styleGallery.variations', {
+component('styleGallery.variations', {
   impl: () => ({ 
     button: { prop: 'raised', values: [true,false] } 
   })
 })
 
-jb.component('styleGallery.controlVariations', {
+component('styleGallery.controlVariations', {
   internal: true,
   params: [
     {id: 'ctrl', as: 'string'},
@@ -84,8 +84,8 @@ jb.component('styleGallery.controlVariations', {
 })
 
 
-jb.defComponents('button,text,editableText,editableNumber,editableBoolean,group,itemlist,picklist,image,multiSelect'.split(','),
-  ctrl => jb.component(`styleGallery.${ctrl}`, ({ 
+ jb.defComponents('button,text,editableText,editableNumber,editableBoolean,group,itemlist,picklist,image,multiSelect'.split(','),
+  ctrl => component(`styleGallery.${ctrl}`, ({ 
     type: 'control',
     params: [
       {id: 'ctrl', as: 'string', defaultValue: ctrl}
@@ -114,7 +114,7 @@ jb.defComponents('button,text,editableText,editableNumber,editableBoolean,group,
     }),
 })))
 
-jb.component('dataResource.person', {
+component('dataResource.person', {
   watchableData: {
     name: 'Homer Simpson',
     male: true,
@@ -123,7 +123,7 @@ jb.component('dataResource.person', {
   }
 })
 
-jb.component('dataResource.people', {
+component('dataResource.people', {
   watchableData: [
     {name: 'Homer Simpson', age: 42, male: true},
     {name: 'Marge Simpson', age: 38, male: false},
@@ -131,6 +131,6 @@ jb.component('dataResource.people', {
   ]
 })
 
-jb.component('galleryMultiChoice',{ watchableData : {
+component('galleryMultiChoice',{ watchableData : {
   result: ["Homer Simpson"],
 }})

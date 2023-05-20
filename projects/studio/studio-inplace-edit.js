@@ -1,5 +1,5 @@
 
-jb.component('inplaceEdit.activate', {
+component('inplaceEdit.activate', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -26,7 +26,7 @@ jb.component('inplaceEdit.activate', {
   )
 })
 
-jb.component('inplaceEdit.popupStyle', {
+component('inplaceEdit.popupStyle', {
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,{contentComp},h) => h('div.jb-dialog jb-popup',{}, h(contentComp)),
@@ -46,7 +46,7 @@ jb.component('inplaceEdit.popupStyle', {
   })
 })
 
-jb.component('inplaceEdit.openToolbarOfLastEdit', {
+component('inplaceEdit.openToolbarOfLastEdit', {
   type: 'action',
   impl: ctx => {
       const path = ctx.run(studio.lastEdit())
@@ -60,7 +60,7 @@ jb.component('inplaceEdit.openToolbarOfLastEdit', {
     }
 })
 
-jb.component('inplaceEdit.toolbar', {
+component('inplaceEdit.toolbar', {
   type: 'control',
   params: [
     {id: 'path'}
@@ -179,7 +179,7 @@ Object.assign(jb.ui, {
   },
 })
 
-jb.component('inplaceEdit.thumbStyle', {
+component('inplaceEdit.thumbStyle', {
     type: 'dialog.style',
     impl: customStyle({
       template: (cmp,state,h) => h('div.jb-dialog jb-popup',{},h(state.contentComp)),

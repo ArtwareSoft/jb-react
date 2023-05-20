@@ -1,5 +1,5 @@
   
-jb.component('studio.propertyPrimitive', {
+component('studio.propertyPrimitive', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -10,7 +10,7 @@ jb.component('studio.propertyPrimitive', {
     features: [
       feature.onKey('Right', suggestions.applyOption('/')),
       editableText.picklistHelper({
-        options: suggestions.calcFromRemote('%$path%', true),
+        options: suggestions.calcFromProbePreview('%$path%', true),
         picklistStyle: studio.suggestionList(),
         picklistFeatures: picklist.allowAsynchOptions(),
         showHelper: suggestions.shouldShow(true),
@@ -20,7 +20,7 @@ jb.component('studio.propertyPrimitive', {
   })
 })
 
-jb.component('studio.jbFloatingInput', {
+component('studio.jbFloatingInput', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -87,7 +87,7 @@ jb.component('studio.jbFloatingInput', {
               ),
               feature.onKey('Esc', runActions(dialog.closeDialogById('studio-jb-editor-popup'), popup.regainCanvasFocus())),
               editableText.picklistHelper({
-                options: suggestions.calcFromRemote('%$path%'),
+                options: suggestions.calcFromProbePreview('%$path%'),
                 picklistStyle: studio.suggestionList(),
                 picklistFeatures: picklist.allowAsynchOptions(),
                 showHelper: suggestions.shouldShow()
@@ -108,7 +108,7 @@ jb.component('studio.jbFloatingInput', {
   })
 })
 
-jb.component('studio.suggestionList', {
+component('studio.suggestionList', {
   type: 'picklist.style',
   impl: styleByControl(
     itemlist({

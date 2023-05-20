@@ -1,4 +1,4 @@
-jb.component('jbEditorChildrenTest', {
+component('jbEditorChildrenTest', {
   type: 'test',
   params: [
     {id: 'path', as: 'string'},

@@ -1,4 +1,4 @@
-jb.component('studio.dropHtml', {
+component('studio.dropHtml', {
   params: [
     {id: 'onDrop', type: 'action', dynamic: true, description: 'use %$newCtrl%'}
   ],
@@ -19,14 +19,15 @@ jb.component('studio.dropHtml', {
   )
 })
 
-jb.component('studio.htmlToControl', {
+component('studio.htmlToControl', {
   params: [
     {id: 'html' }
   ],
   impl: (ctx,html) => jb.ui.htmlToControl(html,ctx)
 })
 
-jb.ui.cssProcessors = {
+extension('ui','cssProcessors', { 
+    initExtension() {  return {  cssProcessors: {
     layout: {
         filter: prop => prop.match(/flex|grid|justify-|align-/) ||
             ['position','display','order','top','left','right','bottom','box-sizing','vertical-align'].find(x=>prop.indexOf(x+':') == 0),
@@ -100,32 +101,45 @@ jb.ui.cssProcessors = {
         filter: x => x.match(/font|text-/),
         features: props => css.typography(props.join(';'))
     },
-}
+ }}
+}})
 
-function cssToFeatures(cssProps) {
-    const res = Object.values(jb.ui.cssProcessors).reduce((agg,proc) => {
-        const props4Features = agg.props.filter(p=>proc.filter(p,cssProps))
-        const features = props4Features.length ? jb.asArray(proc.features(props4Features)).filter(x=>x) : []
-        return {
-            props: agg.props.filter(p=>! proc.filter(p,cssProps)),
-            features: [...agg.features, ...features]
-    }}, {props: cssProps, features: []})
-    return res.features.concat([css(res.props.join(';'))])
-}
+extension('ui','htmlToControl', {
+    initExtension() {
+        return { htmlToControlIgnoreProps: `block-size,border-block-end,border-block-end-color,border-block-start,border-block-start-color,
+            border-inline-end,border-inline-end-color,border-inline-start,border-inline-start-color,caret-color,
+            column-rule,column-rule-color,inline-size,line-height,margin-block-end,margin-block-start,
+            margin-inline-end,margin-inline-start,perspective-origin,transform-origin,webkit-border-after,webkit-border-after-color,
+            webkit-border-before,webkit-border-before-color,webkit-border-end,webkit-border-end-color,webkit-border-start,
+            webkit-border-start-color,webkit-column-rule,webkit-column-rule-color,webkit-locale,
+            webkit-logical-height,webkit-logical-width,webkit-margin-after,webkit-margin-before,
+            webkit-margin-end,webkit-margin-start,webkit-perspective-origin,webkit-text-emphasis-color,
+            webkit-text-fill-color,webkit-text-stroke-color,webkit-transform-origin`.split(',').map(x=>x.trim())
+        }
+    },
+    cssToFeatures(cssProps) {
+        const res = Object.values(jb.ui.cssProcessors).reduce((agg,proc) => {
+            const props4Features = agg.props.filter(p=>proc.filter(p,cssProps))
+            const features = props4Features.length ? jb.asArray(proc.features(props4Features)).filter(x=>x) : []
+            return {
+                props: agg.props.filter(p=>! proc.filter(p,cssProps)),
+                features: [...agg.features, ...features]
+        }}, {props: cssProps, features: []})
+        return res.features.concat([css(res.props.join(';'))])
+    },    
+    cleanRedundentCssFeatures(cssFeatures,{remove} = {}) {
+        const removeMap = jb.objFromEntries((remove||[]).map(x=>[x,true]))
+        const _features = cssFeatures.map(f=>({f, o: jb.exec(f)}))
+        const props = _features.map(x=>x.o.css).filter(x=>x)
+                .map(x=>typeof x == 'string' ?x : x())
+                .flatMap(x=>x.split(';'))
+                .map(x=>x.replace('{','').replace('}','').replace(/\s*:\s*/g,':').trim() )
+                .filter(x=>x)
+                .filter(x=>!removeMap[x])
+        return [...jb.ui.cssToFeatures(jb.utils.unique(props)),..._features.filter(x=>!x.o.css).map(x=>x.f)]
+    },
 
-jb.ui.cleanRedundentCssFeatures = function(cssFeatures,{remove} = {}) {
-    const removeMap = jb.objFromEntries((remove||[]).map(x=>[x,true]))
-    const _features = cssFeatures.map(f=>({f, o: jb.exec(f)}))
-    const props = _features.map(x=>x.o.css).filter(x=>x)
-            .map(x=>typeof x == 'string' ?x : x())
-            .flatMap(x=>x.split(';'))
-            .map(x=>x.replace('{','').replace('}','').replace(/\s*:\s*/g,':').trim() )
-            .filter(x=>x)
-            .filter(x=>!removeMap[x])
-    return [...cssToFeatures(jb.utils.unique(props)),..._features.filter(x=>!x.o.css).map(x=>x.f)]
-}
-
-jb.ui.htmlToControl = function(html,ctx) {
+    htmlToControl(html,ctx) {
     if (!html)
         return jb.logError('htmlToControl - empty html' ,{ctx})
     let elem,width,height
@@ -161,7 +175,7 @@ jb.ui.htmlToControl = function(html,ctx) {
             styleAtt: isAttached && jb.entries(jb.utils.objectDiff(getComputedStyle(elem), getComputedStyle(parentElem)))
                 .map(([p,v])=> [p.replace(/([A-Z])/g, (g) => `-${g[0].toLowerCase()}`),v])
                 .filter(([p,v])=> !(v.indexOf('0px') == 0 && p.match(/border|column/) != -1))
-                .filter(([p])=> jb.ui.htmlToControl.ignoreProps.indexOf(p) == -1)
+                .filter(([p])=> jb.ui.htmlToControlIgnoreProps.indexOf(p) == -1)
                 .map(([p,v])=>`${p}:${v}`).join(';'),
             tag: fixTag(elem.tagName.toLowerCase()),
             attributes: jb.objFromEntries([
@@ -213,7 +227,7 @@ jb.ui.htmlToControl = function(html,ctx) {
                 .map(att=> htmlAttribute(att,atts[att]))
             return [
                 atts.class && css.class(atts.class), 
-                ...(styleCss && cssToFeatures(featureProps) || []), ...attfeatures].filter(x=>x)
+                ...(styleCss && jb.ui.cssToFeatures(featureProps) || []), ...attfeatures].filter(x=>x)
         }
 
         function extractStyle() {
@@ -254,17 +268,5 @@ jb.ui.htmlToControl = function(html,ctx) {
                     : image.widthHeight(... val.split(' ').map(x=>x.trim().replace(/px/,'')))
                 )[0]
         }
-    }
-}
-
-Object.assign(jb.ui.htmlToControl,{
-ignoreProps: `block-size,border-block-end,border-block-end-color,border-block-start,border-block-start-color,
-border-inline-end,border-inline-end-color,border-inline-start,border-inline-start-color,caret-color,
-column-rule,column-rule-color,inline-size,line-height,margin-block-end,margin-block-start,
-margin-inline-end,margin-inline-start,perspective-origin,transform-origin,webkit-border-after,webkit-border-after-color,
-webkit-border-before,webkit-border-before-color,webkit-border-end,webkit-border-end-color,webkit-border-start,
-webkit-border-start-color,webkit-column-rule,webkit-column-rule-color,webkit-locale,
-webkit-logical-height,webkit-logical-width,webkit-margin-after,webkit-margin-before,
-webkit-margin-end,webkit-margin-start,webkit-perspective-origin,webkit-text-emphasis-color,
-webkit-text-fill-color,webkit-text-stroke-color,webkit-transform-origin`.split(',').map(x=>x.trim())
+    }}
 })

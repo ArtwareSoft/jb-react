@@ -1,5 +1,5 @@
 
-jb.extension('vscode', 'utils', {
+extension('vscode', 'utils', {
     initExtension() { return { 
         loadedProjects : {}, useCompletionServer: true, panels: {},
         ctx: new jb.core.jbCtx({},{vars: {}, path: 'vscode.tgpLang'})
@@ -228,7 +228,7 @@ jb.extension('vscode', 'utils', {
     // }
 })
 
-jb.component('vscode.openQuickPickMenu', {
+component('vscode.openQuickPickMenu', {
   type: 'action',
   params: [
     {id: 'menu', type: 'menu.option', dynamic: true, mandatory: true},
@@ -261,7 +261,7 @@ jb.component('vscode.openQuickPickMenu', {
     }
 })
 
-jb.component('vscode.gotoPath', {
+component('vscode.gotoPath', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -270,7 +270,7 @@ jb.component('vscode.gotoPath', {
   impl: (ctx,path,semanticPart) => jb.vscode.gotoPath(path,semanticPart)
 })
 
-jb.component('probe.probeByCmd', {
+component('probe.probeByCmd', {
   params: [
     {id: 'filePath', as: 'string'},
     {id: 'probePath', as: 'string'}

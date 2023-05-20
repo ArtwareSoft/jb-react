@@ -1,4 +1,4 @@
-jb.extension('studioCompletion', {
+extension('studioCompletion', {
     initExtension() {
         return { OPEN: ['{','['], CLOSE: ['}',']']}
     },

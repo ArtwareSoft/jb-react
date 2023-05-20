@@ -1,5 +1,5 @@
 
-jb.component('pptr.newPage', {
+component('pptr.newPage', {
   type: 'rx,pptr',
   params: [
     {id: 'url', as: 'string', dynamic: true, mandatory: true},
@@ -16,7 +16,7 @@ jb.component('pptr.newPage', {
   )
 })
 
-jb.component('pptr.selectElement', {
+component('pptr.selectElement', {
     type: 'rx,pptr',
     params: [
         {id: 'select', type: 'pptr.selector', mandatory: true },
@@ -35,7 +35,7 @@ jb.component('pptr.selectElement', {
         rx.var('%$resultVar%')),
 })
 
-jb.component('pptr.querySelector', {
+component('pptr.querySelector', {
   type: 'rx,pptr,pptr.selector',
   params: [
     {id: 'selector', as: 'string'},
@@ -46,7 +46,7 @@ jb.component('pptr.querySelector', {
   )
 })
 
-jb.component('pptr.xpath', {
+component('pptr.xpath', {
     type: 'rx,pptr,pptr.selector',
     params: [
         {id: 'xpath', as: 'string', mandatory: true, description: "e.g, //*[contains(text(), 'Hello')]" },
@@ -54,7 +54,7 @@ jb.component('pptr.xpath', {
     impl: pptr.mapPromise((ctx,{},{xpath}) => jb.pptr.runMethod(ctx,'$x',xpath)),
 })
 
-jb.component('pptr.jsFunction', {
+component('pptr.jsFunction', {
   type: 'rx,pptr,pptr.selector',
   params: [
     {id: 'expression', as: 'string', mandatory: true}
@@ -64,7 +64,7 @@ jb.component('pptr.jsFunction', {
   )
 })
 
-jb.component('pptr.jsProperty', {
+component('pptr.jsProperty', {
     type: 'rx,pptr,pptr.selector',
     params: [
         {id: 'propName', as: 'string',  options: 'value,innerHTML,outerHTML,href,textContent', mandatory: true}
@@ -72,7 +72,7 @@ jb.component('pptr.jsProperty', {
     impl: pptr.mapPromise((ctx,{},{propName}) => jb.pptr.runMethod(ctx,'evaluate',eval(`x => x && x.${propName} `),ctx.data))
 })
 
-jb.component('pptr.elementWithText', {
+component('pptr.elementWithText', {
     type: 'rx,pptr,pptr.selector',
     description: 'look for a node with text',
     params: [
@@ -130,7 +130,7 @@ jb.component('pptr.elementWithText', {
 //     ],
 //     impl: pptr.mapPromise((ctx,{},{propName}) => jb.pptr.runMethod(ctx,'evaluate',eval(`x => x && x.${propName} `))),
 // })
-jb.component('pptr.waitForFunction', {
+component('pptr.waitForFunction', {
     type: 'rx,pptr',
     params: [
         {id: 'condition', as: 'string' },
@@ -143,7 +143,7 @@ jb.component('pptr.waitForFunction', {
         pptr.mapPromise((ctx,{},{condition,polling,timeout}) => jb.pptr.runMethod(ctx,'waitForFunction',condition,{polling, timeout})))
 })
 
-jb.component('pptr.evaluate', {
+component('pptr.evaluate', {
   type: 'rx,pptr',
   description: 'evaluate javascript expression',
   params: [
@@ -156,7 +156,7 @@ jb.component('pptr.evaluate', {
 })
 
 
-jb.component('pptr.mouseClick', {
+component('pptr.mouseClick', {
     type: 'rx,pptr',
     description: 'clicks on current element',
     params: [
@@ -167,7 +167,7 @@ jb.component('pptr.mouseClick', {
     impl: pptr.doPromise(({data},{},args) => data && data.constructor.name == 'ElementHandle' && data.click(args))
 })
 
-jb.component('pptr.type', {
+component('pptr.type', {
     description: 'enter input form field data',
     type: 'rx,pptr',
     params: [
@@ -178,12 +178,12 @@ jb.component('pptr.type', {
     impl: pptr.doPromise((ctx,{},{text, enterAtEnd, delay}) => jb.pptr.runMethod(ctx,'type', text + (enterAtEnd ? String.fromCharCode(13): ''), {delay}))
 })
 
-jb.component('pptr.closeBrowser', {
+component('pptr.closeBrowser', {
     type: 'action',
     impl: (ctx,{browser}) => browser.close()
 })
 
-jb.component('pptr.repeatingAction', {
+component('pptr.repeatingAction', {
     type: 'pptr.action',
     params: [
         {id: 'action', as: 'string' },
@@ -192,7 +192,7 @@ jb.component('pptr.repeatingAction', {
     impl: pptr.evaluate('setInterval(() => { %$action% } ,%$intervalTime%)')
 })
 
-jb.component('pptr.endlessScrollDown', {
+component('pptr.endlessScrollDown', {
     type: 'rx,pptr',
     impl: rx.innerPipe(
         pptr.repeatingAction('window.scrollPos = window.scrollPos || []; window.scrollPos.push(window.scrollY); window.scrollTo(0,document.body.scrollHeight)' ,500),
@@ -201,12 +201,12 @@ jb.component('pptr.endlessScrollDown', {
 
 // ************ frames *********
 
-jb.component('pptr.gotoInnerFrameBody', {
+component('pptr.gotoInnerFrameBody', {
     type: 'rx,pptr',
     impl: pptr.selectElement(pptr.jsFunction("document.querySelector('iframe').contentDocument.body"))
 })
 
-jb.component('pptr.javascriptOnPptr', {
+component('pptr.javascriptOnPptr', {
     type: 'rx,pptr',
     description: 'advanced, run the function on the pptr server using pptr api',
     params: [
@@ -215,7 +215,7 @@ jb.component('pptr.javascriptOnPptr', {
     impl: pptr.mapPromise((ctx,{},{func}) => func(ctx))
 })
 
-jb.component('pptr.contentFrame', {
+component('pptr.contentFrame', {
     type: 'rx,pptr',
     description: 'retruns a frame object of the current element',
     impl: pptr.mapPromise(({data}) => data.contentFrame && data.contentFrame())

@@ -1,6 +1,6 @@
 
 
-jb.component('studio.browseRx', {
+component('studio.browseRx', {
   type: 'control',
   params: [
     {id: 'rx'}
@@ -16,7 +16,7 @@ jb.component('studio.browseRx', {
   })
 })
 
-jb.component('studio.showRxSniffer', {
+component('studio.showRxSniffer', {
   type: 'control',
   params: [
     {id: 'snifferLog'}

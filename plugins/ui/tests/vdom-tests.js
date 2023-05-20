@@ -1,41 +1,41 @@
 const h = jb.ui.h
 
-jb.component('uiTest.applyVdomDiffText', {
+component('uiTest.applyVdomDiffText', {
   impl: uiTest.applyVdomDiff(
     ctx => h('div',{},'aa'),
     ctx => h('div',{},'bb')
   )
 })
 
-jb.component('uiTest.applyVdomDiffTag', {
+component('uiTest.applyVdomDiffTag', {
   impl: uiTest.applyVdomDiff(
     ctx => h('span',{},'aa'),
     ctx => h('div',{},'bb')
   )
 })
 
-jb.component('uiTest.applyVdomDiffToText', {
+component('uiTest.applyVdomDiffToText', {
   impl: uiTest.applyVdomDiff(
     ctx => h('div',{},'aa'),
     ctx => 'aa'
   )
 })
 
-jb.component('uiTest.applyVdomDiffMixed', {
+component('uiTest.applyVdomDiffMixed', {
   impl: uiTest.applyVdomDiff(
     ctx => h('div',{},'aa'),
     ctx => h('div',{},h('div',{},'bb'))
   )
 })
 
-jb.component('uiTest.applyVdomDiffMixed2', {
+component('uiTest.applyVdomDiffMixed2', {
   impl: uiTest.applyVdomDiff(
     ctx => h('div',{},h('div',{},'bb')),
     ctx => h('div',{},'aa')
   )
 })
 
-jb.component('uiTest.applyVdomDiffDDTree1', {
+component('uiTest.applyVdomDiffDDTree1', {
   impl: uiTest.applyVdomDiff(
     group({
       controls: [
@@ -66,7 +66,7 @@ jb.component('uiTest.applyVdomDiffDDTree1', {
   )
 })
 
-jb.component('uiTest.applyVdomDiff.TableTree', {
+component('uiTest.applyVdomDiff.TableTree', {
   impl: uiTest.applyVdomDiff(
     tableTree({
       treeModel: tree.json(() => ({ names: ["Homer Simpson", "Marge Simpson", "Bart Simpson"] })),
@@ -81,7 +81,7 @@ jb.component('uiTest.applyVdomDiff.TableTree', {
   )
 })
 
-jb.component('uiTest.applyVdomDiff.TableTree2', {
+component('uiTest.applyVdomDiff.TableTree2', {
   impl: uiTest.applyVdomDiff(
     tableTree({
       treeModel: tree.json(() => ({ name: 'mukki'})),
@@ -96,7 +96,7 @@ jb.component('uiTest.applyVdomDiff.TableTree2', {
   )
 })
 
-jb.component('uiTest.applyVdomDiff.TableTo.toAppendInTheMiddle', {
+component('uiTest.applyVdomDiff.TableTo.toAppendInTheMiddle', {
   impl: uiTest.applyVdomDiff(
     tableTree({
       treeModel: tree.jsonReadOnly('%$personWithChildren%', ''),

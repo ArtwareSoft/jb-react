@@ -1,4 +1,4 @@
-jb.component('dialog.studioJbEditorPopup', {
+component('dialog.studioJbEditorPopup', {
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,{contentComp},h) => h('div',{ class: 'jb-dialog jb-popup' },[
@@ -38,7 +38,7 @@ jb.component('dialog.studioJbEditorPopup', {
   })
 })
 
-jb.component('studio.nearLauncherPosition', {
+component('studio.nearLauncherPosition', {
   type: 'dialog-feature',
   impl: dialogFeature.nearLauncherPosition({
     offsetLeft: (ctx,{cursorCoord}) => cursorCoord && cursorCoord.left || 0,
@@ -46,7 +46,7 @@ jb.component('studio.nearLauncherPosition', {
   })
 })
 
-jb.component('dialog.studioSuggestionsPopup', {
+component('dialog.studioSuggestionsPopup', {
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup' },[

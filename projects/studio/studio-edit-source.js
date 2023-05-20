@@ -1,5 +1,5 @@
 
-jb.component('sourceEditor.refreshEditor', {
+component('sourceEditor.refreshEditor', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -7,7 +7,7 @@ jb.component('sourceEditor.refreshEditor', {
   impl: (ctx,path) =>  ctx.vars.refreshEditor && ctx.vars.refreshEditor(path)
 })
 
-jb.component('sourceEditor.propOptions', {
+component('sourceEditor.propOptions', {
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -18,12 +18,12 @@ jb.component('sourceEditor.propOptions', {
   }
 })
 
-jb.component('sourceEditor.storeToRef', {
+component('sourceEditor.storeToRef', {
   type: 'action',
   impl: ctx => ctx.vars.editor && ctx.vars.editor() && ctx.vars.editor().storeToRef()
 })
 
-jb.component('sourceEditor.firstParamAsArrayPath', {
+component('sourceEditor.firstParamAsArrayPath', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -35,7 +35,7 @@ jb.component('sourceEditor.firstParamAsArrayPath', {
   }
 })
 
-jb.component('studio.filePosOfPath', {
+component('studio.filePosOfPath', {
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -50,7 +50,7 @@ jb.component('studio.filePosOfPath', {
   }
 })
 
-jb.component('studio.gotoSource', {
+component('studio.gotoSource', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -67,7 +67,7 @@ jb.component('studio.gotoSource', {
   })
 })
 
-jb.component('studio.editableSource', {
+component('studio.editableSource', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'},
@@ -85,7 +85,7 @@ jb.component('studio.editableSource', {
   })
 })
 
-jb.component('studio.editSource', {
+component('studio.editSource', {
   type: 'action',
   params: [
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
@@ -101,7 +101,7 @@ jb.component('studio.editSource', {
   }))
 })
 
-jb.component('studio.viewAllFiles', {
+component('studio.viewAllFiles', {
   type: 'action',
   params: [
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
@@ -138,7 +138,7 @@ jb.component('studio.viewAllFiles', {
   })
 })
 
-jb.component('studio.gotoEditorSecondary', {
+component('studio.gotoEditorSecondary', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -168,7 +168,7 @@ jb.component('studio.gotoEditorSecondary', {
   })
 })
 
-jb.component('studio.gotoEditorFirst', {
+component('studio.gotoEditorFirst', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -181,7 +181,7 @@ jb.component('studio.gotoEditorFirst', {
   })
 })
 
-jb.component('studio.gotoEditorOptions', {
+component('studio.gotoEditorOptions', {
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}
@@ -191,7 +191,7 @@ jb.component('studio.gotoEditorOptions', {
   )
 })
 
-jb.component('studio.openEditProperty', {
+component('studio.openEditProperty', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -363,7 +363,7 @@ jb.component('studio.openEditProperty', {
 //   )
 // })
 
-jb.component('sourceEditor.addProp', {
+component('sourceEditor.addProp', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -406,7 +406,7 @@ jb.component('sourceEditor.addProp', {
   })
 })
 
-jb.component('sourceEditor.suggestionsItemlist', {
+component('sourceEditor.suggestionsItemlist', {
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -430,11 +430,11 @@ jb.component('sourceEditor.suggestionsItemlist', {
   })
 })
 
-jb.component('sourceEditor.filesOfProject', {
+component('sourceEditor.filesOfProject', {
   impl: '%$studio/projectSettings/jsFiles%'
 })
 
-jb.component('studio.githubHelper', {
+component('studio.githubHelper', {
   type: 'action',
   impl: openDialog({
     style: dialog.studioFloating({id: 'github-helper', width: 600}),

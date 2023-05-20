@@ -1,5 +1,5 @@
 
-jb.extension('tgp', 'readOnly', {
+extension('tgp', 'readOnly', {
 	parentPath: path => path.split('~').slice(0,-1).join('~'),
 	parents: path => path.split('~').reduce((acc,last,i) => acc.concat(i ? [acc[acc.length-1],last].join('~') : last),[]).reverse(),
 	valOfPath: path => { 
@@ -209,9 +209,9 @@ jb.extension('tgp', 'readOnly', {
 
 // ******* components ***************
 
-jb.defComponents(
+ jb.defComponents(
 'isArrayType,parentPath,shortTitle,summary,isDisabled,enumOptions,propName,paramDef,paramType,moreParams,paramsOfPath,firstChildOfPath,canWrapWithArray'
-	.split(','), f => jb.component(`tgp.${f}`, { 
+	.split(','), f => component(`tgp.${f}`, { 
 	params: [
 		{id: 'path', as: 'string', mandatory: true},
 		{id: 'func', as: 'string', defaultValue: f}
@@ -220,35 +220,35 @@ jb.defComponents(
 	  require: `() => #jb.tgp.${f}()`
 }))
 
-jb.component('tgp.compName', {
+component('tgp.compName', {
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => jb.tgp.compNameOfPath(path) || ''
 })
 
-jb.component('tgp.shortCompName', {
+component('tgp.shortCompName', {
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => jb.tgp.shortCompNameOfPath(path)
 })
 
-jb.component('tgp.val', {
+component('tgp.val', {
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
   impl: (ctx,path) => jb.tgp.valOfPath(path)
 })
 
-jb.component('tgp.isPrimitiveValue', {
+component('tgp.isPrimitiveValue', {
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
   impl: (ctx,path) => jb.utils.isPrimitiveValue(jb.tgp.valOfPath(path))
 })
 
-jb.component('tgp.isOfType', {
+component('tgp.isOfType', {
   params: [
     {id: 'path', as: 'string', mandatory: true},
     {id: 'type', as: 'string', mandatory: true}
@@ -256,14 +256,14 @@ jb.component('tgp.isOfType', {
   impl: (ctx,path,_type) =>	jb.tgp.isOfType(path,_type)
 })
 
-jb.component('tgp.PTsOfType', {
+component('tgp.PTsOfType', {
   params: [
     {id: 'type', as: 'string', mandatory: true}
   ],
   impl: (ctx,_type) => jb.tgp.PTsOfType(_type)
 })
 
-jb.component('tgp.categoriesOfType', {
+component('tgp.categoriesOfType', {
   params: [
     {id: 'type', as: 'string', mandatory: true},
   ],
@@ -305,7 +305,7 @@ jb.component('tgp.categoriesOfType', {
 	}
 })
 
-jb.component('tgp.iconOfType', {
+component('tgp.iconOfType', {
   type: 'data',
   params: [
     {id: 'type', as: 'string'}
@@ -324,7 +324,7 @@ jb.component('tgp.iconOfType', {
 	}
 })
 
-jb.component('tgp.titleToId', {
+component('tgp.titleToId', {
   type: 'data',
   params: [
     {id: 'name', as: 'string', defaultValue: '%%'}
@@ -332,7 +332,7 @@ jb.component('tgp.titleToId', {
   impl: ({},name) => jb.macro.titleToId(name)
 })
 
-jb.component('tgp.isArrayItem', {
+component('tgp.isArrayItem', {
   type: 'boolean',
   params: [
     {id: 'path', as: 'string'}
@@ -340,7 +340,7 @@ jb.component('tgp.isArrayItem', {
   impl: (ctx,path) => Array.isArray(jb.tgp.valOfPath(jb.tgp.parentPath(path)))
 })
 
-jb.component('tgp.isCssPath', {
+component('tgp.isCssPath', {
   type: 'boolean',
   description: 'check if the script will change only css and not html',
   params: [

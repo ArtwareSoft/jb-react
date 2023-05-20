@@ -1,8 +1,8 @@
-jb.extension('mdIcons', {
+extension('mdIcons', {
   $requireLibs: ['/dist/md-icons.js']
 })
 
-jb.component('mdcStyle.initDynamic', {
+component('mdcStyle.initDynamic', {
   type: 'feature',
   params: [
     {id: 'query', as: 'string'}
@@ -36,7 +36,7 @@ jb.component('mdcStyle.initDynamic', {
   )
 })
 
-jb.component('feature.mdcRippleEffect', {
+component('feature.mdcRippleEffect', {
   type: 'feature',
   description: 'add ripple effect',
   impl: () => ({
@@ -44,7 +44,7 @@ jb.component('feature.mdcRippleEffect', {
    })
 })
 
-jb.component('label.mdcRippleEffect', {
+component('label.mdcRippleEffect', {
   type: 'text.style',
   impl: customStyle({
     template: ({},{text},h) => h('button.mdc-button',{},[

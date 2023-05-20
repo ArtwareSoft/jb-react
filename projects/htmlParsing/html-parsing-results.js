@@ -1,4 +1,4 @@
-jb.component('dataResource.deviceUrls', { /* dataResource.deviceUrls */
+component('dataResource.deviceUrls', { /* dataResource.deviceUrls */
   passiveData: [
     'acer_chromebook_tab_10-9139',
     'acer_iconia_talk_s-8306',
@@ -43,7 +43,7 @@ jb.component('dataResource.deviceUrls', { /* dataResource.deviceUrls */
   ]
 })
 
-jb.component('dataResource.devices', { /* dataResource.devices */
+component('dataResource.devices', { /* dataResource.devices */
   passiveData: {
     'acer_iconia_talk_s-8306': {
       Technology: 'GSM / HSPA / LTE',

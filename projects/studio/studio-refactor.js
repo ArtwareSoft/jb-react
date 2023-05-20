@@ -1,4 +1,4 @@
-jb.component('studio.openExtractComponent', {
+component('studio.openExtractComponent', {
   type: 'action',
   params: [
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
@@ -23,7 +23,7 @@ jb.component('studio.openExtractComponent', {
   }))
 })
 
-jb.component('studio.canExtractParam', {
+component('studio.canExtractParam', {
 	type: 'boolean',
 	params: [
         {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()},
@@ -31,7 +31,7 @@ jb.component('studio.canExtractParam', {
     impl: (ctx,path) => path.match(/~/) && !path.match(/~impl$/)
 })
 
-jb.component('studio.calcExtractComponent', {
+component('studio.calcExtractComponent', {
 	description: 'returns the suggested component comp with save action',
 	type: 'data',
 	params: [
@@ -72,7 +72,7 @@ jb.component('studio.calcExtractComponent', {
 	}
 })
 
-jb.component('studio.extractComponentDialog', {
+component('studio.extractComponentDialog', {
     type: 'control',
     params: [
       {id: 'path', as: 'string', mandatory: true}
@@ -127,7 +127,7 @@ jb.component('studio.extractComponentDialog', {
 
 // *********** extract param
 
-jb.component('studio.openExtractParam', {
+component('studio.openExtractParam', {
     type: 'action',
     params: [
         {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()},
@@ -151,7 +151,7 @@ jb.component('studio.openExtractParam', {
     }))
 })
 
-jb.component('studio.calcExtractParam', {
+component('studio.calcExtractParam', {
 	type: 'data',
 	params: [
         {id: 'path', as: 'string', mandatory: true},
@@ -181,7 +181,7 @@ jb.component('studio.calcExtractParam', {
 	}
 })
 
-jb.component('studio.extractParamDialog', {
+component('studio.extractParamDialog', {
   type: 'control',
   params: [
     {id: 'path', as: 'string', mandatory: true}
@@ -234,7 +234,7 @@ jb.component('studio.extractParamDialog', {
 
 // ** make local
 
-jb.component('studio.canMakeLocal', {
+component('studio.canMakeLocal', {
 	type: 'boolean',
 	params: [
         {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()},
@@ -242,7 +242,7 @@ jb.component('studio.canMakeLocal', {
     impl: ({},path) => jb.utils.isObject(jb.path(jb.tgp.compOfPath(path),'impl'))
 })
 
-jb.component('studio.calcMakeLocal', {
+component('studio.calcMakeLocal', {
     type: 'data,action',
     params: [
       {id: 'path', as: 'string'},
@@ -331,7 +331,7 @@ jb.component('studio.calcMakeLocal', {
     }
 })
 
-jb.component('studio.openMakeLocal', {
+component('studio.openMakeLocal', {
     type: 'action',
     params: [
         {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()},

@@ -1,7 +1,7 @@
-jb.dsl('d3')
-jb.using('ui')
+dsl('d3')
+using('ui')
 
-jb.extension('d3', {
+extension('d3', {
 })
 
 component('d3.scatter', {

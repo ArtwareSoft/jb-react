@@ -1,4 +1,4 @@
-jb.component('propertySheet.titlesLeft', {
+component('propertySheet.titlesLeft', {
   type: 'group.style',
   params: [
     {id: 'titleStyle', type: 'text.style', defaultValue: styleWithFeatures(text.span(), css.bold()), dynamic: true},
@@ -16,7 +16,7 @@ jb.component('propertySheet.titlesLeft', {
   })
 })
 
-jb.component('propertySheet.titlesAbove', {
+component('propertySheet.titlesAbove', {
   type: 'group.style',
   params: [
     {id: 'titleStyle', type: 'text.style', defaultValue: styleWithFeatures(text.span(), css.bold()), dynamic: true},

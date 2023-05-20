@@ -1,4 +1,4 @@
-jb.component('pptr.crawler', {
+component('pptr.crawler', {
     type: 'pptr.crawler',
     params: [
         {id: 'rootUrl', as: 'string'},
@@ -9,7 +9,7 @@ jb.component('pptr.crawler', {
     ]
 })
 
-jb.component('pptr.pageCrawler', {
+component('pptr.pageCrawler', {
     type: 'pptr.page-crawler',
     params: [
         {id: 'url', as: 'string' },
@@ -22,11 +22,11 @@ jb.component('pptr.pageCrawler', {
 
 
 // move to data file
-jb.component('pptr.resultData', { passiveData: {
+component('pptr.resultData', { passiveData: {
 
 }})
 
-jb.component('pptr.requestQueue', { watchableData: {
+component('pptr.requestQueue', { watchableData: {
     mainQueue: {},
     resultIndex: {}
 }})

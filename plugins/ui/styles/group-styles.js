@@ -1,4 +1,4 @@
-jb.component('group.htmlTag', {
+component('group.htmlTag', {
   type: 'group.style',
   params: [
     {id: 'htmlTag', as: 'string', defaultValue: 'section', options: 'div,ul,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label,form'},
@@ -12,17 +12,17 @@ jb.component('group.htmlTag', {
   })
 })
 
-jb.component('group.div', {
+component('group.div', {
   type: 'group.style',
   impl: group.htmlTag('div')
 })
 
-jb.component('group.section', {
+component('group.section', {
   type: 'group.style',
   impl: group.htmlTag('section')
 })
 
-jb.component('group.ulLi', {
+component('group.ulLi', {
   type: 'group.style',
   impl: customStyle({
     template: (cmp,{ctrls},h) => h('ul.jb-itemlist',{},
@@ -33,7 +33,7 @@ jb.component('group.ulLi', {
   })
 })
 
-jb.component('group.card', {
+component('group.card', {
   type: 'feature',
   category: 'card:100',
   params: [
@@ -51,7 +51,7 @@ jb.component('group.card', {
   )
 })
 
-jb.component('group.chipSet', {
+component('group.chipSet', {
   type: 'feature',
   category: 'chip:100',
   params: [
@@ -63,7 +63,7 @@ jb.component('group.chipSet', {
   )
 })
 
-jb.component('group.tabs', {
+component('group.tabs', {
   type: 'group.style',
   params: [
     {id: 'tabStyle', type: 'button.style', dynamic: true, defaultValue: button.mdcTab()},
@@ -107,7 +107,7 @@ jb.component('group.tabs', {
   )
 })
 
-jb.component('group.mdcTabBar', {
+component('group.mdcTabBar', {
   type: 'group.style',
   impl: customStyle({
     template: (cmp,{ctrls},h) =>
@@ -119,7 +119,7 @@ jb.component('group.mdcTabBar', {
   })
 })
 
-jb.component('group.accordion', {
+component('group.accordion', {
   type: 'group.style',
   params: [
     {id: 'titleStyle', type: 'button.style', dynamic: true, defaultValue: button.mdcHeader(true)},
@@ -161,7 +161,7 @@ jb.component('group.accordion', {
   )
 })
 
-jb.component('group.sections', {
+component('group.sections', {
   type: 'group.style',
   params: [
     {id: 'titleStyle', type: 'text.style', dynamic: true, defaultValue: header.mdcHeaderWithIcon()},
@@ -191,7 +191,7 @@ jb.component('group.sections', {
   )
 })
 
-jb.component('group.sectionExpandCollapse', {
+component('group.sectionExpandCollapse', {
   type: 'group.style',
   params: [
     {id: 'titleCtrl', type: 'control', dynamic: true, defaultValue: text({text: '%$sectionsModel.title()%', style: header.h2() }) },
@@ -219,7 +219,7 @@ jb.component('group.sectionExpandCollapse', {
   )
 })
 
-jb.component('group.sectionsExpandCollapse', {
+component('group.sectionsExpandCollapse', {
   type: 'group.style',
   params: [
     {id: 'autoExpand', as: 'boolean' },

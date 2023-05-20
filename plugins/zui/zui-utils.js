@@ -1,5 +1,6 @@
-jb.using('ui')
-jb.extension('zui','FE-utils', {
+using('remote-widget')
+
+extension('zui','FE-utils', {
   initZuiCmp(vars,glCanvas,gl) {
     const {cmp, DIM} = vars
     const {ZOOM_LIMIT, state} = cmp
@@ -226,7 +227,7 @@ jb.extension('zui','FE-utils', {
     }`
 })
 
-jb.extension('zui','itemPositions', {
+extension('zui','itemPositions', {
   calcItemsPositions({items, pivots, DIM}) {
     const mat = Array(DIM**2)
     items.forEach(item => {

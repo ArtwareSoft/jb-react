@@ -1,4 +1,4 @@
-jb.component('urlHistory.mapStudioUrlToResource', {
+component('urlHistory.mapStudioUrlToResource', {
   type: 'service',
   params: [
     {id: 'resource', as: 'string', mandatory: true},
@@ -72,6 +72,6 @@ jb.component('urlHistory.mapStudioUrlToResource', {
   }})
 })
 
-jb.component('dataResource.queryParams', {
+component('dataResource.queryParams', {
   passiveData: {}
 })

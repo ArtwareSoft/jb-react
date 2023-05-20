@@ -1,4 +1,4 @@
-jb.component('dataResource.devices', { /* dataResource.devices */
+component('dataResource.devices', { /* dataResource.devices */
   passiveData: [
     'acer_chromebook_tab_10-9139.php',
     'acer_iconia_talk_s-8306.php',
@@ -43,7 +43,7 @@ jb.component('dataResource.devices', { /* dataResource.devices */
   ]
 })
 
-jb.component('dataResource.samsung_galaxy_m30s_9818', {
+component('dataResource.samsung_galaxy_m30s_9818', {
     passiveData: `
   <!doctype html>
   <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US" lang="en-US">
@@ -976,7 +976,7 @@ jb.component('dataResource.samsung_galaxy_m30s_9818', {
 
 
 
-  jb.component('dataResource.sampleMakePage', { /* dataResource.sampleMakePage */
+component('dataResource.sampleMakePage', { /* dataResource.sampleMakePage */
     passiveData: `
 
   <!doctype html>

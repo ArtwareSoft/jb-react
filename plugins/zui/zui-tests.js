@@ -1,3 +1,4 @@
+using('ui-tests')
 
 component('zuiTest.gallery', {
   impl: uiTest({

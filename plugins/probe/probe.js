@@ -1,6 +1,6 @@
-jb.component('probe', { watchableData: { path : '',  defaultMainCircuit: '', scriptChangeCounter: 1} })
+component('probe', { watchableData: { path : '',  defaultMainCircuit: '', scriptChangeCounter: 1} })
 
-jb.extension('probe', {
+extension('probe', 'main', {
     initExtension() { return { 
         probeCounter: 0,
         singleVisitPaths: {},
@@ -82,7 +82,7 @@ jb.extension('probe', {
             this.probe[probePath] = this.result
             this.probePath = probePath
             const initial_resources = jb.db.resources
-            const initial_comps = jb.watchableComps.handler.resources()
+            const initial_comps = jb.watchableComps && jb.watchableComps.handler.resources()
 
             try {
                 if (jb.tgp.isExtraElem(probePath) && !probePath.match(/~0$/)) {
@@ -255,7 +255,7 @@ jb.extension('probe', {
 	},
 })
 
-jb.component('probe.runCircuit', {
+component('probe.runCircuit', {
   type: 'data',
   params: [
     {id: 'probePath', as: 'string', defaultValue: '%$probe/path%'}
@@ -272,7 +272,7 @@ jb.component('probe.runCircuit', {
   require: tgp.componentStatistics()
 })
 
-jb.component('probe.calcCircuitPath', {
+component('probe.calcCircuitPath', {
   type: 'data',
   params: [
     {id: 'probePath', as: 'string'},
@@ -283,69 +283,3 @@ jb.component('probe.calcCircuitPath', {
     }
 })
 
-jb.component('probeWorker', {
-  type: 'jbm<jbm>',
-  params: [
-    {id: 'id', defaultValue: 'wProbe'}
-  ],
-  impl: worker('%$id%', probe.initRemoteProbe())
-})
-
-jb.component('probe.initRemoteProbe', {
-  type: 'action',
-  impl: runActions(
-    Var('dataResources', () => jb.studio.projectCompsAsEntries().map(e=>e[0]).filter(x=>x.match(/^dataResource/)).join(',')),
-    remote.action(treeShake.getCodeFromRemote('%$dataResources%'), '%$jbm%'),
-    remote.shadowResource('probe', '%$jbm%'),
-    rx.pipe(
-      watchableComps.scriptChange(),
-      rx.log('preview probe change script'),
-      rx.map(obj(prop('op', '%op%'), prop('path', '%path%'))),
-      rx.var('cssOnlyChange', tgp.isCssPath('%path%')),
-      sink.action(
-        remote.action({
-          action: probe.handleScriptChangeOnPreview('%$cssOnlyChange%'),
-          jbm: '%$jbm%',
-          oneway: true
-        })
-      )
-    )
-  )
-})
-
-jb.component('probe.handleScriptChangeOnPreview', {
-  type: 'action',
-  description: 'preview script change handler',
-  params: [
-    {id: 'cssOnlyChange', as: 'boolean', type: 'boolean'}
-  ],
-  impl: (ctx, cssOnlyChange) => {
-        const {op, path} = ctx.data
-        const handler = jb.watchableComps.startWatch()
-        if (path[0] == 'probeTest.label1' || !jb.ui.headless) return
-        if (!jb.utils.getComp(path[0]))
-            return jb.logError(`handleScriptChangeOnPreview - missing comp ${path[0]}`, {path, ctx})
-        handler.makeWatchable(path[0])
-        jb.log('probe handleScriptChangeOnPreview doOp',{ctx,op,path})
-        handler.doOp(handler.refOfPath(path), op, ctx)
-
-        const headlessWidgetId = Object.keys(jb.ui.headless)[0]
-        const headless = jb.ui.headless[headlessWidgetId]
-        if (!headless)
-            return jb.logError(`handleScriptChangeOnPreview - missing headless ${headlessWidgetId} at ${jb.uri}`, {path, ctx})
-        if (cssOnlyChange) {
-            let featureIndex = path.lastIndexOf('features')
-            if (featureIndex == -1) featureIndex = path.lastIndexOf('layout')
-            const ctrlPath = path.slice(0, featureIndex).join('~')
-            const elems = headless.body.querySelectorAll('[jb-ctx]')
-                .map(elem=>({elem, path: jb.path(JSON.parse(elem.attributes.$__debug),'path') }))
-                .filter(e => e.path == ctrlPath)
-            elems.forEach(e=>jb.ui.refreshElem(e.elem,null,{cssOnly: e.elem.attributes.class ? true : false}))           
-        } else {
-            const ref = ctx.exp('%$probe/scriptChangeCounter%','ref')
-            const newVal = +jb.val(ref)+1
-            jb.db.writeValue(ref, newVal ,ctx.setVars({headlessWidget: true}))
-            jb.log('probe handleScriptChangeOnPreview increaseScriptChangeCounter',{ctx,newVal})
-        }
-    }
-})

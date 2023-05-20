@@ -1,4 +1,4 @@
-jb.component('html', {
+component('html', {
   type: 'control',
   description: 'rich text',
   category: 'control:100,common:80',
@@ -11,7 +11,7 @@ jb.component('html', {
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('html.plain', {
+component('html.plain', {
   type: 'html.style',
   impl: customStyle({
     template: (cmp,{html},h) => h('div',{$html: (html||'').replace(/^(<[a-z0-9]*)/,'$1 jb_external="true"') } ),
@@ -22,7 +22,7 @@ jb.component('html.plain', {
   })
 })
 
-jb.component('html.inIframe', {
+component('html.inIframe', {
   type: 'html.style',
   params: [
     {id: 'width', as: 'string', defaultValue: '100%'},

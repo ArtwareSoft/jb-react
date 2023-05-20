@@ -1,4 +1,4 @@
-jb.component('phones', { passiveData: [{
+component('phones', { passiveData: [{
     "hits": 34398,
     "title": "alcatel 3C",
     "image": "https://cdn2.gsmarena.com/vv/bigpic/alcatel-3c-.jpg",

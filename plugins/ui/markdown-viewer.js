@@ -1,4 +1,4 @@
-jb.component('markdown', {
+component('markdown', {
     type: 'control', category: 'control:20',
     description: 'md markdown viewer',
     params: [
@@ -10,7 +10,7 @@ jb.component('markdown', {
     impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('markdown.mark', {
+component('markdown.mark', {
     type: 'markdown.style',
     impl: customStyle({
         template: ({},{html},h) => h('div',{$html: html.replace(/^(<[a-z0-9]*)/,'$1 jb_external="true"') }),

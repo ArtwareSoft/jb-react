@@ -1,5 +1,5 @@
 
-jb.extension('tgp', 'completion', {
+extension('tgp', 'completion', {
     initExtension() { return {
         wrapMetaData: {
                 control: 'group',
@@ -191,7 +191,7 @@ jb.extension('tgp', 'completion', {
     }
 })
 
-jb.extension('tgpTextEditor', 'completion', {
+extension('tgpTextEditor', 'completion', {
     $phase: 40,
     initExtension() { 
         return { 
@@ -308,7 +308,7 @@ jb.extension('tgpTextEditor', 'completion', {
             if (lib && jb.path(jb,[lib,'__extensions'])) {
                 const loc = Object.values(jb[lib].__extensions).filter(ext=>ext.funcs.includes(func)).map(ext=>ext.location)[0]
                 const lineOfExt = (+loc[1]) || 0
-                const fileContent = await jbHost.defaultCodePackage.fetchFile(loc[0])
+                const fileContent = await jbHost.codePackageFromJson().fetchFile(loc[0])
                 const lines = ('' + fileContent).split('\n').slice(lineOfExt)
                 const funcHeader = new RegExp(`[^\.]${func}\\s*:|[^\.]${func}\\s*\\(`) //[^{]+{)`)
                 const lineOfFunc = lines.findIndex(l=>l.match(funcHeader))
@@ -322,6 +322,7 @@ jb.extension('tgpTextEditor', 'completion', {
         const compId = path.split('~')[0]
         if (!jb.utils.getComp(compId))
             return jb.logError(`completion handleScriptChangeOnPreview - missing comp ${compId}`, {path, ctx})
+            
         const handler = jb.watchableComps.startWatch()
         handler.makeWatchable(compId)
         handler.doOp(handler.refOfPath(path.split('~')), op, ctx)

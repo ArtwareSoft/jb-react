@@ -1,5 +1,5 @@
 
-jb.extension('studio', {
+extension('studio', {
 	PropertiesTree: class PropertiesTree {
 		constructor(rootPath) {
 			this.rootPath = rootPath;
@@ -32,7 +32,7 @@ jb.extension('studio', {
 	},
 })
 
-jb.component('studio.properties', {
+component('studio.properties', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'},
@@ -130,7 +130,7 @@ jb.component('studio.properties', {
   })
 })
 
-jb.component('studio.propField', {
+component('studio.propField', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'},
@@ -213,7 +213,7 @@ jb.component('studio.propField', {
   })
 })
 
-jb.component('studio.propertyToolbar', {
+component('studio.propertyToolbar', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -225,7 +225,7 @@ jb.component('studio.propertyToolbar', {
   })
 })
 
-jb.component('studio.propertyScript', {
+component('studio.propertyScript', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -240,7 +240,7 @@ jb.component('studio.propertyScript', {
   })
 })
 
-jb.component('studio.propertyNumbericCss', {
+component('studio.propertyNumbericCss', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -253,7 +253,7 @@ jb.component('studio.propertyNumbericCss', {
   })
 })
 
-jb.component('studio.propertyNumbericZeroToOne', {
+component('studio.propertyNumbericZeroToOne', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -267,7 +267,7 @@ jb.component('studio.propertyNumbericZeroToOne', {
   })
 })
 
-jb.component('studio.propertyBoolean', {
+component('studio.propertyBoolean', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -279,7 +279,7 @@ jb.component('studio.propertyBoolean', {
   })
 })
 
-jb.component('studio.propertyEnum', {
+component('studio.propertyEnum', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -294,7 +294,7 @@ jb.component('studio.propertyEnum', {
   })
 })
 
-jb.component('studio.jbFloatingInputRich', {
+component('studio.jbFloatingInputRich', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -305,7 +305,7 @@ jb.component('studio.jbFloatingInputRich', {
   })
 })
 
-jb.component('studio.editAs',{
+component('studio.editAs',{
   description: 'has editHas param',
   type: 'boolean',
   params: [
@@ -319,7 +319,7 @@ jb.component('studio.editAs',{
     inGroup(split({text: '%$anyParamIds%'}),'%$paramDef/id%')),
 })
 
-jb.component('studio.rawColorPicker', {
+component('studio.rawColorPicker', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -347,7 +347,7 @@ jb.component('studio.rawColorPicker', {
   })
 })
 
-jb.component('studio.colorPicker', {
+component('studio.colorPicker', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -383,7 +383,7 @@ jb.component('studio.colorPicker', {
   })
 })
 
-jb.component('studio.colorVariables', {
+component('studio.colorVariables', {
   impl: ctx => {
     const doc = jb.frame.document
     if (!doc) return []
@@ -392,7 +392,7 @@ jb.component('studio.colorVariables', {
     }
 })
 
-jb.component('studio.openProperties', {
+component('studio.openProperties', {
   type: 'action',
   params: [
     {id: 'focus', type: 'boolean', as: 'boolean'},

@@ -1,6 +1,6 @@
-jb.using('ui')
+using('ui')
 
-jb.component('ui.dataBrowse', {
+component('ui.dataBrowse', {
   type: 'control',
   params: [
     {id: 'objToShow', mandatory: true, as: 'value', defaultValue: '%%'},
@@ -103,7 +103,7 @@ jb.component('ui.dataBrowse', {
   })
 })
 
-jb.component('dialog.showSourceStyle', {
+component('dialog.showSourceStyle', {
   type: 'dialog.style',
   params: [
     {id: 'id', as: 'string'},

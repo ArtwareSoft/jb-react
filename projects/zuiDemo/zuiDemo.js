@@ -1,5 +1,5 @@
 
-jb.component('zuiDemo.main', {
+component('zuiDemo.main', {
   type: 'control',
   impl: group({
     layout: layout.flex({direction: 'row', wrap: 'wrap'}),

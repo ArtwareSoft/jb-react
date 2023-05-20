@@ -1,5 +1,5 @@
 
-jb.component('picklist', {
+component('picklist', {
   type: 'control',
   description: 'select, choose, pick, choice',
   category: 'input:80',
@@ -14,7 +14,7 @@ jb.component('picklist', {
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('picklist.init', {
+component('picklist.init', {
   type: 'feature',
   impl: features(
     calcProp('options', '%$$model/options()%'),
@@ -22,7 +22,7 @@ jb.component('picklist.init', {
   )
 })
 
-jb.component('picklist.allowAsynchOptions', {
+component('picklist.allowAsynchOptions', {
   type: 'feature',
   description: 'allows a text value to be reactive or promise',
   impl: features(
@@ -68,7 +68,7 @@ jb.component('picklist.allowAsynchOptions', {
   )
 })
 
-jb.component('picklist.onChange', {
+component('picklist.onChange', {
   category: 'picklist:100',
   type: 'feature',
   description: 'action on picklist selection',
@@ -80,7 +80,7 @@ jb.component('picklist.onChange', {
 
 // ********* options
 
-jb.component('picklist.optionsByComma', {
+component('picklist.optionsByComma', {
   type: 'picklist.options',
   params: [
     {id: 'options', as: 'string', mandatory: true},
@@ -92,7 +92,7 @@ jb.component('picklist.optionsByComma', {
   }
 })
 
-jb.component('picklist.options', {
+component('picklist.options', {
   type: 'picklist.options',
   params: [
     {id: 'options', type: 'data', as: 'array', dynamic: true, mandatory: true},
@@ -107,7 +107,7 @@ jb.component('picklist.options', {
   }
 })
 
-jb.component('picklist.sortedOptions', {
+component('picklist.sortedOptions', {
   type: 'picklist.options',
   params: [
     {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true, composite: true},
@@ -126,7 +126,7 @@ jb.component('picklist.sortedOptions', {
   }
 })
 
-jb.component('picklist.promote', {
+component('picklist.promote', {
   type: 'picklist.promote',
   params: [
     {id: 'groups', as: 'array'},
@@ -135,7 +135,7 @@ jb.component('picklist.promote', {
   impl: ctx => ctx.params
 })
 
-jb.component('picklist.initGroups', {
+component('picklist.initGroups', {
   type: 'feature',
   impl: calcProp({id: 'groups', phase: 20, value: (ctx,{$model, $props}) => {
     const options = $props.options;

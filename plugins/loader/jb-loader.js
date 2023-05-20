@@ -1,26 +1,11 @@
-var jb_plugins = null
-// [
-//   'common','rx','tree-shake','pretty-print','watchable','ui',
-//   'remote','testing','data-browser','remote-widget',
-//   'probe','tgp','watchable-comps', 'workspace','vscode', 
-//   'vega', 'zui','parsing','statistics','xml','jison'
-// ];
+const jb_plugins = null
 
-globalThis.jbHost = globalThis.jbHost || { // browserHost - studioServer,worker and static
-  fetch: (...args) => globalThis.fetch(...args),
-  // isStatic: globalThis.location && globalThis.location.origin.indexOf('localhost') == -1,
-  // isVsCodeView: globalThis.location && globalThis.location.origin == 'vscode-file://vscode-app',
-  // isWorker: globalThis.importScripts != null,
-  baseUrl: '',
-  fetchOptions: {}, // {mode: 'cores'}
-  log(...args) { console.log (...args) },
-  WebSocket_Browser: globalThis.WebSocket,
-  
-  defaultCodePackage: {
-    _fetch(path) { return fetch(jbHost.baseUrl + path, jbHost.fetchOptions) },
+function jbBrowserCodePackage(baseUrl = '', fetchOptions= {}, useFileSymbolsFromBuild) {
+  return {
+    _fetch(path) { return fetch((baseUrl || jbHost.baseUrl) + path, fetchOptions) },
     fetchFile(path) { return this._fetch(path).then(x=>x.text()) },
     fetchJSON(path) { return this._fetch(path).then(x=>x.json()) },
-    fileSymbols(path,useFileSymbolsFromBuild) { return useFileSymbolsFromBuild ? this.fileSymbolsFromStaticFileServer(path) 
+    fileSymbols(path) { return useFileSymbolsFromBuild ? this.fileSymbolsFromStaticFileServer(path) 
       : this.fileSymbolsFromStudioServer(path) },
     fileSymbolsFromStudioServer(path) {
       return this.fetchJSON(`?op=fileSymbols&path=${path}`)
@@ -37,77 +22,83 @@ globalThis.jbHost = globalThis.jbHost || { // browserHost - studioServer,worker 
   }
 }
 
-async function jbInit(uri, {projects, plugins, loadTests, multipleInFrame, doNoInitLibs,
-    useFileSymbolsFromBuild, codeServerUri, codePackages }) {
+globalThis.jbHost = globalThis.jbHost || { // browserHost - studioServer,worker and static
+  fetch: (...args) => globalThis.fetch(...args),
+  baseUrl: '',
+  fetchOptions: {}, // {mode: 'cores'}
+  log(...args) { console.log (...args) },
+  WebSocket_Browser: globalThis.WebSocket,
+  codePackageFromJson(package) {
+    if (package == null || package.$ == 'defaultPackage') return jbBrowserCodePackage('',{})
+    if (package.$ == 'jbStudioServer')
+        return jbBrowserCodePackage(package.baseUrl)
+    if (package.$ == 'staticViaHttp')
+        return jbBrowserCodePackage(package.baseUrl,{mode: 'cores'}, true)
+  }
+}
+
+async function jbInit(uri, _sourceCode , {multipleInFrame, doNoInitLibs}={}) {
+  const sourceCode = Array.isArray(_sourceCode) ? _sourceCode : [_sourceCode]
   const jb = { 
-    uri, 
-    async loadCode({codePackge, projects, plugins, doNoInitLibs, loadTests}) {
-      const pluginsSymbols = await codePackge.fileSymbols('plugins',useFileSymbolsFromBuild)
-      const projectsSymbols = await (projects || []).map(x => `projects/${x}`)
-        .reduce( async (acc,dir) => [...await acc, ...await codePackge.fileSymbols(dir,useFileSymbolsFromBuild)], [])
+    uri,
+    loadedFiles: {},
+    async loadPluginSymbols(codePackage,project) {
+      const jb = this
+      const pluginsSymbols = await codePackage.fileSymbols('plugins')
+      const projectSymbols = project ? await codePackage.fileSymbols(`projects/${project}`) : []
       jb.plugins = jb.plugins || {}
-      pluginsSymbols.map(entry =>{
-        const id = (entry.path.match(/plugins\/([^\/]+)/) || ['',''])[1]
-        jb.plugins[id] = jb.plugins[id] || { id, files: [] }
+      ;[...pluginsSymbols,...projectSymbols].map(entry =>{
+        const tests = entry.path.match(/-(tests|testers).js$/) || entry.path.match(/\/tests\//) ? '-tests': ''
+        const id = (entry.path.match(/^.(plugins|projects)\/([^\/]+)/) || ['','',''])[2] + tests
+        jb.plugins[id] = jb.plugins[id] || { id, codePackage, files: [] }
         jb.plugins[id].files.push(entry)
       })
-      calcPluginDependencies()
-      const topPlugins = [...loadTests ? ['testing'] : [], ...(plugins || Object.keys(jb.plugins))]
-
-      const coreTests = loadTests? jb.plugins.core.files.filter(x=>x.path.match(/tests/)) : []
-      const _symbols = [...coreTests, ...topPlugins.flatMap(id => jb.plugins[id].requiredSymbols), ...projectsSymbols]
-      const symbols = jb.utils.unique(_symbols,x=>x.path).filter(x=>loadTests || !x.path.match(/tests|tester/))
-      await supervisedLoad(symbols,jb,doNoInitLibs)
-      if (jb.jbm && codeServerUri) jb.jbm.codeServerUri = codeServerUri
-      return jb        
-
-      function calcPluginDependencies() {
-        Object.keys(jb.plugins).map(id=>calcDependency(id))
-        Object.values(jb.plugins).map(plugin=>{
-          const pluginDsls = jb.utils.unique(plugin.files.map(e=>e.pluginDsl).filter(x=>x))
-          if (pluginDsls.length > 1)
-            jb.logError(`plugin ${plugin.id} has more than one dsl`,{pluginDsls})
-          plugin.dsl = pluginDsls[0]
-        })
-
-        function calcDependency(id,history={}) {
-          const plugin = jb.plugins[id]
-          if (history[id]) return []
-          plugin.dependent = jb.utils.unique(plugin.files.flatMap(e=> 
-            jb.utils.unique(e.using.flatMap(dep=>calcDependency(dep,{...history, id})))
-          ))
-          const ret = [id, ...plugin.dependent]
-          plugin.requiredSymbols = jb.utils.unique(ret.flatMap(_id=>jb.plugins[_id].files), x=>x.path)
-          return ret
-        }
-      }
-      async function supervisedLoad(symbols) {
-        const ns = jb.utils.unique([...symbols.flatMap(x=>x.ns || []),'Var','remark','typeCast'])
-        const libs = jb.utils.unique(symbols.flatMap(x=>x.libs))
-        ns.forEach(id=> jb.macro.registerProxy(id))
-        await Promise.all(symbols.map(fileSymbols=> jb.loadjbFile(fileSymbols.path,jb,{fileSymbols,codePackge,plugin: pluginOfPath(fileSymbols.path)})))
-        !doNoInitLibs && await jb.initializeLibs(libs,codePackge)
-        jb.utils.resolveLoadedProfiles()
-      }
-      function pluginOfPath(path) {
-        const id = (path.match(/plugins\/([^\/]*)/) || ['',''])[1]
-        return id && jb.plugins[id]
-      }
     },
-    async loadjbFile(path,jb,{noSymbols, fileSymbols, codePackage, plugin} = {}) {
-      jb.loadedFiles = jb.loadedFiles || {}
+    async loadProject(project,codePackage = jbHost.codePackageFromJson(), doNoInitLibs) {
+      const jb = this
+      const projectSymbols = project ? await codePackage.fileSymbols(`projects/${project}`) : []
+      jb.plugins = jb.plugins || {}
+      projectSymbols.map(entry =>{
+        const tests = entry.path.match(/-(tests|testers).js$/) || entry.path.match(/\/tests\//) ? '-tests': ''
+        const id = (entry.path.match(/^.(plugins|projects)\/([^\/]+)/) || ['','',''])[2] + tests
+        jb.plugins[id] = jb.plugins[id] || { id, codePackage, files: [] }
+        jb.plugins[id].files.push(entry)
+      })
+      calcPluginDependencies(jb.plugins)
+      const libs = await jb.loadPlugins([project])
+      !doNoInitLibs && await jb.initializeLibs(unique(libs))
+      jb.utils.resolveLoadedProfiles()
+    },
+    async loadPlugins(plugins) {
+      const jb = this
+      let libs = []
+      await plugins.reduce( (pr,id) => pr.then( async ()=> {
+        const plugin = jb.plugins[id]
+        if (!plugin || plugin.loadingReq) return
+        plugin.loadingReq = true
+        const _libs = await jb.loadPlugins(plugin.dependent)
+        await Promise.all(plugin.files.map(fileSymbols =>{
+          libs = unique([...libs,..._libs,...fileSymbols.libs])
+          return jb.loadjbFile(fileSymbols.path,jb,{fileSymbols,plugin})
+        }))
+      }), Promise.resolve() )
+      return libs
+    },
+    async loadjbFile(path,jb,{noSymbols, fileSymbols, plugin} = {}) {
       if (jb.loadedFiles[path]) return
-      const package = codePackage || jbHost.defaultCodePackage
-  
-      const _code = await package.fetchFile(path)
+      const _code = await plugin.codePackage.fetchFile(path)
       const code = `${_code}\n//# sourceURL=${path}?${jb.uri}`
       const dsl = fileSymbols && fileSymbols.dsl || plugin && plugin.dsl
+      const proxies = noSymbols ? {} : jb.objFromEntries(unique(plugin.requiredFiles.flatMap(x=>x.ns)).map(id=>[id,jb.macro.registerProxy(id)]))
       const context = { jb, 
-        require: typeof require != 'undefined' && require,
-        ...(jb.macro && !noSymbols ? jb.macro.proxies : {}),
-        component: (...args) => jb.component(...args,dsl, plugin)
+        ...(typeof require != 'undefined' ? {require} : {}),
+        ...proxies,
+        component:(...args) => jb.component(plugin,dsl,...args),
+        extension:(...args) => jb.extension(plugin,...args),
+        using: x=>jb.using(x), dsl: x=>jb.dsl(x), pluginDsl: x=>jb.pluginDsl(x)
       }
       try {
+        //console.log(`loading ${path}`)
         new Function(Object.keys(context), code).apply(null, Object.values(context))
         jb.loadedFiles[path] = true
       } catch (e) {
@@ -117,80 +108,57 @@ async function jbInit(uri, {projects, plugins, loadTests, multipleInFrame, doNoI
   }
   if (!multipleInFrame) globalThis.jb = jb // multipleInFrame is used in jbm.child
 
-  const coreFiles= ['jb-core','core-utils','jb-expression','db','jb-macro','spy'].map(x=>`/plugins/core/${x}.js`)
-  await coreFiles.reduce((pr,url) => pr.then(()=> jb.loadjbFile(url,jb)), Promise.resolve())
+  await sourceCode.reduce( async (pr,{codePackage, project})=> pr.then(() =>
+    jb.loadPluginSymbols(jbHost.codePackageFromJson(codePackage),project)), Promise.resolve());
+  calcPluginDependencies(jb.plugins,jb)
+  await ['jb-core','core-utils','jb-expression','db','jb-macro','spy'].map(x=>`/plugins/core/${x}.js`).reduce((pr,path) => 
+    pr.then(()=> jb.loadjbFile(path,jb,{noSymbols: true, plugin: jb.plugins.core})), Promise.resolve())
   jb.noSupervisedLoad = false
-  return jb.loadCode({codePackge: jbHost.defaultCodePackage, projects, plugins, doNoInitLibs, loadTests})
+  const codeServerUri = sourceCode.reduce((acc,{codeServerUri}) => acc || codeServerUri, '')
+  const loadTests = sourceCode.reduce((acc,{loadTests}) => acc || loadTests, false)
+  if (jb.jbm && codeServerUri) jb.jbm.codeServerUri = codeServerUri
+
+  const topPlugins = sourceCode.reduce((acc,{plugins,project}) => {
+      const _plugins = (!project && !plugins) || (plugins||[])[0] == '*' ? Object.keys(jb.plugins) : (plugins||[])
+      return [...acc,..._plugins,project]}
+      , [])
+    .filter(x=>x).flatMap(x=>loadTests ? [x,`${x}-tests`] : [x])
+
+  const libs = await jb.loadPlugins(topPlugins)
+  !doNoInitLibs && await jb.initializeLibs(unique(libs))
+  jb.utils.resolveLoadedProfiles()
+  return jb
+
+  function unique(ar,f = (x=>x) ) {
+    const keys = {}, res = []
+    ar.forEach(e=>{ if (!keys[f(e)]) { keys[f(e)] = true; res.push(e) } })
+    return res
+  }
+  function calcPluginDependencies(plugins) {
+    Object.keys(plugins).map(id=>calcDependency(id))
+    Object.values(plugins).map(plugin=>{
+      const pluginDsls = unique(plugin.files.map(e=>e.pluginDsl).filter(x=>x))
+      if (pluginDsls.length > 1)
+        jb.logError(`plugin ${plugin.id} has more than one dsl`,{pluginDsls})
+      plugin.dsl = pluginDsls[0]
+    })
+
+    function calcDependency(id,history={}) {
+      const plugin = plugins[id]
+      if (!plugin)
+        jb.logError('calcDependency: can not find plugin',{id, history})
+      if (!plugin || history[id]) return []
+      if (plugin.dependent) return [id, ...plugin.dependent]
+      const baseOfTest = id.match(/-tests$/) ? [id.slice(0,-6),'testing'] : []
+      plugin.dependent = unique([
+        ...plugin.files.flatMap(e=> unique(e.using.flatMap(dep=>calcDependency(dep,{...history, [id]: true})))),
+        ...baseOfTest.flatMap(dep=>calcDependency(dep,{...history, [id]: true}))]
+      )
+      const ret = [id, ...plugin.dependent]
+      plugin.requiredFiles = unique(ret.flatMap(_id=>plugins[_id].files), x=>x.path)
+      return ret
+    }
+  }
 }
 
-// async function jbInit1(uri, {projects, plugins, baseUrl, multipleInFrame, doNoInitLibs, useFileSymbolsFromBuild, loadTests }) {
-//   const fileSymbols = useFileSymbolsFromBuild && fileSymbolsFromBuild || globalThis.jbFileSymbols || fileSymbolsFromHttp
-//   const jb = { uri, baseUrl: baseUrl !== undefined ? baseUrl : typeof globalThis.jbBaseUrl != 'undefined' ? globalThis.jbBaseUrl : '' }
-//   if (!multipleInFrame) // multipleInFrame is used in jbm.child
-//     globalThis.jb = jb
-//   const coreFiles= ['jb-core','core-utils','jb-expression','db','jb-macro','spy'].map(x=>`/plugins/core/${x}.js`)
-//   await coreFiles.reduce((pr,url) => pr.then(()=> jbloadJSFile(url,jb)), Promise.resolve())
-//   jb.noSupervisedLoad = false
-
-//   const _plugins = loadTests ? ['testing', ...plugins] : plugins
-//   const topRequiredModules = [...(_plugins || []).map(x => `plugins/${x}`), ...(projects || []).map(x => `projects/${x}`) ]
-
-//   const coreTests = loadTests? (await fileSymbols('plugins/core')).filter(x=>x.path.match(/tests/)) : [] // do not load core files again!
-//   const _symbols = [...coreTests, ...await topRequiredModules.reduce( async (acc,dir) => [...await acc, ...await fileSymbols(dir,'','pack-')], [])]
-//   const symbols = jb.utils.unique(_symbols,x=>x.path).filter(x=>loadTests || !x.path.match(/tests|tester/))
-
-//   await jbSupervisedLoad(symbols,jb,doNoInitLibs)
-
-//   return jb
-
-//   async function fileSymbolsFromHttp(path,include,exclude) {
-//     const inc = include ? `&include=${include}` : ''
-//     const exc = exclude ? `&exclude=${exclude}` : ''
-//     return fetch(`${jb.baseUrl}?op=fileSymbols&path=${path}${inc}${exc}`).then(x=>x.json())
-//   }
-// }
-
-// async function jbloadJSFile1(url,jb,{noSymbols, fileSymbols} = {}) {
-//   globalThis.jbFetchFile = globalThis.jbFetchFile || (path => globalThis.fetch(path).then(x=>x.text()))
-//   const fullUrl = jb.baseUrl.match(/\/$/) ? jb.baseUrl+url.replace(/^\//,'') : jb.baseUrl+url
-//   const _code = await jbFetchFile(fullUrl)
-//   const code = `${_code}\n//# sourceURL=${url}?${jb.uri}`
-//   const context = { jb, 
-//     require: typeof require != 'undefined' && require,
-//     ...(jb.macro && !noSymbols ? jb.macro.proxies : {}),
-//     component: (...args) => jb.component(...args,fileSymbols && fileSymbols.dsl)
-//   }
-//   try {
-//     new Function(Object.keys(context), code).apply(null, Object.values(context))
-//   } catch (e) {
-//     return jb.logException(e,`jbloadJSFile lib ${url}`,{context, code})
-//   }
-// }
-
-// async function jbSupervisedLoad(symbols, jb, doNoInitLibs) {
-//   const ns = jb.utils.unique([...symbols.flatMap(x=>x.ns || []),'Var','remark','typeCast'])
-//   const libs = jb.utils.unique(symbols.flatMap(x=>x.libs))
-//   ns.forEach(id=> jb.macro.registerProxy(id))
-//   await Promise.all(symbols.map(fileSymbols=> jbloadJSFile(fileSymbols.path,jb,{fileSymbols})))
-//   //await symbols.reduce((pr,fileSymbols) => pr.then(()=> jbloadJSFile(fileSymbols.path,jb,{fileSymbols})), Promise.resolve())
-//   !doNoInitLibs && await jb.initializeLibs(libs)
-//   jb.utils.resolveLoadedProfiles()
-// }
-
-// var jbLoadedSymbols = null
-// async function fileSymbolsFromBuild(path,_include,_exclude) {
-//   globalThis.jbFetchJson = globalThis.jbFetchJson || (path => globalThis.fetch(path, {mode: 'cors'}).then(x=>x.json()))
-//   const include = _include && new RegExp(_include), exclude = _exclude && new RegExp(_exclude)
-
-//   if (!jbLoadedSymbols) {
-//     jbLoadedSymbols = [
-//       ...await globalThis.jbFetchJson(`${jb.baseUrl}/dist/symbols/src.json`),
-//       ...await globalThis.jbFetchJson(`${jb.baseUrl}/dist/symbols/plugins.json`),
-//       ...await globalThis.jbFetchJson(`${jb.baseUrl}/dist/symbols/projects.json`),
-//     ];
-//   }
-//   return jbLoadedSymbols.filter(e=>e.path.indexOf(path+'/') == 1 && !(include && !include.test(e.path) || exclude && exclude.test(e.path)))
-// }
-
-if (typeof module != 'undefined') module.exports = { jbInit, jb_plugins }
-//globalThis.jbloadJSFile = jbloadJSFile
+if (typeof module != 'undefined') module.exports = { jbInit, jb_plugins };

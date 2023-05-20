@@ -1,6 +1,5 @@
-
-//used mostley for deubgging
-jb.extension('parsing', {
+using('common')
+extension('parsing', {
   initExtension() {
     jb.core.jstypes['string-with-source-ref'] = v => v;
   },
@@ -27,7 +26,7 @@ jb.extension('parsing', {
   }
 })
 
-jb.component('extractText', {
+component('extractText', {
   description: 'text breaking according to begin/end markers',
   params: [
     {id: 'text', as: 'string-with-source-ref', defaultValue: '%%'},
@@ -98,7 +97,7 @@ jb.component('extractText', {
   }
 })
 
-jb.component('breakText', {
+component('breakText', {
   description: 'recursive text breaking according to multi level separators',
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'},
@@ -152,7 +151,7 @@ jb.component('breakText', {
 })
 
 
-jb.component('zipArrays', {
+component('zipArrays', {
   type: 'data',
   description: '[[1,2],[10,20],[100,200]] => [[1,10,100],[2,20,200]]',
   params: [
@@ -161,7 +160,7 @@ jb.component('zipArrays', {
   impl: (ctx,value) => value[0].map((x,i)=> value.map(line=>line[i]))
 })
 
-jb.component('removeSections', {
+component('removeSections', {
   description: 'remove sections between markers',
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'},
@@ -189,7 +188,7 @@ jb.component('removeSections', {
   }
 })
 
-jb.component('merge', {
+component('merge', {
   type: 'data',
   description: 'assign, merge object properties',
   params: [
@@ -198,7 +197,7 @@ jb.component('merge', {
   impl: ({}, objects) => Object.assign.apply({},objects)
 })
 
-jb.component('filterEmptyProperties', {
+component('filterEmptyProperties', {
   type: 'data',
   description: 'remove null or empty string properties',
   params: [
@@ -214,25 +213,25 @@ jb.component('filterEmptyProperties', {
   }
 })
 
-jb.component('trim', {
+component('trim', {
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
   impl: (ctx,text) => text.trim()
 })
 
-jb.component('splitToLines', {
+component('splitToLines', {
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
   impl: (ctx,text) => text.split('\n')
 })
 
-jb.component('newLine', {
+component('newLine', {
   impl: '\n'
 })
 
-jb.component('removePrefixRegex', {
+component('removePrefixRegex', {
   params: [
     {id: 'prefix', as: 'string', mandatory: true},
     {id: 'text', as: 'string', defaultValue: '%%'}
@@ -241,7 +240,7 @@ jb.component('removePrefixRegex', {
     text.replace(new RegExp('^'+prefix) ,'')
 })
 
-jb.component('wrapAsObject', {
+component('wrapAsObject', {
   description: 'object from entries, map each item as a property',
   type: 'aggregator',
   params: [

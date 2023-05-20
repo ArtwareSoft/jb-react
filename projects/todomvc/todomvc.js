@@ -1,17 +1,17 @@
-jb.component('dataResource.todo', { watchableData: [
+component('dataResource.todo', { watchableData: [
   {task: 'eat', completed: false},
   {task: 'drink', completed: true},
 ]
 })
 
-jb.component('dataResource.newTask', {
+component('dataResource.newTask', {
   watchableData: {
     task: 'sleep well',
     completed: false
   }
 })
 
-jb.component('todomvc.main', {
+component('todomvc.main', {
   type: 'control',
   impl: group({
     title: '',
@@ -137,6 +137,6 @@ jb.component('todomvc.main', {
   })
 })
 
-jb.component('dataResource.filterBy', { /* dataResource.filterBy */
+component('dataResource.filterBy', { /* dataResource.filterBy */
   watchableData: 'active'
 })

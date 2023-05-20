@@ -1,4 +1,4 @@
-jb.extension('chromeDebugger', {
+extension('chromeDebugger', {
     initPanelPortListenser(panelId, panelFrame) {
         jb.log('chromeDebugger initPanelPortListenser',{panelId})
         panelFrame.chrome.runtime.onConnect.addListener(port => {
@@ -94,7 +94,7 @@ jb.extension('chromeDebugger', {
     },
 })
 
-jb.component('chromeDebugger.logsCtrl', {
+component('chromeDebugger.logsCtrl', {
     params: [
         {id: 'uri', as: 'string'}
     ],
@@ -128,7 +128,7 @@ jb.component('chromeDebugger.logsCtrl', {
     })
 })
 
-jb.component('chromeDebugger.compCtrl', {
+component('chromeDebugger.compCtrl', {
     params: [
         {id: 'uri', as: 'string'},
         {id: 'inspectedProps'},
@@ -140,7 +140,7 @@ jb.component('chromeDebugger.compCtrl', {
     })
 })
 
-jb.component('chromeDebugger.cardCtrl', {
+component('chromeDebugger.cardCtrl', {
     params: [
         {id: 'uri', as: 'string'},
     ],
@@ -148,7 +148,7 @@ jb.component('chromeDebugger.cardCtrl', {
     impl: remote.widget( cardExtract.showOptions(),byUri('%$uri%'))
 })
 
-jb.component('chromeDebugger.openResource', {
+component('chromeDebugger.openResource', {
     type: 'action',
     params: [
         {id: 'location', as: 'array', description: 'file,line,col'}

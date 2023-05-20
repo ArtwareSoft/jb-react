@@ -1,4 +1,4 @@
-jb.component('editableNumber.sliderNoText', {
+component('editableNumber.sliderNoText', {
   type: 'editable-number.style',
   impl: customStyle({
       template: (cmp,{min,max,step,numbericVal},h) => h('input', { 
@@ -8,7 +8,7 @@ jb.component('editableNumber.sliderNoText', {
   })
 })
 
-jb.component('editableNumber.slider', {
+component('editableNumber.slider', {
   type: 'editable-number.style',
   impl: styleByControl(
     group({
@@ -44,7 +44,7 @@ jb.component('editableNumber.slider', {
   )
 })
 
-jb.component('editableNumber.mdcSlider', {
+component('editableNumber.mdcSlider', {
   type: 'editable-number.style',
   impl: styleByControl(
     group({
@@ -78,7 +78,7 @@ jb.component('editableNumber.mdcSlider', {
   )
 })
 
-jb.component('editableNumber.mdcSliderNoText', {
+component('editableNumber.mdcSliderNoText', {
   type: 'editable-number.style',
   params: [
     { id: 'thumbSize', as: 'number', defaultValue: 21 },
@@ -117,7 +117,7 @@ jb.component('editableNumber.mdcSliderNoText', {
   })
 })
 
-jb.component('slider.init', {
+component('slider.init', {
   type: 'feature',
   impl: features(
     calcProp('numbericVal',({},{editableNumber,$model}) => editableNumber.numericPart(jb.val( $model.databind()))),
@@ -148,7 +148,7 @@ jb.component('slider.init', {
   )
 })
 
-jb.component('slider.drag', {
+component('slider.drag', {
   type: 'feature',
   impl: features(
     frontEnd.flow(source.frontEndEvent('mousemove'), rx.filter('%buttons%!=0'), sink.BEMethod('assignIgnoringUnits','%$cmp.base.value%')),

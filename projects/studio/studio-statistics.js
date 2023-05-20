@@ -1,5 +1,5 @@
 
-jb.component('studio.gotoReferencesOptions', {
+component('studio.gotoReferencesOptions', {
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'},
@@ -26,7 +26,7 @@ jb.component('studio.gotoReferencesOptions', {
   )
 })
 
-jb.component('studio.gotoReferencesButton', {
+component('studio.gotoReferencesButton', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -47,7 +47,7 @@ jb.component('studio.gotoReferencesButton', {
   )
 })
 
-jb.component('studio.gotoReferencesMenu', {
+component('studio.gotoReferencesMenu', {
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}
@@ -66,7 +66,7 @@ jb.component('studio.gotoReferencesMenu', {
   })
 })
 
-jb.component('studio.componentsList', {
+component('studio.componentsList', {
   type: 'control',
   impl: group({
     controls: [
@@ -125,7 +125,7 @@ jb.component('studio.componentsList', {
   })
 })
 
-jb.component('studio.cmpsOfProjectByFiles', {
+component('studio.cmpsOfProjectByFiles', {
   type: 'data',
   impl: dynamicObject({
     items: () => st.projectFiles(),

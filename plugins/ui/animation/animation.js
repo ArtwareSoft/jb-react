@@ -1,4 +1,4 @@
-jb.component('animation.start', {
+component('animation.start', {
   type: 'action',
   params: [
     {id: 'animation', type: 'animation[]', dynamic: true, flattenArray: true, as: 'array', mandatory: true},
@@ -10,7 +10,7 @@ jb.component('animation.start', {
   impl: (ctx,animation,target,direction,loop,duration) => jb.animate.run(Object.assign(jb.animate.fixValues({direction,loop,duration}), ...animation()),target,ctx)
 })
 
-jb.component('animation.timeline', {
+component('animation.timeline', {
   type: 'action',
   params: [
     {id: 'animation', type: 'animation[]', dynamic: true, flattenArray: true, as: 'array', mandatory: true},
@@ -19,7 +19,7 @@ jb.component('animation.timeline', {
   impl: (ctx,animation,target) => jb.animate.run(Object.assign({}, ...animation()),target,ctx)
 })
 
-jb.component('animation.keyframes', {
+component('animation.keyframes', {
   description: 'sequence, one after the other',
   type: 'animation',
   params: [
@@ -28,7 +28,7 @@ jb.component('animation.keyframes', {
   impl: (ctx,animation) => ({ keyframes: animation() })
 })
 
-jb.component('animation.expression', {
+component('animation.expression', {
   type: 'animation.val',
   params: [
     {id: 'val', mandatory: true, description: 'e.g. 20 , +=10, *=2'}
@@ -36,7 +36,7 @@ jb.component('animation.expression', {
   impl: (ctx,val) => val
 })
 
-jb.component('animation.range', {
+component('animation.range', {
   type: 'animation.val',
   params: [
     {id: 'from', as: 'string', mandatory: true, description: 'e.g. 20'},
@@ -46,7 +46,7 @@ jb.component('animation.range', {
 })
 
 
-jb.component('animation.stagger', {
+component('animation.stagger', {
   type: 'animation.val',
   description: 'animate group - distribute different animation values between group members',
   params: [
@@ -64,7 +64,7 @@ jb.component('animation.stagger', {
     }
 })
 
-jb.component('animation.stagerGrid', {
+component('animation.stagerGrid', {
   type: 'animation.stager-grid',
   params: [
     {id: 'rows', mandatory: true, as: 'number', description: 'e.g. 2'},
@@ -74,7 +74,7 @@ jb.component('animation.stagerGrid', {
   impl: (ctx,rows,columns,axis) => ({grid:[rows,columns],axis})
 })
 
-jb.component('animation.stagerIncrease', {
+component('animation.stagerIncrease', {
   type: 'animation.stager-val',
   params: [
     {id: 'increase', mandatory: true, description: 'e.g. 20'},
@@ -86,7 +86,7 @@ jb.component('animation.stagerIncrease', {
     }
 })
 
-jb.component('animation.stagerRange', {
+component('animation.stagerRange', {
   type: 'animation.stager-val',
   params: [
     {id: 'from', as: 'string', mandatory: true, description: 'e.g. 20'},
@@ -95,7 +95,7 @@ jb.component('animation.stagerRange', {
   impl: ({data}, from, to) => data.val = [from, to]
 })
 
-jb.component('animation.direction', {
+component('animation.direction', {
   description: 'supports reverse, go back to origin',
   type: 'animation',
   params: [
@@ -104,7 +104,7 @@ jb.component('animation.direction', {
   impl: ctx => jb.animate.fixValues(ctx.params)
 })
 
-jb.component('animation.duration', {
+component('animation.duration', {
   type: 'animation',
   params: [
     {id: 'duration', type: 'animation.val', description: 'time of animation in mSec'}
@@ -112,7 +112,7 @@ jb.component('animation.duration', {
   impl: ctx => jb.animate.fixValues(ctx.params)
 })
 
-jb.component('animation.delay', {
+component('animation.delay', {
   description: 'wait',
   type: 'animation',
   params: [
@@ -122,7 +122,7 @@ jb.component('animation.delay', {
   impl: ctx => jb.animate.fixValues(ctx.params)
 })
 
-jb.component('animation.moveTo', {
+component('animation.moveTo', {
   type: 'animation',
   params: [
     {id: 'X', type: 'animation.val', description: 'e.g. 20 , +=10, *=2, list(100,200)'},
@@ -132,7 +132,7 @@ jb.component('animation.moveTo', {
   impl: ctx => jb.objFromEntries(jb.entries(ctx.params).map(e=>['translate'+e[0],e[1]]).filter(e=>e[1]))
 })
 
-jb.component('animation.rotate', {
+component('animation.rotate', {
   type: 'animation',
   params: [
     {id: 'rotate', type: 'animation.val', description: 'degree units, e.g. 20 , +=10, *=2, 1turn, list(20,270)'},
@@ -143,7 +143,7 @@ jb.component('animation.rotate', {
   impl: ctx => jb.animate.fixValues(ctx.params)
 })
 
-jb.component('animation.scale', {
+component('animation.scale', {
   type: 'animation',
   params: [
     {id: 'scale', type: 'animation.val', description: 'e.g. 1.5 , *=2, list(2,3)'},
@@ -154,7 +154,7 @@ jb.component('animation.scale', {
   impl: ctx => jb.animate.fixValues(ctx.params)
 })
 
-jb.component('animation.skew', {
+component('animation.skew', {
   type: 'animation',
   params: [
     {id: 'skew', description: 'e.g. 20 , +=10, *=2, list(1,2)'},
@@ -165,7 +165,7 @@ jb.component('animation.skew', {
   impl: ctx => jb.animate.fixValues(ctx.params)
 })
 
-jb.component('animation.perspective', {
+component('animation.perspective', {
   type: 'animation',
   category: '3D',
   params: [
@@ -175,7 +175,7 @@ jb.component('animation.perspective', {
 })
 
 
-jb.component('animation.easing', {
+component('animation.easing', {
   description: 'speed',
   type: 'animation',
   params: [
@@ -184,7 +184,7 @@ jb.component('animation.easing', {
   impl: ctx => ctx.params
 })
 
-jb.component('animation.inOutEasing', {
+component('animation.inOutEasing', {
   description: 'Robert Penner easing functions',
   type: 'animation.easing',
   params: [
@@ -194,7 +194,7 @@ jb.component('animation.inOutEasing', {
   impl: (ctx,method,inOut) => `ease${inOut}${method}`
 })
 
-jb.component('animation.elasticEasing', {
+component('animation.elasticEasing', {
   type: 'animation.easing',
   params: [
     {id: 'inOut', as: 'string', options: 'in,out,inOut', templateValue: 'inOut'},
@@ -204,7 +204,7 @@ jb.component('animation.elasticEasing', {
   impl: (ctx,inOut,amplitude,period) => `ease${inOut}Elastic(${amplitude},${period})`
 })
 
-jb.component('animation.springEasing', {
+component('animation.springEasing', {
   type: 'animation.easing',
   params: [
     {id: 'mass', as: 'number', description: '0-100', defaultValue: 1},
@@ -215,7 +215,7 @@ jb.component('animation.springEasing', {
   impl: (ctx,mass,stiffness,damping,velocity) => `spring(${mass},${stiffness},${damping},${velocity})`
 })
 
-jb.component('animation.movement', {
+component('animation.movement', {
   type: 'animation',
   params: [
     {id: 'to', type: 'position', mandatory: true},
@@ -227,7 +227,7 @@ jb.component('animation.movement', {
     })
 })
 
-jb.component('animation.fixedPos', {
+component('animation.fixedPos', {
   type: 'position',
   params: [
     {id: 'top', as: 'number', mandatory: true},
@@ -236,7 +236,7 @@ jb.component('animation.fixedPos', {
   impl: ctx => ctx.params
 })
 
-jb.animate = {
+extension('animate','main', {
     anime: jb.frame.anime,
     fixValues(obj) {
         return jb.objFromEntries(jb.entries(obj).filter(e=>e[1]).map(e=>[e[0],
@@ -252,5 +252,5 @@ jb.animate = {
             || jb.path(ctx.vars.$launchingElement,'el')
         return jb.animate.anime({targets,...animation}).finished
     },
-}
+})
 

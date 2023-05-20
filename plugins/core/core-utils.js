@@ -30,7 +30,7 @@ Object.assign(jb, {
     exp: (...args) => new jb.core.jbCtx().exp(...args),
 })
 
-jb.extension('utils', 'core', {
+extension('utils', 'core', {
     profileType(profile) {
         if (!profile) return ''
         if (typeof profile == 'string') return 'data'
@@ -113,7 +113,7 @@ jb.extension('utils', 'core', {
       const compFromImpl = jb.path(comp.impl,[CT,'comp'])
       const dslType = compFromImpl && jb.path(compFromImpl,[CT,'dslType'])
       if (dslType) {
-        comp.impl[CT].dslType = dslType
+        comp.impl[CT].dslType = dslType.replace(/\<\>/g,'')
         return registerWithType(dslType)
       }
       return 'unknown'
@@ -126,14 +126,16 @@ jb.extension('utils', 'core', {
           comp = jb.utils.getComp(prof.$, { types: dslType, dsl: jb.path(prof,[CT,'dsl']) })
         }
         if (!comp)
-          return jb.logError(`resolveUnTypedProfile - can not resolve ${comp[CT].idOfUnresolvedType} please provide specific type`, {comp})
+          return jb.logError(`resolveUnTypedProfile - can not resolve profile ${prof.$}`, {prof})
         prof[CT] = prof[CT] || {}
         Object.assign(prof[CT], {comp, dslType})
       }
       function registerWithType(dslType) {
         if (!comp[CT].idOfUnresolvedType) return dslType
-        comp[CT].fullId = (comp[CT].dsl ? dslType : '') + comp[CT].idOfUnresolvedType
+        const typePrefix = comp[CT].dsl && dslType.indexOf('<') != -1 ? dslType : ''
+        comp[CT].fullId = typePrefix + comp[CT].idOfUnresolvedType
         const oldComp = jb.comps[comp[CT].fullId]
+
         jb.comps[comp[CT].fullId] = comp
         if (comp[CT].keepLocation && jb.path(oldComp,[CT,'location']))
           comp[CT].location = jb.path(oldComp,[CT,'location'])
@@ -150,8 +152,9 @@ jb.extension('utils', 'core', {
       //if (topComp[CT].fullId =='state<loc>israel') debugger
       doResolve(topComp.impl)
 
-      function doResolve(prof, expectedType) {
+      function doResolve(prof, _expectedType,parent) {
           if (!prof || !prof.constructor || ['Object','Array'].indexOf(prof.constructor.name) == -1) return
+          const expectedType = _expectedType == '$asParent' ? jb.path(parent,[CT,'dslType']) : _expectedType
           const dslType = prof.$typeCast || jb.path(prof,[CT,'dslType']) ||  expectedType
           const comp = jb.utils.getComp(prof.$, { types: dslType, dsl: jb.path(prof,[CT,'dsl']) })
           prof[CT] = prof[CT] || {}
@@ -163,7 +166,7 @@ jb.extension('utils', 'core', {
           if (Array.isArray(prof)) {
             prof.forEach(v=>doResolve(v, expectedType))
           } else if (comp && prof.$ != 'asIs') {
-            ;(comp.params || []).forEach(p=> doResolve(prof[p.id], (jb.path(p,[CT,'dslType']) ||'').replace(/\[\]/g,'') ))
+            ;(comp.params || []).forEach(p=> doResolve(prof[p.id], (jb.path(p,[CT,'dslType']) ||'').replace(/\[\]/g,''),prof ))
             doResolve(prof.$vars)
             if (prof.$ == 'object')
               Object.values(prof).forEach(v=>doResolve(v))
@@ -273,7 +276,7 @@ jb.extension('utils', 'core', {
     calcDirectory: dir => dir[0] != '/' ? `${jbHost.baseUrl}/${dir}` : dir,
 })
 
-jb.extension('utils', 'generic', {
+extension('utils', 'generic', {
     isEmpty: o => Object.keys(o).length === 0,
     isObject: o => o != null && typeof o === 'object',
     isPrimitiveValue: val => ['string','boolean','number'].indexOf(typeof val) != -1,
@@ -355,16 +358,10 @@ jb.extension('utils', 'generic', {
       return path1[i] < path2[i] ? -2 : 2
     },    
 
-    unique: (ar,f) => {
-      f = f || (x=>x);
-      const keys = {}, res = [];
-      ar.forEach(e=>{
-        if (!keys[f(e)]) {
-          keys[f(e)] = true;
-          res.push(e)
-        }
-      })
-      return res;
+    unique: (ar,f = (x=>x)) => {
+      const keys = {}, res = []
+      ar.forEach(e=>{ if (!keys[f(e)]) { keys[f(e)] = true; res.push(e) } })
+      return res
     },
     sessionStorage(id,val) {
       if (!jb.frame.sessionStorage) return

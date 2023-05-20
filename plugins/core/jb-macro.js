@@ -5,7 +5,7 @@ Object.assign(jb, {
 
 // debugger eval(jb.macro.importAll().replace(/, location/,''))
 
-jb.extension('macro', {
+extension('macro', {
     initExtension() {
         return { proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro') }
         // for loader jb.macro.importAll()
@@ -81,17 +81,12 @@ jb.extension('macro', {
         debugger;
     },
     registerProxy: id => {
-        const proxyId = jb.macro.titleToId(id.split('.')[0]).split('_')[0]
-        if (jb.frame[proxyId] && jb.frame[proxyId][jb.macro.isMacro]) return
-        // if (jb.frame[proxyId])
-        //     return jb.logError(`register macro proxy: ${proxyId} ' is reserved by system or libs. please use a different name`,{obj:jb.frame[proxyId]})
-        
-        jb.macro.proxies[proxyId] = jb.macro.newProxy(proxyId)
-        //jb.frame[proxyId] = jb.macro.proxies[proxyId]
+        const proxyId = jb.macro.titleToId(id.split('.')[0]) //.split('_')[0]
+        return jb.macro.proxies[proxyId] = jb.macro.proxies[proxyId] || jb.macro.newProxy(proxyId)
     }
 })
 
-jb.component('Var', {
+component('Var', {
   type: 'var,system',
   isSystem: true,
   params: [
@@ -105,7 +100,7 @@ jb.component('Var', {
   impl: '' // for inteliscript
 })
 
-jb.component('remark', {
+component('remark', {
   type: 'system',
   isSystem: true,
   params: [
@@ -114,7 +109,7 @@ jb.component('remark', {
   macro: (result, self) => Object.assign(result,{ remark: self.remark || self.$byValue[0] })
 })
 
-jb.component('typeCast', {
+component('typeCast', {
   type: 'system',
   isSystem: true,
   params: [

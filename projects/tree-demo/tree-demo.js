@@ -1,11 +1,11 @@
-jb.component('personWithAddress', { /* personWithAddress */
+component('personWithAddress', { /* personWithAddress */
   watchableData: {
     name: 'Homer Simpson',
     address: {city: 'Springfield', street: '742 Evergreen Terrace'}
   }
 })
 
-jb.component('personWithChildren', { /* personWithChildren */
+component('personWithChildren', { /* personWithChildren */
   watchableData: {
     name: 'Homer Simpson',
     children: [{name: 'Bart'}, {name: 'Lisa'}, {name: 'Maggie'}, {name: 'a'}, {name: 'b'}],
@@ -13,14 +13,14 @@ jb.component('personWithChildren', { /* personWithChildren */
   }
 })
 
-jb.component('treeDemo.main', { 
+component('treeDemo.main', { 
   impl: tree({
       nodeModel: tree.jsonReadOnly('%$personWithAddress%', 'personWithAddress'),
       features: [tree.selection({}), tree.keyboardSelection({})]
   }),
 })
 
-jb.component('treeDemo.rightClick', { 
+component('treeDemo.rightClick', { 
   impl: tree({
       nodeModel: tree.jsonReadOnly('%$personWithAddress%', 'personWithAddress'),
       features: [
@@ -32,7 +32,7 @@ jb.component('treeDemo.rightClick', {
     }),
 })
 
-jb.component('treeDemo.dragAndDrop', { 
+component('treeDemo.dragAndDrop', { 
   impl: tree({
       nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
       features: [
@@ -44,7 +44,7 @@ jb.component('treeDemo.dragAndDrop', {
     }),
 })
 
-jb.component('treeDemo.tableTree', {
+component('treeDemo.tableTree', {
   type: 'control',
   impl: group({
     controls: [

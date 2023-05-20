@@ -1,4 +1,4 @@
-jb.component('dataResource.people', {
+component('dataResource.people', {
   passiveData: [
   { "name": "Homer Simpson" ,age: 42 , male: true},
   { "name": "Marge Simpson" ,age: 38 , male: false},
@@ -6,12 +6,12 @@ jb.component('dataResource.people', {
 ]
 })
 
-jb.component('menusDemo.main', {
+component('menusDemo.main', {
   type: 'control',
   impl: group()
 })
 
-jb.component('menusDemo.pulldown', {
+component('menusDemo.pulldown', {
   type: 'control',
   impl: menu.control({
     menu: menu.menu({
@@ -49,7 +49,7 @@ jb.component('menusDemo.pulldown', {
   })
 })
 
-jb.component('menusDemo.popup', {
+component('menusDemo.popup', {
   type: 'control',
   impl: group({
     controls: [
@@ -96,7 +96,7 @@ jb.component('menusDemo.popup', {
   title: ''
 })
 
-jb.component('menusDemo.dynamic', {
+component('menusDemo.dynamic', {
   type: 'control',
   impl: menu.control({
     menu: menu.menu({
@@ -116,7 +116,7 @@ jb.component('menusDemo.dynamic', {
   })
 })
 
-jb.component('menusDemo.iconToolbar', {
+component('menusDemo.iconToolbar', {
   type: 'control',
   impl: group({
     title: '',

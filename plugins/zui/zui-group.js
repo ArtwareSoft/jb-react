@@ -1,6 +1,6 @@
-jb.dsl('zui')
+dsl('zui')
 
-jb.extension('zui','layout', {
+extension('zui','layout', {
   initGroup(ctx) {
     const { layout, views,viewFeatures } = ctx.params
     const _views = views()

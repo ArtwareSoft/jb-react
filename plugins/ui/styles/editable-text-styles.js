@@ -1,4 +1,4 @@
-jb.component('editableText.input', {
+component('editableText.input', {
   type: 'editable-text.style',
   impl: customStyle({
     template: (cmp,{databind},h) => h('input', {value: databind, onchange: true, onkeyup: true, onblur: true }),
@@ -6,7 +6,7 @@ jb.component('editableText.input', {
   })
 })
 
-jb.component('editableText.textarea', {
+component('editableText.textarea', {
   type: 'editable-text.style',
   params: [
     {id: 'rows', as: 'number', defaultValue: 4},
@@ -20,7 +20,7 @@ jb.component('editableText.textarea', {
   })
 })
 
-jb.component('editableText.mdcInput', {
+component('editableText.mdcInput', {
   type: 'editable-text.style,editable-number.style',
   params: [
     {id: 'width', as: 'number'},
@@ -57,7 +57,7 @@ jb.component('editableText.mdcInput', {
   })
 })
 
-jb.component('editableText.mdcNoLabel', {
+component('editableText.mdcNoLabel', {
   type: 'editable-text.style',
   params: [
     {id: 'width', as: 'number'}
@@ -65,7 +65,7 @@ jb.component('editableText.mdcNoLabel', {
   impl: editableText.mdcInput({width:'%$width%', noLabel: true})
 })
 
-jb.component('editableText.mdcSearch', {
+component('editableText.mdcSearch', {
   params: [
     {id: 'width', as: 'number'}
   ],
@@ -74,7 +74,7 @@ jb.component('editableText.mdcSearch', {
   impl: styleWithFeatures(editableText.mdcInput({width:'%$width%', noLabel: true}), feature.icon({icon: 'search', position: 'post'}))
 })
 
-jb.component('editableText.expandable', {
+component('editableText.expandable', {
   description: 'label that changes to editable class on double click',
   type: 'editable-text.style',
   params: [

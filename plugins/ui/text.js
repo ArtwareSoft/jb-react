@@ -1,5 +1,5 @@
 
-jb.component('text', {
+component('text', {
   type: 'control',
   category: 'control:100,common:100',
   params: [
@@ -11,9 +11,9 @@ jb.component('text', {
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('label', {...jb.comps.text,type: 'depricated-control'} )
+component('label', {...jb.comps.text,type: 'depricated-control'} )
 
-jb.component('text.bindText', {
+component('text.bindText', {
   type: 'feature',
   category: 'text:0',
   impl: features(
@@ -22,7 +22,7 @@ jb.component('text.bindText', {
   )
 })
 
-jb.component('text.allowAsynchValue', {
+component('text.allowAsynchValue', {
   type: 'feature',
   description: 'allows a text value to be reactive or promise',
   params: [
@@ -40,7 +40,7 @@ jb.component('text.allowAsynchValue', {
   )
 })
 
-jb.component('text.highlight', {
+component('text.highlight', {
   type: 'data',
   macroByValue: true,
   params: [

@@ -1,4 +1,6 @@
-jb.component('remoteWidgetTest.button', {
+using('ui-tests')
+
+component('remoteWidgetTest.button', {
   impl: uiTest({
     timeout: 3000,
     checkResultRx: () => jb.ui.renderingUpdates,
@@ -7,7 +9,7 @@ jb.component('remoteWidgetTest.button', {
   })
 })
 
-jb.component('remoteWidgetTest.group.wait', {
+component('remoteWidgetTest.group.wait', {
   impl: uiTest({
     timeout: 3000,
     checkResultRx: () => jb.ui.renderingUpdates,
@@ -19,7 +21,7 @@ jb.component('remoteWidgetTest.group.wait', {
   })
 })
 
-jb.component('remoteWidgetTest.distributedWidget', {
+component('remoteWidgetTest.distributedWidget', {
   impl: uiTest({
     timeout: 3000,
     control: group({
@@ -43,7 +45,7 @@ jb.component('remoteWidgetTest.distributedWidget', {
   })
 })
 
-jb.component('remoteWidgetTest.changeText', {
+component('remoteWidgetTest.changeText', {
   impl: uiTest({
     timeout: 1000,
     control: remote.widget(
@@ -65,7 +67,7 @@ jb.component('remoteWidgetTest.changeText', {
   })
 }) 
 
-jb.component('remoteWidgetTest.buttonClick', {
+component('remoteWidgetTest.buttonClick', {
   impl: uiTest({
     timeout: 1000,
     control: remote.widget(
@@ -87,7 +89,7 @@ jb.component('remoteWidgetTest.buttonClick', {
   })
 })
 
-jb.component('remoteWidgetTest.dialog', {
+component('remoteWidgetTest.dialog', {
   impl: uiTest({
     timeout: 1000,
     control: remote.widget(
@@ -103,7 +105,7 @@ jb.component('remoteWidgetTest.dialog', {
   })
 })
 
-jb.component('remoteWidgetTest.loadCodeManully', {
+component('remoteWidgetTest.loadCodeManully', {
   impl: uiTest({
     timeout: 1000,
     control: remote.widget(
@@ -117,7 +119,7 @@ jb.component('remoteWidgetTest.loadCodeManully', {
   })
 })
 
-jb.component('remoteWidgetTest.html', {
+component('remoteWidgetTest.html', {
   impl: uiTest({
     timeout: 500,
     checkResultRx: () => jb.ui.renderingUpdates,
@@ -127,7 +129,7 @@ jb.component('remoteWidgetTest.html', {
 })
 
 
-jb.component('FETest.distributedWidget', {
+component('FETest.distributedWidget', {
   impl: uiFrontEndTest({
     control: group({controls: [], features: css.class('xRoot')}),
     action: runActions(
@@ -147,7 +149,7 @@ jb.component('FETest.distributedWidget', {
   })
 })
 
-jb.component('FETest.remoteWidgetTest.changeText', {
+component('FETest.remoteWidgetTest.changeText', {
   impl: uiFrontEndTest({
     control: group({controls: [], features: css.class('xRoot')}),
     action: runActions(
@@ -176,7 +178,7 @@ jb.component('FETest.remoteWidgetTest.changeText', {
   })
 })
 
-jb.component('FETest.remoteWidget.codemirror', {
+component('FETest.remoteWidget.codemirror', {
   impl: uiFrontEndTest({
     control: remote.widget(text({text: 'hello', style: text.codemirror({height: 100})}), worker()),
     action: waitFor(() => document.querySelector('.CodeMirror')),
@@ -185,7 +187,7 @@ jb.component('FETest.remoteWidget.codemirror', {
   })
 })
 
-jb.component('FETest.remoteWidget.codemirror.editableText', {
+component('FETest.remoteWidget.codemirror.editableText', {
   impl: uiFrontEndTest({
     control: remote.widget(editableText({databind: '%$person/name%', style: editableText.codemirror({height: 100})}), worker()),
     runBefore: remote.action(addComponent({
@@ -224,7 +226,7 @@ jb.component('FETest.remoteWidget.codemirror.editableText', {
 //   })
 // })
 
-jb.component('FETest.remoteWidget.infiniteScroll', {
+component('FETest.remoteWidget.infiniteScroll', {
   impl: uiFrontEndTest({
     control: remote.widget(
       itemlist({
@@ -245,7 +247,7 @@ jb.component('FETest.remoteWidget.infiniteScroll', {
   })
 })
 
-jb.component('FETest.remoteWidget.infiniteScroll.MDInplace', {
+component('FETest.remoteWidget.infiniteScroll.MDInplace', {
   impl: uiFrontEndTest({
     control: remote.widget(
       group({
@@ -314,7 +316,7 @@ jb.component('FETest.remoteWidget.infiniteScroll.MDInplace', {
   })
 })
 
-jb.component('FETest.remoteWidget.refresh', {
+component('FETest.remoteWidget.refresh', {
   impl: uiFrontEndTest({
     control: group({
       controls: remote.widget(text('%$person1/name%'), worker()),

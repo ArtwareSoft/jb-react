@@ -1,4 +1,4 @@
-jb.extension('nodeContainer', {
+extension('nodeContainer', {
     initExtension() { return { toRestart: [], servers: {} } },
     connectFromBrowser: (wsUrl,serverUri,ctx) => new Promise( resolve => {
         const socket = new jbHost.WebSocket_Browser(wsUrl,'echo-protocol')
@@ -92,7 +92,7 @@ jb.extension('nodeContainer', {
 component('remoteNodeWorker', {
   type: 'jbm',
   params: [
-    {id: 'id', as: 'string', mandatory: true},
+    {id: 'id', as: 'string'},
     {id: 'projects', as: 'array'},
     {id: 'init', type: 'action', dynamic: true},
     {id: 'loadTests', as: 'boolean'},
@@ -101,7 +101,8 @@ component('remoteNodeWorker', {
     {id: 'spyParam', as: 'string'},
     {id: 'restartSource', type: 'rx', description: 'rx event to restrat'}
   ],
-  impl: async (ctx,id,projects,init,loadTests,inspect,nodeContainerUrl,spyParam) => {
+  impl: async (ctx,_id,projects,init,loadTests,inspect,nodeContainerUrl,spyParam) => {
+        const id = _id || ctx.vars.groupWorkerId || 'nodeWorker1'
         jb.log('vscode remote jbm nodeContainer',{ctx,id})
         const nodeWorkerUri = `${jb.uri}__${id}`
         const restart = (jb.nodeContainer.toRestart||[]).indexOf(id)

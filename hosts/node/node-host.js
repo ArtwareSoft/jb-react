@@ -36,12 +36,12 @@ function codePackageNodeFS(baseDir) { return {
         function fileContent(path) {
             const content = fs.readFileSync(`${baseDir}/${path}`, 'utf-8')
             return {
-                dsl: unique(content.split('\n').map(l=>(l.match(/^jb.dsl\('([^']+)/) || ['',''])[1]).filter(x=>x).map(x=>x.split('.')[0]))[0],
-                pluginDsl: unique(content.split('\n').map(l=>(l.match(/^jb.pluginDsl\('([^']+)/) || ['',''])[1]).filter(x=>x).map(x=>x.split('.')[0]))[0],
                 path: '/' + path,
-                ns: unique(content.split('\n').map(l => (l.match(/^(jb.)?component\('([^']+)/) || ['', ''])[2]).filter(x => x).map(x => x.split('.')[0])),
-                libs: unique(content.split('\n').map(l => (l.match(/^jb.extension\('([^']+)/) || ['', ''])[1]).filter(x => x).map(x => x.split('.')[0])),
-                using: unique(content.split('\n').map(l=>(l.match(/^jb.using\('([^']+)/) || ['',''])[1]).filter(x=>x).flatMap(x=>x.split(',').map(x=>x.trim()))),
+                dsl: unique(content.split('\n').map(l=>(l.match(/^(jb.)?dsl\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0]))[0],
+                pluginDsl: unique(content.split('\n').map(l=>(l.match(/^(jb.)?pluginDsl\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0]))[0],
+                ns: unique(content.split('\n').map(l=>(l.match(/^(jb.)?component\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0])),
+                libs: unique(content.split('\n').map(l=>(l.match(/^(jb.)?extension\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0])),
+                using: unique(content.split('\n').map(l=>(l.match(/^(jb.)?using\('([^']+)/) || ['',''])[2]).filter(x=>x).flatMap(x=>x.split(',').map(x=>x.trim()))),
             }
         }
         function unique(list) {
@@ -79,7 +79,6 @@ globalThis.jbHost = globalThis.jbHost || {
             }
         })
     },
-    defaultCodePackage: codePackageNodeFS(findjbReact()),
     getProcessArgument(argName) {
         for (let i = 0; i < process.argv.length; i++) {
         const arg = process.argv[i];
@@ -116,7 +115,12 @@ globalThis.jbHost = globalThis.jbHost || {
             })
         })
     },
-    runShell: cmd => require('child_process').exec(cmd) 
+    runShell: cmd => require('child_process').exec(cmd),
+    codePackageFromJson(package) {
+        if (package == null || package.$ == 'defaultPackage') return codePackageNodeFS(findjbReact())
+        if (package.$ == 'fileSystem')
+            return codePackageNodeFS(package.baseDir)
+    }
 }
 
 module.exports = { jbHost, codePackageNodeFS }

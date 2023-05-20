@@ -1,5 +1,5 @@
 
-jb.extension('zui','layout', {
+extension('zui','layout', {
   floorLog2(size) {
     return 2**Math.floor(Math.log(size)/Math.log(2))
   },

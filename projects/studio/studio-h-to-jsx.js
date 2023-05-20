@@ -1,4 +1,4 @@
-jb.extension('studio', 'jsx', {
+extension('studio', 'jsx', {
   initExtension() {
     if (jb.studio._initJsxToH || !jb.frame.Babel) return;
     jb.frame.Babel.registerPlugin('h-to-jsx',h_to_jsx);
@@ -78,7 +78,7 @@ jb.extension('studio', 'jsx', {
   },
 })
 
-jb.component('studio.jsxToH', {
+component('studio.jsxToH', {
   type: 'data',
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
@@ -86,7 +86,7 @@ jb.component('studio.jsxToH', {
   impl: (ctx,text) => jb.studio.jsxToH(text)
 })
 
-jb.component('studio.hToJsx', {
+component('studio.hToJsx', {
   type: 'data',
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
@@ -95,7 +95,7 @@ jb.component('studio.hToJsx', {
 })
 
 
-jb.component('studio.templateAsJsx', {
+component('studio.templateAsJsx', {
   type: 'data',
   params: [
     {id: 'path', as: 'string', dynamic: true}

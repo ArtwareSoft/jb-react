@@ -1,4 +1,5 @@
-jb.extension('tgp', 'writable', {
+using('watchable-comps')
+extension('tgp', 'writable', {
 	initExtension() {
 		jb.watchableComps.startWatch()
 	},
@@ -93,14 +94,14 @@ jb.extension('tgp', 'writable', {
 	},
 })
 
-jb.component('tgp.ref', {
+component('tgp.ref', {
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
   impl: (ctx,path) => jb.tgp.ref(path)
 })
 
-jb.defComponents('pathOfRef,nameOfRef'.split(','), f => jb.component(`tgp.${f}`, { 
+ jb.defComponents('pathOfRef,nameOfRef'.split(','), f => component(`tgp.${f}`, { 
 	params: [
 		{id: 'ref', defaultValue: '%%', mandatory: true},
 		{id: 'func', as: 'string', defaultValue: f}
@@ -109,7 +110,7 @@ jb.defComponents('pathOfRef,nameOfRef'.split(','), f => jb.component(`tgp.${f}`,
 	require: `() => #jb.tgp.${f}()`
 }))
 
-jb.component('tgp.boolRef', {
+component('tgp.boolRef', {
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
@@ -123,7 +124,7 @@ jb.component('tgp.boolRef', {
 	})
 })
 
-jb.component('tgp.profileValueAsText', {
+component('tgp.profileValueAsText', {
   type: 'data',
   params: [
     {id: 'path', as: 'string'}
@@ -154,7 +155,7 @@ jb.component('tgp.profileValueAsText', {
     })
 })
 
-jb.component('tgp.getOrCreateCompInArray', {
+component('tgp.getOrCreateCompInArray', {
 	type: 'data',
 	params: [
 		{id: 'path', as: 'string', mandatory: true},
@@ -186,7 +187,7 @@ jb.component('tgp.getOrCreateCompInArray', {
 	}
 })
 
-jb.component('tgp.wrap', {
+component('tgp.wrap', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -203,7 +204,7 @@ jb.component('tgp.wrap', {
     }
 })
 
-jb.component('tgp.addProperty', {
+component('tgp.addProperty', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -220,7 +221,7 @@ jb.component('tgp.addProperty', {
 	}
 })
 
-jb.component('tgp.duplicateArrayItem', {
+component('tgp.duplicateArrayItem', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -234,7 +235,7 @@ jb.component('tgp.duplicateArrayItem', {
 	}
 })
 
-jb.component('tgp.addArrayItem', {
+component('tgp.addArrayItem', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -244,7 +245,7 @@ jb.component('tgp.addArrayItem', {
   impl: (srcCtx,path,toAdd,index) => jb.tgp.addArrayItem(path, {srcCtx, toAdd , index})
 })
 
-jb.component('tgp.wrapWithArray', {
+component('tgp.wrapWithArray', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -256,7 +257,7 @@ jb.component('tgp.wrapWithArray', {
   }
 })
 
-jb.component('tgp.setComp', {
+component('tgp.setComp', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -265,7 +266,7 @@ jb.component('tgp.setComp', {
   impl: (ctx,path,id) => jb.tgp.setComp(path, id,ctx)
 })
 
-jb.component('tgp.delete', {
+component('tgp.delete', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -284,7 +285,7 @@ jb.component('tgp.delete', {
 	}
 })
 
-jb.component('tgp.toggleDisabled', {
+component('tgp.toggleDisabled', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}

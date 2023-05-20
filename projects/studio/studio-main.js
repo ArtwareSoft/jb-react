@@ -1,4 +1,6 @@
-jb.component('studio.main', {
+using('remote-widget,data-browser,watchable-comps,probe-preview,net,tgp,workspace')
+
+component('studio.main', {
   type: 'control',
   impl: group({
     controls: [
@@ -12,17 +14,17 @@ jb.component('studio.main', {
   })
 })
 
-jb.component('studio.isNotebook',{
+component('studio.isNotebook',{
   type: 'boolean',
   impl: () => jb.path(self,'location.pathname').indexOf('/notebook') == 0
 })
 
-jb.component('studio.isTest', {
+component('studio.isTest', {
   type: 'boolean',
   impl: () => /host=test/.test(jb.path(globalThis,'location.href')||'')
 })
 
-jb.component('studio.jbart', {
+component('studio.jbart', {
   type: 'control',
   impl: group({
     controls: [
@@ -53,7 +55,7 @@ jb.component('studio.jbart', {
   })
 })
 
-jb.component('studio.test', {
+component('studio.test', {
   type: 'control',
   impl: group({
     controls: [
@@ -103,7 +105,7 @@ jb.component('studio.test', {
 //   })
 // })
 
-jb.component('dataResource.studio', {
+component('dataResource.studio', {
   watchableData: {
     circuit: /host=test/.test(jb.path(globalThis,'location.href')||'') ? (jb.path(globalThis,'location.pathname')||'').split('/')[3] : '',
     project: '',
@@ -121,7 +123,7 @@ jb.component('dataResource.studio', {
   }
 })
 
-jb.component('studio.pages', {
+component('studio.pages', {
   type: 'control',
   impl: group({
     title: 'pages',
@@ -193,7 +195,7 @@ jb.component('studio.pages', {
   })
 })
 
-jb.component('studio.ctxCounters', {
+component('studio.ctxCounters', {
   type: 'control',
   impl: text({
     text: ctx => (jb.frame.performance && performance.memory && performance.memory.usedJSHeapSize / 1000000)  + 'M',
@@ -204,7 +206,7 @@ jb.component('studio.ctxCounters', {
   })
 })
 
-jb.component('studio.sampleProject', {
+component('studio.sampleProject', {
   type: 'menu.option',
   params: [
     {id: 'project', as: 'string'}
@@ -222,7 +224,7 @@ jb.component('studio.sampleProject', {
   )
 })
 
-jb.component('studio.mainMenu', {
+component('studio.mainMenu', {
   type: 'menu.option',
   impl: menu.menu(
     'main',
@@ -355,11 +357,11 @@ jb.component('studio.mainMenu', {
   )
 })
 
-jb.component('studio.baseStudioUrl', {
+component('studio.baseStudioUrl', {
   impl: () => jb.studio.host.baseUrl + '/bin/studio/'
 })
 
-jb.component('studio.topBar', {
+component('studio.topBar', {
   type: 'control',
   impl: group({
     title: 'top bar',
@@ -410,7 +412,7 @@ jb.component('studio.topBar', {
   })
 })
 
-jb.component('studio.vscodeTopBar', {
+component('studio.vscodeTopBar', {
   type: 'control',
   impl: group({
     title: 'top bar',
@@ -466,7 +468,7 @@ jb.component('studio.vscodeTopBar', {
   })
 })
 
-jb.component('studio.pathHyperlink', {
+component('studio.pathHyperlink', {
   type: 'control',
   params: [
     {id: 'path', as: 'string', mandatory: true},
@@ -490,7 +492,7 @@ jb.component('studio.pathHyperlink', {
   })
 })
 
-jb.component('studio.projectSettings', {
+component('studio.projectSettings', {
   type: 'control',
   impl: group({
     title: '',

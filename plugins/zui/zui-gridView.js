@@ -1,4 +1,4 @@
-jb.dsl('zui')
+dsl('zui')
 
 component('zui.gridView', {
   type: 'view',

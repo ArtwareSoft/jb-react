@@ -1,5 +1,5 @@
 
-jb.extension('studio', {
+extension('studio', {
 	ControlTree: class ControlTree {
 		constructor(rootPath) {
 			this.rootPath = rootPath;
@@ -46,7 +46,7 @@ jb.extension('studio', {
 	},
 })
 
-jb.component('studio.treeMenu', {
+component('studio.treeMenu', {
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}
@@ -150,7 +150,7 @@ jb.component('studio.treeMenu', {
   })
 })
 
-jb.component('studio.openTreeMenu', {
+component('studio.openTreeMenu', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -161,7 +161,7 @@ jb.component('studio.openTreeMenu', {
   })
 })
 
-jb.component('studio.controlTreeNodes', {
+component('studio.controlTreeNodes', {
   type: 'tree.node-model',
   impl: function(context) {
 		var currentPath = context.run({ $: 'studio.currentProfilePath' });
@@ -170,7 +170,7 @@ jb.component('studio.controlTreeNodes', {
 	}
 })
 
-jb.component('studio.controlTree', {
+component('studio.controlTree', {
   type: 'control',
   impl: group({
     controls: [
@@ -214,7 +214,7 @@ jb.component('studio.controlTree', {
   })
 })
 
-jb.component('studio.openControlTree', {
+component('studio.openControlTree', {
   type: 'action',
   impl: openDialog({
     style: dialog.studioFloating({id: 'studio-outline', width: '350'}),

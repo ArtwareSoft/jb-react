@@ -1,4 +1,6 @@
-jb.ui.contentEditable = {
+extension('ui','contentEditable', {
+  initExtension() { return {
+  contentEditable : {
   setScriptData(ev,cmp,prop,isHtml) {
     const val = isHtml ? ev.innerHTML : ev.innerText
     const resourceRef = cmp.toObserve.filter(e=>e.id == prop).map(e=>e.ref)[0]
@@ -34,10 +36,11 @@ jb.ui.contentEditable = {
   },
   refOfProp(cmp,prop) {
     return cmp.toObserve.filter(e=>e.id == prop).map(e=>e.ref)[0] || this.scriptRef(cmp,prop)
-  },
-}
+  }
+}}
+}})
 
-jb.component('feature.contentEditable', {
+component('feature.contentEditable', {
   type: 'feature',
   description: 'studio editing behavior',
   params: [
@@ -94,7 +97,7 @@ jb.component('feature.contentEditable', {
   ))
 })
 
-jb.component('contentEditable.deactivate', {
+component('contentEditable.deactivate', {
   type: 'action',
   impl: ctx => {
     const previewUI = jb.studio.previewjb.ui

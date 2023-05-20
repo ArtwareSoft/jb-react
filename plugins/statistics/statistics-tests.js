@@ -1,12 +1,12 @@
 
-jb.component('statTest.groupBy', {
+component('statTest.groupBy', {
     impl: dataTest({
       calculate: pipeline('%$people%', stat.groupBy('%male%'), filter('%male%==true'), '%items/name%', join(',')),
       expectedResult: equals('Homer Simpson,Bart Simpson')
     })
 })
 
-jb.component('statTest.groupBy.performance', {
+component('statTest.groupBy.performance', {
     impl: dataTest({
       calculate: pipeline(
           pipeline(range(1,1000), ({data}) => ({ mod: data % 10 })), 
@@ -17,7 +17,7 @@ jb.component('statTest.groupBy.performance', {
     })
 })
 
-jb.component('statTest.groupBy.fieldsInGroup', {
+component('statTest.groupBy.fieldsInGroup', {
     impl: dataTest({
       calculate: pipeline('%$people%', stat.groupBy({by: '%male%', 
       calculate: [

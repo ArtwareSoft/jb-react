@@ -1,5 +1,5 @@
 
-jb.component('tgpTextEditor.prepareSetPT', {
+component('tgpTextEditor.prepareSetPT', {
   type: 'data',
   params: [
     {id: 'path', as: 'string'},
@@ -27,7 +27,7 @@ jb.component('tgpTextEditor.prepareSetPT', {
   }
 })
 
-jb.component('tgpTextEditor.selectPT', {
+component('tgpTextEditor.selectPT', {
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'},
@@ -55,7 +55,7 @@ jb.component('tgpTextEditor.selectPT', {
   })
 })
 
-jb.component('tgpTextEditor.selectEnum', {
+component('tgpTextEditor.selectEnum', {
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'},
@@ -67,7 +67,7 @@ jb.component('tgpTextEditor.selectEnum', {
   })
 })
 
-jb.component('tgpTextEditor.editMenu', {
+component('tgpTextEditor.editMenu', {
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}

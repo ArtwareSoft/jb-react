@@ -1,10 +1,9 @@
-jb.extension('ui','utils', {
+extension('ui','utils', {
     focus(elem,logTxt,ctx) {
         if (!elem) debugger
         // block the preview from stealing the studio focus
         const now = new Date().getTime()
-        const lastStudioActivity = jb.studio.lastStudioActivity 
-          || jb.path(jb,['studio','studioWindow','jb','studio','lastStudioActivity'])
+        const lastStudioActivity = jb.path(jb,['studio','lastStudioActivity']) || jb.path(jb,['studio','studioWindow','jb','studio','lastStudioActivity']) || 0
 
         jb.log('focus request',{ctx, logTxt, timeDiff: now - lastStudioActivity, elem})
         // if (jb.studio.previewjb == jb && jb.path(jb.ui.parentFrameJb(),'resources.studio.project') != 'studio-helper' && lastStudioActivity && now - lastStudioActivity < 1000)
@@ -64,12 +63,12 @@ jb.extension('ui','utils', {
 
 // ***************** inter-cmp services
 
-jb.component('feature.serviceRegistey', {
+component('feature.serviceRegistey', {
   type: 'feature',
   impl: () => ({extendCtx: ctx => jb.ui.extendWithServiceRegistry(ctx) })
 })
 
-jb.component('service.registerBackEndService', {
+component('service.registerBackEndService', {
   type: 'data',
   params: [
     {id: 'id', as: 'string', mandatory: true, dynamic: true},
@@ -87,7 +86,7 @@ jb.component('service.registerBackEndService', {
 
 
 // ****************** html utils ***************
-jb.extension('ui', 'html', {
+extension('ui', 'html', {
     outerWidth(el) {
         const style = getComputedStyle(el)
         return el.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight)
@@ -174,7 +173,7 @@ jb.extension('ui', 'html', {
 
 // ****************** components ****************
 
-jb.component('action.applyDeltaToCmp', {
+component('action.applyDeltaToCmp', {
   type: 'action',
   params: [
     {id: 'delta', mandatory: true },
@@ -185,7 +184,7 @@ jb.component('action.applyDeltaToCmp', {
     jb.ui.applyDeltaToCmp({ctx,delta,cmpId,assumedVdom})
 })
 
-jb.component('sink.applyDeltaToCmp', {
+component('sink.applyDeltaToCmp', {
   type: 'rx',
   params: [
     {id: 'delta', dynamic: true, mandatory: true},
@@ -194,7 +193,7 @@ jb.component('sink.applyDeltaToCmp', {
   impl: sink.action(action.applyDeltaToCmp('%$delta()%','%$cmpId%'))
 })
 
-jb.component('action.focusOnCmp', {
+component('action.focusOnCmp', {
   description: 'runs both in FE and BE',
   type: 'action',
   params: [
@@ -214,7 +213,7 @@ jb.component('action.focusOnCmp', {
   }
 })
 
-jb.component('customStyle', {
+component('customStyle', {
   typePattern: t => /\.style$/.test(t),
   category: 'advanced:10,all:10',
   params: [
@@ -230,7 +229,7 @@ jb.component('customStyle', {
     })
 })
 
-jb.component('styleByControl', {
+component('styleByControl', {
   typePattern: t => /\.style$/.test(t),
   category: 'advanced:10,all:20',
   params: [
@@ -240,7 +239,7 @@ jb.component('styleByControl', {
   impl: (ctx,control,modelVar) => control(ctx.setVar(modelVar, ctx.vars.$model))
 })
 
-jb.component('styleWithFeatures', {
+component('styleWithFeatures', {
   typePattern: t => /\.style$/.test(t),
   description: 'customize, add more features to style',
   category: 'advanced:10,all:20',
@@ -255,7 +254,7 @@ jb.component('styleWithFeatures', {
   }
 })
 
-jb.component('controlWithFeatures', {
+component('controlWithFeatures', {
   type: 'control',
   description: 'customize, add more features to control',
   category: 'advanced:10,all:20',
@@ -266,7 +265,7 @@ jb.component('controlWithFeatures', {
   impl: (ctx,control,features) => control.jbExtend(features,ctx).orig(ctx)
 })
 
-jb.component('renderWidget', {
+component('renderWidget', {
   type: 'action',
   params: [
     {id: 'control', type: 'control', dynamic: true, mandatory: true},

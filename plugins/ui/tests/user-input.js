@@ -1,4 +1,4 @@
-jb.component('userInput.eventToRequest', {
+component('userInput.eventToRequest', {
     type: 'rx',
     impl: rx.map( (ctx,{tstWidgetId}) => {
       if (!ctx.data.selector) return ctx.data
@@ -8,7 +8,7 @@ jb.component('userInput.eventToRequest', {
     })
 })
 
-jb.component('userInput.click', {
+component('userInput.click', {
     type: 'user-input',
     params: [
       {id: 'selector', as: 'string', defaultValue: 'button'},
@@ -17,7 +17,7 @@ jb.component('userInput.click', {
     impl: (ctx,selector,methodToActivate) => ({ type: 'click', selector, specificMethod: methodToActivate })
 })
 
-jb.component('userInput.setText', {
+component('userInput.setText', {
     type: 'user-input',
     params: [
       {id: 'value', as: 'string', mandatory: true},
@@ -26,7 +26,7 @@ jb.component('userInput.setText', {
     impl: (ctx,value,selector) => ({ type: 'blur', target: {value}, selector })
 })
 
-jb.component('userInput.keyboardEvent', {
+component('userInput.keyboardEvent', {
     type: 'user-input',
     params: [
       {id: 'selector', as: 'string'},
@@ -39,7 +39,7 @@ jb.component('userInput.keyboardEvent', {
 
 // ****** uiActions
 
-jb.component('uiAction.waitForSelector', {
+component('uiAction.waitForSelector', {
   type: 'action',
   params: [
     {id: 'selector', as: 'string' },
@@ -47,7 +47,7 @@ jb.component('uiAction.waitForSelector', {
   impl: waitFor((ctx,{},{selector}) => jb.ui.elemOfSelector(selector,ctx))
 })
 
-jb.component('uiAction.waitForFESelector', {
+component('uiAction.waitForFESelector', {
   type: 'action',
   params: [
     {id: 'selector', as: 'string' },
@@ -60,7 +60,7 @@ jb.component('uiAction.waitForFESelector', {
   })
 })
 
-jb.component('uiAction.waitForCompReady', {
+component('uiAction.waitForCompReady', {
   type: 'action',
   params: [
     {id: 'selector', as: 'string' },
@@ -72,7 +72,7 @@ jb.component('uiAction.waitForCompReady', {
   })
 })
 
-jb.component('uiAction.scrollBy', {
+component('uiAction.scrollBy', {
       type: 'user-input',
       params: [
         {id: 'selector', as: 'string' },
@@ -88,7 +88,7 @@ jb.component('uiAction.scrollBy', {
       )
 })
 
-jb.component('uiAction.setText', {
+component('uiAction.setText', {
     type: 'ui-action',
     params: [
       {id: 'value', as: 'string', mandatory: true},
@@ -105,7 +105,7 @@ jb.component('uiAction.setText', {
       })
 })
 
-jb.component('uiAction.click', {
+component('uiAction.click', {
     type: 'ui-action',
     params: [
       {id: 'selector', as: 'string'},
@@ -119,7 +119,7 @@ jb.component('uiAction.click', {
     })
 })
   
-jb.component('uiAction.keyboardEvent', {
+component('uiAction.keyboardEvent', {
     type: 'ui-action',
     params: [
       {id: 'selector', as: 'string'},

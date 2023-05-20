@@ -1,4 +1,4 @@
-jb.extension('remoteCtx', {
+extension('remoteCtx', {
     initExtension() {
         return { allwaysPassVars: ['tstWidgetId','disableLog','uiTest'], MAX_ARRAY_LENGTH: 1000, MAX_OBJ_DEPTH: 100}
     },
@@ -109,7 +109,7 @@ jb.extension('remoteCtx', {
     usingData: profText => profText.match(/({data})|(ctx.data)|(%[^$])/)
 })
 
-jb.component('runCtx',{
+component('runCtx',{
     params: [
         {id: 'path', as: 'string'},
         {id: 'vars' },

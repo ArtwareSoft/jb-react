@@ -1,4 +1,4 @@
-jb.extension('tgp', 'specific', {
+extension('tgp', 'specific', {
 	nonControlChildren: (path,includeFeatures) =>
 		jb.tgp.paramsOfPath(path).filter(p=>!jb.tgp.isControlType(p.type))
 			.filter(p=>includeFeatures || p.id != 'features')
@@ -22,7 +22,7 @@ jb.extension('tgp', 'specific', {
 	}
 })
 
-jb.component('tgp.wrapWithGroup', {
+component('tgp.wrapWithGroup', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -30,7 +30,7 @@ jb.component('tgp.wrapWithGroup', {
   impl: (ctx,path) => jb.tgp.writeValueOfPath(path,{ $: 'group', controls: [ jb.tgp.valOfPath(path) ] },ctx),
 })
 
-jb.component('tgp.insertControl', {
+component('tgp.insertControl', {
   type: 'action',
   params: [
     {id: 'comp', mandatory: true, description: 'comp name or comp json'},
@@ -57,7 +57,7 @@ jb.component('tgp.insertControl', {
         jb.tgp.push(group_ref,[newCtrl],ctx)	}
 })
 
-jb.component('tgp.duplicateControl', {
+component('tgp.duplicateControl', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}

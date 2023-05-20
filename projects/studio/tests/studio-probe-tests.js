@@ -1,11 +1,13 @@
-jb.component('FETest.workerPreviewTest.suggestions', {
+using('probe-tests')
+
+component('FETest.workerPreviewTest.suggestions', {
   impl: uiFrontEndTest({
     renderDOM: true,
     timeout: 5000,
     runBefore: writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
     control: group({
       controls: [
-        probe.remoteMainCircuitView(),
+        probe.remoteCircuitPreview(),
         studio.propertyPrimitive('sampleProject.main~impl~controls~text')
       ],
     }),
@@ -20,11 +22,11 @@ jb.component('FETest.workerPreviewTest.suggestions', {
   })
 })
 
-jb.component('FETest.workerPreviewTest.suggestions.select', {
+component('FETest.workerPreviewTest.suggestions.select', {
   impl: uiFrontEndTest({
     control: group({controls: [
       studio.propertyPrimitive('sampleProject.main~impl~controls~text'),
-      probe.remoteMainCircuitView()
+      probe.remoteCircuitPreview()
     ]}),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
     action: runActions(
@@ -50,11 +52,11 @@ jb.component('FETest.workerPreviewTest.suggestions.select', {
   })
 })
 
-jb.component('FETest.workerPreviewTest.suggestions.selectPopup', {
+component('FETest.workerPreviewTest.suggestions.selectPopup', {
   impl: uiFrontEndTest({
     control: group({controls: [
       studio.propertyPrimitive('sampleProject.main~impl~controls~text'),
-      probe.remoteMainCircuitView()
+      probe.remoteCircuitPreview()
     ]}),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
     action: runActions(
@@ -74,7 +76,7 @@ jb.component('FETest.workerPreviewTest.suggestions.selectPopup', {
 //     runBefore: writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
 //     control: group({
 //       controls: [
-//         probe.remoteMainCircuitView(),
+//         probe.remoteCircuitPreview(),
 //         studio.propertyPrimitive('sampleProject.main~impl~controls~text')
 //       ],
 //     }),
@@ -82,11 +84,11 @@ jb.component('FETest.workerPreviewTest.suggestions.selectPopup', {
 //   })
 // })
 
-jb.component('FETest.workerPreviewTest.suggestions.filtered', {
+component('FETest.workerPreviewTest.suggestions.filtered', {
   impl: uiFrontEndTest({
     control: group({
       controls: [
-        probe.remoteMainCircuitView(),
+        probe.remoteCircuitPreview(),
         studio.propertyPrimitive('sampleProject.main~impl~controls~text')
       ]
     }),
@@ -107,11 +109,11 @@ jb.component('FETest.workerPreviewTest.suggestions.filtered', {
   })
 })
 
-jb.component('jbEditorTest.basic', {
+component('jbEditorTest.basic', {
   impl: uiTest({
     control: group({
       controls: [
-        probe.remoteMainCircuitView(),
+        probe.remoteCircuitPreview(),
         studio.jbEditor('sampleProject.main~impl')
       ]
     }),
@@ -136,7 +138,7 @@ jb.component('jbEditorTest.basic', {
 //     ),
 //     control: group({
 //       controls: [
-//         probe.remoteMainCircuitView(),
+//         probe.remoteCircuitPreview(),
 //         remote.widget(
 //           controlWithFeatures(
 //             studio.jbEditorInteliTree('sampleProject.main~impl'),{

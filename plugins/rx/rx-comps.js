@@ -1,6 +1,6 @@
-jb.using('watchable')
+using('watchable,common')
 
-jb.component('source.data', {
+component('source.data', {
   type: 'rx',
   params: [
     {id: 'data', mandatory: true}
@@ -8,7 +8,7 @@ jb.component('source.data', {
   impl: (ctx,data) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromIter(jb.toarray(data)))
 })
 
-jb.component('source.watchableData', {
+component('source.watchableData', {
   type: 'rx',
   description: 'wait for data change and returns {op, newVal,oldVal}',
   params: [
@@ -18,7 +18,7 @@ jb.component('source.watchableData', {
   impl: (ctx,ref,includeChildren) => jb.callbag.map(x=>ctx.dataObj(x))(jb.watchable.refObservable(ref,{includeChildren, srcCtx: ctx}))
 })
 
-jb.component('source.callbag', {
+component('source.callbag', {
   type: 'rx',
   params: [
     {id: 'callbag', mandatory: true, description: 'callbag source function'},
@@ -26,7 +26,7 @@ jb.component('source.callbag', {
   impl: (ctx,callbag) => jb.callbag.map(x=>ctx.dataObj(x))(callbag || jb.callbag.fromIter([]))
 })
 
-jb.component('source.callback', {
+component('source.callback', {
   type: 'rx',
   params: [
     {id: 'registerFunc', mandatory: true, description: 'receive callback function, returns handler'},
@@ -35,12 +35,12 @@ jb.component('source.callback', {
   impl: (ctx,registerFunc,unRegisterFunc) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromCallbackFunc(registerFunc,unRegisterFunc))
 })
 
-jb.component('source.animationFrame', {
+component('source.animationFrame', {
   type: 'rx',
   impl: source.callback(()=>jb.frame.requestAnimationFrame, () => jb.frame.cancelAnimationFrame)
 })
 
-jb.component('source.event', {
+component('source.event', {
   type: 'rx',
   macroByValue: true,
   params: [
@@ -51,7 +51,7 @@ jb.component('source.event', {
   impl: (ctx,event,elem,options) => elem && jb.callbag.map(ev=>ctx.setVar('sourceEvent',ev).dataObj(ev))(jb.callbag.fromEvent(event,elem,options))
 })
 
-jb.component('source.any', {
+component('source.any', {
   type: 'rx',
   params: [
     {id: 'source', mandatory: true, description: 'the source is detected by its type: promise, iterable, single, callbag element, etc..'},
@@ -59,7 +59,7 @@ jb.component('source.any', {
   impl: (ctx,source) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromAny(source || []))
 })
 
-jb.component('source.promise', {
+component('source.promise', {
   type: 'rx',
   params: [
     {id: 'promise', mandatory: true},
@@ -67,7 +67,7 @@ jb.component('source.promise', {
   impl: (ctx,promise) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromPromise(promise))
 })
 
-jb.component('source.promises', {
+component('source.promises', {
   type: 'rx',
   params: [
     {id: 'promises', type: 'data[]', mandatory: true},
@@ -75,7 +75,7 @@ jb.component('source.promises', {
   impl: (ctx,promises) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromPromise(promises))
 })
 
-jb.component('source.interval', {
+component('source.interval', {
   type: 'rx',
   params: [
     {id: 'interval', as: 'number', templateValue: '1000', description: 'time in mSec'}
@@ -83,7 +83,7 @@ jb.component('source.interval', {
   impl: (ctx,interval) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.interval(interval))
 })
 
-jb.component('rx.pipe', {
+component('rx.pipe', {
   type: 'rx,data,action',
   category: 'source',
   description: 'pipeline of reactive observables with source',
@@ -94,7 +94,7 @@ jb.component('rx.pipe', {
     jb.callbag.pipe(...jb.callbag.injectSniffers(elems(ctx).filter(x=>x),ctx))
 })
 
-jb.component('rx.merge', {
+component('rx.merge', {
   type: 'rx',
   category: 'source',
   description: 'merge callbags sources (or any)',
@@ -104,7 +104,7 @@ jb.component('rx.merge', {
   impl: (ctx,sources) => jb.callbag.merge(...sources(ctx))
 })
 
-jb.component('rx.mergeConcat', {
+component('rx.mergeConcat', {
   type: 'rx',
   category: 'source',
   description: 'merge sources while keeping the order of sources',
@@ -116,7 +116,7 @@ jb.component('rx.mergeConcat', {
 
 // ******** operators *****
 
-jb.component('rx.innerPipe', {
+component('rx.innerPipe', {
   type: 'rx',
   category: 'operator',
   description: 'composite operator, inner reactive pipeline without source',
@@ -126,7 +126,7 @@ jb.component('rx.innerPipe', {
   impl: (ctx,elems) => source => jb.callbag.pipe(source, ...elems)
 })
 
-jb.component('rx.fork', {
+component('rx.fork', {
   type: 'rx',
   category: 'operator',
   description: 'separate operator with same source data',
@@ -136,7 +136,7 @@ jb.component('rx.fork', {
   impl: (ctx,elems) => jb.callbag.fork(...elems)
 })
 
-jb.component('rx.startWith', {
+component('rx.startWith', {
     type: 'rx',
     category: 'operator',
     description: 'startWith callbags sources (or any)',
@@ -146,7 +146,7 @@ jb.component('rx.startWith', {
     impl: (ctx,sources) => jb.callbag.startWith(...sources)
 })
 
-jb.component('rx.var', {
+component('rx.var', {
   type: 'rx',
   category: 'operator',
   description: 'define an immutable variable that can be used later in the pipe',
@@ -162,7 +162,7 @@ jb.component('rx.var', {
   }, null)
 })
 
-jb.component('rx.resource', {
+component('rx.resource', {
   type: 'rx',
   category: 'operator',
   description: 'define a static mutable variable that can be used later in the pipe',
@@ -179,7 +179,7 @@ jb.component('rx.resource', {
   }, null)
 })
 
-jb.component('rx.reduce', {
+component('rx.reduce', {
   type: 'rx',
   category: 'operator',
   description: 'incrementally aggregates/accumulates data in a variable, e.g. count, concat, max, etc',
@@ -211,7 +211,7 @@ jb.component('rx.reduce', {
   }
 })
 
-jb.component('rx.count', {
+component('rx.count', {
   params: [
     {id: 'varName', as: 'string', mandatory: true, defaultValue: 'count'}
   ],
@@ -222,7 +222,7 @@ jb.component('rx.count', {
   })
 })
 
-jb.component('rx.join', {
+component('rx.join', {
   params: [
     {id: 'varName', as: 'string', mandatory: true, defaultValue: 'join'},
     {id: 'separator', as: 'string', defaultValue: ','}
@@ -235,7 +235,7 @@ jb.component('rx.join', {
   })
 })
 
-jb.component('rx.max', {
+component('rx.max', {
   params: [
     {id: 'varName', as: 'string', mandatory: true, defaultValue: 'max'},
     {id: 'value', dynamic: true, defaultValue: '%%' },
@@ -245,7 +245,7 @@ jb.component('rx.max', {
   })
 })
 
-jb.component('rx.do', {
+component('rx.do', {
   type: 'rx',
   category: 'operator',
   params: [
@@ -254,7 +254,7 @@ jb.component('rx.do', {
   impl: (ctx,action) => jb.callbag.Do(ctx2 => action(ctx2))
 })
 
-jb.component('rx.doPromise', {
+component('rx.doPromise', {
   type: 'rx',
   category: 'operator',
   params: [
@@ -263,7 +263,7 @@ jb.component('rx.doPromise', {
   impl: (ctx,action) => jb.callbag.doPromise(ctx2 => action(ctx2))
 })
 
-jb.component('rx.map', {
+component('rx.map', {
   type: 'rx',
   category: 'operator',
   params: [
@@ -272,7 +272,7 @@ jb.component('rx.map', {
   impl: (ctx,func) => jb.callbag.map(jb.utils.addDebugInfo(ctx2 => ({data: func(ctx2), vars: ctx2.vars || {}}),ctx))
 })
 
-jb.component('rx.mapPromise', {
+component('rx.mapPromise', {
   type: 'rx',
   category: 'operator',
   params: [
@@ -282,7 +282,7 @@ jb.component('rx.mapPromise', {
     .catch(err => ({vars: {...ctx2.vars, err }, data: err})) )
 })
 
-jb.component('rx.filter', {
+component('rx.filter', {
   type: 'rx',
   category: 'filter',
   params: [
@@ -291,7 +291,7 @@ jb.component('rx.filter', {
   impl: (ctx,filter) => jb.callbag.filter(jb.utils.addDebugInfo(ctx2 => filter(ctx2),ctx))
 })
 
-jb.component('rx.flatMap', {
+component('rx.flatMap', {
   type: 'rx',
   category: 'operator',
   description: 'match inputs the callbags or promises',
@@ -341,7 +341,7 @@ jb.component('rx.flatMap', {
   }
 })
 
-jb.component('rx.flatMapArrays', {
+component('rx.flatMapArrays', {
   type: 'rx',
   category: 'operator',
   description: 'match inputs to data arrays',
@@ -351,7 +351,7 @@ jb.component('rx.flatMapArrays', {
   impl: rx.flatMap(source.data(call('func')))
 })
 
-jb.component('rx.concatMap', {
+component('rx.concatMap', {
   type: 'rx',
   category: 'operator,combine',
   params: [
@@ -362,7 +362,7 @@ jb.component('rx.concatMap', {
     : jb.callbag.concatMap(ctx2 => func(ctx2))
 })
 
-jb.component('rx.distinctUntilChanged', {
+component('rx.distinctUntilChanged', {
   type: 'rx',
   description: 'filters adjacent items in stream', 
   category: 'filter',
@@ -373,7 +373,7 @@ jb.component('rx.distinctUntilChanged', {
   //prev && cur && prev.data == cur.data)
 })
 
-jb.component('rx.distinct', {
+component('rx.distinct', {
   type: 'rx',
   description: 'filters unique values', 
   category: 'filter',
@@ -383,13 +383,13 @@ jb.component('rx.distinct', {
   impl: (ctx,keyFunc) => jb.callbag.distinct(jb.utils.addDebugInfo(ctx2 => keyFunc(ctx2),ctx))
 })
 
-jb.component('rx.catchError', {
+component('rx.catchError', {
     type: 'rx',
     category: 'error',
     impl: ctx => jb.callbag.catchError(err => ctx.dataObj(err))
 })
 
-jb.component('rx.timeoutLimit', {
+component('rx.timeoutLimit', {
   type: 'rx',
   category: 'error',
   params: [
@@ -399,7 +399,7 @@ jb.component('rx.timeoutLimit', {
   impl: (ctx,timeout,error) => jb.callbag.timeoutLimit(timeout,error)
 })
 
-jb.component('rx.throwError', {
+component('rx.throwError', {
   type: 'rx',
   category: 'error',
   params: [
@@ -409,7 +409,7 @@ jb.component('rx.throwError', {
   impl: (ctx,condition,error) => jb.callbag.throwError(ctx2=>condition(ctx2), error)
 })
 
-jb.component('rx.debounceTime', {
+component('rx.debounceTime', {
     type: 'rx',
     description: 'waits for a cooldown period, them emits the last arrived',
     category: 'operator',
@@ -420,7 +420,7 @@ jb.component('rx.debounceTime', {
     impl: (ctx,cooldownPeriod,immediate) => jb.callbag.debounceTime(cooldownPeriod,immediate)
 })
 
-jb.component('rx.throttleTime', {
+component('rx.throttleTime', {
   type: 'rx',
   description: 'enforces a cooldown period. Any data that arrives during the quiet time is ignored',
   category: 'operator',
@@ -431,7 +431,7 @@ jb.component('rx.throttleTime', {
   impl: (ctx,cooldownPeriod,emitLast) => jb.callbag.throttleTime(cooldownPeriod,emitLast)
 })
 
-jb.component('rx.delay', {
+component('rx.delay', {
     type: 'rx',
     category: 'operator',
     params: [
@@ -440,7 +440,7 @@ jb.component('rx.delay', {
     impl: (ctx,time) => jb.callbag.delay(time)
 })
 
-jb.component('rx.replay', {
+component('rx.replay', {
   type: 'rx',
   description: 'stores messages and replay them for later subscription', 
   params: [
@@ -449,7 +449,7 @@ jb.component('rx.replay', {
   impl: (ctx,keep) => jb.callbag.replay(keep)
 })
 
-jb.component('rx.takeUntil', {
+component('rx.takeUntil', {
     type: 'rx',
     description: 'closes the stream when events comes from notifier', 
     category: 'terminate',
@@ -459,7 +459,7 @@ jb.component('rx.takeUntil', {
     impl: (ctx,notifier) => jb.callbag.takeUntil(notifier)
 })
 
-jb.component('rx.take', {
+component('rx.take', {
   type: 'rx',
   description: 'closes the stream after taking some items',
   category: 'terminate',
@@ -469,7 +469,7 @@ jb.component('rx.take', {
   impl: (ctx,count) => jb.callbag.take(count())
 })
 
-jb.component('rx.takeWhile', {
+component('rx.takeWhile', {
   type: 'rx',
   description: 'closes the stream on condition',
   category: 'terminate',
@@ -480,20 +480,20 @@ jb.component('rx.takeWhile', {
   impl: (ctx,whileCondition,passtLastEvent) => jb.callbag.takeWhile(ctx => whileCondition(ctx), passtLastEvent)
 })
 
-jb.component('rx.toArray', {
+component('rx.toArray', {
   type: 'rx',
   category: 'operator',
   description: 'wait for all and returns next item as array',
   impl: ctx => source => jb.callbag.pipe(source, jb.callbag.toArray(), jb.callbag.map(arr=> ctx.dataObj(arr.map(x=>x.data))))
 })
 
-jb.component('rx.last', {
+component('rx.last', {
     type: 'rx',
     category: 'filter',
     impl: () => jb.callbag.last()
 })
 
-jb.component('rx.skip', {
+component('rx.skip', {
     type: 'rx',
     category: 'filter',
     params: [
@@ -502,7 +502,7 @@ jb.component('rx.skip', {
     impl: (ctx,count) => jb.callbag.skip(count())
 })
 
-jb.component('rx.subscribe', {
+component('rx.subscribe', {
     type: 'rx',
     description: 'forEach action for all items',
     category: 'sink',
@@ -514,7 +514,7 @@ jb.component('rx.subscribe', {
     impl: (ctx,next, error, complete) => jb.callbag.subscribe(ctx2 => next(ctx2), ctx2 => error(ctx2), () => complete())
 })
 
-jb.component('sink.action', {
+component('sink.action', {
   type: 'rx',
   category: 'sink',
   description: 'subscribe',
@@ -524,7 +524,7 @@ jb.component('sink.action', {
   impl: (ctx,action) => jb.callbag.subscribe(ctx2 => { ctx; return action(ctx2) })
 })
 
-jb.component('sink.data', {
+component('sink.data', {
   type: 'rx',
   params: [
     {id: 'data', as: 'ref', dynamic: true, mandatory: true},
@@ -532,7 +532,7 @@ jb.component('sink.data', {
   impl: sink.action(writeValue('%$data()%','%%'))
 })
 
-jb.component('rx.log', {
+component('rx.log', {
   description: 'jb.log flow data, used for debug',
   params: [
     {id: 'name', as: 'string'},
@@ -542,7 +542,7 @@ jb.component('rx.log', {
   //(ctx,name,extra) => ctx.run({$: 'rx.do', action: _ctx => jb.log(name,{data: _ctx.data,vars: _ctx.vars,ctx, ...extra(_ctx)}) })
 })
 
-jb.component('rx.clog', {
+component('rx.clog', {
   description: 'console.log flow data, used for debug',
   params: [
     {id: 'name', as: 'string'},
@@ -550,7 +550,7 @@ jb.component('rx.clog', {
   impl: rx.do((x,{},{name}) => console.log(name,x))
 })
 
-jb.component('rx.sniffer', {
+component('rx.sniffer', {
   description: 'console.log data & control',
   params: [
     {id: 'name', as: 'string'},
@@ -559,7 +559,7 @@ jb.component('rx.sniffer', {
 })
 
 // ********** subject 
-jb.component('rx.subject', {
+component('rx.subject', {
     type: 'data',
     description: 'callbag "variable" that you can write or listen to', 
     category: 'variable',
@@ -575,7 +575,7 @@ jb.component('rx.subject', {
     }
 })
 
-jb.component('sink.subjectNext', {
+component('sink.subjectNext', {
   type: 'rx',
   params: [
       {id: 'subject', mandatory: true },
@@ -583,7 +583,7 @@ jb.component('sink.subjectNext', {
   impl: (ctx,subject) => jb.callbag.subscribe(e => subject.trigger.next(e))
 })
 
-jb.component('source.subject', {
+component('source.subject', {
     type: 'rx',
     params: [
         {id: 'subject', mandatory: true },
@@ -591,7 +591,7 @@ jb.component('source.subject', {
     impl: (ctx,subj) => subj.source
 })
 
-jb.component('action.subjectNext', {
+component('action.subjectNext', {
     type: 'action',
     params: [
         {id: 'subject', mandatory: true },
@@ -600,7 +600,7 @@ jb.component('action.subjectNext', {
     impl: (ctx,subject,data) => subject.trigger.next(ctx.dataObj(data(ctx)))
 })
 
-jb.component('action.subjectComplete', {
+component('action.subjectComplete', {
     type: 'action',
     params: [
         {id: 'subject', mandatory: true },
@@ -608,7 +608,7 @@ jb.component('action.subjectComplete', {
     impl: (ctx,subject) => subject.trigger.complete()
 })
 
-jb.component('action.subjectError', {
+component('action.subjectError', {
     type: 'action',
     params: [
         {id: 'subject', mandatory: true },
@@ -618,7 +618,7 @@ jb.component('action.subjectError', {
 })
 
 // ********** queue 
-jb.component('rx.queue', {
+component('rx.queue', {
   type: 'data',
   description: 'message queue',
   category: 'variable',
@@ -628,7 +628,7 @@ jb.component('rx.queue', {
   impl: (ctx,items) => ({ items: items.slice(0), subject: jb.callbag.subject(), mkmk: 5 }) 
 })
 
-jb.component('source.queue', {
+component('source.queue', {
   type: 'rx',
   params: [
       {id: 'queue', mandatory: true },
@@ -636,7 +636,7 @@ jb.component('source.queue', {
   impl: rx.merge(source.data('%$queue/items%'), '%$queue/subject%')
 })
 
-jb.component('action.addToQueue', {
+component('action.addToQueue', {
   type: 'action',
   params: [
       {id: 'queue', mandatory: true },
@@ -649,7 +649,7 @@ jb.component('action.addToQueue', {
   }
 })
 
-jb.component('action.removeFromQueue', {
+component('action.removeFromQueue', {
   type: 'action',
   params: [
       {id: 'queue', mandatory: true },

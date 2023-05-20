@@ -1,9 +1,9 @@
-jb.extension('statistics', {
+extension('statistics', {
     $requireLibs: ['/dist/jstat.js']
 })
 
-jb.defComponents('sum,sumsqrd,sumsqerr,sumrow,product,min,max,mean,meansqerr,geomean,median,cumsum,cumprod,diff,rank,mode,range,variance,pooledvariance,deviation,stdev,pooledstdev,meandev,meddev,skewness,kurtosis,coeffvar,quartiles,quantiles,percentile,percentileOfScore,histogram,covariance,corrcoeff'.split(','),
-    f => jb.component(`stat.${f}`, ({
+ jb.defComponents('sum,sumsqrd,sumsqerr,sumrow,product,min,max,mean,meansqerr,geomean,median,cumsum,cumprod,diff,rank,mode,range,variance,pooledvariance,deviation,stdev,pooledstdev,meandev,meddev,skewness,kurtosis,coeffvar,quartiles,quantiles,percentile,percentileOfScore,histogram,covariance,corrcoeff'.split(','),
+    f => component(`stat.${f}`, ({
         type: 'aggregator',
         params: [
             {id: 'func', as: 'string', defaultValue: f}
@@ -11,7 +11,7 @@ jb.defComponents('sum,sumsqrd,sumsqerr,sumrow,product,min,max,mean,meansqerr,geo
         impl: ({data},f) => Array.isArray(data) ? jb.stat[f](data) : []
 })))
 
-jb.component('stat.groupBy', {
+component('stat.groupBy', {
     type: 'aggregator',
     params: [
         { id: 'by', dynamic: 'true', mandatory: true},
@@ -33,7 +33,7 @@ jb.component('stat.groupBy', {
     }
 })
 
-jb.component('stat.fieldInGroup', {
+component('stat.fieldInGroup', {
     type: 'fieldInGroup',
     params: [
         { id: 'aggregateFunc', mandatory: true, dynamic: true, description: 'e.g. sum' },

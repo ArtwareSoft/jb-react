@@ -1,4 +1,4 @@
-jb.extension('studio', {
+extension('studio', {
   showMultiMessages(messages) {
     const el = jb.frame.document && document.querySelector('.studio-message');
     if (!el) return
@@ -16,7 +16,7 @@ jb.extension('studio', {
   previewWindow: () => jb.frame
 })
 
-jb.component('studio.copy', {
+component('studio.copy', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -31,7 +31,7 @@ jb.component('studio.copy', {
   }
 })
 
-jb.component('studio.paste', {
+component('studio.paste', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -40,15 +40,15 @@ jb.component('studio.paste', {
     jb.studio.clipboard && jb.db.writeValue(jb.tgp.ref(path), jb.studio.clipboard, ctx)
 })
 
-jb.component('studio.projectId', {
+component('studio.projectId', {
   impl: ctx => jb.macro.titleToId(ctx.exp('%$studio/project%'))
 })
 
-jb.component('studio.currentPagePath', {
+component('studio.currentPagePath', {
   impl: '%$studio/circuit%'
 })
 
-jb.component('studio.currentProfilePath', {
+component('studio.currentProfilePath', {
   impl: firstSucceeding(
     '%$simulateProfilePath%',
     '%$studio/profile_path%',
@@ -56,7 +56,7 @@ jb.component('studio.currentProfilePath', {
   )
 })
 
-jb.component('studio.message', {
+component('studio.message', {
   type: 'action',
   params: [
     {id: 'message', as: 'string'},
@@ -72,12 +72,12 @@ jb.component('studio.message', {
   }
 })
 
-jb.component('studio.redrawStudio', {
+component('studio.redrawStudio', {
   type: 'action',
   impl: ctx => jb.studio.redrawStudio && jb.studio.redrawStudio()
 })
 
-jb.component('studio.lastEdit', {
+component('studio.lastEdit', {
   description: 'latest edited path',
   type: 'data',
   params: [
@@ -96,23 +96,23 @@ jb.component('studio.lastEdit', {
 	}
 })
 
-jb.component('studio.gotoLastEdit', {
+component('studio.gotoLastEdit', {
   type: 'action',
   impl: runActions(jb.delay(10), studio.gotoPath(studio.lastEdit()))
 })
 
-jb.component('studio.compSource', {
+component('studio.compSource', {
   params: [
     {id: 'comp', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
   impl: (context,comp) =>	jb.studio.compAsStr(comp.split('~')[0])
 })
 
-jb.component('studio.unMacro', {
+component('studio.unMacro', {
   impl: ({data}) => data && data.split('>').pop().replace(/([A-Z])/g, (all, s) => ' ' + s.toLowerCase()),
 })
 
-jb.component('studio.watchPath', {
+component('studio.watchPath', {
   type: 'feature',
   category: 'group:0',
   params: [
@@ -127,7 +127,7 @@ jb.component('studio.watchPath', {
   })
 })
 
-jb.component('studio.watchScriptChanges', {
+component('studio.watchScriptChanges', {
   type: 'feature',
   params: [
     {id: 'path', as: 'string', description: 'under this path, empty means any path'},
@@ -136,12 +136,12 @@ jb.component('studio.watchScriptChanges', {
   impl: watchRef({ref: '%$studio/lastStudioActivity%', allowSelfRefresh: '%$allowSelfRefresh%'}) //followUp.flow(watchableComps.scriptChange(), rx.log('watch script refresh'), sink.refreshCmp())
 })
 
-jb.component('studio.watchComponents', {
+component('studio.watchComponents', {
   type: 'feature',
   impl: followUp.flow(watchableComps.scriptChange(), rx.filter('%path/length%==1'), sink.refreshCmp())
 })
 
-jb.extension('studio', 'project', {
+extension('studio', 'project', {
 	projectFiles: () => jb.exec('%$studio/projectSettings/jsFiles%'),
 	projectCompsAsEntries: () => {
 		const project = jb.exec('%$studio/project%')
@@ -151,7 +151,7 @@ jb.extension('studio', 'project', {
 	},
 })
 
-jb.component('studio.cmpsOfProject', {
+component('studio.cmpsOfProject', {
   type: 'data',
   impl: () => jb.studio.projectCompsAsEntries().filter(e=>e[1].impl).map(e=>e[0]),
 })

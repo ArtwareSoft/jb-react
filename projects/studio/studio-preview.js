@@ -1,5 +1,5 @@
 
-jb.component('wPreview', {
+component('wPreview', {
   type: 'jbm<jbm>',
   params: [
     {id: 'id', defaultValue: 'wPreview'}
@@ -7,12 +7,12 @@ jb.component('wPreview', {
   impl: worker('%$id%', studio.initPreview())
 })
 
-jb.component('preview', {
+component('preview', {
   type: 'jbm<jbm>',
-  impl: If('%$yellowPages/preview%', jbm.start(byUri('%$yellowPages/preview%')), jbm.start(wPreview()))
+  impl: If('%$yellowPages/preview%', byUri('%$yellowPages/preview%'), wPreview())
 })
 
-jb.component('studio.initPreview', {
+component('studio.initPreview', {
   type: 'action',
   impl: runActions(
     Var('dataResources', () => jb.studio.projectCompsAsEntries().map(e=>e[0]).filter(x=>x.match(/^dataResource/)).join(',')),
@@ -39,7 +39,7 @@ jb.component('studio.initPreview', {
   )
 })
 
-jb.component('preview.remoteWidget', {
+component('preview.remoteWidget', {
   params: [
     {id: 'jbm', type: 'jbm<jbm>', defaultValue: wPreview()}
   ],
@@ -47,12 +47,12 @@ jb.component('preview.remoteWidget', {
   impl: remote.widget(preview.control(), '%$jbm%')
 })
 
-jb.component('studio.refreshPreview', {
+component('studio.refreshPreview', {
   type: 'action',
   impl: ''
 })
 
-jb.component('preview.control', {
+component('preview.control', {
   type: 'control',
   impl: group({
     controls: ctx => { 

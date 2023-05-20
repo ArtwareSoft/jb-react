@@ -1,5 +1,5 @@
 
-jb.extension('tgpTextEditor', {
+extension('tgpTextEditor', {
     initExtension() { 
         return { 
             enriched: Symbol.for('enriched'), 
@@ -8,7 +8,7 @@ jb.extension('tgpTextEditor', {
     evalProfileDef: (code, dsl) => { 
       try {
         jb.core.unresolvedProfiles = []
-        const context = { jb, ...jb.macro.proxies, component: (...args) => jb.component(...args, dsl) }
+        const context = { jb, ...jb.macro.proxies, component: (...args) => jb.component({},dsl,...args) }
         const res = new Function(Object.keys(context), `return ${code}`).apply(null, Object.values(context))
         res && jb.utils.resolveLoadedProfiles({keepLocation: true})
         return { res, compId : jb.path(res,[jb.core.CT,'fullId']) }
@@ -249,7 +249,7 @@ jb.extension('tgpTextEditor', {
 
 })
 
-jb.component('tgp.profileAsText', {
+component('tgp.profileAsText', {
   type: 'data',
   params: [
     {id: 'path', as: 'string'},
@@ -258,7 +258,7 @@ jb.component('tgp.profileAsText', {
   impl: tgpTextEditor.watchableAsText(tgp.ref('%$path%'),'%$oneWay%')
 })
 
-jb.component('tgpTextEditor.watchableAsText', {
+component('tgpTextEditor.watchableAsText', {
   type: 'data',
   params: [
     {id: 'ref', as: 'ref', dynamic: true},
@@ -308,7 +308,7 @@ jb.component('tgpTextEditor.watchableAsText', {
     })
 })
 
-jb.component('tgpTextEditor.withCursorPath', {
+component('tgpTextEditor.withCursorPath', {
   type: 'action',
   params: [
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
@@ -329,7 +329,7 @@ jb.component('tgpTextEditor.withCursorPath', {
     }
 })
 
-jb.component('tgpTextEditor.isDirty', {
+component('tgpTextEditor.isDirty', {
   impl: ctx => {
         try {
             return ctx.vars.editor().isDirty()
@@ -363,7 +363,7 @@ jb.component('tgpTextEditor.isDirty', {
 //     }})
 // })
 
-jb.component('tgpTextEditor.cursorPath', {
+component('tgpTextEditor.cursorPath', {
     params: [
         {id: 'watchableAsText', as: 'ref', mandatory: true, description: 'the same that was used for databind'},
         {id: 'cursorPos', dynamic: true, defaultValue: '%$ev/selectionStart%'},
@@ -371,7 +371,7 @@ jb.component('tgpTextEditor.cursorPath', {
     impl: (ctx,ref,pos) => jb.path(jb.tgpTextEditor.pathOfPosition(ref, pos()),'path') || ''
 })
 
-jb.component('TBD', {
+component('TBD', {
   type: 'any',
   impl: 'TBD'
 })

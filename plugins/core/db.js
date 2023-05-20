@@ -1,4 +1,4 @@
-jb.extension('db', 'onAddComponent', {
+extension('db', 'onAddComponent', {
   $phase :2,
   initExtension() { 
     jb.core.onAddComponent.push({ 
@@ -20,7 +20,7 @@ jb.extension('db', 'onAddComponent', {
   addDataResourcePrefix: id => id.indexOf('dataResource.') == 0 ? id : 'dataResource.' + id,
 })
 
-jb.extension('db', {
+extension('db', {
     initExtension() { return { 
         passiveSym: Symbol.for('passive'),
         resources: {}, consts: {}, 

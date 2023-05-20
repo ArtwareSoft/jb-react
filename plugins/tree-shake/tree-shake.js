@@ -1,6 +1,6 @@
-jb.using('common,remote')
+using('common,remote')
 
-jb.extension('treeShake', {
+extension('treeShake', {
     initExtension() {
         return {
             clientComps: ['#extension','#core.run','#component','#jbm.extendPortToJbmProxy','#jbm.portFromFrame',
@@ -9,6 +9,7 @@ jb.extension('treeShake', {
             existingFEPaths: {},
             FELibLoaderPromises: {},
             loadingCode: {},
+            defaultPlugin: { codePackage: jbHost.codePackageFromJson()},
             server: jb.frame.jbInit,
             serverUrl: jb.frame.jbTreeShakeServerUrl,
             getJSFromUrl: jb.frame.jbGetJSFromUrl,
@@ -45,8 +46,9 @@ jb.extension('treeShake', {
         if (obj[jb.core.OnlyData]) return []
         const isRemote = 'source.remote:rx,remote.operator:rx,remote.action:action,remote.data:data' // code run in remote is not dependent
         const vals = Object.keys(obj).filter(k=>!obj.$ || isRemote.indexOf(`${obj.$}:${k}`) == -1).map(k=>obj[k])
+        const _dslType = [obj.$dslType || ''].map(x=>x.indexOf('<>') != -1 ? '' :x)[0]
         return [
-            ...(obj.$ ? [jb.path(obj,[jb.core.CT,'comp',jb.core.CT,'fullId']) || `${obj.$dslType || ''}${obj.$}`] : []),
+            ...(obj.$ ? [jb.path(obj,[jb.core.CT,'comp',jb.core.CT,'fullId']) || `${_dslType}${obj.$}`] : []),
             ...vals.filter(x=> x && typeof x == 'object').flatMap(x => jb.treeShake.dependentOnObj(x, onlyMissing)),
             ...vals.filter(x=> x && typeof x == 'function').flatMap(x => jb.treeShake.dependentOnFunc(x, onlyMissing)),
             ...vals.filter(x=> x && typeof x == 'string' && x.indexOf('%$') != -1).flatMap(x => jb.treeShake.dependentResources(x, onlyMissing)),
@@ -94,7 +96,7 @@ jb.extension('treeShake', {
                 initExtension: jb.path(jb,`${lib}.__extensions.${ext}.init`),
             }
             const extCode = jb.utils.prettyPrint(Object.fromEntries(Object.entries(extObj).filter(([_, v]) => v != null)))
-            return `jb.extension('${lib}', '${ext}', ${extCode})`
+            return `jb.extension(jb.treeShake.defaultPlugin,'${lib}', '${ext}', ${extCode})`
         }).join('\n\n')
 
         const compsCode = cmps.map(cmpId =>jb.treeShake.compToStr(cmpId)).join('\n\n')
@@ -113,7 +115,7 @@ jb.extension('treeShake', {
             (k,v) => typeof v === 'function' ? '@@FUNC'+v.toString()+'FUNC@@' : v,2)
                 .replace(/"@@FUNC([^@]+)FUNC@@"/g, (_,str) => str.replace(/\\\\n/g,'@@__N').replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n').replace(/\\t/g,'')
                     .replace(/@@__N/g,'\\\\n').replace(/\\\\/g,'\\') )
-        return `jb.component('${cmpId.split('>').pop()}', ${content})`
+        return `jb.component(jb.treeShake.defaultPlugin,'${ct.dsl||''}','${cmpId.split('>').pop()}', ${content})`
     },
     async bringMissingCode(obj) {
         const missing = getMissingProfiles(obj)
@@ -201,7 +203,7 @@ jb.extension('treeShake', {
     },
 })
 
-jb.component('treeShake.getCode', {
+component('treeShake.getCode', {
     impl: ({vars}) => {
         const treeShake = jb.treeShake.treeShake(vars.ids.split(','),jb.objFromEntries(vars.existing.split(',').map(x=>[x,true])))
         jb.log('treeShake treeshake',{...vars, treeShake})
@@ -211,7 +213,7 @@ jb.component('treeShake.getCode', {
 
 // code loader client
 
-jb.component('treeShake.getCodeFromRemote', {
+component('treeShake.getCodeFromRemote', {
   params: [
     {id: 'ids'}
   ],

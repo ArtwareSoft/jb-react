@@ -1,5 +1,5 @@
 
-jb.component('table', {
+component('table', {
   description: 'list, dynamic group, collection, repeat',
   type: 'control',
   category: 'group:80,common:80',
@@ -24,7 +24,7 @@ jb.component('table', {
   })
 })
 
-jb.component('table.style', {
+component('table.style', {
     type: 'table.style',
     params: [
       {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true},
@@ -33,7 +33,7 @@ jb.component('table.style', {
     impl: ctx => ctx.params
 })
 
-jb.component('table.plain', { // todo change to table.plain after itemlist => table refactor
+component('table.plain', { // todo change to table.plain after itemlist => table refactor
   type: 'table.style',
   params: [
     {id: 'hideHeaders', as: 'boolean', type: 'boolean'}
@@ -55,7 +55,7 @@ jb.component('table.plain', { // todo change to table.plain after itemlist => ta
   }))
 })
 
-jb.component('table.mdc', {
+component('table.mdc', {
   type: 'table.style',
   params: [
     {id: 'hideHeaders', as: 'boolean', type: 'boolean'},
@@ -93,7 +93,7 @@ jb.component('table.mdc', {
   })
 })
 
-jb.component('table.trTd', {
+component('table.trTd', {
     type: 'group.style',
     impl: customStyle({
       template: ({},{ctrls},h) => h('tr.jb-item',{}, ctrls.map(ctrl=> h('td',{}, h(ctrl)))),
@@ -101,7 +101,7 @@ jb.component('table.trTd', {
     })
 })
 
-jb.component('table.enableExpandToEndOfRow', {
+component('table.enableExpandToEndOfRow', {
   type: 'feature',
   category: 'line-feature',
   description: 'allows expandToEndOfRow in table, set as lineFeatures',
@@ -115,7 +115,7 @@ jb.component('table.enableExpandToEndOfRow', {
   }),
 })
 
-jb.component('feature.expandToEndOfRow', {
+component('feature.expandToEndOfRow', {
     type: 'feature',
     category: 'table-field',
     description: 'requires table.enableExpandToEndOfRow as lineFeature. Put on a field to expandToEndOfRow by condition',

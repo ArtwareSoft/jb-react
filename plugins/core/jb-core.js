@@ -1,5 +1,5 @@
 Object.assign(jb, {
-  extension(libId, p1 , p2) {
+  extension(plugin, libId, p1 , p2) {
     const extId = typeof p1 == 'string' ? p1 : 'main'
     const extension = p2 || p1
     const lib = jb[libId] = jb[libId] || {__extensions: {} }
@@ -12,7 +12,7 @@ Object.assign(jb, {
     funcs.forEach(k=>lib[k] = extension[k])
     const location = jb.calcSourceLocation(new Error().stack.split(/\r|\n/).slice(2)).location
     const phase =  extension.$phase || { core: 1, utils: 5, db: 10, watchable: 20}[libId] || 100
-    lib.__extensions[extId] = { libId, phase, init: extension.initExtension, initialized, 
+    lib.__extensions[extId] = { plugin, libId, phase, init: extension.initExtension, initialized, 
       requireLibs: extension.$requireLibs, requireFuncs: extension.$requireFuncs, funcs, location }
 
     if (jb.noSupervisedLoad && extension.initExtension) {
@@ -20,7 +20,7 @@ Object.assign(jb, {
       lib.__extensions[extId].initialized = true
     }
   },
-  async initializeLibs(libs, codePackge) {
+  async initializeLibs(libs) {
     const jb = this
     try {
     libs.flatMap(l => Object.values(jb[l].__extensions)).sort((x,y) => x.phase - y.phase )
@@ -32,9 +32,10 @@ Object.assign(jb, {
     } catch (e) {
       jb.logException(e,'initializeLibs: error initializing libs', {libs})
     }
-    const libsToLoad = libs.flatMap(l => Object.values(jb[l].__extensions)).flatMap(ext => ext.requireLibs || []).filter(url => !jb.__requiredLoaded[url])
+    const libsToLoad = libs.flatMap(l => Object.values(jb[l].__extensions))
+      .flatMap(ext => (ext.requireLibs || []).filter(url => !jb.__requiredLoaded[url]).map(url=>({url,plugin: ext.plugin})) )
     try {
-      await Promise.all(libsToLoad.map( url => Promise.resolve(jb.loadjbFile(url,jb,{noSymbols: true, codePackge}))
+      await Promise.all(libsToLoad.map( ({url,plugin}) => Promise.resolve(jb.loadjbFile(url,jb,{noSymbols: true, plugin}))
         .then(() => jb.__requiredLoaded[url] = true) ))
     } catch (e) {
       jb.logException(e,'initializeLibs: error loading external library', {libsToLoad, libs})
@@ -43,7 +44,7 @@ Object.assign(jb, {
 
   calcSourceLocation(errStack) {
     try {
-        const line = errStack.map(x=>x.trim()).filter(x=>x && !x.match(/^Error/) && !x.match(/at Object.component|at component/)).shift()
+        const line = errStack.map(x=>x.trim()).filter(x=>x && !x.match(/^Error/) && !x.match(/at Object.component|at component|at extension/)).shift()
         const location = line ? (line.split('at ').pop().split('eval (').pop().split(' (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
         location[0] = location[0].split('?')[0]
         if (location[0].match(/jb-loader.js/)) debugger
@@ -52,10 +53,10 @@ Object.assign(jb, {
       console.log(e)
     }      
   },
-  component(id,comp,dsl) {
+  component(plugin,dsl,id,comp) {
     if (!jb.core.CT) jb.initializeLibs(['core']) // this line must be first
     const CT = jb.core.CT
-    comp[CT] = comp[CT] || {};
+    comp[CT] = comp[CT] || { plugin };
 
     const { location } = 0 || jb.calcSourceLocation(new Error().stack.split(/\r|\n/)) // 0 || to avoid treeshake bug
     comp[CT].location = comp.location || location
@@ -80,7 +81,7 @@ Object.assign(jb, {
   noSupervisedLoad: true
 })
 
-jb.extension('core', {
+extension('core', {
   initExtension() {
     Object.assign(jb, {
       frame: globalThis,

@@ -1,4 +1,4 @@
-jb.dsl('zui')
+dsl('zui')
 
 component('growingText', {
   description: 'text growing from 2 to 32 according to zoom',
@@ -52,7 +52,7 @@ component('fixedText', {
   }
 })
 
-jb.extension('zui','ascii', {
+extension('zui','ascii', {
     initExtension() {
         const fontSize = 16, asciiCharSetSize = 128
         return { 
@@ -94,7 +94,7 @@ jb.extension('zui','ascii', {
     }
 })
 
-jb.extension('zui','text_2_32', {
+extension('zui','text_2_32', {
   text2_32ZuiElem: viewCtx => ({
       txt_fields: ['2','4','8','16_0','16_1','32_0','32_1','32_2','32_3'],
       async asyncPrepare({gl}) {
@@ -250,7 +250,7 @@ jb.extension('zui','text_2_32', {
     }  
 })
 
-jb.extension('zui','text8', {
+extension('zui','text8', {
   text8ZuiElem: viewCtx => ({
       async asyncPrepare({gl}) {
         this.charSetTexture = await jb.zui.asciiCharSetTexture(gl)

@@ -1,4 +1,4 @@
-jb.extension('ui','comp', {
+extension('ui','comp', {
     initExtension() {
         jb.core.jstypes.renderable = value => {
             if (value == null) return '';

@@ -1,10 +1,10 @@
-
-jb.component('vscode.liveProbe', {
-  type: 'control',
-  params: [
-  ],
-  impl: probe.inOutView()
-})
+using('remote,ui')
+// component('vscode.liveProbe', {
+//   type: 'control',
+//   params: [
+//   ],
+//   impl: probe.inOutView()
+// })
 
 // jb.component('vscode.openPreviewPanel', {
 //   type: 'jbm<jbm>',
@@ -32,25 +32,25 @@ jb.component('vscode.liveProbe', {
 //   })
 // })
 
-jb.component('vscode.showInXWebView', {
-  type: 'action',
-  params: [
-    {id: 'id', as: 'string'},
-    {id: 'panel'},
-    {id: 'backend', type: 'jbm<jbm>', defaultValue: jbm.self()}
-  ],
-  impl: runActionOnItem(
-    Var('profToRun', obj(prop('$', 'vscode.%$id%Ctrl'))),
-    jbm.start(vscodeWebView({
-      id: '%$id%',
-      panel: '%$panel%',
-      init: runActions(remote.useYellowPages(), remote.action(defaultTheme(), '%$jbm%'))
-    })),
-    remote.distributedWidget({
-      control: (ctx,{profToRun}) => ctx.run(profToRun),
-      backend: '%$backend%',
-      frontend: '%%',
-      selector: '#main'
-    })
-  )
-})
+// component('vscode.showInXWebView', {
+//   type: 'action',
+//   params: [
+//     {id: 'id', as: 'string'},
+//     {id: 'panel'},
+//     {id: 'backend', type: 'jbm<jbm>', defaultValue: jbm.self()}
+//   ],
+//   impl: runActionOnItem(
+//     Var('profToRun', obj(prop('$', 'vscode.%$id%Ctrl'))),
+//     jbm.start(vscodeWebView({
+//       id: '%$id%',
+//       panel: '%$panel%',
+//       init: runActions(remote.useYellowPages(), remote.action(defaultTheme(), '%$jbm%'))
+//     })),
+//     remote.distributedWidget({
+//       control: (ctx,{profToRun}) => ctx.run(profToRun),
+//       backend: '%$backend%',
+//       frontend: '%%',
+//       selector: '#main'
+//     })
+//   )
+// })

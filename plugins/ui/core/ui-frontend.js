@@ -1,4 +1,4 @@
-jb.extension('ui', 'frontend', {
+extension('ui', 'frontend', {
     refreshFrontEnd(elem, {content} = {}) {
         jb.treeShake.loadFELibsDirectly(jb.ui.feLibs(content)).then(()=> 
             jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> {

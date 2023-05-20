@@ -1,6 +1,6 @@
-jb.using('watchable,common')
+using('watchable,common')
 
-jb.extension('ui', 'watchRef', {
+extension('ui', 'watchRef', {
     $phase: 100,
     $requireFuncs: 'jb.watchable.WatchableValueByRef',
     initExtension() {

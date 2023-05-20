@@ -1,4 +1,4 @@
-jb.component('cardExtract.showOptions', {
+component('cardExtract.showOptions', {
     params: [
       {id: 'inspectorProps'}
     ],
@@ -20,7 +20,7 @@ jb.component('cardExtract.showOptions', {
     })
 })
   
-jb.component('cardExtract.selectStyle', {
+component('cardExtract.selectStyle', {
   type: 'control',
   params: [
     {id: 'extractedCtrl'},
@@ -106,7 +106,7 @@ jb.component('cardExtract.selectStyle', {
   })
 })
   
-jb.component('cardExtract.flattenControlToGrid', {
+component('cardExtract.flattenControlToGrid', {
   type: 'control',
   params: [
     {id: 'ctrl'}
@@ -117,7 +117,7 @@ jb.component('cardExtract.flattenControlToGrid', {
   }
 })
   
-jb.component('cardExtract.extractStyle', {
+component('cardExtract.extractStyle', {
   type: 'action',
   params: [
     {id: 'extractedCtrl'},
@@ -130,7 +130,7 @@ jb.component('cardExtract.extractStyle', {
   })
 })
   
-jb.component('cardExtract.suggestedStyles', {
+component('cardExtract.suggestedStyles', {
   params: [
     {id: 'extractedCtrl'},
     {id: 'targetPath', as: 'string'}
@@ -143,7 +143,7 @@ jb.component('cardExtract.suggestedStyles', {
       }
 })
   
-jb.extension('cardExtract', {
+extension('cardExtract', {
     initExtension() { return {
         paramProps: { text: 'text', button: 'title', image: 'url' }, 
         types: ['text','html','button','image']
@@ -287,7 +287,7 @@ jb.extension('cardExtract', {
     }
 })
   
-jb.extension('stylePatterns', {
+extension('stylePatterns', {
     text(ctx, extractedCtrl) {
         const srcContent = jb.cardExtract.flatContent(extractedCtrl,'')
         const texts = srcContent.filter(x=>x.ctrl.$ == 'text')

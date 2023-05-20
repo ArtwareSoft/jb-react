@@ -1,18 +1,19 @@
-jb.component('dataResource.sortBy', {
+using('ui')
+component('dataResource.sortBy', {
   watchableData: 'age'
 })
 
-jb.component('dataResource.selectedItem', {
+component('dataResource.selectedItem', {
   watchableData: {
 
   }
 })
 
-jb.component('dataResource.noOfItems', {
+component('dataResource.noOfItems', {
   watchableData: '1000'
 })
 
-jb.component('itemlists.main', {
+component('itemlists.main', {
   type: 'control',
   description: `Table of people with name and age columns.
 The data source is taken from a variable named \"%$people%\".
@@ -28,7 +29,7 @@ In the example, field in a table with title \"name\" is bounded to the path \"%n
   })
 })
 
-jb.component('itemlists.selection', {
+component('itemlists.selection', {
   type: 'control',
   description: `Table with single selection. The selection is bounded to a watchable reactive variable named %$selectedItem%`,
   impl: table({
@@ -42,14 +43,14 @@ jb.component('itemlists.selection', {
   })
 })
 
-jb.component('itemlists.manyItems', {
+component('itemlists.manyItems', {
   params: [
     {id: 'howMany', as: 'number', defaultValue: 1000 }
   ],
   impl: pipeline(range(1, '%$howMany%'), obj(prop('id','%%'), prop('name','%%-%%'), prop('group', ({data}) => Math.floor(Number(data) /10))))
 })
 
-jb.component('itemlists.largeTable', {
+component('itemlists.largeTable', {
   type: 'control',
   description: `Large tables with many items are defined with the infinite scroll feature`,
   impl: table({
@@ -63,7 +64,7 @@ jb.component('itemlists.largeTable', {
    })
 })
 
-jb.component('itemlists.search', {
+component('itemlists.search', {
   type: 'control',
   description: `Do the following to add a search capability to itemlist
 - wrap the itemlist with a group called itemlist container and set a group.itemlistContainer feature to it
@@ -99,7 +100,7 @@ jb.component('itemlists.search', {
 })
 
 
-jb.component('itemlists.editableTable', {
+component('itemlists.editableTable', {
   type: 'control',
   impl: group({
     controls: [
@@ -149,7 +150,7 @@ jb.component('itemlists.editableTable', {
 })
 
 
-jb.component('itemlists.searchPeople', {
+component('itemlists.searchPeople', {
   type: 'control',
   impl: group({
     controls: [
@@ -186,7 +187,7 @@ jb.component('itemlists.searchPeople', {
   })
 })
 
-jb.component('itemlists.filters', {
+component('itemlists.filters', {
   type: 'control',
   impl: group({
     controls: [
@@ -227,7 +228,7 @@ jb.component('itemlists.filters', {
   })
 })
 
-jb.component('itemlists.masterDetailsWithContainer', {
+component('itemlists.masterDetailsWithContainer', {
   type: 'control',
   impl: group({
     layout: layout.horizontal(),
@@ -258,7 +259,7 @@ jb.component('itemlists.masterDetailsWithContainer', {
   })
 })
 
-jb.component('itemlists.masterDetails', {
+component('itemlists.masterDetails', {
   type: 'control',
   impl: group({
     layout: layout.horizontal(),
@@ -294,7 +295,7 @@ jb.component('itemlists.masterDetails', {
   })
 })
 
-jb.component('itemlists.sort', {
+component('itemlists.sort', {
   type: 'control',
   impl: group({
     controls: [
@@ -322,7 +323,7 @@ jb.component('itemlists.sort', {
   })
 })
 
-jb.component('dataResource.people', {
+component('dataResource.people', {
   watchableData: [
     {
       name: 'Homer Simpson',

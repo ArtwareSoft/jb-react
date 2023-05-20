@@ -1,4 +1,5 @@
-jb.component('dataResource.people', {
+using('ui')
+component('dataResource.people', {
   watchableData: [
     {
       name: 'Homer',
@@ -16,7 +17,7 @@ jb.component('dataResource.people', {
   ]
 })
 
-jb.component('helloWorld.main', {
+component('helloWorld.main', {
   type: 'control',
   impl: group({
     controls: [
@@ -56,7 +57,7 @@ jb.component('helloWorld.main', {
   })
 })
 
-jb.component('helloWorld.main2', {
+component('helloWorld.main2', {
   type: 'control',
   impl: group({
     controls: [
@@ -65,6 +66,6 @@ jb.component('helloWorld.main2', {
   })
 })
 
-jb.component('helloWorld.data1', {
+component('helloWorld.data1', {
   impl: pipeline('a')
 })

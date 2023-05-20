@@ -1,4 +1,4 @@
-jb.component('studio.newProject', {
+component('studio.newProject', {
   params: [
     {id: 'project', as: 'string'},
     {id: 'type', as: 'string', options: 'material,puppeteer'}
@@ -24,7 +24,7 @@ jb.component('studio.newProject', {
   </script>
 </body>
 </html>`),
-  prop('%$project%.js',`jb.component('%$project%.main', {
+  prop('%$project%.js',`component('%$project%.main', {
   type: 'control',
   impl: group({
     controls: [button('my button')]
@@ -36,7 +36,7 @@ jb.component('studio.newProject', {
 
 /* //# sourceURL=%$project%.js */
 
-jb.component('studio.openNewProject', {
+component('studio.openNewProject', {
   type: 'action',
   impl: openDialog({
     style: dialog.dialogOkCancel(),
@@ -75,7 +75,7 @@ jb.component('studio.openNewProject', {
   })
 })
 
-jb.component('studio.reOpenStudio', {
+component('studio.reOpenStudio', {
   params:[
     {id: 'fileName', as: 'string', defaultValue: pipeline(studio.projectsDir(),'%%/%$studio/project%/%$studio/project%.js')},
     {id: 'line', as: 'number', defaultValue: 0},
@@ -84,7 +84,7 @@ jb.component('studio.reOpenStudio', {
 })
 
 
-jb.component('studio.createProjectFile', {
+component('studio.createProjectFile', {
   type: 'action,has-side-effects',
   params: [
     { id: 'fileName', as: 'string' },
@@ -102,18 +102,18 @@ jb.component('studio.createProjectFile', {
   )
 })
 
-jb.component('studio.projectBaseDir', {
+component('studio.projectBaseDir', {
   impl: ctx => jb.studio.host.locationToPath(
       (jb.frame.jbBaseProjUrl || '') + jb.studio.host.pathOfJsFile(ctx.exp('%$studio/project%'), ''))
   .split('/').slice(0,-1).join('/').slice(1)
 })
 
-jb.component('studio.projectsDir', {
+component('studio.projectsDir', {
   impl: () => jb.studio.host.projectsDir()
 })
 
 
-jb.component('studio.saveNewProject', {
+component('studio.saveNewProject', {
   type: 'action,has-side-effects',
   params: [
     { id: 'project', as: 'string' }

@@ -1,5 +1,6 @@
+using('ui-tests,tgp,workspace')
 
-jb.component('uiTest.checkBoxWithCalculatedAndWatchRef', {
+component('uiTest.checkBoxWithCalculatedAndWatchRef', {
   impl: uiFrontEndTest({
     control: editableBoolean({
       databind: '%$person/name% == \"Homer Simpson\"',
@@ -13,7 +14,7 @@ jb.component('uiTest.checkBoxWithCalculatedAndWatchRef', {
   })
 })
 
-jb.component('uiTest.booleanWatchableVarAsBooleanTrueToFalse', {
+component('uiTest.booleanWatchableVarAsBooleanTrueToFalse', {
   impl: uiFrontEndTest({
     control: text({
       text: data.if('%$person/male%', 'Error', 'OK'),
@@ -24,7 +25,7 @@ jb.component('uiTest.booleanWatchableVarAsBooleanTrueToFalse', {
   })
 })
 
-jb.component('uiTest.booleanWatchableVarAsBooleanFalseToTrue', {
+component('uiTest.booleanWatchableVarAsBooleanFalseToTrue', {
   impl: uiFrontEndTest({
     control: text({
       text: data.if('%$person/male%', 'OK', 'Error'),
@@ -36,7 +37,7 @@ jb.component('uiTest.booleanWatchableVarAsBooleanFalseToTrue', {
   })
 })
 
-jb.component('uiTest.watchableVar', {
+component('uiTest.watchableVar', {
   impl: uiTest({
     control: group({
       controls: text('%$var1%'),
@@ -49,7 +50,7 @@ jb.component('uiTest.watchableVar', {
   })
 })
 
-jb.component('uiTest.watchableVarAsObject', {
+component('uiTest.watchableVarAsObject', {
   impl: uiTest({
     control: group({
       controls: text('%$obj1/txt%'),
@@ -62,7 +63,7 @@ jb.component('uiTest.watchableVarAsObject', {
   })
 })
 
-jb.component('uiTest.watchableVarAsArray', {
+component('uiTest.watchableVarAsArray', {
   impl: uiTest({
     control: group({
       controls: text('%$items[1]/title%'),
@@ -72,7 +73,7 @@ jb.component('uiTest.watchableVarAsArray', {
   })
 })
 
-jb.component('uiTest.watchableVarAsArrayOneItem', {
+component('uiTest.watchableVarAsArrayOneItem', {
   impl: uiTest({
     control: group({
       controls: text('%$items[0]/title%'),
@@ -83,7 +84,7 @@ jb.component('uiTest.watchableVarAsArrayOneItem', {
 })
 
 
-jb.component('uiTest.watchableVarAsObjectNotInitialized', {
+component('uiTest.watchableVarAsObjectNotInitialized', {
   impl: uiTest({
     control: group({
       controls: text('%$obj1/txt%'),
@@ -96,7 +97,7 @@ jb.component('uiTest.watchableVarAsObjectNotInitialized', {
   })
 })
 
-jb.component('uiTest.calculatedVar', {
+component('uiTest.calculatedVar', {
   impl: uiTest({
     control: group({
       controls: [
@@ -120,7 +121,7 @@ jb.component('uiTest.calculatedVar', {
   })
 })
 
-jb.component('uiTest.calculatedVarCyclic', {
+component('uiTest.calculatedVarCyclic', {
   impl: uiTest({
     allowError: true,
     control: group({
@@ -145,21 +146,21 @@ jb.component('uiTest.calculatedVarCyclic', {
   })
 })
 
-jb.component('uiTest.booleanNotReffableTrue', {
+component('uiTest.booleanNotReffableTrue', {
   impl: uiTest({
     control: text({text: isOfType('string', '123')}),
     expectedResult: contains('true')
   })
 })
 
-jb.component('uiTest.booleanNotReffableFalse', {
+component('uiTest.booleanNotReffableFalse', {
   impl: uiTest({
     control: text({text: isOfType('string2', '123')}),
     expectedResult: contains('false')
   })
 })
 
-jb.component('uiTest.labelWithWatchRefInSplicedArray', {
+component('uiTest.labelWithWatchRefInSplicedArray', {
   impl: uiTest({
     control: group({
       controls: text('%$personWithChildren/children[1]/name%'),
@@ -174,7 +175,7 @@ jb.component('uiTest.labelWithWatchRefInSplicedArray', {
   })
 })
 
-jb.component('uiTest.spliceAndSet', {
+component('uiTest.spliceAndSet', {
   impl: uiFrontEndTest({
     control: text({
       text: '%$personWithChildren/children[1]/name%',
@@ -192,7 +193,7 @@ jb.component('uiTest.spliceAndSet', {
   })
 })
 
-jb.component('uiTest.labelNotWatchingUiVar', {
+component('uiTest.labelNotWatchingUiVar', {
   impl: uiTest({
     control: text({
       text: '%$text1/text%',
@@ -206,7 +207,7 @@ jb.component('uiTest.labelNotWatchingUiVar', {
   })
 })
 
-jb.component('uiTest.labelNotWatchingBasicVar', {
+component('uiTest.labelNotWatchingBasicVar', {
   impl: uiTest({
     control: text({
       vars: [Var('text1', obj(prop('text', 'OK')))],
@@ -218,7 +219,7 @@ jb.component('uiTest.labelNotWatchingBasicVar', {
   })
 })
 
-jb.component('uiTest.watchRefCssOnly', {
+component('uiTest.watchRefCssOnly', {
   impl: uiFrontEndTest({
     control: text({
       text: 'hey',
@@ -232,7 +233,7 @@ jb.component('uiTest.watchRefCssOnly', {
   })
 })
 
-jb.component('uiTest.CssOnly.SetAndBack', {
+component('uiTest.CssOnly.SetAndBack', {
   impl: uiFrontEndTest({
     control: text({
       text: 'hey',
@@ -269,7 +270,7 @@ jb.component('uiTest.CssOnly.SetAndBack', {
 //   })
 // })
 
-jb.component('uiTest.groupWatchingWithoutIncludeChildren', {
+component('uiTest.groupWatchingWithoutIncludeChildren', {
   impl: uiTest({
     control: group({
       controls: text('%$text1/text%'),
@@ -299,7 +300,7 @@ jb.component('uiTest.groupWatchingWithoutIncludeChildren', {
 //   })
 // })
 
-jb.component('uiTest.groupWatchingStructure', {
+component('uiTest.groupWatchingStructure', {
   impl: uiTest({
     control: group({
       controls: text('%$text1/text%'),
@@ -314,7 +315,7 @@ jb.component('uiTest.groupWatchingStructure', {
   })
 })
 
-jb.component('uiTest.watchRefArrayDeleteWithRunActionOnItems', {
+component('uiTest.watchRefArrayDeleteWithRunActionOnItems', {
   impl: uiTest({
     control: group({
       controls: text({
@@ -338,7 +339,7 @@ jb.component('uiTest.watchRefArrayDeleteWithRunActionOnItems', {
   })
 })
 
-jb.component('uiTest.watchableAsText', {
+component('uiTest.watchableAsText', {
   impl: uiFrontEndTest({
     //renderDOM: true,
     control: group({
@@ -386,7 +387,7 @@ jb.component('uiTest.watchableAsText', {
   })
 })
 
-jb.component('uiTest.watchableAsTextWrite', {
+component('uiTest.watchableAsTextWrite', {
   impl: uiTest({
     control: editableText({
       databind: tgpTextEditor.watchableAsText('%$watchablePeople%'),
@@ -398,7 +399,7 @@ jb.component('uiTest.watchableAsTextWrite', {
   })
 })
 
-jb.component('uiTest.watchableAsTextWriteObjectInArray', {
+component('uiTest.watchableAsTextWriteObjectInArray', {
   impl: uiTest({
     control: editableText({
       databind: tgpTextEditor.watchableAsText('%$watchablePeople%'),
@@ -410,7 +411,7 @@ jb.component('uiTest.watchableAsTextWriteObjectInArray', {
   })
 })
 
-jb.component('uiTest.watchableAsTextWriteSetObjectToArray', {
+component('uiTest.watchableAsTextWriteSetObjectToArray', {
   impl: uiTest({
     control: editableText({
       databind: tgpTextEditor.watchableAsText('%$emptyArray%'),
@@ -423,7 +424,7 @@ jb.component('uiTest.watchableAsTextWriteSetObjectToArray', {
   })
 })
 
-jb.component('uiTest.watchableObjectToPrimitiveBug', {
+component('uiTest.watchableObjectToPrimitiveBug', {
   impl: uiFrontEndTest({
     control: text('%$person%'),
     action: runActions(writeValue('%$person%', 'world'), writeValue('%$person%', 'hello')),
@@ -431,7 +432,7 @@ jb.component('uiTest.watchableObjectToPrimitiveBug', {
   })
 })
 
-jb.component('uiTest.spliceShouldNotFireFullContainerChange', {
+component('uiTest.spliceShouldNotFireFullContainerChange', {
   impl: uiFrontEndTest({
     control: itemlist({items: '%$watchablePeople%', controls: text('%name%')}),
     action: addToArray('%$watchablePeople%', obj(prop('name', 'mukki'))),
@@ -440,7 +441,7 @@ jb.component('uiTest.spliceShouldNotFireFullContainerChange', {
   })
 })
 
-jb.component('uiTest.spliceAndWatchRefStrcture', {
+component('uiTest.spliceAndWatchRefStrcture', {
   impl: uiFrontEndTest({
     control: itemlist({
       items: '%$watchablePeople%',
@@ -453,7 +454,7 @@ jb.component('uiTest.spliceAndWatchRefStrcture', {
   })
 })
 
-jb.component('uiTest.spliceAndWatchRefWithoutIncludeChildren', {
+component('uiTest.spliceAndWatchRefWithoutIncludeChildren', {
   impl: uiFrontEndTest({
     control: itemlist({
       items: '%$watchablePeople%',
@@ -466,7 +467,7 @@ jb.component('uiTest.spliceAndWatchRefWithoutIncludeChildren', {
   })
 })
 
-jb.component('uiTest.frontEnd.onDestroy', {
+component('uiTest.frontEnd.onDestroy', {
   impl: uiFrontEndTest({
     vars: [Var('res', obj())],
     control: group({
@@ -481,7 +482,7 @@ jb.component('uiTest.frontEnd.onDestroy', {
   })
 })
 
-jb.component('uiTest.spliceAndWatchRefAddTwice', {
+component('uiTest.spliceAndWatchRefAddTwice', {
   impl: uiFrontEndTest({
     control: itemlist({
       items: '%$watchablePeople%',
@@ -497,7 +498,7 @@ jb.component('uiTest.spliceAndWatchRefAddTwice', {
   })
 })
 
-jb.component('uiTest.refProp', {
+component('uiTest.refProp', {
   impl: dataTest({
     runBefore: writeValue(pipeline(
       obj(refProp('personName','%$person/name%')),

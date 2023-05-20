@@ -1,4 +1,4 @@
-jb.component('button', {
+component('button', {
   type: 'control,clickable',
   category: 'control:100,common:100',
   params: [
@@ -11,7 +11,7 @@ jb.component('button', {
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('button.initAction', {
+component('button.initAction', {
   type: 'button.feature',
   category: 'button:0',
   impl: features(
@@ -30,7 +30,7 @@ jb.component('button.initAction', {
   )
 })
 
-jb.component('button.ctrlAction', {
+component('button.ctrlAction', {
   type: 'button.feature',
   category: 'button:70',
   description: 'action to perform on control+click',
@@ -40,7 +40,7 @@ jb.component('button.ctrlAction', {
   impl: method('ctrlAction', (ctx,{},{action}) => action(ctx))
 })
 
-jb.component('button.altAction', {
+component('button.altAction', {
   type: 'button.feature',
   category: 'button:70',
   description: 'action to perform on alt+click',

@@ -5,7 +5,7 @@ sampleX = {
   }
 }
 
-jb.component('dataResource.vegaItems', {
+component('dataResource.vegaItems', {
   passiveData: [
     {"a": "A", "b": 28}, {"a": "B", "b": 55}, {"a": "C", "b": 43},
     {"a": "D", "b": 91}, {"a": "E", "b": 81}, {"a": "F", "b": 53},
@@ -13,7 +13,7 @@ jb.component('dataResource.vegaItems', {
   ]
 })
 
-jb.component('vegaLiteDemo.main', {
+component('vegaLiteDemo.main', {
   type: 'control',
   impl: group({
     title: '',
@@ -30,7 +30,7 @@ jb.component('vegaLiteDemo.main', {
   })
 })
 
-jb.component('vegaLiteDemo.cars', {
+component('vegaLiteDemo.cars', {
   type: 'control',
   impl: group({
     title: '',
@@ -49,7 +49,7 @@ jb.component('vegaLiteDemo.cars', {
   })
 })
 
-jb.component('population', {
+component('population', {
   type: 'control',
   impl: group({
     title: '',

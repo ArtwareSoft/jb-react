@@ -10,7 +10,7 @@ function __cloneDeepLimited(obj, maxDepth) {
   return obj
 }
 
-jb.component('helloWorld.main', {
+component('helloWorld.main', {
   type: 'control', 
   impl : {$:'group', controls: [
     {$: 'editable-text', databind: '%$exp/val%' },
@@ -29,4 +29,4 @@ function evalInMain(exp) {
 
 evalInMain(__cloneDeepLimited.toString())
 
-jb.ui.renderWidget({$:'helloWorld.main'},document.getElementById('main'))
+ jb.ui.renderWidget({$:'helloWorld.main'},document.getElementById('main'))

@@ -1,4 +1,4 @@
-jb.component('uiTest.tree', {
+component('uiTest.tree', {
   impl: uiTest({
     control: tree({
       nodeModel: tree.jsonReadOnly('%$personWithAddress%', 'personWithAddress'),
@@ -8,7 +8,7 @@ jb.component('uiTest.tree', {
   })
 })
 
-jb.component('uiTest.treeRightClick', {
+component('uiTest.treeRightClick', {
   impl: uiTest({
     control: tree({
       nodeModel: tree.jsonReadOnly('%$personWithAddress%', 'personWithAddress'),
@@ -23,7 +23,7 @@ jb.component('uiTest.treeRightClick', {
   })
 })
 
-jb.component('FETest.treeDD.betweenBranches', {
+component('FETest.treeDD.betweenBranches', {
   impl: uiFrontEndTest({
     control: tree({
       nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
@@ -41,7 +41,7 @@ jb.component('FETest.treeDD.betweenBranches', {
   })
 })
 
-jb.component('FETest.treeDD.sameArray', {
+component('FETest.treeDD.sameArray', {
   impl: uiFrontEndTest({
     control: tree({
       nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
@@ -59,7 +59,7 @@ jb.component('FETest.treeDD.sameArray', {
   })
 })
 
-jb.component('FETest.treeDDAndBack', {
+component('FETest.treeDDAndBack', {
   impl: uiFrontEndTest({
     control: tree({
       nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
@@ -80,7 +80,7 @@ jb.component('FETest.treeDDAndBack', {
   })
 })
 
-jb.component('FETest.treeDDTwice', {
+component('FETest.treeDDTwice', {
   impl: uiFrontEndTest({
     control: tree({
       nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
@@ -101,7 +101,7 @@ jb.component('FETest.treeDDTwice', {
   })
 })
 
-jb.component('FETest.treeDDAfterLast', {
+component('FETest.treeDDAfterLast', {
   impl: uiFrontEndTest({
     control: tree({
       nodeModel: tree.json('%$personWithChildren%', 'Homer'),
@@ -119,7 +119,7 @@ jb.component('FETest.treeDDAfterLast', {
   })
 })
 
-jb.component('FETest.treeDD.boundedSelection', {
+component('FETest.treeDD.boundedSelection', {
   impl: uiFrontEndTest({
     control: group({ controls: 
       tree({
@@ -136,7 +136,7 @@ jb.component('FETest.treeDD.boundedSelection', {
   })
 })
 
-jb.component('uiTest.treeVisualDD', {
+component('uiTest.treeVisualDD', {
   impl: uiTest({
     control: tree({
       nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
@@ -151,7 +151,7 @@ jb.component('uiTest.treeVisualDD', {
   })
 })
 
-jb.component('uiTest.treeStyles', {
+component('uiTest.treeStyles', {
   impl: uiTest({
     control: group({
       layout: layout.vertical('30'),
@@ -202,7 +202,7 @@ jb.component('uiTest.treeStyles', {
   })
 })
 
-jb.component('uiTest.tableTree.expandPath', {
+component('uiTest.tableTree.expandPath', {
   impl: uiTest({
     control: tableTree({
       treeModel: tree.jsonReadOnly('%$personWithChildren%', ''),
@@ -216,7 +216,7 @@ jb.component('uiTest.tableTree.expandPath', {
   })
 })
 
-jb.component('uiTest.tableTree.DD', {
+component('uiTest.tableTree.DD', {
   impl: uiFrontEndTest({
     control: tableTree({
       treeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
@@ -243,7 +243,7 @@ jb.component('uiTest.tableTree.DD', {
   })
 })
 
-jb.component('uiTest.tableTreeRefresh1', {
+component('uiTest.tableTreeRefresh1', {
   impl: uiFrontEndTest({
     control: tableTree({
       treeModel: tree.jsonReadOnly('%$personWithChildren%', ''),
@@ -261,7 +261,7 @@ jb.component('uiTest.tableTreeRefresh1', {
   })
 })
 
-jb.component('uiTest.tableTreeUnexpandRefresh', {
+component('uiTest.tableTreeUnexpandRefresh', {
   impl: uiFrontEndTest({
     control: tableTree({
       treeModel: tree.jsonReadOnly(()=>({
@@ -283,7 +283,7 @@ jb.component('uiTest.tableTreeUnexpandRefresh', {
   })
 })
 
-jb.component('uiTest.tableTreeExpandMulitplePaths', {
+component('uiTest.tableTreeExpandMulitplePaths', {
   impl: uiTest({
     control: tableTree({
       treeModel: tree.jsonReadOnly(()=>({
@@ -298,7 +298,7 @@ jb.component('uiTest.tableTreeExpandMulitplePaths', {
   })
 })
 
-jb.component('uiTest.tableTreeWithTitleCtrl', {
+component('uiTest.tableTreeWithTitleCtrl', {
   impl: uiTest({
     control: tableTree({
       treeModel: tree.jsonReadOnly('%$personWithChildren%', ''),
@@ -313,7 +313,7 @@ jb.component('uiTest.tableTreeWithTitleCtrl', {
   })
 })
 
-jb.component('uiTest.tableTreeWithFilter', {
+component('uiTest.tableTreeWithFilter', {
   impl: uiTest({
     control: tableTree({
       treeModel: tree.modelFilter(

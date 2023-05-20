@@ -1,5 +1,5 @@
 
-jb.component('group', {
+component('group', {
   type: 'control',
   category: 'group:100,common:90',
   params: [
@@ -12,13 +12,13 @@ jb.component('group', {
   impl: ctx => jb.ui.ctrl(ctx, ctx.params.layout)
 })
 
-jb.component('group.initGroup', {
+component('group.initGroup', {
   type: 'feature',
   category: 'group:0',
   impl: calcProp('ctrls',(ctx,{$model}) => $model.controls(ctx).filter(x=>x).flatMap(x=>x.segment ? x : [x]))
 })
 
-jb.component('inlineControls', {
+component('inlineControls', {
   type: 'control',
   description: 'controls without a wrapping group',
   params: [
@@ -27,7 +27,7 @@ jb.component('inlineControls', {
   impl: ctx => ctx.params.controls().filter(x=>x)
 })
 
-jb.component('dynamicControls', {
+component('dynamicControls', {
   type: 'control',
   description: 'calculated controls by data items without a wrapping group',
   params: [
@@ -41,7 +41,7 @@ jb.component('dynamicControls', {
         ctx.setVar(itemVariable,controlItem).setVar(indexVariable,i).setData(controlItem))))
 })
 
-jb.component('group.firstSucceeding', {
+component('group.firstSucceeding', {
   type: 'feature',
   category: 'group:70',
   description: 'Used with controlWithCondition. Takes the fhe first succeeding control',
@@ -56,7 +56,7 @@ jb.component('group.firstSucceeding', {
   })
 })
 
-jb.component('controlWithCondition', {
+component('controlWithCondition', {
   type: 'control',
   description: 'Used with group.firstSucceeding',
   category: 'group:10',
@@ -69,7 +69,7 @@ jb.component('controlWithCondition', {
   impl: (ctx,condition,ctrl) => condition(ctx) ? ctrl(ctx) : null
 })
 
-jb.component('group.wait', {
+component('group.wait', {
   type: 'feature',
   category: 'group:70',
   description: 'wait for asynch data before showing the control',
@@ -105,7 +105,7 @@ jb.component('group.wait', {
   )
 })
 
-jb.component('group.eliminateRecursion', {
+component('group.eliminateRecursion', {
   type: 'feature',
   description: 'can be put on a global top group',
   params: [
@@ -119,7 +119,7 @@ jb.component('group.eliminateRecursion', {
   }
 })
 
-jb.component('controls', {
+component('controls', {
   type: 'control',
   description: 'list of controls to be put inline, flatten inplace. E.g., set of table fields',
   category: 'group:20',

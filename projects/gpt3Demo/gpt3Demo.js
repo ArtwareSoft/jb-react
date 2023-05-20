@@ -1,5 +1,5 @@
 
-jb.component('gpt3Demo.main', {
+component('gpt3Demo.main', {
   impl: group({
     layout: layout.vertical('6'),
     style: group.div(),

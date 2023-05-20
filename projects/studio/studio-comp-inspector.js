@@ -1,4 +1,4 @@
-jb.component('studio.compInspector', {
+component('studio.compInspector', {
   params: [
     {id: 'inspectedProps'}
   ],
@@ -60,7 +60,7 @@ jb.component('studio.compInspector', {
   })
 })
 
-jb.component('studio.eventsOfComp', {
+component('studio.eventsOfComp', {
     type: 'control',
     params: [
         {id: 'compId'}
@@ -148,7 +148,7 @@ jb.component('studio.eventsOfComp', {
     })
 })
 
-jb.component('chromeDebugger.refreshAfterSelection', {
+component('chromeDebugger.refreshAfterSelection', {
   type: 'feature',
   impl: method('refreshAfterDebuggerSelection', runActions(
       () => {

@@ -35,7 +35,7 @@ Object.assign(jb.ui, {
   },
 })
 
-jb.component('inplaceEdit.openGridEditor', {
+component('inplaceEdit.openGridEditor', {
     params: [
         {id: 'path', as: 'string'}
     ],
@@ -48,7 +48,7 @@ jb.component('inplaceEdit.openGridEditor', {
     )
 })
 
-jb.component('gridEditor.addRemoveTabPopup', {
+component('gridEditor.addRemoveTabPopup', {
   type: 'feature',
   params: [
     {id: 'axis', as: 'string', options: 'Columns,Rows'}
@@ -93,7 +93,7 @@ jb.component('gridEditor.addRemoveTabPopup', {
     ))))
 })
 
-jb.component('gridEditor.openGridLineThumb', {
+component('gridEditor.openGridLineThumb', {
   type: 'action',
   params: [
     {id: 'axis', as: 'string', options: 'Columns,Rows'}
@@ -148,7 +148,7 @@ jb.component('gridEditor.openGridLineThumb', {
   )
 })
 
-jb.component('gridEditor.dragableGridLineThumb', {
+component('gridEditor.dragableGridLineThumb', {
   type: 'feature',
   params: [
     {id: 'axis', as: 'string', options: 'Columns,Rows'},
@@ -248,7 +248,7 @@ jb.component('gridEditor.dragableGridLineThumb', {
 //   })
 // })
 
-jb.component('gridEditor.openGridItemThumbs', {
+component('gridEditor.openGridItemThumbs', {
   type: 'action',
   impl: runActionOnItems(
     Var('$launchingElement', null),
@@ -291,7 +291,7 @@ jb.component('gridEditor.openGridItemThumbs', {
   )
 })
 
-jb.component('gridEditor.dragableGridItemThumb', {
+component('gridEditor.dragableGridItemThumb', {
   type: 'feature',
   impl: features(
     method('setGridArea', writeValue(

@@ -1,7 +1,7 @@
 Object.assign(jb.ui, {
 })
 
-jb.component('studio.openSizesEditor', {
+component('studio.openSizesEditor', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -22,7 +22,7 @@ jb.component('studio.openSizesEditor', {
   )
 })
 
-jb.component('sizesEditor.cssSizes', {
+component('sizesEditor.cssSizes', {
     params: [
       {id: 'step', as: 'number', defaultValue: 30}
     ],
@@ -45,7 +45,7 @@ jb.component('sizesEditor.cssSizes', {
     }
 })
 
-jb.component('sizesEditor.computedContent', {
+component('sizesEditor.computedContent', {
     type: 'control',
     impl:ctx => {
         const style = jb.studio.previewWindow().getComputedStyle(ctx.vars.inplaceElem)
@@ -53,7 +53,7 @@ jb.component('sizesEditor.computedContent', {
     }
 })
 
-jb.component('sizesEditor.widthHeight', {
+component('sizesEditor.widthHeight', {
     type: 'control',
     params: [
         {id:'prop', as: 'string'},
@@ -75,7 +75,7 @@ jb.component('sizesEditor.widthHeight', {
       })
 })
 
-jb.component('sizesEditor.prop', {
+component('sizesEditor.prop', {
   type: 'control',
   params: [
     {id: 'prop', as: 'string'},
@@ -96,7 +96,7 @@ jb.component('sizesEditor.prop', {
   })
 })
 
-jb.component('sizesEditor.editor', {
+component('sizesEditor.editor', {
   type: 'control',
   impl: group({
     controls: [

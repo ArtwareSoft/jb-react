@@ -300,14 +300,14 @@ const extractedCtrlCard2 = group({
 
 const wixIslandHtml = `<div title="" data-is-responsive="false" data-display-mode="fill" data-content-padding-horizontal="0" data-content-padding-vertical="0" data-exact-height="226" class="style-k80cl0zu" id="comp-k80cl0zl__item1" style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; color: rgb(0, 0, 0); font-family: Arial, Helvetica, sans-serif; font-size: 10px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-style: initial; text-decoration-color: initial; left: 0px; position: absolute; top: 0px; width: 306px; height: 226px;"><div id="comp-k80cl0zl__item1link" class="style-k80cl0zulink" style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; display: block; overflow: hidden; width: 306px; height: 226px;"><div data-has-bg-scroll-effect="" data-image-info="{&quot;imageData&quot;:{&quot;width&quot;:6000,&quot;height&quot;:4000,&quot;alt&quot;:&quot;&quot;,&quot;uri&quot;:&quot;af9daef5b5684a679caf003614294ccd.jpg&quot;,&quot;metaData&quot;:{&quot;isPreset&quot;:false,&quot;schemaVersion&quot;:&quot;2.0&quot;,&quot;isHidden&quot;:false},&quot;crop&quot;:{&quot;x&quot;:584,&quot;y&quot;:0,&quot;width&quot;:5416,&quot;height&quot;:4000},&quot;title&quot;:&quot;&quot;,&quot;type&quot;:&quot;Image&quot;,&quot;id&quot;:&quot;dataItem-k80cl0zn__item1&quot;,&quot;description&quot;:&quot;&quot;,&quot;displayMode&quot;:&quot;fill&quot;},&quot;containerId&quot;:&quot;comp-k80cl0zl__item1&quot;,&quot;displayMode&quot;:&quot;fill&quot;}" data-has-ssr-src="" data-is-svg="false" data-is-svg-mask="false" class="style-k80cl0zuimg" id="comp-k80cl0zl__item1img" style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; overflow: hidden; width: 306px; height: 226px;"><br class="Apple-interchange-newline"><img id="comp-k80cl0zl__item1imgimage" alt="" data-type="image" itemprop="image" src="https://static.wixstatic.com/media/af9daef5b5684a679caf003614294ccd.jpg/v1/crop/x_584,y_0,w_5416,h_4000/fill/w_306,h_226,al_c,q_80,usm_0.66_1.00_0.01/af9daef5b5684a679caf003614294ccd.webp" style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; width: 306px; height: 226px; object-fit: cover;"></div></div></div><div data-is-absolute-layout="true" class="style-k80cl109" id="comp-k80cl106__item1" style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; color: rgb(0, 0, 0); font-family: Arial, Helvetica, sans-serif; font-size: 10px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-style: initial; text-decoration-color: initial; left: 75px; width: 231px; position: absolute; top: 169px; height: 57px;"><div id="comp-k80cl106__item1bg" class="style-k80cl109bg" style="margin: 0px; padding: 0px; border: 0px solid rgb(133, 133, 133); outline: 0px; vertical-align: baseline; background: rgb(255, 255, 255); border-radius: 0px; position: absolute; top: 0px; right: 0px; bottom: 0px; left: 0px;"></div><div class="style-k80cl109inlineContent" id="comp-k80cl106__item1inlineContent" style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; position: absolute; top: 0px; right: 0px; bottom: 0px; left: 0px;"><div data-packed="true" class="style-k80cl10u" id="comp-k80cl10l__item1" style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; overflow-wrap: break-word; text-align: start; left: 12px; width: 159px; position: absolute; pointer-events: none; top: 19px;"><h4 class="font_2" style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; font: 20px proxima-n-w01-reg, sans-serif; color: rgb(65, 65, 65); pointer-events: auto; letter-spacing: normal;"><span style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; font-size: 20px;"><span style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; letter-spacing: 0.08em;"><span style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; font-weight: bold;"><span style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; color: rgb(87, 112, 131);"><span style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; font-family: &quot;open sans&quot;, sans-serif;">HYDRA</span></span></span></span></span></h4></div></div></div><div data-packed="true" class="style-k80cl11c" id="comp-k80cl117__item1" style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; overflow-wrap: break-word; text-align: start; color: rgb(0, 0, 0); font-family: Arial, Helvetica, sans-serif; font-size: 10px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-style: initial; text-decoration-color: initial; left: 19px; width: 257px; position: absolute; pointer-events: none; top: 253px;"><p class="font_7" style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; font: 14px proxima-n-w01-reg, sans-serif; color: rgb(65, 65, 65); pointer-events: auto; letter-spacing: normal;"><span style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; font-size: 14px;"><span style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; font-family: avenir-lt-w01_35-light1475496, sans-serif;"><span style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; color: rgb(54, 181, 205);">01/19 - 01/23</span></span></span></p></div><div data-packed="false" data-min-height="68" class="style-k80cl11t" id="comp-k80cl11o__item1" style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; overflow-wrap: break-word; text-align: start; color: rgb(0, 0, 0); font-family: Arial, Helvetica, sans-serif; font-size: 10px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-style: initial; text-decoration-color: initial; left: 13.5px; width: 268px; position: absolute; min-height: 68px; pointer-events: none; top: 283px;"><p class="font_8" style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; font: 15px / 1.5em proxima-n-w01-reg, sans-serif; color: rgb(65, 65, 65); pointer-events: auto; letter-spacing: normal;"><span style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; color: rgb(87, 112, 131);">Click here to add your own content, or connect to data from your collections.</span></p></div><div data-packed="true" class="style-k80cl12c1" id="comp-k80cl128__item1" style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; overflow-wrap: break-word; text-align: start; color: rgb(0, 0, 0); font-family: Arial, Helvetica, sans-serif; font-size: 10px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-style: initial; text-decoration-color: initial; left: 19px; width: 115px; position: absolute; pointer-events: none; top: 357px;"><p class="font_7" style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; font: 15px / 1.5em proxima-n-w01-reg, sans-serif; color: rgb(65, 65, 65); pointer-events: auto; letter-spacing: normal;"><span style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; font-family: avenir-lt-w01_35-light1475496, sans-serif;"><span style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; font-size: 15px;"><span style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; color: rgb(87, 112, 131);">From:</span></span></span></p></div><div data-packed="true" class="style-k80cl12t1" id="comp-k80cl12p__item1" style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; overflow-wrap: break-word; text-align: start; color: rgb(0, 0, 0); font-family: Arial, Helvetica, sans-serif; font-size: 10px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-style: initial; text-decoration-color: initial; left: 19px; width: 136px; position: absolute; pointer-events: none; top: 379px;"><p class="font_7" style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; font: 26px / 1.5em proxima-n-w01-reg, sans-serif; color: rgb(65, 65, 65); pointer-events: auto; letter-spacing: normal;"><span style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; font-size: 26px;"><span style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; color: rgb(54, 181, 205);"><span style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; font-family: avenir-lt-w01_85-heavy1475544, sans-serif;">$550</span></span></span></p></div><div id="comp-k80cl138__item1" data-align="center" data-disabled="false" data-margin="0" data-should-use-flex="true" data-width="120" data-height="40" role="button" tabindex="0" class="style-k80cl13f" data-state="desktop shouldUseFlex center" style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; color: rgb(0, 0, 0); font-family: Arial, Helvetica, sans-serif; font-size: 10px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-style: initial; text-decoration-color: initial; left: 170px; position: absolute; top: 378px; height: 40px; min-height: 21px; width: 120px;"><div id="comp-k80cl138__item1link" class="g-transparent-a style-k80cl13flink" style="margin: 0px; padding: 0px; border: 0px solid rgb(84, 84, 84); outline: 0px; vertical-align: baseline; background: rgb(54, 181, 205); border-radius: 0px; position: absolute; top: 0px; right: 0px; bottom: 0px; left: 0px; transition: border-color 0.4s ease 0s, background-color 0.4s ease 0s; text-align: initial; display: flex; align-items: center; cursor: pointer !important; justify-content: center;"><span id="comp-k80cl138__item1label" class="style-k80cl13flabel" style="margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; background: transparent; font: 15px / 1.4em helvetica-w01-roman, helvetica-w02-roman, helvetica-lt-w10-roman, sans-serif; transition: color 0.4s ease 0s; color: rgb(255, 255, 255); display: inline-block; position: relative; white-space: nowrap;">Book Now</span></div></div>`
 
-jb.component('studioTest.dragTargetText', {
+component('studioTest.dragTargetText', {
   type: 'control',
   impl: text(
     'paste here'
   )
 })
 
-jb.component('studioTest.dragTargetCard', {
+component('studioTest.dragTargetCard', {
   type: 'control',
   impl: group({
     controls: [
@@ -319,7 +319,7 @@ jb.component('studioTest.dragTargetCard', {
   })
 })
 
-jb.component('patternsTest.suggestedStyles.text', {
+component('patternsTest.suggestedStyles.text', {
   impl: dataTest({
     vars: [
       Var('extractedCtrl', () => jb.utils.resolveDetachedProfile(extractedCtrlSimpleText)),
@@ -338,7 +338,7 @@ jb.component('patternsTest.suggestedStyles.text', {
   })
 })
 
-jb.component('patternsTest.selectStyle.text', {
+component('patternsTest.selectStyle.text', {
   impl: uiTest({
     vars: [
       Var('extractedCtrl', () => jb.utils.resolveDetachedProfile(extractedCtrlSimpleText)),
@@ -357,7 +357,7 @@ jb.component('patternsTest.selectStyle.text', {
   })
 })
 
-jb.component('patternsTest.selectStyle.card1', {
+component('patternsTest.selectStyle.card1', {
   impl: uiTest({
     timeout: 1000,
     vars: [
@@ -377,7 +377,7 @@ jb.component('patternsTest.selectStyle.card1', {
   })
 })
 
-jb.component('patternsTest.selectStyleDeleteUnmapped.card1', {
+component('patternsTest.selectStyleDeleteUnmapped.card1', {
   impl: uiTest({
     timeout: 1000,
     vars: [
@@ -423,7 +423,7 @@ jb.component('patternsTest.selectStyleDeleteUnmapped.card1', {
 //   })
 // })
 
-jb.component('patternsTest.selectStyleDeleteUnmapped.card2', {
+component('patternsTest.selectStyleDeleteUnmapped.card2', {
   impl: uiTest({
     timeout: 1000,
     vars: [
@@ -446,18 +446,18 @@ jb.component('patternsTest.selectStyleDeleteUnmapped.card2', {
   })
 })
 
-jb.component('patternsTest.flattenControlToGrid.card2', {
+component('patternsTest.flattenControlToGrid.card2', {
   impl: uiTest({control: cardExtract.flattenControlToGrid(() => extractedCtrlCard2), expectedResult: contains('Disney in 1946')})
 })
 
-jb.component('patternsTest.flattenControlToGrid.card1', {
+component('patternsTest.flattenControlToGrid.card1', {
   impl: uiTest({
     control: cardExtract.flattenControlToGrid(() => extractedCtrlCard1),
     expectedResult: contains('T3.com'),
   })
 })
 
-jb.component('patternsTest.flattenControlToGrid.wixIsland', {
+component('patternsTest.flattenControlToGrid.wixIsland', {
   impl: uiTest({
     control: group({
       layout: layout.vertical(20),

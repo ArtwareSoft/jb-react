@@ -14,26 +14,26 @@
 //     })))
 // })
 
-jb.component('itemlists.manyItems', {
+component('itemlists.manyItems', {
   params: [
     {id: 'howMany', as: 'number', defaultValue: 1000 }
   ],
   impl: pipeline(range(1, '%$howMany%'), obj(prop('id','%%'), prop('name','%%-%%'), prop('group', ({data}) => Math.floor(Number(data) /10))))
 })
 
-jb.component('remoteTest.childSimple', {
+component('remoteTest.childSimple', {
   impl: dataTest({
     calculate: pipe(jbm.start(child('tst')), remote.data('hello', '%%')),
     expectedResult: equals('hello')
   })
 })
 
-jb.component('test.addAA',{
+component('test.addAA',{
   type: 'rx',
   impl: rx.map('AA%%')
 })
 
-jb.component('remoteTest.childLoadOperatorCode', {
+component('remoteTest.childLoadOperatorCode', {
   impl: dataTest({
     calculate: rx.pipe(source.data('bb'), remote.operator(test.addAA(), child('tst'))), 
     expectedResult: equals('AAbb'),
@@ -41,7 +41,7 @@ jb.component('remoteTest.childLoadOperatorCode', {
   })
 })
 
-jb.component('remoteTest.workerSimple', {
+component('remoteTest.workerSimple', {
   impl: dataTest({
     calculate: pipe(jbm.start(worker()), remote.data('hello', '%%')),
     expectedResult: equals('hello'),
@@ -49,7 +49,7 @@ jb.component('remoteTest.workerSimple', {
   })
 })
 
-jb.component('remoteTest.workerLoadOperatorCode', {
+component('remoteTest.workerLoadOperatorCode', {
   impl: dataTest({
     calculate: rx.pipe(source.data('bb'), remote.operator(test.addAA(), worker('wtst'))),
     expectedResult: equals('AAbb'),
@@ -57,7 +57,7 @@ jb.component('remoteTest.workerLoadOperatorCode', {
   })
 })
 
-jb.component('remoteTest.childWorker.sourceCodeOptions.project', {
+component('remoteTest.childWorker.sourceCodeOptions.project', {
   impl: dataTest({
     calculate: pipe(
       jbm.start(worker({id: 'itemlists', sourceCodeOptions: project('itemlists')})),
@@ -68,7 +68,7 @@ jb.component('remoteTest.childWorker.sourceCodeOptions.project', {
   })
 })
 
-jb.component('remoteTest.remote.data', {
+component('remoteTest.remote.data', {
   impl: dataTest({
     timeout: 3000,
     calculate: pipe(
@@ -77,14 +77,14 @@ jb.component('remoteTest.remote.data', {
   })
 })
 
-jb.component('remoteTest.remote.data.defComponents', {
+component('remoteTest.remote.data.defComponents', {
   impl: dataTest({
     calculate: remote.data(pipeline('1.5', math.floor()), worker()),
     expectedResult: equals(1),
   })
 })
 
-jb.component('remoteTest.remote.action', {
+component('remoteTest.remote.action', {
   impl: dataTest({
     timeout: 3000,
     calculate: pipe(
@@ -95,7 +95,7 @@ jb.component('remoteTest.remote.action', {
   })
 })
 
-jb.component('remoteTest.innerTreeShake', {
+component('remoteTest.innerTreeShake', {
   impl: dataTest({
     calculate: remote.data(() => jb.utils.emptyLineWithSpaces != null, byUri('tests•w1•inner')),
     expectedResult: equals(true),
@@ -104,7 +104,7 @@ jb.component('remoteTest.innerTreeShake', {
   })
 })
 
-jb.component('remoteTest.childJbmPort', {
+component('remoteTest.childJbmPort', {
   impl: dataTest({
     calculate: remote.data('hello', byUri('tests•w1•inner')),
     expectedResult: 'hello',
@@ -113,7 +113,7 @@ jb.component('remoteTest.childJbmPort', {
   })
 })
 
-jb.component('remoteTest.innerWorker', {
+component('remoteTest.innerWorker', {
   impl: dataTest({
     timeout: 5000,
     runBefore: remote.action(jbm.start(child('inWorker')), worker()),
@@ -122,7 +122,7 @@ jb.component('remoteTest.innerWorker', {
   })
 })
 
-jb.component('remoteTest.byUri(', {
+component('remoteTest.byUri(', {
   impl: dataTest({
     timeout: 1000,
     runBefore: jbm.start(child('tst')),
@@ -131,7 +131,7 @@ jb.component('remoteTest.byUri(', {
   })
 })
 
-jb.component('remoteTest.workerByUri', {
+component('remoteTest.workerByUri', {
   impl: dataTest({
     timeout: 1000,
     runBefore: jbm.start(worker('w1')),
@@ -143,7 +143,7 @@ jb.component('remoteTest.workerByUri', {
   })
 })
 
-jb.component('remoteTest.workerToWorker', {
+component('remoteTest.workerToWorker', {
   impl: dataTest({
     calculate: source.remote(
       rx.pipe(source.data('hello'), rx.map('%%'), remote.operator(rx.map('%% world'), byUri('tests•w2'))),
@@ -155,7 +155,7 @@ jb.component('remoteTest.workerToWorker', {
   })
 })
 
-jb.component('remoteTest.networkToWorker', {
+component('remoteTest.networkToWorker', {
   impl: dataTest({
     timeout: 5000,
     runBefore: runActions(jbm.start(worker({id: 'peer1', networkPeer: true})), jbm.start(worker('w2'))),
@@ -168,7 +168,7 @@ jb.component('remoteTest.networkToWorker', {
   })
 })
 
-jb.component('remoteTest.networkGateway', {
+component('remoteTest.networkGateway', {
   impl: dataTest({
     timeout: 5000,
     runBefore: runActions(jbm.start(worker({id: 'peer1', networkPeer: true})), jbm.start(worker({id: 'peer2', networkPeer: true}))),
@@ -181,7 +181,7 @@ jb.component('remoteTest.networkGateway', {
   })
 })
 
-jb.component('remoteTest.shadowResource.initWatchable', {
+component('remoteTest.shadowResource.initWatchable', {
   impl: dataTest({
     timeout: 5000,
     runBefore: remote.shadowResource('person', worker()),
@@ -190,7 +190,7 @@ jb.component('remoteTest.shadowResource.initWatchable', {
   })
 })
 
-jb.component('remoteTest.shadowResource.watchable', {
+component('remoteTest.shadowResource.watchable', {
   impl: dataTest({
     calculate: remote.data(
       pipe(rx.pipe(source.watchableData('%$person/name%'), rx.log('test'), rx.map('%newVal%'), rx.take(1))),
@@ -205,7 +205,7 @@ jb.component('remoteTest.shadowResource.watchable', {
   })
 })
 
-jb.component('remoteTest.shadowResource.childJbm', {
+component('remoteTest.shadowResource.childJbm', {
   impl: dataTest({
     timeout: 5000,
     runBefore: runActions(
@@ -225,7 +225,7 @@ jb.component('remoteTest.shadowResource.childJbm', {
   })
 })
 
-jb.component('remoteTest.sourceNoTalkback', {
+component('remoteTest.sourceNoTalkback', {
     impl: dataTest({
       timeout: 5000,
       calculate: pipe(rx.pipe(
@@ -237,7 +237,7 @@ jb.component('remoteTest.sourceNoTalkback', {
     })
 })
 
-jb.component('remoteTest.source.remote.local', {
+component('remoteTest.source.remote.local', {
   impl: dataTest({
     timeout: 5000,
     calculate: pipe(
@@ -248,7 +248,7 @@ jb.component('remoteTest.source.remote.local', {
   })
 })
 
-jb.component('remoteTest.source.remote.worker', {
+component('remoteTest.source.remote.worker', {
   impl: dataTest({
     timeout: 5000,
     calculate: pipe(
@@ -259,7 +259,7 @@ jb.component('remoteTest.source.remote.worker', {
   })
 })
 
-jb.component('remoteTest.remote.operator', {
+component('remoteTest.remote.operator', {
     impl: dataTest({
       timeout: 5000,
       calculate: pipe(
@@ -285,7 +285,7 @@ jb.component('remoteTest.remote.operator', {
 //   })
 // })
 
-jb.component('remoteTest.remoteParam', {
+component('remoteTest.remoteParam', {
   params: [
     { id: 'retVal', defaultValue: 5},
   ],
@@ -300,7 +300,7 @@ jb.component('remoteTest.remoteParam', {
   })
 })
 
-jb.component('remoteTest.remoteVar', {
+component('remoteTest.remoteVar', {
   impl: dataTest({
     timeout: 5000,
       calculate: rx.pipe(
@@ -313,7 +313,7 @@ jb.component('remoteTest.remoteVar', {
   })
 })
 
-jb.component('remoteTest.remoteVarCleanAndRestore', {
+component('remoteTest.remoteVarCleanAndRestore', {
   impl: dataTest({
     timeout: 5000,
       calculate: rx.pipe(
@@ -328,7 +328,7 @@ jb.component('remoteTest.remoteVarCleanAndRestore', {
   })
 })
 
-jb.component('remoteTest.operator.useVars', {
+component('remoteTest.operator.useVars', {
   impl: dataTest({
     timeout: 5000,
       calculate: rx.pipe(
@@ -342,7 +342,7 @@ jb.component('remoteTest.operator.useVars', {
   })
 })
 
-jb.component('remoteTest.dynamicProfileFunc', {
+component('remoteTest.dynamicProfileFunc', {
   params: [
     { id: 'func', dynamic: true, defaultValue: '-%%-'},
   ],
@@ -373,7 +373,7 @@ jb.component('remoteTest.dynamicProfileFunc', {
 // })
 
 
-jb.component('remoteTest.nodeContainer', {
+component('remoteTest.nodeContainer', {
   impl: dataTest({
     calculate: pipe(jbm.start(remoteNodeWorker()), remote.data('hello', '%%')),
     expectedResult: equals('hello'),
@@ -401,7 +401,7 @@ jb.component('remoteTest.nodeContainer', {
 //   })
 // })
 
-jb.component('remoteTest.nodeContainer.runTest', {
+component('remoteTest.nodeContainer.runTest', {
   impl: dataTest({
     vars: [
       Var('testsToRun', list('dataTest.join', 'dataTest.ctx.expOfRefWithBooleanType')),
@@ -419,7 +419,7 @@ jb.component('remoteTest.nodeContainer.runTest', {
         remote.operator(
           rx.mapPromise(
             ({data}) => {
-        return jb.test.runOneTest(data) 
+        return jb.test.runSingleTest(data) 
       }
           ),
           '%$servlet%'
@@ -434,7 +434,7 @@ jb.component('remoteTest.nodeContainer.runTest', {
   })
 })
 
-jb.component('remoteTest.testResults', {
+component('remoteTest.testResults', {
   impl: dataTest({
     vars: [
       Var('testsToRun', list('dataTest.join', 'dataTest.ctx.expOfRefWithBooleanType')),
@@ -448,7 +448,7 @@ jb.component('remoteTest.testResults', {
   })
 })
 
-jb.component('remoteTest.listSubJbms', {
+component('remoteTest.listSubJbms', {
   impl: dataTest({
     timeout: 1000,
     runBefore: jbm.start(child('inner')),
@@ -457,7 +457,7 @@ jb.component('remoteTest.listSubJbms', {
   })
 })
 
-jb.component('remoteTest.listAll', {
+component('remoteTest.listAll', {
   impl: dataTest({
     timeout: 1000,
     runBefore: runActions(jbm.start(worker({id: 'networkPeer', networkPeer: true})), jbm.start(child('inner'))),

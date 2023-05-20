@@ -1,4 +1,4 @@
-jb.extension('ui','button', {
+extension('ui','button', {
   chooseIconWithRaised(icons,raised) {
     if (!icons) return []
     const raisedIcon = icons.filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'raised')[0]
@@ -10,7 +10,7 @@ jb.extension('ui','button', {
   }
 })
 
-jb.component('button.href', {
+component('button.href', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
@@ -19,7 +19,7 @@ jb.component('button.href', {
   })
 })
 
-jb.component('button.hrefText', {
+component('button.hrefText', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
@@ -28,7 +28,7 @@ jb.component('button.hrefText', {
   })
 })
 
-jb.component('button.x', {
+component('button.x', {
   type: 'button.style',
   params: [
     {id: 'size', as: 'number', defaultValue: '21'}
@@ -50,7 +50,7 @@ jb.component('button.x', {
   })
 })
 
-jb.component('button.native', {
+component('button.native', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) => h('button',{class: raised ? 'raised' : '', title, onclick: true },title),
@@ -59,7 +59,7 @@ jb.component('button.native', {
   })
 })
 
-jb.component('button.mdc', {
+component('button.mdc', {
   type: 'button.style',
   params: [
     {id: 'noRipple', as: 'boolean', type: 'boolean'},
@@ -74,7 +74,7 @@ jb.component('button.mdc', {
     ]), features: [button.initAction(), mdcStyle.initDynamic()]})
 })
 
-jb.component('button.mdcChipAction', {
+component('button.mdcChipAction', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) =>
@@ -89,13 +89,13 @@ jb.component('button.mdcChipAction', {
   })
 })
 
-jb.component('button.plainIcon', {
+component('button.plainIcon', {
   type: 'button.style',
   impl: customStyle({template: (cmp,{title,raised},h) =>
       jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=> vdom.setAttribute('title',vdom.getAttribute('title') || title))[0], features: button.initAction()})
 })
 
-jb.component('button.mdcIcon', {
+component('button.mdcIcon', {
   type: 'button.style,icon.style',
   params: [
     {id: 'icon', type: 'icon'},
@@ -108,7 +108,7 @@ jb.component('button.mdcIcon', {
   )
 })
 
-jb.component('button.mdcFloatingAction', {
+component('button.mdcFloatingAction', {
   type: 'button.style,icon.style',
   description: 'fab icon',
   params: [
@@ -125,7 +125,7 @@ jb.component('button.mdcFloatingAction', {
       ]), features: [button.initAction(), mdcStyle.initDynamic(), css('~.mdc-fab {width: %$buttonSize%px; height: %$buttonSize%px;}')]})
 })
 
-jb.component('button.mdcTab', {
+component('button.mdcTab', {
   type: 'button.style',
   impl: customStyle({template: (cmp,{title,raised},h) =>
       h('button.mdc-tab',{ class: raised ? 'mdc-tab--active' : '',tabIndex: -1, role: 'tab', onclick: true}, [
@@ -139,7 +139,7 @@ jb.component('button.mdcTab', {
       ]), features: [button.initAction(), mdcStyle.initDynamic()]})
 })
 
-jb.component('button.mdcHeader', {
+component('button.mdcHeader', {
   type: 'button.style',
   params: [
     {id: 'stretch', as: 'boolean', type: 'boolean'}

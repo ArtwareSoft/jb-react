@@ -1,4 +1,4 @@
-jb.component('studio.pick', {
+component('studio.pick', {
   type: 'action',
   impl: openDialog({
     id: 'studio.pick',
@@ -7,7 +7,7 @@ jb.component('studio.pick', {
   })
 })
 
-jb.component('studio.pickAndOpen', {
+component('studio.pickAndOpen', {
   type: 'action',
   params: [
     {id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'}
@@ -24,7 +24,7 @@ jb.component('studio.pickAndOpen', {
   })
 })
 
-jb.component('studio.pickTitle', {
+component('studio.pickTitle', {
    type: 'control',
    impl: text({
         text: tgp.shortTitle('%$dialogData/path%'),
@@ -32,7 +32,7 @@ jb.component('studio.pickTitle', {
    })
 })
 
-jb.component('dialogFeature.studioPick', {
+component('dialogFeature.studioPick', {
   type: 'dialog-feature',
   params: [
     {id: 'from', as: 'string', options: 'preview,studio'}
@@ -95,7 +95,7 @@ jb.component('dialogFeature.studioPick', {
   )
 })
 
-jb.component('dialog.studioPickDialog', {
+component('dialog.studioPickDialog', {
   hidden: true,
   type: 'dialog.style',
   params: [
@@ -128,7 +128,7 @@ jb.component('dialog.studioPickDialog', {
   })
 })
 
-jb.extension('studio','pick', {
+extension('studio','pick', {
   eventToElem(e, moveRight, predicate) {
     const mousePos = { x: e.pageX - window.pageXOffset, y: e.pageY  - window.pageYOffset }
     const elems = window.document.elementsFromPoint(mousePos.x, mousePos.y);
@@ -146,7 +146,7 @@ jb.extension('studio','pick', {
   }
 })
 
-jb.extension('studio','highlight', {
+extension('studio','highlight', {
   getOrCreateHighlightBox(sampleElem) {
     const doc = sampleElem.ownerDocument
     if (!doc.querySelector('#preview-box')) {
@@ -210,7 +210,7 @@ jb.extension('studio','highlight', {
   }
 })
 
-jb.component('studio.highlightByPath', {
+component('studio.highlightByPath', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
