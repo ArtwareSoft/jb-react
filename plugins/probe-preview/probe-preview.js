@@ -5,7 +5,7 @@ component('probePreviewWorker', {
   params: [
     {id: 'id', defaultValue: 'wProbe'}
   ],
-  impl: worker('%$id%', probe.initPreview())
+  impl: worker({id: '%$id%', init: probe.initPreview()})
 })
 
 component('suggestions.calcFromProbePreview', {

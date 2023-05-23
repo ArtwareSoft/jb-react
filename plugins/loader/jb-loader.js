@@ -37,38 +37,36 @@ globalThis.jbHost = globalThis.jbHost || { // browserHost - studioServer,worker 
   }
 }
 
-async function jbInit(uri, _sourceCode , {multipleInFrame, doNoInitLibs}={}) {
-  const sourceCode = Array.isArray(_sourceCode) ? _sourceCode : [_sourceCode]
+async function jbInit(uri, sourceCode , {multipleInFrame, doNoInitLibs}={}) {
   const jb = { 
     uri,
     loadedFiles: {},
-    async loadPluginSymbols(codePackage,project) {
+    async loadPluginSymbols(codePackage,loadProjects) {
       const jb = this
       const pluginsSymbols = await codePackage.fileSymbols('plugins')
-      const projectSymbols = project ? await codePackage.fileSymbols(`projects/${project}`) : []
+      const projectSymbols = loadProjects ? await codePackage.fileSymbols('projects') : []
       jb.plugins = jb.plugins || {}
-      ;[...pluginsSymbols,...projectSymbols].map(entry =>{
-        const tests = entry.path.match(/-(tests|testers).js$/) || entry.path.match(/\/tests\//) ? '-tests': ''
-        const id = (entry.path.match(/^.(plugins|projects)\/([^\/]+)/) || ['','',''])[2] + tests
-        jb.plugins[id] = jb.plugins[id] || { id, codePackage, files: [] }
+      ;[...pluginsSymbols,...projectSymbols.map(x=>({...x,project: true}))].map(entry =>{
+        const id = pathToPluginId(entry.path)
+        jb.plugins[id] = jb.plugins[id] || { id, codePackage, files: [], project: entry.project }
         jb.plugins[id].files.push(entry)
       })
     },
-    async loadProject(project,codePackage = jbHost.codePackageFromJson(), doNoInitLibs) {
-      const jb = this
-      const projectSymbols = project ? await codePackage.fileSymbols(`projects/${project}`) : []
-      jb.plugins = jb.plugins || {}
-      projectSymbols.map(entry =>{
-        const tests = entry.path.match(/-(tests|testers).js$/) || entry.path.match(/\/tests\//) ? '-tests': ''
-        const id = (entry.path.match(/^.(plugins|projects)\/([^\/]+)/) || ['','',''])[2] + tests
-        jb.plugins[id] = jb.plugins[id] || { id, codePackage, files: [] }
-        jb.plugins[id].files.push(entry)
-      })
-      calcPluginDependencies(jb.plugins)
-      const libs = await jb.loadPlugins([project])
-      !doNoInitLibs && await jb.initializeLibs(unique(libs))
-      jb.utils.resolveLoadedProfiles()
-    },
+    // async loadProject(project,codePackage = jbHost.codePackageFromJson()) {
+    //   const jb = this
+    //   const projectSymbols = project ? await codePackage.fileSymbols(`projects/${project}`) : []
+    //   jb.plugins = jb.plugins || {}
+    //   projectSymbols.map(entry =>{
+    //     const id = pathToPluginId(path)
+    //     jb.plugins[id] = jb.plugins[id] || { id, codePackage, files: [] }
+    //     jb.plugins[id].files.push(entry)
+    //   })
+    //   calcPluginDependencies(jb.plugins)
+    //   const libs = await jb.loadPlugins([project])
+    //   const libsToInit = sourceCode.libsToInit ? sourceCode.libsToInit.split(','): unique(libs)
+    //   await jb.initializeLibs(libsToInit)
+    //   jb.utils.resolveLoadedProfiles()
+    // },
     async loadPlugins(plugins) {
       const jb = this
       let libs = []
@@ -107,32 +105,33 @@ async function jbInit(uri, _sourceCode , {multipleInFrame, doNoInitLibs}={}) {
     }
   }
   if (!multipleInFrame) globalThis.jb = jb // multipleInFrame is used in jbm.child
-
-  await sourceCode.reduce( async (pr,{codePackage, project})=> pr.then(() =>
-    jb.loadPluginSymbols(jbHost.codePackageFromJson(codePackage),project)), Promise.resolve());
+  await (sourceCode.pluginPackages || [null]).reduce( async (pr,codePackage)=> pr.then(() =>
+    jb.loadPluginSymbols(jbHost.codePackageFromJson(codePackage),sourceCode.project)), Promise.resolve());
   calcPluginDependencies(jb.plugins,jb)
   await ['jb-core','core-utils','jb-expression','db','jb-macro','spy'].map(x=>`/plugins/core/${x}.js`).reduce((pr,path) => 
     pr.then(()=> jb.loadjbFile(path,jb,{noSymbols: true, plugin: jb.plugins.core})), Promise.resolve())
   jb.noSupervisedLoad = false
-  const codeServerUri = sourceCode.reduce((acc,{codeServerUri}) => acc || codeServerUri, '')
-  const loadTests = sourceCode.reduce((acc,{loadTests}) => acc || loadTests, false)
-  if (jb.jbm && codeServerUri) jb.jbm.codeServerUri = codeServerUri
-
-  const topPlugins = sourceCode.reduce((acc,{plugins,project}) => {
-      const _plugins = (!project && !plugins) || (plugins||[])[0] == '*' ? Object.keys(jb.plugins) : (plugins||[])
-      return [...acc,..._plugins,project]}
-      , [])
-    .filter(x=>x).flatMap(x=>loadTests ? [x,`${x}-tests`] : [x])
+  if (jb.jbm && treeShakeServerUri) jb.jbm.treeShakeServerUri = sourceCode.treeShakeServerUri
+  const topPlugins = [...jb.asArray(sourceCode.project),
+   ...(sourceCode.plugins.indexOf('*') != -1 ? Object.values(jb.plugins).filter(x=>!x.project).map(x=>x.id) : sourceCode.plugins)
+  ]
 
   const libs = await jb.loadPlugins(topPlugins)
-  !doNoInitLibs && await jb.initializeLibs(unique(libs))
+  const libsToInit = sourceCode.libsToInit ? sourceCode.libsToInit.split(','): unique(libs)
+  await jb.initializeLibs(libsToInit)
   jb.utils.resolveLoadedProfiles()
+
+
   return jb
 
   function unique(ar,f = (x=>x) ) {
     const keys = {}, res = []
     ar.forEach(e=>{ if (!keys[f(e)]) { keys[f(e)] = true; res.push(e) } })
     return res
+  }
+  function pathToPluginId(path) {
+    const tests = path.match(/-(tests|testers).js$/) || path.match(/\/tests\//) ? '-tests': ''
+    return (path.match(/^.(plugins|projects)\/([^\/]+)/) || ['','',''])[2] + tests
   }
   function calcPluginDependencies(plugins) {
     Object.keys(plugins).map(id=>calcDependency(id))
@@ -142,6 +141,9 @@ async function jbInit(uri, _sourceCode , {multipleInFrame, doNoInitLibs}={}) {
         jb.logError(`plugin ${plugin.id} has more than one dsl`,{pluginDsls})
       plugin.dsl = pluginDsls[0]
     })
+    // the virtual xx-tests plugin must have the same dsl as the plugin
+    Object.values(plugins).filter(plugin=>plugin.id.match(/-tests$/)).forEach(plugin=>
+      plugin.dsl = (jb.plugins[plugin.id.slice(0,-6)] || {}).dsl)
 
     function calcDependency(id,history={}) {
       const plugin = plugins[id]

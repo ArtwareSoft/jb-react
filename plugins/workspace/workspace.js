@@ -35,9 +35,9 @@ extension('workspace', {
                 jb.workspace.openDocs[jb.workspace.activeUri].selection = { start, end: end || start }
                 jb.tgpTextEditor.host.selectionSource.next({start,end})
             },
-            docTextAndCursor() {
+            compTextAndCursor() {
                 const doc = jb.workspace.openDocs[jb.workspace.activeUri]
-                return { docText: doc.text, cursorLine: doc.selection.start.line, cursorCol: doc.selection.start.col}
+                return jb.tgpTextEditor.closestComp(doc.text, doc.selection.start.line, doc.selection.start.col, jb.workspace.activeUri)                
             },
             async execCommand(cmd) {
                 console.log('exec command', cmd)

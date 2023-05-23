@@ -17,7 +17,7 @@
 	<div id="show"> </div>
  <script>
 	const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
-	jbInit('tests', {project: 'studio', plugins: ['*'], loadTests: true })
+	jbInit('tests', {project: 'studio', plugins: ['*']})
 		.then(jb =>{
 			globalThis.jb = jb
 			jb.exec({$: 'defaultTheme'})

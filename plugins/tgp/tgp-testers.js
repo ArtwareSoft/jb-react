@@ -15,24 +15,25 @@ component('tgp.completionOptionsTest', {
   params: [
     {id: 'compText', as: 'string', description: 'use __ for completion points'},
     {id: 'expectedSelections', as: 'array', description: 'label a selection that should exist in the menu. one for each point'},
+    {id: 'filePath', as: 'string', defaultValue: 'projects/jb-react/plugins/common/jb-common-tests.js'},
     {id: 'dsl', as: 'string'}
   ],
-  impl: async (ctx,compText,expectedSelections,dsl)=> {
+  impl: async (ctx,compText,expectedSelections,filePath,dsl)=> {
       const testId = ctx.vars.testID
       jb.workspace.initJbWorkspaceAsHost()
       const parts = jb.test.fixToUniqueName(compText).split('__')
-      const dslLine = dsl ? `jb.dsl('${dsl}')\n` : ''
-      const offsets = parts.reduce((acc,part) => [...acc, acc.pop()+part.length] , [0] ).slice(1,-1).map(x=>x+dslLine.length)
+      const dslLine = dsl ? `dsl('${dsl}')\n` : ''
+      const offsets = parts.reduce((acc,part) => [...acc, acc.pop()+part.length] , [0] ).slice(1,-1)
+        .map(x=>x+dslLine.length)
       const code = parts.join('')
-//        jb.tgpTextEditor.evalProfileDef(code,dsl)
-      jb.tgpTextEditor.host.initDoc('dummy.js', dslLine+code)
+      jb.tgpTextEditor.host.initDoc(filePath, dslLine+code)
       const ctxForTest = ctx.setVars({forceLocalSuggestions: true})
       
       const result = await offsets.map(offset=>jb.tgpTextEditor.offsetToLineCol(dslLine+code,offset))
         .reduce(async (errors, inCompPos,i) => {
           const _errors = await errors
           jb.tgpTextEditor.host.selectRange(inCompPos)
-          const options = await jb.tgpTextEditor.provideCompletionItems(jb.tgpTextEditor.host.docTextAndCursor(), ctxForTest)
+          const options = await jb.tgpTextEditor.provideCompletionItems(jb.tgpTextEditor.host.compTextAndCursor(), ctxForTest)
           if (!options)
               return `no options at index ${i}`
           const res = options.map(x=>x.label).includes(expectedSelections[i]) ? '' : ` ${expectedSelections[i]} not found at index ${i}`
@@ -57,26 +58,26 @@ component('tgp.completionActionTest', {
     async (ctx,{}, {compText,completionToActivate, expectedEdit, expectedTextAtSelection, expectedCursorPos,dsl }) => {
             jb.workspace.initJbWorkspaceAsHost()
             const parts = jb.test.fixToUniqueName(compText).split('__')
-            const dslLine = dsl ? `jb.dsl('${dsl}')\n` : ''
+            const dslLine = dsl ? `dsl('${dsl}')\n` : ''
             const offset = parts[0].length +dslLine.length
             const code = parts.join('')
             jb.utils.resolveLoadedProfiles()
-            jb.tgpTextEditor.host.initDoc('dummy.js', dslLine+code)
+            jb.tgpTextEditor.host.initDoc('someDir/plugins/common/jb-common-tests.js', dslLine+code)
             const ctxForTest = ctx.setVars({forceLocalSuggestions: true})
 
             const inCompPos = jb.tgpTextEditor.offsetToLineCol(dslLine+code,offset)
             jb.tgpTextEditor.host.selectRange(inCompPos)
-            const { reformatEdits } = jb.tgpTextEditor.calcActiveEditorPath(jb.tgpTextEditor.host.docTextAndCursor())
+            const { reformatEdits } = jb.tgpTextEditor.calcActiveEditorPath(jb.tgpTextEditor.host.compTextAndCursor())
             if (reformatEdits)
                 return { testFailure: `bad comp format` }
-            const items = await jb.tgpTextEditor.provideCompletionItems(jb.tgpTextEditor.host.docTextAndCursor(), ctxForTest)
+            const items = await jb.tgpTextEditor.provideCompletionItems(jb.tgpTextEditor.host.compTextAndCursor(), ctxForTest)
             const item = items.find(x=>x.label == completionToActivate)
             if (!item)
                 return { testFailure: `completion not found - ${completionToActivate}` }
     
             await jb.tgpTextEditor.applyCompChange(item,ctx)
             await jb.delay(1) // wait for cursor change
-            const {cursorLine, cursorCol } = jb.tgpTextEditor.host.docTextAndCursor()
+            const {cursorLine, cursorCol } = jb.tgpTextEditor.host.compTextAndCursor()
             const actualCursorPos = [cursorLine, cursorCol].join(',')
             const actualEdit = jb.tgpTextEditor.lastEditForTester
             console.log(jb.utils.prettyPrint(actualEdit.edit))
@@ -104,15 +105,15 @@ component('tgp.fixEditedCompTest', {
   impl: async (ctx,compText,expectedFixedComp,dsl) => {
       jb.workspace.initJbWorkspaceAsHost()
       const parts = jb.test.fixToUniqueName(compText).split('__')
-      const dslLine = dsl ? `jb.dsl('${dsl}')\n` : ''
+      const dslLine = dsl ? `dsl('${dsl}')\n` : ''
       const offset = parts[0].length +dslLine.length
       const code = parts.join('')
       jb.utils.resolveLoadedProfiles()
-      jb.tgpTextEditor.host.initDoc('dummy.js', dslLine+code)
+      jb.tgpTextEditor.host.initDoc('someDir/plugins/common/jb-common-tests.js', dslLine+code)
 
       const inCompPos = jb.tgpTextEditor.offsetToLineCol(dslLine+code,offset)
       jb.tgpTextEditor.host.selectRange(inCompPos)
-      const { formattedText, fixedCompText } = await jb.tgpTextEditor.calcActiveEditorPath(jb.tgpTextEditor.host.docTextAndCursor())
+      const { formattedText, fixedCompText } = await jb.tgpTextEditor.calcActiveEditorPath(jb.tgpTextEditor.host.compTextAndCursor())
       const testId = ctx.vars.testID;
       const success = formattedText == expectedFixedComp || fixedCompText == expectedFixedComp
       const reason = !success && formattedText
@@ -123,21 +124,22 @@ component('tgp.fixEditedCompTest', {
 component('tgp.dummyDocProps', {
   params: [
     {id: 'compText', as: 'string', description: 'use __ for completion point'},
-    {id: 'dsl', as: 'string'}
+    {id: 'dsl', as: 'string'},
+    {id: 'filePath', as: 'string', defaultValue: 'projects/jb-react/plugins/common/jb-common-tests.js'},
   ],
-  impl: (ctx,compText,dsl) => {
+  impl: (ctx,_compText,dsl,_filePath) => {
     jb.workspace.initJbWorkspaceAsHost()
-    const parts = jb.test.fixToUniqueName(compText).split('__')
-    const dslLine = dsl ? `jb.dsl('${dsl}')\n` : ''
+    const parts = jb.test.fixToUniqueName(_compText).split('__')
+    const dslLine = dsl ? `dsl('${dsl}')\n` : ''
     const offset = parts[0].length +dslLine.length
     const code = parts.join('')
     jb.utils.resolveLoadedProfiles()
-    jb.tgpTextEditor.host.initDoc('dummy.js', dslLine+code)
+    jb.tgpTextEditor.host.initDoc(_filePath, dslLine+code)
 
-    const inCompPos = jb.tgpTextEditor.offsetToLineCol(dslLine+code,offset)
-    jb.tgpTextEditor.host.selectRange(inCompPos)
-    const { docText, cursorCol, cursorLine} = jb.tgpTextEditor.calcActiveEditorPath(jb.tgpTextEditor.host.docTextAndCursor())
-    return { docText, cursorCol, cursorLine}
+    const _inCompPos = jb.tgpTextEditor.offsetToLineCol(dslLine+code,offset)
+    jb.tgpTextEditor.host.selectRange(_inCompPos)
+    const { compText, inCompPos, shortId, cursorCol, cursorLine, compLine, filePath } = jb.tgpTextEditor.calcActiveEditorPath(jb.tgpTextEditor.host.compTextAndCursor())
+    return { compText, inCompPos, shortId, cursorCol, cursorLine, compLine, filePath}
   }
 })
 

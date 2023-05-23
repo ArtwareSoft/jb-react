@@ -1,4 +1,4 @@
-
+using('remote,tgp')
 extension('vscode', 'utils', {
     initExtension() { return { 
         loadedProjects : {}, useCompletionServer: true, panels: {},
@@ -32,22 +32,19 @@ extension('vscode', 'utils', {
                 editor.revealRange(new vscodeNS.Range(line, 0,line, 0), vscodeNS.TextEditorRevealType.InCenterIfOutsideViewport)
                 editor.selection = new vscodeNS.Selection(line, start.col, end.line, end.col)
             },
-            docTextAndCursor({maxSize} = {}) {
+            compTextAndCursor() {
                 const editor = vscodeNS.window.activeTextEditor
-                return { docText: maxSize ? editor.document.getText().slice(0,maxSize) : editor.document.getText(),
-                    cursorLine: editor.selection.active.line,
-                    cursorCol: editor.selection.active.character,
-                    filePath: editor.document.uri.path
-                }
+                return jb.tgpTextEditor.closestComp(editor.document.getText(),
+                    editor.selection.active.line,editor.selection.active.character,editor.document.uri.path)
             },
             async execCommand(cmd) {
                 vscodeNS.commands.executeCommand(cmd)
             },
         }
         jb.vscode.log('init')
-        await jb.exec(tgp.startLangServer())
-        const pid = jb.path(jb.nodeContainer.servers,'langServer.pid')
-        jb.vscode.log(`lang server started @${pid}`)
+        //await jb.exec(tgp.startLangServer())
+        //const pid = jb.path(jb.nodeContainer.servers,'langServer.pid')
+        //jb.vscode.log(`lang server started @${pid}`)
 
         vscodeNS.workspace.onDidChangeTextDocument(({document, reason, contentChanges}) => {
             if (!contentChanges || contentChanges.length == 0) return
@@ -57,7 +54,8 @@ extension('vscode', 'utils', {
             if (jb.path(contentChanges,'0.text') == jb.tgpTextEditor.lastEdit) {
                 jb.tgpTextEditor.lastEdit = ''
             } else {
-                jb.vscode.updateCurrentCompFromEditor()
+                // may be used for preview worker
+                // jb.vscode.updateCurrentCompFromEditor()
             }
         })      
         // vscodeNS.window.onDidChangeTextEditorSelection( async () => {           
@@ -70,61 +68,67 @@ extension('vscode', 'utils', {
         jb.vscode.stdout = jb.vscode.stdout || vscodeNS.window.createOutputChannel('jbart')
         jb.vscode.stdout.appendLine(logName)
     },
-    async updateCurrentCompFromEditor() {
-        const docProps = jb.tgpTextEditor.host.docTextAndCursor()
-        // check validity
-        const {docText, cursorLine } = docProps
-        const {compId, compSrc, dsl} = jb.tgpTextEditor.closestComp(docText, cursorLine)
-        const {err} = compSrc ? jb.tgpTextEditor.evalProfileDef(compSrc, dsl) : {}
-        if (err) {
-            jb.vscode.stdout.appendLine(`updateCurrentCompFromEditor compile error ${JSON.stringify(err)}`)
-            return jb.logError('can not parse comp', {compId, err})
-        }
+    // async updateCurrentCompFromEditor() {
+    //     const docProps = jb.tgpTextEditor.host.compTextAndCursor()
+    //     // check validity
+    //     const {docText, cursorLine } = docProps
+    //     const {compId, compSrc, dsl} = jb.tgpTextEditor.closestComp(docText, cursorLine)
+    //     const {err} = compSrc ? jb.tgpTextEditor.evalProfileDef(compSrc, dsl) : {}
+    //     if (err) {
+    //         jb.vscode.stdout.appendLine(`updateCurrentCompFromEditor compile error ${JSON.stringify(err)}`)
+    //         return jb.logError('can not parse comp', {compId, err})
+    //     }
 
-        if (jb.vscode.useCompletionServer) {
-            await jb.exec(vscode.completionServer())
-            jb.vscode.stdout.appendLine(`updateCurrentCompFromEditor`)
-            return jb.vscode.ctx.setData(docProps).run(remote.action(ctx => jb.tgpTextEditor.updateCurrentCompFromEditor(ctx.data,ctx), vscode.completionServer()))
-        } else {
-            jb.tgpTextEditor.updateCurrentCompFromEditor(docProps,jb.vscode.ctx)
-        }
-    },
+    //     if (jb.vscode.useCompletionServer) {
+    //         await jb.exec(vscode.completionServer())
+    //         jb.vscode.stdout.appendLine(`updateCurrentCompFromEditor`)
+    //         return jb.vscode.ctx.setData(docProps).run(remote.action(ctx => jb.tgpTextEditor.updateCurrentCompFromEditor(ctx.data,ctx), vscode.completionServer()))
+    //     } else {
+    //         jb.tgpTextEditor.updateCurrentCompFromEditor(docProps,jb.vscode.ctx)
+    //     }
+    // },
     async provideCompletionItems(docProps) {
         if (jb.vscode.useCompletionServer) {
-            const ret = await jb.exec(tgp.getCompletionItemsFromServer({docProps: () => docProps }))
-            const count = (ret || []).length
-            const docSize = docProps.docText.length
-            const pid = jb.path(jb.nodeContainer.servers,'langServer.pid')
-            jb.vscode.stdout.appendLine(`provideCompletionItems ${docSize} -> ${count} @${pid}`)
-            return ret
+        const ret = await jb.exec(tgp.getCompletionItemsFromCmd({docProps: () => docProps }))
+        // const profile = remote.cmd({
+        //     id: 'langServer',
+        //     main: tgp.provideCompletionItems(), 
+        //     context: obj(prop('docProps', () => JSON.stringify(docProps))), 
+        //     sourceCode: langServer()
+        //   })
+        //   const ret = await jb.exec(profile)
+          const count = (ret || []).length
+          const docSize = docProps.compText.length
+          jb.vscode.stdout.appendLine(`provideCompletionItems ${docSize} -> ${count}`)
+          return ret
         } else {
             return jb.tgpTextEditor.provideCompletionItems(docProps)
         }
     },
     async provideDefinition(docProps) {
-        const loc = await jb.exec(tgp.getDefinitionFromServer({docProps: () => docProps }))
+        const loc = await jb.exec(tgp.getDefinitionFromCmd({docProps: () => docProps }))
         return loc && new vscodeNS.Location(vscodeNS.Uri.file(jbHost.jbReactDir + loc[0]), new vscodeNS.Position((+loc[1]) || 0, 0))
     },
     // commands
     async restartLangServer() {
-        jb.vscode.log('vscode restart lang server',{})
-        const port = jb.path(jb.nodeContainer.servers,'langServer.port') || 8085
-        jb.log('remote http terminating existing service',{port})
-        try {
-            jbHost.fetch(`http://localhost:${port}/?op=terminate`)
-        } catch(e) {}
-        await jb.exec(tgp.startLangServer())
-        const pid = jb.path(jb.nodeContainer.servers,'langServer.pid')
-        jb.vscode.log(`lang server started @${pid}`)
+        // jb.vscode.log('vscode restart lang server',{})
+        // const port = jb.path(jb.nodeContainer.servers,'langServer.port') || 8085
+        // jb.log('remote http terminating existing service',{port})
+        // try {
+        //     jbHost.fetch(`http://localhost:${port}/?op=terminate`)
+        // } catch(e) {}
+        // await jb.exec(tgp.startLangServer())
+        // const pid = jb.path(jb.nodeContainer.servers,'langServer.pid')
+        // jb.vscode.log(`lang server started @${pid}`)
     },    
     moveUp() {
-        return jb.vscode.moveInArray({ diff: -1, ...jb.tgpTextEditor.host.docTextAndCursor()})
+        return jb.vscode.moveInArray({ diff: -1, ...jb.tgpTextEditor.host.compTextAndCursor()})
     },
     moveDown() { 
-        return jb.vscode.moveInArray({ diff: 1, ...jb.tgpTextEditor.host.docTextAndCursor()})
+        return jb.vscode.moveInArray({ diff: 1, ...jb.tgpTextEditor.host.compTextAndCursor()})
     },
     async moveInArray(docPropsWithDiff) {
-        const {edit, cursorPos} = await jb.exec(tgp.moveInArrayEditsFromServer({docProps: () => docPropsWithDiff }))
+        const {edit, cursorPos} = await jb.exec(tgp.moveInArrayEditsFromCmd({docProps: () => docPropsWithDiff }))
         const json = JSON.stringify(edit)
         jb.vscode.stdout.appendLine(`moveInArray ${json.length}`)
         await jb.tgpTextEditor.host.applyEdit(edit)
@@ -132,9 +136,9 @@ extension('vscode', 'utils', {
     },
 
     async openProbeResultPanel() {
-        const docProps = jb.tgpTextEditor.host.docTextAndCursor()
+        const docProps = jb.tgpTextEditor.host.compTextAndCursor()
         jb.vscode.log('start openProbeResultPanel')
-        const probePath = await jb.exec(tgp.getPathFromServer({docProps: () => docProps }))
+        const probePath = await jb.exec(tgp.getPathFromCmd({docProps: () => docProps }))
         jb.vscode.log('openProbeResultPanel 2',probePath)
         const probeRes = await jb.vscode.ctx.run({$: 'probe.probeByCmd', filePath: docProps.filePath, probePath})
         jb.vscode.log('openProbeResultPanel 3',probeRes)
@@ -142,9 +146,9 @@ extension('vscode', 'utils', {
         jb.vscode.panels.main.render('probe.probeResView',probeRes)
     },
     async openLiveProbeResultPanel() {
-        const docProps = jb.tgpTextEditor.host.docTextAndCursor()
+        const docProps = jb.tgpTextEditor.host.compTextAndCursor()
         jb.vscode.log('start openProbeResultPanel')
-        const probePath = await jb.exec(tgp.getPathFromServer({docProps: () => docProps }))
+        const probePath = await jb.exec(tgp.getPathFromCmd({docProps: () => docProps }))
         jb.vscode.log('openProbeResultPanel 2',probePath)
         const probeRes = await jb.vscode.ctx.run({$: 'probe.probeByCmd', filePath: docProps.filePath, probePath})
         jb.vscode.log('openProbeResultPanel 3',probeRes)
@@ -210,7 +214,7 @@ extension('vscode', 'utils', {
     //         jb.vscode.cache = {}
     //     })
     //     vscodeNS.workspace.onDidSaveTextDocument( () => { // update component of active selection
-    //         jb.vscode.updateCurrentCompFromEditor(jb.tgpTextEditor.host.docTextAndCursor())
+    //         jb.vscode.updateCurrentCompFromEditor(jb.tgpTextEditor.host.compTextAndCursor())
     //     })
     //     vscodeNS.workspace.onDidOpenTextDocument(({fileName}) => 
     //         fileName.split(jbBaseUrl).pop().match(/projects[/]([^/]*)/) && jb.vscode.loadOpenedProjects())
@@ -272,13 +276,12 @@ component('vscode.gotoPath', {
 
 component('probe.probeByCmd', {
   params: [
-    {id: 'filePath', as: 'string'},
+    {id: 'sourceCode', type: 'source-code<jbm>' },
     {id: 'probePath', as: 'string'}
   ],
-  impl: async (ctx,filePath,probePath) => {
-    const { plugins, projects } = jb.utils.pluginsOfFilePath(filePath)
-    const args = ["-main:probe.runCircuit()",`-plugins:${(plugins||[]).join(',')}`,`-projects:${(projects||[]).join(',')}`,
-        `%probePath:${probePath}`, "-spy:probe", "-loadTests:true", "-wrap:pipe(MAIN, probe.pruneResult(),first())"]
+  impl: async (ctx,sourceCode,probePath) => {
+    const args = ["-main:probe.runCircuit()",`-sourceCode:${JSON.stringify(sourceCode)}`,
+        `%probePath:${probePath}`, "-spy:probe", "-wrap:pipe(MAIN, probe.pruneResult(),first())"]
 
     const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(x=>`'${x}'`).join(' ')}`
     jb.vscode.stdout.appendLine(`probeByCmd: ${command}`)

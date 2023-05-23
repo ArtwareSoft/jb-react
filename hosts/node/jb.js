@@ -1,23 +1,19 @@
 const { jbHost } = require('./node-host.js')
-
-const [main,_plugins,_projects,wrap,base_dir,_spy,_spyParam,uri,dsl,libsToinit,verbose,loadTests] = 
-    ['main','plugins','projects','wrap','base_dir','spy','spyParam','uri','dsl','libsToinit','verbose','loadTests']
-        .map(x=>getProcessArgument(x))
+const { getProcessArgument } = jbHost
+const _params = 
+      ['main','plugins','project','wrap','uri','dsl','verbose']
+const [main,_plugins,project,wrap,uri,dsl,verbose] = _params.map(p=>getProcessArgument(p))
 
 if (!main) {
     console.log(`usage: jb.js 
     -main:button("hello") // mandatory. profile to run
     -wrap:prune(MAIN) // optional. profile that wraps the 'main' profile and will be run instead
-    -plugins:zui,ui  // optional. plugins to use. default is all stable plugins, + will add to stable
-    -projects:studio,test  // optional
-    -base_dir: // base dir under which to look for /plugins and /projects . defualt is '.' or projects/jb-react
-    -spy:remote // optional. log events to spy
-    -spyParam:remote // optional. same as spy
+    -sourceCode:{plugins: ['*'], spyParam: 'remote', libsToinit:'lib1,lib2' }
+    -plugins:zui,ui  // optional (shortcut for sourceCode.plugins)
+    -project:studio  // optional (shortcut for sourceCode.project)
     -uri:main // optional. jbm uri default is "main"
     -dsl:myDsl // optional. dsl of the main profile default is ""
-    -libsToinit:lib1,lib2 // advanced. default is to init all libs in loaded projects/plugins
     -verbose // show params, vars, and generated tgp code
-    -loadTests // load and use tests
     %v1:val // variable values
     %p1:val||script // param values
 `)
@@ -26,27 +22,18 @@ if (!main) {
 if (verbose)
     console.log(JSON.stringify(process.argv))
 
-// const underJbReact = (__dirname.match(/projects\/jb-react(.*)$/) || [''])[1]
-// global.jbBaseUrl = base_dir || underJbReact != null ? __dirname.slice(0,-1*underJbReact.length) : '.'
-
-const { jbInit, jb_plugins } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
-// globalThis.jbInit = jbInit
-// globalThis.jb_plugins = jb_plugins
+const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
 
 ;(async () => {
-    const projects = _projects ? _projects.split(',') : null
-    const plugins = _plugins ? _plugins.split(',') : null
-    globalThis.jb = await jbInit(uri||'main', {
-        projects, plugins: plugins || jb_plugins, loadTests, doNoInitLibs: libsToinit ? true: false
-    })
-    try {
-        await libsToinit && jb.initializeLibs(libsToinit.split(','))
-    } catch(err) {
-        return console.log(JSON.stringify({error: { desc: 'error while initializing libraries', libsToinit, err }}))
-    }
+    const cmd = ['node --inspect-brk ../hosts/node/jb.js', 
+        ...process.argv.slice(2).map(arg=> (arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg}'`))].join(' ')
+    const sourceCodeStr = getProcessArgument('sourceCode')
+    const sourceCode = sourceCodeStr ? JSON.parse(sourceCodeStr) 
+        : { plugins:_plugins ? _plugins.split(',') : [], project, pluginPackages: {$:'defaultPackage'} }
+    sourceCode.plugins.push('remote')
 
-    const spyParam = _spy || _spyParam
-    globalThis.spy = spyParam && jb.spy.initSpy({spyParam})
+    globalThis.jb = await jbInit(uri||'main', sourceCode)
+
     const {params, vars} = calcParamsAndVars()
     if (verbose)
         console.log(JSON.stringify({params, vars}))
@@ -62,9 +49,10 @@ const { jbInit, jb_plugins } = require(jbHost.jbReactDir + '/plugins/loader/jb-l
 
     const {compId, err} = evalProfileDef(code,dsl)
     if (err)
-        return console.log(JSON.stringify({error: { desc: 'can not resolve profile', main, wrap, err }}))
+        return console.log(JSON.stringify({error: { desc: 'can not resolve profile', cmd, err }}))
 
-    const result = await jb.utils.resolveDelayed(new jb.core.jbCtx().setVars(vars).run({$: compId}))
+    const res = await jb.utils.resolveDelayed(new jb.core.jbCtx().setVars(vars).run({$: compId}))
+    const result = { result: res, cmd }
     try {
         console.log(JSON.stringify(jb.remoteCtx.stripData({...result})))
     } catch(err) {
@@ -97,15 +85,15 @@ function calcParamsAndVars() {
     }
 }
 
-function getProcessArgument(argName) {
-    for (let i = 0; i < process.argv.length; i++) {
-      const arg = process.argv[i];
-      if (arg.indexOf('-' + argName + ':') == 0) 
-        return arg.substring(arg.indexOf(':') + 1).replace(/'/g,'');
-      if (arg == '-' + argName) return true;
-    }
-    return '';
-}
+// function getProcessArgument(argName) {
+//     for (let i = 0; i < process.argv.length; i++) {
+//       const arg = process.argv[i];
+//       if (arg.indexOf('-' + argName + ':') == 0) 
+//         return arg.substring(arg.indexOf(':') + 1);
+//       if (arg == '-' + argName) return true;
+//     }
+//     return '';
+// }
 
 function evalProfileDef(code, dsl) { 
     try {

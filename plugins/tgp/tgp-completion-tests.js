@@ -323,22 +323,91 @@ component('completionTest.writePreviewValue', {
   })
 })
 
-component('remoteTest.langServer.Completions', {
-  impl: dataTest(
-    pipe(
+component('completionTest.dslTest.createProp', {
+  impl: tgp.completionActionTest({
+    compText: `component('x', {
+  impl: state(__)
+})`,
+    completionToActivate: 'capital',
+    expectedEdit: () => ({
+        range: {start: {line: 2, col: 14}, end: {line: 2, col: 14}},
+        newText: 'TBD()'
+      }),
+    expectedCursorPos: '2,14',
+    dsl: 'location'
+  })
+})
+
+component('completionTest.dslTest.nameOverride', {
+  impl: tgp.completionOptionsTest({
+    compText: `component('x', {
+  impl: state(pipeline(__))
+})`,
+    expectedSelections: ['checkNameOverride'],
+    dsl: 'location'
+  })
+})
+
+component('completionTest.dslTest.top', {
+  impl: tgp.completionOptionsTest({
+    compText: `component('x', {
+  impl: state(__)
+})`,
+    expectedSelections: ['capital'],
+    dsl: 'location'
+  })
+})
+
+// component('remoteTest.langServer.Completions', {
+//   impl: dataTest(
+//     pipe(
+//       Var('docProps', tgp.dummyDocProps(`component('x', {
+//   impl: dataTest(pipeline(__))
+// })`)),
+//       '1',
+//       tgp.getCompletionItemsFromServer('%$docProps%'),
+//       log('test'),
+//       count()
+//     ),
+//     '%% > 10'
+//   )
+// })
+
+component('remoteTest.langServerCmd.Completions', {
+  impl: dataTest({
+    calculate: pipe(
       Var('docProps', tgp.dummyDocProps(`component('x', {
   impl: dataTest(pipeline(__))
 })`)),
       '1',
-      tgp.getCompletionItemsFromServer('%$docProps%'),
+      tgp.getCompletionItemsFromCmd('%$docProps%'),
       log('test'),
       count()
     ),
-    '%% > 10'
-  )
+    expectedResult: '%% > 10',
+    timeout: 1000
+  })
 })
 
-component('remoteTest.langServer.editsAndCursorPos', {
+// component('remoteTest.langServer.editsAndCursorPos', {
+//   impl: dataTest({
+//     vars: [
+//       Var('docProps', tgp.dummyDocProps(`component('x', {
+//   impl: dataTest(pipeline(__))
+// })`))
+//     ],
+//     calculate: pipe(
+//       tgp.getCompletionItemsFromServer('%$docProps%'),
+//       filter(equals('%label%', 'split')),
+//       tgp.editsAndCursorPosFromServer('%$docProps%', '%command/arguments/0%'),
+//       log('test'),
+//       '%edit/newText%'
+//     ),
+//     expectedResult: '%%==split()'
+//   })
+// })
+
+component('remoteTest.langServerCmd.editsAndCursorPos', {
   impl: dataTest({
     vars: [
       Var('docProps', tgp.dummyDocProps(`component('x', {
@@ -346,12 +415,14 @@ component('remoteTest.langServer.editsAndCursorPos', {
 })`))
     ],
     calculate: pipe(
-      tgp.getCompletionItemsFromServer('%$docProps%'),
+      tgp.getCompletionItemsFromCmd('%$docProps%'),
       filter(equals('%label%', 'split')),
-      tgp.editsAndCursorPosFromServer('%$docProps/docText%', '%command/arguments/0%'),
+      log('test'),
+      tgp.editsAndCursorPosFromCmd('%$docProps%', '%command/arguments/0%'),
       log('test'),
       '%edit/newText%'
     ),
+    timeout: 5000,
     expectedResult: '%%==split()'
   })
 })

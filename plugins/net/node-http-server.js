@@ -1,3 +1,4 @@
+using('remote')
 
 extension('http', {
     endWithFailure(res,desc) {
@@ -28,46 +29,20 @@ component('node.startRemoteHttpServer', {
   params: [
     {id: 'id', as: 'string', mandatory: true},
     {id: 'port', as: 'number', mandatory: true },
-    {id: 'plugins', as: 'array'},
-    {id: 'projects', as: 'array'},
+    {id: 'sourceCode', type: 'source-code<jbm>', mandatory: true },
     {id: 'services', type: 'http-service[]', dynamic: true},
-    {id: 'inspect', as: 'number'},
-    {id: 'libsToinit', as: 'array', description: 'advanced. initlialize only part of the libs, used by lang server'},
-    {id: 'spyParam', as: 'string'},
     {id: 'restart', as: 'boolean'},
-    {id: 'loadTests', as: 'boolean', defaultValue: true},
   ],
-  impl: async (ctx,id,port,plugins,projects,services,inspect,libsToinit,spyParam, restart,loadTests) => {
-      const args = [
-            ...(inspect ? [`-inspect=${inspect}`] : []),
-            '-main:node.startHttpServer()',
-            `%services:${jb.utils.prettyPrint(services.profile,{forceFlat: true})}`,
-            `-uri:${id}`, `%port:${port}`,
-            ...(restart? [`%restart:true`] : []),
-            ...(loadTests ? [`-loadTests:true`] : []),
-            ...(plugins ? [`-plugins:${plugins.join(',')}`] : []),
-            ...(projects ? [`-projects:${projects.join(',')}`] : []),
-            ...(libsToinit ? [`-libsToinit:${libsToinit.join(',')}`] : []),
-            `-spyParam:${spyParam}`]
-
-      const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(x=>`'${x}'`).join(' ')}`
-      let spawnRes = null
-      if (jbHost.spawn) { // node or vscode
-        const resText = await jbHost.spawn(args,{doNotWaitForEnd: true})
-        try {
-          spawnRes = await JSON.parse(resText) 
-        } catch(e) {
-          jb.logError('remote http - can not parse json',{resText})
-        }
-      } else { // browser
-        const url = `/?op=jb&args=${encodeURIComponent(JSON.stringify(args))}`
-        spawnRes = await jb.frame.fetch(url, {mode: 'cors'}).then(r => r.json())
-      }
-      if (!spawnRes.pid)
-        jb.logError('remote http - can not start server',{id,port,spawnRes})
-      else
-        jb.nodeContainer.servers[id] = spawnRes
-    }
+  impl: remote.cmd({
+    id: '%$id%',
+    sourceCode: '%$sourceCode%',
+    main: 'node.startHttpServer()',
+    context: obj(
+      prop('services',({},{},{services})=>jb.utils.prettyPrint(services.profile,{forceFlat: true})),
+      prop('restart','%$restart%'),
+      prop('port','%$port%')
+    )
+  })
 })
 
 component('node.startHttpServer', {

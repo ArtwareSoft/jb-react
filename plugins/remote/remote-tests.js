@@ -29,7 +29,7 @@ component('remoteTest.childSimple', {
 })
 
 component('test.addAA',{
-  type: 'rx',
+  type: 'rx<>',
   impl: rx.map('AA%%')
 })
 
@@ -57,11 +57,11 @@ component('remoteTest.workerLoadOperatorCode', {
   })
 })
 
-component('remoteTest.childWorker.sourceCodeOptions.project', {
+component('remoteTest.childWorker.sourceCode.project', {
   impl: dataTest({
     calculate: pipe(
-      jbm.start(worker({id: 'itemlists', sourceCodeOptions: project('itemlists')})),
-      remote.data(pipeline({'$': 'itemlists.manyItems', howMany: 3}, '%id%', join(',')), '%%')
+      jbm.start(worker({id: 'itemlists', sourceCode: project('itemlists')})),
+      remote.data(pipeline(itemlists.manyItems(3), '%id%', join(',')), '%%')
     ),
     expectedResult: equals('1,2,3'),
     timeout: 3000
@@ -404,25 +404,15 @@ component('remoteTest.nodeContainer', {
 component('remoteTest.nodeContainer.runTest', {
   impl: dataTest({
     vars: [
-      Var('testsToRun', list('dataTest.join', 'dataTest.ctx.expOfRefWithBooleanType')),
-      Var('servlet', jbm.start(remoteNodeWorker({
-        id: 'tester',
-        loadTests: true,
-        projects: list('studio'),
-        inspect: 7010
-      })))
+      Var('testsToRun', list('dataTest.join','dataTest.ctx.expOfRefWithBooleanType'))
     ],
     calculate: pipe(
       rx.pipe(
         source.data('%$testsToRun%'),
         rx.log('test'),
         remote.operator(
-          rx.mapPromise(
-            ({data}) => {
-        return jb.test.runSingleTest(data) 
-      }
-          ),
-          '%$servlet%'
+          rx.mapPromise(({data}) => jb.test.runSingleTest(data)),
+          remoteNodeWorker('tester', sourceCode(pluginsByPath('/plugins/common/xx-tests.js')))
         ),
         rx.log('test')
       ),
@@ -437,10 +427,16 @@ component('remoteTest.nodeContainer.runTest', {
 component('remoteTest.testResults', {
   impl: dataTest({
     vars: [
-      Var('testsToRun', list('dataTest.join', 'dataTest.ctx.expOfRefWithBooleanType')),
-      Var('servlet', jbm.start(remoteNodeWorker('tester', list('studio'))))
+      Var('testsToRun', list('dataTest.join','dataTest.ctx.expOfRefWithBooleanType'))
     ],
-    calculate: pipe(rx.pipe(source.testsResults('%$testsToRun%', '%$servlet%'), rx.log('test')), '%id%-%started%-%success%', join(',')),
+    calculate: pipe(
+      rx.pipe(
+        source.testsResults('%$testsToRun%', remoteNodeWorker('tester', sourceCode(pluginsByPath('/plugins/common/xx-tests.js')))),
+        rx.log('test')
+      ),
+      '%id%-%started%-%success%',
+      join(',')
+    ),
     expectedResult: equals(
       'dataTest.join-true-,dataTest.join--true,dataTest.ctx.expOfRefWithBooleanType-true-,dataTest.ctx.expOfRefWithBooleanType--true'
     ),
@@ -459,10 +455,21 @@ component('remoteTest.listSubJbms', {
 
 component('remoteTest.listAll', {
   impl: dataTest({
-    timeout: 1000,
+    calculate: pipe(net.listAll(), join(',')),
+    expectedResult: contains(['tests,','tests•inner','networkPeer']),
     runBefore: runActions(jbm.start(worker({id: 'networkPeer', networkPeer: true})), jbm.start(child('inner'))),
-    calculate: pipe(net.listAll(),join(',')),
-    expectedResult: contains(['tests,','tests•inner','networkPeer'])
+    timeout: 1000
   })
 })
 
+component('remoteTest.dataFromCmd', {
+  impl: dataTest({
+    calculate: remote.cmd({
+      main: pipeline(list('a', 'b', '%$v1%'), join()),
+      context: obj(prop('v1', '33')),
+      sourceCode: sourceCode(plugins('common'))
+    }),
+    expectedResult: equals('a,b,33'),
+    timeout: 3000
+  })
+})

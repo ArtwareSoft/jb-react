@@ -31,5 +31,9 @@ component('dslTest.jbDsl.usingCtrl', {
 })
 
 component('remoteTest.dsl', {
-  impl: uiTest({control: remote.widget(location.control(israel()), worker()), expectedResult: contains('Jerusalem')})
+  impl: uiTest({
+    control: remote.widget(location.control(israel()), worker()),
+    expectedResult: contains('Jerusalem'),
+    timeout: 500
+  })
 })

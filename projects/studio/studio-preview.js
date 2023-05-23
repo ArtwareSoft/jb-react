@@ -4,7 +4,7 @@ component('wPreview', {
   params: [
     {id: 'id', defaultValue: 'wPreview'}
   ],
-  impl: worker('%$id%', studio.initPreview())
+  impl: worker({id: '%$id%', init:studio.initPreview()})
 })
 
 component('preview', {

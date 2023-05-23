@@ -3,9 +3,9 @@
 //     $jb_childProp: 'title', // used for primitive props
 // }
 
-using('rx')
+//using('rx')
 
-extension('watchable', {
+extension('watchable', 'main', {
   $requireFuncs: 'jb.watchable.resourcesRef,jb.db.isWatchable,jb.watchable.isWatchable',
 
   initExtension() {

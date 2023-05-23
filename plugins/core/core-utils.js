@@ -263,10 +263,11 @@ extension('utils', 'core', {
       Object.defineProperty(func, 'name', { value: (ctx.path ||'').split('~').pop() + ': ' + debugFuncName })
     },
     subscribe: (source,listener) => jb.callbag.subscribe(listener)(source),
-    pluginsOfFilePath(path) {
-      const project = path && (path.split('jb-react').pop().match(/projects\/([^/]+)\//) || ['',null])[1]
-      return { projects: [project].filter(x=>x) }
-    },
+    pathToPluginId(_path) {
+      const path = (_path.match(/projects(.*)/)||[])[1] || _path
+      const tests = path.match(/-(tests|testers).js$/) || path.match(/\/tests\//) ? '-tests': ''
+      return (path.match(/(plugins|projects)\/([^\/]+)/) || ['','',''])[2] + tests
+    },    
     indexOfCompDeclarationInTextLines(lines,id) {
       return lines.findIndex(line=> {
         const index = line.indexOf(`component('${id}'`)
@@ -297,19 +298,22 @@ extension('utils', 'generic', {
       else if (typeof v === 'object')
         return jb.utils.isPromise(v)
       else if (typeof v === 'function')
-        return jb.callbag.isCallbag(v)
+        return jb.utils.isCallbag(v)
     },
+    isCallbag: v => jb.callbag && jb.callbag.isCallbag(v),
     resolveDelayed(delayed, synchCallbag) {
       if (jb.utils.isPromise(delayed))
         return Promise.resolve(delayed)
-      if (! jb.asArray(delayed).find(v=> jb.callbag.isCallbag(v) || jb.utils.isPromise(v))) return delayed
+      if (! jb.asArray(delayed).find(v=> jb.utils.isCallbag(v) || jb.utils.isPromise(v))) return delayed
       return jb.utils.toSynchArray(delayed, synchCallbag)
     },
     toSynchArray(item, synchCallbag) {
       if (jb.utils.isPromise(item))
         return item.then(x=>[x])
 
-      if (! jb.asArray(item).find(v=> jb.callbag.isCallbag(v) || jb.utils.isPromise(v))) return item
+      if (! jb.asArray(item).find(v=> jb.utils.isCallbag(v) || jb.utils.isPromise(v))) return item
+      if (!jb.callbag) return Promise.all(jb.asArray(item))
+
       const {pipe, fromIter, toPromiseArray, mapPromise,flatMap, map, isCallbag} = jb.callbag
       if (isCallbag(item)) return synchCallbag ? toPromiseArray(pipe(item,map(x=> x && x.vars ? x.data : x ))) : item
       if (Array.isArray(item) && isCallbag(item[0])) return synchCallbag ? toPromiseArray(pipe(item[0], map(x=> x && x.vars ? x.data : x ))) : item

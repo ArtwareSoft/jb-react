@@ -4,23 +4,23 @@ component('worker', {
   type: 'jbm',
   params: [
       {id: 'id', as: 'string'},
+      {id: 'sourceCode', type: 'source-code', defaultValue: treeShakeClient() },
       {id: 'init' , type: 'action<>', dynamic: true },
-      {id: 'sourceCodeOptions', type: 'source-code', flattenArray: true, defaultValue: treeShakeClient() },
       {id: 'networkPeer', as: 'boolean', description: 'used for testing' },
   ],    
-  impl: (ctx,_id,init,sourceCodeOptions,networkPeer) => {
+  impl: (ctx,_id,sourceCode,init,networkPeer) => {
       const id = _id || ctx.vars.groupWorkerId || 'w1'
       const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
       if (childsOrNet[id]) return childsOrNet[id]
       const workerUri = networkPeer ? id : `${jb.uri}•${id}`
       const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
-      sourceCodeOptions.plugins = jb.utils.unique([...(sourceCodeOptions.plugins || []),'remote','tree-shake'])
+      sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),'remote','tree-shake'])
 
       const workerCode = `
 importScripts(location.origin+'/plugins/loader/jb-loader.js');
 jbHost.baseUrl = location.origin || '';
 
-Promise.resolve(jbInit('${workerUri}', ${JSON.stringify(sourceCodeOptions)})
+Promise.resolve(jbInit('${workerUri}', ${JSON.stringify(sourceCode)})
 .then(jb => {
   globalThis.jb = jb;
   jb.spy.initSpy({spyParam: "${jb.spy.spyParam}"});
@@ -59,20 +59,20 @@ component('child', {
 type: 'jbm',
 params: [
   {id: 'id', as: 'string'},
-  {id: 'sourceCodeOptions', type: 'source-code', flattenArray: true, defaultValue: treeShakeClient() },
+  {id: 'sourceCode', type: 'source-code', defaultValue: treeShakeClient() },
   {id: 'init', type: 'action', dynamic: true}
 ],
-impl: (ctx,_id,sourceCodeOptions,init) => {
+impl: (ctx,_id,sourceCode,init) => {
     const id = _id || ctx.vars.groupWorkerId || 'child1'
     if (jb.jbm.childJbms[id]) return jb.jbm.childJbms[id]
     const childUri = `${jb.uri}•${id}`
-    sourceCodeOptions.plugins = jb.utils.unique([...(sourceCodeOptions.plugins || []),'remote','tree-shake'])
+    sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),'remote','tree-shake'])
 
     return jb.jbm.childJbms[id] = {
         uri: childUri,
         async rjbm() {
             if (this._rjbm) return this._rjbm
-            const child = this.child = await jbInit(childUri, sourceCodeOptions, {multipleInFrame: true})
+            const child = this.child = await jbInit(childUri, sourceCode, {multipleInFrame: true})
             child.rjbm = () => this._rjbm
             this._rjbm = initChild(child)
             await init(ctx.setVar('jbm',child))

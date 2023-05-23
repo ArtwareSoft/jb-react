@@ -35,7 +35,7 @@ async function activate(context) {
 	context.subscriptions.push(vscodeNS.languages.registerCompletionItemProvider('javascript', {
 		provideCompletionItems() {
             try {
-                const docProps = jb.tgpTextEditor.host.docTextAndCursor()
+                const docProps = jb.tgpTextEditor.host.compTextAndCursor()
                 jb.log('vscode provideCompletionItems request',{docProps})
                 return jb.vscode.provideCompletionItems(docProps)
             } catch(e) {
@@ -46,7 +46,7 @@ async function activate(context) {
 	context.subscriptions.push(vscodeNS.languages.registerDefinitionProvider('javascript', {
 		provideDefinition() {
             try {
-                return jb.vscode.provideDefinition(jb.tgpTextEditor.host.docTextAndCursor())
+                return jb.vscode.provideDefinition(jb.tgpTextEditor.host.compTextAndCursor())
             } catch(e) {
                 jb.logException(e,'provide definition')
             }

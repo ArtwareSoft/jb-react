@@ -1,0 +1,119 @@
+extension('jbm','source' , {
+    unifyPluginsToLoad(codeInPackage) {
+        return jb.asArray(codeInPackage).reduce((acc,option) => {
+            if (option.plugins) 
+                acc.plugins = [...(acc.plugins || []), ...option.plugins]
+            else 
+                Object.assign(acc,option)
+            return acc
+        } , {})
+    }
+})
+
+// source-code
+component('sourceCode', {
+  type: 'source-code',
+  params: [
+    {id: 'pluginsToLoad', type: 'plugins-to-load[]', flattenArray: true},
+    {id: 'pluginPackages', type: 'plugin-package[]', flattenArray: true, defaultValue: defaultPackage()},
+    {id: 'treeShakeServer', type: 'jbm', description: 'if used, tree shake is used to load extra code, use jbm.self for parent'},
+    {id: 'libsToInit', as: 'string', description: 'Empty means load all libraries'},
+  ],
+  impl: (ctx,pluginsToLoad,pluginPackages,treeShakeServer,libsToInit) => ({ 
+    ...(pluginPackages.length ? { pluginPackages } : {}),
+    plugins:['*'], ...jb.jbm.unifyPluginsToLoad(pluginsToLoad),
+    libsToInit,
+    treeShakeServerUri: (treeShakeServer || {}).uri 
+  })
+})
+
+component('treeShakeClient', {
+  type: 'source-code',
+  impl: sourceCode({pluginsToLoad: plugins('remote,tree-shake'), treeShakeServer : jbm.self()})
+})
+
+component('project', {
+  type: 'source-code',
+  params: [
+    {id: 'project', as: 'string', mandatory: true}
+  ],
+  impl: sourceCode(project('%$project%'))
+})
+
+// plugins-to-load
+
+component('pluginsByPath', {
+  type: 'plugins-to-load',
+  params: [
+    {id: 'path', as: 'string', mandatory: true, description: 'E.g. someDir/plugins/xx-tests.js'}
+  ],
+  impl: (ctx,path) => ({ plugins: [jb.utils.pathToPluginId(path)].filter(x=>x) })
+})
+
+component('loadAll', {
+  type: 'plugins-to-load',
+  impl: ctx => ({ plugins: ['*'] })
+})
+
+component('plugins', {
+  type: 'plugins-to-load',
+  params: [
+    {id: 'plugins', mandatory: true}
+  ],
+  impl: (ctx,plugins) => ({ plugins: Array.isArray(plugins) ? plugins : plugins.split(',') })
+})
+
+component('project', {
+  type: 'plugins-to-load',
+  params: [
+    {id: 'project', as: 'string', mandatory: true}
+  ],
+  impl: ctx => ctx.params
+})
+
+
+// plugin packages
+
+component('packagesByPath', {
+  type: 'plugin-package',
+  impl: () => {
+    // check up the heirachy for /plugins
+  }
+})
+
+component('defaultPackage', {
+  type: 'plugin-package',
+  impl: () => ({ $: 'defaultPackage' })
+})
+
+component('staticViaHttp', {
+  type: 'plugin-package',
+  params: [
+    {id: 'baseUrl', as: 'string', mandatory: true },
+  ],
+  impl: ctx => ({ $: 'staticViaHttp', ...ctx.params, useFileSymbolsFromBuild: true })
+})
+
+component('jbStudioServer', {
+  type: 'plugin-package',
+  params: [
+    {id: 'baseUrl', as: 'string', defaultValue: 'http://localhost:8080' },
+  ],
+  impl: ctx => ({ $: 'jbStudioServer', ...ctx.params })
+})
+
+component('fileSystem', {
+  type: 'plugin-package',
+  params: [
+    {id: 'baseDir', as: 'string' },
+  ],
+  impl: ctx => ({ $: 'fileSystem', ...ctx.params })
+})
+
+component('zipFile', {
+  type: 'plugin-package',
+  params: [
+    {id: 'path', as: 'string' },
+  ],
+  impl: ctx => ({ $: 'zipFile',  ...ctx.params })
+})

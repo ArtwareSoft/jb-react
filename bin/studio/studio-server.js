@@ -209,6 +209,19 @@ const op_post_handlers = {
             endWithSuccess(res,'File saved to ' + path);
         });
     },
+    jb: (req,res,body) => {
+      const args = JSON.parse(body)
+      const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(arg=> 
+        (arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg}'`)).join(' ')}`
+      fs.writeFileSync('./lastCmd', command)
+      fs.chmodSync('./lastCmd', '755')
+      res.setHeader('Content-Type', 'application/json; charset=utf8')
+      const srvr = child.spawn('node',['./jb.js', ...args],{cwd: 'hosts/node'})
+      srvr.stdout.on('data', data => res.write(data))
+      srvr.stdout.on('end', data => res.end(data))
+      //srvr.on('exit', onExit)
+      srvr.on('error', (e) => res.end(JSON.stringify({command, error: `${''+e}`})))  
+    },    
     createProject: function(req, res,body,path) {
       let clientReq;
       try {
@@ -276,38 +289,25 @@ const base_get_handlers = {
 
 const op_get_handlers = {
     createNodeWorker: (req,res,path) => {
-      const params = ['uri', 'clientUri','projects','treeShake','spyParam','loadTests','inspect']
-      const args = params.map(p=>getURLParam(req,p) && `-${p}:${getURLParam(req,p)}`).filter(x=>x)
-      const nodeWorker = child.spawn('node',[
-        ...(getURLParam(req,'inspect') ? [`--inspect=${getURLParam(req,'inspect')}`] : []),
-        './node-worker.js',
-        ...args],{cwd: 'hosts/node'})
+      const args = JSON.parse(getURLParam(req,'args'))
+      const command = `node --inspect-brk ../hosts/node/node-worker.js ${args.map(arg=> 
+        (arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`"\\""`).replace(/\$/g,'\\$')}"` : `'${arg}'`)).join(' ')}`
       res.setHeader('Content-Type', 'application/json; charset=utf8')
+      const nodeWorker = child.spawn('node',['./node-worker.js', ...args],{cwd: 'hosts/node'})
       nodeWorker.stdout.on('data', data => res.end(data))
-      const command = `node --inspect-brk ../hosts/node/node-worker.js ${args.map(x=>`'${x}'`).join(' ')}`
       nodeWorker.on('exit', (code,ev) => res.end(JSON.stringify({command, exit: `exit ${''+code} ${''+ev}}`})))
       nodeWorker.on('error', (e) => res.end(JSON.stringify({command, error: `${''+e}`})))
-    },
-    jb: (req,res,path) => {
+    },    
+    jbGet: (req,res,path) => {
       const args = JSON.parse(getURLParam(req,'args'))
-      const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(x=>`'${x}'`).join(' ')}`
-      const inspect = args.find(x=>x.indexOf('-inspect=') == 0)
-      const cmdArgs = [
-        ...(inspect ? [`-${inspect}`] : []),
-        './jb.js',
-        ...args]
-
-      // try twice without the --inspect
+      const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(arg=> 
+        (arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`"\\""`).replace(/\$/g,'\\$')}"` : `'${arg}'`)).join(' ')}`
       res.setHeader('Content-Type', 'application/json; charset=utf8')
-      runServer(cmdArgs,() => runServer(cmdArgs.slice(1), 
-        (code,ev) => res.end(JSON.stringify({command, exit: `exit ${''+code} ${''+ev}}`}))))
-
-      function runServer(args,onExit) {
-        const srvr = child.spawn('node',args,{cwd: 'hosts/node'})
-        srvr.stdout.on('data', data => res.end(data)) // !! only first portion of result will be returned
-        srvr.on('exit', onExit)
-        srvr.on('error', (e) => res.end(JSON.stringify({command, error: `${''+e}`})))  
-      }
+      const srvr = child.spawn('node',['./jb.js', ...args],{cwd: 'hosts/node'})
+      srvr.stdout.on('data', data => res.write(data))
+      srvr.stdout.on('end', data => res.end(data))
+      //srvr.on('exit', onExit)
+      srvr.on('error', (e) => res.end(JSON.stringify({command, error: `${''+e}`})))  
     },
     runCmd: function(req,res,path) {
       if (!settings.allowCmd) return endWithFailure(res,'no permission to run cmd. allowCmd in jbart.json');

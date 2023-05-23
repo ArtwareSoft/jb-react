@@ -11,5 +11,5 @@ extension('studio', 'path', {
 
 component('jbm.vDebugger', {
   type: 'jbm<jbm>',
-  impl: child({id: 'vDebugger',sourceCodeOptions: project('studio')})
+  impl: child({id: 'vDebugger',sourceCode: project('studio')})
 })

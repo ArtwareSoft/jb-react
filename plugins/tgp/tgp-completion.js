@@ -68,8 +68,7 @@ extension('tgp', 'completion', {
         const { positions } = text_pos
         const input = { value: text.slice(text_pos.offset_from, text_pos.offset_to), selectionStart: cursor - text_pos.offset_from }
 
-        const { plugins, projects } = jb.utils.pluginsOfFilePath(filePath)
-        const suggestions = await ctx.setData(input).run({$: 'probe.suggestionsByCmd', plugins, projects,
+        const suggestions = await ctx.setData(input).run({$: 'probe.suggestionsByCmd', filePath,
             probePath : path, expressionOnly: true })
         return (jb.path(suggestions,'0.options') || []).map(option => {
             const { pos, toPaste, tail, text } = option
@@ -200,50 +199,40 @@ extension('tgpTextEditor', 'completion', {
         } 
     },
     calcActiveEditorPath(docProps,{clearCache} = {}) {
-        const {docText, cursorLine, cursorCol } = docProps
-        const lines = docText.split('\n')
-        const dsl = jb.tgpTextEditor.dsl(lines)
-        const reversedLines = lines.slice(0,cursorLine+1).reverse()
-        const compLine = cursorLine - reversedLines.findIndex(line => line.match(/^(jb.)?(component|extension)\(/))
-        if (compLine > cursorLine) return {}
-        if (lines[compLine].match('^jb.extension')) return {
-            inExtension: true
-        }
-        if (!lines[compLine])
-            return { error: 'can not find comp', cursorLine, compLine, docText}
-        const shortId = (lines[compLine].match(/'([^']+)'/)||['',''])[1]
+        const {compText, shortId, inCompPos, compLine, inExtension, filePath } = docProps
+        if (inExtension) return docProps
+        const plugin = jb.plugins[jb.utils.pathToPluginId(filePath)] || {}
+        const dsl = docProps.dsl || plugin.dsl
         const compId = dsl && jb.path(jb.utils.getCompByShortIdAndDsl(shortId,dsl),[jb.core.CT,'fullId']) || shortId
-        const inCompPos = {line: cursorLine-compLine, col: cursorCol }
-        if (!jb.comps[compId]) // new comp
-            calcCompProps()
+        if (!jb.comps[compId])
+            jb.comps[compId] = jb.tgpTextEditor.evalProfileDef(compText,dsl).res
         if (!compId || !jb.comps[compId])
             return { error: 'can not determine compId', compId, shortId , dsl}
         if (clearCache)
             jb.tgpTextEditor.cache[compId] = null
         const compProps = jb.tgpTextEditor.cache[compId] || calcCompProps()
         const { compilationFailure, reformatEdits, text, map } = compProps
-        const extraDocProps = { docText, compLine, inCompPos, cursorLine, cursorCol }
-        jb.tgpTextEditor.cache[compId] = { ...extraDocProps, ...compProps ,
+        jb.tgpTextEditor.cache[compId] = { ...docProps, ...compProps ,
             ...(compilationFailure || reformatEdits) ? {} : jb.tgpTextEditor.getPathOfPos(inCompPos, text, map) }
         return jb.tgpTextEditor.cache[compId]
 
         function calcCompProps() { // reformatEdits, compilationFailure, fixedComp
             jb.log('completion calcActiveEditorPath calComp props', {})
-            const linesFromComp = lines.slice(compLine)
-            const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
-            const actualText = lines.slice(compLine+1,compLine+compLastLine+1).join('\n').slice(0,-1)
+            // const linesFromComp = lines.slice(compLine)
+            // const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
+            // const actualText = lines.slice(compLine+1,compLine+compLastLine+1).join('\n').slice(0,-1)
             const {text, map} = jb.utils.prettyPrintWithPositions(jb.comps[compId],{initialPath: compId})
-            const props = { time: new Date().getTime(), text, map, dsl, compId, shortId, comp : jb.comps[compId] }
-            if (actualText != (text||'').slice(2)) {
-                const compText = lines.slice(compLine,compLine+compLastLine+1).join('\n')
-                let actualComp = jb.tgpTextEditor.evalProfileDef(compText,dsl).res
-                if (actualComp) {
-                    jb.comps[compId] = actualComp
+            const props = { time: new Date().getTime(), text, map, dsl, compId, comp : jb.comps[compId] }
+            if (compText.split('\n').slice(1).join('\n').slice(0,-1) != (text||'').slice(2)) {
+//                const compText = lines.slice(compLine,compLine+compLastLine+1).join('\n')
+                let evaledComp = jb.tgpTextEditor.evalProfileDef(compText,dsl).res
+                if (evaledComp) {
+                    jb.comps[compId] = evaledComp
                     const formattedText = jb.utils.prettyPrintWithPositions(jb.comps[compId],{initialPath: compId}).text
                     if (formattedText == text) 
-                        Object.assign(props, {formattedText, reformatEdits: jb.tgpTextEditor.deltaFileContent(docText, compId, formattedText)})
+                        Object.assign(props, {formattedText, reformatEdits: jb.tgpTextEditor.deltaFileContent(compText, compId, compLine, formattedText)})
                     else
-                        Object.assign(props, {scriptWasFoundDifferent: true, comp: actualComp}) // new comp
+                        Object.assign(props, {scriptWasFoundDifferent: true, comp: evaledComp}) // new comp
                 } else { // not compiles
                     const fixProps = jb.tgpTextEditor.fixEditedComp(compId, compText,inCompPos,dsl)
                     // compilationFailure or fixedComp
@@ -302,9 +291,8 @@ extension('tgpTextEditor', 'completion', {
         }
 
         async function provideFuncLocation() {
-            const {docText, cursorLine } = docProps
-            const textLine = docText.split('\n')[cursorLine]
-            const [,lib,func] = textLine.match(/jb\.([a-zA-Z_0-9]+)\.([a-zA-Z_0-9]+)/) || ['','','']
+            const {lineText } = docProps
+            const [,lib,func] = lineText.match(/jb\.([a-zA-Z_0-9]+)\.([a-zA-Z_0-9]+)/) || ['','','']
             if (lib && jb.path(jb,[lib,'__extensions'])) {
                 const loc = Object.values(jb[lib].__extensions).filter(ext=>ext.funcs.includes(func)).map(ext=>ext.location)[0]
                 const lineOfExt = (+loc[1]) || 0
@@ -316,11 +304,18 @@ extension('tgpTextEditor', 'completion', {
             }
         }
     },
-    calcEditAndGotoPos(docText, item, ctx) {
+    calcEditAndGotoPos(docProps, item, ctx) {
+        const {compText, compLine,filePath} = docProps
         const itemProps = {...item, ...item.extend() }
         const {op, path, resultPath, resultSemantics, resultOffset} = itemProps
         const compId = path.split('~')[0]
-        if (!jb.utils.getComp(compId))
+        if (!jb.comps[compId]) {
+            const plugin = jb.plugins[jb.utils.pathToPluginId(filePath)] || {}
+            const dsl = docProps.dsl || plugin.dsl
+            jb.comps[compId] = jb.tgpTextEditor.evalProfileDef(compText,dsl).res
+        }
+
+        if (!jb.comps[compId])
             return jb.logError(`completion handleScriptChangeOnPreview - missing comp ${compId}`, {path, ctx})
             
         const handler = jb.watchableComps.startWatch()
@@ -330,7 +325,7 @@ extension('tgpTextEditor', 'completion', {
         jb.tgpTextEditor.cache[compId] = Object.assign(jb.tgpTextEditor.cache[compId] || {}, 
             jb.utils.prettyPrintWithPositions(jb.comps[compId],{initialPath: compId}))
         const { text } = jb.tgpTextEditor.cache[compId]
-        const edit = jb.tgpTextEditor.deltaFileContent(docText, compId, text)
+        const edit = jb.tgpTextEditor.deltaFileContent(compText, compId, compLine, text)
         const cursorPos = itemProps.cursorPos || calcNewPos()
         return { edit, cursorPos }
 
@@ -349,16 +344,17 @@ extension('tgpTextEditor', 'completion', {
             return {TBD, line: inCompPos.line + compLine, col: inCompPos.col + (resultOffset ? resultOffset : 0) }
         }
     },
-    async editsAndCursorPos({docText,item},ctx) {
+    async editsAndCursorPos({docProps,item},ctx) {
         item.extend = eval('x = function ' +item.extendCode)
-        return jb.tgpTextEditor.calcEditAndGotoPos(docText,item,ctx)
+        return jb.tgpTextEditor.calcEditAndGotoPos(docProps,item,ctx)
     },
     async applyCompChange(item,ctx) {
         if (item.id == 'reformat') return
         ctx = ctx || new jb.core.jbCtx({},{vars: {}, path: 'completion.applyCompChange'})
-        const { docText } = jb.tgpTextEditor.host.docTextAndCursor()
+        const { compText, compLine, filePath } = jb.tgpTextEditor.host.compTextAndCursor()
+        const docProps = { compText, compLine, filePath } 
         const { edit, cursorPos } = item.edit ? item : item.serverUri == 'langServer' ? 
-            await remoteCalcEditAndPos() : await jb.tgpTextEditor.calcEditAndGotoPos(docText,item,ctx)
+            await remoteCalcEditAndPos() : await jb.tgpTextEditor.calcEditAndGotoPos(docProps,item,ctx)
         try {
             await jb.tgpTextEditor.host.applyEdit(edit)
             if (cursorPos) {
@@ -373,13 +369,13 @@ extension('tgpTextEditor', 'completion', {
         }
 
         function remoteCalcEditAndPos() {
-            return ctx.setData({docText, item}).run(tgp.editsAndCursorPosFromServer())
+            return ctx.setData({docProps, item}).run(tgp.editsAndCursorPosFromCmd())
         }
     },
     async moveInArrayEdits(docPropsWithDiff,ctx) {
-        const { diff, docText } = docPropsWithDiff
+        const { diff } = docPropsWithDiff
         const props = await jb.tgpTextEditor.calcActiveEditorPath(docPropsWithDiff, {clearCache: true})
-        const { reformatEdits, compId, semanticPath } = props        
+        const { reformatEdits, compId, compLine, semanticPath, compText } = props        
         if (!reformatEdits && semanticPath) {
             const rev = semanticPath.path.split('~').reverse()
             const indexOfElem = rev.findIndex(x=>x.match(/^[0-9]+$/))
@@ -389,7 +385,7 @@ extension('tgpTextEditor', 'completion', {
                 const to = [...path.slice(0,-1), (+path.slice(-1)[0])+diff].join('~')
                 jb.tgp.moveFixDestination(from,to,ctx)
                 const newText = jb.utils.prettyPrintWithPositions(jb.comps[compId],{initialPath: compId}).text
-                const edit = jb.tgpTextEditor.deltaFileContent(docText, compId, newText)
+                const edit = jb.tgpTextEditor.deltaFileContent(compText, compId, compLine, newText)
                 jb.log('tgpTextEditor moveInArray',{ from, to, newText, edit, ...props})
                 return { edit, cursorPos: calcNewPos(to) }
             }

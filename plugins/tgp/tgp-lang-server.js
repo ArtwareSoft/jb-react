@@ -1,74 +1,94 @@
-using('common,net')
+using('common,net,remote')
 
-component('tgp.langServices', {
-  type: 'http-service',
+component('langServer', {
+  type: 'source-code<jbm>',
   params: [
-  ],
-  impl: ctx => ({
-    match: req => ['provideCompletionItems','editsAndCursorPos','provideDefinition','providePath','moveInArrayEdits'].indexOf(jb.http.getURLParam(req,'op')) != -1,
-    usePostData: true,
-    serve: async (req,body,res) => jb.tgpTextEditor[jb.http.getURLParam(req,'op')](JSON.parse(body), ctx)
+    {id: 'filePath', as: 'string'},
+  ],  
+  impl: sourceCode({
+    pluginPackages: packagesByPath('%$filePath%'),
+    pluginsToLoad: [pluginsByPath('%$filePath%'),plugins('tgp,vscode,tree-shake')],
+    libsToInit: 'utils,watchable,immutable,watchableComps,tgp,tgpTextEditor,vscode,jbm,cbHandler,treeShake'
   })
 })
 
-component('tgp.getCompletionItemsFromServer', {
+component('tgp.getCompletionItemsFromCmd', {
   params: [
     {id: 'docProps'},
-    {id: 'baseUrl', as: 'string', defaultValue: 'http://localhost:8085/'},
   ],
-  impl: pipe(http.fetch({url:'%$baseUrl%?op=provideCompletionItems', method: 'POST', body: '%$docProps%', json: true}), '%result%')
+  impl: remote.cmd({
+    id: 'langServer',main: tgp.provideCompletionItems(), context: obj(prop('docProps',json.stringify('%$docProps%'))), 
+    sourceCode: langServer('%$docProps/filePath%'),
+  })
 })
-
-component('tgp.getDefinitionFromServer', {
+component('tgp.provideCompletionItems', {
   params: [
     {id: 'docProps'},
-    {id: 'baseUrl', as: 'string', defaultValue: 'http://localhost:8085/'}
   ],
-  impl: pipe(http.fetch({
-    url: '%$baseUrl%?op=provideDefinition',
-    method: 'POST',
-    body: '%$docProps%',
-    json: true
-  }), '%result%')
+  impl: (ctx,docProps) => jb.tgpTextEditor.provideCompletionItems(docProps,ctx)
 })
 
-component('tgp.getPathFromServer', {
+component('tgp.getDefinitionFromCmd', {
   params: [
     {id: 'docProps'},
-    {id: 'baseUrl', as: 'string', defaultValue: 'http://localhost:8085/'},
   ],
-  impl: pipe(http.fetch({url:'%$baseUrl%?op=providePath', method: 'POST', body: '%$docProps%', json: true}), '%result%', first())
+  impl: remote.cmd({
+    id: 'langServer',main: tgp.provideDefinition(), context: obj(prop('docProps',json.stringify('%$docProps%'))), sourceCode: langServer('%$docProps/filePath%')
+  })
 })
-
-component('tgp.moveInArrayEditsFromServer', {
+component('tgp.provideDefinition', {
   params: [
     {id: 'docProps'},
-    {id: 'baseUrl', as: 'string', defaultValue: 'http://localhost:8085/'},
   ],
-  impl: pipe(http.fetch({url:'%$baseUrl%?op=moveInArrayEdits', method: 'POST', body: '%$docProps%', json: true}), '%result%', first())
+  impl: (ctx,docProps) => jb.tgpTextEditor.provideDefinition(docProps,ctx)
 })
 
-component('tgp.editsAndCursorPosFromServer', {
+component('tgp.getPathFromCmd', {
   params: [
-    {id: 'docText', defaultValue: '%docText%' },
+    {id: 'docProps'},
+  ],
+  impl: remote.cmd({
+    id: 'langServer',main: tgp.providePath(), context: obj(prop('docProps',json.stringify('%$docProps%'))), sourceCode:langServer('%$docProps/filePath%')
+  })
+})
+component('tgp.providePath', {
+  params: [
+    {id: 'docProps'},
+  ],
+  impl: (ctx,docProps) => jb.tgpTextEditor.providePath(docProps,ctx)
+})
+
+component('tgp.moveInArrayEditsFromCmd', {
+  params: [
+    {id: 'docProps'},
+  ],
+  impl: remote.cmd({
+    id: 'langServer',main: tgp.moveInArrayEdits(), context: obj(prop('docProps',json.stringify('%$docProps%'))), sourceCode: langServer('%$docProps/filePath%')
+  })
+})
+component('tgp.moveInArrayEdits', {
+  params: [
+    {id: 'docProps'},
+  ],
+  impl: (ctx,docProps) => jb.tgpTextEditor.moveInArrayEdits(docProps,ctx)
+})
+
+component('tgp.editsAndCursorPosFromCmd', {
+  params: [
+    {id: 'docProps', defaultValue: '%docProps%' },
     {id: 'item', defaultValue: '%item%'},
-    {id: 'baseUrl', as: 'string', defaultValue: 'http://localhost:8085/'},
   ],
-  impl: pipe(
-    http.fetch({url:'%$baseUrl%?op=editsAndCursorPos', method: 'POST', body: ({cmpCtx}) => cmpCtx.params, json: true}),
-    '%result%',first())
+  impl: remote.cmd({
+    id: 'langServer',
+    main: tgp.editsAndCursorPos(), 
+    context: obj(prop('docProps',json.stringify('%$docProps%')), prop('item',json.stringify('%$item%'))), 
+    sourceCode: langServer('%$docProps/filePath%')
+  })
 })
-
-component('tgp.startLangServer', {
-    type: 'action',
-    params: [
-        {id: 'restart', as: 'boolean'},
-    ],
-    impl: node.startRemoteHttpServer({
-        id: 'langServer',port:'8085',
-        services: [tgp.langServices()],inspect: '7015', 
-        libsToinit: list('utils','watchable','immutable','watchableComps','tgp','tgpTextEditor','vscode','jbm','cbHandler','treeShake'),
-        spyParam: 'vscode,tgpEditor,completion,remote',
-        restart: '%$restart%'
-    })
+component('tgp.editsAndCursorPos', {
+  params: [
+    {id: 'docProps' },
+    {id: 'item' },
+  ],
+  impl: (ctx,docProps,item) => jb.tgpTextEditor.editsAndCursorPos({docProps,item},ctx)
 })

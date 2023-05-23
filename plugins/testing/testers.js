@@ -177,7 +177,7 @@ extension('test', {
 
 		if (remoteTests) {
 			jb.exec({$: 'tests.runner', 
-				jbm: worker({sourceCodeOptions: project('studio')}), 
+				jbm: worker({sourceCode: project('studio')}), 
 				tests: () => tests.map(e=>e[0]), rootElemId: 'remoteTests'})
 			return
 		}

@@ -16,38 +16,3 @@ component('pathChangeTest.wrap', {
     expectedPathAfter: 'probeTest.label1~impl~controls~0'
   })
 })
-
-component('completionTest.dslTest.createProp', {
-  impl: tgp.completionActionTest({
-    compText: `component('x', {
-  impl: state(__)
-})`,
-    completionToActivate: 'capital',
-    expectedEdit: () => ({
-        range: {start: {line: 2, col: 14}, end: {line: 2, col: 14}},
-        newText: 'TBD()'
-      }),
-    expectedCursorPos: '2,14',
-    dsl: 'location'
-  })
-})
-
-component('completionTest.dslTest.nameOverride', {
-  impl: tgp.completionOptionsTest({
-    compText: `component('x', {
-  impl: state(pipeline(__))
-})`,
-    expectedSelections: ['checkNameOverride'],
-    dsl: 'location'
-  })
-})
-
-component('completionTest.dslTest.top', {
-  impl: tgp.completionOptionsTest({
-    compText: `component('x', {
-  impl: state(__)
-})`,
-    expectedSelections: ['capital'],
-    dsl: 'location'
-  })
-})

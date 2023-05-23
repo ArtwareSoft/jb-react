@@ -193,15 +193,14 @@ component('probe.suggestions', {
 
 component('probe.suggestionsByCmd', {
   params: [
-    {id: 'plugins', as: 'array'},
-    {id: 'projects', as: 'array'},
-    {id: 'probePath', as: 'string'},
+    {id: 'filePath', as: 'array'},
     {id: 'expressionOnly', as: 'boolean', type: 'boolean'},
     {id: 'input', defaultValue: '%%', description: '{value, selectionStart}'}
   ],
   impl: async (ctx,plugins,projects,probePath,expressionOnly,input) => {
     if (ctx.vars.forceLocalSuggestions)
       return ctx.run({...ctx.profile, $: 'probe.suggestions', sessionId: probePath})
+    // TODO: use source code
     const args = ["-main:probe.suggestions()",'-loadTests:true',`-plugins:${plugins.join(',')}`,`-projects:${projects.join(',')}`,
         `%probePath:${probePath}`,`%input:()=>({value: "${input.value}", selectionStart: "${input.selectionStart}"})`,
         `%expressionOnly:${expressionOnly}`,'-spy:probe']

@@ -93,16 +93,12 @@ component('remoteNodeWorker', {
   type: 'jbm',
   params: [
     {id: 'id', as: 'string'},
-    {id: 'projects', as: 'array'},
+    {id: 'sourceCode', type: 'source-code', defaultValue: treeShakeClient() },
     {id: 'init', type: 'action', dynamic: true},
-    {id: 'loadTests', as: 'boolean'},
-    {id: 'inspect', as: 'number'},
     {id: 'nodeContainerUrl', as: 'string', defaultValue: 'http://localhost:8082'},
-    {id: 'spyParam', as: 'string'},
-    {id: 'restartSource', type: 'rx', description: 'rx event to restrat'}
   ],
-  impl: async (ctx,_id,projects,init,loadTests,inspect,nodeContainerUrl,spyParam) => {
-        const id = _id || ctx.vars.groupWorkerId || 'nodeWorker1'
+  impl: async (ctx,_id,sourceCode,init,nodeContainerUrl) => {
+        const id = _id || 'nodeWorker1'
         jb.log('vscode remote jbm nodeContainer',{ctx,id})
         const nodeWorkerUri = `${jb.uri}__${id}`
         const restart = (jb.nodeContainer.toRestart||[]).indexOf(id)
@@ -114,15 +110,20 @@ component('remoteNodeWorker', {
             jb.nodeContainer.toRestart.splice(restart,1)
         }
         const args = [
-            ...(inspect ? [`-inspect=${inspect}`] : []),
-            ...(id ? [`-uri:${id}`] : []),
-            `-loadTests:${loadTests}`,
-            `-clientUri:${jb.uri}`,
-            `-projects:${projects.join(',')}`,
-            `-spyParam:${spyParam}`]
+            ['-uri',id],
+            ['-clientUri', jb.uri],
+            ['-sourceCode', JSON.stringify(sourceCode)],
+        ].filter(x=>x[1])
+
+        // const args1 = [
+        //     ['inspect',inspect],
+        //     ['uri',id],
+        //     ['sourceCode', JSON.stringify(sourceCode)],
+        //     ['clientUri', jb.uri]
+        // ].filter(x=>x[1])
 
         let workerDetails = await startNodeWorker(args)
-        if (!workerDetails.uri && args[0].indexOf('inspect') != -1) // inspect may cause problems
+        if (!workerDetails.uri && args[0][0] == 'inspect') // inspect may cause problems
             workerDetails = await startNodeWorker(args.slice(1))
         jb.log('vscode remote jbm details',{ctx,workerDetails})
 
@@ -146,7 +147,7 @@ component('remoteNodeWorker', {
         return jbm
 
         function startNodeWorker(args) {
-            const url = `${nodeContainerUrl}/?op=createNodeWorker${args.map(x=>`${x.replace(/:/,'=').replace(/^-/,'&')}`).join('')}`
+            const url = `${nodeContainerUrl}/?op=createNodeWorker&args=${encodeURIComponent(JSON.stringify(args.map(([k,v])=>`${k}:${v}`)))}`
             return jbHost.fetch(url).then(r => r.json())
         }
     }

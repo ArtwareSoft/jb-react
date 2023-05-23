@@ -9,7 +9,7 @@ extension('treeShake', {
             existingFEPaths: {},
             FELibLoaderPromises: {},
             loadingCode: {},
-            defaultPlugin: { codePackage: jbHost.codePackageFromJson()},
+            defaultPlugin: { pluginPackages: jbHost.codePackageFromJson()},
             server: jb.frame.jbInit,
             serverUrl: jb.frame.jbTreeShakeServerUrl,
             getJSFromUrl: jb.frame.jbGetJSFromUrl,
@@ -153,6 +153,8 @@ extension('treeShake', {
         jb.treeShake.loadingCode[vars.ids] = true
         if (!jb.treeShake.codeServerJbm && jb.jbm.codeServerUri)
             jb.treeShake.codeServerJbm = await ctx.run({$: 'byUri(', uri: jb.jbm.codeServerUri})
+            // if (jb.jbm.treeShakeServerUri && jb.treeShake.codeServerJbm.uri != jb.jbm.treeShakeServerUri)
+            // jb.treeShake.codeServerJbm = await ctx.run({$: 'byUri(', uri: jb.jbm.treeShakeServerUri})
 
         if (!jb.treeShake.codeServerJbm)
             jb.logError(`treeShake - missing codeServer jbm at ${jb.uri}`,{ids})

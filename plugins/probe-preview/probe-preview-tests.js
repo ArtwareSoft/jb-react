@@ -38,7 +38,7 @@ component('workerPreviewTest.nodePreview', {
     control: group({
       controls: [
         button('change script', writeValue(tgp.ref('sampleProject.main~impl~controls~text'), 'world')),
-        probe.remoteCircuitPreview(remoteNodeWorker({id: 'nodePreview',init: probe.initPreview()}))
+        probe.remoteCircuitPreview() //remoteNodeWorker({id: 'nodePreview',init: probe.initPreview()}))
       ]
     }),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),

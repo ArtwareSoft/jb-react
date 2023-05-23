@@ -62,15 +62,15 @@ extension('vscode', 'ports', {
     }},   
 })
 
-component('completionServer', {
-  type: 'jbm',
-  impl: remoteNodeWorker({
-    id: 'completionServer',
-    loadTests: true,
-    inspect: 7010,
-    spyParam: 'vscode,completion,remote'
-  })
-})
+// component('completionServer', {
+//   type: 'jbm<jbm>',
+//   impl: remoteNodeWorker({
+//     id: 'completionServer',
+//     loadTests: true,
+//     inspect: 7010,
+//     spyParam: 'vscode,completion,remote'
+//   })
+// })
 
 // jb.component('vscodeRemoteProbe', {
 //   type: 'jbm',
