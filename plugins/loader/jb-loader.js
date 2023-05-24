@@ -115,9 +115,10 @@ async function jbInit(uri, sourceCode , {multipleInFrame, doNoInitLibs}={}) {
     pr.then(()=> jb.loadjbFile(path,jb,{noSymbols: true, plugin: jb.plugins.core})), Promise.resolve())
   jb.noSupervisedLoad = false
   if (jb.jbm && treeShakeServerUri) jb.jbm.treeShakeServerUri = sourceCode.treeShakeServerUri
-  const topPlugins = [...jb.asArray(sourceCode.project),
-   ...(sourceCode.plugins.indexOf('*') != -1 ? Object.values(jb.plugins).filter(x=>!x.project).map(x=>x.id) : sourceCode.plugins)
-  ]
+  const topPlugins = unique([...jb.asArray(sourceCode.project),
+   ...(sourceCode.plugins.indexOf('*') != -1 
+    ? [...Object.values(jb.plugins).filter(x=>!x.project).map(x=>x.id), ...sourceCode.plugins].filter(x=>x!='*') 
+    : sourceCode.plugins) ])
 
   const libs = await jb.loadPlugins(topPlugins)
   const libsToInit = sourceCode.libsToInit ? sourceCode.libsToInit.split(','): unique(libs)

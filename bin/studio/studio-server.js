@@ -217,8 +217,12 @@ const op_post_handlers = {
       fs.chmodSync('./lastCmd', '755')
       res.setHeader('Content-Type', 'application/json; charset=utf8')
       const srvr = child.spawn('node',['./jb.js', ...args],{cwd: 'hosts/node'})
-      srvr.stdout.on('data', data => res.write(data))
-      srvr.stdout.on('end', data => res.end(data))
+      let res_str = ''
+      srvr.stdout.on('data', data => { res.write(data); res_str += data })
+      srvr.stdout.on('end', data => {
+        res.end(data)
+        fs.writeFileSync('./lastCmdRes', res_str+data)
+      })
       //srvr.on('exit', onExit)
       srvr.on('error', (e) => res.end(JSON.stringify({command, error: `${''+e}`})))  
     },    
@@ -300,17 +304,17 @@ const op_get_handlers = {
       nodeWorker.on('exit', (code,ev) => res.end(JSON.stringify({command, exit: `exit ${''+code} ${''+ev}}`})))
       nodeWorker.on('error', (e) => res.end(JSON.stringify({command, error: `${''+e}`})))
     },    
-    jbGet: (req,res,path) => {
-      const args = JSON.parse(getURLParam(req,'args'))
-      const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(arg=> 
-        (arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg}'`)).join(' ')}`
-      res.setHeader('Content-Type', 'application/json; charset=utf8')
-      const srvr = child.spawn('node',['./jb.js', ...args],{cwd: 'hosts/node'})
-      srvr.stdout.on('data', data => res.write(data))
-      srvr.stdout.on('end', data => res.end(data))
-      //srvr.on('exit', onExit)
-      srvr.on('error', (e) => res.end(JSON.stringify({command, error: `${''+e}`})))  
-    },
+    // jbGet: (req,res,path) => {
+    //   const args = JSON.parse(getURLParam(req,'args'))
+    //   const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(arg=> 
+    //     (arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg}'`)).join(' ')}`
+    //   res.setHeader('Content-Type', 'application/json; charset=utf8')
+    //   const srvr = child.spawn('node',['./jb.js', ...args],{cwd: 'hosts/node'})
+    //   srvr.stdout.on('data', data => res.write(data))
+    //   srvr.stdout.on('end', data => res.end(data))
+    //   //srvr.on('exit', onExit)
+    //   srvr.on('error', (e) => res.end(JSON.stringify({command, error: `${''+e}`})))  
+    // },
     runCmd: function(req,res,path) {
       if (!settings.allowCmd) return endWithFailure(res,'no permission to run cmd. allowCmd in jbart.json');
 

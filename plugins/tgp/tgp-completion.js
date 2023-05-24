@@ -309,11 +309,11 @@ extension('tgpTextEditor', 'completion', {
         const itemProps = {...item, ...item.extend() }
         const {op, path, resultPath, resultSemantics, resultOffset} = itemProps
         const compId = path.split('~')[0]
-        if (!jb.comps[compId]) {
+//        if (!jb.comps[compId]) {
             const plugin = jb.plugins[jb.utils.pathToPluginId(filePath)] || {}
             const dsl = docProps.dsl || plugin.dsl
             jb.comps[compId] = jb.tgpTextEditor.evalProfileDef(compText,dsl).res
-        }
+//        }
 
         if (!jb.comps[compId])
             return jb.logError(`completion handleScriptChangeOnPreview - missing comp ${compId}`, {path, ctx})
@@ -330,7 +330,7 @@ extension('tgpTextEditor', 'completion', {
         return { edit, cursorPos }
 
         function calcNewPos() {
-            const { compLine, text } = jb.tgpTextEditor.cache[compId]
+            const { text } = jb.tgpTextEditor.cache[compId]
             const pos = jb.tgpTextEditor.getPosOfPath(resultPath || path,resultSemantics)
             jb.log('completion calcNewPos',{resultSemantics, pos})
             if (!pos)
@@ -351,8 +351,8 @@ extension('tgpTextEditor', 'completion', {
     async applyCompChange(item,ctx) {
         if (item.id == 'reformat') return
         ctx = ctx || new jb.core.jbCtx({},{vars: {}, path: 'completion.applyCompChange'})
-        const { compText, compLine, filePath } = jb.tgpTextEditor.host.compTextAndCursor()
-        const docProps = { compText, compLine, filePath } 
+        const { compText, compLine, filePath, dsl } = jb.tgpTextEditor.host.compTextAndCursor()
+        const docProps = { compText, compLine, filePath, dsl } 
         const { edit, cursorPos } = item.edit ? item : item.serverUri == 'langServer' ? 
             await remoteCalcEditAndPos() : await jb.tgpTextEditor.calcEditAndGotoPos(docProps,item,ctx)
         try {

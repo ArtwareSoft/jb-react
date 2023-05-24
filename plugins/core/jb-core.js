@@ -53,10 +53,10 @@ Object.assign(jb, {
       console.log(e)
     }      
   },
-  component(plugin,dsl,id,comp) {
+  component(plugin = {},dsl,id,comp) {
     if (!jb.core.CT) jb.initializeLibs(['core']) // this line must be first
     const CT = jb.core.CT
-    comp[CT] = comp[CT] || { plugin };
+    comp[CT] = comp[CT] || { plugin }
 
     const { location } = 0 || jb.calcSourceLocation(new Error().stack.split(/\r|\n/)) // 0 || to avoid treeshake bug
     comp[CT].location = comp.location || location

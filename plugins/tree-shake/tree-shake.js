@@ -9,7 +9,7 @@ extension('treeShake', {
             existingFEPaths: {},
             FELibLoaderPromises: {},
             loadingCode: {},
-            defaultPlugin: { pluginPackages: jbHost.codePackageFromJson()},
+            defaultPlugin: { codePackage: jbHost.codePackageFromJson()},
             server: jb.frame.jbInit,
             serverUrl: jb.frame.jbTreeShakeServerUrl,
             getJSFromUrl: jb.frame.jbGetJSFromUrl,

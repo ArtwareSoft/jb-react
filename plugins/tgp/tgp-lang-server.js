@@ -35,10 +35,13 @@ component('tgp.provideCompletionItems', {
 
 component('tgp.getDefinitionFromCmd', {
   params: [
-    {id: 'docProps'},
+    {id: 'docProps'}
   ],
   impl: remote.cmd({
-    id: 'langServer',main: tgp.provideDefinition(), context: obj(prop('docProps',json.stringify('%$docProps%'))), sourceCode: langServer('%$docProps/filePath%')
+    main: tgp.provideDefinition(),
+    context: obj(prop('docProps', json.stringify(obj(prop('$asIs', '%$docProps%'))))),
+    sourceCode: langServer('%$docProps/filePath%'),
+    id: 'langServer'
   })
 })
 component('tgp.provideDefinition', {
@@ -50,10 +53,13 @@ component('tgp.provideDefinition', {
 
 component('tgp.getPathFromCmd', {
   params: [
-    {id: 'docProps'},
+    {id: 'docProps'}
   ],
   impl: remote.cmd({
-    id: 'langServer',main: tgp.providePath(), context: obj(prop('docProps',json.stringify('%$docProps%'))), sourceCode:langServer('%$docProps/filePath%')
+    main: tgp.providePath(),
+    context: obj(prop('docProps', json.stringify(obj(prop('$asIs', '%$docProps%'))))),
+    sourceCode: langServer('%$docProps/filePath%'),
+    id: 'langServer'
   })
 })
 component('tgp.providePath', {
@@ -65,10 +71,13 @@ component('tgp.providePath', {
 
 component('tgp.moveInArrayEditsFromCmd', {
   params: [
-    {id: 'docProps'},
+    {id: 'docProps'}
   ],
   impl: remote.cmd({
-    id: 'langServer',main: tgp.moveInArrayEdits(), context: obj(prop('docProps',json.stringify('%$docProps%'))), sourceCode: langServer('%$docProps/filePath%')
+    main: tgp.moveInArrayEdits(),
+    context: obj(prop('docProps', json.stringify(obj(prop('$asIs', '%$docProps%'))))),
+    sourceCode: langServer('%$docProps/filePath%'),
+    id: 'langServer'
   })
 })
 component('tgp.moveInArrayEdits', {
@@ -80,14 +89,17 @@ component('tgp.moveInArrayEdits', {
 
 component('tgp.editsAndCursorPosFromCmd', {
   params: [
-    {id: 'docProps', defaultValue: '%docProps%' },
-    {id: 'item', defaultValue: '%item%'},
+    {id: 'docProps', defaultValue: '%docProps%'},
+    {id: 'item', defaultValue: '%item%'}
   ],
   impl: remote.cmd({
-    id: 'langServer',
-    main: tgp.editsAndCursorPos(), 
-    context: obj(prop('docProps',json.stringify('%$docProps%')), prop('item',json.stringify('%$item%'))), 
-    sourceCode: langServer('%$docProps/filePath%')
+    main: tgp.editsAndCursorPos(),
+    context: obj(
+      prop('docProps', json.stringify(obj(prop('$asIs', '%$docProps%')))),
+      prop('item', json.stringify(obj(prop('$asIs', '%$item%'))))
+    ),
+    sourceCode: langServer('%$docProps/filePath%'),
+    id: 'langServer'
   })
 })
 component('tgp.editsAndCursorPos', {

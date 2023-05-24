@@ -59,10 +59,7 @@ component('remoteTest.workerLoadOperatorCode', {
 
 component('remoteTest.childWorker.sourceCode.project', {
   impl: dataTest({
-    calculate: pipe(
-      jbm.start(worker({id: 'itemlists', sourceCode: project('itemlists')})),
-      remote.data(pipeline(itemlists.manyItems(3), '%id%', join(',')), '%%')
-    ),
+    calculate: remote.data(pipeline(itemlists.manyItems(3), '%id%', join(',')), worker('itemlists', project('itemlists'))),
     expectedResult: equals('1,2,3'),
     timeout: 3000
   })

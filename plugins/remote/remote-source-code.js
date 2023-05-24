@@ -21,7 +21,7 @@ component('sourceCode', {
   ],
   impl: (ctx,pluginsToLoad,pluginPackages,treeShakeServer,libsToInit) => ({ 
     ...(pluginPackages.length ? { pluginPackages } : {}),
-    plugins:['*'], ...jb.jbm.unifyPluginsToLoad(pluginsToLoad),
+    plugins:[], ...jb.jbm.unifyPluginsToLoad(pluginsToLoad),
     libsToInit,
     treeShakeServerUri: (treeShakeServer || {}).uri 
   })
