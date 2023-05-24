@@ -76,8 +76,15 @@ component('project', {
 
 component('packagesByPath', {
   type: 'plugin-package',
-  impl: () => {
-    // check up the heirachy for /plugins
+  params: [
+    {id: 'path', as: 'string', mandatory: true, description: 'E.g. someDir/plugins/xx-tests.js'}
+  ],
+  impl: (ctx,path) => {
+    const rep = (path.match(/projects\/([^/]*)\/(plugins|projects)/) || [])[1]
+    if (rep && rep != 'jb-react') {
+      const repsBase = path.split('projects/')[0] + 'projects/'
+      return [{ $: 'defaultPackage' }, { $: 'fileSystem', baseDir: repsBase + rep}]
+    }
   }
 })
 

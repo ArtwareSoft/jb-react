@@ -389,6 +389,22 @@ component('remoteTest.langServerCmd.Completions', {
   })
 })
 
+component('remoteTest.langServerCmd.ExternalCompletions', {
+  impl: dataTest({
+    calculate: pipe( 
+      Var('docProps', tgp.dummyDocProps({compText: `component('x', {
+  impl: dataTest(pipeline(__))
+})`, filePath: '/home/shaiby/projects/amta/plugins/amta-parsing/parsing-tests.js'})),
+      '1',
+      tgp.getCompletionItemsFromCmd('%$docProps%'),
+      log('test'),
+      count()
+    ),
+    expectedResult: '%% > 10',
+    timeout: 1000
+  })
+})
+
 // component('remoteTest.langServer.editsAndCursorPos', {
 //   impl: dataTest({
 //     vars: [

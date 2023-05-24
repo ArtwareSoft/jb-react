@@ -264,6 +264,7 @@ extension('utils', 'core', {
     },
     subscribe: (source,listener) => jb.callbag.subscribe(listener)(source),
     pathToPluginId(_path) {
+      const rep = (_path.match(/projects\/([^/]*)\/(plugins|projects)/) || [])[1]
       const path = (_path.match(/projects(.*)/)||[])[1] || _path
       const tests = path.match(/-(tests|testers).js$/) || path.match(/\/tests\//) ? '-tests': ''
       return (path.match(/(plugins|projects)\/([^\/]+)/) || ['','',''])[2] + tests

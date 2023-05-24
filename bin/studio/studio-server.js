@@ -291,8 +291,10 @@ const op_get_handlers = {
     createNodeWorker: (req,res,path) => {
       const args = JSON.parse(getURLParam(req,'args'))
       const command = `node --inspect-brk ../hosts/node/node-worker.js ${args.map(arg=> 
-        (arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`"\\""`).replace(/\$/g,'\\$')}"` : `'${arg}'`)).join(' ')}`
+        (arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg}'`)).join(' ')}`
       res.setHeader('Content-Type', 'application/json; charset=utf8')
+      fs.writeFileSync('./lastNodeWorker', command)
+      fs.chmodSync('./lastNodeWorker', '755')
       const nodeWorker = child.spawn('node',['./node-worker.js', ...args],{cwd: 'hosts/node'})
       nodeWorker.stdout.on('data', data => res.end(data))
       nodeWorker.on('exit', (code,ev) => res.end(JSON.stringify({command, exit: `exit ${''+code} ${''+ev}}`})))
@@ -301,7 +303,7 @@ const op_get_handlers = {
     jbGet: (req,res,path) => {
       const args = JSON.parse(getURLParam(req,'args'))
       const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(arg=> 
-        (arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`"\\""`).replace(/\$/g,'\\$')}"` : `'${arg}'`)).join(' ')}`
+        (arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg}'`)).join(' ')}`
       res.setHeader('Content-Type', 'application/json; charset=utf8')
       const srvr = child.spawn('node',['./jb.js', ...args],{cwd: 'hosts/node'})
       srvr.stdout.on('data', data => res.write(data))

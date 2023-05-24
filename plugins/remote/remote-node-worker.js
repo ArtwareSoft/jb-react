@@ -185,7 +185,7 @@ component('remoteNodeWorker', {
 //         const child = jbHost.child_process.spawn('node', args, {cwd: jbHost.jbReactDir+'/hosts/node'})
 
 //         const command = `node --inspect-brk jb.js ${args.map(x=>`'${x}'`).join(' ')}`
-//         jb.vscode.stdout && jb.vscode.stdout.appendLine(command)
+//         jb.vscode.stdout && jb.vscode.log(command)
 
 //         const childDetailsStr = await new Promise(resolve => child.stdout.on('data', data => resolve('' + data)))
 //         let childDetails

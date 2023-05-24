@@ -3,22 +3,27 @@ using('common,net,remote')
 component('langServer', {
   type: 'source-code<jbm>',
   params: [
-    {id: 'filePath', as: 'string'},
-  ],  
+    {id: 'filePath', as: 'string'}
+  ],
   impl: sourceCode({
+    pluginsToLoad: [
+      pluginsByPath('%$filePath%'),
+      plugins('tgp,vscode,tree-shake')
+    ],
     pluginPackages: packagesByPath('%$filePath%'),
-    pluginsToLoad: [pluginsByPath('%$filePath%'),plugins('tgp,vscode,tree-shake')],
     libsToInit: 'utils,watchable,immutable,watchableComps,tgp,tgpTextEditor,vscode,jbm,cbHandler,treeShake'
   })
 })
 
 component('tgp.getCompletionItemsFromCmd', {
   params: [
-    {id: 'docProps'},
+    {id: 'docProps'}
   ],
   impl: remote.cmd({
-    id: 'langServer',main: tgp.provideCompletionItems(), context: obj(prop('docProps',json.stringify('%$docProps%'))), 
+    main: tgp.provideCompletionItems(),
+    context: obj(prop('docProps', json.stringify(obj(prop('$asIs','%$docProps%'))))),
     sourceCode: langServer('%$docProps/filePath%'),
+    id: 'langServer'
   })
 })
 component('tgp.provideCompletionItems', {

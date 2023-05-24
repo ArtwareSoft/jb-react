@@ -63,10 +63,24 @@ extension('vscode', 'utils', {
         // vscodeNS.workspace.onDidSaveTextDocument(() => {
         // })
     },
-    log(logName) {
-        jb.log(logName)
-        jb.vscode.stdout = jb.vscode.stdout || vscodeNS.window.createOutputChannel('jbart')
-        jb.vscode.stdout.appendLine(logName)
+    initLog() {
+        if (jb.vscode._log) return
+        jb.vscode._log = globalThis.jbVSCodeLog
+        jbHost.log = args => jb.asArray(args).map(x=>jb.vscode._log(tryStringify(x)))
+
+        function tryStringify(x) {
+            if (!x) return ''
+            try {
+                return JSON.stringify(x)
+            } catch(e) {
+                return x.toString && x.toString()
+            }
+        }
+    },
+    log(...args) {
+        jb.vscode.initLog();
+        jb.log(...args)
+        jbHost.log(args)
     },
     // async updateCurrentCompFromEditor() {
     //     const docProps = jb.tgpTextEditor.host.compTextAndCursor()
@@ -75,13 +89,13 @@ extension('vscode', 'utils', {
     //     const {compId, compSrc, dsl} = jb.tgpTextEditor.closestComp(docText, cursorLine)
     //     const {err} = compSrc ? jb.tgpTextEditor.evalProfileDef(compSrc, dsl) : {}
     //     if (err) {
-    //         jb.vscode.stdout.appendLine(`updateCurrentCompFromEditor compile error ${JSON.stringify(err)}`)
+    //         jb.vscode.log(`updateCurrentCompFromEditor compile error ${JSON.stringify(err)}`)
     //         return jb.logError('can not parse comp', {compId, err})
     //     }
 
     //     if (jb.vscode.useCompletionServer) {
     //         await jb.exec(vscode.completionServer())
-    //         jb.vscode.stdout.appendLine(`updateCurrentCompFromEditor`)
+    //         jb.vscode.log(`updateCurrentCompFromEditor`)
     //         return jb.vscode.ctx.setData(docProps).run(remote.action(ctx => jb.tgpTextEditor.updateCurrentCompFromEditor(ctx.data,ctx), vscode.completionServer()))
     //     } else {
     //         jb.tgpTextEditor.updateCurrentCompFromEditor(docProps,jb.vscode.ctx)
@@ -99,7 +113,7 @@ extension('vscode', 'utils', {
         //   const ret = await jb.exec(profile)
           const count = (ret || []).length
           const docSize = docProps.compText.length
-          jb.vscode.stdout.appendLine(`provideCompletionItems ${docSize} -> ${count}`)
+          jb.vscode.log(`provideCompletionItems ${docSize} -> ${count}`)
           return ret
         } else {
             return jb.tgpTextEditor.provideCompletionItems(docProps)
@@ -130,7 +144,7 @@ extension('vscode', 'utils', {
     async moveInArray(docPropsWithDiff) {
         const {edit, cursorPos} = await jb.exec(tgp.moveInArrayEditsFromCmd({docProps: () => docPropsWithDiff }))
         const json = JSON.stringify(edit)
-        jb.vscode.stdout.appendLine(`moveInArray ${json.length}`)
+        jb.vscode.log(`moveInArray ${json.length}`)
         await jb.tgpTextEditor.host.applyEdit(edit)
         cursorPos && jb.tgpTextEditor.host.selectRange(cursorPos)
     },
@@ -284,7 +298,7 @@ component('probe.probeByCmd', {
         `%probePath:${probePath}`, "-spy:probe", "-wrap:pipe(MAIN, probe.pruneResult(),first())"]
 
     const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(x=>`'${x}'`).join(' ')}`
-    jb.vscode.stdout.appendLine(`probeByCmd: ${command}`)
+    jb.vscode.log(`probeByCmd: ${command}`)
 
     if (jbHost.spawn) {
         let res = null

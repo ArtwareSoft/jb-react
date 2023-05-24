@@ -3,7 +3,7 @@ component('uiTest.group', {
 })
 
 component('uiTest.label', {
-  impl: uiTest({ control: text('hello world'), expectedResult: contains('hello world') })
+  impl: uiTest({control: text('hello world'), expectedResult: contains('hello world')})
 })
 
 component('uiTest.label0', {

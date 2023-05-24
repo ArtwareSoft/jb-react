@@ -1,0 +1,1 @@
+node --inspect-brk ../hosts/node/node-worker.js '-uri:tester' '-clientUri:tests' '-sourceCode:{"pluginPackages":[{"$":"defaultPackage"}],"plugins":["common-tests"],"libsToInit":""}'

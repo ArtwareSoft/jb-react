@@ -85,7 +85,8 @@ async function jbInit(uri, sourceCode , {multipleInFrame, doNoInitLibs}={}) {
     async loadjbFile(path,jb,{noSymbols, fileSymbols, plugin} = {}) {
       if (jb.loadedFiles[path]) return
       const _code = await plugin.codePackage.fetchFile(path)
-      const code = `${_code}\n//# sourceURL=${path}?${jb.uri}`
+      const sourceUrl = `${path}?${jb.uri}`.replace(/#/g,'')
+      const code = `${_code}\n//# sourceURL=${sourceUrl}`
       const dsl = fileSymbols && fileSymbols.dsl || plugin && plugin.dsl
       const proxies = noSymbols ? {} : jb.objFromEntries(unique(plugin.requiredFiles.flatMap(x=>x.ns)).map(id=>[id,jb.macro.registerProxy(id)]))
       const context = { jb, 
@@ -97,7 +98,9 @@ async function jbInit(uri, sourceCode , {multipleInFrame, doNoInitLibs}={}) {
       }
       try {
         //console.log(`loading ${path}`)
-        new Function(Object.keys(context), code).apply(null, Object.values(context))
+        //const f = new Function(Object.keys(context), code)
+        const f = eval(`(function x(${Object.keys(context)}) {${code}\n})`)
+        f.apply(null, Object.values(context))
         jb.loadedFiles[path] = true
       } catch (e) {
         return jb.logException(e,`loadjbFile lib ${path}`,{context, code})

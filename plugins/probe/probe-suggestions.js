@@ -206,7 +206,7 @@ component('probe.suggestionsByCmd', {
         `%expressionOnly:${expressionOnly}`,'-spy:probe']
 
     const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(x=>`'${x}'`).join(' ')}`
-    ctx.setData(`suggestionsByCmd: ${command}`).run(remote.action({ action: ({data}) => { jb.vscode.stdout.appendLine(data) }, 
+    ctx.setData(`suggestionsByCmd: ${command}`).run(remote.action({ action: ({data}) => { jb.vscode.log(data) }, 
       jbm: () => jb.parent, oneway: true }))
 
     if (jbHost.spawn) {
