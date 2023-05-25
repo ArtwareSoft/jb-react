@@ -118,7 +118,7 @@ async function jbInit(uri, sourceCode , {multipleInFrame, doNoInitLibs}={}) {
   const topPlugins = unique([...jb.asArray(sourceCode.project),
    ...(sourceCode.plugins.indexOf('*') != -1 
     ? [...Object.values(jb.plugins).filter(x=>!x.project).map(x=>x.id), ...sourceCode.plugins].filter(x=>x!='*') 
-    : sourceCode.plugins) ])
+    : sourceCode.plugins) ]).filter(x=>jb.plugins[x])
 
   const libs = await jb.loadPlugins(topPlugins)
   const libsToInit = sourceCode.libsToInit ? sourceCode.libsToInit.split(','): unique(libs)

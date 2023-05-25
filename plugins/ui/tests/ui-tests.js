@@ -11,11 +11,14 @@ component('uiTest.label0', {
 })
 
 component('uiTest.html', {
-  impl: uiTest({ control: html('<p>hello world</p>'), expectedResult: contains('>hello world</p>') })
+  impl: uiTest({control: html('<p>hello world</p>'), expectedResult: contains('>hello world</p>')})
 })
 
 component('uiTest.html.inIframe', {
-  impl: uiTest({ control: html({ html: '<p>hello world</p>', style: html.inIframe() }), expectedResult: contains('iframe') })
+  impl: uiTest({
+    control: html({html: '<p>hello world</p>', style: html.inIframe()}),
+    expectedResult: contains('iframe')
+  })
 })
 
 component('uiTest.controls', {

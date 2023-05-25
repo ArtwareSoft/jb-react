@@ -115,12 +115,14 @@ component('vscodeWebView', {
   params: [
     {id: 'id', as: 'string'},
     {id: 'panel'},
+    {id: 'sourceCode', type: 'source-code', defaultValue: xServer() },
     {id: 'init', type: 'action', dynamic: true}
   ],
-  impl: (ctx,id,panel, init) => {
+  impl: (ctx,id,panel,sourceCode, init) => {
         if (jb.jbm.childJbms[id]) return jb.jbm.childJbms[id]
         const webViewUri = `${jb.uri}•${id}`
         const _jbBaseUrl = 'http://localhost:8082'
+        sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),'vscode','probe'])
         const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -129,7 +131,7 @@ component('vscodeWebView', {
     <script>
     jbHost.baseUrl = '${_jbBaseUrl}'
     ;(async () => {
-      globalThis.jb = await jbInit('${webViewUri}',{ projects: [], plugins: jb_plugins })
+      globalThis.jb = await jbInit('${webViewUri}', ${JSON.stringify(sourceCode)})
       globalThis.spy = jb.spy.initSpy({spyParam: 'remote,vscode,treeShake'})
       jb.treeShake.codeServerJbm = jb.parent = jb.ports['${jb.uri}'] = jb.jbm.extendPortToJbmProxy(jb.vscode.portFromWebViewToExt('${webViewUri}','${jb.uri}'))
       jb.parent.remoteExec(jb.remoteCtx.stripJS(() => jb.jbm.notifyChildReady['${webViewUri}']() ), {oneway: true} )

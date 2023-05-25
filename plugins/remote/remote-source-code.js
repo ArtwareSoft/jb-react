@@ -22,7 +22,7 @@ component('sourceCode', {
   impl: (ctx,pluginsToLoad,pluginPackages,treeShakeServer,libsToInit) => ({ 
     ...(pluginPackages.length ? { pluginPackages } : {}),
     plugins:[], ...jb.jbm.unifyPluginsToLoad(pluginsToLoad),
-    libsToInit,
+    ...(libsToInit ? {libsToInit} : {}),
     treeShakeServerUri: (treeShakeServer || {}).uri 
   })
 })
@@ -30,6 +30,11 @@ component('sourceCode', {
 component('treeShakeClient', {
   type: 'source-code',
   impl: sourceCode({pluginsToLoad: plugins('remote,tree-shake'), treeShakeServer : jbm.self()})
+})
+
+component('xServer', {
+  type: 'source-code',
+  impl: sourceCode({pluginsToLoad: plugins('remote,tree-shake,remote-widget'), treeShakeServer : jbm.self()})
 })
 
 component('project', {
@@ -45,9 +50,10 @@ component('project', {
 component('pluginsByPath', {
   type: 'plugins-to-load',
   params: [
-    {id: 'path', as: 'string', mandatory: true, description: 'E.g. someDir/plugins/xx-tests.js'}
+    {id: 'path', as: 'string', mandatory: true, description: 'E.g. someDir/plugins/mycode.js'},
+    {id: 'tests', as: 'boolean', description: 'add plugin-tests'}
   ],
-  impl: (ctx,path) => ({ plugins: [jb.utils.pathToPluginId(path)].filter(x=>x) })
+  impl: (ctx,path,tests) => ({ plugins: [jb.utils.pathToPluginId(path)].flatMap(x=>[x,tests && `${x}-tests`]).filter(x=>x) })
 })
 
 component('loadAll', {

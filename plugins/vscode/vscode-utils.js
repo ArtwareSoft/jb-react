@@ -70,6 +70,7 @@ extension('vscode', 'utils', {
 
         function tryStringify(x) {
             if (!x) return ''
+            if (typeof x == 'string') return x
             try {
                 return JSON.stringify(x)
             } catch(e) {
@@ -103,25 +104,20 @@ extension('vscode', 'utils', {
     // },
     async provideCompletionItems(docProps) {
         if (jb.vscode.useCompletionServer) {
-        const ret = await jb.exec(tgp.getCompletionItemsFromCmd({docProps: () => docProps }))
-        // const profile = remote.cmd({
-        //     id: 'langServer',
-        //     main: tgp.provideCompletionItems(), 
-        //     context: obj(prop('docProps', () => JSON.stringify(docProps))), 
-        //     sourceCode: langServer()
-        //   })
-        //   const ret = await jb.exec(profile)
-          const count = (ret || []).length
-          const docSize = docProps.compText.length
-          jb.vscode.log(`provideCompletionItems ${docSize} -> ${count}`)
-          return ret
+            const ret = await jb.exec(tgp.getCompletionItemsFromCmd({docProps: () => docProps }))
+            const count = (ret || []).length
+            const docSize = docProps.compText.length
+            jb.vscode.log(`provideCompletionItems ${docSize} -> ${count}`)
+            return ret
         } else {
             return jb.tgpTextEditor.provideCompletionItems(docProps)
         }
     },
     async provideDefinition(docProps) {
         const loc = await jb.exec(tgp.getDefinitionFromCmd({docProps: () => docProps }))
-        return loc && new vscodeNS.Location(vscodeNS.Uri.file(jbHost.jbReactDir + loc[0]), new vscodeNS.Position((+loc[1]) || 0, 0))
+        const workspaceDir = (vscodeNS.workspace.workspaceFolders || []).map(ws=>ws.uri.path)[0] || ''
+
+        return loc && new vscodeNS.Location(vscodeNS.Uri.file((workspaceDir || jbHost.jbReactDir) + loc[0]), new vscodeNS.Position((+loc[1]) || 0, 0))
     },
     // commands
     async restartLangServer() {
@@ -152,22 +148,16 @@ extension('vscode', 'utils', {
     async openProbeResultPanel() {
         const docProps = jb.tgpTextEditor.host.compTextAndCursor()
         jb.vscode.log('start openProbeResultPanel')
-        const probePath = await jb.exec(tgp.getPathFromCmd({docProps: () => docProps }))
-        jb.vscode.log('openProbeResultPanel 2',probePath)
-        const probeRes = await jb.vscode.ctx.run({$: 'probe.probeByCmd', filePath: docProps.filePath, probePath})
-        jb.vscode.log('openProbeResultPanel 3',probeRes)
+        const _probePath = await jb.exec(tgp.getPathFromCmd({docProps: () => docProps }))
+        const probePath = _probePath
+        jb.vscode.log(`probePath: ${probePath}, filePath:${docProps.filePath}`)
+        const _probeRes = await jb.vscode.ctx.run({$: 'probe.probeByCmd', filePath: docProps.filePath, probePath})
+        const probeRes = _probeRes.result
+        jb.vscode.log(`probeRes: ${JSON.stringify(probeRes||'').length}`)
         jb.log('vscode openProbeResultPanel',{probeRes, probePath})
         jb.vscode.panels.main.render('probe.probeResView',probeRes)
     },
     async openLiveProbeResultPanel() {
-        const docProps = jb.tgpTextEditor.host.compTextAndCursor()
-        jb.vscode.log('start openProbeResultPanel')
-        const probePath = await jb.exec(tgp.getPathFromCmd({docProps: () => docProps }))
-        jb.vscode.log('openProbeResultPanel 2',probePath)
-        const probeRes = await jb.vscode.ctx.run({$: 'probe.probeByCmd', filePath: docProps.filePath, probePath})
-        jb.vscode.log('openProbeResultPanel 3',probeRes)
-        jb.log('vscode openProbeResultPanel',{probeRes, probePath})
-        jb.vscode.panels.main.render('probe.probeResView',probeRes)
     },
 
     toVscodeFormat(pos) {
@@ -203,6 +193,7 @@ extension('vscode', 'utils', {
         }
         return {
             async resolveWebviewView(panel, context, _token) {
+                jb.vscode.log('vscode resolve webView',id)
                 jb.log('vscode resolve webView',{id,extensionUri,context,panel})
                 jb.vscode.panels[id].panel = this._panel = panel
                 panel.webview.options = {
@@ -290,10 +281,11 @@ component('vscode.gotoPath', {
 
 component('probe.probeByCmd', {
   params: [
-    {id: 'sourceCode', type: 'source-code<jbm>' },
+    {id: 'filePath', as: 'string'},
     {id: 'probePath', as: 'string'}
   ],
-  impl: async (ctx,sourceCode,probePath) => {
+  impl: async (ctx,filePath,probePath) => {
+    const sourceCode = jb.exec({$: 'probe', $typeCast: 'source-code<jbm>', filePath})
     const args = ["-main:probe.runCircuit()",`-sourceCode:${JSON.stringify(sourceCode)}`,
         `%probePath:${probePath}`, "-spy:probe", "-wrap:pipe(MAIN, probe.pruneResult(),first())"]
 
@@ -314,4 +306,18 @@ component('probe.probeByCmd', {
         }
     }
   }
+})
+
+component('probe', {
+  type: 'source-code<jbm>',
+  params: [
+    {id: 'filePath', as: 'string'}
+  ],
+  impl: sourceCode(
+    [
+      pluginsByPath('%$filePath%', true),
+      plugins('probe,tree-shake,tgp')
+    ],
+    packagesByPath('%$filePath%')
+  )
 })

@@ -32,7 +32,7 @@ extension('utils', 'prettyPrint', {
     return { line: line + noOfLines, col: newCol }
   },
 
-  prettyPrintWithPositions(val,{colWidth=120,tabSize=2,initialPath='',noMacros,forceFlat, depth} = {}) {
+  prettyPrintWithPositions(val,{colWidth=100,tabSize=2,initialPath='',noMacros,forceFlat, depth} = {}) {
     const props = {}
     if (!val || typeof val !== 'object')
       return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
@@ -114,10 +114,10 @@ extension('utils', 'prettyPrint', {
       function shouldNotFlat() {
         const paramProps = path.match(/~params~[0-9]+$/)
         const paramsParent = path.match(/~params$/)
-        const moreThanTwoVals = innerVals.length > 2 && !isArray
+        const manyVals = innerVals.length > 4 && !isArray
         const top = !path.match(/~/g)
         const _longInnerValInArray = !singleParamAsArray && longInnerValInArray
-        return !paramProps && (paramsParent || top || moreThanTwoVals || _longInnerValInArray)
+        return !paramProps && (paramsParent || top || manyVals || _longInnerValInArray)
         // if (!res)
         //   console.log('should flat ' + path)
         // return res
