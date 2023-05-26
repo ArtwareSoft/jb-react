@@ -360,7 +360,7 @@ extension('tgpTextEditor', 'completion', {
             if (cursorPos) {
                 jb.tgpTextEditor.host.selectRange(cursorPos)
                 if (cursorPos.TBD) {
-                    await jb.delay(1)
+                    await jb.delay(1000)
                     await jb.tgpTextEditor.host.execCommand('editor.action.triggerSuggest')
                 }
             }

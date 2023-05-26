@@ -41,6 +41,11 @@ component('If', {
   impl: ({},cond,_then,_else) => cond() ? _then() : _else()
 })
 
+component('TBD', {
+  type: 'any',
+  impl: 'TBD'
+})
+
 extension('utils', 'pipe', {
   calcPipe(ctx,ptName,passRx) {
     let start = jb.toarray(ctx.data)

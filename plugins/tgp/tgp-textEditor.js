@@ -348,8 +348,3 @@ component('tgpTextEditor.cursorPath', {
     ],  
     impl: (ctx,ref,pos) => jb.path(jb.tgpTextEditor.pathOfPosition(ref, pos()),'path') || ''
 })
-
-component('TBD', {
-  type: 'any',
-  impl: 'TBD'
-})
