@@ -4,7 +4,7 @@ component('studio.main', {
   type: 'control',
   impl: group({
     controls: [
-      controlWithCondition(studio.isTest(), studio.test()),
+      controlWithCondition(studio.isCircuit(), studio.circuit()),
 //      controlWithCondition(studio.isNotebook(), studio.notebook()),
       studio.jbart()
     ],
@@ -16,12 +16,12 @@ component('studio.main', {
 
 component('studio.isNotebook',{
   type: 'boolean',
-  impl: () => jb.path(self,'location.pathname').indexOf('/notebook') == 0
+  impl: () => jb.path(globalThis,'location.pathname').indexOf('/notebook') == 0
 })
 
-component('studio.isTest', {
+component('studio.isCircuit', {
   type: 'boolean',
-  impl: () => /host=test/.test(jb.path(globalThis,'location.href')||'')
+  impl: () => /sourceCode=/.test(jb.path(globalThis,'location.href')||'')
 })
 
 component('studio.jbart', {
@@ -29,22 +29,13 @@ component('studio.jbart', {
   impl: group({
     controls: [
       studio.topBar(),
-      //studio.pages(),
       group({
         controls: preview.remoteWidget(),
         features: [
           watchRef('%$studio/page%'),
           watchRef('%$studio/preview%', 'yes'),
-          css.height({
-            height: '%$studio/preview/height%',
-            overflow: 'auto',
-            minMax: 'max'
-          }),
-          css.width({
-            width: '%$studio/preview/width%',
-            overflow: 'auto',
-            minMax: 'max'
-          })
+          css.height({height: '%$studio/preview/height%', overflow: 'auto', minMax: 'max'}),
+          css.width({width: '%$studio/preview/width%', overflow: 'auto', minMax: 'max'})
         ]
       }),
       studio.ctxCounters()
@@ -55,7 +46,7 @@ component('studio.jbart', {
   })
 })
 
-component('studio.test', {
+component('studio.circuit', {
   type: 'control',
   impl: group({
     controls: [
@@ -64,24 +55,14 @@ component('studio.test', {
         controls: preview.remoteWidget(),
         features: [
           watchRef('%$studio/preview%', 'yes'),
-          css.height({
-            height: '%$studio/preview/height%',
-            overflow: 'auto',
-            minMax: 'max'
-          }),
-          css.width({
-            width: '%$studio/preview/width%',
-            overflow: 'auto',
-            minMax: 'max'
-          })
+          css.height({height: '%$studio/preview/height%', overflow: 'auto', minMax: 'max'}),
+          css.width({width: '%$studio/preview/width%', overflow: 'auto', minMax: 'max'})
         ]
       }),
       studio.ctxCounters()
     ]
   })
 })
-
-
 
 // jb.component('studio.jbartOld', {
 //   type: 'control',
@@ -107,10 +88,10 @@ component('studio.test', {
 
 component('dataResource.studio', {
   watchableData: {
-    circuit: /host=test/.test(jb.path(globalThis,'location.href')||'') ? (jb.path(globalThis,'location.pathname')||'').split('/')[3] : '',
+    circuit: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') ? (jb.path(globalThis,'location.pathname')||'').split('/')[3] : '',
     project: '',
     page: '',
-    profile_path: /host=test/.test(jb.path(globalThis,'location.href')||'') ? (jb.path(globalThis,'location.pathname')||'').split('/')[3] : '',
+    profile_path: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') ? (jb.path(globalThis,'location.pathname')||'').split('/')[3] : '',
     pickSelectionCtxId: '',
     jbEditor: {},
     preview: {
@@ -368,7 +349,7 @@ component('studio.topBar', {
     layout: layout.flex({alignItems: 'start', spacing: ''}),
     controls: [
       image({
-        url: pipeline({'$': 'studio.baseStudioUrl'}, '%%css/jbartlogo.png'),
+        url: pipeline(studio.baseStudioUrl(), '%%css/jbartlogo.png'),
         width: '',
         features: [
           css.margin('5', '5'),
@@ -385,21 +366,14 @@ component('studio.topBar', {
             layout: layout.flex({spacing: '160'}),
             controls: [
               menu.control({
-                menu: {'$': 'studio.mainMenu'},
+                menu: studio.mainMenu(),
                 style: menuStyle.pulldown(),
                 features: [id('mainMenu'), css.height('30'), css.margin('18')]
               }),
-              group({
-                title: 'toolbar',
-                controls: studio.toolbar(),
-                features: css.margin('8')
-              }),
-              controlWithFeatures(
-                studio.searchComponent(),
-                [
-                  css.margin('8', '-100')
-                ]
-              )
+              group({title: 'toolbar', controls: studio.toolbar(), features: css.margin('8')}),
+              controlWithFeatures(studio.searchComponent(), [
+                css.margin('8', '-100')
+              ])
             ]
           })
         ],

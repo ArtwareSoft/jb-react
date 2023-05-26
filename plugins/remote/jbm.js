@@ -9,7 +9,7 @@ component('worker', {
       {id: 'networkPeer', as: 'boolean', description: 'used for testing' },
   ],    
   impl: (ctx,_id,sourceCode,init,networkPeer) => {
-      const id = _id || ctx.vars.groupWorkerId || 'w1'
+      const id = _id || 'w1'
       const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
       if (childsOrNet[id]) return childsOrNet[id]
       const workerUri = networkPeer ? id : `${jb.uri}•${id}`
@@ -56,50 +56,110 @@ Promise.resolve(jbInit('${workerUri}', ${JSON.stringify(sourceCode)})
 })
 
 component('child', {
-type: 'jbm',
-params: [
-  {id: 'id', as: 'string'},
-  {id: 'sourceCode', type: 'source-code', defaultValue: treeShakeClient() },
-  {id: 'init', type: 'action', dynamic: true}
-],
-impl: (ctx,_id,sourceCode,init) => {
-    const id = _id || ctx.vars.groupWorkerId || 'child1'
-    if (jb.jbm.childJbms[id]) return jb.jbm.childJbms[id]
-    const childUri = `${jb.uri}•${id}`
-    sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),'remote','tree-shake'])
+    type: 'jbm',
+    params: [
+        {id: 'id', as: 'string'},
+        {id: 'sourceCode', type: 'source-code', defaultValue: treeShakeClient() },
+        {id: 'init', type: 'action', dynamic: true}
+    ],
+    impl: (ctx,_id,sourceCode,init) => {
+        const id = _id || 'child1'
+        if (jb.jbm.childJbms[id]) return jb.jbm.childJbms[id]
+        const childUri = `${jb.uri}•${id}`
+        sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),'remote','tree-shake'])
 
-    return jb.jbm.childJbms[id] = {
-        uri: childUri,
-        async rjbm() {
-            if (this._rjbm) return this._rjbm
-            const child = this.child = await jbInit(childUri, sourceCode, {multipleInFrame: true})
-            child.rjbm = () => this._rjbm
-            this._rjbm = initChild(child)
-            await init(ctx.setVar('jbm',child))
-            return this._rjbm
+        return jb.jbm.childJbms[id] = {
+            uri: childUri,
+            async rjbm() {
+                if (this._rjbm) return this._rjbm
+                const child = this.child = await jbInit(childUri, sourceCode, {multipleInFrame: true})
+                child.rjbm = () => this._rjbm
+                this._rjbm = initChild(child)
+                await init(ctx.setVar('jbm',child))
+                return this._rjbm
+            }
+        }
+
+        function initChild(child) {
+            child.spy.initSpy({spyParam: jb.spy.spyParam})
+            child.parent = jb
+            child.treeShake.codeServerJbm = jb.treeShake.codeServerJbm || jb // TODO: use codeLoaderUri
+            child.ports[jb.uri] = {
+                from: child.uri, to: jb.uri,
+                postMessage: m => 
+                    jb.net.handleOrRouteMsg(jb.uri,child.uri,jb.ports[child.uri].handler, {from: child.uri, to: jb.uri,...m}),
+                onMessage: { addListener: handler => child.ports[jb.uri].handler = handler }, // only one handler
+            }
+            child.jbm.extendPortToJbmProxy(child.ports[jb.uri])
+            jb.ports[child.uri] = {
+                from: jb.uri,to: child.uri,
+                postMessage: m => 
+                    child.net.handleOrRouteMsg(child.uri,jb.uri,child.ports[jb.uri].handler , {from: jb.uri, to: child.uri,...m}),
+                onMessage: { addListener: handler => jb.ports[child.uri].handler = handler }, // only one handler
+            }
+            return jb.jbm.extendPortToJbmProxy(jb.ports[child.uri])
         }
     }
+})
 
-    function initChild(child) {
-        child.spy.initSpy({spyParam: jb.spy.spyParam})
-        child.parent = jb
-        child.treeShake.codeServerJbm = jb.treeShake.codeServerJbm || jb // TODO: use codeLoaderUri
-        child.ports[jb.uri] = {
-            from: child.uri, to: jb.uri,
-            postMessage: m => 
-                jb.net.handleOrRouteMsg(jb.uri,child.uri,jb.ports[child.uri].handler, {from: child.uri, to: jb.uri,...m}),
-            onMessage: { addListener: handler => child.ports[jb.uri].handler = handler }, // only one handler
-        }
-        child.jbm.extendPortToJbmProxy(child.ports[jb.uri])
-        jb.ports[child.uri] = {
-            from: jb.uri,to: child.uri,
-            postMessage: m => 
-                child.net.handleOrRouteMsg(child.uri,jb.uri,child.ports[jb.uri].handler , {from: jb.uri, to: child.uri,...m}),
-            onMessage: { addListener: handler => jb.ports[child.uri].handler = handler }, // only one handler
-        }
-        return jb.jbm.extendPortToJbmProxy(jb.ports[child.uri])
-    }
-  }
+component('cmd', {
+    type: 'jbm',
+    params: [
+        {id: 'sourceCode', type: 'source-code', mandatory: true },
+        {id: 'viaHttpServer', as: 'string', defaultValue: 'http://localhost:8082'},
+        {id: 'id', as: 'string'}
+    ],
+    impl: (ctx,_sourceCode,viaHttpServer,id) => ({
+        uri: id || 'main',
+        remoteExec: async (sctx,{data, action} = {}) => {
+            const { main, context, wrap, plugins } = jbArgsFromSctx()
+            const sourceCode = _sourceCode  || { plugins , pluginPackages: [{$:'defaultPackage'}] }
+    
+            const args = [
+                ['-main', jb.utils.prettyPrint(main.profile,{forceFlat: true})],
+                ['-wrap', wrap],
+                ['-uri', id || 'main'],
+                ['-sourceCode', JSON.stringify(sourceCode)],
+                ...Object.keys(context).map(k=>[`%${k}`,context[k]]),
+            ].filter(x=>x[1])
+            const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(x=>`'${x}'`).join(' ')}`
+            let cmdResult = null
+            if (viaHttpServer) {
+                const body = JSON.stringify(args.map(([k,v])=>`${k}:${v}`))
+                const url = `${viaHttpServer}/?op=jb`
+                cmdResult = await jbHost.fetch(url,{method: 'POST', body}).then(r => r.text())
+            } else if (jbHost.spawn) {
+                try {
+                   cmdResult = await jbHost.spawn(args)
+                } catch (e) {
+                  jb.logException(e,'cmd',{command})
+                }
+            }
+            try {
+                return JSON.parse(cmdResult).result
+            } catch (err) {
+                jb.logError('cmd: can not parse result returned from jb.js',{res, command, err})
+            }
+
+            function jbArgsFromSctx() { return { 
+                    main: { profile: sctx.profile } , 
+                    context: { ...(sctx.vars || {}), ...(jb.path(sctx,'cmpCtx.params') || {}) }, 
+                    plugins: pluginsOfProfile((data || action).profile) }
+            }
+            function pluginsOfProfile(prof) {
+                if (!prof || typeof prof != 'object' || !prof[jb.core.CT]) return []
+                if (Array.isArray(prof))
+                    return prof.flatMap(x=>pluginsOfProfile(x))
+                const id = (prof[jb.core.CT].dslType || '').indexOf('<') == -1 ? prof.$ : prof[jb.core.CT].dslType + prof.$
+                const plugin = (jb.comps[id][jb.core.CT].plugin || {}).id || ''
+                return jb.utils.unique([plugin,...Object.values(prof).flatMap(x=>pluginsOfProfile(x))])
+            }
+        },
+        createCallbagSource: () => jb.logError('cmd.jbm - callbag is not supported'),
+        createCallbagOperator: () => jb.logError('cmd.jbm - callbag is not supported'),
+
+        async rjbm() { return this }
+    })
 })
 
 component('byUri', {
@@ -128,7 +188,6 @@ component('byUri', {
               nextPort = jb.jbm.gateway
           }
           if (!nextPort) {
-              debugger
               return jb.logError(`routing - can not find next port`,{routingPath, uri: jb.uri, from,to})
           }
   
@@ -190,12 +249,12 @@ component('jbm.start', {
 //     impl: (ctx,id) => jb.jbm.terminateChild(id)
 // })
 
-component('workerGroupByKey', {
-  type: 'jbm',
-  params: [
-    {id: 'groupId', as: 'string', description: 'used as prefix', mandatory: true },
-    {id: 'genericJbm', type: 'jbm', composite: true, mandatory: true},
-    {id: 'key', as: 'string', dynamic: true, mandatory: true, description: 'specialized worker for each key' },
-  ],
-  impl: () => {} //pipe (Var('groupWorkerId', '%$groupId%-%$key()%'),'%$genericJbm()%')
-})
+// component('workerGroupByKey', {
+//   type: 'jbm',
+//   params: [
+//     {id: 'groupId', as: 'string', description: 'used as prefix', mandatory: true },
+//     {id: 'genericJbm', type: 'jbm', composite: true, mandatory: true},
+//     {id: 'key', as: 'string', dynamic: true, mandatory: true, description: 'specialized worker for each key' },
+//   ],
+//   impl: () => {} //pipe (Var('groupWorkerId', '%$groupId%-%$key()%'),'%$genericJbm()%')
+// })

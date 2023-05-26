@@ -1,4 +1,4 @@
-using('probe,watchable-comps,tree-shake,remote-widget')
+using('probe,watchable-comps,tree-shake,remote-widget,testing')
 
 component('probePreviewWorker', {
   type: 'jbm<jbm>',

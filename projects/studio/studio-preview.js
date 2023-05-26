@@ -4,12 +4,20 @@ component('wPreview', {
   params: [
     {id: 'id', defaultValue: 'wPreview'}
   ],
-  impl: worker({id: '%$id%', init:studio.initPreview()})
+  impl: worker({id: '%$id%',sourceCode: preview(), init: studio.initPreview()})
 })
 
 component('preview', {
   type: 'jbm<jbm>',
   impl: If('%$yellowPages/preview%', byUri('%$yellowPages/preview%'), wPreview())
+})
+
+component('preview', {
+  type: 'source-code<jbm>',
+  params: [
+    {id: 'filePath', as: 'string'}
+  ],
+  impl: sourceCode(plugins('testing,probe-preview'))
 })
 
 component('studio.initPreview', {

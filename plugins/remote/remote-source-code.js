@@ -3,6 +3,8 @@ extension('jbm','source' , {
         return jb.asArray(codeInPackage).reduce((acc,option) => {
             if (option.plugins) 
                 acc.plugins = [...(acc.plugins || []), ...option.plugins]
+            else if (option.project) 
+                acc.project = [...(acc.project || []), ...jb.asArray(option.project)]
             else 
                 Object.assign(acc,option)
             return acc
@@ -21,7 +23,7 @@ component('sourceCode', {
   ],
   impl: (ctx,pluginsToLoad,pluginPackages,treeShakeServer,libsToInit) => ({ 
     ...(pluginPackages.length ? { pluginPackages } : {}),
-    plugins:[], ...jb.jbm.unifyPluginsToLoad(pluginsToLoad),
+    plugins:[], ...jb.jbm.unifyPluginsToLoad(pluginsToLoad.flatMap(x=>x)),
     ...(libsToInit ? {libsToInit} : {}),
     treeShakeServerUri: (treeShakeServer || {}).uri 
   })
@@ -51,9 +53,24 @@ component('pluginsByPath', {
   type: 'plugins-to-load',
   params: [
     {id: 'path', as: 'string', mandatory: true, description: 'E.g. someDir/plugins/mycode.js'},
-    {id: 'tests', as: 'boolean', description: 'add plugin-tests'}
+    {id: 'addTests', as: 'boolean', description: 'add plugin-tests'}
   ],
-  impl: (ctx,path,tests) => ({ plugins: [jb.utils.pathToPluginId(path)].flatMap(x=>[x,tests && `${x}-tests`]).filter(x=>x) })
+  impl: (ctx,_path,addTests) => {
+    const rep = (_path.match(/projects\/([^/]*)\/(plugins|projects)/) || [])[1]
+    const path = (_path.match(/projects(.*)/)||[])[1] || _path
+    const tests = path.match(/-(tests|testers).js$/) || path.match(/\/tests\//) ? '-tests': ''
+
+    return [
+      ...pluginsOrProject(path.match(/plugins\/([^\/]+)/),'plugins'),
+      ...pluginsOrProject(path.match(/projects\/([^\/]+)/),'project')
+    ]
+
+    function pluginsOrProject(matchResult,entry) {
+      if (!matchResult) return []
+      const res = matchResult[1] + tests
+      return [{ [entry] : (!tests && addTests) ? [res, `${res}-tests`] : [res] }]
+    }
+  }
 })
 
 component('loadAll', {
@@ -72,7 +89,7 @@ component('plugins', {
 component('project', {
   type: 'plugins-to-load',
   params: [
-    {id: 'project', as: 'string', mandatory: true}
+    {id: 'project', as: 'array', mandatory: true}
   ],
   impl: ctx => ctx.params
 })

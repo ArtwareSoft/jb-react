@@ -137,13 +137,10 @@ component('completionTest.dynamicFormat', {
     compText: "component('x', {\n  impl: uiTest(__{control: text('my text'), expectedResult: contains('hello world')})\n})",
     completionToActivate: 'userInput',
     expectedEdit: () => ({
-  range: {start: {line: 1, col: 16}, end: {line: 1, col: 81}},
-  newText: `
-    control: text('my text'),
-    userInput: TBD(),
-    expectedResult: contains('hello world')
-  `}),
-  expectedCursorPos: '3,15'
+      range: {start: {line: 1, col: 42}, end: {line: 1, col: 42}},
+      newText: 'userInput: TBD(), '
+    }),
+  expectedCursorPos: '1,53'
  })
 })
 
@@ -395,6 +392,22 @@ component('remoteTest.langServerCmd.ExternalCompletions', {
       Var('docProps', tgp.dummyDocProps({compText: `component('x', {
   impl: dataTest(pipeline(__))
 })`, filePath: '/home/shaiby/projects/amta/plugins/amta-parsing/parsing-tests.js'})),
+      '1',
+      tgp.getCompletionItemsFromCmd('%$docProps%'),
+      log('test'),
+      count()
+    ),
+    expectedResult: '%% > 10',
+    timeout: 1000
+  })
+})
+
+component('remoteTest.langServerCmd.StudioCompletions', {
+  impl: dataTest({
+    calculate: pipe( 
+      Var('docProps', tgp.dummyDocProps({compText: `component('x', {
+  impl: pipeline(pipeline(__))
+})`, filePath: '/home/shaiby/projects/jb-react/projects/studio/studio-main.js'})),
       '1',
       tgp.getCompletionItemsFromCmd('%$docProps%'),
       log('test'),

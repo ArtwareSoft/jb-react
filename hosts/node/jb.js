@@ -30,7 +30,7 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
     const sourceCodeStr = getProcessArgument('sourceCode')
     const sourceCode = sourceCodeStr ? JSON.parse(sourceCodeStr) 
         : { plugins:_plugins ? _plugins.split(',') : [], project, pluginPackages: {$:'defaultPackage'} }
-    sourceCode.plugins.push('remote')
+    //sourceCode.plugins.push('remote') // used for jb.remoteCtx.stripData
 
     globalThis.jb = await jbInit(uri||'main', sourceCode)
 
@@ -54,7 +54,7 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
     const res = await jb.utils.resolveDelayed(new jb.core.jbCtx().setVars(vars).run({$: compId}))
     const result = { result: res, cmd }
     try {
-        console.log(JSON.stringify(jb.remoteCtx.stripData({...result})))
+        console.log(JSON.stringify(stripData({...result})))
     } catch(err) {
         return console.log(JSON.stringify({error: { desc: 'can not stringify result', err }}))
     }
@@ -115,4 +115,33 @@ function resolveMacros(code, dsl) {
     } catch (e) { 
         return {err: e}
     } 
+}
+
+function stripData(data, { top, depth, path} = {}) {
+    if (data == null) return
+    const innerDepthAndPath = key => ({depth: (depth || 0) +1, top: top || data, path: [path,key].filter(x=>x).join('~') })
+
+    if (['string','boolean','number'].indexOf(typeof data) != -1) return data
+    if (typeof data == 'function')
+         return
+    if (data instanceof jb.core.jbCtx)
+         return
+    if (depth > 10) {
+         jb.logError('stripData too deep object, maybe recursive',{top, path, depth, data})
+         return
+    }
+
+    if (Array.isArray(data))
+         return data.slice(0,30).map((x,i)=> stripData(x, innerDepthAndPath(i)))
+    if (typeof data == 'object' && ['DOMRect'].indexOf(data.constructor.name) != -1)
+        return jb.objFromEntries(Object.keys(data.__proto__).map(k=>[k,data[k]]))
+    if (typeof data == 'object' && ['VNode','Object','Array'].indexOf(data.constructor.name) == -1)
+        return { $$: data.constructor.name }
+    if (typeof data == 'object' && data.comps)
+        return { uri : data.uri}
+    if (typeof data == 'object')
+         return jb.objFromEntries(jb.entries(data)
+            .filter(e=> data.$ || typeof e[1] != 'function') // if not a profile, block functions
+//                .map(e=>e[0] == '$' ? [e[0], jb.path(data,[jb.core.CT,'comp',jb.core.CT,'fullId']) || e[1]] : e)
+            .map(e=>[e[0],stripData(e[1], innerDepthAndPath(e[0]) )]))
 }

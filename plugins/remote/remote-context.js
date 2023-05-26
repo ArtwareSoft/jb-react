@@ -100,12 +100,12 @@ extension('remoteCtx', {
     stripJS(val) {
         return typeof val == 'function' ? `@js@${val.toString()}` : jb.remoteCtx.stripData(val)
     },
-    serializeCmp(compId) {
-        if (!jb.comps[compId])
-            return jb.logError('no component of id ',{compId}),''
-        return jb.utils.prettyPrint({compId, ...jb.comps[compId],
-            location: jb.comps[compId][jb.core.CT].location } )
-    },
+    // serializeCmp(compId) {
+    //     if (!jb.comps[compId])
+    //         return jb.logError('no component of id ',{compId}),''
+    //     return jb.utils.prettyPrint({compId, ...jb.comps[compId],
+    //         location: jb.comps[compId][jb.core.CT].location } )
+    // },
     shouldPassVar: (varName, profText) => jb.remoteCtx.allwaysPassVars.indexOf(varName) != -1 || profText.match(new RegExp(`\\b${varName}\\b`)),
     usingData: profText => profText.match(/({data})|(ctx.data)|(%[^$])/)
 })

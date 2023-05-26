@@ -1,5 +1,8 @@
 component('uiTest.group', {
-  impl: uiTest({control: group({controls: [text('hello world'), text('2')]}), expectedResult: contains(['hello world','2'])})
+  impl: uiTest({
+    control: group({controls: [text('hello world'), text('2')]}),
+    expectedResult: contains(['hello world','2'])
+  })
 })
 
 component('uiTest.label', {

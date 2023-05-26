@@ -74,7 +74,7 @@ component('remote.action', {
         if (!rjbm || !rjbm.remoteExec)
             return jb.logError('remote.action - can not resolve jbm', {in: jb.uri, jbm, rjbm, jbmProfile: ctx.profile.jbm, jb, ctx})
         action.require = require
-        return rjbm.remoteExec(jb.remoteCtx.stripFunction(action),{timeout,oneway,isAction: true})
+        return rjbm.remoteExec(jb.remoteCtx.stripFunction(action),{timeout,oneway,isAction: true,action})
     }
 })
 
@@ -84,7 +84,7 @@ component('remote.data', {
     {id: 'data', dynamic: true},
     {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self()},
     {id: 'timeout', as: 'number', defaultValue: 10000},
-    {id: 'require', as: 'string'},
+    {id: 'require', as: 'string'}
   ],
   impl: async (ctx,data,jbm,timeout,require) => {
         if (jbm == jb)
@@ -96,7 +96,7 @@ component('remote.data', {
             return jb.logError('remote.data - can not resolve jbm', {in: jb.uri, jbm, rjbm, jbmProfile: ctx.profile.jbm, jb, ctx})
                 
         data.require = require
-        return rjbm.remoteExec(jb.remoteCtx.stripFunction(data),{timeout})
+        return rjbm.remoteExec(jb.remoteCtx.stripFunction(data),{timeout,data})
     }
 })
 

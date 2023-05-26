@@ -6,9 +6,9 @@ component('remote.cmd', {
       {id: 'context', description:'e.g {v1: "xx", param1: prof1("yy") }'}, 
       {id: 'sourceCode', type: 'source-code', mandatory: true },
       {id: 'id', as: 'string', description: 'jb.uri of cmd, default is main'},
-      {id: 'nodeContainerUrl', as: 'string', defaultValue: 'http://localhost:8082'},
+      {id: 'viaHttpServer', as: 'string', defaultValue: 'http://localhost:8082'},
   ],
-  impl: async (ctx,main,wrap,context,sourceCode,id,nodeContainerUrl) => {
+  impl: async (ctx,main,wrap,context,sourceCode,id,viaHttpServer) => {
         const args = [
             ['-main', jb.utils.prettyPrint(main.profile,{forceFlat: true})],
             ['-wrap', wrap],
@@ -17,7 +17,7 @@ component('remote.cmd', {
             ...Object.keys(context).map(k=>[`%${k}`,context[k]]),
         ].filter(x=>x[1])
         const body = JSON.stringify(args.map(([k,v])=>`${k}:${v}`))
-        const url = `${nodeContainerUrl}/?op=jb`
+        const url = `${viaHttpServer}/?op=jb`
 
         return jbHost.fetch(url,{method: 'POST', body}).then(r => r.json()).then(x=>x.result)
     }

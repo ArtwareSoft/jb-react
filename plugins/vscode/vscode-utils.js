@@ -148,8 +148,7 @@ extension('vscode', 'utils', {
     async openProbeResultPanel() {
         const docProps = jb.tgpTextEditor.host.compTextAndCursor()
         jb.vscode.log('start openProbeResultPanel')
-        const _probePath = await jb.exec(tgp.getPathFromCmd({docProps: () => docProps }))
-        const probePath = _probePath
+        const probePath = await jb.exec(tgp.getPathFromCmd({docProps: () => docProps }))
         jb.vscode.log(`probePath: ${probePath}, filePath:${docProps.filePath}`)
         const _probeRes = await jb.vscode.ctx.run({$: 'probe.probeByCmd', filePath: docProps.filePath, probePath})
         const probeRes = _probeRes.result
@@ -158,6 +157,14 @@ extension('vscode', 'utils', {
         jb.vscode.panels.main.render('probe.probeResView',probeRes)
     },
     async openLiveProbeResultPanel() {
+    },
+    async openjBartStudio() {
+        // const docProps = jb.tgpTextEditor.host.compTextAndCursor()
+        // jb.vscode.log('start openProbeResultPanel')
+        // const probePath = await jb.exec(tgp.getPathFromCmd({docProps: () => docProps }))
+        // const 
+        // jb.vscode.log(`probePath: ${probePath}, filePath:${docProps.filePath}`)
+
     },
 
     toVscodeFormat(pos) {

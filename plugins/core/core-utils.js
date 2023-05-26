@@ -267,7 +267,7 @@ extension('utils', 'core', {
       const rep = (_path.match(/projects\/([^/]*)\/(plugins|projects)/) || [])[1]
       const path = (_path.match(/projects(.*)/)||[])[1] || _path
       const tests = path.match(/-(tests|testers).js$/) || path.match(/\/tests\//) ? '-tests': ''
-      return (path.match(/(plugins|projects)\/([^\/]+)/) || ['','',''])[2] + tests
+      return (path.match(/plugins\/([^\/]+)/) || ['','',''])[2] + tests
     },    
     indexOfCompDeclarationInTextLines(lines,id) {
       return lines.findIndex(line=> {
@@ -283,16 +283,17 @@ extension('utils', 'generic', {
     isObject: o => o != null && typeof o === 'object',
     isPrimitiveValue: val => ['string','boolean','number'].indexOf(typeof val) != -1,
     tryWrapper(f,msg,ctx) { try { return f() } catch(e) { jb.logException(e,msg,{ctx}) }},
-    flattenArray(items) {
-      let out = [];
-      items.filter(i=>i).forEach(function(item) {
-        if (Array.isArray(item))
-          out = out.concat(item);
-        else
-          out.push(item);
-      })
-      return out;
-    },
+    flattenArray: items => items.flatMap(x=>x),
+    //  {
+    //   let out = [];
+    //   items.filter(i=>i).forEach(function(item) {
+    //     if (Array.isArray(item))
+    //       out = out.concat(item);
+    //     else
+    //       out.push(item);
+    //   })
+    //   return out;
+    // },
     isPromise: v => v && Object.prototype.toString.call(v) === '[object Promise]',
     isDelayed(v) {
       if (!v || v.constructor === {}.constructor || Array.isArray(v)) return

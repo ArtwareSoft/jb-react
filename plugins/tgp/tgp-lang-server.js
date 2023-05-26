@@ -109,3 +109,22 @@ component('tgp.editsAndCursorPos', {
   ],
   impl: (ctx,docProps,item) => jb.tgpTextEditor.editsAndCursorPos({docProps,item},ctx)
 })
+
+component('tgp.getStudioParamsFromCmd', {
+  params: [
+    {id: 'docProps'}
+  ],
+  impl: remote.cmd({
+    main: tgp.providePath(),
+    context: obj(prop('docProps', json.stringify(obj(prop('$asIs', '%$docProps%'))))),
+    sourceCode: langServer('%$docProps/filePath%'),
+    id: 'langServer'
+  })
+})
+component('tgp.providePath', {
+  params: [
+    {id: 'docProps'},
+  ],
+  impl: (ctx,docProps) => jb.tgpTextEditor.providePath(docProps,ctx)
+})
+

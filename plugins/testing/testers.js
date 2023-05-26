@@ -203,7 +203,7 @@ extension('test', {
 				jb.test.usedJSHeapSize = (jb.path(jb.frame,'performance.memory.usedJSHeapSize' || 0) / 1000000)
 				jb.test.updateTestHeader(jb.frame.document, jb.test)
 
-				jb.test.addHTML(document.body, jb.test.testResultHtml(res, repo));
+				jb.test.addHTML(document.body, jb.test.testResultHtml(res));
 				if (!res.renderDOM && show) res.show()
 				if (jb.ui && tests.length >1) {
 					jb.cbLogByPath = {}
@@ -211,16 +211,18 @@ extension('test', {
 				}
 		}))
   	},
-	testResultHtml(res, repo) {
+	testResultHtml(res) {
 		const baseUrl = jb.frame.location.href.split('/tests.html')[0]
-		const studioUrl = `http://localhost:8082/project/studio/${res.id}?host=test`
+		const sourceCode = JSON.stringify(jb.exec({$: 'test', $typeCast: 'source-code<jbm>', 
+			filePath: (jb.comps[res.id][jb.core.CT].location || [])[0] }))
+		const studioUrl = `http://localhost:8082/project/studio/${res.id}?sourceCode=${encodeURIComponent(sourceCode)}`
 		const matchLogs = 'remote,itemlist,refresh'.split(',')
 		const matchLogsMap = jb.entries({ui: ['uiComp'], widget: ['uiComp','widget'] })
 		const spyLogs = ['test', ...(matchLogs.filter(x=>res.id.toLowerCase().indexOf(x) != -1)), 
 			...(matchLogsMap.flatMap( ([k,logs]) =>res.id.toLowerCase().indexOf(k) != -1 ? logs : []))]
-		const repoInUrl = repo ? `&repo=${repo}` : ''
+		const sourceCodeInUrl = sourceCode ? `&sourceCode=${sourceCode}` : ''
 		return `<div class="${res.success ? 'success' : 'failure'}"">
-			<a href="${baseUrl}/tests.html?test=${res.id}${repoInUrl}&show&spy=${spyLogs.join(',')}" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
+			<a href="${baseUrl}/tests.html?test=${res.id}${sourceCodeInUrl}&show&spy=${spyLogs.join(',')}" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
 			<span> ${res.duration}mSec</span> 
 			<a class="test-button" href="javascript:jb.test.goto_editor('${res.id}')">src</a>
 			<a class="test-button" href="${studioUrl}">studio</a>
@@ -277,4 +279,18 @@ component('tests.runner', {
 			sink.action(()=>{})
 		)
 	)
+})
+
+component('test', {
+  type: 'source-code<jbm>',
+  params: [
+    {id: 'filePath', as: 'string'}
+  ],
+  impl: sourceCode(
+    [
+      pluginsByPath('%$filePath%', true), // load tests because usually circuit comes from tests
+      plugins('testing,probe-preview,tree-shake,tgp,workspace')
+    ],
+    packagesByPath('%$filePath%')
+  )
 })

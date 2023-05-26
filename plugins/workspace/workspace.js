@@ -3,8 +3,8 @@ extension('workspace', {
 	$phase: 50,
     initExtension() { 
         const gotoPathRequest = jb.callbag.subject()
-        //jb.utils.subscribe(jb.watchableComps.source, e => jb.workspace.applyDeltaFromStudio(e))
-        //jb.utils.subscribe(gotoPathRequest, e => jb.tgpTextEditor.gotoPath(e))
+        //jb.utils.subscribe(jb.watchableComps.source, e => jb .workspace.applyDeltaFromStudio(e))
+        //jb.utils.subscribe(gotoPathRequest, e => jb .tgpTextEditor.gotoPath(e))
 
         return {
             onSaveDoc: jb.callbag.subject(),
@@ -16,7 +16,7 @@ extension('workspace', {
 
             openDocs: {},
             activeUri: ''
-    }},    
+    }},
     initJbWorkspaceAsHost() {
         jb.tgpTextEditor.cache = {}
         if (jb.path('jb.tgpTextEditor.host.type') == 'jbWorkspace') return

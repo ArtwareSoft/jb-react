@@ -64,6 +64,10 @@
 			{
 				"command": "jbart.openProbeResultPanel",
 				"title": "inspect probe result input output"
+			},
+			{
+				"command": "jbart.openjBartStudio",
+				"title": "open jBart studio"
 			}
 		],
 		"keybindings": [
@@ -84,9 +88,14 @@
 			},
 			{
 				"command": "jbart.openProbeResultPanel",
-				"key": "ctrl+Alt+I",
+				"key": "ctrl+I",
 				"when": "editorTextFocus"
-			}
+			},
+			{
+				"command": "jbart.openjBartStudio",
+				"key": "ctrl+J",
+				"when": "editorTextFocus"
+			}			
 		]
 	}
 }
