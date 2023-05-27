@@ -123,7 +123,7 @@ component('tgp.fixEditedCompTest', {
 
 component('tgp.dummyDocProps', {
   params: [
-    {id: 'compText', as: 'string', description: 'use __ for completion point'},
+    {id: 'compText', as: 'string', mandatory: true, description: 'use __ for completion point'},
     {id: 'dsl', as: 'string'},
     {id: 'filePath', as: 'string', defaultValue: 'projects/jb-react/plugins/common/jb-common-tests.js'},
   ],

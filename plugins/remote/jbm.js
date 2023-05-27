@@ -112,15 +112,16 @@ component('cmd', {
     impl: (ctx,_sourceCode,viaHttpServer,id) => ({
         uri: id || 'main',
         remoteExec: async (sctx,{data, action} = {}) => {
-            const { main, context, wrap, plugins } = jbArgsFromSctx()
-            const sourceCode = _sourceCode  || { plugins , pluginPackages: [{$:'defaultPackage'}] }
+            // const params = jb.path(sctx,'cmpCtx.params') || {}
+            // const context = { ...(sctx.vars || {}), ...params }
+            const plugins = pluginsOfProfile([(data || action).profile, jb.path(sctx,'cmpCtx.params')])
+            const sourceCode = _sourceCode || { plugins , pluginPackages: [{$:'defaultPackage'}] }
     
             const args = [
-                ['-main', jb.utils.prettyPrint(main.profile,{forceFlat: true})],
-                ['-wrap', wrap],
+                ['-runCtx', JSON.stringify(sctx)],
                 ['-uri', id || 'main'],
                 ['-sourceCode', JSON.stringify(sourceCode)],
-                ...Object.keys(context).map(k=>[`%${k}`,context[k]]),
+//                ...Object.keys(context).map(k=>[`%${k}`, encodeContextVal(context[k])]),
             ].filter(x=>x[1])
             const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(x=>`'${x}'`).join(' ')}`
             let cmdResult = null
@@ -141,18 +142,23 @@ component('cmd', {
                 jb.logError('cmd: can not parse result returned from jb.js',{res, command, err})
             }
 
-            function jbArgsFromSctx() { return { 
-                    main: { profile: sctx.profile } , 
-                    context: { ...(sctx.vars || {}), ...(jb.path(sctx,'cmpCtx.params') || {}) }, 
-                    plugins: pluginsOfProfile((data || action).profile) }
-            }
+            // function encodeContextVal(val) {
+            //     if (!val || typeof val != 'object') return val
+            //     if (val.$ && val.$ == 'runCtx')
+            //         return JSON.stringify({$: 'runCtx', profile: val.profile})
+            //     if (val.$) {
+            //         debugger
+            //         return jb.utils.prettyPrint(val,{forceFlat: true})
+            //     }
+            //     return JSON.stringify({$asIs: val})
+            // }
             function pluginsOfProfile(prof) {
-                if (!prof || typeof prof != 'object' || !prof[jb.core.CT]) return []
-                if (Array.isArray(prof))
-                    return prof.flatMap(x=>pluginsOfProfile(x))
-                const id = (prof[jb.core.CT].dslType || '').indexOf('<') == -1 ? prof.$ : prof[jb.core.CT].dslType + prof.$
-                const plugin = (jb.comps[id][jb.core.CT].plugin || {}).id || ''
-                return jb.utils.unique([plugin,...Object.values(prof).flatMap(x=>pluginsOfProfile(x))])
+                if (!prof || typeof prof != 'object') return []
+                if (!prof.$)
+                    return jb.utils.unique(Object.values(prof).flatMap(x=>pluginsOfProfile(x)))
+                const fullId = jb.utils.compName(prof)
+                const plugin = (jb.comps[fullId][jb.core.CT].plugin || {}).id || ''
+                return jb.utils.unique([plugin,...Object.values(prof).flatMap(x=>pluginsOfProfile(x))]).filter(x=>x)
             }
         },
         createCallbagSource: () => jb.logError('cmd.jbm - callbag is not supported'),
@@ -238,7 +244,7 @@ component('jbm.start', {
   params: [ 
       {id: 'jbm', type: 'jbm', mandatory: true}
   ],
-  impl: pipe('%$jbm%', '%rjbm()%' ,'%$jbm%',first()) // ctx => ctx.data.rjbm()
+  impl: pipe('%$jbm%', '%rjbm()%' ,'%$jbm%',first())
 })
 
 // component('jbm.terminateChild', {
@@ -246,7 +252,7 @@ component('jbm.start', {
 //     params: [
 //         {id: 'id', as: 'string'}
 //     ],
-//     impl: (ctx,id) => jb.jbm.terminateChild(id)
+//     impl: (ctx,id) => jb.jbm.terminateChild(id,ctx)
 // })
 
 // component('workerGroupByKey', {

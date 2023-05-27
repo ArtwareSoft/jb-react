@@ -348,3 +348,45 @@ component('tgpTextEditor.cursorPath', {
     ],  
     impl: (ctx,ref,pos) => jb.path(jb.tgpTextEditor.pathOfPosition(ref, pos()),'path') || ''
 })
+
+component('tgpTextEditor.probeByDocProps', {
+  params: [
+    {id: 'docProps'}
+  ],
+  impl: remote.data(
+    pipe({'$': 'probe.runCircuit', '$byValue': [
+      tgp.providePath('%$docProps%')
+    ]}, '%result%'),
+    cmd(probe('%$docProps/filePath%'))
+  )
+})
+
+component('tgpTextEditor.studioCircuitUrl', {
+  params: [
+    {id: 'docProps'}
+  ],
+  impl: remote.data(
+    pipeline(
+      Var('sourceCode', sourceCode.encodeUri(probe('%$docProps/filePath%'))),
+      Var('probePath', tgp.providePath('%$docProps%')),
+      Var('circuit', {'$': 'probe.calcCircuitPath', '$byValue': ['%$probePath%']}),
+      join({separator: '/', items: list('%$circuit%','%$probePath%')}),
+      'http://localhost:8082/project/studio/%%?sourceCode=%$sourceCode%'
+    ),
+    cmd(probe('%$docProps/filePath%'))
+  )
+})
+
+component('probe', {
+  type: 'source-code<jbm>',
+  params: [
+    {id: 'filePath', as: 'string'}
+  ],
+  impl: sourceCode(
+    [
+      pluginsByPath('%$filePath%', true),
+      plugins('probe,tree-shake,tgp')
+    ],
+    packagesByPath('%$filePath%')
+  )
+})

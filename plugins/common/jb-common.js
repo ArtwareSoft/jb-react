@@ -21,6 +21,16 @@ component('call', {
  	}
 })
 
+component('runCtx',{
+  type: 'any',
+  params: [
+      {id: 'path', as: 'string'},
+      {id: 'vars' },
+      {id: 'profile' },
+  ],
+  impl: ''
+})
+
 component('cast', {
   type: 'any',
   params: [

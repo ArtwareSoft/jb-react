@@ -1,10 +1,10 @@
 const { jbHost } = require('./node-host.js')
 const { getProcessArgument } = jbHost
 const _params = 
-      ['main','plugins','project','wrap','uri','dsl','verbose']
-const [main,_plugins,project,wrap,uri,dsl,verbose] = _params.map(p=>getProcessArgument(p))
+      ['main','plugins','project','wrap','uri','dsl','verbose','runCtx']
+const [main,_plugins,project,wrap,uri,dsl,verbose,runCtx] = _params.map(p=>getProcessArgument(p))
 
-if (!main) {
+if (!main && !runCtx) {
     console.log(`usage: jb.js 
     -main:button("hello") // mandatory. profile to run
     -wrap:prune(MAIN) // optional. profile that wraps the 'main' profile and will be run instead
@@ -16,6 +16,7 @@ if (!main) {
     -verbose // show params, vars, and generated tgp code
     %v1:val // variable values
     %p1:val||script // param values
+    -runCtx:... // json of runCtx instead of main/wrap/vars and params 
 `)
     process.exit(1)
 }
@@ -30,9 +31,17 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
     const sourceCodeStr = getProcessArgument('sourceCode')
     const sourceCode = sourceCodeStr ? JSON.parse(sourceCodeStr) 
         : { plugins:_plugins ? _plugins.split(',') : [], project, pluginPackages: {$:'defaultPackage'} }
-    //sourceCode.plugins.push('remote') // used for jb.remoteCtx.stripData
 
     globalThis.jb = await jbInit(uri||'main', sourceCode)
+    jb.spy.initSpy({spyParam: 'error'})
+    // loading remote-context.js
+    const plugin = jb.plugins.remote
+    const fileSymbols = plugin.files.find(x=>x.path.match(/remote-context/))
+    await jb.loadjbFile(fileSymbols.path,jb,{fileSymbols,plugin})
+    await jb.initializeLibs(fileSymbols.libs)
+
+    if (runCtx)
+        return await runAndEmitResult(jb.remoteCtx.deStrip(JSON.parse(runCtx)))
 
     const {params, vars} = calcParamsAndVars()
     if (verbose)
@@ -42,6 +51,7 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
     const code = `
     const params = {${params.map(p=>`${p[0]}: ${p[1].match(/\(|{|"/) ? p[1] : `"${p[1]}"` }`).join(', ')} }
     component('mainToRun', { impl: ${main} })
+    debugger
     Object.assign(jb.core.unresolvedProfiles[0].comp.impl,params)
     ${wrapperCode}
 `
@@ -50,15 +60,26 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
     const {compId, err} = evalProfileDef(code,dsl)
     if (err)
         return console.log(JSON.stringify({error: { desc: 'can not resolve profile', cmd, err }}))
+    
+    await runAndEmitResult(() => jb.utils.resolveDelayed(new jb.core.jbCtx().setVars(vars).run({$: compId})))
 
-    const res = await jb.utils.resolveDelayed(new jb.core.jbCtx().setVars(vars).run({$: compId}))
-    const result = { result: res, cmd }
-    try {
-        console.log(JSON.stringify(stripData({...result})))
-    } catch(err) {
-        return console.log(JSON.stringify({error: { desc: 'can not stringify result', err }}))
+    async function runAndEmitResult(f) {
+        let res = null, exception = null
+        try {
+            res = await f()
+        } catch(e) {
+            exception = e
+        }
+        const result = { result: res, cmd, exception, errors: jb.spy.search('error') }
+        try {
+            console.log(JSON.stringify(jb.remoteCtx.stripData({...result})))
+            process.exit(0)
+        } catch(err) {
+            return console.log(JSON.stringify({ cmd, desc: 'can not stringify result', err }))
+        }
     }
 })()
+
 
 function calcParamsAndVars() {
     const params = jb.path(jb.utils.getComp(main.split('(')[0],{dsl}),'params') || []
@@ -66,14 +87,11 @@ function calcParamsAndVars() {
     let vars = {}
     all.filter(p=>!isParam(p[0])).forEach(v=>{
         const ctx = new jb.core.jbCtx().setVars(vars)
-        const { profile } = resolveMacros(v[1])
-        vars[v[0]] = profile ? ctx.run(profile) : jb.expression.calc(v[1],ctx)
+        const { profile } = evalInContext(v[1])
+        vars[v[0]] = profile && ctx.run(profile) || jb.expression.calc(v[1],ctx)
     })
 
-    return {
-        params: all.filter(p=>isParam(p[0])),
-        vars
-    }
+    return { vars, params: all.filter(p=>isParam(p[0])) }
 
     function isParam(paramId) {
         return params.find(p=>p.id == paramId)
@@ -84,16 +102,6 @@ function calcParamsAndVars() {
         return [str.slice(0,index), str.slice(index+1)]
     }
 }
-
-// function getProcessArgument(argName) {
-//     for (let i = 0; i < process.argv.length; i++) {
-//       const arg = process.argv[i];
-//       if (arg.indexOf('-' + argName + ':') == 0) 
-//         return arg.substring(arg.indexOf(':') + 1);
-//       if (arg == '-' + argName) return true;
-//     }
-//     return '';
-// }
 
 function evalProfileDef(code, dsl) { 
     try {
@@ -108,40 +116,11 @@ function evalProfileDef(code, dsl) {
     } 
 }
 
-function resolveMacros(code, dsl) { 
+function evalInContext(code, dsl) { 
     try {
         const context = { jb, ...jb.macro.proxies, component: (...args) => jb.component({},dsl,...args) }
         return new Function(Object.keys(context), `return ${code}`).apply(null, Object.values(context))
     } catch (e) { 
         return {err: e}
     } 
-}
-
-function stripData(data, { top, depth, path} = {}) {
-    if (data == null) return
-    const innerDepthAndPath = key => ({depth: (depth || 0) +1, top: top || data, path: [path,key].filter(x=>x).join('~') })
-
-    if (['string','boolean','number'].indexOf(typeof data) != -1) return data
-    if (typeof data == 'function')
-         return
-    if (data instanceof jb.core.jbCtx)
-         return
-    if (depth > 10) {
-         jb.logError('stripData too deep object, maybe recursive',{top, path, depth, data})
-         return
-    }
-
-    if (Array.isArray(data))
-         return data.slice(0,30).map((x,i)=> stripData(x, innerDepthAndPath(i)))
-    if (typeof data == 'object' && ['DOMRect'].indexOf(data.constructor.name) != -1)
-        return jb.objFromEntries(Object.keys(data.__proto__).map(k=>[k,data[k]]))
-    if (typeof data == 'object' && ['VNode','Object','Array'].indexOf(data.constructor.name) == -1)
-        return { $$: data.constructor.name }
-    if (typeof data == 'object' && data.comps)
-        return { uri : data.uri}
-    if (typeof data == 'object')
-         return jb.objFromEntries(jb.entries(data)
-            .filter(e=> data.$ || typeof e[1] != 'function') // if not a profile, block functions
-//                .map(e=>e[0] == '$' ? [e[0], jb.path(data,[jb.core.CT,'comp',jb.core.CT,'fullId']) || e[1]] : e)
-            .map(e=>[e[0],stripData(e[1], innerDepthAndPath(e[0]) )]))
 }

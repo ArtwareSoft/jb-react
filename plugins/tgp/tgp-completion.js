@@ -26,7 +26,7 @@ extension('tgp', 'completion', {
         if (paramDef.options) {
             res = jb.tgp.selectEnumCompletions(path)        
         } else if (path.match(/~\$vars~[0-9]+~val$/)) {
-            res = jb.tgp.newPTCompletions(path)
+            res = [...jb.tgp.paramCompletions(path),...jb.tgp.newPTCompletions(path)]
         } else if (singleParamAsArray) {
             res = jb.tgp.newPTCompletions(`${path}~${singleParamAsArray.id}`, arrayIndex)
         } else if (allSemantics.reduce((acc,s) => acc || s.match(/-by-value|obj-separator-|-profile/), false )) {
@@ -204,8 +204,12 @@ extension('tgpTextEditor', 'completion', {
         const plugin = jb.plugins[jb.utils.pathToPluginId(filePath)] || {}
         const dsl = docProps.dsl || plugin.dsl
         const compId = dsl && jb.path(jb.utils.getCompByShortIdAndDsl(shortId,dsl),[jb.core.CT,'fullId']) || shortId
-        if (!jb.comps[compId])
-            jb.comps[compId] = jb.tgpTextEditor.evalProfileDef(compText,dsl).res
+        if (!jb.comps[compId]) {
+            const evalRes = jb.tgpTextEditor.evalProfileDef(compText,dsl)
+            if (evalRes.err)
+                return jb.logError('calcActiveEditorPath evalProfileDef', {...evalRes, compId, shortId , dsl })
+            jb.comps[compId] = evalRes.res
+        }
         if (!compId || !jb.comps[compId])
             return { error: 'can not determine compId', compId, shortId , dsl}
         if (clearCache)
@@ -270,9 +274,9 @@ extension('tgpTextEditor', 'completion', {
             jb.logError('completion provideCompletionItems', props)
         }
     },
-    async providePath(docProps) {
-        const {semanticPath} = jb.tgpTextEditor.calcActiveEditorPath(docProps, {clearCache: true})
-        return semanticPath.path.split('~!')[0]
+    providePath(docProps) {
+        const res = jb.tgpTextEditor.calcActiveEditorPath(docProps, {clearCache: true})
+        return res.semanticPath ? res.semanticPath.path.split('~!')[0] : {reformatEdits: res.reformatEdits, error: res.error }
     },
     async provideDefinition(docProps, ctx) {
         const props = jb.tgpTextEditor.calcActiveEditorPath(docProps, {clearCache: true})
@@ -360,7 +364,7 @@ extension('tgpTextEditor', 'completion', {
             if (cursorPos) {
                 jb.tgpTextEditor.host.selectRange(cursorPos)
                 if (cursorPos.TBD) {
-                    await jb.delay(1000)
+                    await jb.delay(ctx.vars.testID? 1: 1000)
                     await jb.tgpTextEditor.host.execCommand('editor.action.triggerSuggest')
                 }
             }

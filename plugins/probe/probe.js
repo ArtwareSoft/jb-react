@@ -30,14 +30,14 @@ extension('probe', 'main', {
         async function findMainCircuit(path) {
             const _ctx = new jb.core.jbCtx()
             const cmpId = path.split('~')[0]
-            await jb.treeShake.getCodeFromRemote([cmpId])
+            jb.treeShake.codeServerJbm && await jb.treeShake.getCodeFromRemote([cmpId])
             const circuitCmpId = jb.path(jb.utils.getComp(cmpId),'circuit')
                     || _ctx.exp('%$studio/circuit%') 
                     || _ctx.exp('%$probe/defaultMainCircuit%') 
                     || jb.path(jb.utils.getComp(cmpId),'impl.expectedResult') && cmpId // test
                     || findTest(cmpId) || cmpId
             if (circuitCmpId) {
-                await jb.treeShake.getCodeFromRemote([circuitCmpId])
+                jb.treeShake.codeServerJbm && await jb.treeShake.getCodeFromRemote([circuitCmpId])
                 const res = _ctx.ctx({ profile: {$: circuitCmpId}, comp : circuitCmpId, path: ''})
                 if (jb.tgp.isOfType(circuitCmpId,'control'))
                     return jb.ui.extendWithServiceRegistry(res)

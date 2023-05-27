@@ -1,3 +1,5 @@
+using('parsing,core-tests')
+
 component('jbmTest.child', {
   impl: dataTest({
     calculate: remote.data('hello', child()),
@@ -18,7 +20,11 @@ component('jbmTest.cmd', {
 })
 
 component('jbmTest.cmdWithVars', {
-  impl: dataTest(pipeline(Var('toPass','aa'),remote.data(pipeline('hello %$toPass%'), cmd())), equals('hello aa'))
+  impl: dataTest({
+    calculate: pipeline(Var('toPass', 'aa'), remote.data(pipeline('hello %$toPass%'), cmd())),
+    expectedResult: equals('hello aa'),
+    timeout: 500
+  })
 })
 
 component('jbmTest.cmdWithParams', {
@@ -28,8 +34,51 @@ component('jbmTest.cmdWithParams', {
   impl: dataTest(remote.data(pipeline('hello %$toPass%'), cmd()), equals('hello aa'))
 })
 
+component('jbmTest.cmdWithParams.script.static', {
+  params: [
+    {id: 'toPass', defaultValue: trim(nameOfCity(eilat())) }
+  ],
+  impl: dataTest(remote.data(pipeline('hello %$toPass%'), cmd()), equals('hello Eilat'))
+})
+
+component('jbmTest.cmdWithParams.script.staticObj', {
+  params: [
+    {id: 'toPass', defaultValue: () => ({ x: 'aa\nbb'}) }
+  ],
+  impl: dataTest(remote.data(pipeline('hello %$toPass/x%'), cmd()), equals('hello aa\nbb'))
+})
+
+component('jbmTest.cmdWithParams.script.dynamic', {
+  params: [
+    {id: 'toPass', defaultValue: trim(nameOfCity(eilat())), dynamic: true}
+  ],
+  impl: dataTest({
+    calculate: remote.data(pipeline('hello %$toPass()%'), cmd()),
+    expectedResult: equals('hello Eilat'),
+    timeout: 500
+  })
+})
+
+component('jbmTest.cmdWithParams.script.js', {
+  params: [
+    {id: 'toPass', defaultValue: () => 'aa', dynamic: true}
+  ],
+  impl: dataTest(remote.data(pipeline('hello %$toPass()%'), cmd()), equals('hello aa'))
+})
+
+component('jbmTest.cmdWithParams.objWithNL', {
+  params: [
+    {id: 'toPass', defaultValue: 'a\na'}
+  ],
+  impl: dataTest(remote.data(pipeline('hello %$toPass%'), cmd()), equals('hello a\na'))
+})
+
 component('jbmTest.remote.data.defComponents', {
-  impl: dataTest(remote.data(pipeline('1.5', math.floor()), worker()), equals(1))
+  impl: dataTest({
+    calculate: remote.data(pipeline('1.5', math.floor()), worker()),
+    expectedResult: equals(1),
+    timeout: 500
+  })
 })
 
 component('jbmTest.innerTreeShake', {

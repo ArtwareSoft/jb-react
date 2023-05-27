@@ -17,7 +17,7 @@ function findjbReact() {
 const { jbHost } = require(findjbReact() + '/hosts/node/node-host.js')
 jbHost.WebSocket_WS = require('ws')
 const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
-const plugins = ['common','rx','tree-shake','pretty-print','watchable','ui','vscode', 'tgp','remote','remote-widget']
+const plugins = ['common','rx','tree-shake','pretty-print','watchable','ui','vscode', 'tgp','remote','remote-widget','workspace']
 // globalThis.jbInit = jbInit
 // globalThis.jb_plugins = jb_plugins
  

@@ -154,7 +154,7 @@ extension('jbm', {
                         }
                     }
                 },
-                remoteExec(remoteRun, {oneway, timeout = 3000, isAction} = {}) {
+                remoteExec(remoteRun, {oneway, timeout = 3000, isAction, ctx} = {}) {
                     if (oneway)
                         return port.postMessage({$:'CB.execOneWay', remoteRun, timeout })
                     return new Promise((resolve,reject) => {
@@ -264,7 +264,7 @@ extension('jbm', {
                 })) } // will be called directly by initPanel using eval
         }
     },
-    async terminateChild(id,childsOrNet = jb.jbm.childJbms) {
+    async terminateChild(id,childsOrNet = jb.jbm.childJbms,ctx) {
         if (!childsOrNet[id]) return
         const childJbm = await childsOrNet[id]
         const rjbm = await childJbm.rjbm()
@@ -276,18 +276,18 @@ extension('jbm', {
                 delete jb.ports[uri]
             })
         delete childsOrNet[id]
-        rjbm.remoteExec(jb.remoteCtx.stripJS(() => {jb.cbHandler.terminate(); terminated = true; if (typeof close1 == 'function') close() } ), {oneway: true} )
+        rjbm.remoteExec(jb.remoteCtx.stripJS(() => {jb.cbHandler.terminate(); terminated = true; if (typeof close1 == 'function') close() } ), {oneway: true, ctx} )
         return rjbm.remoteExec(jb.remoteCtx.stripJS(() => {
             jb.cbHandler.terminate(); 
             jb.terminated = true;
             jb.delay(100).then(() => typeof close == 'function' && close()) // close worker
             return 'terminated' 
-        }), { oneway: true} )
+        }), { oneway: true, ctx} )
     },
-    terminateAllChildren() {
+    terminateAllChildren(ctx) {
         return Promise.all([
-            ...Object.keys(jb.jbm.childJbms||{}).map(id=>jb.jbm.terminateChild(id,jb.jbm.childJbms)),
-            ...Object.keys(jb.jbm.networkPeers||{}).map(id=>jb.jbm.terminateChild(id,jb.jbm.networkPeers)),
+            ...Object.keys(jb.jbm.childJbms||{}).map(id=>jb.jbm.terminateChild(id,jb.jbm.childJbms,ctx)),
+            ...Object.keys(jb.jbm.networkPeers||{}).map(id=>jb.jbm.terminateChild(id,jb.jbm.networkPeers,ctx)),
         ])
     }
 })

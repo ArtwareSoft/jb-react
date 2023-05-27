@@ -109,12 +109,3 @@ extension('remoteCtx', {
     shouldPassVar: (varName, profText) => jb.remoteCtx.allwaysPassVars.indexOf(varName) != -1 || profText.match(new RegExp(`\\b${varName}\\b`)),
     usingData: profText => profText.match(/({data})|(ctx.data)|(%[^$])/)
 })
-
-component('runCtx',{
-    params: [
-        {id: 'path', as: 'string'},
-        {id: 'vars' },
-        {id: 'profile' },
-    ],
-    impl: () => {}
-})

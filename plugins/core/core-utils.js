@@ -43,9 +43,9 @@ extension('utils', 'core', {
     },
     compName(profile,parentParam) {
         if (!profile || Array.isArray(profile)) return
-        const dslType = jb.path(profile,[jb.core.CT, 'comp', jb.core.CT, 'dslType']) || ''
+        const dslType = profile.$dslType || jb.path(profile,[jb.core.CT, 'comp', jb.core.CT, 'dslType']) || ''
         const id = profile.$ || jb.utils.singleInType(parentParam) || ''
-        return id && (dslType.indexOf('<') == -1 ? '' : dslType) + id
+        return id && (!dslType.match(/</) || dslType.match(/<>$/) ? '' : dslType) + id
     },
     resolveLoadedProfiles({keepLocation} = {}) {
       const profiles = jb.core.unresolvedProfiles

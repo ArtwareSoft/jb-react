@@ -27,7 +27,7 @@ extension('spy', {
 		jb.spy.enabled = true
 		if (jb.frame) jb.frame.spy = jb.spy // for console use
 		jb.spy.includeLogsInitialized = false
-		jb.spy._obs = jb.callbag.subject()
+		jb.spy._obs = jb.callbag && jb.callbag.subject()
 		return jb.spy
 		// for loader - jb.spy.clear(), jb.spy.search()
 	},

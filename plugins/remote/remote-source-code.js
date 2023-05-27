@@ -147,3 +147,10 @@ component('zipFile', {
   ],
   impl: ctx => ({ $: 'zipFile',  ...ctx.params })
 })
+
+component('sourceCode.encodeUri', {
+  params: [
+    {id: 'sourceCode', type: 'source-code', mandatory: true },
+  ],
+  impl: pipeline(json.stringify('%$sourceCode%'), ({data}) => encodeURIComponent(data), first())
+})

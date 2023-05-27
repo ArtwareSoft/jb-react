@@ -50,4 +50,10 @@ component('pipeline', {
   impl: village()
 })
 
-
+component('nameOfCity' , {
+  type: 'data<>',
+  params: [
+    { id: 'city', type: 'settlement'}
+  ],
+  impl: '%$city/name%'
+})

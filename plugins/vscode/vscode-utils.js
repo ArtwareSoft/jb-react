@@ -42,9 +42,6 @@ extension('vscode', 'utils', {
             },
         }
         jb.vscode.log('init')
-        //await jb.exec(tgp.startLangServer())
-        //const pid = jb.path(jb.nodeContainer.servers,'langServer.pid')
-        //jb.vscode.log(`lang server started @${pid}`)
 
         vscodeNS.workspace.onDidChangeTextDocument(({document, reason, contentChanges}) => {
             if (!contentChanges || contentChanges.length == 0) return
@@ -119,18 +116,7 @@ extension('vscode', 'utils', {
 
         return loc && new vscodeNS.Location(vscodeNS.Uri.file((workspaceDir || jbHost.jbReactDir) + loc[0]), new vscodeNS.Position((+loc[1]) || 0, 0))
     },
-    // commands
-    async restartLangServer() {
-        // jb.vscode.log('vscode restart lang server',{})
-        // const port = jb.path(jb.nodeContainer.servers,'langServer.port') || 8085
-        // jb.log('remote http terminating existing service',{port})
-        // try {
-        //     jbHost.fetch(`http://localhost:${port}/?op=terminate`)
-        // } catch(e) {}
-        // await jb.exec(tgp.startLangServer())
-        // const pid = jb.path(jb.nodeContainer.servers,'langServer.pid')
-        // jb.vscode.log(`lang server started @${pid}`)
-    },    
+    // commands    
     moveUp() {
         return jb.vscode.moveInArray({ diff: -1, ...jb.tgpTextEditor.host.compTextAndCursor()})
     },
@@ -147,24 +133,15 @@ extension('vscode', 'utils', {
 
     async openProbeResultPanel() {
         const docProps = jb.tgpTextEditor.host.compTextAndCursor()
-        jb.vscode.log('start openProbeResultPanel')
-        const probePath = await jb.exec(tgp.getPathFromCmd({docProps: () => docProps }))
-        jb.vscode.log(`probePath: ${probePath}, filePath:${docProps.filePath}`)
-        const _probeRes = await jb.vscode.ctx.run({$: 'probe.probeByCmd', filePath: docProps.filePath, probePath})
-        const probeRes = _probeRes.result
-        jb.vscode.log(`probeRes: ${JSON.stringify(probeRes||'').length}`)
-        jb.log('vscode openProbeResultPanel',{probeRes, probePath})
+        const probeRes = await jb.vscode.ctx.setData(docProps).run(tgpTextEditor.probeByDocProps('%%'))
         jb.vscode.panels.main.render('probe.probeResView',probeRes)
     },
     async openLiveProbeResultPanel() {
     },
     async openjBartStudio() {
-        // const docProps = jb.tgpTextEditor.host.compTextAndCursor()
-        // jb.vscode.log('start openProbeResultPanel')
-        // const probePath = await jb.exec(tgp.getPathFromCmd({docProps: () => docProps }))
-        // const 
-        // jb.vscode.log(`probePath: ${probePath}, filePath:${docProps.filePath}`)
-
+        const docProps = jb.tgpTextEditor.host.compTextAndCursor()
+        const url = await jb.vscode.ctx.setData(docProps).run(tgpTextEditor.studioCircuitUrl('%%'))
+        vscodeNS.env.openExternal(vscodeNS.Uri.parse(url))
     },
 
     toVscodeFormat(pos) {
@@ -286,45 +263,32 @@ component('vscode.gotoPath', {
   impl: (ctx,path,semanticPart) => jb.vscode.gotoPath(path,semanticPart)
 })
 
-component('probe.probeByCmd', {
-  params: [
-    {id: 'filePath', as: 'string'},
-    {id: 'probePath', as: 'string'}
-  ],
-  impl: async (ctx,filePath,probePath) => {
-    const sourceCode = jb.exec({$: 'probe', $typeCast: 'source-code<jbm>', filePath})
-    const args = ["-main:probe.runCircuit()",`-sourceCode:${JSON.stringify(sourceCode)}`,
-        `%probePath:${probePath}`, "-spy:probe", "-wrap:pipe(MAIN, probe.pruneResult(),first())"]
+// component('probe.probeByCmd', {
+//   params: [
+//     {id: 'filePath', as: 'string'},
+//     {id: 'probePath', as: 'string'}
+//   ],
+//   impl: async (ctx,filePath,probePath) => {
+//     const sourceCode = jb.exec({$: 'probe', $typeCast: 'source-code<jbm>', filePath})
+//     const args = ["-main:probe.runCircuit()",`-sourceCode:${JSON.stringify(sourceCode)}`,
+//         `%probePath:${probePath}`, "-spy:probe", "-wrap:pipe(MAIN, probe.pruneResult(),first())"]
 
-    const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(x=>`'${x}'`).join(' ')}`
-    jb.vscode.log(`probeByCmd: ${command}`)
+//     const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(x=>`'${x}'`).join(' ')}`
+//     jb.vscode.log(`probeByCmd: ${command}`)
 
-    if (jbHost.spawn) {
-        let res = null
-        try {
-          res = await jbHost.spawn(args)
-        } catch (e) {
-          jb.logException(e,'probeByCmd',{command})
-        }
-        try {
-          return {...JSON.parse(res), [jb.core.OnlyData]: true }
-        } catch (err) {
-          jb.logError('probeByCmd probe can not parse result returned from command line',{res: res.slice(0,200), command, err})
-        }
-    }
-  }
-})
+//     if (jbHost.spawn) {
+//         let res = null
+//         try {
+//           res = await jbHost.spawn(args)
+//         } catch (e) {
+//           jb.logException(e,'probeByCmd',{command})
+//         }
+//         try {
+//           return {...JSON.parse(res), [jb.core.OnlyData]: true }
+//         } catch (err) {
+//           jb.logError('probeByCmd probe can not parse result returned from command line',{res: res.slice(0,200), command, err})
+//         }
+//     }
+//   }
+// })
 
-component('probe', {
-  type: 'source-code<jbm>',
-  params: [
-    {id: 'filePath', as: 'string'}
-  ],
-  impl: sourceCode(
-    [
-      pluginsByPath('%$filePath%', true),
-      plugins('probe,tree-shake,tgp')
-    ],
-    packagesByPath('%$filePath%')
-  )
-})

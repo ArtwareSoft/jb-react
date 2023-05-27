@@ -130,7 +130,7 @@ extension('test', {
 		res.duration = new Date().getTime() - start
 		jb.log('end test',{testID,res})
 		if (!jb.test.singleTest)
-			await jb.jbm.terminateAllChildren()
+			await jb.jbm.terminateAllChildren(tstCtx)
 		jb.ui && jb.ui.garbageCollectCtxDictionary(true,true)
 
 		res.show = () => {
@@ -220,9 +220,8 @@ extension('test', {
 		const matchLogsMap = jb.entries({ui: ['uiComp'], widget: ['uiComp','widget'] })
 		const spyLogs = ['test', ...(matchLogs.filter(x=>res.id.toLowerCase().indexOf(x) != -1)), 
 			...(matchLogsMap.flatMap( ([k,logs]) =>res.id.toLowerCase().indexOf(k) != -1 ? logs : []))]
-		const sourceCodeInUrl = sourceCode ? `&sourceCode=${sourceCode}` : ''
 		return `<div class="${res.success ? 'success' : 'failure'}"">
-			<a href="${baseUrl}/tests.html?test=${res.id}${sourceCodeInUrl}&show&spy=${spyLogs.join(',')}" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
+			<a href="${baseUrl}/tests.html?test=${res.id}&show&spy=${spyLogs.join(',')}" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
 			<span> ${res.duration}mSec</span> 
 			<a class="test-button" href="javascript:jb.test.goto_editor('${res.id}')">src</a>
 			<a class="test-button" href="${studioUrl}">studio</a>
@@ -241,17 +240,24 @@ extension('test', {
 })
 
 component('source.testsResults', {
-	type: 'rx',
-	params: [
-		{id: 'tests', as: 'array' },
-		{id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self() },
-	],
-	impl: source.remote(
-			rx.pipe(
-				source.data('%$tests%'),
-				rx.var('testID'),
-				rx.concatMap(rx.merge(source.data(obj(prop('id','%%'), prop('started','true'))), rx.pipe(source.promise(({},{testID}) => jb.test.runSingleTest(testID)))))
-			), '%$jbm%')
+  type: 'rx',
+  params: [
+    {id: 'tests', as: 'array'},
+    {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self()}
+  ],
+  impl: source.remote(
+    rx.pipe(
+      source.data('%$tests%'),
+      rx.var('testID'),
+      rx.concatMap(
+        rx.merge(
+          source.data(obj(prop('id', '%%'), prop('started', 'true'))),
+          rx.pipe(source.promise(({},{testID}) => jb.test.runSingleTest(testID)))
+        )
+      )
+    ),
+    '%$jbm%'
+  )
 })
 
 component('tests.runner', {

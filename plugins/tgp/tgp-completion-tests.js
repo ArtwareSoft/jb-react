@@ -355,22 +355,7 @@ component('completionTest.dslTest.top', {
   })
 })
 
-// component('remoteTest.langServer.Completions', {
-//   impl: dataTest(
-//     pipe(
-//       Var('docProps', tgp.dummyDocProps(`component('x', {
-//   impl: dataTest(pipeline(__))
-// })`)),
-//       '1',
-//       tgp.getCompletionItemsFromServer('%$docProps%'),
-//       log('test'),
-//       count()
-//     ),
-//     '%% > 10'
-//   )
-// })
-
-component('remoteTest.langServerCmd.Completions', {
+component('remoteTest.langServer.Completions', {
   impl: dataTest({
     calculate: pipe(
       Var('docProps', tgp.dummyDocProps(`component('x', {
@@ -386,7 +371,7 @@ component('remoteTest.langServerCmd.Completions', {
   })
 })
 
-component('remoteTest.langServerCmd.ExternalCompletions', {
+component('remoteTest.langServer.ExternalCompletions', {
   impl: dataTest({
     calculate: pipe( 
       Var('docProps', tgp.dummyDocProps({compText: `component('x', {
@@ -402,7 +387,7 @@ component('remoteTest.langServerCmd.ExternalCompletions', {
   })
 })
 
-component('remoteTest.langServerCmd.StudioCompletions', {
+component('remoteTest.langServer.StudioCompletions', {
   impl: dataTest({
     calculate: pipe( 
       Var('docProps', tgp.dummyDocProps({compText: `component('x', {
@@ -436,7 +421,7 @@ component('remoteTest.langServerCmd.StudioCompletions', {
 //   })
 // })
 
-component('remoteTest.langServerCmd.editsAndCursorPos', {
+component('remoteTest.langServer.editsAndCursorPos', {
   impl: dataTest({
     vars: [
       Var('docProps', tgp.dummyDocProps(`component('x', {
@@ -456,16 +441,61 @@ component('remoteTest.langServerCmd.editsAndCursorPos', {
   })
 })
 
-// component('remoteTest.langServer.restart', {
+component('remoteTest.tgpTextEditor.providePath', {
+  impl: dataTest({
+    calculate: pipe(
+      Var(
+        'docProps',
+        tgp.dummyDocProps({
+          compText: `component('x', {
+  impl: dataTest(pipeline('hello,world'), __split(','))
+})`,
+          filePath: '/home/shaiby/projects/jb-react/plugins/ui/xx-tests.js'
+        })
+      ),
+      '1',
+      remote.data(tgp.providePath('%$docProps%'), cmd(probe('%$docProps/filePath%'))),
+    ),
+    expectedResult: 'CmpltnTst0~impl~expectedResult',
+    timeout: 1000
+  })
+})
+
+component('remoteTest.tgpTextEditor.probeByDocProps', {
+  impl: dataTest({
+    calculate: pipe(
+      Var(
+        'docProps',
+        tgp.dummyDocProps({
+          compText: `component('x', {
+  impl: dataTest(pipeline('hello,world'), __split(','))
+})`,
+          filePath: '/home/shaiby/projects/jb-react/plugins/ui/xx-tests.js'
+        })
+      ),
+      '1',
+      tgpTextEditor.probeByDocProps('%$docProps%'),
+      log('test'),
+      '%out%',
+      count()
+    ),
+    expectedResult: 2,
+    timeout: 2000
+  })
+})
+
+// component('tgpTextEditor.studioCircuitUrl', {
 //   impl: dataTest({
-//     calculate: pipeline(
-//       () => jb.path(jb.nodeContainer.servers,'langServer.pid'),
-//       log('test')
+//     calculate: pipe(
+//       Var('docProps', tgp.dummyDocProps(`component('x', {
+//   impl: dataTest(pipeline(__))
+// })`)),
+//       '1',
+//       tgpTextEditor.studioCircuitUrl('%$docProps%'),
+//       log('test'),
+//       count()
 //     ),
-//     expectedResult: equals(5),
-//     runBefore: tgp.startLangServer(),
-//     //runBefore: runActions(tgp.startLangServer(), tgp.startLangServer(true))
+//     expectedResult: '%% > 10',
+//     timeout: 1000
 //   })
 // })
-
-//    runBefore: tgp.startLangServer(),
