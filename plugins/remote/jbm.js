@@ -116,6 +116,7 @@ component('cmd', {
             // const context = { ...(sctx.vars || {}), ...params }
             const plugins = pluginsOfProfile([(data || action).profile, jb.path(sctx,'cmpCtx.params')])
             const sourceCode = _sourceCode || { plugins , pluginPackages: [{$:'defaultPackage'}] }
+            sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),plugins])
     
             const args = [
                 ['-runCtx', JSON.stringify(sctx)],

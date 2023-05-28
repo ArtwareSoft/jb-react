@@ -479,23 +479,27 @@ component('remoteTest.tgpTextEditor.probeByDocProps', {
       '%out%',
       count()
     ),
-    expectedResult: 2,
+    expectedResult: equals(2),
     timeout: 2000
   })
 })
 
-// component('tgpTextEditor.studioCircuitUrl', {
-//   impl: dataTest({
-//     calculate: pipe(
-//       Var('docProps', tgp.dummyDocProps(`component('x', {
-//   impl: dataTest(pipeline(__))
-// })`)),
-//       '1',
-//       tgpTextEditor.studioCircuitUrl('%$docProps%'),
-//       log('test'),
-//       count()
-//     ),
-//     expectedResult: '%% > 10',
-//     timeout: 1000
-//   })
-// })
+component('remoteTest.tgpTextEditor.studioCircuitUrl', {
+  impl: dataTest({
+    calculate: pipe(
+      Var(
+        'docProps',
+        tgp.dummyDocProps({
+          compText: `component('x', {
+  impl: dataTest(pipeline('hello,world'), __split(','))
+})`,
+          filePath: '/home/shaiby/projects/jb-react/plugins/ui/xx-tests.js'
+        })
+      ),
+      '1',
+      tgpTextEditor.studioCircuitUrl('%$docProps%')
+    ),
+    expectedResult: contains('http://localhost:8082/project/studio/CmpltnTst0~impl/CmpltnTst0~impl~expectedResult?sourceCode='),
+    timeout: 1000
+  })
+})

@@ -27,7 +27,7 @@ component('sourceCode', {
     plugins:[], ...jb.jbm.unifyPluginsToLoad(pluginsToLoad.flatMap(x=>x)),
     ...(libsToInit ? {libsToInit} : {}),
     treeShakeServerUri: (treeShakeServer || {}).uri,
-    actualCode
+    ...(actualCode ? {actualCode} : {}),
   })
 })
 

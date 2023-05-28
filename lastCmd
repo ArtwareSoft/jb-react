@@ -1,1 +1,0 @@
-node --inspect-brk ../hosts/node/jb.js '-runCtx:{"$":"runCtx","id":178139,"path":"jbmTest.cmdWithParams.objWithNL~impl~calculate~data","param":{"id":"data","dynamic":true},"profile":{"$":"pipeline","items":["hello %$toPass%"]},"vars":{},"cmpCtx":{"params":{"toPass":"a\na"}}}' '-uri:main' '-sourceCode:{"plugins":["common"],"pluginPackages":[{"$":"defaultPackage"}]}'

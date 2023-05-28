@@ -2,3 +2,5 @@ node_modules
 sites.json
 projects/studio/tests/studio-changing-file.js
 dead-code
+lastCmd
+lastCmdRes

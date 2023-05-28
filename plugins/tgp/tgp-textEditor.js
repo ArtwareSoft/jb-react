@@ -366,11 +366,11 @@ component('tgpTextEditor.studioCircuitUrl', {
     {id: 'docProps'}
   ],
   impl: remote.data(
-    pipeline(
+    pipe(
       Var('sourceCode', sourceCode.encodeUri(probe('%$docProps/filePath%'))),
       Var('probePath', tgp.providePath('%$docProps%')),
-      Var('circuit', {'$': 'probe.calcCircuitPath', '$byValue': ['%$probePath%']}),
-      join({separator: '/', items: list('%$circuit%','%$probePath%')}),
+      {'$': 'probe.calcCircuitPath', '$byValue': ['%$probePath%']},
+      join({separator: '/', items: list('%path%','%$probePath%')}),
       'http://localhost:8082/project/studio/%%?sourceCode=%$sourceCode%'
     ),
     cmd(probe('%$docProps/filePath%'))
