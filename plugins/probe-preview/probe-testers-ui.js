@@ -1,7 +1,4 @@
-extension('probe', 'test', {
-  runSingleTest: (...args) => jb.test && jb.test['runSingleTest'](...args),
-  runInner: (...args) => jb.test && jb.test['runInner'](...args)
-})
+using('testing')
 
 component('test.showTestInStudio', {
 	type: 'control',
@@ -27,7 +24,7 @@ component('test.showTestInStudio', {
 			const spyParam = jb.utils.unique([...spy.spyParam.split(','),'test']).join(',')
 			jb.spy.initSpy({spyParam})
 			jb.spy.clear()
-			const res = await jb.probe.runSingleTest(testId,{doNotcleanBeforeRun: true, show: true})
+			const res = await jb.test.runSingleTest(testId,{doNotcleanBeforeRun: true, show: true})
 			jb.db.watchableHandlers.forEach((h,i) =>{
 				h.resources(watchablesBefore[i].resources)
 				h.objToPath = watchablesBefore[i].objToPath
@@ -109,6 +106,6 @@ component('test.uiTestRunner', {
       })
     ],
     features: [group.wait({for: ({},{},{ctxToRun,testResult}) =>
-				Promise.resolve(jb.probe.runInner('runBefore',ctxToRun)).then(() => testResult()), varName: 'result'})]
+				Promise.resolve(jb.test.runInner('runBefore',ctxToRun)).then(() => testResult()), varName: 'result'})]
   })
 })

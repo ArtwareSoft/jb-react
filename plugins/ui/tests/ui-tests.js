@@ -1339,8 +1339,8 @@ component('uiTest.codeMirror', {
     control: group({
       vars: [
         Var('js', {
-          '$': 'object', text: `function f1() { 
-return 15 
+          '$': 'object', text: `function f1() {
+return 15
 }`}),
         Var('css', { '$': 'object', text: '{ width: 15px; }' }),
         Var('html', { '$': 'object', text: '<div><span>hello</span></div>' })
@@ -2214,7 +2214,7 @@ component('FETest.coLocation', {
     vars: Var('toChange',obj()),
     action: uiAction.click('button'),
     control: button({
-      title: 'change', 
+      title: 'change',
       action: runFEMethod({ selector: '#btn', method: 'changeDB' }),
       features: [
         frontEnd.coLocation(),

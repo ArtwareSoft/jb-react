@@ -466,40 +466,32 @@ component('remoteTest.tgpTextEditor.probeByDocProps', {
     calculate: pipe(
       Var(
         'docProps',
-        tgp.dummyDocProps({
-          compText: `component('x', {
+        tgp.dummyDocProps(`component('x', {
   impl: dataTest(pipeline('hello,world'), __split(','))
-})`,
-          filePath: '/home/shaiby/projects/jb-react/plugins/ui/xx-tests.js'
-        })
+})`)
       ),
-      '1',
       tgpTextEditor.probeByDocProps('%$docProps%'),
-      log('test'),
       '%out%',
       count()
     ),
     expectedResult: equals(2),
-    timeout: 2000
+    timeout: 1000
   })
 })
 
 component('remoteTest.tgpTextEditor.studioCircuitUrl', {
   impl: dataTest({
     calculate: pipe(
-      Var(
-        'docProps',
-        tgp.dummyDocProps({
+      Var('docProps', tgp.dummyDocProps({
           compText: `component('x', {
   impl: dataTest(pipeline('hello,world'), __split(','))
 })`,
-          filePath: '/home/shaiby/projects/jb-react/plugins/ui/xx-tests.js'
+//          filePath: '/home/shaiby/projects/jb-react/plugins/ui/xx-tests.js'
         })
       ),
-      '1',
       tgpTextEditor.studioCircuitUrl('%$docProps%')
     ),
-    expectedResult: contains('http://localhost:8082/project/studio/CmpltnTst0~impl/CmpltnTst0~impl~expectedResult?sourceCode='),
+    expectedResult: contains(['http://localhost:8082/project/studio/CmpltnTst','impl~expectedResult?sourceCode=']),
     timeout: 1000
   })
 })

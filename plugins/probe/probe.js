@@ -279,7 +279,7 @@ component('probe.calcCircuitPath', {
   ],
   impl: async (ctx, probePath) => {
         const circuit = await jb.probe.calcCircuit(ctx, probePath)
-        return circuit && { reason: circuit.reason, path: circuit.circuitCtx.path } || {}
+        return circuit && { reason: circuit.reason, path: (circuit.circuitCtx.path || '').split('~impl')[0] } || {}
     }
 })
 

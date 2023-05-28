@@ -4,7 +4,7 @@ component('wPreview', {
   params: [
     {id: 'id', defaultValue: 'wPreview'}
   ],
-  impl: worker({id: '%$id%',sourceCode: preview(), init: studio.initPreview()})
+  impl: worker({id: '%$id%', init: studio.initPreview()})
 })
 
 component('preview', {
@@ -30,18 +30,14 @@ component('studio.initPreview', {
     remote.shadowResource('probe', '%$jbm%'),
     rx.pipe(
       source.callbag(() => {
-                jb.log('init preview watchableComps source',{})
-                return jb.watchableComps.source
-            }),
+          jb.log('init preview watchableComps source',{})
+          return jb.watchableComps.source
+      }),
       rx.log('studio preview change script'),
       rx.map(obj(prop('op', '%op%'), prop('path', '%path%'))),
       rx.var('cssOnlyChange', tgp.isCssPath('%path%')),
       sink.action(
-        remote.action({
-          action: probe.handleScriptChangeOnPreview('%$cssOnlyChange%'),
-          jbm: '%$jbm%',
-          oneway: true
-        })
+        remote.action({action: probe.handleScriptChangeOnPreview('%$cssOnlyChange%'), jbm: '%$jbm%', oneway: true})
       )
     )
   )

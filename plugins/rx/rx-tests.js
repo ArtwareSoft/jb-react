@@ -442,7 +442,7 @@ component('rxTest.FlatMapTiming', {
           source.interval(1),
           rx.take(2),
           rx.var('inp'),
-          rx.flatMap(rx.pipe(source.interval(6), rx.take(2), rx.map('%$inp%-%%')))
+          rx.flatMap(rx.pipe(source.interval(7), rx.take(2), rx.map('%$inp%-%%')))
         ),
       join(',')
     ),

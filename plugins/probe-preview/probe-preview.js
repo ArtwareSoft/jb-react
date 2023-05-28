@@ -65,6 +65,7 @@ component('probe.initPreview', {
   impl: runActions(
     Var('dataResources', () => jb.studio && jb.studio.projectCompsAsEntries().map(e=>e[0]).filter(x=>x.match(/^dataResource/)).join(',')),
     remote.action(treeShake.getCodeFromRemote('%$dataResources%'), '%$jbm%'),
+//    remote.action(treeShake.getCodeFromRemote(['#jb.watchableComps.startWatch']), '%$jbm%'),
     remote.shadowResource('probe', '%$jbm%'),
     rx.pipe(
       watchableComps.scriptChange(),
@@ -72,11 +73,7 @@ component('probe.initPreview', {
       rx.map(obj(prop('op', '%op%'), prop('path', '%path%'))),
       rx.var('cssOnlyChange', tgp.isCssPath('%path%')),
       sink.action(
-        remote.action({
-          action: probe.handleScriptChangeOnPreview('%$cssOnlyChange%'),
-          jbm: '%$jbm%',
-          oneway: true
-        })
+        remote.action({action: probe.handleScriptChangeOnPreview('%$cssOnlyChange%'), jbm: '%$jbm%', oneway: true})
       )
     )
   )

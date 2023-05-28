@@ -54,6 +54,7 @@ component('studio.circuit', {
       group({
         controls: preview.remoteWidget(),
         features: [
+          followUp.action(studio.openControlTree()),
           watchRef('%$studio/preview%', 'yes'),
           css.height({height: '%$studio/preview/height%', overflow: 'auto', minMax: 'max'}),
           css.width({width: '%$studio/preview/width%', overflow: 'auto', minMax: 'max'})
@@ -91,7 +92,7 @@ component('dataResource.studio', {
     circuit: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') ? (jb.path(globalThis,'location.pathname')||'').split('/')[3] : '',
     project: '',
     page: '',
-    profile_path: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') ? (jb.path(globalThis,'location.pathname')||'').split('/')[3] : '',
+    profile_path: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') ? (jb.path(globalThis,'location.pathname')||'').split('/')[4] : '',
     pickSelectionCtxId: '',
     jbEditor: {},
     preview: {

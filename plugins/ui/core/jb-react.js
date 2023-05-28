@@ -655,7 +655,7 @@ extension('ui', 'react', {
         if (options && options.extendCtx)
             ctx = options.extendCtx(ctx)
 //        ctx = ctx.setVar('$refreshElemCall',true).setVar('$cmpId', cmpId).setVar('$cmpVer', cmpVer+1) // special vars for refresh
-        if (ctx.vars.$previewMode && jb.watchableComps.handler) // updating to latest version of profile - todo: moveto studio
+        if (ctx.vars.$previewMode && jb.watchableComps && jb.watchableComps.handler) // updating to latest version of profile - todo: moveto studio
             ctx.profile = jb.watchableComps.handler.valOfPath(ctx.path.split('~')) || ctx.profile
         elem.setAttribute('__refreshing','')
         const cmp = ctx.profile.$ == 'openDialog' ? ctx.run(dialog.buildComp()) : ctx.runItself()
