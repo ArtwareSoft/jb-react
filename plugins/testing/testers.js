@@ -192,6 +192,7 @@ extension('test', {
 				const testID = e[0]
 				//if (testID == 'previewTest.childJbm') debugger
 				document.getElementById('progress').innerHTML = `<div id=${testID}>${index++}: ${testID} started</div>`
+				await jb.delay(1)
 				console.log('starting ' + testID )
 				const res = await jb.test.runSingleTest(testID,{showOnlyTest})
 				console.log('end      ' + testID, res)

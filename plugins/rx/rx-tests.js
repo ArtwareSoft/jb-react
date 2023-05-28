@@ -378,7 +378,7 @@ component('rxTest.concatMapOrderTiming', {
           source.data(list(1, 2, 3)),
           rx.var('inp'),
           rx.concatMap(
-              rx.pipe(source.interval(({data}) => data *10), rx.take(3), rx.map('%$inp%-%%'))
+              rx.pipe(source.interval(({data}) => data), rx.take(3), rx.map('%$inp%-%%'))
             )
         ),
       join(',')
@@ -442,7 +442,7 @@ component('rxTest.FlatMapTiming', {
           source.interval(1),
           rx.take(2),
           rx.var('inp'),
-          rx.flatMap(rx.pipe(source.interval(10), rx.take(2), rx.map('%$inp%-%%')))
+          rx.flatMap(rx.pipe(source.interval(6), rx.take(2), rx.map('%$inp%-%%')))
         ),
       join(',')
     ),
@@ -641,24 +641,15 @@ component('rxTest.snifferBug', {
 })
 
 component('rxTest.race', {
-  impl: dataTest({
-    calculate: rx.pipe(
-      rx.merge(
-          rx.pipe(source.data('a'), rx.delay(40)),
-          rx.pipe(source.data('b'), rx.delay(20))
-        ),
-      rx.take(1)
-    ),
-    expectedResult: '%%==b'
-  })
+  impl: dataTest(
+    rx.pipe(rx.merge(rx.pipe(source.data('a'), rx.delay(1)), source.data('b')), rx.take(1)),
+    '%%==b'
+  )
 })
 
 component('rxTest.mergeConcat', {
   impl: dataTest(
-    pipe(
-      rx.pipe(rx.mergeConcat(rx.pipe(source.data('a'), rx.delay(40)), rx.pipe(source.data('b'), rx.delay(20))), rx.take(2)),
-      join(',')
-    ),
+    pipe(rx.pipe(rx.mergeConcat(rx.pipe(source.data('a'), rx.delay(1)), source.data('b')), rx.take(2)), join(',')),
     '%%==a,b'
   )
 })
@@ -667,7 +658,7 @@ component('rxTest.delay', {
   impl: dataTest(
     pipe(
       remark('flaky - need to be checked manually'),
-      rx.pipe(source.data([1,2,3]), rx.delay(40), rx.log('test')),
+      rx.pipe(source.data([1,2,3]), rx.delay(1), rx.log('test')),
       join(',')
     ),
     '%%==1,2,3'
@@ -675,22 +666,17 @@ component('rxTest.delay', {
 })
 
 component('rxTest.timeoutLimit', {
-  impl: dataTest({
-    calculate: rx.pipe(
-          source.data(1),
-          rx.delay(40),
-          rx.timeoutLimit(10, 'timeout error'),
-          rx.catchError(),
-    ),
-    expectedResult: '%%==timeout error'
-  })
+  impl: dataTest(
+    rx.pipe(source.data(1), rx.delay(1), rx.timeoutLimit(1, 'timeout error'), rx.catchError()),
+    '%%==timeout error'
+  )
 })
 
 component('rxTest.timeoutLimit.notActivated', {
   impl: dataTest({
     calculate: rx.pipe(
           source.data(1),
-          rx.delay(20),
+          rx.delay(1),
           rx.timeoutLimit(100, 'timeout error'),
           rx.catchError(),
     ),

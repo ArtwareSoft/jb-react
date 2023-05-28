@@ -96,26 +96,29 @@ extension('treeShake', {
                 initExtension: jb.path(jb,`${lib}.__extensions.${ext}.init`),
             }
             const extCode = jb.utils.prettyPrint(Object.fromEntries(Object.entries(extObj).filter(([_, v]) => v != null)))
-            return `jb.extension(jb.treeShake.defaultPlugin,'${lib}', '${ext}', ${extCode})`
+            return `jb.extension(jb.plugins['${jb[lib].__extensions[ext].plugin.id}'],'${lib}', '${ext}', ${extCode})`
         }).join('\n\n')
 
         const compsCode = cmps.map(cmpId =>jb.treeShake.compToStr(cmpId)).join('\n\n')
+        const plugins = jb.utils.unique([...cmps.map(cmpId => jb.comps[cmpId][jb.core.CT].plugin),
+            ...extensions.map(([lib,ext]) => jb[lib].__extensions[ext].plugin)
+            ],x=>x.id).map(({id,dsl})=>({id,dsl}))
             //jb.utils.prettyPrintComp(cmpId,jb.comps[cmpId],{noMacros: true})).join('\n\n')
         return [
+            `jb.createPlugins(${JSON.stringify(plugins)})`,
             topLevelCode,libsCode,compsCode,
             `await jb.initializeLibs([${jb.utils.unique(libsFuncs.map(x=>x.lib)).map(l=>"'"+l+"'").join(',')}])`,
             'jb.utils.resolveLoadedProfiles()'
         ].join(';\n')
-
     },
     compToStr(cmpId) {
         const ct = jb.comps[cmpId][jb.core.CT]
-        const compWithCTData = { ...jb.comps[cmpId], location : ct.location, type: ct.dslType, dsl: ct.dsl}
+        const compWithCTData = { ...jb.comps[cmpId], location : ct.location, $dslType: ct.dslType, dsl: ct.dsl}
         const content = JSON.stringify(compWithCTData,
             (k,v) => typeof v === 'function' ? '@@FUNC'+v.toString()+'FUNC@@' : v,2)
                 .replace(/"@@FUNC([^@]+)FUNC@@"/g, (_,str) => str.replace(/\\\\n/g,'@@__N').replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n').replace(/\\t/g,'')
                     .replace(/@@__N/g,'\\\\n').replace(/\\\\/g,'\\') )
-        return `jb.component(jb.treeShake.defaultPlugin,'${ct.dsl||''}','${cmpId.split('>').pop()}', ${content})`
+        return `jb.component(jb.plugins['${ct.plugin.id}'],'${ct.dsl||''}','${cmpId.split('>').pop()}', ${content})`
     },
     async bringMissingCode(obj) {
         const missing = getMissingProfiles(obj)
@@ -171,7 +174,10 @@ extension('treeShake', {
                 }
             })
     },
-    clientCode: () => jb.treeShake.code(jb.treeShake.treeShake(jb.treeShake.clientComps,{})),
+    clientCode() {
+        jb.treeShake._clientCode = jb.treeShake._clientCode || jb.treeShake.code(jb.treeShake.treeShake(jb.treeShake.clientComps,{}))
+        return jb.treeShake._clientCode
+    },
     treeShakeFrontendFeatures(paths) { // treeshake the code of the FRONTEND features without the backend part
         const _paths = paths.filter(path=>! jb.treeShake.existingFEPaths[path]) // performance - avoid tree shake if paths were processed before 
         if (!_paths.length) return []

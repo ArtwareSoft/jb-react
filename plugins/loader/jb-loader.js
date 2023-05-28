@@ -41,11 +41,17 @@ async function jbInit(uri, sourceCode , {multipleInFrame} ={}) {
   const jb = { 
     uri,
     loadedFiles: {},
+    plugins: {},
+    createPlugins(plugins) {
+      jbHost.defaultCodePackage = jbHost.defaultCodePackage || jbHost.codePackageFromJson()
+      plugins.forEach(plugin=> {
+        this.plugins[plugin.id] = this.plugins[plugin.id] || { ...plugin, codePackage : jbHost.defaultCodePackage }
+      })
+    },
     async loadPluginSymbols(codePackage,loadProjects) {
       const jb = this
       const pluginsSymbols = await codePackage.fileSymbols('plugins')
       const projectSymbols = loadProjects ? await codePackage.fileSymbols('projects') : []
-      jb.plugins = jb.plugins || {}
       ;[...pluginsSymbols,...projectSymbols.map(x=>({...x,project: true}))].map(entry =>{
         const id = pathToPluginId(entry.path)
         jb.plugins[id] = jb.plugins[id] || { id, codePackage, files: [], project: entry.project }
@@ -108,6 +114,12 @@ async function jbInit(uri, sourceCode , {multipleInFrame} ={}) {
     }
   }
   if (!multipleInFrame) globalThis.jb = jb // multipleInFrame is used in jbm.child
+  if (sourceCode.actualCode) {
+    const f = eval(`(async function (jb) {${sourceCode.actualCode}\n})//# sourceURL=treeShakeClient?${jb.uri}`)
+    await f(jb)
+    return jb
+  }
+
   await (sourceCode.pluginPackages || [null]).reduce( async (pr,codePackage)=> pr.then(() =>
     jb.loadPluginSymbols(jbHost.codePackageFromJson(codePackage),sourceCode.project)), Promise.resolve());
   calcPluginDependencies(jb.plugins,jb)
@@ -124,7 +136,6 @@ async function jbInit(uri, sourceCode , {multipleInFrame} ={}) {
   const libsToInit = sourceCode.libsToInit ? sourceCode.libsToInit.split(','): unique(libs)
   await jb.initializeLibs(libsToInit)
   jb.utils.resolveLoadedProfiles()
-
 
   return jb
 

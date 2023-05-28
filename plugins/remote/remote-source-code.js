@@ -20,18 +20,25 @@ component('sourceCode', {
     {id: 'pluginPackages', type: 'plugin-package[]', flattenArray: true, defaultValue: defaultPackage()},
     {id: 'treeShakeServer', type: 'jbm', description: 'if used, tree shake is used to load extra code, use jbm.self for parent'},
     {id: 'libsToInit', as: 'string', description: 'Empty means load all libraries'},
+    {id: 'actualCode', as: 'string', description: 'alternative to plugins'},
   ],
-  impl: (ctx,pluginsToLoad,pluginPackages,treeShakeServer,libsToInit) => ({ 
+  impl: (ctx,pluginsToLoad,pluginPackages,treeShakeServer,libsToInit,actualCode) => ({ 
     ...(pluginPackages.length ? { pluginPackages } : {}),
     plugins:[], ...jb.jbm.unifyPluginsToLoad(pluginsToLoad.flatMap(x=>x)),
     ...(libsToInit ? {libsToInit} : {}),
-    treeShakeServerUri: (treeShakeServer || {}).uri 
+    treeShakeServerUri: (treeShakeServer || {}).uri,
+    actualCode
   })
+})
+
+component('treeShakeClientWithPlugins', {
+  type: 'source-code',
+  impl: sourceCode({pluginsToLoad: plugins('remote,tree-shake'), treeShakeServer : jbm.self()})
 })
 
 component('treeShakeClient', {
   type: 'source-code',
-  impl: sourceCode({pluginsToLoad: plugins('remote,tree-shake'), treeShakeServer : jbm.self()})
+  impl: sourceCode({actualCode: () => jb.treeShake.clientCode(), treeShakeServer : jbm.self()})
 })
 
 component('xServer', {

@@ -24,8 +24,8 @@ component('eventTracker.worker.vDebugger', {
     control: remote.widget(studio.eventTracker(), byUri('tests•w1•vDebugger')),
     runBefore: remote.action(
       runActions(
-        () => jb.spy.initSpy({spyParam: 'remote,log1'}), 
-        log('log1', obj(prop('hello', 'world'))), 
+        () => jb.spy.initSpy({spyParam: 'remote,log1'}),
+        log('log1', obj(prop('hello', 'world'))),
         jbm.start(jbm.vDebugger())
       ),
       worker()
