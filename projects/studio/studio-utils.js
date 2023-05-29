@@ -45,7 +45,7 @@ component('studio.projectId', {
 })
 
 component('studio.currentPagePath', {
-  impl: '%$studio/circuit%'
+  impl: '%$studio/profile_path%'
 })
 
 component('studio.currentProfilePath', {

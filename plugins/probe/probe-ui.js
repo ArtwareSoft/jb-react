@@ -1,4 +1,4 @@
-using('data-browser')
+using('data-browser,pretty-print')
 
 component('probe.inOutView', {
   type: 'control',
@@ -16,10 +16,64 @@ component('probe.inOutView', {
                   title: 'in (%in/length%)',
                   controls: ui.dataBrowse('%in%'),
                   features: [
+                    field.titleCtrl(
+                      button({
+                        title: 'in (%$input/in/length%)',
+                        action: openDialog({
+                          title: 'in (%$input/in/length%)',
+                          content: editableText({
+                            title: 'codemirror',
+                            databind: prettyPrint('%$input/in/data%'),
+                            style: editableText.codemirror({
+                              enableFullScreen: true,
+                              height: '',
+                              mode: 'text',
+                              debounceTime: 300,
+                              lineWrapping: false,
+                              lineNumbers: true,
+                              readOnly: true,
+                              maxLength: ''
+                            })
+                          }),
+                          style: dialog.showSourceStyle('show-data')
+                        }),
+                        style: button.href()
+                      })
+                    ),
                     css.width({width: '300', minMax: 'max'})
                   ]
                 }),
-                group({title: 'out', controls: ui.dataBrowse('%out%'), features: field.columnWidth(100)})
+                group({
+                  title: 'out',
+                  controls: ui.dataBrowse('%out%'),
+                  features: [
+                    field.titleCtrl(
+                      button({
+                        title: 'out (%$input/out/length%)',
+                        action: openDialog({
+                          title: 'out (%$input/out/length%)',
+                          content: editableText({
+                            title: 'codemirror',
+                            databind: prettyPrint('%$input/out%'),
+                            style: editableText.codemirror({
+                              enableFullScreen: true,
+                              height: '',
+                              mode: 'text',
+                              debounceTime: 300,
+                              lineWrapping: false,
+                              lineNumbers: true,
+                              readOnly: true,
+                              maxLength: ''
+                            })
+                          }),
+                          style: dialog.showSourceStyle('show-data')
+                        }),
+                        style: button.href()
+                      })
+                    ),
+                    field.columnWidth(100)
+                  ]
+                })
               ],
               style: table.mdc(),
               visualSizeLimit: 7,

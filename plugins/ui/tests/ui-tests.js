@@ -10,7 +10,7 @@ component('uiTest.label', {
 })
 
 component('uiTest.label0', {
-  impl: uiTest({ control: text(0), expectedResult: contains('>0<') })
+  impl: uiTest({control: text(0), expectedResult: contains('>0<')})
 })
 
 component('uiTest.html', {
