@@ -4,7 +4,11 @@ component('wPreview', {
   params: [
     {id: 'id', defaultValue: 'wPreview'}
   ],
-  impl: worker({id: '%$id%', init: studio.initPreview()})
+  impl: worker({id: '%$id%', sourceCode: probe(studio.filePath(), 'studio'), init: studio.initPreview()})
+})
+
+component('studio.filePath', {
+  impl: pipeline('%$studio/circuit%', ({data}) => jb.comps[data][jb.core.CT].location[0])
 })
 
 component('preview', {

@@ -1,14 +1,14 @@
 const jb_plugins = null
 
-function jbBrowserCodePackage(baseUrl = '', fetchOptions= {}, useFileSymbolsFromBuild) {
+function jbBrowserCodePackage(repo = '', fetchOptions= {}, useFileSymbolsFromBuild) {
   return {
-    _fetch(path) { return fetch((baseUrl || jbHost.baseUrl) + path, fetchOptions) },
+    _fetch(path) { return fetch(jbHost.baseUrl + path, fetchOptions) },
     fetchFile(path) { return this._fetch(path).then(x=>x.text()) },
     fetchJSON(path) { return this._fetch(path).then(x=>x.json()) },
     fileSymbols(path) { return useFileSymbolsFromBuild ? this.fileSymbolsFromStaticFileServer(path) 
       : this.fileSymbolsFromStudioServer(path) },
     fileSymbolsFromStudioServer(path) {
-      return this.fetchJSON(`?op=fileSymbols&path=${path}`)
+      return this.fetchJSON(`?op=fileSymbols&path=${repo}${path}`)
     },
     async fileSymbolsFromStaticFileServer(path) {
       if (!this.loadedSymbols) {
@@ -31,9 +31,9 @@ globalThis.jbHost = globalThis.jbHost || { // browserHost - studioServer,worker 
   codePackageFromJson(package) {
     if (package == null || package.$ == 'defaultPackage') return jbBrowserCodePackage('',{})
     if (package.$ == 'jbStudioServer')
-        return jbBrowserCodePackage(package.baseUrl)
+        return jbBrowserCodePackage(`${package.repo}/`)
     if (package.$ == 'staticViaHttp')
-        return jbBrowserCodePackage(package.baseUrl,{mode: 'cores'}, true)
+        return jbBrowserCodePackage(`${package.repo}/`,{mode: 'cores'}, true)
   }
 }
 
@@ -146,7 +146,7 @@ async function jbInit(uri, sourceCode , {multipleInFrame} ={}) {
   }
   function pathToPluginId(path) {
     const tests = path.match(/-(tests|testers).js$/) || path.match(/\/tests\//) ? '-tests': ''
-    return (path.match(/^.(plugins|projects)\/([^\/]+)/) || ['','',''])[2] + tests
+    return (path.match(/(plugins|projects)\/([^\/]+)/) || ['','',''])[2] + tests
   }
   function calcPluginDependencies(plugins) {
     Object.keys(plugins).map(id=>calcDependency(id))

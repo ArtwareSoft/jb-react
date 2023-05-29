@@ -107,13 +107,17 @@ component('project', {
 component('packagesByPath', {
   type: 'plugin-package',
   params: [
-    {id: 'path', as: 'string', mandatory: true, description: 'E.g. someDir/plugins/xx-tests.js'}
+    {id: 'path', as: 'string', mandatory: true, description: 'E.g. someDir/plugins/xx-tests.js'},
+    {id: 'host', as: 'string', options: ',node,studio,static'}
   ],
-  impl: (ctx,path) => {
-    const rep = (path.match(/projects\/([^/]*)\/(plugins|projects)/) || [])[1]
-    if (rep && rep != 'jb-react') {
+  impl: (ctx,path,host) => {
+    const repo = (path.match(/projects\/([^/]*)\/(plugins|projects)/) || [])[1]
+    if (repo && repo != 'jb-react') {
       const repsBase = path.split('projects/')[0] + 'projects/'
-      return [{ $: 'defaultPackage' }, { $: 'fileSystem', baseDir: repsBase + rep}]
+      const package = (!host || host == 'node') ? { $: 'fileSystem', baseDir: repsBase + repo} 
+        : host == 'studio' ? { $: 'jbStudioServer', repo }
+        : host == 'static' ? { $: 'staticViaHttp', repo } : null
+      return [{ $: 'defaultPackage' }, package]
     }
   }
 })

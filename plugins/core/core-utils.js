@@ -255,7 +255,13 @@ extension('utils', 'core', {
       for(let innerCtx=ctx; innerCtx; innerCtx = innerCtx.cmpCtx) 
         ctxStack.push(innerCtx)
       return [ctx.path, ...ctxStack.map(ctx=>ctx.callerPath).slice(1)]
-    },    
+    },
+    ctxStack(ctx) {
+      const ctxStack=[]; 
+      for(let innerCtx=ctx; innerCtx; innerCtx = innerCtx.cmpCtx) 
+        ctxStack.push(innerCtx)
+      return ctxStack
+    },
     addDebugInfo(f,ctx) { f.ctx = ctx; return f},
     assignDebugInfoToFunc(func, ctx) {
       func.ctx = ctx

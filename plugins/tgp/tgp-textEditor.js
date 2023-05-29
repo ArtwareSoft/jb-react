@@ -367,7 +367,7 @@ component('tgpTextEditor.studioCircuitUrl', {
   ],
   impl: remote.data(
     pipe(
-      Var('sourceCode', sourceCode.encodeUri(probe('%$docProps/filePath%'))),
+      Var('sourceCode', sourceCode.encodeUri(probe('%$docProps/filePath%','studio'))),
       Var('probePath', tgp.providePath('%$docProps%')),
       {'$': 'probe.calcCircuitPath', '$byValue': ['%$probePath%']},
       join({separator: '/', items: list('%path%','%$probePath%')}),
@@ -380,13 +380,14 @@ component('tgpTextEditor.studioCircuitUrl', {
 component('probe', {
   type: 'source-code<jbm>',
   params: [
-    {id: 'filePath', as: 'string'}
+    {id: 'filePath', as: 'string'},
+    {id: 'host', as: 'string', options: ',node,studio,static'}
   ],
   impl: sourceCode(
     [
       pluginsByPath('%$filePath%', true),
       plugins('probe,tree-shake,tgp')
     ],
-    packagesByPath('%$filePath%')
+    packagesByPath('%$filePath%','%$host%')
   )
 })

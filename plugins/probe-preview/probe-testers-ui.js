@@ -1,11 +1,11 @@
 using('testing')
 
 component('test.showTestInStudio', {
-	type: 'control',
-	params: [
-	  {id: 'testId', as: 'string', defaultValue: 'uiTest.label'}
-	],
-	impl: (ctx,testId) => {
+  type: 'control',
+  params: [
+    {id: 'testId', as: 'string', defaultValue: 'uiTest.label'}
+  ],
+  impl: (ctx,testId) => {
 		const profile = jb.path(jb.comps[testId],'impl')
 		const ctxForUi = jb.ui.extendWithServiceRegistry(ctx)
 		if (profile.$ == 'dataTest') 
@@ -32,7 +32,14 @@ component('test.showTestInStudio', {
 			return res
 		}
 	},
-	require: [{$: 'test.dataTestView'},{$: 'test.uiTestRunner'}]
+  require: [test.dataTestView(), test.uiTestRunner()]
+})
+
+component('test.expectedResultProfile', {
+  params: [
+    {id: 'expectedResultCtx'},
+  ],
+  impl: (ctx,expectedResultCtx) => jb.utils.ctxStack(expectedResultCtx).pop().profile.expectedResult
 })
 
 component('test.dataTestView', {
@@ -44,7 +51,9 @@ component('test.dataTestView', {
   impl: group({
     controls: [
       button({
-        vars: [Var('color', If('%success%', '--jb-success-fg', '--jb-error-fg'))],
+        vars: [
+          Var('color', If('%success%', '--jb-success-fg', '--jb-error-fg'))
+        ],
         title: If('%success%', '✓ %$testId%', '⚠ %$testId%'),
         action: () => jb.frame.studio.host.openUrlInBrowser('http://localhost:8082/projects/tests/tests.html?test=%$testId%&show&spy=test'),
         style: button.href(),
@@ -53,18 +62,19 @@ component('test.dataTestView', {
       group({
         layout: layout.horizontal(20),
         controls: [
-          controlWithCondition('%expectedResultCtx/data%', text('%expectedResultCtx/data%')),
-          controlWithCondition('%expectedResultCtx/data%', text(prettyPrint('%expectedResultCtx.profile.expectedResult%', true))),
+          controlWithCondition(
+            '%expectedResultCtx/data%',
+            text(prettyPrint(test.expectedResultProfile('%expectedResultCtx%'), true))
+          ),
           controlWithCondition(
             '%html%',
             text({
               text: '%html%',
-              style: text.codemirror({
-                height: '200',
-                formatText: true,
-                mode: 'htmlmixed'
-              }),
-              features: [codemirror.fold(), css('min-width: 1200px')]
+              style: text.codemirror({height: '200', formatText: true, mode: 'htmlmixed'}),
+              features: [
+                codemirror.fold(),
+                css('min-width: 1200px')
+              ]
             })
           )
         ]
@@ -89,23 +99,35 @@ component('test.uiTestRunner', {
     controls: [
       button({
         vars: [
-          Var('color', If('%success%', '--jb-success-fg', '--jb-error-fg')),
+          Var('color', If('%success%', '--jb-success-fg', '--jb-error-fg'))
         ],
         title: If('%success%', '✓ %$testId%', '⚠ %$testId%'),
         action: () => jb.frame.studio.host.openUrlInBrowser('http://localhost:8082/projects/tests/tests.html?test=%$testId%&show&spy=test'),
         style: button.href(),
         features: css.color('var(%$color%)')
       }),
-      group({controls: ({},{},{ctxToRun}) => ctxToRun.runInner(ctxToRun.profile.control,{type: 'control'}, 'control')}),
       group({
         controls: [
-          controlWithCondition('%expectedResultCtx/data%', text('%expectedResultCtx/data%')),
-          controlWithCondition('%expectedResultCtx/data%', text(prettyPrint('%expectedResultCtx.profile.expectedResult%', true)))
+          controlWithCondition(
+            '%expectedResultCtx/data%',
+            text(prettyPrint(test.expectedResultProfile('%expectedResultCtx%'), true))
+          )
         ],
-        features: [group.data(() => jb.spy.logs.find(e=>e.logNames =='check test result'))]
+        features: [
+          group.data(() => jb.spy.logs.find(e=>e.logNames =='check test result'))
+        ]
+      }),
+      divider(),
+      group({
+        controls: ({},{},{ctxToRun}) => ctxToRun.runInner(ctxToRun.profile.control,{type: 'control'}, 'control')
       })
     ],
-    features: [group.wait({for: ({},{},{ctxToRun,testResult}) =>
-				Promise.resolve(jb.test.runInner('runBefore',ctxToRun)).then(() => testResult()), varName: 'result'})]
+    features: [
+      group.wait({
+        for: ({},{},{ctxToRun,testResult}) =>
+				Promise.resolve(jb.test.runInner('runBefore',ctxToRun)).then(() => testResult()),
+        varName: 'result'
+      })
+    ]
   })
 })

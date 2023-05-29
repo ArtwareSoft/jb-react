@@ -3,62 +3,54 @@ using('data-browser')
 component('probe.inOutView', {
   type: 'control',
   impl: group({
-      layout: layout.horizontal(),
-      controls: [
-        group({
-          controls: group({
-            controls: [
-              controlWithCondition('%$probeResult/0/callbagLog%', probe.showRxSniffer('%$probeResult/0%')),
-              table({
-                items: '%$probeResult%',
-                controls: [
-                  group({
-                    title: 'in (%in/length%)',
-                    controls: ui.dataBrowse('%in%'),
-                    features: [
-                      css.width({width: '300', minMax: 'max'})
-                    ]
-                  }),
-                  group({
-                    title: 'out',
-                    controls: ui.dataBrowse('%out%'),
-                    features: field.columnWidth(100)
-                  })
-                ],
-                style: table.mdc(),
-                visualSizeLimit: 7,
-                features: [
-                  itemlist.infiniteScroll(),
-                  css.height({height: '100%', minMax: 'max'}),
-                  field.columnWidth(100),
-                  css('{white-space: normal}')
-                ]
-              })
-            ],
-            features: [
-              group.firstSucceeding(),
-              log('probe result', obj(prop('res', '%$probeResult%')))
-            ]
-          }),
-          features: [
-            feature.if('%$probe/path%'),
-            group.wait({
-              for: pipe(probe.runCircuit('%$probe/path%'), '%result%'),
-              loadingControl: text('...'),
-              varName: 'probeResult',
-              passRx: true
+    layout: layout.horizontal(),
+    controls: [
+      group({
+        controls: group({
+          controls: [
+            controlWithCondition('%$probeResult/0/callbagLog%', probe.showRxSniffer('%$probeResult/0%')),
+            table({
+              items: '%$probeResult%',
+              controls: [
+                group({
+                  title: 'in (%in/length%)',
+                  controls: ui.dataBrowse('%in%'),
+                  features: [
+                    css.width({width: '300', minMax: 'max'})
+                  ]
+                }),
+                group({title: 'out', controls: ui.dataBrowse('%out%'), features: field.columnWidth(100)})
+              ],
+              style: table.mdc(),
+              visualSizeLimit: 7,
+              features: [
+                itemlist.infiniteScroll(),
+                css.height({height: '100%', minMax: 'max'}),
+                field.columnWidth(100),
+                css('{white-space: normal}')
+              ]
             })
+          ],
+          features: [
+            group.firstSucceeding(),
+            log('probe result', obj(prop('res', '%$probeResult%')))
           ]
-        })
-      ],
-      features: [
-        watchRef({
-          ref: '%$probe%',
-          includeChildren: 'yes',
-          strongRefresh: true
-        })
-      ]
-    })
+        }),
+        features: [
+          feature.if('%$probe/path%'),
+          group.wait({
+            for: pipe(probe.runCircuit('%$probe/path%'), '%result%'),
+            loadingControl: text('...'),
+            varName: 'probeResult',
+            passRx: true
+          })
+        ]
+      })
+    ],
+    features: [
+      watchRef({ref: '%$probe%', includeChildren: 'yes', strongRefresh: true})
+    ]
+  })
 })
 
 component('probe.probeResView', {

@@ -35,7 +35,7 @@ extension('vscode', 'utils', {
             compTextAndCursor() {
                 const editor = vscodeNS.window.activeTextEditor
                 return jb.tgpTextEditor.closestComp(editor.document.getText(),
-                    editor.selection.active.line,editor.selection.active.character,editor.document.uri.path)
+                    editor.selection.active.line, editor.selection.active.character, editor.document.uri.path)
             },
             async execCommand(cmd) {
                 vscodeNS.commands.executeCommand(cmd)
