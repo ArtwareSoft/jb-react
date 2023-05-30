@@ -362,7 +362,7 @@ component('remoteTest.langServer.Completions', {
   impl: dataTest(pipeline(__))
 })`)),
       '1',
-      tgp.getCompletionItemsFromCmd('%$docProps%'),
+      tgp.completionItemsByDocProps('%$docProps%'),
       log('test'),
       count()
     ),
@@ -378,7 +378,7 @@ component('remoteTest.langServer.ExternalCompletions', {
   impl: dataTest(pipeline(__))
 })`, filePath: '/home/shaiby/projects/amta/plugins/amta-parsing/parsing-tests.js'})),
       '1',
-      tgp.getCompletionItemsFromCmd('%$docProps%'),
+      tgp.completionItemsByDocProps('%$docProps%'),
       log('test'),
       count()
     ),
@@ -394,7 +394,7 @@ component('remoteTest.langServer.StudioCompletions', {
   impl: pipeline(pipeline(__))
 })`, filePath: '/home/shaiby/projects/jb-react/projects/studio/studio-main.js'})),
       '1',
-      tgp.getCompletionItemsFromCmd('%$docProps%'),
+      tgp.completionItemsByDocProps('%$docProps%'),
       log('test'),
       count()
     ),
@@ -402,24 +402,6 @@ component('remoteTest.langServer.StudioCompletions', {
     timeout: 1000
   })
 })
-
-// component('remoteTest.langServer.editsAndCursorPos', {
-//   impl: dataTest({
-//     vars: [
-//       Var('docProps', tgp.dummyDocProps(`component('x', {
-//   impl: dataTest(pipeline(__))
-// })`))
-//     ],
-//     calculate: pipe(
-//       tgp.getCompletionItemsFromServer('%$docProps%'),
-//       filter(equals('%label%', 'split')),
-//       tgp.editsAndCursorPosFromServer('%$docProps%', '%command/arguments/0%'),
-//       log('test'),
-//       '%edit/newText%'
-//     ),
-//     expectedResult: '%%==split()'
-//   })
-// })
 
 component('remoteTest.langServer.editsAndCursorPos', {
   impl: dataTest({
@@ -429,35 +411,15 @@ component('remoteTest.langServer.editsAndCursorPos', {
 })`))
     ],
     calculate: pipe(
-      tgp.getCompletionItemsFromCmd('%$docProps%'),
+      tgp.completionItemsByDocProps('%$docProps%'),
       filter(equals('%label%', 'split')),
       log('test'),
-      tgp.editsAndCursorPosFromCmd('%$docProps%', '%command/arguments/0%'),
+      tgp.editsAndCursorPosByDocProps('%$docProps%', '%command/arguments/0%'),
       log('test'),
       '%edit/newText%'
     ),
     timeout: 5000,
     expectedResult: '%%==split()'
-  })
-})
-
-component('remoteTest.tgpTextEditor.providePath', {
-  impl: dataTest({
-    calculate: pipe(
-      Var(
-        'docProps',
-        tgp.dummyDocProps({
-          compText: `component('x', {
-  impl: dataTest(pipeline('hello,world'), __split(','))
-})`,
-          filePath: '/home/shaiby/projects/jb-react/plugins/ui/xx-tests.js'
-        })
-      ),
-      '1',
-      remote.data(tgp.providePath('%$docProps%'), cmd(probe('%$docProps/filePath%'))),
-    ),
-    expectedResult: 'CmpltnTst0~impl~expectedResult',
-    timeout: 1000
   })
 })
 
@@ -479,7 +441,7 @@ component('remoteTest.tgpTextEditor.probeByDocProps', {
   })
 })
 
-component('remoteTest.tgpTextEditor.studioCircuitUrl', {
+component('remoteTest.tgpTextEditor.studioCircuitUrlByDocProps', {
   impl: dataTest({
     calculate: pipe(
       Var('docProps', tgp.dummyDocProps({
@@ -489,7 +451,7 @@ component('remoteTest.tgpTextEditor.studioCircuitUrl', {
 //          filePath: '/home/shaiby/projects/jb-react/plugins/ui/xx-tests.js'
         })
       ),
-      tgpTextEditor.studioCircuitUrl('%$docProps%')
+      tgpTextEditor.studioCircuitUrlByDocProps('%$docProps%')
     ),
     expectedResult: contains(['http://localhost:8082/project/studio/CmpltnTst','impl~expectedResult?sourceCode=']),
     timeout: 1000

@@ -349,6 +349,14 @@ component('tgpTextEditor.cursorPath', {
     impl: (ctx,ref,pos) => jb.path(jb.tgpTextEditor.pathOfPosition(ref, pos()),'path') || ''
 })
 
+
+component('tgp.providePath', {
+  params: [
+    {id: 'docProps'},
+  ],
+  impl: (ctx,docProps) => jb.tgpTextEditor.providePath(docProps,ctx)
+})
+
 component('tgpTextEditor.probeByDocProps', {
   params: [
     {id: 'docProps'}
@@ -361,7 +369,7 @@ component('tgpTextEditor.probeByDocProps', {
   )
 })
 
-component('tgpTextEditor.studioCircuitUrl', {
+component('tgpTextEditor.studioCircuitUrlByDocProps', {
   params: [
     {id: 'docProps'}
   ],
@@ -388,6 +396,6 @@ component('probe', {
       pluginsByPath('%$filePath%', true),
       plugins('probe,tree-shake,tgp')
     ],
-    packagesByPath('%$filePath%','%$host%')
+    packagesByPath('%$filePath%', '%$host%')
   )
 })

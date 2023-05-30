@@ -56,6 +56,7 @@ globalThis.jbHost = globalThis.jbHost || {
     isNode: true,
     jbReactDir: findjbReact(), 
     http: require('http'),
+    fs: require('fs'),
     child_process: require('child_process'),
     fetch(url,_options) {
         return new Promise((resolve,reject) => {

@@ -215,6 +215,13 @@ const op_post_handlers = {
         (arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg}'`)).join(' ')}`
       fs.writeFileSync('./lastCmd', command)
       fs.chmodSync('./lastCmd', '755')
+
+      const sourceCode = args.filter(x=>x.match(/^-sourceCode/)).map(x=>encodeURIComponent(x.slice('-sourceCode:'.length)))[0]
+      const runCtx = args.filter(x=>x.match(/^-runCtx/)).map(x=>encodeURIComponent(x.slice('-runCtx:'.length)))[0]
+      const runCtxUrl = `http://localhost:${settings.port}/hosts/tests/runCtx.html?sourceCode=${sourceCode}&runCtx=${runCtx}`
+      fs.writeFileSync('./runCtxUrl', runCtxUrl)
+
+      //${baseUrl}/tests.html?
       res.setHeader('Content-Type', 'application/json; charset=utf8')
       const srvr = child.spawn('node',['./jb.js', ...args],{cwd: 'hosts/node'})
       let res_str = ''

@@ -68,7 +68,11 @@
 			{
 				"command": "jbart.openjBartStudio",
 				"title": "open jBart studio"
-			}
+			},
+			{
+				"command": "jbart.openLastCmd",
+				"title": "internal for debug - open last cmd"
+			}			
 		],
 		"keybindings": [
 			{
@@ -94,6 +98,11 @@
 			{
 				"command": "jbart.openjBartStudio",
 				"key": "ctrl+J",
+				"when": "editorTextFocus"
+			},			
+			{
+				"command": "jbart.openLastCmd",
+				"key": "ctrl+Alt+J",
 				"when": "editorTextFocus"
 			}			
 		]

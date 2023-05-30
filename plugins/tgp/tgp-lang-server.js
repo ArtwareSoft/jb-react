@@ -15,17 +15,6 @@ component('langServer', {
   })
 })
 
-component('tgp.getCompletionItemsFromCmd', {
-  params: [
-    {id: 'docProps'}
-  ],
-  impl: remote.cmd({
-    main: tgp.provideCompletionItems(),
-    context: obj(prop('docProps', json.stringify(obj(prop('$asIs','%$docProps%'))))),
-    sourceCode: langServer('%$docProps/filePath%'),
-    id: 'langServer'
-  })
-})
 component('tgp.provideCompletionItems', {
   params: [
     {id: 'docProps'},
@@ -33,75 +22,6 @@ component('tgp.provideCompletionItems', {
   impl: (ctx,docProps) => jb.tgpTextEditor.provideCompletionItems(docProps,ctx)
 })
 
-component('tgp.getDefinitionFromCmd', {
-  params: [
-    {id: 'docProps'}
-  ],
-  impl: remote.cmd({
-    main: tgp.provideDefinition(),
-    context: obj(prop('docProps', json.stringify(obj(prop('$asIs', '%$docProps%'))))),
-    sourceCode: langServer('%$docProps/filePath%'),
-    id: 'langServer'
-  })
-})
-component('tgp.provideDefinition', {
-  params: [
-    {id: 'docProps'},
-  ],
-  impl: (ctx,docProps) => jb.tgpTextEditor.provideDefinition(docProps,ctx)
-})
-
-component('tgp.getPathFromCmd', {
-  params: [
-    {id: 'docProps'}
-  ],
-  impl: remote.cmd({
-    main: tgp.providePath(),
-    context: obj(prop('docProps', json.stringify(obj(prop('$asIs', '%$docProps%'))))),
-    sourceCode: langServer('%$docProps/filePath%'),
-    id: 'langServer'
-  })
-})
-component('tgp.providePath', {
-  params: [
-    {id: 'docProps'},
-  ],
-  impl: (ctx,docProps) => jb.tgpTextEditor.providePath(docProps,ctx)
-})
-
-component('tgp.moveInArrayEditsFromCmd', {
-  params: [
-    {id: 'docProps'}
-  ],
-  impl: remote.cmd({
-    main: tgp.moveInArrayEdits(),
-    context: obj(prop('docProps', json.stringify(obj(prop('$asIs', '%$docProps%'))))),
-    sourceCode: langServer('%$docProps/filePath%'),
-    id: 'langServer'
-  })
-})
-component('tgp.moveInArrayEdits', {
-  params: [
-    {id: 'docProps'},
-  ],
-  impl: (ctx,docProps) => jb.tgpTextEditor.moveInArrayEdits(docProps,ctx)
-})
-
-component('tgp.editsAndCursorPosFromCmd', {
-  params: [
-    {id: 'docProps', defaultValue: '%docProps%'},
-    {id: 'item', defaultValue: '%item%'}
-  ],
-  impl: remote.cmd({
-    main: tgp.editsAndCursorPos(),
-    context: obj(
-      prop('docProps', json.stringify(obj(prop('$asIs', '%$docProps%')))),
-      prop('item', json.stringify(obj(prop('$asIs', '%$item%'))))
-    ),
-    sourceCode: langServer('%$docProps/filePath%'),
-    id: 'langServer'
-  })
-})
 component('tgp.editsAndCursorPos', {
   params: [
     {id: 'docProps' },
@@ -110,4 +30,48 @@ component('tgp.editsAndCursorPos', {
   impl: (ctx,docProps,item) => jb.tgpTextEditor.editsAndCursorPos({docProps,item},ctx)
 })
 
+component('tgp.provideDefinition', {
+  params: [
+    {id: 'docProps'},
+  ],
+  impl: (ctx,docProps) => jb.tgpTextEditor.provideDefinition(docProps,ctx)
+})
+
+component('tgp.moveInArrayEdits', {
+  params: [
+    {id: 'docProps'},
+  ],
+  impl: (ctx,docProps) => jb.tgpTextEditor.moveInArrayEdits(docProps,ctx)
+})
+
+// remote
+
+component('tgp.completionItemsByDocProps', {
+  params: [
+    {id: 'docProps'}
+  ],
+  impl: remote.data(tgp.provideCompletionItems('%$docProps%'), cmd({sourceCode: langServer('%$docProps/filePath%'), id: 'langServer'}))
+})
+
+component('tgp.editsAndCursorPosByDocProps', {
+  params: [
+    {id: 'docProps', defaultValue: '%docProps%'},
+    {id: 'item', defaultValue: '%item%'}
+  ],
+  impl: remote.data(tgp.editsAndCursorPos('%$docProps%','%$item%'), cmd(langServer('%$docProps/filePath%')))
+})
+
+component('tgp.definitionByDocProps', {
+  params: [
+    {id: 'docProps'}
+  ],
+  impl: remote.data(tgp.provideDefinition('%$docProps%'), cmd(langServer('%$docProps/filePath%')))
+})
+
+component('tgp.moveInArrayEditsByDocProps', {
+  params: [
+    {id: 'docProps'}
+  ],
+  impl: remote.data(tgp.moveInArrayEdits('%$docProps%'), cmd(langServer('%$docProps/filePath%')))
+})
 

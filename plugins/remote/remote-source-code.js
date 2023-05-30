@@ -114,7 +114,7 @@ component('packagesByPath', {
     const repo = (path.match(/projects\/([^/]*)\/(plugins|projects)/) || [])[1]
     if (repo && repo != 'jb-react') {
       const repsBase = path.split('projects/')[0] + 'projects/'
-      const package = (!host || host == 'node') ? { $: 'fileSystem', baseDir: repsBase + repo} 
+      const package = (!host || host == 'node') ? { $: 'fileSystem', repo, baseDir: repsBase + repo} 
         : host == 'studio' ? { $: 'jbStudioServer', repo }
         : host == 'static' ? { $: 'staticViaHttp', repo } : null
       return [{ $: 'defaultPackage' }, package]

@@ -101,19 +101,18 @@ extension('vscode', 'utils', {
     // },
     async provideCompletionItems(docProps) {
         if (jb.vscode.useCompletionServer) {
-            const ret = await jb.exec(tgp.getCompletionItemsFromCmd({docProps: () => docProps }))
+            const ret = await jb.vscode.ctx.setData(docProps).run(tgp.completionItemsByDocProps('%%'))
             const count = (ret || []).length
             const docSize = docProps.compText.length
             jb.vscode.log(`provideCompletionItems ${docSize} -> ${count}`)
             return ret
-        } else {
+        } else { // used by test
             return jb.tgpTextEditor.provideCompletionItems(docProps)
         }
     },
     async provideDefinition(docProps) {
-        const loc = await jb.exec(tgp.getDefinitionFromCmd({docProps: () => docProps }))
+        const loc = await jb.vscode.ctx.setData(docProps).run(tgp.definitionByDocProps('%%'))
         const workspaceDir = (vscodeNS.workspace.workspaceFolders || []).map(ws=>ws.uri.path)[0] || ''
-
         return loc && new vscodeNS.Location(vscodeNS.Uri.file((workspaceDir || jbHost.jbReactDir) + loc[0]), new vscodeNS.Position((+loc[1]) || 0, 0))
     },
     // commands    
@@ -124,7 +123,7 @@ extension('vscode', 'utils', {
         return jb.vscode.moveInArray({ diff: 1, ...jb.tgpTextEditor.host.compTextAndCursor()})
     },
     async moveInArray(docPropsWithDiff) {
-        const {edit, cursorPos} = await jb.exec(tgp.moveInArrayEditsFromCmd({docProps: () => docPropsWithDiff }))
+        const {edit, cursorPos} = await jb.vscode.ctx.setData(docPropsWithDiff).run(tgp.moveInArrayEditsByDocProps('%%'))
         const json = JSON.stringify(edit)
         jb.vscode.log(`moveInArray ${json.length}`)
         await jb.tgpTextEditor.host.applyEdit(edit)
@@ -140,10 +139,13 @@ extension('vscode', 'utils', {
     },
     async openjBartStudio() {
         const docProps = jb.tgpTextEditor.host.compTextAndCursor()
-        const url = await jb.vscode.ctx.setData(docProps).run(tgpTextEditor.studioCircuitUrl('%%'))
+        const url = await jb.vscode.ctx.setData(docProps).run(tgpTextEditor.studioCircuitUrlByDocProps('%%'))
         vscodeNS.env.openExternal(vscodeNS.Uri.parse(url))
     },
-
+    openLastCmd() {
+        const url = jbHost.fs.readFileSync(jbHost.jbReactDir + '/runCtxUrl')
+        vscodeNS.env.openExternal(vscodeNS.Uri.parse(url))
+    },
     toVscodeFormat(pos) {
         return { line: pos.line, character: pos.col }
     },

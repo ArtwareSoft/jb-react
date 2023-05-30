@@ -357,8 +357,10 @@ extension('tgpTextEditor', 'completion', {
         ctx = ctx || new jb.core.jbCtx({},{vars: {}, path: 'completion.applyCompChange'})
         const { compText, compLine, filePath, dsl } = jb.tgpTextEditor.host.compTextAndCursor()
         const docProps = { compText, compLine, filePath, dsl } 
-        const { edit, cursorPos } = item.edit ? item : item.serverUri == 'langServer' ? 
-            await remoteCalcEditAndPos() : await jb.tgpTextEditor.calcEditAndGotoPos(docProps,item,ctx)
+        const editAndCursor  = item.edit ? item 
+            : item.serverUri == 'langServer' ? await remoteCalcEditAndPos() 
+            : await jb.tgpTextEditor.calcEditAndGotoPos(docProps,item,ctx)
+        const { edit, cursorPos } = editAndCursor
         try {
             await jb.tgpTextEditor.host.applyEdit(edit)
             if (cursorPos) {
@@ -373,7 +375,7 @@ extension('tgpTextEditor', 'completion', {
         }
 
         function remoteCalcEditAndPos() {
-            return ctx.setData({docProps, item}).run(tgp.editsAndCursorPosFromCmd())
+            return ctx.setData({docProps, item}).run(tgp.editsAndCursorPosByDocProps())
         }
     },
     async moveInArrayEdits(docPropsWithDiff,ctx) {

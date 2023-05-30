@@ -25,12 +25,12 @@ function jbBrowserCodePackage(repo = '', fetchOptions= {}, useFileSymbolsFromBui
 globalThis.jbHost = globalThis.jbHost || { // browserHost - studioServer,worker and static
   fetch: (...args) => globalThis.fetch(...args),
   baseUrl: '',
-  fetchOptions: {}, // {mode: 'cores'}
+  fetchOptions: {},
   log(...args) { console.log (...args) },
   WebSocket_Browser: globalThis.WebSocket,
   codePackageFromJson(package) {
     if (package == null || package.$ == 'defaultPackage') return jbBrowserCodePackage('',{})
-    if (package.$ == 'jbStudioServer')
+    if (package.$ == 'jbStudioServer' || package.$ == 'fileSystem')
         return jbBrowserCodePackage(`${package.repo}/`)
     if (package.$ == 'staticViaHttp')
         return jbBrowserCodePackage(`${package.repo}/`,{mode: 'cores'}, true)
@@ -163,7 +163,7 @@ async function jbInit(uri, sourceCode , {multipleInFrame} ={}) {
     function calcDependency(id,history={}) {
       const plugin = plugins[id]
       if (!plugin)
-        jb.logError('calcDependency: can not find plugin',{id, history})
+        console.log('calcDependency: can not find plugin',{id, history})
       if (!plugin || history[id]) return []
       if (plugin.dependent) return [id, ...plugin.dependent]
       const baseOfTest = id.match(/-tests$/) ? [id.slice(0,-6),'testing'] : []
