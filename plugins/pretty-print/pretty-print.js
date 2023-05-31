@@ -165,7 +165,7 @@ extension('utils', 'prettyPrint', {
       const singleParamAsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
       const vars = (profile.$vars || []).map(({name,val},i) => ({innerPath: `$vars~${i}`, val: {$: 'Var', name, val }}))
       const systemProps = [...vars, 
-          ...profile.remark ? [{innerPath: 'remark', val: {$remark: profile.remark}} ] : [],
+          ...profile.$remark ? [{innerPath: 'remark', val: {remark: profile.$remark}} ] : [],
           ...profile.typeCast ? [{innerPath: 'typeCast', val: {$typeCast: profile.$typeCast}} ] : [],
       ]
       const openProfileByValueGroup = [{prop: '!profile', item: macro}, {prop:'!open-by-value', item:'('}]
@@ -179,11 +179,14 @@ extension('utils', 'prettyPrint', {
         const varsAsArray = vars.map((val,i) => ({innerPath: `$vars~${i}`, val}))
         const paramsProps = calcArrayProps(paramAsArray.map(x=>x.val),`${path}~${params[0].id}`)
         const varsProps = calcArrayProps(varsAsArray.map(x=>x.val),`${path}~$vars`)
+        const remarkAsArray = profile.$remark ? [{innerPath: '$remark', val: {$: 'remark', remark: profile.$remark}} ] : []
+        profile.$remark && calcProfileProps({$: 'remark', remark: profile.$remark },`${path}~$remark`)
+
         return openCloseProps(path, openProfileByValueGroup, closeProfileByValueGroup, { singleParamAsArray, 
             len: paramsProps.len+varsProps.len,
             longInnerValInArray: paramsProps.longInnerValInArray && vars.length == 0,
             primitiveArray: paramsProps.primitiveArray && vars.length == 0,
-            innerVals: [...varsAsArray,...paramAsArray], isArray: true })
+            innerVals: [...remarkAsArray, ...varsAsArray,...paramAsArray], isArray: true })
       }
       const keys = Object.keys(profile).filter(x=>x != '$')
       const oneFirstArg = keys.length === 1 && params[0] && params[0].id == keys[0]
@@ -198,7 +201,7 @@ extension('utils', 'prettyPrint', {
         return openCloseProps(path, openProfileByValueGroup, closeProfileByValueGroup, {len, innerVals: args, isArray: true, nameValuePattern, singleFunc })
       }
       const systemPropsInObj = [
-        ...profile.remark ? [{innerPath: 'remark', val: profile.remark} ] : [],
+        ...profile.$remark ? [{innerPath: 'remark', val: profile.$remark} ] : [],
         ...profile.typeCast ? [{innerPath: 'typeCast', val: profile.$typeCast} ] : [],
         ...vars.length ? [{innerPath: '$vars', val: vars.map(x=>x.val)}] : []
       ]

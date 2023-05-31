@@ -192,7 +192,7 @@ component('merge', {
   type: 'data',
   description: 'assign, merge object properties',
   params: [
-    {id: 'objects', as: 'array', mandatory: true}
+    {id: 'objects', type: 'data[]', as: 'array', mandatory: true}
   ],
   impl: ({}, objects) => Object.assign.apply({},objects)
 })
@@ -253,4 +253,11 @@ component('wrapAsObject', {
     items.forEach(item=>out[jb.tostring(key(ctx.setData(item)))] = value(ctx.setData(item)))
     return out;
   }
+})
+
+component('asString', {
+	params: [
+		{ id: 'text', as: 'string', defaultValue: '%%'}
+	],
+	impl: ({},text) => text
 })

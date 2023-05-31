@@ -25,6 +25,8 @@
     <div id="runCtxEl"> </div>
     <br></br>
     <div id="resultEl"> </div>
+    <br></br>
+    <div id="errorsEl"> </div>
     <script>
         (async function () {
             const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
@@ -44,6 +46,9 @@
             runCtxEl.innerText = JSON.stringify(runCtx)
             const res = await jb.remoteCtx.deStrip(runCtx)()
             resultEl.innerText = JSON.stringify(res)
+
+            resultEl.errorsEl = JSON.stringify(jb.spy.search('error'))
+            
             console.log(res)
         })()
     </script>

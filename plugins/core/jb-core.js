@@ -10,7 +10,7 @@ Object.assign(jb, {
       extension[k].__initFunc = extension.initExtension && `#${libId}.__extensions.${extId}.init`
     })
     funcs.forEach(k=>lib[k] = extension[k])
-    const location = jb.calcSourceLocation(new Error().stack.split(/\r|\n/).slice(2)).location
+    const location = jb.calcSourceLocation(new Error().stack.split(/\r|\n/).slice(2), plugin)
     const phase =  extension.$phase || { core: 1, utils: 5, db: 10, watchable: 20}[libId] || 100
     lib.__extensions[extId] = { plugin, libId, phase, init: extension.initExtension, initialized, 
       requireLibs: extension.$requireLibs, requireFuncs: extension.$requireFuncs, funcs, location }
@@ -20,8 +20,11 @@ Object.assign(jb, {
       lib.__extensions[extId].initialized = true
     }
   },
-  async initializeLibs(libs) {
+  async initializeLibs(_libs) {
     const jb = this
+    const unknownLibs = _libs.filter(l=>!jb[l]).join(',')
+    unknownLibs && jb.logError('initializeLibs: unknownLibs',{unknownLibs})
+    const libs = _libs.filter(l=>jb[l])
     try {
     libs.flatMap(l => Object.values(jb[l].__extensions)).sort((x,y) => x.phase - y.phase )
       .filter(ext => ext.init && !ext.initialized)
@@ -42,13 +45,13 @@ Object.assign(jb, {
     }
   },
 
-  calcSourceLocation(errStack) {
+  calcSourceLocation(errStack,plugin) {
     try {
         const line = errStack.map(x=>x.trim()).filter(x=>x && !x.match(/^Error/) && !x.match(/at Object.component|at component|at extension/)).shift()
         const location = line ? (line.split('at ').pop().split('eval (').pop().split(' (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
         location[0] = location[0].split('?')[0]
         if (location[0].match(/jb-loader.js/)) debugger
-        return { location }
+        return [((plugin || {}).codePackage || {}).repo||'',...location]
     } catch(e) {
       console.log(e)
     }      
@@ -59,16 +62,17 @@ Object.assign(jb, {
     comp[CT] = comp[CT] || { plugin }
     const dsl = _dsl || plugin.dsl
 
-    const { location } = 0 || jb.calcSourceLocation(new Error().stack.split(/\r|\n/)) // 0 || to avoid treeshake bug
+    const location = jb.calcSourceLocation(new Error().stack.split(/\r|\n/), plugin)
     comp[CT].location = comp.location || location
     delete comp.location
 
     if (comp.type == 'any')
       jb.core.genericCompIds[id] = true
 
-    const h = jb.core.onAddComponent.find(x=>x.match(id,comp))
+    //if (id == 'state') debugger
+    const h = jb.core.onAddComponent.find(x=>x.match(id,comp,dsl))
     if (h && h.register)
-      return h.register(id,comp)
+      return h.register(id,comp,dsl)
     comp.impl = comp.impl || (({params}) => params)
 
     jb.core.unresolvedProfiles.push({id,comp,dsl})

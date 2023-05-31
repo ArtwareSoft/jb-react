@@ -2,6 +2,7 @@ const jb_plugins = null
 
 function jbBrowserCodePackage(repo = '', fetchOptions= {}, useFileSymbolsFromBuild) {
   return {
+    repo,
     _fetch(path) { return fetch(jbHost.baseUrl + path, fetchOptions) },
     fetchFile(path) { return this._fetch(path).then(x=>x.text()) },
     fetchJSON(path) { return this._fetch(path).then(x=>x.json()) },
@@ -75,18 +76,13 @@ async function jbInit(uri, sourceCode , {multipleInFrame} ={}) {
     // },
     async loadPlugins(plugins) {
       const jb = this
-      let libs = []
       await plugins.reduce( (pr,id) => pr.then( async ()=> {
         const plugin = jb.plugins[id]
         if (!plugin || plugin.loadingReq) return
         plugin.loadingReq = true
-        const _libs = await jb.loadPlugins(plugin.dependent)
-        await Promise.all(plugin.files.map(fileSymbols =>{
-          libs = unique([...libs,..._libs,...fileSymbols.libs])
-          return jb.loadjbFile(fileSymbols.path,jb,{fileSymbols,plugin})
-        }))
+        await jb.loadPlugins(plugin.dependent)
+        await Promise.all(plugin.files.map(fileSymbols =>jb.loadjbFile(fileSymbols.path,jb,{fileSymbols,plugin})))
       }), Promise.resolve() )
-      return libs
     },
     async loadjbFile(path,jb,{noSymbols, fileSymbols, plugin} = {}) {
       if (jb.loadedFiles[path]) return
@@ -94,7 +90,8 @@ async function jbInit(uri, sourceCode , {multipleInFrame} ={}) {
       const sourceUrl = `${path}?${jb.uri}`.replace(/#/g,'')
       const code = `${_code}\n//# sourceURL=${sourceUrl}`
       const dsl = fileSymbols && fileSymbols.dsl || plugin && plugin.dsl
-      const proxies = noSymbols ? {} : jb.objFromEntries(unique(plugin.requiredFiles.flatMap(x=>x.ns)).map(id=>[id,jb.macro.registerProxy(id)]))
+      const proxies = noSymbols ? {} : jb.objFromEntries(unique(plugin.requiredFiles.flatMap(x=>x.ns))
+        .map(id=>jb.macro.registerProxy(id)))
       const context = { jb, 
         ...(typeof require != 'undefined' ? {require} : {}),
         ...proxies,
@@ -132,8 +129,10 @@ async function jbInit(uri, sourceCode , {multipleInFrame} ={}) {
     ? [...Object.values(jb.plugins).filter(x=>!x.project).map(x=>x.id), ...sourceCode.plugins].filter(x=>x!='*') 
     : sourceCode.plugins) ]).filter(x=>jb.plugins[x])
 
-  const libs = await jb.loadPlugins(topPlugins)
-  const libsToInit = sourceCode.libsToInit ? sourceCode.libsToInit.split(','): unique(libs)
+  await jb.loadPlugins(topPlugins)
+  const libs = unique(topPlugins.flatMap(id=>jb.plugins[id].requiredLibs))
+
+  const libsToInit = sourceCode.libsToInit ? sourceCode.libsToInit.split(','): libs
   await jb.initializeLibs(libsToInit)
   jb.utils.resolveLoadedProfiles()
 
@@ -173,6 +172,7 @@ async function jbInit(uri, sourceCode , {multipleInFrame} ={}) {
       )
       const ret = [id, ...plugin.dependent]
       plugin.requiredFiles = unique(ret.flatMap(_id=>plugins[_id].files), x=>x.path)
+      plugin.requiredLibs = unique(ret.flatMap(_id=>plugins[_id].files).flatMap(x=>x.libs || []))
       return ret
     }
   }

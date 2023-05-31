@@ -392,7 +392,7 @@ const op_get_handlers = {
       const exclude = getURLParam(req,'exclude') && new RegExp(getURLParam(req,'exclude'))
       res.setHeader('Content-Type', 'application/json;charset=utf8')
       try {
-        res.end(JSON.stringify(getFilesInDir(calcFullPath(path)).filter(f=>f.match(/\.js/)).map(path => fileContent(path))))
+        res.end(JSON.stringify(getFilesInDir(calcFullPath(path)).filter(f=>f.match(/\.js$/)).map(path => fileContent(path))))
       } catch (e) {
         res.end('[]')
       }

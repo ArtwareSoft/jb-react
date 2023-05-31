@@ -1,4 +1,4 @@
-using('ui,remote-widget')
+using('ui,remote-widget,parsing')
 
 // component('macroTest.simple', {
 //   impl: dataTest(prettyPrint(ctx => jb.comps['dataTest.obj'].impl), contains(["prop('a', 1)", ctx => "res: '%%'"]))
@@ -27,6 +27,17 @@ component('macroTest.varsPath', {
       join()
     ),
     equals('1,18,1,21')
+  )
+})
+
+component('macroTest.remark.pipeline', {
+  impl: dataTest(
+    pipeline(
+      () => jb.utils.prettyPrintWithPositions(pipeline(Var('x',1), remark('r'), 'a'),{forceFlat: true}),
+      log('test'),
+      '%text%'
+    ),
+    equals("pipeline(remark('r'), Var('x', 1), 'a')")
   )
 })
 

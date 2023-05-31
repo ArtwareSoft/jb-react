@@ -112,8 +112,14 @@ extension('vscode', 'utils', {
     },
     async provideDefinition(docProps) {
         const loc = await jb.vscode.ctx.setData(docProps).run(tgp.definitionByDocProps('%%'))
-        const workspaceDir = (vscodeNS.workspace.workspaceFolders || []).map(ws=>ws.uri.path)[0] || ''
-        return loc && new vscodeNS.Location(vscodeNS.Uri.file((workspaceDir || jbHost.jbReactDir) + loc[0]), new vscodeNS.Position((+loc[1]) || 0, 0))
+        if (!loc)
+            return jb.logError('provideDefinition - no location returned', {docProps})
+        const repos = (vscodeNS.workspace.workspaceFolders || []).map(ws=>ws.uri.path)
+            .map(path=>({path,repo: path.split('/').pop()}))
+        debugger
+        const repo = repos.find(x=>x.repo == loc[0]) 
+        const path = ((repo || {}).path || jbHost.jbReactDir) + loc[1]
+        return new vscodeNS.Location(vscodeNS.Uri.file(path), new vscodeNS.Position((+loc[2]) || 0, 0))
     },
     // commands    
     moveUp() {

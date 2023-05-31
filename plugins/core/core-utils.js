@@ -56,6 +56,8 @@ extension('utils', 'core', {
       return profiles
     },
     resolveProfileTop(id, comp, dslFromContext, keepLocation) {
+      if (id == 'a-b') debugger
+
       const CT = jb.core.CT
       if (!comp[CT]) comp[CT] = comp[CT] || { id }
       const type = comp.type || ''
@@ -268,13 +270,7 @@ extension('utils', 'core', {
       const debugFuncName = ctx.profile && ctx.profile.$ || typeof ctx.profile == 'string' && ctx.profile.slice(0,10) || ''
       Object.defineProperty(func, 'name', { value: (ctx.path ||'').split('~').pop() + ': ' + debugFuncName })
     },
-    subscribe: (source,listener) => jb.callbag.subscribe(listener)(source),
-    pathToPluginId(_path) {
-      const rep = (_path.match(/projects\/([^/]*)\/(plugins|projects)/) || [])[1]
-      const path = (_path.match(/projects(.*)/)||[])[1] || _path
-      const tests = path.match(/-(tests|testers).js$/) || path.match(/\/tests\//) ? '-tests': ''
-      return (path.match(/plugins\/([^\/]+)/) || ['','',''])[2] + tests
-    },    
+    subscribe: (source,listener) => jb.callbag.subscribe(listener)(source),  
     indexOfCompDeclarationInTextLines(lines,id) {
       return lines.findIndex(line=> {
         const index = line.indexOf(`component('${id}'`)

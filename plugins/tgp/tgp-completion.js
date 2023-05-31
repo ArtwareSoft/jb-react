@@ -198,20 +198,28 @@ extension('tgpTextEditor', 'completion', {
             host: null,
         } 
     },
+    pluginOfPath(_path, dsl) {
+        const rep = (_path.match(/projects\/([^/]*)\/(plugins|projects)/) || [])[1]
+        const path = (_path.match(/projects(.*)/)||[])[1] || _path
+        const tests = path.match(/-(tests|testers).js$/) || path.match(/\/tests\//) ? '-tests': ''
+        const _id = (path.match(/plugins\/([^\/]+)/) || ['',''])[1]
+        const id = _id.match(/tests/) ? _id : _id + tests
+        const plugin = jb.plugins[id] || {}
+        return {...plugin, dsl: plugin.dsl || dsl}
+    },  
     calcActiveEditorPath(docProps,{clearCache} = {}) {
-        const {compText, shortId, inCompPos, compLine, inExtension, filePath } = docProps
+        const {compText, shortId, inCompPos, compLine, inExtension, filePath, dsl } = docProps
         if (inExtension) return docProps
-        const plugin = jb.plugins[jb.utils.pathToPluginId(filePath)] || {}
-        const dsl = docProps.dsl || plugin.dsl
-        const compId = dsl && jb.path(jb.utils.getCompByShortIdAndDsl(shortId,dsl),[jb.core.CT,'fullId']) || shortId
+        const plugin = jb.tgpTextEditor.pluginOfPath(filePath, dsl) 
+        const compId = plugin.dsl && jb.path(jb.utils.getCompByShortIdAndDsl(shortId,plugin.dsl),[jb.core.CT,'fullId']) || shortId
         if (!jb.comps[compId]) {
-            const evalRes = jb.tgpTextEditor.evalProfileDef(compText,dsl)
+            const evalRes = jb.tgpTextEditor.evalProfileDef(compText,plugin)
             if (evalRes.err)
-                return jb.logError('calcActiveEditorPath evalProfileDef', {...evalRes, compId, shortId , dsl })
+                return jb.logError('calcActiveEditorPath evalProfileDef', {...evalRes, compId, shortId , plugin })
             jb.comps[compId] = evalRes.res
         }
         if (!compId || !jb.comps[compId])
-            return { error: 'can not determine compId', compId, shortId , dsl}
+            return { error: 'can not determine compId', compId, shortId , plugin}
         if (clearCache)
             jb.tgpTextEditor.cache[compId] = null
         const compProps = jb.tgpTextEditor.cache[compId] || calcCompProps()
@@ -226,10 +234,10 @@ extension('tgpTextEditor', 'completion', {
             // const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
             // const actualText = lines.slice(compLine+1,compLine+compLastLine+1).join('\n').slice(0,-1)
             const {text, map} = jb.utils.prettyPrintWithPositions(jb.comps[compId],{initialPath: compId})
-            const props = { time: new Date().getTime(), text, map, dsl, compId, comp : jb.comps[compId] }
+            const props = { time: new Date().getTime(), text, map, plugin, compId, comp : jb.comps[compId] }
             if (compText.split('\n').slice(1).join('\n').slice(0,-1) != (text||'').slice(2)) {
 //                const compText = lines.slice(compLine,compLine+compLastLine+1).join('\n')
-                let evaledComp = jb.tgpTextEditor.evalProfileDef(compText,dsl).res
+                let evaledComp = jb.tgpTextEditor.evalProfileDef(compText,plugin).res
                 if (evaledComp) {
                     jb.comps[compId] = evaledComp
                     const formattedText = jb.utils.prettyPrintWithPositions(jb.comps[compId],{initialPath: compId}).text
@@ -238,7 +246,7 @@ extension('tgpTextEditor', 'completion', {
                     else
                         Object.assign(props, {scriptWasFoundDifferent: true, comp: evaledComp}) // new comp
                 } else { // not compiles
-                    const fixProps = jb.tgpTextEditor.fixEditedComp(compId, compText,inCompPos,dsl)
+                    const fixProps = jb.tgpTextEditor.fixEditedComp(compId, compText,inCompPos,plugin)
                     // compilationFailure or fixedComp
                     Object.assign(props, { ...fixProps, comp : jb.comps[compId]})    
                 }
@@ -295,29 +303,25 @@ extension('tgpTextEditor', 'completion', {
         }
 
         async function provideFuncLocation() {
-            const {lineText } = docProps
+            const {lineText, cursorCol } = docProps
             const [,lib,func] = lineText.match(/jb\.([a-zA-Z_0-9]+)\.([a-zA-Z_0-9]+)/) || ['','','']
             if (lib && jb.path(jb,[lib,'__extensions'])) {
                 const loc = Object.values(jb[lib].__extensions).filter(ext=>ext.funcs.includes(func)).map(ext=>ext.location)[0]
-                const lineOfExt = (+loc[1]) || 0
-                const fileContent = await jbHost.codePackageFromJson().fetchFile(loc[0])
+                const lineOfExt = (+loc[2]) || 0
+                const fileContent = await jbHost.codePackageFromJson().fetchFile(loc[1])
                 const lines = ('' + fileContent).split('\n').slice(lineOfExt)
                 const funcHeader = new RegExp(`[^\.]${func}\\s*:|[^\.]${func}\\s*\\(`) //[^{]+{)`)
                 const lineOfFunc = lines.findIndex(l=>l.match(funcHeader))
-                return [loc[0], lineOfExt + lineOfFunc]
+                return [loc[0], loc[1], lineOfExt + lineOfFunc]
             }
         }
     },
     calcEditAndGotoPos(docProps, item, ctx) {
-        const {compText, compLine,filePath} = docProps
+        const {compText, compLine,filePath, dsl} = docProps
         const itemProps = {...item, ...item.extend() }
         const {op, path, resultPath, resultSemantics, resultOffset} = itemProps
         const compId = path.split('~')[0]
-//        if (!jb.comps[compId]) {
-            const plugin = jb.plugins[jb.utils.pathToPluginId(filePath)] || {}
-            const dsl = docProps.dsl || plugin.dsl
-            jb.comps[compId] = jb.tgpTextEditor.evalProfileDef(compText,dsl).res
-//        }
+        jb.comps[compId] = jb.tgpTextEditor.evalProfileDef(compText,jb.tgpTextEditor.pluginOfPath(filePath, dsl)).res
 
         if (!jb.comps[compId])
             return jb.logError(`completion handleScriptChangeOnPreview - missing comp ${compId}`, {path, ctx})

@@ -10,11 +10,11 @@ extension('macro', {
         return { proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro') }
         // for loader jb.macro.importAll()
     },
-    ns: nsIds => {
-        nsIds.split(',').forEach(nsId => jb.macro.registerProxy(nsId))
-        return jb.macro.proxies
-    },    
-    titleToId: id => id.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
+    // ns: nsIds => {
+    //     nsIds.split(',').forEach(nsId => jb.macro.registerProxy(nsId))
+    //     return jb.macro.proxies
+    // },    
+    titleToId: id => id.replace(/-([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
 //    proxiesKeys: () => jb.utils.unique(Object.keys(jb.macro.proxies).map(x=>x.split('_')[0])),
     importAll: () => `var { '${Object.keys(jb.macro.proxies).join(', ')}} = jb.macro.proxies;`,
     newProxy: id => new Proxy(() => 0, {
@@ -82,7 +82,8 @@ extension('macro', {
     },
     registerProxy: id => {
         const proxyId = jb.macro.titleToId(id.split('.')[0]) //.split('_')[0]
-        return jb.macro.proxies[proxyId] = jb.macro.proxies[proxyId] || jb.macro.newProxy(proxyId)
+        jb.macro.proxies[proxyId] = jb.macro.proxies[proxyId] || jb.macro.newProxy(proxyId)
+        return [proxyId,jb.macro.proxies[proxyId]]
     }
 })
 
@@ -106,7 +107,7 @@ component('remark', {
   params: [
     {id: 'remark', as: 'string', mandatory: true}
   ],
-  macro: (result, self) => Object.assign(result,{ remark: self.remark || self.$byValue[0] })
+  macro: (result, self) => Object.assign(result,{ $remark: self.remark || self.$byValue[0] })
 })
 
 component('typeCast', {
@@ -116,4 +117,48 @@ component('typeCast', {
     {id: 'typeCast', as: 'string', mandatory: true, description: 'e.g. type1<myDsl>'}
   ],
   macro: (result, self) => Object.assign(result,{ $typeCast: self.typeCast || self.$byValue[0]})
+})
+
+extension('syntaxConverter', 'onAddComponent', {
+  initExtension() { 
+    jb.core.onAddComponent.push({ 
+      match:(id,comp) => (jb.path(comp[jb.core.CT].plugin,'files') || []).find(x=>x.path.match(/amta/)),
+      register: (_id,_comp,dsl) => {
+        //if (_id == 'amta.aa') debugger
+        const comp = jb.syntaxConverter.fixProfile(_comp,_comp)
+        const id = jb.macro.titleToId(_id)
+        jb.core.unresolvedProfiles.push({id,comp,dsl})
+        comp[jb.core.CT] = _comp[jb.core.CT]
+        return comp
+      }
+    })    
+  },
+  fixProfile(profile,origin) {
+    if (jb.utils.isPrimitiveValue(profile) || typeof profile == 'function') return profile
+    ;['pipeline','list','firstSucceeding'].forEach(sugar => {
+        if (profile['$'+sugar]) {
+            profile.$ = sugar
+            profile.items = profile['$'+sugar]
+            delete profile['$'+sugar]
+        }
+    })
+    const $vars = profile.$vars
+    if ($vars && !Array.isArray($vars))
+        profile.$vars = jb.entries($vars).map(([name,val]) => ({name,val}))
+
+    if (profile.$)
+        profile.$ = jb.macro.titleToId(profile.$)
+    if (profile.remark) {
+        profile.$remark = profile.remark
+        delete profile.remark
+    }
+    
+    if (profile.$ == 'object')
+        return {$: 'obj', props: jb.entries(profile).filter(([x]) =>x!='$').map(([title,val]) => ({$: 'prop', title, val: jb.syntaxConverter.fixProfile(val,origin) }))}
+
+    if (Array.isArray(profile)) 
+        return profile.map(v=>jb.syntaxConverter.fixProfile(v,origin))
+
+    return jb.objFromEntries(jb.entries(profile).map(([k,v]) => [k,jb.syntaxConverter.fixProfile(v,origin)]))
+  }
 })

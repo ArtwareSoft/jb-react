@@ -1,13 +1,15 @@
+using('probe')
+
 extension('tgpTextEditor', {
     initExtension() { 
         return { 
             enriched: Symbol.for('enriched'), 
         } 
     },    
-    evalProfileDef(code, dsl) { 
+    evalProfileDef(code, plugin) { 
       try {
         jb.core.unresolvedProfiles = []
-        const context = { jb, ...jb.macro.proxies, dsl: x=>jb.dsl(x), component: (...args) => jb.component({},dsl,...args) }
+        const context = { jb, ...jb.macro.proxies, dsl: x=>jb.dsl(x), component: (...args) => jb.component(plugin,'',...args) }
         const res = new Function(Object.keys(context), `return ${code}`).apply(null, Object.values(context))
         res && jb.utils.resolveLoadedProfiles({keepLocation: true})
         return { res, compId : jb.path(res,[jb.core.CT,'fullId']) }
@@ -144,7 +146,7 @@ extension('tgpTextEditor', {
         const reversedLines = lines.slice(0,cursorLine+1).reverse()
         const compLine = cursorLine - reversedLines.findIndex(line => line.match(/^(component|extension)\(/))
         if (compLine > cursorLine) return { notJbCode: true }
-        if (lines[compLine].match(/^extension/)) return { inExtension: true, lineText }
+        if (lines[compLine].match(/^extension/)) return { inExtension: true, lineText, cursorCol }
         if (!lines[compLine])
             return { error: 'can not find comp', cursorLine, compLine, docText}
 
@@ -160,13 +162,13 @@ extension('tgpTextEditor', {
         const inCompPos = {line: cursorLine-compLine, col: cursorCol }
         return {compText, compLine, inCompPos, shortId, cursorLine, cursorCol, filePath, dsl }
     },
-    fixEditedComp(compId, compText, {line, col} = {},dsl) {
+    fixEditedComp(compId, compText, {line, col} = {},plugin) {
         const lines = compText.split('\n')
         const currentLine = lines[line]
         const fixedLine = currentLine && fixLineAtCursor(currentLine,col)
         if (currentLine && fixedLine != currentLine) {
             const fixedCompText = lines.map((l,i) => i == line ? fixedLine : l).join('\n')
-            const comp = jb.tgpTextEditor.evalProfileDef(fixedCompText, dsl).res
+            const comp = jb.tgpTextEditor.evalProfileDef(fixedCompText, plugin).res
             if (comp) {
                 jb.comps[compId] = comp
                 const {text, map} = jb.utils.prettyPrintWithPositions(comp,{initialPath: compId})
@@ -194,7 +196,7 @@ extension('tgpTextEditor', {
         const compContent = compText.slice(compText.indexOf('{'),-1)
         const justCreatedComp = !compContent.length && comp[jb.core.CT].location[1] == 'new'
         if (justCreatedComp) {
-          comp[jb.core.CT].location[1] == lines.length
+          comp[jb.core.CT].location[2] = lines.length
           return { range: {start: { line: lines.length, col: 0}, end: {line: lines.length, col: 0} } , newText: '\n\n' + newCompText }
         }
         const {common, oldText, newText} = calcDiff(compContent, newCompText || '')
@@ -214,15 +216,15 @@ extension('tgpTextEditor', {
           return {firstDiff: i, common, oldText: oldText.slice(0,-j+1), newText: newText.slice(0,-j+1)}
         }
     },
-    updateCurrentCompFromEditor(docProps,ctx) {
-        const {docText, cursorLine } = docProps
-        const {compId, compSrc, dsl} = jb.tgpTextEditor.closestComp(docText, cursorLine)
-        const {err} = compSrc ? jb.tgpTextEditor.evalProfileDef(compSrc, dsl) : {}
-        if (err)
-          return jb.logError('can not parse comp', {compId, err})
-        const ref = ctx.exp('%$studio/scriptChangeCounter%','ref')
-        jb.db.writeValue(ref, +(jb.val(ref)||0)+1 ,ctx)          
-    },
+    // updateCurrentCompFromEditor(docProps,ctx) {
+    //     const {docText, cursorLine } = docProps
+    //     const {compId, compSrc, filePath, dsl} = jb.tgpTextEditor.closestComp(docText, cursorLine)
+    //     const {err} = compSrc ? jb.tgpTextEditor.evalProfileDef(compSrc, jb.tgpTextEditor.pluginOfPath(filePath, dsl)) : {}
+    //     if (err)
+    //       return jb.logError('can not parse comp', {compId, err})
+    //     const ref = ctx.exp('%$studio/scriptChangeCounter%','ref')
+    //     jb.db.writeValue(ref, +(jb.val(ref)||0)+1 ,ctx)          
+    // },
     posFromCM: pos => pos && ({line: pos.line, col: pos.ch}),
 
 })
@@ -362,9 +364,7 @@ component('tgpTextEditor.probeByDocProps', {
     {id: 'docProps'}
   ],
   impl: remote.data(
-    pipe({'$': 'probe.runCircuit', '$byValue': [
-      tgp.providePath('%$docProps%')
-    ]}, '%result%'),
+    pipe(probe.runCircuit(tgp.providePath('%$docProps%')), '%result%'),
     cmd(probe('%$docProps/filePath%'))
   )
 })
@@ -375,11 +375,11 @@ component('tgpTextEditor.studioCircuitUrlByDocProps', {
   ],
   impl: remote.data(
     pipe(
-      Var('sourceCode', sourceCode.encodeUri(probe('%$docProps/filePath%','studio'))),
+      Var('sourceCode', sourceCode.encodeUri(probe('%$docProps/filePath%', 'studio'))),
       Var('probePath', tgp.providePath('%$docProps%')),
-      {'$': 'probe.calcCircuitPath', '$byValue': ['%$probePath%']},
+      probe.calcCircuitPath('%$probePath%'),
       join({separator: '/', items: list('%path%','%$probePath%')}),
-      'http://localhost:8082/project/studio/%%?sourceCode=%$sourceCode%'
+      'http://localhost:8082/project/studio/%%?sourceCode=%$sourceCode%&spy=test'
     ),
     cmd(probe('%$docProps/filePath%'))
   )

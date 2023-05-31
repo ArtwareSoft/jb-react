@@ -9,6 +9,7 @@ function findjbReact() {
 }
 
 function codePackageNodeFS(baseDir) { return {
+    repo: baseDir.split('/').pop(),
     fetchFile(url) {
         try {
             return require('util').promisify(fs.readFile)(baseDir+url)
@@ -22,7 +23,7 @@ function codePackageNodeFS(baseDir) { return {
     },        
     async fileSymbols (path) {
         try {
-            return getFilesInDir(path).filter(f => f.match(/\.js/)).map(path => fileContent(path))
+            return getFilesInDir(path).filter(f => f.match(/\.js$/)).map(path => fileContent(path))
         } catch(e) {
             return []
         }
