@@ -89,10 +89,11 @@ extension('watchable', 'main', {
       }
     }
     makeWatchable(resName) {
-      jb.log('make watchable',{resName})
       const resource = this.resources()[resName]
-      if (!this.objToPath.has(resource))
+      if (!(this.objToPath.has(resource) || this.objToPath.has(resource[jb.watchable.jbId]))) {
+        jb.log('make watchable',{resName})
         this.addObjToMap(resource,[resName])
+      }
     }
     addJbId(path) {
       for(let i=0;i<path.length;i++) {

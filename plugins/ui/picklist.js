@@ -33,12 +33,12 @@ component('picklist.allowAsynchOptions', {
         const model = picklistModel || $model
         let res
         if ($state.refresh && $state.options && $state.refreshSource == 'dataArrived') {
-          console.log('state dataArrived',$state)
+          //console.log('state dataArrived',$state)
           res = $state.options
           jb.log('picklist options using state',{res,ctx,$state})
         } else if ($state.refresh && $state.options) { 
           // could not write test to cover it - suggestions.selectPopup does not cover it
-          console.log('state no dataArrived',$state)
+          //console.log('state no dataArrived',$state)
           res = $state.options // show these options while recalcing model options
           const options = model.options() // recalc options
           if (jb.utils.isPromise(options) || jb.callbag.isCallbag(options))

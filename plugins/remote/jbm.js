@@ -237,7 +237,10 @@ component('jbm.self', {
 
 component('parent', {
   type: 'jbm',
-  impl: () => jb.parent
+  impl: () => ({
+    uri: jb.parent.uri,
+    rjbm: () => jb.parent
+  })
 })
 
 component('jbm.start', {

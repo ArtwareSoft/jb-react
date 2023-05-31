@@ -1128,6 +1128,7 @@ component('action.switch', {
     {id: 'cases', type: 'action.switch-case[]', as: 'array', mandatory: true, defaultValue: []},
     {id: 'defaultAction', type: 'action', dynamic: true}
   ],
+  macroByValue: false,
   impl: (ctx,cases,defaultAction) => {
   	for(let i=0;i<cases.length;i++)
   		if (cases[i].condition(ctx))

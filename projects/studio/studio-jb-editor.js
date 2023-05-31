@@ -116,30 +116,26 @@ component('studio.openJbEditProperty', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: action.switch(
-    Var('actualPath', studio.jbEditorPathForEdit('%$path%')),
-    Var('paramDef', tgp.paramDef('%$actualPath%')),
-    [
-      action.switchCase(ctx =>
-        console.log('open property', ctx.run({$: 'tgp.isOfType', path: '%$actualPath%', type: 'data,boolean'}), ctx)),
+  impl: action.switch({
+    vars: [
+      Var('actualPath', studio.jbEditorPathForEdit('%$path%')),
+      Var('paramDef', tgp.paramDef('%$actualPath%'))
+    ],
+    cases: [
       action.switchCase(endsWith('$vars', '%$path%'), studio.addVariable('%$path%')),
       action.switchCase(
         '%$paramDef/options%',
         openDialog({
-          style: dialog.studioJbEditorPopup(),
           content: group({
             controls: [
               studio.jbFloatingInputRich('%$actualPath%')
             ],
             features: [
               feature.onEsc(dialog.closeDialog(true)),
-              feature.onEnter(
-                dialog.closeDialog(true),
-                popup.regainCanvasFocus(),
-                toggleBooleanValue('%$studio/refreshProbe%')
-              )
+              feature.onEnter(dialog.closeDialog(true))
             ]
           }),
+          style: dialog.studioJbEditorPopup(),
           features: [
             dialogFeature.autoFocusOnFirstInput(),
             dialogFeature.onClose(popup.regainCanvasFocus())
@@ -153,8 +149,8 @@ component('studio.openJbEditProperty', {
       action.switchCase(
         tgp.isOfType('%$actualPath%', 'data,boolean'),
         openDialog({
-          style: dialog.studioJbEditorPopup(),
           content: studio.jbFloatingInput('%$actualPath%'),
+          style: dialog.studioJbEditorPopup(),
           features: [
             dialogFeature.autoFocusOnFirstInput(),
             dialogFeature.onClose(toggleBooleanValue('%$studio/refreshProbe%'))
@@ -167,13 +163,13 @@ component('studio.openJbEditProperty', {
         tgp.setComp('%$path%', '%$ptsOfType[0]%')
       )
     ],
-    studio.openNewProfileDialog({
+    defaultAction: studio.openNewProfileDialog({
       path: '%$actualPath%',
       type: tgp.paramType('%$actualPath%'),
       mode: 'update',
       onClose: popup.regainCanvasFocus()
     })
-  )
+  })
 })
 
 component('studio.jbEditorInteliTree', {

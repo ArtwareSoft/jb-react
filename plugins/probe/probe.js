@@ -13,7 +13,7 @@ extension('probe', 'main', {
         let circuitCtx = jb.ctxDictionary[ctx.exp('%$workspace/pickSelectionCtxId%')]
         if (circuitCtx) return { reason: 'pickSelection', circuitCtx }
 
-        circuitCtx = jb.probe.closestCtxWithSingleVisit(probePath)
+        circuitCtx = await jb.probe.closestCtxWithSingleVisit(probePath)
         if (circuitCtx) return { reason: 'closestCtxWithSingleVisit', circuitCtx }
 
         if (jb.path(jb.ui,'headless')) {
@@ -231,7 +231,10 @@ extension('probe', 'main', {
         if (jb.callbag.isCallbag(x)) return x
         return Promise.resolve(x)
     },
-	closestCtxWithSingleVisit(probePath) {
+	async closestCtxWithSingleVisit(probePath) {
+        const cmpId = probePath.split('~')[0]
+        jb.treeShake.codeServerJbm && await jb.treeShake.getCodeFromRemote([cmpId])
+
 		let path = probePath.split('~')
         if (jb.tgp.isExtraElem(probePath)) {
             if (probePath.match(/items~0$/)) {

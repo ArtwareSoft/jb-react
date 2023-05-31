@@ -201,7 +201,7 @@ const op_post_handlers = {
         } catch(e) {}
         if (!clientReq)
            return endWithFailure(res,'Can not parse json request');
-        const path = settings.http_dir + _path(clientReq.Path)
+        const path = calcFullPath(clientReq.Path) // settings.http_dir + _path(clientReq.Path)
         fs.writeFile(path || '', clientReq.Contents || '' , function (err) {
           if (err)
             endWithFailure(res,'Can not write to file ' + path);

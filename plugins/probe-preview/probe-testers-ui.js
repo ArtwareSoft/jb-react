@@ -8,7 +8,7 @@ component('test.showTestInStudio', {
   impl: (ctx,testId) => {
 		const profile = jb.path(jb.comps[testId],'impl')
 		const ctxForUi = jb.ui.extendWithServiceRegistry(ctx)
-		if (profile.$ == 'dataTest') 
+		if (profile.$ == 'dataTest')
 			return ctxForUi.run({ $: 'test.dataTestView' ,testId, testResult })
 		if (profile.$ == 'uiTest') {
 			const ctxWithVars = ctx.setVars(jb.objFromEntries((profile.vars||[]).map(v=>[v.name,ctx.run(v.val)])))
@@ -55,7 +55,7 @@ component('test.dataTestView', {
           Var('color', If('%success%', '--jb-success-fg', '--jb-error-fg'))
         ],
         title: If('%success%', '✓ %$testId%', '⚠ %$testId%'),
-        action: () => jb.frame.studio.host.openUrlInBrowser('http://localhost:8082/projects/tests/tests.html?test=%$testId%&show&spy=test'),
+        action: remote.action(winUtils.gotoUrl('/hosts/tests/tests.html?test=%$testId%&show&spy=test'), parent()),
         style: button.href(),
         features: css.color('var(%$color%)')
       }),
@@ -102,7 +102,7 @@ component('test.uiTestRunner', {
           Var('color', If('%success%', '--jb-success-fg', '--jb-error-fg'))
         ],
         title: If('%success%', '✓ %$testId%', '⚠ %$testId%'),
-        action: () => jb.frame.studio.host.openUrlInBrowser('http://localhost:8082/projects/tests/tests.html?test=%$testId%&show&spy=test'),
+        action: remote.action(winUtils.gotoUrl('/hosts/tests/tests.html?test=%$testId%&show&spy=test,uiComp'), parent()),
         style: button.href(),
         features: css.color('var(%$color%)')
       }),
