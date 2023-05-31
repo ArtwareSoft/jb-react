@@ -215,8 +215,8 @@ extension('test', {
 	testResultHtml(res) {
 		const baseUrl = jb.frame.location.href.split('/tests.html')[0]
 		const sourceCode = JSON.stringify(jb.exec({$: 'test', $typeCast: 'source-code<jbm>', 
-			filePath: (jb.comps[res.id][jb.core.CT].location || [])[0] }))
-		const studioUrl = `http://localhost:8082/project/studio/${res.id}?sourceCode=${encodeURIComponent(sourceCode)}`
+			filePath: (jb.comps[res.id][jb.core.CT].location || {}).path }))
+		const studioUrl = `http://localhost:8082/project/studio/${res.id}/${res.id}?sourceCode=${encodeURIComponent(sourceCode)}`
 		const matchLogs = 'remote,itemlist,refresh'.split(',')
 		const matchLogsMap = jb.entries({ui: ['uiComp'], widget: ['uiComp','widget'] })
 		const spyLogs = ['test', ...(matchLogs.filter(x=>res.id.toLowerCase().indexOf(x) != -1)), 

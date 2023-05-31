@@ -1,15 +1,17 @@
+
 component('menu.menu', {
   type: 'menu.option',
   params: [
     {id: 'title', as: 'string', dynamic: true, mandatory: true},
     {id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true, defaultValue: []},
     {id: 'icon', type: 'icon' },
-    {id: 'optionsFilter', type: 'data', dynamic: true, defaultValue: '%%'}
+//    {id: 'optionsFilter', type: 'data', dynamic: true, defaultValue: '%%'}
   ],
   impl: ctx => ({
 		options: function(ctx2) {
       const ctxWithDepth = ctx.setVars({...ctx.vars, ...(ctx2 && ctx2.vars), menuDepth: this.ctx.vars.menuDepth })
-      return ctx.params.optionsFilter(ctx.setData(ctx.params.options(ctxWithDepth)))
+      return ctx.params.options(ctxWithDepth).filter(x=>x)
+      //return ctx.params.optionsFilter(ctx.setData(ctx.params.options(ctxWithDepth)))
     },
     title: ctx.params.title(),
     icon: ctx.params.icon,

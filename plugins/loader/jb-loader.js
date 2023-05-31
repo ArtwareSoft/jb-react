@@ -2,7 +2,7 @@ const jb_plugins = null
 
 function jbBrowserCodePackage(repo = '', fetchOptions= {}, useFileSymbolsFromBuild) {
   return {
-    repo,
+    repo: repo.split('/')[0],
     _fetch(path) { return fetch(jbHost.baseUrl + path, fetchOptions) },
     fetchFile(path) { return this._fetch(path).then(x=>x.text()) },
     fetchJSON(path) { return this._fetch(path).then(x=>x.json()) },

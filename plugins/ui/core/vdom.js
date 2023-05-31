@@ -29,6 +29,10 @@ extension('ui','vdom', {
                 debugger
             if (typeof cmpOrTag != 'string' && !jb.path(cmpOrTag,'$'))
                 debugger
+            if (cmpOrTag == '[object Object]') {
+                debugger
+                cmpOrTag = 'div'
+            }
 
             if (children != null)
                 children.forEach(ch=>ch.parentNode = this)

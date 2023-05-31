@@ -313,7 +313,7 @@ component('studio.jbEditorMenu', {
             showCondition: studio.canExtractParam('%$path%')
           })
         ],
-        optionsFilter: '%%'
+        //optionsFilter: '%%'
       })
     ]
   })
