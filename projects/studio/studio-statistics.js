@@ -136,7 +136,7 @@ component('studio.cmpsOfProjectByFiles', {
       filter(
           equals(
             pipeline(
-              ({data}) => jb.studio.previewjb.comps[data][jb.core.CT].location[1],
+              ({data}) => jb.studio.previewjb.comps[data][jb.core.CT].location.path,
               split({separator: '/', part: 'last'})
             ),
             '%$file%'

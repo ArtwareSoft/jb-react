@@ -307,12 +307,12 @@ extension('tgpTextEditor', 'completion', {
             const [,lib,func] = lineText.match(/jb\.([a-zA-Z_0-9]+)\.([a-zA-Z_0-9]+)/) || ['','','']
             if (lib && jb.path(jb,[lib,'__extensions'])) {
                 const loc = Object.values(jb[lib].__extensions).filter(ext=>ext.funcs.includes(func)).map(ext=>ext.location)[0]
-                const lineOfExt = (+loc[2]) || 0
-                const fileContent = await jbHost.codePackageFromJson().fetchFile(loc[1])
+                const lineOfExt = (+loc.line) || 0
+                const fileContent = await jbHost.codePackageFromJson().fetchFile(loc.path)
                 const lines = ('' + fileContent).split('\n').slice(lineOfExt)
                 const funcHeader = new RegExp(`[^\.]${func}\\s*:|[^\.]${func}\\s*\\(`) //[^{]+{)`)
                 const lineOfFunc = lines.findIndex(l=>l.match(funcHeader))
-                return [loc[0], loc[1], lineOfExt + lineOfFunc]
+                return {...loc, line: lineOfExt + lineOfFunc}
             }
         }
     },

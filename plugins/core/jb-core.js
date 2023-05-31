@@ -51,7 +51,7 @@ Object.assign(jb, {
         const location = line ? (line.split('at ').pop().split('eval (').pop().split(' (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
         location[0] = location[0].split('?')[0]
         if (location[0].match(/jb-loader.js/)) debugger
-        return [((plugin || {}).codePackage || {}).repo||'',...location]
+        return { repo: ((plugin || {}).codePackage || {}).repo||'', path: location[0], line: location[1] }
     } catch(e) {
       console.log(e)
     }      

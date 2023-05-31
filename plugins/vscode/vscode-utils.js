@@ -117,9 +117,9 @@ extension('vscode', 'utils', {
         const repos = (vscodeNS.workspace.workspaceFolders || []).map(ws=>ws.uri.path)
             .map(path=>({path,repo: path.split('/').pop()}))
         debugger
-        const repo = repos.find(x=>x.repo == loc[0]) 
-        const path = ((repo || {}).path || jbHost.jbReactDir) + loc[1]
-        return new vscodeNS.Location(vscodeNS.Uri.file(path), new vscodeNS.Position((+loc[2]) || 0, 0))
+        const repo = repos.find(x=>x.repo == loc.repo) 
+        const path = ((repo || {}).path || jbHost.jbReactDir) + loc.path
+        return new vscodeNS.Location(vscodeNS.Uri.file(path), new vscodeNS.Position((+loc.line) || 0, 0))
     },
     // commands    
     moveUp() {

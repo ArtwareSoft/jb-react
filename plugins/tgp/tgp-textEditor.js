@@ -194,9 +194,9 @@ extension('tgpTextEditor', {
     deltaFileContent(compText, compId, compLine, newCompText) {
         const comp = jb.comps[compId]
         const compContent = compText.slice(compText.indexOf('{'),-1)
-        const justCreatedComp = !compContent.length && comp[jb.core.CT].location[1] == 'new'
+        const justCreatedComp = !compContent.length && comp[jb.core.CT].location.path == 'new'
         if (justCreatedComp) {
-          comp[jb.core.CT].location[2] = lines.length
+          comp[jb.core.CT].location.line = lines.length
           return { range: {start: { line: lines.length, col: 0}, end: {line: lines.length, col: 0} } , newText: '\n\n' + newCompText }
         }
         const {common, oldText, newText} = calcDiff(compContent, newCompText || '')
