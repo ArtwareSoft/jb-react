@@ -2,10 +2,10 @@ using('ui-tests')
 
 component('remoteWidgetTest.button', {
   impl: uiTest({
-    timeout: 3000,
-    checkResultRx: () => jb.ui.renderingUpdates,
     control: remote.widget(button('hello world'), worker()),
-    expectedResult: contains('hello world')
+    checkResultRx: () => jb.ui.renderingUpdates,
+    expectedResult: contains('hello world'),
+    timeout: 3000
   })
 })
 

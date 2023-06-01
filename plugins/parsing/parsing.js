@@ -194,7 +194,14 @@ component('merge', {
   params: [
     {id: 'objects', type: 'data[]', as: 'array', mandatory: true}
   ],
-  impl: ({}, objects) => Object.assign.apply({},objects)
+  impl: ({}, objects) => Object.assign({},...objects)
+})
+
+component('clone', {
+  params: [
+      { id: 'obj', defaultValue: '%%' }
+  ],
+  impl: ({},obj) => JSON.parse(JSON.stringify(obj))
 })
 
 component('filterEmptyProperties', {
@@ -245,14 +252,16 @@ component('wrapAsObject', {
   type: 'aggregator',
   params: [
     {id: 'propertyName', as: 'string', dynamic: true, mandatory: true},
-    {id: 'value', as: 'string', dynamic: true, defaultValue: '%%'},
+    {id: 'value', dynamic: true, defaultValue: '%%'},
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
-  impl: (ctx,key,value,items) => {
-    let out = {}
-    items.forEach(item=>out[jb.tostring(key(ctx.setData(item)))] = value(ctx.setData(item)))
-    return out;
-  }
+  impl: (ctx,key,value,items) => items.reduce((acc,item) => ({...acc, [jb.tostring(key(ctx.setData(item)))] : value(ctx.setData(item))}),{})
+  
+  // {
+  //   let out = {}
+  //   items.forEach(item=>out[jb.tostring(key(ctx.setData(item)))] = value(ctx.setData(item)))
+  //   return out;
+  // }
 })
 
 component('asString', {

@@ -89,6 +89,7 @@ extension('watchable', 'main', {
       }
     }
     makeWatchable(resName) {
+      if (!resName) return
       const resource = this.resources()[resName]
       if (!(this.objToPath.has(resource) || this.objToPath.has(resource[jb.watchable.jbId]))) {
         jb.log('make watchable',{resName})

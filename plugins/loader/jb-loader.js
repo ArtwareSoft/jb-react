@@ -101,8 +101,7 @@ async function jbInit(uri, sourceCode , {multipleInFrame} ={}) {
       }
       try {
         //console.log(`loading ${path}`)
-        //const f = new Function(Object.keys(context), code)
-        const f = eval(`(function x(${Object.keys(context)}) {${code}\n})`)
+        const f = eval(`(function(${Object.keys(context)}) {${code}\n})`)
         f.apply(null, Object.values(context))
         jb.loadedFiles[path] = true
       } catch (e) {

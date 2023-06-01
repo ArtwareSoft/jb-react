@@ -23,7 +23,7 @@ component('probe.inOutView', {
                           title: 'in (%$input/in/length%)',
                           content: editableText({
                             title: 'codemirror',
-                            databind: prettyPrint('%$input/in/data%'),
+                            databind: prettyPrint({profile: '%$input/in/data%', noMacros: true}),
                             style: editableText.codemirror({
                               enableFullScreen: true,
                               height: '',
@@ -54,7 +54,7 @@ component('probe.inOutView', {
                           title: 'out (%$input/out/length%)',
                           content: editableText({
                             title: 'codemirror',
-                            databind: prettyPrint('%$input/out%'),
+                            databind: prettyPrint({profile: '%$input/out%', noMacros: true}),
                             style: editableText.codemirror({
                               enableFullScreen: true,
                               height: '',

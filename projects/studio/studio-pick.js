@@ -136,10 +136,10 @@ extension('studio','pick', {
         .filter(el => el && el.getAttribute && el.getAttribute('jb-ctx') && predicate(jb.path(el,'debug.path') || '')))
         // .map( el => ({el, ctxId: checkCtxId(el.getAttribute('pick-ctx')) || checkCtxId(el.getAttribute('jb-ctx')) }))
         // .filter(({ctxId}) =>  ctxId), ({ctxId}) => ctxId)
-    const results1 = elems.flatMap(el=>jb.ui.parents(el,{includeSelf: true}))
-        .filter(el => el && el.getAttribute && el.getAttribute('jb-ctx')).map(el=>[jb.path(el,'debug.path'),el])
+    // const results1 = elems.flatMap(el=>jb.ui.parents(el,{includeSelf: true}))
+    //     .filter(el => el && el.getAttribute && el.getAttribute('jb-ctx')).map(el=>[jb.path(el,'debug.path'),el])
 
-    console.log(results1)
+    // console.log(results1)
     if (results.length == 0) return [];
   
     let index = moveRight.dir == 'right' ? 1 + Math.floor(moveRight.count / 10) : 0

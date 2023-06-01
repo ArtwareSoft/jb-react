@@ -1,7 +1,8 @@
 component('prettyPrint', {
   params: [
     {id: 'profile', defaultValue: '%%'},
-    {id: 'forceFlat', as: 'boolean', type: 'boolean'}
+    {id: 'forceFlat', as: 'boolean', type: 'boolean'},
+    {id: 'noMacros', as: 'boolean' }
   ],
   impl: (ctx,profile) => jb.utils.prettyPrint(jb.val(profile),{ ...ctx.params })
 })
@@ -142,23 +143,17 @@ extension('utils', 'prettyPrint', {
     }
 
     function calcProfileProps(profile, path) {
+      if (noMacros)
+        return asIsProps(profile,path)
       const fullId = [jb.utils.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
       const comp = fullId && jb.utils.getComp(fullId)
       if (comp && profile.$byValue)
         jb.utils.resolveDetachedProfile(profile)
       const id = fullId.split('>').pop()
         
-      if (noMacros || !id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
-        const objProps = Object.keys(profile)
-        if (objProps.indexOf('$') > 0) { // make the $ first
-          objProps.splice(objProps.indexOf('$'),1);
-          objProps.unshift('$');
-        }
-        const len = objProps.reduce((len,key) => len 
-          + calcValueProps(profile[key],`${path}~${key}`).len + key.length + 3,2)
-        const innerVals = objProps.map(prop=>({innerPath: prop}))
-        return openCloseProps(path, {prop:'!open-obj', item:'{'},{prop:'!close-obj', item:'}'}, { len, simpleObj: true, innerVals})
-      }
+      if (!id || !comp || ',object,var,'.indexOf(`,${id},`) != -1)
+        return asIsProps(profile,path)
+        
       const macro = jb.macro.titleToId(id)
 
       const params = comp.params || []
@@ -212,6 +207,18 @@ extension('utils', 'prettyPrint', {
       const len = macro.length + args.reduce((len,elem) => 
         len + calcValueProps(elem.val,`${path}~${elem.innerPath}`).len + elem.innerPath.length + 2, 2)
       return openCloseProps(path, open, close, {byName: true, len, innerVals: args })
+    }
+
+    function asIsProps(profile,path) {
+      const objProps = Object.keys(profile)
+      if (objProps.indexOf('$') > 0) { // make the $ first
+        objProps.splice(objProps.indexOf('$'),1);
+        objProps.unshift('$');
+      }
+      const len = objProps.reduce((len,key) => len 
+        + calcValueProps(profile[key],`${path}~${key}`).len + key.length + 3,2)
+      const innerVals = objProps.map(prop=>({innerPath: prop}))
+      return openCloseProps(path, {prop:'!open-obj', item:'{'},{prop:'!close-obj', item:'}'}, { len, simpleObj: true, innerVals})
     }
 
     function calcArrayProps(array, path) {

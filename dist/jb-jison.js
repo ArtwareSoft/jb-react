@@ -369,7 +369,7 @@ eval("module.exports = function(module) {\n\tif (!module.webpackPolyfill) {\n\t\
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("jb.jisonParser = __webpack_require__(/*! jison */ \"./node_modules/jison/lib/jison.js\");\n\n//# sourceURL=webpack:///./src/misc/pack-jison.js?");
+eval("globalThis.jb.jisonParser = __webpack_require__(/*! jison */ \"./node_modules/jison/lib/jison.js\");\n\n//# sourceURL=webpack:///./src/misc/pack-jison.js?");
 
 /***/ })
 
