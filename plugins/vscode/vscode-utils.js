@@ -24,13 +24,17 @@ extension('vscode', 'utils', {
                 jb.log('vscode applyEdit',{wEdit, edit,uri})
                 jb.tgpTextEditor.lastEdit = edit.newText
                 await vscodeNS.workspace.applyEdit(wEdit)
+                await jb.delay(1)
             },
-            selectRange(start,end) {
+            async selectRange(start,end) {
                 end = end || start
                 const editor = vscodeNS.window.activeTextEditor
                 const line = start.line
+                await jb.delay(1)
                 editor.revealRange(new vscodeNS.Range(line, 0,line, 0), vscodeNS.TextEditorRevealType.InCenterIfOutsideViewport)
+                await jb.delay(1)
                 editor.selection = new vscodeNS.Selection(line, start.col, end.line, end.col)
+                await jb.delay(1)
             },
             compTextAndCursor() {
                 const editor = vscodeNS.window.activeTextEditor

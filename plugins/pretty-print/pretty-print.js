@@ -224,7 +224,10 @@ extension('utils', 'prettyPrint', {
     function calcArrayProps(array, path) {
       const primitiveArray = array.reduce((acc,item)=> acc && jb.utils.isPrimitiveValue(item), true)
       let longInnerValInArray = false
-      const len = array.reduce((len,val,i) => {
+      // support undefined values in array
+      // Array.from(array.keys()).map(x=>val[x])
+      //if (!jb.utils.compareArrays(array,Array.from(array.keys()).map(x=>array[x]))) debugger
+      const len = Array.from(array.keys()).map(x=>array[x]).reduce((len,val,i) => {
         const innerLen = calcValueProps(val,`${path}~${i}`).len
         longInnerValInArray = longInnerValInArray || innerLen > 20
         return len + innerLen + 2 

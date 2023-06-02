@@ -63,7 +63,11 @@ component('jbmTest.cmdWithParams.script.js', {
   params: [
     {id: 'toPass', defaultValue: () => 'aa', dynamic: true}
   ],
-  impl: dataTest(remote.data(pipeline('hello %$toPass()%'), cmd()), equals('hello aa'))
+  impl: dataTest({
+    calculate: remote.data(pipeline('hello %$toPass()%'), cmd()),
+    expectedResult: equals('hello aa'),
+    timeout: 500
+  })
 })
 
 component('jbmTest.cmdWithParams.objWithNL', {

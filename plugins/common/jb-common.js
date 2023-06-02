@@ -640,15 +640,8 @@ component('and', {
   params: [
     {id: 'items', type: 'boolean[]', ignore: true, mandatory: true, composite: true}
   ],
-  impl: function(context) {
-		const items = context.profile.$and || context.profile.items || [];
-		const innerPath =  context.profile.$and ? '$and~' : 'items~';
-		for(let i=0;i<items.length;i++) {
-			if (!context.runInner(items[i], { type: 'boolean' }, innerPath + i))
-				return false;
-		}
-		return true;
-	}
+  impl: ctx => (ctx.profile.items || []).reduce(
+      (res,item,i) => res && ctx.runInner(item, { type: 'boolean' }, `items~${i}`), true)
 })
 
 component('or', {
@@ -657,15 +650,8 @@ component('or', {
   params: [
     {id: 'items', type: 'boolean[]', ignore: true, mandatory: true, composite: true}
   ],
-  impl: function(context) {
-		const items = context.profile.$or || context.profile.items || [];
-		const innerPath =  context.profile.$or ? '$or~' : 'items~';
-		for(let i=0;i<items.length;i++) {
-			if (context.runInner(items[i],{ type: 'boolean' },innerPath+i))
-				return true;
-		}
-		return false;
-	}
+  impl: ctx => (ctx.profile.items || []).reduce(
+    (res,item,i) => res || ctx.runInner(item, { type: 'boolean' }, `items~${i}`), false)
 })
 
 component('between', {

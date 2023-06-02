@@ -55,8 +55,8 @@ component('probe.circuitPreview', {
     ]
   }),
   require: [
-    {$: 'test.showTestInStudio' },
-    {$: 'sampleProject.main' }
+    test.showTestInStudio(),
+    {'$': 'sampleProject.main'}
   ]
 })
 

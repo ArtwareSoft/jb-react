@@ -135,7 +135,7 @@ extension('syntaxConverter', 'onAddComponent', {
   },
   fixProfile(profile,origin) {
     if (jb.utils.isPrimitiveValue(profile) || typeof profile == 'function') return profile
-    ;['pipeline','list','firstSucceeding'].forEach(sugar => {
+    ;['pipeline','list','firstSucceeding','concat'].forEach(sugar => {
         if (profile['$'+sugar]) {
             profile.$ = sugar
             profile.items = profile['$'+sugar]

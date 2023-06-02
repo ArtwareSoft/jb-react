@@ -364,11 +364,13 @@ extension('tgpTextEditor', 'completion', {
         const editAndCursor  = item.edit ? item 
             : item.serverUri == 'langServer' ? await remoteCalcEditAndPos() 
             : await jb.tgpTextEditor.calcEditAndGotoPos(docProps,item,ctx)
+        debugger
         const { edit, cursorPos } = editAndCursor
         try {
             await jb.tgpTextEditor.host.applyEdit(edit)
+            await jb.delay(1)
             if (cursorPos) {
-                jb.tgpTextEditor.host.selectRange(cursorPos)
+                await jb.tgpTextEditor.host.selectRange(cursorPos)
                 if (cursorPos.TBD) {
                     await jb.delay(ctx.vars.testID? 1: 1000)
                     await jb.tgpTextEditor.host.execCommand('editor.action.triggerSuggest')

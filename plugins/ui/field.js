@@ -50,44 +50,22 @@ component('field.databind', {
   category: 'field:0',
   params: [
     {id: 'debounceTime', as: 'number', defaultValue: 0},
-    {id: 'oneWay', as: 'boolean'}
+    {id: 'oneWay', as: 'boolean', type: 'boolean'}
   ],
   impl: features(
     If(
-        '%$oneWay%',
-        calcProp({id: 'databind', value: '%$$model/databind()%', defaultValue: ''}),
-        watchAndCalcModelProp({prop: 'databind', allowSelfRefresh: true, defaultValue: ''})
-      ),
-    calcProp('title'),
-    calcProp({id: 'fieldId', value: () => jb.ui.field_id_counter++}),
-    method(
-      'writeFieldValue',
-      (ctx,{cmp},{oneWay}) => jb.ui.writeFieldData(ctx,cmp,ctx.data,oneWay)
+      '%$oneWay%',
+      calcProp({id: 'databind', value: '%$$model/databind()%', defaultValue: ''}),
+      watchAndCalcModelProp({prop: 'databind', allowSelfRefresh: true, defaultValue: ''})
     ),
-    method(
-        'onblurHandler',
-        (ctx,{cmp, ev},{oneWay}) => jb.ui.writeFieldData(ctx,cmp,ev.value,oneWay)
-      ),
-    method(
-        'onchangeHandler',
-        (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && jb.ui.writeFieldData(ctx,cmp,ev.value,oneWay)
-      ),
-    method(
-        'onkeyupHandler',
-        (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && jb.ui.writeFieldData(ctx,cmp,ev.value,oneWay)
-      ),
-    method(
-        'onkeydownHandler',
-        (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && jb.ui.writeFieldData(ctx,cmp,ev.value,oneWay)
-      ),
-    // frontEndProp(
-    //     'jbModel',
-    //     (ctx,{cmp}) => value =>
-    //       value == null ? ctx.exp('%$$model/databind%','number') : jb.ui.writeFieldData(ctx,cmp,value,true)
-    //   ),
-    
-    feature.byCondition('%$$dialog%', feature.initValue('%$$dialog/hasFields%',true))
-    //feature.init((ctx,{$dialog})=> $dialog && ($dialog.hasFields = true))
+    calcProp('title'),
+    calcProp('fieldId', () => jb.ui.field_id_counter++),
+    method('writeFieldValue', (ctx,{cmp},{oneWay}) => jb.ui.writeFieldData(ctx,cmp,ctx.data,oneWay)),
+    method('onblurHandler', (ctx,{cmp, ev},{oneWay}) => jb.ui.writeFieldData(ctx,cmp,ev.value,oneWay)),
+    method('onchangeHandler', (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && jb.ui.writeFieldData(ctx,cmp,ev.value,oneWay)),
+    method('onkeyupHandler', (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && jb.ui.writeFieldData(ctx,cmp,ev.value,oneWay)),
+    method('onkeydownHandler', (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && jb.ui.writeFieldData(ctx,cmp,ev.value,oneWay)),
+    feature.byCondition('%$$dialog%', feature.initValue('%$$dialog/hasFields%', true))
   )
 })
 
@@ -108,10 +86,7 @@ component('field.databindText', {
     {id: 'debounceTime', as: 'number', defaultValue: 0},
     {id: 'oneWay', type: 'boolean', as: 'boolean', defaultValue: true}
   ],
-  impl: field.databind(
-    '%$debounceTime%',
-    '%$oneWay%'
-  )
+  impl: field.databind('%$debounceTime%', '%$oneWay%')
 })
 
 // jb.component('field.keyboardShortcut', {

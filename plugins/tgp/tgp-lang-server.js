@@ -58,7 +58,7 @@ component('tgp.editsAndCursorPosByDocProps', {
     {id: 'docProps', defaultValue: '%docProps%'},
     {id: 'item', defaultValue: '%item%'}
   ],
-  impl: remote.data(tgp.editsAndCursorPos('%$docProps%','%$item%'), cmd(langServer('$debugger:%$docProps/filePath%')))
+  impl: remote.data(tgp.editsAndCursorPos('%$docProps%','%$item%'), cmd(langServer('%$docProps/filePath%')))
 })
 
 component('tgp.definitionByDocProps', {

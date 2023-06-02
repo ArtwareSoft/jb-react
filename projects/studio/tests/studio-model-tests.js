@@ -18,15 +18,17 @@ component('test.cmpWithVars', {
 
 component('test.moveInTree', {
   type: 'control',
-  impl: group({
-    controls: [
-      text('a'),
-      text('b'),
-      text('c'),
-      group(),
-      group({controls: []})
-    ]
-  })
+  impl: group({controls: [text('a'), text('b'), text('c'), group(), group({controls: []})]})
+})
+
+component('test.moveInTree2', {
+  type: 'control',
+  impl: group({controls: [text('a'), text('b'), text('c'), group(), group({controls: []})]})
+})
+
+component('test.moveInTree3', {
+  type: 'control',
+  impl: group({controls: [text('a'), text('b'), text('c'), group(), group({controls: []})]})
 })
 
 component('studioTest.setCompInVars', {
@@ -57,85 +59,26 @@ component('studioTest.moveFixDestinationEmptyGroup', {
   impl: dataTest({
     calculate: pipeline(
       list(
-          tgp.val('test.moveInTree~impl~controls'),
-          tgp.val('test.moveInTree~impl~controls~3~controls')
+          tgp.val('test.moveInTree2~impl~controls'),
+          tgp.val('test.moveInTree2~impl~controls~3~controls')
         ),
       '%text%',
       join({})
     ),
     runBefore: ctx =>
-	 		jb.tgp.moveFixDestination('test.moveInTree~impl~controls~1', 'test.moveInTree~impl~controls~4~controls',ctx),
+	 		jb.tgp.moveFixDestination('test.moveInTree2~impl~controls~1', 'test.moveInTree2~impl~controls~4~controls',ctx),
     expectedResult: equals('a,c,b')
   })
 })
 
 component('studioTest.jbEditorMove', {
   impl: dataTest({
-    calculate: pipeline(tgp.val('test.moveInTree~impl~controls'), '%text%', join({})),
+    calculate: pipeline(tgp.val('test.moveInTree3~impl~controls'), '%text%', join({})),
     runBefore: ctx =>
-	 		jb.db.move(jb.tgp.ref('test.moveInTree~impl~controls~1'), jb.tgp.ref('test.moveInTree~impl~controls~0'),ctx),
+	 		jb.db.move(jb.tgp.ref('test.moveInTree3~impl~controls~1'), jb.tgp.ref('test.moveInTree3~impl~controls~0'),ctx),
     expectedResult: equals('b,a,c')
   })
 })
-
-component('test.setSugarCompSimple', {
-  impl: text({
-
-  })
-})
-
-component('test.setSugarCompWrap', {
-  impl: text(
-    'a'
-  )
-})
-
-component('test.setSugarCompOverride1', {
-  impl: text({
-    text: pipeline('a', 'b')
-  })
-})
-
-component('test.setSugarCompOverride2', {
-  impl: text({
-    text: list('a', 'b')
-  })
-})
-
-// jb.component('studioTest.setSugarCompSimple', {
-//   impl: dataTest({
-//     calculate: tgp.val('test.setSugarCompSimple~impl~text~$pipeline'),
-//     runBefore: tgp.setComp('test.setSugarCompSimple~impl~text', 'pipeline'),
-//     expectedResult: ctx => JSON.stringify(ctx.data) == '[]'
-//   })
-// })
-
-// jb.component('studioTest.setSugarCompWrap', {
-//   impl: dataTest({
-//     calculate: tgp.val('test.setSugarCompWrap~impl~text~$pipeline'),
-//     runBefore: tgp.setComp('test.setSugarCompWrap~impl~text', 'pipeline'),
-//     expectedResult: ctx =>
-// 			JSON.stringify(ctx.data) == '["a"]'
-//   })
-// })
-
-// jb.component('studioTest.setSugarCompOverride1', {
-//   impl: dataTest({
-//     calculate: tgp.val('test.setSugarCompOverride1~impl~text~$pipeline'),
-//     runBefore: tgp.setComp('test.setSugarCompOverride1~impl~text', 'pipeline'),
-//     expectedResult: ctx =>
-// 			JSON.stringify(ctx.data) == '["a","b"]'
-//   })
-// })
-
-// jb.component('studioTest.setSugarCompOverride2', {
-//   impl: dataTest({
-//     calculate: tgp.val('test.setSugarCompOverride2~impl~text~$pipeline'),
-//     runBefore: tgp.setComp('test.setSugarCompOverride2~impl~text', 'pipeline'),
-//     expectedResult: ctx =>
-// 			JSON.stringify(ctx.data) == '["a","b"]'
-//   })
-// })
 
 component('test.profileAsTextExample', {
   impl: text('a')
