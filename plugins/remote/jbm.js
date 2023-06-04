@@ -112,19 +112,18 @@ component('cmd', {
     impl: (ctx,_sourceCode,viaHttpServer,id) => ({
         uri: id || 'main',
         remoteExec: async (sctx,{data, action} = {}) => {
-            // const params = jb.path(sctx,'cmpCtx.params') || {}
-            // const context = { ...(sctx.vars || {}), ...params }
+            jb.jbm.cmdCounter = (jb.jbm.cmdCounter || 0) + 1
             const plugins = pluginsOfProfile([(data || action).profile, jb.path(sctx,'cmpCtx.params')])
             const sourceCode = _sourceCode || { plugins , pluginPackages: [{$:'defaultPackage'}] }
             sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),plugins])
     
             const args = [
                 ['-runCtx', JSON.stringify(sctx)],
-                ['-uri', id || 'main'],
+                ['-uri', id || `main${jb.jbm.cmdCounter}`],
                 ['-sourceCode', JSON.stringify(sourceCode)],
-//                ...Object.keys(context).map(k=>[`%${k}`, encodeContextVal(context[k])]),
             ].filter(x=>x[1])
-            const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(x=>`'${x}'`).join(' ')}`
+            const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(arg=> arg[0] + 
+                (arg[1].indexOf("'") != -1 ? `"${arg[1].replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg[1]}'`)).join(' ')}`
             let cmdResult = null
             if (viaHttpServer) {
                 const body = JSON.stringify(args.map(([k,v])=>`${k}:${v}`))
@@ -140,7 +139,8 @@ component('cmd', {
             try {
                 return JSON.parse(cmdResult).result
             } catch (err) {
-                jb.logError('cmd: can not parse result returned from jb.js',{res, command, err})
+                debugger
+                jb.logError('cmd: can not parse result returned from jb.js',{cmdResult, command, err})
             }
 
             // function encodeContextVal(val) {

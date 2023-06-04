@@ -206,14 +206,12 @@ component('uiTest.editableTextExpandable', {
 
 component('uiTest.twoWayBinding', {
   impl: uiTest({
-    control: group({
-      controls: [
-        editableText('name', '%$person/name%'),
-        text('%$person/name%')
-      ]
-    }),
+    control: group({controls: [
+      editableText('name', '%$person/name%'),
+      text('%$person/name%')
+    ]}),
     userInput: userInput.setText('hello', 'input'),
-    expectedResult: contains(['<span', 'hello', '</span'])
+    expectedResult: contains(['<span','hello','</span'])
   })
 })
 

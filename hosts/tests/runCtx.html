@@ -42,7 +42,7 @@
             await jb.loadjbFile(ppFileSymbols.path, jb, { fileSymbols: ppFileSymbols, plugin: jb.plugins['pretty-print'] })
             await jb.initializeLibs(ppFileSymbols.libs)
 
-            sourceCodeEl.innerText = jb.utils.prettyPrint(sourceCode)
+            sourceCodeEl.innerText = jb.utils.prettyPrint(sourceCode,{noMacros: true})
             runCtxEl.innerText = JSON.stringify(runCtx)
             const res = await jb.remoteCtx.deStrip(runCtx)()
             resultEl.innerText = JSON.stringify(res)

@@ -56,7 +56,10 @@ extension('treeShake', {
         ].filter(id=> !onlyMissing || jb.treeShake.missing(id)).filter(x=> x!= 'runCtx')
     },
     dependentOnFunc(func, onlyMissing) {
-        if (!func) debugger
+        if (!func) { 
+            return []
+            //debugger
+        }
         const funcStr = typeof func == 'string' ? func : func.toString()
         const funcDefs = [...funcStr.matchAll(/{([a-zA-Z0-9_ ,]+)}\s*=\s*jb\.([a-zA-Z0-9_]+)\b[^\.]/g)] // {...} = jb.xx
             .map(line=>({ lib: line[2], funcs: line[1].split(',')}))

@@ -100,7 +100,7 @@ extension('net', {
     }
 })
 
-extension('jbm', {
+extension('jbm', 'main', {
     initExtension() {
         Object.assign(jb, {
             uri: jb.uri || jb.frame.jbUri,

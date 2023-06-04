@@ -17,8 +17,10 @@
 	<div id="show"> </div>
  <script>
 	const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
-	jbInit('tests', {project: 'studio', plugins: ['*','studio-tests']})
-		.then(jb =>{
+	const repo = urlQuery('repo')
+	const sourceCode = repo ? {pluginPackages: [{'$':'defaultPackage'},{'$':'jbStudioServer', repo }],plugins:['*'] } 
+		: { project: 'studio', plugins: ['*','studio-tests']}
+	jbInit('tests',sourceCode).then(jb =>{
 			globalThis.jb = jb
 			jb.exec({$: 'defaultTheme'})
 			jb.spy.initSpyByUrl()

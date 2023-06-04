@@ -6,7 +6,7 @@ const [main,_plugins,project,wrap,uri,dsl,verbose,runCtx] = _params.map(p=>getPr
 
 if (!main && !runCtx) {
     console.log(`usage: jb.js 
-    -main:button("hello") // mandatory. profile to run
+    -main:button("hello") // profile to run. mandatory or use runCtx.
     -wrap:prune(MAIN) // optional. profile that wraps the 'main' profile and will be run instead
     -sourceCode:{plugins: ['*'], spyParam: 'remote', libsToinit:'lib1,lib2' }
     -plugins:zui,ui  // optional (shortcut for sourceCode.plugins)
@@ -70,7 +70,7 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
         } catch(e) {
             exception = e
         }
-        const result = { result: res, cmd, exception, errors: jb.spy.search('error') }
+        const result = { result: res, cmd, exception, errors: jb.spy.search('error'), main }
         try {
             console.log(JSON.stringify(jb.remoteCtx.stripData({...result})))
             process.exit(0)

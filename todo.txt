@@ -1,15 +1,9 @@
-- suggestionsTest.varsFilter.remote - error in test (worker)
-- jbloader - use plungin dependencies as context
--jb.callbag.mapPromise - try to rewrite it directly
+- nested tests - pattern=remote|worker|jbm|pattern|distributed
 - jbm group - resolveJbm
-pluginDsl('ui')
-- write test for remoteTest.langServer.dataCompletions
 - implement private comps - jb.component should evaluate in the context of **plugin** and DSL  private comps of other types, 
 idea: { $: 'button', $plugin :'ui@5.2' at the json } allow multiple version simulatinously for conversion
 
 plugins
-  studio server - try to refactor with jb.js node-http & http-service plugin
-  createjbm (node-servlet.js) - refactor use jb.js
   dist directory - check to move it to plugins/xx/external
 
 

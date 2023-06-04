@@ -134,14 +134,25 @@ extension('syntaxConverter', 'onAddComponent', {
     })    
   },
   fixProfile(profile,origin) {
+    if (!profile) return
     if (jb.utils.isPrimitiveValue(profile) || typeof profile == 'function') return profile
-    ;['pipeline','list','firstSucceeding','concat'].forEach(sugar => {
+    ;['pipeline','list','firstSucceeding','concat','and','or'].forEach(sugar => {
         if (profile['$'+sugar]) {
             profile.$ = sugar
             profile.items = profile['$'+sugar]
             delete profile['$'+sugar]
         }
     })
+    ;['not'].forEach(sugar => {
+        if (profile['$'+sugar]) {
+            profile.$ = sugar
+            profile.of = profile['$'+sugar]
+            delete profile['$'+sugar]
+        }
+    })
+    if (jb.syntaxConverter.amtaFix)
+        profile = jb.syntaxConverter.amtaFix(profile)
+
     const $vars = profile.$vars
     if ($vars && !Array.isArray($vars))
         profile.$vars = jb.entries($vars).map(([name,val]) => ({name,val}))

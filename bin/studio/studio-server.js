@@ -434,12 +434,14 @@ const op_get_handlers = {
       res.end(JSON.stringify({projects}));
     },
     gotoSource: function(req,res) {
-      const path = getURLParam(req,'path');
+      const path = getURLParam(req,'path')
+      const repo = getURLParam(req,'repo')
       if (path)
         return gotoFile(path.split(':')[0],path.split(':')[1])
 
-      const comp = getURLParam(req,'comp');
-      const files = walk('projects').concat(walk('plugins'));
+      const comp = getURLParam(req,'comp')
+      const extraBaseDir = repo ? `../${repo}/plugins` : 'projects'
+      const files = walk(extraBaseDir).concat(walk('plugins'))
       files.filter(x=>x.match(/\.(ts|js)$/))
         .forEach(srcPath=>{
                 const source = ('' + fs.readFileSync(srcPath)).split('\n');

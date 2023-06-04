@@ -42,7 +42,8 @@ extension('workspace', {
             async execCommand(cmd) {
                 console.log('exec command', cmd)
             },
-            
+            async saveDoc() {
+            },
             // testers only use
             initDoc(uri,text, selection = { start:{line:0,col:0}, end:{line:0,col:0} }) {
                 jb.workspace.openDocs[uri] = { text, selection}

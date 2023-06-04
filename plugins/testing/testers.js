@@ -51,7 +51,7 @@ extension('test', {
 		jb.test.initSpyEnrichers()
 		return { success_counter: 0, fail_counter: 0, startTime: new Date().getTime() } 
 	},
-	goto_editor: id => fetch(`/?op=gotoSource&comp=${id}`),
+	goto_editor: (id,repo) => fetch(`/?op=gotoSource&comp=${id}&repo=${repo}`),
 	hide_success_lines: () => jb.frame.document.querySelectorAll('.success').forEach(e=>e.style.display = 'none'),
 	profileSingleTest: testID => new jb.core.jbCtx().setVars({testID}).run({$: testID}),
 	initSpyEnrichers() {
@@ -221,10 +221,11 @@ extension('test', {
 		const matchLogsMap = jb.entries({ui: ['uiComp'], widget: ['uiComp','widget'] })
 		const spyLogs = ['test', ...(matchLogs.filter(x=>res.id.toLowerCase().indexOf(x) != -1)), 
 			...(matchLogsMap.flatMap( ([k,logs]) =>res.id.toLowerCase().indexOf(k) != -1 ? logs : []))]
+		const _repo = repo ? `&repo=${repo}` : ''
 		return `<div class="${res.success ? 'success' : 'failure'}"">
-			<a href="${baseUrl}/tests.html?test=${res.id}&show&spy=${spyLogs.join(',')}" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
+			<a href="${baseUrl}/tests.html?test=${res.id}${_repo}&show&spy=${spyLogs.join(',')}" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
 			<span> ${res.duration}mSec</span> 
-			<a class="test-button" href="javascript:jb.test.goto_editor('${res.id}')">src</a>
+			<a class="test-button" href="javascript:jb.test.goto_editor('${res.id}','${repo||''}')">src</a>
 			<a class="test-button" href="${studioUrl}">studio</a>
 			<a class="test-button" href="javascript:jb.test.profileSingleTest('${res.id}')">profile</a>
 			<span>${res.reason||''}</span>

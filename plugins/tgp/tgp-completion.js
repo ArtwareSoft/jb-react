@@ -359,24 +359,24 @@ extension('tgpTextEditor', 'completion', {
     async applyCompChange(item,ctx) {
         if (item.id == 'reformat') return
         ctx = ctx || new jb.core.jbCtx({},{vars: {}, path: 'completion.applyCompChange'})
+        await jb.tgpTextEditor.host.saveDoc()
         const { compText, compLine, filePath, dsl } = jb.tgpTextEditor.host.compTextAndCursor()
         const docProps = { compText, compLine, filePath, dsl } 
         const editAndCursor  = item.edit ? item 
             : item.serverUri == 'langServer' ? await remoteCalcEditAndPos() 
             : await jb.tgpTextEditor.calcEditAndGotoPos(docProps,item,ctx)
-        debugger
         const { edit, cursorPos } = editAndCursor
         try {
             await jb.tgpTextEditor.host.applyEdit(edit)
-            await jb.delay(1)
+            await jb.tgpTextEditor.host.saveDoc()
             if (cursorPos) {
                 await jb.tgpTextEditor.host.selectRange(cursorPos)
                 if (cursorPos.TBD) {
-                    await jb.delay(ctx.vars.testID? 1: 1000)
                     await jb.tgpTextEditor.host.execCommand('editor.action.triggerSuggest')
                 }
             }
         } catch (e) {
+            jb.vscode.log(`applyCompChange exception`)
             jb.logException(e,'completion apply comp change',{item,ctx})
         }
 
