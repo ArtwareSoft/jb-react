@@ -428,21 +428,21 @@ component('rxTest.flatMapReturnArray', {
   })
 })
 
-component('rxTest.flatMapArrays', {
+component('rxTest.flatMap.Arrays', {
   impl: dataTest({
     calculate: pipe(rx.pipe(source.data(list('1,2,3')), rx.flatMapArrays(split())), join(',')),
     expectedResult: equals('1,2,3')
   })
 })
 
-component('rxTest.FlatMapTiming', {
+component('rxTest.flatMap.timing', {
   impl: dataTest({
     calculate: pipe(
       rx.pipe(
           source.interval(1),
           rx.take(2),
           rx.var('inp'),
-          rx.flatMap(rx.pipe(source.interval(7), rx.take(2), rx.map('%$inp%-%%')))
+          rx.flatMap(rx.pipe(source.interval(14), rx.take(2), rx.map('%$inp%-%%')))
         ),
       join(',')
     ),

@@ -52,7 +52,7 @@ component('studio.circuit', {
     controls: [
       studio.topBar(),
       group({
-        controls: preview.remoteWidget(),
+        controls: probe.remoteCircuitPreview(),
         features: [
           followUp.action(studio.openControlTree()),
           watchRef('%$studio/preview%', 'yes'),

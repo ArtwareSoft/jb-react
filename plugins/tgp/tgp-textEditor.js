@@ -11,6 +11,9 @@ extension('tgpTextEditor', {
         jb.core.unresolvedProfiles = []
         const context = { jb, ...jb.macro.proxies, dsl: x=>jb.dsl(x), component: (...args) => jb.component(plugin,'',...args) }
         const res = new Function(Object.keys(context), `return ${code}`).apply(null, Object.values(context))
+        // const f = eval(`(function(${Object.keys(context)}) {${code}\n})`)
+        // const res = f.apply(null, Object.values(context))
+
         res && jb.utils.resolveLoadedProfiles({keepLocation: true})
         return { res, compId : jb.path(res,[jb.core.CT,'fullId']) }
       } 

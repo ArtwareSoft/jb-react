@@ -251,7 +251,8 @@ component('widget.headless', {
                     talkback.forEach(tb=>tb(1))
             })
             filteredSrc(0, function headless(t, d) {
-                jb.log('headless widget delta out',{widgetId,t,d,ctx})
+                if (t == 1 && d)
+                    jb.log('headless widget delta out',{widgetId,t,d,ctx, json: {widgetId,delta: d.delta} })
                 if (t == 0) talkback.push(d)
                 if (t === 2) sink(t,d)
                 if (t === 1 && d) sink(t,ctx.dataObj(d))

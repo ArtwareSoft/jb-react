@@ -1,4 +1,6 @@
-component('probe', { watchableData: { path : '',  defaultMainCircuit: '', scriptChangeCounter: 1} })
+component('probe', { watchableData: { path : '',  
+defaultMainCircuit: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') ? (jb.path(globalThis,'location.pathname')||'').split('/')[3] : '',
+scriptChangeCounter: 1} })
 
 extension('probe', 'main', {
     initExtension() { return { 
@@ -31,9 +33,9 @@ extension('probe', 'main', {
             const _ctx = new jb.core.jbCtx()
             const cmpId = path.split('~')[0]
             jb.treeShake.codeServerJbm && await jb.treeShake.getCodeFromRemote([cmpId])
-            const circuitCmpId = jb.path(jb.utils.getComp(cmpId),'circuit')
-                    || _ctx.exp('%$studio/circuit%') 
+            const circuitCmpId = _ctx.exp('%$studio/circuit%') 
                     || _ctx.exp('%$probe/defaultMainCircuit%') 
+                    || jb.path(jb.utils.getComp(cmpId),'circuit')
                     || jb.path(jb.utils.getComp(cmpId),'impl.expectedResult') && cmpId // test
                     || findTest(cmpId) || cmpId
             if (circuitCmpId) {

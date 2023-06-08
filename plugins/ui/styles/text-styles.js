@@ -20,11 +20,8 @@ component('text.noWrappingTag', {
 })
   
 component('text.span', {
-    type: 'text.style',
-    impl: customStyle({
-      template: (cmp,{text},h) => h('span',{},text),
-      features: text.bindText()
-    })
+  type: 'text.style',
+  impl: customStyle({template: (cmp,{text},h) => h('span',{},text), features: text.bindText()})
 })
 
 component('text.chip', {

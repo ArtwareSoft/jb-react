@@ -85,7 +85,8 @@ component('test.dataTestView', {
       group.data(() => jb.spy.logs.find(e=>e.logNames =='check test result')),
       group.wait({for: '%$testResult()%', varName: 'result'})
     ]
-  })
+  }),
+  require: winUtils.gotoUrl()
 })
 
 component('test.uiTestRunner', {
@@ -129,5 +130,6 @@ component('test.uiTestRunner', {
         varName: 'result'
       })
     ]
-  })
+  }),
+  require: winUtils.gotoUrl()
 })

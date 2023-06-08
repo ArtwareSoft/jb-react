@@ -1,5 +1,15 @@
 using('probe-tests')
 
+component('sampleProject.main', {
+  impl: group({
+    controls: text({text: 'hello', features: [id('sampleText')]}),
+    features: [
+      variable('var1', 'world'),
+      variable('xx', 'xx')
+    ]
+  })
+})
+
 component('FETest.workerPreviewTest.suggestions', {
   impl: uiFrontEndTest({
     renderDOM: true,
@@ -24,28 +34,22 @@ component('FETest.workerPreviewTest.suggestions', {
 
 component('FETest.workerPreviewTest.suggestions.select', {
   impl: uiFrontEndTest({
-    control: group({controls: [
-      studio.propertyPrimitive('sampleProject.main~impl~controls~text'),
-      probe.remoteCircuitPreview()
-    ]}),
+    control: group({
+      controls: [
+        studio.propertyPrimitive('sampleProject.main~impl~controls~text'),
+        probe.remoteCircuitPreview()
+      ]
+    }),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
     action: runActions(
       uiAction.waitForSelector('#sampleText'),
       uiAction.waitForSelector('input'),
       uiAction.setText('hello %$var1', 'input'),
-      uiAction.keyboardEvent({
-        selector: 'input',
-        type: 'keyup',
-        keyCode: 37
-      }),
+      uiAction.keyboardEvent({selector: 'input', type: 'keyup', keyCode: 37}),
       uiAction.waitForSelector('.jb-dialog .jb-item'),
       uiAction.click('.jb-dialog .jb-item:first-child'),
-      uiAction.keyboardEvent({
-        selector: 'input',
-        type: 'keyup',
-        keyCode: 13
-      }),
-      uiAction.waitForSelector('[cmp-ver=\"3\"]')
+      uiAction.keyboardEvent({selector: 'input', type: 'keyup', keyCode: 13}),
+      uiAction.waitForSelector('[cmp-ver=\"4\"]')
     ),
     expectedResult: contains('hello world'),
     renderDOM: true

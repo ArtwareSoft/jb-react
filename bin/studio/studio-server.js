@@ -207,12 +207,12 @@ const op_post_handlers = {
             endWithFailure(res,'Can not write to file ' + path);
           else
             endWithSuccess(res,'File saved to ' + path);
-        });
+        })
     },
     jb: (req,res,body) => {
       const args = JSON.parse(body)
       const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(arg=> 
-        (arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg}'`)).join(' ')}`
+        (arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`\\"`).replace(/`/g,"\\`").replace(/\$/g,'\\$')}"` : `'${arg}'`)).join(' ')}`
       fs.writeFileSync('./lastCmd', command)
       fs.chmodSync('./lastCmd', '755')
 

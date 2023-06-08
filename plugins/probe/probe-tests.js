@@ -310,16 +310,6 @@ component('suggestionsTest.1', {
   impl: suggestionsTest({expression: '%', expectedResult: contains('people')})
 })
 
-component('sampleProject.main', {
-  impl: group({
-    controls: text({text: 'hello', features: [id('sampleText')]}),
-    features: [
-      variable('var1', 'world'),
-      variable('xx', 'xx')
-    ]
-  })
-})
-
 component('sampleComp.ctrlWithPipeline', {
   impl: group({
     controls: text(pipeline(list('hello','%$var1%'), join(' '))),

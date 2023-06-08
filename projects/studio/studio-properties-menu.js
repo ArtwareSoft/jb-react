@@ -33,7 +33,7 @@ component('studio.openPropertyMenu', {
           showCondition: equals(pipeline(tgp.paramDef('%$path%'), '%as%'), 'string')
         }),
         menu.action({
-          title: pipeline(tgp.shortCompName('%$path%'), 'Goto %%'), 
+          title: pipeline(tgp.shortCompName('%$path%'), 'Goto %%'),
           action: studio.gotoPath('%$compName%'),
           showCondition: '%$compName%'
         }),
@@ -78,31 +78,25 @@ component('studio.jbEditorMenu', {
       menu.action({
         title: 'Add property',
         action: openDialog({
-          id: 'add property',
-          style: dialog.popup(),
+          title: 'Add Property',
           content: group({
             controls: [
               editableText({
                 title: 'property name',
                 databind: '%$name%',
-                style: editableText.mdcInput({}),
+                style: editableText.mdcInput(),
                 features: [
-                  feature.onEnter(
-                    writeValue(tgp.ref('%$path%~%$name%'), ''),
-                    dialog.closeDialog(true),
-                    tree.redraw(),
-                    popup.regainCanvasFocus()
-                  )
+                  feature.onEnter(writeValue({to: tgp.ref('%$path%~%$name%'), value: ''}))
                 ]
               })
             ],
             features: css.padding({top: '9', left: '20', right: '20'})
           }),
-          title: 'Add Property',
-          modal: 'true',
+          style: dialog.popup(),
+          id: 'add property',
           features: [
             watchable('name'),
-            dialogFeature.nearLauncherPosition({}),
+            dialogFeature.nearLauncherPosition(),
             dialogFeature.autoFocusOnFirstInput()
           ]
         }),
@@ -110,25 +104,25 @@ component('studio.jbEditorMenu', {
       }),
       menu.action({
         title: 'Add variable',
-        action: runActions(studio.addVariable('%$path%'), studio.gotoPath('%$path%~%id%','value')),
+        action: runActions(studio.addVariable('%$path%'), studio.gotoPath('%$path%~%id%', 'value')),
         showCondition: endsWith('~$vars', '%$path%')
       }),
-      menu.endWithSeparator({
-        options: menu.dynamicOptions(
+      menu.endWithSeparator(
+        menu.dynamicOptions(
           tgp.moreParams('%$path%'),
-          menu.action({
-            title: '%id%',
-            action: runActions(
+          menu.action(
+            '%id%',
+            runActions(
               tgp.addProperty('%$path%~%id%'),
               tree.redraw(),
               dialog.closeDialog(),
               writeValue('%$studio/jbEditor/selected%', '%$path%~%id%'),
-              studio.gotoPath('%$path%~%id%','value'),
+              studio.gotoPath('%$path%~%id%', 'value'),
               studio.openJbEditProperty('%$path%~%id%')
             )
-          })
+          )
         )
-      }),
+      ),
       menu.action({
         title: 'Variables',
         action: [
@@ -136,33 +130,32 @@ component('studio.jbEditorMenu', {
           writeValue('%$studio/jbEditor/selected%', '%$path%~$vars'),
           tree.redraw(),
           studio.addVariable('%$path%~$vars'),
-          studio.gotoPath('%$path%~$vars','value')
+          studio.gotoPath('%$path%~$vars', 'value')
         ],
-        showCondition: and(
-          isEmpty(tgp.val('%$path%~$vars')),
-          isOfType('object', tgp.val('%$path%'))
-        )
+        showCondition: and(isEmpty(tgp.val('%$path%~$vars')), isOfType('object', tgp.val('%$path%')))
       }),
       studio.styleEditorOptions('%$path%'),
       menu.endWithSeparator(
         [
           menu.action({
             title: 'Goto parent',
-            action: studio.openJbEditor({
-              path: tgp.parentPath('%$path%'),
-              fromPath: tgp.parentPath('%$fromPath%')
-            }),
+            action: studio.openJbEditor(tgp.parentPath('%$path%'), tgp.parentPath('%$fromPath%')),
             shortcut: 'Ctrl+P',
-            showCondition: contains({text: '~', allText: '%$root%'})
+            showCondition: contains('~', '%$root%')
           }),
           menu.action({
-            vars: [Var('compName', tgp.compName('%$path%'))],
-            title: pipeline(tgp.shortCompName('%$path%'), 'Goto %%'), 
-            action: studio.openJbEditor({path: '%$compName%', fromPath: '%$path%'}),
+            vars: [
+              Var('compName', tgp.compName('%$path%'))
+            ],
+            title: pipeline(tgp.shortCompName('%$path%'), 'Goto %%'),
+            action: studio.openJbEditor('%$compName%', '%$path%'),
+            shortcut: 'Ctrl+I',
             showCondition: '%$compName%'
           }),
           menu.action({
-            vars: [Var('compName', split({separator: '~', text: '%$fromPath%', part: 'first'}))],
+            vars: [
+              Var('compName', split({separator: '~', text: '%$fromPath%', part: 'first'}))
+            ],
             title: 'Back to %$compName%',
             action: studio.openComponentInJbEditor('%$fromPath%', '%$path%'),
             showCondition: '%$fromPath%'
@@ -171,31 +164,15 @@ component('studio.jbEditorMenu', {
       ),
       studio.gotoEditorOptions('%$path%'),
       menu.studioWrapWith({path: '%$path%', type: 'control', components: list('group')}),
-      menu.studioWrapWith({
-        path: '%$path%',
-        type: 'style',
-        components: list('styleWithFeatures')
-      }),
-      menu.studioWrapWith({
-        path: '%$path%',
-        type: 'data',
-        components: list('pipeline', 'list', 'firstSucceeding')
-      }),
-      menu.studioWrapWith({
-        path: '%$path%',
-        type: 'boolean',
-        components: list('and', 'or', 'not')
-      }),
+      menu.studioWrapWith({path: '%$path%', type: 'style', components: list('styleWithFeatures')}),
+      menu.studioWrapWith({path: '%$path%', type: 'data', components: list('pipeline','list','firstSucceeding')}),
+      menu.studioWrapWith({path: '%$path%', type: 'boolean', components: list('and','or','not')}),
       menu.studioWrapWith({
         path: '%$path%',
         type: 'action',
-        components: list('runActions', 'runActionOnItems','action.if')
+        components: list('runActions','runActionOnItems','action.if')
       }),
-      menu.studioWrapWith({
-        path: '%$path%',
-        type: 'feature',
-        components: list('feature.byCondition')
-      }),
+      menu.studioWrapWith({path: '%$path%', type: 'feature', components: list('feature.byCondition')}),
       menu.studioWrapWithArray('%$path%'),
       menu.action({
         title: 'Duplicate',
@@ -204,48 +181,37 @@ component('studio.jbEditorMenu', {
         showCondition: tgp.isArrayItem('%$path%')
       }),
       menu.separator(),
-      menu.action({
-        title: 'Set as current page',
-        action: writeValue(
-          '%$studio/circuit%',
-          split({separator: '~', text: '%$path%', part: 'first'})
-        )
-      }),
-      menu.menu({
-        title: 'More',
-        options: [
-          menu.action({title: 'Pick context', action: studio.pick()}),
-          studio.gotoReferencesMenu(
-            split({separator: '~', text: '%$path%', part: 'first'})
-          ),
+      menu.action(
+        'Set as current page',
+        writeValue('%$studio/circuit%', split({separator: '~', text: '%$path%', part: 'first'}))
+      ),
+      menu.menu(
+        'More',
+        [
+          menu.action('Pick context', studio.pick()),
+          studio.gotoReferencesMenu(split({separator: '~', text: '%$path%', part: 'first'})),
           menu.action({
             title: 'Remark',
             action: openDialog({
-              id: 'add property',
-              style: dialog.popup(),
+              title: 'Remark',
               content: group({
                 controls: [
                   editableText({
                     title: 'remark',
                     databind: '%$remark%',
-                    style: editableText.mdcInput({}),
+                    style: editableText.mdcInput(),
                     features: [
-                      feature.onEnter(
-                        writeValue(tgp.ref('%$path%~remark'), '%$remark%'),
-                        dialog.closeDialog(true),
-                        tree.redraw(),
-                        popup.regainCanvasFocus()
-                      )
+                      feature.onEnter(writeValue(tgp.ref('%$path%~remark'), '%$remark%'))
                     ]
                   })
                 ],
                 features: css.padding({top: '9', left: '20', right: '20'})
               }),
-              title: 'Remark',
-              modal: 'true',
+              style: dialog.popup(),
+              id: 'add property',
               features: [
                 watchable('remark', tgp.val('%$path%~remark')),
-                dialogFeature.nearLauncherPosition({}),
+                dialogFeature.nearLauncherPosition(),
                 dialogFeature.autoFocusOnFirstInput()
               ]
             }),
@@ -260,43 +226,25 @@ component('studio.jbEditorMenu', {
           menu.action({
             title: 'Delete',
             action: runActions(
-              action.if(and(matchRegex('vars~[0-9]+~val$','%$path%'), isEmpty(tgp.val('%$path%'))), 
-                writeValue('%$studio/jbEditor/selected%', tgp.parentPath(tgp.parentPath('%$path%')))),
-              tgp.delete('%$path%'),
+              action.if(
+                and(matchRegex('vars~[0-9]+~val$', '%$path%'), isEmpty(tgp.val('%$path%'))),
+                writeValue('%$studio/jbEditor/selected%', tgp.parentPath(tgp.parentPath('%$path%')))
+              ),
+              tgp.delete('%$path%')
             ),
             icon: icon('delete'),
             shortcut: 'Delete'
           }),
           menu.action({
-            title: If(tgp.isDisabled('%$path%'), 'Enable','Disable'),
+            title: If(tgp.isDisabled('%$path%'), 'Enable', 'Disable'),
             action: tgp.toggleDisabled('%$path%'),
             icon: icon('do_not_disturb'),
             shortcut: 'Ctrl+X'
           }),
-          menu.action({
-            title: 'Copy',
-            action: studio.copy('%$path%'),
-            icon: icon('copy'),
-            shortcut: 'Ctrl+C'
-          }),
-          menu.action({
-            title: 'Paste',
-            action: studio.paste('%$path%'),
-            icon: icon('paste'),
-            shortcut: 'Ctrl+V'
-          }),
-          menu.action({
-            title: 'Undo',
-            action: watchableComps.undo(),
-            icon: icon('undo'),
-            shortcut: 'Ctrl+Z'
-          }),
-          menu.action({
-            title: 'Redo',
-            action: watchableComps.redo(),
-            icon: icon('redo'),
-            shortcut: 'Ctrl+Y'
-          }),
+          menu.action({title: 'Copy', action: studio.copy('%$path%'), icon: icon('copy'), shortcut: 'Ctrl+C'}),
+          menu.action({title: 'Paste', action: studio.paste('%$path%'), icon: icon('paste'), shortcut: 'Ctrl+V'}),
+          menu.action({title: 'Undo', action: watchableComps.undo(), icon: icon('undo'), shortcut: 'Ctrl+Z'}),
+          menu.action({title: 'Redo', action: watchableComps.redo(), icon: icon('redo'), shortcut: 'Ctrl+Y'}),
           menu.action({
             title: 'Make Local',
             action: studio.openMakeLocal('%$path%'),
@@ -312,9 +260,8 @@ component('studio.jbEditorMenu', {
             action: studio.openExtractParam('%$path%'),
             showCondition: studio.canExtractParam('%$path%')
           })
-        ],
-        //optionsFilter: '%%'
-      })
+        ]
+      )
     ]
   })
 })

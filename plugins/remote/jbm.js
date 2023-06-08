@@ -112,14 +112,13 @@ component('cmd', {
     impl: (ctx,_sourceCode,viaHttpServer,id) => ({
         uri: id || 'main',
         remoteExec: async (sctx,{data, action} = {}) => {
-            jb.jbm.cmdCounter = (jb.jbm.cmdCounter || 0) + 1
             const plugins = pluginsOfProfile([(data || action).profile, jb.path(sctx,'cmpCtx.params')])
             const sourceCode = _sourceCode || { plugins , pluginPackages: [{$:'defaultPackage'}] }
             sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),plugins])
     
             const args = [
                 ['-runCtx', JSON.stringify(sctx)],
-                ['-uri', id || `main${jb.jbm.cmdCounter}`],
+                ['-uri', id || `main`],
                 ['-sourceCode', JSON.stringify(sourceCode)],
             ].filter(x=>x[1])
             const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(arg=> arg[0] + 
