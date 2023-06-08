@@ -102,7 +102,7 @@ async function jbInit(uri, sourceCode , {multipleInFrame} ={}) {
       try {
         //console.log(`loading ${path}`)
         const f = eval(`(function(${Object.keys(context)}) {${code}\n})`)
-        f.apply(null, Object.values(context))
+        f(...Object.values(context))
         jb.loadedFiles[path] = true
       } catch (e) {
         return jb.logException(e,`loadjbFile lib ${path}`,{context, code})
