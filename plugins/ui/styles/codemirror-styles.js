@@ -24,7 +24,11 @@ extension('codemirror', {
 		//cmp.editor.refresh()
 		_enableFullScreen && jb.delay(1).then(() => jb.codemirror.enableFullScreen(ctx,cmp,el))
 	},
-	
+	mergeSettings(s1 = {},s2 = {}) {
+		const extraKeys = {...(s1.extraKeys ||{}), ...(s2.extraKeys ||{})}
+		const gutters = [...(s1.gutters ||[]), ...(s2.gutters ||[])]
+		return {...s1,...s2,extraKeys,gutters}
+    },
 	enableFullScreen(ctx,cmp,el) {
 		const width = jb.ui.outerWidth(el), height = jb.ui.outerHeight(el), editor = cmp.editor
 		const fullScreenBtnHtml = '<div class="jb-codemirror-fullScreenBtnCss hidden"><img title="Full Screen (F11)" src="http://png-1.findicons.com/files/icons/1150/tango/22/view_fullscreen.png"/></div>'
@@ -139,32 +143,32 @@ component('editableText.codemirror', {
 
 component('codemirror.textEditorKeys', {
 	type: 'feature',
-	impl: frontEnd.prop('extraCmSettings', ({},{cmp,el}) => ({...cmp.extraCmSettings, ...{
+	impl: frontEnd.prop('extraCmSettings', ({},{cmp}) => jb.codemirror.mergeSettings(cmp.extraCmSettings, {
 		extraKeys: {
 			'Ctrl-Space': 'autocomplete',
 			'Ctrl-Enter': () => jb.ui.runBEMethod(el,'onCtrlEnter'),
 		},
-	}})),
+	})),
 })
 
 component('codemirror.fold', {
 	type: 'feature',
-	impl: frontEnd.prop('extraCmSettings', ({},{cmp}) => ({...cmp.extraCmSettings, ...{
+	impl: frontEnd.prop('extraCmSettings', ({},{cmp}) => jb.codemirror.mergeSettings(cmp.extraCmSettings, {
 		extraKeys: {
 			'Ctrl-Q': () => cmp.editor.foldCode(cmp.editor.getCursor())
 		},
 		lineWrapping: true,
 		foldGutter: true,			
 		gutters: [ 'CodeMirror-foldgutter' ]
-	}})),
+	})),
 })
 
 component('codemirror.lineNumbers', {
 	type: 'feature',
-	impl: frontEnd.prop('extraCmSettings', ({},{cmp}) => ({...cmp.extraCmSettings, ...{
+	impl: frontEnd.prop('extraCmSettings', ({},{cmp}) => jb.codemirror.mergeSettings(cmp.extraCmSettings, {
 		lineNumbers: true,
 		gutters: ['CodeMirror-linenumbers' ]
-	}})),
+	})),
 })
 
 component('codemirror.enrichUserEvent', {

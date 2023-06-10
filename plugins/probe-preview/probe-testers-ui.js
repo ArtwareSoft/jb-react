@@ -128,7 +128,11 @@ component('test.uiTestRunner', {
       divider(),
       text({
         text: () => jb.spy.headlessIO(),
-        style: text.codemirror({enableFullScreen: true, height: '400'})
+        style: text.codemirror({enableFullScreen: true, height: '800', mode: 'javascript'}),
+        features: [
+          codemirror.fold(),
+          codemirror.lineNumbers()
+        ]
       })
     ],
     features: [
