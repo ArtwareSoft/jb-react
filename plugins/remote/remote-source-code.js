@@ -63,11 +63,11 @@ component('sameAsParent', {
 component('pluginsByPath', {
   type: 'plugins-to-load',
   params: [
-    {id: 'path', as: 'string', mandatory: true, description: 'E.g. someDir/plugins/mycode.js'},
+    {id: 'filePath', as: 'string', mandatory: true, description: 'E.g. someDir/plugins/mycode.js'},
     {id: 'addTests', as: 'boolean', description: 'add plugin-tests'}
   ],
   impl: (ctx,_path,addTests) => {
-    const rep = (_path.match(/projects\/([^/]*)\/(plugins|projects)/) || [])[1]
+    const repo = (_path.match(/projects\/([^/]*)\/(plugins|projects)/) || [])[1]
     const path = (_path.match(/projects(.*)/)||[])[1] || _path
     const tests = path.match(/-(tests|testers).js$/) || path.match(/\/tests\//) ? '-tests': ''
 

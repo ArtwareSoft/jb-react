@@ -288,3 +288,17 @@ component('tests.runner', {
 		)
 	)
 })
+
+component('test', {
+  type: 'source-code<jbm>',
+  params: [
+    {id: 'filePath', as: 'string'}
+  ],
+  impl: sourceCode(
+    [
+      pluginsByPath({filePath: '%$filePath%', addTests: true}), // load tests because usually circuit comes from tests
+      plugins('testing,probe-preview,tree-shake,tgp,workspace')
+    ],
+    packagesByPath('%$filePath%')
+  )
+})
