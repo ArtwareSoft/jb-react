@@ -1,5 +1,12 @@
 using('remote,ui')
 
+extension('ui','widget-frontend', {
+    initExtension() { return { 
+        frontendWidgets : {},
+    }},
+    initFEWidget() {}
+})
+
 component('widget.frontEndCtrl', {
     type: 'control',
     params: [
@@ -20,9 +27,9 @@ component('widget.newId', {
         {id: 'jbm', type: 'jbm<jbm>', defaultValue: () => jb },
     ],
     impl: (ctx, jbm) => {
+        jb.ui.initFEWidget() // dummy to get constrcutor
         const id = jbm.uri + '-' + ctx.id
-        jb.ui.frontendWidgets = jb.ui.frontendWidgets || {}
-        jb.ui.frontendWidgets[id] = jbm
+        jb.ui.frontendWidgets[id] = { jbm, reqCounter: 0 }
         return id
     }
 })
@@ -34,7 +41,7 @@ component('jbm.backEnd', {
     ],
     impl: (ctx,elem) => {
         const widgetId = jb.ui.frontendWidgetId(elem)
-        return widgetId && jb.ui.frontendWidgets[widgetId] || jb
+        return widgetId && jb.path(jb.ui.frontendWidgets[widgetId],'jbm') || jb
     }
 })
 
@@ -81,7 +88,7 @@ component('action.frontEndDelta', {
             const res = elem && jb.ui.applyDeltaToCmp({delta,ctx: ctxToUse,cmpId,elem,assumedVdom})
             if (jb.path(res,'recover')) {
                 jb.log('headless frontend recover widget request',{widgetId,ctx,elem,cmpId, ...res})
-                jb.ui.widgetUserRequests.next({$: 'recoverWidget', widgetId, ...res })
+                jb.ui.sendUserReq({$: 'recoverWidget', widgetId, ...res })
             }
         } catch(e) {
             jb.logException(e,'headless frontend apply delta',{ctx,elem,cmpId})
@@ -184,7 +191,6 @@ extension('ui','headless', {
     initExtension() { // 1100 is after ui phase (100)
         // for loader : jb.ui.render( 
         return {
-            widgetRenderingSrc: jb.callbag.replay(100)(jb.ui.renderingUpdates),
             headless: {},
         }
     },
@@ -241,7 +247,8 @@ component('widget.headless', {
       {id: 'widgetId', as: 'string'},
     ],
     impl: (ctx,ctrl,widgetId) => {
-        const filteredSrc = jb.callbag.filter(m=>m.widgetId == widgetId)(jb.ui.widgetRenderingSrc)
+        const filteredSrc = jb.callbag.filter(m=>m.widgetId == widgetId)
+            (jb.callbag.replay(100)(jb.ui.renderingUpdates))
         jb.ui.createHeadlessWidget(widgetId,ctrl,ctx)
         return userReqIn => (start, sink) => {
             if (start !== 0) return

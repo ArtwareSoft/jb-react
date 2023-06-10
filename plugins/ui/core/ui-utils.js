@@ -27,10 +27,11 @@ extension('ui','utils', {
     },
 //    inPreview: () => !jb.ui.inStudio() && jb.ui.parentFrameJb() && jb.ui.parentFrameJb().studio.initPreview,
     widgetBody(ctx) {
-      const {elemToTest,tstWidgetId,headlessWidget,FEwidgetId, headlessWidgetId} = ctx.vars
+      const {elemToTest,widgetId,headlessWidget,FEwidgetId, headlessWidgetId, uiTest} = ctx.vars
       const top = elemToTest ||
-        tstWidgetId && jb.path(jb,`ui.headless.${tstWidgetId}.body`) ||
-        tstWidgetId && jb.path(jb,`parent.ui.headless.${tstWidgetId}.body`) ||
+        uiTest && jb.path(jb,`ui.headless.${headlessWidgetId}.body`) ||
+        uiTest && jb.path(jb,`parent.ui.headless.${headlessWidgetId}.body`) ||
+        widgetId && jb.path(jb,`ui.headless.${widgetId}.body`) ||
         headlessWidget && jb.path(jb,`ui.headless.${headlessWidgetId}.body`) ||
         jb.path(jb.frame.document,'body')
       return FEwidgetId ? jb.ui.findIncludeSelf(top,`[widgetid="${FEwidgetId}"]`)[0] : top
@@ -279,4 +280,11 @@ component('renderWidget', {
     el.innerHTML = ''
     jb.ui.render(jb.ui.h(control(jb.ui.extendWithServiceRegistry(ctx))), el, {ctx})
   }
+})
+
+component('elemOfSelector', {
+  params: [
+    {id: 'selector', as: 'string' },
+  ],
+  impl: (ctx,selector) => jb.ui.elemOfSelector(selector,ctx)
 })

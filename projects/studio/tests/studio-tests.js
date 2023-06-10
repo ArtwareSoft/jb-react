@@ -37,19 +37,21 @@ component('eventTracker.worker.vDebugger', {
 
 component('eventTracker.uiTest.vDebugger', {
   impl: uiTest({
-    timeout: 2000,
+    control: group({
+      controls: [
+        remote.widget(editableText({databind: '%$person/name%'}), worker()),
+        remote.widget(studio.eventTracker(), byUri('tests•w1•vDebugger'))
+      ]
+    }),
     runBefore: remote.action(
       runActions(
         jbm.start(jbm.vDebugger()),
-        log('check test result', obj(prop('html','<div><span>aa</span></div>'), prop('success',true))),
-        log('check test result', obj(prop('html','<span/>'), prop('success',false))),
-      ), worker()),
-    control: group({
-      controls: [
-        remote.widget(editableText({databind:'%$person/name%'}), worker()),
-        remote.widget(studio.eventTracker(), byUri('tests•w1•vDebugger')),
-      ]
-    }),
+        log('check test result', obj(prop('html', '<div><span>aa</span></div>'), prop('success', true))),
+        log('check test result', obj(prop('html', '<span/>'), prop('success', false)))
+      ),
+      worker()
+    ),
     expectedResult: contains('remote rec'),
+    timeout: 2000
   })
 })

@@ -21,23 +21,22 @@ component('uiTest', {
 	impl: dataTest({
 		vars: [
 			Var('uiTest',true),
-			Var('tstWidgetId', ({},{testID}) => `${jb.uri}-${testID.replace(/\./g,'_')}`)
+			Var('widgetId', widget.newId()),
 		],
 		timeout: '%$timeout%',
 		allowError: '%$allowError()%',
 		runBefore: runActions(
 			call('runBefore'), 
 			rx.pipe(
-				rx.merge(
-					'%$userInputRx()%',
-					rx.pipe(source.data('%$userInput%'),rx.delay(1))
-				),
-				rx.log('userInput'),
+				source.promise(delay(1,1)),
+				//source.promise(waitFor(elemOfSelector(':scope'))),
+				rx.flatMap(rx.merge('%$userInputRx()%', source.data('%$userInput%'))),
+				rx.log('uiTest userInput'),
 				rx.takeUntil('%$$testFinished%'),
 				userInput.eventToRequest(),
 				rx.filter(({data}) => data && data.$ == 'runCtxAction'),
-				rx.log('userRequest'),
-				sink.action(({data}) => jb.ui.widgetUserRequests.next(data))
+				rx.log('uiTest userRequest'),
+				sink.action(({data}) => jb.ui.sendUserReq(data))
 			)
 		),
 		calculate: rx.pipe(
@@ -45,9 +44,9 @@ component('uiTest', {
 				rx.pipe(
 					source.callbag(()=>jb.ui.widgetUserRequests),
 					rx.takeUntil('%$$testFinished%'),
-					rx.log('userRequest from widgetUserRequests'),
-					widget.headless(call('control'), '%$tstWidgetId%'),
-					rx.log('uiDelta from headless'),
+					rx.log('uiTest userRequest from widgetUserRequests'),
+					widget.headless('%$control()%', '%$widgetId%'),
+					rx.log('uiTest uiDelta from headless'),
 					rx.delay(1),
 				),
 				'%$checkResultRx%'
@@ -55,11 +54,11 @@ component('uiTest', {
 			rx.takeUntil('%$$testFinished%'),
 			rx.var('html',uiTest.vdomResultAsHtml()),
 			rx.var('success', pipeline('%$html%', call('expectedResult'), last())),
-			rx.log('check ui test result', obj(prop('success','%$success%'), prop('html','%$html%'))),
+			rx.log('check uiTest result', obj(prop('success','%$success%'), prop('html','%$html%'))),
 			rx.filter('%$success%'), // if failure wait for the next delta
 			rx.map('%$success%'),
 			rx.take(1),
-			rx.do( ({},{tstWidgetId})=> jb.ui.destroyHeadless(tstWidgetId)),
+			rx.do( ({},{widgetId})=> !jb.test.singleTest && jb.ui.destroyHeadless(widgetId)),
 		),
 		expectedResult: '%%',
 		cleanUp: call('cleanUp'),
@@ -127,7 +126,7 @@ component('uiFrontEndTest', {
 
 component('uiTest.vdomResultAsHtml', {
   impl: ctx => {
-		const widget = jb.ui.headless[ctx.vars.tstWidgetId]
+		const widget = jb.ui.headless[ctx.vars.widgetId]
 		if (!widget) return ''
 		if (typeof document == 'undefined') // in worker
 			return widget.body ? widget.body.outerHTML() : ''
@@ -169,10 +168,29 @@ component('uiTest.applyVdomDiff', {
 })
 
 extension('ui','tester', {
-	elemOfSelector: (selector,ctx) => jb.ui.widgetBody(ctx).querySelector(selector) || document.querySelector('.jb-dialogs '+ selector),
+	elemOfSelector: (selector,ctx) => {
+		const widgetBody = jb.ui.widgetBody(ctx)
+		if (widgetBody)
+			return widgetBody.querySelector(selector)
+		return jb.frame.document && document.querySelector('.jb-dialogs '+ selector)
+	},
 	cmpOfSelector: (selector,ctx) => jb.path(jb.ui.elemOfSelector(selector,ctx),'_component'),
 	cssOfSelector(selector,ctx) {
 		const jbClass = (jb.ui.elemOfSelector(selector,ctx).classList.value || '').split('-').pop()
 		return jb.entries(jb.ui.cssSelectors_hash).filter(e=>e[1] == jbClass)[0] || ''
+	}
+})
+
+extension('spy','headless', {
+	headlessIO: () => {
+		let res = null
+		try {
+			res = jb.spy.logs.map(x=>
+			x.logNames == 'uiTest uiDelta from headless' && {log: x.logNames, ...x.data.delta }
+			|| x.logNames == 'uiTest userRequest'  && {log: x.logNames, ...x.data}
+			|| x.logNames == 'uiComp start renderVdom'  && {log: x.logNames, cmp: `${x.cmp.ctx.path};${x.cmp.ctx.profile.$};${x.cmp.ver}`}
+		).filter(x=>x).map(x=>jb.utils.prettyPrint(x,{noMacros: true})).join('\n---\n')
+		} catch(e) {}
+		return res || ''
 	}
 })

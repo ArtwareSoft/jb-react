@@ -36,7 +36,7 @@ extension('ui', 'react', {
             })
 
             if (widgetId && !destroyLocally)
-                jb.ui.widgetUserRequests.next({$$:'destroy', ...e })
+                jb.ui.sendUserReq({$$:'destroy', ...e })
             else 
                 cmps.forEach(cmp=> (cmp.destroyCtxs || []).forEach(ctxIdToRun => {
                     jb.log('backend method destroy uiComp',{cmp, el: cmp.el})
@@ -448,13 +448,17 @@ extension('ui', 'react', {
         jb.log('handle cmp event',{ev,specificMethod,userReq})
         if (!userReq) return
         if (userReq.widgetId)
-            jb.ui.widgetUserRequests.next(userReq)
+            jb.ui.sendUserReq(userReq)
         else {
             const ctx = jb.ctxDictionary[userReq.ctxIdToRun]
             if (!ctx)
                 jb.logError(`handleCmpEvent - no ctx in dictionary for id ${userReq.ctxIdToRun}`,{ev,specificMethod})
             ctx && jb.ui.runCtxAction(ctx,userReq.data,userReq.vars)
         }
+    },
+    sendUserReq(userReq) {
+        const reqCounter = 0 //jb.ui.frontendWidgets[userReq.widgetId].reqCounter++
+        jb.ui.widgetUserRequests.next({ ...userReq, reqCounter})
     },
     rawEventToUserRequest(ev, specificMethod) {
         const elem = jb.ui.closestCmpElem(ev.currentTarget)
@@ -463,7 +467,7 @@ extension('ui', 'react', {
             return jb.logError('rawEventToUserRequest can not find closest elem with jb-ctx',{ev})
         const method = specificMethod && typeof specificMethod == 'string' ? specificMethod : `on${ev.type}Handler`
         const ctxIdToRun = jb.ui.ctxIdOfMethod(elem,method)
-        const widgetId = jb.ui.frontendWidgetId(elem) || ev.tstWidgetId
+        const widgetId = jb.ui.frontendWidgetId(elem) || ev.widgetId
         return ctxIdToRun && {$:'runCtxAction', method, widgetId, ctxIdToRun, vars: {ev: jb.ui.buildUserEvent(ev, elem)} }
     },
     calcElemProps(elem) {
@@ -518,7 +522,7 @@ extension('ui', 'react', {
             return jb.logError(`no method in cmp: ${method}`, {elem, data, vars})
 
         if (widgetId)
-            jb.ui.widgetUserRequests.next({$:'runCtxAction', method, widgetId, ctxIdToRun, data, vars })
+            jb.ui.sendUserReq({$:'runCtxAction', method, widgetId, ctxIdToRun, data, vars })
         else {
             const ctx = jb.ctxDictionary[ctxIdToRun]
             if (!ctx)
@@ -590,7 +594,7 @@ extension('ui', 'react', {
         const removeWidgets = Object.keys(jb.ui.frontendWidgets||{}).filter(id=>!usedWidgets[id])
 
         removeWidgets.forEach(widgetId => {
-            jb.ui.widgetUserRequests.next({$$:'destroy', widgetId, destroyWidget: true, cmps: [] })
+            jb.ui.sendUserReq({$$:'destroy', widgetId, destroyWidget: true, cmps: [] })
             if (jb.ui.frontendWidgets) delete jb.ui.frontendWidgets[widgetId]
         })
         

@@ -54,6 +54,10 @@ component('project', {
   impl: sourceCode(project('%$project%'))
 })
 
+component('sameAsParent', {
+  type: 'source-code',
+  impl: () => jb.sourceCode
+})
 // plugins-to-load
 
 component('pluginsByPath', {

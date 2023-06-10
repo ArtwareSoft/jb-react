@@ -21,7 +21,7 @@ component('test.showTestInStudio', {
 			jb.test.singleTest = true
 			const watchablesBefore = jb.db.watchableHandlers.map(h=>({resources: h.resources(), objToPath: new Map(h.objToPath)}))
 			//const spyBefore = { logs: spy.logs, spyParam: spy.spyParam}
-			const spyParam = jb.utils.unique([...spy.spyParam.split(','),'test']).join(',')
+			const spyParam = jb.utils.unique([...spy.spyParam.split(','),'test,uiTest,headless']).join(',')
 			jb.spy.initSpy({spyParam})
 			jb.spy.clear()
 			const res = await jb.test.runSingleTest(testId,{doNotcleanBeforeRun: true, show: true})
@@ -103,7 +103,10 @@ component('test.uiTestRunner', {
           Var('color', If('%success%', '--jb-success-fg', '--jb-error-fg'))
         ],
         title: If('%success%', '✓ %$testId%', '⚠ %$testId%'),
-        action: remote.action(winUtils.gotoUrl('/hosts/tests/tests.html?test=%$testId%&show&spy=test,uiComp'), parent()),
+        action: remote.action(
+          winUtils.gotoUrl('/hosts/tests/tests.html?test=%$testId%&show&spy=test,uiTest'),
+          parent()
+        ),
         style: button.href(),
         features: css.color('var(%$color%)')
       }),
@@ -121,6 +124,11 @@ component('test.uiTestRunner', {
       divider(),
       group({
         controls: ({},{},{ctxToRun}) => ctxToRun.runInner(ctxToRun.profile.control,{type: 'control'}, 'control')
+      }),
+      divider(),
+      text({
+        text: () => jb.spy.headlessIO(),
+        style: text.codemirror({enableFullScreen: true, height: '400'})
       })
     ],
     features: [

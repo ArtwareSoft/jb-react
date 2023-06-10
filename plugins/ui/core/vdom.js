@@ -79,6 +79,9 @@ extension('ui','vdom', {
             if (selector.match(/^:scope>/)) 
                 return this.children.filter(el=>el.querySelector(selector.slice(7),{includeSelf: true}))
             if (selector == '' || selector == ':scope') return [this]
+            if (selector.indexOf(' ') != -1)
+                return selector.split(' ').map(x=>x.trim()).reduce(
+                    (res,sel) => res.flatMap(r=>r.querySelectorAll(sel,{includeSelf})), jb.asArray(this))
             if (selector.indexOf(',') != -1)
                 return selector.split(',').map(x=>x.trim()).reduce((res,sel) => [...res, ...this.querySelectorAll(sel,{includeSelf})], [])
             const hasAtt = selector.match(/^\[([a-zA-Z0-9_$\-]+)\]$/)

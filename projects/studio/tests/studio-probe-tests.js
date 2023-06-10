@@ -1,15 +1,5 @@
 using('probe-tests')
 
-component('sampleProject.main', {
-  impl: group({
-    controls: text({text: 'hello', features: [id('sampleText')]}),
-    features: [
-      variable('var1', 'world'),
-      variable('xx', 'xx')
-    ]
-  })
-})
-
 component('FETest.workerPreviewTest.suggestions', {
   impl: uiFrontEndTest({
     renderDOM: true,
@@ -122,7 +112,6 @@ component('jbEditorTest.basic', {
       ]
     }),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
-    checkResultRx: () => jb.ui.renderingUpdates,
     expectedResult: contains('hello'),
     timeout: 1000
   }),

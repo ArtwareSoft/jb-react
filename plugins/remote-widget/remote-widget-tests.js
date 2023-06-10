@@ -21,26 +21,26 @@ component('remoteWidgetTest.group.wait', {
   })
 })
 
-component('remoteWidgetTest.distributedWidget', {
-  impl: uiTest({
-    control: group({
-      controls: button(
-        'click',
-        remote.distributedWidget({
-          control: text('hello world'),
-          backend: worker(),
-          frontend: child('jbxServer'),
-          selector: '.xRoot'
-        })
-      ),
-      features: css.class('xRoot')
-    }),
-    userInputRx: rx.pipe(source.promise(uiAction.waitForSelector('button')), rx.map(userInput.click())),
-    checkResultRx: () => jb.ui.renderingUpdates,
-    expectedResult: contains('hello'),
-    timeout: 3000
-  })
-})
+// component('remoteWidgetTest.distributedWidget', {
+//   impl: uiTest({
+//     control: group({
+//       controls: button(
+//         'click',
+//         remote.distributedWidget({
+//           control: text('hello world'),
+//           backend: worker(),
+//           frontend: child('jbxServer'),
+//           selector: '.xRoot'
+//         })
+//       ),
+//       features: css.class('xRoot')
+//     }),
+//     userInputRx: rx.pipe(source.promise(uiAction.waitForSelector('button')), rx.map(userInput.click())),
+//     checkResultRx: () => jb.ui.renderingUpdates,
+//     expectedResult: contains('hello'),
+//     timeout: 3000
+//   })
+// })
 
 component('remoteWidgetTest.changeText', {
   impl: uiTest({

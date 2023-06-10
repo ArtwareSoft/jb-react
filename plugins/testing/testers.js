@@ -218,7 +218,7 @@ extension('test', {
 			filePath: (jb.comps[res.id][jb.core.CT].location || {}).path }))
 		const studioUrl = `http://localhost:8082/project/studio/${res.id}/${res.id}?sourceCode=${encodeURIComponent(sourceCode)}`
 		const matchLogs = 'remote,itemlist,refresh'.split(',')
-		const matchLogsMap = jb.entries({ui: ['uiComp'], widget: ['uiComp','widget'] })
+		const matchLogsMap = jb.entries({ui: ['uiTest'], widget: ['uiTest','widget'] })
 		const spyLogs = ['test', ...(matchLogs.filter(x=>res.id.toLowerCase().indexOf(x) != -1)), 
 			...(matchLogsMap.flatMap( ([k,logs]) =>res.id.toLowerCase().indexOf(k) != -1 ? logs : []))]
 		const _repo = repo ? `&repo=${repo}` : ''
@@ -287,18 +287,4 @@ component('tests.runner', {
 			sink.action(()=>{})
 		)
 	)
-})
-
-component('test', {
-  type: 'source-code<jbm>',
-  params: [
-    {id: 'filePath', as: 'string'}
-  ],
-  impl: sourceCode(
-    [
-      pluginsByPath('%$filePath%', true), // load tests because usually circuit comes from tests
-      plugins('testing,probe-preview,tree-shake,tgp,workspace')
-    ],
-    packagesByPath('%$filePath%')
-  )
 })

@@ -123,7 +123,7 @@ component('editableText.codemirror', {
 	//codemirror.enrichUserEvent(),
     frontEnd.init( (ctx,vars) => ! jb.ui.hasClass(vars.el, 'jb-textarea-alternative-for-codemirror')
 		 && jb.codemirror.injectCodeMirror(ctx,vars)),
-	frontEnd.onRefresh(({},{text,cmp}) => cmp.editor && cmp.editor.setValue(text)),
+	frontEnd.onRefresh(({},{text,cmp}) => text != null && cmp.editor && cmp.editor.setValue(text)),
 	method('writeText',writeValue('%$$model/databind()%','%%')),
 	frontEnd.flow(
 			source.callbag(({},{cmp}) => jb.callbag.create(obs=> cmp.editor && cmp.editor.on('change', () => obs(cmp.editor.getValue()))) ),

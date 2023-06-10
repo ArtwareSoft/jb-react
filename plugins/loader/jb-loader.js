@@ -41,6 +41,7 @@ globalThis.jbHost = globalThis.jbHost || { // browserHost - studioServer,worker 
 async function jbInit(uri, sourceCode , {multipleInFrame} ={}) {
   const jb = { 
     uri,
+    sourceCode,
     loadedFiles: {},
     plugins: {},
     createPlugins(plugins) {

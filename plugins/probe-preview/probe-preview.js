@@ -1,5 +1,33 @@
 using('probe,watchable-comps,tree-shake,remote-widget,testing')
 
+component('test', {
+  type: 'source-code<jbm>',
+  params: [
+    {id: 'filePath', as: 'string'}
+  ],
+  impl: sourceCode(
+    [
+      pluginsByPath({filePath: '%$filePath%', addTests: true}), // load tests because usually circuit comes from tests
+      plugins('testing,probe-preview,tree-shake,tgp,workspace')
+    ],
+    packagesByPath('%$filePath%')
+  )
+})
+
+component('circuit', {
+  type: 'source-code<jbm>',
+  params: [
+    {id: 'filePath', as: 'string'}
+  ],
+  impl: sourceCode(
+    [
+      pluginsByPath({filePath: '%$filePath%', addTests: true}),
+      plugins('probe,tree-shake,tgp')
+    ],
+    packagesByPath('%$filePath%', 'studio')
+  )
+})
+
 component('probePreviewWorker', {
   type: 'jbm<jbm>',
   params: [
@@ -113,4 +141,23 @@ component('probe.handleScriptChangeOnPreview', {
             jb.log('probe handleScriptChangeOnPreview increaseScriptChangeCounter',{ctx,newVal})
         }
     }
+})
+
+component('probe.propertyPrimitive', {
+  type: 'control',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: editableText({
+    databind: tgp.ref('%$path%'),
+    features: [
+      feature.onKey('Right', suggestions.applyOption('/')),
+      editableText.picklistHelper({
+        options: suggestions.calcFromProbePreview('%$path%', true),
+        picklistFeatures: picklist.allowAsynchOptions(),
+        showHelper: suggestions.shouldShow(true),
+        onEnter: suggestions.applyOption()
+      })
+    ]
+  })
 })
