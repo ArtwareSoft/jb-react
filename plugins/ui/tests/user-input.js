@@ -46,6 +46,18 @@ component('uiAction.waitForSelector', {
   impl: waitFor((ctx,{},{selector}) => jb.ui.elemOfSelector(selector,ctx))
 })
 
+component('uiAction.waitForText', {
+  type: 'action',
+  params: [
+    {id: 'text', as: 'string' },
+  ],
+  impl: waitFor((ctx,{},{text}) => {
+    const body = jb.ui.widgetBody(ctx)
+    const lookin = typeof body.outerHTML == 'function' ? body.outerHTML() : body.outerHTML
+    return lookin.indexOf(text) != -1
+  })
+})
+
 component('uiAction.waitForFESelector', {
   type: 'action',
   params: [
@@ -107,7 +119,7 @@ component('uiAction.setText', {
 component('uiAction.click', {
     type: 'ui-action',
     params: [
-      {id: 'selector', as: 'string'},
+      {id: 'selector', as: 'string', defaultValue: 'button'},
     ],
     impl: runActions(
       uiAction.waitForFESelector('%$selector%'),

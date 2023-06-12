@@ -62,7 +62,7 @@ component('remoteWidgetTest.changeText', {
     checkResultRx: () => jb.ui.renderingUpdates,
     expectedResult: contains('danny')
   })
-}) 
+})
 
 component('remoteWidgetTest.buttonClick', {
   impl: uiTest({
@@ -204,7 +204,7 @@ component('FETest.remoteWidget.codemirror.editableText', {
 //         watchRef('%$person/name%')
 //       ]
 //     }),
-//     action: rx.pipe( 
+//     action: rx.pipe(
 //       source.data(0),
 //       rx.do(writeValue('%$person/name%', 'hello')),
 //       rx.flatMap(source.remote(source.promise(waitFor(count(widget.headlessWidgets()))), worker())),
@@ -212,7 +212,7 @@ component('FETest.remoteWidget.codemirror.editableText', {
 //       rx.flatMap(source.remote(source.promise(waitFor(equals(1, count(widget.headlessWidgets())))), worker())),
 //       rx.timeoutLimit(1000, () => jb.logError('worker did not cleanup')),
 //       rx.catchError()
-//     ),    
+//     ),
 //     expectedResult: contains('hello')
 //   })
 // })
@@ -232,7 +232,7 @@ component('FETest.remoteWidget.infiniteScroll', {
       }),
       worker()
     ),
-    action: runActions(uiAction.scrollBy('.jb-itemlist', 100), delay(200)),
+    action: runActions(uiAction.scrollBy('.jb-itemlist', 100), uiAction.waitForText('>8<')),
     expectedResult: contains('>8<'),
     renderDOM: true
   })
@@ -310,21 +310,54 @@ component('FETest.remoteWidget.infiniteScroll.MDInplace', {
 component('FETest.remoteWidget.refresh', {
   impl: uiFrontEndTest({
     control: group({
-      controls: remote.widget(text('%$person1/name%'), worker()),
+      controls: remote.widget(text({text: '%$person1/name%', features: id('text1')}), worker()),
       features: [
+        id('group1'),
         variable('person1', '%$person%'),
         watchRef('%$person/name%')
       ]
     }),
-    action: rx.pipe(
-      source.data(0),
-      rx.do(writeValue('%$person/name%', 'hello')),
-      rx.flatMap(
-        source.remote(source.promise(waitFor(count(widget.headlessWidgets()))), worker())
-      ),
-      rx.delay(100)
+    action: runActions(
+      uiAction.waitForSelector('#text1'),
+      writeValue('%$person/name%', 'hello'),
+      uiAction.waitForText('hello')
     ),
-    expectedResult: contains('hello'),
-    renderDOM: true
+    expectedResult: contains('hello')
+  })
+})
+
+component('remoteWidgetTest.FE.dialog', {
+  impl: uiFrontEndTest({
+    control: remote.widget(
+      frontEnd.widget(
+        button({title: 'click me', action: openDialog('hello', group()), style: button.native()})
+      ),
+      worker()
+    ),
+    action: uiAction.click(),
+    expectedResult: contains('hello')
+  })
+})
+
+component('remoteWidgetTest.FE.useBackEnd', {
+  impl: uiFrontEndTest({
+    control: remote.widget(
+      group({
+        controls: [
+          text('%$var1%'),
+          frontEnd.widget(
+            button({
+              title: 'click me',
+              action: runInBECmpContext('%$frontEndCmpId%', writeValue('%$var1%', 'hello')),
+              style: button.native()
+            })
+          )
+        ],
+        features: watchable('var1', 'Hi')
+      }),
+      worker()
+    ),
+    action: runActions(uiAction.click(), uiAction.waitForSelector('[cmp-ver=\"2\"]')),
+    expectedResult: contains('hello')
   })
 })

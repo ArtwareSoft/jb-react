@@ -2195,10 +2195,6 @@ component('uiTest.changeText', {
       features: watchable('fName', 'Dan')
     }),
     userInputRx: source.data(userInput.setText('danny')),
-    // rx.mergeConcat(
-    //   source.promise(uiAction.waitForSelector('input')),
-    //   source.data(userInput.setText('danny'))
-    // ),
     checkResultRx: () => jb.ui.renderingUpdates,
     expectedResult: contains('danny')
   })

@@ -106,6 +106,6 @@ extension('remoteCtx', {
     //     return jb.utils.prettyPrint({compId, ...jb.comps[compId],
     //         location: jb.comps[compId][jb.core.CT].location } )
     // },
-    shouldPassVar: (varName, profText) => jb.remoteCtx.allwaysPassVars.indexOf(varName) != -1 || profText.match(new RegExp(`\\b${varName}\\b`)),
+    shouldPassVar: (varName, profText) => jb.remoteCtx.allwaysPassVars.indexOf(varName) != -1 || profText.match(new RegExp(`\\b${varName.split(':')[0]}\\b`)),
     usingData: profText => profText.match(/({data})|(ctx.data)|(%[^$])/)
 })

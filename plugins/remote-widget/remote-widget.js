@@ -34,13 +34,13 @@ component('widget.newId', {
     }
 })
 
-component('jbm.backEnd', {
+component('backEnd', {
     type: 'jbm<jbm>',
     params: [
         {id: 'elem', defaultValue: '%$cmp/el%' },
     ],
     impl: (ctx,elem) => {
-        const widgetId = jb.ui.frontendWidgetId(elem)
+        const widgetId = ctx.vars.FEWidgetId || jb.ui.frontendWidgetId(elem)
         return widgetId && jb.path(jb.ui.frontendWidgets[widgetId],'jbm') || jb
     }
 })
@@ -67,7 +67,7 @@ component('dataMethodFromBackend', {
       return ctxIdToRun
     }
     ),
-    remote.data(backend.dataMethod({ctxIdToRun: '%$ctxIdToRun%', method: '%$method%', data: '%$data%'}), jbm.backEnd())
+    remote.data(backend.dataMethod({ctxIdToRun: '%$ctxIdToRun%', method: '%$method%', data: '%$data%'}), backEnd())
   )
 })
 
@@ -278,4 +278,40 @@ component('widget.headless', {
 component('widget.headlessWidgets', {
     impl: () => Object.keys(jb.ui.headless || {}),
     dependency: widget.headless()
+})
+
+component('frontEnd.widget', {
+  type: 'control',
+  params: [
+    {id: 'control', type: 'control', dynamic: true}
+  ],
+  impl: text({
+    text: '',
+    style: text.htmlTag('div'),
+    features: features(
+      frontEnd.coLocation(),
+      htmlAttribute('widgetTop', 'true'),
+      htmlAttribute('frontend', 'true'),
+      frontEnd.var('ctrlProfile', ({},{},{control}) => control.profile),
+      frontEnd.init((ctx,{el,ctrlProfile}) => {
+        jb.ui.renderWidget(ctrlProfile, el, ctx.setVars({ 
+            FEWidgetId: jb.ui.frontendWidgetId(el.parentNode),
+            frontEndCmpCtxId: el.getAttribute('full-cmp-ctx')
+        }))
+      })
+    )
+  })
+})
+
+component('runInBECmpContext', {
+  type: 'action',
+  category: 'mutable:100',
+  params: [
+    {id: 'cmpId', as: 'string', mandatory: true},
+    {id: 'action', type: 'action', dynamic: true, mandatory: true}
+  ],
+  impl: remote.action(
+    ({},{frontEndCmpCtxId},{action}) => action(jb.ctxDictionary[frontEndCmpCtxId]),
+    backEnd()
+  )
 })

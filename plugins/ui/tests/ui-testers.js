@@ -186,11 +186,12 @@ extension('spy','headless', {
 		let res = null
 		try {
 			res = jb.spy.logs.map(x=>
-			x.logNames == 'uiTest uiDelta from headless' && {log: x.logNames, ...x.data.delta }
+			x.logNames == 'uiTest uiDelta from headless' && {log: x.logNames, ...x.data }
 			|| x.logNames == 'uiTest userRequest'  && {log: x.logNames, ...x.data}
 			|| x.logNames == 'uiComp start renderVdom'  && {log: x.logNames, cmp: `${x.cmp.ctx.path};${x.cmp.ctx.profile.$};${x.cmp.ver}`}
-		).filter(x=>x).map(x=>jb.utils.prettyPrint(x,{noMacros: true})).join('\n---\n')
+		).filter(x=>x).map(x=>{delete x.ctx; delete x.assumedVdom; return x}).map(x=>jb.utils.prettyPrint(x,{noMacros: true})).join('\n---\n')
 		} catch(e) {}
+
 		return res || ''
 	}
 })
