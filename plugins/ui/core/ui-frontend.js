@@ -26,10 +26,6 @@ extension('ui', 'frontend', {
             elem._component = this
             this.runFEMethod('calcProps',null,null,true)
             this.runFEMethod('init',null,null,true)
-            ;(elem.getAttribute('eventhandlers') || '').split(',').filter(x=>x).forEach(h=>{
-                const [event,ctxId] = h.split('-')
-                elem.addEventListener(event, ev => jb.ui.handleCmpEvent(ev,ctxId))
-            })
             this.state.frontEndStatus = 'ready'
             this.props = coLocationCtx && this.ctx.vars.$props
         }

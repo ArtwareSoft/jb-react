@@ -91,11 +91,7 @@ component('FETest.workerPreviewTest.suggestions.filtered', {
       uiAction.waitForSelector('#sampleText'),
       uiAction.waitForSelector('input'),
       uiAction.setText('hello %$var1', 'input'),
-      uiAction.keyboardEvent({
-        selector: 'input',
-        type: 'keyup',
-        keyCode: ()=> '%'.charCodeAt(0)
-      }),
+      uiAction.keyboardEvent({selector: 'input', type: 'keyup', keyCode: ()=> '%'.charCodeAt(0)}),
       uiAction.waitForSelector('.jb-dialog .jb-item')
     ),
     expectedResult: not(contains('$xx')),

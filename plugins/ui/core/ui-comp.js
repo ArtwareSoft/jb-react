@@ -11,7 +11,7 @@ extension('ui','comp', {
     
         return {
             lifeCycle: new Set('init,extendCtx,templateModifier,followUp,destroy'.split(',')),
-            arrayProps: new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,frontEndLib,frontEndVar,eventHandler'.split(',')),
+            arrayProps: new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,frontEndLib,frontEndVar'.split(',')),
             singular: new Set('template,calcRenderProps,toolbar,styleParams,ctxForPick,coLocation'.split(',')),
             cmpCounter: 1,
             cssHashCounter: 0,
@@ -131,7 +131,6 @@ extension('ui','comp', {
                 x.strongRefresh && `strongRefresh`,  x.cssOnly && `cssOnly`, x.allowSelfRefresh && `allowSelfRefresh`, x.delay && `delay=${x.delay}`] 
                 .filter(x=>x).join(';')).join(',')
             const methods = (this.method||[]).map(h=>`${h.id}-${jb.ui.preserveCtx(h.ctx.setVars({cmp: this, $props: this.renderProps, ...this.newVars}))}`).join(',')
-            const eventhandlers = (this.eventHandler||[]).map(h=>`${h.event}-${jb.ui.preserveCtx(h.ctx.setVars({cmp: this}))}`).join(',')
             const originators = this.originators.map(ctx=>jb.ui.preserveCtx(ctx)).join(',')
             const usereventprops = (this.userEventProps||[]).join(',')
             const colocation = this.coLocation
@@ -149,13 +148,12 @@ extension('ui','comp', {
                     },
                     observe && {observe}, 
                     methods && {methods}, 
-                    eventhandlers && {eventhandlers},
                     originators && {originators},
                     usereventprops && {usereventprops},
                     colocation && {colocation},
                     frontEndLibs.length && {$__frontEndLibs : JSON.stringify(frontEndLibs)},
                     frontEndMethods.length && {$__frontEndMethods : JSON.stringify(frontEndMethods) },
-                    (frontEndMethods.length + frontEndLibs.length || eventhandlers)  && {interactive : 'true'}, 
+                    (frontEndMethods.length + frontEndLibs.length)  && {interactive : 'true'}, 
                     frontEndVars && { $__vars : JSON.stringify(frontEndVars)},
                     this.state && { $__state : JSON.stringify(this.state)},
                     { $__debug: JSON.stringify({ path: (this.ctxForPick || this.calcCtx).path, callStack: jb.utils.callStack(this.calcCtx) }) },
@@ -250,9 +248,9 @@ extension('ui','comp', {
             if (!ctx) debugger
             ctx = ctx || this.ctx;
             if (!ctx)
-                console.logError('uiComp: no ctx provided for jbExtend',{_options,ctx})
+                jb.logError('uiComp: no ctx provided for jbExtend',{_options,ctx})
             if (typeof _options != 'object')
-                console.logError('uiComp: _options should be an object',{_options,ctx})
+                jb.logError('uiComp: _options should be an object',{_options,ctx})
             const options = _options.$ ? ctx.run(_options) : _options
             if (Array.isArray(options)) {
                 options.forEach(o=>this.jbExtend(o,ctx))

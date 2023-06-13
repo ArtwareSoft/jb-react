@@ -121,7 +121,6 @@ component('studio.pages', {
         ]
       }),
       itemlist({
-        title: '',
         items: pipeline(studio.cmpsOfProject(), filter(tgp.isOfType('%%', 'control'))),
         controls: text({text: pipeline(suffix('.'), extractSuffix('.')), features: css.class('studio-page')}),
         style: itemlist.horizontal(),
@@ -136,11 +135,7 @@ component('studio.pages', {
           }),
           css.class('studio-pages-items'),
           studio.watchComponents(),
-          css.width({
-            width: '1200',
-            overflow: 'auto',
-            minMax: 'max'
-          }),
+          css.width({width: '1200', overflow: 'auto', minMax: 'max'}),
           css('align-items: center;')
         ]
       }),
@@ -156,7 +151,10 @@ component('studio.pages', {
       }),
       itemlist({
         items: pipeline(studio.cmpsOfProject(), filter(tgp.isOfType('%%', 'data'))),
-        controls: text({text: pipeline(suffix('.'), extractSuffix('.')), features: feature.onEvent('click', studio.openJbEditor('%%'))}),
+        controls: text({
+          text: pipeline(suffix('.'), extractSuffix('.')),
+          features: method('onclickHandler', studio.openJbEditor('%%'))
+        }),
         style: itemlist.horizontal(),
         features: [
           id('functions'),
@@ -168,11 +166,7 @@ component('studio.pages', {
     ],
     features: [
       css.class('studio-pages1'),
-      css.border({
-        width: '1',
-        side: 'bottom',
-        color: 'var(--jb-dropdown-border)'
-      })
+      css.border({width: '1', side: 'bottom', color: 'var(--jb-dropdown-border)'})
     ]
   })
 })

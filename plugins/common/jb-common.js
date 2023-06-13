@@ -152,14 +152,14 @@ component('list', {
   impl: ({},items) => items.flatMap(item=>Array.isArray(item) ? item : [item])
 })
 
-component('gList', {
-  type: 'any',
-  description: 'generic list definition, flatten internal arrays',
-  params: [
-    {id: 'items', type: '$asParent[]', as: 'array', composite: true}
-  ],
-  impl: ({},items) => items.flatMap(item=>Array.isArray(item) ? item : [item])
-})
+// component('gList', {
+//   type: 'any',
+//   description: 'generic list definition, flatten internal arrays',
+//   params: [
+//     {id: 'items', type: '$asParent[]', as: 'array', composite: true}
+//   ],
+//   impl: ({},items) => items.flatMap(item=>Array.isArray(item) ? item : [item])
+// })
 
 component('firstSucceeding', {
   type: 'data',

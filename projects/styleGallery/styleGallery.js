@@ -1,9 +1,12 @@
+using('remote-widget,tree-shake')
 
 extension('styleGallery', {
   getAllStyles(cmpId) {
     const comp = jb.comps[cmpId] || jb.core.unresolvedProfiles.find(x=>x.id==cmpId).comp
     const styleType = comp.params.find(p=>p.id =='style').type
-    return jb.core.unresolvedProfiles.filter(c=> jb.tgp.isCompObjOfType(c.comp,styleType)).map(x=>({$: x.id}))
+    return jb.core.unresolvedProfiles.filter(c=> jb.tgp.isCompObjOfType(c.comp,styleType))
+      .filter(c=> { if (c.id == 'cast') debugger; c.comp.type != 'any'})
+      .map(x=>({$: x.id}))
   }
 })
 
@@ -22,7 +25,7 @@ component('styleGallery.stylesOfUiComponent', {
     {id: 'ctrl', as: 'string'}
   ],
   impl: (ctx,ctrl) => 
-      jb.tgp.PTsOfType(ctrl).filter(x=>['customStyle','styleByControl','styleWithFeatures'].indexOf(x) == -1).sort()
+      jb.tgp.PTsOfType(ctrl).filter(x=>['cast','If','TBD','runCtx','call','jbComponent','customStyle','styleByControl','styleWithFeatures'].indexOf(x) == -1).sort()
 })
 
 component('styleGallery.variations', {

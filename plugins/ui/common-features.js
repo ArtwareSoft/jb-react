@@ -2,20 +2,10 @@ component('method', {
   type: 'feature',
   description: 'define backend event handler',
   params: [
-    {id: 'id', as: 'string', mandatory: true, description: 'to be used in html, e.g. onclick=\"myMethod\" '},
+    {id: 'id', as: 'string', mandatory: true, description: 'if using the pattern onXXHandler, or onKeyXXHandler automaticaly binds to UI event XX'},
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
   impl: (ctx,id) => ({method: {id, ctx}})
-})
-
-component('feature.onEvent', {
-  type: 'feature',
-  category: 'events',
-  params: [
-    {id: 'event', as: 'string', mandatory: true, options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll'},
-    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
-  ],
-  impl: (ctx,event) => ({eventHandler: {event, ctx}})
 })
 
 component('watchAndCalcModelProp', {

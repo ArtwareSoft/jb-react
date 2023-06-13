@@ -562,7 +562,7 @@ extension('ui', 'react', {
         if (!forceNow)
             return jb.delay(1000).then(()=>jb.ui.garbageCollectCtxDictionary(true))
    
-        const used = 'jb-ctx,full-cmp-ctx,pick-ctx,props-ctx,methods,frontEnd,originators,eventhandlers'.split(',')
+        const used = 'jb-ctx,full-cmp-ctx,pick-ctx,props-ctx,methods,frontEnd,originators'.split(',')
             .flatMap(att=>querySelectAllWithWidgets(`[${att}]`)
                 .flatMap(el => el.getAttribute(att).split(',').map(x=>Number(x.split('-').pop())).filter(x=>x)))
                     .sort((x,y)=>x-y)
