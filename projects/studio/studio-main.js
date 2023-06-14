@@ -54,7 +54,9 @@ component('studio.circuit', {
       group({
         controls: probe.remoteCircuitPreview(),
         features: [
-          followUp.action(studio.openControlTree()),
+          followUp.action(
+            studio.openComponentInJbEditor('%$studio/jbEditor/selected%', '%$studio/probe/circuit%')
+          ),
           watchRef('%$studio/preview%', 'yes'),
           css.height({height: '%$studio/preview/height%', overflow: 'auto', minMax: 'max'}),
           css.width({width: '%$studio/preview/width%', overflow: 'auto', minMax: 'max'})
@@ -94,7 +96,9 @@ component('dataResource.studio', {
     page: '',
     profile_path: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') ? (jb.path(globalThis,'location.pathname')||'').split('/')[4] : '',
     pickSelectionCtxId: '',
-    jbEditor: {},
+    jbEditor: {
+      selected: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') ? (jb.path(globalThis,'location.pathname')||'').split('/')[4] : ''
+    },
     preview: {
       width: 1280,
       height: '100%',

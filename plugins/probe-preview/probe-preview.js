@@ -42,12 +42,29 @@ component('suggestions.calcFromProbePreview', {
   })
 })
 
+component('probe.remoteCircuitPreview2', {
+  params: [
+    {id: 'jbm', type: 'jbm<jbm>', defaultValue: probePreviewWorker()}
+  ],
+  type: 'control',
+  impl: probe.circuitPreview()
+})
+
 component('probe.remoteCircuitPreview', {
   params: [
     {id: 'jbm', type: 'jbm<jbm>', defaultValue: probePreviewWorker()}
   ],
   type: 'control',
-  impl: remote.widget(probe.circuitPreview(), '%$jbm%')
+  impl: If(probe.circuitPreviewRequiresMainThread(),probe.circuitPreview(), remote.widget(probe.circuitPreview(), '%$jbm%'))
+})
+
+component('probe.circuitPreviewRequiresMainThread', {
+  type: 'boolean',
+  impl: ctx => {
+    const _circuit = ctx.exp('%$probe/defaultMainCircuit%')
+    return jb.utils.prettyPrint(jb.utils.getComp(_circuit,{silent: true}),{noMacros: true})
+      .indexOf('uiFrontEndTest') != -1
+  }
 })
 
 component('probe.circuitPreview', {

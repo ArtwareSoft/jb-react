@@ -183,7 +183,8 @@ extension('ui','comp', {
             if (jb.path(vars,'$state'))
                 Object.assign(this.state,vars.$state)
             const methodImpls = (this.method||[]).filter(h=> h.id == method)
-            methodImpls.forEach(h=> jb.ui.runCtxAction(h.ctx,data,{cmp: this,$state: this.state, $props: this.renderProps, ...vars}))
+            methodImpls.forEach(h=> jb.ui.runCtxAction(h.ctx,data,
+                {cmp: this,$state: this.state, $props: this.renderProps, ...vars, $model: this.calcCtx.vars.$model}))
             if (methodImpls.length == 0)
                 jb.logError(`no method ${method} in cmp`, {cmp: this, data, vars})
         }

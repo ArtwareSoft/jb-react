@@ -57,7 +57,7 @@ component('dataMethodFromBackend', {
   impl: pipe(
     Var(
       'ctxIdToRun',
-      (ctx,{cmp},{method,data})=>{
+      (ctx,{cmp},{method})=>{
       const elem = cmp && cmp.base 
       if (!elem)
         return jb.logError(`frontEnd.dataMethodFromBackend, no elem found`, {method})
@@ -144,8 +144,8 @@ component('remote.distributedWidget', {
 component('remote.widget', {
     type: 'control',
     params: [
-      {id: 'control', type: 'control', dynamic: true },
-      {id: 'jbm', type: 'jbm<jbm>' },
+      {id: 'control', type: 'control', dynamic: true, composite: true },
+      {id: 'jbm', type: 'jbm<jbm>', defaultValue: worker() },
     ],
     impl: group({
         controls: controlWithFeatures({
@@ -220,7 +220,15 @@ extension('ui','headless', {
             const ctx = jb.ctxDictionary[userReq.ctxIdToRun]
             if (!ctx)
                 return jb.logError(`headless widget runCtxAction. no ctxId ${userReq.ctxIdToRun}`,{userReq})
-            jb.ui.runCtxActionAndUdateCmpState(ctx,userReq.data,userReq.vars)
+            const vars = userReq.vars
+            if (jb.path(vars,'$updateCmpState.cmpId') == jb.path(ctx.vars,'cmp.cmpId') && jb.path(vars,'$updateCmpState.state'))
+                Object.assign(ctx.vars.cmp.state,vars.$updateCmpState.state)
+    
+            if (userReq.method)
+                jb.ui.runBEMethodByContext(ctx,userReq.method,userReq.data,vars)                
+            else
+                jb.ui.runCtxAction(ctx,userReq.data,vars)
+
         } else if (userReq.$ == 'recoverWidget') {
             jb.log('recover headless widget',{userReq})
             //createHeadlessWidget({ recover: true })

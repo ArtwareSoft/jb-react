@@ -59,13 +59,13 @@ extension('chromeDebugger', {
         chrome.devtools.panels.elements.onSelectionChanged.addListener( async () => {
             const inspectedProps = await jb.chromeDebugger.selectedProps()
             const elem = document.querySelector('[widgettop="true"]>*')
-            inspectedProps && inspectedProps.cmpId && elem && jb.ui.runBEMethod(elem,'refreshAfterDebuggerSelection',inspectedProps)
+            inspectedProps && inspectedProps.cmpId && elem && jb.ui.runBEMethodByElem(elem,'refreshAfterDebuggerSelection',inspectedProps)
         })
         if (panelId == 'card') 
             chrome.devtools.panels.elements.onSelectionChanged.addListener(async () => {
                 await jb.chromeDebugger.markSelected()
                 const elem = document.querySelector('[widgettop="true"]>*')
-                elem && jb.ui.runBEMethod(elem,'refreshAfterDebuggerSelection')
+                elem && jb.ui.runBEMethodByElem(elem,'refreshAfterDebuggerSelection')
         })
         const inspectedProps = await jb.chromeDebugger.selectedProps()
         const profile = {$: `chromeDebugger.${panelId}Ctrl`, inspectedProps, uri: debugeeUri}

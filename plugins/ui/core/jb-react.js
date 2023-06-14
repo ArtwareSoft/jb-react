@@ -446,14 +446,17 @@ extension('ui', 'react', {
         specificMethod = specificMethod == 'true' ? true : specificMethod
         const userReq = jb.ui.rawEventToUserRequest(ev,specificMethod)
         jb.log('handle cmp event',{ev,specificMethod,userReq})
-        if (!userReq) return
+        if (!userReq) return true
         if (userReq.widgetId)
             jb.ui.sendUserReq(userReq)
         else {
             const ctx = jb.ctxDictionary[userReq.ctxIdToRun]
             if (!ctx)
-                jb.logError(`handleCmpEvent - no ctx in dictionary for id ${userReq.ctxIdToRun}`,{ev,specificMethod})
-            ctx && jb.ui.runCtxAction(ctx,userReq.data,userReq.vars)
+                return jb.logError(`handleCmpEvent - no ctx in dictionary for id ${userReq.ctxIdToRun}`,{ev,specificMethod})
+            if (userReq.method)
+                jb.ui.runBEMethodByContext(ctx,userReq.method,userReq.data,userReq.vars)                
+            else
+                jb.ui.runCtxAction(ctx,userReq.data,userReq.vars)
         }
     },
     sendUserReq(userReq) {
@@ -505,15 +508,15 @@ extension('ui', 'react', {
     runCtxAction(ctx,data,vars) {
         ctx.setData(data).setVars(vars).runInner(ctx.profile.action,'action','action')        
     },
-    runBEMethodInAnyContext(ctx,method,data,vars) {
+    runBEMethodByContext(ctx,method,data,vars) {
         const cmp = ctx.vars.cmp
         if (cmp instanceof jb.ui.JbComponent)
-            cmp.runBEMethod(method,data,vars ? {...ctx.vars, ...vars} : ctx.vars)
+            return cmp.runBEMethod(method,data,vars ? {...ctx.vars, ...vars} : ctx.vars)
         else
-            jb.ui.runBEMethod(cmp.base,method,data,
+            return jb.ui.runBEMethodByElem(cmp.base,method,data,
                     {$updateCmpState: {state: cmp.state, cmpId: cmp.cmpId}, $state: cmp.state, ev: ctx.vars.ev, ...vars})
     },
-    runBEMethod(elem,method,data,vars) {
+    runBEMethodByElem(elem,method,data,vars) {
         if (!elem)
             return jb.logError(`runBEMethod, no elem provided: ${method}`, {elem, data, vars})
         const widgetId = jb.ui.frontendWidgetId(elem)

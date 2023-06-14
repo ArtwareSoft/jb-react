@@ -194,26 +194,31 @@ component('group.sections', {
 component('group.sectionExpandCollapse', {
   type: 'group.style',
   params: [
-    {id: 'titleCtrl', type: 'control', dynamic: true, defaultValue: text({text: '%$sectionsModel.title()%', style: header.h2() }) },
-    {id: 'toggleStyle', type: 'editable-boolean.style', defaultValue: editableBoolean.expandCollapse() },
-    {id: 'autoExpand', as: 'boolean' }
+    {
+      id: 'titleCtrl',
+      type: 'control',
+      dynamic: true,
+      defaultValue: text({text: '%$sectionsModel.title()%', style: header.h2()})
+    },
+    {id: 'toggleStyle', type: 'editable-boolean.style', defaultValue: editableBoolean.expandCollapse()},
+    {id: 'autoExpand', as: 'boolean', type: 'boolean'}
   ],
   impl: styleByControl(
     group({
       controls: [
         group({
+          layout: layout.flex({direction: 'row', justifyContent: 'start', alignItems: 'center'}),
           controls: [
-            editableBoolean({databind: '%$sectionExpanded%', style: call('toggleStyle')}),
-            call('titleCtrl'),
-          ],
-          layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'})
+            editableBoolean('%$sectionExpanded%', call('toggleStyle')),
+            call('titleCtrl')
+          ]
         }),
         group({
-          controls: controlWithCondition('%$sectionExpanded%','%$sectionsModel/controls%'),
+          controls: controlWithCondition('%$sectionExpanded%', '%$sectionsModel/controls%'),
           features: watchRef('%$sectionExpanded%')
         })
       ],
-      features: watchable('sectionExpanded','%$autoExpand%'),
+      features: watchable('sectionExpanded', '%$autoExpand%')
     }),
     'sectionsModel'
   )

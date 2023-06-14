@@ -136,11 +136,12 @@ component('uiAction.keyboardEvent', {
       {id: 'selector', as: 'string'},
       {id: 'type', as: 'string', options: ['keypress', 'keyup', 'keydown']},
       {id: 'keyCode', as: 'number'},
+      {id: 'keyChar', as: 'string'},
       {id: 'ctrl', as: 'string', options: ['ctrl', 'alt']}
     ],
     impl: runActions(
       uiAction.waitForFESelector('%$selector%'),
-      (ctx,{elemToTest},{selector,type,keyCode,ctrl}) => {
+      (ctx,{elemToTest},{selector,type,keyCode,keyChar,ctrl}) => {
         // const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : ctx.vars.elemToTest
         // const ev = ({ selector, type, keyCode , currentTarget: elem, target: elem, ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt'})
         // jb.log('test keyboardEvent',{ev,elem,selector,ctx})
@@ -148,8 +149,10 @@ component('uiAction.keyboardEvent', {
 
         const elem = selector ? ctx.vars.elemToTest.querySelector(selector) : elemToTest
         if (!elem) return
-        const e = new KeyboardEvent(type,{ ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt' })
-        Object.defineProperty(e, 'keyCode', { get : _ => keyCode })
+        if (keyChar && type == 'keyup')
+          elem.value = elem.value + keyChar
+        const e = new KeyboardEvent(type,{ ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt', key: keyChar })
+        Object.defineProperty(e, 'keyCode', { get : _ => keyChar ? keyChar.charCodeAt(0) : keyCode })
         Object.defineProperty(e, 'target', { get : _ => elem })
         jb.log('test keyboardEvent',{e,elem,selector,type,keyCode,ctx})
         elem.dispatchEvent(e)

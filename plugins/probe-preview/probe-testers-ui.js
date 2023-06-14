@@ -10,7 +10,9 @@ component('test.showTestInStudio', {
 		const ctxForUi = jb.ui.extendWithServiceRegistry(ctx)
 		if (profile.$ == 'dataTest')
 			return ctxForUi.run({ $: 'test.dataTestView' ,testId, testResult })
-		if (profile.$ == 'uiTest') {
+		else if (profile.$ == 'uiFrontEndTest')
+			return ctxForUi.run({ $: 'test.uiFrontEndTestView' ,testId, testResult })
+		else if (profile.$ == 'uiTest') {
 			const ctxWithVars = ctx.setVars(jb.objFromEntries((profile.vars||[]).map(v=>[v.name,ctx.run(v.val)])))
 			const ctxToRun = jb.ui.extendWithServiceRegistry(new jb.core.jbCtx(ctxWithVars,{ profile, forcePath: testId+ '~impl', path: '' } ))
 			return ctxForUi.run({ $: 'test.uiTestRunner', testId,ctxToRun,testResult })
@@ -42,23 +44,57 @@ component('test.expectedResultProfile', {
   impl: (ctx,expectedResultCtx) => jb.utils.ctxStack(expectedResultCtx).pop().profile.expectedResult
 })
 
-component('test.dataTestView', {
+component('test.successIndication', {
   type: 'control',
   params: [
-    {id: 'testId', as: 'string', defaultValue: 'ui-test.label'},
+    {id: 'testId', as: 'string' },
+  ],
+  impl: button({
+    vars: [
+      Var('color', If('%success%', '--jb-success-fg', '--jb-error-fg'))
+    ],
+    title: If('%success%', '✓ %$testId%', '⚠ %$testId%'),
+    action: remote.action(winUtils.gotoUrl('/hosts/tests/tests.html?test=%$testId%&show&spy=test'), parent()),
+    style: button.href(),
+    features: css.color('var(%$color%)')
+  })
+})
+
+component('test.FE_BE_interaction', {
+  type: 'control',
+  params: [
+    {id: 'method', as: 'string', defaultValue: 'headlessIO'}
+  ],
+  impl: group({
+    controls: [
+      divider(),
+      group({
+        style: group.sectionExpandCollapse(text('FE <--> BE interaction')),
+        controls: [
+          text({
+            text: ({},{},{method}) => method == 'headlessIO' ? jb.spy.headlessIO() : jb.spy.uiTestHeadlessIO(), 
+            style: text.codemirror({enableFullScreen: true, height: '800', mode: 'javascript'}),
+            features: [
+              codemirror.fold(),
+              codemirror.lineNumbers()
+            ]
+          })
+        ]
+      }),
+      divider()
+    ]
+  }),
+})
+
+component('test.uiFrontEndTestView', {
+  type: 'control',
+  params: [
+    {id: 'testId', as: 'string' },
     {id: 'testResult', dynamic: true}
   ],
   impl: group({
     controls: [
-      button({
-        vars: [
-          Var('color', If('%success%', '--jb-success-fg', '--jb-error-fg'))
-        ],
-        title: If('%success%', '✓ %$testId%', '⚠ %$testId%'),
-        action: remote.action(winUtils.gotoUrl('/hosts/tests/tests.html?test=%$testId%&show&spy=test'), parent()),
-        style: button.href(),
-        features: css.color('var(%$color%)')
-      }),
+      test.successIndication('%$testId%'),
       group({
         layout: layout.horizontal(20),
         controls: [
@@ -79,7 +115,47 @@ component('test.dataTestView', {
           )
         ]
       }),
-      text('%$result/duration% mSec {?, %$result/reason%?}')
+      text('front end test %$result/duration% mSec {?, %$result/reason%?}'),
+      test.FE_BE_interaction(),
+    ],
+    features: [
+      group.data(() => jb.spy.logs.find(e=>e.logNames =='check test result')),
+      group.wait({for: '%$testResult()%', varName: 'result'})
+    ]
+  }),
+  require: winUtils.gotoUrl()
+})
+
+component('test.dataTestView', {
+  type: 'control',
+  params: [
+    {id: 'testId', as: 'string' },
+    {id: 'testResult', dynamic: true}
+  ],
+  impl: group({
+    controls: [
+      test.successIndication('%$testId%'),
+      group({
+        layout: layout.horizontal(20),
+        controls: [
+          controlWithCondition(
+            '%expectedResultCtx/data%',
+            text(prettyPrint(test.expectedResultProfile('%expectedResultCtx%'), true))
+          ),
+          controlWithCondition(
+            '%html%',
+            text({
+              text: '%html%',
+              style: text.codemirror({height: '200', formatText: true, mode: 'htmlmixed'}),
+              features: [
+                codemirror.fold(),
+                css('min-width: 1200px')
+              ]
+            })
+          )
+        ]
+      }),
+      text('dataTest %$result/duration% mSec {?, %$result/reason%?}')
     ],
     features: [
       group.data(() => jb.spy.logs.find(e=>e.logNames =='check test result')),
@@ -98,18 +174,7 @@ component('test.uiTestRunner', {
   ],
   impl: group({
     controls: [
-      button({
-        vars: [
-          Var('color', If('%success%', '--jb-success-fg', '--jb-error-fg'))
-        ],
-        title: If('%success%', '✓ %$testId%', '⚠ %$testId%'),
-        action: remote.action(
-          winUtils.gotoUrl('/hosts/tests/tests.html?test=%$testId%&show&spy=test,uiTest'),
-          parent()
-        ),
-        style: button.href(),
-        features: css.color('var(%$color%)')
-      }),
+      test.successIndication('%$testId%'),
       group({
         controls: [
           controlWithCondition(
@@ -125,15 +190,7 @@ component('test.uiTestRunner', {
       group({
         controls: ({},{},{ctxToRun}) => ctxToRun.runInner(ctxToRun.profile.control,{type: 'control'}, 'control')
       }),
-      divider(),
-      text({
-        text: () => jb.spy.headlessIO(),
-        style: text.codemirror({enableFullScreen: true, height: '800', mode: 'javascript'}),
-        features: [
-          codemirror.fold(),
-          codemirror.lineNumbers()
-        ]
-      })
+      test.FE_BE_interaction('uiTestHeadlessIO')
     ],
     features: [
       group.wait({

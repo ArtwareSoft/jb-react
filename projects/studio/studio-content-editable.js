@@ -69,7 +69,7 @@ component('feature.contentEditable', {
       frontEnd.onRefresh(({},{$state,el}) => el.onkeydown = $state.contentEditableActive ? 
           ev => {
             if (ev.keyCode == 13) {
-              jb.studio.previewjb.ui.runBEMethod(el,'onEnter',null,{ev: jb.ui.buildUserEvent(ev, el)})
+              jb.studio.previewjb.ui.runBEMethodByElem(el,'onEnter',null,{ev: jb.ui.buildUserEvent(ev, el)})
               return false
             }
             return true

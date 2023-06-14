@@ -80,7 +80,7 @@ component('uiFrontEndTest', {
     {id: 'runInPreview', type: 'action', dynamic: true, descrition: 'not for test mode'},
     {id: 'runInStudio', type: 'action', dynamic: true, descrition: 'not for test mode'}
   ],
-  impl: (_ctx,control,runBefore,action,expectedResult,allowError,cleanUp,expectedCounters,renderDOM) => {
+  impl: async (_ctx,control,runBefore,action,expectedResult,allowError,cleanUp,expectedCounters,renderDOM) => {
 		if (typeof document == 'undefined')
 			return _ctx.run({..._ctx.profile, $: 'uiTest'})
 		const {testID, singleTest} = _ctx.vars
@@ -90,37 +90,33 @@ component('uiFrontEndTest', {
 		elemToTest.ctxForFE = ctx
 		elemToTest.setAttribute('id','jb-testResult')
 		const show = new URL(jb.frame.location.href).searchParams.get('show') !== null
-		return Promise.resolve(runBefore())
-			.then(() => {
-				try {
-					if (renderDOM) document.body.appendChild(elemToTest)
-					jb.ui.render(jb.ui.h(control(ctx)), elemToTest)
-				} catch (e) {
-					jb.logException(e,'error in test',{ctx})
-					return e
-				}
-			})
-			.then(error => jb.delay(1,error))
-			.then(error => !error && jb.utils.toSynchArray(action(ctx),true))
-			.then(() => jb.delay(1))
-			.then(() => {
-				// put input values as text
-				Array.from(elemToTest.querySelectorAll('input,textarea')).forEach(e=>
-					e.parentNode && jb.ui.addHTML(e.parentNode,`<input-val style="display:none">${e.value}</input-val>`))
-				const reason = jb.test.countersErrors(expectedCounters,allowError)
-				const resultHtml = elemToTest.outerHTML
-				const expectedResultRes = expectedResult(ctx.setData(resultHtml))
-				const success = !! (expectedResultRes && !reason)
-				jb.log('check FE test result',{testID, success, reason, html: resultHtml})
-				const result = { id: testID, success, reason, renderDOM}
-				// default cleanup
-				if (!show) { //} && !singleTest) {
-					jb.ui.unmount(elemToTest)
-					ctx.run(runActions(dialog.closeAll(), dialogs.destroyAllEmitters()))
-				}
-				if (renderDOM && !show && !singleTest) document.body.removeChild(elemToTest)
-				return Promise.resolve(cleanUp()).then(_=>result)
-		})
+		await runBefore()
+		let error = null
+		try {
+			if (renderDOM) document.body.appendChild(elemToTest)
+			await jb.ui.render(jb.ui.h(control(ctx)), elemToTest)
+		} catch (e) {
+			jb.logException(e,'error in test',{ctx})
+			error = await e
+		}
+		await (!error && jb.utils.toSynchArray(action(ctx),true))
+		await jb.delay(1)
+		Array.from(elemToTest.querySelectorAll('input,textarea')).forEach(e=>
+			e.parentNode && jb.ui.addHTML(e.parentNode,`<input-val style="display:none">${e.value}</input-val>`))
+		const reason = jb.test.countersErrors(expectedCounters,allowError)
+		const resultHtml = elemToTest.outerHTML
+		const expectedResultRes = expectedResult(ctx.setData(resultHtml))
+		const success = !! (expectedResultRes && !reason)
+		jb.log('check FE test result',{testID, success, reason, html: resultHtml})
+		const result = { id: testID, success, reason, renderDOM}
+		// default cleanup
+		if (!show && !singleTest) {
+			jb.ui.unmount(elemToTest)
+			ctx.run(runActions(dialog.closeAll(), dialogs.destroyAllEmitters()))
+		}
+		if (renderDOM && !show && !singleTest) document.body.removeChild(elemToTest)
+		await cleanUp()
+		return result
 	}
 })
 
@@ -182,16 +178,41 @@ extension('ui','tester', {
 })
 
 extension('spy','headless', {
-	headlessIO: () => {
+	uiTestHeadlessIO: () => {
 		let res = null
 		try {
 			res = jb.spy.logs.map(x=>
 			x.logNames == 'uiTest uiDelta from headless' && {log: x.logNames, ...x.data }
 			|| x.logNames == 'uiTest userRequest'  && {log: x.logNames, ...x.data}
 			|| x.logNames == 'uiComp start renderVdom'  && {log: x.logNames, cmp: `${x.cmp.ctx.path};${x.cmp.ctx.profile.$};${x.cmp.ver}`}
-		).filter(x=>x).map(x=>{delete x.ctx; delete x.assumedVdom; return x}).map(x=>jb.utils.prettyPrint(x,{noMacros: true})).join('\n---\n')
+		).filter(x=>x).map(x=>{delete x.ctx; delete x.assumedVdom; return x})
+			.map(x=> {
+				const txt = jb.utils.prettyPrint(x,{noMacros: true})
+				const isReq = x.log == 'uiTest userRequest'
+				return `\n${isReq ? '' : '<'}---${isReq ? '>' : ''}` + txt
+			})
+			.join('\n')
+		} catch(e) {}
+
+		return res || ''
+	},
+	headlessIO: () => {
+		let res = null
+		try {
+			res = jb.spy.logs.map(x=>
+			x.logNames == 'remote widget arrived from headless' && {log: x.logNames, ...x.data }
+			|| x.logNames == 'remote widget sent to headless'  && {log: x.logNames, ...x.data}
+			|| x.logNames == 'uiComp start renderVdom'  && {log: x.logNames, cmp: `${x.cmp.ctx.path};${x.cmp.ctx.profile.$};${x.cmp.ver}`}
+		).filter(x=>x).map(x=>{delete x.ctx; delete x.assumedVdom; return x})
+			.map(x=> {
+				const txt = jb.utils.prettyPrint(x,{noMacros: true})
+				const isReq = x.log == 'remote widget sent to headless'
+				return `\n${isReq ? '' : '<'}---${isReq ? '>' : ''}` + txt
+			})
+			.join('\n')
 		} catch(e) {}
 
 		return res || ''
 	}
+	
 })

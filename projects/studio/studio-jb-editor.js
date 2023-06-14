@@ -102,12 +102,18 @@ component('studio.jbEditor', {
     controls: [
       studio.jbEditorInteliTree('%$path%'),
       group({
-        title: '',
-        controls: remote.widget(probe.inOutView(),probePreviewWorker()),
-        features: [feature.if(not('%$studio/hideProbe%')), watchRef('%$studio/hideProbe%')]
+        controls: remote.widget(probe.inOutView(), probePreviewWorker()),
+        features: [
+          feature.if(not('%$studio/hideProbe%')),
+          watchRef('%$studio/hideProbe%')
+        ]
       })
     ],
-    features: [id('jbEditor'), css.padding('10'), css.height({height: '800', minMax: 'max'})]
+    features: [
+      id('jbEditor'),
+      css.padding('10'),
+      css.height({height: '800', minMax: 'max'})
+    ]
   })
 })
 

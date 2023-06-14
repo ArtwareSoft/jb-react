@@ -26,7 +26,7 @@ component('action.runBEMethod', {
       {id: 'data', defaultValue: '%%', dynamic: true },
       {id: 'vars', dynamic: true },
     ],
-    impl: (ctx,method,data,vars) => jb.ui.runBEMethodInAnyContext(ctx,method(),data(),vars())
+    impl: (ctx,method,data,vars) => jb.ui.runBEMethodByContext(ctx,method(),data(),vars())
 })
 
 component('backend.dataMethod', {
@@ -69,7 +69,7 @@ component('sink.BEMethod', {
         {id: 'data', defaultValue: ({data}) => jb.frame.Event && data instanceof jb.frame.Event ? null : data, dynamic: true },
         {id: 'vars', dynamic: true },
     ],
-    impl: sink.action((ctx,{},{method,data,vars}) => jb.ui.runBEMethodInAnyContext(ctx,method(ctx),data(ctx),vars(ctx)))
+    impl: sink.action((ctx,{},{method,data,vars}) => jb.ui.runBEMethodByContext(ctx,method(ctx),data(ctx),vars(ctx)))
 })
 
 component('sink.FEMethod', {

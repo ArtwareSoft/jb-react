@@ -1,4 +1,5 @@
 uiTests actionOrWait DSL
+fix expand collapse - http://localhost:8082/project/studio/styleGallery/styleGallery.editableBoolean/styleGallery.editableBoolean
 - nested tests - pattern=remote|worker|jbm|pattern|distributed
 - jbm group - resolveJbm
 - implement private comps - jb.component should evaluate in the context of **plugin** and DSL  private comps of other types, 

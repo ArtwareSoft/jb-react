@@ -215,6 +215,14 @@ component('uiTest.twoWayBinding', {
   })
 })
 
+// component('uiTest.sectionExpandCollapse', {
+//   impl: uiFrontEndTest({
+//     control: remote.widget(group({style: group.sectionExpandCollapse(text('open')), controls: text('hello')})),
+//     expectedResult: contains('hello')
+//   })
+// })
+
+
 component('uiTest.autoFocusOnFirstInput', {
   impl: uiTest({
     control: group({
@@ -1755,7 +1763,7 @@ component('uiTest.refreshByStateChange', {
     control: group({
       controls: [
         text('%$name%'),
-        button('click', ctx => jb.ui.runBEMethod(jb.ui.find(ctx, '#g1')[0], 'refresh'))
+        button('click', ctx => jb.ui.runBEMethodByElem(jb.ui.find(ctx, '#g1')[0], 'refresh'))
       ],
       features: [
         id('g1'),
@@ -1774,7 +1782,7 @@ component('uiTest.refreshWithStyleByCtrl', {
       style: group.sections(),
       controls: [
         text('%$name%'),
-        button('click', ctx => jb.ui.runBEMethod(jb.ui.find(ctx, '#g1')[0], 'refresh'))
+        button('click', ctx => jb.ui.runBEMethodByElem(jb.ui.find(ctx, '#g1')[0], 'refresh'))
       ],
       features: [
         id('g1'),

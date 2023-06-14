@@ -146,7 +146,7 @@ component('codemirror.textEditorKeys', {
 	impl: frontEnd.prop('extraCmSettings', ({},{cmp}) => jb.codemirror.mergeSettings(cmp.extraCmSettings, {
 		extraKeys: {
 			'Ctrl-Space': 'autocomplete',
-			'Ctrl-Enter': () => jb.ui.runBEMethod(el,'onCtrlEnter'),
+			'Ctrl-Enter': () => jb.ui.runBEMethodByElem(el,'onCtrlEnter'),
 		},
 	})),
 })
