@@ -9,18 +9,6 @@ component('remoteWidgetTest.button', {
   })
 })
 
-component('remoteWidgetTest.group.wait', {
-  impl: uiTest({
-    timeout: 3000,
-    checkResultRx: () => jb.ui.renderingUpdates,
-    control: remote.widget(group({
-      controls: button('hello world'),
-      features: group.wait(treeShake.getCodeFromRemote('sampleProject.main')),
-    }), worker()),
-    expectedResult: contains('hello world')
-  })
-})
-
 // component('remoteWidgetTest.distributedWidget', {
 //   impl: uiTest({
 //     control: group({
@@ -61,6 +49,18 @@ component('remoteWidgetTest.changeText', {
     ),
     checkResultRx: () => jb.ui.renderingUpdates,
     expectedResult: contains('danny')
+  })
+})
+
+component('remoteWidgetTest.group.wait', {
+  impl: uiTest({
+    timeout: 3000,
+    checkResultRx: () => jb.ui.renderingUpdates,
+    control: remote.widget(group({
+      controls: button('hello world'),
+      features: group.wait(treeShake.getCodeFromRemote('sampleProject.main')),
+    }), worker()),
+    expectedResult: contains('hello world')
   })
 })
 

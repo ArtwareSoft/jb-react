@@ -118,6 +118,14 @@ component('uiTest.button', {
   impl: uiTest({ control: button('btn1', ctx => alert(1)), expectedResult: contains('btn1') })
 })
 
+// component('uiTest.button.disabled', {
+//   impl: uiTest({
+//     control: button({title: 'btn1', action: delay(100), style: button.native()}),
+//     userInput: userInput.click(),
+//     expectedResult: contains('disabled')
+//   })
+// })
+
 component('uiTest.button.mdcIcon', {
   impl: uiTest({
     control: button({

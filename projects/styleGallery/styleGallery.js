@@ -83,7 +83,7 @@ component('styleGallery.controlVariations', {
       .flatMap(e=> e.values.map(val => ({...prof, [e.prop] : val }))))
       .map(profile=> ctx.run(profile))
   }),
-  require: [{$:'picklist.options'}]
+  require: [{$:'picklist.options'}, {$: 'dataResource.person'}]
 })
 
 
@@ -117,7 +117,7 @@ component('styleGallery.controlVariations', {
     }),
 })))
 
-component('dataResource.person', {
+component('person', {
   watchableData: {
     name: 'Homer Simpson',
     male: true,
@@ -126,7 +126,7 @@ component('dataResource.person', {
   }
 })
 
-component('dataResource.people', {
+component('people', {
   watchableData: [
     {name: 'Homer Simpson', age: 42, male: true},
     {name: 'Marge Simpson', age: 38, male: false},

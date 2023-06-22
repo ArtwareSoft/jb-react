@@ -29,7 +29,7 @@ component('widget.newId', {
     impl: (ctx, jbm) => {
         jb.ui.initFEWidget() // dummy to get constrcutor
         const id = jbm.uri + '-' + ctx.id
-        jb.ui.frontendWidgets[id] = { jbm, reqCounter: 0 }
+        jb.ui.frontendWidgets[id] = { jbm }
         return id
     }
 })

@@ -68,12 +68,14 @@ extension('utils', 'core', {
         comp.impl[CT] = { dsl }
       if (!unresolvedType) {
         const dslType = comp[CT].dslType = (dsl && type.indexOf('<') == -1 ? `${type}<${dsl}>` : type).replace(/\<\>/g,'')
-        comp[CT].fullId = (dsl ? dslType : '') + id
-        const oldComp = jb.comps[comp[CT].fullId]
-        if (jb.comps[comp[CT].fullId] && jb.comps[comp[CT].fullId] != comp)
-          jb.logError(`comp ${comp[CT].fullId} at ${ JSON.stringify(comp[CT].location || {})} already defined at ${JSON.stringify((jb.comps[comp[CT].fullId][CT].location || {}))}`,
-            {oldComp: jb.comps[comp[CT].fullId], oldLocation: jb.comps[comp[CT].fullId][CT].location, newLocation: comp[CT].location})
-        jb.comps[comp[CT].fullId] = comp
+        const fullId = comp[CT].fullId = (dsl ? dslType : '') + id
+        const oldComp = jb.comps[fullId]
+        if (oldComp && oldComp != comp) {
+          const oldCompCT = oldComp[CT] || {}
+          jb.logError(`comp ${fullId} at ${ JSON.stringify(comp[CT].location)} already defined at ${JSON.stringify((oldCompCT.location))}`,
+            {oldComp, oldLocation: oldCompCT.location, newLocation: comp[CT].location})
+        }
+        jb.comps[fullId] = comp
         
         if (keepLocation && jb.path(oldComp,[CT,'location']))
           comp[CT].location = jb.path(oldComp,[CT,'location'])

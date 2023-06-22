@@ -1,8 +1,13 @@
+ui sequence
+  test1 - disable button after enables when action finished
+  test2 - FE type char after char, BE method overrides text
+
+
 uiTests actionOrWait DSL
-fix expand collapse - http://localhost:8082/project/studio/styleGallery/styleGallery.editableBoolean/styleGallery.editableBoolean
 - nested tests - pattern=remote|worker|jbm|pattern|distributed
 - jbm group - resolveJbm
-- implement private comps - jb.component should evaluate in the context of **plugin** and DSL  private comps of other types, 
+- implement private comps - jb.component has plugin. jb.run will try jb.utils.getPlugin(profile).comps[fullId] || jb.comps[fullId],
+jb.exec({$: 'mukki', $plugin: 'studio' })
 idea: { $: 'button', $plugin :'ui@5.2' at the json } allow multiple version simulatinously for conversion
 
 plugins

@@ -5,6 +5,7 @@ extension('ui', 'react', {
             refreshNotification: jb.callbag.subject(),
             renderingUpdates: jb.callbag.subject(),
             widgetUserRequests: jb.callbag.subject(),
+            widgetEventCounter: {},
             followUps: {},
         })
 
@@ -133,7 +134,7 @@ extension('ui', 'react', {
         }
     },
 
-    applyNewVdom(elem,vdomAfter,{strongRefresh, ctx, delta} = {}) {
+    applyNewVdom(elem,vdomAfter,{strongRefresh, ctx, delta, srcCtx} = {}) {
         const widgetId = jb.ui.headlessWidgetId(elem)
         jb.log('applyNew vdom',{widgetId,elem,vdomAfter,strongRefresh, ctx})
         if (delta) { // used only by $runFEMethod
@@ -155,7 +156,7 @@ extension('ui', 'react', {
                 Object.assign(elem,vdomAfter)
                 ;(vdomAfter.children ||[]).forEach(ch=>ch.parentNode = elem)
             }
-            jb.ui.renderingUpdates.next({assumedVdom, delta,cmpId,widgetId})
+            jb.ui.renderingUpdates.next({assumedVdom, delta,cmpId,widgetId, src_evCounter: jb.path(srcCtx,'vars.evCounter') })
             return
         }
         const active = jb.ui.activeElement() === elem
@@ -460,8 +461,7 @@ extension('ui', 'react', {
         }
     },
     sendUserReq(userReq) {
-        const reqCounter = 0 //jb.ui.frontendWidgets[userReq.widgetId].reqCounter++
-        jb.ui.widgetUserRequests.next({ ...userReq, reqCounter})
+        jb.ui.widgetUserRequests.next(userReq)
     },
     rawEventToUserRequest(ev, specificMethod) {
         const elem = jb.ui.closestCmpElem(ev.currentTarget)
@@ -471,7 +471,9 @@ extension('ui', 'react', {
         const method = specificMethod && typeof specificMethod == 'string' ? specificMethod : `on${ev.type}Handler`
         const ctxIdToRun = jb.ui.ctxIdOfMethod(elem,method)
         const widgetId = jb.ui.frontendWidgetId(elem) || ev.widgetId
-        return ctxIdToRun && {$:'runCtxAction', method, widgetId, ctxIdToRun, vars: {ev: jb.ui.buildUserEvent(ev, elem)} }
+        jb.ui.widgetEventCounter[widgetId] = (jb.ui.widgetEventCounter[widgetId] || 0) + 1
+        return ctxIdToRun && {$:'runCtxAction', method, widgetId, ctxIdToRun, vars: 
+            { evCounter: jb.ui.widgetEventCounter[widgetId], ev: jb.ui.buildUserEvent(ev, elem)} }
     },
     calcElemProps(elem) {
         return elem instanceof jb.ui.VNode ? {} : { 
@@ -647,7 +649,7 @@ extension('ui', 'react', {
             jb.ui.refreshFrontEnd(actualElem, {content: delta})
         }
     },
-    refreshElem(elem, state, options) {
+    refreshElem(elem, state, options = {}) {
         if (jb.path(elem,'_component.state.frontEndStatus') == 'initializing' || jb.ui.findIncludeSelf(elem,'[__refreshing]')[0]) 
             return jb.logError('circular refresh',{elem, state, options})
         const cmpId = elem.getAttribute('cmp-id'), cmpVer = +elem.getAttribute('cmp-ver')
@@ -684,7 +686,7 @@ extension('ui', 'react', {
             }
         } else {
             jb.log('do refresh element',{cmp,ctx,elem, state, options})
-            cmp && jb.ui.applyNewVdom(elem, jb.ui.h(cmp), {strongRefresh, ctx})
+            cmp && jb.ui.applyNewVdom(elem, jb.ui.h(cmp), {strongRefresh, ctx, srcCtx: options.srcCtx})
         }
         elem.removeAttribute('__refreshing')
         jb.ui.refreshNotification.next({cmp,ctx,elem, state, options})
