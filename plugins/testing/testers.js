@@ -214,8 +214,9 @@ extension('test', {
   	},
 	testResultHtml(res) {
 		const baseUrl = jb.frame.location.href.split('/tests.html')[0]
+		const location = jb.comps[res.id][jb.core.CT].location || {}
 		const sourceCode = JSON.stringify(jb.exec({$: 'test', $typeCast: 'source-code<jbm>', 
-			filePath: (jb.comps[res.id][jb.core.CT].location || {}).path }))
+			filePath: location.path, repo: location.repo }))
 		const studioUrl = `http://localhost:8082/project/studio/${res.id}/${res.id}?sourceCode=${encodeURIComponent(sourceCode)}`
 		const matchLogs = 'remote,itemlist,refresh'.split(',')
 		const matchLogsMap = jb.entries({ui: ['uiTest'], widget: ['uiTest','widget'] })
@@ -292,13 +293,17 @@ component('tests.runner', {
 component('test', {
   type: 'source-code<jbm>',
   params: [
-    {id: 'filePath', as: 'string'}
+    {id: 'filePath', as: 'string'},
+    {id: 'repo', as: 'string'}
   ],
   impl: sourceCode(
     [
-      pluginsByPath({filePath: '%$filePath%', addTests: true}), // load tests because usually circuit comes from tests
+      pluginsByPath('%$filePath%', true),
       plugins('testing,probe-preview,tree-shake,tgp,workspace')
     ],
-    packagesByPath('%$filePath%')
+    [
+      defaultPackage(),
+      jbStudioServer('%$repo%')
+    ]
   )
 })

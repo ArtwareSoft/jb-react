@@ -15,6 +15,7 @@ extension('jbm','source' , {
 // source-code
 component('sourceCode', {
   type: 'source-code',
+  macroByValue: false,
   params: [
     {id: 'pluginsToLoad', type: 'plugins-to-load[]', flattenArray: true},
     {id: 'pluginPackages', type: 'plugin-package[]', flattenArray: true, defaultValue: defaultPackage()},
@@ -23,7 +24,7 @@ component('sourceCode', {
     {id: 'actualCode', as: 'string', description: 'alternative to plugins'},
   ],
   impl: (ctx,pluginsToLoad,pluginPackages,treeShakeServer,libsToInit,actualCode) => ({ 
-    ...(pluginPackages.length ? { pluginPackages } : {}),
+    ...(pluginPackages.filter(x=>x).length ? { pluginPackages : pluginPackages.filter(x=>x)} : {}),
     plugins:[], ...jb.jbm.unifyPluginsToLoad(pluginsToLoad.flatMap(x=>x)),
     ...(libsToInit ? {libsToInit} : {}),
     treeShakeServerUri: (treeShakeServer || {}).uri,
@@ -142,9 +143,9 @@ component('staticViaHttp', {
 component('jbStudioServer', {
   type: 'plugin-package',
   params: [
-    {id: 'baseUrl', as: 'string', defaultValue: 'http://localhost:8080' },
+    {id: 'repo', as: 'string' },
   ],
-  impl: ctx => ({ $: 'jbStudioServer', ...ctx.params })
+  impl: ctx => repo && ({ $: 'jbStudioServer', ...ctx.params })
 })
 
 component('fileSystem', {
