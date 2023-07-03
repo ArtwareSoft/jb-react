@@ -12,6 +12,8 @@ Object.assign(jb, {
     funcs.forEach(k=>lib[k] = extension[k])
     const location = jb.calcSourceLocation(new Error().stack.split(/\r|\n/).slice(2), plugin)
     const phase =  extension.$phase || { core: 1, utils: 5, db: 10, watchable: 20}[libId] || 100
+    if (extension.initExtension) 
+      extension.initExtension.requireFuncs = extension.$requireFuncs
     lib.__extensions[extId] = { plugin, libId, phase, init: extension.initExtension, initialized, 
       requireLibs: extension.$requireLibs, requireFuncs: extension.$requireFuncs, funcs, location }
 

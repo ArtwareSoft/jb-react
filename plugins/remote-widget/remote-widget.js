@@ -185,10 +185,9 @@ component('action.renderXwidget', {
 
 extension('ui','headless', {
     $phase: 1100,
-    $requireFuncs: 'jb.ui.render',
+    $requireFuncs: '#ui.render',
 
     initExtension() { // 1100 is after ui phase (100)
-        // for loader : jb.ui.render( 
         return {
             headless: {},
         }

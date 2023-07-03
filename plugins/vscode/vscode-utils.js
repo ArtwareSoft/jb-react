@@ -224,15 +224,7 @@ extension('vscode', 'utils', {
     // },
     watchCursorChange() {
     //    vscodeNS.window.onDidChangeTextEditorSelection(jb.vscode.updatePosVariables)
-    },
-    // openedProjects() {
-    //     return jb.utils.unique(vscodeNS.workspace.textDocuments
-    //         .map(doc => (doc.fileName.split(jbBaseUrl).pop().match(/projects[/]([^/]*)/) || ['',''])[1]))
-    // },
-    // loadOpenedProjects() {
-    //     const doc = vscodeNS.window.activeTextEditor.document
-    //     jb.frame.eval(jb.macro.importAll() + ';' + doc.getText() || '')
-    // }
+    }
 })
 
 component('vscode.openQuickPickMenu', {

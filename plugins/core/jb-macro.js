@@ -3,12 +3,9 @@ Object.assign(jb, {
     defOperator: (id, {detect, extractAliases, registerComp}) => operators.push({id, detect, extractAliases, registerComp})
 })
 
-// debugger eval(jb.macro.importAll().replace(/, location/,''))
-
 extension('macro', {
     initExtension() {
         return { proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro') }
-        // for loader jb.macro.importAll()
     },
     // ns: nsIds => {
     //     nsIds.split(',').forEach(nsId => jb.macro.registerProxy(nsId))
@@ -16,7 +13,6 @@ extension('macro', {
     // },    
     titleToId: id => id.replace(/-([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
 //    proxiesKeys: () => jb.utils.unique(Object.keys(jb.macro.proxies).map(x=>x.split('_')[0])),
-    importAll: () => `var { '${Object.keys(jb.macro.proxies).join(', ')}} = jb.macro.proxies;`,
     newProxy: id => new Proxy(() => 0, {
         get: (o, p) => p === jb.macro.isMacro? true : jb.macro.getInnerMacro(id, p),
         apply: function (target, thisArg, allArgs) {

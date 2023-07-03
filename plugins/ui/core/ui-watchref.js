@@ -2,9 +2,8 @@ using('watchable,common')
 
 extension('ui', 'watchRef', {
     $phase: 100,
-    $requireFuncs: 'jb.watchable.WatchableValueByRef',
+    $requireFuncs: '#watchable.WatchableValueByRef',
     initExtension() {
-        // for loader: jb.watchable.WatchableValueByRef(
         jb.db.watchableHandlers.forEach(h=> jb.ui.subscribeToRefChange(h))
     },
     subscribeToRefChange: watchHandler => jb.utils.subscribe(watchHandler.resourceChange, e=> {

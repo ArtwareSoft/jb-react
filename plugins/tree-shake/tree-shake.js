@@ -39,7 +39,7 @@ extension('treeShake', {
             return [jb.path(jb.comps,id.split('~'))].filter(x=>x)
                 .flatMap(obj=> typeof obj === 'function' ? jb.treeShake.dependentOnFunc(obj) : jb.treeShake.dependentOnObj(obj))
         else
-            jb.logError('treeShake: can not find comp', {id})
+            jb.logError(`treeShake: can not find comp ${id}`, {id})
         return []
     },
     dependentOnObj(obj, onlyMissing) {
@@ -67,7 +67,8 @@ extension('treeShake', {
         const funcUsage = [...funcStr.matchAll(/\bjb\.([a-zA-Z0-9_]+)\.?([a-zA-Z0-9_]*)\(/g)].map(e=>e[2] ? `#${e[1]}.${e[2]}` : `#${e[1]}`)
         const extraComps = [...funcStr.matchAll(/\/\/.?#jbLoadComponents:([ ,\.\-#a-zA-Z0-9_]*)/g)].map(e=>e[1]).flatMap(x=>x.split(',')).map(x=>x.trim()).filter(x=>x)
         //jb.log('treeShake dependent on func',{f: func.name || funcStr, funcDefs, funcUsage})
-        return [ ...(func.__initFunc ? [func.__initFunc] : []), ...funcDefs, ...funcUsage, ...extraComps]
+        const required = (func.requireFuncs||'').split(',').filter(x=>x)
+        return [ ...(func.__initFunc ? [func.__initFunc] : []), ...funcDefs, ...funcUsage, ...extraComps, ...required]
             .filter(x=>!x.match(/^#frame\./)).filter(id=> !onlyMissing || jb.treeShake.missing(id))
     },
     dependentResources(str, onlyMissing) {
