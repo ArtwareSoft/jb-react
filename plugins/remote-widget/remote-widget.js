@@ -142,29 +142,28 @@ component('remote.distributedWidget', {
 })
 
 component('remote.widget', {
-    type: 'control',
-    params: [
-      {id: 'control', type: 'control', dynamic: true, composite: true },
-      {id: 'jbm', type: 'jbm<jbm>', defaultValue: worker() },
-    ],
-    impl: group({
-        controls: controlWithFeatures({
-            vars: Var('widgetId', widget.newId('%$resolvedJbm%')),
-            control: widget.frontEndCtrl('%$widgetId%'),
-            features: followUp.flow(
-                source.callbag(() => jb.ui.widgetUserRequests),
-                rx.log('remote widget userReq'),
-                rx.filter('%widgetId% == %$widgetId%'),
-                rx.takeWhile(({data}) => data.$$ != 'destroy',true),
-                //source.frontEndUserEvent('%$widgetId%'),
-                rx.log('remote widget sent to headless'),
-                remote.operator(widget.headless(call('control'),'%$widgetId%'), '%$resolvedJbm%'),
-                rx.log('remote widget arrived from headless'),
-                sink.action(action.frontEndDelta('%%')),
-            )
-        }),
-        features: group.wait({for: '%$jbm%', varName: 'resolvedJbm'})
-    })
+  type: 'control',
+  params: [
+    {id: 'control', type: 'control', dynamic: true, composite: true},
+    {id: 'jbm', type: 'jbm<jbm>', defaultValue: worker()}
+  ],
+  impl: group({
+    controls: controlWithFeatures(
+      Var('widgetId', widget.newId('%$resolvedJbm%')),
+      widget.frontEndCtrl('%$widgetId%'),
+      followUp.flow(
+        source.callbag(() => jb.ui.widgetUserRequests),
+        rx.log('remote widget userReq'),
+        rx.filter('%widgetId% == %$widgetId%'),
+        rx.takeWhile(({data}) => data.$$ != 'destroy', true),
+        rx.log('remote widget sent to headless'),
+        remote.operator(widget.headless(call('control'), '%$widgetId%'), '%$resolvedJbm%'),
+        rx.log('remote widget arrived from headless'),
+        sink.action(action.frontEndDelta('%%'))
+      )
+    ),
+    features: group.wait({for: '%$jbm%', varName: 'resolvedJbm'})
+  })
 })
 
 component('action.renderXwidget', {
@@ -208,11 +207,9 @@ extension('ui','headless', {
         const body = jb.ui.h('div',{ widgetTop: true, headless: true, widgetId, ...(ctx.vars.remoteUri && { remoteUri: ctx.vars.remoteUri })},top)
         top.parentNode = body
         jb.ui.headless[widgetId].body = body
-        // if (recover && !jb.ui.headless[widgetId])
-        //     jb.logError('headless recover no existing widget',{widgetId,ctx})
         jb.log('headless widget created',{widgetId,body})
         const delta = { children: {resetAll : true, toAppend: [jb.ui.stripVdom(top)]} }
-        jb.ui.renderingUpdates.next({widgetId, delta, ctx })
+        return {widgetId, userReqId: 'init', delta, ctx }
     },
     handleUserReq(userReq, sink) {
         jb.log('headless widget handle userRequset',{widgetId: userReq.widgetId,userReq})
@@ -231,7 +228,6 @@ extension('ui','headless', {
 
         } else if (userReq.$ == 'recoverWidget') {
             jb.log('recover headless widget',{userReq})
-            //createHeadlessWidget({ recover: true })
         } else if (userReq.$$ == 'destroy') {
             jb.log('destroy headless widget request',{widgetId: userReq.widgetId,userReq})
             jb.ui.BECmpsDestroyNotification.next({cmps: userReq.cmps, destroyLocally: true})
@@ -255,9 +251,8 @@ component('widget.headless', {
       {id: 'widgetId', as: 'string'},
     ],
     impl: (ctx,ctrl,widgetId) => {
-        const filteredSrc = jb.callbag.filter(m=>m.widgetId == widgetId)
-            (jb.callbag.replay(100)(jb.ui.renderingUpdates))
-        jb.ui.createHeadlessWidget(widgetId,ctrl,ctx)
+        const renderingUpdates = jb.callbag.filter(m=>m.widgetId == widgetId)(jb.ui.renderingUpdates)
+
         return userReqIn => (start, sink) => {
             if (start !== 0) return
             const talkback = []
@@ -265,13 +260,16 @@ component('widget.headless', {
                 if (t == 1 && (d == undefined || d == null))
                     talkback.forEach(tb=>tb(1))
             })
-            filteredSrc(0, function headless(t, d) {
+            renderingUpdates(0, function headless(t, d) {
                 if (t == 1 && d)
                     jb.log('headless widget delta out',{widgetId,t,d,ctx, json: {widgetId,delta: d.delta} })
                 if (t == 0) talkback.push(d)
                 if (t === 2) sink(t,d)
                 if (t === 1 && d) sink(t,ctx.dataObj(d))
             })
+            const initialDelta = jb.ui.createHeadlessWidget(widgetId,ctrl,ctx)
+            jb.log('headless widget initial delta out',{widgetId, ctx, json: {widgetId, initialDelta} })
+            sink(1,ctx.dataObj(initialDelta))
     
             userReqIn(0, function headless(t, d) {
               jb.log('headless widget userRequset in',{widgetId,t,d,ctx})

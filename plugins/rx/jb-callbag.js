@@ -492,7 +492,7 @@ extension('callbag', {
   },  
   subject() {
       let sinks = []
-      function subj(t, d) {
+      function subj(t, d, transactive) {
           if (t === 0) {
               const sink = d
               sinks.push(sink)
@@ -503,14 +503,13 @@ extension('callbag', {
                   }
               })
           } else {
-                  const zinkz = sinks.slice(0)
-                  for (let i = 0, n = zinkz.length, sink; i < n; i++) {
-                      sink = zinkz[i]
-                      if (sinks.indexOf(sink) > -1) sink(t, d)
-                  }
+            sinks.slice(0).forEach(sink=> {
+              const td = transactive ? jb.callbag.childTxInData(d,sinks.length) : d
+              sinks.indexOf(sink) > -1 && sink(t, td)
+            })
           }
       }
-      subj.next = data => subj(1,data)
+      subj.next = (data,transactive) => subj(1,data,transactive)
       subj.complete = () => subj(2)
       subj.error = err => subj(2,err)
       subj.sinks = sinks
@@ -965,5 +964,39 @@ extension('callbag', {
   jbLog: (name,...params) => jb.callbag.Do(data => jb.log(name,{data,...params})),
   valueFromfunctionOrConstant(val,data) {
     return typeof val == 'function' ? val(val.runCtx && val.runCtx.setData(data)) : val
+  },
+  childTxInCtx(ctx,noOfChildren) {
+    const tx = jb.path(ctx,'vars.tx')
+    if (noOfChildren < 2 || !tx) return ctx
+    return ctx.setVars({tx: jb.callbag.transaction(tx)})
+  },
+  childTxInData(data,noOfChildren) {
+    const ctx = jb.path(data,'srcCtx')
+    const ctxWithRx = ctx && jb.callbag.childTxInCtx(ctx,noOfChildren)
+    return (!ctxWithRx || ctxWithRx == ctx) ? data : { ...data, srcCtx: ctxWithRx}
+  },
+  transaction(parent) { 
+    const tx = {
+      parent,
+      children: [],
+      isComplete() { 
+        return this.done = this.done || this.children.reduce((acc,t) => acc && t.isDone() , true)
+      },
+      next(d) { this.cb.next(d) },
+      complete() { 
+        this.done = true
+        this.cb.complete()
+      },
+      addChild(childTx) {
+        this.children.push(childTx)
+        childTx.cb(0, function tx(t,d) { 
+          if (t == 1) this.cb(1,d)
+          if (t == 2) this.isComplete() && this.cb(2)
+        })
+      },
+      cb: jb.callbag.subject()
+    }
+    parent && parent.addChild(tx)
+    return tx
   }
 })

@@ -141,7 +141,7 @@ extension('ui', 'react', {
             const cmpId = elem.getAttribute('cmp-id')
             jb.log('applyNew vdom runFEMethod',{elem,cmpId,delta, ctx})
             if (widgetId)
-                jb.ui.renderingUpdates.next({delta,cmpId,widgetId})
+                jb.ui.sendRenderingUpdate(ctx,{delta,cmpId,widgetId})
             else
                 jb.ui.applyDeltaToDom(elem,delta, ctx)
             return
@@ -156,7 +156,7 @@ extension('ui', 'react', {
                 Object.assign(elem,vdomAfter)
                 ;(vdomAfter.children ||[]).forEach(ch=>ch.parentNode = elem)
             }
-            jb.ui.renderingUpdates.next({assumedVdom, delta,cmpId,widgetId, src_evCounter: jb.path(srcCtx,'vars.evCounter') })
+            jb.ui.sendRenderingUpdate(ctx,{assumedVdom, delta,cmpId,widgetId, src_evCounter: jb.path(srcCtx,'vars.evCounter') })
             return
         }
         const active = jb.ui.activeElement() === elem
@@ -641,9 +641,9 @@ extension('ui', 'react', {
         jb.log('applyDelta uiComp',{cmpId, delta, ctx, elem, bySelector, actualElem})
         if (actualElem instanceof jb.ui.VNode) {
             jb.ui.applyDeltaToVDom(actualElem, actualdelta,ctx)
-            jb.ui.renderingUpdates.next({delta,cmpId,widgetId: ctx.vars.headlessWidgetId,ctx})
+            jb.ui.sendRenderingUpdate(ctx,{delta,cmpId,widgetId: ctx.vars.headlessWidgetId,ctx})
             if (ctx.vars.uiTest && jb.path(jb,'parent.uri') == 'tests' && jb.path(jb,'parent.ui.renderingUpdates')) // used for distributedWidget tests
-                jb.parent.ui.renderingUpdates.next({delta,ctx})
+                jb.parent.ui.sendRenderingUpdate(ctx,{delta,ctx})
         } else if (actualElem) {
             jb.ui.applyDeltaToDom(actualElem, actualdelta, ctx)
             jb.ui.refreshFrontEnd(actualElem, {content: delta})
@@ -691,5 +691,11 @@ extension('ui', 'react', {
         elem.removeAttribute('__refreshing')
         jb.ui.refreshNotification.next({cmp,ctx,elem, state, options})
         //jb .studio.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
-    }
+    },
+    sendRenderingUpdate(ctx,ev) {
+        jb.ui.renderingUpdates.next(ev)
+        return ev
+    //   const userReqTx = jb.path(ctx,'vars.userReqTx')
+    //   ;(userReqTx || jb.ui.renderingUpdates).next(ev)
+    },
 })

@@ -143,7 +143,7 @@ extension('ui', 'html', {
           return
         jb.ui.headless[widgetId].styles = jb.ui.headless[widgetId].styles || {}
         jb.ui.headless[widgetId].styles[elemId] = innerText
-        jb.ui.renderingUpdates.next({widgetId, css: innerText, elemId, classId })
+        jb.ui.sendRenderingUpdate(ctx,{widgetId, css: innerText, elemId, classId })
       } else if (jb.frame.document) { // FE or local
         let elem = document.querySelector(`head>style[elemId="${elemId}"]`)
         if (!elem) {

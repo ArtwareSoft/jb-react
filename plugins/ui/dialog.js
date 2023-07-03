@@ -60,7 +60,7 @@ component('dialog.buildComp', {
 
 component('dialog.createDialogTopIfNeeded', {
   type: 'action',
-  impl: (ctx) => {
+  impl: ctx => {
 		const widgetBody = jb.ui.widgetBody(ctx)
 		if (!widgetBody || widgetBody.querySelector(':scope>.jb-dialogs')) return
 		const vdom = ctx.run({$: 'dialog.dialogTop'}).renderVdomAndFollowUp()
@@ -69,7 +69,7 @@ component('dialog.createDialogTopIfNeeded', {
 			widgetBody.children.push(vdom)
 			vdom.parentNode = widgetBody
 			const delta = { children: { toAppend: [jb.ui.stripVdom(vdom)] }}
-			jb.ui.renderingUpdates.next({delta ,widgetId: ctx.vars.headlessWidgetId})
+			jb.ui.sendRenderingUpdate(ctx,{delta ,widgetId: ctx.vars.headlessWidgetId})
 		} else {
 			jb.ui.render(vdom,widgetBody)
 			jb.log('dialog dom createTop',{vdom,widgetBody})
