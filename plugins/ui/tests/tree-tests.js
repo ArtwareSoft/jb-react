@@ -1,3 +1,14 @@
+
+component('move', {
+  dsl: 'test',
+  type: 'ui-action',
+  params: [
+    {id: 'from', as: 'ref', mandatory: true},
+    {id: 'to', as: 'ref', mandatory: true}
+  ],
+  impl: (ctx,from,_to) => jb.db.move(from,_to,ctx)
+})
+
 component('uiTest.tree', {
   impl: uiTest({
     control: tree({
@@ -50,10 +61,10 @@ component('FETest.treeDD.sameArray', {
         tree.expandPath('personWithChildren~children')
       ]
     }),
-    action: runActions(
+    action: uiActions(
       waitFor(()=> jb.frame.dragula),
-      uiAction.click('[title="Bart"]'),
-      uiAction.keyboardEvent({ selector: '[interactive]', type: 'keydown', keyCode: 40, ctrl: 'ctrl' }),
+      click('[title="Bart"]'),
+      keyboardEvent({ selector: '[interactive]', type: 'keydown', keyCode: 40, ctrl: 'ctrl' }),
     ),
     expectedResult: contains(['Lisa','Bart','Maggie'])
   })
@@ -65,7 +76,7 @@ component('FETest.treeDDAndBack', {
       nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
       features: [tree.selection(), tree.dragAndDrop(), tree.keyboardSelection()]
     }),
-    action: runActions(
+    action: uiActions(
       move('%$personWithChildren/children[1]%','%$personWithChildren/friends[1]%'),
       move('%$personWithChildren/friends[1]%','%$personWithChildren/children[1]%'),
     ),
@@ -86,7 +97,7 @@ component('FETest.treeDDTwice', {
       nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
       features: [tree.selection(), tree.dragAndDrop(), tree.keyboardSelection()]
     }),
-    action: runActions(
+    action: uiActions(
       move('%$personWithChildren/children[1]%','%$personWithChildren/friends[1]%'),
       move('%$personWithChildren/children[1]%','%$personWithChildren/friends[1]%'),
     ),
@@ -131,7 +142,7 @@ component('FETest.treeDD.boundedSelection', {
       }),
       features: watchable('selected', 'personWithChildren~children~1')
     }),
-    action: uiAction.keyboardEvent({ selector: '[interactive]', type: 'keydown', keyCode: 40, ctrl: 'ctrl' }),
+    action: keyboardEvent({ selector: '[interactive]', type: 'keydown', keyCode: 40, ctrl: 'ctrl' }),
     expectedResult: contains(['Bart','Maggie','selected','Lisa'])
   })
 })
@@ -235,7 +246,7 @@ component('uiTest.tableTree.DD', {
         watchRef({ref: '%$personWithChildren/children%', strongRefresh1: true})
       ]
     }),
-    action: runActions(
+    action: uiActions(
       ctx => jb.db.move(ctx.exp('%$personWithChildren/children[2]%', 'ref'), ctx.exp('%$personWithChildren/children[0]%', 'ref'),ctx),
       ctx => jb.db.move(ctx.exp('%$personWithChildren/children[2]%', 'ref'), ctx.exp('%$personWithChildren/children[0]%', 'ref'),ctx),
     ),

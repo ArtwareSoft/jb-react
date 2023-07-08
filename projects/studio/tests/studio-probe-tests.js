@@ -11,12 +11,12 @@ component('FETest.workerPreviewTest.suggestions', {
         studio.propertyPrimitive('sampleProject.main~impl~controls~text')
       ],
     }),
-    action: runActions(
-      uiAction.waitForSelector('[cmp-pt="text"]'),
-      uiAction.waitForSelector('input'),
-      uiAction.setText('hello %','input'),
-      uiAction.keyboardEvent({ selector: 'input', type: 'keyup', keyCode: ()=> '%'.charCodeAt(0) }),
-      uiAction.waitForSelector('.jb-dialog .jb-item'),
+    action: uiActions(
+      waitForSelector('[cmp-pt="text"]'),
+      waitForSelector('input'),
+      setText('hello %','input'),
+      keyboardEvent({ selector: 'input', type: 'keyup', keyCode: ()=> '%'.charCodeAt(0) }),
+      waitForSelector('.jb-dialog .jb-item'),
     ),    
     expectedResult: contains('$var1')
   })
@@ -31,15 +31,15 @@ component('FETest.workerPreviewTest.suggestions.select', {
       ]
     }),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
-    action: runActions(
-      uiAction.waitForSelector('#sampleText'),
-      uiAction.waitForSelector('input'),
-      uiAction.setText('hello %$var1', 'input'),
-      uiAction.keyboardEvent({selector: 'input', type: 'keyup', keyCode: 37}),
-      uiAction.waitForSelector('.jb-dialog .jb-item'),
-      uiAction.click('.jb-dialog .jb-item:first-child'),
-      uiAction.keyboardEvent({selector: 'input', type: 'keyup', keyCode: 13}),
-      uiAction.waitForSelector('[cmp-ver=\"4\"]')
+    action: uiActions(
+      waitForSelector('#sampleText'),
+      waitForSelector('input'),
+      setText('hello %$var1', 'input'),
+      keyboardEvent({selector: 'input', type: 'keyup', keyCode: 37}),
+      waitForSelector('.jb-dialog .jb-item'),
+      click('.jb-dialog .jb-item:first-child'),
+      keyboardEvent({selector: 'input', type: 'keyup', keyCode: 13}),
+      waitForSelector('[cmp-ver=\"4\"]')
     ),
     expectedResult: contains('hello world'),
     renderDOM: true
@@ -53,12 +53,12 @@ component('FETest.workerPreviewTest.suggestions.selectPopup', {
       probe.remoteCircuitPreview()
     ]}),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
-    action: runActions(
-      uiAction.waitForSelector('#sampleText'),
-      uiAction.waitForSelector('input'),
-      uiAction.setText('hello %$', 'input'),
-      uiAction.keyboardEvent({ selector: 'input', type: 'keyup',  keyCode: 37 }), // %
-      uiAction.waitForSelector('.jb-dialog .jb-item')
+    action: uiActions(
+      waitForSelector('#sampleText'),
+      waitForSelector('input'),
+      setText('hello %$', 'input'),
+      keyboardEvent({ selector: 'input', type: 'keyup',  keyCode: 37 }), // %
+      waitForSelector('.jb-dialog .jb-item')
     ),
     expectedResult: contains('(world)'),
     renderDOM: true
@@ -87,12 +87,12 @@ component('FETest.workerPreviewTest.suggestions.filtered', {
       ]
     }),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
-    action: runActions(
-      uiAction.waitForSelector('#sampleText'),
-      uiAction.waitForSelector('input'),
-      uiAction.setText('hello %$var1', 'input'),
-      uiAction.keyboardEvent({selector: 'input', type: 'keyup', keyCode: ()=> '%'.charCodeAt(0)}),
-      uiAction.waitForSelector('.jb-dialog .jb-item')
+    action: uiActions(
+      waitForSelector('#sampleText'),
+      waitForSelector('input'),
+      setText('hello %$var1', 'input'),
+      keyboardEvent({selector: 'input', type: 'keyup', keyCode: ()=> '%'.charCodeAt(0)}),
+      waitForSelector('.jb-dialog .jb-item')
     ),
     expectedResult: not(contains('$xx')),
     renderDOM: true
@@ -138,11 +138,11 @@ component('jbEditorTest.basic', {
 //         ,worker('inteli')),
 //       ],
 //     }),
-//     action: runActions(
-//       uiAction.click('[path="sampleProject.main~impl~controls~text"]'),
-//       uiAction.waitForSelector('.selected'),
-//       uiAction.keyboardEvent({ selector: '.jb-editor', type: 'keydown', keyCode: 13 }),
-//       uiAction.waitForSelector('.jb-dialog'),
+//     action: uiActions(
+//       click('[path="sampleProject.main~impl~controls~text"]'),
+//       waitForSelector('.selected'),
+//       keyboardEvent({ selector: '.jb-editor', type: 'keydown', keyCode: 13 }),
+//       waitForSelector('.jb-dialog'),
 //     ),    
 //     expectedResult: contains('hello')
 //   })

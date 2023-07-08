@@ -135,12 +135,12 @@ component('completionTest.splitPart', {
 component('completionTest.dynamicFormat', {
   impl: tgp.completionActionTest({
     compText: "component('x', {\n  impl: uiTest(__{control: text('my text'), expectedResult: contains('hello world')})\n})",
-    completionToActivate: 'userInput',
+    completionToActivate: 'uiAction',
     expectedEdit: () => ({
       range: {start: {line: 1, col: 42}, end: {line: 1, col: 42}},
-      newText: 'userInput: TBD(), '
+      newText: 'uiAction: TBD(), '
     }),
-  expectedCursorPos: '1,53'
+  expectedCursorPos: '1,52'
  })
 })
 
@@ -247,7 +247,7 @@ component('completionTest.people', {
 component('completionTest.person', {
   impl: tgp.completionOptionsTest(`component('x', {
   impl: dataTest('%$__')
-})`, ['$person (1 prop)'])
+})`, ['$person (4 props)'])
 })
 
 component('completionTest.writePerson', {
@@ -255,7 +255,7 @@ component('completionTest.writePerson', {
     compText: `component('x', {
   impl: dataTest('%$__')
 })`,
-    completionToActivate: '$person (1 prop)',
+    completionToActivate: '$person (4 props)',
     expectedEdit: () => ({
       range: {start: {line: 1, col: 20}, end: {line: 1, col: 20}},
       newText: 'person/'
@@ -269,7 +269,7 @@ component('completionTest.writePersonInner', {
     compText: `component('x', {
   impl: dataTest('%$p__er')
 })`,
-    completionToActivate: '$person (1 prop)',
+    completionToActivate: '$person (4 props)',
     expectedEdit: () => ({
       range: {start: {line: 1, col: 23}, end: {line: 1, col: 23}},
       newText: 'son/'
@@ -283,7 +283,7 @@ component('completionTest.writePersonInner2', {
     compText: `component('x', {
   impl: dataTest('%$per__')
 })`,
-    completionToActivate: '$person (1 prop)',
+    completionToActivate: '$person (4 props)',
     expectedEdit: () => ({
       range: {start: {line: 1, col: 23}, end: {line: 1, col: 23}},
       newText: 'son/'
@@ -355,39 +355,45 @@ component('completionTest.dslTest.top', {
   })
 })
 
-component('remoteTest.langServer.Completions', {
+component('remoteTest.langServer.completions', {
   impl: dataTest({
     calculate: pipe(
       Var('docProps', tgp.dummyDocProps(`component('x', {
-  impl: dataTest(pipeline(__))
+  impl: dataTest(pipeline(filter(__)))
 })`)),
       '1',
       tgp.completionItemsByDocProps('%$docProps%'),
       log('test'),
       count()
     ),
-    expectedResult: '%% > 10',
+    expectedResult: '%% == 1',
     timeout: 1000
   })
 })
 
-component('remoteTest.langServer.ExternalCompletions', {
+component('remoteTest.langServer.externalCompletions', {
   impl: dataTest({
-    calculate: pipe( 
-      Var('docProps', tgp.dummyDocProps({compText: `component('x', {
-  impl: dataTest(pipeline(__))
-})`, filePath: '/home/shaiby/projects/amta/plugins/amta-parsing/parsing-tests.js'})),
+    calculate: pipe(
+      Var(
+        'docProps',
+        tgp.dummyDocProps({
+          compText: `component('x', {
+  impl: dataTest(pipeline(filter(__)))
+})`,
+          filePath: '/home/shaiby/projects/amta/plugins/amta-parsing/parsing-tests.js'
+        })
+      ),
       '1',
       tgp.completionItemsByDocProps('%$docProps%'),
       log('test'),
       count()
     ),
-    expectedResult: '%% > 10',
+    expectedResult: '%% == 1',
     timeout: 1000
   })
 })
 
-component('remoteTest.langServer.StudioCompletions', {
+component('remoteTest.langServer.studioCompletions', {
   impl: dataTest({
     calculate: pipe( 
       Var('docProps', tgp.dummyDocProps({compText: `component('x', {

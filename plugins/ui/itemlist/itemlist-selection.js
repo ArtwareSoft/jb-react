@@ -8,12 +8,14 @@ component('itemlist.selection', {
     {id: 'onSelection', type: 'action', dynamic: true},
     {id: 'onDoubleClick', type: 'action', dynamic: true},
     {id: 'autoSelectFirst', type: 'boolean'},
-    {id: 'cssForSelected', as: 'string', defaultValue: 'color: var(--jb-menubar-selection-fg); background: var(--jb-menubar-selection-bg)'}
+    {
+      id: 'cssForSelected',
+      as: 'string',
+      defaultValue: 'color: var(--jb-menubar-selection-fg); background: var(--jb-menubar-selection-bg)'
+    }
   ],
   impl: features(
-    css(
-      ({},{},{cssForSelected}) => ['>.selected','>*>.selected','>*>*>.selected'].map(sel=>sel+ ' ' + jb.ui.fixCssLine(cssForSelected)).join('\n')
-    ),
+    css(({},{},{cssForSelected}) => ['>.selected','>*>.selected','>*>*>.selected'].map(sel=>sel+ ' ' + jb.ui.fixCssLine(cssForSelected)).join('\n')),
     userStateProp({
       id: 'selected',
       value: (ctx,{$props,$state},{databind, autoSelectFirst, databindToSelected}) => {
@@ -33,14 +35,20 @@ component('itemlist.selection', {
       'onSelection',
       runActionOnItem(
         itemlist.indexToData(),
-        runActions(If(isRef('%$databind()%'), writeValue('%$databind()%', '%$selectedToDatabind()%')), call('onSelection'))
+        runActions(
+          If(isRef('%$databind()%'), writeValue('%$databind()%', '%$selectedToDatabind()%')),
+          call('onSelection')
+        )
       )
     ),
     method(
       'onDoubleClick',
       runActionOnItem(
         itemlist.indexToData(),
-        runActions(If(isRef('%$databind()%'), writeValue('%$databind()%', '%$selectedToDatabind()%')), call('onDoubleClick'))
+        runActions(
+          If(isRef('%$databind()%'), writeValue('%$databind()%', '%$selectedToDatabind()%')),
+          call('onDoubleClick')
+        )
       )
     ),
     followUp.flow(
@@ -70,7 +78,7 @@ component('itemlist.selection', {
       sink.action(runActions(action.runFEMethod('setSelected'), action.runBEMethod('onDoubleClick')))
     ),
     frontEnd.flow(
-      rx.merge(
+      source.merge(
         rx.pipe(source.frontEndEvent('click'), rx.map(itemlist.indexOfElem('%target%')), rx.filter('%%')),
         source.subject('%$cmp/selectionEmitter%')
       ),
@@ -91,7 +99,7 @@ component('itemlist.keyboardSelection', {
     htmlAttribute('tabIndex', 0),
     method('onEnter', runActionOnItem(itemlist.indexToData(), call('onEnter'))),
     frontEnd.passSelectionKeySource(),
-    frontEnd.prop('onkeydown', rx.merge(source.frontEndEvent('keydown'), source.findSelectionKeySource())),
+    frontEnd.prop('onkeydown', source.merge(source.frontEndEvent('keydown'), source.findSelectionKeySource())),
     frontEnd.flow(
       '%$cmp.onkeydown%',
       rx.filter('%keyCode%==13'),

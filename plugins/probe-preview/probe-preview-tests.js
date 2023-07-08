@@ -21,6 +21,7 @@ component('workerPreviewTest.basic', {
   impl: uiTest({
     control: probe.remoteCircuitPreview(),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
+    uiAction: waitForNextUpdate(2),
     expectedResult: contains('hello'),
     timeout: 1000
   })
@@ -35,7 +36,7 @@ component('workerPreviewTest.changeScript', {
       ]
     }),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
-    userInputRx: rx.pipe(source.promise(uiAction.waitForSelector('#sampleText')), rx.map(userInput.click())),
+    uiAction: uiActions(click(), waitForNextUpdate(3)),
     expectedResult: contains('world'),
     timeout: 1000
   })
@@ -50,11 +51,11 @@ component('workerPreviewTest.changeScript', {
 //       ]
 //     }),
 //     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
-//     userInputRx: rx.mergeConcat(
-//       source.promise(uiAction.waitForSelector('input')),
+//     userInputRx: source.mergeConcat(
+//       source.promise(waitForSelector('input')),
 //       source.data(userInput.setText('hello %$var1', 'input')),
 //       source.data(userInput.keyboardEvent({selector: 'input', type: 'keyup', keyCode: ()=> '%'.charCodeAt(0)})),
-//       source.promise(uiAction.waitForSelector('.jb-dialog .jb-item'))
+//       source.promise(waitForSelector('.jb-dialog .jb-item'))
 //     ),
 //     expectedResult: and(contains('$var1'), notContains('$xx')),
 //   }),
@@ -70,7 +71,7 @@ component('workerPreviewTest.nodePreview', {
       ]
     }),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
-    userInputRx: rx.pipe(source.promise(uiAction.waitForSelector('#sampleText')), rx.map(userInput.click())),
+    uiAction: uiActions(click(), waitForNextUpdate(3)),
     expectedResult: contains('world'),
     timeout: 1000
   })
@@ -91,9 +92,9 @@ component('FETest.workerPreviewTest.addCss', {
       ]
     }),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
-    action: runActions(
-      uiAction.waitForSelector('#sampleText'),
-      uiAction.click('button'),
+    action: uiActions(
+      waitForSelector('#sampleText'),
+      click('button'),
       waitFor(
         ()=>Array.from(document.querySelectorAll('head>style')).find(x=>x.innerText.match(/tests•wProbe/))
       )
@@ -118,9 +119,9 @@ component('FETest.workerPreviewTest.changeCss', {
         probe.remoteCircuitPreview()
       ],
     }),
-    action: runActions(
-      uiAction.waitForSelector('#sampleText'),
-      uiAction.click('button'),
+    action: uiActions(
+      waitForSelector('#sampleText'),
+      click('button'),
       waitFor(()=>Array.from(document.querySelectorAll('head>style')).find(x=>x.innerText.match(/color: blue/)))
     ),    
     expectedResult: () => getComputedStyle(document.querySelector('#sampleText')).color == 'rgb(0, 0, 255)',

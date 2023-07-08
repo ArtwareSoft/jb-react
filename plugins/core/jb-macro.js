@@ -118,10 +118,11 @@ component('typeCast', {
 extension('syntaxConverter', 'onAddComponent', {
   initExtension() { 
     jb.core.onAddComponent.push({ 
-      match:(id,comp) => (jb.path(comp[jb.core.CT].plugin,'files') || []).find(x=>x.path.match(/amta/)),
+//        match:(id,comp) => (jb.path(comp[jb.core.CT].plugin,'files') || []).find(x=>x.path.match(/amta/)),
+        match:(id,comp) => (jb.path(comp[jb.core.CT].plugin,'files') || []).find(x=>x.path.match(/tests/)),
       register: (_id,_comp,dsl) => {
         //if (_id == 'amta.aa') debugger
-        const comp = jb.syntaxConverter.fixProfile(_comp,_comp)
+        const comp = jb.syntaxConverter.fixProfile(_comp,_comp,_id)
         const id = jb.macro.titleToId(_id)
         jb.core.unresolvedProfiles.push({id,comp,dsl})
         comp[jb.core.CT] = _comp[jb.core.CT]
@@ -129,9 +130,21 @@ extension('syntaxConverter', 'onAddComponent', {
       }
     })    
   },
-  fixProfile(profile,origin) {
-    if (!profile) return
+  fixProfile(profile,origin,id) {
+    if (profile === null) return
     if (jb.utils.isPrimitiveValue(profile) || typeof profile == 'function') return profile
+    if (profile.$ == 'uiTest') {
+        if ((jb.path(profile.$byValue[0].userInput,'$') || '').indexOf('userInput.') == 0) {
+            profile.$byValue[0].uiAction = profile.$byValue[0].userInput
+            profile.$byValue[0].uiAction.$ = profile.$byValue[0].uiAction.$.slice('userInput.'.length)
+        }
+
+    }
+    if (profile.$ == 'uiFrontEndTest' && profile.$byValue[0].action) {
+        profile.$byValue[0].uiAction = profile.$byValue[0].action
+        delete profile.$byValue[0].action
+    }
+
     ;['pipeline','list','firstSucceeding','concat','and','or'].forEach(sugar => {
         if (profile['$'+sugar]) {
             profile.$ = sugar

@@ -83,7 +83,7 @@ component('dialogFeature.studioPick', {
       sink.BEMethod('hoverOnElem')
     ),
     frontEnd.flow(
-      rx.merge(
+      source.merge(
         source.event({event: 'mousedown', options: obj(prop('capture',true)) }),
         rx.pipe(
           source.event({event: 'keyup', options: obj(prop('capture',true)) }),

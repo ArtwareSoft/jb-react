@@ -50,7 +50,10 @@ component('tgp.completionItemsByDocProps', {
   params: [
     {id: 'docProps'}
   ],
-  impl: remote.data(tgp.provideCompletionItems('%$docProps%'), cmd({sourceCode: langServer('%$docProps/filePath%'), id: 'langServer'}))
+  impl: remote.data(
+    tgp.provideCompletionItems('%$docProps%'),
+    cmd({sourceCode: langServer('%$docProps/filePath%'), id: 'langServer'})
+  )
 })
 
 component('tgp.editsAndCursorPosByDocProps', {

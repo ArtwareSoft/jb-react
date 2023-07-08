@@ -486,7 +486,7 @@ component('rxTest.doPromiseActiveSource', {
 
 component('rxTest.subjectReplay', {
   impl: dataTest({
-    vars: Var('subj', rx.subject(true)),
+    vars: Var('subj', rx.subject({replay: true})),
     calculate: source.subject('%$subj%'),
     runBefore: runActions(action.subjectNext('%$subj%', '1'), action.subjectComplete('%$subj%')),
     expectedResult: equals('1')
@@ -642,14 +642,14 @@ component('rxTest.snifferBug', {
 
 component('rxTest.race', {
   impl: dataTest(
-    rx.pipe(rx.merge(rx.pipe(source.data('a'), rx.delay(1)), source.data('b')), rx.take(1)),
+    rx.pipe(source.merge(rx.pipe(source.data('a'), rx.delay(1)), source.data('b')), rx.take(1)),
     '%%==b'
   )
 })
 
 component('rxTest.mergeConcat', {
   impl: dataTest(
-    pipe(rx.pipe(rx.mergeConcat(rx.pipe(source.data('a'), rx.delay(1)), source.data('b')), rx.take(2)), join(',')),
+    pipe(rx.pipe(source.mergeConcat(rx.pipe(source.data('a'), rx.delay(1)), source.data('b')), rx.take(2)), join(',')),
     '%%==a,b'
   )
 })

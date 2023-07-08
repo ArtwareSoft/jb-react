@@ -212,10 +212,10 @@ extension('ui','headless', {
     },
     handleUserReq(userReq, sink) {
         jb.log('headless widget handle userRequset',{widgetId: userReq.widgetId,userReq})
-        if (userReq.$ == 'runCtxAction') {
+        if (userReq.$ == 'userRequest') {
             const ctx = jb.ctxDictionary[userReq.ctxIdToRun]
             if (!ctx)
-                return jb.logError(`headless widget runCtxAction. no ctxId ${userReq.ctxIdToRun}`,{userReq})
+                return jb.logError(`headless widget handleUserRequest. no ctxId ${userReq.ctxIdToRun}`,{userReq})
             const vars = userReq.vars
             if (jb.path(vars,'$updateCmpState.cmpId') == jb.path(ctx.vars,'cmp.cmpId') && jb.path(vars,'$updateCmpState.state'))
                 Object.assign(ctx.vars.cmp.state,vars.$updateCmpState.state)
@@ -223,7 +223,7 @@ extension('ui','headless', {
             if (userReq.method)
                 jb.ui.runBEMethodByContext(ctx,userReq.method,userReq.data,vars)                
             else
-                jb.ui.runCtxAction(ctx,userReq.data,vars)
+                jb.ui.handleUserRequest(ctx,userReq.data,vars)
 
         } else if (userReq.$ == 'recoverWidget') {
             jb.log('recover headless widget',{userReq})
@@ -238,6 +238,7 @@ extension('ui','headless', {
         }
     },
     destroyHeadless(widgetId) {
+        jb.exec(dialogs.destroyAllEmitters())
         jb.ui.unmount(jb.ui.headless[widgetId])
         delete jb.ui.headless[widgetId]
     }
@@ -260,21 +261,31 @@ component('widget.headless', {
                     talkback.forEach(tb=>tb(1))
             })
             renderingUpdates(0, function headless(t, d) {
-                if (t == 1 && d)
-                    jb.log('headless widget delta out',{widgetId,t,d,ctx, json: {widgetId,delta: d.delta} })
+                if (t == 1 && d) {
+                    const updatesCounter = jb.ui.headless[widgetId].updatesCounter = (jb.ui.headless[widgetId].updatesCounter || 0) + 1
+                    jb.log(`headless widget delta out ${updatesCounter}`,{updatesCounter, widgetId,t,d,ctx, json: {widgetId,delta: d.delta} })
+                    sink(t,ctx.dataObj(d))
+                }
                 if (t == 0) talkback.push(d)
                 if (t === 2) sink(t,d)
-                if (t === 1 && d) sink(t,ctx.dataObj(d))
             })
             const initialDelta = jb.ui.createHeadlessWidget(widgetId,ctrl,ctx)
             jb.log('headless widget initial delta out',{widgetId, ctx, json: {widgetId, initialDelta} })
             sink(1,ctx.dataObj(initialDelta))
     
             userReqIn(0, function headless(t, d) {
-              jb.log('headless widget userRequset in',{widgetId,t,d,ctx})
-              if (t == 0) talkback.push(d)
-              if (t === 2) sink(t,d)
-              if (t === 1 && d && d.data.widgetId == widgetId) jb.ui.handleUserReq(d.data,sink)
+              if (t == 0) {
+                jb.log('headless widget register FE',{widgetId,t,d,ctx})
+                talkback.push(d)
+              }
+              if (t === 2) {
+                jb.log('headless widget unregister FE',{widgetId,t,d,ctx})
+                sink(t,d)
+              }
+              if (t === 1 && d && d.data.widgetId == widgetId) {
+                jb.log('headless widget userRequset in',{widgetId,t,d,ctx})
+                jb.ui.handleUserReq(d.data,sink)
+              }
             })
         }
     }

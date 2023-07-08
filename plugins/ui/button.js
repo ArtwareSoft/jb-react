@@ -4,7 +4,7 @@ component('button', {
   params: [
     {id: 'title', as: 'ref', mandatory: true, templateValue: 'click me', dynamic: true},
     {id: 'action', type: 'action', mandatory: true, dynamic: true},
-    {id: 'style', type: 'button.style', defaultValue: button.mdc(), dynamic: true},
+    {id: 'style', type: 'button.style', defaultValue: button.native(), dynamic: true},
     {id: 'raised', as: 'boolean', dynamic: true, type: 'boolean'},
     {id: 'disabledTillActionFinished', as: 'boolean', type: 'boolean'},
     {id: 'features', type: 'feature,button.feature[]', dynamic: true}

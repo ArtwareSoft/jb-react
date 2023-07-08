@@ -253,7 +253,7 @@ component('source.testsResults', {
       source.data('%$tests%'),
       rx.var('testID'),
       rx.concatMap(
-        rx.merge(
+        source.merge(
           source.data(obj(prop('id', '%%'), prop('started', 'true'))),
           rx.pipe(source.promise(({},{testID}) => jb.test.runSingleTest(testID)))
         )

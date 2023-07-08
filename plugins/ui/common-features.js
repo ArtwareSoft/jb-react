@@ -26,7 +26,7 @@ component('calcProp', {
   params: [
     {id: 'id', as: 'string', mandatory: true},
     {id: 'value', mandatory: true, dynamic: true, description: 'when empty, value is taken from model'},
-    {id: 'priority', as: 'number', defaultValue: 1, description: 'if same prop was defined elsewhere decides who will override. range 1-1000'},
+    {id: 'priority', as: 'number', dynamic: true, defaultValue: 1, description: 'if same prop was defined elsewhere decides who will override. range 1-1000, can use the $state variable'},
     {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'},
     {id: 'defaultValue' },
   ],
@@ -39,7 +39,7 @@ component('userStateProp', {
   params: [
     {id: 'id', as: 'string', mandatory: true},
     {id: 'value', mandatory: true, dynamic: true, description: 'when empty value is taken from model'},
-    {id: 'priority', as: 'number', defaultValue: 1, description: 'if same prop was defined elsewhere decides who will override. range 1-1000'},
+    {id: 'priority', as: 'number', dynamic: true, defaultValue: 1, description: 'if same prop was defined elsewhere decides who will override. range 1-1000, can use the $state variable'},
     {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'}
   ],
   impl: ctx => ({calcProp: {... ctx.params, userStateProp: true, index: jb.ui.propCounter++}})
@@ -296,35 +296,35 @@ component('variable', {
   impl: ({}, name, value) => ({ extendCtx: ctx => ctx.setVar(name,jb.val(value(ctx))) })
 })
 
-component('calculatedVar', {
-  type: 'feature',
-  category: 'general:60',
-  description: 'defines a local variable that watches other variables with auto recalc',
-  params: [
-    {id: 'name', as: 'string', mandatory: true},
-    {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
-    {id: 'watchRefs', as: 'array', dynamic: true, mandatory: true, defaultValue: [], description: 'variable to watch. needs to be in array'}
-  ],
-  impl: features(
-    onDestroy(writeValue('%${%$name%}:{%$cmp/cmpId%}%', null)),
-    followUp.flow(
-      rx.merge((ctx,{},{watchRefs}) => watchRefs(ctx).map(ref=>ctx.setData(ref).run(source.watchableData('%%')) )),
-      rx.log('check calculatedVar'),
-      rx.map('%$value()%'),
-      sink.data('%${%$name%}:{%$cmp/cmpId%}%')
-    ),
-    ctx => ({
-      extendCtx: (_ctx,cmp) => {
-        const {name,value} = ctx.cmpCtx.params
-        const fullName = name + ':' + cmp.cmpId;
-        jb.log('create watchable calculatedVar',{ctx,cmp,fullName})
-        jb.db.resource(fullName, jb.val(value(_ctx)));
-        const ref = _ctx.exp(`%$${fullName}%`,'ref')
-        return _ctx.setVar(name, ref);
-      }
-    })
-  )
-})
+// component('calculatedVar', {
+//   type: 'feature',
+//   category: 'general:60',
+//   description: 'defines a local variable that watches other variables with auto recalc',
+//   params: [
+//     {id: 'name', as: 'string', mandatory: true},
+//     {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
+//     {id: 'watchRefs', as: 'array', dynamic: true, mandatory: true, defaultValue: [], description: 'variable to watch. needs to be in array'}
+//   ],
+//   impl: features(
+//     onDestroy(writeValue('%${%$name%}:{%$cmp/cmpId%}%', null)),
+//     followUp.flow(
+//       source.merge((ctx,{},{watchRefs}) => watchRefs(ctx).map(ref=>ctx.setData(ref).run(source.watchableData('%%')) )),
+//       rx.log('check calculatedVar'),
+//       rx.map('%$value()%'),
+//       sink.data('%${%$name%}:{%$cmp/cmpId%}%')
+//     ),
+//     ctx => ({
+//       extendCtx: (_ctx,cmp) => {
+//         const {name,value} = ctx.cmpCtx.params
+//         const fullName = name + ':' + cmp.cmpId;
+//         jb.log('create watchable calculatedVar',{ctx,cmp,fullName})
+//         jb.db.resource(fullName, jb.val(value(_ctx)));
+//         const ref = _ctx.exp(`%$${fullName}%`,'ref')
+//         return _ctx.setVar(name, ref);
+//       }
+//     })
+//   )
+// })
 
 component('feature.if', {
   type: 'feature',
@@ -384,7 +384,7 @@ component('refreshIfNotWatchable', {
   params: [
     {id: 'data'}
   ],
-  impl: (ctx, data) => !jb.db.isWatchable(data) && ctx.vars.cmp.refresh(null,{strongRefresh: true})
+  impl: (ctx, data) => !jb.db.isWatchable(data) && ctx.vars.cmp.refresh(null,{strongRefresh: true}, ctx)
 })
 
 component('feature.byCondition', {

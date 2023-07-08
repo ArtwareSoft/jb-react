@@ -5,13 +5,13 @@ extension('ui', 'field', {
     jb.db.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx)
     jb.ui.checkValidationError(cmp,value,ctx)
     cmp.hasBEMethod('onValueChange') && cmp.runBEMethod('onValueChange',value,ctx.vars)
-    !oneWay && cmp.refresh({},{srcCtx: ctx.cmpCtx})
+    !oneWay && cmp.refresh({},{srcCtx: ctx.cmpCtx},ctx)
   },
   checkValidationError(cmp,val,ctx) {
     const err = validationError()
     if (cmp.state.error != err) {
       jb.log('field validation set error state',{cmp,err})
-      cmp.refresh({valid: !err, error:err}, {srcCtx: ctx.cmpCtx})
+      cmp.refresh({valid: !err, error:err}, {srcCtx: ctx.cmpCtx},ctx)
     }
   
     function validationError() {

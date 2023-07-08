@@ -97,12 +97,12 @@ component('dialog.closeDialog', {
 })
 
 component('dialog.closeDialogById', {
-	type: 'action',
-	description: 'close dialog fast without checking validations and running onOK',
-	params: [
-	  {id: 'id', as: 'string'},
-	],
-	impl: action.subjectNext(dialogs.changeEmitter(), obj(prop('close',true), prop('dialogId','%$id%')))
+  type: 'action',
+  description: 'close dialog fast without checking validations and running onOK',
+  params: [
+    {id: 'id', as: 'string'}
+  ],
+  impl: action.subjectNext(dialogs.changeEmitter(), obj(prop('close', true), prop('dialogId', '%$id%')))
 })
   
 component('dialog.closeAll', {
@@ -116,7 +116,7 @@ component('dialog.closeAllPopups', {
 })
 
 component('dialog.shownDialogs', {
-	impl: ctx => jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog').map(el=> el.getAttribute('id'))
+	impl: ctx =>jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog').map(el=> el.getAttribute('id'))
 })
 
 component('dialog.isOpen', {
@@ -169,7 +169,7 @@ component('source.eventIncludingPreview', {
 	type: 'rx',
 	params: [
 		{ id: 'event', as: 'string'}],
-	impl: rx.merge(
+	impl: source.merge(
 		source.event('%$event%', () => document),
 		source.event('%$event%', () => jb.path(jb.studio, 'previewWindow.document'))
 	)
@@ -308,7 +308,7 @@ component('dialogFeature.closeWhenClickingOutside', {
 	  frontEnd.flow(
 		source.data(0), rx.delay(100), // wait before start listening
 		rx.flatMap(source.eventIncludingPreview('mousedown')),
-		// 	rx.merge(
+		// 	source.merge(
 		// 	source.event('mousedown','%$cmp.base.ownerDocument%'),
 		// 	source.event('mousedown', () => jb.path(jb.studio,'previewWindow.document')),
 		// )),
@@ -473,13 +473,13 @@ component('dialogs.changeEmitter', {
 	impl: (ctx,_widgetId) => {
 		const widgetId = !ctx.vars.previewOverlay && _widgetId || 'default'
 		jb.ui.dlgEmitters = jb.ui.dlgEmitters || {}
-		jb.ui.dlgEmitters[widgetId] = jb.ui.dlgEmitters[widgetId] || ctx.run({$: 'rx.subject', replay: true})
+		jb.ui.dlgEmitters[widgetId] = jb.ui.dlgEmitters[widgetId] || ctx.run({$: 'rx.subject', id: `dialog emitter ${widgetId}`, replay: true})
 		return jb.ui.dlgEmitters[widgetId]
 	},
 	require: {$: 'rx.subject'}
 })
 
-component('dialogs.destroyAllEmitters', {
+component('dialogs.destroyAllEmitters', { // should be defined at the widget level
 	type: 'action',
 	impl: () => Object.keys(jb.ui.dlgEmitters||{}).forEach(k=>{
 		jb.ui.dlgEmitters[k].trigger.complete()
@@ -510,6 +510,7 @@ component('dialogs.defaultStyle', {
 			),
 			followUp.flow(source.subject(dialogs.changeEmitter()), 
 				rx.filter('%close%'),
+				rx.log('close dialog',obj(prop('dialogId','%dialogId%'))),
 				rx.var('dlgCmpId', dialogs.cmpIdOfDialog('%dialogId%')),
 				rx.filter('%$dlgCmpId%'),
 				rx.var('delta', obj(prop('children', obj(prop('deleteCmp','%$dlgCmpId%'))))),

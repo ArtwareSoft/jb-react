@@ -94,22 +94,22 @@ component('rx.pipe', {
     jb.callbag.pipe(...jb.callbag.injectSniffers(elems(ctx).filter(x=>x),ctx))
 })
 
-component('rx.merge', {
+component('source.merge', {
   type: 'rx',
   category: 'source',
   description: 'merge callbags sources (or any)',
   params: [
-    {id: 'sources', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
+    {id: 'sources', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: [], composite: true}
   ],
   impl: (ctx,sources) => jb.callbag.merge(...sources(ctx))
 })
 
-component('rx.mergeConcat', {
+component('source.mergeConcat', {
   type: 'rx',
   category: 'source',
   description: 'merge sources while keeping the order of sources',
   params: [
-    {id: 'sources', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
+    {id: 'sources', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: [], composite: true}
   ],
   impl: rx.pipe(source.data(ctx => ctx.cmpCtx.params.sources.profile), rx.concatMap(ctx => ctx.run(ctx.data)))
 })
@@ -564,11 +564,12 @@ component('rx.subject', {
     description: 'callbag "variable" that you can write or listen to', 
     category: 'variable',
     params: [
+      {id: 'id', as: 'string', description: 'can be used for logging'},
       {id: 'replay', as: 'boolean', description: 'keep pushed items for late subscription'},
       {id: 'itemsToKeep', as: 'number', description: 'relevant for replay, empty for unlimited'},
     ],
-    impl: (ctx,replay,itemsToKeep) => {
-      const trigger = jb.callbag.subject()
+    impl: (ctx,id, replay,itemsToKeep) => {
+      const trigger = jb.callbag.subject(id)
       const source = replay ? jb.callbag.replay(itemsToKeep)(trigger): trigger
       source.ctx = trigger.ctx = ctx
       return { trigger, source } 
@@ -633,7 +634,7 @@ component('source.queue', {
   params: [
       {id: 'queue', mandatory: true },
   ],
-  impl: rx.merge(source.data('%$queue/items%'), '%$queue/subject%')
+  impl: source.merge(source.data('%$queue/items%'), '%$queue/subject%')
 })
 
 component('action.addToQueue', {

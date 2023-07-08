@@ -41,7 +41,7 @@ extension('ui', 'react', {
             else 
                 cmps.forEach(cmp=> (cmp.destroyCtxs || []).forEach(ctxIdToRun => {
                     jb.log('backend method destroy uiComp',{cmp, el: cmp.el})
-                    jb.ui.runCtxAction(jb.ctxDictionary[ctxIdToRun])
+                    jb.ui.handleUserRequest(jb.ctxDictionary[ctxIdToRun])
                 } ))
         })(jb.ui.BECmpsDestroyNotification)
 
@@ -324,10 +324,10 @@ extension('ui', 'react', {
             elem.removeAttribute(att)
             jb.log('dom change remove',{elem,att,val,ctx})
         } else if (att.indexOf('on-') == 0 && val != null && !elem[`registeredTo-${att}`]) {
-            elem.addEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev,val))
+            elem.addEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev))
             elem[`registeredTo-${att}`] = true
         } else if (att.indexOf('on-') == 0 && val == null) {
-            elem.removeEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev,val))
+            elem.removeEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev))
             elem[`registeredTo-${att}`] = false
         } else if (att === 'checked' && elem.tagName.toLowerCase() === 'input') {
             elem.setAttribute(att,val)
@@ -457,7 +457,7 @@ extension('ui', 'react', {
             if (userReq.method)
                 jb.ui.runBEMethodByContext(ctx,userReq.method,userReq.data,userReq.vars)                
             else
-                jb.ui.runCtxAction(ctx,userReq.data,userReq.vars)
+                jb.ui.handleUserRequest(ctx,userReq.data,userReq.vars)
         }
     },
     sendUserReq(userReq) {
@@ -472,7 +472,7 @@ extension('ui', 'react', {
         const ctxIdToRun = jb.ui.ctxIdOfMethod(elem,method)
         const widgetId = jb.ui.frontendWidgetId(elem) || ev.widgetId
         jb.ui.widgetEventCounter[widgetId] = (jb.ui.widgetEventCounter[widgetId] || 0) + 1
-        return ctxIdToRun && {$:'runCtxAction', method, widgetId, ctxIdToRun, vars: 
+        return ctxIdToRun && {$:'userRequest', method, widgetId, ctxIdToRun, vars: 
             { evCounter: jb.ui.widgetEventCounter[widgetId], ev: jb.ui.buildUserEvent(ev, elem)} }
     },
     calcElemProps(elem) {
@@ -502,12 +502,12 @@ extension('ui', 'react', {
             .map(str=>str.split('-')[1])
             .filter(x=>x)[0]
     },
-    runCtxActionAndUdateCmpState(ctx,data,vars) {
+    handleUserRequestAndUdateCmpState(ctx,data,vars) {
         if (jb.path(vars,'$updateCmpState.cmpId') == jb.path(ctx.vars,'cmp.cmpId') && jb.path(vars,'$updateCmpState.state'))
             Object.assign(ctx.vars.cmp.state,vars.$updateCmpState.state)
         ctx.setData(data).setVars(vars).runInner(ctx.profile.action,'action','action')        
     },    
-    runCtxAction(ctx,data,vars) {
+    handleUserRequest(ctx,data,vars) {
         ctx.setData(data).setVars(vars).runInner(ctx.profile.action,'action','action')        
     },
     runBEMethodByContext(ctx,method,data,vars) {
@@ -527,14 +527,14 @@ extension('ui', 'react', {
             return jb.logError(`no method in cmp: ${method}`, {elem, data, vars})
 
         if (widgetId)
-            jb.ui.sendUserReq({$:'runCtxAction', method, widgetId, ctxIdToRun, data, vars })
+            jb.ui.sendUserReq({$:'userRequest', method, widgetId, ctxIdToRun, data, vars })
         else {
             const ctx = jb.ctxDictionary[ctxIdToRun]
             if (!ctx)
                 return jb.logError(`no ctx found for method: ${method}`, {ctxIdToRun, elem, data, vars})
     
             jb.log(`backend method request: ${method}`,{cmp: ctx.vars.cmp, method,ctx,elem,data,vars})
-            jb.ui.runCtxActionAndUdateCmpState(ctx,data,vars)
+            jb.ui.handleUserRequestAndUdateCmpState(ctx,data,vars)
         }
     },
     ctrl(origCtx,options) {

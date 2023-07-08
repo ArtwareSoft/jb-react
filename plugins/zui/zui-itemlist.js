@@ -103,9 +103,9 @@ component('itemlistStyle', {
         rx.var('pid', '%pointerId%'),
         rx.do(({},{cmp,pid}) => cmp.addPointer(pid)),
         rx.flatMap(
-          rx.mergeConcat(
+          source.mergeConcat(
             rx.pipe(
-              rx.merge(source.event('pointermove'), source.frontEndEvent('pointerup')),
+              source.merge(source.event('pointermove'), source.frontEndEvent('pointerup')),
               rx.filter('%$pid%==%pointerId%'),
               rx.do(({data},{cmp,pid}) => cmp.updatePointer(pid,data)),
               rx.takeWhile('%type%==pointermove'),

@@ -309,7 +309,7 @@ component('source.findMenuKeySource', {
     {id: 'clientCmp', defaultValue: '%$cmp%' }    
   ],
   impl: rx.pipe(
-    rx.merge( 
+    source.merge( 
       source.data([]),
       (ctx,{menuKeySourceCmpId},{clientCmp}) => {
         jb.log('search menuKeySource',{menuKeySourceCmpId,clientCmp,ctx})

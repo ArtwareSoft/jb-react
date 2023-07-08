@@ -282,9 +282,9 @@ component('renderWidget', {
   }
 })
 
-component('elemOfSelector', {
-  params: [
-    {id: 'selector', as: 'string' },
-  ],
-  impl: (ctx,selector) => jb.ui.elemOfSelector(selector,ctx)
-})
+// component('elemOfSelector', {
+//   params: [
+//     {id: 'selector', as: 'string' },
+//   ],
+//   impl: (ctx,selector) => jb.ui.elemOfSelector(selector,ctx)
+// })

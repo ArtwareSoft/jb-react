@@ -208,7 +208,7 @@ component('tree.selection', {
       sink.action(runActions(action.runFEMethod('setSelected'), action.runBEMethod('onDoubleClick')))
     ),
     frontEnd.flow(
-      rx.merge(
+      source.merge(
         rx.pipe(source.frontEndEvent('click'), rx.map(tree.pathOfElem('%target%')), rx.filter('%%')),
         source.subject('%$cmp.selectionEmitter%')
       ),
@@ -244,7 +244,7 @@ component('tree.keyboardSelection', {
 		$state.selected = selected
 		if ($props.model.isArray(selected) && !expanded[selected]) {
 			expanded[selected] = true
-			cmp.refresh($state)
+			cmp.refresh($state,{},ctx)
 		} else {
 			onRightClickOfExpanded(ctx.setData(selected))
 		}
@@ -255,7 +255,7 @@ component('tree.keyboardSelection', {
 		$state.selected = selected
 		if (Object.keys(expanded).some(x=>x.indexOf(selected == 0))) {
 			delete expanded[selected]
-			cmp.refresh($state)
+			cmp.refresh($state,{},ctx)
 		}
 	}),
     frontEnd.prop(
@@ -420,7 +420,7 @@ component('tree.moveItem', {
 		const stateAsRefs = pathsToRefs($state)
 		model.move(from,to,ctx)
 		const state = refsToPaths(stateAsRefs)
-		cmp.refresh(state)
+		cmp.refresh(state,{},ctx)
 
 		function pathsToRefs({selected,expanded}) {
 			return {

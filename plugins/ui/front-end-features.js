@@ -94,7 +94,7 @@ component('action.refreshCmp', {
   impl: (ctx,stateF,optionsF) => {
     const cmp = ctx.vars.cmp, options = optionsF(ctx), state = stateF(ctx)
     jb.log('refresh uiComp',{cmp,ctx,state,options})
-    cmp && cmp.refresh(state,{srcCtx: ctx, ...options})
+    cmp && cmp.refresh(state,{srcCtx: ctx, ...options},ctx)
   }
 })
 
@@ -447,7 +447,7 @@ component('source.findSelectionKeySource', {
   description: 'used in front end, works with "selectionKeySourceService" and "passSelectionKeySource"',
   impl: rx.pipe(
     Var('clientCmp','%$cmp%'),
-    rx.merge( 
+    source.merge( 
       source.data([]),
       (ctx,{cmp,selectionKeySourceCmpId}) => {
         jb.log('keyboard search selectionKeySource',{cmp,selectionKeySourceCmpId,ctx})

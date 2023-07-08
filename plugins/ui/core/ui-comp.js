@@ -100,8 +100,11 @@ extension('ui','comp', {
 
             ;[...(this.calcProp || []),...(this.method || [])].forEach(
                 p=>typeof p.value == 'function' && Object.defineProperty(p.value, 'name', { value: p.id }))
+            ;(this.calcProp || []).forEach(prop=> 
+                prop._priority = jb.utils.tryWrapper(() => prop.priority ? prop.priority(this.calcCtx) : 1, `renderPropPriority:${prop.id}`,this.ctx) )
+
             const filteredPropsByPriority = (this.calcProp || []).filter(toFilter=> 
-                    this.calcProp.filter(p=>p.id == toFilter.id && p.priority > toFilter.priority).length == 0)
+                    this.calcProp.filter(p=>p.id == toFilter.id && p._priority > toFilter._priority).length == 0)
             filteredPropsByPriority.sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
                 .forEach(prop=> { 
                     const val = jb.val( jb.utils.tryWrapper(() => 
@@ -183,14 +186,14 @@ extension('ui','comp', {
             if (jb.path(vars,'$state'))
                 Object.assign(this.state,vars.$state)
             const methodImpls = (this.method||[]).filter(h=> h.id == method)
-            methodImpls.forEach(h=> jb.ui.runCtxAction(h.ctx,data,
+            methodImpls.forEach(h=> jb.ui.handleUserRequest(h.ctx,data,
                 {cmp: this,$state: this.state, $props: this.renderProps, ...vars, $model: this.calcCtx.vars.$model}))
             if (methodImpls.length == 0)
                 jb.logError(`no method ${method} in cmp`, {cmp: this, data, vars})
         }
-        refresh(state,options) {
+        refresh(state,options,ctx) {
             const elem = jb.ui.elemOfCmp(this.ctx,this.cmpId)
-            jb.log('backend uiComp refresh request',{cmp: this,elem,state,options})
+            jb.log('backend uiComp refresh request',{ctx, cmp: this,elem,state,options})
             jb.ui.BECmpsDestroyNotification.next({ cmps: [{cmpId: this.cmpId, ver: this.ver, destroyCtxs: [] }] })
             elem && jb.ui.refreshElem(elem,state,options) // cmpId may be deleted
         }

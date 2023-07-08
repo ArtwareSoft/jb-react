@@ -7,7 +7,7 @@ component('itemlist.infiniteScroll', {
     method('fetchNextPage', itemlist.applyDeltaOfNextPage('%$pageSize%')),
     feature.userEventProps('elem.scrollTop,elem.scrollHeight'),
     frontEnd.flow(
-      rx.merge(
+      source.merge(
         source.frontEndEvent('scroll'),
         source.frontEndEvent('wheel')
       ),

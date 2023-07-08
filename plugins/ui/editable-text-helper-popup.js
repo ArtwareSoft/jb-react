@@ -6,54 +6,106 @@ component('editableText.picklistHelper', {
     {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true},
     {id: 'picklistStyle', type: 'picklist.style', dynamic: true, defaultValue: picklist.labelList()},
     {id: 'picklistFeatures', type: 'feature[]', flattenArray: true, dynamic: true},
-    {id: 'showHelper', as: 'boolean', dynamic: true, defaultValue: notEmpty('%value%'), description: 'show/hide helper according to input content', type: 'boolean'},
+    {
+      id: 'showHelper',
+      as: 'boolean',
+      dynamic: true,
+      defaultValue: notEmpty('%value%'),
+      description: 'show/hide helper according to input content',
+      type: 'boolean'
+    },
     {id: 'autoOpen', as: 'boolean', type: 'boolean'},
-    {id: 'onEnter', type: 'action', dynamic: true, defaultValue: writeValue('%$$model/databind%','%$selectedOption%')},
+    {
+      id: 'onEnter',
+      type: 'action',
+      dynamic: true,
+      defaultValue: writeValue('%$$model/databind%', '%$selectedOption%')
+    },
     {id: 'onEsc', type: 'action', dynamic: true},
     {id: 'popupId', as: 'string', defaultValue: 'editableTextHelper'}
   ],
   impl: features(
     watchable('selectedOption'),
-    watchable('watchableInput', obj(prop('value',''))),
+    watchable('watchableInput', obj(prop('value', ''))),
     variable('helperCmp', '%$cmp%'),
-    method('openPopup', openDialog({
-        style: dialog.popup(), content: picklist({
-          options: (ctx,{watchableInput},{options}) => options(ctx.setData(jb.val(watchableInput))),
+    method(
+      'openPopup',
+      openDialog({
+        content: picklist({
           databind: '%$selectedOption%',
-          features: [ watchRef('%$watchableInput%'), '%$picklistFeatures()%'],
-          style: call('picklistStyle')
+          options: (ctx,{watchableInput},{options}) => options(ctx.setData(jb.val(watchableInput))),
+          style: call('picklistStyle'),
+          features: [
+            watchRef('%$watchableInput%'),
+            '%$picklistFeatures()%'
+          ]
         }),
+        style: dialog.popup(),
         features: [
           dialogFeature.maxZIndexOnClick(),
-          dialogFeature.uniqueDialog('%$popupId%'),
+          dialogFeature.uniqueDialog('%$popupId%')
         ]
-    })),
+      })
+    ),
     method('closePopup', dialog.closeDialogById('%$popupId%')),
-    method('refresh', runActions(
-      writeValue('%$watchableInput%','%%'),
-      If(call('showHelper'),
-        If(not(dialog.isOpen('%$popupId%')), action.runBEMethod('openPopup')),
-        action.runBEMethod('closePopup')
+    method(
+      'refresh',
+      runActions(
+        writeValue('%$watchableInput%', '%%'),
+        If(
+          call('showHelper'),
+          If(not(dialog.isOpen('%$popupId%')), action.runBEMethod('openPopup')),
+          action.runBEMethod('closePopup')
+        )
       )
-    )),
+    ),
     frontEnd.enrichUserEvent(({},{cmp}) => {
         const input = jb.ui.findIncludeSelf(cmp.base,'input,textarea')[0];
         return { input: { value: input.value, selectionStart: input.selectionStart}}
     }),
-    method('onEnter', action.if(dialog.isOpen('%$popupId%'), runActions(call('onEnter'),dialog.closeDialogById('%$popupId%')))),
-    method('onEsc', action.if(dialog.isOpen('%$popupId%'), runActions(call('onEsc'),dialog.closeDialogById('%$popupId%')))),
+    method(
+      'onEnter',
+      action.if(
+        dialog.isOpen('%$popupId%'),
+        runActions(call('onEnter'), dialog.closeDialogById('%$popupId%'))
+      )
+    ),
+    method(
+      'onEsc',
+      action.if(dialog.isOpen('%$popupId%'), runActions(call('onEsc'), dialog.closeDialogById('%$popupId%')))
+    ),
     feature.serviceRegistey(),
     frontEnd.selectionKeySourceService(),
     frontEnd.prop('keyUp', rx.pipe(source.frontEndEvent('keyup'), rx.delay(1))),
-    frontEnd.flow('%$cmp/keyUp%', rx.log('editableTextHelper keyup'), rx.filter('%keyCode% == 13'), editableText.addUserEvent(), 
-      sink.BEMethod('onEnter')),
-    frontEnd.flow('%$cmp/keyUp%', rx.filter(not(inGroup(list(13,27,38,40),'%keyCode%'))), editableText.addUserEvent(),
-      sink.BEMethod('refresh')),
-    frontEnd.flow('%$cmp/keyUp%', rx.filter('%keyCode% == 27'), editableText.addUserEvent(), sink.BEMethod('onEsc')),
-
+    frontEnd.flow(
+      '%$cmp/keyUp%',
+      rx.log('editableTextHelper keyup'),
+      rx.filter('%keyCode% == 13'),
+      editableText.addUserEvent(),
+      sink.BEMethod('onEnter')
+    ),
+    frontEnd.flow(
+      '%$cmp/keyUp%',
+      rx.filter(not(inGroup(list(13,27,38,40), '%keyCode%'))),
+      editableText.addUserEvent(),
+      sink.BEMethod('refresh')
+    ),
+    frontEnd.flow(
+      '%$cmp/keyUp%',
+      rx.filter('%keyCode% == 27'),
+      editableText.addUserEvent(),
+      sink.BEMethod('onEsc')
+    ),
     onDestroy(action.runBEMethod('closePopup')),
-    followUp.action(action.if('%$autoOpen%', runActions(
-      writeValue('%$watchableInput%',obj(prop('value','%$helperCmp/renderProps/databind%'))), action.runBEMethod('openPopup'))))
+    followUp.action(
+      action.if(
+        '%$autoOpen%',
+        runActions(
+          writeValue('%$watchableInput%', obj(prop('value', '%$helperCmp/renderProps/databind%'))),
+          action.runBEMethod('openPopup')
+        )
+      )
+    )
   )
 })
 

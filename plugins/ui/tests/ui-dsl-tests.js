@@ -34,6 +34,7 @@ component('remoteTest.dsl', {
   impl: uiTest({
     control: remote.widget(location.control(israel()), worker()),
     expectedResult: contains('Jerusalem'),
+    uiAction: waitForNextUpdate(),
     timeout: 500
   })
 })

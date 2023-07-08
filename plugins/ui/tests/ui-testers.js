@@ -5,11 +5,52 @@ component('tests.main', { // needed for loading the 'virtual' tests project
 })
 
 component('uiTest', {
+  type: 'test',
+  params: [
+    {id: 'control', type: 'control', dynamic: true, mandatory: true},
+    {id: 'runBefore', type: 'action', dynamic: true},
+    {id: 'uiAction', type: 'ui-action<test>', dynamic: true },
+    {id: 'expectedResult', type: 'boolean', dynamic: true, mandatory: true},
+    {id: 'allowError', as: 'boolean', dynamic: true, type: 'boolean'},
+    {id: 'timeout', as: 'number', defaultValue: 200},
+    {id: 'cleanUp', type: 'action', dynamic: true},
+    {id: 'expectedCounters', as: 'single'}
+  ],
+  impl: dataTest({
+    vars: [
+      Var('uiTest', true),
+      Var('widgetId', widget.newId()),
+	  Var('headlessWidget', true),
+	  Var('headlessWidgetId', '%$widgetId%')
+    ],
+    calculate: rx.pipe(
+	  uiActions(typeCast('ui-action<test>'),'%$uiAction()%'),
+      rx.log('uiTest userRequest from widgetUserRequests'),
+      widget.headless('%$control()%', '%$widgetId%'),
+      rx.log('uiTest uiDelta from headless'),
+      rx.takeUntil('%$$testFinished%'),
+      rx.toArray(),
+      rx.var('html', uiTest.vdomResultAsHtml()),
+      rx.var('success', pipeline('%$html%', call('expectedResult'), last())),
+      rx.log('check uiTest result', obj(prop('success', '%$success%'), prop('html', '%$html%'))),
+	  rx.map('%$success%'),
+      rx.do(({},{widgetId})=> !jb.test.singleTest && jb.ui.destroyHeadless(widgetId))
+    ),
+    expectedResult: '%%',
+    runBefore: '%$runBefore()%',
+    timeout: '%$timeout%',
+    allowError: '%$allowError()%',
+    cleanUp: call('cleanUp'),
+    expectedCounters: '%$expectedCounters%'
+  })
+})
+
+component('uiTestOld', {
 	type: 'test',
 	params: [
 	  {id: 'control', type: 'control', dynamic: true, mandatory: true},
 	  {id: 'runBefore', type: 'action', dynamic: true},
-	  {id: 'userInput', type: 'user-input[]', as: 'array', description: 'user actions' },
+	  {id: 'userInput', type: 'user-input[]<test>', as: 'array', description: 'user actions' },
 	  {id: 'userInputRx', type: 'rx', dynamic: true },
 	  {id: 'checkResultRx', type: 'rx' },
 	  {id: 'expectedResult', type: 'boolean', dynamic: true, mandatory: true},
@@ -30,17 +71,17 @@ component('uiTest', {
 			rx.pipe(
 				source.promise(delay(1,1)),
 				//source.promise(waitFor(elemOfSelector(':scope'))),
-				rx.flatMap(rx.merge('%$userInputRx()%', source.data('%$userInput%'))),
+				rx.flatMap(source.merge('%$userInputRx()%', source.data('%$userInput%'))),
 				rx.log('uiTest userInput'),
 				rx.takeUntil('%$$testFinished%'),
 				userInput.eventToRequest(),
-				rx.filter(({data}) => data && data.$ == 'runCtxAction'),
+				rx.filter(({data}) => data && data.$ == 'userRequest'),
 				rx.log('uiTest userRequest'),
 				sink.action(({data}) => jb.ui.sendUserReq(data))
 			)
 		),
 		calculate: rx.pipe(
-			rx.merge(
+			source.merge(
 				rx.pipe(
 					source.callbag(()=>jb.ui.widgetUserRequests),
 					rx.takeUntil('%$$testFinished%'),
@@ -71,7 +112,7 @@ component('uiFrontEndTest', {
   params: [
     {id: 'control', type: 'control', dynamic: true},
     {id: 'runBefore', type: 'action', dynamic: true},
-    {id: 'action', type: 'action', dynamic: true},
+    {id: 'uiAction', type: 'ui-action<test>', dynamic: true},
     {id: 'expectedResult', as: 'boolean', dynamic: true, type: 'boolean'},
     {id: 'allowError', as: 'boolean', dynamic: true, type: 'boolean'},
     {id: 'cleanUp', type: 'action', dynamic: true},

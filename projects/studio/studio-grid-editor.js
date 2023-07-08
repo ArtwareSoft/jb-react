@@ -284,7 +284,7 @@ component('gridEditor.openGridItemThumbs', {
         watchRef({ ref: tgp.ref('%$gridPath%'), includeChildren: 'yes' }),
         //followUp.flow(source.watchableData({ ref: tgp.ref('%$gridPath%'), includeChildren: 'yes' }), sink.refreshCmp() )
         // followUp.onDataChange(,
-        //   action: (ctx,{cmp}) => jb.delay(1).then(()=> cmp.refresh(null,{srcCtx: ctx.cmpCtx}))
+        //   action: (ctx,{cmp}) => jb.delay(1).then(()=> cmp.refresh(null,{srcCtx: ctx.cmpCtx}),ctx)
         // })
       ]
     })

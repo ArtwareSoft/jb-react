@@ -37,8 +37,8 @@ extension('probe', 'suggestions', {
 
       calcVars(probeCtx) {
         const resources = jb.entries(jb.comps)
-//              .filter(e=>! jb.comps[e[0]])
-              .filter(e=>e[1].watchableData  !== undefined || e[1].passiveData  !== undefined)
+              .map(([id,val]) => [id,val.watchableData || val.passiveData])
+              .filter(e=>e[1])
               .map(e=>[jb.db.removeDataResourcePrefix(e[0]),e[1]])
         return jb.entries(Object.assign({},(probeCtx.cmpCtx||{}).params,probeCtx.vars))
             .concat(resources)

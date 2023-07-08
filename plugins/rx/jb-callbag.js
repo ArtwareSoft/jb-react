@@ -490,19 +490,25 @@ extension('callbag', {
         if (t === 2) endedBySink = true
     })
   },  
-  subject() {
+  subject(id) {
       let sinks = []
       function subj(t, d, transactive) {
           if (t === 0) {
               const sink = d
+              id && jb.log(`${id} subject sink registered`,{sink})
               sinks.push(sink)
               sink(0, function subject(t,d) {
                   if (t === 2) {
                       const i = sinks.indexOf(sink)
-                      if (i > -1) sinks.splice(i, 1)
+                      if (i > -1) {
+                        const sink = sinks.splice(i, 1)
+                        id && jb.log(`${id} subject sink unregistered`,{sink})
+                      }
                   }
               })
           } else {
+            id && t == 1 && jb.log(`${id} subject next`,{d, sinks: sinks.slice(0)})
+            id && t == 2 && jb.log(`${id} subject complete`,{d, sinks: sinks.slice(0)})
             sinks.slice(0).forEach(sink=> {
               const td = transactive ? jb.callbag.childTxInData(d,sinks.length) : d
               sinks.indexOf(sink) > -1 && sink(t, td)

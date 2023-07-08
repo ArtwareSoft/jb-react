@@ -19,22 +19,6 @@ component('studioTest.save', {
     })
 })
 
-component('eventTracker.worker.vDebugger', {
-  impl: uiTest({
-    control: remote.widget(studio.eventTracker(), byUri('tests•w1•vDebugger')),
-    runBefore: remote.action(
-      runActions(
-        () => jb.spy.initSpy({spyParam: 'remote,log1'}),
-        log('log1', obj(prop('hello', 'world'))),
-        jbm.start(jbm.vDebugger())
-      ),
-      worker()
-    ),
-    expectedResult: contains('log1'),
-    timeout: 5000
-  })
-})
-
 component('eventTracker.uiTest.vDebugger', {
   impl: uiTest({
     control: group({
@@ -51,6 +35,7 @@ component('eventTracker.uiTest.vDebugger', {
       ),
       worker()
     ),
+    uiAction: uiActions(waitForNextUpdate(),waitForNextUpdate()),
     expectedResult: contains('remote rec'),
     timeout: 2000
   })

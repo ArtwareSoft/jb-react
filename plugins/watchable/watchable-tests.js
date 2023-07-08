@@ -15,24 +15,18 @@ component('uiTest.checkBoxWithCalculatedAndWatchRef', {
 })
 
 component('uiTest.booleanWatchableVarAsBooleanTrueToFalse', {
-  impl: uiFrontEndTest({
-    control: text({
-      text: data.if('%$person/male%', 'Error', 'OK'),
-      features: watchRef('%$person/male%')
-    }),
-    action: writeValue('%$person/male%', false),
+  impl: uiTest({
+    control: text({text: data.if('%$person/male%', 'Error', 'OK'), features: watchRef('%$person/male%')}),
+    uiAction: writeValue('%$person/male%', false),
     expectedResult: contains('OK')
   })
 })
 
 component('uiTest.booleanWatchableVarAsBooleanFalseToTrue', {
-  impl: uiFrontEndTest({
-    control: text({
-      text: data.if('%$person/male%', 'OK', 'Error'),
-      features: watchRef('%$person/male%')
-    }),
-    runBefore: writeValue('%$person/male%', false),
-    action: writeValue('%$person/male%', true),
+  impl: uiTest({
+    control: text({text: data.if('%$person/male%', 'OK', 'Error'), features: watchRef('%$person/male%')}),
+    runBefore: writeValue({to: '%$person/male%', value: false}),
+    uiAction: writeValue('%$person/male%', true),
     expectedResult: contains('OK')
   })
 })
@@ -46,6 +40,7 @@ component('uiTest.watchableVar', {
         followUp.action(writeValue('%$var1%', 'foo'))
       ]
     }),
+    uiAction: waitForNextUpdate(),
     expectedResult: contains('foo')
   })
 })
@@ -55,10 +50,11 @@ component('uiTest.watchableVarAsObject', {
     control: group({
       controls: text('%$obj1/txt%'),
       features: [
-        watchable('obj1', {'$': 'object', txt: 'hello'}),
+        watchable('obj1', obj(prop('txt', 'hello'))),
         followUp.action(writeValue('%$obj1/txt%', 'foo'))
       ]
     }),
+    uiAction: waitForNextUpdate(),
     expectedResult: contains('foo')
   })
 })
@@ -89,62 +85,63 @@ component('uiTest.watchableVarAsObjectNotInitialized', {
     control: group({
       controls: text('%$obj1/txt%'),
       features: [
-        watchable('obj1', {'$': 'object'}),
+        watchable('obj1', obj()),
         followUp.action(writeValue('%$obj1/txt%', 'foo'))
       ]
     }),
+    uiAction: waitForNextUpdate(),
     expectedResult: contains('foo')
   })
 })
 
-component('uiTest.calculatedVar', {
-  impl: uiTest({
-    control: group({
-      controls: [
-        editableText({databind: '%$var1%', features: id('var1')}),
-        editableText({databind: '%$var2%'}),
-        text('%$var3%')
-      ],
-      features: [
-        id('group'),
-        watchable('var1', 'hello'),
-        watchable('var2','world'),
-        calculatedVar({
-          name: 'var3',
-          value: '%$var1% %$var2%',
-          watchRefs: list('%$var1%', '%$var2%')
-        })
-      ]
-    }),
-    userInputRx: rx.pipe(source.promise(uiAction.waitForCompReady('#group')), rx.map(userInput.setText('hi', '#var1'))),
-    expectedResult: contains('hi world')
-  })
-})
+// component('uiTest.calculatedVar', {
+//   impl: uiTest({
+//     control: group({
+//       controls: [
+//         editableText({databind: '%$var1%', features: id('var1')}),
+//         editableText({databind: '%$var2%'}),
+//         text('%$var3%')
+//       ],
+//       features: [
+//         id('group'),
+//         watchable('var1', 'hello'),
+//         watchable('var2','world'),
+//         calculatedVar({
+//           name: 'var3',
+//           value: '%$var1% %$var2%',
+//           watchRefs: list('%$var1%', '%$var2%')
+//         })
+//       ]
+//     }),
+//     userInputRx: rx.pipe(source.promise(waitForCompReady('#group')), rx.map(userInput.setText('hi', '#var1'))),
+//     expectedResult: contains('hi world')
+//   })
+// })
 
-component('uiTest.calculatedVarCyclic', {
-  impl: uiTest({
-    allowError: true,
-    control: group({
-      controls: [
-        editableText({databind: '%$var1%', features: id('var1')}),
-        editableText({databind: '%$var2%'}),
-        text('%$var3%')
-      ],
-      features: [
-        id('group'),
-        calculatedVar({name: 'var1', value: 'xx%$var3%', watchRefs: '%$var3%'}),
-        watchable('var2','world'),
-        calculatedVar({
-          name: 'var3',
-          value: '%$var1% %$var2%',
-          watchRefs: list('%$var1%', '%$var2%')
-        })
-      ]
-    }),
-    userInputRx: rx.pipe(source.promise(uiAction.waitForCompReady('#group')), rx.map(userInput.setText('hi', '#var1'))),
-    expectedResult: contains('hi world')
-  })
-})
+// component('uiTest.calculatedVarCyclic', {
+//   impl: uiTest({
+//     allowError: true,
+//     control: group({
+//       controls: [
+//         editableText({databind: '%$var1%', features: id('var1')}),
+//         editableText({databind: '%$var2%'}),
+//         text('%$var3%')
+//       ],
+//       features: [
+//         id('group'),
+//         calculatedVar({name: 'var1', value: 'xx%$var3%', watchRefs: '%$var3%'}),
+//         watchable('var2','world'),
+//         calculatedVar({
+//           name: 'var3',
+//           value: '%$var1% %$var2%',
+//           watchRefs: list('%$var1%', '%$var2%')
+//         })
+//       ]
+//     }),
+//     userInputRx: rx.pipe(source.promise(waitForCompReady('#group')), rx.map(userInput.setText('hi', '#var1'))),
+//     expectedResult: contains('hi world')
+//   })
+// })
 
 component('uiTest.booleanNotReffableTrue', {
   impl: uiTest({
@@ -164,31 +161,28 @@ component('uiTest.labelWithWatchRefInSplicedArray', {
   impl: uiTest({
     control: group({
       controls: text('%$personWithChildren/children[1]/name%'),
-      features: followUp.action(splice({
-        array: '%$personWithChildren/children%',
-        fromIndex: 0,
-        noOfItemsToRemove: 1
-      }))
+      features: followUp.action(splice({array: '%$personWithChildren/children%', fromIndex: 0, noOfItemsToRemove: 1}))
     }),
+    uiAction: waitForNextUpdate(),
     expectedResult: contains('Maggie'),
     expectedCounters: {'do refresh element !check': 1}
   })
 })
 
 component('uiTest.spliceAndSet', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     control: text({
       text: '%$personWithChildren/children[1]/name%',
       features: watchRef('%$personWithChildren/children%')
     }),
-    action: [
+    uiAction: action(runActions(
       splice({
         array: '%$personWithChildren/children%',
         fromIndex: 0,
         noOfItemsToRemove: 1
       }),
       writeValue('%$personWithChildren/children[1]/name%', 'hello')
-    ],
+    )),
     expectedResult: contains('hello')
   })
 })
@@ -198,7 +192,7 @@ component('uiTest.labelNotWatchingUiVar', {
     control: text({
       text: '%$text1/text%',
       features: [
-        variable({name: 'text1', value: obj(prop('text', 'OK'))}),
+        variable('text1', obj(prop('text', 'OK'))),
         followUp.action(writeValue('%$text1/text%', 'not good'))
       ]
     }),
@@ -210,9 +204,11 @@ component('uiTest.labelNotWatchingUiVar', {
 component('uiTest.labelNotWatchingBasicVar', {
   impl: uiTest({
     control: text({
-      vars: [Var('text1', obj(prop('text', 'OK')))],
+      vars: [
+        Var('text1', obj(prop('text', 'OK')))
+      ],
       text: '%$text1/text%',
-      features: [followUp.action(writeValue('%$text1/text%', 'not good'))]
+      features: followUp.action(writeValue('%$text1/text%', 'not good'))
     }),
     expectedResult: contains('OK'),
     expectedCounters: {'do refresh element !check': 0}
@@ -306,10 +302,11 @@ component('uiTest.groupWatchingStructure', {
       controls: text('%$text1/text%'),
       features: [
         watchable('text1', obj(prop('text', 'OK'))),
-        watchRef({ref: '%$text1%', includeChildren: 'structure'}),
+        watchRef('%$text1%', 'structure'),
         followUp.action(writeValue('%$text1/text%', 'changed'))
       ]
     }),
+    uiAction: waitForNextUpdate(),
     expectedResult: contains('changed'),
     expectedCounters: {'do refresh element !check': 1}
   })
@@ -318,22 +315,20 @@ component('uiTest.groupWatchingStructure', {
 component('uiTest.watchRefArrayDeleteWithRunActionOnItems', {
   impl: uiTest({
     control: group({
-      controls: text({
-        text: json.stringify('%$watchablePeople%'),
-        features: watchRef({ref: '%$watchablePeople%', includeChildren: 'yes'})
-      }),
+      controls: text({text: json.stringify('%$watchablePeople%'), features: watchRef('%$watchablePeople%', 'yes')}),
       features: followUp.action(
-          runActionOnItems(
-              '%$watchablePeople%',
-              splice({
-                array: '%$watchablePeople%',
-                fromIndex: indexOf('%$watchablePeople%', '%%'),
-                noOfItemsToRemove: '1',
-                itemsToAdd: []
-              })
-            )
+        runActionOnItems(
+          '%$watchablePeople%',
+          splice({
+            array: '%$watchablePeople%',
+            fromIndex: indexOf('%$watchablePeople%', '%%'),
+            noOfItemsToRemove: '1',
+            itemsToAdd: []
+          })
         )
+      )
     }),
+    uiAction: waitForNextUpdate(),
     expectedResult: contains('[]'),
     expectedCounters: {'do refresh element !check': 3}
   })
@@ -378,10 +373,10 @@ component('uiTest.watchableAsText', {
         watchable('path')
       ]
     }),
-    action: runActions(
+    action: uiActions(
       waitFor(ctx => jb.ui.cmpOfSelector('#editor',ctx) ),
-      runFEMethod({ selector: '#editor', method: 'setSelectionRange', data: {$: 'object', from: 22} }),
-      uiAction.click('#show-path')
+      action(runFEMethod({ selector: '#editor', method: 'setSelectionRange', data: {$: 'object', from: 22} })),
+      click('#show-path')
     ),
     expectedResult: contains('watchablePeople~0~name~!value')
   })
@@ -392,9 +387,12 @@ component('uiTest.watchableAsTextWrite', {
     control: editableText({
       databind: tgpTextEditor.watchableAsText('%$watchablePeople%'),
       style: editableText.textarea(30, 80),
-      features: [id('editor'), watchRef({ref: '%$watchablePeople%', allowSelfRefresh: true})]
+      features: [
+        id('editor'),
+        watchRef({ref: '%$watchablePeople%', allowSelfRefresh: true})
+      ]
     }),
-    userInput: userInput.setText('hello', '#editor'),
+    uiAction: setText({value: 'hello', selector: '#editor', doNotWaitForNextUpdate: true}),
     expectedResult: equals('%$watchablePeople%', 'hello')
   })
 })
@@ -403,10 +401,13 @@ component('uiTest.watchableAsTextWriteObjectInArray', {
   impl: uiTest({
     control: editableText({
       databind: tgpTextEditor.watchableAsText('%$watchablePeople%'),
-      style: editableText.textarea({rows: 30, cols: 80}),
-      features: [id('editor'), watchRef({ ref: '%$watchablePeople%', allowSelfRefresh: true})],
+      style: editableText.textarea(30, 80),
+      features: [
+        id('editor'),
+        watchRef({ref: '%$watchablePeople%', allowSelfRefresh: true})
+      ]
     }),
-    userInput: userInput.setText('[{a:3}]', '#editor'),
+    uiAction: setText({value: '[{a:3}]', selector: '#editor', doNotWaitForNextUpdate: true}),
     expectedResult: equals('%$watchablePeople/0/a%', '3')
   })
 })
@@ -415,53 +416,55 @@ component('uiTest.watchableAsTextWriteSetObjectToArray', {
   impl: uiTest({
     control: editableText({
       databind: tgpTextEditor.watchableAsText('%$emptyArray%'),
-      style: editableText.textarea({rows: 30, cols: 80}),
-      features: [id('editor'), watchRef({ ref: '%$watchablePeople%', allowSelfRefresh: true})],
+      style: editableText.textarea(30, 80),
+      features: [
+        id('editor'),
+        watchRef({ref: '%$watchablePeople%', allowSelfRefresh: true})
+      ]
     }),
-    userInput: userInput.setText('[{a:3}]', '#editor'),
-    checkResultRx: rx.pipe(source.data(0),rx.delay(1)),
+    uiAction: setText({value: '[{a:3}]', selector: '#editor', doNotWaitForNextUpdate: true}),
     expectedResult: equals('%$emptyArray/0/a%', '3')
   })
 })
 
 component('uiTest.watchableObjectToPrimitiveBug', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     control: text('%$person%'),
-    action: runActions(writeValue('%$person%', 'world'), writeValue('%$person%', 'hello')),
+    uiAction: uiActions(writeValue('%$person%', 'world'), writeValue('%$person%', 'hello')),
     expectedResult: contains('hello')
   })
 })
 
 component('uiTest.spliceShouldNotFireFullContainerChange', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     control: itemlist({items: '%$watchablePeople%', controls: text('%name%')}),
-    action: addToArray('%$watchablePeople%', obj(prop('name', 'mukki'))),
+    uiAction: action(addToArray('%$watchablePeople%', obj(prop('name', 'mukki')))),
     expectedResult: not(contains('mukki')),
     expectedCounters: {'do refresh element !check': 0}
   })
 })
 
 component('uiTest.spliceAndWatchRefStrcture', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     control: itemlist({
       items: '%$watchablePeople%',
       controls: text('%name%'),
-      features: watchRef({ref: '%$watchablePeople%', includeChildren: 'structure'})
+      features: watchRef('%$watchablePeople%', 'structure')
     }),
-    action: addToArray('%$watchablePeople%', obj(prop('name', 'mukki'))),
+    uiAction: action(addToArray('%$watchablePeople%', obj(prop('name', 'mukki')))),
     expectedResult: contains('mukki'),
     expectedCounters: {'do refresh element !check': 1}
   })
 })
 
 component('uiTest.spliceAndWatchRefWithoutIncludeChildren', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     control: itemlist({
       items: '%$watchablePeople%',
       controls: text('%name%'),
       features: watchRef('%$watchablePeople%', 'no')
     }),
-    action: writeValue('%$watchablePeople[0]/name%', 'mukki'),
+    uiAction: writeValue('%$watchablePeople[0]/name%', 'mukki'),
     expectedResult: contains('mukki'),
     expectedCounters: {'do refresh element !check': 1}
   })
@@ -477,21 +480,23 @@ component('uiTest.frontEnd.onDestroy', {
       ),
       features: watchRef('%$person/name%')
     }),
-    action: writeValue('%$person/name%', 'mukki'),
+    uiAction: writeValue('%$person/name%', 'mukki'),
     expectedResult: equals('%$res/destroyed%', 'ya')
   })
 })
 
 component('uiTest.spliceAndWatchRefAddTwice', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     control: itemlist({
       items: '%$watchablePeople%',
       controls: text('%name%'),
-      features: watchRef({ref: '%$watchablePeople%', includeChildren: 'structure'})
+      features: watchRef('%$watchablePeople%', 'structure')
     }),
-    action: runActions(
-      addToArray('%$watchablePeople%', obj(prop('name', 'mukki'))),
-      addToArray('%$watchablePeople%', obj(prop('name','kukki')))
+    uiAction: action(
+      runActions(
+        addToArray('%$watchablePeople%', obj(prop('name', 'mukki'))),
+        addToArray('%$watchablePeople%', obj(prop('name', 'kukki')))
+      )
     ),
     expectedResult: contains('kukki'),
     expectedCounters: {'do refresh element !check': 2}

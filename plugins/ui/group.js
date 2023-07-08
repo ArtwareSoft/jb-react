@@ -78,28 +78,45 @@ component('group.wait', {
     {id: 'loadingControl', type: 'control', defaultValue: text('loading ...'), dynamic: true},
     {id: 'error', type: 'control', defaultValue: text('error: %$error%'), dynamic: true},
     {id: 'varName', as: 'string', description: 'variable for the promise result'},
-    {id: 'passRx', as: 'boolean', description: 'do not wait for reactive data to end, and pass it as is' },
+    {
+      id: 'passRx',
+      as: 'boolean',
+      description: 'do not wait for reactive data to end, and pass it as is',
+      type: 'boolean'
+    }
   ],
   impl: features(
     calcProp({
-        id: 'ctrls',
-        value: (ctx,{cmp},{loadingControl,error}) => {
+      id: 'ctrls',
+      value: (ctx,{cmp},{loadingControl,error}) => {
           const ctrl = cmp.state.error ? error() : loadingControl(ctx)
           return cmp.ctx.profile.$ == 'itemlist' ? [[ctrl]] : [ctrl]
         },
-        priority: ctx => jb.path(ctx.vars.$state,'dataArrived') ? 0: 10
+      priority: (ctx,{},{varName}) => {
+        if (jb.path(ctx.vars.$state,'dataArrived')) return 0
+        const cmp = ctx.vars.cmp
+        // not well behaved - calculating the "waitFor" prop not via calcProp
+        const waitFor = cmp.renderProps.waitFor = ctx.cmpCtx.params.for()
+        if (!jb.utils.isDelayed(waitFor)) {
+          cmp.state.dataArrived = true
+          if (varName)
+            cmp.calcCtx = cmp.calcCtx.setVar(varName,waitFor)
+          return 0
+        }
+        return 10
+      }
     }),
-    followUp.action( async (ctx,{cmp},{varName,passRx}) => {
+    followUp.action(async (ctx,{cmp,$props},{varName,passRx}) => {
       try {
         if (!cmp.state.dataArrived && !cmp.state.error) {
-          const data = await jb.utils.resolveDelayed(ctx.cmpCtx.params.for(), !passRx)
+          const data = await jb.utils.resolveDelayed($props.waitFor, !passRx)
           cmp.refresh({ dataArrived: true }, {
             srcCtx: ctx.cmpCtx,
             extendCtx: ctx => ctx.setVar(varName,data).setData(data)
-          })
+          }, ctx)
         }
       } catch(e) {
-        cmp.refresh({error: JSON.stringify(e)})
+        cmp.refresh({error: JSON.stringify(e)},{},ctx)
       }
     })
   )
