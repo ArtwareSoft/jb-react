@@ -28,10 +28,17 @@ component('dataTest.propertyWatchable', {
 })
 
 component('dataTest.pipelineVar', {
-  impl: dataTest(
-    pipeline('%$peopleWithChildren%', pipeline(Var('parent'), '%children%', '%name% is child of %$parent/name%'), join()),
-    equals('Bart is child of Homer,Lisa is child of Homer,Bart is child of Marge,Lisa is child of Marge')
-  )
+  impl: dataTest({
+    calculate: pipeline(
+      '%$peopleWithChildren%',
+      pipeline(Var('parent'), '%children%', '%name% is child of %$parent/name%'),
+      join()
+    ),
+    expectedResult: equals(
+      'Bart is child of Homer,Lisa is child of Homer,Bart is child of Marge,Lisa is child of Marge'
+    ),
+    parentTest: dataTest.Var()
+  })
 })
 
 component('dataTest.datum', {
@@ -65,7 +72,6 @@ component('dataTest.ctx.expOfRefWithBooleanType', {
     expectedResult: ({data}) => data === true
   })
 })
-
 
 component('dataTest.writeValue', {
   impl: dataTest({
