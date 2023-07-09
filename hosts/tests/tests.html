@@ -29,7 +29,7 @@
 				show: window.location.href.indexOf('&show') != -1,
 				specificTest: urlQuery('test'),
 				notPattern: urlQuery('not'),
-				dependentTestsOf: urlQuery('dependentTestsOf'),
+				coveredTestsOf: urlQuery('coveredTestsOf'),
 				top: window.location.href.match(/\btop\b/),
 				showOnlyTest: urlQuery('show') == 'onlyTest',
 				...jb.objFromEntries(['repo','rerun','pattern','take','remoteTests'].map(x=>[x,urlQuery(x)]))

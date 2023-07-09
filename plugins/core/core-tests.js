@@ -37,7 +37,7 @@ component('dataTest.pipelineVar', {
     expectedResult: equals(
       'Bart is child of Homer,Lisa is child of Homer,Bart is child of Marge,Lisa is child of Marge'
     ),
-    parentTest: dataTest.Var()
+    covers: ['dataTest.Var','dataTest.join']
   })
 })
 

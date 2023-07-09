@@ -10,7 +10,7 @@ component('dataTest', {
     {id: 'allowError', as: 'boolean', dynamic: true, type: 'boolean'},
     {id: 'cleanUp', type: 'action', dynamic: true},
     {id: 'expectedCounters', as: 'single'},
-    {id: 'parentTest', type: 'test'}
+    {id: 'covers', as : 'array' }
   ],
   impl: function(ctx,calculate,expectedResult,runBefore,timeout,allowError,cleanUp,expectedCounters) {
 		const _timeout = ctx.vars.singleTest ? Math.max(1000,timeout) : timeout
@@ -148,19 +148,18 @@ extension('test', {
 		}		
 		return res
 	},
-	async runTests({testType,specificTest,show,pattern,notPattern,take,remoteTests,repo,showOnlyTest,top,dependentTestsOf}) {
+	async runTests({testType,specificTest,show,pattern,notPattern,take,remoteTests,repo,showOnlyTest,top,coveredTestsOf}) {
 		const {pipe, fromIter, subscribe,concatMap, fromPromise } = jb.callbag 
 		let index = 1
 
 		jb.test.initial_resources = JSON.stringify(jb.db.resources) //.replace(/\"\$jb_id":[0-9]*,/g,'')
 		jb.test.initial_comps = jb.watchableComps && jb.watchableComps.handler && jb.watchableComps.handler.resources()
-		jb.test.dependentTests = {}
+		jb.test.coveredTests = {}
 		jb.entries(jb.comps).forEach(e=>{
-			const parent = jb.path(e[1].impl,'parentTest.$')
-			if (parent) {
-				jb.test.dependentTests[parent] = jb.test.dependentTests[parent] || []
-				jb.test.dependentTests[parent].push(e[0])
-			}
+			(jb.path(e[1].impl,'covers') || []).forEach(test=>{
+				jb.test.coveredTests[test] = jb.test.coveredTests[test] || []
+				jb.test.coveredTests[test].push(e[0])
+			})
 		})
 
 		let tests = jb.entries(jb.comps)
@@ -172,8 +171,8 @@ extension('test', {
 	//		.filter(e=> !e[0].match(/throw/)) // tests that throw exceptions and stop the debugger
 			.filter(e=>!pattern || e[0].match(pattern))
 			.filter(e=>!notPattern || !e[0].match(notPattern))
-			.filter(e=> !top || !jb.path(e[1].impl,'parentTest'))
-			.filter(e=> !dependentTestsOf || (jb.test.dependentTests[dependentTestsOf] || []).includes(e[0]) || e[0] == dependentTestsOf)
+			.filter(e=> !top || !jb.test.coveredTests[e[0]])
+			.filter(e=> !coveredTestsOf || (jb.comps[coveredTestsOf].impl.covers || []).includes(e[0]) || e[0] == coveredTestsOf)
 			.filter(e=> jb.path(e[1].impl,'expectedResult') !== true)
 	//		.filter(e=>!e[0].match(/^remoteTest|inPlaceEditTest|patternsTest/) && ['uiTest','dataTest'].indexOf(e[1].impl.$) != -1) // || includeHeavy || specificTest || !e[1].impl.heavy )
 	//		.sort((a,b) => (a[0] > b[0]) ? 1 : ((b[0] > a[0]) ? -1 : 0))
@@ -233,11 +232,11 @@ extension('test', {
 		const spyLogs = ['test', ...(matchLogs.filter(x=>res.id.toLowerCase().indexOf(x) != -1)), 
 			...(matchLogsMap.flatMap( ([k,logs]) =>res.id.toLowerCase().indexOf(k) != -1 ? logs : []))]
 		const _repo = repo ? `&repo=${repo}` : ''
-		const dependentTests = jb.test.dependentTests[res.id] ? `<a href="${baseUrl}/tests.html?dependentTestsOf=${res.id}${_repo}">${jb.test.dependentTests[res.id].length} dependent tests</a>` : ''
+		const coveredTests = jb.comps[res.id].impl.covers ? `<a href="${baseUrl}/tests.html?coveredTestsOf=${res.id}${_repo}">${jb.comps[res.id].impl.covers.length} dependent tests</a>` : ''
 		return `<div class="${res.success ? 'success' : 'failure'}"">
 			<a href="${baseUrl}/tests.html?test=${res.id}${_repo}&show&spy=${spyLogs.join(',')}" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
 			<span> ${res.duration}mSec</span> 
-			${dependentTests}
+			${coveredTests}
 			<a class="test-button" href="javascript:jb.test.goto_editor('${res.id}','${repo||''}')">src</a>
 			<a class="test-button" href="${studioUrl}">studio</a>
 			<a class="test-button" href="javascript:jb.test.profileSingleTest('${res.id}')">profile</a>
