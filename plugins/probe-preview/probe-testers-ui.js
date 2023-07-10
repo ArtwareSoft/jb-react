@@ -72,7 +72,7 @@ component('test.FE_BE_interaction', {
         style: group.sectionExpandCollapse(text('FE <--> BE interaction')),
         controls: [
           text({
-            text: ({},{},{method}) => method == 'headlessIO' ? jb.spy.headlessIO() : jb.spy.uiTestHeadlessIO(), 
+            text: ({},{},{method}) => method == 'headlessIO' ? jb.spy.headlessIO() : jb.spy.uiTestHeadlessIO(),
             style: text.codemirror({enableFullScreen: true, height: '800', mode: 'javascript'}),
             features: [
               codemirror.fold(),
@@ -83,7 +83,7 @@ component('test.FE_BE_interaction', {
       }),
       divider()
     ]
-  }),
+  })
 })
 
 component('test.uiFrontEndTestView', {
@@ -175,6 +175,12 @@ component('test.uiTestRunner', {
   impl: group({
     controls: [
       test.successIndication('%$testId%'),
+      button({title: 'play', action: ({},{},{ctxToRun}) => {
+        debugger
+        const elemToTest = document.querySelector('.elemToTest')
+        elemToTest && ctx.setVars({elemToTest}).runInner(ctxToRun.profile.uiAction,{type: 'uiAction'}, 'uiAction')
+      }, 
+      style: button.href(), features: css.margin({left: '10'})}),
       group({
         controls: [
           controlWithCondition(

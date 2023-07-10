@@ -121,7 +121,7 @@ component('uiFrontEndTest', {
     {id: 'runInPreview', type: 'action', dynamic: true, descrition: 'not for test mode'},
     {id: 'runInStudio', type: 'action', dynamic: true, descrition: 'not for test mode'}
   ],
-  impl: async (_ctx,control,runBefore,action,expectedResult,allowError,cleanUp,expectedCounters,renderDOM) => {
+  impl: async (_ctx,control,runBefore,uiAction,expectedResult,allowError,cleanUp,expectedCounters,renderDOM) => {
 		if (typeof document == 'undefined')
 			return _ctx.run({..._ctx.profile, $: 'uiTest'})
 		const {testID, singleTest} = _ctx.vars
@@ -140,7 +140,7 @@ component('uiFrontEndTest', {
 			jb.logException(e,'error in test',{ctx})
 			error = await e
 		}
-		await (!error && jb.utils.toSynchArray(action(ctx),true))
+		await (!error && jb.utils.toSynchArray(uiAction(ctx),true))
 		await jb.delay(1)
 		Array.from(elemToTest.querySelectorAll('input,textarea')).forEach(e=>
 			e.parentNode && jb.ui.addHTML(e.parentNode,`<input-val style="display:none">${e.value}</input-val>`))
@@ -153,7 +153,8 @@ component('uiFrontEndTest', {
 		// default cleanup
 		if (!show && !singleTest) {
 			jb.ui.unmount(elemToTest)
-			ctx.run(runActions(dialog.closeAll(), dialogs.destroyAllEmitters()))
+			ctx.run(dialog.closeAll())
+			jb.ui.destroyAllDialogEmitters()
 		}
 		if (renderDOM && !show && !singleTest) document.body.removeChild(elemToTest)
 		await cleanUp()

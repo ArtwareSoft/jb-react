@@ -247,9 +247,10 @@ extension('utils', 'core', {
         res = ctx.vars[varname]
       else if (ctx.vars.scope && ctx.vars.scope[varname] !== undefined)
         res = ctx.vars.scope[varname]
-      else if (jb.db.resources && jb.db.resources[varname] !== undefined)
+      else if (jb.db.resources && jb.db.resources[varname] !== undefined) {
+        jb.db.useResourcesHandler(h => h.makeWatchable(varname))
         res = jb.utils.isRefType(jstype) ? jb.db.useResourcesHandler(h=>h.refOfPath([varname])) : jb.db.resource(varname)
-      else if (jb.db.consts && jb.db.consts[varname] !== undefined)
+      } else if (jb.db.consts && jb.db.consts[varname] !== undefined)
         res = jb.utils.isRefType(jstype) ? jb.db.simpleValueByRefHandler.objectProperty(jb.db.consts,varname) : res = jb.db.consts[varname]
     
       return jb.utils.resolveFinishedPromise(res)

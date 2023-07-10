@@ -140,7 +140,7 @@ extension('test', {
 			if (!doc) return
 			const ctxToRun = jb.ui.extendWithServiceRegistry(new jb.core.jbCtx(tstCtx,{ profile: profile.impl.control , forcePath: testID+ '~impl~control', path: '' } ))
 			const elem = doc.createElement('div')
-			elem.className = 'show'
+			elem.className = 'show elemToTest'
 			if (showOnlyTest)
 				doc.body.innerHTML = ''
 			doc.body.appendChild(elem)

@@ -238,7 +238,7 @@ extension('ui','headless', {
         }
     },
     destroyHeadless(widgetId) {
-        jb.exec(dialogs.destroyAllEmitters())
+        jb.ui.destroyAllDialogEmitters()
         jb.ui.unmount(jb.ui.headless[widgetId])
         delete jb.ui.headless[widgetId]
     }

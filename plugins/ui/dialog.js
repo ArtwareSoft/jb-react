@@ -479,14 +479,6 @@ component('dialogs.changeEmitter', {
 	require: {$: 'rx.subject'}
 })
 
-component('dialogs.destroyAllEmitters', { // should be defined at the widget level
-	type: 'action',
-	impl: () => Object.keys(jb.ui.dlgEmitters||{}).forEach(k=>{
-		jb.ui.dlgEmitters[k].trigger.complete()
-		delete jb.ui.dlgEmitters[k]
-	})
-})
-
 component('dialog.dialogTop', {
 	type: 'control',
 	params: [
@@ -525,4 +517,13 @@ component('dialogs.defaultStyle', {
 			)			
 		]
 	})
+})
+
+extension('ui','dialog' , {
+	destroyAllDialogEmitters: () => {
+		Object.keys(jb.ui.dlgEmitters||{}).forEach(k=>{
+			jb.ui.dlgEmitters[k].trigger.complete()
+			delete jb.ui.dlgEmitters[k]
+		})
+	}
 })

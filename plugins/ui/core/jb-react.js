@@ -324,10 +324,10 @@ extension('ui', 'react', {
             elem.removeAttribute(att)
             jb.log('dom change remove',{elem,att,val,ctx})
         } else if (att.indexOf('on-') == 0 && val != null && !elem[`registeredTo-${att}`]) {
-            elem.addEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev))
+            elem.addEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev,val))
             elem[`registeredTo-${att}`] = true
         } else if (att.indexOf('on-') == 0 && val == null) {
-            elem.removeEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev))
+            elem.removeEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev,val))
             elem[`registeredTo-${att}`] = false
         } else if (att === 'checked' && elem.tagName.toLowerCase() === 'input') {
             elem.setAttribute(att,val)
@@ -474,7 +474,7 @@ extension('ui', 'react', {
         const widgetId = jb.ui.frontendWidgetId(elem) || ev.widgetId
         jb.ui.widgetEventCounter[widgetId] = (jb.ui.widgetEventCounter[widgetId] || 0) + 1
         if (!ctxIdToRun)
-            return jb.logError('can not find ctxId for method',{ctx, method, id, widgetId,})
+            return jb.logError(`can not find ctxId for method ${method}`,{ctx, method, id, widgetId,})
 
         return {$:'userRequest', method, id, widgetId, ctxIdToRun, vars: 
             { evCounter: jb.ui.widgetEventCounter[widgetId], ev: jb.ui.buildUserEvent(ev, elem)} }
