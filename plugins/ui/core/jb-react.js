@@ -445,7 +445,7 @@ extension('ui', 'react', {
     },
     handleCmpEvent(ev, specificMethod) {
         specificMethod = specificMethod == 'true' ? true : specificMethod
-        const userReq = jb.ui.rawEventToUserRequest(ev,specificMethod)
+        const userReq = jb.ui.rawEventToUserRequest(ev,{specificMethod})
         jb.log('handle cmp event',{ev,specificMethod,userReq})
         if (!userReq) return true
         if (userReq.widgetId)
@@ -463,16 +463,20 @@ extension('ui', 'react', {
     sendUserReq(userReq) {
         jb.ui.widgetUserRequests.next(userReq)
     },
-    rawEventToUserRequest(ev, specificMethod) {
+    rawEventToUserRequest(ev, {specificMethod, ctx} = {}) {
         const elem = jb.ui.closestCmpElem(ev.currentTarget)
         //const elem = jb.ui.parents(ev.currentTarget,{includeSelf: true}).find(el=> el.getAttribute && el.getAttribute('jb-ctx') != null)
         if (!elem) 
-            return jb.logError('rawEventToUserRequest can not find closest elem with jb-ctx',{ev})
+            return jb.logError('rawEventToUserRequest can not find closest elem with jb-ctx',{ctx, ev})
+        const id = elem.getAttribute('id')
         const method = specificMethod && typeof specificMethod == 'string' ? specificMethod : `on${ev.type}Handler`
         const ctxIdToRun = jb.ui.ctxIdOfMethod(elem,method)
         const widgetId = jb.ui.frontendWidgetId(elem) || ev.widgetId
         jb.ui.widgetEventCounter[widgetId] = (jb.ui.widgetEventCounter[widgetId] || 0) + 1
-        return ctxIdToRun && {$:'userRequest', method, widgetId, ctxIdToRun, vars: 
+        if (!ctxIdToRun)
+            return jb.logError('can not find ctxId for method',{ctx, method, id, widgetId,})
+
+        return {$:'userRequest', method, id, widgetId, ctxIdToRun, vars: 
             { evCounter: jb.ui.widgetEventCounter[widgetId], ev: jb.ui.buildUserEvent(ev, elem)} }
     },
     calcElemProps(elem) {

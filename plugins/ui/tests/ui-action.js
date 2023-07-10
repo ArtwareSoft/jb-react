@@ -1,44 +1,7 @@
 dsl('test')
 
-component('userInput.eventToRequest', {
-    type: 'rx<>',
-    impl: rx.map( (ctx,{widgetId}) => {
-      if (!ctx.data.selector) return ctx.data
-      const currentTarget = jb.ui.findIncludeSelf(jb.ui.widgetBody(ctx.setVars({headlessWidget: true,headlessWidgetId: widgetId})),ctx.data.selector)[0]
-      return jb.ui.rawEventToUserRequest({ ...ctx.data, currentTarget, widgetId }, ctx.data.specificMethod)
-    })
-})
-
-component('userInput.click', {
-    type: 'user-input',
-    params: [
-      {id: 'selector', as: 'string', defaultValue: 'button'},
-      {id: 'methodToActivate', as: 'string'}
-    ],
-    impl: (ctx,selector,methodToActivate) => ({ type: 'click', selector, specificMethod: methodToActivate })
-})
-
-component('userInput.setText', {
-    type: 'user-input',
-    params: [
-      {id: 'value', as: 'string', mandatory: true},
-      {id: 'selector', as: 'string', defaultValue: 'input,textarea'}
-    ],
-    impl: (ctx,value,selector) => ({ type: 'blur', target: {value}, selector })
-})
-
-component('userInput.keyboardEvent', {
-    type: 'user-input',
-    params: [
-      {id: 'selector', as: 'string'},
-      {id: 'type', as: 'string', options: ['keypress', 'keyup', 'keydown']},
-      {id: 'keyCode', as: 'number'},
-      {id: 'ctrl', as: 'string', options: ['ctrl', 'alt']}
-    ],
-    impl: (ctx,selector,type,keyCode,ctrl) => ({ selector, type, keyCode , ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt'})
-})  
-
-// ****** uiActions
+// uiAction works in both uiTest and uiFrontEndTest. 
+// uiAction uses ctx.vars.elemToTest to decide whether to return a sourceCb of events (uiTest) or promise (uiFETest)
 
 component('action', {
   type: 'ui-action',
@@ -232,7 +195,7 @@ component('setText', {
           if (elemToTest) 
             jb.ui.handleCmpEvent(ev)
           else
-            return jb.ui.rawEventToUserRequest(ev)
+            return jb.ui.rawEventToUserRequest(ev,{ctx})
       },
     If('%$doNotWaitForNextUpdate%', '', waitForNextUpdate())
   )
@@ -256,7 +219,7 @@ component('click', {
       if (elemToTest) 
         elem.click()
       else
-        return jb.ui.rawEventToUserRequest({ type: 'click', currentTarget: elem, widgetId}, methodToActivate)
+        return jb.ui.rawEventToUserRequest({ type: 'click', currentTarget: elem, widgetId}, {specificMethod: methodToActivate, ctx})
     },
     If('%$doNotWaitForNextUpdate%', '', waitForNextUpdate())
   )
@@ -281,7 +244,7 @@ component('keyboardEvent', {
 
       const widgetId = jb.ui.parentWidgetId(elem) || ctx.vars.widgetId
       if (!elemToTest) 
-        return jb.ui.rawEventToUserRequest({ widgetId, type, keyCode , ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt', key: keyChar})
+        return jb.ui.rawEventToUserRequest({ widgetId, type, keyCode , ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt', key: keyChar}, {ctx})
 
       if (keyChar && type == 'keyup')
         elem.value = elem.value + keyChar

@@ -127,7 +127,7 @@ component('uiTest.button', {
 // component('uiTest.button.disabled', {
 //   impl: uiTest({
 //     control: button({title: 'btn1', action: delay(100), style: button.native()}),
-//     userInput: userInput.click(),
+//     uiAction: click(),
 //     expectedResult: contains('disabled')
 //   })
 // })
@@ -326,11 +326,8 @@ component('uiTest.codeMirrorDialogResizerOkCancel', {
 
 component('uiTest.renderable', {
   impl: uiTest({
-    control: button({
-      title: 'click me',
-      action: openDialog({ content: text('jbart'), title: text('hello as label') })
-    }),
-    userInput: userInput.click('button'),
+    control: button('click me', openDialog(text('hello as label'), text('jbart'))),
+    uiAction: click('button'),
     expectedResult: contains('hello as label')
   })
 })
@@ -744,21 +741,15 @@ component('uiTest.itemlistSelection.databind', {
           items: '%$people/name%',
           controls: text('%%'),
           features: [
-            itemlist.selection({
-              databind: '%$globals/selectedPerson%',
-              autoSelectFirst: true
-            }),
+            itemlist.selection({databind: '%$globals/selectedPerson%', autoSelectFirst: true}),
             watchRef('%$globals/selectedPerson%')
           ]
         }),
-        button({
-          title: 'select Marge',
-          action: writeValue('%$globals/selectedPerson%', '%$people/1/name%')
-        })
+        button('select Marge', writeValue('%$globals/selectedPerson%', '%$people/1/name%'))
       ]
     }),
-    userInput: userInput.click('button'),
-    expectedResult: contains(['li', 'li', 'selected', 'Marge'])
+    uiAction: click('button'),
+    expectedResult: contains(['li','li','selected','Marge'])
   })
 })
 
@@ -811,19 +802,18 @@ component('uiTest.itemlistContainerSearchCtrl', {
 component('uiTest.itemlistContainerSearch', {
   impl: uiTest({
     control: uiTest.itemlistContainerSearchCtrl(),
-    userInput: userInput.setText('ho', '#search'),
-    expectedResult: contains(['Ho<', '>mer'])
+    uiAction: setText('ho', '#search'),
+    expectedResult: contains(['Ho<','>mer'])
   })
 })
 
 component('FETest.itemlistContainerSearchEnterOnLi', {
   impl: uiFrontEndTest({
-    renderDOM: true,
-    vars: Var('res', obj()),
+    vars: [Var('res', obj())],
     control: uiTest.itemlistContainerSearchCtrl(),
-    //userInput: userInput.keyboardEvent({selector: '.jb-itemlist', type: 'keydown', keyCode: 13}),
-    action: keyboardEvent({ selector: '.jb-itemlist', type: 'keydown', keyCode: 13 }),
-    expectedResult: equals('%$res/selected%', 'Homer Simpson')
+    uiAction: keyboardEvent({selector: '.jb-itemlist', type: 'keydown', keyCode: 13}),
+    expectedResult: equals('%$res/selected%', 'Homer Simpson'),
+    renderDOM: true
   })
 })
 
@@ -940,24 +930,24 @@ component('FETest.onKey', {
 component('uiTest.editableText.blockSelfRefresh', {
   impl: uiTest({
     control: group({
-      controls: editableText({ title: 'name', databind: '%$person/name%', features: id('inp') }),
+      controls: editableText({title: 'name', databind: '%$person/name%', features: id('inp')}),
       features: watchRef('%$person/name%')
     }),
-    userInput: userInput.setText('hello', '#inp'),
+    uiAction: setText('hello', '#inp'),
     expectedResult: true,
-    expectedCounters: { 'start renderVdom': 2 }
+    expectedCounters: {'start renderVdom': 2}
   })
 })
 
 component('uiTest.editableText.allowSelfRefresh', {
   impl: uiTest({
     control: group({
-      controls: editableText({ title: 'name', databind: '%$person/name%' }),
-      features: watchRef({ ref: '%$person/name%', allowSelfRefresh: true })
+      controls: editableText('name', '%$person/name%'),
+      features: watchRef({ref: '%$person/name%', allowSelfRefresh: true})
     }),
-    userInput: userInput.setText('hello'),
+    uiAction: setText('hello'),
     expectedResult: contains('hello'),
-    expectedCounters: { 'start renderVdom': 4 }
+    expectedCounters: {'start renderVdom': 4}
   })
 })
 
@@ -1243,19 +1233,15 @@ component('uiTest.editableBoolean.expandCollapse', {
   impl: uiTest({
     control: group({
       controls: [
-        editableBoolean({
-          databind: '%$expanded%',
-          style: editableBoolean.expandCollapse(),
-          features: id('toggle')
-        }),
-        text({
-          text: 'inner text',
-          features: [feature.if('%$expanded%'), watchRef('%$expanded%')]
-        })
+        editableBoolean({databind: '%$expanded%', style: editableBoolean.expandCollapse(), features: id('toggle')}),
+        text({text: 'inner text', features: [
+          feature.if('%$expanded%'),
+          watchRef('%$expanded%')
+        ]})
       ],
       features: watchable('expanded', false)
     }),
-    userInput: userInput.click('#toggle', 'toggle'),
+    uiAction: click('#toggle', 'toggle'),
     expectedResult: contains('inner text')
   })
 })
@@ -1296,7 +1282,7 @@ component('uiTest.expandCollapseWithDefaultCollapse', {
 component('uiTest.editableBoolean.expandCollapseWithDefaultVal', {
   impl: uiTest({
     control: uiTest.expandCollapseWithDefaultCollapse(),
-    userInput: userInput.click('#default', 'toggle'),
+    uiAction: click('#default', 'toggle'),
     expectedResult: contains('inner text')
   })
 })
@@ -1682,9 +1668,9 @@ component('menuTest.pulldown', {
 
 component('menuTest.pulldown.inner', {
   impl: uiTest({
-    control: menu.control({ menu: menuTest.menu1(), style: menuStyle.pulldown({}) }),
-    userInput: userInput.click('[$text="File"]', 'openPopup'),
-    expectedResult: and(contains('Open'), contains(['File', 'Edit', 'dynamic-1', 'dynamic-3']))
+    control: menu.control(menuTest.menu1(), menuStyle.pulldown()),
+    uiAction: click('[$text=\"File\"]', 'openPopup'),
+    expectedResult: and(contains('Open'), contains(['File','Edit','dynamic-1','dynamic-3']))
   })
 })
 
@@ -1761,7 +1747,7 @@ component('uiTest.refreshWithStyleByCtrl', {
         method('refresh', action.refreshCmp(obj(prop('name', 'Dan'))))
       ]
     }),
-    userInput: userInput.click('button'),
+    uiAction: click('button'),
     expectedResult: contains('Dan')
   })
 })
@@ -1867,9 +1853,9 @@ component('uiTest.firstSucceedingWatchableSample', {
 component('uiTest.firstSucceeding.watchRefreshOnCtrlChange', {
   impl: uiTest({
     control: uiTest.firstSucceedingWatchableSample(),
-    userInput: userInput.click('#female'),
+    uiAction: click('#female'),
     expectedResult: contains('not male'),
-    expectedCounters: { 'start renderVdom': 9 }
+    expectedCounters: {'start renderVdom': 9}
   })
 })
 
@@ -1881,15 +1867,6 @@ component('uiTest.firstSucceeding.sameDoesNotRecreate', {
     expectedCounters: { 'start renderVdom': 11 }
   })
 })
-
-// jb.component('uiTest.firstSucceeding.watchRefreshOnCtrlChangeAndBack', {
-//   impl: uiTest({
-//     control: uiTest.firstSucceedingWatchableSample(),
-//     userInput: [userInput.click('#female'), userInput.click('#male')],
-//     expectedResult: contains('a male'),
-//     expectedCounters: {'start renderVdom': 11}
-//   })
-// })
 
 component('uiTest.watchRef.recalcVars', {
   impl: uiFrontEndTest({
@@ -1961,13 +1938,16 @@ component('uiTest.validator', {
         editableText({
           title: 'project',
           databind: '%$person/project%',
-          features: [id('fld'), validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid project name')]
+          features: [
+            id('fld'),
+            validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid project name')
+          ]
         })
       ]
     }),
-    userInput: userInput.setText('a b', '#fld'),
+    uiAction: setText('a b', '#fld'),
     expectedResult: contains('invalid project name'),
-    allowError: true,
+    allowError: true
   })
 })
 
@@ -2007,21 +1987,6 @@ component('uiTest.watchableWriteViaLink', {
     expectedResult: contains(['hello','hello'])
   })
 })
-
-// jb.component('ui-test.watchable-override-link-val', {
-//   impl: uiTest({
-//     control: group({
-//       controls: [
-//         text({text: '%$person/name%' }),
-//         text({text: '%$link/name%' }),
-//         button({title: 'set', action: writeValue('%$link%',obj(prop('name','hello'))), features: id('set')})
-//       ],
-//       features: watchable('link', '%$person%')
-//     }),
-//     userInput: userInput.click('#set'),
-//     expectedResult: contains(['Homer','hello'])
-//   })
-// })
 
 component('uiTest.watchableParentRefreshMaskChildren', {
   impl: uiFrontEndTest({
