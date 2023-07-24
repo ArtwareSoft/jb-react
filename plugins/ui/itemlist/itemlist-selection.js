@@ -102,6 +102,7 @@ component('itemlist.keyboardSelection', {
     frontEnd.prop('onkeydown', source.merge(source.frontEndEvent('keydown'), source.findSelectionKeySource())),
     frontEnd.flow(
       '%$cmp.onkeydown%',
+      rx.log('test'),
       rx.filter('%keyCode%==13'),
       rx.filter('%$cmp.state.selected%'),
       sink.BEMethod('onEnter', '%$cmp.state.selected%')

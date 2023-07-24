@@ -489,12 +489,8 @@ component('uiTest.table', {
       items: '%$people%',
       controls: [
         text('%name%'),
-        button({
-          title: 'delete',
-          style: button.x(),
-          features: field.columnWidth('50px')
-        })
-      ],
+        button({title: 'delete', style: button.x(), features: field.columnWidth('50px')})
+      ]
     }),
     expectedResult: contains('Homer Simpson')
   })

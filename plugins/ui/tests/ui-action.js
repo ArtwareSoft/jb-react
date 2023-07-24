@@ -229,7 +229,7 @@ component('keyboardEvent', {
   type: 'ui-action',
   params: [
     {id: 'selector', as: 'string'},
-    {id: 'type', as: 'string', options: ['keypress','keyup','keydown']},
+    {id: 'type', as: 'string', options: 'keypress,keyup,keydown'},
     {id: 'keyCode', as: 'number'},
     {id: 'keyChar', as: 'string'},
     {id: 'ctrl', as: 'string', options: ['ctrl','alt']}
@@ -250,6 +250,34 @@ component('keyboardEvent', {
         elem.value = elem.value + keyChar
       const e = new KeyboardEvent(type,{ ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt', key: keyChar })
       Object.defineProperty(e, 'keyCode', { get : _ => keyChar ? keyChar.charCodeAt(0) : keyCode })
+      Object.defineProperty(e, 'target', { get : _ => elem })
+      elem.dispatchEvent(e)
+    },
+    waitForNextUpdate()
+  )
+})
+
+component('changeEvent', {
+  type: 'ui-action',
+  params: [
+    {id: 'selector', as: 'string'},
+    {id: 'value', as: 'string'},
+  ],
+  impl: uiActions(
+    waitForSelector('%$selector%'),
+    (ctx,{elemToTest},{selector,value}) => {
+      const type = 'change'
+      const elem = selector ? ctx.vars.elemToTest.querySelector(selector) : elemToTest
+      jb.log('test uiAction keyboardEvent',{elem,selector,ctx})
+      if (!elem)
+        return jb.logError('can not find elem for test uiAction keyboardEvent',{ elem,selector,ctx})
+
+      const widgetId = jb.ui.parentWidgetId(elem) || ctx.vars.widgetId
+      if (!elemToTest) 
+        return jb.ui.rawEventToUserRequest({ widgetId, type, value }, {ctx})
+
+      elem.value = value
+      const e = new Event(type)
       Object.defineProperty(e, 'target', { get : _ => elem })
       elem.dispatchEvent(e)
     },
@@ -281,16 +309,16 @@ component('runMethod', {
     {id: 'selector', as: 'string'},
     {id: 'method', as: 'string' },
     {id: 'data', defaultValue: '%%' },
-    {id: 'vars', as: 'single' },
+    {id: 'ctxVars', as: 'single' },
     {id: 'doNotWaitForNextUpdate', as: 'boolean', type: 'boolean'}
   ],
   impl: uiActions(
     waitForSelector('%$selector%'),
-    (ctx,{elemToTest},{selector,method,data,vars}) => {
+    (ctx,{elemToTest},{selector,method,data,ctxVars}) => {
       if (elemToTest) return
       const elem = jb.ui.elemOfSelector(selector,ctx)
       const cmpElem = elem && jb.ui.closestCmpElem(elem)
-      jb.ui.runBEMethodByElem(cmpElem,method,data,vars ? {...ctx.vars, ...vars} : ctx.vars)
+      jb.ui.runBEMethodByElem(cmpElem,method,data,ctxVars ? {...ctx.vars, ...ctxVars} : ctx.vars)
     },
     If('%$doNotWaitForNextUpdate%', '', waitForNextUpdate()),
   )

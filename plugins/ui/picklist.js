@@ -6,7 +6,13 @@ component('picklist', {
   params: [
     {id: 'title', as: 'string', dynamic: true},
     {id: 'databind', as: 'ref', mandaroy: true, dynamic: true},
-    {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true, templateValue: picklist.optionsByComma()},
+    {
+      id: 'options',
+      type: 'picklist.options',
+      dynamic: true,
+      mandatory: true,
+      templateValue: picklist.optionsByComma()
+    },
     {id: 'promote', type: 'picklist.promote', dynamic: true},
     {id: 'style', type: 'picklist.style', defaultValue: picklist.native(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}

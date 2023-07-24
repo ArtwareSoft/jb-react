@@ -10,6 +10,7 @@ component('source.remote', {
     impl: (ctx,rx,jbm) => {
         if (!jbm)
             return jb.logError('source.remote - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
+        if (jbm == jb) return rx()
         const stripedRx = jbm.callbag ? rx : jb.remoteCtx.stripFunction(rx)
         return jb.callbag.pipe(
             jb.callbag.fromPromise(jbm), jb.callbag.mapPromise(_jbm=>_jbm.rjbm()),
@@ -27,6 +28,7 @@ component('remote.operator', {
     impl: (ctx,rx,jbm) => {
         if (!jbm)
             return jb.logError('remote.operator - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
+        if (jbm == jb) return rx()
         const stripedRx = jbm.callbag ? rx : jb.remoteCtx.stripFunction(rx)
         const profText = jb.utils.prettyPrint(rx.profile)
         let counter = 0
@@ -47,13 +49,6 @@ component('remote.operator', {
             jb.callbag.concatMap(rjbm => jb.callbag.pipe(
                 source, jb.callbag.replay(5), cleanDataObjVars, rjbm.createCallbagOperator(stripedRx), restoreDataObjVars)))
 
-        // if (jb.utils.isPromise(jbm)) {
-        //     jb.log('jbm as promise in remote operator, adding request buffer', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
-        //     return source => jb.callbag.pipe(jb.callbag.fromPromise(jbm),
-        //             jb.callbag.concatMap(_jbm=> jb.callbag.pipe(
-        //                 source, jb.callbag.replay(5), cleanDataObjVars, _jbm.createCallbagOperator(stripedRx), restoreDataObjVars)))
-        // }
-        //return source => jb.callbag.pipe(source, cleanDataObjVars, jbm.createCallbagOperator(stripedRx), restoreDataObjVars)
     }
 })
 
@@ -70,6 +65,7 @@ component('remote.action', {
     impl: async (ctx,action,jbm,oneway,timeout,require) => {
         if (!jbm)
             return jb.logError('remote.action - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
+        if (jbm == jb) return action()
         const rjbm = await (await jbm).rjbm()
         if (!rjbm || !rjbm.remoteExec)
             return jb.logError('remote.action - can not resolve jbm', {in: jb.uri, jbm, rjbm, jbmProfile: ctx.profile.jbm, jb, ctx})

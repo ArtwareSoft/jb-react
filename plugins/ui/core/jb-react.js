@@ -448,7 +448,7 @@ extension('ui', 'react', {
         const userReq = jb.ui.rawEventToUserRequest(ev,{specificMethod})
         jb.log('handle cmp event',{ev,specificMethod,userReq})
         if (!userReq) return true
-        if (userReq.widgetId)
+        if (userReq.widgetId && userReq.widgetId != 'client')
             jb.ui.sendUserReq(userReq)
         else {
             const ctx = jb.ctxDictionary[userReq.ctxIdToRun]

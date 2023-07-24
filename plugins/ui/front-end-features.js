@@ -24,9 +24,9 @@ component('action.runBEMethod', {
     params: [
       {id: 'method', as: 'string', dynamic: true },
       {id: 'data', defaultValue: '%%', dynamic: true },
-      {id: 'vars', dynamic: true },
+      {id: 'ctxVars', dynamic: true },
     ],
-    impl: (ctx,method,data,vars) => jb.ui.runBEMethodByContext(ctx,method(),data(),vars())
+    impl: (ctx,method,data,ctxVars) => jb.ui.runBEMethodByContext(ctx,method(),data(),ctxVars())
 })
 
 component('backend.dataMethod', {
@@ -36,15 +36,15 @@ component('backend.dataMethod', {
     {id: 'ctxIdToRun', as: 'string'},
     {id: 'method', as: 'string'},
     {id: 'data', defaultValue: '%%'},
-    {id: 'vars'}
+    {id: 'ctxVars'}
   ],
-  impl: (_ctx,ctxIdToRun,method,data,vars) => {
+  impl: (_ctx,ctxIdToRun,method,data,ctxVars) => {
     const ctx = jb.ctxDictionary[ctxIdToRun]
     if (!ctx)
-        return jb.logError(`no ctx found for data method: ${method}`, {ctxIdToRun, data, vars})
+        return jb.logError(`no ctx found for data method: ${method}`, {ctxIdToRun, data, ctxVars})
 
-    jb.log(`backend data method request: ${method}`,{cmp: ctx.vars.cmp, method,ctx, data,vars})
-    return ctx.setData(data).setVars(vars).runInner(ctx.profile.action,'action','action') // dirty: action should be data
+    jb.log(`backend data method request: ${method}`,{cmp: ctx.vars.cmp, method,ctx, data,ctxVars})
+    return ctx.setData(data).setVars(ctxVars).runInner(ctx.profile.action,'action','action') // dirty: action should be data
   }
 })
 
@@ -55,9 +55,9 @@ component('action.runFEMethod', {
   params: [
     {id: 'method', as: 'string', dynamic: true },
     {id: 'data', defaultValue: '%%', dynamic: true },
-    {id: 'vars', dynamic: true },
+    {id: 'ctxVars', dynamic: true },
   ],
-  impl: (ctx,method,data,vars) => ctx.vars.cmp && ctx.vars.cmp.runFEMethod(method(),data(),vars())
+  impl: (ctx,method,data,ctxVars) => ctx.vars.cmp && ctx.vars.cmp.runFEMethod(method(),data(),ctxVars())
 })
 
 component('sink.BEMethod', {
@@ -67,9 +67,9 @@ component('sink.BEMethod', {
     params: [
         {id: 'method', as: 'string', dynamic: true },
         {id: 'data', defaultValue: ({data}) => jb.frame.Event && data instanceof jb.frame.Event ? null : data, dynamic: true },
-        {id: 'vars', dynamic: true },
+        {id: 'ctxVars', dynamic: true },
     ],
-    impl: sink.action((ctx,{},{method,data,vars}) => jb.ui.runBEMethodByContext(ctx,method(ctx),data(ctx),vars(ctx)))
+    impl: sink.action((ctx,{},{method,data,ctxVars}) => jb.ui.runBEMethodByContext(ctx,method(ctx),data(ctx),ctxVars(ctx)))
 })
 
 component('sink.FEMethod', {
@@ -79,9 +79,9 @@ component('sink.FEMethod', {
   params: [
       {id: 'method', as: 'string', dynamic: true },
       {id: 'data', defaultValue: '%%', dynamic: true },
-      {id: 'vars', dynamic: true },
+      {id: 'ctxVars', dynamic: true },
   ],
-  impl: sink.action((ctx,{cmp},{method,data,vars}) => cmp && cmp.runFEMethod(method(ctx),data(ctx),vars(ctx)))
+  impl: sink.action((ctx,{cmp},{method,data,ctxVars}) => cmp && cmp.runFEMethod(method(ctx),data(ctx),ctxVars(ctx)))
 })
 
 component('action.refreshCmp', {
