@@ -236,7 +236,6 @@ component('uiTest.twoWayBinding', {
 //   })
 // })
 
-
 component('uiTest.autoFocusOnFirstInput', {
   impl: uiTest({
     control: group({
@@ -1422,13 +1421,16 @@ component('uiTest.picklist.delayedOptions.StyleByControlBug.Promise', {
   impl: uiTest({
     control: picklist({
       title: 'city',
-      style: picklist.labelList(),
       databind: '%$personWithAddress/address/city%',
-      options: pipe(delay(1), (obj(prop('options', picklist.optionsByComma('Springfield,New York,Tel Aviv,London'))))),
+      options: pipe(
+        delay(1),
+        obj(prop('options', picklist.optionsByComma('Springfield,New York,Tel Aviv,London')))
+      ),
+      style: picklist.labelList(),
       features: picklist.allowAsynchOptions()
     }),
     uiAction: waitForNextUpdate(),
-    expectedResult: contains(['Springfield', 'New York'])
+    expectedResult: contains(['Springfield','New York'])
   })
 })
 
@@ -1897,10 +1899,7 @@ component('uiTest.checkBoxWithText', {
 
 component('uiTest.hiddenRefBug', {
   impl: uiTest({
-    control: group({
-      controls: text({ text: 'hey', features: hidden('%$hidden%') }),
-      features: watchable('hidden', false)
-    }),
+    control: group({controls: text({text: 'hey', features: hidden('%$hidden%')}), features: watchable('hidden', false)}),
     expectedResult: contains('display:none')
   })
 })

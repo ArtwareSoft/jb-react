@@ -32,9 +32,9 @@ component('dslTest.jbDsl.usingCtrl', {
 
 component('remoteTest.dsl', {
   impl: uiTest({
-    control: remote.widget(location.control(israel()), worker()),
+    control: location.control(israel()),
     expectedResult: contains('Jerusalem'),
-    uiAction: waitForNextUpdate(),
-    timeout: 500
+    timeout: 500,
+    backEndJbm: worker()
   })
 })

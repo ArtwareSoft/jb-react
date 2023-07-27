@@ -21,22 +21,17 @@ component('workerPreviewTest.basic', {
   impl: uiTest({
     control: probe.remoteCircuitPreview(),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
-    uiAction: waitForNextUpdate(2),
+    uiAction: waitForText('hello'),
     expectedResult: contains('hello'),
-    timeout: 1000
+    timeout: 3000
   })
 })
 
 component('workerPreviewTest.changeScript', {
   impl: uiTest({
-    control: group({
-      controls: [
-        button('change script', writeValue(tgp.ref('sampleProject.main~impl~controls~text'), 'world')),
-        probe.remoteCircuitPreview()
-      ]
-    }),
+    control: probe.remoteCircuitPreview(),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
-    uiAction: uiActions(click(), waitForNextUpdate(3)),
+    uiAction: uiActions(writeValue(tgp.ref('sampleProject.main~impl~controls~text'), 'world'), waitForText('world')),
     expectedResult: contains('world'),
     timeout: 1000
   })
@@ -61,21 +56,6 @@ component('workerPreviewTest.changeScript', {
 //   }),
 //   require: sampleProject.main()
 // })
-
-component('workerPreviewTest.nodePreview', {
-  impl: uiTest({
-    control: group({
-      controls: [
-        button('change script', writeValue(tgp.ref('sampleProject.main~impl~controls~text'), 'world')),
-        probe.remoteCircuitPreview()
-      ]
-    }),
-    runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
-    uiAction: uiActions(click(), waitForNextUpdate(3)),
-    expectedResult: contains('world'),
-    timeout: 1000
-  })
-})
 
 component('FETest.workerPreviewTest.addCss', {
   impl: uiFrontEndTest({

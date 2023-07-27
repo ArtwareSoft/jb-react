@@ -109,7 +109,7 @@ component('waitForText', {
     {id: 'text', as: 'string' },
   ],
   impl: waitFor((ctx,{},{text}) => {
-    const body = jb.ui.widgetBody(ctx)
+    const body = jb.ui.widgetBody(ctx.setVars({headlessWidget: false})) // look at FE
     const lookin = typeof body.outerHTML == 'function' ? body.outerHTML() : body.outerHTML
     return lookin.indexOf(text) != -1
   })
@@ -145,11 +145,12 @@ component('waitForNextUpdate', {
     if (ctx.vars.elemToTest) return resolve() // maybe should find the widget
     let done = false
     const { updatesCounterAtBeginUIActions, widgetId} = ctx.vars
-    if (!widgetId || !jb.ui.headless[widgetId]) {
+    const widget = jb.ui.headless[widgetId] || jb.ui.FEEmulator[widgetId]
+    if (!widget) {
       jb.logError('uiTest waitForNextUpdate can not find widget',{ctx, widgetId})
       return resolve()
     }    
-    const currentCounter = jb.ui.headless[widgetId].updatesCounter || 0
+    const currentCounter = widget.updatesCounter || 0
     const baseCounter = updatesCounterAtBeginUIActions != null ? updatesCounterAtBeginUIActions : currentCounter
     if (expectedCounter == 0)
       expectedCounter = baseCounter + 1
@@ -160,11 +161,11 @@ component('waitForNextUpdate', {
       return resolve() 
     }
     jb.ui.renderingUpdates(0, (t,d) => {
-      if (!jb.ui.headless[widgetId]) return
+      if (!widget) return
       let talkback = null
       if (t == 0)
         talkback = d
-      const currentCounter = jb.ui.headless[widgetId].updatesCounter || 0
+      const currentCounter = widget.updatesCounter || 0
       if (t == 1 && !done && d.widgetId == widgetId && currentCounter >= expectedCounter) {
         done = true
         talkback && talkback(2)
@@ -221,7 +222,7 @@ component('click', {
       else
         return jb.ui.rawEventToUserRequest({ type: 'click', currentTarget: elem, widgetId}, {specificMethod: methodToActivate, ctx})
     },
-    If('%$doNotWaitForNextUpdate%', '', waitForNextUpdate())
+    If(or('%$remoteUiTest%','%$doNotWaitForNextUpdate%'), '', waitForNextUpdate())
   )
 })
   

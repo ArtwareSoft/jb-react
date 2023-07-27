@@ -21,12 +21,7 @@ component('studioTest.save', {
 
 component('eventTracker.uiTest.vDebugger', {
   impl: uiTest({
-    control: group({
-      controls: [
-        remote.widget(editableText({databind: '%$person/name%'}), worker()),
-        remote.widget(studio.eventTracker(), byUri('tests•w1•vDebugger'))
-      ]
-    }),
+    control: studio.eventTracker(),
     runBefore: remote.action(
       runActions(
         jbm.start(jbm.vDebugger()),
@@ -35,8 +30,8 @@ component('eventTracker.uiTest.vDebugger', {
       ),
       worker()
     ),
-    uiAction: uiActions(waitForNextUpdate(),waitForNextUpdate()),
     expectedResult: contains('remote rec'),
-    timeout: 2000
+    timeout: 2000,
+    backEndJbm: byUri('tests•w1•vDebugger')
   })
 })

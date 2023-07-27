@@ -9,38 +9,41 @@ component('uiTest', {
   params: [
     {id: 'control', type: 'control', dynamic: true, mandatory: true},
     {id: 'runBefore', type: 'action', dynamic: true},
-    {id: 'uiAction', type: 'ui-action<test>', dynamic: true },
+    {id: 'uiAction', type: 'ui-action<test>', dynamic: true},
     {id: 'expectedResult', type: 'boolean', dynamic: true, mandatory: true},
     {id: 'allowError', as: 'boolean', dynamic: true, type: 'boolean'},
     {id: 'timeout', as: 'number', defaultValue: 200},
     {id: 'cleanUp', type: 'action', dynamic: true},
-    {id: 'expectedCounters', as: 'single'}
+    {id: 'expectedCounters', as: 'single'},
+    {id: 'backEndJbm', type: 'jbm<jbm>', defaultValue: jbm.self()}
   ],
   impl: dataTest({
     vars: [
       Var('uiTest', true),
       Var('widgetId', widget.newId()),
-	  Var('headlessWidget', true),
-	  Var('headlessWidgetId', '%$widgetId%')
+      Var('headlessWidget', true),
+	  Var('remoteUiTest', notEquals('%$backEndJbm%', () => jb)),
+      Var('headlessWidgetId', '%$widgetId%')
     ],
     calculate: rx.pipe(
-	  uiActions(typeCast('ui-action<test>'),'%$uiAction()%'),
+      uiActions(typeCast('ui-action<test>'),'%$uiAction()%'),
       rx.log('uiTest userRequest from widgetUserRequests'),
-      widget.headless('%$control()%', '%$widgetId%'),
+      remote.operator(widget.headless('%$control()%', '%$widgetId%'), '%$backEndJbm%'),
       rx.log('uiTest uiDelta from headless'),
       rx.takeUntil('%$$testFinished%'),
+      rx.do(uiTest.aggregateDelta('%%')),
       rx.toArray(),
       rx.var('html', uiTest.vdomResultAsHtml()),
       rx.var('success', pipeline('%$html%', call('expectedResult'), last())),
       rx.log('check uiTest result', obj(prop('success', '%$success%'), prop('html', '%$html%'))),
-	  rx.map('%$success%'),
+      rx.map('%$success%'),
       rx.do(({},{widgetId})=> !jb.test.singleTest && jb.ui.destroyHeadless(widgetId))
     ),
     expectedResult: '%%',
-    runBefore: '%$runBefore()%',
+    runBefore: runActions(uiTest.addFrontEndEmulation() , '%$runBefore()%'),
     timeout: '%$timeout%',
     allowError: '%$allowError()%',
-    cleanUp: call('cleanUp'),
+    cleanUp: runActions(uiTest.removeFrontEndEmulation() ,call('cleanUp')),
     expectedCounters: '%$expectedCounters%'
   })
 })
@@ -102,19 +105,46 @@ component('uiFrontEndTest', {
 
 component('uiTest.vdomResultAsHtml', {
   impl: ctx => {
-		const widget = jb.ui.headless[ctx.vars.widgetId]
-		if (!widget) return ''
-		if (typeof document == 'undefined') // in worker
-			return widget.body ? widget.body.outerHTML() : ''
-		return widget.body.children.map(vdom => {
-			const elemToTest = document.createElement('div')
-			elemToTest.ctxForFE = ctx.setVars({elemToTest})
-			jb.ui.render(vdom, elemToTest,{doNotRefreshFrontEnd: true})
-			Array.from(elemToTest.querySelectorAll('input,textarea')).forEach(e=> e.parentNode && 
-				jb.ui.addHTML(e.parentNode,`<input-val style="display:none">${e.value}</input-val>`))		
-			return elemToTest.outerHTML	
-		}).join('\n')
+		const widget = jb.ui.FEEmulator[ctx.vars.widgetId]
+		// jb.ui.headless[ctx.vars.widgetId] || 
+		if (!widget || !widget.body) return ''
+		if (typeof widget.body.outerHTML == 'function')
+			return widget.body.outerHTML()
+		// if (typeof document == 'undefined') // in worker
+		// 	return widget.body ? widget.body.outerHTML() : ''
+		// return widget.body.children.map(vdom => {
+		// 	const elemToTest = document.createElement('div')
+		// 	elemToTest.ctxForFE = ctx.setVars({elemToTest})
+		// 	jb.ui.render(vdom, elemToTest,{doNotRefreshFrontEnd: true})
+		// 	Array.from(elemToTest.querySelectorAll('input,textarea')).forEach(e=> e.parentNode && 
+		// 		jb.ui.addHTML(e.parentNode,`<input-val style="display:none">${e.value}</input-val>`))		
+		// 	return elemToTest.outerHTML	
+		// }).join('\n')
 	}
+})
+
+component('uiTest.addFrontEndEmulation', {
+	impl: ctx => jb.ui.FEEmulator[ctx.vars.widgetId] = { body: jb.ui.h('div',{widgetId:ctx.vars.widgetId, widgetTop:true, frontend: true}) }
+})
+
+component('uiTest.removeFrontEndEmulation', {
+	impl: ctx => delete jb.ui.FEEmulator[ctx.vars.widgetId]
+})
+
+component('uiTest.aggregateDelta', {
+  type: 'action',
+  params: [
+    {id: 'ev' },
+  ],
+  impl: (ctx, ev) => {
+	const {delta,css,widgetId,cmpId} = ev
+	const assumedVdom = null
+	const ctxToUse = ctx.setVars({headlessWidget: false, FEwidgetId: widgetId})
+	const widgetBody = jb.ui.widgetBody(ctxToUse)
+	const elem = cmpId ? jb.ui.find(widgetBody,`[cmp-id="${cmpId}"]`)[0] : widgetBody
+	jb.log('uiTest aggregate delta',{ctx,delta,ev,cmpId, widgetBody,elem})
+	jb.ui.applyDeltaToCmp({delta,ctx: ctxToUse,cmpId,elem,assumedVdom})
+  }
 })
 
 component('uiTest.applyVdomDiff', {
@@ -144,6 +174,9 @@ component('uiTest.applyVdomDiff', {
 })
 
 extension('ui','tester', {
+	initExtension() {
+		return { FEEmulator: {} }
+	},
 	elemOfSelector: (selector,ctx) => {
 		const widgetBody = jb.ui.widgetBody(ctx)
 		if (widgetBody)

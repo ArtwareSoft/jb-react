@@ -49,90 +49,6 @@ extension('ui', 'react', {
             r => jb.spy.findProp(r,'delta') && ({ props: {delta: jb.ui.beautifyDelta(jb.spy.findProp(r,'delta')) }})
         ])   
     },
-    h(cmpOrTag,attributes,children) {
-        if (cmpOrTag instanceof jb.ui.VNode) return cmpOrTag // Vdom
-        if (cmpOrTag && cmpOrTag.renderVdom)
-            return cmpOrTag.renderVdomAndFollowUp()
-    
-        return new jb.ui.VNode(cmpOrTag,attributes,children)
-    },
-    compareVdom(b,after,ctx) {
-        const a = after instanceof jb.ui.VNode ? jb.ui.stripVdom(after) : after
-        jb.log('vdom diff compare',{before: b,after : a,ctx})
-        const attributes = jb.utils.objectDiff(a.attributes || {}, b.attributes || {})
-        const children = childDiff(b.children || [],a.children || [])
-        return { 
-            ...(Object.keys(attributes).length ? {attributes} : {}), 
-            ...(children ? {children} : {}),
-            ...(a.tag != b.tag ? { tag: a.tag} : {})
-        }
-
-        function childDiff(b,a) {
-            if (b.length == 0 && a.length ==0) return
-            if (a.length == 1 && b.length == 1 && a[0].tag == b[0].tag)
-                return { 0: {...jb.ui.compareVdom(b[0],a[0],ctx),__afterIndex: 0}, length: 1 }
-            jb.log('vdom child diff start',{before: b,after: a,ctx})
-            const beforeWithIndex = b.map((e,i)=> ({i, ...e}))
-            let remainingBefore = beforeWithIndex.slice(0)
-            // locating before-objects in after-array. done in two stages. also calcualing the remaining before objects that were not found
-            const afterToBeforeMap = a.map(toLocate => locateVdom(toLocate,remainingBefore))
-            a.forEach((toLocate,i) => afterToBeforeMap[i] = afterToBeforeMap[i] || sameIndexSameTag(toLocate,i,remainingBefore))
-
-            const reused = []
-            const res = { length: 0, sameOrder: true }
-            beforeWithIndex.forEach( (e,i) => {
-                const __afterIndex = afterToBeforeMap.indexOf(e)
-                if (__afterIndex != i) res.sameOrder = false
-                if (__afterIndex == -1) {
-                    res.length = i+1
-                    res[i] =  {$$: 'delete' } //, __afterIndex: i }
-                } else {
-                    reused[__afterIndex] = true
-                    const innerDiff = { __afterIndex, ...jb.ui.compareVdom(e, a[__afterIndex],ctx), ...(e.$remount ? {remount: true}: {}) }
-                    if (Object.keys(innerDiff).length > 1) {
-                        res[i] = innerDiff
-                        res.length = i+1
-                    }
-                }
-            })
-            res.toAppend = a.flatMap((e,i) => reused[i] ? [] : [ Object.assign( e, {__afterIndex: i}) ])
-            jb.log('vdom child diff result',{res,before: b,after: a,ctx})
-            if (!res.length && !res.toAppend.length) return null
-            return res
-
-            function locateVdom(toLocate,remainingBefore) {
-                const found = remainingBefore.findIndex(before=>sameSource(before,toLocate))
-                if (found != -1)                
-                    return remainingBefore.splice(found,1)[0]
-            }
-            function sameIndexSameTag(toLocate,index,remainingBefore) {
-                const found = remainingBefore.findIndex(before=>before.tag && before.i == index && before.tag === toLocate.tag)
-                if (found != -1) {
-                    const ret = remainingBefore.splice(found,1)[0]
-                    if (ret.attributes.ctxId && !sameSource(ret,toLocate))
-                        ret.$remount = true
-                    return ret
-                }
-            }
-            function sameSource(vdomBefore,vdomAfter) {
-                if (vdomBefore.cmp && vdomBefore.cmp === vdomAfter.cmp) return true
-                const atts1 = vdomBefore.attributes || {}, atts2 = vdomAfter.attributes || {}
-                if (atts1['cmp-id'] && atts1['cmp-id'] === atts2['cmp-id'] || atts1['jb-ctx'] && atts1['jb-ctx'] === atts2['jb-ctx']) return true
-                if (compareCtxAtt('path',atts1,atts2) && compareCtxAtt('data',atts1,atts2)) return true
-                if (compareAtts(['id','path','name'],atts1,atts2)) return true
-            }
-            function compareAtts(attsToCompare,atts1,atts2) {
-                for(let i=0;i<attsToCompare.length;i++)
-                    if (atts1[attsToCompare[i]] && atts1[attsToCompare[i]] == atts2[attsToCompare[i]])
-                        return true
-            }
-            function compareCtxAtt(att,atts1,atts2) {
-                const val1 = atts1.ctxId && jb.path(jb.ctxDictionary[atts1.ctxId],att)
-                const val2 = atts2.ctxId && jb.path(jb.ctxDictionary[atts2.ctxId],att)
-                return val1 && val2 && val1 == val2
-            }            
-        }
-    },
 
     applyNewVdom(elem,vdomAfter,{strongRefresh, ctx, delta, srcCtx} = {}) {
         const widgetId = jb.ui.headlessWidgetId(elem)
@@ -148,7 +64,8 @@ extension('ui', 'react', {
         }
         if (widgetId) {
             const cmpId = elem.getAttribute('cmp-id')
-            const delta = jb.ui.compareVdom(elem,vdomAfter,ctx)
+            const vdomBefore = elem instanceof jb.ui.VNode ? elem : jb.ui.elemToVdom(elem)
+            const delta = jb.ui.compareVdom(vdomBefore,vdomAfter,ctx)
             const assumedVdom = JSON.parse(JSON.stringify(jb.ui.stripVdom(elem)))
             if (elem != vdomAfter) { // update the elem
                 ;(elem.children ||[]).forEach(ch=>ch.parentNode = null)
@@ -175,20 +92,6 @@ extension('ui', 'react', {
         jb.ui.refreshFrontEnd(elem, {content: vdomAfter})
         if (active) jb.ui.focus(elem,'apply Vdom diff',ctx)
         jb.ui.garbageCollectCtxDictionary()
-    },
-    elemToVdom(elem) {
-        if (elem instanceof jb.ui.VNode) return elem
-        if (elem.getAttribute('jb_external')) return
-        const textNode = Array.from(elem.children).filter(x=>x.tagName != 'BR').length == 0
-        return {
-            tag: elem.tagName.toLowerCase(),
-            attributes: jb.objFromEntries([
-                ...Array.from(elem.attributes).map(e=>[e.name,e.value]), 
-                ...(textNode ? [['$text',elem.innerText]] : [])
-                //...(jb.path(elem,'firstChild.nodeName') == '#text' ? [['$text',elem.firstChild.nodeValue]] : [])
-            ]),
-            ...( elem.childElementCount && !textNode && { children: Array.from(elem.children).map(el=> jb.ui.elemToVdom(el)).filter(x=>x) })
-        }
     },
 
     applyDeltaToDom(elem,delta,ctx) {
@@ -302,21 +205,6 @@ extension('ui', 'react', {
             elem.children = childElems.filter(ch=>ch.tag != '#text')
         }
         Object.assign(elem.attributes,delta.attributes)
-    },
-	beautifyXml(xml) {
-		return xml.trim().split(/>\s*</).reduce( (acc, node) => {
-			const pad = Math.max(0,acc[1] + (node.match( /^\w[^>]*[^\/]/ ) ? 1 :node.match( /^\/\w/ ) ? -1 : 0))
-			return [acc[0] + new Array(pad).join('  ') + '<' + node + '>\n', pad]
-		}, ['',0])[0].slice(1,-2)
-	},    
-    beautifyDelta(delta) {
-        const childs = delta.children
-        const childrenAtts = childs && ['sameOrder','resetAll','deleteCmp'].filter(p=>childs[p]).map(p=>p+'="' + childs[p] +'"').join(' ')
-        const childrenArr = childs.length ? Array.from(Array(childs.length).keys()).map(i=>childs[i]) : []
-        const children = (childrenAtts || childrenArr.length) && `<children ${childrenAtts||''}>${childrenArr.map(ch=>jb.ui.vdomToHtml(ch)).join('')}</children>`
-        const toAppend = childs && childs.toAppend && `<toAppend>${childs.toAppend.map(ch=>jb.ui.vdomToHtml(ch)).join('')}</toAppend>`
-        return jb.ui.beautifyXml(`<delta ${jb.entries(delta.attributes).map(([k,v]) => k+'="' +v + '"').join(' ')}>
-            ${[children,toAppend].filter(x=>x).join('')}</delta>`)
     },
     setAtt(elem,att,val,ctx) {
         if (val == '__undefined') val = null
@@ -541,91 +429,11 @@ extension('ui', 'react', {
             jb.ui.handleUserRequestAndUdateCmpState(ctx,data,vars)
         }
     },
-    ctrl(origCtx,options) {
-        const styleByControl = jb.path(origCtx,'cmpCtx.profile.$') == 'styleByControl'
-        const $state = (origCtx.vars.$refreshElemCall || styleByControl) ? origCtx.vars.$state : {}
-        const cmpId = origCtx.vars.$cmpId, cmpVer = origCtx.vars.$cmpVer
-        if (!origCtx.vars.$serviceRegistry)
-            jb.logError('no serviceRegistry',{ctx: origCtx})
-        const ctx = origCtx.setVars({
-            $model: { ctx: origCtx, ...origCtx.params},
-            $state,
-            $serviceRegistry: origCtx.vars.$serviceRegistry,
-            $refreshElemCall : undefined, $props : undefined, cmp: undefined, $cmpId: undefined, $cmpVer: undefined 
-        })
-        const styleOptions = runEffectiveStyle(ctx) || {}
-        if (styleOptions instanceof jb.ui.JbComponent)  {// style by control
-            return styleOptions.orig(ctx).jbExtend(options,ctx).applyParamFeatures(ctx)
-        }
-        return new jb.ui.JbComponent(ctx,cmpId,cmpVer).jbExtend(options,ctx).jbExtend(styleOptions,ctx).applyParamFeatures(ctx)
-    
-        function runEffectiveStyle(ctx) {
-            const profile = origCtx.profile
-            const defaultVar = '$theme.' + (profile.$ || '')
-            if (!profile.style && origCtx.vars[defaultVar])
-                return ctx.run({$:origCtx.vars[defaultVar]})
-            return origCtx.params.style ? origCtx.params.style(ctx) : {}
-        }
-    },
-    garbageCollectCtxDictionary(forceNow,clearAll) {
-        if (!forceNow)
-            return jb.delay(1000).then(()=>jb.ui.garbageCollectCtxDictionary(true))
-   
-        const used = 'jb-ctx,full-cmp-ctx,pick-ctx,props-ctx,methods,frontEnd,originators'.split(',')
-            .flatMap(att=>querySelectAllWithWidgets(`[${att}]`)
-                .flatMap(el => el.getAttribute(att).split(',').map(x=>Number(x.split('-').pop())).filter(x=>x)))
-                    .sort((x,y)=>x-y)
-
-        // remove unused ctx from dictionary
-        const dict = Object.keys(jb.ctxDictionary).map(x=>Number(x)).sort((x,y)=>x-y)
-        let lastUsedIndex = 0;
-        const removedCtxs = [], removedResources = [], maxUsed = used.slice(-1)[0] || (clearAll ? Number.MAX_SAFE_INTEGER : 0)
-        for(let i=0;i<dict.length && dict[i] < maxUsed;i++) {
-            while (used[lastUsedIndex] < dict[i])
-                lastUsedIndex++;
-            if (used[lastUsedIndex] != dict[i]) {
-                removedCtxs.push(dict[i])
-                delete jb.ctxDictionary[''+dict[i]]
-            }
-        }
-        // remove unused vars from resources
-        const ctxToPath = ctx => Object.values(ctx.vars).filter(v=>jb.db.isWatchable(v)).map(v => jb.db.asRef(v))
-            .map(ref=>jb.db.refHandler(ref).pathOfRef(ref)).flat()
-        const globalVarsUsed = jb.utils.unique(used.map(x=>jb.ctxDictionary[''+x]).filter(x=>x).map(ctx=>ctxToPath(ctx)).flat())
-        Object.keys(jb.db.resources).filter(id=>id.indexOf(':') != -1)
-            .filter(id=>globalVarsUsed.indexOf(id) == -1)
-            .filter(id=>+id.split(':').pop < maxUsed)
-            .forEach(id => { removedResources.push(id); delete jb.db.resources[id]})
-
-        // remove front-end widgets
-        const usedWidgets = jb.objFromEntries(
-            Array.from(querySelectAllWithWidgets(`[widgetid]`)).filter(el => el.getAttribute('frontend')).map(el => [el.getAttribute('widgetid'),1]))
-        const removeWidgets = Object.keys(jb.ui.frontendWidgets||{}).filter(id=>!usedWidgets[id])
-
-        removeWidgets.forEach(widgetId => {
-            jb.ui.sendUserReq({$$:'destroy', widgetId, destroyWidget: true, cmps: [] })
-            if (jb.ui.frontendWidgets) delete jb.ui.frontendWidgets[widgetId]
-        })
-        
-        // remove component follow ups
-        const removeFollowUps = Object.keys(jb.ui.followUps).flatMap(cmpId=> {
-            const curVer = Array.from(querySelectAllWithWidgets(`[cmp-id="${cmpId}"]`)).map(el=>+el.getAttribute('cmp-ver'))[0]
-            return jb.ui.followUps[cmpId].flatMap(({cmp})=>cmp).filter(cmp => !curVer || cmp.ver > curVer)
-        })
-        if (removeFollowUps.length)
-            jb.ui.BECmpsDestroyNotification.next({ cmps: removeFollowUps})
-
-        jb.log('garbageCollect',{maxUsed,removedCtxs,removedResources,removeWidgets,removeFollowUps})
-
-        function querySelectAllWithWidgets(query) {
-            return jb.ui.headless ? [...Object.values(jb.ui.headless).filter(x=>x.body).flatMap(w=>w.body.querySelectorAll(query,{includeSelf:true})), 
-                ...Array.from(jb.frame.document && document.querySelectorAll(query) || [])].filter(x=>x) : []
-        }
-    },
     applyDeltaToCmp({delta, ctx, cmpId, elem, assumedVdom}) {
         if (!delta) return
         elem = elem || jb.ui.elemOfCmp(ctx,cmpId)
         if (!elem || delta._$prevVersion && delta._$prevVersion != elem.getAttribute('cmp-ver')) {
+            jb.ui.elemOfCmp(ctx,cmpId) // for debug
             const reason = elem ? 'unexpected version' : 'elem not found'
             jb.logError(`applyDeltaToCmp: ${reason}`,{reason, delta, ctx, cmpId, elem})
             return // { recover: true, reason }
@@ -645,56 +453,14 @@ extension('ui', 'react', {
         jb.log('applyDelta uiComp',{cmpId, delta, ctx, elem, bySelector, actualElem})
         if (actualElem instanceof jb.ui.VNode) {
             jb.ui.applyDeltaToVDom(actualElem, actualdelta,ctx)
-            jb.ui.sendRenderingUpdate(ctx,{delta,cmpId,widgetId: ctx.vars.headlessWidgetId,ctx})
-            if (ctx.vars.uiTest && jb.path(jb,'parent.uri') == 'tests' && jb.path(jb,'parent.ui.renderingUpdates')) // used for distributedWidget tests
-                jb.parent.ui.sendRenderingUpdate(ctx,{delta,ctx})
+            const { headlessWidgetId, headlessWidget, uiTest } = ctx.vars
+            headlessWidget && jb.ui.sendRenderingUpdate(ctx,{delta,cmpId,widgetId: headlessWidgetId,ctx})
+            // if (uiTest && jb.path(jb,'parent.uri') == 'tests' && jb.path(jb,'parent.ui.renderingUpdates')) // used for distributedWidget tests
+            //     jb.parent.ui.sendRenderingUpdate(ctx,{delta,ctx})
         } else if (actualElem) {
             jb.ui.applyDeltaToDom(actualElem, actualdelta, ctx)
             jb.ui.refreshFrontEnd(actualElem, {content: delta})
         }
-    },
-    refreshElem(elem, state, options = {}) {
-        if (jb.path(elem,'_component.state.frontEndStatus') == 'initializing' || jb.ui.findIncludeSelf(elem,'[__refreshing]')[0]) 
-            return jb.logError('circular refresh',{elem, state, options})
-        const cmpId = elem.getAttribute('cmp-id'), cmpVer = +elem.getAttribute('cmp-ver')
-        const _ctx = jb.ui.ctxOfElem(elem)
-        if (!_ctx) 
-            return jb.logError('refreshElem - no ctx for elem',{elem, cmpId, cmpVer})
-        const strongRefresh = jb.path(options,'strongRefresh')
-        const newState = strongRefresh ? {refresh: true } 
-            : { ...jb.path(elem._component,'state'), refreshSource: jb.path(options,'refreshSource'), refresh: true, ...state} // strongRefresh kills state
-        let ctx = _ctx.setVars({$model: null, $state: newState, $refreshElemCall: true, $cmpId: cmpId, $cmpVer: cmpVer+1})
-        ctx._parent = null
-        if (options && options.extendCtx)
-            ctx = options.extendCtx(ctx)
-//        ctx = ctx.setVar('$refreshElemCall',true).setVar('$cmpId', cmpId).setVar('$cmpVer', cmpVer+1) // special vars for refresh
-        if (ctx.vars.$previewMode && jb.watchableComps && jb.watchableComps.handler) // updating to latest version of profile - todo: moveto studio
-            ctx.profile = jb.watchableComps.handler.valOfPath(ctx.path.split('~')) || ctx.profile
-        elem.setAttribute('__refreshing','')
-        const cmp = ctx.profile.$ == 'openDialog' ? ctx.run(dialog.buildComp()) : ctx.runItself()
-        jb.log('refresh elem start',{cmp,ctx,newState ,elem, state, options})
-
-        const className = elem.className != null ? elem.className : jb.path(elem.attributes.class) || ''
-        const existingClass = (className.match(/[•a-zA-Z0-9_-]+⦾[0-9]*/)||[''])[0]
-        if (jb.path(options,'cssOnly') && existingClass) {
-            const { headlessWidget, headlessWidgetId } = ctx.vars
-            if (headlessWidget) {
-                const existingElemId = jb.entries(jb.ui.headless[headlessWidgetId].styles||{}).find(([id,text])=>text.indexOf(existingClass) != -1)[0]
-                jb.log('css only refresh headelss element',{existingElemId, cmp, lines: cmp.cssLines,ctx,elem, state, options})
-                jb.ui.hashCss(cmp.calcCssLines(),cmp.ctx,{existingClass, existingElemId})
-            } else {
-                const existingElem = Array.from(document.querySelectorAll('style')).find(el=>el.innerText.indexOf(existingClass) != -1)
-                const existingElemId = existingElem.getAttribute('elemId')
-                jb.log('css only refresh element',{existingElemId, existingElem, cmp, lines: cmp.cssLines,ctx,elem, state, options})
-                jb.ui.hashCss(cmp.calcCssLines(),cmp.ctx,{existingClass, existingElemId})
-            }
-        } else {
-            jb.log('do refresh element',{cmp,ctx,elem, state, options})
-            cmp && jb.ui.applyNewVdom(elem, jb.ui.h(cmp), {strongRefresh, ctx, srcCtx: options.srcCtx})
-        }
-        elem.removeAttribute('__refreshing')
-        jb.ui.refreshNotification.next({cmp,ctx,elem, state, options})
-        //jb .studio.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
     },
     sendRenderingUpdate(ctx,ev) {
         jb.ui.renderingUpdates.next(ev)

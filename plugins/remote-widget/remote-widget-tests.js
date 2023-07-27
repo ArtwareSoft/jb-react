@@ -1,11 +1,20 @@
 using('ui-tests')
 
+// component('remoteWidgetTest.text', {
+//   impl: uiTest({
+//     control: remote.widget(text('hello world'), worker()),
+//     uiAction: waitForNextUpdate(),
+//     expectedResult: contains('hello world'),
+//     timeout: 3000,
+//   })
+// })
+
 component('remoteWidgetTest.text', {
   impl: uiTest({
-    control: remote.widget(text('hello world'), worker()),
-    uiAction: waitForNextUpdate(),
+    control: text('hello world'),
     expectedResult: contains('hello world'),
-    timeout: 3000
+    timeout: 1000,
+    backEndJbm: worker()
   })
 })
 
@@ -30,6 +39,22 @@ component('remoteWidgetTest.text', {
 //   })
 // })
 
+component('remoteWidgetTest.changeText2', {
+  impl: uiTest({
+    control: group({
+      controls: [
+        text('%$fName%'),
+        editableText({databind: '%$fName%'})
+      ],
+      features: watchable('fName', 'Dan')
+    }),
+    uiAction: setText({value: 'danny', doNotWaitForNextUpdate: true}),
+    expectedResult: contains('danny'),
+    timeout: 500,
+    backEndJbm: worker()
+  })
+})
+
 component('remoteWidgetTest.changeText', {
   impl: uiFrontEndTest({
     control: remote.widget(
@@ -50,65 +75,47 @@ component('remoteWidgetTest.changeText', {
 
 component('remoteWidgetTest.group.wait', {
   impl: uiTest({
-    control: remote.widget(
-      group({
-        controls: button('hello world'),
-        features: group.wait(treeShake.getCodeFromRemote('sampleProject.main'))
-      }),
-      worker()
-    ),
-    uiAction: uiActions(waitForNextUpdate(), waitForNextUpdate()),
+    control: group({
+      controls: button('hello world'),
+      features: group.wait(treeShake.getCodeFromRemote('sampleProject.main'))
+    }),
     expectedResult: contains('hello world'),
-    timeout: 1000
+    backEndJbm: worker()
   })
 })
 
 component('remoteWidgetTest.buttonClick', {
-  impl: uiFrontEndTest({
-    control: remote.widget(
-      group({
-        controls: [
-          text('%$fName%'),
-          button('change', writeValue('%$fName%', 'danny'))
-        ],
-        features: watchable('fName', 'Dan')
-      }),
-      worker()
-    ),
-    uiAction: uiActions(click(), waitForCmpUpdate(2)),
-    expectedResult: contains('danny')
+  impl: uiTest({
+    control: group({
+      controls: [
+        text('%$fName%'),
+        button('change', writeValue('%$fName%', 'danny'))
+      ],
+      features: watchable('fName', 'Dan')
+    }),
+    uiAction: click(),
+    expectedResult: contains('danny'),
+    backEndJbm: worker()
   })
 })
 
 component('remoteWidgetTest.dialog', {
-  impl: uiFrontEndTest({
-    control: remote.widget(button('open', openDialog('hello', group())), worker()),
+  impl: uiTest({
+    control: button('open', openDialog('hello', group())),
     uiAction: uiActions(click(), waitForSelector('.jb-dialog')),
-    expectedResult: contains('hello')
+    expectedResult: contains('hello'),
+    backEndJbm: worker()
   })
 })
 
 component('remoteWidgetTest.loadCodeManully', {
   impl: uiTest({
-    timeout: 1000,
-    control: remote.widget(
-      group({
-        controls: ctx => ctx.run({$: 'text', text: 'hello' }),
-        features: group.wait(treeShake.getCodeFromRemote('text'))
-      }),
-      worker()
-    ),
-    uiAction: uiActions(waitForNextUpdate(), waitForCmpUpdate(2)),
-    expectedResult: contains('hello')
-  })
-})
-
-component('remoteWidgetTest.html', {
-  impl: uiTest({
-    control: remote.widget(html('<p>hello world</p>'), worker()),
-    uiAction: waitForNextUpdate(),
-    expectedResult: contains('hello world</p>'),
-    timeout: 500
+    control: group({
+      controls: ctx => ctx.run({$: 'text', text: 'hello' }),
+      features: group.wait(treeShake.getCodeFromRemote('text'))
+    }),
+    expectedResult: contains('hello'),
+    backEndJbm: worker()
   })
 })
 
@@ -206,9 +213,8 @@ component('FETest.remoteWidget.codemirror.editableText', {
 // })
 
 component('FETest.remoteWidget.infiniteScroll', {
-  impl: uiFrontEndTest({
-    control: remote.widget(
-      itemlist({
+  impl: uiTest({
+    control: itemlist({
         items: range(0, 10),
         controls: text('%%'),
         visualSizeLimit: '7',
@@ -218,11 +224,9 @@ component('FETest.remoteWidget.infiniteScroll', {
           css.width('600')
         ]
       }),
-      worker()
-    ),
-    action: uiActions(scrollBy('.jb-itemlist', 100), waitForText('>8<')),
+    backEndJbm: worker(),
+    uiAction: uiActions(click('.jb-itemlist', 'fetchNextPage'), waitForText('>8<')),
     expectedResult: contains('>8<'),
-    renderDOM: true
   })
 })
 
