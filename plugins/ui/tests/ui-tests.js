@@ -823,8 +823,37 @@ component('FETest.itemlistKeyboardSelection', {
         itemlist.keyboardSelection({onEnter: writeValue('%$res/selected%', '%name%')})
       ]
     }),
-    uiAction: uiActions(keyboardEvent({selector: '.jb-itemlist', type: 'keydown', keyCode: 13}), FEUserRequest()),
+    uiAction: keyboardEvent({selector: '.jb-itemlist', type: 'keydown', keyCode: 13}),
     expectedResult: equals('%$res/selected%', 'Homer Simpson'),
+    useFrontEnd: true
+  })
+})
+
+component('FETest.remote.itemlistKeyboardSelection', {
+  impl: uiTest({
+    control: group({
+      controls: [
+        text({text: '-%$res/selected%-', features: watchRef('%$res/selected%')}),
+        itemlist({
+          items: '%$people%',
+          controls: text('%name%'),
+          features: [
+            itemlist.selection({autoSelectFirst: true}),
+            itemlist.keyboardSelection({onEnter: writeValue('%$res/selected%', '%name%')})
+          ]
+        })
+      ],
+      features: [
+        watchable('res', obj())
+      ]
+    }),
+    uiAction: keyboardEvent({selector: '.jb-itemlist', type: 'keydown', keyCode: 13}),
+    expectedResult: contains('-Homer Simpson-'),
+    timeout: 1000,
+    backEndJbm: remoteNodeWorker(
+      'itemlistKeyboardSelection',
+      sourceCode(pluginsByPath('/plugins/ui/tests/ui-tests.js'))
+    ),
     useFrontEnd: true
   })
 })

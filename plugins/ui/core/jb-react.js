@@ -200,7 +200,7 @@ extension('ui', 'react', {
                             childElems.splice(index,0,el) //childElems.insertBefore(el, childElems[index])
                         el.removeAttribute('__afterIndex')
                     })
-            }
+            }   
             // remove leftover text nodes in mixed
             elem.children = childElems.filter(ch=>ch.tag != '#text')
         }
@@ -217,7 +217,7 @@ extension('ui', 'react', {
         } else if (att.indexOf('on-') == 0 && val == null) {
             elem.removeEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev,val))
             elem[`registeredTo-${att}`] = false
-        } else if (att === 'checked' && elem.tagName.toLowerCase() === 'input') {
+        } else if (att === 'checked' && elem.tagName&& elem.tagName.toLowerCase() === 'input') {
             elem.setAttribute(att,val)
             jb.delay(1).then(()=> { // browser bug?
                 elem.checked = true
@@ -253,7 +253,7 @@ extension('ui', 'react', {
         } else if (att === 'style' && typeof val === 'object') {
             elem.setAttribute(att,jb.entries(val).map(e=>`${e[0]}:${e[1]}`).join(';'))
             jb.log('dom set style',{elem,att,val,ctx})
-        } else if (att == 'value' && elem.tagName.match(/select|input|textarea/i) ) {
+        } else if (att == 'value' && elem.tagName && elem.tagName.match(/select|input|textarea/i) ) {
             const active = document.activeElement === elem
             if (elem.value == val) return
             elem.value = val

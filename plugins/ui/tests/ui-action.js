@@ -79,7 +79,7 @@ component('uiActions', {
               talkback = d
               talkback(1,null)
             }
-            if (t == 1 && !finished)
+            if (t == 1 && d && !finished)
               sink(1,d)
             if (t == 2)
               nextSource()
@@ -230,7 +230,7 @@ component('keyboardEvent', {
   type: 'ui-action',
   params: [
     {id: 'selector', as: 'string'},
-    {id: 'type', as: 'string', options: 'keypress,keyup,keydown'},
+    {id: 'type', as: 'string', options: 'keypress,keyup,keydown,blur'},
     {id: 'keyCode', as: 'number'},
     {id: 'keyChar', as: 'string'},
     {id: 'ctrl', as: 'string', options: ['ctrl','alt']},
@@ -250,8 +250,12 @@ component('keyboardEvent', {
       if (!elemToTest && !useFrontEndInTest) 
         return jb.ui.rawEventToUserRequest(ev, {ctx})
       if (!elemToTest && useFrontEndInTest) {
-         (jb.path(elem.handlers,type) || []).forEach(h=>h(ev))
-         return Promise.resolve()
+        const evForTest = {...ev, target: elem, currentTarget: elem}
+        elem.value = elem.value || ''
+        if (type == 'keyup')
+          elem.value += keyChar
+        ;(jb.path(elem.handlers,type) || []).forEach(h=>h(evForTest))
+        return Promise.resolve()
       }
     
       if (keyChar && type == 'keyup')
@@ -261,7 +265,8 @@ component('keyboardEvent', {
       Object.defineProperty(e, 'target', { get : _ => elem })
       elem.dispatchEvent(e)
     },
-    If(or('%$remoteUiTest%','%$useFrontEndInTest%', '%$doNotWaitForNextUpdate%'), '', waitForNextUpdate())
+    If(or('%$remoteUiTest%','%$useFrontEndInTest%', '%$doNotWaitForNextUpdate%'), '', waitForNextUpdate()),
+    If('%$useFrontEndInTest%', FEUserRequest()),
   )
 })
 
@@ -336,5 +341,10 @@ component('FEUserRequest', {
   type: 'ui-action',
   params: [
   ],
-  impl: ctx => jb.ui.FEEmulator[ctx.vars.widgetId].userRequests[0],
+  impl: ctx => {
+    const userRequest = jb.ui.FEEmulator[ctx.vars.widgetId].userRequests.pop()
+    if (userRequest)
+      jb.log('uiTest frontend widgetUserRequest is played', {ctx,userRequest})
+    return userRequest
+  },
 })

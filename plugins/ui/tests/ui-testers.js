@@ -117,7 +117,11 @@ component('uiTest.vdomResultAsHtml', {
 component('uiTest.addFrontEndEmulation', {
 	impl: ctx => {
 		jb.ui.FEEmulator[ctx.vars.widgetId] = {
-			userReqSubs: jb.callbag.subscribe(x=>jb.ui.FEEmulator[ctx.vars.widgetId].userRequests.push(x))(jb.ui.widgetUserRequests),
+			userReqSubs: ctx.vars.useFrontEndInTest && jb.callbag.subscribe(userRequest => {
+				if (userRequest.$$ == 'destroy') return
+				jb.log('uiTest frontend widgetUserRequest recorded', {ctx,userRequest})
+				jb.ui.FEEmulator[ctx.vars.widgetId].userRequests.push(userRequest)
+			})(jb.ui.widgetUserRequests),
 			userRequests: [],
 			body: jb.ui.h('div',{widgetId:ctx.vars.widgetId, widgetTop:true, frontend: true}) 
 		}
@@ -126,7 +130,7 @@ component('uiTest.addFrontEndEmulation', {
 
 component('uiTest.removeFrontEndEmulation', {
 	impl: ctx => {
-		jb.ui.FEEmulator[ctx.vars.widgetId].userReqSubs.dispose()
+		ctx.vars.useFrontEndInTest && jb.ui.FEEmulator[ctx.vars.widgetId].userReqSubs.dispose()
 		delete jb.ui.FEEmulator[ctx.vars.widgetId]
 	}
 })

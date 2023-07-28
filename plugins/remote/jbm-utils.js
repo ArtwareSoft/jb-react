@@ -190,7 +190,7 @@ extension('jbm', 'main', {
             })
         }
 
-        function outboundMsg({cbId,t,d}) { 
+        function outboundMsg({cbId,t,d}) {
             port.postMessage({$:'CB', cbId,t, d: t == 0 ? jb.cbHandler.addToLookup(d) : d })
         }
         function inboundMsg(m) { 

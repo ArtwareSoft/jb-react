@@ -177,7 +177,7 @@ extension('callbag', {
     if (!combineResults) combineResults = (input, inner) => inner
     return source => (start, sink) => {
         if (start !== 0) return
-        let queue = [], activeCb, sourceEnded, allEnded, sourceTalkback, activecbTalkBack
+        let queue = [], activeCb, sourceEnded, allEnded, sourceTalkback, activecbTalkBack, waitingForNext = true
         source(0, function concatMap(t,d) {
           if (t == 0)
             sourceTalkback = d
@@ -189,8 +189,8 @@ extension('callbag', {
         })
         sink(0, function concatMap(t,d) {
           if (t == 1) {
-            activecbTalkBack && activecbTalkBack(1)
-            sourceTalkback && sourceTalkback(1)
+            waitingForNext = true
+            tick()
           } else if (t == 2) {
             allEnded = true
             queue = []
@@ -206,16 +206,19 @@ extension('callbag', {
             activeCb(0, function concatMap(t,d) {
               if (t == 0) {
                 activecbTalkBack = d
-                activecbTalkBack && activecbTalkBack(1)
+                tick()
+                //waitingForNext && activecbTalkBack && activecbTalkBack(1)
               } else if (t == 1) {
+                waitingForNext = false
                 sink(1, combineResults(input,d))
-                activecbTalkBack && activecbTalkBack(1)
+                //activecbTalkBack && activecbTalkBack(1)
               } else if (t == 2 && d) {
                 allEnded = true
                 queue = []
                 sink(2,d)
                 sourceTalkback && sourceTalkback(2)
               } else if (t == 2) {
+                waitingForNext = true
                 activecbTalkBack = activeCb = null
                 tick()
               }
@@ -224,6 +227,10 @@ extension('callbag', {
           if (sourceEnded && !activeCb && !queue.length) {
             allEnded = true
             sink(2)
+          }
+          if (waitingForNext) {
+            if (activecbTalkBack) activecbTalkBack(1);
+            if (!activeCb) sourceTalkback && sourceTalkback(1)
           }
         }
     }
@@ -732,19 +739,19 @@ extension('callbag', {
       ended = true
     }
   },      
-  forEach: operation => sinkSrc => {
+  forEach: operation => source => {
     let talkback
-    sinkSrc(0, function forEach(t, d) {
+    source(0, function forEach(t, d) {
         if (t === 0) talkback = d
         if (t === 1) operation(d)
         if (t === 1 || t === 0) talkback(1)
     })
   },
-  subscribe: (listener = {}) => sinkSrc => {
+  subscribe: (listener = {}) => source => {
       if (typeof listener === "function") listener = { next: listener }
       let { next, error, complete } = listener
       let talkback, done
-      sinkSrc(0, function subscribe(t, d) {
+      source(0, function subscribe(t, d) {
         if (t === 0) talkback = d
         if (t === 1 && next) next(d)
         if (t === 1 || t === 0) talkback(1)  // Pull
@@ -759,7 +766,7 @@ extension('callbag', {
         isActive: () => talkback && !done
       }
   },
-  // toPromise: sinkSrc => {
+  // toPromise: source => {
   //     return new Promise((resolve, reject) => {
   //       jb.callbag.subscribe({
   //         next: resolve,
@@ -769,17 +776,17 @@ extension('callbag', {
   //           err.code = 'NO_ELEMENTS'
   //           reject(err)
   //         },
-  //       })(jb.callbag.last(sinkSrc))
+  //       })(jb.callbag.last(source))
   //     })
   // },
-  toPromiseArray: sinkSrc => {
+  toPromiseArray: source => {
       const res = []
       let talkback
       return new Promise((resolve, reject) => {
-              sinkSrc(0, function toPromiseArray(t, d) {
+              source(0, function toPromiseArray(t, d) {
                   if (t === 0) talkback = d
                   if (t === 1) res.push(d)
-                  if (t === 1 || t === 0) talkback(1)  // Pull
+                  if (t === 1 || t === 0) talkback && talkback(1)  // Pull
                   if (t === 2 && !d) resolve(res)
                   if (t === 2 && !!d) reject( d )
           })
@@ -942,29 +949,29 @@ extension('callbag', {
       else
           return jb.callbag.fromIter([source])
   },
-  isSink: cb => typeof cb == 'function' && cb.toString().match(/sinkSrc/),
+//  isSink: cb => typeof cb == 'function' && cb.toString().match(/source/),
   isCallbag: cb => typeof cb == 'function' && cb.toString().split('=>')[0].split('{')[0].replace(/\s/g,'').match(/start,sink|t,d/),
 
   injectSniffers(cbs,ctx) {
     return cbs
-    const _jb = ctx.frame().jb
-    if (!_jb) return cbs
-    return cbs.reduce((acc,cb) => [...acc,cb, ...injectSniffer(cb) ] ,[])
+    // const _jb = ctx.frame().jb
+    // if (!_jb) return cbs
+    // return cbs.reduce((acc,cb) => [...acc,cb, ...injectSniffer(cb) ] ,[])
 
-    function injectSniffer(cb) {
-      if (!cb.ctx || cb.sniffer || jb.callbag.isSink(cb)) return []
-      _jb.cbLogByPath =  _jb.cbLogByPath || {}
-      const log = _jb.cbLogByPath[cb.ctx.path] = { callbagLog: true, result: [] }
-      const listener = {
-        next(r) { log.result.push(r) },
-        complete() { log.complete = true }
-      }
-      const res = source => _jb.callbag.sniffer(source, listener)
-      res.sniffer = true
-      res.ctx = cb.ctx
-      Object.defineProperty(res, 'name', { value: 'sniffer' })
-      return [res]
-    }
+    // function injectSniffer(cb) {
+    //   if (!cb.ctx || cb.sniffer || jb.callbag. isSink(cb)) return []
+    //   _jb.cbLogByPath =  _jb.cbLogByPath || {}
+    //   const log = _jb.cbLogByPath[cb.ctx.path] = { callbagLog: true, result: [] }
+    //   const listener = {
+    //     next(r) { log.result.push(r) },
+    //     complete() { log.complete = true }
+    //   }
+    //   const res = source => _jb.callbag.sniffer(source, listener)
+    //   res.sniffer = true
+    //   res.ctx = cb.ctx
+    //   Object.defineProperty(res, 'name', { value: 'sniffer' })
+    //   return [res]
+    // }
   },  
   log: name => jb.callbag.Do(x=>console.log(name,x)),
   jbLog: (name,...params) => jb.callbag.Do(data => jb.log(name,{data,...params})),

@@ -94,7 +94,7 @@ component('rxTest.pipeInsidePipeWithConcatMap', {
   impl: dataTest({
     calculate: () => {
       const {pipe,fromIter, map, concatMap, toPromiseArray} = jb.callbag
-      return toPromiseArray(pipe(fromIter([1,2]), concatMap(x => pipe(fromIter([x]), map(x=>`-${x}-`))))).then(ar=>ar.join(','))
+      return toPromiseArray(pipe(fromIter([1,2]), concatMap(x => pipe(fromIter([x]), map(x=>`-${x}-`))))) .then(ar=>ar.join(','))
     },
     expectedResult: equals('-1-,-2-')
   })
