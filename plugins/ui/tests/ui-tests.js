@@ -812,6 +812,23 @@ component('FETest.itemlistContainerSearchEnterOnLi', {
   })
 })
 
+component('FETest.itemlistKeyboardSelection', {
+  impl: uiTest({
+    vars: [Var('res', obj())],
+    control: itemlist({
+      items: '%$people%',
+      controls: text('%name%'),
+      features: [
+        itemlist.selection({autoSelectFirst: true}),
+        itemlist.keyboardSelection({onEnter: writeValue('%$res/selected%', '%name%')})
+      ]
+    }),
+    uiAction: uiActions(keyboardEvent({selector: '.jb-itemlist', type: 'keydown', keyCode: 13}), FEUserRequest()),
+    expectedResult: equals('%$res/selected%', 'Homer Simpson'),
+    useFrontEnd: true
+  })
+})
+
 component('uiTest.secondaryLinkSetBug', {
   impl: uiTest({
     control: itemlist({

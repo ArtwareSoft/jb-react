@@ -233,20 +233,27 @@ component('keyboardEvent', {
     {id: 'type', as: 'string', options: 'keypress,keyup,keydown'},
     {id: 'keyCode', as: 'number'},
     {id: 'keyChar', as: 'string'},
-    {id: 'ctrl', as: 'string', options: ['ctrl','alt']}
+    {id: 'ctrl', as: 'string', options: ['ctrl','alt']},
+    {id: 'doNotWaitForNextUpdate', as: 'boolean', type: 'boolean'}
   ],
   impl: uiActions(
     waitForSelector('%$selector%'),
-    (ctx,{elemToTest},{selector,type,keyCode,keyChar,ctrl}) => {
-      const elem = selector ? ctx.vars.elemToTest.querySelector(selector) : elemToTest
+    (ctx,{elemToTest, useFrontEndInTest},{selector,type,keyCode,keyChar,ctrl}) => {
+      const ctxToUse = useFrontEndInTest ? ctx.setVars({headlessWidget: false}) : ctx
+      const elem = selector ? jb.ui.elemOfSelector(selector,ctxToUse) : elemToTest
       jb.log('test uiAction keyboardEvent',{elem,selector,type,keyCode,ctx})
       if (!elem)
         return jb.logError('can not find elem for test uiAction keyboardEvent',{ elem,selector,type,keyCode,ctx})
 
       const widgetId = jb.ui.parentWidgetId(elem) || ctx.vars.widgetId
-      if (!elemToTest) 
-        return jb.ui.rawEventToUserRequest({ widgetId, type, keyCode , ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt', key: keyChar}, {ctx})
-
+      const ev = { widgetId, type, keyCode , ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt', key: keyChar}
+      if (!elemToTest && !useFrontEndInTest) 
+        return jb.ui.rawEventToUserRequest(ev, {ctx})
+      if (!elemToTest && useFrontEndInTest) {
+         (jb.path(elem.handlers,type) || []).forEach(h=>h(ev))
+         return Promise.resolve()
+      }
+    
       if (keyChar && type == 'keyup')
         elem.value = elem.value + keyChar
       const e = new KeyboardEvent(type,{ ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt', key: keyChar })
@@ -254,7 +261,7 @@ component('keyboardEvent', {
       Object.defineProperty(e, 'target', { get : _ => elem })
       elem.dispatchEvent(e)
     },
-    waitForNextUpdate()
+    If(or('%$remoteUiTest%','%$useFrontEndInTest%', '%$doNotWaitForNextUpdate%'), '', waitForNextUpdate())
   )
 })
 
@@ -325,3 +332,9 @@ component('runMethod', {
   )
 })
 
+component('FEUserRequest', {
+  type: 'ui-action',
+  params: [
+  ],
+  impl: ctx => jb.ui.FEEmulator[ctx.vars.widgetId].userRequests[0],
+})

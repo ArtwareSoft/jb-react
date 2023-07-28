@@ -110,6 +110,15 @@ extension('ui','vdom', {
     ${(this.children || []).map(x=>x.outerHTML()).join('\n')}
 </${this.tag}>`.replace(/\$text="([^"]*)/g,'>$1<').replace(/\$focus/g,'__focus')
         }
+        addEventListener(event, handler, options) {
+            this.handlers = this.handlers || {}
+            this.handlers[event] = this.handlers[event] || []
+            this.handlers[event].push(handler)
+        }
+        removeEventListener(event, handler, options) {
+            const handlers = jb.path(this.handlers,event)
+            handlers.splice(handlers.indexOf(handler),1)
+        }
     },
     toVdomOrStr(val) {
         if (jb.utils.isDelayed(val))

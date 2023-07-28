@@ -15,7 +15,8 @@ component('uiTest', {
     {id: 'timeout', as: 'number', defaultValue: 200},
     {id: 'cleanUp', type: 'action', dynamic: true},
     {id: 'expectedCounters', as: 'single'},
-    {id: 'backEndJbm', type: 'jbm<jbm>', defaultValue: jbm.self()}
+    {id: 'backEndJbm', type: 'jbm<jbm>', defaultValue: jbm.self()},
+	{id: 'useFrontEnd', as: 'boolean', type: 'boolean'},
   ],
   impl: dataTest({
     vars: [
@@ -23,11 +24,12 @@ component('uiTest', {
       Var('widgetId', widget.newId()),
       Var('headlessWidget', true),
 	  Var('remoteUiTest', notEquals('%$backEndJbm%', () => jb)),
-      Var('headlessWidgetId', '%$widgetId%')
+      Var('headlessWidgetId', '%$widgetId%'),
+	  Var('useFrontEndInTest', '%$useFrontEnd%')
     ],
     calculate: rx.pipe(
       uiActions(typeCast('ui-action<test>'),'%$uiAction()%'),
-      rx.log('uiTest userRequest from widgetUserRequests'),
+      rx.log('uiTest userRequest'),
       remote.operator(widget.headless('%$control()%', '%$widgetId%'), '%$backEndJbm%'),
       rx.log('uiTest uiDelta from headless'),
       rx.takeUntil('%$$testFinished%'),
@@ -106,29 +108,27 @@ component('uiFrontEndTest', {
 component('uiTest.vdomResultAsHtml', {
   impl: ctx => {
 		const widget = jb.ui.FEEmulator[ctx.vars.widgetId]
-		// jb.ui.headless[ctx.vars.widgetId] || 
 		if (!widget || !widget.body) return ''
 		if (typeof widget.body.outerHTML == 'function')
 			return widget.body.outerHTML()
-		// if (typeof document == 'undefined') // in worker
-		// 	return widget.body ? widget.body.outerHTML() : ''
-		// return widget.body.children.map(vdom => {
-		// 	const elemToTest = document.createElement('div')
-		// 	elemToTest.ctxForFE = ctx.setVars({elemToTest})
-		// 	jb.ui.render(vdom, elemToTest,{doNotRefreshFrontEnd: true})
-		// 	Array.from(elemToTest.querySelectorAll('input,textarea')).forEach(e=> e.parentNode && 
-		// 		jb.ui.addHTML(e.parentNode,`<input-val style="display:none">${e.value}</input-val>`))		
-		// 	return elemToTest.outerHTML	
-		// }).join('\n')
 	}
 })
 
 component('uiTest.addFrontEndEmulation', {
-	impl: ctx => jb.ui.FEEmulator[ctx.vars.widgetId] = { body: jb.ui.h('div',{widgetId:ctx.vars.widgetId, widgetTop:true, frontend: true}) }
+	impl: ctx => {
+		jb.ui.FEEmulator[ctx.vars.widgetId] = {
+			userReqSubs: jb.callbag.subscribe(x=>jb.ui.FEEmulator[ctx.vars.widgetId].userRequests.push(x))(jb.ui.widgetUserRequests),
+			userRequests: [],
+			body: jb.ui.h('div',{widgetId:ctx.vars.widgetId, widgetTop:true, frontend: true}) 
+		}
+	}
 })
 
 component('uiTest.removeFrontEndEmulation', {
-	impl: ctx => delete jb.ui.FEEmulator[ctx.vars.widgetId]
+	impl: ctx => {
+		jb.ui.FEEmulator[ctx.vars.widgetId].userReqSubs.dispose()
+		delete jb.ui.FEEmulator[ctx.vars.widgetId]
+	}
 })
 
 component('uiTest.aggregateDelta', {
@@ -139,7 +139,7 @@ component('uiTest.aggregateDelta', {
   impl: (ctx, ev) => {
 	const {delta,css,widgetId,cmpId} = ev
 	const assumedVdom = null
-	const ctxToUse = ctx.setVars({headlessWidget: false, FEwidgetId: widgetId})
+	const ctxToUse = ctx.setVars({headlessWidget: false, FEwidgetId: widgetId })
 	const widgetBody = jb.ui.widgetBody(ctxToUse)
 	const elem = cmpId ? jb.ui.find(widgetBody,`[cmp-id="${cmpId}"]`)[0] : widgetBody
 	jb.log('uiTest aggregate delta',{ctx,delta,ev,cmpId, widgetBody,elem})
@@ -175,7 +175,7 @@ component('uiTest.applyVdomDiff', {
 
 extension('ui','tester', {
 	initExtension() {
-		return { FEEmulator: {} }
+		return { FEEmulator: {}, testUserRequests: {} }
 	},
 	elemOfSelector: (selector,ctx) => {
 		const widgetBody = jb.ui.widgetBody(ctx)

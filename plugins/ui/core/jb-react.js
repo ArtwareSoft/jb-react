@@ -418,9 +418,10 @@ extension('ui', 'react', {
         if (!ctxIdToRun)
             return jb.logError(`no method in cmp: ${method}`, {elem, data, vars})
 
-        if (widgetId)
+        if (widgetId) {
+            jb.log(`frontEnd method send request: ${method}`,{elem, widgetId, ctxIdToRun, data, vars})
             jb.ui.sendUserReq({$:'userRequest', method, widgetId, ctxIdToRun, data, vars })
-        else {
+        } else {
             const ctx = jb.ctxDictionary[ctxIdToRun]
             if (!ctx)
                 return jb.logError(`no ctx found for method: ${method}`, {ctxIdToRun, elem, data, vars})
@@ -453,13 +454,22 @@ extension('ui', 'react', {
         jb.log('applyDelta uiComp',{cmpId, delta, ctx, elem, bySelector, actualElem})
         if (actualElem instanceof jb.ui.VNode) {
             jb.ui.applyDeltaToVDom(actualElem, actualdelta,ctx)
-            const { headlessWidgetId, headlessWidget, uiTest } = ctx.vars
+            const { headlessWidgetId, headlessWidget, useFrontEndInTest } = ctx.vars
             headlessWidget && jb.ui.sendRenderingUpdate(ctx,{delta,cmpId,widgetId: headlessWidgetId,ctx})
+            if (useFrontEndInTest) {
+                setAttToVdom(actualElem)
+                jb.ui.refreshFrontEnd(actualElem, {content: delta})
+            }
             // if (uiTest && jb.path(jb,'parent.uri') == 'tests' && jb.path(jb,'parent.ui.renderingUpdates')) // used for distributedWidget tests
             //     jb.parent.ui.sendRenderingUpdate(ctx,{delta,ctx})
         } else if (actualElem) {
             jb.ui.applyDeltaToDom(actualElem, actualdelta, ctx)
             jb.ui.refreshFrontEnd(actualElem, {content: delta})
+        }
+
+        function setAttToVdom(elem) {
+            jb.entries(elem.attributes).forEach(e=>jb.ui.setAtt(elem,e[0],e[1],ctx))
+            ;(elem.children || []).forEach(el => setAttToVdom(el))
         }
     },
     sendRenderingUpdate(ctx,ev) {

@@ -102,14 +102,13 @@ component('itemlist.keyboardSelection', {
     frontEnd.prop('onkeydown', source.merge(source.frontEndEvent('keydown'), source.findSelectionKeySource())),
     frontEnd.flow(
       '%$cmp.onkeydown%',
-      rx.log('test'),
+      rx.log('test onkeydown keyboardSelection'),
       rx.filter('%keyCode%==13'),
-      rx.filter('%$cmp.state.selected%'),
+      rx.filter(notNull('%$cmp.state.selected%')),
       sink.BEMethod('onEnter', '%$cmp.state.selected%')
     ),
     frontEnd.flow(
       '%$cmp.onkeydown%',
-      rx.log('test 1'),
       rx.filter(not('%ctrlKey%')),
       rx.filter(inGroup(list(38, 40), '%keyCode%')),
       rx.map(itemlist.nextSelected(If('%keyCode%==40', 1, -1))),
