@@ -217,6 +217,7 @@ extension('jbm', 'main', {
             let talkback
             return (t,d) => {
                 if (t==2) jb.cbHandler.removeEntry([localCbId,talkback],routingMsg)
+                //if (t == 1 && !d) return
                 port.postMessage({$:'CB', cbId,t, d: t == 0 ? (talkback = jb.cbHandler.addToLookup(d)) : jb.remoteCtx.stripCBVars(d), ...jb.net.reverseRoutingProps(routingMsg) }) 
             }
         }

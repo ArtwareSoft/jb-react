@@ -1,1 +1,1 @@
-node --inspect-brk ../hosts/node/node-worker.js '-uri:itemlistKeyboardSelection' '-clientUri:tests' '-sourceCode:{"pluginPackages":[{"$":"defaultPackage"}],"plugins":["ui-tests"]}'
+node --inspect-brk ../hosts/node/node-worker.js '-uri:amtaServer' '-clientUri:tests' '-sourceCode:{"pluginPackages":[{"$":"defaultPackage"},{"$":"fileSystem","repo":"amta","baseDir":"/home/shaiby/projects/amta"}],"plugins":["amta-ui","amta-ui-tests"]}'

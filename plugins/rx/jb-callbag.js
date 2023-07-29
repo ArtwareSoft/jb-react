@@ -177,7 +177,7 @@ extension('callbag', {
     if (!combineResults) combineResults = (input, inner) => inner
     return source => (start, sink) => {
         if (start !== 0) return
-        let queue = [], activeCb, sourceEnded, allEnded, sourceTalkback, activecbTalkBack, waitingForNext = true
+        let queue = [], activeCb, sourceEnded, allEnded, sourceTalkback, activecbTalkBack, waitingForNext = false
         source(0, function concatMap(t,d) {
           if (t == 0)
             sourceTalkback = d
