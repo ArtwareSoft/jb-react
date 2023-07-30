@@ -1,14 +1,5 @@
 using('ui-tests')
 
-// component('remoteWidgetTest.text', {
-//   impl: uiTest({
-//     control: remote.widget(text('hello world'), worker()),
-//     uiAction: waitForNextUpdate(),
-//     expectedResult: contains('hello world'),
-//     timeout: 3000,
-//   })
-// })
-
 component('remoteWidgetTest.text', {
   impl: uiTest({
     control: text('hello world'),

@@ -397,10 +397,10 @@ extension('ui', 'react', {
     handleUserRequestAndUdateCmpState(ctx,data,vars) {
         if (jb.path(vars,'$updateCmpState.cmpId') == jb.path(ctx.vars,'cmp.cmpId') && jb.path(vars,'$updateCmpState.state'))
             Object.assign(ctx.vars.cmp.state,vars.$updateCmpState.state)
-        ctx.setData(data).setVars(vars).runInner(ctx.profile.action,'action','action')        
+        return ctx.setData(data).setVars(vars).runInner(ctx.profile.action,'action','action')        
     },    
     handleUserRequest(ctx,data,vars) {
-        ctx.setData(data).setVars(vars).runInner(ctx.profile.action,'action','action')        
+        return ctx.setData(data).setVars(vars).runInner(ctx.profile.action,'action','action')        
     },
     runBEMethodByContext(ctx,method,data,vars) {
         const cmp = ctx.vars.cmp
@@ -472,10 +472,10 @@ extension('ui', 'react', {
             ;(elem.children || []).forEach(el => setAttToVdom(el))
         }
     },
-    sendRenderingUpdate(ctx,ev) {
-        jb.ui.renderingUpdates.next(ev)
-        return ev
-    //   const userReqTx = jb.path(ctx,'vars.userReqTx')
-    //   ;(userReqTx || jb.ui.renderingUpdates).next(ev)
+    sendRenderingUpdate(ctx,renderingUpdate) {
+        const tx = ctx.vars.userReqTx
+        if (tx) tx.next(renderingUpdate)
+        if (!tx) jb.ui.renderingUpdates.next(renderingUpdate)
+        return renderingUpdate
     },
 })

@@ -37,7 +37,7 @@ component('cast', {
     {id: 'typeCast', as: 'string', mandatory: true, description: 'e.g. type1<myDsl>'},
     {id: 'val', type: '$asParent', mandatory: true },
   ],
-  impl: ctx => { debugger; return ctx.params.val }
+  impl: ctx => ctx.params.val
 })
 
 component('If', {

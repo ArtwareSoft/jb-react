@@ -340,7 +340,7 @@ component('uiTest.refreshDialog', {
         features: followUp.action(writeValue('%$person/name%', 'mukki'))
       })
     ),
-    uiAction: uiActions(click('button'), waitForNextUpdate(5)),
+    uiAction: uiActions(click('button'), waitForNextUpdate(6)),
     expectedResult: contains('mukki')
   })
 })

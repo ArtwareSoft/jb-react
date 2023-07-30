@@ -87,7 +87,7 @@ component('resolveImpl', {
 
 component('dslTest.resolveImpl', {
   impl: dataTest(
-    resolveImpl(typeCast('myType<myDsl>')),
+    castFrom('myType<myDsl>', resolveImpl()),
     equals('myDsl')
   )
 })
@@ -105,7 +105,7 @@ component('resolveDefaultValues', {
 
 component('dslTest.resolveDefaultValues', {
   impl: dataTest(
-    resolveDefaultValues(typeCast('myType<myDsl>')),
+    castFrom('myType<myDsl>', resolveDefaultValues()),
     equals('myDsl,myDsl')
   )
 })
@@ -181,7 +181,7 @@ component('macroTest.dsl.typeCast', {
 
 component('dslTest.inheritTypeFromImp', {
   impl: dataTest(
-    pipeline(israel(typeCast('state<location>')),'%capital/name%'),
+    pipeline(castFrom('state<location>', israel()),'%capital/name%'),
     equals('Jerusalem')
   )
 })
@@ -205,7 +205,7 @@ component('dslTest.treeShake', {
 
 // component('dslTest.setComp', {
 //   impl: dataTest({
-//     calculate: pipeline(israel(typeCast('state<location>')), '%capital/name%'),
+//     calculate: pipeline(castFrom('state<location>', israel())), '%capital/name%'),
 //     expectedResult: equals('nokdim'),
 //     //runBefore: tgp.setComp('state<location>israel~impl~capital', 'settlement<location>nokdim')
 //   })

@@ -16,21 +16,25 @@ component('uiTest', {
     {id: 'cleanUp', type: 'action', dynamic: true},
     {id: 'expectedCounters', as: 'single'},
     {id: 'backEndJbm', type: 'jbm<jbm>', defaultValue: jbm.self()},
-	{id: 'useFrontEnd', as: 'boolean', type: 'boolean'},
+    {id: 'useFrontEnd', as: 'boolean', type: 'boolean'},
+    {id: 'transactiveHeadless', as: 'boolean', type: 'boolean'}
   ],
   impl: dataTest({
     vars: [
       Var('uiTest', true),
       Var('widgetId', widget.newId()),
       Var('headlessWidget', true),
-	  Var('remoteUiTest', notEquals('%$backEndJbm%', () => jb)),
+      Var('remoteUiTest', notEquals('%$backEndJbm%', () => jb)),
       Var('headlessWidgetId', '%$widgetId%'),
-	  Var('useFrontEndInTest', '%$useFrontEnd%')
+      Var('useFrontEndInTest', '%$useFrontEnd%')
     ],
     calculate: rx.pipe(
-      uiActions(typeCast('ui-action<test>'),'%$uiAction()%'),
+	  castFrom('ui-action<test>', uiActions('%$uiAction()%')),
       rx.log('uiTest userRequest'),
-      remote.operator(widget.headless('%$control()%', '%$widgetId%'), '%$backEndJbm%'),
+      remote.operator(
+        widget.headless({control: '%$control()%', widgetId: '%$widgetId%', transactiveHeadless: '%$transactiveHeadless%'}),
+        '%$backEndJbm%'
+      ),
       rx.log('uiTest uiDelta from headless'),
       rx.takeUntil('%$$testFinished%'),
       rx.do(uiTest.aggregateDelta('%%')),
@@ -42,13 +46,15 @@ component('uiTest', {
       rx.do(({},{widgetId})=> !jb.test.singleTest && jb.ui.destroyHeadless(widgetId))
     ),
     expectedResult: '%%',
-    runBefore: runActions(uiTest.addFrontEndEmulation() , '%$runBefore()%'),
+    runBefore: runActions(uiTest.addFrontEndEmulation(), '%$runBefore()%'),
     timeout: '%$timeout%',
     allowError: '%$allowError()%',
-    cleanUp: runActions(uiTest.removeFrontEndEmulation() ,call('cleanUp')),
+    cleanUp: runActions(uiTest.removeFrontEndEmulation(), call('cleanUp')),
     expectedCounters: '%$expectedCounters%'
   })
 })
+
+//uiActions(typeCast('ui-action<test>'),'%$uiAction()%'),
 
 component('uiFrontEndTest', {
   type: 'test',
@@ -138,16 +144,23 @@ component('uiTest.removeFrontEndEmulation', {
 component('uiTest.aggregateDelta', {
   type: 'action',
   params: [
-    {id: 'ev' },
+    {id: 'renderingUpdate' },
   ],
-  impl: (ctx, ev) => {
-	const {delta,css,widgetId,cmpId} = ev
-	const assumedVdom = null
-	const ctxToUse = ctx.setVars({headlessWidget: false, FEwidgetId: widgetId })
-	const widgetBody = jb.ui.widgetBody(ctxToUse)
-	const elem = cmpId ? jb.ui.find(widgetBody,`[cmp-id="${cmpId}"]`)[0] : widgetBody
-	jb.log('uiTest aggregate delta',{ctx,delta,ev,cmpId, widgetBody,elem})
-	jb.ui.applyDeltaToCmp({delta,ctx: ctxToUse,cmpId,elem,assumedVdom})
+  impl: (ctx, renderingUpdate) => {
+	if (renderingUpdate.$ == 'updates')
+      return renderingUpdate.updates.forEach(inner => aggDelta(inner))
+    else
+      return aggDelta(renderingUpdate)
+
+    function aggDelta(renderingUpdate) {
+		const {delta,css,widgetId,cmpId} = renderingUpdate
+		const assumedVdom = null
+		const ctxToUse = ctx.setVars({headlessWidget: false, FEwidgetId: widgetId })
+		const widgetBody = jb.ui.widgetBody(ctxToUse)
+		const elem = cmpId ? jb.ui.find(widgetBody,`[cmp-id="${cmpId}"]`)[0] : widgetBody
+		jb.log('uiTest aggregate delta',{ctx,delta,renderingUpdate,cmpId, widgetBody,elem})
+		jb.ui.applyDeltaToCmp({delta,ctx: ctxToUse,cmpId,elem,assumedVdom})
+	}
   }
 })
 

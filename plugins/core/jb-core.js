@@ -78,7 +78,7 @@ Object.assign(jb, {
       return h.register(id,comp,dsl)
 
     jb.core.unresolvedProfiles.push({id,comp,dsl})
-    if (comp.isSystem)
+    if (comp.isSystem || comp.isMacro)
       jb.comps[id] = comp
     return comp
   },

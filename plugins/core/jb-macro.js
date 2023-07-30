@@ -44,6 +44,8 @@ extension('macro', {
         allArgs.forEach(arg => {
             if (arg && typeof arg === 'object' && (jb.comps[arg.$] || {}).isSystem)
                 jb.comps[arg.$].macro(system, arg)
+            else if (arg && typeof arg === 'object' && (jb.comps[arg.$] || {}).isMacro)
+                args.push(jb.comps[arg.$].macro(arg))
             else
                 args.push(arg)
         })
@@ -51,7 +53,7 @@ extension('macro', {
             jb.asArray(args[0].vars).forEach(arg => jb.comps[arg.$].macro(system, arg))
             delete args[0].vars
             args[0].remark && jb.comps.remark.macro(system, args[0])
-            args[0].typeCast && jb.comps.typeCast.macro(system, args[0])
+            args[0].typeCast && Object.assign(system,{ $typeCast: args[0].typeCast || args[0].$byValue[0]})
         }
         return { args, system }
     },
@@ -106,13 +108,23 @@ component('remark', {
   macro: (result, self) => Object.assign(result,{ $remark: self.remark || self.$byValue[0] })
 })
 
-component('typeCast', {
-  type: 'system',
-  isSystem: true,
+// component('typeCast', {
+//   type: 'system',
+//   isSystem: true,
+//   params: [
+//     {id: 'typeCast', as: 'string', mandatory: true, description: 'e.g. type1<myDsl>'}
+//   ],
+//   macro: (result, self) => Object.assign(result,{ $typeCast: self.typeCast || self.$byValue[0]})
+// })
+
+component('castFrom', {
+  type: 'any',
+  isMacro: true,
   params: [
-    {id: 'typeCast', as: 'string', mandatory: true, description: 'e.g. type1<myDsl>'}
+    {id: 'asType', as: 'string', mandatory: true, description: 'e.g. type1<myDsl>'},
+    {id: 'val', type: 'any', mandatory: true },
   ],
-  macro: (result, self) => Object.assign(result,{ $typeCast: self.typeCast || self.$byValue[0]})
+  macro: self => ({ ...self.$byValue[1], $typeCast: self.$byValue[0] })
 })
 
 extension('syntaxConverter', 'onAddComponent', {
