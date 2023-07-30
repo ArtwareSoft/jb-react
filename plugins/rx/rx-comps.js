@@ -535,10 +535,10 @@ component('sink.data', {
 component('rx.log', {
   description: 'jb.log flow data, used for debug',
   params: [
-    {id: 'name', as: 'string'},
+    {id: 'name', as: 'string', dynamic: true},
     {id: 'extra', as: 'single', dynamic: true},
   ],
-  impl: rx.do((ctx,vars,{name,extra}) => jb.log(name,{data: ctx.data,vars,...extra(ctx), ctx: ctx.cmpCtx}))
+  impl: rx.do((ctx,vars,{name,extra}) => jb.log(name(ctx),{data: ctx.data,vars,...extra(ctx), ctx: ctx.cmpCtx}))
   //(ctx,name,extra) => ctx.run({$: 'rx.do', action: _ctx => jb.log(name,{data: _ctx.data,vars: _ctx.vars,ctx, ...extra(_ctx)}) })
 })
 

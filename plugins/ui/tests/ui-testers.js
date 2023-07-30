@@ -26,7 +26,9 @@ component('uiTest', {
       Var('headlessWidget', true),
       Var('remoteUiTest', notEquals('%$backEndJbm%', () => jb)),
       Var('headlessWidgetId', '%$widgetId%'),
-      Var('useFrontEndInTest', '%$useFrontEnd%')
+      Var('useFrontEndInTest', '%$useFrontEnd%'),
+	  Var('transactiveHeadless', '%$transactiveHeadless%'),
+	  Var('testRenderingUpdate', () => jb.callbag.subject('testRenderingUpdate'))
     ],
     calculate: rx.pipe(
 	  castFrom('ui-action<test>', uiActions('%$uiAction()%')),
@@ -35,9 +37,10 @@ component('uiTest', {
         widget.headless({control: '%$control()%', widgetId: '%$widgetId%', transactiveHeadless: '%$transactiveHeadless%'}),
         '%$backEndJbm%'
       ),
-      rx.log('uiTest uiDelta from headless'),
       rx.takeUntil('%$$testFinished%'),
       rx.do(uiTest.aggregateDelta('%%')),
+	  rx.var('renderingCounters', uiTest.renderingCounters()),
+      rx.log('uiTest uiDelta from headless %$renderingCounters%'),
       rx.toArray(),
       rx.var('html', uiTest.vdomResultAsHtml()),
       rx.var('success', pipeline('%$html%', call('expectedResult'), last())),
@@ -120,6 +123,17 @@ component('uiTest.vdomResultAsHtml', {
 	}
 })
 
+component('uiTest.renderingCounters', {
+  impl: ctx => {
+		const {widgetId} = ctx.vars
+		jb.ui.testUpdateCounters[widgetId] = (jb.ui.testUpdateCounters[widgetId] || 0) + 1
+		ctx.vars.testRenderingUpdate && ctx.vars.testRenderingUpdate.next({widgetId})
+        return '' + jb.ui.testUpdateCounters[widgetId]
+	}
+})
+
+
+
 component('uiTest.addFrontEndEmulation', {
 	impl: ctx => {
 		jb.ui.FEEmulator[ctx.vars.widgetId] = {
@@ -138,6 +152,7 @@ component('uiTest.removeFrontEndEmulation', {
 	impl: ctx => {
 		ctx.vars.useFrontEndInTest && jb.ui.FEEmulator[ctx.vars.widgetId].userReqSubs.dispose()
 		delete jb.ui.FEEmulator[ctx.vars.widgetId]
+		jb.ui.testUpdateCounters = {}
 	}
 })
 
@@ -192,7 +207,7 @@ component('uiTest.applyVdomDiff', {
 
 extension('ui','tester', {
 	initExtension() {
-		return { FEEmulator: {}, testUserRequests: {} }
+		return { FEEmulator: {}, testUpdateCounters: {} }
 	},
 	elemOfSelector: (selector,ctx) => {
 		const widgetBody = jb.ui.widgetBody(ctx)

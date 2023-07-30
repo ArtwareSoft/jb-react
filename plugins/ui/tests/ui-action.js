@@ -43,8 +43,7 @@ component('uiActions', {
   ],
   impl: ctx => {
     const isFE = ctx.vars.elemToTest
-    const updatesCounterAtBeginUIActions = jb.path(jb.ui.headless[ctx.vars.widgetId],'updatesCounter' || 0)
-    const ctxToUse = ctx.setVars({updatesCounterAtBeginUIActions})
+    const ctxToUse = ctx.setVars({updatesCounterAtBeginUIActions: jb.ui.testUpdateCounters[ctx.vars.widgetId]})
     if (isFE) return jb.asArray(ctx.profile.actions).filter(x=>x).reduce((pr,action,index) =>
 				pr.finally(function runActions() {return ctxToUse.runInner(action, { as: 'single'}, `items~${index}` ) })
 			,Promise.resolve())
@@ -150,25 +149,31 @@ component('waitForNextUpdate', {
       jb.logError('uiTest waitForNextUpdate can not find widget',{ctx, widgetId})
       return resolve()
     }    
-    const currentCounter = widget.updatesCounter || 0
+    const currentCounter = jb.ui.testUpdateCounters[widgetId] || 0
     const baseCounter = updatesCounterAtBeginUIActions != null ? updatesCounterAtBeginUIActions : currentCounter
     if (expectedCounter == 0)
       expectedCounter = baseCounter + 1
 
-    jb.log('uiTest waitForNextUpdate started',{ctx, currentCounter, expectedCounter, baseCounter})
+    jb.log(`uiTest waitForNextUpdate started`,{ctx, currentCounter, expectedCounter, baseCounter})
     if (currentCounter >= expectedCounter) {
       jb.log('uiTest waitForNextUpdate resolved - counter already reached',{ctx, currentCounter, expectedCounter, baseCounter})
       return resolve() 
     }
-    jb.ui.renderingUpdates(0, (t,d) => {
+    const renderingUpdates = ctx.vars.testRenderingUpdate
+
+    renderingUpdates(0, (t,d) => {
       if (!widget) return
       let talkback = null
       if (t == 0)
         talkback = d
-      const currentCounter = widget.updatesCounter || 0
+      const currentCounter = jb.ui.testUpdateCounters[widgetId] || 0
+      jb.log(`waitForNextUpdate checking ${currentCounter}`,{ctx, currentCounter, expectedCounter, baseCounter})
+
       if (t == 1 && !done && d.widgetId == widgetId && currentCounter >= expectedCounter) {
         done = true
         talkback && talkback(2)
+        jb.log(`waitForNextUpdate done at ${currentCounter}`,{ctx, currentCounter, expectedCounter, baseCounter})
+
         jb.delay(1).then(() => {
           jb.log('uiTest waitForNextUpdate counter reached', {ctx, currentCounter, expectedCounter, baseCounter})
           resolve()

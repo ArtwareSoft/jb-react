@@ -77,7 +77,7 @@ extension('ui', 'react', {
             return
         }
         const active = jb.ui.activeElement() === elem
-        if (vdomAfter.tag != elem.tagName.toLowerCase() || strongRefresh) {
+        if (vdomAfter.tag != (elem.tagName || elem.tag).toLowerCase() || strongRefresh) {
             jb.ui.unmount(elem)
             const newElem = jb.ui.render(vdomAfter,elem.parentElement,{ctx})
             elem.parentElement.replaceChild(newElem,elem)
@@ -217,7 +217,7 @@ extension('ui', 'react', {
         } else if (att.indexOf('on-') == 0 && val == null) {
             elem.removeEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev,val))
             elem[`registeredTo-${att}`] = false
-        } else if (att === 'checked' && elem.tagName&& elem.tagName.toLowerCase() === 'input') {
+        } else if (att === 'checked' && (elem.tagName || elem.tag).toLowerCase() === 'input') {
             elem.setAttribute(att,val)
             jb.delay(1).then(()=> { // browser bug?
                 elem.checked = true

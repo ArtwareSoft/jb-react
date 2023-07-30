@@ -850,10 +850,7 @@ component('FETest.remote.itemlistKeyboardSelection', {
     uiAction: keyboardEvent({selector: '.jb-itemlist', type: 'keydown', keyCode: 13}),
     expectedResult: contains('-Homer Simpson-'),
     timeout: 1000,
-    backEndJbm: remoteNodeWorker(
-      'itemlistKeyboardSelection',
-      sourceCode(pluginsByPath('/plugins/ui/tests/ui-tests.js'))
-    ),
+    backEndJbm: remoteNodeWorker('itemlist', sourceCode(pluginsByPath('/plugins/ui/tests/ui-tests.js'))),
     useFrontEnd: true
   })
 })
@@ -2206,5 +2203,31 @@ component('FETest.coLocation', {
       ]
     }),
     expectedResult: equals('%$toChange/x%',3)
+  })
+})
+
+component('uiTest.transactiveHeadless.createWidget', {
+  impl: uiTest({
+    control: text('hello world'),
+    expectedResult: contains('hello world'),
+    transactiveHeadless: true
+  })
+})
+
+component('uiTest.transactiveHeadless.changeText', {
+  impl: uiTest({
+    control: group({
+      controls: [
+        text({text: '-%$fName%-', features: watchRef('%$fName%')}),
+        text({text: '+%$fName%+', features: watchRef('%$fName%')}),
+        editableText({databind: '%$fName%', style: editableText.input()})
+      ],
+      features: watchable('fName', 'Dan')
+    }),
+    uiAction: setText('danny'),
+    expectedResult: contains(['-danny-','+danny+']),
+    timeout: 1000,
+    backEndJbm: remoteNodeWorker('changeText', sourceCode(pluginsByPath('/plugins/ui/tests/ui-tests.js'))),
+    transactiveHeadless: true
   })
 })

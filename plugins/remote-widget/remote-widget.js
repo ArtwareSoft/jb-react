@@ -203,21 +203,6 @@ extension('ui', 'headless', {
       headless: {},
     }
   },
-  userReqTx({ userReq }) {
-    return {
-      updates: [],
-      cb: jb.callbag.subject(),
-      next(renderingUpdate) {
-        this.updates.push(renderingUpdate)
-        //this.cb.next({userReq, ...renderingUpdate})
-      },
-      complete(renderingUpdate) {
-        if (renderingUpdate)
-          this.next({ userReq, ...renderingUpdate })
-        this.cb.complete()
-      }
-    }
-  },
   createHeadlessWidget(widgetId, ctrl, ctx, { recover } = {}) {
     const ctxToUse = jb.ui.extendWithServiceRegistry(ctx.setVars({
         ...(recover && { recover: true }), headlessWidget: true, headlessWidgetId: widgetId
@@ -239,14 +224,12 @@ extension('ui', 'headless', {
     ctx.vars.userReqTx && ctx.vars.userReqTx.complete()
   },
   handleUserReq(userReq, sink, _ctx) {
-    const ctx = _ctx.vars.transactiveHeadless ? _ctx.setVars({ userReqTx: jb.ui.userReqTx({ userReq }) }) : _ctx
+    const ctx = _ctx.vars.transactiveHeadless ? _ctx.setVars({ userReqTx: jb.ui.userReqTx({ userReq, ctx: _ctx }) }) : _ctx
     const { widgetId } = userReq
     jb.log('headless widget handle userRequset', { widgetId, userReq })
     const tx = ctx.vars.userReqTx
     if (tx)
-      jb.callbag.subscribe({
-        complete: () => sink(1, ctx.dataObj({ $: 'updates', updates: tx.updates }))
-      })(tx.cb);
+      tx.onComplete(update => sink(1, ctx.dataObj(update)))
 
     if (userReq.$ == 'userRequest') {
       const ctx = jb.ctxDictionary[userReq.ctxIdToRun]

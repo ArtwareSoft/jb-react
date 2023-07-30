@@ -326,14 +326,25 @@ extension('ui','comp', {
         hasBEMethod(method) {
             return (this.method||[]).filter(h=> h.id == method)[0]
         }
-        runBEMethod(method, data, vars) {
+        runBEMethod(method, data, vars, {doNotUseuserReqTx} = {}) {
             jb.log(`backend uiComp method ${method}`, {cmp: this,data,vars})
             if (jb.path(vars,'$state'))
                 Object.assign(this.state,vars.$state)
-            const methodImpls = (this.method||[]).filter(h=> h.id == method)
-            methodImpls.forEach(h=> jb.ui.handleUserRequest(h.ctx,data,
-                {cmp: this,$state: this.state, $props: this.renderProps, ...vars, $model: this.calcCtx.vars.$model}))
-            if (methodImpls.length == 0)
+            const tActions = (this.method||[]).filter(h=> h.id == method).map(h => ctx => {
+                jb.ui.handleUserRequest(h.ctx, data,
+                    {cmp: this,$state: this.state, $props: this.renderProps, ...vars, $model: this.calcCtx.vars.$model})
+                const tx = !doNotUseuserReqTx && ctx.vars.userReqTx
+                tx && tx.complete()                        
+            })
+            const tx = this.calcCtx.vars.userReqTx
+            if (tx)
+                tx.completeByChildren(tActions, this.calcCtx)
+            else
+                tActions.forEach(action => action(this.calcCtx))
+    
+            // (h=> jb.ui.handleUserRequest(h.ctx,data,
+            //     {cmp: this,$state: this.state, $props: this.renderProps, ...vars, $model: this.calcCtx.vars.$model}))
+            if (tActions.length == 0)
                 jb.logError(`no method ${method} in cmp`, {cmp: this, data, vars})
         }
         refresh(state,options,ctx) {
