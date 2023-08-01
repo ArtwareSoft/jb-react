@@ -66,14 +66,15 @@ extension('ui', 'react', {
             const cmpId = elem.getAttribute('cmp-id')
             const vdomBefore = elem instanceof jb.ui.VNode ? elem : jb.ui.elemToVdom(elem)
             const delta = jb.ui.compareVdom(vdomBefore,vdomAfter,ctx)
-            const assumedVdom = JSON.parse(JSON.stringify(jb.ui.stripVdom(elem)))
+            //const assumedVdom = JSON.parse(JSON.stringify(jb.ui.stripVdom(elem)))
             if (elem != vdomAfter) { // update the elem
                 ;(elem.children ||[]).forEach(ch=>ch.parentNode = null)
                 Object.keys(elem).filter(x=>x !='parentNode').forEach(k=>delete elem[k])
                 Object.assign(elem,vdomAfter)
                 ;(vdomAfter.children ||[]).forEach(ch=>ch.parentNode = elem)
             }
-            jb.ui.sendRenderingUpdate(ctx,{assumedVdom, delta,cmpId,widgetId, src_evCounter: jb.path(srcCtx,'vars.evCounter') })
+            const id = elem.getAttribute('id')
+            jb.ui.sendRenderingUpdate(ctx,{id, delta,cmpId,widgetId, src_evCounter: jb.path(srcCtx,'vars.evCounter') })
             return
         }
         const active = jb.ui.activeElement() === elem
@@ -91,7 +92,7 @@ extension('ui', 'react', {
         }
         if (!elem instanceof jb.ui.VNode || ctx.vars.useFrontEndInTest)
             if (elem instanceof jb.ui.VNode)
-                jb.ui.setAttToVdom(elem)
+                jb.ui.setAttToVdom(elem,ctx)
             jb.ui.refreshFrontEnd(elem, {content: vdomAfter})
         if (active) jb.ui.focus(elem,'apply Vdom diff',ctx)
         jb.ui.garbageCollectCtxDictionary()
@@ -217,10 +218,10 @@ extension('ui', 'react', {
             elem.removeAttribute(att)
             jb.log('dom change remove',{elem,att,val,ctx})
         } else if (att.indexOf('on-') == 0 && val != null && !elem[`registeredTo-${att}`]) {
-            elem.addEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev,val))
+            elem.addEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev,val,ctx))
             elem[`registeredTo-${att}`] = true
         } else if (att.indexOf('on-') == 0 && val == null) {
-            elem.removeEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev,val))
+            elem.removeEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev,val,ctx))
             elem[`registeredTo-${att}`] = false
         } else if (att === 'checked' && (elem.tagName || elem.tag).toLowerCase() === 'input') {
             elem.setAttribute(att,val)
@@ -334,11 +335,11 @@ extension('ui', 'react', {
             tag = tag || 'div'
             return (['svg','circle','ellipse','image','line','mesh','path','polygon','polyline','rect','text'].indexOf(tag) != -1) ?
                 doc.createElementNS("http://www.w3.org/2000/svg", tag) : doc.createElement(tag)
-        } 
+        }
     },
-    handleCmpEvent(ev, specificMethod) {
+    handleCmpEvent(ev, specificMethod,ctx) {
         specificMethod = specificMethod == 'true' ? `on${ev.type}Handler` : specificMethod
-        const userReq = jb.ui.rawEventToUserRequest(ev,{specificMethod})
+        const userReq = jb.ui.rawEventToUserRequest(ev,{specificMethod,ctx})
         jb.log('handle cmp event',{ev,specificMethod,userReq})
         if (!userReq) return true
         if (userReq.widgetId && userReq.widgetId != 'client')
@@ -462,7 +463,7 @@ extension('ui', 'react', {
             const { headlessWidgetId, headlessWidget, useFrontEndInTest } = ctx.vars
             headlessWidget && jb.ui.sendRenderingUpdate(ctx,{delta,cmpId,widgetId: headlessWidgetId,ctx})
             if (useFrontEndInTest) {
-                jb.ui.setAttToVdom(actualElem)
+                jb.ui.setAttToVdom(actualElem,ctx)
                 jb.ui.refreshFrontEnd(actualElem, {content: delta})
             }
             // if (uiTest && jb.path(jb,'parent.uri') == 'tests' && jb.path(jb,'parent.ui.renderingUpdates')) // used for distributedWidget tests
@@ -472,9 +473,9 @@ extension('ui', 'react', {
             jb.ui.refreshFrontEnd(actualElem, {content: delta})
         }
     },
-    setAttToVdom(elem) {
+    setAttToVdom(elem,ctx) {
         jb.entries(elem.attributes).forEach(e=>jb.ui.setAtt(elem,e[0],e[1],ctx))
-        ;(elem.children || []).forEach(el => jb.ui.setAttToVdom(el))
+        ;(elem.children || []).forEach(el => jb.ui.setAttToVdom(el,ctx))
     },
     sendRenderingUpdate(ctx,renderingUpdate) {
         const tx = ctx.vars.userReqTx
