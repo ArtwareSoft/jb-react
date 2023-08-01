@@ -193,7 +193,7 @@ component('uiTest.applyVdomDiff', {
 		const vdomBefore = jb.ui.h(controlBefore(ctx))
 		const vdom = jb.ui.h(control(ctx))
 		jb.ui.render(vdomBefore,elem)
-		jb.ui.applyNewVdom(elem.firstElementChild,vdom)
+		jb.ui.applyNewVdom(elem.firstElementChild,vdom,{ctx})
 		const actualVdom = jb.ui.elemToVdom(elem.firstElementChild)
 		const diff = jb.ui.vdomDiff(vdom,actualVdom)
 

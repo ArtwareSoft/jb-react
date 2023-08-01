@@ -153,8 +153,9 @@ component('remote.distributedWidget', {
 component('remote.widget', {
   type: 'control',
   params: [
-    { id: 'control', type: 'control', dynamic: true, composite: true },
-    { id: 'jbm', type: 'jbm<jbm>', defaultValue: worker() }
+    {id: 'control', type: 'control', dynamic: true, composite: true},
+    {id: 'jbm', type: 'jbm<jbm>', defaultValue: worker()},
+    {id: 'transactiveHeadless', as: 'boolean', type: 'boolean'}
   ],
   impl: group({
     controls: controlWithFeatures(
@@ -166,12 +167,19 @@ component('remote.widget', {
         rx.filter('%widgetId% == %$widgetId%'),
         rx.takeWhile(({ data }) => data.$$ != 'destroy', true),
         rx.log('remote widget sent to headless'),
-        remote.operator(widget.headless(call('control'), '%$widgetId%'), '%$resolvedJbm%'),
+        remote.operator(
+          widget.headless({
+            control: call('control'),
+            widgetId: '%$widgetId%',
+            transactiveHeadless: '%$transactiveHeadless%'
+          }),
+          '%$resolvedJbm%'
+        ),
         rx.log('remote widget arrived from headless'),
         sink.action(action.updateFrontEnd('%%'))
       )
     ),
-    features: group.wait({ for: '%$jbm%', varName: 'resolvedJbm' })
+    features: group.wait({for: '%$jbm%', varName: 'resolvedJbm'})
   })
 })
 

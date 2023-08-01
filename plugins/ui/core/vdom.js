@@ -67,6 +67,7 @@ extension('ui','vdom', {
             return (jb.path(this,'attributes.class') || '').split(' ').indexOf(clz) != -1
         }
         appendChild(vdom) {
+            this.children = this.children || []
             this.children.push(vdom)
             return this
         }

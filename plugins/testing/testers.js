@@ -49,7 +49,7 @@ component('dataTest', {
 extension('test', {
 	initExtension() { 
 		jb.test.initSpyEnrichers()
-		return { success_counter: 0, fail_counter: 0, startTime: new Date().getTime() } 
+		return { success_counter: 0, fail_counter: 0, startTime: new Date().getTime(), projectsPath: '/home/shaiby/projects' } 
 	},
 	goto_editor: (id,repo) => fetch(`/?op=gotoSource&comp=${id}&repo=${repo}`),
 	hide_success_lines: () => jb.frame.document.querySelectorAll('.success').forEach(e=>e.style.display = 'none'),
@@ -120,7 +120,7 @@ extension('test', {
 	async runSingleTest(testID,{doNotcleanBeforeRun, showOnlyTest} = {}) {
 		const $testFinished = jb.callbag.subject()
 		const tstCtx = (jb.ui ? jb.ui.extendWithServiceRegistry() : new jb.core.jbCtx())
-			.setVars({ testID, singleTest: jb.test.singleTest, $testFinished })
+			.setVars({ testID, singleTest: jb.test.singleTest, $testFinished, projects: jb.test.projectsPath })
 		const start = new Date().getTime()
 		await !doNotcleanBeforeRun && jb.test.cleanBeforeRun()
 		jb.log('start test',{testID})

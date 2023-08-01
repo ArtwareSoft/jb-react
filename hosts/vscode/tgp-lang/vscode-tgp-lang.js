@@ -1,16 +1,17 @@
 globalThis.vscodeNS = require('vscode')
 globalThis.jbVSCodeLog = vscodeNS.window.createOutputChannel('jbart').appendLine
 function findjbReact() {
-    const workspaceDir = (vscodeNS.workspace.workspaceFolders || []).map(ws=>ws.uri.path)[0] || ''
+    const _dirname = __dirname.replace(/\\/g,'/')
+    const workspaceDir = (vscodeNS.workspace.workspaceFolders || []).map(ws=>ws.uri.path.replace(/\\/g,'/'))[0] || ''
     const rep = (workspaceDir.match(/projects\/([^/]*)$/) || [])[1]
     jbVSCodeLog('rep:' + rep)
     if (rep)
         return workspaceDir.split('projects/')[0] + 'projects/jb-react'
   
-    if (__dirname.match(/\/hosts\/vscode\/tgp-lang$/)) // debugger case
-        return __dirname.replace(/\/hosts\/vscode\/tgp-lang$/,'')
+    if (_dirname.match(/\/hosts\/vscode\/tgp-lang$/)) // debugger case
+        return _dirname.replace(/\/hosts\/vscode\/tgp-lang$/,'')
     jbVSCodeLog('can not locate jbReact dir')
-    jbVSCodeLog('__dirname:' + __dirname)
+    jbVSCodeLog('_dirname:' + _dirname)
     jbVSCodeLog('workspaceDir:' + workspaceDir)
 }
 

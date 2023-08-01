@@ -89,12 +89,17 @@ extension('ui', 'react', {
             jb.log('apply delta top dom',{vdomBefore,vdomAfter,active,elem,vdomAfter,strongRefresh, delta, ctx})
             jb.ui.applyDeltaToDom(elem,delta,ctx)
         }
-        jb.ui.refreshFrontEnd(elem, {content: vdomAfter})
+        if (!elem instanceof jb.ui.VNode || ctx.vars.useFrontEndInTest)
+            if (elem instanceof jb.ui.VNode)
+                jb.ui.setAttToVdom(elem)
+            jb.ui.refreshFrontEnd(elem, {content: vdomAfter})
         if (active) jb.ui.focus(elem,'apply Vdom diff',ctx)
         jb.ui.garbageCollectCtxDictionary()
     },
 
     applyDeltaToDom(elem,delta,ctx) {
+        if (elem instanceof jb.ui.VNode)
+            return jb.ui.applyDeltaToVDom(elem,delta,ctx)
         jb.log('applyDelta dom',{elem,delta,ctx})
         const children = delta.children
         if (children) {
@@ -332,7 +337,7 @@ extension('ui', 'react', {
         } 
     },
     handleCmpEvent(ev, specificMethod) {
-        specificMethod = specificMethod == 'true' ? true : specificMethod
+        specificMethod = specificMethod == 'true' ? `on${ev.type}Handler` : specificMethod
         const userReq = jb.ui.rawEventToUserRequest(ev,{specificMethod})
         jb.log('handle cmp event',{ev,specificMethod,userReq})
         if (!userReq) return true
@@ -457,7 +462,7 @@ extension('ui', 'react', {
             const { headlessWidgetId, headlessWidget, useFrontEndInTest } = ctx.vars
             headlessWidget && jb.ui.sendRenderingUpdate(ctx,{delta,cmpId,widgetId: headlessWidgetId,ctx})
             if (useFrontEndInTest) {
-                setAttToVdom(actualElem)
+                jb.ui.setAttToVdom(actualElem)
                 jb.ui.refreshFrontEnd(actualElem, {content: delta})
             }
             // if (uiTest && jb.path(jb,'parent.uri') == 'tests' && jb.path(jb,'parent.ui.renderingUpdates')) // used for distributedWidget tests
@@ -466,11 +471,10 @@ extension('ui', 'react', {
             jb.ui.applyDeltaToDom(actualElem, actualdelta, ctx)
             jb.ui.refreshFrontEnd(actualElem, {content: delta})
         }
-
-        function setAttToVdom(elem) {
-            jb.entries(elem.attributes).forEach(e=>jb.ui.setAtt(elem,e[0],e[1],ctx))
-            ;(elem.children || []).forEach(el => setAttToVdom(el))
-        }
+    },
+    setAttToVdom(elem) {
+        jb.entries(elem.attributes).forEach(e=>jb.ui.setAtt(elem,e[0],e[1],ctx))
+        ;(elem.children || []).forEach(el => jb.ui.setAttToVdom(el))
     },
     sendRenderingUpdate(ctx,renderingUpdate) {
         const tx = ctx.vars.userReqTx

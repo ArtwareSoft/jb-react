@@ -7,7 +7,7 @@ extension('ui', 'watchRef', {
         jb.db.watchableHandlers.forEach(h=> jb.ui.subscribeToRefChange(h))
     },
     subscribeToRefChange: watchHandler => jb.utils.subscribe(watchHandler.resourceChange, e=> {
-        const srcCtx = e.srcCtx
+        const {opVal, srcCtx } = e
         const changed_path = watchHandler.removeLinksFromPath(e.insertedPath || watchHandler.pathOfRef(e.ref))
         if (!changed_path) debugger
         //observe="resources://2~name;person~name
@@ -22,7 +22,7 @@ extension('ui', 'watchRef', {
             const cmpId = elem.getAttribute('cmp-id')
             if (cmpId.indexOf('-') != -1 && cmpId.split('-')[0] != jb.uri)
                 return
-            let refresh = false, strongRefresh = false, cssOnly = true, delay = 0
+            let refresh = false, strongRefresh = false, cssOnly = true, delay = 0, methodBeforeRefresh = ''
             elem.getAttribute('observe').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{
                 if (!obs.allowSelfRefresh && jb.ui.findIncludeSelf(elem,`[cmp-id="${originatingCmpId}"]`)[0]) 
                     return jb.log('blocking self refresh observableElems',{cmpId,originatingCmpId,elem, obs,e})
@@ -32,6 +32,7 @@ extension('ui', 'watchRef', {
                 strongRefresh = strongRefresh || obs.strongRefresh
                 delay = delay || obs.delay
                 cssOnly = cssOnly && obs.cssOnly
+                methodBeforeRefresh = [methodBeforeRefresh,obs.methodBeforeRefresh || ''].filter(x=>x).join(',')
                 const diff = jb.utils.comparePaths(changed_path, obsPath)
                 const isChildOfChange = diff == 1
                 const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
@@ -40,7 +41,7 @@ extension('ui', 'watchRef', {
                     refresh = true
             })
             if (refresh)
-                return ctx => applyRefreshAstAction({ctx, delay,elem, strongRefresh, cssOnly, cmpId, originatingCmpId, top, i})
+                return ctx => applyRefreshAstAction({ctx, delay,elem, methodBeforeRefresh, strongRefresh, cssOnly, cmpId, originatingCmpId, top, i})
         }).filter(x=>x)
         const tx = srcCtx.vars.userReqTx
         if (tx)
@@ -48,7 +49,7 @@ extension('ui', 'watchRef', {
         else
             refreshActions.forEach(action => action(srcCtx))
 
-        async function applyRefreshAstAction({ctx, delay,elem, strongRefresh, cssOnly,cmpId, originatingCmpId, top, i}) {
+        async function applyRefreshAstAction({ctx, delay,elem, methodBeforeRefresh, strongRefresh, cssOnly,cmpId, originatingCmpId, top, i}) {
             await doApply()
             const tx = ctx.vars.userReqTx
             tx && tx.complete()
@@ -60,9 +61,9 @@ extension('ui', 'watchRef', {
                     return jb.log('observable elem was refreshed from top in refresh process',{originatingCmpId,cmpId,elem})
                 jb.log('refresh from observable elements',{cmpId,originatingCmpId,elem,ctx,e})
                 if (delay)
-                    jb.delay(delay).then(()=> jb.ui.refreshElem(elem,null,{srcCtx : ctx, strongRefresh, cssOnly}))
+                    jb.delay(delay).then(()=> jb.ui.refreshElem(elem,null,{srcCtx : ctx, strongRefresh, methodBeforeRefresh, opVal, cssOnly}))
                 else
-                    jb.ui.refreshElem(elem,null,{srcCtx: ctx, strongRefresh, cssOnly})
+                    jb.ui.refreshElem(elem,null,{srcCtx: ctx, methodBeforeRefresh, opVal, strongRefresh, cssOnly})
             }
         }
 
@@ -71,12 +72,13 @@ extension('ui', 'watchRef', {
             const innerParts = parts[1].split(';')
             const includeChildren = ((innerParts[2] ||'').match(/includeChildren=([a-z]+)/) || ['',''])[1]
             const delay = +((parts[1].match(/delay=([0-9]+)/) || ['',''])[1])
+            const methodBeforeRefresh = (parts[1].match(/methodBeforeRefresh=([a-zA-Z0-9_]+)/) || ['',''])[1]
             const strongRefresh = innerParts.indexOf('strongRefresh') != -1
             const cssOnly = innerParts.indexOf('cssOnly') != -1
             const allowSelfRefresh = innerParts.indexOf('allowSelfRefresh') != -1
             
             return parts[0] == watchHandler.resources.id && 
-                { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh, cssOnly, allowSelfRefresh, delay }
+                { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, methodBeforeRefresh, strongRefresh, cssOnly, allowSelfRefresh, delay }
         }
     })
 })

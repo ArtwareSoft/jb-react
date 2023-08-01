@@ -32,8 +32,9 @@ extension('ui', 'utils', {
   },
   //    inPreview: () => !jb.ui.inStudio() && jb.ui.parentFrameJb() && jb.ui.parentFrameJb().studio.initPreview,
   widgetBody(ctx) {
-    const { elemToTest, widgetId, headlessWidget, FEwidgetId, headlessWidgetId, uiTest } = ctx.vars
+    const { elemToTest, widgetId, headlessWidget, FEwidgetId, headlessWidgetId, uiTest, useFrontEndInTest } = ctx.vars
     const top = elemToTest ||
+      useFrontEndInTest && jb.path(jb, `ui.FEEmulator.${headlessWidgetId}.body`) ||
       uiTest && headlessWidget && jb.path(jb, `ui.headless.${headlessWidgetId}.body`) ||
       uiTest && jb.path(jb, `ui.FEEmulator.${headlessWidgetId}.body`) ||
       uiTest && jb.path(jb, `parent.ui.headless.${headlessWidgetId}.body`) ||
@@ -43,6 +44,7 @@ extension('ui', 'utils', {
     return FEwidgetId ? jb.ui.findIncludeSelf(top, `[widgetid="${FEwidgetId}"]`)[0] : top
   },
   ctxOfElem: (elem, att) => elem && elem.getAttribute && jb.ctxDictionary[elem.getAttribute(att || 'jb-ctx')],
+  cmpCtxOfElem: (elem, att) => elem && elem.getAttribute && jb.ctxDictionary[elem.getAttribute(att || 'full-cmp-ctx')],
   parentCmps: el => jb.ui.parents(el).map(el => el._component).filter(x => x),
   closestCmpElem: elem => jb.ui.parents(elem, { includeSelf: true }).find(el => el.getAttribute && el.getAttribute('cmp-id') != null),
   headlessWidgetId: elem => jb.ui.parents(elem, { includeSelf: true })

@@ -252,10 +252,10 @@ component('keyboardEvent', {
 
       const widgetId = jb.ui.parentWidgetId(elem) || ctx.vars.widgetId
       const ev = { widgetId, type, keyCode , ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt', key: keyChar}
+      const evForTest = {...ev, target: elem, currentTarget: elem}
       if (!elemToTest && !useFrontEndInTest) 
-        return jb.ui.rawEventToUserRequest(ev, {ctx})
+        return jb.ui.rawEventToUserRequest(evForTest, {ctx})
       if (!elemToTest && useFrontEndInTest) {
-        const evForTest = {...ev, target: elem, currentTarget: elem}
         elem.value = elem.value || ''
         if (type == 'keyup')
           elem.value += keyChar
@@ -280,26 +280,34 @@ component('changeEvent', {
   params: [
     {id: 'selector', as: 'string'},
     {id: 'value', as: 'string'},
+    {id: 'doNotWaitForNextUpdate', as: 'boolean', type: 'boolean'}
   ],
   impl: uiActions(
     waitForSelector('%$selector%'),
-    (ctx,{elemToTest},{selector,value}) => {
+    (ctx,{elemToTest, useFrontEndInTest},{selector, value}) => {
       const type = 'change'
-      const elem = selector ? ctx.vars.elemToTest.querySelector(selector) : elemToTest
-      jb.log('test uiAction keyboardEvent',{elem,selector,ctx})
+      const ctxToUse = useFrontEndInTest ? ctx.setVars({headlessWidget: false}) : ctx
+      const elem = selector ? jb.ui.elemOfSelector(selector,ctxToUse) : elemToTest
+      jb.log('test uiAction changeEvent',{elem,selector,type,ctx})
       if (!elem)
-        return jb.logError('can not find elem for test uiAction keyboardEvent',{ elem,selector,ctx})
+        return jb.logError('can not find elem for test uiAction keyboardEvent',{ elem,selector,type,ctx})
 
       const widgetId = jb.ui.parentWidgetId(elem) || ctx.vars.widgetId
-      if (!elemToTest) 
-        return jb.ui.rawEventToUserRequest({ widgetId, type, value }, {ctx})
-
-      elem.value = value
+      const ev = { widgetId, type, target: elem, currentTarget: elem }
+      if (!elemToTest && !useFrontEndInTest) 
+        return jb.ui.rawEventToUserRequest(ev, {ctx})
+      if (!elemToTest && useFrontEndInTest) {
+        elem.value = value
+        ;(jb.path(elem.handlers,type) || []).forEach(h=>h(ev))
+        return Promise.resolve()
+      }
+    
       const e = new Event(type)
       Object.defineProperty(e, 'target', { get : _ => elem })
       elem.dispatchEvent(e)
     },
-    waitForNextUpdate()
+    If(or('%$remoteUiTest%','%$useFrontEndInTest%', '%$doNotWaitForNextUpdate%'), '', waitForNextUpdate()),
+    If('%$useFrontEndInTest%', FEUserRequest()),
   )
 })
 
