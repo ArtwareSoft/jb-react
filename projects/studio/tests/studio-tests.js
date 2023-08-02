@@ -31,7 +31,7 @@ component('eventTracker.uiTest.vDebugger', {
       worker()
     ),
     expectedResult: contains('remote rec'),
-    timeout: 2000,
+    timeout: 4000,
     backEndJbm: byUri('tests•w1•vDebugger')
   })
 })

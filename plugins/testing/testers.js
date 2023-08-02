@@ -1,5 +1,7 @@
 using('tree-shake')
 
+const PROJECTS_PATH = '/home/shaiby/projects' // 'c/projects'
+
 component('dataTest', {
   type: 'test',
   params: [
@@ -49,7 +51,7 @@ component('dataTest', {
 extension('test', {
 	initExtension() { 
 		jb.test.initSpyEnrichers()
-		return { success_counter: 0, fail_counter: 0, startTime: new Date().getTime(), projectsPath: '/home/shaiby/projects' } 
+		return { success_counter: 0, fail_counter: 0, startTime: new Date().getTime() } 
 	},
 	goto_editor: (id,repo) => fetch(`/?op=gotoSource&comp=${id}&repo=${repo}`),
 	hide_success_lines: () => jb.frame.document.querySelectorAll('.success').forEach(e=>e.style.display = 'none'),
@@ -120,7 +122,7 @@ extension('test', {
 	async runSingleTest(testID,{doNotcleanBeforeRun, showOnlyTest} = {}) {
 		const $testFinished = jb.callbag.subject()
 		const tstCtx = (jb.ui ? jb.ui.extendWithServiceRegistry() : new jb.core.jbCtx())
-			.setVars({ testID, singleTest: jb.test.singleTest, $testFinished, projects: jb.test.projectsPath })
+			.setVars({ testID, singleTest: jb.test.singleTest, $testFinished, projects: PROJECTS_PATH })
 		const start = new Date().getTime()
 		await !doNotcleanBeforeRun && jb.test.cleanBeforeRun()
 		jb.log('start test',{testID})
@@ -192,10 +194,13 @@ extension('test', {
 		}
 
 		document.body.innerHTML = `<div style="font-size: 20px"><div id="progress"></div><span id="fail-counter" onclick="jb.test.hide_success_lines()"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span><span id="memory-usage"></span></div>`;
-
+		let counter = 0
 		return pipe(
 			fromIter(tests),
 			concatMap(e => fromPromise((async () => {
+				counter++
+				if (counter % 100 == 0)
+					await jb.delay(500) // gc
 				if (e[1].impl.timeout && e[1].impl.timeout > 1000)
 					await jb.delay(5)
 				const testID = e[0]

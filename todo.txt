@@ -1,4 +1,5 @@
-castFrom
+uiTest.editableText.richPicklistHelper.setInput
+  make uiTest
 
 prettyprint
   castFrom('ui-action<test>', uiActions('%$uiAction()%'))

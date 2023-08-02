@@ -224,7 +224,7 @@ extension('ui','comp', {
             this.newVars = jb.objFromEntries(jb.entries(this.ctx.vars).filter(([k,v]) => baseVars[k] != v))
             this.renderProps = {}
             this.state = this.ctx.vars.$state
-            this.calcCtx = this.ctx.setVar('$props',this.renderProps).setVar('cmp',this)
+            this.calcCtx = this.ctx.setVars({$props: this.renderProps, cmp: this})
             this.initialized = true
         }
     
@@ -282,6 +282,7 @@ extension('ui','comp', {
                 x.methodBeforeRefresh && `methodBeforeRefresh=${x.methodBeforeRefresh}`,
                 x.strongRefresh && `strongRefresh`,  x.cssOnly && `cssOnly`, x.allowSelfRefresh && `allowSelfRefresh`, x.delay && `delay=${x.delay}`] 
                 .filter(x=>x).join(';')).join(',')
+                this.calcCtx
             const methods = (this.method||[]).map(h=>`${h.id}-${jb.ui.preserveCtx(h.ctx.setVars({cmp: this, $props: this.renderProps, ...this.newVars}))}`).join(',')
             const originators = this.originators.map(ctx=>jb.ui.preserveCtx(ctx)).join(',')
             const usereventprops = (this.userEventProps||[]).join(',')
@@ -445,6 +446,8 @@ extension('ui','comp', {
                 this.watchRef = this.watchRef || []
                 this.watchRef.push({cmp: this,...options.watchRef});
             }
+            if (options.cmpId)
+                this.cmpId = options.cmpId
 
             // eventObservables
             this.eventObservables = this.eventObservables.concat(Object.keys(options).filter(op=>op.indexOf('on') == 0))

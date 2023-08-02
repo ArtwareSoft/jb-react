@@ -244,6 +244,16 @@ component('htmlAttribute', {
   })
 })
 
+component('cmpId', {
+  type: 'feature:0',
+  priority: 0,
+  description: 'force cmpId',
+  params: [
+    {id: 'cmpId', mandatory: true, as: 'string'}
+  ],
+  impl: ({},cmpId) => ({ cmpId})
+})
+
 component('id', {
   type: 'feature',
   description: 'adds id to html element',

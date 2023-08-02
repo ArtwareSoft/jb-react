@@ -425,8 +425,9 @@ extension('ui', 'react', {
             return jb.logError(`no method in cmp: ${method}`, {elem, data, vars})
 
         if (widgetId) {
+            const id = elem.getAttribute('id')
             jb.log(`frontEnd method send request: ${method}`,{elem, widgetId, ctxIdToRun, data, vars})
-            jb.ui.sendUserReq({$:'userRequest', method, widgetId, ctxIdToRun, data, vars })
+            jb.ui.sendUserReq({$:'userRequest', method, id, widgetId, ctxIdToRun, data, vars })
         } else {
             const ctx = jb.ctxDictionary[ctxIdToRun]
             if (!ctx)

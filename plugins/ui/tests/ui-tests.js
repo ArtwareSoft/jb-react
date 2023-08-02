@@ -680,15 +680,13 @@ component('uiTest.table.MDInplace.withScroll', {
       }),
       features: watchable('sectionExpanded', obj())
     }),
-    uiAction: uiActions(
-      click('.jb-itemlist', 'fetchNextPage'),
-      click('i', 'toggle')
-    ),
+    uiAction: uiActions(click('.jb-itemlist', 'fetchNextPage'), click('i', 'toggle')),
     expectedResult: and(
       contains(['colspan=\"','inner text','Bart']),
       not(contains('>42<')),
       not(contains(['inner text','inner text']))
-    )
+    ),
+    timeout: 300
   })
 })
 
@@ -1054,6 +1052,7 @@ component('uiTest.editableText.richPicklistHelper.setInput', {
     control: editableText({
       title: 'name',
       databind: '%$person/name%',
+      style: editableText.input(),
       features: [
         id('inp'),
         editableText.picklistHelper({
@@ -1065,9 +1064,10 @@ component('uiTest.editableText.richPicklistHelper.setInput', {
     uiAction: uiActions(
       keyboardEvent({selector: '#inp', type: 'keyup', keyCode: 37}),
       keyboardEvent({selector: '#inp', type: 'keydown', keyCode: 40}),
-      keyboardEvent({selector: '#inp', type: 'keyup', keyCode: 13})
+      keyboardEvent({selector: '#inp', type: 'keyup', keyCode: 13}),
     ),
     expectedResult: contains('1111</input-val>'),
+    useFrontEnd: true
   })
 })
 

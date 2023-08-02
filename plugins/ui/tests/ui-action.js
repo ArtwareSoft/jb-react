@@ -216,18 +216,28 @@ component('click', {
   ],
   impl: uiActions(
     waitForSelector('%$selector%'),
-    (ctx,{elemToTest},{selector, methodToActivate}) => {
-      const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : elemToTest
+    (ctx,{elemToTest, useFrontEndInTest},{selector, methodToActivate}) => {
+      const ctxToUse = useFrontEndInTest ? ctx.setVars({headlessWidget: false}) : ctx
+      const elem = selector ? jb.ui.elemOfSelector(selector,ctxToUse) : elemToTest
       jb.log('test uiAction click',{elem,selector,ctx})
       if (!elem) 
         return jb.logError(`click can not find elem ${selector}`, {ctx,elemToTest} )
       const widgetId = jb.ui.parentWidgetId(elem) || ctx.vars.widgetId
+      const ev = { type: 'click', currentTarget: elem, widgetId, currentTarget: elem }
+      if (!elemToTest && !useFrontEndInTest) 
+        return jb.ui.rawEventToUserRequest(ev, {specificMethod: methodToActivate, ctx})
+      if (!elemToTest && useFrontEndInTest) {
+        ;(jb.path(elem.handlers,type) || []).forEach(h=>h(ev))
+        return Promise.resolve()
+      }
+
       if (elemToTest) 
         elem.click()
       else
         return jb.ui.rawEventToUserRequest({ type: 'click', currentTarget: elem, widgetId}, {specificMethod: methodToActivate, ctx})
     },
-    If(or('%$remoteUiTest%','%$doNotWaitForNextUpdate%'), '', waitForNextUpdate())
+    If(or('%$remoteUiTest%','%$doNotWaitForNextUpdate%'), '', waitForNextUpdate()),
+    If('%$useFrontEndInTest%', FEUserRequest())
   )
 })
   
