@@ -191,10 +191,10 @@ component('tree.selection', {
     ),
     frontEnd.method('applyState', ({},{cmp}) => {
 		Array.from(jb.ui.findIncludeSelf(cmp.base,'.treenode.selected'))
-		  .forEach(elem=>elem.classList.remove('selected'))
+		  .forEach(elem=>jb.ui.removeClass(elem,'selected'))
 		Array.from(jb.ui.findIncludeSelf(cmp.base,'.treenode'))
 		  .filter(elem=> elem.getAttribute('path') == cmp.state.selected)
-		  .forEach(elem=> {elem.classList.add('selected'); jb.ui.scrollIntoView(elem)})
+		  .forEach(elem=> {jb.ui.addClass(elem,'selected'); jb.ui.scrollIntoView(elem)})
 	  }),
     frontEnd.method('setSelected', ({data},{cmp}) => {
 		cmp.base.state.selected = cmp.state.selected = data

@@ -56,15 +56,21 @@ extension('ui','vdom', {
                 clz.split(' ').filter(x=>x).forEach(cl=>this.addClass(cl))
                 return this
             }
-            this.attributes = this.attributes || {};
+            this.attributes = this.attributes || {}
             if (this.attributes.class === undefined) this.attributes.class = ''
-            if (clz && this.attributes.class.split(' ').indexOf(clz) == -1) {
-                this.attributes.class = [this.attributes.class,clz].filter(x=>x).join(' ');
-            }
-            return this;
+            if (clz && this.attributes.class.split(' ').indexOf(clz) == -1)
+                this.attributes.class = [this.attributes.class,clz].filter(x=>x).join(' ')
+            return this
         }
-        hasClass(clz) {
-            return (jb.path(this,'attributes.class') || '').split(' ').indexOf(clz) != -1
+        removeClass(clz) {
+            this.attributes = this.attributes || {}
+            this.attributes.class = (this.attributes.class || '').split(' ').filter(x=>x!=clz).join(' ') || ''
+            return this
+        }        
+        hasClass(clzs) {
+            return clzs.split('.').filter(x=>x).reduce((acc,clz) => 
+                acc && (jb.path(this,'attributes.class') || '').split(' ').indexOf(clz) != -1, true)
+            //return (jb.path(this,'attributes.class') || '').split(' ').indexOf(clz) != -1
         }
         appendChild(vdom) {
             this.children = this.children || []
@@ -77,33 +83,32 @@ extension('ui','vdom', {
         querySelectorAll(selector,{includeSelf}={}) {
             let maxDepth = 50
             if (!selector) debugger
-            if (selector.match(/^:scope>/)) 
+            if (selector.match(/^:scope>/))
                 return this.children.filter(el=>el.querySelector(selector.slice(7),{includeSelf: true}))
+            if (selector.match(/^\*>/))
+                return this.children.filter(el=>el.querySelector(selector.slice(2),{includeSelf: true}))
+
             if (selector == '' || selector == ':scope') return [this]
             if (selector.indexOf(' ') != -1)
                 return selector.split(' ').map(x=>x.trim()).reduce(
                     (res,sel) => res.flatMap(r=>r.querySelectorAll(sel,{includeSelf})), jb.asArray(this))
             if (selector.indexOf(',') != -1)
                 return selector.split(',').map(x=>x.trim()).reduce((res,sel) => [...res, ...this.querySelectorAll(sel,{includeSelf})], [])
-            const hasAtt = selector.match(/^\[([a-zA-Z0-9_$\-]+)\]$/)
-            const attEquals = selector.match(/^\[([a-zA-Z0-9_$\-]+)="([a-zA-Z0-9_\-→•]+)"\]$/)
-            const hasClass = selector.match(/^\.([a-zA-Z0-9_$\-]+)$/)
-            const hasTag = selector.match(/^[a-zA-Z0-9_\-]+$/)
-            const idEquals = selector.match(/^#([a-zA-Z0-9_$\-]+)$/)
-            const selectorMatcher = hasAtt ? el => el.attributes && el.attributes[hasAtt[1]]
-                : hasClass ? el => el.hasClass(hasClass[1])
-                : hasTag ? el => el.tag === hasTag[0]
-                : attEquals ? el => el.attributes && el.attributes[attEquals[1]] == attEquals[2]
-                : idEquals ? el => el.attributes && el.attributes.id == idEquals[1]
-                : null
-
-            return selectorMatcher && doFind(this,selectorMatcher,!includeSelf,0)
+            const selectorMatcher = jb.ui.selectorMatcher(selector)
+            if (selectorMatcher)
+                return doFind(this,selectorMatcher,!includeSelf,0)
+            jb.logError(`vdom selector is not supported ${selector}`,{vdom: this})
+            return []
 
             function doFind(vdom,selectorMatcher,excludeSelf,depth) {
                 return depth >= maxDepth ? [] : [ ...(!excludeSelf && selectorMatcher(vdom) ? [vdom] : []), 
                     ...(vdom.children||[]).flatMap(ch=> doFind(ch,selectorMatcher,false,depth+1))
                 ]
             }
+        }
+        matches(selector) {
+            const selectorMatcher = jb.ui.selectorMatcher(selector)
+            return selectorMatcher && selectorMatcher(this)
         }
         outerHTML() { // for tests
             const style = jb.entries(jb.path(this.attributes,'style')).map(e=>`${e[0]}:${e[1]}`).join(';')
@@ -120,6 +125,21 @@ extension('ui','vdom', {
             const handlers = jb.path(this.handlers,event)
             handlers.splice(handlers.indexOf(handler),1)
         }
+    },
+    selectorMatcher(selector) {
+        const hasAtt = selector.match(/^\[([a-zA-Z0-9_$\-]+)\]$/)
+        const attEquals = selector.match(/^\[([a-zA-Z0-9_$\-]+)="([a-zA-Z0-9_\-→•]+)"\]$/)
+        const hasClass = selector.match(/^(\.[a-zA-Z0-9_$\-]+)+$/)
+        const hasTag = selector.match(/^[a-zA-Z0-9_\-]+$/)
+        const idEquals = selector.match(/^#([a-zA-Z0-9_$\-]+)$/)
+        const selectorMatcher = hasAtt ? el => el.attributes && el.attributes[hasAtt[1]]
+            : hasClass ? el => el.hasClass(hasClass[1])
+            : hasTag ? el => el.tag === hasTag[0]
+            : attEquals ? el => el.attributes && el.attributes[attEquals[1]] == attEquals[2]
+            : idEquals ? el => el.attributes && el.attributes.id == idEquals[1]
+            : null
+
+        return selectorMatcher
     },
     toVdomOrStr(val) {
         if (jb.utils.isDelayed(val))

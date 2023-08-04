@@ -154,7 +154,7 @@ extension('jbm', 'main', {
                         }
                     }
                 },
-                remoteExec(remoteRun, {oneway, timeout = 3000, isAction, ctx} = {}) {
+                remoteExec(remoteRun, {oneway, timeout = 5000, isAction, ctx} = {}) {
                     if (oneway)
                         return port.postMessage({$:'CB.execOneWay', remoteRun, timeout })
                     return new Promise((resolve,reject) => {

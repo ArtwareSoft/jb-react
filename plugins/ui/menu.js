@@ -244,11 +244,11 @@ component('menu.selection', {
     menu.passMenuKeySource(),
     frontEnd.method('applyState', ({},{cmp}) => {
       Array.from(cmp.base.querySelectorAll('.jb-item.selected,*>.jb-item.selected,*>*>.jb-item.selected'))
-        .forEach(elem=>elem.classList.remove('selected'))
+        .forEach(elem=>jb.ui.removeClass(elem,'selected'))
       const parent = cmp.base.querySelector('.jb-items-parent') || cmp.base
       const elem = parent.children[cmp.state.selected]
       if (elem) {
-        elem.classList.add('selected')
+        jb.ui.addClass(elem,'selected')
         jb.ui.scrollIntoView(elem)
       }
     }),

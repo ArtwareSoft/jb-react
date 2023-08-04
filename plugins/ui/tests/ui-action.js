@@ -3,6 +3,14 @@ dsl('test')
 // uiAction works in both uiTest and uiFrontEndTest. 
 // uiAction uses ctx.vars.elemToTest to decide whether to return a sourceCb of events (uiTest) or promise (uiFETest)
 
+extension('test','uiActions', {
+  activateFEHandlers(elem,type,ev) {
+    const currentTarget = [elem, ...jb.ui.parents(elem)].find(x=>jb.path(x.handlers,type)) || {}
+    ;(jb.path(currentTarget.handlers,type) || []).forEach(h=>h({...ev,currentTarget}))
+    return Promise.resolve()
+  }
+})
+
 component('action', {
   type: 'ui-action',
   params: [
@@ -203,7 +211,12 @@ component('setText', {
           else
             return jb.ui.rawEventToUserRequest(ev,{ctx})
       },
-    If('%$doNotWaitForNextUpdate%', '', waitForNextUpdate())
+      If('%$useFrontEndInTest%', uiActions(delay(1), FEUserRequest(), If(not('%$doNotWaitForNextUpdate%'), waitForNextUpdate()))),
+      If(
+        and(not('%$useFrontEndInTest%'), not('%$remoteUiTest%'), not('%$doNotWaitForNextUpdate%')),
+        waitForNextUpdate()
+      )      
+//    If('%$doNotWaitForNextUpdate%', '', waitForNextUpdate())
   )
 })
 
@@ -217,27 +230,29 @@ component('click', {
   impl: uiActions(
     waitForSelector('%$selector%'),
     (ctx,{elemToTest, useFrontEndInTest},{selector, methodToActivate}) => {
+      const type = 'click'
       const ctxToUse = useFrontEndInTest ? ctx.setVars({headlessWidget: false}) : ctx
       const elem = selector ? jb.ui.elemOfSelector(selector,ctxToUse) : elemToTest
       jb.log('test uiAction click',{elem,selector,ctx})
       if (!elem) 
         return jb.logError(`click can not find elem ${selector}`, {ctx,elemToTest} )
       const widgetId = jb.ui.parentWidgetId(elem) || ctx.vars.widgetId
-      const ev = { type: 'click', currentTarget: elem, widgetId, currentTarget: elem }
+      const ev = { type, currentTarget: elem, widgetId, target: elem }
       if (!elemToTest && !useFrontEndInTest) 
         return jb.ui.rawEventToUserRequest(ev, {specificMethod: methodToActivate, ctx})
-      if (!elemToTest && useFrontEndInTest) {
-        ;(jb.path(elem.handlers,type) || []).forEach(h=>h(ev))
-        return Promise.resolve()
-      }
+      if (!elemToTest && useFrontEndInTest)
+        return jb.test.activateFEHandlers(elem,type,ev)
 
       if (elemToTest) 
         elem.click()
       else
-        return jb.ui.rawEventToUserRequest({ type: 'click', currentTarget: elem, widgetId}, {specificMethod: methodToActivate, ctx})
+        return jb.ui.rawEventToUserRequest({ type, target: elem, currentTarget: elem, widgetId}, {specificMethod: methodToActivate, ctx})
     },
-    If(or('%$remoteUiTest%','%$doNotWaitForNextUpdate%'), '', waitForNextUpdate()),
-    If('%$useFrontEndInTest%', FEUserRequest())
+    If('%$useFrontEndInTest%', uiActions(delay(1), FEUserRequest(), If(not('%$doNotWaitForNextUpdate%'), waitForNextUpdate()))),
+    If(
+      and(not('%$useFrontEndInTest%'), not('%$remoteUiTest%'), not('%$doNotWaitForNextUpdate%')),
+      waitForNextUpdate()
+    )
   )
 })
   
@@ -261,16 +276,14 @@ component('keyboardEvent', {
         return jb.logError('can not find elem for test uiAction keyboardEvent',{ elem,selector,type,keyCode,ctx})
 
       const widgetId = jb.ui.parentWidgetId(elem) || ctx.vars.widgetId
-      const ev = { widgetId, type, keyCode , ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt', key: keyChar}
-      const evForTest = {...ev, target: elem, currentTarget: elem}
+      const ev = { widgetId, type, keyCode , ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt', key: keyChar, target: elem, currentTarget: elem}
       if (!elemToTest && !useFrontEndInTest) 
-        return jb.ui.rawEventToUserRequest(evForTest, {ctx})
+        return jb.ui.rawEventToUserRequest(ev, {ctx})
       if (!elemToTest && useFrontEndInTest) {
         elem.value = elem.value || ''
         if (type == 'keyup')
           elem.value += keyChar
-        ;(jb.path(elem.handlers,type) || []).forEach(h=>h(evForTest))
-        return Promise.resolve()
+        return jb.test.activateFEHandlers(elem,type,ev)
       }
     
       if (keyChar && type == 'keyup')
@@ -280,8 +293,13 @@ component('keyboardEvent', {
       Object.defineProperty(e, 'target', { get : _ => elem })
       elem.dispatchEvent(e)
     },
-    If(or('%$remoteUiTest%','%$useFrontEndInTest%', '%$doNotWaitForNextUpdate%'), '', waitForNextUpdate()),
-    If('%$useFrontEndInTest%', FEUserRequest()),
+    If('%$useFrontEndInTest%', uiActions(delay(1), FEUserRequest(), If(not('%$doNotWaitForNextUpdate%'), waitForNextUpdate()))),
+    If(
+      and(not('%$useFrontEndInTest%'), not('%$remoteUiTest%'), not('%$doNotWaitForNextUpdate%')),
+      waitForNextUpdate()
+    )    
+    // If(or('%$remoteUiTest%','%$useFrontEndInTest%', '%$doNotWaitForNextUpdate%'), '', waitForNextUpdate()),
+    // If('%$useFrontEndInTest%', FEUserRequest()),
   )
 })
 
@@ -308,16 +326,20 @@ component('changeEvent', {
         return jb.ui.rawEventToUserRequest(ev, {ctx})
       if (!elemToTest && useFrontEndInTest) {
         elem.value = value
-        ;(jb.path(elem.handlers,type) || []).forEach(h=>h(ev))
-        return Promise.resolve()
+        return jb.test.activateFEHandlers(elem,type,ev)
       }
     
       const e = new Event(type)
       Object.defineProperty(e, 'target', { get : _ => elem })
       elem.dispatchEvent(e)
     },
-    If(or('%$remoteUiTest%','%$useFrontEndInTest%', '%$doNotWaitForNextUpdate%'), '', waitForNextUpdate()),
-    If('%$useFrontEndInTest%', FEUserRequest()),
+    If('%$useFrontEndInTest%', uiActions(delay(1), FEUserRequest(), If(not('%$doNotWaitForNextUpdate%'), waitForNextUpdate()))),
+    If(
+      and(not('%$useFrontEndInTest%'), not('%$remoteUiTest%'), not('%$doNotWaitForNextUpdate%')),
+      waitForNextUpdate()
+    )    
+    // If(or('%$remoteUiTest%','%$useFrontEndInTest%', '%$doNotWaitForNextUpdate%'), '', waitForNextUpdate()),
+    // If('%$useFrontEndInTest%', FEUserRequest()),
   )
 })
 
@@ -366,8 +388,9 @@ component('FEUserRequest', {
   ],
   impl: ctx => {
     const userRequest = jb.ui.FEEmulator[ctx.vars.widgetId].userRequests.pop()
-    if (userRequest)
-      jb.log('uiTest frontend widgetUserRequest is played', {ctx,userRequest})
+    jb.log('uiTest frontend check FEUserRequest', {ctx,userRequest})
+    // if (userRequest)
+    //   jb.log('uiTest frontend widgetUserRequest is played', {ctx,userRequest})
     return userRequest
   },
 })

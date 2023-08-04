@@ -50,7 +50,7 @@ component('uiTest', {
     ),
     expectedResult: '%%',
     runBefore: runActions(uiTest.addFrontEndEmulation(), '%$runBefore()%'),
-    timeout: '%$timeout%',
+    timeout: If(equals('%$backEndJbm%', () => jb), '%$timeout%', 5000),
     allowError: '%$allowError()%',
     cleanUp: runActions(uiTest.removeFrontEndEmulation(), call('cleanUp')),
     expectedCounters: '%$expectedCounters%'

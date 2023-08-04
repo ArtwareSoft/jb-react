@@ -58,11 +58,11 @@ component('itemlist.selection', {
     ),
     frontEnd.method('applyState', ({},{cmp}) => {
       Array.from(cmp.base.querySelectorAll('.jb-item.selected,*>.jb-item.selected,*>*>.jb-item.selected'))
-        .forEach(elem=>elem.classList.remove('selected'))
+        .forEach(elem=>jb.ui.removeClass(elem,'selected'))
       const parent = cmp.base.querySelector('.jb-items-parent') || cmp.base
       const elem = parent.children[cmp.state.selected]
       if (elem) {
-        elem.classList.add('selected')
+        jb.ui.addClass(elem,'selected')
         jb.ui.scrollIntoView(elem)
       }
     }),
@@ -126,9 +126,11 @@ component('itemlist.indexOfElem', {
   params: [
     {id: 'elem', defaultValue: '%%'}
   ],
-  impl: ({},el) => {
-      const elem = jb.ui.closest(el,'.jb-item')
-      return elem && jb.ui.indexOfElement(elem)
+  impl: (ctx,el) => {
+      const elemOfItem = jb.ui.closest(el,'.jb-item')
+      const index = elemOfItem && jb.ui.indexOfElement(elemOfItem)
+      jb.log('itemlist selection index of elem', {el,elemOfItem,ctx})
+      return index
   }
 })
 

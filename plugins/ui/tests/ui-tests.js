@@ -710,7 +710,7 @@ component('uiTest.itemlistMDAutoSelectFirst', {
   })
 })
 
-component('uiTest.itemlistSelection', {
+component('uiTest.itemlistSelection.autoSelectFirst', {
   impl: uiTest({
     control: itemlist({
       items: '%$people%',
@@ -723,6 +723,24 @@ component('uiTest.itemlistSelection', {
       ]
     }),
     expectedResult: contains(['Homer Simpson'])
+  })
+})
+
+component('uiTest.itemlistSelection.click', {
+  impl: uiTest({
+    control: group({
+      controls: [
+        itemlist({
+          items: '%$people%',
+          controls: text({text: '%$item.name%', features: id('idx-%$index%')}),
+          features: itemlist.selection('%$globals/selectedPerson%')
+        }),
+        text({text: '-%$globals/selectedPerson/name%-', features: watchRef('%$globals/selectedPerson%')})
+      ]
+    }),
+    uiAction: click('#idx-2'),
+    expectedResult: contains('-Marge Simpson-'),
+    useFrontEnd: true
   })
 })
 
@@ -810,7 +828,7 @@ component('FETest.itemlistContainerSearchEnterOnLi', {
   })
 })
 
-component('FETest.itemlistKeyboardSelection', {
+component('uiTest.itemlistKeyboardSelection', {
   impl: uiTest({
     vars: [Var('res', obj())],
     control: itemlist({
@@ -821,13 +839,13 @@ component('FETest.itemlistKeyboardSelection', {
         itemlist.keyboardSelection({onEnter: writeValue('%$res/selected%', '%name%')})
       ]
     }),
-    uiAction: keyboardEvent({selector: '.jb-itemlist', type: 'keydown', keyCode: 13}),
+    uiAction: keyboardEvent({selector: '.jb-itemlist', type: 'keydown', keyCode: 13, doNotWaitForNextUpdate: true}),
     expectedResult: equals('%$res/selected%', 'Homer Simpson'),
     useFrontEnd: true
   })
 })
 
-component('FETest.remote.itemlistKeyboardSelection', {
+component('uiTest.remote.itemlistKeyboardSelection', {
   impl: uiTest({
     control: group({
       controls: [
@@ -2226,8 +2244,7 @@ component('uiTest.transactiveHeadless.changeText', {
     }),
     uiAction: setText('danny'),
     expectedResult: contains(['-danny-','+danny+']),
-    timeout: 1000,
-    backEndJbm: remoteNodeWorker('changeText', sourceCode(pluginsByPath('/plugins/ui/tests/ui-tests.js'))),
+    backEndJbm: worker('changeText', sourceCode(pluginsByPath('/plugins/ui/group.js'))),
     transactiveHeadless: true
   })
 })
