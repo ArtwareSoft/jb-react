@@ -86,8 +86,9 @@ component('action.updateFrontEnd', {
 
     async function frontEndDelta(renderingUpdate) {
       const { delta, css, widgetId, cmpId, assumedVdom } = renderingUpdate
+      const {headlessWidget, useFrontEndInTest} = ctx.vars
       if (css)
-        return !ctx.vars.headlessWidget && jb.ui.insertOrUpdateStyleElem(ctx, css, renderingUpdate.elemId, { classId: renderingUpdate.classId })
+        return (useFrontEndInTest || !headlessWidget) && jb.ui.insertOrUpdateStyleElem(ctx, css, renderingUpdate.elemId, { classId: renderingUpdate.classId })
       await jb.treeShake.getCodeFromRemote(jb.treeShake.treeShakeFrontendFeatures(pathsOfFEFeatures(delta)))
       await jb.treeShake.loadFELibsDirectly(feLibs(delta))
       const ctxToUse = ctx.setVars({ headlessWidget: false, FEwidgetId: widgetId })
@@ -121,10 +122,10 @@ component('action.updateFrontEnd', {
 component('remote.distributedWidget', {
   type: 'action',
   params: [
-    { id: 'control', type: 'control', dynamic: true },
-    { id: 'backend', type: 'jbm<jbm>', defaultValue: jbm.self() },
-    { id: 'frontend', type: 'jbm<jbm>' },
-    { id: 'selector', as: 'string', description: 'root selector to put widget in. e.g. #main' }
+    {id: 'control', type: 'control', dynamic: true},
+    {id: 'backend', type: 'jbm<jbm>', defaultValue: jbm.self()},
+    {id: 'frontend', type: 'jbm<jbm>'},
+    {id: 'selector', as: 'string', description: 'root selector to put widget in. e.g. #main'}
   ],
   impl: runActions(
     Var('widgetId', widget.newId()),
@@ -337,6 +338,7 @@ component('frontEnd.widget', {
     style: text.htmlTag('div'),
     features: features(
       frontEnd.coLocation(),
+      htmlAttribute('widgetId', 'client'),
       htmlAttribute('widgetTop', 'true'),
       htmlAttribute('frontend', 'true'),
       frontEnd.var('ctrlProfile', ({ }, { }, { control }) => control.profile),

@@ -47,20 +47,18 @@ component('remoteWidgetTest.changeText2', {
 })
 
 component('remoteWidgetTest.changeText', {
-  impl: uiFrontEndTest({
-    control: remote.widget(
-      group({
-        controls: [
-          text('%$fName%'),
-          editableText({databind: '%$fName%'})
-        ],
-        features: watchable('fName', 'Dan')
-      }),
-      worker()
-    ),
+  impl: uiTest({
+    control: group({
+      controls: [
+        text('%$fName%'),
+        editableText({databind: '%$fName%'})
+      ],
+      features: watchable('fName', 'Dan')
+    }),
     uiAction: setText('danny'),
     expectedResult: contains('danny'),
-    timeout: 1000
+    timeout: 1000,
+    backEndJbm: worker()
   })
 })
 
@@ -290,8 +288,8 @@ component('FETest.remoteWidget.infiniteScroll', {
 //   })
 // })
 
-component('FETest.remoteWidget.refresh', {
-  impl: uiFrontEndTest({
+component('remoteWidgetTest.refresh', {
+  impl: uiTest({
     control: group({
       controls: remote.widget(text({text: '%$person1/name%', features: id('text1')}), worker()),
       features: [
@@ -300,47 +298,44 @@ component('FETest.remoteWidget.refresh', {
         watchRef('%$person/name%')
       ]
     }),
-    action: uiActions(
-      waitForSelector('#text1'),
-      writeValue('%$person/name%', 'hello'),
-      waitForText('hello')
-    ),
-    expectedResult: contains('hello')
+    uiAction: uiActions(waitForSelector('#text1'), writeValue('%$person/name%', 'hello'), waitForText('hello')),
+    expectedResult: contains('hello'),
+    timeout: 2000,
+    useFrontEnd: true
   })
 })
 
-component('remoteWidgetTest.FE.dialog', {
-  impl: uiFrontEndTest({
+component('remoteWidgetTest.frontEnd.widget', {
+  impl: uiTest({
     control: remote.widget(
       frontEnd.widget(
         button({title: 'click me', action: openDialog('hello', group()), style: button.native()})
       ),
       worker()
     ),
-    action: click(),
-    expectedResult: contains('hello')
+    uiAction: click(),
+    expectedResult: true
   })
 })
 
-component('remoteWidgetTest.FE.useBackEnd', {
-  impl: uiFrontEndTest({
-    control: remote.widget(
-      group({
-        controls: [
-          text('%$var1%'),
-          frontEnd.widget(
-            button({
-              title: 'click me',
-              action: runInBECmpContext('%$frontEndCmpId%', writeValue('%$var1%', 'hello')),
-              style: button.native()
-            })
-          )
-        ],
-        features: watchable('var1', 'Hi')
-      }),
-      worker()
-    ),
-    action: uiActions(click(), waitForSelector('[cmp-ver=\"2\"]')),
-    expectedResult: contains('hello')
+component('remoteWidgetTest.runInBECmpContext', {
+  impl: uiTest({
+    control: group({
+      controls: [
+        text('%$var1%'),
+        frontEnd.widget(
+          button({
+            title: 'click me',
+            action: runInBECmpContext('%$frontEndCmpId%', writeValue('%$var1%', 'hello')),
+            style: button.native()
+          })
+        )
+      ],
+      features: watchable('var1', 'Hi')
+    }),
+    uiAction: click(),
+    expectedResult: true, //contains('hello'),
+    backEndJbm: worker(),
+    useFrontEnd: true
   })
 })

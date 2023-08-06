@@ -57,55 +57,42 @@ component('workerPreviewTest.changeScript', {
 //   require: sampleProject.main()
 // })
 
-component('FETest.workerPreviewTest.addCss', {
-  impl: uiFrontEndTest({
+component('uiTest.workerPreviewTest.addCss', {
+  impl: uiTest({
     control: group({
       controls: [
         button(
           'change script',
-          writeValue(
-            tgp.ref('sampleProject.main~impl~controls~features~1'),
-            () => css('color: red')
-          )
+          writeValue(tgp.ref('sampleProject.main~impl~controls~features~1'), () => css('color: red'))
         ),
         probe.remoteCircuitPreview()
       ]
     }),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
-    action: uiActions(
-      waitForSelector('#sampleText'),
-      click('button'),
-      waitFor(
-        ()=>Array.from(document.querySelectorAll('head>style')).find(x=>x.innerText.match(/tests•wProbe/))
-      )
-    ),
-    expectedResult: () => getComputedStyle(document.querySelector('#sampleText')).color == 'rgb(255, 0, 0)',
-    cleanUp: () => Array.from(document.querySelectorAll('head>style')).filter(x=>x.innerText.match(/tests•wProbe/)).forEach(x=>x.remove()),
-    renderDOM: true
+    uiAction: click(),
+    expectedResult: ctx => Object.values(jb.ui.FEEmulator[ctx.vars.widgetId].styles).join(';').indexOf('color: red') != -1,
+    useFrontEnd: true
   })
 })
 
-component('FETest.workerPreviewTest.changeCss', {
-  impl: uiFrontEndTest({
-    renderDOM: true,
-    timeout: 5000,
-    runBefore: runActions(
-      writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
-      writeValue(tgp.ref('sampleProject.main~impl~controls~features~1'),() => css('color: green'))
-    ),
+component('uiTest.workerPreviewTest.changeCss', {
+  impl: uiTest({
     control: group({
       controls: [
-        button({title: 'change script', action: writeValue(tgp.ref('sampleProject.main~impl~controls~features~1'),() => css('color: blue')) }),
+        button(
+          'change script',
+          writeValue(tgp.ref('sampleProject.main~impl~controls~features~1'), () => css('color: blue'))
+        ),
         probe.remoteCircuitPreview()
-      ],
+      ]
     }),
-    action: uiActions(
-      waitForSelector('#sampleText'),
-      click('button'),
-      waitFor(()=>Array.from(document.querySelectorAll('head>style')).find(x=>x.innerText.match(/color: blue/)))
-    ),    
-    expectedResult: () => getComputedStyle(document.querySelector('#sampleText')).color == 'rgb(0, 0, 255)',
-    cleanUp: () => Array.from(document.querySelectorAll('head>style')).filter(x=>x.innerText.match(/tests•wProbe/)).forEach(x=>x.remove())
+    runBefore: runActions(
+      writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
+      writeValue(tgp.ref('sampleProject.main~impl~controls~features~1'), () => css('color: green'))
+    ),
+    uiAction: click(),
+    expectedResult: ctx => Object.values(jb.ui.FEEmulator[ctx.vars.widgetId].styles).join(';').indexOf('color: blue') != -1,
+    useFrontEnd: true
   })
 })
 

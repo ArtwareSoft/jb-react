@@ -134,8 +134,11 @@ component('waitForSelector', {
     {id: 'selector', as: 'string'}
   ],
   impl: waitFor(
-    (ctx,{elemToTest},{selector}) => {
-    const elem = jb.ui.elemOfSelector(selector,ctx)
+    (ctx,{elemToTest, useFrontEndInTest},{selector}) => {
+    const ctxToUse = useFrontEndInTest ? ctx.setVars({headlessWidget: false}) : ctx
+    const elem = jb.ui.elemOfSelector(selector,ctxToUse)
+
+  //  const elem = jb.ui.elemOfSelector(selector,ctx)
     const cmpElem = elem && jb.ui.closestCmpElem(elem)
     if (!cmpElem) return false
     // if FETest, wait for the frontEnd cmp to be in ready state

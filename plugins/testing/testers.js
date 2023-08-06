@@ -15,8 +15,9 @@ component('dataTest', {
     {id: 'covers', as : 'array' }
   ],
   impl: function(ctx,calculate,expectedResult,runBefore,timeout,allowError,cleanUp,expectedCounters) {
-		const _timeout = ctx.vars.singleTest ? Math.max(1000,timeout) : timeout
 		const id = ctx.vars.testID
+		const remoteTimeout = id.match(/[rR]emote/) ? 5000 : null
+		const _timeout = ctx.vars.singleTest ? Math.max(1000,timeout) : (remoteTimeout || timeout)
 		return Promise.race([ 
 			jb.delay(_timeout).then(()=>[{testFailure: 'timeout'}]), 
 			Promise.resolve(runBefore())
@@ -230,7 +231,7 @@ extension('test', {
 			filePath: location.path, repo: location.repo }))
 		const studioUrl = `http://localhost:8082/project/studio/${res.id}/${res.id}?sourceCode=${encodeURIComponent(sourceCode)}`
 		const matchLogs = 'remote,itemlist,refresh'.split(',')
-		const matchLogsMap = jb.entries({ui: ['uiTest'], widget: ['uiTest','widget'] })
+		const matchLogsMap = jb.entries({uiTest: ['uiTest'], remoteWidget: ['uiTest','headless'] })
 		const spyLogs = ['test', ...(matchLogs.filter(x=>res.id.toLowerCase().indexOf(x) != -1)), 
 			...(matchLogsMap.flatMap( ([k,logs]) =>res.id.toLowerCase().indexOf(k) != -1 ? logs : []))]
 		const _repo = repo ? `&repo=${repo}` : ''

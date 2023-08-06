@@ -1,22 +1,9 @@
-uiTest.editableText.richPicklistHelper.setInput
-  make uiTest
-
-itemlist - select with uiTest
+tests to fix
+  uiTest.editableText.richPicklistHelper.setInput
+  remoteWidgetTest.runInBECmpContext
 
 prettyprint
   castFrom('ui-action<test>', uiActions('%$uiAction()%'))
-
-headless
-  package deltas
-  { $: 'userReq', transactive }, transactiveUserReq
-  send initWidget
-support tAction
-  handleUserReq
-  writwValue (doOp) maybe with single observer
-  refreshElem
-  cmp.renderVdomAndFollowUp - support group.wait
-  cmp.runBEMethod
-
 
 
 - nested tests - pattern=remote|worker|jbm|pattern|distributed
