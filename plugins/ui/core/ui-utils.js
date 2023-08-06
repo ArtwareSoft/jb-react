@@ -133,7 +133,9 @@ extension('ui', 'html', {
   findIncludeSelf: (el, selector) => jb.ui.find(el, selector, { includeSelf: true }),
   addClass: (el, clz) => el && el.addClass ? el.addClass(clz) : el.classList && el.classList.add(clz),
   removeClass: (el, clz) => el && el.removeClass ? el.removeClass(clz) : el.classList && el.classList.remove(clz),
-  hasClass: (el, clz) => el && el.classList && el.classList.contains(clz),
+  hasClass: (el, clz) => el && el.hasClass ? el.hasClass(clz) : el.classList && el.classList.contains(clz),
+  getStyle: (el, prop) => el && el.getStyle ? el.getStyle(prop) : el.style[prop],
+  setStyle: (el, prop,val) => el && el.setStyle ? el.setStyle(prop,val) : el.style[prop] = val,
   matches: (el, query) => el && el.matches && el.matches(query),
   indexOfElement: el => Array.from(el.parentNode.children).indexOf(el),
   limitStringLength: (str, maxLength) =>
@@ -144,8 +146,17 @@ extension('ui', 'html', {
     el.appendChild(elem.firstChild)
   },
   insertOrUpdateStyleElem(ctx, innerText, elemId, { classId } = {}) {
-    const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId
-    if (widgetId && !ctx.vars.previewOverlay) { // headless
+    const { headlessWidget, headlessWidgetId, previewOverlay, FEwidgetId, useFrontEndInTest} = ctx.vars
+
+    if (useFrontEndInTest && !headlessWidget && FEwidgetId) {
+      const widgetId = headlessWidgetId
+      const widget = jb.ui.FEEmulator[widgetId]
+      if (!widget)
+        return
+      widget.styles = widget.styles || {}
+      widget.styles[elemId] = innerText
+    } else if (headlessWidget && !previewOverlay) { // headless
+      const widgetId = headlessWidgetId
       if (!jb.ui.headless[widgetId])
         return
       jb.ui.headless[widgetId].styles = jb.ui.headless[widgetId].styles || {}

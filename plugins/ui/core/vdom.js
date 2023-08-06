@@ -72,9 +72,19 @@ extension('ui','vdom', {
                 acc && (jb.path(this,'attributes.class') || '').split(' ').indexOf(clz) != -1, true)
             //return (jb.path(this,'attributes.class') || '').split(' ').indexOf(clz) != -1
         }
+        getStyle(prop) {
+            this.attributes = this.attributes || {}
+            return (this.attributes.style || '').split(';').filter(x=>x.indexOf(`${prop}:`) == 0).map(x=>x.split(':').pop().trim())[0]
+        }
+        setStyle(prop,val) {
+            this.attributes = this.attributes || {}
+            this.attributes.style = 
+                [...(this.attributes.style || '').split(';').filter(x=>x.indexOf(`${prop}:`) == 0), `${prop}: ${val}`].join(';')
+        }
         appendChild(vdom) {
             this.children = this.children || []
             this.children.push(vdom)
+            vdom.parentNode = this
             return this
         }
         querySelector(...args) {

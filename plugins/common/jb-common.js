@@ -1179,9 +1179,10 @@ component('waitFor',{
   params: [
     {id: 'check', dynamic: true},
     {id: 'interval', as: 'number', defaultValue: 14},
-    {id: 'timeout', as: 'number', defaultValue: 5000},
+    {id: 'timeout', as: 'number', defaultValue: 3000},
+    {id: 'logOnError', as: 'string', dynamic: true},
   ],
-  impl: (ctx,check,interval,timeout) => {
+  impl: (ctx,check,interval,timeout,logOnError) => {
     // const res1 = check()
     // if (!jb.utils.isPromise(res1))
     //   return Promise.resolve(res1)
@@ -1192,6 +1193,7 @@ component('waitFor',{
             if (timesoFar >= timeout) {
               clearInterval(toRelease)
               jb.log('waitFor timeout',{ctx})
+              jb.log(logOnError(),{ctx})
               reject('timeout')
             }
             if (waitingForPromise) return

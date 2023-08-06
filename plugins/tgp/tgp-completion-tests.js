@@ -355,7 +355,7 @@ component('completionTest.dslTest.top', {
   })
 })
 
-component('remoteTest.langServer.completions', {
+  component('remoteTest.langServer.completions', {
   impl: dataTest({
     calculate: pipe(
       Var('docProps', tgp.dummyDocProps(`component('x', {

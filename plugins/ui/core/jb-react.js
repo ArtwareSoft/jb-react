@@ -90,10 +90,11 @@ extension('ui', 'react', {
             jb.log('apply delta top dom',{vdomBefore,vdomAfter,active,elem,vdomAfter,strongRefresh, delta, ctx})
             jb.ui.applyDeltaToDom(elem,delta,ctx)
         }
-        if (!elem instanceof jb.ui.VNode || ctx.vars.useFrontEndInTest)
+        if (!elem instanceof jb.ui.VNode || ctx.vars.useFrontEndInTest) {
             if (elem instanceof jb.ui.VNode)
                 jb.ui.setAttToVdom(elem,ctx)
             jb.ui.refreshFrontEnd(elem, {content: vdomAfter})
+        }
         if (active) jb.ui.focus(elem,'apply Vdom diff',ctx)
         jb.ui.garbageCollectCtxDictionary()
     },
@@ -292,7 +293,8 @@ extension('ui', 'react', {
         const groupByWidgets = {}
         jb.ui.findIncludeSelf(elem,'[cmp-id]').forEach(el => {
             el._component && el._component.destroyFE()
-            if (jb.ui.frontendWidgetId(elem)) return
+            const FEWidgetId = jb.ui.frontendWidgetId(elem)
+            if (FEWidgetId && FEWidgetId != 'client') return
             const widgetId = jb.ui.headlessWidgetId(el) || '_local_'
             groupByWidgets[widgetId] = groupByWidgets[widgetId] || { cmps: []}
             const destroyCtxs = (el.getAttribute('methods')||'').split(',').filter(x=>x.indexOf('destroy-') == 0).map(x=>x.split('destroy-').pop())
@@ -309,8 +311,14 @@ extension('ui', 'react', {
     },
     render(vdom,parentElem,{prepend,ctx,doNotRefreshFrontEnd} = {}) {
         jb.log('render',{vdom,parentElem,prepend})
-        if (jb.path(parentElem,'constructor.name') == 'VNode')
-            return parentElem.appendChild(vdom)
+        if (parentElem instanceof jb.ui.VNode) {
+            parentElem.appendChild(vdom)
+            if (ctx.vars.useFrontEndInTest) {
+                jb.ui.setAttToVdom(vdom,ctx)
+                jb.ui.refreshFrontEnd(vdom, {content: vdom})
+            }
+            return
+        }
 
         const res = doRender(vdom,parentElem)
         vdomDiffCheckForDebug()
@@ -419,15 +427,15 @@ extension('ui', 'react', {
     runBEMethodByElem(elem,method,data,vars) {
         if (!elem)
             return jb.logError(`runBEMethod, no elem provided: ${method}`, {elem, data, vars})
-        const widgetId = jb.ui.frontendWidgetId(elem)
+        const FEWidgetId = jb.ui.frontendWidgetId(elem)
         const ctxIdToRun = jb.ui.ctxIdOfMethod(elem,method)
         if (!ctxIdToRun)
             return jb.logError(`no method in cmp: ${method}`, {elem, data, vars})
 
-        if (widgetId) {
+        if (FEWidgetId && FEWidgetId != 'client') {
             const id = elem.getAttribute('id')
-            jb.log(`frontEnd method send request: ${method}`,{elem, widgetId, ctxIdToRun, data, vars})
-            jb.ui.sendUserReq({$:'userRequest', method, id, widgetId, ctxIdToRun, data, vars })
+            jb.log(`frontEnd method send request: ${method}`,{elem, FEWidgetId, ctxIdToRun, data, vars})
+            jb.ui.sendUserReq({$:'userRequest', method, id, widgetId: FEWidgetId, ctxIdToRun, data, vars })
         } else {
             const ctx = jb.ctxDictionary[ctxIdToRun]
             if (!ctx)

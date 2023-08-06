@@ -120,15 +120,12 @@ extension('test', {
 		}
 	},
 	async runSingleTest(testID,{doNotcleanBeforeRun, showOnlyTest} = {}) {
-		const $testFinished = jb.callbag.subject()
 		const tstCtx = (jb.ui ? jb.ui.extendWithServiceRegistry() : new jb.core.jbCtx())
-			.setVars({ testID, singleTest: jb.test.singleTest, $testFinished, projects: PROJECTS_PATH })
+			.setVars({ testID, singleTest: jb.test.singleTest, projects: PROJECTS_PATH })
 		const start = new Date().getTime()
 		await !doNotcleanBeforeRun && jb.test.cleanBeforeRun()
 		jb.log('start test',{testID})
 		const res = await tstCtx.run({$:testID})
-		$testFinished.next(1)
-		$testFinished.complete()
 		res.duration = new Date().getTime() - start
 		jb.log('end test',{testID,res})
 		if (!jb.test.singleTest)

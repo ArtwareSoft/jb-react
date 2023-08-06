@@ -37,7 +37,6 @@ component('uiTest', {
         widget.headless({control: '%$control()%', widgetId: '%$widgetId%', transactiveHeadless: '%$transactiveHeadless%'}),
         '%$backEndJbm%'
       ),
-      rx.takeUntil('%$$testFinished%'),
       rx.do(uiTest.aggregateDelta('%%')),
 	  rx.var('renderingCounters', uiTest.renderingCounters()),
       rx.log('uiTest uiDelta from headless %$renderingCounters%'),
@@ -132,8 +131,6 @@ component('uiTest.renderingCounters', {
 	}
 })
 
-
-
 component('uiTest.addFrontEndEmulation', {
 	impl: ctx => {
 		jb.ui.FEEmulator[ctx.vars.widgetId] = {
@@ -168,13 +165,16 @@ component('uiTest.aggregateDelta', {
       return aggDelta(renderingUpdate)
 
     function aggDelta(renderingUpdate) {
-		const {delta,css,widgetId,cmpId} = renderingUpdate
-		const assumedVdom = null
+		const {delta,css,widgetId,cmpId,elemId,classId} = renderingUpdate
 		const ctxToUse = ctx.setVars({headlessWidget: false, FEwidgetId: widgetId })
+		if (css)
+	        return jb.ui.insertOrUpdateStyleElem(ctxToUse, css, elemId, { classId })
+
+		const assumedVdom = null
 		const widgetBody = jb.ui.widgetBody(ctxToUse)
 		const elem = cmpId ? jb.ui.find(widgetBody,`[cmp-id="${cmpId}"]`)[0] : widgetBody
 		jb.log('uiTest aggregate delta',{ctx,delta,renderingUpdate,cmpId, widgetBody,elem})
-		jb.ui.applyDeltaToCmp({delta,ctx: ctxToUse,cmpId,elem,assumedVdom})
+		delta && jb.ui.applyDeltaToCmp({delta,ctx: ctxToUse,cmpId,elem,assumedVdom})
 	}
   }
 })

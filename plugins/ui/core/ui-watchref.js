@@ -17,8 +17,11 @@ extension('ui', 'watchRef', {
 
         const elemsToCheckCtxBefore = elemsToCheck.map(({elem}) =>elem.getAttribute('jb-ctx'))
         const originatingCmpId = jb.path(srcCtx, 'vars.cmp.cmpId')
-        jb.log('refresh check observable elements',{originatingCmpId,elemsToCheck,e,srcCtx })
+        jb.log(`refresh check observable elements : ${changed_path}`,{originatingCmpId,elemsToCheck,e,srcCtx })
         const refreshActions = elemsToCheck.map(({elem, top},i) => {
+            const FEWidgetId = jb.ui.frontendWidgetId(elem)
+            if (FEWidgetId && FEWidgetId != 'client') return
+
             const cmpId = elem.getAttribute('cmp-id')
             if (cmpId.indexOf('-') != -1 && cmpId.split('-')[0] != jb.uri)
                 return

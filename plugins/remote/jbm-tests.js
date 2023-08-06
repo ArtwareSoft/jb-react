@@ -16,14 +16,14 @@ component('jbmTest.worker', {
 })
 
 component('jbmTest.cmd', {
-  impl: dataTest(remote.data(pipeline('hello'), cmd()), equals('hello'))
+  impl: dataTest({calculate: remote.data(pipeline('hello'), cmd()), expectedResult: equals('hello'), timeout: 5000})
 })
 
 component('jbmTest.cmdWithVars', {
   impl: dataTest({
     calculate: pipeline(Var('toPass', 'aa'), remote.data(pipeline('hello %$toPass%'), cmd())),
     expectedResult: equals('hello aa'),
-    timeout: 500
+    timeout: 5000
   })
 })
 

@@ -62,14 +62,15 @@ component('dialog.createDialogTopIfNeeded', {
   type: 'action',
   impl: ctx => {
 		const widgetBody = jb.ui.widgetBody(ctx)
+		const {headlessWidget, headlessWidgetId, useFrontEndInTest} = ctx.vars
 		if (!widgetBody || widgetBody.querySelector(':scope>.jb-dialogs')) return
 		const vdom = ctx.run({$: 'dialog.dialogTop'}).renderVdomAndFollowUp()
-		if (ctx.vars.headlessWidget && widgetBody instanceof jb.ui.VNode) {
+		if ((headlessWidget || useFrontEndInTest )&& widgetBody instanceof jb.ui.VNode) {
 			jb.log('dialog headless createTop',{vdom,widgetBody})
 			widgetBody.children.push(vdom)
 			vdom.parentNode = widgetBody
 			const delta = { children: { toAppend: [jb.ui.stripVdom(vdom)] }}
-			jb.ui.sendRenderingUpdate(ctx,{delta ,widgetId: ctx.vars.headlessWidgetId})
+			jb.ui.sendRenderingUpdate(ctx,{delta ,widgetId: headlessWidgetId})
 		} else {
 			jb.ui.render(vdom,widgetBody)
 			jb.log('dialog dom createTop',{vdom,widgetBody})
@@ -358,11 +359,11 @@ component('dialogFeature.maxZIndexOnClick', {
   ],
   impl: features(
 	  frontEnd.var('minZIndex','%$minZIndex%'),
-	  frontEnd.method('setAsMaxZIndex', ({},{el,minZIndex}) => {
-		  	const dialogs = Array.from(document.querySelectorAll('.jb-dialog')).filter(dl=>!jb.ui.hasClass(dl, 'jb-popup'))
-			const calcMaxIndex = dialogs.reduce((max, _el) => 
-				Math.max(max,(_el && parseInt(_el.style.zIndex || 100)+1) || 100), minZIndex || 100)
-			el.style.zIndex = calcMaxIndex
+	  frontEnd.method('setAsMaxZIndex', (ctx,{el,minZIndex}) => {
+			const dialogs = jb.frame.document && Array.from(document.querySelectorAll('.jb-dialog')) || jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog')
+			const calcMaxIndex = dialogs.filter(dl=>!jb.ui.hasClass(dl, 'jb-popup')).reduce((max, _el) => 
+				Math.max(max,(_el && parseInt(jb.ui.getStyle(_el,'zIndex') || 100)+1) || 100), minZIndex || 100)
+			jb.ui.setStyle(el,'zIndex',calcMaxIndex)
 	  }),
 	  frontEnd.init(({},{cmp}) => { cmp.state.frontEndStatus = 'ready'; cmp.runFEMethod('setAsMaxZIndex') }),
 	  frontEnd.flow(source.frontEndEvent('mousedown'), sink.FEMethod('setAsMaxZIndex'))
@@ -381,8 +382,8 @@ component('dialog.dialogOkCancel', {
 			h('button.dialog-close', { onclick: 'dialogClose' },'×'),
 			h(contentComp),
 			h('div.dialog-buttons',{},[
-				h('button.mdc-button', {onclick: 'dialogClose' }, [h('div.mdc-button__ripple'), h('span.mdc-button__label',{},cancelLabel)]),
-				h('button.mdc-button', {onclick: 'dialogCloseOK' },[h('div.mdc-button__ripple'), h('span.mdc-button__label',{},okLabel)]),
+				h('button.mdc-button', {class: 'dialog-cancel', onclick: 'dialogClose' }, [h('div.mdc-button__ripple'), h('span.mdc-button__label',{},cancelLabel)]),
+				h('button.mdc-button', {class: 'dialog-ok', onclick: 'dialogCloseOK' },[h('div.mdc-button__ripple'), h('span.mdc-button__label',{},okLabel)]),
 			]),
 		]),
 	css: '>.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }',

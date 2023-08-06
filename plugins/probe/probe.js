@@ -45,7 +45,7 @@ extension('probe', 'main', {
                     return jb.ui.extendWithServiceRegistry(res)
                 if (jb.tgp.isOfType(circuitCmpId,'test'))
                     return jb.ui.extendWithServiceRegistry(res).setVars(
-                        { testID: cmpId, singleTest: true, $testFinished: jb.callbag.subject() })
+                        { testID: cmpId, singleTest: true })
                 return res
             }
         }
@@ -93,17 +93,9 @@ extension('probe', 'main', {
                     this.extraElem = true
                 }
                 this.active = true
-                try {
-                    this.cleanSignleVisits()
-                    await this.simpleRun()
-                    await this.handleGaps()
-                } finally {
-                    const testFinished = this.circuitCtx.vars.$testFinished
-                    if (testFinished) {
-                        testFinished.next(1)
-                        testFinished.complete()
-                    }                    
-                }
+                this.cleanSingleVisits()
+                await this.simpleRun()
+                await this.handleGaps()
 
                 await (this.result || []).reduce((pr,item,i) =>
                     pr.then(_=>jb.probe.resolve(item.out)).then(resolved=> this.result[i].out =resolved), Promise.resolve())
@@ -127,7 +119,7 @@ extension('probe', 'main', {
             }
         }
 
-        cleanSignleVisits() {
+        cleanSingleVisits() {
             if (this.defaultMainCircuit == this.circuitCtx.path)
                 jb.probe.singleVisitCounters = {}
             Object.keys(jb.probe.singleVisitCounters).forEach(k=>k.indexOf(this.probePath) == 0 && (jb.probe.singleVisitCounters[k] = 0))

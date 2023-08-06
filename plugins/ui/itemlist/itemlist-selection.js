@@ -36,6 +36,7 @@ component('itemlist.selection', {
       runActionOnItem(
         itemlist.indexToData(),
         runActions(
+          log('itemlist onSelection'),
           If(isRef('%$databind()%'), writeValue('%$databind()%', '%$selectedToDatabind()%')),
           call('onSelection')
         )

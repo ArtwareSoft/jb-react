@@ -781,8 +781,9 @@ component('uiTest.itemlistMDOfRefs.refChangeBug', {
       ]
     }),
     uiAction: uiActions(
+      waitForNextUpdate(),
       runMethod({selector: '#itemlist', method: 'onSelection', data: 2}),
-      runMethod({selector: '#itemlist', method: 'onSelection', data: 1}),
+      runMethod({selector: '#itemlist', method: 'onSelection', data: 1})
     ),
     expectedResult: contains(['Marge Simpson','Marge Simpson - watchable selected'])
   })

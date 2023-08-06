@@ -4,9 +4,12 @@ dsl('test')
 // uiAction uses ctx.vars.elemToTest to decide whether to return a sourceCb of events (uiTest) or promise (uiFETest)
 
 extension('test','uiActions', {
-  activateFEHandlers(elem,type,ev) {
-    const currentTarget = [elem, ...jb.ui.parents(elem)].find(x=>jb.path(x.handlers,type)) || {}
-    ;(jb.path(currentTarget.handlers,type) || []).forEach(h=>h({...ev,currentTarget}))
+  activateFEHandlers(elem,type,ev,ctx) {
+    const currentTarget = [elem, ...jb.ui.parents(elem)].find(x=>jb.path(x.handlers,type))
+    if (currentTarget)
+      (jb.path(currentTarget.handlers,type) || []).forEach(h=>h({...ev,currentTarget}))
+    else
+      jb.log(`uiTest can not find event handler for ${type}`,{elem,ev,ctx})
     return Promise.resolve()
   }
 })
@@ -23,8 +26,9 @@ component('waitFor', {
   type: 'ui-action',
   params: [
     {id: 'check', dynamic: true},
+    {id: 'logOnError', as: 'string', dynamic: true},
   ],
-  impl: action(waitFor('%$check()%'))
+  impl: action(waitFor({check: '%$check()%', logOnError: '%$logOnError()%'}))
 })
 
 component('delay', {
@@ -62,6 +66,7 @@ component('uiActions', {
 
       function nextSource() {
         index++;
+        //jb.log('uiActions nextSource',{ctx,index})
         if (ctx.profile.actions.length <= index) {
           finished = true
           sink(2)
@@ -70,6 +75,7 @@ component('uiActions', {
 
         const action = ctx.profile.actions[index]
         currSrc = action && ctxToUse.runInner(action, { as: 'single'}, `items~${index}` )
+        jb.log('uiActions calc next source',{action, ctx,currSrc, index})
         if (!currSrc)
           nextSource()
         else if (jb.utils.isPromise(currSrc)) {
@@ -125,16 +131,20 @@ component('waitForText', {
 component('waitForSelector', {
   type: 'ui-action',
   params: [
-    {id: 'selector', as: 'string' },
+    {id: 'selector', as: 'string'}
   ],
-  impl: waitFor((ctx,{elemToTest},{selector}) => {
+  impl: waitFor(
+    (ctx,{elemToTest},{selector}) => {
     const elem = jb.ui.elemOfSelector(selector,ctx)
     const cmpElem = elem && jb.ui.closestCmpElem(elem)
     if (!cmpElem) return false
     // if FETest, wait for the frontEnd cmp to be in ready state
     return !elemToTest || !cmpElem.getAttribute('interactive') || jb.path(cmpElem,'_component.state.frontEndStatus') == 'ready'
-  })
+  },
+    'uiTest waitForSelector failed. selector %$selector%'
+  )
 })
+
 component('waitForCmpUpdate', {
   type: 'ui-action',
   params: [
@@ -150,8 +160,9 @@ component('waitForNextUpdate', {
   ],
   impl: (ctx,expectedCounter) => jb.ui.renderingUpdates && new Promise(resolve => {
     if (ctx.vars.elemToTest) return resolve() // maybe should find the widget
+    const startTime = new Date().getTime()
     let done = false
-    const { updatesCounterAtBeginUIActions, widgetId} = ctx.vars
+    const { updatesCounterAtBeginUIActions, useFrontEndInTest, widgetId} = ctx.vars
     const widget = jb.ui.headless[widgetId] || jb.ui.FEEmulator[widgetId]
     if (!widget) {
       jb.logError('uiTest waitForNextUpdate can not find widget',{ctx, widgetId})
@@ -169,25 +180,32 @@ component('waitForNextUpdate', {
     }
     const renderingUpdates = ctx.vars.testRenderingUpdate
 
-    renderingUpdates(0, (t,d) => {
-      if (!widget) return
-      let talkback = null
-      if (t == 0)
-        talkback = d
+    const userRequestSubject = useFrontEndInTest && jb.callbag.subscribe(userRequest => {
+      if (done) return
+      done = true
+      userRequestSubject.dispose()
+      jb.delay(1).then(() => {
+        const waitTime = new Date().getTime() - startTime
+        jb.log(`uiTest waitForNextUpdate done by userRequest after ${waitTime}mSec`, {ctx, userRequest, currentCounter, expectedCounter, baseCounter})
+        resolve()
+      })
+    })(jb.ui.widgetUserRequests)
+
+    const renderingUpdatesSubject = jb.callbag.subscribe(renderingUpdate => {
+      if (done) return
       const currentCounter = jb.ui.testUpdateCounters[widgetId] || 0
       jb.log(`waitForNextUpdate checking ${currentCounter}`,{ctx, currentCounter, expectedCounter, baseCounter})
 
-      if (t == 1 && !done && d.widgetId == widgetId && currentCounter >= expectedCounter) {
+      if (renderingUpdate.widgetId == widgetId && currentCounter >= expectedCounter) {
         done = true
-        talkback && talkback(2)
-        jb.log(`waitForNextUpdate done at ${currentCounter}`,{ctx, currentCounter, expectedCounter, baseCounter})
-
+        renderingUpdatesSubject.dispose()
         jb.delay(1).then(() => {
-          jb.log('uiTest waitForNextUpdate counter reached', {ctx, currentCounter, expectedCounter, baseCounter})
+          const waitTime = new Date().getTime() - startTime
+          jb.log(`uiTest waitForNextUpdate counter reached after ${waitTime}mSec`, {ctx, currentCounter, expectedCounter, baseCounter})
           resolve()
         })
       }
-    })
+    })(renderingUpdates)
   })
 })
 
@@ -205,7 +223,7 @@ component('setText', {
           jb.ui.findIncludeSelf(currentTarget,'input,textarea').forEach(e=>e.value= value)
           const widgetId = jb.ui.parentWidgetId(currentTarget) || ctx.vars.widgetId
           const ev = { type: 'blur', currentTarget, widgetId, target: {value}}
-          jb.log('test setText',{ev,currentTarget,selector,ctx})
+          jb.log('uiTest setText',{ev,currentTarget,selector,ctx})
           if (elemToTest) 
             jb.ui.handleCmpEvent(ev)
           else
@@ -225,15 +243,16 @@ component('click', {
   params: [
     {id: 'selector', as: 'string', defaultValue: 'button'},
     {id: 'methodToActivate', as: 'string'},
-    {id: 'doNotWaitForNextUpdate', as: 'boolean', type: 'boolean'}
+    {id: 'doNotWaitForNextUpdate', as: 'boolean', type: 'boolean'},
+    {id: 'doubleClick', as: 'boolean', type: 'boolean'}
   ],
   impl: uiActions(
     waitForSelector('%$selector%'),
-    (ctx,{elemToTest, useFrontEndInTest},{selector, methodToActivate}) => {
-      const type = 'click'
+    (ctx,{elemToTest, useFrontEndInTest},{selector, methodToActivate, doubleClick}) => {
+      const type = doubleClick ? 'dblclick' : 'click'
       const ctxToUse = useFrontEndInTest ? ctx.setVars({headlessWidget: false}) : ctx
       const elem = selector ? jb.ui.elemOfSelector(selector,ctxToUse) : elemToTest
-      jb.log('test uiAction click',{elem,selector,ctx})
+      jb.log('uiTest uiAction click',{elem,selector,ctx})
       if (!elem) 
         return jb.logError(`click can not find elem ${selector}`, {ctx,elemToTest} )
       const widgetId = jb.ui.parentWidgetId(elem) || ctx.vars.widgetId
@@ -241,7 +260,7 @@ component('click', {
       if (!elemToTest && !useFrontEndInTest) 
         return jb.ui.rawEventToUserRequest(ev, {specificMethod: methodToActivate, ctx})
       if (!elemToTest && useFrontEndInTest)
-        return jb.test.activateFEHandlers(elem,type,ev)
+        return jb.test.activateFEHandlers(elem,type,ev,ctx)
 
       if (elemToTest) 
         elem.click()
@@ -271,7 +290,7 @@ component('keyboardEvent', {
     (ctx,{elemToTest, useFrontEndInTest},{selector,type,keyCode,keyChar,ctrl}) => {
       const ctxToUse = useFrontEndInTest ? ctx.setVars({headlessWidget: false}) : ctx
       const elem = selector ? jb.ui.elemOfSelector(selector,ctxToUse) : elemToTest
-      jb.log('test uiAction keyboardEvent',{elem,selector,type,keyCode,ctx})
+      jb.log('uiTest uiAction keyboardEvent',{elem,selector,type,keyCode,ctx})
       if (!elem)
         return jb.logError('can not find elem for test uiAction keyboardEvent',{ elem,selector,type,keyCode,ctx})
 
@@ -283,7 +302,7 @@ component('keyboardEvent', {
         elem.value = elem.value || ''
         if (type == 'keyup')
           elem.value += keyChar
-        return jb.test.activateFEHandlers(elem,type,ev)
+        return jb.test.activateFEHandlers(elem,type,ev,ctx)
       }
     
       if (keyChar && type == 'keyup')
@@ -316,7 +335,7 @@ component('changeEvent', {
       const type = 'change'
       const ctxToUse = useFrontEndInTest ? ctx.setVars({headlessWidget: false}) : ctx
       const elem = selector ? jb.ui.elemOfSelector(selector,ctxToUse) : elemToTest
-      jb.log('test uiAction changeEvent',{elem,selector,type,ctx})
+      jb.log('uiTest uiAction changeEvent',{elem,selector,type,ctx})
       if (!elem)
         return jb.logError('can not find elem for test uiAction keyboardEvent',{ elem,selector,type,ctx})
 
@@ -326,7 +345,7 @@ component('changeEvent', {
         return jb.ui.rawEventToUserRequest(ev, {ctx})
       if (!elemToTest && useFrontEndInTest) {
         elem.value = value
-        return jb.test.activateFEHandlers(elem,type,ev)
+        return jb.test.activateFEHandlers(elem,type,ev,ctx)
       }
     
       const e = new Event(type)
@@ -355,7 +374,7 @@ component('scrollBy', {
       if (!elemToTest) return
       const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : elemToTest
       elem && elem.scrollBy(scrollBy,scrollBy)
-      jb.log('test scroll on dom',{elem,ctx})
+      jb.log('uiTest scroll on dom',{elem,ctx})
     },
     waitForNextUpdate(),
   )
@@ -376,6 +395,7 @@ component('runMethod', {
       if (elemToTest) return
       const elem = jb.ui.elemOfSelector(selector,ctx)
       const cmpElem = elem && jb.ui.closestCmpElem(elem)
+      jb.log('uiTest run method',{method,cmpElem,elem,ctx})
       jb.ui.runBEMethodByElem(cmpElem,method,data,ctxVars ? {...ctx.vars, ...ctxVars} : ctx.vars)
     },
     If('%$doNotWaitForNextUpdate%', '', waitForNextUpdate()),
