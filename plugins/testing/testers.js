@@ -1,7 +1,5 @@
 using('tree-shake')
 
-const PROJECTS_PATH = '/home/shaiby/projects' // 'c/projects'
-
 component('dataTest', {
   type: 'test',
   params: [
@@ -122,7 +120,7 @@ extension('test', {
 	},
 	async runSingleTest(testID,{doNotcleanBeforeRun, showOnlyTest} = {}) {
 		const tstCtx = (jb.ui ? jb.ui.extendWithServiceRegistry() : new jb.core.jbCtx())
-			.setVars({ testID, singleTest: jb.test.singleTest, projects: PROJECTS_PATH })
+			.setVars({ testID, singleTest: jb.test.singleTest })
 		const start = new Date().getTime()
 		await !doNotcleanBeforeRun && jb.test.cleanBeforeRun()
 		jb.log('start test',{testID})
@@ -230,8 +228,8 @@ extension('test', {
 		const sourceCode = JSON.stringify(jb.exec({$: 'test', $typeCast: 'source-code<jbm>', 
 			filePath: location.path, repo: location.repo }))
 		const studioUrl = `http://localhost:8082/project/studio/${res.id}/${res.id}?sourceCode=${encodeURIComponent(sourceCode)}`
-		const matchLogs = 'remote,itemlist,refresh'.split(',')
-		const matchLogsMap = jb.entries({uiTest: ['uiTest'], remoteWidget: ['uiTest','headless'] })
+		const matchLogsMap = jb.entries({uiTest: ['uiTest','headless'], remoteWidget: ['uiTest','headless'] })
+		const matchLogs = Object.keys(matchLogsMap)
 		const spyLogs = ['test', ...(matchLogs.filter(x=>res.id.toLowerCase().indexOf(x) != -1)), 
 			...(matchLogsMap.flatMap( ([k,logs]) =>res.id.toLowerCase().indexOf(k) != -1 ? logs : []))]
 		const _repo = repo ? `&repo=${repo}` : ''
@@ -320,4 +318,7 @@ component('test', {
       jbStudioServer('%$repo%')
     ]
   )
+})
+
+component('PROJECTS_PATH', { passiveData : '/home/shaiby/projects' // 'c:/projects' 
 })

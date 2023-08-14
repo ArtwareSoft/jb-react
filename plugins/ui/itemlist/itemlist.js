@@ -4,7 +4,7 @@ component('itemlist', {
   type: 'control',
   category: 'group:80,common:80',
   params: [
-    {id: 'title', as: 'string'},
+    {id: 'title', as: 'string', dynamic: true},
     {id: 'items', as: 'array', dynamic: true, mandatory: true},
     {id: 'controls', type: 'control[]', mandatory: true, dynamic: true},
     {id: 'style', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.ulLi()},

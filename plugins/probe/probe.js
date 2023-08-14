@@ -113,7 +113,8 @@ extension('probe', 'main', {
                 }
                 return this
             } catch (e) {
-                jb.logException(e,'probe run',{probe: this})
+                if (e != 'probe tails')
+                    jb.logException(e,'probe run',{probe: this})
             } finally {
                 this.active = false
             }
@@ -198,12 +199,14 @@ extension('probe', 'main', {
             if (this.id < jb.probe.probeCounter) {
                 jb.log('probe probeCounter is larger than current',{ctx, probe: this, counter: jb.probe.probeCounter})
                 this.active = false
+                throw 'probe tails'
                 return
             }
             const now = new Date().getTime()
             if (now - this.startTime > this.maxTime && !ctx.vars.testID) {
                 jb.log('probe timeout',{ctx, probe: this,now})
                 this.active = false
+                throw 'probe tails'
                 //throw 'out of time';
             }
             const path = ctx.path

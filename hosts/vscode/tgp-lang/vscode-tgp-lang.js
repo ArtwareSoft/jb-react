@@ -23,7 +23,7 @@ const plugins = ['common','rx','tree-shake','pretty-print','watchable','ui','vsc
 // globalThis.jb_plugins = jb_plugins
  
 async function activate(context) {
-    globalThis.jb = await jbInit('jbart-lsp-ext', { plugins, doNoInitLibs: true, noTests: true })
+    globalThis.jb = await jbInit('jbart_lsp_ext', { plugins, doNoInitLibs: true, noTests: true })
     await jb.initializeLibs(['utils','treeShake','remoteCtx','jbm','cbHandler'
         ,'tgpTextEditor','vscode','nodeContainer'])
     jb.spy.initSpy({spyParam: 'remote,vscode'})

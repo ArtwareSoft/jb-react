@@ -1,3 +1,4 @@
+
 component('remote.cmd', {
     description: 'calc a script with jb.js',
     params: [
@@ -20,5 +21,11 @@ component('remote.cmd', {
         const url = `${viaHttpServer}/?op=jb`
 
         return jbHost.fetch(url, { method: 'POST', body }).then(r => r.json()).then(x => x.result)
+
+        function serializeContextVal(val) {
+            if (val && typeof val == 'object')
+                return `() => ${JSON.stringify(val)}`
+            return val
+        }
     }
 })

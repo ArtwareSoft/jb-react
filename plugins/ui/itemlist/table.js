@@ -4,23 +4,31 @@ component('table', {
   type: 'control',
   category: 'group:80,common:80',
   params: [
-    {id: 'title', as: 'string'},
+    {id: 'title', as: 'string', dynamic: true},
     {id: 'items', as: 'array', dynamic: true, mandatory: true},
     {id: 'controls', type: 'control[]', description: 'fields', mandatory: true, dynamic: true},
     {id: 'style', type: 'table.style', defaultValue: table.plain()},
     {id: 'itemVariable', as: 'string', defaultValue: 'item'},
-    {id: 'visualSizeLimit', as: 'number', defaultValue: 100, description: 'by default itemlist is limmited to 100 shown items'},
+    {
+      id: 'visualSizeLimit',
+      as: 'number',
+      defaultValue: 100,
+      description: 'by default itemlist is limmited to 100 shown items'
+    },
     {id: 'features', type: 'feature[]', dynamic: true, flattenArray: true},
-    {id: 'lineFeatures', type: 'feature[]', dynamic: true, flattenArray: true},
+    {id: 'lineFeatures', type: 'feature[]', dynamic: true, flattenArray: true}
   ],
   impl: itemlist({
-    vars: Var('$tableModel', ({},{},params) => params),
-    items: '%$items()%', style: '%$style.itemlistStyle()%', itemVariable: '%$itemVariable%', visualSizeLimit: '%$visualSizeLimit%', features: '%$features()%',
-    controls: group({
-      controls: '%$controls()%',
-      style: '%$style.lineStyle()%',
-      features: '%$lineFeatures()%'
-    })
+    vars: [
+      Var('$tableModel', ({},{},params) => params)
+    ],
+    title: '%$title()%',
+    items: '%$items()%',
+    controls: group({style: '%$style.lineStyle()%', controls: '%$controls()%', features: '%$lineFeatures()%'}),
+    style: '%$style.itemlistStyle()%',
+    itemVariable: '%$itemVariable%',
+    visualSizeLimit: '%$visualSizeLimit%',
+    features: '%$features()%'
   })
 })
 

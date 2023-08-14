@@ -145,6 +145,7 @@ extension('vscode', 'utils', {
     async openProbeResultPanel() {
         const docProps = jb.tgpTextEditor.host.compTextAndCursor()
         const probeRes = await jb.vscode.ctx.setData(docProps).run(tgpTextEditor.probeByDocProps('%%'))
+        debugger
         jb.vscode.panels.main.render('probe.probeResView',probeRes)
     },
     async openLiveProbeResultPanel() {

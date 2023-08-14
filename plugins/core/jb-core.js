@@ -166,7 +166,7 @@ extension('core', {
           return castToParam(out,parentParam)
       }
     } catch (e) {
-      if (ctx.vars.$throw) throw e
+      if (ctx.vars.$throw || e == 'probe tails') throw e
       jb.logException(e,'exception while running run',{ctx,parentParam,settings})
     }
   },

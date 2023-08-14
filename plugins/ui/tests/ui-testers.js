@@ -56,8 +56,6 @@ component('uiTest', {
   })
 })
 
-//uiActions(typeCast('ui-action<test>'),'%$uiAction()%'),
-
 component('uiFrontEndTest', {
   type: 'test',
   params: [

@@ -63,7 +63,7 @@
 			},
 			{
 				"command": "jbart.openProbeResultPanel",
-				"title": "inspect probe result input output"
+				"title": "jbart inspect probe result input output"
 			},
 			{
 				"command": "jbart.openjBartStudio",

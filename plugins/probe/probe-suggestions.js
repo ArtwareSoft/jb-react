@@ -1,3 +1,5 @@
+using('remote')
+
 extension('probe', 'suggestions', {
     $requireLibs: ['/dist/fuse.js'],
     initExtension() {
@@ -193,37 +195,15 @@ component('probe.suggestions', {
 
 component('probe.suggestionsByCmd', {
   params: [
-    {id: 'filePath', as: 'array'},
+    {id: 'sourceCode', type: 'source-code<jbm>'},
+    {id: 'probePath', as: 'string'},
     {id: 'expressionOnly', as: 'boolean', type: 'boolean'},
     {id: 'input', defaultValue: '%%', description: '{value, selectionStart}'}
   ],
-  impl: async (ctx,plugins,projects,probePath,expressionOnly,input) => {
-    if (ctx.vars.forceLocalSuggestions)
-      return ctx.run({...ctx.profile, $: 'probe.suggestions', sessionId: probePath})
-    // TODO: use source code
-    const args = ["-main:probe.suggestions()",'-loadTests:true',`-plugins:${plugins.join(',')}`,`-projects:${projects.join(',')}`,
-        `%probePath:${probePath}`,`%input:()=>({value: "${input.value}", selectionStart: "${input.selectionStart}"})`,
-        `%expressionOnly:${expressionOnly}`,'-spy:probe']
-
-    const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(x=>`'${x}'`).join(' ')}`
-    ctx.setData(`suggestionsByCmd: ${command}`).run(remote.action({ action: ({data}) => { jb.vscode.log(data) }, 
-      jbm: () => jb.parent, oneway: true }))
-
-    if (jbHost.spawn) {
-        let res = null
-        try {
-          res = await jbHost.spawn(args)
-        } catch (e) {
-          jb.logException(e,'suggestionsByCmd',{command})
-        }
-        try {
-          return JSON.parse(res)
-        } catch (err) {
-          debugger
-          jb.logError('suggestionsByCmd probe can not parse result returned from command line',{res, command, err})
-        }
-    }
-  }
+  impl: remote.data(
+    probe.suggestions('%$probePath%', '%$expressionOnly%', '%$input%'),
+    If('%$forceLocalSuggestions%', jbm.self(), cmd('%$sourceCode%'))
+  )
 })
 
 component('probe.pruneResult', {

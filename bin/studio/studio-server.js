@@ -213,13 +213,12 @@ const op_post_handlers = {
       const args = JSON.parse(body)
       const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(arg=> 
         (arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`\\"`).replace(/`/g,"\\`").replace(/\$/g,'\\$')}"` : `'${arg}'`)).join(' ')}`
-      fs.writeFileSync('./lastCmd', command)
-      fs.chmodSync('./lastCmd', '755')
+      writeToCmdLog('./lastCmd', command)
 
       const sourceCode = args.filter(x=>x.match(/^-sourceCode/)).map(x=>encodeURIComponent(x.slice('-sourceCode:'.length)))[0]
       const runCtx = args.filter(x=>x.match(/^-runCtx/)).map(x=>encodeURIComponent(x.slice('-runCtx:'.length)))[0]
       const runCtxUrl = `http://localhost:${settings.port}/hosts/tests/runCtx.html?sourceCode=${sourceCode}&runCtx=${runCtx}`
-      fs.writeFileSync('./runCtxUrl', runCtxUrl)
+      writeToCmdLog('./runCtxUrl', runCtxUrl)
 
       //${baseUrl}/tests.html?
       res.setHeader('Content-Type', 'application/json; charset=utf8')
@@ -228,7 +227,7 @@ const op_post_handlers = {
       srvr.stdout.on('data', data => { res.write(data); res_str += data })
       srvr.stdout.on('end', data => {
         res.end(data)
-        fs.writeFileSync('./lastCmdRes', res_str+data)
+        writeToCmdLog('./lastCmdRes', res_str+data)
       })
       //srvr.on('exit', onExit)
       srvr.on('error', (e) => res.end(JSON.stringify({command, error: `${''+e}`})))  
@@ -304,8 +303,7 @@ const op_get_handlers = {
       const command = `node --inspect-brk ../hosts/node/node-worker.js ${args.map(arg=> 
         (arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg}'`)).join(' ')}`
       res.setHeader('Content-Type', 'application/json; charset=utf8')
-      fs.writeFileSync('./lastNodeWorker', command)
-      fs.chmodSync('./lastNodeWorker', '755')
+      writeToCmdLog('./lastNodeWorker', command)
       const nodeWorker = child.spawn('node',['./node-worker.js', ...args],{cwd: 'hosts/node'})
       nodeWorker.stdout.on('data', data => res.end(data))
       nodeWorker.on('exit', (code,ev) => res.end(JSON.stringify({command, exit: `exit ${''+code} ${''+ev}}`})))
@@ -616,6 +614,16 @@ function getProcessArgument(argName) {
     if (arg == '-' + argName) return true;
   }
   return '';
+}
+
+function writeToCmdLog(fn,content) {
+  let newContent = content
+  try {
+    if (new Date().getTime() - fs.statSync(fn).mtime < 1000)
+    newContent = fs.readFileSync(fn) + '\n' + content
+  } catch (e) {}
+  fs.writeFileSync(fn,newContent)
+  fs.chmodSync(fn, '755')
 }
 
 http.createServer(serve).listen(settings.port)

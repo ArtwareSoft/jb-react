@@ -68,12 +68,7 @@ component('dslTest.defaultDSLInParamType', {
 
 component('dslTest.defaultInnerDSLInParamType', {
   impl: dataTest(
-    testDslClientInInnerDsl({
-      typeCast: 'data<myDsl.inner>',
-      defaultDsl: cmp1(),
-      myDsl: cmp1(),
-      innerDsl: cmp1()
-    }),
+    testDslClientInInnerDsl({typeCast: 'data<myDsl.inner>', defaultDsl: cmp1(), myDsl: cmp1(), innerDsl: cmp1()}),
     equals('innerDsl,myDsl,innerDsl')
   )
 })

@@ -128,6 +128,9 @@ component('vscodeWebView', {
 <head>
     <meta charset="UTF-8">
     <script type="text/javascript" src="${_jbBaseUrl}/plugins/loader/jb-loader.js"></script>
+    <script type="text/javascript" src="${_jbBaseUrl}/dist/codemirror.js"></script>
+    <link rel="stylesheet" type="text/css" href="${_jbBaseUrl}/dist/css/codemirror.css"/>
+
     <script>
     jbHost.baseUrl = '${_jbBaseUrl}'
     ;(async () => {
@@ -139,6 +142,8 @@ component('vscodeWebView', {
     })()
 
     </script>
+
+
     <link rel="stylesheet" type="text/css" href="${_jbBaseUrl}/dist/css/material.css"/>
 
     <link rel="stylesheet" type="text/css" href="${_jbBaseUrl}/dist/css/styles.css"/>

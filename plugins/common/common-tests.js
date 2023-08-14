@@ -1,7 +1,7 @@
 using('core-tests')
 
 component('dataTest.join', {
-  impl: dataTest(pipeline(list(1,2), join()), equals('1,2'))
+  impl: dataTest(pipeline(list(1,2), '%%', join()), equals('1,2'))
 })
 
 component('dataTest.runActionOnItems', {
@@ -21,7 +21,7 @@ component('dataTest.pipeWithPromise', {
 })
 
 component('dataTest.pipeInPipe', {
-  impl: dataTest(pipe(Var('a', 3), pipe(delay(1), list([1, 2, '%$a%']), join())), equals('1,2,3'))
+  impl: dataTest(pipe(Var('a', 3), pipe(delay(1), list([1,2,'%$a%']), join())), equals('1,2,3'))
 })
 
 component('dataTest.pipeInPipeWithDelayedVar', {

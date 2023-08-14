@@ -39,11 +39,14 @@ extension('tgp', 'completion', {
                 res = [...res,...jb.tgp.newPTCompletions(singleValueProfile[0].split('~!')[0], arrayIndex)]
         } else if (arrayIndex != null || allSemantics.includes('prop') || allSemantics.includes('profile')) {
             res = jb.tgp.newPTCompletions(path, arrayIndex)
-        } else if (allSemantics.includes('value-text') && jb.tgp.isOfType(path,'data')) {
-            res = await jb.tgp.dataCompletions({semanticPath, inCompPos, text, compLine, filePath}, path, ctx)
+        } else if (allSemantics.includes('value-text-start') && allSemantics.includes('value-text-end')) {
+            res = await jb.tgp.newPTCompletions(path, arrayIndex)
         } else if (allSemantics.includes('value')) {
             res = jb.tgp.paramCompletions(path)
         }
+
+        if (allSemantics.includes('value-text') && jb.tgp.isOfType(path,'data'))
+            res = [...await jb.tgp.dataCompletions({semanticPath, inCompPos, text, compLine, filePath}, path, ctx), ...res]
 
         return [...jb.tgp.calcWrapWithCompletions(semanticPath, path), ...res]
     },
@@ -68,8 +71,9 @@ extension('tgp', 'completion', {
         const { positions } = text_pos
         const input = { value: text.slice(text_pos.offset_from, text_pos.offset_to), selectionStart: cursor - text_pos.offset_from }
 
-        const suggestions = await ctx.setData(input).run({$: 'probe.suggestionsByCmd', filePath,
-            probePath : path, expressionOnly: true })
+        const suggestions = await ctx.setData(input).setVars({filePath,probePath:path}).run(
+            probe.suggestionsByCmd({sourceCode: probe('%$filePath%'),
+            probePath : '%$probePath%', expressionOnly: true }))
         return (jb.path(suggestions,'0.options') || []).map(option => {
             const { pos, toPaste, tail, text } = option
             const primiteVal = option.valueType != 'object'

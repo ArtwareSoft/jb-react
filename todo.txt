@@ -1,3 +1,7 @@
+probe.inOutView
+  fix data and vars as tabs 
+  codeMirror folding
+  
 tests to fix
   uiTest.editableText.richPicklistHelper.setInput
   remoteWidgetTest.runInBECmpContext

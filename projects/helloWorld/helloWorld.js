@@ -30,7 +30,7 @@ component('helloWorld.main', {
             style: propertySheet.titlesAbove({spacing: '4'}),
             controls: [
               text({
-                text: ' Hello %$people.name%',
+                text: pipeline(Var('x', 'xcxcx'), '%$people%', '%name%'),
                 title: 'aaaa',
                 style: text.chip(),
                 features: feature.icon('account_balance')

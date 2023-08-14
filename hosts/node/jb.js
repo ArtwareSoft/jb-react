@@ -1,14 +1,15 @@
 const { jbHost } = require('./node-host.js')
 const { getProcessArgument } = jbHost
 const _params = 
-      ['main','plugins','project','wrap','uri','dsl','verbose','runCtx']
-const [main,_plugins,project,wrap,uri,dsl,verbose,runCtx] = _params.map(p=>getProcessArgument(p))
+      ['main','plugins','project','wrap','uri','dsl','verbose','runCtx','spyParam']
+const [main,_plugins,project,wrap,uri,dsl,verbose,runCtx,spyParam] = _params.map(p=>getProcessArgument(p))
 
 if (!main && !runCtx) {
     console.log(`usage: jb.js 
     -main:button("hello") // profile to run. mandatory or use runCtx.
     -wrap:prune(MAIN) // optional. profile that wraps the 'main' profile and will be run instead
-    -sourceCode:{plugins: ['*'], spyParam: 'remote', libsToinit:'lib1,lib2' }
+    -sourceCode:{plugins: ['*'], libsToinit:'lib1,lib2' }
+    -spyParam: 'remote' // optional default is 'error'
     -plugins:zui,ui  // optional (shortcut for sourceCode.plugins)
     -project:studio  // optional (shortcut for sourceCode.project)
     -uri:main // optional. jbm uri default is "main"
@@ -33,7 +34,7 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
         : { plugins:_plugins ? _plugins.split(',') : [], project, pluginPackages: {$:'defaultPackage'} }
 
     globalThis.jb = await jbInit(uri||'main', sourceCode)
-    jb.spy.initSpy({spyParam: 'error'})
+    jb.spy.initSpy({spyParam: spyParam || 'error'})
     // loading remote-context.js
     const plugin = jb.plugins.remote
     const fileSymbols = plugin.files.find(x=>x.path.match(/remote-context/))

@@ -111,31 +111,35 @@ component('editableText.codemirror', {
   ],
   impl: features(
     frontEnd.requireExternalLibrary(['codemirror.js','css/codemirror.css']),
-	calcProp('text','%$$model/databind()%'),
-	frontEnd.var('text', '%$$props/text%'),
-    calcProp('textAreaAlternative',({},{$props},{maxLength}) => ($props.text || '').length > maxLength),
+    calcProp('text', '%$$model/databind()%'),
+    frontEnd.var('text', '%$$props/text%'),
+    calcProp('textAreaAlternative', ({},{$props},{maxLength}) => ($props.text || '').length > maxLength),
     () => ({
 		  template: ({},{text,textAreaAlternative},h) => textAreaAlternative ? 
 		  		h('textarea.jb-textarea-alternative-for-codemirror autoResizeInDialog', {value: text }) :
 				h('div'),
 	}),
-	frontEnd.var('cm_settings', ({},{},{cm_settings,lineWrapping, mode, lineNumbers, readOnly}) => ({
+    frontEnd.var('cm_settings', ({},{},{cm_settings,lineWrapping, mode, lineNumbers, readOnly}) => ({
 		...cm_settings, lineWrapping, lineNumbers, readOnly, mode: mode || 'javascript',
 	})),
-	frontEnd.var('_enableFullScreen', '%$enableFullScreen%'),
-	method('onCtrlEnter', call('onCtrlEnter')),
-	//codemirror.enrichUserEvent(),
-    frontEnd.init( (ctx,vars) => ! jb.ui.hasClass(vars.el, 'jb-textarea-alternative-for-codemirror')
+    frontEnd.var('_enableFullScreen', '%$enableFullScreen%'),
+    method('onCtrlEnter', call('onCtrlEnter')),
+    frontEnd.init((ctx,vars) => ! jb.ui.hasClass(vars.el, 'jb-textarea-alternative-for-codemirror')
 		 && jb.codemirror.injectCodeMirror(ctx,vars)),
-	frontEnd.onRefresh(({},{text,cmp}) => text != null && cmp.editor && cmp.editor.setValue(text)),
-	method('writeText',writeValue('%$$model/databind()%','%%')),
-	frontEnd.flow(
-			source.callbag(({},{cmp}) => jb.callbag.create(obs=> cmp.editor && cmp.editor.on('change', () => obs(cmp.editor.getValue()))) ),
-			rx.takeUntil('%$cmp/destroyed%'),
-			rx.debounceTime('%$debounceTime%'),
-			rx.distinctUntilChanged(),
-			sink.BEMethod('writeText','%%')
-	),
+    frontEnd.onRefresh((ctx,vars) => { 
+		const {text,cmp} = vars
+		if (!cmp.editor)
+			jb.codemirror.injectCodeMirror(ctx,vars);
+		text != null && cmp.editor && cmp.editor.setValue(text) 
+	}),
+    method('writeText', writeValue('%$$model/databind()%', '%%')),
+    frontEnd.flow(
+      source.callbag(({},{cmp}) => jb.callbag.create(obs=> cmp.editor && cmp.editor.on('change', () => obs(cmp.editor.getValue())))),
+      rx.takeUntil('%$cmp/destroyed%'),
+      rx.debounceTime('%$debounceTime%'),
+      rx.distinctUntilChanged(),
+      sink.BEMethod('writeText', '%%')
+    ),
     css(({},{},{height}) => `{width: 100% }
 		>div { box-shadow: none !important; ${jb.ui.propWithUnits('height',height)} !important}`)
   )
@@ -213,7 +217,12 @@ component('text.codemirror', {
 	frontEnd.var('_enableFullScreen', '%$enableFullScreen%'),
 	frontEnd.var('formatText', '%$formatText%'),
     frontEnd.init( (ctx,vars) => jb.codemirror.injectCodeMirror(ctx,vars)),
-//	frontEnd.onRefresh((ctx,vars) => { jb.codemirror.injectCodeMirror(ctx,vars); vars.cmp.editor.setValue(vars.text) }),	
+	frontEnd.onRefresh((ctx,vars) => { 
+		const {text,cmp} = vars
+		if (!cmp.editor)
+			jb.codemirror.injectCodeMirror(ctx,vars);
+		text != null && cmp.editor && cmp.editor.setValue(text) 
+	}),
     css(({},{},{height}) => `{width: 100%}
 		>div { box-shadow: none !important; ${jb.ui.propWithUnits('height',height)} !important}`)
   )

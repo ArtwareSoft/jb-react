@@ -380,7 +380,7 @@ component('remoteTest.langServer.externalCompletions', {
           compText: `component('x', {
   impl: dataTest(pipeline(filter(__)))
 })`,
-          filePath: '%$projects%/amta/plugins/amta-parsing/parsing-tests.js'
+          filePath: '%$PROJECTS_PATH%/amta/plugins/amta-parsing/parsing-tests.js'
         })
       ),
       '1',
@@ -398,7 +398,7 @@ component('remoteTest.langServer.studioCompletions', {
     calculate: pipe( 
       Var('docProps', tgp.dummyDocProps({compText: `component('x', {
   impl: pipeline(pipeline(__))
-})`, filePath: '%$projects%/jb-react/projects/studio/studio-main.js'})),
+})`, filePath: '%$PROJECTS_PATH%/jb-react/projects/studio/studio-main.js'})),
       '1',
       tgp.completionItemsByDocProps('%$docProps%'),
       log('test'),
@@ -439,7 +439,7 @@ component('remoteTest.tgpTextEditor.probeByDocProps', {
 })`)
       ),
       tgpTextEditor.probeByDocProps('%$docProps%'),
-      '%out%',
+      '%result/out%',
       count()
     ),
     expectedResult: equals(2),
@@ -454,7 +454,7 @@ component('remoteTest.tgpTextEditor.studioCircuitUrlByDocProps', {
           compText: `component('x', {
   impl: dataTest(pipeline('hello,world'), __split(','))
 })`,
-//          filePath: '%$projects%/jb-react/plugins/ui/xx-tests.js'
+//          filePath: '%$PROJECTS_PATH%/jb-react/plugins/ui/xx-tests.js'
         })
       ),
       tgpTextEditor.studioCircuitUrlByDocProps('%$docProps%')

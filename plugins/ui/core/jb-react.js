@@ -90,7 +90,7 @@ extension('ui', 'react', {
             jb.log('apply delta top dom',{vdomBefore,vdomAfter,active,elem,vdomAfter,strongRefresh, delta, ctx})
             jb.ui.applyDeltaToDom(elem,delta,ctx)
         }
-        if (!elem instanceof jb.ui.VNode || ctx.vars.useFrontEndInTest) {
+        if (!(elem instanceof jb.ui.VNode) || ctx.vars.useFrontEndInTest) {
             if (elem instanceof jb.ui.VNode)
                 jb.ui.setAttToVdom(elem,ctx)
             jb.ui.refreshFrontEnd(elem, {content: vdomAfter})

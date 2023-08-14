@@ -367,9 +367,24 @@ component('tgpTextEditor.probeByDocProps', {
     {id: 'docProps'}
   ],
   impl: remote.data(
-    pipe(probe.runCircuit(tgp.providePath('%$docProps%')), '%result%'),
+    pipe(
+      probe.runCircuit(tgp.providePath('%$docProps%')),
+      obj(
+        prop('result', tgpTextEditor.stripProbeResult('%result%')),
+        prop('simpleVisits', '%simpleVisits%'),
+        prop('circuitPath', '%circuitCtx.path%')
+      ),
+      first()
+    ),
     cmd(probe('%$docProps/filePath%'))
   )
+})
+
+component('tgpTextEditor.stripProbeResult', {
+  params: [
+    {id: 'result'}
+  ],
+  impl: (ctx,result) => (result || []).map ( x => ({out: x.out,in: {data: x.in.data, vars: x.in.vars}}))
 })
 
 component('tgpTextEditor.studioCircuitUrlByDocProps', {
