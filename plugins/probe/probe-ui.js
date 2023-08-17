@@ -23,6 +23,8 @@ extension('probe', 'ui', {
         , ...slicedArray ? ['...'] : []]
     if (typeof data == 'object' && ['DOMRect'].indexOf(data.constructor.name) != -1)
       return jb.objFromEntries(Object.keys(data.__proto__).map(k => [k, data[k]]))
+    if (typeof data == 'object' && (jb.path(data.constructor,'name') || '').match(/Error$/))
+      return data.toString()
     if (typeof data == 'object' && ['VNode', 'Object', 'Array'].indexOf(data.constructor.name) == -1)
       return { $$: data.constructor.name }
     if (typeof data == 'object' && data.comps)
@@ -189,6 +191,30 @@ component('probe.probeResView', {
   impl: group({
     style: group.tabs({tabStyle: button.href(), barStyle: group.div(), barLayout: layout.horizontal(30)}),
     controls: [
+      dynamicControls(pipeline('%badFormat%', filter('%%')), text('bad format', 'bad format')),
+      dynamicControls(pipeline('%noCircuit%', filter('%%')), text('no circuit', 'no circuit')),
+      dynamicControls(
+        pipeline(list('%$errCount%'), filter('%%!=0')),
+        group({
+          title: 'error: %$errCount%',
+          controls: [
+            text({
+              text: pipeline(
+                '%$probeRes/errors%',
+                prettyPrint({profile: probe.stripData('%%', true), noMacros: true}),
+                join(`
+---
+`)
+              ),
+              style: text.codemirror({enableFullScreen: true, height: '600', mode: 'javascript'}),
+              features: [
+                codemirror.fold(),
+                codemirror.lineNumbers()
+              ]
+            })
+          ]
+        })
+      ),
       table({
         title: 'in->out',
         items: '%$probeRes/result%',
@@ -213,7 +239,9 @@ component('probe.probeResView', {
         title: 'in',
         controls: [
           text({
-            text: pipeline('%$probeRes/result/in%', prettyPrint({profile: '%data%', noMacros: true}), join(`\n---\n`)),
+            text: pipeline('%$probeRes/result/in%', prettyPrint({profile: '%data%', noMacros: true}), join(`
+---
+`)),
             style: text.codemirror({enableFullScreen: true, height: '600', mode: 'javascript'}),
             features: [
               codemirror.fold(),
@@ -242,9 +270,29 @@ component('probe.probeResView', {
             text: pipeline(
               '%$probeRes/result/in%',
               prettyPrint({profile: probe.stripData('%vars%'), noMacros: true}),
-              join(`\n---\n`)
+              join(`
+---
+`)
             ),
-            title: 'vars',
+            style: text.codemirror({enableFullScreen: true, height: '600', mode: 'javascript'}),
+            features: [
+              codemirror.fold(),
+              codemirror.lineNumbers()
+            ]
+          })
+        ]
+      }),
+      group({
+        title: 'params',
+        controls: [
+          text({
+            text: pipeline(
+              '%$probeRes/result/in%',
+              prettyPrint({profile: probe.stripData('%params%'), noMacros: true}),
+              join(`
+---
+`)
+            ),
             style: text.codemirror({enableFullScreen: true, height: '600', mode: 'javascript'}),
             features: [
               codemirror.fold(),
@@ -259,8 +307,10 @@ component('probe.probeResView', {
           text({
             text: pipeline(
               '%$probeRes/result/in%',
-              prettyPrint({profile: probe.stripData('%vars%', true), noMacros: true}),
-              join(`\n---\n`)
+              prettyPrint({profile: probe.stripData('%varsvars%', true), noMacros: true}),
+              join(`
+---
+`)
             ),
             style: text.codemirror({enableFullScreen: true, height: '600', mode: 'javascript'}),
             features: [
@@ -270,15 +320,29 @@ component('probe.probeResView', {
           })
         ]
       }),
-      text({title: 'circuit: %$probeRes/circuitPath%'})
-    ]
+      text({title: 'circuit: %$probeRes/circuitPath%'}),
+      group({
+        title: 'probeRes',
+        controls: [
+          text({
+            text: prettyPrint({profile: '%$probeRes%', noMacros: true}),
+            style: text.codemirror({enableFullScreen: true, height: '600', mode: 'javascript'}),
+            features: [
+              codemirror.fold(),
+              codemirror.lineNumbers()
+            ]
+          })
+        ]
+      })
+    ],
+    features: variable('errCount', count('%$probeRes/errors%'))
   })
 })
 
 component('probe.browseRx', {
   type: 'control',
   params: [
-    { id: 'rx' }
+    {id: 'rx'}
   ],
   impl: itemlist({
     items: '%$rx%',
@@ -286,7 +350,7 @@ component('probe.browseRx', {
     style: itemlist.ulLi(),
     features: [
       itemlist.incrementalFromRx(),
-      css.height({ height: '100%', overflow: 'scroll', minMax: 'max' })
+      css.height({height: '100%', overflow: 'scroll', minMax: 'max'})
     ]
   })
 })

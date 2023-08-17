@@ -109,7 +109,7 @@ extension('vscode', 'utils', {
             //     jb.path(option,'command.arguments.0.docProps',docProps)
             // })
             const count = (ret || []).length
-            const docSize = docProps.compText.length
+            const docSize = docProps.compText && docProps.compText.length
             jb.vscode.log(`provideCompletionItems ${docSize} -> ${count}`)
             return ret
         } else { // used by test
@@ -122,7 +122,6 @@ extension('vscode', 'utils', {
             return jb.logError('provideDefinition - no location returned', {docProps})
         const repos = (vscodeNS.workspace.workspaceFolders || []).map(ws=>ws.uri.path)
             .map(path=>({path,repo: path.split('/').pop()}))
-        debugger
         const repo = repos.find(x=>x.repo == loc.repo) 
         const path = ((repo || {}).path || jbHost.jbReactDir) + loc.path
         return new vscodeNS.Location(vscodeNS.Uri.file(path), new vscodeNS.Position((+loc.line) || 0, 0))
@@ -145,8 +144,30 @@ extension('vscode', 'utils', {
     async openProbeResultPanel() {
         const docProps = jb.tgpTextEditor.host.compTextAndCursor()
         const probeRes = await jb.vscode.ctx.setData(docProps).run(tgpTextEditor.probeByDocProps('%%'))
-        debugger
         jb.vscode.panels.main.render('probe.probeResView',probeRes)
+    },
+    async openProbeResultEditor() {
+        const docProps = jb.tgpTextEditor.host.compTextAndCursor()
+        vscodeNS.commands.executeCommand('workbench.action.editorLayoutTwoRows')
+        if (!jb.vscode.panels.inspect) {
+            jb.vscode.panels.inspect = {}
+            const panel = jb.vscode.panels.inspect.panel = vscodeNS.window.createWebviewPanel('jbart.inpect', 'inspect', vscodeNS.ViewColumn.Two, { enableScripts: true })
+            panel.onDidDispose(() => { 
+                delete jb.vscode.panels.inspect
+                delete jb.jbm.childJbms.vscode_inspect
+            })
+            jb.vscode.panels.inspect.jbm = await jb.exec(jbm.start(vscodeWebView({ id: 'vscode_inspect', panel: () => panel})))
+        }
+        const probeRes = await jb.vscode.ctx.setData(docProps).run(tgpTextEditor.probeByDocProps('%%'))
+        probeRes.badFormat = (probeRes.errors || []).find(x=>x.err == 'reformat edits') && true
+
+        return jb.vscode.ctx.setData(probeRes).run(
+            remote.action(renderWidget({$: 'probe.probeResView', probeRes: '%%'}, '#main'), ()=> jb.vscode.panels.inspect.jbm))
+    },
+    async closeProbeResultEditor() {
+        delete jb.vscode.panels.inspect
+        delete jb.jbm.childJbms.vscode_inspect
+        vscodeNS.commands.executeCommand('workbench.action.editorLayoutSingle')
     },
     async openLiveProbeResultPanel() {
     },
@@ -154,6 +175,12 @@ extension('vscode', 'utils', {
         const docProps = jb.tgpTextEditor.host.compTextAndCursor()
         const url = await jb.vscode.ctx.setData(docProps).run(tgpTextEditor.studioCircuitUrlByDocProps('%%'))
         vscodeNS.env.openExternal(vscodeNS.Uri.parse(url))
+    },
+    async openjBartTest() {
+        const docProps = jb.tgpTextEditor.host.compTextAndCursor()
+        const testID = docProps.shortId
+        const spyParam = testID.match(/uiTest/) ? 'uiTest,headless' : 'test'
+        vscodeNS.env.openExternal(`http://localhost:8082/hosts/tests/tests.html?test=${testID}&show&spy=${spyParam}`)
     },
     openLastCmd() {
         const url = jbHost.fs.readFileSync(jbHost.jbReactDir + '/runCtxUrl')
@@ -270,32 +297,5 @@ component('vscode.gotoPath', {
   impl: (ctx,path,semanticPart) => jb.vscode.gotoPath(path,semanticPart)
 })
 
-// component('probe.probeByCmd', {
-//   params: [
-//     {id: 'filePath', as: 'string'},
-//     {id: 'probePath', as: 'string'}
-//   ],
-//   impl: async (ctx,filePath,probePath) => {
-//     const sourceCode = jb.exec({$: 'probe', $typeCast: 'source-code<jbm>', filePath})
-//     const args = ["-main:probe.runCircuit()",`-sourceCode:${JSON.stringify(sourceCode)}`,
-//         `%probePath:${probePath}`, "-spy:probe", "-wrap:pipe(MAIN, probe.pruneResult(),first())"]
 
-//     const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(x=>`'${x}'`).join(' ')}`
-//     jb.vscode.log(`probeByCmd: ${command}`)
-
-//     if (jbHost.spawn) {
-//         let res = null
-//         try {
-//           res = await jbHost.spawn(args)
-//         } catch (e) {
-//           jb.logException(e,'probeByCmd',{command})
-//         }
-//         try {
-//           return {...JSON.parse(res), [jb.core.OnlyData]: true }
-//         } catch (err) {
-//           jb.logError('probeByCmd probe can not parse result returned from command line',{res: res.slice(0,200), command, err})
-//         }
-//     }
-//   }
-// })
 

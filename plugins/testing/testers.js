@@ -225,7 +225,7 @@ extension('test', {
 	testResultHtml(res, repo) {
 		const baseUrl = jb.frame.location.href.split('/tests.html')[0]
 		const location = jb.comps[res.id][jb.core.CT].location || {}
-		const sourceCode = JSON.stringify(jb.exec({$: 'test', $typeCast: 'source-code<jbm>', 
+		const sourceCode = JSON.stringify(jb.exec({$: 'test', $dslType: 'source-code<jbm>', 
 			filePath: location.path, repo: location.repo }))
 		const studioUrl = `http://localhost:8082/project/studio/${res.id}/${res.id}?sourceCode=${encodeURIComponent(sourceCode)}`
 		const matchLogsMap = jb.entries({uiTest: ['uiTest','headless'], remoteWidget: ['uiTest','headless'] })

@@ -66,8 +66,20 @@
 				"title": "jbart inspect probe result input output"
 			},
 			{
+				"command": "jbart.openProbeResultEditor",
+				"title": "jbart inspect probe result input output in editor"
+			},
+			{
+				"command": "jbart.closeProbeResultEditor",
+				"title": "close jbart inspect probe result input output editor"
+			},						
+			{
 				"command": "jbart.openjBartStudio",
 				"title": "open jBart studio"
+			},
+			{
+				"command": "jbart.openjBartTest",
+				"title": "open jBart test"
 			},
 			{
 				"command": "jbart.openLastCmd",
@@ -91,15 +103,30 @@
 				"when": "editorTextFocus"
 			},
 			{
-				"command": "jbart.openProbeResultPanel",
+				"command": "jbart.openProbeResultEditor",
 				"key": "ctrl+I",
 				"when": "editorTextFocus"
 			},
 			{
+				"command": "jbart.closeProbeResultEditor",
+				"key": "ctrl+Shift+I",
+				"when": "editorTextFocus"
+			},			
+			{
+				"command": "jbart.openProbeResultPanel",
+				"key": "ctrl+U",
+				"when": "editorTextFocus"
+			},			
+			{
 				"command": "jbart.openjBartStudio",
 				"key": "ctrl+J",
 				"when": "editorTextFocus"
-			},			
+			},
+			{
+				"command": "jbart.openjBartTest",
+				"key": "ctrl+Shift+J",
+				"when": "editorTextFocus"
+			},					
 			{
 				"command": "jbart.openLastCmd",
 				"key": "ctrl+Alt+J",

@@ -286,8 +286,10 @@ extension('tgpTextEditor', 'completion', {
             jb.logError('completion provideCompletionItems', props)
         }
     },
-    providePath(docProps) {
+    providePath(docProps,ctx) {
         const res = jb.tgpTextEditor.calcActiveEditorPath(docProps, {clearCache: true})
+        if (res.reformatEdits)
+            jb.logError('reformat edits',{docProps,ctx})
         return res.semanticPath ? res.semanticPath.path.split('~!')[0] : {reformatEdits: res.reformatEdits, error: res.error }
     },
     async provideDefinition(docProps, ctx) {

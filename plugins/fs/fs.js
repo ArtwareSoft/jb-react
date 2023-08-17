@@ -36,7 +36,7 @@ component('readFile' , {
     try {
         return require('fs').readFileSync(path)
     } catch(e) {
-        //jb.logException(e,'readFile',{ctx,path})
+        jb.logException(e,'readFile',{ctx,path})
         return ''
     }
   }

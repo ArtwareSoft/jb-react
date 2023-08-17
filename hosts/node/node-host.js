@@ -54,6 +54,7 @@ function codePackageNodeFS(baseDir) { return {
 }
 
 globalThis.jbHost = globalThis.jbHost || {
+    process: process,
     isNode: true,
     jbReactDir: findjbReact(), 
     http: require('http'),

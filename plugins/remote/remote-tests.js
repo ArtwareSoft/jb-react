@@ -80,7 +80,10 @@ component('remoteTest.remoteOperator.child.loadOperatorCode', {
 
 component('remoteTest.childWorker.sourceCode.project', {
   impl: dataTest({
-    calculate: remote.data(pipeline(itemlists.manyItems(3), '%id%', join(',')), worker('itemlists', project('itemlists'))),
+    calculate: remote.data(
+      pipeline(itemlists.manyItems(3), '%id%', join(',')),
+      worker('itemlists', project('itemlists'))
+    ),
     expectedResult: equals('1,2,3'),
     timeout: 3000
   })

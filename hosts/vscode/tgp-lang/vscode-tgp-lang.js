@@ -32,7 +32,7 @@ async function activate(context) {
     ;['applyCompChange']
         .forEach(cmd => vscodeNS.commands.registerCommand(`jbart.${cmd}`, jb.tgpTextEditor[cmd]))
 
-    ;['moveUp','moveDown','openProbeResultPanel','openjBartStudio','openLastCmd']
+    ;['moveUp','moveDown','openProbeResultPanel','openjBartStudio','openLastCmd','openProbeResultEditor','closeProbeResultEditor','openjBartTest']
             .forEach(cmd => vscodeNS.commands.registerCommand(`jbart.${cmd}`, jb.vscode[cmd]))
     
     ;['main'].forEach(viewId => context.subscriptions.push(

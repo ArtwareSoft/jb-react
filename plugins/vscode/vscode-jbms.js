@@ -165,6 +165,7 @@ component('vscodeWebView', {
                 await new Promise(resolve=> jb.jbm.notifyChildReady[webViewUri] = resolve)
                 jb.log('vscode jbm webview ready',{id})
                 await init(ctx.setVar('jbm',jb.jbm.childJbms[id]))
+                return jb.jbm.childJbms[id]
             }
         }
     }

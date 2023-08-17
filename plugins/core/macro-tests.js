@@ -1,3 +1,4 @@
+
 using('ui,remote-widget,parsing')
 
 // component('macroTest.simple', {
@@ -141,5 +142,27 @@ component('macroTest.funcDefaults', {
   impl: dataTest(
     () => jb.utils.prettyPrint({ aB(c, { b } = {}) { 3 } }),
     and(not(contains('aB:')), contains('aB(c, { b } = {}) { 3 }'))
+  )
+})
+
+component('macroTest.castFrom', {
+  impl: dataTest(
+    prettyPrint(() => ({$ : "israel", $dslType : "state<location>"})),
+    equals(
+      "castFrom('state<location>', israel())"
+    )
+  )
+})
+
+component('macroTest.castFrom2', {
+  impl: dataTest(
+    prettyPrint(() => {
+      debugger
+      const x = castFrom('state<location>', israel())
+      return x
+    }),
+    equals(
+      "castFrom('state<location>', israel())"
+    )
   )
 })

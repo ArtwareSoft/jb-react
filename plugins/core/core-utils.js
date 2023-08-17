@@ -9,12 +9,16 @@ Object.assign(jb, {
     logError(err,logObj) {
       const ctx = jb.path(logObj,'ctx')
       const stack = ctx && jb.utils.callStack(ctx)
-      jb.frame.console && jb.frame.console.error('%c Error: ','color: red', err, stack, logObj)
-      jb.log('error',{err , ...logObj, stack })
+      jb.frame.window && jb.frame.console.error('%c Error: ','color: red', err, stack, logObj)
+      const errObj = { err , ...logObj, stack}
+      globalThis.jbHost.process && globalThis.jbHost.process.stderr.write(err)
+      jb.log('error',errObj)
     },
     logException(e,err,logObj) {
-      jb.frame.console && jb.frame.console.log('%c Exception: ','color: red', err, e, logObj)
-      jb.log('exception error',{ e, err, stack: e.stack||'', ...logObj})
+      jb.frame.window && jb.frame.console.log('%c Exception: ','color: red', err, e, logObj)
+      const errObj = { e, err, stack: e.stack||'', ...logObj}
+      globalThis.jbHost.process && globalThis.jbHost.process.stderr.write(`${err}\n${e}`)
+      jb.log('exception error',errObj)
     },
     val(ref) {
       if (ref == null || typeof ref != 'object') return ref
@@ -56,7 +60,7 @@ extension('utils', 'core', {
       return profiles
     },
     resolveProfileTop(id, comp, dslFromContext, keepLocation) {
-      if (id == 'a-b') debugger
+//      if (id == 'macroTest.castFrom') debugger
 
       const CT = jb.core.CT
       if (!comp[CT]) comp[CT] = comp[CT] || { id }

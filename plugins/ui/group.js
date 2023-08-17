@@ -63,7 +63,7 @@ component('controlWithCondition', {
   macroByValue: true,
   params: [
     {id: 'condition', type: 'boolean', dynamic: true, mandatory: true, as: 'boolean'},
-    {id: 'control', type: 'control', mandatory: true, dynamic: true},
+    {id: 'control', type: 'control', mandatory: true, dynamic: true, composite: true},
     {id: 'title', as: 'string'}
   ],
   impl: (ctx,condition,ctrl) => condition(ctx) ? ctrl(ctx) : null

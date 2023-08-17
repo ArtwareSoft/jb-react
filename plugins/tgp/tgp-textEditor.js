@@ -372,7 +372,8 @@ component('tgpTextEditor.probeByDocProps', {
       obj(
         prop('result', tgpTextEditor.stripProbeResult('%result%')),
         prop('simpleVisits', '%simpleVisits%'),
-        prop('circuitPath', '%circuitCtx.path%')
+        prop('circuitPath', '%circuitCtx.path%'),
+        prop('errors', () => jb.spy.search('error'))
       ),
       first()
     ),
@@ -384,7 +385,7 @@ component('tgpTextEditor.stripProbeResult', {
   params: [
     {id: 'result'}
   ],
-  impl: (ctx,result) => (result || []).map ( x => ({out: x.out,in: {data: x.in.data, vars: x.in.vars}}))
+  impl: (ctx,result) => (result || []).map ( x => ({out: x.out,in: {data: x.in.data, params: jb.path(x.in.cmpCtx,'params'), vars: x.in.vars}}))
 })
 
 component('tgpTextEditor.studioCircuitUrlByDocProps', {

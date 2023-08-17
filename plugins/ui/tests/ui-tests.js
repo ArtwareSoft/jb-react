@@ -1,3 +1,14 @@
+
+component('xx.slice2', {
+  type: 'control',
+  impl: group({
+    style: group.tabs({tabStyle: button.href(), barStyle: group.div(), barLayout: layout.horizontal(30)}),
+    controls: [
+      dynamicControls(pipeline('%badFormat%', filter('%%')), text('bad format', 'bad format'))
+    ]
+  })
+})
+
 component('uiTest.group', {
   impl: uiTest({
     control: group({controls: [text('hello world'), text('2')]}),

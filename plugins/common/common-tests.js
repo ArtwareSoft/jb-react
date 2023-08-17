@@ -4,6 +4,10 @@ component('dataTest.join', {
   impl: dataTest(pipeline(list(1,2), '%%', join()), equals('1,2'))
 })
 
+component('dataTest.slice', {
+  impl: dataTest(pipeline(list(1,2,3), slice(0, 2), join()), equals('1,2'))
+})
+
 component('dataTest.runActionOnItems', {
   impl: dataTest({
     calculate: pipeline('%$personWithChildren/children/name%', join()),
