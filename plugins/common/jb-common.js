@@ -40,15 +40,6 @@ component('typeAdapter', {
   impl: ctx => ctx.params.val
 })
 
-// component('cast', {
-//   type: 'any',
-//   params: [
-//     {id: 'typeCast', as: 'string', mandatory: true, description: 'e.g. type1<myDsl>'},
-//     {id: 'val', type: '$asParent', mandatory: true },
-//   ],
-//   impl: ctx => ctx.params.val
-// })
-
 component('If', {
   type: 'any',
   macroByValue: true,

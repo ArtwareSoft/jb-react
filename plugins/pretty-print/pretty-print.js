@@ -161,7 +161,6 @@ extension('utils', 'prettyPrint', {
       const vars = (profile.$vars || []).map(({name,val},i) => ({innerPath: `$vars~${i}`, val: {$: 'Var', name, val }}))
       const systemProps = [...vars, 
           ...profile.$remark ? [{innerPath: 'remark', val: {remark: profile.$remark}} ] : [],
-          ...profile.typeCast ? [{innerPath: 'typeCast', val: {$typeCast: profile.$typeCast}} ] : [],
       ]
       const openProfileByValueGroup = [{prop: '!profile', item: macro}, {prop:'!open-by-value', item:'('}]
       const closeProfileByValueGroup = [{prop:'!close-by-value', item:')'}]
@@ -197,7 +196,6 @@ extension('utils', 'prettyPrint', {
       }
       const systemPropsInObj = [
         ...profile.$remark ? [{innerPath: 'remark', val: profile.$remark} ] : [],
-        ...profile.typeCast ? [{innerPath: 'typeCast', val: profile.$typeCast} ] : [],
         ...vars.length ? [{innerPath: '$vars', val: vars.map(x=>x.val)}] : []
       ]
       const args = systemPropsInObj.concat(params.filter(param=>profile[param.id] !== undefined)

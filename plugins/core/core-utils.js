@@ -127,7 +127,7 @@ extension('utils', 'core', {
       return 'unknown'
 
       function resolveImpl(prof) {
-        const dslType = prof.$typeCast || jb.path(prof,[CT,'dslType'])
+        const dslType = jb.path(prof,[CT,'dslType'])
         let comp = jb.utils.getComp(prof.$, { types: dslType, dsl: jb.path(prof,[CT,'dsl']), silent: true })
         if (!comp) {
           jb.utils.resolveUnTypedProfile(jb.utils.getUnresolvedProfile(prof.$), depth-1)
@@ -164,7 +164,7 @@ extension('utils', 'core', {
           if (!prof || !prof.constructor || ['Object','Array'].indexOf(prof.constructor.name) == -1) return
           const expectedType = _expectedType == '$asParent' ? jb.path(parent,[CT,'dslType']) : _expectedType
           const typeFromParentAdapter = parent && parent.$ == 'typeAdapter' && parent.fromType
-          const dslType = prof.$typeCast || typeFromParentAdapter || jb.path(prof,[CT,'dslType']) ||  expectedType
+          const dslType = typeFromParentAdapter || jb.path(prof,[CT,'dslType']) ||  expectedType
           const comp = jb.utils.getComp(prof.$, { types: dslType, dsl: jb.path(prof,[CT,'dsl']) })
           prof[CT] = prof[CT] || {}
           Object.assign(prof[CT], {comp, dslType})
@@ -194,7 +194,7 @@ extension('utils', 'core', {
           return prof
       }
       const typeFromParentAdapter = parent && parent.$ == 'typeAdapter' && parent.fromType
-      const dslType = prof.$typeCast || typeFromParentAdapter || expectedType
+      const dslType = typeFromParentAdapter || expectedType
       const comp = jb.utils.getComp(prof.$, { types: dslType })
       prof[CT] = {comp, dslType}
       if (prof.$byValue && comp) {
