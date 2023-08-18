@@ -179,7 +179,7 @@ extension('vscode', 'utils', {
     async openjBartTest() {
         const docProps = jb.tgpTextEditor.host.compTextAndCursor()
         const testID = docProps.shortId
-        const spyParam = testID.match(/uiTest/) ? 'uiTest,headless' : 'test'
+        const spyParam = jb.spy.spyParamForTest(testID)
         vscodeNS.env.openExternal(`http://localhost:8082/hosts/tests/tests.html?test=${testID}&show&spy=${spyParam}`)
     },
     openLastCmd() {

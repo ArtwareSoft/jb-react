@@ -163,7 +163,8 @@ extension('utils', 'core', {
       function doResolve(prof, _expectedType,parent) {
           if (!prof || !prof.constructor || ['Object','Array'].indexOf(prof.constructor.name) == -1) return
           const expectedType = _expectedType == '$asParent' ? jb.path(parent,[CT,'dslType']) : _expectedType
-          const dslType = prof.$typeCast || jb.path(prof,[CT,'dslType']) ||  expectedType
+          const typeFromParentAdapter = parent && parent.$ == 'typeAdapter' && parent.fromType
+          const dslType = prof.$typeCast || typeFromParentAdapter || jb.path(prof,[CT,'dslType']) ||  expectedType
           const comp = jb.utils.getComp(prof.$, { types: dslType, dsl: jb.path(prof,[CT,'dsl']) })
           prof[CT] = prof[CT] || {}
           Object.assign(prof[CT], {comp, dslType})
@@ -184,21 +185,22 @@ extension('utils', 'core', {
           }
       }
     },    
-    resolveDetachedProfile(prof, expectedType) {
+    resolveDetachedProfile(prof, expectedType, parent) {
       const CT = jb.core.CT
       if (!prof || !prof.constructor || ['Object','Array'].indexOf(prof.constructor.name) == -1) 
         return prof
       if (Array.isArray(prof)) {
-          prof.forEach(v=>jb.utils.resolveDetachedProfile(v, expectedType))
+          prof.forEach(v=>jb.utils.resolveDetachedProfile(v, expectedType, prof))
           return prof
       }
-      const dslType = prof.$typeCast || expectedType
+      const typeFromParentAdapter = parent && parent.$ == 'typeAdapter' && parent.fromType
+      const dslType = prof.$typeCast || typeFromParentAdapter || expectedType
       const comp = jb.utils.getComp(prof.$, { types: dslType })
       prof[CT] = {comp, dslType}
       if (prof.$byValue && comp) {
           Object.assign(prof, jb.macro.argsToProfile(prof.$, comp, prof.$byValue))
           delete prof.$byValue
-          ;(comp.params || []).forEach(p=> jb.utils.resolveDetachedProfile(prof[p.id], jb.path(p,[CT,'dslType'])))
+          ;(comp.params || []).forEach(p=> jb.utils.resolveDetachedProfile(prof[p.id], jb.path(p,[CT,'dslType']), prof))
           jb.utils.resolveDetachedProfile(prof.$vars)
       } else if (prof.$byValue && !comp) {
           return jb.logError(`resolveDetachedProfile - can not resolve ${prof.$} expected type ${dslType || 'unknown'}`, 
@@ -207,7 +209,7 @@ extension('utils', 'core', {
         Object.keys(prof).forEach(key=> {
           const p = (comp && comp.params || []).find(p=>p.id == key)
           const type = p && (jb.path(p,[CT,'dslType']) ||'').replace(/\[\]/g,'')
-          jb.utils.resolveDetachedProfile(prof[key],  type)
+          jb.utils.resolveDetachedProfile(prof[key], type, prof)
         })
       }
       return prof

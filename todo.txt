@@ -4,6 +4,8 @@ tests to fix
   remoteWidgetTest.runInBECmpContext
 
 remote logs should be added to log in general (in cmd)
+  how to merge?
+    1. just add a new log line starting with 'source:xx 
   remote errors should be added to current log
 add logs to ctrl-I
   log selection defaults and DSL
@@ -12,6 +14,7 @@ add disabled (like remark)
 
 
 prettyprint
+  castFrom => specific()
   castFrom('ui-action<test>', uiActions('%$uiAction()%'))
 
 

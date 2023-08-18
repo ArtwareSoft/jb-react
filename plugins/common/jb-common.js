@@ -31,14 +31,23 @@ component('runCtx',{
   impl: ''
 })
 
-component('cast', {
+component('typeAdapter', {
   type: 'any',
   params: [
-    {id: 'typeCast', as: 'string', mandatory: true, description: 'e.g. type1<myDsl>'},
-    {id: 'val', type: '$asParent', mandatory: true },
+    {id: 'fromType', as: 'string', mandatory: true, description: 'e.g. type1<myDsl>'},
+    {id: 'val', mandatory: true, composite: true },
   ],
   impl: ctx => ctx.params.val
 })
+
+// component('cast', {
+//   type: 'any',
+//   params: [
+//     {id: 'typeCast', as: 'string', mandatory: true, description: 'e.g. type1<myDsl>'},
+//     {id: 'val', type: '$asParent', mandatory: true },
+//   ],
+//   impl: ctx => ctx.params.val
+// })
 
 component('If', {
   type: 'any',

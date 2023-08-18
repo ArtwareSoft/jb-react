@@ -117,15 +117,15 @@ component('remark', {
 //   macro: (result, self) => Object.assign(result,{ $typeCast: self.typeCast || self.$byValue[0]})
 // })
 
-component('castFrom', {
-  type: 'any',
-  isMacro: true,
-  params: [
-    {id: 'asType', as: 'string', mandatory: true, description: 'e.g. type1<myDsl>'},
-    {id: 'val', type: 'any', mandatory: true },
-  ],
-  macro: self => ({ ...self.$byValue[1], $typeCast: self.$byValue[0] })
-})
+// component('castFrom', {
+//   type: 'any',
+//   isMacro: true,
+//   params: [
+//     {id: 'asType', as: 'string', mandatory: true, description: 'e.g. type1<myDsl>'},
+//     {id: 'val', type: 'any', mandatory: true },
+//   ],
+//   macro: self => ({ ...self.$byValue[1], $typeCast: self.$byValue[0] })
+// })
 
 extension('syntaxConverter', 'onAddComponent', {
   initExtension() { 

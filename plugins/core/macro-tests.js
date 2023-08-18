@@ -145,24 +145,15 @@ component('macroTest.funcDefaults', {
   )
 })
 
-component('macroTest.castFrom', {
+component('macroTest.typeAdapter.from', {
   impl: dataTest(
-    prettyPrint(() => ({$ : "israel", $dslType : "state<location>"})),
+    prettyPrint(() => typeAdapter('state<location>', israel()), true),
     equals(
-      "castFrom('state<location>', israel())"
+      "typeAdapter('state<location>', israel())"
     )
   )
 })
 
-component('macroTest.castFrom2', {
-  impl: dataTest(
-    prettyPrint(() => {
-      debugger
-      const x = castFrom('state<location>', israel())
-      return x
-    }),
-    equals(
-      "castFrom('state<location>', israel())"
-    )
-  )
+component('macroTest.typeAdapter.to', {
+  impl: dataTest(pipeline(typeAdapter('state<location>', israel()), '%capital/name%'), equals('Jerusalem'))
 })

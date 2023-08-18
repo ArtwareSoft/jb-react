@@ -27,18 +27,22 @@ component('uiTest', {
       Var('remoteUiTest', notEquals('%$backEndJbm%', () => jb)),
       Var('headlessWidgetId', '%$widgetId%'),
       Var('useFrontEndInTest', '%$useFrontEnd%'),
-	  Var('transactiveHeadless', '%$transactiveHeadless%'),
-	  Var('testRenderingUpdate', () => jb.callbag.subject('testRenderingUpdate'))
+      Var('transactiveHeadless', '%$transactiveHeadless%'),
+      Var('testRenderingUpdate', () => jb.callbag.subject('testRenderingUpdate'))
     ],
     calculate: rx.pipe(
-	  castFrom('ui-action<test>', uiActions('%$uiAction()%')),
+      typeAdapter('ui-action<test>', uiActions('%$uiAction()%')),
       rx.log('uiTest userRequest'),
       remote.operator(
-        widget.headless({control: '%$control()%', widgetId: '%$widgetId%', transactiveHeadless: '%$transactiveHeadless%'}),
+        widget.headless({
+          control: '%$control()%',
+          widgetId: '%$widgetId%',
+          transactiveHeadless: '%$transactiveHeadless%'
+        }),
         '%$backEndJbm%'
       ),
       rx.do(uiTest.aggregateDelta('%%')),
-	  rx.var('renderingCounters', uiTest.renderingCounters()),
+      rx.var('renderingCounters', uiTest.renderingCounters()),
       rx.log('uiTest uiDelta from headless %$renderingCounters%'),
       rx.toArray(),
       rx.var('html', uiTest.vdomResultAsHtml()),

@@ -56,19 +56,17 @@ component('dslTest.sameIdDifferentDsls', {
 
 component('dslTest.defaultDSLInParamType', {
   impl: dataTest(
-    testDslClientInMyDsl({
-      typeCast: 'data<myDsl>',
-      defaultDsl: cmp1(),
-      myDsl: cmp1(),
-      innerDsl: cmp1()
-    }),
+    typeAdapter('data<myDsl>', testDslClientInMyDsl({defaultDsl: cmp1(), myDsl: cmp1(), innerDsl: cmp1()})),
     equals('myDsl,myDsl,innerDsl')
   )
 })
 
 component('dslTest.defaultInnerDSLInParamType', {
   impl: dataTest(
-    testDslClientInInnerDsl({typeCast: 'data<myDsl.inner>', defaultDsl: cmp1(), myDsl: cmp1(), innerDsl: cmp1()}),
+    typeAdapter(
+      'data<myDsl.inner>',
+      testDslClientInInnerDsl({defaultDsl: cmp1(), myDsl: cmp1(), innerDsl: cmp1()})
+    ),
     equals('innerDsl,myDsl,innerDsl')
   )
 })
@@ -81,10 +79,7 @@ component('resolveImpl', {
 })
 
 component('dslTest.resolveImpl', {
-  impl: dataTest(
-    castFrom('myType<myDsl>', resolveImpl()),
-    equals('myDsl')
-  )
+  impl: dataTest(typeAdapter('myType<myDsl>', resolveImpl()), equals('myDsl'))
 })
 
 // resolve default values in params
@@ -99,10 +94,7 @@ component('resolveDefaultValues', {
 })
 
 component('dslTest.resolveDefaultValues', {
-  impl: dataTest(
-    castFrom('myType<myDsl>', resolveDefaultValues()),
-    equals('myDsl,myDsl')
-  )
+  impl: dataTest(typeAdapter('myType<myDsl>', resolveDefaultValues()), equals('myDsl,myDsl'))
 })
 
 component('cmpAtMyDsl', {
@@ -136,16 +128,13 @@ component('test.helperByName', {
 })
 
 component('dslTest.multiTypes', {
-  impl: dataTest({
-    calculate: testMultiTypes({
-      typeCast: 'data<myDsl.inner>',
-      x1: cmpAtInnerDsl(),
-      x2: cmpAtMyDsl(),
-      x3: cmpAtInnerDsl(),
-      x4: cmpAtMyDsl('50')
-    }),
-    expectedResult: equals('innerDsl,myDsl,innerDsl,myDsl50')
-  })
+  impl: dataTest(
+    typeAdapter(
+      'data<myDsl.inner>',
+      testMultiTypes({x1: cmpAtInnerDsl(), x2: cmpAtMyDsl(), x3: cmpAtInnerDsl(), x4: cmpAtMyDsl('50')})
+    ),
+    equals('innerDsl,myDsl,innerDsl,myDsl50')
+  )
 })
 
 component('dslTest.resolveByName', {
@@ -164,13 +153,6 @@ component('macroTest.dsl.inherit', {
   impl: dataTest(
     () => jb.utils.prettyPrintComp('israel',jb.utils.getComp('state<location>israel')),
     and(notContains('state<location>'), notContains('$'))
-  )
-})
-
-component('macroTest.dsl.typeCast', {
-  impl: dataTest(
-    () => jb.utils.prettyPrintComp('dslTest.multiTypes',jb.utils.getComp('dslTest.multiTypes')),
-    and(contains("typeCast: 'data<myDsl.inner>'"), notContains('$'))
   )
 })
 

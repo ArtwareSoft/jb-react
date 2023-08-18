@@ -184,5 +184,8 @@ extension('spy', {
 		return {log: rec.logNames, ...rec.$ext.props, 
 			...jb.objFromEntries(Object.keys(rec).filter(k=>!rec.$ext.props[k]).map(k=>[k,rec[k]])) }
 	},
+	spyParamForTest(testID) {
+		return testID.match(/uiTest|[Ww]idget/) ? 'uiTest,headless' : 'test'
+	}
 })
 
