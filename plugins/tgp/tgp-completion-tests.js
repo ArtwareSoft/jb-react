@@ -16,6 +16,15 @@ component('completionTest.pipeline', {
  })
 })
 
+component('completionTest.typeAdapter', {
+  impl: tgp.completionOptionsTest(
+    `component('x', {
+  impl: uiTest(text(typeAdapter('state<location>', __TBD())))
+})`,
+    ['israel']
+  )
+})
+
 component('completionTest.pipeline2', {
   impl: tgp.completionOptionsTest(`component('x', {
   impl: uiTest(text(pipeline(__'')))

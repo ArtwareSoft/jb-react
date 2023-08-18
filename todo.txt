@@ -3,6 +3,9 @@ tests to fix
   uiTest.editableText.richPicklistHelper.setInput
   remoteWidgetTest.runInBECmpContext
 
+worker -> webWorker
+worker is If('jb.isNode', no)
+
 remote logs should be added to log in general (in cmd)
   how to merge?
     1. just add a new log line starting with 'source:xx 
@@ -11,11 +14,6 @@ add logs to ctrl-I
   log selection defaults and DSL
 add circuit selection to ctrl-I
 add disabled (like remark)
-
-
-prettyprint
-  castFrom => specific()
-  castFrom('ui-action<test>', uiActions('%$uiAction()%'))
 
 
 - nested tests - pattern=remote|worker|jbm|pattern|distributed

@@ -1,5 +1,6 @@
 component('jbComponent', {
   type: 'any',
+  hidden: true,
   params: [
     {id: 'type', as: 'string', mandatory: true},
     {id: 'category', as: 'string'},

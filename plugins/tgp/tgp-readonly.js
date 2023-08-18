@@ -62,7 +62,7 @@ extension('tgp', 'readOnly', {
 		const single = /([^\[]*)(\[\])?/
 		const types = [...(type||'').split(',').map(x=>x.match(single)[1]),'any']
 			.flatMap(x=> x=='data' ? ['data','aggregator','boolean'] : [x])
-		const res = types.flatMap(t=> jb.entries(jb.comps).filter(c=> jb.tgp.isCompObjOfType(c[1],t)).map(c=>c[0]) )
+		const res = types.flatMap(t=> jb.entries(jb.comps).filter(c=> !c[1].hidden && jb.tgp.isCompObjOfType(c[1],t)).map(c=>c[0]) )
 		res.sort((c1,c2) => jb.tgp.markOfComp(c2) - jb.tgp.markOfComp(c1))
 		return res
 	},
@@ -90,6 +90,9 @@ extension('tgp', 'readOnly', {
 		.map(t=> t == '$asParent' ? jb.tgp.paramType(jb.tgp.parentPath(path)) : t),
 	paramType: path => jb.tgp.paramDef(path) ? jb.tgp.paramTypes(path)[0] : '',
 	PTsOfPath: path => {
+		const typeAdpter = jb.tgp.valOfPath(`${jb.tgp.parentPath(path)}~fromType`,true)
+		if (typeAdpter)
+			return jb.tgp.PTsOfType(typeAdpter)
 		const types = jb.tgp.paramTypes(path)
 		if (types.length == 1)
 			return jb.tgp.PTsOfType(types[0])

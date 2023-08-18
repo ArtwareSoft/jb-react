@@ -157,10 +157,7 @@ component('macroTest.dsl.inherit', {
 })
 
 component('dslTest.inheritTypeFromImp', {
-  impl: dataTest(
-    pipeline(castFrom('state<location>', israel()),'%capital/name%'),
-    equals('Jerusalem')
-  )
+  impl: dataTest(pipeline(typeAdapter('state<location>', israel()), '%capital/name%'), equals('Jerusalem'))
 })
 
 component('dslTest.jbDsl.dslType', {
@@ -179,13 +176,3 @@ component('dslTest.treeShake', {
 })
 
 // more tests at tgp-tests, ui-dsl-tests
-
-// component('dslTest.setComp', {
-//   impl: dataTest({
-//     calculate: pipeline(castFrom('state<location>', israel())), '%capital/name%'),
-//     expectedResult: equals('nokdim'),
-//     //runBefore: tgp.setComp('state<location>israel~impl~capital', 'settlement<location>nokdim')
-//   })
-// })
-
-// TODO: multi engine tests

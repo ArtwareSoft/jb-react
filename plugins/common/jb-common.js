@@ -2,6 +2,7 @@ using('core')
 
 component('call', {
   type: 'any',
+  hidden: true,
   description: 'invoke dynamic parameter',
   category: 'system:50',
   params: [
@@ -23,6 +24,7 @@ component('call', {
 
 component('runCtx',{
   type: 'any',
+  hidden: true,
   params: [
       {id: 'path', as: 'string'},
       {id: 'vars' },
@@ -35,7 +37,7 @@ component('typeAdapter', {
   type: 'any',
   params: [
     {id: 'fromType', as: 'string', mandatory: true, description: 'e.g. type1<myDsl>'},
-    {id: 'val', mandatory: true, composite: true },
+    {id: 'val' },
   ],
   impl: ctx => ctx.params.val
 })
@@ -53,6 +55,7 @@ component('If', {
 
 component('TBD', {
   type: 'any',
+  hidden: true,
   impl: 'TBD'
 })
 

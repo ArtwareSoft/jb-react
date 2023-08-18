@@ -34,6 +34,8 @@ component('tgp.completionOptionsTest', {
           const _errors = await errors
           jb.tgpTextEditor.host.selectRange(inCompPos)
           const options = await jb.tgpTextEditor.provideCompletionItems(jb.tgpTextEditor.host.compTextAndCursor(), ctxForTest)
+          if (jb.path(options,'0.id') == 'reformat')
+            return `bad format`
           if (!options)
               return `no options at index ${i}`
           const res = options.map(x=>x.label).includes(expectedSelections[i]) ? '' : ` ${expectedSelections[i]} not found at index ${i}`
