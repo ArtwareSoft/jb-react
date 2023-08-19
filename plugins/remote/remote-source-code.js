@@ -170,3 +170,4 @@ component('sourceCode.encodeUri', {
   ],
   impl: pipeline(json.stringify('%$sourceCode%'), ({data}) => encodeURIComponent(data), first())
 })
+

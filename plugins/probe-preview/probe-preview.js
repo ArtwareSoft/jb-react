@@ -55,7 +55,11 @@ component('probe.remoteCircuitPreview', {
     {id: 'jbm', type: 'jbm<jbm>', defaultValue: probePreviewWorker()}
   ],
   type: 'control',
-  impl: If(probe.circuitPreviewRequiresMainThread(),probe.circuitPreview(), remote.widget(probe.circuitPreview(), '%$jbm%'))
+  impl: If(
+    probe.circuitPreviewRequiresMainThread(),
+    probe.circuitPreview(),
+    remote.widget(probe.circuitPreview(), '%$jbm%')
+  )
 })
 
 component('probe.circuitPreviewRequiresMainThread', {

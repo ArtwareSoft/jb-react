@@ -3,6 +3,33 @@ pluginDsl('jbm')
 component('worker', {
   type: 'jbm',
   params: [
+    {id: 'id', as: 'string'},
+    {id: 'sourceCode', type: 'source-code'},
+    {id: 'init', type: 'action<>', dynamic: true},
+    {id: 'networkPeer', as: 'boolean', description: 'used for testing', type: 'boolean'}
+  ],
+  impl: If(
+    () => globalThis.jbHost.isNode,
+    remoteNodeWorker({id: '%$id%', sourceCode: '%$sourceCode%', init: '%$init()%'}),
+    webWorker({id: '%$id%', sourceCode: '%$sourceCode%', init: '%$init()%', networkPeer: '%$networkPeer%'})
+  )
+})
+
+// remoteNodeWorker({
+//     id: '%$id%',
+//     sourceCode: firstNotEmpty('%$sourceCode%', treeShakeClientWithPlugins()),
+//     init: '%$init()%'
+//   }),
+//   webWorker({
+//     id: '%$id%',
+//     sourceCode: firstNotEmpty('%$sourceCode%', treeShakeClient()),
+//     init: '%$init()%',
+//     networkPeer: '%$networkPeer%'
+//   })
+
+component('webWorker', {
+  type: 'jbm',
+  params: [
       {id: 'id', as: 'string'},
       {id: 'sourceCode', type: 'source-code', defaultValue: treeShakeClient() },
       {id: 'init' , type: 'action<>', dynamic: true },

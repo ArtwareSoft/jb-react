@@ -89,15 +89,10 @@ component('dataTest.extractTextExclude', {
 })
 
 component('dataTest.extractTextRegex', {
-  impl: dataTest({
-    calculate: extractText({
-      text: '%$textToParse%',
-      startMarkers: '#s.*',
-      endMarker: '#e.*',
-      useRegex: true
-    }),
-    expectedResult: '%% == first'
-  })
+  impl: dataTest(
+    extractText({text: '%$textToParse%', startMarkers: '#s.*', endMarker: '#e.*', useRegex: true}),
+    '%% == first'
+  )
 })
 
 component('dataTest.breakText', {

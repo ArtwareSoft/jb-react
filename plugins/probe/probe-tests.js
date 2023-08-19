@@ -163,7 +163,7 @@ component('probeTest.insideOpenDialogOnOk', {
 
 component('probeTest.insideGotoUrl', {
   impl: probeTest({
-    circuit: button({action: winUtils.gotoUrl('google')}),
+    circuit: button({action: winUtils.gotoUrl('google%%')}),
     probePath: 'action~url',
     expectedVisits: 1
   })

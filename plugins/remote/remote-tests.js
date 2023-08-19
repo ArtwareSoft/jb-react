@@ -171,12 +171,20 @@ component('remoteTest.source.remote.local', {
 
 component('remoteTest.source.remote.worker', {
   impl: dataTest({
-    timeout: 5000,
     calculate: pipe(
-      rx.pipe(source.remote(source.data([1, 2, 3]), worker()), rx.take(2), rx.map('-%%-')),
+      rx.pipe(source.remote(source.data([1,2,3]), worker()), rx.take(2), rx.map('-%%-')),
       join(',')
     ),
-    expectedResult: equals('-1-,-2-')
+    expectedResult: equals('-1-,-2-'),
+    timeout: 5000
+  })
+})
+
+component('remoteTest.source.remote.worker2', {
+  impl: dataTest({
+    calculate: pipe(remote.data(list([1,2,3]), worker()), join(',')),
+    expectedResult: equals('-1-,-2-'),
+    timeout: 5000
   })
 })
 

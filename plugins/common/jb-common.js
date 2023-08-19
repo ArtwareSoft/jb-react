@@ -53,6 +53,15 @@ component('If', {
   impl: ({},cond,_then,_else) => cond() ? _then() : _else()
 })
 
+component('firstNotEmpty', {
+  type: 'any',
+  params: [
+    {id: 'first', type: '$asParent', mandatory: true },
+    {id: 'second', type: '$asParent', mandatory: true }
+  ],
+  impl: If('%$first%','%$first%','%$second%')
+})
+
 component('TBD', {
   type: 'any',
   hidden: true,
@@ -93,15 +102,6 @@ extension('utils', 'pipe', {
     }
   }
 })
-
-// extension('tgp', {
-//   'pipeline-inputMatch': (input,profile) => jb.tgp.inputMatch(input,profile.items[0]),
-//   'pipeline-outputOptions': (input,profile) => profile.items.reduce((input,item) => jb.tgp.outputOptions(input,item), input),
-//   'pipeline-innerInputMatch-items': ({input, inputPath, index}) => {
-//     const inputBefore = jb.tgp.calcOutputOptions(input, index ? `${inputPath}~items~${index-1}` : inputPath)
-//     return jb.tgp.calcOutputOptions(index ? `${inputPath}~items~${index-1}` : inputPath)
-//   }
-// })
 
 component('pipeline', {
   type: 'data',

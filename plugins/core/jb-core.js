@@ -147,20 +147,20 @@ extension('core', {
         case 'profile':
           if (!run.impl)
             run.ctx.callerPath = ctx.path;
-          const prepareParam = paramObj => {
-            switch (paramObj.type) {
-              case 'function': run.ctx.params[paramObj.name] = paramObj.outerFunc(run.ctx) ;  break;
-              case 'array': run.ctx.params[paramObj.name] =
-                  paramObj.array.map(function prepareParamItem(prof,i) { return prof != null && jb.core.run(new jb.core.jbCtx(run.ctx,{
-                        profile: prof, forcePath: paramObj.forcePath || ctx.path + '~' + paramObj.path+ '~' + i, path: ''}), paramObj.param)})
-                ; break;  // maybe we should [].concat and handle nulls
-              default: run.ctx.params[paramObj.name] =
-                jb.core.run(new jb.core.jbCtx(run.ctx,{profile: paramObj.prof, forcePath: paramObj.forcePath || ctx.path + '~' + paramObj.path, path: ''}), paramObj.param);
-            }
+          const calcParam = paramObj => {
+            const paramVal = paramObj.type == 'function' ? paramObj.outerFunc(run.ctx) 
+            : paramObj.type == 'primitive' ? paramObj.val
+            : paramObj.type == 'array' ? paramObj.array.map(function prepareParamItem(prof,i) { 
+                  return prof != null && jb.core.run(new jb.core.jbCtx(run.ctx,{
+                        profile: prof, forcePath: paramObj.forcePath || ctx.path + '~' + paramObj.path+ '~' + i, path: ''}), paramObj.param)
+                  })
+            : jb.core.run(new jb.core.jbCtx(run.ctx,{profile: paramObj.prof, forcePath: paramObj.forcePath || ctx.path + '~' + paramObj.path, path: ''}), paramObj.param);
+            return paramVal
           }
-          Object.defineProperty(prepareParam, 'name', { value: `${run.ctx.path} ${profile.$ ||''}-prepare param` })
 
-          run.preparedParams.forEach(paramObj => prepareParam(paramObj))
+          Object.defineProperty(calcParam, 'name', { value: `${run.ctx.path} ${profile.$ ||''}-calc param` })
+
+          run.preparedParams.forEach(paramObj => run.ctx.params[paramObj.name] = calcParam(paramObj))
           const out = run.impl ? run.impl.call(null,run.ctx,...run.preparedParams.map(param=>run.ctx.params[param.name]))
             : jb.core.run(new jb.core.jbCtx(run.ctx, { cmpCtx: run.ctx }),parentParam)
           return castToParam(out,parentParam)
@@ -178,14 +178,23 @@ extension('core', {
     return ctx
   },
   prepareParams(comp_name,comp,profile,ctx) {
+    if (profile.$ == 'webWorker') debugger
     return jb.utils.compParams(comp)
       .filter(param=> !param.ignore)
       .map(param => {
         const p = param.id
         let val = profile[p], path =p
-        const valOrDefault = val !== undefined ? val : (param.defaultValue !== undefined ? param.defaultValue : null)
-        const usingDefault = val === undefined && param.defaultValue !== undefined
-        const forcePath = usingDefault && [comp_name, 'params', jb.utils.compParams(comp).indexOf(param), 'defaultValue'].join('~')
+        const nullValueOfParam = typeof val == 'string' && val == `%$${p}%` && ctx.cmpCtx && ctx.cmpCtx.params[p] === null
+        const defaultValue = param.defaultValue
+        const defaultValuePath = defaultValue !== undefined && [comp_name, 'params', jb.utils.compParams(comp).indexOf(param), 'defaultValue'].join('~')
+        const isNullValue = val === undefined || nullValueOfParam
+        const valOrDefault = isNullValue ? (defaultValue !== undefined ? defaultValue : null) : val
+       const isNullValueOld = val === undefined // || nullValueOfParam
+       const valOrDefaultOld = isNullValueOld ? (defaultValue !== undefined ? defaultValue : null) : val
+       if (valOrDefault !== valOrDefaultOld) debugger
+
+        const usingDefault = isNullValue && defaultValue !== undefined
+        const forcePath = usingDefault && defaultValuePath
         if (forcePath) path = ''
 
         const valOrDefaultArray = valOrDefault ? valOrDefault : []; // can remain single, if null treated as empty array
@@ -209,8 +218,9 @@ extension('core', {
 
         if (arrayParam) // array of profiles
           return { name: p, type: 'array', array: valOrDefaultArray, param: Object.assign({},param,{type:param.type.split('[')[0],as:null}), forcePath, path };
-        else
-          return { name: p, type: 'run', prof: valOrDefault, param, forcePath, path };
+        if (param.as == 'string' && typeof valOrDefault == 'string' && valOrDefault.indexOf('%') == -1)
+          return { name: p, type: 'primitive', val: valOrDefault }
+        return { name: p, type: 'run', prof: valOrDefault, param, forcePath, path };
     })
   },
   prepare(ctx,parentParam) {
