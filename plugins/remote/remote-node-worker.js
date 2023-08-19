@@ -11,7 +11,14 @@ extension('nodeContainer', {
         client.on('open', () => resolve(jb.nodeContainer.portFromVSCodeWebSocket(client,serverUri)))
     }),
     connectFromNodeClient: (wsUrl,serverUri,ctx) => new Promise( resolve => {
-        const client = new jb.frame.require('websocket').client()
+        const WebSocketClient = require('websocket').client
+        if (!WebSocketClient)
+            return jb.logError('connectFromNodeClient can not import webSocket client',{ctx})
+        const client = new WebSocketClient()
+        if (!client)
+            return jb.logError('connectFromNodeClient can not create webSocket client',{ctx,WebSocketClient})
+
+        //const client = new globalThis.require('websocket').client
         client.on('connectFailed', err => {jb.logError('websocket client - connection failed',{ctx,err}); resolve() })
         client.on('connect', socket => {
           if (!socket.connected) {

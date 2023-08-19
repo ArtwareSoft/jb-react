@@ -21,6 +21,10 @@ component('itemlists.manyItems', {
   impl: pipeline(range(1, '%$howMany%'), obj(prop('id','%%'), prop('name','%%-%%'), prop('group', ({data}) => Math.floor(Number(data) /10))))
 })
 
+component('remoteTest.remote.data', {
+  impl: dataTest(pipe(remote.data(list([1,2,3]), worker()), join(',')), equals('1,2,3'))
+})
+
 component('remoteTest.remote.action', {
   impl: dataTest({
     timeout: 3000,
@@ -31,6 +35,7 @@ component('remoteTest.remote.action', {
     expectedResult: equals('hello')
   })
 })
+
 
 component('remoteTest.remoteOperator.remoteParam', {
   params: [
@@ -176,15 +181,6 @@ component('remoteTest.source.remote.worker', {
       join(',')
     ),
     expectedResult: equals('-1-,-2-'),
-    timeout: 5000
-  })
-})
-
-component('remoteTest.source.remote.worker2', {
-  impl: dataTest({
-    calculate: pipe(remote.data(list([1,2,3]), worker()), join(',')),
-    expectedResult: equals('-1-,-2-'),
-    timeout: 5000
   })
 })
 

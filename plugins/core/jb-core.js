@@ -178,7 +178,6 @@ extension('core', {
     return ctx
   },
   prepareParams(comp_name,comp,profile,ctx) {
-    if (profile.$ == 'webWorker') debugger
     return jb.utils.compParams(comp)
       .filter(param=> !param.ignore)
       .map(param => {
@@ -189,9 +188,9 @@ extension('core', {
         const defaultValuePath = defaultValue !== undefined && [comp_name, 'params', jb.utils.compParams(comp).indexOf(param), 'defaultValue'].join('~')
         const isNullValue = val === undefined || nullValueOfParam
         const valOrDefault = isNullValue ? (defaultValue !== undefined ? defaultValue : null) : val
-       const isNullValueOld = val === undefined // || nullValueOfParam
-       const valOrDefaultOld = isNullValueOld ? (defaultValue !== undefined ? defaultValue : null) : val
-       if (valOrDefault !== valOrDefaultOld) debugger
+      //  const isNullValueOld = val === undefined // || nullValueOfParam
+      //  const valOrDefaultOld = isNullValueOld ? (defaultValue !== undefined ? defaultValue : null) : val
+      //  if (valOrDefault !== valOrDefaultOld) debugger
 
         const usingDefault = isNullValue && defaultValue !== undefined
         const forcePath = usingDefault && defaultValuePath
