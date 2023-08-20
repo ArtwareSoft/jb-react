@@ -302,26 +302,28 @@ const wixIslandHtml = `<div title="" data-is-responsive="false" data-display-mod
 
 component('studioTest.dragTargetText', {
   type: 'control',
-  impl: text(
-    'paste here'
-  )
+  impl: text({text: 'paste here', features: variable('$previewMode',true)})
 })
 
 component('studioTest.dragTargetCard', {
   type: 'control',
   impl: group({
     controls: [
-      text({text: '%title%', title: 'my title'}),
+      text('%title%', 'my title'),
       image({url: '%image%', width: '200', height: '200'}),
-      text({text: '%hits% hits', title: 'hits'})
+      text('%hits% hits', 'hits')
     ],
-    features: group.data({data: '%$phones[0]%', itemVariable: ''})
+    features: [
+      variable('$previewMode',true),
+      group.data({data: '%$phones[0]%', itemVariable: ''})
+    ]
   })
 })
 
 component('patternsTest.suggestedStyles.text', {
   impl: dataTest({
     vars: [
+      Var('$previewMode', true),
       Var('extractedCtrl', () => jb.utils.resolveDetachedProfile(extractedCtrlSimpleText)),
       Var('targetPath', 'studioTest.dragTargetText~impl'),
       Var('top', obj())
@@ -341,6 +343,7 @@ component('patternsTest.suggestedStyles.text', {
 component('patternsTest.selectStyle.text', {
   impl: uiTest({
     vars: [
+      Var('$previewMode',true),
       Var('extractedCtrl', () => jb.utils.resolveDetachedProfile(extractedCtrlSimpleText)),
       Var('targetPath', 'studioTest.dragTargetText~impl'),
       Var('top', obj())
@@ -361,6 +364,7 @@ component('patternsTest.selectStyle.card1', {
   impl: uiTest({
     timeout: 1000,
     vars: [
+      Var('$previewMode',true),
       Var('extractedCtrl', () => extractedCtrlCard1),
       Var('targetPath', 'studioTest.dragTargetCard~impl'),
       Var('top',obj())
@@ -381,6 +385,7 @@ component('patternsTest.selectStyleDeleteUnmapped.card1', {
   impl: uiTest({
     timeout: 1000,
     vars: [
+      Var('$previewMode',true),
       Var('extractedCtrl', () => extractedCtrlCard1),
       Var('targetPath', 'studioTest.dragTargetCard~impl'),
       Var('top',obj())

@@ -290,9 +290,12 @@ extension('ui','comp', {
             const frontEndMethods = (this.frontEndMethod || []).map(h=>({method: h.method, path: h.path}))
             const frontEndLibs = (this.frontEndLib || [])
             const frontEndVars = this.frontEndVar && jb.objFromEntries(this.frontEndVar.map(h=>[h.id, jb.val(h.value(this.calcCtx))]))
+            const passive = (frontEndMethods.length + frontEndLibs.length) == 0 && !this.followUpFuncs && !observe && !methods
+            const hasAtts = (!passive) || this.ctx.vars.$previewMode || jb.path(vdom.attributes.id)
             if (vdom instanceof jb.ui.VNode) {
                 vdom.addClass(this.jbCssClass())
-                vdom.attributes = Object.assign(vdom.attributes || {}, {
+                vdom.attributes = Object.assign(vdom.attributes || {}, Object.keys(this.state||{}).length && { $__state : JSON.stringify(this.state)})
+                if (hasAtts) vdom.attributes = Object.assign(vdom.attributes || {},  {
                         'jb-ctx': jb.ui.preserveCtx(this.originatingCtx()),
                         'cmp-id': this.cmpId, 
                         'cmp-ver': ''+this.ver,
@@ -307,9 +310,8 @@ extension('ui','comp', {
                     frontEndLibs.length && {$__frontEndLibs : JSON.stringify(frontEndLibs)},
                     frontEndMethods.length && {$__frontEndMethods : JSON.stringify(frontEndMethods) },
                     (frontEndMethods.length + frontEndLibs.length)  && {interactive : 'true'}, 
-                    frontEndVars && { $__vars : JSON.stringify(frontEndVars)},
-                    this.state && { $__state : JSON.stringify(this.state)},
-                    { $__debug: JSON.stringify({ path: (this.ctxForPick || this.calcCtx).path, callStack: jb.utils.callStack(this.calcCtx) }) },
+                    frontEndVars && { $__vars : JSON.stringify(frontEndVars)},                    
+                    this.ctx.vars.$previewMode && { $__debug: JSON.stringify({ path: (this.ctxForPick || this.calcCtx).path, callStack: jb.utils.callStack(this.calcCtx) }) },
                     this.ctxForPick && { 'pick-ctx': jb.ui.preserveCtx(this.ctxForPick) },
                 )
             }

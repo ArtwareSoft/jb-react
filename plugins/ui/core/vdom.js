@@ -52,6 +52,7 @@ extension('ui','vdom', {
             this.attributes && delete this.attributes[att.toLowerCase()]
         }
         addClass(clz) {
+            if (!clz) return
             if (clz.indexOf(' ') != -1) {
                 clz.split(' ').filter(x=>x).forEach(cl=>this.addClass(cl))
                 return this
@@ -121,10 +122,11 @@ extension('ui','vdom', {
             return selectorMatcher && selectorMatcher(this)
         }
         outerHTML() { // for tests
-            const style = jb.entries(jb.path(this.attributes,'style')).map(e=>`${e[0]}:${e[1]}`).join(';')
-            return `<${this.tag} ${style} ${jb.entries(this.attributes).map(([att,val]) => att+'="'+val+'"').join(' ')}>
-    ${(this.children || []).map(x=>x.outerHTML()).join('\n')}
-</${this.tag}>`.replace(/\$text="([^>][^"]*)/g,'$text=">$1<').replace(/\$focus/g,'__focus')
+            const styleVal = jb.entries(jb.path(this.attributes,'style')).map(e=>`${e[0]}:${e[1]}`).join(';')
+            const styleAtt = styleVal ? ` style="${styleVal}" ` : ''
+            const atts = jb.entries(this.attributes).map(([att,val]) => att+'="'+val+'"').join(' ').replace(/\$text="([^>][^"]*)/g,'$text=">$1<').replace(/\$focus/g,'__focus')
+            const children = (this.children || []).map(x=>x.outerHTML()).join('\n')
+            return `<${this.tag} ${styleAtt}${atts}${children?'':'/'}>${children?`\n${children}\n</${this.tag}>`:''}`    
         }
         addEventListener(event, handler, options) {
             this.handlers = this.handlers || {}

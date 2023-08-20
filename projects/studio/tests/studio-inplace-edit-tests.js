@@ -126,6 +126,7 @@ component('test.wixIslandGridCtrl', {
 
 component('inPlaceEditTest.text', {
   impl: uiFrontEndTest({
+    vars: Var('$previewMode',true),
     control: text('hello world'),
     action: action(runActions(inplaceEdit.activate('inPlaceEditTest.text~impl~control'), delay(10))),
     expectedResult: contains('view_quilt'),
@@ -135,6 +136,7 @@ component('inPlaceEditTest.text', {
 
 component('inPlaceEditTest.grid', {
   impl: uiFrontEndTest({
+    vars: Var('$previewMode',true),
     control: test.wixIslandGridCtrl(),
     action: action(runActions(inplaceEdit.activate('test.wixIslandGridCtrl~impl'), delay(10))),
     expectedResult: contains('gridLineThumb'),
@@ -145,6 +147,7 @@ component('inPlaceEditTest.grid', {
 
 component('inPlaceEditTest.grid.inStudio', {
   impl: uiTest({
+    vars: Var('$previewMode',true),
     control: test.wixIslandGridCtrl(),
     runInPreview: runActions(
       delay(10),

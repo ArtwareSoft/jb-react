@@ -18,7 +18,7 @@ extension('remoteCtx', {
         return res
     },
     stripData(data, { top, depth, path} = {}) {
-        if (data == null) return
+        if (data == null || (path||'').match(/parentNode$/)) return
         const innerDepthAndPath = key => ({depth: (depth || 0) +1, top: top || data, path: [path,key].filter(x=>x).join('~') })
 
         if (['string','boolean','number'].indexOf(typeof data) != -1) return data

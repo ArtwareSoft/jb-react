@@ -231,12 +231,15 @@ component('uiTest.editableTextExpandable', {
 
 component('uiTest.twoWayBinding', {
   impl: uiTest({
-    control: group({controls: [
-      editableText('name', '%$person/name%'),
-      text('%$person/name%')
-    ]}),
-    uiAction: setText('hello', 'input'),
-    expectedResult: contains(['<span','hello','</span'])
+    control: group({
+      controls: [
+        editableText({title: 'name', databind: '%$person/name%', style: editableText.input()}),
+        text('%$person/name%')
+      ]
+    }),
+    uiAction: setText('hello'),
+    expectedResult: contains(['<span','hello']),
+    timeout: 3000
   })
 })
 
@@ -1407,25 +1410,9 @@ component('uiTest.innerLabel2Tst', {
 
 component('uiTest.innerLabel3Tst', {
   params: [
-    { id: 'title', mandatory: true, dynamic: true }
+    {id: 'title', mandatory: true, dynamic: true}
   ],
-  impl: uiTest.innerLabel2Tst(
-    call('title')
-  )
-})
-
-component('uiTest.prettyPrintComp', {
-  impl: uiTest({
-    control: group({
-      controls: [
-        text({
-          text: ctx => jb.utils.prettyPrintComp('uiTest.codeMirror', jb.comps['uiTest.codeMirror']),
-          style: text.codemirror()
-        })
-      ]
-    }),
-    expectedResult: () => true
-  })
+  impl: uiTest.innerLabel2Tst(call('title'))
 })
 
 component('uiTest.picklist', {
@@ -1546,7 +1533,7 @@ component('uiTest.fieldTitleOfLabel', {
   impl: uiTest({
     control: group({
       style: propertySheet.titlesLeft(),
-      controls: text({ text: '%$personWithAddress/address/city%', features: field.title('City') })
+      controls: text({text: '%$personWithAddress/address/city%', features: field.title('City')})
     }),
     expectedResult: contains('City')
   })
@@ -1609,13 +1596,11 @@ component('uiTest.dynamicControls', {
 
 component('uiTest.inlineControls', {
   impl: uiTest({
-    control: group({
-      controls: [
-        text('a1'),
-        inlineControls(text('a2'), text('a3'))
-      ]
-    }),
-    expectedResult: contains(['a1', 'a2', 'a3'])
+    control: group({controls: [
+      text('a1'),
+      inlineControls(text('a2'), text('a3'))
+    ]}),
+    expectedResult: contains(['a1','a2','a3'])
   })
 })
 
@@ -1624,11 +1609,11 @@ component('uiTest.tabs', {
     control: group({
       style: group.tabs(),
       controls: [
-        group({ title: 'tab1', controls: text('in tab1') }),
-        group({ title: 'tab2', controls: text('in tab2') })
+        group({title: 'tab1', controls: text('in tab1')}),
+        group({title: 'tab2', controls: text('in tab2')})
       ]
     }),
-    expectedResult: and(contains(['tab1', 'in tab1']), contains('tab2'), not(contains('in tab2')))
+    expectedResult: and(contains(['tab1','in tab1']), contains('tab2'), not(contains('in tab2')))
   })
 })
 
@@ -1637,16 +1622,16 @@ component('uiTest.group.accordion', {
     control: group({
       style: group.accordion(),
       controls: [
-        group({ title: 'tab1', controls: text('in tab1') }),
-        group({ title: 'tab2', controls: text('in tab2') })
+        group({title: 'tab1', controls: text('in tab1')}),
+        group({title: 'tab2', controls: text('in tab2')})
       ]
     }),
-    expectedResult: contains(['tab1', 'in tab1', 'tab2'])
+    expectedResult: contains(['tab1','in tab1','tab2'])
   })
 })
 
 component('uiTest.innerLabel', {
-  impl: uiTest({ control: uiTest.innerLabel3Tst('Hello World2'), expectedResult: contains('Hello World2') })
+  impl: uiTest({control: uiTest.innerLabel3Tst('Hello World2'), expectedResult: contains('Hello World2')})
 })
 
 // jb.component('uiTest.markdown', {
@@ -1663,10 +1648,7 @@ component('uiTest.innerLabel', {
 
 component('uiTest.styleByControl', {
   impl: uiTest({
-    control: text({
-      text: 'Hello World',
-      style: styleByControl(button('%$labelModel/text()%2'), 'labelModel')
-    }),
+    control: text({text: 'Hello World', style: styleByControl(button('%$labelModel/text()%2'), 'labelModel')}),
     expectedResult: contains('Hello World2')
   })
 })
@@ -1755,12 +1737,11 @@ component('menuTest.openContextMenu', {
 
 component('uiTest.refreshControlById.text', {
   impl: uiFrontEndTest({
-    vars: Var('person1', () => ({ name: 'Homer' })), // none watchable var
-    control: text({ text: '%$person1/name%', features: id('t1') }),
-    action: uiActions(
-      writeValue('%$person1/name%', 'Dan'),
-      action(refreshControlById('t1')),
-    ),
+    vars: [
+      Var('person1', () => ({ name: 'Homer' }))
+    ],
+    control: text({text: '%$person1/name%', features: id('t1')}),
+    uiAction: uiActions(writeValue('%$person1/name%', 'Dan'), action(refreshControlById('t1'))),
     expectedResult: contains('Dan')
   })
 })

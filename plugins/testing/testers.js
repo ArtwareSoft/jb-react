@@ -17,7 +17,7 @@ component('dataTest', {
 		const remoteTimeout = id.match(/([rR]emote)|([wW]orker)|([pP]robe)|(jbm)/) ? 5000 : null
 		const _timeout = ctx.vars.singleTest ? Math.max(1000,timeout) : (remoteTimeout || timeout)
 		return Promise.race([ 
-			jb.delay(_timeout).then(()=>[{testFailure: 'timeout'}]), 
+			jb.delay(_timeout).then(()=>[{testFailure: `timeout ${_timeout}mSec`}]), 
 			Promise.resolve(runBefore())
 			  .then(_ => calculate())
 			  .then(v => jb.utils.toSynchArray(v,true))

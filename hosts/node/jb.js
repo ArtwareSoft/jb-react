@@ -60,7 +60,7 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
 
     const {compId, err} = evalProfileDef(code,dsl)
     if (err)
-        return console.log(JSON.stringify({error: { desc: 'can not resolve profile', cmd, err }}))
+        return console.log(JSON.stringify({error: { desc: 'can not resolve profile', err }}))
     
     await runAndEmitResult(() => jb.utils.resolveDelayed(new jb.core.jbCtx().setVars(vars).run({$: compId})))
 
@@ -71,12 +71,12 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
         } catch(e) {
             exception = e
         }
-        const result = { result: res, cmd, exception, errors: jb.spy.search('error'), main }
+        const result = { result: res, exception, errors: jb.spy.search('error'), logs: jb.spy.logs, main }
         try {
             console.log(JSON.stringify(jb.remoteCtx.stripData({...result})))
             process.exit(0)
         } catch(err) {
-            return console.log(JSON.stringify({ cmd, desc: 'can not stringify result', err }))
+            return console.log(JSON.stringify({ desc: 'can not stringify result', err }))
         }
     }
 })()

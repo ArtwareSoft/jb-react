@@ -1,4 +1,5 @@
-  
+clean the html
+  preview mode  
 tests to fix
   uiTest.editableText.richPicklistHelper.setInput
   remoteWidgetTest.runInBECmpContext
