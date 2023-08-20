@@ -58,7 +58,8 @@ extension('expression', {
         return pipe(input,subExp.slice(0,-2),last,first,true)
       if (first && subExp.charAt(0) == '$' && subExp.length > 1) {
         const ret = jb.utils.calcVar(ctx,subExp.substr(1),last ? jstype : null)
-        return typeof ret === 'function' && invokeFunc ? ret(ctx) : ret
+        const _ctx = ret && ret.runCtx ? new jb.core.jbCtx(ctx, { cmpCtx: ret.runCtx, forcePath: ret.srcPath}) : ctx
+        return typeof ret === 'function' && invokeFunc ? ret(_ctx) : ret
       }
       const obj = jb.val(input)
       if (subExp == 'length' && obj && typeof obj.length == 'number')

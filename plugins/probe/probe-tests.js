@@ -148,20 +148,23 @@ component('probeTest.insideOpenDialog', {
   })
 })
 
-component('probeTest.insideOpenDialogOnOk', {
+component('probeTest.gaps.insideOpenDialogOnOk', {
   impl: probeTest({
-    circuit: button({
-      action: openDialog({
-        content: text('hello'),
-        onOK: writeValue('%$person/name%', 'homer')
-      })
-    }),
+    circuit: button({action: openDialog({content: text('hello'), onOK: writeValue('%$person/name%', 'homer')})}),
     probePath: 'action~onOK~value',
     expectedVisits: 1
   })
 })
 
-component('probeTest.insideGotoUrl', {
+component('probeTest.gaps.runActionOnItems', {
+  impl: probeTest({
+    circuit: button({action: runActionOnItems('%$people%', writeValue('%$person/name%', '%name%'))}),
+    probePath: 'action~action~value',
+    expectedVisits: 3
+  })
+})
+
+component('probeTest.gaps.insideGotoUrl', {
   impl: probeTest({
     circuit: button({action: winUtils.gotoUrl('google%%')}),
     probePath: 'action~url',

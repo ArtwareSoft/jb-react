@@ -109,7 +109,9 @@ extension('core', {
     //  ctx.profile && jb.log('core request', [ctx.id,...arguments])
       if (ctx.probe && !ctx.probe.active) return
       const runner = () => jb.core.doRun(...arguments)
-      Object.defineProperty(runner, 'name', { value: `${ctx.path} ${ctx.profile && ctx.profile.$ ||''}-prepare param` })
+      Object.defineProperty(runner, 'name', { value: `${ctx.path} ${ctx.profile && ctx.profile.$ ||''}-run` })
+      if (ctx.probe)
+        ctx.profile = ctx.probe.alternateProfile(ctx)
       let res = runner(...arguments)
       if (ctx.probe)
           res = ctx.probe.record(ctx,res) || res

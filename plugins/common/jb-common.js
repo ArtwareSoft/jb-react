@@ -8,17 +8,10 @@ component('call', {
   params: [
     {id: 'param', as: 'string', description: 'parameter name'}
   ],
-  impl: function(context,param) {
- 	  const paramObj = context.cmpCtx && context.cmpCtx.params[param];
-      if (typeof paramObj == 'function')
- 		return paramObj(new jb.core.jbCtx(context, {
- 			data: context.data,
- 			vars: context.vars,
- 			cmpCtx: context.cmpCtx.cmpCtx,
- 			forcePath: paramObj.srcPath // overrides path - use the former path
- 		}));
-      else
-        return paramObj;
+  impl: (ctx,param) => {
+ 	  const paramObj = ctx.cmpCtx && ctx.cmpCtx.params[param]
+    return typeof paramObj == 'function' ?
+ 		  paramObj(new jb.core.jbCtx(ctx, { cmpCtx: paramObj.runCtx, forcePath: paramObj.srcPath })) : paramObj
  	}
 })
 

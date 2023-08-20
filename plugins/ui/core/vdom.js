@@ -124,7 +124,7 @@ extension('ui','vdom', {
             const style = jb.entries(jb.path(this.attributes,'style')).map(e=>`${e[0]}:${e[1]}`).join(';')
             return `<${this.tag} ${style} ${jb.entries(this.attributes).map(([att,val]) => att+'="'+val+'"').join(' ')}>
     ${(this.children || []).map(x=>x.outerHTML()).join('\n')}
-</${this.tag}>`.replace(/\$text="([^"]*)/g,'>$1<').replace(/\$focus/g,'__focus')
+</${this.tag}>`.replace(/\$text="([^>][^"]*)/g,'$text=">$1<').replace(/\$focus/g,'__focus')
         }
         addEventListener(event, handler, options) {
             this.handlers = this.handlers || {}

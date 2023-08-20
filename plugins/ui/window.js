@@ -7,8 +7,12 @@ component('winUtils.gotoUrl', {
   ],
   impl: (ctx,url,target) => {
 		var _target = (target == 'new tab') ? '_blank' : '_self';
-		if (!ctx.probe)
-      globalThis.window.open(url,_target);
+		if (ctx.probe) return
+    if (globalThis.window)
+      window.open(url,_target)
+
+    if (globalThis.vscodeNS)
+      vscodeNS.env.openExternal(url)
 	}
 })
 

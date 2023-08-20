@@ -189,6 +189,9 @@ extension('probe', 'main', {
             this.closestPath = _path
             this.result = this.probe[_path] || []
         }
+        alternateProfile(ctx) {
+            return ctx.profile
+        }
 
         // called from jb_run
         record(ctx,out) {

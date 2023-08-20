@@ -412,14 +412,8 @@ component('uiTest.dialogCleanupBug', {
 
 component('uiTest.groupFlex', {
   impl: uiTest({
-    control: group({
-      layout: layout.flex('row'),
-      controls: [
-        button('button1'),
-        text('label1')
-      ]
-    }),
-    expectedResult: contains(['button1', 'label1'])
+    control: group({layout: layout.flex('row'), controls: [button('button1'), text('label1')]}),
+    expectedResult: contains(['button1','label1'])
   })
 })
 
@@ -441,7 +435,7 @@ component('uiTest.resource', {
 
 component('uiTest.featuresCss', {
   impl: uiFrontEndTest({
-    control: text({ text: 'Hello World', features: css('color: red') }),
+    control: text({text: 'Hello World', features: css('color: red')}),
     expectedResult: ctx => {
       const elem = jb.ui.widgetBody(ctx)
       document.body.appendChild(elem)
@@ -454,8 +448,8 @@ component('uiTest.featuresCss', {
 
 component('uiTest.itemlist', {
   impl: uiTest({
-    control: itemlist({ items: '%$people%', controls: text('%$item.name% - %name%') }),
-    expectedResult: contains(['Homer Simpson - Homer Simpson', 'Bart Simpson - Bart Simpson'])
+    control: itemlist({items: '%$people%', controls: text('%$item.name% - %name%')}),
+    expectedResult: contains(['Homer Simpson - Homer Simpson','Bart Simpson - Bart Simpson'])
   })
 })
 
