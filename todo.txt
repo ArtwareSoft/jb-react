@@ -1,5 +1,9 @@
-clean the html
-  preview mode  
+vscode
+  preview mode - 
+    two phase - calc the circuit and run preview on the circuit
+  tgpTextEditor.probeByDocProps => tgpTextEditor.probeOrPreviewByDocProps
+    params: previewMode, preferedCircuit
+
 tests to fix
   uiTest.editableText.richPicklistHelper.setInput
   remoteWidgetTest.runInBECmpContext

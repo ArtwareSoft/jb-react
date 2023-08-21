@@ -371,7 +371,9 @@ component('tgpTextEditor.probeByDocProps', {
       probe.runCircuit(tgp.providePath('%$docProps%')),
       obj(
         prop('result', tgpTextEditor.stripProbeResult('%result%')),
+        prop('circuitRes', '%circuitRes%'),
         prop('simpleVisits', '%simpleVisits%'),
+        prop('totalTime', '%totalTime%'),        
         prop('circuitPath', '%circuitCtx.path%'),
         prop('errors', () => jb.spy.search('error'))
       ),

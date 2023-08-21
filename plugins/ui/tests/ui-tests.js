@@ -10,10 +10,7 @@ component('xx.slice2', {
 })
 
 component('uiTest.group', {
-  impl: uiTest({
-    control: group({controls: [text('hello world'), text('2')]}),
-    expectedResult: contains(['hello world','2'])
-  })
+  impl: uiTest(group({controls: [text('hello world'), text('2')]}), contains(['hello world','2']))
 })
 
 component('uiTest.label', {
@@ -171,62 +168,35 @@ component('uiTest.group2', {
 })
 
 component('uiTest.editableText', {
-  impl: uiTest({
-    control: editableText({
-      title: 'name',
-      databind: '%$person/name%',
-      style: editableText.input()
-    }),
-    expectedResult: contains(['input', 'Homer Simpson'])
-  })
+  impl: uiTest(
+    editableText({title: 'name', databind: '%$person/name%', style: editableText.input()}),
+    contains(['input','Homer Simpson'])
+  )
 })
 
 component('uiTest.editableText.emptyData', {
-  impl: uiTest({ control: editableText('name', '%$person/name1%'), expectedResult: not(contains('undefined')) })
+  impl: uiTest(editableText('name', '%$person/name1%'), not(contains('undefined')))
 })
 
 component('uiTest.editableTextEmpty', {
-  impl: uiTest({
-    control: editableText({
-      title: 'name',
-      databind: '%$person/name1%',
-      style: editableText.input()
-    }),
-    expectedResult: not(contains('object'))
-  })
+  impl: uiTest(
+    editableText({title: 'name', databind: '%$person/name1%', style: editableText.input()}),
+    not(contains('object'))
+  )
 })
 
 component('uiTest.editableTextMdc', {
-  impl: uiTest({
-    control: editableText({
-      title: 'name',
-      databind: '%$person/name%',
-      style: editableText.mdcInput()
-    }),
-    expectedResult: contains(['input', 'Homer Simpson'])
-  })
+  impl: uiTest(
+    editableText({title: 'name', databind: '%$person/name%', style: editableText.mdcInput()}),
+    contains(['input','Homer Simpson'])
+  )
 })
 
 component('uiTest.editableText.xButton', {
-  impl: uiTest({
-    control: editableText({
-      title: 'name',
-      databind: '%$person/name%',
-      features: editableText.xButton()
-    }),
-    expectedResult: contains({ text: ['×', 'input', 'Homer Simpson'], inOrder: false })
-  })
-})
-
-component('uiTest.editableTextExpandable', {
-  impl: uiTest({
-    control: editableText({
-      title: 'name',
-      databind: '%$person/name%',
-      style: editableText.expandable({})
-    }),
-    expectedResult: true
-  })
+  impl: uiTest(
+    editableText({title: 'name', databind: '%$person/name%', features: editableText.xButton()}),
+    contains({text: ['×','input','Homer Simpson'], inOrder: false})
+  )
 })
 
 component('uiTest.twoWayBinding', {
@@ -237,9 +207,8 @@ component('uiTest.twoWayBinding', {
         text('%$person/name%')
       ]
     }),
-    uiAction: setText('hello'),
     expectedResult: contains(['<span','hello']),
-    timeout: 3000
+    uiAction: setText('hello')
   })
 })
 
@@ -251,42 +220,30 @@ component('uiTest.twoWayBinding', {
 // })
 
 component('uiTest.autoFocusOnFirstInput', {
-  impl: uiTest({
-    control: group({
+  impl: uiTest(
+    group({
       controls: [
         editableText('name', '%$person/name%'),
         editableText('age', '%$person/age%')
       ],
       features: group.autoFocusOnFirstInput()
     }),
-    expectedResult: contains('__focus=\"autoFocusOnFirstInput\"')
-  })
+    contains('__focus=\"autoFocusOnFirstInput\"')
+  )
 })
 
-component('uiTest.groupHorizontal', {
-  impl: uiTest({
-    control: group({
-      layout: layout.horizontal(30),
-      controls: [
-        button('button1'),
-        text('label1')
-      ]
-    }),
-    expectedResult: contains(['button1', 'label1'])
-  })
+component('uiTest.layout.horizontal', {
+  impl: uiTest(
+    group({layout: layout.horizontal(30), controls: [button('button1'), text('label1')]}),
+    contains(['button1','label1','margin-right: 30px;'])
+  )
 })
 
-component('uiTest.layoutVertical', {
-  impl: uiTest({
-    control: group({
-      layout: layout.vertical(30),
-      controls: [
-        button('button1'),
-        text('label1')
-      ]
-    }),
-    expectedResult: contains(['button1', 'label1'])
-  })
+component('uiTest.layout.vertical', {
+  impl: uiTest(
+    group({layout: layout.vertical(30), controls: [button('button1'), text('label1')]}),
+    contains(['button1','label1','margin-bottom: 30px;'])
+  )
 })
 
 component('uiTest.openDialog', {
@@ -300,8 +257,8 @@ component('uiTest.openDialog', {
         features: dialogFeature.nearLauncherPosition()
       })
     ),
-    uiAction: click('button'),
-    expectedResult: contains(['hello','jbart'])
+    expectedResult: contains(['hello','jbart']),
+    uiAction: click('button')
   })
 })
 

@@ -1,19 +1,27 @@
 using('ui-tests')
 
 component('completionTest.param', {
-  impl: tgp.completionOptionsTest({
-    compText:`component('x', {
-  impl: uiTest(__{control: text(__{__text: 'hello world',__ title: ''__}__),__ expectedResult: contains('hello world')__})
+  impl: tgp.completionOptionsTest(
+    `component('x', {
+  impl: uiTest(__text(__{__text: 'hello world',__ title: ''__}__),__ contains('hello world')__)
 })`,
-    expectedSelections:['runBefore','style','style','style','style','style','runBefore','runBefore']
- })
+    ['runBefore','style','style','style','style','style','runBefore','runBefore']
+  )
+})
+
+component('completionTest.betweentwoFirstArgs', {
+  impl: tgp.completionOptionsTest(
+    `component('x', {
+  impl: uiTest(text('hello world'),__ contains('hello world'))
+})`,
+    ['runBefore']
+  )
 })
 
 component('completionTest.pipeline', {
-  impl: tgp.completionOptionsTest({
-    compText: "component('x', {\n  impl: uiTest(text(pipeline(__)))\n})",
-    expectedSelections:['split']
- })
+  impl: tgp.completionOptionsTest(`component('x', {
+  impl: uiTest(text(pipeline(__)))
+})`, ['split'])
 })
 
 component('completionTest.typeAdapter', {
@@ -34,13 +42,13 @@ component('completionTest.pipeline2', {
 component('completionTest.pt', {
   impl: tgp.completionOptionsTest({
     compText:`component('x', {
-  impl: uiTest({
-    control: group({controls: [__
+  impl: uiTest(
+    group({controls: [__
 __      text('hello world in the largest'),__
 __      text('2')__
 __    ]}),
-    expectedResult: __contains(['hello world','2'])
-  })
+    __contains(['hello world','2'])
+  )
 })`,
     expectedSelections:['button','button','button','button','button','button','not']
  })
@@ -143,27 +151,17 @@ component('completionTest.splitPart', {
 
 component('completionTest.dynamicFormat', {
   impl: tgp.completionActionTest({
-    compText: "component('x', {\n  impl: uiTest(__{control: text('my text'), expectedResult: contains('hello world')})\n})",
+    compText: `component('x', {
+  impl: uiTest(__text('my text'), contains('hello world'))
+})`,
     completionToActivate: 'uiAction',
     expectedEdit: () => ({
-      range: {start: {line: 1, col: 42}, end: {line: 1, col: 42}},
-      newText: 'uiAction: TBD(), '
+      range: {start: {line: 1, col: 15}, end: {line: 1, col: 55}},
+      newText: "{control: text('my text'), expectedResult: contains('hello world'), uiAction: TBD()}"
     }),
-  expectedCursorPos: '1,52'
- })
+    expectedCursorPos: '1,93'
+  })
 })
-
-// component('completionTest.wrapWithGroup', {
-//   impl: tgp.completionActionTest({
-//     compText: "component('x', {\n  impl: uiTest(__text())\n})",
-//     completionToActivate: 'group',
-//     expectedEdit: () => ({
-//         range: {start: {line: 1, col: 15}, end: {line: 1, col: 20}},
-//         newText: 'group({controls: [text()]}'
-//       }),
-//     expectedCursorPos: '2,4'
-//  })
-// })
 
 component('completionTest.wrapWithGroup', {
   impl: tgp.completionActionTest({

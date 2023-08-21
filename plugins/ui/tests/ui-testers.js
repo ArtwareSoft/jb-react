@@ -8,9 +8,9 @@ component('uiTest', {
   type: 'test',
   params: [
     {id: 'control', type: 'control', dynamic: true, mandatory: true},
+    {id: 'expectedResult', type: 'boolean', dynamic: true, mandatory: true},
     {id: 'runBefore', type: 'action', dynamic: true},
     {id: 'uiAction', type: 'ui-action<test>', dynamic: true},
-    {id: 'expectedResult', type: 'boolean', dynamic: true, mandatory: true},
     {id: 'allowError', as: 'boolean', dynamic: true, type: 'boolean'},
     {id: 'timeout', as: 'number', defaultValue: 200},
     {id: 'cleanUp', type: 'action', dynamic: true},
@@ -45,13 +45,10 @@ component('uiTest', {
       rx.var('renderingCounters', uiTest.renderingCounters()),
       rx.log('uiTest uiDelta from headless %$renderingCounters%'),
       rx.toArray(),
-      rx.var('html', uiTest.vdomResultAsHtml()),
-      rx.var('success', pipeline('%$html%', call('expectedResult'), last())),
-      rx.log('check uiTest result', obj(prop('success', '%$success%'), prop('html', '%$html%'))),
-      rx.map('%$success%'),
+      rx.map(uiTest.vdomResultAsHtml()),
       rx.do(({},{widgetId})=> !jb.test.singleTest && jb.ui.destroyHeadless(widgetId))
     ),
-    expectedResult: '%%',
+    expectedResult: '%$expectedResult()%',
     runBefore: runActions(uiTest.addFrontEndEmulation(), '%$runBefore()%'),
     timeout: If(equals('%$backEndJbm%', () => jb), '%$timeout%', 5000),
     allowError: '%$allowError()%',
@@ -59,6 +56,10 @@ component('uiTest', {
     expectedCounters: '%$expectedCounters%'
   })
 })
+
+// rx.var('success', pipeline('%$html%', call('expectedResult'), last())),
+// rx.log('check uiTest result', obj(prop('success', '%$success%'), prop('html', '%$html%'))),
+// rx.map('%$success%'),
 
 component('uiFrontEndTest', {
   type: 'test',
@@ -118,9 +119,10 @@ component('uiFrontEndTest', {
 component('uiTest.vdomResultAsHtml', {
   impl: ctx => {
 		const widget = jb.ui.FEEmulator[ctx.vars.widgetId]
+		const css = Object.values(jb.path(jb.ui.headless,[ctx.vars.widgetId,'styles']) || {})
 		if (!widget || !widget.body) return ''
 		if (typeof widget.body.outerHTML == 'function')
-			return widget.body.outerHTML()
+			return [widget.body.outerHTML(),...css].join('\n')
 	}
 })
 

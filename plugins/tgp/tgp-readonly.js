@@ -44,6 +44,12 @@ extension('tgp', 'readOnly', {
 		const params = jb.path(jb.tgp.compOfPath(path),'params') || []
         return params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1 && params[0]
 	},
+	twoFirstArgs: path => {
+		const profile = jb.tgp.valOfPath(path)
+		const params = jb.path(jb.tgp.compOfPath(path),'params') || []
+		const keys = Object.keys(profile).filter(x=>x != '$')
+		return keys.length == 2 && params.length >= 2 && profile[params[0].id] && profile[params[1].id]
+	},
 	isArrayType: path => ((jb.tgp.paramDef(path)||{}).type||'').indexOf('[]') != -1,
 	isOfType(path,type) {
 		const types = type.split(',')

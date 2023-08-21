@@ -94,7 +94,7 @@ extension('probe', 'main', {
                 }
                 this.active = true
                 this.cleanSingleVisits()
-                await this.simpleRun()
+                this.circuitRes = await this.simpleRun()
                 await this.handleGaps()
 
                 await (this.result || []).reduce((pr,item,i) =>
@@ -143,6 +143,7 @@ extension('probe', 'main', {
                 const index = this.circuitCtx.vars.$probe_index
                 return res.control ? res.control(item) : res.fieldData(item,index)
             }
+            return res
         }
 
         handleGaps(formerGap) {

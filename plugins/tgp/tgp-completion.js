@@ -23,10 +23,14 @@ extension('tgp', 'completion', {
         
         let res = []
         const singleParamAsArray = jb.tgp.singleParamAsArray(path)
+        const twoFirstArgs = jb.tgp.twoFirstArgs(path)
+
         if (paramDef.options) {
             res = jb.tgp.selectEnumCompletions(path)        
         } else if (path.match(/~\$vars~[0-9]+~val$/)) {
             res = [...jb.tgp.paramCompletions(path),...jb.tgp.newPTCompletions(path)]
+        } else if (twoFirstArgs) {
+            res = jb.tgp.paramCompletions(path)
         } else if (singleParamAsArray) {
             res = jb.tgp.newPTCompletions(`${path}~${singleParamAsArray.id}`, arrayIndex)
         } else if (allSemantics.reduce((acc,s) => acc || s.match(/-by-value|obj-separator-|-profile/), false )) {

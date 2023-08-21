@@ -121,12 +121,13 @@ extension('ui','vdom', {
             const selectorMatcher = jb.ui.selectorMatcher(selector)
             return selectorMatcher && selectorMatcher(this)
         }
-        outerHTML() { // for tests
+        outerHTML(depth) { // for tests
             const styleVal = jb.entries(jb.path(this.attributes,'style')).map(e=>`${e[0]}:${e[1]}`).join(';')
             const styleAtt = styleVal ? ` style="${styleVal}" ` : ''
+            const lPrefix = '                      '.slice(0,depth||0)
             const atts = jb.entries(this.attributes).map(([att,val]) => att+'="'+val+'"').join(' ').replace(/\$text="([^>][^"]*)/g,'$text=">$1<').replace(/\$focus/g,'__focus')
-            const children = (this.children || []).map(x=>x.outerHTML()).join('\n')
-            return `<${this.tag} ${styleAtt}${atts}${children?'':'/'}>${children?`\n${children}\n</${this.tag}>`:''}`    
+            const children = (this.children || []).map(x=>x.outerHTML((depth||0)+1)).join('\n')
+            return `${lPrefix}<${this.tag} ${styleAtt}${atts}${children?'':'/'}>${children?`\n${lPrefix}${children}\n${lPrefix}</${this.tag}>`:''}`    
         }
         addEventListener(event, handler, options) {
             this.handlers = this.handlers || {}
