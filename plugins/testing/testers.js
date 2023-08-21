@@ -27,8 +27,8 @@ component('dataTest', {
 				  const expectedResultCtx = new jb.core.jbCtx(ctx,{ data: value })
 				  const expectedResultRes = expectedResult(expectedResultCtx)
 				  const success = !! (expectedResultRes && !countersErr && !testFailure)
-				  jb.log('check test result',{success,expectedResultRes, testFailure, countersErr, expectedResultCtx})
-				  const result = { id, success, reason: countersErr || testFailure }
+				  jb.log('check test result',{value, success,expectedResultRes, testFailure, countersErr, expectedResultCtx})
+				  const result = { id, success, reason: countersErr || testFailure, ...(value && value.html? value:{})}
 				  return result
 			  })
 			  .catch(e=> {

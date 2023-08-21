@@ -1,20 +1,10 @@
 
-component('xx.slice2', {
-  type: 'control',
-  impl: group({
-    style: group.tabs({tabStyle: button.href(), barStyle: group.div(), barLayout: layout.horizontal(30)}),
-    controls: [
-      dynamicControls(pipeline('%badFormat%', filter('%%')), text('bad format', 'bad format'))
-    ]
-  })
-})
-
 component('uiTest.group', {
   impl: uiTest(group({controls: [text('hello world'), text('2')]}), contains(['hello world','2']))
 })
 
 component('uiTest.label', {
-  impl: uiTest({control: text('hello world'), expectedResult: contains('hello world')})
+  impl: uiTest(text({text: 'hello world', features: css.color('red')}), contains(['hello world','red']))
 })
 
 component('uiTest.label0', {
@@ -22,7 +12,7 @@ component('uiTest.label0', {
 })
 
 component('uiTest.html', {
-  impl: uiTest({control: html('<p>hello world</p>'), expectedResult: contains('>hello world</p>')})
+  impl: uiTest(html('<p>hello world</p>'), contains('>hello world</p>'))
 })
 
 component('uiTest.html.inIframe', {
@@ -33,16 +23,16 @@ component('uiTest.html.inIframe', {
 })
 
 component('uiTest.controls', {
-  impl: uiTest({
-    control: group({
+  impl: uiTest(
+    group({
       controls: [
         text('hello'),
         controls(text('-1-'), controlWithCondition('1==2', text('-1.5-')), text('-2-')),
         text('world')
       ]
     }),
-    expectedResult: contains(['hello','-1-','-2-','world'])
-  })
+    contains(['hello','-1-','-2-','world'])
+  )
 })
 
 component('uiTest.waitForWithPipe', {
@@ -102,8 +92,8 @@ component('uiTest.waitForRx', {
 component('uiTest.asynchLabel', {
   impl: uiTest({
     control: text({text: pipe(delay(1), 'hello'), features: text.allowAsynchValue()}),
-    uiAction: waitForNextUpdate(),
     expectedResult: contains('hello'),
+    uiAction: waitForNextUpdate(),
     expectedCounters: {'start renderVdom': 2, 'refresh uiComp !request': 1}
   })
 })
@@ -152,19 +142,11 @@ component('uiTest.button.mdcIcon', {
 })
 
 component('uiTest.icon.mdi', {
-  impl: uiTest({ control: control.icon({ icon: 'Yoga', type: 'mdi' }), expectedResult: contains('svg') })
+  impl: uiTest(control.icon({icon: 'Yoga', type: 'mdi'}), contains('svg'))
 })
 
 component('uiTest.group2', {
-  impl: uiTest({
-    control: group({
-      controls: [
-        button('button1'),
-        text('label1')
-      ]
-    }),
-    expectedResult: contains(['button1', 'label1'])
-  })
+  impl: uiTest(group({controls: [button('button1'), text('label1')]}), contains(['button1','label1']))
 })
 
 component('uiTest.editableText', {
@@ -605,8 +587,8 @@ component('uiTest.table.MDInplace', {
       }),
       features: watchable('sectionExpanded', obj())
     }),
-    uiAction: click('i', 'toggle'),
-    expectedResult: and(contains(['colspan=\"','inner text']), not(contains('>42<')))
+    expectedResult: and(contains(['colspan=\"','inner text']), not(contains('>42<'))),
+    uiAction: click('i', 'toggle')
   })
 })
 
@@ -645,12 +627,12 @@ component('uiTest.table.MDInplace.withScroll', {
       }),
       features: watchable('sectionExpanded', obj())
     }),
-    uiAction: uiActions(click('.jb-itemlist', 'fetchNextPage'), click('i', 'toggle')),
     expectedResult: and(
       contains(['colspan=\"','inner text','Bart']),
       not(contains('>42<')),
       not(contains(['inner text','inner text']))
     ),
+    uiAction: uiActions(click('.jb-itemlist', 'fetchNextPage'), click('i', 'toggle')),
     timeout: 300
   })
 })

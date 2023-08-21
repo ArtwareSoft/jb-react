@@ -333,9 +333,20 @@ component('probe.probeResView', {
             ]
           })
         ]
+      }),
+      group({
+        title: 'preview',
+        controls: html({
+          html: '<style>%$probeRes/circuitRes/css%</style>%$probeRes/circuitRes/html%',
+          style: html.inIframe()
+        })
       })
     ],
-    features: variable('errCount', count('%$probeRes/errors%'))
+    features: [
+      variable('errCount', count('%$probeRes/errors%')),
+      variable('color', If('%$probeRes/circuitRes/success%', 'green', 'red')),
+      css('>div>a:first-child { color: %$color%}')
+    ]
   })
 })
 

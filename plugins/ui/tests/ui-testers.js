@@ -30,25 +30,28 @@ component('uiTest', {
       Var('transactiveHeadless', '%$transactiveHeadless%'),
       Var('testRenderingUpdate', () => jb.callbag.subject('testRenderingUpdate'))
     ],
-    calculate: rx.pipe(
-      typeAdapter('ui-action<test>', uiActions('%$uiAction()%')),
-      rx.log('uiTest userRequest'),
-      remote.operator(
-        widget.headless({
-          control: '%$control()%',
-          widgetId: '%$widgetId%',
-          transactiveHeadless: '%$transactiveHeadless%'
-        }),
-        '%$backEndJbm%'
+    calculate: pipe(
+      rx.pipe(
+        typeAdapter('ui-action<test>', uiActions('%$uiAction()%')),
+        rx.log('uiTest userRequest'),
+        remote.operator(
+          widget.headless({
+            control: '%$control()%',
+            widgetId: '%$widgetId%',
+            transactiveHeadless: '%$transactiveHeadless%'
+          }),
+          '%$backEndJbm%'
+        ),
+        rx.do(uiTest.aggregateDelta('%%')),
+        rx.var('renderingCounters', uiTest.renderingCounters()),
+        rx.log('uiTest uiDelta from headless %$renderingCounters%'),
+        rx.toArray(),
+        rx.map(uiTest.vdomResultAsHtml()),
+        rx.do(({},{widgetId})=> !jb.test.singleTest && jb.ui.destroyHeadless(widgetId))
       ),
-      rx.do(uiTest.aggregateDelta('%%')),
-      rx.var('renderingCounters', uiTest.renderingCounters()),
-      rx.log('uiTest uiDelta from headless %$renderingCounters%'),
-      rx.toArray(),
-      rx.map(uiTest.vdomResultAsHtml()),
-      rx.do(({},{widgetId})=> !jb.test.singleTest && jb.ui.destroyHeadless(widgetId))
+      first()
     ),
-    expectedResult: '%$expectedResult()%',
+    expectedResult: pipeline('%all%', '%$expectedResult()%', first()),
     runBefore: runActions(uiTest.addFrontEndEmulation(), '%$runBefore()%'),
     timeout: If(equals('%$backEndJbm%', () => jb), '%$timeout%', 5000),
     allowError: '%$allowError()%',
@@ -56,10 +59,6 @@ component('uiTest', {
     expectedCounters: '%$expectedCounters%'
   })
 })
-
-// rx.var('success', pipeline('%$html%', call('expectedResult'), last())),
-// rx.log('check uiTest result', obj(prop('success', '%$success%'), prop('html', '%$html%'))),
-// rx.map('%$success%'),
 
 component('uiFrontEndTest', {
   type: 'test',
@@ -119,10 +118,10 @@ component('uiFrontEndTest', {
 component('uiTest.vdomResultAsHtml', {
   impl: ctx => {
 		const widget = jb.ui.FEEmulator[ctx.vars.widgetId]
-		const css = Object.values(jb.path(jb.ui.headless,[ctx.vars.widgetId,'styles']) || {})
-		if (!widget || !widget.body) return ''
-		if (typeof widget.body.outerHTML == 'function')
-			return [widget.body.outerHTML(),...css].join('\n')
+		const css = Object.values(jb.path(jb.ui.headless,[ctx.vars.widgetId,'styles']) || {}).join('\n')
+		const html = (!widget || !widget.body) ? '' : (typeof widget.body.outerHTML == 'function')
+			? widget.body.outerHTML() : ''
+		return { html, css, all : [html,css].join('\n')}
 	}
 })
 
