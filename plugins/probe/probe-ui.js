@@ -236,7 +236,7 @@ component('probe.probeResView', {
         ]
       }),
       group({
-        title: 'in',
+        title: 'in:%$probeRes/simpleVisits%',
         controls: [
           text({
             text: pipeline('%$probeRes/result/in%', prettyPrint({profile: '%data%', noMacros: true}), join(`
@@ -289,25 +289,6 @@ component('probe.probeResView', {
             text: pipeline(
               '%$probeRes/result/in%',
               prettyPrint({profile: probe.stripData('%params%'), noMacros: true}),
-              join(`
----
-`)
-            ),
-            style: text.codemirror({enableFullScreen: true, height: '600', mode: 'javascript'}),
-            features: [
-              codemirror.fold(),
-              codemirror.lineNumbers()
-            ]
-          })
-        ]
-      }),
-      group({
-        title: 'visits: %$probeRes/simpleVisits%',
-        controls: [
-          text({
-            text: pipeline(
-              '%$probeRes/result/in%',
-              prettyPrint({profile: probe.stripData('%varsvars%', true), noMacros: true}),
               join(`
 ---
 `)

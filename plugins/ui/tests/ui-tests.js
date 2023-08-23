@@ -8,7 +8,7 @@ component('uiTest.label', {
 })
 
 component('uiTest.label0', {
-  impl: uiTest({control: text(0), expectedResult: contains('>0<')})
+  impl: uiTest(text(0), contains('>0<'))
 })
 
 component('uiTest.html', {
@@ -16,10 +16,7 @@ component('uiTest.html', {
 })
 
 component('uiTest.html.inIframe', {
-  impl: uiTest({
-    control: html({html: '<p>hello world</p>', style: html.inIframe()}),
-    expectedResult: contains('iframe')
-  })
+  impl: uiTest(html({html: '<p>hello world</p>', style: html.inIframe()}), contains('iframe'))
 })
 
 component('uiTest.controls', {

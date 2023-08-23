@@ -125,8 +125,8 @@ extension('ui','vdom', {
             const styleVal = jb.entries(jb.path(this.attributes,'style')).map(e=>`${e[0]}:${e[1]}`).join(';')
             const styleAtt = styleVal ? ` style="${styleVal}" ` : ''
             const lPrefix = '                      '.slice(0,depth||0)
-            const atts = jb.entries(this.attributes).filter(e=>e[0]!='$text').map(([att,val]) => att+'="'+val+'"').join(' ').replace(/\$focus/g,'__focus')
-            const text = jb.path(this.attributes,'$text') || ''
+            const atts = jb.entries(this.attributes).filter(e=>! ['$text','$html'].includes(e[0])).map(([att,val]) => att+'="'+val+'"').join(' ').replace(/\$focus/g,'__focus')
+            const text = jb.path(this.attributes,'$text') || jb.path(this.attributes,'$html') || ''
             const children = text + (this.children || []).map(x=>x.outerHTML((depth||0)+1)).join('\n')
             const childrenwithNL = (this.children || []).length ? `\n${lPrefix}${children}\n${lPrefix}` : text
             return `${lPrefix}<${this.tag} ${styleAtt}${atts}${children?'':'/'}>${children? `${childrenwithNL}</${this.tag}>`:''}`

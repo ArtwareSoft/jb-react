@@ -14,7 +14,7 @@ component('dataTest', {
   ],
   impl: function(ctx,calculate,expectedResult,runBefore,timeout,allowError,cleanUp,expectedCounters) {
 		const id = ctx.vars.testID
-		const remoteTimeout = id.match(/([rR]emote)|([wW]orker)|([pP]robe)|(jbm)/) ? 5000 : null
+		const remoteTimeout = id.match(/([rR]emote)|([wW]orker)|(jbm)/) ? 5000 : null
 		const _timeout = ctx.vars.singleTest ? Math.max(1000,timeout) : (remoteTimeout || timeout)
 		return Promise.race([ 
 			jb.delay(_timeout).then(()=>[{testFailure: `timeout ${_timeout}mSec`}]), 
