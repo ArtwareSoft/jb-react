@@ -301,9 +301,6 @@ component('widget.headless', {
           if (t === 2) sink(t, d)
         })
       jb.ui.handleUserReq({ $: 'createHeadlessWidget', ctrl, widgetId }, sink, ctx.setVars({transactiveHeadless}))
-      // const initialDelta = jb.ui.createHeadlessWidget(widgetId,ctrl,ctx)
-      // jb.log('headless widget initial delta out',{widgetId, ctx, json: {widgetId, initialDelta} })
-      // sink(1,ctx.dataObj(initialDelta))
 
       userReqIn(0, function headless(t, d) {
         if (t == 0) {

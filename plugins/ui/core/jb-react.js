@@ -370,15 +370,15 @@ extension('ui', 'react', {
         //const elem = jb.ui.parents(ev.currentTarget,{includeSelf: true}).find(el=> el.getAttribute && el.getAttribute('jb-ctx') != null)
         if (!elem) 
             return jb.logError('rawEventToUserRequest can not find closest elem with jb-ctx',{ctx, ev})
-        const id = elem.getAttribute('id')
+        const cmpId = elem.getAttribute('cmp-id')
         const method = specificMethod && typeof specificMethod == 'string' ? specificMethod : `on${ev.type}Handler`
         const ctxIdToRun = jb.ui.ctxIdOfMethod(elem,method)
         const widgetId = jb.ui.frontendWidgetId(elem) || ev.widgetId
         jb.ui.widgetEventCounter[widgetId] = (jb.ui.widgetEventCounter[widgetId] || 0) + 1
-        if (!ctxIdToRun)
-            return jb.logError(`can not find ctxId for method ${method}`,{ctx, method, id, widgetId,})
+        if (!ctxIdToRun && !cmpId)
+            return jb.logError(`can not find ctxId for method ${method}`,{ctx, method, widgetId })
 
-        return {$:'userRequest', method, id, widgetId, ctxIdToRun, vars: 
+        return {$:'userRequest', method, widgetId, ctxIdToRun, cmpId, vars: 
             { evCounter: jb.ui.widgetEventCounter[widgetId], ev: jb.ui.buildUserEvent(ev, elem)} }
     },
     calcElemProps(elem) {
@@ -418,7 +418,7 @@ extension('ui', 'react', {
     },
     runBEMethodByContext(ctx,method,data,vars) {
         const cmp = ctx.vars.cmp
-        if (cmp instanceof jb.ui.JbComponent)
+        if (cmp.isBEComp)
             return cmp.runBEMethod(method,data,vars ? {...ctx.vars, ...vars} : ctx.vars)
         else
             return jb.ui.runBEMethodByElem(cmp.base,method,data,

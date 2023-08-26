@@ -284,7 +284,7 @@ component('styleWithFeatures', {
     { id: 'features', type: 'feature[]', templateValue: [], dynamic: true, mandatory: true }
   ],
   impl: (ctx, style, features) => {
-    if (style instanceof jb.ui.JbComponent)
+    if (style.isBEComp)
       return style.jbExtend(features(), ctx)
     return style && { ...style, featuresOptions: (style.featuresOptions || []).concat(features()) }
   }

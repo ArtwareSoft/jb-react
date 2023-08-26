@@ -13,22 +13,23 @@ component('dataTest', {
     {id: 'covers', as : 'array' }
   ],
   impl: function(ctx,calculate,expectedResult,runBefore,timeout,allowError,cleanUp,expectedCounters) {
-		const id = ctx.vars.testID
-		const remoteTimeout = id.match(/([rR]emote)|([wW]orker)|(jbm)/) ? 5000 : null
-		const _timeout = ctx.vars.singleTest ? Math.max(1000,timeout) : (remoteTimeout || timeout)
+		const {testID,singleTest,uiTest, engineForTest }  = ctx.vars
+		const remoteTimeout = testID.match(/([rR]emote)|([wW]orker)|(jbm)/) ? 5000 : null
+		const _timeout = singleTest ? Math.max(1000,timeout) : (remoteTimeout || timeout)
+		const ctxToUse = engineForTest ? ctx.setVar(engineForTest,true): ctx
 		return Promise.race([ 
 			jb.delay(_timeout).then(()=>[{testFailure: `timeout ${_timeout}mSec`}]), 
-			Promise.resolve(runBefore())
-			  .then(_ => calculate())
+			Promise.resolve(runBefore(ctxToUse))
+			  .then(_ => calculate(ctxToUse))
 			  .then(v => jb.utils.toSynchArray(v,true))
 			]).then(value => {
 				  const testFailure = jb.path(value,'0.testFailure') || jb.path(value,'testFailure')
 				  const countersErr = jb.test.countersErrors(expectedCounters,allowError)
-				  const expectedResultCtx = new jb.core.jbCtx(ctx,{ data: value })
+				  const expectedResultCtx = new jb.core.jbCtx(ctxToUse,{ data: value })
 				  const expectedResultRes = expectedResult(expectedResultCtx)
 				  const success = !! (expectedResultRes && !countersErr && !testFailure)
 				  jb.log('check test result',{value, success,expectedResultRes, testFailure, countersErr, expectedResultCtx})
-				  const result = { id, success, reason: countersErr || testFailure, ...(value && value.html? value:{})}
+				  const result = { id: testID, success, reason: countersErr || testFailure, ...(value && value.html? value:{})}
 				  return result
 			  })
 			  .catch(e=> {
@@ -36,13 +37,13 @@ component('dataTest', {
 				  return { id, success: false, reason: 'Exception ' + e}
 			  })
 			  .then(result => { // default cleanup
-				  if (ctx.probe || ctx.vars.singleTest) return result
-				  if (ctx.vars.uiTest)
+				  if (ctx.probe || singleTest) return result
+				  if (uiTest)
 					result.elem && jb.ui && jb.ui.unmount(result.elem)
 				  return result
 			  })
 			  .then(result =>
-					  Promise.resolve(!ctx.vars.singleTest && cleanUp())
+					  Promise.resolve(!singleTest && cleanUp())
 					  .then(_=>result) )
 	  }
 })

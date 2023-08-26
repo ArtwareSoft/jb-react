@@ -17,7 +17,8 @@ component('uiTest', {
     {id: 'expectedCounters', as: 'single'},
     {id: 'backEndJbm', type: 'jbm<jbm>', defaultValue: jbm.self()},
     {id: 'useFrontEnd', as: 'boolean', type: 'boolean'},
-    {id: 'transactiveHeadless', as: 'boolean', type: 'boolean'}
+    {id: 'transactiveHeadless', as: 'boolean', type: 'boolean'},
+    {id: 'engine', as: 'string', options: ',ibffEngine'}
   ],
   impl: dataTest({
     vars: [
@@ -28,7 +29,8 @@ component('uiTest', {
       Var('headlessWidgetId', '%$widgetId%'),
       Var('useFrontEndInTest', '%$useFrontEnd%'),
       Var('transactiveHeadless', '%$transactiveHeadless%'),
-      Var('testRenderingUpdate', () => jb.callbag.subject('testRenderingUpdate'))
+      Var('testRenderingUpdate', () => jb.callbag.subject('testRenderingUpdate')),
+      Var('engineForTest', '%$engine%')
     ],
     calculate: pipe(
       rx.pipe(
@@ -173,11 +175,10 @@ component('uiTest.aggregateDelta', {
 		if (css)
 	        return jb.ui.insertOrUpdateStyleElem(ctxToUse, css, elemId, { classId })
 
-		const assumedVdom = null
 		const widgetBody = jb.ui.widgetBody(ctxToUse)
 		const elem = cmpId ? jb.ui.find(widgetBody,`[cmp-id="${cmpId}"]`)[0] : widgetBody
 		jb.log('uiTest aggregate delta',{ctx,delta,renderingUpdate,cmpId, widgetBody,elem})
-		delta && jb.ui.applyDeltaToCmp({delta,ctx: ctxToUse,cmpId,elem,assumedVdom})
+		delta && jb.ui.applyDeltaToCmp({delta,ctx: ctxToUse,cmpId,elem})
 	}
   }
 })

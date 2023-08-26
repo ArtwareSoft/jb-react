@@ -3,7 +3,7 @@ extension('ui','comp', {
         jb.core.jstypes.renderable = value => {
             if (value == null) return '';
             if (value instanceof jb.ui.VNode) return value;
-            if (value instanceof jb.ui.JbComponent) return jb.ui.h(value)
+            if (value.isBEComp) return jb.ui.h(value)
             if (Array.isArray(value))
                 return jb.ui.h('div',{},value.map(item=>jb.core.jstypes.renderable(item)));
             return '' + jb.val(value,true);
@@ -54,7 +54,7 @@ extension('ui','comp', {
             $refreshElemCall : undefined, $props : undefined, cmp: undefined, $cmpId: undefined, $cmpVer: undefined 
         })
         const styleOptions = runEffectiveStyle(ctx) || {}
-        if (styleOptions instanceof jb.ui.JbComponent)  {// style by control
+        if (styleOptions.isBEComp)  {// style by control
             return styleOptions.orig(ctx).jbExtend(options,ctx).applyParamFeatures(ctx)
         }
         return new jb.ui.JbComponent(ctx,cmpId,cmpVer).jbExtend(options,ctx).jbExtend(styleOptions,ctx).applyParamFeatures(ctx)
@@ -214,6 +214,7 @@ extension('ui','comp', {
             this.cssLines = []
             this.contexts = []
             this.originators = [ctx]
+            this.isBEComp = true
         }
         init() {
             if (this.initialized) return
