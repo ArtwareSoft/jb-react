@@ -36,13 +36,12 @@ extension('ui', 'react', {
                     delete jb.ui.followUps[_cmp.cmpId]
             })
 
+            // destroy BE
             if (widgetId && !destroyLocally)
                 jb.ui.sendUserReq({$$:'destroy', ...e })
-            else 
-                cmps.forEach(cmp=> (cmp.destroyCtxs || []).forEach(ctxIdToRun => {
-                    jb.log('backend method destroy uiComp',{cmp, el: cmp.el})
-                    jb.ui.handleUserRequest(jb.ctxDictionary[ctxIdToRun])
-                } ))
+            else
+                cmps.forEach(cmp=> jb.ui.cmps[cmp.cmpId] && jb.ui.cmps[cmp.cmpId].destroy())
+
         })(jb.ui.BECmpsDestroyNotification)
 
         jb.spy.registerEnrichers([
@@ -297,9 +296,8 @@ extension('ui', 'react', {
             if (FEWidgetId && FEWidgetId != 'client') return
             const widgetId = jb.ui.headlessWidgetId(el) || '_local_'
             groupByWidgets[widgetId] = groupByWidgets[widgetId] || { cmps: []}
-            const destroyCtxs = (el.getAttribute('methods')||'').split(',').filter(x=>x.indexOf('destroy-') == 0).map(x=>x.split('destroy-').pop())
             const cmpId = el.getAttribute('cmp-id'), ver = el.getAttribute('cmp-ver')
-            groupByWidgets[widgetId].cmps.push({cmpId,ver,el,destroyCtxs})
+            groupByWidgets[widgetId].cmps.push({cmpId,ver,el})
         })
         jb.log('unmount',{elem,groupByWidgets})
         jb.entries(groupByWidgets).forEach(([widgetId,val])=>
@@ -353,13 +351,14 @@ extension('ui', 'react', {
         if (userReq.widgetId && userReq.widgetId != 'client')
             jb.ui.sendUserReq(userReq)
         else {
-            const ctx = jb.ctxDictionary[userReq.ctxIdToRun]
-            if (!ctx)
-                return jb.logError(`handleCmpEvent - no ctx in dictionary for id ${userReq.ctxIdToRun}`,{ev,specificMethod})
+            const cmp = jb.ui.cmps[userReq.cmpId]
+            if (!cmp)
+                return jb.logError(`handleCmpEvent - no cmp in dictionary for id ${userReq.cmpId}`,{ev,specificMethod})
             if (userReq.method)
-                jb.ui.runBEMethodByContext(ctx,userReq.method,userReq.data,userReq.vars)                
-            else
-                jb.ui.handleUserRequest(ctx,userReq.data,userReq.vars)
+                cmp.runBEMethod(userReq.method,userReq.data,userReq.vars)
+            else {
+                return jb.logError(`handleCmpEvent - no method in request`,{ev,specificMethod})
+            }
         }
     },
     sendUserReq(userReq) {
@@ -372,13 +371,13 @@ extension('ui', 'react', {
             return jb.logError('rawEventToUserRequest can not find closest elem with jb-ctx',{ctx, ev})
         const cmpId = elem.getAttribute('cmp-id')
         const method = specificMethod && typeof specificMethod == 'string' ? specificMethod : `on${ev.type}Handler`
-        const ctxIdToRun = jb.ui.ctxIdOfMethod(elem,method)
+        //const ctxIdToRun = jb.ui.ctxIdOfMethod(elem,method)
         const widgetId = jb.ui.frontendWidgetId(elem) || ev.widgetId
         jb.ui.widgetEventCounter[widgetId] = (jb.ui.widgetEventCounter[widgetId] || 0) + 1
-        if (!ctxIdToRun && !cmpId)
-            return jb.logError(`can not find ctxId for method ${method}`,{ctx, method, widgetId })
+        if (!cmpId)
+            return jb.logError(`no cmpId in element`,{ctx, elem, method, widgetId })
 
-        return {$:'userRequest', method, widgetId, ctxIdToRun, cmpId, vars: 
+        return {$:'userRequest', method, widgetId, cmpId, vars: 
             { evCounter: jb.ui.widgetEventCounter[widgetId], ev: jb.ui.buildUserEvent(ev, elem)} }
     },
     calcElemProps(elem) {
@@ -408,14 +407,14 @@ extension('ui', 'react', {
             .map(str=>str.split('-')[1])
             .filter(x=>x)[0]
     },
-    handleUserRequestAndUdateCmpState(ctx,data,vars) {
-        if (jb.path(vars,'$updateCmpState.cmpId') == jb.path(ctx.vars,'cmp.cmpId') && jb.path(vars,'$updateCmpState.state'))
-            Object.assign(ctx.vars.cmp.state,vars.$updateCmpState.state)
-        return ctx.setData(data).setVars(vars).runInner(ctx.profile.action,'action','action')        
-    },    
-    handleUserRequest(ctx,data,vars) {
-        return ctx.setData(data).setVars(vars).runInner(ctx.profile.action,'action','action')        
-    },
+    // handleUserRequestAndUdateCmpState(ctx,data,vars) {
+    //     if (jb.path(vars,'$updateCmpState.cmpId') == jb.path(ctx.vars,'cmp.cmpId') && jb.path(vars,'$updateCmpState.state'))
+    //         Object.assign(ctx.vars.cmp.state,vars.$updateCmpState.state)
+    //     return ctx.setData(data).setVars(vars).runInner(ctx.profile.action,'action','action')        
+    // },    
+    // handleUserRequest(ctx,data,vars) {
+    //     return ctx.setData(data).setVars(vars).runInner(ctx.profile.action,'action','action')        
+    // },
     runBEMethodByContext(ctx,method,data,vars) {
         const cmp = ctx.vars.cmp
         if (cmp.isBEComp)
@@ -428,21 +427,13 @@ extension('ui', 'react', {
         if (!elem)
             return jb.logError(`runBEMethod, no elem provided: ${method}`, {elem, data, vars})
         const FEWidgetId = jb.ui.frontendWidgetId(elem)
-        const ctxIdToRun = jb.ui.ctxIdOfMethod(elem,method)
-        if (!ctxIdToRun)
-            return jb.logError(`no method in cmp: ${method}`, {elem, data, vars})
+        const cmpId = elem.getAttribute('cmp-id')
 
         if (FEWidgetId && FEWidgetId != 'client') {
-            const id = elem.getAttribute('id')
-            jb.log(`frontEnd method send request: ${method}`,{elem, FEWidgetId, ctxIdToRun, data, vars})
-            jb.ui.sendUserReq({$:'userRequest', method, id, widgetId: FEWidgetId, ctxIdToRun, data, vars })
+            jb.log(`frontEnd method send request: ${method}`,{ elem, FEWidgetId, cmpId, data, vars})
+            jb.ui.sendUserReq({$:'userRequest', method, widgetId: FEWidgetId, cmpId, data, vars })
         } else {
-            const ctx = jb.ctxDictionary[ctxIdToRun]
-            if (!ctx)
-                return jb.logError(`no ctx found for method: ${method}`, {ctxIdToRun, elem, data, vars})
-    
-            jb.log(`backend method request: ${method}`,{cmp: ctx.vars.cmp, method,ctx,elem,data,vars})
-            jb.ui.handleUserRequestAndUdateCmpState(ctx,data,vars)
+            return jb.ui.cmps[cmpId].runBEMethod(method,data,vars,{})
         }
     },
     applyDeltaToCmp({delta, ctx, cmpId, elem, assumedVdom}) {

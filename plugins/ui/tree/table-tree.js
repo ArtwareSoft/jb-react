@@ -48,7 +48,7 @@ component('tableTree.init', {
             const rootPath = $props.model.rootPath, expanded = $props.expanded, model = $props.model
             const items = $model.includeRoot ? calcItems(rootPath, 0) : calcItems(rootPath, -1).filter(x=>x.depth > -1)
             const itemsCtxs = items.map((item,i) => ctxOfItem(item,i))
-            itemsCtxs.forEach(iCtx => jb.ui.preserveCtx(iCtx))
+            //itemsCtxs.forEach(iCtx => jb.ui .preserveCtx(iCtx))
             return itemsCtxs
 
             function calcItems(top, depth) {

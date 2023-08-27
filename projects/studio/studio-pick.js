@@ -58,11 +58,11 @@ component('dialogFeature.studioPick', {
 
     method('hoverOnElem', (ctx,{}) => {
       const el = ctx.data
-      Object.assign(ctx.vars.dialogData,{ elem: el, path: jb.path(el,'debug.path') || '' })
+      Object.assign(ctx.vars.dialogData,{ elem: el, cmpId: el.getAttribute('cmp-id'), path: jb.studio.pathOfElem(el) })
       ctx.run(toggleBooleanValue('%$studio/refreshPick%')) // trigger for refreshing the dialog
     }),
     method('endPick', runActions(
-      writeValue('%$studio/pickSelectionCtxId%', '%$dialogData.ctx.id%'),
+      writeValue('%$studio/pickSelectionCmpId%', '%$dialogData.cmpId%'),
       dialog.closeDialog(true)
     )),
     frontEnd.flow(
@@ -133,11 +133,7 @@ extension('studio','pick', {
     const mousePos = { x: e.pageX - window.pageXOffset, y: e.pageY  - window.pageYOffset }
     const elems = window.document.elementsFromPoint(mousePos.x, mousePos.y);
     const results = jb.utils.unique(elems.flatMap(el=>jb.ui.parents(el,{includeSelf: true}))
-        .filter(el => el && el.getAttribute && el.getAttribute('jb-ctx') && predicate(jb.path(el,'debug.path') || '')))
-        // .map( el => ({el, ctxId: checkCtxId(el.getAttribute('pick-ctx')) || checkCtxId(el.getAttribute('jb-ctx')) }))
-        // .filter(({ctxId}) =>  ctxId), ({ctxId}) => ctxId)
-    // const results1 = elems.flatMap(el=>jb.ui.parents(el,{includeSelf: true}))
-    //     .filter(el => el && el.getAttribute && el.getAttribute('jb-ctx')).map(el=>[jb.path(el,'debug.path'),el])
+        .filter(el => el && el.getAttribute && el.getAttribute('cmp-id') && predicate(jb.studio.pathOfElem(el))))
 
     // console.log(results1)
     if (results.length == 0) return [];
@@ -147,6 +143,9 @@ extension('studio','pick', {
   
     jb.log('studio pick eventToElem result',{results,index,results,elems})
     return results[index] // { el: results[index].el , index };
+  },
+  pathOfElem(el) {
+    return jb.path(el,'debug.path') || jb.path(jb.ui.cmpCtxOfElem(el),'path') || '' 
   }
 })
 
@@ -160,11 +159,11 @@ extension('studio','highlight', {
     }
     return doc.querySelector('#preview-box')
   },
-  highlightCtx: ctxId => jb.frame.document && jb.studio.highlightElems(Array.from(jb.frame.document.querySelectorAll(`[jb-ctx="${ctxId}"]`))),
+  highlightCmp: cmpId => jb.frame.document && jb.studio.highlightElems(Array.from(jb.frame.document.querySelectorAll(`[cmp-id="${cmpId}"]`))),
   highlightByScriptPath(path) {
       const pathStr = Array.isArray(path) ? path.join('~') : path
-      const result = jb.studio.closestCtxInPreview(pathStr)
-      jb.studio.highlightCtx(result.ctxId)
+      const {elem} = jb.studio.closestCtxInPreview(pathStr)
+      elem && jb.studio.highlightElems([elem])
   },
   highlightElemsEm: jb.callbag.subject(),
   highlightElems(elems) {
@@ -197,20 +196,20 @@ extension('studio','highlight', {
   refreshStudioComponent(path) { // editing the studio...
     jb.comps[path[0]] = jb.comps[path[0]]
     const pathStr = Array.isArray(path) ? path.join('~') : path;
-    const {elem, ctxId} = jb.studio.findElemsByPathCondition(path => pathStr.indexOf(path) == 0)[0] || {}
-    const ctx = jb.ctxDictionary[ctxId]
+    const {elem, cmp } = jb.studio.findElemsByPathCondition(path => pathStr.indexOf(path) == 0)[0] || {}
+    const ctx = cmp && cmp.ctx
     if (!ctx) return
     ctx.profile = jb.path(jb.comps,ctx.path.split('~'))
-    const cmp = ctx.profile.$ == 'openDialog' ? ctx.run({$: 'dialog.buildComp'}) : ctx.runItself()
-    cmp && jb.ui.applyNewVdom(elem, jb.ui.h(cmp), {strongRefresh: true, ctx})
+    const dialogCmp = ctx.profile.$ == 'openDialog' ? ctx.run({$: 'dialog.buildComp'}) : ctx.runItself()
+    dialogCmp && jb.ui.applyNewVdom(elem, jb.ui.h(dialogCmp), {strongRefresh: true, ctx})
   },
-  findElemsByPathCondition: condition => Array.from(document.querySelectorAll('[jb-ctx]'))
-      .map(elem =>({elem, path: jb.path(elem,'debug.path'), callStack: jb.path(elem,'debug.callStack'), ctxId: elem.getAttribute('jb-ctx') }))
+  findElemsByPathCondition: condition => Array.from(document.querySelectorAll('[cmp-id]'))
+      .map(elem =>({elem, path: jb.path(elem,'debug.path'), callStack: jb.path(elem,'debug.callStack'), ctxId: jb.path(elem,'debug.ctxId') }))
         .filter(e => [e.path, ...(e.callStack ||[])].filter(x=>x).some(path => condition(path))),
   closestCtxInPreview(_path) {
       const path = _path.split('~fields~')[0]; // field is passive..
       const candidates = jb.studio.findElemsByPathCondition(p => p.indexOf(path) == 0)
-      return candidates.sort((e2,e1) => 1000* (e1.path.length - e2.path.length) + (+e1.ctxId.match(/[0-9]+/)[0] - +e2.ctxId.match(/[0-9]+/)[0]) )[0] || {}
+      return candidates.sort((e2,e1) => 1000* (e1.path.length - e2.path.length) + e1.ctxId - e2.ctxId )[0] || {}
   }
 })
 

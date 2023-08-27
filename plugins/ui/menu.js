@@ -90,7 +90,7 @@ component('menu.control', {
     const ctxToUse = ctx.vars.topMenu ? ctxWithModel : jb.ui.extendWithServiceRegistry(ctxWithModel.setVar('topMenu',{}))
     jb.log('menu create uiComp',{topMenu: ctx.vars.topMenu, menuModel,ctx,ctxToUse})
     return jb.ui.ctrl(ctxToUse, {$: 'features', features: [
-      () => ({ctxForPick: menuModel.ctx }),
+      () => ({pathForPick: menuModel.ctx.path }),
       {$: 'calcProp', id: 'title', value: '%$menuModel.title%' },
       {$: 'htmlAttribute', attribute: 'menuDepth', value: '%$menuModel/ctx/vars/menuDepth%' },
     ]})

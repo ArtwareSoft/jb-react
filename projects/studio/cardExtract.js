@@ -224,8 +224,8 @@ extension('cardExtract', {
       const win = jb.frame
       const prefix = top ? 'group~impl~' : previewCt+x.ctx.path + '~'
       const pathToCheck = (prefix + path).replace(/\//g,'~')
-      return Array.from((top || win.document).querySelectorAll('[jb-ctx]'))
-          .map(elem=>({elem, ctx: win.jb.ctxDictionary[elem.getAttribute('jb-ctx')]}))
+      return Array.from((top || win.document).querySelectorAll('[cmp-id]'))
+          .map(elem=>({elem, ctx: jb.ui.cmpCtxOfElem(elem) }))
           .filter(e => e.ctx && e.ctx.path == pathToCheck).map(e=>e.elem)[0]
     }
   
@@ -383,8 +383,8 @@ extension('stylePatterns', {
         function distanceVal(path, win, top) {
             const prefix = top ? 'group~impl~' : previewCtx.path + '~'
             const pathToCheck = (prefix + path).replace(/\//g,'~')
-            const elem = Array.from((top || win.document).querySelectorAll('[jb-ctx]'))
-                .map(elem=>({elem, ctx: win.jb.ctxDictionary[elem.getAttribute('jb-ctx')]}))
+            const elem = Array.from((top || win.document).querySelectorAll('[cmp-id]'))
+                .map(elem=>({elem, ctx: jb.ui.cmpCtxOfElem(elem)}))
                 .filter(e => e.ctx && e.ctx.path == pathToCheck).map(e=>e.elem)[0]
             if (!elem) return {}
             const style = getComputedStyle(elem)

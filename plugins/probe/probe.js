@@ -12,16 +12,15 @@ extension('probe', 'main', {
         jb.log('probe calc circuit',{ctx, probePath})
         if (!probePath) 
             return jb.logError(`calcCircuitPath : no probe path`, {ctx,probePath})
-        let circuitCtx = jb.ctxDictionary[ctx.exp('%$workspace/pickSelectionCtxId%')]
+        let circuitCtx = jb.path(jb.ui.cmps[ctx.exp('%$workspace/pickSelectionCmpId%')],'calcCtx')
         if (circuitCtx) return { reason: 'pickSelection', circuitCtx }
 
         circuitCtx = await jb.probe.closestCtxWithSingleVisit(probePath)
         if (circuitCtx) return { reason: 'closestCtxWithSingleVisit', circuitCtx }
 
         if (jb.path(jb.ui,'headless')) {
-            const circuitElem = closestElemWithCtx(probePath)
-            circuitCtx = circuitElem && jb.ctxDictionary[circuitElem.ctxId]
-            if (circuitCtx) return { reason: 'closestElemWithCtx', circuitCtx }
+            const circuitCtx = closestElemWithCmp(probePath).ctx
+            if (circuitCtx) return { reason: 'closestElemWithCmp', circuitCtx }
         }
         circuitCtx = await findMainCircuit(probePath)
         if (circuitCtx) 
@@ -49,11 +48,12 @@ extension('probe', 'main', {
                 return res
             }
         }
-        function closestElemWithCtx(path) {
-            const candidates = Object.values(jb.ui.headless).flatMap(x=>x.body.querySelectorAll('[jb-ctx]'))
-                .map(elem =>({elem, path: jb.path(elem,'debug.path'), callStack: jb.path(elem,'debug.callStack'), ctxId: elem.getAttribute('jb-ctx') }))
-                .filter(e => [e.path, ...(e.callStack ||[])].filter(x=>x).some(p => p.indexOf(path) == 0))
-            return candidates.sort((e2,e1) => 1000* (e1.path.length - e2.path.length) + (+e1.ctxId.match(/[0-9]+/)[0] - +e2.ctxId.match(/[0-9]+/)[0]) )[0] || {}
+        function closestElemWithCmp(path) {
+            const candidates = Object.values(jb.ui.headless).flatMap(x=>x.body.querySelectorAll('[cmp-id]'))
+                .map(elem => jb.ui.cmps[elem.getAttribute('cmp-id')]).filter(x=>x)
+                .filter(cmp => [cmp.ctx.path, ...(cmp.callStack ||[])].filter(x=>x).some(p => p.indexOf(path) == 0))
+            return candidates.sort((cmp2,cmp1) => 1000* (cmp1.ctx.path.length - cmp2.ctx.path.length) + 
+                (cmp1.ctx.id - cmp2.ctx.id) ) [0] || {}
         }
         function findTest(cmpId) {
             // #jbLoadComponents: tgp.componentStatistics

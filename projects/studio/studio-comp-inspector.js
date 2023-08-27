@@ -48,7 +48,7 @@ component('studio.compInspector', {
       variable('frameOfElem', ({},{frameUri}) => [globalThis,globalThis.parent,...Array.from(frames)].filter(x=>x.jb.uri == frameUri)[0]),
       variable('elem', ({},{cmpId,frameOfElem}) => frameOfElem && frameOfElem.document.querySelector(`[cmp-id="${cmpId}"]`)),
       variable('inspectedCmp', ({},{frameOfElem, elem}) => 
-            jb.path(elem && frameOfElem && frameOfElem.jb.ctxDictionary[elem.getAttribute('full-cmp-ctx')],'vars.cmp')),
+            elem && frameOfElem && frameOfElem.jb.ui.cmps[elem.getAttribute('cmp-id')]),
       variable('inspectedCtx', '%$inspectedCmp/ctx%'),
       chromeDebugger.refreshAfterSelection(),
       followUp.flow(

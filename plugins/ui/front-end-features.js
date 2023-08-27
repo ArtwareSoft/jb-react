@@ -33,19 +33,12 @@ component('backend.dataMethod', {
   type: 'data',
   description: 'activated on BE',
   params: [
-    {id: 'ctxIdToRun', as: 'string'},
+    {id: 'cmpId', as: 'string'},
     {id: 'method', as: 'string'},
     {id: 'data', defaultValue: '%%'},
     {id: 'ctxVars'}
   ],
-  impl: (_ctx,ctxIdToRun,method,data,ctxVars) => {
-    const ctx = jb.ctxDictionary[ctxIdToRun]
-    if (!ctx)
-        return jb.logError(`no ctx found for data method: ${method}`, {ctxIdToRun, data, ctxVars})
-
-    jb.log(`backend data method request: ${method}`,{cmp: ctx.vars.cmp, method,ctx, data,ctxVars})
-    return ctx.setData(data).setVars(ctxVars).runInner(ctx.profile.action,'action','action') // dirty: action should be data
-  }
+  impl: ({} ,cmpId,method,data,ctxVars) => jb.ui.cmps[cmpId].runBEMethod(method,data,ctxVars)
 })
 
 component('action.runFEMethod', {
@@ -102,10 +95,10 @@ component('sink.refreshCmp', {
   type: 'rx',
   description: 'can be activated on both FE & BE, assuming $cmp variable',
   params: [
-    {id: 'state', dynamic: true },
-    {id: 'options', dynamic: true },
+    {id: 'state', dynamic: true},
+    {id: 'options', dynamic: true}
   ],
-  impl: sink.action(action.refreshCmp('%$state()%','%$options()%'))
+  impl: sink.action(action.refreshCmp('%$state()%', '%$options()%'))
 })
 
 component('frontEnd.method', {

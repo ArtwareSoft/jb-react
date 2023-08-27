@@ -230,20 +230,14 @@ extension('ui','vdom', {
             function sameSource(vdomBefore,vdomAfter) {
                 if (vdomBefore.cmp && vdomBefore.cmp === vdomAfter.cmp) return true
                 const atts1 = vdomBefore.attributes || {}, atts2 = vdomAfter.attributes || {}
-                if (atts1['cmp-id'] && atts1['cmp-id'] === atts2['cmp-id'] || atts1['jb-ctx'] && atts1['jb-ctx'] === atts2['jb-ctx']) return true
-                if (compareCtxAtt('path',atts1,atts2) && compareCtxAtt('data',atts1,atts2)) return true
+                if (atts1['cmp-id'] && atts1['cmp-id'] === atts2['cmp-id']) return true
                 if (compareAtts(['id','path','name'],atts1,atts2)) return true
             }
             function compareAtts(attsToCompare,atts1,atts2) {
                 for(let i=0;i<attsToCompare.length;i++)
                     if (atts1[attsToCompare[i]] && atts1[attsToCompare[i]] == atts2[attsToCompare[i]])
                         return true
-            }
-            function compareCtxAtt(att,atts1,atts2) {
-                const val1 = atts1.ctxId && jb.path(jb.ctxDictionary[atts1.ctxId],att)
-                const val2 = atts2.ctxId && jb.path(jb.ctxDictionary[atts2.ctxId],att)
-                return val1 && val2 && val1 == val2
-            }            
+            }        
         }
     },
     stripVdom(vdom) {

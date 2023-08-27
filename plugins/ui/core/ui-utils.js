@@ -19,10 +19,10 @@ extension('ui', 'utils', {
   withUnits: v => (v === '' || v === undefined) ? '' : ('' + v || '').match(/[^0-9]$/) ? v : `${v}px`,
   propWithUnits: (prop, v) => (v === '' || v === undefined) ? '' : `${prop}: ` + (('' + v || '').match(/[^0-9]$/) ? v : `${v}px`) + ';',
   fixCssLine: css => css.indexOf('\n') == -1 && !css.match(/}\s*/) ? `{ ${css} }` : css,
-  preserveCtx(ctx) {
-    jb.ctxDictionary[ctx.id] = ctx
-    return '' + ctx.id
-  },
+  // preserveCtx(ctx) {
+  //   jb.ctxDictionary[ctx.id] = ctx
+  //   return '' + ctx.id
+  // },
   inStudio() { return jb.studio && jb.studio.studioWindow },
   isMobile: () => typeof navigator != 'undefined' && /Mobi|Android/i.test(navigator.userAgent),
   parentFrameJb() {
@@ -43,8 +43,7 @@ extension('ui', 'utils', {
       jb.path(jb.frame.document, 'body')
     return FEwidgetId ? jb.ui.findIncludeSelf(top, `[widgetid="${FEwidgetId}"]`)[0] : top
   },
-  ctxOfElem: (elem, att) => elem && elem.getAttribute && jb.ctxDictionary[elem.getAttribute(att || 'jb-ctx')],
-  cmpCtxOfElem: (elem, att) => elem && elem.getAttribute && jb.ctxDictionary[elem.getAttribute(att || 'full-cmp-ctx')],
+  cmpCtxOfElem: (elem) => elem && elem.getAttribute && jb.path(jb.ui.cmps[elem.getAttribute('cmp-id')],'calcCtx'),
   parentCmps: el => jb.ui.parents(el).map(el => el._component).filter(x => x),
   closestCmpElem: elem => jb.ui.parents(elem, { includeSelf: true }).find(el => el.getAttribute && el.getAttribute('cmp-id') != null),
   headlessWidgetId: elem => jb.ui.parents(elem, { includeSelf: true })

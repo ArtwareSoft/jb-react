@@ -97,9 +97,9 @@ component('uiTest.asynchLabel', {
 
 component('uiTest.waitForWithVar', {
   impl: uiTest({
-    uiAction: waitForNextUpdate(),
-    control: group({ controls: text('%$txt%'), features: group.wait({ for: pipe(delay(1), 'hello'), varName: 'txt' }) }),
-    expectedResult: contains('hello')
+    control: group({controls: text('%$txt%'), features: group.wait({for: pipe(delay(1), 'hello'), varName: 'txt'})}),
+    expectedResult: contains('hello'),
+    uiAction: waitForNextUpdate()
   })
 })
 
@@ -116,7 +116,17 @@ component('uiTest.waitForWithVar', {
 // })
 
 component('uiTest.button', {
-  impl: uiTest({ control: button('btn1', ctx => alert(1)), expectedResult: contains('btn1') })
+  impl: uiTest({
+    control: group({
+      controls: [
+        text('%$txt%'),
+        button('btn1', writeValue('%$txt%', 'bbb'))
+      ],
+      features: watchable('txt', 'aaa')
+    }),
+    expectedResult: contains('bbb'),
+    uiAction: click()
+  })
 })
 
 // component('uiTest.button.disabled', {
@@ -129,14 +139,28 @@ component('uiTest.button', {
 
 component('uiTest.button.mdcIcon', {
   impl: uiTest({
-    control: button({
-      title: 'btn1',
-      action: ctx => alert(1),
-      style: button.mdcIcon(icon('build'))
+    control: group({
+      controls: [
+        text('%$txt%'),
+        button({title: 'btn1', action: writeValue('%$txt%', 'bbb'), style: button.mdcIcon(icon('build'))})
+      ],
+      features: watchable('txt', 'aaa')
     }),
-    expectedResult: contains('build')
+    expectedResult: contains('bbb'),
+    uiAction: click()
   })
 })
+
+// component('uiTest.button.mdcIcon', {
+//   impl: uiTest({
+//     control: button({
+//       title: 'btn1',
+//       action: ctx => alert(1),
+//       style: button.mdcIcon(icon('build'))
+//     }),
+//     expectedResult: contains('build')
+//   })
+// })
 
 component('uiTest.icon.mdi', {
   impl: uiTest(control.icon({icon: 'Yoga', type: 'mdi'}), contains('svg'))
@@ -808,8 +832,8 @@ component('uiTest.remote.itemlistKeyboardSelection', {
         watchable('res', obj())
       ]
     }),
-    uiAction: keyboardEvent({selector: '.jb-itemlist', type: 'keydown', keyCode: 13}),
     expectedResult: contains('-Homer Simpson-'),
+    uiAction: keyboardEvent({selector: '.jb-itemlist', type: 'keydown', keyCode: 13}),
     timeout: 1000,
     backEndJbm: remoteNodeWorker('itemlist', sourceCode(pluginsByPath('/plugins/ui/tests/ui-tests.js'))),
     useFrontEnd: true
@@ -886,19 +910,21 @@ component('uiTest.itemlistWithTableStyleUsingDynamicParam', {
 // })
 
 component('uiTest.BEOnDestroy', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     control: text('%$person/name%'),
-    action: action(runActions(
-      openDialog({
-        id: 'dlg',
-        content: text({
-          text: 'in dialog',
-          features: onDestroy(writeValue('%$person/name%', 'dialog closed'))
-        })
-      }),
-      dialog.closeDialogById('dlg')
-    )),
-    expectedResult: contains('dialog closed')
+    expectedResult: contains('dialog closed'),
+    uiAction: uiActions(
+      action(
+        runActions(
+          openDialog({
+            content: text({text: 'in dialog', features: onDestroy(writeValue('%$person/name%', 'dialog closed'))}),
+            id: 'dlg'
+          }),
+          dialog.closeDialogById('dlg')
+        )
+      ),
+      waitForText('dialog closed')
+    )
   })
 })
 
@@ -1968,11 +1994,11 @@ component('uiTest.watchableWriteViaLink', {
 })
 
 component('uiTest.watchableParentRefreshMaskChildren', {
-  impl: uiFrontEndTest({
-    control: group({ controls: text('%$person/name%'), features: watchRef('%$person/name%') }),
-    action: writeValue('%$person/name%', 'hello'),
+  impl: uiTest({
+    control: group({controls: text('%$person/name%'), features: watchRef('%$person/name%')}),
     expectedResult: contains('hello'),
-    expectedCounters: { 'refresh from observable elements': 1 }
+    uiAction: writeValue('%$person/name%', 'hello'),
+    expectedCounters: {'refresh from observable elements': 1}
   })
 })
 
@@ -2040,8 +2066,8 @@ component('uiTest.infiniteScroll.twice', {
         css.width('100')
       ]
     }),
-    uiAction: uiActions(runMethod('#itemlist', 'fetchNextPage'), runMethod('#itemlist', 'fetchNextPage')),
-    expectedResult: contains('>10<')
+    expectedResult: contains('>10<'),
+    uiAction: uiActions(runMethod('#itemlist', 'fetchNextPage'), runMethod('#itemlist', 'fetchNextPage'))
   })
 })
 
@@ -2124,7 +2150,7 @@ component('FETest.runFEMethod', {
         })
       ]
     }),
-    action: click('button'),
+    uiAction: click(),
     expectedResult: contains('world'),
     renderDOM: true
   })
@@ -2133,7 +2159,7 @@ component('FETest.runFEMethod', {
 component('FETest.coLocation', {
   impl: uiFrontEndTest({
     vars: Var('toChange',obj()),
-    action: click('button'),
+    uiAction: click(),
     control: button({
       title: 'change',
       action: runFEMethod({ selector: '#btn', method: 'changeDB' }),

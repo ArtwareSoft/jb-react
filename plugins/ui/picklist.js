@@ -33,8 +33,7 @@ component('picklist.allowAsynchOptions', {
   description: 'allows a text value to be reactive or promise',
   impl: features(
     calcProp({
-      id: 'options', 
-      priority: 5, phase: 5,
+      id: 'options',
       value: (ctx,{$state,$model,picklistModel},{}) => {
         const model = picklistModel || $model
         let res
@@ -64,13 +63,17 @@ component('picklist.allowAsynchOptions', {
           picklistModel.options = res
         return res
       },
+      priority: 5,
+      phase: 5
     }),
     followUp.flow(
       source.any(({},{$state,$props}) => $props.options.delayed || []),
-      rx.log('picklist followUp allowAsynchValue'),
-      sink.refreshCmp(({data}) => data.data || jb.path(data,'0.options') && data[0] || data
-      , obj(prop('refreshSource','dataArrived')))
-    ),
+      rx.log('picklist followUp allowAsynchValue data arrived'),
+      sink.refreshCmp(
+        ({data}) => data.data || jb.path(data,'0.options') && data[0] || data,
+        obj(prop('refreshSource', 'dataArrived'))
+      )
+    )
   )
 })
 

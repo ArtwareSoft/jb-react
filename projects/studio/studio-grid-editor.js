@@ -158,7 +158,7 @@ component('gridEditor.dragableGridLineThumb', {
       ({},{gridIndex},{axis}) => `%$gridPath%~layout~${axis.toLowerCase().slice(0,-1)}Sizes~items~${gridIndex-1}`,
       '%%')
     ),
-    frontEnd.var('inplaceElemPath',(ctx,{inplaceElem})=> jb.ui.ctxOfElem(inplaceElem).path),
+    frontEnd.var('inplaceElemPath',(ctx,{inplaceElem})=> jb.ui.cmpCtxOfElem(inplaceElem).path),
     frontEnd.var('axis','%$axis%'),
     frontEnd.var('gridIndex','%$gridIndex%'),
     frontEnd.prop('inplaceElem',({},{inplaceElemPath}) => (jb.studio.findElemsByPathCondition(path => path == inplaceElemPath)[0] || {}).elem),
@@ -300,7 +300,7 @@ component('gridEditor.dragableGridItemThumb', {
         '%css%', tgp.ref('%%')
       ), '%%' 
     )),
-    frontEnd.var('inplaceElemPath',({},{inplaceElem})=> jb.ui.ctxOfElem(inplaceElem).path),
+    frontEnd.var('inplaceElemPath',({},{inplaceElem})=> jb.ui.cmpCtxOfElem(inplaceElem).path),
     frontEnd.prop('inplaceElem',({},{inplaceElemPath}) => (jb.studio.findElemsByPathCondition(path => path == inplaceElemPath)[0] || {}).elem),
     frontEnd.prop('gridRect', ({},{cmp}) => cmp.inplaceElem.getBoundingClientRect()),
     frontEnd.prop('posToGridPos', ({},{inplaceElem}) => pos => {

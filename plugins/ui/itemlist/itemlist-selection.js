@@ -19,7 +19,7 @@ component('itemlist.selection', {
     userStateProp({
       id: 'selected',
       value: (ctx,{$props,$state},{databind, autoSelectFirst, databindToSelected}) => {
-        const currentVal = $state.selected && jb.path(jb.ctxDictionary[$state.selected],'data')
+        const currentVal = $state.selected != null && jb.path(jb.ui.cmps[$state.selected],'ctx.data')
         const databindVal = jb.val(databind()) 
         const val = jb.val( databindVal != null && databindToSelected(ctx.setData(databindVal)) || currentVal || (autoSelectFirst && $props.items[0]))
         return $props.items.findIndex(item => jb.val(item) == val)

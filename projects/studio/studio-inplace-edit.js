@@ -52,8 +52,8 @@ component('inplaceEdit.openToolbarOfLastEdit', {
       const path = ctx.run(studio.lastEdit())
       jb.delay(500).then(()=>{
         const _window = jb.studio.previewWindow();
-        const el = Array.from(_window.document.querySelectorAll('[jb-ctx]'))
-          .filter(e=> jb.path(_window.jb.ctxDictionary[e.getAttribute('jb-ctx')],'path') == path)[0]
+        const el = Array.from(_window.document.querySelectorAll('[cmp-id]'))
+          .filter(e=> jb.path(_window.jb.ui.cmps[e.getAttribute('cmp-id')],'ctx.path') == path)[0]
         if (el)
           jb.ui.extendWithServiceRegistry().run({$: 'inplaceEdit.openToolbar', path })
       })
@@ -159,7 +159,7 @@ Object.assign(jb.ui, {
       if (fullProp == 'height' || fullProp == 'width')
         side = prop = fullProp
       const featureComp = {$: `css.${prop}`, [side] : value }
-      const originatingCtx = jb.studio.previewjb.ctxOfElem(el)
+      const originatingCtx = jb.studio.previewjb.cmpCtxOfElem(el)
       jb.ui.setOrCreateArrayComp(originatingCtx.path+ '~features',featureComp,ctx)
   },
   duplicateDataItem(ctx) {

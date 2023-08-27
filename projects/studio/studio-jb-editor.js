@@ -240,7 +240,7 @@ component('studio.expandAndSelectFirstChildInJbEditor', {
   impl: ctx => {
     const jbEditorElem = document.querySelector('.jb-editor')
     if (!jbEditorElem) return
-    const ctxOfTree = ctx.vars.$tree ? ctx : jb.ctxDictionary[jbEditorElem.getAttribute('jb-ctx')];
+    const ctxOfTree = ctx.vars.$tree ? ctx : jb.ui.cmpCtxOfElem(jbEditorElem)
     const cmp = ctxOfTree.vars.$tree && ctxOfTree.vars.$tree.cmp;
     if (!cmp) return;
     const path = cmp.getSelected() || ctx.cmpCtx.params.path

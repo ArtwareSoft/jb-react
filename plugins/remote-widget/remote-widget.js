@@ -58,16 +58,7 @@ component('dataMethodFromBackend', {
   ],
   impl: pipe(
     Var(
-      'ctxIdToRun',
-      (ctx, { cmp }, { method }) => {
-        const elem = cmp && cmp.base
-        if (!elem)
-          return jb.logError(`frontEnd.dataMethodFromBackend, no elem found`, { method })
-        const ctxIdToRun = jb.ui.ctxIdOfMethod(elem, method)
-        if (!ctxIdToRun)
-          return jb.logError(`no method in cmp: ${method}`, { elem })
-        return ctxIdToRun
-      }
+      'cmpId', '%$cmp/cmpId%'
     ),
     remote.data(backend.dataMethod({ ctxIdToRun: '%$ctxIdToRun%', method: '%$method%', data: '%$data%' }), backEnd())
   )
@@ -233,27 +224,24 @@ extension('ui', 'headless', {
     ctx.vars.userReqTx && ctx.vars.userReqTx.complete()
   },
   handleUserReq(userReq, sink, _ctx) {
-    const ctx = _ctx.vars.transactiveHeadless ? _ctx.setVars({ userReqTx: jb.ui.userReqTx({ userReq, ctx: _ctx }) }) : _ctx
+    const reqCtx = _ctx.vars.transactiveHeadless ? _ctx.setVars({ userReqTx: jb.ui.userReqTx({ userReq, ctx: _ctx }) }) : _ctx
     const { widgetId } = userReq
     jb.log('headless widget handle userRequset', { widgetId, userReq })
-    const tx = ctx.vars.userReqTx
+    const tx = reqCtx.vars.userReqTx
     if (tx)
-      tx.onComplete(update => sink(1, ctx.dataObj(update)))
+      tx.onComplete(update => sink(1, reqCtx.dataObj(update)))
 
     if (userReq.$ == 'userRequest') {
-      const ctx = jb.ctxDictionary[userReq.ctxIdToRun]
-      if (!ctx)
-        return jb.logError(`headless widget handleUserRequest. no ctxId ${userReq.ctxIdToRun}`, { userReq })
+      const cmp = jb.ui.cmps[userReq.cmpId]
+      if (!cmp)
+        return jb.logError(`headless widget handleUserRequest. no cmp ${userReq.cmpId}`, { userReq })
       const vars = userReq.vars
-      if (jb.path(vars, '$updateCmpState.cmpId') == jb.path(ctx.vars, 'cmp.cmpId') && jb.path(vars, '$updateCmpState.state'))
-        Object.assign(ctx.vars.cmp.state, vars.$updateCmpState.state)
+      if (jb.path(vars, '$updateCmpState.cmpId') == jb.path(reqCtx.vars, 'cmp.cmpId') && jb.path(vars, '$updateCmpState.state'))
+        Object.assign(reqCtx.vars.cmp.state, vars.$updateCmpState.state)
 
-      if (userReq.method)
-        jb.ui.runBEMethodByContext(ctx, userReq.method, userReq.data, vars)
-      else
-        jb.ui.handleUserRequest(ctx, userReq.data, vars)
+      cmp.runBEMethod(userReq.method, userReq.data, vars, reqCtx)
     } else if (userReq.$ == 'createHeadlessWidget') {
-      jb.ui.createHeadlessWidget(widgetId, userReq.ctrl, ctx)
+      jb.ui.createHeadlessWidget(widgetId, userReq.ctrl, reqCtx)
     } else if (userReq.$ == 'recoverWidget') {
       jb.log('recover headless widget', { userReq })
     } else if (userReq.$$ == 'destroy') {
@@ -342,7 +330,6 @@ component('frontEnd.widget', {
       frontEnd.init((ctx, { el, ctrlProfile }) => {
         jb.ui.renderWidget(ctrlProfile, el, ctx.setVars({
           FEWidgetId: jb.ui.frontendWidgetId(el.parentNode),
-          frontEndCmpCtxId: el.getAttribute('full-cmp-ctx')
         }))
       })
     )
@@ -357,7 +344,7 @@ component('runInBECmpContext', {
     { id: 'action', type: 'action', dynamic: true, mandatory: true }
   ],
   impl: remote.action(
-    ({ }, { frontEndCmpCtxId }, { action }) => action(jb.ctxDictionary[frontEndCmpCtxId]),
+    ({}, {}, { cmpId, action }) => action(jb.ui.cmps[cmpId].calcCtx),
     backEnd()
   )
 })

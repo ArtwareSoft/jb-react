@@ -230,14 +230,10 @@ extension('test', {
 			filePath: () => location.path, repo: () => location.repo
 		}))))
 		const studioUrl = `http://localhost:8082/project/studio/${res.id}/${res.id}?sourceCode=${encodeURIComponent(sourceCode)}`
-		const matchLogsMap = jb.entries({uiTest: ['uiTest','headless'], remoteWidget: ['uiTest','headless'] })
-		const matchLogs = Object.keys(matchLogsMap)
-		const spyLogs = ['test', ...(matchLogs.filter(x=>res.id.toLowerCase().indexOf(x) != -1)), 
-			...(matchLogsMap.flatMap( ([k,logs]) =>res.id.toLowerCase().indexOf(k) != -1 ? logs : []))]
 		const _repo = repo ? `&repo=${repo}` : ''
 		const coveredTests = jb.comps[res.id].impl.covers ? `<a href="${baseUrl}/tests.html?coveredTestsOf=${res.id}${_repo}">${jb.comps[res.id].impl.covers.length} dependent tests</a>` : ''
 		return `<div class="${res.success ? 'success' : 'failure'}"">
-			<a href="${baseUrl}/tests.html?test=${res.id}${_repo}&show&spy=${spyLogs.join(',')}" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
+			<a href="${baseUrl}/tests.html?test=${res.id}${_repo}&show&spy=${jb.spy.spyParamForTest(res.id)}" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
 			<span> ${res.duration}mSec</span> 
 			${coveredTests}
 			<a class="test-button" href="javascript:jb.test.goto_editor('${res.id}','${repo||''}')">src</a>

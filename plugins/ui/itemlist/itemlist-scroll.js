@@ -33,6 +33,7 @@ component('itemlist.applyDeltaOfNextPage', {
   ],
   impl: (ctx,pageSize) => {
     const $props = ctx.vars.$props, cmp = ctx.vars.cmp, $state = cmp.state, cmpId = cmp.cmpId
+    jb.log('itemlist applyDeltaOfNextPage',{ctx,pageSize,$props,$state,cmpId})
     $state.visualSizeLimit = $state.visualSizeLimit || $props.visualSizeLimit
     const nextPageItems = $props.allItems.slice($state.visualSizeLimit, $state.visualSizeLimit + pageSize)
     $state.visualSizeLimit = $state.visualSizeLimit + nextPageItems.length
@@ -41,7 +42,9 @@ component('itemlist.applyDeltaOfNextPage', {
       .setVars({$cmpId: cmpId, $cmpVer: cmp.ver+1, $baseIndex: $state.visualSizeLimit - nextPageItems.length})
       .ctx({profile: {...cmp.ctx.profile, items: () => nextPageItems}, path: ''}) // change the profile to return itemsToAppend
     const deltaCmp = deltaCalcCtx.runItself()
+    const oldCmp = jb.ui.cmps[cmpId]
     const vdomOfDeltaItems = deltaCmp.renderVdom()
+    jb.ui.cmps[cmpId] = oldCmp
     cmp.renderProps.items = [...cmp.renderProps.items, ...deltaCmp.renderProps.items]
     cmp.renderProps.ctrls = [...cmp.renderProps.ctrls, ...deltaCmp.renderProps.ctrls]
     const itemsParent = jb.ui.find(vdomOfDeltaItems,'.jb-items-parent')[0] || vdomOfDeltaItems

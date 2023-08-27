@@ -35,13 +35,9 @@ extension('ui', 'field', {
     if (field.titleCtrl) {
       const ctx = cmp.ctx.setData(field).setVars({input: cmp.ctx.data})
       const jbComp = field.titleCtrl(ctx);
-      return jbComp && h(jbComp,{'jb-ctx': jb.ui.preserveCtx(ctx) })
+      return jbComp && h(jbComp,{'cmp-id': jbComp.cmpId })
     }
     return field.title(cmp.ctx)
-  },
-  preserveFieldCtxWithItem(field,item) {
-    const ctx = jb.ctxDictionary[field.ctxId]
-    return ctx && jb.ui.preserveCtx(ctx.setData(item))
   }
 })
 

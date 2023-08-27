@@ -3,7 +3,7 @@ extension('ui', 'frontend', {
         jb.treeShake.loadFELibsDirectly(jb.ui.feLibs(content)).then(()=> 
             jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> {
                 const coLocation = jb.ui.parents(el,{includeSelf: true}).find(_elem=>_elem.getAttribute && _elem.getAttribute('colocation') == 'true')
-                const coLocationCtx = coLocation && jb.ctxDictionary[el.getAttribute('full-cmp-ctx')]
+                const coLocationCtx = coLocation && jb.ui.cmps[el.getAttribute('cmp-id')].calcCtx
                 return el._component ? el._component.newVDomApplied() : new jb.ui.frontEndCmp(el,coLocationCtx) 
             }))
     },

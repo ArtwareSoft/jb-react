@@ -282,11 +282,11 @@ component('watchable', {
   ],
   impl: ({}, name, value) => ({
     destroy: cmp => {
-      const fullName = name + ':' + cmp.ctx.id;
+      const fullName = name + ':' + cmp.cmpId;
       cmp.ctx.run(writeValue(`%$${fullName}%`,null))
     },
     extendCtx: (ctx,cmp) => {
-      const fullName = name + ':' + cmp.ctx.id;
+      const fullName = name + ':' + cmp.cmpId;
       jb.log('create watchable var',{cmp,ctx,fullName})
       const refToResource = jb.db.useResourcesHandler(h=>h.refOfPath([fullName]))
       jb.db.writeValue(refToResource,value(ctx),ctx)

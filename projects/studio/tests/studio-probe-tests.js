@@ -2,23 +2,22 @@ using('probe-tests')
 
 component('FETest.workerPreviewTest.suggestions', {
   impl: uiFrontEndTest({
-    renderDOM: true,
-    timeout: 5000,
-    runBefore: writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
     control: group({
       controls: [
         probe.remoteCircuitPreview(),
         studio.propertyPrimitive('sampleProject.main~impl~controls~text')
-      ],
+      ]
     }),
-    action: uiActions(
-      waitForSelector('[cmp-pt="text"]'),
+    runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
+    uiAction: uiActions(
+      waitForSelector('[cmp-pt=\"text\"]'),
       waitForSelector('input'),
-      setText('hello %','input'),
-      keyboardEvent({ selector: 'input', type: 'keyup', keyCode: ()=> '%'.charCodeAt(0) }),
-      waitForSelector('.jb-dialog .jb-item'),
-    ),    
-    expectedResult: contains('$var1')
+      setText('hello %', 'input'),
+      keyboardEvent({selector: 'input', type: 'keyup', keyCode: ()=> '%'.charCodeAt(0)}),
+      waitForSelector('.jb-dialog .jb-item')
+    ),
+    expectedResult: contains('$var1'),
+    renderDOM: true
   })
 })
 

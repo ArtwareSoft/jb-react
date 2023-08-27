@@ -12,12 +12,13 @@ extension('ui','comp', {
         return {
             lifeCycle: new Set('init,extendCtx,templateModifier,followUp,destroy'.split(',')),
             arrayProps: new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,frontEndLib,frontEndVar'.split(',')),
-            singular: new Set('template,calcRenderProps,toolbar,styleParams,ctxForPick,coLocation'.split(',')),
+            singular: new Set('template,calcRenderProps,toolbar,styleParams,pathForPick,coLocation'.split(',')),
             cmpCounter: 1,
             cssHashCounter: 0,
             cssElemCounter: 0,
             propCounter: 0,
-            cssHashMap: {},                
+            cssHashMap: {},
+            cmps: {}              
         }
     },
     h(cmpOrTag,attributes,children) {
@@ -71,30 +72,37 @@ extension('ui','comp', {
         if (!forceNow)
             return jb.delay(1000).then(()=>jb.ui.garbageCollectCtxDictionary(true))
    
-        const used = 'jb-ctx,full-cmp-ctx,pick-ctx,props-ctx,methods,frontEnd,originators'.split(',')
-            .flatMap(att=>querySelectAllWithWidgets(`[${att}]`)
-                .flatMap(el => el.getAttribute(att).split(',').map(x=>Number(x.split('-').pop())).filter(x=>x)))
-                    .sort((x,y)=>x-y)
+        // const used = 'jb-ctx,full-cmp-ctx,pick-ctx,props-ctx,methods,frontEnd,originators'.split(',')
+        //     .flatMap(att=>querySelectAllWithWidgets(`[${att}]`)
+        //         .flatMap(el => el.getAttribute(att).split(',').map(x=>Number(x.split('-').pop())).filter(x=>x)))
+        //             .sort((x,y)=>x-y)
 
         // remove unused ctx from dictionary
-        const dict = Object.keys(jb.ctxDictionary).map(x=>Number(x)).sort((x,y)=>x-y)
-        let lastUsedIndex = 0;
-        const removedCtxs = [], removedResources = [], maxUsed = used.slice(-1)[0] || (clearAll ? Number.MAX_SAFE_INTEGER : 0)
-        for(let i=0;i<dict.length && dict[i] < maxUsed;i++) {
-            while (used[lastUsedIndex] < dict[i])
-                lastUsedIndex++;
-            if (used[lastUsedIndex] != dict[i]) {
-                removedCtxs.push(dict[i])
-                delete jb.ctxDictionary[''+dict[i]]
-            }
-        }
+        // const dict = Object.keys(jb.ctxDictionary).map(x=>Number(x)).sort((x,y)=>x-y)
+        // let lastUsedIndex = 0;
+        // const removedCtxs = [], removedResources = [], maxUsed = used.slice(-1)[0] || (clearAll ? Number.MAX_SAFE_INTEGER : 0)
+        // for(let i=0;i<dict.length && dict[i] < maxUsed;i++) {
+        //     while (used[lastUsedIndex] < dict[i])
+        //         lastUsedIndex++;
+        //     if (used[lastUsedIndex] != dict[i]) {
+        //         removedCtxs.push(dict[i])
+        //         delete jb.ctxDictionary[''+dict[i]]
+        //     }
+        // }
+        // remove unused cmps from dictionary
+        const usedCmps = new Map(querySelectAllWithWidgets(`[cmp-id]`).map(el=>[el.getAttribute('cmp-id'),true]))
+        const maxUsed = Object.keys(usedCmps).map(x=> +x || 0).sort((x,y)=>x-y)[0] || (clearAll ? Number.MAX_SAFE_INTEGER : 0)
+        const removedCmps = []
+        Object.keys(jb.ui.cmps).filter(id=> (+id || 0) < maxUsed && !usedCmps.get(id)).forEach(id=> {removedCmps.push(id); delete jb.ui.cmps[id] })
+
         // remove unused vars from resources
+        const removedResources = []
         const ctxToPath = ctx => Object.values(ctx.vars).filter(v=>jb.db.isWatchable(v)).map(v => jb.db.asRef(v))
             .map(ref=>jb.db.refHandler(ref).pathOfRef(ref)).flat()
-        const globalVarsUsed = jb.utils.unique(used.map(x=>jb.ctxDictionary[''+x]).filter(x=>x).map(ctx=>ctxToPath(ctx)).flat())
+        const globalVarsUsed = jb.utils.unique(Object.keys(usedCmps).map(id=>jb.path(jb.ui.cmps[id],'calcCtx')).filter(x=>x).map(ctx=>ctxToPath(ctx)).flat())
         Object.keys(jb.db.resources).filter(id=>id.indexOf(':') != -1)
             .filter(id=>globalVarsUsed.indexOf(id) == -1)
-            .filter(id=>+id.split(':').pop < maxUsed)
+            .filter(id=>+id.split(':').pop || 0 < maxUsed)
             .forEach(id => { removedResources.push(id); delete jb.db.resources[id]})
 
         // remove front-end widgets
@@ -115,7 +123,7 @@ extension('ui','comp', {
         if (removeFollowUps.length)
             jb.ui.BECmpsDestroyNotification.next({ cmps: removeFollowUps})
 
-        jb.log('garbageCollect',{maxUsed,removedCtxs,removedResources,removeWidgets,removeFollowUps})
+        jb.log('garbageCollect',{maxUsed,removedCmps,removedResources,removeWidgets,removeFollowUps})
 
         function querySelectAllWithWidgets(query) {
             return jb.ui.headless ? [...Object.values(jb.ui.headless).filter(x=>x.body).flatMap(w=>w.body.querySelectorAll(query,{includeSelf:true})), 
@@ -161,8 +169,8 @@ extension('ui','comp', {
         if (jb.path(elem,'_component.state.frontEndStatus') == 'initializing' || jb.ui.findIncludeSelf(elem,'[__refreshing]')[0]) 
             return jb.logError('circular refresh',{elem, state, options})
         const cmpId = elem.getAttribute('cmp-id'), cmpVer = +elem.getAttribute('cmp-ver')
-        const _ctx = jb.ui.ctxOfElem(elem)
-        const cmpBefore = jb.ui.cmpCtxOfElem(elem).vars.cmp
+        const cmpBefore = jb.ui.cmps[cmpId]
+        const _ctx = cmpBefore.originatingCtx()
         const {methodBeforeRefresh, opVal} = options
         methodBeforeRefresh && cmpBefore && methodBeforeRefresh.split(',').forEach(m=>cmpBefore.runBEMethod(m,opVal))
         if (!_ctx) 
@@ -284,8 +292,7 @@ extension('ui','comp', {
                 x.strongRefresh && `strongRefresh`,  x.cssOnly && `cssOnly`, x.allowSelfRefresh && `allowSelfRefresh`, x.delay && `delay=${x.delay}`] 
                 .filter(x=>x).join(';')).join(',')
                 this.calcCtx
-            const methods = (this.method||[]).map(h=>`${h.id}-${jb.ui.preserveCtx(h.ctx.setVars({cmp: this, $props: this.renderProps, ...this.newVars}))}`).join(',')
-            const originators = this.originators.map(ctx=>jb.ui.preserveCtx(ctx)).join(',')
+            const methods = (this.method||[]).map(h=>h.id).join(',')
             const usereventprops = (this.userEventProps||[]).join(',')
             const colocation = this.coLocation
             const frontEndMethods = (this.frontEndMethod || []).map(h=>({method: h.method, path: h.path}))
@@ -296,28 +303,34 @@ extension('ui','comp', {
             if (vdom instanceof jb.ui.VNode) {
                 vdom.addClass(this.jbCssClass())
                 vdom.attributes = Object.assign(vdom.attributes || {}, Object.keys(this.state||{}).length && { $__state : JSON.stringify(this.state)})
-                if (hasAtts) vdom.attributes = Object.assign(vdom.attributes || {},  {
-                        'jb-ctx': jb.ui.preserveCtx(this.originatingCtx()),
+                vdom.attributes = Object.assign(vdom.attributes,  {
+//                        'ctx-id': ''+ this.ctx.id,
                         'cmp-id': this.cmpId, 
                         'cmp-ver': ''+this.ver,
                         'cmp-pt': this.ctx.profile.$,
-                        'full-cmp-ctx': jb.ui.preserveCtx(this.calcCtx),
-                    },
+            //            'full-cmp-ctx': jb.ui .preserveCtx(this.calcCtx),
+                })
+                if (hasAtts) Object.assign(vdom.attributes,
                     observe && {observe}, 
                     methods && {methods}, 
-                    originators && {originators},
                     usereventprops && {usereventprops},
                     colocation && {colocation},
                     frontEndLibs.length && {$__frontEndLibs : JSON.stringify(frontEndLibs)},
                     frontEndMethods.length && {$__frontEndMethods : JSON.stringify(frontEndMethods) },
                     (frontEndMethods.length + frontEndLibs.length)  && {interactive : 'true'}, 
                     frontEndVars && { $__vars : JSON.stringify(frontEndVars)},                    
-                    this.ctx.vars.$previewMode && { $__debug: JSON.stringify({ path: (this.ctxForPick || this.calcCtx).path, callStack: jb.utils.callStack(this.calcCtx) }) },
-                    this.ctxForPick && { 'pick-ctx': jb.ui.preserveCtx(this.ctxForPick) },
+                    (this.ctx.vars.$previewMode || this.pathForPick) && { $__debug: JSON.stringify({ 
+                        path: this.pathForPick || this.originatingCtx().path,
+                        callStack: jb.utils.callStack(this.calcCtx) 
+                    }) },
                 )
             }
+            if (this.ctx.vars.$previewMode)
+                this.callStack = jb.utils.callStack(this.calcCtx)
+        
             jb.log('uiComp end renderVdom',{cmp: this, vdom})
             this.afterFirstRendering = true
+            jb.ui.cmps[this.cmpId] = this
             return vdom
         }
         renderVdomAndFollowUp() {
@@ -334,13 +347,13 @@ extension('ui','comp', {
         hasBEMethod(method) {
             return (this.method||[]).filter(h=> h.id == method)[0]
         }
-        runBEMethod(method, data, vars, {doNotUseuserReqTx} = {}) {
+        runBEMethod(method, data, vars, reqCtx = {}) {
+            const {doNotUseuserReqTx} = reqCtx
             jb.log(`backend uiComp method ${method}`, {cmp: this,data,vars})
             if (jb.path(vars,'$state'))
                 Object.assign(this.state,vars.$state)
             const tActions = (this.method||[]).filter(h=> h.id == method).map(h => ctx => {
-                jb.ui.handleUserRequest(h.ctx, data,
-                    {cmp: this,$state: this.state, $props: this.renderProps, ...vars, $model: this.calcCtx.vars.$model})
+                this.runMethodObject(h,data,vars)
                 const tx = !doNotUseuserReqTx && ctx.vars.userReqTx
                 tx && tx.complete()                        
             })
@@ -350,8 +363,6 @@ extension('ui','comp', {
             else
                 tActions.forEach(action => action(this.calcCtx))
     
-            // (h=> jb.ui.handleUserRequest(h.ctx,data,
-            //     {cmp: this,$state: this.state, $props: this.renderProps, ...vars, $model: this.calcCtx.vars.$model}))
             if (tActions.length == 0)
                 jb.logError(`no method ${method} in cmp`, {cmp: this, data, vars})
         }
@@ -360,6 +371,14 @@ extension('ui','comp', {
             jb.log('backend uiComp refresh request',{ctx, cmp: this,elem,state,options})
             jb.ui.BECmpsDestroyNotification.next({ cmps: [{cmpId: this.cmpId, ver: this.ver, destroyCtxs: [] }] })
             elem && jb.ui.refreshElem(elem,state,options) // cmpId may be deleted
+        }
+        runMethodObject(methodObj,data, vars) {
+            return methodObj.ctx.setData(data).setVars({
+                cmp: this,$state: this.state, $props: this.renderProps, ...vars, ...this.newVars, $model: this.calcCtx.vars.$model
+            }).runInner(methodObj.ctx.profile.action,'action','action')
+        }
+        destroy(reqCtx = {}) {
+            (this.method||[]).filter(h=> h.id == 'destroy').forEach(h => this.runMethodObject(h,null,reqCtx.vars))
         }
         calcCssLines() {
             return jb.utils.unique((this.css || []).map(l=> typeof l == 'function' ? l(this.calcCtx): l)
@@ -380,7 +399,7 @@ extension('ui','comp', {
             const ctx = this.originatingCtx()
             this._field = {
                 class: '',
-                ctxId: jb.ui.preserveCtx(ctx),
+                // ctxId: jb.ui .preserveCtx(ctx),
                 control: (item,index,noCache) => this.getOrCreateItemField(item, () => ctx.setData(item).setVars({index: (index||0)+1}).runItself(),noCache),
             }
             this.enrichField && this.enrichField.forEach(enrichField=>enrichField(this._field))

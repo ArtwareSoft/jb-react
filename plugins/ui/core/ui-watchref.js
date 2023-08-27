@@ -15,7 +15,7 @@ extension('ui', 'watchRef', {
         const tops = [testTop, jb.path(jb.frame.document,'body'), ...Object.values(jb.ui.headless).map(x=>x && x.body) ].filter(x=>x)
         const elemsToCheck = tops.flatMap(top=> jb.ui.find(top,'[observe]').map(elem=>({top, elem})))
 
-        const elemsToCheckCtxBefore = elemsToCheck.map(({elem}) =>elem.getAttribute('jb-ctx'))
+        const elemsToCheckCtxIdBefore = elemsToCheck.map(({elem}) =>elem.getAttribute('cmp-ver'))
         const originatingCmpId = jb.path(srcCtx, 'vars.cmp.cmpId')
         jb.log(`refresh check observable elements : ${changed_path}`,{originatingCmpId,elemsToCheck,e,srcCtx })
         const refreshActions = elemsToCheck.map(({elem, top},i) => {
@@ -60,7 +60,7 @@ extension('ui', 'watchRef', {
             function doApply() {
                 if (!jb.ui.parents(elem).find(el=>el == top))
                     return jb.log('observable elem was detached in refresh process',{originatingCmpId,cmpId,elem})
-                if (elemsToCheckCtxBefore[i] != elem.getAttribute('jb-ctx'))
+                if (elemsToCheckCtxIdBefore[i] != elem.getAttribute('cmp-ver'))
                     return jb.log('observable elem was refreshed from top in refresh process',{originatingCmpId,cmpId,elem})
                 jb.log('refresh from observable elements',{cmpId,originatingCmpId,elem,ctx,e})
                 if (delay)
