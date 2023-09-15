@@ -36,7 +36,7 @@ component('webWorker', {
       {id: 'networkPeer', as: 'boolean', description: 'used for testing' },
   ],    
   impl: (ctx,_id,sourceCode,init,networkPeer) => {
-      const id = _id || 'w1'
+      const id = (_id || 'w1').replace(/-/g,'__')
       const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
       if (childsOrNet[id]) return childsOrNet[id]
       const workerUri = networkPeer ? id : `${jb.uri}•${id}`

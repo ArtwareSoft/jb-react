@@ -71,7 +71,6 @@ Object.assign(jb, {
     if (comp.type == 'any')
       jb.core.genericCompIds[id] = true
 
-    
     comp.impl = comp.impl || (({params}) => params)
     const h = jb.core.onAddComponent.find(x=>x.match(id,comp,dsl))
     if (h && h.register)

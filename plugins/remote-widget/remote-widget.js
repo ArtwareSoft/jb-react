@@ -203,25 +203,25 @@ extension('ui', 'headless', {
       headless: {},
     }
   },
-  createHeadlessWidget(widgetId, ctrl, ctx, { recover } = {}) {
-    const ctxToUse = jb.ui.extendWithServiceRegistry(ctx.setVars({
+  createHeadlessWidget(widgetId, ctrl, reqCtx, { recover } = {}) {
+    const ctxToUse = jb.ui.extendWithServiceRegistry(reqCtx.setVars({
         ...(recover && { recover: true }), headlessWidget: true, headlessWidgetId: widgetId
       }))
     if (jb.ui.headless[widgetId]) {
-      if (!recover) jb.logError('headless widgetId already exists', { widgetId, ctx })
+      if (!recover) jb.logError('headless widgetId already exists', { widgetId, ctx: reqCtx })
       jb.ui.destroyHeadless(widgetId)
     }
     jb.log('create headless widget', { widgetId, path: ctrl.runCtx.path })
     const cmp = ctrl(ctxToUse)
     jb.ui.headless[widgetId] = {} // used by styles
     const top = jb.ui.h(cmp)
-    const body = jb.ui.h('div', { widgetTop: true, headless: true, widgetId, ...(ctx.vars.remoteUri && { remoteUri: ctx.vars.remoteUri }) }, top)
+    const body = jb.ui.h('div', { widgetTop: true, headless: true, widgetId, ...(reqCtx.vars.remoteUri && { remoteUri: reqCtx.vars.remoteUri }) }, top)
     top.parentNode = body
     jb.ui.headless[widgetId].body = body
     jb.log('headless widget created', { widgetId, body })
     const delta = { children: { resetAll: true, toAppend: [jb.ui.stripVdom(top)] } }
-    jb.ui.sendRenderingUpdate(ctxToUse, { widgetId, delta, ctx })
-    ctx.vars.userReqTx && ctx.vars.userReqTx.complete()
+    jb.ui.sendRenderingUpdate(ctxToUse, { widgetId, delta, reqCtx })
+    reqCtx.vars.userReqTx && reqCtx.vars.userReqTx.complete()
   },
   handleUserReq(userReq, sink, _ctx) {
     const reqCtx = _ctx.vars.transactiveHeadless ? _ctx.setVars({ userReqTx: jb.ui.userReqTx({ userReq, ctx: _ctx }) }) : _ctx

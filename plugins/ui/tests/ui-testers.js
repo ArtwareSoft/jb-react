@@ -18,7 +18,7 @@ component('uiTest', {
     {id: 'backEndJbm', type: 'jbm<jbm>', defaultValue: jbm.self()},
     {id: 'useFrontEnd', as: 'boolean', type: 'boolean'},
     {id: 'transactiveHeadless', as: 'boolean', type: 'boolean'},
-    {id: 'engine', as: 'string', options: ',ibffEngine'}
+    {id: 'engine', as: 'string' }
   ],
   impl: dataTest({
     vars: [

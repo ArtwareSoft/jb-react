@@ -43,14 +43,6 @@ async function run() {
   const _host = require('os').hostname().replace(/-/g,'_')
   const uri = getProcessArgument('uri') || `${_host}_${process.pid}`
   const project = getProcessArgument('project') || ''
-  // if (getProcessArgument('treeShake')) {
-  //   // global.jbTreeShakeServerUrl = `http://localhost:${settings.ports.treeShake}`
-  //   // global.jbGetJSFromUrl = jbGetJSFromUrl
-
-  //   // //global.jb = { uri }
-  //   // await jbGetJSFromUrl(`${jbTreeShakeServerUrl}/treeShake-client.js`)
-  //   // await jbGetJSFromUrl(`${jbTreeShakeServerUrl}/jb-port.js?ids=-nodeContainer.portFromNodeWebSocket`)
-  // } else {
   const { jbInit } = require(`${jbHost.jbReactDir}/plugins/loader/jb-loader.js`)
   const sourceCodeStr = getProcessArgument('sourceCode')
   const sourceCode = sourceCodeStr ? JSON.parse(sourceCodeStr) 

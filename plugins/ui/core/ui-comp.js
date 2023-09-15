@@ -28,20 +28,6 @@ extension('ui','comp', {
     
         return new jb.ui.VNode(cmpOrTag,attributes,children)
     },
-    elemToVdom(elem) {
-        if (elem instanceof jb.ui.VNode) return elem
-        if (elem.getAttribute('jb_external')) return
-        const textNode = Array.from(elem.children).filter(x=>x.tagName != 'BR').length == 0
-        return {
-            tag: elem.tagName.toLowerCase(),
-            attributes: jb.objFromEntries([
-                ...Array.from(elem.attributes).map(e=>[e.name,e.value]), 
-                ...(textNode ? [['$text',elem.innerText]] : [])
-                //...(jb.path(elem,'firstChild.nodeName') == '#text' ? [['$text',elem.firstChild.nodeValue]] : [])
-            ]),
-            ...( elem.childElementCount && !textNode && { children: Array.from(elem.children).map(el=> jb.ui.elemToVdom(el)).filter(x=>x) })
-        }
-    },
     ctrl(origCtx,options) {
         const styleByControl = jb.path(origCtx,'cmpCtx.profile.$') == 'styleByControl'
         const $state = (origCtx.vars.$refreshElemCall || styleByControl) ? origCtx.vars.$state : {}
@@ -68,27 +54,10 @@ extension('ui','comp', {
             return origCtx.params.style ? origCtx.params.style(ctx) : {}
         }
     },
-    garbageCollectCtxDictionary(forceNow,clearAll) {
+    garbageCollectUiComps(forceNow,clearAll) {
         if (!forceNow)
-            return jb.delay(1000).then(()=>jb.ui.garbageCollectCtxDictionary(true))
+            return jb.delay(1000).then(()=>jb.ui.garbageCollectUiComps(true))
    
-        // const used = 'jb-ctx,full-cmp-ctx,pick-ctx,props-ctx,methods,frontEnd,originators'.split(',')
-        //     .flatMap(att=>querySelectAllWithWidgets(`[${att}]`)
-        //         .flatMap(el => el.getAttribute(att).split(',').map(x=>Number(x.split('-').pop())).filter(x=>x)))
-        //             .sort((x,y)=>x-y)
-
-        // remove unused ctx from dictionary
-        // const dict = Object.keys(jb.ctxDictionary).map(x=>Number(x)).sort((x,y)=>x-y)
-        // let lastUsedIndex = 0;
-        // const removedCtxs = [], removedResources = [], maxUsed = used.slice(-1)[0] || (clearAll ? Number.MAX_SAFE_INTEGER : 0)
-        // for(let i=0;i<dict.length && dict[i] < maxUsed;i++) {
-        //     while (used[lastUsedIndex] < dict[i])
-        //         lastUsedIndex++;
-        //     if (used[lastUsedIndex] != dict[i]) {
-        //         removedCtxs.push(dict[i])
-        //         delete jb.ctxDictionary[''+dict[i]]
-        //     }
-        // }
         // remove unused cmps from dictionary
         const usedCmps = new Map(querySelectAllWithWidgets(`[cmp-id]`).map(el=>[el.getAttribute('cmp-id'),true]))
         const maxUsed = Object.keys(usedCmps).map(x=> +x || 0).sort((x,y)=>x-y)[0] || (clearAll ? Number.MAX_SAFE_INTEGER : 0)
@@ -348,13 +317,13 @@ extension('ui','comp', {
             return (this.method||[]).filter(h=> h.id == method)[0]
         }
         runBEMethod(method, data, vars, reqCtx = {}) {
-            const {doNotUseuserReqTx} = reqCtx
+            const {doNotUseUserReqTx} = reqCtx
             jb.log(`backend uiComp method ${method}`, {cmp: this,data,vars})
             if (jb.path(vars,'$state'))
                 Object.assign(this.state,vars.$state)
             const tActions = (this.method||[]).filter(h=> h.id == method).map(h => ctx => {
                 this.runMethodObject(h,data,vars)
-                const tx = !doNotUseuserReqTx && ctx.vars.userReqTx
+                const tx = !doNotUseUserReqTx && ctx.vars.userReqTx
                 tx && tx.complete()                        
             })
             const tx = this.calcCtx.vars.userReqTx

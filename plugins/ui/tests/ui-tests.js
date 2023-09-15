@@ -878,7 +878,7 @@ component('uiTest.itemlistWithTableStyle', {
 component('test.personName', {
   type: 'control',
   params: [
-    { id: 'person' }
+    {id: 'person'}
   ],
   impl: text('%$person/name%')
 })

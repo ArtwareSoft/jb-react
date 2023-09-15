@@ -176,31 +176,6 @@ component('FETest.remoteWidget.codemirror.editableText', {
   })
 })
 
-// jb.component('remoteWidgetTest.refresh.cleanUp', {
-//   description: 'creating remote widgets and deleting them with gc',
-//   impl: uiFrontEndTest({
-//     renderDOM: true,
-//     timeout: 3000,
-//     control: group({
-//       controls: remote.widget(text('%$person1/name%'), worker()),
-//       features: [
-//         variable('person1','%$person%'), // only local vars are passed to remote
-//         watchRef('%$person/name%')
-//       ]
-//     }),
-//     action: rx.pipe(
-//       source.data(0),
-//       rx.do(writeValue('%$person/name%', 'hello')),
-//       rx.flatMap(source.remote(source.promise(waitFor(count(widget.headlessWidgets()))), worker())),
-//       rx.do(() => jb.ui.garbageCollectCtxDictionary(true,true)),
-//       rx.flatMap(source.remote(source.promise(waitFor(equals(1, count(widget.headlessWidgets())))), worker())),
-//       rx.timeoutLimit(1000, () => jb.logError('worker did not cleanup')),
-//       rx.catchError()
-//     ),
-//     expectedResult: contains('hello')
-//   })
-// })
-
 component('FETest.remoteWidget.infiniteScroll', {
   impl: uiTest({
     control: itemlist({
@@ -218,75 +193,6 @@ component('FETest.remoteWidget.infiniteScroll', {
     expectedResult: contains('>8<'),
   })
 })
-
-// component('FETest.remoteWidget.infiniteScroll.MDInplace', {
-//   impl: uiFrontEndTest({
-//     control: remote.widget(
-//       group({
-//         controls: [
-//           table({
-//             items: '%$people%',
-//             controls: [
-//               group({
-//                 layout: layout.flex({
-//                   direction: 'row',
-//                   justifyContent: 'start',
-//                   alignItems: 'center'
-//                 }),
-//                 controls: [
-//                   editableBoolean('%$sectionExpanded/{%$index%}%', editableBoolean.expandCollapse()),
-//                   text('%name%')
-//                 ]
-//               }),
-//               controlWithCondition(
-//                 '%$sectionExpanded/{%$index%}%',
-//                 group({controls: text('inner text'), features: feature.expandToEndOfRow('%$sectionExpanded/{%$index%}%')})
-//               ),
-//               text('%age%'),
-//               text('%age%')
-//             ],
-//             visualSizeLimit: 2,
-//             features: [
-//               css.height('40', 'scroll'),
-//               itemlist.infiniteScroll(2)
-//             ],
-//             lineFeatures: [
-//               watchRef({ref: '%$sectionExpanded/{%$index%}%', allowSelfRefresh: true}),
-//               table.enableExpandToEndOfRow()
-//             ]
-//           })
-//         ],
-//         features: [
-//           watchable('sectionExpanded', obj()),
-//           variable(
-//             'people',
-//             [
-//               {
-//                 name: 'Homer Simpson',
-//                 age: 42,
-//                 male: true
-//               },
-//               {
-//                 name: 'Marge Simpson',
-//                 age: 38,
-//                 male: false
-//               },
-//               {
-//                 name: 'Bart Simpson',
-//                 age: 12,
-//                 male: true
-//               }
-//             ]
-//           )
-//         ]
-//       }),
-//       worker()
-//     ),
-//     action: uiActions(scrollBy('.jb-itemlist', 100), delay(200), click('i'), delay(200)),
-//     expectedResult: and(contains(['colspan=\"', 'inner text', 'Bart']), not(contains('>42<')), not(contains(['inner text', 'inner text']))),
-//     renderDOM: true
-//   })
-// })
 
 component('remoteWidgetTest.refresh', {
   impl: uiTest({

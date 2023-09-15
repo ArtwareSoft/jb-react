@@ -180,7 +180,10 @@ extension('vscode', 'utils', {
         const docProps = jb.tgpTextEditor.host.compTextAndCursor()
         const testID = docProps.shortId
         const spyParam = jb.spy.spyParamForTest(testID)
-        vscodeNS.env.openExternal(`http://localhost:8082/hosts/tests/tests.html?test=${testID}&show&spy=${spyParam}`)
+        const _repo = ((docProps.filePath || '').match(/projects\/([^/]*)/) || [])[1]
+        debugger
+        const repo = _repo != 'jb-react' ? `&repo=${_repo}` : ''
+        vscodeNS.env.openExternal(`http://localhost:8082/hosts/tests/tests.html?test=${testID}&show${repo}&spy=${spyParam}`)
     },
     openLastCmd() {
         const url = jbHost.fs.readFileSync(jbHost.jbReactDir + '/runCtxUrl')

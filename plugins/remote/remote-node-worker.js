@@ -105,7 +105,7 @@ component('remoteNodeWorker', {
     {id: 'nodeContainerUrl', as: 'string', defaultValue: 'http://localhost:8082'},
   ],
   impl: async (ctx,_id,sourceCode,init,nodeContainerUrl) => {
-        const id = _id || 'nodeWorker1'
+        const id = (_id || 'nodeWorker1').replace(/-/g,'__')
         jb.log('vscode remote jbm nodeContainer',{ctx,id})
         const nodeWorkerUri = `${jb.uri}__${id}`
         const restart = (jb.nodeContainer.toRestart||[]).indexOf(id)

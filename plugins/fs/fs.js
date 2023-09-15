@@ -2,7 +2,7 @@ using('common')
 
 extension('fs','main' ,{
     ls(dir, recursive) {
-        const fs = require('fs')
+        const fs = jbHost.fs
         return fs.readdirSync(dir).flatMap( file => {
             const full_path = dir + '/' + file
             return recursive && fs.statSync(full_path).isDirectory() ? jb.fs.ls(full_path,recursive) : [full_path]
@@ -15,8 +15,9 @@ component('filesOfPath' , {
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => {
+    if (!jbHost.fs) return []
     try {
-        const stat = require('fs').statSync(path)
+        const stat = jbHost.fs.statSync(path)
         if (stat && stat.isFile()) 
             return [path]
         if (stat && stat.isDirectory())
@@ -33,8 +34,9 @@ component('readFile' , {
     {id: 'path', as: 'string'},
   ],
   impl: (ctx,path) => {
+    if (!jbHost.fs) return ''
     try {
-        return require('fs').readFileSync(path)
+        return jbHost.fs.readFileSync(path)
     } catch(e) {
         jb.logException(e,'readFile',{ctx,path})
         return ''
@@ -49,8 +51,9 @@ component('writeFile' , {
     {id: 'content', as: 'string'}
   ],
   impl: (ctx,path,content) => {
+    if (!jbHost.fs) return
     try {
-        return require('fs').writeFileSync(path,content)
+        return jbHost.fs.writeFileSync(path,content)
     } catch(e) {
         //jb.logException(e,'writeFile',{ctx,path})
     }

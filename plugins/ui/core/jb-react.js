@@ -48,7 +48,20 @@ extension('ui', 'react', {
             r => jb.spy.findProp(r,'delta') && ({ props: {delta: jb.ui.beautifyDelta(jb.spy.findProp(r,'delta')) }})
         ])   
     },
-
+    elemToVdom(elem) {
+        if (elem instanceof jb.ui.VNode) return elem
+        if (elem.getAttribute('jb_external')) return
+        const textNode = Array.from(elem.children).filter(x=>x.tagName != 'BR').length == 0
+        return {
+            tag: elem.tagName.toLowerCase(),
+            attributes: jb.objFromEntries([
+                ...Array.from(elem.attributes).map(e=>[e.name,e.value]), 
+                ...(textNode ? [['$text',elem.innerText]] : [])
+                //...(jb.path(elem,'firstChild.nodeName') == '#text' ? [['$text',elem.firstChild.nodeValue]] : [])
+            ]),
+            ...( elem.childElementCount && !textNode && { children: Array.from(elem.children).map(el=> jb.ui.elemToVdom(el)).filter(x=>x) })
+        }
+    },
     applyNewVdom(elem,vdomAfter,{strongRefresh, ctx, delta, srcCtx} = {}) {
         const widgetId = jb.ui.headlessWidgetId(elem)
         jb.log('applyNew vdom',{widgetId,elem,vdomAfter,strongRefresh, ctx})
@@ -95,7 +108,7 @@ extension('ui', 'react', {
             jb.ui.refreshFrontEnd(elem, {content: vdomAfter})
         }
         if (active) jb.ui.focus(elem,'apply Vdom diff',ctx)
-        jb.ui.garbageCollectCtxDictionary()
+        jb.ui.garbageCollectUiComps()
     },
 
     applyDeltaToDom(elem,delta,ctx) {
@@ -407,14 +420,6 @@ extension('ui', 'react', {
             .map(str=>str.split('-')[1])
             .filter(x=>x)[0]
     },
-    // handleUserRequestAndUdateCmpState(ctx,data,vars) {
-    //     if (jb.path(vars,'$updateCmpState.cmpId') == jb.path(ctx.vars,'cmp.cmpId') && jb.path(vars,'$updateCmpState.state'))
-    //         Object.assign(ctx.vars.cmp.state,vars.$updateCmpState.state)
-    //     return ctx.setData(data).setVars(vars).runInner(ctx.profile.action,'action','action')        
-    // },    
-    // handleUserRequest(ctx,data,vars) {
-    //     return ctx.setData(data).setVars(vars).runInner(ctx.profile.action,'action','action')        
-    // },
     runBEMethodByContext(ctx,method,data,vars) {
         const cmp = ctx.vars.cmp
         if (cmp.isBEComp)

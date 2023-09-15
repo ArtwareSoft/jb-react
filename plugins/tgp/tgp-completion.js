@@ -145,6 +145,8 @@ extension('tgp', 'completion', {
     },
 	addPropertyOp(path,srcCtx) {
 		const param = jb.tgp.paramDef(path)
+        if (!param)
+            return jb.logError(`no param def for path ${path}`,{srcCtx})
 		const paramType = jb.tgp.paramType(path)
 		const result = param.templateValue ? JSON.parse(JSON.stringify(param.templateValue))
 			: paramType.indexOf('data') != -1 ? '' : {$: 'TBD'}

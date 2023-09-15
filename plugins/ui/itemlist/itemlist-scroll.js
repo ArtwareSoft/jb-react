@@ -76,10 +76,36 @@ component('itemlist.incrementalFromRx', {
   impl: followUp.flow(
       source.callbag(ctx => ctx.exp('%$$props.items%').callbag || jb.callbag.fromIter([])),
       rx.map(If('%vars%','%data%','%%')), // rx/cb compatible ...
-      rx.do(({data},{$props}) => $props.items.push(data)),
-      rx.var('delta', itemlist.deltaOfItems()),
+      rx.var('delta', itemlist.deltaOfNextItem()),
       sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
     )
+})
+
+component('itemlist.deltaOfNextItem', {
+  type: 'data',
+  impl: (ctx) => {
+    const { $props, cmp } = ctx.vars
+    const { state, cmpId } = cmp
+    jb.log('itemlist deltaOfNextItem',{ctx,$props,state,cmpId})
+    state.visualSizeLimit = state.visualSizeLimit || $props.visualSizeLimit
+    state.visualSizeLimit = state.visualSizeLimit + 1
+    const deltaCalcCtx = cmp.ctx.setVar('$refreshElemCall',true)
+      .setVars({$cmpId: cmpId, $cmpVer: cmp.ver+1, $baseIndex: state.visualSizeLimit - 1 })
+      .ctx({profile: {...cmp.ctx.profile, items: () => [ctx.data]}, path: ''}) // change the profile to return itemsToAppend
+    const deltaCmp = deltaCalcCtx.runItself()
+    const oldCmp = jb.ui.cmps[cmpId]
+    const vdomOfDeltaItems = deltaCmp.renderVdom()
+    jb.ui.cmps[cmpId] = oldCmp
+    cmp.renderProps.items = [...cmp.renderProps.items, ...deltaCmp.renderProps.items]
+    cmp.renderProps.ctrls = [...cmp.renderProps.ctrls, ...deltaCmp.renderProps.ctrls]
+    const itemsParent = jb.ui.find(vdomOfDeltaItems,'.jb-items-parent')[0] || vdomOfDeltaItems
+    const appendDelta = { children: {toAppend: jb.ui.stripVdom(itemsParent).children } }
+    const deltaOfItems = itemsParent == vdomOfDeltaItems ? appendDelta : { _$bySelector: {'.jb-items-parent': appendDelta} }
+    const deltaOfCmp = { attributes: { $scrollDown: true, $__state : JSON.stringify(state) } }
+
+    jb.ui.applyDeltaToCmp({ctx,delta: deltaOfItems,cmpId,assumedVdom: jb.ui.elemToVdom(jb.ui.elemOfCmp(ctx,cmpId))})
+    jb.ui.applyDeltaToCmp({ctx,delta: deltaOfCmp,cmpId})
+  }
 })
 
 component('itemlist.calcSlicedItems', {
