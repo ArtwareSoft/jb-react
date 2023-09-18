@@ -251,7 +251,10 @@ component('cmpId', {
   params: [
     {id: 'cmpId', mandatory: true, as: 'string'}
   ],
-  impl: ({},cmpId) => ({ cmpId})
+  impl: (ctx,cmpId) => {
+    if (cmpId.match(/:/)) jb.logError(`cmpId: do not use ":" in cmpId ${cmpId}`,{ctx})
+    return ({ cmpId})
+  }
 })
 
 component('id', {
@@ -286,6 +289,7 @@ component('watchable', {
       cmp.ctx.run(writeValue(`%$${fullName}%`,null))
     },
     extendCtx: (ctx,cmp) => {
+      if (name.match(/:/)) jb.logError(`watchable: do not use ":" in var name ${name}`,{ctx})
       const fullName = name + ':' + cmp.cmpId;
       jb.log('create watchable var',{cmp,ctx,fullName})
       const refToResource = jb.db.useResourcesHandler(h=>h.refOfPath([fullName]))

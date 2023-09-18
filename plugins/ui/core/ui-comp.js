@@ -59,20 +59,22 @@ extension('ui','comp', {
             return jb.delay(1000).then(()=>jb.ui.garbageCollectUiComps(true))
    
         // remove unused cmps from dictionary
-        const usedCmps = new Map(querySelectAllWithWidgets(`[cmp-id]`).map(el=>[el.getAttribute('cmp-id'),true]))
-        const maxUsed = Object.keys(usedCmps).map(x=> +x || 0).sort((x,y)=>x-y)[0] || (clearAll ? Number.MAX_SAFE_INTEGER : 0)
+        const usedCmps = new Map(querySelectAllWithWidgets(`[cmp-id]`).map(el=>[el.getAttribute('cmp-id'),el.getAttribute('ctx-id')]))
+        const maxUsed = Object.values(usedCmps).map(x=> +x || 0).sort((x,y)=>x-y)[0] || (clearAll ? Number.MAX_SAFE_INTEGER : 0)
         const removedCmps = []
-        Object.keys(jb.ui.cmps).filter(id=> (+id || 0) < maxUsed && !usedCmps.get(id)).forEach(id=> {removedCmps.push(id); delete jb.ui.cmps[id] })
+        Object.keys(jb.ui.cmps).filter(id=> (usedCmps.get(id) || 0) < maxUsed && !usedCmps.get(id)).forEach(id=> {removedCmps.push(id); delete jb.ui.cmps[id] })
 
         // remove unused vars from resources
         const removedResources = []
-        const ctxToPath = ctx => Object.values(ctx.vars).filter(v=>jb.db.isWatchable(v)).map(v => jb.db.asRef(v))
-            .map(ref=>jb.db.refHandler(ref).pathOfRef(ref)).flat()
-        const globalVarsUsed = jb.utils.unique(Object.keys(usedCmps).map(id=>jb.path(jb.ui.cmps[id],'calcCtx')).filter(x=>x).map(ctx=>ctxToPath(ctx)).flat())
+        // const ctxToPath = ctx => Object.values(ctx.vars).filter(v=>jb.db.isWatchable(v)).map(v => jb.db.asRef(v))
+        //     .map(ref=>jb.db.refHandler(ref).pathOfRef(ref)).flat()
+        // const globalVarsUsed = jb.utils.unique(Object.keys(usedCmps).map(id=>jb.path(jb.ui.cmps[id],'calcCtx')).filter(x=>x).map(ctx=>ctxToPath(ctx)).flat())
         Object.keys(jb.db.resources).filter(id=>id.indexOf(':') != -1)
-            .filter(id=>globalVarsUsed.indexOf(id) == -1)
-            .filter(id=>+id.split(':').pop || 0 < maxUsed)
-            .forEach(id => { removedResources.push(id); delete jb.db.resources[id]})
+            .filter(id=>{
+                const cmpId = id.split(':').pop() // no ':' in cmpID or var name
+                return (usedCmps.get(cmpId) || 0) < maxUsed && !usedCmps.get(cmpId)
+            })
+            .forEach(id => { debugger; removedResources.push(id); delete jb.db.resources[id]})
 
         // remove front-end widgets
         const usedWidgets = jb.objFromEntries(
@@ -273,7 +275,7 @@ extension('ui','comp', {
                 vdom.addClass(this.jbCssClass())
                 vdom.attributes = Object.assign(vdom.attributes || {}, Object.keys(this.state||{}).length && { $__state : JSON.stringify(this.state)})
                 vdom.attributes = Object.assign(vdom.attributes,  {
-//                        'ctx-id': ''+ this.ctx.id,
+                        'ctx-id': ''+ this.ctx.id,
                         'cmp-id': this.cmpId, 
                         'cmp-ver': ''+this.ver,
                         'cmp-pt': this.ctx.profile.$,
@@ -438,7 +440,7 @@ extension('ui','comp', {
                 this.watchRef.push({cmp: this,...options.watchRef});
             }
             if (options.cmpId)
-                this.cmpId = options.cmpId
+                this.cmpId = options.cmpId.replace
 
             // eventObservables
             this.eventObservables = this.eventObservables.concat(Object.keys(options).filter(op=>op.indexOf('on') == 0))
