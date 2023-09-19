@@ -226,6 +226,7 @@ extension('ui', 'react', {
         Object.assign(elem.attributes,delta.attributes)
     },
     setAtt(elem,att,val,ctx) {
+        const activeElem = jb.path(jb.frame.document,'activeElement')
         if (val == '__undefined') val = null
         if (att[0] !== '$' && val == null) {
             elem.removeAttribute(att)
@@ -273,10 +274,10 @@ extension('ui', 'react', {
             elem.setAttribute(att,jb.entries(val).map(e=>`${e[0]}:${e[1]}`).join(';'))
             jb.log('dom set style',{elem,att,val,ctx})
         } else if (att == 'value' && elem.tagName && elem.tagName.match(/select|input|textarea/i) ) {
-            const active = document.activeElement === elem
+            const active = activeElem === elem
             if (elem.value == val) return
             elem.value = val
-            if (active && document.activeElement !== elem) { debugger; elem.focus() }
+            if (active && activeElem !== elem) { debugger; elem.focus() }
             jb.log('dom set elem value',{elem,att,val,ctx})
         } else {
             elem.setAttribute(att,val)
@@ -290,12 +291,12 @@ extension('ui', 'react', {
                 return jb.logError('setInput: can not find input under elem',{elem,ctx})
             if (assumedVal != el.value) 
                 return jb.logError('setInput: assumed val is not as expected',{ assumedVal, value: el.value, el,ctx })
-            const active = document.activeElement === el
+            const active = activeElem === el
             jb.log('dom set input',{el, assumedVal,newVal,selectionStart,ctx})
             el.value = newVal
             if (typeof selectionStart == 'number') 
                 el.selectionStart = selectionStart
-            if (active && document.activeElement !== el) { debugger; el.focus() }
+            if (active && activeElem !== el) { debugger; el.focus() }
         }
     },
 

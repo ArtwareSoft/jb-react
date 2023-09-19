@@ -119,7 +119,7 @@ extension('ui', 'html', {
     }
   },
   scrollIntoView: el => el.scrollIntoViewIfNeeded && el.scrollIntoViewIfNeeded(),
-  activeElement: () => document.activeElement,
+  activeElement: () => jb.path(jb.frame.document,'activeElement'),
   find(el, selector, options) {
     if (!el) return []
     if (jb.path(el, 'constructor.name') == 'jbCtx')

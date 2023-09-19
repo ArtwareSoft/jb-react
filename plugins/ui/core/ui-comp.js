@@ -440,7 +440,7 @@ extension('ui','comp', {
                 this.watchRef.push({cmp: this,...options.watchRef});
             }
             if (options.cmpId)
-                this.cmpId = options.cmpId.replace
+                this.cmpId = options.cmpId
 
             // eventObservables
             this.eventObservables = this.eventObservables.concat(Object.keys(options).filter(op=>op.indexOf('on') == 0))

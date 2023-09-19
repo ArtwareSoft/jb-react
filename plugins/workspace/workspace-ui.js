@@ -168,7 +168,7 @@ component('textarea.initTgpTextEditor', {
         frontEnd.flow(
             source.event('selectionchange',() => document),
             rx.takeUntil('%$cmp.destroyed%'),
-            rx.filter(({},{el}) => el == document.activeElement),
+            rx.filter(({},{el}) => el == jb.path(jb.frame.document,'activeElement')),
             rx.map(({},{el}) => jb.tgpTextEditor.offsetToLineCol(el.value,el.selectionStart)),
             sink.BEMethod('selectionChanged','%%')
         ),
