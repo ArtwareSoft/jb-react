@@ -17,7 +17,7 @@ component('FETest.workerPreviewTest.suggestions', {
       waitForSelector('.jb-dialog .jb-item')
     ),
     expectedResult: contains('$var1'),
-    renderDOM: true
+    //renderDOM: true
   })
 })
 
@@ -30,10 +30,10 @@ component('FETest.workerPreviewTest.suggestions.select', {
       ]
     }),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
-    action: uiActions(
+    uiAction: uiActions(
       waitForSelector('#sampleText'),
-      waitForSelector('input'),
-      setText('hello %$var1', 'input'),
+      //waitForSelector('input'),
+      setText('hello %$var1'),
       keyboardEvent({selector: 'input', type: 'keyup', keyCode: 37}),
       waitForSelector('.jb-dialog .jb-item'),
       click('.jb-dialog .jb-item:first-child'),
@@ -41,26 +41,27 @@ component('FETest.workerPreviewTest.suggestions.select', {
       waitForSelector('[cmp-ver=\"4\"]')
     ),
     expectedResult: contains('hello world'),
-    renderDOM: true
   })
 })
 
 component('FETest.workerPreviewTest.suggestions.selectPopup', {
   impl: uiFrontEndTest({
-    control: group({controls: [
-      studio.propertyPrimitive('sampleProject.main~impl~controls~text'),
-      probe.remoteCircuitPreview()
-    ]}),
+    control: group({
+      controls: [
+        studio.propertyPrimitive('sampleProject.main~impl~controls~text'),
+        probe.remoteCircuitPreview()
+      ]
+    }),
+    expectedResult: contains('(world)'),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
-    action: uiActions(
+    uiAction: uiActions(
       waitForSelector('#sampleText'),
       waitForSelector('input'),
-      setText('hello %$', 'input'),
-      keyboardEvent({ selector: 'input', type: 'keyup',  keyCode: 37 }), // %
+      setText('hello %$'),
+      keyboardEvent({selector: 'input', type: 'keyup', keyCode: 37}),
       waitForSelector('.jb-dialog .jb-item')
     ),
-    expectedResult: contains('(world)'),
-    renderDOM: true
+    useFrontEnd: true
   })
 })
 
@@ -86,15 +87,15 @@ component('FETest.workerPreviewTest.suggestions.filtered', {
       ]
     }),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
-    action: uiActions(
+    uiAction: uiActions(
       waitForSelector('#sampleText'),
       waitForSelector('input'),
-      setText('hello %$var1', 'input'),
+      setText('hello %$var1'),
       keyboardEvent({selector: 'input', type: 'keyup', keyCode: ()=> '%'.charCodeAt(0)}),
       waitForSelector('.jb-dialog .jb-item')
     ),
     expectedResult: not(contains('$xx')),
-    renderDOM: true
+    //renderDOM: true
   })
 })
 

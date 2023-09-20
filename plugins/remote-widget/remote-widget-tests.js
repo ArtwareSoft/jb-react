@@ -130,7 +130,7 @@ component('FETest.distributedWidget', {
 component('FETest.remoteWidgetTest.changeText', {
   impl: uiFrontEndTest({
     control: group({controls: [], features: css.class('xRoot')}),
-    action: uiActions(
+    uiAction: uiActions(
       action(remote.distributedWidget({
         control: group({
           controls: [
@@ -156,7 +156,7 @@ component('FETest.remoteWidgetTest.changeText', {
 component('FETest.remoteWidget.codemirror', {
   impl: uiFrontEndTest({
     control: remote.widget(text({text: 'hello', style: text.codemirror({height: 100})}), worker()),
-    action: waitFor(() => document.querySelector('.CodeMirror')),
+    uiAction: waitFor(() => document.querySelector('.CodeMirror')),
     expectedResult: contains('hello'),
     renderDOM: true
   })
@@ -170,7 +170,7 @@ component('FETest.remoteWidget.codemirror.editableText', {
       value: obj(prop('name', 'Homer')),
       type: 'watchableData'
     }), worker()),
-    action: waitFor(() => document.querySelector('.CodeMirror')),
+    uiAction: waitFor(() => document.querySelector('.CodeMirror')),
     expectedResult: contains('Homer'),
     renderDOM: true
   })

@@ -68,7 +68,7 @@ component('uiTest.workerPreviewTest.addCss', {
         probe.remoteCircuitPreview()
       ]
     }),
-    expectedResult: ctx => Object.values(jb.ui.FEEmulator[ctx.vars.widgetId].styles).join(';').indexOf('color: red') != -1,
+    expectedResult: contains('color: red'),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
     uiAction: click(),
     useFrontEnd: true

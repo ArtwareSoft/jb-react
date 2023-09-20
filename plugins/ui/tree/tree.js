@@ -301,8 +301,10 @@ component('tree.dragAndDrop', {
       rx.filter(tree.sameParent('%from%', '%to%')),
       sink.BEMethod('moveItem', '%%')
     ),
-    frontEnd.onRefresh((ctx,{cmp}) => cmp.drake.containers = jb.ui.find(cmp.base,'.jb-array-node>.treenode-children')),
-    frontEnd.init((ctx,{cmp}) => {
+    frontEnd.var('uiTest', '%$uiTest%'),
+    frontEnd.onRefresh((ctx,{cmp}) => cmp.drake && (cmp.drake.containers = jb.ui.find(cmp.base,'.jb-array-node>.treenode-children'))),
+    frontEnd.init((ctx,{uiTest, cmp}) => {
+		if (uiTest) return
 		const drake = cmp.drake = dragula([], {
 			moves: el => jb.ui.matches(el,'.jb-array-node>.treenode-children>div')
 		})

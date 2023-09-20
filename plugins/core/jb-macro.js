@@ -111,7 +111,8 @@ extension('syntaxConverter', 'onAddComponent', {
   initExtension() { 
     jb.core.onAddComponent.push({ 
 //        match:(id,comp) => (jb.path(comp[jb.core.CT].plugin,'files') || []).find(x=>x.path.match(/amta/)),
-        match:(id,comp) => (jb.path(comp[jb.core.CT].plugin,'files') || []).find(x=>x.path.match(/tests/)),
+        //match:(id,comp) => (jb.path(comp[jb.core.CT].plugin,'files') || []).find(x=>x.path.match(/tests/)),
+        match:(id,comp) => false,
       register: (_id,_comp,dsl) => {
         //if (_id == 'amta.aa') debugger
         const comp = jb.syntaxConverter.fixProfile(_comp,_comp,_id)
@@ -124,7 +125,7 @@ extension('syntaxConverter', 'onAddComponent', {
   },
   fixProfile(profile,origin,id) {
     if (profile === null) return
-    if (jb.utils.isPrimitiveValue(profile) || typeof profile == 'function') return profile
+    if (!profile || jb.utils.isPrimitiveValue(profile) || typeof profile == 'function') return profile
     if (profile.$ == 'uiTest') {
         if ((jb.path(profile.$byValue[0].userInput,'$') || '').indexOf('userInput.') == 0) {
             profile.$byValue[0].uiAction = profile.$byValue[0].userInput

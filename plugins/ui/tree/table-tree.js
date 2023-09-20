@@ -182,9 +182,11 @@ component('tableTree.dragAndDrop', {
   type: 'feature',
   impl: features(
     frontEnd.requireExternalLibrary(['dragula.js','css/dragula.css']),
-    frontEnd.onRefresh( (ctx,{cmp}) => cmp.drake.containers = jb.ui.find(cmp.base,'.jb-items-parent')),
+    frontEnd.var('uiTest', '%$uiTest%'),
+    frontEnd.onRefresh((ctx,{cmp}) => cmp.drake && (cmp.drake.containers = jb.ui.find(cmp.base,'.jb-items-parent'))),
     method('moveItem', (ctx,{$props}) => $props.model.move(ctx.data.from,ctx.data.to,ctx)),
-		frontEnd.init( (ctx,{cmp}) => {
+    frontEnd.init((ctx,{uiTest, cmp}) => {
+        if (uiTest) return
         const drake = cmp.drake = dragula([], {
           moves: (el, source, handle) => jb.ui.parents(handle,{includeSelf: true}).some(x=>jb.ui.hasClass(x,'drag-handle')) && (el.getAttribute('path') || '').match(/[0-9]$/)
         })
@@ -212,6 +214,7 @@ component('tableTree.dragAndDrop', {
           if (sameParent)
             ctx.run(action.runBEMethod('moveItem',() => ({from, to: targetPath})))
         })
-    }))
+    })
+  )
 })
 

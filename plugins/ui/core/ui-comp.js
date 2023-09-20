@@ -74,7 +74,7 @@ extension('ui','comp', {
                 const cmpId = id.split(':').pop() // no ':' in cmpID or var name
                 return (usedCmps.get(cmpId) || 0) < maxUsed && !usedCmps.get(cmpId)
             })
-            .forEach(id => { debugger; removedResources.push(id); delete jb.db.resources[id]})
+            .forEach(id => { removedResources.push(id); delete jb.db.resources[id]})
 
         // remove front-end widgets
         const usedWidgets = jb.objFromEntries(

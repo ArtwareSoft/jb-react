@@ -1,14 +1,14 @@
 using('ui-tests,tgp,workspace')
 
 component('uiTest.checkBoxWithCalculatedAndWatchRef', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     control: editableBoolean({
       databind: '%$person/name% == \"Homer Simpson\"',
       style: editableBoolean.checkboxWithLabel(),
       title: '%$person/name%',
       features: watchRef('%$person/name%')
     }),
-    action: writeValue('%$person/name%', 'Mukki'),
+    uiAction: writeValue('%$person/name%', 'Mukki'),
     expectedResult: contains('Mukki'),
     expectedCounters: {'do refresh element !check': 1}
   })
@@ -224,7 +224,7 @@ component('uiTest.watchRefCssOnly', {
         css(If('%$person/name% == Homer Simpson','color: red; /*css-only*/', 'color: green; /*css-only*/'))
       ]
     }),
-    action: writeValue('%$person/name%','Dan'),
+    uiAction: writeValue('%$person/name%','Dan'),
     expectedResult: ctx => Array.from(document.querySelectorAll('style')).map(el=>el.innerText).filter(x=>x.indexOf('color: green; /*css-only*/') != -1)[0],
   })
 })
@@ -238,7 +238,7 @@ component('uiTest.CssOnly.SetAndBack', {
         css(If('%$person/name% == Homer Simpson','color: red; /*css-only*/', 'color: green; /*css-only*/'))
       ]
     }),
-    action: [
+    uiAction: [
       writeValue('%$person/name%','Dan'),
       writeValue('%$person/name%','Homer Simpson'),
     ],
@@ -336,21 +336,19 @@ component('uiTest.watchRefArrayDeleteWithRunActionOnItems', {
 
 component('uiTest.watchableAsText', {
   impl: uiFrontEndTest({
-    //renderDOM: true,
     control: group({
-      vars: Var('watchedText', tgpTextEditor.watchableAsText('%$watchablePeople%')),
+      vars: [
+        Var('watchedText', tgpTextEditor.watchableAsText('%$watchablePeople%'))
+      ],
       controls: [
         editableText({
           databind: '%$watchedText%',
-          style: editableText.textarea({rows: 30, cols: 80}),
+          style: editableText.textarea(30, 80),
           features: [
             id('editor'),
-            feature.onKey(
-              'Alt-P',
-              writeValue('%$path%', tgpTextEditor.cursorPath('%$watchedText%'))
-            ),
+            feature.onKey('Alt-P', writeValue('%$path%', tgpTextEditor.cursorPath('%$watchedText%'))),
             textarea.initTgpTextEditor(),
-            watchRef({ ref: '%$watchablePeople%', includeChildren: 'yes'})
+            watchRef('%$watchablePeople%', 'yes')
           ]
         }),
         button({
@@ -358,7 +356,7 @@ component('uiTest.watchableAsText', {
           action: writeValue('%$path%', tgpTextEditor.cursorPath('%$watchedText%')),
           features: [
             id('show-path'),
-            textarea.enrichUserEvent('#editor'),
+            textarea.enrichUserEvent('#editor')
           ]
         }),
         button({
@@ -368,17 +366,15 @@ component('uiTest.watchableAsText', {
         }),
         text('%$path%')
       ],
-      features: [
-        id('group'),
-        watchable('path')
-      ]
+      features: [id('group'), watchable('path')]
     }),
-    action: uiActions(
-      waitFor(ctx => jb.ui.cmpOfSelector('#editor',ctx) ),
-      action(runFEMethod({ selector: '#editor', method: 'setSelectionRange', data: {$: 'object', from: 22} })),
+    expectedResult: contains('watchablePeople~0~name~!value'),
+    uiAction: uiActions(
+      waitFor(ctx => jb.ui.cmpOfSelector('#editor',ctx)),
+      action(runFEMethod({selector: '#editor', method: 'setSelectionRange', data: {'$': 'object', from: 22}})),
       click('#show-path')
     ),
-    expectedResult: contains('watchablePeople~0~name~!value')
+    useFrontEnd: true
   })
 })
 

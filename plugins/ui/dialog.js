@@ -262,8 +262,8 @@ component('dialogFeature.nearLauncherPosition', {
 	  }),
 	  frontEnd.onRefresh( ({},{$state,el}) => { 
 		const {top,left} = $state.dialogPos || { top: 0, left: 0}
-		el.style.top = `${top}px`
-		el.style.left = `${left}px`
+		jb.ui.setStyle(el,'top',`${top}px`)
+		jb.ui.setStyle(el,'left',`${left}px`)
 	  }),
 	  frontEnd.init((ctx,{cmp,pos,launcherCmpId,elemToTest}) => { // handle launcherCmpId
 		  if (!elemToTest && launcherCmpId && cmp.state.dialogPos.left == 0 && cmp.state.dialogPos.top == 0) {

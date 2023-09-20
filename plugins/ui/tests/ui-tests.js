@@ -498,7 +498,7 @@ component('FETest.itemlistWithSelect.click', {
       controls: text('%$item.name% - %name%'),
       features: itemlist.selection({ autoSelectFirst: true })
     }),
-    action: click('ul>li:nth-child(2)'),
+    uiAction: click('ul>li:nth-child(2)'),
     expectedResult: contains(['Homer Simpson - Homer Simpson', 'selected', 'Bart Simpson - Bart Simpson'])
   })
 })
@@ -530,7 +530,7 @@ component('FETest.itemlistDD', {
         })
       ]
     }),
-    action: uiActions(
+    uiAction: uiActions(
       waitForSelector('.drag-handle'),
       keyboardEvent({ selector: '#itemlist', type: 'keydown', keyCode: 40, ctrl: 'ctrl' })
     ),
@@ -942,13 +942,18 @@ component('uiTest.editableTextInGroup', {
 })
 
 component('FETest.onKey', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     control: editableText({
-      title: 'name', databind: '%$person/name%',
-      features: [id('inp'), feature.onKey('ctrl-Enter', openDialog({ title: 'hello' }))]
+      title: 'name',
+      databind: '%$person/name%',
+      features: [
+        id('inp'),
+        feature.onKey('ctrl-Enter', openDialog('hello'))
+      ]
     }),
-    action: keyboardEvent({ selector: '#inp', type: 'keydown', keyCode: 13, ctrl: 'ctrl' }),
-    expectedResult: contains('hello')
+    expectedResult: contains('hello'),
+    uiAction: keyboardEvent({selector: '#inp', type: 'keydown', keyCode: 13, ctrl: 'ctrl'}),
+    useFrontEnd: true
   })
 })
 
@@ -1350,7 +1355,7 @@ return 15
         editableText({ databind: '%$html/text%', style: editableText.codemirror({ mode: 'htmlmixed' }) })
       ]
     }),
-    action: waitForSelector('.CodeMirror'),
+    uiAction: waitForSelector('.CodeMirror'),
     expectedResult: contains(['function', 'f1', 15]),
     renderDOM: true
   })
@@ -1721,7 +1726,7 @@ component('uiTest.refreshControlById.withButton', {
         })
       ]
     }),
-    action: click('button'),
+    uiAction: click('button'),
     expectedResult: contains('Dan')
   })
 })
@@ -1885,7 +1890,7 @@ component('uiTest.watchRef.recalcVars', {
         watchRef('%$person/name%')
       ]
     }),
-    action: writeValue('%$person/name%', 'hello'),
+    uiAction: writeValue('%$person/name%', 'hello'),
     expectedResult: contains('--hello--')
   })
 })
@@ -2047,7 +2052,7 @@ component('uiTest.infiniteScroll', {
         css.width('100')
       ]
     }),
-    action: uiActions(scrollBy('.jb-itemlist', 80), waitForSelector('ul>:nth-child(8)')),
+    uiAction: uiActions(scrollBy('.jb-itemlist', 80), waitForSelector('ul>:nth-child(8)')),
     expectedResult: contains('>10<'),
     renderDOM: true
   })

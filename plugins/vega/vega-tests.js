@@ -17,7 +17,7 @@ component('vegaTest.bar', {
         encoding: vega.positionChannels(vega.channel('a', 'nominal'), vega.channel('b', 'quantitative'))
       })
     ),
-    action: waitForSelector('svg'),
+    uiAction: waitForSelector('svg'),
     expectedResult: contains('linear scale with values from 0 to 100'),
     renderDOM: true
   })

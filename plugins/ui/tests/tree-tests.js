@@ -35,20 +35,20 @@ component('uiTest.treeRightClick', {
 })
 
 component('FETest.treeDD.betweenBranches', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     control: tree({
       nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
-      features: [tree.selection(), tree.dragAndDrop(), tree.keyboardSelection()]
+      features: [
+        tree.selection(),
+        tree.dragAndDrop(),
+        tree.keyboardSelection()
+      ]
     }),
-    action: move('%$personWithChildren/children[1]%','%$personWithChildren/friends[0]%'),
     expectedResult: equals(
-      pipeline(
-        list('%$personWithChildren/children%', '%$personWithChildren/friends%'),
-        '%name%',
-        join(',')
-      ),
+      pipeline(list('%$personWithChildren/children%','%$personWithChildren/friends%'), '%name%', join(',')),
       'Bart,Maggie,Lisa,Barnie'
-    )
+    ),
+    uiAction: move('%$personWithChildren/children[1]%', '%$personWithChildren/friends[0]%')
   })
 })
 
@@ -61,7 +61,7 @@ component('FETest.treeDD.sameArray', {
         tree.expandPath('personWithChildren~children')
       ]
     }),
-    action: uiActions(
+    uiAction: uiActions(
       waitFor(()=> jb.frame.dragula),
       click('[title="Bart"]'),
       keyboardEvent({ selector: '[interactive]', type: 'keydown', keyCode: 40, ctrl: 'ctrl' }),
@@ -71,33 +71,34 @@ component('FETest.treeDD.sameArray', {
 })
 
 component('FETest.treeDDAndBack', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     control: tree({
       nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
-      features: [tree.selection(), tree.dragAndDrop(), tree.keyboardSelection()]
+      features: [
+        tree.selection(),
+        tree.dragAndDrop(),
+        tree.keyboardSelection()
+      ]
     }),
-    action: uiActions(
-      move('%$personWithChildren/children[1]%','%$personWithChildren/friends[1]%'),
-      move('%$personWithChildren/friends[1]%','%$personWithChildren/children[1]%'),
-    ),
     expectedResult: equals(
-      pipeline(
-        list('%$personWithChildren/children%', '%$personWithChildren/friends%'),
-        '%name%',
-        join(',')
-      ),
+      pipeline(list('%$personWithChildren/children%','%$personWithChildren/friends%'), '%name%', join(',')),
       'Bart,Lisa,Maggie,Barnie'
-    )
+    ),
+    uiAction: uiActions(
+      move('%$personWithChildren/children[1]%', '%$personWithChildren/friends[1]%'),
+      move('%$personWithChildren/friends[1]%', '%$personWithChildren/children[1]%')
+    ),
+    useFrontEnd: true
   })
 })
 
 component('FETest.treeDDTwice', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     control: tree({
       nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
       features: [tree.selection(), tree.dragAndDrop(), tree.keyboardSelection()]
     }),
-    action: uiActions(
+    uiAction: uiActions(
       move('%$personWithChildren/children[1]%','%$personWithChildren/friends[1]%'),
       move('%$personWithChildren/children[1]%','%$personWithChildren/friends[1]%'),
     ),
@@ -108,17 +109,18 @@ component('FETest.treeDDTwice', {
         join(',')
       ),
       'Bart,Barnie,Maggie,Lisa'
-    )
+    ),
+    useFrontEnd: true
   })
 })
 
 component('FETest.treeDDAfterLast', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     control: tree({
       nodeModel: tree.json('%$personWithChildren%', 'Homer'),
       features: [tree.selection(), tree.dragAndDrop(), tree.keyboardSelection()]
     }),
-    action: move('%$personWithChildren/children[1]%','%$personWithChildren/friends[1]%'),
+    uiAction: move('%$personWithChildren/children[1]%','%$personWithChildren/friends[1]%'),
     expectedResult: equals(
       pipeline(
         list('%$personWithChildren/children%', '%$personWithChildren/friends%'),
@@ -126,7 +128,8 @@ component('FETest.treeDDAfterLast', {
         join({})
       ),
       'Bart,Maggie,Barnie,Lisa'
-    )
+    ),
+    useFrontEnd: true
   })
 })
 
@@ -142,8 +145,9 @@ component('FETest.treeDD.boundedSelection', {
       }),
       features: watchable('selected', 'personWithChildren~children~1')
     }),
-    action: keyboardEvent({ selector: '[interactive]', type: 'keydown', keyCode: 40, ctrl: 'ctrl' }),
-    expectedResult: contains(['Bart','Maggie','selected','Lisa'])
+    uiAction: keyboardEvent({ selector: '[interactive]', type: 'keydown', keyCode: 40, ctrl: 'ctrl' }),
+    expectedResult: contains(['Bart','Maggie','selected','Lisa']),
+    useFrontEnd: true
   })
 })
 
@@ -159,6 +163,43 @@ component('uiTest.treeVisualDD', {
       ]
     }),
     expectedResult: true
+  })
+})
+
+component('uiTest.treeUnexpandRefresh', {
+  impl: uiTest({
+    control: tree({
+      nodeModel: tree.jsonReadOnly(()=>({
+          a: { a1: 'val' },
+          b: { b1: 'val' },
+        }), ''),
+      features: [
+        tree.expandPath('%$globals/expanded%'),
+        watchRef({ref: '%$globals/expanded%', strongRefresh: true})
+      ]
+    }),
+    runBefore: writeValue('%$globals/expanded%', '~a'),
+    expectedResult: contains('~a~a1'),
+    useFrontEnd: true
+  })
+})
+
+component('uiTest.treeExpandRefresh', {
+  impl: uiTest({
+    control: tree({
+      nodeModel: tree.jsonReadOnly(()=>({
+          a: { a1: 'val' },
+          b: { b1: 'val' },
+        }), ''),
+      features: [
+        tree.expandPath('%$globals/expanded%'),
+        watchRef({ref: '%$globals/expanded%', strongRefresh: true})
+      ]
+    }),
+    runBefore: writeValue('%$globals/expanded%', '~a'),
+    uiAction: writeValue('%$globals/expanded%', ''),
+    expectedResult: not(contains('~a~a1')),
+    useFrontEnd: true
   })
 })
 
@@ -228,34 +269,29 @@ component('uiTest.tableTree.expandPath', {
 })
 
 component('uiTest.tableTree.DD', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     control: tableTree({
       treeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
-      chapterHeadline: text({
-        text: If(
-          matchRegex('[0-9]*', suffix('~', '%path%')),
-          '%val/name%',
-          suffix('~', '%path%')
-        )
-      }),
-      style: tableTree.plain({}),
+      chapterHeadline: text(If(matchRegex('[0-9]*', suffix('~', '%path%')), '%val/name%', suffix('~', '%path%'))),
+      style: tableTree.plain(),
       features: [
         id('tableTree'),
         tableTree.expandPath('personWithChildren~children'),
         tableTree.dragAndDrop(),
-        watchRef({ref: '%$personWithChildren/children%', strongRefresh1: true})
+        watchRef({ref: '%$personWithChildren/children%'})
       ]
     }),
-    action: uiActions(
-      ctx => jb.db.move(ctx.exp('%$personWithChildren/children[2]%', 'ref'), ctx.exp('%$personWithChildren/children[0]%', 'ref'),ctx),
-      ctx => jb.db.move(ctx.exp('%$personWithChildren/children[2]%', 'ref'), ctx.exp('%$personWithChildren/children[0]%', 'ref'),ctx),
-    ),
     expectedResult: contains(['Lisa','Maggie','Bart']),
+    uiAction: uiActions(
+      ctx => jb.db.move(ctx.exp('%$personWithChildren/children[2]%', 'ref'), ctx.exp('%$personWithChildren/children[0]%', 'ref'),ctx),
+      ctx => jb.db.move(ctx.exp('%$personWithChildren/children[2]%', 'ref'), ctx.exp('%$personWithChildren/children[0]%', 'ref'),ctx)
+    ),
+    useFrontEnd: true
   })
 })
 
 component('uiTest.tableTreeRefresh1', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     control: tableTree({
       treeModel: tree.jsonReadOnly('%$personWithChildren%', ''),
       leafFields: text({text: '%val%', title: 'name'}),
@@ -267,8 +303,9 @@ component('uiTest.tableTreeRefresh1', {
         watchRef({ref: '%$globals/expanded%', strongRefresh: true})
       ]
     }),
-    action: writeValue('%$globals/expanded%', '~friends~0'),
-    expectedResult: contains(['name', 'path', 'Homer', 'friends', 'Barnie', '~friends~0~name'])
+    uiAction: writeValue('%$globals/expanded%', '~friends~0'),
+    expectedResult: contains(['name', 'path', 'Homer', 'friends', 'Barnie', '~friends~0~name']),
+    useFrontEnd: true
   })
 })
 
@@ -289,10 +326,33 @@ component('uiTest.tableTreeUnexpandRefresh', {
       ]
     }),
     runBefore: writeValue('%$globals/expanded%', '~a'),
-    action: writeValue('%$globals/expanded%', ''),
-    expectedResult: not(contains('~a~a1'))
+    uiAction: writeValue('%$globals/expanded%', ''),
+    expectedResult: not(contains('~a~a1')),
   })
 })
+
+// component('uiTest.tableTreeUnexpandRefresh.vdom', {
+//   impl: uiTest({
+//     control: tableTree({
+//       treeModel: tree.jsonReadOnly(()=>({
+//           a: { a1: 'val' },
+//           b: { b1: 'val' },
+//         }), ''),
+//       leafFields: text({text: '%val%', title: 'name'}),
+//       commonFields: text({text: '%path%', title: 'path'}),
+//       chapterHeadline: text({text: suffix('~', '%path%')}),
+//       style: tableTree.plain(),
+//       features: [
+//         tableTree.expandPath('%$globals/expanded%'),
+//         watchRef({ref: '%$globals/expanded%', strongRefresh: true})
+//       ]
+//     }),
+//     runBefore: writeValue('%$globals/expanded%', '~a'),
+//     uiAction: writeValue('%$globals/expanded%', ''),
+//     expectedResult: not(contains('~a~a1')),
+//     useFrontEnd: true
+//   })
+// })
 
 component('uiTest.tableTreeExpandMulitplePaths', {
   impl: uiTest({
