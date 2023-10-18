@@ -126,32 +126,31 @@ extension('syntaxConverter', 'onAddComponent', {
   fixProfile(profile,origin,id) {
     if (profile === null) return
     if (!profile || jb.utils.isPrimitiveValue(profile) || typeof profile == 'function') return profile
-    if (profile.$ == 'uiTest') {
-        if ((jb.path(profile.$byValue[0].userInput,'$') || '').indexOf('userInput.') == 0) {
-            profile.$byValue[0].uiAction = profile.$byValue[0].userInput
-            profile.$byValue[0].uiAction.$ = profile.$byValue[0].uiAction.$.slice('userInput.'.length)
-        }
+    // if (profile.$ == 'uiTest') {
+    //     if ((jb.path(profile.$byValue[0].userInput,'$') || '').indexOf('userInput.') == 0) {
+    //         profile.$byValue[0].uiAction = profile.$byValue[0].userInput
+    //         profile.$byValue[0].uiAction.$ = profile.$byValue[0].uiAction.$.slice('userInput.'.length)
+    //     }
+    // }
+    // if (profile.$ == 'uiFrontEndTest' && profile.$byValue[0].action) {
+    //     profile.$byValue[0].uiAction = profile.$byValue[0].action
+    //     delete profile.$byValue[0].action
+    // }
 
-    }
-    if (profile.$ == 'uiFrontEndTest' && profile.$byValue[0].action) {
-        profile.$byValue[0].uiAction = profile.$byValue[0].action
-        delete profile.$byValue[0].action
-    }
-
-    ;['pipeline','list','firstSucceeding','concat','and','or'].forEach(sugar => {
-        if (profile['$'+sugar]) {
-            profile.$ = sugar
-            profile.items = profile['$'+sugar]
-            delete profile['$'+sugar]
-        }
-    })
-    ;['not'].forEach(sugar => {
-        if (profile['$'+sugar]) {
-            profile.$ = sugar
-            profile.of = profile['$'+sugar]
-            delete profile['$'+sugar]
-        }
-    })
+    // ;['pipeline','list','firstSucceeding','concat','and','or'].forEach(sugar => {
+    //     if (profile['$'+sugar]) {
+    //         profile.$ = sugar
+    //         profile.items = profile['$'+sugar]
+    //         delete profile['$'+sugar]
+    //     }
+    // })
+    // ;['not'].forEach(sugar => {
+    //     if (profile['$'+sugar]) {
+    //         profile.$ = sugar
+    //         profile.of = profile['$'+sugar]
+    //         delete profile['$'+sugar]
+    //     }
+    // })
     if (jb.syntaxConverter.amtaFix)
         profile = jb.syntaxConverter.amtaFix(profile)
 

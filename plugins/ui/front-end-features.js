@@ -38,7 +38,7 @@ component('backend.dataMethod', {
     {id: 'data', defaultValue: '%%'},
     {id: 'ctxVars'}
   ],
-  impl: ({} ,cmpId,method,data,ctxVars) => jb.ui.cmps[cmpId].runBEMethod(method,data,ctxVars)
+  impl: ({} ,cmpId,method,data,ctxVars) => jb.ui.cmps[cmpId].runBEMethod(method,data,ctxVars,{dataMethod: true})
 })
 
 component('action.runFEMethod', {

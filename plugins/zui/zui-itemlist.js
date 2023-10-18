@@ -60,8 +60,8 @@ component('itemlistStyle', {
         frontEnd.var('itemPropsProfile', ({},{$model}) => $model.itemProps.profile),
         frontEnd.var('itemViewProfile', ({},{$model}) => $model.itemView.profile),
         frontEnd.prop('itemView', (ctx,{itemPropsProfile, itemViewProfile}) => {
-        const itemProps = ctx.run(itemPropsProfile, {type: 'itemProp[]<zui>' })
-        return ctx.setVars({itemProps}).run(itemViewProfile,{ type: 'view<zui>'})
+          const itemProps = ctx.run(itemPropsProfile, {type: 'itemProp[]<zui>' })
+          return ctx.setVars({itemProps}).run(itemViewProfile,{ type: 'view<zui>'})
       }),
         frontEnd.varsFromBEProps(['DIM','records','shortPaths','center','tCenter','tZoom']),
         frontEnd.prop('ZOOM_LIMIT', ({},{DIM}) => [1, jb.ui.isMobile() ? DIM: DIM*2]),
@@ -202,7 +202,7 @@ extension('zui','itemlist-FE', {
   },
   async bindBuffers(ctx, {cmp}) {
     const {gl} = cmp
-    const {viewId, buffers} = ctx.data[0]
+    const {viewId, buffers} = ctx.data
     const view = jb.zui.viewOfId(cmp.itemView,viewId)
     const elem = view.zuiElem
     if (!elem) return

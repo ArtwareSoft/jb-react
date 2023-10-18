@@ -73,8 +73,9 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
         }
         const result = { result: res, exception, errors: jb.spy.search('error'), logs: jb.spy.logs, main }
         try {
-            console.log(JSON.stringify(jb.remoteCtx.stripData({...result})))
-            process.exit(0)
+            const resStr = JSON.stringify(jb.remoteCtx.stripData({...result}))
+            process.stdout.write(resStr)
+            process.stdout.on('finish', () => process.exit(0))
         } catch(err) {
             return console.log(JSON.stringify({ desc: 'can not stringify result', err }))
         }

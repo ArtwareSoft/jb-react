@@ -49,19 +49,14 @@ component('backEnd', {
 
 component('dataMethodFromBackend', {
   type: 'data',
-  description: 'activated on FE to get data from BE, assuming $cmp variable',
+  description: 'activated on FE to get data from BE',
   macroByValue: true,
   params: [
     { id: 'method', as: 'string' },
     { id: 'data', defaultValue: '%%' },
     { id: 'vars' }
   ],
-  impl: pipe(
-    Var(
-      'cmpId', '%$cmp/cmpId%'
-    ),
-    remote.data(backend.dataMethod({ ctxIdToRun: '%$ctxIdToRun%', method: '%$method%', data: '%$data%' }), backEnd())
-  )
+  impl: remote.data(backend.dataMethod({ cmpId: '%$cmp/cmpId%', method: '%$method%', data: '%$data%' }), backEnd())
 })
 
 component('action.updateFrontEnd', {

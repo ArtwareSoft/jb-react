@@ -222,12 +222,12 @@ const op_post_handlers = {
 
       //${baseUrl}/tests.html?
       res.setHeader('Content-Type', 'application/json; charset=utf8')
-      const srvr = child.spawn('node',['./jb.js', ...args],{cwd: 'hosts/node'})
+      const srvr = child.spawn('node',['--inspect-brk', './jb.js', ...args],{cwd: 'hosts/node'})
       let res_str = ''
       srvr.stdout.on('data', data => { res.write(data); res_str += data })
       srvr.stdout.on('end', data => {
         res.end(data)
-        writeToCmdLog('./lastCmdRes', res_str+data)
+        writeToCmdLog('./lastCmdRes', res_str+(data || ''))
       })
       //srvr.on('exit', onExit)
       srvr.on('error', (e) => res.end(JSON.stringify({command, error: `${''+e}`})))  

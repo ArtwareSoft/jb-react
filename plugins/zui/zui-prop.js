@@ -21,7 +21,7 @@ component('text', {
     {id: 'features', type: 'prop_feature[]', dynamic: true, flattenArray: true}
   ],
   impl: (ctx, att, calc, features) => {
-    const items = ctx.vars.items
+    const items = ctx.vars.items || []
     if (calc.profile) // calculated attribute
       items.forEach(i=> i[att] = calc(ctx.setData(i)))
 
@@ -50,7 +50,7 @@ component('numeric', {
     {id: 'features', type: 'prop_feature[]', dynamic: true, flattenArray: true}
   ],
   impl: (ctx, att, calc, prefix, suffix, features) => {
-    const items = ctx.vars.items
+    const items = ctx.vars.items || []
     if (calc.profile) // calculated attribute
       items.forEach(i=> i[att] = calc(ctx.setData(i)))
 

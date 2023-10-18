@@ -29,7 +29,7 @@ extension('parsing', {
 component('extractText', {
   description: 'text breaking according to begin/end markers',
   params: [
-    {id: 'text', as: 'string-with-source-ref', defaultValue: '%%'},
+    {id: 'text', as: 'string', defaultValue: '%%'},
     {id: 'startMarkers', type: 'data[]', as: 'array', mandatory: true},
     {id: 'endMarker', as: 'string'},
     {id: 'includingStartMarker', as: 'boolean', type: 'boolean', description: 'include the marker at part of the result'},

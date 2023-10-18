@@ -318,8 +318,8 @@ extension('ui','comp', {
         hasBEMethod(method) {
             return (this.method||[]).filter(h=> h.id == method)[0]
         }
-        runBEMethod(method, data, vars, reqCtx = {}) {
-            const {doNotUseUserReqTx} = reqCtx
+        runBEMethod(method, data, vars, options = {}) {
+            const {doNotUseUserReqTx, dataMethod} = options
             jb.log(`backend uiComp method ${method}`, {cmp: this,data,vars})
             if (jb.path(vars,'$state'))
                 Object.assign(this.state,vars.$state)
@@ -328,6 +328,9 @@ extension('ui','comp', {
                 const tx = !doNotUseUserReqTx && ctx.vars.userReqTx
                 tx && tx.complete()                        
             })
+            if (dataMethod && tActions[0])
+                return this.runMethodObject((this.method||[]).filter(h=> h.id == method)[0],data,vars)
+
             const tx = this.calcCtx.vars.userReqTx
             if (tx)
                 tx.completeByChildren(tActions, this.calcCtx)

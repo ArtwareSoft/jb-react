@@ -8,7 +8,7 @@ component('wPreview', {
 })
 
 component('studio.filePath', {
-  impl: pipeline(firstSucceeding('%$studio/circuit%','%$studio/page%'), ({data}) => jb.comps[data][jb.core.CT].location.path)
+  impl: pipeline(firstSucceeding('%$studio/circuit%','%$studio/page%'), ({data}) => jb.comps[data] && jb.comps[data][jb.core.CT].location.path)
 })
 
 component('preview', {

@@ -1,3 +1,4 @@
+using('common,zui,ui')
 
 component('zuiDemo.main', {
   type: 'control',
@@ -26,14 +27,10 @@ component('zuiDemo.main', {
         center: '11.250771189536731,23.093061441630162',
         items: pipeline('%$hotels%', unique('%name%')),
         itemProps: [
-          numeric({
-            att: 'price',
-            prefix: '$',
-            features: [
-              priorty(1),
-              colorScale(green())
-            ]
-          }),
+          numeric({att: 'price', prefix: '$', features: [
+            priorty(1),
+            colorScale(green())
+          ]}),
           numeric({att: 'rating', features: [priorty(2), colorScale(red())]}),
           text({att: 'name', features: priorty(3)}),
           geo('lat', preferedAxis('y')),

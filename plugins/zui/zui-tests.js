@@ -31,8 +31,8 @@ component('zuiTest.gallery', {
 })
 
 component('zuiTest.itemlist', {
-  impl: uiTest({
-    control: group({
+  impl: uiTest(
+    group({
       layout: layout.flex({direction: 'row', wrap: 'wrap'}),
       controls: [
         zui.itemlist({
@@ -44,11 +44,7 @@ component('zuiTest.itemlist', {
                   firstToFit(
                     [
                       fixedText({prop: byName('price'), length: 8}),
-                      fixedText({
-                        prop: byName('price'),
-                        length: 4,
-                        backgroundColorByProp: true
-                      }),
+                      fixedText({prop: byName('price'), length: 4, backgroundColorByProp: true}),
                       circle(byName('price'))
                     ]
                   ),
@@ -69,14 +65,10 @@ component('zuiTest.itemlist', {
           center: '1.3130639001816125,0.9833333333333321',
           items: pipeline('%$hotels%'),
           itemProps: [
-            numeric({
-              att: 'price',
-              prefix: '$',
-              features: [
-                priorty(1),
-                colorScale(green())
-              ]
-            }),
+            numeric({att: 'price', prefix: '$', features: [
+              priorty(1),
+              colorScale(green())
+            ]}),
             numeric({att: 'rating', features: [priorty(2), colorScale(red())]}),
             text({att: 'name', features: priorty(3)}),
             geo('lat', preferedAxis('y')),
@@ -90,8 +82,8 @@ component('zuiTest.itemlist', {
         variable('zuiCtx', obj())
       ]
     }),
-    expectedResult: contains('-')
-  })
+    contains('-')
+  )
 })
 
 component('zuiTest.nested', {

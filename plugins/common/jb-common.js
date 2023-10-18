@@ -1084,7 +1084,7 @@ component('data.switch', {
   macroByValue: false,
   params: [
     {id: 'cases', type: 'data.switch-case[]', as: 'array', mandatory: true, defaultValue: []},
-    {id: 'default', dynamic: true}
+    {id: 'default', dynamic: true},
   ],
   impl: (ctx,cases,defaultValue) => {
 		for(let i=0;i<cases.length;i++)
