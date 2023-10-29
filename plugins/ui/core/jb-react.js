@@ -108,7 +108,7 @@ extension('ui', 'react', {
             jb.ui.refreshFrontEnd(elem, {content: vdomAfter})
         }
         if (active) jb.ui.focus(elem,'apply Vdom diff',ctx)
-        jb.ui.garbageCollectUiComps()
+        jb.ui.garbageCollectUiComps({ctx})
     },
 
     applyDeltaToDom(elem,delta,ctx) {

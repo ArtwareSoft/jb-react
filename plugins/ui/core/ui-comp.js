@@ -54,9 +54,9 @@ extension('ui','comp', {
             return origCtx.params.style ? origCtx.params.style(ctx) : {}
         }
     },
-    garbageCollectUiComps(forceNow,clearAll) {
+    garbageCollectUiComps({forceNow,clearAll,ctx}) {
         if (!forceNow)
-            return jb.delay(1000).then(()=>jb.ui.garbageCollectUiComps(true))
+            return jb.delay(1000).then(()=>jb.ui.garbageCollectUiComps({forceNow: true, clearAll, ctx}))
    
         // remove unused cmps from dictionary
         const usedCmps = new Map(querySelectAllWithWidgets(`[cmp-id]`).map(el=>[el.getAttribute('cmp-id'),el.getAttribute('ctx-id')]))
@@ -94,7 +94,7 @@ extension('ui','comp', {
         if (removeFollowUps.length)
             jb.ui.BECmpsDestroyNotification.next({ cmps: removeFollowUps})
 
-        jb.log('garbageCollect',{maxUsed,removedCmps,removedResources,removeWidgets,removeFollowUps})
+        jb.log('garbageCollect',{maxUsed,removedCmps,removedResources,removeWidgets,removeFollowUps,ctx})
 
         function querySelectAllWithWidgets(query) {
             return jb.ui.headless ? [...Object.values(jb.ui.headless).filter(x=>x.body).flatMap(w=>w.body.querySelectorAll(query,{includeSelf:true})), 

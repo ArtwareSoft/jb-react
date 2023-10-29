@@ -1,1 +1,1 @@
-node --inspect-brk ../hosts/node/node-worker.js '-uri:nodeWorker1' '-clientUri:tests' '-sourceCode:{"pluginPackages":[{"$":"defaultPackage"}],"plugins":["remote","tree-shake"],"treeShakeServerUri":"tests"}'
+node --inspect-brk ../hosts/node/node-worker.js '-uri:amtaServer' '-clientUri:tests' '-sourceCode:{"pluginPackages":[{"$":"defaultPackage"},{"$":"fileSystem","repo":"amta","baseDir":"/home/shaiby/projects/amta"}],"plugins":["tree-shake","amta-ui","amta-ui-tests"]}'

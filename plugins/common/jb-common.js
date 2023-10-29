@@ -390,6 +390,7 @@ component('writeValue', {
   ],
   impl: (ctx,to,value,noNotifications) => {
     if (!jb.db.isRef(to)) {
+      debugger
       ctx.run(ctx.profile.to,{as: 'ref'}) // for debug
       return jb.logError(`can not write to: ${ctx.profile.to}`, {ctx})
     }
@@ -1189,7 +1190,7 @@ component('waitFor',{
             if (timesoFar >= timeout) {
               clearInterval(toRelease)
               jb.log('waitFor timeout',{ctx})
-              jb.log(logOnError(),{ctx})
+              logOnError() && jb.log(logOnError(),{ctx})
               reject('timeout')
             }
             if (waitingForPromise) return

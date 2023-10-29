@@ -104,20 +104,21 @@ extension('db', {
       return jb.db.simpleValueByRefHandler.asRef(obj)
     },
     // the !srcCtx.probe blocks data change in probe
-    writeValue: (ref,value,srcCtx,noNotifications) => !srcCtx.probe && jb.db.safeRefCall(ref, h => {
+    writeValue: (ref,value,srcCtx,noNotifications) => jb.db.canChangeDB(srcCtx) && jb.db.safeRefCall(ref, h => {
       noNotifications && h.startTransaction && h.startTransaction()
       h.writeValue(ref,value,srcCtx)
       noNotifications && h.endTransaction && h.endTransaction(true)
     }),
     objectProperty: (obj,prop,srcCtx) => jb.db.objHandler(obj).objectProperty(obj,prop,srcCtx),
-    splice: (ref,args,srcCtx) => !srcCtx.probe && jb.db.safeRefCall(ref, h=>h.splice(ref,args,srcCtx)),
-    move: (ref,toRef,srcCtx) => !srcCtx.probe && jb.db.safeRefCall(ref, h=>h.move(ref,toRef,srcCtx)),
-    push: (ref,toAdd,srcCtx) => !srcCtx.probe && jb.db.safeRefCall(ref, h=>h.push(ref,toAdd,srcCtx)),
-    doOp: (ref,op,srcCtx) => !srcCtx.probe && jb.db.safeRefCall(ref, h=>h.doOp(ref,op,srcCtx)),
+    splice: (ref,args,srcCtx) => jb.db.canChangeDB(srcCtx) && jb.db.safeRefCall(ref, h=>h.splice(ref,args,srcCtx)),
+    move: (ref,toRef,srcCtx) => jb.db.canChangeDB(srcCtx) && jb.db.safeRefCall(ref, h=>h.move(ref,toRef,srcCtx)),
+    push: (ref,toAdd,srcCtx) => jb.db.canChangeDB(srcCtx) && jb.db.safeRefCall(ref, h=>h.push(ref,toAdd,srcCtx)),
+    doOp: (ref,op,srcCtx) => jb.db.canChangeDB(srcCtx) && jb.db.safeRefCall(ref, h=>h.doOp(ref,op,srcCtx)),
     isRef: ref => jb.db.refHandler(ref),
     isWatchable: ref => jb.db.isWatchableFunc[0] && jb.db.isWatchableFunc[0](ref), // see remark at initExtension
     isValid: ref => jb.db.safeRefCall(ref, h=>h.isValid(ref)),
     pathOfRef: ref => jb.db.safeRefCall(ref, h=>h.pathOfRef(ref)),
     refOfPath: path => jb.db.watchableHandlers.reduce((res,h) => res || h.refOfPath(path),null),
+    canChangeDB: ctx => !ctx.probe || ctx.vars.testID
 })
 

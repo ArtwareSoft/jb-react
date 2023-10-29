@@ -211,7 +211,7 @@ const op_post_handlers = {
     },
     jb: (req,res,body) => {
       const args = JSON.parse(body)
-      const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(arg=> 
+      const command = `node --inspect-brk=7001 ../hosts/node/jb.js ${args.map(arg=> 
         (arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`\\"`).replace(/`/g,"\\`").replace(/\$/g,'\\$')}"` : `'${arg}'`)).join(' ')}`
       writeToCmdLog('./lastCmd', command)
 
@@ -221,8 +221,8 @@ const op_post_handlers = {
       writeToCmdLog('./runCtxUrl', runCtxUrl)
 
       //${baseUrl}/tests.html?
-      res.setHeader('Content-Type', 'application/json; charset=utf8')
-      const srvr = child.spawn('node',['--inspect-brk', './jb.js', ...args],{cwd: 'hosts/node'})
+      res.setHeader('Content-Type', 'application/json; charset=utf8') // '--inspect-brk', 
+      const srvr = child.spawn('node',['./jb.js', ...args],{cwd: 'hosts/node'})
       let res_str = ''
       srvr.stdout.on('data', data => { res.write(data); res_str += data })
       srvr.stdout.on('end', data => {

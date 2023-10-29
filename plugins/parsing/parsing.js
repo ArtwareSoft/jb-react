@@ -264,6 +264,18 @@ component('wrapAsObject', {
   // }
 })
 
+component('substring', {
+  params: [
+    {id: 'start', as: 'number', defaultValue: 0, description: '0-based index', mandatory: true},
+    {id: 'end', as: 'number', mandatory: true, description: '0-based index of where to end the selection (not including itself)'},
+    {id: 'text', as: 'string', defaultValue: '%%'}
+  ],
+  impl: ({},start,end, text) => {
+		if (!text || !text.substring) return ''
+		return end ? text.substring(start,end) : text.substring(start)
+	}
+})
+
 component('asString', {
 	params: [
 		{ id: 'text', as: 'string', defaultValue: '%%'}

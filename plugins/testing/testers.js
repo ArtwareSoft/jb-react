@@ -96,7 +96,7 @@ extension('test', {
 		if (!jb.spy.enabled) jb.spy.initSpy({spyParam: 'test'})
 		jb.spy.clear()
 		// await jb.jbm.terminateAllChildren()
-		// jb.ui.garbageCollectUiComps(true,true)
+		// jb.ui.garbageCollectUiComps({forceNow: true,clearAll: true})
 	},
 	countersErrors(expectedCounters,allowError) {
 		if (!jb.spy.enabled) return ''
@@ -130,7 +130,7 @@ extension('test', {
 		jb.log('end test',{testID,res})
 		if (!jb.test.singleTest)
 			await jb.jbm.terminateAllChildren(tstCtx)
-		jb.ui && jb.ui.garbageCollectUiComps(true,true)
+		jb.ui && jb.ui.garbageCollectUiComps({forceNow: true,clearAll: true ,ctx: tstCtx})
 
 		res.show = () => {
 			const profile = jb.comps[testID]
