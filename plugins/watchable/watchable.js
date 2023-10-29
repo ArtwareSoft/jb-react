@@ -114,7 +114,9 @@ extension('watchable', 'main', {
           this.objToPath.set(top[jb.watchable.jbId],path)
           this.objToPath.delete(top)
       } else {
-          this.objToPath.set(top,path)
+          //this.objToPath.set(top,path)
+          top[jb.watchable.jbId] = this.idCounter++
+          this.objToPath.set(top[jb.watchable.jbId],path)  
       }
       Object.keys(top).filter(key=>typeof top[key] === 'object' && key.indexOf('$jb_') != 0)
           .forEach(key => this.addObjToMap(top[key],[...path,key]))

@@ -2008,10 +2008,7 @@ component('uiTest.watchableParentRefreshMaskChildren', {
 })
 
 component('uiTest.watchableUrl', {
-  impl: uiTest({
-    control: text('%$person/name%'),
-    expectedResult: contains('observe=\"resources://2~name;person~name')
-  })
+  impl: uiTest(text('%$person/name%'), contains(['observe=\"resources','~name;person~name']))
 })
 
 component('uiTest.itemlistWithGroupWait', {
