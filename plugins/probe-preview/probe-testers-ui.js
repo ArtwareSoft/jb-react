@@ -21,7 +21,7 @@ component('test.showTestInStudio', {
 		async function testResult() {
       if (!jb.test) return
 			jb.test.singleTest = true
-			const watchablesBefore = jb.db.watchableHandlers.map(h=>({resources: h.resources(), objToPath: new Map(h.objToPath)}))
+			const watchablesBefore = jb.db.watchableHandlers.map(h=>({resources: h.resources(), objToPath: []}))
 			//const spyBefore = { logs: spy.logs, spyParam: spy.spyParam}
 			const spyParam = jb.utils.unique([...spy.spyParam.split(','),'test,uiTest,headless']).join(',')
 			jb.spy.initSpy({spyParam})

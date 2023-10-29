@@ -21,7 +21,7 @@ extension('watchable', 'main', {
   WatchableValueByRef: class WatchableValueByRef {
     constructor(resources) {
       this.resources = resources
-      this.objToPath = new Map()
+      this.objToPath = []
       this.idCounter = 1
       this.opCounter = 1
       this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])]
@@ -31,7 +31,7 @@ extension('watchable', 'main', {
 
       const resourcesObj = resources()
       resourcesObj[jb.watchable.jbId] = this.idCounter++
-      this.objToPath.set(resourcesObj[jb.watchable.jbId],[])
+      this.objToPath[resourcesObj[jb.watchable.jbId]] = []
       this.propagateResourceChangeToObservables()
     }
     doOp(ref,opOnRef,srcCtx) {
@@ -93,7 +93,7 @@ extension('watchable', 'main', {
       const resource = this.resources()[resName]
       if (!resource)
         return jb.logError(`makeWatchable - can not find ${resName} in resources`,{})
-      if (!(this.objToPath.has(resource) || this.objToPath.has(resource[jb.watchable.jbId]))) {
+      if (!this.objToPath[resource[jb.watchable.jbId]]) {
         jb.log('make watchable',{resName})
         this.addObjToMap(resource,[resName])
       }
@@ -110,38 +110,34 @@ extension('watchable', 'main', {
     }
     addObjToMap(top,path) {
       if (!top || top[jb.watchable.isProxy] || top[jb.db.passiveSym] || top.$jb_val || typeof top !== 'object' || this.allowedTypes.indexOf(Object.getPrototypeOf(top)) == -1) return
-      if (top[jb.watchable.jbId]) {
-          this.objToPath.set(top[jb.watchable.jbId],path)
-          this.objToPath.delete(top)
-      } else {
-          //this.objToPath.set(top,path)
+      if (!top[jb.watchable.jbId])
           top[jb.watchable.jbId] = this.idCounter++
-          this.objToPath.set(top[jb.watchable.jbId],path)  
-      }
+      this.objToPath[top[jb.watchable.jbId]] = path
+
       Object.keys(top).filter(key=>typeof top[key] === 'object' && key.indexOf('$jb_') != 0)
           .forEach(key => this.addObjToMap(top[key],[...path,key]))
     }
     removeObjFromMap(top,isInner) {
       if (!top || typeof top !== 'object' || this.allowedTypes.indexOf(Object.getPrototypeOf(top)) == -1) return
-      this.objToPath.delete(top)
+//      this.objToPath.delete(top)
       if (top[jb.watchable.jbId] && isInner)
-          this.objToPath.delete(top[jb.watchable.jbId])
+          this.objToPath[top[jb.watchable.jbId]] = null
       Object.keys(top).filter(key=>typeof top[key] === 'object' && key.indexOf('$jb_') != 0).forEach(key => this.removeObjFromMap(top[key],true))
     }
     fixSplicedPaths(path,spliceOp) {
       const propDepth = path.length
       Array.from(this.objToPath.keys())
-        .filter(k=>startsWithPath(this.objToPath.get(k)))
+        .filter(k=>startsWithPath(this.objToPath[k]))
   //      .filter(k=>! spliceOp.reduce((res,ar) => res || jb.asArray(ar[2]).indexOf(k) != -1, false)) // do not touch the moved elem itslef
         .forEach(k=>{
-          const newPath = this.objToPath.get(k)
+          const newPath = this.objToPath[k]
           newPath[propDepth] = fixIndexProp(+newPath[propDepth])
           if (newPath[propDepth] >= 0)
-            this.objToPath.set(k,newPath)
+            this.objToPath[k] = newPath
         })
 
       function startsWithPath(toCompare) {
-        if (toCompare.length <= propDepth) return
+        if (!toCompare || toCompare.length <= propDepth) return
         for(let i=0;i<propDepth;i++)
           if (toCompare[i] != path[i]) return
         return true
@@ -154,7 +150,7 @@ extension('watchable', 'main', {
     pathOfRef(ref) {
       if (ref.$jb_path)
         return ref.$jb_path()
-      const path = this.isRef(ref) && (this.objToPath.get(ref.$jb_obj) || this.objToPath.get(ref.$jb_obj[jb.watchable.jbId]))
+      const path = this.isRef(ref) && this.objToPath[ref.$jb_obj[jb.watchable.jbId]]
       if (path && ref.$jb_childProp !== undefined) {
           this.refreshPrimitiveArrayRef(ref)
           return [...path, ref.$jb_childProp]
@@ -177,7 +173,7 @@ extension('watchable', 'main', {
         return obj
       if (!obj || typeof obj !== 'object') return obj;
       const actualObj = obj[jb.watchable.isProxy] ? obj[jb.watchable.targetVal] : obj
-      const path = this.objToPath.get(actualObj) || this.objToPath.get(actualObj[jb.watchable.jbId])
+      const path = this.objToPath[actualObj[jb.watchable.jbId]]
       if (path)
           return { $jb_obj: this.valOfPath(path), handler: this, path: function() { return this.handler.pathOfRef(this)} }
       if (!silent)
@@ -205,7 +201,7 @@ extension('watchable', 'main', {
       return path.reduce(({val,path} ,p) => {
         const proxy = (val && val[jb.watchable.isProxy])
         const inner =  proxy ? val[jb.watchable.originalVal] : val
-        const newPath = proxy ? (this.objToPath.get(inner) || this.objToPath.get(inner[jb.watchable.jbId])) : path
+        const newPath = proxy ? this.objToPath[inner[jb.watchable.jbId]] : path
         return { val: inner && inner[p], path: [newPath,p].join('~') }
       }, {val: this.resources(), path: ''}).path
     }
@@ -243,7 +239,7 @@ extension('watchable', 'main', {
       return this.valOfPath(path)
     }
     watchable(val) {
-      return this.resources() === val || typeof val != 'number' && (this.objToPath.get(val) || (val && this.objToPath.get(val[jb.watchable.jbId])))
+      return this.resources() === val || val && typeof val == 'object' && this.objToPath[val[jb.watchable.jbId]]
     }
     isRef(ref) {
       return ref && ref.$jb_obj && this.watchable(ref.$jb_obj);
