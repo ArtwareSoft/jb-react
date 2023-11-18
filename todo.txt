@@ -1,6 +1,7 @@
 ctrl-I
   add 'using' and 'dsl' indication for current plugin
 
+controlWithFeatures - use ctx params in features
 vdom diff bug!!!
  uiTest.tableTreeUnexpandRefresh.vdom
 vscode

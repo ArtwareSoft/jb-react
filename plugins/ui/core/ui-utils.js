@@ -197,7 +197,7 @@ extension('ui', 'beautify', {
     }, ['', 0])[0].slice(1, -2)
   },
   beautifyDelta(delta) {
-    const childs = delta.children
+    const childs = delta.children || []
     const childrenAtts = childs && ['sameOrder', 'resetAll', 'deleteCmp'].filter(p => childs[p]).map(p => p + '="' + childs[p] + '"').join(' ')
     const childrenArr = childs.length ? Array.from(Array(childs.length).keys()).map(i => childs[i]) : []
     const children = (childrenAtts || childrenArr.length) && `<children ${childrenAtts || ''}>${childrenArr.map(ch => jb.ui.vdomToHtml(ch)).join('')}</children>`

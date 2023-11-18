@@ -276,6 +276,27 @@ component('substring', {
 	}
 })
 
+component('Undefined', {
+  impl: () => undefined
+})
+
+component('switchByArraySize', {
+  description: 'return different output by array size',
+  params: [
+    {id: 'array', as: 'array', mandatory: true},
+    {id: 'zero', dynamic: true, mandatory: true},
+    {id: 'one', dynamic: true, mandatory: true},
+    {id: 'moreThanOne', dynamic: true, mandatory: true},
+  ],
+  impl: (ctx,array,zero,one,moreThanOne) => {
+    if (!Array.isArray(array))
+      return jb.logError('switchByArraySize - non array as input', {ctx,array})
+    if (array.length == 0) return zero()
+    if (array.length == 1) return one()
+    return moreThanOne()
+	}
+})
+
 component('asString', {
 	params: [
 		{ id: 'text', as: 'string', defaultValue: '%%'}

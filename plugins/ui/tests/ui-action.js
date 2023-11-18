@@ -55,7 +55,7 @@ component('uiActions', {
   ],
   impl: ctx => {
     const isFE = ctx.vars.elemToTest
-    const ctxToUse = ctx.setVars({updatesCounterAtBeginUIActions: jb.ui.testUpdateCounters[ctx.vars.widgetId]})
+    const ctxToUse = ctx.setVars({updatesCounterAtBeginUIActions: jb.ui.testUpdateCounters[ctx.vars.widgetId], logCounterAtBeginUIActions: jb.path(jb.spy,'logs.length')})
     if (isFE) return jb.asArray(ctx.profile.actions).filter(x=>x).reduce((pr,action,index) =>
 				pr.finally(function runActions() {return ctxToUse.runInner(action, { as: 'single'}, `items~${index}` ) })
 			,Promise.resolve())
@@ -232,12 +232,14 @@ component('setText', {
           else
             return jb.ui.rawEventToUserRequest(ev,{ctx})
       },
-      If('%$useFrontEndInTest%', uiActions(delay(1), FEUserRequest(), If(not('%$doNotWaitForNextUpdate%'), waitForNextUpdate()))),
-      If(
-        and(not('%$useFrontEndInTest%'), not('%$remoteUiTest%'), not('%$doNotWaitForNextUpdate%')),
-        waitForNextUpdate()
-      )      
-//    If('%$doNotWaitForNextUpdate%', '', waitForNextUpdate())
+    If(
+      '%$useFrontEndInTest%',
+      uiActions(delay(1), FEUserRequest(), If(not('%$doNotWaitForNextUpdate%'), waitForNextUpdate()))
+    ),
+    If(
+      and(not('%$useFrontEndInTest%'), not('%$remoteUiTest%'), not('%$doNotWaitForNextUpdate%')),
+      waitForNextUpdate()
+    )
   )
 })
 
@@ -247,17 +249,20 @@ component('click', {
     {id: 'selector', as: 'string', defaultValue: 'button'},
     {id: 'methodToActivate', as: 'string'},
     {id: 'doNotWaitForNextUpdate', as: 'boolean', type: 'boolean'},
-    {id: 'doubleClick', as: 'boolean', type: 'boolean'}
+    {id: 'doubleClick', as: 'boolean', type: 'boolean'},
+    {id: 'expectedEffects', type: 'ui-action-effects'}
   ],
   impl: uiActions(
+    Var('originatingUIAction', 'click{? at %$selector%?}'),
     waitForSelector('%$selector%'),
-    (ctx,{elemToTest, useFrontEndInTest},{selector, methodToActivate, doubleClick}) => {
+    (ctx,{elemToTest, useFrontEndInTest},{selector, methodToActivate, doubleClick, expectedEffects}) => {
       const type = doubleClick ? 'dblclick' : 'click'
       const ctxToUse = useFrontEndInTest ? ctx.setVars({headlessWidget: false}) : ctx
       const elem = selector ? jb.ui.elemOfSelector(selector,ctxToUse) : elemToTest
       jb.log('uiTest uiAction click',{elem,selector,ctx})
       if (!elem) 
         return jb.logError(`click can not find elem ${selector}`, {ctx,elemToTest} )
+      expectedEffects && expectedEffects.setLogs()
       const widgetId = jb.ui.parentWidgetId(elem) || ctx.vars.widgetId
       const ev = { type, currentTarget: elem, widgetId, target: elem }
       if (!elemToTest && !useFrontEndInTest) 
@@ -270,11 +275,15 @@ component('click', {
       else
         return jb.ui.rawEventToUserRequest({ type, target: elem, currentTarget: elem, widgetId}, {specificMethod: methodToActivate, ctx})
     },
-    If('%$useFrontEndInTest%', uiActions(delay(1), FEUserRequest(), If(not('%$doNotWaitForNextUpdate%'), waitForNextUpdate()))),
+    If(
+      '%$useFrontEndInTest%',
+      uiActions(delay(1), FEUserRequest(), If(not('%$doNotWaitForNextUpdate%'), waitForNextUpdate()))
+    ),
     If(
       and(not('%$useFrontEndInTest%'), not('%$remoteUiTest%'), not('%$doNotWaitForNextUpdate%')),
       waitForNextUpdate()
-    )
+    ),
+    If('%$expectedEffects%', '%$expectedEffects/check()%')
   )
 })
   
@@ -416,4 +425,52 @@ component('FEUserRequest', {
     //   jb.log('uiTest frontend widgetUserRequest is played', {ctx,userRequest})
     return userRequest
   },
+})
+
+// expected effects
+
+component('expectedEffects', {
+  type: 'ui-action-effects',
+  params: [
+    {id: 'logsToCheck', as: 'string' },
+    {id: 'effects', type: 'ui-action-effect[]', mandatory: true},
+  ],
+  impl: (_ctx,logsToCheck,effects) => ({
+    setLogs() {
+      this.originalLogs = { ... jb.spy.includeLogs }
+      logsToCheck.split(',').filter(x=>x).forEach(logName=>jb.spy.includeLogs[logName] = true)
+    },
+    check(ctx) {
+      jb.spy.includeLogs = this.originalLogs
+      effects.forEach(ef=>ef.check(ctx))
+    }
+  })
+})
+
+component('logFired', {
+  type: 'ui-action-effect',
+  params: [
+    {id: 'log', as: 'string', mandatory: true},
+    {id: 'condition', type: 'boolean<>', dynamic: true, description: '%% is log item', mandatory: true},
+    {id: 'errorMessage', as: 'string', dynamic: true },
+  ],
+  impl: (_ctx,log,condition,errorMessage) => ({
+    check: (ctx) => {
+      const logs = jb.spy.search(log,{ slice: ctx.vars.logCounterAtBeginUIActions || 0, spy: jb.spy, enrich: true })
+      if (!logs.length)
+        jb.logError(`can not find logs ${log} after action ${ctx.vars.originatingUIAction}`,{ctx,log})
+      if (! logs.find(l=>condition(ctx.setData(l))))
+        jb.logError(errorMessage(ctx) + `no log item met condition ${jb.utils.prettyPrint(condition.profile,{forceFlat:true})} after action ${ctx.vars.originatingUIAction}`,
+          {logs, ctx})
+    }
+  })
+})
+
+component('compChange', {
+  type: 'ui-action-effect',
+  params: [
+    {id: 'cmpId', as: 'string', mandatory: true },
+    {id: 'condition', type: 'boolean<>', dynamic: true, description: '%% is cmp vdom', mandatory: true},
+  ],
+  impl: 5
 })

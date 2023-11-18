@@ -129,6 +129,22 @@ component('uiTest.button', {
   })
 })
 
+component('uiTest.button.expectedEffects', {
+  impl: uiTest({
+    control: group({
+      controls: [
+        text('%$txt%'),
+        button('btn1', writeValue('%$txt%', 'bbb'))
+      ],
+      features: watchable('txt', 'aaa')
+    }),
+    expectedResult: contains('bbb'),
+    uiAction: click({
+      expectedEffects: expectedEffects('delta', logFired('delta', contains('$text=\"bbb\"', '%delta%')))
+    })
+  })
+})
+
 // component('uiTest.button.disabled', {
 //   impl: uiTest({
 //     control: button({title: 'btn1', action: delay(100), style: button.native()}),
@@ -2199,3 +2215,20 @@ component('uiTest.transactiveHeadless.changeText', {
     transactiveHeadless: true
   })
 })
+
+component('uiTest.controlWithFeatures.variable', {
+  impl: uiTest(controlWithFeatures(text('%$txt%'), variable('txt', 'homer')), contains('homer'))
+})
+
+component('test.controlWithFeaturesUseParams', {
+  type: 'control',
+  params: [
+    {id: 'name'}
+  ],
+  impl: controlWithFeatures(text('%$txt%'), variable('txt', '%$name%'))
+})
+
+component('uiTest.controlWithFeatures.useParams', {
+  impl: uiTest(test.controlWithFeaturesUseParams('homer'), contains('homer'))
+})
+
