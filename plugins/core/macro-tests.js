@@ -145,6 +145,10 @@ component('macroTest.funcDefaults', {
   )
 })
 
+component('macroTest.disabled', {
+  impl: dataTest(() => jb.utils.prettyPrint(_dataTest(),{forceFlat: true}), equals('_dataTest()'))
+})
+
 component('macroTest.typeAdapter.from', {
   impl: dataTest(
     prettyPrint(() => typeAdapter('state<location>', israel()), true),

@@ -6,20 +6,17 @@ Object.assign(jb, {
 extension('macro', {
     initExtension() {
         return { proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro') }
-    },
-    // ns: nsIds => {
-    //     nsIds.split(',').forEach(nsId => jb.macro.registerProxy(nsId))
-    //     return jb.macro.proxies
-    // },    
+    },  
     titleToId: id => id.replace(/-([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
 //    proxiesKeys: () => jb.utils.unique(Object.keys(jb.macro.proxies).map(x=>x.split('_')[0])),
     newProxy: id => new Proxy(() => 0, {
         get: (o, p) => p === jb.macro.isMacro? true : jb.macro.getInnerMacro(id, p),
         apply: function (target, thisArg, allArgs) {
+            const actualId = id[0] == '_' ? id.slice(1) : id
             const { args, system } = jb.macro.splitSystemArgs(allArgs)
-            return { $: id, $byValue: args, ...system }
+            return { $: actualId, $byValue: args, ...system, ...(id[0] == '_' ? {$disabled:true} : {} ) }
         }
-    }),
+    }),   
     getInnerMacro(ns, innerId) {
         return (...allArgs) => {
             const { args, system } = jb.macro.splitSystemArgs(allArgs)
@@ -79,8 +76,10 @@ extension('macro', {
     },
     registerProxy: id => {
         const proxyId = jb.macro.titleToId(id.split('.')[0]) //.split('_')[0]
-        jb.macro.proxies[proxyId] = jb.macro.proxies[proxyId] || jb.macro.newProxy(proxyId)
-        return [proxyId,jb.macro.proxies[proxyId]]
+        return [proxyId,`_${proxyId}`].map(proxyId => {
+            jb.macro.proxies[proxyId] = jb.macro.proxies[proxyId] || jb.macro.newProxy(proxyId)
+            return [proxyId,jb.macro.proxies[proxyId]]
+        })
     }
 })
 

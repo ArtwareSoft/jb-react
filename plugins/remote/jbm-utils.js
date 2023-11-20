@@ -163,7 +163,7 @@ extension('jbm', 'main', {
                         const timer = setTimeout(() => {
                             if (!handlers[cbId] || handlers[cbId].terminated) return
                             const err = { type: 'error', desc: 'remote exec timeout', remoteRun, timeout }
-                            jb.logError('remote exec timeout',{timer, uri: jb.uri, h: handlers[cbId]})
+                            jb.logError('remote exec timeout',{timeout, uri: jb.uri, h: handlers[cbId]})
                             handlers[cbId] && reject(err)
                         }, timeout)
                         handlers[cbId] = {resolve,reject,remoteRun, timer}

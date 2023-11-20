@@ -154,7 +154,8 @@ extension('utils', 'prettyPrint', {
       if (!id || !comp || ',object,var,'.indexOf(`,${id},`) != -1)
         return asIsProps(profile,path)
         
-      const macro = jb.macro.titleToId(id)
+      const _macro = jb.macro.titleToId(id)
+      const macro = profile.$disabled ? `_${_macro}` : _macro
 
       const params = comp.params || []
       const singleParamAsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
@@ -182,7 +183,7 @@ extension('utils', 'prettyPrint', {
             primitiveArray: paramsProps.primitiveArray && vars.length == 0,
             innerVals: [...remarkAsArray, ...varsAsArray,...paramAsArray], isArray: true })
       }
-      const keys = Object.keys(profile).filter(x=>x != '$')
+      const keys = Object.keys(profile).filter(x=>x != '$' && x != '$disabled')
       const oneFirstArg = keys.length === 1 && params[0] && params[0].id == keys[0]
       const twoFirstArgs = keys.length == 2 && params.length >= 2 && profile[params[0].id] && profile[params[1].id]
       if ((params.length < 3 && comp.macroByValue !== false) || comp.macroByValue || oneFirstArg || twoFirstArgs) {
