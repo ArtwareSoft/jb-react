@@ -429,15 +429,15 @@ component('FEUserRequest', {
 
 // expected effects
 
-component('expectedEffects', {
+component('Effects', {
   type: 'ui-action-effects',
   params: [
-    {id: 'logsToCheck', as: 'string' },
     {id: 'effects', type: 'ui-action-effect[]', mandatory: true},
   ],
-  impl: (_ctx,logsToCheck,effects) => ({
-    setLogs() {
+  impl: (_ctx,effects) => ({
+    setLogs(ctx) {
       this.originalLogs = { ... jb.spy.includeLogs }
+      const logsToCheck = effects.map(ef=>ef.logsToCheck(ctx)).join(',')
       logsToCheck.split(',').filter(x=>x).forEach(logName=>jb.spy.includeLogs[logName] = true)
     },
     check(ctx) {
@@ -447,19 +447,21 @@ component('expectedEffects', {
   })
 })
 
-component('logFired', {
+component('checkLog', {
   type: 'ui-action-effect',
   params: [
     {id: 'log', as: 'string', mandatory: true},
-    {id: 'condition', type: 'boolean<>', dynamic: true, description: '%% is log item', mandatory: true},
+    {id: 'data', dynamic: true, description: 'what to check', mandatory: true},
+    {id: 'condition', type: 'boolean<>', dynamic: true, description: '%% is data', mandatory: true},
     {id: 'errorMessage', as: 'string', dynamic: true },
   ],
-  impl: (_ctx,log,condition,errorMessage) => ({
-    check: (ctx) => {
+  impl: (_ctx,log,data, condition,errorMessage) => ({
+    logsToCheck: () => log,
+    check(ctx) {
       const logs = jb.spy.search(log,{ slice: ctx.vars.logCounterAtBeginUIActions || 0, spy: jb.spy, enrich: true })
       if (!logs.length)
         jb.logError(`can not find logs ${log} after action ${ctx.vars.originatingUIAction}`,{ctx,log})
-      if (! logs.find(l=>condition(ctx.setData(l))))
+      if (! logs.find(l=>condition(ctx.setData(data(ctx.setData(l))))))
         jb.logError(errorMessage(ctx) + `no log item met condition ${jb.utils.prettyPrint(condition.profile,{forceFlat:true})} after action ${ctx.vars.originatingUIAction}`,
           {logs, ctx})
     }
@@ -469,8 +471,7 @@ component('logFired', {
 component('compChange', {
   type: 'ui-action-effect',
   params: [
-    {id: 'cmpId', as: 'string', mandatory: true },
-    {id: 'condition', type: 'boolean<>', dynamic: true, description: '%% is cmp vdom', mandatory: true},
+    {id: 'newText', dynamic: true, mandatory: true}
   ],
-  impl: 5
+  impl: checkLog({log: 'delta', data: '%delta%', condition: contains('%$newText()%'), errorMessage: 'can not find %$newText()%, '})
 })

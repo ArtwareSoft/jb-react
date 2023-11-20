@@ -139,9 +139,21 @@ component('uiTest.button.expectedEffects', {
       features: watchable('txt', 'aaa')
     }),
     expectedResult: contains('bbb'),
-    uiAction: click({
-      expectedEffects: expectedEffects('delta', logFired('delta', contains('$text=\"bbb\"', '%delta%')))
-    })
+    uiAction: click({expectedEffects: Effects(checkLog({log: 'delta', data: '%delta%', condition: contains('$text=\"bbb\"')}))})
+  })
+})
+
+component('uiTest.button.expectedEffects.compChange', {
+  impl: uiTest({
+    control: group({
+      controls: [
+        text('%$txt%'),
+        button('btn1', writeValue('%$txt%', 'bbb'))
+      ],
+      features: watchable('txt', 'aaa')
+    }),
+    expectedResult: contains('bbb'),
+    uiAction: click({expectedEffects: Effects(compChange('bbb'))})
   })
 })
 

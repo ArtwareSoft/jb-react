@@ -33,6 +33,18 @@ component('completionTest.typeAdapter', {
   )
 })
 
+component('completionTest.inDSL', {
+  impl: tgp.completionOptionsTest(
+    `component('x', {
+  impl: uiTest({
+    control: text(),
+    uiAction: click({expectedEffects: expectedEffects('', logFired({condition: __TBD()}))})
+  })
+})`,
+    ['contains']
+  )
+})
+
 component('completionTest.pipeline2', {
   impl: tgp.completionOptionsTest(`component('x', {
   impl: uiTest(text(pipeline(__'')))
