@@ -140,13 +140,13 @@ component('chromeDebugger.compCtrl', {
     })
 })
 
-component('chromeDebugger.cardCtrl', {
-    params: [
-        {id: 'uri', as: 'string'},
-    ],
-    type: 'control',
-    impl: remote.widget( cardExtract.showOptions(),byUri('%$uri%'))
-})
+// component('chromeDebugger.cardCtrl', {
+//     params: [
+//         {id: 'uri', as: 'string'},
+//     ],
+//     type: 'control',
+//     impl: remote.widget( cardExtract.showOptions(),byUri('%$uri%'))
+// })
 
 component('chromeDebugger.openResource', {
     type: 'action',

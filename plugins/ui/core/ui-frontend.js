@@ -16,6 +16,8 @@ extension('ui', 'frontend', {
     frontEndCmp: class frontEndCmp {
         constructor(elem, coLocationCtx) {
             this.ctx = coLocationCtx || jb.ui.parents(elem,{includeSelf: true}).map(elem=>elem.ctxForFE).filter(x=>x)[0] || new jb.core.jbCtx()
+            if (elem.getAttribute('uiTest'))
+                this.ctx = this.ctx.setVars({uiTest: true})
             this.state = { ...elem.state, frontEndStatus: 'initializing' }
             this.base = elem
             this.cmpId = elem.getAttribute('cmp-id')

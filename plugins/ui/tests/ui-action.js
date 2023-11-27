@@ -122,7 +122,7 @@ component('waitForText', {
     {id: 'text', as: 'string' },
   ],
   impl: waitFor((ctx,{},{text}) => {
-    const body = jb.ui.widgetBody(ctx.setVars({headlessWidget: false})) // look at FE
+    const body = jb.ui.widgetBody(ctx.setVars({FEEMulator: true})) // look at FE
     const lookin = typeof body.outerHTML == 'function' ? body.outerHTML() : body.outerHTML
     return lookin.indexOf(text) != -1
   })
@@ -135,7 +135,7 @@ component('waitForSelector', {
   ],
   impl: waitFor(
     (ctx,{elemToTest, useFrontEndInTest},{selector}) => {
-    const ctxToUse = useFrontEndInTest ? ctx.setVars({headlessWidget: false}) : ctx
+    const ctxToUse = useFrontEndInTest ? ctx.setVars({FEEMulator: true}) : ctx
     const elem = jb.ui.elemOfSelector(selector,ctxToUse)
 
   //  const elem = jb.ui.elemOfSelector(selector,ctx)
@@ -257,7 +257,7 @@ component('click', {
     waitForSelector('%$selector%'),
     (ctx,{elemToTest, useFrontEndInTest},{selector, methodToActivate, doubleClick, expectedEffects}) => {
       const type = doubleClick ? 'dblclick' : 'click'
-      const ctxToUse = useFrontEndInTest ? ctx.setVars({headlessWidget: false}) : ctx
+      const ctxToUse = useFrontEndInTest ? ctx.setVars({FEEMulator: true}) : ctx
       const elem = selector ? jb.ui.elemOfSelector(selector,ctxToUse) : elemToTest
       jb.log('uiTest uiAction click',{elem,selector,ctx})
       if (!elem) 
@@ -300,7 +300,7 @@ component('keyboardEvent', {
   impl: uiActions(
     waitForSelector('%$selector%'),
     (ctx,{elemToTest, useFrontEndInTest},{selector,type,keyCode,keyChar,ctrl}) => {
-      const ctxToUse = useFrontEndInTest ? ctx.setVars({headlessWidget: false}) : ctx
+      const ctxToUse = useFrontEndInTest ? ctx.setVars({FEEMulator: true}) : ctx
       const elem = selector ? jb.ui.elemOfSelector(selector,ctxToUse) : elemToTest
       jb.log('uiTest uiAction keyboardEvent',{elem,selector,type,keyCode,ctx})
       if (!elem)
@@ -345,7 +345,7 @@ component('changeEvent', {
     waitForSelector('%$selector%'),
     (ctx,{elemToTest, useFrontEndInTest},{selector, value}) => {
       const type = 'change'
-      const ctxToUse = useFrontEndInTest ? ctx.setVars({headlessWidget: false}) : ctx
+      const ctxToUse = useFrontEndInTest ? ctx.setVars({FEEMulator: true}) : ctx
       const elem = selector ? jb.ui.elemOfSelector(selector,ctxToUse) : elemToTest
       jb.log('uiTest uiAction changeEvent',{elem,selector,type,ctx})
       if (!elem)

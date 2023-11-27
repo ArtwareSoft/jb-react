@@ -1447,8 +1447,8 @@ component('uiTest.picklist.delayedOptions', {
         text('%$personWithAddress/address/city%')
       ]
     }),
-    uiAction: waitForNextUpdate(),
-    expectedResult: contains(['Springfield','New York'])
+    expectedResult: contains(['Springfield','New York']),
+    uiAction: waitForNextUpdate()
   })
 })
 
@@ -1510,6 +1510,13 @@ component('uiTest.picklistRadio', {
     }),
     expectedResult: contains(['Springfield', 'New York'])
   })
+})
+
+component('uiTest.innerSelector', {
+  impl: uiTest(
+    picklist({options: picklist.optionsByComma('a')}),
+    ctx => jb.ui.elemOfSelector('select>option',ctx)
+  )
 })
 
 component('uiTest.picklist.mdcSelect', {

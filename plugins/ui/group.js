@@ -117,6 +117,7 @@ component('group.wait', {
           }, ctx)
         }
       } catch(e) {
+        jb.logException(e,'group.wait',{ctx,cmp}) 
         cmp.refresh({error: JSON.stringify(e)},{},ctx)
       }
     })

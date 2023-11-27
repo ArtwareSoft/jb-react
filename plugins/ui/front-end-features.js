@@ -88,6 +88,8 @@ component('action.refreshCmp', {
     const cmp = ctx.vars.cmp, options = optionsF(ctx), state = stateF(ctx)
     jb.log('refresh uiComp',{cmp,ctx,state,options})
     cmp && cmp.refresh(state,{srcCtx: ctx, ...options},ctx)
+    const tx = ctx.vars.userReqTx
+    tx && tx.complete(`refresh cmp ${cmp.cmpId}`)
   }
 })
 

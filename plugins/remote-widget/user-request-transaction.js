@@ -1,14 +1,16 @@
 extension('ui', 'userReqTx', {
+  initExtension() {
+    return { userReqTxCounter: 0}
+  },
   // interface - complete notification is done by calling complete OR completeByChildren
   userReqChildTx({ parent, ctx }) {
     return {
       next(renderingUpdate) {
         parent.next(renderingUpdate)
       },      
-      complete(renderingUpdate) { 
-        jb.log('userReqTx userReqChildTx complete',{ctx,renderingUpdate})
+      complete(logTxt) { 
+        jb.log(`userReqTx userReqChildTx complete ${logTxt}`,{ctx})
         this.completed = true
-        renderingUpdate && this.next(renderingUpdate)
         parent.childCompleteNotfication(this)
       },
 
@@ -32,6 +34,7 @@ extension('ui', 'userReqTx', {
 
   userReqTx({ userReq, ctx }) {
     return {
+      id: jb.ui.userReqTxCounter++,
       updates: [],
       cb: jb.callbag.subject(userReq.reqId || userReq.widgetId),
       next(renderingUpdate) {
@@ -43,13 +46,11 @@ extension('ui', 'userReqTx', {
         this.cb.next({userReq, ...renderingUpdate})
         ctx.vars.testRenderingUpdate && ctx.vars.testRenderingUpdate.next({userReq, ...renderingUpdate})
       },      
-      complete(renderingUpdate) {
-        if (this.updates.length == 0) return
-        if (renderingUpdate)
-          this.next({ userReq, ...renderingUpdate })
-        const update = this.updates.length == 1 ? this.updates[0] : { $: 'updates', updates: this.updates }
+      complete(logTxt) {
+        //if (this.updates.length == 0) return
+        const update = this.updates.length == 0 ? [] : this.updates.length == 1 ? this.updates[0] : { $: 'updates', updates: this.updates }
         this.updates = []
-        jb.log('userReqTx top complete',{ctx,update})
+        jb.log(`userReqTx top complete ${logTxt}`,{ctx,update})
         this.onCompleteHandler && this.onCompleteHandler(update)
         const { widgetId } = userReq
         jb.ui.headless[widgetId].txCounter = (jb.ui.headless[widgetId].txCounter || 0) + 1
@@ -68,7 +69,7 @@ extension('ui', 'userReqTx', {
           jb.logError('childCompleteNotfication called before completeByChildren',{ctx})
         this.childrenLeft--;
         if (this.childrenLeft < 1)
-          this.complete()
+          this.complete('last child')
       }
     }
   },

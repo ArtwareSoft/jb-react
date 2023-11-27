@@ -141,6 +141,8 @@ extension('ui','comp', {
             return jb.logError('circular refresh',{elem, state, options})
         const cmpId = elem.getAttribute('cmp-id'), cmpVer = +elem.getAttribute('cmp-ver')
         const cmpBefore = jb.ui.cmps[cmpId]
+        if (!cmpBefore)
+            return jb.logError('refresh elem. can not find former cmp',{cmpId})
         const _ctx = cmpBefore.originatingCtx()
         const {methodBeforeRefresh, opVal} = options
         methodBeforeRefresh && cmpBefore && methodBeforeRefresh.split(',').forEach(m=>cmpBefore.runBEMethod(m,opVal))
@@ -283,7 +285,8 @@ extension('ui','comp', {
                 })
                 if (hasAtts) Object.assign(vdom.attributes,
                     observe && {observe}, 
-                    methods && {methods}, 
+                    methods && {methods},
+                    this.ctx.vars.uiTest && {uiTest: this.ctx.vars.uiTest},
                     usereventprops && {usereventprops},
                     colocation && {colocation},
                     frontEndLibs.length && {$__frontEndLibs : JSON.stringify(frontEndLibs)},
@@ -319,14 +322,14 @@ extension('ui','comp', {
             return (this.method||[]).filter(h=> h.id == method)[0]
         }
         runBEMethod(method, data, vars, options = {}) {
-            const {doNotUseUserReqTx, dataMethod} = options
-            jb.log(`backend uiComp method ${method}`, {cmp: this,data,vars})
+            const {doNotUseUserReqTx, dataMethod, userReqTx} = options
+            jb.log(`backend uiComp method ${method}`, {cmp: this,data,vars,doNotUseUserReqTx, dataMethod, userReqTx})
             if (jb.path(vars,'$state'))
                 Object.assign(this.state,vars.$state)
             const tActions = (this.method||[]).filter(h=> h.id == method).map(h => ctx => {
-                this.runMethodObject(h,data,vars)
-                const tx = !doNotUseUserReqTx && ctx.vars.userReqTx
-                tx && tx.complete()                        
+                const _vars = { ...vars, userReqTx: userReqTx || (!doNotUseUserReqTx && ctx.vars.userReqTx) }
+                this.runMethodObject(h,data,_vars)
+                userReqTx && userReqTx.complete(`method ${method}`)                        
             })
             if (dataMethod && tActions[0])
                 return this.runMethodObject((this.method||[]).filter(h=> h.id == method)[0],data,vars)
@@ -341,7 +344,7 @@ extension('ui','comp', {
                 jb.logError(`no method ${method} in cmp`, {cmp: this, data, vars})
         }
         refresh(state,options,ctx) {
-            const elem = jb.ui.elemOfCmp(this.ctx,this.cmpId)
+            const elem = jb.ui.elemOfCmp(ctx,this.cmpId)
             jb.log('backend uiComp refresh request',{ctx, cmp: this,elem,state,options})
             jb.ui.BECmpsDestroyNotification.next({ cmps: [{cmpId: this.cmpId, ver: this.ver, destroyCtxs: [] }] })
             elem && jb.ui.refreshElem(elem,state,options) // cmpId may be deleted

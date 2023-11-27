@@ -18,7 +18,7 @@ component('uiTest', {
     {id: 'backEndJbm', type: 'jbm<jbm>', defaultValue: jbm.self()},
     {id: 'useFrontEnd', as: 'boolean', type: 'boolean'},
     {id: 'transactiveHeadless', as: 'boolean', type: 'boolean'},
-    {id: 'engine', as: 'string' }
+    {id: 'engine', as: 'string'}
   ],
   impl: dataTest({
     vars: [
@@ -119,8 +119,9 @@ component('uiFrontEndTest', {
 
 component('uiTest.vdomResultAsHtml', {
   impl: ctx => {
-		const widget = jb.ui.FEEmulator[ctx.vars.widgetId]
-		const css = Object.values(jb.path(jb.ui.headless,[ctx.vars.widgetId,'styles']) || {}).join('\n')
+		const { widgetId } = ctx.vars
+		const widget = jb.ui.FEEmulator[widgetId]
+		const css = Object.values(jb.path(jb.ui.headless,[widgetId,'styles']) || {}).join('\n')
 		const html = (!widget || !widget.body) ? '' : (typeof widget.body.outerHTML == 'function')
 			? widget.body.outerHTML() : ''
 		return { html, css, all : [html,css].join('\n')}
@@ -131,29 +132,33 @@ component('uiTest.renderingCounters', {
   impl: ctx => {
 		const {widgetId} = ctx.vars
 		jb.ui.testUpdateCounters[widgetId] = (jb.ui.testUpdateCounters[widgetId] || 0) + 1
+		const counter = '' + jb.ui.testUpdateCounters[widgetId]
+		//jb.log('uiTest inc renderingCounters', {widgetId, counter, ctx })
 		ctx.vars.testRenderingUpdate && ctx.vars.testRenderingUpdate.next({widgetId})
-        return '' + jb.ui.testUpdateCounters[widgetId]
+        return counter
 	}
 })
 
 component('uiTest.addFrontEndEmulation', {
 	impl: ctx => {
-		jb.ui.FEEmulator[ctx.vars.widgetId] = {
-			userReqSubs: ctx.vars.useFrontEndInTest && jb.callbag.subscribe(userRequest => {
+		const { widgetId, useFrontEndInTest} = ctx.vars
+		jb.ui.FEEmulator[widgetId] = {
+			userReqSubs: useFrontEndInTest && jb.callbag.subscribe(userRequest => {
 				if (userRequest.$$ == 'destroy') return
 				jb.log('uiTest frontend widgetUserRequest recorded', {ctx,userRequest})
-				jb.ui.FEEmulator[ctx.vars.widgetId].userRequests.push(userRequest)
+				jb.ui.FEEmulator[widgetId].userRequests.push(userRequest)
 			})(jb.ui.widgetUserRequests),
 			userRequests: [],
-			body: jb.ui.h('div',{widgetId:ctx.vars.widgetId, widgetTop:true, frontend: true}) 
+			body: jb.ui.h('div',{widgetId , widgetTop:true, frontend: true}) 
 		}
 	}
 })
 
 component('uiTest.removeFrontEndEmulation', {
 	impl: ctx => {
-		ctx.vars.useFrontEndInTest && jb.ui.FEEmulator[ctx.vars.widgetId].userReqSubs.dispose()
-		delete jb.ui.FEEmulator[ctx.vars.widgetId]
+		const { widgetId, useFrontEndInTest} = ctx.vars
+		useFrontEndInTest && jb.ui.FEEmulator[widgetId].userReqSubs.dispose()
+		delete jb.ui.FEEmulator[widgetId]
 		jb.ui.testUpdateCounters = {}
 	}
 })

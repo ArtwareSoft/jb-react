@@ -55,7 +55,7 @@ extension('ui', 'watchRef', {
         async function applyRefreshAstAction({ctx, delay,elem, methodBeforeRefresh, strongRefresh, cssOnly,cmpId, originatingCmpId, top, i}) {
             await doApply()
             const tx = ctx.vars.userReqTx
-            tx && tx.complete()
+            tx && tx.complete(`refresh cmp ${cmpId}`)
 
             function doApply() {
                 if (!jb.ui.parents(elem).find(el=>el == top))

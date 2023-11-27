@@ -94,11 +94,12 @@ extension('ui','vdom', {
         querySelectorAll(selector,{includeSelf}={}) {
             let maxDepth = 50
             if (!selector) debugger
-            if (selector.match(/^:scope>/))
-                return this.children.filter(el=>el.querySelector(selector.slice(7),{includeSelf: true}))
-            if (selector.match(/^\*>/))
-                return this.children.filter(el=>el.querySelector(selector.slice(2),{includeSelf: true}))
-
+            if (selector.match(/>/)) {
+                const parts = selector.split('>')
+                const first = this.querySelectorAll(parts[0])
+                return parts.slice(1).reduce((acc,part) => acc.flatMap(el=>el.children).filter(el=>el.matches(part)), first)
+            }
+            if (selector == '*') return this.children
             if (selector == '' || selector == ':scope') return [this]
             if (selector.indexOf(' ') != -1)
                 return selector.split(' ').map(x=>x.trim()).reduce(

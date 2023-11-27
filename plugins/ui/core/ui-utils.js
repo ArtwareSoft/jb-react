@@ -32,9 +32,9 @@ extension('ui', 'utils', {
   },
   //    inPreview: () => !jb.ui.inStudio() && jb.ui.parentFrameJb() && jb.ui.parentFrameJb().studio.initPreview,
   widgetBody(ctx) {
-    const { elemToTest, widgetId, headlessWidget, FEwidgetId, headlessWidgetId, uiTest, useFrontEndInTest } = ctx.vars
+    const { elemToTest, widgetId, headlessWidget, FEwidgetId, headlessWidgetId, uiTest, useFrontEndInTest, FEEMulator } = ctx.vars
     const top = elemToTest ||
-      useFrontEndInTest && jb.path(jb, `ui.FEEmulator.${headlessWidgetId}.body`) ||
+      FEEMulator && jb.path(jb, `ui.FEEmulator.${headlessWidgetId}.body`) ||
       uiTest && headlessWidget && jb.path(jb, `ui.headless.${headlessWidgetId}.body`) ||
       uiTest && jb.path(jb, `ui.FEEmulator.${headlessWidgetId}.body`) ||
       uiTest && jb.path(jb, `parent.ui.headless.${headlessWidgetId}.body`) ||

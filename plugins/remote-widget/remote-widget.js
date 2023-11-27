@@ -216,15 +216,15 @@ extension('ui', 'headless', {
     jb.log('headless widget created', { widgetId, body })
     const delta = { children: { resetAll: true, toAppend: [jb.ui.stripVdom(top)] } }
     jb.ui.sendRenderingUpdate(ctxToUse, { widgetId, delta, reqCtx })
-    reqCtx.vars.userReqTx && reqCtx.vars.userReqTx.complete()
+    reqCtx.vars.userReqTx && reqCtx.vars.userReqTx.complete('createHeadlessWidget')
   },
   handleUserReq(userReq, sink, _ctx) {
     const reqCtx = _ctx.vars.transactiveHeadless ? _ctx.setVars({ userReqTx: jb.ui.userReqTx({ userReq, ctx: _ctx }) }) : _ctx
     const { widgetId } = userReq
-    jb.log('headless widget handle userRequset', { widgetId, userReq })
     const tx = reqCtx.vars.userReqTx
     if (tx)
       tx.onComplete(update => sink(1, reqCtx.dataObj(update)))
+    jb.log('headless widget handle userRequset', {widgetId, tx, userReq, reqCtx, ctx: _ctx})
 
     if (userReq.$ == 'userRequest') {
       const cmp = jb.ui.cmps[userReq.cmpId]
