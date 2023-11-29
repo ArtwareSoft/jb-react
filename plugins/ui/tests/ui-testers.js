@@ -45,7 +45,7 @@ component('uiTest', {
           '%$backEndJbm%'
         ),
         rx.do(uiTest.aggregateDelta('%%')),
-        rx.var('renderingCounters', uiTest.renderingCounters()),
+        rx.var('renderingCounters', uiTest.postTestRenderingUpdate()),
         rx.log('uiTest uiDelta from headless %$renderingCounters%'),
         rx.toArray(),
         rx.map(uiTest.vdomResultAsHtml()),
@@ -128,12 +128,12 @@ component('uiTest.vdomResultAsHtml', {
 	}
 })
 
-component('uiTest.renderingCounters', {
+component('uiTest.postTestRenderingUpdate', {
   impl: ctx => {
 		const {widgetId} = ctx.vars
 		jb.ui.testUpdateCounters[widgetId] = (jb.ui.testUpdateCounters[widgetId] || 0) + 1
 		const counter = '' + jb.ui.testUpdateCounters[widgetId]
-		//jb.log('uiTest inc renderingCounters', {widgetId, counter, ctx })
+		// jb.log('postTestRenderingUpdate', {widgetId, counter, ctx }) - causing test stuck in FETest.workerPreviewTest.suggestions
 		ctx.vars.testRenderingUpdate && ctx.vars.testRenderingUpdate.next({widgetId})
         return counter
 	}

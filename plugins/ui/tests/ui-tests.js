@@ -1411,8 +1411,8 @@ component('uiTest.innerLabel3Tst', {
 })
 
 component('uiTest.picklist', {
-  impl: uiTest({
-    control: group({
+  impl: uiTest(
+    group({
       controls: [
         group({
           style: propertySheet.titlesLeft(),
@@ -1425,8 +1425,8 @@ component('uiTest.picklist', {
         text('%$personWithAddress/address/city%')
       ]
     }),
-    expectedResult: contains(['Springfield', 'New York'])
-  })
+    contains(['Springfield','New York'])
+  )
 })
 
 component('uiTest.picklist.delayedOptions', {

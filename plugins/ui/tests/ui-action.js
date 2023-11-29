@@ -176,7 +176,7 @@ component('waitForNextUpdate', {
     if (expectedCounter == 0)
       expectedCounter = baseCounter + 1
 
-    jb.log(`uiTest waitForNextUpdate started`,{ctx, currentCounter, expectedCounter, baseCounter})
+    jb.log(`uiTest waitForNextUpdate started`,{ctx, currentCounter, expectedCounter, widgetId, baseCounter})
     if (currentCounter >= expectedCounter) {
       jb.log('uiTest waitForNextUpdate resolved - counter already reached',{ctx, currentCounter, expectedCounter, baseCounter})
       return resolve() 
@@ -295,16 +295,19 @@ component('keyboardEvent', {
     {id: 'keyCode', as: 'number'},
     {id: 'keyChar', as: 'string'},
     {id: 'ctrl', as: 'string', options: ['ctrl','alt']},
-    {id: 'doNotWaitForNextUpdate', as: 'boolean', type: 'boolean'}
+    {id: 'doNotWaitForNextUpdate', as: 'boolean', type: 'boolean'},
+    {id: 'expectedEffects', type: 'ui-action-effects'}
   ],
   impl: uiActions(
+    Var('originatingUIAction', 'keyboardEvent %$keyChar% {? at %$selector%?}'),
     waitForSelector('%$selector%'),
-    (ctx,{elemToTest, useFrontEndInTest},{selector,type,keyCode,keyChar,ctrl}) => {
+    (ctx,{elemToTest, useFrontEndInTest},{selector,type,keyCode,keyChar,ctrl,expectedEffects}) => {
       const ctxToUse = useFrontEndInTest ? ctx.setVars({FEEMulator: true}) : ctx
       const elem = selector ? jb.ui.elemOfSelector(selector,ctxToUse) : elemToTest
-      jb.log('uiTest uiAction keyboardEvent',{elem,selector,type,keyCode,ctx})
+      jb.log('uiTest uiAction keyboardEvent',{elem,selector,type,keyCode,keyChar,ctx})
       if (!elem)
         return jb.logError('can not find elem for test uiAction keyboardEvent',{ elem,selector,type,keyCode,ctx})
+      expectedEffects && expectedEffects.setLogs()
 
       const widgetId = jb.ui.parentWidgetId(elem) || ctx.vars.widgetId
       const ev = { widgetId, type, keyCode , ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt', key: keyChar, target: elem, currentTarget: elem}
@@ -328,7 +331,8 @@ component('keyboardEvent', {
     If(
       and(not('%$useFrontEndInTest%'), not('%$remoteUiTest%'), not('%$doNotWaitForNextUpdate%')),
       waitForNextUpdate()
-    )    
+    ),
+    If('%$expectedEffects%', '%$expectedEffects/check()%')    
     // If(or('%$remoteUiTest%','%$useFrontEndInTest%', '%$doNotWaitForNextUpdate%'), '', waitForNextUpdate()),
     // If('%$useFrontEndInTest%', FEUserRequest()),
   )
@@ -339,17 +343,20 @@ component('changeEvent', {
   params: [
     {id: 'selector', as: 'string'},
     {id: 'value', as: 'string'},
-    {id: 'doNotWaitForNextUpdate', as: 'boolean', type: 'boolean'}
+    {id: 'doNotWaitForNextUpdate', as: 'boolean', type: 'boolean'},
+    {id: 'expectedEffects', type: 'ui-action-effects'}
   ],
   impl: uiActions(
+    Var('originatingUIAction', 'changeEvent to %$value% {? at %$selector%?}'),
     waitForSelector('%$selector%'),
-    (ctx,{elemToTest, useFrontEndInTest},{selector, value}) => {
+    (ctx,{elemToTest, useFrontEndInTest},{selector, value,expectedEffects}) => {
       const type = 'change'
       const ctxToUse = useFrontEndInTest ? ctx.setVars({FEEMulator: true}) : ctx
       const elem = selector ? jb.ui.elemOfSelector(selector,ctxToUse) : elemToTest
       jb.log('uiTest uiAction changeEvent',{elem,selector,type,ctx})
       if (!elem)
         return jb.logError('can not find elem for test uiAction keyboardEvent',{ elem,selector,type,ctx})
+      expectedEffects && expectedEffects.setLogs()
 
       const widgetId = jb.ui.parentWidgetId(elem) || ctx.vars.widgetId
       const ev = { widgetId, type, target: elem, currentTarget: elem }
@@ -368,9 +375,8 @@ component('changeEvent', {
     If(
       and(not('%$useFrontEndInTest%'), not('%$remoteUiTest%'), not('%$doNotWaitForNextUpdate%')),
       waitForNextUpdate()
-    )    
-    // If(or('%$remoteUiTest%','%$useFrontEndInTest%', '%$doNotWaitForNextUpdate%'), '', waitForNextUpdate()),
-    // If('%$useFrontEndInTest%', FEUserRequest()),
+    ),
+    If('%$expectedEffects%', '%$expectedEffects/check()%')    
   )
 })
 
@@ -453,17 +459,22 @@ component('checkLog', {
     {id: 'log', as: 'string', mandatory: true},
     {id: 'data', dynamic: true, description: 'what to check', mandatory: true},
     {id: 'condition', type: 'boolean<>', dynamic: true, description: '%% is data', mandatory: true},
-    {id: 'errorMessage', as: 'string', dynamic: true },
+    {id: 'dataErrorMessage', as: 'string', dynamic: true },
+    {id: 'conditionErrorMessage', as: 'string', dynamic: true },
   ],
-  impl: (_ctx,log,data, condition,errorMessage) => ({
+  impl: (_ctx,log,data, condition,dataErrorMessage, conditionErrorMessage) => ({
     logsToCheck: () => log,
     check(ctx) {
       const logs = jb.spy.search(log,{ slice: ctx.vars.logCounterAtBeginUIActions || 0, spy: jb.spy, enrich: true })
       if (!logs.length)
-        jb.logError(`can not find logs ${log} after action ${ctx.vars.originatingUIAction}`,{ctx,log})
-      if (! logs.find(l=>condition(ctx.setData(data(ctx.setData(l))))))
-        jb.logError(errorMessage(ctx) + `no log item met condition ${jb.utils.prettyPrint(condition.profile,{forceFlat:true})} after action ${ctx.vars.originatingUIAction}`,
-          {logs, ctx})
+        return jb.logError(`can not find logs ${log} after action ${ctx.vars.originatingUIAction}`,{ctx,log})
+      const dataItems = logs.map(l=> jb.tosingle(data(ctx.setData(l)))).filter(x=>x)
+      if (!dataItems.length)
+        return jb.logError(dataErrorMessage(ctx) + ` using expression ${jb.utils.prettyPrint(data.profile,{forceFlat:true})} after action ${ctx.vars.originatingUIAction}`,{ctx,logs})
+      const conditionItems = dataItems.find(dt => condition(ctx.setData(dt)))
+      if (!conditionItems)
+        jb.logError(conditionErrorMessage(ctx.setData(dataItems)) + ` using condition ${jb.utils.prettyPrint(condition.profile,{forceFlat:true})} after action ${ctx.vars.originatingUIAction}`,
+          {dataItems, ctx})
     }
   })
 })
@@ -473,5 +484,11 @@ component('compChange', {
   params: [
     {id: 'newText', dynamic: true, mandatory: true}
   ],
-  impl: checkLog({log: 'delta', data: '%delta%', condition: contains('%$newText()%'), errorMessage: 'can not find %$newText()%, '})
+  impl: checkLog({
+    log: 'delta',
+    data: '%delta%',
+    condition: contains('%$newText()%'),
+    dataErrorMessage: 'no rendering updates',
+    conditionErrorMessage: 'can not find %$newText()% in delta'
+  })
 })

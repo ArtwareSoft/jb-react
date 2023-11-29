@@ -1,3 +1,4 @@
+load plugin dynamically in probeTest
 ctrl-I
   add 'using' and 'dsl' indication for current plugin
 

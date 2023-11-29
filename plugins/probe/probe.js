@@ -37,6 +37,10 @@ extension('probe', 'main', {
                     || jb.path(jb.utils.getComp(cmpId),'circuit')
                     || jb.path(jb.utils.getComp(cmpId),'impl.expectedResult') && cmpId // test
                     || findTest(cmpId) || cmpId
+            if (circuitCmpId && !jb.utils.getComp(circuitCmpId,{silent: true}) && !jb.treeShake.codeServerJbm) {
+                return jb.logError(`calcCircuit. can not bring circuit comp ${circuitCmpId}`,{probePath,cmpId,ctx})
+            }
+        
             if (circuitCmpId) {
                 jb.treeShake.codeServerJbm && await jb.treeShake.getCodeFromRemote([circuitCmpId])
                 const res = _ctx.ctx({ profile: {$: circuitCmpId}, comp : circuitCmpId, path: ''})

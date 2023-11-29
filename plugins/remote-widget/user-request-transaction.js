@@ -42,7 +42,7 @@ extension('ui', 'userReqTx', {
         const {widgetId} = userReq
         const updatesCounter = jb.ui.headless[widgetId].updatesCounter = (jb.ui.headless[widgetId].updatesCounter || 0) + 1
         const txCounter = jb.ui.headless[widgetId].txCounter || 0
-        jb.log(`headless widget delta out ${txCounter}-${updatesCounter}`, { widgetId, ctx, delta: renderingUpdate.delta })
+        jb.log(`userReqTx delta ${txCounter}-${updatesCounter}`, { widgetId, ctx, renderingUpdate, delta: renderingUpdate.delta })
         this.cb.next({userReq, ...renderingUpdate})
         ctx.vars.testRenderingUpdate && ctx.vars.testRenderingUpdate.next({userReq, ...renderingUpdate})
       },      
