@@ -369,6 +369,7 @@ component('changeEvent', {
     
       const e = new Event(type)
       Object.defineProperty(e, 'target', { get : _ => elem })
+      Object.defineProperty(e, 'value', { get : _ => value })
       elem.dispatchEvent(e)
     },
     If('%$useFrontEndInTest%', uiActions(delay(1), FEUserRequest(), If(not('%$doNotWaitForNextUpdate%'), waitForNextUpdate()))),
@@ -447,7 +448,8 @@ component('Effects', {
       logsToCheck.split(',').filter(x=>x).forEach(logName=>jb.spy.includeLogs[logName] = true)
     },
     check(ctx) {
-      jb.spy.includeLogs = this.originalLogs
+      if (this.originalLogs != undefined)
+        jb.spy.includeLogs = this.originalLogs
       effects.forEach(ef=>ef.check(ctx))
     }
   })
@@ -465,16 +467,41 @@ component('checkLog', {
   impl: (_ctx,log,data, condition,dataErrorMessage, conditionErrorMessage) => ({
     logsToCheck: () => log,
     check(ctx) {
+      const { originatingUIAction } = ctx.vars
       const logs = jb.spy.search(log,{ slice: ctx.vars.logCounterAtBeginUIActions || 0, spy: jb.spy, enrich: true })
       if (!logs.length)
-        return jb.logError(`can not find logs ${log} after action ${ctx.vars.originatingUIAction}`,{ctx,log})
+        return jb.logError(`can not find logs ${log} after action ${originatingUIAction}`,{ctx,log})
       const dataItems = logs.map(l=> jb.tosingle(data(ctx.setData(l)))).filter(x=>x)
       if (!dataItems.length)
-        return jb.logError(dataErrorMessage(ctx) + ` using expression ${jb.utils.prettyPrint(data.profile,{forceFlat:true})} after action ${ctx.vars.originatingUIAction}`,{ctx,logs})
+        return jb.logError(dataErrorMessage(ctx) + `  after action ${originatingUIAction} using expression ${jb.utils.prettyPrint(data.profile,{forceFlat:true})}`,{ctx,logs})
       const conditionItems = dataItems.find(dt => condition(ctx.setData(dt)))
       if (!conditionItems)
-        jb.logError(conditionErrorMessage(ctx.setData(dataItems)) + ` using condition ${jb.utils.prettyPrint(condition.profile,{forceFlat:true})} after action ${ctx.vars.originatingUIAction}`,
+        jb.logError(conditionErrorMessage(ctx.setData(dataItems)) + ` after action ${originatingUIAction} using condition ${jb.utils.prettyPrint(condition.profile,{forceFlat:true})}`,
           {dataItems, ctx})
+    }
+  })
+})
+
+component('checkDOM', {
+  type: 'ui-action-effect',
+  params: [
+    {id: 'selector', as: 'string', mandatory: true},
+    {id: 'calculate', type: 'data<>', dynamic: true, description: '%% is dom elem', mandatory: true},
+    {id: 'expectedResult', type: 'boolean<>', dynamic: true, description: '%% is calc result', mandatory: true},
+    {id: 'errorMessage', as: 'string', dynamic: true },
+  ],
+  impl: (ctx,selector,calculate, expectedResult, errorMessage) => ({
+    logsToCheck: () => '',
+    check(ctx) {
+      const { originatingUIAction } = ctx.vars
+      const elem = jb.ui.elemOfSelector(selector,ctx)
+      jb.log('checkDOM elem',{elem,selector,ctx})
+      if (!elem)
+        return jb.logError(`checkDOM: can not find elem of selector ${selector} after action ${originatingUIAction}`,{ctx})
+      const actualResult = calculate(ctx.setData(elem))
+      const res = expectedResult(ctx.setData(actualResult))
+      if (!res)
+        return jb.logError(errorMessage(ctx.setVars({actualResult})) + ` after action ${originatingUIAction}`,{ctx})
     }
   })
 })

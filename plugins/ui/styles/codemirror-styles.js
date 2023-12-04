@@ -31,13 +31,13 @@ extension('codemirror', {
     },
 	enableFullScreen(ctx,cmp,el) {
 		const width = jb.ui.outerWidth(el), height = jb.ui.outerHeight(el), editor = cmp.editor
-		const fullScreenBtnHtml = '<div class="jb-codemirror-fullScreenBtnCss hidden"><img title="Full Screen (F11)" src="http://png-1.findicons.com/files/icons/1150/tango/22/view_fullscreen.png"/></div>'
+		const fullScreenBtnHtml = '<div class="jb-codemirror-fullScreenBtnCss hidden" title="Full Screen (F11)"</div>'
 		const escText = '<span class="jb-codemirror-escCss">Press ESC or F11 to exit full screen</span>'
 		const lineNumbers = true
 		const css = `
 			.jb-codemirror-escCss { cursor:default; text-align: center; width: 100%; position:absolute; top:0px; left:0px; font-family: arial; font-size: 11px; color: #a00; padding: 2px 5px 3px; }
 			.jb-codemirror-escCss:hover { text-decoration: underline; }
-			.jb-codemirror-fullScreenBtnCss { position:absolute; bottom:5px; right:15px; -webkit-transition: opacity 1s; z-index: 20; }
+			.jb-codemirror-fullScreenBtnCss { content:url("fullscreen.png"); position:absolute; bottom:5px; right:15px; -webkit-transition: opacity 1s; z-index: 20; }
 			.jb-codemirror-fullScreenBtnCss.hidden { opacity:0; }
 			.jb-codemirror-editorCss { position:relative; }
 			.jb-codemirror-fullScreenEditorCss { padding-top: 20px, display: block; position: fixed !important; top: 0; left: 0; z-index: 99999999; }

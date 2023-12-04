@@ -99,7 +99,8 @@ extension('ui', 'react', {
         } else {
             const vdomBefore = elem instanceof jb.ui.VNode ? elem : jb.ui.elemToVdom(elem)
             const delta = jb.ui.compareVdom(vdomBefore,vdomAfter,ctx)
-            jb.log('apply delta top dom',{vdomBefore,vdomAfter,active,elem,vdomAfter,strongRefresh, delta, ctx})
+            const cmpId = elem.getAttribute('cmp-id')
+            jb.log('applyDeltaTop apply delta top dom',{cmpId, vdomBefore,vdomAfter,active,elem,vdomAfter,strongRefresh, delta, ctx})
             jb.ui.applyDeltaToDom(elem,delta,ctx)
         }
         if (!(elem instanceof jb.ui.VNode) || ctx.vars.useFrontEndInTest) {
@@ -403,7 +404,7 @@ extension('ui', 'react', {
     buildUserEvent(ev, elem) {
         if (!ev) return null
         const userEvent = {
-            value: (ev.target || {}).value, 
+            value: ev.value || (ev.target || {}).value, 
             elem: jb.ui.calcElemProps(elem),
             ev: {},
         }

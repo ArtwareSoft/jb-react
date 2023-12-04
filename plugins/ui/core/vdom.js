@@ -265,6 +265,7 @@ extension('ui','vdom', {
         }
     },
     vdomToHtml(vdom) {
+        if (!vdom) return ''
         let childs = (vdom.children || [])
         if (!Array.isArray(childs))
             childs = childs.length ? Array.from(Array(childs.length).keys()).map(i=>childs[i]) : []

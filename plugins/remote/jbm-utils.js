@@ -278,10 +278,11 @@ extension('jbm', 'main', {
             })
         delete childsOrNet[id]
         rjbm.remoteExec(jb.remoteCtx.stripJS(() => {jb.cbHandler.terminate(); terminated = true; if (typeof close1 == 'function') close() } ), {oneway: true, ctx} )
-        return rjbm.remoteExec(jb.remoteCtx.stripJS(() => {
-            jb.cbHandler.terminate(); 
-            jb.terminated = true;
-            jb.delay(100).then(() => typeof close == 'function' && close()) // close worker
+        return rjbm.remoteExec(jb.remoteCtx.stripJS(async () => {
+            jb.cbHandler.terminate()
+            jb.terminated = true
+            if (typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope)
+                jb.delay(100).then(() => close()) // close worker
             return 'terminated' 
         }), { oneway: true, ctx} )
     },

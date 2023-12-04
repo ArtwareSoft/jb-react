@@ -10,6 +10,7 @@ component('mdcStyle.initDynamic', {
   impl: features(
     frontEnd.requireExternalLibrary(['material-components-web.js','css/font.css','css/material.css']),
     frontEnd.init( async ({},{cmp}) => {
+      if (cmp.base.constructor.name == 'VNode') return
       const mdc = jb.frame.mdc
       if (!mdc) return jb.logError('please load mdc library')
       cmp.mdc_comps = cmp.mdc_comps || [];

@@ -78,10 +78,14 @@ extension('test', {
 	runInStudio(profile) {
 		return profile && jb.ui.parentFrameJb().exec(profile)
 	},
-	addHTML(el,html) {
+	addHTML(el,html,{beforeResult} = {}) {
         const elem = document.createElement('div')
         elem.innerHTML = html
-        el.appendChild(elem.firstChild)
+		const toAdd = elem.firstChild
+		if (beforeResult && document.querySelector('#jb-testResult'))
+			el.insertBefore(toAdd, document.querySelector('#jb-testResult'))
+		else
+        	el.appendChild(toAdd)
     },
 	async cleanBeforeRun() {
 		jb.db.watchableHandlers.forEach(h=>h.dispose())
@@ -215,7 +219,7 @@ extension('test', {
 				jb.test.usedJSHeapSize = (jb.path(jb.frame,'performance.memory.usedJSHeapSize' || 0) / 1000000)
 				jb.test.updateTestHeader(jb.frame.document, jb.test)
 
-				jb.test.addHTML(document.body, jb.test.testResultHtml(res, repo));
+				jb.test.addHTML(document.body, jb.test.testResultHtml(res, repo), {beforeResult: jb.test.singleTest && res.renderDOM});
 				if (!res.renderDOM && show) res.show()
 				if (jb.ui && tests.length >1) {
 					jb.cbLogByPath = {}
@@ -232,7 +236,7 @@ extension('test', {
 		const studioUrl = `http://localhost:8082/project/studio/${res.id}/${res.id}?sourceCode=${encodeURIComponent(sourceCode)}`
 		const _repo = repo ? `&repo=${repo}` : ''
 		const coveredTests = jb.comps[res.id].impl.covers ? `<a href="${baseUrl}/tests.html?coveredTestsOf=${res.id}${_repo}">${jb.comps[res.id].impl.covers.length} dependent tests</a>` : ''
-		return `<div class="${res.success ? 'success' : 'failure'}"">
+		return `<div class="${res.success ? 'success' : 'failure'}">
 			<a href="${baseUrl}/tests.html?test=${res.id}${_repo}&show&spy=${jb.spy.spyParamForTest(res.id)}" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
 			<span> ${res.duration}mSec</span> 
 			${coveredTests}
