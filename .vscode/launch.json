@@ -1,49 +1,103 @@
 {
     "version": "0.2.0",
     "configurations": [
-
+        {
+            "name": "Python: play.py",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/hosts/python/play.py",
+            "console": "integratedTerminal",
+            "args": [
+                "-main:split(\"-\")",
+                "%text:rak-lo-%$v2%",
+                "%part:but first",
+                "%v1:pipeline('bb',first())",
+                "%v2:#%$v1%#"
+            ],            
+            "justMyCode": true
+        },
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": [
+                "-main:split(\"-\")",
+                "%text:rak-lo-%$v2%",
+                "%part:but first",
+                "%v1:pipeline('bb',first())",
+                "%v2:#%$v1%#"
+            ],            
+            "justMyCode": true
+        },
         {
             "type": "node",
             "request": "launch",
             "name": "jb",
             "program": "${workspaceFolder}/bin/jb",
-            "args": ["-main:split(\"-\")", "%text:rak-lo-%$v2%","%part:but first","%v1:pipeline('bb',first())","%v2:#%$v1%#"],
+            "args": [
+                "-main:split(\"-\")",
+                "%text:rak-lo-%$v2%",
+                "%part:but first",
+                "%v1:pipeline('bb',first())",
+                "%v2:#%$v1%#"
+            ],
         },
         {
             "type": "node",
             "request": "launch",
             "name": "download",
             "program": "${workspaceFolder}/bin/download-images",
-            "args": ["-main:split(\"-\")", "%text:rak-lo-%$v2%","%part:but first","%v1:pipeline('bb',first())","%v2:#%$v1%#"],
+            "args": [
+                "-main:split(\"-\")",
+                "%text:rak-lo-%$v2%",
+                "%part:but first",
+                "%v1:pipeline('bb',first())",
+                "%v2:#%$v1%#"
+            ],
         },
         {
             "type": "node",
             "request": "launch",
             "name": "jb with wrap",
             "program": "${workspaceFolder}/bin/jb",
-            "args": ["-main:split(\"-\")", "%text:rak-lo-%$v1%","%part:but first","%v1:bb","-wrap:pipeline(MAIN ,\"#%%#\")"],
+            "args": [
+                "-main:split(\"-\")",
+                "%text:rak-lo-%$v1%",
+                "%part:but first",
+                "%v1:bb",
+                "-wrap:pipeline(MAIN ,\"#%%#\")"
+            ],
         },
         {
             "type": "node",
             "request": "launch",
             "name": "probe",
             "program": "${workspaceFolder}/bin/jb",
-            "args": ["-main:probe.runCircuit()", "%probePath:zui.itemPreview~impl~title","-wrap:pipeline(MAIN ,\"%%\")"],
+            "args": [
+                "-main:probe.runCircuit()",
+                "%probePath:zui.itemPreview~impl~title",
+                "-wrap:pipeline(MAIN ,\"%%\")"
+            ],
         },
-
         {
             "type": "node",
             "request": "launch",
             "name": "pretty",
             "program": "${workspaceFolder}/bin/tgp-pretty",
-            "args": ["-file:common-features.js"],
+            "args": [
+                "-file:common-features.js"
+            ],
         },
         {
             "name": "TGP Lang Extension",
             "type": "extensionHost",
             "request": "launch",
             "runtimeExecutable": "${execPath}",
-            "args": ["--extensionDevelopmentPath=${workspaceRoot}/hosts/vscode/tgp-lang"],
+            "args": [
+                "--extensionDevelopmentPath=${workspaceRoot}/hosts/vscode/tgp-lang"
+            ],
         },
         {
             "name": "pptr-server",
@@ -85,7 +139,10 @@
             "request": "launch",
             "program": "${workspaceRoot}/bin/tgp2ts",
             "stopOnEntry": false,
-            "args": ["srcDir:bin/studio","-out:dist/jbart"],
+            "args": [
+                "srcDir:bin/studio",
+                "-out:dist/jbart"
+            ],
             "cwd": "${workspaceRoot}",
             "preLaunchTask": null,
             "runtimeExecutable": null,
