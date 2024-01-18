@@ -90,13 +90,13 @@ async function jbInit(uri, sourceCode , {multipleInFrame} ={}) {
       const _code = await plugin.codePackage.fetchFile(path)
       const sourceUrl = `${path}?${jb.uri}`.replace(/#/g,'')
       const code = `${_code}\n//# sourceURL=${sourceUrl}`
-      const dsl = fileSymbols && fileSymbols.dsl || plugin && plugin.dsl
+      const override_dsl = fileSymbols && fileSymbols.dsl
       const proxies = noSymbols ? {} : jb.objFromEntries(unique(plugin.requiredFiles.flatMap(x=>x.ns))
         .flatMap(id=>jb.macro.registerProxy(id)))
       const context = { jb, 
         ...(typeof require != 'undefined' ? {require} : {}),
         ...proxies,
-        component:(...args) => jb.component(plugin,dsl,...args),
+        component:(...args) => jb.component(...args,{plugin,override_dsl}),
         extension:(...args) => jb.extension(plugin,...args),
         using: x=>jb.using(x), dsl: x=>jb.dsl(x), pluginDsl: x=>jb.pluginDsl(x)
       }

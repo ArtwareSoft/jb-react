@@ -666,7 +666,7 @@ component('contains', {
   type: 'boolean',
   params: [
     {id: 'text', type: 'data[]', as: 'array', mandatory: true},
-    {id: 'allText', defaultValue: '%%', as: 'string'},
+    {id: 'allText', defaultValue: '%%', as: 'string', byName: true},
     {id: 'inOrder', defaultValue: true, as: 'boolean', type: 'boolean'}
   ],
   impl: ({},text,allText,inOrder) => {
@@ -684,7 +684,7 @@ component('notContains', {
   type: 'boolean',
   params: [
     {id: 'text', type: 'data[]', as: 'array', mandatory: true},
-    {id: 'allText', defaultValue: '%%', as: 'array'}
+    {id: 'allText', defaultValue: '%%', as: 'array', byName: true}
   ],
   impl: not(
     contains({text: '%$text%', allText: '%$allText%'})
@@ -696,7 +696,7 @@ component('startsWith', {
   type: 'boolean',
   params: [
     {id: 'startsWith', as: 'string', mandatory: true},
-    {id: 'text', defaultValue: '%%', as: 'string'}
+    {id: 'text', defaultValue: '%%', as: 'string', byName: true}
   ],
   impl: ({},startsWith,text) => text.indexOf(startsWith) == 0
 })
@@ -833,7 +833,7 @@ component('split', {
   type: 'data',
   params: [
     {id: 'separator', as: 'string', defaultValue: ',', description: 'E.g., \",\" or \"<a>\"'},
-    {id: 'text', as: 'string', defaultValue: '%%'},
+    {id: 'text', as: 'string', defaultValue: '%%', byName: true},
     {id: 'part', options: 'all,first,second,last,but first,but last', defaultValue: 'all'}
   ],
   impl: ({},separator,text,part) => {
@@ -978,7 +978,7 @@ component('extractPrefix', {
   type: 'data',
   params: [
     {id: 'separator', as: 'string', description: '/w- alphnumberic, /s- whitespace, ^- beginline, $-endline'},
-    {id: 'text', as: 'string', defaultValue: '%%'},
+    {id: 'text', as: 'string', defaultValue: '%%', byName: true},
     {id: 'regex', type: 'boolean', as: 'boolean', description: 'separator is regex'},
     {id: 'keepSeparator', type: 'boolean', as: 'boolean'}
   ],
@@ -997,7 +997,7 @@ component('extractSuffix', {
   type: 'data',
   params: [
     {id: 'separator', as: 'string', description: '/w- alphnumberic, /s- whitespace, ^- beginline, $-endline'},
-    {id: 'text', as: 'string', defaultValue: '%%'},
+    {id: 'text', as: 'string', defaultValue: '%%', byName: true},
     {id: 'regex', type: 'boolean', as: 'boolean', description: 'separator is regex'},
     {id: 'keepSeparator', type: 'boolean', as: 'boolean'}
   ],
@@ -1175,7 +1175,7 @@ component('action.setSessionStorage', {
 component('waitFor',{
   params: [
     {id: 'check', dynamic: true},
-    {id: 'interval', as: 'number', defaultValue: 14},
+    {id: 'interval', as: 'number', defaultValue: 14, byName: true},
     {id: 'timeout', as: 'number', defaultValue: 3000},
     {id: 'logOnError', as: 'string', dynamic: true},
   ],
@@ -1225,7 +1225,7 @@ component('addComponent', {
     {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
     {id: 'type', options:'watchableData,passiveData,comp', mandatory: true },
   ],
-  impl: (ctx,id,value,type) => jb.component({},'',id(), type == 'comp' ? value() : {[type]: value() } ),
+  impl: (ctx,id,value,type) => jb.component(id(), type == 'comp' ? value() : {[type]: value() } ),
   require: () => jb.db.addDataResourcePrefix()
 })
 

@@ -122,7 +122,10 @@ extension('treeShake', {
             (k,v) => typeof v === 'function' ? '@@FUNC'+v.toString()+'FUNC@@' : v,2)
                 .replace(/"@@FUNC([^@]+)FUNC@@"/g, (_,str) => str.replace(/\\\\n/g,'@@__N').replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n').replace(/\\t/g,'')
                     .replace(/@@__N/g,'\\\\n').replace(/\\\\/g,'\\') )
-        return `jb.component(jb.plugins['${ct.plugin.id}'],'${ct.dsl||''}','${cmpId.split('>').pop()}', ${content})`
+        const override_dsl = ct.dsl ? `, override_dsl: '${ct.dsl||''}'` : ''
+        const pluginId = ct.plugin.id ? `pluginId: '${ct.plugin.id}'` : ''
+        const settings = (override_dsl || pluginId) ? `, { ${pluginId}${override_dsl} }` : ''
+        return `jb.component('${cmpId.split('>').pop()}', ${content}${settings})`
     },
     async bringMissingCode(obj) {
         const missing = getMissingProfiles(obj)

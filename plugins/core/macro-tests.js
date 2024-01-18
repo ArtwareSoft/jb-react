@@ -139,10 +139,11 @@ component('macroTest.asyncInProfile', {
 })
 
 component('macroTest.funcDefaults', {
-  impl: dataTest(
-    () => jb.utils.prettyPrint({ aB(c, { b } = {}) { 3 } }),
-    and(not(contains('aB:')), contains('aB(c, { b } = {}) { 3 }'))
-  )
+  impl: dataTest({
+    calculate: () => jb.utils.prettyPrint({ aB(c, { b } = {}) { 3 } }),
+    expectedResult: and(not(contains('aB:')), contains('aB(c, { b } = {}) { 3 }')),
+    runBefore: runActionOnItems(list(1,2,3), delay(), 'index')
+  })
 })
 
 component('macroTest.disabled', {
@@ -161,3 +162,17 @@ component('macroTest.typeAdapter.from', {
 component('macroTest.typeAdapter.to', {
   impl: dataTest(pipeline(typeAdapter('state<location>', israel()), '%capital/name%'), equals('Jerusalem'))
 })
+
+component('macroTest.mixed.byNameSection', {
+  impl: dataTest(
+    () => jb.utils.prettyPrint(runActionOnItems(list(1,2,3), delay(), 'index'), { mixed: true, initialPath: 'myProf~impl' }),
+    contains('{indexVariable:')
+  )
+})
+
+// component('macroTest.mixed.load', {
+//   impl: dataTest(
+//     () => jb.utils.prettyPrint(jb.utils.prettyPrintComp(), { mixed: true, initialPath: 'myProf~impl' }),
+//     contains('{indexVariable:')
+//   )
+// })

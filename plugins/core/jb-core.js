@@ -58,11 +58,12 @@ Object.assign(jb, {
       console.log(e)
     }      
   },
-  component(plugin = {},_dsl,id,comp) {
+  component(id,comp,{plugin, override_dsl, pluginId} = {}) {
     if (!jb.core.CT) jb.initializeLibs(['core']) // this line must be first
     const CT = jb.core.CT
+    plugin = plugin || jb.plugins[pluginId] || {}
     comp[CT] = comp[CT] || { plugin }
-    const dsl = _dsl || plugin.dsl
+    const dsl = override_dsl || plugin.dsl
 
     const location = jb.calcSourceLocation(new Error().stack.split(/\r|\n/), plugin)
     comp[CT].location = comp.location || location

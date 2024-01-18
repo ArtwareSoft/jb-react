@@ -33,7 +33,8 @@ extension('utils', 'prettyPrint', {
     return { line: line + noOfLines, col: newCol }
   },
 
-  prettyPrintWithPositions(val,{colWidth=100,tabSize=2,initialPath='',noMacros,forceFlat, depth} = {}) {
+  prettyPrintWithPositions(val,{colWidth=100,tabSize=2,initialPath='',noMacros,forceFlat, depth, mixed} = {}) {
+    //mixed = true
     const props = {}
     if (!val || typeof val !== 'object')
       return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
@@ -82,13 +83,13 @@ extension('utils', 'prettyPrint', {
       const innerVals = props[path].innerVals || []
       const flat = forceFlat || singleFunc || nameValuePattern || primitiveArray || (len < colWidth && !shouldNotFlat())
       const arrayOrProfile = isArray? 'array' : 'profile'
+      const separatorWS = primitiveArray ? '' : flat ? ' ' : newLine()
 
       const vals = innerVals.reduce((acc,{innerPath}, index) => {
         const fullInnerPath = [path,innerPath].join('~')
         const fixedPropName = props[fullInnerPath].fixedPropName
         const semanticPrefix = isArray ? `array-prefix-${index}` : 'prop'
         const semanticSeparator = isArray ? `array-separator-${index}` : `obj-separator-${index}`
-        const separatorWS = primitiveArray ? '' : flat ? ' ' : newLine()
         return [
           ...acc,
           {prop: `!${semanticPrefix}`, path: fullInnerPath, item: isArray ? '' : fixedPropName || (fixPropName(innerPath) + ': ')},
@@ -98,6 +99,49 @@ extension('utils', 'prettyPrint', {
           {prop: `!${semanticSeparator}`, path, item: index === innerVals.length-1 ? '' : ',' + separatorWS},
         ]
       }, [])
+      const argsByValue = props[path].argsByValue || []
+      const _argsByValue = argsByValue.reduce((acc,{innerPath}, index) => {
+        const fullInnerPath = [path,innerPath].join('~')
+        return [
+          ...acc,
+          {prop: `!$prop`, path: fullInnerPath, item: ''},
+          {prop: '!value', item: '', path: fullInnerPath },
+          ...calcTokens(fullInnerPath, flat ? depth : depth +1, forceFlat),
+          {prop: '!value', item: '', path: fullInnerPath, end: true },
+          {prop: `!$prop-separator`, path, item: index === argsByValue.length-1 ? '' : ',' + separatorWS},
+        ]
+      }, [])
+      const propsByName = props[path].propsByName || []
+      const _propsByName = propsByName.reduce((acc,{innerPath}, index) => {
+        const fullInnerPath = [path,innerPath].join('~')
+        const fixedPropName = props[fullInnerPath].fixedPropName
+        return [
+          ...acc,
+          {prop: `!$prop`, path: fullInnerPath, item: fixedPropName || (fixPropName(innerPath) + ': ')},
+          {prop: '!value', item: '', path: fullInnerPath },
+          ...calcTokens(fullInnerPath, flat ? depth : depth +1, forceFlat),
+          {prop: '!value', item: '', path: fullInnerPath, end: true },
+          {prop: `!$prop-separator`, path, item: index === propsByName.length-1 ? '' : ',' + separatorWS},
+        ]
+      }, [])
+
+      const propsByNameSection = propsByName.length ? [
+        ...(argsByValue.length ? [{prop: `!$prop-separator`, path, item: ',' + separatorWS}] : []),
+        {prop:'!open-props-byName', item: '{', path}, 
+        ..._propsByName, 
+        {prop:'!close-props-byName', item:'}', path},
+      ] : []
+
+      if (props[path].mixed)
+        return [
+          {prop: '!profile', item: props[path].macro, path}, 
+          {prop: '!open-profile', item:'(', path},
+          {prop: `!open-profile-NL`, path, item: newLine()},
+          ..._argsByValue,
+          ...propsByNameSection,
+          {prop: `!close-profile-NL`, path, item: newLine(-1)},
+          {prop:'!close-profile', item:')', path}
+        ]
 
       return [
         ...jb.asArray(open).map(x=>({...x, path})),
@@ -145,6 +189,8 @@ extension('utils', 'prettyPrint', {
     function calcProfileProps(profile, path) {
       if (noMacros)
         return asIsProps(profile,path)
+      if (mixed)
+        return calcProfilePropsMixed(profile, path)
       const fullId = [jb.utils.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
       const comp = fullId && jb.utils.getComp(fullId)
       if (comp && profile.$byValue)
@@ -206,6 +252,51 @@ extension('utils', 'prettyPrint', {
       const len = macro.length + args.reduce((len,elem) => 
         len + calcValueProps(elem.val,`${path}~${elem.innerPath}`).len + elem.innerPath.length + 2, 2)
       return openCloseProps(path, open, close, {byName: true, len, innerVals: args })
+    }
+
+    function calcProfilePropsMixed(profile, path) {
+      const fullId = [jb.utils.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
+      const comp = fullId && jb.utils.getComp(fullId)
+      if (comp && profile.$byValue)
+        jb.utils.resolveDetachedProfile(profile)
+      const id = fullId.split('>').pop()
+        
+      if (!id || !comp || ',object,var,'.indexOf(`,${id},`) != -1)
+        return asIsProps(profile,path)
+        
+      const macro = jb.macro.titleToId(id)
+
+      const params = comp.params || []
+      const param0 = params[0] ? params[0] : {}
+      const firstParamAsArray = param0.as == 'array' || (param0.type||'').indexOf('[]') != -1
+
+      const paramsByValue = (firstParamAsArray || param0.byName) ? [] : params.slice(0,2)
+      const paramsByName = firstParamAsArray ? (param0.byName ? params: params.slice(1)) : params.slice(2)
+      const param1 = params[1] ? params[1] : {}
+      if (!firstParamAsArray && (param1.as == 'array' || (param1.type||'').indexOf('[]') != -1 || param1.byName))
+        paramsByName.unshift(paramsByValue.pop())
+
+      const systemProps = [
+        ...profile.$remark ? [{innerPath: 'remark', val: profile.$remark} ] : [],
+        ...profile.$debug ? [{innerPath: 'debug', val: profile.$debug} ] : [],
+        ...profile.$log ? [{innerPath: 'log', val: profile.$log} ] : [],
+        ...profile.$disable ? [{innerPath: 'disable', val: profile.$disable} ] : [],
+      ]
+      const propsByName = systemProps.concat(paramsByName.map(param=>({innerPath: param.id, val: profile[param.id]}))).filter(({val})=>val !== undefined)
+      const propsByValue = paramsByValue.map(param=>({innerPath: param.id, val: profile[param.id]})).filter(({val})=>val !== undefined)
+      const argsOfFirstParam = firstParamAsArray ? jb.asArray(profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + '~' + i, val})) : []
+      const varArgs = (profile.$vars || []).map(({name,val},i) => ({innerPath: `$vars~${i}`, val: {$: 'Var', name, val }}))
+
+      const varsLength = profile.$vars ? calcArrayProps(profile.$vars.map(x=>x.val),`${path}~$vars`).len : 0
+      const firstParamLength = firstParamAsArray ? calcArrayProps(argsOfFirstParam.map(x=>x.val),`${path}~${params[0].id}`).len : 0
+      const propsByValueLength = propsByValue.length && !firstParamAsArray ? propsByValue.reduce((len,elem) => len + calcValueProps(elem.val,`${path}~${elem.innerPath}`).len + 2, 2) : 0
+      const propsByNameLength = propsByName.reduce((len,elem) => len + calcValueProps(elem.val,`${path}~${elem.innerPath}`).len + elem.innerPath.length + 2, 2)
+      
+      const argsByValue = [...varArgs, ...(firstParamAsArray ? argsOfFirstParam: propsByValue)]
+      const len = varsLength + firstParamLength + propsByValueLength + propsByNameLength
+      const nameValuePattern = !varArgs.length && !systemProps.length && propsByValue.length == 2 && typeof propsByValue[0].val == 'string' && typeof propsByValue[1].val == 'function'
+      const singleFunc = !varArgs.length && !systemProps.length && propsByValue.length == 1 && typeof propsByValue[0].val == 'function'
+      return props[path] = { macro, len, argsByValue, propsByName, nameValuePattern, singleFunc, mixed: true}
     }
 
     function asIsProps(profile,path) {

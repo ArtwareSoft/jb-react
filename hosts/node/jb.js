@@ -105,10 +105,10 @@ function calcParamsAndVars() {
     }
 }
 
-function evalProfileDef(code, dsl) { 
+function evalProfileDef(code, override_dsl) { 
     try {
       jb.core.unresolvedProfiles = []
-      const context = { jb, ...jb.macro.proxies, component: (...args) => jb.component({},dsl,...args) }
+      const context = { jb, ...jb.macro.proxies, component: (...args) => jb.component(...args,{override_dsl}) }
       const res = new Function(Object.keys(context), `${code}`).apply(null, Object.values(context))
       const compId = jb.core.unresolvedProfiles.slice(-1)[0].id
       jb.utils.resolveLoadedProfiles()
@@ -118,9 +118,9 @@ function evalProfileDef(code, dsl) {
     } 
 }
 
-function evalInContext(code, dsl) { 
+function evalInContext(code, override_dsl) { 
     try {
-        const context = { jb, ...jb.macro.proxies, component: (...args) => jb.component({},dsl,...args) }
+        const context = { jb, ...jb.macro.proxies, component: (...args) => jb.component(...args,{override_dsl}) }
         return new Function(Object.keys(context), `return ${code}`).apply(null, Object.values(context))
     } catch (e) { 
         return {err: e}
