@@ -92,7 +92,7 @@ async function jbInit(uri, sourceCode , {multipleInFrame} ={}) {
       const code = `${_code}\n//# sourceURL=${sourceUrl}`
       const override_dsl = fileSymbols && fileSymbols.dsl
       const proxies = noSymbols ? {} : jb.objFromEntries(unique(plugin.requiredFiles.flatMap(x=>x.ns))
-        .flatMap(id=>jb.macro.registerProxy(id)))
+        .map(id=>jb.macro.registerProxy(id)) )
       const context = { jb, 
         ...(typeof require != 'undefined' ? {require} : {}),
         ...proxies,

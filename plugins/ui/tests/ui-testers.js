@@ -18,7 +18,8 @@ component('uiTest', {
     {id: 'backEndJbm', type: 'jbm<jbm>', defaultValue: jbm.self()},
     {id: 'useFrontEnd', as: 'boolean', type: 'boolean'},
     {id: 'transactiveHeadless', as: 'boolean', type: 'boolean'},
-    {id: 'engine', as: 'string'}
+    {id: 'engine', as: 'string'},
+    {id: 'covers'}
   ],
   impl: dataTest({
     vars: [
@@ -74,7 +75,8 @@ component('uiFrontEndTest', {
     {id: 'expectedCounters', as: 'single'},
     {id: 'renderDOM', type: 'boolean', descrition: 'render the vdom under the document dom'},
     {id: 'runInPreview', type: 'action', dynamic: true, descrition: 'not for test mode'},
-    {id: 'runInStudio', type: 'action', dynamic: true, descrition: 'not for test mode'}
+    {id: 'runInStudio', type: 'action', dynamic: true, descrition: 'not for test mode'},
+	{id: 'covers'}
   ],
   impl: async (_ctx,control,runBefore,uiAction,expectedResult,allowError,cleanUp,expectedCounters,renderDOM) => {
 		if (typeof document == 'undefined')

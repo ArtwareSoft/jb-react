@@ -223,7 +223,7 @@ extension('tgpTextEditor', 'completion', {
         const plugin = jb.tgpTextEditor.pluginOfPath(filePath, dsl) 
         const compId = plugin.dsl && jb.path(jb.utils.getCompByShortIdAndDsl(shortId,plugin.dsl),[jb.core.CT,'fullId']) || shortId
         if (!jb.comps[compId]) {
-            const evalRes = jb.tgpTextEditor.evalProfileDef(compText,plugin)
+            const evalRes = jb.tgpTextEditor.evalProfileDef(compText,{plugin})
             if (evalRes.err)
                 return jb.logError('calcActiveEditorPath evalProfileDef', {...evalRes, compId, shortId , plugin })
             jb.comps[compId] = evalRes.res
@@ -247,7 +247,7 @@ extension('tgpTextEditor', 'completion', {
             const props = { time: new Date().getTime(), text, map, plugin, compId, comp : jb.comps[compId] }
             if (compText.split('\n').slice(1).join('\n').slice(0,-1) != (text||'').slice(2)) {
 //                const compText = lines.slice(compLine,compLine+compLastLine+1).join('\n')
-                let evaledComp = jb.tgpTextEditor.evalProfileDef(compText,plugin).res
+                let evaledComp = jb.tgpTextEditor.evalProfileDef(compText,{plugin}).res
                 if (evaledComp) {
                     jb.comps[compId] = evaledComp
                     const formattedText = jb.utils.prettyPrintWithPositions(jb.comps[compId],{initialPath: compId}).text
@@ -333,7 +333,7 @@ extension('tgpTextEditor', 'completion', {
         const itemProps = {...item, ...item.extend() }
         const {op, path, resultPath, resultSemantics, resultOffset} = itemProps
         const compId = path.split('~')[0]
-        jb.comps[compId] = jb.tgpTextEditor.evalProfileDef(compText,jb.tgpTextEditor.pluginOfPath(filePath, dsl)).res
+        jb.comps[compId] = jb.tgpTextEditor.evalProfileDef(compText,{plugin: jb.tgpTextEditor.pluginOfPath(filePath, dsl)}).res
 
         if (!jb.comps[compId])
             return jb.logError(`completion handleScriptChangeOnPreview - missing comp ${compId}`, {path, ctx})

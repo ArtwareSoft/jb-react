@@ -276,12 +276,7 @@ extension('utils', 'prettyPrint', {
       if (!firstParamAsArray && (param1.as == 'array' || (param1.type||'').indexOf('[]') != -1 || param1.byName))
         paramsByName.unshift(paramsByValue.pop())
 
-      const systemProps = [
-        ...profile.$remark ? [{innerPath: 'remark', val: profile.$remark} ] : [],
-        ...profile.$debug ? [{innerPath: 'debug', val: profile.$debug} ] : [],
-        ...profile.$log ? [{innerPath: 'log', val: profile.$log} ] : [],
-        ...profile.$disable ? [{innerPath: 'disable', val: profile.$disable} ] : [],
-      ]
+      const systemProps = jb.macro.systemProps.flatMap(p=>profile[p] ? [{innerPath: p, val: profile[p]}] : [])
       const propsByName = systemProps.concat(paramsByName.map(param=>({innerPath: param.id, val: profile[param.id]}))).filter(({val})=>val !== undefined)
       const propsByValue = paramsByValue.map(param=>({innerPath: param.id, val: profile[param.id]})).filter(({val})=>val !== undefined)
       const argsOfFirstParam = firstParamAsArray ? jb.asArray(profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + '~' + i, val})) : []

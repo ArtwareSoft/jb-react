@@ -1,4 +1,4 @@
-using('core-tests,tgp-tests')
+using('testing,tgp-tests')
 
 component('location.control', {
   type: 'control<>',

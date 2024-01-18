@@ -169,7 +169,7 @@ extension('utils', 'core', {
           prof[CT] = prof[CT] || {}
           Object.assign(prof[CT], {comp, dslType})
           if (prof.$byValue && comp) {
-              Object.assign(prof, jb.macro.argsToProfile(prof.$, comp, prof.$byValue))
+              Object.assign(prof, jb.macro.argsToProfile(prof.$, comp, prof.$byValue, topComp))
               delete prof.$byValue
           }
           if (Array.isArray(prof)) {

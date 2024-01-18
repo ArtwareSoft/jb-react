@@ -6,10 +6,10 @@ extension('tgpTextEditor', {
             enriched: Symbol.for('enriched'), 
         } 
     },    
-    evalProfileDef(code, plugin) { 
+    evalProfileDef(code, settings) { 
       try {
         jb.core.unresolvedProfiles = []
-        const context = { jb, ...jb.macro.proxies, dsl: x=>jb.dsl(x), component: (...args) => jb.component(...args,{plugin}) }
+        const context = { jb, ...jb.macro.proxies, dsl: x=>jb.dsl(x), component: (...args) => jb.component(...args,settings) }
         //const res = new Function(Object.keys(context), `return ${code}`).apply(null, Object.values(context))
         const f = eval(`(function(${Object.keys(context)}) {return ${code}\n})`)
         const res = f(...Object.values(context))

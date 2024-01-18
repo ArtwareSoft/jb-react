@@ -5,7 +5,7 @@ Object.assign(jb, {
 
 extension('macro', {
     initExtension() {
-        return { proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro') }
+        return { proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro'), systemProps: ['remark', 'debug', 'disabled', 'log' ] }
     },  
     titleToId: id => id.replace(/-([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
 //    proxiesKeys: () => jb.utils.unique(Object.keys(jb.macro.proxies).map(x=>x.split('_')[0])),
@@ -53,11 +53,16 @@ extension('macro', {
         }
         return { args, system }
     },
-    argsToProfile(cmpId, comp, args) { // todo - fix dsl type
+    argsToProfile(cmpId, comp, args, topComp) {
         if (args.length == 0)
             return { $: cmpId }        
         if (!comp)
             return { $: cmpId, $byValue: args }
+        const lastArg = args.length > 1 && args[args.length-1]
+        const lastArgIsByName = lastArg && typeof lastArg == 'object' && !Array.isArray(lastArg) && !lastArg.$
+        if (lastArgIsByName) 
+            return jb.macro.mixedArgsToProfile(cmpId, comp, args)
+
         const params = comp.params || []
         const singleParamAsArray = (params[0] && params[0].type || '').indexOf('[]') != -1
         if (params.length == 1 && singleParamAsArray) // pipeline, or, and, plus
@@ -74,12 +79,32 @@ extension('macro', {
             return { $: cmpId, [params[0].id]: args[0], [params[1].id]: args[1] }
         debugger;
     },
+    mixedArgsToProfile(cmpId, comp, args) {
+        console.error('%c mixedArgsToProfile: ','color: red', cmpId, comp)
+        const lastArg = args[args.length-1]
+        const lastArgIsByName = lastArg && typeof lastArg == 'object' && !Array.isArray(lastArg) && !lastArg.$
+        const argsByValue = lastArgIsByName ? args.slice(0,-1) : args
+        const propsByName = lastArgIsByName ? lastArg : {}
+
+        const params = comp.params || []
+        const param0 = params[0] ? params[0] : {}
+        const firstParamAsArray = param0.as == 'array' || (param0.type||'').indexOf('[]') != -1
+        const varArgs = []
+        while (argsByValue[0] && argsByValue[0].$ == 'Var')
+            varArgs.push(argsByValue.shift())
+        const firstProps = firstParamAsArray ? { [param0.id] : argsByValue } : jb.objFromEntries(argsByValue.map((v,i) => [params[i].id, v]))
+        return { $: cmpId,
+            ...(varArgs.length ? {$vars: varArgs} : {}),
+            ...firstProps, ...propsByName
+        }
+    },
     registerProxy: id => {
         const proxyId = jb.macro.titleToId(id.split('.')[0]) //.split('_')[0]
-        return [proxyId,`_${proxyId}`].map(proxyId => {
-            jb.macro.proxies[proxyId] = jb.macro.proxies[proxyId] || jb.macro.newProxy(proxyId)
-            return [proxyId,jb.macro.proxies[proxyId]]
-        })
+        return [proxyId, jb.macro.proxies[proxyId] = jb.macro.proxies[proxyId] || jb.macro.newProxy(proxyId)]
+        // return [proxyId,`_${proxyId}`].map(proxyId => {
+        //     jb.macro.proxies[proxyId] = jb.macro.proxies[proxyId] || jb.macro.newProxy(proxyId)
+        //     return [proxyId,jb.macro.proxies[proxyId]]
+        // })
     }
 })
 

@@ -1,5 +1,5 @@
 
-using('ui,remote-widget,parsing')
+using('ui,remote-widget,parsing,testing')
 
 // component('macroTest.simple', {
 //   impl: dataTest(prettyPrint(ctx => jb.comps['dataTest.obj'].impl), contains(["prop('a', 1)", ctx => "res: '%%'"]))
@@ -144,10 +144,6 @@ component('macroTest.funcDefaults', {
     expectedResult: and(not(contains('aB:')), contains('aB(c, { b } = {}) { 3 }')),
     runBefore: runActionOnItems(list(1,2,3), delay(), 'index')
   })
-})
-
-component('macroTest.disabled', {
-  impl: dataTest(() => jb.utils.prettyPrint(_dataTest(),{forceFlat: true}), equals('_dataTest()'))
 })
 
 component('macroTest.typeAdapter.from', {

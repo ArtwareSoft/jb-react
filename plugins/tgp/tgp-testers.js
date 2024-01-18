@@ -5,8 +5,36 @@ extension('test', 'completion', {
 		return { uniqueNameCounter: 0 } 
 	},
 	fixToUniqueName(code) {
-    const cmpId = 'CmpltnTst'+jb.test.uniqueNameCounter++
+    jb.test.uniqueNameCounter++
+    const cmpId = 'CmpltnTst'+jb.test.uniqueNameCounter
     return code.replace(/component\('x',/,`component('${cmpId}',`)
+  }
+})
+
+component('mixedMigrationTest', {
+  type: 'test',
+  params: [
+    {id: 'cmpId', as: 'string' },
+    {id: 'expectedResult', type: 'boolean', dynamic: true},
+  ],
+  impl: (ctx,cmpId,expectedResult)=> {
+      const testId = ctx.vars.testID
+      //const [code,cmpId] = fixCode(cmpId)
+      //jb.tgpTextEditor.evalProfileDef(code, {})
+      const newProfCode = jb.utils.prettyPrintComp(cmpId,jb.comps[cmpId], { mixed: true })
+      const [mixedCode,newCmpId] = fixCode(newProfCode.replace(cmpId,'x'))
+      jb.tgpTextEditor.evalProfileDef(mixedCode, { mixed: true})
+      const newProfCode2 = jb.utils.prettyPrintComp(newCmpId,jb.comps[newCmpId], { mixed: true })
+      const matchExpected = expectedResult(ctx.setData(newProfCode))
+      const sameCode = matchExpected && newProfCode2.replace(newCmpId,'x') == newProfCode.replace(cmpId,'x')
+      const reason = (!matchExpected && 'expectedResult does not match') || (!sameCode && 'code does not match')
+      return { id: testId, title: testId, success: sameCode && matchExpected, reason }
+
+      function fixCode(code) {
+        jb.test.uniqueNameCounter++
+        const cmpId = 'CmpltnTst'+jb.test.uniqueNameCounter
+        return [code.replace(/component\('x',/,`component('${cmpId}',`), cmpId ]
+      } 
   }
 })
 

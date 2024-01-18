@@ -1,4 +1,9 @@
-pretty print - mixed
+fix FETest.workerPreviewTest.suggestions - have only one test
+
+upgrade type
+  upgradeMixed
+  upgradePT
+
 use chatgpt to generate python and tgp wrapper
 external lib version, add version to using and pluginDsl - find use case with external lib
 

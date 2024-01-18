@@ -174,7 +174,7 @@ extension('test', {
 	//		.filter(e=> !e[0].match(/throw/)) // tests that throw exceptions and stop the debugger
 			.filter(e=>!pattern || e[0].match(pattern))
 			.filter(e=>!notPattern || !e[0].match(notPattern))
-			.filter(e=> !top || !jb.test.coveredTests[e[0]])
+			.filter(e=> coveredTestsOf || !jb.test.coveredTests[e[0]])
 			.filter(e=> !coveredTestsOf || (jb.comps[coveredTestsOf].impl.covers || []).includes(e[0]) || e[0] == coveredTestsOf)
 			.filter(e=> jb.path(e[1].impl,'expectedResult') !== true)
 	//		.filter(e=>!e[0].match(/^remoteTest|inPlaceEditTest|patternsTest/) && ['uiTest','dataTest'].indexOf(e[1].impl.$) != -1) // || includeHeavy || specificTest || !e[1].impl.heavy )

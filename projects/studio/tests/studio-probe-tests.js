@@ -1,5 +1,30 @@
 using('probe-tests')
 
+component('FETest.workerPreviewTest.suggestions.select', {
+  impl: uiFrontEndTest({
+    control: group({
+      controls: [
+        studio.propertyPrimitive('sampleProject.main~impl~controls~text'),
+        probe.remoteCircuitPreview()
+      ]
+    }),
+    runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
+    uiAction: uiActions(
+      waitForSelector('#sampleText'),
+      setText('hello %$var1'),
+      keyboardEvent({selector: 'input', type: 'keyup', keyCode: 37}),
+      waitForSelector('.jb-dialog .jb-item'),
+      click('.jb-dialog .jb-item:first-child'),
+      keyboardEvent({selector: 'input', type: 'keyup', keyCode: 13}),
+      waitForSelector('[cmp-ver=\"4\"]')
+    ),
+    expectedResult: contains('hello world'),
+    renderDOM: true,
+    covers: ['FETest.workerPreviewTest.suggestions','FETest.workerPreviewTest.suggestions.selectPopup'
+      ,'FETest.workerPreviewTest.suggestions.filtered']
+  })
+})
+
 component('FETest.workerPreviewTest.suggestions', {
   impl: uiFrontEndTest({
     control: group({
@@ -18,29 +43,6 @@ component('FETest.workerPreviewTest.suggestions', {
     ),
     expectedResult: contains('$var1'),
     //renderDOM: true
-  })
-})
-
-component('FETest.workerPreviewTest.suggestions.select', {
-  impl: uiFrontEndTest({
-    control: group({
-      controls: [
-        studio.propertyPrimitive('sampleProject.main~impl~controls~text'),
-        probe.remoteCircuitPreview()
-      ]
-    }),
-    runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
-    uiAction: uiActions(
-      waitForSelector('#sampleText'),
-      //waitForSelector('input'),
-      setText('hello %$var1'),
-      keyboardEvent({selector: 'input', type: 'keyup', keyCode: 37}),
-      waitForSelector('.jb-dialog .jb-item'),
-      click('.jb-dialog .jb-item:first-child'),
-      keyboardEvent({selector: 'input', type: 'keyup', keyCode: 13}),
-      waitForSelector('[cmp-ver=\"4\"]')
-    ),
-    expectedResult: contains('hello world'),
   })
 })
 
