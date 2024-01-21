@@ -110,46 +110,41 @@ component('studio.newDataSource', {
 component('studio.openNewDataSource', {
   type: 'action',
   impl: openDialog({
-    style: dialog.dialogOkCancel(),
-    content: studio.newDataSource(),
     title: 'New Data Source',
+    content: studio.newDataSource(),
+    style: dialog.dialogOkCancel(),
     onOK: runActions(
       Var('watchableOrPassive', If('%$dialogData/watchable%', 'watchable', 'passive')),
       Var('name', tgp.titleToId('%$dialogData/name%')),
       If(
-          not('%$dialogData/file%'),
-          runActions(
-            writeValue('%$dialogData/file%', '%$dialogData/name%.js'),
-            studio.createProjectFile('%$dialogData/name%.js')
+        not('%$dialogData/file%'),
+        runActions(
+          writeValue('%$dialogData/file%', '%$dialogData/name%.js'),
+          studio.createProjectFile('%$dialogData/name%.js')
+        )
+      ),
+      studio.newComp({
+        compName: 'dataResource.%$name%',
+        compContent: obj(
+          prop(
+            '%$watchableOrPassive%Data',
+            data.switch({
+              cases: [
+                data.case('%$dialogData/type%==text', ''),
+                data.case('%$dialogData/type%==array', '[]'),
+                data.case('%$dialogData/type%==card', asIs({title: '', description: '', image: ''})),
+                data.case('%$dialogData/type%==collection', asIs([
+                  {title: '', description: '', image: ''}
+                ]))
+              ]
+            }),
+            ''
           )
         ),
-      studio.newComp({
-          compName: 'dataResource.%$name%',
-          compContent: obj(
-            prop(
-                '%$watchableOrPassive%Data',
-                data.switch(
-                  [
-                    data.case('%$dialogData/type%==text', ''),
-                    data.case('%$dialogData/type%==array', '[]'),
-                    data.case(
-                      '%$dialogData/type%==card',
-                      asIs({title: '', description: '', image: ''})
-                    ),
-                    data.case(
-                      '%$dialogData/type%==collection',
-                      asIs([{title: '', description: '', image: ''}])
-                    )
-                  ]
-                ),
-                ''
-              )
-          ),
-          file: '%$dialogData/file%'
-        }),
+        file: '%$dialogData/file%'
+      }),
       studio.openResource('dataResource.%$name%~%$watchableOrPassive%Data', '%$name%')
     ),
-    modal: true,
     features: [
       dialogFeature.autoFocusOnFirstInput(),
       dialogFeature.maxZIndexOnClick(),

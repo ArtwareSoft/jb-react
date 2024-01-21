@@ -111,7 +111,10 @@ component('source.mergeConcat', {
   params: [
     {id: 'sources', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: [], composite: true}
   ],
-  impl: rx.pipe(source.data(ctx => ctx.cmpCtx.params.sources.profile), rx.concatMap(ctx => ctx.run(ctx.data)))
+  impl: rx.pipe(
+    source.data(ctx => ctx.cmpCtx.params.sources.profile),
+    rx.concatMap(ctx => ctx.run(ctx.data))
+  )
 })
 
 // ******** operators *****

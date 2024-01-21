@@ -473,7 +473,7 @@ extension('immutable', {
 component('runTransaction', {
   type: 'action',
   params: [
-    {id: 'actions', type: 'action[]', ignore: true, composite: true, mandatory: true},
+    {id: 'action', type: 'action', ignore: true, composite: true, mandatory: true},
     {id: 'noNotifications', as: 'boolean', type: 'boolean'},
     {id: 'handler', defaultValue: () => jb.db.watchableHandlers.find(x=>x.resources.id == 'resources')}
   ],

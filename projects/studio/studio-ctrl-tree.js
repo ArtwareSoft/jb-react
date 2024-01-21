@@ -178,12 +178,15 @@ component('studio.controlTree', {
         nodeModel: studio.controlTreeNodes(),
         style: tree.expandBox(true),
         features: [
-          variable('popupLauncherCanvas','%$cmp%'),
+          variable('popupLauncherCanvas', '%$cmp%'),
           tree.selection({
             databind: '%$studio/profile_path%',
-            autoSelectFirst: true,
-            onSelection: [studio.openProperties(), studio.highlightByPath(studio.currentProfilePath())],
-            onRightClick: studio.openTreeMenu('%%')
+            onSelection: [
+              studio.openProperties(),
+              studio.highlightByPath(studio.currentProfilePath())
+            ],
+            onRightClick: studio.openTreeMenu('%%'),
+            autoSelectFirst: true
           }),
           tree.keyboardSelection({
             onEnter: studio.openProperties(true),
@@ -191,12 +194,8 @@ component('studio.controlTree', {
             applyMenuShortcuts: studio.treeMenu('%%')
           }),
           tree.dragAndDrop(),
-          watchRef({ref: '%$studio/profile_path%', strongRefresh: true, remark: 'override selection state'}),
-          studio.watchPath({
-            path: studio.currentPagePath(),
-            includeChildren: 'structure',
-            allowSelfRefresh: true
-          }),
+          watchRef({ref: '%$studio/profile_path%', strongRefresh: true}),
+          studio.watchPath({path: studio.currentPagePath(), includeChildren: 'structure', allowSelfRefresh: true}),
           method(
             'newControl',
             studio.openNewProfileDialog({
@@ -205,8 +204,7 @@ component('studio.controlTree', {
               mode: 'insert-control',
               onClose: studio.gotoLastEdit()
             })
-          ),
-          //studio.dropHtml(cardExtract.extractStyle('%$newCtrl%', tree.pathOfInteractiveItem()))
+          )
         ]
       })
     ],
@@ -217,15 +215,15 @@ component('studio.controlTree', {
 component('studio.openControlTree', {
   type: 'action',
   impl: openDialog({
-    style: dialog.studioFloating({id: 'studio-outline', width: '350'}),
+    title: 'Outline',
     content: studio.controlTree(),
+    style: dialog.studioFloating('studio-outline', '350'),
     menu: button({
       title: ' ',
       action: studio.openTreeMenu('%$studio/profile_path%'),
       style: button.mdcIcon('menu'),
       features: css('{ background: none }')
-    }),
-    title: 'Outline'
+    })
   })
 })
 

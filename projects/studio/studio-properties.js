@@ -46,17 +46,14 @@ component('studio.properties', {
         commonFields: [
           group({
             controls: studio.propField('%path%', '%expanded%'),
-            features: [field.columnWidth('300'), css.conditionalClass('jb-disabled', tgp.isDisabled('%$path%'))]
+            features: [
+              field.columnWidth('300'),
+              css.conditionalClass('jb-disabled', tgp.isDisabled('%$path%'))
+            ]
           }),
-          group({
-            controls: studio.propertyToolbar('%path%'),
-            features: [field.columnWidth('20')]
-          }),
-          // group({
-          //   title: 'pptr actions',
-          //   controls: studio.pptrToolbar('%path%'),
-          //   features: [field.columnWidth('20')]
-          // })
+          group({controls: studio.propertyToolbar('%path%'), features: [
+            field.columnWidth('20')
+          ]})
         ],
         chapterHeadline: text({
           text: ({data}) => {
@@ -68,7 +65,9 @@ component('studio.properties', {
               return prop
             return Number(prop) + 1
           },
-          features: [feature.hoverTitle(pipeline(tgp.paramDef('%path%'), '%description%'))]
+          features: [
+            feature.hoverTitle(pipeline(tgp.paramDef('%path%'), '%description%'))
+          ]
         }),
         style: tableTree.plain({hideHeaders: true, gapWidth: 100, noItemsCtrl: text('')}),
         features: [
@@ -76,11 +75,7 @@ component('studio.properties', {
             `>tbody>tr>td.headline { vertical-align: inherit; margin-bottom: 7px; }
             >tbody>tr>td>span>i { margin-bottom: 8px }`
           ),
-          studio.watchPath({
-            path: '%$path%',
-            includeChildren: 'structure',
-            allowSelfRefresh: true
-          }),
+          studio.watchPath({path: '%$path%', includeChildren: 'structure', allowSelfRefresh: true}),
           tableTree.expandPath(studio.lastEdit()),
           tableTree.expandPath('%$innerPath%'),
           tableTree.dragAndDrop(),
@@ -93,40 +88,46 @@ component('studio.properties', {
         controls: [
           button({
             title: 'new feature',
-            action: studio.openNewProfileDialog({path: '%$path%~features', type: 'feature'}),
+            action: studio.openNewProfileDialog('%$path%~features', 'feature'),
             style: button.href(),
             features: [
               feature.if(tgp.isOfType('%$path%~features', 'feature')),
-              css.margin({top: '20', left: '5'}),
+              css.margin('20', '5'),
               css.width('100%')
             ]
           }),
           button({
             title: 'new icon',
             action: tgp.getOrCreateCompInArray('%$path%~features', 'feature.icon'),
-            style: button.mdcIcon(undefined, '24'),
+            style: button.mdcIcon(
+              undefined,
+              '24'
+            ),
             features: feature.icon({icon: 'Creation', type: 'mdi', size: '16'})
           }),
           button({
             title: 'new css',
             action: tgp.getOrCreateCompInArray('%$path%~features', 'css'),
-            style: button.mdcIcon(undefined, '24'),
+            style: button.mdcIcon(
+              undefined,
+              '24'
+            ),
             features: feature.icon({icon: 'LanguageCss3', type: 'mdi', size: '16'})
           }),
           button({
             title: 'size, padding & margin',
             action: studio.openSizesEditor('%$path%'),
-            style: button.mdcIcon(undefined, '24'),
+            style: button.mdcIcon(
+              undefined,
+              '24'
+            ),
             features: feature.icon({icon: 'business', type: 'mdc', size: '16'})
           })
         ],
         features: css.margin({bottom: '10', right: '5'})
       })
     ],
-    features: feature.byCondition(
-      or('%$focus%', studio.lastEdit()),
-      group.autoFocusOnFirstInput()
-    )
+    features: feature.byCondition(or('%$focus%', studio.lastEdit()), group.autoFocusOnFirstInput())
   })
 })
 
@@ -142,21 +143,25 @@ component('studio.propField', {
       controls: [
         controlWithCondition(
           and(
-            inGroup(list('feature.icon','icon','control.icon'),tgp.compName(tgp.parentPath('%$path%'))),
-            equals('icon',pipeline(tgp.paramDef('%$path%'), '%id%'))
+            inGroup(list('feature.icon','icon','control.icon'), tgp.compName(tgp.parentPath('%$path%'))),
+            equals('icon', pipeline(tgp.paramDef('%$path%'), '%id%'))
           ),
           studio.pickIcon('%$path%')
         ),
         controlWithCondition(
-          studio.editAs({ path: '%$path%', type: 'numericCss', anyParamIds: 'width,height,top,left,right,bottom,spacing,blurRadius,spreadRadius,horizontal,vertical,radius'}),
+          studio.editAs({
+            path: '%$path%',
+            type: 'numericCss',
+            anyParamIds: 'width,height,top,left,right,bottom,spacing,blurRadius,spreadRadius,horizontal,vertical,radius'
+          }),
           studio.propertyNumbericCss('%$path%')
         ),
         controlWithCondition(
-          studio.editAs({ path: '%$path%', type: 'numericZeroToOne', anyParamIds: 'opacity'}),
+          studio.editAs({path: '%$path%', type: 'numericZeroToOne', anyParamIds: 'opacity'}),
           studio.propertyNumbericZeroToOne('%$path%')
         ),
         controlWithCondition(
-          studio.editAs({ path: '%$path%', type: 'color', anyParamIds: 'color,shadowColor'}),
+          studio.editAs({path: '%$path%', type: 'color', anyParamIds: 'color,shadowColor'}),
           studio.colorPicker('%$path%')
         ),
         controlWithCondition(
@@ -174,40 +179,29 @@ component('studio.propField', {
         controlWithCondition(
           and(
             '%$paramDef/as%==\"boolean\"',
-            or((inGroup(list(true, false,'true','false'), '%$val%')), isEmpty('%$val%')),
+            or(inGroup(list(true,false,'true','false'), '%$val%'), isEmpty('%$val%'))
           ),
           studio.propertyBoolean('%$path%')
         ),
+        controlWithCondition(tgp.isOfType('%$path%', 'data,boolean'), studio.propertyPrimitive('%$path%')),
         controlWithCondition(
-          tgp.isOfType('%$path%', 'data,boolean'),
-          studio.propertyPrimitive('%$path%')
-        ),
-        controlWithCondition(
-          or(
-            '%$expanded%',
-            isEmpty('%$val%'),
-            not(tgp.isOfType('%$path%', 'data,boolean'))
-          ),
+          or('%$expanded%', isEmpty('%$val%'), not(tgp.isOfType('%$path%', 'data,boolean'))),
           studio.pickProfile('%$path%')
         ),
         studio.propertyScript('%$path%')
       ],
       features: [
         group.firstSucceeding(),
-        studio.watchPath({path: '%$path%', includeChildren: 'yes', recalcVars: true}),
-        variable({name: 'paramDef', value: tgp.paramDef('%$path%')}),
-        variable({name: 'val', value: tgp.val('%$path%')})
+        studio.watchPath({path: '%$path%', includeChildren: 'yes'}),
+        variable('paramDef', tgp.paramDef('%$path%')),
+        variable('val', tgp.val('%$path%'))
       ]
     }),
     features: [
       feature.keyboardShortcut('Ctrl+I', studio.openJbEditor('%$path%')),
       If(
         not(isOfType('string,number,boolean,undefined', tgp.val('%$path%'))),
-        studio.watchPath({
-          path: '%$path%',
-          includeChildren: 'structure',
-          allowSelfRefresh: true
-        })
+        studio.watchPath({path: '%$path%', includeChildren: 'structure', allowSelfRefresh: true})
       )
     ]
   })

@@ -110,7 +110,7 @@ component('editableText.codemirror', {
     {id: 'maxLength', as: 'number', defaultValue: 5000}
   ],
   impl: features(
-    frontEnd.requireExternalLibrary(['codemirror.js','css/codemirror.css']),
+    frontEnd.requireExternalLibrary('codemirror.js','css/codemirror.css'),
     calcProp('text', '%$$model/databind()%'),
     frontEnd.var('text', '%$$props/text%'),
     calcProp('textAreaAlternative', ({},{$props},{maxLength}) => ($props.text || '').length > maxLength),
@@ -201,23 +201,23 @@ component('text.codemirror', {
   params: [
     {id: 'cm_settings', as: 'single'},
     {id: 'enableFullScreen', type: 'boolean', as: 'boolean', defaultValue: true},
-	{id: 'height', as: 'number'},
+    {id: 'height', as: 'number'},
     {id: 'lineWrapping', as: 'boolean', type: 'boolean'},
-	{id: 'lineNumbers', as: 'boolean', type: 'boolean'},
-	{id: 'formatText', as: 'boolean', type: 'boolean'},
-    {id: 'mode', as: 'string', options: 'htmlmixed,javascript,css'},
+    {id: 'lineNumbers', as: 'boolean', type: 'boolean'},
+    {id: 'formatText', as: 'boolean', type: 'boolean'},
+    {id: 'mode', as: 'string', options: 'htmlmixed,javascript,css'}
   ],
   impl: features(
-    frontEnd.requireExternalLibrary(['codemirror.js','css/codemirror.css']),
-	frontEnd.var('text', '%$$model/text()%'),
+    frontEnd.requireExternalLibrary('codemirror.js','css/codemirror.css'),
+    frontEnd.var('text', '%$$model/text()%'),
     () => ({ template: ({},{},h) => h('div') }),
-	frontEnd.var('cm_settings', ({},{},{cm_settings,lineWrapping, mode, lineNumbers}) => ({
+    frontEnd.var('cm_settings', ({},{},{cm_settings,lineWrapping, mode, lineNumbers}) => ({
 		...cm_settings, lineWrapping, lineNumbers, readOnly: true, mode: mode || 'javascript',
 	})),
-	frontEnd.var('_enableFullScreen', '%$enableFullScreen%'),
-	frontEnd.var('formatText', '%$formatText%'),
-    frontEnd.init( (ctx,vars) => jb.codemirror.injectCodeMirror(ctx,vars)),
-	frontEnd.onRefresh((ctx,vars) => { 
+    frontEnd.var('_enableFullScreen', '%$enableFullScreen%'),
+    frontEnd.var('formatText', '%$formatText%'),
+    frontEnd.init((ctx,vars) => jb.codemirror.injectCodeMirror(ctx,vars)),
+    frontEnd.onRefresh((ctx,vars) => { 
 		const {text,cmp} = vars
 		if (!cmp.editor)
 			jb.codemirror.injectCodeMirror(ctx,vars);

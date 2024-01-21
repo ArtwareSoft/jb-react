@@ -38,10 +38,10 @@ component('dialogFeature.studioPick', {
     {id: 'from', as: 'string', options: 'preview,studio'}
   ],
   impl: features(
-    frontEnd.var('from','%$from%'),
+    frontEnd.var('from', '%$from%'),
     frontEnd.var('projectPrefix', studio.currentPagePath()),
     frontEnd.var('testHost', ctx => ['tests','studio-helper'].indexOf(ctx.exp('%$studio/project%')) != -1),
-    frontEnd.prop('eventToElemPredicate',({},{from, projectPrefix, testHost}) => from == 'preview' ?
+    frontEnd.prop('eventToElemPredicate', ({},{from, projectPrefix, testHost}) => from == 'preview' ?
       (path => testHost || path.indexOf(projectPrefix) == 0) : (path => jb.studio.isStudioCmp(path.split('~')[0]))),
     frontEnd.prop('cover', ({},{cmp}) => {
       if (!cmp.cover) {
@@ -55,40 +55,48 @@ component('dialogFeature.studioPick', {
     frontEnd.onDestroy(({},{cmp})=> {
       cmp.cover.parentElement == document.body.removeChild(cmp.cover)
     }),
-
     method('hoverOnElem', (ctx,{}) => {
       const el = ctx.data
       Object.assign(ctx.vars.dialogData,{ elem: el, cmpId: el.getAttribute('cmp-id'), path: jb.studio.pathOfElem(el) })
       ctx.run(toggleBooleanValue('%$studio/refreshPick%')) // trigger for refreshing the dialog
     }),
-    method('endPick', runActions(
-      writeValue('%$studio/pickSelectionCmpId%', '%$dialogData.cmpId%'),
-      dialog.closeDialog(true)
-    )),
+    method(
+      'endPick',
+      runActions(writeValue('%$studio/pickSelectionCmpId%', '%$dialogData.cmpId%'), dialog.closeDialog(true))
+    ),
     frontEnd.flow(
-      source.event({event: 'mousemove', options: obj(prop('capture',true)) }),
+      source.event('mousemove', () => jb.frame.document, obj(prop('capture', true))),
       rx.debounceTime(50),
       rx.reduce({
         varName: 'moveRight',
+        initialValue: obj(prop('count', 0), prop('dir', '')),
         value: ({data},{moveRight,prev}) => {
           const dir = prev && prev.clientX < data.clientX ? 'right' : 'left'
           return {dir, count: (moveRight.dir == dir) ? moveRight.count+1 : 1}
-        },
-        initialValue: obj(prop('count',0),prop('dir',''))
+        }
       }),
-      rx.skip(1),      
-      rx.map( (ctx,{cmp,moveRight}) => jb.studio.eventToElem(ctx.data,moveRight,cmp.eventToElemPredicate)),
+      rx.skip(1),
+      rx.map((ctx,{cmp,moveRight}) => jb.studio.eventToElem(ctx.data,moveRight,cmp.eventToElemPredicate)),
       rx.filter('%getAttribute%'),
       rx.distinctUntilChanged(),
       sink.BEMethod('hoverOnElem')
     ),
     frontEnd.flow(
       source.merge(
-        source.event({event: 'mousedown', options: obj(prop('capture',true)) }),
+        source.event(
+          'mousedown',
+          () => jb.frame.document,
+          obj(prop('capture', true))
+        ),
         rx.pipe(
-          source.event({event: 'keyup', options: obj(prop('capture',true)) }),
+          source.event(
+            'keyup',
+            () => jb.frame.document,
+            obj(prop('capture', true))
+          ),
           rx.filter('%keyCode% == 27')
-      )),
+        )
+      ),
       rx.takeUntil('%$cmp.destroyed%'),
       sink.BEMethod('endPick')
     )

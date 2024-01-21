@@ -181,7 +181,7 @@ component('tableTree.resizer', {
 component('tableTree.dragAndDrop', {
   type: 'feature',
   impl: features(
-    frontEnd.requireExternalLibrary(['dragula.js','css/dragula.css']),
+    frontEnd.requireExternalLibrary('dragula.js','css/dragula.css'),
     frontEnd.var('uiTest', '%$uiTest%'),
     frontEnd.onRefresh((ctx,{cmp}) => cmp.drake && (cmp.drake.containers = jb.ui.find(cmp.base,'.jb-items-parent'))),
     method('moveItem', (ctx,{$props}) => $props.model.move(ctx.data.from,ctx.data.to,ctx)),

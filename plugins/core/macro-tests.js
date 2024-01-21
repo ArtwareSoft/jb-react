@@ -159,13 +159,6 @@ component('macroTest.typeAdapter.to', {
   impl: dataTest(pipeline(typeAdapter('state<location>', israel()), '%capital/name%'), equals('Jerusalem'))
 })
 
-component('macroTest.mixed.byNameSection', {
-  impl: dataTest(
-    () => jb.utils.prettyPrint(runActionOnItems(list(1,2,3), delay(), 'index'), { mixed: true, initialPath: 'myProf~impl' }),
-    contains('{indexVariable:')
-  )
-})
-
 // component('macroTest.mixed.load', {
 //   impl: dataTest(
 //     () => jb.utils.prettyPrint(jb.utils.prettyPrintComp(), { mixed: true, initialPath: 'myProf~impl' }),

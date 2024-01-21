@@ -216,7 +216,7 @@ extension('utils', 'core', {
     },
     getCompByShortIdAndDsl(shortId,dsl) {
       const pattern = `<${dsl}>${shortId}`
-      const options = Object.keys(jb.comps).filter(fullId =>fullId.indexOf(pattern) != -1)
+      const options = Object.keys(jb.comps).filter(fullId =>fullId.endsWith(pattern))
       if (options.length == 1)
         return jb.comps[options[0]]
       else if (options.length > 1)

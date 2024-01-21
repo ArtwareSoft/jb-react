@@ -665,7 +665,7 @@ component('between', {
 component('contains', {
   type: 'boolean',
   params: [
-    {id: 'text', type: 'data[]', as: 'array', mandatory: true},
+    {id: 'text', type: 'data[]', as: 'array', arrayInMacro: true, mandatory: true},
     {id: 'allText', defaultValue: '%%', as: 'string', byName: true},
     {id: 'inOrder', defaultValue: true, as: 'boolean', type: 'boolean'}
   ],
@@ -683,12 +683,10 @@ component('contains', {
 component('notContains', {
   type: 'boolean',
   params: [
-    {id: 'text', type: 'data[]', as: 'array', mandatory: true},
+    {id: 'text', type: 'data[]', as: 'array', arrayInMacro: true, mandatory: true},
     {id: 'allText', defaultValue: '%%', as: 'array', byName: true}
   ],
-  impl: not(
-    contains({text: '%$text%', allText: '%$allText%'})
-  )
+  impl: not(contains('%$text%', '%$allText%'))
 })
 
 component('startsWith', {

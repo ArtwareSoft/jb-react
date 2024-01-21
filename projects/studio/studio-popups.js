@@ -170,7 +170,7 @@ component('studio.openResponsivePhonePopup', {
     {id: 'path', as: 'string'}
   ],
   impl: openDialog({
-    style: dialog.popup(),
+    title: 'responsive',
     content: group({
       layout: layout.vertical('10'),
       controls: [
@@ -180,63 +180,36 @@ component('studio.openResponsivePhonePopup', {
           controls: [
             button({
               title: 'phone',
-              action: runTransaction({actions:                [
-                  writeValue('%$studio/preview/width%', '400'),
-                  writeValue('%$studio/preview/height%', '600')
-                ]
-              }),
+              action: runTransaction(
+                runActions(writeValue('%$studio/preview/width%', '400'), writeValue('%$studio/preview/height%', '600'))
+              ),
               style: button.mdcFloatingAction(true),
               features: feature.icon({icon: 'phone_android', title: '', type: 'mdc'})
             }),
             button({
               title: 'tablet',
-              action: runActions(
-                writeValue('%$studio/preview/width%', '600'),
-                writeValue('%$studio/preview/height%', '850')
-              ),
+              action: runActions(writeValue('%$studio/preview/width%', '600'), writeValue('%$studio/preview/height%', '850')),
               style: button.mdcFloatingAction(true),
               features: feature.icon({icon: 'tablet', title: '', type: 'mdc'})
             }),
             button({
               title: 'desktop',
-              action: runActions(
-                writeValue('%$studio/preview/width%', '1280'),
-                writeValue('%$studio/preview/height%', '100%')
-              ),
+              action: runActions(writeValue('%$studio/preview/width%', '1280'), writeValue('%$studio/preview/height%', '100%')),
               style: button.mdcFloatingAction(true),
               features: feature.icon({icon: 'desktop_mac', type: 'mdc'})
             }),
             button({
               title: 'full screen',
-              action: runActions(
-                writeValue('%$studio/preview/width%', '100%'),
-                writeValue('%$studio/preview/height%', '100%')
-              ),
+              action: runActions(writeValue('%$studio/preview/width%', '100%'), writeValue('%$studio/preview/height%', '100%')),
               style: button.mdcFloatingAction(true),
               features: feature.icon({icon: 'fullscreen', type: 'mdc'})
             })
           ],
           features: css.padding({top: '7', left: '4', right: '4'})
-        }),
-        // group({
-        //   title: 'Zoom',
-        //   style: propertySheet.titlesAbove({}),
-        //   controls: [
-        //     editableNumber({
-        //       databind: '%$studio/preview/zoom%',
-        //       title: 'zoom',
-        //       style: editableNumber.mdcSliderNoText({}),
-        //       symbol: '',
-        //       min: '1',
-        //       max: '20',
-        //       displayString: '%%px'
-        //     })
-        //   ],
-        //   features: css.margin({left: '10', bottom: '10'})
-        // })
-      ],
+        })
+      ]
     }),
-    title: 'responsive'
+    style: dialog.popup()
   })
 })
 

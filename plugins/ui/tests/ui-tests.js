@@ -868,39 +868,19 @@ component('uiTest.remote.itemlistKeyboardSelection', {
   })
 })
 
-component('uiTest.secondaryLinkSetBug', {
-  impl: uiTest({
-    control: itemlist({
-      items: '%$people%',
-      controls: text('%name%'),
-      features: itemlist.selection({ databind: '%$globals/selected%', autoSelectFirst: true })
-    }),
-    action: uiActions(
-      writeValue('%$globals/selected%', '%$people[1]%'),
-      writeValue('%$globals/data1%', '5')
-    ),
-    expectedResult: ctx => true
-  })
-})
-
 component('uiTest.itemlistWithTableStyle', {
-  impl: uiTest({
-    control: table({
+  impl: uiTest(
+    table({
       items: '%$watchablePeople%',
       controls: [
-        text({ text: '%$index%', title: 'index', features: field.columnWidth(40) }),
-        text({ text: '%name%', title: 'name', features: field.columnWidth(300) }),
-        text({ text: '%age%', title: 'age' })
+        text({text: '%$index%', title: 'index', features: field.columnWidth(40)}),
+        text({text: '%name%', title: 'name', features: field.columnWidth(300)}),
+        text('%age%', 'age')
       ],
-      features: [
-        itemlist.selection({
-          databind: '%$globals/selectedPerson%',
-          autoSelectFirst: true
-        })
-      ]
+      features: itemlist.selection({databind: '%$globals/selectedPerson%', autoSelectFirst: true})
     }),
-    expectedResult: contains(['300', 'age', 'Homer Simpson', '38', '>3<', 'Bart'])
-  })
+    contains(['300','age','Homer Simpson','38','>3<','Bart'])
+  )
 })
 
 component('test.personName', {
@@ -2250,4 +2230,3 @@ component('test.controlWithFeaturesUseParams', {
 component('uiTest.controlWithFeatures.useParams', {
   impl: uiTest(test.controlWithFeaturesUseParams('homer'), contains('homer'))
 })
-

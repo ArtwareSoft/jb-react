@@ -5,45 +5,39 @@ component('workspace', { watchableData: { bottomViewIndex : 0 } })
 component('workspace.IDE', {
   type: 'control',
   params: [
-    {id: 'height', as: 'number', defaultValue: '300'},
+    {id: 'height', as: 'number', defaultValue: '300'}
   ],
   impl: group({
-      controls: [
-            group({
-                style: group.tabs(),
-                controls: dynamicControls({
-                    controlItems: () => Object.keys(jb.workspace.openDocs),
-                    genericControl: group({
-                        title: pipeline('%$docUri%', suffix('/')),
-                        controls: workspace.textEditor({
-                            docContent: ({},{docUri}) => jb.workspace.openDocs[docUri].text,
-                            docUri: '%$docUri%',
-                            pos: ({},{docUri}) => jb.workspace.openDocs[docUri].selection,
-                        })
-                    }),
-                    itemVariable: 'docUri'
-                }),
-                features: [
-                    followUp.watchObservable(() => jb.workspace.onOpenDoc),
-                    followUp.flow(
-                        source.callbag(() => jb.workspace.gotoOffsetRequest),
-                        sink.action(runFEMethod({selector:'#activeEditor', method: 'setSelectionRange', data: '%%'}))
-                    ),
-                    followUp.flow(
-                        source.callbag(() => jb.workspace.applyEditRequest),
-                        sink.action(runFEMethod({selector:'#activeEditor', method: 'applyEdit', data: '%%'}))
-                    ),
-                ]
-            }),
-            remote.widget(probe.inOutView(),probePreviewWorker())
-            //probe.inOutView('%$workspace/selectedPath%'),
-            //workspace.views()
-        ],
-      features: [
-          css.height({height: '%$height%', minMax: 'max'}),
-          group.wait(jbm.start(probePreviewWorker()))
-      ]
-    })
+    controls: [
+      group({
+        style: group.tabs(),
+        controls: dynamicControls({
+          controlItems: () => Object.keys(jb.workspace.openDocs),
+          genericControl: group({
+            title: pipeline('%$docUri%', suffix('/')),
+            controls: workspace.textEditor(({},{docUri}) => jb.workspace.openDocs[docUri].text, '%$docUri%')
+          }),
+          itemVariable: 'docUri'
+        }),
+        features: [
+          followUp.watchObservable(() => jb.workspace.onOpenDoc),
+          followUp.flow(
+            source.callbag(() => jb.workspace.gotoOffsetRequest),
+            sink.action(runFEMethod({selector: '#activeEditor', method: 'setSelectionRange', data: '%%'}))
+          ),
+          followUp.flow(
+            source.callbag(() => jb.workspace.applyEditRequest),
+            sink.action(runFEMethod({selector: '#activeEditor', method: 'applyEdit', data: '%%'}))
+          )
+        ]
+      }),
+      remote.widget(probe.inOutView(), probePreviewWorker())
+    ],
+    features: [
+      css.height({height: '%$height%', minMax: 'max'}),
+      group.wait(jbm.start(probePreviewWorker()))
+    ]
+  })
 })
 
 component('workspace.views', {

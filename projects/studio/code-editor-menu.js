@@ -58,12 +58,13 @@ component('tgpTextEditor.selectPT', {
 component('tgpTextEditor.selectEnum', {
   type: 'menu.option',
   params: [
-    {id: 'path', as: 'string'},
+    {id: 'path', as: 'string'}
   ],
   impl: menu.menu({
     options: menu.dynamicOptions(
-      ({},{},{path}) => jb.tgp.paramDef(path).options.split(','), 
-      menu.action('%%', (ctx,{},{path}) => jb.studio.writeValueOfPath(path,ctx.data,ctx)))
+      ({},{},{path}) => jb.tgp.paramDef(path).options.split(','),
+      menu.action('%%', (ctx,{},{path}) => jb.studio.writeValueOfPath(path,ctx.data,ctx))
+    )
   })
 })
 
@@ -72,80 +73,55 @@ component('tgpTextEditor.editMenu', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: menu.menu(
-    tgp.shortTitle('%$path%'),
-    [
+  impl: menu.menu({
+    title: tgp.shortTitle('%$path%'),
+    options: [
       menu.action({
         title: 'Add variable',
         action: studio.addVariable('%$path%'),
         showCondition: endsWith('~$vars', '%$path%')
       }),
-      menu.endWithSeparator(
-        menu.dynamicOptions(
+      menu.endWithSeparator({
+        options: menu.dynamicOptions(
           tgp.moreParams('%$path%'),
-          menu.action({ 
-            title: '%id%', 
-            description: '%description%',
-            action: runActions(tgp.addProperty('%$path%~%id%'), studio.gotoPath('%$path%~%id%', 'value-text'))
+          menu.action({
+            title: '%id%',
+            action: runActions(tgp.addProperty('%$path%~%id%'), studio.gotoPath('%$path%~%id%', 'value-text')),
+            description: '%description%'
           })
         )
-      ),
+      }),
       studio.styleEditorOptions('%$path%'),
-      menu.endWithSeparator(
-        [
+      menu.endWithSeparator({
+        options: [
           menu.action({
-            vars: [Var('compName', tgp.compName('%$path%'))],
-            title: pipeline(tgp.shortCompName('%$path%'), 'Goto %%'), 
+            vars: [
+              Var('compName', tgp.compName('%$path%'))
+            ],
+            title: pipeline(tgp.shortCompName('%$path%'), 'Goto %%'),
             action: studio.gotoPath('%$compName%', 'open'),
             showCondition: '%$compName%'
           }),
           menu.action({
             vars: [
-              Var(
-                'compName',
-                split({
-                  separator: '~',
-                  text: '%$fromPath%',
-                  part: 'first'
-                })
-              )
+              Var('compName', split({separator: '~', text: '%$fromPath%', part: 'first'}))
             ],
             title: 'Back to %$compName%',
             action: studio.openComponentInJbEditor('%$fromPath%', '%$path%'),
             showCondition: '%$fromPath%'
           })
         ]
-      ),
-      menu.studioWrapWith({
-        path: '%$path%',
-        type: 'control',
-        components: list('group')
       }),
-      menu.studioWrapWith({
-        path: '%$path%',
-        type: 'style',
-        components: list('styleWithFeatures')
-      }),
-      menu.studioWrapWith({
-        path: '%$path%',
-        type: 'data',
-        components: list('pipeline', 'list', 'firstSucceeding')
-      }),
-      menu.studioWrapWith({
-        path: '%$path%',
-        type: 'boolean',
-        components: list('and', 'or', 'not')
-      }),
+      menu.studioWrapWith({path: '%$path%', type: 'control', components: list('group')}),
+      menu.studioWrapWith({path: '%$path%', type: 'style', components: list('styleWithFeatures')}),
+      menu.studioWrapWith({path: '%$path%', type: 'data', components: list('pipeline','list','firstSucceeding')}),
+      menu.studioWrapWith({path: '%$path%', type: 'boolean', components: list('and','or','not')}),
       menu.studioWrapWith({
         path: '%$path%',
         type: 'action',
-        components: list('runActions', 'runActionOnItems', 'action.if')
+        components: list('runActions','runActionOnItems','action.if')
       }),
-      menu.studioWrapWith({
-        path: '%$path%',
-        type: 'feature',
-        components: list('feature.byCondition')
-      }),
+      menu.studioWrapWith({path: '%$path%', type: 'feature', components: list('feature.byCondition')}),
       menu.studioWrapWithArray('%$path%'),
       menu.action({
         title: 'Duplicate',
@@ -154,13 +130,7 @@ component('tgpTextEditor.editMenu', {
         showCondition: tgp.isArrayItem('%$path%')
       }),
       menu.separator(),
-      studio.gotoReferencesMenu(
-        split({
-          separator: '~',
-          text: '%$path%',
-          part: 'first'
-        })
-      ),
+      studio.gotoReferencesMenu(split({separator: '~', text: '%$path%', part: 'first'})),
       menu.action({
         title: 'Remark',
         action: openDialog({
@@ -171,14 +141,12 @@ component('tgpTextEditor.editMenu', {
                 title: 'remark',
                 databind: '%$remark%',
                 style: editableText.mdcInput(),
-                features: [feature.onEnter(writeValue(tgp.ref('%$path%~remark'), '%$remark%'))]
+                features: [
+                  feature.onEnter(writeValue(tgp.ref('%$path%~remark'), '%$remark%'))
+                ]
               })
             ],
-            features: css.padding({
-              top: '9',
-              left: '20',
-              right: '20'
-            })
+            features: css.padding({top: '9', left: '20', right: '20'})
           }),
           style: dialog.popup(),
           id: 'add property',
@@ -214,18 +182,8 @@ component('tgpTextEditor.editMenu', {
         icon: icon('do_not_disturb'),
         shortcut: 'Ctrl+X'
       }),
-      menu.action({
-        title: 'Copy',
-        action: studio.copy('%$path%'),
-        icon: icon('copy'),
-        shortcut: 'Ctrl+C'
-      }),
-      menu.action({
-        title: 'Paste',
-        action: studio.paste('%$path%'),
-        icon: icon('paste'),
-        shortcut: 'Ctrl+V'
-      }),
+      menu.action({title: 'Copy', action: studio.copy('%$path%'), icon: icon('copy'), shortcut: 'Ctrl+C'}),
+      menu.action({title: 'Paste', action: studio.paste('%$path%'), icon: icon('paste'), shortcut: 'Ctrl+V'}),
       menu.action({
         title: 'Make Local',
         action: studio.openMakeLocal('%$path%'),
@@ -242,5 +200,5 @@ component('tgpTextEditor.editMenu', {
         showCondition: studio.canExtractParam('%$path%')
       })
     ]
-  )
+  })
 })

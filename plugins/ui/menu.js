@@ -1,6 +1,7 @@
 
 component('menu.menu', {
   type: 'menu.option',
+  macroByValue: false,
   params: [
     {id: 'title', as: 'string', dynamic: true, mandatory: true},
     {id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true, defaultValue: []},
@@ -33,6 +34,7 @@ component('menu.dynamicOptions', {
 
 component('menu.endWithSeparator', {
   type: 'menu.option',
+  macroByValue: false,
   params: [
     {id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true},
     {id: 'separator', type: 'menu.option', defaultValue: menu.separator()},

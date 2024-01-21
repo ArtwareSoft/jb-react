@@ -115,7 +115,7 @@ component('vscodeWebView', {
   params: [
     {id: 'id', as: 'string'},
     {id: 'panel'},
-    {id: 'sourceCode', type: 'source-code', defaultValue: xServer() },
+    {id: 'sourceCode', type: 'source-code', byName: true, defaultValue: xServer() },
     {id: 'init', type: 'action', dynamic: true}
   ],
   impl: (ctx,id,panel,sourceCode, init) => {

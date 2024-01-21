@@ -8,6 +8,10 @@ component('dataTest.slice', {
   impl: dataTest(pipeline(list(1,2,3), slice(0, 2), join()), equals('1,2'))
 })
 
+component('dataTest.varInPipeline', {
+  impl: dataTest(pipeline(Var('a', '33'), '%$a%'), equals('33'))
+})
+
 component('dataTest.runActionOnItems', {
   impl: dataTest({
     calculate: pipeline('%$personWithChildren/children/name%', join()),

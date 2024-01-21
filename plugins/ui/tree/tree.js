@@ -290,15 +290,22 @@ component('tree.keyboardSelection', {
 component('tree.dragAndDrop', {
   type: 'feature',
   impl: features(
-    frontEnd.requireExternalLibrary(['dragula.js', 'css/dragula.css']),
+    frontEnd.requireExternalLibrary('dragula.js','css/dragula.css'),
     htmlAttribute('tabIndex', 0),
-    method('moveItem', tree.moveItem('%from%', '%to%')),
+    method('moveItem', {'$': 'tree.moveItem', '$byValue': ['%from%','%to%']}),
     frontEnd.flow(
       source.frontEndEvent('keydown'),
       rx.filter('%ctrlKey%'),
-      rx.filter(inGroup(list(38, 40), '%keyCode%')),
-      rx.map(obj(prop('from', tree.nextSelected(0)), prop('to', tree.nextSelected(If('%keyCode%==40', 1, -1))))),
-      rx.filter(tree.sameParent('%from%', '%to%')),
+      rx.filter(inGroup(list(38,40), '%keyCode%')),
+      rx.map(
+        obj(
+          prop('from', {'$': 'tree.nextSelected', '$byValue': [0]}),
+          prop('to', {'$': 'tree.nextSelected', '$byValue': [
+            If('%keyCode%==40', 1, -1)
+          ]})
+        )
+      ),
+      rx.filter({'$': 'tree.sameParent', '$byValue': ['%from%','%to%']}),
       sink.BEMethod('moveItem', '%%')
     ),
     frontEnd.var('uiTest', '%$uiTest%'),

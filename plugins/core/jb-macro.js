@@ -60,7 +60,7 @@ extension('macro', {
             return { $: cmpId, $byValue: args }
         const lastArg = args.length > 1 && args[args.length-1]
         const lastArgIsByName = lastArg && typeof lastArg == 'object' && !Array.isArray(lastArg) && !lastArg.$
-        if (lastArgIsByName) 
+        if (lastArgIsByName || topComp && topComp[jb.core.CT].mixed) 
             return jb.macro.mixedArgsToProfile(cmpId, comp, args)
 
         const params = comp.params || []
@@ -80,11 +80,13 @@ extension('macro', {
         debugger;
     },
     mixedArgsToProfile(cmpId, comp, args) {
-        console.error('%c mixedArgsToProfile: ','color: red', cmpId, comp)
+        //console.error('%c mixedArgsToProfile: ','color: red', cmpId, comp)
+        if (cmpId == 'asIs') return { $: 'asIs', $asIs: args[0] }
         const lastArg = args[args.length-1]
         const lastArgIsByName = lastArg && typeof lastArg == 'object' && !Array.isArray(lastArg) && !lastArg.$
-        const argsByValue = lastArgIsByName ? args.slice(0,-1) : args
+        let argsByValue = lastArgIsByName ? args.slice(0,-1) : args
         const propsByName = lastArgIsByName ? lastArg : {}
+        const onlyByName = lastArgIsByName && args.length == 1
 
         const params = comp.params || []
         const param0 = params[0] ? params[0] : {}
@@ -92,7 +94,9 @@ extension('macro', {
         const varArgs = []
         while (argsByValue[0] && argsByValue[0].$ == 'Var')
             varArgs.push(argsByValue.shift())
-        const firstProps = firstParamAsArray ? { [param0.id] : argsByValue } : jb.objFromEntries(argsByValue.map((v,i) => [params[i].id, v]))
+        if (firstParamAsArray && argsByValue.length == 1)
+            argsByValue = argsByValue[0]
+        const firstProps = onlyByName ? [] : firstParamAsArray ? { [param0.id] : argsByValue } : jb.objFromEntries(argsByValue.map((v,i) => [params[i].id, v]))
         return { $: cmpId,
             ...(varArgs.length ? {$vars: varArgs} : {}),
             ...firstProps, ...propsByName

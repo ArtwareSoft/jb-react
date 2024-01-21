@@ -126,7 +126,7 @@ component('frontEnd.requireExternalLibrary', {
   category: 'front-end',
   description: 'url or name of external library in dist path, js or css',
   params: [
-      {id: 'libs', as: 'array' },
+      {id: 'libs', type: 'data[]', as: 'array' },
   ],
   impl: ({},libs) => libs.map(frontEndLib =>({ frontEndLib }))
 })
@@ -393,7 +393,7 @@ component('feature.onEsc', {
     type: 'feature',
     category: 'events',
     params: [
-      {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
+      {id: 'action', type: 'action', mandatory: true, dynamic: true}
     ],
     impl: feature.onKey('Esc',call('action'))
 })

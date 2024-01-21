@@ -64,7 +64,6 @@ component('circles', {
 component('initScatter', {
   type: 'feature<d3.scatter>',
   impl: features(
-//    frontEnd.requireExternalLibrary(['d3.js']),
     calcProp({
         id: 'items',
         value: (ctx,{cmp,$model,itemlistCntr}) => {

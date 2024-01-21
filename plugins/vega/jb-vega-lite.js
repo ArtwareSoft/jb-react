@@ -33,7 +33,7 @@ component('vega.interactiveChart', {
   type: 'control',
   params: [
     {id: 'spec', type: 'vega.spec'},
-    {id: 'showSpec', as: 'boolean', defaultValue: false}
+    {id: 'showSpec', as: 'boolean', defaultValue: false, type: 'boolean'}
   ],
   impl: group({
     controls: [
@@ -47,14 +47,17 @@ component('vega.interactiveChart', {
               const view = vegaEmbed.createView(el, eval(`(${prettySpec})`))
               vegaData.forEach(e => view.insert(e[0],e[1] ))
               view.run()
-          }),
+          })
         ]
       }),
-      controlWithCondition('%$showSpec%', editableText({databind: '%$prettySpec%', style: editableText.codemirror()})),
+      controlWithCondition(
+        '%$showSpec%',
+        editableText({databind: '%$prettySpec%', style: editableText.codemirror()})
+      )
     ],
     features: [
-        frontEnd.requireExternalLibrary(['vega-lite.js']),
-        watchable('prettySpec', ({},{},{spec}) => jb.utils.prettyPrint(jb.vega.cleanEmptyValues(spec))),
+      frontEnd.requireExternalLibrary('vega-lite.js'),
+      watchable('prettySpec', ({},{},{spec}) => jb.utils.prettyPrint(jb.vega.cleanEmptyValues(spec)))
     ]
   })
 })

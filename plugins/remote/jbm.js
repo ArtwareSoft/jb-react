@@ -4,7 +4,7 @@ component('worker', {
   type: 'jbm',
   params: [
     {id: 'id', as: 'string'},
-    {id: 'sourceCode', type: 'source-code'},
+    {id: 'sourceCode', type: 'source-code', byName: true},
     {id: 'init', type: 'action<>', dynamic: true},
     {id: 'networkPeer', as: 'boolean', description: 'used for testing', type: 'boolean'}
   ],
@@ -31,7 +31,7 @@ component('webWorker', {
   type: 'jbm',
   params: [
       {id: 'id', as: 'string'},
-      {id: 'sourceCode', type: 'source-code', defaultValue: treeShakeClient() },
+      {id: 'sourceCode', type: 'source-code', byName: true, defaultValue: treeShakeClient() },
       {id: 'init' , type: 'action<>', dynamic: true },
       {id: 'networkPeer', as: 'boolean', description: 'used for testing' },
   ],    
@@ -86,7 +86,7 @@ component('child', {
     type: 'jbm',
     params: [
         {id: 'id', as: 'string'},
-        {id: 'sourceCode', type: 'source-code', defaultValue: treeShakeClient() },
+        {id: 'sourceCode', type: 'source-code', byName: true, defaultValue: treeShakeClient() },
         {id: 'init', type: 'action', dynamic: true}
     ],
     impl: (ctx,_id,sourceCode,init) => {

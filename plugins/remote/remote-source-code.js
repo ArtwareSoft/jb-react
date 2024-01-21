@@ -39,12 +39,12 @@ component('treeShakeClientWithPlugins', {
 
 component('treeShakeClient', {
   type: 'source-code',
-  impl: sourceCode({actualCode: () => jb.treeShake.clientCode(), treeShakeServer : jbm.self()})
+  impl: sourceCode({treeShakeServer: jbm.self(), actualCode: () => jb.treeShake.clientCode()})
 })
 
 component('xServer', {
   type: 'source-code',
-  impl: sourceCode({pluginsToLoad: plugins('remote,tree-shake,remote-widget'), treeShakeServer : jbm.self()})
+  impl: sourceCode({pluginsToLoad: plugins('remote,tree-shake,remote-widget'), treeShakeServer: jbm.self()})
 })
 
 component('project', {

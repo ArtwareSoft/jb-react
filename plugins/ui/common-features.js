@@ -3,7 +3,7 @@ component('method', {
   description: 'define backend event handler',
   params: [
     {id: 'id', as: 'string', mandatory: true, description: 'if using the pattern onXXHandler, or onKeyXXHandler automaticaly binds to UI event XX, assuming on-XX:true is defined at the template'},
-    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
+    {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
   impl: (ctx,id) => ({method: {id, ctx}})
 })

@@ -3,8 +3,11 @@
 component('itemlist.dragAndDrop', {
   type: 'feature',
   impl: features(
-    frontEnd.requireExternalLibrary(['dragula.js','css/dragula.css']),
-    method('moveItem', runActions(move(itemlist.indexToData('%from%'), itemlist.indexToData('%to%')), action.refreshCmp())),
+    frontEnd.requireExternalLibrary('dragula.js','css/dragula.css'),
+    method(
+      'moveItem',
+      runActions(move(itemlist.indexToData('%from%'), itemlist.indexToData('%to%')), action.refreshCmp())
+    ),
     frontEnd.prop('drake', ({},{cmp}) => {
         if (!jb.frame.dragula) return jb.logError('itemlist.dragAndDrop - the dragula lib is not loaded')
         return dragula([cmp.base.querySelector('.jb-items-parent') || cmp.base] , {
@@ -15,20 +18,29 @@ component('itemlist.dragAndDrop', {
       source.dragulaEvent('drag', list('el')),
       rx.map(itemlist.indexOfElem('%el%')),
       rx.do(({},{cmp}) => 
-        Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).forEach(el=>el.setAttribute('jb-original-index',jb.ui.indexOfElement(el)))
-      ),
+        Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).forEach(el=>el.setAttribute('jb-original-index',jb.ui.indexOfElement(el)))),
       sink.subjectNext('%$cmp/selectionEmitter%')
     ),
     frontEnd.flow(
-      source.dragulaEvent('drop', list('dropElm', 'target', 'source', 'sibling')),
-      rx.map(obj(prop('from', itemlist.indexOfElem('%dropElm%')), prop('to', itemlist.orignialIndexFromSibling('%sibling%')))),
+      source.dragulaEvent('drop', list('dropElm','target','source','sibling')),
+      rx.map(
+        obj(
+          prop('from', itemlist.indexOfElem('%dropElm%')),
+          prop('to', itemlist.orignialIndexFromSibling('%sibling%'))
+        )
+      ),
       sink.BEMethod('moveItem')
     ),
     frontEnd.flow(
       source.frontEndEvent('keydown'),
       rx.filter('%ctrlKey%'),
-      rx.filter(inGroup(list(38, 40), '%keyCode%')),
-      rx.map(obj(prop('from', itemlist.nextSelected(0)), prop('to', itemlist.nextSelected(If('%keyCode%==40', 1, -1))))),
+      rx.filter(inGroup(list(38,40), '%keyCode%')),
+      rx.map(
+        obj(
+          prop('from', itemlist.nextSelected(0)),
+          prop('to', itemlist.nextSelected(If('%keyCode%==40', 1, -1)))
+        )
+      ),
       sink.BEMethod('moveItem')
     )
   )

@@ -81,10 +81,10 @@ component('editableNumber.mdcSlider', {
 component('editableNumber.mdcSliderNoText', {
   type: 'editable-number.style',
   params: [
-    { id: 'thumbSize', as: 'number', defaultValue: 21 },
-    { id: 'cx', as: 'number', defaultValue: 10.5 },
-    { id: 'cy', as: 'number', defaultValue: 10.5 },
-    { id: 'r', as: 'number', defaultValue: 7.875 },
+    {id: 'thumbSize', as: 'number', defaultValue: 21},
+    {id: 'cx', as: 'number', defaultValue: 10.5},
+    {id: 'cy', as: 'number', defaultValue: 10.5},
+    {id: 'r', as: 'number', defaultValue: 7.875}
   ],
   impl: customStyle({
     template: (cmp,{title,min,max,step,numbericVal,thumbSize,cx,cy,r},h) =>
@@ -98,7 +98,7 @@ component('editableNumber.mdcSliderNoText', {
         ])
       ]),
     features: [
-      frontEnd.requireExternalLibrary(['material-components-web.js','css/font.css','css/material.css']),
+      frontEnd.requireExternalLibrary('material-components-web.js','css/font.css','css/material.css'),
       field.databind(),
       slider.init(),
       frontEnd.init((ctx,{cmp}) => {
@@ -112,7 +112,7 @@ component('editableNumber.mdcSliderNoText', {
         cmp.mdcSlider.max = +el.getAttribute('aria-valuemax')
         cmp.mdcSlider.step = +el.getAttribute('data-step')
       }),
-      frontEnd.onDestroy((ctx,{cmp}) => cmp.mdcSlider && cmp.mdcSlider.destroy()),
+      frontEnd.onDestroy((ctx,{cmp}) => cmp.mdcSlider && cmp.mdcSlider.destroy())
     ]
   })
 })

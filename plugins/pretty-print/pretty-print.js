@@ -54,7 +54,6 @@ extension('utils', 'prettyPrint', {
         const startPos = jb.utils.advanceLineCol(pos,''), endPos = jb.utils.advanceLineCol(pos,toAddStr)
 //        posArray.toAddStr = toAddStr
         const semanticPath = [path,prop].join('~')
-        if (semanticPath.indexOf('valval') != -1) debugger
 
         if (end) {
           paths[semanticPath].endPos = startPos
@@ -232,7 +231,7 @@ extension('utils', 'prettyPrint', {
       const keys = Object.keys(profile).filter(x=>x != '$' && x != '$disabled')
       const oneFirstArg = keys.length === 1 && params[0] && params[0].id == keys[0]
       const twoFirstArgs = keys.length == 2 && params.length >= 2 && profile[params[0].id] && profile[params[1].id]
-      if ((params.length < 3 && comp.macroByValue !== false) || comp.macroByValue || oneFirstArg || twoFirstArgs) {
+      if (comp.macroByValue !== false && (params.length < 3 || comp.macroByValue || oneFirstArg || twoFirstArgs)) {
         const args = systemProps.concat(params.map(param=>({innerPath: param.id, val: profile[param.id]})))
         while (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop() // cut the undefined's at the end
         const nameValuePattern = args.length == 2 && typeof args[0].val == 'string' && typeof args[1].val == 'function'
@@ -268,30 +267,40 @@ extension('utils', 'prettyPrint', {
 
       const params = comp.params || []
       const param0 = params[0] ? params[0] : {}
-      const firstParamAsArray = param0.as == 'array' || (param0.type||'').indexOf('[]') != -1
+      // param0.arrayInMacro is temporary - remove after upgrade to mixed
+      const firstParamAsArray = !param0.arrayInMacro && (param0.as == 'array' || (param0.type||'').indexOf('[]') != -1)
 
-      const paramsByValue = (firstParamAsArray || param0.byName) ? [] : params.slice(0,2)
-      const paramsByName = firstParamAsArray ? (param0.byName ? params: params.slice(1)) : params.slice(2)
+      let paramsByValue = (firstParamAsArray || param0.byName) ? [] : params.slice(0,2)
+      let paramsByName = firstParamAsArray ? (param0.byName ? params: params.slice(1)) : params.slice(2)
       const param1 = params[1] ? params[1] : {}
       if (!firstParamAsArray && (param1.as == 'array' || (param1.type||'').indexOf('[]') != -1 || param1.byName))
         paramsByName.unshift(paramsByValue.pop())
+      if (comp.macroByValue) {
+        paramsByValue = params
+        paramsByName = []
+      }
+      if (profile[param0.id] === undefined || profile.$vars) {
+        paramsByValue = []
+        paramsByName = params
+      }
 
       const systemProps = jb.macro.systemProps.flatMap(p=>profile[p] ? [{innerPath: p, val: profile[p]}] : [])
       const propsByName = systemProps.concat(paramsByName.map(param=>({innerPath: param.id, val: profile[param.id]}))).filter(({val})=>val !== undefined)
       const propsByValue = paramsByValue.map(param=>({innerPath: param.id, val: profile[param.id]})).filter(({val})=>val !== undefined)
       const argsOfFirstParam = firstParamAsArray ? jb.asArray(profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + '~' + i, val})) : []
-      const varArgs = (profile.$vars || []).map(({name,val},i) => ({innerPath: `$vars~${i}`, val: {$: 'Var', name, val }}))
+      const varArgs = (profile.$vars || []).map(({name, val},i) => ({innerPath: `$vars~${i}`, val: {$: 'Var', name, val }}))
 
-      const varsLength = profile.$vars ? calcArrayProps(profile.$vars.map(x=>x.val),`${path}~$vars`).len : 0
-      const firstParamLength = firstParamAsArray ? calcArrayProps(argsOfFirstParam.map(x=>x.val),`${path}~${params[0].id}`).len : 0
-      const propsByValueLength = propsByValue.length && !firstParamAsArray ? propsByValue.reduce((len,elem) => len + calcValueProps(elem.val,`${path}~${elem.innerPath}`).len + 2, 2) : 0
-      const propsByNameLength = propsByName.reduce((len,elem) => len + calcValueProps(elem.val,`${path}~${elem.innerPath}`).len + elem.innerPath.length + 2, 2)
+      const varsLength = varArgs.length ? calcArrayProps(varArgs.map(x=>x.val),`${path}~$vars`).len : 0
+      const firstParamLength = argsOfFirstParam.length ? calcArrayProps(argsOfFirstParam.map(x=>x.val),`${path}~${params[0].id}`).len : 0
+      const propsByValueLength = propsByValue.length && !firstParamAsArray ? propsByValue.reduce((len,elem) => len + calcValueProps(elem.val,`${path}~${elem.innerPath}`).len + 2, macro.length+2) : 0
+      const propsByNameLength = propsByName.length ? propsByName.reduce((len,elem) => len + calcValueProps(elem.val,`${path}~${elem.innerPath}`).len + elem.innerPath.length + 2, macro.length+2) : 0
       
       const argsByValue = [...varArgs, ...(firstParamAsArray ? argsOfFirstParam: propsByValue)]
       const len = varsLength + firstParamLength + propsByValueLength + propsByNameLength
       const nameValuePattern = !varArgs.length && !systemProps.length && propsByValue.length == 2 && typeof propsByValue[0].val == 'string' && typeof propsByValue[1].val == 'function'
       const singleFunc = !varArgs.length && !systemProps.length && propsByValue.length == 1 && typeof propsByValue[0].val == 'function'
-      return props[path] = { macro, len, argsByValue, propsByName, nameValuePattern, singleFunc, mixed: true}
+      const primitiveArray = !varArgs.length && firstParamAsArray && argsByValue.reduce((acc,item)=> acc && jb.utils.isPrimitiveValue(item.val), true)
+      return props[path] = { macro, len, argsByValue, propsByName, nameValuePattern, singleFunc, primitiveArray, mixed: true}
     }
 
     function asIsProps(profile,path) {
