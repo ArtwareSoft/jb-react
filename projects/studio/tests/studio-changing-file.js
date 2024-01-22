@@ -1,3 +1,3 @@
 component('studioTest.changingComp', {
-  impl: 920
+  impl: 340
 })

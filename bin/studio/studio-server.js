@@ -303,7 +303,7 @@ const op_get_handlers = {
       const command = `node --inspect-brk ../hosts/node/node-worker.js ${args.map(arg=> 
         (arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg}'`)).join(' ')}`
       res.setHeader('Content-Type', 'application/json; charset=utf8')
-      writeToCmdLog('./lastNodeWorker', command)
+      writeToCmdLog('./temp/lastNodeWorker', command)
       const nodeWorker = child.spawn('node',['./node-worker.js', ...args],{cwd: 'hosts/node'})
       nodeWorker.stdout.on('data', data => res.end(data))
       nodeWorker.on('exit', (code,ev) => res.end(JSON.stringify({command, exit: `exit ${''+code} ${''+ev}}`})))

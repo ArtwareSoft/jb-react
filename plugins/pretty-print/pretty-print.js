@@ -352,7 +352,7 @@ extension('utils', 'prettyPrint', {
       else if (typeof val === 'string' && val.indexOf('\n') != -1)
         return itemListProps([
           {prop: '!value-text-start', item: "`"},
-          {prop: '!value-text', item: val.replace(/`/g,'\\`')},
+          {prop: '!value-text', item: val.replace(/`/g,'\\`').replace(/\$\{/g, '\\${')},
           {prop: '!value-text-end', item: "`"},
         ], val.length, path)
       else if (typeof val === 'boolean')

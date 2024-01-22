@@ -74,7 +74,7 @@ component('createUpgradeScript', {
         const script = `#sourceCode { "project": ["studio"], "plugins": ["*"] }
 #main 
 runActions(
-${cmds.join('\n')}
+${cmds.join(',\n')}
 )`
         jbHost.fs.writeFileSync(jb.tgpTextEditor.fixPath(fn), script)
         return script

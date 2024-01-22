@@ -1,8 +1,7 @@
-revisiting the jb.js utility interface
 
 upgrade
   create the upgrade script and run it for some -> all
-  fix pamaram section po
+  fix arrayInMacro
 
 use chatgpt to generate python and tgp wrapper
 external lib version, add version to using and pluginDsl - find use case with external lib
