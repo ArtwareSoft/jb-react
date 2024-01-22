@@ -213,12 +213,12 @@ const op_post_handlers = {
       const args = JSON.parse(body)
       const command = `node --inspect-brk=7001 ../hosts/node/jb.js ${args.map(arg=> 
         (arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`\\"`).replace(/`/g,"\\`").replace(/\$/g,'\\$')}"` : `'${arg}'`)).join(' ')}`
-      writeToCmdLog('./lastCmd', command)
+      writeToCmdLog('./temp/lastCmd', command)
 
       const sourceCode = args.filter(x=>x.match(/^-sourceCode/)).map(x=>encodeURIComponent(x.slice('-sourceCode:'.length)))[0]
       const runCtx = args.filter(x=>x.match(/^-runCtx/)).map(x=>encodeURIComponent(x.slice('-runCtx:'.length)))[0]
       const runCtxUrl = `http://localhost:${settings.port}/hosts/tests/runCtx.html?sourceCode=${sourceCode}&runCtx=${runCtx}`
-      writeToCmdLog('./runCtxUrl', runCtxUrl)
+      writeToCmdLog('./temp/runCtxUrl', runCtxUrl)
 
       //${baseUrl}/tests.html?
       res.setHeader('Content-Type', 'application/json; charset=utf8') // '--inspect-brk', 
@@ -227,7 +227,7 @@ const op_post_handlers = {
       srvr.stdout.on('data', data => { res.write(data); res_str += data })
       srvr.stdout.on('end', data => {
         res.end(data)
-        writeToCmdLog('./lastCmdRes', res_str+(data || ''))
+        writeToCmdLog('./temp/lastCmdRes', res_str+(data || ''))
       })
       //srvr.on('exit', onExit)
       srvr.on('error', (e) => res.end(JSON.stringify({command, error: `${''+e}`})))  

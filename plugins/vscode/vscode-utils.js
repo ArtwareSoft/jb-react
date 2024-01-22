@@ -186,7 +186,7 @@ extension('vscode', 'utils', {
         vscodeNS.env.openExternal(`http://localhost:8082/hosts/tests/tests.html?test=${testID}&show${repo}&spy=${spyParam}`)
     },
     openLastCmd() {
-        const url = jbHost.fs.readFileSync(jbHost.jbReactDir + '/runCtxUrl')
+        const url = jbHost.fs.readFileSync(jbHost.jbReactDir + '/temp/runCtxUrl')
         vscodeNS.env.openExternal(vscodeNS.Uri.parse(url))
     },
     toVscodeFormat(pos) {
