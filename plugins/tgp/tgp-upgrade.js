@@ -19,7 +19,10 @@ extension('tgpTextEditor','upgrade', {
         const _oldText = oldText.slice(i), _newText = newText.slice(i)
         while(_newText[_newText.length-j] == _oldText[_oldText.length-j] && j < _newText.length) j++ // calc backwards from the end
         return {from: i, to: oldText.length-j+1, replaceBy: _newText.slice(0, _newText.length-j+1)}
-    },    
+    },
+    fixPath(path) {
+        return path.replace('[JB_BASE]',jbHost.jbReactDir || '')
+    }
 })
 
 component('upgradeCmp', {
@@ -36,7 +39,7 @@ component('upgradeCmp', {
         if (!ctx.vars.allowLostInfo && lostInfo)
             return jb.logError(`upgradeCmp can not loose information at ${cmpId}. use $allowLostInfo to override`, { ctx, lostInfo})
         if (!edit) return
-        const fullPath = `.${path}`
+        const fullPath = jb.tgpTextEditor.fixPath(path)
         const docText = jbHost.fs.readFileSync(fullPath, 'utf-8')
         const lines = docText.split('\n')
         const compLine = jb.utils.indexOfCompDeclarationInTextLines(lines,cmpId)
@@ -62,7 +65,7 @@ component('createUpgradeScript', {
     type: 'data<>',
     params: [
         {id: 'upgrade', type: 'cmp-upgrade', dynamic: true },
-        {id: 'scriptFile', as: 'string', defaultValue: './temp/upgrade.jb' },
+        {id: 'scriptFile', as: 'string', defaultValue: '[JB_BASE]/temp/upgrade-cmps.js' },
         {id: 'cmps', as: 'array', defaultValue: () => Object.keys(jb.comps) },
         {id: 'slice', as: 'number' },
     ],
@@ -73,7 +76,7 @@ component('createUpgradeScript', {
 runActions(
 ${cmds.join('\n')}
 )`
-        //jbHost.fs.writeFileSync(fn, script)
+        jbHost.fs.writeFileSync(jb.tgpTextEditor.fixPath(fn), script)
         return script
     }
 })
@@ -90,7 +93,7 @@ component('upgradeMixed', {
         const mixedProfCode = jb.utils.prettyPrintComp(cmpId,comp, { mixed: true })
         const edit = jb.tgpTextEditor.deltaText(originalProfCode, mixedProfCode)
         const hash = jb.tgpTextEditor.calcHash(originalProfCode)
-        const path = comp[jb.core.CT].location.path
+        const path = '[JB_BASE]' + comp[jb.core.CT].location.path
 
         // deserializing - serializing the mixed code and checking it against the original profile
         // if (!edit)

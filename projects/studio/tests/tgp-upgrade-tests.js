@@ -58,5 +58,5 @@ component('mixedTest.all', {
 })
 
 component('mixedTest.createUpgradeScript', {
-  impl: dataTest(createUpgradeScript({upgrade: upgradeMixed(), slice: 100}), equals(''))
+  impl: dataTest(createUpgradeScript(upgradeMixed()), equals(''))
 })
