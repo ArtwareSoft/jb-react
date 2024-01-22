@@ -49,7 +49,7 @@ component('mixedTest.all', {
       () => Object.keys(jb.comps),
       filter(not(startsWith('dataResource.'))),
       slice(0, 100),
-      typeAdapter('cmp-upgrade<upgrade>', upgradeMixed('%%')),
+      typeAdapter('cmp-upgrade<upgrade>', upgradeMixed()),
       filter('%edit%'),
       slice(0, 1)
     ),
@@ -57,3 +57,6 @@ component('mixedTest.all', {
   )
 })
 
+component('mixedTest.createUpgradeScript', {
+  impl: dataTest(createUpgradeScript({upgrade: upgradeMixed(), slice: 100}), equals(''))
+})

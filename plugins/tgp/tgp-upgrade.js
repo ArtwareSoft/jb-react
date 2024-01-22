@@ -59,19 +59,22 @@ component('upgradeCmp', {
 })
 
 component('createUpgradeScript', {
-    type: 'data',
+    type: 'data<>',
     params: [
-        {id: 'scriptFile', as: 'string' },
-        {id: 'plugins', type: 'plugins-to-load<jbm>', mandatory: true },
-        {id: 'compFilter', as: 'string', description: 'regex for comps' },
         {id: 'upgrade', type: 'cmp-upgrade', dynamic: true },
+        {id: 'scriptFile', as: 'string', defaultValue: './temp/upgrade.jb' },
+        {id: 'cmps', as: 'array', defaultValue: () => Object.keys(jb.comps) },
+        {id: 'slice', as: 'number' },
     ],
-    impl: async (ctx,_plugins,compFilter,upgrade) => {
-        const plugins = jb.jbm.unifyPluginsToLoad(_plugins.flatMap(x=>x))
-        const _compFilter = new Regex(compFilter)
-        const cmps = Object.keys(jb.comps).filter(k=>!compFilter || _compFilter.match(k)).filter(k=> plugins.indexOf(jb.comps[k][jb.core.CT].plugin.id) != -1)
-        const updates = cmps.flatMap(id=>upgrade(ctx.setData(id)))
-        return updates
+    impl: async (ctx,upgrade,fn,cmps,slice) => {
+        const cmds = cmps.slice(slice).map(id=>upgrade(ctx.setData(id))).filter(x=>x && x.edit && !x.lostInfo).map(x=>x.cmd)
+        const script = `#sourceCode { "project": ["studio"], "plugins": ["*"] }
+#main 
+runActions(
+${cmds.join('\n')}
+)`
+        //jbHost.fs.writeFileSync(fn, script)
+        return script
     }
 })
 
