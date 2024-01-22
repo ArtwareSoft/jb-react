@@ -70,7 +70,7 @@ component('createUpgradeScript', {
         {id: 'slice', as: 'number' },
     ],
     impl: async (ctx,upgrade,fn,cmps,slice) => {
-        const cmds = cmps.map(id=>upgrade(ctx.setData(id))).filter(x=>x && x.edit && !x.lostInfo).slice(slice).map(x=>x.cmd)
+        const cmds = cmps.map(id=>upgrade(ctx.setData(id))).filter(x=>x && x.edit && !x.lostInfo).slice(0,slice).map(x=>x.cmd)
         const script = `#sourceCode { "project": ["studio"], "plugins": ["*"] }
 #main 
 runActions(
