@@ -1,8 +1,8 @@
-fix FETest.workerPreviewTest.suggestions - have only one test
+revisiting the jb.js utility interface
 
-upgrade type
-  upgradeMixed
-  upgradePT
+upgrade
+  create the upgrade script and run it for some -> all
+  fix pamaram section po
 
 use chatgpt to generate python and tgp wrapper
 external lib version, add version to using and pluginDsl - find use case with external lib

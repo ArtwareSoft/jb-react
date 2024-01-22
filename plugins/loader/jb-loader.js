@@ -117,7 +117,8 @@ async function jbInit(uri, sourceCode , {multipleInFrame} ={}) {
     return jb
   }
 
-  await (sourceCode.pluginPackages || [null]).reduce( async (pr,codePackage)=> pr.then(() =>
+  const pluginPackages = Array.isArray(sourceCode.pluginPackages) ? sourceCode.pluginPackages : [sourceCode.pluginPackages]
+  await pluginPackages.reduce( async (pr,codePackage)=> pr.then(() =>
     jb.loadPluginSymbols(jbHost.codePackageFromJson(codePackage),sourceCode.project)), Promise.resolve());
   calcPluginDependencies(jb.plugins,jb)
   await ['jb-core','core-utils','jb-expression','db','jb-macro','spy'].map(x=>`/plugins/core/${x}.js`).reduce((pr,path) => 

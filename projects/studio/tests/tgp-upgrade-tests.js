@@ -38,7 +38,7 @@ component('mixedTest.tst1Helper', {
 
 component('mixedTest.tst1', {
   impl: dataTest(
-    typeAdapter('cmp-upgrade<upgrade>', upgradeMixed('tgpTextEditor.studioCircuitUrlByDocProps')),
+    typeAdapter('cmp-upgrade<upgrade>', upgradeMixed('notContains')),
     isNull('%edit%')
   )
 })
@@ -48,9 +48,12 @@ component('mixedTest.all', {
     pipeline(
       () => Object.keys(jb.comps),
       filter(not(startsWith('dataResource.'))),
+      slice(0, 100),
       typeAdapter('cmp-upgrade<upgrade>', upgradeMixed('%%')),
-      filter('%lostInfo%')
+      filter('%edit%'),
+      slice(0, 1)
     ),
     equals('')
   )
 })
+

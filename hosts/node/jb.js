@@ -1,20 +1,39 @@
 const { jbHost } = require('./node-host.js')
 const { getProcessArgument } = jbHost
+
+const scriptFN = getProcessArgument('script')
+const argsFromScript = {}
+if (scriptFN) {
+    try {
+        const script = jbHost.fs.readFileSync(scriptFN)
+        ;('\n'+script).split('\n#').filter(x=>x).forEach(p=>argsFromScript[p.slice(0,p.indexOf(' '))] = p.slice(p.indexOf(' ')+1).trim())
+    } catch(err) {
+        console.log(JSON.stringify({ desc: `can not read script file ${scriptFN}`, err: JSON.stringify(err) }))
+        process.exit(1)
+    }
+}
+
+function doGetProcessArgument(p) {
+    return argsFromScript[p] || getProcessArgument(p)
+}
+
 const _params = 
-      ['main','plugins','project','wrap','uri','dsl','verbose','runCtx','spy']
-const [main,_plugins,project,wrap,uri,dsl,verbose,runCtx,spy] = _params.map(p=>getProcessArgument(p))
+      ['main','plugins','project','wrap','uri','dsl','verbose','runCtx','spy','text']
+const [main,_plugins,project,wrap,uri,dsl,verbose,runCtx,spy,resultAsText] = _params.map(p=>doGetProcessArgument(p))
 
 if (!main && !runCtx) {
     console.log(`usage: jb.js 
+    -script:dist/myScript.jb // script file with all the params string with #
     -main:button("hello") // profile to run. mandatory or use runCtx.
     -wrap:prune(MAIN) // optional. profile that wraps the 'main' profile and will be run instead
-    -sourceCode:{plugins: ['*'], libsToinit:'lib1,lib2' }
+    -sourceCode:{ "project": ["studio"], "plugins": ["*"] } // "libsToinit" :"lib1,lib2"
     -spy: 'remote' // optional default is 'error'
     -plugins:zui,ui  // optional (shortcut for sourceCode.plugins)
     -project:studio  // optional (shortcut for sourceCode.project)
     -uri:main // optional. jbm uri default is "main"
     -dsl:myDsl // optional. dsl of the main profile default is ""
     -verbose // show params, vars, and generated tgp code
+    -text // result as text
     %v1:val // variable values
     %p1:val||script // param values
     -runCtx:... // json of runCtx instead of main/wrap/vars and params 
@@ -29,7 +48,7 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
 ;(async () => {
     const cmd = ['node --inspect-brk ../hosts/node/jb.js', 
         ...process.argv.slice(2).map(arg=> (arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg}'`))].join(' ')
-    const sourceCodeStr = getProcessArgument('sourceCode')
+    const sourceCodeStr = doGetProcessArgument('sourceCode')
     const sourceCode = sourceCodeStr ? JSON.parse(sourceCodeStr) 
         : { plugins:_plugins ? _plugins.split(',') : [], project, pluginPackages: {$:'defaultPackage'} }
 
@@ -73,7 +92,8 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
         }
         const result = { result: res, exception, errors: jb.spy.search('error'), logs: jb.spy.logs, main }
         try {
-            const resStr = JSON.stringify(jb.remoteCtx.stripData({...result}))
+            const resOut = jb.remoteCtx.stripData(resultAsText ? res : {...result})
+            const resStr = resOut ? JSON.stringify(resOut) : ''
             process.stdout.write(resStr)
             process.stdout.on('finish', () => process.exit(0))
         } catch(err) {
