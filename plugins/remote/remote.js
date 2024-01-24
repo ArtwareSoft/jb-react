@@ -1,13 +1,13 @@
 using('common,pretty-print,rx')
 
 component('source.remote', {
-    type: 'rx<>',
-    macroByValue: true,
-    params: [
-      {id: 'rx', type: 'rx<>', dynamic: true },
-      {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self() },
-    ],
-    impl: (ctx,rx,jbm) => {
+  type: 'rx<>',
+  macroByValue: true,
+  params: [
+    {id: 'rx', type: 'rx<>', dynamic: true},
+    {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self()}
+  ],
+  impl: (ctx,rx,jbm) => {
         if (!jbm)
             return jb.logError('source.remote - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
         if (jbm == jb) return rx()
@@ -15,17 +15,17 @@ component('source.remote', {
         return jb.callbag.pipe(
             jb.callbag.fromPromise(jbm), jb.callbag.mapPromise(_jbm=>_jbm.rjbm()),
             jb.callbag.concatMap(rjbm => rjbm.createCallbagSource(stripedRx)))
-    }        
+    }
 })
 
 component('remote.operator', {
-    type: 'rx<>',
-    macroByValue: true,
-    params: [
-      {id: 'rx', type: 'rx<>', dynamic: true },
-      {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self()},
-    ],
-    impl: (ctx,rx,jbm) => {
+  type: 'rx<>',
+  macroByValue: true,
+  params: [
+    {id: 'rx', type: 'rx<>', dynamic: true},
+    {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self()}
+  ],
+  impl: (ctx,rx,jbm) => {
         if (!jbm)
             return jb.logError('remote.operator - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
         if (jbm == jb) return rx()
@@ -53,16 +53,16 @@ component('remote.operator', {
 })
 
 component('remote.action', {
-    type: 'action<>',
-    description: 'exec a script on a remote node and returns a promise if not oneWay',
-    params: [
-      {id: 'action', type: 'action', dynamic: true },
-      {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self()},
-      {id: 'oneway', as: 'boolean', description: 'do not wait for the respone' },
-      {id: 'timeout', as: 'number', defaultValue: 10000 },
-      {id: 'require', as: 'string'},
-    ],
-    impl: async (ctx,action,jbm,oneway,timeout,require) => {
+  type: 'action<>',
+  description: 'exec a script on a remote node and returns a promise if not oneWay',
+  params: [
+    {id: 'action', type: 'action', dynamic: true},
+    {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self()},
+    {id: 'oneway', as: 'boolean', description: 'do not wait for the respone', type: 'boolean'},
+    {id: 'timeout', as: 'number', defaultValue: 10000},
+    {id: 'require', as: 'string'}
+  ],
+  impl: async (ctx,action,jbm,oneway,timeout,require) => {
         if (!jbm)
             return jb.logError('remote.action - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
         if (jbm == jb) return action()
@@ -97,17 +97,17 @@ component('remote.data', {
 })
 
 component('remote.initShadowData', {
-    type: 'action<>',
-    description: 'shadow watchable data on remote jbm',
-    params: [
-      {id: 'src', as: 'ref' },
-      {id: 'jbm', type: 'jbm<jbm>'}
-    ],
-    impl: rx.pipe(
-        source.watchableData({ref: '%$src%', includeChildren: 'yes'}),
-        rx.map(obj(prop('op','%op%'), prop('path',({data}) => jb.db.pathOfRef(data.ref)))),
-        sink.action(remote.action( remote.updateShadowData('%%'), '%$jbm%'))
-    )
+  type: 'action<>',
+  description: 'shadow watchable data on remote jbm',
+  params: [
+    {id: 'src', as: 'ref'},
+    {id: 'jbm', type: 'jbm<jbm>'}
+  ],
+  impl: rx.pipe(
+    source.watchableData('%$src%', { includeChildren: 'yes' }),
+    rx.map(obj(prop('op', '%op%'), prop('path', ({data}) => jb.db.pathOfRef(data.ref)))),
+    sink.action(remote.action(remote.updateShadowData('%%'), '%$jbm%'))
+  )
 })
 
 component('remote.copyPassiveData', {
@@ -119,14 +119,10 @@ component('remote.copyPassiveData', {
   ],
   impl: runActions(
     Var('resourceCopy', '%${%$resourceId%}%'),
-    remote.action(
-      addComponent({
-        id: '%$resourceId%',
-        value: '%$resourceCopy%',
-        type: 'passiveData'
-      }),
-      '%$jbm%'
-    )
+    remote.action({
+      action: addComponent('%$resourceId%', '%$resourceCopy%', { type: 'passiveData' }),
+      jbm: '%$jbm%'
+    })
   )
 })
 

@@ -296,8 +296,8 @@ component('controlWithFeatures', {
   description: 'customize, add more features to control',
   category: 'advanced:10,all:20',
   params: [
-    { id: 'control', type: 'control', mandatory: true },
-    { id: 'features', type: 'feature[]', templateValue: [], mandatory: true }
+    {id: 'control', type: 'control', mandatory: true},
+    {id: 'features', type: 'feature[]', templateValue: [], mandatory: true}
   ],
   impl: (ctx, control, features) => control.jbExtend(features, ctx).orig(ctx)
 })

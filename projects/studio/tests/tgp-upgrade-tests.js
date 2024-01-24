@@ -16,7 +16,7 @@ component('mixedTest.tst1Helper', {
 })
 
 component('mixedTest.tst1', {
-  impl: dataTest(typeAdapter('cmp-upgrade<upgrade>', upgradeMixed('mixedTest.tst1Helper')), equals('', ''))
+  impl: dataTest(typeAdapter('cmp-upgrade<upgrade>', reformat('source-code<jbm>project')), equals('', ''))
 })
 
 // component('mixedTest.all', {
@@ -35,5 +35,7 @@ component('mixedTest.tst1', {
 
 component('mixedTest.createUpgradeScript', {
   doNotRunInTests: true,
-  impl: dataTest(createUpgradeScript(reformat(), { slice: 100 }), equals('', ''))
+  impl: dataTest(createUpgradeScript(reformat(), { slice: 20 }), equals('', ''), {
+    timeout: 10000
+  })
 })

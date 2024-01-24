@@ -18,6 +18,7 @@ component('source.watchableData', {
       as: 'string',
       options: 'yes,no,structure',
       defaultValue: 'no',
+      byName: true,
       description: 'watch childern change as well'
     }
   ],
@@ -639,7 +640,7 @@ component('rx.sniffer', {
 // ********** subject 
 component('rx.subject', {
   type: 'data',
-  description: 'callbag "variable" that you can write or listen to',
+  description: 'callbag \"variable\" that you can write or listen to',
   category: 'variable',
   params: [
     {id: 'id', as: 'string', description: 'can be used for logging'},

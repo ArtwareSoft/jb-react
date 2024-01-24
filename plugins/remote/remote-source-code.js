@@ -19,9 +19,13 @@ component('sourceCode', {
   params: [
     {id: 'pluginsToLoad', type: 'plugins-to-load[]', flattenArray: true},
     {id: 'pluginPackages', type: 'plugin-package[]', flattenArray: true, defaultValue: defaultPackage()},
-    {id: 'treeShakeServer', type: 'jbm', description: 'if used, tree shake is used to load extra code, use jbm.self for parent'},
+    {
+      id: 'treeShakeServer',
+      type: 'jbm',
+      description: 'if used, tree shake is used to load extra code, use jbm.self for parent'
+    },
     {id: 'libsToInit', as: 'string', description: 'Empty means load all libraries'},
-    {id: 'actualCode', as: 'string', description: 'alternative to plugins'},
+    {id: 'actualCode', as: 'string', description: 'alternative to plugins'}
   ],
   impl: (ctx,pluginsToLoad,pluginPackages,treeShakeServer,libsToInit,actualCode) => ({ 
     ...(pluginPackages.filter(x=>x).length ? { pluginPackages : pluginPackages.filter(x=>x)} : {}),
@@ -34,17 +38,17 @@ component('sourceCode', {
 
 component('treeShakeClientWithPlugins', {
   type: 'source-code',
-  impl: sourceCode({pluginsToLoad: plugins('remote,tree-shake'), treeShakeServer : jbm.self()})
+  impl: sourceCode(plugins('remote,tree-shake'), { treeShakeServer: jbm.self() })
 })
 
 component('treeShakeClient', {
   type: 'source-code',
-  impl: sourceCode({treeShakeServer: jbm.self(), actualCode: () => jb.treeShake.clientCode()})
+  impl: sourceCode({ treeShakeServer: jbm.self(),actualCode: () => jb.treeShake.clientCode() })
 })
 
 component('xServer', {
   type: 'source-code',
-  impl: sourceCode({pluginsToLoad: plugins('remote,tree-shake,remote-widget'), treeShakeServer: jbm.self()})
+  impl: sourceCode(plugins('remote,tree-shake,remote-widget'), { treeShakeServer: jbm.self() })
 })
 
 component('project', {
@@ -65,7 +69,7 @@ component('pluginsByPath', {
   type: 'plugins-to-load',
   params: [
     {id: 'filePath', as: 'string', mandatory: true, description: 'E.g. someDir/plugins/mycode.js'},
-    {id: 'addTests', as: 'boolean', description: 'add plugin-tests'}
+    {id: 'addTests', as: 'boolean', description: 'add plugin-tests', type: 'boolean'}
   ],
   impl: (ctx,_path,addTests) => {
     const repo = (_path.match(/projects\/([^/]*)\/(plugins|projects)/) || [])[1]
