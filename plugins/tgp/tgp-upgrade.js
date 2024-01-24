@@ -45,18 +45,17 @@ extension('tgpTextEditor','upgrade', {
 component('upgradeCmp', {
     type: 'action<>',
     params: [
-        {id: 'cmpId', type: 'string', mandatory: true },
-        {id: 'path', type: 'string', mandatory: true },
-        {id: 'hash', type: 'number', mandatory: true },
+        {id: 'cmpId', as: 'string', mandatory: true },
+        {id: 'path', as: 'string', mandatory: true },
+        {id: 'hash', as: 'number', mandatory: true },
         {id: 'edit' },
         {id: 'lostInfo' },
     ],
-    impl: (ctx,cmpId,location,expectedHash,edit,lostInfo) => {
-        const path = '[JB_BASE]' + location.path
+    impl: (ctx,cmpId,path,expectedHash,edit,lostInfo) => {
         if (!ctx.vars.allowLostInfo && lostInfo)
-            return jb.logError(`upgradeCmp can not loose information at ${cmpId}. use $allowLostInfo to override`, { ctx, lostInfo})
+            return jb.logError(`upgradeCmp can not loose information at ${cmpId}`, { ctx, lostInfo})
         if (!edit) return
-        const fullPath = jb.tgpTextEditor.fixPath(path)
+        const fullPath = jb.tgpTextEditor.fixPath('[JB_BASE]' + path)
         const docText = jbHost.fs.readFileSync(fullPath, 'utf-8')
         const lines = docText.split('\n')
         const compLine = jb.utils.indexOfCompDeclarationInTextLines(lines,cmpId)
@@ -66,11 +65,11 @@ component('upgradeCmp', {
         const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
         const nextjbComponent = lines.slice(compLine+1).findIndex(line => line.match(/^component/))
         if (nextjbComponent != -1 && nextjbComponent < compLastLine)
-           return jb.logError(`upgradeCmp - can not find last line of cmp ${cmpId} in file ${path}`, { ctx })
+           return jb.logError(`upgradeCmp - can not find last line of cmp ${cmpId} in file ${fullPath}`, { ctx })
         const compText = linesFromComp.slice(0,compLastLine+1).join('\n')
         const hash = jb.tgpTextEditor.calcHash(compText)
         if (hash != expectedHash)
-            return jb.logError(`upgradeCmp hash mismatch at ${cmpId} in file ${path}`, { ctx, hash, expectedHash})
+            return jb.logError(`upgradeCmp hash mismatch at ${cmpId} in file ${fullPath}`, { ctx, hash, expectedHash})
         const resultCompText = compText.slice(0,edit.from) + edit.replaceBy + compText.slice(edit.to)
         const resultDocText = [...lines.slice(0,compLine), ...resultCompText.split('\n'),...lines.slice(compLine+compLastLine+1)].join('\n')
         jbHost.fs && jbHost.fs.writeFileSync(fullPath, resultDocText)
@@ -113,7 +112,7 @@ component('upgradeMixed', {
         const mixedProfCode = jb.utils.prettyPrintComp(cmpId,comp)
         const edit = jb.tgpTextEditor.deltaText(originalProfCode, mixedProfCode)
         const hash = jb.tgpTextEditor.calcHash(originalProfCode)
-        const location = comp[jb.core.CT].location
+        const {path, line} = comp[jb.core.CT].location
 
         // deserializing - serializing the mixed code and checking it against the original profile
         // if (!edit)
@@ -128,7 +127,7 @@ component('upgradeMixed', {
         const mixedProfAfterEval = jb.utils.prettyPrintComp(mixedCmpId,jb.comps[mixedCmpId], {noMixed: true})
         const originalCodeWithMixedId = originalProfCode.replace(`component('${shortId}'`,`component('${shortMixedCmpId}'`)
         const lostInfo = jb.tgpTextEditor.deltaText(mixedProfAfterEval, originalCodeWithMixedId)
-        const props = { cmpId, edit, hash, lostInfo, location }
+        const props = { cmpId, edit, hash, lostInfo, path, line }
         const cmd = jb.utils.prettyPrint({$: 'upgradeCmp', ...props, cmpId: shortId}, {singleLine: true})
 
         return { ...props, cmd }
@@ -145,6 +144,7 @@ component('reformat', {
         if (comp.autoGen) return
         const shortId = cmpId.split('>').pop()
         const location = comp[jb.core.CT].location
+        const { path } = location
         const { originalProfCode, notFound } = await jb.tgpTextEditor.compTextFromFile(shortId, location, ctx)
         if (notFound) return
         const newCode = jb.utils.prettyPrintComp(cmpId,comp)
@@ -152,7 +152,7 @@ component('reformat', {
         const edit = jb.tgpTextEditor.deltaText(originalProfCode, newCode)
         const hash = jb.tgpTextEditor.calcHash(originalProfCode)
 
-        const props = { cmpId, edit, hash, location }
+        const props = { cmpId, edit, hash, path }
         const cmd = jb.utils.prettyPrint({$: 'upgradeCmp', ...props, cmpId: shortId}, {singleLine: true})
         return { ...props, cmd }
     }

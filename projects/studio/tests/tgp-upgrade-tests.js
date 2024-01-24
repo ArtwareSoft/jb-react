@@ -35,7 +35,7 @@ component('mixedTest.tst1', {
 
 component('mixedTest.createUpgradeScript', {
   doNotRunInTests: true,
-  impl: dataTest(createUpgradeScript(reformat(), { slice: 20 }), equals('', ''), {
+  impl: dataTest(createUpgradeScript(reformat(), { slice: 10 }), equals('', ''), {
     timeout: 10000
   })
 })

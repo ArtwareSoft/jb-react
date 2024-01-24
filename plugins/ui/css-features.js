@@ -164,7 +164,12 @@ component('css.underline', {
 component('css.boxShadow', {
   type: 'feature,dialog-feature',
   params: [
-    {id: 'inset', as: 'boolean', description: 'the box is raised or content is depressed inside the box'},
+    {
+      id: 'inset',
+      as: 'boolean',
+      description: 'the box is raised or content is depressed inside the box',
+      type: 'boolean'
+    },
     {id: 'blurRadius', as: 'string', defaultValue: '5', description: 'bigger and lighter shadow'},
     {id: 'spreadRadius', as: 'string', defaultValue: '0', description: 'just bigger shadow'},
     {id: 'shadowColor', as: 'string', defaultValue: '#000000'},
@@ -185,7 +190,12 @@ component('css.border', {
   params: [
     {id: 'width', as: 'string', defaultValue: '1'},
     {id: 'side', as: 'string', options: 'top,left,bottom,right'},
-    {id: 'style', as: 'string', options: 'solid,dotted,dashed,double,groove,ridge,inset,outset', defaultValue: 'solid'},
+    {
+      id: 'style',
+      as: 'string',
+      options: 'solid,dotted,dashed,double,groove,ridge,inset,outset',
+      defaultValue: 'solid'
+    },
     {id: 'color', as: 'string', defaultValue: 'black'},
     {id: 'selector', as: 'string'}
   ],

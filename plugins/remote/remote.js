@@ -127,33 +127,36 @@ component('remote.copyPassiveData', {
 })
 
 component('remote.shadowResource', {
-    type: 'action<>',
-    description: 'shadow watchable data on remote jbm',
-    params: [
-      {id: 'resourceId', as: 'string' },
-      {id: 'jbm', type: 'jbm<jbm>'},
-    ],
-    impl: runActions(
-        Var('resourceCopy', '%${%$resourceId%}%'),
-        remote.action(runActions(
-            () => 'for loader - jb.watchable.initResourcesRef()',
-            addComponent({id: '%$resourceId%', value: '%$resourceCopy%', type: 'watchableData' }))
-        ,'%$jbm%'),
-        rx.pipe(
-            source.watchableData({ref: '%${%$resourceId%}%', includeChildren: 'yes'}),
-            rx.map(obj(prop('op','%op%'), prop('path',({data}) => jb.db.pathOfRef(data.ref)))),
-            sink.action(remote.action( remote.updateShadowData('%%'), '%$jbm%')
-        ))
-    ),
+  type: 'action<>',
+  description: 'shadow watchable data on remote jbm',
+  params: [
+    {id: 'resourceId', as: 'string'},
+    {id: 'jbm', type: 'jbm<jbm>'}
+  ],
+  impl: runActions(
+    Var('resourceCopy', '%${%$resourceId%}%'),
+    remote.action({
+      action: runActions(
+        () => 'for loader - jb.watchable.initResourcesRef()',
+        addComponent('%$resourceId%', '%$resourceCopy%', { type: 'watchableData' })
+      ),
+      jbm: '%$jbm%'
+    }),
+    rx.pipe(
+      source.watchableData('%${%$resourceId%}%', { includeChildren: 'yes' }),
+      rx.map(obj(prop('op', '%op%'), prop('path', ({data}) => jb.db.pathOfRef(data.ref)))),
+      sink.action(remote.action(remote.updateShadowData('%%'), '%$jbm%'))
+    )
+  )
 })
 
 component('remote.updateShadowData', {
-    type: 'action<>:0',
-    description: 'internal - update shadow on remote jbm',
-    params: [
-        {id: 'entry' },
-    ],
-    impl: (ctx,{path,op}) => {
+  type: 'action<>:0',
+  description: 'internal - update shadow on remote jbm',
+  params: [
+    {id: 'entry'}
+  ],
+  impl: (ctx,{path,op}) => {
         jb.log('shadowData update',{op, ctx})
         const ref = jb.db.refOfPath(path)
         if (!ref)
@@ -166,15 +169,15 @@ component('remote.updateShadowData', {
 /*** net comps */
 
 component('net.listSubJbms', {
-    type: 'rx<>',
-    category: 'source',
-    impl: pipe(
-        () => Object.values(jb.jbm.childJbms || {}),
-        log('test listSubJbms 1'),
-        remote.data(net.listSubJbms(),'%%'),
-        log('test listSubJbms 2'),
-        aggregate(list(() => jb.uri,'%%'))
-    )
+  type: 'rx<>',
+  category: 'source',
+  impl: pipe(
+    () => Object.values(jb.jbm.childJbms || {}),
+    log('test listSubJbms 1'),
+    remote.data(net.listSubJbms(), '%%'),
+    log('test listSubJbms 2'),
+    aggregate(list(() => jb.uri, '%%'))
+  )
 })
 
 component('net.getRootextentionUri', {

@@ -274,7 +274,10 @@ component('followUp.onDataChange', {
     },
     {id: 'action', type: 'action', dynamic: true, description: 'run on change'}
   ],
-  impl: followUp.flow(source.watchableData('%$ref()%', '%$includeChildren%'), sink.action(call('action')))
+  impl: followUp.flow(
+    source.watchableData('%$ref()%', { includeChildren: '%$includeChildren%' }),
+    sink.action(call('action'))
+  )
 })
 
 component('group.data', {

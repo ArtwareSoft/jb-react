@@ -305,8 +305,8 @@ component('controlWithFeatures', {
 component('renderWidget', {
   type: 'action',
   params: [
-    { id: 'control', type: 'control', dynamic: true, mandatory: true },
-    { id: 'selector', as: 'string', defaultValue: 'body' }
+    {id: 'control', type: 'control', dynamic: true, mandatory: true},
+    {id: 'selector', as: 'string', defaultValue: 'body'}
   ],
   impl: (ctx, control, selector) => {
     const el = document.querySelector(selector)

@@ -139,7 +139,7 @@ component('defaultPackage', {
 component('staticViaHttp', {
   type: 'plugin-package',
   params: [
-    {id: 'baseUrl', as: 'string', mandatory: true },
+    {id: 'baseUrl', as: 'string', mandatory: true}
   ],
   impl: ctx => ({ $: 'staticViaHttp', ...ctx.params, useFileSymbolsFromBuild: true })
 })
@@ -147,7 +147,7 @@ component('staticViaHttp', {
 component('jbStudioServer', {
   type: 'plugin-package',
   params: [
-    {id: 'repo', as: 'string' },
+    {id: 'repo', as: 'string'}
   ],
   impl: ctx => repo && ({ $: 'jbStudioServer', ...ctx.params })
 })
@@ -155,7 +155,7 @@ component('jbStudioServer', {
 component('fileSystem', {
   type: 'plugin-package',
   params: [
-    {id: 'baseDir', as: 'string' },
+    {id: 'baseDir', as: 'string'}
   ],
   impl: ctx => ({ $: 'fileSystem', ...ctx.params })
 })
@@ -163,7 +163,7 @@ component('fileSystem', {
 component('zipFile', {
   type: 'plugin-package',
   params: [
-    {id: 'path', as: 'string' },
+    {id: 'path', as: 'string'}
   ],
   impl: ctx => ({ $: 'zipFile',  ...ctx.params })
 })
