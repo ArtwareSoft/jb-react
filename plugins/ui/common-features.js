@@ -2,7 +2,12 @@ component('method', {
   type: 'feature',
   description: 'define backend event handler',
   params: [
-    {id: 'id', as: 'string', mandatory: true, description: 'if using the pattern onXXHandler, or onKeyXXHandler automaticaly binds to UI event XX, assuming on-XX:true is defined at the template'},
+    {
+      id: 'id',
+      as: 'string',
+      mandatory: true,
+      description: 'if using the pattern onXXHandler, or onKeyXXHandler automaticaly binds to UI event XX, assuming on-XX:true is defined at the template'
+    },
     {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
   impl: (ctx,id) => ({method: {id, ctx}})
@@ -14,7 +19,12 @@ component('watchAndCalcModelProp', {
   params: [
     {id: 'prop', as: 'string', mandatory: true},
     {id: 'transformValue', dynamic: true, defaultValue: '%%'},
-    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
+    {
+      id: 'allowSelfRefresh',
+      as: 'boolean',
+      description: 'allow refresh originated from the components or its children',
+      type: 'boolean'
+    },
     {id: 'defaultValue'}
   ],
   impl: ctx => ({watchAndCalcModelProp: ctx.params})
@@ -26,9 +36,20 @@ component('calcProp', {
   params: [
     {id: 'id', as: 'string', mandatory: true},
     {id: 'value', mandatory: true, dynamic: true, description: 'when empty, value is taken from model'},
-    {id: 'priority', as: 'number', dynamic: true, defaultValue: 1, description: 'if same prop was defined elsewhere decides who will override. range 1-1000, can use the $state variable'},
-    {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'},
-    {id: 'defaultValue' },
+    {
+      id: 'priority',
+      as: 'number',
+      dynamic: true,
+      defaultValue: 1,
+      description: 'if same prop was defined elsewhere decides who will override. range 1-1000, can use the $state variable'
+    },
+    {
+      id: 'phase',
+      as: 'number',
+      defaultValue: 10,
+      description: 'props from different features can use each other, phase defines the calculation order'
+    },
+    {id: 'defaultValue'}
   ],
   impl: ctx => ({calcProp: {... ctx.params, index: jb.ui.propCounter++}})
 })
@@ -39,8 +60,19 @@ component('userStateProp', {
   params: [
     {id: 'id', as: 'string', mandatory: true},
     {id: 'value', mandatory: true, dynamic: true, description: 'when empty value is taken from model'},
-    {id: 'priority', as: 'number', dynamic: true, defaultValue: 1, description: 'if same prop was defined elsewhere decides who will override. range 1-1000, can use the $state variable'},
-    {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'}
+    {
+      id: 'priority',
+      as: 'number',
+      dynamic: true,
+      defaultValue: 1,
+      description: 'if same prop was defined elsewhere decides who will override. range 1-1000, can use the $state variable'
+    },
+    {
+      id: 'phase',
+      as: 'number',
+      defaultValue: 10,
+      description: 'props from different features can use each other, phase defines the calculation order'
+    }
   ],
   impl: ctx => ({calcProp: {... ctx.params, userStateProp: true, index: jb.ui.propCounter++}})
 })
@@ -50,7 +82,12 @@ component('calcProps', {
   description: 'define variables to be used in the rendering calculation process',
   params: [
     {id: 'props', as: 'object', mandatory: true, description: 'props as object', dynamic: true},
-    {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'}
+    {
+      id: 'phase',
+      as: 'number',
+      defaultValue: 10,
+      description: 'props from different features can use each other, phase defines the calculation order'
+    }
   ],
   impl: (ctx,propsF,phase) => ({
       calcProp: {id: '$props', value: ctx => propsF(ctx), phase, index: jb.ui.propCounter++ }
@@ -64,7 +101,7 @@ component('feature.initValue', {
   params: [
     {id: 'to', as: 'ref', mandatory: true, dynamic: true},
     {id: 'value', mandatory: true, dynamic: true},
-    {id: 'alsoWhenNotEmpty', as: 'boolean'}
+    {id: 'alsoWhenNotEmpty', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,_to,_value,alsoWhenNotEmpty) => ({ init: { 
     action: (_ctx,{cmp}) => {
@@ -98,7 +135,12 @@ component('feature.init', {
   description: 'activated before calc properties, use initValue or require instead',
   params: [
     {id: 'action', type: 'action', mandatory: true, dynamic: true},
-    {id: 'phase', as: 'number', defaultValue: 10, description: 'init funcs from different features can use each other, phase defines the calculation order'}
+    {
+      id: 'phase',
+      as: 'number',
+      defaultValue: 10,
+      description: 'init funcs from different features can use each other, phase defines the calculation order'
+    }
   ],
   impl: ({},action,phase) => ({ init: { action, phase }})
 })
@@ -146,17 +188,16 @@ component('followUp.flow', {
   params: [
     {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
   ],
-  impl: followUp.action(
-    runActions(
+  impl: followUp.action({
+    action: runActions(
       Var('followUpCmp', '%$cmp%'),
-      //registerCmpFLow(rx.pipe('%$elems()%'), '%$cmp%'),
       Var('pipeToRun', rx.pipe('%$elems()%')),
       (ctx,{cmp,pipeToRun}) => {
         jb.ui.followUps[cmp.cmpId] = jb.ui.followUps[cmp.cmpId] || []
         jb.ui.followUps[cmp.cmpId].push({cmp, pipe: pipeToRun, srcPath: ctx.cmpCtx.callerPath})
-      },
+      }
     )
-  )
+  })
 })
 
 // jb.component('registerCmpFLow', {
@@ -174,9 +215,25 @@ component('watchRef', {
   description: 'subscribes to data changes to refresh component',
   params: [
     {id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data'},
-    {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
-    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
-    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and reinit wait for data', type: 'boolean'},
+    {
+      id: 'includeChildren',
+      as: 'string',
+      options: 'yes,no,structure',
+      defaultValue: 'no',
+      description: 'watch childern change as well'
+    },
+    {
+      id: 'allowSelfRefresh',
+      as: 'boolean',
+      description: 'allow refresh originated from the components or its children',
+      type: 'boolean'
+    },
+    {
+      id: 'strongRefresh',
+      as: 'boolean',
+      description: 'rebuild the component and reinit wait for data',
+      type: 'boolean'
+    },
     {id: 'cssOnly', as: 'boolean', description: 'refresh only css features', type: 'boolean'},
     {id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority'},
     {id: 'methodBeforeRefresh', as: 'string', description: 'cmp method to run before refreshing'}
@@ -208,7 +265,13 @@ component('followUp.onDataChange', {
   description: 'watch observable data reference, subscribe and run action',
   params: [
     {id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data'},
-    {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
+    {
+      id: 'includeChildren',
+      as: 'string',
+      options: 'yes,no,structure',
+      defaultValue: 'no',
+      description: 'watch childern change as well'
+    },
     {id: 'action', type: 'action', dynamic: true, description: 'run on change'}
   ],
   impl: followUp.flow(source.watchableData('%$ref()%', '%$includeChildren%'), sink.action(call('action')))
@@ -221,7 +284,13 @@ component('group.data', {
     {id: 'data', mandatory: true, dynamic: true, as: 'ref'},
     {id: 'itemVariable', as: 'string', description: 'optional. define data as a local variable'},
     {id: 'watch', as: 'boolean', type: 'boolean'},
-    {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'}
+    {
+      id: 'includeChildren',
+      as: 'string',
+      options: 'yes,no,structure',
+      defaultValue: 'no',
+      description: 'watch childern change as well'
+    }
   ],
   impl: ({}, refF, itemVariable,watch,includeChildren) => ({
       ...(watch ? {watchRef: { refF, includeChildren }} : {}),
@@ -281,7 +350,7 @@ component('watchable', {
   description: 'define a watchable variable',
   params: [
     {id: 'name', as: 'string', mandatory: true},
-    {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
+    {id: 'value', dynamic: true, defaultValue: '', mandatory: true}
   ],
   impl: ({}, name, value) => ({
     destroy: cmp => {
@@ -306,7 +375,7 @@ component('variable', {
   description: 'define a constant passive variable',
   params: [
     {id: 'name', as: 'string', mandatory: true},
-    {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
+    {id: 'value', dynamic: true, defaultValue: '', mandatory: true}
   ],
   impl: ({}, name, value) => ({ extendCtx: ctx => ctx.setVar(name,jb.val(value(ctx))) })
 })
@@ -373,7 +442,12 @@ component('refreshControlById', {
   type: 'action',
   params: [
     {id: 'id', as: 'string', mandatory: true},
-    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and reinit wait for data', type: 'boolean'},
+    {
+      id: 'strongRefresh',
+      as: 'boolean',
+      description: 'rebuild the component and reinit wait for data',
+      type: 'boolean'
+    },
     {id: 'cssOnly', as: 'boolean', description: 'refresh only css features', type: 'boolean'}
   ],
   impl: (ctx,id) => {
@@ -386,11 +460,13 @@ component('refreshControlById', {
 
 component('group.autoFocusOnFirstInput', {
   type: 'feature',
-  impl: templateModifier(({},{vdom}) => {
+  impl: templateModifier({
+    value: ({},{vdom}) => {
     const elem = vdom.querySelectorAll('input,textarea,select').filter(e => e.getAttribute('type') != 'checkbox')[0]
     if (elem)
       elem.setAttribute('$focus','autoFocusOnFirstInput')
     return vdom
+  }
   })
 })
 
@@ -418,7 +494,11 @@ component('feature.userEventProps', {
   type: 'feature',
   description: 'add data to the event sent from the front end',
   params: [
-    {id: 'props', as: 'string', description: 'comma separated props to take from the original event e.g., altKey,ctrlKey'}
+    {
+      id: 'props',
+      as: 'string',
+      description: 'comma separated props to take from the original event e.g., altKey,ctrlKey'
+    }
   ],
   impl: (ctx, prop) => ({userEventProps: prop })
 })
@@ -427,10 +507,10 @@ component('runFEMethod', {
   type: 'action',
   description: 'invoke FE Method from the backend. used with library objects like codemirror',
   params: [
-    {id: 'selector', as: 'string' },    
-    {id: 'method',as :'string'},
-    {id: 'data' },
-    {id: 'vars' },
+    {id: 'selector', as: 'string'},
+    {id: 'method', as: 'string'},
+    {id: 'data'},
+    {id: 'vars'}
   ],
   impl: (ctx, selector, method, data, vars) => {
     const elem = jb.ui.elemOfSelector(selector,ctx)

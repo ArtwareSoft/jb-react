@@ -60,6 +60,7 @@ component('text.alignToBottom', {
 
  jb.defComponents('1,2,3,4,5,6'.split(','), 
   level=> component(`header.h${level}`, ({
+    autoGen: true,
     type: 'text.style',
     params: [
       { id: 'level', as: 'string', defaultValue: level }
@@ -80,17 +81,17 @@ component('text.h2WithClass', {
 
  jb.defComponents('1,2,3,4,5,6'.split(','), 
   level=> component(`header.mdcHeadline${level}`, 
-    ({type: 'text.style', impl: {$: 'text.h2WithClass', clz: `mdc-typography mdc-typography--headline${level}`}})
+    ({autoGen: true, type: 'text.style', impl: {$: 'text.h2WithClass', clz: `mdc-typography mdc-typography--headline${level}`}})
 ))
 
  jb.defComponents('1,2'.split(','), 
   level=> component(`header.mdcSubtitle${level}`, 
-    ({type: 'text.style', impl: {$: 'text.h2WithClass', clz: `header.mdcSubtitle${level}`}})
+    ({autoGen: true, type: 'text.style', impl: {$: 'text.h2WithClass', clz: `header.mdcSubtitle${level}`}})
 ))
 
  jb.defComponents('1,2'.split(','), 
   level => component(`header.mdcBody${level}`, 
-    ({type: 'text.style', impl: {$: 'text.h2WithClass', clz: `mdc-typography mdc-typography--body${level}`}})
+    ({autoGen: true, type: 'text.style', impl: {$: 'text.h2WithClass', clz: `mdc-typography mdc-typography--body${level}`}})
 ))
 
 component('text.textarea', {

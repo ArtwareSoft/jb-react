@@ -241,6 +241,7 @@ component('css.conditionalClass', {
 
  jb.defComponents('layout,typography,detailedBorder,detailedColor,gridArea'.split(','), 
   id => component(`css.${id}`, ({
+    autoGen: true,
     type: 'feature:0',
     params: [
       {id: 'css', mandatory: true, as: 'string'}

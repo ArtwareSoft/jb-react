@@ -78,16 +78,18 @@ component('feature.serviceRegistey', {
 component('service.registerBackEndService', {
   type: 'data',
   params: [
-    { id: 'id', as: 'string', mandatory: true, dynamic: true },
-    { id: 'service', mandatory: true, dynamic: true },
-    { id: 'allowOverride', as: 'boolean', type: 'boolean' }
+    {id: 'id', as: 'string', mandatory: true, dynamic: true},
+    {id: 'service', mandatory: true, dynamic: true},
+    {id: 'allowOverride', as: 'boolean', type: 'boolean'}
   ],
-  impl: feature.init((ctx, { $serviceRegistry }, { id, service, allowOverride }) => {
+  impl: feature.init({
+    action: (ctx, { $serviceRegistry }, { id, service, allowOverride }) => {
     const _id = id(ctx), _service = service(ctx)
     jb.log('register service', { id: _id, service: _service, ctx: ctx.cmpCtx })
     if ($serviceRegistry.services[_id] && !allowOverride)
       jb.logError('overridingService ${_id}', { id: _id, service: $serviceRegistry.services[_id], service: _service, ctx })
     $serviceRegistry.services[_id] = _service
+  }
   })
 })
 
@@ -212,9 +214,9 @@ extension('ui', 'beautify', {
 component('action.applyDeltaToCmp', {
   type: 'action',
   params: [
-    { id: 'delta', mandatory: true },
-    { id: 'cmpId', as: 'string', mandatory: true },
-    { id: 'assumedVdom' },
+    {id: 'delta', mandatory: true},
+    {id: 'cmpId', as: 'string', mandatory: true},
+    {id: 'assumedVdom'}
   ],
   impl: (ctx, delta, cmpId, assumedVdom) => jb.ui.applyDeltaToCmp({ ctx, delta, cmpId, assumedVdom })
 })
@@ -222,8 +224,8 @@ component('action.applyDeltaToCmp', {
 component('sink.applyDeltaToCmp', {
   type: 'rx',
   params: [
-    { id: 'delta', dynamic: true, mandatory: true },
-    { id: 'cmpId', as: 'string', mandatory: true },
+    {id: 'delta', dynamic: true, mandatory: true},
+    {id: 'cmpId', as: 'string', mandatory: true}
   ],
   impl: sink.action(action.applyDeltaToCmp('%$delta()%', '%$cmpId%'))
 })
@@ -232,8 +234,8 @@ component('action.focusOnCmp', {
   description: 'runs both in FE and BE',
   type: 'action',
   params: [
-    { id: 'description', as: 'string' },
-    { id: 'cmpId', as: 'string', defaultValue: '%$cmp/cmpId%' },
+    {id: 'description', as: 'string'},
+    {id: 'cmpId', as: 'string', defaultValue: '%$cmp/cmpId%'}
   ],
   impl: (ctx, desc, cmpId) => {
     const frontEndElem = jb.path(ctx.vars.cmp, 'base')

@@ -221,6 +221,7 @@ extension('tgp', 'readOnly', {
  jb.defComponents(
 'isArrayType,parentPath,shortTitle,summary,isDisabled,enumOptions,propName,paramDef,paramType,moreParams,paramsOfPath,firstChildOfPath,canWrapWithArray'
 	.split(','), f => component(`tgp.${f}`, { 
+	autoGen: true,
 	params: [
 		{id: 'path', as: 'string', mandatory: true},
 		{id: 'func', as: 'string', defaultValue: f}

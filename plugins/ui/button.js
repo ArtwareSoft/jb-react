@@ -18,13 +18,16 @@ component('button.initAction', {
   impl: features(
     watchAndCalcModelProp('title'),
     watchAndCalcModelProp('raised'),
-    method('onclickHandler', (ctx,{cmp, ev, $model}) => {
+    method({
+      id: 'onclickHandler',
+      action: (ctx,{cmp, ev, $model}) => {
       if (jb.path(ev,'ev.ctrlKey'))
         cmp.runBEMethod('ctrlAction',ctx.data,ctx.vars)
       else if (jb.path(ev,'ev.alyKey'))
         cmp.runBEMethod('altAction',ctx.data,ctx.vars)
       else
         $model.action(ctx)
+    }
     }),
     feature.userEventProps('ctrlKey,altKey'),
     () => ({studioFeatures :{$: 'feature.contentEditable', param: 'title' }})
@@ -37,10 +40,13 @@ component('button.initDisabled', {
   impl: features(
     watchAndCalcModelProp('title'),
     watchAndCalcModelProp('raised'),
-    frontEnd.method('disable', ({data},{el}) => { 
+    frontEnd.method({
+      method: 'disable',
+      action: ({data},{el}) => { 
       const btn = jb.ui.findIncludeSelf(el,'button')[0]
       if (btn)
         data ? btn.setAttribute('disabled',data) : btn.removeAttribute('disabled')
+    }
     }),
     frontEnd.flow(
       source.event('click'),
@@ -49,13 +55,16 @@ component('button.initDisabled', {
       rx.do(action.runFEMethod('disable', false)),
       sink.action()
     ),
-    method('handleClick', (ctx,{cmp, ev, $model}) => {
+    method({
+      id: 'handleClick',
+      action: (ctx,{cmp, ev, $model}) => {
       if (jb.path(ev,'ev.ctrlKey'))
         cmp.runBEMethod('ctrlAction',ctx.data,ctx.vars)
       else if (jb.path(ev,'ev.alyKey'))
         cmp.runBEMethod('altAction',ctx.data,ctx.vars)
       else
         $model.action(ctx)
+    }
     }),
     feature.userEventProps('ctrlKey,altKey'),
     () => ({studioFeatures :{$: 'feature.contentEditable', param: 'title' }})

@@ -28,14 +28,16 @@ extension('tgpTextEditor','upgrade', {
         const docText = jbHost.fs.readFileSync(fullPath, 'utf-8')
         const lines = docText.split('\n')
         const compLine = jb.utils.indexOfCompDeclarationInTextLines(lines,cmpId)
-        if (compLine == -1)
-            return jb.logError(`upgradeCmp can not find cmp ${cmpId} in file ${path}`, { ctx })
+        if (compLine == -1) {
+            jb.logError(`compTextFromFile can not find cmp ${cmpId} in file ${path}`, { ctx })
+            return { notFound : true }
+        }
         const linesFromComp = lines.slice(compLine)
         const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
         const nextjbComponent = lines.slice(compLine+1).findIndex(line => line.match(/^component/))
         if (nextjbComponent != -1 && nextjbComponent < compLastLine)
-           return jb.logError(`upgradeCmp - can not find last line of cmp ${cmpId} in file ${path}`, { ctx })
-        return linesFromComp.slice(0,compLastLine+1).join('\n')
+           return jb.logError(`compTextFromFile can not find last line of cmp ${cmpId} in file ${path}`, { ctx })
+        return { originalProfCode: linesFromComp.slice(0,compLastLine+1).join('\n') }
     }
 })
 
@@ -83,7 +85,7 @@ component('createUpgradeScript', {
         {id: 'slice', as: 'number' },
     ],
     impl: async (ctx,upgrade,fn,cmps,slice) => {
-        const cmds = cmps.filter(id=>!id.match(/^dataResource\./)).slice(0,100)
+        const cmds = cmps.filter(id=>!id.match(/^dataResource\./))
             .map(id => upgrade(ctx.setData(id))).filter(x=>x && x.edit && !x.lostInfo).slice(0,slice).map(x=>x.cmd)
         const script = `//#sourceCode { "project": ["studio"], "plugins": ["*"] }
 //#main 
@@ -136,9 +138,11 @@ component('reformat', {
     ],
     impl: (ctx,cmpId) => {
         const comp = jb.comps[cmpId]
+        if (comp.autoGen) return
         const shortId = cmpId.split('>').pop()
         const path = '[JB_BASE]' + comp[jb.core.CT].location.path
-        const originalProfCode = jb.tgpTextEditor.compTextFromFile(cmpId, path, ctx)
+        const { originalProfCode, notFound } = jb.tgpTextEditor.compTextFromFile(shortId, path, ctx)
+        if (notFound) return
         const newCode = jb.utils.prettyPrintComp(cmpId,comp)
         if (originalProfCode == newCode) return
         const edit = jb.tgpTextEditor.deltaText(originalProfCode, newCode)

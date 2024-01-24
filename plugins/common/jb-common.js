@@ -282,6 +282,7 @@ component('math.div', {
 
  jb.defComponents('abs,acos,acosh,asin,asinh,atan,atan2,atanh,cbrt,ceil,clz32,cos,cosh,exp,expm1,floor,fround,hypot,log2,random,round,sign,sin,sinh,sqrt,tan,tanh,trunc'
   .split(','), f => component(`math.${f}`, {
+    autoGen: true,
     category: 'math:70',
     params: [
       {id: 'func', as: 'string', defaultValue: f}
@@ -592,7 +593,7 @@ component('extend', {
   impl: (ctx,properties) =>
 		Object.assign({}, ctx.data, jb.objFromEntries(properties.map(p=>[p.title, jb.core.tojstype(p.val(ctx),p.type)])))
 })
-component('assign', jb.utils.getUnresolvedProfile('extend'))
+component('assign', { autoGen: true, ...jb.utils.getUnresolvedProfile('extend'), [jb.core.CT]: null})
 
 component('extendWithIndex', {
   type: 'aggregator',

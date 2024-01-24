@@ -1,16 +1,16 @@
 dsl('location')
 
-component('city' , {
+component('city', {
   type: 'settlement',
   params: [
-    { id: 'name', as: 'string'}
+    {id: 'name', as: 'string'}
   ]
 })
 
-component('village' , {
+component('village', {
   type: 'settlement',
   params: [
-    { id: 'name', as: 'string'}
+    {id: 'name', as: 'string'}
   ]
 })
 
@@ -19,8 +19,7 @@ component('state', {
   params: [
     {id: 'capital', type: 'settlement'},
     {id: 'cities', type: 'settlement[]'}
-  ],
-  impl: ({params}) => params
+  ]
 })
 
 component('israel', {
@@ -50,10 +49,10 @@ component('pipeline', {
   impl: village()
 })
 
-component('nameOfCity' , {
+component('nameOfCity', {
   type: 'data<>',
   params: [
-    { id: 'city', type: 'settlement'}
+    {id: 'city', type: 'settlement'}
   ],
   impl: '%$city/name%'
 })

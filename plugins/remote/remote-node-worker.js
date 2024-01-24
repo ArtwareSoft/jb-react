@@ -100,9 +100,9 @@ component('remoteNodeWorker', {
   type: 'jbm',
   params: [
     {id: 'id', as: 'string'},
-    {id: 'sourceCode', type: 'source-code', byName: true, defaultValue: treeShakeClientWithPlugins() },
+    {id: 'sourceCode', type: 'source-code', byName: true, defaultValue: treeShakeClientWithPlugins()},
     {id: 'init', type: 'action', dynamic: true},
-    {id: 'nodeContainerUrl', as: 'string', defaultValue: 'http://localhost:8082'},
+    {id: 'nodeContainerUrl', as: 'string', defaultValue: 'http://localhost:8082'}
   ],
   impl: async (ctx,_id,sourceCode,init,nodeContainerUrl) => {
         const id = (_id || 'nodeWorker1').replace(/-/g,'__')

@@ -154,6 +154,7 @@ component('vega.filterExpression', {
 
  jb.defComponents('equal,lt,lte,gt,gte'.split(','),
     op=> component(`vega.${op}`, ({
+        autoGen: true,
         type: 'vega.boolean',
         params: [
             {id: 'field', as: 'string', mandatory: true },
@@ -165,6 +166,7 @@ component('vega.filterExpression', {
 
  jb.defComponents('range,oneOf'.split(','),
     op=> component(`vega.${op}`, ({
+        autoGen: true,
         type: 'vega.boolean',
     params: [
         {id: 'field', as: 'string', mandatory: true },
@@ -189,6 +191,7 @@ component('vega.inSelection', {
 
  jb.defComponents('bar,circle,square,text,rule,point,geoshape,tick,errorband'.split(','), 
     type => component(`vega.${type}`, ({
+        autoGen: true,
         type: 'vega.mark',
         params: [
             {id: 'props', type: 'vega.markProps[]', as: 'array' },

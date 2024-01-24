@@ -101,7 +101,8 @@ component('tgp.ref', {
   impl: (ctx,path) => jb.tgp.ref(path)
 })
 
- jb.defComponents('pathOfRef,nameOfRef'.split(','), f => component(`tgp.${f}`, { 
+ jb.defComponents('pathOfRef,nameOfRef'.split(','), f => component(`tgp.${f}`, {
+	autoGen: true,
 	params: [
 		{id: 'ref', defaultValue: '%%', mandatory: true},
 		{id: 'func', as: 'string', defaultValue: f}

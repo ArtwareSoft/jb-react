@@ -107,7 +107,7 @@ extension('utils', 'core', {
     },
     resolveUnTypedProfile(comp, depth) {
       const CT = jb.core.CT
-//      if (comp[CT].idOfUnresolvedType == 'israel') debugger
+      //if (comp[CT].idOfUnresolvedType == 'assign') debugger
       if (! comp)
         return 'data'
       if (depth < 1) 

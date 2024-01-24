@@ -51,7 +51,13 @@ component('animation.stagger', {
   description: 'animate group - distribute different animation values between group members',
   params: [
     {id: 'val', mandatory: true, type: 'animation.stager-val', description: 'value range', dynamic: true},
-    {id: 'from', as: 'string', options: 'first,last,center', description: 'Starts the stagger effect from a specific position', defaultValue: 'first'},
+    {
+      id: 'from',
+      as: 'string',
+      options: 'first,last,center',
+      description: 'Starts the stagger effect from a specific position',
+      defaultValue: 'first'
+    },
     {id: 'direction', options: ',reverse', description: 'e.g. 20'},
     {id: 'easing', type: 'animation.easing'},
     {id: 'grid', type: 'animation.stager-grid'}
@@ -99,7 +105,13 @@ component('animation.direction', {
   description: 'supports reverse, go back to origin',
   type: 'animation',
   params: [
-    {id: 'direction', mandatory: true, as: 'string', options: ',reverse,alternate', description: 'alternate goes back to origin'}
+    {
+      id: 'direction',
+      mandatory: true,
+      as: 'string',
+      options: ',reverse,alternate',
+      description: 'alternate goes back to origin'
+    }
   ],
   impl: ctx => jb.animate.fixValues(ctx.params)
 })
@@ -135,7 +147,11 @@ component('animation.moveTo', {
 component('animation.rotate', {
   type: 'animation',
   params: [
-    {id: 'rotate', type: 'animation.val', description: 'degree units, e.g. 20 , +=10, *=2, 1turn, list(20,270)'},
+    {
+      id: 'rotate',
+      type: 'animation.val',
+      description: 'degree units, e.g. 20 , +=10, *=2, 1turn, list(20,270)'
+    },
     {id: 'rotateX', type: 'animation.val'},
     {id: 'rotateY', type: 'animation.val'},
     {id: 'rotateZ', type: 'animation.val'}
@@ -169,7 +185,12 @@ component('animation.perspective', {
   type: 'animation',
   category: '3D',
   params: [
-    {id: 'perspective', type: 'animation.val', description: 'e.g. 100 , +=10, *=2, list(10,20)', mandatory: true}
+    {
+      id: 'perspective',
+      type: 'animation.val',
+      description: 'e.g. 100 , +=10, *=2, list(10,20)',
+      mandatory: true
+    }
   ],
   impl: ctx => jb.animate.fixValues(ctx.params)
 })
@@ -188,7 +209,13 @@ component('animation.inOutEasing', {
   description: 'Robert Penner easing functions',
   type: 'animation.easing',
   params: [
-    {id: 'method', as: 'string', options: 'Quad,Cubic,Quart,Quint,Sine,Expo,Circ,Back,Bounce', defaultValue: 'Quad', mandatory: true},
+    {
+      id: 'method',
+      as: 'string',
+      options: 'Quad,Cubic,Quart,Quint,Sine,Expo,Circ,Back,Bounce',
+      defaultValue: 'Quad',
+      mandatory: true
+    },
     {id: 'inOut', as: 'string', options: 'In,Out,InOut', defaultValue: 'InOut', mandatory: true}
   ],
   impl: (ctx,method,inOut) => `ease${inOut}${method}`
@@ -199,7 +226,12 @@ component('animation.elasticEasing', {
   params: [
     {id: 'inOut', as: 'string', options: 'in,out,inOut', templateValue: 'inOut'},
     {id: 'amplitude', as: 'string', description: '1-10  Controls the overshoot of the curve', templateValue: '1'},
-    {id: 'period', as: 'string', description: '0.1-2 Controls how many times the curve goes back and forth', templateValue: '0.5'}
+    {
+      id: 'period',
+      as: 'string',
+      description: '0.1-2 Controls how many times the curve goes back and forth',
+      templateValue: '0.5'
+    }
   ],
   impl: (ctx,inOut,amplitude,period) => `ease${inOut}Elastic(${amplitude},${period})`
 })

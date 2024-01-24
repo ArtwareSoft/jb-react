@@ -11,7 +11,7 @@ component('text', {
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-component('label', {...jb.comps.text,type: 'depricated-control'} )
+component('label', {...jb.comps.text,type: 'depricated-control', autoGen: true })
 
 component('text.bindText', {
   type: 'feature',

@@ -88,7 +88,8 @@ component('styleGallery.controlVariations', {
 
 
  jb.defComponents('button,text,editableText,editableNumber,editableBoolean,group,itemlist,picklist,image,multiSelect'.split(','),
-  ctrl => component(`styleGallery.${ctrl}`, ({ 
+  ctrl => component(`styleGallery.${ctrl}`, ({
+    autoGen: true,
     type: 'control',
     params: [
       {id: 'ctrl', as: 'string', defaultValue: ctrl}

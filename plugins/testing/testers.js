@@ -10,7 +10,7 @@ component('dataTest', {
     {id: 'allowError', as: 'boolean', dynamic: true, type: 'boolean'},
     {id: 'cleanUp', type: 'action', dynamic: true},
     {id: 'expectedCounters', as: 'single'},
-    {id: 'covers', as : 'array' }
+    {id: 'covers', as: 'array'}
   ],
   impl: function(ctx,calculate,expectedResult,runBefore,timeout,allowError,cleanUp,expectedCounters) {
 		const {testID,singleTest,uiTest, engineForTest }  = ctx.vars
@@ -263,46 +263,51 @@ component('source.testsResults', {
     {id: 'tests', as: 'array'},
     {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self()}
   ],
-  impl: source.remote(
-    rx.pipe(
+  impl: source.remote({
+    rx: rx.pipe(
       source.data('%$tests%'),
       rx.var('testID'),
-      rx.concatMap(
-        source.merge(
+      rx.concatMap({
+        func: source.merge(
           source.data(obj(prop('id', '%%'), prop('started', 'true'))),
           rx.pipe(source.promise(({},{testID}) => jb.test.runSingleTest(testID)))
         )
-      )
+      })
     ),
-    '%$jbm%'
-  )
+    jbm: '%$jbm%'
+  })
 })
 
 component('tests.runner', {
-	type: 'action',
-	params: [
-		{id: 'tests', as: 'array' },
-		{id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self() },
-		{id: 'rootElemId', as: 'string'}
-	],
-	impl: runActions(
-		Var('rootElem', ({},{},{rootElemId}) => jb.frame.document.getElementById(rootElemId)),
-		({},{rootElem},{tests}) => rootElem.innerHTML = `<div style="font-size: 20px"><div id="progress"></div><span id="fail-counter" onclick="jb.test.hide_success_lines()"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span><span id="memory-usage"></span></div>`,
-		rx.pipe(
-			source.testsResults('%$tests%','%$jbm%'),
-			rx.resource('acc',() => ({ index: 0, success_counter: 0, fail_counter: 0, startTime: new Date().getTime() })),
-			rx.var('testID','%id%'),
-			rx.do(({data},{acc, testID, rootElem}) => {
+  type: 'action',
+  params: [
+    {id: 'tests', as: 'array'},
+    {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self()},
+    {id: 'rootElemId', as: 'string'}
+  ],
+  impl: runActions(
+    Var('rootElem', ({},{},{rootElemId}) => jb.frame.document.getElementById(rootElemId)),
+    ({},{rootElem},{tests}) => rootElem.innerHTML = `<div style="font-size: 20px"><div id="progress"></div><span id="fail-counter" onclick="jb.test.hide_success_lines()"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span><span id="memory-usage"></span></div>`,
+    rx.pipe(
+      source.testsResults('%$tests%',{ jbm: '%$jbm%' }),
+      rx.resource({
+        name: 'acc',
+        value: () => ({ index: 0, success_counter: 0, fail_counter: 0, startTime: new Date().getTime() })
+      }),
+      rx.var('testID', '%id%'),
+      rx.do({
+        action: ({data},{acc, testID, rootElem}) => {
 				rootElem.querySelector('#progress').innerHTML = `<div id=${testID}>${acc.index++}: ${testID} ${data.started?'started':'finished'}</div>`
 				if (!data.started) {
 					data.success ? acc.success_counter++ : acc.fail_counter++;
 					jb.test.addHTML(rootElem, jb.test.testResultHtml(data))
 					jb.test.updateTestHeader(rootElem,acc)
 				}
-			}),
-			sink.action(()=>{})
-		)
-	)
+			}
+      }),
+      sink.action(()=>{})
+    )
+  )
 })
 
 component('test', {
@@ -311,16 +316,12 @@ component('test', {
     {id: 'filePath', as: 'string'},
     {id: 'repo', as: 'string'}
   ],
-  impl: sourceCode(
-    [
-      pluginsByPath('%$filePath%', true),
-      plugins('testing,probe-preview,tree-shake,tgp,workspace')
-    ],
-    [
-      defaultPackage(),
-      jbStudioServer('%$repo%')
-    ]
-  )
+  impl: sourceCode(pluginsByPath('%$filePath%', true), plugins('testing,probe-preview,tree-shake,tgp,workspace'), {
+    pluginPackages: [
+    defaultPackage(),
+    jbStudioServer('%$repo%')
+  ]
+  })
 })
 
 component('PROJECTS_PATH', { passiveData : '/home/shaiby/projects' // 'c:/projects' 

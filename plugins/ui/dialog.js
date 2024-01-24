@@ -26,6 +26,7 @@ component('openDialog', {
 })
 
 component('openDialog.probe', {
+	autoGen: true,
 	type: 'control:0',
 	params: jb.utils.getUnresolvedProfile('openDialog').params,
 	impl: ctx => jb.ui.ctrl(ctx.setVar('$dialog',{}), dialog.init()).renderVdom(),

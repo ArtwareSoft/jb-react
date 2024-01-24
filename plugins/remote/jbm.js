@@ -8,11 +8,11 @@ component('worker', {
     {id: 'init', type: 'action<>', dynamic: true},
     {id: 'networkPeer', as: 'boolean', description: 'used for testing', type: 'boolean'}
   ],
-  impl: If(
-    () => globalThis.jbHost.isNode,
-    remoteNodeWorker({id: '%$id%', sourceCode: '%$sourceCode%', init: '%$init()%'}),
-    webWorker({id: '%$id%', sourceCode: '%$sourceCode%', init: '%$init()%', networkPeer: '%$networkPeer%'})
-  )
+  impl: If({
+    condition: () => globalThis.jbHost.isNode,
+    then: remoteNodeWorker('%$id%', { sourceCode: '%$sourceCode%', init: '%$init()%' }),
+    Else: webWorker('%$id%', { sourceCode: '%$sourceCode%', init: '%$init()%', networkPeer: '%$networkPeer%' })
+  })
 })
 
 // remoteNodeWorker({
@@ -30,11 +30,11 @@ component('worker', {
 component('webWorker', {
   type: 'jbm',
   params: [
-      {id: 'id', as: 'string'},
-      {id: 'sourceCode', type: 'source-code', byName: true, defaultValue: treeShakeClient() },
-      {id: 'init' , type: 'action<>', dynamic: true },
-      {id: 'networkPeer', as: 'boolean', description: 'used for testing' },
-  ],    
+    {id: 'id', as: 'string'},
+    {id: 'sourceCode', type: 'source-code', byName: true, defaultValue: treeShakeClient()},
+    {id: 'init', type: 'action<>', dynamic: true},
+    {id: 'networkPeer', as: 'boolean', description: 'used for testing', type: 'boolean'}
+  ],
   impl: (ctx,_id,sourceCode,init,networkPeer) => {
       const id = (_id || 'w1').replace(/-/g,'__')
       const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
@@ -83,13 +83,13 @@ Promise.resolve(jbInit('${workerUri}', ${JSON.stringify(sourceCode)})
 })
 
 component('child', {
-    type: 'jbm',
-    params: [
-        {id: 'id', as: 'string'},
-        {id: 'sourceCode', type: 'source-code', byName: true, defaultValue: treeShakeClient() },
-        {id: 'init', type: 'action', dynamic: true}
-    ],
-    impl: (ctx,_id,sourceCode,init) => {
+  type: 'jbm',
+  params: [
+    {id: 'id', as: 'string'},
+    {id: 'sourceCode', type: 'source-code', byName: true, defaultValue: treeShakeClient()},
+    {id: 'init', type: 'action', dynamic: true}
+  ],
+  impl: (ctx,_id,sourceCode,init) => {
         const id = _id || 'child1'
         if (jb.jbm.childJbms[id]) return jb.jbm.childJbms[id]
         const childUri = `${jb.uri}•${id}`
@@ -130,13 +130,13 @@ component('child', {
 })
 
 component('cmd', {
-    type: 'jbm',
-    params: [
-        {id: 'sourceCode', type: 'source-code', mandatory: true },
-        {id: 'viaHttpServer', as: 'string', defaultValue: 'http://localhost:8082'},
-        {id: 'id', as: 'string'}
-    ],
-    impl: (ctx,_sourceCode,viaHttpServer,id) => ({
+  type: 'jbm',
+  params: [
+    {id: 'sourceCode', type: 'source-code', mandatory: true},
+    {id: 'viaHttpServer', as: 'string', defaultValue: 'http://localhost:8082'},
+    {id: 'id', as: 'string'}
+  ],
+  impl: (ctx,_sourceCode,viaHttpServer,id) => ({
         uri: id || 'main',
         remoteExec: async (sctx,{data, action} = {}) => {
             const plugins = pluginsOfProfile([(data || action).profile, jb.path(sctx,'cmpCtx.params')])
@@ -198,7 +198,7 @@ component('cmd', {
 component('byUri', {
   type: 'jbm',
   params: [
-      { id: 'uri', as: 'string', dynamic: true}
+    {id: 'uri', as: 'string', dynamic: true}
   ],
   impl: ({},_uri) => {
       const uri = _uri()
@@ -271,10 +271,10 @@ component('parent', {
 
 component('jbm.start', {
   type: 'data<>,action<>',
-  params: [ 
-      {id: 'jbm', type: 'jbm', mandatory: true}
+  params: [
+    {id: 'jbm', type: 'jbm', mandatory: true}
   ],
-  impl: pipe('%$jbm%', '%rjbm()%' ,'%$jbm%',first())
+  impl: pipe('%$jbm%', '%rjbm()%', '%$jbm%', first())
 })
 
 // component('jbm.terminateChild', {
