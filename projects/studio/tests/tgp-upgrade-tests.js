@@ -1,17 +1,17 @@
 component('test.mixedTest.disabled', {
-  impl: split({separator: ';', part: 'first', disabled: true})
-})
-
-component('mixedTest.disabled', {
-  impl: mixedMigrationTest('test.mixedTest.disabled', contains('{disabled: true'))
-})
-
-component('mixedTest.group', {
-  impl: dataTest(typeAdapter('cmp-upgrade<upgrade>', upgradeMixed('uiTest.group')), isNull('%edit%'))
+  impl: split(';', {
+    disabled: true,
+    text: pipeline('%%','dfssdaasdasdadasd','sdfsdfsd','dsfsdfsdfsd sdfsdf'),
+    part: 'second'
+  })
 })
 
 component('mixedTest.tst1Helper', {
-  impl: contains(['hello world','2'])
+  impl: dataTest({
+    calculate: pipeline(typeAdapter('cmp-upgrade<upgrade>', upgradeMixed('uiTest.group'))),
+    expectedResult: notNull('%edit%'),
+    runBefore: TBD()
+  })
 })
 
 component('mixedTest.tst1', {

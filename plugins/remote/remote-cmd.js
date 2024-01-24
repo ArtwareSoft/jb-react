@@ -11,7 +11,7 @@ component('remote.cmd', {
     ],
     impl: async (ctx, main, wrap, context, sourceCode, id, viaHttpServer) => {
         const args = [
-            ['-main', jb.utils.prettyPrint(main.profile, { forceFlat: true })],
+            ['-main', jb.utils.prettyPrint(main.profile, { singleLine: true })],
             ['-wrap', wrap],
             ['-uri', id],
             ['-sourceCode', JSON.stringify(sourceCode)],

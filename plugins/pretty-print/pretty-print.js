@@ -1,7 +1,7 @@
 component('prettyPrint', {
   params: [
     {id: 'profile', defaultValue: '%%'},
-    {id: 'forceFlat', as: 'boolean', type: 'boolean'},
+    {id: 'singleLine', as: 'boolean', type: 'boolean'},
     {id: 'noMacros', as: 'boolean' }
   ],
   impl: (ctx,profile) => jb.utils.prettyPrint(jb.val(profile),{ ...ctx.params })
@@ -33,14 +33,13 @@ extension('utils', 'prettyPrint', {
     return { line: line + noOfLines, col: newCol }
   },
 
-  prettyPrintWithPositions(val,{colWidth=100,tabSize=2,initialPath='',noMacros,forceFlat, depth, mixed} = {}) {
-    //mixed = true
+  prettyPrintWithPositions(val,{colWidth=100,tabSize=2,initialPath='',noMacros,singleLine, depth, noMixed} = {}) {
     const props = {}
     if (!val || typeof val !== 'object')
       return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
 
     calcValueProps(val,initialPath)
-    const tokens = calcTokens(initialPath, depth || 1, forceFlat)
+    const tokens = calcTokens(initialPath, depth || 1, singleLine)
     const res = aggregateTokens(tokens,{line:0, col: 0})
     res.text = res.text.replace(jb.utils.fixedNLRegExp,'\n')
     return res
@@ -70,78 +69,38 @@ extension('utils', 'prettyPrint', {
       return { text, map, tokens}
     }
 
-    function calcTokens(path, depth = 1, forceFlat) {
+    function calcTokens(path, depth = 1, useSingleLine) {
       if (depth > 100)
         throw `prettyprint structure too deep ${path}`
-      const { open, close, isArray, len, singleParamAsArray, primitiveArray, longInnerValInArray, singleFunc, nameValuePattern, item, list } = props[path]
+      const { open, close, isArray, len, singleParamAsArray, primitiveArray, longInnerValInArray, singleFunc, nameValuePattern, item, list, mixed } = props[path]
       if (item != null) 
         return [props[path]].map(x=>({...x, path}))
       if (list != null)
         return props[path].list.map(x=>({...x, path}))
 
       const innerVals = props[path].innerVals || []
-      const flat = forceFlat || singleFunc || nameValuePattern || primitiveArray || (len < colWidth && !shouldNotFlat())
+
+      const singleLine = useSingleLine || singleFunc || nameValuePattern || primitiveArray || (len < colWidth && !multiLine())
       const arrayOrProfile = isArray? 'array' : 'profile'
-      const separatorWS = primitiveArray ? '' : flat ? ' ' : newLine()
+      const separatorWS = primitiveArray ? '' : singleLine ? ' ' : newLine()
+
+      if (mixed)
+        return calcMixedTokens()
 
       const vals = innerVals.reduce((acc,{innerPath}, index) => {
-        const fullInnerPath = [path,innerPath].join('~')
-        const fixedPropName = props[fullInnerPath].fixedPropName
-        const semanticPrefix = isArray ? `array-prefix-${index}` : 'prop'
-        const semanticSeparator = isArray ? `array-separator-${index}` : `obj-separator-${index}`
-        return [
-          ...acc,
-          {prop: `!${semanticPrefix}`, path: fullInnerPath, item: isArray ? '' : fixedPropName || (fixPropName(innerPath) + ': ')},
-          {prop: '!value', item: '', path: fullInnerPath },
-          ...calcTokens(fullInnerPath, flat ? depth : depth +1, forceFlat),
-          {prop: '!value', item: '', path: fullInnerPath, end: true },
-          {prop: `!${semanticSeparator}`, path, item: index === innerVals.length-1 ? '' : ',' + separatorWS},
-        ]
-      }, [])
-      const argsByValue = props[path].argsByValue || []
-      const _argsByValue = argsByValue.reduce((acc,{innerPath}, index) => {
-        const fullInnerPath = [path,innerPath].join('~')
-        return [
-          ...acc,
-          {prop: `!$prop`, path: fullInnerPath, item: ''},
-          {prop: '!value', item: '', path: fullInnerPath },
-          ...calcTokens(fullInnerPath, flat ? depth : depth +1, forceFlat),
-          {prop: '!value', item: '', path: fullInnerPath, end: true },
-          {prop: `!$prop-separator`, path, item: index === argsByValue.length-1 ? '' : ',' + separatorWS},
-        ]
-      }, [])
-      const propsByName = props[path].propsByName || []
-      const _propsByName = propsByName.reduce((acc,{innerPath}, index) => {
-        const fullInnerPath = [path,innerPath].join('~')
-        const fixedPropName = props[fullInnerPath].fixedPropName
-        return [
-          ...acc,
-          {prop: `!$prop`, path: fullInnerPath, item: fixedPropName || (fixPropName(innerPath) + ': ')},
-          {prop: '!value', item: '', path: fullInnerPath },
-          ...calcTokens(fullInnerPath, flat ? depth : depth +1, forceFlat),
-          {prop: '!value', item: '', path: fullInnerPath, end: true },
-          {prop: `!$prop-separator`, path, item: index === propsByName.length-1 ? '' : ',' + separatorWS},
-        ]
-      }, [])
-
-      const propsByNameSection = propsByName.length ? [
-        ...(argsByValue.length ? [{prop: `!$prop-separator`, path, item: ',' + separatorWS}] : []),
-        {prop:'!open-props-byName', item: '{', path}, 
-        ..._propsByName, 
-        {prop:'!close-props-byName', item:'}', path},
-      ] : []
-
-      if (props[path].mixed)
-        return [
-          {prop: '!profile', item: props[path].macro, path}, 
-          {prop: '!open-profile', item:'(', path},
-          {prop: `!open-profile-NL`, path, item: newLine()},
-          ..._argsByValue,
-          ...propsByNameSection,
-          {prop: `!close-profile-NL`, path, item: newLine(-1)},
-          {prop:'!close-profile', item:')', path}
-        ]
-
+          const fullInnerPath = [path,innerPath].join('~')
+          const fixedPropName = props[fullInnerPath].fixedPropName
+          const semanticPrefix = isArray ? `array-prefix-${index}` : 'prop'
+          const semanticSeparator = isArray ? `array-separator-${index}` : `obj-separator-${index}`
+          return [
+            ...acc,
+            {prop: `!${semanticPrefix}`, path: fullInnerPath, item: isArray ? '' : fixedPropName || (fixPropName(innerPath) + ': ')},
+            {prop: '!value', item: '', path: fullInnerPath },
+            ...calcTokens(fullInnerPath, singleLine ? depth : depth +1, singleLine),
+            {prop: '!value', item: '', path: fullInnerPath, end: true },
+            {prop: `!${semanticSeparator}`, path, item: index === innerVals.length-1 ? '' : ',' + separatorWS},
+          ]
+        }, [])        
       return [
         ...jb.asArray(open).map(x=>({...x, path})),
         {prop: `!open-${arrayOrProfile}`, path, item: newLine()},
@@ -152,10 +111,10 @@ extension('utils', 'prettyPrint', {
       ]
 
       function newLine(offset = 0) {
-        return flat ? '' : '\n' + jb.utils.emptyLineWithSpaces.slice(0,(depth+offset)*tabSize)
+        return singleLine ? '' : '\n' + jb.utils.emptyLineWithSpaces.slice(0,(depth+offset)*tabSize)
       }
 
-      function shouldNotFlat() {
+      function multiLine() {
         const paramProps = path.match(/~params~[0-9]+$/)
         const paramsParent = path.match(/~params$/)
         const manyVals = innerVals.length > 4 && !isArray
@@ -169,6 +128,55 @@ extension('utils', 'prettyPrint', {
       function fixPropName(prop) {
         if (prop == '$vars') return 'vars'
         return prop.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/) ? prop : `'${prop}'`
+      }
+
+      function calcMixedTokens() {
+        const { lenOfValues, macro, argsByValue, propsByName } = props[path]
+        const mixedFold = !singleLine && lenOfValues && lenOfValues < colWidth
+        const valueSeparatorWS = (singleLine || mixedFold) ? primitiveArray ? '' : ' ' : newLine()
+
+        const _argsByValue = argsByValue.reduce((acc,{innerPath}, index) => {
+          const fullInnerPath = [path,innerPath].join('~')
+          return [
+            ...acc,
+            {prop: `!$prop`, path: fullInnerPath, item: ''},
+            {prop: '!value', path: fullInnerPath, item: ''},
+            ...calcTokens(fullInnerPath, (singleLine || mixedFold) ? depth : depth +1, singleLine),
+            {prop: '!value', item: '', path: fullInnerPath, end: true },
+            {prop: `!$prop-separator`, path, item: index === argsByValue.length-1 ? '' : ',' + valueSeparatorWS},
+          ]
+        }, [])
+        const _propsByName = propsByName.reduce((acc,{innerPath}, index) => {
+          const fullInnerPath = [path,innerPath].join('~')
+          const fixedPropName = props[fullInnerPath].fixedPropName
+          return [
+            ...acc,
+            {prop: `!$prop`, path: fullInnerPath, item: fixedPropName || (fixPropName(innerPath) + ': ')},
+            {prop: '!value', item: '', path: fullInnerPath },
+            ...calcTokens(fullInnerPath, (singleLine || mixedFold) ? depth : depth +1, singleLine),
+            {prop: '!value', item: '', path: fullInnerPath, end: true },
+            {prop: `!$prop-separator`, path, item: index === propsByName.length-1 ? '' : ',' + separatorWS},
+          ]
+        }, [])
+
+        const propsByNameSection = propsByName.length ? [
+          ...(argsByValue.length ? [{prop: `!$prop-separator`, path, item: ',' + valueSeparatorWS}] : []),
+          {prop:'!open-by-name', item: '{', path},
+          {prop:'!open-by-name', item: newLine() || ' ', path},
+          ..._propsByName,
+          {prop:'!close-by-name', item: newLine(-1) || ' ', path},
+          {prop:'!close-by-name', item: '}', path},
+        ] : []
+    
+        return [
+            {prop: '!profile', item: macro, path}, 
+            {prop: '!open-profile', item:'(', path},
+            ...(argsByValue.length && !mixedFold ? [{prop: `!open-profile-NL`, path, item: newLine()}] : []),
+            ..._argsByValue,
+            ...propsByNameSection,
+            ...(argsByValue.length && !mixedFold ? [{prop: `!close-profile-NL`, path, item: newLine(-1)}] : []),
+            {prop:'!close-profile', item:')', path}
+          ]
       }
     }
 
@@ -188,7 +196,7 @@ extension('utils', 'prettyPrint', {
     function calcProfileProps(profile, path) {
       if (noMacros)
         return asIsProps(profile,path)
-      if (mixed)
+      if (!noMixed)
         return calcProfilePropsMixed(profile, path)
       const fullId = [jb.utils.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
       const comp = fullId && jb.utils.getComp(fullId)
@@ -253,7 +261,7 @@ extension('utils', 'prettyPrint', {
       return openCloseProps(path, open, close, {byName: true, len, innerVals: args })
     }
 
-    function calcProfilePropsMixed(profile, path) {
+    function calcProfilePropsMixed(profile, path, {forceByName} = {}) {
       const fullId = [jb.utils.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
       const comp = fullId && jb.utils.getComp(fullId)
       if (comp && profile.$byValue)
@@ -268,10 +276,10 @@ extension('utils', 'prettyPrint', {
       const params = comp.params || []
       const param0 = params[0] ? params[0] : {}
       // param0.arrayInMacro is temporary - remove after upgrade to mixed
-      const firstParamAsArray = !param0.arrayInMacro && (param0.as == 'array' || (param0.type||'').indexOf('[]') != -1)
+      let firstParamAsArray = !param0.arrayInMacro && (param0.as == 'array' || (param0.type||'').indexOf('[]') != -1)
 
       let paramsByValue = (firstParamAsArray || param0.byName) ? [] : params.slice(0,2)
-      let paramsByName = firstParamAsArray ? (param0.byName ? params: params.slice(1)) : params.slice(2)
+      let paramsByName = param0.byName ? params : firstParamAsArray ? params.slice(1) : params.slice(2)
       const param1 = params[1] ? params[1] : {}
       if (!firstParamAsArray && (param1.as == 'array' || (param1.type||'').indexOf('[]') != -1 || param1.byName))
         paramsByName.unshift(paramsByValue.pop())
@@ -279,28 +287,40 @@ extension('utils', 'prettyPrint', {
         paramsByValue = params
         paramsByName = []
       }
-      if (profile[param0.id] === undefined || profile.$vars) {
+      if (profile[param0.id] === undefined || profile.$vars && !firstParamAsArray) {
+        paramsByValue = []
+        paramsByName = params
+      }
+      if (forceByName) {
+        firstParamAsArray = false
         paramsByValue = []
         paramsByName = params
       }
 
-      const systemProps = jb.macro.systemProps.flatMap(p=>profile[p] ? [{innerPath: p, val: profile[p]}] : [])
+      const varArgs = (profile.$vars || []).map(({name, val},i) => ({innerPath: `$vars~${i}`, val: {$: 'Var', name, val }}))
+      const varsByValue = firstParamAsArray ? varArgs : []
+      const varsByName = firstParamAsArray ? [] : ['$vars']
+      const systemProps = [...varsByName, ...jb.macro.systemProps].flatMap(p=>profile[p] ? [{innerPath: p, val: profile[p]}] : [])
+
       const propsByName = systemProps.concat(paramsByName.map(param=>({innerPath: param.id, val: profile[param.id]}))).filter(({val})=>val !== undefined)
       const propsByValue = paramsByValue.map(param=>({innerPath: param.id, val: profile[param.id]})).filter(({val})=>val !== undefined)
       const argsOfFirstParam = firstParamAsArray ? jb.asArray(profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + '~' + i, val})) : []
-      const varArgs = (profile.$vars || []).map(({name, val},i) => ({innerPath: `$vars~${i}`, val: {$: 'Var', name, val }}))
 
-      const varsLength = varArgs.length ? calcArrayProps(varArgs.map(x=>x.val),`${path}~$vars`).len : 0
+      const varsLength = varsByValue.length ? calcArrayProps(varsByValue.map(x=>x.val),`${path}~$vars`).len : 0
       const firstParamLength = argsOfFirstParam.length ? calcArrayProps(argsOfFirstParam.map(x=>x.val),`${path}~${params[0].id}`).len : 0
-      const propsByValueLength = propsByValue.length && !firstParamAsArray ? propsByValue.reduce((len,elem) => len + calcValueProps(elem.val,`${path}~${elem.innerPath}`).len + 2, macro.length+2) : 0
+      const propsByValueLength = (propsByValue.length && !firstParamAsArray) ? propsByValue.reduce((len,elem) => len + calcValueProps(elem.val,`${path}~${elem.innerPath}`).len + 2, macro.length+2) : 0
       const propsByNameLength = propsByName.length ? propsByName.reduce((len,elem) => len + calcValueProps(elem.val,`${path}~${elem.innerPath}`).len + elem.innerPath.length + 2, macro.length+2) : 0
-      
-      const argsByValue = [...varArgs, ...(firstParamAsArray ? argsOfFirstParam: propsByValue)]
-      const len = varsLength + firstParamLength + propsByValueLength + propsByNameLength
+      const argsByValue = [...varsByValue, ...(firstParamAsArray ? argsOfFirstParam: propsByValue)]
+      const lenOfValues = varsLength + firstParamLength + propsByValueLength
+      const singleArgAsArray = firstParamAsArray && propsByName.length == 0
+      if (lenOfValues >= colWidth && !singleArgAsArray)
+        return calcProfilePropsMixed(profile, path, {forceByName: true})
+
+      const len = lenOfValues + propsByNameLength
       const nameValuePattern = !varArgs.length && !systemProps.length && propsByValue.length == 2 && typeof propsByValue[0].val == 'string' && typeof propsByValue[1].val == 'function'
       const singleFunc = !varArgs.length && !systemProps.length && propsByValue.length == 1 && typeof propsByValue[0].val == 'function'
       const primitiveArray = !varArgs.length && firstParamAsArray && argsByValue.reduce((acc,item)=> acc && jb.utils.isPrimitiveValue(item.val), true)
-      return props[path] = { macro, len, argsByValue, propsByName, nameValuePattern, singleFunc, primitiveArray, mixed: true}
+      return props[path] = { macro, len, argsByValue, propsByName, nameValuePattern, singleFunc, primitiveArray, lenOfValues, mixed: true}
     }
 
     function asIsProps(profile,path) {
@@ -349,7 +369,7 @@ extension('utils', 'prettyPrint', {
           {prop: '!value-text', item: JSON.stringify(val).slice(1,-1)},
           {prop: '!value-text-end', item: "'"},
         ], val.length, path)
-      else if (typeof val === 'string' && val.indexOf('\n') != -1)
+      else if (typeof val === 'string')
         return itemListProps([
           {prop: '!value-text-start', item: "`"},
           {prop: '!value-text', item: val.replace(/`/g,'\\`').replace(/\$\{/g, '\\${')},

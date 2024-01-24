@@ -89,8 +89,8 @@ component('upgradeMixed', {
     impl: (ctx,cmpId) => {
         //console.log('upgradeMixed',cmpId)
         const comp = jb.comps[cmpId]
-        const originalProfCode = jb.utils.prettyPrintComp(cmpId,comp)
-        const mixedProfCode = jb.utils.prettyPrintComp(cmpId,comp, { mixed: true })
+        const originalProfCode = jb.utils.prettyPrintComp(cmpId,comp, {noMixed: true})
+        const mixedProfCode = jb.utils.prettyPrintComp(cmpId,comp)
         const edit = jb.tgpTextEditor.deltaText(originalProfCode, mixedProfCode)
         const hash = jb.tgpTextEditor.calcHash(originalProfCode)
         const path = '[JB_BASE]' + comp[jb.core.CT].location.path
@@ -104,12 +104,12 @@ component('upgradeMixed', {
         const mixedCode = mixedProfCode.replace(`component('${shortId}'`,`component('${shortMixedCmpId}'`)
 
         const {plugin,dsl} = comp[jb.core.CT]
-        jb.tgpTextEditor.evalProfileDef(mixedCode, { mixed: true, plugin, override_dsl: dsl})
-        const mixedProfAfterEval = jb.utils.prettyPrintComp(mixedCmpId,jb.comps[mixedCmpId])
+        jb.tgpTextEditor.evalProfileDef(mixedCode, { plugin, override_dsl: dsl})
+        const mixedProfAfterEval = jb.utils.prettyPrintComp(mixedCmpId,jb.comps[mixedCmpId], {noMixed: true})
         const originalCodeWithMixedId = originalProfCode.replace(`component('${shortId}'`,`component('${shortMixedCmpId}'`)
         const lostInfo = jb.tgpTextEditor.deltaText(mixedProfAfterEval, originalCodeWithMixedId)
         const props = { cmpId, edit, hash, lostInfo, path }
-        const cmd = jb.utils.prettyPrint({$: 'upgradeCmp', ...props}, {forceFlat: true})
+        const cmd = jb.utils.prettyPrint({$: 'upgradeCmp', ...props}, {singleLine: true})
 
         return { ...props, cmd }
     }

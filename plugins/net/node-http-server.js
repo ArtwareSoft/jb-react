@@ -38,7 +38,7 @@ component('node.startRemoteHttpServer', {
     sourceCode: '%$sourceCode%',
     main: 'node.startHttpServer()',
     context: obj(
-      prop('services',({},{},{services})=>jb.utils.prettyPrint(services.profile,{forceFlat: true})),
+      prop('services',({},{},{services})=>jb.utils.prettyPrint(services.profile,{singleLine: true})),
       prop('restart','%$restart%'),
       prop('port','%$port%')
     )

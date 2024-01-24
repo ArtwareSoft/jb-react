@@ -1,6 +1,10 @@
 
 component('uiTest.group', {
-  impl: uiTest(group({controls: [text('hello world'), text('2')]}), contains(['hello world','2']))
+  impl: uiTest(group({ controls: [text('hello world'), text('2')] }), contains(['hello world','2']))
+})
+
+component('uiTest.group1', {
+  impl: dataTest('', not())
 })
 
 component('uiTest.label', {

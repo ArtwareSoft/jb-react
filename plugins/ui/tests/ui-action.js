@@ -473,10 +473,10 @@ component('checkLog', {
         return jb.logError(`can not find logs ${log} after action ${originatingUIAction}`,{ctx,log})
       const dataItems = logs.map(l=> jb.tosingle(data(ctx.setData(l)))).filter(x=>x)
       if (!dataItems.length)
-        return jb.logError(dataErrorMessage(ctx) + `  after action ${originatingUIAction} using expression ${jb.utils.prettyPrint(data.profile,{forceFlat:true})}`,{ctx,logs})
+        return jb.logError(dataErrorMessage(ctx) + `  after action ${originatingUIAction} using expression ${jb.utils.prettyPrint(data.profile,{singleLine:true})}`,{ctx,logs})
       const conditionItems = dataItems.find(dt => condition(ctx.setData(dt)))
       if (!conditionItems)
-        jb.logError(conditionErrorMessage(ctx.setData(dataItems)) + ` after action ${originatingUIAction} using condition ${jb.utils.prettyPrint(condition.profile,{forceFlat:true})}`,
+        jb.logError(conditionErrorMessage(ctx.setData(dataItems)) + ` after action ${originatingUIAction} using condition ${jb.utils.prettyPrint(condition.profile,{singleLine:true})}`,
           {dataItems, ctx})
     }
   })

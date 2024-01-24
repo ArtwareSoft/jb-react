@@ -11,42 +11,15 @@ extension('test', 'completion', {
   }
 })
 
-component('mixedMigrationTest', {
-  type: 'test',
-  params: [
-    {id: 'cmpId', as: 'string' },
-    {id: 'expectedResult', type: 'boolean', dynamic: true},
-  ],
-  impl: (ctx,cmpId,expectedResult)=> {
-      const testId = ctx.vars.testID
-      //const [code,cmpId] = fixCode(cmpId)
-      //jb.tgpTextEditor.evalProfileDef(code, {})
-      const newProfCode = jb.utils.prettyPrintComp(cmpId,jb.comps[cmpId], { mixed: true })
-      const [mixedCode,newCmpId] = fixCode(newProfCode.replace(cmpId,'x'))
-      jb.tgpTextEditor.evalProfileDef(mixedCode, { mixed: true})
-      const newProfCode2 = jb.utils.prettyPrintComp(newCmpId,jb.comps[newCmpId], { mixed: true })
-      const matchExpected = expectedResult(ctx.setData(newProfCode))
-      const sameCode = matchExpected && newProfCode2.replace(newCmpId,'x') == newProfCode.replace(cmpId,'x')
-      const reason = (!matchExpected && 'expectedResult does not match') || (!sameCode && 'code does not match')
-      return { id: testId, title: testId, success: sameCode && matchExpected, reason }
-
-      function fixCode(code) {
-        jb.test.uniqueNameCounter++
-        const cmpId = 'CmpltnTst'+jb.test.uniqueNameCounter
-        return [code.replace(/component\('x',/,`component('${cmpId}',`), cmpId ]
-      } 
-  }
-})
-
 component('tgp.completionOptionsTest', {
   type: 'test',
   params: [
     {id: 'compText', as: 'string', description: 'use __ for completion points'},
     {id: 'expectedSelections', as: 'array', description: 'label a selection that should exist in the menu. one for each point'},
     {id: 'filePath', as: 'string', defaultValue: 'projects/jb-react/plugins/common/jb-common-tests.js'},
-    {id: 'dsl', as: 'string'}
+    {id: 'dsl', as: 'string'},
   ],
-  impl: async (ctx,compText,expectedSelections,filePath,dsl)=> {
+  impl: async (ctx,compText,expectedSelections,filePath,dsl,notMixed)=> {
       const testId = ctx.vars.testID
       jb.workspace.initJbWorkspaceAsHost()
       const parts = jb.test.fixToUniqueName(compText).split('__')
@@ -78,7 +51,7 @@ component('tgp.completionActionTest', {
   type: 'test',
   params: [
     {id: 'compText', as: 'string', description: 'use __ for completion point'},
-    {id: 'completionToActivate', as: 'string', description: 'label of completion to activate'},
+    {id: 'completionToActivate', as: 'string', description: 'label of completion to activate', byName: true},
     {id: 'expectedEdit', description: '{ range: , newText:}'},
     {id: 'expectedTextAtSelection', description: '{ start: , end: }'},
     {id: 'expectedCursorPos', description: 'e.g. 1,12'},

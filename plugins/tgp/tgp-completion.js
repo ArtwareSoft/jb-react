@@ -21,7 +21,7 @@ extension('tgp', 'completion', {
             return []
         }
         
-        let res = []
+        let res = [], ptCompletion
         const singleParamAsArray = jb.tgp.singleParamAsArray(path)
         const twoFirstArgs = jb.tgp.twoFirstArgs(path)
 
@@ -33,23 +33,33 @@ extension('tgp', 'completion', {
             res = jb.tgp.paramCompletions(path)
         } else if (singleParamAsArray) {
             res = jb.tgp.newPTCompletions(`${path}~${singleParamAsArray.id}`, arrayIndex)
+            ptCompletion = true
         } else if (allSemantics.reduce((acc,s) => acc || s.match(/-by-value|obj-separator-|-profile/), false )) {
-            res = jb.tgp.paramCompletions(path)
-            const textStart = semanticPath.allPaths.find(x=>x[0].match(/~!value-text-start$/))
-            if (textStart)
-                res = [...res,...jb.tgp.newPTCompletions(textStart[0].split('~!')[0], arrayIndex)]
+            res = jb.tgp.paramCompletions(path)            
             const singleValueProfile = semanticPath.allPaths.find(x=>x[0].match(/~!profile/) && x[0].indexOf(path) == 0)
-            if (singleValueProfile)
+            if (singleValueProfile) {
                 res = [...res,...jb.tgp.newPTCompletions(singleValueProfile[0].split('~!')[0], arrayIndex)]
+                ptCompletion = true
+            }
         } else if (arrayIndex != null || allSemantics.includes('prop') || allSemantics.includes('profile')) {
             res = jb.tgp.newPTCompletions(path, arrayIndex)
-        } else if (allSemantics.includes('value-text-start') && allSemantics.includes('value-text-end')) {
-            res = await jb.tgp.newPTCompletions(path, arrayIndex)
+            ptCompletion = true
         } else if (allSemantics.includes('value')) {
             res = jb.tgp.paramCompletions(path)
         }
 
-        if (allSemantics.includes('value-text') && jb.tgp.isOfType(path,'data'))
+        if (!ptCompletion && allSemantics.includes('value-text-start')) {
+            const textStart = semanticPath.allPaths.find(x=>x[0].match(/~!value-text-start$/))
+            res = [...res,...jb.tgp.newPTCompletions(textStart[0].split('~!')[0], arrayIndex)]
+            ptCompletion =  true
+        }
+        const valuePath = semanticPath.allPaths.find(x=>x[0].match(/~!value/) && x[0].indexOf(path) == 0)
+        if (!ptCompletion && valuePath) {
+            res = [...res,...jb.tgp.newPTCompletions(valuePath[0].split('~!')[0], arrayIndex)]
+            ptCompletion =  true
+        }
+
+        if (allSemantics.includes('value-text') && !allSemantics.includes('value-text-start') && jb.tgp.isOfType(path,'data'))
             res = [...await jb.tgp.dataCompletions({semanticPath, inCompPos, text, compLine, filePath}, path, ctx), ...res]
 
         return [...jb.tgp.calcWrapWithCompletions(semanticPath, path), ...res]
@@ -126,7 +136,7 @@ extension('tgp', 'completion', {
         }))
     },
     newPTCompletions(path, arrayIndex, ctx) {
-        const options = jb.tgp.PTsOfPath(path).map(compName=>{
+        const options = jb.tgp.PTsOfPath(path).filter(x=>!x.match(/^dataResource\./)).map(compName=>{
             const comp = jb.utils.getComp(compName)
             return {
                 kind: 2,

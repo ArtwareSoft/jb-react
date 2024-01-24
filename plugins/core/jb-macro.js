@@ -60,7 +60,7 @@ extension('macro', {
             return { $: cmpId, $byValue: args }
         const lastArg = args.length > 1 && args[args.length-1]
         const lastArgIsByName = lastArg && typeof lastArg == 'object' && !Array.isArray(lastArg) && !lastArg.$
-        if (lastArgIsByName || topComp && topComp[jb.core.CT].mixed) 
+        if (lastArgIsByName) // || topComp && topComp[jb.core.CT].mixed) 
             return jb.macro.mixedArgsToProfile(cmpId, comp, args)
 
         const params = comp.params || []

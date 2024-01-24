@@ -175,7 +175,7 @@ component('cmd', {
             //         return JSON.stringify({$: 'runCtx', profile: val.profile})
             //     if (val.$) {
             //         debugger
-            //         return jb.utils.prettyPrint(val,{forceFlat: true})
+            //         return jb.utils.prettyPrint(val,{singleLine: true})
             //     }
             //     return JSON.stringify({$asIs: val})
             // }

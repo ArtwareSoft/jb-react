@@ -6,7 +6,8 @@ using('ui,remote-widget,parsing,testing')
 // })
 
 component('macroTest.vars', {
-  impl: dataTest(ctx => {
+  impl: dataTest(
+    ctx => {
     try {
       const testToTest = 'dataTest.varsCases'
       const compTxt = jb.utils.prettyPrintComp(testToTest.replace(/varsCases/, 'varsCases2'), jb.comps[testToTest])
@@ -16,13 +17,15 @@ component('macroTest.vars', {
     } catch (e) {
       return false
     }
-  }, contains("[\n      Var('items', [{id: 1}, {id: 2}])\n    ]"))
+  },
+    contains(`Var('items', [{id: 1}, {id: 2}])`)
+  )
 })
 
 component('macroTest.varsPath', {
   impl: dataTest(
     pipeline(
-      () => jb.utils.prettyPrintWithPositions(split({ vars: [Var('a', 'b')] })),
+      () => jb.utils.prettyPrintWithPositions(split(Var('a', 'b'))),
       log('test'),
       '%map/~$vars~0~val~!value%',
       join()
@@ -34,11 +37,11 @@ component('macroTest.varsPath', {
 component('macroTest.remark.pipeline', {
   impl: dataTest(
     pipeline(
-      () => jb.utils.prettyPrintWithPositions(pipeline(Var('x',1), remark('r'), 'a'),{forceFlat: true}),
+      () => jb.utils.prettyPrintWithPositions(pipeline(Var('x',1), 'a' , {remark: 'hello'}),{singleLine: true}),
       log('test'),
       '%text%'
     ),
-    equals("pipeline(remark('r'), Var('x', 1), 'a')")
+    equals(`pipeline(Var('x', 1), 'a', { remark: 'hello' })`)
   )
 })
 
@@ -46,7 +49,6 @@ component('macroTest.Positions.shouldNotFlat', {
   impl: dataTest(
     pipeline(
       () => jb.utils.prettyPrintWithPositions(group({ title: '2.0', controls: text('my label') })),
-      log('test'),
       '%map/~controls~text~!value%',
       join()
     ),
@@ -74,7 +76,9 @@ component('macroTest.Positions.separator', {
 })
 
 component('macroTest.Positions.InnerFlat', {
-  impl: dataTest(pipeline(() => jb.utils.prettyPrintWithPositions(
+  impl: dataTest(
+    pipeline(
+      () => jb.utils.prettyPrintWithPositions(
     group({
       title: 'main',
       controls: [
@@ -82,7 +86,12 @@ component('macroTest.Positions.InnerFlat', {
         text('1.00')
       ]
     })
-  ), '%map/~controls~0~controls~text~!value%', join()), equals('3,40,3,50'))
+  ),
+      '%map/~controls~0~controls~text~!value%',
+      join()
+    ),
+    equals('3,41,3,51')
+  )
 })
 
 
@@ -119,7 +128,10 @@ component('macroTest.Array', {
 })
 
 component('macroTest.primitiveArray', {
-  impl: dataTest(() => jb.utils.prettyPrintWithPositions(list(1, 2, 3, 4)), equals('%text%', 'list(1,2,3,4)'))
+  impl: dataTest(
+    () => jb.utils.prettyPrintWithPositions(list(1, 2, 3, 4)),
+    equals('%text%', 'list(1,2,3,4)')
+  )
 })
 
 component('macroTest.contains', {
@@ -158,10 +170,3 @@ component('macroTest.typeAdapter.from', {
 component('macroTest.typeAdapter.to', {
   impl: dataTest(pipeline(typeAdapter('state<location>', israel()), '%capital/name%'), equals('Jerusalem'))
 })
-
-// component('macroTest.mixed.load', {
-//   impl: dataTest(
-//     () => jb.utils.prettyPrint(jb.utils.prettyPrintComp(), { mixed: true, initialPath: 'myProf~impl' }),
-//     contains('{indexVariable:')
-//   )
-// })
