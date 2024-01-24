@@ -177,6 +177,7 @@ extension('test', {
 			.filter(e=> coveredTestsOf || !jb.test.coveredTests[e[0]])
 			.filter(e=> !coveredTestsOf || (jb.comps[coveredTestsOf].impl.covers || []).includes(e[0]) || e[0] == coveredTestsOf)
 			.filter(e=> jb.path(e[1].impl,'expectedResult') !== true)
+			.filter(e=> !jb.path(e[1],'doNotRunInTests'))
 	//		.filter(e=>!e[0].match(/^remoteTest|inPlaceEditTest|patternsTest/) && ['uiTest','dataTest'].indexOf(e[1].impl.$) != -1) // || includeHeavy || specificTest || !e[1].impl.heavy )
 	//		.sort((a,b) => (a[0] > b[0]) ? 1 : ((b[0] > a[0]) ? -1 : 0))
 		tests.forEach(e => e.group = e[0].split('.')[0].split('Test')[0])

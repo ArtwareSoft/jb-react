@@ -686,7 +686,7 @@ component('notContains', {
     {id: 'text', type: 'data[]', as: 'array', arrayInMacro: true, mandatory: true},
     {id: 'allText', defaultValue: '%%', as: 'array', byName: true}
   ],
-  impl: not(contains('%$text%', '%$allText%'))
+  impl: not(contains('%$text%', { allText: '%$allText%' }))
 })
 
 component('startsWith', {

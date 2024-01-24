@@ -7,6 +7,7 @@ component('test.mixedTest.disabled', {
 })
 
 component('mixedTest.tst1Helper', {
+  doNotRunInTests: true,
   impl: dataTest({
     calculate: pipeline(typeAdapter('cmp-upgrade<upgrade>', upgradeMixed('uiTest.group'))),
     expectedResult: notNull('%edit%'),
@@ -32,6 +33,7 @@ component('mixedTest.tst1', {
 //   )
 // })
 
-// component('mixedTest.createUpgradeScript', {
-//   impl: dataTest(createUpgradeScript({upgrade: upgradeMixed(), slice: 5}), equals('',''))
-// })
+component('mixedTest.createUpgradeScript', {
+  doNotRunInTests: true,
+  impl: dataTest(createUpgradeScript(upgradeMixed(), { slice: 5 }), equals('', ''))
+})

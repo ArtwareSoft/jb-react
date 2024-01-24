@@ -6,7 +6,7 @@ const argsFromScript = {}
 if (scriptFN) {
     try {
         const script = jbHost.fs.readFileSync(scriptFN)
-        ;('\n'+script).split('\n#').filter(x=>x).forEach(p=>argsFromScript[p.slice(0,p.indexOf(' '))] = p.slice(p.indexOf(' ')+1).trim())
+        ;('\n'+script).split('\n//#').filter(x=>x).forEach(p=>argsFromScript[p.slice(0,p.indexOf(' '))] = p.slice(p.indexOf(' ')+1).trim())
     } catch(err) {
         console.log(JSON.stringify({ desc: `can not read script file ${scriptFN}`, err: JSON.stringify(err) }))
         process.exit(1)
