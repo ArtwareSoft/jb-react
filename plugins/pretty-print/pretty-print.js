@@ -324,7 +324,8 @@ extension('utils', 'prettyPrint', {
     }
 
     function asIsProps(profile,path) {
-      const objProps = Object.keys(profile)
+      const defaultImpl = (profile.impl && typeof profile.impl == 'function' && profile.impl.toString() == '({params}) => params')
+      const objProps = Object.keys(profile).filter(x=>x!= 'impl' || !defaultImpl)
       if (objProps.indexOf('$') > 0) { // make the $ first
         objProps.splice(objProps.indexOf('$'),1);
         objProps.unshift('$');

@@ -22,6 +22,20 @@ extension('tgpTextEditor','upgrade', {
     },
     fixPath(path) {
         return path.replace('[JB_BASE]',jbHost.jbReactDir || '')
+    },
+    compTextFromFile(cmpId, path, ctx) {
+        const fullPath = jb.tgpTextEditor.fixPath(path)
+        const docText = jbHost.fs.readFileSync(fullPath, 'utf-8')
+        const lines = docText.split('\n')
+        const compLine = jb.utils.indexOfCompDeclarationInTextLines(lines,cmpId)
+        if (compLine == -1)
+            return jb.logError(`upgradeCmp can not find cmp ${cmpId} in file ${path}`, { ctx })
+        const linesFromComp = lines.slice(compLine)
+        const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
+        const nextjbComponent = lines.slice(compLine+1).findIndex(line => line.match(/^component/))
+        if (nextjbComponent != -1 && nextjbComponent < compLastLine)
+           return jb.logError(`upgradeCmp - can not find last line of cmp ${cmpId} in file ${path}`, { ctx })
+        return linesFromComp.slice(0,compLastLine+1).join('\n')
     }
 })
 
@@ -54,7 +68,6 @@ component('upgradeCmp', {
         const hash = jb.tgpTextEditor.calcHash(compText)
         if (hash != expectedHash)
             return jb.logError(`upgradeCmp hash mismatch at ${cmpId} in file ${path}`, { ctx, hash, expectedHash})
-        debugger
         const resultCompText = compText.slice(0,edit.from) + edit.replaceBy + compText.slice(edit.to)
         const resultDocText = [...lines.slice(0,compLine), ...resultCompText.split('\n'),...lines.slice(compLine+compLastLine+1)].join('\n')
         jbHost.fs.writeFileSync(fullPath, resultDocText)
@@ -70,9 +83,10 @@ component('createUpgradeScript', {
         {id: 'slice', as: 'number' },
     ],
     impl: async (ctx,upgrade,fn,cmps,slice) => {
-        const cmds = cmps.map(id=>upgrade(ctx.setData(id))).slice(0,100).filter(x=>x && x.edit && !x.lostInfo).slice(0,slice).map(x=>x.cmd)
-        const script = `#sourceCode { "project": ["studio"], "plugins": ["*"] }
-#main 
+        const cmds = cmps.filter(id=>!id.match(/^dataResource\./)).slice(0,100)
+            .map(id => upgrade(ctx.setData(id))).filter(x=>x && x.edit && !x.lostInfo).slice(0,slice).map(x=>x.cmd)
+        const script = `//#sourceCode { "project": ["studio"], "plugins": ["*"] }
+//#main 
 runActions(
 ${cmds.join(',\n')}
 )`
@@ -109,8 +123,29 @@ component('upgradeMixed', {
         const originalCodeWithMixedId = originalProfCode.replace(`component('${shortId}'`,`component('${shortMixedCmpId}'`)
         const lostInfo = jb.tgpTextEditor.deltaText(mixedProfAfterEval, originalCodeWithMixedId)
         const props = { cmpId, edit, hash, lostInfo, path }
-        const cmd = jb.utils.prettyPrint({$: 'upgradeCmp', ...props}, {singleLine: true})
+        const cmd = jb.utils.prettyPrint({$: 'upgradeCmp', ...props, cmpId: shortId}, {singleLine: true})
 
+        return { ...props, cmd }
+    }
+})
+
+component('reformat', {
+    type: 'cmp-upgrade',
+    params: [
+        { id: 'cmpId', as: 'string', defaultValue: '%%'}
+    ],
+    impl: (ctx,cmpId) => {
+        const comp = jb.comps[cmpId]
+        const shortId = cmpId.split('>').pop()
+        const path = '[JB_BASE]' + comp[jb.core.CT].location.path
+        const originalProfCode = jb.tgpTextEditor.compTextFromFile(cmpId, path, ctx)
+        const newCode = jb.utils.prettyPrintComp(cmpId,comp)
+        if (originalProfCode == newCode) return
+        const edit = jb.tgpTextEditor.deltaText(originalProfCode, newCode)
+        const hash = jb.tgpTextEditor.calcHash(originalProfCode)
+
+        const props = { cmpId, edit, hash, path }
+        const cmd = jb.utils.prettyPrint({$: 'upgradeCmp', ...props, cmpId: shortId}, {singleLine: true})
         return { ...props, cmd }
     }
 })

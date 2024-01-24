@@ -122,8 +122,7 @@ component('Var', {
   macro: (result, self) => {
     result.$vars = result.$vars || []
     result.$vars.push(self)
-  },
-  impl: '' // for inteliscript
+  }
 })
 
 component('remark', {

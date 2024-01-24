@@ -15,22 +15,21 @@ component('call', {
  	}
 })
 
-component('runCtx',{
+component('runCtx', {
   type: 'any',
   hidden: true,
   params: [
-      {id: 'path', as: 'string'},
-      {id: 'vars' },
-      {id: 'profile' },
-  ],
-  impl: ''
+    {id: 'path', as: 'string'},
+    {id: 'vars'},
+    {id: 'profile'}
+  ]
 })
 
 component('typeAdapter', {
   type: 'any',
   params: [
     {id: 'fromType', as: 'string', mandatory: true, description: 'e.g. type1<myDsl>'},
-    {id: 'val' },
+    {id: 'val'}
   ],
   impl: ctx => ctx.params.val
 })
@@ -49,10 +48,10 @@ component('If', {
 component('firstNotEmpty', {
   type: 'any',
   params: [
-    {id: 'first', type: '$asParent', mandatory: true },
-    {id: 'second', type: '$asParent', mandatory: true }
+    {id: 'first', type: '$asParent', mandatory: true},
+    {id: 'second', type: '$asParent', mandatory: true}
   ],
-  impl: If('%$first%','%$first%','%$second%')
+  impl: If('%$first%', '%$first%', '%$second%')
 })
 
 component('TBD', {
@@ -101,7 +100,14 @@ component('pipeline', {
   category: 'common:100',
   description: 'map data arrays one after the other, do not wait for promises and rx',
   params: [
-    {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true, description: 'click \"=\" for functions list' }
+    {
+      id: 'items',
+      type: 'data,aggregator[]',
+      ignore: true,
+      mandatory: true,
+      composite: true,
+      description: 'click \"=\" for functions list'
+    }
   ],
   impl: ctx => jb.utils.calcPipe(ctx,'$pipeline')
 })
@@ -386,7 +392,7 @@ component('writeValue', {
   params: [
     {id: 'to', as: 'ref', mandatory: true},
     {id: 'value', mandatory: true},
-    {id: 'noNotifications', as: 'boolean'}
+    {id: 'noNotifications', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,to,value,noNotifications) => {
     if (!jb.db.isRef(to)) {
@@ -457,7 +463,7 @@ component('getOrCreate', {
   category: 'mutable:80',
   params: [
     {id: 'writeTo', as: 'ref', mandatory: true},
-    {id: 'calcValue', dynamic: true},
+    {id: 'calcValue', dynamic: true}
   ],
   impl: async (ctx,writeTo,calcValue) => {
     let val = jb.val(writeTo)
@@ -481,7 +487,12 @@ component('slice', {
   type: 'aggregator',
   params: [
     {id: 'start', as: 'number', defaultValue: 0, description: '0-based index', mandatory: true},
-    {id: 'end', as: 'number', mandatory: true, description: '0-based index of where to end the selection (not including itself)'}
+    {
+      id: 'end',
+      as: 'number',
+      mandatory: true,
+      description: '0-based index of where to end the selection (not including itself)'
+    }
   ],
   impl: ({data},start,end) => {
 		if (!data || !data.slice) return null
@@ -933,7 +944,7 @@ component('runActionOnItem', {
   type: 'action',
   params: [
     {id: 'item', mandatory: true},
-    {id: 'action', type: 'action', dynamic: true, mandatory: true},
+    {id: 'action', type: 'action', dynamic: true, mandatory: true}
   ],
   impl: (ctx,item,action) => jb.utils.isPromise(item) ? Promise.resolve(item).then(_item => action(ctx.setData(_item))) 
     : item != null && action(ctx.setData(item))
@@ -957,7 +968,7 @@ component('delay', {
   type: 'action,data',
   params: [
     {id: 'mSec', as: 'number', defaultValue: 1},
-    {id: 'res', defaultValue: '%%' }
+    {id: 'res', defaultValue: '%%'}
   ],
   impl: ({},mSec,res) => jb.delay(mSec).then(() => res)
 })
@@ -1095,7 +1106,6 @@ component('data.switch', {
 
 component('data.case', {
   type: 'data.switch-case',
-//  singleInType: true,
   params: [
     {id: 'condition', type: 'boolean', mandatory: true, dynamic: true},
     {id: 'value', mandatory: true, dynamic: true}
@@ -1120,7 +1130,6 @@ component('action.switch', {
 
 component('action.switchCase', {
   type: 'action.switch-case',
-//  singleInType: true,
   params: [
     {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true, dynamic: true},
     {id: 'action', type: 'action', mandatory: true, dynamic: true}
@@ -1221,7 +1230,7 @@ component('addComponent', {
   params: [
     {id: 'id', as: 'string', dynamic: true, mandatory: true},
     {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
-    {id: 'type', options:'watchableData,passiveData,comp', mandatory: true },
+    {id: 'type', options: 'watchableData,passiveData,comp', mandatory: true}
   ],
   impl: (ctx,id,value,type) => jb.component(id(), type == 'comp' ? value() : {[type]: value() } ),
   require: () => jb.db.addDataResourcePrefix()
@@ -1231,7 +1240,7 @@ component('loadLibs', {
   description: 'load a list of libraries into current jbm',
   type: 'action',
   params: [
-    {id: 'libs', as: 'array', mandatory: true},
+    {id: 'libs', as: 'array', mandatory: true}
   ],
   impl: ({},libs) => 
     jb_dynamicLoad(libs, Object.assign(jb, { loadFromDist: true}))
@@ -1241,7 +1250,7 @@ component('loadAppFiles', {
   description: 'load a list of app files into current jbm',
   type: 'action',
   params: [
-    {id: 'jsFiles', as: 'array', mandatory: true},
+    {id: 'jsFiles', as: 'array', mandatory: true}
   ],
   impl: ({},jsFiles) => 
     jb_loadProject({ uri: jb.uri, baseUrl: jb.baseUrl, libs: '', jsFiles })
