@@ -100,14 +100,7 @@ component('pipeline', {
   category: 'common:100',
   description: 'map data arrays one after the other, do not wait for promises and rx',
   params: [
-    {
-      id: 'items',
-      type: 'data,aggregator[]',
-      ignore: true,
-      mandatory: true,
-      composite: true,
-      description: 'click \"=\" for functions list'
-    }
+    {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true, description: 'click "=" for functions list'}
   ],
   impl: ctx => jb.utils.calcPipe(ctx,'$pipeline')
 })
@@ -488,12 +481,7 @@ component('slice', {
   type: 'aggregator',
   params: [
     {id: 'start', as: 'number', defaultValue: 0, description: '0-based index', mandatory: true},
-    {
-      id: 'end',
-      as: 'number',
-      mandatory: true,
-      description: '0-based index of where to end the selection (not including itself)'
-    }
+    {id: 'end', as: 'number', mandatory: true, description: '0-based index of where to end the selection (not including itself)'}
   ],
   impl: ({data},start,end) => {
 		if (!data || !data.slice) return null
@@ -842,7 +830,7 @@ component('split', {
   description: 'breaks string using separator',
   type: 'data',
   params: [
-    {id: 'separator', as: 'string', defaultValue: ',', description: 'E.g., \",\" or \"<a>\"'},
+    {id: 'separator', as: 'string', defaultValue: ',', description: 'E.g., "," or "<a>"'},
     {id: 'text', as: 'string', defaultValue: '%%', byName: true},
     {id: 'part', options: 'all,first,second,last,but first,but last', defaultValue: 'all'}
   ],

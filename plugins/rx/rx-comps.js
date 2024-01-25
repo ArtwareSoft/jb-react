@@ -13,14 +13,7 @@ component('source.watchableData', {
   description: 'wait for data change and returns {op, newVal,oldVal}',
   params: [
     {id: 'ref', as: 'ref'},
-    {
-      id: 'includeChildren',
-      as: 'string',
-      options: 'yes,no,structure',
-      defaultValue: 'no',
-      byName: true,
-      description: 'watch childern change as well'
-    }
+    {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', byName: true, description: 'watch childern change as well'}
   ],
   impl: (ctx,ref,includeChildren) => jb.callbag.map(x=>ctx.dataObj(x))(jb.watchable.refObservable(ref,{includeChildren, srcCtx: ctx}))
 })
@@ -51,17 +44,9 @@ component('source.event', {
   type: 'rx',
   macroByValue: true,
   params: [
-    {
-      id: 'event',
-      as: 'string',
-      mandatory: true,
-      options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll,resize'
-    },
+    {id: 'event', as: 'string', mandatory: true, options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll,resize'},
     {id: 'elem', description: 'html element', defaultValue: () => jb.frame.document},
-    {
-      id: 'options',
-      description: 'addEventListener options, https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener'
-    }
+    {id: 'options', description: 'addEventListener options, https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener'}
   ],
   impl: (ctx,event,elem,options) => elem && jb.callbag.map(ev=>ctx.setVar('sourceEvent',ev).dataObj(ev))(jb.callbag.fromEvent(event,elem,options))
 })
@@ -69,11 +54,7 @@ component('source.event', {
 component('source.any', {
   type: 'rx',
   params: [
-    {
-      id: 'source',
-      mandatory: true,
-      description: 'the source is detected by its type: promise, iterable, single, callbag element, etc..'
-    }
+    {id: 'source', mandatory: true, description: 'the source is detected by its type: promise, iterable, single, callbag element, etc..'}
   ],
   impl: (ctx,source) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromAny(source || []))
 })
@@ -214,27 +195,10 @@ component('rx.reduce', {
   category: 'operator',
   description: 'incrementally aggregates/accumulates data in a variable, e.g. count, concat, max, etc',
   params: [
-    {
-      id: 'varName',
-      as: 'string',
-      mandatory: true,
-      description: 'the result is accumulated in this var',
-      templateValue: 'acc'
-    },
+    {id: 'varName', as: 'string', mandatory: true, description: 'the result is accumulated in this var', templateValue: 'acc'},
     {id: 'initialValue', dynamic: true, description: 'receives first value as input', mandatory: true},
-    {
-      id: 'value',
-      dynamic: true,
-      defaultValue: '%%',
-      description: 'the accumulated value use %$acc%,%% %$prev%',
-      mandatory: true
-    },
-    {
-      id: 'avoidFirst',
-      as: 'boolean',
-      description: 'used for join with separators, initialValue uses the first value without adding the separtor',
-      type: 'boolean'
-    }
+    {id: 'value', dynamic: true, defaultValue: '%%', description: 'the accumulated value use %$acc%,%% %$prev%', mandatory: true},
+    {id: 'avoidFirst', as: 'boolean', description: 'used for join with separators, initialValue uses the first value without adding the separtor', type: 'boolean'}
   ],
   impl: (ctx,varName,initialValue,value,avoidFirst) => source => (start, sink) => {
     if (start !== 0) return
@@ -343,14 +307,7 @@ component('rx.flatMap', {
   category: 'operator',
   description: 'match inputs the callbags or promises',
   params: [
-    {
-      id: 'source',
-      type: 'rx',
-      category: 'source',
-      dynamic: true,
-      mandatory: true,
-      description: 'map each input to source callbag'
-    }
+    {id: 'source', type: 'rx', category: 'source', dynamic: true, mandatory: true, description: 'map each input to source callbag'}
   ],
   impl: (ctx,sourceGenerator) => source => (start, sink) => {
     if (start !== 0) return
@@ -400,12 +357,7 @@ component('rx.flatMapArrays', {
   category: 'operator',
   description: 'match inputs to data arrays',
   params: [
-    {
-      id: 'func',
-      dynamic: true,
-      defaultValue: '%%',
-      description: 'should return array, items will be passed one by one'
-    }
+    {id: 'func', dynamic: true, defaultValue: '%%', description: 'should return array, items will be passed one by one'}
   ],
   impl: rx.flatMap(source.data(call('func')))
 })
@@ -414,12 +366,7 @@ component('rx.concatMap', {
   type: 'rx',
   category: 'operator,combine',
   params: [
-    {
-      id: 'func',
-      dynamic: true,
-      mandatory: true,
-      description: 'keeps the order of the results, can return array, promise or callbag'
-    },
+    {id: 'func', dynamic: true, mandatory: true, description: 'keeps the order of the results, can return array, promise or callbag'},
     {id: 'combineResultWithInput', dynamic: true, description: 'combines %$input% with the inner result %%'}
   ],
   impl: (ctx,func,combine) => combine.profile ? jb.callbag.concatMap(ctx2 => func(ctx2), (input,{data}) => combine({data,vars: {...input.vars, input: input.data} }))
@@ -431,13 +378,7 @@ component('rx.distinctUntilChanged', {
   description: 'filters adjacent items in stream',
   category: 'filter',
   params: [
-    {
-      id: 'equalsFunc',
-      dynamic: true,
-      mandatory: true,
-      defaultValue: ({data},{prev}) => data === prev,
-      description: 'e.g. %% == %$prev%'
-    }
+    {id: 'equalsFunc', dynamic: true, mandatory: true, defaultValue: ({data},{prev}) => data === prev, description: 'e.g. %% == %$prev%'}
   ],
   impl: (ctx,equalsFunc) => jb.callbag.distinctUntilChanged((prev,cur) => equalsFunc(ctx.setData(cur.data).setVar('prev',prev.data)))
 })
@@ -484,12 +425,7 @@ component('rx.debounceTime', {
   category: 'operator',
   params: [
     {id: 'cooldownPeriod', dynamic: true, description: 'can be dynamic'},
-    {
-      id: 'immediate',
-      as: 'boolean',
-      description: 'emits the first event immediately, default is true',
-      type: 'boolean'
-    }
+    {id: 'immediate', as: 'boolean', description: 'emits the first event immediately, default is true', type: 'boolean'}
   ],
   impl: (ctx,cooldownPeriod,immediate) => jb.callbag.debounceTime(cooldownPeriod,immediate)
 })
@@ -500,12 +436,7 @@ component('rx.throttleTime', {
   category: 'operator',
   params: [
     {id: 'cooldownPeriod', dynamic: true, description: 'can be dynamic'},
-    {
-      id: 'emitLast',
-      as: 'boolean',
-      description: 'emits the last event arrived at the end of the cooldown, default is true',
-      type: 'boolean'
-    }
+    {id: 'emitLast', as: 'boolean', description: 'emits the last event arrived at the end of the cooldown, default is true', type: 'boolean'}
   ],
   impl: (ctx,cooldownPeriod,emitLast) => jb.callbag.throttleTime(cooldownPeriod,emitLast)
 })
@@ -640,7 +571,7 @@ component('rx.sniffer', {
 // ********** subject 
 component('rx.subject', {
   type: 'data',
-  description: 'callbag \"variable\" that you can write or listen to',
+  description: 'callbag "variable" that you can write or listen to',
   category: 'variable',
   params: [
     {id: 'id', as: 'string', description: 'can be used for logging'},

@@ -5,13 +5,10 @@ component('openDialog', {
     {id: 'content', type: 'control', dynamic: true, templateValue: group(), defaultValue: text('')},
     {id: 'style', type: 'dialog.style', dynamic: true, defaultValue: dialog.default()},
     {id: 'menu', type: 'control', dynamic: true},
-	{id: 'onOK', type: 'action', dynamic: true},
-	{id: 'id', as: 'string'},
+    {id: 'onOK', type: 'action', dynamic: true},
+    {id: 'id', as: 'string'},
     {id: 'features', type: 'dialog-feature[]', dynamic: true},
-	{id: 'doOpen', type: 'action', dynamic: true, defaultValue: runActions(
-		dialog.createDialogTopIfNeeded(),
-		action.subjectNext(dialogs.changeEmitter(), obj(prop('open',true), prop('dialog', '%$$dialog%')))
-	)}
+    {id: 'doOpen', type: 'action', dynamic: true, defaultValue: runActions(dialog.createDialogTopIfNeeded(), action.subjectNext(dialogs.changeEmitter(), obj(prop('open', true), prop('dialog', '%$$dialog%'))))}
   ],
   impl: ctx => {
 	const $dialog = { id: ctx.params.id || `dlg-${ctx.id}`, launcherCmpId: ctx.exp('%$cmp/cmpId%') }
@@ -34,29 +31,28 @@ component('openDialog.probe', {
 })
 
 component('dialog.init', {
-	type: 'feature',
-	impl: features(
-		calcProp('dummy',ctx => jb.log('dialog init uiComp', {dialog: ctx.vars.$dialog, cmp: ctx.vars.cmp,ctx})),
-		calcProp('title', '%$$model/title()%'),
-		calcProp('contentComp', '%$$model/content%'),
-		calcProp('hasMenu', '%$$model/menu/profile%'),
-		calcProp('menuComp', '%$$model/menu%'),
-		feature.initValue({to: '%$$dialog/cmpId%', value: '%$cmp/cmpId%', alsoWhenNotEmpty: true}),
-		htmlAttribute('id','%$$dialog/id%'),
-
-		method('dialogCloseOK', dialog.closeDialog(true)),
-		method('dialogClose', dialog.closeDialog(false)),
-		css('z-index: 100'),
-	)
+  type: 'feature',
+  impl: features(
+    calcProp('dummy', ctx => jb.log('dialog init uiComp', {dialog: ctx.vars.$dialog, cmp: ctx.vars.cmp,ctx})),
+    calcProp('title', '%$$model/title()%'),
+    calcProp('contentComp', '%$$model/content%'),
+    calcProp('hasMenu', '%$$model/menu/profile%'),
+    calcProp('menuComp', '%$$model/menu%'),
+    feature.initValue('%$$dialog/cmpId%', '%$cmp/cmpId%', { alsoWhenNotEmpty: true }),
+    htmlAttribute('id', '%$$dialog/id%'),
+    method('dialogCloseOK', dialog.closeDialog(true)),
+    method('dialogClose', dialog.closeDialog(false)),
+    css('z-index: 100')
+  )
 })
 
 component('dialog.buildComp', {
-	type: 'control:0',
-	params: [
-		{id: 'dialog', defaultValue: '%$$dialog%' },
-	],
-	impl: (ctx,dlg) => jb.ui.ctrl(dlg.ctx, {$: 'dialog.init'}),
-	require: {$: 'dialog.init'}
+  type: 'control:0',
+  params: [
+    {id: 'dialog', defaultValue: '%$$dialog%'}
+  ],
+  impl: (ctx,dlg) => jb.ui.ctrl(dlg.ctx, {$: 'dialog.init'}),
+  require: dialog.init()
 })
 
 component('dialog.createDialogTopIfNeeded', {
@@ -81,21 +77,32 @@ component('dialog.createDialogTopIfNeeded', {
 })
 
 component('dialog.closeDialog', {
-	type: 'action',
-	description: 'close parent dialog',
-	params: [
-		{id: 'OK', type: 'boolean', as: 'boolean', defaultValue: true},
-	],
-	impl: action.if('%$$dialog%' , runActions(
-		action.if(and('%$OK%','%$$dialog.hasFields%', (ctx,{$dialog}) => 
-			jb.ui.checkFormValidation && jb.ui.checkFormValidation(jb.ui.elemOfCmp(ctx, $dialog.cmpId)))),
-		action.if(and('%$OK%', not('%$formContainer.err%')), (ctx,{$dialog}) => {
+  type: 'action',
+  description: 'close parent dialog',
+  params: [
+    {id: 'OK', type: 'boolean', as: 'boolean', defaultValue: true}
+  ],
+  impl: action.if('%$$dialog%', runActions(
+    action.if(
+      and(
+        '%$OK%',
+        '%$$dialog.hasFields%',
+        (ctx,{$dialog}) => 
+			jb.ui.checkFormValidation && jb.ui.checkFormValidation(jb.ui.elemOfCmp(ctx, $dialog.cmpId))
+      )
+    ),
+    action.if({
+      condition: and('%$OK%', not('%$formContainer.err%')),
+      then: (ctx,{$dialog}) => {
 			jb.log('dialog onOK',{$dialog,ctx})
 			$dialog.ctx.params.onOK(ctx)
-		}),
-		action.if(or(not('%$OK%'), not('%$formContainer.err%')),
-			action.subjectNext(dialogs.changeEmitter(), obj(prop('close',true), prop('dialogId','%$$dialog/id%'))))
-	))
+		}
+    }),
+    action.if({
+      condition: or(not('%$OK%'), not('%$formContainer.err%')),
+      then: action.subjectNext(dialogs.changeEmitter(), obj(prop('close', true), prop('dialogId', '%$$dialog/id%')))
+    })
+  ))
 })
 
 component('dialog.closeDialogById', {
@@ -108,13 +115,13 @@ component('dialog.closeDialogById', {
 })
   
 component('dialog.closeAll', {
-	type: 'action',
-	impl: runActionOnItems(dialog.shownDialogs(), dialog.closeDialogById('%%'))
+  type: 'action',
+  impl: runActionOnItems(dialog.shownDialogs(), dialog.closeDialogById('%%'))
 })
 
 component('dialog.closeAllPopups', {
-	type: 'action',
-	impl: runActionOnItems(dialogs.shownPopups(), dialog.closeDialogById('%%'))
+  type: 'action',
+  impl: runActionOnItems(dialogs.shownPopups(), dialog.closeDialogById('%%'))
 })
 
 component('dialog.shownDialogs', {
@@ -140,31 +147,31 @@ component('dialogs.shownPopups', {
 })
 
 component('dialogFeature.modal', {
-	description: 'blocks all other screen elements',
-	type: 'dialog-feature',
-	impl: features(
-		frontEnd.init(() =>	jb.ui.addHTML(document.body,'<div class="modal-overlay"></div>')),
-		frontEnd.onDestroy(() => Array.from(document.body.querySelectorAll('>.modal-overlay'))
+  description: 'blocks all other screen elements',
+  type: 'dialog-feature',
+  impl: features(
+    frontEnd.init(() =>	jb.ui.addHTML(document.body,'<div class="modal-overlay"></div>')),
+    frontEnd.onDestroy(() => Array.from(document.body.querySelectorAll('>.modal-overlay'))
 			.forEach(el=>document.body.removeChild(el)))
-	)
+  )
 })
 
 component('dialogFeature.uniqueDialog', {
-	type: 'dialog-feature',
-	params: [
-	  {id: 'id', as: 'string'},
-	],
-	impl: If('%$id%', features(
-		feature.initValue({to: '%$$dialog/id%',value: '%$id%', alsoWhenNotEmpty: true}),
-		followUp.flow(
-			source.data(ctx => jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog')),
-			rx.filter(({data},{cmp},{id}) => data.getAttribute('id') == id && data.getAttribute('cmp-id') != cmp.cmpId ),
-			rx.map(({data}) => data.getAttribute('cmp-id')),
-			rx.map(obj(prop('closeByCmpId',true), prop('cmpId','%%'), prop('dialogId','%$id%'))),
-			rx.log('dialog close uniqueDialog'),
-			sink.subjectNext(dialogs.changeEmitter())
-		)
-	))
+  type: 'dialog-feature',
+  params: [
+    {id: 'id', as: 'string'}
+  ],
+  impl: If('%$id%', features(
+    feature.initValue('%$$dialog/id%', '%$id%', { alsoWhenNotEmpty: true }),
+    followUp.flow(
+      source.data(ctx => jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog')),
+      rx.filter(({data},{cmp},{id}) => data.getAttribute('id') == id && data.getAttribute('cmp-id') != cmp.cmpId),
+      rx.map(({data}) => data.getAttribute('cmp-id')),
+      rx.map(obj(prop('closeByCmpId', true), prop('cmpId', '%%'), prop('dialogId', '%$id%'))),
+      rx.log('dialog close uniqueDialog'),
+      sink.subjectNext(dialogs.changeEmitter())
+    )
+  ))
 })
 
 component('source.eventIncludingPreview', {

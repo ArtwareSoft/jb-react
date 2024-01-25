@@ -267,12 +267,12 @@ component('source.testsResults', {
     rx: rx.pipe(
       source.data('%$tests%'),
       rx.var('testID'),
-      rx.concatMap({
-        func: source.merge(
+      rx.concatMap(
+        source.merge(
           source.data(obj(prop('id', '%%'), prop('started', 'true'))),
           rx.pipe(source.promise(({},{testID}) => jb.test.runSingleTest(testID)))
         )
-      })
+      )
     ),
     jbm: '%$jbm%'
   })
@@ -289,22 +289,17 @@ component('tests.runner', {
     Var('rootElem', ({},{},{rootElemId}) => jb.frame.document.getElementById(rootElemId)),
     ({},{rootElem},{tests}) => rootElem.innerHTML = `<div style="font-size: 20px"><div id="progress"></div><span id="fail-counter" onclick="jb.test.hide_success_lines()"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span><span id="memory-usage"></span></div>`,
     rx.pipe(
-      source.testsResults('%$tests%',{ jbm: '%$jbm%' }),
-      rx.resource({
-        name: 'acc',
-        value: () => ({ index: 0, success_counter: 0, fail_counter: 0, startTime: new Date().getTime() })
-      }),
+      source.testsResults('%$tests%', { jbm: '%$jbm%' }),
+      rx.resource('acc', () => ({ index: 0, success_counter: 0, fail_counter: 0, startTime: new Date().getTime() })),
       rx.var('testID', '%id%'),
-      rx.do({
-        action: ({data},{acc, testID, rootElem}) => {
+      rx.do(({data},{acc, testID, rootElem}) => {
 				rootElem.querySelector('#progress').innerHTML = `<div id=${testID}>${acc.index++}: ${testID} ${data.started?'started':'finished'}</div>`
 				if (!data.started) {
 					data.success ? acc.success_counter++ : acc.fail_counter++;
 					jb.test.addHTML(rootElem, jb.test.testResultHtml(data))
 					jb.test.updateTestHeader(rootElem,acc)
 				}
-			}
-      }),
+			}),
       sink.action(()=>{})
     )
   )

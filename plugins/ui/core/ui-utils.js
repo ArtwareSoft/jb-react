@@ -82,14 +82,12 @@ component('service.registerBackEndService', {
     {id: 'service', mandatory: true, dynamic: true},
     {id: 'allowOverride', as: 'boolean', type: 'boolean'}
   ],
-  impl: feature.init({
-    action: (ctx, { $serviceRegistry }, { id, service, allowOverride }) => {
+  impl: feature.init((ctx, { $serviceRegistry }, { id, service, allowOverride }) => {
     const _id = id(ctx), _service = service(ctx)
     jb.log('register service', { id: _id, service: _service, ctx: ctx.cmpCtx })
     if ($serviceRegistry.services[_id] && !allowOverride)
       jb.logError('overridingService ${_id}', { id: _id, service: $serviceRegistry.services[_id], service: _service, ctx })
     $serviceRegistry.services[_id] = _service
-  }
   })
 })
 

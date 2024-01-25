@@ -19,11 +19,7 @@ component('sourceCode', {
   params: [
     {id: 'pluginsToLoad', type: 'plugins-to-load[]', flattenArray: true},
     {id: 'pluginPackages', type: 'plugin-package[]', flattenArray: true, defaultValue: defaultPackage()},
-    {
-      id: 'treeShakeServer',
-      type: 'jbm',
-      description: 'if used, tree shake is used to load extra code, use jbm.self for parent'
-    },
+    {id: 'treeShakeServer', type: 'jbm', description: 'if used, tree shake is used to load extra code, use jbm.self for parent'},
     {id: 'libsToInit', as: 'string', description: 'Empty means load all libraries'},
     {id: 'actualCode', as: 'string', description: 'alternative to plugins'}
   ],
@@ -43,7 +39,7 @@ component('treeShakeClientWithPlugins', {
 
 component('treeShakeClient', {
   type: 'source-code',
-  impl: sourceCode({ treeShakeServer: jbm.self(),actualCode: () => jb.treeShake.clientCode() })
+  impl: sourceCode({ treeShakeServer: jbm.self(), actualCode: () => jb.treeShake.clientCode() })
 })
 
 component('xServer', {
