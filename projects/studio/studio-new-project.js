@@ -1,16 +1,12 @@
 component('studio.newProject', {
+  autoGen: true,
   params: [
     {id: 'project', as: 'string'},
     {id: 'type', as: 'string', options: 'material,puppeteer'}
   ],
   impl: obj(
-    prop('project', '%$project%'),
-    prop({
-      title: 'files',
-      val: obj(
-        prop(
-          'index.html',
-          `<!DOCTYPE html>
+    prop('project','%$project%'),
+    prop('files', obj(prop('index.html', `<!DOCTYPE html>
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,28 +24,16 @@ component('studio.newProject', {
     window.jb_initWidget && jb_initWidget()
   </script>
 </body>
-</html>`
-        ),
-        prop(
-          '%$project%.js',
-          `component('%$project%.main', {
+</html>`),
+  prop('%$project%.js',`component('%$project%.main', {
   type: 'control',
   impl: group({
     controls: [button('my button')]
   })
 })
-`
-        )
-      ),
-      type: 'object'
-    })
-  )
-})
-`)), 'object'),
+`))),
 )
 })
-
-/* //# sourceURL=%$project%.js */
 
 component('studio.openNewProject', {
   type: 'action',
@@ -122,7 +106,6 @@ component('studio.projectBaseDir', {
 component('studio.projectsDir', {
   impl: () => jb.studio.host.projectsDir()
 })
-
 
 component('studio.saveNewProject', {
   type: 'action,has-side-effects',

@@ -1,6 +1,6 @@
 using('common')
 
-extension('fs','main' ,{
+extension('fs','main', {
     ls(dir, recursive) {
         const fs = jbHost.fs
         return fs.readdirSync(dir).flatMap( file => {
@@ -10,7 +10,7 @@ extension('fs','main' ,{
     }
 })
 
-component('filesOfPath' , {
+component('filesOfPath', {
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -29,7 +29,7 @@ component('filesOfPath' , {
   }
 })
 
-component('readFile' , {
+component('readFile', {
   params: [
     {id: 'path', as: 'string'},
   ],
@@ -44,7 +44,7 @@ component('readFile' , {
   }
 })
 
-component('writeFile' , {
+component('writeFile', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -60,7 +60,7 @@ component('writeFile' , {
   }
 })
 
-component('writeFilesContent' , {
+component('writeFilesContent', {
   type: 'action',
   params: [
     {id: 'items', as: 'array'}

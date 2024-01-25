@@ -3,13 +3,13 @@ component('cmp1', {
 })
 
 component('cmp1', {
-    type: 'myType<myDsl>',
-    impl: 'myDsl'
+  type: 'myType<myDsl>',
+  impl: 'myDsl'
 })
 
 component('cmp1', {
-    type: 'myType<myDsl.inner>',
-    impl: 'innerDsl'
+  type: 'myType<myDsl.inner>',
+  impl: 'innerDsl'
 })
 
 component('testDslClientOutOfDsl', {
