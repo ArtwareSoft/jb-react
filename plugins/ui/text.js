@@ -26,17 +26,17 @@ component('text.allowAsynchValue', {
   type: 'feature',
   description: 'allows a text value to be reactive or promise',
   params: [
-    { id: 'propId', defaultValue: 'text'},
-    { id: 'waitingValue', defaultValue: ''},
+    {id: 'propId', defaultValue: 'text'},
+    {id: 'waitingValue', defaultValue: ''}
   ],
   impl: features(
-    calcProp('%$propId%', firstSucceeding('%$$state/{%$propId%}%','%$$props/{%$propId%}%' )),
+    calcProp('%$propId%', firstSucceeding('%$$state/{%$propId%}%','%$$props/{%$propId%}%')),
     followUp.flow(
-      source.any(If('%$$state/{%$propId%}%','','%$$props/{%$propId%}%')),
+      source.any(If('%$$state/{%$propId%}%', '', '%$$props/{%$propId%}%')),
       rx.log('followUp allowAsynchValue'),
       rx.map(({data}) => jb.ui.toVdomOrStr(data)),
-      sink.refreshCmp(obj(prop('%$propId%','%%')))
-    ),
+      sink.refreshCmp(obj(prop('%$propId%', '%%')))
+    )
   )
 })
 

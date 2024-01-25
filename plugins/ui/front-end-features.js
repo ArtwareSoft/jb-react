@@ -385,21 +385,21 @@ component('feature.globalKeyboardShortcut', {
 })
 
 component('feature.onEnter', {
-    type: 'feature',
-    category: 'events',
-    params: [
-      {id: 'action', type: 'action', mandatory: true, dynamic: true}
-    ],
-    impl: feature.onKey('Enter', call('action'))
+  type: 'feature',
+  category: 'events',
+  params: [
+    {id: 'action', type: 'action', mandatory: true, dynamic: true}
+  ],
+  impl: feature.onKey('Enter', call('action'))
 })
   
 component('feature.onEsc', {
-    type: 'feature',
-    category: 'events',
-    params: [
-      {id: 'action', type: 'action', mandatory: true, dynamic: true}
-    ],
-    impl: feature.onKey('Esc',call('action'))
+  type: 'feature',
+  category: 'events',
+  params: [
+    {id: 'action', type: 'action', mandatory: true, dynamic: true}
+  ],
+  impl: feature.onKey('Esc', call('action'))
 })
 
 component('frontEnd.selectionKeySourceService', {
@@ -409,9 +409,7 @@ component('frontEnd.selectionKeySourceService', {
     {id: 'autoFocs', as: 'boolean', type: 'boolean'}
   ],
   impl: features(
-    service.registerBackEndService({
-      id: 'selectionKeySource',
-      service: obj(prop('cmpId', '%$cmp/cmpId%')),
+    service.registerBackEndService('selectionKeySource', obj(prop('cmpId', '%$cmp/cmpId%')), {
       allowOverride: true
     }),
     frontEnd.var('autoFocs', '%$autoFocs%'),
@@ -445,8 +443,8 @@ component('source.findSelectionKeySource', {
   category: 'source',
   description: 'used in front end, works with "selectionKeySourceService" and "passSelectionKeySource"',
   impl: rx.pipe(
-    Var('clientCmp','%$cmp%'),
-    source.merge( 
+    Var('clientCmp', '%$cmp%'),
+    source.merge(
       source.data([]),
       (ctx,{cmp,selectionKeySourceCmpId}) => {
         jb.log('keyboard search selectionKeySource',{cmp,selectionKeySourceCmpId,ctx})
@@ -460,7 +458,7 @@ component('source.findSelectionKeySource', {
       }
     ),
     rx.takeUntil('%$clientCmp.destroyed%'),
-    rx.var('cmp','%$clientCmp%'),
+    rx.var('cmp', '%$clientCmp%'),
     rx.log('keyboard from selectionKeySource')
   )
 })

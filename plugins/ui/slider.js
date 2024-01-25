@@ -1,17 +1,21 @@
 component('editableNumber.sliderNoText', {
   type: 'editable-number.style',
   impl: customStyle({
-      template: (cmp,{min,max,step,numbericVal},h) => h('input', { 
+    template: (cmp,{min,max,step,numbericVal},h) => h('input', { 
         type: 'range', value: numbericVal, mouseup: 'onblurHandler', tabindex: -1, min,max,step
       }),
-      features: [ field.databind(0,true), slider.init(), slider.drag()]
+    features: [
+      field.databind(0, true),
+      slider.init(),
+      slider.drag()
+    ]
   })
 })
 
 component('editableNumber.slider', {
   type: 'editable-number.style',
-  impl: styleByControl(
-    group({
+  impl: styleByControl({
+    control: group({
       title: '%$editableNumberModel/title%',
       controls: group({
         layout: layout.horizontal(20),
@@ -28,26 +32,28 @@ component('editableNumber.slider', {
               css.class('text-input')
             ]
           }),
-          editableNumber({
-            databind: '%$editableNumberModel/databind()%',
+          editableNumber('%$editableNumberModel/databind()%', {
             style: editableNumber.sliderNoText(),
-            max: '%$editableNumberModel/max%',
             min: '%$editableNumberModel/min%',
-            step: '%$editableNumberModel/step%',            
-            features: [css.width(80), css.class('slider-input')]
+            max: '%$editableNumberModel/max%',
+            step: '%$editableNumberModel/step%',
+            features: [
+            css.width(80),
+            css.class('slider-input')
+          ]
           })
         ],
-        features: watchRef({ref: '%$editableNumberModel/databind()%', allowSelfRefresh: true})
+        features: watchRef('%$editableNumberModel/databind()%', { allowSelfRefresh: true })
       })
     }),
-    'editableNumberModel'
-  )
+    modelVar: 'editableNumberModel'
+  })
 })
 
 component('editableNumber.mdcSlider', {
   type: 'editable-number.style',
-  impl: styleByControl(
-    group({
+  impl: styleByControl({
+    control: group({
       title: '%$editableNumberModel/title%',
       controls: group({
         layout: layout.horizontal(20),
@@ -63,19 +69,18 @@ component('editableNumber.mdcSlider', {
               css.class('text-input')
             ]
           }),
-          editableNumber({
-            databind: '%$editableNumberModel/databind()%',
-            max: '%$editableNumberModel/max%',
+          editableNumber('%$editableNumberModel/databind()%', {
+            style: editableNumber.mdcSliderNoText(),
             min: '%$editableNumberModel/min%',
-            step: '%$editableNumberModel/step%',
-            style: editableNumber.mdcSliderNoText({}),
+            max: '%$editableNumberModel/max%',
+            step: '%$editableNumberModel/step%'
           })
         ],
-        features: watchRef({ref: '%$editableNumberModel/databind()%', allowSelfRefresh: true})
+        features: watchRef('%$editableNumberModel/databind()%', { allowSelfRefresh: true })
       })
     }),
-    'editableNumberModel'
-  )
+    modelVar: 'editableNumberModel'
+  })
 })
 
 component('editableNumber.mdcSliderNoText', {
@@ -120,16 +125,16 @@ component('editableNumber.mdcSliderNoText', {
 component('slider.init', {
   type: 'feature',
   impl: features(
-    calcProp('numbericVal',({},{editableNumber,$model}) => editableNumber.numericPart(jb.val( $model.databind()))),
+    calcProp('numbericVal', ({},{editableNumber,$model}) => editableNumber.numericPart(jb.val( $model.databind()))),
     calcProp('min'),
-    calcProp('step'),      
+    calcProp('step'),
     calcProp('max', (ctx,{$model,$props}) => {
         const val = $props.numbericVal
         if (val >= +$model.max && $model.autoScale)
           return val * 1.2
         return +$model.max
     }),
-    method('delete',writeValue('%$$model/databind()%',() => null)),
+    method('delete', writeValue('%$$model/databind()%', () => null)),
     method('assignIgnoringUnits', (ctx,{editableNumber,$model}) => {
       const curVal = editableNumber.numericPart(jb.val($model.databind()))
       if (curVal === undefined) return
@@ -143,16 +148,30 @@ component('slider.init', {
       jb.db.writeValue($model.databind(), editableNumber.calcDataString(newVal, ctx),ctx)
     }),
     frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode%==46'), sink.BEMethod('delete')),
-    frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode%==39'), rx.map(If('%shiftKey%',9,1)), sink.BEMethod('incIgnoringUnits')),
-    frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode%==37'), rx.map(If('%shiftKey%',-9,-1)), sink.BEMethod('incIgnoringUnits')),
+    frontEnd.flow(
+      source.frontEndEvent('keydown'),
+      rx.filter('%keyCode%==39'),
+      rx.map(If('%shiftKey%', 9, 1)),
+      sink.BEMethod('incIgnoringUnits')
+    ),
+    frontEnd.flow(
+      source.frontEndEvent('keydown'),
+      rx.filter('%keyCode%==37'),
+      rx.map(If('%shiftKey%', -9, -1)),
+      sink.BEMethod('incIgnoringUnits')
+    )
   )
 })
 
 component('slider.drag', {
   type: 'feature',
   impl: features(
-    frontEnd.flow(source.frontEndEvent('mousemove'), rx.filter('%buttons%!=0'), sink.BEMethod('assignIgnoringUnits','%$cmp.base.value%')),
-    frontEnd.flow(source.frontEndEvent('click'), sink.BEMethod('assignIgnoringUnits','%$cmp.base.value%'))
+    frontEnd.flow(
+      source.frontEndEvent('mousemove'),
+      rx.filter('%buttons%!=0'),
+      sink.BEMethod('assignIgnoringUnits', '%$cmp.base.value%')
+    ),
+    frontEnd.flow(source.frontEndEvent('click'), sink.BEMethod('assignIgnoringUnits', '%$cmp.base.value%'))
   )
 })
 

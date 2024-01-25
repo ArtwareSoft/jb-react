@@ -35,7 +35,7 @@ component('html.inIframe', {
         src: 'javascript: document.write(parent.contentForIframe)'
     }),
     features: [
-      frontEnd.var('html','%$$model/html()%'),
+      frontEnd.var('html', '%$$model/html()%'),
       frontEnd.init(({},{html}) => window.contentForIframe = html)
     ]
   })

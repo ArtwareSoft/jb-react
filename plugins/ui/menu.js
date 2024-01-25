@@ -5,8 +5,7 @@ component('menu.menu', {
   params: [
     {id: 'title', as: 'string', dynamic: true, mandatory: true},
     {id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true, defaultValue: []},
-    {id: 'icon', type: 'icon' },
-//    {id: 'optionsFilter', type: 'data', dynamic: true, defaultValue: '%%'}
+    {id: 'icon', type: 'icon'}
   ],
   impl: ctx => ({
 		options: function(ctx2) {
@@ -40,15 +39,12 @@ component('menu.endWithSeparator', {
     {id: 'separator', type: 'menu.option', defaultValue: menu.separator()},
     {id: 'title', as: 'string'}
   ],
-  impl: pipeline(
-      Var('opts','%$options()%'), 
-      If('%$opts/length%>0', list('%$opts%','%$separator%'))
-  )
+  impl: pipeline(Var('opts', '%$options()%'), If('%$opts/length%>0', list('%$opts%','%$separator%')))
 })
 
 component('menu.separator', {
   type: 'menu.option',
-  impl: obj(prop('separator',true))
+  impl: obj(prop('separator', true))
 })
 
 component('menu.action', {
@@ -73,7 +69,7 @@ component('menu.action', {
 			},
 			ctx: ctx.setVar('menuDepth', (ctx.vars.menuDepth || 0)+1)
 		}),
-  require: {$: 'key.eventMatchKey' }
+  require: key.eventMatchKey()
 })
 
 // ********* controls ************
@@ -97,7 +93,7 @@ component('menu.control', {
       {$: 'htmlAttribute', attribute: 'menuDepth', value: '%$menuModel/ctx/vars/menuDepth%' },
     ]})
 	},
-  require: [{$: 'features'}, {$: 'calcProp'}, {$: 'htmlAttribute'}]
+  require: [features(), calcProp(), htmlAttribute()]
 })
 
 component('menu.openContextMenu', {
@@ -107,12 +103,12 @@ component('menu.openContextMenu', {
     {id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue: dialog.contextMenuPopup()},
     {id: 'menuStyle', type: 'menu.style', dynamic: true, defaultValue: menuStyle.contextMenu()},
     {id: 'features', type: 'dialog-feature[]', dynamic: true},
-    {id: 'id', as: 'string' } 
+    {id: 'id', as: 'string'}
   ],
   impl: openDialog({
-    id: '%$id%',
+    content: menu.control(call('menu'), call('menuStyle')),
     style: call('popupStyle'),
-    content: menu.control({menu: call('menu'), style: call('menuStyle')}),
+    id: '%$id%',
     features: call('features')
   })
 })
@@ -126,17 +122,19 @@ component('menuStyle.pulldown', {
     {id: 'leafOptionStyle', type: 'menu-option.style', dynamic: true, defaultValue: menuStyle.optionLine()},
     {id: 'layout', type: 'group.style', dynamic: true, defaultValue: itemlist.horizontal()}
   ],
-  impl: styleByControl(
-    Var('optionsParentId', ctx => ctx.id),
-    Var('innerMenuStyle', '%$innerMenuStyle%'),
-    Var('leafOptionStyle', '%$leafOptionStyle%'),
-    itemlist({
+  impl: styleByControl({
+    vars: [
+      Var('optionsParentId', ctx => ctx.id),
+      Var('innerMenuStyle', '%$innerMenuStyle%'),
+      Var('leafOptionStyle', '%$leafOptionStyle%')
+    ],
+    control: itemlist({
       items: '%$menuModel.options()%',
-      controls: menu.control({menu: '%$item%', style: menuStyle.popupThumb()}),
+      controls: menu.control('%$item%', menuStyle.popupThumb()),
       style: call('layout'),
       features: menu.selection()
     })
-  )
+  })
 })
 
 component('menuStyle.contextMenu', {
@@ -144,15 +142,13 @@ component('menuStyle.contextMenu', {
   params: [
     {id: 'leafOptionStyle', type: 'menu-option.style', dynamic: true, defaultValue: menuStyle.optionLine()}
   ],
-  impl: styleByControl(
-    Var('optionsParentId', ctx => ctx.id),
-    Var('leafOptionStyle', '%$leafOptionStyle%'),
-    itemlist({
-      items: '%$menuModel.options()%',
-      controls: menu.control({menu: '%$item%', style: menuStyle.applyMultiLevel({})}),
-      features: menu.selection()
-    })
-  )
+  impl: styleByControl({
+    vars: [
+      Var('optionsParentId', ctx => ctx.id),
+      Var('leafOptionStyle', '%$leafOptionStyle%')
+    ],
+    control: itemlist({ items: '%$menuModel.options()%', controls: menu.control('%$item%', menuStyle.applyMultiLevel()), features: menu.selection() })
+  })
 })
 
 component('menu.initPopupMenu', {
@@ -162,35 +158,29 @@ component('menu.initPopupMenu', {
   ],
   impl: features(
     calcProp('title', '%$menuModel.title%'),
-    method('openPopup', 
-      parentCtx => parentCtx.run({$: 'menu.openContextMenu',
+    method('openPopup', parentCtx => parentCtx.run({$: 'menu.openContextMenu',
         popupStyle: {$: 'call', param: 'popupStyle'},
         menu: () => parentCtx.run({$: 'If', condition: '%$innerMenu%', then: '%$innerMenu.menu()%', Else: '%$$model.menu()%'}),
-      })
-    ),
+      })),
     method('closePopup', dialog.closeDialogById('%$optionsParentId%')),
     method('openNewPopup', runActions(action.runBEMethod('closePopup'), action.runBEMethod('openPopup'))),
     frontEnd.onDestroy(action.runBEMethod('closePopup')),
     menu.passMenuKeySource(),
     frontEnd.flow(source.findMenuKeySource(), rx.filter('%keyCode%==39'), sink.BEMethod('openPopup')),
-    frontEnd.flow(source.findMenuKeySource(), rx.filter(inGroup(list(37,27),'%keyCode%')), sink.BEMethod('closePopup')),
+    frontEnd.flow(source.findMenuKeySource(), rx.filter(inGroup(list(37,27), { item: '%keyCode%' })), sink.BEMethod('closePopup'))
   ),
-  require: [{$: 'menu.openContextMenu'}, {$: 'call'}, {$: 'If'}]
+  require: [menu.openContextMenu(), call(), If()]
 })
 
 component('menu.initMenuOption', {
   type: 'feature',
   impl: features(
-    calcProp({id: 'title', value: '%$menuModel.leaf.title%'}),
-    calcProp({id: 'icon', value: '%$menuModel.leaf.icon%'}),
-    calcProp({id: 'shortcut', value: '%$menuModel.leaf.shortcut%'}),
-    method('closeAndActivate', //action.if(equals('%$topMenu.selected%','%$menuModel%'),
-      runActions(
-        dialog.closeAllPopups(),
-        '%$menuModel.action()%'
-    )),
+    calcProp('title', '%$menuModel.leaf.title%'),
+    calcProp('icon', '%$menuModel.leaf.icon%'),
+    calcProp('shortcut', '%$menuModel.leaf.shortcut%'),
+    method('closeAndActivate', runActions(dialog.closeAllPopups(), '%$menuModel.action()%')),
     menu.passMenuKeySource(),
-    frontEnd.flow( source.findMenuKeySource(), rx.filter('%keyCode%==13'), sink.BEMethod('closeAndActivate'))
+    frontEnd.flow(source.findMenuKeySource(), rx.filter('%keyCode%==13'), sink.BEMethod('closeAndActivate'))
   )
 })
 
@@ -233,15 +223,17 @@ component('menuStyle.applyMultiLevel', {
 component('menu.selection', {
   type: 'feature',
   impl: features(
-    htmlAttribute('tabIndex',0),
-    css('>.selected { color: var(--jb-menubar-selection-fg); background: var(--jb-menubar-selection-bg) }'),
-    userStateProp('selected',0),
+    htmlAttribute('tabIndex', 0),
+    css(
+      '>.selected { color: var(--jb-menubar-selection-fg); background: var(--jb-menubar-selection-bg) }'
+    ),
+    userStateProp('selected', 0),
     templateModifier(({},{vdom, selected}) => {
       const parent = vdom.querySelector('.jb-items-parent') || vdom
       const el = jb.path(parent,`children.${selected}`)
       el && el.addClass('selected')
     }),
-    method('closeMenu',dialog.closeDialog()),
+    method('closeMenu', dialog.closeDialog()),
     menu.selectionKeySourceService(),
     menu.passMenuKeySource(),
     frontEnd.method('applyState', ({},{cmp}) => {
@@ -258,29 +250,34 @@ component('menu.selection', {
         cmp.base.state.selected = cmp.state.selected = data
         cmp.runFEMethod('applyState')
     }),
-    frontEnd.flow(source.findMenuKeySource(), 
+    frontEnd.flow(
+      source.findMenuKeySource(),
       rx.filter(not('%ctrlKey%')),
-      rx.filter(inGroup(list(38,40),'%keyCode%')),
-      rx.map(itemlist.nextSelected(If('%keyCode%==40',1,-1), menu.notSeparator('%%') )),
+      rx.filter(inGroup(list(38,40), { item: '%keyCode%' })),
+      rx.map(itemlist.nextSelected(If('%keyCode%==40', 1, -1), menu.notSeparator('%%'))),
       sink.FEMethod('setSelected')
     ),
     frontEnd.flow(source.findMenuKeySource(), rx.filter('%keyCode%==27'), sink.BEMethod('closeMenu')),
-    frontEnd.flow(source.frontEndEvent('mousemove'),
+    frontEnd.flow(
+      source.frontEndEvent('mousemove'),
       rx.filter(menu.notSeparator('%target%')),
-      rx.var('elem',({data}) => data.target.ownerDocument.elementsFromPoint(data.pageX, data.pageY)[0]),
-      rx.var('ctxId',itemlist.indexOfElem('%$elem%')),
+      rx.var('elem', ({data}) => data.target.ownerDocument.elementsFromPoint(data.pageX, data.pageY)[0]),
+      rx.var('ctxId', itemlist.indexOfElem('%$elem%')),
       rx.map('%$ctxId%'),
       rx.distinctUntilChanged(),
       sink.FEMethod('setSelected')
-    ),
+    )
   )
 })
   
 component('menu.selectionKeySourceService', {
   type: 'feature',
-  impl: If('%$$serviceRegistry/services/menuKeySource%', [], features( // regiter service only for top ctrl
-    service.registerBackEndService('menuKeySource', '%$cmp/cmpId%'),
-    frontEnd.prop('menuKeySource', (ctx,{cmp,el}) => {
+  impl: If({
+    condition: '%$$serviceRegistry/services/menuKeySource%',
+    then: [],
+    Else: features(
+      service.registerBackEndService('menuKeySource', '%$cmp/cmpId%'),
+      frontEnd.prop('menuKeySource', (ctx,{cmp,el}) => {
       if (el.keydown_src) return
       const {pipe, takeUntil,subject} = jb.callbag
       el.keydown_src = subject()
@@ -296,22 +293,23 @@ component('menu.selectionKeySourceService', {
       jb.log('menuKeySource register',{cmp,el,ctx})
       return pipe(el.keydown_src, takeUntil(cmp.destroyed))
     })
-  ))
+    )
+  })
 })
 
 component('menu.passMenuKeySource', {
   type: 'feature',
-  impl: frontEnd.var('menuKeySourceCmpId', '%$$serviceRegistry/services/menuKeySource%'),
+  impl: frontEnd.var('menuKeySourceCmpId', '%$$serviceRegistry/services/menuKeySource%')
 })
 
 component('source.findMenuKeySource', {
   type: 'rx',
   category: 'source',
   params: [
-    {id: 'clientCmp', defaultValue: '%$cmp%' }    
+    {id: 'clientCmp', defaultValue: '%$cmp%'}
   ],
   impl: rx.pipe(
-    source.merge( 
+    source.merge(
       source.data([]),
       (ctx,{menuKeySourceCmpId},{clientCmp}) => {
         jb.log('search menuKeySource',{menuKeySourceCmpId,clientCmp,ctx})
@@ -324,7 +322,7 @@ component('source.findMenuKeySource', {
         return ret
       }
     ),
-    rx.var('cmp','%$clientCmp%'),
+    rx.var('cmp', '%$clientCmp%'),
     rx.takeUntil('%$cmp.destroyed%'),
     rx.filter(menu.isRelevantMenu()),
     rx.log('from menuKeySource')
@@ -387,16 +385,16 @@ component('menuStyle.popupAsOption', {
 component('menuStyle.popupThumb', {
   type: 'menu.style',
   description: 'used for pulldown',
-  impl: customStyle({
-    template: ({},{title},h) => h('div.pulldown-top-menu-item',{ onclick: 'openPopup'}, title),
+  impl: customStyle(({},{title},h) => h('div.pulldown-top-menu-item',{ onclick: 'openPopup'}, title), {
     features: [
-      menu.initPopupMenu(), 
-      feature.mdcRippleEffect(),
-      frontEnd.flow(source.frontEndEvent('mouseenter'), 
-        rx.filter(ctx => jb.ui.find(ctx,'.pulldown-mainmenu-popup')[0]), // the first 'open popup' needs a click
-        sink.BEMethod('openNewPopup')
-      )
-    ]
+    menu.initPopupMenu(),
+    feature.mdcRippleEffect(),
+    frontEnd.flow(
+      source.frontEndEvent('mouseenter'),
+      rx.filter(ctx => jb.ui.find(ctx,'.pulldown-mainmenu-popup')[0]),
+      sink.BEMethod('openNewPopup')
+    )
+  ]
   })
 })
 
@@ -405,20 +403,17 @@ component('dialog.contextMenuPopup', {
   params: [
     {id: 'offsetTop', as: 'number'},
     {id: 'rightSide', as: 'boolean', type: 'boolean'},
-    {id: 'toolbar', as: 'boolean', type: 'boolean'},
+    {id: 'toolbar', as: 'boolean', type: 'boolean'}
   ],
   impl: customStyle({
     template: ({},{contentComp,toolbar},h) => h('div.jb-dialog jb-popup context-menu-popup', 
       { class: toolbar ? 'toolbar-popup' : 'pulldown-mainmenu-popup'}, h(contentComp)),
     features: [
-      dialogFeature.uniqueDialog('%$optionsParentId%', false),
+      dialogFeature.uniqueDialog('%$optionsParentId%'),
       dialogFeature.maxZIndexOnClick(),
       dialogFeature.closeWhenClickingOutside(),
       dialogFeature.cssClassOnLaunchingElement(),
-      dialogFeature.nearLauncherPosition({
-        offsetTop: '%$offsetTop%',
-        rightSide: '%$rightSide%'
-      })
+      dialogFeature.nearLauncherPosition({ offsetTop: '%$offsetTop%', rightSide: '%$rightSide%' })
     ]
   })
 })
@@ -427,14 +422,14 @@ component('menuSeparator.line', {
   type: 'menu-separator.style',
   impl: customStyle({
     template: ({},{},h) => h('div', {separator: true}),
-    css: '{ margin: 6px 0; border-bottom: 1px solid var(--jb-menu-separator-fg);}',
+    css: '{ margin: 6px 0; border-bottom: 1px solid var(--jb-menu-separator-fg);}'
   })
 })
 
-component('menu.notSeparator',{
+component('menu.notSeparator', {
   type: 'boolean',
   params: [
-    { id: 'elem' }
+    {id: 'elem'}
   ],
   impl: (ctx,elem) => elem.firstElementChild && !elem.firstElementChild.getAttribute('separator')
 })
@@ -445,38 +440,40 @@ component('menuStyle.toolbar', {
   type: 'menu.style',
   params: [
     {id: 'leafOptionStyle', type: 'menu-option.style', dynamic: true, defaultValue: menuStyle.icon()},
-    {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.horizontal(5)},
+    {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.horizontal(5)}
   ],
-  impl: styleByControl(
-    Var('optionsParentId', ctx => ctx.id),
-    Var('leafOptionStyle', '%$leafOptionStyle%'),
-    itemlist({
-      style: call('itemlistStyle'),
+  impl: styleByControl({
+    vars: [
+      Var('optionsParentId', ctx => ctx.id),
+      Var('leafOptionStyle', '%$leafOptionStyle%')
+    ],
+    control: itemlist({
       items: '%$menuModel/options()%',
-      controls: menu.control({menu: '%$item%', style: menuStyle.applyMultiLevel({
-        menuStyle: menuStyle.iconMenu(), leafStyle: menuStyle.icon()
-      })}),
+      controls: menu.control('%$item%', menuStyle.applyMultiLevel(menuStyle.iconMenu(), menuStyle.icon())),
+      style: call('itemlistStyle')
     })
-  )
+  })
 })
 
 component('menuStyle.icon', {
   type: 'menu-option.style',
   params: [
-    {id: 'buttonSize', as: 'number', defaultValue: 20 },
+    {id: 'buttonSize', as: 'number', defaultValue: 20}
   ],
-  impl: styleByControl(button({
-    action: '%$menuModel/action()%',
-    style: button.mdcFloatingAction({withTitle: false, buttonSize: '%$buttonSize%'}), 
-    features: (ctx,{menuModel},{buttonSize}) => 
+  impl: styleByControl(
+    button({
+      action: '%$menuModel/action()%',
+      style: button.mdcFloatingAction('%$buttonSize%', false),
+      features: (ctx,{menuModel},{buttonSize}) => 
         ctx.run({$: 'feature.icon', ...menuModel.leaf.icon, title: menuModel.title, size: buttonSize * 24/40 })
-  }))
+    })
+  )
 })
 
 component('menuStyle.icon3', {
   type: 'menu-option.style',
   params: [
-    {id: 'buttonSize', as: 'number', defaultValue: 20 },
+    {id: 'buttonSize', as: 'number', defaultValue: 20}
   ],
   impl: customStyle({
     template: (cmp,{icon,title,shortcut},h) => h('div.line noselect', { onmousedown: 'closeAndActivate' },[
@@ -497,23 +494,20 @@ component('menuStyle.icon3', {
 
 component('menuStyle.iconMenu', {
   type: 'menu.style',
-  impl: styleByControl(
-      button({
-        title: '%title%',
-        action: action.runBEMethod('openPopup'),
-        style: button.mdcIcon(
-          icon({
-            icon: '%icon/icon%',
-            type: '%icon/type%',
-            features: css('transform: translate(7px,0px) !important')
-          }), 16),
-        features: [feature.icon({
-          icon: 'more_vert',
-          type: 'mdc',
-          features: css('transform: translate(-3px,0px) !important')
-        }),
-          menu.initPopupMenu(dialog.contextMenuPopup({toolbar: true, rightSide: true}))
-        ]
+  impl: styleByControl({
+    control: button('%title%', action.runBEMethod('openPopup'), {
+      style: button.mdcIcon({
+      icon: icon('%icon/icon%', { type: '%icon/type%', features: css('transform: translate(7px,0px) !important') }),
+      buttonSize: 16
+    }),
+      features: [
+      feature.icon('more_vert', {
+        type: 'mdc',
+        features: css('transform: translate(-3px,0px) !important')
       }),
-    'innerMenu'),
+      menu.initPopupMenu(dialog.contextMenuPopup({ rightSide: true, toolbar: true }))
+    ]
+    }),
+    modelVar: 'innerMenu'
+  })
 })

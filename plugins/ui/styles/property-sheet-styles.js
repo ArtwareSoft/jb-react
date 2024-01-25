@@ -1,7 +1,7 @@
 component('propertySheet.titlesLeft', {
   type: 'group.style',
   params: [
-    {id: 'titleStyle', type: 'text.style', defaultValue: styleWithFeatures(text.span(), css.bold()), dynamic: true},
+    {id: 'titleStyle', type: 'text.style', defaultValue: styleWithFeatures(text.span(), { features: css.bold() }), dynamic: true},
     {id: 'titleText', defaultValue: '%%:', dynamic: true},
     {id: 'spacing', as: 'string', description: 'grid-column-gap', defaultValue: '10px'}
   ],
@@ -19,7 +19,7 @@ component('propertySheet.titlesLeft', {
 component('propertySheet.titlesAbove', {
   type: 'group.style',
   params: [
-    {id: 'titleStyle', type: 'text.style', defaultValue: styleWithFeatures(text.span(), css.bold()), dynamic: true},
+    {id: 'titleStyle', type: 'text.style', defaultValue: styleWithFeatures(text.span(), { features: css.bold() }), dynamic: true},
     {id: 'titleText', defaultValue: '%%', dynamic: true},
     {id: 'spacing', as: 'string', description: 'grid-column-gap', defaultValue: '10px'}
   ],

@@ -24,8 +24,8 @@ component('editableText.mdcInput', {
   type: 'editable-text.style,editable-number.style',
   params: [
     {id: 'width', as: 'number'},
-    {id: 'noLabel', as: 'boolean'},
-    {id: 'noRipple', as: 'boolean'}
+    {id: 'noLabel', as: 'boolean', type: 'boolean'},
+    {id: 'noRipple', as: 'boolean', type: 'boolean'}
   ],
   impl: customStyle({
     template: (cmp,{databind,fieldId,title,noLabel,noRipple,error},h) => h('div',{}, [
@@ -50,9 +50,7 @@ component('editableText.mdcInput', {
     features: [
       field.databindText(),
       mdcStyle.initDynamic(),
-      css(
-        ({},{},{width}) => `>.mdc-text-field { ${jb.ui.propWithUnits('width', width)} }`
-      )
+      css(({},{},{width}) => `>.mdc-text-field { ${jb.ui.propWithUnits('width', width)} }`)
     ]
   })
 })
@@ -62,7 +60,7 @@ component('editableText.mdcNoLabel', {
   params: [
     {id: 'width', as: 'number'}
   ],
-  impl: editableText.mdcInput({width:'%$width%', noLabel: true})
+  impl: editableText.mdcInput('%$width%', true)
 })
 
 component('editableText.mdcSearch', {
@@ -71,7 +69,9 @@ component('editableText.mdcSearch', {
   ],
   description: 'debounced and one way binding',
   type: 'editable-text.style',
-  impl: styleWithFeatures(editableText.mdcInput({width:'%$width%', noLabel: true}), feature.icon({icon: 'search', position: 'post'}))
+  impl: styleWithFeatures(editableText.mdcInput('%$width%', true), {
+    features: feature.icon('search', { position: 'post' })
+  })
 })
 
 component('editableText.expandable', {
@@ -84,19 +84,23 @@ component('editableText.expandable', {
     {id: 'editableStyle', type: 'editable-text.style', dynamic: true, defaultValue: editableText.input()},
     {id: 'onToggle', type: 'action', dynamic: true}
   ],
-  impl: styleByControl(
-    group({
+  impl: styleByControl({
+    control: group({
       controls: [
         editableText({
           databind: '%$editableTextModel/databind%',
           style: call('editableStyle'),
           features: [
-            watchRef({ref: '%$editable%', allowSelfRefresh: true}),
+            watchRef('%$editable%', { allowSelfRefresh: true }),
             hidden('%$editable%'),
-            method('exitEditable',runActions(writeValue('%$editable%',false), call('onToggle'))),
+            method('exitEditable', runActions(writeValue('%$editable%', false), call('onToggle'))),
             method('regainFocus', action.focusOnCmp()),
-            frontEnd.flow(source.frontEndEvent('blur'),sink.BEMethod('exitEditable')),
-            frontEnd.flow(source.frontEndEvent('keyup'),rx.filter(or('%keyCode%==13','%keyCode%==27')), sink.BEMethod('exitEditable')),
+            frontEnd.flow(source.frontEndEvent('blur'), sink.BEMethod('exitEditable')),
+            frontEnd.flow(
+              source.frontEndEvent('keyup'),
+              rx.filter(or('%keyCode%==13','%keyCode%==27')),
+              sink.BEMethod('exitEditable')
+            ),
             (ctx,{},{editableFeatures}) => editableFeatures(ctx)
           ]
         }),
@@ -109,7 +113,7 @@ component('editableText.expandable', {
           ),
           style: call('buttonStyle'),
           features: [
-            watchRef({ref: '%$editable%', allowSelfRefresh: true}),
+            watchRef('%$editable%', { allowSelfRefresh: true }),
             hidden(not('%$editable%')),
             (ctx,{},{buttonFeatures}) => buttonFeatures(ctx)
           ]
@@ -117,9 +121,9 @@ component('editableText.expandable', {
       ],
       features: [
         watchable('editable'),
-        variable({name: 'expandableContext', value: obj()})
+        variable('expandableContext', obj())
       ]
     }),
-    'editableTextModel'
-  )
+    modelVar: 'editableTextModel'
+  })
 })

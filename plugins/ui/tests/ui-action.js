@@ -17,7 +17,7 @@ extension('test','uiActions', {
 component('action', {
   type: 'ui-action',
   params: [
-    {id: 'action', type: 'action', dynamic: true },
+    {id: 'action', type: 'action', dynamic: true}
   ],
   impl: '%$action()%'
 })
@@ -26,15 +26,15 @@ component('waitFor', {
   type: 'ui-action',
   params: [
     {id: 'check', dynamic: true},
-    {id: 'logOnError', as: 'string', dynamic: true},
+    {id: 'logOnError', as: 'string', dynamic: true}
   ],
-  impl: action(waitFor({check: '%$check()%', logOnError: '%$logOnError()%'}))
+  impl: action(waitFor('%$check()%', { logOnError: '%$logOnError()%' }))
 })
 
 component('delay', {
   type: 'ui-action',
   params: [
-    {id: 'mSec', as: 'number', defaultValue: 1},
+    {id: 'mSec', as: 'number', defaultValue: 1}
   ],
   impl: action(delay('%$mSec%'))
 })
@@ -43,9 +43,9 @@ component('writeValue', {
   type: 'ui-action',
   params: [
     {id: 'to', as: 'ref', mandatory: true},
-    {id: 'value', mandatory: true},
+    {id: 'value', mandatory: true}
   ],
-  impl: action(writeValue('%$to%','%$value%'))
+  impl: action(writeValue('%$to%', '%$value%'))
 })
 
 component('uiActions', {
@@ -119,7 +119,7 @@ component('uiActions', {
 component('waitForText', {
   type: 'ui-action',
   params: [
-    {id: 'text', as: 'string' },
+    {id: 'text', as: 'string'}
   ],
   impl: waitFor((ctx,{},{text}) => {
     const body = jb.ui.widgetBody(ctx.setVars({FEEMulator: true})) // look at FE
@@ -133,8 +133,8 @@ component('waitForSelector', {
   params: [
     {id: 'selector', as: 'string'}
   ],
-  impl: waitFor(
-    (ctx,{elemToTest, useFrontEndInTest},{selector}) => {
+  impl: waitFor({
+    check: (ctx,{elemToTest, useFrontEndInTest},{selector}) => {
     const ctxToUse = useFrontEndInTest ? ctx.setVars({FEEMulator: true}) : ctx
     const elem = jb.ui.elemOfSelector(selector,ctxToUse)
 
@@ -144,22 +144,22 @@ component('waitForSelector', {
     // if FETest, wait for the frontEnd cmp to be in ready state
     return !elemToTest || !cmpElem.getAttribute('interactive') || jb.path(cmpElem,'_component.state.frontEndStatus') == 'ready'
   },
-    'uiTest waitForSelector failed. selector %$selector%'
-  )
+    logOnError: 'uiTest waitForSelector failed. selector %$selector%'
+  })
 })
 
 component('waitForCmpUpdate', {
   type: 'ui-action',
   params: [
-    {id: 'cmpVer', as: 'number', defaultValue: 2 },
+    {id: 'cmpVer', as: 'number', defaultValue: 2}
   ],
-  impl: waitForSelector('[cmp-ver=\"%$cmpVer%\"]')
+  impl: waitForSelector('[cmp-ver="%$cmpVer%"]')
 })
 
 component('waitForNextUpdate', {
   type: 'ui-action',
   params: [
-    {id: 'expectedCounter', as: 'number', defaultValue: 0, description: '0 means next' },
+    {id: 'expectedCounter', as: 'number', defaultValue: 0, description: '0 means next'}
   ],
   impl: (ctx,expectedCounter) => jb.ui.renderingUpdates && new Promise(resolve => {
     if (ctx.vars.elemToTest) return resolve() // maybe should find the widget
@@ -232,14 +232,8 @@ component('setText', {
           else
             return jb.ui.rawEventToUserRequest(ev,{ctx})
       },
-    If(
-      '%$useFrontEndInTest%',
-      uiActions(delay(1), FEUserRequest(), If(not('%$doNotWaitForNextUpdate%'), waitForNextUpdate()))
-    ),
-    If(
-      and(not('%$useFrontEndInTest%'), not('%$remoteUiTest%'), not('%$doNotWaitForNextUpdate%')),
-      waitForNextUpdate()
-    )
+    If('%$useFrontEndInTest%', uiActions(delay(1), FEUserRequest(), If(not('%$doNotWaitForNextUpdate%'), waitForNextUpdate()))),
+    If(and(not('%$useFrontEndInTest%'), not('%$remoteUiTest%'), not('%$doNotWaitForNextUpdate%')), waitForNextUpdate())
   )
 })
 
@@ -275,14 +269,8 @@ component('click', {
       else
         return jb.ui.rawEventToUserRequest({ type, target: elem, currentTarget: elem, widgetId}, {specificMethod: methodToActivate, ctx})
     },
-    If(
-      '%$useFrontEndInTest%',
-      uiActions(delay(1), FEUserRequest(), If(not('%$doNotWaitForNextUpdate%'), waitForNextUpdate()))
-    ),
-    If(
-      and(not('%$useFrontEndInTest%'), not('%$remoteUiTest%'), not('%$doNotWaitForNextUpdate%')),
-      waitForNextUpdate()
-    ),
+    If('%$useFrontEndInTest%', uiActions(delay(1), FEUserRequest(), If(not('%$doNotWaitForNextUpdate%'), waitForNextUpdate()))),
+    If(and(not('%$useFrontEndInTest%'), not('%$remoteUiTest%'), not('%$doNotWaitForNextUpdate%')), waitForNextUpdate()),
     If('%$expectedEffects%', '%$expectedEffects/check()%')
   )
 })
@@ -328,13 +316,8 @@ component('keyboardEvent', {
       elem.dispatchEvent(e)
     },
     If('%$useFrontEndInTest%', uiActions(delay(1), FEUserRequest(), If(not('%$doNotWaitForNextUpdate%'), waitForNextUpdate()))),
-    If(
-      and(not('%$useFrontEndInTest%'), not('%$remoteUiTest%'), not('%$doNotWaitForNextUpdate%')),
-      waitForNextUpdate()
-    ),
-    If('%$expectedEffects%', '%$expectedEffects/check()%')    
-    // If(or('%$remoteUiTest%','%$useFrontEndInTest%', '%$doNotWaitForNextUpdate%'), '', waitForNextUpdate()),
-    // If('%$useFrontEndInTest%', FEUserRequest()),
+    If(and(not('%$useFrontEndInTest%'), not('%$remoteUiTest%'), not('%$doNotWaitForNextUpdate%')), waitForNextUpdate()),
+    If('%$expectedEffects%', '%$expectedEffects/check()%')
   )
 })
 
@@ -373,11 +356,8 @@ component('changeEvent', {
       elem.dispatchEvent(e)
     },
     If('%$useFrontEndInTest%', uiActions(delay(1), FEUserRequest(), If(not('%$doNotWaitForNextUpdate%'), waitForNextUpdate()))),
-    If(
-      and(not('%$useFrontEndInTest%'), not('%$remoteUiTest%'), not('%$doNotWaitForNextUpdate%')),
-      waitForNextUpdate()
-    ),
-    If('%$expectedEffects%', '%$expectedEffects/check()%')    
+    If(and(not('%$useFrontEndInTest%'), not('%$remoteUiTest%'), not('%$doNotWaitForNextUpdate%')), waitForNextUpdate()),
+    If('%$expectedEffects%', '%$expectedEffects/check()%')
   )
 })
 
@@ -395,7 +375,7 @@ component('scrollBy', {
       elem && elem.scrollBy(scrollBy,scrollBy)
       jb.log('uiTest scroll on dom',{elem,ctx})
     },
-    waitForNextUpdate(),
+    waitForNextUpdate()
   )
 })
 
@@ -403,9 +383,9 @@ component('runMethod', {
   type: 'ui-action',
   params: [
     {id: 'selector', as: 'string'},
-    {id: 'method', as: 'string' },
-    {id: 'data', defaultValue: '%%' },
-    {id: 'ctxVars', as: 'single' },
+    {id: 'method', as: 'string'},
+    {id: 'data', defaultValue: '%%'},
+    {id: 'ctxVars', as: 'single'},
     {id: 'doNotWaitForNextUpdate', as: 'boolean', type: 'boolean'}
   ],
   impl: uiActions(
@@ -417,21 +397,20 @@ component('runMethod', {
       jb.log('uiTest run method',{method,cmpElem,elem,ctx})
       jb.ui.runBEMethodByElem(cmpElem,method,data,ctxVars ? {...ctx.vars, ...ctxVars} : ctx.vars)
     },
-    If('%$doNotWaitForNextUpdate%', '', waitForNextUpdate()),
+    If('%$doNotWaitForNextUpdate%', '', waitForNextUpdate())
   )
 })
 
 component('FEUserRequest', {
   type: 'ui-action',
-  params: [
-  ],
+  params: [],
   impl: ctx => {
     const userRequest = jb.ui.FEEmulator[ctx.vars.widgetId].userRequests.pop()
     jb.log('uiTest frontend check FEUserRequest', {ctx,userRequest})
     // if (userRequest)
     //   jb.log('uiTest frontend widgetUserRequest is played', {ctx,userRequest})
     return userRequest
-  },
+  }
 })
 
 // expected effects
@@ -439,7 +418,7 @@ component('FEUserRequest', {
 component('Effects', {
   type: 'ui-action-effects',
   params: [
-    {id: 'effects', type: 'ui-action-effect[]', mandatory: true},
+    {id: 'effects', type: 'ui-action-effect[]', mandatory: true}
   ],
   impl: (_ctx,effects) => ({
     setLogs(ctx) {
@@ -461,8 +440,8 @@ component('checkLog', {
     {id: 'log', as: 'string', mandatory: true},
     {id: 'data', dynamic: true, description: 'what to check', mandatory: true},
     {id: 'condition', type: 'boolean<>', dynamic: true, description: '%% is data', mandatory: true},
-    {id: 'dataErrorMessage', as: 'string', dynamic: true },
-    {id: 'conditionErrorMessage', as: 'string', dynamic: true },
+    {id: 'dataErrorMessage', as: 'string', dynamic: true},
+    {id: 'conditionErrorMessage', as: 'string', dynamic: true}
   ],
   impl: (_ctx,log,data, condition,dataErrorMessage, conditionErrorMessage) => ({
     logsToCheck: () => log,
@@ -488,7 +467,7 @@ component('checkDOM', {
     {id: 'selector', as: 'string', mandatory: true},
     {id: 'calculate', type: 'data<>', dynamic: true, description: '%% is dom elem', mandatory: true},
     {id: 'expectedResult', type: 'boolean<>', dynamic: true, description: '%% is calc result', mandatory: true},
-    {id: 'errorMessage', as: 'string', dynamic: true },
+    {id: 'errorMessage', as: 'string', dynamic: true}
   ],
   impl: (ctx,selector,calculate, expectedResult, errorMessage) => ({
     logsToCheck: () => '',
@@ -511,9 +490,8 @@ component('compChange', {
   params: [
     {id: 'newText', dynamic: true, mandatory: true}
   ],
-  impl: checkLog({
+  impl: checkLog('delta', '%delta%', {
     log: 'delta',
-    data: '%delta%',
     condition: contains('%$newText()%'),
     dataErrorMessage: 'no rendering updates',
     conditionErrorMessage: 'can not find %$newText()% in delta'

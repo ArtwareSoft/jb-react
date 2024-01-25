@@ -43,15 +43,15 @@ extension('tgpTextEditor','upgrade', {
 })
 
 component('upgradeCmp', {
-    type: 'action<>',
-    params: [
-        {id: 'cmpId', as: 'string', mandatory: true },
-        {id: 'path', as: 'string', mandatory: true },
-        {id: 'hash', as: 'number', mandatory: true },
-        {id: 'edit' },
-        {id: 'lostInfo' },
-    ],
-    impl: (ctx,cmpId,path,expectedHash,edit,lostInfo) => {
+  type: 'action<>',
+  params: [
+    {id: 'cmpId', as: 'string', mandatory: true},
+    {id: 'path', as: 'string', mandatory: true},
+    {id: 'hash', as: 'number', mandatory: true},
+    {id: 'edit'},
+    {id: 'lostInfo'}
+  ],
+  impl: (ctx,cmpId,path,expectedHash,edit,lostInfo) => {
         if (!ctx.vars.allowLostInfo && lostInfo)
             return jb.logError(`upgradeCmp can not loose information at ${cmpId}`, { ctx, lostInfo})
         if (!edit) return
@@ -77,14 +77,14 @@ component('upgradeCmp', {
 })
 
 component('createUpgradeScript', {
-    type: 'data<>',
-    params: [
-        {id: 'upgrade', type: 'cmp-upgrade', dynamic: true },
-        {id: 'scriptFile', as: 'string', defaultValue: '[JB_BASE]/temp/upgrade-cmps.js' },
-        {id: 'cmps', as: 'array', defaultValue: () => Object.keys(jb.comps) },
-        {id: 'slice', as: 'number' },
-    ],
-    impl: async (ctx,upgrade,fn,cmps,slice) => {
+  type: 'data<>',
+  params: [
+    {id: 'upgrade', type: 'cmp-upgrade', dynamic: true},
+    {id: 'scriptFile', as: 'string', defaultValue: '[JB_BASE]/temp/upgrade-cmps.js'},
+    {id: 'cmps', as: 'array', defaultValue: () => Object.keys(jb.comps)},
+    {id: 'slice', as: 'number'}
+  ],
+  impl: async (ctx,upgrade,fn,cmps,slice) => {
         const upgrades = [] 
         await cmps.filter(id=>!id.match(/^dataResource\./)).reduce(
             (pr,id) => pr.then(() => upgrades.length < slice && upgrade(ctx.setData(id)).then(x=> x && upgrades.push(x))) , Promise.resolve())
@@ -101,11 +101,11 @@ ${cmds.join(',\n')}
 })
 
 component('upgradeMixed', {
-    type: 'cmp-upgrade',
-    params: [
-        { id: 'cmpId', as: 'string', defaultValue: '%%'}
-    ],
-    impl: (ctx,cmpId) => {
+  type: 'cmp-upgrade',
+  params: [
+    {id: 'cmpId', as: 'string', defaultValue: '%%'}
+  ],
+  impl: (ctx,cmpId) => {
         //console.log('upgradeMixed',cmpId)
         const comp = jb.comps[cmpId]
         const originalProfCode = jb.utils.prettyPrintComp(cmpId,comp, {noMixed: true})
@@ -135,11 +135,11 @@ component('upgradeMixed', {
 })
 
 component('reformat', {
-    type: 'cmp-upgrade',
-    params: [
-        { id: 'cmpId', as: 'string', defaultValue: '%%'}
-    ],
-    impl: async (ctx,cmpId) => {
+  type: 'cmp-upgrade',
+  params: [
+    {id: 'cmpId', as: 'string', defaultValue: '%%'}
+  ],
+  impl: async (ctx,cmpId) => {
         const comp = jb.comps[cmpId]
         if (comp.autoGen) return
         const shortId = cmpId.split('>').pop()
@@ -159,12 +159,12 @@ component('reformat', {
 })
 
 component('upgradePT', {
-    type: 'cmp-upgrade',
-    params: [
-        {id: 'PT', as: 'string'},
-        {id: 'newParams', as: 'array'},
-    ],
-    impl: ctx => ({
+  type: 'cmp-upgrade',
+  params: [
+    {id: 'PT', as: 'string'},
+    {id: 'newParams', as: 'array'}
+  ],
+  impl: ctx => ({
         upgradeActions(cmpId) {
             
         }

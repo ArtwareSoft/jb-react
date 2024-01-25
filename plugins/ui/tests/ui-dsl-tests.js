@@ -7,8 +7,8 @@ component('location.control', {
   ],
   impl: group({
     controls: [
-      text({text: '%$state/capital/name%', style: header.h2()}),
-      itemlist({items: '%$state/cities%', controls: text('%name%')})
+      text('%$state/capital/name%', { style: header.h2() }),
+      itemlist({ items: '%$state/cities%', controls: text('%name%') })
     ]
   })
 })

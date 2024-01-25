@@ -53,10 +53,7 @@ component('image.background', {
   impl: customStyle({
     template: (cmp,state,h) => h('div'),
     css: pipeline(
-      Var(
-          'url',
-          (ctx,{$model}) => $model.url.replace(/__WIDTH__/,$model.width).replace(/__HEIGHT__/,$model.height)
-        ),
+      Var('url', (ctx,{$model}) => $model.url.replace(/__WIDTH__/,$model.width).replace(/__HEIGHT__/,$model.height)),
       Var('width', (ctx,{$model}) => jb.ui.withUnits($model.width)),
       Var('height', (ctx,{$model}) => jb.ui.withUnits($model.height)),
       `

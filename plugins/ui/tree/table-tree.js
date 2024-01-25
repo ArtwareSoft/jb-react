@@ -6,7 +6,7 @@ component('tableTree', {
     {id: 'leafFields', type: 'control[]', dynamic: true},
     {id: 'commonFields', type: 'control[]', dynamic: true, as: 'array'},
     {id: 'chapterHeadline', type: 'control', dynamic: true, defaultValue: text(''), description: '$collapsed as parameter'},
-    {id: 'style', type: 'table-tree.style', defaultValue: tableTree.plain({}), dynamic: true},
+    {id: 'style', type: 'table-tree.style', defaultValue: tableTree.plain(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true, as: 'array'}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
@@ -27,22 +27,18 @@ component('tree.modelFilter', {
 component('tableTree.init', {
   type: 'feature',
   impl: features(
-		calcProp('model','%$$model/treeModel()%'),
-		method('flip', runActions(
+    calcProp('model', '%$$model/treeModel()%'),
+    method('flip', runActions(
       ({},{$state,ev}) => {
         $state.expanded = $state.expanded || {}
         $state.expanded[ev.path] = !$state.expanded[ev.path]
       },
-			action.refreshCmp('%$$state%')
+      action.refreshCmp('%$$state%')
     )),
     calcProp('expanded', ({},{$state,$props}) => ({ ...$state.expanded, ...$props.expanded, [$props.model.rootPath]: true })),
-    //     ...(!$state.refresh && {[$props.model.rootPath]: true})
-    // })),
-    frontEnd.prop('elemToPath',() => el => el && (el.getAttribute('path') || jb.ui.closest(el,'.jb-item') && jb.ui.closest(el,'.jb-item').getAttribute('path'))),
-		frontEnd.enrichUserEvent(({},{cmp,ev}) => ({ path: cmp.elemToPath(ev.target)})),
-    calcProp({
-        id: 'itemsCtxs',
-        value: (ctx,{$props,$model}) => {
+    frontEnd.prop('elemToPath', () => el => el && (el.getAttribute('path') || jb.ui.closest(el,'.jb-item') && jb.ui.closest(el,'.jb-item').getAttribute('path'))),
+    frontEnd.enrichUserEvent(({},{cmp,ev}) => ({ path: cmp.elemToPath(ev.target)})),
+    calcProp('itemsCtxs', (ctx,{$props,$model}) => {
             const ctxOfItem = (item,index) => ctx.setData({path: item.path, val: $props.model.val(item.path)}).setVars({index, item})
 
             const rootPath = $props.model.rootPath, expanded = $props.expanded, model = $props.model
@@ -58,10 +54,9 @@ component('tableTree.init', {
                         depth >= model.maxDepth ? acc : acc = acc.concat(calcItems(child, depth+1)),item)
                 return item
             }
-        }
-    }),
-    calcProp('maxDepth',firstSucceeding('%$$model/maxDepth%',5)),
-    calcProp('headerFields',list('%$$model/leafFields()/field()%','%$$model/commonFields()/field()%')),
+        }),
+    calcProp('maxDepth', firstSucceeding('%$$model/maxDepth%',5)),
+    calcProp('headerFields', list('%$$model/leafFields()/field()%','%$$model/commonFields()/field()%')),
     calcProp('ctrlsMatrix', (ctx,{$model,$props}) => {
         const model = $props.model, maxDepth = $props.maxDepth
         const maxDepthAr = Array.from(new Array(maxDepth))
@@ -100,12 +95,16 @@ component('tableTree.init', {
 })
 
 component('tableTree.expandFirstLevel', {
-	type: 'feature',
-	impl: calcProp({phase: 5, id: 'before calcProps', value: ({},{$state,$props}) => {
+  type: 'feature',
+  impl: calcProp({
+    id: 'before calcProps',
+    value: ({},{$state,$props}) => {
       if ($state.refresh) return
       const pathsAsObj = jb.objFromEntries($props.model.children($props.model.rootPath) || []).map(path=>[path,true])
       $props.expanded = Object.assign($props.expanded || {}, pathsAsObj)
-    }}) 
+    },
+    phase: 5
+  })
 })
 
 component('tableTree.plain', {
@@ -154,7 +153,7 @@ component('tableTree.plain', {
 component('tableTree.expandPath', {
   type: 'feature',
   params: [
-	  {id: 'paths', as: 'array', descrition: 'array of paths to be expanded'}
+    {id: 'paths', as: 'array', descrition: 'array of paths to be expanded'}
   ],
   impl: tree.expandPath('%$paths%')
 })
@@ -163,16 +162,18 @@ component('tableTree.resizer', {
   type: 'feature',
   impl: features(
     css('>tbody>tr>td.tt-resizer { cursor: col-resize }'),
-	  frontEnd.method('setSize', ({data},{el}) => el.querySelector('.gapCol').width = data + 'px'),
+    frontEnd.method('setSize', ({data},{el}) => el.querySelector('.gapCol').width = data + 'px'),
     frontEnd.flow(
       source.frontEndEvent('mousedown'),
       rx.filter(ctx => jb.ui.hasClass(ctx.data.target,'tt-resizer')),
-      rx.var('offset',({data},{el}) => data.clientX - (+el.querySelector('.gapCol').width.slice(0,-2))),
-      rx.flatMap(rx.pipe(
-        source.frontEndEvent('mousemove'), 
-        rx.takeWhile('%buttons%!=0'),
-        rx.map(({data},{offset}) => Math.max(0, data.clientX - offset)),
-      )),
+      rx.var('offset', ({data},{el}) => data.clientX - (+el.querySelector('.gapCol').width.slice(0,-2))),
+      rx.flatMap(
+        rx.pipe(
+          source.frontEndEvent('mousemove'),
+          rx.takeWhile('%buttons%!=0'),
+          rx.map(({data},{offset}) => Math.max(0, data.clientX - offset))
+        )
+      ),
       sink.FEMethod('setSize')
     )
   )

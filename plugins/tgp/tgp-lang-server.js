@@ -5,11 +5,7 @@ component('langServer', {
   params: [
     {id: 'filePath', as: 'string'}
   ],
-  impl: sourceCode({
-    pluginsToLoad: [
-      pluginsByPath('%$filePath%'),
-      plugins('tgp,vscode,tree-shake')
-    ],
+  impl: sourceCode(pluginsByPath('%$filePath%'), plugins('tgp,vscode,tree-shake'), {
     pluginPackages: packagesByPath('%$filePath%'),
     libsToInit: 'utils,watchable,immutable,watchableComps,tgp,tgpTextEditor,vscode,jbm,cbHandler,treeShake'
   })

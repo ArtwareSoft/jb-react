@@ -4,10 +4,7 @@ component('itemlist.dragAndDrop', {
   type: 'feature',
   impl: features(
     frontEnd.requireExternalLibrary('dragula.js','css/dragula.css'),
-    method(
-      'moveItem',
-      runActions(move(itemlist.indexToData('%from%'), itemlist.indexToData('%to%')), action.refreshCmp())
-    ),
+    method('moveItem', runActions(move(itemlist.indexToData('%from%'), itemlist.indexToData('%to%')), action.refreshCmp())),
     frontEnd.prop('drake', ({},{cmp}) => {
         if (!jb.frame.dragula) return jb.logError('itemlist.dragAndDrop - the dragula lib is not loaded')
         return dragula([cmp.base.querySelector('.jb-items-parent') || cmp.base] , {
@@ -15,14 +12,14 @@ component('itemlist.dragAndDrop', {
         })
     }),
     frontEnd.flow(
-      source.dragulaEvent('drag', list('el')),
+      source.dragulaEvent('drag', { argNames: list('el') }),
       rx.map(itemlist.indexOfElem('%el%')),
       rx.do(({},{cmp}) => 
         Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).forEach(el=>el.setAttribute('jb-original-index',jb.ui.indexOfElement(el)))),
       sink.subjectNext('%$cmp/selectionEmitter%')
     ),
     frontEnd.flow(
-      source.dragulaEvent('drop', list('dropElm','target','source','sibling')),
+      source.dragulaEvent('drop', { argNames: list('dropElm','target','source','sibling') }),
       rx.map(
         obj(
           prop('from', itemlist.indexOfElem('%dropElm%')),
@@ -34,7 +31,7 @@ component('itemlist.dragAndDrop', {
     frontEnd.flow(
       source.frontEndEvent('keydown'),
       rx.filter('%ctrlKey%'),
-      rx.filter(inGroup(list(38,40), '%keyCode%')),
+      rx.filter(inGroup(list(38,40), { item: '%keyCode%' })),
       rx.map(
         obj(
           prop('from', itemlist.nextSelected(0)),
@@ -50,7 +47,7 @@ component('source.dragulaEvent', {
   type: 'rx:0',
   params: [
     {id: 'event', as: 'string'},
-    {id: 'argNames', as: 'array', description: "e.g., ['dropElm', 'target', 'source']"}
+    {id: 'argNames', as: 'array', description: `e.g., ['dropElm', 'target', 'source']`}
   ],
   impl: source.callbag(({},{cmp},{event,argNames}) =>
     jb.callbag.create(obs=> cmp.drake.on(event, (...args) => obs(jb.objFromEntries(args.map((v,i) => [argNames[i],v]))))))

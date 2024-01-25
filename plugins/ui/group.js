@@ -15,7 +15,7 @@ component('group', {
 component('group.initGroup', {
   type: 'feature',
   category: 'group:0',
-  impl: calcProp('ctrls',(ctx,{$model}) => $model.controls(ctx).filter(x=>x).flatMap(x=>x.segment ? x : [x]))
+  impl: calcProp('ctrls', (ctx,{$model}) => $model.controls(ctx).filter(x=>x).flatMap(x=>x.segment ? x : [x]))
 })
 
 component('inlineControls', {
@@ -46,13 +46,13 @@ component('group.firstSucceeding', {
   category: 'group:70',
   description: 'Used with controlWithCondition. Takes the fhe first succeeding control',
   impl: calcProp({
-      id: 'ctrls',
-      value: (ctx,{$model}) => {
+    id: 'ctrls',
+    value: (ctx,{$model}) => {
         const runCtx = $model.controls.runCtx.setVars(ctx.vars)
         return [jb.asArray($model.controls.profile).reduce((res,prof,i) => 
           res || runCtx.runInner(prof, {}, `controls~${i}`), null )]
       },
-      priority: 5
+    priority: 5
   })
 })
 
@@ -78,12 +78,7 @@ component('group.wait', {
     {id: 'loadingControl', type: 'control', defaultValue: text('loading ...'), dynamic: true},
     {id: 'error', type: 'control', defaultValue: text('error: %$error%'), dynamic: true},
     {id: 'varName', as: 'string', description: 'variable for the promise result'},
-    {
-      id: 'passRx',
-      as: 'boolean',
-      description: 'do not wait for reactive data to end, and pass it as is',
-      type: 'boolean'
-    }
+    {id: 'passRx', as: 'boolean', description: 'do not wait for reactive data to end, and pass it as is', type: 'boolean'}
   ],
   impl: features(
     calcProp({
@@ -128,7 +123,7 @@ component('group.eliminateRecursion', {
   type: 'feature',
   description: 'can be put on a global top group',
   params: [
-    { id: 'maxDepth', as: 'number' }
+    {id: 'maxDepth', as: 'number'}
   ],
   impl: (ctx,maxDepth) => {
     const protectedComp = jb.path(ctx.cmpCtx,'cmpCtx.path')
@@ -143,7 +138,7 @@ component('controls', {
   description: 'list of controls to be put inline, flatten inplace. E.g., set of table fields',
   category: 'group:20',
   params: [
-    {id: 'controls', type: 'control[]', mandatory: true, dynamic: true, composite: true},
+    {id: 'controls', type: 'control[]', mandatory: true, dynamic: true, composite: true}
   ],
   impl: (ctx,controls) => {
     const res = controls(ctx)

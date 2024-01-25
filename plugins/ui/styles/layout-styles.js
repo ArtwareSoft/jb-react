@@ -3,11 +3,9 @@ component('layout.vertical', {
   params: [
     {id: 'spacing', as: 'string', defaultValue: 3}
   ],
-  impl: css(
-    ({},{},{spacing}) =>  `{display: flex; flex-direction: column}
+  impl: css(({},{},{spacing}) =>  `{display: flex; flex-direction: column}
           >* { ${jb.ui.propWithUnits('margin-bottom',spacing)} }
-          >*:last-child { margin-bottom:0 }`
-  )
+          >*:last-child { margin-bottom:0 }`)
 })
 
 component('layout.horizontal', {
@@ -17,8 +15,7 @@ component('layout.horizontal', {
   ],
   impl: css(({},{},{spacing}) =>  `{display: flex}
         >* { ${jb.ui.propWithUnits('margin-right', spacing)} }
-        >*:last-child { margin-right:0 }`
-  )
+        >*:last-child { margin-right:0 }`)
 })
 
 component('layout.horizontalFixedSplit', {
@@ -68,7 +65,7 @@ component('layout.flex', {
 component('layout.grid', {
   type: 'layout,feature',
   params: [
-    {id: 'columnSizes', as: 'array', templateValue: list('auto', 'auto'), description: 'grid-template-columns, list of lengths'},
+    {id: 'columnSizes', as: 'array', templateValue: list('auto','auto'), description: 'grid-template-columns, list of lengths'},
     {id: 'rowSizes', as: 'array', description: 'grid-template-rows, list of lengths'},
     {id: 'columnGap', as: 'string', description: 'grid-column-gap'},
     {id: 'rowGap', as: 'string', description: 'grid-row-gap'}

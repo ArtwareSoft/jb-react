@@ -7,17 +7,13 @@ component('itemlist.infiniteScroll', {
     method('fetchNextPage', itemlist.applyDeltaOfNextPage('%$pageSize%')),
     feature.userEventProps('elem.scrollTop,elem.scrollHeight'),
     frontEnd.flow(
-      source.merge(
-        source.frontEndEvent('scroll'),
-        source.frontEndEvent('wheel')
+      source.merge(source.frontEndEvent('scroll'), source.frontEndEvent('wheel')),
+      rx.var('applicative', '%target/__appScroll%'),
+      rx.do(
+        action.if('%$applicative%', runActions(log('itemlist applicative scroll terminated'), ({data}) => data.target.__appScroll = null))
       ),
-      rx.var('applicative','%target/__appScroll%'),
-      rx.do(action.if('%$applicative%', runActions(
-        log('itemlist applicative scroll terminated'),
-        ({data}) => data.target.__appScroll = null
-      ))),
       rx.filter(not('%$applicative%')),
-      rx.var('scrollPercentFromTop',({data}) => 
+      rx.var('scrollPercentFromTop', ({data}) => 
         (data.currentTarget.scrollTop + data.currentTarget.getBoundingClientRect().height) / data.currentTarget.scrollHeight),
       rx.log('itemlist frontend infiniteScroll'),
       rx.filter('%$scrollPercentFromTop%>0.9'),
@@ -71,14 +67,14 @@ component('itemlist.deltaOfItems', {
 component('itemlist.incrementalFromRx', {
   type: 'feature',
   params: [
-    {id: 'prepend', as: 'boolean', boolean: 'last at top' }
+    {id: 'prepend', as: 'boolean', boolean: 'last at top', type: 'boolean'}
   ],
   impl: followUp.flow(
-      source.callbag(ctx => ctx.exp('%$$props.items%').callbag || jb.callbag.fromIter([])),
-      rx.map(If('%vars%','%data%','%%')), // rx/cb compatible ...
-      rx.var('delta', itemlist.deltaOfNextItem()),
-      sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
-    )
+    source.callbag(ctx => ctx.exp('%$$props.items%').callbag || jb.callbag.fromIter([])),
+    rx.map(If('%vars%', '%data%', '%%')),
+    rx.var('delta', itemlist.deltaOfNextItem()),
+    sink.applyDeltaToCmp('%$delta%', '%$followUpCmp/cmpId%')
+  )
 })
 
 component('itemlist.deltaOfNextItem', {

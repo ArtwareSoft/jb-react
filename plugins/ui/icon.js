@@ -24,7 +24,7 @@ component('icon', {
   params: [
     {id: 'icon', as: 'string', mandatory: true},
     {id: 'title', as: 'string', dynamic: true},
-    {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
+    {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc'},
     {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.materialNoClick()},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],

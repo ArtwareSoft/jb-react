@@ -146,43 +146,43 @@ component('editableText.codemirror', {
 })
 
 component('codemirror.textEditorKeys', {
-	type: 'feature',
-	impl: frontEnd.prop('extraCmSettings', ({},{cmp}) => jb.codemirror.mergeSettings(cmp.extraCmSettings, {
+  type: 'feature',
+  impl: frontEnd.prop('extraCmSettings', ({},{cmp}) => jb.codemirror.mergeSettings(cmp.extraCmSettings, {
 		extraKeys: {
 			'Ctrl-Space': 'autocomplete',
 			'Ctrl-Enter': () => jb.ui.runBEMethodByElem(el,'onCtrlEnter'),
 		},
-	})),
+	}))
 })
 
 component('codemirror.fold', {
-	type: 'feature',
-	impl: frontEnd.prop('extraCmSettings', ({},{cmp}) => jb.codemirror.mergeSettings(cmp.extraCmSettings, {
+  type: 'feature',
+  impl: frontEnd.prop('extraCmSettings', ({},{cmp}) => jb.codemirror.mergeSettings(cmp.extraCmSettings, {
 		extraKeys: {
 			'Ctrl-Q': () => cmp.editor.foldCode(cmp.editor.getCursor())
 		},
 		lineWrapping: true,
 		foldGutter: true,			
 		gutters: [ 'CodeMirror-foldgutter' ]
-	})),
+	}))
 })
 
 component('codemirror.lineNumbers', {
-	type: 'feature',
-	impl: frontEnd.prop('extraCmSettings', ({},{cmp}) => jb.codemirror.mergeSettings(cmp.extraCmSettings, {
+  type: 'feature',
+  impl: frontEnd.prop('extraCmSettings', ({},{cmp}) => jb.codemirror.mergeSettings(cmp.extraCmSettings, {
 		lineNumbers: true,
 		gutters: ['CodeMirror-linenumbers' ]
-	})),
+	}))
 })
 
 component('codemirror.enrichUserEvent', {
-    type: 'feature',
-    params: [
-      {id: 'cmSelector', as: 'string', description: 'used for external buttons'}
-    ],
-    impl: features(
-		frontEnd.var('cmSelector','%$cmSelector%'),
-        frontEnd.enrichUserEvent((ctx,{cmp,cmSelector}) => {
+  type: 'feature',
+  params: [
+    {id: 'cmSelector', as: 'string', description: 'used for external buttons'}
+  ],
+  impl: features(
+    frontEnd.var('cmSelector', '%$cmSelector%'),
+    frontEnd.enrichUserEvent((ctx,{cmp,cmSelector}) => {
 			const elem = cmSelector ? jb.ui.widgetBody(ctx).querySelector(cmSelector) : cmp.base
 			const editor = elem && elem.editor
             return editor && {
@@ -193,7 +193,7 @@ component('codemirror.enrichUserEvent', {
                 selectionStart: {line: editor.getCursor().line, col: editor.getCursor().ch}
             }
         })
-    )
+  )
 })
 
 component('text.codemirror', {

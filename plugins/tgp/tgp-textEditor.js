@@ -236,9 +236,9 @@ component('tgp.profileAsText', {
   type: 'data',
   params: [
     {id: 'path', as: 'string'},
-    {id: 'oneWay', as: 'boolean', defaultValue: true, type: 'boolean'},
+    {id: 'oneWay', as: 'boolean', defaultValue: true, type: 'boolean'}
   ],
-  impl: tgpTextEditor.watchableAsText(tgp.ref('%$path%'),'%$oneWay%')
+  impl: tgpTextEditor.watchableAsText(tgp.ref('%$path%'), '%$oneWay%')
 })
 
 component('tgpTextEditor.watchableAsText', {
@@ -412,11 +412,7 @@ component('probe', {
     {id: 'filePath', as: 'string'},
     {id: 'host', as: 'string', options: ',node,studio,static'}
   ],
-  impl: sourceCode(
-    [
-      pluginsByPath('%$filePath%', true),
-      plugins('probe,tree-shake,tgp')
-    ],
-    packagesByPath('%$filePath%', '%$host%')
-  )
+  impl: sourceCode(pluginsByPath('%$filePath%', true), plugins('probe,tree-shake,tgp'), {
+    pluginPackages: packagesByPath('%$filePath%', '%$host%')
+  })
 })

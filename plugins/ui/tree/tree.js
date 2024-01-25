@@ -33,41 +33,41 @@ component('tree', {
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-component('tree.noHead',{
-	type: 'feature',
-	impl: features(calcProp('noHead',true))
+component('tree.noHead', {
+  type: 'feature',
+  impl: features(calcProp('noHead', true))
 })
 
 component('tree.initTree', {
-	type: 'feature',
-	impl: features(
-		variable('treeCmp','%$cmp%'),
-		calcProp('model','%$$model/nodeModel()%'),
-		method('flipExpandCollapse', runActions(
-			({},{$state,ev}) => $state.expanded[ev.path] = !$state.expanded[ev.path],
-			action.refreshCmp('%$$state%')
-		)),
-		userStateProp('expanded', ({},{$state,$props}) => ({
+  type: 'feature',
+  impl: features(
+    variable('treeCmp', '%$cmp%'),
+    calcProp('model', '%$$model/nodeModel()%'),
+    method('flipExpandCollapse', runActions(
+      ({},{$state,ev}) => $state.expanded[ev.path] = !$state.expanded[ev.path],
+      action.refreshCmp('%$$state%')
+    )),
+    userStateProp('expanded', ({},{$state,$props}) => ({
 			 ...$state.expanded, 
 			 ...(!$state.refresh && {[$props.model.rootPath]: true}) 
 		})),
-		frontEnd.enrichUserEvent(({},{cmp,ev}) => {
+    frontEnd.enrichUserEvent(({},{cmp,ev}) => {
 			const el = jb.ui.find(ev.target,'.selected')[0] || ev.target
 			const labelEl = jb.ui.find(el,'.treenode-label')[0] || el
 			ev.fixedTarget = labelEl
 			return { path: cmp.elemToPath(el) }
 		}),
-		frontEnd.prop('elemToPath',() => el => el && (el.getAttribute('path') || jb.ui.closest(el,'.treenode') && jb.ui.closest(el,'.treenode').getAttribute('path'))),
-		css('{user-select: none}')
-	)
+    frontEnd.prop('elemToPath', () => el => el && (el.getAttribute('path') || jb.ui.closest(el,'.treenode') && jb.ui.closest(el,'.treenode').getAttribute('path'))),
+    css('{user-select: none}')
+  )
 })
 
 component('tree.expandPath', {
-	type: 'feature',
-	params: [
-	  {id: 'paths', as: 'array', descrition: 'array of paths to be expanded'}
-	],
-	impl: feature.init(({},{$state},{paths}) => {
+  type: 'feature',
+  params: [
+    {id: 'paths', as: 'array', descrition: 'array of paths to be expanded'}
+  ],
+  impl: feature.init(({},{$state},{paths}) => {
 //		if ($state.refresh) return
 		$state.expanded = $state.expanded || {}
 		;(paths || []).forEach( path=> path.split('~').reduce((base, x, i) => {
@@ -82,10 +82,10 @@ component('tree.expandPath', {
 component('tree.plain', {
   type: 'tree.style',
   params: [
-    {id: 'showIcon', as: 'boolean', type: 'boolean'},
+    {id: 'showIcon', as: 'boolean', type: 'boolean'}
   ],
   impl: customStyle({
-	template: (cmp,{showIcon,noHead,expanded,model,selected},h) => {
+    template: (cmp,{showIcon,noHead,expanded,model,selected},h) => {
 		function renderLine(path) {
 			const _icon = model.icon(path) || 'radio_button_unchecked'
 			return h('div',{ class: `treenode-line`},[
@@ -97,7 +97,7 @@ component('tree.plain', {
 		}
 		return new jb.ui.TreeRenderer({model,expanded,h,showIcon,noHead,renderLine,selected}).renderTree(cmp.renderProps.model.rootPath)
 	},
-	css: `|>.treenode-children { padding-left: 10px; min-height: 7px }
+    css: `|>.treenode-children { padding-left: 10px; min-height: 7px }
 	|>.treenode-label { margin-top: -1px }
 
 	|>.treenode-label .treenode-val { color: var(--jb-tree-value); padding-left: 4px; display: inline-block;}
@@ -110,7 +110,7 @@ component('tree.plain', {
 	|>.treenode.selected>*>.treenode-label,.treenode.selected>*>.treenode-label  { 
 		color: var(--jb-menu-selection-fg); background: var(--jb-menu-selection-bg)}
 	`,
-	features: tree.initTree()
+    features: tree.initTree()
   })
 })
 
@@ -121,7 +121,7 @@ component('tree.expandBox', {
     {id: 'lineWidth', as: 'string', defaultValue: '300px'}
   ],
   impl: customStyle({
-	  template: (cmp,{showIcon,noHead,expanded,model,selected},h) => {
+    template: (cmp,{showIcon,noHead,expanded,model,selected},h) => {
 		function renderLine(path) {
 			const _icon = model.icon(path) || 'radio_button_unchecked';
 			const nochildren = model.isArray(path) ? '' : ' nochildren'
@@ -140,7 +140,7 @@ component('tree.expandBox', {
 		}
 		return new jb.ui.TreeRenderer({model,expanded,h,showIcon,noHead,renderLine,selected}).renderTree(cmp.renderProps.model.rootPath)
 	  },
-	  css: ({},{},{lineWidth}) => `|>.treenode-children { padding-left: 10px; min-height: 7px }
+    css: ({},{},{lineWidth}) => `|>.treenode-children { padding-left: 10px; min-height: 7px }
 	|>.treenode-label { margin-top: -2px }
 	|>.treenode-label .treenode-val { color: var(--jb-tree-value); padding-left: 4px; display: inline-block;}
 	|>.treenode-line { display: flex; box-orient: horizontal; width: ${lineWidth}; padding-bottom: 3px;}
@@ -162,8 +162,8 @@ component('tree.expandBox', {
 	|>.treenode-expandbox.nochildren .frame { display: none; }
 	|>.treenode-expandbox.nochildren .line-lr { display: none; }
 	|>.treenode-expandbox.nochildren .line-tb { display: none;}`,
-		features: tree.initTree()
-	}),
+    features: tree.initTree()
+  })
 })
 
 component('tree.selection', {
@@ -258,10 +258,7 @@ component('tree.keyboardSelection', {
 			cmp.refresh($state,{},ctx)
 		}
 	}),
-    frontEnd.prop(
-      'onkeydown',
-      rx.pipe(source.frontEndEvent('keydown'), rx.filter(not('%ctrlKey%')), rx.filter(not('%altKey%')), rx.userEventVar())
-    ),
+    frontEnd.prop('onkeydown', rx.pipe(source.frontEndEvent('keydown'), rx.filter(not('%ctrlKey%')), rx.filter(not('%altKey%')), rx.userEventVar())),
     frontEnd.flow(
       '%$cmp.onkeydown%',
       rx.filter('%keyCode%==13'),
@@ -270,16 +267,21 @@ component('tree.keyboardSelection', {
     ),
     frontEnd.flow(
       '%$cmp.onkeydown%',
-      rx.filter(inGroup(list(38, 40), '%keyCode%')),
+      rx.filter(inGroup(list(38,40), { item: '%keyCode%' })),
       rx.map(tree.nextSelected(If('%keyCode%==40', 1, -1))),
       sink.subjectNext('%$cmp.selectionEmitter%')
     ),
     frontEnd.flow('%$cmp.onkeydown%', rx.filter('%keyCode%==39'), sink.BEMethod('expand', '%$cmp.state.selected%')),
     frontEnd.flow('%$cmp.onkeydown%', rx.filter('%keyCode%==37'), sink.BEMethod('collapse', '%$cmp.state.selected%')),
-    frontEnd.flow(source.callbag(({},{cmp}) => 
+    frontEnd.flow(
+      source.callbag(({},{cmp}) => 
 		  	jb.callbag.create(obs=> cmp.base.onkeydown = ev => { obs(ev); return false } // stop propagation
-		)), rx.filter(({data}) => (data.ctrlKey || data.altKey || data.keyCode == 46) // Delete
-			  && (data.keyCode != 17 && data.keyCode != 18)), rx.userEventVar(), sink.BEMethod('runShortcut', '%$ev%', obj(prop('path', '%$cmp.state.selected%')))),
+		)),
+      rx.filter(({data}) => (data.ctrlKey || data.altKey || data.keyCode == 46) // Delete
+			  && (data.keyCode != 17 && data.keyCode != 18)),
+      rx.userEventVar(),
+      sink.BEMethod('runShortcut', '%$ev%', obj(prop('path', '%$cmp.state.selected%')))
+    ),
     frontEnd.flow(source.frontEndEvent('click'), sink.FEMethod('regainFocus')),
     frontEnd.method('regainFocus', action.focusOnCmp('tree regain focus')),
     frontEnd.var('autoFocus', '%$autoFocus%'),
@@ -292,20 +294,18 @@ component('tree.dragAndDrop', {
   impl: features(
     frontEnd.requireExternalLibrary('dragula.js','css/dragula.css'),
     htmlAttribute('tabIndex', 0),
-    method('moveItem', {'$': 'tree.moveItem', '$byValue': ['%from%','%to%']}),
+    method('moveItem', tree.moveItem('%from%', '%to%')),
     frontEnd.flow(
       source.frontEndEvent('keydown'),
       rx.filter('%ctrlKey%'),
-      rx.filter(inGroup(list(38,40), '%keyCode%')),
+      rx.filter(inGroup(list(38,40), { item: '%keyCode%' })),
       rx.map(
         obj(
-          prop('from', {'$': 'tree.nextSelected', '$byValue': [0]}),
-          prop('to', {'$': 'tree.nextSelected', '$byValue': [
-            If('%keyCode%==40', 1, -1)
-          ]})
+          prop('from', tree.nextSelected(0)),
+          prop('to', tree.nextSelected(If('%keyCode%==40', 1, -1)))
         )
       ),
-      rx.filter({'$': 'tree.sameParent', '$byValue': ['%from%','%to%']}),
+      rx.filter(tree.sameParent('%from%', '%to%')),
       sink.BEMethod('moveItem', '%%')
     ),
     frontEnd.var('uiTest', '%$uiTest%'),
@@ -348,12 +348,12 @@ component('tree.dragAndDrop', {
 })
 
 component('tree.nextSelected', {
-	type: 'data:0',
-	descrition: 'FE action',
-	params: [
-	  {id: 'diff', as: 'number'}
-	],
-	impl: (ctx,diff) => {
+  type: 'data:0',
+  descrition: 'FE action',
+  params: [
+    {id: 'diff', as: 'number'}
+  ],
+  impl: (ctx,diff) => {
 	  	const {cmp} = ctx.vars
 		const nodes = jb.ui.findIncludeSelf(cmp.base,'.treenode')
 		const selectedEl = jb.ui.findIncludeSelf(cmp.base,'.treenode.selected')[0]
@@ -362,18 +362,18 @@ component('tree.nextSelected', {
 })
 
 component('tree.pathOfInteractiveItem', {
-	type: 'data',
-	descrition: 'path of the clicked/dragged item using event.target',
-	impl: tree.pathOfElem('%$ev/target%')
+  type: 'data',
+  descrition: 'path of the clicked/dragged item using event.target',
+  impl: tree.pathOfElem('%$ev/target%')
 })
 
 component('tree.pathOfElem', {
-	type: 'data:0',
-	descrition: 'FE action',
-	params: [
-		{id: 'elem'}
-	],
-	impl: (ctx,el) => ctx.vars.cmp && ctx.vars.cmp.elemToPath && ctx.vars.cmp.elemToPath(el)
+  type: 'data:0',
+  descrition: 'FE action',
+  params: [
+    {id: 'elem'}
+  ],
+  impl: (ctx,el) => ctx.vars.cmp && ctx.vars.cmp.elemToPath && ctx.vars.cmp.elemToPath(el)
 })
 
 component('tree.parentPath', {
@@ -384,46 +384,46 @@ component('tree.parentPath', {
 })
 
 component('tree.lastPathElement', {
-	params: [
-		{id: 'path', as: 'string', defaultValue: '%%'}
-	],
-	impl: (ctx,path) => path.split('~').pop(),
+  params: [
+    {id: 'path', as: 'string', defaultValue: '%%'}
+  ],
+  impl: (ctx,path) => path.split('~').pop()
 })
 
-component('tree.sameParent', { 
-	descrition: 'check if two paths have the same parent',
-	type: 'boolean',
-	params: [
-		{id: 'path1', as: 'string'},
-		{id: 'path2', as: 'string'}
-	],
-	impl: (ctx,path1,path2) => (path1.match(/(.*?)~[0-9]*$/)||[])[1] == (path2.match(/(.*?)~[0-9]*$/)||[])[1]
+component('tree.sameParent', {
+  descrition: 'check if two paths have the same parent',
+  type: 'boolean',
+  params: [
+    {id: 'path1', as: 'string'},
+    {id: 'path2', as: 'string'}
+  ],
+  impl: (ctx,path1,path2) => (path1.match(/(.*?)~[0-9]*$/)||[])[1] == (path2.match(/(.*?)~[0-9]*$/)||[])[1]
 })
 
 component('tree.regainFocus', {
-	type: 'action',
-	impl: action.focusOnCmp('regain focus','%$treeCmp/cmpId%')
+  type: 'action',
+  impl: action.focusOnCmp('regain focus', '%$treeCmp/cmpId%')
 })
   
 component('tree.redraw', {
-	type: 'action',
-	params: [
-	  {id: 'strong', type: 'boolean', as: 'boolean'}
-	],
-	impl: (ctx,strong) => {
+  type: 'action',
+  params: [
+    {id: 'strong', type: 'boolean', as: 'boolean'}
+  ],
+  impl: (ctx,strong) => {
 		jb.log('tree redraw',{ cmpId: jb.path(ctx.vars,'$tree.cmpId'), ctx, strong})
 		return ctx.vars.$tree && ctx.vars.$tree.redraw && ctx.vars.$tree.redraw(strong)
 	}
 })
   
 component('tree.moveItem', {
-	type: 'action',
-	descrition: 'move item in backend, changing also the state of selected and expanded',
-	params: [
-		{id: 'from', as: 'string'},
-		{id: 'to', as: 'string'},
-	],
-	impl: (ctx,from,to) => {
+  type: 'action',
+  descrition: 'move item in backend, changing also the state of selected and expanded',
+  params: [
+    {id: 'from', as: 'string'},
+    {id: 'to', as: 'string'}
+  ],
+  impl: (ctx,from,to) => {
 		const {cmp,$state} = ctx.vars
 		const model = cmp.renderProps.model
 		const stateAsRefs = pathsToRefs($state)

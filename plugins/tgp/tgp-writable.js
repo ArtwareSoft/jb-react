@@ -157,12 +157,12 @@ component('tgp.profileValueAsText', {
 })
 
 component('tgp.getOrCreateCompInArray', {
-	type: 'data',
-	params: [
-		{id: 'path', as: 'string', mandatory: true},
-		{id: 'compId', as: 'string', mandatory: true}
-	],
-	impl: (ctx,path,compId) => {
+  type: 'data',
+  params: [
+    {id: 'path', as: 'string', mandatory: true},
+    {id: 'compId', as: 'string', mandatory: true}
+  ],
+  impl: (ctx,path,compId) => {
 		let arrayRef = jb.tgp.ref(path)
 		let arrayVal = jb.val(arrayRef)
 		if (!arrayVal) {

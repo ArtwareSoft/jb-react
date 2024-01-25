@@ -51,44 +51,33 @@ component('probe.detailedInput', {
   ],
   type: 'control',
   impl: group({
-    style: group.tabs({tabStyle: button.href(), barStyle: group.div(), barLayout: layout.horizontal()}),
+    style: group.tabs(button.href(), group.div(), { barLayout: layout.horizontal() }),
     controls: [
-      text({
-        text: pipeline('%$input/in%', prettyPrint({profile: '%data%', noMacros: true}), join(`
+      text(pipeline('%$input/in%', prettyPrint('%data%', { noMacros: true }), join(`
 ---
-`)),
-        title: 'data',
-        style: text.codemirror({enableFullScreen: true, height: '600', mode: 'javascript'}),
-        features: [
-          codemirror.fold(),
-          codemirror.lineNumbers()
-        ]
+`)), 'data', {
+        style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
+        features: [codemirror.fold(), codemirror.lineNumbers()]
       }),
       text({
-        text: pipeline('%$input/in%', prettyPrint({profile: probe.stripData('%vars%'), noMacros: true}), join(`
+        text: pipeline('%$input/in%', prettyPrint(probe.stripData('%vars%'), { noMacros: true }), join(`
 ---
 `)),
         title: 'vars',
-        style: text.codemirror({enableFullScreen: true, height: '600', mode: 'javascript'}),
-        features: [
-          codemirror.fold(),
-          codemirror.lineNumbers()
-        ]
+        style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
+        features: [codemirror.fold(), codemirror.lineNumbers()]
       }),
       text({
         text: pipeline(
           '%$input/in%',
-          prettyPrint({profile: probe.stripData('%vars%', true), noMacros: true}),
+          prettyPrint(probe.stripData('%vars%', true), { noMacros: true }),
           join(`
 ---
 `)
         ),
         title: 'system vars',
-        style: text.codemirror({enableFullScreen: true, height: '600', mode: 'javascript'}),
-        features: [
-          codemirror.fold(),
-          codemirror.lineNumbers()
-        ]
+        style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
+        features: [codemirror.fold(), codemirror.lineNumbers()]
       })
     ]
   })
@@ -113,15 +102,13 @@ component('probe.inOutView', {
                     field.titleCtrl(
                       button({
                         title: 'in (%$input/in/length%)',
-                        action: openDialog({
-                          title: 'in (%$input/in/length%)',
-                          content: probe.detailedInput('%$input%'),
+                        action: openDialog('in (%$input/in/length%)', probe.detailedInput('%$input%'), {
                           style: dialog.showSourceStyle('show-data')
                         }),
                         style: button.href()
                       })
                     ),
-                    css.width({width: '300', minMax: 'max'})
+                    css.width('300', { minMax: 'max' })
                   ]
                 }),
                 group({
@@ -133,14 +120,9 @@ component('probe.inOutView', {
                         title: 'out (%$input/out/length%)',
                         action: openDialog({
                           title: 'out (%$input/out/length%)',
-                          content: text({
-                            text: prettyPrint({profile: '%$input/out%', noMacros: true}),
-                            title: 'system vars',
-                            style: text.codemirror({enableFullScreen: true, height: '600', mode: 'javascript'}),
-                            features: [
-                              codemirror.fold(),
-                              codemirror.lineNumbers()
-                            ]
+                          content: text(prettyPrint('%$input/out%', { noMacros: true }), 'system vars', {
+                            style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
+                            features: [codemirror.fold(), codemirror.lineNumbers()]
                           }),
                           style: dialog.showSourceStyle('show-data')
                         }),
@@ -155,7 +137,7 @@ component('probe.inOutView', {
               visualSizeLimit: 7,
               features: [
                 itemlist.infiniteScroll(),
-                css.height({height: '100%', minMax: 'max'}),
+                css.height('100%', { minMax: 'max' }),
                 field.columnWidth(100),
                 css('{white-space: normal}')
               ]
@@ -168,9 +150,7 @@ component('probe.inOutView', {
         }),
         features: [
           feature.if('%$probe/path%'),
-          group.wait({
-            for: pipe(probe.runCircuit('%$probe/path%'), '%result%'),
-            loadingControl: text('...'),
+          group.wait(pipe(probe.runCircuit('%$probe/path%'), '%result%'), text('...'), {
             varName: 'probeResult',
             passRx: true
           })
@@ -178,7 +158,7 @@ component('probe.inOutView', {
       })
     ],
     features: [
-      watchRef({ref: '%$probe%', includeChildren: 'yes', strongRefresh: true})
+      watchRef('%$probe%', 'yes', { strongRefresh: true })
     ]
   })
 })
@@ -189,77 +169,64 @@ component('probe.probeResView', {
     {id: 'probeRes', defaultValue: '%%'}
   ],
   impl: group({
-    style: group.tabs({tabStyle: button.href(), barStyle: group.div(), barLayout: layout.horizontal(30)}),
+    style: group.tabs(button.href(), group.div(), { barLayout: layout.horizontal(30) }),
     controls: [
-      dynamicControls(pipeline('%badFormat%', filter('%%')), text('bad format', 'bad format')),
-      dynamicControls(pipeline('%noCircuit%', filter('%%')), text('no circuit', 'no circuit')),
-      dynamicControls(
-        pipeline(list('%$errCount%'), filter('%%!=0')),
-        group({
-          title: 'error: %$errCount%',
-          controls: [
-            text({
-              text: pipeline(
-                '%$probeRes/errors%',
-                prettyPrint({profile: probe.stripData('%%', true), noMacros: true}),
-                join(`
+      dynamicControls(pipeline('%badFormat%', filter('%%')), { genericControl: text('bad format', 'bad format') }),
+      dynamicControls(pipeline('%noCircuit%', filter('%%')), { genericControl: text('no circuit', 'no circuit') }),
+      dynamicControls(pipeline(list('%$errCount%'), filter('%%!=0')), {
+        genericControl: group({
+        title: 'error: %$errCount%',
+        controls: [
+          text({
+            text: pipeline(
+              '%$probeRes/errors%',
+              prettyPrint(probe.stripData('%%', true), { noMacros: true }),
+              join(`
 ---
 `)
-              ),
-              style: text.codemirror({enableFullScreen: true, height: '600', mode: 'javascript'}),
-              features: [
-                codemirror.fold(),
-                codemirror.lineNumbers()
-              ]
-            })
-          ]
-        })
-      ),
-      table({
-        title: 'in->out',
+            ),
+            style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
+            features: [codemirror.fold(), codemirror.lineNumbers()]
+          })
+        ]
+      })
+      }),
+      table('in->out', {
         items: '%$probeRes/result%',
         controls: [
-          group({
-            title: 'in (%in/length%)',
-            controls: ui.dataBrowse('%in%'),
-            features: css.width({width: 300, minMax: 'max'})
-          }),
-          group({title: 'out', controls: ui.dataBrowse('%out%'), features: field.columnWidth(100)})
-        ],
+        group({
+          title: 'in (%in/length%)',
+          controls: ui.dataBrowse('%in%'),
+          features: css.width(300, { minMax: 'max' })
+        }),
+        group({ title: 'out', controls: ui.dataBrowse('%out%'), features: field.columnWidth(100) })
+      ],
         style: table.mdc(),
         visualSizeLimit: 7,
         features: [
-          itemlist.infiniteScroll(),
-          css.height({height: '100%', minMax: 'max'}),
-          field.columnWidth(100),
-          css('{white-space: normal}')
-        ]
+        itemlist.infiniteScroll(),
+        css.height('100%', { minMax: 'max' }),
+        field.columnWidth(100),
+        css('{white-space: normal}')
+      ]
       }),
       group({
         title: 'in:%$probeRes/simpleVisits%',
         controls: [
-          text({
-            text: pipeline('%$probeRes/result/in%', prettyPrint({profile: '%data%', noMacros: true}), join(`
+          text(pipeline('%$probeRes/result/in%', prettyPrint('%data%', { noMacros: true }), join(`
 ---
-`)),
-            style: text.codemirror({enableFullScreen: true, height: '600', mode: 'javascript'}),
-            features: [
-              codemirror.fold(),
-              codemirror.lineNumbers()
-            ]
+`)), {
+            style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
+            features: [codemirror.fold(), codemirror.lineNumbers()]
           })
         ]
       }),
       group({
         title: 'out',
         controls: [
-          text({
-            text: prettyPrint({profile: '%$probeRes/result/out%', noMacros: true}),
-            style: text.codemirror({enableFullScreen: true, height: '600', mode: 'javascript'}),
-            features: [
-              codemirror.fold(),
-              codemirror.lineNumbers()
-            ]
+          text(prettyPrint('%$probeRes/result/out%', { noMacros: true }), {
+            style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
+            features: [codemirror.fold(), codemirror.lineNumbers()]
           })
         ]
       }),
@@ -269,16 +236,13 @@ component('probe.probeResView', {
           text({
             text: pipeline(
               '%$probeRes/result/in%',
-              prettyPrint({profile: probe.stripData('%vars%'), noMacros: true}),
+              prettyPrint(probe.stripData('%vars%'), { noMacros: true }),
               join(`
 ---
 `)
             ),
-            style: text.codemirror({enableFullScreen: true, height: '600', mode: 'javascript'}),
-            features: [
-              codemirror.fold(),
-              codemirror.lineNumbers()
-            ]
+            style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
+            features: [codemirror.fold(), codemirror.lineNumbers()]
           })
         ]
       }),
@@ -288,39 +252,29 @@ component('probe.probeResView', {
           text({
             text: pipeline(
               '%$probeRes/result/in%',
-              prettyPrint({profile: probe.stripData('%params%'), noMacros: true}),
+              prettyPrint(probe.stripData('%params%'), { noMacros: true }),
               join(`
 ---
 `)
             ),
-            style: text.codemirror({enableFullScreen: true, height: '600', mode: 'javascript'}),
-            features: [
-              codemirror.fold(),
-              codemirror.lineNumbers()
-            ]
+            style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
+            features: [codemirror.fold(), codemirror.lineNumbers()]
           })
         ]
       }),
-      text({title: 'circuit: %$probeRes/circuitPath%'}),
+      text({ title: 'circuit: %$probeRes/circuitPath%' }),
       group({
         title: 'probeRes',
         controls: [
-          text({
-            text: prettyPrint({profile: '%$probeRes%', noMacros: true}),
-            style: text.codemirror({enableFullScreen: true, height: '600', mode: 'javascript'}),
-            features: [
-              codemirror.fold(),
-              codemirror.lineNumbers()
-            ]
+          text(prettyPrint('%$probeRes%', { noMacros: true }), {
+            style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
+            features: [codemirror.fold(), codemirror.lineNumbers()]
           })
         ]
       }),
       group({
         title: 'preview',
-        controls: html({
-          html: '<style>%$probeRes/circuitRes/css%</style>%$probeRes/circuitRes/html%',
-          style: html.inIframe()
-        })
+        controls: html('<style>%$probeRes/circuitRes/css%</style>%$probeRes/circuitRes/html%', { style: html.inIframe() })
       })
     ],
     features: [
@@ -342,7 +296,7 @@ component('probe.browseRx', {
     style: itemlist.ulLi(),
     features: [
       itemlist.incrementalFromRx(),
-      css.height({height: '100%', overflow: 'scroll', minMax: 'max'})
+      css.height('100%', 'scroll', { minMax: 'max' })
     ]
   })
 })
@@ -350,7 +304,7 @@ component('probe.browseRx', {
 component('probe.showRxSniffer', {
   type: 'control',
   params: [
-    { id: 'snifferLog' }
+    {id: 'snifferLog'}
   ],
   impl: itemlist({
     items: source.data('%$snifferLog/result%'),
@@ -365,32 +319,19 @@ component('probe.showRxSniffer', {
         }),
         button({
           title: '%dir%',
-          action: openDialog({
-            id: '',
+          action: openDialog('variables', group({ controls: [ui.dataBrowse('%d/vars%')] }), {
             style: dialog.popup(),
-            content: group({
-              controls: [
-                ui.dataBrowse('%d/vars%')
-              ]
-            }),
-            title: 'variables',
+            id: '',
             features: dialogFeature.uniqueDialog('variables')
           }),
           style: button.href(),
-          features: [css.margin({ left: '10' }), feature.hoverTitle('show variables')]
+          features: [
+            css.margin({ left: '10' }),
+            feature.hoverTitle('show variables')
+          ]
         }),
-        text({
-          text: '%t%',
-          title: 't',
-          style: text.span(),
-          features: [css.opacity('0.5'), css.margin({ left: '10' })]
-        }),
-        text({
-          text: '%time%',
-          title: 'time',
-          style: text.span(),
-          features: [css.opacity('0.5'), css.margin({ left: '10' })]
-        })
+        text('%t%', 't', { style: text.span(), features: [css.opacity('0.5'), css.margin({ left: '10' })] }),
+        text('%time%', 'time', { style: text.span(), features: [css.opacity('0.5'), css.margin({ left: '10' })] })
       ],
       features: feature.byCondition('%dir%==out', css.color({ background: 'var(--jb-menubar-inactive-bg)' }))
     }),
@@ -398,7 +339,7 @@ component('probe.showRxSniffer', {
     visualSizeLimit: 7,
     features: [
       itemlist.incrementalFromRx(),
-      css.height({ height: '100%', overflow: 'scroll', minMax: 'max' })
+      css.height('100%', 'scroll', { minMax: 'max' })
     ]
   })
 })

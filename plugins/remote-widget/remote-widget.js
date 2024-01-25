@@ -12,14 +12,14 @@ extension('ui', 'widget-frontend', {
 component('widget.frontEndCtrl', {
   type: 'control',
   params: [
-    { id: 'widgetId', as: 'string' },
+    {id: 'widgetId', as: 'string'}
   ],
   impl: group({
     features: [
       htmlAttribute('widgetId', '%$widgetId%'),
       htmlAttribute('remoteUri', '%$remoteUri%'),
       htmlAttribute('widgetTop', 'true'),
-      htmlAttribute('frontend', 'true'),
+      htmlAttribute('frontend', 'true')
     ]
   })
 })
@@ -39,7 +39,7 @@ component('widget.newId', {
 component('backEnd', {
   type: 'jbm<jbm>',
   params: [
-    { id: 'elem', defaultValue: '%$cmp/el%' },
+    {id: 'elem', defaultValue: '%$cmp/el%'}
   ],
   impl: (ctx, elem) => {
     const widgetId = ctx.vars.FEWidgetId || jb.ui.frontendWidgetId(elem)
@@ -52,17 +52,17 @@ component('dataMethodFromBackend', {
   description: 'activated on FE to get data from BE',
   macroByValue: true,
   params: [
-    { id: 'method', as: 'string' },
-    { id: 'data', defaultValue: '%%' },
-    { id: 'vars' }
+    {id: 'method', as: 'string'},
+    {id: 'data', defaultValue: '%%'},
+    {id: 'vars'}
   ],
-  impl: remote.data(backend.dataMethod({ cmpId: '%$cmp/cmpId%', method: '%$method%', data: '%$data%' }), backEnd())
+  impl: remote.data(backend.dataMethod('%$cmp/cmpId%', '%$method%', { data: '%$data%' }), backEnd())
 })
 
 component('action.updateFrontEnd', {
   type: 'action',
   params: [
-    { id: 'renderingUpdate', defaultValue: '%%' }
+    {id: 'renderingUpdate', defaultValue: '%%'}
   ],
   impl: (ctx, renderingUpdate) => {
     if (renderingUpdate.$ == 'updates')
@@ -119,15 +119,15 @@ component('remote.distributedWidget', {
     remote.action(action.renderXwidget('%$selector%', '%$widgetId%'), byUri('%$frontEndUri%')),
     remote.action({
       action: rx.pipe(
-        source.remote(
-          rx.pipe(
+        source.remote({
+          rx: rx.pipe(
             source.callbag(() => jb.ui.widgetUserRequests),
             rx.log('remote widget userReq'),
             rx.filter('%widgetId% == %$widgetId%'),
             rx.takeWhile(({ data }) => data.$$ != 'destroy', true)
           ),
-          byUri('%$frontEndUri%')
-        ),
+          jbm: byUri('%$frontEndUri%')
+        }),
         widget.headless('%$control()%', '%$widgetId%'),
         sink.action(remote.action(action.updateFrontEnd('%%'), byUri('%$frontEndUri%')))
       ),
@@ -145,36 +145,36 @@ component('remote.widget', {
     {id: 'transactiveHeadless', as: 'boolean', type: 'boolean'}
   ],
   impl: group({
-    controls: controlWithFeatures(
-      Var('widgetId', widget.newId('%$resolvedJbm%')),
-      widget.frontEndCtrl('%$widgetId%'),
-      followUp.flow(
+    controls: controlWithFeatures({
+      vars: [
+        Var('widgetId', widget.newId('%$resolvedJbm%'))
+      ],
+      control: widget.frontEndCtrl('%$widgetId%'),
+      features: followUp.flow(
         source.callbag(() => jb.ui.widgetUserRequests),
         rx.log('remote widget userReq'),
         rx.filter('%widgetId% == %$widgetId%'),
         rx.takeWhile(({ data }) => data.$$ != 'destroy', true),
         rx.log('remote widget sent to headless'),
-        remote.operator(
-          widget.headless({
-            control: call('control'),
-            widgetId: '%$widgetId%',
+        remote.operator({
+          rx: widget.headless(call('control'), '%$widgetId%', {
             transactiveHeadless: '%$transactiveHeadless%'
           }),
-          '%$resolvedJbm%'
-        ),
+          jbm: '%$resolvedJbm%'
+        }),
         rx.log('remote widget arrived from headless'),
         sink.action(action.updateFrontEnd('%%'))
       )
-    ),
-    features: group.wait({for: '%$jbm%', varName: 'resolvedJbm'})
+    }),
+    features: group.wait('%$jbm%', { varName: 'resolvedJbm' })
   })
 })
 
 component('action.renderXwidget', {
   type: 'action',
   params: [
-    { id: 'selector', as: 'string' },
-    { id: 'widgetId', as: 'string' }
+    {id: 'selector', as: 'string'},
+    {id: 'widgetId', as: 'string'}
   ],
   impl: (ctx, selector, widgetId) => {
     const elem = selector ? jb.ui.widgetBody(ctx).querySelector(selector) : jb.ui.widgetBody(ctx)
@@ -182,9 +182,7 @@ component('action.renderXwidget', {
       return jb.logError('renderXwidget - can not find top elem', { body: jb.ui.widgetBody(ctx), ctx, selector })
     jb.ui.renderWidget({ $: 'widget.frontEndCtrl', widgetId: widgetId }, elem)
   },
-  dependency: [
-    widget.frontEndCtrl()
-  ]
+  dependency: [widget.frontEndCtrl()]
 })
 
 // headless
@@ -259,9 +257,9 @@ extension('ui', 'headless', {
 component('widget.headless', {
   type: 'rx',
   params: [
-    { id: 'control', type: 'control', dynamic: true },
-    { id: 'widgetId', as: 'string' },
-    { id: 'transactiveHeadless', as: 'boolean'},
+    {id: 'control', type: 'control', dynamic: true},
+    {id: 'widgetId', as: 'string'},
+    {id: 'transactiveHeadless', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx, ctrl, widgetId, transactiveHeadless) => {
     const renderingUpdates = jb.callbag.filter(m => m.widgetId == widgetId)(jb.ui.renderingUpdates)
@@ -311,23 +309,22 @@ component('widget.headlessWidgets', {
 component('frontEnd.widget', {
   type: 'control',
   params: [
-    { id: 'control', type: 'control', dynamic: true }
+    {id: 'control', type: 'control', dynamic: true}
   ],
-  impl: text({
-    text: '',
+  impl: text('', {
     style: text.htmlTag('div'),
     features: features(
-      frontEnd.coLocation(),
-      htmlAttribute('widgetId', 'client'),
-      htmlAttribute('widgetTop', 'true'),
-      htmlAttribute('frontend', 'true'),
-      frontEnd.var('ctrlProfile', ({ }, { }, { control }) => control.profile),
-      frontEnd.init((ctx, { el, ctrlProfile }) => {
+    frontEnd.coLocation(),
+    htmlAttribute('widgetId', 'client'),
+    htmlAttribute('widgetTop', 'true'),
+    htmlAttribute('frontend', 'true'),
+    frontEnd.var('ctrlProfile', ({ }, { }, { control }) => control.profile),
+    frontEnd.init((ctx, { el, ctrlProfile }) => {
         jb.ui.renderWidget(ctrlProfile, el, ctx.setVars({
           FEWidgetId: jb.ui.frontendWidgetId(el.parentNode),
         }))
       })
-    )
+  )
   })
 })
 
@@ -335,11 +332,8 @@ component('runInBECmpContext', {
   type: 'action',
   category: 'mutable:100',
   params: [
-    { id: 'cmpId', as: 'string', mandatory: true },
-    { id: 'action', type: 'action', dynamic: true, mandatory: true }
+    {id: 'cmpId', as: 'string', mandatory: true},
+    {id: 'action', type: 'action', dynamic: true, mandatory: true}
   ],
-  impl: remote.action(
-    ({}, {}, { cmpId, action }) => action(jb.ui.cmps[cmpId].calcCtx),
-    backEnd()
-  )
+  impl: remote.action(({}, {}, { cmpId, action }) => action(jb.ui.cmps[cmpId].calcCtx), backEnd())
 })

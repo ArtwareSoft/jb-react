@@ -47,7 +47,7 @@ component('test.expectedResultProfile', {
 component('test.successIndication', {
   type: 'control',
   params: [
-    {id: 'testId', as: 'string' },
+    {id: 'testId', as: 'string'}
   ],
   impl: button({
     vars: [
@@ -73,11 +73,8 @@ component('test.FE_BE_interaction', {
         controls: [
           text({
             text: ({},{},{method}) => method == 'headlessIO' ? jb.spy.headlessIO() : jb.spy.uiTestHeadlessIO(),
-            style: text.codemirror({enableFullScreen: true, height: '800', mode: 'javascript'}),
-            features: [
-              codemirror.fold(),
-              codemirror.lineNumbers()
-            ]
+            style: text.codemirror({ enableFullScreen: true, height: '800', mode: 'javascript' }),
+            features: [codemirror.fold(), codemirror.lineNumbers()]
           })
         ]
       }),
@@ -89,7 +86,7 @@ component('test.FE_BE_interaction', {
 component('test.uiFrontEndTestView', {
   type: 'control',
   params: [
-    {id: 'testId', as: 'string' },
+    {id: 'testId', as: 'string'},
     {id: 'testResult', dynamic: true}
   ],
   impl: group({
@@ -98,29 +95,22 @@ component('test.uiFrontEndTestView', {
       group({
         layout: layout.horizontal(20),
         controls: [
-          controlWithCondition(
-            '%expectedResultCtx/data%',
-            text(prettyPrint(test.expectedResultProfile('%expectedResultCtx%'), true))
-          ),
-          controlWithCondition(
-            '%html%',
-            text({
-              text: '%html%',
-              style: text.codemirror({height: '200', formatText: true, mode: 'htmlmixed'}),
-              features: [
-                codemirror.fold(),
-                css('min-width: 1200px')
-              ]
-            })
-          )
+          controlWithCondition('%expectedResultCtx/data%', text(prettyPrint(test.expectedResultProfile('%expectedResultCtx%'), true))),
+          controlWithCondition('%html%', text('%html%', {
+            style: text.codemirror({ height: '200', formatText: true, mode: 'htmlmixed' }),
+            features: [
+            codemirror.fold(),
+            css('min-width: 1200px')
+          ]
+          }))
         ]
       }),
       text('front end test %$result/duration% mSec {?, %$result/reason%?}'),
-      test.FE_BE_interaction(),
+      test.FE_BE_interaction()
     ],
     features: [
       group.data(() => jb.spy.logs.find(e=>e.logNames =='check test result')),
-      group.wait({for: '%$testResult()%', varName: 'result'})
+      group.wait('%$testResult()%', { varName: 'result' })
     ]
   }),
   require: winUtils.gotoUrl()
@@ -129,7 +119,7 @@ component('test.uiFrontEndTestView', {
 component('test.dataTestView', {
   type: 'control',
   params: [
-    {id: 'testId', as: 'string' },
+    {id: 'testId', as: 'string'},
     {id: 'testResult', dynamic: true}
   ],
   impl: group({
@@ -138,28 +128,21 @@ component('test.dataTestView', {
       group({
         layout: layout.horizontal(20),
         controls: [
-          controlWithCondition(
-            '%expectedResultCtx/data%',
-            text(prettyPrint(test.expectedResultProfile('%expectedResultCtx%'), true))
-          ),
-          controlWithCondition(
-            '%html%',
-            text({
-              text: '%html%',
-              style: text.codemirror({height: '200', formatText: true, mode: 'htmlmixed'}),
-              features: [
-                codemirror.fold(),
-                css('min-width: 1200px')
-              ]
-            })
-          )
+          controlWithCondition('%expectedResultCtx/data%', text(prettyPrint(test.expectedResultProfile('%expectedResultCtx%'), true))),
+          controlWithCondition('%html%', text('%html%', {
+            style: text.codemirror({ height: '200', formatText: true, mode: 'htmlmixed' }),
+            features: [
+            codemirror.fold(),
+            css('min-width: 1200px')
+          ]
+          }))
         ]
       }),
       text('dataTest %$result/duration% mSec {?, %$result/reason%?}')
     ],
     features: [
       group.data(() => jb.spy.logs.find(e=>e.logNames =='check test result')),
-      group.wait({for: '%$testResult()%', varName: 'result'})
+      group.wait('%$testResult()%', { varName: 'result' })
     ]
   }),
   require: winUtils.gotoUrl()
@@ -175,18 +158,19 @@ component('test.uiTestRunner', {
   impl: group({
     controls: [
       test.successIndication('%$testId%'),
-      button({title: 'play', action: ({},{},{ctxToRun}) => {
+      button({
+        title: 'play',
+        action: ({},{},{ctxToRun}) => {
         debugger
         const elemToTest = document.querySelector('.elemToTest')
         elemToTest && ctx.setVars({elemToTest}).runInner(ctxToRun.profile.uiAction,{type: 'uiAction'}, 'uiAction')
-      }, 
-      style: button.href(), features: css.margin({left: '10'})}),
+      },
+        style: button.href(),
+        features: css.margin({ left: '10' })
+      }),
       group({
         controls: [
-          controlWithCondition(
-            '%expectedResultCtx/data%',
-            text(prettyPrint(test.expectedResultProfile('%expectedResultCtx%'), true))
-          )
+          controlWithCondition('%expectedResultCtx/data%', text(prettyPrint(test.expectedResultProfile('%expectedResultCtx%'), true)))
         ],
         features: [
           group.data(() => jb.spy.logs.find(e=>e.logNames =='check test result'))

@@ -6,13 +6,7 @@ component('picklist', {
   params: [
     {id: 'title', as: 'string', dynamic: true},
     {id: 'databind', as: 'ref', mandaroy: true, dynamic: true},
-    {
-      id: 'options',
-      type: 'picklist.options',
-      dynamic: true,
-      mandatory: true,
-      templateValue: picklist.optionsByComma()
-    },
+    {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true, templateValue: picklist.optionsByComma()},
     {id: 'promote', type: 'picklist.promote', dynamic: true},
     {id: 'style', type: 'picklist.style', defaultValue: picklist.native(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
@@ -24,7 +18,7 @@ component('picklist.init', {
   type: 'feature',
   impl: features(
     calcProp('options', '%$$model/options()%'),
-    calcProp('hasEmptyOption', (ctx,{$props}) => $props.options.filter(x=>!x.text)[0]),
+    calcProp('hasEmptyOption', (ctx,{$props}) => $props.options.filter(x=>!x.text)[0])
   )
 })
 
@@ -69,10 +63,10 @@ component('picklist.allowAsynchOptions', {
     followUp.flow(
       source.any(({},{$state,$props}) => $props.options.delayed || []),
       rx.log('picklist followUp allowAsynchValue data arrived'),
-      sink.refreshCmp(
-        ({data}) => data.data || jb.path(data,'0.options') && data[0] || data,
-        obj(prop('refreshSource', 'dataArrived'))
-      )
+      sink.refreshCmp({
+        state: ({data}) => data.data || jb.path(data,'0.options') && data[0] || data,
+        options: obj(prop('refreshSource', 'dataArrived'))
+      })
     )
   )
 })
@@ -105,9 +99,9 @@ component('picklist.options', {
   type: 'picklist.options',
   params: [
     {id: 'options', type: 'data', as: 'array', dynamic: true, mandatory: true},
-    {id: 'code', as: 'string', dynamic: true, defaultValue: '%%' },
+    {id: 'code', as: 'string', dynamic: true, defaultValue: '%%'},
     {id: 'text', as: 'string', dynamic: true, defaultValue: '%%'},
-    {id: 'icon', type: 'icon', dynamic: true },
+    {id: 'icon', type: 'icon', dynamic: true},
     {id: 'allowEmptyValue', type: 'boolean'}
   ],
   impl: (ctx,options,code,text,icon,allowEmptyValue) => {
@@ -146,7 +140,9 @@ component('picklist.promote', {
 
 component('picklist.initGroups', {
   type: 'feature',
-  impl: calcProp({id: 'groups', phase: 20, value: (ctx,{$model, $props}) => {
+  impl: calcProp({
+    id: 'groups',
+    value: (ctx,{$model, $props}) => {
     const options = $props.options;
     const groupsHash = {};
     const promotedGroups = ($model.promote() || {}).groups || [];
@@ -168,5 +164,7 @@ component('picklist.initGroups', {
         return '---';
       return opt.group || opt.text.split('.').shift();
     }
-  }}),
+  },
+    phase: 20
+  })
 })

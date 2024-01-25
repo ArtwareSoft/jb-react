@@ -27,7 +27,7 @@ component('tgp.wrapWithGroup', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) => jb.tgp.writeValueOfPath(path,{ $: 'group', controls: [ jb.tgp.valOfPath(path) ] },ctx),
+  impl: (ctx,path) => jb.tgp.writeValueOfPath(path,{ $: 'group', controls: [ jb.tgp.valOfPath(path) ] },ctx)
 })
 
 component('tgp.insertControl', {

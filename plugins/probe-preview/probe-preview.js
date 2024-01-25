@@ -5,13 +5,9 @@ component('circuit', {
   params: [
     {id: 'filePath', as: 'string'}
   ],
-  impl: sourceCode(
-    [
-      pluginsByPath({filePath: '%$filePath%', addTests: true}),
-      plugins('probe,tree-shake,tgp')
-    ],
-    packagesByPath('%$filePath%', 'studio')
-  )
+  impl: sourceCode(pluginsByPath('%$filePath%', true), plugins('probe,tree-shake,tgp'), {
+    pluginPackages: packagesByPath('%$filePath%', 'studio')
+  })
 })
 
 component('probePreviewWorker', {
@@ -19,7 +15,7 @@ component('probePreviewWorker', {
   params: [
     {id: 'id', defaultValue: 'wProbe'}
   ],
-  impl: worker({id: '%$id%', init: probe.initPreview()})
+  impl: worker('%$id%', { init: probe.initPreview() })
 })
 
 component('suggestions.calcFromProbePreview', {
@@ -55,11 +51,7 @@ component('probe.remoteCircuitPreview', {
     {id: 'jbm', type: 'jbm<jbm>', defaultValue: probePreviewWorker()}
   ],
   type: 'control',
-  impl: If(
-    probe.circuitPreviewRequiresMainThread(),
-    probe.circuitPreview(),
-    remote.widget(probe.circuitPreview(), '%$jbm%')
-  )
+  impl: If(probe.circuitPreviewRequiresMainThread(), probe.circuitPreview(), remote.widget(probe.circuitPreview(), '%$jbm%'))
 })
 
 component('probe.circuitPreviewRequiresMainThread', {
@@ -81,17 +73,15 @@ component('probe.circuitPreview', {
         return circuit && circuit.$ && ctx.run(circuit)
     },
     features: [
-      If(
-        ctx => !jb.utils.getComp(ctx.exp('%$probe/defaultMainCircuit%'),{silent: true}),
-        group.wait(treeShake.getCodeFromRemote('%$probe/defaultMainCircuit%'))
-      ),
+      If({
+        condition: ctx => !jb.utils.getComp(ctx.exp('%$probe/defaultMainCircuit%'),{silent: true}),
+        then: group.wait(treeShake.getCodeFromRemote('%$probe/defaultMainCircuit%'))
+      }),
       watchRef('%$probe/scriptChangeCounter%'),
       variable('$previewMode', true)
     ]
   }),
-  require: [
-    test.showTestInStudio(),
-  ]
+  require: [test.showTestInStudio()]
 })
 
 component('probe.initPreview', {
@@ -99,7 +89,6 @@ component('probe.initPreview', {
   impl: runActions(
     Var('dataResources', () => jb.studio && jb.studio.projectCompsAsEntries().map(e=>e[0]).filter(x=>x.match(/^dataResource/)).join(',')),
     remote.action(treeShake.getCodeFromRemote('%$dataResources%'), '%$jbm%'),
-//    remote.action(treeShake.getCodeFromRemote(['#jb.watchableComps.startWatch']), '%$jbm%'),
     remote.shadowResource('probe', '%$jbm%'),
     rx.pipe(
       watchableComps.scriptChange(),
@@ -107,7 +96,9 @@ component('probe.initPreview', {
       rx.map(obj(prop('op', '%op%'), prop('path', '%path%'))),
       rx.var('cssOnlyChange', tgp.isCssPath('%path%')),
       sink.action(
-        remote.action({action: probe.handleScriptChangeOnPreview('%$cssOnlyChange%'), jbm: '%$jbm%', oneway: true})
+        remote.action(probe.handleScriptChangeOnPreview('%$cssOnlyChange%'), '%$jbm%', {
+          oneway: true
+        })
       )
     )
   )
@@ -159,8 +150,7 @@ component('probe.propertyPrimitive', {
     databind: tgp.ref('%$path%'),
     features: [
       feature.onKey('Right', suggestions.applyOption('/')),
-      editableText.picklistHelper({
-        options: suggestions.calcFromProbePreview('%$path%', true),
+      editableText.picklistHelper(suggestions.calcFromProbePreview('%$path%', true), {
         picklistFeatures: picklist.allowAsynchOptions(),
         showHelper: suggestions.shouldShow(true),
         onEnter: suggestions.applyOption()

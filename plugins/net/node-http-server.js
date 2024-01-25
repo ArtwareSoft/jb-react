@@ -28,29 +28,28 @@ component('node.startRemoteHttpServer', {
   type: 'action',
   params: [
     {id: 'id', as: 'string', mandatory: true},
-    {id: 'port', as: 'number', mandatory: true },
-    {id: 'sourceCode', type: 'source-code<jbm>', mandatory: true },
+    {id: 'port', as: 'number', mandatory: true},
+    {id: 'sourceCode', type: 'source-code<jbm>', mandatory: true},
     {id: 'services', type: 'http-service[]', dynamic: true},
-    {id: 'restart', as: 'boolean'},
+    {id: 'restart', as: 'boolean', type: 'boolean'}
   ],
-  impl: remote.cmd({
-    id: '%$id%',
-    sourceCode: '%$sourceCode%',
-    main: 'node.startHttpServer()',
+  impl: remote.cmd('node.startHttpServer()', {
     context: obj(
-      prop('services',({},{},{services})=>jb.utils.prettyPrint(services.profile,{singleLine: true})),
-      prop('restart','%$restart%'),
-      prop('port','%$port%')
-    )
+    prop('services', ({},{},{services})=>jb.utils.prettyPrint(services.profile,{singleLine: true})),
+    prop('restart', '%$restart%'),
+    prop('port', '%$port%')
+  ),
+    sourceCode: '%$sourceCode%',
+    id: '%$id%'
   })
 })
 
 component('node.startHttpServer', {
   type: 'action',
   params: [
-    {id: 'port', as: 'number', mandatory: true },
+    {id: 'port', as: 'number', mandatory: true},
     {id: 'services', type: 'http-service[]', dynamic: true},
-    {id: 'restart', as: 'boolean'},
+    {id: 'restart', as: 'boolean', type: 'boolean'}
   ],
   impl: async (ctx,port,servicesF,restart) => {
     const services = [...servicesF(),jb.exec(node.terminate()),jb.exec(node.details())]
@@ -99,8 +98,7 @@ component('node.startHttpServer', {
 
 component('node.terminate', {
   type: 'http-service',
-  params: [
-  ],
+  params: [],
   impl: ({}) => ({
     match: req => jb.http.getURLParam(req,'op') == 'terminate',
     serve: () => process.exit(0)
@@ -109,8 +107,7 @@ component('node.terminate', {
 
 component('node.details', {
   type: 'http-service',
-  params: [
-  ],
+  params: [],
   impl: ({}) => ({
     match: req => jb.http.getURLParam(req,'op') == 'details',
     serve: () => ({uri: jb.uri,pid:process.pid})

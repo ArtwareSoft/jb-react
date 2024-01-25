@@ -19,9 +19,9 @@ extension('watchableComps', {
 })
 
 component('watchableComps.scriptChange', {
-	type: 'rx',
+  type: 'rx',
   category: 'source',
-	impl: source.callbag(() => jb.watchableComps.source),
+  impl: source.callbag(() => jb.watchableComps.source)
 })
 
 

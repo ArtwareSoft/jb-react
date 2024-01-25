@@ -10,7 +10,9 @@ component('itemlist.divider', {
   params: [
     {id: 'space', as: 'number', defaultValue: 5}
   ],
-  impl: css('>.jb-item:not(:first-of-type) { border-top: 1px solid rgba(0,0,0,0.12); padding-top: %$space%px }')
+  impl: css(
+    '>.jb-item:not(:first-of-type) { border-top: 1px solid rgba(0,0,0,0.12); padding-top: %$space%px }'
+  )
 })
 
 component('itemlist.ulLi', {
@@ -29,8 +31,11 @@ component('itemlist.div', {
   params: [
     {id: 'spacing', as: 'number', defaultValue: 0}
   ],
-  impl: customStyle({template: ({},{ctrls},h) => h('div.jb-itemlist',{},
-        ctrls.map((ctrl) => h('div.jb-item', {}, ctrl.map(singleCtrl=>h(singleCtrl))))), features: itemlist.init()})
+  impl: customStyle({
+    template: ({},{ctrls},h) => h('div.jb-itemlist',{},
+        ctrls.map((ctrl) => h('div.jb-item', {}, ctrl.map(singleCtrl=>h(singleCtrl))))),
+    features: itemlist.init()
+  })
 })
 
 component('itemlist.horizontal', {

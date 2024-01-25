@@ -22,7 +22,7 @@ component('editableBoolean.expandCollapseWithUnicodeChars', {
   type: 'editable-boolean.style',
   params: [
     {id: 'toExpandSign', as: 'string', defaultValue: '⯈'},
-    {id: 'toCollapseSign', as: 'string', defaultValue: '⯆'},
+    {id: 'toCollapseSign', as: 'string', defaultValue: '⯆'}
   ],
   impl: customStyle({
     template: ({},{databind,toExpandSign,toCollapseSign},h) => 
@@ -66,27 +66,32 @@ component('editableBoolean.buttonXV', {
   description: 'two icons',
   params: [
     {id: 'yesIcon', type: 'icon', mandatory: true, defaultValue: icon('check')},
-    {id: 'noIcon', type: 'icon', mandatory: true, defaultValue: icon('close') },
-    {id: 'buttonStyle', type: 'button.style', dynamic: true, mandatory: true, defaultValue: button.mdcFloatingAction() }
+    {id: 'noIcon', type: 'icon', mandatory: true, defaultValue: icon('close')},
+    {id: 'buttonStyle', type: 'button.style', dynamic: true, mandatory: true, defaultValue: button.mdcFloatingAction()}
   ],
-  impl: styleByControl(button({
-        title: If('%$editableBooleanModel/databind()%','%$editableBooleanModel/textForTrue()%','%$editableBooleanModel/textForFalse()%' ),
-        style: call('buttonStyle'),
-        action: runActions(
-          writeValue('%$editableBooleanModel/databind()%',not('%$editableBooleanModel/databind()%')),
-          refreshIfNotWatchable('%$editableBooleanModel/databind()%')
-        ),
-        features: [
-          (ctx,{editableBooleanModel},{yesIcon,noIcon}) => {
+  impl: styleByControl({
+    control: button({
+      title: If({
+        condition: '%$editableBooleanModel/databind()%',
+        then: '%$editableBooleanModel/textForTrue()%',
+        Else: '%$editableBooleanModel/textForFalse()%'
+      }),
+      action: runActions(
+        writeValue('%$editableBooleanModel/databind()%', not('%$editableBooleanModel/databind()%')),
+        refreshIfNotWatchable('%$editableBooleanModel/databind()%')
+      ),
+      style: call('buttonStyle'),
+      features: [
+        (ctx,{editableBooleanModel},{yesIcon,noIcon}) => {
             const icon = jb.val(editableBooleanModel.databind()) ? yesIcon : noIcon
             const title = jb.val(editableBooleanModel.databind()) ? editableBooleanModel.textForTrue() : editableBooleanModel.textForFalse()
             return ctx.run({$: 'feature.icon', ...icon, title})
           },
-          watchRef({ref: '%$editableBooleanModel/databind()%', strongRefresh: true, allowSelfRefresh: true})
-        ]
-      }),
-    'editableBooleanModel'
-  )
+        watchRef('%$editableBooleanModel/databind()%', { allowSelfRefresh: true, strongRefresh: true })
+      ]
+    }),
+    modelVar: 'editableBooleanModel'
+  })
 })
 
 component('editableBoolean.mdcSlideToggle', {
@@ -133,26 +138,27 @@ component('editableBoolean.mdcCheckBox', {
     css: ctx => jb.ui.propWithUnits('width',ctx.params.width),
     features: [
       editableBoolean.initToggle(),
-      field.databind(), 
+      field.databind(),
       css('~ .mdc-checkbox__checkmark { top: -9px}')
-     ]
+    ]
   })
 })
 
 component('editableBoolean.picklist', {
   type: 'editable-boolean.style',
   params: [
-    {id: 'picklistStyle', type: 'picklist.style', defaultValue: picklist.native(), dynamic: true },
+    {id: 'picklistStyle', type: 'picklist.style', defaultValue: picklist.native(), dynamic: true}
   ],
-  impl: styleByControl(
-    picklist({
+  impl: styleByControl({
+    control: picklist({
       databind: '%$editableBooleanModel/databind%',
       options: list(
-        obj(prop('text','%$editableBooleanModel/textForTrue()%'),prop('code',true)),
-        obj(prop('text','%$editableBooleanModel/textForFalse()%'),prop('code',false))),
+        obj(prop('text', '%$editableBooleanModel/textForTrue()%'), prop('code', true)),
+        obj(prop('text', '%$editableBooleanModel/textForFalse()%'), prop('code', false))
+      ),
       style: call('picklistStyle'),
-      features: picklist.onChange(writeValue('%$editableBooleanModel/databind()%',If('%%==true',true,false))) // convert to boolean
+      features: picklist.onChange(writeValue('%$editableBooleanModel/databind()%', If('%%==true', true, false)))
     }),
-    'editableBooleanModel'
-  )
+    modelVar: 'editableBooleanModel'
+  })
 })

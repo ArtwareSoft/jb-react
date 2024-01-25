@@ -17,7 +17,7 @@ component('tgp.completionOptionsTest', {
     {id: 'compText', as: 'string', description: 'use __ for completion points'},
     {id: 'expectedSelections', as: 'array', description: 'label a selection that should exist in the menu. one for each point'},
     {id: 'filePath', as: 'string', defaultValue: 'projects/jb-react/plugins/common/jb-common-tests.js'},
-    {id: 'dsl', as: 'string'},
+    {id: 'dsl', as: 'string'}
   ],
   impl: async (ctx,compText,expectedSelections,filePath,dsl,notMixed)=> {
       const testId = ctx.vars.testID
@@ -57,11 +57,12 @@ component('tgp.completionActionTest', {
     {id: 'expectedCursorPos', description: 'e.g. 1,12'},
     {id: 'dsl', as: 'string'}
   ],
-  impl: dataTest(
-    async (ctx,{}, {compText,completionToActivate, expectedEdit, expectedTextAtSelection, expectedCursorPos,dsl }) => {
+  impl: dataTest({
+    calculate: async (ctx,{}, {compText,completionToActivate, expectedEdit, expectedTextAtSelection, expectedCursorPos,dsl }) => {
             jb.workspace.initJbWorkspaceAsHost()
             const parts = jb.test.fixToUniqueName(compText).split('__')
-            const dslLine = dsl ? `dsl('${dsl}')\n` : ''
+            const dslLine = dsl ? `dsl('${dsl}')
+` : ''
             const offset = parts[0].length +dslLine.length
             const code = parts.join('')
             jb.utils.resolveLoadedProfiles()
@@ -94,8 +95,8 @@ component('tgp.completionActionTest', {
     
             return { testFailure }        
         },
-    not('%testFailure%')
-  )
+    expectedResult: not('%testFailure%')
+  })
 })
 
 component('tgp.fixEditedCompTest', {

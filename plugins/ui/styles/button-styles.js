@@ -65,13 +65,16 @@ component('button.mdc', {
     {id: 'noRipple', as: 'boolean', type: 'boolean'},
     {id: 'noTitle', as: 'boolean', type: 'boolean'}
   ],
-  impl: customStyle({template: (cmp,{title,raised,noRipple,noTitle},h) => h('button',{
+  impl: customStyle({
+    template: (cmp,{title,raised,noRipple,noTitle},h) => h('button',{
       class: ['mdc-button',raised && 'raised mdc-button--raised'].filter(x=>x).join(' '), onclick: true},[
       ...[!noRipple && h('div.mdc-button__ripple')],
       ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-button__icon')),
       ...[!noTitle && h('span.mdc-button__label',{},title)],
       ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-button__icon')),
-    ]), features: [button.initAction(), mdcStyle.initDynamic()]})
+    ]),
+    features: [button.initAction(), mdcStyle.initDynamic()]
+  })
 })
 
 component('button.mdcChipAction', {
@@ -91,8 +94,11 @@ component('button.mdcChipAction', {
 
 component('button.plainIcon', {
   type: 'button.style',
-  impl: customStyle({template: (cmp,{title,raised},h) =>
-      jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=> vdom.setAttribute('title',vdom.getAttribute('title') || title))[0], features: button.initAction()})
+  impl: customStyle({
+    template: (cmp,{title,raised},h) =>
+      jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=> vdom.setAttribute('title',vdom.getAttribute('title') || title))[0],
+    features: button.initAction()
+  })
 })
 
 component('button.mdcIcon', {
@@ -101,11 +107,12 @@ component('button.mdcIcon', {
     {id: 'icon', type: 'icon'},
     {id: 'buttonSize', as: 'number', defaultValue: 40, description: 'button size is larger than the icon size, usually at the rate of 40/24'}
   ],
-  impl: styleWithFeatures(
-    button.mdcFloatingAction('%$buttonSize%', false),
-    features((ctx,{},{icon}) => icon && ctx.run({$: 'feature.icon', ...icon, title: '%$model.title%',
-        size: ({},{},{buttonSize}) => buttonSize * 24/40 }))
+  impl: styleWithFeatures(button.mdcFloatingAction('%$buttonSize%', false), {
+    features: features(
+    (ctx,{},{icon}) => icon && ctx.run({$: 'feature.icon', ...icon, title: '%$model.title%',
+        size: ({},{},{buttonSize}) => buttonSize * 24/40 })
   )
+  })
 })
 
 component('button.mdcFloatingAction', {
@@ -115,19 +122,27 @@ component('button.mdcFloatingAction', {
     {id: 'buttonSize', as: 'number', defaultValue: 60, description: 'mini is 40'},
     {id: 'withTitle', as: 'boolean', type: 'boolean'}
   ],
-  impl: customStyle({template: (cmp,{title,withTitle,raised},h) =>
+  impl: customStyle({
+    template: (cmp,{title,withTitle,raised},h) =>
       h('button',{ class: ['mdc-fab',raised && 'raised mdc-icon-button--on'].filter(x=>x).join(' ') ,
           title, tabIndex: -1, onclick: true}, [
             h('div',{ class: 'mdc-fab__ripple'}),
             ...jb.ui.chooseIconWithRaised(cmp.icon,raised).filter(x=>x).map(h).map(vdom=>
                 vdom.addClass('mdc-fab__icon').setAttribute('title',vdom.getAttribute('title') || title)),
             ...[withTitle && h('span',{ class: 'mdc-fab__label'},title)].filter(x=>x)
-      ]), features: [button.initAction(), mdcStyle.initDynamic(), css('~.mdc-fab {width: %$buttonSize%px; height: %$buttonSize%px;}')]})
+      ]),
+    features: [
+      button.initAction(),
+      mdcStyle.initDynamic(),
+      css('~.mdc-fab {width: %$buttonSize%px; height: %$buttonSize%px;}')
+    ]
+  })
 })
 
 component('button.mdcTab', {
   type: 'button.style',
-  impl: customStyle({template: (cmp,{title,raised},h) =>
+  impl: customStyle({
+    template: (cmp,{title,raised},h) =>
       h('button.mdc-tab',{ class: raised ? 'mdc-tab--active' : '',tabIndex: -1, role: 'tab', onclick: true}, [
         h('span.mdc-tab__content',{}, [
           ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-tab__icon')),
@@ -136,7 +151,9 @@ component('button.mdcTab', {
         ]),
         h('span',{ class: ['mdc-tab-indicator', raised && 'mdc-tab-indicator--active'].filter(x=>x).join(' ') }, h('span',{ class: 'mdc-tab-indicator__content mdc-tab-indicator__content--underline'})),
         h('span.mdc-tab__ripple'),
-      ]), features: [button.initAction(), mdcStyle.initDynamic()]})
+      ]),
+    features: [button.initAction(), mdcStyle.initDynamic()]
+  })
 })
 
 component('button.mdcHeader', {
@@ -144,19 +161,18 @@ component('button.mdcHeader', {
   params: [
     {id: 'stretch', as: 'boolean', type: 'boolean'}
   ],
-  impl: styleWithFeatures(
-    button.mdcTab(),
-    css(
-      pipeline(
-        Var('contentWidth', If('%$stretch%', 'width: 100%;', '')),
-        `
+  impl: styleWithFeatures(button.mdcTab(), {
+    features: css(
+    pipeline(
+      Var('contentWidth', If('%$stretch%', 'width: 100%;', '')),
+      `
     {width: 100%; border-bottom: 1px solid black; margin-bottom: 7px; padding: 0}
     ~ .mdc-tab__content { %$contentWidth% display: flex; align-content: space-between;}
     ~ .mdc-tab__text-label { width: 100% }
   `
-      )
     )
   )
+  })
 })
 
 

@@ -6,12 +6,9 @@ component('group.itemlistContainer', {
     {id: 'initialSelection', as: 'single'}
   ],
   impl: features(
-	feature.serviceRegistey(),
-    watchable('itemlistCntrData',{'$': 'object', search_pattern: '', selected: '%$initialSelection%'}),
-    variable({ // not watchable
-		name: 'itemlistCntr',
-		value: {'$': 'object', filters: () => []},
-    })
+    feature.serviceRegistey(),
+    watchable('itemlistCntrData', {'$': 'object', search_pattern: '', selected: '%$initialSelection%'}),
+    variable('itemlistCntr', {'$': 'object', filters: () => []})
   )
 })
 
@@ -20,7 +17,7 @@ component('itemlistContainer.filter', {
   category: 'itemlist-filter:100',
   requireService: 'dataFilters',
   params: [
-    {id: 'updateCounters', as: 'boolean'},
+    {id: 'updateCounters', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,updateCounters) => {
 			if (!ctx.vars.itemlistCntr) return;
@@ -48,8 +45,9 @@ component('itemlistContainer.search', {
     {id: 'style', type: 'editable-text.style', defaultValue: editableText.mdcSearch(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.cmpCtx), features(
-		calcProp('init', (ctx,{cmp, itemlistCntr},{searchIn,databind}) => {
+  impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.cmpCtx), {
+    features: features(
+    calcProp('init', (ctx,{cmp, itemlistCntr},{searchIn,databind}) => {
 				if (!itemlistCntr) return
 				itemlistCntr.filters.push( {
 					filter: items => {
@@ -62,8 +60,9 @@ component('itemlistContainer.search', {
 						return items.filter(item=>toSearch == '' || searchIn(ctx.setData(item)).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
 				}})
 		}),
-		frontEnd.selectionKeySourceService(),
-  	))
+    frontEnd.selectionKeySourceService()
+  )
+  })
 })
 
 component('itemlistContainer.moreItemsButton', {
@@ -76,27 +75,20 @@ component('itemlistContainer.moreItemsButton', {
     {id: 'style', type: 'button.style', defaultValue: button.href(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.cmpCtx), features(
-      watchRef('%$itemlistCntrData/maxItems%'),
-      method(
-        'onclickHandler',
-        writeValue(
-          '%$itemlistCntrData/maxItems%',
-          (ctx,{itemlistCntrData},{delta}) => delta + itemlistCntrData.maxItems
-        )
-      ),
-      calcProp({
-        id: 'title',
-        value: (ctx,{},{title,delta}) => title(ctx.setVar('delta',delta))
-      }),
-      ctx => ({
+  impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.cmpCtx), {
+    features: features(
+    watchRef('%$itemlistCntrData/maxItems%'),
+    method('onclickHandler', writeValue('%$itemlistCntrData/maxItems%', (ctx,{itemlistCntrData},{delta}) => delta + itemlistCntrData.maxItems)),
+    calcProp('title', (ctx,{},{title,delta}) => title(ctx.setVar('delta',delta))),
+    ctx => ({
 		templateModifier: (vdom,cmp,state) => { // hide the button when not needed
 			if (cmp.ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','number') == cmp.ctx.exp('%$itemlistCntrData/countAfterFilter%','number'))
 				return '';
 			return vdom;
 		}
-	  }))
+	  })
   )
+  })
 })
 
 extension('ui','itemlistCtr', {
@@ -185,7 +177,7 @@ component('search.fuse', {
   type: 'search-in',
   description: 'fuse.js search https://fusejs.io/api/options.html#basic-options',
   params: [
-    {id: 'keys', as: 'array', defaultValue: list('id', 'name'), description: 'List of keys that will be searched. This supports nested paths, weighted search, searching in arrays of strings and objects'},
+    {id: 'keys', as: 'array', defaultValue: list('id','name'), description: 'List of keys that will be searched. This supports nested paths, weighted search, searching in arrays of strings and objects'},
     {id: 'findAllMatches', as: 'boolean', defaultValue: false, description: 'When true, the matching function will continue to the end of a search pattern even if a perfect match has already been located in the string', type: 'boolean'},
     {id: 'isCaseSensitive', as: 'boolean', defaultValue: false, type: 'boolean'},
     {id: 'minMatchCharLength', as: 'number', defaultValue: 1, description: 'Only the matches whose length exceeds this value will be returned. (For instance, if you want to ignore single character matches in the result, set it to 2)'},

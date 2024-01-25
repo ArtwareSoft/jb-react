@@ -5,7 +5,7 @@ component('ui.dataBrowse', {
   params: [
     {id: 'objToShow', mandatory: true, as: 'value', defaultValue: '%%'},
     {id: 'width', as: 'number', defaultValue: 200},
-    {id: 'depth', as: 'number' },
+    {id: 'depth', as: 'number'}
   ],
   impl: group({
     controls: [
@@ -13,91 +13,74 @@ component('ui.dataBrowse', {
         controls: [
           controlWithCondition(isNull('%$obj%'), text('null')),
           controlWithCondition(({},{obj}) => obj == null, text('null')),
-          controlWithCondition(({},{obj}) => Array.isArray(obj) && obj.length == 1 && obj[0] == null, text('[null]')),
+          controlWithCondition({
+            condition: ({},{obj}) => Array.isArray(obj) && obj.length == 1 && obj[0] == null,
+            control: text('[null]')
+          }),
           controlWithCondition(isOfType('string,boolean,number', '%$obj%'), text('%$obj%')),
-          controlWithCondition(isOfType('function', '%$obj%'), text( ({data}) => data.name || 'func' )),
-          // controlWithCondition('%$obj.snifferResult%', studio.showRxSniffer('%$obj%')),
-          // controlWithCondition(
-          //   (ctx,{obj}) => jb.callbag.isCallbag(obj),
-          //   studio.browseRx('%$obj%')
-          // ),
-
-          controlWithCondition(
-            isOfType('array', '%$obj%'),
-            table({
+          controlWithCondition(isOfType('function', '%$obj%'), text(({data}) => data.name || 'func')),
+          controlWithCondition({
+            condition: isOfType('array', '%$obj%'),
+            control: table({
               items: '%$obj%',
-              controls: group({title: '%$obj/length% items', controls: ui.dataBrowse('%%', 200)}),
+              controls: group({ title: '%$obj/length% items', controls: ui.dataBrowse('%%', 200) }),
               style: table.mdc(),
               visualSizeLimit: 7,
-              features: [itemlist.infiniteScroll(), css.height({height: '400', minMax: 'max'})]
-            })
-          ),
-          controlWithCondition(
-            '%$obj/vars%',
-            group({
-              layout: layout.flex({spacing: '10'}),
-              controls: [
-                ui.dataBrowse('%$obj/data%')
+              features: [
+                itemlist.infiniteScroll(),
+                css.height('400', { minMax: 'max' })
               ]
             })
-          ),
+          }),
+          controlWithCondition('%$obj/vars%', group({ layout: layout.flex({ spacing: '10' }), controls: [ui.dataBrowse('%$obj/data%')] })),
           tree({
             nodeModel: tree.jsonReadOnly('%$obj%', '%$title%'),
-            style: tree.expandBox({}),
+            style: tree.expandBox(),
             features: [
               css.class('jb-editor'),
-              tree.selection({}),
-              tree.keyboardSelection({}),
-              css.width({width: '%$width%', minMax: 'max'})
+              tree.selection(),
+              tree.keyboardSelection(),
+              css.width('%$width%', { minMax: 'max' })
             ]
           })
         ],
         features: group.firstSucceeding()
       }),
-      controlWithCondition(
-        and('%$obj/length% > 100', isOfType('string', '%$obj%')),
-        button({
+      controlWithCondition({
+        condition: and('%$obj/length% > 100', isOfType('string', '%$obj%')),
+        control: button({
           title: 'open (%$obj/length%)',
           action: openDialog({
-            style: dialog.showSourceStyle('show-data'),
             content: group({
-              style: group.tabs({}),
+              style: group.tabs(),
               controls: [
-                editableText({
-                  title: 'codemirror',
-                  databind: '%$obj%',
+                editableText('codemirror', '%$obj%', {
                   style: editableText.codemirror({
-                    enableFullScreen: true,
-                    resizer: true,
-                    height: '',
-                    mode: 'text',
-                    debounceTime: 300,
-                    lineWrapping: false,
-                    lineNumbers: true,
-                    readOnly: true,
-                    maxLength: ''
-                  })
+                  enableFullScreen: true,
+                  height: '',
+                  mode: 'text',
+                  debounceTime: 300,
+                  lineWrapping: false,
+                  lineNumbers: true,
+                  readOnly: true,
+                  maxLength: ''
+                })
                 }),
-                html({title: 'html', html: '%$obj%', style: html.inIframe()})
+                html('%$obj%', 'html', { style: html.inIframe() })
               ],
               features: css('{height: 100%} >div:last-child {height: 100%}')
-            })
+            }),
+            style: dialog.showSourceStyle('show-data')
           }),
           style: button.href()
         }),
-        'long text'
-      )
+        title: 'long text'
+      })
     ],
     features: [
-      variable('obj','%$objToShow%'),
-      // group.wait({
-      //   for: '%$objToShow%',
-      //   loadingControl: text('...'),
-      //   varName: 'obj',
-      //   passRx: true
-      // }),
-      css.height({height: '400', overflow: 'auto', minMax: 'max'}),
-      css.width({overflow: 'auto', minMax: 'max'}),
+      variable('obj', '%$objToShow%'),
+      css.height('400', 'auto', { minMax: 'max' }),
+      css.width({ overflow: 'auto', minMax: 'max' }),
       group.eliminateRecursion(5)
     ]
   })
@@ -138,10 +121,9 @@ component('dialog.showSourceStyle', {
 				  }
 				  >.dialog-close:hover { opacity: .5 }`,
     features: [
-      dialogFeature.dragTitle({id: '%$id%', useSessionStorage: true}),
-      dialogFeature.uniqueDialog('%$id%', true),
+      dialogFeature.dragTitle('%$id%', true),
+      dialogFeature.uniqueDialog('%$id%'),
       dialogFeature.maxZIndexOnClick(5000),
-//      studioDialogFeature.studioPopupLocation(),
       dialogFeature.resizer(true)
     ]
   })

@@ -61,9 +61,13 @@ component('picklist.plusIcon', {
   type: 'feature',
   categories: 'feature:0,picklist:50',
   impl: features(
-    Var('color',css.valueOfCssVar('--mdc-theme-text-primary-on-background')),
-    css('-webkit-appearance: none; appearance: none; width: 6px; height: 23px; background-repeat: no-repeat; background-position-y: -1px;'),
-    css(`background-image: url("data:image/svg+xml;utf8,<svg fill='%$color%' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M17,13 H13 V17 H11 V13 H7 V11 H11 V7 H13 V11 H17 V13 Z'/></svg>");`),
+    Var('color', css.valueOfCssVar('--mdc-theme-text-primary-on-background')),
+    css(
+      '-webkit-appearance: none; appearance: none; width: 6px; height: 23px; background-repeat: no-repeat; background-position-y: -1px;'
+    ),
+    css(
+      `background-image: url("data:image/svg+xml;utf8,<svg fill='%$color%' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M17,13 H13 V17 H11 V13 H7 V11 H11 V7 H13 V11 H17 V13 Z'/></svg>");`
+    )
   )
 })
 
@@ -109,10 +113,7 @@ component('picklist.mdcRadio', {
 
 component('picklist.radioVertical', {
   type: 'picklist.style',
-  impl: styleWithFeatures(
-    picklist.radio(),
-    layout.grid({columnSizes: list('30px', 'auto')})
-  )
+  impl: styleWithFeatures(picklist.radio(), { features: layout.grid(list('30px','auto')) })
 })
 
 component('picklist.mdcSelect', {
@@ -146,8 +147,8 @@ component('picklist.mdcSelect', {
         source.callbag(({},{cmp}) => jb.callbag.create(obs=> 
           cmp.mdc_comps.forEach(({mdc_cmp}) => mdc_cmp.listen('MDCSelect:change', () => obs(mdc_cmp.value))))),
         rx.takeUntil('%$cmp/destroyed%'),
-        sink.BEMethod('writeFieldValue','%%')
-      ),  
+        sink.BEMethod('writeFieldValue', '%%')
+      ),
       css(
         `~.mdc-select:not(.mdc-select--disabled) .mdc-select__selected-text { color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-menubar-inactive-bg); }
         ~.mdc-select:not(.mdc-select--disabled) .mdc-floating-label { color: var(--mdc-theme-primary) }`
@@ -161,22 +162,15 @@ component('picklist.labelList', {
   params: [
     {id: 'labelStyle', type: 'text.style', dynamic: true, defaultValue: text.span()},
     {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.ulLi()},
-    {
-      id: 'cssForSelected',
-      as: 'string',
-      description: 'e.g. background: red OR >a { color: red }',
-      defaultValue: 'background: #bbb; color: #fff'
-    }
+    {id: 'cssForSelected', as: 'string', description: 'e.g. background: red OR >a { color: red }', defaultValue: 'background: #bbb; color: #fff'}
   ],
-  impl: styleByControl(
-    itemlist({
+  impl: styleByControl({
+    control: itemlist({
       items: '%$picklistModel/options%',
-      controls: text({text: '%text%', style: call('labelStyle')}),
+      controls: text('%text%', { style: call('labelStyle') }),
       style: call('itemlistStyle'),
       features: [
-        itemlist.selection({
-          databind: '%$picklistModel/databind%',
-          selectedToDatabind: '%code%',
+        itemlist.selection('%$picklistModel/databind%', '%code%', {
           databindToSelected: (ctx,{$props}) => $props.items.find(o=>o.code == ctx.data),
           cssForSelected: '%$cssForSelected%'
         }),
@@ -184,8 +178,8 @@ component('picklist.labelList', {
         watchRef('%$picklistModel/databind%')
       ]
     }),
-    'picklistModel'
-  )
+    modelVar: 'picklistModel'
+  })
 })
 
 component('picklist.buttonList', {
@@ -195,30 +189,26 @@ component('picklist.buttonList', {
     {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.horizontal()},
     {id: 'cssForSelected', as: 'string', description: 'e.g. background: red;color: blue;font-weight: bold;', defaultValue: 'background: #bbb; color: #fff'}
   ],
-  impl: styleByControl(
-    itemlist({
+  impl: styleByControl({
+    control: itemlist({
       items: '%$picklistModel/options%',
-      controls: button({title: '%text%', style: call('buttonStyle')}),
+      controls: button('%text%', { style: call('buttonStyle') }),
       style: call('itemlistStyle'),
       features: [
-          itemlist.selection({
-          databind: '%$picklistModel/databind%',
-          selectedToDatabind: '%code%',
+        itemlist.selection('%$picklistModel/databind%', '%code%', {
           databindToSelected: (ctx,{$props}) => $props.items.find(o=>o.code == ctx.data),
           cssForSelected: '%$cssForSelected%'
         }),
         watchRef('%$picklistModel/databind%')
       ]
     }),
-    'picklistModel'
-  )
+    modelVar: 'picklistModel'
+  })
 })
 
 component('picklist.hyperlinks', {
   type: 'picklist.style',
-  impl: picklist.buttonList({
-    buttonStyle: button.href(),
-    itemlistStyle: itemlist.horizontal('10'),
+  impl: picklist.buttonList(button.href(), itemlist.horizontal('10'), {
     cssForSelected: '>a { color: red }'
   })
 })
@@ -232,7 +222,7 @@ component('picklist.groups', {
               group.options.map(
                 option=>h('option',{value: option.code, ...(databind == option.code && {selected:  '' }) },option.text))))
       )),
-    features: [field.databind(), picklist.init(),  picklist.initGroups()]
+    features: [field.databind(), picklist.init(), picklist.initGroups()]
   })
 })
 

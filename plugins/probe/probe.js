@@ -283,7 +283,7 @@ component('probe.runCircuit', {
 component('probe.calcCircuitPath', {
   type: 'data',
   params: [
-    {id: 'probePath', as: 'string'},
+    {id: 'probePath', as: 'string'}
   ],
   impl: async (ctx, probePath) => {
         const circuit = await jb.probe.calcCircuit(ctx, probePath)
