@@ -5,54 +5,24 @@ component('studio.categoriesMarks', {
   ],
   impl: pipeline(
     {
-        '$': 'object',
-        control: pipeline(
-          list(
-              'common:100',
-              'control:95',
-              'input:90',
-              'group:85',
-              'studio-helper:0,suggestions-test:0,studio:0,test:0,basic:0,ui-tests:0,studio-helper-dummy:0,itemlist-container:0'
-            ),
-          split(','),
-          {
-              '$': 'object',
-              code: split({separator: ':', part: 'first'}),
-              mark: split({separator: ':', part: 'second'})
-            }
-        ),
-        feature: pipeline(
-          list(
-              'css:100',
-              'watch:95',
-              'lifecycle:90',
-              'events:85',
-              'group:80',
-              'all:20',
-              'feature:0,tabs:0,text:0,picklist:0,studio:0,text:0,menu:0,flex-layout-container:0,md-style:0,itemlist-container:0,editable-text:0,editable-boolean:0,first-succeeding:0,itemlist-filter:0',
-              'md-style:0'
-            ),
-          split(','),
-          {
-              '$': 'object',
-              code: split({separator: ':', part: 'first'}),
-              mark: split({separator: ':', part: 'second'})
-            }
-        ),
-        'group.style': pipeline(
-          list('layout:100', 'group:90', 'tabs:0'),
-          split(','),
-          {
-              '$': 'object',
-              code: split({separator: ':', part: 'first'}),
-              mark: split({separator: ':', part: 'second'})
-            }
-        )
-      },
-    firstSucceeding(
-        ctx => ctx.data[ctx.exp('%$type%','string')],
-        {'$': 'object', code: 'all', mark: '100'}
+      '$': 'object',
+      control: pipeline(
+        list('common:100','control:95','input:90','group:85','studio-helper:0,suggestions-test:0,studio:0,test:0,basic:0,ui-tests:0,studio-helper-dummy:0,itemlist-container:0'),
+        split(','),
+        {'$': 'object', code: split(':', { part: 'first' }), mark: split(':', { part: 'second' })}
+      ),
+      feature: pipeline(
+        list('css:100','watch:95','lifecycle:90','events:85','group:80','all:20','feature:0,tabs:0,text:0,picklist:0,studio:0,text:0,menu:0,flex-layout-container:0,md-style:0,itemlist-container:0,editable-text:0,editable-boolean:0,first-succeeding:0,itemlist-filter:0','md-style:0'),
+        split(','),
+        {'$': 'object', code: split(':', { part: 'first' }), mark: split(':', { part: 'second' })}
+      ),
+      'group.style': pipeline(
+        list('layout:100','group:90','tabs:0'),
+        split(','),
+        {'$': 'object', code: split(':', { part: 'first' }), mark: split(':', { part: 'second' })}
       )
+    },
+    firstSucceeding(ctx => ctx.data[ctx.exp('%$type%','string')], {'$': 'object', code: 'all', mark: '100'})
   )
 })
 

@@ -350,20 +350,17 @@ component('sourceEditor.suggestionsItemlist', {
   ],
   impl: itemlist({
     items: sourceEditor.propOptions('%$path%'),
-    controls: text({text: '%text%', features: [css.padding({left: '3', right: '2'})]}),
+    controls: text('%text%', { features: [css.padding({ left: '3', right: '2' })] }),
     features: [
       id('suggestions-itemlist'),
       itemlist.noContainer(),
-      itemlist.selection({
-        databind: '%$suggestionData/selected%',
-        autoSelectFirst: true
-      }),
+      itemlist.selection('%$suggestionData/selected%', { autoSelectFirst: true }),
       itemlist.keyboardSelection(false),
-      css.height({height: '500', overflow: 'auto', minMax: 'max'}),
-      css.width({width: '300', overflow: 'auto', minMax: 'min'}),
+      css.height('500', 'auto', { minMax: 'max' }),
+      css.width('300', 'auto', { minMax: 'min' }),
       css('{ position: absolute; z-index:1000; background: var(--jb-editor-background) }'),
-      css.border({width: '1', color: '#cdcdcd'}),
-      css.padding({top: '2', left: '3', selector: 'li'})
+      css.border('1', { color: '#cdcdcd' }),
+      css.padding('2', '3', { selector: 'li' })
     ]
   })
 })

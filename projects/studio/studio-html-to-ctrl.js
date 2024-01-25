@@ -15,7 +15,7 @@ component('studio.dropHtml', {
 
 component('studio.htmlToControl', {
   params: [
-    {id: 'html' }
+    {id: 'html'}
   ],
   impl: (ctx,html) => jb.ui.htmlToControl(html,ctx)
 })

@@ -288,13 +288,13 @@ component('studio.lowFootprintObj', {
 
 component('studio.slicedString', {
   params: [
-    {id: 'data', mandatory: true },
-    {id: 'length', as: 'number', defaultValue: 30 },
+    {id: 'data', mandatory: true},
+    {id: 'length', as: 'number', defaultValue: 30}
   ],
-  impl: controlWithCondition(
-        isOfType('string', '%$data%'),
-        text(({},{},{length,data}) => data.replace(/\n/g,'').slice(0,length))
-    )
+  impl: controlWithCondition({
+    condition: isOfType('string', '%$data%'),
+    control: text(({},{},{length,data}) => data.replace(/\n/g,'').slice(0,length))
+  })
 })
 
 // jb.component('eventTracker.isNotDebuggerEvent', {
