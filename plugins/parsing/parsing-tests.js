@@ -17,13 +17,13 @@ component('textToBreak', { passiveData: 'l1-a1-b1-c1;l2-a2-b2-c2;l3-a3-b3-c3'})
 component('textToBreak2', { passiveData: 'l1-a1-b1-c1;l2|a2|b2|c2;l3-a3-b3-c3'})
 
 component('dataTest.stringWithSourceRef', {
-  impl: dataTest(ctx => new jb.parsing.stringWithSourceRef(ctx,'textToBreak',6,8), '%% == b1')
+  impl: dataTest(ctx => new jb.parsing.stringWithSourceRef(ctx,'textToBreak',6,8), equals('b1'))
 })
 
 component('dataTest.extractTextRepeating', {
   impl: dataTest({
     calculate: pipeline(extractText('%$textToParse%', { startMarkers: '#start', endMarker: '#end', repeating: true }), join()),
-    expectedResult: '%% == first,second'
+    expectedResult: equals('first,second')
   })
 })
 
@@ -38,7 +38,7 @@ component('dataTest.extractTextIncludingStartMarker', {
       }),
       join()
     ),
-    expectedResult: ctx => ctx.data == '#start\nfirst,#start\nsecond'
+    expectedResult: ({data}) => data == '#start\nfirst,#start\nsecond'
   })
 })
 
@@ -53,7 +53,7 @@ component('dataTest.extractTextIncludingEndMarker', {
       }),
       join()
     ),
-    expectedResult: ctx => ctx.data == 'first\n#end,second\n#end'
+    expectedResult: ({data}) => data == 'first\n#end,second\n#end'
   })
 })
 
@@ -70,38 +70,35 @@ component('dataTest.extractTextExclude', {
       }),
       join()
     ),
-    expectedResult: '%% == before,outside1,outside2'
+    expectedResult: equals('before,outside1,outside2')
   })
 })
 
 component('dataTest.extractTextRegex', {
   impl: dataTest({
     calculate: extractText('%$textToParse%', { startMarkers: '#s.*', endMarker: '#e.*', useRegex: true }),
-    expectedResult: '%% == first'
+    expectedResult: equals('first')
   })
 })
 
 component('dataTest.breakText', {
   impl: dataTest({
     calculate: json.stringify(breakText('%$textToBreak%', { separators: [';','-'] })),
-    expectedResult: '%% == [["l1","a1","b1","c1"],["l2","a2","b2","c2"],["l3","a3","b3","c3"]]'
+    expectedResult: equals('[["l1","a1","b1","c1"],["l2","a2","b2","c2"],["l3","a3","b3","c3"]]')
   })
 })
 
 component('dataTest.breakTextRegex', {
   impl: dataTest({
-    autoGen: true,
-    calculate: json.stringify(
-      breakText({text: '%$textToBreak2%', separators: [';', '-|\\|'], useRegex: true})
-    ),
-    expectedResult: '%% == [[\"l1\",\"a1\",\"b1\",\"c1\"],[\"l2\",\"a2\",\"b2\",\"c2\"],[\"l3\",\"a3\",\"b3\",\"c3\"]]'
+    calculate: json.stringify(breakText('%$textToBreak2%', { separators: [';','-|\\|'], useRegex: true })),
+    expectedResult: equals('[["l1","a1","b1","c1"],["l2","a2","b2","c2"],["l3","a3","b3","c3"]]')
   })
 })
 
 component('dataTest.zipArrays', {
   impl: dataTest({
-    calculate: zipArrays(ctx => [[1,2],[10,20],[100,200]]),
-    expectedResult: ({data}) => JSON.stringify(data) == JSON.stringify([[1,10,100],[2,20,200]])
+    calculate: json.stringify(zipArrays(() => [[1,2],[10,20],[100,200]])),
+    expectedResult: equals('[[1,10,100],[2,20,200]]')
   })
 })
 
