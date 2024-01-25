@@ -129,7 +129,7 @@ component('uiTest.treeVisualDD', {
         tree.selection(),
         tree.dragAndDrop(),
         tree.keyboardSelection({ autoFocus: true }),
-        tree.expandPath('personWithChildren~children','personWithChildren~friends')
+        tree.expandPath('personWithChildren~children')
       ]
     }),
     expectedResult: true
@@ -191,7 +191,7 @@ component('uiTest.treeStyles', {
             tree.selection(),
             tree.dragAndDrop(),
             tree.keyboardSelection(),
-            tree.expandPath('personWithChildren~children','personWithChildren~friends')
+            tree.expandPath('personWithChildren~children')
           ]
         }),
         tree({
@@ -201,7 +201,7 @@ component('uiTest.treeStyles', {
             tree.selection(),
             tree.dragAndDrop(),
             tree.keyboardSelection(),
-            tree.expandPath('personWithChildren~children','personWithChildren~friends')
+            tree.expandPath('personWithChildren~children')
           ]
         }),
         tree({
@@ -211,7 +211,7 @@ component('uiTest.treeStyles', {
             tree.selection(),
             tree.dragAndDrop(),
             tree.keyboardSelection(),
-            tree.expandPath('personWithChildren~children','personWithChildren~friends')
+            tree.expandPath('personWithChildren~children')
           ]
         }),
         tree({
@@ -221,7 +221,7 @@ component('uiTest.treeStyles', {
             tree.selection(),
             tree.dragAndDrop(),
             tree.keyboardSelection(),
-            tree.expandPath('personWithChildren~children','personWithChildren~friends')
+            tree.expandPath('personWithChildren~children')
           ]
         })
       ]

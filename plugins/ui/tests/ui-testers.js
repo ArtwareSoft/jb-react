@@ -140,7 +140,7 @@ component('uiTest.postTestRenderingUpdate', {
 })
 
 component('uiTest.addFrontEndEmulation', {
-	impl: ctx => {
+  impl: ctx => {
 		const { widgetId, useFrontEndInTest} = ctx.vars
 		jb.ui.FEEmulator[widgetId] = {
 			userReqSubs: useFrontEndInTest && jb.callbag.subscribe(userRequest => {
@@ -155,7 +155,7 @@ component('uiTest.addFrontEndEmulation', {
 })
 
 component('uiTest.removeFrontEndEmulation', {
-	impl: ctx => {
+  impl: ctx => {
 		const { widgetId, useFrontEndInTest} = ctx.vars
 		useFrontEndInTest && jb.ui.FEEmulator[widgetId].userReqSubs.dispose()
 		delete jb.ui.FEEmulator[widgetId]

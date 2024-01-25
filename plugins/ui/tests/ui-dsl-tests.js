@@ -14,27 +14,25 @@ component('location.control', {
 })
 
 component('completionTest.dslTest.usingCtrl', {
-  impl: tgp.completionOptionsTest(
-    "component('x', {\n  impl: uiTest(__TBD())\n})",
-    ['location.control']
-  )
+  impl: tgp.completionOptionsTest(`component('x', {
+  impl: uiTest(__TBD())
+})`, {
+    expectedSelections: ['location.control']
+  })
 })
 
 component('completionTest.dslTest.usingCtrl2', {
   impl: tgp.completionOptionsTest(`component('x', {
   impl: uiTest(location.control(__TBD()))
-})`, ['israel'])
+})`, {
+    expectedSelections: ['israel']
+  })
 })
 
 component('dslTest.jbDsl.usingCtrl', {
-  impl: uiTest({control: location.control(israel()), expectedResult: contains('Jerusalem')})
+  impl: uiTest(location.control(israel()), contains('Jerusalem'))
 })
 
 component('remoteTest.dsl', {
-  impl: uiTest({
-    control: location.control(israel()),
-    expectedResult: contains('Jerusalem'),
-    timeout: 500,
-    backEndJbm: worker()
-  })
+  impl: uiTest(location.control(israel()), contains('Jerusalem'), { timeout: 500, backEndJbm: worker() })
 })
