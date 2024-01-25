@@ -49,11 +49,7 @@ component('studio.currentPagePath', {
 })
 
 component('studio.currentProfilePath', {
-  impl: firstSucceeding(
-    '%$simulateProfilePath%',
-    '%$studio/profile_path%',
-    studio.currentPagePath()
-  )
+  impl: firstSucceeding('%$simulateProfilePath%', '%$studio/profile_path%', studio.currentPagePath())
 })
 
 component('studio.message', {
@@ -109,7 +105,7 @@ component('studio.compSource', {
 })
 
 component('studio.unMacro', {
-  impl: ({data}) => data && data.split('>').pop().replace(/([A-Z])/g, (all, s) => ' ' + s.toLowerCase()),
+  impl: ({data}) => data && data.split('>').pop().replace(/([A-Z])/g, (all, s) => ' ' + s.toLowerCase())
 })
 
 component('studio.watchPath', {

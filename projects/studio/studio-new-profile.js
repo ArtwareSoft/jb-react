@@ -297,73 +297,63 @@ component('studio.insertCompOption', {
     {id: 'title', as: 'string'},
     {id: 'comp', as: 'string'}
   ],
-  impl: menu.action({
-    title: '%$title%',
-    action: tgp.insertControl('%$comp%',studio.currentProfilePath())
-  })
+  impl: menu.action('%$title%', tgp.insertControl('%$comp%', studio.currentProfilePath()))
 })
 
 component('studio.insertControlMenu', {
-  impl: menu.menu(
-    'Insert',
-    [
-      menu.menu(
-        'Control',
-        [
-          studio.insertCompOption('Label', 'label'),
-          studio.insertCompOption('Button', 'button')
-        ]
-      ),
-      menu.menu(
-        'Input',
-        [
-          studio.insertCompOption('Editable Text', 'editable-text'),
-          studio.insertCompOption('Editable Number', 'editable-number'),
-          studio.insertCompOption('Editable Boolean', 'editable-boolean')
-        ]
-      ),
-      menu.action('More...', studio.openNewProfileDialog({type: 'control', mode: 'insert-control'})),
-      menu.separator(),
-      menu.action({
-        title: 'Drop html from any web site',
-        action: openDialog({
-          title: 'Drop html from any web site',
-          content: group({
-            layout: layout.vertical(),
-            controls: [
-              button({
-                title: 'drop here',
-                style: button.mdc(),
-                raised: '',
-                features: [
-                  css.height('80'),
-                  studio.dropHtml(runActions(tgp.insertControl('%$newCtrl%',studio.currentProfilePath()), dialog.closeDialog()))
-                ]
-              }),
-              editableText({
-                title: 'paste html here',
-                databind: '%$studio/htmlToPaste%',
-                style: editableText.textarea('3', '80'),
-                features: htmlAttribute('placeholder', 'or paste html here')
-              })
-            ],
-            features: [
-              css.width('400'),
-              css.padding({left: '4', right: '4'})
-            ]
-          }),
-          style: dialog.dialogOkCancel(),
-          onOK: action.if('%$studio/htmlToPaste%', tgp.insertControl(
-            studio.htmlToControl('%$studio/htmlToPaste%'),studio.currentProfilePath() )),
-          features: dialogFeature.dragTitle()
-        }),
-        shortcut: ''
-      }),
-      menu.separator(),
-      menu.action('New Page (Control)', studio.openNewPage()),
-      menu.action('New Function', studio.openNewFunction())
+  impl: menu.menu('Insert', {
+    options: [
+    menu.menu('Control', {
+      options: [
+      studio.insertCompOption('Label', 'label'),
+      studio.insertCompOption('Button', 'button')
     ]
-  )
+    }),
+    menu.menu('Input', {
+      options: [
+      studio.insertCompOption('Editable Text', 'editable-text'),
+      studio.insertCompOption('Editable Number', 'editable-number'),
+      studio.insertCompOption('Editable Boolean', 'editable-boolean')
+    ]
+    }),
+    menu.action('More...', studio.openNewProfileDialog({ type: 'control', mode: 'insert-control' })),
+    menu.separator(),
+    menu.action({
+      title: 'Drop html from any web site',
+      action: openDialog({
+        title: 'Drop html from any web site',
+        content: group({
+          layout: layout.vertical(),
+          controls: [
+            button('drop here', {
+              style: button.mdc(),
+              raised: '',
+              features: [
+              css.height('80'),
+              studio.dropHtml(runActions(tgp.insertControl('%$newCtrl%', studio.currentProfilePath()), dialog.closeDialog()))
+            ]
+            }),
+            editableText('paste html here', '%$studio/htmlToPaste%', {
+              style: editableText.textarea('3', '80'),
+              features: htmlAttribute('placeholder', 'or paste html here')
+            })
+          ],
+          features: [
+            css.width('400'),
+            css.padding({ left: '4', right: '4' })
+          ]
+        }),
+        style: dialog.dialogOkCancel(),
+        onOK: action.if('%$studio/htmlToPaste%', tgp.insertControl(studio.htmlToControl('%$studio/htmlToPaste%'), studio.currentProfilePath())),
+        features: dialogFeature.dragTitle()
+      }),
+      shortcut: ''
+    }),
+    menu.separator(),
+    menu.action('New Page (Control)', studio.openNewPage()),
+    menu.action('New Function', studio.openNewFunction())
+  ]
+  })
 })
 
 component('studio.newProfile', {
@@ -377,7 +367,7 @@ component('studio.newComp', {
   params: [
     {id: 'compName', as: 'string'},
     {id: 'compContent'},
-    {id: 'file', as: 'string'},
+    {id: 'file', as: 'string'}
   ],
   impl: (ctx, compName, compContent,file) => {
     component(compName, jb.frame.JSON.parse(JSON.stringify({...compContent, type: '_'})))

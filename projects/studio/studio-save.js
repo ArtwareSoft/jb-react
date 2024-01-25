@@ -12,14 +12,14 @@ component('studio.saveComponents', {
 
 component('studio.filePathOfComp', {
   params: [
-    { id: 'comp' }
+    {id: 'comp'}
   ],
   impl: (ctx,comp) => jb.studio.host.locationToPath(comp[jb.core.CT].location.path)
 })
 
 component('studio.getFileContent', {
   params: [
-    { id: 'filePath', as: 'string' }
+    {id: 'filePath', as: 'string'}
   ],
   impl: (ctx,filePath) => jb.studio.host.getFile(filePath)
 })
@@ -43,8 +43,8 @@ component('studio.saveFile', {
 // jb.studio.host.saveFile(filePath, content)
 component('studio.newFileContent', {
   params: [
-    { id: 'fileContent', as: 'string' },
-    { id: 'comps' }
+    {id: 'fileContent', as: 'string'},
+    {id: 'comps'}
   ],
   impl: (ctx, fileContent, comps) => {
     let lines = fileContent.split('\n').map(x=>x.replace(/[\s]*$/,''))

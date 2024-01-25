@@ -13,18 +13,17 @@ component('mixedTest.tst2Helper', {
 
 component('mixedTest.tst1Helper', {
   doNotRunInTests: true,
-  impl: customStyle({
-    template: ({},{},h) => h('div.jb-dialogs'),
+  impl: customStyle(({},{},h) => h('div.jb-dialogs'), {
     features: features(
-      followUp.flow(
-        source.subject(dialogs.changeEmitter()),
-        rx.filter('%open%'),
-        rx.var('dialogVdom', pipeline(dialog.buildComp('%dialog%'), '%renderVdomAndFollowUp()%')),
-        rx.var('delta', obj(prop('children', obj(prop('toAppend', pipeline('%$dialogVdom%', ({data}) => jb.ui.stripVdom(data))))))),
-        rx.log('open dialog', obj(prop('dialogId', '%dialog/id%'))),
-        sink.applyDeltaToCmp('%$delta%', '%$followUpCmp/cmpId%')
-      )
+    followUp.flow(
+      source.subject(dialogs.changeEmitter()),
+      rx.filter('%open%'),
+      rx.var('dialogVdom', pipeline(dialog.buildComp('%dialog%'), '%renderVdomAndFollowUp()%')),
+      rx.var('delta', obj(prop('children', obj(prop('toAppend', pipeline('%$dialogVdom%', ({data}) => jb.ui.stripVdom(data))))))),
+      rx.log('open dialog', obj(prop('dialogId', '%dialog/id%'))),
+      sink.applyDeltaToCmp('%$delta%', '%$followUpCmp/cmpId%')
     )
+  )
   })
 })
 

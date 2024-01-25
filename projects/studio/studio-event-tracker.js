@@ -244,22 +244,18 @@ component('eventTracker.eventTypes', {
 
 component('studio.objExpandedAsText', {
   params: [
-    {id: 'obj', mandatory: true },
-    {id: 'title', as: 'string', mandatory: true},
+    {id: 'obj', mandatory: true},
+    {id: 'title', as: 'string', mandatory: true}
   ],
-  impl: controlWithCondition('%$obj%',group({
+  impl: controlWithCondition('%$obj%', group({
     controls: [
       controlWithCondition('%$asText/length% < 20', text('%$asText%')),
       controlWithCondition('%$asText/length% > 19', group({
         style: group.sectionExpandCollapse(text('%$title%')),
-        controls: text({
-          text: '%$asText%',
-          style: text.codemirror({height: '200'}),
-          features: codemirror.fold()
-        }),    
+        controls: text('%$asText%', { style: text.codemirror({ height: '200' }), features: codemirror.fold() })
       }))
     ],
-    features: variable('asText',prettyPrint('%$obj%'))
+    features: variable('asText', prettyPrint('%$obj%'))
   }))
 })
 
@@ -306,7 +302,7 @@ component('studio.slicedString', {
 component('eventTracker.eventItems', {
   params: [
     {id: 'spy', dynamic: true},
-    {id: 'query', as: 'string' },
+    {id: 'query', as: 'string'}
   ],
   impl: (ctx,_spy, query) => {
     const spy = _spy()
@@ -325,14 +321,14 @@ component('eventTracker.eventItems', {
 
 component('eventTracker.elemOfCmp', {
   params: [
-    {id: 'cmp' }
+    {id: 'cmp'}
   ],
   impl: eventTracker.elemInInspectedJb('[cmp-id="%$cmp/cmpId%"]')
 })
 
 component('eventTracker.elemInInspectedJb', {
   params: [
-    {id: 'selector' }
+    {id: 'selector'}
   ],
   impl: (ctx,selector) => {
     const elem = selector != '#' && jb.ui.find(jb.frame.document,selector)[0]
@@ -435,14 +431,14 @@ component('studio.singleSourceCtxView', {
 
 component('studio.stackItems', {
   params: [
-    {id: 'srcCtx' },
+    {id: 'srcCtx'}
   ],
   impl: (ctx,srcCtx) => {
           const stack=[];
           for(let innerCtx= srcCtx; innerCtx; innerCtx = innerCtx.cmpCtx)
             stack.push(innerCtx)
           return stack.slice(2)
-      },
+      }
 })
 
 component('chromeDebugger.colors', {

@@ -2,68 +2,50 @@ using('probe-tests')
 
 component('FETest.workerPreviewTest.suggestions.select', {
   impl: uiFrontEndTest({
-    control: group({
-      controls: [
-        studio.propertyPrimitive('sampleProject.main~impl~controls~text'),
-        probe.remoteCircuitPreview()
-      ]
-    }),
+    control: group({ controls: [studio.propertyPrimitive('sampleProject.main~impl~controls~text'), probe.remoteCircuitPreview()] }),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
     uiAction: uiActions(
       waitForSelector('#sampleText'),
       setText('hello %$var1'),
-      keyboardEvent({selector: 'input', type: 'keyup', keyCode: 37}),
+      keyboardEvent('input', 'keyup', { keyCode: 37 }),
       waitForSelector('.jb-dialog .jb-item'),
       click('.jb-dialog .jb-item:first-child'),
-      keyboardEvent({selector: 'input', type: 'keyup', keyCode: 13}),
-      waitForSelector('[cmp-ver=\"4\"]')
+      keyboardEvent('input', 'keyup', { keyCode: 13 }),
+      waitForSelector('[cmp-ver="4"]')
     ),
     expectedResult: contains('hello world'),
     renderDOM: true,
-    covers: ['FETest.workerPreviewTest.suggestions','FETest.workerPreviewTest.suggestions.selectPopup'
-      ,'FETest.workerPreviewTest.suggestions.filtered']
+    covers: ['FETest.workerPreviewTest.suggestions','FETest.workerPreviewTest.suggestions.selectPopup','FETest.workerPreviewTest.suggestions.filtered']
   })
 })
 
 component('FETest.workerPreviewTest.suggestions', {
   impl: uiFrontEndTest({
-    control: group({
-      controls: [
-        probe.remoteCircuitPreview(),
-        studio.propertyPrimitive('sampleProject.main~impl~controls~text')
-      ]
-    }),
+    control: group({ controls: [probe.remoteCircuitPreview(), studio.propertyPrimitive('sampleProject.main~impl~controls~text')] }),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
     uiAction: uiActions(
-      waitForSelector('[cmp-pt=\"text\"]'),
+      waitForSelector('[cmp-pt="text"]'),
       waitForSelector('input'),
       setText('hello %', 'input'),
-      keyboardEvent({selector: 'input', type: 'keyup', keyCode: ()=> '%'.charCodeAt(0)}),
+      keyboardEvent('input', 'keyup', { keyCode: ()=> '%'.charCodeAt(0) }),
       waitForSelector('.jb-dialog .jb-item')
     ),
-    expectedResult: contains('$var1'),
-    //renderDOM: true
+    expectedResult: contains('$var1')
   })
 })
 
 component('FETest.workerPreviewTest.suggestions.selectPopup', {
   impl: uiFrontEndTest({
-    control: group({
-      controls: [
-        studio.propertyPrimitive('sampleProject.main~impl~controls~text'),
-        probe.remoteCircuitPreview()
-      ]
-    }),
-    expectedResult: contains('(world)'),
+    control: group({ controls: [studio.propertyPrimitive('sampleProject.main~impl~controls~text'), probe.remoteCircuitPreview()] }),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
     uiAction: uiActions(
       waitForSelector('#sampleText'),
       waitForSelector('input'),
       setText('hello %$'),
-      keyboardEvent({selector: 'input', type: 'keyup', keyCode: 37}),
+      keyboardEvent('input', 'keyup', { keyCode: 37 }),
       waitForSelector('.jb-dialog .jb-item')
     ),
-    useFrontEnd: true
+    expectedResult: contains('(world)')
   })
 })
 
@@ -82,37 +64,24 @@ component('FETest.workerPreviewTest.suggestions.selectPopup', {
 
 component('FETest.workerPreviewTest.suggestions.filtered', {
   impl: uiFrontEndTest({
-    control: group({
-      controls: [
-        probe.remoteCircuitPreview(),
-        studio.propertyPrimitive('sampleProject.main~impl~controls~text')
-      ]
-    }),
+    control: group({ controls: [probe.remoteCircuitPreview(), studio.propertyPrimitive('sampleProject.main~impl~controls~text')] }),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
     uiAction: uiActions(
       waitForSelector('#sampleText'),
       waitForSelector('input'),
       setText('hello %$var1'),
-      keyboardEvent({selector: 'input', type: 'keyup', keyCode: ()=> '%'.charCodeAt(0)}),
+      keyboardEvent('input', 'keyup', { keyCode: ()=> '%'.charCodeAt(0) }),
       waitForSelector('.jb-dialog .jb-item')
     ),
-    expectedResult: not(contains('$xx')),
-    //renderDOM: true
+    expectedResult: not(contains('$xx'))
   })
 })
 
 component('jbEditorTest.basic', {
-  impl: uiTest({
-    control: group({
-      controls: [
-        probe.remoteCircuitPreview(),
-        studio.jbEditor('sampleProject.main~impl')
-      ]
-    }),
+  impl: uiTest(group({ controls: [probe.remoteCircuitPreview(), studio.jbEditor('sampleProject.main~impl')] }), contains('hello'), {
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
-    expectedResult: contains('hello'),
     timeout: 1000
-  }),
+  })
 })
 
 // jb.component('jbEditorTest.onWorker', {

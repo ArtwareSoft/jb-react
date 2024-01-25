@@ -1,9 +1,6 @@
 
 component('studioTest.categoriesOfType', {
-  impl: dataTest({
-    calculate: pipeline(tgp.categoriesOfType('control'), '%code%', join({})),
-    expectedResult: contains(['control'])
-  })
+  impl: dataTest(pipeline(tgp.categoriesOfType('control'), '%code%', join()), contains(['control']))
 })
 
 component('test.simplePipeline', {
@@ -32,9 +29,7 @@ component('test.moveInTree3', {
 })
 
 component('studioTest.setCompInVars', {
-  impl: dataTest({
-    calculate: tgp.val('test.cmpWithVars~impl~$vars~0~val'),
-    expectedResult: equals(({data}) => data.$,'pipeline'),
+  impl: dataTest(tgp.val('test.cmpWithVars~impl~$vars~0~val'), equals(({data}) => data.$, 'pipeline'), {
     runBefore: tgp.setComp('test.cmpWithVars~impl~$vars~0~val', 'pipeline')
   })
 })
@@ -42,41 +37,33 @@ component('studioTest.setCompInVars', {
 component('studioTest.moveFixDestinationNullGroup', {
   impl: dataTest({
     calculate: pipeline(
-      list(
-          tgp.val('test.moveInTree~impl~controls'),
-          tgp.val('test.moveInTree~impl~controls~2~controls')
-        ),
+      list(tgp.val('test.moveInTree~impl~controls'), tgp.val('test.moveInTree~impl~controls~2~controls')),
       '%text%',
-      join({})
+      join()
     ),
+    expectedResult: equals('a,c,b'),
     runBefore: ctx =>
-	 		jb.tgp.moveFixDestination('test.moveInTree~impl~controls~1', 'test.moveInTree~impl~controls~3~controls',ctx),
-    expectedResult: equals('a,c,b')
+	 		jb.tgp.moveFixDestination('test.moveInTree~impl~controls~1', 'test.moveInTree~impl~controls~3~controls',ctx)
   })
 })
 
 component('studioTest.moveFixDestinationEmptyGroup', {
   impl: dataTest({
     calculate: pipeline(
-      list(
-          tgp.val('test.moveInTree2~impl~controls'),
-          tgp.val('test.moveInTree2~impl~controls~3~controls')
-        ),
+      list(tgp.val('test.moveInTree2~impl~controls'), tgp.val('test.moveInTree2~impl~controls~3~controls')),
       '%text%',
-      join({})
+      join()
     ),
+    expectedResult: equals('a,c,b'),
     runBefore: ctx =>
-	 		jb.tgp.moveFixDestination('test.moveInTree2~impl~controls~1', 'test.moveInTree2~impl~controls~4~controls',ctx),
-    expectedResult: equals('a,c,b')
+	 		jb.tgp.moveFixDestination('test.moveInTree2~impl~controls~1', 'test.moveInTree2~impl~controls~4~controls',ctx)
   })
 })
 
 component('studioTest.jbEditorMove', {
-  impl: dataTest({
-    calculate: pipeline(tgp.val('test.moveInTree3~impl~controls'), '%text%', join({})),
+  impl: dataTest(pipeline(tgp.val('test.moveInTree3~impl~controls'), '%text%', join()), equals('b,a,c'), {
     runBefore: ctx =>
-	 		jb.db.move(jb.tgp.ref('test.moveInTree3~impl~controls~1'), jb.tgp.ref('test.moveInTree3~impl~controls~0'),ctx),
-    expectedResult: equals('b,a,c')
+	 		jb.db.move(jb.tgp.ref('test.moveInTree3~impl~controls~1'), jb.tgp.ref('test.moveInTree3~impl~controls~0'),ctx)
   })
 })
 
@@ -97,10 +84,7 @@ component('test.referer2', {
 })
 
 component('studioUiTest.gotoReferencesButton', {
-  impl: uiTest({
-    control: studio.gotoReferencesButton('test.referee'),
-    expectedResult: contains('3 references')
-  })
+  impl: uiTest(studio.gotoReferencesButton('test.referee'), contains('3 references'))
 })
 
 component('studio.completionPropOfPt', {
@@ -177,12 +161,13 @@ component('test.makeLocalCases', {
 
 component('studioTest.makeLocal', {
   impl: dataTest({
-    runBefore: test.makeLocalCases({oneSimpleUsage:'1', simpleAndComplex: '200', multiSimpleUsages: '10', usedInFunc: '4', toCall: '%$aa%'}),
     calculate: pipeline(
-        Var('aa',75),
-        studio.calcMakeLocal('studioTest.makeLocal~impl~runBefore'),
-        ctx => ctx.run(ctx.data), 
-        join(',')),
-    expectedResult: equals('%%','1,200,3,10,10,75,4')
+      Var('aa', 75),
+      studio.calcMakeLocal('studioTest.makeLocal~impl~runBefore'),
+      ctx => ctx.run(ctx.data),
+      join(',')
+    ),
+    expectedResult: equals('%%', '1,200,3,10,10,75,4'),
+    runBefore: test.makeLocalCases('1', '200', { multiSimpleUsages: '10', usedInFunc: '4', toCall: '%$aa%' })
   })
 })

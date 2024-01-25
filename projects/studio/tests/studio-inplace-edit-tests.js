@@ -120,7 +120,9 @@ component('test.wixIslandGridCtrl', {
 
 component('inPlaceEditTest.text', {
   impl: uiFrontEndTest({
-    vars: Var('$previewMode',true),
+    vars: [
+      Var('$previewMode', true)
+    ],
     control: text('hello world'),
     uiAction: action(runActions(inplaceEdit.activate('inPlaceEditTest.text~impl~control'), delay(10))),
     expectedResult: contains('view_quilt'),
@@ -130,7 +132,9 @@ component('inPlaceEditTest.text', {
 
 component('inPlaceEditTest.grid', {
   impl: uiFrontEndTest({
-    vars: Var('$previewMode',true),
+    vars: [
+      Var('$previewMode', true)
+    ],
     control: test.wixIslandGridCtrl(),
     uiAction: action(runActions(inplaceEdit.activate('test.wixIslandGridCtrl~impl'), delay(10))),
     expectedResult: contains('gridLineThumb'),
@@ -140,24 +144,11 @@ component('inPlaceEditTest.grid', {
 })
 
 component('inPlaceEditTest.grid.inStudio', {
-  impl: uiTest({
-    vars: Var('$previewMode',true),
-    control: test.wixIslandGridCtrl(),
-    runInPreview: runActions(
-      delay(10),
-      ctx => {
-        if (jb.ui.inPlaceEditTestGrid) return
-        jb.ui.inPlaceEditTestGrid = true
-        const studiojb = jb.ui.parentFrameJb(), studioWin = jb.frame.parent
-        studiojb.exec(studioWin.inplaceEdit.activate('test.wixIslandGridCtrl~impl'))
-      }
-    ),
-    expectedResult: true
-  })
+  impl: uiTest({ vars: [Var('$previewMode', true)], control: test.wixIslandGridCtrl(), expectedResult: true })
 })
 
 component('inPlaceEditTest.sizesEditor.inStudio', {
-  impl: uiTest({control: text({text: 'hello world', features: css('padding: 132px;margin-left: 3px')}), expectedResult: true})
+  impl: uiTest(text('hello world', { features: css('padding: 132px;margin-left: 3px') }), true)
 })
 
 component('test.extractComponentDialog.inStudio', {

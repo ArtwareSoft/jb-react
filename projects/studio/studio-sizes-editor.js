@@ -19,10 +19,10 @@ component('studio.openSizesEditor', {
 })
 
 component('sizesEditor.cssSizes', {
-    params: [
-      {id: 'step', as: 'number', defaultValue: 30}
-    ],
-    impl: (ctx,step) => {
+  params: [
+    {id: 'step', as: 'number', defaultValue: 30}
+  ],
+  impl: (ctx,step) => {
       const levels = ['margin','padding','inner']
       const background = ['#f9cc9d','#c3deb7','']
       const size = step * (levels.length * 2 + -1)
