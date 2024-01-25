@@ -37,23 +37,19 @@ component('vega.interactiveChart', {
   ],
   impl: group({
     controls: [
-      html({
-        html: '<div/>',
+      html('<div/>', {
         features: [
-          frontEnd.var('prettySpec', '%$prettySpec%'),
-          frontEnd.var('vegaData', (ctx,{},{spec}) => jb.vega.namedData(spec)),
-          frontEnd.init(({},{el,vegaData,prettySpec}) => {
+        frontEnd.var('prettySpec', '%$prettySpec%'),
+        frontEnd.var('vegaData', (ctx,{},{spec}) => jb.vega.namedData(spec)),
+        frontEnd.init(({},{el,vegaData,prettySpec}) => {
               el.setAttribute('jb_external','true')
               const view = vegaEmbed.createView(el, eval(`(${prettySpec})`))
               vegaData.forEach(e => view.insert(e[0],e[1] ))
               view.run()
           })
-        ]
+      ]
       }),
-      controlWithCondition(
-        '%$showSpec%',
-        editableText({databind: '%$prettySpec%', style: editableText.codemirror()})
-      )
+      controlWithCondition('%$showSpec%', editableText({ databind: '%$prettySpec%', style: editableText.codemirror() }))
     ],
     features: [
       frontEnd.requireExternalLibrary('vega-lite.js'),
@@ -68,7 +64,7 @@ component('vega.spec', {
     {id: 'data', type: 'vega.data', mandatory: true},
     {id: 'transform', type: 'vega.transform[]', as: 'array'},
     {id: 'mark', type: 'vega.mark', defaultValue: vega.bar()},
-    {id: 'encoding', type: 'vega.encoding' },
+    {id: 'encoding', type: 'vega.encoding'},
     {id: 'name', as: 'string'},
     {id: 'title', as: 'string'},
     {id: 'description', as: 'string'}
@@ -77,71 +73,71 @@ component('vega.spec', {
 })
 
 component('vega.dataFromUrl', {
-    type: 'vega.data',
-    params: [
-        {id: 'url', as: 'string', mandatory: true },
-        {id: 'name', as: 'string'},
-        {id: 'format', as: 'string', options: 'json,csv,tsv,dsv'},
-    ],
-    impl: ctx => ctx.params
+  type: 'vega.data',
+  params: [
+    {id: 'url', as: 'string', mandatory: true},
+    {id: 'name', as: 'string'},
+    {id: 'format', as: 'string', options: 'json,csv,tsv,dsv'}
+  ],
+  impl: ctx => ctx.params
 })
 
 component('vega.jbData', {
-    type: 'vega.data',
-    params: [
-        {id: 'items', as: 'array', mandatory: true },
-    ],
-    impl: (ctx,items) => {
+  type: 'vega.data',
+  params: [
+    {id: 'items', as: 'array', mandatory: true}
+  ],
+  impl: (ctx,items) => {
         const name = 'data-' + (jb.vega.counter++)
         return {name, [jb.vega.jbData] : items}
     }
 })
 
 component('vega.namedData', {
-    type: 'vega.data',
-    params: [
-        {id: 'name', as: 'string', mandatory: true},
-    ],
-    impl: ctx => ctx.params
+  type: 'vega.data',
+  params: [
+    {id: 'name', as: 'string', mandatory: true}
+  ],
+  impl: ctx => ctx.params
 })
 
 // ************ transform ***************
 
 component('vega.aggregate', {
-    type: 'vega.transform',
-    params: [
-        {id: 'pipe', type: 'vega.aggPipeElem[]', mandatory: true },
-        {id: 'groupby', as: 'array' },
-    ],
-    impl: (ctx,pipe,groupby) => ({ aggregate: pipe, groupby})
+  type: 'vega.transform',
+  params: [
+    {id: 'pipe', type: 'vega.aggPipeElem[]', mandatory: true},
+    {id: 'groupby', as: 'array'}
+  ],
+  impl: (ctx,pipe,groupby) => ({ aggregate: pipe, groupby})
 })
 
 component('vega.aggPipeElem', {
-    type: 'vega.aggPipeElem',
-    singleInType: true,
-    params: [
-        {id: 'op', as: 'string', options: 'count,valid,values,missing,distinct,sum,product,mean,average,variance,variancep,stdev,stdevp,stderr,median,q1,q3,ci0,ci1,min,max,argmin,argmax', mandatory: true },
-        {id: 'field', as: 'string', mandatory: true },
-        {id: 'as', as: 'string', mandatory: true },
-    ],
-    impl: ctx => ctx.params
+  type: 'vega.aggPipeElem',
+  singleInType: true,
+  params: [
+    {id: 'op', as: 'string', options: 'count,valid,values,missing,distinct,sum,product,mean,average,variance,variancep,stdev,stdevp,stderr,median,q1,q3,ci0,ci1,min,max,argmin,argmax', mandatory: true},
+    {id: 'field', as: 'string', mandatory: true},
+    {id: 'as', as: 'string', mandatory: true}
+  ],
+  impl: ctx => ctx.params
 })
 
 component('vega.calculate', {
-    type: 'vega.transform',
-    params: [
-        {id: 'expression', as: 'string', mandatory: true, description: 'e.g: datum.x*2' },
-        {id: 'as', as: 'array', mandatory: true },
-    ],
-    impl: (ctx,expression,as) => ({ calculate: expression, as })
+  type: 'vega.transform',
+  params: [
+    {id: 'expression', as: 'string', mandatory: true, description: 'e.g: datum.x*2'},
+    {id: 'as', as: 'array', mandatory: true}
+  ],
+  impl: (ctx,expression,as) => ({ calculate: expression, as })
 })
 
 component('vega.filter', {
-    type: 'vega.transform',
-    params: [
-        {id: 'filter', type: 'vega.boolean' },
-    ],
-    impl: (ctx,filter) => filter
+  type: 'vega.transform',
+  params: [
+    {id: 'filter', type: 'vega.boolean'}
+  ],
+  impl: (ctx,filter) => filter
 })
 
 component('vega.filterExpression', {
@@ -201,57 +197,57 @@ component('vega.inSelection', {
 })))
 
 component('vega.line', {
-    type: 'vega.mark',
-    params: [
-        {id: 'showPoints', type: 'boolean' },
-        {id: 'props', type: 'vega.markProps[]', as: 'array' },
-    ],
-    impl: (ctx, point, props) => (point || props) ? ({type: 'line', point, ...props.reduce((acc,props) => ({...acc,...props}) ,{})}) : 'line'
+  type: 'vega.mark',
+  params: [
+    {id: 'showPoints', type: 'boolean'},
+    {id: 'props', type: 'vega.markProps[]', as: 'array'}
+  ],
+  impl: (ctx, point, props) => (point || props) ? ({type: 'line', point, ...props.reduce((acc,props) => ({...acc,...props}) ,{})}) : 'line'
 })
 
 component('vega.generalMarkProps', {
-    type: 'vega.markProps',
-    params: [
-        {id: 'aria', as: 'string' },
-        {id: 'description', as: 'string' },
-        {id: 'style', as: 'string' },
-        {id: 'tooltip', as: 'string' },
-    ],
-    impl: ctx => ctx.params
+  type: 'vega.markProps',
+  params: [
+    {id: 'aria', as: 'string'},
+    {id: 'description', as: 'string'},
+    {id: 'style', as: 'string'},
+    {id: 'tooltip', as: 'string'}
+  ],
+  impl: ctx => ctx.params
 })
 
 component('vega.positionMarkProps', {
-    type: 'vega.markProps',
-    params: [
-        {id: 'x', as: 'string' },
-        {id: 'x2', as: 'string' },
-        {id: 'width', as: 'string' },
-        {id: 'height', as: 'string' },
-        {id: 'y', as: 'string' },
-        {id: 'y2', as: 'string' },
-    ],
-    impl: ctx => ctx.params
+  type: 'vega.markProps',
+  params: [
+    {id: 'x', as: 'string'},
+    {id: 'x2', as: 'string'},
+    {id: 'width', as: 'string'},
+    {id: 'height', as: 'string'},
+    {id: 'y', as: 'string'},
+    {id: 'y2', as: 'string'}
+  ],
+  impl: ctx => ctx.params
 })
 // TODO: more from https://vega.github.io/vega-lite/docs/mark.html
 
 // ************ encoding ***************
 component('vega.positionChannels', {
-    type: 'vega.encoding',
-    params: [
-        {id: 'x', type: 'vega.channel' },
-        {id: 'y', type: 'vega.channel' },
-        {id: 'color', type: 'vega.channel' },
-    ],
-    impl: ctx => ctx.params
+  type: 'vega.encoding',
+  params: [
+    {id: 'x', type: 'vega.channel'},
+    {id: 'y', type: 'vega.channel'},
+    {id: 'color', type: 'vega.channel'}
+  ],
+  impl: ctx => ctx.params
 })
 
 // ************ channel ***************
 component('vega.channel', {
-    type: 'vega.channel',
-    params: [
-        {id: 'field', as: 'string', mandatory: true },
-        {id: 'type', as: 'string', options: 'quantitative,temporal,ordinal,nominal' },
-        {id: 'title', as: 'string' },
-    ],
-    impl: ctx => ctx.params
+  type: 'vega.channel',
+  params: [
+    {id: 'field', as: 'string', mandatory: true},
+    {id: 'type', as: 'string', options: 'quantitative,temporal,ordinal,nominal'},
+    {id: 'title', as: 'string'}
+  ],
+  impl: ctx => ctx.params
 })

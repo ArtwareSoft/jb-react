@@ -23,13 +23,11 @@ component('itemlistStyle', {
     {id: 'width', as: 'string', defaultValue: '100%'},
     {id: 'height', as: 'string', defaultValue: '600'}
   ],
-  impl: typeAdapter(
-    'style',
-    customStyle({
-      template: ({},{width,height},h) => h('canvas', {...jb.zui.calcWidthHeight(width, height), zuiBackEndForTest:true }),
-      css: '{ touch-action: none; }',
-      features: [
-        calcProps((ctx,{$model,zuiCtx},{width,height})=> {
+  impl: typeAdapter('style', customStyle({
+    template: ({},{width,height},h) => h('canvas', {...jb.zui.calcWidthHeight(width, height), zuiBackEndForTest:true }),
+    css: '{ touch-action: none; }',
+    features: [
+      calcProps((ctx,{$model,zuiCtx},{width,height})=> {
         const DIM = $model.boardSize
         const items = $model.items()
         const zoom = +($model.initialZoom || DIM)
@@ -57,20 +55,20 @@ component('itemlistStyle', {
         // }
         return props
       }),
-        frontEnd.var('itemPropsProfile', ({},{$model}) => $model.itemProps.profile),
-        frontEnd.var('itemViewProfile', ({},{$model}) => $model.itemView.profile),
-        frontEnd.prop('itemView', (ctx,{itemPropsProfile, itemViewProfile}) => {
+      frontEnd.var('itemPropsProfile', ({},{$model}) => $model.itemProps.profile),
+      frontEnd.var('itemViewProfile', ({},{$model}) => $model.itemView.profile),
+      frontEnd.prop('itemView', (ctx,{itemPropsProfile, itemViewProfile}) => {
           const itemProps = ctx.run(itemPropsProfile, {type: 'itemProp[]<zui>' })
           return ctx.setVars({itemProps}).run(itemViewProfile,{ type: 'view<zui>'})
       }),
-        frontEnd.varsFromBEProps(['DIM','records','shortPaths','center','tCenter','tZoom']),
-        frontEnd.prop('ZOOM_LIMIT', ({},{DIM}) => [1, jb.ui.isMobile() ? DIM: DIM*2]),
-        frontEnd.prop('debugElems', () => [
+      frontEnd.varsFromBEProps('DIM','records','shortPaths','center','tCenter','tZoom'),
+      frontEnd.prop('ZOOM_LIMIT', ({},{DIM}) => [1, jb.ui.isMobile() ? DIM: DIM*2]),
+      frontEnd.prop('debugElems', () => [
           //jb.zui.showTouchPointers(),
           //jb.zui.mark4PointsZuiElem(), 
           // jb.zui.markGridAreaZuiElem()
       ]),
-        frontEnd.method('refreshCanvas', async ({},{cmp, el}) => {
+      frontEnd.method('refreshCanvas', async ({},{cmp, el}) => {
           const sizeInPx = cmp.calcWidthHeight(cmp.width, cmp.height)
           el.width = sizeInPx.width;
           el.height = sizeInPx.height;
@@ -80,7 +78,7 @@ component('itemlistStyle', {
           cmp.elemsLayoutCache = {}
           cmp.renderRequest = true
       }),
-        frontEnd.init(async ({},vars) => {
+      frontEnd.init(async ({},vars) => {
           //document.body.style.overflow = "hidden"
           const {cmp, el} = vars
           cmp.glCanvas = el
@@ -96,70 +94,69 @@ component('itemlistStyle', {
           el.setAttribute('zui-rendered',true) // for tests
           cmp.updateZoomState({ dz :1, dp:0 })
       }),
-        frontEnd.prop('zuiEvents', rx.subject()),
-        frontEnd.prop('exposedView', rx.subject()),
-        frontEnd.flow(
-          source.frontEndEvent('pointerdown'),
-          rx.log('zui pointerdown'),
-          rx.var('pid', '%pointerId%'),
-          rx.do(({},{cmp,pid}) => cmp.addPointer(pid)),
-          rx.flatMap(
-            source.mergeConcat(
-              rx.pipe(
-                source.merge(source.event('pointermove'), source.frontEndEvent('pointerup')),
-                rx.filter('%$pid%==%pointerId%'),
-                rx.do(({data},{cmp,pid}) => cmp.updatePointer(pid,data)),
-                rx.takeWhile('%type%==pointermove'),
-                rx.flatMap(source.data(({},{cmp}) => cmp.zoomEventFromPointers()))
-              ),
-              rx.pipe(
-                source.data(({},{cmp,pid}) => cmp.momentumEvents(pid)),
-                rx.var('delay', '%delay%'),
-                rx.flatMap(rx.pipe(source.data('%events%'))),
-                rx.delay('%$delay%'),
-                rx.log('momentum zui')
-              ),
-              rx.pipe(source.data(1), rx.do(({},{cmp,pid}) => cmp.removePointer(pid)))
-            )
-          ),
-          rx.do(({data},{cmp}) => cmp.updateZoomState(data)),
-          sink.subjectNext('%$cmp.zuiEvents%')
+      frontEnd.prop('zuiEvents', rx.subject()),
+      frontEnd.prop('exposedView', rx.subject()),
+      frontEnd.flow(
+        source.frontEndEvent('pointerdown'),
+        rx.log('zui pointerdown'),
+        rx.var('pid', '%pointerId%'),
+        rx.do(({},{cmp,pid}) => cmp.addPointer(pid)),
+        rx.flatMap(
+          source.mergeConcat(
+            rx.pipe(
+              source.merge(source.event('pointermove'), source.frontEndEvent('pointerup')),
+              rx.filter('%$pid%==%pointerId%'),
+              rx.do(({data},{cmp,pid}) => cmp.updatePointer(pid,data)),
+              rx.takeWhile('%type%==pointermove'),
+              rx.flatMap(source.data(({},{cmp}) => cmp.zoomEventFromPointers()))
+            ),
+            rx.pipe(
+              source.data(({},{cmp,pid}) => cmp.momentumEvents(pid)),
+              rx.var('delay', '%delay%'),
+              rx.flatMap(rx.pipe(source.data('%events%'))),
+              rx.delay('%$delay%'),
+              rx.log('momentum zui')
+            ),
+            rx.pipe(source.data(1), rx.do(({},{cmp,pid}) => cmp.removePointer(pid)))
+          )
         ),
-        frontEnd.flow(
-          source.event('wheel', () => jb.frame.document, obj(prop('capture', true))),
-          rx.takeUntil('%$cmp.destroyed%'),
-          rx.log('zui wheel'),
-          rx.map(({},{sourceEvent}) => ({ dz: sourceEvent.deltaY > 0 ? 1.1 : sourceEvent.deltaY < 0 ? 1/1.1 : 1 })),
-          rx.do(({data},{cmp}) => cmp.updateZoomState(data)),
-          sink.subjectNext('%$cmp.zuiEvents%')
-        ),
-        frontEnd.flow(source.event('resize', () => jb.frame.window), sink.FEMethod('refreshCanvas')),
-        frontEnd.flow(
-          source.animationFrame(),
-          rx.flatMap(source.data('%$cmp.animationStep()%')),
-          rx.do(({},{cmp}) => cmp.renderCounter++),
-          rx.flatMap(source.data('%$cmp.layoutViews()%')),
-          rx.do(action.subjectNext('%$cmp.exposedView%')),
-          rx.map(({data},{cmp})=> jb.zui.viewOfId(cmp.itemView,data)),
-          rx.map('%zuiElem%'),
-          rx.filter('%ready%'),
-          rx.do('%calcExtraProps()%'),
-          sink.action('%$cmp.renderGPUFrame()%')
-        ),
-        method('onChange', '%$$model/onChange()%'),
-        method('calcElemBuffers', (...args) => jb.zui.calcElemBuffers(...args)),
-        frontEnd.flow(source.subject('%$cmp.zuiEvents%'), rx.debounceTime(100), sink.BEMethod('onChange')),
-        frontEnd.flow(
-          source.subject('%$cmp.exposedView%'),
-          rx.distinct(),
-          rx.mapPromise(dataMethodFromBackend('calcElemBuffers', '%%')),
-          rx.mapPromise((ctx,vars) => jb.zui.bindBuffers(ctx,vars)),
-          sink.action(writeValue('%$cmp/renderRequest%', true))
-        ),
-        method('buildPartition', (...args) => jb.zui.buildPartitionFromItemList(...args))
-      ]
-    })
-  )
+        rx.do(({data},{cmp}) => cmp.updateZoomState(data)),
+        sink.subjectNext('%$cmp.zuiEvents%')
+      ),
+      frontEnd.flow(
+        source.event('wheel', () => jb.frame.document, obj(prop('capture', true))),
+        rx.takeUntil('%$cmp.destroyed%'),
+        rx.log('zui wheel'),
+        rx.map(({},{sourceEvent}) => ({ dz: sourceEvent.deltaY > 0 ? 1.1 : sourceEvent.deltaY < 0 ? 1/1.1 : 1 })),
+        rx.do(({data},{cmp}) => cmp.updateZoomState(data)),
+        sink.subjectNext('%$cmp.zuiEvents%')
+      ),
+      frontEnd.flow(source.event('resize', () => jb.frame.window), sink.FEMethod('refreshCanvas')),
+      frontEnd.flow(
+        source.animationFrame(),
+        rx.flatMap(source.data('%$cmp.animationStep()%')),
+        rx.do(({},{cmp}) => cmp.renderCounter++),
+        rx.flatMap(source.data('%$cmp.layoutViews()%')),
+        rx.do(action.subjectNext('%$cmp.exposedView%')),
+        rx.map(({data},{cmp})=> jb.zui.viewOfId(cmp.itemView,data)),
+        rx.map('%zuiElem%'),
+        rx.filter('%ready%'),
+        rx.do('%calcExtraProps()%'),
+        sink.action('%$cmp.renderGPUFrame()%')
+      ),
+      method('onChange', '%$$model/onChange()%'),
+      method('calcElemBuffers', (...args) => jb.zui.calcElemBuffers(...args)),
+      frontEnd.flow(source.subject('%$cmp.zuiEvents%'), rx.debounceTime(100), sink.BEMethod('onChange')),
+      frontEnd.flow(
+        source.subject('%$cmp.exposedView%'),
+        rx.distinct(),
+        rx.mapPromise(dataMethodFromBackend('calcElemBuffers', '%%')),
+        rx.mapPromise((ctx,vars) => jb.zui.bindBuffers(ctx,vars)),
+        sink.action(writeValue('%$cmp/renderRequest%', true))
+      ),
+      method('buildPartition', (...args) => jb.zui.buildPartitionFromItemList(...args))
+    ]
+  }))
 })
 
 extension('zui','itemlist-BE', {

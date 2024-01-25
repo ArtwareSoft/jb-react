@@ -29,11 +29,7 @@ component('dataTest.propertyWatchable', {
 
 component('dataTest.pipelineVar', {
   impl: dataTest({
-    calculate: pipeline(
-      '%$peopleWithChildren%',
-      pipeline(Var('parent'), '%children%', '%name% is child of %$parent/name%'),
-      join()
-    ),
+    calculate: pipeline('%$peopleWithChildren%', pipeline(Var('parent'), '%children%', '%name% is child of %$parent/name%'), join()),
     expectedResult: equals(
       'Bart is child of Homer,Lisa is child of Homer,Bart is child of Marge,Lisa is child of Marge'
     ),
@@ -47,7 +43,9 @@ component('dataTest.datum', {
 
 component('dataTest.propertyPassive', {
   impl: dataTest({
-    vars: [Var('person', obj(prop('name', 'homer')))],
+    vars: [
+      Var('person', obj(prop('name', 'homer')))
+    ],
     calculate: property('name', '%$person%'),
     expectedResult: equals('homer')
   })
@@ -74,52 +72,30 @@ component('dataTest.ctx.expOfRefWithBooleanType', {
 })
 
 component('dataTest.writeValue', {
-  impl: dataTest({
-    calculate: '%$person/age%',
-    expectedResult: equals('20'),
-    runBefore: writeValue('%$person/age%', 20)
-  })
+  impl: dataTest('%$person/age%', equals('20'), { runBefore: writeValue('%$person/age%', 20) })
 })
 
 component('dataTest.writeValueFalseBug', {
-  impl: dataTest({
-    calculate: '%$person/male%',
-    expectedResult: equals(false),
-    runBefore: writeValue({to: '%$person/male%', value: false})
-  })
+  impl: dataTest('%$person/male%', equals(false), { runBefore: writeValue('%$person/male%', false) })
 })
 
 component('dataTest.spliceDelete', {
-  impl: dataTest({
-    calculate: pipeline('%$personWithChildren/children/name%', join()),
-    expectedResult: contains('Bart,Maggie'),
-    runBefore: splice({
-      array: '%$personWithChildren/children%',
-      fromIndex: 1,
-      noOfItemsToRemove: 1
-    })
+  impl: dataTest(pipeline('%$personWithChildren/children/name%', join()), contains('Bart,Maggie'), {
+    runBefore: splice('%$personWithChildren/children%', 1, { noOfItemsToRemove: 1 })
   })
 })
 
 component('dataTest.splice', {
-  impl: dataTest({
-    calculate: pipeline('%$personWithChildren/children/name%', join()),
-    expectedResult: contains('Bart,Lisa2,Maggie2,Maggie'),
-    runBefore: splice({
-      array: '%$personWithChildren/children%',
-      fromIndex: 1,
-      noOfItemsToRemove: 1,
-      itemsToAdd: asIs([{name: 'Lisa2'}, {name: 'Maggie2'}])
-    })
+  impl: dataTest(pipeline('%$personWithChildren/children/name%', join()), contains('Bart,Lisa2,Maggie2,Maggie'), {
+    runBefore: splice('%$personWithChildren/children%', 1, {
+    noOfItemsToRemove: 1,
+    itemsToAdd: asIs([{name: 'Lisa2'}, {name: 'Maggie2'}])
+  })
   })
 })
 
 component('dataTest.writeValueInner', {
-  impl: dataTest({
-    calculate: '%$person/zz/age%',
-    expectedResult: equals('20'),
-    runBefore: writeValue('%$person/zz/age%', 20)
-  })
+  impl: dataTest('%$person/zz/age%', equals('20'), { runBefore: writeValue('%$person/zz/age%', 20) })
 })
 
 component('dataTest.writeValueWithLink', {
@@ -167,23 +143,21 @@ component('dataTest.writeValueViaArrayLink', {
 })
 
 component('dataTest.runActionOnItemsArrayRef', {
-  impl: dataTest({
-    calculate: pipeline('%$personWithChildren/children/name%', join(',')),
-    expectedResult: equals('aBart,aLisa,aMaggie'),
+  impl: dataTest(pipeline('%$personWithChildren/children/name%', join(',')), equals('aBart,aLisa,aMaggie'), {
     runBefore: runActionOnItems('%$personWithChildren/children/name%', writeValue('%%', 'a%%'))
   })
 })
 
 component('dataTest.refApi', {
-  impl: dataTest({calculate: '', expectedResult: ctx =>
+  impl: dataTest('', ctx =>
         ctx.exp('%$personWithChildren/friends[0]%','ref').path().join('/') == 'personWithChildren/friends/0' &&
         ctx.exp('%$person/name%') == 'Homer Simpson' &&
-        ctx.exp('%$person/name%','ref').path().join('/') == 'person/name'})
+        ctx.exp('%$person/name%','ref').path().join('/') == 'person/name')
 })
 
 component('dataTest.refOfArrayItem', {
-  impl: dataTest({calculate: '', expectedResult: ctx =>
-        ctx.exp('%$personWithChildren/children[1]%','ref').path().join('/') == 'personWithChildren/children/1'})
+  impl: dataTest('', ctx =>
+        ctx.exp('%$personWithChildren/children[1]%','ref').path().join('/') == 'personWithChildren/children/1')
 })
 
 component('dataTest.refOfStringArrayItemSplice', {
@@ -205,6 +179,7 @@ component('dataTest.refOfStringArrayItemMove', {
   impl: dataTest({
     vars: [Var('refs', obj())],
     calculate: '',
+    expectedResult: equals('%$refs/valBefore%', '%$refs/valAfter%'),
     runBefore: ctx => {
       const refs = ctx.vars.refs
       refs.refOfb = ctx.exp('%$stringArray[1]%','ref')
@@ -212,8 +187,7 @@ component('dataTest.refOfStringArrayItemMove', {
       refs.valBefore = jb.val(refs.refOfc)
       jb.db.move(refs.refOfc, refs.refOfb, ctx)
       refs.valAfter = jb.val(refs.refOfc)
-    },
-    expectedResult: equals('%$refs/valBefore%', '%$refs/valAfter%')
+    }
   })
 })
 
@@ -221,6 +195,7 @@ component('dataTest.refOfStringTreeMove', {
   impl: dataTest({
     vars: [Var('refs', obj())],
     calculate: '',
+    expectedResult: equals('%$refs/valBefore%', '%$refs/valAfter%'),
     runBefore: ctx => {
       const refs = ctx.vars.refs
       refs.refOfb = ctx.exp('%$stringTree/node1[1]%','ref')
@@ -228,8 +203,7 @@ component('dataTest.refOfStringTreeMove', {
       refs.valBefore = jb.val(refs.refOfb)
       jb.db.move(refs.refOfb, refs.refOf2, ctx)
       refs.valAfter = jb.val(refs.refOfb)
-    },
-    expectedResult: equals('%$refs/valBefore%', '%$refs/valAfter%')
+    }
   })
 })
 
@@ -261,21 +235,23 @@ component('dataTest.stringLength', {
 
 component('dataTest.expWithArrayVar', {
   impl: dataTest({
-    vars: [Var('children', '%$personWithChildren/children%')],
+    vars: [
+      Var('children', '%$personWithChildren/children%')
+    ],
     calculate: '%$children[0]/name%',
     expectedResult: equals('Bart')
   })
 })
 
 component('dataTest.Var', {
-  impl: dataTest(
-    pipeline(
+  impl: dataTest({
+    calculate: pipeline(
       Var('children', '%$personWithChildren/children%'),
       Var('children2', '%$personWithChildren/children%'),
       '%$children[0]/name% %$children2[1]/name%'
     ),
-    equals('Bart Lisa')
-  )
+    expectedResult: equals('Bart Lisa')
+  })
 })
 
 component('dataTest.conditionalText', {
@@ -306,9 +282,7 @@ component('dataTest.waitForPromise', {
 component('arTest', { watchableData: { ar: ['0'] }})
 
 component('dataTest.restoreArrayIdsBug', {
-  impl: dataTest({
-    calculate: '%$arTest/result%',
-    expectedResult: contains('0'),
+  impl: dataTest('%$arTest/result%', contains('0'), {
     runBefore: ctx => {
       const ar_ref = ctx.run('%$arTest/ar%',{as: 'ref'});
       const refWithBug = jb.db.refHandler(ar_ref).refOfPath(['arTest','ar','0']);
@@ -321,7 +295,9 @@ component('dataTest.restoreArrayIdsBug', {
 
 component('dataTest.activateMethod', {
   impl: dataTest({
-    vars: [Var('o1', () => ({ f1: () => ({a:5}) }))],
+    vars: [
+      Var('o1', () => ({ f1: () => ({a:5}) }))
+    ],
     calculate: '%$o1/f1()/a%',
     expectedResult: equals(5)
   })
@@ -329,7 +305,9 @@ component('dataTest.activateMethod', {
 
 component('dataTest.asArrayBug', {
   impl: dataTest({
-    vars: [Var('items', [{id: 1}, {id: 2}])],
+    vars: [
+      Var('items', [{id: 1}, {id: 2}])
+    ],
     calculate: ctx =>                                                                                                                                                                                                
       ctx.exp('%$items/id%','array'),
     expectedResult: ctx => ctx.data[0] == 1 && !Array.isArray(ctx.data[0])
@@ -347,20 +325,20 @@ component('dataTest.varsCases', {
 })
 
 component('dataTest.macroNs', {
-  impl: dataTest(json.stringify(()=>({a:5})), contains(['a', '5']))
+  impl: dataTest(json.stringify(()=>({a:5})), contains(['a','5']))
 })
 
 component('dataTest.createNewResourceAndWrite', {
-  impl: dataTest({
-    calculate: '%$zzz/a%',
-    expectedResult: equals(5),
+  impl: dataTest('%$zzz/a%', equals(5), {
     runBefore: runActions(ctx => component('zzz',{watchableData: {}}), writeValue('%$zzz%', () => ({a: 5})))
   })
 })
 
 component('dataTest.nonWatchableRef', {
   impl: dataTest({
-    vars: [Var('constA', () => ({a: 5}))],
+    vars: [
+      Var('constA', () => ({a: 5}))
+    ],
     calculate: '%$constA/a%',
     expectedResult: equals(7),
     runBefore: writeValue('%$constA/a%', '7')
@@ -368,9 +346,7 @@ component('dataTest.nonWatchableRef', {
 })
 
 component('dataTest.innerOfUndefinedVar', {
-  impl: dataTest({
-    calculate: '%$unknown/a%',
-    expectedResult: ({data}) => data === undefined,
+  impl: dataTest('%$unknown/a%', ({data}) => data === undefined, {
     runBefore: writeValue('%$unknown/a%', '7'),
     allowError: true
   })
@@ -386,21 +362,13 @@ component('dataTest.innerOfUndefinedVar', {
 component('watchableVar', { watchableData: 'hey' })
 
 component('dataTest.stringWatchableVar', {
-  impl: dataTest({
-    calculate: '%$watchableVar%',
-    expectedResult: equals('foo'),
-    runBefore: writeValue('%$watchableVar%', 'foo')
-  })
+  impl: dataTest('%$watchableVar%', equals('foo'), { runBefore: writeValue('%$watchableVar%', 'foo') })
 })
 
 component('passiveVar', { passiveData: 'hey' })
 
 component('dataTest.stringPassiveVar', {
-  impl: dataTest({
-    calculate: '%$passiveVar%',
-    expectedResult: equals('foo'),
-    runBefore: writeValue('%$passiveVar%', 'foo')
-  })
+  impl: dataTest('%$passiveVar%', equals('foo'), { runBefore: writeValue('%$passiveVar%', 'foo') })
 })
 
 component('dataTest.DefaultValueComp', {

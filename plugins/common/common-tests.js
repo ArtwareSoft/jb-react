@@ -13,9 +13,7 @@ component('dataTest.varInPipeline', {
 })
 
 component('dataTest.runActionOnItems', {
-  impl: dataTest({
-    calculate: pipeline('%$personWithChildren/children/name%', join()),
-    expectedResult: equals('aBart,aLisa,aMaggie'),
+  impl: dataTest(pipeline('%$personWithChildren/children/name%', join()), equals('aBart,aLisa,aMaggie'), {
     runBefore: runActionOnItems('%$personWithChildren/children%', writeValue('%name%', 'a%name%'))
   })
 })
@@ -33,11 +31,14 @@ component('dataTest.pipeInPipe', {
 })
 
 component('dataTest.pipeInPipeWithDelayedVar', {
-  impl: dataTest(pipe(Var('a', ctx => Promise.resolve(3)), pipe(delay(1), list([1, 2, '%$a%']), join())), equals('1,2,3'))
+  impl: dataTest({
+    calculate: pipe(Var('a', ctx => Promise.resolve(3)), pipe(delay(1), list([1,2,'%$a%']), join())),
+    expectedResult: equals('1,2,3')
+  })
 })
 
 component('dataTest.pipeWithPromise2', {
-  impl: dataTest(pipe(dataTest.delayedObj(list(1, 2)), join()), equals('1,2'))
+  impl: dataTest(pipe(dataTest.delayedObj(list(1,2)), join()), equals('1,2'))
 })
 
 component('dataTest.pipeWithPromise3', {

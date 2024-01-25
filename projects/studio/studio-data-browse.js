@@ -106,9 +106,7 @@ component('studio.openNewDataSource', {
       compContent: obj(
         prop({
           title: '%$watchableOrPassive%Data',
-          val: data.switch(data.case('%$dialogData/type%==text', ''), {
-            default: data.case('%$dialogData/type%==array', '[]')
-          }),
+          val: data.switch(data.case('%$dialogData/type%==text', ''), data.case('%$dialogData/type%==array', '[]')),
           type: ''
         })
       ),

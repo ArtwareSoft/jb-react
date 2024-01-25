@@ -85,11 +85,19 @@ component('createUpgradeScript', {
     {id: 'slice', as: 'number'}
   ],
   impl: async (ctx,upgrade,fn,cmps,slice) => {
-        const upgrades = [] 
-        await cmps.filter(id=>!id.match(/^dataResource\./)).reduce(
+        const upgrades = []
+        let i=0
+        const _cmps = cmps.filter(id=>!id.match(/^dataResource\./))
+        if (jbHost.fs) {
+            while (upgrades.length < slice && i < cmps.length) { 
+                const up = upgrade(ctx.setData(_cmps[i]))
+                up && upgrades.push(up)
+                i++
+            }
+        } else await _cmps.reduce(
             (pr,id) => pr.then(() => upgrades.length < slice && upgrade(ctx.setData(id)).then(x=> x && upgrades.push(x))) , Promise.resolve())
             
-        const cmds = upgrades.filter(x=>x && x.edit && !x.lostInfo).slice(0,slice).map(x=>x.cmd)
+        const cmds = upgrades.filter(x=>x && x.edit && !x.lostInfo).map(x=>x.cmd)
         const script = `//#sourceCode { "project": ["studio"], "plugins": ["*"] }
 //#main 
 runActions(

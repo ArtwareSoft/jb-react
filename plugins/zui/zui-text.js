@@ -6,7 +6,7 @@ component('growingText', {
   params: [
     {id: 'prop', type: 'itemProp', mandatory: true},
     {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true},
-    {id: 'backgroundColorByProp', as: 'boolean' }
+    {id: 'backgroundColorByProp', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,prop, features) => {
     const zuiElem = jb.zui.text2_32ZuiElem(ctx)
@@ -31,7 +31,7 @@ component('fixedText', {
     {id: 'prop', type: 'itemProp', mandatory: true},
     {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true},
     {id: 'length', as: 'number', description: '<= 8', defaultValue: 8},
-    {id: 'backgroundColorByProp', as: 'boolean' },
+    {id: 'backgroundColorByProp', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,prop, features,length, backgroundColorByProp) => {
     const zuiElem = jb.zui.text8ZuiElem(ctx)

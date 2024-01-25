@@ -3,11 +3,11 @@ dsl('zui')
 component('image', {
   type: 'view',
   params: [
-    {id: 'url', as: 'string', dynamic: 'true', description: '%% is item' },
-    {id: 'preferedSize', as: 'string', defaultValue: '400,400' },
-    {id: 'minSize', as: 'string', defaultValue: '32,32' },
+    {id: 'url', as: 'string', dynamic: 'true', description: '%% is item'},
+    {id: 'preferedSize', as: 'string', defaultValue: '400,400'},
+    {id: 'minSize', as: 'string', defaultValue: '32,32'},
     {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true},
-    {id: 'build', type: 'imageBuild', defaultValue: imageBuild() },
+    {id: 'build', type: 'imageBuild', defaultValue: imageBuild()}
   ],
   impl: (ctx,url,preferedSize,minSize,features,build) => { 
     const size = minSize.split(',').map(x=>+x)
@@ -424,19 +424,19 @@ extension('zui','buildAtlas', {
   }
 })
 
-component('imageBuild',{
+component('imageBuild', {
   type: 'imageBuild',
   params: [
-    { id: 'buildDir', as: 'string', defaultValue: '/projects/zuiDemo/build'},
-    { id: 'imageSize', as: 'string', defaultValue: '256'}
+    {id: 'buildDir', as: 'string', defaultValue: '/projects/zuiDemo/build'},
+    {id: 'imageSize', as: 'string', defaultValue: '256'}
   ],
   impl: ctx=> ctx.params
 })
 
-component('buildPartition',{
+component('buildPartition', {
   type: 'action<>',
   params: [
-    { id: 'cmpId', as: 'string'},
+    {id: 'cmpId', as: 'string'}
   ],
   impl: ctx => jb.zui.buildPartition(ctx.params)
 })

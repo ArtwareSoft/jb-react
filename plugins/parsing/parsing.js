@@ -199,7 +199,7 @@ component('merge', {
 
 component('clone', {
   params: [
-      { id: 'obj', defaultValue: '%%' }
+    {id: 'obj', defaultValue: '%%'}
   ],
   impl: ({},obj) => JSON.parse(JSON.stringify(obj))
 })
@@ -235,7 +235,8 @@ component('splitToLines', {
 })
 
 component('newLine', {
-  impl: '\n'
+  impl: `
+`
 })
 
 component('removePrefixRegex', {
@@ -256,12 +257,6 @@ component('wrapAsObject', {
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
   impl: (ctx,key,value,items) => items.reduce((acc,item) => ({...acc, [jb.tostring(key(ctx.setData(item)))] : value(ctx.setData(item))}),{})
-  
-  // {
-  //   let out = {}
-  //   items.forEach(item=>out[jb.tostring(key(ctx.setData(item)))] = value(ctx.setData(item)))
-  //   return out;
-  // }
 })
 
 component('substring', {
@@ -286,7 +281,7 @@ component('switchByArraySize', {
     {id: 'array', as: 'array', mandatory: true},
     {id: 'zero', dynamic: true, mandatory: true},
     {id: 'one', dynamic: true, mandatory: true},
-    {id: 'moreThanOne', dynamic: true, mandatory: true},
+    {id: 'moreThanOne', dynamic: true, mandatory: true}
   ],
   impl: (ctx,array,zero,one,moreThanOne) => {
     if (!Array.isArray(array))
@@ -298,8 +293,8 @@ component('switchByArraySize', {
 })
 
 component('asString', {
-	params: [
-		{ id: 'text', as: 'string', defaultValue: '%%'}
-	],
-	impl: ({},text) => text
+  params: [
+    {id: 'text', as: 'string', defaultValue: '%%'}
+  ],
+  impl: ({},text) => text
 })

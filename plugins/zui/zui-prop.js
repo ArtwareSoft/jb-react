@@ -3,7 +3,7 @@ dsl('zui')
 component('byName', {
   type: 'itemProp',
   params: [
-    {id: 'att', as: 'string', mandatory: true, defaultValue: ''},
+    {id: 'att', as: 'string', mandatory: true, defaultValue: ''}
   ],
   impl: (ctx, att) => {
     const res = (ctx.vars.itemProps || []).find(x=>x.att == att)
@@ -147,7 +147,7 @@ component('preferedAxis', {
 component('colorScale', {
   type: 'prop_feature',
   params: [
-    {id: 'colorScale', mandatory: true, type: 'color_scale', defaultValue: green() }
+    {id: 'colorScale', mandatory: true, type: 'color_scale', defaultValue: green()}
   ],
   impl: (ctx,colorScale) => ({
     enrich(obj) { obj.colorScale = colorScale}

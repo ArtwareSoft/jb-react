@@ -615,10 +615,7 @@ component('rxTest.paramedRxPipe', {
     {id: 'first', type: 'rx'},
     {id: 'last', type: 'rx'}
   ],
-  impl: rx.pipe(
-    '%$first%',
-    '%$last%'
-  )
+  impl: rx.pipe('%$first%','%$last%')
 })
 
 component('rxTest.dynamicParam', {

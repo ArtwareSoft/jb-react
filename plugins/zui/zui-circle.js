@@ -3,8 +3,8 @@ dsl('zui')
 component('circle', {
   type: 'view',
   params: [
-    {id: 'prop', type: 'itemProp' },
-    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true},
+    {id: 'prop', type: 'itemProp'},
+    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true}
   ],
   impl: (ctx,prop,features) => { 
     const zuiElem = jb.zui.circleZuiElem()

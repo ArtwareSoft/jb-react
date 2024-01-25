@@ -18,7 +18,7 @@ component('testDslClientOutOfDsl', {
     {id: 'myDsl', type: 'myType<myDsl>'},
     {id: 'innerDsl', type: 'myType<myDsl.inner>'}
   ],
-  impl: join({items: list('%$defaultDsl%', '%$myDsl%', '%$innerDsl%')})
+  impl: join({ items: list('%$defaultDsl%','%$myDsl%','%$innerDsl%') })
 })
 
 component('testDslClientInMyDsl', {
@@ -42,33 +42,26 @@ component('testDslClientInInnerDsl', {
 })
 
 component('dslTest.sameIdDifferentDsls', {
-  impl: dataTest(
-    testDslClientOutOfDsl({
-      defaultDsl: cmp1(),
-      myDsl: cmp1(),
-      innerDsl: cmp1()
-    }),
-    equals('noDsl,myDsl,innerDsl')
-  )
+  impl: dataTest({
+    calculate: testDslClientOutOfDsl(cmp1(), cmp1(), { innerDsl: cmp1() }),
+    expectedResult: equals('noDsl,myDsl,innerDsl')
+  })
 })
 
 // default DSL in param type
 
 component('dslTest.defaultDSLInParamType', {
-  impl: dataTest(
-    typeAdapter('data<myDsl>', testDslClientInMyDsl({defaultDsl: cmp1(), myDsl: cmp1(), innerDsl: cmp1()})),
-    equals('myDsl,myDsl,innerDsl')
-  )
+  impl: dataTest({
+    calculate: typeAdapter('data<myDsl>', testDslClientInMyDsl(cmp1(), cmp1(), { innerDsl: cmp1() })),
+    expectedResult: equals('myDsl,myDsl,innerDsl')
+  })
 })
 
 component('dslTest.defaultInnerDSLInParamType', {
-  impl: dataTest(
-    typeAdapter(
-      'data<myDsl.inner>',
-      testDslClientInInnerDsl({defaultDsl: cmp1(), myDsl: cmp1(), innerDsl: cmp1()})
-    ),
-    equals('innerDsl,myDsl,innerDsl')
-  )
+  impl: dataTest({
+    calculate: typeAdapter('data<myDsl.inner>', testDslClientInInnerDsl(cmp1(), cmp1(), { innerDsl: cmp1() })),
+    expectedResult: equals('innerDsl,myDsl,innerDsl')
+  })
 })
 
 // resolve impl in global profile
@@ -99,8 +92,9 @@ component('dslTest.resolveDefaultValues', {
 
 component('cmpAtMyDsl', {
   type: 't<myDsl>',
-  params: [ 
-    { id: 'x', as: 'string' }],
+  params: [
+    {id: 'x', as: 'string'}
+  ],
   impl: 'myDsl%$x%'
 })
 
@@ -115,7 +109,7 @@ component('testMultiTypes', {
     {id: 'x1', type: 't<myDsl>,t<myDsl.inner>'},
     {id: 'x2', type: 't<myDsl.inner>,t<myDsl>'},
     {id: 'x3', type: 't<myDsl>,t'},
-    {id: 'x4', type: 't,t<myDsl>'},
+    {id: 'x4', type: 't,t<myDsl>'}
   ],
   impl: '%$x1%,%$x2%,%$x3%,%$x4%'
 })
@@ -128,32 +122,29 @@ component('test.helperByName', {
 })
 
 component('dslTest.multiTypes', {
-  impl: dataTest(
-    typeAdapter(
-      'data<myDsl.inner>',
-      testMultiTypes({x1: cmpAtInnerDsl(), x2: cmpAtMyDsl(), x3: cmpAtInnerDsl(), x4: cmpAtMyDsl('50')})
-    ),
-    equals('innerDsl,myDsl,innerDsl,myDsl50')
-  )
+  impl: dataTest({
+    calculate: typeAdapter('data<myDsl.inner>', testMultiTypes(cmpAtInnerDsl(), cmpAtMyDsl(), { x3: cmpAtInnerDsl(), x4: cmpAtMyDsl('50') })),
+    expectedResult: equals('innerDsl,myDsl,innerDsl,myDsl50')
+  })
 })
 
 component('dslTest.resolveByName', {
-  impl: dataTest(test.helperByName(testMultiTypes({x4:cmpAtMyDsl(20)})), equals(',,,myDsl20'))
+  impl: dataTest(test.helperByName(testMultiTypes({ x4: cmpAtMyDsl(20) })), equals(',,,myDsl20'))
 })
 
 // macro tests
 component('macroTest.dsl.simple', {
-  impl: dataTest(
-    () => jb.utils.prettyPrintComp('cmpAtMyDsl',jb.utils.getComp('t<myDsl>cmpAtMyDsl')),
-    and(contains("type: 't<myDsl>'"), notContains("'$"))
-  )
+  impl: dataTest({
+    calculate: () => jb.utils.prettyPrintComp('cmpAtMyDsl',jb.utils.getComp('t<myDsl>cmpAtMyDsl')),
+    expectedResult: and(contains(`type: 't<myDsl>'`), notContains(`'$`))
+  })
 })
 
 component('macroTest.dsl.inherit', {
-  impl: dataTest(
-    () => jb.utils.prettyPrintComp('israel',jb.utils.getComp('state<location>israel')),
-    and(notContains('state<location>'), notContains('$'))
-  )
+  impl: dataTest({
+    calculate: () => jb.utils.prettyPrintComp('israel',jb.utils.getComp('state<location>israel')),
+    expectedResult: and(notContains('state<location>'), notContains('$'))
+  })
 })
 
 component('dslTest.inheritTypeFromImp', {
@@ -161,7 +152,10 @@ component('dslTest.inheritTypeFromImp', {
 })
 
 component('dslTest.jbDsl.dslType', {
-  impl: dataTest(() => jb.utils.getComp('settlement<location>city')[jb.core.CT].dslType, equals('settlement<location>'))
+  impl: dataTest({
+    calculate: () => jb.utils.getComp('settlement<location>city')[jb.core.CT].dslType,
+    expectedResult: equals('settlement<location>')
+  })
 })
 
 component('dslTest.jbDsl.inheritDslType', {

@@ -13,12 +13,12 @@ extension('statistics', {
 })))
 
 component('stat.groupBy', {
-    type: 'aggregator',
-    params: [
-        { id: 'by', dynamic: 'true', mandatory: true},
-        { id: 'calculate', type: 'fieldInGroup[]', dynamic: true },
-    ],
-    impl: (ctx ,by, calculate) => {
+  type: 'aggregator',
+  params: [
+    {id: 'by', dynamic: 'true', mandatory: true},
+    {id: 'calculate', type: 'fieldInGroup[]', dynamic: true}
+  ],
+  impl: (ctx ,by, calculate) => {
         if (!Array.isArray(ctx.data)) return []
         const fieldName = (typeof by.profile == 'string' && by.profile.match(/^%[^%]+%$/)) && by.profile.slice(1,-1)
         const resObj = ctx.data.reduce((res,x) => { 
@@ -35,13 +35,13 @@ component('stat.groupBy', {
 })
 
 component('stat.fieldInGroup', {
-    type: 'fieldInGroup',
-    params: [
-        { id: 'aggregateFunc', mandatory: true, dynamic: true, description: 'e.g. sum' },
-        { id: 'aggregateValues', dynamic: 'true', defaultValue: '%%', description: 'e.g, %price%' },
-        { id: 'aggregateResultField', as: 'string', description: 'default is function name' },
-    ],
-    impl: (ctx,aggregateFunc,aggregateValues,aggregateResultField) => {
+  type: 'fieldInGroup',
+  params: [
+    {id: 'aggregateFunc', mandatory: true, dynamic: true, description: 'e.g. sum'},
+    {id: 'aggregateValues', dynamic: 'true', defaultValue: '%%', description: 'e.g, %price%'},
+    {id: 'aggregateResultField', as: 'string', description: 'default is function name'}
+  ],
+  impl: (ctx,aggregateFunc,aggregateValues,aggregateResultField) => {
         if (aggregateFunc.profile) {
             const fld = aggregateResultField || aggregateFunc.profile.$
             ctx.data.forEach(group => group[fld] = aggregateFunc(ctx.setData( aggregateValues(ctx.setData(group.items)) ) ))

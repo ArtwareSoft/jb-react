@@ -65,6 +65,6 @@ component('writeFilesContent', {
   params: [
     {id: 'items', as: 'array'}
   ],
-  impl: runActionOnItems('%$items%', writeFile('%path%','%content%'))
+  impl: runActionOnItems('%$items%', writeFile('%path%', '%content%'))
 })
 

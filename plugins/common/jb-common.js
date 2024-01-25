@@ -1082,7 +1082,7 @@ component('asRef', {
 component('data.switch', {
   macroByValue: false,
   params: [
-    {id: 'cases', type: 'data.switch-case[]', as: 'array', mandatory: true, defaultValue: []},
+    {id: 'cases', type: 'data.switch-case[]', as: 'array', mandatory: true, arrayInMacro: true, defaultValue: []},
     {id: 'default', dynamic: true}
   ],
   impl: (ctx,cases,defaultValue) => {

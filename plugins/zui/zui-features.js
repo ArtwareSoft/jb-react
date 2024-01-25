@@ -14,7 +14,7 @@ component('backgroundColorByProp', {
   type: 'view_feature',
   params: [
     {id: 'prop', type: 'itemProp', mandatory: true},
-    {id: 'colorScale', mandatory: true, type: 'color_scale', defaultValue: green() }
+    {id: 'colorScale', mandatory: true, type: 'color_scale', defaultValue: green()}
   ],
   impl: (ctx,prop,colorScale) => ({
     enrich(obj) { obj.backgroundColorByProp = { prop, colorScale} }
@@ -24,7 +24,7 @@ component('backgroundColorByProp', {
 component('borderTypeByProp', {
   type: 'view_feature',
   params: [
-    {id: 'prop', type: 'itemProp', mandatory: true},
+    {id: 'prop', type: 'itemProp', mandatory: true}
   ],
   impl: (ctx,prop) => ({
     enrich(obj) { obj.borderTypeByProp = prop}

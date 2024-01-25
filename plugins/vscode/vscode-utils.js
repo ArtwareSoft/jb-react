@@ -295,7 +295,7 @@ component('vscode.gotoPath', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
-    {id: 'semanticPart', as: 'string' }
+    {id: 'semanticPart', as: 'string'}
   ],
   impl: (ctx,path,semanticPart) => jb.vscode.gotoPath(path,semanticPart)
 })
