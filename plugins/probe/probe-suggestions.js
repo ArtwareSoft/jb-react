@@ -145,7 +145,7 @@ extension('probe', 'suggestions', {
 
 component('suggestions.shouldShow', {
   params: [
-    {id: 'expressionOnly', as: 'boolean'}
+    {id: 'expressionOnly', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,expressionOnly) => new jb.probe.suggestions(jb.val(ctx.data), expressionOnly).suggestionsRelevant()
 })
@@ -153,9 +153,9 @@ component('suggestions.shouldShow', {
 component('suggestions.optionsByProbeResult', {
   params: [
     {id: 'probePath', as: 'string'},
-    {id: 'expressionOnly', as: 'boolean'},
-    {id: 'input' },
-    {id: 'probeObj' },
+    {id: 'expressionOnly', as: 'boolean', type: 'boolean'},
+    {id: 'input'},
+    {id: 'probeObj'}
   ],
   impl: (ctx,probePath,expressionOnly,input,probeObj) => 
     new jb.probe.suggestions(jb.val(input), expressionOnly).calcOptions(probeObj,probePath),
@@ -184,10 +184,10 @@ component('probe.suggestions', {
     {id: 'sessionId', as: 'string', defaultValue: '%$$dialog.cmpId%', description: 'run probe only once per session'}
   ],
   impl: pipe(
-    getOrCreate(
-      suggestions.lastRunCtxRef('%$sessionId%'),
-      pipe(probe.runCircuit('%$probePath%'), log('memoize suggestions'))
-    ),
+    getOrCreate({
+      writeTo: suggestions.lastRunCtxRef('%$sessionId%'),
+      calcValue: pipe(probe.runCircuit('%$probePath%'), log('memoize suggestions'))
+    }),
     suggestions.optionsByProbeResult('%$probePath%', '%$expressionOnly%', '%$input%', '%%')
   ),
   macroByValue: true
@@ -200,10 +200,10 @@ component('probe.suggestionsByCmd', {
     {id: 'expressionOnly', as: 'boolean', type: 'boolean'},
     {id: 'input', defaultValue: '%%', description: '{value, selectionStart}'}
   ],
-  impl: remote.data(
-    probe.suggestions('%$probePath%', '%$expressionOnly%', '%$input%'),
-    If('%$forceLocalSuggestions%', jbm.self(), cmd('%$sourceCode%'))
-  )
+  impl: remote.data({
+    data: probe.suggestions('%$probePath%', '%$expressionOnly%', '%$input%'),
+    jbm: If('%$forceLocalSuggestions%', jbm.self(), cmd('%$sourceCode%'))
+  })
 })
 
 component('probe.pruneResult', {

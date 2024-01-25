@@ -26,7 +26,7 @@ component('widget.frontEndCtrl', {
 
 component('widget.newId', {
   params: [
-    { id: 'jbm', type: 'jbm<jbm>', defaultValue: () => jb },
+    {id: 'jbm', type: 'jbm<jbm>', defaultValue: () => jb}
   ],
   impl: (ctx, jbm) => {
     jb.ui.initFEWidget() // dummy to get constrcutor

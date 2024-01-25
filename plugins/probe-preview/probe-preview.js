@@ -25,15 +25,15 @@ component('suggestions.calcFromProbePreview', {
     {id: 'input', defaultValue: '%%'},
     {id: 'forceLocal', as: 'boolean', description: 'do not use remote preview', type: 'boolean'},
     {id: 'sessionId', as: 'string', defaultValue: '%$$dialog.cmpId%', description: 'run probe only once per session'},
-    {id: 'require', as: 'string' }
+    {id: 'require', as: 'string'}
   ],
   impl: remote.data({
     data: probe.suggestions('%$probePath%', '%$expressionOnly%', '%$input%', '%$sessionId%'),
-    jbm: If(
-      ({},{},{input,forceLocal}) => forceLocal  || !new jb.probe.suggestions(jb.val(input)).inExpression(),
-      jbm.self(),
-      probePreviewWorker()
-    ),
+    jbm: If({
+      condition: ({},{},{input,forceLocal}) => forceLocal  || !new jb.probe.suggestions(jb.val(input)).inExpression(),
+      then: jbm.self(),
+      Else: probePreviewWorker()
+    }),
     require: '%$require%'
   })
 })

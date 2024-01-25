@@ -18,45 +18,31 @@ component('peopleArray', {
 })
 
 component('probeTest.extraElement.pipeline', {
-  impl: probeTest({
-    circuit: pipeline('%$people%'),
-    probePath: 'items~1',
+  impl: probeTest(pipeline('%$people%'), 'items~1', {
     allowClosestPath: true,
-    expectedResult: equals('%0.in.data.name%','Homer Simpson')
+    expectedResult: equals('%0.in.data.name%', 'Homer Simpson')
   })
 })
 
 component('probeTest.extraElement.pipe', {
-  impl: probeTest({
-    circuit: pipe('%$people%',delay(1)),
-    probePath: 'items~2',
+  impl: probeTest(pipe('%$people%', delay(1)), 'items~2', {
     allowClosestPath: true,
-    expectedResult: equals('%0.in.data.name%','Homer Simpson')
+    expectedResult: equals('%0.in.data.name%', 'Homer Simpson')
   })
 })
 
 component('probeTest.singleControl', {
-  impl: probeTest({
-    circuit: group({controls: text('hello')}),
-    probePath: 'controls',
-    expectedVisits: 1
-  })
+  impl: probeTest(group({ controls: text('hello') }), 'controls', { expectedVisits: 1 })
 })
 
 component('probeTest.ptByExample', {
-  impl: probeTest({
-    circuit: group({controls: itemlist({items: list(1, 2), controls: text('hello')})}),
-    probePath: 'controls~controls',
+  impl: probeTest(group({ controls: itemlist({ items: list(1,2), controls: text('hello') }) }), 'controls~controls', {
     expectedVisits: 2
   })
 })
 
 component('probeTest.usingGlobal', {
-  impl: probeTest({
-    circuit: group({controls: test.innerLabel()}),
-    probePath: 'controls',
-    expectedVisits: 1
-  })
+  impl: probeTest(group({ controls: test.innerLabel() }), 'controls', { expectedVisits: 1 })
 })
 
 component('test.innerLabel', {
@@ -81,51 +67,32 @@ component('test.innerLabelTemplateStaticParam', {
 })
 
 component('probeTest.staticInnerInTemplate', {
-  impl: probeTest({
-    circuit: group({controls: test.innerLabelTemplateStaticParam('hello')}),
-    probePath: 'controls~param1',
+  impl: probeTest(group({ controls: test.innerLabelTemplateStaticParam('hello') }), 'controls~param1', {
     expectedVisits: 1
   })
 })
 
 component('probeTest.labelText', {
-  impl: probeTest({
-    circuit: text(
-      ctx => 'hello'
-    ),
-    probePath: 'text',
-    expectedVisits: 1
-  })
+  impl: probeTest(text(ctx => 'hello'), 'text', { expectedVisits: 1 })
 })
 
 component('probeTest.pipelineMultiple', {
-  impl: probeTest({
-    circuit: pipeline(list(1,2),join()),
-    probePath: 'items~1',
-    expectedVisits: 1
-  })
+  impl: probeTest(pipeline(list(1,2), join()), 'items~1', { expectedVisits: 1 })
 })
 
 component('probeTest.innerInTemplate', {
-  impl: probeTest({
-    circuit: group({controls: test.innerLabelTemplate(text('hello'))}),
-    probePath: 'controls~ctrl~text',
+  impl: probeTest(group({ controls: test.innerLabelTemplate(text('hello')) }), 'controls~ctrl~text', {
     expectedVisits: 1
   })
 })
 
 component('probeTest.pipelineNoSugar', {
-  impl: probeTest({
-    circuit: group({controls: text({text: pipeline('hello')})}),
-    probePath: 'controls~text~items~0'
-  })
+  impl: probeTest(group({ controls: text(pipeline('hello')) }), 'controls~text~items~0')
 })
 
 component('probeTest.gap.actionsArray', {
   impl: probeTest({
-    circuit: group({controls: button('hello', [
-          winUtils.gotoUrl('google')
-        ])}),
+    circuit: group({ controls: button('hello', [winUtils.gotoUrl('google')]) }),
     probePath: 'controls~action~0~url',
     allowClosestPath: true,
     expectedVisits: 1
@@ -133,24 +100,20 @@ component('probeTest.gap.actionsArray', {
 })
 
 component('probeTest.insideWriteValue', {
-  impl: probeTest({
-    circuit: button({action: writeValue('%$person/name%', 'homer')}),
-    probePath: 'action~to',
+  impl: probeTest(button({ action: writeValue('%$person/name%', 'homer') }), 'action~to', {
     expectedVisits: 1
   })
 })
 
 component('probeTest.insideOpenDialog', {
-  impl: probeTest({
-    circuit: button({action: openDialog({content: text('hello')})}),
-    probePath: 'action~content~text',
+  impl: probeTest(button({ action: openDialog({ content: text('hello') }) }), 'action~content~text', {
     expectedVisits: 1
   })
 })
 
 component('probeTest.gaps.insideOpenDialogOnOk', {
   impl: probeTest({
-    circuit: button({action: openDialog({content: text('hello'), onOK: writeValue('%$person/name%', 'homer')})}),
+    circuit: button({ action: openDialog({ content: text('hello'), onOK: writeValue('%$person/name%', 'homer') }) }),
     probePath: 'action~onOK~value',
     expectedVisits: 1
   })
@@ -158,18 +121,14 @@ component('probeTest.gaps.insideOpenDialogOnOk', {
 
 component('probeTest.gaps.runActionOnItems', {
   impl: probeTest({
-    circuit: button({action: runActionOnItems('%$people%', writeValue('%$person/name%', '%name%'))}),
+    circuit: button({ action: runActionOnItems('%$people%', writeValue('%$person/name%', '%name%')) }),
     probePath: 'action~action~value',
     expectedVisits: 3
   })
 })
 
 component('probeTest.gaps.insideGotoUrl', {
-  impl: probeTest({
-    circuit: button({action: winUtils.gotoUrl('google%%')}),
-    probePath: 'action~url',
-    expectedVisits: 1
-  })
+  impl: probeTest(button({ action: winUtils.gotoUrl('google%%') }), 'action~url', { expectedVisits: 1 })
 })
 
 component('test.actionWithSideEffects', {
@@ -181,16 +140,14 @@ component('test.actionWithSideEffects', {
 })
 
 component('probeTest.insideActionWithSideEffects', {
-  impl: probeTest({
-    circuit: button({action: test.actionWithSideEffects('hello')}),
-    probePath: 'action~text',
+  impl: probeTest(button({ action: test.actionWithSideEffects('hello') }), 'action~text', {
     expectedVisits: 0
   })
 })
 
 component('probeTest.filterNoSugar', {
   impl: probeTest({
-    circuit: group({controls: text({text: pipeline('hello', filter('%% == \"hello\"'))})}),
+    circuit: group({ controls: text(pipeline('hello', filter('%% == "hello"'))) }),
     probePath: 'controls~text~items~1~filter'
   })
 })
@@ -219,14 +176,14 @@ component('test.pathSrcComp', {
 })
 
 component('test.probePipeline', {
-  impl: pipeline(list('a', 'b'), '%%', join())
+  impl: pipeline(list('a','b'), '%%', join())
 })
 
 component('test.pathSrcCaller', {
   params: [
     {id: 'items', dynamic: true}
   ],
-  impl: test.pathSrcComp(['a', 'b'])
+  impl: test.pathSrcComp(['a','b'])
 })
 
 component('probeTest.pathSrcThrough.call', {
@@ -252,13 +209,10 @@ component('probeTest.pathSrcThrough.call2', {
 })
 
 component('probeTest.runCircuit', {
-  impl: dataTest(
-    pipe(
-      probe.runCircuit('test.probePipeline~impl~items~1'),
-      ({data}) => data.result.visits
-    ),
-    equals(2)
-  )
+  impl: dataTest({
+    calculate: pipe(probe.runCircuit('test.probePipeline~impl~items~1'), ({data}) => data.result.visits),
+    expectedResult: equals(2)
+  })
 })
 
 // jb.component('path-change-test.insert-comp', {
@@ -287,48 +241,45 @@ component('suggestionsTest.defaultProbe', {
 })
 
 component('suggestionsTest.simpleVars', {
-  impl: suggestionsTest({
-    expression: '%',
-    expectedResult: contains('$people')
-  })
+  impl: suggestionsTest('%', { expectedResult: contains('$people') })
 })
 
 component('suggestionsTest.varsFilter', {
-  impl: suggestionsTest({expression: '%$p', expectedResult: and(contains('$people'), not(contains('$win')))})
+  impl: suggestionsTest('%$p', {
+    expectedResult: and(contains('$people'), not(contains('$win')))
+  })
 })
 
 component('suggestionsTest.component', {
-  impl: suggestionsTest({
+  impl: suggestionsTest('=watc', {
     path: 'suggestionsTest.defaultProbe~impl~features~0',
-    expression: '=watc',
     expectedResult: contains('watchRef')
   }),
-  require :{ $: 'suggestionsTest.defaultProbe'}
+  require: suggestionsTest.defaultProbe()
 })
 
 component('suggestionsTest.insideArray', {
-  impl: suggestionsTest({expression: '%$peopleArray/', expectedResult: and(contains('people'), not(contains('$people')))})
+  impl: suggestionsTest('%$peopleArray/', {
+    expectedResult: and(contains('people'), not(contains('$people')))
+  })
 })
 
 component('suggestionsTest.1', {
-  impl: suggestionsTest({expression: '%', expectedResult: contains('people')})
+  impl: suggestionsTest('%', { expectedResult: contains('people') })
 })
 
 component('sampleComp.ctrlWithPipeline', {
   impl: group({
     controls: text(pipeline(list('hello','%$var1%'), join(' '))),
     features: [
-      variable('var1','world'),
-      variable('xx','xx')
+      variable('var1', 'world'),
+      variable('xx', 'xx')
     ]
   })
 })
 
 component('uiTest.probe.detailedInput', {
-  impl: uiTest({
-    control: probe.detailedInput('%$probe_sampleProbe/result%'),
-    expectedResult: () => true
-  })
+  impl: uiTest(probe.detailedInput('%$probe_sampleProbe/result%'), () => true)
 })
 
 component('probe_sampleProbe', { passiveData: {

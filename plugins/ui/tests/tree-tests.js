@@ -357,15 +357,18 @@ component('uiTest.tableTreeUnexpandRefresh', {
 component('uiTest.tableTreeExpandMulitplePaths', {
   impl: uiTest({
     control: tableTree({
-      treeModel: tree.jsonReadOnly(()=>({
+      treeModel: tree.jsonReadOnly({
+        object: ()=>({
           a: { a1: 'val' },
           b: { b1: 'val' },
-        }), ''),
-      commonFields: text({text: '%path%', title: 'path'}),
-      chapterHeadline: text({text: suffix('~', '%path%')}),
-      features: tableTree.expandPath(['~a','~b'])
+        }),
+        rootPath: ''
+      }),
+      commonFields: text('%path%', 'path'),
+      chapterHeadline: text(suffix('~', '%path%')),
+      features: tableTree.expandPath(list('~a','~b'))
     }),
-    expectedResult: contains(['~a~a1', '~b~b1'])
+    expectedResult: contains(['~a~a1','~b~b1'])
   })
 })
 

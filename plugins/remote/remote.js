@@ -181,18 +181,14 @@ component('net.listSubJbms', {
 })
 
 component('net.getRootextentionUri', {
-    impl: () => jb.uri.split('•')[0]
+  impl: () => jb.uri.split('•')[0]
 })
 
 component('net.listAll', {
-    impl: remote.data(
-        pipe(
-            () => Object.values(jb.jbm.networkPeers || {}),
-            remote.data(net.listSubJbms(),'%%'),
-            aggregate(list(net.listSubJbms() ,'%%'))
-        )
-        ,byUri(net.getRootextentionUri())
-    )
+  impl: remote.data({
+    data: pipe(() => Object.values(jb.jbm.networkPeers || {}), remote.data(net.listSubJbms(), '%%'), aggregate(list(net.listSubJbms(), '%%'))),
+    jbm: byUri(net.getRootextentionUri())
+  })
 })
 
 // component('dataResource.yellowPages', { watchableData: {}})

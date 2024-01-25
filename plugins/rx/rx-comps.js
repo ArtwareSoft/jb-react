@@ -226,11 +226,7 @@ component('rx.count', {
   params: [
     {id: 'varName', as: 'string', mandatory: true, defaultValue: 'count'}
   ],
-  impl: rx.reduce({
-    varName: '%$varName%',
-    initialValue: 0,
-    value: (ctx,{},{varName}) => ctx.vars[varName]+1
-  })
+  impl: rx.reduce('%$varName%', 0, { value: (ctx,{},{varName}) => ctx.vars[varName]+1 })
 })
 
 component('rx.join', {
@@ -238,9 +234,7 @@ component('rx.join', {
     {id: 'varName', as: 'string', mandatory: true, defaultValue: 'join'},
     {id: 'separator', as: 'string', defaultValue: ','}
   ],
-  impl: rx.reduce({
-    varName: '%$varName%',
-    initialValue: '%%',
+  impl: rx.reduce('%$varName%', '%%', {
     value: (ctx,{},{varName,separator}) => [ctx.vars[varName],ctx.data].join(separator),
     avoidFirst: true
   })
@@ -249,10 +243,10 @@ component('rx.join', {
 component('rx.max', {
   params: [
     {id: 'varName', as: 'string', mandatory: true, defaultValue: 'max'},
-    {id: 'value', dynamic: true, defaultValue: '%%' },
+    {id: 'value', dynamic: true, defaultValue: '%%'}
   ],
-  impl: rx.reduce({
-    varName: '%$varName%', initialValue: Number.NEGATIVE_INFINITY, value: (ctx,{},{varName,value}) => Math.max(ctx.vars[varName],value(ctx))
+  impl: rx.reduce('%$varName%', -Infinity, {
+    value: (ctx,{},{varName,value}) => Math.max(ctx.vars[varName],value(ctx))
   })
 })
 
@@ -546,16 +540,15 @@ component('rx.log', {
   description: 'jb.log flow data, used for debug',
   params: [
     {id: 'name', as: 'string', dynamic: true},
-    {id: 'extra', as: 'single', dynamic: true},
+    {id: 'extra', as: 'single', dynamic: true}
   ],
   impl: rx.do((ctx,vars,{name,extra}) => jb.log(name(ctx),{data: ctx.data,vars,...extra(ctx), ctx: ctx.cmpCtx}))
-  //(ctx,name,extra) => ctx.run({$: 'rx.do', action: _ctx => jb.log(name,{data: _ctx.data,vars: _ctx.vars,ctx, ...extra(_ctx)}) })
 })
 
 component('rx.clog', {
   description: 'console.log flow data, used for debug',
   params: [
-    {id: 'name', as: 'string'},
+    {id: 'name', as: 'string'}
   ],
   impl: rx.do((x,{},{name}) => console.log(name,x))
 })
@@ -563,7 +556,7 @@ component('rx.clog', {
 component('rx.sniffer', {
   description: 'console.log data & control',
   params: [
-    {id: 'name', as: 'string'},
+    {id: 'name', as: 'string'}
   ],
   impl: (ctx,name) => source => jb.callbag.sniffer(source, {next: x => console.log(name,x)})
 })

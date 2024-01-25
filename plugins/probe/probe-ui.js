@@ -40,7 +40,7 @@ extension('probe', 'ui', {
 component('probe.stripData', {
   params: [
     {id: 'data', defaultValue: '%%'},
-    {id: 'systemVars', as: 'boolean'},
+    {id: 'systemVars', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,data,systemVars) => jb.probe.stripData(data,{systemVars})
 })

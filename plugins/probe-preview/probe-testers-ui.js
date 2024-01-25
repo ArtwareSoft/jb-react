@@ -39,7 +39,7 @@ component('test.showTestInStudio', {
 
 component('test.expectedResultProfile', {
   params: [
-    {id: 'expectedResultCtx'},
+    {id: 'expectedResultCtx'}
   ],
   impl: (ctx,expectedResultCtx) => jb.utils.ctxStack(expectedResultCtx).pop().profile.expectedResult
 })

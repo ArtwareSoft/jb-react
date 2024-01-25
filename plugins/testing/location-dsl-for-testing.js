@@ -23,7 +23,7 @@ component('state', {
 })
 
 component('israel', {
-  impl: state(jerusalem(), [eilat(), city('Tel Aviv')])
+  impl: state(jerusalem(), { cities: [eilat(), city('Tel Aviv')] })
 })
 
 component('israel2', {

@@ -2,7 +2,7 @@ component('prettyPrint', {
   params: [
     {id: 'profile', defaultValue: '%%'},
     {id: 'singleLine', as: 'boolean', type: 'boolean'},
-    {id: 'noMacros', as: 'boolean' }
+    {id: 'noMacros', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,profile) => jb.utils.prettyPrint(jb.val(profile),{ ...ctx.params })
 })
