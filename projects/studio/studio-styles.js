@@ -18,8 +18,9 @@ component('editableText.studioPrimitiveText', {
 
 component('editableText.floatingInput', {
   type: 'editable-text.style',
-  impl: styleWithFeatures(editableText.mdcInput(),
-    css(`~ .mdc-text-field { width: 100%; margin-right: 13px;}`))
+  impl: styleWithFeatures(editableText.mdcInput(), {
+    features: css('~ .mdc-text-field { width: 100%; margin-right: 13px;}')
+  })
 })
 
 extension('studio', 'codeMirror', {
@@ -91,7 +92,7 @@ component('button.studioScript', {
       cursor: pointer; opacity: 0.8; font-style: italic; }`,
     features: [
       button.initAction(),
-      frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode% == 13'), sink.BEMethod('onclickHandler')) 
+      frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode% == 13'), sink.BEMethod('onclickHandler'))
     ]
   })
 })
@@ -156,10 +157,6 @@ component('dialog.studioMultilineEdit', {
 				}
 				>.dialog-close:hover { opacity: .5 }
 				`,
-    features: [
-      dialogFeature.maxZIndexOnClick(),
-      dialogFeature.closeWhenClickingOutside(),
-      dialogFeature.cssClassOnLaunchingElement()
-    ]
+    features: [dialogFeature.maxZIndexOnClick(), dialogFeature.closeWhenClickingOutside(), dialogFeature.cssClassOnLaunchingElement()]
   })
 })

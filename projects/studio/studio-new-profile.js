@@ -92,11 +92,7 @@ component('studio.selectProfile', {
             style: editableText.mdcInput('200'),
             features: feature.onEsc(dialog.closeDialog(false))
           }),
-          control.icon({
-            icon: 'search',
-            title: 'search icon',
-            features: css.margin({top: '20', left: '-25'})
-          })
+          control.icon('search', 'search icon', { features: css.margin('20', '-25') })
         ]
       }),
       group({
@@ -106,96 +102,70 @@ component('studio.selectProfile', {
           itemlist({
             items: pipeline(
               '%$Categories%',
-              filter(
-                  or(
-                    equals('%code%', '%$SelectedCategory%'),
-                    notEmpty('%$itemlistCntrData/search_pattern%')
-                  )
-                ),
+              filter(or(equals('%code%', '%$SelectedCategory%'), notEmpty('%$itemlistCntrData/search_pattern%'))),
               '%pts%',
               ({data}) => ({ id: data, desc: jb.comps[data].description }),
               itemlistContainer.filter(),
               '%id%',
-              unique('%%', '%%')
+              unique('%%', { items: '%%' })
             ),
-            controls: text({text: studio.unMacro(), title: 'profile'}),
+            controls: text(studio.unMacro(), 'profile'),
             style: itemlist.ulLi(),
             visualSizeLimit: '30',
             features: [
-              itemlist.selection({
-                databind: '%$itemlistCntrData/selected%',
+              itemlist.selection('%$itemlistCntrData/selected%', {
                 onSelection: call('onBrowse'),
-                onDoubleClick: runActions(
-                  watchableComps.cleanSelectionPreview(),
-                  call('onSelect'),
-                  dialog.closeDialog()
-                ),
+                onDoubleClick: runActions(watchableComps.cleanSelectionPreview(), call('onSelect'), dialog.closeDialog()),
                 autoSelectFirst: true
               }),
-              itemlist.keyboardSelection({
-                onEnter: runActions(
-                  watchableComps.cleanSelectionPreview(),
-                  call('onSelect'),
-                  dialog.closeDialog()
-                )
-              }),
+              itemlist.keyboardSelection({ onEnter: runActions(watchableComps.cleanSelectionPreview(), call('onSelect'), dialog.closeDialog()) }),
               watchRef('%$SelectedCategory%'),
               watchRef('%$itemlistCntrData/search_pattern%'),
-              css.margin({top: '3', selector: '>li'}),
-              css.height({height: '360', overflow: 'auto'}),
+              css.margin('3', { selector: '>li' }),
+              css.height('360', 'auto'),
               css.width('200'),
               itemlist.infiniteScroll('2')
             ]
           }),
-          picklist({
-            title: '',
-            databind: '%$SelectedCategory%',
+          picklist('', '%$SelectedCategory%', {
             options: '%$Categories%',
-            style: styleByControl(
-              group({
-                controls: itemlist({
-                  items: '%$picklistModel/options/code%',
-                  controls: text({
-                    text: pipeline('%$Categories%', filter('%code% == %$item%'), '%code% (%pts/length%)'),
-                    style: text.span(),
-                    features: [css.width('120'), css('{text-align: left}'), css.padding({left: '10'})]
-                  }),
-                  style: itemlist.ulLi(),
+            style: styleByControl({
+            control: group({
+              controls: itemlist({
+                items: '%$picklistModel/options/code%',
+                controls: text(pipeline('%$Categories%', filter('%code% == %$item%'), '%code% (%pts/length%)'), {
+                  style: text.span(),
                   features: [
-                    itemlist.selection({
-                      databind: '%$SelectedCategory%',
-                      cssForSelected: 'box-shadow: 3px 0px 0 0 var(--jb-dropdown-shadow) inset; color: black !important; background: none !important; !important'
-                    })
-                  ]
+                  css.width('120'),
+                  css('{text-align: left}'),
+                  css.padding({ left: '10' })
+                ]
                 }),
-                features: group.itemlistContainer({})
+                style: itemlist.ulLi(),
+                features: [
+                  itemlist.selection('%$SelectedCategory%', {
+                    cssForSelected: 'box-shadow: 3px 0px 0 0 var(--jb-dropdown-shadow) inset; color: black !important; background: none !important; !important'
+                  })
+                ]
               }),
-              'picklistModel'
-            ),
+              features: group.itemlistContainer()
+            }),
+            modelVar: 'picklistModel'
+          }),
             features: picklist.onChange(writeValue('%$itemlistCntrData/search_pattern%'))
           })
         ]
       }),
-      text({
-        text: pipeline('%$itemlistCntrData/selected%', tgp.val('%%'), '%description%'),
-        style: text.span()
-      })
+      text(pipeline('%$itemlistCntrData/selected%', tgp.val('%%'), '%description%'), { style: text.span() })
     ],
     features: [
-      css.margin({top: '10', left: '20'}),
-      variable({
-        name: 'unsortedCategories',
-        value: tgp.categoriesOfType('%$type%')
-      }),
-      variable({
-        name: 'Categories',
-        value: picklist.sortedOptions(
-          '%$unsortedCategories%',
-          studio.categoriesMarks('%$type%', '%$path%')
-        )
-      }),
-      watchable('SelectedCategory',If(tgp.val('%$path%'), 'all', '%$Categories[0]/code%')),
-      group.itemlistContainer({initialSelection: tgp.compName('%$path%')}),
+      css.margin('10', '20'),
+      variable('unsortedCategories', tgp.categoriesOfType('%$type%')),
+      variable('Categories', picklist.sortedOptions('%$unsortedCategories%', {
+        marks: studio.categoriesMarks('%$type%', '%$path%')
+      })),
+      watchable('SelectedCategory', If(tgp.val('%$path%'), 'all', '%$Categories[0]/code%')),
+      group.itemlistContainer(tgp.compName('%$path%')),
       css.width('400')
     ]
   })
@@ -211,35 +181,23 @@ component('studio.openNewProfileDialog', {
     {id: 'onClose', type: 'action', dynamic: true}
   ],
   impl: openDialog({
-    style: dialog.studioFloating({}),
+    title: 'new %$type%',
     content: studio.selectProfile({
       onSelect: action.switch(
-        [
-          action.switchCase(
-            '%$mode% == \"insert-control\"',
-            tgp.insertControl('%%', '%$path%')
-          ),
-          action.switchCase(
-            '%$mode% == \"insert\"',
-            tgp.addArrayItem({
-              path: '%$path%',
-              toAdd: studio.newProfile('%%'),
-              index: '%$index%'
-            })
-          ),
-          action.switchCase('%$mode% == \"update\"', tgp.setComp('%$path%', '%%'))
-        ]
+        action.switchCase('%$mode% == "insert-control"', tgp.insertControl('%%', '%$path%')),
+        action.switchCase('%$mode% == "insert"', tgp.addArrayItem('%$path%', studio.newProfile('%%'), { index: '%$index%' })),
+        action.switchCase('%$mode% == "update"', tgp.setComp('%$path%', '%%'))
       ),
       type: '%$type%',
       path: '%$path%'
     }),
-    title: 'new %$type%',
+    style: dialog.studioFloating(),
     features: [
-      css.height({height: '520', overflow: 'hidden', minMax: 'min'}),
-      css.width({width: '450', overflow: 'hidden'}),
+      css.height('520', 'hidden', { minMax: 'min' }),
+      css.width('450', 'hidden'),
       dialogFeature.closeWhenClickingOutside(),
       css('~ .mdc-text-field { background-color: inherit }'),
-      dialogFeature.dragTitle({id: 'new %$type%', useSessionStorage: true}),
+      dialogFeature.dragTitle('new %$type%', true),
       studio.nearLauncherPosition(),
       dialogFeature.autoFocusOnFirstInput(),
       dialogFeature.onClose(call('onClose'))
@@ -253,11 +211,12 @@ component('studio.pickProfile', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: button({
-    title: prettyPrint(tgp.val('%$path%'), true),
-    action: studio.openPickProfile('%$path%'),
+  impl: button(prettyPrint(tgp.val('%$path%'), true), studio.openPickProfile('%$path%'), {
     style: button.selectProfileStyle(),
-    features: [studio.watchPath({path: '%$path%', includeChildren: 'yes'}), css.opacity(0.7)]
+    features: [
+    studio.watchPath('%$path%', 'yes'),
+    css.opacity(0.7)
+  ]
   })
 })
 
@@ -267,124 +226,101 @@ component('studio.openPickProfile', {
     {id: 'path', as: 'string'}
   ],
   impl: openDialog({
-    style: dialog.studioFloating({}),
+    title: pipeline(tgp.paramType('%$path%'), 'select %%'),
     content: group({
       controls: [
         studio.selectProfile({
           onSelect: tgp.setComp('%$path%', '%%'),
-          onBrowse: action.if(
-            or(
-              equals('layout', tgp.paramType('%$path%')),
-              endsWith('.style', tgp.paramType('%$path%'))
-            ),
-            tgp.setComp('%$path%', '%%')
-          ),
+          onBrowse: action.if({
+            condition: or(equals('layout', tgp.paramType('%$path%')), endsWith('.style', tgp.paramType('%$path%'))),
+            then: tgp.setComp('%$path%', '%%')
+          }),
           type: tgp.paramType('%$path%'),
           path: '%$path%'
         }),
         studio.properties('%$path%')
       ]
     }),
-    title: pipeline(tgp.paramType('%$path%'), 'select %%'),
+    style: dialog.studioFloating(),
     features: [
-      css.height({height: '520', overflow: 'hidden', minMax: 'min'}),
-      css.width({width: '450', overflow: 'hidden'}),
+      css.height('520', 'hidden', { minMax: 'min' }),
+      css.width('450', 'hidden'),
       css('~ .mdc-text-field { background-color: inherit }'),
       dialogFeature.closeWhenClickingOutside(),
       dialogFeature.autoFocusOnFirstInput(),
-      css.padding({right: '20'}),
+      css.padding({ right: '20' }),
       feature.initValue('%$dialogData/originalVal%', tgp.val('%$path%')),
-      dialogFeature.onClose(
-        action.if(not('%%'), tgp.setComp('%$path%', '%$dialogData/originalVal%'))
-      )
+      dialogFeature.onClose(action.if(not('%%'), tgp.setComp('%$path%', '%$dialogData/originalVal%')))
     ]
   })
 })
 
 component('studio.openNewPage', {
   type: 'action',
-  impl: studio.openNewProfile({
-    title: 'New Reusable Control (page)',
-    onOK: runActions(
-      Var('compName', tgp.titleToId('%$dialogData/name%')),
-      studio.newComp({
-        compName: '%$compName%',
-        compContent:  asIs({type: 'control', impl: group({})}),
-        file: '%$dialogData/file%'
-      }),
-      writeValue('%$studio/profile_path%', '%$compName%~impl'),
-      writeValue('%$studio/circuit%', '%$compName%'),
-      studio.openControlTree(),
-      popup.regainCanvasFocus(),
-    )
-  })
+  impl: studio.openNewProfile('New Reusable Control (page)', runActions(
+    Var('compName', tgp.titleToId('%$dialogData/name%')),
+    studio.newComp('%$compName%', asIs({type: 'control', impl: group()}), {
+      file: '%$dialogData/file%'
+    }),
+    writeValue('%$studio/profile_path%', '%$compName%~impl'),
+    writeValue('%$studio/circuit%', '%$compName%'),
+    studio.openControlTree(),
+    popup.regainCanvasFocus()
+  ))
 })
 
 component('studio.openNewFunction', {
   type: 'action',
-  impl: studio.openNewProfile({
-    title: 'New Function',
-    onOK: runActions(
-      Var('compName', tgp.titleToId('%$dialogData/name%')),
-      studio.newComp({
-          compName: '%$compName%',
-          compContent: asIs({type: 'data', impl: pipeline('')}),
-          file: '%$dialogData/file%'
-      }),
-      writeValue('%$studio/profile_path%', '%$compName%'),
-      studio.openJbEditor('%$compName%'),
-      refreshControlById('functions')
-    )
-  })
+  impl: studio.openNewProfile('New Function', runActions(
+    Var('compName', tgp.titleToId('%$dialogData/name%')),
+    studio.newComp('%$compName%', asIs({type: 'data', impl: pipeline('')}), {
+      file: '%$dialogData/file%'
+    }),
+    writeValue('%$studio/profile_path%', '%$compName%'),
+    studio.openJbEditor('%$compName%'),
+    refreshControlById('functions')
+  ))
 })
 
 component('studio.openNewProfile', {
   type: 'action',
   params: [
-    {id: 'title', as: 'string' },
-    {id: 'onOK', type: 'action', dynamic: true },
+    {id: 'title', as: 'string'},
+    {id: 'onOK', type: 'action', dynamic: true}
   ],
   impl: openDialog({
-    style: dialog.dialogOkCancel(),
+    title: '%$title%',
     content: group({
       title: '',
       layout: layout.horizontal('11'),
       style: group.div(),
       controls: [
-        editableText({
-          title: 'name',
-          databind: '%$dialogData/name%',
-          style: editableText.mdcInput({}),
+        editableText('name', '%$dialogData/name%', {
+          style: editableText.mdcInput(),
           features: [
-            feature.initValue('%$dialogData/name%', '%$studio/project%.myComp'),
-            feature.onEnter(dialog.closeDialog()),
-            validation(matchRegex('^[a-zA-Z_0-9.]+$'), 'invalid name')
-          ]
+          feature.initValue('%$dialogData/name%', '%$studio/project%.myComp'),
+          feature.onEnter(dialog.closeDialog()),
+          validation(matchRegex('^[a-zA-Z_0-9.]+$'), 'invalid name')
+        ]
         }),
-        picklist({
-          title: 'file',
-          databind: '%$dialogData/file%',
-          options: picklist.options({options: sourceEditor.filesOfProject()}),
-          style: picklist.mdcSelect({}),
+        picklist('file', '%$dialogData/file%', {
+          options: picklist.options(sourceEditor.filesOfProject()),
+          style: picklist.mdcSelect(),
           features: [
-            feature.initValue(
-                '%$dialogData/file%',
-                pipeline(sourceEditor.filesOfProject(), first())
-            ),
-            validation(notEmpty('%%'), 'mandatory')
-          ]
+          feature.initValue('%$dialogData/file%', pipeline(sourceEditor.filesOfProject(), first())),
+          validation(notEmpty('%%'), 'mandatory')
+        ]
         })
       ],
-      features: [css.padding({top: '14', left: '11'}), css.width('600'), css.height('200')]
+      features: [
+        css.padding('14', '11'),
+        css.width('600'),
+        css.height('200')
+      ]
     }),
-    title: '%$title%',
+    style: dialog.dialogOkCancel(),
     onOK: call('onOK'),
-    modal: true,
-    features: [
-      dialogFeature.autoFocusOnFirstInput(),
-      dialogFeature.maxZIndexOnClick(),
-      dialogFeature.dragTitle()
-    ]
+    features: [dialogFeature.autoFocusOnFirstInput(), dialogFeature.maxZIndexOnClick(), dialogFeature.dragTitle()]
   })
 })
 

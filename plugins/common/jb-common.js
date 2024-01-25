@@ -239,8 +239,8 @@ component('math.sum', {
 component('math.plus', {
   category: 'math:80',
   params: [
-    {id: 'x', as: 'number', mandatory: true },
-    {id: 'y', as: 'number', mandatory: true },
+    {id: 'x', as: 'number', mandatory: true},
+    {id: 'y', as: 'number', mandatory: true}
   ],
   impl: ({},x,y) => +x + +y
 })
@@ -778,8 +778,8 @@ component('unique', {
 
 component('log', {
   params: [
-    {id: 'logName', as: 'string', mandatory: 'true' },
-    {id: 'logObj', as: 'single', defaultValue: '%%' }
+    {id: 'logName', as: 'string', mandatory: 'true'},
+    {id: 'logObj', as: 'single', defaultValue: '%%'}
   ],
   impl: (ctx,log,logObj) => { jb.log(log,{...logObj,ctx}); return ctx.data }
 })
@@ -1083,7 +1083,7 @@ component('data.switch', {
   macroByValue: false,
   params: [
     {id: 'cases', type: 'data.switch-case[]', as: 'array', mandatory: true, defaultValue: []},
-    {id: 'default', dynamic: true},
+    {id: 'default', dynamic: true}
   ],
   impl: (ctx,cases,defaultValue) => {
 		for(let i=0;i<cases.length;i++)
@@ -1148,32 +1148,32 @@ component('formatNumber', {
   description: 'using toLocaleDateString',
   params: [
     {id: 'precision', as: 'number', defaultValue: '2', description: '10.33'},
-    {id: 'num', defaultValue: '%%' },
+    {id: 'num', defaultValue: '%%'}
   ],
   impl: (ctx,precision,x) => typeof x == 'number' ? +x.toFixed(+precision) : x
 })
 
 component('getSessionStorage', {
   params: [
-    { id: 'id', as: 'string' }
+    {id: 'id', as: 'string'}
   ],
   impl: ({},id) => jb.utils.sessionStorage(id)
 })
 
 component('action.setSessionStorage', {
   params: [
-    { id: 'id', as: 'string' },
-    { id: 'value', dynamic: true },
+    {id: 'id', as: 'string'},
+    {id: 'value', dynamic: true}
   ],
   impl: ({},id,value) => jb.utils.sessionStorage(id,value())
 })
 
-component('waitFor',{
+component('waitFor', {
   params: [
     {id: 'check', dynamic: true},
     {id: 'interval', as: 'number', defaultValue: 14, byName: true},
     {id: 'timeout', as: 'number', defaultValue: 3000},
-    {id: 'logOnError', as: 'string', dynamic: true},
+    {id: 'logOnError', as: 'string', dynamic: true}
   ],
   impl: (ctx,check,interval,timeout,logOnError) => {
     // const res1 = check()

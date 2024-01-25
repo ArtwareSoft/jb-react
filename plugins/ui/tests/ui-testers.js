@@ -37,14 +37,12 @@ component('uiTest', {
       rx.pipe(
         typeAdapter('ui-action<test>', uiActions('%$uiAction()%')),
         rx.log('uiTest userRequest'),
-        remote.operator(
-          widget.headless({
-            control: '%$control()%',
-            widgetId: '%$widgetId%',
+        remote.operator({
+          rx: widget.headless('%$control()%', '%$widgetId%', {
             transactiveHeadless: '%$transactiveHeadless%'
           }),
-          '%$backEndJbm%'
-        ),
+          jbm: '%$backEndJbm%'
+        }),
         rx.do(uiTest.aggregateDelta('%%')),
         rx.var('renderingCounters', uiTest.postTestRenderingUpdate()),
         rx.log('uiTest uiDelta from headless %$renderingCounters%'),
@@ -76,7 +74,7 @@ component('uiFrontEndTest', {
     {id: 'renderDOM', type: 'boolean', descrition: 'render the vdom under the document dom'},
     {id: 'runInPreview', type: 'action', dynamic: true, descrition: 'not for test mode'},
     {id: 'runInStudio', type: 'action', dynamic: true, descrition: 'not for test mode'},
-	{id: 'covers'}
+    {id: 'covers'}
   ],
   impl: async (_ctx,control,runBefore,uiAction,expectedResult,allowError,cleanUp,expectedCounters,renderDOM) => {
 		if (typeof document == 'undefined')
@@ -168,7 +166,7 @@ component('uiTest.removeFrontEndEmulation', {
 component('uiTest.aggregateDelta', {
   type: 'action',
   params: [
-    {id: 'renderingUpdate' },
+    {id: 'renderingUpdate'}
   ],
   impl: (ctx, renderingUpdate) => {
 	if (renderingUpdate.$ == 'updates')

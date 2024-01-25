@@ -4,18 +4,12 @@ component('studio.dropHtml', {
   ],
   type: 'feature',
   impl: features(
-//    htmlAttribute('ondragover', 'over'),
     htmlAttribute('ondrop', 'dropHtml'),
-//    frontEnd.flow(source.frontEndEvent('drop'), sink.BEMethod('dropHtml')),    
-//    method('over', (ctx,{ev}) => ev.preventDefault()),
-    method(
-        'dropHtml',
-        (ctx,{cmp, ev},{onDrop}) => {
+    method('dropHtml', (ctx,{cmp, ev},{onDrop}) => {
   //      ev.preventDefault();
         return Array.from(ev.dataTransfer.items).filter(x=>x.type.match(/html/))[0].getAsString(html =>
                 onDrop(ctx.setVar('newCtrl',jb.ui.htmlToControl(html,ctx))))
-      }
-      )
+      })
   )
 })
 

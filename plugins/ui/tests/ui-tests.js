@@ -800,10 +800,7 @@ component('uiTest.itemlistContainerSearchCtrl', {
         features: [
           watchRef('%$itemlistCntrData/search_pattern%'),
           itemlist.selection({ autoSelectFirst: true }),
-          itemlist.keyboardSelection({
-            autoFocus: true,
-            onEnter: writeValue('%$res/selected%', '%name%')
-          })
+          itemlist.keyboardSelection(true, writeValue('%$res/selected%', '%name%'))
         ]
       })
     ],
@@ -1294,26 +1291,19 @@ component('uiTest.expandCollapseWithDefaultCollapse', {
   type: 'control',
   impl: group({
     controls: [
-      editableBoolean({
-        databind: '%$default%',
+      editableBoolean('%$default%', editableBoolean.checkboxWithLabel(), {
         title: 'default value for expanded',
-        style: editableBoolean.checkboxWithLabel(),
         features: id('default')
       }),
       group({
         controls: [
-          editableBoolean({
-            databind: '%$expanded%',
-            style: editableBoolean.expandCollapse(),
-            title: 'expColl',
-            features: id('expCollapse')
-          }),
-          text({
-            text: 'inner text',
-            features: [feature.if('%$expanded%'), watchRef('%$expanded%')]
-          })
+          editableBoolean('%$expanded%', editableBoolean.expandCollapse(), { title: 'expColl', features: id('expCollapse') }),
+          text('inner text', { features: [feature.if('%$expanded%'), watchRef('%$expanded%')] })
         ],
-        features: [watchRef('%$default%'), feature.initValue({ to: '%$expanded%', value: '%$default%', alsoWhenNotEmpty: true })]
+        features: [
+          watchRef('%$default%'),
+          feature.initValue('%$expanded%', '%$default%', { alsoWhenNotEmpty: true })
+        ]
       })
     ],
     features: [
@@ -1855,27 +1845,18 @@ component('uiTest.firstSucceedingWatchableSample', {
   impl: group({
     controls: [
       editableText({ databind: '%$gender%' }),
-      button({
-        title: 'female',
-        action: writeValue('%$gender%', 'female'),
-        features: id('female')
-      }),
-      button({
-        title: 'zee',
-        action: writeValue('%$gender%', 'zee'),
-        features: id('zee')
-      }),
-      button({
-        title: 'male',
-        action: writeValue('%$gender%', 'male'),
-        features: id('male')
-      }),
+      button('female', writeValue('%$gender%', 'female'), { features: id('female') }),
+      button('zee', writeValue('%$gender%', 'zee'), { features: id('zee') }),
+      button('male', writeValue('%$gender%', 'male'), { features: id('male') }),
       group({
         controls: [
-          controlWithCondition('%$gender% == \"male\"', text('a male')),
+          controlWithCondition('%$gender% == "male"', text('a male')),
           text('not male')
         ],
-        features: [group.firstSucceeding(), watchRef('%$gender%')]
+        features: [
+          group.firstSucceeding(),
+          watchRef('%$gender%')
+        ]
       })
     ],
     features: watchable('gender', 'male')
@@ -2113,14 +2094,14 @@ component('uiTest.infiniteScroll.table', {
 component('uiTest.recursiveCtrl', {
   type: 'control',
   params: [
-    { id: 'data' }
+    {id: 'data'}
   ],
   impl: group({
     controls: [
       text('%$data/text%'),
-      uiTest.recursiveCtrl('%$data/child%'),
+      uiTest.recursiveCtrl('%$data/child%')
     ],
-    features: group.eliminateRecursion(5),
+    features: group.eliminateRecursion(5)
   })
 })
 
@@ -2228,7 +2209,7 @@ component('test.controlWithFeaturesUseParams', {
   params: [
     {id: 'name'}
   ],
-  impl: controlWithFeatures(text('%$txt%'), variable('txt', '%$name%'))
+  impl: controlWithFeatures(text('%$txt%'), { features: variable('txt', '%$name%') })
 })
 
 component('uiTest.controlWithFeatures.useParams', {

@@ -1,6 +1,6 @@
 component('studio.eventTracker', {
   params: [
-    {id: 'spy', dynamic: true, defaultValue: () => jb.path(jb.parent,'spy') }
+    {id: 'spy', dynamic: true, defaultValue: () => jb.path(jb.parent,'spy')}
   ],
   type: 'control',
   impl: group({
@@ -8,39 +8,33 @@ component('studio.eventTracker', {
       controls: [
         eventTracker.toolbar('%$spy()%'),
         table({
-          items: eventTracker.eventItems('%$spy()%','%$eventTracker/eventTrackerQuery%'),
+          items: eventTracker.eventItems('%$spy()%', '%$eventTracker/eventTrackerQuery%'),
           controls: [
             text('%index%'),
             eventTracker.uiComp(),
             eventTracker.callbagMessage(),
             eventTracker.testResult(),
-            text({ text: '%logNames%', features: feature.byCondition(
-              inGroup(list('exception','error'), '%logNames%'),
-              css.color('var(--jb-error-fg)')
-            )}),
-            studio.lowFootprintObj('%err%','err'),
-            studio.objExpandedAsText('%stack%','stack'),
-
-            controlWithCondition('%m%',text('%m/$%: %m/t%, %m/cbId%')),
-  //          studio.objExpandedAsText('%m/d%','payload'),
-            studio.lowFootprintObj('%delta%','delta'),
-            studio.lowFootprintObj('%vdom%','vdom'),
-            studio.lowFootprintObj('%ref%','ref'),
-            studio.lowFootprintObj('%value%','value'),
-            studio.lowFootprintObj('%val%','val'),
-            studio.lowFootprintObj('%focusChanged%','focusChanged'),
+            text('%logNames%', {
+              features: feature.byCondition({
+              condition: inGroup(list('exception','error'), { item: '%logNames%' }),
+              then: css.color('var(--jb-error-fg)')
+            })
+            }),
+            studio.lowFootprintObj('%err%', 'err'),
+            studio.objExpandedAsText('%stack%', 'stack'),
+            controlWithCondition('%m%', text('%m/$%: %m/t%, %m/cbId%')),
+            studio.lowFootprintObj('%delta%', 'delta'),
+            studio.lowFootprintObj('%vdom%', 'vdom'),
+            studio.lowFootprintObj('%ref%', 'ref'),
+            studio.lowFootprintObj('%value%', 'value'),
+            studio.lowFootprintObj('%val%', 'val'),
+            studio.lowFootprintObj('%focusChanged%', 'focusChanged'),
             studio.sourceCtxView('%srcCtx%'),
             studio.sourceCtxView('%cmp/ctx%'),
-            studio.sourceCtxView('%ctx%'),
+            studio.sourceCtxView('%ctx%')
           ],
           style: table.plain(true),
           visualSizeLimit: 80,
-          lineFeatures: [
-            watchRef({ref: '%$cmpExpanded/{%$index%}%', allowSelfRefresh: true}),
-            watchRef({ref: '%$payloadExpanded/{%$index%}%', allowSelfRefresh: true}),
-            watchRef({ref: '%$testResultExpanded/{%$index%}%', allowSelfRefresh: true}),
-            table.enableExpandToEndOfRow()
-          ],               
           features: [
             watchable('cmpExpanded', obj()),
             watchable('payloadExpanded', obj()),
@@ -49,133 +43,138 @@ component('studio.eventTracker', {
             itemlist.selection({
               onSelection: runActions(({data}) => { jb.frame.console.log(data) }, eventTracker.highlightEvent('%%'))
             }),
-            itemlist.keyboardSelection({}),
-            eventTracker.watchSpy('%$spy()%',500),
+            itemlist.keyboardSelection(),
+            eventTracker.watchSpy('%$spy()%', 500)
+          ],
+          lineFeatures: [
+            watchRef('%$cmpExpanded/{%$index%}%', { allowSelfRefresh: true }),
+            watchRef('%$payloadExpanded/{%$index%}%', { allowSelfRefresh: true }),
+            watchRef('%$testResultExpanded/{%$index%}%', { allowSelfRefresh: true }),
+            table.enableExpandToEndOfRow()
           ]
         })
       ],
-      features: id('event-tracker'),
+      features: id('event-tracker')
     }),
     features: [
-      variable('$disableLog',true),
-      watchable('eventTracker',obj())
+      variable('$disableLog', true),
+      watchable('eventTracker', obj())
     ]
   })
 })
 
 component('eventTracker.toolbar', {
   params: [
-    {id: 'spy' }
+    {id: 'spy'}
   ],
   type: 'control',
   impl: group({
     layout: layout.horizontal('2'),
     controls: [
-      text({
-        text: eventTracker.codeSize(),
+      text(eventTracker.codeSize(), {
         features: [
-          feature.hoverTitle('code size'),
-          css('cursor: default'),
-          css.padding({top: '5'})
-        ]
+        feature.hoverTitle('code size'),
+        css('cursor: default'),
+        css.padding('5')
+      ]
       }),
-      divider({style: divider.vertical()}),
-      text({
-        title: 'counts',
-        text: '%$events/length%/%$spy/logs/length%',
+      divider(divider.vertical()),
+      text('%$events/length%/%$spy/logs/length%', 'counts', {
         features: [
-          variable('events', eventTracker.eventItems('%$spy%','%$eventTracker/eventTrackerQuery%')),
-          feature.hoverTitle('filtered events / total'),
-          css('cursor: default'),
-          css.padding({top: '5', left: '5'})
-        ]
+        variable('events', eventTracker.eventItems('%$spy%', '%$eventTracker/eventTrackerQuery%')),
+        feature.hoverTitle('filtered events / total'),
+        css('cursor: default'),
+        css.padding('5', '5')
+      ]
       }),
-      divider({style: divider.vertical()}),
-      button({
-        title: 'clear',
-        action: runActions(eventTracker.clearSpyLog('%$spy%'), refreshControlById('event-tracker')),
+      divider(divider.vertical()),
+      button('clear', runActions(eventTracker.clearSpyLog('%$spy%'), refreshControlById('event-tracker')), {
         style: chromeDebugger.icon(),
         features: feature.hoverTitle('clear')
       }),
-      button({
-        title: 'refresh',
-        action: refreshControlById('event-tracker'),
+      button('refresh', refreshControlById('event-tracker'), {
         style: chromeDebugger.icon('165px 264px'),
         features: feature.hoverTitle('refresh')
-      }),      
-      divider({style: divider.vertical()}),
-      editableText({
-        title: 'query',
-        databind: '%$eventTracker/eventTrackerQuery%',
+      }),
+      divider(divider.vertical()),
+      editableText('query', '%$eventTracker/eventTrackerQuery%', {
         style: editableText.input(),
         features: [
-          htmlAttribute('placeholder', 'query'),
-          feature.onEnter(refreshControlById('event-tracker')),
-          css.class('toolbar-input'),
-          css.height('10'),
-          css.margin('4'),
-          css.width('300')
-        ]
+        htmlAttribute('placeholder', 'query'),
+        feature.onEnter(refreshControlById('event-tracker')),
+        css.class('toolbar-input'),
+        css.height('10'),
+        css.margin('4'),
+        css.width('300')
+      ]
       }),
       eventTracker.eventTypes('%$spy%')
     ],
     features: [
       chromeDebugger.colors(),
-      eventTracker.watchSpy('%$spy%',100)
+      eventTracker.watchSpy('%$spy%', 100)
     ]
-  }),
+  })
 })
 
 component('eventTracker.uiComp', {
   type: 'control',
   impl: controls(
-    controlWithCondition(or('%cmp%','%elem%', '%parentElem%'), group({
-      controls: [
-        controlWithCondition('%cmp/ctx/profile/$%', group({
-          controls: [
-            editableBoolean({databind: '%$cmpExpanded/{%$index%}%', style: chromeDebugger.toggleStyle()}),
-            text('%cmp/ctx/profile/$% %cmp/cmpId%;%cmp/ver%'),
-          ],
-          layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'})
-        })),
-        controlWithCondition('%cmp/pt%',text('%cmp/pt% %cmp/cmpId%;%cmp/ver%')),
-        controlWithCondition('%$cmpElem%',text('%$cmpElem/@cmp-pt% %$cmpElem/@cmp-id%;%$cmpElem/@cmp-ver%')),
-      ],
-      features: [
-        group.firstSucceeding(),
-        variable('cmpElem', ({data}) => jb.ui.closestCmpElem(data.elem || data.parentElem))
-      ]
-    })),
-    controlWithCondition('%$cmpExpanded/{%$index%}%', group({ 
-      controls: eventTracker.compInspector('%cmp%'), 
+    controlWithCondition({
+      condition: or('%cmp%','%elem%','%parentElem%'),
+      control: group({
+        controls: [
+          controlWithCondition('%cmp/ctx/profile/$%', group({
+            layout: layout.flex('row', 'start', { alignItems: 'center' }),
+            controls: [
+              editableBoolean('%$cmpExpanded/{%$index%}%', chromeDebugger.toggleStyle()),
+              text('%cmp/ctx/profile/$% %cmp/cmpId%;%cmp/ver%')
+            ]
+          })),
+          controlWithCondition('%cmp/pt%', text('%cmp/pt% %cmp/cmpId%;%cmp/ver%')),
+          controlWithCondition('%$cmpElem%', text('%$cmpElem/@cmp-pt% %$cmpElem/@cmp-id%;%$cmpElem/@cmp-ver%'))
+        ],
+        features: [
+          group.firstSucceeding(),
+          variable('cmpElem', ({data}) => jb.ui.closestCmpElem(data.elem || data.parentElem))
+        ]
+      })
+    }),
+    controlWithCondition('%$cmpExpanded/{%$index%}%', group({
+      controls: eventTracker.compInspector('%cmp%'),
       features: feature.expandToEndOfRow('%$cmpExpanded/{%$index%}%')
-    })),
+    }))
   )
 })
 
 component('eventTracker.callbagMessage', {
   type: 'control',
   impl: controls(
-    controlWithCondition(and('%m/d%','%m/t%==1'), group({
-      controls: [
-        editableBoolean({databind: '%$payloadExpanded/{%$index%}%', style: chromeDebugger.toggleStyle()}),
-        text('%$contentType% %$direction% %m/cbId% (%$payload/length%) %m/$%: %m/t%'),
-      ],
-      layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'}),
-      features: [
-        variable('direction', If(contains({allText: '%logNames%', text: 'received'}),'🡸','🡺')),
-        variable('contentType', If('%m/d/data/css%','css', If('%m/d/data/delta%','delta','%m/d/data/$%'))),
-        variable('payload', prettyPrint('%m/d%'))
+    controlWithCondition({
+      condition: and('%m/d%','%m/t%==1'),
+      control: group({
+        layout: layout.flex('row', 'start', { alignItems: 'center' }),
+        controls: [
+          editableBoolean('%$payloadExpanded/{%$index%}%', chromeDebugger.toggleStyle()),
+          text('%$contentType% %$direction% %m/cbId% (%$payload/length%) %m/$%: %m/t%')
+        ],
+        features: [
+          variable('direction', If(contains('received', { allText: '%logNames%' }), '🡸', '🡺')),
+          variable('contentType', If('%m/d/data/css%', 'css', If('%m/d/data/delta%', 'delta', '%m/d/data/$%'))),
+          variable('payload', prettyPrint('%m/d%'))
+        ]
+      })
+    }),
+    controlWithCondition('%$payloadExpanded/{%$index%}%', group({
+      controls: text(prettyPrint('%m/d%'), {
+        style: text.codemirror({ height: '200' }),
+        features: [
+        codemirror.fold(),
+        css('min-width: 1200px; font-size: 130%')
       ]
-    })),
-    controlWithCondition('%$payloadExpanded/{%$index%}%', group({ 
-      controls: text({
-        text: prettyPrint('%m/d%'),
-        style: text.codemirror({height: '200'}),
-        features: [codemirror.fold(), css('min-width: 1200px; font-size: 130%')]
-      }), 
+      }),
       features: feature.expandToEndOfRow('%$payloadExpanded/{%$index%}%')
-    })),
+    }))
   )
 })
 
@@ -184,26 +183,31 @@ component('eventTracker.testResult', {
   impl: controls(
     controlWithCondition('%logNames%==check test result', group({
       controls: [
-        editableBoolean({databind: '%$testResultExpanded/{%$index%}%', style: chromeDebugger.toggleStyle()}),
+        editableBoolean('%$testResultExpanded/{%$index%}%', chromeDebugger.toggleStyle()),
         text({
-          vars: Var('color',If('%success%','--jb-success-fg','--jb-error-fg')),
-          text: If('%success%','✓ check test result','⚠ check test result'),
+          vars: [
+            Var('color', If('%success%', '--jb-success-fg', '--jb-error-fg'))
+          ],
+          text: If('%success%', '✓ check test result', '⚠ check test result'),
           features: css.color('var(%$color%)')
-        }),
+        })
       ]
     })),
-    controlWithCondition('%$testResultExpanded/{%$index%}%', group({ 
+    controlWithCondition('%$testResultExpanded/{%$index%}%', group({
       layout: layout.horizontal(20),
       controls: [
-        controlWithCondition('%expectedResultCtx/data%', text(prettyPrint('%expectedResultCtx.profile.expectedResult%',true))),
-        controlWithCondition('%expectedResultCtx/data%', text('%expectedResultCtx/data%')),              
-        text({
-          text: '%html%',
-          style: text.codemirror({height: '200', mode: 'htmlmixed', formatText: true}),
-          features: [codemirror.fold(), css('min-width: 1200px; font-size: 130%')]
-      })],
+        controlWithCondition('%expectedResultCtx/data%', text(prettyPrint('%expectedResultCtx.profile.expectedResult%', true))),
+        controlWithCondition('%expectedResultCtx/data%', text('%expectedResultCtx/data%')),
+        text('%html%', {
+          style: text.codemirror({ height: '200', formatText: true, mode: 'htmlmixed' }),
+          features: [
+          codemirror.fold(),
+          css('min-width: 1200px; font-size: 130%')
+        ]
+        })
+      ],
       features: feature.expandToEndOfRow('%$testResultExpanded/{%$index%}%')
-    })),
+    }))
   )
 })
 
@@ -263,33 +267,21 @@ component('studio.objExpandedAsText', {
 component('studio.lowFootprintObj', {
   type: 'control',
   params: [
-    {id: 'obj', mandatory: true },
-    {id: 'title', mandatory: true },
-    {id: 'length', as: 'number', defaultValue: 20 },
+    {id: 'obj', mandatory: true},
+    {id: 'title', mandatory: true},
+    {id: 'length', as: 'number', defaultValue: 20}
   ],
   impl: controlWithCondition('%$obj%', group({
     layout: layout.horizontal(4),
     controls: [
-      controlWithCondition(
-        '%$obj/cmpCtx%',
-        studio.slicedString('%$obj/profile/$%: %$obj/path%')
-      ),
-      controlWithCondition(
-        ({},{},{obj}) => jb.db.isRef(obj),
-        studio.slicedString(({},{},{obj}) => obj.handler.pathOfRef(obj).join('/'))
-      ),
-      controlWithCondition(
-        '%$obj/opEvent/newVal%',
-        studio.slicedString('%$obj/opEvent/newVal%')
-      ),
-      controlWithCondition(
-        isOfType('boolean', '%$obj%'),
-        studio.slicedString('%$title%')
-      ),
-      controlWithCondition(
-        isOfType('string,number', '%$obj%'),
-        studio.slicedString('%$title%: %$obj%')
-      ),
+      controlWithCondition('%$obj/cmpCtx%', studio.slicedString('%$obj/profile/$%: %$obj/path%')),
+      controlWithCondition({
+        condition: ({},{},{obj}) => jb.db.isRef(obj),
+        control: studio.slicedString(({},{},{obj}) => obj.handler.pathOfRef(obj).join('/'))
+      }),
+      controlWithCondition('%$obj/opEvent/newVal%', studio.slicedString('%$obj/opEvent/newVal%')),
+      controlWithCondition(isOfType('boolean', '%$obj%'), studio.slicedString('%$title%')),
+      controlWithCondition(isOfType('string,number', '%$obj%'), studio.slicedString('%$title%: %$obj%'))
     ]
   }))
 })
@@ -357,8 +349,8 @@ component('eventTracker.highlightEvent', {
   impl: runActions(
     Var('elem', firstSucceeding(eventTracker.elemOfCmp('%$event/cmp%'), eventTracker.elemInInspectedJb('#%$event/dialogId%'))),
     If('%$elem%', eventTracker.highlightElem('%$elem%')),
-    If('%$event/elem%',eventTracker.highlightElem('%$event/elem%')),
-    If('%$event/parentElem%',eventTracker.highlightElem('%$event/parentElem%'))
+    If('%$event/elem%', eventTracker.highlightElem('%$event/elem%')),
+    If('%$event/parentElem%', eventTracker.highlightElem('%$event/parentElem%'))
   )
 })
 
@@ -369,14 +361,14 @@ component('eventTracker.highlightElem', {
     {id: 'css', as: 'string', defaultValue: 'border: 1px dashed grey'}
   ],
   impl: runActions(
-    Var('previewOverlay',true),
+    Var('previewOverlay', true),
     log('eventTracker highlightElem'),
     openDialog({
-        id: 'highlight-dialog',
-        style: eventTracker.highlightDialogStyle(),
-        content: text(''),
-        features: [
-          css(({},{},{elem}) => {
+      content: text(''),
+      style: eventTracker.highlightDialogStyle(),
+      id: 'highlight-dialog',
+      features: [
+        css(({},{},{elem}) => {
             if (!elem || !elem.getBoundingClientRect || !jb.ui.studioFixXPos) return ''
             const elemRect = elem.getBoundingClientRect()
             const left = jb.ui.studioFixXPos(elem) + elemRect.left + 'px'
@@ -384,8 +376,8 @@ component('eventTracker.highlightElem', {
             const width = Math.max(10,elemRect.width), height = Math.max(10,elemRect.height)
             return `left: ${left}; top: ${top}; width: ${width}px; height: ${height}px;`
           }),
-          css('%$css%')
-        ]
+        css('%$css%')
+      ]
     }),
     delay(500),
     dialog.closeDialogById('highlight-dialog')
@@ -404,14 +396,14 @@ component('eventTracker.highlightDialogStyle', {
 component('studio.sourceCtxView', {
   type: 'control',
   params: [
-    {id: 'srcCtx'},
+    {id: 'srcCtx'}
   ],
   impl: controlWithCondition('%$srcCtx/cmpCtx%', group({
     controls: [
-      controlWithCondition('%$stackItems/length% == 0',studio.singleSourceCtxView('%$srcCtx%')),
+      controlWithCondition('%$stackItems/length% == 0', studio.singleSourceCtxView('%$srcCtx%')),
       controlWithCondition('%$stackItems/length% > 0', group({
-          style: group.sectionExpandCollapse(studio.singleSourceCtxView('%$srcCtx%')),
-          controls: itemlist({items: '%$stackItems%', controls: studio.singleSourceCtxView('%%')}),
+        style: group.sectionExpandCollapse(studio.singleSourceCtxView('%$srcCtx%')),
+        controls: itemlist({ items: '%$stackItems%', controls: studio.singleSourceCtxView('%%') })
       }))
     ],
     features: variable('stackItems', studio.stackItems('%$srcCtx%'))
@@ -421,24 +413,24 @@ component('studio.sourceCtxView', {
 component('studio.singleSourceCtxView', {
   type: 'control',
   params: [
-    {id: 'srcCtx'},
+    {id: 'srcCtx'}
   ],
   impl: button({
-          title: ({},{},{srcCtx}) => {
+    title: ({},{},{srcCtx}) => {
             if (!srcCtx) return ''
             const path = srcCtx.path || ''
             const profile = path && jb.tgp.valOfPath(path)
             const pt = profile && profile.$ || ''
             const ret = `${path.split('~')[0]}:${pt}`
-            return ret.replace(/feature\./g,'').replace(/front.nd\./g,'').replace(/\.action/g,'')
+            return ret.replace(/feature./g,'').replace(/front.nd./g,'').replace(/.action/g,'')
           },
-          action: eventTracker.highlightEvent('%%'),
-          style: button.hrefText(),
-          features: [
-            feature.hoverTitle('%$srcCtx/path%'),
-            button.ctrlAction(studio.gotoSource('%$srcCtx/path%', true))
-          ]
-    }),
+    action: eventTracker.highlightEvent('%%'),
+    style: button.hrefText(),
+    features: [
+      feature.hoverTitle('%$srcCtx/path%'),
+      button.ctrlAction(studio.gotoSource('%$srcCtx/path%', true))
+    ]
+  })
 })
 
 component('studio.stackItems', {
@@ -472,41 +464,34 @@ component('eventTracker.compInspector', {
       style: chromeDebugger.sectionsExpandCollapse(),
       controls: [
         text('%$cmp/cmpId%;%$cmp/ver% -- %$cmp/ctx/path%', '%$cmp/ctx/profile/$%'),
-        table({
-            title: 'state',
-            items: unique({items: list(keys('%$cmp/state%'),keys('%$elem/_component/state%'))}),
-            controls: [
-             text('%%', ''),
-             text('%$elem/_component/state/{%%}%', 'front end'),
-             text('%$cmp/state/{%%}%', 'back end'),
-            ],
+        table('state', {
+          items: unique({ items: list(keys('%$cmp/state%'), keys('%$elem/_component/state%')) }),
+          controls: [
+          text('%%', ''),
+          text('%$elem/_component/state/{%%}%', 'front end'),
+          text('%$cmp/state/{%%}%', 'back end')
+        ]
         }),
-        editableText({
-            title: 'source',
-            databind: tgp.profileAsText('%$cmp/ctx/path%'),
-            style: editableText.codemirror({height: '100'}),
-            features: codemirror.fold()            
+        editableText('source', tgp.profileAsText('%$cmp/ctx/path%'), {
+          style: editableText.codemirror({ height: '100' }),
+          features: codemirror.fold()
         }),
-        table({
-          title: 'methods',
+        table('methods', {
           items: '%$cmp/method%',
           controls: [
-            text('%id%', 'method'),
-            studio.sourceCtxView('%ctx%')
-          ],
+          text('%id%', 'method'),
+          studio.sourceCtxView('%ctx%')
+        ],
           style: table.plain(true)
         }),
-        tableTree({
-            title: 'rendering props',
-            treeModel: tree.jsonReadOnly('%$cmp/renderProps%'),
-            leafFields: text('%val%', 'value'),
-            chapterHeadline: text(tree.lastPathElement('%path%'))
-        }),
-        //tree('raw', tree.jsonReadOnly('%$cmp%'))
+        tableTree('rendering props', tree.jsonReadOnly('%$cmp/renderProps%'), {
+          leafFields: text('%val%', 'value'),
+          chapterHeadline: text(tree.lastPathElement('%path%'))
+        })
       ]
     }),
     features: [
-      variable('elem', eventTracker.elemOfCmp('%$cmp%')),
+      variable('elem', eventTracker.elemOfCmp('%$cmp%'))
     ]
   })
 })
@@ -514,7 +499,7 @@ component('eventTracker.compInspector', {
 component('chromeDebugger.icon', {
   type: 'button.style',
   params: [
-      {id: 'position', as: 'string', defaultValue: '0px 144px'}
+    {id: 'position', as: 'string', defaultValue: '0px 144px'}
   ],
   impl: customStyle({
     template: (cmp,{title},h) => h('div',{onclick: true, title}),
@@ -528,18 +513,16 @@ component('chromeDebugger.icon', {
 
 component('chromeDebugger.sectionsExpandCollapse', {
   type: 'group.style',
-  impl: group.sectionsExpandCollapse({
-      autoExpand: true,
-      titleStyle: text.span(),
-      toggleStyle: editableBoolean.expandCollapseWithUnicodeChars(),
-      titleGroupStyle: styleWithFeatures(group.div(), features(
-        css.class('expandable-view-title'),
-        css('~ i { margin-top: 5px }'),
-        css('text-transform: capitalize')
-      )),
-      innerGroupStyle: styleWithFeatures(group.div(), features(
-        css.margin({bottom: 5}),
-      ))
+  impl: group.sectionsExpandCollapse(true, text.span(), {
+    toggleStyle: editableBoolean.expandCollapseWithUnicodeChars(),
+    titleGroupStyle: styleWithFeatures(group.div(), {
+    features: features(
+    css.class('expandable-view-title'),
+    css('~ i { margin-top: 5px }'),
+    css('text-transform: capitalize')
+  )
+  }),
+    innerGroupStyle: styleWithFeatures(group.div(), { features: features(css.margin({ bottom: 5 })) })
   })
 })
 
@@ -550,10 +533,8 @@ component('chromeDebugger.toggleStyle', {
 
 component('studio.openEventTracker', {
   type: 'action',
-  impl: openDialog({
-    style: dialog.studioFloating({id: 'event-tracker', width: '700', height: '400'}),
-    content: studio.eventTracker(),
-    title: 'Spy',
+  impl: openDialog('Spy', studio.eventTracker(), {
+    style: dialog.studioFloating('event-tracker', '700', { height: '400' }),
     features: dialogFeature.resizer()
   })
 })
@@ -572,7 +553,7 @@ component('eventTracker.codeSize', {
 component('eventTracker.clearSpyLog', {
   type: 'action',
   params: [
-    {id: 'spy' }
+    {id: 'spy'}
   ],
   impl: runActions(
     Var('items', eventTracker.eventItems('%$spy%')),
@@ -582,5 +563,6 @@ component('eventTracker.clearSpyLog', {
         jb.spy.clear(spy)
       else
         spy.logs.splice(0,lastGroupIndex-1)
-  })
+  }
+  )
 })

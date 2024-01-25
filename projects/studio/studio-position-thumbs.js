@@ -38,10 +38,7 @@ component('contentEditable.effectiveProp', {
   params: [
     {id: 'axis', as: 'string', options: 'x,y'}
   ],
-  impl: firstSucceeding(
-    '%$studio/dragPos/prop%',
-    If('axis==\"x\"', 'paddingRight', 'paddingBottom')
-  )
+  impl: firstSucceeding('%$studio/dragPos/prop%', If('axis=="x"', 'paddingRight', 'paddingBottom'))
 })
 
 component('contentEditable.actionIcon', {
@@ -67,25 +64,19 @@ component('contentEditable.positionButton', {
   ],
   impl: group({
     controls: [
-      button({
-        title: '',
+      button('', {
         style: button.mdcIcon(contentEditable.actionIcon('%$cssProp%')),
         raised: equals(contentEditable.effectiveProp(), '%$cssProp%'),
         features: css(
-          If(
-            '%$axis%==y',
-            'padding-top: 20px; padding-bottom: 20px; margin-top: -20px',
-            'padding-left: 20px; padding-right: 20px; margin-left: -20px'
-          )
-        )
+        If({
+          condition: '%$axis%==y',
+          then: 'padding-top: 20px; padding-bottom: 20px; margin-top: -20px',
+          Else: 'padding-left: 20px; padding-right: 20px; margin-left: -20px'
+        })
+      )
       })
     ],
-    features: feature.onHover({
-      action: runActions(
-        contentEditable.writePosToScript(),
-        writeValue('%$studio/dragPos/prop%', '%$cssProp%')
-      )
-    })
+    features: feature.onHover(runActions(contentEditable.writePosToScript(), writeValue('%$studio/dragPos/prop%', '%$cssProp%')))
   })
 })
 
@@ -95,26 +86,23 @@ component('contentEditable.positionThumbs', {
     {id: 'axis', as: 'string', options: 'x,y'}
   ],
   impl: group({
-    layout: layout.flex({direction: If('%$axis%==y', 'column', 'row'), alignItems: 'center'}),
+    layout: layout.flex(If('%$axis%==y', 'column', 'row'), { alignItems: 'center' }),
     controls: [
       group({
-        layout: layout.flex({direction: If('%$axis%==y', 'column', 'row'), alignItems: 'center'}),
-        controls: control.icon({
-          icon: 'radio_button_unchecked',
+        layout: layout.flex(If('%$axis%==y', 'column', 'row'), { alignItems: 'center' }),
+        controls: control.icon('radio_button_unchecked', {
           type: 'mdc',
-          features: [contentEditable.dragableThumb('%$axis%'), css('font-size: 14px')]
+          features: [
+          contentEditable.dragableThumb('%$axis%'),
+          css('font-size: 14px')
+        ]
         })
       }),
       group({
-        layout: layout.grid({
-          columnSizes: If('%$axis%==x', list('30', '40', '100'), list('168'))
-        }),
+        layout: layout.grid(If('%$axis%==x', list('30','40','100'), list('168'))),
         controls: [
           group({
-            layout: layout.grid({
-              columnSizes: If('%$axis%==y', list('24', '24', '24', '24', '24', '24', '24'), list('24')),
-              rowGap: '10px'
-            }),
+            layout: layout.grid(If('%$axis%==y', list('24','24','24','24','24','24','24'), list('24')), { rowGap: '10px' }),
             controls: [
               contentEditable.positionButton('margin%$sideEnd%', '%$axis%'),
               contentEditable.positionButton('padding%$sideEnd%', '%$axis%'),
@@ -127,34 +115,24 @@ component('contentEditable.positionThumbs', {
           }),
           text({
             text: pipeline(
-              Var(
-                  'inspectElemStyle',
-                  ctx => getComputedStyle(jb.ui.contentEditable.current)
-                ),
+              Var('inspectElemStyle', ctx => getComputedStyle(jb.ui.contentEditable.current)),
               Var('prop', contentEditable.effectiveProp('%$axis%')),
               '%$inspectElemStyle/{%$prop%}%',
               removeSuffix('px')
             ),
             features: css(If('%$axis%==x', 'align-self: center', 'padding-top: 5px'))
           }),
-          text({
-            text: contentEditable.effectiveProp('%$axis%'),
+          text(contentEditable.effectiveProp('%$axis%'), {
             features: css(If('%$axis%==x', 'align-self: center;', ''))
           })
         ],
         features: [
-          css(
-            If(
-              '%$axis%==y',
-              'margin-top: -10px; width: 168px;text-align: center',
-              'height: 182px'
-            )
-          ),
+          css(If('%$axis%==y', 'margin-top: -10px; width: 168px;text-align: center', 'height: 182px')),
           feature.if('%$studio/dragPos/{%$axis%}-active%'),
-          watchRef({ref: '%$studio/dragPos%', includeChildren: 'yes'}),
-          variable({name: 'sizer', value: If('%$axis%==x', 'width', 'height')}),
-          variable({name: 'sideStart', value: If('%$axis%==x', 'Left', 'Top')}),
-          variable({name: 'sideEnd', value: If('%$axis%==x', 'Right', 'Bottom')})
+          watchRef('%$studio/dragPos%', 'yes'),
+          variable('sizer', If('%$axis%==x', 'width', 'height')),
+          variable('sideStart', If('%$axis%==x', 'Left', 'Top')),
+          variable('sideEnd', If('%$axis%==x', 'Right', 'Bottom'))
         ]
       })
     ]
@@ -169,21 +147,20 @@ component('contentEditable.openPositionThumbs', {
   impl: runActions(
     delay(100),
     openDialog({
-        id: 'positionThumbs',
-        style: contentEditable.positionThumbsStyle(),
-        content: contentEditable.positionThumbs('%$axis%'),
-        features: [
-          watchRef('%$studio/dragPos/prop%'),
-          css(
-            `~ button>i {font-size: 24px }
+      content: contentEditable.positionThumbs('%$axis%'),
+      style: contentEditable.positionThumbsStyle(),
+      id: 'positionThumbs',
+      features: [
+        watchRef('%$studio/dragPos/prop%'),
+        css(
+          `~ button>i {font-size: 24px }
             ~ button.raised>i { border-bottom: 2px solid #6200ee; }
             {display: flex; align-items: center;}
           `
-          ),
-          css(If('%$axis%==y', '{flex-direction: column}')),
-          css(If('%$axis%==y', '~ i {cursor: row-resize}', '~ i {cursor: col-resize}')),
-          css(
-            (ctx,{},{axis}) => {
+        ),
+        css(If('%$axis%==y', '{flex-direction: column}')),
+        css(If('%$axis%==y', '~ i {cursor: row-resize}', '~ i {cursor: col-resize}')),
+        css((ctx,{},{axis}) => {
             const el = jb.ui.contentEditable.current
             const elemRect = el.getBoundingClientRect()
             const iconOffset = [-3, -8]
@@ -192,10 +169,9 @@ component('contentEditable.openPositionThumbs', {
             const width = axis == 'y' ? `width: ${elemRect.width}px;` : ''
             const height = axis == 'x' ? `height: ${elemRect.height}px;` : ''
             return `left: ${left}; top: ${top}; ${width}${height}`
-          }
-          )
-        ]
-      })
+          })
+      ]
+    })
   )
 })
 
@@ -215,7 +191,7 @@ component('contentEditable.dragableThumb', {
   params: [
     {id: 'axis', as: 'string', options: 'x,y'}
   ],
-  impl: frontEnd.init( (ctx,{cmp},{axis})=> {
+  impl: frontEnd.init((ctx,{cmp},{axis})=> {
     const el = jb.ui.contentEditable.current
     const prop = () => ctx.run(contentEditable.effectiveProp(axis))
     const {pipe,takeUntil,merge,Do, flatMap, map, last, forEach} = jb.callbag
@@ -264,8 +240,7 @@ component('contentEditable.dragableThumb', {
       if (getVal() != requested)
         setVal(current) // was not effective, so rollback
     }
-  }
-  )
+  })
 })
 
 component('contentEditable.positionThumbsStyle', {

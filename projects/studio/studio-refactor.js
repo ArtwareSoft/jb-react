@@ -3,45 +3,39 @@ component('studio.openExtractComponent', {
   params: [
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
-  impl: runActions( writeValue('%$studio/refactor',obj()),
-   openDialog({
-    style: dialog.dialogOkCancel(),
-    content: studio.extractComponentDialog('%$path%'),
-    title: 'Extract Component',
-    onOK: studio.calcExtractComponent({
-        path: '%$path%',
-        compName: '%$studio/refactor/compName%',
-        description: '%$studio/refactor/description%',
-        file: '%$studio/refactor/file%',
-        activate: true
-      }),
-    modal: true,
-    features: [
-      dialogFeature.resizer(),
-      css.width('730')
-    ]
-  }))
+  impl: runActions(
+    writeValue('%$studio/refactor', obj()),
+    openDialog('Extract Component', studio.extractComponentDialog('%$path%'), {
+      style: dialog.dialogOkCancel(),
+      onOK: studio.calcExtractComponent('%$path%', '%$studio/refactor/compName%', {
+      description: '%$studio/refactor/description%',
+      file: '%$studio/refactor/file%',
+      activate: true
+    }),
+      features: [dialogFeature.resizer(), css.width('730')]
+    })
+  )
 })
 
 component('studio.canExtractParam', {
-	type: 'boolean',
-	params: [
-        {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()},
-    ],
-    impl: (ctx,path) => path.match(/~/) && !path.match(/~impl$/)
+  type: 'boolean',
+  params: [
+    {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
+  ],
+  impl: (ctx,path) => path.match(/~/) && !path.match(/~impl$/)
 })
 
 component('studio.calcExtractComponent', {
-	description: 'returns the suggested component comp with save action',
-	type: 'data',
-	params: [
-        {id: 'path', as: 'string', mandatory: true},
-		{id: 'compName', as: 'string', mandatory: true },
-		{id: 'description', as: 'string' },
-		{id: 'file', as: 'string' },
-		{id: 'activate', as: 'boolean' },
-	],
-	impl: (ctx,path,compName,description,file,activate) => {
+  description: 'returns the suggested component comp with save action',
+  type: 'data',
+  params: [
+    {id: 'path', as: 'string', mandatory: true},
+    {id: 'compName', as: 'string', mandatory: true},
+    {id: 'description', as: 'string'},
+    {id: 'file', as: 'string'},
+    {id: 'activate', as: 'boolean', type: 'boolean'}
+  ],
+  impl: (ctx,path,compName,description,file,activate) => {
     const parentComp = jb.tgp.getComp(path.split('~')[0])
     const parentParams = parentComp.params || []
     const impl = jb.tgp.clone(jb.tgp.valOfPath(path))
@@ -73,93 +67,84 @@ component('studio.calcExtractComponent', {
 })
 
 component('studio.extractComponentDialog', {
-    type: 'control',
-    params: [
-      {id: 'path', as: 'string', mandatory: true}
-    ],
-    impl: group({
-      title: '',
-      layout: layout.vertical('40'),
-      controls: [
-        group({
-          layout: layout.horizontal('10'),
-          controls: [
-            editableText({
-              title: 'component name',
-              databind: '%$studio/refactor/compName%',
-              features: [
-                feature.initValue('%$studio/refactor/compName%','%$studio/project%.cmp1'),
-                validation(matchRegex('^[A-Za-z_][\\.A-Za-z_0-9]*$', '%%'), 'invalid comp name'),
-                validation(
-                  not(inGroup(() => Object.keys(jb.studio.previewjb.comps))),
-                  'component \"%%\" already exists'
-                )
-              ]
-            }),
-            editableText({
-              title: 'description',
-              databind: '%$studio/refactor/description%',
-              style: editableText.mdcInput('300')
-            }),
-            picklist({
-              title: 'file',
-              databind: '%$studio/refactor/file%',
-              options: picklist.options(sourceEditor.filesOfProject()),
-              style: picklist.mdcSelect('200'),
-              features: [css('~ .mdc-select__anchor { background-color: white !important }')]
+  type: 'control',
+  params: [
+    {id: 'path', as: 'string', mandatory: true}
+  ],
+  impl: group({
+    title: '',
+    layout: layout.vertical('40'),
+    controls: [
+      group({
+        layout: layout.horizontal('10'),
+        controls: [
+          editableText('component name', '%$studio/refactor/compName%', {
+            features: [
+            feature.initValue('%$studio/refactor/compName%', '%$studio/project%.cmp1'),
+            validation(matchRegex('^[A-Za-z_][\.A-Za-z_0-9]*$', '%%'), 'invalid comp name'),
+            validation({
+              validCondition: not(inGroup(() => Object.keys(jb.studio.previewjb.comps))),
+              errorMessage: 'component "%%" already exists'
             })
           ]
-        }),
-        editableText({
-          title: 'content',
-          databind: pipeline(studio.calcExtractComponent({
-              path: '%$path%',
-              compName: '%$studio/refactor/compName%',
-              description: '%$studio/refactor/description%',
-              file: '%$studio/refactor/file%'
-            }), prettyPrint()),
-          style: editableText.codemirror({}),
-          features: watchRef({ref: '%$studio/refactor%', includeChildren: 'yes'})
-        })
-      ],
-    })
+          }),
+          editableText('description', '%$studio/refactor/description%', {
+            style: editableText.mdcInput('300')
+          }),
+          picklist('file', '%$studio/refactor/file%', {
+            options: picklist.options(sourceEditor.filesOfProject()),
+            style: picklist.mdcSelect('200'),
+            features: [
+            css('~ .mdc-select__anchor { background-color: white !important }')
+          ]
+          })
+        ]
+      }),
+      editableText({
+        title: 'content',
+        databind: pipeline(
+          studio.calcExtractComponent('%$path%', '%$studio/refactor/compName%', {
+            description: '%$studio/refactor/description%',
+            file: '%$studio/refactor/file%'
+          }),
+          prettyPrint()
+        ),
+        style: editableText.codemirror(),
+        features: watchRef('%$studio/refactor%', 'yes')
+      })
+    ]
+  })
 })
 
 // *********** extract param
 
 component('studio.openExtractParam', {
-    type: 'action',
-    params: [
-        {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()},
-    ],
-    impl: runActions(
-    writeValue('%$studio/refactor',obj()),
-    openDialog({
-        style: dialog.dialogOkCancel(),
-        content: studio.extractParamDialog('%$path%'),
-        title: 'Extract Parameter',
-        onOK: studio.calcExtractParam({
-            path: '%$path%',
-            id: '%$studio/refactor/paramName%',
-            description: '%$studio/refactor/description%',
-            activate: true
-        }),
-        modal: true,
-        features: [dialogFeature.resizer(), 
-            css.width('500')
-        ]
-    }))
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
+  ],
+  impl: runActions(
+    writeValue('%$studio/refactor', obj()),
+    openDialog('Extract Parameter', studio.extractParamDialog('%$path%'), {
+      style: dialog.dialogOkCancel(),
+      onOK: studio.calcExtractParam('%$path%', '%$studio/refactor/paramName%', {
+      description: '%$studio/refactor/description%',
+      activate: true
+    }),
+      features: [dialogFeature.resizer(), css.width('500')]
+    })
+  )
 })
 
 component('studio.calcExtractParam', {
-	type: 'data',
-	params: [
-        {id: 'path', as: 'string', mandatory: true},
-		{id: 'id', as: 'string' },
-        {id: 'description', as: 'string' },
-		{id: 'activate', as: 'boolean' },
-	],
-	impl: (ctx,path,id,description,activate) => {
+  type: 'data',
+  params: [
+    {id: 'path', as: 'string', mandatory: true},
+    {id: 'id', as: 'string'},
+    {id: 'description', as: 'string'},
+    {id: 'activate', as: 'boolean', type: 'boolean'}
+  ],
+  impl: (ctx,path,id,description,activate) => {
         const compName = path.split('~')[0]
         const parentComp = jb.tgp.getComp(compName)
         const type = ((jb.tgp.paramDef(path) || {}).type || '').split('[')[0]
@@ -193,24 +178,13 @@ component('studio.extractParamDialog', {
       group({
         layout: layout.horizontal('10'),
         controls: [
-          editableText({
-            title: 'param name',
-            databind: '%$studio/refactor/paramName%',
+          editableText('param name', '%$studio/refactor/paramName%', {
             features: [
-              feature.initValue('%$studio/refactor/paramName%',
-                    pipeline(
-                      split({separator: '~', text: '%$path%'}),
-                      filter(not(matchRegex('[0-9]+'))),
-                      last(),
-                      removeSuffix('s')
-                    )
-              ),
-              validation(matchRegex('^[A-Za-z_][\\.A-Za-z_0-9]*$', '%%'), 'invalid param name')
-            ]
+            feature.initValue('%$studio/refactor/paramName%', pipeline(split('~', { text: '%$path%' }), filter(not(matchRegex('[0-9]+'))), last(), removeSuffix('s'))),
+            validation(matchRegex('^[A-Za-z_][\.A-Za-z_0-9]*$', '%%'), 'invalid param name')
+          ]
           }),
-          editableText({
-            title: 'description',
-            databind: '%$studio/refactor/description%',
+          editableText('description', '%$studio/refactor/description%', {
             style: editableText.mdcInput('300')
           })
         ]
@@ -218,15 +192,13 @@ component('studio.extractParamDialog', {
       editableText({
         title: 'content',
         databind: pipeline(
-          studio.calcExtractParam({
-              path: '%$path%',
-              id: '%$studio/refactor/paramName%',
-              description: '%$studio/refactor/description%'
-            }),
+          studio.calcExtractParam('%$path%', '%$studio/refactor/paramName%', {
+            description: '%$studio/refactor/description%'
+          }),
           prettyPrint()
         ),
-        style: editableText.codemirror({}),
-        features: watchRef({ref: '%$studio/refactor%', includeChildren: 'yes'})
+        style: editableText.codemirror(),
+        features: watchRef('%$studio/refactor%', 'yes')
       })
     ]
   })
@@ -235,20 +207,20 @@ component('studio.extractParamDialog', {
 // ** make local
 
 component('studio.canMakeLocal', {
-	type: 'boolean',
-	params: [
-        {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()},
-    ],
-    impl: ({},path) => jb.utils.isObject(jb.path(jb.tgp.compOfPath(path),'impl'))
+  type: 'boolean',
+  params: [
+    {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
+  ],
+  impl: ({},path) => jb.utils.isObject(jb.path(jb.tgp.compOfPath(path),'impl'))
 })
 
 component('studio.calcMakeLocal', {
-    type: 'data,action',
-    params: [
-      {id: 'path', as: 'string'},
-      {id: 'activate', as: 'boolean' },
-    ],
-    impl: (ctx,path,activate) => {
+  type: 'data,action',
+  params: [
+    {id: 'path', as: 'string'},
+    {id: 'activate', as: 'boolean', type: 'boolean'}
+  ],
+  impl: (ctx,path,activate) => {
         const comp = jb.tgp.compOfPath(path)
         const valToReplace = jb.tgp.valOfPath(path)
         const impl = jb.tgp.clone(comp.impl)
@@ -332,24 +304,17 @@ component('studio.calcMakeLocal', {
 })
 
 component('studio.openMakeLocal', {
-    type: 'action',
-    params: [
-        {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()},
-    ],
-    impl: runActions(
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
+  ],
+  impl: runActions(
     openDialog({
-        style: dialog.dialogOkCancel(),
-        content: editableText({
-            title: 'content',
-            databind: pipeline(
-              studio.calcMakeLocal({path: '%$path%' }),
-              prettyPrint()
-            ),
-            style: editableText.codemirror({}),
-        }),
-        title: 'Make Local',
-        onOK: studio.calcMakeLocal({ path: '%$path%', activate: true }),
-        modal: true,
-        features: [dialogFeature.resizer(), css.width('500') ]
-    }))
+      title: 'Make Local',
+      content: editableText('content', pipeline(studio.calcMakeLocal('%$path%'), prettyPrint()), { style: editableText.codemirror() }),
+      style: dialog.dialogOkCancel(),
+      onOK: studio.calcMakeLocal('%$path%', true),
+      features: [dialogFeature.resizer(), css.width('500')]
+    })
+  )
 })

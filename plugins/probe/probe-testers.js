@@ -8,14 +8,14 @@ component('suggestionsTest', {
   ],
   impl: dataTest({
     calculate: pipe(
-      probe.suggestions(
-        '%$path%',
-        false,
-        obj(
+      probe.suggestions({
+        probePath: '%$path%',
+        expressionOnly: false,
+        input: obj(
           prop('value', '%$expression%'),
           prop('selectionStart', ({},{},{expression, selectionStart}) => selectionStart == -1 ? expression.length : selectionStart)
         )
-      ),
+      }),
       log('suggestions test', obj(prop('result', '%%'))),
       '%options/text%',
       join(',')

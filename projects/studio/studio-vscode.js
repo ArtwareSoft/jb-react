@@ -1,7 +1,7 @@
 
-component('studio.inVscode',{
-    type: 'boolean',
-    impl: () => jb.frame.jbInvscode
+component('studio.inVscode', {
+  type: 'boolean',
+  impl: () => jb.frame.jbInvscode
 })
 
 // jb.component('vscode.openPreviewPanelOld', {

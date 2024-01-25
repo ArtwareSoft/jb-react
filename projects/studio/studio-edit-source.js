@@ -56,7 +56,9 @@ component('studio.gotoSource', {
     {id: 'path', as: 'string'},
     {id: 'chromeDebugger', as: 'boolean', type: 'boolean'}
   ],
-  impl: runActions(Var('filePos', studio.filePosOfPath('%$path%')), ({},{filePos},{chromeDebugger}) => {
+  impl: runActions(
+    Var('filePos', studio.filePosOfPath('%$path%')),
+    ({},{filePos},{chromeDebugger}) => {
       if (jb.frame.jbInvscode)
         jb.vscode['openEditor'](filePos)
       else if (chromeDebugger)
@@ -64,7 +66,8 @@ component('studio.gotoSource', {
           location: [ jb.frame.location.origin + '/' + filePos.fn, filePos.pos[0], filePos.pos[1]] }})
       else
         fetch(`/?op=gotoSource&path=${filePos.fn}:${filePos.pos[0]}`)
-  })
+  }
+  )
 })
 
 component('studio.editableSource', {
@@ -75,10 +78,10 @@ component('studio.editableSource', {
   ],
   impl: editableText({
     databind: tgp.profileAsText('%$path%'),
-    style: editableText.codemirror({height: '%$height%'}),
+    style: editableText.codemirror({ height: '%$height%' }),
     features: [
       codemirror.initTgpTextEditor(),
-      css.height({height: '%$height%', minMax: 'max'}),
+      css.height('%$height%', { minMax: 'max' }),
       feature.onKey('Ctrl-I', studio.openJbEditor('%$path%')),
       feature.onKey('Enter', studio.openEditProperty('%$cursorPath%'))
     ]
@@ -90,15 +93,17 @@ component('studio.editSource', {
   params: [
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
-  impl: If('%$studio/vscode%', studio.gotoSource('%$path%'), openDialog({
-    style: dialog.editSourceStyle({id: 'editor', width: 600}),
-    content: studio.editableSource('%$path%'),
-    title: tgp.shortTitle('%$path%'),
-    features: [
+  impl: If({
+    condition: '%$studio/vscode%',
+    then: studio.gotoSource('%$path%'),
+    Else: openDialog(tgp.shortTitle('%$path%'), studio.editableSource('%$path%'), {
+      style: dialog.editSourceStyle('editor', 600),
+      features: [
       css('.jb-dialog-content-parent {overflow-y: hidden}'),
       dialogFeature.resizer(true)
     ]
-  }))
+    })
+  })
 })
 
 component('studio.viewAllFiles', {
@@ -107,30 +112,22 @@ component('studio.viewAllFiles', {
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
   impl: openDialog({
-    style: dialog.studioFloating({id: 'edit-source', width: 600}),
+    title: '%$studio/project% files',
     content: group({
       title: 'project files',
       controls: [
-        picklist({
-          databind: '%$file%',
-          options: picklist.options(keys('%$content/files%'))
-        }),
-        editableText({
-          title: '',
-          databind: property('%$file%', '%$content/files%'),
+        picklist({ databind: '%$file%', options: picklist.options(keys('%$content/files%')) }),
+        editableText('', property('%$file%', '%$content/files%'), {
           style: editableText.studioCodemirrorTgp(),
           features: watchRef('%$file%')
         })
       ],
       features: [
-        watchable('file', pipeline(studio.projectsDir(),'%%/%$studio/project%/index.html')),
-        group.wait({
-          for: ctx => jb.studio.projectUtils.projectContent(ctx),
-          varName: 'content'
-        })
+        watchable('file', pipeline(studio.projectsDir(), '%%/%$studio/project%/index.html')),
+        group.wait(ctx => jb.studio.projectUtils.projectContent(ctx), { varName: 'content' })
       ]
     }),
-    title: '%$studio/project% files',
+    style: dialog.studioFloating('edit-source', 600),
     features: [
       css('.jb-dialog-content-parent {overflow-y: hidden}'),
       dialogFeature.resizer(true)
@@ -145,22 +142,8 @@ component('studio.gotoEditorSecondary', {
   ],
   impl: menu.action({
     vars: [
-      Var(
-        'baseComp',
-        split({
-          separator: '~',
-          text: '%$path%',
-          part: 'first'
-        })
-      ),
-      Var(
-        'shortBaseComp',
-        split({
-          separator: '>',
-          text: '%$baseComp%',
-          part: 'last'
-        })
-      )
+      Var('baseComp', split('~', { text: '%$path%', part: 'first' })),
+      Var('shortBaseComp', split('>', { text: '%$baseComp%', part: 'last' }))
     ],
     title: 'Goto editor: %$shortBaseComp%',
     action: studio.gotoSource('%$baseComp%'),
@@ -174,7 +157,7 @@ component('studio.gotoEditorFirst', {
     {id: 'path', as: 'string'}
   ],
   impl: menu.action({
-    title: pipeline(tgp.shortCompName('%$path%'), 'Goto editor: %%'), 
+    title: pipeline(tgp.shortCompName('%$path%'), 'Goto editor: %%'),
     action: studio.gotoSource(tgp.compName('%$path%')),
     shortcut: 'Alt+E',
     showCondition: notEmpty(tgp.compName('%$path%'))
@@ -186,9 +169,7 @@ component('studio.gotoEditorOptions', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: menu.endWithSeparator(
-    [studio.gotoEditorFirst('%$path%'), studio.gotoEditorSecondary('%$path%')]
-  )
+  impl: menu.endWithSeparator(studio.gotoEditorFirst('%$path%'), studio.gotoEditorSecondary('%$path%'))
 })
 
 component('studio.openEditProperty', {
@@ -196,32 +177,20 @@ component('studio.openEditProperty', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: action.switch(
-    Var(
-      'pathType',
-      split({
-        separator: '~!',
-        text: '%$path%',
-        part: 'last'
-      })
-    ),
-    Var(
-      'actualPath',
-      split({
-        separator: '~!',
-        text: '%$path%',
-        part: 'first'
-      })
-    ),
-    Var('parentPath', tgp.parentPath('%$actualPath%')),
-    Var('paramDef', tgp.paramDef('%$actualPath%')),
-    [
-      action.switchCase(
-        or(
-          startsWith('obj-separator', '%$pathType%'),
-          inGroup(list('close-profile', 'open-profile', 'open-by-value', 'close-by-value'), '%$pathType%')
+  impl: action.switch({
+    vars: [
+      Var('pathType', split('~!', { text: '%$path%', part: 'last' })),
+      Var('actualPath', split('~!', { text: '%$path%', part: 'first' })),
+      Var('parentPath', tgp.parentPath('%$actualPath%')),
+      Var('paramDef', tgp.paramDef('%$actualPath%'))
+    ],
+    cases: [
+      action.switchCase({
+        condition: or(
+          startsWith('obj-separator', { text: '%$pathType%' }),
+          inGroup(list('close-profile','open-profile','open-by-value','close-by-value'), { item: '%$pathType%' })
         ),
-        openDialog({
+        action: openDialog({
           content: sourceEditor.addProp('%$actualPath%'),
           style: dialog.studioJbEditorPopup(),
           features: [
@@ -230,81 +199,67 @@ component('studio.openEditProperty', {
             dialogFeature.onClose(sourceEditor.refreshEditor())
           ]
         })
-      ),
+      }),
       action.switchCase(endsWith('$vars', '%$path%')),
-      action.switchCase(
-        '%$paramDef/options%',
-        openDialog({
-          content: group({
-            controls: [
-              studio.jbFloatingInputRich('%$actualPath%')
-            ],
-            features: [
-              feature.onEsc(dialog.closeDialog(true)),
-              feature.onEnter(dialog.closeDialog(true))
-            ]
-          }),
-          style: dialog.studioJbEditorPopup(),
+      action.switchCase('%$paramDef/options%', openDialog({
+        content: group({
+          controls: [
+            studio.jbFloatingInputRich('%$actualPath%')
+          ],
           features: [
-            studio.nearLauncherPosition(),
-            dialogFeature.autoFocusOnFirstInput(),
-            dialogFeature.onClose(sourceEditor.refreshEditor())
+            feature.onEsc(dialog.closeDialog(true)),
+            feature.onEnter(dialog.closeDialog(true))
           ]
-        })
-      ),
-      action.switchCase(
-        tgp.isOfType('%$actualPath%', 'data,boolean'),
-        runActions(
+        }),
+        style: dialog.studioJbEditorPopup(),
+        features: [
+          studio.nearLauncherPosition(),
+          dialogFeature.autoFocusOnFirstInput(),
+          dialogFeature.onClose(sourceEditor.refreshEditor())
+        ]
+      })),
+      action.switchCase({
+        condition: tgp.isOfType('%$actualPath%', 'data,boolean'),
+        action: runActions(
           Var('sugarArrayPath', sourceEditor.firstParamAsArrayPath('%$actualPath%')),
-          Var(
-            'index',
-            data.switch(
-              [
-                data.case(equals('open-sugar', '%$pathType%'), 0),
-                data.case(equals('close-sugar', '%$pathType%'), count(tgp.val('%$sugarArrayPath%')))
-              ]
-            )
-          ),
+          Var('index', data.switch(
+            data.case(equals('open-sugar', '%$pathType%'), 0),
+            data.case(equals('close-sugar', '%$pathType%'), count(tgp.val('%$sugarArrayPath%')))
+          )),
           Var('actualPathHere', data.if(endsWith('-sugar', '%$pathType%'), '%$sugarArrayPath%~%$index%', '%$actualPath%')),
-          action.if(
-            endsWith('-sugar', '%$pathType%'),
-            tgp.addArrayItem({
-              path: '%$sugarArrayPath%',
-              toAdd: '',
-              index: '%$index%'
-            })
-          ),
+          action.if({
+            condition: endsWith('-sugar', '%$pathType%'),
+            then: tgp.addArrayItem('%$sugarArrayPath%', '', { index: '%$index%' })
+          }),
           openDialog({
             content: studio.jbFloatingInput('%$actualPathHere%'),
             style: dialog.studioJbEditorPopup(),
             features: [
               dialogFeature.autoFocusOnFirstInput(),
               studio.nearLauncherPosition(),
-              dialogFeature.onClose(
-                runActions(toggleBooleanValue('%$studio/jb_preview_result_counter%'), sourceEditor.refreshEditor())
-              )
+              dialogFeature.onClose(runActions(toggleBooleanValue('%$studio/jb_preview_result_counter%'), sourceEditor.refreshEditor()))
             ]
           })
         )
-      ),
-      action.switchCase(
-        Var('ptsOfType', tgp.PTsOfType(tgp.paramType('%$actualPath%'))),
-        '%$ptsOfType/length% == 1',
-        runActions(tgp.setComp('%$path%', '%$ptsOfType[0]%'), sourceEditor.refreshEditor())
-      ),
-      action.switchCase(
-        and(startsWith('open', '%$pathType%'), tgp.isArrayType('%$actualPath%')),
-        studio.openNewProfileDialog({
-          path: '%$actualPath%',
-          type: tgp.paramType('%$actualPath%'),
+      }),
+      action.switchCase({
+        vars: [
+          Var('ptsOfType', tgp.PTsOfType(tgp.paramType('%$actualPath%')))
+        ],
+        condition: '%$ptsOfType/length% == 1',
+        action: runActions(tgp.setComp('%$path%', '%$ptsOfType[0]%'), sourceEditor.refreshEditor())
+      }),
+      action.switchCase({
+        condition: and(startsWith('open', { text: '%$pathType%' }), tgp.isArrayType('%$actualPath%')),
+        action: studio.openNewProfileDialog('%$actualPath%', tgp.paramType('%$actualPath%'), {
           index: 0,
           mode: 'insert',
           onClose: sourceEditor.refreshEditor('%$actualPath%~0')
         })
-      ),
-      action.switchCase(
-        and(startsWith('close', '%$pathType%'), tgp.isArrayType('%$actualPath%')),
-        studio.openNewProfileDialog({
+      }),
+      action.switchCase({
+        condition: and(startsWith('close', { text: '%$pathType%' }), tgp.isArrayType('%$actualPath%')),
+        action: studio.openNewProfileDialog({
           vars: [
             Var('length', count(tgp.val('%$actualPath%')))
           ],
@@ -314,13 +269,13 @@ component('studio.openEditProperty', {
           mode: 'insert',
           onClose: sourceEditor.refreshEditor('%$actualPath%~%$length%')
         })
-      ),
-      action.switchCase(
-        and(startsWith('array-separator', '%$pathType%'), tgp.isArrayType('%$actualPath%')),
-        studio.openNewProfileDialog({
+      }),
+      action.switchCase({
+        condition: and(startsWith('array-separator', { text: '%$pathType%' }), tgp.isArrayType('%$actualPath%')),
+        action: studio.openNewProfileDialog({
           vars: [
             Var('index', (ctx,{actualPath}) => +actualPath.split('~').pop()+1),
-            Var('nextSiblingPath', pipeline(list('%$actualPath%', '%$index%'), join('~')))
+            Var('nextSiblingPath', pipeline(list('%$actualPath%','%$index%'), join('~')))
           ],
           path: '%$actualPath%',
           type: tgp.paramType('%$actualPath%'),
@@ -328,15 +283,13 @@ component('studio.openEditProperty', {
           mode: 'insert',
           onClose: sourceEditor.refreshEditor('%$nextSiblingPath%')
         })
-      )
+      })
     ],
-    studio.openNewProfileDialog({
-      path: '%$actualPath%',
-      type: tgp.paramType('%$actualPath%'),
+    defaultAction: studio.openNewProfileDialog('%$actualPath%', tgp.paramType('%$actualPath%'), {
       mode: 'update',
       onClose: sourceEditor.refreshEditor('%$actualPath%')
     })
-  )
+  })
 })
 
 // jb.component('sourceEditor.suggestions', {
@@ -370,38 +323,22 @@ component('sourceEditor.addProp', {
   ],
   impl: group({
     controls: [
-      editableText({
-        title: pipeline(tgp.compName('%$path%'), '%% properties'),
-        databind: '%$suggestionData/text%',
+      editableText(pipeline(tgp.compName('%$path%'), '%% properties'), '%$suggestionData/text%', {
         style: editableText.floatingInput(),
         features: [
-          feature.onKey(
-            'Enter',
-            runActions(
-              dialog.closeDialogById('studio-jb-editor-popup'),
-              studio.openEditProperty('%$path%~%$suggestionData/selected/id%'),
-              true
-            )
-          ),
-          // editableText.helperPopup({
-          //   control: sourceEditor.suggestionsItemlist('%$path%'),
-          //   popupId: 'suggestions',
-          //   popupStyle: dialog.popup(),
-          //   showHelper: true,
-          //   autoOpen: true,
-          //   onEsc: [dialog.closeDialogById('studio-jb-editor-popup'), popup.regainCanvasFocus()()]
-          // })
-        ]
+        feature.onKey('Enter', runActions(
+          dialog.closeDialogById('studio-jb-editor-popup'),
+          studio.openEditProperty('%$path%~%$suggestionData/selected/id%'),
+          true
+        ))
+      ]
       }),
-      text({text: '', features: css('{border: 1px solid white;}')})
+      text('', { features: css('{border: 1px solid white;}') })
     ],
     features: [
-      variable({
-        name: 'suggestionData',
-        value: {'$': 'object', selected: '', text: ''}
-      }),
-      css.padding({left: '4', right: '4'}),
-      css.margin({top: '-20', selector: '>*:last-child'})
+      variable('suggestionData', {'$': 'object', selected: '', text: ''}),
+      css.padding({ left: '4', right: '4' }),
+      css.margin('-20', { selector: '>*:last-child' })
     ]
   })
 })
@@ -437,72 +374,60 @@ component('sourceEditor.filesOfProject', {
 component('studio.githubHelper', {
   type: 'action',
   impl: openDialog({
-    style: dialog.studioFloating({id: 'github-helper', width: 600}),
+    title: 'github helper',
     content: group({
       controls: [
         group({
           title: 'properties',
-          layout: layout.flex({spacing: '100'}),
+          layout: layout.flex({ spacing: '100' }),
           controls: [
-            editableText({title: 'github username', databind: '%$properties/username%'}),
-            editableText({title: 'github repository', databind: '%$properties/repository%'})
+            editableText('github username', '%$properties/username%'),
+            editableText('github repository', '%$properties/repository%')
           ]
         }),
         group({
           controls: [
             group({
               title: 'share urls',
-              layout: layout.flex({justifyContent: 'flex-start', spacing: ''}),
+              layout: layout.flex({ justifyContent: 'flex-start', spacing: '' }),
               controls: [
                 html({
+                  html: '<a href="%$projectLink%" target="_blank" style="color:rgb(63,81,181)">share link: %$projectLink%</a>',
                   title: 'share link',
-                  html: '<a href=\"%$projectLink%\" target=\"_blank\" style=\"color:rgb(63,81,181)\">share link: %$projectLink%</a>',
                   features: css.width('350')
                 }),
-                html({
-                  title: 'share with studio link',
-                  html: '<a href=\"https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=%$projectLink%\" target=\"_blank\"  style=\"color:rgb(63,81,181)\">share with studio link</a>'
-                })
+                html('<a href="https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=%$projectLink%" target="_blank"  style="color:rgb(63,81,181)">share with studio link</a>', 'share with studio link')
               ],
               features: [
-                variable({
-                  name: 'projectLink',
-                  value: pipeline(
-                    'https://%$properties/username%.github.io',
-                    '%%/%$properties/repository%',
-                    data.if(
-                        equals('%$properties/repository%', '%$studio/project%'),
-                        '%%',
-                        '%%/%$studio/project%'
-                      )
-                  )
-                }),
+                variable('projectLink', pipeline(
+                  'https://%$properties/username%.github.io',
+                  '%%/%$properties/repository%',
+                  data.if(equals('%$properties/repository%', '%$studio/project%'), '%%', '%%/%$studio/project%')
+                )),
                 css('>a { color:rgb(63,81,181) }')
               ]
             }),
-            html({title: 'html', html: '<hr>'}),
+            html('<hr>', 'html'),
             group({
               title: 'options',
               controls: [
-                picklist({databind: '%$item%', options: picklist.options(keys('%$content%'))}),
+                picklist({ databind: '%$item%', options: picklist.options(keys('%$content%')) }),
                 editableText({
                   databind: pipeline(
                     property('%$item%', '%$content%'),
-                    replace({find: 'USERNAME', replace: '%$properties/username%'}),
-                    replace({find: 'REPOSITORY', replace: '%$properties/repository%'})
+                    replace('USERNAME', '%$properties/username%'),
+                    replace('REPOSITORY', '%$properties/repository%')
                   ),
-                  style: editableText.codemirror({mode: 'text'}),
+                  style: editableText.codemirror({ mode: 'text' }),
                   features: [watchRef('%$item%')]
                 })
               ],
               features: [
                 watchable('item', 'new project'),
-                variable({
-                  name: 'content',
-                  value: obj(
-                    prop(
-                        'new project',
-                        `1) Create a new github repository
+                variable('content', obj(
+                  prop(
+                    'new project',
+                    `1) Create a new github repository
 2) Open cmd at your project directory and run the following commands
 
 
@@ -514,10 +439,10 @@ git config --global user.email "MY_NAME@example.com"
 git commit -am first-commit
 git remote add origin https://github.com/USERNAME/REPOSITORY.git
 git push origin master`
-                      ),
-                    prop(
-                        'commit',
-                        `Open cmd at your project directory and run the following commands
+                  ),
+                  prop(
+                    'commit',
+                    `Open cmd at your project directory and run the following commands
 
 git add .
 git commit -am COMMIT_REMARK
@@ -528,20 +453,17 @@ git add -  mark all files to be handled by the local repository.
 Needed only if you added new files
 git commit - adds the changes to your local git repository
 git push - copy the local repostiry to github's cloud repository`
-                      )
-                  ),
-                  watchable: false
-                })
+                  )
+                ))
               ]
             })
           ],
-          features: watchRef({ref: '%$properties%', includeChildren: 'yes'})
+          features: watchRef('%$properties%', 'yes')
         })
       ],
-      features: watchable('properties',obj(prop('username', 'user1'), prop('repository', 'repo1'))),
-    
+      features: watchable('properties', obj(prop('username', 'user1'), prop('repository', 'repo1')))
     }),
-    title: 'github helper',
+    style: dialog.studioFloating('github-helper', 600),
     features: [
       css('.jb-dialog-content-parent {overflow-y: hidden}'),
       dialogFeature.resizer(true)

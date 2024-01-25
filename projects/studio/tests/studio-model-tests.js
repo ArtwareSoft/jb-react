@@ -8,7 +8,7 @@ component('studioTest.categoriesOfType', {
 
 component('test.simplePipeline', {
   type: 'data',
-  impl: pipeline('x', 'y', 'z')
+  impl: pipeline('x','y','z')
 })
 
 component('test.cmpWithVars', {
@@ -18,17 +18,17 @@ component('test.cmpWithVars', {
 
 component('test.moveInTree', {
   type: 'control',
-  impl: group({controls: [text('a'), text('b'), text('c'), group(), group({controls: []})]})
+  impl: group({ controls: [text('a'), text('b'), text('c'), group(), group({ controls: [] })] })
 })
 
 component('test.moveInTree2', {
   type: 'control',
-  impl: group({controls: [text('a'), text('b'), text('c'), group(), group({controls: []})]})
+  impl: group({ controls: [text('a'), text('b'), text('c'), group(), group({ controls: [] })] })
 })
 
 component('test.moveInTree3', {
   type: 'control',
-  impl: group({controls: [text('a'), text('b'), text('c'), group(), group({controls: []})]})
+  impl: group({ controls: [text('a'), text('b'), text('c'), group(), group({ controls: [] })] })
 })
 
 component('studioTest.setCompInVars', {
@@ -157,12 +157,12 @@ component('studioTest.pathOfTextPropAfterArray', {
 
 component('test.makeLocalCases', {
   type: 'data',
-  params:[
-    { id: 'oneSimpleUsage' },
-    { id: 'simpleAndComplex' },
-    { id: 'multiSimpleUsages' },
-    { id: 'usedInFunc' },
-    { id: 'toCall' },
+  params: [
+    {id: 'oneSimpleUsage'},
+    {id: 'simpleAndComplex'},
+    {id: 'multiSimpleUsages'},
+    {id: 'usedInFunc'},
+    {id: 'toCall'}
   ],
   impl: list(
     '%$oneSimpleUsage%',

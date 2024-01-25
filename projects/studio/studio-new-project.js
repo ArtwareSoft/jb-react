@@ -39,37 +39,33 @@ component('studio.newProject', {
 component('studio.openNewProject', {
   type: 'action',
   impl: openDialog({
-    style: dialog.dialogOkCancel(),
+    title: 'New Project',
     content: group({
       style: group.div(),
       controls: [
-        editableText({
-          title: 'project name',
-          databind: '%$dialogData/name%',
+        editableText('project name', '%$dialogData/name%', {
           style: editableText.mdcInput('280'),
           features: [
-            feature.onEnter(dialog.closeDialog()),
-            validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid project name')
-          ]
+          feature.onEnter(dialog.closeDialog()),
+          validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid project name')
+        ]
         })
       ],
-      features: css.padding({top: '14', left: '11'})
+      features: css.padding('14', '11')
     }),
-    title: 'New Project',
+    style: dialog.dialogOkCancel(),
     onOK: runActions(
       Var('project', '%$dialogData/name%'),
-      Var('mainFileName', pipeline(studio.projectsDir(),'%%/%$project%/%$project%.js')),
+      Var('mainFileName', pipeline(studio.projectsDir(), '%%/%$project%/%$project%.js')),
       studio.saveNewProject('%$project%'),
       writeValue('%$studio/project%', '%$project%'),
-//      writeValue('%$studio/projectFolder%', '%$project%'),
       writeValue('%$studio/circuit%', '%$project%.main'),
       writeValue('%$studio/profile_path%', studio.currentPagePath()),
-      studio.reOpenStudio('%$mainFileName%',5)
+      studio.reOpenStudio('%$mainFileName%', 5)
     ),
-    modal: true,
     features: [
       dialogFeature.autoFocusOnFirstInput(),
-      dialogFeature.nearLauncherPosition({offsetLeft: '300', offsetTop: '100'}),
+      dialogFeature.nearLauncherPosition('300', '100'),
       dialogFeature.dragTitle('newProject')
     ]
   })
@@ -87,17 +83,17 @@ component('studio.reOpenStudio', {
 component('studio.createProjectFile', {
   type: 'action,has-side-effects',
   params: [
-    { id: 'fileName', as: 'string' },
+    {id: 'fileName', as: 'string'}
   ],
   impl: runActions(
-    Var('project','%$studio/project%'),
+    Var('project', '%$studio/project%'),
     (ctx,{},{fileName}) => jb.studio.host.createDirectoryWithFiles({
       override: true,
       project: ctx.exp('%$project%'), 
       files: {[fileName]: ''}, 
       baseDir: ctx.run(pipeline(studio.projectsDir(),'%%/%$project%'))[0]
     }),
-    addToArray('%$studio/projectSettings/jsFiles%','%$fileName%'),
+    addToArray('%$studio/projectSettings/jsFiles%', { toAdd: '%$fileName%' }),
     studio.saveProjectSettings()
   )
 })
@@ -116,7 +112,7 @@ component('studio.projectsDir', {
 component('studio.saveNewProject', {
   type: 'action,has-side-effects',
   params: [
-    { id: 'project', as: 'string' }
+    {id: 'project', as: 'string'}
   ],
   impl: (ctx,project) => {
     const {files} = ctx.run(studio.newProject(()=> project))

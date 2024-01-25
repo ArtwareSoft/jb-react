@@ -6,7 +6,7 @@ component('studio.saveComponents', {
     rx.var('comps', pipeline(watchableComps.changedComps(), filter(equals('%$fn%', studio.filePathOfComp('%comp%'))))),
     rx.mapPromise(studio.getFileContent('%$fn%')),
     rx.var('fileContent', '%%'),
-    sink.action(studio.saveFile('%$fn%', studio.newFileContent('%$fileContent%', '%$comps%'))),
+    sink.action(studio.saveFile('%$fn%', studio.newFileContent('%$fileContent%', '%$comps%')))
   )
 })
 

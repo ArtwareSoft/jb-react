@@ -112,7 +112,7 @@ component('studio.jbEditor', {
     features: [
       id('jbEditor'),
       css.padding('10'),
-      css.height({height: '800', minMax: 'max'})
+      css.height('800', { minMax: 'max' })
     ]
   })
 })
@@ -129,32 +129,29 @@ component('studio.openJbEditProperty', {
     ],
     cases: [
       action.switchCase(endsWith('$vars', '%$path%'), studio.addVariable('%$path%')),
-      action.switchCase(
-        '%$paramDef/options%',
-        openDialog({
-          content: group({
-            controls: [
-              studio.jbFloatingInputRich('%$actualPath%')
-            ],
-            features: [
-              feature.onEsc(dialog.closeDialog(true)),
-              feature.onEnter(dialog.closeDialog(true))
-            ]
-          }),
-          style: dialog.studioJbEditorPopup(),
+      action.switchCase('%$paramDef/options%', openDialog({
+        content: group({
+          controls: [
+            studio.jbFloatingInputRich('%$actualPath%')
+          ],
           features: [
-            dialogFeature.autoFocusOnFirstInput(),
-            dialogFeature.onClose(popup.regainCanvasFocus())
+            feature.onEsc(dialog.closeDialog(true)),
+            feature.onEnter(dialog.closeDialog(true))
           ]
-        })
-      ),
-      action.switchCase(
-        isOfType('function', tgp.val('%$actualPath%')),
-        studio.editSource('%$actualPath%')
-      ),
-      action.switchCase(
-        tgp.isOfType('%$actualPath%', 'data,boolean'),
-        openDialog({
+        }),
+        style: dialog.studioJbEditorPopup(),
+        features: [
+          dialogFeature.autoFocusOnFirstInput(),
+          dialogFeature.onClose(popup.regainCanvasFocus())
+        ]
+      })),
+      action.switchCase({
+        condition: isOfType('function', tgp.val('%$actualPath%')),
+        action: studio.editSource('%$actualPath%')
+      }),
+      action.switchCase({
+        condition: tgp.isOfType('%$actualPath%', 'data,boolean'),
+        action: openDialog({
           content: studio.jbFloatingInput('%$actualPath%'),
           style: dialog.studioJbEditorPopup(),
           features: [
@@ -162,16 +159,16 @@ component('studio.openJbEditProperty', {
             dialogFeature.onClose(toggleBooleanValue('%$studio/refreshProbe%'))
           ]
         })
-      ),
-      action.switchCase(
-        Var('ptsOfType', tgp.PTsOfType(tgp.paramType('%$actualPath%'))),
-        '%$ptsOfType/length% == 1',
-        tgp.setComp('%$path%', '%$ptsOfType[0]%')
-      )
+      }),
+      action.switchCase({
+        vars: [
+          Var('ptsOfType', tgp.PTsOfType(tgp.paramType('%$actualPath%')))
+        ],
+        condition: '%$ptsOfType/length% == 1',
+        action: tgp.setComp('%$path%', '%$ptsOfType[0]%')
+      })
     ],
-    defaultAction: studio.openNewProfileDialog({
-      path: '%$actualPath%',
-      type: tgp.paramType('%$actualPath%'),
+    defaultAction: studio.openNewProfileDialog('%$actualPath%', tgp.paramType('%$actualPath%'), {
       mode: 'update',
       onClose: popup.regainCanvasFocus()
     })
@@ -185,15 +182,13 @@ component('studio.jbEditorInteliTree', {
   ],
   impl: tree({
     nodeModel: studio.jbEditorNodes('%$path%'),
-    style: tree.expandBox({showIcon: true, lineWidth: '800px'}),
+    style: tree.expandBox(true, '800px'),
     features: [
-      variable('popupLauncherCanvas','%$cmp%'),
+      variable('popupLauncherCanvas', '%$cmp%'),
       css.class('jb-editor'),
-      tree.selection({
-        databind: '%$studio/jbEditor/selected%',
-        autoSelectFirst: true,
+      tree.selection('%$studio/jbEditor/selected%', writeValue('%$probe/path%', '%%'), {
         onRightClick: studio.openJbEditorMenu('%%', '%$path%'),
-        onSelection: writeValue('%$probe/path%','%%')
+        autoSelectFirst: true
       }),
       tree.keyboardSelection({
         onEnter: studio.openJbEditProperty('%$studio/jbEditor/selected%'),
@@ -202,12 +197,8 @@ component('studio.jbEditorInteliTree', {
         applyMenuShortcuts: studio.jbEditorMenu('%%', '%$path%')
       }),
       tree.dragAndDrop(),
-      css.width({width: '500', selector: 'jb-editor'}),
-      studio.watchPath({
-        path: '%$path%',
-        includeChildren: 'yes',
-        allowSelfRefresh: true
-      }),
+      css.width('500', { selector: 'jb-editor' }),
+      studio.watchPath('%$path%', 'yes', { allowSelfRefresh: true }),
       watchRef('%$studio/jbEditor/selected%')
     ]
   })
@@ -220,18 +211,16 @@ component('studio.openComponentInJbEditor', {
     {id: 'fromPath', as: 'string'}
   ],
   impl: runActions(
-    Var('compPath', split({separator: '~', text: '%$path%', part: 'first'})),
+    Var('compPath', split('~', { text: '%$path%', part: 'first' })),
     Var('fromPath', '%$fromPath%'),
-    openDialog({
-        style: dialog.studioFloating({id: 'jb-editor', width: '860', height: '100%'}),
-        content: studio.jbEditor('%$compPath%'),
-        menu: button({
-          action: studio.openJbEditorMenu('%$studio/jbEditor/selected%', '%$path%'),
-          style: button.mdcIcon('menu')
-        }),
-        title: studio.jbEditorTitle('%$compPath%', 'Inteliscript'),
-        features: dialogFeature.resizer()
-      })
+    openDialog(studio.jbEditorTitle('%$compPath%', 'Inteliscript'), studio.jbEditor('%$compPath%'), {
+      style: dialog.studioFloating('jb-editor', '860', { height: '100%' }),
+      menu: button({
+      action: studio.openJbEditorMenu('%$studio/jbEditor/selected%', '%$path%'),
+      style: button.mdcIcon('menu')
+    }),
+      features: dialogFeature.resizer()
+    })
   )
 })
 
@@ -261,17 +250,9 @@ component('menu.studioWrapWith', {
     {id: 'type', as: 'string'},
     {id: 'components', as: 'array'}
   ],
-  impl: menu.dynamicOptions(
-    If(tgp.isOfType('%$path%', '%$type%'),'%$components%',list()),
-    menu.action({
-      title: 'Wrap with %%',
-      action: runActions(
-        tgp.wrap('%$path%', '%%'),
-        studio.expandAndSelectFirstChildInJbEditor(),
-        studio.gotoPath('%$path%','close-array'),
-      )
-    })
-  )
+  impl: menu.dynamicOptions(If(tgp.isOfType('%$path%', '%$type%'), '%$components%', list()), {
+    genericOption: menu.action('Wrap with %%', runActions(tgp.wrap('%$path%', '%%'), studio.expandAndSelectFirstChildInJbEditor(), studio.gotoPath('%$path%', 'close-array')))
+  })
 })
 
 component('menu.studioWrapWithArray', {
@@ -279,15 +260,11 @@ component('menu.studioWrapWithArray', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: If(tgp.canWrapWithArray('%$path%'),
-    menu.action({
-      title: 'Wrap with array',
-      action: runActions(
-        tgp.wrapWithArray('%$path%'),
-        studio.expandAndSelectFirstChildInJbEditor(),
-        studio.gotoPath('%$path%','close-array'),
-      )
-    }),[])
+  impl: If({
+    condition: tgp.canWrapWithArray('%$path%'),
+    then: menu.action('Wrap with array', runActions(tgp.wrapWithArray('%$path%'), studio.expandAndSelectFirstChildInJbEditor(), studio.gotoPath('%$path%', 'close-array'))),
+    Else: []
+  })
 })
 
 component('studio.addVariable', {
@@ -295,37 +272,31 @@ component('studio.addVariable', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: //onNextTimer(
-    openDialog({
-      title: 'New variable',
-      content: group({
-        controls: [
-          editableText({
-            title: 'variable name',
-            databind: '%$dialogData/name%',
-            style: editableText.mdcInput(),
-            features: [
-              feature.onEnter(
-                runActions(
-                  addToArray(tgp.ref('%$path%'), obj(prop('$','Var'),prop('name','%$dialogData/name%'),prop('value',''))),
-                  dialog.closeDialog(),
-                  popup.regainCanvasFocus()
-                )
-              )
-            ]
-          })
-        ],
-        features: css.padding({
-          top: '9',
-          left: '20',
-          right: '20'
+  impl: openDialog({
+    title: 'New variable',
+    content: group({
+      controls: [
+        editableText('variable name', '%$dialogData/name%', {
+          style: editableText.mdcInput(),
+          features: [
+          feature.onEnter(
+            runActions(
+              addToArray(tgp.ref('%$path%'), {
+                toAdd: obj(prop('$', 'Var'), prop('name', '%$dialogData/name%'), prop('value', ''))
+              }),
+              dialog.closeDialog(),
+              popup.regainCanvasFocus()
+            )
+          )
+        ]
         })
-      }),
-      style: dialog.popup(),
-      id: 'add variable',
-      features: [css.width('300'), dialogFeature.nearLauncherPosition(), dialogFeature.autoFocusOnFirstInput()]
-    })
-//  )
+      ],
+      features: css.padding('9', '20', { right: '20' })
+    }),
+    style: dialog.popup(),
+    id: 'add variable',
+    features: [css.width('300'), dialogFeature.nearLauncherPosition(), dialogFeature.autoFocusOnFirstInput()]
+  })
 })
 
 component('studio.openJbEditor', {
@@ -337,16 +308,13 @@ component('studio.openJbEditor', {
   ],
   impl: openDialog({
     vars: [
-      Var('dialogId', If('%$newWindow%','','jb-editor')),
+      Var('dialogId', If('%$newWindow%', '', 'jb-editor')),
       Var('fromPath', '%$fromPath%')
     ],
-    style: dialog.studioFloating({id: '%$dialogId%', width: '860', height: '100%'}),
-    content: studio.jbEditor('%$path%'),
-    menu: button({
-      action: studio.openJbEditorMenu('%$path%', '%$path%'),
-      style: button.mdcIcon('menu')
-    }),
     title: studio.jbEditorTitle('%$path%', 'Inteliscript'),
+    content: studio.jbEditor('%$path%'),
+    style: dialog.studioFloating('%$dialogId%', '860', { height: '100%' }),
+    menu: button({ action: studio.openJbEditorMenu('%$path%', '%$path%'), style: button.mdcIcon('menu') }),
     features: dialogFeature.resizer()
   })
 })
@@ -369,8 +337,7 @@ component('studio.openJbEditorMenu', {
     {id: 'path', as: 'string'},
     {id: 'root', as: 'string'}
   ],
-  impl: menu.openContextMenu({
-    menu: studio.jbEditorMenu('%$path%', '%$root%'),
+  impl: menu.openContextMenu(studio.jbEditorMenu('%$path%', '%$root%'), {
     features: dialogFeature.onClose(popup.regainCanvasFocus())
   })
 })
@@ -406,22 +373,18 @@ component('studio.jbEditorTitle', {
       menu.control({
         menu: menu.menu({
           options: [
-            menu.action({
-              title: 'pick context',
-              action: studio.pick(),
-              icon: icon({icon: 'Selection', type: 'mdi'})
-            })
+            menu.action('pick context', studio.pick(), { icon: icon('Selection', { type: 'mdi' }) })
           ],
           icon: icon('undo')
         }),
         style: menuStyle.toolbar(),
-        features: css.margin({left: '100'})
+        features: css.margin({ left: '100' })
       }),
       editableBoolean({
         databind: '%$studio/hideProbe%',
         style: editableBoolean.buttonXV({
-          yesIcon: icon({icon: 'ArrowCollapseRight', type: 'mdi'}),
-          noIcon: icon({icon: 'ArrowCollapseLeft', type: 'mdi'}),
+          yesIcon: icon('ArrowCollapseRight', { type: 'mdi' }),
+          noIcon: icon('ArrowCollapseLeft', { type: 'mdi' }),
           buttonStyle: button.mdcFloatingAction(20, true)
         }),
         title: 'hide input-output',

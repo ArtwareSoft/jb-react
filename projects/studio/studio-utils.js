@@ -60,7 +60,7 @@ component('studio.message', {
   type: 'action',
   params: [
     {id: 'message', as: 'string'},
-    {id: 'error', as: 'boolean'}
+    {id: 'error', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,message, error) => {
     const el = jb.frame.document && document.querySelector('.studio-message');
@@ -98,7 +98,7 @@ component('studio.lastEdit', {
 
 component('studio.gotoLastEdit', {
   type: 'action',
-  impl: runActions(jb.delay(10), studio.gotoPath(studio.lastEdit()))
+  impl: runActions({}, studio.gotoPath(studio.lastEdit()))
 })
 
 component('studio.compSource', {
@@ -131,9 +131,9 @@ component('studio.watchScriptChanges', {
   type: 'feature',
   params: [
     {id: 'path', as: 'string', description: 'under this path, empty means any path'},
-    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
+    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'}
   ],
-  impl: watchRef({ref: '%$studio/lastStudioActivity%', allowSelfRefresh: '%$allowSelfRefresh%'}) //followUp.flow(watchableComps.scriptChange(), rx.log('watch script refresh'), sink.refreshCmp())
+  impl: watchRef('%$studio/lastStudioActivity%', { allowSelfRefresh: '%$allowSelfRefresh%' })
 })
 
 component('studio.watchComponents', {
@@ -153,5 +153,5 @@ extension('studio', 'project', {
 
 component('studio.cmpsOfProject', {
   type: 'data',
-  impl: () => jb.studio.projectCompsAsEntries().filter(e=>e[1].impl).map(e=>e[0]),
+  impl: () => jb.studio.projectCompsAsEntries().filter(e=>e[1].impl).map(e=>e[0])
 })

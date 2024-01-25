@@ -5,16 +5,21 @@ component('studio.main', {
   impl: group({
     controls: [
       controlWithCondition(studio.isCircuit(), studio.circuit()),
-//      controlWithCondition(studio.isNotebook(), studio.notebook()),
       studio.jbart()
     ],
-    features: [group.wait(ctx => jb.studio.host.settings()
+    features: [
+      group.wait({
+        for: ctx => jb.studio.host.settings()
         .then(settings => ctx.run(writeValue('%$studio/settings%',
-          Object.assign(ctx.exp('%$studio/settings%'), typeof settings == 'string' ? JSON.parse(settings) : {})))), text('')), group.firstSucceeding()]
+          Object.assign(ctx.exp('%$studio/settings%'), typeof settings == 'string' ? JSON.parse(settings) : {})))),
+        loadingControl: text('')
+      }),
+      group.firstSucceeding()
+    ]
   })
 })
 
-component('studio.isNotebook',{
+component('studio.isNotebook', {
   type: 'boolean',
   impl: () => jb.path(globalThis,'location.pathname').indexOf('/notebook') == 0
 })
@@ -34,8 +39,8 @@ component('studio.jbart', {
         features: [
           watchRef('%$studio/page%'),
           watchRef('%$studio/preview%', 'yes'),
-          css.height({height: '%$studio/preview/height%', overflow: 'auto', minMax: 'max'}),
-          css.width({width: '%$studio/preview/width%', overflow: 'auto', minMax: 'max'})
+          css.height('%$studio/preview/height%', 'auto', { minMax: 'max' }),
+          css.width('%$studio/preview/width%', 'auto', { minMax: 'max' })
         ]
       }),
       studio.ctxCounters()
@@ -58,8 +63,8 @@ component('studio.circuit', {
             studio.openComponentInJbEditor('%$studio/jbEditor/selected%', '%$studio/probe/circuit%')
           ),
           watchRef('%$studio/preview%', 'yes'),
-          css.height({height: '%$studio/preview/height%', overflow: 'auto', minMax: 'max'}),
-          css.width({width: '%$studio/preview/width%', overflow: 'auto', minMax: 'max'})
+          css.height('%$studio/preview/height%', 'auto', { minMax: 'max' }),
+          css.width('%$studio/preview/width%', 'auto', { minMax: 'max' })
         ]
       }),
       studio.ctxCounters()
@@ -115,48 +120,42 @@ component('studio.pages', {
     title: 'pages',
     layout: layout.horizontal(),
     controls: [
-      button({
-        title: 'new page',
-        action: studio.openNewPage(),
+      button('new page', studio.openNewPage(), {
         style: button.mdcIcon(icon('add'), 16),
         features: [
-          css('{margin: 5px}'),
-          feature.hoverTitle('new page')
-        ]
+        css('{margin: 5px}'),
+        feature.hoverTitle('new page')
+      ]
       }),
       itemlist({
         items: pipeline(studio.cmpsOfProject(), filter(tgp.isOfType('%%', 'control'))),
-        controls: text({text: pipeline(suffix('.'), extractSuffix('.')), features: css.class('studio-page')}),
+        controls: text(pipeline(suffix('.'), extractSuffix('.')), { features: css.class('studio-page') }),
         style: itemlist.horizontal(),
         features: [
-          itemlist.selection({
-            databind: '%$studio/page%',
+          itemlist.selection('%$studio/page%', {
             onSelection: runActions(
-              writeValue('%$studio/profile_path%', '%$studio/page%'),
-              writeValue('%$studio/circuit%', tgp.circuitOptions('%$studio/page%'))
-            ),
+            writeValue('%$studio/profile_path%', '%$studio/page%'),
+            writeValue('%$studio/circuit%', tgp.circuitOptions('%$studio/page%'))
+          ),
             autoSelectFirst: true
           }),
           css.class('studio-pages-items'),
           studio.watchComponents(),
-          css.width({width: '1200', overflow: 'auto', minMax: 'max'}),
+          css.width('1200', 'auto', { minMax: 'max' }),
           css('align-items: center;')
         ]
       }),
       text('|'),
-      button({
-        title: 'new function',
-        action: studio.openNewFunction(),
-        style: button.mdcIcon(icon({icon: 'add', type: 'mdc'}), '16'),
+      button('new function', studio.openNewFunction(), {
+        style: button.mdcIcon(icon('add', { type: 'mdc' }), '16'),
         features: [
-          css('{margin: 5px}'),
-          feature.hoverTitle('new function')
-        ]
+        css('{margin: 5px}'),
+        feature.hoverTitle('new function')
+      ]
       }),
       itemlist({
         items: pipeline(studio.cmpsOfProject(), filter(tgp.isOfType('%%', 'data'))),
-        controls: text({
-          text: pipeline(suffix('.'), extractSuffix('.')),
+        controls: text(pipeline(suffix('.'), extractSuffix('.')), {
           features: method('onclickHandler', studio.openJbEditor('%%'))
         }),
         style: itemlist.horizontal(),
@@ -170,7 +169,7 @@ component('studio.pages', {
     ],
     features: [
       css.class('studio-pages1'),
-      css.border({width: '1', side: 'bottom', color: 'var(--jb-dropdown-border)'})
+      css.border('1', 'bottom', { color: 'var(--jb-dropdown-border)' })
     ]
   })
 })
@@ -191,150 +190,78 @@ component('studio.sampleProject', {
   params: [
     {id: 'project', as: 'string'}
   ],
-  impl: menu.action(
-    '%$project%',
-    action.if(
-      studio.inVscode(),
-      studio.reOpenStudio(pipeline(studio.projectsDir(), '%%/%$project%/%$project%.js'), 0),
-      winUtils.gotoUrl(
-        'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/%$project%&project=%$project%',
-        'new tab'
-      )
-    )
-  )
+  impl: menu.action('%$project%', action.if({
+    condition: studio.inVscode(),
+    then: studio.reOpenStudio(pipeline(studio.projectsDir(), '%%/%$project%/%$project%.js'), 0),
+    else: winUtils.gotoUrl('https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/%$project%&project=%$project%', 'new tab')
+  }))
 })
 
 component('studio.mainMenu', {
   type: 'menu.option',
-  impl: menu.menu(
-    'main',
-    [
-      menu.menu(
-        'File',
-        [
-          menu.menu(
-            'Sample Projects',
-            [
-              studio.sampleProject('styleGallery'),
-              studio.sampleProject('itemlists'),
-              studio.sampleProject('todomvc'),
-              studio.sampleProject('htmlParsing'),
-              studio.sampleProject('cardsDemo')
-            ]
-          ),
-          menu.action({
-            title: 'New Project',
-            action: studio.openNewProject(),
-            icon: icon('new')
-          }),
-          menu.action({
-            title: 'Open Project ...',
-            action: studio.openProject(),
-            showCondition: not(studio.inVscode())
-          }),
-          menu.action({
-            title: 'Save',
-            action: studio.saveComponents(),
-            icon: icon('save'),
-            shortcut: 'Ctrl+S',
-            showCondition: not(studio.inVscode())
-          }),
-          menu.action({
-            title: 'Force Save',
-            action: studio.saveComponents(),
-            icon: icon('save'),
-            showCondition: not(studio.inVscode())
-          }),
-          menu.action({
-            title: 'Github helper...',
-            action: studio.githubHelper(),
-            showCondition: not(studio.inVscode())
-          }),
-          menu.action(
-            'Settings...',
-            openDialog({
-              title: 'Project Settings',
-              content: studio.projectSettings(),
-              style: dialog.dialogOkCancel(),
-              onOK: runActions(
-                writeValue('%$studio/projectSettings/libs%', pipeline('%$studio/libsAsArray%', join(','))),
-                studio.saveProjectSettings(),
-                studio.refreshPreview()
-              ),
-              features: dialogFeature.dragTitle()
-            })
-          )
-        ]
-      ),
-      menu.menu(
-        'Edit',
-        [
-          menu.action({
-            title: 'Undo',
-            action: watchableComps.undo(),
-            icon: icon('undo'),
-            shortcut: 'Ctrl+Z'
-          }),
-          menu.action({
-            title: 'Redo',
-            action: watchableComps.redo(),
-            icon: icon('redo'),
-            shortcut: 'Ctrl+Y'
-          }),
-          menu.action({
-            title: 'Extract Component',
-            action: studio.openExtractComponent(),
-            shortcut: '',
-            showCondition: studio.canExtractParam()
-          }),
-          menu.action({
-            title: 'Extract Param',
-            action: studio.openExtractParam(),
-            shortcut: '',
-            showCondition: studio.canExtractParam()
-          })
-        ]
-      ),
-      menu.menu(
-        'View',
-        [
-          menu.action(
-            'Components...',
-            openDialog({
-              title: 'components',
-              content: studio.componentsList(),
-              style: dialog.studioFloating(),
-              features: css.width('600')
-            })
-          ),
-          menu.action('Refresh Preview', studio.refreshPreview()),
-          menu.action('Redraw Studio', studio.redrawStudio()),
-          menu.action('Edit source', studio.editSource()),
-          menu.action('Outline', studio.openControlTree()),
-          menu.action('Inteliscript Editor', studio.openJbEditor(studio.currentProfilePath())),
-          menu.separator(),
-          menu.dynamicOptions(
-            studio.cmpsOfProject(),
-            menu.action(
-              pipeline(
-                Var('type', data.if(tgp.isOfType('%%', 'control'), 'page', 'component')),
-                suffix('.'),
-                extractSuffix('.'),
-                '%% (%$type%)'
-              ),
-              runActions(
-                writeValue('%$studio/page%', '%%'),
-                writeValue('%$studio/profile_path%', '%%'),
-                writeValue('%$studio/circuit%', tgp.circuitOptions('%%'))
-              )
-            )
-          )
-        ]
-      ),
-      studio.insertControlMenu(),
-      studio.dataResourceMenu()
+  impl: menu.menu('main', {
+    options: [
+    menu.menu('File', {
+      options: [
+      menu.menu('Sample Projects', {
+        options: [
+        studio.sampleProject('styleGallery'),
+        studio.sampleProject('itemlists'),
+        studio.sampleProject('todomvc'),
+        studio.sampleProject('htmlParsing'),
+        studio.sampleProject('cardsDemo')
+      ]
+      }),
+      menu.action('New Project', studio.openNewProject(), { icon: icon('new') }),
+      menu.action('Open Project ...', studio.openProject(), { showCondition: not(studio.inVscode()) }),
+      menu.action('Save', studio.saveComponents(), { icon: icon('save'), shortcut: 'Ctrl+S', showCondition: not(studio.inVscode()) }),
+      menu.action('Force Save', studio.saveComponents(), { icon: icon('save'), showCondition: not(studio.inVscode()) }),
+      menu.action('Github helper...', studio.githubHelper(), { showCondition: not(studio.inVscode()) }),
+      menu.action('Settings...', openDialog('Project Settings', studio.projectSettings(), {
+        style: dialog.dialogOkCancel(),
+        onOK: runActions(writeValue('%$studio/projectSettings/libs%', pipeline('%$studio/libsAsArray%', join(','))), studio.saveProjectSettings(), studio.refreshPreview()),
+        features: dialogFeature.dragTitle()
+      }))
     ]
-  )
+    }),
+    menu.menu('Edit', {
+      options: [
+      menu.action('Undo', watchableComps.undo(), { icon: icon('undo'), shortcut: 'Ctrl+Z' }),
+      menu.action('Redo', watchableComps.redo(), { icon: icon('redo'), shortcut: 'Ctrl+Y' }),
+      menu.action('Extract Component', studio.openExtractComponent(), { shortcut: '', showCondition: studio.canExtractParam() }),
+      menu.action('Extract Param', studio.openExtractParam(), { shortcut: '', showCondition: studio.canExtractParam() })
+    ]
+    }),
+    menu.menu('View', {
+      options: [
+      menu.action('Components...', openDialog('components', studio.componentsList(), { style: dialog.studioFloating(), features: css.width('600') })),
+      menu.action('Refresh Preview', studio.refreshPreview()),
+      menu.action('Redraw Studio', studio.redrawStudio()),
+      menu.action('Edit source', studio.editSource()),
+      menu.action('Outline', studio.openControlTree()),
+      menu.action('Inteliscript Editor', studio.openJbEditor(studio.currentProfilePath())),
+      menu.separator(),
+      menu.dynamicOptions(studio.cmpsOfProject(), {
+        genericOption: menu.action({
+        title: pipeline(
+          Var('type', data.if(tgp.isOfType('%%', 'control'), 'page', 'component')),
+          suffix('.'),
+          extractSuffix('.'),
+          '%% (%$type%)'
+        ),
+        action: runActions(
+          writeValue('%$studio/page%', '%%'),
+          writeValue('%$studio/profile_path%', '%%'),
+          writeValue('%$studio/circuit%', tgp.circuitOptions('%%'))
+        )
+      })
+      })
+    ]
+    }),
+    studio.insertControlMenu(),
+    studio.dataResourceMenu()
+  ]
+  })
 })
 
 component('studio.baseStudioUrl', {
@@ -345,34 +272,26 @@ component('studio.topBar', {
   type: 'control',
   impl: group({
     title: 'top bar',
-    layout: layout.flex({alignItems: 'start', spacing: ''}),
+    layout: layout.flex({ alignItems: 'start', spacing: '' }),
     controls: [
-      image({
-        url: pipeline(studio.baseStudioUrl(), '%%css/jbartlogo.png'),
-        width: '',
+      image(pipeline(studio.baseStudioUrl(), '%%css/jbartlogo.png'), '', {
         features: [
-          css.margin('5', '5'),
-          css.width({width: '80', minMax: 'min'}),
-          css.height('100')
-        ]
+        css.margin('5', '5'),
+        css.width('80', { minMax: 'min' }),
+        css.height('100')
+      ]
       }),
       group({
         title: 'title and menu',
         controls: [
-          text({text: 'message', style: text.studioMessage()}),
+          text('message', { style: text.studioMessage() }),
           group({
             title: 'menu and toolbar',
-            layout: layout.flex({spacing: '160'}),
+            layout: layout.flex({ spacing: '160' }),
             controls: [
-              menu.control({
-                menu: studio.mainMenu(),
-                style: menuStyle.pulldown(),
-                features: [id('mainMenu'), css.height('30'), css.margin('18')]
-              }),
-              group({title: 'toolbar', controls: studio.toolbar(), features: css.margin('8')}),
-              controlWithFeatures(studio.searchComponent(), [
-                css.margin('8', '-100')
-              ])
+              menu.control(studio.mainMenu(), menuStyle.pulldown(), { features: [id('mainMenu'), css.height('30'), css.margin('18')] }),
+              group({ title: 'toolbar', controls: studio.toolbar(), features: css.margin('8') }),
+              controlWithFeatures(studio.searchComponent(), { features: [css.margin('8', '-100')] })
             ]
           })
         ],
@@ -389,22 +308,10 @@ component('studio.vscodeTopBar', {
   type: 'control',
   impl: group({
     title: 'top bar',
-    layout: layout.flex({
-      direction: 'column',
-      alignItems: 'start',
-      spacing: ''
-    }),
+    layout: layout.flex('column', { alignItems: 'start', spacing: '' }),
     controls: [
       text({
-        text: If(
-          '%$studio/project%==tests',
-          '%$studio/circuit%',
-          replace({
-            find: '_',
-            replace: ' ',
-            text: '%$studio/project%'
-          })
-        ),
+        text: If('%$studio/project%==tests', '%$studio/circuit%', replace('_', ' ', { text: '%$studio/project%' })),
         style: header.h1(),
         features: [
           watchRef('%$studio/project%'),
@@ -418,19 +325,11 @@ component('studio.vscodeTopBar', {
         controls: [
           group({
             title: 'menu and toolbar',
-            layout: layout.flex({
-              justifyContent: 'space-between',
-              alignItems: 'baseline',
-              spacing: ''
-            }),
+            layout: layout.flex({ justifyContent: 'space-between', alignItems: 'baseline', spacing: '' }),
             style: group.htmlTag(),
             controls: [
-              menu.control({
-                menu: studio.mainMenu(),
-                style: menuStyle.pulldown(),
-                features: id('mainMenu')
-              }),
-              group({title: 'toolbar', controls: studio.toolbar()}),
+              menu.control(studio.mainMenu(), menuStyle.pulldown(), { features: id('mainMenu') }),
+              group({ title: 'toolbar', controls: studio.toolbar() }),
               studio.searchComponent('')
             ]
           })
@@ -460,7 +359,7 @@ component('studio.pathHyperlink', {
         action: runActions(writeValue('%$studio/profile_path%', '%$path%'), studio.openControlTree()),
         style: button.href(),
         features: feature.hoverTitle('%$path%')
-      }),
+      })
     ]
   })
 })
@@ -470,79 +369,63 @@ component('studio.projectSettings', {
   impl: group({
     title: '',
     layout: layout.vertical(),
-    style: group.tabs({}),
+    style: group.tabs(),
     controls: [
       group({
         title: 'Files (%$studio/projectSettings/jsFiles/length%)',
         controls: [
-          itemlist({
-            title: '',
+          itemlist('', {
             items: '%jsFiles%',
             controls: [
-              group({
-                layout: layout.horizontal('1'),
-                controls: [
-                  editableText({
-                    title: 'file',
-                    databind: '%%',
-                    style: editableText.mdcNoLabel('262'),
-                    features: [
-                      css('background-color: transparent !important;'),
-                      css.padding({left: '30', right: ''})
-                    ]
-                  }),
-                  button({
-                    title: 'delete',
-                    action: removeFromArray({array: '%$studio/projectSettings/jsFiles%', itemToRemove: '%%'}),
-                    style: button.plainIcon(),
-                    features: [
-                      itemlist.shownOnlyOnItemHover(),
-                      css('background-color: transparent !important; z-index: 10000; cursor: pointer'),
-                      feature.icon({icon: 'cancel', type: 'mdc'}),
-                      css.margin({top: '20', left: '-30'})
-                    ]
-                  })
+            group({
+              layout: layout.horizontal('1'),
+              controls: [
+                editableText('file', '%%', {
+                  style: editableText.mdcNoLabel('262'),
+                  features: [
+                  css('background-color: transparent !important;'),
+                  css.padding({ left: '30', right: '' })
                 ]
-              })
-            ],
+                }),
+                button('delete', removeFromArray('%$studio/projectSettings/jsFiles%', '%%'), {
+                  style: button.plainIcon(),
+                  features: [
+                  itemlist.shownOnlyOnItemHover(),
+                  css('background-color: transparent !important; z-index: 10000; cursor: pointer'),
+                  feature.icon('cancel', { type: 'mdc' }),
+                  css.margin('20', '-30')
+                ]
+                })
+              ]
+            })
+          ],
             style: itemlist.div(),
-            layout: layout.flex({wrap: 'wrap'}),
+            layout: layout.flex({ wrap: 'wrap' }),
             features: [
-              watchRef({ref: '%jsFiles%', includeChildren: 'structure', allowSelfRefresh: true}),
-              itemlist.dragAndDrop(),
-              css.width('100%')
-            ]
+            watchRef('%jsFiles%', 'structure', { allowSelfRefresh: true }),
+            itemlist.dragAndDrop(),
+            css.width('100%')
+          ]
           }),
-          button({
-            title: 'add file',
-            action: addToArray('%jsFiles%', 'myFile.js'),
-            style: button.mdcChipAction()
-          })
+          button('add file', addToArray('%jsFiles%', { toAdd: 'myFile.js' }), { style: button.mdcChipAction() })
         ],
-        features: [feature.icon({icon: 'FileOutline', type: 'mdi'})]
+        features: [
+          feature.icon('FileOutline', { type: 'mdi' })
+        ]
       }),
-      multiSelect({
-        title: 'Libs (%$studio/libsAsArray/length%)',
-        databind: '%$studio/libsAsArray%',
-        options: picklist.optionsByComma(
-          'remote,codemirror,fuse,animate,cards,cards-sample-data,d3,dragula,md-icons,material,pretty-print,xml,jison,parsing,puppeteer,rx',
-          ''
-        ),
+      multiSelect('Libs (%$studio/libsAsArray/length%)', '%$studio/libsAsArray%', {
+        options: picklist.optionsByComma('remote,codemirror,fuse,animate,cards,cards-sample-data,d3,dragula,md-icons,material,pretty-print,xml,jison,parsing,puppeteer,rx', ''),
         style: multiSelect.chips(),
         features: [
-          css.margin({top: '15', left: '10'}),
-          feature.icon({icon: 'Library', type: 'mdi'})
-        ]
+        css.margin('15', '10'),
+        feature.icon('Library', { type: 'mdi' })
+      ]
       })
     ],
     features: [
-      group.data({
-        data: '%$studio/projectSettings%',
-        watch: true,
-        includeChildren: 'structure'
-      }),
+      group.data('%$studio/projectSettings%', { watch: true, includeChildren: 'structure' }),
       css.width('600'),
-      feature.initValue('%$studio/libsAsArray%', split({text: '%libs%'}))
+      feature.initValue('%$studio/libsAsArray%', split({ text: '%libs%' }))
     ]
   })
 })

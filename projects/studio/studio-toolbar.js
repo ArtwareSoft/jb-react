@@ -4,83 +4,46 @@ component('studio.toolbar', {
   impl: group({
     layout: layout.horizontal('5'),
     controls: [
-      button({
-        title: 'Select',
-        action: studio.pickAndOpen(),
-        style: button.mdcIcon(icon('call_made'))
-      }),
-      button({
-        title: 'Save',
-        action: studio.saveComponents(),
+      button('Select', studio.pickAndOpen(), { style: button.mdcIcon(icon('call_made')) }),
+      button('Save', studio.saveComponents(), {
         style: button.mdcIcon(icon('save')),
-        features: [button.ctrlAction(studio.saveComponents()), feature.if(not(studio.inVscode()))]
+        features: [
+        button.ctrlAction(studio.saveComponents()),
+        feature.if(not(studio.inVscode()))
+      ]
       }),
-      button({
-        title: 'Refresh Preview',
-        action: studio.refreshPreview(),
-        style: button.mdcIcon(icon('refresh'))
-      }),
-      button({
-        title: 'Javascript',
-        action: studio.editSource(),
-        style: button.mdcIcon(icon({icon: 'LanguageJavascript', type: 'mdi'}))
-      }),
-      button({
-        title: 'Outline',
-        action: studio.openControlTree(),
-        style: button.mdcIcon(icon('format_align_left'))
-      }),
-      button({
-        title: 'Properties',
-        action: studio.openProperties(true),
-        style: button.mdcIcon(icon('storage'))
-      }),
-      button({
-        title: 'jbEditor',
-        action: studio.openComponentInJbEditor(studio.currentPagePath()),
+      button('Refresh Preview', studio.refreshPreview(), { style: button.mdcIcon(icon('refresh')) }),
+      button('Javascript', studio.editSource(), { style: button.mdcIcon(icon('LanguageJavascript', { type: 'mdi' })) }),
+      button('Outline', studio.openControlTree(), { style: button.mdcIcon(icon('format_align_left')) }),
+      button('Properties', studio.openProperties(true), { style: button.mdcIcon(icon('storage')) }),
+      button('jbEditor', studio.openComponentInJbEditor(studio.currentPagePath()), {
         style: button.mdcIcon(icon('build')),
-        features: button.ctrlAction(studio.openJbEditor({path: '%$studio/profile_path%', newWindow: true}))
+        features: button.ctrlAction(
+        studio.openJbEditor('%$studio/profile_path%', { newWindow: true })
+      )
       }),
-      button({
-        title: 'Event Tracker',
-        action: studio.openEventTracker(),
-        style: button.mdcIcon(icon({icon: 'bug_report', type: 'mdc'})),
-        features: [button.ctrlAction(studio.openEventTracker())]
+      button('Event Tracker', studio.openEventTracker(), {
+        style: button.mdcIcon(icon('bug_report', { type: 'mdc' })),
+        features: [
+        button.ctrlAction(studio.openEventTracker())
+      ]
       }),
-      button({
-        title: 'History',
-        action: studio.openScriptHistory(),
-        style: button.mdcIcon('pets'),
-        features: hidden()
-      }),
-      button({
-        title: 'add',
-        action: studio.openNewProfileDialog({
-          type: 'control',
-          mode: 'insert-control',
-          onClose: studio.gotoLastEdit()
-        }),
+      button('History', studio.openScriptHistory(), { style: button.mdcIcon('pets'), features: hidden() }),
+      button('add', studio.openNewProfileDialog({ type: 'control', mode: 'insert-control', onClose: studio.gotoLastEdit() }), {
         style: button.mdcIcon(icon('add')),
-        features: studio.dropHtml(tgp.insertControl('%$newCtrl%',studio.currentProfilePath()))
+        features: studio.dropHtml(tgp.insertControl('%$newCtrl%', studio.currentProfilePath()))
       }),
-      button({
-        title: 'Responsive',
-        action: studio.openResponsivePhonePopup(),
-        style: button.mdcIcon(icon('tablet_android'))
-      })
+      button('Responsive', studio.openResponsivePhonePopup(), { style: button.mdcIcon(icon('tablet_android')) })
     ],
     features: [
       feature.globalKeyboardShortcut('Alt+C', studio.pickAndOpen()),
-      feature.globalKeyboardShortcut('Alt++', studio.openNewProfileDialog({type: 'control', mode: 'insert-control'})),
+      feature.globalKeyboardShortcut('Alt++', studio.openNewProfileDialog({ type: 'control', mode: 'insert-control' })),
       feature.globalKeyboardShortcut('Alt+N', studio.pickAndOpen('studio')),
       feature.globalKeyboardShortcut('Ctrl+Z', watchableComps.undo()),
       feature.globalKeyboardShortcut('Ctrl+Y', watchableComps.redo()),
-      feature.globalKeyboardShortcut(
-        'Alt+X',
-        studio.openJbEditor(firstSucceeding('%$studio/profile_path%', studio.currentPagePath()))
-      ),
+      feature.globalKeyboardShortcut('Alt+X', studio.openJbEditor(firstSucceeding('%$studio/profile_path%', studio.currentPagePath()))),
       css.transformScale('0.7', '0.7'),
-      css.color({background: 'var(--jb-menubar-selection-bg)', selector: '~ button'})
+      css.color({ background: 'var(--jb-menubar-selection-bg)', selector: '~ button' })
     ]
   })
 })

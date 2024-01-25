@@ -31,35 +31,27 @@ component('studio.scriptHistory', {
       itemlist({
         items: watchableComps.scriptHistoryItems(),
         controls: [
-          button({
-              title: tgp.nameOfRef('%opEvent/ref%'),
-              action: studio.gotoPath(tgp.pathOfRef('%opEvent/ref%')),
-              style: button.href(),
-              features: feature.hoverTitle(tgp.pathOfRef('%opEvent/ref%'))
+          button(tgp.nameOfRef('%opEvent/ref%'), studio.gotoPath(tgp.pathOfRef('%opEvent/ref%')), {
+            style: button.href(),
+            features: feature.hoverTitle(tgp.pathOfRef('%opEvent/ref%'))
           }),
           text(prettyPrint('%opEvent/oldVal%')),
           text(prettyPrint('%opEvent/newVal%')),
-          button({
-              title: 'revert to here',
-              action: watchableComps.revert('%undoIndex%'),
-              style: button.href()
-          })
-        ],
+          button('revert to here', watchableComps.revert('%undoIndex%'), { style: button.href() })
+        ]
       })
     ],
     features: [
       followUp.watchObservable(watchableComps.scriptChange(), 500),
-      css.height({height: '400', overflow: 'auto', minMax: 'max'})
+      css.height('400', 'auto', { minMax: 'max' })
     ]
   })
 })
 
 component('studio.openScriptHistory', {
   type: 'action',
-  impl: openDialog({
-    style: dialog.studioFloating({id: 'script-history', width: '700', height: '400'}),
-    content: studio.scriptHistory(),
-    title: 'Script History'
+  impl: openDialog('Script History', studio.scriptHistory(), {
+    style: dialog.studioFloating('script-history', '700', { height: '400' })
   })
 })
 

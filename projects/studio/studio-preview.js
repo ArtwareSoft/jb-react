@@ -4,7 +4,7 @@ component('wPreview', {
   params: [
     {id: 'id', defaultValue: 'wPreview'}
   ],
-  impl: worker({id: '%$id%', sourceCode: probe(studio.filePath(), 'studio'), init: studio.initPreview()})
+  impl: worker('%$id%', { sourceCode: probe(studio.filePath(), 'studio'), init: studio.initPreview() })
 })
 
 component('studio.filePath', {
@@ -41,7 +41,9 @@ component('studio.initPreview', {
       rx.map(obj(prop('op', '%op%'), prop('path', '%path%'))),
       rx.var('cssOnlyChange', tgp.isCssPath('%path%')),
       sink.action(
-        remote.action({action: probe.handleScriptChangeOnPreview('%$cssOnlyChange%'), jbm: '%$jbm%', oneway: true})
+        remote.action(probe.handleScriptChangeOnPreview('%$cssOnlyChange%'), '%$jbm%', {
+          oneway: true
+        })
       )
     )
   )
@@ -56,8 +58,7 @@ component('preview.remoteWidget', {
 })
 
 component('studio.refreshPreview', {
-  type: 'action',
-  impl: ''
+  type: 'action'
 })
 
 component('preview.control', {
@@ -70,12 +71,15 @@ component('preview.control', {
       return circuit && circuit.$ && ctx.run(circuit)
     },
     features: [
-      If(ctx => !jb.comps[ctx.exp('%$studio/circuit%')], group.wait(treeShake.getCodeFromRemote('%$studio/circuit%'))),
+      If({
+        condition: ctx => !jb.comps[ctx.exp('%$studio/circuit%')],
+        then: group.wait(treeShake.getCodeFromRemote('%$studio/circuit%'))
+      }),
       watchRef('%$probe/scriptChangeCounter%'),
       variable('$previewMode', true)
     ]
   }),
-  require: {$: 'test.showTestInStudio' }
+  require: test.showTestInStudio()
 })
 
 

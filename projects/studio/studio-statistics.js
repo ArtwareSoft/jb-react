@@ -5,25 +5,23 @@ component('studio.gotoReferencesOptions', {
     {id: 'path', as: 'string'},
     {id: 'refs', as: 'array'}
   ],
-  impl: menu.dynamicOptions(
-    '%$refs%',
-      If('%refs/length% > 1',
-      menu.menu({
-        title: '%id% (%refs/length%)',
-        options: menu.dynamicOptions(
-          '%$menuData/refs%',
-          menu.action({
-            title: '%%',
-            action: studio.openComponentInJbEditor('%%', '%$path%')
-          })
-        )
-      }),
-      menu.action({
-        vars: [Var('compName', split({separator: '~', text: '%refs[0]%', part: 'first'}))],
-        title: '%$compName%',
-        action: studio.openComponentInJbEditor('%refs[0]%', '%$path%')
-      }))
-  )
+  impl: menu.dynamicOptions('%$refs%', {
+    genericOption: If({
+    condition: '%refs/length% > 1',
+    then: menu.menu('%id% (%refs/length%)', {
+      options: menu.dynamicOptions('%$menuData/refs%', {
+      genericOption: menu.action('%%', studio.openComponentInJbEditor('%%', '%$path%'))
+    })
+    }),
+    Else: menu.action({
+      vars: [
+        Var('compName', split('~', { text: '%refs[0]%', part: 'first' }))
+      ],
+      title: '%$compName%',
+      action: studio.openComponentInJbEditor('%refs[0]%', '%$path%')
+    })
+  })
+  })
 })
 
 component('studio.gotoReferencesButton', {
@@ -31,20 +29,18 @@ component('studio.gotoReferencesButton', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: controlWithCondition(
-    Var('refs', tgp.references('%$path%')),
-    Var(
-        'noOfReferences',
-        ctx => ctx.vars.refs.reduce((total,refsInObj)=>total+refsInObj.refs.length,0)
-      ),
-    '%$refs/length%',
-    button({
-      title: '%$noOfReferences% references',
-      action: menu.openContextMenu({
-        menu: menu.menu({options: studio.gotoReferencesOptions('%$path%', '%$refs%')})
+  impl: controlWithCondition({
+    vars: [
+      Var('refs', tgp.references('%$path%')),
+      Var('noOfReferences', ctx => ctx.vars.refs.reduce((total,refsInObj)=>total+refsInObj.refs.length,0))
+    ],
+    condition: '%$refs/length%',
+    control: button('%$noOfReferences% references', menu.openContextMenu(
+      menu.menu({
+        options: studio.gotoReferencesOptions('%$path%', { refs: '%$refs%' })
       })
-    })
-  )
+    ))
+  })
 })
 
 component('studio.gotoReferencesMenu', {
@@ -53,14 +49,13 @@ component('studio.gotoReferencesMenu', {
     {id: 'path', as: 'string'}
   ],
   impl: If({
-    condition: '%$noOfReferences% > 0',
     vars: [
       Var('refs', tgp.references('%$path%')),
       Var('noOfReferences', ctx => ctx.vars.refs.reduce((total,refsInObj)=>total+refsInObj.refs.length,0))
     ],
-    then: menu.menu({
-      title: '%$noOfReferences% references for %$path%',
-      options: studio.gotoReferencesOptions('%$path%', '%$refs%')
+    condition: '%$noOfReferences% > 0',
+    then: menu.menu('%$noOfReferences% references for %$path%', {
+      options: studio.gotoReferencesOptions('%$path%', { refs: '%$refs%' })
     }),
     Else: menu.action('no references for %$path%')
   })
@@ -73,34 +68,44 @@ component('studio.componentsList', {
       tableTree({
         treeModel: tree.jsonReadOnly(studio.cmpsOfProjectByFiles(), ''),
         leafFields: [
-          text({
-            text: pipeline(tgp.componentStatistics('%val%'), '%size%'),
-            title: 'size',
-            features: [field.columnWidth('80')]
+          text(pipeline(tgp.componentStatistics('%val%'), '%size%'), 'size', {
+            features: [
+            field.columnWidth('80')
+          ]
           }),
           button({
             title: pipeline(tgp.componentStatistics('%val%'), '%refCount%.', split('.')),
-            action: menu.openContextMenu({
-              menu: menu.menu({
-                options: [studio.gotoReferencesOptions('%val%', tgp.references('%val%'))]
+            action: menu.openContextMenu(
+              menu.menu({
+                options: [
+                  studio.gotoReferencesOptions('%val%', { refs: tgp.references('%val%') })
+                ]
               })
-            }),
+            ),
             style: button.href(),
-            features: [field.title('refs'), field.columnWidth('40')]
+            features: [
+              field.title('refs'),
+              field.columnWidth('40')
+            ]
           }),
           button({
             title: 'delete',
             action: openDialog({
-              vars: [Var('compId', pipeline('%path%', split({separator: '~', part: 'last'})))],
-              style: dialog.dialogOkCancel(),
-              content: group({}),
+              vars: [
+                Var('compId', pipeline('%path%', split('~', { part: 'last' })))
+              ],
               title: 'delete %$compId%',
+              content: group(),
+              style: dialog.dialogOkCancel(),
               onOK: runActions(
                 tgp.delete('%$compId%'),
                 ctx => delete jb.studio.comps[ctx.vars.compId],
                 refreshControlById('component-list')
               ),
-              features: [css('z-index: 6000 !important'), dialogFeature.nearLauncherPosition({})]
+              features: [
+                css('z-index: 6000 !important'),
+                dialogFeature.nearLauncherPosition()
+              ]
             }),
             style: button.x(),
             features: [
@@ -110,16 +115,13 @@ component('studio.componentsList', {
             ]
           })
         ],
-        chapterHeadline: text({
-          text: pipeline('%path%', split({separator: '~', part: 'last'})),
-          title: ''
-        }),
-        style: tableTree.plain({hideHeaders: false, gapWidth: '130', expColWidth: '10'})
+        chapterHeadline: text(pipeline('%path%', split('~', { part: 'last' })), ''),
+        style: tableTree.plain(false, '130', { expColWidth: '10' })
       })
     ],
     features: [
-      css.padding({top: '4', right: '5'}),
-      css.height({height: '400', overflow: 'auto', minMax: ''}),
+      css.padding('4', { right: '5' }),
+      css.height('400', 'auto', { minMax: '' }),
       id('component-list')
     ]
   })
@@ -127,23 +129,22 @@ component('studio.componentsList', {
 
 component('studio.cmpsOfProjectByFiles', {
   type: 'data',
-  impl: dynamicObject({
-    items: () => st.projectFiles(),
+  impl: dynamicObject(() => st.projectFiles(), {
     propertyName: '%%',
     value: pipeline(
-      Var('file', '%%'),
-      () => st.projectCompsAsEntries(),
-      filter(
-          equals(
-            pipeline(
-              ({data}) => jb.studio.previewjb.comps[data][jb.core.CT].location.path,
-              split({separator: '/', part: 'last'})
-            ),
-            '%$file%'
-          )
+    Var('file', '%%'),
+    () => st.projectCompsAsEntries(),
+    filter(
+      equals({
+        item1: pipeline(
+          ({data}) => jb.studio.previewjb.comps[data][jb.core.CT].location.path,
+          split('/', { part: 'last' })
         ),
-      '%[0]%',
-      aggregate(dynamicObject({items: '%%', propertyName: '%%', value: '%%'}))
-    )
+        item2: '%$file%'
+      })
+    ),
+    '%[0]%',
+    aggregate(dynamicObject('%%', { propertyName: '%%', value: '%%' }))
+  )
   })
 })

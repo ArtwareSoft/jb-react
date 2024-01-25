@@ -3,7 +3,7 @@ component('inplaceEdit.activate', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
-    {id: 'elem'},
+    {id: 'elem'}
   ],
   impl: runActions(
     Var('inplaceElem', (ctx,{},{path,elem})=> {
@@ -13,15 +13,15 @@ component('inplaceEdit.activate', {
     }),
     Var('parentGroup', ctx => jb.tgp.pathParents(ctx.exp('%$path%'), true).find(path=>jb.tgp.compNameOfPath(path) == 'group')),
     Var('parentLayout', If('%$parentGroup%', tgp.compName('%$parentGroup%~layout'))),
-    action.if( '%$parentLayout% == layout.grid', inplaceEdit.openGridEditor('%$parentGroup%')),
+    action.if('%$parentLayout% == layout.grid', inplaceEdit.openGridEditor('%$parentGroup%')),
     writeValue('%$studio/profile_path%', '%$path%'),
     openDialog({
-        style: inplaceEdit.popupStyle(),
-        content: inplaceEdit.toolbar('%$path%'),
-        features: [
-          css('background: transparent; box-shadow: 0 0; border: 0'),
-          dialogFeature.onClose(contentEditable.deactivate())
-        ]
+      content: inplaceEdit.toolbar('%$path%'),
+      style: inplaceEdit.popupStyle(),
+      features: [
+        css('background: transparent; box-shadow: 0 0; border: 0'),
+        dialogFeature.onClose(contentEditable.deactivate())
+      ]
     })
   )
 })
@@ -33,7 +33,7 @@ component('inplaceEdit.popupStyle', {
     css: `{ position: absolute; background: var(--jb-editor-background); padding: 6px;
               box-shadow: 2px 2px 3px #d5d5d5; border: 1px solid rgb(213, 213, 213); }`,
     features: [
-      dialogFeature.dragTitle({ selector: '*'}),
+      dialogFeature.dragTitle({ selector: '*' }),
       dialogFeature.uniqueDialog('inplace-edit-toolbar'),
       dialogFeature.maxZIndexOnClick(),
       dialogFeature.closeWhenClickingOutside(),
@@ -68,62 +68,35 @@ component('inplaceEdit.toolbar', {
   impl: group({
     layout: layout.horizontal('3'),
     controls: [
-      button({
-        title: 'sizes',
-        action: studio.openSizesEditor(),
-        style: button.mdcIcon(icon('business'), '20')
-      }),
-      button({
-        title: 'edit grid',
-        action: inplaceEdit.activate('%$parentGroup%'),
-        style: button.mdcIcon(icon({icon: 'grid_on', type: 'mdc'}), '20'),
+      button('sizes', studio.openSizesEditor(), { style: button.mdcIcon(icon('business'), '20') }),
+      button('edit grid', inplaceEdit.activate('%$parentGroup%'), {
+        style: button.mdcIcon(icon('grid_on', { type: 'mdc' }), '20'),
         features: ctx => ctx.run(feature.if('%$parentLayout% == layout.grid'))
       }),
       button({
         title: 'Change Style',
-        action: action.if(
-          equals(tgp.compName('%$path%'), 'image'),
-          studio.openProperties(),
-          studio.openPickProfile('%$path%~style')
-        ),
+        action: action.if(equals(tgp.compName('%$path%'), 'image'), studio.openProperties(), studio.openPickProfile('%$path%~style')),
         style: button.mdcIcon(icon('style'), '20')
       }),
-      button({
-        title: 'Insert Control',
-        action: studio.openNewProfileDialog({
-          type: 'control',
-          mode: 'insert-control',
-          onClose: inplaceEdit.openToolbarOfLastEdit()
-        }),
+      button('Insert Control', studio.openNewProfileDialog({ type: 'control', mode: 'insert-control', onClose: inplaceEdit.openToolbarOfLastEdit() }), {
         style: button.mdcIcon(icon('add'), '20')
       }),
-      button({
-        title: 'Duplicate data item',
-        action: ctx => jb.ui.duplicateDataItem(ctx),
-        style: button.mdcIcon(icon({icon: 'PlusBoxOutline', type: 'mdi'}), '20'),
+      button('Duplicate data item', ctx => jb.ui.duplicateDataItem(ctx), {
+        style: button.mdcIcon(icon('PlusBoxOutline', { type: 'mdi' }), '20'),
         features: feature.if('%$sourceItem%')
       }),
       button({
         vars: [
-          Var(
-            'parentLayout',
-            ctx => jb.tgp.parents(ctx.run('%$path%')).find(path=> jb.tgp.compNameOfPath(path) == 'group') + '~layout'
-          )
+          Var('parentLayout', ctx => jb.tgp.parents(ctx.run('%$path%')).find(path=> jb.tgp.compNameOfPath(path) == 'group') + '~layout')
         ],
         title: 'Layout',
         action: studio.openPickProfile('%$parentLayout%'),
         style: button.mdcIcon(icon('view_quilt'), '20')
       }),
-      button({
-        title: 'Properties',
-        action: studio.openProperties(true),
+      button('Properties', studio.openProperties(true), {
         style: button.mdcIcon(icon('storage'), '20')
       }),
-      button({
-        title: 'Delete',
-        action: tgp.delete('%$path%'),
-        style: button.mdcIcon(icon('delete'), '20')
-      })
+      button('Delete', tgp.delete('%$path%'), { style: button.mdcIcon(icon('delete'), '20') })
     ]
   })
 })
@@ -180,10 +153,10 @@ Object.assign(jb.ui, {
 })
 
 component('inplaceEdit.thumbStyle', {
-    type: 'dialog.style',
-    impl: customStyle({
-      template: (cmp,state,h) => h('div.jb-dialog jb-popup',{},h(state.contentComp)),
-      css: '{ display: block; position: absolute; }',
-      features: [dialogFeature.maxZIndexOnClick(), dialogFeature.closeWhenClickingOutside()]
-    })
+  type: 'dialog.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div.jb-dialog jb-popup',{},h(state.contentComp)),
+    css: '{ display: block; position: absolute; }',
+    features: [dialogFeature.maxZIndexOnClick(), dialogFeature.closeWhenClickingOutside()]
+  })
 })

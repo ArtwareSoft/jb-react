@@ -4,67 +4,56 @@ component('studio.searchList', {
     {id: 'path', as: 'string'}
   ],
   impl: table({
-    items: pipeline(
-      tgp.allComps(),
-      itemlistContainer.filter(),
-      tgp.componentStatistics('%%')
-    ),
+    items: pipeline(tgp.allComps(), itemlistContainer.filter(), tgp.componentStatistics('%%')),
     controls: [
-      control.icon({
-        icon: tgp.iconOfType('%type%'),
-        features: [
-          css.opacity('0.3'),
-          css.padding({top: '5', left: '5'})
-        ]
+      control.icon(tgp.iconOfType('%type%'), {
+        features: [css.opacity('0.3'), css.padding('5', '5')]
       }),
       button({
         title: pipeline(
-          text.highlight(
-              '%id%',
-              '%$itemlistCntrData/search_pattern%',
-              'var(--vscode-editor-findMatchHighlightBackground)'
-            )
+          text.highlight({
+            base: '%id%',
+            highlight: '%$itemlistCntrData/search_pattern%',
+            cssClass: 'var(--vscode-editor-findMatchHighlightBackground)'
+          })
         ),
         action: runActions(writeValue('%$studio/circuit%', '%id%'), dialog.closeDialog()),
         style: button.href(),
-        features: [field.columnWidth(200), field.title('id')]
+        features: [
+          field.columnWidth(200),
+          field.title('id')
+        ]
       }),
       button({
         title: '%refCount%',
-        action: menu.openContextMenu({
-          menu: menu.menu({
-            options: [studio.gotoReferencesOptions('%id%', tgp.references('%id%'))]
+        action: menu.openContextMenu(
+          menu.menu({
+            options: [
+              studio.gotoReferencesOptions('%id%', { refs: tgp.references('%id%') })
+            ]
           })
-        }),
+        ),
         style: button.href(),
         features: field.title('refCount')
       }),
-      text({text: '%type%', features: field.title('type')}),
-      text({
-        text: pipeline('%file%', split({separator: '/', part: 'last'})),
-        features: field.title('file')
-      }),
-      text({
-        text: pipeline('%implType%', data.if('%% = \"function\"', 'javascript', '')),
-        features: field.title('impl')
-      })
+      text('%type%', { features: field.title('type') }),
+      text(pipeline('%file%', split('/', { part: 'last' })), { features: field.title('file') }),
+      text(pipeline('%implType%', data.if('%% = "function"', 'javascript', '')), { features: field.title('impl') })
     ],
     visualSizeLimit: 30,
     features: [
       watchRef('%$itemlistCntrData/search_pattern%'),
-      itemlist.selection({
-        databind: '%$itemlistCntrData/selected%',
-        selectedToDatabind: '%%',
+      itemlist.selection('%$itemlistCntrData/selected%', '%%', {
         databindToSelected: '%%',
         cssForSelected: 'background: #bbb !important; color: #fff !important'
       }),
       itemlist.infiniteScroll(),
-      itemlist.keyboardSelection({onEnter: studio.gotoPath('%id%')}),
-      css.boxShadow({shadowColor: '#cccccc'}),
-      css.padding({top: '4', right: '5'}),
-      css.height({height: '600', overflow: 'auto', minMax: 'max'}),
-      css.width({width: '400', minMax: 'min'}),
-      css.class('searchList'),
+      itemlist.keyboardSelection({ onEnter: studio.gotoPath('%id%') }),
+      css.boxShadow({ shadowColor: '#cccccc' }),
+      css.padding('4', { right: '5' }),
+      css.height('600', 'auto', { minMax: 'max' }),
+      css.width('400', { minMax: 'min' }),
+      css.class('searchList')
     ]
   })
 })
@@ -78,23 +67,17 @@ component('studio.searchComponent', {
     title: 'itemlist-with-find',
     layout: layout.horizontal(''),
     controls: [
-      itemlistContainer.search({
-        title: 'Search',
+      itemlistContainer.search('Search', {
         databind: '%$itemlistCntrData/search_pattern%',
-        style: editableText.mdcInput({}),
+        style: editableText.mdcInput(),
         features: [
-          editableText.helperPopup({
-            control: studio.searchList(),
-            popupId: 'search-component',
-            popupStyle: styleWithFeatures(
-              dialog.popup(),
-              dialogFeature.nearLauncherPosition()
-            )
-          }),
-          css.height({height: '40', selector: '~ .mdc-text-field'})
-        ]
+        editableText.helperPopup(studio.searchList(), styleWithFeatures(dialog.popup(), { features: dialogFeature.nearLauncherPosition() }), {
+          popupId: 'search-component'
+        }),
+        css.height('40', { selector: '~ .mdc-text-field' })
+      ]
       })
     ],
-    features: [group.itemlistContainer({})]
+    features: [group.itemlistContainer()]
   })
 })

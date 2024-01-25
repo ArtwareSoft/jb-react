@@ -95,49 +95,47 @@ extension('chromeDebugger', {
 })
 
 component('chromeDebugger.logsCtrl', {
-    params: [
-        {id: 'uri', as: 'string'}
-    ],
-    type: 'control',
-    impl: group({
-        controls: [
-            picklist({
-                title: 'jbm',
-                databind: '%$inspectedUri%',
-                options: pipe(
-                    remote.data(net.listSubJbms(), byUri('%$uri%')),
-                    unique(),
-                    filter(not(contains('•vDebugger'))),
-                    filter(not(contains('devtools'))),
-                    aggregate(obj(prop('options',picklist.options('%%'))))
-                ),
-                features: picklist.allowAsynchOptions(),
-            }),
-            group({
-                controls: remote.widget(studio.eventTracker(), byUri('%$inspectedUri%•vDebugger')),
-                features: [
-                    watchRef('%$inspectedUri%'),
-                    group.wait(remote.data(jbm.start(jbm.vDebugger()),byUri('%$inspectedUri%')))
-                ]
-            })
-        ],
+  params: [
+    {id: 'uri', as: 'string'}
+  ],
+  type: 'control',
+  impl: group({
+    controls: [
+      picklist('jbm', '%$inspectedUri%', {
+        options: pipe(
+        remote.data(net.listSubJbms(), byUri('%$uri%')),
+        unique(),
+        filter(not(contains('•vDebugger'))),
+        filter(not(contains('devtools'))),
+        aggregate(obj(prop('options', picklist.options('%%'))))
+      ),
+        features: picklist.allowAsynchOptions()
+      }),
+      group({
+        controls: remote.widget(studio.eventTracker(), byUri('%$inspectedUri%•vDebugger')),
         features: [
-            watchable('inspectedUri', '%$uri%'),
-            id('%$uri%')
+          watchRef('%$inspectedUri%'),
+          group.wait(remote.data(jbm.start(jbm.vDebugger()), byUri('%$inspectedUri%')))
         ]
-    })
+      })
+    ],
+    features: [
+      watchable('inspectedUri', '%$uri%'),
+      id('%$uri%')
+    ]
+  })
 })
 
 component('chromeDebugger.compCtrl', {
-    params: [
-        {id: 'uri', as: 'string'},
-        {id: 'inspectedProps'},
-    ],
-    type: 'control',
-    impl: group({
-        controls: remote.widget(studio.compInspector('%$inspectedProps%'), byUri('%$uri%•vDebugger')),
-        features: group.wait(remote.data(jbm.start(jbm.vDebugger()),byUri('%$uri%')))
-    })
+  params: [
+    {id: 'uri', as: 'string'},
+    {id: 'inspectedProps'}
+  ],
+  type: 'control',
+  impl: group({
+    controls: remote.widget(studio.compInspector('%$inspectedProps%'), byUri('%$uri%•vDebugger')),
+    features: group.wait(remote.data(jbm.start(jbm.vDebugger()), byUri('%$uri%')))
+  })
 })
 
 // component('chromeDebugger.cardCtrl', {
@@ -149,11 +147,11 @@ component('chromeDebugger.compCtrl', {
 // })
 
 component('chromeDebugger.openResource', {
-    type: 'action',
-    params: [
-        {id: 'location', as: 'array', description: 'file,line,col'}
-    ],
-    impl: (ctx,loc) => {
+  type: 'action',
+  params: [
+    {id: 'location', as: 'array', description: 'file,line,col'}
+  ],
+  impl: (ctx,loc) => {
         console.log('chromeDebugger openResource',loc)
         chrome.devtools.panels.openResource(...loc)
     }

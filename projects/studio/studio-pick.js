@@ -1,10 +1,6 @@
 component('studio.pick', {
   type: 'action',
-  impl: openDialog({
-    id: 'studio.pick',
-    style: dialog.studioPickDialog('preview'),
-    content: text(''),
-  })
+  impl: openDialog({ content: text(''), style: dialog.studioPickDialog('preview'), id: 'studio.pick' })
 })
 
 component('studio.pickAndOpen', {
@@ -13,23 +9,18 @@ component('studio.pickAndOpen', {
     {id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'}
   ],
   impl: openDialog({
-    id: 'studio.pick',
-    style: dialog.studioPickDialog('%$from%'),
     content: text(''),
-    onOK: runActions(
-      writeValue('%$studio/profile_path%', '%$dialogData/path%'),
-      studio.openControlTree(),
-      //studio.openProperties(true)
-    )
+    style: dialog.studioPickDialog('%$from%'),
+    onOK: runActions(writeValue('%$studio/profile_path%', '%$dialogData/path%'), studio.openControlTree()),
+    id: 'studio.pick'
   })
 })
 
 component('studio.pickTitle', {
-   type: 'control',
-   impl: text({
-        text: tgp.shortTitle('%$dialogData/path%'),
-        features: css('display: block; margin-top: -20px; background: white')
-   })
+  type: 'control',
+  impl: text(tgp.shortTitle('%$dialogData/path%'), {
+    features: css('display: block; margin-top: -20px; background: white')
+  })
 })
 
 component('dialogFeature.studioPick', {
@@ -60,16 +51,11 @@ component('dialogFeature.studioPick', {
       Object.assign(ctx.vars.dialogData,{ elem: el, cmpId: el.getAttribute('cmp-id'), path: jb.studio.pathOfElem(el) })
       ctx.run(toggleBooleanValue('%$studio/refreshPick%')) // trigger for refreshing the dialog
     }),
-    method(
-      'endPick',
-      runActions(writeValue('%$studio/pickSelectionCmpId%', '%$dialogData.cmpId%'), dialog.closeDialog(true))
-    ),
+    method('endPick', runActions(writeValue('%$studio/pickSelectionCmpId%', '%$dialogData.cmpId%'), dialog.closeDialog(true))),
     frontEnd.flow(
       source.event('mousemove', () => jb.frame.document, obj(prop('capture', true))),
       rx.debounceTime(50),
-      rx.reduce({
-        varName: 'moveRight',
-        initialValue: obj(prop('count', 0), prop('dir', '')),
+      rx.reduce('moveRight', obj(prop('count', 0), prop('dir', '')), {
         value: ({data},{moveRight,prev}) => {
           const dir = prev && prev.clientX < data.clientX ? 'right' : 'left'
           return {dir, count: (moveRight.dir == dir) ? moveRight.count+1 : 1}
@@ -83,17 +69,9 @@ component('dialogFeature.studioPick', {
     ),
     frontEnd.flow(
       source.merge(
-        source.event(
-          'mousedown',
-          () => jb.frame.document,
-          obj(prop('capture', true))
-        ),
+        source.event('mousedown', () => jb.frame.document, obj(prop('capture', true))),
         rx.pipe(
-          source.event(
-            'keyup',
-            () => jb.frame.document,
-            obj(prop('capture', true))
-          ),
+          source.event('keyup', () => jb.frame.document, obj(prop('capture', true))),
           rx.filter('%keyCode% == 27')
         )
       ),
@@ -114,9 +92,11 @@ component('dialog.studioPickDialog', {
       h('div.edge top'), h('div.edge left'), h('div.edge right'), h('div.edge bottom'), h(cmp.ctx.run(studio.pickTitle()))
     ]),
     css: `{ display: block; position: absolute; width: 0; height:0; z-index: 10000 !important; }
-    >.edge { position: absolute; box-shadow: 0 0 1px 1px gray; width: 1px; height: 1px; cursor: pointer; }`,    
+    >.edge { position: absolute; box-shadow: 0 0 1px 1px gray; width: 1px; height: 1px; cursor: pointer; }`,
     features: [
-      css(pipeline( (ctx,{dialogData},{from}) => {
+      css(
+        pipeline(
+          (ctx,{dialogData},{from}) => {
         if (!dialogData.elem) return {}
         const elemRect = dialogData.elem.getBoundingClientRect()
         const zoom = +(document.body.style.zoom) || 1
@@ -126,12 +106,13 @@ component('dialog.studioPickDialog', {
             height: `height: ${elemRect.height*zoom}px`, widthVal: `${elemRect.width*zoom}px`, heightVal: `${elemRect.height*zoom}px`
           }
         },
-        `{ %top%; %left% } ~ .pick-toolbar { margin-top: -20px }
+          `{ %top%; %left% } ~ .pick-toolbar { margin-top: -20px }
         >.top, >span { %width% } >.left{ %height% } >.right{ left: %widthVal%;  %height% } >.bottom{ top: %heightVal%; %width% }`
-      )),
-      watchRef({ref: '%$studio/refreshPick%', allowSelfRefresh: true}),
+        )
+      ),
+      watchRef('%$studio/refreshPick%', { allowSelfRefresh: true }),
       dialogFeature.studioPick('%$from%'),
-      dialogFeature.closeWhenClickingOutside(),
+      dialogFeature.closeWhenClickingOutside()
     ]
   })
 })

@@ -50,10 +50,9 @@ component('dialog.editSourceStyle', {
 				>.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }
 				>.dialog-close:hover { opacity: .5 }`,
     features: [
-      dialogFeature.dragTitle({id: '%$id%', useSessionStorage: true}),
-      dialogFeature.uniqueDialog('%$id%', true),
+      dialogFeature.dragTitle('%$id%', true),
+      dialogFeature.uniqueDialog('%$id%'),
       dialogFeature.maxZIndexOnClick(5000),
-//      studioDialogFeature.refreshTitle(),
       studioDialogFeature.studioPopupLocation()
     ]
   })
@@ -70,7 +69,7 @@ component('studio.dialogParticleStyle', {
 
 component('studioDialogFeature.studioPopupLocation', {
   type: 'dialog-feature',
-  impl: templateModifier( ({},{vdom}) => { 
+  impl: templateModifier(({},{vdom}) => { 
     const id = (vdom.getAttribute('id')||'').replace(/\s/g,'_')
     if (id && !jb.utils.sessionStorage(id))
       vdom.addClass(`default-location ${id}`)
@@ -79,7 +78,7 @@ component('studioDialogFeature.studioPopupLocation', {
 
 component('studioDialogFeature.refreshTitle', {
   type: 'dialog-feature',
-  impl: frontEnd.flow(watchableComps.scriptChange(), rx.takeUntil( '%$cmp.destroyed%' ), sink.FEMethod('recalcTitle'))
+  impl: frontEnd.flow(watchableComps.scriptChange(), rx.takeUntil('%$cmp.destroyed%'), sink.FEMethod('recalcTitle'))
 })
 
 component('studio.codeMirrorMode', {
@@ -101,11 +100,11 @@ component('studio.openMultilineEdit', {
     {id: 'path', as: 'string'}
   ],
   impl: openDialog({
-    style: dialog.studioMultilineEdit(),
     content: editableText({
       databind: tgp.ref('%$path%'),
-      style: editableText.codemirror({mode: studio.codeMirrorMode('%$path%')})
-    })
+      style: editableText.codemirror({ mode: studio.codeMirrorMode('%$path%') })
+    }),
+    style: dialog.studioMultilineEdit()
   })
 })
 
@@ -155,10 +154,9 @@ component('dialog.studioFloating', {
 				}
 				>.dialog-close:hover { opacity: .5 }`,
     features: [
-      dialogFeature.dragTitle({id: '%$id%', useSessionStorage: true}),
-      dialogFeature.uniqueDialog('%$id%', true),
+      dialogFeature.dragTitle('%$id%', true),
+      dialogFeature.uniqueDialog('%$id%'),
       dialogFeature.maxZIndexOnClick(5000),
-//      studioDialogFeature.refreshTitle(),
       studioDialogFeature.studioPopupLocation()
     ]
   })
@@ -184,28 +182,28 @@ component('studio.openResponsivePhonePopup', {
                 runActions(writeValue('%$studio/preview/width%', '400'), writeValue('%$studio/preview/height%', '600'))
               ),
               style: button.mdcFloatingAction(true),
-              features: feature.icon({icon: 'phone_android', title: '', type: 'mdc'})
+              features: feature.icon('phone_android', '', { type: 'mdc' })
             }),
             button({
               title: 'tablet',
               action: runActions(writeValue('%$studio/preview/width%', '600'), writeValue('%$studio/preview/height%', '850')),
               style: button.mdcFloatingAction(true),
-              features: feature.icon({icon: 'tablet', title: '', type: 'mdc'})
+              features: feature.icon('tablet', '', { type: 'mdc' })
             }),
             button({
               title: 'desktop',
               action: runActions(writeValue('%$studio/preview/width%', '1280'), writeValue('%$studio/preview/height%', '100%')),
               style: button.mdcFloatingAction(true),
-              features: feature.icon({icon: 'desktop_mac', type: 'mdc'})
+              features: feature.icon('desktop_mac', { type: 'mdc' })
             }),
             button({
               title: 'full screen',
               action: runActions(writeValue('%$studio/preview/width%', '100%'), writeValue('%$studio/preview/height%', '100%')),
               style: button.mdcFloatingAction(true),
-              features: feature.icon({icon: 'fullscreen', type: 'mdc'})
+              features: feature.icon('fullscreen', { type: 'mdc' })
             })
           ],
-          features: css.padding({top: '7', left: '4', right: '4'})
+          features: css.padding('7', '4', { right: '4' })
         })
       ]
     }),
