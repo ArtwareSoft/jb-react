@@ -8,7 +8,7 @@ component('uiTest.group1', {
 })
 
 component('uiTest.label', {
-  impl: uiTest(text({text: 'hello world', features: css.color('red')}), contains(['hello world','red']))
+  impl: uiTest(text('hello world', { features: css.color('red') }), contains(['hello world','red']))
 })
 
 component('uiTest.label0', {
@@ -20,27 +20,27 @@ component('uiTest.html', {
 })
 
 component('uiTest.html.inIframe', {
-  impl: uiTest(html({html: '<p>hello world</p>', style: html.inIframe()}), contains('iframe'))
+  impl: uiTest(html('<p>hello world</p>', { style: html.inIframe() }), contains('iframe'))
 })
 
 component('uiTest.controls', {
-  impl: uiTest(
-    group({
+  impl: uiTest({
+    control: group({
       controls: [
         text('hello'),
         controls(text('-1-'), controlWithCondition('1==2', text('-1.5-')), text('-2-')),
         text('world')
       ]
     }),
-    contains(['hello','-1-','-2-','world'])
-  )
+    expectedResult: contains(['hello','-1-','-2-','world'])
+  })
 })
 
 component('uiTest.waitForWithPipe', {
   impl: uiTest({
-    control: group({controls: text('%%'), features: group.wait(pipe(delay(1), 'hello'))}),
-    uiAction: waitForNextUpdate(),
+    control: group({ controls: text('%%'), features: group.wait(pipe(delay(1), 'hello')) }),
     expectedResult: and(contains('hello'), not(contains('loading'))),
+    uiAction: waitForNextUpdate(),
     expectedCounters: {'init uiComp': 4}
   })
 })
@@ -51,8 +51,8 @@ component('uiTest.waitForRx', {
       controls: text('%%'),
       features: group.wait(rx.pipe(source.interval(10), rx.take(1), rx.map('hello')))
     }),
-    uiAction: waitForNextUpdate(),
     expectedResult: and(contains('hello'), not(contains('loading'))),
+    uiAction: waitForNextUpdate(),
     expectedCounters: {'init uiComp': 4}
   })
 })
@@ -91,9 +91,7 @@ component('uiTest.waitForRx', {
 // })
 
 component('uiTest.asynchLabel', {
-  impl: uiTest({
-    control: text({text: pipe(delay(1), 'hello'), features: text.allowAsynchValue()}),
-    expectedResult: contains('hello'),
+  impl: uiTest(text(pipe(delay(1), 'hello'), { features: text.allowAsynchValue() }), contains('hello'), {
     uiAction: waitForNextUpdate(),
     expectedCounters: {'start renderVdom': 2, 'refresh uiComp !request': 1}
   })
@@ -101,7 +99,10 @@ component('uiTest.asynchLabel', {
 
 component('uiTest.waitForWithVar', {
   impl: uiTest({
-    control: group({controls: text('%$txt%'), features: group.wait({for: pipe(delay(1), 'hello'), varName: 'txt'})}),
+    control: group({
+      controls: text('%$txt%'),
+      features: group.wait(pipe(delay(1), 'hello'), { varName: 'txt' })
+    }),
     expectedResult: contains('hello'),
     uiAction: waitForNextUpdate()
   })
@@ -143,7 +144,9 @@ component('uiTest.button.expectedEffects', {
       features: watchable('txt', 'aaa')
     }),
     expectedResult: contains('bbb'),
-    uiAction: click({expectedEffects: Effects(checkLog({log: 'delta', data: '%delta%', condition: contains('$text=\"bbb\"')}))})
+    uiAction: click({
+      expectedEffects: Effects(checkLog('delta', '%delta%', { log: 'delta', condition: contains('$text="bbb"') }))
+    })
   })
 })
 
@@ -157,7 +160,7 @@ component('uiTest.button.expectedEffects.compChange', {
       features: watchable('txt', 'aaa')
     }),
     expectedResult: contains('bbb'),
-    uiAction: click({expectedEffects: Effects(compChange('bbb'))})
+    uiAction: click({ expectedEffects: Effects(compChange('bbb')) })
   })
 })
 
