@@ -8,11 +8,7 @@ component('itemlist.selection', {
     {id: 'onSelection', type: 'action', dynamic: true},
     {id: 'onDoubleClick', type: 'action', dynamic: true},
     {id: 'autoSelectFirst', type: 'boolean'},
-    {
-      id: 'cssForSelected',
-      as: 'string',
-      defaultValue: 'color: var(--jb-menubar-selection-fg); background: var(--jb-menubar-selection-bg)'
-    }
+    {id: 'cssForSelected', as: 'string', defaultValue: 'color: var(--jb-menubar-selection-fg); background: var(--jb-menubar-selection-bg)'}
   ],
   impl: features(
     css(({},{},{cssForSelected}) => ['>.selected','>*>.selected','>*>*>.selected'].map(sel=>sel+ ' ' + jb.ui.fixCssLine(cssForSelected)).join('\n')),
@@ -31,27 +27,21 @@ component('itemlist.selection', {
       const el = jb.path(parent,`children.${selected}`)
       el && el.addClass('selected')
     }),
-    method(
-      'onSelection',
-      runActionOnItem(
-        itemlist.indexToData(),
-        runActions(
-          log('itemlist onSelection'),
-          If(isRef('%$databind()%'), writeValue('%$databind()%', '%$selectedToDatabind()%')),
-          call('onSelection')
-        )
+    method('onSelection', runActionOnItem({
+      item: itemlist.indexToData(),
+      action: runActions(
+        log('itemlist onSelection'),
+        If(isRef('%$databind()%'), writeValue('%$databind()%', '%$selectedToDatabind()%')),
+        call('onSelection')
       )
-    ),
-    method(
-      'onDoubleClick',
-      runActionOnItem(
-        itemlist.indexToData(),
-        runActions(
-          If(isRef('%$databind()%'), writeValue('%$databind()%', '%$selectedToDatabind()%')),
-          call('onDoubleClick')
-        )
+    })),
+    method('onDoubleClick', runActionOnItem({
+      item: itemlist.indexToData(),
+      action: runActions(
+        If(isRef('%$databind()%'), writeValue('%$databind()%', '%$selectedToDatabind()%')),
+        call('onDoubleClick')
       )
-    ),
+    })),
     followUp.flow(
       source.data('%$$props/selected%'),
       rx.filter(and('%$autoSelectFirst%', not('%$$state/refresh%'))),

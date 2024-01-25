@@ -161,7 +161,7 @@ component('FETest.remoteWidgetTest.changeText', {
 component('FETest.remoteWidget.codemirror', {
   impl: uiFrontEndTest({
     control: remote.widget(text({text: 'hello', style: text.codemirror({height: 100})}), worker()),
-    uiAction: waitFor(() => document.querySelector('.CodeMirror')),
+    uiAction: waitFor(() => jb.frame.document.querySelector('.CodeMirror')),
     expectedResult: contains('hello'),
     renderDOM: true
   })
@@ -175,7 +175,7 @@ component('FETest.remoteWidget.codemirror.editableText', {
       value: obj(prop('name', 'Homer')),
       type: 'watchableData'
     }), worker()),
-    uiAction: waitFor(() => document.querySelector('.CodeMirror')),
+    uiAction: waitFor(() => jb.frame.document.querySelector('.CodeMirror')),
     expectedResult: contains('Homer'),
     renderDOM: true,
     covers: ['FETest.remoteWidget.codemirror']

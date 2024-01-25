@@ -80,7 +80,8 @@ extension('utils', 'prettyPrint', {
 
       const innerVals = props[path].innerVals || []
 
-      const singleLine = useSingleLine || singleFunc || nameValuePattern || primitiveArray || (len < colWidth && !multiLine())
+      const paramProps = path.match(/~params~[0-9]+$/)
+      const singleLine = paramProps || useSingleLine || singleFunc || nameValuePattern || primitiveArray || (len < colWidth && !multiLine())
       const arrayOrProfile = isArray? 'array' : 'profile'
       const separatorWS = primitiveArray ? '' : singleLine ? ' ' : newLine()
 
@@ -115,15 +116,11 @@ extension('utils', 'prettyPrint', {
       }
 
       function multiLine() {
-        const paramProps = path.match(/~params~[0-9]+$/)
         const paramsParent = path.match(/~params$/)
         const manyVals = innerVals.length > 4 && !isArray
         const top = !path.match(/~/g)
         const _longInnerValInArray = !singleParamAsArray && longInnerValInArray
-        return !paramProps && (paramsParent || top || manyVals || _longInnerValInArray)
-        // if (!res)
-        //   console.log('should flat ' + path)
-        // return res
+        return paramsParent || top || manyVals || _longInnerValInArray
       }
       function fixPropName(prop) {
         if (prop == '$vars') return 'vars'
@@ -131,8 +128,8 @@ extension('utils', 'prettyPrint', {
       }
 
       function calcMixedTokens() {
-        const { lenOfValues, macro, argsByValue, propsByName } = props[path]
-        const mixedFold = !singleLine && lenOfValues && lenOfValues < colWidth
+        const { lenOfValues, macro, argsByValue, propsByName, nameValueFold } = props[path]
+        const mixedFold = nameValueFold || !singleLine && lenOfValues && lenOfValues < colWidth
         const valueSeparatorWS = (singleLine || mixedFold) ? primitiveArray ? '' : ' ' : newLine()
 
         const _argsByValue = argsByValue.reduce((acc,{innerPath}, index) => {
@@ -278,8 +275,9 @@ extension('utils', 'prettyPrint', {
       // param0.arrayInMacro is temporary - remove after upgrade to mixed
       let firstParamAsArray = !param0.arrayInMacro && (param0.as == 'array' || (param0.type||'').indexOf('[]') != -1)
 
-      let paramsByValue = (firstParamAsArray || param0.byName) ? [] : params.slice(0,2)
-      let paramsByName = param0.byName ? params : firstParamAsArray ? params.slice(1) : params.slice(2)
+      const firstParamByName = param0.byName
+      let paramsByValue = (firstParamAsArray || firstParamByName) ? [] : params.slice(0,2)
+      let paramsByName = firstParamByName ? params : firstParamAsArray ? params.slice(1) : params.slice(2)
       const param1 = params[1] ? params[1] : {}
       if (!firstParamAsArray && (param1.as == 'array' || (param1.type||'').indexOf('[]') != -1 || param1.byName))
         paramsByName.unshift(paramsByValue.pop())
@@ -313,14 +311,17 @@ extension('utils', 'prettyPrint', {
       const argsByValue = [...varsByValue, ...(firstParamAsArray ? argsOfFirstParam: propsByValue)]
       const lenOfValues = varsLength + firstParamLength + propsByValueLength
       const singleArgAsArray = firstParamAsArray && propsByName.length == 0
-      if (lenOfValues >= colWidth && !singleArgAsArray)
+      const singleProp = propsByName.length == 0 && propsByValue.length == 1
+      const nameValue = propsByName.length == 0 && !varArgs.length && !systemProps.length && propsByValue.length == 2 && typeof propsByValue[0].val == 'string' 
+      const nameValuePattern = nameValue && (typeof propsByValue[1].val == 'function' || props[`${path}~${propsByValue[1].innerPath}`].len < colWidth)
+      const nameValueFold = nameValue && !nameValuePattern && propsByValue[1].val && propsByValue[1].val.$
+      if (lenOfValues >= colWidth && !singleArgAsArray && !nameValue && !singleProp)
         return calcProfilePropsMixed(profile, path, {forceByName: true})
 
       const len = lenOfValues + propsByNameLength
-      const nameValuePattern = !varArgs.length && !systemProps.length && propsByValue.length == 2 && typeof propsByValue[0].val == 'string' && typeof propsByValue[1].val == 'function'
-      const singleFunc = !varArgs.length && !systemProps.length && propsByValue.length == 1 && typeof propsByValue[0].val == 'function'
-      const primitiveArray = !varArgs.length && firstParamAsArray && argsByValue.reduce((acc,item)=> acc && jb.utils.isPrimitiveValue(item.val), true)
-      return props[path] = { macro, len, argsByValue, propsByName, nameValuePattern, singleFunc, primitiveArray, lenOfValues, mixed: true}
+      const singleFunc =  propsByName.length == 0 && !varArgs.length && !systemProps.length && propsByValue.length == 1 && typeof propsByValue[0].val == 'function'
+      const primitiveArray =  propsByName.length == 0 && !varArgs.length && firstParamAsArray && argsByValue.reduce((acc,item)=> acc && jb.utils.isPrimitiveValue(item.val), true)
+      return props[path] = { macro, len, argsByValue, propsByName, nameValuePattern, nameValueFold, singleFunc, primitiveArray, lenOfValues, mixed: true}
     }
 
     function asIsProps(profile,path) {
@@ -367,7 +368,7 @@ extension('utils', 'prettyPrint', {
       if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
         return itemListProps([
           {prop: '!value-text-start', item: "'"},
-          {prop: '!value-text', item: JSON.stringify(val).slice(1,-1)},
+          {prop: '!value-text', item: JSON.stringify(val).slice(1,-1).replace(/\\"/g,'"')},
           {prop: '!value-text-end', item: "'"},
         ], val.length, path)
       else if (typeof val === 'string')

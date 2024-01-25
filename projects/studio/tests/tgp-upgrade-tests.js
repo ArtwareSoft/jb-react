@@ -6,17 +6,30 @@ component('test.mixedTest.disabled', {
   })
 })
 
+component('mixedTest.tst2Helper', {
+  doNotRunInTests: true,
+  impl: calcProp('toggleText', If('%$$model/databind()%', '%$$model/textForTrue()%', '%$$model/textForFalse()%'))
+})
+
 component('mixedTest.tst1Helper', {
   doNotRunInTests: true,
-  impl: dataTest({
-    calculate: pipeline(typeAdapter('cmp-upgrade<upgrade>', upgradeMixed('uiTest.group'))),
-    expectedResult: notNull('%edit%'),
-    runBefore: TBD()
+  impl: customStyle({
+    template: ({},{},h) => h('div.jb-dialogs'),
+    features: features(
+      followUp.flow(
+        source.subject(dialogs.changeEmitter()),
+        rx.filter('%open%'),
+        rx.var('dialogVdom', pipeline(dialog.buildComp('%dialog%'), '%renderVdomAndFollowUp()%')),
+        rx.var('delta', obj(prop('children', obj(prop('toAppend', pipeline('%$dialogVdom%', ({data}) => jb.ui.stripVdom(data))))))),
+        rx.log('open dialog', obj(prop('dialogId', '%dialog/id%'))),
+        sink.applyDeltaToCmp('%$delta%', '%$followUpCmp/cmpId%')
+      )
+    )
   })
 })
 
 component('mixedTest.tst1', {
-  impl: dataTest(typeAdapter('cmp-upgrade<upgrade>', reformat('source-code<jbm>project')), equals('', ''))
+  impl: dataTest(typeAdapter('cmp-upgrade<upgrade>', reformat('mixedTest.tst1Helper')), equals('', ''))
 })
 
 // component('mixedTest.all', {
@@ -35,7 +48,7 @@ component('mixedTest.tst1', {
 
 component('mixedTest.createUpgradeScript', {
   doNotRunInTests: true,
-  impl: dataTest(createUpgradeScript(reformat(), { slice: 10 }), equals('', ''), {
+  impl: dataTest(createUpgradeScript(reformat(), { slice: 50 }), equals('', ''), {
     timeout: 10000
   })
 })
