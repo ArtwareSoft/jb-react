@@ -3,13 +3,12 @@ using('ui-tests')
 component('zuiTest.gallery', {
   impl: uiTest({
     control: group({
-      layout: layout.flex({direction: 'row', wrap: 'wrap'}),
+      layout: layout.flex('row', { wrap: 'wrap' }),
       controls: [
         zui.itemlist({
           itemView: group(
             [
-              image({
-                url: 'https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp',
+              image('https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp', {
                 build: imageBuild('projects/zuiDemo/build/gallery0')
               }),
               fixedText(text('xy'))
@@ -22,38 +21,35 @@ component('zuiTest.gallery', {
           itemProps: [xyByIndex()]
         })
       ],
-      features: [
-        variable('zuiCtx', obj())
-      ]
+      features: [variable('zuiCtx', obj())]
     }),
     expectedResult: contains('-')
   })
 })
 
 component('zuiTest.itemlist', {
-  impl: uiTest(
-    group({
-      layout: layout.flex({direction: 'row', wrap: 'wrap'}),
+  impl: uiTest({
+    control: group({
+      layout: layout.flex('row', { wrap: 'wrap' }),
       controls: [
         zui.itemlist({
           itemView: group(
             [
               growingText(byName('name')),
-              group(
-                [
+              group({
+                views: [
                   firstToFit(
                     [
-                      fixedText({prop: byName('price'), length: 8}),
-                      fixedText({prop: byName('price'), length: 4, backgroundColorByProp: true}),
+                      fixedText(byName('price'), { length: 8 }),
+                      fixedText(byName('price'), { length: 4, backgroundColorByProp: true }),
                       circle(byName('price'))
                     ]
                   ),
-                  fixedText({prop: byName('rating'), length: 4})
+                  fixedText(byName('rating'), { length: 4 })
                 ],
-                horizontal()
-              ),
-              image({
-                url: 'https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp',
+                layout: horizontal()
+              }),
+              image('https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp', {
                 build: imageBuild('projects/zuiDemo/build/top')
               }),
               fixedText(text('x', ' ')),
@@ -65,49 +61,42 @@ component('zuiTest.itemlist', {
           center: '1.3130639001816125,0.9833333333333321',
           items: pipeline('%$hotels%'),
           itemProps: [
-            numeric({att: 'price', prefix: '$', features: [
-              priorty(1),
-              colorScale(green())
-            ]}),
-            numeric({att: 'rating', features: [priorty(2), colorScale(red())]}),
-            text({att: 'name', features: priorty(3)}),
-            geo('lat', preferedAxis('y')),
-            geo('long', preferedAxis('x'))
+            numeric('price', { prefix: '$', features: [priorty(1), colorScale(green())] }),
+            numeric('rating', { features: [priorty(2), colorScale(red())] }),
+            text('name', { features: priorty(3) }),
+            geo('lat', { features: preferedAxis('y') }),
+            geo('long', { features: preferedAxis('x') })
           ],
           onChange: refreshControlById('itemPreview')
         }),
         zui.visualItemPreview()
       ],
-      features: [
-        variable('zuiCtx', obj())
-      ]
+      features: [variable('zuiCtx', obj())]
     }),
-    contains('-')
-  )
+    expectedResult: contains('-')
+  })
 })
 
 component('zuiTest.nested', {
   impl: uiTest({
     control: group({
-      layout: layout.flex({direction: 'row', wrap: 'wrap'}),
+      layout: layout.flex('row', { wrap: 'wrap' }),
       controls: [
         zui.itemlist({
           itemView: group(
             [
               circle(byName('price')),
               growingText(byName('name')),
-              zui.gridView({
-                items: pipeline('%$hotels/0/gallery%', obj(prop('image', '%%'))),
+              zui.gridView(pipeline('%$hotels/0/gallery%', obj(prop('image', '%%'))), {
                 itemView: group(
-                  [
-                    image({
-                      url: 'https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp',
-                      build: imageBuild('projects/zuiDemo/build/gallery0')
-                    }),
-                    fixedText(text('xy')),
-                    fixedText(text('imageDebug'))
-                  ]
-                ),
+                [
+                  image('https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp', {
+                    build: imageBuild('projects/zuiDemo/build/gallery0')
+                  }),
+                  fixedText(text('xy')),
+                  fixedText(text('imageDebug'))
+                ]
+              ),
                 itemProps: xyByIndex()
               })
             ]
@@ -117,26 +106,17 @@ component('zuiTest.nested', {
           center: '1.3130639001816125,0.9833333333333321',
           items: pipeline('%$hotels%'),
           itemProps: [
-            numeric({
-              att: 'price',
-              prefix: '$',
-              features: [
-                priorty(1),
-                colorScale(green())
-              ]
-            }),
-            numeric({att: 'rating', features: [priorty(2), colorScale(red())]}),
-            text({att: 'name', features: priorty(3)}),
-            geo('lat', preferedAxis('y')),
-            geo('long', preferedAxis('x'))
+            numeric('price', { prefix: '$', features: [priorty(1), colorScale(green())] }),
+            numeric('rating', { features: [priorty(2), colorScale(red())] }),
+            text('name', { features: priorty(3) }),
+            geo('lat', { features: preferedAxis('y') }),
+            geo('long', { features: preferedAxis('x') })
           ],
           onChange: refreshControlById('itemPreview')
         }),
         zui.visualItemPreview()
       ],
-      features: [
-        variable('zuiCtx', obj())
-      ]
+      features: [variable('zuiCtx', obj())]
     }),
     expectedResult: contains('-')
   })

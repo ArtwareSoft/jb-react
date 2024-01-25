@@ -11,8 +11,7 @@ component('dataResource.vegaItems', {
 component('vegaTest.bar', {
   impl: uiFrontEndTest({
     control: vega.interactiveChart(
-      vega.spec({
-        data: vega.jbData('%$vegaItems%'),
+      vega.spec(vega.jbData('%$vegaItems%'), {
         mark: vega.bar(),
         encoding: vega.positionChannels(vega.channel('a', 'nominal'), vega.channel('b', 'quantitative'))
       })

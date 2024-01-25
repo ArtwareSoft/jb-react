@@ -106,11 +106,15 @@ component('zui.stateOfItemView', {
     {id: 'itemView', type: 'view<zui>', dynamic: true, mandatory: true},
     {id: 'pos', as: 'string', description: 'top,left,width,height', defaultValue: '0,0,100,100'},
     {id: 'zoom', as: 'number', defaultValue: 4},
-    {id: 'DIM', as: 'number', defaultValue: 128},
+    {id: 'DIM', as: 'number', defaultValue: 128}
   ],
-  impl: pipeline(Var('elemsLayoutProps', obj()), Var('$props',({},{},{zoom,DIM}) => ({zoom, DIM})),
+  impl: pipeline(
+    Var('elemsLayoutProps', obj()),
+    Var('$props', ({},{},{zoom,DIM}) => ({zoom, DIM})),
     (ctx,{},{itemView,pos,zoom}) => {
       const [top, left,width,height] = pos
       return itemView(ctx).layout({zoom,top, left,width,height})
-    }, '%$elemsLayoutProps%')
+    },
+    '%$elemsLayoutProps%'
+  )
 })
