@@ -12,21 +12,21 @@ component('frontEnd.varsFromBEProps', {
   type: 'feature',
   description: 'calculate in the BE and pass to frontEnd',
   params: [
-    {id: 'idList', as: 'array', mandatory: true},
+    {id: 'idList', as: 'array', mandatory: true}
   ],
   impl: ({},idList) => idList.map(id => ({ frontEndVar: {id, value: ctx => ctx.vars.$props[id]} }))
 })
 
 component('action.runBEMethod', {
-    type: 'action',
-    description: 'can be activated on both FE & BE, assuming $cmp variable',
-    macroByValue: true,
-    params: [
-      {id: 'method', as: 'string', dynamic: true },
-      {id: 'data', defaultValue: '%%', dynamic: true },
-      {id: 'ctxVars', dynamic: true },
-    ],
-    impl: (ctx,method,data,ctxVars) => jb.ui.runBEMethodByContext(ctx,method(),data(),ctxVars())
+  type: 'action',
+  description: 'can be activated on both FE & BE, assuming $cmp variable',
+  macroByValue: true,
+  params: [
+    {id: 'method', as: 'string', dynamic: true},
+    {id: 'data', defaultValue: '%%', dynamic: true},
+    {id: 'ctxVars', dynamic: true}
+  ],
+  impl: (ctx,method,data,ctxVars) => jb.ui.runBEMethodByContext(ctx,method(),data(),ctxVars())
 })
 
 component('backend.dataMethod', {
@@ -46,23 +46,23 @@ component('action.runFEMethod', {
   description: 'cab be activated in frontEnd only with $cmp variable',
   macroByValue: true,
   params: [
-    {id: 'method', as: 'string', dynamic: true },
-    {id: 'data', defaultValue: '%%', dynamic: true },
-    {id: 'ctxVars', dynamic: true },
+    {id: 'method', as: 'string', dynamic: true},
+    {id: 'data', defaultValue: '%%', dynamic: true},
+    {id: 'ctxVars', dynamic: true}
   ],
   impl: (ctx,method,data,ctxVars) => ctx.vars.cmp && ctx.vars.cmp.runFEMethod(method(),data(),ctxVars())
 })
 
 component('sink.BEMethod', {
-    type: 'rx',
-    category: 'sink',
-    macroByValue: true,
-    params: [
-        {id: 'method', as: 'string', dynamic: true },
-        {id: 'data', defaultValue: ({data}) => jb.frame.Event && data instanceof jb.frame.Event ? null : data, dynamic: true },
-        {id: 'ctxVars', dynamic: true },
-    ],
-    impl: sink.action((ctx,{},{method,data,ctxVars}) => jb.ui.runBEMethodByContext(ctx,method(ctx),data(ctx),ctxVars(ctx)))
+  type: 'rx',
+  category: 'sink',
+  macroByValue: true,
+  params: [
+    {id: 'method', as: 'string', dynamic: true},
+    {id: 'data', defaultValue: ({data}) => jb.frame.Event && data instanceof jb.frame.Event ? null : data, dynamic: true},
+    {id: 'ctxVars', dynamic: true}
+  ],
+  impl: sink.action((ctx,{},{method,data,ctxVars}) => jb.ui.runBEMethodByContext(ctx,method(ctx),data(ctx),ctxVars(ctx)))
 })
 
 component('sink.FEMethod', {
@@ -70,9 +70,9 @@ component('sink.FEMethod', {
   category: 'sink',
   macroByValue: true,
   params: [
-      {id: 'method', as: 'string', dynamic: true },
-      {id: 'data', defaultValue: '%%', dynamic: true },
-      {id: 'ctxVars', dynamic: true },
+    {id: 'method', as: 'string', dynamic: true},
+    {id: 'data', defaultValue: '%%', dynamic: true},
+    {id: 'ctxVars', dynamic: true}
   ],
   impl: sink.action((ctx,{cmp},{method,data,ctxVars}) => cmp && cmp.runFEMethod(method(ctx),data(ctx),ctxVars(ctx)))
 })
@@ -81,8 +81,8 @@ component('action.refreshCmp', {
   type: 'action',
   description: 'can be activated on both FE & BE, assuming $cmp variable',
   params: [
-    {id: 'state', dynamic: true },
-    {id: 'options', dynamic: true },
+    {id: 'state', dynamic: true},
+    {id: 'options', dynamic: true}
   ],
   impl: (ctx,stateF,optionsF) => {
     const cmp = ctx.vars.cmp, options = optionsF(ctx), state = stateF(ctx)
@@ -104,14 +104,14 @@ component('sink.refreshCmp', {
 })
 
 component('frontEnd.method', {
-    type: 'feature',
-    category: 'front-end',
-    description: 'register as front end method, the context is limited to cmp & state. can be run with cmp.runFEMetod(id,data,vars)',
-    params: [
-        {id: 'method', as: 'string' },
-        {id: 'action', type: 'action', mandatory: true, dynamic: true}
-    ],
-    impl: (ctx,method,action) => ({ frontEndMethod: { method, path: ctx.path, action: action.profile} })
+  type: 'feature',
+  category: 'front-end',
+  description: 'register as front end method, the context is limited to cmp & state. can be run with cmp.runFEMetod(id,data,vars)',
+  params: [
+    {id: 'method', as: 'string'},
+    {id: 'action', type: 'action', mandatory: true, dynamic: true}
+  ],
+  impl: (ctx,method,action) => ({ frontEndMethod: { method, path: ctx.path, action: action.profile} })
 })
 
 component('frontEnd.coLocation', {
@@ -126,7 +126,7 @@ component('frontEnd.requireExternalLibrary', {
   category: 'front-end',
   description: 'url or name of external library in dist path, js or css',
   params: [
-      {id: 'libs', type: 'data[]', as: 'array' },
+    {id: 'libs', type: 'data[]', as: 'array'}
   ],
   impl: ({},libs) => libs.map(frontEndLib =>({ frontEndLib }))
 })
@@ -137,7 +137,7 @@ component('frontEnd.enrichUserEvent', {
   category: 'front-end',
   description: 'the result is assigned to userEvent, can use %$cmp%, %$ev%, %$userEvent%',
   params: [
-      {id: 'action', type: 'action', mandatory: true, dynamic: true}
+    {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
   impl: (ctx,action) => ({ frontEndMethod: { method: 'enrichUserEvent', path: ctx.path, action: action.profile} })
 })
@@ -147,107 +147,112 @@ component('frontEnd.onRefresh', {
   category: 'front-end',
   description: 'rerun on frontend when after refresh is activated',
   params: [
-      {id: 'action', type: 'action', mandatory: true, dynamic: true}
+    {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
   impl: (ctx,action) => ({ frontEndMethod: { method: 'onRefresh', path: ctx.path, action: action.profile} })
 })
 
 component('frontEnd.init', {
-    type: 'feature',
-    category: 'front-end',
-    description: 'initializes the front end, mount, component did update. runs after props',
-    params: [
-      {id: 'action', type: 'action', mandatory: true, dynamic: true}
-    ],
-    impl: (ctx,action) => ({ frontEndMethod: { method: 'init', path: ctx.path, action: action.profile} })
+  type: 'feature',
+  category: 'front-end',
+  description: 'initializes the front end, mount, component did update. runs after props',
+  params: [
+    {id: 'action', type: 'action', mandatory: true, dynamic: true}
+  ],
+  impl: (ctx,action) => ({ frontEndMethod: { method: 'init', path: ctx.path, action: action.profile} })
 })
 
 component('frontEnd.prop', {
-    type: 'feature',
-    category: 'front-end',
-    description: 'assign front end property (calculated using the limited FE context). runs before init',
-    params: [
-      {id: 'id', as: 'string', mandatory: true },
-      {id: 'value', mandatory: true, dynamic: true}
-    ],
-    impl: (ctx,id,value) => ({ frontEndMethod: { method: 'calcProps', path: ctx.path, _prop: id,
+  type: 'feature',
+  category: 'front-end',
+  description: 'assign front end property (calculated using the limited FE context). runs before init',
+  params: [
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'value', mandatory: true, dynamic: true}
+  ],
+  impl: (ctx,id,value) => ({ frontEndMethod: { method: 'calcProps', path: ctx.path, _prop: id,
       action: (_ctx,{cmp}) => cmp[id] = value(_ctx) } })
 })
 
 component('frontEnd.onDestroy', {
-    type: 'feature',
-    description: 'destructs the front end',
-    params: [
-      {id: 'action', type: 'action', mandatory: true, dynamic: true}
-    ],
-    impl: (ctx,action) => ({ frontEndMethod: { method: 'destroy', path: ctx.path, action: action.profile } })
+  type: 'feature',
+  description: 'destructs the front end',
+  params: [
+    {id: 'action', type: 'action', mandatory: true, dynamic: true}
+  ],
+  impl: (ctx,action) => ({ frontEndMethod: { method: 'destroy', path: ctx.path, action: action.profile } })
 })
 
 component('source.frontEndEvent', {
-    type: 'rx',
-    category: 'source',
-    description: 'assumes cmp in context',
-    params: [
-        {id: 'event', as: 'string', options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll'},
-    ],
-    impl: //source.event('%$event%','%$cmp.base%')
-    rx.pipe(source.event('%$event%','%$cmp.base%'), rx.takeUntil('%$cmp.destroyed%'))
+  type: 'rx',
+  category: 'source',
+  description: 'assumes cmp in context',
+  params: [
+    {id: 'event', as: 'string', options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll'}
+  ],
+  impl: rx.pipe(source.event('%$event%', '%$cmp.base%'), rx.takeUntil('%$cmp.destroyed%'))
 })
 
 component('rx.userEventVar', {
   type: 'rx',
-  impl: rx.var('ev', ({data}) => jb.ui.buildUserEvent(data, jb.ui.closestCmpElem(data.currentTarget || data.target))),
+  impl: rx.var('ev', ({data}) => jb.ui.buildUserEvent(data, jb.ui.closestCmpElem(data.currentTarget || data.target)))
 })
 
 component('frontEnd.flow', {
-    type: 'feature',
-    category: 'front-end',
-    description: 'rx flow at front end',
-    params: [
-        {id: 'elems', type: 'rx[]', as: 'array', dynamic: true, mandatory: true, templateValue: []}
-    ],
-    impl: (ctx, elems) => ({ frontEndMethod: { 
+  type: 'feature',
+  category: 'front-end',
+  description: 'rx flow at front end',
+  params: [
+    {id: 'elems', type: 'rx[]', as: 'array', dynamic: true, mandatory: true, templateValue: []}
+  ],
+  impl: (ctx, elems) => ({ frontEndMethod: { 
       method: 'init', path: ctx.path, _flow: elems.profile,
       action: { $: 'rx.pipe', elems: _ctx => elems(_ctx) }
     }})
 })
 
 component('feature.onHover', {
-    type: 'feature',
-    description: 'on mouse enter',
-    category: 'events',
-    params: [
-      {id: 'action', type: 'action', mandatory: true, dynamic: true},
-      {id: 'onLeave', type: 'action', mandatory: true, dynamic: true},
-    ],
-    impl: features(
-        method('onHover','%$action()%'),
-        method('onLeave','%$onLeave()%'),
-        frontEnd.flow(source.frontEndEvent('mouseenter'), sink.BEMethod('onHover')),
-        frontEnd.flow(source.frontEndEvent('mouseleave'), sink.BEMethod('onLeave'))
-    )
+  type: 'feature',
+  description: 'on mouse enter',
+  category: 'events',
+  params: [
+    {id: 'action', type: 'action', mandatory: true, dynamic: true},
+    {id: 'onLeave', type: 'action', mandatory: true, dynamic: true}
+  ],
+  impl: features(
+    method('onHover', '%$action()%'),
+    method('onLeave', '%$onLeave()%'),
+    frontEnd.flow(source.frontEndEvent('mouseenter'), sink.BEMethod('onHover')),
+    frontEnd.flow(source.frontEndEvent('mouseleave'), sink.BEMethod('onLeave'))
+  )
 })
   
 component('feature.classOnHover', {
-    type: 'feature',
-    description: 'set css class on mouse enter',
-    category: 'events',
-    params: [
-      {id: 'clz', type: 'string', defaultValue: 'item-hover', description: 'css class to add/remove on hover'}
-    ],
-    impl: features(
-        frontEnd.flow(source.frontEndEvent('mouseenter'), sink.action(({},{cmp},{clz}) => jb.ui.addClass(cmp.base,clz))),
-        frontEnd.flow(source.frontEndEvent('mouseleave'), sink.action(({},{cmp},{clz}) => jb.ui.removeClass(cmp.base,clz))),
+  type: 'feature',
+  description: 'set css class on mouse enter',
+  category: 'events',
+  params: [
+    {id: 'clz', type: 'string', defaultValue: 'item-hover', description: 'css class to add/remove on hover'}
+  ],
+  impl: features(
+    frontEnd.flow(
+      source.frontEndEvent('mouseenter'),
+      sink.action(({},{cmp},{clz}) => jb.ui.addClass(cmp.base,clz))
+    ),
+    frontEnd.flow(
+      source.frontEndEvent('mouseleave'),
+      sink.action(({},{cmp},{clz}) => jb.ui.removeClass(cmp.base,clz))
     )
+  )
 })
 
 component('key.eventMatchKey', {
-    type: 'boolean',
-    params: [
-        {id: 'event'},
-        {id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V' },
-    ],
-    impl: (ctx, e, key) => {
+  type: 'boolean',
+  params: [
+    {id: 'event'},
+    {id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V'}
+  ],
+  impl: (ctx, e, key) => {
       jb.log('keyboard search eventMatchKey',{e,key})
       if (!key) return;
       const dict = { tab: 9, delete: 46, tab: 9, esc: 27, enter: 13, right: 39, left: 37, up: 38, down: 40}
@@ -270,8 +275,8 @@ component('key.eventMatchKey', {
 component('key.eventToMethod', {
   type: 'boolean',
   params: [
-      {id: 'event'},
-      {id: 'elem' },
+    {id: 'event'},
+    {id: 'elem'}
   ],
   impl: (ctx, event, elem) => {
     elem.keysHash = elem.keysHash || calcKeysHash()
@@ -302,32 +307,31 @@ component('key.eventToMethod', {
 })
 
 component('feature.onKey', {
-    type: 'feature',
-    category: 'events',
-    params: [
-      {id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V'},
-      {id: 'action', type: 'action', mandatory: true, dynamic: true},
-    ],
-    impl: features(
-        method(replace({find: '-', replace: '+', text: 'onKey%$key%Handler',useRegex: true}), call('action')),
-        frontEnd.init(If(not('%$cmp.hasOnKeyHanlder%'), runActions(
+  type: 'feature',
+  category: 'events',
+  params: [
+    {id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V'},
+    {id: 'action', type: 'action', mandatory: true, dynamic: true}
+  ],
+  impl: features(
+    method(replace('-', '+', { text: 'onKey%$key%Handler', useRegex: true }), call('action')),
+    frontEnd.init(
+      If({
+        condition: not('%$cmp.hasOnKeyHanlder%'),
+        then: runActions(
           ({},{cmp}) => cmp.hasOnKeyHanlder = true,
           rx.pipe(
-            source.frontEndEvent('keydown'), 
-            rx.userEventVar(), 
-            rx.map(key.eventToMethod('%%','%$el%')), 
-            rx.filter('%%'), 
-            rx.log('keyboard uiComp onKey %$key%'), 
-            sink.BEMethod('%%'))
-        ))),
-      //   frontEnd.init((ctx,{cmp,el}) => {
-      //     if (! cmp.hasOnKeyHanlder) {
-      //       cmp.hasOnKeyHanlder = true
-      //       ctx.run(rx.pipe(source.frontEndEvent('keydown'), rx.userEventVar(), 
-      //         rx.map(key.eventToMethod('%%',el)), rx.filter('%%'), rx.log('keyboard uiComp onKey %$key%'), sink.BEMethod('%%')))
-      //     }
-      // })
+            source.frontEndEvent('keydown'),
+            rx.userEventVar(),
+            rx.map(key.eventToMethod('%%', '%$el%')),
+            rx.filter('%%'),
+            rx.log('keyboard uiComp onKey %$key%'),
+            sink.BEMethod('%%')
+          )
+        )
+      })
     )
+  )
 })
 
 component('feature.keyboardShortcut', {
@@ -335,10 +339,10 @@ component('feature.keyboardShortcut', {
   category: 'events',
   params: [
     {id: 'key', as: 'string', description: 'e.g. Alt+C'},
-    {id: 'action', type: 'action', dynamic: true},
+    {id: 'action', type: 'action', dynamic: true}
   ],
   impl: features(
-    method(replace({find: '-', replace: '+', text: 'onKey%$key%Handler',useRegex: true}), call('action')),
+    method(replace('-', '+', { text: 'onKey%$key%Handler', useRegex: true }), call('action')),
     frontEnd.init((ctx,{cmp,el}) => {
       if (! cmp.hasDocOnKeyHanlder) {
         cmp.hasDocOnKeyHanlder = true
@@ -360,10 +364,10 @@ component('feature.globalKeyboardShortcut', {
   description: 'listen to events at the document level even when the component is not active',
   params: [
     {id: 'key', as: 'string', description: 'e.g. Alt+C'},
-    {id: 'action', type: 'action', dynamic: true},
+    {id: 'action', type: 'action', dynamic: true}
   ],
   impl: features(
-    method(replace({find: '-', replace: '+', text: 'onKey%$key%Handler',useRegex: true}), call('action')),
+    method(replace('-', '+', { text: 'onKey%$key%Handler', useRegex: true }), call('action')),
     frontEnd.init((ctx,{cmp,el}) => {
       if (! cmp.hasDocOnKeyHanlder) {
         cmp.hasDocOnKeyHanlder = true

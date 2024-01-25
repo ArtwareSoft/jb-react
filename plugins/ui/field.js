@@ -49,11 +49,11 @@ component('field.databind', {
     {id: 'oneWay', as: 'boolean', type: 'boolean'}
   ],
   impl: features(
-    If(
-      '%$oneWay%',
-      calcProp({id: 'databind', value: '%$$model/databind()%', defaultValue: ''}),
-      watchAndCalcModelProp({prop: 'databind', allowSelfRefresh: true, defaultValue: ''})
-    ),
+    If({
+      condition: '%$oneWay%',
+      then: calcProp('databind', '%$$model/databind()%', { defaultValue: '' }),
+      Else: watchAndCalcModelProp('databind', { allowSelfRefresh: true, defaultValue: '' })
+    }),
     calcProp('title'),
     calcProp('fieldId', () => jb.ui.field_id_counter++),
     method('writeFieldValue', (ctx,{cmp},{oneWay}) => jb.ui.writeFieldData(ctx,cmp,ctx.data,oneWay)),
@@ -72,7 +72,7 @@ component('field.onChange', {
   params: [
     {id: 'action', type: 'action', dynamic: true}
   ],
-  impl: followUp.onDataChange({ref: '%$$model/databind%', action: call('action') })
+  impl: followUp.onDataChange('%$$model/databind%', { action: call('action') })
 })
 
 component('field.databindText', {
@@ -140,7 +140,7 @@ component('field.titleCtrl', {
   type: 'feature',
   category: 'table:80',
   params: [
-    {id: 'titleCtrl', type: 'control', mandatory: true, dynamic: true, templateValue: button({title: '%title%', style: button.href()})}
+    {id: 'titleCtrl', type: 'control', mandatory: true, dynamic: true, templateValue: button('%title%', { style: button.href() })}
   ],
   impl: (ctx,titleCtrl) => ({
       enrichField: field => field.titleCtrl = ctx => titleCtrl(ctx)

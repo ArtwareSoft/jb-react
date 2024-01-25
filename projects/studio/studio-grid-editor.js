@@ -171,7 +171,7 @@ component('gridEditor.dragableGridLineThumb', {
 			rx.var('base',({},{cmp,axis,gridIndex}) => gridIndex ? jb.ui.getGridVals(cmp.inplaceElem, axis)[gridIndex-1] : 0),
 			rx.var('accVals',({},{cmp,axis,gridIndex}) => jb.ui.getGridVals(cmp.inplaceElem, axis).slice(gridIndex).reduce((sums,x) => [...sums,x + sums.slice(-1)[0]],[0])),
 			rx.flatMap(rx.pipe(
-				source.event('mousemove', () => document), 
+				source.event('mousemove', () => jb.frame.document), 
         rx.takeWhile('%buttons%!=0'),
         rx.do(({},{el}) => el.querySelector('span').style.display = 'block'),
         rx.var('newPos',({data},{cmp}) => cmp.handlerPos(data)),
@@ -315,7 +315,7 @@ component('gridEditor.dragableGridItemThumb', {
         y: data.screenY - data.clientY
 			})),      
 			rx.flatMap(rx.pipe(
-				source.event('mousemove', () => document), 
+				source.event('mousemove', () => jb.frame.document), 
 				rx.takeWhile('%buttons%!=0'),
         rx.do(({},{el}) => el.querySelector('span').style.display = 'block'),
         rx.var('ctrlKey','%ctrlKey%'),

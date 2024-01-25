@@ -175,75 +175,80 @@ component('dialogFeature.uniqueDialog', {
 })
 
 component('source.eventIncludingPreview', {
-	type: 'rx',
-	params: [
-		{ id: 'event', as: 'string'}],
-	impl: source.merge(
-		source.event('%$event%', () => document),
-		source.event('%$event%', () => jb.path(jb.studio, 'previewWindow.document'))
-	)
+  type: 'rx',
+  params: [
+    {id: 'event', as: 'string'}
+  ],
+  impl: source.merge(
+    source.event('%$event%', () => jb.frame.document),
+    source.event('%$event%', () => jb.path(jb.studio, 'previewWindow.document'))
+  )
 })
 
 component('dialogFeature.dragTitle', {
-	type: 'dialog-feature',
-	params: [
-	  {id: 'id', as: 'string'},
-	  {id: 'useSessionStorage', as: 'boolean'},
-	  {id: 'selector', as: 'string', defaultValue: '.dialog-title'},
-	],
-	impl: features(
-		calcProp('sessionStorageId','dialogPos-%$id%'),
-		calcProp('posFromSessionStorage', If('%$useSessionStorage%', getSessionStorage('%$$props/sessionStorageId%'))),
-		css('%$selector% { cursor: pointer; user-select: none }'),
-		frontEnd.method('setPos',({data},{el}) => { 
+  type: 'dialog-feature',
+  params: [
+    {id: 'id', as: 'string'},
+    {id: 'useSessionStorage', as: 'boolean', type: 'boolean'},
+    {id: 'selector', as: 'string', defaultValue: '.dialog-title'}
+  ],
+  impl: features(
+    calcProp('sessionStorageId', 'dialogPos-%$id%'),
+    calcProp('posFromSessionStorage', If('%$useSessionStorage%', getSessionStorage('%$$props/sessionStorageId%'))),
+    css('%$selector% { cursor: pointer; user-select: none }'),
+    frontEnd.method('setPos', ({data},{el}) => { 
 			el.style.top = data.top + 'px'
 			el.style.left = data.left +'px' 
 		}),
-		frontEnd.var('selector','%$selector%'),
-		frontEnd.var('useSessionStorage','%$useSessionStorage%'),
-		frontEnd.var('sessionStorageId','%$$props/sessionStorageId%'),
-		frontEnd.var('posFromSessionStorage','%$$props/posFromSessionStorage%'),
-		frontEnd.init(({},{el,posFromSessionStorage}) => {
+    frontEnd.var('selector', '%$selector%'),
+    frontEnd.var('useSessionStorage', '%$useSessionStorage%'),
+    frontEnd.var('sessionStorageId', '%$$props/sessionStorageId%'),
+    frontEnd.var('posFromSessionStorage', '%$$props/posFromSessionStorage%'),
+    frontEnd.init(({},{el,posFromSessionStorage}) => {
 			if (posFromSessionStorage) {
 				el.style.top = posFromSessionStorage.top + 'px'
 				el.style.left = posFromSessionStorage.left +'px'
 			}
 		}),
-		frontEnd.prop('titleElem',({},{el,selector}) => el.querySelector(selector)),
-		frontEnd.flow(
-			source.event('mousedown','%$cmp/titleElem%'), 
-			rx.takeUntil('%$cmp/destroyed%'),
-			rx.var('offset',({data},{el}) => ({
+    frontEnd.prop('titleElem', ({},{el,selector}) => el.querySelector(selector)),
+    frontEnd.flow(
+      source.event('mousedown', '%$cmp/titleElem%'),
+      rx.takeUntil('%$cmp/destroyed%'),
+      rx.var('offset', ({data},{el}) => ({
 				left: data.clientX - el.getBoundingClientRect().left,
 				top:  data.clientY - el.getBoundingClientRect().top
 			})),
-			rx.flatMap(rx.pipe(
-				source.eventIncludingPreview('mousemove'),
-				rx.takeWhile('%buttons%!=0'),
-				rx.var('ev'),
-				rx.map(({data},{offset}) => ({
+      rx.flatMap(
+        rx.pipe(
+          source.eventIncludingPreview('mousemove'),
+          rx.takeWhile('%buttons%!=0'),
+          rx.var('ev'),
+          rx.map(({data},{offset}) => ({
 					left: Math.max(0, data.clientX - offset.left),
 					top: Math.max(0, data.clientY - offset.top),
-				})),
-			)),
-			sink.action(runActions(
-				action.runFEMethod('setPos'),
-				If('%$useSessionStorage%', action.setSessionStorage('%$sessionStorageId%','%%'))
-			))
-		)
-	)
+				}))
+        )
+      ),
+      sink.action(
+        runActions(
+          action.runFEMethod('setPos'),
+          If('%$useSessionStorage%', action.setSessionStorage('%$sessionStorageId%', '%%'))
+        )
+      )
+    )
+  )
 })
 
 component('dialog.default', {
-	type: 'dialog.style',
-	impl: customStyle({
-	  template: ({},{title,contentComp},h) => h('div.jb-dialog jb-default-dialog',{},[
+  type: 'dialog.style',
+  impl: customStyle({
+    template: ({},{title,contentComp},h) => h('div.jb-dialog jb-default-dialog',{},[
 			  h('div.dialog-title',{},title),
 			  h('button.dialog-close', {onclick: 'dialogClose' },'×'),
 			  h(contentComp),
 		  ]),
-	  features: dialogFeature.dragTitle()
-	})
+    features: dialogFeature.dragTitle()
+  })
 })
 
 component('dialogFeature.nearLauncherPosition', {
@@ -251,14 +256,14 @@ component('dialogFeature.nearLauncherPosition', {
   params: [
     {id: 'offsetLeft', as: 'number', dynamic: true, defaultValue: 0},
     {id: 'offsetTop', as: 'number', dynamic: true, defaultValue: 0},
-    {id: 'rightSide', as: 'boolean' }
+    {id: 'rightSide', as: 'boolean', type: 'boolean'}
   ],
   impl: features(
-	  calcProp('launcherRectangle','%$ev/elem/clientRect%'),
-	  frontEnd.var('launcherRectangle','%$$props/launcherRectangle%'),
-	  frontEnd.var('launcherCmpId','%$$dialog/launcherCmpId%'),
-	  frontEnd.var('pos',({},{},{offsetLeft,offsetTop,rightSide}) => ({offsetLeft: offsetLeft() || 0, offsetTop: offsetTop() || 0,rightSide})),
-	  userStateProp('dialogPos', ({},{ev,$props},{offsetLeft,offsetTop,rightSide}) => {
+    calcProp('launcherRectangle', '%$ev/elem/clientRect%'),
+    frontEnd.var('launcherRectangle', '%$$props/launcherRectangle%'),
+    frontEnd.var('launcherCmpId', '%$$dialog/launcherCmpId%'),
+    frontEnd.var('pos', ({},{},{offsetLeft,offsetTop,rightSide}) => ({offsetLeft: offsetLeft() || 0, offsetTop: offsetTop() || 0,rightSide})),
+    userStateProp('dialogPos', ({},{ev,$props},{offsetLeft,offsetTop,rightSide}) => {
 		if (!ev) return { left: 0, top: 0}
 		const _offsetLeft = offsetLeft() || 0, _offsetTop = offsetTop() || 0
 		if (!$props.launcherRectangle)
@@ -268,12 +273,12 @@ component('dialogFeature.nearLauncherPosition', {
 			top:  $props.launcherRectangle.y  + _offsetTop   + ev.elem.outerHeight
 		}
 	  }),
-	  frontEnd.onRefresh( ({},{$state,el}) => { 
+    frontEnd.onRefresh(({},{$state,el}) => { 
 		const {top,left} = $state.dialogPos || { top: 0, left: 0}
 		jb.ui.setStyle(el,'top',`${top}px`)
 		jb.ui.setStyle(el,'left',`${left}px`)
 	  }),
-	  frontEnd.init((ctx,{cmp,pos,launcherCmpId,elemToTest}) => { // handle launcherCmpId
+    frontEnd.init((ctx,{cmp,pos,launcherCmpId,elemToTest}) => { // handle launcherCmpId
 		  if (!elemToTest && launcherCmpId && cmp.state.dialogPos.left == 0 && cmp.state.dialogPos.top == 0) {
 			  const el = jb.ui.elemOfCmp(ctx,launcherCmpId)
 			  if (!el) return
@@ -286,7 +291,7 @@ component('dialogFeature.nearLauncherPosition', {
 			  	cmp.refreshFE({ dialogPos })
 		  }
 	  }),
-	  frontEnd.init(({},{cmp,elemToTest}) => { // fixDialogPositionAtScreenEdges
+    frontEnd.init(({},{cmp,elemToTest}) => { // fixDialogPositionAtScreenEdges
 		if (elemToTest || cmp.state.dialogPos.left == 0 && cmp.state.dialogPos.top == 0) return
 		const dialog = jb.ui.findIncludeSelf(cmp.base,'.jb-dialog')[0]
 		const dialogPos = cmp.state.dialogPos
@@ -298,7 +303,7 @@ component('dialogFeature.nearLauncherPosition', {
 			left = dialogPos.left - dialog_width
 		if (left || top)
 			cmp.refreshFE({ dialogPos: { top: top || dialogPos.top , left: left || dialogPos.left} })
-	  }),
+	  })
   )
 })
 
@@ -313,19 +318,17 @@ component('dialogFeature.onClose', {
 component('dialogFeature.closeWhenClickingOutside', {
   type: 'dialog-feature',
   impl: features(
-	  feature.initValue('%$$dialog.isPopup%',true),
-	  frontEnd.flow(
-		source.data(0), rx.delay(100), // wait before start listening
-		rx.flatMap(source.eventIncludingPreview('mousedown')),
-		// 	source.merge(
-		// 	source.event('mousedown','%$cmp.base.ownerDocument%'),
-		// 	source.event('mousedown', () => jb.path(jb.studio,'previewWindow.document')),
-		// )),
-		rx.takeUntil('%$cmp.destroyed%'),
-		rx.filter(({data}) => jb.ui.closest(data.target,'.jb-dialog') == null),
-		rx.var('dialogId', ({},{cmp}) => cmp.base.getAttribute('id')),
-		sink.action(dialog.closeDialogById('%$dialogId%'))
-	))
+    feature.initValue('%$$dialog.isPopup%', true),
+    frontEnd.flow(
+      source.data(0),
+      rx.delay(100),
+      rx.flatMap(source.eventIncludingPreview('mousedown')),
+      rx.takeUntil('%$cmp.destroyed%'),
+      rx.filter(({data}) => jb.ui.closest(data.target,'.jb-dialog') == null),
+      rx.var('dialogId', ({},{cmp}) => cmp.base.getAttribute('id')),
+      sink.action(dialog.closeDialogById('%$dialogId%'))
+    )
+  )
 })
 
 component('dialogFeature.autoFocusOnFirstInput', {
@@ -334,8 +337,8 @@ component('dialogFeature.autoFocusOnFirstInput', {
     {id: 'selectText', as: 'boolean', type: 'boolean'}
   ],
   impl: features(
-	  frontEnd.var('selectText','%$selectText%'),
-	  frontEnd.init( (ctx,{el,selectText}) => {
+    frontEnd.var('selectText', '%$selectText%'),
+    frontEnd.init((ctx,{el,selectText}) => {
 	    const elem = jb.ui.find(el,'input,textarea,select').filter(e => e.getAttribute('type') != 'checkbox')[0]
 		if (elem)
 			jb.ui.focus(elem, 'dialog-feature.auto-focus-on-first-input',ctx);
@@ -346,17 +349,17 @@ component('dialogFeature.autoFocusOnFirstInput', {
 })
 
 component('popup.regainCanvasFocus', {
-	type: 'action',
-	impl: action.focusOnCmp('regain focus','%$popupLauncherCanvas/cmpId%')
+  type: 'action',
+  impl: action.focusOnCmp('regain focus', '%$popupLauncherCanvas/cmpId%')
 })
 
 component('dialogFeature.cssClassOnLaunchingElement', {
   type: 'dialog-feature',
   description: 'launching element toggles class "dialog-open" if the dialog is open',
   impl: features(
-	  frontEnd.prop('launchingElement', (ctx,{cmp}) => cmp.launchingCmp && jb.ui.elemOfCmp(ctx,cmp.launchingCmp)),
-	  frontEnd.init( ({},{cmp}) => cmp.launchingElement && jb.ui.addClass(cmp.launchingElement,'dialog-open')),
-	  frontEnd.onDestroy( ({},{cmp}) => cmp.launchingElement && jb.ui.removeClass(cmp.launchingElement,'dialog-open'))
+    frontEnd.prop('launchingElement', (ctx,{cmp}) => cmp.launchingCmp && jb.ui.elemOfCmp(ctx,cmp.launchingCmp)),
+    frontEnd.init(({},{cmp}) => cmp.launchingElement && jb.ui.addClass(cmp.launchingElement,'dialog-open')),
+    frontEnd.onDestroy(({},{cmp}) => cmp.launchingElement && jb.ui.removeClass(cmp.launchingElement,'dialog-open'))
   )
 })
 
@@ -366,15 +369,15 @@ component('dialogFeature.maxZIndexOnClick', {
     {id: 'minZIndex', as: 'number', defaultValue: 100}
   ],
   impl: features(
-	  frontEnd.var('minZIndex','%$minZIndex%'),
-	  frontEnd.method('setAsMaxZIndex', (ctx,{el,minZIndex}) => {
+    frontEnd.var('minZIndex', '%$minZIndex%'),
+    frontEnd.method('setAsMaxZIndex', (ctx,{el,minZIndex}) => {
 			const dialogs = jb.frame.document && Array.from(document.querySelectorAll('.jb-dialog')) || jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog')
 			const calcMaxIndex = dialogs.filter(dl=>!jb.ui.hasClass(dl, 'jb-popup')).reduce((max, _el) => 
 				Math.max(max,(_el && parseInt(jb.ui.getStyle(_el,'zIndex') || 100)+1) || 100), minZIndex || 100)
 			jb.ui.setStyle(el,'zIndex',calcMaxIndex)
 	  }),
-	  frontEnd.init(({},{cmp}) => { cmp.state.frontEndStatus = 'ready'; cmp.runFEMethod('setAsMaxZIndex') }),
-	  frontEnd.flow(source.frontEndEvent('mousedown'), sink.FEMethod('setAsMaxZIndex'))
+    frontEnd.init(({},{cmp}) => { cmp.state.frontEndStatus = 'ready'; cmp.runFEMethod('setAsMaxZIndex') }),
+    frontEnd.flow(source.frontEndEvent('mousedown'), sink.FEMethod('setAsMaxZIndex'))
   )
 })
 
@@ -394,8 +397,8 @@ component('dialog.dialogOkCancel', {
 				h('button.mdc-button', {class: 'dialog-ok', onclick: 'dialogCloseOK' },[h('div.mdc-button__ripple'), h('span.mdc-button__label',{},okLabel)]),
 			]),
 		]),
-	css: '>.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }',
-	features: dialogFeature.maxZIndexOnClick()
+    css: '>.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }',
+    features: dialogFeature.maxZIndexOnClick()
   })
 })
 
@@ -405,10 +408,10 @@ component('dialogFeature.resizer', {
     {id: 'autoResizeInnerElement', as: 'boolean', description: 'effective element with "autoResizeInDialog" class', type: 'boolean'}
   ],
   impl: features(
-	  templateModifier( ({},{vdom}) => { vdom && vdom.tag == 'div' && vdom.children.push(jb.ui.h('img.jb-resizer',{})) }),
-	  css('>.jb-resizer { cursor: pointer; position: absolute; right: 1px; bottom: 1px }'),
-	  frontEnd.var('autoResizeInnerElement','%$autoResizeInnerElement%'),
-	  frontEnd.method('setSize',({data},{cmp,el,autoResizeInnerElement}) => { 
+    templateModifier(({},{vdom}) => { vdom && vdom.tag == 'div' && vdom.children.push(jb.ui.h('img.jb-resizer',{})) }),
+    css('>.jb-resizer { cursor: pointer; position: absolute; right: 1px; bottom: 1px }'),
+    frontEnd.var('autoResizeInnerElement', '%$autoResizeInnerElement%'),
+    frontEnd.method('setSize', ({data},{cmp,el,autoResizeInnerElement}) => { 
 		el.style.height = data.top + 'px'
 		el.style.width = data.left + 'px'
 		const innerElemToResize = el.querySelector('.autoResizeInDialog')
@@ -417,52 +420,45 @@ component('dialogFeature.resizer', {
 				  + (el.getBoundingClientRect().bottom - innerElemToResize.getBoundingClientRect().bottom)
 		innerElemToResize.style.height = (data.top - cmp.innerElemOffset) + 'px'
 	  }),
-	  frontEnd.prop('resizerElem',({},{cmp}) => cmp.base.querySelector('.jb-resizer')),
-	  frontEnd.flow(
-		source.event('mousedown','%$cmp.resizerElem%'), 
-		rx.takeUntil('%$cmp.destroyed%'),
-		rx.var('offset',({},{el}) => ({
+    frontEnd.prop('resizerElem', ({},{cmp}) => cmp.base.querySelector('.jb-resizer')),
+    frontEnd.flow(
+      source.event('mousedown', '%$cmp.resizerElem%'),
+      rx.takeUntil('%$cmp.destroyed%'),
+      rx.var('offset', ({},{el}) => ({
 			left: el.getBoundingClientRect().left,
 			top:  el.getBoundingClientRect().top
 		})),
-		rx.flatMap(rx.pipe(
-			source.eventIncludingPreview('mousemove'),
-			rx.takeWhile('%buttons%!=0'),
-			rx.map(({data},{offset}) => ({
+      rx.flatMap(
+        rx.pipe(
+          source.eventIncludingPreview('mousemove'),
+          rx.takeWhile('%buttons%!=0'),
+          rx.map(({data},{offset}) => ({
 				left: Math.max(0, data.clientX - offset.left),
 				top: Math.max(0, data.clientY - offset.top),
-			})),
-		)),
-		sink.FEMethod('setSize')
-	))
+			}))
+        )
+      ),
+      sink.FEMethod('setSize')
+    )
+  )
 })
 
 component('dialog.popup', {
   type: 'dialog.style',
   impl: customStyle({
-	template: ({},{contentComp},h) => h('div.jb-dialog jb-popup',{},h(contentComp)),
+    template: ({},{contentComp},h) => h('div.jb-dialog jb-popup',{},h(contentComp)),
     css: '{ position: absolute; background: var(--jb-dropdown-bg); box-shadow: 2px 2px 3px var(--jb-dropdown-shadow); padding: 3px 0; border: 1px solid var(--jb-dropdown-border) }',
-    features: [
-      dialogFeature.maxZIndexOnClick(),
-      dialogFeature.closeWhenClickingOutside(),
-      dialogFeature.cssClassOnLaunchingElement(),
-      dialogFeature.nearLauncherPosition()
-    ]
+    features: [dialogFeature.maxZIndexOnClick(), dialogFeature.closeWhenClickingOutside(), dialogFeature.cssClassOnLaunchingElement(), dialogFeature.nearLauncherPosition()]
   })
 })
 
 component('dialog.transparentPopup', {
-	type: 'dialog.style',
-	impl: customStyle({
-	  template: ({},{contentComp},h) => h('div.jb-dialog jb-popup',{},h(contentComp)),
-	  css: '{ position: absolute; padding: 3px 0; }',
-	  features: [
-		dialogFeature.maxZIndexOnClick(),
-		dialogFeature.closeWhenClickingOutside(),
-		dialogFeature.cssClassOnLaunchingElement(),
-		dialogFeature.nearLauncherPosition()
-	  ]
-	})
+  type: 'dialog.style',
+  impl: customStyle({
+    template: ({},{contentComp},h) => h('div.jb-dialog jb-popup',{},h(contentComp)),
+    css: '{ position: absolute; padding: 3px 0; }',
+    features: [dialogFeature.maxZIndexOnClick(), dialogFeature.closeWhenClickingOutside(), dialogFeature.cssClassOnLaunchingElement(), dialogFeature.nearLauncherPosition()]
+  })
 })
   
 component('dialog.div', {
@@ -474,58 +470,59 @@ component('dialog.div', {
 })
 
 component('dialogs.changeEmitter', {
-	type: 'rx',
-	params: [
-		{id: 'widgetId', defaultValue: '%$headlessWidgetId%'},
-	],
-	category: 'source',
-	impl: (ctx,_widgetId) => {
+  type: 'rx',
+  params: [
+    {id: 'widgetId', defaultValue: '%$headlessWidgetId%'}
+  ],
+  category: 'source',
+  impl: (ctx,_widgetId) => {
 		const widgetId = !ctx.vars.previewOverlay && _widgetId || 'default'
 		jb.ui.dlgEmitters = jb.ui.dlgEmitters || {}
 		jb.ui.dlgEmitters[widgetId] = jb.ui.dlgEmitters[widgetId] || ctx.run({$: 'rx.subject', id: `dialog emitter ${widgetId}`, replay: true})
 		return jb.ui.dlgEmitters[widgetId]
 	},
-	require: {$: 'rx.subject'}
+  require: rx.subject()
 })
 
 component('dialog.dialogTop', {
-	type: 'control',
-	params: [
-		{id: 'style', type: 'dialogs.style', defaultValue: dialogs.defaultStyle(), dynamic: true},
-	],
-	impl: ctx => jb.ui.ctrl(ctx)
+  type: 'control',
+  params: [
+    {id: 'style', type: 'dialogs.style', defaultValue: dialogs.defaultStyle(), dynamic: true}
+  ],
+  impl: ctx => jb.ui.ctrl(ctx)
 })
 
 component('dialogs.defaultStyle', {
-	type: 'dialogs.style',
-	impl: customStyle({
-		template: ({},{},h) => h('div.jb-dialogs'),
-		features: [
-			followUp.flow(
-				source.subject(dialogs.changeEmitter()),
-				rx.filter('%open%'),
-				rx.var('dialogVdom', pipeline(dialog.buildComp('%dialog%'),'%renderVdomAndFollowUp()%')),
-				rx.var('delta', obj(prop('children', obj(prop('toAppend', pipeline('%$dialogVdom%', ({data}) => jb.ui.stripVdom(data))))))),
-				rx.log('open dialog',obj(prop('dialogId','%dialog/id%'))),
-				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
-			),
-			followUp.flow(source.subject(dialogs.changeEmitter()), 
-				rx.filter('%close%'),
-				rx.log('close dialog',obj(prop('dialogId','%dialogId%'))),
-				rx.var('dlgCmpId', dialogs.cmpIdOfDialog('%dialogId%')),
-				rx.filter('%$dlgCmpId%'),
-				rx.var('delta', obj(prop('children', obj(prop('deleteCmp','%$dlgCmpId%'))))),
-				rx.log('close dialog',obj(prop('dialogId','%dialogId%'))),
-				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
-			),
-			followUp.flow(source.subject(dialogs.changeEmitter()), 
-				rx.filter('%closeByCmpId%'),
-				rx.var('delta', obj(prop('children', obj(prop('deleteCmp','%cmpId%'))))),
-				rx.log('close dialog', obj(prop('dialogId','%dialogId%'))),
-				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
-			)			
-		]
-	})
+  type: 'dialogs.style',
+  impl: customStyle(({},{},h) => h('div.jb-dialogs'), {
+    features: [
+    followUp.flow(
+      source.subject(dialogs.changeEmitter()),
+      rx.filter('%open%'),
+      rx.var('dialogVdom', pipeline(dialog.buildComp('%dialog%'), '%renderVdomAndFollowUp()%')),
+      rx.var('delta', obj(prop('children', obj(prop('toAppend', pipeline('%$dialogVdom%', ({data}) => jb.ui.stripVdom(data))))))),
+      rx.log('open dialog', obj(prop('dialogId', '%dialog/id%'))),
+      sink.applyDeltaToCmp('%$delta%', '%$followUpCmp/cmpId%')
+    ),
+    followUp.flow(
+      source.subject(dialogs.changeEmitter()),
+      rx.filter('%close%'),
+      rx.log('close dialog', obj(prop('dialogId', '%dialogId%'))),
+      rx.var('dlgCmpId', dialogs.cmpIdOfDialog('%dialogId%')),
+      rx.filter('%$dlgCmpId%'),
+      rx.var('delta', obj(prop('children', obj(prop('deleteCmp', '%$dlgCmpId%'))))),
+      rx.log('close dialog', obj(prop('dialogId', '%dialogId%'))),
+      sink.applyDeltaToCmp('%$delta%', '%$followUpCmp/cmpId%')
+    ),
+    followUp.flow(
+      source.subject(dialogs.changeEmitter()),
+      rx.filter('%closeByCmpId%'),
+      rx.var('delta', obj(prop('children', obj(prop('deleteCmp', '%cmpId%'))))),
+      rx.log('close dialog', obj(prop('dialogId', '%dialogId%'))),
+      sink.applyDeltaToCmp('%$delta%', '%$followUpCmp/cmpId%')
+    )
+  ]
+  })
 })
 
 extension('ui','dialog' , {

@@ -160,7 +160,7 @@ component('textarea.initTgpTextEditor', {
             el.setSelectionRange(from,to || from)
         }),
         frontEnd.flow(
-            source.event('selectionchange',() => document),
+            source.event('selectionchange',() => jb.frame.document),
             rx.takeUntil('%$cmp.destroyed%'),
             rx.filter(({},{el}) => el == jb.path(jb.frame.document,'activeElement')),
             rx.map(({},{el}) => jb.tgpTextEditor.offsetToLineCol(el.value,el.selectionStart)),
