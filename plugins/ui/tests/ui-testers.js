@@ -1,7 +1,7 @@
 using('remote-widget')
-component('tests.main', { // needed for loading the 'virtual' tests project
-	type: 'control',
-	impl: text('') // dummy impl needed
+component('tests.main', {
+  type: 'control',
+  impl: text('')
 })
 
 component('uiTest', {

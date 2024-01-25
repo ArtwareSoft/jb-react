@@ -207,39 +207,33 @@ component('eventTracker.testResult', {
   )
 })
 
-component('eventTracker.watchSpy',{
+component('eventTracker.watchSpy', {
   type: 'feature',
   params: [
-    {id: 'spy' },
+    {id: 'spy'},
     {id: 'delay', defaultValue: 3000}
   ],
-  impl: followUp.watchObservable(source.callbag('%$spy/_obs%','%$delay%'))
+  impl: followUp.watchObservable(source.callbag('%$spy/_obs%'))
 })
 
 component('eventTracker.eventTypes', {
   params: [
-    {id: 'spy' }
-  ],  
+    {id: 'spy'}
+  ],
   type: 'control',
   impl: picklist({
     databind: '%$eventTracker/spyLogs%',
-    options: picklist.options({
-      options: properties('%$spy/counters%'),
-      code: '%id%',
-      text: '%id% (%val%)'
-    }),
+    options: picklist.options(properties('%$spy/counters%'), { code: '%id%', text: '%id% (%val%)' }),
     features: [
       chromeDebugger.colors(),
-      picklist.onChange(
-        (ctx,{},{spy}) => {
+      picklist.onChange((ctx,{},{spy}) => {
         const loc = spy.locations[ctx.data].split(':')
         const col = +loc.pop()
         const line = (+loc.pop())-1
         const location = [loc.join(':'),line,col]
         jb.log('eventTracker openResource',{ctx,loc: spy.locations[ctx.data], location})
         loc && parent.postMessage({ runProfile: {$: 'chromeDebugger.openResource', location }})
-      }
-      )
+      })
     ]
   })
 })
@@ -459,10 +453,10 @@ component('studio.stackItems', {
       },
 })
 
-component('chromeDebugger.colors',{
+component('chromeDebugger.colors', {
   type: 'feature',
   impl: features(
-    css.color({background: 'var(--jb-menubar-inactive-bg)', color: 'var(--jb-menu-fg)'}),
+    css.color('var(--jb-menu-fg)', 'var(--jb-menubar-inactive-bg)'),
     css('border: 0px;'),
     css('~ option { background: white}')
   )

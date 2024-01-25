@@ -29,7 +29,7 @@ extension('tgpTextEditor','upgrade', {
         const docText = jbHost.fs ? jbHost.fs.readFileSync(fullPath, 'utf-8') : await (await jbHost.fetch(fullPath)).text()
         const lines = docText.split('\n')
         const compLine = location.line-1
-        if (lines[compLine] != `component('${cmpId}', {`) {
+        if (!lines[compLine] || lines[compLine].indexOf(`component('${cmpId}',`) != 0) {
             jb.logError(`compTextFromFile can not find cmp ${cmpId} in file ${path} ${location.line}`, { ctx })
             return { notFound : true }
         }
