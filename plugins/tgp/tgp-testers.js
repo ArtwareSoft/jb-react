@@ -129,7 +129,7 @@ component('tgp.dummyDocProps', {
   params: [
     {id: 'compText', as: 'string', mandatory: true, description: 'use __ for completion point'},
     {id: 'dsl', as: 'string'},
-    {id: 'filePath', as: 'string', defaultValue: 'projects/jb-react/plugins/common/jb-common-tests.js'},
+    {id: 'filePath', as: 'string', defaultValue: 'projects/jb-react/plugins/common/jb-common-tests.js'}
   ],
   impl: (ctx,_compText,dsl,_filePath) => {
     jb.workspace.initJbWorkspaceAsHost()

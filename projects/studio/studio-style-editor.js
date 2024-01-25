@@ -141,15 +141,17 @@ component('studio.styleEditorOptions', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: menu.endWithSeparator(
-    Var('compName', tgp.compName('%$path%')),
-    menu.action({
+  impl: menu.endWithSeparator({
+    vars: [
+      Var('compName', tgp.compName('%$path%'))
+    ],
+    options: menu.action({
       title: 'Style editor',
       action: runActions(studio.calcMakeLocal('%$path%', true), studio.openStyleEditor('%$path%')),
       showCondition: endsWith('~style', '%$path%')
     }),
-    menu.action('Style editor of %$compName%', studio.openStyleEditor('%$compName%~impl'), {
+    separator: menu.action('Style editor of %$compName%', studio.openStyleEditor('%$compName%~impl'), {
       showCondition: and(endsWith('~style', '%$path%'), notEmpty('%$compName%'))
     })
-  )
+  })
 })

@@ -41,9 +41,9 @@ extension('scriptHistory', {
 })
 
 component('watchableComps.changedComps', {
-	impl: () => jb.utils.unique((jb.scriptHistory.compsHistory || [])
+  impl: () => jb.utils.unique((jb.scriptHistory.compsHistory || [])
 		.slice(jb.scriptHistory.lastSaveIndex)
-		.map(e=>jb.path(e,'opEvent.path.0'))).map(id=>({id, comp: jb.comps[id]})),
+		.map(e=>jb.path(e,'opEvent.path.0'))).map(id=>({id, comp: jb.comps[id]}))
 })
 
 component('watchableComps.undo', {

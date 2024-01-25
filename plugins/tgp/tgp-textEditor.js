@@ -347,17 +347,17 @@ component('tgpTextEditor.isDirty', {
 // })
 
 component('tgpTextEditor.cursorPath', {
-    params: [
-        {id: 'watchableAsText', as: 'ref', mandatory: true, description: 'the same that was used for databind'},
-        {id: 'cursorPos', dynamic: true, defaultValue: '%$ev/selectionStart%'},
-    ],  
-    impl: (ctx,ref,pos) => jb.path(jb.tgpTextEditor.pathOfPosition(ref, pos()),'path') || ''
+  params: [
+    {id: 'watchableAsText', as: 'ref', mandatory: true, description: 'the same that was used for databind'},
+    {id: 'cursorPos', dynamic: true, defaultValue: '%$ev/selectionStart%'}
+  ],
+  impl: (ctx,ref,pos) => jb.path(jb.tgpTextEditor.pathOfPosition(ref, pos()),'path') || ''
 })
 
 
 component('tgp.providePath', {
   params: [
-    {id: 'docProps'},
+    {id: 'docProps'}
   ],
   impl: (ctx,docProps) => jb.tgpTextEditor.providePath(docProps,ctx)
 })
@@ -366,8 +366,8 @@ component('tgpTextEditor.probeByDocProps', {
   params: [
     {id: 'docProps'}
   ],
-  impl: remote.data(
-    pipe(
+  impl: remote.data({
+    data: pipe(
       probe.runCircuit(tgp.providePath('%$docProps%')),
       obj(
         prop('result', tgpTextEditor.stripProbeResult('%result%')),
@@ -379,8 +379,8 @@ component('tgpTextEditor.probeByDocProps', {
       ),
       first()
     ),
-    cmd(probe('%$docProps/filePath%'))
-  )
+    jbm: cmd(probe('%$docProps/filePath%'))
+  })
 })
 
 component('tgpTextEditor.stripProbeResult', {
@@ -394,16 +394,16 @@ component('tgpTextEditor.studioCircuitUrlByDocProps', {
   params: [
     {id: 'docProps'}
   ],
-  impl: remote.data(
-    pipe(
+  impl: remote.data({
+    data: pipe(
       Var('sourceCode', sourceCode.encodeUri(probe('%$docProps/filePath%', 'studio'))),
       Var('probePath', tgp.providePath('%$docProps%')),
       probe.calcCircuitPath('%$probePath%'),
-      join({separator: '/', items: list('%path%','%$probePath%')}),
+      join('/', { items: list('%path%','%$probePath%') }),
       'http://localhost:8082/project/studio/%%?sourceCode=%$sourceCode%&spy=test'
     ),
-    cmd(probe('%$docProps/filePath%'))
-  )
+    jbm: cmd(probe('%$docProps/filePath%'))
+  })
 })
 
 component('probe', {

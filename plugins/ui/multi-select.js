@@ -13,12 +13,12 @@ component('multiSelect', {
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-component('multiSelect.modelAsBooleanRef',{
-    params: [
-        {id: 'multiSelectModel'},
-        {id: 'code'},
-    ],
-    impl: (ctx,multiSelectModel,code) => {
+component('multiSelect.modelAsBooleanRef', {
+  params: [
+    {id: 'multiSelectModel'},
+    {id: 'code'}
+  ],
+  impl: (ctx,multiSelectModel,code) => {
         const ref = multiSelectModel.databind()
         return { $jb_val: val => val === undefined ? has() : val === true ? add() : remove() }
 

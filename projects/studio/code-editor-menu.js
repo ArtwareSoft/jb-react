@@ -89,8 +89,8 @@ component('tgpTextEditor.editMenu', {
       })
     ),
     studio.styleEditorOptions('%$path%'),
-    menu.endWithSeparator(
-      menu.action({
+    menu.endWithSeparator({
+      options: menu.action({
         vars: [
           Var('compName', tgp.compName('%$path%'))
         ],
@@ -98,7 +98,7 @@ component('tgpTextEditor.editMenu', {
         action: studio.gotoPath('%$compName%', 'open'),
         showCondition: '%$compName%'
       }),
-      menu.action({
+      separator: menu.action({
         vars: [
           Var('compName', split('~', { text: '%$fromPath%', part: 'first' }))
         ],
@@ -106,7 +106,7 @@ component('tgpTextEditor.editMenu', {
         action: studio.openComponentInJbEditor('%$fromPath%', '%$path%'),
         showCondition: '%$fromPath%'
       })
-    ),
+    }),
     menu.studioWrapWith('%$path%', 'control', { components: list('group') }),
     menu.studioWrapWith('%$path%', 'style', { components: list('styleWithFeatures') }),
     menu.studioWrapWith('%$path%', 'data', {

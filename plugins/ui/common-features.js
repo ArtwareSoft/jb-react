@@ -84,7 +84,7 @@ component('feature.initValue', {
 component('feature.requireService', {
   params: [
     {id: 'service', type: 'service'},
-    {id: 'condition', dynamic: true, defaultValue: true},
+    {id: 'condition', dynamic: true, defaultValue: true}
   ],
   impl: (_ctx,service,condition) => ({ init: { 
     action: ctx => condition(ctx) && service.init(ctx),

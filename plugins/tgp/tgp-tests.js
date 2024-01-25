@@ -10,9 +10,7 @@ component('dataTest.tgpTextEditor.getPosOfPath', {
 })
 
 component('pathChangeTest.wrap', {
-  impl: tgp.pathChangeTest({
-    path: 'probeTest.label1~impl',
-    action: tgp.wrapWithGroup('probeTest.label1~impl'),
+  impl: tgp.pathChangeTest('probeTest.label1~impl', tgp.wrapWithGroup('probeTest.label1~impl'), {
     expectedPathAfter: 'probeTest.label1~impl~controls~0'
   })
 })

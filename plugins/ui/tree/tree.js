@@ -377,10 +377,10 @@ component('tree.pathOfElem', {
 })
 
 component('tree.parentPath', {
-	params: [
-		{id: 'path', as: 'string', defaultValue: '%%'}
-	],
-	impl: (ctx,path) => path.split('~').slice(0,-1).join('~'),
+  params: [
+    {id: 'path', as: 'string', defaultValue: '%%'}
+  ],
+  impl: (ctx,path) => path.split('~').slice(0,-1).join('~')
 })
 
 component('tree.lastPathElement', {

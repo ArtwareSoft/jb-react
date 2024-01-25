@@ -183,11 +183,9 @@ component('studio.openNewProfileDialog', {
   impl: openDialog({
     title: 'new %$type%',
     content: studio.selectProfile({
-      onSelect: action.switch(
-        action.switchCase('%$mode% == "insert-control"', tgp.insertControl('%%', '%$path%')),
-        action.switchCase('%$mode% == "insert"', tgp.addArrayItem('%$path%', studio.newProfile('%%'), { index: '%$index%' })),
-        action.switchCase('%$mode% == "update"', tgp.setComp('%$path%', '%%'))
-      ),
+      onSelect: action.switch(action.switchCase('%$mode% == "insert-control"', tgp.insertControl('%%', '%$path%')), {
+        defaultAction: action.switchCase('%$mode% == "insert"', tgp.addArrayItem('%$path%', studio.newProfile('%%'), { index: '%$index%' }))
+      }),
       type: '%$type%',
       path: '%$path%'
     }),

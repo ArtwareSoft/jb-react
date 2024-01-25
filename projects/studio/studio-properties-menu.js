@@ -108,14 +108,14 @@ component('studio.jbEditorMenu', {
         showCondition: and(isEmpty(tgp.val('%$path%~$vars')), isOfType('object', tgp.val('%$path%')))
       }),
       studio.styleEditorOptions('%$path%'),
-      menu.endWithSeparator(
-        menu.action({
+      menu.endWithSeparator({
+        options: menu.action({
           title: 'Goto parent',
           action: studio.openJbEditor(tgp.parentPath('%$path%'), tgp.parentPath('%$fromPath%')),
           shortcut: 'Ctrl+P',
           showCondition: contains('~', { allText: '%$root%' })
         }),
-        menu.action({
+        separator: menu.action({
           vars: [
             Var('compName', tgp.compName('%$path%'))
           ],
@@ -123,16 +123,8 @@ component('studio.jbEditorMenu', {
           action: studio.openJbEditor('%$compName%', '%$path%'),
           shortcut: 'Ctrl+I',
           showCondition: '%$compName%'
-        }),
-        menu.action({
-          vars: [
-            Var('compName', split('~', { text: '%$fromPath%', part: 'first' }))
-          ],
-          title: 'Back to %$compName%',
-          action: studio.openComponentInJbEditor('%$fromPath%', '%$path%'),
-          showCondition: '%$fromPath%'
         })
-      ),
+      }),
       studio.gotoEditorOptions('%$path%'),
       menu.studioWrapWith('%$path%', 'control', { components: list('group') }),
       menu.studioWrapWith('%$path%', 'style', { components: list('styleWithFeatures') }),

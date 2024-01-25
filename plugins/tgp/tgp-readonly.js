@@ -275,7 +275,7 @@ component('tgp.PTsOfType', {
 
 component('tgp.categoriesOfType', {
   params: [
-    {id: 'type', as: 'string', mandatory: true},
+    {id: 'type', as: 'string', mandatory: true}
   ],
   impl: (ctx,type) => {
 		const comps = jb.comps;

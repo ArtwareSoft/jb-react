@@ -219,7 +219,7 @@ extension('treeShake', {
 })
 
 component('treeShake.getCode', {
-    impl: ({vars}) => {
+  impl: ({vars}) => {
         const treeShake = jb.treeShake.treeShake(vars.ids.split(','),jb.objFromEntries(vars.existing.split(',').map(x=>[x,true])))
         jb.log('treeShake treeshake',{...vars, treeShake})
         return jb.treeShake.code(treeShake)

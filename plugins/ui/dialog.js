@@ -125,25 +125,25 @@ component('dialog.closeAllPopups', {
 })
 
 component('dialog.shownDialogs', {
-	impl: ctx =>jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog').map(el=> el.getAttribute('id'))
+  impl: ctx =>jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog').map(el=> el.getAttribute('id'))
 })
 
 component('dialog.isOpen', {
-	params: [
-		{id: 'id', as: 'string'},
-  	],
-	impl: dialogs.cmpIdOfDialog('%$id%')
+  params: [
+    {id: 'id', as: 'string'}
+  ],
+  impl: dialogs.cmpIdOfDialog('%$id%')
 })
 
 component('dialogs.cmpIdOfDialog', {
-	params: [
-		{id: 'id', as: 'string'},
-  	],
-	impl: (ctx,id) => jb.ui.find(jb.ui.widgetBody(ctx),`[id="${id}"]`).map(el=> el.getAttribute('cmp-id'))[0]
+  params: [
+    {id: 'id', as: 'string'}
+  ],
+  impl: (ctx,id) => jb.ui.find(jb.ui.widgetBody(ctx),`[id="${id}"]`).map(el=> el.getAttribute('cmp-id'))[0]
 })
 
 component('dialogs.shownPopups', {
-	impl: ctx => jb.ui.find(jb.ui.widgetBody(ctx),'.jb-popup').map(el=>el.getAttribute('id'))
+  impl: ctx => jb.ui.find(jb.ui.widgetBody(ctx),'.jb-popup').map(el=>el.getAttribute('id'))
 })
 
 component('dialogFeature.modal', {

@@ -106,12 +106,9 @@ component('studio.openNewDataSource', {
       compContent: obj(
         prop({
           title: '%$watchableOrPassive%Data',
-          val: data.switch(
-            data.case('%$dialogData/type%==text', ''),
-            data.case('%$dialogData/type%==array', '[]'),
-            data.case('%$dialogData/type%==card', asIs({title: '', description: '', image: ''})),
-            data.case('%$dialogData/type%==collection', asIs([{title: '', description: '', image: ''}]))
-          ),
+          val: data.switch(data.case('%$dialogData/type%==text', ''), {
+            default: data.case('%$dialogData/type%==array', '[]')
+          }),
           type: ''
         })
       ),

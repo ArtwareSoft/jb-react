@@ -252,9 +252,9 @@ component('customStyle', {
   typePattern: t => /\.style$/.test(t),
   category: 'advanced:10,all:10',
   params: [
-    { id: 'template', as: 'single', mandatory: true, dynamic: true, ignore: true },
-    { id: 'css', as: 'string' },
-    { id: 'features', type: 'feature[]', dynamic: true }
+    {id: 'template', as: 'single', mandatory: true, dynamic: true, ignore: true},
+    {id: 'css', as: 'string'},
+    {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: (ctx, css, features) => ({
     template: ctx.profile.template,
@@ -268,8 +268,8 @@ component('styleByControl', {
   typePattern: t => /\.style$/.test(t),
   category: 'advanced:10,all:20',
   params: [
-    { id: 'control', type: 'control', mandatory: true, dynamic: true },
-    { id: 'modelVar', as: 'string', mandatory: true }
+    {id: 'control', type: 'control', mandatory: true, dynamic: true},
+    {id: 'modelVar', as: 'string', mandatory: true}
   ],
   impl: (ctx, control, modelVar) => control(ctx.setVar(modelVar, ctx.vars.$model))
 })
@@ -279,8 +279,8 @@ component('styleWithFeatures', {
   description: 'customize, add more features to style',
   category: 'advanced:10,all:20',
   params: [
-    { id: 'style', type: '$asParent', mandatory: true, composite: true },
-    { id: 'features', type: 'feature[]', templateValue: [], dynamic: true, mandatory: true }
+    {id: 'style', type: '$asParent', mandatory: true, composite: true},
+    {id: 'features', type: 'feature[]', templateValue: [], dynamic: true, mandatory: true}
   ],
   impl: (ctx, style, features) => {
     if (style.isBEComp)

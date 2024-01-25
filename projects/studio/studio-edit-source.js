@@ -169,7 +169,9 @@ component('studio.gotoEditorOptions', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: menu.endWithSeparator(studio.gotoEditorFirst('%$path%'), studio.gotoEditorSecondary('%$path%'))
+  impl: menu.endWithSeparator(studio.gotoEditorFirst('%$path%'), {
+    separator: studio.gotoEditorSecondary('%$path%')
+  })
 })
 
 component('studio.openEditProperty', {
@@ -222,10 +224,9 @@ component('studio.openEditProperty', {
         condition: tgp.isOfType('%$actualPath%', 'data,boolean'),
         action: runActions(
           Var('sugarArrayPath', sourceEditor.firstParamAsArrayPath('%$actualPath%')),
-          Var('index', data.switch(
-            data.case(equals('open-sugar', '%$pathType%'), 0),
-            data.case(equals('close-sugar', '%$pathType%'), count(tgp.val('%$sugarArrayPath%')))
-          )),
+          Var('index', data.switch(data.case(equals('open-sugar', '%$pathType%'), 0), {
+            default: data.case(equals('close-sugar', '%$pathType%'), count(tgp.val('%$sugarArrayPath%')))
+          })),
           Var('actualPathHere', data.if(endsWith('-sugar', '%$pathType%'), '%$sugarArrayPath%~%$index%', '%$actualPath%')),
           action.if({
             condition: endsWith('-sugar', '%$pathType%'),

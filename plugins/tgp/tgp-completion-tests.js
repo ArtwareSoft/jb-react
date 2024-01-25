@@ -1,68 +1,70 @@
 using('ui-tests')
 
 component('completionTest.param', {
-  impl: tgp.completionOptionsTest(
-    `component('x', {
+  impl: tgp.completionOptionsTest({
+    compText: `component('x', {
   impl: uiTest(__text(__'hello world',__ ''__)__,__ __contains('hello world')__)
 })`,
-    {
     expectedSelections: ['runBefore','style','style','style','style','runBefore','not','runBefore']
-  }
-  )
+  })
 })
 
 component('completionTest.pt', {
   impl: tgp.completionOptionsTest({
-    compText:`component('x', {
+    compText: `component('x', {
   impl: uiTest(group({ controls: [__text('hello world'), __text('2')__]__ }), __contains(['hello world','2']))
 })`,
-    expectedSelections:['button','button','button','style','not']
- })
+    expectedSelections: ['button','button','button','style','not']
+  })
 })
 
 component('completionTest.text', {
-  impl: tgp.completionOptionsTest({
-    compText:`component('x', {
+  impl: tgp.completionOptionsTest(`component('x', {
   impl: uiTest(text(__'__hello'__, __'__'__))
-})`,
-    expectedSelections:['pipeline','pipeline','pipeline','pipeline','pipeline','pipeline']
- })
+})`, {
+    expectedSelections: ['pipeline','pipeline','pipeline','pipeline','pipeline','pipeline']
+  })
 })
 
 component('completionTest.betweentwoFirstArgs', {
-  impl: tgp.completionOptionsTest(
-    `component('x', {
+  impl: tgp.completionOptionsTest({
+    compText: `component('x', {
   impl: uiTest(text('hello world'),__ contains('hello world'))
 })`,
-    ['runBefore']
-  )
+    expectedSelections: ['runBefore']
+  })
 })
 
 component('completionTest.pipeline', {
   impl: tgp.completionOptionsTest(`component('x', {
   impl: uiTest(text(pipeline(__)))
-})`, ['split'])
+})`, {
+    expectedSelections: ['split']
+  })
 })
 
 component('completionTest.typeAdapter', {
-  impl: tgp.completionOptionsTest(
-    `component('x', {
+  impl: tgp.completionOptionsTest({
+    compText: `component('x', {
   impl: uiTest(text(typeAdapter('state<location>', __TBD())))
 })`,
-    ['israel']
-  )
+    expectedSelections: ['israel']
+  })
 })
 
 component('completionTest.pipeline2', {
   impl: tgp.completionOptionsTest(`component('x', {
   impl: uiTest(text(pipeline(__'')))
-})`, ['split'])
+})`, {
+    expectedSelections: ['split']
+  })
 })
 
 component('completionTest.createPipelineFromComp', {
   impl: tgp.completionActionTest(`component('x', {
   impl: uiTest(text(__split()))
-})`, 'pipeline', {
+})`, {
+    completionToActivate: 'pipeline',
     expectedEdit: () => ({
         range: {start: {line: 1, col: 20}, end: {line: 1, col: 26}},
         newText: 'pipeline(split()'
@@ -72,9 +74,9 @@ component('completionTest.createPipelineFromComp', {
 })
 
 component('completionTest.addToArray', {
-  impl: tgp.completionActionTest({
-    compText: `component('x', {
-  impl: uiTest(group({ controls: [button('')__] }))\n})`,
+  impl: tgp.completionActionTest(`component('x', {
+  impl: uiTest(group({ controls: [button('')__] }))
+})`, {
     completionToActivate: 'button',
     expectedEdit: () => ({
         range: {start: {line: 1, col: 44}, end: {line: 1, col: 44}},
@@ -85,28 +87,31 @@ component('completionTest.addToArray', {
 })
 
 component('completionTest.paramsAndProfiles', {
-  impl: tgp.completionOptionsTest({
-    compText:"component('x', {\n  impl: uiTest(text(__''))\n})",
-    expectedSelections:['pipeline','style']
- })
+  impl: tgp.completionOptionsTest(`component('x', {
+  impl: uiTest(text(__''))
+})`, {
+    expectedSelections: ['pipeline','style']
+  })
 })
 
 component('completionTest.createPipelineFromString', {
-  impl: tgp.completionActionTest({
-    compText: "component('x', {\n  impl: uiTest(text(__'aa'))\n})",
+  impl: tgp.completionActionTest(`component('x', {
+  impl: uiTest(text(__'aa'))
+})`, {
     completionToActivate: 'pipeline',
     expectedEdit: () => ({
         range: {start: {line: 1, col: 20}, end: {line: 1, col: 24}},
         newText: "pipeline('aa')"
       }),
     expectedCursorPos: '1,33'
- })
+  })
 })
 
 component('completionTest.createPipelineFromEmptyString', {
   impl: tgp.completionActionTest(`component('x', {
   impl: uiTest(text('hello world', __''))
-})`, 'pipeline', {
+})`, {
+    completionToActivate: 'pipeline',
     expectedEdit: () => ({
       range: {start: {line: 1, col: 35}, end: {line: 1, col: 37}},
       newText: `pipeline('')`
@@ -129,10 +134,9 @@ component('completionTest.insideVar', {
 })
 
 component('completionTest.splitInsidePipeline', {
-  impl: tgp.completionActionTest({
-    compText: `component('x', {
+  impl: tgp.completionActionTest(`component('x', {
   impl: uiTest(text(pipeline(__)))
-})`,
+})`, {
     completionToActivate: 'split',
     expectedEdit: () => ({
         range: {start: {line: 1, col: 29}, end: {line: 1, col: 29}},
@@ -145,7 +149,9 @@ component('completionTest.splitInsidePipeline', {
 component('completionTest.splitPart', {
   impl: tgp.completionOptionsTest(`component('x', {
   impl: uiTest(text(pipeline(split(__))))
-})`, ['part'])
+})`, {
+    expectedSelections: ['part']
+  })
 })
 
 component('completionTest.dynamicFormat', {
@@ -163,14 +169,15 @@ component('completionTest.dynamicFormat', {
 })
 
 component('completionTest.wrapWithGroup', {
-  impl: tgp.completionActionTest({
-    compText: "component('x', {\n  impl: uiTest(__text())\n})",
+  impl: tgp.completionActionTest(`component('x', {
+  impl: uiTest(__text())
+})`, {
     completionToActivate: 'group',
     expectedEdit: () => ({
         range: {start: {line: 1, col: 15}, end: {line: 1, col: 20}},
         newText: `group({ controls: [text()] }`}),
     expectedCursorPos: '1,43'
- })
+  })
 })
 
 component('completionTest.wrapWithArray', {
