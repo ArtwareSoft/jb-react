@@ -1,28 +1,19 @@
 using('parsing,core-tests')
 
 component('jbmTest.child', {
-  impl: dataTest({
-    calculate: remote.data('hello', child()),
-    expectedResult: equals('hello')
-  })
+  impl: dataTest(remote.data('hello', child()), equals('hello'))
 })
 
 component('jbmTest.worker', {
-  impl: dataTest({
-    calculate: remote.data('hello', worker()),
-    expectedResult: equals('hello'),
-    timeout: 3000
-  })
+  impl: dataTest(remote.data('hello', worker()), equals('hello'), { timeout: 3000 })
 })
 
 component('jbmTest.cmd', {
-  impl: dataTest({calculate: remote.data(pipeline('hello'), cmd()), expectedResult: equals('hello'), timeout: 5000})
+  impl: dataTest(remote.data(pipeline('hello'), cmd()), equals('hello'), { timeout: 5000 })
 })
 
 component('jbmTest.cmdWithVars', {
-  impl: dataTest({
-    calculate: pipeline(Var('toPass', 'aa'), remote.data(pipeline('hello %$toPass%'), cmd())),
-    expectedResult: equals('hello aa'),
+  impl: dataTest(pipeline(Var('toPass', 'aa'), remote.data(pipeline('hello %$toPass%'), cmd())), equals('hello aa'), {
     timeout: 5000
   })
 })
@@ -36,53 +27,44 @@ component('jbmTest.cmdWithParams', {
 
 component('jbmTest.cmdWithParams.script.static', {
   params: [
-    {id: 'toPass', defaultValue: trim(nameOfCity(eilat())) }
+    {id: 'toPass', defaultValue: trim(nameOfCity(eilat()))}
   ],
   impl: dataTest(remote.data(pipeline('hello %$toPass%'), cmd()), equals('hello Eilat'))
 })
 
 component('jbmTest.cmdWithParams.script.staticObj', {
   params: [
-    {id: 'toPass', defaultValue: () => ({ x: 'aa\nbb'}) }
+    {id: 'toPass', defaultValue: () => ({ x: 'aa\nbb'})}
   ],
-  impl: dataTest(remote.data(pipeline('hello %$toPass/x%'), cmd()), equals('hello aa\nbb'))
+  impl: dataTest(remote.data(pipeline('hello %$toPass/x%'), cmd()), equals(`hello aa
+bb`))
 })
 
 component('jbmTest.cmdWithParams.script.dynamic', {
   params: [
     {id: 'toPass', defaultValue: trim(nameOfCity(eilat())), dynamic: true}
   ],
-  impl: dataTest({
-    calculate: remote.data(pipeline('hello %$toPass()%'), cmd()),
-    expectedResult: equals('hello Eilat'),
-    timeout: 500
-  })
+  impl: dataTest(remote.data(pipeline('hello %$toPass()%'), cmd()), equals('hello Eilat'), { timeout: 500 })
 })
 
 component('jbmTest.cmdWithParams.script.js', {
   params: [
     {id: 'toPass', defaultValue: () => 'aa', dynamic: true}
   ],
-  impl: dataTest({
-    calculate: remote.data(pipeline('hello %$toPass()%'), cmd()),
-    expectedResult: equals('hello aa'),
-    timeout: 500
-  })
+  impl: dataTest(remote.data(pipeline('hello %$toPass()%'), cmd()), equals('hello aa'), { timeout: 500 })
 })
 
 component('jbmTest.cmdWithParams.objWithNL', {
   params: [
-    {id: 'toPass', defaultValue: 'a\na'}
+    {id: 'toPass', defaultValue: `a
+a`}
   ],
-  impl: dataTest(remote.data(pipeline('hello %$toPass%'), cmd()), equals('hello a\na'))
+  impl: dataTest(remote.data(pipeline('hello %$toPass%'), cmd()), equals(`hello a
+a`))
 })
 
 component('jbmTest.remote.data.defComponents', {
-  impl: dataTest({
-    calculate: remote.data(pipeline('1.5', math.floor()), worker()),
-    expectedResult: equals(1),
-    timeout: 500
-  })
+  impl: dataTest(remote.data(pipeline('1.5', math.floor()), worker()), equals(1), { timeout: 500 })
 })
 
 component('jbmTest.innerTreeShake', {
@@ -95,41 +77,34 @@ component('jbmTest.innerTreeShake', {
 })
 
 component('jbmTest.innerWorker', {
-  impl: dataTest({
-    timeout: 5000,
+  impl: dataTest(pipe(net.listSubJbms(), join(',')), contains(['tests•w1','tests•w1•inWorker']), {
     runBefore: remote.action(jbm.start(child('inWorker')), worker()),
-    calculate: pipe(net.listSubJbms(), join(',')),
-    expectedResult: contains(['tests•w1','tests•w1•inWorker'])
+    timeout: 5000
   })
 })
 
 component('jbmTest.child.byUri', {
-  impl: dataTest({
-    timeout: 1000,
+  impl: dataTest(remote.data('hello', byUri('tests•tst')), equals('hello'), {
     runBefore: jbm.start(child('tst')),
-    calculate: remote.data('hello', byUri('tests•tst')),
-    expectedResult: equals('hello')
+    timeout: 1000
   })
 })
 
 component('jbmTest.worker.byUri', {
   impl: dataTest({
-    timeout: 1000,
+    calculate: rx.pipe(source.data('hello'), remote.operator(rx.map('%% world'), byUri('tests•w1'))),
+    expectedResult: equals('hello world'),
     runBefore: jbm.start(worker('w1')),
-    calculate: rx.pipe(
-      source.data('hello'),
-      remote.operator(rx.map('%% world'), byUri('tests•w1'))
-    ),
-    expectedResult: equals('hello world')
+    timeout: 1000
   })
 })
 
 component('jbmTest.workerToWorker', {
   impl: dataTest({
-    calculate: source.remote(
-      rx.pipe(source.data('hello'), rx.map('%%'), remote.operator(rx.map('%% world'), byUri('tests•w2'))),
-      byUri('tests•w1')
-    ),
+    calculate: source.remote({
+      rx: rx.pipe(source.data('hello'), rx.map('%%'), remote.operator(rx.map('%% world'), byUri('tests•w2'))),
+      jbm: byUri('tests•w1')
+    }),
     expectedResult: equals('hello world'),
     runBefore: runActions(jbm.start(worker('w1')), jbm.start(worker('w2'))),
     timeout: 5000
@@ -138,14 +113,13 @@ component('jbmTest.workerToWorker', {
 
 component('jbmTest.networkToWorker', {
   impl: dataTest({
-    timeout: 5000,
-    runBefore: runActions(jbm.start(worker({id: 'peer1', networkPeer: true})), jbm.start(worker('w2'))),
-    calculate: source.remote(rx.pipe(
-        source.data('hello'),
-        rx.map('%%'),
-        remote.operator(rx.map('%% world'), byUri('tests•w2'))
-      ), byUri('peer1')),
-    expectedResult: equals('hello world')
+    calculate: source.remote({
+      rx: rx.pipe(source.data('hello'), rx.map('%%'), remote.operator(rx.map('%% world'), byUri('tests•w2'))),
+      jbm: byUri('peer1')
+    }),
+    expectedResult: equals('hello world'),
+    runBefore: runActions(jbm.start(worker('peer1', { networkPeer: true })), jbm.start(worker('w2'))),
+    timeout: 5000
   })
 })
 
@@ -166,54 +140,41 @@ component('jbmTest.remoteVarCleanAndRestore', {
 
 component('jbmTest.operator.useVars', {
   impl: dataTest({
-    timeout: 5000,
-      calculate: rx.pipe(
-          source.data(1),
-          rx.var('keepIt','keep me'),
-          remote.operator(rx.var('remoteVar','alive'), worker()),
-          rx.map('%$keepIt%-%$remoteVar%'),
-          rx.take(1)
+    calculate: rx.pipe(
+      source.data(1),
+      rx.var('keepIt', 'keep me'),
+      remote.operator(rx.var('remoteVar', 'alive'), worker()),
+      rx.map('%$keepIt%-%$remoteVar%'),
+      rx.take(1)
     ),
-    expectedResult: equals('keep me-alive')
+    expectedResult: equals('keep me-alive'),
+    timeout: 5000
   })
 })
 
 component('jbmTest.dynamicProfileFunc', {
   params: [
-    { id: 'func', dynamic: true, defaultValue: '-%%-'},
+    {id: 'func', dynamic: true, defaultValue: '-%%-'}
   ],
   impl: dataTest({
-    timeout: 5000,
-      calculate: rx.pipe(
-          source.data(1),
-          remote.operator(rx.map('%$func()%'), worker()),
-          rx.take(1)
-    ),
-    expectedResult: equals('-1-')
+    calculate: rx.pipe(source.data(1), remote.operator(rx.map('%$func()%'), worker()), rx.take(1)),
+    expectedResult: equals('-1-'),
+    timeout: 5000
   })
 })
 
 component('jbmTest.remoteNodeWorker', {
-  impl: dataTest({
-    calculate: pipe(jbm.start(remoteNodeWorker()), remote.data('hello', '%%')),
-    expectedResult: equals('hello'),
+  impl: dataTest(pipe(jbm.start(remoteNodeWorker()), remote.data('hello', '%%')), equals('hello'), { timeout: 3000 })
+})
+
+component('jbmTest.remote.data', {
+  impl: dataTest(pipe(Var('w', 'world'), remote.data('hello %$w%', worker())), equals('hello world'), {
     timeout: 3000
   })
 })
 
-component('jbmTest.remote.data', {
-  impl: dataTest({
-    timeout: 3000,
-    calculate: pipe(
-      Var('w','world'), remote.data('hello %$w%', worker())),
-    expectedResult: equals('hello world')
-  })
-})
-
 component('jbmTest.childJbmPort', {
-  impl: dataTest({
-    calculate: remote.data('hello', byUri('tests•w1•inner')),
-    expectedResult: 'hello',
+  impl: dataTest(remote.data('hello', byUri('tests•w1•inner')), 'hello', {
     runBefore: pipe(jbm.start(worker()), remote.action(jbm.start(child('inner')), '%%')),
     timeout: 5000
   })

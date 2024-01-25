@@ -2,7 +2,7 @@ using('ui-tests')
 
 component('sampleProject.main', {
   impl: group({
-    controls: text({text: 'hello', features: [id('sampleText')]}),
+    controls: text('hello', { features: [id('sampleText')] }),
     features: [
       variable('var1', 'world'),
       variable('xx', 'xx')
@@ -11,28 +11,23 @@ component('sampleProject.main', {
 })
 
 component('suggestionsTest.varsFilter.remote', {
-  impl: remoteSuggestionsTest({
-    expression: '%$p',
-    expectedResult: and(contains('$people'), not(contains('$win'))),
+  impl: remoteSuggestionsTest('%$p', {
+    expectedResult: and(contains('$people'), not(contains('$win')))
   })
 })
 
 component('workerPreviewTest.basic', {
-  impl: uiTest({
-    control: probe.remoteCircuitPreview(),
+  impl: uiTest(probe.remoteCircuitPreview(), contains('hello'), {
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
     uiAction: waitForText('hello'),
-    expectedResult: contains('hello'),
     timeout: 3000
   })
 })
 
 component('workerPreviewTest.changeScript', {
-  impl: uiTest({
-    control: probe.remoteCircuitPreview(),
+  impl: uiTest(probe.remoteCircuitPreview(), contains('world'), {
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
     uiAction: uiActions(writeValue(tgp.ref('sampleProject.main~impl~controls~text'), 'world'), waitForText('world')),
-    expectedResult: contains('world'),
     timeout: 1000
   })
 })
@@ -61,10 +56,7 @@ component('uiTest.workerPreviewTest.addCss', {
   impl: uiTest({
     control: group({
       controls: [
-        button(
-          'change script',
-          writeValue(tgp.ref('sampleProject.main~impl~controls~features~1'), () => css('color: red'))
-        ),
+        button('change script', writeValue(tgp.ref('sampleProject.main~impl~controls~features~1'), () => css('color: red'))),
         probe.remoteCircuitPreview()
       ]
     }),
@@ -79,10 +71,7 @@ component('uiTest.workerPreviewTest.changeCss', {
   impl: uiTest({
     control: group({
       controls: [
-        button(
-          'change script',
-          writeValue(tgp.ref('sampleProject.main~impl~controls~features~1'), () => css('color: blue'))
-        ),
+        button('change script', writeValue(tgp.ref('sampleProject.main~impl~controls~features~1'), () => css('color: blue'))),
         probe.remoteCircuitPreview()
       ]
     }),

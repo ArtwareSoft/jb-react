@@ -46,35 +46,54 @@ component('dataTest.pipeWithPromise3', {
 })
 
 component('dataTest.dataSwitch', {
-  impl: dataTest(
-    pipeline(5, data.switch([data.case(equals(4), 'a'), data.case(equals(5), 'b'), data.case(equals(6), 'c')])),
-    equals('b')
-  )
+  impl: dataTest({
+    calculate: pipeline(
+      5,
+      data.switch(
+        [
+          data.case(equals(4), 'a'),
+          data.case(equals(5), 'b'),
+          data.case(equals(6), 'c')
+        ]
+      )
+    ),
+    expectedResult: equals('b')
+  })
 })
 
 component('dataTest.dataSwitchDefault', {
-  impl: dataTest(
-    pipeline(7, data.switch([data.case(equals(4), 'a'), data.case(equals(5), 'b'), data.case(equals(6), 'c')], 'd')),
-    equals('d')
-  )
+  impl: dataTest({
+    calculate: pipeline(
+      7,
+      data.switch({
+        cases: [
+          data.case(equals(4), 'a'),
+          data.case(equals(5), 'b'),
+          data.case(equals(6), 'c')
+        ],
+        default: 'd'
+      })
+    ),
+    expectedResult: equals('d')
+  })
 })
 
 component('dataTest.extendWithIndex', {
-  impl: dataTest(
-    pipeline(
+  impl: dataTest({
+    calculate: pipeline(
       '%$personWithChildren/children%',
       extendWithIndex(prop('nameTwice', '%name%-%name%'), prop('index', '%$index%')),
-      join({itemText: '%index%.%nameTwice%'})
+      join({ itemText: '%index%.%nameTwice%' })
     ),
-    contains('0.Bart-Bart,1.Lisa-Lisa,2.Maggie-Maggie')
-  )
+    expectedResult: contains('0.Bart-Bart,1.Lisa-Lisa,2.Maggie-Maggie')
+  })
 })
 
 component('dataTest.if', {
-  impl: dataTest(
-    pipeline('%$personWithChildren/children%', If(equals('%name%', 'Bart'), 'funny', 'mamy'), join()),
-    contains('funny,mamy,mamy')
-  )
+  impl: dataTest({
+    calculate: pipeline('%$personWithChildren/children%', If(equals('%name%', 'Bart'), 'funny', 'mamy'), join()),
+    expectedResult: contains('funny,mamy,mamy')
+  })
 })
 
 component('dataTest.if.filters', {
@@ -82,18 +101,23 @@ component('dataTest.if.filters', {
 })
 
 component('dataTest.pipelineMultiple', {
-  impl: dataTest(pipeline(list(1, 2), join()), '1,2')
+  impl: dataTest(pipeline(list(1,2), join()), '1,2')
 })
 
 component('dataTest.assign', {
-  impl: dataTest(
-    pipeline('%$personWithChildren/children%', assign(prop('nameTwice', '%name%-%name%')), '%nameTwice%', join()),
-    contains('Bart-Bart,Lisa-Lisa,Maggie-Maggie')
-  )
+  impl: dataTest({
+    calculate: pipeline('%$personWithChildren/children%', assign(prop('nameTwice', '%name%-%name%')), '%nameTwice%', join()),
+    expectedResult: contains('Bart-Bart,Lisa-Lisa,Maggie-Maggie')
+  })
 })
 
 component('dataTest.obj', {
-  impl: dataTest(pipeline(obj(prop('a', 1), prop('b', 2)), '%a%-%b%', '\n%%\n', {'$': 'object', res: '%%'}, '%res%'), contains('1-2'))
+  impl: dataTest({
+    calculate: pipeline(obj(prop('a', 1), prop('b', 2)), '%a%-%b%', `
+%%
+`, {'$': 'object', res: '%%'}, '%res%'),
+    expectedResult: contains('1-2')
+  })
 })
 
 component('dataTest.evalExpression', {
@@ -105,7 +129,7 @@ component('dataTest.firstSucceeding', {
 })
 
 component('dataTest.firstSucceeding.withEmptyString', {
-  impl: dataTest(firstSucceeding('', 'a', 'b'), equals('a'))
+  impl: dataTest(firstSucceeding('','a','b'), equals('a'))
 })
 
 component('dataTest.unique', {

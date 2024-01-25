@@ -1,26 +1,17 @@
 component('rxTest.pipeWithObservable', {
-  impl: dataTest({
-    calculate: pipe(ctx => jb.callbag.fromIter([1,2]), '%%a', join({})),
-    expectedResult: equals('1a,2a')
-  })
+  impl: dataTest(pipe(ctx => jb.callbag.fromIter([1,2]), '%%a', join()), equals('1a,2a'))
 })
   
 component('rxTest.mapPromise', {
-  impl: dataTest({
-    calculate: rx.pipe(
-          source.data(0),
-          rx.mapPromise(({data}) =>jb.delay(1,data+2))
-    ),
-    expectedResult: equals('2')
-  })
+  impl: dataTest(rx.pipe(source.data(0), rx.mapPromise(({data}) =>jb.delay(1,data+2))), equals('2'))
 })
 
 component('rxTest.doPromise', {
   impl: dataTest({
     calculate: rx.pipe(
       source.data(1),
-      rx.doPromise( ({data}) =>jb.delay(1,data *10)),
-      rx.mapPromise(({data}) =>jb.delay(1,data+2)),
+      rx.doPromise(({data}) =>jb.delay(1,data *10)),
+      rx.mapPromise(({data}) =>jb.delay(1,data+2))
     ),
     expectedResult: equals('3')
   })
@@ -28,56 +19,42 @@ component('rxTest.doPromise', {
 
 component('rxTest.pipe', {
   impl: dataTest({
-    calculate: pipe(rx.pipe( source.data(list('1','2','3','4')),rx.map('-%%-')),join(',')),    
+    calculate: pipe(rx.pipe(source.data(list('1','2','3','4')), rx.map('-%%-')), join(',')),
     expectedResult: equals('-1-,-2-,-3-,-4-')
   })
 })
 
 component('rxTest.source.watchableData', {
   impl: dataTest({
-    runBefore: () => {jb.exec(runActions(delay(1),writeValue('%$person/name%','Dan')))}, // activate writeValue after 'calculate'
-    calculate: pipe(rx.pipe(
-          source.watchableData('%$person/name%'),
-          rx.map('%newVal%'),
-          rx.take(1)
-    ),join(',')),
-    expectedResult: equals('Dan')
+    calculate: pipe(rx.pipe(source.watchableData('%$person/name%'), rx.map('%newVal%'), rx.take(1)), join(',')),
+    expectedResult: equals('Dan'),
+    runBefore: () => {jb.exec(runActions(delay(1),writeValue('%$person/name%','Dan')))}
   })
 })
 
 component('rxTest.toArray', {
-  impl: dataTest({
-    calculate: rx.pipe( source.data(list(0,1,2,3)),rx.toArray(),rx.map(join())),    
-    expectedResult: equals('0,1,2,3')
-  })
+  impl: dataTest(rx.pipe(source.data(list(0,1,2,3)), rx.toArray(), rx.map(join())), equals('0,1,2,3'))
 })
 
 component('rxTest.distinctUntilChanged', {
-  impl: dataTest({
-    calculate: rx.pipe( 
-      source.data(list(1,2,2,3)),
-      rx.distinctUntilChanged(),
-      rx.toArray(), rx.map(join())
-    ),    
-    expectedResult: equals('1,2,3')
-  })
+  impl: dataTest(rx.pipe(source.data(list(1,2,2,3)), rx.distinctUntilChanged(), rx.toArray(), rx.map(join())), equals('1,2,3'))
 })
 
 component('rxTest.enrichWithPrevious', {
   impl: dataTest({
-    calculate: rx.pipe( source.data(list(1,2,3,2)),
-      rx.reduce({
-        varName: 'upDown',
+    calculate: rx.pipe(
+      source.data(list(1,2,3,2)),
+      rx.reduce('upDown', obj(prop('count', 0), prop('dir', '')), {
         value: ({data},{upDown,prev}) => {
           const dir = prev && prev < data ? 'up' : 'down'
           return {dir, count: (upDown.dir == dir) ? upDown.count+1 : 1}
-        },
-        initialValue: obj(prop('count',0),prop('dir',''))
+        }
       }),
       rx.skip(1),
       rx.map('%$upDown/dir%-%$upDown/count%'),
-      rx.toArray(), rx.map(join())
-    ),    
+      rx.toArray(),
+      rx.map(join())
+    ),
     expectedResult: equals('up-1,up-2,down-1')
   })
 })
@@ -111,32 +88,20 @@ component('rxTest.rawPipeInsidePipe', {
 })
 
 component('rxTest.TakeWhile', {
-  impl: dataTest({
-    calculate: pipe(rx.pipe(source.interval(1), rx.takeWhile('%%<2')), join(',')),
-    expectedResult: equals('0,1')
-  })
+  impl: dataTest(pipe(rx.pipe(source.interval(1), rx.takeWhile('%%<2')), join(',')), equals('0,1'))
 })
 
 component('rxTest.ActionPulls', {
   impl: dataTest({
-    vars: Var('out',obj()),
-    runBefore: rx.pipe(source.data(1), rx.map('%%'), sink.data('%$out/x%')),
+    vars: [Var('out', obj())],
     calculate: '%$out/x%',
-    expectedResult: equals('1')
+    expectedResult: equals('1'),
+    runBefore: rx.pipe(source.data(1), rx.map('%%'), sink.data('%$out/x%'))
   })
 })
 
 component('rxTest.TakeWhileIter', {
-  impl: dataTest({
-    calculate: pipe(
-      rx.pipe(
-        source.data([0,1,2,3]),
-        rx.takeWhile('%%<2')
-      ),
-      join(',')
-    ),
-    expectedResult: equals('0,1')
-  })
+  impl: dataTest(pipe(rx.pipe(source.data([0,1,2,3]), rx.takeWhile('%%<2')), join(',')), equals('0,1'))
 })
 
 
@@ -144,14 +109,10 @@ component('rxTest.innerPipe', {
   impl: dataTest({
     calculate: pipe(
       rx.pipe(
-          source.interval(1),
-          rx.take(2),
-          rx.innerPipe(
-              rx.mapPromise(pipe(delay(1), '-%%-')),
-              rx.var('a', '-%%-'),
-              rx.map('-%$a%-')
-            )
-        ),
+        source.interval(1),
+        rx.take(2),
+        rx.innerPipe(rx.mapPromise(pipe(delay(1), '-%%-')), rx.var('a', '-%%-'), rx.map('-%$a%-'))
+      ),
       join(',')
     ),
     expectedResult: equals('---0---,---1---')
@@ -170,13 +131,13 @@ component('rxTest.var', {
     vars: [Var('a', 'hello')],
     calculate: pipe(
       rx.pipe(
-          source.interval(1),
-          rx.take('4'),
-          rx.var('origin'),
-          rx.map('-%%-'),
-          rx.map('%$a%;%%;%$origin%'),
-          rx.last()
-        ),
+        source.interval(1),
+        rx.take('4'),
+        rx.var('origin'),
+        rx.map('-%%-'),
+        rx.map('%$a%;%%;%$origin%'),
+        rx.last()
+      ),
       join(',')
     ),
     expectedResult: equals('hello;-3-;3')
@@ -184,28 +145,16 @@ component('rxTest.var', {
 })
 
 component('rxTest.reduceCount', {
-  impl: dataTest({
-    calculate: rx.pipe(source.interval(1),rx.take('4'),rx.count(),rx.map('%$count%'),rx.last() ),
-    expectedResult: equals(4)
-  })
+  impl: dataTest(rx.pipe(source.interval(1), rx.take('4'), rx.count(), rx.map('%$count%'), rx.last()), equals(4))
 })
 
 component('rxTest.reduceMax', {
-  impl: dataTest({
-    calculate: rx.pipe(source.interval(1),rx.take('4'),rx.max(),rx.map('%$max%'),rx.last()),
-    expectedResult: equals(3)
-  })
+  impl: dataTest(rx.pipe(source.interval(1), rx.take('4'), rx.max(), rx.map('%$max%'), rx.last()), equals(3))
 })
 
 component('rxTest.reduceJoin', {
   impl: dataTest({
-    calculate: rx.pipe(
-      source.interval(1),
-      rx.take('4'),
-      rx.join('res', ';'),
-      rx.map('%$res%'),
-      rx.last()
-    ),
+    calculate: rx.pipe(source.interval(1), rx.take('4'), rx.join('res', ';'), rx.map('%$res%'), rx.last()),
     expectedResult: equals('0;1;2;3')
   })
 })
@@ -269,31 +218,19 @@ component('rxTest.rawflatMapActiveActive', {
 })
 
 component('rxTest.flatMapPassivePassive', {
-  impl: dataTest({
-    calculate: rx.pipe(
-          source.data(0),
-          rx.flatMap(rx.pipe(source.data(0), rx.map('-%%-'))),
-    ),
-    expectedResult: equals('-0-')
-  })
+  impl: dataTest(rx.pipe(source.data(0), rx.flatMap(rx.pipe(source.data(0), rx.map('-%%-')))), equals('-0-'))
 })
 
 component('rxTest.flatMapActivePassive', {
   impl: dataTest({
-    calculate: rx.pipe(
-        source.interval(1), rx.take(1),
-        rx.flatMap(rx.pipe(source.data(0), rx.map('-%%-'))),
-    ),
+    calculate: rx.pipe(source.interval(1), rx.take(1), rx.flatMap(rx.pipe(source.data(0), rx.map('-%%-')))),
     expectedResult: equals('-0-')
   })
 })
 
 component('rxTest.flatMapPassiveActive', {
   impl: dataTest({
-    calculate: rx.pipe(
-        source.data(0),
-        rx.flatMap(rx.pipe(source.interval(1), rx.take(1), rx.map('-%%-'))),
-    ),
+    calculate: rx.pipe(source.data(0), rx.flatMap(rx.pipe(source.interval(1), rx.take(1), rx.map('-%%-')))),
     expectedResult: equals('-0-')
   })
 })
@@ -301,29 +238,30 @@ component('rxTest.flatMapPassiveActive', {
 component('rxTest.flatMapActiveActive', {
   impl: dataTest({
     calculate: rx.pipe(
-          source.interval(1), rx.take(1),
-          rx.flatMap(rx.pipe(source.interval(1), rx.take(1), rx.map('-%%-'))),
+      source.interval(1),
+      rx.take(1),
+      rx.flatMap(rx.pipe(source.interval(1), rx.take(1), rx.map('-%%-')))
     ),
     expectedResult: equals('-0-')
   })
 })
 
 component('rxTest.promises', {
-  impl: dataTest({
-    calculate: pipe( source.promises(delay(1,1), delay(1,2)) , join(',')),
-    expectedResult: equals('1,2')
-  })
+  impl: dataTest(pipe(source.promises(delay(1, 1), delay(1, 2)), join(',')), equals('1,2'))
 })
 
 component('rxTest.mapPromiseActiveSource', {
-  impl: dataTest(rx.pipe(source.interval(1), rx.take(1), rx.mapPromise(({data}) =>jb.delay(1,data+2))), equals(2))
+  impl: dataTest({
+    calculate: rx.pipe(source.interval(1), rx.take(1), rx.mapPromise(({data}) =>jb.delay(1,data+2))),
+    expectedResult: equals(2)
+  })
 })
 
 component('rxTest.rawMapPromiseTwice', {
   impl: dataTest({
     calculate: ctx => { const {fromIter,pipe,mapPromise,toPromiseArray} = jb.callbag
       return toPromiseArray(pipe(fromIter([0]), mapPromise(data =>jb.delay(1,data+2)), mapPromise(data =>jb.delay(1,data+2))))
-    },    
+    },
     expectedResult: equals('4')
   })
 })
@@ -331,22 +269,24 @@ component('rxTest.rawMapPromiseTwice', {
 component('rxTest.mapPromiseTwice', {
   impl: dataTest({
     calculate: rx.pipe(
-          source.data(0),
-          rx.mapPromise(({data}) =>jb.delay(1,data+2)),
-          rx.mapPromise(({data}) =>jb.delay(1,data+2)),
-        ),
+      source.data(0),
+      rx.mapPromise(({data}) =>jb.delay(1,data+2)),
+      rx.mapPromise(({data}) =>jb.delay(1,data+2))
+    ),
     expectedResult: equals('4')
   })
 })
 
 component('rxTest.mapPromiseWithError', {
   impl: dataTest({
-    calculate: rx.pipe(source.data(0), rx.var('aa', 'aa'), 
-      rx.mapPromise( () => new Promise((res,rej) => { rej('error') })), 
+    calculate: rx.pipe(
+      source.data(0),
+      rx.var('aa', 'aa'),
+      rx.mapPromise(() => new Promise((res,rej) => { rej('error') })),
       rx.map('%$aa%-%$err%-%%')
     ),
     expectedResult: equals('aa-error-error'),
-    allowError: true,
+    allowError: true
   })
 })
 

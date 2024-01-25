@@ -1,12 +1,7 @@
 using('ui-tests')
 
 component('remoteWidgetTest.text', {
-  impl: uiTest({
-    control: text('hello world'),
-    expectedResult: contains('hello world'),
-    timeout: 1000,
-    backEndJbm: worker()
-  })
+  impl: uiTest(text('hello world'), contains('hello world'), { timeout: 1000, backEndJbm: worker() })
 })
 
 // component('remoteWidgetTest.distributedWidget', {
@@ -35,12 +30,12 @@ component('remoteWidgetTest.changeText2', {
     control: group({
       controls: [
         text('%$fName%'),
-        editableText({databind: '%$fName%'})
+        editableText({ databind: '%$fName%' })
       ],
       features: watchable('fName', 'Dan')
     }),
-    uiAction: setText({value: 'danny', doNotWaitForNextUpdate: true}),
     expectedResult: contains('danny'),
+    uiAction: setText('danny', { doNotWaitForNextUpdate: true }),
     timeout: 500,
     backEndJbm: worker(),
     covers: ['remoteWidgetTest.text','remoteWidgetTest.changeText']
@@ -52,12 +47,12 @@ component('remoteWidgetTest.changeText', {
     control: group({
       controls: [
         text('%$fName%'),
-        editableText({databind: '%$fName%'})
+        editableText({ databind: '%$fName%' })
       ],
       features: watchable('fName', 'Dan')
     }),
-    uiAction: setText('danny'),
     expectedResult: contains('danny'),
+    uiAction: setText('danny'),
     timeout: 1000,
     backEndJbm: worker()
   })
@@ -90,9 +85,7 @@ component('remoteWidgetTest.buttonClick', {
 })
 
 component('remoteWidgetTest.dialog', {
-  impl: uiTest({
-    control: button('open', openDialog('hello', group())),
-    expectedResult: contains('hello'),
+  impl: uiTest(button('open', openDialog('hello', group())), contains('hello'), {
     uiAction: uiActions(click(), waitForSelector('.jb-dialog')),
     backEndJbm: worker(),
     covers: ['remoteWidgetTest.buttonClick']
@@ -111,47 +104,43 @@ component('remoteWidgetTest.loadCodeManully', {
 })
 
 component('FETest.distributedWidget', {
-  impl: uiFrontEndTest({
-    control: group({controls: [], features: css.class('xRoot')}),
+  impl: uiFrontEndTest(group({ controls: [], features: css.class('xRoot') }), {
     uiAction: uiActions(
-      action(
-        remote.distributedWidget({
-          control: button('hello world'),
-          backend: worker(),
-          frontend: child('jbxServer'),
-          selector: '.xRoot'
-        })
-      ),
-      waitForSelector('button')
+    action(
+      remote.distributedWidget(button('hello world'), worker(), {
+        frontend: child('jbxServer'),
+        selector: '.xRoot'
+      })
     ),
+    waitForSelector('button')
+  ),
     expectedResult: contains('hello'),
     renderDOM: true
   })
 })
 
 component('FETest.remoteWidgetTest.changeText', {
-  impl: uiFrontEndTest({
-    control: group({controls: [], features: css.class('xRoot')}),
+  impl: uiFrontEndTest(group({ controls: [], features: css.class('xRoot') }), {
     uiAction: uiActions(
-      action(
-        remote.distributedWidget({
-          control: group({
-            controls: [
-              text({text: 'hey %$fName%', features: watchRef('%$fName%')}),
-              editableText({databind: '%$fName%'})
-            ],
-            features: watchable('fName', 'Dan')
-          }),
-          backend: worker(),
-          frontend: child('jbxServer'),
-          selector: '.xRoot'
-        })
-      ),
-      waitForSelector('input'),
-      setText('danny'),
-      keyboardEvent('input', 'keyup'),
-      waitForSelector('[cmp-ver=\"2\"]')
+    action(
+      remote.distributedWidget({
+        control: group({
+          controls: [
+            text('hey %$fName%', { features: watchRef('%$fName%') }),
+            editableText({ databind: '%$fName%' })
+          ],
+          features: watchable('fName', 'Dan')
+        }),
+        backend: worker(),
+        frontend: child('jbxServer'),
+        selector: '.xRoot'
+      })
     ),
+    waitForSelector('input'),
+    setText('danny'),
+    keyboardEvent('input', 'keyup'),
+    waitForSelector('[cmp-ver="2"]')
+  ),
     expectedResult: contains('hey danny'),
     renderDOM: true,
     covers: ['FETest.distributedWidget']
@@ -159,8 +148,7 @@ component('FETest.remoteWidgetTest.changeText', {
 })
 
 component('FETest.remoteWidget.codemirror', {
-  impl: uiFrontEndTest({
-    control: remote.widget(text({text: 'hello', style: text.codemirror({height: 100})}), worker()),
+  impl: uiFrontEndTest(remote.widget(text('hello', { style: text.codemirror({ height: 100 }) }), worker()), {
     uiAction: waitFor(() => jb.frame.document.querySelector('.CodeMirror')),
     expectedResult: contains('hello'),
     renderDOM: true
@@ -169,12 +157,11 @@ component('FETest.remoteWidget.codemirror', {
 
 component('FETest.remoteWidget.codemirror.editableText', {
   impl: uiFrontEndTest({
-    control: remote.widget(editableText({databind: '%$person/name%', style: editableText.codemirror({height: 100})}), worker()),
-    runBefore: remote.action(addComponent({
-      id: 'person',
-      value: obj(prop('name', 'Homer')),
-      type: 'watchableData'
-    }), worker()),
+    control: remote.widget({
+      control: editableText({ databind: '%$person/name%', style: editableText.codemirror({ height: 100 }) }),
+      jbm: worker()
+    }),
+    runBefore: remote.action(addComponent('person', obj(prop('name', 'Homer')), { type: 'watchableData' }), worker()),
     uiAction: waitFor(() => jb.frame.document.querySelector('.CodeMirror')),
     expectedResult: contains('Homer'),
     renderDOM: true,
@@ -185,33 +172,33 @@ component('FETest.remoteWidget.codemirror.editableText', {
 component('FETest.remoteWidget.infiniteScroll', {
   impl: uiTest({
     control: itemlist({
-        items: range(0, 10),
-        controls: text('%%'),
-        visualSizeLimit: '7',
-        features: [
-          css.height('100', 'scroll'),
-          itemlist.infiniteScroll(),
-          css.width('600')
-        ]
-      }),
-    backEndJbm: worker(),
-    uiAction: uiActions(click('.jb-itemlist', 'fetchNextPage'), waitForText('>8<')),
+      items: range(0, 10),
+      controls: text('%%'),
+      visualSizeLimit: '7',
+      features: [
+        css.height('100', 'scroll'),
+        itemlist.infiniteScroll(),
+        css.width('600')
+      ]
+    }),
     expectedResult: contains('>8<'),
+    uiAction: uiActions(click('.jb-itemlist', 'fetchNextPage'), waitForText('>8<')),
+    backEndJbm: worker()
   })
 })
 
 component('remoteWidgetTest.refresh', {
   impl: uiTest({
     control: group({
-      controls: remote.widget(text({text: '%$person1/name%', features: id('text1')}), worker()),
+      controls: remote.widget(text('%$person1/name%', { features: id('text1') }), worker()),
       features: [
         id('group1'),
         variable('person1', '%$person%'),
         watchRef('%$person/name%')
       ]
     }),
-    uiAction: uiActions(waitForSelector('#text1'), writeValue('%$person/name%', 'hello'), waitForText('hello')),
     expectedResult: contains('hello'),
+    uiAction: uiActions(waitForSelector('#text1'), writeValue('%$person/name%', 'hello'), waitForText('hello')),
     timeout: 2000,
     useFrontEnd: true
   })
@@ -223,17 +210,15 @@ component('remoteWidgetTest.runInBECmpContext', {
       controls: [
         text('%$var1%'),
         frontEnd.widget(
-          button({
-            title: 'click me',
-            action: runInBECmpContext('%$frontEndCmpId%', writeValue('%$var1%', 'hello')),
+          button('click me', runInBECmpContext('%$frontEndCmpId%', writeValue('%$var1%', 'hello')), {
             style: button.native()
           })
         )
       ],
       features: watchable('var1', 'Hi')
     }),
+    expectedResult: true,
     uiAction: click(),
-    expectedResult: true, //contains('hello'),
     backEndJbm: worker(),
     useFrontEnd: true
   })

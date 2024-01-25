@@ -31,7 +31,7 @@ component('filesOfPath', {
 
 component('readFile', {
   params: [
-    {id: 'path', as: 'string'},
+    {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => {
     if (!jbHost.fs) return ''
