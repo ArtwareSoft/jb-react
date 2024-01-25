@@ -148,7 +148,9 @@ extension('tgp', 'completion', {
                 extend(ctx) { return jb.tgp.setPTOp(this.path,this.arrayIndex,this.compName,ctx) },
             }
         })
-        return options
+        const propStr = `${path.split('~').pop()}: `
+        const propTitle = { path, kind: 19, label: propStr + jb.tgp.paramTypes(path).join(', '), extend: () => {} }
+        return [propTitle, ...options]
     },
 	writeValueOfPathOp: (path,value,srcCtx) => {
         return {op: { $set: value} , path,srcCtx, resultSemantics : ['value-text', 'profile']}

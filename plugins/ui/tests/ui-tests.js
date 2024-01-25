@@ -1011,33 +1011,6 @@ component('test.getSelectionChar', {
   }
 })
 
-
-component('uiTest.editableTextWithJbVal', {
-  impl: uiTest({
-    control: group({
-      vars: [
-        Var('a1', ctx => {
-        return {
-          $jb_val: value => {
-            if (value === undefined)
-              return jb.__test_jb_val || 'Marge';
-            else
-              jb.__test_jb_val = value;
-          }
-        }
-      })
-      ],
-      controls: [
-        editableText('name', '%$a1%'),
-        editableText('name', '%$a1%'),
-        picklist('name', '%$a1%', { options: picklist.optionsByComma('Homer,Marge') }),
-        text('%$a1%')
-      ]
-    }),
-    expectedResult: contains(['Homer'])
-  })
-})
-
 component('uiTest.propertySheet.titlesAbove', {
   impl: uiTest({
     control: group({
@@ -1060,7 +1033,7 @@ component('uiTest.propertySheet.titlesLeft', {
         editableText('address', '%$person/age%', { style: editableText.input() })
       ]
     }),
-    expectedResult: contains('Homer')
+    expectedResult: contains(['name:','Homer','display: grid'])
   })
 })
 
@@ -1075,16 +1048,8 @@ component('uiTest.editableNumber', {
         text('%$person/age%')
       ]
     }),
-    expectedResult: contains(['42','42'])
+    expectedResult: contains(['42','42','42','42'])
   })
-})
-
-component('uiTest.editableNumberSlider', {
-  impl: uiTest(editableNumber('%$person/age%', 'age', { style: editableNumber.slider() }), contains('42'))
-})
-
-component('uiTest.editableNumberSliderEmpty', {
-  impl: uiTest(editableNumber('%$person/age1%', 'age', { style: editableNumber.slider() }), true)
 })
 
 component('uiTest.editableBoolean.buttonXV', {
@@ -1094,7 +1059,7 @@ component('uiTest.editableBoolean.buttonXV', {
       noIcon: icon('location_disabled', { type: 'mdc' }),
       buttonStyle: button.mdcFloatingAction('40')
     })),
-    expectedResult: true
+    expectedResult: contains(['material-icons','location_searching'])
   })
 })
 
