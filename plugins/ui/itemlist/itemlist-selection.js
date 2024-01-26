@@ -27,21 +27,15 @@ component('itemlist.selection', {
       const el = jb.path(parent,`children.${selected}`)
       el && el.addClass('selected')
     }),
-    method('onSelection', runActionOnItem({
-      item: itemlist.indexToData(),
-      action: runActions(
-        log('itemlist onSelection'),
-        If(isRef('%$databind()%'), writeValue('%$databind()%', '%$selectedToDatabind()%')),
-        call('onSelection')
-      )
-    })),
-    method('onDoubleClick', runActionOnItem({
-      item: itemlist.indexToData(),
-      action: runActions(
-        If(isRef('%$databind()%'), writeValue('%$databind()%', '%$selectedToDatabind()%')),
-        call('onDoubleClick')
-      )
-    })),
+    method('onSelection', runActionOnItem(itemlist.indexToData(), runActions(
+      log('itemlist onSelection'),
+      If(isRef('%$databind()%'), writeValue('%$databind()%', '%$selectedToDatabind()%')),
+      call('onSelection')
+    ))),
+    method('onDoubleClick', runActionOnItem(itemlist.indexToData(), runActions(
+      If(isRef('%$databind()%'), writeValue('%$databind()%', '%$selectedToDatabind()%')),
+      call('onDoubleClick')
+    ))),
     followUp.flow(
       source.data('%$$props/selected%'),
       rx.filter(and('%$autoSelectFirst%', not('%$$state/refresh%'))),

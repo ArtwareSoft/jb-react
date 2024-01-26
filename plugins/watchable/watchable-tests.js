@@ -439,7 +439,10 @@ component('uiTest.frontEnd.onDestroy', {
   impl: uiFrontEndTest({
     vars: [Var('res', obj())],
     control: group({
-      controls: controlWithCondition('%$person/name%!=mukki', text('hello', { features: frontEnd.onDestroy(writeValue('%$res/destroyed%', 'ya')) })),
+      controls: controlWithCondition({
+        condition: '%$person/name%!=mukki',
+        control: text('hello', { features: frontEnd.onDestroy(writeValue('%$res/destroyed%', 'ya')) })
+      }),
       features: watchRef('%$person/name%')
     }),
     uiAction: writeValue('%$person/name%', 'mukki'),

@@ -154,7 +154,10 @@ component('studio.openNewProfileDialog', {
     title: 'new %$type%',
     content: studio.selectProfile({
       onSelect: action.switch(action.switchCase('%$mode% == "insert-control"', tgp.insertControl('%%', '%$path%')), {
-        defaultAction: action.switchCase('%$mode% == "insert"', tgp.addArrayItem('%$path%', studio.newProfile('%%'), { index: '%$index%' }))
+        defaultAction: action.switchCase({
+        condition: '%$mode% == "insert"',
+        action: tgp.addArrayItem('%$path%', studio.newProfile('%%'), { index: '%$index%' })
+      })
       }),
       type: '%$type%',
       path: '%$path%'

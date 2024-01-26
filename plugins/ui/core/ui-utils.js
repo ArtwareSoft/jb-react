@@ -252,7 +252,7 @@ component('customStyle', {
   typePattern: t => /\.style$/.test(t),
   category: 'advanced:10,all:10',
   params: [
-    {id: 'template', as: 'single', mandatory: true, dynamic: true, ignore: true},
+    {id: 'template', as: 'single', mandatory: true, dynamic: true, ignore: true, byName: true},
     {id: 'css', as: 'string'},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],

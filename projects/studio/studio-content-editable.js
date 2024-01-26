@@ -46,37 +46,35 @@ component('feature.contentEditable', {
   params: [
     {id: 'param', as: 'string', description: 'name of param mapped to the content editable element'}
   ],
-  impl: If({
-    condition: ()=> jb.ui.contentEditable.isEnabled(),
-    then: features(
-      method('activate', ({},{cmp,ev}) => jb.ui.contentEditable.activate(cmp,ev)),
-      frontEnd.flow(
-        source.frontEndEvent('mousedown'),
-        rx.filter(not('%$cmp.state.contentEditableActive%')),
-        rx.userEventVar(),
-        sink.BEMethod('activate')
-      ),
-      If('%$$state.contentEditableActive%', features(
-        method('execProfile', ({data}) => jb.ui.parentFrameJb() && jb.ui.parentFrameJb().exec({$: data, from: 'studio'})),
-        method('setScriptData', ({},{ev,cmp},{param}) => jb.ui.contentEditable.setScriptData(ev,cmp,param,param == 'html')),
-        method('onEnter', ({},{ev,cmp},{param}) => {
+  impl: If(()=> jb.ui.contentEditable.isEnabled(), features(
+    method('activate', ({},{cmp,ev}) => jb.ui.contentEditable.activate(cmp,ev)),
+    frontEnd.flow(
+      source.frontEndEvent('mousedown'),
+      rx.filter(not('%$cmp.state.contentEditableActive%')),
+      rx.userEventVar(),
+      sink.BEMethod('activate')
+    ),
+    If('%$$state.contentEditableActive%', features(
+      method('execProfile', ({data}) => jb.ui.parentFrameJb() && jb.ui.parentFrameJb().exec({$: data, from: 'studio'})),
+      method('setScriptData', ({},{ev,cmp},{param}) => jb.ui.contentEditable.setScriptData(ev,cmp,param,param == 'html')),
+      method('onEnter', ({},{ev,cmp},{param}) => {
         jb.ui.contentEditable.setScriptData(ev,cmp,param)
         new jb.core.jbCtx().run(runActions(
           delay(1), // can not wait for script change delay
           contentEditable.deactivate()
         ))
       }),
-        feature.keyboardShortcut('Alt+N', studio.pickAndOpen('studio')),
-        feature.keyboardShortcut('Ctrl+Z', action.runBEMethod('execProfile', 'watchableComps.undo')),
-        feature.keyboardShortcut('Ctrl+Y', action.runBEMethod('execProfile', 'watchableComps.redo')),
-        frontEnd.enrichUserEvent(({},{ev}) => ({ innerText: ev.target.innerText, innerHTML: ev.target.innerText})),
-        frontEnd.flow(
-          source.frontEndEvent('blur'),
-          rx.filter('%$cmp.state.contentEditableActive%'),
-          rx.userEventVar(),
-          sink.BEMethod('setScriptData')
-        ),
-        frontEnd.onRefresh(({},{$state,el}) => el.onkeydown = $state.contentEditableActive ? 
+      feature.keyboardShortcut('Alt+N', studio.pickAndOpen('studio')),
+      feature.keyboardShortcut('Ctrl+Z', action.runBEMethod('execProfile', 'watchableComps.undo')),
+      feature.keyboardShortcut('Ctrl+Y', action.runBEMethod('execProfile', 'watchableComps.redo')),
+      frontEnd.enrichUserEvent(({},{ev}) => ({ innerText: ev.target.innerText, innerHTML: ev.target.innerText})),
+      frontEnd.flow(
+        source.frontEndEvent('blur'),
+        rx.filter('%$cmp.state.contentEditableActive%'),
+        rx.userEventVar(),
+        sink.BEMethod('setScriptData')
+      ),
+      frontEnd.onRefresh(({},{$state,el}) => el.onkeydown = $state.contentEditableActive ? 
           ev => {
             if (ev.keyCode == 13) {
               jb.studio.previewjb.ui.runBEMethodByElem(el,'onEnter',null,{ev: jb.ui.buildUserEvent(ev, el)})
@@ -84,7 +82,7 @@ component('feature.contentEditable', {
             }
             return true
           } : null),
-        templateModifier(({},{cmp,vdom},{param}) => {
+      templateModifier(({},{cmp,vdom},{param}) => {
         const contentEditable = jb.ui.contentEditable
         if (!contentEditable || !contentEditable.isEnabled() || param && !contentEditable.refOfProp(cmp,param)) return vdom // jb.frame.isWorker || 
         const attsToInject = cmp.state.contentEditableActive ? {contenteditable: 'true'} : {} // onkeypress: true
@@ -101,12 +99,11 @@ component('feature.contentEditable', {
         Object.assign(vdom.attributes,attsToInject)
         return vdom;
       }),
-        css(
-          '{ border: 1px dashed grey; background-image: linear-gradient(90deg,rgba(243,248,255,.03) 63.45%,rgba(207,214,229,.27) 98%); border-radius: 3px;}'
-        )
-      ))
-    )
-  })
+      css(
+        '{ border: 1px dashed grey; background-image: linear-gradient(90deg,rgba(243,248,255,.03) 63.45%,rgba(207,214,229,.27) 98%); border-radius: 3px;}'
+      )
+    ))
+  ))
 })
 
 component('contentEditable.deactivate', {

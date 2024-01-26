@@ -258,7 +258,10 @@ component('tree.keyboardSelection', {
 			cmp.refresh($state,{},ctx)
 		}
 	}),
-    frontEnd.prop('onkeydown', rx.pipe(source.frontEndEvent('keydown'), rx.filter(not('%ctrlKey%')), rx.filter(not('%altKey%')), rx.userEventVar())),
+    frontEnd.prop({
+      id: 'onkeydown',
+      value: rx.pipe(source.frontEndEvent('keydown'), rx.filter(not('%ctrlKey%')), rx.filter(not('%altKey%')), rx.userEventVar())
+    }),
     frontEnd.flow(
       '%$cmp.onkeydown%',
       rx.filter('%keyCode%==13'),

@@ -180,7 +180,10 @@ component('studio.extractParamDialog', {
         controls: [
           editableText('param name', '%$studio/refactor/paramName%', {
             features: [
-            feature.initValue('%$studio/refactor/paramName%', pipeline(split('~', { text: '%$path%' }), filter(not(matchRegex('[0-9]+'))), last(), removeSuffix('s'))),
+            feature.initValue({
+              to: '%$studio/refactor/paramName%',
+              value: pipeline(split('~', { text: '%$path%' }), filter(not(matchRegex('[0-9]+'))), last(), removeSuffix('s'))
+            }),
             validation(matchRegex('^[A-Za-z_][.A-Za-z_0-9]*$', '%%'), 'invalid param name')
           ]
           }),

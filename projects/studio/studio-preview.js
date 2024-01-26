@@ -74,10 +74,7 @@ component('preview.control', {
       return circuit && circuit.$ && ctx.run(circuit)
     },
     features: [
-      If({
-        condition: ctx => !jb.comps[ctx.exp('%$studio/circuit%')],
-        then: group.wait(treeShake.getCodeFromRemote('%$studio/circuit%'))
-      }),
+      If(ctx => !jb.comps[ctx.exp('%$studio/circuit%')], group.wait(treeShake.getCodeFromRemote('%$studio/circuit%'))),
       watchRef('%$probe/scriptChangeCounter%'),
       variable('$previewMode', true)
     ]

@@ -83,18 +83,12 @@ component('dialog.closeDialog', {
     {id: 'OK', type: 'boolean', as: 'boolean', defaultValue: true}
   ],
   impl: If('%$$dialog%', runActions(
-    If({
-      condition: and('%$OK%','%$$dialog.hasFields%'),
-      then: (ctx,{$dialog}) => 
-			jb.ui.checkFormValidation && jb.ui.checkFormValidation(jb.ui.elemOfCmp(ctx, $dialog.cmpId))
-    }),
-    If({
-      condition: and('%$OK%', not('%$formContainer.err%')),
-      then: (ctx,{$dialog}) => {
+    If(and('%$OK%','%$$dialog.hasFields%'), (ctx,{$dialog}) => 
+			jb.ui.checkFormValidation && jb.ui.checkFormValidation(jb.ui.elemOfCmp(ctx, $dialog.cmpId))),
+    If(and('%$OK%', not('%$formContainer.err%')), (ctx,{$dialog}) => {
 			jb.log('dialog onOK',{$dialog,ctx})
 			$dialog.ctx.params.onOK(ctx)
-		}
-    }),
+		}),
     If({
       condition: or(not('%$OK%'), not('%$formContainer.err%')),
       then: action.subjectNext(dialogs.changeEmitter(), obj(prop('close', true), prop('dialogId', '%$$dialog/id%')))
@@ -491,34 +485,35 @@ component('dialog.dialogTop', {
 
 component('dialogs.defaultStyle', {
   type: 'dialogs.style',
-  impl: customStyle(({},{},h) => h('div.jb-dialogs'), {
+  impl: customStyle({
+    template: ({},{},h) => h('div.jb-dialogs'),
     features: [
-    followUp.flow(
-      source.subject(dialogs.changeEmitter()),
-      rx.filter('%open%'),
-      rx.var('dialogVdom', pipeline(dialog.buildComp('%dialog%'), '%renderVdomAndFollowUp()%')),
-      rx.var('delta', obj(prop('children', obj(prop('toAppend', pipeline('%$dialogVdom%', ({data}) => jb.ui.stripVdom(data))))))),
-      rx.log('open dialog', obj(prop('dialogId', '%dialog/id%'))),
-      sink.applyDeltaToCmp('%$delta%', '%$followUpCmp/cmpId%')
-    ),
-    followUp.flow(
-      source.subject(dialogs.changeEmitter()),
-      rx.filter('%close%'),
-      rx.log('close dialog', obj(prop('dialogId', '%dialogId%'))),
-      rx.var('dlgCmpId', dialogs.cmpIdOfDialog('%dialogId%')),
-      rx.filter('%$dlgCmpId%'),
-      rx.var('delta', obj(prop('children', obj(prop('deleteCmp', '%$dlgCmpId%'))))),
-      rx.log('close dialog', obj(prop('dialogId', '%dialogId%'))),
-      sink.applyDeltaToCmp('%$delta%', '%$followUpCmp/cmpId%')
-    ),
-    followUp.flow(
-      source.subject(dialogs.changeEmitter()),
-      rx.filter('%closeByCmpId%'),
-      rx.var('delta', obj(prop('children', obj(prop('deleteCmp', '%cmpId%'))))),
-      rx.log('close dialog', obj(prop('dialogId', '%dialogId%'))),
-      sink.applyDeltaToCmp('%$delta%', '%$followUpCmp/cmpId%')
-    )
-  ]
+      followUp.flow(
+        source.subject(dialogs.changeEmitter()),
+        rx.filter('%open%'),
+        rx.var('dialogVdom', pipeline(dialog.buildComp('%dialog%'), '%renderVdomAndFollowUp()%')),
+        rx.var('delta', obj(prop('children', obj(prop('toAppend', pipeline('%$dialogVdom%', ({data}) => jb.ui.stripVdom(data))))))),
+        rx.log('open dialog', obj(prop('dialogId', '%dialog/id%'))),
+        sink.applyDeltaToCmp('%$delta%', '%$followUpCmp/cmpId%')
+      ),
+      followUp.flow(
+        source.subject(dialogs.changeEmitter()),
+        rx.filter('%close%'),
+        rx.log('close dialog', obj(prop('dialogId', '%dialogId%'))),
+        rx.var('dlgCmpId', dialogs.cmpIdOfDialog('%dialogId%')),
+        rx.filter('%$dlgCmpId%'),
+        rx.var('delta', obj(prop('children', obj(prop('deleteCmp', '%$dlgCmpId%'))))),
+        rx.log('close dialog', obj(prop('dialogId', '%dialogId%'))),
+        sink.applyDeltaToCmp('%$delta%', '%$followUpCmp/cmpId%')
+      ),
+      followUp.flow(
+        source.subject(dialogs.changeEmitter()),
+        rx.filter('%closeByCmpId%'),
+        rx.var('delta', obj(prop('children', obj(prop('deleteCmp', '%cmpId%'))))),
+        rx.log('close dialog', obj(prop('dialogId', '%dialogId%'))),
+        sink.applyDeltaToCmp('%$delta%', '%$followUpCmp/cmpId%')
+      )
+    ]
   })
 })
 

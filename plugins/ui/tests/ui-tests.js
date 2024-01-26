@@ -1287,10 +1287,7 @@ component('uiTest.picklistRadio', {
 })
 
 component('uiTest.innerSelector', {
-  impl: uiTest({
-    control: picklist({ options: picklist.optionsByComma('a') }),
-    expectedResult: ctx => jb.ui.elemOfSelector('select>option',ctx)
-  })
+  impl: uiTest(picklist({ options: picklist.optionsByComma('a') }), ctx => jb.ui.elemOfSelector('select>option',ctx))
 })
 
 component('uiTest.picklist.mdcSelect', {
@@ -1717,10 +1714,7 @@ component('uiTest.validator', {
 })
 
 component('uiTest.watchableVariableAsProxy', {
-  impl: uiTest({
-    control: group({ features: watchable('link', '%$person%') }),
-    expectedResult: ctx => jb.db.resources[Object.keys(jb.db.resources).filter(x => x.match(/link:[0-9]*/))[0]][Symbol.for("isProxy")]
-  })
+  impl: uiTest(group({ features: watchable('link', '%$person%') }), ctx => jb.db.resources[Object.keys(jb.db.resources).filter(x => x.match(/link:[0-9]*/))[0]][Symbol.for("isProxy")])
 })
 
 

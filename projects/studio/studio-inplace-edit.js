@@ -37,11 +37,8 @@ component('inplaceEdit.popupStyle', {
       dialogFeature.uniqueDialog('inplace-edit-toolbar'),
       dialogFeature.maxZIndexOnClick(),
       dialogFeature.closeWhenClickingOutside(),
-      dialogFeature.nearLauncherPosition({
-        offsetLeft: 100,
-        offsetTop: (ctx,{inplaceElem}) =>
-          jb.ui.studioFixYPos() - jb.ui.computeStyle(inplaceElem,'marginBottom')
-      })
+      dialogFeature.nearLauncherPosition(100, (ctx,{inplaceElem}) =>
+          jb.ui.studioFixYPos() - jb.ui.computeStyle(inplaceElem,'marginBottom'))
     ]
   })
 })

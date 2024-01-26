@@ -316,20 +316,17 @@ component('feature.onKey', {
   impl: features(
     method(replace('-', '+', { text: 'onKey%$key%Handler', useRegex: true }), call('action')),
     frontEnd.init(
-      If({
-        condition: not('%$cmp.hasOnKeyHanlder%'),
-        then: runActions(
-          ({},{cmp}) => cmp.hasOnKeyHanlder = true,
-          rx.pipe(
-            source.frontEndEvent('keydown'),
-            rx.userEventVar(),
-            rx.map(key.eventToMethod('%%', '%$el%')),
-            rx.filter('%%'),
-            rx.log('keyboard uiComp onKey %$key%'),
-            sink.BEMethod('%%')
-          )
+      If(not('%$cmp.hasOnKeyHanlder%'), runActions(
+        ({},{cmp}) => cmp.hasOnKeyHanlder = true,
+        rx.pipe(
+          source.frontEndEvent('keydown'),
+          rx.userEventVar(),
+          rx.map(key.eventToMethod('%%', '%$el%')),
+          rx.filter('%%'),
+          rx.log('keyboard uiComp onKey %$key%'),
+          sink.BEMethod('%%')
         )
-      })
+      ))
     )
   )
 })

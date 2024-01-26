@@ -152,10 +152,7 @@ component('macroTest.byValue.cutTailingUndefinedArgs', {
 })
 
 component('macroTest.async', {
-  impl: dataTest({
-    calculate: () => jb.utils.prettyPrint({ async a() { 3 } }),
-    expectedResult: and(not(contains('a:')), contains('async a() { 3 }'))
-  })
+  impl: dataTest(() => jb.utils.prettyPrint({ async a() { 3 } }), and(not(contains('a:')), contains('async a() { 3 }')))
 })
 
 component('macroTest.asyncInProfile', {

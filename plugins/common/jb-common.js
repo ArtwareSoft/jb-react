@@ -115,29 +115,6 @@ component('pipe', {
   impl: ctx => jb.utils.calcPipe(ctx,'$pipe',false)
 })
 
-// component('If', {
-//   type: 'data',
-//   macroByValue: true,
-//   params: [
-//     {id: 'condition', as: 'boolean', mandatory: true, dynamic: true, type: 'boolean'},
-//     {id: 'then', mandatory: true, dynamic: true},
-//     {id: 'else', dynamic: true, defaultValue: '%%'}
-//   ],
-//   impl: ({},cond,_then,_else) =>	cond() ? _then() : _else()
-// })
-
-// component('If', {
-//   type: 'action',
-//   description: 'if then else',
-//   macroByValue: true,
-//   params: [
-//     {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
-//     {id: 'then', type: 'action', mandatory: true, dynamic: true, composite: true},
-//     {id: 'else', type: 'action', dynamic: true}
-//   ],
-//   impl: ({},cond,_then,_else) => jb.utils.isPromise(cond) ? Promise.resolve(cond).then(_cond=> _cond ? _then() : _else()) :	(cond ? _then() : _else())
-// })
-
 component('list', {
   type: 'data',
   description: 'list definition, flatten internal arrays',
@@ -146,15 +123,6 @@ component('list', {
   ],
   impl: ({},items) => items.flatMap(item=>Array.isArray(item) ? item : [item])
 })
-
-// component('gList', {
-//   type: 'any',
-//   description: 'generic list definition, flatten internal arrays',
-//   params: [
-//     {id: 'items', type: '$asParent[]', as: 'array', composite: true}
-//   ],
-//   impl: ({},items) => items.flatMap(item=>Array.isArray(item) ? item : [item])
-// })
 
 component('firstSucceeding', {
   type: 'data',

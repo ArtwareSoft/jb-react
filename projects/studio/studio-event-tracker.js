@@ -15,10 +15,7 @@ component('studio.eventTracker', {
             eventTracker.callbagMessage(),
             eventTracker.testResult(),
             text('%logNames%', {
-              features: feature.byCondition({
-              condition: inGroup(list('exception','error'), { item: '%logNames%' }),
-              then: css.color('var(--jb-error-fg)')
-            })
+              features: feature.byCondition(inGroup(list('exception','error'), { item: '%logNames%' }), css.color('var(--jb-error-fg)'))
             }),
             studio.lowFootprintObj('%err%', 'err'),
             studio.objExpandedAsText('%stack%', 'stack'),
@@ -120,26 +117,23 @@ component('eventTracker.toolbar', {
 component('eventTracker.uiComp', {
   type: 'control',
   impl: controls(
-    controlWithCondition({
-      condition: or('%cmp%','%elem%','%parentElem%'),
-      control: group({
-        controls: [
-          controlWithCondition('%cmp/ctx/profile/$%', group({
-            layout: layout.flex('row', 'start', { alignItems: 'center' }),
-            controls: [
-              editableBoolean('%$cmpExpanded/{%$index%}%', chromeDebugger.toggleStyle()),
-              text('%cmp/ctx/profile/$% %cmp/cmpId%;%cmp/ver%')
-            ]
-          })),
-          controlWithCondition('%cmp/pt%', text('%cmp/pt% %cmp/cmpId%;%cmp/ver%')),
-          controlWithCondition('%$cmpElem%', text('%$cmpElem/@cmp-pt% %$cmpElem/@cmp-id%;%$cmpElem/@cmp-ver%'))
-        ],
-        features: [
-          group.firstSucceeding(),
-          variable('cmpElem', ({data}) => jb.ui.closestCmpElem(data.elem || data.parentElem))
-        ]
-      })
-    }),
+    controlWithCondition(or('%cmp%','%elem%','%parentElem%'), group({
+      controls: [
+        controlWithCondition('%cmp/ctx/profile/$%', group({
+          layout: layout.flex('row', 'start', { alignItems: 'center' }),
+          controls: [
+            editableBoolean('%$cmpExpanded/{%$index%}%', chromeDebugger.toggleStyle()),
+            text('%cmp/ctx/profile/$% %cmp/cmpId%;%cmp/ver%')
+          ]
+        })),
+        controlWithCondition('%cmp/pt%', text('%cmp/pt% %cmp/cmpId%;%cmp/ver%')),
+        controlWithCondition('%$cmpElem%', text('%$cmpElem/@cmp-pt% %$cmpElem/@cmp-id%;%$cmpElem/@cmp-ver%'))
+      ],
+      features: [
+        group.firstSucceeding(),
+        variable('cmpElem', ({data}) => jb.ui.closestCmpElem(data.elem || data.parentElem))
+      ]
+    })),
     controlWithCondition('%$cmpExpanded/{%$index%}%', group({
       controls: eventTracker.compInspector('%cmp%'),
       features: feature.expandToEndOfRow('%$cmpExpanded/{%$index%}%')
@@ -150,21 +144,18 @@ component('eventTracker.uiComp', {
 component('eventTracker.callbagMessage', {
   type: 'control',
   impl: controls(
-    controlWithCondition({
-      condition: and('%m/d%','%m/t%==1'),
-      control: group({
-        layout: layout.flex('row', 'start', { alignItems: 'center' }),
-        controls: [
-          editableBoolean('%$payloadExpanded/{%$index%}%', chromeDebugger.toggleStyle()),
-          text('%$contentType% %$direction% %m/cbId% (%$payload/length%) %m/$%: %m/t%')
-        ],
-        features: [
-          variable('direction', If(contains('received', { allText: '%logNames%' }), '🡸', '🡺')),
-          variable('contentType', If('%m/d/data/css%', 'css', If('%m/d/data/delta%', 'delta', '%m/d/data/$%'))),
-          variable('payload', prettyPrint('%m/d%'))
-        ]
-      })
-    }),
+    controlWithCondition(and('%m/d%','%m/t%==1'), group({
+      layout: layout.flex('row', 'start', { alignItems: 'center' }),
+      controls: [
+        editableBoolean('%$payloadExpanded/{%$index%}%', chromeDebugger.toggleStyle()),
+        text('%$contentType% %$direction% %m/cbId% (%$payload/length%) %m/$%: %m/t%')
+      ],
+      features: [
+        variable('direction', If(contains('received', { allText: '%logNames%' }), '🡸', '🡺')),
+        variable('contentType', If('%m/d/data/css%', 'css', If('%m/d/data/delta%', 'delta', '%m/d/data/$%'))),
+        variable('payload', prettyPrint('%m/d%'))
+      ]
+    })),
     controlWithCondition('%$payloadExpanded/{%$index%}%', group({
       controls: text(prettyPrint('%m/d%'), {
         style: text.codemirror({ height: '200' }),
@@ -196,7 +187,10 @@ component('eventTracker.testResult', {
     controlWithCondition('%$testResultExpanded/{%$index%}%', group({
       layout: layout.horizontal(20),
       controls: [
-        controlWithCondition('%expectedResultCtx/data%', text(prettyPrint('%expectedResultCtx.profile.expectedResult%', true))),
+        controlWithCondition({
+          condition: '%expectedResultCtx/data%',
+          control: text(prettyPrint('%expectedResultCtx.profile.expectedResult%', true))
+        }),
         controlWithCondition('%expectedResultCtx/data%', text('%expectedResultCtx/data%')),
         text('%html%', {
           style: text.codemirror({ height: '200', formatText: true, mode: 'htmlmixed' }),

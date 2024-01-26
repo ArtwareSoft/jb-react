@@ -19,19 +19,16 @@ component('ui.dataBrowse', {
           }),
           controlWithCondition(isOfType('string,boolean,number', '%$obj%'), text('%$obj%')),
           controlWithCondition(isOfType('function', '%$obj%'), text(({data}) => data.name || 'func')),
-          controlWithCondition({
-            condition: isOfType('array', '%$obj%'),
-            control: table({
-              items: '%$obj%',
-              controls: group({ title: '%$obj/length% items', controls: ui.dataBrowse('%%', 200) }),
-              style: table.mdc(),
-              visualSizeLimit: 7,
-              features: [
-                itemlist.infiniteScroll(),
-                css.height('400', { minMax: 'max' })
-              ]
-            })
-          }),
+          controlWithCondition(isOfType('array', '%$obj%'), table({
+            items: '%$obj%',
+            controls: group({ title: '%$obj/length% items', controls: ui.dataBrowse('%%', 200) }),
+            style: table.mdc(),
+            visualSizeLimit: 7,
+            features: [
+              itemlist.infiniteScroll(),
+              css.height('400', { minMax: 'max' })
+            ]
+          })),
           controlWithCondition('%$obj/vars%', group({ layout: layout.flex({ spacing: '10' }), controls: [ui.dataBrowse('%$obj/data%')] })),
           tree({
             nodeModel: tree.jsonReadOnly('%$obj%', '%$title%'),

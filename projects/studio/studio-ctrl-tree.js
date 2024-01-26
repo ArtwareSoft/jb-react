@@ -65,7 +65,10 @@ component('studio.treeMenu', {
         mode: 'insert-control',
         onClose: studio.gotoLastEdit()
       })),
-      menu.action('Wrap with group', runActions(tgp.wrapWithGroup('%$path%'), writeValue('%$studio/profile_path%', '%$path%~controls~0'), popup.regainCanvasFocus())),
+      menu.action({
+        title: 'Wrap with group',
+        action: runActions(tgp.wrapWithGroup('%$path%'), writeValue('%$studio/profile_path%', '%$path%~controls~0'), popup.regainCanvasFocus())
+      }),
       menu.action('Duplicate', tgp.duplicateControl('%$path%'), { shortcut: 'Ctrl+D' }),
       menu.separator(),
       menu.action('Inteliscript editor', studio.openJbEditor('%$path%'), { shortcut: 'Ctrl+I' }),
@@ -140,7 +143,10 @@ component('studio.controlTree', {
           tree.dragAndDrop(),
           watchRef('%$studio/profile_path%', { strongRefresh: true }),
           studio.watchPath(studio.currentPagePath(), 'structure', { allowSelfRefresh: true }),
-          method('newControl', studio.openNewProfileDialog(tree.pathOfInteractiveItem(), 'control', { mode: 'insert-control', onClose: studio.gotoLastEdit() }))
+          method({
+            id: 'newControl',
+            action: studio.openNewProfileDialog(tree.pathOfInteractiveItem(), 'control', { mode: 'insert-control', onClose: studio.gotoLastEdit() })
+          })
         ]
       })
     ],

@@ -235,17 +235,23 @@ component('completionTest.fixEditedSample', {
 })
 
 component('completionTest.fixEditedCompSpaces', {
-  impl: tgp.fixEditedCompTest(`component('completionTest.fixEditedSample' ,{ impl: pipeline(__) 
-})`, `{
+  impl: tgp.fixEditedCompTest({
+    compText: `component('completionTest.fixEditedSample' ,{ impl: pipeline(__) 
+})`,
+    expectedFixedComp: `{
   impl: pipeline()
-}`)
+}`
+  })
 })
 
 component('completionTest.fixEditedCompWrongName', {
-  impl: tgp.fixEditedCompTest(`component('completionTest.fixEditedSample' ,{ impl: pipeline(__a) 
-})`, `component('completionTest.fixEditedSample', {
+  impl: tgp.fixEditedCompTest({
+    compText: `component('completionTest.fixEditedSample' ,{ impl: pipeline(__a) 
+})`,
+    expectedFixedComp: `component('completionTest.fixEditedSample', {
   impl: pipeline(TBD())
-})`)
+})`
+  })
 })
 
 component('completionTest.people', {

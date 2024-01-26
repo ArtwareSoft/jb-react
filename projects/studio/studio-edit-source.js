@@ -220,30 +220,24 @@ component('studio.openEditProperty', {
           dialogFeature.onClose(sourceEditor.refreshEditor())
         ]
       })),
-      action.switchCase({
-        condition: tgp.isOfType('%$actualPath%', 'data,boolean'),
-        action: runActions(
-          Var('sugarArrayPath', sourceEditor.firstParamAsArrayPath('%$actualPath%')),
-          Var('index', data.switch({
-            cases: data.case(equals('open-sugar', '%$pathType%'), 0),
-            default: data.case(equals('close-sugar', '%$pathType%'), count(tgp.val('%$sugarArrayPath%')))
-          })),
-          Var('actualPathHere', If(endsWith('-sugar', '%$pathType%'), '%$sugarArrayPath%~%$index%', '%$actualPath%')),
-          If({
-            condition: endsWith('-sugar', '%$pathType%'),
-            then: tgp.addArrayItem('%$sugarArrayPath%', '', { index: '%$index%' })
-          }),
-          openDialog({
-            content: studio.jbFloatingInput('%$actualPathHere%'),
-            style: dialog.studioJbEditorPopup(),
-            features: [
-              dialogFeature.autoFocusOnFirstInput(),
-              studio.nearLauncherPosition(),
-              dialogFeature.onClose(runActions(toggleBooleanValue('%$studio/jb_preview_result_counter%'), sourceEditor.refreshEditor()))
-            ]
-          })
-        )
-      }),
+      action.switchCase(tgp.isOfType('%$actualPath%', 'data,boolean'), runActions(
+        Var('sugarArrayPath', sourceEditor.firstParamAsArrayPath('%$actualPath%')),
+        Var('index', data.switch({
+          cases: data.case(equals('open-sugar', '%$pathType%'), 0),
+          default: data.case(equals('close-sugar', '%$pathType%'), count(tgp.val('%$sugarArrayPath%')))
+        })),
+        Var('actualPathHere', If(endsWith('-sugar', '%$pathType%'), '%$sugarArrayPath%~%$index%', '%$actualPath%')),
+        If(endsWith('-sugar', '%$pathType%'), tgp.addArrayItem('%$sugarArrayPath%', '', { index: '%$index%' })),
+        openDialog({
+          content: studio.jbFloatingInput('%$actualPathHere%'),
+          style: dialog.studioJbEditorPopup(),
+          features: [
+            dialogFeature.autoFocusOnFirstInput(),
+            studio.nearLauncherPosition(),
+            dialogFeature.onClose(runActions(toggleBooleanValue('%$studio/jb_preview_result_counter%'), sourceEditor.refreshEditor()))
+          ]
+        })
+      )),
       action.switchCase({
         vars: [
           Var('ptsOfType', tgp.PTsOfType(tgp.paramType('%$actualPath%')))
@@ -395,7 +389,10 @@ component('studio.githubHelper', {
                   title: 'share link',
                   features: css.width('350')
                 }),
-                html('<a href="https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=%$projectLink%" target="_blank"  style="color:rgb(63,81,181)">share with studio link</a>', 'share with studio link')
+                html({
+                  html: '<a href="https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=%$projectLink%" target="_blank"  style="color:rgb(63,81,181)">share with studio link</a>',
+                  title: 'share with studio link'
+                })
               ],
               features: [
                 variable('projectLink', pipeline(
@@ -424,9 +421,9 @@ component('studio.githubHelper', {
               features: [
                 watchable('item', 'new project'),
                 variable('content', obj(
-                  prop(
-                    'new project',
-                    `1) Create a new github repository
+                  prop({
+                    title: 'new project',
+                    val: `1) Create a new github repository
 2) Open cmd at your project directory and run the following commands
 
 
@@ -438,10 +435,10 @@ git config --global user.email "MY_NAME@example.com"
 git commit -am first-commit
 git remote add origin https://github.com/USERNAME/REPOSITORY.git
 git push origin master`
-                  ),
-                  prop(
-                    'commit',
-                    `Open cmd at your project directory and run the following commands
+                  }),
+                  prop({
+                    title: 'commit',
+                    val: `Open cmd at your project directory and run the following commands
 
 git add .
 git commit -am COMMIT_REMARK
@@ -452,7 +449,7 @@ git add -  mark all files to be handled by the local repository.
 Needed only if you added new files
 git commit - adds the changes to your local git repository
 git push - copy the local repostiry to github's cloud repository`
-                  )
+                  })
                 ))
               ]
             })

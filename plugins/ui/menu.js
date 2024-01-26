@@ -385,16 +385,17 @@ component('menuStyle.popupAsOption', {
 component('menuStyle.popupThumb', {
   type: 'menu.style',
   description: 'used for pulldown',
-  impl: customStyle(({},{title},h) => h('div.pulldown-top-menu-item',{ onclick: 'openPopup'}, title), {
+  impl: customStyle({
+    template: ({},{title},h) => h('div.pulldown-top-menu-item',{ onclick: 'openPopup'}, title),
     features: [
-    menu.initPopupMenu(),
-    feature.mdcRippleEffect(),
-    frontEnd.flow(
-      source.frontEndEvent('mouseenter'),
-      rx.filter(ctx => jb.ui.find(ctx,'.pulldown-mainmenu-popup')[0]),
-      sink.BEMethod('openNewPopup')
-    )
-  ]
+      menu.initPopupMenu(),
+      feature.mdcRippleEffect(),
+      frontEnd.flow(
+        source.frontEndEvent('mouseenter'),
+        rx.filter(ctx => jb.ui.find(ctx,'.pulldown-mainmenu-popup')[0]),
+        sink.BEMethod('openNewPopup')
+      )
+    ]
   })
 })
 

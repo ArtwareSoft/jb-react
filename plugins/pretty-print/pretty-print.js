@@ -312,10 +312,13 @@ extension('utils', 'prettyPrint', {
       const lenOfValues = varsLength + firstParamLength + propsByValueLength
       const singleArgAsArray = firstParamAsArray && propsByName.length == 0
       const singleProp = propsByName.length == 0 && propsByValue.length == 1
-      const nameValue = propsByName.length == 0 && !varArgs.length && !systemProps.length && propsByValue.length == 2 && typeof propsByValue[0].val == 'string' 
-      const nameValuePattern = nameValue && (typeof propsByValue[1].val == 'function' || props[`${path}~${propsByValue[1].innerPath}`].len < colWidth)
-      const nameValueFold = nameValue && !nameValuePattern && propsByValue[1].val && propsByValue[1].val.$
-      if (lenOfValues >= colWidth && !singleArgAsArray && !nameValue && !singleProp)
+
+      const valuePair = propsByName.length == 0 && !varArgs.length && !systemProps.length && propsByValue.length == 2 
+        && props[`${path}~${propsByValue[0].innerPath}`].len < colWidth/2
+      const nameValuePattern = valuePair && (typeof propsByValue[1].val == 'function' || lenOfValues < colWidth *1.2)
+      const nameValueFold = valuePair && !nameValuePattern && propsByValue[1].val && propsByValue[1].val.$ 
+        && props[`${path}~${propsByValue[1].innerPath}`].len >= colWidth
+      if (lenOfValues >= colWidth && !singleArgAsArray && !nameValuePattern &&!nameValueFold && !singleProp)
         return calcProfilePropsMixed(profile, path, {forceByName: true})
 
       const len = lenOfValues + propsByNameLength

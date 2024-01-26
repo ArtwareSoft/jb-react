@@ -7,7 +7,10 @@ component('studio.compInspector', {
     controls: group({
       style: chromeDebugger.sectionsExpandCollapse(),
       controls: [
-        text('%$inspectedCmp/cmpId%;%$inspectedCmp/ver% -- %$inspectedCtx/path%', '%$inspectedCtx/profile/$%'),
+        text({
+          text: '%$inspectedCmp/cmpId%;%$inspectedCmp/ver% -- %$inspectedCtx/path%',
+          title: '%$inspectedCtx/profile/$%'
+        }),
         table('state', {
           items: unique({ items: list(keys('%$inspectedCmp/state%'), keys('%$elem/_component/state%')) }),
           controls: [
@@ -95,10 +98,7 @@ component('studio.eventsOfComp', {
         controls: [
           text('%index%'),
           text('%logNames%', {
-            features: feature.byCondition({
-            condition: inGroup(list('exception','error'), { item: '%logNames%' }),
-            then: css.color('var(--jb-error-fg)')
-          })
+            features: feature.byCondition(inGroup(list('exception','error'), { item: '%logNames%' }), css.color('var(--jb-error-fg)'))
           }),
           studio.lowFootprintObj('%err%', 'err'),
           studio.objExpandedAsText('%stack%', 'stack'),

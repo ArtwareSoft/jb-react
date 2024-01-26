@@ -95,7 +95,10 @@ component('test.uiFrontEndTestView', {
       group({
         layout: layout.horizontal(20),
         controls: [
-          controlWithCondition('%expectedResultCtx/data%', text(prettyPrint(test.expectedResultProfile('%expectedResultCtx%'), true))),
+          controlWithCondition({
+            condition: '%expectedResultCtx/data%',
+            control: text(prettyPrint(test.expectedResultProfile('%expectedResultCtx%'), true))
+          }),
           controlWithCondition('%html%', text('%html%', {
             style: text.codemirror({ height: '200', formatText: true, mode: 'htmlmixed' }),
             features: [
@@ -128,7 +131,10 @@ component('test.dataTestView', {
       group({
         layout: layout.horizontal(20),
         controls: [
-          controlWithCondition('%expectedResultCtx/data%', text(prettyPrint(test.expectedResultProfile('%expectedResultCtx%'), true))),
+          controlWithCondition({
+            condition: '%expectedResultCtx/data%',
+            control: text(prettyPrint(test.expectedResultProfile('%expectedResultCtx%'), true))
+          }),
           controlWithCondition('%html%', text('%html%', {
             style: text.codemirror({ height: '200', formatText: true, mode: 'htmlmixed' }),
             features: [
@@ -170,7 +176,10 @@ component('test.uiTestRunner', {
       }),
       group({
         controls: [
-          controlWithCondition('%expectedResultCtx/data%', text(prettyPrint(test.expectedResultProfile('%expectedResultCtx%'), true)))
+          controlWithCondition({
+            condition: '%expectedResultCtx/data%',
+            control: text(prettyPrint(test.expectedResultProfile('%expectedResultCtx%'), true))
+          })
         ],
         features: [
           group.data(() => jb.spy.logs.find(e=>e.logNames =='check test result'))

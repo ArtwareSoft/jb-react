@@ -145,21 +145,15 @@ component('studio.openJbEditProperty', {
           dialogFeature.onClose(popup.regainCanvasFocus())
         ]
       })),
-      action.switchCase({
-        condition: isOfType('function', tgp.val('%$actualPath%')),
-        action: studio.editSource('%$actualPath%')
-      }),
-      action.switchCase({
-        condition: tgp.isOfType('%$actualPath%', 'data,boolean'),
-        action: openDialog({
-          content: studio.jbFloatingInput('%$actualPath%'),
-          style: dialog.studioJbEditorPopup(),
-          features: [
-            dialogFeature.autoFocusOnFirstInput(),
-            dialogFeature.onClose(toggleBooleanValue('%$studio/refreshProbe%'))
-          ]
-        })
-      }),
+      action.switchCase(isOfType('function', tgp.val('%$actualPath%')), studio.editSource('%$actualPath%')),
+      action.switchCase(tgp.isOfType('%$actualPath%', 'data,boolean'), openDialog({
+        content: studio.jbFloatingInput('%$actualPath%'),
+        style: dialog.studioJbEditorPopup(),
+        features: [
+          dialogFeature.autoFocusOnFirstInput(),
+          dialogFeature.onClose(toggleBooleanValue('%$studio/refreshProbe%'))
+        ]
+      })),
       action.switchCase({
         vars: [
           Var('ptsOfType', tgp.PTsOfType(tgp.paramType('%$actualPath%')))

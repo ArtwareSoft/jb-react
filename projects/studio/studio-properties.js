@@ -356,21 +356,18 @@ component('studio.openProperties', {
   ],
   impl: runActions(
     Var('path', studio.currentProfilePath()),
-    If({
-      condition: tgp.compName('%$path%'),
-      then: openDialog({
-        title: pipeline(
-          {'$': 'object', title: tgp.shortTitle('%$path%'), comp: tgp.compName('%$path%')},
-          If(equals('%comp%', '%title%'), '%comp%', '%comp% %title%'),
-          'Properties of %%'
-        ),
-        content: studio.properties('%$path%', '%$innerPath%', { focus: '%$focus%' }),
-        style: dialog.studioFloating('studio-properties', '520'),
-        features: [
-          feature.keyboardShortcut('Ctrl+Left', studio.openControlTree()),
-          dialogFeature.resizer()
-        ]
-      })
-    })
+    If(tgp.compName('%$path%'), openDialog({
+      title: pipeline(
+        {'$': 'object', title: tgp.shortTitle('%$path%'), comp: tgp.compName('%$path%')},
+        If(equals('%comp%', '%title%'), '%comp%', '%comp% %title%'),
+        'Properties of %%'
+      ),
+      content: studio.properties('%$path%', '%$innerPath%', { focus: '%$focus%' }),
+      style: dialog.studioFloating('studio-properties', '520'),
+      features: [
+        feature.keyboardShortcut('Ctrl+Left', studio.openControlTree()),
+        dialogFeature.resizer()
+      ]
+    }))
   )
 })

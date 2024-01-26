@@ -11,10 +11,7 @@ component('studio.copyDataResourceToComp', {
     {id: 'path', as: 'string'},
     {id: 'name', as: 'string'}
   ],
-  impl: writeValue({
-    to: tgp.profileAsText('%$path%'),
-    value: (ctx,vars,{name}) => jb.utils.prettyPrint(new jb.core.jbCtx().exp('%$'+name+'%'))
-  })
+  impl: writeValue(tgp.profileAsText('%$path%'), (ctx,vars,{name}) => jb.utils.prettyPrint(new jb.core.jbCtx().exp('%$'+name+'%')))
 })
 
 component('studio.openResource', {
@@ -94,13 +91,10 @@ component('studio.openNewDataSource', {
     onOK: runActions(
     Var('watchableOrPassive', If('%$dialogData/watchable%', 'watchable', 'passive')),
     Var('name', tgp.titleToId('%$dialogData/name%')),
-    If({
-      condition: not('%$dialogData/file%'),
-      then: runActions(
-        writeValue('%$dialogData/file%', '%$dialogData/name%.js'),
-        studio.createProjectFile('%$dialogData/name%.js')
-      )
-    }),
+    If(not('%$dialogData/file%'), runActions(
+      writeValue('%$dialogData/file%', '%$dialogData/name%.js'),
+      studio.createProjectFile('%$dialogData/name%.js')
+    )),
     studio.newComp({
       compName: 'dataResource.%$name%',
       compContent: obj(

@@ -26,5 +26,5 @@ component('divider.vertical', {
 
 component('divider.flexAutoGrow', {
   type: 'divider.style',
-  impl: customStyle((cmp,state,h) => h('div'), '{ flex-grow: 10 }')
+  impl: customStyle({ template: (cmp,state,h) => h('div'), css: '{ flex-grow: 10 }' })
 })

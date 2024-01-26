@@ -101,7 +101,8 @@ component('table.mdc', {
 
 component('table.trTd', {
   type: 'group.style',
-  impl: customStyle(({},{ctrls},h) => h('tr.jb-item',{}, ctrls.map(ctrl=> h('td',{}, h(ctrl)))), {
+  impl: customStyle({
+    template: ({},{ctrls},h) => h('tr.jb-item',{}, ctrls.map(ctrl=> h('td',{}, h(ctrl)))),
     features: group.initGroup()
   })
 })
