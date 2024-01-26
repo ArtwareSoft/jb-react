@@ -41,7 +41,7 @@ component('studio.openPropertyMenu', {
         }),
         studio.gotoEditorOptions('%$path%'),
         menu.action('Delete', tgp.delete('%$path%'), { icon: icon('delete'), shortcut: 'Delete' }),
-        menu.action(data.if(tgp.isDisabled('%$path%'), 'Enable', 'Disable'), tgp.toggleDisabled('%$path%'), {
+        menu.action(If(tgp.isDisabled('%$path%'), 'Enable', 'Disable'), tgp.toggleDisabled('%$path%'), {
           icon: icon('do_not_disturb'),
           shortcut: 'Ctrl+X'
         })

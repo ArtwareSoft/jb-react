@@ -14,7 +14,7 @@ component('uiTest.checkBoxWithCalculatedAndWatchRef', {
 
 component('uiTest.booleanWatchableVarAsBooleanTrueToFalse', {
   impl: uiTest({
-    control: text(data.if('%$person/male%', 'Error', 'OK'), { features: watchRef('%$person/male%') }),
+    control: text(If('%$person/male%', 'Error', 'OK'), { features: watchRef('%$person/male%') }),
     expectedResult: contains('OK'),
     uiAction: writeValue('%$person/male%', false)
   })
@@ -22,7 +22,7 @@ component('uiTest.booleanWatchableVarAsBooleanTrueToFalse', {
 
 component('uiTest.booleanWatchableVarAsBooleanFalseToTrue', {
   impl: uiTest({
-    control: text(data.if('%$person/male%', 'OK', 'Error'), { features: watchRef('%$person/male%') }),
+    control: text(If('%$person/male%', 'OK', 'Error'), { features: watchRef('%$person/male%') }),
     expectedResult: contains('OK'),
     runBefore: writeValue('%$person/male%', false),
     uiAction: writeValue('%$person/male%', true)

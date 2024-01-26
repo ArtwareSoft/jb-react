@@ -313,7 +313,7 @@ component('probe.showRxSniffer', {
       controls: [
         group({
           title: 'data',
-          layout: layout.flex({ justifyContent: data.if('%dir%==in', 'flex-start', 'flex-end') }),
+          layout: layout.flex({ justifyContent: If('%dir%==in', 'flex-start', 'flex-end') }),
           controls: ui.dataBrowse('%d%'),
           features: [css.width('100%'), css.margin({ left: '10' })]
         }),

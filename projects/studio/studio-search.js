@@ -38,7 +38,7 @@ component('studio.searchList', {
       }),
       text('%type%', { features: field.title('type') }),
       text(pipeline('%file%', split('/', { part: 'last' })), { features: field.title('file') }),
-      text(pipeline('%implType%', data.if('%% = "function"', 'javascript', '')), { features: field.title('impl') })
+      text(pipeline('%implType%', If('%% = "function"', 'javascript', '')), { features: field.title('impl') })
     ],
     visualSizeLimit: 30,
     features: [

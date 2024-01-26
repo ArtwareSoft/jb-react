@@ -100,7 +100,7 @@ component('pipeline', {
   category: 'common:100',
   description: 'map data arrays one after the other, do not wait for promises and rx',
   params: [
-    {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true, description: 'click "=" for functions list'}
+    {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true, description: 'chain/map data functions'}
   ],
   impl: ctx => jb.utils.calcPipe(ctx,'$pipeline')
 })
@@ -115,16 +115,16 @@ component('pipe', {
   impl: ctx => jb.utils.calcPipe(ctx,'$pipe',false)
 })
 
-component('data.if', {
-  type: 'data',
-  macroByValue: true,
-  params: [
-    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true, type: 'boolean'},
-    {id: 'then', mandatory: true, dynamic: true},
-    {id: 'else', dynamic: true, defaultValue: '%%'}
-  ],
-  impl: ({},cond,_then,_else) =>	cond() ? _then() : _else()
-})
+// component('If', {
+//   type: 'data',
+//   macroByValue: true,
+//   params: [
+//     {id: 'condition', as: 'boolean', mandatory: true, dynamic: true, type: 'boolean'},
+//     {id: 'then', mandatory: true, dynamic: true},
+//     {id: 'else', dynamic: true, defaultValue: '%%'}
+//   ],
+//   impl: ({},cond,_then,_else) =>	cond() ? _then() : _else()
+// })
 
 component('action.if', {
   type: 'action',

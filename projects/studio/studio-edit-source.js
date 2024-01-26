@@ -228,7 +228,7 @@ component('studio.openEditProperty', {
             cases: data.case(equals('open-sugar', '%$pathType%'), 0),
             default: data.case(equals('close-sugar', '%$pathType%'), count(tgp.val('%$sugarArrayPath%')))
           })),
-          Var('actualPathHere', data.if(endsWith('-sugar', '%$pathType%'), '%$sugarArrayPath%~%$index%', '%$actualPath%')),
+          Var('actualPathHere', If(endsWith('-sugar', '%$pathType%'), '%$sugarArrayPath%~%$index%', '%$actualPath%')),
           action.if({
             condition: endsWith('-sugar', '%$pathType%'),
             then: tgp.addArrayItem('%$sugarArrayPath%', '', { index: '%$index%' })
@@ -401,7 +401,7 @@ component('studio.githubHelper', {
                 variable('projectLink', pipeline(
                   'https://%$properties/username%.github.io',
                   '%%/%$properties/repository%',
-                  data.if(equals('%$properties/repository%', '%$studio/project%'), '%%', '%%/%$studio/project%')
+                  If(equals('%$properties/repository%', '%$studio/project%'), '%%', '%%/%$studio/project%')
                 )),
                 css('>a { color:rgb(63,81,181) }')
               ]

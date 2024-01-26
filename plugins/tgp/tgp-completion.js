@@ -149,7 +149,10 @@ extension('tgp', 'completion', {
             }
         })
         const propStr = `${path.split('~').pop()}: `
-        const propTitle = { path, kind: 19, label: propStr + jb.tgp.paramTypes(path).join(', '), extend: () => {} }
+        const propTitle = { 
+            path, kind: 19, label: propStr + jb.tgp.paramTypes(path).join(', '), extend: () => {},
+            detail: jb.path(jb.tgp.paramDef(path),'description')
+        }
         return [propTitle, ...options]
     },
 	writeValueOfPathOp: (path,value,srcCtx) => {

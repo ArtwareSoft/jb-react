@@ -244,7 +244,7 @@ component('studio.mainMenu', {
       menu.dynamicOptions(studio.cmpsOfProject(), {
         genericOption: menu.action({
         title: pipeline(
-          Var('type', data.if(tgp.isOfType('%%', 'control'), 'page', 'component')),
+          Var('type', If(tgp.isOfType('%%', 'control'), 'page', 'component')),
           suffix('.'),
           extractSuffix('.'),
           '%% (%$type%)'
