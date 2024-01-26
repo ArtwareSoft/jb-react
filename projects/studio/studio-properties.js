@@ -356,7 +356,7 @@ component('studio.openProperties', {
   ],
   impl: runActions(
     Var('path', studio.currentProfilePath()),
-    action.if({
+    If({
       condition: tgp.compName('%$path%'),
       then: openDialog({
         title: pipeline(

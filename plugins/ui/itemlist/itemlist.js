@@ -34,7 +34,7 @@ component('itemlist.init', {
     }),
     calcProp({
       id: 'updateItemlistCntr',
-      value: action.if('%$itemlistCntr%', writeValue('%$itemlistCntr.items%', '%$$props.items%')),
+      value: If('%$itemlistCntr%', writeValue('%$itemlistCntr.items%', '%$$props.items%')),
       phase: 100
     })
   )

@@ -13,7 +13,7 @@ component('inplaceEdit.activate', {
     }),
     Var('parentGroup', ctx => jb.tgp.pathParents(ctx.exp('%$path%'), true).find(path=>jb.tgp.compNameOfPath(path) == 'group')),
     Var('parentLayout', If('%$parentGroup%', tgp.compName('%$parentGroup%~layout'))),
-    action.if('%$parentLayout% == layout.grid', inplaceEdit.openGridEditor('%$parentGroup%')),
+    If('%$parentLayout% == layout.grid', inplaceEdit.openGridEditor('%$parentGroup%')),
     writeValue('%$studio/profile_path%', '%$path%'),
     openDialog({
       content: inplaceEdit.toolbar('%$path%'),
@@ -75,7 +75,7 @@ component('inplaceEdit.toolbar', {
       }),
       button({
         title: 'Change Style',
-        action: action.if(equals(tgp.compName('%$path%'), 'image'), studio.openProperties(), studio.openPickProfile('%$path%~style')),
+        action: If(equals(tgp.compName('%$path%'), 'image'), studio.openProperties(), studio.openPickProfile('%$path%~style')),
         style: button.mdcIcon(icon('style'), '20')
       }),
       button('Insert Control', studio.openNewProfileDialog({ type: 'control', mode: 'insert-control', onClose: inplaceEdit.openToolbarOfLastEdit() }), {

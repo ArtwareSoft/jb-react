@@ -5,7 +5,7 @@ component('studio.gotoPath', {
     {id: 'path', as: 'string'},
     {id: 'semanticPart', as: 'string', options: 'prop,value', defaultValue: 'value'}
   ],
-  impl: action.if('%$path%', runActions(
+  impl: If('%$path%', runActions(
     dialog.closeDialog(),
     writeValue('%$studio/profile_path%', '%$path%'),
     ({},{},{path,semanticPart}) => jb.workspace.gotoPathRequest && jb.workspace.gotoPathRequest.next({path,semanticPart}),
@@ -133,7 +133,7 @@ component('studio.jbEditorMenu', {
       }),
       menu.studioWrapWith('%$path%', 'boolean', { components: list('and','or','not') }),
       menu.studioWrapWith('%$path%', 'action', {
-        components: list('runActions','runActionOnItems','action.if')
+        components: list('runActions','runActionOnItems','If')
       }),
       menu.studioWrapWith('%$path%', 'feature', { components: list('feature.byCondition') }),
       menu.studioWrapWithArray('%$path%'),
@@ -179,7 +179,7 @@ component('studio.jbEditorMenu', {
         menu.action({
           title: 'Delete',
           action: runActions(
-            action.if({
+            If({
               condition: and(matchRegex('vars~[0-9]+~val$', '%$path%'), isEmpty(tgp.val('%$path%'))),
               then: writeValue('%$studio/jbEditor/selected%', tgp.parentPath(tgp.parentPath('%$path%')))
             }),

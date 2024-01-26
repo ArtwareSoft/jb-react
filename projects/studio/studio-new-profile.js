@@ -199,7 +199,7 @@ component('studio.openPickProfile', {
       controls: [
         studio.selectProfile({
           onSelect: tgp.setComp('%$path%', '%%'),
-          onBrowse: action.if({
+          onBrowse: If({
             condition: or(equals('layout', tgp.paramType('%$path%')), endsWith('.style', tgp.paramType('%$path%'))),
             then: tgp.setComp('%$path%', '%%')
           }),
@@ -218,7 +218,7 @@ component('studio.openPickProfile', {
       dialogFeature.autoFocusOnFirstInput(),
       css.padding({ right: '20' }),
       feature.initValue('%$dialogData/originalVal%', tgp.val('%$path%')),
-      dialogFeature.onClose(action.if(not('%%'), tgp.setComp('%$path%', '%$dialogData/originalVal%')))
+      dialogFeature.onClose(If(not('%%'), tgp.setComp('%$path%', '%$dialogData/originalVal%')))
     ]
   })
 })
@@ -344,7 +344,7 @@ component('studio.insertControlMenu', {
           ]
         }),
         style: dialog.dialogOkCancel(),
-        onOK: action.if('%$studio/htmlToPaste%', tgp.insertControl(studio.htmlToControl('%$studio/htmlToPaste%'), studio.currentProfilePath())),
+        onOK: If('%$studio/htmlToPaste%', tgp.insertControl(studio.htmlToControl('%$studio/htmlToPaste%'), studio.currentProfilePath())),
         features: dialogFeature.dragTitle()
       }),
       shortcut: ''

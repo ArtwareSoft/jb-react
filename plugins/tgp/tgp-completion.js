@@ -6,7 +6,7 @@ extension('tgp', 'completion', {
                 style: 'styleWithFeatures',
                 data: ['pipeline', 'list', 'firstSucceeding'],
                 boolean: ['and', 'or', 'not'],
-                action: ['runActions', 'runActionOnItems', 'action.if'],
+                action: ['runActions', 'runActionOnItems', 'If'],
                 feature: ['feature.byCondition']
             }
         }

@@ -10,7 +10,7 @@ component('itemlist.infiniteScroll', {
       source.merge(source.frontEndEvent('scroll'), source.frontEndEvent('wheel')),
       rx.var('applicative', '%target/__appScroll%'),
       rx.do(
-        action.if('%$applicative%', runActions(log('itemlist applicative scroll terminated'), ({data}) => data.target.__appScroll = null))
+        If('%$applicative%', runActions(log('itemlist applicative scroll terminated'), ({data}) => data.target.__appScroll = null))
       ),
       rx.filter(not('%$applicative%')),
       rx.var('scrollPercentFromTop', ({data}) => 

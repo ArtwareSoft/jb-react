@@ -126,17 +126,17 @@ component('pipe', {
 //   impl: ({},cond,_then,_else) =>	cond() ? _then() : _else()
 // })
 
-component('action.if', {
-  type: 'action',
-  description: 'if then else',
-  macroByValue: true,
-  params: [
-    {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
-    {id: 'then', type: 'action', mandatory: true, dynamic: true, composite: true},
-    {id: 'else', type: 'action', dynamic: true}
-  ],
-  impl: ({},cond,_then,_else) => jb.utils.isPromise(cond) ? Promise.resolve(cond).then(_cond=> _cond ? _then() : _else()) :	(cond ? _then() : _else())
-})
+// component('If', {
+//   type: 'action',
+//   description: 'if then else',
+//   macroByValue: true,
+//   params: [
+//     {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
+//     {id: 'then', type: 'action', mandatory: true, dynamic: true, composite: true},
+//     {id: 'else', type: 'action', dynamic: true}
+//   ],
+//   impl: ({},cond,_then,_else) => jb.utils.isPromise(cond) ? Promise.resolve(cond).then(_cond=> _cond ? _then() : _else()) :	(cond ? _then() : _else())
+// })
 
 component('list', {
   type: 'data',

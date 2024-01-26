@@ -82,23 +82,20 @@ component('dialog.closeDialog', {
   params: [
     {id: 'OK', type: 'boolean', as: 'boolean', defaultValue: true}
   ],
-  impl: action.if('%$$dialog%', runActions(
-    action.if(
-      and(
-        '%$OK%',
-        '%$$dialog.hasFields%',
-        (ctx,{$dialog}) => 
+  impl: If('%$$dialog%', runActions(
+    If({
+      condition: and('%$OK%','%$$dialog.hasFields%'),
+      then: (ctx,{$dialog}) => 
 			jb.ui.checkFormValidation && jb.ui.checkFormValidation(jb.ui.elemOfCmp(ctx, $dialog.cmpId))
-      )
-    ),
-    action.if({
+    }),
+    If({
       condition: and('%$OK%', not('%$formContainer.err%')),
       then: (ctx,{$dialog}) => {
 			jb.log('dialog onOK',{$dialog,ctx})
 			$dialog.ctx.params.onOK(ctx)
 		}
     }),
-    action.if({
+    If({
       condition: or(not('%$OK%'), not('%$formContainer.err%')),
       then: action.subjectNext(dialogs.changeEmitter(), obj(prop('close', true), prop('dialogId', '%$$dialog/id%')))
     })

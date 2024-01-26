@@ -181,7 +181,7 @@
 //   params: [
 //     {id: 'elem'}
 //   ],
-//   impl: action.if(
+//   impl: If(
 //     '%$studio/settings/activateWatchRefViewer%',
 //     {
 //       '$': 'animation.start',

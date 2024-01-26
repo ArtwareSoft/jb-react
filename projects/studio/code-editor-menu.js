@@ -114,7 +114,7 @@ component('tgpTextEditor.editMenu', {
     }),
     menu.studioWrapWith('%$path%', 'boolean', { components: list('and','or','not') }),
     menu.studioWrapWith('%$path%', 'action', {
-      components: list('runActions','runActionOnItems','action.if')
+      components: list('runActions','runActionOnItems','If')
     }),
     menu.studioWrapWith('%$path%', 'feature', { components: list('feature.byCondition') }),
     menu.studioWrapWithArray('%$path%'),
@@ -156,7 +156,7 @@ component('tgpTextEditor.editMenu', {
     menu.action({
       title: 'Delete',
       action: runActions(
-        action.if({
+        If({
           condition: and(matchRegex('vars~[0-9]+~val$', '%$path%'), isEmpty(tgp.val('%$path%'))),
           then: writeValue('%$studio/jbEditor/selected%', tgp.parentPath(tgp.parentPath('%$path%')))
         }),

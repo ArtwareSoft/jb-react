@@ -229,7 +229,7 @@ component('studio.openEditProperty', {
             default: data.case(equals('close-sugar', '%$pathType%'), count(tgp.val('%$sugarArrayPath%')))
           })),
           Var('actualPathHere', If(endsWith('-sugar', '%$pathType%'), '%$sugarArrayPath%~%$index%', '%$actualPath%')),
-          action.if({
+          If({
             condition: endsWith('-sugar', '%$pathType%'),
             then: tgp.addArrayItem('%$sugarArrayPath%', '', { index: '%$index%' })
           }),

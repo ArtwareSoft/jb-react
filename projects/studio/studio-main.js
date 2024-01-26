@@ -190,7 +190,7 @@ component('studio.sampleProject', {
   params: [
     {id: 'project', as: 'string'}
   ],
-  impl: menu.action('%$project%', action.if({
+  impl: menu.action('%$project%', If({
     condition: studio.inVscode(),
     then: studio.reOpenStudio(pipeline(studio.projectsDir(), '%%/%$project%/%$project%.js'), 0),
     else: winUtils.gotoUrl('https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/%$project%&project=%$project%', 'new tab')
