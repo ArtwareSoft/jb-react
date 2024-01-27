@@ -1,6 +1,11 @@
 extension('db', 'onAddComponent', {
   $phase :2,
   initExtension() { 
+    jb.val = ref => {
+      if (ref == null || typeof ref != 'object') return ref
+      const handler = jb.db.refHandler(ref)
+      return handler ? handler.val(ref) : ref
+    }
     jb.core.onAddComponent.push({ 
       match:(id,comp) => comp.watchableData !== undefined,
       register: (id,comp) => {

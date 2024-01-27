@@ -234,13 +234,15 @@ component('tree.keyboardSelection', {
     htmlAttribute('tabIndex', 0),
     method('onEnter', call('onEnter')),
     method('runShortcut', (ctx,{path},{applyMenuShortcuts}) => {
-		if (jb.assert(path,{ctx},'missing path in tree')) return;
+		if (!path)
+			return jb.logError(`missing path "${path}" in tree`,{ctx})
 		const shortCut = applyMenuShortcuts(ctx.setData(path))
 		shortCut && shortCut.runShortcut(ctx.data) 
 	}),
     method('expand', (ctx,{cmp,$props,$state},{onRightClickOfExpanded}) => {
 		const {expanded} = $state, selected = ctx.data
-		if (jb.assert(selected,{ctx},'missing selected in expand tree')) return;
+		if (!selected)
+			return jb.logError(`missing selected "${selected}" in expand tree`,{ctx})
 		$state.selected = selected
 		if ($props.model.isArray(selected) && !expanded[selected]) {
 			expanded[selected] = true
@@ -251,7 +253,8 @@ component('tree.keyboardSelection', {
 	}),
     method('collapse', (ctx,{cmp,$state}) => {
 		const {expanded} = $state, selected = ctx.data
-		if (jb.assert(selected,{ctx},'missing selected in collapse tree')) return;
+		if (!selected)
+			return jb.logError(`missing selected "${selected}" in collapse tree`,{ctx})
 		$state.selected = selected
 		if (Object.keys(expanded).some(x=>x.indexOf(selected == 0))) {
 			delete expanded[selected]

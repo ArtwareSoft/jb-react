@@ -1,11 +1,6 @@
 // core utils promoted for easy usage
 Object.assign(jb, {
     log(logName, record, options) { jb.spy && jb.spy.enabled && jb.spy.log(logName, record, options) },
-    assert(cond, logObj, err) { 
-      if (cond) return
-      jb.spy && jb.spy.enabled && jb.logError(err,logObj);
-      return true
-    },
     logError(err,logObj) {
       const ctx = jb.path(logObj,'ctx')
       const stack = ctx && jb.utils.callStack(ctx)
@@ -19,11 +14,6 @@ Object.assign(jb, {
       const errObj = { e, err, stack: e.stack||'', ...logObj}
       globalThis.jbHost.process && globalThis.jbHost.process.stderr.write(`${err}\n${e}`)
       jb.log('exception error',errObj)
-    },
-    val(ref) {
-      if (ref == null || typeof ref != 'object') return ref
-      const handler = jb.db.refHandler(ref)
-      return handler ? handler.val(ref) : ref
     },
     tostring: value => jb.core.tojstype(value,'string'),
     toarray: value => jb.core.tojstype(value,'array'),

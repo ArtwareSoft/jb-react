@@ -17,7 +17,7 @@ component('mixedTest.tst1Helper', {
 })
 
 component('mixedTest.tst1', {
-  impl: dataTest(typeAdapter('cmp-upgrade<upgrade>', reformat('mixedTest.tst1Helper')), equals('', ''))
+  impl: dataTest(typeAdapter('upgrade<upgrade>', reformat('mixedTest.tst1Helper')), equals('', ''))
 })
 
 // component('mixedTest.all', {

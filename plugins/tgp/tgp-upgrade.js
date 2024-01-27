@@ -1,6 +1,29 @@
 dsl('upgrade')
 using('remote')
 
+extension('tgpTextEditor', 'onAddComponent', {
+  initExtension() { 
+    jb.core.onAddComponent.push({ 
+//        match:(id,comp) => (jb.path(comp[jb.core.CT].plugin,'files') || []).find(x=>x.path.match(/amta/)),
+        //match:(id,comp) => (jb.path(comp[jb.core.CT].plugin,'files') || []).find(x=>x.path.match(/tests/)),
+        match:(id,comp) => false,
+      register: (_id,_comp,dsl) => {
+        //if (_id == 'amta.aa') debugger
+        const comp = jb.tgpTextEditor.fixProfile(_comp,_comp,_id)
+        const id = jb.macro.titleToId(_id)
+        jb.core.unresolvedProfiles.push({id,comp,dsl})
+        comp[jb.core.CT] = _comp[jb.core.CT]
+        return comp
+      }
+    })    
+  },
+  fixProfile(profile,origin,id) {
+    if (profile === null) return
+    if (profile.$ == 'object')
+        return {$: 'obj', props: jb.entries(profile).filter(([x]) =>x!='$').map(([title,val]) => ({$: 'prop', title, val: jb.syntaxConverter.fixProfile(val,origin) }))}
+  }
+})
+
 extension('tgpTextEditor','upgrade', {
     calcHash(str) {
         let hash = 0, i, chr;
@@ -79,7 +102,7 @@ component('upgradeCmp', {
 component('createUpgradeScript', {
   type: 'data<>',
   params: [
-    {id: 'upgrade', type: 'cmp-upgrade', dynamic: true},
+    {id: 'upgrade', type: 'upgrade', dynamic: true},
     {id: 'scriptFile', as: 'string', defaultValue: '[JB_BASE]/temp/upgrade-cmps.js'},
     {id: 'cmps', as: 'array', defaultValue: () => Object.keys(jb.comps)},
     {id: 'slice', as: 'number'}
@@ -108,42 +131,62 @@ ${cmds.join(',\n')}
     }
 })
 
-component('upgradeMixed', {
+// component('upgradeMixed', {
+//   type: 'upgrade',
+//   params: [
+//     {id: 'cmpId', as: 'string', defaultValue: '%%'}
+//   ],
+//   impl: (ctx,cmpId) => {
+//         //console.log('upgradeMixed',cmpId)
+//         const comp = jb.comps[cmpId]
+//         const originalProfCode = jb.utils.prettyPrintComp(cmpId,comp, {noMixed: true})
+//         const mixedProfCode = jb.utils.prettyPrintComp(cmpId,comp)
+//         const edit = jb.tgpTextEditor.deltaText(originalProfCode, mixedProfCode)
+//         const hash = jb.tgpTextEditor.calcHash(originalProfCode)
+//         const {path, line} = comp[jb.core.CT].location
+
+//         // deserializing - serializing the mixed code and checking it against the original profile
+//         // if (!edit)
+//         //     return { cmpId, noDiff: true}    
+//         const shortId = cmpId.split('>').pop()
+//         const mixedCmpId = cmpId + '__mixed'
+//         const shortMixedCmpId = shortId + '__mixed'
+//         const mixedCode = mixedProfCode.replace(`component('${shortId}'`,`component('${shortMixedCmpId}'`)
+
+//         const {plugin,dsl} = comp[jb.core.CT]
+//         jb.tgpTextEditor.evalProfileDef(mixedCode, { plugin, override_dsl: dsl})
+//         const mixedProfAfterEval = jb.utils.prettyPrintComp(mixedCmpId,jb.comps[mixedCmpId], {noMixed: true})
+//         const originalCodeWithMixedId = originalProfCode.replace(`component('${shortId}'`,`component('${shortMixedCmpId}'`)
+//         const lostInfo = jb.tgpTextEditor.deltaText(mixedProfAfterEval, originalCodeWithMixedId)
+//         const props = { cmpId, edit, hash, lostInfo, path, line }
+//         const cmd = jb.utils.prettyPrint({$: 'upgradeCmp', ...props, cmpId: shortId}, {singleLine: true})
+
+//         return { ...props, cmd }
+//     }
+// })
+
+component('upgradePT', {
+  type: 'upgrade',
+  params: [
+    {id: 'PT', as: 'string', mandatory: true},
+    {id: 'oldPT', as: 'string', mandatory: true},
+    {id: 'cmpUpgrades', type: 'cmp-upgrade[]', mandatory: true},
+  ],
+  impl: (ctx,cmpId) => {}
+})
+
+component('mapProp', {
   type: 'cmp-upgrade',
   params: [
-    {id: 'cmpId', as: 'string', defaultValue: '%%'}
+    {id: 'prop', as: 'string', mandatory: true},
+    {id: 'propInOldPT', as: 'string', mandatory: true},
+    {id: 'transformValue', type: 'data', dynamic: true, defaultValue: '%%'},
   ],
-  impl: (ctx,cmpId) => {
-        //console.log('upgradeMixed',cmpId)
-        const comp = jb.comps[cmpId]
-        const originalProfCode = jb.utils.prettyPrintComp(cmpId,comp, {noMixed: true})
-        const mixedProfCode = jb.utils.prettyPrintComp(cmpId,comp)
-        const edit = jb.tgpTextEditor.deltaText(originalProfCode, mixedProfCode)
-        const hash = jb.tgpTextEditor.calcHash(originalProfCode)
-        const {path, line} = comp[jb.core.CT].location
-
-        // deserializing - serializing the mixed code and checking it against the original profile
-        // if (!edit)
-        //     return { cmpId, noDiff: true}    
-        const shortId = cmpId.split('>').pop()
-        const mixedCmpId = cmpId + '__mixed'
-        const shortMixedCmpId = shortId + '__mixed'
-        const mixedCode = mixedProfCode.replace(`component('${shortId}'`,`component('${shortMixedCmpId}'`)
-
-        const {plugin,dsl} = comp[jb.core.CT]
-        jb.tgpTextEditor.evalProfileDef(mixedCode, { plugin, override_dsl: dsl})
-        const mixedProfAfterEval = jb.utils.prettyPrintComp(mixedCmpId,jb.comps[mixedCmpId], {noMixed: true})
-        const originalCodeWithMixedId = originalProfCode.replace(`component('${shortId}'`,`component('${shortMixedCmpId}'`)
-        const lostInfo = jb.tgpTextEditor.deltaText(mixedProfAfterEval, originalCodeWithMixedId)
-        const props = { cmpId, edit, hash, lostInfo, path, line }
-        const cmd = jb.utils.prettyPrint({$: 'upgradeCmp', ...props, cmpId: shortId}, {singleLine: true})
-
-        return { ...props, cmd }
-    }
+  impl: (ctx,cmpId) => {}
 })
 
 component('reformat', {
-  type: 'cmp-upgrade',
+  type: 'upgrade',
   params: [
     {id: 'cmpId', as: 'string', defaultValue: '%%'}
   ],
@@ -167,7 +210,7 @@ component('reformat', {
 })
 
 component('upgradePT', {
-  type: 'cmp-upgrade',
+  type: 'upgrade',
   params: [
     {id: 'PT', as: 'string'},
     {id: 'newParams', as: 'array'}
