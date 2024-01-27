@@ -15,7 +15,6 @@ extension('jbm','source' , {
 // source-code
 component('sourceCode', {
   type: 'source-code',
-  macroByValue: false,
   params: [
     {id: 'pluginsToLoad', type: 'plugins-to-load[]', flattenArray: true},
     {id: 'pluginPackages', type: 'plugin-package[]', flattenArray: true, defaultValue: defaultPackage()},

@@ -526,7 +526,7 @@ component('obj', {
   params: [
     {id: 'props', type: 'prop[]', mandatory: true, sugar: true}
   ],
-  impl: (ctx,properties) => jb.objFromEntries(properties.map(p=>[p.title, jb.core.tojstype(p.val(ctx),p.type)]))
+  impl: (ctx,properties) => jb.objFromEntries(properties.map(p=>[p.name, jb.core.tojstype(p.val(ctx),p.type)]))
 })
 
 component('dynamicObject', {
@@ -547,7 +547,7 @@ component('extend', {
     {id: 'props', type: 'prop[]', mandatory: true, defaultValue: []}
   ],
   impl: (ctx,properties) =>
-		Object.assign({}, ctx.data, jb.objFromEntries(properties.map(p=>[p.title, jb.core.tojstype(p.val(ctx),p.type)])))
+		Object.assign({}, ctx.data, jb.objFromEntries(properties.map(p=>[p.name, jb.core.tojstype(p.val(ctx),p.type)])))
 })
 component('assign', { autoGen: true, ...jb.utils.getUnresolvedProfile('extend'), [jb.core.CT]: null})
 
@@ -558,14 +558,14 @@ component('extendWithIndex', {
     {id: 'props', type: 'prop[]', mandatory: true, defaultValue: []}
   ],
   impl: (ctx,properties) => jb.toarray(ctx.data).map((item,i) =>
-			Object.assign({}, item, jb.objFromEntries(properties.map(p=>[p.title, jb.core.tojstype(p.val(ctx.setData(item).setVars({index:i})),p.type)]))))
+			Object.assign({}, item, jb.objFromEntries(properties.map(p=>[p.name, jb.core.tojstype(p.val(ctx.setData(item).setVars({index:i})),p.type)]))))
 })
 
 component('prop', {
   type: 'prop',
   macroByValue: true,
   params: [
-    {id: 'title', as: 'string', mandatory: true},
+    {id: 'name', as: 'string', mandatory: true},
     {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: ''},
     {id: 'type', as: 'string', options: 'string,number,boolean,object,array,asIs', defaultValue: 'asIs'}
   ],
@@ -576,7 +576,7 @@ component('refProp', {
   type: 'prop',
   description: 'value by reference allows to change or watch the value',
   params: [
-    {id: 'title', as: 'string', mandatory: true},
+    {id: 'name', as: 'string', mandatory: true},
     {id: 'val', dynamic: true, as: 'ref', mandatory: true}
   ],
   impl: ctx => ({ ...ctx.params, type: 'ref' })

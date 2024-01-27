@@ -72,7 +72,7 @@ extension('macro', {
             const singleParamAsArray = params.length == 1 && (param0.type || '').indexOf('[]') != -1
             if (singleParamAsArray) // pipeline, or, and, plus
                 return { $: cmpId, [param0.id]: args }
-            if ((comp.macroByValue || params.length < 3) && comp.macroByValue !== false)
+            if (comp.macroByValue || params.length < 3)
                 return { $: cmpId, ...jb.objFromEntries(args.filter((_, i) => params[i]).map((arg, i) => [params[i].id, arg])) }
             if (args.length == 1 && !Array.isArray(args[0]) && typeof args[0] === 'object' && !args[0].$)
                 return { $: cmpId, ...args[0] }

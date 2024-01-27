@@ -99,9 +99,8 @@ component('studio.openNewDataSource', {
       compName: 'dataResource.%$name%',
       compContent: obj(
         prop({
-          title: '%$watchableOrPassive%Data',
-          val: data.switch(data.case('%$dialogData/type%==text', ''), data.case('%$dialogData/type%==array', '[]')),
-          type: ''
+          name: '%$watchableOrPassive%Data',
+          val: data.switch(data.case('%$dialogData/type%==text', ''), data.case('%$dialogData/type%==array', '[]'))
         })
       ),
       file: '%$dialogData/file%'

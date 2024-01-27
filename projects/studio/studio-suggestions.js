@@ -107,7 +107,7 @@ component('studio.suggestionList', {
         itemlist.selection('%$picklistModel/databind%', {
           onDoubleClick: runActions(Var('cmp', '%$helperCmp%'), action.runBEMethod('onEnter'))
         }),
-        itemlist.keyboardSelection({ autoFocus: false }),
+        itemlist.keyboardSelection(false),
         css.height('500', 'scroll', { minMax: 'max' }),
         css.width('300', 'auto', { minMax: 'min' }),
         css('{ position: absolute; z-index:1000; background: var(--jb-dropdown-bg) }'),

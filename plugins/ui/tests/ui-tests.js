@@ -519,7 +519,7 @@ component('FETest.itemlistDD', {
           controls: text('%name%', { features: css.class('drag-handle') }),
           features: [
             itemlist.selection('%$globals/selectedPerson%', { autoSelectFirst: true }),
-            itemlist.keyboardSelection({ autoFocus: true }),
+            itemlist.keyboardSelection(true),
             itemlist.dragAndDrop(),
             id('itemlist')
           ]
@@ -653,7 +653,7 @@ component('uiTest.itemlistMDAutoSelectFirst', {
           controls: text('%$item.name%'),
           features: [
             itemlist.selection('%$globals/selectedPerson%', { autoSelectFirst: true }),
-            itemlist.keyboardSelection({ autoFocus: true })
+            itemlist.keyboardSelection(true)
           ]
         }),
         text('%$globals/selectedPerson/name% selected', {
@@ -727,7 +727,7 @@ component('uiTest.itemlistMDOfRefs.refChangeBug', {
           features: [
             id('itemlist'),
             itemlist.selection('%$globals/selectedPerson%', { autoSelectFirst: true }),
-            itemlist.keyboardSelection({ autoFocus: true })
+            itemlist.keyboardSelection(true)
           ]
         }),
         text('%$globals/selectedPerson/name% selected', {
@@ -755,7 +755,7 @@ component('uiTest.itemlistContainerSearchCtrl', {
         features: [
           watchRef('%$itemlistCntrData/search_pattern%'),
           itemlist.selection({ autoSelectFirst: true }),
-          itemlist.keyboardSelection({ autoFocus: true, onEnter: writeValue('%$res/selected%', '%name%') })
+          itemlist.keyboardSelection(true, writeValue('%$res/selected%', '%name%'))
         ]
       })
     ],

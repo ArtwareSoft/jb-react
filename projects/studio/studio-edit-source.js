@@ -350,7 +350,7 @@ component('sourceEditor.suggestionsItemlist', {
       id('suggestions-itemlist'),
       itemlist.noContainer(),
       itemlist.selection('%$suggestionData/selected%', { autoSelectFirst: true }),
-      itemlist.keyboardSelection({ autoFocus: false }),
+      itemlist.keyboardSelection(false),
       css.height('500', 'auto', { minMax: 'max' }),
       css.width('300', 'auto', { minMax: 'min' }),
       css('{ position: absolute; z-index:1000; background: var(--jb-editor-background) }'),
@@ -422,7 +422,7 @@ component('studio.githubHelper', {
                 watchable('item', 'new project'),
                 variable('content', obj(
                   prop({
-                    title: 'new project',
+                    name: 'new project',
                     val: `1) Create a new github repository
 2) Open cmd at your project directory and run the following commands
 
@@ -437,7 +437,7 @@ git remote add origin https://github.com/USERNAME/REPOSITORY.git
 git push origin master`
                   }),
                   prop({
-                    title: 'commit',
+                    name: 'commit',
                     val: `Open cmd at your project directory and run the following commands
 
 git add .
