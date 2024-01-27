@@ -52,9 +52,9 @@ component('studio.selectProfile', {
             title: 'search',
             searchIn: search.fuse({
               keys: list(
-                obj(prop('name', 'id'), prop('weight', '0.6', 'number')),
-                obj(prop('name', 'desc'), prop('weight', '0.2', 'number')),
-                obj(prop('name', 'name'), prop('weight', '0.4', 'number'))
+                obj(prop('name', 'id'), prop('weight', '0.6', { type: 'number' })),
+                obj(prop('name', 'desc'), prop('weight', '0.2', { type: 'number' })),
+                obj(prop('name', 'name'), prop('weight', '0.4', { type: 'number' }))
               ),
               threshold: '0.3'
             }),

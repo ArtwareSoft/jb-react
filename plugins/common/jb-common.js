@@ -563,13 +563,11 @@ component('extendWithIndex', {
 
 component('prop', {
   type: 'prop',
-  macroByValue: true,
   params: [
     {id: 'name', as: 'string', mandatory: true},
     {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: ''},
     {id: 'type', as: 'string', options: 'string,number,boolean,object,array,asIs', defaultValue: 'asIs'}
-  ],
-  impl: ctx => ctx.params
+  ]
 })
 
 component('refProp', {
