@@ -1,6 +1,5 @@
 
 upgrade
-  create the upgrade script and run it for some -> all
   fix arrayInMacro
 
 use chatgpt to generate python and tgp wrapper

@@ -350,7 +350,7 @@ component('sourceEditor.suggestionsItemlist', {
       id('suggestions-itemlist'),
       itemlist.noContainer(),
       itemlist.selection('%$suggestionData/selected%', { autoSelectFirst: true }),
-      itemlist.keyboardSelection(false),
+      itemlist.keyboardSelection({ autoFocus: false }),
       css.height('500', 'auto', { minMax: 'max' }),
       css.width('300', 'auto', { minMax: 'min' }),
       css('{ position: absolute; z-index:1000; background: var(--jb-editor-background) }'),

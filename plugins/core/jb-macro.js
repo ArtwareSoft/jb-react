@@ -58,39 +58,30 @@ extension('macro', {
             return { $: cmpId }        
         if (!comp)
             return { $: cmpId, $byValue: args }
-        const lastArg = args.length > 1 && args[args.length-1]
-        const lastArgIsByName = lastArg && typeof lastArg == 'object' && !Array.isArray(lastArg) && !lastArg.$
-        if (lastArgIsByName) // || topComp && topComp[jb.core.CT].mixed) 
-            return jb.macro.mixedArgsToProfile(cmpId, comp, args)
-
-        const params = comp.params || []
-        const singleParamAsArray = (params[0] && params[0].type || '').indexOf('[]') != -1
-        if (params.length == 1 && singleParamAsArray) // pipeline, or, and, plus
-            return { $: cmpId, [params[0].id]: args }
-        const macroByProps = args.length == 1 && typeof args[0] === 'object' &&
-            (params[0] && args[0][params[0].id] || params[1] && args[0][params[1].id])
-        if ((comp.macroByValue || params.length < 3) && comp.macroByValue !== false && !macroByProps)
-            return { $: cmpId, ...jb.objFromEntries(args.filter((_, i) => params[i]).map((arg, i) => [params[i].id, arg])) }
-        if (args.length == 1 && !Array.isArray(args[0]) && typeof args[0] === 'object' && !args[0].$)
-            return { $: cmpId, ...args[0] }
-        if (args.length == 1 && params.length)
-            return { $: cmpId, [params[0].id]: args[0] }
-        if (args.length >= 2 && params.length > 1)
-            return { $: cmpId, [params[0].id]: args[0], [params[1].id]: args[1] }
-        debugger;
-    },
-    mixedArgsToProfile(cmpId, comp, args) {
-        //console.error('%c mixedArgsToProfile: ','color: red', cmpId, comp)
         if (cmpId == 'asIs') return { $: 'asIs', $asIs: args[0] }
         const lastArg = args[args.length-1]
         const lastArgIsByName = lastArg && typeof lastArg == 'object' && !Array.isArray(lastArg) && !lastArg.$
         let argsByValue = lastArgIsByName ? args.slice(0,-1) : args
         const propsByName = lastArgIsByName ? lastArg : {}
         const onlyByName = lastArgIsByName && args.length == 1
-
         const params = comp.params || []
-        const param0 = params[0] ? params[0] : {}
+        const param0 = params[0] ? params[0] : {}        
         const firstParamAsArray = param0.as == 'array' || (param0.type||'').indexOf('[]') != -1
+
+        if (!lastArgIsByName) {
+            const singleParamAsArray = params.length == 1 && (param0.type || '').indexOf('[]') != -1
+            if (singleParamAsArray) // pipeline, or, and, plus
+                return { $: cmpId, [param0.id]: args }
+            if ((comp.macroByValue || params.length < 3) && comp.macroByValue !== false)
+                return { $: cmpId, ...jb.objFromEntries(args.filter((_, i) => params[i]).map((arg, i) => [params[i].id, arg])) }
+            if (args.length == 1 && !Array.isArray(args[0]) && typeof args[0] === 'object' && !args[0].$)
+                return { $: cmpId, ...args[0] }
+            if (args.length == 1 && params.length)
+                return { $: cmpId, [param0.id]: args[0] }
+            if (args.length >= 2 && params.length > 1)
+                return { $: cmpId, [param0.id]: args[0], [params[1].id]: args[1] }            
+        }
+
         const varArgs = []
         while (argsByValue[0] && argsByValue[0].$ == 'Var')
             varArgs.push(argsByValue.shift())

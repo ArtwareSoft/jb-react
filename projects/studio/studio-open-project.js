@@ -19,7 +19,7 @@ component('studio.chooseProject', {
           features: css('{ text-align: left; width: 250px }')
         }),
         features: [
-          itemlist.keyboardSelection(true, studio.gotoProject('%%')),
+          itemlist.keyboardSelection({ autoFocus: true, onEnter: studio.gotoProject('%%') }),
           watchRef('%$itemlistCntrData/search_pattern%'),
           css.height('400', 'scroll')
         ]
