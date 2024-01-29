@@ -22,8 +22,8 @@ component('uiTest.applyVdomDiffMixed2', {
 
 component('uiTest.applyVdomDiffDDTree1', {
   impl: uiTest.applyVdomDiff({
-    controlBefore: group({ controls: [text('0'), text('1'), group({ controls: [text('1.1'), text('1.2')] }), text('2')] }),
-    control: group({ controls: [text('1'), group({ controls: [text('0'), text('1.1'), text('1.2')] }), text('2')] })
+    controlBefore: group(text('0'), text('1'), group(text('1.1'), text('1.2')), text('2')),
+    control: group(text('1'), group(text('0'), text('1.1'), text('1.2')), text('2'))
   })
 })
 

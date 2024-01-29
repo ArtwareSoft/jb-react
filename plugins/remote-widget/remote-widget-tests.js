@@ -27,13 +27,7 @@ component('remoteWidgetTest.text', {
 
 component('remoteWidgetTest.changeText2', {
   impl: uiTest({
-    control: group({
-      controls: [
-        text('%$fName%'),
-        editableText({ databind: '%$fName%' })
-      ],
-      features: watchable('fName', 'Dan')
-    }),
+    control: group(text('%$fName%'), editableText({ databind: '%$fName%' }), { features: watchable('fName', 'Dan') }),
     expectedResult: contains('danny'),
     uiAction: setText('danny', { doNotWaitForNextUpdate: true }),
     timeout: 500,
@@ -44,13 +38,7 @@ component('remoteWidgetTest.changeText2', {
 
 component('remoteWidgetTest.changeText', {
   impl: uiTest({
-    control: group({
-      controls: [
-        text('%$fName%'),
-        editableText({ databind: '%$fName%' })
-      ],
-      features: watchable('fName', 'Dan')
-    }),
+    control: group(text('%$fName%'), editableText({ databind: '%$fName%' }), { features: watchable('fName', 'Dan') }),
     expectedResult: contains('danny'),
     uiAction: setText('danny'),
     timeout: 1000,
@@ -60,8 +48,7 @@ component('remoteWidgetTest.changeText', {
 
 component('remoteWidgetTest.group.wait', {
   impl: uiTest({
-    control: group({
-      controls: button('hello world'),
+    control: group(button('hello world'), {
       features: group.wait(treeShake.getCodeFromRemote('sampleProject.main'))
     }),
     expectedResult: contains('hello world'),
@@ -71,11 +58,7 @@ component('remoteWidgetTest.group.wait', {
 
 component('remoteWidgetTest.buttonClick', {
   impl: uiTest({
-    control: group({
-      controls: [
-        text('%$fName%'),
-        button('change', writeValue('%$fName%', 'danny'))
-      ],
+    control: group(text('%$fName%'), button('change', writeValue('%$fName%', 'danny')), {
       features: watchable('fName', 'Dan')
     }),
     expectedResult: contains('danny'),
@@ -94,8 +77,7 @@ component('remoteWidgetTest.dialog', {
 
 component('remoteWidgetTest.loadCodeManully', {
   impl: uiTest({
-    control: group({
-      controls: ctx => ctx.run({$: 'text', text: 'hello' }),
+    control: group(ctx => ctx.run({$: 'text', text: 'hello' }), {
       features: group.wait(treeShake.getCodeFromRemote('text'))
     }),
     expectedResult: contains('hello'),
@@ -104,7 +86,7 @@ component('remoteWidgetTest.loadCodeManully', {
 })
 
 component('FETest.distributedWidget', {
-  impl: uiFrontEndTest(group({ controls: [], features: css.class('xRoot') }), {
+  impl: uiFrontEndTest(group({ features: css.class('xRoot') }), {
     uiAction: uiActions(
       action(
         remote.distributedWidget(button('hello world'), worker(), {
@@ -120,15 +102,11 @@ component('FETest.distributedWidget', {
 })
 
 component('FETest.remoteWidgetTest.changeText', {
-  impl: uiFrontEndTest(group({ controls: [], features: css.class('xRoot') }), {
+  impl: uiFrontEndTest(group({ features: css.class('xRoot') }), {
     uiAction: uiActions(
       action(
         remote.distributedWidget({
-          control: group({
-            controls: [
-              text('hey %$fName%', { features: watchRef('%$fName%') }),
-              editableText({ databind: '%$fName%' })
-            ],
+          control: group(text('hey %$fName%', { features: watchRef('%$fName%') }), editableText({ databind: '%$fName%' }), {
             features: watchable('fName', 'Dan')
           }),
           backend: worker(),
@@ -189,8 +167,7 @@ component('FETest.remoteWidget.infiniteScroll', {
 
 component('remoteWidgetTest.refresh', {
   impl: uiTest({
-    control: group({
-      controls: remote.widget(text('%$person1/name%', { features: id('text1') }), worker()),
+    control: group(remote.widget(text('%$person1/name%', { features: id('text1') }), worker()), {
       features: [
         id('group1'),
         variable('person1', '%$person%'),

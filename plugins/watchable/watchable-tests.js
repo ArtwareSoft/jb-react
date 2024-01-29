@@ -27,8 +27,7 @@ component('uiTest.booleanWatchableVarAsBooleanFalseToTrue', {
 
 component('uiTest.watchableVar', {
   impl: uiTest({
-    control: group({
-      controls: text('%$var1%'),
+    control: group(text('%$var1%'), {
       features: [
         watchable('var1', 'hello'),
         followUp.action(writeValue('%$var1%', 'foo'))
@@ -41,8 +40,7 @@ component('uiTest.watchableVar', {
 
 component('uiTest.watchableVarAsObject', {
   impl: uiTest({
-    control: group({
-      controls: text('%$obj1/txt%'),
+    control: group(text('%$obj1/txt%'), {
       features: [
         watchable('obj1', obj(prop('txt', 'hello'))),
         followUp.action(writeValue('%$obj1/txt%', 'foo'))
@@ -55,8 +53,7 @@ component('uiTest.watchableVarAsObject', {
 
 component('uiTest.watchableVarAsArray', {
   impl: uiTest({
-    control: group({
-      controls: text('%$items[1]/title%'),
+    control: group(text('%$items[1]/title%'), {
       features: watchable('items', asIs([{title: 'koo'}, {title: 'foo'}]))
     }),
     expectedResult: contains('foo')
@@ -65,7 +62,7 @@ component('uiTest.watchableVarAsArray', {
 
 component('uiTest.watchableVarAsArrayOneItem', {
   impl: uiTest({
-    control: group({ controls: text('%$items[0]/title%'), features: watchable('items', asIs([{title: 'foo'}])) }),
+    control: group(text('%$items[0]/title%'), { features: watchable('items', asIs([{title: 'foo'}])) }),
     expectedResult: contains('foo')
   })
 })
@@ -73,8 +70,7 @@ component('uiTest.watchableVarAsArrayOneItem', {
 
 component('uiTest.watchableVarAsObjectNotInitialized', {
   impl: uiTest({
-    control: group({
-      controls: text('%$obj1/txt%'),
+    control: group(text('%$obj1/txt%'), {
       features: [
         watchable('obj1', obj()),
         followUp.action(writeValue('%$obj1/txt%', 'foo'))
@@ -144,8 +140,7 @@ component('uiTest.booleanNotReffableFalse', {
 
 component('uiTest.labelWithWatchRefInSplicedArray', {
   impl: uiTest({
-    control: group({
-      controls: text('%$personWithChildren/children[1]/name%'),
+    control: group(text('%$personWithChildren/children[1]/name%'), {
       features: followUp.action(splice('%$personWithChildren/children%', 0, { noOfItemsToRemove: 1 }))
     }),
     expectedResult: contains('Maggie'),
@@ -247,8 +242,7 @@ component('uiTest.CssOnly.SetAndBack', {
 
 component('uiTest.groupWatchingWithoutIncludeChildren', {
   impl: uiTest({
-    control: group({
-      controls: text('%$text1/text%'),
+    control: group(text('%$text1/text%'), {
       features: [
         variable('text1', obj(prop('text', 'OK'))),
         watchRef('%$text1%'),
@@ -277,8 +271,7 @@ component('uiTest.groupWatchingWithoutIncludeChildren', {
 
 component('uiTest.groupWatchingStructure', {
   impl: uiTest({
-    control: group({
-      controls: text('%$text1/text%'),
+    control: group(text('%$text1/text%'), {
       features: [
         watchable('text1', obj(prop('text', 'OK'))),
         watchRef('%$text1%', 'structure'),
@@ -293,8 +286,7 @@ component('uiTest.groupWatchingStructure', {
 
 component('uiTest.watchRefArrayDeleteWithRunActionOnItems', {
   impl: uiTest({
-    control: group({
-      controls: text(json.stringify('%$watchablePeople%'), { features: watchRef('%$watchablePeople%', 'yes') }),
+    control: group(text(json.stringify('%$watchablePeople%'), { features: watchRef('%$watchablePeople%', 'yes') }), {
       features: followUp.action(
         runActionOnItems('%$watchablePeople%', splice('%$watchablePeople%', indexOf('%$watchablePeople%', '%%'), {
           noOfItemsToRemove: '1',

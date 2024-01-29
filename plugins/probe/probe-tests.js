@@ -32,17 +32,17 @@ component('probeTest.extraElement.pipe', {
 })
 
 component('probeTest.singleControl', {
-  impl: probeTest(group({ controls: text('hello') }), 'controls', { expectedVisits: 1 })
+  impl: probeTest(group(text('hello')), 'controls', { expectedVisits: 1 })
 })
 
 component('probeTest.ptByExample', {
-  impl: probeTest(group({ controls: itemlist({ items: list(1,2), controls: text('hello') }) }), 'controls~controls', {
+  impl: probeTest(group(itemlist({ items: list(1,2), controls: text('hello') })), 'controls~controls', {
     expectedVisits: 2
   })
 })
 
 component('probeTest.usingGlobal', {
-  impl: probeTest(group({ controls: test.innerLabel() }), 'controls', { expectedVisits: 1 })
+  impl: probeTest(group(test.innerLabel()), 'controls', { expectedVisits: 1 })
 })
 
 component('test.innerLabel', {
@@ -67,7 +67,7 @@ component('test.innerLabelTemplateStaticParam', {
 })
 
 component('probeTest.staticInnerInTemplate', {
-  impl: probeTest(group({ controls: test.innerLabelTemplateStaticParam('hello') }), 'controls~param1', {
+  impl: probeTest(group(test.innerLabelTemplateStaticParam('hello')), 'controls~param1', {
     expectedVisits: 1
   })
 })
@@ -81,19 +81,17 @@ component('probeTest.pipelineMultiple', {
 })
 
 component('probeTest.innerInTemplate', {
-  impl: probeTest(group({ controls: test.innerLabelTemplate(text('hello')) }), 'controls~ctrl~text', {
+  impl: probeTest(group(test.innerLabelTemplate(text('hello'))), 'controls~ctrl~text', {
     expectedVisits: 1
   })
 })
 
 component('probeTest.pipelineNoSugar', {
-  impl: probeTest(group({ controls: text(pipeline('hello')) }), 'controls~text~items~0')
+  impl: probeTest(group(text(pipeline('hello'))), 'controls~text~items~0')
 })
 
 component('probeTest.gap.actionsArray', {
-  impl: probeTest({
-    circuit: group({ controls: button('hello', [winUtils.gotoUrl('google')]) }),
-    probePath: 'controls~action~0~url',
+  impl: probeTest(group(button('hello', [winUtils.gotoUrl('google')])), 'controls~action~0~url', {
     allowClosestPath: true,
     expectedVisits: 1
   })
@@ -146,10 +144,7 @@ component('probeTest.insideActionWithSideEffects', {
 })
 
 component('probeTest.filterNoSugar', {
-  impl: probeTest({
-    circuit: group({ controls: text(pipeline('hello', filter('%% == "hello"'))) }),
-    probePath: 'controls~text~items~1~filter'
-  })
+  impl: probeTest(group(text(pipeline('hello', filter('%% == "hello"')))), 'controls~text~items~1~filter')
 })
 
 // jb.component('probeTest.callbag.sniffer', {
@@ -267,8 +262,7 @@ component('suggestionsTest.1', {
 })
 
 component('sampleComp.ctrlWithPipeline', {
-  impl: group({
-    controls: text(pipeline(list('hello','%$var1%'), join(' '))),
+  impl: group(text(pipeline(list('hello','%$var1%'), join(' '))), {
     features: [
       variable('var1', 'world'),
       variable('xx', 'xx')

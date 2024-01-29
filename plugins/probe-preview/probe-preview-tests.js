@@ -1,8 +1,7 @@
 using('ui-tests')
 
 component('sampleProject.main', {
-  impl: group({
-    controls: text('hello', { features: [id('sampleText')] }),
+  impl: group(text('hello', { features: [id('sampleText')] }), {
     features: [
       variable('var1', 'world'),
       variable('xx', 'xx')
@@ -25,7 +24,7 @@ component('workerPreviewTest.basic', {
 component('workerPreviewTest.changeScript', {
   impl: uiTest(probe.remoteCircuitPreview(), contains('world'), {
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
-    uiAction: uiActions(writeValue(tgp.ref('sampleProject.main~impl~controls~text'), 'world'), waitForText('world')),
+    uiAction: uiActions(writeValue(tgp.ref('sampleProject.main~impl~controls~0~text'), 'world'), waitForText('world')),
     timeout: 1000
   })
 })
@@ -35,7 +34,7 @@ component('workerPreviewTest.changeScript', {
 //     control: group({
 //       controls: [
 //         probe.remoteCircuitPreview(),
-//         probe.propertyPrimitive('sampleProject.main~impl~controls~text')
+//         probe.propertyPrimitive('sampleProject.main~impl~controls~0~text')
 //       ]
 //     }),
 //     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
@@ -52,13 +51,14 @@ component('workerPreviewTest.changeScript', {
 
 component('uiTest.workerPreviewTest.addCss', {
   impl: uiTest({
-    control: group({
-      controls: [
-        button('change script', writeValue(tgp.ref('sampleProject.main~impl~controls~features~1'), () => css('color: red'))),
-        probe.remoteCircuitPreview()
-      ]
-    }),
-    expectedResult: contains('color: red'),
+    control: group(
+      button({
+        title: 'change script',
+        action: writeValue(tgp.ref('sampleProject.main~impl~controls~0~features~1'), () => css('color: green'))
+      }),
+      probe.remoteCircuitPreview()
+    ),
+    expectedResult: contains('color: green'),
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
     uiAction: click(),
     useFrontEnd: true
@@ -67,16 +67,17 @@ component('uiTest.workerPreviewTest.addCss', {
 
 component('uiTest.workerPreviewTest.changeCss', {
   impl: uiTest({
-    control: group({
-      controls: [
-        button('change script', writeValue(tgp.ref('sampleProject.main~impl~controls~features~1'), () => css('color: blue'))),
-        probe.remoteCircuitPreview()
-      ]
-    }),
+    control: group(
+      button({
+        title: 'change script',
+        action: writeValue(tgp.ref('sampleProject.main~impl~controls~0~features~1'), () => css('color: blue'))
+      }),
+      probe.remoteCircuitPreview()
+    ),
     expectedResult: ctx => Object.values(jb.ui.FEEmulator[ctx.vars.widgetId].styles).join(';').indexOf('color: blue') != -1,
     runBefore: runActions(
       writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
-      writeValue(tgp.ref('sampleProject.main~impl~controls~features~1'), () => css('color: green'))
+      writeValue(tgp.ref('sampleProject.main~impl~controls~0~features~1'), () => css('color: green'))
     ),
     uiAction: click(),
     useFrontEnd: true

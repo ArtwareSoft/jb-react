@@ -158,12 +158,10 @@ component('test.extractComponentDialog.inStudio', {
     {id: 'path', as: 'string', defaultValue: 'hello world'}
   ],
   impl: uiTest({
-    control: group({
-      controls: [
-        studio.extractComponentDialog('test.extractComponentDialog.inStudio~impl~control~controls~1'),
-        text('%$path%')
-      ]
-    }),
+    control: group(
+      studio.extractComponentDialog('test.extractComponentDialog.inStudio~impl~control~controls~1'),
+      text('%$path%')
+    ),
     expectedResult: true
   })
 })

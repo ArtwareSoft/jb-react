@@ -1289,16 +1289,14 @@ component('uiTest.styleByControl', {
 
 component('uiTest.picklistAsItemlist', {
   impl: uiTest({
-    control: group({
-      controls: [
-        picklist({
-          databind: '%$personWithAddress/address/city%',
-          options: picklist.optionsByComma('Springfield,New York,Tel Aviv,London'),
-          style: picklist.labelList()
-        }),
-        text('%$personWithAddress/address/city%')
-      ]
-    }),
+    control: group(
+      picklist({
+        databind: '%$personWithAddress/address/city%',
+        options: picklist.optionsByComma('Springfield,New York,Tel Aviv,London'),
+        style: picklist.labelList()
+      }),
+      text('%$personWithAddress/address/city%')
+    ),
     expectedResult: contains('Springfield','New York')
   })
 })
@@ -1371,12 +1369,10 @@ component('uiTest.refreshControlById.withButton', {
     vars: [
       Var('person1', () => ({ name: 'Homer' }))
     ],
-    control: group({
-      controls: [
-        text('%$person1/name%', { features: id('t1') }),
-        button('refresh', runActions(writeValue('%$person1/name%', 'Dan'), refreshControlById('t1')))
-      ]
-    }),
+    control: group(
+      text('%$person1/name%', { features: id('t1') }),
+      button('refresh', runActions(writeValue('%$person1/name%', 'Dan'), refreshControlById('t1')))
+    ),
     uiAction: click('button'),
     expectedResult: contains('Dan'),
     renderDOM: true
@@ -1385,8 +1381,7 @@ component('uiTest.refreshControlById.withButton', {
 
 component('uiTest.refreshByStateChange', {
   impl: uiTest({
-    control: group({
-      controls: text('%$name%'),
+    control: group(text('%$name%'), {
       features: [
         id('g1'),
         variable('name', 'name: %$$state/name%'),
@@ -1401,11 +1396,11 @@ component('uiTest.refreshByStateChange', {
 component('uiTest.refreshWithStyleByCtrl', {
   impl: uiTest({
     control: group({
-      style: group.sections(),
       controls: [
         text('%$name%'),
         button('click', ctx => jb.ui.runBEMethodByElem(jb.ui.find(ctx, '#g1')[0], 'refresh'))
       ],
+      style: group.sections(),
       features: [
         id('g1'),
         variable('name', ctx => ctx.exp('name: %$$state/name%')),
@@ -1425,7 +1420,7 @@ component('uiTest.control.firstSucceeding', {
   impl: uiTest({
     control: group({
       controls: [
-        group({ controls: controlWithCondition('%$gender% == "male"', text('male')), features: group.firstSucceeding() }),
+        group(controlWithCondition('%$gender% == "male"', text('male')), { features: group.firstSucceeding() }),
         group({
           controls: [
             controlWithCondition('%$gender% == "female"', text('female')),
@@ -1445,8 +1440,7 @@ component('uiTest.control.firstSucceeding', {
 
 component('uiTest.control.firstSucceedingInnerVar', {
   impl: uiTest({
-    control: group({
-      controls: controlWithCondition('%$innerVar% == "5"', text('innerVar')),
+    control: group(controlWithCondition('%$innerVar% == "5"', text('innerVar')), {
       features: [
         group.firstSucceeding(),
         variable('innerVar', '5')
@@ -1458,20 +1452,14 @@ component('uiTest.control.firstSucceedingInnerVar', {
 
 component('uiTest.control.firstSucceedingDefault', {
   impl: uiTest({
-    control: group({ controls: [controlWithCondition(false, text('female')), text('defaultCtrl')], features: group.firstSucceeding() }),
+    control: group(controlWithCondition(false, text('female')), text('defaultCtrl'), { features: group.firstSucceeding() }),
     expectedResult: contains('defaultCtrl')
   })
 })
 
 component('uiTest.control.firstSucceedingWithoutCondition', {
   impl: uiTest({
-    control: group({
-      controls: [
-        text('withoutCondition'),
-        controlWithCondition(true, text('female'))
-      ],
-      features: group.firstSucceeding()
-    }),
+    control: group(text('withoutCondition'), controlWithCondition(true, text('female')), { features: group.firstSucceeding() }),
     expectedResult: contains('withoutCondition')
   })
 })
@@ -1521,22 +1509,20 @@ component('uiTest.watchRef.recalcVars', {
 
 component('uiTest.checkBoxWithText', {
   impl: uiTest({
-    control: group({
-      controls: [
-        editableBoolean('%$person/male%', editableBoolean.checkboxWithLabel(), {
-          textForTrue: 'male',
-          textForFalse: 'girl',
-          features: id('male')
-        })
-      ]
-    }),
+    control: group(
+      editableBoolean('%$person/male%', editableBoolean.checkboxWithLabel(), {
+        textForTrue: 'male',
+        textForFalse: 'girl',
+        features: id('male')
+      })
+    ),
     expectedResult: contains('male')
   })
 })
 
 component('uiTest.hiddenRefBug', {
   impl: uiTest({
-    control: group({ controls: text('hey', { features: hidden('%$hidden%') }), features: watchable('hidden', false) }),
+    control: group(text('hey', { features: hidden('%$hidden%') }), { features: watchable('hidden', false) }),
     expectedResult: contains('display:none')
   })
 })
@@ -1565,16 +1551,14 @@ component('uiTest.hiddenRefBug', {
 
 component('uiTest.validator', {
   impl: uiTest({
-    control: group({
-      controls: [
-        editableText('project', '%$person/project%', {
-          features: [
-            id('fld'),
-            validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid project name')
-          ]
-        })
-      ]
-    }),
+    control: group(
+      editableText('project', '%$person/project%', {
+        features: [
+          id('fld'),
+          validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid project name')
+        ]
+      })
+    ),
     expectedResult: contains('invalid project name'),
     uiAction: setText('a b', '#fld'),
     allowError: true
@@ -1588,13 +1572,7 @@ component('uiTest.watchableVariableAsProxy', {
 
 component('uiTest.watchableLinkWriteOriginalWatchLink', {
   impl: uiTest({
-    control: group({
-      controls: [
-        text('%$person/name%'),
-        text('%$link/name%')
-      ],
-      features: watchable('link', '%$person%')
-    }),
+    control: group(text('%$person/name%'), text('%$link/name%'), { features: watchable('link', '%$person%') }),
     expectedResult: contains('hello','hello'),
     uiAction: writeValue('%$person/name%', 'hello')
   })
@@ -1616,7 +1594,7 @@ component('uiTest.watchableWriteViaLink', {
 })
 
 component('uiTest.watchableParentRefreshMaskChildren', {
-  impl: uiTest(group({ controls: text('%$person/name%'), features: watchRef('%$person/name%') }), contains('hello'), {
+  impl: uiTest(group(text('%$person/name%'), { features: watchRef('%$person/name%') }), contains('hello'), {
     uiAction: writeValue('%$person/name%', 'hello'),
     expectedCounters: {'refresh from observable elements': 1}
   })
@@ -1732,11 +1710,7 @@ component('uiTest.eliminateRecursion', {
 
 component('uiTest.changeText', {
   impl: uiTest({
-    control: group({
-      controls: [
-        text('%$fName%'),
-        editableText({ databind: '%$fName%', style: editableText.input() })
-      ],
+    control: group(text('%$fName%'), editableText({ databind: '%$fName%', style: editableText.input() }), {
       features: watchable('fName', 'Dan')
     }),
     expectedResult: contains('danny'),
@@ -1746,19 +1720,17 @@ component('uiTest.changeText', {
 
 component('FETest.runFEMethod', {
   impl: uiFrontEndTest({
-    control: group({
-      controls: [
-        button('change', runFEMethod('#input1', 'changeText', { data: 'world' })),
-        editableText({
-          databind: '%$person/name%',
-          style: editableText.input(),
-          features: [
-            id('input1'),
-            frontEnd.method('changeText', ({data},{el}) => el.value = data)
-          ]
-        })
-      ]
-    }),
+    control: group(
+      button('change', runFEMethod('#input1', 'changeText', { data: 'world' })),
+      editableText({
+        databind: '%$person/name%',
+        style: editableText.input(),
+        features: [
+          id('input1'),
+          frontEnd.method('changeText', ({data},{el}) => el.value = data)
+        ]
+      })
+    ),
     uiAction: click(),
     expectedResult: contains('world'),
     renderDOM: true

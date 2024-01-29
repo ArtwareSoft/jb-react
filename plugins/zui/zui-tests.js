@@ -3,7 +3,6 @@ using('ui-tests')
 component('zuiTest.gallery', {
   impl: uiTest({
     control: group({
-      layout: layout.flex('row', { wrap: 'wrap' }),
       controls: [
         zui.itemlist({
           itemView: group(
@@ -19,6 +18,7 @@ component('zuiTest.gallery', {
           itemProps: [xyByIndex()]
         })
       ],
+      layout: layout.flex('row', { wrap: 'wrap' }),
       features: [variable('zuiCtx', obj())]
     }),
     expectedResult: contains('-')
@@ -28,7 +28,6 @@ component('zuiTest.gallery', {
 component('zuiTest.itemlist', {
   impl: uiTest({
     control: group({
-      layout: layout.flex('row', { wrap: 'wrap' }),
       controls: [
         zui.itemlist({
           itemView: group(
@@ -65,6 +64,7 @@ component('zuiTest.itemlist', {
         }),
         zui.visualItemPreview()
       ],
+      layout: layout.flex('row', { wrap: 'wrap' }),
       features: [variable('zuiCtx', obj())]
     }),
     expectedResult: contains('-')
@@ -74,7 +74,6 @@ component('zuiTest.itemlist', {
 component('zuiTest.nested', {
   impl: uiTest({
     control: group({
-      layout: layout.flex('row', { wrap: 'wrap' }),
       controls: [
         zui.itemlist({
           itemView: group(
@@ -106,6 +105,7 @@ component('zuiTest.nested', {
         }),
         zui.visualItemPreview()
       ],
+      layout: layout.flex('row', { wrap: 'wrap' }),
       features: [variable('zuiCtx', obj())]
     }),
     expectedResult: contains('-')
