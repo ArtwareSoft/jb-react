@@ -195,67 +195,67 @@ extension('utils', 'prettyPrint', {
         return asIsProps(profile,path)
       if (!noMixed)
         return calcProfilePropsMixed(profile, path)
-      const fullId = [jb.utils.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
-      const comp = fullId && jb.utils.getComp(fullId)
-      if (comp && profile.$byValue)
-        jb.utils.resolveDetachedProfile(profile)
-      const id = fullId.split('>').pop()
+      // const fullId = [jb.utils.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
+      // const comp = fullId && jb.utils.getComp(fullId)
+      // if (comp && profile.$byValue)
+      //   jb.utils.resolveDetachedProfile(profile)
+      // const id = fullId.split('>').pop()
         
-      if (!id || !comp || ',object,var,'.indexOf(`,${id},`) != -1)
-        return asIsProps(profile,path)
+      // if (!id || !comp || ',object,var,'.indexOf(`,${id},`) != -1)
+      //   return asIsProps(profile,path)
         
-      const _macro = jb.macro.titleToId(id)
-      const macro = profile.$disabled ? `_${_macro}` : _macro
+      // const _macro = jb.macro.titleToId(id)
+      // const macro = profile.$disabled ? `_${_macro}` : _macro
 
-      const params = comp.params || []
-      const singleParamAsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
-      const vars = (profile.$vars || []).map(({name,val},i) => ({innerPath: `$vars~${i}`, val: {$: 'Var', name, val }}))
-      const systemProps = [...vars, 
-          ...profile.$remark ? [{innerPath: 'remark', val: {remark: profile.$remark}} ] : [],
-      ]
-      const openProfileByValueGroup = [{prop: '!profile', item: macro}, {prop:'!open-by-value', item:'('}]
-      const closeProfileByValueGroup = [{prop:'!close-by-value', item:')'}]
-      const openProfileGroup = [{prop: '!profile', item: macro}, {prop:'!open-profile', item:'({'}]
-      const closeProfileGroup = [{prop:'!close-profile', item:'})'}]
+      // const params = comp.params || []
+      // const singleParamAsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
+      // const vars = (profile.$vars || []).map(({name,val},i) => ({innerPath: `$vars~${i}`, val: {$: 'Var', name, val }}))
+      // const systemProps = [...vars, 
+      //     ...profile.$remark ? [{innerPath: 'remark', val: {remark: profile.$remark}} ] : [],
+      // ]
+      // const openProfileByValueGroup = [{prop: '!profile', item: macro}, {prop:'!open-by-value', item:'('}]
+      // const closeProfileByValueGroup = [{prop:'!close-by-value', item:')'}]
+      // const openProfileGroup = [{prop: '!profile', item: macro}, {prop:'!open-profile', item:'({'}]
+      // const closeProfileGroup = [{prop:'!close-profile', item:'})'}]
 
-      if (singleParamAsArray) { // pipeline, or, and, plus
-        const vars = (profile.$vars || []).map(({name,val}) => ({$: 'Var', name, val }))
-        const paramAsArray = jb.asArray(profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + '~' + i, val}))
-        const varsAsArray = vars.map((val,i) => ({innerPath: `$vars~${i}`, val}))
-        const paramsProps = calcArrayProps(paramAsArray.map(x=>x.val),`${path}~${params[0].id}`)
-        const varsProps = calcArrayProps(varsAsArray.map(x=>x.val),`${path}~$vars`)
-        const remarkAsArray = profile.$remark ? [{innerPath: '$remark', val: {$: 'remark', remark: profile.$remark}} ] : []
-        profile.$remark && calcProfileProps({$: 'remark', remark: profile.$remark },`${path}~$remark`)
+      // if (singleParamAsArray) { // pipeline, or, and, plus
+      //   const vars = (profile.$vars || []).map(({name,val}) => ({$: 'Var', name, val }))
+      //   const paramAsArray = jb.asArray(profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + '~' + i, val}))
+      //   const varsAsArray = vars.map((val,i) => ({innerPath: `$vars~${i}`, val}))
+      //   const paramsProps = calcArrayProps(paramAsArray.map(x=>x.val),`${path}~${params[0].id}`)
+      //   const varsProps = calcArrayProps(varsAsArray.map(x=>x.val),`${path}~$vars`)
+      //   const remarkAsArray = profile.$remark ? [{innerPath: '$remark', val: {$: 'remark', remark: profile.$remark}} ] : []
+      //   profile.$remark && calcProfileProps({$: 'remark', remark: profile.$remark },`${path}~$remark`)
 
-        return openCloseProps(path, openProfileByValueGroup, closeProfileByValueGroup, { singleParamAsArray, 
-            len: paramsProps.len+varsProps.len,
-            longInnerValInArray: paramsProps.longInnerValInArray && vars.length == 0,
-            primitiveArray: paramsProps.primitiveArray && vars.length == 0,
-            innerVals: [...remarkAsArray, ...varsAsArray,...paramAsArray], isArray: true })
-      }
-      const keys = Object.keys(profile).filter(x=>x != '$' && x != '$disabled')
-      const oneFirstArg = keys.length === 1 && params[0] && params[0].id == keys[0]
-      const twoFirstArgs = keys.length == 2 && params.length >= 2 && profile[params[0].id] && profile[params[1].id]
-      if (comp.macroByValue !== false && (params.length < 3 || comp.macroByValue || oneFirstArg || twoFirstArgs)) {
-        const args = systemProps.concat(params.map(param=>({innerPath: param.id, val: profile[param.id]})))
-        while (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop() // cut the undefined's at the end
-        const nameValuePattern = args.length == 2 && typeof args[0].val == 'string' && typeof args[1].val == 'function'
-        const singleFunc = args.length == 1 && typeof args[0].val == 'function'
-        const len = macro.length + args.reduce((len,elem) => 
-          len + calcValueProps(elem.val,`${path}~${elem.innerPath}`).len + 2, 2)
-        return openCloseProps(path, openProfileByValueGroup, closeProfileByValueGroup, {len, innerVals: args, isArray: true, nameValuePattern, singleFunc })
-      }
-      const systemPropsInObj = [
-        ...profile.$remark ? [{innerPath: 'remark', val: profile.$remark} ] : [],
-        ...vars.length ? [{innerPath: '$vars', val: vars.map(x=>x.val)}] : []
-      ]
-      const args = systemPropsInObj.concat(params.filter(param=>profile[param.id] !== undefined)
-          .map(param=>({innerPath: param.id, val: profile[param.id]})))
-      const open = args.length ? openProfileGroup : openProfileByValueGroup
-      const close = args.length ? closeProfileGroup : closeProfileByValueGroup
-      const len = macro.length + args.reduce((len,elem) => 
-        len + calcValueProps(elem.val,`${path}~${elem.innerPath}`).len + elem.innerPath.length + 2, 2)
-      return openCloseProps(path, open, close, {byName: true, len, innerVals: args })
+      //   return openCloseProps(path, openProfileByValueGroup, closeProfileByValueGroup, { singleParamAsArray, 
+      //       len: paramsProps.len+varsProps.len,
+      //       longInnerValInArray: paramsProps.longInnerValInArray && vars.length == 0,
+      //       primitiveArray: paramsProps.primitiveArray && vars.length == 0,
+      //       innerVals: [...remarkAsArray, ...varsAsArray,...paramAsArray], isArray: true })
+      // }
+      // const keys = Object.keys(profile).filter(x=>x != '$' && x != '$disabled')
+      // const oneFirstArg = keys.length === 1 && params[0] && params[0].id == keys[0]
+      // const twoFirstArgs = keys.length == 2 && params.length >= 2 && profile[params[0].id] && profile[params[1].id]
+      // if (comp.macroByValue !== false && (params.length < 3 || comp.macroByValue || oneFirstArg || twoFirstArgs)) {
+      //   const args = systemProps.concat(params.map(param=>({innerPath: param.id, val: profile[param.id]})))
+      //   while (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop() // cut the undefined's at the end
+      //   const nameValuePattern = args.length == 2 && typeof args[0].val == 'string' && typeof args[1].val == 'function'
+      //   const singleFunc = args.length == 1 && typeof args[0].val == 'function'
+      //   const len = macro.length + args.reduce((len,elem) => 
+      //     len + calcValueProps(elem.val,`${path}~${elem.innerPath}`).len + 2, 2)
+      //   return openCloseProps(path, openProfileByValueGroup, closeProfileByValueGroup, {len, innerVals: args, isArray: true, nameValuePattern, singleFunc })
+      // }
+      // const systemPropsInObj = [
+      //   ...profile.$remark ? [{innerPath: 'remark', val: profile.$remark} ] : [],
+      //   ...vars.length ? [{innerPath: '$vars', val: vars.map(x=>x.val)}] : []
+      // ]
+      // const args = systemPropsInObj.concat(params.filter(param=>profile[param.id] !== undefined)
+      //     .map(param=>({innerPath: param.id, val: profile[param.id]})))
+      // const open = args.length ? openProfileGroup : openProfileByValueGroup
+      // const close = args.length ? closeProfileGroup : closeProfileByValueGroup
+      // const len = macro.length + args.reduce((len,elem) => 
+      //   len + calcValueProps(elem.val,`${path}~${elem.innerPath}`).len + elem.innerPath.length + 2, 2)
+      // return openCloseProps(path, open, close, {byName: true, len, innerVals: args })
     }
 
     function calcProfilePropsMixed(profile, path, {forceByName} = {}) {
@@ -270,15 +270,15 @@ extension('utils', 'prettyPrint', {
         
       const macro = jb.macro.titleToId(id)
 
-      const params = comp.params || []
+      const params = (comp.params || []).slice(0)
       const param0 = params[0] ? params[0] : {}
       const firstParamByName = param0.byName
       let firstParamAsArray = (param0.type||'').indexOf('[]') != -1 && !firstParamByName
 
       let paramsByValue = (firstParamAsArray || firstParamByName) ? [] : params.slice(0,2)
-      let paramsByName = firstParamByName ? params : firstParamAsArray ? params.slice(1) : params.slice(2)
+      let paramsByName = firstParamByName ? params.slice(0) : firstParamAsArray ? params.slice(1) : params.slice(2)
       const param1 = params[1] ? params[1] : {}
-      if (!firstParamAsArray && (param1.as == 'array' || (param1.type||'').indexOf('[]') != -1 || param1.byName))
+      if (!firstParamAsArray && paramsByValue.length && (param1.as == 'array' || (param1.type||'').indexOf('[]') != -1 || param1.byName))
         paramsByName.unshift(paramsByValue.pop())
       if (comp.macroByValue) {
         paramsByValue = params
@@ -286,12 +286,12 @@ extension('utils', 'prettyPrint', {
       }
       if (profile[param0.id] === undefined || profile.$vars && !firstParamAsArray) {
         paramsByValue = []
-        paramsByName = params
+        paramsByName = params.slice(0)
       }
       if (forceByName) {
         firstParamAsArray = false
         paramsByValue = []
-        paramsByName = params
+        paramsByName = params.slice(0)
       }
 
       const varArgs = (profile.$vars || []).map(({name, val},i) => ({innerPath: `$vars~${i}`, val: {$: 'Var', name, val }}))

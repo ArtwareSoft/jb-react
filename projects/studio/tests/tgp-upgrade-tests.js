@@ -17,10 +17,12 @@ component('mixedTest.tst1Helper', {
 })
 
 component('mixedTest.tst1', {
-  impl: dataTest(typeAdapter('upgrade<upgrade>', reformat('mixedTest.tst1Helper')), equals('', ''))
+  doNotRunInTests: true,
+  impl: dataTest(typeAdapter('upgrade<upgrade>', reformat({ cmpId: 'mixedTest.tst1Helper' })), equals('', ''))
 })
 
 component('upgradeTest.upgradePT', {
+  doNotRunInTests: true,
   impl: dataTest({
     calculate: pipeline('mixedTest.tst1Helper', typeAdapter('upgrade<upgrade>', upgradePT('contains'))),
     expectedResult: equals('', '')
@@ -44,7 +46,7 @@ component('upgradeTest.upgradePT', {
 
 component('mixedTest.createUpgradeScript', {
   doNotRunInTests: true,
-  impl: dataTest(createUpgradeScript(reformat(), { slice: 100 }), equals('', ''), {
+  impl: dataTest(createUpgradeScript(reformat('amta'), { slice: 100 }), equals('', ''), {
     timeout: 20000
   })
 })

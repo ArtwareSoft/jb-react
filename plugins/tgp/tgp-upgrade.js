@@ -25,6 +25,7 @@ extension('tgpTextEditor','upgrade', {
     },
     fixPath(path) {
         return path.replace('[JB_BASE]',jbHost.jbReactDir || '')
+          .replace(/\[REPO\]\/([^/]+)\//, (x,repo) => `${jbHost.jbReactDir}/../${repo}/`)
     },
     async compTextFromFile(cmpId, location, ctx) {
         const path = '[JB_BASE]' + location.path
@@ -50,15 +51,16 @@ component('upgradeCmp', {
   params: [
     {id: 'cmpId', as: 'string', mandatory: true},
     {id: 'path', as: 'string', mandatory: true},
+    {id: 'repo', as: 'string'},
     {id: 'hash', as: 'number', mandatory: true},
     {id: 'edit'},
-    {id: 'lostInfo'}
+    {id: 'lostInfo'},
   ],
-  impl: (ctx,cmpId,path,expectedHash,edit,lostInfo) => {
+  impl: (ctx,cmpId,path,repo,expectedHash,edit,lostInfo) => {
         if (!ctx.vars.allowLostInfo && lostInfo)
             return jb.logError(`upgradeCmp can not loose information at ${cmpId}`, { ctx, lostInfo})
         if (!edit) return
-        const fullPath = jb.tgpTextEditor.fixPath('[JB_BASE]' + path)
+        const fullPath = jb.tgpTextEditor.fixPath((repo ? '[REPO]' : '[JB_BASE]') + path)
         const docText = jbHost.fs.readFileSync(fullPath, 'utf-8')
         const lines = docText.split('\n')
         const compLine = jb.utils.indexOfCompDeclarationInTextLines(lines,cmpId)
@@ -225,14 +227,18 @@ component('renameProp', {
 component('reformat', {
   type: 'upgrade',
   params: [
-    {id: 'cmpId', as: 'string', defaultValue: '%%'}
+    {id: 'repo', as: 'string'},
+    {id: 'cmpId', as: 'string', defaultValue: '%%', byName: true},
   ],
-  impl: async (ctx,cmpId) => {
+  impl: async (ctx,_repo,cmpId) => {
         const comp = jb.comps[cmpId]
         if (comp.autoGen) return
         const shortId = cmpId.split('>').pop()
         const location = comp[jb.core.CT].location
-        const { path } = location
+        const { path, repo } = location
+        if (_repo && _repo != repo) return
+        console.log(cmpId)
+        if (jb.comps['parser<jison>parser'].params.length != 3) debugger
         const { originalProfCode, notFound } = await jb.tgpTextEditor.compTextFromFile(shortId, location, ctx)
         if (notFound) return
         const newCode = jb.utils.prettyPrintComp(cmpId,comp)
@@ -240,7 +246,7 @@ component('reformat', {
         const edit = jb.tgpTextEditor.deltaText(originalProfCode, newCode)
         const hash = jb.tgpTextEditor.calcHash(originalProfCode)
 
-        const props = { cmpId, edit, hash, path }
+        const props = { cmpId, edit, hash, path, repo }
         const cmd = jb.utils.prettyPrint({$: 'upgradeCmp', ...props, cmpId: shortId}, {singleLine: true})
         return { ...props, cmd }
     }

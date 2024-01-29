@@ -44,14 +44,12 @@ extension('utils', 'core', {
     resolveLoadedProfiles({keepLocation} = {}) {
       const profiles = jb.core.unresolvedProfiles
       profiles.forEach(({comp,id,dsl}) => jb.utils.resolveProfileTop(id,comp,dsl, keepLocation))
-      profiles.forEach(({comp}) => jb.utils.resolveUnTypedProfile(comp, 10))
+      profiles.forEach(({comp,id}) => jb.utils.resolveUnTypedProfile(comp,id, 10))
       jb.core.unresolvedProfiles = []
       profiles.forEach(({comp}) => jb.utils.resolveProfileInnerElements(comp))
       return profiles
     },
     resolveProfileTop(id, comp, dslFromContext, keepLocation) {
-//      if (id == 'macroTest.castFrom') debugger
-
       const CT = jb.core.CT
       if (!comp[CT]) comp[CT] = comp[CT] || { id }
       const type = comp.type || ''
@@ -95,7 +93,7 @@ extension('utils', 'core', {
       })
       return comp
     },
-    resolveUnTypedProfile(comp, depth) {
+    resolveUnTypedProfile(comp,id, depth) {
       const CT = jb.core.CT
       //if (comp[CT].idOfUnresolvedType == 'assign') debugger
       if (! comp)
@@ -120,7 +118,7 @@ extension('utils', 'core', {
         const dslType = jb.path(prof,[CT,'dslType'])
         let comp = jb.utils.getComp(prof.$, { types: dslType, dsl: jb.path(prof,[CT,'dsl']), silent: true })
         if (!comp) {
-          jb.utils.resolveUnTypedProfile(jb.utils.getUnresolvedProfile(prof.$), depth-1)
+          jb.utils.resolveUnTypedProfile(jb.utils.getUnresolvedProfile(prof.$),'', depth-1)
           comp = jb.utils.getComp(prof.$, { types: dslType, dsl: jb.path(prof,[CT,'dsl']) })
         }
         if (!comp)
@@ -226,9 +224,7 @@ extension('utils', 'core', {
       return res
     },
     compParams(comp) {
-      if (!comp || !comp.params)
-        return []
-      return Array.isArray(comp.params) ? comp.params : entries(comp.params).map(x=>Object.assign(x[1],{id: x[0]}))
+      return (!comp || !comp.params) ? [] : comp.params
     },
     getUnresolvedProfile: _id => (jb.core.unresolvedProfiles.find(({id}) => id == _id) || {}).comp,
     resolveFinishedPromise(val) {

@@ -18,8 +18,10 @@
  <script>
 	const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
 	const repo = urlQuery('repo')
-	const sourceCode = repo ? {pluginPackages: [{'$':'defaultPackage'},{'$':'jbStudioServer', repo }],plugins:['*'] } 
-		: { project: 'studio', plugins: ['*','studio-tests']}
+	const addRepo = urlQuery('addRepo')
+	const sourceCodeAddRepo = addRepo && {project: 'studio', pluginPackages: [{'$':'defaultPackage'},{'$':'jbStudioServer', repo: addRepo }],plugins:['*','studio-tests'] } 
+	const sourceCode = sourceCodeAddRepo || (repo ? {pluginPackages: [{'$':'defaultPackage'},{'$':'jbStudioServer', repo }],plugins:['*'] } 
+		: { project: 'studio', plugins: ['*','studio-tests']})
 	jbInit('tests',sourceCode,{initSpyByUrl: true}).then(jb =>{
 			globalThis.jb = jb
 			jb.exec({$: 'defaultTheme'})
