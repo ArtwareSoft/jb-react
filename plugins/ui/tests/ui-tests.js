@@ -1,14 +1,14 @@
 
 component('uiTest.group', {
-  impl: uiTest(group({ controls: [text('hello world'), text('2')] }), contains(['hello world','2']))
+  impl: uiTest(group({ controls: [text('hello world'), text('2')] }), contains('hello world','2'))
 })
 
 component('uiTest.group1', {
-  impl: dataTest('', not())
+  impl: uiTest(group({ controls: text('hello world') }), contains())
 })
 
 component('uiTest.label', {
-  impl: uiTest(text('hello world', { features: css.color('red') }), contains(['hello world','red']))
+  impl: uiTest(text('hello world', { features: css.color('green') }), contains('hello world','green'))
 })
 
 component('uiTest.label0', {

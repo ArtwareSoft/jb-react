@@ -38,7 +38,7 @@ globalThis.jbHost = globalThis.jbHost || { // browserHost - studioServer,worker 
   }
 }
 
-async function jbInit(uri, sourceCode , {multipleInFrame} ={}) {
+async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl} ={}) {
   const jb = { 
     uri,
     sourceCode,
@@ -123,6 +123,8 @@ async function jbInit(uri, sourceCode , {multipleInFrame} ={}) {
   calcPluginDependencies(jb.plugins,jb)
   await ['jb-core','core-utils','jb-expression','db','jb-macro','spy'].map(x=>`/plugins/core/${x}.js`).reduce((pr,path) => 
     pr.then(()=> jb.loadjbFile(path,jb,{noSymbols: true, plugin: jb.plugins.core})), Promise.resolve())
+  if (initSpyByUrl)
+    jb.spy.initSpyByUrl()
   jb.noSupervisedLoad = false
   if (jb.jbm && treeShakeServerUri) jb.jbm.treeShakeServerUri = sourceCode.treeShakeServerUri
   const topPlugins = unique([...jb.asArray(sourceCode.project),

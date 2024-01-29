@@ -8,7 +8,6 @@ extension('macro', {
         return { proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro'), systemProps: ['remark', 'debug', 'disabled', 'log' ] }
     },  
     titleToId: id => id.replace(/-([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
-//    proxiesKeys: () => jb.utils.unique(Object.keys(jb.macro.proxies).map(x=>x.split('_')[0])),
     newProxy: id => new Proxy(() => 0, {
         get: (o, p) => p === jb.macro.isMacro? true : jb.macro.getInnerMacro(id, p),
         apply: function (target, thisArg, allArgs) {
@@ -20,15 +19,6 @@ extension('macro', {
     getInnerMacro(ns, innerId) {
         return (...allArgs) => {
             const { args, system } = jb.macro.splitSystemArgs(allArgs)
-            // const out = { $: `${ns}.${innerId}` }
-            // if (args.length == 0)
-            //     Object.assign(out)
-            // else if (jb.macro.isParamsByNameArgs(args))
-            //     Object.assign(out, args[0])
-            // else
-            //     Object.assign(out, { $byValue: args })
-            // return Object.assign(out, system)
-
             return { $: `${ns}.${innerId}`, 
                 ...(args.length == 0 ? {} : jb.macro.isParamsByNameArgs(args) ? args[0] : { $byValue: args }),
                 ...system
@@ -37,7 +27,7 @@ extension('macro', {
     },
     isParamsByNameArgs : args => args.length == 1 && typeof args[0] == 'object' && !Array.isArray(args[0]) && !jb.utils.compName(args[0]),    
     splitSystemArgs(allArgs) {
-        const args = [], system = {} // system props: constVar, remark
+        const args = [], system = {}
         allArgs.forEach(arg => {
             if (arg && typeof arg === 'object' && (jb.comps[arg.$] || {}).isSystem)
                 jb.comps[arg.$].macro(system, arg)
@@ -61,32 +51,24 @@ extension('macro', {
         if (cmpId == 'asIs') return { $: 'asIs', $asIs: args[0] }
         const lastArg = args[args.length-1]
         const lastArgIsByName = lastArg && typeof lastArg == 'object' && !Array.isArray(lastArg) && !lastArg.$
-        let argsByValue = lastArgIsByName ? args.slice(0,-1) : args
+        const argsByValue = lastArgIsByName ? args.slice(0,-1) : args
         const propsByName = lastArgIsByName ? lastArg : {}
         const onlyByName = lastArgIsByName && args.length == 1
         const params = comp.params || []
-        const param0 = params[0] ? params[0] : {}        
-        const firstParamAsArray = param0.as == 'array' || (param0.type||'').indexOf('[]') != -1
+        const param0 = params[0] || {}        
+        const firstParamAsArray = (param0.type||'').indexOf('[]') != -1
 
         if (!lastArgIsByName) {
-            const singleParamAsArray = params.length == 1 && (param0.type || '').indexOf('[]') != -1
-            if (singleParamAsArray) // pipeline, or, and, plus
-                return { $: cmpId, [param0.id]: args }
+            if (firstParamAsArray)
+                return { $: cmpId, [param0.id]: params.length > 1 && args.length == 1 ? args[0] : args }
+
             if (comp.macroByValue || params.length < 3)
                 return { $: cmpId, ...jb.objFromEntries(args.filter((_, i) => params[i]).map((arg, i) => [params[i].id, arg])) }
-            if (args.length == 1 && !Array.isArray(args[0]) && typeof args[0] === 'object' && !args[0].$)
-                return { $: cmpId, ...args[0] }
-            if (args.length == 1 && params.length)
-                return { $: cmpId, [param0.id]: args[0] }
-            if (args.length >= 2 && params.length > 1)
-                return { $: cmpId, [param0.id]: args[0], [params[1].id]: args[1] }            
         }
 
         const varArgs = []
         while (argsByValue[0] && argsByValue[0].$ == 'Var')
             varArgs.push(argsByValue.shift())
-        if (firstParamAsArray && argsByValue.length == 1)
-            argsByValue = argsByValue[0]
         const firstProps = onlyByName ? [] : firstParamAsArray ? { [param0.id] : argsByValue } : jb.objFromEntries(argsByValue.map((v,i) => [params[i].id, v]))
         return { $: cmpId,
             ...(varArgs.length ? {$vars: varArgs} : {}),
@@ -94,12 +76,8 @@ extension('macro', {
         }
     },
     registerProxy: id => {
-        const proxyId = jb.macro.titleToId(id.split('.')[0]) //.split('_')[0]
+        const proxyId = jb.macro.titleToId(id.split('.')[0])
         return [proxyId, jb.macro.proxies[proxyId] = jb.macro.proxies[proxyId] || jb.macro.newProxy(proxyId)]
-        // return [proxyId,`_${proxyId}`].map(proxyId => {
-        //     jb.macro.proxies[proxyId] = jb.macro.proxies[proxyId] || jb.macro.newProxy(proxyId)
-        //     return [proxyId,jb.macro.proxies[proxyId]]
-        // })
     }
 })
 

@@ -160,6 +160,7 @@ extension('utils', 'core', {
           Object.assign(prof[CT], {comp, dslType})
           if (prof.$byValue && comp) {
               Object.assign(prof, jb.macro.argsToProfile(prof.$, comp, prof.$byValue, topComp))
+              if (jb.core.OrigValues) prof[jb.core.OrigValues] = prof.$byValue
               delete prof.$byValue
           }
           if (Array.isArray(prof)) {
@@ -189,6 +190,7 @@ extension('utils', 'core', {
       prof[CT] = {comp, dslType}
       if (prof.$byValue && comp) {
           Object.assign(prof, jb.macro.argsToProfile(prof.$, comp, prof.$byValue))
+          if (jb.core.OrigValues) prof[jb.core.OrigValues] = prof.$byValue
           delete prof.$byValue
           ;(comp.params || []).forEach(p=> jb.utils.resolveDetachedProfile(prof[p.id], jb.path(p,[CT,'dslType']), prof))
           jb.utils.resolveDetachedProfile(prof.$vars)

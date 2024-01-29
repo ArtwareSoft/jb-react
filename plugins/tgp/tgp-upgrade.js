@@ -1,30 +1,10 @@
 dsl('upgrade')
 using('remote')
 
-extension('tgpTextEditor', 'onAddComponent', {
-  initExtension() { 
-    jb.core.onAddComponent.push({ 
-//        match:(id,comp) => (jb.path(comp[jb.core.CT].plugin,'files') || []).find(x=>x.path.match(/amta/)),
-        //match:(id,comp) => (jb.path(comp[jb.core.CT].plugin,'files') || []).find(x=>x.path.match(/tests/)),
-        match:(id,comp) => false,
-      register: (_id,_comp,dsl) => {
-        //if (_id == 'amta.aa') debugger
-        const comp = jb.tgpTextEditor.fixProfile(_comp,_comp,_id)
-        const id = jb.macro.titleToId(_id)
-        jb.core.unresolvedProfiles.push({id,comp,dsl})
-        comp[jb.core.CT] = _comp[jb.core.CT]
-        return comp
-      }
-    })    
-  },
-  fixProfile(profile,origin,id) {
-    if (profile === null) return
-    if (profile.$ == 'object')
-        return {$: 'obj', props: jb.entries(profile).filter(([x]) =>x!='$').map(([title,val]) => ({$: 'prop', title, val: jb.syntaxConverter.fixProfile(val,origin) }))}
-  }
-})
-
 extension('tgpTextEditor','upgrade', {
+    initExtension() { 
+        jb.core.OrigValues = Symbol.for('OrigValues')
+    },
     calcHash(str) {
         let hash = 0, i, chr;
         if (str.length === 0) return hash;
@@ -170,19 +150,76 @@ component('upgradePT', {
   params: [
     {id: 'PT', as: 'string', mandatory: true},
     {id: 'oldPT', as: 'string', mandatory: true},
-    {id: 'cmpUpgrades', type: 'cmp-upgrade[]', mandatory: true},
+    {id: 'cmpUpgrade', type: 'cmp-upgrade', mandatory: true, dynamic: true},
   ],
-  impl: (ctx,cmpId) => {}
+  impl: async (ctx,PT,oldPT,cmpUpgrade) => {
+    const PTplugin = jb.path(jb.comps[PT],[jb.core.CT,'plugin','id'])
+    const cmpId = ctx.data
+    const comp = jb.comps[cmpId]
+    const ct = comp[jb.core.CT] || {}
+    const plugin = ct.plugin || {}
+    const dsl = ct.dsl
+    const shortPTName = PT.split('>').pop()
+    const workingId = `${cmpId}__working__`
+    const shortId = cmpId.split('>').pop()
+    const location = ct.location
+    const { path } = location
+
+    // check if relevant for upgrade 
+    if (comp.autoGen) return
+    if ( plugin.id != PTplugin && !(plugin.dependent || []).includes(PTplugin))
+        return
+    if (!findProfilesOfPT(comp.impl).length) 
+        return
+
+    if (jb.core.unresolvedProfiles.length)
+        return jb.logError('upgradePT - resolved profiles in not empty', {})
+    const newComp = {...comp, [jb.core.CT]: {plugin, location}, impl: buildOrigProfileWithOldPT(comp.impl),}
+    jb.core.unresolvedProfiles.push({comp: newComp,id: workingId, dsl})
+    jb.utils.resolveLoadedProfiles()
+    const workingComp = jb.comps[workingId]
+    findProfilesOfPT(workingComp.impl).forEach(prof=>{ cmpUpgrade(ctx.setData(prof)); prof.$ = shortPTName})
+
+    const { originalProfCode, notFound } = await jb.tgpTextEditor.compTextFromFile(shortId, location, ctx)
+    if (notFound) return
+    const newCode = jb.utils.prettyPrintComp(cmpId, workingComp)
+    if (originalProfCode == newCode) return
+    const edit = jb.tgpTextEditor.deltaText(originalProfCode, newCode)
+    const hash = jb.tgpTextEditor.calcHash(originalProfCode)
+
+    const props = { cmpId, edit, hash, path }
+    const cmd = jb.utils.prettyPrint({$: 'upgradeCmp', ...props, cmpId: shortId}, {singleLine: true})
+    return { ...props, cmd }
+
+    function buildOrigProfileWithOldPT(prof) {
+        if (prof.$)
+            return {$: oldPT && fullPTName(prof) == PT ? oldPT : prof.$, $byValue: prof[jb.core.OrigValues].map(x=>buildOrigProfileWithOldPT(x))}
+        return prof
+    }
+    function fullPTName(prof) {
+        const dslType = jb.path(prof,[jb.core.CT,'dslType']) || ''
+        return (dslType.indexOf('<') != -1) ? dslType + prof.$ : prof.$
+    }
+    function findProfilesOfPT(prof) {
+        if (!prof) return []
+        const inner = (prof[jb.core.OrigValues] || []).filter(x=>x.$)
+        const res = (prof.$ == PT || `${jb.path(prof,[jb.core.CT,'dslType'])}${prof.$}` == PT) ? [prof] : []
+        return [...res,...inner]
+    }
+  }
 })
 
-component('mapProp', {
+component('renameProp', {
   type: 'cmp-upgrade',
   params: [
-    {id: 'prop', as: 'string', mandatory: true},
-    {id: 'propInOldPT', as: 'string', mandatory: true},
-    {id: 'transformValue', type: 'data', dynamic: true, defaultValue: '%%'},
+    {id: 'oldMame', as: 'string', mandatory: true},
+    {id: 'newName', as: 'string', mandatory: true},
   ],
-  impl: (ctx,cmpId) => {}
+  impl: (ctx,oldMame,newName) => {
+    const prof = ctx.data
+    prof[newName] = prof[oldMame]
+    delete prof[oldMame]
+  }
 })
 
 component('reformat', {
@@ -207,17 +244,4 @@ component('reformat', {
         const cmd = jb.utils.prettyPrint({$: 'upgradeCmp', ...props, cmpId: shortId}, {singleLine: true})
         return { ...props, cmd }
     }
-})
-
-component('upgradePT', {
-  type: 'upgrade',
-  params: [
-    {id: 'PT', as: 'string'},
-    {id: 'newParams', as: 'array'}
-  ],
-  impl: ctx => ({
-        upgradeActions(cmpId) {
-            
-        }
-    })
 })

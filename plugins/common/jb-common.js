@@ -631,7 +631,7 @@ component('between', {
 component('contains', {
   type: 'boolean',
   params: [
-    {id: 'text', type: 'data[]', as: 'array', arrayInMacro: true, mandatory: true},
+    {id: 'text', type: 'data[]', as: 'array', mandatory: true},
     {id: 'allText', defaultValue: '%%', as: 'string', byName: true},
     {id: 'inOrder', defaultValue: true, as: 'boolean', type: 'boolean'}
   ],
@@ -649,7 +649,7 @@ component('contains', {
 component('notContains', {
   type: 'boolean',
   params: [
-    {id: 'text', type: 'data[]', as: 'array', arrayInMacro: true, mandatory: true},
+    {id: 'text', type: 'data[]', as: 'array', mandatory: true},
     {id: 'allText', defaultValue: '%%', as: 'array', byName: true}
   ],
   impl: not(contains('%$text%', { allText: '%$allText%' }))
@@ -1048,7 +1048,7 @@ component('asRef', {
 component('data.switch', {
   macroByValue: false,
   params: [
-    {id: 'cases', type: 'data.switch-case[]', as: 'array', mandatory: true, arrayInMacro: true, defaultValue: []},
+    {id: 'cases', type: 'data.switch-case[]', as: 'array', mandatory: true, defaultValue: []},
     {id: 'default', dynamic: true}
   ],
   impl: (ctx,cases,defaultValue) => {

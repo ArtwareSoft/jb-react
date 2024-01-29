@@ -21,7 +21,7 @@ extension('zui','layout', {
 component('group', {
   type: 'view',
   params: [
-    {id: 'views', mandatory: true, type: 'view[]', dynamic: true, composite: true, arrayInMacro: true},
+    {id: 'views', mandatory: true, type: 'view[]', dynamic: true, composite: true},
     {id: 'layout', type: 'layout', defaultValue: vertical()},
     {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true}
   ],
@@ -41,7 +41,7 @@ component('allOrNone', {
 component('firstToFit', {
   type: 'view',
   params: [
-    {id: 'views', mandatory: true, type: 'view[]', dynamic: true, composite: true, arrayInMacro: true},
+    {id: 'views', mandatory: true, type: 'view[]', dynamic: true, composite: true},
     {id: 'layout', type: 'layout', defaultValue: vertical()},
     {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true}
   ],

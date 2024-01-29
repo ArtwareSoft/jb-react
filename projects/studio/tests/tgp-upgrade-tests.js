@@ -13,12 +13,20 @@ component('mixedTest.tst2Helper', {
 
 component('mixedTest.tst1Helper', {
   doNotRunInTests: true,
-  impl: studio.openNewProfileDialog(tree.pathOfInteractiveItem(), 'control', { mode: 'insert-control', onClose: studio.gotoLastEdit() })
+  impl: contains('hello world','red')
 })
 
 component('mixedTest.tst1', {
   impl: dataTest(typeAdapter('upgrade<upgrade>', reformat('mixedTest.tst1Helper')), equals('', ''))
 })
+
+component('upgradeTest.upgradePT', {
+  impl: dataTest({
+    calculate: pipeline('mixedTest.tst1Helper', typeAdapter('upgrade<upgrade>', upgradePT('contains'))),
+    expectedResult: equals('', '')
+  })
+})
+
 
 // component('mixedTest.all', {
 //   impl: dataTest(

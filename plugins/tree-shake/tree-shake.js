@@ -43,7 +43,7 @@ extension('treeShake', {
         return []
     },
     dependentOnObj(obj, onlyMissing) {
-        if (obj[jb.core.OnlyData]) return []
+        //if (obj[jb.core.OnlyData]) return []
         const isRemote = 'source.remote:rx,remote.operator:rx,remote.action:action,remote.data:data' // code run in remote is not dependent
         const vals = Object.keys(obj).filter(k=>!obj.$ || isRemote.indexOf(`${obj.$}:${k}`) == -1).map(k=>obj[k])
         const _dslType = [obj.$dslType || ''].map(x=>x.indexOf('<>') != -1 ? '' :x)[0]

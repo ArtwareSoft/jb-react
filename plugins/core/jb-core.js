@@ -98,7 +98,6 @@ extension('core', {
     return {
       ctxCounter: 0,
       CT: Symbol.for('CT'), // compile time
-      OnlyData: Symbol.for('OnlyData'),
       jstypes: jb.core._jsTypes(),
       onAddComponent: [],
       unresolvedProfiles: [],
@@ -199,7 +198,8 @@ extension('core', {
         if (forcePath) path = ''
 
         const valOrDefaultArray = valOrDefault ? valOrDefault : []; // can remain single, if null treated as empty array
-        const arrayParam = param.type && param.type.indexOf('[]') > -1 && Array.isArray(valOrDefaultArray);
+        const arrayParam = param.type && param.type.indexOf('[]') > -1 && Array.isArray(valOrDefaultArray)
+        if (param.type && param.type.indexOf('[]') > -1 && !Array.isArray(valOrDefaultArray)) debugger
 
         if (param.dynamic) {
           const outerFunc = runCtx => {

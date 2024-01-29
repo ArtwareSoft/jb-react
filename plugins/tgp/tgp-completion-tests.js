@@ -12,7 +12,7 @@ component('completionTest.param', {
 component('completionTest.pt', {
   impl: tgp.completionOptionsTest({
     compText: `component('x', {
-  impl: uiTest(group({ controls: [__text('hello world'), __text('2')__]__ }), __contains(['hello world','2']))
+  impl: uiTest(group({ controls: [__text('hello world'), __text('2')__]__ }), __contains('hello world','2'))
 })`,
     expectedSelections: ['button','button','button','style','not']
   })
@@ -182,14 +182,14 @@ component('completionTest.wrapWithGroup', {
 
 component('completionTest.wrapWithArray', {
   impl: tgp.completionActionTest(`component('x', {
-  impl: uiTest({ expectedResult: contains(__'') })
+  impl: uiTest(group({ controls: __text('hello') }), contains())
 })`, {
     completionToActivate: 'wrap with array',
     expectedEdit: () => ({
-      range: {start: {line: 1, col: 42}, end: {line: 1, col: 44}},
-      newText: `['']`
+      range: {start: {line: 1, col: 33}, end: {line: 1, col: 46}},
+      newText: `[text('hello')]`
     }),
-    expectedCursorPos: '1,45'
+    expectedCursorPos: '1,47'
   })
 })
 

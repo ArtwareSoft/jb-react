@@ -272,8 +272,7 @@ extension('utils', 'prettyPrint', {
 
       const params = comp.params || []
       const param0 = params[0] ? params[0] : {}
-      // param0.arrayInMacro is temporary - remove after upgrade to mixed
-      let firstParamAsArray = !param0.arrayInMacro && (param0.as == 'array' || (param0.type||'').indexOf('[]') != -1)
+      let firstParamAsArray = (param0.type||'').indexOf('[]') != -1
 
       const firstParamByName = param0.byName
       let paramsByValue = (firstParamAsArray || firstParamByName) ? [] : params.slice(0,2)

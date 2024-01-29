@@ -20,10 +20,10 @@
 	const repo = urlQuery('repo')
 	const sourceCode = repo ? {pluginPackages: [{'$':'defaultPackage'},{'$':'jbStudioServer', repo }],plugins:['*'] } 
 		: { project: 'studio', plugins: ['*','studio-tests']}
-	jbInit('tests',sourceCode).then(jb =>{
+	jbInit('tests',sourceCode,{initSpyByUrl: true}).then(jb =>{
 			globalThis.jb = jb
 			jb.exec({$: 'defaultTheme'})
-			jb.spy.initSpyByUrl()
+//			jb.spy.initSpyByUrl()
 			const params = { 
 				testType: '',
 				show: window.location.href.indexOf('&show') != -1,
