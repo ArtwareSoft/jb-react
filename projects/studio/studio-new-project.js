@@ -45,9 +45,9 @@ component('studio.openNewProject', {
         editableText('project name', '%$dialogData/name%', {
           style: editableText.mdcInput('280'),
           features: [
-          feature.onEnter(dialog.closeDialog()),
-          validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid project name')
-        ]
+            feature.onEnter(dialog.closeDialog()),
+            validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid project name')
+          ]
         })
       ],
       features: css.padding('14', '11')

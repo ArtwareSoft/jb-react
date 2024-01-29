@@ -47,16 +47,7 @@ component('dataTest.pipeWithPromise3', {
 
 component('dataTest.dataSwitch', {
   impl: dataTest({
-    calculate: pipeline(
-      5,
-      data.switch(
-        [
-          data.case(equals(4), 'a'),
-          data.case(equals(5), 'b'),
-          data.case(equals(6), 'c')
-        ]
-      )
-    ),
+    calculate: pipeline(5, data.switch(data.case(equals(4), 'a'), data.case(equals(5), 'b'), data.case(equals(6), 'c'))),
     expectedResult: equals('b')
   })
 })
@@ -65,12 +56,7 @@ component('dataTest.dataSwitchDefault', {
   impl: dataTest({
     calculate: pipeline(
       7,
-      data.switch({
-        cases: [
-          data.case(equals(4), 'a'),
-          data.case(equals(5), 'b'),
-          data.case(equals(6), 'c')
-        ],
+      data.switch(data.case(equals(4), 'a'), data.case(equals(5), 'b'), data.case(equals(6), 'c'), {
         default: 'd'
       })
     ),
@@ -112,12 +98,9 @@ component('dataTest.assign', {
 })
 
 component('dataTest.obj', {
-  impl: dataTest({
-    calculate: pipeline(obj(prop('a', 1), prop('b', 2)), '%a%-%b%', `
+  impl: dataTest(pipeline(obj(prop('a', 1), prop('b', 2)), '%a%-%b%', `
 %%
-`, {'$': 'object', res: '%%'}, '%res%'),
-    expectedResult: contains('1-2')
-  })
+`, {'$': 'object', res: '%%'}, '%res%'), contains('1-2'))
 })
 
 component('dataTest.evalExpression', {

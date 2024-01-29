@@ -103,8 +103,7 @@ component('sizesEditor.editor', {
       sizesEditor.prop('boxShadow', 'top: 175px; left: 0px;'),
       sizesEditor.prop('border', 'top: 175px; left: 75px;'),
       sizesEditor.prop('borderRadius', 'top: 175px; left: 126px;'),
-      dynamicControls(sizesEditor.cssSizes(), {
-        genericControl: group({
+      dynamicControls(sizesEditor.cssSizes(), group({
         controls: [
           button({
             title: sizesEditor.computedContent(),
@@ -121,8 +120,7 @@ component('sizesEditor.editor', {
           feature.hoverTitle('%level%-%side%'),
           css('>a {font-size: 8px} ~:hover a { font-size: 16px; background: white}')
         ]
-      })
-      })
+      }))
     ]
   })
 })

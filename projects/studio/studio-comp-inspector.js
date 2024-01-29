@@ -14,10 +14,10 @@ component('studio.compInspector', {
         table('state', {
           items: unique({ items: list(keys('%$inspectedCmp/state%'), keys('%$elem/_component/state%')) }),
           controls: [
-          text('%%', ''),
-          text('%$elem/_component/state/{%%}%', 'front end'),
-          text('%$inspectedCmp/state/{%%}%', 'back end')
-        ],
+            text('%%', ''),
+            text('%$elem/_component/state/{%%}%', 'front end'),
+            text('%$inspectedCmp/state/{%%}%', 'back end')
+          ],
           features: followUp.watchObservable(source.callbag('%$frameOfElem.spy.observable()%'))
         }),
         studio.eventsOfComp('%$inspectedCmp/cmpId%'),
@@ -28,9 +28,9 @@ component('studio.compInspector', {
         table('methods', {
           items: '%$inspectedCmp/method%',
           controls: [
-          text('%id%', 'method'),
-          studio.sourceCtxView('%ctx%')
-        ]
+            text('%id%', 'method'),
+            studio.sourceCtxView('%ctx%')
+          ]
         }),
         tableTree('rendering props', tree.jsonReadOnly('%$inspectedCmp/renderProps%'), {
           leafFields: text('%val%', 'value'),
@@ -73,21 +73,21 @@ component('studio.eventsOfComp', {
           button('clear', runActions(eventTracker.clearSpyLog(), refreshControlById('cmp-event-tracker')), {
             style: chromeDebugger.icon(),
             features: [
-            css.color('var(--jb-menu-fg)'),
-            feature.hoverTitle('clear')
-          ]
+              css.color('var(--jb-menu-fg)'),
+              feature.hoverTitle('clear')
+            ]
           }),
           divider(divider.vertical()),
           editableText('query', '%$studio/eventTrackerCmpQuery%', {
             style: editableText.input(),
             features: [
-            htmlAttribute('placeholder', 'query'),
-            feature.onEnter(refreshControlById('cmp-event-tracker')),
-            css.class('toolbar-input'),
-            css.height('10'),
-            css.margin('4'),
-            css.width('300')
-          ]
+              htmlAttribute('placeholder', 'query'),
+              feature.onEnter(refreshControlById('cmp-event-tracker')),
+              css.class('toolbar-input'),
+              css.height('10'),
+              css.margin('4'),
+              css.width('300')
+            ]
           }),
           eventTracker.eventTypes(eventTracker.getParentSpy())
         ],
@@ -98,7 +98,7 @@ component('studio.eventsOfComp', {
         controls: [
           text('%index%'),
           text('%logNames%', {
-            features: feature.byCondition(inGroup(list('exception','error'), { item: '%logNames%' }), css.color('var(--jb-error-fg)'))
+            features: feature.byCondition(inGroup(list('exception','error'), '%logNames%'), css.color('var(--jb-error-fg)'))
           }),
           studio.lowFootprintObj('%err%', 'err'),
           studio.objExpandedAsText('%stack%', 'stack'),

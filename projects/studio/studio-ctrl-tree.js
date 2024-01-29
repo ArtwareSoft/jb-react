@@ -159,9 +159,9 @@ component('studio.openControlTree', {
   impl: openDialog('Outline', studio.controlTree(), {
     style: dialog.studioFloating('studio-outline', '350'),
     menu: button(' ', studio.openTreeMenu('%$studio/profile_path%'), {
-    style: button.mdcIcon('menu'),
-    features: css('{ background: none }')
-  })
+      style: button.mdcIcon('menu'),
+      features: css('{ background: none }')
+    })
   })
 })
 

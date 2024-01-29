@@ -19,39 +19,39 @@ component('studio.openPickIcon', {
               databind: '%$itemlistCntrData/search_pattern%',
               style: styleWithFeatures(editableText.mdcSearch(), {
                 features: [
-                css('~ .mdc-text-field {height: 32px }'),
-                css('~ input { padding: 0 0 0 10px; }'),
-                css('~ .mdc-text-field__icon { top: 20%;}')
-              ]
+                  css('~ .mdc-text-field {height: 32px }'),
+                  css('~ input { padding: 0 0 0 10px; }'),
+                  css('~ .mdc-text-field__icon { top: 20%;}')
+                ]
               })
             })
           ]
         }),
         itemlist('', {
           items: pipeline(
-          If(equals('mdi', '%$type%'), pipeline(ctx => jb.ui.MDIcons, keys()), ctx => jb.ui.mdcIconNames.split(',')),
-          itemlistContainer.filter()
-        ),
+            If(equals('mdi', '%$type%'), pipeline(ctx => jb.ui.MDIcons, keys()), ctx => jb.ui.mdcIconNames.split(',')),
+            itemlistContainer.filter()
+          ),
           controls: [
-          group({
-            title: '',
-            layout: layout.horizontal(),
-            controls: [
-              control.icon('%%', { type: firstSucceeding('%$type%','mdc') }),
-              text(pipeline('%%', text.highlight('%%', '%$itemlistCntrData.search_pattern%')), 'icon name')
-            ]
-          })
-        ],
+            group({
+              title: '',
+              layout: layout.horizontal(),
+              controls: [
+                control.icon('%%', { type: firstSucceeding('%$type%','mdc') }),
+                text(pipeline('%%', text.highlight('%%', '%$itemlistCntrData.search_pattern%')), 'icon name')
+              ]
+            })
+          ],
           visualSizeLimit: '50',
           features: [
-          watchRef('%$itemlistCntrData/search_pattern%', { strongRefresh: 'true' }),
-          watchRef('%$type%', { strongRefresh: 'true' }),
-          css.height('500', 'scroll'),
-          css.width('600'),
-          itemlist.infiniteScroll(),
-          itemlist.selection({ onDoubleClick: runActions(writeValue(tgp.ref('%$path%'), '%%'), delay(), dialog.closeDialog()) }),
-          itemlist.keyboardSelection({ onEnter: runActions(writeValue(tgp.ref('%$path%'), '%%'), delay(), dialog.closeDialog()) })
-        ]
+            watchRef('%$itemlistCntrData/search_pattern%', { strongRefresh: 'true' }),
+            watchRef('%$type%', { strongRefresh: 'true' }),
+            css.height('500', 'scroll'),
+            css.width('600'),
+            itemlist.infiniteScroll(),
+            itemlist.selection({ onDoubleClick: runActions(writeValue(tgp.ref('%$path%'), '%%'), delay(), dialog.closeDialog()) }),
+            itemlist.keyboardSelection({ onEnter: runActions(writeValue(tgp.ref('%$path%'), '%%'), delay(), dialog.closeDialog()) })
+          ]
         })
       ],
       features: [group.itemlistContainer(), group.autoFocusOnFirstInput()]

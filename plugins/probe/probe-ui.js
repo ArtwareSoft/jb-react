@@ -171,10 +171,9 @@ component('probe.probeResView', {
   impl: group({
     style: group.tabs(button.href(), group.div(), { barLayout: layout.horizontal(30) }),
     controls: [
-      dynamicControls(pipeline('%badFormat%', filter('%%')), { genericControl: text('bad format', 'bad format') }),
-      dynamicControls(pipeline('%noCircuit%', filter('%%')), { genericControl: text('no circuit', 'no circuit') }),
-      dynamicControls(pipeline(list('%$errCount%'), filter('%%!=0')), {
-        genericControl: group({
+      dynamicControls(pipeline('%badFormat%', filter('%%')), text('bad format', 'bad format')),
+      dynamicControls(pipeline('%noCircuit%', filter('%%')), text('no circuit', 'no circuit')),
+      dynamicControls(pipeline(list('%$errCount%'), filter('%%!=0')), group({
         title: 'error: %$errCount%',
         controls: [
           text({
@@ -189,26 +188,25 @@ component('probe.probeResView', {
             features: [codemirror.fold(), codemirror.lineNumbers()]
           })
         ]
-      })
-      }),
+      })),
       table('in->out', {
         items: '%$probeRes/result%',
         controls: [
-        group({
-          title: 'in (%in/length%)',
-          controls: ui.dataBrowse('%in%'),
-          features: css.width(300, { minMax: 'max' })
-        }),
-        group({ title: 'out', controls: ui.dataBrowse('%out%'), features: field.columnWidth(100) })
-      ],
+          group({
+            title: 'in (%in/length%)',
+            controls: ui.dataBrowse('%in%'),
+            features: css.width(300, { minMax: 'max' })
+          }),
+          group({ title: 'out', controls: ui.dataBrowse('%out%'), features: field.columnWidth(100) })
+        ],
         style: table.mdc(),
         visualSizeLimit: 7,
         features: [
-        itemlist.infiniteScroll(),
-        css.height('100%', { minMax: 'max' }),
-        field.columnWidth(100),
-        css('{white-space: normal}')
-      ]
+          itemlist.infiniteScroll(),
+          css.height('100%', { minMax: 'max' }),
+          field.columnWidth(100),
+          css('{white-space: normal}')
+        ]
       }),
       group({
         title: 'in:%$probeRes/simpleVisits%',

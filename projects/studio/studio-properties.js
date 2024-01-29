@@ -87,10 +87,10 @@ component('studio.properties', {
           button('new feature', studio.openNewProfileDialog('%$path%~features', 'feature'), {
             style: button.href(),
             features: [
-            feature.if(tgp.isOfType('%$path%~features', 'feature')),
-            css.margin('20', '5'),
-            css.width('100%')
-          ]
+              feature.if(tgp.isOfType('%$path%~features', 'feature')),
+              css.margin('20', '5'),
+              css.width('100%')
+            ]
           }),
           button('new icon', tgp.getOrCreateCompInArray('%$path%~features', 'feature.icon'), {
             style: button.mdcIcon({ buttonSize: '24' }),
@@ -124,7 +124,7 @@ component('studio.propField', {
       controls: [
         controlWithCondition({
           condition: and(
-            inGroup(list('feature.icon','icon','control.icon'), { item: tgp.compName(tgp.parentPath('%$path%')) }),
+            inGroup(list('feature.icon','icon','control.icon'), tgp.compName(tgp.parentPath('%$path%'))),
             equals('icon', pipeline(tgp.paramDef('%$path%'), '%id%'))
           ),
           control: studio.pickIcon('%$path%')
@@ -158,7 +158,7 @@ component('studio.propField', {
         controlWithCondition({
           condition: and(
             '%$paramDef/as%=="boolean"',
-            or(inGroup(list(true,false,'true','false'), { item: '%$val%' }), isEmpty('%$val%'))
+            or(inGroup(list(true,false,'true','false'), '%$val%'), isEmpty('%$val%'))
           ),
           control: studio.propertyBoolean('%$path%')
         }),
@@ -274,7 +274,7 @@ component('studio.editAs', {
   impl: or(
     Var('paramDef', tgp.paramDef('%$path%')),
     equals('%$paramDef/editAs%', '%$type%'),
-    inGroup(split({ text: '%$anyParamIds%' }), { item: '%$paramDef/id%' })
+    inGroup(split({ text: '%$anyParamIds%' }), '%$paramDef/id%')
   )
 })
 
@@ -317,17 +317,17 @@ component('studio.colorPicker', {
         content: itemlist('', {
           items: studio.colorVariables(),
           controls: group({
-          title: '',
-          layout: layout.flex({ alignItems: 'center', spacing: '5' }),
-          controls: [
-            control.icon('MoonFull', {
-              type: 'mdi',
-              features: css('~ svg { fill: %color%; stroke: black }')
-            }),
-            text('%varName%')
-          ],
-          features: css.width('300')
-        }),
+            title: '',
+            layout: layout.flex({ alignItems: 'center', spacing: '5' }),
+            controls: [
+              control.icon('MoonFull', {
+                type: 'mdi',
+                features: css('~ svg { fill: %color%; stroke: black }')
+              }),
+              text('%varName%')
+            ],
+            features: css.width('300')
+          }),
           features: itemlist.selection({ onSelection: writeValue(tgp.ref('%$path%'), 'var(--%varName%)') })
         }),
         style: dialog.studioJbEditorPopup(),

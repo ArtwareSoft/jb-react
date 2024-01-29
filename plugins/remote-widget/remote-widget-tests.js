@@ -106,14 +106,14 @@ component('remoteWidgetTest.loadCodeManully', {
 component('FETest.distributedWidget', {
   impl: uiFrontEndTest(group({ controls: [], features: css.class('xRoot') }), {
     uiAction: uiActions(
-    action(
-      remote.distributedWidget(button('hello world'), worker(), {
-        frontend: child('jbxServer'),
-        selector: '.xRoot'
-      })
+      action(
+        remote.distributedWidget(button('hello world'), worker(), {
+          frontend: child('jbxServer'),
+          selector: '.xRoot'
+        })
+      ),
+      waitForSelector('button')
     ),
-    waitForSelector('button')
-  ),
     expectedResult: contains('hello'),
     renderDOM: true
   })
@@ -122,25 +122,25 @@ component('FETest.distributedWidget', {
 component('FETest.remoteWidgetTest.changeText', {
   impl: uiFrontEndTest(group({ controls: [], features: css.class('xRoot') }), {
     uiAction: uiActions(
-    action(
-      remote.distributedWidget({
-        control: group({
-          controls: [
-            text('hey %$fName%', { features: watchRef('%$fName%') }),
-            editableText({ databind: '%$fName%' })
-          ],
-          features: watchable('fName', 'Dan')
-        }),
-        backend: worker(),
-        frontend: child('jbxServer'),
-        selector: '.xRoot'
-      })
+      action(
+        remote.distributedWidget({
+          control: group({
+            controls: [
+              text('hey %$fName%', { features: watchRef('%$fName%') }),
+              editableText({ databind: '%$fName%' })
+            ],
+            features: watchable('fName', 'Dan')
+          }),
+          backend: worker(),
+          frontend: child('jbxServer'),
+          selector: '.xRoot'
+        })
+      ),
+      waitForSelector('input'),
+      setText('danny'),
+      keyboardEvent('input', 'keyup'),
+      waitForSelector('[cmp-ver="2"]')
     ),
-    waitForSelector('input'),
-    setText('danny'),
-    keyboardEvent('input', 'keyup'),
-    waitForSelector('[cmp-ver="2"]')
-  ),
     expectedResult: contains('hey danny'),
     renderDOM: true,
     covers: ['FETest.distributedWidget']

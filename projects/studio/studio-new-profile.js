@@ -100,28 +100,28 @@ component('studio.selectProfile', {
           picklist('', '%$SelectedCategory%', {
             options: '%$Categories%',
             style: styleByControl({
-            control: group({
-              controls: itemlist({
-                items: '%$picklistModel/options/code%',
-                controls: text(pipeline('%$Categories%', filter('%code% == %$item%'), '%code% (%pts/length%)'), {
-                  style: text.span(),
+              control: group({
+                controls: itemlist({
+                  items: '%$picklistModel/options/code%',
+                  controls: text(pipeline('%$Categories%', filter('%code% == %$item%'), '%code% (%pts/length%)'), {
+                    style: text.span(),
+                    features: [
+                      css.width('120'),
+                      css('{text-align: left}'),
+                      css.padding({ left: '10' })
+                    ]
+                  }),
+                  style: itemlist.ulLi(),
                   features: [
-                  css.width('120'),
-                  css('{text-align: left}'),
-                  css.padding({ left: '10' })
-                ]
+                    itemlist.selection('%$SelectedCategory%', {
+                      cssForSelected: 'box-shadow: 3px 0px 0 0 var(--jb-dropdown-shadow) inset; color: black !important; background: none !important; !important'
+                    })
+                  ]
                 }),
-                style: itemlist.ulLi(),
-                features: [
-                  itemlist.selection('%$SelectedCategory%', {
-                    cssForSelected: 'box-shadow: 3px 0px 0 0 var(--jb-dropdown-shadow) inset; color: black !important; background: none !important; !important'
-                  })
-                ]
+                features: group.itemlistContainer()
               }),
-              features: group.itemlistContainer()
+              modelVar: 'picklistModel'
             }),
-            modelVar: 'picklistModel'
-          }),
             features: picklist.onChange(writeValue('%$itemlistCntrData/search_pattern%'))
           })
         ]
@@ -155,9 +155,9 @@ component('studio.openNewProfileDialog', {
     content: studio.selectProfile({
       onSelect: action.switch(action.switchCase('%$mode% == "insert-control"', tgp.insertControl('%%', '%$path%')), {
         defaultAction: action.switchCase({
-        condition: '%$mode% == "insert"',
-        action: tgp.addArrayItem('%$path%', studio.newProfile('%%'), { index: '%$index%' })
-      })
+          condition: '%$mode% == "insert"',
+          action: tgp.addArrayItem('%$path%', studio.newProfile('%%'), { index: '%$index%' })
+        })
       }),
       type: '%$type%',
       path: '%$path%'
@@ -185,9 +185,9 @@ component('studio.pickProfile', {
   impl: button(prettyPrint(tgp.val('%$path%'), true), studio.openPickProfile('%$path%'), {
     style: button.selectProfileStyle(),
     features: [
-    studio.watchPath('%$path%', 'yes'),
-    css.opacity(0.7)
-  ]
+      studio.watchPath('%$path%', 'yes'),
+      css.opacity(0.7)
+    ]
   })
 })
 
@@ -269,18 +269,18 @@ component('studio.openNewProfile', {
         editableText('name', '%$dialogData/name%', {
           style: editableText.mdcInput(),
           features: [
-          feature.initValue('%$dialogData/name%', '%$studio/project%.myComp'),
-          feature.onEnter(dialog.closeDialog()),
-          validation(matchRegex('^[a-zA-Z_0-9.]+$'), 'invalid name')
-        ]
+            feature.initValue('%$dialogData/name%', '%$studio/project%.myComp'),
+            feature.onEnter(dialog.closeDialog()),
+            validation(matchRegex('^[a-zA-Z_0-9.]+$'), 'invalid name')
+          ]
         }),
         picklist('file', '%$dialogData/file%', {
           options: picklist.options(sourceEditor.filesOfProject()),
           style: picklist.mdcSelect(),
           features: [
-          feature.initValue('%$dialogData/file%', pipeline(sourceEditor.filesOfProject(), first())),
-          validation(notEmpty('%%'), 'mandatory')
-        ]
+            feature.initValue('%$dialogData/file%', pipeline(sourceEditor.filesOfProject(), first())),
+            validation(notEmpty('%%'), 'mandatory')
+          ]
         })
       ],
       features: [
@@ -306,56 +306,56 @@ component('studio.insertCompOption', {
 component('studio.insertControlMenu', {
   impl: menu.menu('Insert', {
     options: [
-    menu.menu('Control', {
-      options: [
-      studio.insertCompOption('Label', 'label'),
-      studio.insertCompOption('Button', 'button')
-    ]
-    }),
-    menu.menu('Input', {
-      options: [
-      studio.insertCompOption('Editable Text', 'editable-text'),
-      studio.insertCompOption('Editable Number', 'editable-number'),
-      studio.insertCompOption('Editable Boolean', 'editable-boolean')
-    ]
-    }),
-    menu.action('More...', studio.openNewProfileDialog({ type: 'control', mode: 'insert-control' })),
-    menu.separator(),
-    menu.action({
-      title: 'Drop html from any web site',
-      action: openDialog({
-        title: 'Drop html from any web site',
-        content: group({
-          layout: layout.vertical(),
-          controls: [
-            button('drop here', {
-              style: button.mdc(),
-              raised: '',
-              features: [
-              css.height('80'),
-              studio.dropHtml(runActions(tgp.insertControl('%$newCtrl%', studio.currentProfilePath()), dialog.closeDialog()))
-            ]
-            }),
-            editableText('paste html here', '%$studio/htmlToPaste%', {
-              style: editableText.textarea('3', '80'),
-              features: htmlAttribute('placeholder', 'or paste html here')
-            })
-          ],
-          features: [
-            css.width('400'),
-            css.padding({ left: '4', right: '4' })
-          ]
-        }),
-        style: dialog.dialogOkCancel(),
-        onOK: If('%$studio/htmlToPaste%', tgp.insertControl(studio.htmlToControl('%$studio/htmlToPaste%'), studio.currentProfilePath())),
-        features: dialogFeature.dragTitle()
+      menu.menu('Control', {
+        options: [
+          studio.insertCompOption('Label', 'label'),
+          studio.insertCompOption('Button', 'button')
+        ]
       }),
-      shortcut: ''
-    }),
-    menu.separator(),
-    menu.action('New Page (Control)', studio.openNewPage()),
-    menu.action('New Function', studio.openNewFunction())
-  ]
+      menu.menu('Input', {
+        options: [
+          studio.insertCompOption('Editable Text', 'editable-text'),
+          studio.insertCompOption('Editable Number', 'editable-number'),
+          studio.insertCompOption('Editable Boolean', 'editable-boolean')
+        ]
+      }),
+      menu.action('More...', studio.openNewProfileDialog({ type: 'control', mode: 'insert-control' })),
+      menu.separator(),
+      menu.action({
+        title: 'Drop html from any web site',
+        action: openDialog({
+          title: 'Drop html from any web site',
+          content: group({
+            layout: layout.vertical(),
+            controls: [
+              button('drop here', {
+                style: button.mdc(),
+                raised: '',
+                features: [
+                  css.height('80'),
+                  studio.dropHtml(runActions(tgp.insertControl('%$newCtrl%', studio.currentProfilePath()), dialog.closeDialog()))
+                ]
+              }),
+              editableText('paste html here', '%$studio/htmlToPaste%', {
+                style: editableText.textarea('3', '80'),
+                features: htmlAttribute('placeholder', 'or paste html here')
+              })
+            ],
+            features: [
+              css.width('400'),
+              css.padding({ left: '4', right: '4' })
+            ]
+          }),
+          style: dialog.dialogOkCancel(),
+          onOK: If('%$studio/htmlToPaste%', tgp.insertControl(studio.htmlToControl('%$studio/htmlToPaste%'), studio.currentProfilePath())),
+          features: dialogFeature.dragTitle()
+        }),
+        shortcut: ''
+      }),
+      menu.separator(),
+      menu.action('New Page (Control)', studio.openNewPage()),
+      menu.action('New Function', studio.openNewFunction())
+    ]
   })
 })
 

@@ -10,9 +10,9 @@ component('remoteSuggestionsTest', {
     calculate: pipe(
       suggestions.calcFromProbePreview('%$path%', {
         input: obj(
-        prop('value', '%$expression%'),
-        prop('selectionStart', ({},{},{expression, selectionStart}) => selectionStart == -1 ? expression.length : selectionStart)
-      ),
+          prop('value', '%$expression%'),
+          prop('selectionStart', ({},{},{expression, selectionStart}) => selectionStart == -1 ? expression.length : selectionStart)
+        ),
         require: 'suggestionsTest.defaultProbe'
       }),
       log('suggestions test', obj(prop('result', '%%'))),

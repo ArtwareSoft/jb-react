@@ -245,9 +245,7 @@ component('suggestionsTest.simpleVars', {
 })
 
 component('suggestionsTest.varsFilter', {
-  impl: suggestionsTest('%$p', {
-    expectedResult: and(contains('$people'), not(contains('$win')))
-  })
+  impl: suggestionsTest('%$p', { expectedResult: and(contains('$people'), not(contains('$win'))) })
 })
 
 component('suggestionsTest.component', {

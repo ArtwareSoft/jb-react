@@ -102,9 +102,9 @@ component('test.uiFrontEndTestView', {
           controlWithCondition('%html%', text('%html%', {
             style: text.codemirror({ height: '200', formatText: true, mode: 'htmlmixed' }),
             features: [
-            codemirror.fold(),
-            css('min-width: 1200px')
-          ]
+              codemirror.fold(),
+              css('min-width: 1200px')
+            ]
           }))
         ]
       }),
@@ -138,9 +138,9 @@ component('test.dataTestView', {
           controlWithCondition('%html%', text('%html%', {
             style: text.codemirror({ height: '200', formatText: true, mode: 'htmlmixed' }),
             features: [
-            codemirror.fold(),
-            css('min-width: 1200px')
-          ]
+              codemirror.fold(),
+              css('min-width: 1200px')
+            ]
           }))
         ]
       }),

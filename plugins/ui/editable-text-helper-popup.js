@@ -58,7 +58,7 @@ component('editableText.picklistHelper', {
     ),
     frontEnd.flow(
       '%$cmp/keyUp%',
-      rx.filter(not(inGroup(list(13,27,38,40), { item: '%keyCode%' }))),
+      rx.filter(not(inGroup(list(13,27,38,40), '%keyCode%'))),
       editableText.addUserEvent(),
       sink.BEMethod('refresh')
     ),
@@ -142,7 +142,7 @@ component('editableText.helperPopup', {
     ),
     frontEnd.flow(
       '%$cmp/keyUp%',
-      rx.filter(not(inGroup(list(13,27,38,40), { item: '%keyCode%' }))),
+      rx.filter(not(inGroup(list(13,27,38,40), '%keyCode%'))),
       editableText.addUserEvent(),
       sink.BEMethod('refresh')
     ),

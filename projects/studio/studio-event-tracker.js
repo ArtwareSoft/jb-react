@@ -15,7 +15,7 @@ component('studio.eventTracker', {
             eventTracker.callbagMessage(),
             eventTracker.testResult(),
             text('%logNames%', {
-              features: feature.byCondition(inGroup(list('exception','error'), { item: '%logNames%' }), css.color('var(--jb-error-fg)'))
+              features: feature.byCondition(inGroup(list('exception','error'), '%logNames%'), css.color('var(--jb-error-fg)'))
             }),
             studio.lowFootprintObj('%err%', 'err'),
             studio.objExpandedAsText('%stack%', 'stack'),
@@ -70,19 +70,19 @@ component('eventTracker.toolbar', {
     controls: [
       text(eventTracker.codeSize(), {
         features: [
-        feature.hoverTitle('code size'),
-        css('cursor: default'),
-        css.padding('5')
-      ]
+          feature.hoverTitle('code size'),
+          css('cursor: default'),
+          css.padding('5')
+        ]
       }),
       divider(divider.vertical()),
       text('%$events/length%/%$spy/logs/length%', 'counts', {
         features: [
-        variable('events', eventTracker.eventItems('%$spy%', '%$eventTracker/eventTrackerQuery%')),
-        feature.hoverTitle('filtered events / total'),
-        css('cursor: default'),
-        css.padding('5', '5')
-      ]
+          variable('events', eventTracker.eventItems('%$spy%', '%$eventTracker/eventTrackerQuery%')),
+          feature.hoverTitle('filtered events / total'),
+          css('cursor: default'),
+          css.padding('5', '5')
+        ]
       }),
       divider(divider.vertical()),
       button('clear', runActions(eventTracker.clearSpyLog('%$spy%'), refreshControlById('event-tracker')), {
@@ -97,13 +97,13 @@ component('eventTracker.toolbar', {
       editableText('query', '%$eventTracker/eventTrackerQuery%', {
         style: editableText.input(),
         features: [
-        htmlAttribute('placeholder', 'query'),
-        feature.onEnter(refreshControlById('event-tracker')),
-        css.class('toolbar-input'),
-        css.height('10'),
-        css.margin('4'),
-        css.width('300')
-      ]
+          htmlAttribute('placeholder', 'query'),
+          feature.onEnter(refreshControlById('event-tracker')),
+          css.class('toolbar-input'),
+          css.height('10'),
+          css.margin('4'),
+          css.width('300')
+        ]
       }),
       eventTracker.eventTypes('%$spy%')
     ],
@@ -160,9 +160,9 @@ component('eventTracker.callbagMessage', {
       controls: text(prettyPrint('%m/d%'), {
         style: text.codemirror({ height: '200' }),
         features: [
-        codemirror.fold(),
-        css('min-width: 1200px; font-size: 130%')
-      ]
+          codemirror.fold(),
+          css('min-width: 1200px; font-size: 130%')
+        ]
       }),
       features: feature.expandToEndOfRow('%$payloadExpanded/{%$index%}%')
     }))
@@ -195,9 +195,9 @@ component('eventTracker.testResult', {
         text('%html%', {
           style: text.codemirror({ height: '200', formatText: true, mode: 'htmlmixed' }),
           features: [
-          codemirror.fold(),
-          css('min-width: 1200px; font-size: 130%')
-        ]
+            codemirror.fold(),
+            css('min-width: 1200px; font-size: 130%')
+          ]
         })
       ],
       features: feature.expandToEndOfRow('%$testResultExpanded/{%$index%}%')
@@ -221,7 +221,7 @@ component('eventTracker.eventTypes', {
   type: 'control',
   impl: picklist({
     databind: '%$eventTracker/spyLogs%',
-    options: picklist.options(properties('%$spy/counters%'), { code: '%id%', text: '%id% (%val%)' }),
+    options: picklist.options(properties('%$spy/counters%'), '%id%', { text: '%id% (%val%)' }),
     features: [
       chromeDebugger.colors(),
       picklist.onChange((ctx,{},{spy}) => {
@@ -457,10 +457,10 @@ component('eventTracker.compInspector', {
         table('state', {
           items: unique({ items: list(keys('%$cmp/state%'), keys('%$elem/_component/state%')) }),
           controls: [
-          text('%%', ''),
-          text('%$elem/_component/state/{%%}%', 'front end'),
-          text('%$cmp/state/{%%}%', 'back end')
-        ]
+            text('%%', ''),
+            text('%$elem/_component/state/{%%}%', 'front end'),
+            text('%$cmp/state/{%%}%', 'back end')
+          ]
         }),
         editableText('source', tgp.profileAsText('%$cmp/ctx/path%'), {
           style: editableText.codemirror({ height: '100' }),
@@ -469,9 +469,9 @@ component('eventTracker.compInspector', {
         table('methods', {
           items: '%$cmp/method%',
           controls: [
-          text('%id%', 'method'),
-          studio.sourceCtxView('%ctx%')
-        ],
+            text('%id%', 'method'),
+            studio.sourceCtxView('%ctx%')
+          ],
           style: table.plain(true)
         }),
         tableTree('rendering props', tree.jsonReadOnly('%$cmp/renderProps%'), {
@@ -506,12 +506,12 @@ component('chromeDebugger.sectionsExpandCollapse', {
   impl: group.sectionsExpandCollapse(true, text.span(), {
     toggleStyle: editableBoolean.expandCollapseWithUnicodeChars(),
     titleGroupStyle: styleWithFeatures(group.div(), {
-    features: features(
-    css.class('expandable-view-title'),
-    css('~ i { margin-top: 5px }'),
-    css('text-transform: capitalize')
-  )
-  }),
+      features: features(
+        css.class('expandable-view-title'),
+        css('~ i { margin-top: 5px }'),
+        css('text-transform: capitalize')
+      )
+    }),
     innerGroupStyle: styleWithFeatures(group.div(), { features: features(css.margin({ bottom: 5 })) })
   })
 })

@@ -32,32 +32,32 @@ component('studio.jbFloatingInput', {
       button('set to false', writeValue(tgp.boolRef('%$path%'), false), {
         style: button.mdcIcon(icon('cancel', { type: 'mdc' }), '24'),
         features: [
-        feature.if(tgp.isOfType('%$path%', 'boolean')),
-        css.margin('26'),
-        css.width('38')
-      ]
+          feature.if(tgp.isOfType('%$path%', 'boolean')),
+          css.margin('26'),
+          css.width('38')
+        ]
       }),
       button('set to true', writeValue(tgp.boolRef('%$path%'), true), {
         style: button.mdcIcon(icon('done', { type: 'mdc' }), '24'),
         features: [
-        feature.if(tgp.isOfType('%$path%', 'boolean')),
-        css.margin('26'),
-        css.width('38')
-      ]
+          feature.if(tgp.isOfType('%$path%', 'boolean')),
+          css.margin('26'),
+          css.width('38')
+        ]
       }),
       button('choose icon', studio.openPickIcon('%$path%'), {
         style: button.mdcIcon(),
         features: [
-        feature.if(
-          and(
-            inGroup(list('feature.icon','icon'), { item: tgp.compName(tgp.parentPath('%$path%')) }),
-            equals('icon', pipeline(tgp.paramDef('%$path%'), '%id%'))
-          )
-        ),
-        css.transformScale('1', '0.8'),
-        css.margin('15'),
-        feature.icon('all_out')
-      ]
+          feature.if(
+            and(
+              inGroup(list('feature.icon','icon'), tgp.compName(tgp.parentPath('%$path%'))),
+              equals('icon', pipeline(tgp.paramDef('%$path%'), '%id%'))
+            )
+          ),
+          css.transformScale('1', '0.8'),
+          css.margin('15'),
+          feature.icon('all_out')
+        ]
       }),
       group({
         title: '',
@@ -67,17 +67,17 @@ component('studio.jbFloatingInput', {
             updateOnBlur: true,
             style: editableText.floatingInput(),
             features: [
-            watchRef(tgp.ref('%$path%'), { strongRefresh: true }),
-            feature.onKey('Right', suggestions.applyOption('/')),
-            feature.onKey('Enter', runActions(suggestions.applyOption(), dialog.closeDialogById('studio-jb-editor-popup'), popup.regainCanvasFocus())),
-            feature.onKey('Esc', runActions(dialog.closeDialogById('studio-jb-editor-popup'), popup.regainCanvasFocus())),
-            editableText.picklistHelper(suggestions.calcFromProbePreview('%$path%'), studio.suggestionList(), {
-              picklistFeatures: picklist.allowAsynchOptions(),
-              showHelper: suggestions.shouldShow()
-            }),
-            css.width('100%'),
-            css('~ input { padding-top: 30px !important}')
-          ]
+              watchRef(tgp.ref('%$path%'), { strongRefresh: true }),
+              feature.onKey('Right', suggestions.applyOption('/')),
+              feature.onKey('Enter', runActions(suggestions.applyOption(), dialog.closeDialogById('studio-jb-editor-popup'), popup.regainCanvasFocus())),
+              feature.onKey('Esc', runActions(dialog.closeDialogById('studio-jb-editor-popup'), popup.regainCanvasFocus())),
+              editableText.picklistHelper(suggestions.calcFromProbePreview('%$path%'), studio.suggestionList(), {
+                picklistFeatures: picklist.allowAsynchOptions(),
+                showHelper: suggestions.shouldShow()
+              }),
+              css.width('100%'),
+              css('~ input { padding-top: 30px !important}')
+            ]
           }),
           text(pipeline(tgp.paramDef('%$path%'), '%description%'), { features: css('color: grey') })
         ],
@@ -98,9 +98,9 @@ component('studio.suggestionList', {
       items: '%$picklistModel/options%',
       controls: text(pipeline('%text%', studio.unMacro()), {
         features: [
-        css.padding({ left: '3', right: '2' }),
-        feature.hoverTitle(pipeline(ctx => jb.comps[ctx.data.toPaste], '%description%'))
-      ]
+          css.padding({ left: '3', right: '2' }),
+          feature.hoverTitle(pipeline(ctx => jb.comps[ctx.data.toPaste], '%description%'))
+        ]
       }),
       visualSizeLimit: 30,
       features: [

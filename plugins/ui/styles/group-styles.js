@@ -71,15 +71,16 @@ component('group.tabs', {
         group({
           layout: '%$barLayout()%',
           style: call('barStyle'),
-          controls: dynamicControls('%$tabsModel/controls%', {
+          controls: dynamicControls({
+            controlItems: '%$tabsModel/controls%',
             genericControl: button('%$tab/field()/title%', writeValue('%$selectedTab%', '%$tabIndex%'), {
-            style: call('tabStyle'),
-            raised: '%$tabIndex% == %$selectedTab%',
-            features: [
-            ctx => ctx.cmpCtx.params.barStyle.profile.$ !== 'group.mdcTabBar' && {$: 'watchRef', ref: '%$selectedTab%'},
-            ctx => ctx.run({ $: 'features', features: (ctx.vars.tab.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x) })
-          ]
-          }),
+              style: call('tabStyle'),
+              raised: '%$tabIndex% == %$selectedTab%',
+              features: [
+                ctx => ctx.cmpCtx.params.barStyle.profile.$ !== 'group.mdcTabBar' && {$: 'watchRef', ref: '%$selectedTab%'},
+                ctx => ctx.run({ $: 'features', features: (ctx.vars.tab.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x) })
+              ]
+            }),
             itemVariable: 'tab',
             indexVariable: 'tabIndex'
           })
@@ -121,30 +122,31 @@ component('group.accordion', {
   ],
   impl: styleByControl({
     control: group({
-      controls: dynamicControls('%$$sectionsModel/controls%', {
+      controls: dynamicControls({
+        controlItems: '%$$sectionsModel/controls%',
         genericControl: group({
-        style: call('sectionStyle'),
-        controls: [
-          button('%$section/field()/title()%', writeValue('%$selectedTab%', '%$sectionIndex%'), {
-            style: call('titleStyle'),
-            raised: '%$sectionIndex% == %$selectedTab%',
-            features: [
-            css.width('%$width%'),
-            css('{justify-content: left}'),
-            watchRef('%$selectedTab%'),
-            ctx => ctx.run({ $: 'features', features: (ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x) })
+          style: call('sectionStyle'),
+          controls: [
+            button('%$section/field()/title()%', writeValue('%$selectedTab%', '%$sectionIndex%'), {
+              style: call('titleStyle'),
+              raised: '%$sectionIndex% == %$selectedTab%',
+              features: [
+                css.width('%$width%'),
+                css('{justify-content: left}'),
+                watchRef('%$selectedTab%'),
+                ctx => ctx.run({ $: 'features', features: (ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x) })
+              ]
+            }),
+            group({
+              style: call('innerGroupStyle'),
+              controls: '%$$sectionsModel/controls[{%$sectionIndex%}]%',
+              features: [
+                feature.if('%$sectionIndex% == %$selectedTab%'),
+                watchRef('%$selectedTab%')
+              ]
+            })
           ]
-          }),
-          group({
-            style: call('innerGroupStyle'),
-            controls: '%$$sectionsModel/controls[{%$sectionIndex%}]%',
-            features: [
-              feature.if('%$sectionIndex% == %$selectedTab%'),
-              watchRef('%$selectedTab%')
-            ]
-          })
-        ]
-      }),
+        }),
         itemVariable: 'section',
         indexVariable: 'sectionIndex'
       }),
@@ -163,18 +165,19 @@ component('group.sections', {
   ],
   impl: styleByControl({
     control: group({
-      controls: dynamicControls('%$$sectionsModel/controls%', {
+      controls: dynamicControls({
+        controlItems: '%$$sectionsModel/controls%',
         genericControl: group({
-        title: '',
-        style: call('sectionStyle'),
-        controls: [
-          text('%$section/field()/title()%', {
-            style: call('titleStyle'),
-            features: ctx => ctx.run({ $: 'features', features: (ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x) })
-          }),
-          group({ style: call('innerGroupStyle'), controls: '%$section%' })
-        ]
-      }),
+          title: '',
+          style: call('sectionStyle'),
+          controls: [
+            text('%$section/field()/title()%', {
+              style: call('titleStyle'),
+              features: ctx => ctx.run({ $: 'features', features: (ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x) })
+            }),
+            group({ style: call('innerGroupStyle'), controls: '%$section%' })
+          ]
+        }),
         itemVariable: 'section'
       })
     }),
@@ -221,25 +224,26 @@ component('group.sectionsExpandCollapse', {
   ],
   impl: styleByControl({
     control: group({
-      controls: dynamicControls('%$$sectionsModel/controls%', {
+      controls: dynamicControls({
+        controlItems: '%$$sectionsModel/controls%',
         genericControl: group({
-        controls: [
-          group({
-            layout: layout.flex('row', 'start', { alignItems: 'center' }),
-            style: call('titleGroupStyle'),
-            controls: [
-              editableBoolean('%$sectionExpanded%', call('toggleStyle')),
-              text('%$section/field()/title()%', { style: call('titleStyle') })
-            ]
-          }),
-          group({
-            style: call('innerGroupStyle'),
-            controls: controlWithCondition('%$sectionExpanded%', '%$$sectionsModel/controls[{%$sectionIndex%}]%'),
-            features: watchRef('%$sectionExpanded%')
-          })
-        ],
-        features: watchable('sectionExpanded', '%$autoExpand%')
-      }),
+          controls: [
+            group({
+              layout: layout.flex('row', 'start', { alignItems: 'center' }),
+              style: call('titleGroupStyle'),
+              controls: [
+                editableBoolean('%$sectionExpanded%', call('toggleStyle')),
+                text('%$section/field()/title()%', { style: call('titleStyle') })
+              ]
+            }),
+            group({
+              style: call('innerGroupStyle'),
+              controls: controlWithCondition('%$sectionExpanded%', '%$$sectionsModel/controls[{%$sectionIndex%}]%'),
+              features: watchRef('%$sectionExpanded%')
+            })
+          ],
+          features: watchable('sectionExpanded', '%$autoExpand%')
+        }),
         itemVariable: 'section',
         indexVariable: 'sectionIndex'
       })

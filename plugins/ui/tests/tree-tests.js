@@ -12,7 +12,7 @@ component('move', {
 component('uiTest.tree', {
   impl: uiTest({
     control: tree({ nodeModel: tree.jsonReadOnly('%$personWithAddress%', 'personWithAddress'), features: [tree.selection(), tree.keyboardSelection()] }),
-    expectedResult: contains(['address'])
+    expectedResult: contains('address')
   })
 })
 
@@ -25,7 +25,7 @@ component('uiTest.treeRightClick', {
         tree.keyboardSelection()
       ]
     }),
-    expectedResult: contains(['address'])
+    expectedResult: contains('address')
   })
 })
 
@@ -56,7 +56,7 @@ component('FETest.treeDD.sameArray', {
       click('[title="Bart"]'),
       keyboardEvent('[interactive]', 'keydown', { keyCode: 40, ctrl: 'ctrl' })
     ),
-    expectedResult: contains(['Lisa','Bart','Maggie'])
+    expectedResult: contains('Lisa','Bart','Maggie')
   })
 })
 
@@ -117,7 +117,7 @@ component('FETest.treeDD.boundedSelection', {
       features: watchable('selected', 'personWithChildren~children~1')
     }),
     uiAction: keyboardEvent('[interactive]', 'keydown', { keyCode: 40, ctrl: 'ctrl' }),
-    expectedResult: contains(['Bart','Maggie','selected','Lisa'])
+    expectedResult: contains('Bart','Maggie','selected','Lisa')
   })
 })
 
@@ -238,9 +238,13 @@ component('uiTest.tableTree.expandPath', {
       commonFields: text('%path%', 'path'),
       chapterHeadline: text(suffix('~', '%path%')),
       style: tableTree.plain(),
-      features: [id('tableTree'), tableTree.expandPath('~friends~0'), tableTree.resizer()]
+      features: [
+        id('tableTree'),
+        tableTree.expandPath('~friends~0'),
+        tableTree.resizer()
+      ]
     }),
-    expectedResult: contains(['name','path','Homer','friends','Barnie','~friends~0~name'])
+    expectedResult: contains('name','path','Homer','friends','Barnie','~friends~0~name')
   })
 })
 
@@ -257,7 +261,7 @@ component('uiTest.tableTree.DD', {
         watchRef('%$personWithChildren/children%')
       ]
     }),
-    expectedResult: contains(['Lisa','Maggie','Bart']),
+    expectedResult: contains('Lisa','Maggie','Bart'),
     uiAction: uiActions(
       ctx => jb.db.move(ctx.exp('%$personWithChildren/children[2]%', 'ref'), ctx.exp('%$personWithChildren/children[0]%', 'ref'),ctx),
       ctx => jb.db.move(ctx.exp('%$personWithChildren/children[2]%', 'ref'), ctx.exp('%$personWithChildren/children[0]%', 'ref'),ctx)
@@ -279,7 +283,7 @@ component('uiTest.tableTreeRefresh1', {
         watchRef('%$globals/expanded%', { strongRefresh: true })
       ]
     }),
-    expectedResult: contains(['name','path','Homer','friends','Barnie','~friends~0~name']),
+    expectedResult: contains('name','path','Homer','friends','Barnie','~friends~0~name'),
     uiAction: writeValue('%$globals/expanded%', '~friends~0'),
     useFrontEnd: true
   })
@@ -347,7 +351,7 @@ component('uiTest.tableTreeExpandMulitplePaths', {
       chapterHeadline: text(suffix('~', '%path%')),
       features: tableTree.expandPath(list('~a','~b'))
     }),
-    expectedResult: contains(['~a~a1','~b~b1'])
+    expectedResult: contains('~a~a1','~b~b1')
   })
 })
 
@@ -358,7 +362,7 @@ component('uiTest.tableTreeWithTitleCtrl', {
       leafFields: text('%val%', 'name', { features: field.titleCtrl(button('my %title()%', { style: button.href() })) }),
       chapterHeadline: text(suffix('~', '%path%'))
     }),
-    expectedResult: contains(['my name','path','Homer'])
+    expectedResult: contains('my name','path','Homer')
   })
 })
 
@@ -369,7 +373,7 @@ component('uiTest.tableTreeWithFilter', {
       leafFields: text('%val%', 'name'),
       chapterHeadline: text(suffix('~', '%path%'))
     }),
-    expectedResult: and(contains(['name','Homer']), not(contains('friends')))
+    expectedResult: and(contains('name','Homer'), not(contains('friends')))
   })
 })
 

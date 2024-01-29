@@ -38,9 +38,9 @@ component('editableNumber.slider', {
             max: '%$editableNumberModel/max%',
             step: '%$editableNumberModel/step%',
             features: [
-            css.width(80),
-            css.class('slider-input')
-          ]
+              css.width(80),
+              css.class('slider-input')
+            ]
           })
         ],
         features: watchRef('%$editableNumberModel/databind()%', { allowSelfRefresh: true })

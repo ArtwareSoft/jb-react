@@ -7,12 +7,10 @@ component('zuiTest.gallery', {
       controls: [
         zui.itemlist({
           itemView: group(
-            [
-              image('https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp', {
-                build: imageBuild('projects/zuiDemo/build/gallery0')
-              }),
-              fixedText(text('xy'))
-            ]
+            image('https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp', {
+              build: imageBuild('projects/zuiDemo/build/gallery0')
+            }),
+            fixedText(text('xy'))
           ),
           boardSize: 4,
           initialZoom: 3,
@@ -34,27 +32,23 @@ component('zuiTest.itemlist', {
       controls: [
         zui.itemlist({
           itemView: group(
-            [
-              growingText(byName('name')),
-              group({
-                views: [
-                  firstToFit(
-                    [
-                      fixedText(byName('price'), { length: 8 }),
-                      fixedText(byName('price'), { length: 4, backgroundColorByProp: true }),
-                      circle(byName('price'))
-                    ]
-                  ),
-                  fixedText(byName('rating'), { length: 4 })
-                ],
-                layout: horizontal()
-              }),
-              image('https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp', {
-                build: imageBuild('projects/zuiDemo/build/top')
-              }),
-              fixedText(text('x', ' ')),
-              fixedText(text('x', ' '))
-            ]
+            growingText(byName('name')),
+            group({
+              views: [
+                firstToFit(
+                  fixedText(byName('price'), { length: 8 }),
+                  fixedText(byName('price'), { length: 4, backgroundColorByProp: true }),
+                  circle(byName('price'))
+                ),
+                fixedText(byName('rating'), { length: 4 })
+              ],
+              layout: horizontal()
+            }),
+            image('https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp', {
+              build: imageBuild('projects/zuiDemo/build/top')
+            }),
+            fixedText(text('x', ' ')),
+            fixedText(text('x', ' '))
           ),
           boardSize: 64,
           initialZoom: 3.821267725000016,
@@ -84,22 +78,18 @@ component('zuiTest.nested', {
       controls: [
         zui.itemlist({
           itemView: group(
-            [
-              circle(byName('price')),
-              growingText(byName('name')),
-              zui.gridView(pipeline('%$hotels/0/gallery%', obj(prop('image', '%%'))), {
-                itemView: group(
-                [
-                  image('https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp', {
-                    build: imageBuild('projects/zuiDemo/build/gallery0')
-                  }),
-                  fixedText(text('xy')),
-                  fixedText(text('imageDebug'))
-                ]
+            circle(byName('price')),
+            growingText(byName('name')),
+            zui.gridView(pipeline('%$hotels/0/gallery%', obj(prop('image', '%%'))), {
+              itemView: group(
+                image('https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp', {
+                  build: imageBuild('projects/zuiDemo/build/gallery0')
+                }),
+                fixedText(text('xy')),
+                fixedText(text('imageDebug'))
               ),
-                itemProps: xyByIndex()
-              })
-            ]
+              itemProps: xyByIndex()
+            })
           ),
           boardSize: 64,
           initialZoom: 3.821267725000016,

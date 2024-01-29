@@ -4,16 +4,18 @@ component('zui.itemPreview', {
   impl: group({
     style: group.sections(header.h3()),
     controls: [
-      dynamicControls(pipeline('%$zuiCtx/props/elemsLayoutProps%', properties()), {
+      dynamicControls({
+        controlItems: pipeline('%$zuiCtx/props/elemsLayoutProps%', properties()),
         genericControl: group({
-        title: pipeline('%$elemLayoutProps/val/path% - %$elemLayoutProps/val/title%'),
-        style: propertySheet.titlesAbove(),
-        controls: dynamicControls(pipeline('%$elemLayoutProps/val%', properties(), filter(not(inGroup(list('path','title','axis'), { item: '%id%' })))), {
-          genericControl: text(pipeline('%$prop/val%', formatNumber(), join()), '%$prop/id%'),
-          itemVariable: 'prop'
+          title: pipeline('%$elemLayoutProps/val/path% - %$elemLayoutProps/val/title%'),
+          style: propertySheet.titlesAbove(),
+          controls: dynamicControls({
+            controlItems: pipeline('%$elemLayoutProps/val%', properties(), filter(not(inGroup(list('path','title','axis'), '%id%')))),
+            genericControl: text(pipeline('%$prop/val%', formatNumber(), join()), '%$prop/id%'),
+            itemVariable: 'prop'
+          }),
+          features: css.margin({ left: '30px' })
         }),
-        features: css.margin({ left: '30px' })
-      }),
         itemVariable: 'elemLayoutProps'
       })
     ],
@@ -27,15 +29,17 @@ component('zui.itemPreviewTable', {
   impl: group({
     style: group.sections(header.h3()),
     controls: [
-      dynamicControls(pipeline('%$zuiCtx/props/elemsLayoutProps%', properties()), {
+      dynamicControls({
+        controlItems: pipeline('%$zuiCtx/props/elemsLayoutProps%', properties()),
         genericControl: group({
-        style: propertySheet.titlesAbove(),
-        controls: dynamicControls(pipeline('%$elemLayoutProps/val%', properties(), filter(not(inGroup(list('axis'), { item: '%id%' })))), {
-          genericControl: text(pipeline('%$prop/val%', formatNumber(), join()), '%$prop/id%'),
-          itemVariable: 'prop'
+          style: propertySheet.titlesAbove(),
+          controls: dynamicControls({
+            controlItems: pipeline('%$elemLayoutProps/val%', properties(), filter(not(inGroup(list('axis'), '%id%')))),
+            genericControl: text(pipeline('%$prop/val%', formatNumber(), join()), '%$prop/id%'),
+            itemVariable: 'prop'
+          }),
+          features: css.margin({ left: '30px' })
         }),
-        features: css.margin({ left: '30px' })
-      }),
         itemVariable: 'elemLayoutProps'
       })
     ],
@@ -48,7 +52,8 @@ component('zui.itemViewProps', {
   type: 'control',
   impl: group({
     style: propertySheet.titlesAbove(),
-    controls: dynamicControls(pipeline('%$zuiCtx/props/elemsLayoutProps/itemView%', properties()), {
+    controls: dynamicControls({
+      controlItems: pipeline('%$zuiCtx/props/elemsLayoutProps/itemView%', properties()),
       genericControl: text(pipeline('%$prop/val%', formatNumber(), join()), '%$prop/id%'),
       itemVariable: 'prop'
     }),
@@ -62,32 +67,34 @@ component('zui.visualItemPreview', {
   impl: group({
     controls: [
       zui.itemViewProps(),
-      dynamicControls(pipeline('%$zuiCtx/props/elemsLayoutProps%', values(), filter('%size/1%'), filter('%title% != group')), {
+      dynamicControls({
+        controlItems: pipeline('%$zuiCtx/props/elemsLayoutProps%', values(), filter('%size/1%'), filter('%title% != group')),
         genericControl: text('%$box/title%', {
-        style: text.span(),
-        features: [
-        css.width('%$box/size/0%px'),
-        css.height('%$box/size/1%px'),
-        feature.onHover(
-          openDialog({
-            title: '%$box/path% - %$box/title%',
-            content: group({
-              style: propertySheet.titlesAbove(),
-              controls: dynamicControls(pipeline('%$box%', properties(), filter(not(inGroup(list('path','title','axis'), { item: '%id%' })))), {
-                genericControl: text(pipeline('%$prop/val%', formatNumber(), join()), '%$prop/id%'),
-                itemVariable: 'prop'
-              }),
-              features: css.margin({ left: '30px' })
-            }),
-            features: [
-              dialogFeature.nearLauncherPosition(),
-              dialogFeature.uniqueDialog('zui-preview')
-            ]
-          })
-        ),
-        css('position: absolute; background: red; opacity: 0.5; left: %$box/pos/0%px; top: %$box/pos/1%px')
-      ]
-      }),
+          style: text.span(),
+          features: [
+            css.width('%$box/size/0%px'),
+            css.height('%$box/size/1%px'),
+            feature.onHover(
+              openDialog({
+                title: '%$box/path% - %$box/title%',
+                content: group({
+                  style: propertySheet.titlesAbove(),
+                  controls: dynamicControls({
+                    controlItems: pipeline('%$box%', properties(), filter(not(inGroup(list('path','title','axis'), '%id%')))),
+                    genericControl: text(pipeline('%$prop/val%', formatNumber(), join()), '%$prop/id%'),
+                    itemVariable: 'prop'
+                  }),
+                  features: css.margin({ left: '30px' })
+                }),
+                features: [
+                  dialogFeature.nearLauncherPosition(),
+                  dialogFeature.uniqueDialog('zui-preview')
+                ]
+              })
+            ),
+            css('position: absolute; background: red; opacity: 0.5; left: %$box/pos/0%px; top: %$box/pos/1%px')
+          ]
+        }),
         itemVariable: 'box'
       })
     ],

@@ -150,7 +150,7 @@ component('upgradePT', {
   params: [
     {id: 'PT', as: 'string', mandatory: true},
     {id: 'oldPT', as: 'string', mandatory: true},
-    {id: 'cmpUpgrade', type: 'cmp-upgrade', mandatory: true, dynamic: true},
+    {id: 'cmpUpgrade', type: 'cmp-upgrade', mandatory: true, dynamic: true}
   ],
   impl: async (ctx,PT,oldPT,cmpUpgrade) => {
     const PTplugin = jb.path(jb.comps[PT],[jb.core.CT,'plugin','id'])
@@ -213,7 +213,7 @@ component('renameProp', {
   type: 'cmp-upgrade',
   params: [
     {id: 'oldMame', as: 'string', mandatory: true},
-    {id: 'newName', as: 'string', mandatory: true},
+    {id: 'newName', as: 'string', mandatory: true}
   ],
   impl: (ctx,oldMame,newName) => {
     const prof = ctx.data

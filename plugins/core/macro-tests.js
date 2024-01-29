@@ -141,10 +141,7 @@ component('macroTest.primitiveArray', {
 })
 
 component('macroTest.contains', {
-  impl: dataTest({
-    calculate: pipeline(() => jb.utils.prettyPrintWithPositions({ $contains: 'hello' }), '%text%'),
-    expectedResult: contains('hello')
-  })
+  impl: dataTest(pipeline(() => jb.utils.prettyPrintWithPositions({ $contains: 'hello' }), '%text%'), contains('hello'))
 })
 
 component('macroTest.byValue.cutTailingUndefinedArgs', {

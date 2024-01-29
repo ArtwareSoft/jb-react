@@ -5,13 +5,10 @@ component('studio.gotoReferencesOptions', {
     {id: 'path', as: 'string'},
     {id: 'refs', as: 'array'}
   ],
-  impl: menu.dynamicOptions('%$refs%', {
-    genericOption: If({
+  impl: menu.dynamicOptions('%$refs%', If({
     condition: '%refs/length% > 1',
     then: menu.menu('%id% (%refs/length%)', {
-      options: menu.dynamicOptions('%$menuData/refs%', {
-      genericOption: menu.action('%%', studio.openComponentInJbEditor('%%', '%$path%'))
-    })
+      options: menu.dynamicOptions('%$menuData/refs%', menu.action('%%', studio.openComponentInJbEditor('%%', '%$path%')))
     }),
     Else: menu.action({
       vars: [
@@ -20,8 +17,7 @@ component('studio.gotoReferencesOptions', {
       title: '%$compName%',
       action: studio.openComponentInJbEditor('%refs[0]%', '%$path%')
     })
-  })
-  })
+  }))
 })
 
 component('studio.gotoReferencesButton', {
@@ -70,8 +66,8 @@ component('studio.componentsList', {
         leafFields: [
           text(pipeline(tgp.componentStatistics('%val%'), '%size%'), 'size', {
             features: [
-            field.columnWidth('80')
-          ]
+              field.columnWidth('80')
+            ]
           }),
           button({
             title: pipeline(tgp.componentStatistics('%val%'), '%refCount%.', split('.')),
@@ -129,22 +125,21 @@ component('studio.componentsList', {
 
 component('studio.cmpsOfProjectByFiles', {
   type: 'data',
-  impl: dynamicObject(() => st.projectFiles(), {
-    propertyName: '%%',
+  impl: dynamicObject(() => st.projectFiles(), '%%', {
     value: pipeline(
-    Var('file', '%%'),
-    () => st.projectCompsAsEntries(),
-    filter(
-      equals({
-        item1: pipeline(
-          ({data}) => jb.studio.previewjb.comps[data][jb.core.CT].location.path,
-          split('/', { part: 'last' })
-        ),
-        item2: '%$file%'
-      })
-    ),
-    '%[0]%',
-    aggregate(dynamicObject('%%', { propertyName: '%%', value: '%%' }))
-  )
+      Var('file', '%%'),
+      () => st.projectCompsAsEntries(),
+      filter(
+        equals({
+          item1: pipeline(
+            ({data}) => jb.studio.previewjb.comps[data][jb.core.CT].location.path,
+            split('/', { part: 'last' })
+          ),
+          item2: '%$file%'
+        })
+      ),
+      '%[0]%',
+      aggregate(dynamicObject('%%', '%%', { value: '%%' }))
+    )
   })
 })

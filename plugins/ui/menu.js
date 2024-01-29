@@ -165,7 +165,7 @@ component('menu.initPopupMenu', {
     frontEnd.onDestroy(action.runBEMethod('closePopup')),
     menu.passMenuKeySource(),
     frontEnd.flow(source.findMenuKeySource(), rx.filter('%keyCode%==39'), sink.BEMethod('openPopup')),
-    frontEnd.flow(source.findMenuKeySource(), rx.filter(inGroup(list(37,27), { item: '%keyCode%' })), sink.BEMethod('closePopup'))
+    frontEnd.flow(source.findMenuKeySource(), rx.filter(inGroup(list(37,27), '%keyCode%')), sink.BEMethod('closePopup'))
   ),
   require: [menu.openContextMenu(), call(), If()]
 })
@@ -251,7 +251,7 @@ component('menu.selection', {
     frontEnd.flow(
       source.findMenuKeySource(),
       rx.filter(not('%ctrlKey%')),
-      rx.filter(inGroup(list(38,40), { item: '%keyCode%' })),
+      rx.filter(inGroup(list(38,40), '%keyCode%')),
       rx.map(itemlist.nextSelected(If('%keyCode%==40', 1, -1), menu.notSeparator('%%'))),
       sink.FEMethod('setSelected')
     ),
@@ -496,16 +496,16 @@ component('menuStyle.iconMenu', {
   impl: styleByControl({
     control: button('%title%', action.runBEMethod('openPopup'), {
       style: button.mdcIcon({
-      icon: icon('%icon/icon%', { type: '%icon/type%', features: css('transform: translate(7px,0px) !important') }),
-      buttonSize: 16
-    }),
-      features: [
-      feature.icon('more_vert', {
-        type: 'mdc',
-        features: css('transform: translate(-3px,0px) !important')
+        icon: icon('%icon/icon%', { type: '%icon/type%', features: css('transform: translate(7px,0px) !important') }),
+        buttonSize: 16
       }),
-      menu.initPopupMenu(dialog.contextMenuPopup({ rightSide: true, toolbar: true }))
-    ]
+      features: [
+        feature.icon('more_vert', {
+          type: 'mdc',
+          features: css('transform: translate(-3px,0px) !important')
+        }),
+        menu.initPopupMenu(dialog.contextMenuPopup({ rightSide: true, toolbar: true }))
+      ]
     }),
     modelVar: 'innerMenu'
   })

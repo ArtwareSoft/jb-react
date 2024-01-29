@@ -44,17 +44,17 @@ component('studio.newDataSource', {
       editableText('name', '%$dialogData/name%', {
         style: editableText.mdcInput(),
         features: [
-        validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid name'),
-        css.margin({ left: '10' })
-      ]
+          validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid name'),
+          css.margin({ left: '10' })
+        ]
       }),
       picklist('type', '%$dialogData/type%', {
         options: picklist.optionsByComma('text,array,card,collection'),
         style: picklist.mdcRadio(),
         features: [
-        feature.initValue('%$dialogData/type%', 'collection'),
-        css.margin({ left: '10' })
-      ]
+          feature.initValue('%$dialogData/type%', 'collection'),
+          css.margin({ left: '10' })
+        ]
       }),
       group({
         title: '',
@@ -69,9 +69,9 @@ component('studio.newDataSource', {
         options: picklist.options(sourceEditor.filesOfProject()),
         style: picklist.mdcSelect('250'),
         features: [
-        hidden(not('%$newFile%')),
-        watchRef('%$newFile%')
-      ]
+          hidden(not('%$newFile%')),
+          watchRef('%$newFile%')
+        ]
       })
     ],
     features: [
@@ -89,24 +89,24 @@ component('studio.openNewDataSource', {
   impl: openDialog('New Data Source', studio.newDataSource(), {
     style: dialog.dialogOkCancel(),
     onOK: runActions(
-    Var('watchableOrPassive', If('%$dialogData/watchable%', 'watchable', 'passive')),
-    Var('name', tgp.titleToId('%$dialogData/name%')),
-    If(not('%$dialogData/file%'), runActions(
-      writeValue('%$dialogData/file%', '%$dialogData/name%.js'),
-      studio.createProjectFile('%$dialogData/name%.js')
-    )),
-    studio.newComp({
-      compName: 'dataResource.%$name%',
-      compContent: obj(
-        prop({
-          name: '%$watchableOrPassive%Data',
-          val: data.switch(data.case('%$dialogData/type%==text', ''), data.case('%$dialogData/type%==array', '[]'))
-        })
-      ),
-      file: '%$dialogData/file%'
-    }),
-    studio.openResource('dataResource.%$name%~%$watchableOrPassive%Data', '%$name%')
-  ),
+      Var('watchableOrPassive', If('%$dialogData/watchable%', 'watchable', 'passive')),
+      Var('name', tgp.titleToId('%$dialogData/name%')),
+      If(not('%$dialogData/file%'), runActions(
+        writeValue('%$dialogData/file%', '%$dialogData/name%.js'),
+        studio.createProjectFile('%$dialogData/name%.js')
+      )),
+      studio.newComp({
+        compName: 'dataResource.%$name%',
+        compContent: obj(
+          prop({
+            name: '%$watchableOrPassive%Data',
+            val: data.switch(data.case('%$dialogData/type%==text', ''), data.case('%$dialogData/type%==array', '[]'))
+          })
+        ),
+        file: '%$dialogData/file%'
+      }),
+      studio.openResource('dataResource.%$name%~%$watchableOrPassive%Data', '%$name%')
+    ),
     features: [dialogFeature.autoFocusOnFirstInput(), dialogFeature.maxZIndexOnClick(), dialogFeature.dragTitle()]
   })
 })
@@ -115,9 +115,9 @@ component('studio.dataResourceMenu', {
   type: 'menu.option',
   impl: menu.menu('Data', {
     options: [
-    menu.endWithSeparator(
-      dynamicControls({
-        controlItems: ctx => jb.studio.projectCompsAsEntries()
+      menu.endWithSeparator(
+        dynamicControls({
+          controlItems: ctx => jb.studio.projectCompsAsEntries()
           .filter(e=>e[1].watchableData !== undefined || e[1].passiveData !== undefined)
             .map(e=> {
               const watchableOrPassive = e[1].watchableData !== undefined ? 'watchable' : 'passive'
@@ -130,11 +130,11 @@ component('studio.dataResourceMenu', {
               }
             }
             ),
-        genericControl: menu.action('%$controlItem/title%', studio.openResource('%$controlItem/path%', '%$controlItem/name%'))
-      })
-    ),
-    menu.action('New ...', studio.openNewDataSource())
-  ]
+          genericControl: menu.action('%$controlItem/title%', studio.openResource('%$controlItem/path%', '%$controlItem/name%'))
+        })
+      ),
+      menu.action('New ...', studio.openNewDataSource())
+    ]
   })
 })
 

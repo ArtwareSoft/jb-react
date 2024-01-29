@@ -63,7 +63,8 @@ component('tgpTextEditor.selectEnum', {
     {id: 'path', as: 'string'}
   ],
   impl: menu.menu({
-    options: menu.dynamicOptions(({},{},{path}) => jb.tgp.paramDef(path).options.split(','), {
+    options: menu.dynamicOptions({
+      items: ({},{},{path}) => jb.tgp.paramDef(path).options.split(','),
       genericOption: menu.action('%%', (ctx,{},{path}) => jb.studio.writeValueOfPath(path,ctx.data,ctx))
     })
   })
@@ -76,110 +77,108 @@ component('tgpTextEditor.editMenu', {
   ],
   impl: menu.menu(tgp.shortTitle('%$path%'), {
     options: [
-    menu.action('Add variable', studio.addVariable('%$path%'), {
-      showCondition: endsWith('~$vars', '%$path%')
-    }),
-    menu.endWithSeparator(
-      menu.dynamicOptions(tgp.moreParams('%$path%'), {
-        genericOption: menu.action({
-        title: '%id%',
-        action: runActions(tgp.addProperty('%$path%~%id%'), studio.gotoPath('%$path%~%id%', 'value-text')),
-        description: '%description%'
-      })
-      })
-    ),
-    studio.styleEditorOptions('%$path%'),
-    menu.endWithSeparator({
-      options: menu.action({
-        vars: [
-          Var('compName', tgp.compName('%$path%'))
-        ],
-        title: pipeline(tgp.shortCompName('%$path%'), 'Goto %%'),
-        action: studio.gotoPath('%$compName%', 'open'),
-        showCondition: '%$compName%'
+      menu.action('Add variable', studio.addVariable('%$path%'), {
+        showCondition: endsWith('~$vars', '%$path%')
       }),
-      separator: menu.action({
-        vars: [
-          Var('compName', split('~', { text: '%$fromPath%', part: 'first' }))
-        ],
-        title: 'Back to %$compName%',
-        action: studio.openComponentInJbEditor('%$fromPath%', '%$path%'),
-        showCondition: '%$fromPath%'
-      })
-    }),
-    menu.studioWrapWith('%$path%', 'control', { components: list('group') }),
-    menu.studioWrapWith('%$path%', 'style', { components: list('styleWithFeatures') }),
-    menu.studioWrapWith('%$path%', 'data', {
-      components: list('pipeline','list','firstSucceeding')
-    }),
-    menu.studioWrapWith('%$path%', 'boolean', { components: list('and','or','not') }),
-    menu.studioWrapWith('%$path%', 'action', {
-      components: list('runActions','runActionOnItems','If')
-    }),
-    menu.studioWrapWith('%$path%', 'feature', { components: list('feature.byCondition') }),
-    menu.studioWrapWithArray('%$path%'),
-    menu.action('Duplicate', tgp.duplicateArrayItem('%$path%'), {
-      shortcut: 'Ctrl+D',
-      showCondition: tgp.isArrayItem('%$path%')
-    }),
-    menu.separator(),
-    studio.gotoReferencesMenu(split('~', { text: '%$path%', part: 'first' })),
-    menu.action({
-      title: 'Remark',
-      action: openDialog({
-        title: 'Remark',
-        content: group({
-          controls: [
-            editableText('remark', '%$remark%', {
-              style: editableText.mdcInput(),
-              features: [
-              feature.onEnter(writeValue(tgp.ref('%$path%~remark'), '%$remark%'))
-            ]
-            })
-          ],
-          features: css.padding('9', '20', { right: '20' })
-        }),
-        style: dialog.popup(),
-        id: 'add property',
-        features: [
-          watchable('remark', tgp.val('%$path%~remark')),
-          dialogFeature.nearLauncherPosition(),
-          dialogFeature.autoFocusOnFirstInput()
-        ]
-      }),
-      showCondition: isOfType('object', tgp.val('%$path%'))
-    }),
-    menu.action('Javascript', studio.editSource('%$path%'), {
-      icon: icon('LanguageJavascript', { type: 'mdi' }),
-      shortcut: 'Ctrl+J'
-    }),
-    menu.action({
-      title: 'Delete',
-      action: runActions(
-        If({
-          condition: and(matchRegex('vars~[0-9]+~val$', '%$path%'), isEmpty(tgp.val('%$path%'))),
-          then: writeValue('%$studio/jbEditor/selected%', tgp.parentPath(tgp.parentPath('%$path%')))
-        }),
-        tgp.delete('%$path%')
+      menu.endWithSeparator(
+        menu.dynamicOptions(tgp.moreParams('%$path%'), menu.action({
+          title: '%id%',
+          action: runActions(tgp.addProperty('%$path%~%id%'), studio.gotoPath('%$path%~%id%', 'value-text')),
+          description: '%description%'
+        }))
       ),
-      icon: icon('delete'),
-      shortcut: 'Delete'
-    }),
-    menu.action(If(tgp.isDisabled('%$path%'), 'Enable', 'Disable'), tgp.toggleDisabled('%$path%'), {
-      icon: icon('do_not_disturb'),
-      shortcut: 'Ctrl+X'
-    }),
-    menu.action('Copy', studio.copy('%$path%'), { icon: icon('copy'), shortcut: 'Ctrl+C' }),
-    menu.action('Paste', studio.paste('%$path%'), { icon: icon('paste'), shortcut: 'Ctrl+V' }),
-    menu.action('Make Local', studio.openMakeLocal('%$path%'), {
-      showCondition: studio.canMakeLocal('%$path%')
-    }),
-    menu.action('Extract Component', studio.openExtractComponent('%$path%'), {
-      showCondition: studio.canExtractParam('%$path%')
-    }),
-    menu.action('Extract Param', studio.openExtractParam('%$path%'), {
-      showCondition: studio.canExtractParam('%$path%')
-    })
-  ]
+      studio.styleEditorOptions('%$path%'),
+      menu.endWithSeparator({
+        options: menu.action({
+          vars: [
+            Var('compName', tgp.compName('%$path%'))
+          ],
+          title: pipeline(tgp.shortCompName('%$path%'), 'Goto %%'),
+          action: studio.gotoPath('%$compName%', 'open'),
+          showCondition: '%$compName%'
+        }),
+        separator: menu.action({
+          vars: [
+            Var('compName', split('~', { text: '%$fromPath%', part: 'first' }))
+          ],
+          title: 'Back to %$compName%',
+          action: studio.openComponentInJbEditor('%$fromPath%', '%$path%'),
+          showCondition: '%$fromPath%'
+        })
+      }),
+      menu.studioWrapWith('%$path%', 'control', { components: list('group') }),
+      menu.studioWrapWith('%$path%', 'style', { components: list('styleWithFeatures') }),
+      menu.studioWrapWith('%$path%', 'data', {
+        components: list('pipeline','list','firstSucceeding')
+      }),
+      menu.studioWrapWith('%$path%', 'boolean', { components: list('and','or','not') }),
+      menu.studioWrapWith('%$path%', 'action', {
+        components: list('runActions','runActionOnItems','If')
+      }),
+      menu.studioWrapWith('%$path%', 'feature', { components: list('feature.byCondition') }),
+      menu.studioWrapWithArray('%$path%'),
+      menu.action('Duplicate', tgp.duplicateArrayItem('%$path%'), {
+        shortcut: 'Ctrl+D',
+        showCondition: tgp.isArrayItem('%$path%')
+      }),
+      menu.separator(),
+      studio.gotoReferencesMenu(split('~', { text: '%$path%', part: 'first' })),
+      menu.action({
+        title: 'Remark',
+        action: openDialog({
+          title: 'Remark',
+          content: group({
+            controls: [
+              editableText('remark', '%$remark%', {
+                style: editableText.mdcInput(),
+                features: [
+                  feature.onEnter(writeValue(tgp.ref('%$path%~remark'), '%$remark%'))
+                ]
+              })
+            ],
+            features: css.padding('9', '20', { right: '20' })
+          }),
+          style: dialog.popup(),
+          id: 'add property',
+          features: [
+            watchable('remark', tgp.val('%$path%~remark')),
+            dialogFeature.nearLauncherPosition(),
+            dialogFeature.autoFocusOnFirstInput()
+          ]
+        }),
+        showCondition: isOfType('object', tgp.val('%$path%'))
+      }),
+      menu.action('Javascript', studio.editSource('%$path%'), {
+        icon: icon('LanguageJavascript', { type: 'mdi' }),
+        shortcut: 'Ctrl+J'
+      }),
+      menu.action({
+        title: 'Delete',
+        action: runActions(
+          If({
+            condition: and(matchRegex('vars~[0-9]+~val$', '%$path%'), isEmpty(tgp.val('%$path%'))),
+            then: writeValue('%$studio/jbEditor/selected%', tgp.parentPath(tgp.parentPath('%$path%')))
+          }),
+          tgp.delete('%$path%')
+        ),
+        icon: icon('delete'),
+        shortcut: 'Delete'
+      }),
+      menu.action(If(tgp.isDisabled('%$path%'), 'Enable', 'Disable'), tgp.toggleDisabled('%$path%'), {
+        icon: icon('do_not_disturb'),
+        shortcut: 'Ctrl+X'
+      }),
+      menu.action('Copy', studio.copy('%$path%'), { icon: icon('copy'), shortcut: 'Ctrl+C' }),
+      menu.action('Paste', studio.paste('%$path%'), { icon: icon('paste'), shortcut: 'Ctrl+V' }),
+      menu.action('Make Local', studio.openMakeLocal('%$path%'), {
+        showCondition: studio.canMakeLocal('%$path%')
+      }),
+      menu.action('Extract Component', studio.openExtractComponent('%$path%'), {
+        showCondition: studio.canExtractParam('%$path%')
+      }),
+      menu.action('Extract Param', studio.openExtractParam('%$path%'), {
+        showCondition: studio.canExtractParam('%$path%')
+      })
+    ]
   })
 })

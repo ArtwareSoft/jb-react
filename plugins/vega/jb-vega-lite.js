@@ -39,15 +39,15 @@ component('vega.interactiveChart', {
     controls: [
       html('<div/>', {
         features: [
-        frontEnd.var('prettySpec', '%$prettySpec%'),
-        frontEnd.var('vegaData', (ctx,{},{spec}) => jb.vega.namedData(spec)),
-        frontEnd.init(({},{el,vegaData,prettySpec}) => {
+          frontEnd.var('prettySpec', '%$prettySpec%'),
+          frontEnd.var('vegaData', (ctx,{},{spec}) => jb.vega.namedData(spec)),
+          frontEnd.init(({},{el,vegaData,prettySpec}) => {
               el.setAttribute('jb_external','true')
               const view = vegaEmbed.createView(el, eval(`(${prettySpec})`))
               vegaData.forEach(e => view.insert(e[0],e[1] ))
               view.run()
           })
-      ]
+        ]
       }),
       controlWithCondition('%$showSpec%', editableText({ databind: '%$prettySpec%', style: editableText.codemirror() }))
     ],

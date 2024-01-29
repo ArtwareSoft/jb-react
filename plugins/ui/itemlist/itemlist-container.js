@@ -47,7 +47,7 @@ component('itemlistContainer.search', {
   ],
   impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.cmpCtx), {
     features: features(
-    calcProp('init', (ctx,{cmp, itemlistCntr},{searchIn,databind}) => {
+      calcProp('init', (ctx,{cmp, itemlistCntr},{searchIn,databind}) => {
 				if (!itemlistCntr) return
 				itemlistCntr.filters.push( {
 					filter: items => {
@@ -60,8 +60,8 @@ component('itemlistContainer.search', {
 						return items.filter(item=>toSearch == '' || searchIn(ctx.setData(item)).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
 				}})
 		}),
-    frontEnd.selectionKeySourceService()
-  )
+      frontEnd.selectionKeySourceService()
+    )
   })
 })
 
@@ -77,17 +77,17 @@ component('itemlistContainer.moreItemsButton', {
   ],
   impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.cmpCtx), {
     features: features(
-    watchRef('%$itemlistCntrData/maxItems%'),
-    method('onclickHandler', writeValue('%$itemlistCntrData/maxItems%', (ctx,{itemlistCntrData},{delta}) => delta + itemlistCntrData.maxItems)),
-    calcProp('title', (ctx,{},{title,delta}) => title(ctx.setVar('delta',delta))),
-    ctx => ({
+      watchRef('%$itemlistCntrData/maxItems%'),
+      method('onclickHandler', writeValue('%$itemlistCntrData/maxItems%', (ctx,{itemlistCntrData},{delta}) => delta + itemlistCntrData.maxItems)),
+      calcProp('title', (ctx,{},{title,delta}) => title(ctx.setVar('delta',delta))),
+      ctx => ({
 		templateModifier: (vdom,cmp,state) => { // hide the button when not needed
 			if (cmp.ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','number') == cmp.ctx.exp('%$itemlistCntrData/countAfterFilter%','number'))
 				return '';
 			return vdom;
 		}
 	  })
-  )
+    )
   })
 })
 

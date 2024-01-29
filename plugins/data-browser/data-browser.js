@@ -53,15 +53,15 @@ component('ui.dataBrowse', {
               controls: [
                 editableText('codemirror', '%$obj%', {
                   style: editableText.codemirror({
-                  enableFullScreen: true,
-                  height: '',
-                  mode: 'text',
-                  debounceTime: 300,
-                  lineWrapping: false,
-                  lineNumbers: true,
-                  readOnly: true,
-                  maxLength: ''
-                })
+                    enableFullScreen: true,
+                    height: '',
+                    mode: 'text',
+                    debounceTime: 300,
+                    lineWrapping: false,
+                    lineNumbers: true,
+                    readOnly: true,
+                    maxLength: ''
+                  })
                 }),
                 html('%$obj%', 'html', { style: html.inIframe() })
               ],

@@ -103,12 +103,12 @@ component('chromeDebugger.logsCtrl', {
     controls: [
       picklist('jbm', '%$inspectedUri%', {
         options: pipe(
-        remote.data(net.listSubJbms(), byUri('%$uri%')),
-        unique(),
-        filter(not(contains('•vDebugger'))),
-        filter(not(contains('devtools'))),
-        aggregate(obj(prop('options', picklist.options('%%'))))
-      ),
+          remote.data(net.listSubJbms(), byUri('%$uri%')),
+          unique(),
+          filter(not(contains('•vDebugger'))),
+          filter(not(contains('devtools'))),
+          aggregate(obj(prop('options', picklist.options('%%'))))
+        ),
         features: picklist.allowAsynchOptions()
       }),
       group({

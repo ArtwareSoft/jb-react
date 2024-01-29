@@ -88,9 +88,9 @@ component('dataTest.spliceDelete', {
 component('dataTest.splice', {
   impl: dataTest(pipeline('%$personWithChildren/children/name%', join()), contains('Bart,Lisa2,Maggie2,Maggie'), {
     runBefore: splice('%$personWithChildren/children%', 1, {
-    noOfItemsToRemove: 1,
-    itemsToAdd: asIs([{name: 'Lisa2'}, {name: 'Maggie2'}])
-  })
+      noOfItemsToRemove: 1,
+      itemsToAdd: asIs([{name: 'Lisa2'}, {name: 'Maggie2'}])
+    })
   })
 })
 
@@ -325,7 +325,7 @@ component('dataTest.varsCases', {
 })
 
 component('dataTest.macroNs', {
-  impl: dataTest(json.stringify(()=>({a:5})), contains(['a','5']))
+  impl: dataTest(json.stringify(()=>({a:5})), contains('a','5'))
 })
 
 component('dataTest.createNewResourceAndWrite', {

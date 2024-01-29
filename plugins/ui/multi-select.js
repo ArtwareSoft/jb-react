@@ -72,9 +72,9 @@ component('multiSelect.chips', {
               button('delete', removeFromArray('%$multiSelectModel/databind%', '%%'), {
                 style: button.x(),
                 features: [
-                css('z-index: 1000;margin-left: -25px'),
-                itemlist.shownOnlyOnItemHover()
-              ]
+                  css('z-index: 1000;margin-left: -25px'),
+                  itemlist.shownOnlyOnItemHover()
+                ]
               })
             ]
           }),
@@ -82,10 +82,7 @@ component('multiSelect.chips', {
           features: itemlist.dragAndDrop()
         }),
         picklist({
-          options: pipeline(
-            '%$multiSelectModel/options%',
-            filter(not(inGroup('%$multiSelectModel/databind%', { item: '%code%' })))
-          ),
+          options: pipeline('%$multiSelectModel/options%', filter(not(inGroup('%$multiSelectModel/databind%', '%code%')))),
           features: [
             picklist.onChange(addToArray('%$multiSelectModel/databind%', { toAdd: '%%' })),
             picklist.plusIcon()

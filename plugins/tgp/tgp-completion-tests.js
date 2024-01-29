@@ -181,9 +181,10 @@ component('completionTest.wrapWithGroup', {
 })
 
 component('completionTest.wrapWithArray', {
-  impl: tgp.completionActionTest(`component('x', {
+  impl: tgp.completionActionTest({
+    compText: `component('x', {
   impl: uiTest(group({ controls: __text('hello') }), contains())
-})`, {
+})`,
     completionToActivate: 'wrap with array',
     expectedEdit: () => ({
       range: {start: {line: 1, col: 33}, end: {line: 1, col: 46}},
@@ -462,7 +463,7 @@ component('remoteTest.tgpTextEditor.studioCircuitUrlByDocProps', {
 })`)),
       tgpTextEditor.studioCircuitUrlByDocProps('%$docProps%')
     ),
-    expectedResult: contains(['http://localhost:8082/project/studio/CmpltnTst','impl~expectedResult?sourceCode=']),
+    expectedResult: contains('http://localhost:8082/project/studio/CmpltnTst','impl~expectedResult?sourceCode='),
     timeout: 1000
   })
 })

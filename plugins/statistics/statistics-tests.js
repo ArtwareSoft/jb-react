@@ -19,9 +19,9 @@ component('statTest.groupBy.fieldsInGroup', {
       '%$people%',
       stat.groupBy('%male%', {
         calculate: [
-        stat.fieldInGroup(count()),
-        stat.fieldInGroup(join(','), '%name%')
-      ]
+          stat.fieldInGroup(count()),
+          stat.fieldInGroup(join(','), '%name%')
+        ]
       }),
       '%count%-%join%',
       join(',')

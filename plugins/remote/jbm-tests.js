@@ -77,7 +77,7 @@ component('jbmTest.innerTreeShake', {
 })
 
 component('jbmTest.innerWorker', {
-  impl: dataTest(pipe(net.listSubJbms(), join(',')), contains(['tests•w1','tests•w1•inWorker']), {
+  impl: dataTest(pipe(net.listSubJbms(), join(',')), contains('tests•w1','tests•w1•inWorker'), {
     runBefore: remote.action(jbm.start(child('inWorker')), worker()),
     timeout: 5000
   })

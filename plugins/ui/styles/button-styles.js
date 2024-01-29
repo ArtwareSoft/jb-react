@@ -109,9 +109,9 @@ component('button.mdcIcon', {
   ],
   impl: styleWithFeatures(button.mdcFloatingAction('%$buttonSize%', false), {
     features: features(
-    (ctx,{},{icon}) => icon && ctx.run({$: 'feature.icon', ...icon, title: '%$model.title%',
+      (ctx,{},{icon}) => icon && ctx.run({$: 'feature.icon', ...icon, title: '%$model.title%',
         size: ({},{},{buttonSize}) => buttonSize * 24/40 })
-  )
+    )
   })
 })
 
@@ -163,15 +163,15 @@ component('button.mdcHeader', {
   ],
   impl: styleWithFeatures(button.mdcTab(), {
     features: css(
-    pipeline(
-      Var('contentWidth', If('%$stretch%', 'width: 100%;', '')),
-      `
+      pipeline(
+        Var('contentWidth', If('%$stretch%', 'width: 100%;', '')),
+        `
     {width: 100%; border-bottom: 1px solid black; margin-bottom: 7px; padding: 0}
     ~ .mdc-tab__content { %$contentWidth% display: flex; align-content: space-between;}
     ~ .mdc-tab__text-label { width: 100% }
   `
+      )
     )
-  )
   })
 })
 

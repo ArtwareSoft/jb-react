@@ -99,9 +99,9 @@ component('studio.editSource', {
     Else: openDialog(tgp.shortTitle('%$path%'), studio.editableSource('%$path%'), {
       style: dialog.editSourceStyle('editor', 600),
       features: [
-      css('.jb-dialog-content-parent {overflow-y: hidden}'),
-      dialogFeature.resizer(true)
-    ]
+        css('.jb-dialog-content-parent {overflow-y: hidden}'),
+        dialogFeature.resizer(true)
+      ]
     })
   })
 })
@@ -190,7 +190,7 @@ component('studio.openEditProperty', {
       action.switchCase({
         condition: or(
           startsWith('obj-separator', { text: '%$pathType%' }),
-          inGroup(list('close-profile','open-profile','open-by-value','close-by-value'), { item: '%$pathType%' })
+          inGroup(list('close-profile','open-profile','open-by-value','close-by-value'), '%$pathType%')
         ),
         action: openDialog({
           content: sourceEditor.addProp('%$actualPath%'),
@@ -222,8 +222,7 @@ component('studio.openEditProperty', {
       })),
       action.switchCase(tgp.isOfType('%$actualPath%', 'data,boolean'), runActions(
         Var('sugarArrayPath', sourceEditor.firstParamAsArrayPath('%$actualPath%')),
-        Var('index', data.switch({
-          cases: data.case(equals('open-sugar', '%$pathType%'), 0),
+        Var('index', data.switch(data.case(equals('open-sugar', '%$pathType%'), 0), {
           default: data.case(equals('close-sugar', '%$pathType%'), count(tgp.val('%$sugarArrayPath%')))
         })),
         Var('actualPathHere', If(endsWith('-sugar', '%$pathType%'), '%$sugarArrayPath%~%$index%', '%$actualPath%')),
@@ -322,12 +321,12 @@ component('sourceEditor.addProp', {
       editableText(pipeline(tgp.compName('%$path%'), '%% properties'), '%$suggestionData/text%', {
         style: editableText.floatingInput(),
         features: [
-        feature.onKey('Enter', runActions(
-          dialog.closeDialogById('studio-jb-editor-popup'),
-          studio.openEditProperty('%$path%~%$suggestionData/selected/id%'),
-          true
-        ))
-      ]
+          feature.onKey('Enter', runActions(
+            dialog.closeDialogById('studio-jb-editor-popup'),
+            studio.openEditProperty('%$path%~%$suggestionData/selected/id%'),
+            true
+          ))
+        ]
       }),
       text('', { features: css('{border: 1px solid white;}') })
     ],

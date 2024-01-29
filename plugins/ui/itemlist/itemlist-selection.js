@@ -95,7 +95,7 @@ component('itemlist.keyboardSelection', {
     frontEnd.flow(
       '%$cmp.onkeydown%',
       rx.filter(not('%ctrlKey%')),
-      rx.filter(inGroup(list(38,40), { item: '%keyCode%' })),
+      rx.filter(inGroup(list(38,40), '%keyCode%')),
       rx.map(itemlist.nextSelected(If('%keyCode%==40', 1, -1))),
       rx.log('itemlist frontend nextSelected'),
       sink.subjectNext('%$cmp/selectionEmitter%')

@@ -314,17 +314,17 @@ component('frontEnd.widget', {
   impl: text('', {
     style: text.htmlTag('div'),
     features: features(
-    frontEnd.coLocation(),
-    htmlAttribute('widgetId', 'client'),
-    htmlAttribute('widgetTop', 'true'),
-    htmlAttribute('frontend', 'true'),
-    frontEnd.var('ctrlProfile', ({ }, { }, { control }) => control.profile),
-    frontEnd.init((ctx, { el, ctrlProfile }) => {
+      frontEnd.coLocation(),
+      htmlAttribute('widgetId', 'client'),
+      htmlAttribute('widgetTop', 'true'),
+      htmlAttribute('frontend', 'true'),
+      frontEnd.var('ctrlProfile', ({ }, { }, { control }) => control.profile),
+      frontEnd.init((ctx, { el, ctrlProfile }) => {
         jb.ui.renderWidget(ctrlProfile, el, ctx.setVars({
           FEWidgetId: jb.ui.frontendWidgetId(el.parentNode),
         }))
       })
-  )
+    )
   })
 })
 

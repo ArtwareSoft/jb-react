@@ -8,10 +8,10 @@ component('studio.openExtractComponent', {
     openDialog('Extract Component', studio.extractComponentDialog('%$path%'), {
       style: dialog.dialogOkCancel(),
       onOK: studio.calcExtractComponent('%$path%', '%$studio/refactor/compName%', {
-      description: '%$studio/refactor/description%',
-      file: '%$studio/refactor/file%',
-      activate: true
-    }),
+        description: '%$studio/refactor/description%',
+        file: '%$studio/refactor/file%',
+        activate: true
+      }),
       features: [dialogFeature.resizer(), css.width('730')]
     })
   )
@@ -80,13 +80,13 @@ component('studio.extractComponentDialog', {
         controls: [
           editableText('component name', '%$studio/refactor/compName%', {
             features: [
-            feature.initValue('%$studio/refactor/compName%', '%$studio/project%.cmp1'),
-            validation(matchRegex('^[A-Za-z_][.A-Za-z_0-9]*$', '%%'), 'invalid comp name'),
-            validation({
-              validCondition: not(inGroup(() => Object.keys(jb.studio.previewjb.comps))),
-              errorMessage: 'component "%%" already exists'
-            })
-          ]
+              feature.initValue('%$studio/refactor/compName%', '%$studio/project%.cmp1'),
+              validation(matchRegex('^[A-Za-z_][.A-Za-z_0-9]*$', '%%'), 'invalid comp name'),
+              validation({
+                validCondition: not(inGroup(() => Object.keys(jb.studio.previewjb.comps))),
+                errorMessage: 'component "%%" already exists'
+              })
+            ]
           }),
           editableText('description', '%$studio/refactor/description%', {
             style: editableText.mdcInput('300')
@@ -95,8 +95,8 @@ component('studio.extractComponentDialog', {
             options: picklist.options(sourceEditor.filesOfProject()),
             style: picklist.mdcSelect('200'),
             features: [
-            css('~ .mdc-select__anchor { background-color: white !important }')
-          ]
+              css('~ .mdc-select__anchor { background-color: white !important }')
+            ]
           })
         ]
       }),
@@ -128,9 +128,9 @@ component('studio.openExtractParam', {
     openDialog('Extract Parameter', studio.extractParamDialog('%$path%'), {
       style: dialog.dialogOkCancel(),
       onOK: studio.calcExtractParam('%$path%', '%$studio/refactor/paramName%', {
-      description: '%$studio/refactor/description%',
-      activate: true
-    }),
+        description: '%$studio/refactor/description%',
+        activate: true
+      }),
       features: [dialogFeature.resizer(), css.width('500')]
     })
   )
@@ -180,12 +180,12 @@ component('studio.extractParamDialog', {
         controls: [
           editableText('param name', '%$studio/refactor/paramName%', {
             features: [
-            feature.initValue({
-              to: '%$studio/refactor/paramName%',
-              value: pipeline(split('~', { text: '%$path%' }), filter(not(matchRegex('[0-9]+'))), last(), removeSuffix('s'))
-            }),
-            validation(matchRegex('^[A-Za-z_][.A-Za-z_0-9]*$', '%%'), 'invalid param name')
-          ]
+              feature.initValue({
+                to: '%$studio/refactor/paramName%',
+                value: pipeline(split('~', { text: '%$path%' }), filter(not(matchRegex('[0-9]+'))), last(), removeSuffix('s'))
+              }),
+              validation(matchRegex('^[A-Za-z_][.A-Za-z_0-9]*$', '%%'), 'invalid param name')
+            ]
           }),
           editableText('description', '%$studio/refactor/description%', {
             style: editableText.mdcInput('300')

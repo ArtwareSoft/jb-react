@@ -210,9 +210,9 @@ component('studio.openComponentInJbEditor', {
     openDialog(studio.jbEditorTitle('%$compPath%', 'Inteliscript'), studio.jbEditor('%$compPath%'), {
       style: dialog.studioFloating('jb-editor', '860', { height: '100%' }),
       menu: button({
-      action: studio.openJbEditorMenu('%$studio/jbEditor/selected%', '%$path%'),
-      style: button.mdcIcon('menu')
-    }),
+        action: studio.openJbEditorMenu('%$studio/jbEditor/selected%', '%$path%'),
+        style: button.mdcIcon('menu')
+      }),
       features: dialogFeature.resizer()
     })
   )
@@ -244,7 +244,8 @@ component('menu.studioWrapWith', {
     {id: 'type', as: 'string'},
     {id: 'components', as: 'array'}
   ],
-  impl: menu.dynamicOptions(If(tgp.isOfType('%$path%', '%$type%'), '%$components%', list()), {
+  impl: menu.dynamicOptions({
+    items: If(tgp.isOfType('%$path%', '%$type%'), '%$components%', list()),
     genericOption: menu.action('Wrap with %%', runActions(tgp.wrap('%$path%', '%%'), studio.expandAndSelectFirstChildInJbEditor(), studio.gotoPath('%$path%', 'close-array')))
   })
 })
@@ -273,16 +274,16 @@ component('studio.addVariable', {
         editableText('variable name', '%$dialogData/name%', {
           style: editableText.mdcInput(),
           features: [
-          feature.onEnter(
-            runActions(
-              addToArray(tgp.ref('%$path%'), {
-                toAdd: obj(prop('$', 'Var'), prop('name', '%$dialogData/name%'), prop('value', ''))
-              }),
-              dialog.closeDialog(),
-              popup.regainCanvasFocus()
+            feature.onEnter(
+              runActions(
+                addToArray(tgp.ref('%$path%'), {
+                  toAdd: obj(prop('$', 'Var'), prop('name', '%$dialogData/name%'), prop('value', ''))
+                }),
+                dialog.closeDialog(),
+                popup.regainCanvasFocus()
+              )
             )
-          )
-        ]
+          ]
         })
       ],
       features: css.padding('9', '20', { right: '20' })

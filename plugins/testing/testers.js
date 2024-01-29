@@ -289,7 +289,7 @@ component('tests.runner', {
     Var('rootElem', ({},{},{rootElemId}) => jb.frame.document.getElementById(rootElemId)),
     ({},{rootElem},{tests}) => rootElem.innerHTML = `<div style="font-size: 20px"><div id="progress"></div><span id="fail-counter" onclick="jb.test.hide_success_lines()"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span><span id="memory-usage"></span></div>`,
     rx.pipe(
-      source.testsResults('%$tests%', { jbm: '%$jbm%' }),
+      source.testsResults('%$tests%', '%$jbm%'),
       rx.resource('acc', () => ({ index: 0, success_counter: 0, fail_counter: 0, startTime: new Date().getTime() })),
       rx.var('testID', '%id%'),
       rx.do(({data},{acc, testID, rootElem}) => {
@@ -313,9 +313,9 @@ component('test', {
   ],
   impl: sourceCode(pluginsByPath('%$filePath%', true), plugins('testing,probe-preview,tree-shake,tgp,workspace'), {
     pluginPackages: [
-    defaultPackage(),
-    jbStudioServer('%$repo%')
-  ]
+      defaultPackage(),
+      jbStudioServer('%$repo%')
+    ]
   })
 })
 

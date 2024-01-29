@@ -68,12 +68,12 @@ component('contentEditable.positionButton', {
         style: button.mdcIcon(contentEditable.actionIcon('%$cssProp%')),
         raised: equals(contentEditable.effectiveProp(), '%$cssProp%'),
         features: css(
-        If({
-          condition: '%$axis%==y',
-          then: 'padding-top: 20px; padding-bottom: 20px; margin-top: -20px',
-          Else: 'padding-left: 20px; padding-right: 20px; margin-left: -20px'
-        })
-      )
+          If({
+            condition: '%$axis%==y',
+            then: 'padding-top: 20px; padding-bottom: 20px; margin-top: -20px',
+            Else: 'padding-left: 20px; padding-right: 20px; margin-left: -20px'
+          })
+        )
       })
     ],
     features: feature.onHover(runActions(contentEditable.writePosToScript(), writeValue('%$studio/dragPos/prop%', '%$cssProp%')))
@@ -93,9 +93,9 @@ component('contentEditable.positionThumbs', {
         controls: control.icon('radio_button_unchecked', {
           type: 'mdc',
           features: [
-          contentEditable.dragableThumb('%$axis%'),
-          css('font-size: 14px')
-        ]
+            contentEditable.dragableThumb('%$axis%'),
+            css('font-size: 14px')
+          ]
         })
       }),
       group({

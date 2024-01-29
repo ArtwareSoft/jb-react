@@ -24,13 +24,13 @@ component('studioTest.save', {
 component('eventTracker.uiTest.vDebugger', {
   impl: uiTest(studio.eventTracker(), contains('remote rec'), {
     runBefore: remote.action({
-    action: runActions(
-      jbm.start(jbm.vDebugger()),
-      log('check test result', obj(prop('html', '<div><span>aa</span></div>'), prop('success', true))),
-      log('check test result', obj(prop('html', '<span/>'), prop('success', false)))
-    ),
-    jbm: worker()
-  }),
+      action: runActions(
+        jbm.start(jbm.vDebugger()),
+        log('check test result', obj(prop('html', '<div><span>aa</span></div>'), prop('success', true))),
+        log('check test result', obj(prop('html', '<span/>'), prop('success', false)))
+      ),
+      jbm: worker()
+    }),
     timeout: 4000,
     backEndJbm: byUri('tests•w1•vDebugger')
   })

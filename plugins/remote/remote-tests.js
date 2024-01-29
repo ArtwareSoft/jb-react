@@ -248,11 +248,9 @@ component('remoteTest.testResults', {
     ],
     calculate: pipe(
       rx.pipe(
-        source.testsResults('%$testsToRun%', {
-          jbm: remoteNodeWorker('tester', {
+        source.testsResults('%$testsToRun%', remoteNodeWorker('tester', {
           sourceCode: sourceCode(pluginsByPath('/plugins/common/xx-tests.js'))
-        })
-        }),
+        })),
         rx.log('test')
       ),
       '%id%-%started%-%success%',
@@ -266,14 +264,14 @@ component('remoteTest.testResults', {
 })
 
 component('remoteTest.listSubJbms', {
-  impl: dataTest(pipe(net.listSubJbms(), join(',')), contains(['tests,','tests•inner']), {
+  impl: dataTest(pipe(net.listSubJbms(), join(',')), contains('tests,','tests•inner'), {
     runBefore: jbm.start(child('inner')),
     timeout: 1000
   })
 })
 
 component('remoteTest.listAll', {
-  impl: dataTest(pipe(net.listAll(), join(',')), contains(['tests,','tests•inner','networkPeer']), {
+  impl: dataTest(pipe(net.listAll(), join(',')), contains('tests,','tests•inner','networkPeer'), {
     runBefore: runActions(jbm.start(worker('networkPeer', { networkPeer: true })), jbm.start(child('inner'))),
     timeout: 1000
   })

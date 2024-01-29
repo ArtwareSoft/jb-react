@@ -35,10 +35,10 @@ component('node.startRemoteHttpServer', {
   ],
   impl: remote.cmd('node.startHttpServer()', {
     context: obj(
-    prop('services', ({},{},{services})=>jb.utils.prettyPrint(services.profile,{singleLine: true})),
-    prop('restart', '%$restart%'),
-    prop('port', '%$port%')
-  ),
+      prop('services', ({},{},{services})=>jb.utils.prettyPrint(services.profile,{singleLine: true})),
+      prop('restart', '%$restart%'),
+      prop('port', '%$port%')
+    ),
     sourceCode: '%$sourceCode%',
     id: '%$id%'
   })

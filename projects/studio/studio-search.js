@@ -71,11 +71,11 @@ component('studio.searchComponent', {
         databind: '%$itemlistCntrData/search_pattern%',
         style: editableText.mdcInput(),
         features: [
-        editableText.helperPopup(studio.searchList(), styleWithFeatures(dialog.popup(), { features: dialogFeature.nearLauncherPosition() }), {
-          popupId: 'search-component'
-        }),
-        css.height('40', { selector: '~ .mdc-text-field' })
-      ]
+          editableText.helperPopup(studio.searchList(), styleWithFeatures(dialog.popup(), { features: dialogFeature.nearLauncherPosition() }), {
+            popupId: 'search-component'
+          }),
+          css.height('40', { selector: '~ .mdc-text-field' })
+        ]
       })
     ],
     features: [group.itemlistContainer()]

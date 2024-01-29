@@ -31,7 +31,7 @@ component('itemlist.dragAndDrop', {
     frontEnd.flow(
       source.frontEndEvent('keydown'),
       rx.filter('%ctrlKey%'),
-      rx.filter(inGroup(list(38,40), { item: '%keyCode%' })),
+      rx.filter(inGroup(list(38,40), '%keyCode%')),
       rx.map(
         obj(
           prop('from', itemlist.nextSelected(0)),

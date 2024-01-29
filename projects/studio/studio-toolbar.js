@@ -8,9 +8,9 @@ component('studio.toolbar', {
       button('Save', studio.saveComponents(), {
         style: button.mdcIcon(icon('save')),
         features: [
-        button.ctrlAction(studio.saveComponents()),
-        feature.if(not(studio.inVscode()))
-      ]
+          button.ctrlAction(studio.saveComponents()),
+          feature.if(not(studio.inVscode()))
+        ]
       }),
       button('Refresh Preview', studio.refreshPreview(), { style: button.mdcIcon(icon('refresh')) }),
       button('Javascript', studio.editSource(), { style: button.mdcIcon(icon('LanguageJavascript', { type: 'mdi' })) }),
@@ -19,14 +19,14 @@ component('studio.toolbar', {
       button('jbEditor', studio.openComponentInJbEditor(studio.currentPagePath()), {
         style: button.mdcIcon(icon('build')),
         features: button.ctrlAction(
-        studio.openJbEditor('%$studio/profile_path%', { newWindow: true })
-      )
+          studio.openJbEditor('%$studio/profile_path%', { newWindow: true })
+        )
       }),
       button('Event Tracker', studio.openEventTracker(), {
         style: button.mdcIcon(icon('bug_report', { type: 'mdc' })),
         features: [
-        button.ctrlAction(studio.openEventTracker())
-      ]
+          button.ctrlAction(studio.openEventTracker())
+        ]
       }),
       button('History', studio.openScriptHistory(), { style: button.mdcIcon('pets'), features: hidden() }),
       button('add', studio.openNewProfileDialog({ type: 'control', mode: 'insert-control', onClose: studio.gotoLastEdit() }), {

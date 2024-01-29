@@ -11,11 +11,12 @@ component('workspace.IDE', {
     controls: [
       group({
         style: group.tabs(),
-        controls: dynamicControls(() => Object.keys(jb.workspace.openDocs), {
+        controls: dynamicControls({
+          controlItems: () => Object.keys(jb.workspace.openDocs),
           genericControl: group({
-          title: pipeline('%$docUri%', suffix('/')),
-          controls: workspace.textEditor(({},{docUri}) => jb.workspace.openDocs[docUri].text, '%$docUri%')
-        }),
+            title: pipeline('%$docUri%', suffix('/')),
+            controls: workspace.textEditor(({},{docUri}) => jb.workspace.openDocs[docUri].text, '%$docUri%')
+          }),
           itemVariable: 'docUri'
         }),
         features: [
@@ -84,11 +85,11 @@ component('workspace.openQuickPickMenu', {
   ],
   impl: menu.openContextMenu('%$menu()%', {
     features: [
-    dialogFeature.nearLauncherPosition({
-      offsetLeft: ({},{ev}) => ev.clientRect.width / 120 * (jb.workspace.activeTextEditor.selection.active().col +1),
-      offsetTop: ({},{ev}) => -1 * ev.clientRect.height + ev.clientRect.height / 15 * (jb.workspace.activeTextEditor.selection.active().line+1)
-    })
-  ]
+      dialogFeature.nearLauncherPosition({
+        offsetLeft: ({},{ev}) => ev.clientRect.width / 120 * (jb.workspace.activeTextEditor.selection.active().col +1),
+        offsetTop: ({},{ev}) => -1 * ev.clientRect.height + ev.clientRect.height / 15 * (jb.workspace.activeTextEditor.selection.active().line+1)
+      })
+    ]
   })
 })
 
@@ -104,20 +105,20 @@ component('workspace.textEditor', {
   impl: text('%$docContent%', {
     style: If('%$codeMirror%', text.codemirror({ height: '%$height%' }), text.textarea(20)),
     features: [
-    id('activeEditor'),
-    frontEnd.var('docUri', '%$docUri%'),
-    variable('popupLauncherCanvas', '%$cmp%'),
-    feature.byCondition('%$codeMirror%', codemirror.initTgpTextEditor(), textarea.initTgpTextEditor()),
-    feature.onKey('Ctrl-Enter', action.runBEMethod('onEnter')),
-    method('onEnter', ctx => jb.workspace.onEnter(ctx)),
-    method('selectionChanged', workspace.selelctionChanged('%%', '%$docUri%')),
-    method('contentChanged', (ctx,{},{docUri}) => jb.workspace.contentChanged(ctx.data,docUri,ctx)),
-    feature.byCondition(
-      '%$height%',
-      css.height('%$height%', { minMax: 'max' }),
-      null
-    )
-  ]
+      id('activeEditor'),
+      frontEnd.var('docUri', '%$docUri%'),
+      variable('popupLauncherCanvas', '%$cmp%'),
+      feature.byCondition('%$codeMirror%', codemirror.initTgpTextEditor(), textarea.initTgpTextEditor()),
+      feature.onKey('Ctrl-Enter', action.runBEMethod('onEnter')),
+      method('onEnter', ctx => jb.workspace.onEnter(ctx)),
+      method('selectionChanged', workspace.selelctionChanged('%%', '%$docUri%')),
+      method('contentChanged', (ctx,{},{docUri}) => jb.workspace.contentChanged(ctx.data,docUri,ctx)),
+      feature.byCondition(
+        '%$height%',
+        css.height('%$height%', { minMax: 'max' }),
+        null
+      )
+    ]
   })
 })
 

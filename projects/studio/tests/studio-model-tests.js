@@ -1,6 +1,6 @@
 
 component('studioTest.categoriesOfType', {
-  impl: dataTest(pipeline(tgp.categoriesOfType('control'), '%code%', join()), contains(['control']))
+  impl: dataTest(pipeline(tgp.categoriesOfType('control'), '%code%', join()), contains('control'))
 })
 
 component('test.simplePipeline', {

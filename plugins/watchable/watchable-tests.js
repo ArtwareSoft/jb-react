@@ -13,17 +13,13 @@ component('uiTest.checkBoxWithCalculatedAndWatchRef', {
 })
 
 component('uiTest.booleanWatchableVarAsBooleanTrueToFalse', {
-  impl: uiTest({
-    control: text(If('%$person/male%', 'Error', 'OK'), { features: watchRef('%$person/male%') }),
-    expectedResult: contains('OK'),
+  impl: uiTest(text(If('%$person/male%', 'Error', 'OK'), { features: watchRef('%$person/male%') }), contains('OK'), {
     uiAction: writeValue('%$person/male%', false)
   })
 })
 
 component('uiTest.booleanWatchableVarAsBooleanFalseToTrue', {
-  impl: uiTest({
-    control: text(If('%$person/male%', 'OK', 'Error'), { features: watchRef('%$person/male%') }),
-    expectedResult: contains('OK'),
+  impl: uiTest(text(If('%$person/male%', 'OK', 'Error'), { features: watchRef('%$person/male%') }), contains('OK'), {
     runBefore: writeValue('%$person/male%', false),
     uiAction: writeValue('%$person/male%', true)
   })
@@ -177,9 +173,9 @@ component('uiTest.labelNotWatchingUiVar', {
   impl: uiTest({
     control: text('%$text1/text%', {
       features: [
-      variable('text1', obj(prop('text', 'OK'))),
-      followUp.action(writeValue('%$text1/text%', 'not good'))
-    ]
+        variable('text1', obj(prop('text', 'OK'))),
+        followUp.action(writeValue('%$text1/text%', 'not good'))
+      ]
     }),
     expectedResult: contains('OK'),
     expectedCounters: {'do refresh element !check': 0}
@@ -204,9 +200,9 @@ component('uiTest.watchRefCssOnly', {
   impl: uiFrontEndTest({
     control: text('hey', {
       features: [
-      watchRef('%$person/name%', { cssOnly: true }),
-      css(If('%$person/name% == Homer Simpson', 'color: red; /*css-only*/', 'color: green; /*css-only*/'))
-    ]
+        watchRef('%$person/name%', { cssOnly: true }),
+        css(If('%$person/name% == Homer Simpson', 'color: red; /*css-only*/', 'color: green; /*css-only*/'))
+      ]
     }),
     uiAction: writeValue('%$person/name%', 'Dan'),
     expectedResult: ctx => Array.from(document.querySelectorAll('style')).map(el=>el.innerText).filter(x=>x.indexOf('color: green; /*css-only*/') != -1)[0]
@@ -217,9 +213,9 @@ component('uiTest.CssOnly.SetAndBack', {
   impl: uiFrontEndTest({
     control: text('hey', {
       features: [
-      watchRef('%$person/name%', { cssOnly: true }),
-      css(If('%$person/name% == Homer Simpson', 'color: red; /*css-only*/', 'color: green; /*css-only*/'))
-    ]
+        watchRef('%$person/name%', { cssOnly: true }),
+        css(If('%$person/name% == Homer Simpson', 'color: red; /*css-only*/', 'color: green; /*css-only*/'))
+      ]
     }),
     uiAction: [
       writeValue('%$person/name%', 'Dan'),
@@ -300,7 +296,7 @@ component('uiTest.watchRefArrayDeleteWithRunActionOnItems', {
     control: group({
       controls: text(json.stringify('%$watchablePeople%'), { features: watchRef('%$watchablePeople%', 'yes') }),
       features: followUp.action(
-        runActionOnItems('%$watchablePeople%', splice('%$watchablePeople%', indexOf('%$watchablePeople%', { item: '%%' }), {
+        runActionOnItems('%$watchablePeople%', splice('%$watchablePeople%', indexOf('%$watchablePeople%', '%%'), {
           noOfItemsToRemove: '1',
           itemsToAdd: []
         }))
@@ -331,9 +327,9 @@ component('uiTest.watchableAsText', {
         }),
         button('show path of cursor', writeValue('%$path%', tgpTextEditor.cursorPath('%$watchedText%')), {
           features: [
-          id('show-path'),
-          textarea.enrichUserEvent('#editor')
-        ]
+            id('show-path'),
+            textarea.enrichUserEvent('#editor')
+          ]
         }),
         button('change name', writeValue('%$watchablePeople[1]/name%', 'mukki'), {
           features: id('change-name')

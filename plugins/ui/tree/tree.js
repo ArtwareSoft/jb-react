@@ -273,7 +273,7 @@ component('tree.keyboardSelection', {
     ),
     frontEnd.flow(
       '%$cmp.onkeydown%',
-      rx.filter(inGroup(list(38,40), { item: '%keyCode%' })),
+      rx.filter(inGroup(list(38,40), '%keyCode%')),
       rx.map(tree.nextSelected(If('%keyCode%==40', 1, -1))),
       sink.subjectNext('%$cmp.selectionEmitter%')
     ),
@@ -304,7 +304,7 @@ component('tree.dragAndDrop', {
     frontEnd.flow(
       source.frontEndEvent('keydown'),
       rx.filter('%ctrlKey%'),
-      rx.filter(inGroup(list(38,40), { item: '%keyCode%' })),
+      rx.filter(inGroup(list(38,40), '%keyCode%')),
       rx.map(
         obj(
           prop('from', tree.nextSelected(0)),
