@@ -56,7 +56,7 @@ extension('macro', {
         const onlyByName = lastArgIsByName && args.length == 1
         const params = comp.params || []
         const param0 = params[0] || {}        
-        const firstParamAsArray = (param0.type||'').indexOf('[]') != -1
+        const firstParamAsArray = (param0.type||'').indexOf('[]') != -1 && !param0.byName
 
         if (!lastArgIsByName) {
             if (firstParamAsArray)

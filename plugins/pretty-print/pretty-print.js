@@ -150,7 +150,7 @@ extension('utils', 'prettyPrint', {
             ...acc,
             {prop: `!$prop`, path: fullInnerPath, item: fixedPropName || (fixPropName(innerPath) + ': ')},
             {prop: '!value', item: '', path: fullInnerPath },
-            ...calcTokens(fullInnerPath, (singleLine || mixedFold) ? depth : depth +1, singleLine),
+            ...calcTokens(fullInnerPath, singleLine ? depth : depth +1, singleLine),
             {prop: '!value', item: '', path: fullInnerPath, end: true },
             {prop: `!$prop-separator`, path, item: index === propsByName.length-1 ? '' : ',' + separatorWS},
           ]
@@ -272,9 +272,9 @@ extension('utils', 'prettyPrint', {
 
       const params = comp.params || []
       const param0 = params[0] ? params[0] : {}
-      let firstParamAsArray = (param0.type||'').indexOf('[]') != -1
-
       const firstParamByName = param0.byName
+      let firstParamAsArray = (param0.type||'').indexOf('[]') != -1 && !firstParamByName
+
       let paramsByValue = (firstParamAsArray || firstParamByName) ? [] : params.slice(0,2)
       let paramsByName = firstParamByName ? params : firstParamAsArray ? params.slice(1) : params.slice(2)
       const param1 = params[1] ? params[1] : {}

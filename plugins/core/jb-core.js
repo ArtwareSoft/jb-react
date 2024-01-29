@@ -199,7 +199,7 @@ extension('core', {
 
         const valOrDefaultArray = valOrDefault ? valOrDefault : []; // can remain single, if null treated as empty array
         const arrayParam = param.type && param.type.indexOf('[]') > -1 && Array.isArray(valOrDefaultArray)
-        if (param.type && param.type.indexOf('[]') > -1 && !Array.isArray(valOrDefaultArray)) debugger
+        //if (param.type && param.type.indexOf('[]') > -1 && !Array.isArray(valOrDefaultArray)) debugger
 
         if (param.dynamic) {
           const outerFunc = runCtx => {
