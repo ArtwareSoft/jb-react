@@ -3,10 +3,10 @@ component('group', {
   type: 'control',
   category: 'group:100,common:90',
   params: [
+    {id: 'controls', type: 'control[]', mandatory: true, dynamic: true, composite: true},
     {id: 'title', as: 'string', dynamic: true, byName: true},
     {id: 'layout', type: 'layout'},
     {id: 'style', type: 'group.style', defaultValue: group.div(), mandatory: true, dynamic: true},
-    {id: 'controls', type: 'control[]', mandatory: true, dynamic: true, composite: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx, ctx.params.layout)

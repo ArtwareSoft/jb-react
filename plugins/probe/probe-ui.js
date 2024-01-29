@@ -51,7 +51,6 @@ component('probe.detailedInput', {
   ],
   type: 'control',
   impl: group({
-    style: group.tabs(button.href(), group.div(), { barLayout: layout.horizontal() }),
     controls: [
       text(pipeline('%$input/in%', prettyPrint('%data%', { noMacros: true }), join(`
 ---
@@ -79,14 +78,14 @@ component('probe.detailedInput', {
         style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
         features: [codemirror.fold(), codemirror.lineNumbers()]
       })
-    ]
+    ],
+    style: group.tabs(button.href(), group.div(), { barLayout: layout.horizontal() })
   })
 })
 
 component('probe.inOutView', {
   type: 'control',
   impl: group({
-    layout: layout.horizontal(),
     controls: [
       group({
         controls: group({
@@ -95,9 +94,8 @@ component('probe.inOutView', {
             table({
               items: '%$probeResult%',
               controls: [
-                group({
+                group(ui.dataBrowse('%in%'), {
                   title: 'in (%in/length%)',
-                  controls: ui.dataBrowse('%in%'),
                   features: [
                     field.titleCtrl(
                       button({
@@ -111,9 +109,8 @@ component('probe.inOutView', {
                     css.width('300', { minMax: 'max' })
                   ]
                 }),
-                group({
+                group(ui.dataBrowse('%out%'), {
                   title: 'out',
-                  controls: ui.dataBrowse('%out%'),
                   features: [
                     field.titleCtrl(
                       button({
@@ -157,6 +154,7 @@ component('probe.inOutView', {
         ]
       })
     ],
+    layout: layout.horizontal(),
     features: [
       watchRef('%$probe%', 'yes', { strongRefresh: true })
     ]
@@ -169,12 +167,10 @@ component('probe.probeResView', {
     {id: 'probeRes', defaultValue: '%%'}
   ],
   impl: group({
-    style: group.tabs(button.href(), group.div(), { barLayout: layout.horizontal(30) }),
     controls: [
       dynamicControls(pipeline('%badFormat%', filter('%%')), text('bad format', 'bad format')),
       dynamicControls(pipeline('%noCircuit%', filter('%%')), text('no circuit', 'no circuit')),
       dynamicControls(pipeline(list('%$errCount%'), filter('%%!=0')), group({
-        title: 'error: %$errCount%',
         controls: [
           text({
             text: pipeline(
@@ -187,17 +183,17 @@ component('probe.probeResView', {
             style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
             features: [codemirror.fold(), codemirror.lineNumbers()]
           })
-        ]
+        ],
+        title: 'error: %$errCount%'
       })),
       table('in->out', {
         items: '%$probeRes/result%',
         controls: [
-          group({
+          group(ui.dataBrowse('%in%'), {
             title: 'in (%in/length%)',
-            controls: ui.dataBrowse('%in%'),
             features: css.width(300, { minMax: 'max' })
           }),
-          group({ title: 'out', controls: ui.dataBrowse('%out%'), features: field.columnWidth(100) })
+          group(ui.dataBrowse('%out%'), { title: 'out', features: field.columnWidth(100) })
         ],
         style: table.mdc(),
         visualSizeLimit: 7,
@@ -209,7 +205,6 @@ component('probe.probeResView', {
         ]
       }),
       group({
-        title: 'in:%$probeRes/simpleVisits%',
         controls: [
           text(pipeline('%$probeRes/result/in%', prettyPrint('%data%', { noMacros: true }), join(`
 ---
@@ -217,19 +212,19 @@ component('probe.probeResView', {
             style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
             features: [codemirror.fold(), codemirror.lineNumbers()]
           })
-        ]
+        ],
+        title: 'in:%$probeRes/simpleVisits%'
       }),
       group({
-        title: 'out',
         controls: [
           text(prettyPrint('%$probeRes/result/out%', { noMacros: true }), {
             style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
             features: [codemirror.fold(), codemirror.lineNumbers()]
           })
-        ]
+        ],
+        title: 'out'
       }),
       group({
-        title: 'vars',
         controls: [
           text({
             text: pipeline(
@@ -242,10 +237,10 @@ component('probe.probeResView', {
             style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
             features: [codemirror.fold(), codemirror.lineNumbers()]
           })
-        ]
+        ],
+        title: 'vars'
       }),
       group({
-        title: 'params',
         controls: [
           text({
             text: pipeline(
@@ -258,23 +253,24 @@ component('probe.probeResView', {
             style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
             features: [codemirror.fold(), codemirror.lineNumbers()]
           })
-        ]
+        ],
+        title: 'params'
       }),
       text({ title: 'circuit: %$probeRes/circuitPath%' }),
       group({
-        title: 'probeRes',
         controls: [
           text(prettyPrint('%$probeRes%', { noMacros: true }), {
             style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
             features: [codemirror.fold(), codemirror.lineNumbers()]
           })
-        ]
+        ],
+        title: 'probeRes'
       }),
-      group({
-        title: 'preview',
-        controls: html('<style>%$probeRes/circuitRes/css%</style>%$probeRes/circuitRes/html%', { style: html.inIframe() })
+      group(html('<style>%$probeRes/circuitRes/css%</style>%$probeRes/circuitRes/html%', { style: html.inIframe() }), {
+        title: 'preview'
       })
     ],
+    style: group.tabs(button.href(), group.div(), { barLayout: layout.horizontal(30) }),
     features: [
       variable('errCount', count('%$probeRes/errors%')),
       variable('color', If('%$probeRes/circuitRes/success%', 'green', 'red')),
@@ -307,17 +303,15 @@ component('probe.showRxSniffer', {
   impl: itemlist({
     items: source.data('%$snifferLog/result%'),
     controls: group({
-      layout: layout.flex({ spacing: '0' }),
       controls: [
-        group({
+        group(ui.dataBrowse('%d%'), {
           title: 'data',
           layout: layout.flex({ justifyContent: If('%dir%==in', 'flex-start', 'flex-end') }),
-          controls: ui.dataBrowse('%d%'),
           features: [css.width('100%'), css.margin({ left: '10' })]
         }),
         button({
           title: '%dir%',
-          action: openDialog('variables', group({ controls: [ui.dataBrowse('%d/vars%')] }), {
+          action: openDialog('variables', group(ui.dataBrowse('%d/vars%')), {
             style: dialog.popup(),
             id: '',
             features: dialogFeature.uniqueDialog('variables')
@@ -331,6 +325,7 @@ component('probe.showRxSniffer', {
         text('%t%', 't', { style: text.span(), features: [css.opacity('0.5'), css.margin({ left: '10' })] }),
         text('%time%', 'time', { style: text.span(), features: [css.opacity('0.5'), css.margin({ left: '10' })] })
       ],
+      layout: layout.flex({ spacing: '0' }),
       features: feature.byCondition('%dir%==out', css.color({ background: 'var(--jb-menubar-inactive-bg)' }))
     }),
     style: itemlist.ulLi(),

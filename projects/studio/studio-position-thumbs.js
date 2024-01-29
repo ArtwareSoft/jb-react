@@ -86,23 +86,20 @@ component('contentEditable.positionThumbs', {
     {id: 'axis', as: 'string', options: 'x,y'}
   ],
   impl: group({
-    layout: layout.flex(If('%$axis%==y', 'column', 'row'), { alignItems: 'center' }),
     controls: [
       group({
-        layout: layout.flex(If('%$axis%==y', 'column', 'row'), { alignItems: 'center' }),
         controls: control.icon('radio_button_unchecked', {
           type: 'mdc',
           features: [
             contentEditable.dragableThumb('%$axis%'),
             css('font-size: 14px')
           ]
-        })
+        }),
+        layout: layout.flex(If('%$axis%==y', 'column', 'row'), { alignItems: 'center' })
       }),
       group({
-        layout: layout.grid(If('%$axis%==x', list('30','40','100'), list('168'))),
         controls: [
           group({
-            layout: layout.grid(If('%$axis%==y', list('24','24','24','24','24','24','24'), list('24')), { rowGap: '10px' }),
             controls: [
               contentEditable.positionButton('margin%$sideEnd%', '%$axis%'),
               contentEditable.positionButton('padding%$sideEnd%', '%$axis%'),
@@ -111,7 +108,8 @@ component('contentEditable.positionThumbs', {
               text(''),
               contentEditable.positionButton('padding%$sideStart%', '%$axis%'),
               contentEditable.positionButton('margin%$sideStart%', '%$axis%')
-            ]
+            ],
+            layout: layout.grid(If('%$axis%==y', list('24','24','24','24','24','24','24'), list('24')), { rowGap: '10px' })
           }),
           text({
             text: pipeline(
@@ -126,6 +124,7 @@ component('contentEditable.positionThumbs', {
             features: css(If('%$axis%==x', 'align-self: center;', ''))
           })
         ],
+        layout: layout.grid(If('%$axis%==x', list('30','40','100'), list('168'))),
         features: [
           css(If('%$axis%==y', 'margin-top: -10px; width: 168px;text-align: center', 'height: 182px')),
           feature.if('%$studio/dragPos/{%$axis%}-active%'),
@@ -135,7 +134,8 @@ component('contentEditable.positionThumbs', {
           variable('sideEnd', If('%$axis%==x', 'Right', 'Bottom'))
         ]
       })
-    ]
+    ],
+    layout: layout.flex(If('%$axis%==y', 'column', 'row'), { alignItems: 'center' })
   })
 })
 

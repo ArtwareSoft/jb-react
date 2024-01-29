@@ -2,7 +2,6 @@
 component('studio.toolbar', {
   type: 'control',
   impl: group({
-    layout: layout.horizontal('5'),
     controls: [
       button('Select', studio.pickAndOpen(), { style: button.mdcIcon(icon('call_made')) }),
       button('Save', studio.saveComponents(), {
@@ -35,6 +34,7 @@ component('studio.toolbar', {
       }),
       button('Responsive', studio.openResponsivePhonePopup(), { style: button.mdcIcon(icon('tablet_android')) })
     ],
+    layout: layout.horizontal('5'),
     features: [
       feature.globalKeyboardShortcut('Alt+C', studio.pickAndOpen()),
       feature.globalKeyboardShortcut('Alt++', studio.openNewProfileDialog({ type: 'control', mode: 'insert-control' })),

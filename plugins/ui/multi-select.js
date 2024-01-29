@@ -61,12 +61,10 @@ component('multiSelect.chips', {
   ],
   impl: styleByControl({
     control: group({
-      layout: layout.horizontal(),
       controls: [
         itemlist({
           items: '%$multiSelectModel/databind%',
           controls: group({
-            layout: layout.flex({ wrap: 'wrap', spacing: '4' }),
             controls: [
               text('%% ', { style: call('chipStyle'), features: itemlist.dragHandle() }),
               button('delete', removeFromArray('%$multiSelectModel/databind%', '%%'), {
@@ -76,7 +74,8 @@ component('multiSelect.chips', {
                   itemlist.shownOnlyOnItemHover()
                 ]
               })
-            ]
+            ],
+            layout: layout.flex({ wrap: 'wrap', spacing: '4' })
           }),
           style: call('itemlistStyle'),
           features: itemlist.dragAndDrop()
@@ -89,6 +88,7 @@ component('multiSelect.chips', {
           ]
         })
       ],
+      layout: layout.horizontal(),
       features: watchRef('%$multiSelectModel/databind%', 'yes', { allowSelfRefresh: true, strongRefresh: false })
     }),
     modelVar: 'multiSelectModel'

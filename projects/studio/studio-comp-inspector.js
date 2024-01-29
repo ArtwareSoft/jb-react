@@ -5,7 +5,6 @@ component('studio.compInspector', {
   type: 'control',
   impl: group({
     controls: group({
-      style: chromeDebugger.sectionsExpandCollapse(),
       controls: [
         text({
           text: '%$inspectedCmp/cmpId%;%$inspectedCmp/ver% -- %$inspectedCtx/path%',
@@ -36,7 +35,8 @@ component('studio.compInspector', {
           leafFields: text('%val%', 'value'),
           chapterHeadline: text(tree.lastPathElement('%path%'))
         })
-      ]
+      ],
+      style: chromeDebugger.sectionsExpandCollapse()
     }),
     features: [
       variable('cmpId', firstSucceeding('%$$state.cmpId%','%$inspectedProps.cmpId%')),
@@ -62,11 +62,8 @@ component('studio.eventsOfComp', {
     {id: 'compId'}
   ],
   impl: group({
-    title: 'events',
     controls: [
       group({
-        title: 'toolbar',
-        layout: layout.horizontal('2'),
         controls: [
           text(pipeline(eventTracker.getParentSpy(), '%$events/length%/%logs/length%'), 'counts', { features: [css.padding('5', '5')] }),
           divider(divider.vertical()),
@@ -91,6 +88,8 @@ component('studio.eventsOfComp', {
           }),
           eventTracker.eventTypes(eventTracker.getParentSpy())
         ],
+        title: 'toolbar',
+        layout: layout.horizontal('2'),
         features: css.color({ background: 'var(--jb-menubar-inactive-bg)' })
       }),
       table({
@@ -127,6 +126,7 @@ component('studio.eventsOfComp', {
         ]
       })
     ],
+    title: 'events',
     features: [
       id('cmp-event-tracker'),
       variable('events', pipeline(eventTracker.eventItems(eventTracker.getParentSpy(), '%$studio/eventTrackerCmpQuery%'), filter('%cmp/cmpId%==%$cmpId%'))),

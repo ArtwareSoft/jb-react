@@ -1,10 +1,10 @@
 
 component('uiTest.group', {
-  impl: uiTest(group({ controls: [text('hello world'), text('2')] }), contains('hello world','2'))
+  impl: uiTest(group(text('hello world'), text('2')), contains('hello world','2'))
 })
 
 component('uiTest.group1', {
-  impl: uiTest(group({ controls: text('hello world') }), contains())
+  impl: uiTest(group(text('hello world')), contains())
 })
 
 component('uiTest.label', {
@@ -25,20 +25,18 @@ component('uiTest.html.inIframe', {
 
 component('uiTest.controls', {
   impl: uiTest({
-    control: group({
-      controls: [
-        text('hello'),
-        controls(text('-1-'), controlWithCondition('1==2', text('-1.5-')), text('-2-')),
-        text('world')
-      ]
-    }),
+    control: group(
+      text('hello'),
+      controls(text('-1-'), controlWithCondition('1==2', text('-1.5-')), text('-2-')),
+      text('world')
+    ),
     expectedResult: contains('hello','-1-','-2-','world')
   })
 })
 
 component('uiTest.waitForWithPipe', {
   impl: uiTest({
-    control: group({ controls: text('%%'), features: group.wait(pipe(delay(1), 'hello')) }),
+    control: group(text('%%'), { features: group.wait(pipe(delay(1), 'hello')) }),
     expectedResult: and(contains('hello'), not(contains('loading'))),
     uiAction: waitForNextUpdate(),
     expectedCounters: {'init uiComp': 4}
@@ -47,8 +45,7 @@ component('uiTest.waitForWithPipe', {
 
 component('uiTest.waitForRx', {
   impl: uiTest({
-    control: group({
-      controls: text('%%'),
+    control: group(text('%%'), {
       features: group.wait(rx.pipe(source.interval(10), rx.take(1), rx.map('hello')))
     }),
     expectedResult: and(contains('hello'), not(contains('loading'))),
@@ -99,10 +96,7 @@ component('uiTest.asynchLabel', {
 
 component('uiTest.waitForWithVar', {
   impl: uiTest({
-    control: group({
-      controls: text('%$txt%'),
-      features: group.wait(pipe(delay(1), 'hello'), { varName: 'txt' })
-    }),
+    control: group(text('%$txt%'), { features: group.wait(pipe(delay(1), 'hello'), { varName: 'txt' }) }),
     expectedResult: contains('hello'),
     uiAction: waitForNextUpdate()
   })
@@ -122,13 +116,7 @@ component('uiTest.waitForWithVar', {
 
 component('uiTest.button', {
   impl: uiTest({
-    control: group({
-      controls: [
-        text('%$txt%'),
-        button('btn1', writeValue('%$txt%', 'bbb'))
-      ],
-      features: watchable('txt', 'aaa')
-    }),
+    control: group(text('%$txt%'), button('btn1', writeValue('%$txt%', 'bbb')), { features: watchable('txt', 'aaa') }),
     expectedResult: contains('bbb'),
     uiAction: click()
   })
@@ -136,13 +124,7 @@ component('uiTest.button', {
 
 component('uiTest.button.expectedEffects', {
   impl: uiTest({
-    control: group({
-      controls: [
-        text('%$txt%'),
-        button('btn1', writeValue('%$txt%', 'bbb'))
-      ],
-      features: watchable('txt', 'aaa')
-    }),
+    control: group(text('%$txt%'), button('btn1', writeValue('%$txt%', 'bbb')), { features: watchable('txt', 'aaa') }),
     expectedResult: contains('bbb'),
     uiAction: click({
       expectedEffects: Effects(checkLog('delta', '%delta%', { log: 'delta', condition: contains('$text="bbb"') }))
@@ -152,13 +134,7 @@ component('uiTest.button.expectedEffects', {
 
 component('uiTest.button.expectedEffects.compChange', {
   impl: uiTest({
-    control: group({
-      controls: [
-        text('%$txt%'),
-        button('btn1', writeValue('%$txt%', 'bbb'))
-      ],
-      features: watchable('txt', 'aaa')
-    }),
+    control: group(text('%$txt%'), button('btn1', writeValue('%$txt%', 'bbb')), { features: watchable('txt', 'aaa') }),
     expectedResult: contains('bbb'),
     uiAction: click({ expectedEffects: Effects(compChange('bbb')) })
   })
@@ -202,7 +178,7 @@ component('uiTest.icon.mdi', {
 })
 
 component('uiTest.group2', {
-  impl: uiTest(group({ controls: [button('button1'), text('label1')] }), contains('button1','label1'))
+  impl: uiTest(group(button('button1'), text('label1')), contains('button1','label1'))
 })
 
 component('uiTest.editableText', {
@@ -230,12 +206,7 @@ component('uiTest.editableText.xButton', {
 
 component('uiTest.twoWayBinding', {
   impl: uiTest({
-    control: group({
-      controls: [
-        editableText('name', '%$person/name%', { style: editableText.input() }),
-        text('%$person/name%')
-      ]
-    }),
+    control: group(editableText('name', '%$person/name%', { style: editableText.input() }), text('%$person/name%')),
     expectedResult: contains('<span','hello'),
     uiAction: setText('hello')
   })
@@ -250,27 +221,21 @@ component('uiTest.twoWayBinding', {
 
 component('uiTest.autoFocusOnFirstInput', {
   impl: uiTest({
-    control: group({
-      controls: [
-        editableText('name', '%$person/name%'),
-        editableText('age', '%$person/age%')
-      ],
-      features: group.autoFocusOnFirstInput()
-    }),
+    control: group(editableText('name', '%$person/name%'), editableText('age', '%$person/age%'), { features: group.autoFocusOnFirstInput() }),
     expectedResult: contains('__focus="autoFocusOnFirstInput"')
   })
 })
 
 component('uiTest.layout.horizontal', {
   impl: uiTest({
-    control: group({ layout: layout.horizontal(30), controls: [button('button1'), text('label1')] }),
+    control: group(button('button1'), text('label1'), { layout: layout.horizontal(30) }),
     expectedResult: contains('button1','label1','margin-right: 30px;')
   })
 })
 
 component('uiTest.layout.vertical', {
   impl: uiTest({
-    control: group({ layout: layout.vertical(30), controls: [button('button1'), text('label1')] }),
+    control: group(button('button1'), text('label1'), { layout: layout.vertical(30) }),
     expectedResult: contains('button1','label1','margin-bottom: 30px;')
   })
 })
@@ -385,7 +350,7 @@ component('uiTest.dialogCleanupBug', {
 
 component('uiTest.groupFlex', {
   impl: uiTest({
-    control: group({ layout: layout.flex('row'), controls: [button('button1'), text('label1')] }),
+    control: group(button('button1'), text('label1'), { layout: layout.flex('row') }),
     expectedResult: contains('button1','label1')
   })
 })
@@ -506,22 +471,20 @@ component('FETest.itemlistWithSelect.click', {
 
 component('FETest.itemlistDD', {
   impl: uiFrontEndTest({
-    control: group({
-      controls: [
-        itemlist({
-          items: '%$watchablePeople%',
-          controls: text('%name%', { features: css.class('drag-handle') }),
-          features: [
-            itemlist.selection('%$globals/selectedPerson%', { autoSelectFirst: true }),
-            itemlist.keyboardSelection(true),
-            itemlist.dragAndDrop(),
-            id('itemlist')
-          ]
-        }),
-        text('----'),
-        itemlist({ items: '%$watchablePeople%', controls: text('%name%'), features: watchRef('%$watchablePeople%') })
-      ]
-    }),
+    control: group(
+      itemlist({
+        items: '%$watchablePeople%',
+        controls: text('%name%', { features: css.class('drag-handle') }),
+        features: [
+          itemlist.selection('%$globals/selectedPerson%', { autoSelectFirst: true }),
+          itemlist.keyboardSelection(true),
+          itemlist.dragAndDrop(),
+          id('itemlist')
+        ]
+      }),
+      text('----'),
+      itemlist({ items: '%$watchablePeople%', controls: text('%name%'), features: watchRef('%$watchablePeople%') })
+    ),
     uiAction: uiActions(
       waitForSelector('.drag-handle'),
       keyboardEvent('#itemlist', 'keydown', { keyCode: 40, ctrl: 'ctrl' })
@@ -537,12 +500,10 @@ component('uiTest.itemlistBasic', {
 
 component('uiTest.itemlistAddButton', {
   impl: uiTest({
-    control: group({
-      controls: [
-        itemlist({ items: '%$watchablePeople%', controls: text('%name%'), features: watchRef('%$watchablePeople%') }),
-        button('add', addToArray('%$watchablePeople%', { toAdd: obj(prop('name', 'maggie')) }))
-      ]
-    }),
+    control: group(
+      itemlist({ items: '%$watchablePeople%', controls: text('%name%'), features: watchRef('%$watchablePeople%') }),
+      button('add', addToArray('%$watchablePeople%', { toAdd: obj(prop('name', 'maggie')) }))
+    ),
     expectedResult: contains('Homer Simpson','Bart Simpson')
   })
 })
@@ -567,17 +528,13 @@ component('uiTest.table.MDInplace', {
       controls: table({
         items: '%$people%',
         controls: [
-          group({
-            layout: layout.flex('row', 'start', { alignItems: 'center' }),
-            controls: [
-              editableBoolean('%$sectionExpanded/{%$index%}%', editableBoolean.expandCollapse()),
-              text('%name%')
-            ]
+          group(editableBoolean('%$sectionExpanded/{%$index%}%', editableBoolean.expandCollapse()), text('%name%'), {
+            layout: layout.flex('row', 'start', { alignItems: 'center' })
           }),
-          controlWithCondition('%$sectionExpanded/{%$index%}%', group({
-            controls: text('inner text'),
-            features: feature.expandToEndOfRow('%$sectionExpanded/{%$index%}%')
-          })),
+          controlWithCondition({
+            condition: '%$sectionExpanded/{%$index%}%',
+            control: group(text('inner text'), { features: feature.expandToEndOfRow('%$sectionExpanded/{%$index%}%') })
+          }),
           text('%age%'),
           text('%age%')
         ],
@@ -599,17 +556,13 @@ component('uiTest.table.MDInplace.withScroll', {
       controls: table({
         items: '%$people%',
         controls: [
-          group({
-            layout: layout.flex('row', 'start', { alignItems: 'center' }),
-            controls: [
-              editableBoolean('%$sectionExpanded/{%$index%}%', editableBoolean.expandCollapse()),
-              text('%name%')
-            ]
+          group(editableBoolean('%$sectionExpanded/{%$index%}%', editableBoolean.expandCollapse()), text('%name%'), {
+            layout: layout.flex('row', 'start', { alignItems: 'center' })
           }),
-          controlWithCondition('%$sectionExpanded/{%$index%}%', group({
-            controls: text('inner text'),
-            features: feature.expandToEndOfRow('%$sectionExpanded/{%$index%}%')
-          })),
+          controlWithCondition({
+            condition: '%$sectionExpanded/{%$index%}%',
+            control: group(text('inner text'), { features: feature.expandToEndOfRow('%$sectionExpanded/{%$index%}%') })
+          }),
           text('%age%'),
           text('%age%')
         ],
@@ -633,21 +586,19 @@ component('uiTest.table.MDInplace.withScroll', {
 
 component('uiTest.itemlistMDAutoSelectFirst', {
   impl: uiTest({
-    control: group({
-      controls: [
-        itemlist({
-          items: '%$people%',
-          controls: text('%$item.name%'),
-          features: [
-            itemlist.selection('%$globals/selectedPerson%', { autoSelectFirst: true }),
-            itemlist.keyboardSelection(true)
-          ]
-        }),
-        text('%$globals/selectedPerson/name% selected', {
-          features: watchRef('%$globals/selectedPerson%')
-        })
-      ]
-    }),
+    control: group(
+      itemlist({
+        items: '%$people%',
+        controls: text('%$item.name%'),
+        features: [
+          itemlist.selection('%$globals/selectedPerson%', { autoSelectFirst: true }),
+          itemlist.keyboardSelection(true)
+        ]
+      }),
+      text('%$globals/selectedPerson/name% selected', {
+        features: watchRef('%$globals/selectedPerson%')
+      })
+    ),
     expectedResult: contains('Homer Simpson','Homer Simpson selected'),
     uiAction: waitForNextUpdate()
   })
@@ -668,16 +619,14 @@ component('uiTest.itemlistSelection.autoSelectFirst', {
 
 component('uiTest.itemlistSelection.click', {
   impl: uiTest({
-    control: group({
-      controls: [
-        itemlist({
-          items: '%$people%',
-          controls: text('%$item.name%', { features: id('idx-%$index%') }),
-          features: itemlist.selection('%$globals/selectedPerson%')
-        }),
-        text('-%$globals/selectedPerson/name%-', { features: watchRef('%$globals/selectedPerson%') })
-      ]
-    }),
+    control: group(
+      itemlist({
+        items: '%$people%',
+        controls: text('%$item.name%', { features: id('idx-%$index%') }),
+        features: itemlist.selection('%$globals/selectedPerson%')
+      }),
+      text('-%$globals/selectedPerson/name%-', { features: watchRef('%$globals/selectedPerson%') })
+    ),
     expectedResult: contains('-Marge Simpson-'),
     uiAction: click('#idx-2'),
     useFrontEnd: true
@@ -686,19 +635,17 @@ component('uiTest.itemlistSelection.click', {
 
 component('uiTest.itemlistSelection.databind', {
   impl: uiTest({
-    control: group({
-      controls: [
-        itemlist({
-          items: '%$people/name%',
-          controls: text('%%'),
-          features: [
-            itemlist.selection('%$globals/selectedPerson%', { autoSelectFirst: true }),
-            watchRef('%$globals/selectedPerson%')
-          ]
-        }),
-        button('select Marge', writeValue('%$globals/selectedPerson%', '%$people/1/name%'))
-      ]
-    }),
+    control: group(
+      itemlist({
+        items: '%$people/name%',
+        controls: text('%%'),
+        features: [
+          itemlist.selection('%$globals/selectedPerson%', { autoSelectFirst: true }),
+          watchRef('%$globals/selectedPerson%')
+        ]
+      }),
+      button('select Marge', writeValue('%$globals/selectedPerson%', '%$people/1/name%'))
+    ),
     expectedResult: contains('li','li','selected','Marge'),
     uiAction: click('button')
   })
@@ -706,22 +653,20 @@ component('uiTest.itemlistSelection.databind', {
 
 component('uiTest.itemlistMDOfRefs.refChangeBug', {
   impl: uiTest({
-    control: group({
-      controls: [
-        itemlist({
-          items: '%$watchablePeople%',
-          controls: text('%$item.name%', { features: id('itemlist%$index%') }),
-          features: [
-            id('itemlist'),
-            itemlist.selection('%$globals/selectedPerson%', { autoSelectFirst: true }),
-            itemlist.keyboardSelection(true)
-          ]
-        }),
-        text('%$globals/selectedPerson/name% selected', {
-          features: watchRef('%$globals/selectedPerson%')
-        })
-      ]
-    }),
+    control: group(
+      itemlist({
+        items: '%$watchablePeople%',
+        controls: text('%$item.name%', { features: id('itemlist%$index%') }),
+        features: [
+          id('itemlist'),
+          itemlist.selection('%$globals/selectedPerson%', { autoSelectFirst: true }),
+          itemlist.keyboardSelection(true)
+        ]
+      }),
+      text('%$globals/selectedPerson/name% selected', {
+        features: watchRef('%$globals/selectedPerson%')
+      })
+    ),
     expectedResult: contains('Marge Simpson','Marge Simpson - watchable selected'),
     uiAction: uiActions(
       waitForNextUpdate(),
@@ -867,19 +812,6 @@ component('uiTest.BEOnDestroy', {
   })
 })
 
-component('uiTest.editableTextInGroup', {
-  impl: uiTest({
-    control: group({
-      controls: [
-        editableText('name', '%$person/name%'),
-        editableText('name', '%$person/name%'),
-        text('%$person/name%')
-      ]
-    }),
-    expectedResult: contains('Homer')
-  })
-})
-
 component('FETest.onKey', {
   impl: uiTest({
     control: editableText('name', '%$person/name%', {
@@ -896,20 +828,16 @@ component('FETest.onKey', {
 
 component('uiTest.editableText.blockSelfRefresh', {
   impl: uiTest({
-    control: group({
-      controls: editableText('name', '%$person/name%', { features: id('inp') }),
-      features: watchRef('%$person/name%')
-    }),
-    expectedResult: true,
-    uiAction: setText('hello', '#inp'),
+    control: group(editableText('name', '%$person/name%'), { features: watchRef('%$person/name%') }),
+    expectedResult: contains('>name<'),
+    uiAction: setText('hello', { doNotWaitForNextUpdate: true }),
     expectedCounters: {'start renderVdom': 2}
   })
 })
 
 component('uiTest.editableText.allowSelfRefresh', {
   impl: uiTest({
-    control: group({
-      controls: editableText('name', '%$person/name%'),
+    control: group(editableText('name', '%$person/name%'), {
       features: watchRef('%$person/name%', { allowSelfRefresh: true })
     }),
     expectedResult: contains('hello'),
@@ -1000,13 +928,7 @@ component('test.getSelectionChar', {
 
 component('uiTest.propertySheet.titlesAbove', {
   impl: uiTest({
-    control: group({
-      style: propertySheet.titlesAbove(),
-      controls: [
-        editableText('name', '%$person/name%'),
-        editableText('address', '%$person/age%')
-      ]
-    }),
+    control: group(editableText('name', '%$person/name%'), editableText('address', '%$person/age%'), { style: propertySheet.titlesAbove() }),
     expectedResult: contains('Homer')
   })
 })
@@ -1014,11 +936,11 @@ component('uiTest.propertySheet.titlesAbove', {
 component('uiTest.propertySheet.titlesLeft', {
   impl: uiTest({
     control: group({
-      style: propertySheet.titlesLeft(),
       controls: [
         editableText('name', '%$person/name%', { style: editableText.input() }),
         editableText('address', '%$person/age%', { style: editableText.input() })
-      ]
+      ],
+      style: propertySheet.titlesLeft()
     }),
     expectedResult: contains('name:','Homer','display: grid')
   })
@@ -1027,13 +949,13 @@ component('uiTest.propertySheet.titlesLeft', {
 component('uiTest.editableNumber', {
   impl: uiTest({
     control: group({
-      layout: layout.vertical(),
       controls: [
         editableNumber('%$person/age%', 'age', { style: editableNumber.sliderNoText() }),
         editableNumber('%$person/age%', 'age', { style: editableNumber.slider() }),
         editableNumber('%$person/age%', 'age'),
         text('%$person/age%')
-      ]
+      ],
+      layout: layout.vertical()
     }),
     expectedResult: contains('42','42','42','42')
   })
@@ -1052,20 +974,18 @@ component('uiTest.editableBoolean.buttonXV', {
 
 component('uiTest.editableBoolean.allStyles', {
   impl: uiTest({
-    control: group({
-      controls: [
-        editableBoolean('%$person/male%', editableBoolean.checkbox(), { title: 'male' }),
-        editableBoolean('%$person/male%', editableBoolean.checkboxWithLabel(), {
-          title: 'gender',
-          textForTrue: 'male',
-          textForFalse: 'female'
-        }),
-        editableBoolean('%$person/male%', editableBoolean.mdcSlideToggle(), { title: 'male' }),
-        editableBoolean('%$person/male%', editableBoolean.expandCollapse(), { title: 'male' }),
-        editableBoolean('%$person/male%', editableBoolean.mdcXV(), { title: 'male' }),
-        text('%$person/male%')
-      ]
-    }),
+    control: group(
+      editableBoolean('%$person/male%', editableBoolean.checkbox(), { title: 'male' }),
+      editableBoolean('%$person/male%', editableBoolean.checkboxWithLabel(), {
+        title: 'gender',
+        textForTrue: 'male',
+        textForFalse: 'female'
+      }),
+      editableBoolean('%$person/male%', editableBoolean.mdcSlideToggle(), { title: 'male' }),
+      editableBoolean('%$person/male%', editableBoolean.expandCollapse(), { title: 'male' }),
+      editableBoolean('%$person/male%', editableBoolean.mdcXV(), { title: 'male' }),
+      text('%$person/male%')
+    ),
     expectedResult: contains('male')
   })
 })
@@ -1076,15 +996,13 @@ component('uiTest.editableBoolean.mdcSlideToggle', {
 
 component('uiTest.editableBooleanSettings', {
   impl: uiTest({
-    control: group({
-      controls: [
-        editableBoolean('%$person/male%', editableBoolean.checkboxWithLabel(), {
-          title: 'male',
-          textForTrue: 'male',
-          textForFalse: 'female'
-        })
-      ]
-    }),
+    control: group(
+      editableBoolean('%$person/male%', editableBoolean.checkboxWithLabel(), {
+        title: 'male',
+        textForTrue: 'male',
+        textForFalse: 'female'
+      })
+    ),
     expectedResult: contains('male')
   })
 })
@@ -1139,20 +1057,16 @@ component('uiTest.editableBoolean.expandCollapseWithDefaultCollapse', {
 
 component('uiTest.codeMirror', {
   impl: uiFrontEndTest({
-    control: group({
-      vars: [
-        Var('js', {'$': 'object', text: `function f1() {
+    control: group(
+      Var('js', {'$': 'object', text: `function f1() {
 return 15
 }`}),
-        Var('css', {'$': 'object', text: '{ width: 15px; }'}),
-        Var('html', {'$': 'object', text: '<div><span>hello</span></div>'})
-      ],
-      controls: [
-        editableText({ databind: '%$js/text%', style: editableText.codemirror({ mode: 'javascript' }), features: codemirror.fold() }),
-        editableText({ databind: '%$css/text%', style: editableText.codemirror({ mode: 'css' }), features: [codemirror.fold(), codemirror.lineNumbers()] }),
-        editableText({ databind: '%$html/text%', style: editableText.codemirror({ mode: 'htmlmixed' }) })
-      ]
-    }),
+      Var('css', {'$': 'object', text: '{ width: 15px; }'}),
+      Var('html', {'$': 'object', text: '<div><span>hello</span></div>'}),
+      editableText({ databind: '%$js/text%', style: editableText.codemirror({ mode: 'javascript' }), features: codemirror.fold() }),
+      editableText({ databind: '%$css/text%', style: editableText.codemirror({ mode: 'css' }), features: [codemirror.fold(), codemirror.lineNumbers()] }),
+      editableText({ databind: '%$html/text%', style: editableText.codemirror({ mode: 'htmlmixed' }) })
+    ),
     uiAction: waitForSelector('.CodeMirror'),
     expectedResult: contains('function','f1',15),
     renderDOM: true
@@ -1182,35 +1096,31 @@ component('uiTest.innerLabel3Tst', {
 
 component('uiTest.picklist', {
   impl: uiTest({
-    control: group({
-      controls: [
-        group({
-          style: propertySheet.titlesLeft(),
-          controls: picklist('city', '%$personWithAddress/address/city%', {
-            options: picklist.optionsByComma('Springfield,New York,Tel Aviv,London')
-          })
+    control: group(
+      group({
+        controls: picklist('city', '%$personWithAddress/address/city%', {
+          options: picklist.optionsByComma('Springfield,New York,Tel Aviv,London')
         }),
-        text('%$personWithAddress/address/city%')
-      ]
-    }),
+        style: propertySheet.titlesLeft()
+      }),
+      text('%$personWithAddress/address/city%')
+    ),
     expectedResult: contains('Springfield','New York')
   })
 })
 
 component('uiTest.picklist.delayedOptions', {
   impl: uiTest({
-    control: group({
-      controls: [
-        group({
-          style: propertySheet.titlesLeft(),
-          controls: picklist('city', '%$personWithAddress/address/city%', {
-            options: source.data(obj(prop('options', picklist.optionsByComma('Springfield,New York,Tel Aviv,London')))),
-            features: picklist.allowAsynchOptions()
-          })
+    control: group(
+      group({
+        controls: picklist('city', '%$personWithAddress/address/city%', {
+          options: source.data(obj(prop('options', picklist.optionsByComma('Springfield,New York,Tel Aviv,London')))),
+          features: picklist.allowAsynchOptions()
         }),
-        text('%$personWithAddress/address/city%')
-      ]
-    }),
+        style: propertySheet.titlesLeft()
+      }),
+      text('%$personWithAddress/address/city%')
+    ),
     expectedResult: contains('Springfield','New York'),
     uiAction: waitForNextUpdate()
   })
@@ -1289,10 +1199,7 @@ component('uiTest.picklist.mdcSelect', {
 
 component('uiTest.fieldTitleOfLabel', {
   impl: uiTest({
-    control: group({
-      style: propertySheet.titlesLeft(),
-      controls: text('%$personWithAddress/address/city%', { features: field.title('City') })
-    }),
+    control: group(text('%$personWithAddress/address/city%', { features: field.title('City') }), { style: propertySheet.titlesLeft() }),
     expectedResult: contains('City')
   })
 })
@@ -1316,58 +1223,43 @@ component('uiTest.picklistSort', {
 
 component('uiTest.picklistGroups', {
   impl: uiTest({
-    control: group({
-      controls: [
-        group({
-          style: propertySheet.titlesLeft(),
-          controls: picklist('city', '%$personWithAddress/address/city%', {
-            options: picklist.optionsByComma('US.Springfield,US.New York,Israel.Tel Aviv,UK.London,mooncity'),
-            style: picklist.groups()
-          })
+    control: group(
+      group({
+        controls: picklist('city', '%$personWithAddress/address/city%', {
+          options: picklist.optionsByComma('US.Springfield,US.New York,Israel.Tel Aviv,UK.London,mooncity'),
+          style: picklist.groups()
         }),
-        text('%$personWithAddress/address/city%')
-      ]
-    }),
+        style: propertySheet.titlesLeft()
+      }),
+      text('%$personWithAddress/address/city%')
+    ),
     expectedResult: contains('Springfield','New York')
   })
 })
 
 component('uiTest.dynamicControls', {
   impl: uiTest({
-    control: group({
-      style: propertySheet.titlesLeft(),
-      controls: dynamicControls(list('name','age'), editableText('%$controlItem%', '%$person/{%$controlItem%}%'))
+    control: group(dynamicControls(list('name','age'), editableText('%$controlItem%', '%$person/{%$controlItem%}%')), {
+      style: propertySheet.titlesLeft()
     }),
     expectedResult: contains('name','age')
   })
 })
 
 component('uiTest.inlineControls', {
-  impl: uiTest(group({ controls: [text('a1'), inlineControls(text('a2'), text('a3'))] }), contains('a1','a2','a3'))
+  impl: uiTest(group(text('a1'), inlineControls(text('a2'), text('a3'))), contains('a1','a2','a3'))
 })
 
 component('uiTest.tabs', {
   impl: uiTest({
-    control: group({
-      style: group.tabs(),
-      controls: [
-        group({ title: 'tab1', controls: text('in tab1') }),
-        group({ title: 'tab2', controls: text('in tab2') })
-      ]
-    }),
+    control: group(group(text('in tab1'), { title: 'tab1' }), group(text('in tab2'), { title: 'tab2' }), { style: group.tabs() }),
     expectedResult: and(contains('tab1','in tab1'), contains('tab2'), not(contains('in tab2')))
   })
 })
 
 component('uiTest.group.accordion', {
   impl: uiTest({
-    control: group({
-      style: group.accordion(),
-      controls: [
-        group({ title: 'tab1', controls: text('in tab1') }),
-        group({ title: 'tab2', controls: text('in tab2') })
-      ]
-    }),
+    control: group(group(text('in tab1'), { title: 'tab1' }), group(text('in tab2'), { title: 'tab2' }), { style: group.accordion() }),
     expectedResult: contains('tab1','in tab1','tab2')
   })
 })
@@ -1592,11 +1484,7 @@ component('uiTest.firstSucceedingWatchableSample', {
       button('female', writeValue('%$gender%', 'female'), { features: id('female') }),
       button('zee', writeValue('%$gender%', 'zee'), { features: id('zee') }),
       button('male', writeValue('%$gender%', 'male'), { features: id('male') }),
-      group({
-        controls: [
-          controlWithCondition('%$gender% == "male"', text('a male')),
-          text('not male')
-        ],
+      group(controlWithCondition('%$gender% == "male"', text('a male')), text('not male'), {
         features: [
           group.firstSucceeding(),
           watchRef('%$gender%')
@@ -1823,11 +1711,7 @@ component('uiTest.recursiveCtrl', {
   params: [
     {id: 'data'}
   ],
-  impl: group({
-    controls: [
-      text('%$data/text%'),
-      uiTest.recursiveCtrl('%$data/child%')
-    ],
+  impl: group(text('%$data/text%'), uiTest.recursiveCtrl('%$data/child%'), {
     features: group.eliminateRecursion(5)
   })
 })

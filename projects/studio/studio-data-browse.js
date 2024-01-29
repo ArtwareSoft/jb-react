@@ -37,9 +37,6 @@ component('studio.openResource', {
 component('studio.newDataSource', {
   type: 'control',
   impl: group({
-    title: '',
-    layout: layout.vertical('23'),
-    style: group.div(),
     controls: [
       editableText('name', '%$dialogData/name%', {
         style: editableText.mdcInput(),
@@ -57,12 +54,12 @@ component('studio.newDataSource', {
         ]
       }),
       group({
-        title: '',
-        layout: layout.horizontal('65'),
         controls: [
           editableBoolean('%$dialogData/watchable%', editableBoolean.mdcCheckBox(), { title: 'watchable' }),
           editableBoolean('%$newFile%', editableBoolean.mdcCheckBox(), { title: 'new file' })
         ],
+        title: '',
+        layout: layout.horizontal('65'),
         features: css.margin('8', '14')
       }),
       picklist('file', '%$dialogData/file%', {
@@ -74,6 +71,9 @@ component('studio.newDataSource', {
         ]
       })
     ],
+    title: '',
+    layout: layout.vertical('23'),
+    style: group.div(),
     features: [
       css.padding('14', '11'),
       css.width('451'),

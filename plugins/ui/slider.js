@@ -16,9 +16,7 @@ component('editableNumber.slider', {
   type: 'editable-number.style',
   impl: styleByControl({
     control: group({
-      title: '%$editableNumberModel/title%',
       controls: group({
-        layout: layout.horizontal(20),
         controls: [
           editableText({
             databind: '%$editableNumberModel/databind()%',
@@ -43,8 +41,10 @@ component('editableNumber.slider', {
             ]
           })
         ],
+        layout: layout.horizontal(20),
         features: watchRef('%$editableNumberModel/databind()%', { allowSelfRefresh: true })
-      })
+      }),
+      title: '%$editableNumberModel/title%'
     }),
     modelVar: 'editableNumberModel'
   })
@@ -54,9 +54,7 @@ component('editableNumber.mdcSlider', {
   type: 'editable-number.style',
   impl: styleByControl({
     control: group({
-      title: '%$editableNumberModel/title%',
       controls: group({
-        layout: layout.horizontal(20),
         controls: [
           editableText({
             databind: '%$editableNumberModel/databind()%',
@@ -76,8 +74,10 @@ component('editableNumber.mdcSlider', {
             step: '%$editableNumberModel/step%'
           })
         ],
+        layout: layout.horizontal(20),
         features: watchRef('%$editableNumberModel/databind()%', { allowSelfRefresh: true })
-      })
+      }),
+      title: '%$editableNumberModel/title%'
     }),
     modelVar: 'editableNumberModel'
   })

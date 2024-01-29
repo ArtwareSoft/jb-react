@@ -63,7 +63,6 @@ component('inplaceEdit.toolbar', {
     {id: 'path'}
   ],
   impl: group({
-    layout: layout.horizontal('3'),
     controls: [
       button('sizes', studio.openSizesEditor(), { style: button.mdcIcon(icon('business'), '20') }),
       button('edit grid', inplaceEdit.activate('%$parentGroup%'), {
@@ -94,7 +93,8 @@ component('inplaceEdit.toolbar', {
         style: button.mdcIcon(icon('storage'), '20')
       }),
       button('Delete', tgp.delete('%$path%'), { style: button.mdcIcon(icon('delete'), '20') })
-    ]
+    ],
+    layout: layout.horizontal('3')
   })
 })
 

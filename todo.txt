@@ -1,10 +1,8 @@
 
-upgrade
-  fix arrayInMacro
-
 use chatgpt to generate python and tgp wrapper
 external lib version, add version to using and pluginDsl - find use case with external lib
 
+go over UIFrontEndTest and try to make it uiTest
 load plugin dynamically in probeTest
 ctrl-I
   add 'using' and 'dsl' indication for current plugin

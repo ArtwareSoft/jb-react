@@ -9,9 +9,8 @@ component('studio.gotoProject', {
 component('studio.chooseProject', {
   type: 'control',
   impl: group({
-    title: 'itemlist-with-find',
     controls: [
-      group({ controls: [itemlistContainer.search({ features: css.width('250') })], features: group.autoFocusOnFirstInput() }),
+      group(itemlistContainer.search({ features: css.width('250') }), { features: group.autoFocusOnFirstInput() }),
       itemlist({
         items: pipeline('%projects%', itemlistContainer.filter()),
         controls: button(text.highlight('%%', '%$itemlistCntrData/search_pattern%'), studio.gotoProject('%%'), {
@@ -25,6 +24,7 @@ component('studio.chooseProject', {
         ]
       })
     ],
+    title: 'itemlist-with-find',
     features: [
       group.wait(http.get('/?op=projects', 'true')),
       css.padding('15', '15'),

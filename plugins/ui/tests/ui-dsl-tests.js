@@ -5,12 +5,10 @@ component('location.control', {
   params: [
     {id: 'state', type: 'state<location>'}
   ],
-  impl: group({
-    controls: [
-      text('%$state/capital/name%', { style: header.h2() }),
-      itemlist({ items: '%$state/cities%', controls: text('%name%') })
-    ]
-  })
+  impl: group(
+    text('%$state/capital/name%', { style: header.h2() }),
+    itemlist({ items: '%$state/cities%', controls: text('%name%') })
+  )
 })
 
 component('completionTest.dslTest.usingCtrl', {

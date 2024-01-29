@@ -40,7 +40,6 @@ component('studio.openNewProject', {
   impl: openDialog({
     title: 'New Project',
     content: group({
-      style: group.div(),
       controls: [
         editableText('project name', '%$dialogData/name%', {
           style: editableText.mdcInput('280'),
@@ -50,6 +49,7 @@ component('studio.openNewProject', {
           ]
         })
       ],
+      style: group.div(),
       features: css.padding('14', '11')
     }),
     style: dialog.dialogOkCancel(),

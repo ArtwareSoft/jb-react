@@ -66,7 +66,6 @@ component('eventTracker.toolbar', {
   ],
   type: 'control',
   impl: group({
-    layout: layout.horizontal('2'),
     controls: [
       text(eventTracker.codeSize(), {
         features: [
@@ -107,6 +106,7 @@ component('eventTracker.toolbar', {
       }),
       eventTracker.eventTypes('%$spy%')
     ],
+    layout: layout.horizontal('2'),
     features: [
       chromeDebugger.colors(),
       eventTracker.watchSpy('%$spy%', 100)
@@ -120,11 +120,11 @@ component('eventTracker.uiComp', {
     controlWithCondition(or('%cmp%','%elem%','%parentElem%'), group({
       controls: [
         controlWithCondition('%cmp/ctx/profile/$%', group({
-          layout: layout.flex('row', 'start', { alignItems: 'center' }),
           controls: [
             editableBoolean('%$cmpExpanded/{%$index%}%', chromeDebugger.toggleStyle()),
             text('%cmp/ctx/profile/$% %cmp/cmpId%;%cmp/ver%')
-          ]
+          ],
+          layout: layout.flex('row', 'start', { alignItems: 'center' })
         })),
         controlWithCondition('%cmp/pt%', text('%cmp/pt% %cmp/cmpId%;%cmp/ver%')),
         controlWithCondition('%$cmpElem%', text('%$cmpElem/@cmp-pt% %$cmpElem/@cmp-id%;%$cmpElem/@cmp-ver%'))
@@ -134,8 +134,7 @@ component('eventTracker.uiComp', {
         variable('cmpElem', ({data}) => jb.ui.closestCmpElem(data.elem || data.parentElem))
       ]
     })),
-    controlWithCondition('%$cmpExpanded/{%$index%}%', group({
-      controls: eventTracker.compInspector('%cmp%'),
+    controlWithCondition('%$cmpExpanded/{%$index%}%', group(eventTracker.compInspector('%cmp%'), {
       features: feature.expandToEndOfRow('%$cmpExpanded/{%$index%}%')
     }))
   )
@@ -145,11 +144,11 @@ component('eventTracker.callbagMessage', {
   type: 'control',
   impl: controls(
     controlWithCondition(and('%m/d%','%m/t%==1'), group({
-      layout: layout.flex('row', 'start', { alignItems: 'center' }),
       controls: [
         editableBoolean('%$payloadExpanded/{%$index%}%', chromeDebugger.toggleStyle()),
         text('%$contentType% %$direction% %m/cbId% (%$payload/length%) %m/$%: %m/t%')
       ],
+      layout: layout.flex('row', 'start', { alignItems: 'center' }),
       features: [
         variable('direction', If(contains('received', { allText: '%logNames%' }), '🡸', '🡺')),
         variable('contentType', If('%m/d/data/css%', 'css', If('%m/d/data/delta%', 'delta', '%m/d/data/$%'))),
@@ -172,20 +171,17 @@ component('eventTracker.callbagMessage', {
 component('eventTracker.testResult', {
   type: 'control',
   impl: controls(
-    controlWithCondition('%logNames%==check test result', group({
-      controls: [
-        editableBoolean('%$testResultExpanded/{%$index%}%', chromeDebugger.toggleStyle()),
-        text({
-          vars: [
-            Var('color', If('%success%', '--jb-success-fg', '--jb-error-fg'))
-          ],
-          text: If('%success%', '✓ check test result', '⚠ check test result'),
-          features: css.color('var(%$color%)')
-        })
-      ]
-    })),
+    controlWithCondition('%logNames%==check test result', group(
+      editableBoolean('%$testResultExpanded/{%$index%}%', chromeDebugger.toggleStyle()),
+      text({
+        vars: [
+          Var('color', If('%success%', '--jb-success-fg', '--jb-error-fg'))
+        ],
+        text: If('%success%', '✓ check test result', '⚠ check test result'),
+        features: css.color('var(%$color%)')
+      })
+    )),
     controlWithCondition('%$testResultExpanded/{%$index%}%', group({
-      layout: layout.horizontal(20),
       controls: [
         controlWithCondition({
           condition: '%expectedResultCtx/data%',
@@ -200,6 +196,7 @@ component('eventTracker.testResult', {
           ]
         })
       ],
+      layout: layout.horizontal(20),
       features: feature.expandToEndOfRow('%$testResultExpanded/{%$index%}%')
     }))
   )
@@ -244,9 +241,8 @@ component('studio.objExpandedAsText', {
   impl: controlWithCondition('%$obj%', group({
     controls: [
       controlWithCondition('%$asText/length% < 20', text('%$asText%')),
-      controlWithCondition('%$asText/length% > 19', group({
-        style: group.sectionExpandCollapse(text('%$title%')),
-        controls: text('%$asText%', { style: text.codemirror({ height: '200' }), features: codemirror.fold() })
+      controlWithCondition('%$asText/length% > 19', group(text('%$asText%', { style: text.codemirror({ height: '200' }), features: codemirror.fold() }), {
+        style: group.sectionExpandCollapse(text('%$title%'))
       }))
     ],
     features: variable('asText', prettyPrint('%$obj%'))
@@ -262,7 +258,6 @@ component('studio.lowFootprintObj', {
     {id: 'length', as: 'number', defaultValue: 20}
   ],
   impl: controlWithCondition('%$obj%', group({
-    layout: layout.horizontal(4),
     controls: [
       controlWithCondition('%$obj/cmpCtx%', studio.slicedString('%$obj/profile/$%: %$obj/path%')),
       controlWithCondition({
@@ -272,7 +267,8 @@ component('studio.lowFootprintObj', {
       controlWithCondition('%$obj/opEvent/newVal%', studio.slicedString('%$obj/opEvent/newVal%')),
       controlWithCondition(isOfType('boolean', '%$obj%'), studio.slicedString('%$title%')),
       controlWithCondition(isOfType('string,number', '%$obj%'), studio.slicedString('%$title%: %$obj%'))
-    ]
+    ],
+    layout: layout.horizontal(4)
   }))
 })
 
@@ -391,9 +387,8 @@ component('studio.sourceCtxView', {
   impl: controlWithCondition('%$srcCtx/cmpCtx%', group({
     controls: [
       controlWithCondition('%$stackItems/length% == 0', studio.singleSourceCtxView('%$srcCtx%')),
-      controlWithCondition('%$stackItems/length% > 0', group({
-        style: group.sectionExpandCollapse(studio.singleSourceCtxView('%$srcCtx%')),
-        controls: itemlist({ items: '%$stackItems%', controls: studio.singleSourceCtxView('%%') })
+      controlWithCondition('%$stackItems/length% > 0', group(itemlist({ items: '%$stackItems%', controls: studio.singleSourceCtxView('%%') }), {
+        style: group.sectionExpandCollapse(studio.singleSourceCtxView('%$srcCtx%'))
       }))
     ],
     features: variable('stackItems', studio.stackItems('%$srcCtx%'))
@@ -451,7 +446,6 @@ component('eventTracker.compInspector', {
   type: 'control',
   impl: group({
     controls: group({
-      style: chromeDebugger.sectionsExpandCollapse(),
       controls: [
         text('%$cmp/cmpId%;%$cmp/ver% -- %$cmp/ctx/path%', '%$cmp/ctx/profile/$%'),
         table('state', {
@@ -478,7 +472,8 @@ component('eventTracker.compInspector', {
           leafFields: text('%val%', 'value'),
           chapterHeadline: text(tree.lastPathElement('%path%'))
         })
-      ]
+      ],
+      style: chromeDebugger.sectionsExpandCollapse()
     }),
     features: [
       variable('elem', eventTracker.elemOfCmp('%$cmp%'))

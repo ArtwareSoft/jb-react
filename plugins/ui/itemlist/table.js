@@ -19,7 +19,7 @@ component('table', {
     ],
     title: '%$title()%',
     items: '%$items()%',
-    controls: group({ style: '%$style.lineStyle()%', controls: '%$controls()%', features: '%$lineFeatures()%' }),
+    controls: group('%$controls()%', { style: '%$style.lineStyle()%', features: '%$lineFeatures()%' }),
     style: '%$style.itemlistStyle()%',
     itemVariable: '%$itemVariable%',
     visualSizeLimit: '%$visualSizeLimit%',

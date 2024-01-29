@@ -42,11 +42,8 @@ component('studio.selectProfile', {
     {id: 'path', as: 'string'}
   ],
   impl: group({
-    title: 'itemlist-with-find',
-    layout: layout.vertical(3),
     controls: [
       group({
-        layout: layout.horizontal(3),
         controls: [
           itemlistContainer.search({
             title: 'search',
@@ -63,11 +60,10 @@ component('studio.selectProfile', {
             features: feature.onEsc(dialog.closeDialog(false))
           }),
           control.icon('search', 'search icon', { features: css.margin('20', '-25') })
-        ]
+        ],
+        layout: layout.horizontal(3)
       }),
       group({
-        title: 'categories and items',
-        layout: layout.horizontal('33'),
         controls: [
           itemlist({
             items: pipeline(
@@ -124,10 +120,14 @@ component('studio.selectProfile', {
             }),
             features: picklist.onChange(writeValue('%$itemlistCntrData/search_pattern%'))
           })
-        ]
+        ],
+        title: 'categories and items',
+        layout: layout.horizontal('33')
       }),
       text(pipeline('%$itemlistCntrData/selected%', tgp.val('%%'), '%description%'), { style: text.span() })
     ],
+    title: 'itemlist-with-find',
+    layout: layout.vertical(3),
     features: [
       css.margin('10', '20'),
       variable('unsortedCategories', tgp.categoriesOfType('%$type%')),
@@ -198,20 +198,18 @@ component('studio.openPickProfile', {
   ],
   impl: openDialog({
     title: pipeline(tgp.paramType('%$path%'), 'select %%'),
-    content: group({
-      controls: [
-        studio.selectProfile({
-          onSelect: tgp.setComp('%$path%', '%%'),
-          onBrowse: If({
-            condition: or(equals('layout', tgp.paramType('%$path%')), endsWith('.style', tgp.paramType('%$path%'))),
-            then: tgp.setComp('%$path%', '%%')
-          }),
-          type: tgp.paramType('%$path%'),
-          path: '%$path%'
+    content: group(
+      studio.selectProfile({
+        onSelect: tgp.setComp('%$path%', '%%'),
+        onBrowse: If({
+          condition: or(equals('layout', tgp.paramType('%$path%')), endsWith('.style', tgp.paramType('%$path%'))),
+          then: tgp.setComp('%$path%', '%%')
         }),
-        studio.properties('%$path%')
-      ]
-    }),
+        type: tgp.paramType('%$path%'),
+        path: '%$path%'
+      }),
+      studio.properties('%$path%')
+    ),
     style: dialog.studioFloating(),
     features: [
       css.height('520', 'hidden', { minMax: 'min' }),
@@ -262,9 +260,6 @@ component('studio.openNewProfile', {
   impl: openDialog({
     title: '%$title%',
     content: group({
-      title: '',
-      layout: layout.horizontal('11'),
-      style: group.div(),
       controls: [
         editableText('name', '%$dialogData/name%', {
           style: editableText.mdcInput(),
@@ -283,6 +278,9 @@ component('studio.openNewProfile', {
           ]
         })
       ],
+      title: '',
+      layout: layout.horizontal('11'),
+      style: group.div(),
       features: [
         css.padding('14', '11'),
         css.width('600'),
@@ -326,7 +324,6 @@ component('studio.insertControlMenu', {
         action: openDialog({
           title: 'Drop html from any web site',
           content: group({
-            layout: layout.vertical(),
             controls: [
               button('drop here', {
                 style: button.mdc(),
@@ -341,6 +338,7 @@ component('studio.insertControlMenu', {
                 features: htmlAttribute('placeholder', 'or paste html here')
               })
             ],
+            layout: layout.vertical(),
             features: [
               css.width('400'),
               css.padding({ left: '4', right: '4' })

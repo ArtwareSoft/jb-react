@@ -97,18 +97,17 @@ component('studio.jbEditor', {
     {id: 'path', as: 'string'}
   ],
   impl: group({
-    title: 'main',
-    layout: layout.horizontalFixedSplit('350px', '100%'),
     controls: [
       studio.jbEditorInteliTree('%$path%'),
-      group({
-        controls: remote.widget(probe.inOutView(), probePreviewWorker()),
+      group(remote.widget(probe.inOutView(), probePreviewWorker()), {
         features: [
           feature.if(not('%$studio/hideProbe%')),
           watchRef('%$studio/hideProbe%')
         ]
       })
     ],
+    title: 'main',
+    layout: layout.horizontalFixedSplit('350px', '100%'),
     features: [
       id('jbEditor'),
       css.padding('10'),
@@ -130,10 +129,7 @@ component('studio.openJbEditProperty', {
     cases: [
       action.switchCase(endsWith('$vars', '%$path%'), studio.addVariable('%$path%')),
       action.switchCase('%$paramDef/options%', openDialog({
-        content: group({
-          controls: [
-            studio.jbFloatingInputRich('%$actualPath%')
-          ],
+        content: group(studio.jbFloatingInputRich('%$actualPath%'), {
           features: [
             feature.onEsc(dialog.closeDialog(true)),
             feature.onEnter(dialog.closeDialog(true))
@@ -352,7 +348,6 @@ component('studio.jbEditorTitle', {
     {id: 'prefix', as: 'string'}
   ],
   impl: group({
-    layout: layout.horizontal('9'),
     controls: [
       text('%$prefix%'),
       button({
@@ -387,6 +382,7 @@ component('studio.jbEditorTitle', {
         textForFalse: 'show probe',
         features: css('>*>svg { transform: scale(0.5,0.5) }')
       })
-    ]
+    ],
+    layout: layout.horizontal('9')
   })
 })

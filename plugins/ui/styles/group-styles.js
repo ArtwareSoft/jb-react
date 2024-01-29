@@ -69,8 +69,6 @@ component('group.tabs', {
     control: group({
       controls: [
         group({
-          layout: '%$barLayout()%',
-          style: call('barStyle'),
           controls: dynamicControls({
             controlItems: '%$tabsModel/controls%',
             genericControl: button('%$tab/field()/title%', writeValue('%$selectedTab%', '%$tabIndex%'), {
@@ -83,11 +81,12 @@ component('group.tabs', {
             }),
             itemVariable: 'tab',
             indexVariable: 'tabIndex'
-          })
+          }),
+          layout: '%$barLayout()%',
+          style: call('barStyle')
         }),
-        group({
+        group('%$tabsModel/controls[{%$selectedTab%}]%', {
           style: call('innerGroupStyle'),
-          controls: '%$tabsModel/controls[{%$selectedTab%}]%',
           features: watchRef('%$selectedTab%')
         })
       ],
@@ -125,7 +124,6 @@ component('group.accordion', {
       controls: dynamicControls({
         controlItems: '%$$sectionsModel/controls%',
         genericControl: group({
-          style: call('sectionStyle'),
           controls: [
             button('%$section/field()/title()%', writeValue('%$selectedTab%', '%$sectionIndex%'), {
               style: call('titleStyle'),
@@ -137,15 +135,15 @@ component('group.accordion', {
                 ctx => ctx.run({ $: 'features', features: (ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x) })
               ]
             }),
-            group({
+            group('%$$sectionsModel/controls[{%$sectionIndex%}]%', {
               style: call('innerGroupStyle'),
-              controls: '%$$sectionsModel/controls[{%$sectionIndex%}]%',
               features: [
                 feature.if('%$sectionIndex% == %$selectedTab%'),
                 watchRef('%$selectedTab%')
               ]
             })
-          ]
+          ],
+          style: call('sectionStyle')
         }),
         itemVariable: 'section',
         indexVariable: 'sectionIndex'
@@ -164,23 +162,23 @@ component('group.sections', {
     {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
   ],
   impl: styleByControl({
-    control: group({
-      controls: dynamicControls({
+    control: group(
+      dynamicControls({
         controlItems: '%$$sectionsModel/controls%',
         genericControl: group({
-          title: '',
-          style: call('sectionStyle'),
           controls: [
             text('%$section/field()/title()%', {
               style: call('titleStyle'),
               features: ctx => ctx.run({ $: 'features', features: (ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x) })
             }),
-            group({ style: call('innerGroupStyle'), controls: '%$section%' })
-          ]
+            group('%$section%', { style: call('innerGroupStyle') })
+          ],
+          title: '',
+          style: call('sectionStyle')
         }),
         itemVariable: 'section'
       })
-    }),
+    ),
     modelVar: '$sectionsModel'
   })
 })
@@ -195,15 +193,10 @@ component('group.sectionExpandCollapse', {
   impl: styleByControl({
     control: group({
       controls: [
-        group({
-          layout: layout.flex('row', 'start', { alignItems: 'center' }),
-          controls: [
-            editableBoolean('%$sectionExpanded%', call('toggleStyle')),
-            call('titleCtrl')
-          ]
+        group(editableBoolean('%$sectionExpanded%', call('toggleStyle')), call('titleCtrl'), {
+          layout: layout.flex('row', 'start', { alignItems: 'center' })
         }),
-        group({
-          controls: controlWithCondition('%$sectionExpanded%', '%$$sectionsModel/controls%'),
+        group(controlWithCondition('%$sectionExpanded%', '%$$sectionsModel/controls%'), {
           features: watchRef('%$sectionExpanded%')
         })
       ],
@@ -223,22 +216,21 @@ component('group.sectionsExpandCollapse', {
     {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
   ],
   impl: styleByControl({
-    control: group({
-      controls: dynamicControls({
+    control: group(
+      dynamicControls({
         controlItems: '%$$sectionsModel/controls%',
         genericControl: group({
           controls: [
             group({
-              layout: layout.flex('row', 'start', { alignItems: 'center' }),
-              style: call('titleGroupStyle'),
               controls: [
                 editableBoolean('%$sectionExpanded%', call('toggleStyle')),
                 text('%$section/field()/title()%', { style: call('titleStyle') })
-              ]
+              ],
+              layout: layout.flex('row', 'start', { alignItems: 'center' }),
+              style: call('titleGroupStyle')
             }),
-            group({
+            group(controlWithCondition('%$sectionExpanded%', '%$$sectionsModel/controls[{%$sectionIndex%}]%'), {
               style: call('innerGroupStyle'),
-              controls: controlWithCondition('%$sectionExpanded%', '%$$sectionsModel/controls[{%$sectionIndex%}]%'),
               features: watchRef('%$sectionExpanded%')
             })
           ],
@@ -247,7 +239,7 @@ component('group.sectionsExpandCollapse', {
         itemVariable: 'section',
         indexVariable: 'sectionIndex'
       })
-    }),
+    ),
     modelVar: '$sectionsModel'
   })
 })

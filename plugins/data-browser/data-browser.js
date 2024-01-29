@@ -21,7 +21,7 @@ component('ui.dataBrowse', {
           controlWithCondition(isOfType('function', '%$obj%'), text(({data}) => data.name || 'func')),
           controlWithCondition(isOfType('array', '%$obj%'), table({
             items: '%$obj%',
-            controls: group({ title: '%$obj/length% items', controls: ui.dataBrowse('%%', 200) }),
+            controls: group(ui.dataBrowse('%%', 200), { title: '%$obj/length% items' }),
             style: table.mdc(),
             visualSizeLimit: 7,
             features: [
@@ -29,7 +29,7 @@ component('ui.dataBrowse', {
               css.height('400', { minMax: 'max' })
             ]
           })),
-          controlWithCondition('%$obj/vars%', group({ layout: layout.flex({ spacing: '10' }), controls: [ui.dataBrowse('%$obj/data%')] })),
+          controlWithCondition('%$obj/vars%', group(ui.dataBrowse('%$obj/data%'), { layout: layout.flex({ spacing: '10' }) })),
           tree({
             nodeModel: tree.jsonReadOnly('%$obj%', '%$title%'),
             style: tree.expandBox(),
@@ -49,7 +49,6 @@ component('ui.dataBrowse', {
           title: 'open (%$obj/length%)',
           action: openDialog({
             content: group({
-              style: group.tabs(),
               controls: [
                 editableText('codemirror', '%$obj%', {
                   style: editableText.codemirror({
@@ -65,6 +64,7 @@ component('ui.dataBrowse', {
                 }),
                 html('%$obj%', 'html', { style: html.inIframe() })
               ],
+              style: group.tabs(),
               features: css('{height: 100%} >div:last-child {height: 100%}')
             }),
             style: dialog.showSourceStyle('show-data')

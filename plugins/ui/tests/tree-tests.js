@@ -182,7 +182,6 @@ component('uiTest.treeExpandRefresh', {
 component('uiTest.treeStyles', {
   impl: uiTest({
     control: group({
-      layout: layout.vertical('30'),
       controls: [
         tree({
           nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
@@ -224,7 +223,8 @@ component('uiTest.treeStyles', {
             tree.expandPath('personWithChildren~children')
           ]
         })
-      ]
+      ],
+      layout: layout.vertical('30')
     }),
     expectedResult: true
   })

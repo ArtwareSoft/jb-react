@@ -54,7 +54,7 @@ component('upgradeCmp', {
     {id: 'repo', as: 'string'},
     {id: 'hash', as: 'number', mandatory: true},
     {id: 'edit'},
-    {id: 'lostInfo'},
+    {id: 'lostInfo'}
   ],
   impl: (ctx,cmpId,path,repo,expectedHash,edit,lostInfo) => {
         if (!ctx.vars.allowLostInfo && lostInfo)
@@ -228,7 +228,7 @@ component('reformat', {
   type: 'upgrade',
   params: [
     {id: 'repo', as: 'string'},
-    {id: 'cmpId', as: 'string', defaultValue: '%%', byName: true},
+    {id: 'cmpId', as: 'string', defaultValue: '%%', byName: true}
   ],
   impl: async (ctx,_repo,cmpId) => {
         const comp = jb.comps[cmpId]
@@ -237,8 +237,6 @@ component('reformat', {
         const location = comp[jb.core.CT].location
         const { path, repo } = location
         if (_repo && _repo != repo) return
-        console.log(cmpId)
-        if (jb.comps['parser<jison>parser'].params.length != 3) debugger
         const { originalProfCode, notFound } = await jb.tgpTextEditor.compTextFromFile(shortId, location, ctx)
         if (notFound) return
         const newCode = jb.utils.prettyPrintComp(cmpId,comp)

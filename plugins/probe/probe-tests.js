@@ -55,7 +55,7 @@ component('test.innerLabelTemplate', {
   params: [
     {id: 'ctrl', type: 'control', dynamic: true}
   ],
-  impl: group({ controls: call('ctrl') })
+  impl: group(call('ctrl'))
 })
 
 component('test.innerLabelTemplateStaticParam', {
@@ -63,7 +63,7 @@ component('test.innerLabelTemplateStaticParam', {
   params: [
     {id: 'param1', type: 'string'}
   ],
-  impl: group({ controls: [] })
+  impl: group()
 })
 
 component('probeTest.staticInnerInTemplate', {

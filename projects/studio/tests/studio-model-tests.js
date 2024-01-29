@@ -15,17 +15,17 @@ component('test.cmpWithVars', {
 
 component('test.moveInTree', {
   type: 'control',
-  impl: group({ controls: [text('a'), text('b'), text('c'), group(), group({ controls: [] })] })
+  impl: group(text('a'), text('b'), text('c'), group(), group())
 })
 
 component('test.moveInTree2', {
   type: 'control',
-  impl: group({ controls: [text('a'), text('b'), text('c'), group(), group({ controls: [] })] })
+  impl: group(text('a'), text('b'), text('c'), group(), group())
 })
 
 component('test.moveInTree3', {
   type: 'control',
-  impl: group({ controls: [text('a'), text('b'), text('c'), group(), group({ controls: [] })] })
+  impl: group(text('a'), text('b'), text('c'), group(), group())
 })
 
 component('studioTest.setCompInVars', {

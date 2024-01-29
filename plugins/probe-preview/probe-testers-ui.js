@@ -65,22 +65,20 @@ component('test.FE_BE_interaction', {
   params: [
     {id: 'method', as: 'string', defaultValue: 'headlessIO'}
   ],
-  impl: group({
-    controls: [
-      divider(),
-      group({
-        style: group.sectionExpandCollapse(text('FE <--> BE interaction')),
-        controls: [
-          text({
-            text: ({},{},{method}) => method == 'headlessIO' ? jb.spy.headlessIO() : jb.spy.uiTestHeadlessIO(),
-            style: text.codemirror({ enableFullScreen: true, height: '800', mode: 'javascript' }),
-            features: [codemirror.fold(), codemirror.lineNumbers()]
-          })
-        ]
-      }),
-      divider()
-    ]
-  })
+  impl: group(
+    divider(),
+    group({
+      controls: [
+        text({
+          text: ({},{},{method}) => method == 'headlessIO' ? jb.spy.headlessIO() : jb.spy.uiTestHeadlessIO(),
+          style: text.codemirror({ enableFullScreen: true, height: '800', mode: 'javascript' }),
+          features: [codemirror.fold(), codemirror.lineNumbers()]
+        })
+      ],
+      style: group.sectionExpandCollapse(text('FE <--> BE interaction'))
+    }),
+    divider()
+  )
 })
 
 component('test.uiFrontEndTestView', {
@@ -93,7 +91,6 @@ component('test.uiFrontEndTestView', {
     controls: [
       test.successIndication('%$testId%'),
       group({
-        layout: layout.horizontal(20),
         controls: [
           controlWithCondition({
             condition: '%expectedResultCtx/data%',
@@ -106,7 +103,8 @@ component('test.uiFrontEndTestView', {
               css('min-width: 1200px')
             ]
           }))
-        ]
+        ],
+        layout: layout.horizontal(20)
       }),
       text('front end test %$result/duration% mSec {?, %$result/reason%?}'),
       test.FE_BE_interaction()
@@ -129,7 +127,6 @@ component('test.dataTestView', {
     controls: [
       test.successIndication('%$testId%'),
       group({
-        layout: layout.horizontal(20),
         controls: [
           controlWithCondition({
             condition: '%expectedResultCtx/data%',
@@ -142,7 +139,8 @@ component('test.dataTestView', {
               css('min-width: 1200px')
             ]
           }))
-        ]
+        ],
+        layout: layout.horizontal(20)
       }),
       text('dataTest %$result/duration% mSec {?, %$result/reason%?}')
     ],
@@ -186,9 +184,7 @@ component('test.uiTestRunner', {
         ]
       }),
       divider(),
-      group({
-        controls: ({},{},{ctxToRun}) => ctxToRun.runInner(ctxToRun.profile.control,{type: 'control'}, 'control')
-      }),
+      group(({},{},{ctxToRun}) => ctxToRun.runInner(ctxToRun.profile.control,{type: 'control'}, 'control')),
       test.FE_BE_interaction('uiTestHeadlessIO')
     ],
     features: [

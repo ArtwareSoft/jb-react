@@ -90,37 +90,35 @@ component('sizesEditor.prop', {
 
 component('sizesEditor.editor', {
   type: 'control',
-  impl: group({
-    controls: [
-      text('', {
-        features: css('position: absolute; top: 65px; left: 65px; width: 60px; height: 60px; background: white')
-      }),
-      text('', {
-        features: css('position: absolute; top: 175px; left: 0; width: 180px; height: 16px; background: white')
-      }),
-      sizesEditor.widthHeight('width', '73px'),
-      sizesEditor.widthHeight('height', '85px'),
-      sizesEditor.prop('boxShadow', 'top: 175px; left: 0px;'),
-      sizesEditor.prop('border', 'top: 175px; left: 75px;'),
-      sizesEditor.prop('borderRadius', 'top: 175px; left: 126px;'),
-      dynamicControls(sizesEditor.cssSizes(), group({
-        controls: [
-          button({
-            title: sizesEditor.computedContent(),
-            action: runActions(
-              writeValue('%$studio/profile_path%', '%$path%'),
-              studio.openProperties(true, tgp.getOrCreateCompInArray('%$path%~features', 'css.%level%')),
-              dialog.closeDialog()
-            ),
-            style: button.href()
-          })
-        ],
-        features: [
-          css('position: absolute; display: flex; justify-content: center; align-items: center;%css%'),
-          feature.hoverTitle('%level%-%side%'),
-          css('>a {font-size: 8px} ~:hover a { font-size: 16px; background: white}')
-        ]
-      }))
-    ]
-  })
+  impl: group(
+    text('', {
+      features: css('position: absolute; top: 65px; left: 65px; width: 60px; height: 60px; background: white')
+    }),
+    text('', {
+      features: css('position: absolute; top: 175px; left: 0; width: 180px; height: 16px; background: white')
+    }),
+    sizesEditor.widthHeight('width', '73px'),
+    sizesEditor.widthHeight('height', '85px'),
+    sizesEditor.prop('boxShadow', 'top: 175px; left: 0px;'),
+    sizesEditor.prop('border', 'top: 175px; left: 75px;'),
+    sizesEditor.prop('borderRadius', 'top: 175px; left: 126px;'),
+    dynamicControls(sizesEditor.cssSizes(), group({
+      controls: [
+        button({
+          title: sizesEditor.computedContent(),
+          action: runActions(
+            writeValue('%$studio/profile_path%', '%$path%'),
+            studio.openProperties(true, tgp.getOrCreateCompInArray('%$path%~features', 'css.%level%')),
+            dialog.closeDialog()
+          ),
+          style: button.href()
+        })
+      ],
+      features: [
+        css('position: absolute; display: flex; justify-content: center; align-items: center;%css%'),
+        feature.hoverTitle('%level%-%side%'),
+        css('>a {font-size: 8px} ~:hover a { font-size: 16px; background: white}')
+      ]
+    }))
+  )
 })

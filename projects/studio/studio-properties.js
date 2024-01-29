@@ -44,14 +44,13 @@ component('studio.properties', {
       tableTree({
         treeModel: (ctx,{},{path}) => Object.assign(new jb.studio.PropertiesTree(path),{maxDepth: 7}),
         commonFields: [
-          group({
-            controls: studio.propField('%path%', '%expanded%'),
+          group(studio.propField('%path%', '%expanded%'), {
             features: [
               field.columnWidth('300'),
               css.conditionalClass('jb-disabled', tgp.isDisabled('%$path%'))
             ]
           }),
-          group({ controls: studio.propertyToolbar('%path%'), features: [field.columnWidth('20')] })
+          group(studio.propertyToolbar('%path%'), { features: [field.columnWidth('20')] })
         ],
         chapterHeadline: text({
           text: ({data}) => {
@@ -81,8 +80,6 @@ component('studio.properties', {
         ]
       }),
       group({
-        title: '',
-        layout: layout.flex({ justifyContent: 'flex-end', alignItems: 'flex-end', spacing: '7' }),
         controls: [
           button('new feature', studio.openNewProfileDialog('%$path%~features', 'feature'), {
             style: button.href(),
@@ -105,6 +102,8 @@ component('studio.properties', {
             features: feature.icon('business', { type: 'mdc', size: '16' })
           })
         ],
+        title: '',
+        layout: layout.flex({ justifyContent: 'flex-end', alignItems: 'flex-end', spacing: '7' }),
         features: css.margin({ bottom: '10', right: '5' })
       })
     ],
@@ -119,7 +118,6 @@ component('studio.propField', {
     {id: 'expanded', as: 'boolean', type: 'boolean'}
   ],
   impl: group({
-    title: tgp.propName('%$path%'),
     controls: group({
       controls: [
         controlWithCondition({
@@ -176,6 +174,7 @@ component('studio.propField', {
         variable('val', tgp.val('%$path%'))
       ]
     }),
+    title: tgp.propName('%$path%'),
     features: [
       feature.keyboardShortcut('Ctrl+I', studio.openJbEditor('%$path%')),
       If({
@@ -260,7 +259,7 @@ component('studio.jbFloatingInputRich', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: group({ controls: studio.propField('%$path%'), features: css('{padding: 20px}') })
+  impl: group(studio.propField('%$path%'), { features: css('{padding: 20px}') })
 })
 
 component('studio.editAs', {
@@ -317,8 +316,6 @@ component('studio.colorPicker', {
         content: itemlist('', {
           items: studio.colorVariables(),
           controls: group({
-            title: '',
-            layout: layout.flex({ alignItems: 'center', spacing: '5' }),
             controls: [
               control.icon('MoonFull', {
                 type: 'mdi',
@@ -326,6 +323,8 @@ component('studio.colorPicker', {
               }),
               text('%varName%')
             ],
+            title: '',
+            layout: layout.flex({ alignItems: 'center', spacing: '5' }),
             features: css.width('300')
           }),
           features: itemlist.selection({ onSelection: writeValue(tgp.ref('%$path%'), 'var(--%varName%)') })

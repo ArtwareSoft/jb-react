@@ -7,9 +7,6 @@ component('test.helloWorldCtrl', {
 component('test.wixIslandGridCtrl', {
   type: 'control',
   impl: group({
-    layout: layout.grid(list(13,74,321,55.5,55.5,16), {
-      rowSizes: list(11,177,79,33,74,4,31,9,21)
-    }),
     controls: [
       text('HYDRA', {
         style: text.htmlTag('span'),
@@ -113,6 +110,9 @@ component('test.wixIslandGridCtrl', {
         ]
       })
     ],
+    layout: layout.grid(list(13,74,321,55.5,55.5,16), {
+      rowSizes: list(11,177,79,33,74,4,31,9,21)
+    }),
     features: [
       id('island'),
       css('width: 783px; height: 449px;')

@@ -111,8 +111,7 @@ component('chromeDebugger.logsCtrl', {
         ),
         features: picklist.allowAsynchOptions()
       }),
-      group({
-        controls: remote.widget(studio.eventTracker(), byUri('%$inspectedUri%•vDebugger')),
+      group(remote.widget(studio.eventTracker(), byUri('%$inspectedUri%•vDebugger')), {
         features: [
           watchRef('%$inspectedUri%'),
           group.wait(remote.data(jbm.start(jbm.vDebugger()), byUri('%$inspectedUri%')))
@@ -132,8 +131,7 @@ component('chromeDebugger.compCtrl', {
     {id: 'inspectedProps'}
   ],
   type: 'control',
-  impl: group({
-    controls: remote.widget(studio.compInspector('%$inspectedProps%'), byUri('%$uri%•vDebugger')),
+  impl: group(remote.widget(studio.compInspector('%$inspectedProps%'), byUri('%$uri%•vDebugger')), {
     features: group.wait(remote.data(jbm.start(jbm.vDebugger()), byUri('%$uri%')))
   })
 })

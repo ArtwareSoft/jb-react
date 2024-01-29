@@ -170,11 +170,8 @@ component('studio.openResponsivePhonePopup', {
   impl: openDialog({
     title: 'responsive',
     content: group({
-      layout: layout.vertical('10'),
       controls: [
         group({
-          title: 'buttons',
-          layout: layout.horizontal('10'),
           controls: [
             button({
               title: 'phone',
@@ -203,9 +200,12 @@ component('studio.openResponsivePhonePopup', {
               features: feature.icon('fullscreen', { type: 'mdc' })
             })
           ],
+          title: 'buttons',
+          layout: layout.horizontal('10'),
           features: css.padding('7', '4', { right: '4' })
         })
-      ]
+      ],
+      layout: layout.vertical('10')
     }),
     style: dialog.popup()
   })

@@ -24,7 +24,6 @@ component('studio.jbFloatingInput', {
     {id: 'path', as: 'string'}
   ],
   impl: group({
-    layout: layout.horizontal('20'),
     controls: [
       control.icon('FunctionVariant', `hit '=' to calculate with function`, {
         features: [css.margin('25')]
@@ -60,8 +59,6 @@ component('studio.jbFloatingInput', {
         ]
       }),
       group({
-        title: '',
-        layout: layout.vertical(),
         controls: [
           editableText(tgp.propName('%$path%'), tgp.profileValueAsText('%$path%'), {
             updateOnBlur: true,
@@ -81,9 +78,12 @@ component('studio.jbFloatingInput', {
           }),
           text(pipeline(tgp.paramDef('%$path%'), '%description%'), { features: css('color: grey') })
         ],
+        title: '',
+        layout: layout.vertical(),
         features: css.width('100%')
       })
     ],
+    layout: layout.horizontal('20'),
     features: [
       css.padding({ left: '4', right: '4' }),
       css.width('500')

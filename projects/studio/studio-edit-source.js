@@ -114,7 +114,6 @@ component('studio.viewAllFiles', {
   impl: openDialog({
     title: '%$studio/project% files',
     content: group({
-      title: 'project files',
       controls: [
         picklist({ databind: '%$file%', options: picklist.options(keys('%$content/files%')) }),
         editableText('', property('%$file%', '%$content/files%'), {
@@ -122,6 +121,7 @@ component('studio.viewAllFiles', {
           features: watchRef('%$file%')
         })
       ],
+      title: 'project files',
       features: [
         watchable('file', pipeline(studio.projectsDir(), '%%/%$studio/project%/index.html')),
         group.wait(ctx => jb.studio.projectUtils.projectContent(ctx), { varName: 'content' })
@@ -204,10 +204,7 @@ component('studio.openEditProperty', {
       }),
       action.switchCase(endsWith('$vars', '%$path%')),
       action.switchCase('%$paramDef/options%', openDialog({
-        content: group({
-          controls: [
-            studio.jbFloatingInputRich('%$actualPath%')
-          ],
+        content: group(studio.jbFloatingInputRich('%$actualPath%'), {
           features: [
             feature.onEsc(dialog.closeDialog(true)),
             feature.onEnter(dialog.closeDialog(true))
@@ -370,18 +367,16 @@ component('studio.githubHelper', {
     content: group({
       controls: [
         group({
-          title: 'properties',
-          layout: layout.flex({ spacing: '100' }),
           controls: [
             editableText('github username', '%$properties/username%'),
             editableText('github repository', '%$properties/repository%')
-          ]
+          ],
+          title: 'properties',
+          layout: layout.flex({ spacing: '100' })
         }),
         group({
           controls: [
             group({
-              title: 'share urls',
-              layout: layout.flex({ justifyContent: 'flex-start', spacing: '' }),
               controls: [
                 html({
                   html: '<a href="%$projectLink%" target="_blank" style="color:rgb(63,81,181)">share link: %$projectLink%</a>',
@@ -393,6 +388,8 @@ component('studio.githubHelper', {
                   title: 'share with studio link'
                 })
               ],
+              title: 'share urls',
+              layout: layout.flex({ justifyContent: 'flex-start', spacing: '' }),
               features: [
                 variable('projectLink', pipeline(
                   'https://%$properties/username%.github.io',
@@ -404,7 +401,6 @@ component('studio.githubHelper', {
             }),
             html('<hr>', 'html'),
             group({
-              title: 'options',
               controls: [
                 picklist({ databind: '%$item%', options: picklist.options(keys('%$content%')) }),
                 editableText({
@@ -417,6 +413,7 @@ component('studio.githubHelper', {
                   features: [watchRef('%$item%')]
                 })
               ],
+              title: 'options',
               features: [
                 watchable('item', 'new project'),
                 variable('content', obj(

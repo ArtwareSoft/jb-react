@@ -72,11 +72,8 @@ component('studio.extractComponentDialog', {
     {id: 'path', as: 'string', mandatory: true}
   ],
   impl: group({
-    title: '',
-    layout: layout.vertical('40'),
     controls: [
       group({
-        layout: layout.horizontal('10'),
         controls: [
           editableText('component name', '%$studio/refactor/compName%', {
             features: [
@@ -98,7 +95,8 @@ component('studio.extractComponentDialog', {
               css('~ .mdc-select__anchor { background-color: white !important }')
             ]
           })
-        ]
+        ],
+        layout: layout.horizontal('10')
       }),
       editableText({
         title: 'content',
@@ -112,7 +110,9 @@ component('studio.extractComponentDialog', {
         style: editableText.codemirror(),
         features: watchRef('%$studio/refactor%', 'yes')
       })
-    ]
+    ],
+    title: '',
+    layout: layout.vertical('40')
   })
 })
 
@@ -172,11 +172,8 @@ component('studio.extractParamDialog', {
     {id: 'path', as: 'string', mandatory: true}
   ],
   impl: group({
-    title: '',
-    layout: layout.vertical('40'),
     controls: [
       group({
-        layout: layout.horizontal('10'),
         controls: [
           editableText('param name', '%$studio/refactor/paramName%', {
             features: [
@@ -190,7 +187,8 @@ component('studio.extractParamDialog', {
           editableText('description', '%$studio/refactor/description%', {
             style: editableText.mdcInput('300')
           })
-        ]
+        ],
+        layout: layout.horizontal('10')
       }),
       editableText({
         title: 'content',
@@ -203,7 +201,9 @@ component('studio.extractParamDialog', {
         style: editableText.codemirror(),
         features: watchRef('%$studio/refactor%', 'yes')
       })
-    ]
+    ],
+    title: '',
+    layout: layout.vertical('40')
   })
 })
 

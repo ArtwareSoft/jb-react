@@ -11,7 +11,6 @@ component('studio.openPickIcon', {
       ],
       controls: [
         group({
-          layout: layout.horizontal(),
           controls: [
             picklist('type', '%$type%', { options: picklist.optionsByComma('mdi,mdc'), style: picklist.buttonList() }),
             itemlistContainer.search({
@@ -25,7 +24,8 @@ component('studio.openPickIcon', {
                 ]
               })
             })
-          ]
+          ],
+          layout: layout.horizontal()
         }),
         itemlist('', {
           items: pipeline(
@@ -34,12 +34,12 @@ component('studio.openPickIcon', {
           ),
           controls: [
             group({
-              title: '',
-              layout: layout.horizontal(),
               controls: [
                 control.icon('%%', { type: firstSucceeding('%$type%','mdc') }),
                 text(pipeline('%%', text.highlight('%%', '%$itemlistCntrData.search_pattern%')), 'icon name')
-              ]
+              ],
+              title: '',
+              layout: layout.horizontal()
             })
           ],
           visualSizeLimit: '50',

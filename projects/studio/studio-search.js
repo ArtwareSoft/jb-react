@@ -64,8 +64,6 @@ component('studio.searchComponent', {
     {id: 'path', as: 'string'}
   ],
   impl: group({
-    title: 'itemlist-with-find',
-    layout: layout.horizontal(''),
     controls: [
       itemlistContainer.search('Search', {
         databind: '%$itemlistCntrData/search_pattern%',
@@ -78,6 +76,8 @@ component('studio.searchComponent', {
         ]
       })
     ],
+    title: 'itemlist-with-find',
+    layout: layout.horizontal(''),
     features: [group.itemlistContainer()]
   })
 })

@@ -10,15 +10,14 @@ component('workspace.IDE', {
   impl: group({
     controls: [
       group({
-        style: group.tabs(),
         controls: dynamicControls({
           controlItems: () => Object.keys(jb.workspace.openDocs),
-          genericControl: group({
-            title: pipeline('%$docUri%', suffix('/')),
-            controls: workspace.textEditor(({},{docUri}) => jb.workspace.openDocs[docUri].text, '%$docUri%')
+          genericControl: group(workspace.textEditor(({},{docUri}) => jb.workspace.openDocs[docUri].text, '%$docUri%'), {
+            title: pipeline('%$docUri%', suffix('/'))
           }),
           itemVariable: 'docUri'
         }),
+        style: group.tabs(),
         features: [
           followUp.watchObservable(() => jb.workspace.onOpenDoc),
           followUp.flow(
@@ -45,7 +44,7 @@ component('workspace.views', {
   params: [
     {id: 'height', as: 'number', defaultValue: '300'}
   ],
-  impl: group({ controls: [group({ title: 'preview', controls: probe.inOutView() })] })
+  impl: group(group(probe.inOutView(), { title: 'preview' }))
 })
 
 component('workspace.openDoc', {

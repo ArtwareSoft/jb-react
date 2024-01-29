@@ -24,17 +24,15 @@ component('studio.showRxSniffer', {
   impl: itemlist({
     items: source.data('%$snifferLog/result%'),
     controls: group({
-      layout: layout.flex({ spacing: '0' }),
       controls: [
-        group({
+        group(ui.dataBrowse('%d%'), {
           title: 'data',
           layout: layout.flex({ justifyContent: If('%dir%==in', 'flex-start', 'flex-end') }),
-          controls: ui.dataBrowse('%d%'),
           features: [css.width('100%'), css.margin({ left: '10' })]
         }),
         button({
           title: '%dir%',
-          action: openDialog('variables', group({ controls: [ui.dataBrowse('%d/vars%')] }), {
+          action: openDialog('variables', group(ui.dataBrowse('%d/vars%')), {
             style: dialog.popup(),
             id: '',
             features: dialogFeature.uniqueDialog('variables')
@@ -48,6 +46,7 @@ component('studio.showRxSniffer', {
         text('%t%', 't', { style: text.span(), features: [css.opacity('0.5'), css.margin({ left: '10' })] }),
         text('%time%', 'time', { style: text.span(), features: [css.opacity('0.5'), css.margin({ left: '10' })] })
       ],
+      layout: layout.flex({ spacing: '0' }),
       features: feature.byCondition('%dir%==out', css.color({ background: 'var(--jb-menubar-inactive-bg)' }))
     }),
     style: itemlist.ulLi(),

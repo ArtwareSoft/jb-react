@@ -48,56 +48,52 @@ component('studio.styleEditor', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: group({
-    controls: [
-      group({
-        style: group.tabs(),
-        controls: [
-          group({
-            title: 'css',
-            layout: layout.vertical(3),
-            controls: [
-              editableText('css', tgp.profileAsText('%$path%~css'), {
-                style: editableText.codemirror({ enableFullScreen: false, height: '300', mode: 'css', debounceTime: '2000', onCtrlEnter: studio.refreshPreview() })
+  impl: group(
+    group({
+      controls: [
+        group({
+          controls: [
+            editableText('css', tgp.profileAsText('%$path%~css'), {
+              style: editableText.codemirror({ enableFullScreen: false, height: '300', mode: 'css', debounceTime: '2000', onCtrlEnter: studio.refreshPreview() })
+            }),
+            text('jsx', { style: text.htmlTag('h5') }),
+            editableText('template', pipeline(studio.templateAsJsx('%$path%~template'), prettyPrint('%%')), {
+              style: editableText.codemirror({ height: '200', mode: 'jsx', onCtrlEnter: studio.refreshPreview() })
+            })
+          ],
+          title: 'css',
+          layout: layout.vertical(3)
+        }),
+        group({
+          controls: [
+            editableText('template', tgp.profileAsText('%$path%~template'), {
+              style: editableText.codemirror({ height: '400', mode: 'javascript', onCtrlEnter: studio.refreshPreview() })
+            }),
+            button({
+              title: 'load from jsx/html',
+              action: openDialog({
+                title: 'Paste html / jsx',
+                content: group(
+                  editableText('jsx', '%$jsx%', {
+                    style: editableText.codemirror({ enableFullScreen: true, debounceTime: 300 })
+                  })
+                ),
+                style: dialog.dialogOkCancel('OK', 'Cancel'),
+                onOK: writeValue(tgp.ref('%$path%~template'), studio.jsxToH('%$jsx%')),
+                features: [
+                  variable('jsx', 'paste your jsx here')
+                ]
               }),
-              text('jsx', { style: text.htmlTag('h5') }),
-              editableText('template', pipeline(studio.templateAsJsx('%$path%~template'), prettyPrint('%%')), {
-                style: editableText.codemirror({ height: '200', mode: 'jsx', onCtrlEnter: studio.refreshPreview() })
-              })
-            ]
-          }),
-          group({
-            title: 'js',
-            controls: [
-              editableText('template', tgp.profileAsText('%$path%~template'), {
-                style: editableText.codemirror({ height: '400', mode: 'javascript', onCtrlEnter: studio.refreshPreview() })
-              }),
-              button({
-                title: 'load from jsx/html',
-                action: openDialog({
-                  title: 'Paste html / jsx',
-                  content: group({
-                    controls: [
-                      editableText('jsx', '%$jsx%', {
-                        style: editableText.codemirror({ enableFullScreen: true, debounceTime: 300 })
-                      })
-                    ]
-                  }),
-                  style: dialog.dialogOkCancel('OK', 'Cancel'),
-                  onOK: writeValue(tgp.ref('%$path%~template'), studio.jsxToH('%$jsx%')),
-                  features: [
-                    variable('jsx', 'paste your jsx here')
-                  ]
-                }),
-                style: button.mdc()
-              })
-            ]
-          }),
-          group({ title: 'Inteliscript editor', layout: layout.vertical(), controls: [studio.jbEditor('%$path%')] })
-        ]
-      })
-    ]
-  })
+              style: button.mdc()
+            })
+          ],
+          title: 'js'
+        }),
+        group(studio.jbEditor('%$path%'), { title: 'Inteliscript editor', layout: layout.vertical() })
+      ],
+      style: group.tabs()
+    })
+  )
 })
 
 component('studio.styleSource', {

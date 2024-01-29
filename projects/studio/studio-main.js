@@ -2,11 +2,7 @@ using('remote-widget,data-browser,watchable-comps,probe-preview,net,tgp,workspac
 
 component('studio.main', {
   type: 'control',
-  impl: group({
-    controls: [
-      controlWithCondition(studio.isCircuit(), studio.circuit()),
-      studio.jbart()
-    ],
+  impl: group(controlWithCondition(studio.isCircuit(), studio.circuit()), studio.jbart(), {
     features: [
       group.wait({
         for: ctx => jb.studio.host.settings()
@@ -34,8 +30,7 @@ component('studio.jbart', {
   impl: group({
     controls: [
       studio.topBar(),
-      group({
-        controls: preview.remoteWidget(),
+      group(preview.remoteWidget(), {
         features: [
           watchRef('%$studio/page%'),
           watchRef('%$studio/preview%', 'yes'),
@@ -53,23 +48,20 @@ component('studio.jbart', {
 
 component('studio.circuit', {
   type: 'control',
-  impl: group({
-    controls: [
-      studio.topBar(),
-      group({
-        controls: probe.remoteCircuitPreview(),
-        features: [
-          followUp.action(
-            studio.openComponentInJbEditor('%$studio/jbEditor/selected%', '%$studio/probe/circuit%')
-          ),
-          watchRef('%$studio/preview%', 'yes'),
-          css.height('%$studio/preview/height%', 'auto', { minMax: 'max' }),
-          css.width('%$studio/preview/width%', 'auto', { minMax: 'max' })
-        ]
-      }),
-      studio.ctxCounters()
-    ]
-  })
+  impl: group(
+    studio.topBar(),
+    group(probe.remoteCircuitPreview(), {
+      features: [
+        followUp.action(
+          studio.openComponentInJbEditor('%$studio/jbEditor/selected%', '%$studio/probe/circuit%')
+        ),
+        watchRef('%$studio/preview%', 'yes'),
+        css.height('%$studio/preview/height%', 'auto', { minMax: 'max' }),
+        css.width('%$studio/preview/width%', 'auto', { minMax: 'max' })
+      ]
+    }),
+    studio.ctxCounters()
+  )
 })
 
 // jb.component('studio.jbartOld', {
@@ -117,8 +109,6 @@ component('dataResource.studio', {
 component('studio.pages', {
   type: 'control',
   impl: group({
-    title: 'pages',
-    layout: layout.horizontal(),
     controls: [
       button('new page', studio.openNewPage(), {
         style: button.mdcIcon(icon('add'), 16),
@@ -167,6 +157,8 @@ component('studio.pages', {
         ]
       })
     ],
+    title: 'pages',
+    layout: layout.horizontal(),
     features: [
       css.class('studio-pages1'),
       css.border('1', 'bottom', { color: 'var(--jb-dropdown-border)' })
@@ -265,8 +257,6 @@ component('studio.baseStudioUrl', {
 component('studio.topBar', {
   type: 'control',
   impl: group({
-    title: 'top bar',
-    layout: layout.flex({ alignItems: 'start', spacing: '' }),
     controls: [
       image(pipeline(studio.baseStudioUrl(), '%%css/jbartlogo.png'), '', {
         features: [
@@ -276,22 +266,24 @@ component('studio.topBar', {
         ]
       }),
       group({
-        title: 'title and menu',
         controls: [
           text('message', { style: text.studioMessage() }),
           group({
-            title: 'menu and toolbar',
-            layout: layout.flex({ spacing: '160' }),
             controls: [
               menu.control(studio.mainMenu(), menuStyle.pulldown(), { features: [id('mainMenu'), css.height('30'), css.margin('18')] }),
-              group({ title: 'toolbar', controls: studio.toolbar(), features: css.margin('8') }),
+              group(studio.toolbar(), { title: 'toolbar', features: css.margin('8') }),
               controlWithFeatures(studio.searchComponent(), { features: [css.margin('8', '-100')] })
-            ]
+            ],
+            title: 'menu and toolbar',
+            layout: layout.flex({ spacing: '160' })
           })
         ],
+        title: 'title and menu',
         features: css('padding-left: 18px; width: 100%; ')
       })
     ],
+    title: 'top bar',
+    layout: layout.flex({ alignItems: 'start', spacing: '' }),
     features: [
       css('height: 48px; border-bottom: 1px #d9d9d9 solid;')
     ]
@@ -301,8 +293,6 @@ component('studio.topBar', {
 component('studio.vscodeTopBar', {
   type: 'control',
   impl: group({
-    title: 'top bar',
-    layout: layout.flex('column', { alignItems: 'start', spacing: '' }),
     controls: [
       text({
         text: If('%$studio/project%==tests', '%$studio/circuit%', replace('_', ' ', { text: '%$studio/project%' })),
@@ -315,22 +305,24 @@ component('studio.vscodeTopBar', {
         ]
       }),
       group({
-        title: 'title and menu',
         controls: [
           group({
-            title: 'menu and toolbar',
-            layout: layout.flex({ justifyContent: 'space-between', alignItems: 'baseline', spacing: '' }),
-            style: group.htmlTag(),
             controls: [
               menu.control(studio.mainMenu(), menuStyle.pulldown(), { features: id('mainMenu') }),
-              group({ title: 'toolbar', controls: studio.toolbar() }),
+              group(studio.toolbar(), { title: 'toolbar' }),
               studio.searchComponent('')
-            ]
+            ],
+            title: 'menu and toolbar',
+            layout: layout.flex({ justifyContent: 'space-between', alignItems: 'baseline', spacing: '' }),
+            style: group.htmlTag()
           })
         ],
+        title: 'title and menu',
         features: css('width: 100%; ')
       })
-    ]
+    ],
+    title: 'top bar',
+    layout: layout.flex('column', { alignItems: 'start', spacing: '' })
   })
 })
 
@@ -341,7 +333,6 @@ component('studio.pathHyperlink', {
     {id: 'prefix', as: 'string'}
   ],
   impl: group({
-    layout: layout.horizontal('9'),
     controls: [
       text('%$prefix%'),
       button({
@@ -354,25 +345,21 @@ component('studio.pathHyperlink', {
         style: button.href(),
         features: feature.hoverTitle('%$path%')
       })
-    ]
+    ],
+    layout: layout.horizontal('9')
   })
 })
 
 component('studio.projectSettings', {
   type: 'control',
   impl: group({
-    title: '',
-    layout: layout.vertical(),
-    style: group.tabs(),
     controls: [
       group({
-        title: 'Files (%$studio/projectSettings/jsFiles/length%)',
         controls: [
           itemlist('', {
             items: '%jsFiles%',
             controls: [
               group({
-                layout: layout.horizontal('1'),
                 controls: [
                   editableText('file', '%%', {
                     style: editableText.mdcNoLabel('262'),
@@ -390,7 +377,8 @@ component('studio.projectSettings', {
                       css.margin('20', '-30')
                     ]
                   })
-                ]
+                ],
+                layout: layout.horizontal('1')
               })
             ],
             style: itemlist.div(),
@@ -403,6 +391,7 @@ component('studio.projectSettings', {
           }),
           button('add file', addToArray('%jsFiles%', { toAdd: 'myFile.js' }), { style: button.mdcChipAction() })
         ],
+        title: 'Files (%$studio/projectSettings/jsFiles/length%)',
         features: [
           feature.icon('FileOutline', { type: 'mdi' })
         ]
@@ -419,6 +408,9 @@ component('studio.projectSettings', {
         ]
       })
     ],
+    title: '',
+    layout: layout.vertical(),
+    style: group.tabs(),
     features: [
       group.data('%$studio/projectSettings%', { watch: true, includeChildren: 'structure' }),
       css.width('600'),

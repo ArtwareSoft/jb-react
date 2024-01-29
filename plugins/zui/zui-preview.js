@@ -2,23 +2,23 @@
 component('zui.itemPreview', {
   type: 'control',
   impl: group({
-    style: group.sections(header.h3()),
     controls: [
       dynamicControls({
         controlItems: pipeline('%$zuiCtx/props/elemsLayoutProps%', properties()),
         genericControl: group({
-          title: pipeline('%$elemLayoutProps/val/path% - %$elemLayoutProps/val/title%'),
-          style: propertySheet.titlesAbove(),
           controls: dynamicControls({
             controlItems: pipeline('%$elemLayoutProps/val%', properties(), filter(not(inGroup(list('path','title','axis'), '%id%')))),
             genericControl: text(pipeline('%$prop/val%', formatNumber(), join()), '%$prop/id%'),
             itemVariable: 'prop'
           }),
+          title: pipeline('%$elemLayoutProps/val/path% - %$elemLayoutProps/val/title%'),
+          style: propertySheet.titlesAbove(),
           features: css.margin({ left: '30px' })
         }),
         itemVariable: 'elemLayoutProps'
       })
     ],
+    style: group.sections(header.h3()),
     features: [css.width('400'), id('itemPreview')]
   }),
   circuit: 'zuiTest.itemlist'
@@ -27,22 +27,22 @@ component('zui.itemPreview', {
 component('zui.itemPreviewTable', {
   type: 'control',
   impl: group({
-    style: group.sections(header.h3()),
     controls: [
       dynamicControls({
         controlItems: pipeline('%$zuiCtx/props/elemsLayoutProps%', properties()),
         genericControl: group({
-          style: propertySheet.titlesAbove(),
           controls: dynamicControls({
             controlItems: pipeline('%$elemLayoutProps/val%', properties(), filter(not(inGroup(list('axis'), '%id%')))),
             genericControl: text(pipeline('%$prop/val%', formatNumber(), join()), '%$prop/id%'),
             itemVariable: 'prop'
           }),
+          style: propertySheet.titlesAbove(),
           features: css.margin({ left: '30px' })
         }),
         itemVariable: 'elemLayoutProps'
       })
     ],
+    style: group.sections(header.h3()),
     features: [css.width('400'), id('itemPreview')]
   }),
   circuit: 'zuiTest.itemlist'
@@ -51,12 +51,12 @@ component('zui.itemPreviewTable', {
 component('zui.itemViewProps', {
   type: 'control',
   impl: group({
-    style: propertySheet.titlesAbove(),
     controls: dynamicControls({
       controlItems: pipeline('%$zuiCtx/props/elemsLayoutProps/itemView%', properties()),
       genericControl: text(pipeline('%$prop/val%', formatNumber(), join()), '%$prop/id%'),
       itemVariable: 'prop'
     }),
+    style: propertySheet.titlesAbove(),
     features: css.margin({ left: '30px' })
   }),
   circuit: 'zuiTest.itemlist'
@@ -78,12 +78,12 @@ component('zui.visualItemPreview', {
               openDialog({
                 title: '%$box/path% - %$box/title%',
                 content: group({
-                  style: propertySheet.titlesAbove(),
                   controls: dynamicControls({
                     controlItems: pipeline('%$box%', properties(), filter(not(inGroup(list('path','title','axis'), '%id%')))),
                     genericControl: text(pipeline('%$prop/val%', formatNumber(), join()), '%$prop/id%'),
                     itemVariable: 'prop'
                   }),
+                  style: propertySheet.titlesAbove(),
                   features: css.margin({ left: '30px' })
                 }),
                 features: [
