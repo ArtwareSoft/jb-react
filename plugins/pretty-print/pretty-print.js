@@ -104,7 +104,7 @@ extension('utils', 'prettyPrint', {
       }
       function fixPropName(prop) {
         if (prop == '$vars') return 'vars'
-        return prop.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/) ? prop : `'${prop}'`
+        return prop.match(/^[$a-zA-Z_][a-zA-Z0-9_]*$/) ? prop : `'${prop}'`
       }
 
       function calcMixedTokens() {

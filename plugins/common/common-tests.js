@@ -4,8 +4,16 @@ component('dataTest.join', {
   impl: dataTest(pipeline(list(1,2), '%%', join()), equals('1,2'))
 })
 
+component('dataTest.data', {
+  impl: dataTest(join({ data: list(1,2) }), equals('1,2'))
+})
+
 component('dataTest.slice', {
   impl: dataTest(pipeline(list(1,2,3), slice(0, 2), join()), equals('1,2'))
+})
+
+component('dataTest.disabled', {
+  impl: dataTest(pipeline(list(1,2,3), slice(0, 2, { $disabled: true }), join()), equals('1,2,3'))
 })
 
 component('dataTest.varInPipeline', {

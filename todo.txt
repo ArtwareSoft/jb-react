@@ -1,11 +1,10 @@
 refactor
-  fix ~!
-  fix moveUp
+  make lang test local
   watchRef - second param byName
   disable
   fix tgp-upgrade in nodejs
   langServer dsl
-  unify contains, equal, endsWith, startsWith - %% - allText, text -> data, maybe data param can be standard!!
+  unify contains, equal, endsWith, startsWith - %% - allText, text -> data, maybe 'data' param by name can be standard!!
   
 use chatgpt to plan a view of a context for a specific need and target audience.
 use rules

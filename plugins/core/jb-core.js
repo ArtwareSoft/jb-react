@@ -124,8 +124,10 @@ extension('core', {
       const profile = ctx.profile
       if (profile == null || (typeof profile == 'object' && profile.$disabled))
         return jb.core.castToParam(null,parentParam)
+      if (profile.data && ! jb.path(settings, 'dataUsed'))
+        if ((jb.path(profile[jb.core.CT],'comp.params') || []).find(p=>p.id == 'data') == null)
+         return jb.core.doRun(ctx.setData(ctx.runInner(profile.data, {}, 'data')),parentParam,{...(settings||{}), dataUsed: true})
 
-      if (profile.$debugger == 0) debugger
       if (profile.$asIs) return profile.$asIs
       if (parentParam && (parentParam.type||'').indexOf('[]') > -1 && ! parentParam.as) // fix to array value. e.g. single feature not in array
           parentParam.as = 'array'
@@ -136,6 +138,7 @@ extension('core', {
       const run = jb.core.prepare(ctxWithVars,parentParam)
       ctx.parentParam = parentParam
       const {castToParam } = jb.core
+      if (profile.$debug) debugger
       switch (run.type) {
         case 'booleanExp': return castToParam(jb.expression.calcBool(profile, ctx,parentParam), parentParam)
         case 'expression': return castToParam(jb.expression.calc(profile, ctx,parentParam), parentParam)

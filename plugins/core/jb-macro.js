@@ -5,7 +5,7 @@ Object.assign(jb, {
 
 extension('macro', {
     initExtension() {
-        return { proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro'), systemProps: ['remark', 'debug', 'disabled', 'log' ] }
+        return { proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro'), systemProps: ['remark', 'data', '$debug', '$disabled', '$log' ] }
     },  
     titleToId: id => id.replace(/-([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
     newProxy: id => new Proxy(() => 0, {

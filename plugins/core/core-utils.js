@@ -164,7 +164,7 @@ extension('utils', 'core', {
           if (Array.isArray(prof)) {
             prof.forEach(v=>doResolve(v, expectedType))
           } else if (comp && prof.$ != 'asIs') {
-            ;(comp.params || []).forEach(p=> doResolve(prof[p.id], (jb.path(p,[CT,'dslType']) ||'').replace(/\[\]/g,''),prof ))
+            ;[...(comp.params || []), {id: 'data'}].forEach(p=> doResolve(prof[p.id], (jb.path(p,[CT,'dslType']) ||'').replace(/\[\]/g,''),prof ))
             doResolve(prof.$vars)
             if (prof.$ == 'object')
               Object.values(prof).forEach(v=>doResolve(v))
