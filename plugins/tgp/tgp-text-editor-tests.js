@@ -44,6 +44,20 @@ component('langServerTest.provideDefinition.inFunc', {
   })
 })
 
+component('langServerTest.moveInArrayEdits', {
+  impl: dataTest({
+    calculate: pipe(
+      tgp.dummyDocProps(
+        `component('x', {
+  impl: dataTest(pipeline(list(1,2,3), __slice(0, 2), join()), equals('1,2'))
+})`
+      ),
+      tgp.moveInArrayEdits(assign(prop('diff', 1)))
+    ),
+    expectedResult: equals('%cursorPos/col%', 52)
+  })
+})
+
 component('remoteTest.langServer.completions', {
   impl: dataTest({
     calculate: pipe(

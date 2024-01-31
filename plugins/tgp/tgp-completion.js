@@ -345,9 +345,9 @@ extension('tgpTextEditor', 'completion', {
     async moveInArrayEdits(docPropsWithDiff,ctx) {
         const { diff } = docPropsWithDiff
         const props = await jb.tgpTextEditor.calcActiveEditorPath(docPropsWithDiff, {clearCache: true})
-        const { reformatEdits, compId, compLine, actionMap, compText } = props        
+        const { reformatEdits, compId, compLine, actionMap, compText, path } = props        
         if (!reformatEdits && actionMap) {
-            const rev = actionMap.path.split('~').reverse()
+            const rev = path.split('~').reverse()
             const indexOfElem = rev.findIndex(x=>x.match(/^[0-9]+$/))
             if (indexOfElem != -1) {
                 const path = rev.slice(indexOfElem).reverse()

@@ -544,10 +544,11 @@ component('dynamicObject', {
 component('extend', {
   description: 'assign and extend with calculated properties',
   params: [
-    {id: 'props', type: 'prop[]', mandatory: true, defaultValue: []}
+    {id: 'props', type: 'prop[]', mandatory: true, defaultValue: []},
+    {id: 'obj', byName: true, defaultValue: '%%'}
   ],
-  impl: (ctx,properties) =>
-		Object.assign({}, ctx.data, jb.objFromEntries(properties.map(p=>[p.name, jb.core.tojstype(p.val(ctx),p.type)])))
+  impl: (ctx,properties,obj) =>
+		Object.assign({}, obj, jb.objFromEntries(properties.map(p=>[p.name, jb.core.tojstype(p.val(ctx),p.type)])))
 })
 component('assign', { autoGen: true, ...jb.utils.getUnresolvedProfile('extend'), [jb.core.CT]: null})
 
