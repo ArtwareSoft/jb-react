@@ -1,3 +1,13 @@
+refactor
+  fix ~!
+  fix moveUp
+  watchRef - second param byName
+  fix tgp-upgrade in nodejs
+  langServer dsl
+  unify contains, equal, endsWith, startsWith - %% - allText, text -> data, maybe data param can be standard!!
+  
+use chatgpt to plan a view of a context for a specific need and target audience.
+use rules
 
 use chatgpt to generate python and tgp wrapper
 external lib version, add version to using and pluginDsl - find use case with external lib
@@ -5,7 +15,8 @@ external lib version, add version to using and pluginDsl - find use case with ex
 go over UIFrontEndTest and try to make it uiTest
 load plugin dynamically in probeTest
 ctrl-I
-  add 'using' and 'dsl' indication for current plugin
+  add plugin and file info about 'using' and 'dsl' indication for current plugin
+add plugin dependencies chart with code side and #components
 
 controlWithFeatures - use ctx params in features
 vdom diff bug!!!

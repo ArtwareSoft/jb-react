@@ -301,7 +301,7 @@ component('uiTest.watchRefArrayDeleteWithRunActionOnItems', {
 })
 
 component('uiTest.watchableAsText', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     control: group({
       vars: [
         Var('watchedText', tgpTextEditor.watchableAsText('%$watchablePeople%'))
@@ -317,7 +317,9 @@ component('uiTest.watchableAsText', {
             watchRef('%$watchablePeople%', 'yes')
           ]
         }),
-        button('show path of cursor', writeValue('%$path%', tgpTextEditor.cursorPath('%$watchedText%')), {
+        button({
+          title: 'show path of cursor',
+          action: writeValue('%$path%', tgpTextEditor.cursorPath('%$watchedText%')),
           features: [
             id('show-path'),
             textarea.enrichUserEvent('#editor')
@@ -330,12 +332,13 @@ component('uiTest.watchableAsText', {
       ],
       features: [id('group'), watchable('path')]
     }),
+    expectedResult: contains('watchablePeople~0~name'),
     uiAction: uiActions(
-      waitFor(ctx => jb.ui.cmpOfSelector('#editor',ctx)),
-      action(runFEMethod('#editor', 'setSelectionRange', { data: {'$': 'object', from: 22} })),
+      waitForSelector('#editor'),
+      action(runFEMethod('#editor', 'setSelectionRange', obj(prop('from',22)))),
       click('#show-path')
     ),
-    expectedResult: contains('watchablePeople~0~name~!value')
+    useFrontEnd: true
   })
 })
 

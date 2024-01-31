@@ -71,7 +71,7 @@ component('tgp.completionActionTest', {
 
             const inCompPos = jb.tgpTextEditor.offsetToLineCol(dslLine+code,offset)
             jb.tgpTextEditor.host.selectRange(inCompPos)
-            const { reformatEdits } = jb.tgpTextEditor.calcActiveEditorPath(jb.tgpTextEditor.host.compTextAndCursor())
+            const { reformatEdits, inCompOffset } = jb.tgpTextEditor.calcActiveEditorPath(jb.tgpTextEditor.host.compTextAndCursor())
             if (reformatEdits)
                 return { testFailure: `bad comp format` }
             const items = await jb.tgpTextEditor.provideCompletionItems(jb.tgpTextEditor.host.compTextAndCursor(), ctxForTest)
@@ -142,8 +142,8 @@ component('tgp.dummyDocProps', {
 
     const _inCompPos = jb.tgpTextEditor.offsetToLineCol(dslLine+code,offset)
     jb.tgpTextEditor.host.selectRange(_inCompPos)
-    const { compText, inCompPos, shortId, cursorCol, cursorLine, compLine, filePath } = jb.tgpTextEditor.calcActiveEditorPath(jb.tgpTextEditor.host.compTextAndCursor())
-    return { compText, inCompPos, shortId, cursorCol, cursorLine, compLine, filePath}
+    const { compText, inCompOffset, shortId, cursorCol, cursorLine, compLine, filePath, lineText } = jb.tgpTextEditor.calcActiveEditorPath(jb.tgpTextEditor.host.compTextAndCursor())
+    return { compText, inCompOffset, shortId, cursorCol, cursorLine, compLine, filePath, lineText}
   }
 })
 

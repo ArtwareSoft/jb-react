@@ -57,15 +57,15 @@ extension('ui', 'frontend', {
                 if (_flow && res) this.flows.push(res)
             }, `frontEnd-${method}`,this.ctx))
         }
-        enrichUserEvent(ev, userEvent) {
+        enrichUserEvent(ev, {userEvent , ctx}) {
             (this.base.frontEndMethods || []).filter(x=>x.method == 'enrichUserEvent').map(({path}) => jb.utils.tryWrapper(() => {
                 const actionPath = path+'~action'
                 const profile = actionPath.split('~').reduce((o,p)=>o && o[p],jb.comps)
                 if (!profile)
                     return jb.logError('enrichUserEvent - can not get profile',{method, path})
                 const vars = {cmp: this, $state: this.state, el: this.base, ...this.base.vars, ev, userEvent }
-                Object.assign(userEvent, jb.core.run( new jb.core.jbCtx(this.ctx, { vars, profile, path: actionPath })))
-            }, 'enrichUserEvent',this.ctx))
+                Object.assign(userEvent, jb.core.run( new jb.core.jbCtx(ctx || this.ctx, { vars, profile, path: actionPath })))
+            }, 'enrichUserEvent', ctx || this.ctx))
         }
         refresh(state, options) {
             jb.log('frontend uiComp refresh request',{cmp: {...this} , state, options})

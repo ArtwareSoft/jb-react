@@ -4,7 +4,7 @@ component('uiTest.group', {
 })
 
 component('uiTest.group1', {
-  impl: uiTest(group(text('hello world')), contains())
+  impl: group(text('my label'), { title: '2.0' })
 })
 
 component('uiTest.label', {

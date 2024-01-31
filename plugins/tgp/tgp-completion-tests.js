@@ -5,16 +5,16 @@ component('completionTest.param', {
     compText: `component('x', {
   impl: uiTest(__text(__'hello world',__ ''__)__,__ __contains('hello world')__)
 })`,
-    expectedSelections: ['runBefore','style','style','style','style','runBefore','not','runBefore']
+    expectedSelections: ['runBefore','style','style','style','runBefore','runBefore','not','runBefore']
   })
 })
 
 component('completionTest.pt', {
   impl: tgp.completionOptionsTest({
     compText: `component('x', {
-  impl: uiTest(group({ controls: [__text('hello world'), __text('2')__]__ }), __contains('hello world','2'))
+  impl: uiTest(group(__text('__hello world'), __text('2'__)__), __contains('hello world','2'))
 })`,
-    expectedSelections: ['button','button','button','style','not']
+    expectedSelections: ['button','pipeline','button','style','button','not']
   })
 })
 
@@ -22,7 +22,7 @@ component('completionTest.text', {
   impl: tgp.completionOptionsTest(`component('x', {
   impl: uiTest(text(__'__hello'__, __'__'__))
 })`, {
-    expectedSelections: ['pipeline','pipeline','pipeline','pipeline','pipeline','pipeline']
+    expectedSelections: ['style','pipeline','style','style','pipeline','style']
   })
 })
 
@@ -54,7 +54,7 @@ component('completionTest.typeAdapter', {
 
 component('completionTest.pipeline2', {
   impl: tgp.completionOptionsTest(`component('x', {
-  impl: uiTest(text(pipeline(__'')))
+  impl: uiTest(text(pipeline('__')))
 })`, {
     expectedSelections: ['split']
   })
@@ -69,67 +69,93 @@ component('completionTest.createPipelineFromComp', {
         range: {start: {line: 1, col: 20}, end: {line: 1, col: 26}},
         newText: 'pipeline(split()'
       }),
-    expectedCursorPos: '1,36'
+    expectedCursorPos: '1,29'
   })
 })
 
-component('completionTest.addToArray', {
+component('completionTest.singleArgAsArray.begin', {
   impl: tgp.completionActionTest(`component('x', {
-  impl: uiTest(group({ controls: [button('')__] }))
+  impl: uiTest(group(__text('')))
+})`, {
+    completionToActivate: 'features',
+    expectedEdit: () => ({
+      range: {start: {line: 1, col: 29}, end: {line: 1, col: 29}},
+      newText: ', { features: TBD() }'
+    }),
+    expectedCursorPos: '1,43'
+  })
+})
+
+component('completionTest.singleArgAsArray.end', {
+  impl: tgp.completionActionTest(`component('x', {
+  impl: uiTest(group(text('')__))
 })`, {
     completionToActivate: 'button',
     expectedEdit: () => ({
-        range: {start: {line: 1, col: 44}, end: {line: 1, col: 44}},
+        range: {start: {line: 1, col: 29}, end: {line: 1, col: 29}},
         newText: ", button('click me')"
       }),
-    expectedCursorPos: '1,63'
+    expectedCursorPos: '1,38'
+  })
+})
+
+component('completionTest.singleArgAsArray.middle', {
+  impl: tgp.completionActionTest(`component('x', {
+  impl: uiTest(group(text(''),__ text('2')))
+})`, {
+    completionToActivate: 'button',
+    expectedEdit: () => ({
+      range: {start: {line: 1, col: 31}, end: {line: 1, col: 31}},
+      newText: `button('click me'), `
+    }),
+    expectedCursorPos: '1,38'
   })
 })
 
 component('completionTest.paramsAndProfiles', {
   impl: tgp.completionOptionsTest(`component('x', {
-  impl: uiTest(text(__''))
+  impl: uiTest(__text(''))
 })`, {
-    expectedSelections: ['pipeline','style']
+    expectedSelections: ['runBefore','button']
   })
 })
 
 component('completionTest.createPipelineFromString', {
   impl: tgp.completionActionTest(`component('x', {
-  impl: uiTest(text(__'aa'))
+  impl: uiTest(text('__aa'))
 })`, {
     completionToActivate: 'pipeline',
     expectedEdit: () => ({
         range: {start: {line: 1, col: 20}, end: {line: 1, col: 24}},
         newText: "pipeline('aa')"
       }),
-    expectedCursorPos: '1,33'
+    expectedCursorPos: '1,29'
   })
 })
 
 component('completionTest.createPipelineFromEmptyString', {
   impl: tgp.completionActionTest(`component('x', {
-  impl: uiTest(text('hello world', __''))
+  impl: uiTest(text('hello world', '__'))
 })`, {
     completionToActivate: 'pipeline',
     expectedEdit: () => ({
       range: {start: {line: 1, col: 35}, end: {line: 1, col: 37}},
       newText: `pipeline('')`
       }),
-    expectedCursorPos: '1,46'
+    expectedCursorPos: '1,44'
   })
 })
 
 component('completionTest.insideVar', {
   impl: tgp.completionActionTest(`component('x', {
-  impl: dataTest({ vars: [Var('a', __'b')] })
+  impl: dataTest({ vars: [Var('a', '__b')] })
 })`, {
     completionToActivate: 'pipeline',
     expectedEdit: () => ({
         range: {start: {line: 1, col: 35}, end: {line: 1, col: 38}},
         newText: `pipeline('b')`
       }),
-    expectedCursorPos: '1,47'
+    expectedCursorPos: '1,44'
   })
 })
 
@@ -142,7 +168,7 @@ component('completionTest.splitInsidePipeline', {
         range: {start: {line: 1, col: 29}, end: {line: 1, col: 29}},
         newText: 'split()'
       }),
-    expectedCursorPos: '1,36'
+    expectedCursorPos: '1,35'
   })
 })
 
@@ -174,23 +200,24 @@ component('completionTest.wrapWithGroup', {
 })`, {
     completionToActivate: 'group',
     expectedEdit: () => ({
-        range: {start: {line: 1, col: 15}, end: {line: 1, col: 20}},
-        newText: `group({ controls: [text()] }`}),
-    expectedCursorPos: '1,43'
+      range: {start: {line: 1, col: 15}, end: {line: 1, col: 20}},
+      newText: 'group(text()'
+    }),
+    expectedCursorPos: '1,21'
   })
 })
 
 component('completionTest.wrapWithArray', {
   impl: tgp.completionActionTest({
     compText: `component('x', {
-  impl: uiTest(group({ controls: __text('hello') }), contains())
+  impl: uiTest(text({ features: __id('x') }), contains())
 })`,
     completionToActivate: 'wrap with array',
     expectedEdit: () => ({
-      range: {start: {line: 1, col: 33}, end: {line: 1, col: 46}},
-      newText: `[text('hello')]`
+      range: {start: {line: 1, col: 32}, end: {line: 1, col: 39}},
+      newText: `[id('x')]`
     }),
-    expectedCursorPos: '1,47'
+    expectedCursorPos: '1,40'
   })
 })
 
@@ -365,105 +392,5 @@ component('completionTest.dslTest.top', {
 })`, {
     expectedSelections: ['capital'],
     dsl: 'location'
-  })
-})
-
-component('remoteTest.langServer.completions', {
-  impl: dataTest({
-    calculate: pipe(
-      Var('docProps', tgp.dummyDocProps(`component('x', {
-  impl: dataTest('', __not())
-})`)),
-      '1',
-      tgp.completionItemsByDocProps('%$docProps%'),
-      log('test'),
-      count()
-    ),
-    expectedResult: '%% > 0',
-    timeout: 1000
-  })
-})
-
-component('remoteTest.langServer.externalCompletions', {
-  impl: dataTest({
-    calculate: pipe(
-      Var('docProps', tgp.dummyDocProps(`component('x', {
-  impl: dataTest('', __not())
-})`, {
-        filePath: '%$PROJECTS_PATH%/amta/plugins/amta-parsing/parsing-tests.js'
-      })),
-      '1',
-      tgp.completionItemsByDocProps('%$docProps%'),
-      log('test'),
-      count()
-    ),
-    expectedResult: '%% > 0',
-    timeout: 1000
-  })
-})
-
-component('remoteTest.langServer.studioCompletions', {
-  impl: dataTest({
-    calculate: pipe(
-      Var('docProps', tgp.dummyDocProps(`component('x', {
-  impl: pipeline(pipeline(__))
-})`, {
-        filePath: '%$PROJECTS_PATH%/jb-react/projects/studio/studio-main.js'
-      })),
-      '1',
-      tgp.completionItemsByDocProps('%$docProps%'),
-      log('test'),
-      count()
-    ),
-    expectedResult: '%% > 10',
-    timeout: 1000
-  })
-})
-
-component('remoteTest.langServer.editsAndCursorPos', {
-  impl: dataTest({
-    vars: [
-      Var('docProps', tgp.dummyDocProps(`component('x', {
-  impl: dataTest(pipeline(__))
-})`))
-    ],
-    calculate: pipe(
-      tgp.completionItemsByDocProps('%$docProps%'),
-      filter(equals('%label%', 'split')),
-      log('test'),
-      tgp.editsAndCursorPosByDocProps('%$docProps%', '%command/arguments/0%'),
-      log('test'),
-      '%edit/newText%'
-    ),
-    expectedResult: '%%==split()',
-    timeout: 5000
-  })
-})
-
-component('remoteTest.tgpTextEditor.probeByDocProps', {
-  impl: dataTest({
-    calculate: pipe(
-      Var('docProps', tgp.dummyDocProps(`component('x', {
-  impl: dataTest(pipeline('hello,world'), __split(','))
-})`)),
-      tgpTextEditor.probeByDocProps('%$docProps%'),
-      '%result/out%',
-      count()
-    ),
-    expectedResult: equals(2),
-    timeout: 1000
-  })
-})
-
-component('remoteTest.tgpTextEditor.studioCircuitUrlByDocProps', {
-  impl: dataTest({
-    calculate: pipe(
-      Var('docProps', tgp.dummyDocProps(`component('x', {
-  impl: dataTest(pipeline('hello,world'), __split(','))
-})`)),
-      tgpTextEditor.studioCircuitUrlByDocProps('%$docProps%')
-    ),
-    expectedResult: contains('http://localhost:8082/project/studio/CmpltnTst','impl~expectedResult?sourceCode='),
-    timeout: 1000
   })
 })

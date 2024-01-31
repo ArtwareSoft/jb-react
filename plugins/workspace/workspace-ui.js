@@ -126,21 +126,24 @@ component('textarea.initTgpTextEditor', {
   impl: features(
     textarea.enrichUserEvent(),
     frontEnd.method('applyEdit', ({data},{docUri, el}) => {
-            const {edits, uri} = data
-            if (uri != docUri) return
-            ;(edits || []).forEach(({text, from, to}) => {
-                el.value = el.value.slice(0,from) + text + el.value.slice(to)
-                el.setSelectionRange(from,from)
-            })
-        }),
+        const {edits, uri} = data
+        if (uri != docUri) return
+        ;(edits || []).forEach(({text, from, to}) => {
+            el.value = el.value.slice(0,from) + text + el.value.slice(to)
+            el.setSelectionRange(from,from)
+        })
+    }),
     frontEnd.method('setSelectionRange', ({data},{docUri, el}) => {
-            const {uri, from, to} = data || {}
-            if (uri != docUri) return
-            if (!from) 
-                return jb.logError('tgpTextEditor setSelectionRange empty offset',{data ,el})
-            jb.log('tgpTextEditor selection set to', {data})
-            el.setSelectionRange(from,to || from)
-        }),
+        const {uri, from, to} = data || {}
+        if (uri != docUri) return
+        if (!from) 
+            return jb.logError('tgpTextEditor setSelectionRange empty offset',{data ,el})
+        jb.log('tgpTextEditor selection set to', {data})
+        if (el.setSelectionRange)
+          el.setSelectionRange(from,to || from)
+        else
+          Object.assign(el._component.state, { selectionRange : {from, to: to || from} })
+    }),
     frontEnd.flow(
       source.event('selectionchange', () => jb.frame.document),
       rx.takeUntil('%$cmp.destroyed%'),
@@ -199,15 +202,17 @@ component('textarea.enrichUserEvent', {
   impl: features(
     frontEnd.var('textEditorSelector', '%$textEditorSelector%'),
     frontEnd.enrichUserEvent((ctx,{cmp,textEditorSelector}) => {
-            const elem = textEditorSelector ? jb.ui.widgetBody(ctx).querySelector(textEditorSelector) : cmp.base
-            return elem && {
-                outerHeight: jb.ui.outerHeight(elem), 
-                outerWidth: jb.ui.outerWidth(elem), 
-                clientRect: elem.getBoundingClientRect(),
-                text: elem.value,
-                selectionStart: jb.tgpTextEditor.offsetToLineCol(elem.value,elem.selectionStart)
-            }
-        })
+        const elem = textEditorSelector ? jb.ui.widgetBody(ctx).querySelector(textEditorSelector) : cmp.base
+        if (elem instanceof jb.ui.VNode)
+          return { selectionStart: jb.path(elem, '_component.state.selectionRange.from') }
+        return elem && {
+            outerHeight: jb.ui.outerHeight(elem), 
+            outerWidth: jb.ui.outerWidth(elem), 
+            clientRect: elem.getBoundingClientRect(),
+            text: elem.value,
+            selectionStart: jb.tgpTextEditor.offsetToLineCol(elem.value,elem.selectionStart)
+        }
+    })
   )
 })
 

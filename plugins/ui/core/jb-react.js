@@ -393,7 +393,7 @@ extension('ui', 'react', {
             return jb.logError(`no cmpId in element`,{ctx, elem, method, widgetId })
 
         return {$:'userRequest', method, widgetId, cmpId, vars: 
-            { evCounter: jb.ui.widgetEventCounter[widgetId], ev: jb.ui.buildUserEvent(ev, elem)} }
+            { evCounter: jb.ui.widgetEventCounter[widgetId], ev: jb.ui.buildUserEvent(ev, elem, ctx)} }
     },
     calcElemProps(elem) {
         return elem instanceof jb.ui.VNode ? {} : { 
@@ -401,7 +401,7 @@ extension('ui', 'react', {
             clientRect: elem.getBoundingClientRect() 
         }
     },
-    buildUserEvent(ev, elem) {
+    buildUserEvent(ev, elem, ctx) {
         if (!ev) return null
         const userEvent = {
             value: ev.value || (ev.target || {}).value, 
@@ -412,7 +412,7 @@ extension('ui', 'react', {
         const elemProps = (elem.getAttribute('usereventprops') || '').split(',').filter(x=>x).filter(x=>x.split('.')[0] == 'elem').map(x=>x.split('.')[1])
         ;['type','keyCode','ctrlKey','altKey','clientX','clientY', ...evProps].forEach(prop=> ev[prop] != null && (userEvent.ev[prop] = ev[prop]))
         ;['id', 'class', ...elemProps].forEach(prop=>userEvent.elem[prop] = elem.getAttribute(prop))
-        jb.path(elem,'_component.enrichUserEvent') && elem._component.enrichUserEvent(ev,userEvent)
+        jb.path(elem,'_component.enrichUserEvent') && elem._component.enrichUserEvent(ev,{userEvent, ctx})
         if (ev.fixedTarget) userEvent.elem = jb.ui.calcElemProps(ev.fixedTarget) // enrich UserEvent can 'fix' the target, e.g. picking the selected node in tree
         return userEvent
     },

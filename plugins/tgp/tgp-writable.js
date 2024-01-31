@@ -38,30 +38,38 @@ extension('tgp', 'writable', {
 		} catch (e) {
 			jb.logException(e,'eval profile',{prof_str})
 		}
-	},	
-	newProfile(comp,compName,path) {
-		const currentVal = path && jb.tgp.valOfPath(path)
+	},
+	cloneProfile(prof) {
+		if (!prof || jb.utils.isPrimitiveValue(prof) || typeof prof == 'function') return prof
+		const keys = [...Object.keys(prof),jb.core.OrigValues,jb.core.CT]
+		return jb.objFromEntries(keys.map(k=>[k,jb.tgp.cloneProfile(prof[k])]))
+	},
+	newProfile(comp,compName, basedOnPath) { // basedOnPath is optional
+		const currentVal = basedOnPath && jb.tgp.valOfPath(basedOnPath)
 		const result = { $: compName }
 		jb.utils.compParams(comp).forEach(p=>{
 			if (p.composite)
-				result[p.id] = currentVal == null  || Array.isArray(currentVal) ? [] : jb.asArray(currentVal)
-			if (p.templateValue)
-				result[p.id] = JSON.parse(JSON.stringify(p.templateValue))
+				result[p.id] = currentVal == null || Array.isArray(currentVal) ? [] : jb.asArray(currentVal)
+			else if (p.templateValue)
+				result[p.id] = jb.tgp.cloneProfile(p.templateValue)
+			else if (currentVal && currentVal[p.id] !== undefined)
+				result[p.id] = currentVal[p.id]
 		})
 		return result
 	},
 	setComp(path,id,srcCtx) {
 		const comp = id && jb.tgp.getComp(id)
 		if (!id || !comp) return
-		const params = jb.utils.compParams(comp)
+//		const params = jb.utils.compParams(comp)
 
 		const result = jb.tgp.newProfile(comp,id,path)
-		const currentVal = jb.tgp.valOfPath(path)
-		params.forEach(p=>{
-			if (currentVal && currentVal[p.id] !== undefined)
-				result[p.id] = currentVal[p.id]
-		})
+		// const currentVal = jb.tgp.valOfPath(path)
+		// params.forEach(p=>{
+		// 	if (currentVal && currentVal[p.id] !== undefined)
+		// 		result[p.id] = currentVal[p.id]
+		// })
 		jb.tgp.writeValue(jb.tgp.ref(path),result,srcCtx)
+		return result
 	},
 
     // if drop destination is not an array item, fix it

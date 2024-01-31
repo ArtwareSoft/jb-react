@@ -5,6 +5,7 @@ dsl('test')
 
 extension('test','uiActions', {
   activateFEHandlers(elem,type,ev,ctx) {
+    //elem._component && elem._component.enrichUserEvent(ev)
     const currentTarget = [elem, ...jb.ui.parents(elem)].find(x=>jb.path(x.handlers,type))
     if (currentTarget)
       (jb.path(currentTarget.handlers,type) || []).forEach(h=>h({...ev,currentTarget}))
