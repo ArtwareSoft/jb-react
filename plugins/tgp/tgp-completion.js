@@ -1,4 +1,3 @@
-
 extension('tgp', 'completion', {
     initExtension() { return {
         wrapMetaData: {
@@ -222,7 +221,6 @@ extension('tgpTextEditor', 'completion', {
     },
     async provideCompletionItems(docProps, ctx) {
         const props = jb.tgpTextEditor.calcActiveEditorPath(docProps, {clearCache: true})
-        jb.log('completion calcActiveEditorPath',props)
         const { actionMap, reformatEdits, compLine, error } = props
         if (reformatEdits) {
             const item = { kind: 4, id: 'reformat', insertText: '',label: 'reformat', extend() { }, sortText: '0001',

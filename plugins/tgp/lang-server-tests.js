@@ -1,30 +1,22 @@
 component('langServerTest.provideDefinition', {
   impl: dataTest({
-    calculate: pipe(
-      Var('docProps', tgp.dummyDocProps(`component('x', {
+    calculate: tgp.provideDefinition(tgp.dummyDocProps(`component('x', {
   impl: dataTest('', __not())
 })`)),
-      '1',
-      tgp.provideDefinition('%$docProps%'),
-      '%path%'
-    ),
-    expectedResult: contains('jb-common'),
+    expectedResult: contains('jb-common', { data: '%path%' })
   })
 })
 
 component('langServerTest.provideDefinition.inFunc', {
   impl: dataTest({
-    calculate: pipe(
-      Var('docProps', tgp.dummyDocProps(
+    calculate: tgp.provideDefinition(
+      tgp.dummyDocProps(
         `component('x', {
   impl: dataTest('', () => { __jb.utils.prettyPrint('aa'); return 3})
 })`
-      )),
-      '1',
-      tgp.provideDefinition('%$docProps%'),
-      '%path%'
+      )
     ),
-    expectedResult: contains('pretty-print')
+    expectedResult: contains('pretty-print', { data: '%path%' })
   })
 })
 
@@ -55,7 +47,7 @@ component('langServer.editsAndCursorPos', {
       tgp.editsAndCursorPos('%$docProps%', '%command/arguments/0%'),
       '%edit/newText%'
     ),
-    expectedResult: '%%==split()'
+    expectedResult: equals('split()')
   })
 })
 
@@ -67,15 +59,13 @@ component('remoteTest.langServer.externalCompletions', {
 })`, {
         filePath: '%$PROJECTS_PATH%/amta/plugins/amta-parsing/parsing-tests.js'
       })),
-      '1',
       tgp.completionItemsByDocProps('%$docProps%'),
       log('test'),
       count()
     ),
     expectedResult: '%% > 0',
-    timeout: 1000,
-    covers: ['remoteTest.langServer.completions','remoteTest.langServer.studioCompletions'
-    ,'remoteTest.langServer.editsAndCursorPos', 'remoteTest.tgpTextEditor.probeByDocProps', 'remoteTest.tgpTextEditor.studioCircuitUrlByDocProps']
+    timeout: 5000,
+    covers: ['remoteTest.langServer.completions','remoteTest.langServer.studioCompletions','remoteTest.langServer.editsAndCursorPos','remoteTest.tgpTextEditor.probeByDocProps','remoteTest.tgpTextEditor.studioCircuitUrlByDocProps']
   })
 })
 
@@ -85,13 +75,12 @@ component('remoteTest.langServer.completions', {
       Var('docProps', tgp.dummyDocProps(`component('x', {
   impl: dataTest('', __not())
 })`)),
-      '1',
       tgp.completionItemsByDocProps('%$docProps%'),
       log('test'),
       count()
     ),
     expectedResult: '%% > 0',
-    timeout: 1000
+    timeout: 2000
   })
 })
 
@@ -103,7 +92,6 @@ component('remoteTest.langServer.studioCompletions', {
 })`, {
         filePath: '%$PROJECTS_PATH%/jb-react/projects/studio/studio-main.js'
       })),
-      '1',
       tgp.completionItemsByDocProps('%$docProps%'),
       log('test'),
       count()

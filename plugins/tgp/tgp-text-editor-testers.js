@@ -16,7 +16,7 @@ component('tgp.completionOptionsTest', {
   params: [
     {id: 'compText', as: 'string', description: 'use __ for completion points'},
     {id: 'expectedSelections', as: 'array', description: 'label a selection that should exist in the menu. one for each point'},
-    {id: 'filePath', as: 'string', defaultValue: 'projects/jb-react/plugins/common/jb-common-tests.js'},
+    {id: 'filePath', as: 'string', defaultValue: 'projects/jb-react/plugins/ui/tests/ui-tests.js'},
     {id: 'dsl', as: 'string'}
   ],
   impl: async (ctx,compText,expectedSelections,filePath,dsl,notMixed)=> {
@@ -66,7 +66,7 @@ component('tgp.completionActionTest', {
             const offset = parts[0].length +dslLine.length
             const code = parts.join('')
             jb.utils.resolveLoadedProfiles()
-            jb.tgpTextEditor.host.initDoc('someDir/plugins/common/jb-common-tests.js', dslLine+code)
+            jb.tgpTextEditor.host.initDoc('someDir/plugins/ui/tests/ui-tests.js', dslLine+code)
             const ctxForTest = ctx.setVars({forceLocalSuggestions: true})
 
             const inCompPos = jb.tgpTextEditor.offsetToLineCol(dslLine+code,offset)
@@ -113,7 +113,7 @@ component('tgp.fixEditedCompTest', {
       const offset = parts[0].length +dslLine.length
       const code = parts.join('')
       jb.utils.resolveLoadedProfiles()
-      jb.tgpTextEditor.host.initDoc('someDir/plugins/common/jb-common-tests.js', dslLine+code)
+      jb.tgpTextEditor.host.initDoc('someDir/plugins/ui/tests/ui-tests.js', dslLine+code)
 
       const inCompPos = jb.tgpTextEditor.offsetToLineCol(dslLine+code,offset)
       jb.tgpTextEditor.host.selectRange(inCompPos)
@@ -129,7 +129,7 @@ component('tgp.dummyDocProps', {
   params: [
     {id: 'compText', as: 'string', mandatory: true, description: 'use __ for completion point'},
     {id: 'dsl', as: 'string'},
-    {id: 'filePath', as: 'string', defaultValue: 'projects/jb-react/plugins/common/jb-common-tests.js'}
+    {id: 'filePath', as: 'string', defaultValue: 'projects/jb-react/plugins/ui/tests/ui-tests.js'}
   ],
   impl: (ctx,_compText,dsl,_filePath) => {
     jb.workspace.initJbWorkspaceAsHost()

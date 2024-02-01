@@ -371,3 +371,19 @@ component('tgp.isCssPath', {
       }
   }
 })
+
+component('tgp.tgpModel', {
+  description: 'tgpModel for editor',
+  params: [],
+  impl: () => ({
+	plugins: jb.objFromEntries(Object.values(jb.plugins).filter(p=>p.proxies).map(({id,proxies,dependent,dsl,dslOfFiles})=>({id,proxies,dependent,dsl,dslOfFiles})).map(p=>[p.id,p])),
+	comps: jb.objFromEntries(Object.keys(jb.comps).filter(k=>k.indexOf('dataResource') != 0).map(k=> { 
+		const ct =jb.comps[k][jb.core.CT]
+		const res = {...jb.comps[k], impl: undefined, id: ct.fullId, plugin: ct.plugin.id, location: ct.location }
+		delete res[jb.core.CT]
+		delete res.impl
+		Object.keys(res).forEach(k=>{ if(typeof res[k] == 'function') delete res[k]})
+		return res
+	}).map(c=>[c.id,c]))
+  })
+})

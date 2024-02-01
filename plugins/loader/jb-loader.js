@@ -91,8 +91,7 @@ async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl} ={}) {
       const sourceUrl = `${path}?${jb.uri}`.replace(/#/g,'')
       const code = `${_code}\n//# sourceURL=${sourceUrl}`
       const override_dsl = fileSymbols && fileSymbols.dsl
-      const proxies = noSymbols ? {} : jb.objFromEntries(unique(plugin.requiredFiles.flatMap(x=>x.ns))
-        .map(id=>jb.macro.registerProxy(id)) )
+      const proxies = noSymbols ? {} : jb.objFromEntries(plugin.proxies.map(id=>jb.macro.registerProxy(id)) )
       const context = { jb, 
         ...(typeof require != 'undefined' ? {require} : {}),
         ...proxies,
@@ -176,6 +175,11 @@ async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl} ={}) {
       const ret = [id, ...plugin.dependent]
       plugin.requiredFiles = unique(ret.flatMap(_id=>plugins[_id].files), x=>x.path)
       plugin.requiredLibs = unique(ret.flatMap(_id=>plugins[_id].files).flatMap(x=>x.libs || []))
+      plugin.proxies = unique(plugin.requiredFiles.flatMap(x=>x.ns))
+      const dslOfFiles = plugin.files.filter(fileSymbols=>fileSymbols.dsl && fileSymbols.dsl != plugin.dsl).map(({path,dsl}) => [path,dsl])
+      if (dslOfFiles.length)
+        plugin.dslOfFiles = dslOfFiles
+
       return ret
     }
   }
