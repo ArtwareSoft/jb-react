@@ -172,7 +172,7 @@ extension('tgpTextEditor', {
     // updateCurrentCompFromEditor(docProps,ctx) {
     //     const {docText, cursorLine } = docProps
     //     const {compId, compSrc, filePath, dsl} = jb.tgpTextEditor.closestComp(docText, cursorLine)
-    //     const {err} = compSrc ? jb.tgpTextEditor.evalProfileDef(compSrc, jb.tgpTextEditor.pluginOfPath(filePath, dsl)) : {}
+    //     const {err} = compSrc ? jb.tgpTextEditor.evalProfileDef(compSrc, jb.tgpTextEditor.pluginOfFilePath(filePath, dsl)) : {}
     //     if (err)
     //       return jb.logError('can not parse comp', {compId, err})
     //     const ref = ctx.exp('%$studio/scriptChangeCounter%','ref')

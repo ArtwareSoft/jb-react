@@ -306,7 +306,6 @@ extension('utils', 'prettyPrint', {
       const header = noPrefix.indexOf(`${funcName}(`) == 0 ? funcName : noPrefix.indexOf(`function ${funcName}(`) == 0 ? `function ${funcName}` : ''
       const fixedPropName = header ? `${asynch}${header}` : ''
       const text = (fixedPropName ? '' : asynch) + asStr.slice(header.length+asynch.length)
-//      const fixedText = text.replace(/\n/g,jb.utils.fixedNL)
       return props[path] = { item: text, fixedPropName, len: text.length, action: `function!${path}` }
     }
   }

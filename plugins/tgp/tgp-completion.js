@@ -130,7 +130,7 @@ extension('tgp', 'completion', {
 		return jb.tgp.writeValueOfPathOp(path,result,srcCtx)
 	},
 	addArrayItemOp(path,{toAdd, index, srcCtx} = {}) {
-		let val = jb.tgp.valOfPath(path)
+		const val = jb.tgp.valOfPath(path)
 		toAdd = toAdd === undefined ? {$:'TBD'} : toAdd
 		if (Array.isArray(val)) {
 			if (index === undefined || index == -1)
@@ -168,7 +168,7 @@ extension('tgpTextEditor', 'completion', {
             host: null,
         } 
     },
-    pluginOfPath(_path, dsl) {
+    pluginOfFilePath(_path, dsl) {
         const rep = (_path.match(/projects\/([^/]*)\/(plugins|projects)/) || [])[1]
         const path = (_path.match(/projects(.*)/)||[])[1] || _path
         const tests = path.match(/-(tests|testers).js$/) || path.match(/\/tests\//) ? '-tests': ''
@@ -180,7 +180,7 @@ extension('tgpTextEditor', 'completion', {
     calcActiveEditorPath(docProps,{clearCache} = {}) {
         const {compText, shortId, inCompOffset, compLine, inExtension, filePath, dsl } = docProps
         if (inExtension) return docProps
-        const plugin = jb.tgpTextEditor.pluginOfPath(filePath, dsl) 
+        const plugin = jb.tgpTextEditor.pluginOfFilePath(filePath, dsl) 
         const compId = plugin.dsl && jb.path(jb.utils.getCompByShortIdAndDsl(shortId,plugin.dsl),[jb.core.CT,'fullId']) || shortId
         if (!jb.comps[compId]) {
             const evalRes = jb.tgpTextEditor.evalProfileDef(compText,{plugin})
@@ -283,12 +283,12 @@ extension('tgpTextEditor', 'completion', {
             }
         }
     },
-    calcEditAndGotoPos(docProps, item, ctx) {
+    calcEditAndGotoPos(docProps, item, ctx) { // Todo - make stateless
         const {compText, compLine,filePath, dsl} = docProps
         const itemProps = {...item, ...item.extend() }
         const {op, path, resultPath, whereToLand } = itemProps
         const compId = path.split('~')[0]
-        jb.comps[compId] = jb.tgpTextEditor.evalProfileDef(compText,{plugin: jb.tgpTextEditor.pluginOfPath(filePath, dsl)}).res
+        jb.comps[compId] = jb.tgpTextEditor.evalProfileDef(compText,{plugin: jb.tgpTextEditor.pluginOfFilePath(filePath, dsl)}).res
 
         if (!jb.comps[compId])
             return jb.logError(`completion handleScriptChangeOnPreview - missing comp ${compId}`, {path, ctx})
