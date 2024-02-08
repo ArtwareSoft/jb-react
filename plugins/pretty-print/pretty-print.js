@@ -15,7 +15,8 @@ extension('utils', 'prettyPrint', {
   },
   prettyPrintComp(compId,comp,settings={}) {
     if (comp) {
-      return `${jb.utils.compHeader(compId)}${jb.utils.prettyPrint(comp,{ initialPath: jb.utils.compName(comp) || compId, ...settings })})`
+      // const tgpModel = settings.tgpModel - jb.utils.compName(comp,{tgpModel}) || 
+      return `${jb.utils.compHeader(compId)}${jb.utils.prettyPrint(comp,{ initialPath: compId, ...settings })})`
     }
   },
   
@@ -28,7 +29,7 @@ extension('utils', 'prettyPrint', {
     return `component('${compId.split('>').pop()}', `
   },
 
-  prettyPrintWithPositions(val,{colWidth=100,tabSize=2,initialPath='',noMacros,singleLine, depth} = {}) {
+  prettyPrintWithPositions(val,{colWidth=100,tabSize=2,initialPath='',noMacros,singleLine, depth, tgpModel} = {}) {
     const props = {}
     const fullId = jb.path(val,[jb.core.CT,'fullId'])
     const startOffset = fullId ? jb.utils.compHeader(fullId).length : 0
@@ -160,10 +161,10 @@ extension('utils', 'prettyPrint', {
     function calcProfileProps(profile, path, {forceByName} = {}) {
       if (noMacros)
         return asIsProps(profile,path)
-      const fullId = [jb.utils.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
-      const comp = fullId && jb.utils.getComp(fullId)
+      const fullId = [jb.utils.compName(profile, {tgpModel})].map(x=> x=='var' ? 'variable' : x)[0]
+      const comp = fullId && jb.utils.getCompById(fullId, {tgpModel})
       if (comp && profile.$byValue)
-        jb.utils.resolveDetachedProfile(profile)
+        jb.utils.resolveDetachedProfile(profile,{tgpModel})
       const id = fullId.split('>').pop()
         
       if (!id || !comp || ',object,var,'.indexOf(`,${id},`) != -1)
@@ -229,7 +230,7 @@ extension('utils', 'prettyPrint', {
 
     function asIsProps(profile,path) {
       const defaultImpl = (profile.impl && typeof profile.impl == 'function' && profile.impl.toString() == '({params}) => params')
-      const objProps = Object.keys(profile).filter(x=>x!= 'impl' || !defaultImpl)
+      const objProps = Object.keys(profile).filter(x=>x!= 'impl' || !defaultImpl).filter(p=>!p.startsWith('$symbol'))
       if (objProps.indexOf('$') > 0) { // make the $ first
         objProps.splice(objProps.indexOf('$'),1);
         objProps.unshift('$');

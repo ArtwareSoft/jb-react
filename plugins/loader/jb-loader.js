@@ -90,12 +90,12 @@ async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl} ={}) {
       const _code = await plugin.codePackage.fetchFile(path)
       const sourceUrl = `${path}?${jb.uri}`.replace(/#/g,'')
       const code = `${_code}\n//# sourceURL=${sourceUrl}`
-      const override_dsl = fileSymbols && fileSymbols.dsl
+      const fileDsl = fileSymbols && fileSymbols.dsl
       const proxies = noSymbols ? {} : jb.objFromEntries(plugin.proxies.map(id=>jb.macro.registerProxy(id)) )
       const context = { jb, 
         ...(typeof require != 'undefined' ? {require} : {}),
         ...proxies,
-        component:(...args) => jb.component(...args,{plugin,override_dsl}),
+        component:(...args) => jb.component(...args,{plugin,fileDsl}),
         extension:(...args) => jb.extension(plugin,...args),
         using: x=>jb.using(x), dsl: x=>jb.dsl(x), pluginDsl: x=>jb.pluginDsl(x)
       }
@@ -168,6 +168,7 @@ async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl} ={}) {
       if (!plugin || history[id]) return []
       if (plugin.dependent) return [id, ...plugin.dependent]
       const baseOfTest = id.match(/-tests$/) ? [id.slice(0,-6),'testing'] : []
+      plugin.using = unique(plugin.files.flatMap(e=> unique(e.using)))
       plugin.dependent = unique([
         ...plugin.files.flatMap(e=> unique(e.using.flatMap(dep=>calcDependency(dep,{...history, [id]: true})))),
         ...baseOfTest.flatMap(dep=>calcDependency(dep,{...history, [id]: true}))]

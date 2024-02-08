@@ -1,3 +1,5 @@
+using('tgp-model-data,tgp')
+
 component('probe', { watchableData: { path : '',  
 defaultMainCircuit: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') ? (jb.path(globalThis,'location.pathname')||'').split('/')[3] : '',
 scriptChangeCounter: 1} })
@@ -34,10 +36,10 @@ extension('probe', 'main', {
             jb.treeShake.codeServerJbm && await jb.treeShake.getCodeFromRemote([cmpId])
             const circuitCmpId = _ctx.exp('%$studio/circuit%') 
                     || _ctx.exp('%$probe/defaultMainCircuit%') 
-                    || jb.path(jb.utils.getComp(cmpId),'circuit')
-                    || jb.path(jb.utils.getComp(cmpId),'impl.expectedResult') && cmpId // test
+                    || jb.path(jb.utils.getCompById(cmpId),'circuit')
+                    || jb.path(jb.utils.getCompById(cmpId),'impl.expectedResult') && cmpId // test
                     || findTest(cmpId) || cmpId
-            if (circuitCmpId && !jb.utils.getComp(circuitCmpId,{silent: true}) && !jb.treeShake.codeServerJbm) {
+            if (circuitCmpId && !jb.utils.getCompById(circuitCmpId,{silent: true}) && !jb.treeShake.codeServerJbm) {
                 return jb.logError(`calcCircuit. can not bring circuit comp ${circuitCmpId}`,{probePath,cmpId,ctx})
             }
         
@@ -171,14 +173,14 @@ extension('probe', 'main', {
             const parentCtx = this.probe[_path][0].in, breakingPath = _path+'~'+breakingProp
             const obj = this.probe[_path][0].out
             const compName = jb.tgp.compNameOfPath(breakingPath)
-            if (jb.utils.getComp(`${compName}.probe`,{silent:true})) {
+            if (jb.utils.getCompById(`${compName}.probe`,{silent:true})) {
                 parentCtx.profile[breakingProp][jb.core.CT] = { ...parentCtx.profile[breakingProp][jb.core.CT], comp: null }
                 return jb.probe.resolve(parentCtx.runInner(jb.utils.resolveDetachedProfile({...parentCtx.profile[breakingProp], $: `${compName}.probe`}),
                     jb.tgp.paramDef(breakingPath),breakingProp))
                         .then(_=>this.handleGaps(_path))
             }
 
-            const hasSideEffect = jb.utils.getComp(compName,{silent:true}) && (jb.utils.getComp(jb.tgp.compNameOfPath(breakingPath)).type ||'').indexOf('has-side-effects') != -1
+            const hasSideEffect = jb.utils.getCompById(compName,{silent:true}) && (jb.utils.getCompById(jb.tgp.compNameOfPath(breakingPath)).type ||'').indexOf('has-side-effects') != -1
             if (obj && !hasSideEffect && obj[breakingProp] && typeof obj[breakingProp] == 'function')
                 return jb.probe.resolve(obj[breakingProp]())
                     .then(_=>this.handleGaps(_path))
@@ -291,3 +293,9 @@ component('probe.calcCircuitPath', {
     }
 })
 
+component('probe.stripProbeResult', {
+  params: [
+    {id: 'result'}
+  ],
+  impl: (ctx,result) => (result || []).map ( x => ({out: x.out,in: {data: x.in.data, params: jb.path(x.in.cmpCtx,'params'), vars: x.in.vars}}))
+})

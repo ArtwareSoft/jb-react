@@ -456,7 +456,7 @@ component('eventTracker.compInspector', {
             text('%$cmp/state/{%%}%', 'back end')
           ]
         }),
-        editableText('source', tgp.profileAsText('%$cmp/ctx/path%'), {
+        editableText('source', sourceEditor.profileAsText('%$cmp/ctx/path%'), {
           style: editableText.codemirror({ height: '100' }),
           features: codemirror.fold()
         }),

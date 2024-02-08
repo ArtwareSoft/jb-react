@@ -72,11 +72,11 @@ component('action.updateFrontEnd', {
 
     async function frontEndDelta(renderingUpdate) {
       const { delta, css, widgetId, cmpId, assumedVdom } = renderingUpdate
-      const {headlessWidget, useFrontEndInTest} = ctx.vars
+      const {headlessWidget, useFrontEndInTest, uiTest} = ctx.vars
       if (css)
         return (useFrontEndInTest || !headlessWidget) && jb.ui.insertOrUpdateStyleElem(ctx, css, renderingUpdate.elemId, { classId: renderingUpdate.classId })
       await jb.treeShake.getCodeFromRemote(jb.treeShake.treeShakeFrontendFeatures(pathsOfFEFeatures(delta)))
-      await jb.treeShake.loadFELibsDirectly(feLibs(delta))
+      !uiTest && await jb.treeShake.loadFELibsDirectly(feLibs(delta))
       const ctxToUse = ctx.setVars({ headlessWidget: false, FEwidgetId: widgetId })
       const elem = cmpId ? jb.ui.find(jb.ui.widgetBody(ctxToUse), `[cmp-id="${cmpId}"]`)[0] : jb.ui.widgetBody(ctxToUse)
       try {

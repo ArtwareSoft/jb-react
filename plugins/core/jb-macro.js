@@ -20,12 +20,12 @@ extension('macro', {
         return (...allArgs) => {
             const { args, system } = jb.macro.splitSystemArgs(allArgs)
             return { $: `${ns}.${innerId}`, 
-                ...(args.length == 0 ? {} : jb.macro.isParamsByNameArgs(args) ? args[0] : { $byValue: args }),
+                ...(args.length == 0 ? {} : { $byValue: args }),
                 ...system
             }
         }
     },
-    isParamsByNameArgs : args => args.length == 1 && typeof args[0] == 'object' && !Array.isArray(args[0]) && !jb.utils.compName(args[0]),    
+    //isParamsByNameArgs : args => args.length == 1 && typeof args[0] == 'object' && !Array.isArray(args[0]) && !jb.utils.compName(args[0]),    
     splitSystemArgs(allArgs) {
         const args = [], system = {}
         allArgs.forEach(arg => {

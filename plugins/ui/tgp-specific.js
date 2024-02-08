@@ -39,7 +39,7 @@ component('tgp.insertControl', {
   impl: (ctx,compToInsert,path) => {
     let newCtrl = compToInsert
     if (typeof compToInsert == 'string') {
-        const comp = compToInsert && jb.tgp.getComp(compToInsert)
+        const comp = compToInsert && jb.tgp.getCompById(compToInsert)
         if (!compToInsert || !comp) return
         newCtrl = jb.tgp.newProfile(comp,compToInsert)
     }

@@ -1,4 +1,4 @@
-using('probe,watchable-comps,tree-shake,remote-widget,testing')
+using('probe,watchable-comps,tree-shake,remote-widget,testing,probe-result-ui')
 
 component('circuit', {
   type: 'source-code<jbm>',
@@ -28,7 +28,7 @@ component('suggestions.calcFromProbePreview', {
     {id: 'require', as: 'string'}
   ],
   impl: remote.data({
-    data: probe.suggestions('%$probePath%', '%$expressionOnly%', '%$input%', '%$sessionId%'),
+    calc: probe.suggestions('%$probePath%', '%$expressionOnly%', '%$input%', '%$sessionId%'),
     jbm: If({
       condition: ({},{},{input,forceLocal}) => forceLocal  || !new jb.probe.suggestions(jb.val(input)).inExpression(),
       then: jbm.self(),
@@ -58,7 +58,7 @@ component('probe.circuitPreviewRequiresMainThread', {
   type: 'boolean',
   impl: ctx => {
     const _circuit = ctx.exp('%$probe/defaultMainCircuit%')
-    return jb.utils.prettyPrint(jb.utils.getComp(_circuit,{silent: true}),{noMacros: true})
+    return jb.utils.prettyPrint(jb.utils.getCompById(_circuit,{silent: true}),{noMacros: true})
       .indexOf('uiFrontEndTest') != -1
   }
 })
@@ -68,13 +68,13 @@ component('probe.circuitPreview', {
   impl: group({
     controls: ctx => { 
         const _circuit = ctx.exp('%$probe/defaultMainCircuit%')
-        const circuit = (jb.path(jb.utils.getComp(_circuit,{silent: true}),'impl.$') || '').match(/Test/) ? { $: 'test.showTestInStudio', testId: _circuit} : { $: _circuit }
+        const circuit = (jb.path(jb.utils.getCompById(_circuit,{silent: true}),'impl.$') || '').match(/Test/) ? { $: 'test.showTestInStudio', testId: _circuit} : { $: _circuit }
         jb.log('probe circuit',{circuit, ctx})
         return circuit && circuit.$ && ctx.run(circuit)
     },
     features: [
       If({
-        condition: ctx => !jb.utils.getComp(ctx.exp('%$probe/defaultMainCircuit%'),{silent: true}),
+        condition: ctx => !jb.utils.getCompById(ctx.exp('%$probe/defaultMainCircuit%'),{silent: true}),
         then: group.wait(treeShake.getCodeFromRemote('%$probe/defaultMainCircuit%'))
       }),
       watchRef('%$probe/scriptChangeCounter%'),
@@ -114,7 +114,7 @@ component('probe.handleScriptChangeOnPreview', {
         const {op, path} = ctx.data
         const handler = jb.watchableComps.startWatch()
         if (path[0] == 'probeTest.label1' || !jb.ui.headless) return
-        if (!jb.utils.getComp(path[0]))
+        if (!jb.utils.getCompById(path[0]))
             return jb.logError(`handleScriptChangeOnPreview - missing comp ${path[0]}`, {path, ctx})
         handler.makeWatchable(path[0])
         jb.log('probe handleScriptChangeOnPreview doOp',{ctx,op,path})
@@ -155,6 +155,28 @@ component('probe.propertyPrimitive', {
         showHelper: suggestions.shouldShow(true),
         onEnter: suggestions.applyOption()
       })
+    ]
+  })
+})
+
+component('probe.inOutView', {
+  type: 'control',
+  impl: group({
+    controls: [
+      group({
+        controls: probeUI.probeResView(),
+        features: [
+          feature.if('%$probe/path%'),
+          group.wait(pipe(probe.runCircuit('%$probe/path%'), '%result%'), text('...'), {
+            varName: 'probeResult',
+            passRx: true
+          })
+        ]
+      })
+    ],
+    layout: layout.horizontal(),
+    features: [
+      watchRef('%$probe%', 'yes', { strongRefresh: true })
     ]
   })
 })

@@ -1,4 +1,5 @@
 using('watchable-comps')
+
 extension('tgp', 'writable', {
 	initExtension() {
 		jb.watchableComps.startWatch()
@@ -27,42 +28,12 @@ extension('tgp', 'writable', {
  
 	//refreshRef: ref => jb.watchableComps.handler.refresh(ref),
 	writeValueOfPath: (path,value,ctx) => jb.tgp.writeValue(jb.tgp.ref(path),value,ctx),
-	clone(profile) {
-		if (typeof profile !== 'object') return profile
-		return jb.tgp.evalProfile(jb.utils.prettyPrint(profile,{noMacros: true}))
-	},
-	evalProfile(prof_str) {
-		try {
-			return jb.frame.eval('('+prof_str+')')
-			//return (jb.studio.previewWindow() || window).eval('('+prof_str+')')
-		} catch (e) {
-			jb.logException(e,'eval profile',{prof_str})
-		}
-	},
-	cloneProfile(prof) {
-		if (!prof || jb.utils.isPrimitiveValue(prof) || typeof prof == 'function') return prof
-		const keys = [...Object.keys(prof),jb.core.OrigValues,jb.core.CT]
-		return jb.objFromEntries(keys.map(k=>[k,jb.tgp.cloneProfile(prof[k])]))
-	},
-	newProfile(comp,compName, basedOnPath) { // basedOnPath is optional
-		const currentVal = basedOnPath && jb.tgp.valOfPath(basedOnPath)
-		const result = { $: compName }
-		jb.utils.compParams(comp).forEach(p=>{
-			if (p.composite)
-				result[p.id] = currentVal == null || Array.isArray(currentVal) ? [] : jb.asArray(currentVal)
-			else if (p.templateValue)
-				result[p.id] = jb.tgp.cloneProfile(p.templateValue)
-			else if (currentVal && currentVal[p.id] !== undefined)
-				result[p.id] = currentVal[p.id]
-		})
-		return result
-	},
 	setComp(path,id,srcCtx) {
-		const comp = id && jb.tgp.getComp(id)
+		const comp = id && jb.tgp.getCompById(id)
 		if (!id || !comp) return
 //		const params = jb.utils.compParams(comp)
 
-		const result = jb.tgp.newProfile(comp,id,path)
+		const result = jb.tgp.newProfile(comp,id, { basedOnPath: path})
 		// const currentVal = jb.tgp.valOfPath(path)
 		// params.forEach(p=>{
 		// 	if (currentVal && currentVal[p.id] !== undefined)
@@ -203,7 +174,7 @@ component('tgp.wrap', {
     {id: 'compId', as: 'string', mandatory: true}
   ],
   impl: (ctx,path,compId) => {
-        const comp = jb.tgp.getComp(compId)
+        const comp = jb.tgp.getCompById(compId)
         const compositeParam = jb.utils.compParams(comp).filter(p=>p.composite)[0]
         if (compositeParam) {
             const singleOrArray = compositeParam.type.indexOf('[') == -1 ? jb.tgp.valOfPath(path) : [jb.tgp.valOfPath(path)]

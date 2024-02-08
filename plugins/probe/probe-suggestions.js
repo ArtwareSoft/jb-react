@@ -62,7 +62,7 @@ extension('probe', 'suggestions', {
           options = jb.tgp.PTsOfPath(path).map(compName=> {
                 const name = compName.substring(compName.indexOf('.')+1);
                 const ns = compName.substring(0,compName.indexOf('.'));
-                return jb.probe.compOption(path, compName, compName, ns ? `${name} (${ns})` : name, jb.tgp.getComp(compName).description || '')
+                return jb.probe.compOption(path, compName, compName, ns ? `${name} (${ns})` : name, jb.tgp.getCompById(compName).description || '')
             })
         else if (this.tailSymbol == '%')
           options = [...innerPropsOptions(probeCtx.data), ...indexOptions(probeCtx.data), ...this.calcVars(probeCtx) ]
@@ -201,7 +201,7 @@ component('probe.suggestionsByCmd', {
     {id: 'input', defaultValue: '%%', description: '{value, selectionStart}'}
   ],
   impl: remote.data({
-    data: probe.suggestions('%$probePath%', '%$expressionOnly%', '%$input%'),
+    calc: probe.suggestions('%$probePath%', '%$expressionOnly%', '%$input%'),
     jbm: If('%$forceLocalSuggestions%', jbm.self(), cmd('%$sourceCode%'))
   })
 })
@@ -226,11 +226,11 @@ component('suggestions.applyOption', {
         const toPaste = option.toPaste + (primiteVal ? '%' : toAdd)
         const pos = option.pos + 1
         const newVal = () => input.value.substr(0,option.pos-option.tail.length) + toPaste + input.value.substr(pos)
-        ctx.run(editableText.setInputState({
+        ctx.run({$: 'editableText.setInputState',
             assumedVal: () => input.value,
             newVal,
             selectionStart: pos + toPaste.length,
-        }))
+        })
         if (toPaste.match(/%$/))
           ctx.run(writeValue('%$$model/databind()%', newVal))        
       } else if (option.type == 'comp') {

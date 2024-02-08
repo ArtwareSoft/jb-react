@@ -1,11 +1,12 @@
 extension('ui', 'frontend', {
-    refreshFrontEnd(elem, {content} = {}) {
-        jb.treeShake.loadFELibsDirectly(jb.ui.feLibs(content)).then(()=> 
-            jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> {
-                const coLocation = jb.ui.parents(el,{includeSelf: true}).find(_elem=>_elem.getAttribute && _elem.getAttribute('colocation') == 'true')
-                const coLocationCtx = coLocation && jb.ui.cmps[el.getAttribute('cmp-id')].calcCtx
-                return el._component ? el._component.newVDomApplied() : new jb.ui.frontEndCmp(el,coLocationCtx) 
-            }))
+    async refreshFrontEnd(elem, {content} = {}) {
+        if (!(elem instanceof jb.ui.VNode))
+            await jb.treeShake.loadFELibsDirectly(jb.ui.feLibs(content))
+        jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> {
+            const coLocation = jb.ui.parents(el,{includeSelf: true}).find(_elem=>_elem.getAttribute && _elem.getAttribute('colocation') == 'true')
+            const coLocationCtx = coLocation && jb.ui.cmps[el.getAttribute('cmp-id')].calcCtx
+            return el._component ? el._component.newVDomApplied() : new jb.ui.frontEndCmp(el,coLocationCtx) 
+        })
     },
     feLibs(obj) {
         if (!obj || typeof obj != 'object') return []

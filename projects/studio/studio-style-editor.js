@@ -35,8 +35,8 @@ component('studio.openStyleMenu', {
           showCondition: `%$styleSource/type% == 'inner'`
         }),
         menu.action('Format css', writeValue({
-          to: tgp.profileAsText('%$styleSource/path%~css'),
-          value: studio.formatCss(tgp.profileAsText('%$styleSource/path%~css'))
+          to: sourceEditor.profileAsText('%$styleSource/path%~css'),
+          value: studio.formatCss(sourceEditor.profileAsText('%$styleSource/path%~css'))
         }))
       ]
     })
@@ -53,7 +53,7 @@ component('studio.styleEditor', {
       controls: [
         group({
           controls: [
-            editableText('css', tgp.profileAsText('%$path%~css'), {
+            editableText('css', sourceEditor.profileAsText('%$path%~css'), {
               style: editableText.codemirror({ enableFullScreen: false, height: '300', mode: 'css', debounceTime: '2000', onCtrlEnter: studio.refreshPreview() })
             }),
             text('jsx', { style: text.htmlTag('h5') }),
@@ -66,7 +66,7 @@ component('studio.styleEditor', {
         }),
         group({
           controls: [
-            editableText('template', tgp.profileAsText('%$path%~template'), {
+            editableText('template', sourceEditor.profileAsText('%$path%~template'), {
               style: editableText.codemirror({ height: '400', mode: 'javascript', onCtrlEnter: studio.refreshPreview() })
             }),
             button({

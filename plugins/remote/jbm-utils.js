@@ -105,7 +105,7 @@ extension('jbm', 'main', {
         Object.assign(jb, {
             uri: jb.uri || jb.frame.jbUri,
             ports: {},
-            remoteExec: sctx => jb.treeShake.bringMissingCode(sctx).then(()=>jb.remoteCtx.deStrip(sctx)()),
+            remoteExec: sctx => (jb.treeShake ? jb.treeShake.bringMissingCode(sctx) : Promise.resolve()).then(()=>jb.remoteCtx.deStrip(sctx)()),
             createCallbagSource: sctx => jb.remoteCtx.deStrip(sctx)(),
             createCallbagOperator: sctx => jb.remoteCtx.deStrip(sctx)(),
         })
@@ -224,11 +224,13 @@ extension('jbm', 'main', {
         async function handleCBCommnad(cmd) {
             const {$,sourceId,cbId,isAction} = cmd
             try {
-                if (Object.keys(jb.treeShake.loadingCode || {}).length) {
-                    jb.log('remote waiting for loadingCode',{cmd, loading: Object.keys(jb.treeShake.loadingCode)})
-                    await jb.exec({$: 'waitFor', timeout: 100, check: () => !Object.keys(jb.treeShake.loadingCode).length })
+                if (jb.treeShake) {
+                    if (Object.keys(jb.treeShake.loadingCode || {}).length) {
+                        jb.log('remote waiting for loadingCode',{cmd, loading: Object.keys(jb.treeShake.loadingCode)})
+                        await jb.exec({$: 'waitFor', timeout: 100, check: () => !Object.keys(jb.treeShake.loadingCode).length })
+                    }
+                    await jb.treeShake.bringMissingCode(cmd.remoteRun)
                 }
-                await jb.treeShake.bringMissingCode(cmd.remoteRun)
                 const deStrip = jb.remoteCtx.deStrip(cmd.remoteRun)
                 const result = await (typeof deStrip == 'function' ? deStrip() : deStrip)
                 if ($ == 'CB.createSource' && typeof result == 'function')

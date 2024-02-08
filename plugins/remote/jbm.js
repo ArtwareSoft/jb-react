@@ -134,12 +134,13 @@ component('cmd', {
   params: [
     {id: 'sourceCode', type: 'source-code', mandatory: true},
     {id: 'viaHttpServer', as: 'string', defaultValue: 'http://localhost:8082'},
+    {id: 'doNotStripResult', as: 'boolean'},
     {id: 'id', as: 'string'}
   ],
-  impl: (ctx,_sourceCode,viaHttpServer,id) => ({
+  impl: (ctx,_sourceCode,viaHttpServer,doNotStripResult,id) => ({
         uri: id || 'main',
         remoteExec: async (sctx,{data, action} = {}) => {
-            const plugins = pluginsOfProfile([(data || action).profile, jb.path(sctx,'cmpCtx.params')])
+            const plugins = !_sourceCode && pluginsOfProfile([(data || action).profile, jb.path(sctx,'cmpCtx.params')])
             const sourceCode = _sourceCode || { plugins , pluginPackages: [{$:'defaultPackage'}] }
             sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),plugins])
     
@@ -147,6 +148,7 @@ component('cmd', {
                 ['-runCtx', JSON.stringify(sctx)],
                 ['-uri', id || `main`],
                 ['-sourceCode', JSON.stringify(sourceCode)],
+                doNotStripResult ? ['-doNotStripResult',''+doNotStripResult] : []
             ].filter(x=>x[1])
             const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(arg=> arg[0] + 
                 (arg[1].indexOf("'") != -1 ? `"${arg[1].replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg[1]}'`)).join(' ')}`
@@ -184,7 +186,12 @@ component('cmd', {
                 if (!prof.$)
                     return jb.utils.unique(Object.values(prof).flatMap(x=>pluginsOfProfile(x)))
                 const fullId = jb.utils.compName(prof)
-                const plugin = (jb.comps[fullId][jb.core.CT].plugin || {}).id || ''
+                const comp = jb.comps[fullId]
+                if (!comp) {
+                    jb.logError(`cmd - can not find comp ${fullId} please provide sourceCode`,{ctx})
+                    return []
+                }
+                const plugin = (comp[jb.core.CT].plugin || {}).id || ''
                 return jb.utils.unique([plugin,...Object.values(prof).flatMap(x=>pluginsOfProfile(x))]).filter(x=>x)
             }
         },

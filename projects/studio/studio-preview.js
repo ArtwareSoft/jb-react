@@ -4,7 +4,7 @@ component('wPreview', {
   params: [
     {id: 'id', defaultValue: 'wPreview'}
   ],
-  impl: worker('%$id%', { sourceCode: probe(studio.filePath(), 'studio'), init: studio.initPreview() })
+  impl: worker('%$id%', { sourceCode: probeServer(studio.filePath(), 'studio'), init: studio.initPreview() })
 })
 
 component('studio.filePath', {

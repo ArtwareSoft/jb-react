@@ -1,22 +1,57 @@
-using('probe')
+using('pretty-print')
 
 extension('tgpTextEditor', {
-    evalProfileDef(code, settings) { 
+    evalProfileDef(id, code, pluginId, fileDsl, tgpModel, {cursorPos, fixed, forceLocalSuggestions} = {}) { 
+      const plugin = jb.path(tgpModel,['plugins',pluginId])
+      const proxies = jb.path(plugin,'proxies') ? jb.objFromEntries(plugin.proxies.map(id=>jb.macro.registerProxy(id))) : jb.macro.proxies
+      const context = { jb, ...proxies, dsl: x=>jb.dsl(x), component: (...args) => jb.component(...args,{plugin, fileDsl}) }
       try {
-        jb.core.unresolvedProfiles = []
-        const proxies = jb.path(settings,'plugin.proxies') ? jb.objFromEntries(settings.plugin.proxies.map(id=>jb.macro.registerProxy(id))) : jb.macro.proxies
-        const context = { jb, ...proxies, dsl: x=>jb.dsl(x), component: (...args) => jb.component(...args,settings) }
-        //const res = new Function(Object.keys(context), `return ${code}`).apply(null, Object.values(context))
         const f = eval(`(function(${Object.keys(context)}) {return ${code}\n})`)
         const res = f(...Object.values(context))
+        if (!id) return { res }
 
-        res && jb.utils.resolveLoadedProfiles({keepLocation: true})
-        return { res, compId : jb.path(res,[jb.core.CT,'fullId']) }
-      } 
-      catch (e) { 
-        return {err: e}
-      } 
-    },    
+        const comp = res
+        const type = comp.type || ''
+        const dslOfType = type.indexOf('<') != -1 && type.split(/<|>/)[1]        
+        const dsl = fileDsl || plugin.dsl || dslOfType
+        comp[jb.core.CT] = { plugin, dsl }
+        const compId = jb.utils.resolveProfile(comp,id,dsl, {tgpModel})
+        //tgpModel[compId] = comp // statefull, not sure how to avoid it
+        if (forceLocalSuggestions)
+          jb.comps[compId] = comp
+        return tgpModel.currentComp = { comp, compId }
+      } catch (e) {
+        if (fixed)
+          return { compilationFailure: true, err: e}
+        const newCode = fixCode()
+        if (!newCode)
+          return { compilationFailure: true, err: e}
+        return jb.tgpTextEditor.evalProfileDef(id, newCode, pluginId, fileDsl, tgpModel, {cursorPos, fixed: true })
+      }
+
+      function fixCode() {
+        const lines = code.split('\n')
+        const { line, col } = cursorPos
+        const currentLine = lines[line]
+        const fixedLine = currentLine && fixLineAtCursor(currentLine,col)
+        if (currentLine && fixedLine != currentLine)
+            return lines.map((l,i) => i == line ? fixedLine : l).join('\n')
+      }
+
+      function fixLineAtCursor(line,pos) {
+          const rest = line.slice(pos)
+          const to = pos + (rest.match(/^[a-zA-Z0-9$_\.]+/)||[''])[0].length
+          const from = pos - (line.slice(0,pos).match(/[a-zA-Z0-9$_\.]+$/)||[''])[0].length
+          const word = line.slice(from,to)
+          const noCommaNoParan = rest.match(/^[a-zA-Z0-9$_\.]*\s*$/)
+          const func = rest.match(/^[a-zA-Z0-9$_\.]*\s*\(/)
+          const replaceWith = noCommaNoParan ? 'TBD(),' : func ? isValidFunc(word) ? word : 'TBD' : 'TBD()'
+          return line.slice(0,from) + replaceWith + line.slice(to)
+      }
+      function isValidFunc(f) {
+          return f.trim() != '' && (jb.macro.proxies[f] || jb.frame[f])
+      }
+    },
     getSinglePathChange(diff, currentVal) {
         return pathAndValueOfSingleChange(diff,'',currentVal)
     
@@ -31,7 +66,7 @@ extension('tgpTextEditor', {
     },
     setStrValue(value, ref, ctx) {
         const notPrimitive = value.match(/^\s*[a-zA-Z0-9\._]*\(/) || value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
-        const { res, err } = notPrimitive ? jb.tgpTextEditor.evalProfileDef(value) : value
+        const { res, err } = notPrimitive ? jb.tgpTextEditor.evalProfileDef('', value) : value
         if (err) return
         const newVal = notPrimitive ? res : value
         // I had a guess that ',' at the end of line means editing, YET, THIS GUESS DID NOT WORK WELL ...
@@ -76,9 +111,9 @@ extension('tgpTextEditor', {
     //     }
     //     editor.focus && jb.delay(10).then(()=>editor.focus())
     // },
-    getPosOfPath(path, where = 'edit') { // edit,begin,end,function
+    getPosOfPath(path, where = 'edit', {prettyPrintData} = {}) { // edit,begin,end,function
         const compId = path.split('~')[0]
-        const {actionMap, text, startOffset} = (jb.tgpTextEditor.cache[compId] || jb.utils.prettyPrintWithPositions(jb.comps[compId],{initialPath: compId}))
+        const {actionMap, text, startOffset} = prettyPrintData || jb.utils.prettyPrintWithPositions(jb.comps[compId],{initialPath: compId})
         const item = actionMap.find(e=>e.action == `${where}!${path}`)
         if (!item) return { line: 0, col: 0}
         return jb.tgpTextEditor.offsetToLineCol(text, item.from-startOffset)
@@ -111,44 +146,8 @@ extension('tgpTextEditor', {
         const inCompOffset = jb.tgpTextEditor.lineColToOffset(compText, {line: cursorLine-compLine, col: cursorCol })
         return {compText, compLine, inCompOffset, shortId, cursorLine, cursorCol, filePath, dsl, lineText }
     },
-    fixEditedComp(compId, compText, {line, col} = {},plugin) {
-        const lines = compText.split('\n')
-        const currentLine = lines[line]
-        const fixedLine = currentLine && fixLineAtCursor(currentLine,col)
-        if (currentLine && fixedLine != currentLine) {
-            const fixedCompText = lines.map((l,i) => i == line ? fixedLine : l).join('\n')
-            const comp = jb.tgpTextEditor.evalProfileDef(fixedCompText, plugin).res
-            if (comp) {
-                jb.comps[compId] = comp
-                const {text, map} = jb.utils.prettyPrintWithPositions(comp,{initialPath: compId})
-                return { fixedComp: true, fixedCompText: `component('${compId}', ${text})`, comp, text, map }
-            }
-        }
-        return { compilationFailure: true}
-
-        function fixLineAtCursor(line,pos) {
-            const rest = line.slice(pos)
-            const to = pos + (rest.match(/^[a-zA-Z0-9$_\.]+/)||[''])[0].length
-            const from = pos - (line.slice(0,pos).match(/[a-zA-Z0-9$_\.]+$/)||[''])[0].length
-            const word = line.slice(from,to)
-            const noCommaNoParan = rest.match(/^[a-zA-Z0-9$_\.]*\s*$/)
-            const func = rest.match(/^[a-zA-Z0-9$_\.]*\s*\(/)
-            const replaceWith = noCommaNoParan ? 'TBD(),' : func ? isValidFunc(word) ? word : 'TBD' : 'TBD()'
-            return line.slice(0,from) + replaceWith + line.slice(to)
-        }
-        function isValidFunc(f) {
-            return f.trim() != '' && (jb.macro.proxies[f] || jb.frame[f])
-        }
-    },
-    deltaFileContent(compText, compId, compLine, newCompText) {
-        const comp = jb.comps[compId]
-        const compContent = compText.slice(compText.indexOf('{'),-1)
-        const justCreatedComp = !compContent.length && comp[jb.core.CT].location.newComp
-        if (justCreatedComp) {
-          comp[jb.core.CT].location.line = lines.length
-          return { range: {start: { line: lines.length, col: 0}, end: {line: lines.length, col: 0} } , newText: '\n\n' + newCompText }
-        }
-        const {common, oldText, newText} = calcDiff(compContent, newCompText || '')
+    deltaFileContent(compText, newCompText, compLine) {
+        const {common, oldText, newText} = calcDiff(compText, newCompText || '')
         const commonStartSplit = common.split('\n')
         const start = {line: compLine + commonStartSplit.length - 1, col: commonStartSplit.slice(-1)[0].length }
         const end = { line: start.line + oldText.split('\n').length -1, 
@@ -165,26 +164,7 @@ extension('tgpTextEditor', {
           return {firstDiff: i, common, oldText: oldText.slice(0,-j+1), newText: newText.slice(0,-j+1)}
         }
     },
-    // updateCurrentCompFromEditor(docProps,ctx) {
-    //     const {docText, cursorLine } = docProps
-    //     const {compId, compSrc, filePath, dsl} = jb.tgpTextEditor.closestComp(docText, cursorLine)
-    //     const {err} = compSrc ? jb.tgpTextEditor.evalProfileDef(compSrc, jb.tgpTextEditor.pluginOfFilePath(filePath, dsl)) : {}
-    //     if (err)
-    //       return jb.logError('can not parse comp', {compId, err})
-    //     const ref = ctx.exp('%$studio/scriptChangeCounter%','ref')
-    //     jb.db.writeValue(ref, +(jb.val(ref)||0)+1 ,ctx)          
-    // },
     posFromCM: pos => pos && ({line: pos.line, col: pos.ch}),
-
-})
-
-component('tgp.profileAsText', {
-  type: 'data',
-  params: [
-    {id: 'path', as: 'string'},
-    {id: 'oneWay', as: 'boolean', defaultValue: true, type: 'boolean'}
-  ],
-  impl: tgpTextEditor.watchableAsText(tgp.ref('%$path%'), '%$oneWay%')
 })
 
 component('tgpTextEditor.watchableAsText', {
@@ -300,73 +280,11 @@ component('tgpTextEditor.cursorPath', {
   impl: (ctx,ref,pos) => jb.tgpTextEditor.pathOfPosition(ref, pos()) || ''
 })
 
-
-component('tgp.providePath', {
-  params: [
-    {id: 'docProps'}
-  ],
-  impl: (ctx,docProps) => jb.tgpTextEditor.providePath(docProps,ctx)
+component('tgpTextEditor.currentFilePath', {
+    impl: ctx => {
+        const docProps = ctx.vars.docPropsForTests || jb.tgpTextEditor.host.compTextAndCursor()
+        return docProps.filePath
+    }
 })
 
-component('tgp.posOfPath', {
-  params: [
-    {id: 'path', as: 'string'},
-    {id: 'where', as: 'string', options: 'edit,begin,end,function', defaultValue: 'edit'},
-  ],
-  impl: (ctx,path,where) => jb.tgpTextEditor.getPosOfPath(path,where)
-})
 
-component('tgpTextEditor.probeByDocProps', {
-  params: [
-    {id: 'docProps'}
-  ],
-  impl: remote.data({
-    data: pipe(
-      probe.runCircuit(tgp.providePath('%$docProps%')),
-      obj(
-        prop('result', tgpTextEditor.stripProbeResult('%result%')),
-        prop('circuitRes', '%circuitRes%'),
-        prop('simpleVisits', '%simpleVisits%'),
-        prop('totalTime', '%totalTime%'),
-        prop('circuitPath', '%circuitCtx.path%'),
-        prop('errors', () => jb.spy.search('error'))
-      ),
-      first()
-    ),
-    jbm: cmd(probe('%$docProps/filePath%'))
-  })
-})
-
-component('tgpTextEditor.stripProbeResult', {
-  params: [
-    {id: 'result'}
-  ],
-  impl: (ctx,result) => (result || []).map ( x => ({out: x.out,in: {data: x.in.data, params: jb.path(x.in.cmpCtx,'params'), vars: x.in.vars}}))
-})
-
-component('tgpTextEditor.studioCircuitUrlByDocProps', {
-  params: [
-    {id: 'docProps'}
-  ],
-  impl: remote.data({
-    data: pipe(
-      Var('sourceCode', sourceCode.encodeUri(probe('%$docProps/filePath%', 'studio'))),
-      Var('probePath', tgp.providePath('%$docProps%')),
-      probe.calcCircuitPath('%$probePath%'),
-      join('/', { items: list('%path%','%$probePath%') }),
-      'http://localhost:8082/project/studio/%%?sourceCode=%$sourceCode%&spy=test'
-    ),
-    jbm: cmd(probe('%$docProps/filePath%'))
-  })
-})
-
-component('probe', {
-  type: 'source-code<jbm>',
-  params: [
-    {id: 'filePath', as: 'string'},
-    {id: 'host', as: 'string', options: ',node,studio,static'}
-  ],
-  impl: sourceCode(pluginsByPath('%$filePath%', true), plugins('probe,tree-shake,tgp'), {
-    pluginPackages: packagesByPath('%$filePath%', '%$host%')
-  })
-})

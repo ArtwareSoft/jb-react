@@ -2,7 +2,7 @@
 extension('tgp', 'statistics', {
     $phase: 50,
     initExtension() {
-      jb.watchableComps && jb.utils.subscribe(jb.watchableComps.source, () => jb.tgp.statistics = {})
+//      jb.watchableComps && jb.utils.subscribe(jb.watchableComps.source, () => jb.tgp.statistics = {})
       return { statistics: {} }
     },
     calcRefs() {

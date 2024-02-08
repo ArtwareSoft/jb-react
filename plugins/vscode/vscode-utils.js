@@ -1,21 +1,17 @@
-using('remote,tgp')
+using('tgp-lang-server')
+
 extension('vscode', 'utils', {
     initExtension() { return { 
-        loadedProjects : {}, useCompletionServer: true, panels: {},
+        loadedProjects : {}, panels: {},
         ctx: new jb.core.jbCtx({},{vars: {}, path: 'vscode.tgpLang'})
     } },
     initServer(clientUri) {
-        jb.vscode.useCompletionServer = false // avoid potential bug
-        const ctx = new jb.core.jbCtx({},{vars: {}, path: 'vscode.tgpLangSrvr'})
         jb.tgpTextEditor.host = { // limited tgpEditor host at the server
             serverUri: jb.uri,
-            // applyEdit: async (edit,uri) => ctx.setData({edit,uri}).run( 
-            //     remote.action(({data}) => jb.tgpTextEditor.host.applyEdit(data.edit, data.uri), byUri(()=> clientUri))),
         }
     },
     async initVscodeAsHost({context}) {
         jb.log('vscode initVscodeAsHost', {context})
-        jb.tgpTextEditor.cache = {}
         jb.tgpTextEditor.host = {
             async applyEdit(edit,uri) {
                 uri = uri || vscodeNS.window.activeTextEditor.document.uri
@@ -34,8 +30,14 @@ extension('vscode', 'utils', {
              },
             compTextAndCursor() {
                 const editor = vscodeNS.window.activeTextEditor
-                return jb.tgpTextEditor.closestComp(editor.document.getText(),
+                const docProps = jb.tgpTextEditor.closestComp(editor.document.getText(),
                     editor.selection.active.line, editor.selection.active.character, editor.document.uri.path)
+                if (jb.path(docProps,'shortId')) {
+                    if (jb.vscode.lastEdited != docProps.shortId)
+                        jb.langService.tgpModels = {} // clean cache
+                    jb.vscode.lastEdited = docProps.shortId
+                }
+                return docProps
             },
             async execCommand(cmd) {
                 vscodeNS.commands.executeCommand(cmd)
@@ -49,7 +51,7 @@ extension('vscode', 'utils', {
         vscodeNS.workspace.onDidChangeTextDocument(({document, reason, contentChanges}) => {
             if (!contentChanges || contentChanges.length == 0) return
             if (!document.uri.toString().match(/^file:/)) return
-            jb.tgpTextEditor.cache = {}
+//            jb.langService.compsCache = {}
             jb.log('vscode onDidChangeTextDocument clean cache',{document, reason, contentChanges})
             if (jb.path(contentChanges,'0.text') == jb.tgpTextEditor.lastEdit) {
                 jb.tgpTextEditor.lastEdit = ''
@@ -83,43 +85,13 @@ extension('vscode', 'utils', {
         jb.log(...args)
         jbHost.log([...args,`time: ${new Date().getTime() % 100000}`])
     },
-    // async updateCurrentCompFromEditor() {
-    //     const docProps = jb.tgpTextEditor.host.compTextAndCursor()
-    //     // check validity
-    //     const {docText, cursorLine } = docProps
-    //     const {compId, compSrc, dsl} = jb.tgpTextEditor.closestComp(docText, cursorLine)
-    //     const {err} = compSrc ? jb.tgpTextEditor.evalProfileDef(compSrc, dsl) : {}
-    //     if (err) {
-    //         jb.vscode.log(`updateCurrentCompFromEditor compile error ${JSON.stringify(err)}`)
-    //         return jb.logError('can not parse comp', {compId, err})
-    //     }
-
-    //     if (jb.vscode.useCompletionServer) {
-    //         await jb.exec(vscode.completionServer())
-    //         jb.vscode.log(`updateCurrentCompFromEditor`)
-    //         return jb.vscode.ctx.setData(docProps).run(remote.action(ctx => jb.tgpTextEditor.updateCurrentCompFromEditor(ctx.data,ctx), vscode.completionServer()))
-    //     } else {
-    //         jb.tgpTextEditor.updateCurrentCompFromEditor(docProps,jb.vscode.ctx)
-    //     }
-    // },
-    async provideCompletionItems(docProps) {
-        if (jb.vscode.useCompletionServer) {
-            const ret = await jb.vscode.ctx.setData(docProps).run(tgp.completionItemsByDocProps('%%'))
-            // jb.asArray(ret).map(option=> { // inject docProps in every option - docText is imporant as it might be changed
-            //     jb.path(option,'command.arguments.0.docProps',docProps)
-            // })
-            const count = (ret || []).length
-            const docSize = docProps.compText && docProps.compText.length
-            jb.vscode.log(`provideCompletionItems ${docSize} -> ${count}`)
-            return ret
-        } else { // used by test
-            return jb.tgpTextEditor.provideCompletionItems(docProps)
-        }
+    provideCompletionItems() {
+        return jb.exec(langService.completionItems())
     },
-    async provideDefinition(docProps) {
-        const loc = await jb.vscode.ctx.setData(docProps).run(tgp.definitionByDocProps('%%'))
+    async provideDefinition() {
+        const loc = await jb.exec(langService.definition())
         if (!loc)
-            return jb.logError('provideDefinition - no location returned', {docProps})
+            return jb.logError('provideDefinition - no location returned', {})
         const repos = (vscodeNS.workspace.workspaceFolders || []).map(ws=>ws.uri.path)
             .map(path=>({path,repo: path.split('/').pop()}))
         const repo = repos.find(x=>x.repo == loc.repo) 
@@ -128,27 +100,24 @@ extension('vscode', 'utils', {
     },
     // commands    
     moveUp() {
-        return jb.vscode.moveInArray({ diff: -1, ...jb.tgpTextEditor.host.compTextAndCursor()})
+        return jb.vscode.moveInArray(-1)
     },
     moveDown() { 
-        return jb.vscode.moveInArray({ diff: 1, ...jb.tgpTextEditor.host.compTextAndCursor()})
+        return jb.vscode.moveInArray(1)
     },
-    async moveInArray(docPropsWithDiff) {
-        const {edit, cursorPos} = await jb.vscode.ctx.setData(docPropsWithDiff).run(tgp.moveInArrayEditsByDocProps('%%'))
-        const json = JSON.stringify(edit)
-        jb.vscode.log(`moveInArray ${json.length}`)
+    async moveInArray(diff) {
+        const {edit, cursorPos} = await jb.vscode.ctx.setData(diff).run(langService.moveInArrayEdits('%%'))
         await jb.tgpTextEditor.host.applyEdit(edit)
         cursorPos && jb.tgpTextEditor.host.selectRange(cursorPos)
     },
 
     async openProbeResultPanel() {
-        const docProps = jb.tgpTextEditor.host.compTextAndCursor()
-        const probeRes = await jb.vscode.ctx.setData(docProps).run(tgpTextEditor.probeByDocProps('%%'))
-        jb.vscode.panels.main.render('probe.probeResView',probeRes)
+        const probeRes = await jb.exec(langServer.probe())
+        jb.vscode.panels.main.render('probeUI.probeResViewForVSCode',probeRes)
     },
     async openProbeResultEditor() {
-        const docProps = jb.tgpTextEditor.host.compTextAndCursor()
         vscodeNS.commands.executeCommand('workbench.action.editorLayoutTwoRows')
+        const compProps = await jb.exec(langService.compProps()) // IMPORTANT - get comp props here. opening the view will change the current editor
         if (!jb.vscode.panels.inspect) {
             jb.vscode.panels.inspect = {}
             const panel = jb.vscode.panels.inspect.panel = vscodeNS.window.createWebviewPanel('jbart.inpect', 'inspect', vscodeNS.ViewColumn.Two, { enableScripts: true })
@@ -158,11 +127,11 @@ extension('vscode', 'utils', {
             })
             jb.vscode.panels.inspect.jbm = await jb.exec(jbm.start(vscodeWebView({ id: 'vscode_inspect', panel: () => panel})))
         }
-        const probeRes = await jb.vscode.ctx.setData(docProps).run(tgpTextEditor.probeByDocProps('%%'))
+        const probeRes = await jb.vscode.ctx.setData(compProps).run(langServer.probe())
         probeRes.badFormat = (probeRes.errors || []).find(x=>x.err == 'reformat edits') && true
 
         return jb.vscode.ctx.setData(probeRes).run(
-            remote.action(renderWidget({$: 'probe.probeResView', probeRes: '%%'}, '#main'), ()=> jb.vscode.panels.inspect.jbm))
+            remote.action(renderWidget({$: 'probeUI.probeResViewForVSCode', probeRes: '%%'}, '#main'), ()=> jb.vscode.panels.inspect.jbm))
     },
     async closeProbeResultEditor() {
         delete jb.vscode.panels.inspect
@@ -172,8 +141,7 @@ extension('vscode', 'utils', {
     async openLiveProbeResultPanel() {
     },
     async openjBartStudio() {
-        const docProps = jb.tgpTextEditor.host.compTextAndCursor()
-        const url = await jb.vscode.ctx.setData(docProps).run(tgpTextEditor.studioCircuitUrlByDocProps('%%'))
+        const url = await jb.exec(langServer.studioCircuitUrl())
         vscodeNS.env.openExternal(vscodeNS.Uri.parse(url))
     },
     async openjBartTest() {

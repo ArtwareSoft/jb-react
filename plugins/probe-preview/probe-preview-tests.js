@@ -10,7 +10,9 @@ component('sampleProject.main', {
 })
 
 component('suggestionsTest.varsFilter.remote', {
-  impl: remoteSuggestionsTest('%$p', { expectedResult: and(contains('$people'), not(contains('$win'))) })
+  impl: remoteSuggestionsTest('%$p', {
+    expectedResult: and(contains('$people'), not(contains('$win')))
+  })
 })
 
 component('workerPreviewTest.basic', {

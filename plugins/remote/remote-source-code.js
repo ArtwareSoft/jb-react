@@ -66,7 +66,8 @@ component('pluginsByPath', {
     {id: 'filePath', as: 'string', mandatory: true, description: 'E.g. someDir/plugins/mycode.js'},
     {id: 'addTests', as: 'boolean', description: 'add plugin-tests', type: 'boolean'}
   ],
-  impl: (ctx,_path,addTests) => {
+  impl: (ctx,filePath,addTests) => {
+    const _path = jb.tgp.shortFilePath(filePath)
     const repo = (_path.match(/projects\/([^/]*)\/(plugins|projects)/) || [])[1]
     const path = (_path.match(/projects(.*)/)||[])[1] || _path
     const tests = path.match(/-(tests|testers).js$/) || path.match(/\/tests\//) ? '-tests': ''

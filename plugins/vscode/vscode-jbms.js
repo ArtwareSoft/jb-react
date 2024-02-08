@@ -1,5 +1,5 @@
 dsl('jbm')
-using('remote')
+using('remote,tree-shake')
 
 extension('vscode', 'ports', {
     portFromWebViewToExt(from,to) { return {
@@ -122,7 +122,7 @@ component('vscodeWebView', {
         if (jb.jbm.childJbms[id]) return jb.jbm.childJbms[id]
         const webViewUri = `${jb.uri}•${id}`
         const _jbBaseUrl = 'http://localhost:8082'
-        sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),'vscode','probe'])
+        sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),'vscode','tree-shake','probe-result-ui'])
         const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -161,8 +161,10 @@ component('vscodeWebView', {
                 if (this._rjbm) return this._rjbm
                 this._rjbm = jb.ports[webViewUri] = jb.jbm.extendPortToJbmProxy(
                     jb.vscode.portFromExtensionToWebView(panel.webview, jb.uri, webViewUri))
-                panel.webview.html = html
-                await new Promise(resolve=> jb.jbm.notifyChildReady[webViewUri] = resolve)
+                await new Promise(resolve=> {
+                    jb.jbm.notifyChildReady[webViewUri] = resolve
+                    panel.webview.html = html
+                })
                 jb.log('vscode jbm webview ready',{id})
                 await init(ctx.setVar('jbm',jb.jbm.childJbms[id]))
                 return jb.jbm.childJbms[id]

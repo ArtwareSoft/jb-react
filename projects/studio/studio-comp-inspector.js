@@ -20,7 +20,7 @@ component('studio.compInspector', {
           features: followUp.watchObservable(source.callbag('%$frameOfElem.spy.observable()%'))
         }),
         studio.eventsOfComp('%$inspectedCmp/cmpId%'),
-        editableText('source', tgp.profileAsText('%$inspectedCtx/path%'), {
+        editableText('source', sourceEditor.profileAsText('%$inspectedCtx/path%'), {
           style: editableText.codemirror({ height: '100' }),
           features: codemirror.fold()
         }),

@@ -100,7 +100,7 @@ component('studioHelper.jbEditor', {
       group({
         controls: [
           editableText({
-            databind: tgp.profileAsText('%$jbEditorCntrData/selected%'),
+            databind: sourceEditor.profileAsText('%$jbEditorCntrData/selected%'),
             style: editableText.textarea({}),
             features: [css.width('300'), css.height('200'), css.margin({left: '10'})]
           })

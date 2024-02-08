@@ -1,11 +1,11 @@
 
 using('ui,remote-widget,parsing,testing')
 
-// component('macroTest.simple', {
+// component('PPrintTest.simple', {
 //   impl: dataTest(prettyPrint(ctx => jb.comps['dataTest.obj'].impl), contains(["prop('a', 1)", ctx => "res: '%%'"]))
 // })
 
-component('macroTest.vars', {
+component('PPrintTest.vars', {
   impl: dataTest({
     calculate: ctx => {
     try {
@@ -22,7 +22,7 @@ component('macroTest.vars', {
   })
 })
 
-component('macroTest.varsPath', {
+component('PPrintTest.varsPath', {
   impl: dataTest({
     calculate: pipeline(
       () => jb.utils.prettyPrintWithPositions(split(Var('a', 'b'))),
@@ -34,7 +34,7 @@ component('macroTest.varsPath', {
   })
 })
 
-component('macroTest.remark.pipeline', {
+component('PPrintTest.remark.pipeline', {
   impl: dataTest({
     calculate: pipeline(
       () => jb.utils.prettyPrintWithPositions(pipeline(Var('x',1), 'a' , {remark: 'hello'}),{singleLine: true}),
@@ -45,7 +45,7 @@ component('macroTest.remark.pipeline', {
   })
 })
 
-component('macroTest.Positions.closeArray', {
+component('PPrintTest.Positions.closeArray', {
   impl: dataTest({
     calculate: pipeline(
       () => jb.utils.prettyPrintWithPositions(text('hello world', { features: [ css.color('green'), css.color('green'), css.color('green') ] }), { colWidth: 30 }),
@@ -65,11 +65,11 @@ component('test.foldFunction', {
   )
 })
 
-component('macroTest.posOfFoldFunctionBug', {
-  impl: dataTest(tgp.posOfPath('test.foldFunction~impl~items~1'), equals('%line%', 4))
+component('PPrintTest.posOfFoldFunctionBug', {
+  impl: dataTest(() => jb.tgpTextEditor.getPosOfPath('test.foldFunction~impl~items~1'), equals('%line%', 4))
 })
 
-component('macroTest.singleFunc', {
+component('PPrintTest.singleFunc', {
   impl: dataTest({
     calculate: pipeline(
       () => jb.utils.prettyPrintWithPositions(frontEnd.init(({ }, { }) => 5)),
@@ -80,29 +80,29 @@ component('macroTest.singleFunc', {
   })
 })
 
-component('macroTest.primitiveArray', {
+component('PPrintTest.primitiveArray', {
   impl: dataTest({
     calculate: () => jb.utils.prettyPrintWithPositions(list(1, 2, 3, 4)),
     expectedResult: equals('%text%', 'list(1,2,3,4)')
   })
 })
 
-component('macroTest.byValue.cutTailingUndefinedArgs', {
+component('PPrintTest.byValue.cutTailingUndefinedArgs', {
   impl: dataTest(() => jb.utils.prettyPrint(css.boxShadow({ inset: false })), notContains('undefined'))
 })
 
-component('macroTest.async', {
+component('PPrintTest.async', {
   impl: dataTest(() => jb.utils.prettyPrint({ async a() { 3 } }), and(not(contains('a:')), contains('async a() { 3 }')))
 })
 
-component('macroTest.asyncInProfile', {
+component('PPrintTest.asyncInProfile', {
   impl: dataTest({
     calculate: () => jb.utils.prettyPrint(dataTest(async () => { 5 })),
     expectedResult: and(not(contains('a:')), contains('async () => { 5 }'))
   })
 })
 
-component('macroTest.funcDefaults', {
+component('PPrintTest.funcDefaults', {
   impl: dataTest({
     calculate: () => jb.utils.prettyPrint({ aB(c, { b } = {}) { 3 } }),
     expectedResult: and(not(contains('aB:')), contains('aB(c, { b } = {}) { 3 }')),
@@ -110,13 +110,13 @@ component('macroTest.funcDefaults', {
   })
 })
 
-component('macroTest.typeAdapter.from', {
+component('PPrintTest.typeAdapter.from', {
   impl: dataTest({
     calculate: prettyPrint(() => typeAdapter('state<location>', israel()), true),
     expectedResult: equals(`typeAdapter('state<location>', israel())`)
   })
 })
 
-component('macroTest.typeAdapter.to', {
+component('PPrintTest.typeAdapter.to', {
   impl: dataTest(pipeline(typeAdapter('state<location>', israel()), '%capital/name%'), equals('Jerusalem'))
 })

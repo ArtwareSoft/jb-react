@@ -3,7 +3,7 @@ extension('tgp', 'readOnly', {
 	parentPath: path => path.split('~').slice(0,-1).join('~'),
 	parents: path => path.split('~').reduce((acc,last,i) => acc.concat(i ? [acc[acc.length-1],last].join('~') : last),[]).reverse(),
 	valOfPath: path => { 
-		const res = jb.path(jb.utils.getComp(path.split('~')[0]),path.split('~').slice(1))
+		const res = jb.path(jb.utils.getCompById(path.split('~')[0]),path.split('~').slice(1))
         if (res && res[jb.macro.isMacro])
         	return res()
 		return res
@@ -15,12 +15,12 @@ extension('tgp', 'readOnly', {
 	  if (path.match(/~\$vars$/)) 
 	  	return
 	  const prof = jb.tgp.valOfPath(path,silent)
-	  return jb.utils.compName(prof) || jb.utils.compName(prof,jb.tgp.paramDef(path))
+	  return jb.utils.compName(prof) || jb.utils.compName(prof,{parentParam: jb.tgp.paramDef(path)})
 	},
 	shortCompNameOfPath: (path,silent) => (jb.tgp.compNameOfPath(path,silent) || '').split('>').pop(),
 	paramDef: path => {
 	  if (!jb.tgp.parentPath(path))
-		  return jb.tgp.getComp(path)
+		  return jb.tgp.getCompById(path)
 	  if (!isNaN(Number(path.split('~').pop()))) // array elements
 		  path = jb.tgp.parentPath(path)
 	  const comp = jb.tgp.compOfPath(jb.tgp.parentPath(path),true)
@@ -30,26 +30,16 @@ extension('tgp', 'readOnly', {
 		  return params[0]
 	  return params.find(p=>p.id==paramName)
 	},
-	compOfPath: (path,silent) => jb.tgp.getComp(jb.tgp.compNameOfPath(path,silent)),
+	compOfPath: (path,silent) => jb.tgp.getCompById(jb.tgp.compNameOfPath(path,silent)),
 	paramsOfPath: (path,silent) => jb.utils.compParams(jb.tgp.compOfPath(path,silent)),
-	getComp: id => jb.utils.getComp(id),
-	compAsStr: id => jb.utils.prettyPrintComp(id,jb.tgp.getComp(id)),
+	getCompById: id => jb.utils.getCompById(id),
+	compAsStr: id => jb.utils.prettyPrintComp(id,jb.tgp.getCompById(id)),
 	valSummary: val => {
 		if (val && typeof val == 'object')
 			return val.id || val.name
 		return '' + val
 	},
 	pathSummary: path => path.replace(/~controls~/g,'~').replace(/~impl~/g,'~').replace(/^[^\.]*./,''),
-	singleParamAsArray: path => {
-		const params = jb.path(jb.tgp.compOfPath(path),'params') || []
-        return params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1 && params[0]
-	},
-	twoFirstArgs: path => {
-		const profile = jb.tgp.valOfPath(path)
-		const params = jb.path(jb.tgp.compOfPath(path),'params') || []
-		const keys = Object.keys(profile).filter(x=>x != '$')
-		return keys.length == 2 && params.length >= 2 && profile[params[0].id] && profile[params[1].id]
-	},
 	isArrayType: path => ((jb.tgp.paramDef(path)||{}).type||'').indexOf('[]') != -1,
 	isOfType(path,type) {
 		const types = type.split(',')
@@ -73,7 +63,7 @@ extension('tgp', 'readOnly', {
 		return res
 	},
 	markOfComp(id) {
-		return +(((jb.tgp.getComp(id).category||'').match(/common:([0-9]+)/)||[0,0])[1])
+		return +(((jb.tgp.getCompById(id).category||'').match(/common:([0-9]+)/)||[0,0])[1])
 	},
 	isCompNameOfType(name,type) {
 		if (name.indexOf('<') != -1)
@@ -85,8 +75,8 @@ extension('tgp', 'readOnly', {
 			return jb.comps[name] && jb.tgp.isCompObjOfType(jb.comps[name],type)
 		}
 	},
-	isCompObjOfType: (compObj,type) => {
-		if (compObj[jb.core.CT].dslType == type) return true
+	isCompObjOfType(compObj,type) {
+		if (compObj.dslType === type || [jb.core.CT].dslType == type) return true
 		const compType = !compObj.type && typeof compObj.impl == 'function' ? 'data' : compObj.type || ''
 		return compType.split(',').includes(type) || (compObj.typePattern && compObj.typePattern(type))
 	},
@@ -207,14 +197,38 @@ extension('tgp', 'readOnly', {
 	},
 	isDisabled: path => jb.path(jb.tgp.valOfPath(path),'$disabled'),
 	moreParams: path => jb.tgp.paramsOfPath(path).filter(p=>jb.tgp.valOfPath(path+'~'+p.id) == null), // && !p.mandatory)
-	canWrapWithArray: path => {
-		const type = jb.tgp.paramDef(path) ? (jb.tgp.paramDef(path).type || '') : ''
-		const val = jb.tgp.valOfPath(path)
-		const parentVal = jb.tgp.valOfPath(jb.tgp.parentPath(path))
-		return type.includes('[') && !Array.isArray(val) && !Array.isArray(parentVal)
+
+	clone(profile) {
+		if (typeof profile !== 'object') return profile
+		return jb.tgp.evalProfile(jb.utils.prettyPrint(profile,{noMacros: true}))
+	},
+	evalProfile(prof_str) {
+		try {
+			return jb.frame.eval('('+prof_str+')')
+			//return (jb.studio.previewWindow() || window).eval('('+prof_str+')')
+		} catch (e) {
+			jb.logException(e,'eval profile',{prof_str})
+		}
+	},
+	cloneProfile(prof) {
+		if (!prof || jb.utils.isPrimitiveValue(prof) || typeof prof == 'function') return prof
+		const keys = [...Object.keys(prof),jb.core.OrigValues,jb.core.CT]
+		return jb.objFromEntries(keys.map(k=>[k,jb.tgp.cloneProfile(prof[k])]))
+	},
+	newProfile(comp,compName, {basedOnPath, basedOnVal} = {}) {
+		const currentVal = basedOnVal != null ?  basedOnVal : (basedOnPath && jb.tgp.valOfPath(basedOnPath))
+		const result = { $: compName }
+		jb.utils.compParams(comp).forEach(p=>{
+			if (p.composite)
+				result[p.id] = currentVal == null || Array.isArray(currentVal) ? [] : jb.asArray(currentVal)
+			else if (p.templateValue)
+				result[p.id] = jb.tgp.cloneProfile(p.templateValue)
+			else if (currentVal && currentVal[p.id] !== undefined)
+				result[p.id] = currentVal[p.id]
+		})
+		return result
 	}
 })
-
 
 // ******* components ***************
 
@@ -370,20 +384,4 @@ component('tgp.isCssPath', {
           return path.slice(0,featureIndex+(array?2:1)).join('~')
       }
   }
-})
-
-component('tgp.tgpModel', {
-  description: 'tgpModel for editor',
-  params: [],
-  impl: () => ({
-	plugins: jb.objFromEntries(Object.values(jb.plugins).filter(p=>p.proxies).map(({id,proxies,dependent,dsl,dslOfFiles})=>({id,proxies,dependent,dsl,dslOfFiles})).map(p=>[p.id,p])),
-	comps: jb.objFromEntries(Object.keys(jb.comps).filter(k=>k.indexOf('dataResource') != 0).map(k=> { 
-		const ct =jb.comps[k][jb.core.CT]
-		const res = {...jb.comps[k], impl: undefined, id: ct.fullId, plugin: ct.plugin.id, location: ct.location }
-		delete res[jb.core.CT]
-		delete res.impl
-		Object.keys(res).forEach(k=>{ if(typeof res[k] == 'function') delete res[k]})
-		return res
-	}).map(c=>[c.id,c]))
-  })
 })

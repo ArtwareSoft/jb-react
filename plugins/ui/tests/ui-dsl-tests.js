@@ -1,4 +1,4 @@
-using('testing,tgp-tests')
+using('tgp-lang-service-tests')
 
 component('location.control', {
   type: 'control<>',
@@ -11,16 +11,16 @@ component('location.control', {
   )
 })
 
-component('completionTest.dslTest.usingCtrl', {
-  impl: tgp.completionOptionsTest(`component('x', {
+component('dslTest.usingCtrl', {
+  impl: completionOptionsTest(`component('x', {
   impl: uiTest(__TBD())
 })`, {
     expectedSelections: ['location.control']
   })
 })
 
-component('completionTest.dslTest.usingCtrl2', {
-  impl: tgp.completionOptionsTest(`component('x', {
+component('dslTest.usingCtrl2', {
+  impl: completionOptionsTest(`component('x', {
   impl: uiTest(location.control(__TBD()))
 })`, {
     expectedSelections: ['israel']

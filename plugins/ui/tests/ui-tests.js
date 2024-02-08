@@ -4,7 +4,7 @@ component('uiTest.group', {
 })
 
 component('uiTest.group1', {
-  impl: group(text('my label'), { title: '2.0' })
+  impl: group(text('my label', ''))
 })
 
 component('uiTest.label', {

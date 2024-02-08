@@ -118,7 +118,7 @@ extension('test', {
 	isCompNameOfType(name,type) {
 		const comp = name && jb.comps[name]
 		if (comp) {
-			while (jb.comps[name] && !jb.comps[name].type && jb.utils.compName(jb.comps[name].impl))
+			while (jb.comps[name] && !jb.comps[name].type && typeof jb.comps[name].impl == 'object' && jb.utils.compName(jb.comps[name].impl))
 				name = jb.utils.compName(jb.comps[name].impl)
 			return (jb.comps[name] && jb.comps[name].type || '').indexOf(type) == 0
 		}
@@ -174,10 +174,12 @@ extension('test', {
 	//		.filter(e=> !e[0].match(/throw/)) // tests that throw exceptions and stop the debugger
 			.filter(e=>!pattern || e[0].match(pattern))
 			.filter(e=>!notPattern || !e[0].match(notPattern))
-			.filter(e=> coveredTestsOf || !jb.test.coveredTests[e[0]])
-			.filter(e=> !coveredTestsOf || (jb.comps[coveredTestsOf].impl.covers || []).includes(e[0]) || e[0] == coveredTestsOf)
-			.filter(e=> jb.path(e[1].impl,'expectedResult') !== true)
-			.filter(e=> e[0] == specificTest || !jb.path(e[1],'doNotRunInTests'))
+			.filter(e => e[0] == specificTest || (
+				(coveredTestsOf || !jb.test.coveredTests[e[0]])
+				&& (!coveredTestsOf || (jb.comps[coveredTestsOf].impl.covers || []).includes(e[0]) || e[0] == coveredTestsOf)
+				&& jb.path(e[1].impl,'expectedResult') !== true
+				&& !jb.path(e[1],'doNotRunInTests')
+			))
 	//		.filter(e=>!e[0].match(/^remoteTest|inPlaceEditTest|patternsTest/) && ['uiTest','dataTest'].indexOf(e[1].impl.$) != -1) // || includeHeavy || specificTest || !e[1].impl.heavy )
 	//		.sort((a,b) => (a[0] > b[0]) ? 1 : ((b[0] > a[0]) ? -1 : 0))
 		tests.forEach(e => e.group = e[0].split('.')[0].split('Test')[0])
@@ -317,6 +319,55 @@ component('test', {
       jbStudioServer('%$repo%')
     ]
   })
+})
+
+component('tester.runTestsOfPlugin', {
+  params: [
+    {id: 'plugin', as: 'string'},
+    {id: 'tests', as: 'array', description: 'empty means all'},
+  ],
+  impl: async (ctx,plugin,test) => {
+	const tests = jb.entries(jb.comps)
+		.filter(([id,comp]) => jb.path(comp,[jb.core.CT,'plugin','id']) == plugin+'-tests' 
+			&& jb.path(comp,[jb.core.CT,'dslType']) == 'test' && comp.type != 'test')
+		.filter(([id,comp]) => jb.path(comp,'impl.$') != 'uiFrontEndTest').map(([id]) => id)
+	const testResults = []
+	await tests.reduce((pr,testID) => pr.then(()=> jb.test.runSingleTest(testID).then(res=>testResults.push(res))), Promise.resolve())
+	testResults.forEach(t=>delete t.show)
+	return { tests, testResults }
+  }
+})
+
+component('testServer', {
+  type: 'source-code<jbm>',
+  params: [
+    {id: 'plugin', as: 'string'},
+    {id: 'repo', as: 'string'}
+  ],
+  impl: sourceCode(plugins('%$plugin%,%$plugin%-tests,testing'), {
+    pluginPackages: [
+      defaultPackage(),
+      jbStudioServer('%$repo%')
+    ]
+  })
+})
+
+component('testServer.runTestsOfPlugin', {
+  params: [
+    {id: 'plugin', as: 'string'},
+    {id: 'tests', as: 'array', description: 'empty means all'},
+  ],
+  impl: remote.data(tester.runTestsOfPlugin('%$plugin%','%$test%'), cmd(testServer('%$plugin%'),{doNotStripResult: true}))
+})
+
+component('pluginTest.common', {
+	doNotRunInTests: true,
+	impl: dataTest(tester.runTestsOfPlugin('common'), equals('1,2'))
+})
+
+component('testServer.ui', {
+	doNotRunInTests: true,
+	impl: dataTest(testServer.runTestsOfPlugin('ui'), equals('1,2'))
 })
 
 component('PROJECTS_PATH', { passiveData : '/home/shaiby/projects' // 'c:/projects' 

@@ -1,7 +1,7 @@
 using('ui-tests')
 
 component('completionTest.param', {
-  impl: tgp.completionOptionsTest({
+  impl: completionOptionsTest({
     compText: `component('x', {
   impl: uiTest(__text(__'hello world',__ ''__)__,__ __contains('hello world')__)
 })`,
@@ -9,8 +9,17 @@ component('completionTest.param', {
   })
 })
 
+component('completionTest.param1', {
+  impl: completionOptionsTest({
+    compText: `component('x', {
+  impl: uiTest(text(__'hello world', ''), contains('hello world'))
+})`,
+    expectedSelections: ['style']
+  })
+})
+
 component('completionTest.pt', {
-  impl: tgp.completionOptionsTest({
+  impl: completionOptionsTest({
     compText: `component('x', {
   impl: uiTest(group(__text('__hello world'), __text('2'__)__), __contains('hello world','2'))
 })`,
@@ -19,7 +28,7 @@ component('completionTest.pt', {
 })
 
 component('completionTest.text', {
-  impl: tgp.completionOptionsTest(`component('x', {
+  impl: completionOptionsTest(`component('x', {
   impl: uiTest(text(__'__hello'__, __'__'__))
 })`, {
     expectedSelections: ['style','pipeline','style','style','pipeline','style']
@@ -27,7 +36,7 @@ component('completionTest.text', {
 })
 
 component('completionTest.betweentwoFirstArgs', {
-  impl: tgp.completionOptionsTest({
+  impl: completionOptionsTest({
     compText: `component('x', {
   impl: uiTest(text('hello world'),__ contains('hello world'))
 })`,
@@ -36,7 +45,7 @@ component('completionTest.betweentwoFirstArgs', {
 })
 
 component('completionTest.pipeline', {
-  impl: tgp.completionOptionsTest(`component('x', {
+  impl: completionOptionsTest(`component('x', {
   impl: uiTest(text(pipeline(__)))
 })`, {
     expectedSelections: ['split']
@@ -44,7 +53,7 @@ component('completionTest.pipeline', {
 })
 
 component('completionTest.typeAdapter', {
-  impl: tgp.completionOptionsTest({
+  impl: completionOptionsTest({
     compText: `component('x', {
   impl: uiTest(text(typeAdapter('state<location>', __TBD())))
 })`,
@@ -53,7 +62,7 @@ component('completionTest.typeAdapter', {
 })
 
 component('completionTest.pipeline2', {
-  impl: tgp.completionOptionsTest(`component('x', {
+  impl: completionOptionsTest(`component('x', {
   impl: uiTest(text(pipeline('__')))
 })`, {
     expectedSelections: ['split']
@@ -61,7 +70,7 @@ component('completionTest.pipeline2', {
 })
 
 component('completionTest.createPipelineFromComp', {
-  impl: tgp.completionActionTest(`component('x', {
+  impl: completionActionTest(`component('x', {
   impl: uiTest(text(__split()))
 })`, {
     completionToActivate: 'pipeline',
@@ -74,7 +83,7 @@ component('completionTest.createPipelineFromComp', {
 })
 
 component('completionTest.singleArgAsArray.begin', {
-  impl: tgp.completionActionTest(`component('x', {
+  impl: completionActionTest(`component('x', {
   impl: uiTest(group(__text('')))
 })`, {
     completionToActivate: 'features',
@@ -87,7 +96,7 @@ component('completionTest.singleArgAsArray.begin', {
 })
 
 component('completionTest.singleArgAsArray.end', {
-  impl: tgp.completionActionTest(`component('x', {
+  impl: completionActionTest(`component('x', {
   impl: uiTest(group(text('')__))
 })`, {
     completionToActivate: 'button',
@@ -100,7 +109,7 @@ component('completionTest.singleArgAsArray.end', {
 })
 
 component('completionTest.singleArgAsArray.middle', {
-  impl: tgp.completionActionTest(`component('x', {
+  impl: completionActionTest(`component('x', {
   impl: uiTest(group(text(''),__ text('2')))
 })`, {
     completionToActivate: 'button',
@@ -113,7 +122,7 @@ component('completionTest.singleArgAsArray.middle', {
 })
 
 component('completionTest.paramsAndProfiles', {
-  impl: tgp.completionOptionsTest(`component('x', {
+  impl: completionOptionsTest(`component('x', {
   impl: uiTest(__text(''))
 })`, {
     expectedSelections: ['runBefore','button']
@@ -121,7 +130,7 @@ component('completionTest.paramsAndProfiles', {
 })
 
 component('completionTest.createPipelineFromString', {
-  impl: tgp.completionActionTest(`component('x', {
+  impl: completionActionTest(`component('x', {
   impl: uiTest(text('__aa'))
 })`, {
     completionToActivate: 'pipeline',
@@ -134,7 +143,7 @@ component('completionTest.createPipelineFromString', {
 })
 
 component('completionTest.createPipelineFromEmptyString', {
-  impl: tgp.completionActionTest(`component('x', {
+  impl: completionActionTest(`component('x', {
   impl: uiTest(text('hello world', '__'))
 })`, {
     completionToActivate: 'pipeline',
@@ -147,7 +156,7 @@ component('completionTest.createPipelineFromEmptyString', {
 })
 
 component('completionTest.insideVar', {
-  impl: tgp.completionActionTest(`component('x', {
+  impl: completionActionTest(`component('x', {
   impl: dataTest({ vars: [Var('a', '__b')] })
 })`, {
     completionToActivate: 'pipeline',
@@ -160,7 +169,7 @@ component('completionTest.insideVar', {
 })
 
 component('completionTest.splitInsidePipeline', {
-  impl: tgp.completionActionTest(`component('x', {
+  impl: completionActionTest(`component('x', {
   impl: uiTest(text(pipeline(__)))
 })`, {
     completionToActivate: 'split',
@@ -173,7 +182,7 @@ component('completionTest.splitInsidePipeline', {
 })
 
 component('completionTest.splitPart', {
-  impl: tgp.completionOptionsTest(`component('x', {
+  impl: completionOptionsTest(`component('x', {
   impl: uiTest(text(pipeline(split(__))))
 })`, {
     expectedSelections: ['part']
@@ -181,7 +190,7 @@ component('completionTest.splitPart', {
 })
 
 component('completionTest.dynamicFormat', {
-  impl: tgp.completionActionTest({
+  impl: completionActionTest({
     compText: `component('x', {
   impl: uiTest(__text('my text'), contains('hello world'))
 })`,
@@ -195,7 +204,7 @@ component('completionTest.dynamicFormat', {
 })
 
 component('completionTest.wrapWithGroup', {
-  impl: tgp.completionActionTest(`component('x', {
+  impl: completionActionTest(`component('x', {
   impl: uiTest(__text())
 })`, {
     completionToActivate: 'group',
@@ -208,7 +217,7 @@ component('completionTest.wrapWithGroup', {
 })
 
 component('completionTest.wrapWithArray', {
-  impl: tgp.completionActionTest({
+  impl: completionActionTest({
     compText: `component('x', {
   impl: uiTest(text({ features: __id('x') }), contains())
 })`,
@@ -222,7 +231,7 @@ component('completionTest.wrapWithArray', {
 })
 
 component('completionTest.buttonFeature', {
-  impl: tgp.completionOptionsTest(`component('x', {
+  impl: completionOptionsTest(`component('x', {
   impl: uiTest(button('', { features: [__] }))
 })`, {
     expectedSelections: ['method','button.ctrlAction']
@@ -230,7 +239,7 @@ component('completionTest.buttonFeature', {
 })
 
 component('completionTest.singleParamAsArray.rx', {
-  impl: tgp.completionOptionsTest(`component('x', {
+  impl: completionOptionsTest(`component('x', {
   impl: dataTest(rx.pipe(__))
 })`, {
     expectedSelections: ['source.data']
@@ -238,7 +247,7 @@ component('completionTest.singleParamAsArray.rx', {
 })
 
 component('completionTest.singleParamAsArray.data', {
-  impl: tgp.completionOptionsTest(`component('x', {
+  impl: completionOptionsTest(`component('x', {
   impl: dataTest(pipeline(__))
 })`, {
     expectedSelections: ['split']
@@ -246,7 +255,7 @@ component('completionTest.singleParamAsArray.data', {
 })
 
 component('completionTest.actionReplaceTBD', {
-  impl: tgp.completionActionTest(`component('x', {
+  impl: completionActionTest(`component('x', {
   impl: uiTest(button('x', remote.action(__TBD())))
 })`, {
     completionToActivate: 'move',
@@ -263,8 +272,9 @@ component('completionTest.fixEditedSample', {
 })
 
 component('completionTest.fixEditedCompSpaces', {
-  impl: tgp.fixEditedCompTest({
-    compText: `component('completionTest.fixEditedSample' ,{ impl: pipeline(__) 
+  impl: fixEditedCompTest({
+    compText: `component('completionTest.fixEditedSample', {
+   impl:     pipeline(__) 
 })`,
     expectedFixedComp: `{
   impl: pipeline()
@@ -273,17 +283,18 @@ component('completionTest.fixEditedCompSpaces', {
 })
 
 component('completionTest.fixEditedCompWrongName', {
-  impl: tgp.fixEditedCompTest({
-    compText: `component('completionTest.fixEditedSample' ,{ impl: pipeline(__a) 
+  impl: fixEditedCompTest({
+    compText: `component('completionTest.fixEditedSample' ,{
+  impl: pipeline(__a) 
 })`,
-    expectedFixedComp: `component('completionTest.fixEditedSample', {
+    expectedFixedComp: `{
   impl: pipeline(TBD())
-})`
+}`
   })
 })
 
 component('completionTest.people', {
-  impl: tgp.completionOptionsTest(`component('x', {
+  impl: completionOptionsTest(`component('x', {
   impl: dataTest('%$peopleArray/__')
 })`, {
     expectedSelections: ['people (3 items)']
@@ -291,7 +302,7 @@ component('completionTest.people', {
 })
 
 component('completionTest.person', {
-  impl: tgp.completionOptionsTest(`component('x', {
+  impl: completionOptionsTest(`component('x', {
   impl: dataTest('%$__')
 })`, {
     expectedSelections: ['$person (4 props)']
@@ -299,7 +310,7 @@ component('completionTest.person', {
 })
 
 component('completionTest.writePerson', {
-  impl: tgp.completionActionTest(`component('x', {
+  impl: completionActionTest(`component('x', {
   impl: dataTest('%$__')
 })`, {
     completionToActivate: '$person (4 props)',
@@ -312,7 +323,7 @@ component('completionTest.writePerson', {
 })
 
 component('completionTest.writePersonInner', {
-  impl: tgp.completionActionTest(`component('x', {
+  impl: completionActionTest(`component('x', {
   impl: dataTest('%$p__er')
 })`, {
     completionToActivate: '$person (4 props)',
@@ -325,7 +336,7 @@ component('completionTest.writePersonInner', {
 })
 
 component('completionTest.writePersonInner2', {
-  impl: tgp.completionActionTest(`component('x', {
+  impl: completionActionTest(`component('x', {
   impl: dataTest('%$per__')
 })`, {
     completionToActivate: '$person (4 props)',
@@ -338,7 +349,7 @@ component('completionTest.writePersonInner2', {
 })
 
 component('completionTest.writePersonName', {
-  impl: tgp.completionActionTest(`component('x', {
+  impl: completionActionTest(`component('x', {
   impl: dataTest('%$person/__')
 })`, {
     completionToActivate: 'name (Homer Simpson)',
@@ -351,7 +362,7 @@ component('completionTest.writePersonName', {
 })
 
 component('completionTest.writePreviewValue', {
-  impl: tgp.completionActionTest(`component('x', {
+  impl: completionActionTest(`component('x', {
   impl: dataTest('%$peopleArray/__')
 })`, {
     completionToActivate: 'people (3 items)',
@@ -364,21 +375,21 @@ component('completionTest.writePreviewValue', {
 })
 
 component('completionTest.dslTest.createProp', {
-  impl: tgp.completionActionTest(`component('x', {
+  impl: completionActionTest(`component('x', {
   impl: state(__)
 })`, {
     completionToActivate: 'capital',
     expectedEdit: () => ({
-        range: {start: {line: 2, col: 14}, end: {line: 2, col: 14}},
+        range: {start: {line: 1, col: 14}, end: {line: 1, col: 14}},
         newText: 'TBD()'
       }),
-    expectedCursorPos: '2,14',
+    expectedCursorPos: '1,14',
     dsl: 'location'
   })
 })
 
 component('completionTest.dslTest.nameOverride', {
-  impl: tgp.completionOptionsTest(`component('x', {
+  impl: completionOptionsTest(`component('x', {
   impl: state(pipeline(__))
 })`, {
     expectedSelections: ['checkNameOverride'],
@@ -387,7 +398,7 @@ component('completionTest.dslTest.nameOverride', {
 })
 
 component('completionTest.dslTest.top', {
-  impl: tgp.completionOptionsTest(`component('x', {
+  impl: completionOptionsTest(`component('x', {
   impl: state(__)
 })`, {
     expectedSelections: ['capital'],

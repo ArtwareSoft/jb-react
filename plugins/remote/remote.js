@@ -77,7 +77,7 @@ component('remote.action', {
 component('remote.data', {
   description: 'calc a script on a remote node and returns a promise',
   params: [
-    {id: 'data', dynamic: true},
+    {id: 'calc', dynamic: true},
     {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self()},
     {id: 'timeout', as: 'number', defaultValue: 10000},
     {id: 'require', as: 'string'}
@@ -186,7 +186,7 @@ component('net.getRootextentionUri', {
 
 component('net.listAll', {
   impl: remote.data({
-    data: pipe(() => Object.values(jb.jbm.networkPeers || {}), remote.data(net.listSubJbms(), '%%'), aggregate(list(net.listSubJbms(), '%%'))),
+    calc: pipe(() => Object.values(jb.jbm.networkPeers || {}), remote.data(net.listSubJbms(), '%%'), aggregate(list(net.listSubJbms(), '%%'))),
     jbm: byUri(net.getRootextentionUri())
   })
 })

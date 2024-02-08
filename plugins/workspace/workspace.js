@@ -18,12 +18,12 @@ extension('workspace', {
             activeUri: ''
     }},
     initJbWorkspaceAsHost() {
-        jb.tgpTextEditor.cache = {}
+//        jb.langService.compsCache = {}
         if (jb.path('jb.tgpTextEditor.host.type') == 'jbWorkspace') return
         jb.tgpTextEditor.host = {
             type: 'jbWorkspace',
             async applyEdit(edit,uri) {
-                jb.tgpTextEditor.cache = {}
+//                jb.langService.compsCache = {}
                 const docUri = uri || jb.workspace.activeUri
                 const docText = jb.workspace.openDocs[docUri].text
                 const from = jb.tgpTextEditor.lineColToOffset(docText, edit.range.start)
@@ -40,7 +40,7 @@ extension('workspace', {
                 return jb.tgpTextEditor.closestComp(doc.text, doc.selection.start.line, doc.selection.start.col, jb.workspace.activeUri)                
             },
             async execCommand(cmd) {
-                console.log('exec command', cmd)
+                //console.log('exec command', cmd)
             },
             async saveDoc() {
             },

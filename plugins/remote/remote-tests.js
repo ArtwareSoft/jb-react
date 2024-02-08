@@ -75,7 +75,7 @@ component('remoteTest.remoteOperator.child.loadOperatorCode', {
 component('remoteTest.childWorker.sourceCode.project', {
   impl: dataTest({
     calculate: remote.data({
-      data: pipeline(itemlists.manyItems(3), '%id%', join(',')),
+      calc: pipeline(itemlists.manyItems(3), '%id%', join(',')),
       jbm: worker('itemlists', { sourceCode: project('itemlists') })
     }),
     expectedResult: equals('1,2,3'),
@@ -108,7 +108,7 @@ component('remoteTest.shadowResource.initWatchable', {
 component('remoteTest.shadowResource.watchable', {
   impl: dataTest({
     calculate: remote.data({
-      data: pipe(rx.pipe(source.watchableData('%$person/name%'), rx.log('test'), rx.map('%newVal%'), rx.take(1))),
+      calc: pipe(rx.pipe(source.watchableData('%$person/name%'), rx.log('test'), rx.map('%newVal%'), rx.take(1))),
       jbm: worker()
     }),
     expectedResult: equals('Dan'),
@@ -123,7 +123,7 @@ component('remoteTest.shadowResource.watchable', {
 component('remoteTest.shadowResource.childJbm', {
   impl: dataTest({
     calculate: remote.data({
-      data: pipe(rx.pipe(source.watchableData('%$person/name%'), rx.log('test'), rx.map('%newVal%'), rx.take(1))),
+      calc: pipe(rx.pipe(source.watchableData('%$person/name%'), rx.log('test'), rx.map('%newVal%'), rx.take(1))),
       jbm: child('inner')
     }),
     expectedResult: equals('Dan'),

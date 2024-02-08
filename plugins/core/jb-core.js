@@ -58,12 +58,12 @@ Object.assign(jb, {
       console.log(e)
     }      
   },
-  component(id,comp,{plugin, override_dsl, pluginId} = {}) {
+  component(id,comp,{plugin, fileDsl, pluginId} = {}) {
     if (!jb.core.CT) jb.initializeLibs(['core']) // this line must be first
     const CT = jb.core.CT
     plugin = plugin || jb.plugins[pluginId] || {}
     comp[CT] = comp[CT] || { plugin }
-    const dsl = override_dsl || plugin.dsl
+    const dsl = fileDsl || plugin.dsl
 
     const location = jb.calcSourceLocation(new Error().stack.split(/\r|\n/), plugin)
     comp[CT].location = comp.location || location
@@ -125,8 +125,12 @@ extension('core', {
       if (profile == null || (typeof profile == 'object' && profile.$disabled))
         return jb.core.castToParam(null,parentParam)
       if (profile.data && ! jb.path(settings, 'dataUsed'))
-        if ((jb.path(profile[jb.core.CT],'comp.params') || []).find(p=>p.id == 'data') == null)
-         return jb.core.doRun(ctx.setData(ctx.runInner(profile.data, {}, 'data')),parentParam,{...(settings||{}), dataUsed: true})
+        if ((jb.path(profile[jb.core.CT],'comp.params') || []).find(p=>p.id == 'data') == null) {
+          const data = ctx.setData(ctx.runInner(profile.data, {}, 'data'))
+          // if (jb.utils.isPromise(data))
+          //   return data.then(_data=>jb.core.doRun(_data,parentParam,{...(settings||{}), dataUsed: true}))
+          return jb.core.doRun(data,parentParam,{...(settings||{}), dataUsed: true})
+      }
 
       if (profile.$asIs) return profile.$asIs
       if (parentParam && (parentParam.type||'').indexOf('[]') > -1 && ! parentParam.as) // fix to array value. e.g. single feature not in array
@@ -251,7 +255,7 @@ extension('core', {
         return { type: 'runActions' }
       }
     }
-    const comp_name = jb.utils.compName(profile,parentParam)
+    const comp_name = jb.utils.compName(profile,{parentParam})
     if (!comp_name)
       return { type: 'asIs' }
     if (profile.$byValue)
@@ -298,7 +302,7 @@ extension('core', {
       }
     }
     run(profile,parentParam) {
-      return jb.core.run(new jb.core.jbCtx(this,{ profile: jb.utils.resolveDetachedProfile(profile, jb.path(parentParam,'type')), comp: profile.$ , path: ''}), parentParam)
+      return jb.core.run(new jb.core.jbCtx(this,{ profile: jb.utils.resolveDetachedProfile(profile, {expectedType: jb.path(parentParam,'type')}), comp: profile.$ , path: ''}), parentParam)
     }
     exp(exp,jstype) { return jb.expression.calc(exp, this, {as: jstype}) }
     setVars(vars) { return new jb.core.jbCtx(this,{vars: vars}) }
@@ -314,7 +318,7 @@ extension('core', {
     extendVars(ctx2,data2) {
       if (ctx2 == null && data2 == null)
         return this;
-      return new jb.core.jbCtx(this,{
+      return new jb.core.jbCtx(this, {
         vars: ctx2 ? ctx2.vars : null,
         data: (data2 == null) ? ctx2.data : data2,
         forcePath: (ctx2 && ctx2.forcePath) ? ctx2.forcePath : null

@@ -2,6 +2,8 @@ refactor
   unify tests - jbmTest.cmd*
   watchRef - second param byName
   fix tgp-upgrade in nodejs
+  use tgpModels[filePath]
+    pass {tgpModel} = { tgpModel: jb}), to tgp functions and use tgpModel.comps[] instead of jb.comps
   langServerice dsl - completion, definition, calcEditAndGotoPos(completionItem), applyEditAndGoto(editItem), shiftArrayItem
   unify contains, equal, endsWith, startsWith - %% - allText, text -> data, maybe 'data' param by name can be standard!!
 
@@ -38,7 +40,7 @@ vdom diff bug!!!
 vscode
   preview mode - 
     two phase - calc the circuit and run preview on the circuit
-  tgpTextEditor.probeByDocProps => tgpTextEditor.probeOrPreviewByDocProps
+  langServer.probe => tgpTextEditor.probeOrPreviewByDocProps
     params: previewMode, preferedCircuit
 
 tests to fix

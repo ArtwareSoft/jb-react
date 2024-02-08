@@ -18,14 +18,14 @@ function doGetProcessArgument(p) {
 }
 
 const _params = 
-      ['main','plugins','project','wrap','uri','dsl','verbose','runCtx','spy','text']
-const [main,_plugins,project,wrap,uri,dsl,verbose,runCtx,spy,resultAsText] = _params.map(p=>doGetProcessArgument(p))
+      ['main','plugins','project','wrap','uri','dsl','verbose','runCtx','spy','text','doNotStripResult']
+const [main,_plugins,project,wrap,uri,dsl,verbose,runCtx,spy,resultAsText,doNotStripResult] = _params.map(p=>doGetProcessArgument(p))
 
 if (!main && !runCtx) {
     console.log(`usage: jb.js 
     -script:dist/myScript.jb // script file with all the params string with #
     -main:button("hello") // profile to run. mandatory or use runCtx.
-    -wrap:prune(MAIN) // optional. profile that wraps the 'main' profile and will be run instead
+    -wrap:prune(MAIN) // optional. profile that wraps the 'main' profile
     -sourceCode:{ "project": ["studio"], "plugins": ["*"] } // "libsToinit" :"lib1,lib2"
     -spy: 'remote' // optional default is 'error'
     -plugins:zui,ui  // optional (shortcut for sourceCode.plugins)
@@ -34,6 +34,7 @@ if (!main && !runCtx) {
     -dsl:myDsl // optional. dsl of the main profile default is ""
     -verbose // show params, vars, and generated tgp code
     -text // result as text
+    -doNotStripResult // result as Is
     %v1:val // variable values
     %p1:val||script // param values
     -runCtx:... // json of runCtx instead of main/wrap/vars and params 
@@ -91,9 +92,11 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
         }
         const result = { result: res, exception, errors: jb.spy.search('error'), logs: jb.spy.logs, main }
         try {
-            const resOut = jb.remoteCtx.stripData(resultAsText ? res : {...result})
-            const resStr = resOut ? JSON.stringify(resOut) : ''
+            const res1 = resultAsText ? res : {...result}
+            const res2 = doNotStripResult ? res1 : jb.remoteCtx.stripData(res1)
+            const resStr = res2 ? JSON.stringify(res2) : ''
             process.stdout.write(resStr)
+            process.stdout.end()
             process.stdout.on('finish', () => process.exit(0))
         } catch(err) {
             return console.log(JSON.stringify({ desc: 'can not stringify result', err }))
@@ -103,7 +106,7 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
 
 
 function calcParamsAndVars() {
-    const params = jb.path(jb.utils.getComp(main.split('(')[0],{dsl}),'params') || []
+    const params = jb.path(jb.utils.getCompById(main.split('(')[0],{dsl}),'params') || []
     const all = process.argv.filter(arg=>arg.indexOf('%') == 0).map(x=>splitColon(x.slice(1)))
     let vars = {}
     all.filter(p=>!isParam(p[0])).forEach(v=>{
@@ -124,10 +127,10 @@ function calcParamsAndVars() {
     }
 }
 
-function evalProfileDef(code, override_dsl) { 
+function evalProfileDef(code, fileDsl) { 
     try {
       jb.core.unresolvedProfiles = []
-      const context = { jb, ...jb.macro.proxies, component: (...args) => jb.component(...args,{override_dsl}) }
+      const context = { jb, ...jb.macro.proxies, component: (...args) => jb.component(...args,{fileDsl}) }
       const res = new Function(Object.keys(context), `${code}`).apply(null, Object.values(context))
       const compId = jb.core.unresolvedProfiles.slice(-1)[0].id
       jb.utils.resolveLoadedProfiles()
@@ -137,9 +140,9 @@ function evalProfileDef(code, override_dsl) {
     } 
 }
 
-function evalInContext(code, override_dsl) { 
+function evalInContext(code, fileDsl) { 
     try {
-        const context = { jb, ...jb.macro.proxies, component: (...args) => jb.component(...args,{override_dsl}) }
+        const context = { jb, ...jb.macro.proxies, component: (...args) => jb.component(...args,{fileDsl}) }
         return new Function(Object.keys(context), `return ${code}`).apply(null, Object.values(context))
     } catch (e) { 
         return {err: e}

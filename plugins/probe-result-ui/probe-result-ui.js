@@ -1,6 +1,6 @@
-using('data-browser,pretty-print')
+using('pretty-print')
 
-extension('probe', 'ui', {
+extension('probeUI', 'ui', {
   initExtension() {
     return { MAX_OBJ_DEPTH: 10, MAX_ARRAY_LENGTH: 1000}
   },
@@ -14,12 +14,12 @@ extension('probe', 'ui', {
     if (data instanceof jb.core.jbCtx)
       return jb.remoteCtx.stripFunction(data)
       //return { id: data.id, data: data.data, path: data.path, $: 'ctx'}
-    if (depth > jb.probe.MAX_OBJ_DEPTH)
+    if (depth > jb.probeUI.MAX_OBJ_DEPTH)
       return '...'
 
-    const slicedArray = (Array.isArray(data) && data.length > jb.probe.MAX_ARRAY_LENGTH)
+    const slicedArray = (Array.isArray(data) && data.length > jb.probeUI.MAX_ARRAY_LENGTH)
     if (Array.isArray(data))
-      return [...data.slice(0, jb.probe.MAX_ARRAY_LENGTH).map((x, i) => jb.probe.stripData(x, innerDepthAndPath(i)))
+      return [...data.slice(0, jb.probeUI.MAX_ARRAY_LENGTH).map((x, i) => jb.probeUI.stripData(x, innerDepthAndPath(i)))
         , ...slicedArray ? ['...'] : []]
     if (typeof data == 'object' && ['DOMRect'].indexOf(data.constructor.name) != -1)
       return jb.objFromEntries(Object.keys(data.__proto__).map(k => [k, data[k]]))
@@ -33,19 +33,19 @@ extension('probe', 'ui', {
       return jb.objFromEntries(jb.entries(data)
         .filter(e => systemVars || e[0][0] != '$')
         .filter(e => data.$ || typeof e[1] != 'function') // if not a profile, block functions
-        .map(e => [e[0], jb.probe.stripData(e[1], innerDepthAndPath(e[0]))]))
+        .map(e => [e[0], jb.probeUI.stripData(e[1], innerDepthAndPath(e[0]))]))
   },
 })
 
-component('probe.stripData', {
+component('probeUI.stripData', {
   params: [
     {id: 'data', defaultValue: '%%'},
     {id: 'systemVars', as: 'boolean', type: 'boolean'}
   ],
-  impl: (ctx,data,systemVars) => jb.probe.stripData(data,{systemVars})
+  impl: (ctx,data,systemVars) => jb.probeUI.stripData(data,{systemVars})
 })
 
-component('probe.detailedInput', {
+component('probeUI.detailedInput', {
   params: [
     {id: 'input'}
   ],
@@ -59,7 +59,7 @@ component('probe.detailedInput', {
         features: [codemirror.fold(), codemirror.lineNumbers()]
       }),
       text({
-        text: pipeline('%$input/in%', prettyPrint(probe.stripData('%vars%'), { noMacros: true }), join(`
+        text: pipeline('%$input/in%', prettyPrint(probeUI.stripData('%vars%'), { noMacros: true }), join(`
 ---
 `)),
         title: 'vars',
@@ -69,7 +69,7 @@ component('probe.detailedInput', {
       text({
         text: pipeline(
           '%$input/in%',
-          prettyPrint(probe.stripData('%vars%', true), { noMacros: true }),
+          prettyPrint(probeUI.stripData('%vars%', true), { noMacros: true }),
           join(`
 ---
 `)
@@ -83,85 +83,70 @@ component('probe.detailedInput', {
   })
 })
 
-component('probe.inOutView', {
+component('probeUI.probeResView', {
+  description: 'using probeResult variable',
   type: 'control',
   impl: group({
     controls: [
-      group({
-        controls: group({
-          controls: [
-            controlWithCondition('%$probeResult/0/callbagLog%', probe.showRxSniffer('%$probeResult/0%')),
-            table({
-              items: '%$probeResult%',
-              controls: [
-                group(ui.dataBrowse('%in%'), {
-                  title: 'in (%in/length%)',
-                  features: [
-                    field.titleCtrl(
-                      button({
-                        title: 'in (%$input/in/length%)',
-                        action: openDialog('in (%$input/in/length%)', probe.detailedInput('%$input%'), {
-                          style: dialog.showSourceStyle('show-data')
-                        }),
-                        style: button.href()
-                      })
-                    ),
-                    css.width('300', { minMax: 'max' })
-                  ]
-                }),
-                group(ui.dataBrowse('%out%'), {
-                  title: 'out',
-                  features: [
-                    field.titleCtrl(
-                      button({
-                        title: 'out (%$input/out/length%)',
-                        action: openDialog({
-                          title: 'out (%$input/out/length%)',
-                          content: text(prettyPrint('%$input/out%', { noMacros: true }), 'system vars', {
-                            style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
-                            features: [codemirror.fold(), codemirror.lineNumbers()]
-                          }),
-                          style: dialog.showSourceStyle('show-data')
-                        }),
-                        style: button.href()
-                      })
-                    ),
-                    field.columnWidth(100)
-                  ]
+      controlWithCondition('%$probeResult/0/callbagLog%', {$: 'probeUI.showRxSniffer', $byValue: ['%$probeResult/0%']}),
+      table({
+        items: '%$probeResult%',
+        controls: [
+          group(ui.dataBrowse('%in%'), {
+            title: 'in (%in/length%)',
+            features: [
+              field.titleCtrl(
+                button({
+                  title: 'in (%$input/in/length%)',
+                  action: openDialog('in (%$input/in/length%)', {$: 'probeUI.detailedInput', $byValue: ['%$input%']}, {
+                    style: dialog.showSourceStyle('show-data')
+                  }),
+                  style: button.href()
                 })
-              ],
-              style: table.mdc(),
-              visualSizeLimit: 7,
-              features: [
-                itemlist.infiniteScroll(),
-                css.height('100%', { minMax: 'max' }),
-                field.columnWidth(100),
-                css('{white-space: normal}')
-              ]
-            })
-          ],
-          features: [
-            group.firstSucceeding(),
-            log('probe result', obj(prop('res', '%$probeResult%')))
-          ]
-        }),
-        features: [
-          feature.if('%$probe/path%'),
-          group.wait(pipe(probe.runCircuit('%$probe/path%'), '%result%'), text('...'), {
-            varName: 'probeResult',
-            passRx: true
+              ),
+              css.width('300', { minMax: 'max' })
+            ]
+          }),
+          group(ui.dataBrowse('%out%'), {
+            title: 'out',
+            features: [
+              field.titleCtrl(
+                button({
+                  title: 'out (%$input/out/length%)',
+                  action: openDialog({
+                    title: 'out (%$input/out/length%)',
+                    content: text(prettyPrint('%$input/out%', { noMacros: true }), 'system vars', {
+                      style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
+                      features: [codemirror.fold(), codemirror.lineNumbers()]
+                    }),
+                    style: dialog.showSourceStyle('show-data')
+                  }),
+                  style: button.href()
+                })
+              ),
+              field.columnWidth(100)
+            ]
           })
+        ],
+        style: table.mdc(),
+        visualSizeLimit: 7,
+        features: [
+          itemlist.infiniteScroll(),
+          css.height('100%', { minMax: 'max' }),
+          field.columnWidth(100),
+          css('{white-space: normal}')
         ]
       })
     ],
-    layout: layout.horizontal(),
     features: [
-      watchRef('%$probe%', 'yes', { strongRefresh: true })
+      group.firstSucceeding(),
+      log('probe result', obj(prop('res', '%$probeResult%')))
     ]
   })
 })
 
-component('probe.probeResView', {
+
+component('probeUI.probeResViewForVSCode', {
   type: 'control',
   params: [
     {id: 'probeRes', defaultValue: '%%'}
@@ -175,7 +160,7 @@ component('probe.probeResView', {
           text({
             text: pipeline(
               '%$probeRes/errors%',
-              prettyPrint(probe.stripData('%%', true), { noMacros: true }),
+              prettyPrint(probeUI.stripData('%%', true), { noMacros: true }),
               join(`
 ---
 `)
@@ -229,7 +214,7 @@ component('probe.probeResView', {
           text({
             text: pipeline(
               '%$probeRes/result/in%',
-              prettyPrint(probe.stripData('%vars%'), { noMacros: true }),
+              prettyPrint(probeUI.stripData('%vars%'), { noMacros: true }),
               join(`
 ---
 `)
@@ -245,7 +230,7 @@ component('probe.probeResView', {
           text({
             text: pipeline(
               '%$probeRes/result/in%',
-              prettyPrint(probe.stripData('%params%'), { noMacros: true }),
+              prettyPrint(probeUI.stripData('%params%'), { noMacros: true }),
               join(`
 ---
 `)
@@ -279,7 +264,7 @@ component('probe.probeResView', {
   })
 })
 
-component('probe.browseRx', {
+component('probeUI.browseRx', {
   type: 'control',
   params: [
     {id: 'rx'}
@@ -295,7 +280,7 @@ component('probe.browseRx', {
   })
 })
 
-component('probe.showRxSniffer', {
+component('probeUI.showRxSniffer', {
   type: 'control',
   params: [
     {id: 'snifferLog'}

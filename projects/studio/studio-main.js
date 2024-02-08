@@ -1,4 +1,4 @@
-using('remote-widget,data-browser,watchable-comps,probe-preview,net,tgp,workspace')
+using('remote-widget,watchable-comps,probe-preview,tgp-lang-server')
 
 component('studio.main', {
   type: 'control',
@@ -106,65 +106,65 @@ component('dataResource.studio', {
   }
 })
 
-component('studio.pages', {
-  type: 'control',
-  impl: group({
-    controls: [
-      button('new page', studio.openNewPage(), {
-        style: button.mdcIcon(icon('add'), 16),
-        features: [
-          css('{margin: 5px}'),
-          feature.hoverTitle('new page')
-        ]
-      }),
-      itemlist({
-        items: pipeline(studio.cmpsOfProject(), filter(tgp.isOfType('%%', 'control'))),
-        controls: text(pipeline(suffix('.'), extractSuffix('.')), { features: css.class('studio-page') }),
-        style: itemlist.horizontal(),
-        features: [
-          itemlist.selection('%$studio/page%', {
-            onSelection: runActions(
-              writeValue('%$studio/profile_path%', '%$studio/page%'),
-              writeValue('%$studio/circuit%', tgp.circuitOptions('%$studio/page%'))
-            ),
-            autoSelectFirst: true
-          }),
-          css.class('studio-pages-items'),
-          studio.watchComponents(),
-          css.width('1200', 'auto', { minMax: 'max' }),
-          css('align-items: center;')
-        ]
-      }),
-      text('|'),
-      button('new function', studio.openNewFunction(), {
-        style: button.mdcIcon(icon('add', { type: 'mdc' }), '16'),
-        features: [
-          css('{margin: 5px}'),
-          feature.hoverTitle('new function')
-        ]
-      }),
-      itemlist({
-        items: pipeline(studio.cmpsOfProject(), filter(tgp.isOfType('%%', 'data'))),
-        controls: text(pipeline(suffix('.'), extractSuffix('.')), {
-          features: method('onclickHandler', studio.openJbEditor('%%'))
-        }),
-        style: itemlist.horizontal(),
-        features: [
-          id('functions'),
-          css.class('studio-pages-items'),
-          css('align-items: center;'),
-          studio.watchComponents()
-        ]
-      })
-    ],
-    title: 'pages',
-    layout: layout.horizontal(),
-    features: [
-      css.class('studio-pages1'),
-      css.border('1', 'bottom', { color: 'var(--jb-dropdown-border)' })
-    ]
-  })
-})
+// component('studio.pages', {
+//   type: 'control',
+//   impl: group({
+//     controls: [
+//       button('new page', studio.openNewPage(), {
+//         style: button.mdcIcon(icon('add'), 16),
+//         features: [
+//           css('{margin: 5px}'),
+//           feature.hoverTitle('new page')
+//         ]
+//       }),
+//       itemlist({
+//         items: pipeline(studio.cmpsOfProject(), filter(tgp.isOfType('%%', 'control'))),
+//         controls: text(pipeline(suffix('.'), extractSuffix('.')), { features: css.class('studio-page') }),
+//         style: itemlist.horizontal(),
+//         features: [
+//           itemlist.selection('%$studio/page%', {
+//             onSelection: runActions(
+//               writeValue('%$studio/profile_path%', '%$studio/page%'),
+//               writeValue('%$studio/circuit%', tgp.circuitOptions('%$studio/page%'))
+//             ),
+//             autoSelectFirst: true
+//           }),
+//           css.class('studio-pages-items'),
+//           studio.watchComponents(),
+//           css.width('1200', 'auto', { minMax: 'max' }),
+//           css('align-items: center;')
+//         ]
+//       }),
+//       text('|'),
+//       button('new function', studio.openNewFunction(), {
+//         style: button.mdcIcon(icon('add', { type: 'mdc' }), '16'),
+//         features: [
+//           css('{margin: 5px}'),
+//           feature.hoverTitle('new function')
+//         ]
+//       }),
+//       itemlist({
+//         items: pipeline(studio.cmpsOfProject(), filter(tgp.isOfType('%%', 'data'))),
+//         controls: text(pipeline(suffix('.'), extractSuffix('.')), {
+//           features: method('onclickHandler', studio.openJbEditor('%%'))
+//         }),
+//         style: itemlist.horizontal(),
+//         features: [
+//           id('functions'),
+//           css.class('studio-pages-items'),
+//           css('align-items: center;'),
+//           studio.watchComponents()
+//         ]
+//       })
+//     ],
+//     title: 'pages',
+//     layout: layout.horizontal(),
+//     features: [
+//       css.class('studio-pages1'),
+//       css.border('1', 'bottom', { color: 'var(--jb-dropdown-border)' })
+//     ]
+//   })
+// })
 
 component('studio.ctxCounters', {
   type: 'control',

@@ -11,7 +11,7 @@ component('studio.copyDataResourceToComp', {
     {id: 'path', as: 'string'},
     {id: 'name', as: 'string'}
   ],
-  impl: writeValue(tgp.profileAsText('%$path%'), (ctx,vars,{name}) => jb.utils.prettyPrint(new jb.core.jbCtx().exp('%$'+name+'%')))
+  impl: writeValue(sourceEditor.profileAsText('%$path%'), (ctx,vars,{name}) => jb.utils.prettyPrint(new jb.core.jbCtx().exp('%$'+name+'%')))
 })
 
 component('studio.openResource', {
@@ -24,7 +24,7 @@ component('studio.openResource', {
     studio.copyDataResourceToComp('%$path%', '%$name%'),
     openDialog({
       title: pipeline(studio.watchableOrPassive('%$path%'), 'Edit %$name% (%%)'),
-      content: editableText({ databind: tgp.profileAsText('%$path%'), style: editableText.studioCodemirrorTgp() }),
+      content: editableText({ databind: sourceEditor.profileAsText('%$path%'), style: editableText.studioCodemirrorTgp() }),
       style: dialog.editSourceStyle('editDataResource', 600),
       features: [
         css('.jb-dialog-content-parent {overflow-y: hidden}'),

@@ -1,3 +1,11 @@
+component('sourceEditor.profileAsText', {
+  type: 'data',
+  params: [
+    {id: 'path', as: 'string'},
+    {id: 'oneWay', as: 'boolean', defaultValue: true, type: 'boolean'}
+  ],
+  impl: tgpTextEditor.watchableAsText(tgp.ref('%$path%'), '%$oneWay%')
+})
 
 component('sourceEditor.refreshEditor', {
   type: 'action',
@@ -77,7 +85,7 @@ component('studio.editableSource', {
     {id: 'height', as: 'number'}
   ],
   impl: editableText({
-    databind: tgp.profileAsText('%$path%'),
+    databind: sourceEditor.profileAsText('%$path%'),
     style: editableText.codemirror({ height: '%$height%' }),
     features: [
       codemirror.initTgpTextEditor(),

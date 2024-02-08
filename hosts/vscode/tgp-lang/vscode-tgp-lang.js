@@ -16,16 +16,11 @@ function findjbReact() {
 }
 
 const { jbHost } = require(findjbReact() + '/hosts/node/node-host.js')
-jbHost.WebSocket_WS = require('ws')
 const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
-const plugins = ['common','rx','tree-shake','pretty-print','watchable','ui','vscode', 'tgp','remote','remote-widget','workspace']
-// globalThis.jbInit = jbInit
-// globalThis.jb_plugins = jb_plugins
+jbHost.WebSocket_WS = require('ws')
  
 async function activate(context) {
-    globalThis.jb = await jbInit('jbart_lsp_ext', { plugins, doNoInitLibs: true, noTests: true })
-    await jb.initializeLibs(['utils','treeShake','remoteCtx','jbm','cbHandler'
-        ,'tgpTextEditor','vscode','nodeContainer'])
+    globalThis.jb = await jbInit('jbart_lsp_ext', { plugins: ['tgp-lang-server', 'remote-widget','vscode']})
     jb.spy.initSpy({spyParam: 'remote,vscode'})
     await jb.vscode.initVscodeAsHost({context})
 
@@ -41,9 +36,7 @@ async function activate(context) {
 	context.subscriptions.push(vscodeNS.languages.registerCompletionItemProvider('javascript', {
 		provideCompletionItems() {
             try {
-                const docProps = jb.tgpTextEditor.host.compTextAndCursor()
-                jb.log('vscode provideCompletionItems request',{docProps})
-                return jb.vscode.provideCompletionItems(docProps)
+                return jb.vscode.provideCompletionItems()
             } catch(e) {
                 jb.logException(e,'provide completions')
             }
@@ -52,7 +45,7 @@ async function activate(context) {
 	context.subscriptions.push(vscodeNS.languages.registerDefinitionProvider('javascript', {
 		provideDefinition() {
             try {
-                return jb.vscode.provideDefinition(jb.tgpTextEditor.host.compTextAndCursor())
+                return jb.vscode.provideDefinition()
             } catch(e) {
                 jb.logException(e,'provide definition')
             }
