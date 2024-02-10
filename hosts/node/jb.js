@@ -69,9 +69,10 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
         console.log(JSON.stringify({params, vars}))
 
     const wrapperCode = wrap ? `component('wrapperToRun', { impl: ${wrap.replace(/MAIN/g,"{$: 'mainToRun'}")} })` : ''
+    const fixedMain = main.match(/^[a-zA-Z_\.]+$/) ? `${main}()` : main
     const code = `
     const params = {${params.map(p=>`${p[0]}: ${p[1].match(/\(|{|"/) ? p[1] : `"${p[1]}"` }`).join(', ')} }
-    component('mainToRun', { impl: ${main} })
+    component('mainToRun', { impl: ${fixedMain} })
     Object.assign(jb.core.unresolvedProfiles[0].comp.impl,params)
     ${wrapperCode}
 `

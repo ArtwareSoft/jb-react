@@ -10,42 +10,47 @@ component('dataTest', {
     {id: 'allowError', as: 'boolean', dynamic: true, type: 'boolean'},
     {id: 'cleanUp', type: 'action', dynamic: true},
     {id: 'expectedCounters', as: 'single'},
-    {id: 'covers', as: 'array'}
+    {id: 'spy', as: 'string'},
+    {id: 'covers', as: 'array'},
   ],
-  impl: function(ctx,calculate,expectedResult,runBefore,timeout,allowError,cleanUp,expectedCounters) {
-		const {testID,singleTest,uiTest, engineForTest }  = ctx.vars
+  impl: async function(ctx,calculate,expectedResult,runBefore,timeout,allowError,cleanUp,expectedCounters,spy) {
+		const ctxToUse = ctx.vars.testID ? ctx : ctx.setVars({testID:'unknown'})
+		const {testID,singleTest,uiTest}  = ctxToUse.vars
 		const remoteTimeout = testID.match(/([rR]emote)|([wW]orker)|(jbm)/) ? 5000 : null
 		const _timeout = singleTest ? Math.max(1000,timeout) : (remoteTimeout || timeout)
-		const ctxToUse = engineForTest ? ctx.setVar(engineForTest,true): ctx
-		return Promise.race([ 
-			jb.delay(_timeout).then(()=>[{testFailure: `timeout ${_timeout}mSec`}]), 
-			Promise.resolve(runBefore(ctxToUse))
-			  .then(_ => calculate(ctxToUse))
-			  .then(v => jb.utils.toSynchArray(v,true))
-			]).then(value => {
-				  const testFailure = jb.path(value,'0.testFailure') || jb.path(value,'testFailure')
-				  const countersErr = jb.test.countersErrors(expectedCounters,allowError)
-				  const expectedResultCtx = new jb.core.jbCtx(ctxToUse,{ data: value })
-				  const expectedResultRes = expectedResult(expectedResultCtx)
-				  const success = !! (expectedResultRes && !countersErr && !testFailure)
-				  jb.log('check test result',{value, success,expectedResultRes, testFailure, countersErr, expectedResultCtx})
-				  const result = { id: testID, success, reason: countersErr || testFailure, ...(value && value.html? value:{})}
-				  return result
-			  })
-			  .catch(e=> {
-				  jb.logException(e,'error in test',{ctx})
-				  return { id, success: false, reason: 'Exception ' + e}
-			  })
-			  .then(result => { // default cleanup
-				  if (ctx.probe || singleTest) return result
-				  if (uiTest)
-					result.elem && jb.ui && jb.ui.unmount(result.elem)
-				  return result
-			  })
-			  .then(result =>
-					  Promise.resolve(!singleTest && cleanUp())
-					  .then(_=>result) )
-	  }
+		if (spy) jb.spy.initSpy({spyParam: spy || 'error'})
+		let result = null
+		try {
+			const testRes = await Promise.race([ 
+				(async() => {
+					await jb.delay(_timeout)
+					return {testFailure: `timeout ${_timeout}mSec`}
+				})(),
+				(async() => {
+					await runBefore(ctxToUse)
+					const res = await calculate(ctxToUse)
+					return await jb.utils.toSynchArray(res,true)
+				})()
+			])
+			const testFailure = jb.path(testRes,'0.testFailure') || jb.path(testRes,'testFailure')
+			const countersErr = jb.test.countersErrors(expectedCounters,allowError)
+			const expectedResultCtx = new jb.core.jbCtx(ctxToUse,{ data: testRes })
+			const expectedResultRes = await expectedResult(expectedResultCtx)
+			const success = !! (expectedResultRes && !countersErr && !testFailure)
+			jb.log('check test result',{testRes, success,expectedResultRes, testFailure, countersErr, expectedResultCtx})
+			result = { id: testID, success, reason: countersErr || testFailure, ...(testRes && testRes.html? testRes:{})}
+			} catch (e) {
+				jb.logException(e,'error in test',{ctx})
+				result = { id, success: false, reason: 'Exception ' + e}
+			} finally {
+				if (spy) jb.spy.initSpy({spyParam: 'error'})
+				if (uiTest && result.elem && jb.ui)
+					jb.ui.unmount(result.elem)
+				const doNotClean = ctx.probe || singleTest
+				if (!doNotClean) await (!singleTest && cleanUp())
+		} 
+		return result
+	}
 })
 
 extension('test', {
@@ -280,6 +285,14 @@ component('source.testsResults', {
   })
 })
 
+component('tests.batchRunner', {
+  params: [
+    {id: 'tests', as: 'array'},
+    {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self()}
+  ],
+  impl: pipe(source.testsResults('%$tests%', '%$jbm%'))
+})
+
 component('tests.runner', {
   type: 'action',
   params: [
@@ -332,7 +345,13 @@ component('tester.runTestsOfPlugin', {
 			&& jb.path(comp,[jb.core.CT,'dslType']) == 'test' && comp.type != 'test')
 		.filter(([id,comp]) => jb.path(comp,'impl.$') != 'uiFrontEndTest').map(([id]) => id)
 	const testResults = []
-	await tests.reduce((pr,testID) => pr.then(()=> jb.test.runSingleTest(testID).then(res=>testResults.push(res))), Promise.resolve())
+	await tests.reduce(async (pr,testID) => {
+		await pr
+		console.log(`starting test ${testID}`)
+		const res = await jb.test.runSingleTest(testID)
+		console.log(`test ${testID} ${res.success}`)
+		testResults.push(res)
+	}, Promise.resolve())
 	testResults.forEach(t=>delete t.show)
 	return { tests, testResults }
   }

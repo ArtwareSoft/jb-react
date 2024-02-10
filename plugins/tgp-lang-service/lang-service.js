@@ -292,7 +292,7 @@ extension('langService', 'api', {
             return funcLocation()
         } else if (path) {
             const cmpId = path && tgpModel.compNameOfPath(path)
-            return jb.path(tgpModel.comps,`${cmpId}.location`) || funcLocation()
+            return jb.path(tgpModel.comps,[cmpId,'location']) || funcLocation()
         } else if (error) {
             jb.logError('langService definition', compProps)
         }

@@ -1153,7 +1153,7 @@ component('waitFor', {
             if (timesoFar >= timeout) {
               clearInterval(toRelease)
               jb.log('waitFor timeout',{ctx})
-              logOnError() && jb.log(logOnError(),{ctx})
+              logOnError() && jb.logError(logOnError() + ` timeout: ${timeout}, waitingTime: ${timesoFar}`,{ctx})
               reject('timeout')
             }
             if (waitingForPromise) return

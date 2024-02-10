@@ -1,6 +1,6 @@
 
 component('uiTest.group', {
-  impl: uiTest(group(text('hello world'), text('2')), contains('hello world','2'))
+  impl: uiTest(group(text('hello world'), text('2')), contains('hello world','2'), { spy: '' })
 })
 
 component('uiTest.group1', {
@@ -726,7 +726,7 @@ component('uiTest.itemlistKeyboardSelection', {
   })
 })
 
-component('uiTest.remote.itemlistKeyboardSelection', {
+component('uiTest.remoteItemlistKeyboardSelection', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1756,7 +1756,7 @@ component('uiTest.transactiveHeadless.createWidget', {
   impl: uiTest(text('hello world'), contains('hello world'), { transactiveHeadless: true })
 })
 
-component('uiTest.transactiveHeadless.changeText', {
+component('uiTest.transactiveHeadlessChangeText', {
   impl: uiTest({
     control: group({
       controls: [

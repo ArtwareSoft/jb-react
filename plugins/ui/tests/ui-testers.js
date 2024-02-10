@@ -19,6 +19,7 @@ component('uiTest', {
     {id: 'useFrontEnd', as: 'boolean', type: 'boolean'},
     {id: 'transactiveHeadless', as: 'boolean', type: 'boolean'},
     {id: 'engine', as: 'string'},
+    {id: 'spy', as: 'string'},
     {id: 'covers'}
   ],
   impl: dataTest({
@@ -57,7 +58,8 @@ component('uiTest', {
     timeout: If(equals('%$backEndJbm%', () => jb), '%$timeout%', 5000),
     allowError: '%$allowError()%',
     cleanUp: runActions(uiTest.removeFrontEndEmulation(), call('cleanUp')),
-    expectedCounters: '%$expectedCounters%'
+    expectedCounters: '%$expectedCounters%',
+	spy: ({},{},{spy}) => spy === '' ? 'uiTests,headless' : spy
   })
 })
 

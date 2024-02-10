@@ -216,7 +216,7 @@ component('remoteTest.remote.operator', {
 //   })
 // })
 
-component('remoteTest.nodeContainer.runTest', {
+component('remoteTest.webSocket.runTest', {
   impl: dataTest({
     vars: [
       Var('testsToRun', list('dataTest.join','dataTest.ctx.expOfRefWithBooleanType'))

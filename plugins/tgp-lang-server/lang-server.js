@@ -45,7 +45,8 @@ component('langServer.probe', {
           prop('simpleVisits', '%simpleVisits%'),
           prop('totalTime', '%totalTime%'),
           prop('circuitPath', '%circuitCtx.path%'),
-          prop('errors', () => jb.spy.search('error'))
+          prop('errors', () => jb.spy.search('error')),
+          prop('logs', () => jb.spy.logs)
         ),
         first()
       ),

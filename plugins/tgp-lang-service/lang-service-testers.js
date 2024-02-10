@@ -122,6 +122,7 @@ component('fixEditedCompTest', {
 })
 
 component('langService.dummyCompProps', {
+  type: 'data<>',
   params: [
     {id: 'compText', as: 'string', mandatory: true, description: 'use __ for completion point'},
     {id: 'dsl', as: 'string'},

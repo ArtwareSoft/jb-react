@@ -1,3 +1,5 @@
+using('tgp-lang-service-tests')
+
 component('langServiceTest.provideDefinition', {
   impl: dataTest({
     calculate: pipe(langService.dummyCompProps(`component('x', {

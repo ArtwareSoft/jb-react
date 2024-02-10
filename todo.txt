@@ -1,25 +1,18 @@
+fix event viewer in vscode
+  build test, work in studio
+vscode
+  key for $disabled ctrl-shift-D
+
+tests
+  run tests on node
+
+Worker jbm should work on nodejs
 refactor
   unify tests - jbmTest.cmd*
   watchRef - second param byName
   fix tgp-upgrade in nodejs
-  use tgpModels[filePath]
-    pass {tgpModel} = { tgpModel: jb}), to tgp functions and use tgpModel.comps[] instead of jb.comps
-  langServerice dsl - completion, definition, calcEditAndGotoPos(completionItem), applyEditAndGoto(editItem), shiftArrayItem
-  unify contains, equal, endsWith, startsWith - %% - allText, text -> data, maybe 'data' param by name can be standard!!
 
-tgpModel
-  tgpModel for prettyPrint and tgpLang
-  interface based on json
-    paramsOfComp(cmpId,{sourceCode})
-    typeOfComp(cmpId,{sourceCode})
-    ptsOfType(type<dsl>, {sourceCode, topPlugin})
-    plugins({sourceCode})
-      [{ id, dependentPlugins, symbols }]
-    dsls({sourceCode})
-    typesOfDsl(dsl,{sourceCode})
-
-  paramDef(profileText, path, plugin) - not a model but specific profile !!!
-    this is the hard part because we do not have the symbols for the plugin
+unify contains, equal, endsWith, startsWith - %% - allText, text -> data, maybe 'data' param by name can be standard!!
 
 
 use chatgpt to plan a view of a context for a specific need and target audience.

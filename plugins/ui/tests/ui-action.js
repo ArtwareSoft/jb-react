@@ -75,7 +75,14 @@ component('uiActions', {
         if (finished) return
 
         const action = ctx.profile.actions[index]
-        currSrc = action && ctxToUse.runInner(action, { as: 'single'}, `items~${index}` )
+        try {
+          currSrc = action && ctxToUse.runInner(action, { as: 'single'}, `items~${index}` )
+        } catch(e) {
+            jb.log(`uiActions exception ${e.toString()}`,{action, ctx, index})
+            finished = true
+            sink(2)
+            return
+        }
         jb.log('uiActions calc next source',{action, ctx,currSrc, index})
         if (!currSrc)
           nextSource()

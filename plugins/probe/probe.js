@@ -14,7 +14,7 @@ extension('probe', 'main', {
         jb.log('probe calc circuit',{ctx, probePath})
         if (!probePath) 
             return jb.logError(`calcCircuitPath : no probe path`, {ctx,probePath})
-        let circuitCtx = jb.path(jb.ui.cmps[ctx.exp('%$workspace/pickSelectionCmpId%')],'calcCtx')
+        let circuitCtx = jb.path(jb.ui,['cmps',ctx.exp('%$workspace/pickSelectionCmpId%'),'calcCtx'])
         if (circuitCtx) return { reason: 'pickSelection', circuitCtx }
 
         circuitCtx = await jb.probe.closestCtxWithSingleVisit(probePath)
@@ -46,9 +46,9 @@ extension('probe', 'main', {
             if (circuitCmpId) {
                 jb.treeShake.codeServerJbm && await jb.treeShake.getCodeFromRemote([circuitCmpId])
                 const res = _ctx.ctx({ profile: {$: circuitCmpId}, comp : circuitCmpId, path: ''})
-                if (jb.tgp.isOfType(circuitCmpId,'control'))
+                if (jb.ui && jb.tgp.isOfType(circuitCmpId,'control'))
                     return jb.ui.extendWithServiceRegistry(res)
-                if (jb.tgp.isOfType(circuitCmpId,'test'))
+                if (jb.ui && jb.tgp.isOfType(circuitCmpId,'test'))
                     return jb.ui.extendWithServiceRegistry(res).setVars(
                         { testID: cmpId, singleTest: true })
                 return res

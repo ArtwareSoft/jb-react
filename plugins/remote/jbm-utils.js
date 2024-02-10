@@ -270,6 +270,7 @@ extension('jbm', 'main', {
     async terminateChild(id,childsOrNet = jb.jbm.childJbms,ctx) {
         if (!childsOrNet[id]) return
         const childJbm = await childsOrNet[id]
+        if (!childJbm) return
         const rjbm = await childJbm.rjbm()
         rjbm.terminated = childJbm.terminated = true
         jb.log('remote terminate child', {id})
