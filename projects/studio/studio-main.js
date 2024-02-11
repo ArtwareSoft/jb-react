@@ -1,4 +1,26 @@
-using('remote-widget,watchable-comps,probe-preview,tgp-lang-server')
+using('remote-widget,watchable-comps,probe-preview,tgp-lang-server,workspace-IDE')
+
+
+component('dataResource.studio', {
+  watchableData: {
+    sourceCode: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') ? JSON.parse(globalThis.decodeURIComponent((globalThis.location.href.match(new RegExp('sourceCode' + '=([^&]*)')) || [])[1])) : '',
+    circuit: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') ? (jb.path(globalThis,'location.pathname')||'').split('/')[3] : '',
+    project: '',
+    page: '',
+    profile_path: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') ? (jb.path(globalThis,'location.pathname')||'').split('/')[4] : '',
+    pickSelectionCtxId: '',
+    jbEditor: {
+      selected: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') ? (jb.path(globalThis,'location.pathname')||'').split('/')[4] : ''
+    },
+    preview: {
+      width: 1280,
+      height: '100%',
+      zoom: 10
+    },
+    settings: {contentEditable: false, activateWatchRefViewer: true},
+    vscode: undefined
+  }
+})
 
 component('studio.main', {
   type: 'control',
@@ -85,26 +107,6 @@ component('studio.circuit', {
 //     ]
 //   })
 // })
-
-component('dataResource.studio', {
-  watchableData: {
-    circuit: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') ? (jb.path(globalThis,'location.pathname')||'').split('/')[3] : '',
-    project: '',
-    page: '',
-    profile_path: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') ? (jb.path(globalThis,'location.pathname')||'').split('/')[4] : '',
-    pickSelectionCtxId: '',
-    jbEditor: {
-      selected: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') ? (jb.path(globalThis,'location.pathname')||'').split('/')[4] : ''
-    },
-    preview: {
-      width: 1280,
-      height: '100%',
-      zoom: 10
-    },
-    settings: {contentEditable: false, activateWatchRefViewer: true},
-    vscode: undefined
-  }
-})
 
 // component('studio.pages', {
 //   type: 'control',

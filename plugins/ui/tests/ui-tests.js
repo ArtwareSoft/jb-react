@@ -1,6 +1,6 @@
 
 component('uiTest.group', {
-  impl: uiTest(group(text('hello world'), text('2')), contains('hello world','2'), { spy: '' })
+  impl: uiTest(group(text('hello world'), text('2')), contains('hello world','2'))
 })
 
 component('uiTest.group1', {
@@ -1769,7 +1769,8 @@ component('uiTest.transactiveHeadlessChangeText', {
     expectedResult: contains('-danny-','+danny+'),
     uiAction: setText('danny'),
     backEndJbm: worker('changeText', { sourceCode: sourceCode(pluginsByPath('/plugins/ui/group.js')) }),
-    transactiveHeadless: true
+    transactiveHeadless: true,
+    spy: ''
   })
 })
 

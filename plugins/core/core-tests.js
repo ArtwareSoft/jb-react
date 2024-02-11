@@ -362,10 +362,14 @@ component('dataTest.innerOfUndefinedVar', {
 component('watchableVar', { watchableData: 'hey' })
 
 component('dataTest.stringWatchableVar', {
-  impl: dataTest('%$watchableVar%', equals('foo'), { runBefore: writeValue('%$watchableVar%', 'foo') })
+  impl: dataTest('%$watchableVar%', equals('foo'), {
+    runBefore: writeValue('%$watchableVar%', 'foo')
+  })
 })
 
-component('passiveVar', { passiveData: 'hey' })
+component('passiveVar', { 
+  passiveData: 'hey'
+})
 
 component('dataTest.stringPassiveVar', {
   impl: dataTest('%$passiveVar%', equals('foo'), { runBefore: writeValue('%$passiveVar%', 'foo') })

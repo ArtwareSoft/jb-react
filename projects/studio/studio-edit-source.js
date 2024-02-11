@@ -47,14 +47,13 @@ component('studio.filePosOfPath', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) => {
-      const comp = path.split('~')[0]
+  impl: (ctx,tgpPath) => {
+      const comp = tgpPath.split('~')[0]
       const loc = jb.comps[comp][jb.core.CT].location
-      const fn = jb.studio.host.locationToPath(loc.path)
-      const lineOfComp = (+loc.line) || 0
-      const pos = jb.tgpTextEditor.getPosOfPath(path, 'begin') || [0,0,0,0]
-      pos[0] += lineOfComp; pos[2] += lineOfComp
-      return {path,comp,loc,fn, pos}
+      const path = jb.studio.host.locationToPath(loc.path)
+      const compLine = (+loc.line) || 0
+      const { line, col } = jb.tgpTextEditor.getPosOfPath(tgpPath, 'begin') || [0,0,0,0]
+      return { path, line: line + compLine, col }
   }
 })
 
@@ -71,9 +70,9 @@ component('studio.gotoSource', {
         jb.vscode['openEditor'](filePos)
       else if (chromeDebugger)
         parent.postMessage({ runProfile: {$: 'chromeDebugger.openResource', 
-          location: [ jb.frame.location.origin + '/' + filePos.fn, filePos.pos[0], filePos.pos[1]] }})
+          location: [ jb.frame.location.origin + '/' + filePos.file, filePos.line, filePos.col] }})
       else
-        fetch(`/?op=gotoSource&path=${filePos.fn}:${filePos.pos[0]}`)
+        fetch(`/?op=gotoSource&path=${filePos.path}:${filePos.line}`)
   }
   )
 })

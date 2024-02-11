@@ -29,7 +29,17 @@ component('waitFor', {
     {id: 'check', dynamic: true},
     {id: 'logOnError', as: 'string', dynamic: true}
   ],
-  impl: action(waitFor('%$check()%', { logOnError: '%$logOnError()%' }))
+  impl: action(
+    waitFor('%$check()%', { timeout: firstSucceeding('%$uiActionsTimeout%',3000), logOnError: '%$logOnError()%' })
+  )
+})
+
+component('waitForPromise', {
+  type: 'ui-action',
+  params: [
+    {id: 'promise', dynamic: true},
+  ],
+  impl: (ctx,promise) => promise()
 })
 
 component('delay', {
@@ -52,11 +62,13 @@ component('writeValue', {
 component('uiActions', {
   type: 'ui-action',
   params: [
-    {id: 'actions', type: 'ui-action[]', ignore: true, composite: true, mandatory: true}
+    {id: 'actions', type: 'ui-action[]', ignore: true, composite: true, mandatory: true},
   ],
   impl: ctx => {
     const isFE = ctx.vars.elemToTest
-    const ctxToUse = ctx.setVars({updatesCounterAtBeginUIActions: jb.ui.testUpdateCounters[ctx.vars.widgetId], logCounterAtBeginUIActions: jb.path(jb.spy,'logs.length')})
+    const ctxToUse = ctx.setVars({
+      updatesCounterAtBeginUIActions: jb.ui.testUpdateCounters[ctx.vars.widgetId], logCounterAtBeginUIActions: jb.path(jb.spy,'logs.length')
+    })
     if (isFE) return jb.asArray(ctx.profile.actions).filter(x=>x).reduce((pr,action,index) =>
 				pr.finally(function runActions() {return ctxToUse.runInner(action, { as: 'single'}, `items~${index}` ) })
 			,Promise.resolve())

@@ -19,7 +19,7 @@ component('uiTest', {
     {id: 'useFrontEnd', as: 'boolean', type: 'boolean'},
     {id: 'transactiveHeadless', as: 'boolean', type: 'boolean'},
     {id: 'engine', as: 'string'},
-    {id: 'spy', as: 'string'},
+    {id: 'spy'},
     {id: 'covers'}
   ],
   impl: dataTest({
@@ -35,8 +35,9 @@ component('uiTest', {
       Var('engineForTest', '%$engine%')
     ],
     calculate: pipe(
+      Var('uiActionsTimeout', If('%$backEndJbm%', 2000, 3000)),
       rx.pipe(
-        typeAdapter('ui-action<test>', uiActions('%$uiAction()%')),
+        typeAdapter('ui-action<test>', uiActions(waitForPromise(remote.waitForJbm('%$backEndJbm%')), '%$uiAction()%')),
         rx.log('uiTest userRequest'),
         remote.operator({
           rx: widget.headless('%$control()%', '%$widgetId%', {
@@ -59,7 +60,7 @@ component('uiTest', {
     allowError: '%$allowError()%',
     cleanUp: runActions(uiTest.removeFrontEndEmulation(), call('cleanUp')),
     expectedCounters: '%$expectedCounters%',
-	spy: ({},{},{spy}) => spy === '' ? 'uiTests,headless' : spy
+    spy: ({},{},{spy}) => spy === '' ? 'test,uiTest,headless' : spy
   })
 })
 

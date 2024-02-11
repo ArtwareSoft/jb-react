@@ -1,7 +1,7 @@
-using('tgp-lang-service,common,net,remote')
+using('tgp-lang-service,common,net,remote,probe')
 
 component('modelDataServer', {
-  type: 'source-code<jbm>',
+  type: 'source-code<loader>',
   params: [
     {id: 'filePath', as: 'string'}
   ],
@@ -12,21 +12,24 @@ component('modelDataServer', {
 })
 
 component('probeServer', {
-  type: 'source-code<jbm>',
+  type: 'source-code<loader>',
   params: [
     {id: 'filePath', as: 'string'},
     {id: 'host', as: 'string', options: ',node,studio,static'}
   ],
-  impl: sourceCode(pluginsByPath('%$filePath%'), plugins('probe,tree-shake,tgp'), {
+  impl: sourceCode(pluginsByPath('%$filePath%',true), plugins('probe,tree-shake,tgp'), {
     pluginPackages: packagesByPath('%$filePath%', '%$host%')
   })
 })
 
-component('langServer.tgpModelData', {
+component('remote.tgpModelData', {
   params: [
     {id: 'filePath', defaultValue: '%%'}
   ],
-  impl: remote.data(langService.tgpModelData('%$filePath%'), cmd(modelDataServer('%$filePath%'), { doNotStripResult: true }))
+  impl: remote.data({
+    calc: tgpModelData.byFilePath('%$filePath%'),
+    jbm: cmd(modelDataServer('%$filePath%'), { doNotStripResult: true })
+  })
 })
 
 component('langServer.probe', {
@@ -71,4 +74,22 @@ component('langServer.studioCircuitUrl', {
       jbm: cmd(probeServer('%$filePath%'))
     }))
   )
+})
+
+component('langServer.remoteProbe', {
+  params: [
+    {id: 'sourceCode', type: 'source-code<loader>'},
+    {id: 'probePath', as: 'string'},
+    {id: 'expressionOnly', as: 'boolean', type: 'boolean'},
+    {id: 'input', defaultValue: '%%', description: '{value, selectionStart}'}
+  ],
+  impl: remote.data({
+    calc: {
+      $: 'probe.suggestions',
+      probePath: '%$probePath%',
+      expressionOnly: '%$expressionOnly%',
+      input: '%$input%'
+    },
+    jbm: If('%$forceLocalSuggestions%', jbm.self(), cmd('%$sourceCode%'))
+  })
 })

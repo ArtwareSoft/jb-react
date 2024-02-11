@@ -29,7 +29,7 @@ component('node.startRemoteHttpServer', {
   params: [
     {id: 'id', as: 'string', mandatory: true},
     {id: 'port', as: 'number', mandatory: true},
-    {id: 'sourceCode', type: 'source-code<jbm>', mandatory: true},
+    {id: 'sourceCode', type: 'source-code<loader>', mandatory: true},
     {id: 'services', type: 'http-service[]', dynamic: true},
     {id: 'restart', as: 'boolean', type: 'boolean'}
   ],

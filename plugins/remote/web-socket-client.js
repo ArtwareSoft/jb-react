@@ -125,7 +125,7 @@ component('remoteNodeWorker', {
   type: 'jbm',
   params: [
     {id: 'id', as: 'string'},
-    {id: 'sourceCode', type: 'source-code', byName: true, defaultValue: treeShakeClientWithPlugins()},
+    {id: 'sourceCode', type: 'source-code<loader>', byName: true, defaultValue: treeShakeClientWithPlugins()},
     {id: 'init', type: 'action', dynamic: true},
     {id: 'webSocketUrl', as: 'string', defaultValue: 'http://localhost:8082'},
     {id: 'workerDetails'}

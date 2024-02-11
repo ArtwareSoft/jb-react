@@ -1,5 +1,5 @@
 dsl('jbm')
-using('remote,tree-shake')
+using('remote-widget')
 
 extension('vscode', 'ports', {
     portFromWebViewToExt(from,to) { return {
@@ -115,7 +115,7 @@ component('vscodeWebView', {
   params: [
     {id: 'id', as: 'string'},
     {id: 'panel'},
-    {id: 'sourceCode', type: 'source-code', byName: true, defaultValue: xServer()},
+    {id: 'sourceCode', type: 'source-code<loader>', byName: true, defaultValue: xServer()},
     {id: 'init', type: 'action', dynamic: true}
   ],
   impl: (ctx,id,panel,sourceCode, init) => {

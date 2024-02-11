@@ -14,7 +14,7 @@ extension('langService', 'impl', {
         const packagePath = docProps.packagePath = docProps.filePath
         if (jb.langService.tgpModels[packagePath])
             return jb.langService.calcCompPropsSync(docProps, jb.langService.tgpModels[packagePath])
-        const tgpModelData = forceLocalSuggestions ? jb.tgp.tgpModelData({filePath: packagePath}) : await new jb.core.jbCtx().setData(packagePath).run({$: 'langServer.tgpModelData'})
+        const tgpModelData = forceLocalSuggestions ? jb.tgp.tgpModelData({filePath: packagePath}) : await new jb.core.jbCtx().setData(packagePath).run({$: 'remote.tgpModelData'})
         docProps.filePath = tgpModelData.filePath
         return jb.langService.calcCompPropsSync(docProps, new jb.langService.tgpModelForLangService(tgpModelData))
     },
@@ -153,7 +153,7 @@ extension('langService', 'impl', {
         const { line, col } = jb.tgpTextEditor.offsetToLineCol(text, item.from - startOffset - 1)
 
         const suggestions = await ctx.setData(input).setVars({ filePath, probePath: path }).run(
-            {$: 'probe.suggestionsByCmd', sourceCode: {$: 'probeServer', filePath: '%$filePath%'}, probePath: '%$probePath%', expressionOnly: true })
+            {$: 'langServer.remoteProbe', sourceCode: {$: 'probeServer', filePath: '%$filePath%'}, probePath: '%$probePath%', expressionOnly: true })
         return (jb.path(suggestions, '0.options') || []).map(option => {
             const { pos, toPaste, tail, text } = option
             const primiteVal = option.valueType != 'object'

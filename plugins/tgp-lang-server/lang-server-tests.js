@@ -83,15 +83,14 @@ component('langServiceTest.completions', {
 component('langServerTest.probe', {
   impl: dataTest({
     vars: [
-      Var('forceLocalSuggestions',true)
+      Var('forceLocalSuggestions', true)
     ],
     calculate: pipe(
-      {
-        $: 'langService.dummyCompProps',
-        $byValue: [`component('uiTest.group', {
+      langService.dummyCompProps(
+        `component('uiTest.group', {
   impl: uiTest(group(text('hello world'), text('2')), __contains('hello world','2'))
-})`]
-      },
+})`
+      ),
       langService.compProps(),
       langServer.probe(),
       '%result/0/in/data%'
@@ -117,9 +116,10 @@ component('langServerTest.studioCircuitUrl', {
 })
 
 component('langServerTest.tgpModelData', {
+  doNotRunInTests: true,
   impl: dataTest({
     calculate: pipe(
-      langServer.tgpModelData('someDir/projects/jb-react/plugins/ui/tests/ui-tests.js'),
+      remote.tgpModelData('someDir/projects/jb-react/plugins/ui/tests/ui-tests.js'),
       '%comps/button/type%'
     ),
     expectedResult: contains('control'),
@@ -131,12 +131,12 @@ component('langServerTest.tgpModelData.studio', {
   doNotRunInTests: true,
   impl: dataTest({
     calculate: pipe(
-      langServer.tgpModelData('%$PROJECTS_PATH%/jb-react/projects/studio/studio-main.js'),
+      remote.tgpModelData('%$PROJECTS_PATH%/jb-react/projects/studio/studio-main.js'),
       '%comps%',
       property('studio.main'),
-      '%control%'
+      '%type%'
     ),
-    expectedResult: contains('parser<jison>'),
+    expectedResult: equals('control'),
     timeout: 1000
   })
 })
@@ -145,11 +145,12 @@ component('langServerTest.tgpModelData.external', {
   doNotRunInTests: true,
   impl: dataTest({
     calculate: pipe(
-      langServer.tgpModelData('%$PROJECTS_PATH%/amta/plugins/amta-parsing/parsing-tests.js'),'%comps%',
-      property('amta.expressionParser'),
+      remote.tgpModelData('%$PROJECTS_PATH%/amta/plugins/amta-parsing/amta-parsing-tests.js'),
+      '%comps%',
+      property('parser<jison>amta.expressionParser'),
       '%type%'
     ),
-    expectedResult: contains('parser<jison>'),
+    expectedResult: equals('parser<jison>'),
     timeout: 1000
   })
 })

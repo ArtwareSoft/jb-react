@@ -195,7 +195,7 @@ component('probe.suggestions', {
 
 component('probe.suggestionsByCmd', {
   params: [
-    {id: 'sourceCode', type: 'source-code<jbm>'},
+    {id: 'sourceCode', type: 'source-code<loader>'},
     {id: 'probePath', as: 'string'},
     {id: 'expressionOnly', as: 'boolean', type: 'boolean'},
     {id: 'input', defaultValue: '%%', description: '{value, selectionStart}'}

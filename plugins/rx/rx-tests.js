@@ -637,13 +637,14 @@ component('rxTest.fork.cleanActiveSource', {
       rx.pipe(
         source.interval(1),
         rx.log('test 0'),
-        rx.fork(rx.take(1), sink.data('%$a/fork%')),
+        rx.fork(rx.take(1), sink.data('%$a/fork%', { data: '%$a/fork%' })),
         rx.skip(1),
         rx.take(1),
         rx.delay(1)
       ),
       join(',')
     ),
-    expectedResult: and(() => jb.spy.search('test 0').length == 2, equals('%%,%$a/fork%', '1,0'))
+    expectedResult: and(() => jb.spy.search('test 0').length == 2, equals('%%,%$a/fork%', '1,0')),
+    spy: 'test'
   })
 })

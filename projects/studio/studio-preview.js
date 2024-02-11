@@ -20,7 +20,7 @@ component('preview', {
 })
 
 component('preview', {
-  type: 'source-code<jbm>',
+  type: 'source-code<loader>',
   params: [
     {id: 'filePath', as: 'string'}
   ],

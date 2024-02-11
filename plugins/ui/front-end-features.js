@@ -275,35 +275,38 @@ component('key.eventMatchKey', {
 component('key.eventToMethod', {
   type: 'boolean',
   params: [
-    {id: 'event'},
-    {id: 'elem'}
+    {id: 'event'}
   ],
-  impl: (ctx, event, elem) => {
-    elem.keysHash = elem.keysHash || calcKeysHash()
-        
-    jb.log('keyboard search eventToMethod',{elem,event})
-    const res = elem.keysHash.find(key=>key.keyCode == event.keyCode && event.ctrlKey == key.ctrl && event.altKey == key.alt)
-    const resMethod = res && res.methodName
-    jb.log(`keyboard ${res ? 'found': 'notFound'} eventToMethod`,{resMethod,elem,event})
-    return resMethod
+  impl: (ctx, event) => {
+      const {elem} = ctx.vars
+      if (!jb.path(elem,'getAttribute'))
+        return
 
-    function calcKeysHash() {
-      const keys = elem.getAttribute('methods').split(',').map(x=>x.split('-')[0])
-      .filter(x=>x.indexOf('onKey') == 0).map(x=>x.slice(5).slice(0,-7))
-      const dict = { tab: 9, delete: 46, tab: 9, esc: 27, enter: 13, right: 39, left: 37, up: 38, down: 40}
-  
-      return keys.map(_key=>{
-        const key = _key.replace(/-/,'+');
-        const keyWithoutPrefix = key.split('+').pop()
-        let keyCode = dict[keyWithoutPrefix.toLowerCase()]
-        if (+keyWithoutPrefix)
-          keyCode = +keyWithoutPrefix
-        if (keyWithoutPrefix.length == 1)
-          keyCode = keyWithoutPrefix.charCodeAt(0)
-        return { keyCode, ctrl: !!key.match(/^[Cc]trl/), alt: !!key.match(/^[Aa]lt/), methodName: `onKey${_key}Handler` }
-      })
-    }
-}
+      elem.keysHash = elem.keysHash || calcKeysHash()
+          
+      jb.log('keyboard search eventToMethod',{elem,event})
+      const res = elem.keysHash.find(key=>key.keyCode == event.keyCode && event.ctrlKey == key.ctrl && event.altKey == key.alt)
+      const resMethod = res && res.methodName
+      jb.log(`keyboard ${res ? 'found': 'notFound'} eventToMethod`,{resMethod,elem,event})
+      return resMethod
+
+      function calcKeysHash() {
+        const keys = elem.getAttribute('methods').split(',').map(x=>x.split('-')[0])
+        .filter(x=>x.indexOf('onKey') == 0).map(x=>x.slice(5).slice(0,-7))
+        const dict = { tab: 9, delete: 46, tab: 9, esc: 27, enter: 13, right: 39, left: 37, up: 38, down: 40}
+    
+        return keys.map(_key=>{
+          const key = _key.replace(/-/,'+');
+          const keyWithoutPrefix = key.split('+').pop()
+          let keyCode = dict[keyWithoutPrefix.toLowerCase()]
+          if (+keyWithoutPrefix)
+            keyCode = +keyWithoutPrefix
+          if (keyWithoutPrefix.length == 1)
+            keyCode = keyWithoutPrefix.charCodeAt(0)
+          return { keyCode, ctrl: !!key.match(/^[Cc]trl/), alt: !!key.match(/^[Aa]lt/), methodName: `onKey${_key}Handler` }
+        })
+      }
+  }
 })
 
 component('feature.onKey', {
@@ -321,7 +324,7 @@ component('feature.onKey', {
         rx.pipe(
           source.frontEndEvent('keydown'),
           rx.userEventVar(),
-          rx.map(key.eventToMethod('%%', '%$el%')),
+          rx.map(key.eventToMethod('%%')),
           rx.filter('%%'),
           rx.log('keyboard uiComp onKey %$key%'),
           sink.BEMethod('%%')

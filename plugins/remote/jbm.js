@@ -1,10 +1,11 @@
 pluginDsl('jbm')
+using('loader,tree-shake')
 
 component('worker', {
   type: 'jbm',
   params: [
     {id: 'id', as: 'string'},
-    {id: 'sourceCode', type: 'source-code', byName: true},
+    {id: 'sourceCode', type: 'source-code<loader>', byName: true},
     {id: 'init', type: 'action<>', dynamic: true},
     {id: 'networkPeer', as: 'boolean', description: 'used for testing', type: 'boolean'}
   ],
@@ -31,7 +32,7 @@ component('webWorker', {
   type: 'jbm',
   params: [
     {id: 'id', as: 'string'},
-    {id: 'sourceCode', type: 'source-code', byName: true, defaultValue: treeShakeClient()},
+    {id: 'sourceCode', type: 'source-code<loader>', byName: true, defaultValue: treeShakeClient()},
     {id: 'init', type: 'action<>', dynamic: true},
     {id: 'networkPeer', as: 'boolean', description: 'used for testing', type: 'boolean'}
   ],
@@ -86,7 +87,7 @@ component('child', {
   type: 'jbm',
   params: [
     {id: 'id', as: 'string'},
-    {id: 'sourceCode', type: 'source-code', byName: true, defaultValue: treeShakeClient()},
+    {id: 'sourceCode', type: 'source-code<loader>', byName: true, defaultValue: treeShakeClient()},
     {id: 'init', type: 'action', dynamic: true}
   ],
   impl: (ctx,_id,sourceCode,init) => {
@@ -132,7 +133,7 @@ component('child', {
 component('cmd', {
   type: 'jbm',
   params: [
-    {id: 'sourceCode', type: 'source-code', mandatory: true},
+    {id: 'sourceCode', type: 'source-code<loader>', mandatory: true},
     {id: 'viaHttpServer', as: 'string', defaultValue: 'http://localhost:8082'},
     {id: 'doNotStripResult', as: 'boolean'},
     {id: 'id', as: 'string'}

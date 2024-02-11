@@ -1143,6 +1143,8 @@ component('waitFor', {
     {id: 'logOnError', as: 'string', dynamic: true}
   ],
   impl: (ctx,check,interval,timeout,logOnError) => {
+    if (!timeout) 
+      return jb.logError('waitFor no timeout',{ctx})
     // const res1 = check()
     // if (!jb.utils.isPromise(res1))
     //   return Promise.resolve(res1)

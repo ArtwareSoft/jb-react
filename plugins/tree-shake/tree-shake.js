@@ -1,4 +1,23 @@
-using('common,remote')
+using('loader')
+
+component('treeShake', {
+  type: 'source-code<loader>',
+  params: [
+    {id: 'sourceCode', type: 'source-code<loader>', mandatory: true },
+    {id: 'treeShakeServerUri', as: 'string', defaultValue: () => jb.uri },
+  ],
+  impl: (ctx,sourceCode,treeShakeServerUri) => ({ ...sourceCode, treeShakeServerUri })
+})
+
+component('treeShakeClientWithPlugins', {
+  type: 'source-code<loader>',
+  impl: treeShake(sourceCode(plugins('remote,tree-shake')))
+})
+
+component('treeShakeClient', {
+  type: 'source-code<loader>',
+  impl: treeShake(sourceCode({ actualCode: () => jb.treeShake.clientCode() }))
+})
 
 extension('treeShake', {
     initExtension() {

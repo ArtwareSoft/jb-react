@@ -337,3 +337,8 @@ component('runInBECmpContext', {
   ],
   impl: remote.action(({}, {}, { cmpId, action }) => action(jb.ui.cmps[cmpId].calcCtx), backEnd())
 })
+
+component('xServer', {
+  type: 'source-code<loader>',
+  impl: treeShake(sourceCode(plugins('remote,tree-shake,remote-widget')))
+})

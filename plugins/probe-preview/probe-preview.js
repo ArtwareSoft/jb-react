@@ -1,7 +1,7 @@
 using('probe,watchable-comps,tree-shake,remote-widget,testing,probe-result-ui')
 
 component('circuit', {
-  type: 'source-code<jbm>',
+  type: 'source-code<loader>',
   params: [
     {id: 'filePath', as: 'string'}
   ],
@@ -10,12 +10,14 @@ component('circuit', {
   })
 })
 
+// '%$studio/sourceCode%'
 component('probePreviewWorker', {
   type: 'jbm<jbm>',
   params: [
+    {id: 'sourceCode', type: 'source-code<loader>', defaultValue: treeShakeClient()},
     {id: 'id', defaultValue: 'wProbe'}
   ],
-  impl: worker('%$id%', { init: probe.initPreview() })
+  impl: worker('%$id%', { sourceCode: '%$sourceCode%', init: probe.initPreview() })
 })
 
 component('suggestions.calcFromProbePreview', {

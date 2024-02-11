@@ -1,50 +1,37 @@
-extension('jbm','source' , {
-    unifyPluginsToLoad(codeInPackage) {
-        return jb.asArray(codeInPackage).reduce((acc,option) => {
-            if (option.plugins) 
-                acc.plugins = [...(acc.plugins || []), ...option.plugins]
-            else if (option.project) 
-                acc.project = [...(acc.project || []), ...jb.asArray(option.project)]
-            else 
-                Object.assign(acc,option)
-            return acc
+dsl('loader')
+
+extension('loader','main' , {
+    shortFilePath(filePath) {
+        const elems = filePath.split('/').reverse()
+    return '/' + elems.slice(0,elems.findIndex(x=> x == 'plugins' || x == 'projects')+1).reverse().join('/')
+    },
+    unifyPluginsToLoad(pluginsToLoad) {
+        return jb.asArray(pluginsToLoad).reduce((acc,item) => {
+            const plugins = [...(acc.plugins || []), ...(item.plugins || [])]
+            return {...acc, ...item, plugins}
         } , {})
     }
 })
 
 // source-code
+
 component('sourceCode', {
   type: 'source-code',
   params: [
     {id: 'pluginsToLoad', type: 'plugins-to-load[]', flattenArray: true},
     {id: 'pluginPackages', type: 'plugin-package[]', flattenArray: true, defaultValue: defaultPackage()},
-    {id: 'treeShakeServer', type: 'jbm', description: 'if used, tree shake is used to load extra code, use jbm.self for parent'},
-    {id: 'libsToInit', as: 'string', description: 'Empty means load all libraries'},
+    {id: 'libsToInit', as: 'string', description: 'empty means load all libraries'},
     {id: 'actualCode', as: 'string', description: 'alternative to plugins'}
   ],
-  impl: (ctx,pluginsToLoad,pluginPackages,treeShakeServer,libsToInit,actualCode) => ({ 
+  impl: (ctx,pluginsToLoad,pluginPackages,libsToInit,actualCode) => ({ 
     ...(pluginPackages.filter(x=>x).length ? { pluginPackages : pluginPackages.filter(x=>x)} : {}),
-    plugins:[], ...jb.jbm.unifyPluginsToLoad(pluginsToLoad.flatMap(x=>x)),
+    plugins:[], 
+    ...jb.loader.unifyPluginsToLoad(pluginsToLoad),
     ...(libsToInit ? {libsToInit} : {}),
-    treeShakeServerUri: (treeShakeServer || {}).uri,
     ...(actualCode ? {actualCode} : {}),
   })
 })
 
-component('treeShakeClientWithPlugins', {
-  type: 'source-code',
-  impl: sourceCode(plugins('remote,tree-shake'), { treeShakeServer: jbm.self() })
-})
-
-component('treeShakeClient', {
-  type: 'source-code',
-  impl: sourceCode({ treeShakeServer: jbm.self(), actualCode: () => jb.treeShake.clientCode() })
-})
-
-component('xServer', {
-  type: 'source-code',
-  impl: sourceCode(plugins('remote,tree-shake,remote-widget'), { treeShakeServer: jbm.self() })
-})
 
 component('project', {
   type: 'source-code',
@@ -67,20 +54,16 @@ component('pluginsByPath', {
     {id: 'addTests', as: 'boolean', description: 'add plugin-tests', type: 'boolean'}
   ],
   impl: (ctx,filePath,addTests) => {
-    const _path = jb.tgp.shortFilePath(filePath)
-    const repo = (_path.match(/projects\/([^/]*)\/(plugins|projects)/) || [])[1]
-    const path = (_path.match(/projects(.*)/)||[])[1] || _path
+    const path = jb.loader.shortFilePath(filePath)
     const tests = path.match(/-(tests|testers).js$/) || path.match(/\/tests\//) ? '-tests': ''
+    const plugins = [...calcPlugins(path.match(/plugins\/([^\/]+)/)), ...calcPlugins(path.match(/projects\/([^\/]+)/))]
+    const project = jb.path(path.match(/projects\/([^\/]+)/),'1')
+    return { plugins, ...(project ? {project} : {}) }
 
-    return [
-      ...pluginsOrProject(path.match(/plugins\/([^\/]+)/),'plugins'),
-      ...pluginsOrProject(path.match(/projects\/([^\/]+)/),'project')
-    ]
-
-    function pluginsOrProject(matchResult,entry) {
+    function calcPlugins(matchResult) {
       if (!matchResult) return []
       const res = matchResult[1] + tests
-      return [{ [entry] : (!tests && addTests) ? [res, `${res}-tests`] : [res] }]
+      return (!tests && addTests) ? [res, `${res}-tests`] : [res]
     }
   }
 })
@@ -166,8 +149,8 @@ component('zipFile', {
 
 component('sourceCode.encodeUri', {
   params: [
-    {id: 'sourceCode', type: 'source-code', mandatory: true}
+    {id: 'sourceCode', type: 'source-code<loader>', mandatory: true}
   ],
-  impl: pipeline(json.stringify('%$sourceCode%'), ({data}) => encodeURIComponent(data), first())
+  impl: (ctx,source) => jb.frame.encodeURIComponent(JSON.stringify(source))
 })
 

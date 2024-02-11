@@ -1,7 +1,7 @@
 extension('tgp', 'modelData', {
     pluginOfFilePath: filePath => Object.values(jb.plugins).filter(p=>p.files.find(f=>f.path == filePath)).map(p=>p.id)[0],
 	tgpModelData(settings) {
-		const filePath = settings.filePath && jb.tgp.shortFilePath(settings.filePath)
+		const filePath = settings.filePath && jb.loader.shortFilePath(settings.filePath)
 		const plugin = settings.plugin || jb.tgp.pluginOfFilePath(filePath)
 		const pluginsAr = plugin ? [...jb.plugins[plugin].dependent,plugin] : []
 		const compsAr = Object.values(jb.comps).map(c=>c[jb.core.CT]).filter(c=>c && c.fullId).filter(c=>pluginsAr.includes(c.plugin.id))
@@ -19,13 +19,9 @@ extension('tgp', 'modelData', {
 				return comp.params.map(p=>({...p, $symbolDslType: jb.path(p[jb.core.CT],'dslType')}))
 		}
 	},
-	shortFilePath(filePath) {
-        const elems = filePath.split('/').reverse()
-		return '/' + elems.slice(0,elems.findIndex(x=> x == 'plugins' || x == 'projects')+1).reverse().join('/')
-	}
 })
 
-component('langService.tgpModelData', {
+component('tgpModelData.byFilePath', {
   params: [
 	{id: 'filePath', as: 'string'}
   ],

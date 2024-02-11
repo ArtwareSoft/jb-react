@@ -1,4 +1,4 @@
-using('tree-shake')
+using('remote')
 
 component('dataTest', {
   type: 'test',
@@ -238,7 +238,7 @@ extension('test', {
 	testResultHtml(res, repo) {
 		const baseUrl = jb.frame.location.href.split('/tests.html')[0]
 		const location = jb.comps[res.id][jb.core.CT].location || {}
-		const sourceCode = JSON.stringify(jb.exec(typeAdapter('source-code<jbm>', test({
+		const sourceCode = JSON.stringify(jb.exec(typeAdapter('source-code<loader>', test({
 			filePath: () => location.path, repo: () => location.repo
 		}))))
 		const studioUrl = `http://localhost:8082/project/studio/${res.id}/${res.id}?sourceCode=${encodeURIComponent(sourceCode)}`
@@ -321,7 +321,7 @@ component('tests.runner', {
 })
 
 component('test', {
-  type: 'source-code<jbm>',
+  type: 'source-code<loader>',
   params: [
     {id: 'filePath', as: 'string'},
     {id: 'repo', as: 'string'}
@@ -358,7 +358,7 @@ component('tester.runTestsOfPlugin', {
 })
 
 component('testServer', {
-  type: 'source-code<jbm>',
+  type: 'source-code<loader>',
   params: [
     {id: 'plugin', as: 'string'},
     {id: 'repo', as: 'string'}
