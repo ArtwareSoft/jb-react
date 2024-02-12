@@ -1,8 +1,7 @@
 extension('tgp', 'modelData', {
-    pluginOfFilePath: filePath => Object.values(jb.plugins).filter(p=>p.files.find(f=>f.path == filePath)).map(p=>p.id)[0],
 	tgpModelData(settings) {
 		const filePath = settings.filePath && jb.loader.shortFilePath(settings.filePath)
-		const plugin = settings.plugin || jb.tgp.pluginOfFilePath(filePath)
+		const plugin = settings.plugin || jb.loader.pluginOfFilePath(filePath)
 		const pluginsAr = plugin ? [...jb.plugins[plugin].dependent,plugin] : []
 		const compsAr = Object.values(jb.comps).map(c=>c[jb.core.CT]).filter(c=>c && c.fullId).filter(c=>pluginsAr.includes(c.plugin.id))
 			.map(ct=>({...jb.comps[ct.fullId],id: ct.fullId, plugin: ct.plugin.id, dslType: ct.dslType, location: ct.location, 

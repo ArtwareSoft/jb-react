@@ -91,12 +91,14 @@ Object.assign(jb, {
 extension('core', {
   initExtension() {
     Object.assign(jb, {
+      [Symbol.for('jb-version')]: '4.1.0beta',
       frame: globalThis,
       comps: {}, ctxDictionary: {},
       __requiredLoaded: {},
     })
     return {
       ctxCounter: 0,
+      VERSION: Symbol.for('jb-version'),
       CT: Symbol.for('CT'), // compile time
       jstypes: jb.core._jsTypes(),
       onAddComponent: [],

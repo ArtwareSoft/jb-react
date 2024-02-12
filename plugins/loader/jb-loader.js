@@ -105,8 +105,21 @@ async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl} ={}) {
         f(...Object.values(context))
         jb.loadedFiles[path] = true
       } catch (e) {
-        return jb.logException(e,`loadjbFile lib ${path}`,{context, code})
+        if (!handleUnknownComp((e.message.match(/^(.*) is not defined$/)||['',''])[1]))
+          return jb.logException(e,`loadjbFile lib ${path}`,{context, code})
       }
+
+    function handleUnknownComp(unknownCmp) {
+      if (!unknownCmp) return
+      try {
+        const fixed = code.replace(new RegExp(`${unknownCmp}\\(`,'g'),`unknownCmp('${unknownCmp}',`)
+        const f = eval(`(function(${Object.keys(context)}) {${fixed}\n})`)
+        f(...Object.values(context))
+        jb.loadedFiles[path] = true
+        jb.logError(`loader unknown comp ${unknownCmp} in file ${sourceUrl}`,{})
+        return true
+      } catch(e) {}
+    }
     }
   }
   if (!multipleInFrame) globalThis.jb = jb // multipleInFrame is used in jbm.child

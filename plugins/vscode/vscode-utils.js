@@ -1,4 +1,4 @@
-using('tgp-lang-server')
+using('tgp-lang-server,probe-result-ui')
 
 extension('vscode', 'utils', {
     initExtension() { return { 
@@ -127,6 +127,7 @@ extension('vscode', 'utils', {
             })
             jb.vscode.panels.inspect.jbm = await jb.exec(jbm.start(vscodeWebView({ id: 'vscode_inspect', panel: () => panel})))
         }
+        debugger
         const probeRes = await jb.vscode.ctx.setData(compProps).run(langServer.probe())
         probeRes.badFormat = (probeRes.errors || []).find(x=>x.err == 'reformat edits') && true
 
@@ -149,7 +150,6 @@ extension('vscode', 'utils', {
         const testID = docProps.shortId
         const spyParam = jb.spy.spyParamForTest(testID)
         const _repo = ((docProps.filePath || '').match(/projects\/([^/]*)/) || [])[1]
-        debugger
         const repo = _repo != 'jb-react' ? `&repo=${_repo}` : ''
         vscodeNS.env.openExternal(`http://localhost:8082/hosts/tests/tests.html?test=${testID}&show${repo}&spy=${spyParam}`)
     },

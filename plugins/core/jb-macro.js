@@ -103,6 +103,15 @@ component('remark', {
   macro: (result, self) => Object.assign(result,{ $remark: self.remark || self.$byValue[0] })
 })
 
+component('unknownCmp', {
+  type: 'system',
+  isSystem: true,
+  params: [
+    {id: 'id', as: 'string', mandatory: true}
+  ],
+  macro: (result, self) => jb.comps[self.$byValue[0]] = { impl: ctx => jb.logError(`comp ${self.$byValue[0]} is not defined`,{ctx})}
+})
+
 extension('syntaxConverter', 'onAddComponent', {
   initExtension() { 
     jb.core.onAddComponent.push({ 

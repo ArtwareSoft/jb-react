@@ -9,12 +9,13 @@ extension('langService', 'impl', {
         }
     },
     async calcCompProps(ctx) {
-        const {forceLocalSuggestions} = ctx.vars
+        const {forceLocalSuggestions, forceRemoteCompProps} = ctx.vars
         const docProps = { forceLocalSuggestions, ...jb.tgpTextEditor.host.compTextAndCursor() }
         const packagePath = docProps.packagePath = docProps.filePath
-        if (jb.langService.tgpModels[packagePath])
+        if (jb.langService.tgpModels[packagePath] && !forceRemoteCompProps)
             return jb.langService.calcCompPropsSync(docProps, jb.langService.tgpModels[packagePath])
-        const tgpModelData = forceLocalSuggestions ? jb.tgp.tgpModelData({filePath: packagePath}) : await new jb.core.jbCtx().setData(packagePath).run({$: 'remote.tgpModelData'})
+        const tgpModelData = forceLocalSuggestions ? jb.tgp.tgpModelData({filePath: packagePath}) 
+            : await new jb.core.jbCtx().setData(packagePath).run({$: 'remote.tgpModelData'})
         docProps.filePath = tgpModelData.filePath
         return jb.langService.calcCompPropsSync(docProps, new jb.langService.tgpModelForLangService(tgpModelData))
     },
@@ -22,8 +23,9 @@ extension('langService', 'impl', {
         const { compText, shortId, inCompOffset, compLine, inExtension, filePath, forceLocalSuggestions } = docProps
         if (inExtension) return docProps
 
-        const plugin = tgpModel.pluginOfFilePath(filePath)
+        const plugin = jb.loader.pluginOfFilePath(filePath)
         const fileDsl = tgpModel.fileDsl(filePath)
+        const tgpModelErrors = tgpModel.errors ? {tgpModelErrors: tgpModel.errors} : {}
 
         const code = '{\n' + compText.split('\n').slice(1).join('\n').slice(0, -1)
         const cursorPos = jb.tgpTextEditor.offsetToLineCol(compText, inCompOffset)
@@ -34,11 +36,12 @@ extension('langService', 'impl', {
             return { error: 'can not determine compId', shortId, plugin }
 
         const { text, actionMap, startOffset } = jb.utils.prettyPrintWithPositions(comp, { initialPath: compId, tgpModel })
-        const path = actionMap.filter(e => e.from <= inCompOffset && inCompOffset < e.to || (e.from == e.to && e.from == inCompOffset)).map(e => e.action.split('!').pop())[0]
+        const path = actionMap.filter(e => e.from <= inCompOffset && inCompOffset < e.to || (e.from == e.to && e.from == inCompOffset))
+            .map(e => e.action.split('!').pop())[0] || compId
 
-        const compProps = (code != text) ? { formattedText: text, reformatEdits: jb.tgpTextEditor.deltaFileContent(code, text, compLine) }
+        const compProps = (code != text) ? { path, formattedText: text, reformatEdits: jb.tgpTextEditor.deltaFileContent(code, text, compLine) }
             : { time: new Date().getTime(), text, path, actionMap, startOffset, plugin, tgpModel, compId, comp }
-        return { ...docProps, ...compProps }
+        return { ...docProps, ...compProps, ...tgpModelErrors }
     },
 
     async provideCompletionItems(compProps, ctx) {

@@ -41,7 +41,7 @@ extension('remoteCtx', {
             return {$$: 'Error', message: data.toString() }
         if (typeof data == 'object' && ['VNode','Object','Array'].indexOf(data.constructor.name) == -1)
             return { $$: data.constructor.name }
-        if (typeof data == 'object' && data.comps)
+        if (typeof data == 'object' && data[jb.core.VERSION])
             return { uri : data.uri}
         if (typeof data == 'object')
              return jb.objFromEntries(jb.entries(data)

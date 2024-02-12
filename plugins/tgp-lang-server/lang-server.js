@@ -26,10 +26,20 @@ component('remote.tgpModelData', {
   params: [
     {id: 'filePath', defaultValue: '%%'}
   ],
-  impl: remote.data({
-    calc: tgpModelData.byFilePath('%$filePath%'),
-    jbm: cmd(modelDataServer('%$filePath%'), { doNotStripResult: true })
-  })
+  circuit: 'langServerTest.tgpModelData',
+  impl: pipe(
+    remote.data({
+      calc: tgpModelData.byFilePath('%$filePath%'),
+      jbm: cmd(modelDataServer('%$filePath%'), { doNotStripResult: true, includeLogs: true })
+    }),
+    obj(
+      prop('filePath', '%result/filePath%'),
+      prop('errors', '%errors%'),
+      prop('comps', '%result/comps%'),
+      prop('plugins', '%result/plugins%')
+    ),
+    first()
+  )
 })
 
 component('langServer.probe', {
@@ -40,10 +50,10 @@ component('langServer.probe', {
     '%$compProps/path%',
     remote.data({
       calc: pipe(
-        If('%%', {$: 'probe.runCircuit', probePath: '%%'}, '%%'),
+        If('%%', probe.runCircuit('%%'), '%%'),
         obj(
-          prop('probePath','%probePath%'),
-          prop('result', {$: 'probe.stripProbeResult', result: '%result%'}),
+          prop('probePath', '%probePath%'),
+          prop('result', probe.stripProbeResult('%result%')),
           prop('circuitRes', '%circuitRes%'),
           prop('simpleVisits', '%simpleVisits%'),
           prop('totalTime', '%totalTime%'),
@@ -54,7 +64,8 @@ component('langServer.probe', {
         first()
       ),
       jbm: cmd(probeServer('%$compProps/filePath%'))
-    })
+    }),
+    extend(prop('tgpModelErrors','%$compProps/tgpModelErrors%'))
   )
 })
 
@@ -84,12 +95,7 @@ component('langServer.remoteProbe', {
     {id: 'input', defaultValue: '%%', description: '{value, selectionStart}'}
   ],
   impl: remote.data({
-    calc: {
-      $: 'probe.suggestions',
-      probePath: '%$probePath%',
-      expressionOnly: '%$expressionOnly%',
-      input: '%$input%'
-    },
+    calc: probe.suggestions('%$probePath%', '%$expressionOnly%', '%$input%'),
     jbm: If('%$forceLocalSuggestions%', jbm.self(), cmd('%$sourceCode%'))
   })
 })

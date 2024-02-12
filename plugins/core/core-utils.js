@@ -7,13 +7,13 @@ Object.assign(jb, {
       jb.frame.window && jb.frame.console.error('%c Error: ','color: red', err, stack, logObj)
       const errObj = { err , ...logObj, stack}
       globalThis.jbHost.process && globalThis.jbHost.process.stderr.write(err)
-      jb.log('error',errObj)
+      jb.spy && jb.spy.log('error', errObj)
     },
     logException(e,err,logObj) {
       jb.frame.window && jb.frame.console.log('%c Exception: ','color: red', err, e, logObj)
       const errObj = { e, err, stack: e.stack||'', ...logObj}
       globalThis.jbHost.process && globalThis.jbHost.process.stderr.write(`${err}\n${e}`)
-      jb.log('exception error',errObj)
+      jb.spy && jb.spy.log('exception error', errObj)
     },
     tostring: value => jb.core.tojstype(value,'string'),
     toarray: value => jb.core.tojstype(value,'array'),

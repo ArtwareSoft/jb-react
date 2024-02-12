@@ -1,15 +1,26 @@
 dsl('loader')
 
 extension('loader','main' , {
-    shortFilePath(filePath) {
-        const elems = filePath.split('/').reverse()
-    return '/' + elems.slice(0,elems.findIndex(x=> x == 'plugins' || x == 'projects')+1).reverse().join('/')
+    shortFilePath(fullFilePath) {
+        const elems = fullFilePath.split('/').reverse()
+        return '/' + elems.slice(0,elems.findIndex(x=> x == 'plugins' || x == 'projects')+1).reverse().join('/')
     },
     unifyPluginsToLoad(pluginsToLoad) {
         return jb.asArray(pluginsToLoad).reduce((acc,item) => {
             const plugins = [...(acc.plugins || []), ...(item.plugins || [])]
             return {...acc, ...item, plugins}
         } , {})
+    },
+    pluginOfFilePath(fullFilePath, addTests) {
+      const filePath = jb.loader.shortFilePath(fullFilePath)
+      const tests = filePath.match(/-(tests|testers).js$/) || filePath.match(/\/tests\//) ? '-tests': ''
+      return [...calcPlugins(filePath.match(/plugins\/([^\/]+)/)), ...calcPlugins(filePath.match(/projects\/([^\/]+)/))][0]
+  
+      function calcPlugins(matchResult) {
+        if (!matchResult) return []
+        const res = matchResult[1] + tests
+        return (!tests && addTests) ? [`${res}-tests`] : [res]
+      }
     }
 })
 
@@ -53,18 +64,11 @@ component('pluginsByPath', {
     {id: 'filePath', as: 'string', mandatory: true, description: 'E.g. someDir/plugins/mycode.js'},
     {id: 'addTests', as: 'boolean', description: 'add plugin-tests', type: 'boolean'}
   ],
-  impl: (ctx,filePath,addTests) => {
-    const path = jb.loader.shortFilePath(filePath)
-    const tests = path.match(/-(tests|testers).js$/) || path.match(/\/tests\//) ? '-tests': ''
-    const plugins = [...calcPlugins(path.match(/plugins\/([^\/]+)/)), ...calcPlugins(path.match(/projects\/([^\/]+)/))]
-    const project = jb.path(path.match(/projects\/([^\/]+)/),'1')
+  impl: (ctx,fullFilePath,addTests) => {
+    const filePath = jb.loader.shortFilePath(fullFilePath)
+    const plugins = [jb.loader.pluginOfFilePath(fullFilePath,addTests)]
+    const project = jb.path(filePath.match(/projects\/([^\/]+)/),'1')
     return { plugins, ...(project ? {project} : {}) }
-
-    function calcPlugins(matchResult) {
-      if (!matchResult) return []
-      const res = matchResult[1] + tests
-      return (!tests && addTests) ? [res, `${res}-tests`] : [res]
-    }
   }
 })
 

@@ -80,22 +80,23 @@ component('langServiceTest.completions', {
 //   })
 // })
 
-component('langServerTest.probe', {
+component('langServerTest.remoteProbe', {
   impl: dataTest({
     vars: [
-      Var('forceLocalSuggestions', true)
+      Var('forceRemoteCompProps', true)
     ],
     calculate: pipe(
       langService.dummyCompProps(
         `component('uiTest.group', {
-  impl: uiTest(group(text('hello world'), text('2')), __contains('hello world','2'))
+  impl: uiTest(group(text('hello world'), text('2')), __containsbb('hello world','2'))
 })`
       ),
+      log('test doc props'),
       langService.compProps(),
+      log('test comp props'),
       langServer.probe(),
-      '%result/0/in/data%'
     ),
-    expectedResult: contains('hello'),
+    expectedResult: and(contains('hello', { allText: '%result/0/in/data%' })),
     timeout: 2000
   })
 })

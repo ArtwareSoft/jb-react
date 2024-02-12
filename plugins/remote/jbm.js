@@ -135,10 +135,12 @@ component('cmd', {
   params: [
     {id: 'sourceCode', type: 'source-code<loader>', mandatory: true},
     {id: 'viaHttpServer', as: 'string', defaultValue: 'http://localhost:8082'},
-    {id: 'doNotStripResult', as: 'boolean'},
-    {id: 'id', as: 'string'}
+    {id: 'doNotStripResult', as: 'boolean', type: 'boolean'},
+    {id: 'id', as: 'string'},
+    {id: 'spy', as: 'string'},
+    {id: 'includeLogs', as: 'boolean', type: 'boolean'}
   ],
-  impl: (ctx,_sourceCode,viaHttpServer,doNotStripResult,id) => ({
+  impl: (ctx,_sourceCode,viaHttpServer,doNotStripResult,id,spy,includeLogs) => ({
         uri: id || 'main',
         remoteExec: async (sctx,{data, action} = {}) => {
             const plugins = !_sourceCode && pluginsOfProfile([(data || action).profile, jb.path(sctx,'cmpCtx.params')])
@@ -149,6 +151,7 @@ component('cmd', {
                 ['-runCtx', JSON.stringify(sctx)],
                 ['-uri', id || `main`],
                 ['-sourceCode', JSON.stringify(sourceCode)],
+                spy ? ['-spy', spy]: [],
                 doNotStripResult ? ['-doNotStripResult',''+doNotStripResult] : []
             ].filter(x=>x[1])
             const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(arg=> arg[0] + 
@@ -166,7 +169,8 @@ component('cmd', {
                 }
             }
             try {
-                return JSON.parse(cmdResult).result
+                const resultWithLogs = JSON.parse(cmdResult)
+                return includeLogs ? resultWithLogs : resultWithLogs.result
             } catch (err) {
                 debugger
                 jb.logError('cmd: can not parse result returned from jb.js',{cmdResult, command, err})
