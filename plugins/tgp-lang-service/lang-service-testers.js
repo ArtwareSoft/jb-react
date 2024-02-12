@@ -9,7 +9,7 @@ extension('test', 'completion', {
     const cmpId = 'CmpltnTst'+jb.test.uniqueNameCounter
     return code.replace(/component\('x',/,`component('${cmpId}',`)
   },
-  initCompletionText({ctx,compText,filePath,dsl}) {
+  initCompletionText({ctx,compText,filePath,dsl,remoteSuggestions}) {
     const testId = ctx.vars.testID
     jb.workspace.initJbWorkspaceAsHost()
     const parts = jb.test.fixToUniqueName(compText).split('__')
@@ -24,7 +24,7 @@ extension('test', 'completion', {
         plugin.dslOfFiles = plugin.dslOfFiles || []
       plugin.dslOfFiles.push([filePath,dsl])
     }
-    const ctxForTest = ctx.setVars({forceLocalSuggestions: true})
+    const ctxForTest = ctx.setVars({forceLocalSuggestions: !remoteSuggestions})
     const inCompPos = jb.tgpTextEditor.offsetToLineCol(code,offset)
     jb.tgpTextEditor.host.selectRange(inCompPos)
     const offsets = parts.reduce((acc,part) => [...acc, acc.pop()+part.length] , [0] ).slice(1,-1)
@@ -41,8 +41,9 @@ component('completionOptionsTest', {
     {id: 'filePath', as: 'string', defaultValue: '/plugins/ui/tests/completion-tests.js'},
     {id: 'dsl', as: 'string'}
   ],
-  impl: async (ctx,compText,expectedSelections,filePath,dsl)=> {
-      const {testId, ctxForTest, code, offsets} = jb.test.initCompletionText({ctx,compText,filePath,dsl})
+  impl: dataTest({
+    calculate: async (ctx,{},{compText,expectedSelections,filePath,dsl})=> {
+      const {ctxForTest, code, offsets} = jb.test.initCompletionText({ctx,compText,filePath,dsl})
       const result = await offsets.map(offset=>jb.tgpTextEditor.offsetToLineCol(code,offset))
         .reduce(async (errors, inCompPos,i) => {
           const _errors = await errors
@@ -56,8 +57,11 @@ component('completionOptionsTest', {
           return _errors + res
       }, '')
 
-      return { id: testId, title: testId, success: result.match(/^-*$/), reason: result }
-  }
+      return { testFailure: result.match(/^-*$/) ? '' : result}
+       //{ id: testId, title: testId, success: result.match(/^-*$/), reason: result }
+    },
+    expectedResult: not('%testFailure%')
+  })
 })
   
 component('completionActionTest', {
@@ -69,11 +73,12 @@ component('completionActionTest', {
     {id: 'expectedTextAtSelection', description: '{ start: , end: }'},
     {id: 'expectedCursorPos', description: 'e.g. 1,12'},
     {id: 'filePath', as: 'string', defaultValue: '/plugins/ui/tests/completion-tests.js'},
-    {id: 'dsl', as: 'string'}
+    {id: 'dsl', as: 'string'},
+    {id: 'remoteSuggestions', as: 'boolean', type: 'boolean'}
   ],
   impl: dataTest({
-    calculate: async (ctx,{}, {compText,completionToActivate, expectedEdit, expectedTextAtSelection, expectedCursorPos,filePath, dsl }) => {
-            const {ctxForTest} = jb.test.initCompletionText({ctx,compText,filePath,dsl})
+    calculate: async (ctx,{}, {compText,completionToActivate, expectedEdit, expectedTextAtSelection, expectedCursorPos,filePath, dsl, remoteSuggestions }) => {
+            const {ctxForTest} = jb.test.initCompletionText({ctx,compText,filePath,dsl,remoteSuggestions})
             const items = await jb.langService.completionItems(ctxForTest)
             if (items.find(x=>x.label == 'reformat'))
                 return { testFailure: `bad comp format` }

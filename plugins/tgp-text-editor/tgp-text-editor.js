@@ -16,9 +16,12 @@ extension('tgpTextEditor', {
         const dsl = fileDsl || plugin.dsl || dslOfType
         comp[jb.core.CT] = { plugin, dsl }
         const compId = jb.utils.resolveProfile(comp,id,dsl, {tgpModel})
-        //tgpModel[compId] = comp // statefull, not sure how to avoid it
-        if (forceLocalSuggestions)
-          jb.comps[compId] = comp
+        if (forceLocalSuggestions && jb.plugins[pluginId]) {
+            const compToRun = f(...Object.values(context))
+            jb.comps[compId] = compToRun
+            compToRun[jb.core.CT] = { plugin: jb.plugins[pluginId], dsl }
+            jb.utils.resolveProfile(compToRun,id,dsl)
+        }
         return tgpModel.currentComp = { comp, compId }
       } catch (e) {
         if (fixed)
