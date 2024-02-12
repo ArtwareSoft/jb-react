@@ -47,6 +47,12 @@ component('studio.isCircuit', {
   impl: () => /sourceCode=/.test(jb.path(globalThis,'location.href')||'')
 })
 
+component('studio.circuitPlugin', {
+  type: 'boolean',
+  impl: ctx => (jb.path(jb.comps,[ctx.exp('%$studio/circuit%'),jb.core.CT,'plugin','id']) || '').split('-tests')[0]
+})
+
+
 component('studio.jbart', {
   type: 'control',
   impl: group({
@@ -287,6 +293,7 @@ component('studio.topBar', {
     title: 'top bar',
     layout: layout.flex({ alignItems: 'start', spacing: '' }),
     features: [
+      feature.keyboardShortcut('Alt+N', studio.pickAndOpen('studio')),
       css('height: 48px; border-bottom: 1px #d9d9d9 solid;')
     ]
   })

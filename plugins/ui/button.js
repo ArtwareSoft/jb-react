@@ -7,7 +7,7 @@ component('button', {
     {id: 'style', type: 'button.style', defaultValue: button.native(), dynamic: true},
     {id: 'raised', as: 'boolean', dynamic: true, type: 'boolean'},
     {id: 'disabledTillActionFinished', as: 'boolean', type: 'boolean'},
-    {id: 'features', type: 'feature,button.feature[]', dynamic: true}
+    {id: 'features', type: 'feature[],button.feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
 })

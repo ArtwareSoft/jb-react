@@ -141,7 +141,10 @@ component('studio.openJbEditProperty', {
           dialogFeature.onClose(popup.regainCanvasFocus())
         ]
       })),
-      action.switchCase(isOfType('function', tgp.val('%$actualPath%')), studio.editSource('%$actualPath%')),
+      action.switchCase({
+        condition: isOfType('function', tgp.val('%$actualPath%')),
+        action: studio.editSource('%$actualPath%')
+      }),
       action.switchCase(tgp.isOfType('%$actualPath%', 'data,boolean'), openDialog({
         content: studio.jbFloatingInput('%$actualPath%'),
         style: dialog.studioJbEditorPopup(),

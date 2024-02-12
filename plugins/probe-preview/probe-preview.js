@@ -70,7 +70,8 @@ component('probe.circuitPreview', {
   impl: group({
     controls: ctx => { 
         const _circuit = ctx.exp('%$probe/defaultMainCircuit%')
-        const circuit = (jb.path(jb.utils.getCompById(_circuit,{silent: true}),'impl.$') || '').match(/Test/) ? { $: 'test.showTestInStudio', testId: _circuit} : { $: _circuit }
+        const circuit = (jb.path(jb.utils.getCompById(_circuit,{silent: true}),'impl.$') || '').match(/Test/) 
+          ? { $: 'test.showTestInStudio', testId: _circuit, controlOnly: true} : { $: _circuit }
         jb.log('probe circuit',{circuit, ctx})
         return circuit && circuit.$ && ctx.run(circuit)
     },
@@ -121,6 +122,7 @@ component('probe.handleScriptChangeOnPreview', {
         handler.makeWatchable(path[0])
         jb.log('probe handleScriptChangeOnPreview doOp',{ctx,op,path})
         handler.doOp(handler.refOfPath(path), op, ctx)
+        jb.utils.resolveDetachedProfile(jb.comps[path[0]])
 
         const headlessWidgetId = Object.keys(jb.ui.headless)[0]
         const headless = jb.ui.headless[headlessWidgetId]
@@ -130,7 +132,7 @@ component('probe.handleScriptChangeOnPreview', {
             let featureIndex = path.lastIndexOf('features')
             if (featureIndex == -1) featureIndex = path.lastIndexOf('layout')
             const ctrlPath = path.slice(0, featureIndex).join('~')
-            const elems = headless.body.querySelectorAll('[jb-ctx]')
+            const elems = headless.body.querySelectorAll('[cmp-id]')
                 .map(elem=>({elem, path: jb.path(JSON.parse(elem.attributes.$__debug),'path') }))
                 .filter(e => e.path == ctrlPath)
             elems.forEach(e=>jb.ui.refreshElem(e.elem,null,{cssOnly: e.elem.attributes.class ? true : false}))           

@@ -154,6 +154,7 @@ component('uiTest.addFrontEndEmulation', {
 			userRequests: [],
 			body: jb.ui.h('div',{widgetId , widgetTop:true, frontend: true}) 
 		}
+		// jb.ui.elemOfSelector() - for loader
 	}
 })
 

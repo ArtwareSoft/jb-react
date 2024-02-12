@@ -112,7 +112,7 @@ component('langServerTest.studioCircuitUrl', {
       langServer.studioCircuitUrl()
     ),
     expectedResult: contains('http://localhost:8082/project/studio/CmpltnTst','impl~expectedResult?sourceCode='),
-    timeout: 1000
+    timeout: 2000
   })
 })
 

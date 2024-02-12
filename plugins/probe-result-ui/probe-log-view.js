@@ -5,5 +5,5 @@ component('probeUI.probeLogView', {
   params: [
     {id: 'logs', defaultValue: '%%'}
   ],
-  impl: group(itemlist({ items: '%$logs/logs' }), button('click me'))
+  impl: button('click me')
 })

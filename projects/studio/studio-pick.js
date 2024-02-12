@@ -19,7 +19,7 @@ component('studio.pickAndOpen', {
 component('studio.pickTitle', {
   type: 'control',
   impl: text(tgp.shortTitle('%$dialogData/path%'), {
-    features: css('display: block; margin-top: -20px; background: white')
+    features: css('display: block; margin-top: -20px; background: white; opacity: 0.7')
   })
 })
 
@@ -30,10 +30,10 @@ component('dialogFeature.studioPick', {
   ],
   impl: features(
     frontEnd.var('from', '%$from%'),
-    frontEnd.var('projectPrefix', studio.currentPagePath()),
+    frontEnd.var('circuitPlugin', studio.circuitPlugin()),
     frontEnd.var('testHost', ctx => ['tests','studio-helper'].indexOf(ctx.exp('%$studio/project%')) != -1),
-    frontEnd.prop('eventToElemPredicate', ({},{from, projectPrefix, testHost}) => from == 'preview' ?
-      (path => testHost || path.indexOf(projectPrefix) == 0) : (path => jb.studio.isStudioCmp(path.split('~')[0]))),
+    frontEnd.prop('eventToElemPredicate', ({},{from, circuitPlugin, testHost}) => from == 'preview' ?
+      (path => testHost || jb.path(jb.comps,[path.split('~')[0],jb.core.CT,'plugin','id']) == circuitPlugin) : (path => jb.studio.isStudioCmp(path.split('~')[0]))),
     frontEnd.prop('cover', ({},{cmp}) => {
       if (!cmp.cover) {
         const cover = cmp.cover = document.querySelector('.jb-cover') || document.createElement('div')

@@ -3,16 +3,22 @@ using('testing')
 component('test.showTestInStudio', {
   type: 'control',
   params: [
-    {id: 'testId', as: 'string', defaultValue: 'uiTest.label'}
+    {id: 'testId', as: 'string', defaultValue: 'uiTest.label'},
+    {id: 'controlOnly', as: 'boolean'}
   ],
-  impl: (ctx,testId) => {
+  impl: (ctx,testId, controlOnly) => {
 		const profile = jb.path(jb.comps[testId],'impl')
+    jb.utils.resolveDetachedProfile(profile)
 		const ctxForUi = jb.ui.extendWithServiceRegistry(ctx)
 		if (profile.$ == 'dataTest')
 			return ctxForUi.run({ $: 'test.dataTestView' ,testId, testResult })
 		else if (profile.$ == 'uiFrontEndTest')
 			return ctxForUi.run({ $: 'test.uiFrontEndTestView' ,testId, testResult })
-		else if (profile.$ == 'uiTest') {
+    else if (profile.$ == 'uiTest' && controlOnly) {
+        const ctxWithVars = ctx.setVars(jb.objFromEntries((profile.vars||[]).map(v=>[v.name,ctx.run(v.val)])))
+        const ctxToRun = jb.ui.extendWithServiceRegistry(new jb.core.jbCtx(ctxWithVars,{ profile: profile.control, forcePath: testId+ '~impl~control', path: '' } ))
+        return ctxToRun.runItself()
+    } else if (profile.$ == 'uiTest') {
 			const ctxWithVars = ctx.setVars(jb.objFromEntries((profile.vars||[]).map(v=>[v.name,ctx.run(v.val)])))
 			const ctxToRun = jb.ui.extendWithServiceRegistry(new jb.core.jbCtx(ctxWithVars,{ profile, forcePath: testId+ '~impl', path: '' } ))
 			return ctxForUi.run({ $: 'test.uiTestRunner', testId,ctxToRun,testResult })

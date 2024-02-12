@@ -60,9 +60,10 @@ Promise.resolve(jbInit('${workerUri}', ${JSON.stringify(sourceCode)})
       return childsOrNet[id] = {
           uri: workerUri,
           rjbm() {
-              if (this._rjbm) return this._rjbm
-              const self = this
-              return new Promise(resolve => {
+                if (this._rjbm) return this._rjbm
+                if (this.waitingForPromise) return this.waitingForPromise
+                const self = this
+                return this.waitingForPromise = new Promise(resolve => {
                   const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
                   worker.addEventListener('message', async function f1(m) {
                       if (m.data.$ == 'workerReady') {

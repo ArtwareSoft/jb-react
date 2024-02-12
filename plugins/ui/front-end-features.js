@@ -275,10 +275,11 @@ component('key.eventMatchKey', {
 component('key.eventToMethod', {
   type: 'boolean',
   params: [
-    {id: 'event'}
+    {id: 'event'},
+    {id: 'elem'}
   ],
-  impl: (ctx, event) => {
-      const {elem} = ctx.vars
+  impl: (ctx, event, elem) => {
+      elem = elem || ctx.vars.elem
       if (!jb.path(elem,'getAttribute'))
         return
 

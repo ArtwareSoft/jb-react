@@ -143,10 +143,10 @@ component('studio.controlTree', {
           tree.dragAndDrop(),
           watchRef('%$studio/profile_path%', { strongRefresh: true }),
           studio.watchPath(studio.currentPagePath(), 'structure', { allowSelfRefresh: true }),
-          method({
-            id: 'newControl',
-            action: studio.openNewProfileDialog(tree.pathOfInteractiveItem(), 'control', { mode: 'insert-control', onClose: studio.gotoLastEdit() })
-          })
+          method('newControl', studio.openNewProfileDialog('%$ev/path%', 'control', {
+            mode: 'insert-control',
+            onClose: studio.gotoLastEdit()
+          }))
         ]
       })
     ],

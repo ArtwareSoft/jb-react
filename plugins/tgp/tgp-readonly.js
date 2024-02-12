@@ -197,7 +197,13 @@ extension('tgp', 'readOnly', {
 	},
 	isDisabled: path => jb.path(jb.tgp.valOfPath(path),'$disabled'),
 	moreParams: path => jb.tgp.paramsOfPath(path).filter(p=>jb.tgp.valOfPath(path+'~'+p.id) == null), // && !p.mandatory)
-
+	canWrapWithArray: path => {
+		const type = jb.tgp.paramDef(path) ? (jb.tgp.paramDef(path).type || '') : ''
+		const val = jb.tgp.valOfPath(path)
+		const parentVal = jb.tgp.valOfPath(jb.tgp.parentPath(path))
+		return type.includes('[') && !Array.isArray(val) && !Array.isArray(parentVal)
+	},
+	
 	clone(profile) {
 		if (typeof profile !== 'object') return profile
 		return jb.tgp.evalProfile(jb.utils.prettyPrint(profile,{noMacros: true}))

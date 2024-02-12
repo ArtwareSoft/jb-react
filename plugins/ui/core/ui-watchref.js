@@ -1,4 +1,4 @@
-using('watchable,common')
+using('watchable,common,rx')
 
 extension('ui', 'watchRef', {
     $phase: 100,
@@ -17,7 +17,7 @@ extension('ui', 'watchRef', {
 
         const elemsToCheckCtxIdBefore = elemsToCheck.map(({elem}) =>elem.getAttribute('cmp-ver'))
         const originatingCmpId = jb.path(srcCtx, 'vars.cmp.cmpId')
-        jb.log(`refresh check observable elements : ${changed_path}`,{originatingCmpId,elemsToCheck,e,srcCtx })
+        jb.log(`refresh check observable elements : ${changed_path.join('~')}`,{originatingCmpId,elemsToCheck,e,srcCtx })
         const refreshActions = elemsToCheck.map(({elem, top},i) => {
             const FEWidgetId = jb.ui.frontendWidgetId(elem)
             if (FEWidgetId && FEWidgetId != 'client') return
@@ -28,7 +28,7 @@ extension('ui', 'watchRef', {
             let refresh = false, strongRefresh = false, cssOnly = true, delay = 0, methodBeforeRefresh = ''
             elem.getAttribute('observe').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{
                 if (!obs.allowSelfRefresh && jb.ui.findIncludeSelf(elem,`[cmp-id="${originatingCmpId}"]`)[0]) 
-                    return jb.log('blocking self refresh observableElems',{cmpId,originatingCmpId,elem, obs,e})
+                    return jb.log('blocking self refresh observable',{cmpId,originatingCmpId,elem, obs,e})
                 const obsPath = watchHandler.removeLinksFromPath(watchHandler.pathOfRef(obs.ref))
                 if (!obsPath)
                     return jb.logError('observer ref path is empty',{originatingCmpId,cmpId,obs,e})

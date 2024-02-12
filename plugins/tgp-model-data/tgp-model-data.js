@@ -1,3 +1,5 @@
+using('loader')
+
 extension('tgp', 'modelData', {
 	tgpModelData(settings) {
 		const filePath = settings.filePath && jb.loader.shortFilePath(settings.filePath)
