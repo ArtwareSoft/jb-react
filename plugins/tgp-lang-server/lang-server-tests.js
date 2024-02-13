@@ -91,9 +91,7 @@ component('langServerTest.remoteProbe', {
   impl: uiTest(group(text('hello world'), text('2')), __containsbb('hello world','2'))
 })`
       ),
-      log('test doc props'),
       langService.compProps(),
-      log('test comp props'),
       langServer.probe(),
     ),
     expectedResult: and(contains('hello', { allText: '%result/0/in/data%' })),

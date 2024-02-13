@@ -203,7 +203,7 @@ extension('tgp', 'readOnly', {
 		const parentVal = jb.tgp.valOfPath(jb.tgp.parentPath(path))
 		return type.includes('[') && !Array.isArray(val) && !Array.isArray(parentVal)
 	},
-	
+
 	clone(profile) {
 		if (typeof profile !== 'object') return profile
 		return jb.tgp.evalProfile(jb.utils.prettyPrint(profile,{noMacros: true}))
@@ -269,6 +269,14 @@ component('tgp.val', {
     {id: 'path', as: 'string', mandatory: true}
   ],
   impl: (ctx,path) => jb.tgp.valOfPath(path)
+})
+
+component('tgp.profileText', {
+  type: 'data',
+  params: [
+    {id: 'path', as: 'string'},
+  ],
+  impl: (ctx,path) => jb.utils.prettyPrint(jb.tgp.valOfPath(path))
 })
 
 component('tgp.isPrimitiveValue', {

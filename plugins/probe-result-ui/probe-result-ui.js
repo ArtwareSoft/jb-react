@@ -1,4 +1,4 @@
-using('pretty-print')
+using('pretty-print,tgp-text-editor')
 
 extension('probeUI', 'ui', {
   initExtension() {

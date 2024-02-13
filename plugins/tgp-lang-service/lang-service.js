@@ -277,7 +277,9 @@ extension('langService', 'api', {
         } else if (actionMap) {
             const items = await jb.langService.provideCompletionItems(compProps, ctx)
             items.forEach((item, i) => Object.assign(item, {
-                compLine, insertText: '', sortText: ('0000' + i).slice(-4), command: { command: 'jbart.applyCompChange', arguments: [item] },
+                compLine, insertText: '', sortText: ('0000' + i).slice(-4), command: { command: 'jbart.applyCompChange', 
+                arguments: [{op: item.op, path: item.path, resultPath: item.resultPath, whereToLand: item.whereToLand , extend: item.extend}] 
+            },
             }))
             jb.log('completion completion items', { items, ...compProps, ctx })
             return items

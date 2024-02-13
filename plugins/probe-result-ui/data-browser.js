@@ -1,4 +1,4 @@
-using('ui')
+using('ui,pretty-print')
 
 component('ui.dataBrowse', {
   type: 'control',
@@ -49,19 +49,13 @@ component('ui.dataBrowse', {
           title: 'open (%$obj/length%)',
           action: openDialog({
             content: group({
-              controls: [
-                editableText('codemirror', '%$obj%', {
-                  style: editableText.codemirror({
-                    enableFullScreen: true,
-                    height: '',
-                    mode: 'text',
-                    debounceTime: 300,
-                    lineWrapping: false,
-                    lineNumbers: true,
-                    readOnly: true,
-                    maxLength: ''
-                  })
-                }),
+              controls: [                
+              text({
+                text: '%$obj%',
+                title: 'codemirror',
+                style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'text' }),
+                features: [codemirror.fold(), codemirror.lineNumbers()]
+              }),
                 html('%$obj%', 'html', { style: html.inIframe() })
               ],
               style: group.tabs(),

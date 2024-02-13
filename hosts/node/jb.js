@@ -91,7 +91,7 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
         } catch(e) {
             exception = e
         }
-        const result = { result: res, exception, errors: jb.spy.search('error'), logs: jb.spy.logs, main }
+        const result = { result: res, exception, errors: [...jb.spy.search('error')], logs: [...jb.spy.logs], main }
         try {
             const res1 = resultAsText ? res : {...result}
             const res2 = doNotStripResult ? res1 : jb.remoteCtx.stripData(res1)

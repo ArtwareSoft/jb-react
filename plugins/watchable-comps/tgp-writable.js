@@ -1,5 +1,3 @@
-using('watchable-comps')
-
 extension('tgp', 'writable', {
 	initExtension() {
 		jb.watchableComps.startWatch()

@@ -82,6 +82,15 @@ component('completionTest.createPipelineFromComp', {
   })
 })
 
+component('completionTest.groupInGroup', {
+  impl: completionOptionsTest({
+    compText: `component('x', {
+  impl: uiTest(group(group(__text(''))))
+})`,
+    expectedSelections: ['button']
+  })
+})
+
 component('completionTest.singleArgAsArray.begin', {
   impl: completionActionTest(`component('x', {
   impl: uiTest(group(__text('')))

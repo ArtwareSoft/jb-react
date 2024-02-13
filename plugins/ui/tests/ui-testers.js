@@ -60,7 +60,8 @@ component('uiTest', {
     allowError: '%$allowError()%',
     cleanUp: runActions(uiTest.removeFrontEndEmulation(), call('cleanUp')),
     expectedCounters: '%$expectedCounters%',
-    spy: ({},{},{spy}) => spy === '' ? 'test,uiTest,headless' : spy
+    spy: ({},{},{spy}) => spy === '' ? 'test,uiTest,headless' : spy,
+    includeTestRes: true
   })
 })
 

@@ -11,9 +11,10 @@ component('dataTest', {
     {id: 'cleanUp', type: 'action', dynamic: true},
     {id: 'expectedCounters', as: 'single'},
     {id: 'spy', as: 'string'},
+    {id: 'includeTestRes', as: 'boolean', type: 'boolean'},
     {id: 'covers', as: 'array'},
   ],
-  impl: async function(ctx,calculate,expectedResult,runBefore,timeout,allowError,cleanUp,expectedCounters,spy) {
+  impl: async function(ctx,calculate,expectedResult,runBefore,timeout,allowError,cleanUp,expectedCounters,spy,includeTestRes) {
 		const ctxToUse = ctx.vars.testID ? ctx : ctx.setVars({testID:'unknown'})
 		const {testID,singleTest,uiTest}  = ctxToUse.vars
 		const remoteTimeout = testID.match(/([rR]emote)|([wW]orker)|(jbm)/) ? 5000 : null
@@ -32,22 +33,23 @@ component('dataTest', {
 					return await jb.utils.toSynchArray(res,true)
 				})()
 			])
-			const testFailure = jb.path(testRes,'0.testFailure') || jb.path(testRes,'testFailure')
+			let testFailure = jb.path(testRes,'0.testFailure') || jb.path(testRes,'testFailure')
 			const countersErr = jb.test.countersErrors(expectedCounters,allowError)
 			const expectedResultCtx = new jb.core.jbCtx(ctxToUse,{ data: testRes })
-			const expectedResultRes = await expectedResult(expectedResultCtx)
+			const expectedResultRes = !testFailure && await expectedResult(expectedResultCtx)
+			testFailure = jb.path(expectedResultRes,'testFailure')
 			const success = !! (expectedResultRes && !countersErr && !testFailure)
 			jb.log('check test result',{testRes, success,expectedResultRes, testFailure, countersErr, expectedResultCtx})
-			result = { id: testID, success, reason: countersErr || testFailure, ...(testRes && testRes.html? testRes:{})}
-			} catch (e) {
-				jb.logException(e,'error in test',{ctx})
-				result = { id, success: false, reason: 'Exception ' + e}
-			} finally {
-				if (spy) jb.spy.initSpy({spyParam: 'error'})
-				if (uiTest && result.elem && jb.ui)
-					jb.ui.unmount(result.elem)
-				const doNotClean = ctx.probe || singleTest
-				if (!doNotClean) await (!singleTest && cleanUp())
+			result = { id: testID, success, reason: countersErr || testFailure, ...(includeTestRes ? testRes : {})}
+		} catch (e) {
+			jb.logException(e,'error in test',{ctx})
+			result = { id, success: false, reason: 'Exception ' + e}
+		} finally {
+			if (spy) jb.spy.initSpy({spyParam: 'error'})
+			if (uiTest && result.elem && jb.ui)
+				jb.ui.unmount(result.elem)
+			const doNotClean = ctx.probe || singleTest
+			if (!doNotClean) await (!singleTest && cleanUp())
 		} 
 		return result
 	}

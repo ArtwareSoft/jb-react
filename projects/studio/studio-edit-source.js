@@ -43,40 +43,6 @@ component('sourceEditor.firstParamAsArrayPath', {
   }
 })
 
-component('studio.filePosOfPath', {
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: (ctx,tgpPath) => {
-      const comp = tgpPath.split('~')[0]
-      const loc = jb.comps[comp][jb.core.CT].location
-      const path = jb.studio.host.locationToPath(loc.path)
-      const compLine = (+loc.line) || 0
-      const { line, col } = jb.tgpTextEditor.getPosOfPath(tgpPath, 'begin') || [0,0,0,0]
-      return { path, line: line + compLine, col }
-  }
-})
-
-component('studio.gotoSource', {
-  type: 'action',
-  params: [
-    {id: 'path', as: 'string'},
-    {id: 'chromeDebugger', as: 'boolean', type: 'boolean'}
-  ],
-  impl: runActions(
-    Var('filePos', studio.filePosOfPath('%$path%')),
-    ({},{filePos},{chromeDebugger}) => {
-      if (jb.frame.jbInvscode)
-        jb.vscode['openEditor'](filePos)
-      else if (chromeDebugger)
-        parent.postMessage({ runProfile: {$: 'chromeDebugger.openResource', 
-          location: [ jb.frame.location.origin + '/' + filePos.file, filePos.line, filePos.col] }})
-      else
-        fetch(`/?op=gotoSource&path=${filePos.path}:${filePos.line}`)
-  }
-  )
-})
-
 component('studio.editableSource', {
   type: 'control',
   params: [
@@ -102,7 +68,7 @@ component('studio.editSource', {
   ],
   impl: If({
     condition: '%$studio/vscode%',
-    then: studio.gotoSource('%$path%'),
+    then: tgpTextEditor.gotoSource('%$path%'),
     Else: openDialog(tgp.shortTitle('%$path%'), studio.editableSource('%$path%'), {
       style: dialog.editSourceStyle('editor', 600),
       features: [
@@ -153,7 +119,7 @@ component('studio.gotoEditorSecondary', {
       Var('shortBaseComp', split('>', { text: '%$baseComp%', part: 'last' }))
     ],
     title: 'Goto editor: %$shortBaseComp%',
-    action: studio.gotoSource('%$baseComp%'),
+    action: tgpTextEditor.gotoSource('%$baseComp%'),
     showCondition: notEquals(tgp.compName('%$path%'), '%$baseComp%')
   })
 })
@@ -165,7 +131,7 @@ component('studio.gotoEditorFirst', {
   ],
   impl: menu.action({
     title: pipeline(tgp.shortCompName('%$path%'), 'Goto editor: %%'),
-    action: studio.gotoSource(tgp.compName('%$path%')),
+    action: tgpTextEditor.gotoSource(tgp.compName('%$path%')),
     shortcut: 'Alt+E',
     showCondition: notEmpty(tgp.compName('%$path%'))
   })

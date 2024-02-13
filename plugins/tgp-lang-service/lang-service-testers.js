@@ -42,25 +42,30 @@ component('completionOptionsTest', {
     {id: 'dsl', as: 'string'}
   ],
   impl: dataTest({
-    calculate: async (ctx,{},{compText,expectedSelections,filePath,dsl})=> {
+    calculate: async (ctx,{},{compText,filePath,dsl})=> {
       const {ctxForTest, code, offsets} = jb.test.initCompletionText({ctx,compText,filePath,dsl})
-      const result = await offsets.map(offset=>jb.tgpTextEditor.offsetToLineCol(code,offset))
-        .reduce(async (errors, inCompPos,i) => {
-          const _errors = await errors
-          jb.tgpTextEditor.host.selectRange(inCompPos)
-          const options = await jb.langService.completionItems(ctxForTest)
-          if (jb.path(options,'0.id') == 'reformat')
-            return `bad format`
-          if (!options)
-              return `no options at index ${i}`
-          const res = options.map(x=>x.label).includes(expectedSelections[i]) ? '' : ` ${expectedSelections[i]} not found at index ${i}`
-          return _errors + res
-      }, '')
-
-      return { testFailure: result.match(/^-*$/) ? '' : result}
-       //{ id: testId, title: testId, success: result.match(/^-*$/), reason: result }
+      const offsetsPos = offsets.map(offset=>jb.tgpTextEditor.offsetToLineCol(code,offset))
+      const acc = []
+      await offsetsPos.reduce(async (pr, inCompPos) => {
+        await pr
+        jb.tgpTextEditor.host.selectRange(inCompPos)
+        const options = await jb.langService.completionItems(ctxForTest)
+        acc.push({options})
+      }, Promise.resolve())
+      return acc
     },
-    expectedResult: not('%testFailure%')
+    expectedResult: ({data},{},{expectedSelections}) => {
+      const errors = data.reduce((errors,{options},i) => {
+        if (jb.path(options,'0.id') == 'reformat')
+          return `bad format`
+        if (!options)
+            return `no options at index ${i}`
+        const res = options.map(x=>x.label).includes(expectedSelections[i]) ? '' : ` ${expectedSelections[i]} not found at index ${i}`
+        return errors + res
+      }, '')
+      return errors.match(/^-*$/) ? true : { testFailure: errors }
+    },
+    includeTestRes: true
   })
 })
   

@@ -413,7 +413,7 @@ component('studio.singleSourceCtxView', {
     style: button.hrefText(),
     features: [
       feature.hoverTitle('%$srcCtx/path%'),
-      button.ctrlAction(studio.gotoSource('%$srcCtx/path%', true))
+      button.ctrlAction(tgpTextEditor.gotoSource('%$srcCtx/path%', true))
     ]
   })
 })

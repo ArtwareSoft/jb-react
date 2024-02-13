@@ -176,23 +176,32 @@ async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl} ={}) {
 
     function calcDependency(id,history={}) {
       const plugin = plugins[id]
-      if (!plugin)
+      if (!plugin) {
         console.log('calcDependency: can not find plugin',{id, history})
-      if (!plugin || history[id]) return []
+        return []
+      }
       if (plugin.dependent) return [id, ...plugin.dependent]
+      if (history[id])
+        return [`$circular:${id}`]
       const baseOfTest = id.match(/-tests$/) ? [id.slice(0,-6),'testing'] : []
       plugin.using = unique(plugin.files.flatMap(e=> unique(e.using)))
-      plugin.dependent = unique([
-        ...plugin.files.flatMap(e=> unique(e.using.flatMap(dep=>calcDependency(dep,{...history, [id]: true})))),
-        ...baseOfTest.flatMap(dep=>calcDependency(dep,{...history, [id]: true}))]
-      )
-      const ret = [id, ...plugin.dependent]
-      plugin.requiredFiles = unique(ret.flatMap(_id=>plugins[_id].files), x=>x.path)
-      plugin.requiredLibs = unique(ret.flatMap(_id=>plugins[_id].files).flatMap(x=>x.libs || []))
-      plugin.proxies = unique(plugin.requiredFiles.flatMap(x=>x.ns))
       const dslOfFiles = plugin.files.filter(fileSymbols=>fileSymbols.dsl && fileSymbols.dsl != plugin.dsl).map(({path,dsl}) => [path,dsl])
       if (dslOfFiles.length)
         plugin.dslOfFiles = dslOfFiles
+
+      const dependent = unique([
+        ...plugin.files.flatMap(e=> unique(e.using.flatMap(dep=>calcDependency(dep,{...history, [id]: true})))),
+        ...baseOfTest.flatMap(dep=>calcDependency(dep,{...history, [id]: true}))]
+      ).filter(x=>x !=`$circular:${id}`)
+
+      plugin.circular = dependent.find(x=>x.match(/^\$circular:/))
+      const ret = [id, ...dependent]
+      if(!plugin.circular) {
+        plugin.dependent = dependent
+        plugin.requiredFiles = unique(ret.flatMap(_id=>plugins[_id].files), x=>x.path)
+        plugin.requiredLibs = unique(ret.flatMap(_id=>plugins[_id].files).flatMap(x=>x.libs || []))
+        plugin.proxies = unique(plugin.requiredFiles.flatMap(x=>x.ns))
+      }
 
       return ret
     }

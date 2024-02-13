@@ -23,15 +23,19 @@ component('PPrintTest.vars', {
 })
 
 component('PPrintTest.varsPath', {
-  impl: dataTest({
-    calculate: pipeline(
-      () => jb.utils.prettyPrintWithPositions(split(Var('a', 'b'))),
-      '%actionMap%',
-      filter(endsWith('edit!~$vars~0~val', '%action%')),
-      '%from%,%to%'
-    ),
-    expectedResult: equals('27,27')
-  })
+  impl: PPPosOfPath(() => split(Var('a', 'b')), 'edit!~$vars~0~val', '27,27')
+})
+
+component('PPrintTest.prependInGroup', {
+  impl: PPPosOfPath(() => group(text(''),text('')), 'prependPT!~controls', '6,11')
+})
+
+component('PPrintTest.prependSingleInArrayPath', {
+  impl: PPPosOfPath(() => group(text('')), 'prependPT!~controls', '6,11')
+})
+
+component('PPrintTest.singleInArrayPath', {
+  impl: PPPosOfPath(() => group(text('')), 'begin!~controls~text', '11,11')
 })
 
 component('PPrintTest.remark.pipeline', {
