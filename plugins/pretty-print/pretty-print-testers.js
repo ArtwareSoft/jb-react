@@ -9,11 +9,9 @@ component('PPPosOfPath', {
   impl: dataTest({
     calculate: ({},{},{profile}) => jb.utils.prettyPrintWithPositions(profile),
     expectedResult: ({data},{},{expectedPos,path}) => {
-        const item = (jb.path(data,'actionMap') || []).find(x=>x.action == path)
-        let error = item ? '' : `path not found ${path}`
-        const _item = item || {}
-        const actualPos = `${_item.from},${_item.to}`
-        error = error || (actualPos != expectedPos ? `pos ${actualPos}` : '')
+        const items = (jb.path(data,'actionMap') || []).filter(x=>x.action == path).map(x=>`${x.from},${x.to}`)
+        let error = items.length ? '' : `path not found ${path}`
+        error = error || (items.includes(expectedPos) ? '' : `pos ${items.join(';')}`)
         return error ? { testFailure: error } : true
     },
     includeTestRes: true

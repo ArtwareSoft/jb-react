@@ -23,7 +23,7 @@ component('action.runBEMethod', {
   macroByValue: true,
   params: [
     {id: 'method', as: 'string', dynamic: true},
-    {id: 'data', defaultValue: '%%', dynamic: true},
+    {id: 'Data', defaultValue: '%%', dynamic: true},
     {id: 'ctxVars', dynamic: true}
   ],
   impl: (ctx,method,data,ctxVars) => jb.ui.runBEMethodByContext(ctx,method(),data(),ctxVars())
@@ -35,7 +35,7 @@ component('backend.dataMethod', {
   params: [
     {id: 'cmpId', as: 'string'},
     {id: 'method', as: 'string'},
-    {id: 'data', defaultValue: '%%'},
+    {id: 'Data', defaultValue: '%%'},
     {id: 'ctxVars'}
   ],
   impl: ({} ,cmpId,method,data,ctxVars) => jb.ui.cmps[cmpId].runBEMethod(method,data,ctxVars,{dataMethod: true})
@@ -47,7 +47,7 @@ component('action.runFEMethod', {
   macroByValue: true,
   params: [
     {id: 'method', as: 'string', dynamic: true},
-    {id: 'data', defaultValue: '%%', dynamic: true},
+    {id: 'Data', defaultValue: '%%', dynamic: true},
     {id: 'ctxVars', dynamic: true}
   ],
   impl: (ctx,method,data,ctxVars) => ctx.vars.cmp && ctx.vars.cmp.runFEMethod(method(),data(),ctxVars())
@@ -59,10 +59,10 @@ component('sink.BEMethod', {
   macroByValue: true,
   params: [
     {id: 'method', as: 'string', dynamic: true},
-    {id: 'data', defaultValue: ({data}) => jb.frame.Event && data instanceof jb.frame.Event ? null : data, dynamic: true},
+    {id: 'Data', defaultValue: ({data}) => jb.frame.Event && data instanceof jb.frame.Event ? null : data, dynamic: true},
     {id: 'ctxVars', dynamic: true}
   ],
-  impl: sink.action((ctx,{},{method,data,ctxVars}) => jb.ui.runBEMethodByContext(ctx,method(ctx),data(ctx),ctxVars(ctx)))
+  impl: sink.action((ctx,{},{method,Data,ctxVars}) => jb.ui.runBEMethodByContext(ctx,method(ctx),Data(ctx),ctxVars(ctx)))
 })
 
 component('sink.FEMethod', {
@@ -71,10 +71,10 @@ component('sink.FEMethod', {
   macroByValue: true,
   params: [
     {id: 'method', as: 'string', dynamic: true},
-    {id: 'data', defaultValue: '%%', dynamic: true},
+    {id: 'Data', defaultValue: '%%', dynamic: true},
     {id: 'ctxVars', dynamic: true}
   ],
-  impl: sink.action((ctx,{cmp},{method,data,ctxVars}) => cmp && cmp.runFEMethod(method(ctx),data(ctx),ctxVars(ctx)))
+  impl: sink.action((ctx,{cmp},{method,Data,ctxVars}) => cmp && cmp.runFEMethod(method(ctx),Data(ctx),ctxVars(ctx)))
 })
 
 component('action.refreshCmp', {

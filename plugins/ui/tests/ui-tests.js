@@ -670,8 +670,8 @@ component('uiTest.itemlistMDOfRefs.refChangeBug', {
     expectedResult: contains('Marge Simpson','Marge Simpson - watchable selected'),
     uiAction: uiActions(
       waitForNextUpdate(),
-      runMethod('#itemlist', 'onSelection', { data: 2 }),
-      runMethod('#itemlist', 'onSelection', { data: 1 })
+      runMethod('#itemlist', 'onSelection', { Data: 2 }),
+      runMethod('#itemlist', 'onSelection', { Data: 1 })
     )
   })
 })
@@ -1687,9 +1687,9 @@ component('uiTest.infiniteScroll.table', {
 component('uiTest.recursiveCtrl', {
   type: 'control',
   params: [
-    {id: 'data'}
+    {id: 'Data'}
   ],
-  impl: group(text('%$data/text%'), uiTest.recursiveCtrl('%$data/child%'), {
+  impl: group(text('%$Data/text%'), uiTest.recursiveCtrl('%$Data/child%'), {
     features: group.eliminateRecursion(5)
   })
 })
@@ -1721,7 +1721,7 @@ component('uiTest.changeText', {
 component('FETest.runFEMethod', {
   impl: uiFrontEndTest({
     control: group(
-      button('change', runFEMethod('#input1', 'changeText', { data: 'world' })),
+      button('change', runFEMethod('#input1', 'changeText', { Data: 'world' })),
       editableText({
         databind: '%$person/name%',
         style: editableText.input(),

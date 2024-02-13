@@ -404,18 +404,18 @@ component('runMethod', {
   params: [
     {id: 'selector', as: 'string'},
     {id: 'method', as: 'string'},
-    {id: 'data', defaultValue: '%%'},
+    {id: 'Data', defaultValue: '%%'},
     {id: 'ctxVars', as: 'single'},
     {id: 'doNotWaitForNextUpdate', as: 'boolean', type: 'boolean'}
   ],
   impl: uiActions(
     waitForSelector('%$selector%'),
-    (ctx,{elemToTest},{selector,method,data,ctxVars}) => {
+    (ctx,{elemToTest},{selector,method,Data,ctxVars}) => {
       if (elemToTest) return
       const elem = jb.ui.elemOfSelector(selector,ctx)
       const cmpElem = elem && jb.ui.closestCmpElem(elem)
       jb.log('uiTest run method',{method,cmpElem,elem,ctx})
-      jb.ui.runBEMethodByElem(cmpElem,method,data,ctxVars ? {...ctx.vars, ...ctxVars} : ctx.vars)
+      jb.ui.runBEMethodByElem(cmpElem,method,Data,ctxVars ? {...ctx.vars, ...ctxVars} : ctx.vars)
     },
     If('%$doNotWaitForNextUpdate%', '', waitForNextUpdate())
   )
@@ -458,7 +458,7 @@ component('checkLog', {
   type: 'ui-action-effect',
   params: [
     {id: 'log', as: 'string', mandatory: true},
-    {id: 'data', dynamic: true, description: 'what to check', mandatory: true},
+    {id: 'Data', dynamic: true, description: 'what to check', mandatory: true},
     {id: 'condition', type: 'boolean<>', dynamic: true, description: '%% is data', mandatory: true},
     {id: 'dataErrorMessage', as: 'string', dynamic: true},
     {id: 'conditionErrorMessage', as: 'string', dynamic: true}

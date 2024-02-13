@@ -274,12 +274,12 @@ component('studio.lowFootprintObj', {
 
 component('studio.slicedString', {
   params: [
-    {id: 'data', mandatory: true},
+    {id: 'Data', mandatory: true},
     {id: 'length', as: 'number', defaultValue: 30}
   ],
   impl: controlWithCondition({
     condition: isOfType('string', '%$data%'),
-    control: text(({},{},{length,data}) => data.replace(/\n/g,'').slice(0,length))
+    control: text(({},{},{length,Data}) => Data.replace(/\n/g,'').slice(0,length))
   })
 })
 

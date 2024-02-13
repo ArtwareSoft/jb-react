@@ -1,4 +1,3 @@
-
 using('ui,remote-widget,parsing,testing')
 
 // component('PPrintTest.simple', {
@@ -27,15 +26,37 @@ component('PPrintTest.varsPath', {
 })
 
 component('PPrintTest.prependInGroup', {
-  impl: PPPosOfPath(() => group(text(''),text('')), 'prependPT!~controls', '6,11')
+  impl: PPPosOfPath(() => group(text(''),text('')), 'prependPT!~controls', '6,6')
 })
 
 component('PPrintTest.prependSingleInArrayPath', {
-  impl: PPPosOfPath(() => group(text('')), 'prependPT!~controls', '6,11')
+  impl: PPPosOfPath(() => group(text('')), 'prependPT!~controls', '6,6')
 })
 
 component('PPrintTest.singleInArrayPath', {
   impl: PPPosOfPath(() => group(text('')), 'begin!~controls~text', '11,11')
+})
+
+
+component('PPrintTest.multiLineExample', {
+  type: 'control',
+  impl: group(
+    text('hello'),
+    group(text('-1-'), controlWithCondition('1==2', text('-1.5-')), text('-2-')),
+    text('world')
+  )
+})
+
+component('PPrintTest.multiLine.prepend', {
+  impl: PPPosOfPath(() => jb.comps['PPrintTest.multiLineExample'], 'prependPT!~impl~controls', '76,81')
+})
+
+component('PPrintTest.multiLine.addPropBegin', {
+  impl: PPPosOfPath(() => jb.comps['PPrintTest.multiLineExample'], 'addProp!~impl', '76,76')
+})
+
+component('PPrintTest.multiLine.addPropEnd', {
+  impl: PPPosOfPath(() => jb.comps['PPrintTest.multiLineExample'], 'addProp!~impl', '198,199')
 })
 
 component('PPrintTest.remark.pipeline', {

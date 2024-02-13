@@ -203,12 +203,12 @@ component('lowFootprintObj', {
 
 component('slicedString', {
   params: [
-    {id: 'data', mandatory: true},
+    {id: 'str', mandatory: true},
     {id: 'length', as: 'number', defaultValue: 30}
   ],
   impl: controlWithCondition({
-    condition: isOfType('string', '%$data%'),
-    control: text(({},{},{length,data}) => data.replace(/\n/g,'').slice(0,length))
+    condition: isOfType('string', '%$str%'),
+    control: text(({},{},{length,str}) => str.replace(/\n/g,'').slice(0,length))
   })
 })
 
@@ -248,18 +248,16 @@ component('singleSourceCtxView', {
   ],
   impl: button({
     title: ({},{},{srcCtx}) => {
-            if (!srcCtx) return ''
-            const path = srcCtx.path || ''
-            const profile = path && jb.tgp.valOfPath(path)
-            const pt = profile && profile.$ || ''
-            const ret = `${path.split('~')[0]}:${pt}`
-            return ret.replace(/feature./g,'').replace(/front.nd./g,'').replace(/.action/g,'')
-          },
+      if (!srcCtx) return ''
+      const path = srcCtx.path || ''
+      const profile = path && jb.tgp.valOfPath(path)
+      const pt = profile && profile.$ || ''
+      const ret = `${path.split('~')[0]}:${pt}`
+      return ret.replace(/feature./g,'').replace(/front.nd./g,'').replace(/.action/g,'')
+    },
     action: tgpTextEditor.gotoSource('%$srcCtx/path%', true),
     style: button.hrefText(),
-    features: [
-      feature.hoverTitle('%$srcCtx/path%'),
-    ]
+    features: feature.hoverTitle('%$srcCtx/path%')
   })
 })
 
@@ -268,7 +266,7 @@ component('stackItems', {
     {id: 'srcCtx'}
   ],
   impl: (ctx,srcCtx) => {
-          const stack=[];
+          const stack=[]
           for(let innerCtx= srcCtx; innerCtx; innerCtx = innerCtx.cmpCtx)
             stack.push(innerCtx)
           return stack.slice(2)

@@ -13,7 +13,6 @@ extension('probeUI', 'ui', {
       return 'function'
     if (data instanceof jb.core.jbCtx)
       return jb.remoteCtx.stripFunction(data)
-      //return { id: data.id, data: data.data, path: data.path, $: 'ctx'}
     if (depth > jb.probeUI.MAX_OBJ_DEPTH)
       return '...'
 
@@ -39,7 +38,7 @@ extension('probeUI', 'ui', {
 
 component('probeUI.stripData', {
   params: [
-    {id: 'data', defaultValue: '%%'},
+    {id: 'datum', defaultValue: '%%'},
     {id: 'systemVars', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,data,systemVars) => jb.probeUI.stripData(data,{systemVars})
@@ -88,7 +87,7 @@ component('probeUI.probeResView', {
   type: 'control',
   impl: group({
     controls: [
-      controlWithCondition('%$probeResult/0/callbagLog%', {$: 'probeUI.showRxSniffer', $byValue: ['%$probeResult/0%']}),
+      controlWithCondition('%$probeResult/0/callbagLog%', probeUI.showRxSniffer('%$probeResult/0%')),
       table({
         items: '%$probeResult%',
         controls: [
@@ -98,7 +97,7 @@ component('probeUI.probeResView', {
               field.titleCtrl(
                 button({
                   title: 'in (%$input/in/length%)',
-                  action: openDialog('in (%$input/in/length%)', {$: 'probeUI.detailedInput', $byValue: ['%$input%']}, {
+                  action: openDialog('in (%$input/in/length%)', probeUI.detailedInput('%$input%'), {
                     style: dialog.showSourceStyle('show-data')
                   }),
                   style: button.href()

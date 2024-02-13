@@ -220,7 +220,7 @@ component('group.data', {
   type: 'feature',
   category: 'general:100,watch:80',
   params: [
-    {id: 'data', mandatory: true, dynamic: true, as: 'ref'},
+    {id: 'Data', mandatory: true, dynamic: true, as: 'ref'},
     {id: 'itemVariable', as: 'string', description: 'optional. define data as a local variable'},
     {id: 'watch', as: 'boolean', type: 'boolean'},
     {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'}
@@ -399,7 +399,7 @@ component('group.autoFocusOnFirstInput', {
 component('refreshIfNotWatchable', {
   type: 'action',
   params: [
-    {id: 'data'}
+    {id: 'Data'}
   ],
   impl: (ctx, data) => !jb.db.isWatchable(data) && ctx.vars.cmp.refresh(null,{strongRefresh: true}, ctx)
 })
@@ -431,8 +431,8 @@ component('runFEMethod', {
   params: [
     {id: 'selector', as: 'string'},
     {id: 'method', as: 'string'},
-    {id: 'data'},
-    {id: 'vars'}
+    {id: 'Data'},
+    {id: 'Vars'}
   ],
   impl: (ctx, selector, method, data, vars) => {
     const elem = jb.ui.elemOfSelector(selector,ctx)

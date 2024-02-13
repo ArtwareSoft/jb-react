@@ -70,7 +70,7 @@ component('cardsDemo.phone', {
         ]
       })
     ],
-    features: group.data({data: '%$phones/0%', itemVariable: ''})
+    features: group.data({Data: '%$phones/0%', itemVariable: ''})
   })
 })
 

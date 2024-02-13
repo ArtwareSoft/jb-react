@@ -49,8 +49,10 @@ extension('langService', 'impl', {
         const actions = actionMap.filter(e => e.from <= inCompOffset && inCompOffset < e.to || (e.from == e.to && e.from == inCompOffset))
             .map(e => e.action).filter(e => e.indexOf('edit!') != 0 && e.indexOf('begin!') != 0 && e.indexOf('end!') != 0)
         if (actions.length == 0) return []
-        const res = jb.utils.unique(actions).reduce((acc, action) => {
-            const [op, path] = action.split('!')
+        const priorities = ['addProp']
+        const sortedActions = jb.utils.unique(actions).map(action=>action.split('!')).sort((a1,a2) => priorities.indexOf(a2[0]) - priorities.indexOf(a1[0]))
+        const res = sortedActions.reduce((acc, action) => {
+            const [op, path] = action
             const paramDef = tgpModel.paramDef(path)
             const toAdd = (op == 'setPT' && paramDef && paramDef.options) ? jb.langService.enumCompletions(path,compProps)
                 : op == 'setPT' ? [...jb.langService.wrapWithArray(path, compProps), ...jb.langService.newPTCompletions(path, 'set', compProps)]
@@ -278,7 +280,7 @@ extension('langService', 'api', {
             const items = await jb.langService.provideCompletionItems(compProps, ctx)
             items.forEach((item, i) => Object.assign(item, {
                 compLine, insertText: '', sortText: ('0000' + i).slice(-4), command: { command: 'jbart.applyCompChange', 
-                arguments: [{op: item.op, path: item.path, resultPath: item.resultPath, whereToLand: item.whereToLand , extend: item.extend}] 
+                arguments: [item] 
             },
             }))
             jb.log('completion completion items', { items, ...compProps, ctx })
@@ -341,7 +343,6 @@ extension('langService', 'api', {
                 const origPath = compProps.path.split('~')
                 const index = origPath.length - indexOfElem
                 const to = [...origPath.slice(0,index-1),toIndex,...origPath.slice(index)].join('~')
-                debugger
 
                 return { edit, cursorPos: calcNewPos(to, newRes) }
             }

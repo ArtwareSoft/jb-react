@@ -127,7 +127,6 @@ extension('vscode', 'utils', {
             })
             jb.vscode.panels.inspect.jbm = await jb.exec(jbm.start(vscodeWebView({ id: 'vscode_inspect', panel: () => panel})))
         }
-        debugger
         const probeRes = await jb.vscode.ctx.setData(compProps).run(langServer.probe())
         probeRes.badFormat = (probeRes.errors || []).find(x=>x.err == 'reformat edits') && true
 

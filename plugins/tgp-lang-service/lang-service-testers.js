@@ -49,18 +49,18 @@ component('completionOptionsTest', {
       await offsetsPos.reduce(async (pr, inCompPos) => {
         await pr
         jb.tgpTextEditor.host.selectRange(inCompPos)
-        const options = await jb.langService.completionItems(ctxForTest)
+        const options = (await jb.langService.completionItems(ctxForTest)).map(x=>x.label)
         acc.push({options})
       }, Promise.resolve())
       return acc
     },
     expectedResult: ({data},{},{expectedSelections}) => {
       const errors = data.reduce((errors,{options},i) => {
-        if (jb.path(options,'0.id') == 'reformat')
+        if (jb.path(options,'0') == 'reformat')
           return `bad format`
         if (!options)
             return `no options at index ${i}`
-        const res = options.map(x=>x.label).includes(expectedSelections[i]) ? '' : ` ${expectedSelections[i]} not found at index ${i}`
+        const res = options.includes(expectedSelections[i]) ? '' : ` ${expectedSelections[i]} not found at index ${i}`
         return errors + res
       }, '')
       return errors.match(/^-*$/) ? true : { testFailure: errors }
@@ -82,34 +82,41 @@ component('completionActionTest', {
     {id: 'remoteSuggestions', as: 'boolean', type: 'boolean'}
   ],
   impl: dataTest({
-    calculate: async (ctx,{}, {compText,completionToActivate, expectedEdit, expectedTextAtSelection, expectedCursorPos,filePath, dsl, remoteSuggestions }) => {
-            const {ctxForTest} = jb.test.initCompletionText({ctx,compText,filePath,dsl,remoteSuggestions})
-            const items = await jb.langService.completionItems(ctxForTest)
-            if (items.find(x=>x.label == 'reformat'))
-                return { testFailure: `bad comp format` }
+    calculate: async (ctx,{}, {compText,completionToActivate, filePath, dsl, remoteSuggestions }) => {
+        const {ctxForTest} = jb.test.initCompletionText({ctx,compText,filePath,dsl,remoteSuggestions})
+        const items = await jb.langService.completionItems(ctxForTest)
+        if (items.find(x=>x.label == 'reformat'))
+            return { testFailure: `bad comp format` }
 
-            const toActivate = completionToActivate(ctx.setData(items)) // Todo: ensure we get to see it with probe!! ctrl-I
-            const item = items.find(x=>x.label == toActivate)
-            if (!item)
-                return { testFailure: `completion not found - ${toActivate}` }
-    
-            await jb.tgpTextEditor.applyCompChange(item,ctx)
-            await jb.delay(1) // wait for cursor change
-            const {cursorLine, cursorCol } = jb.tgpTextEditor.host.compTextAndCursor()
-            const actualCursorPos = [cursorLine, cursorCol].join(',')
-            const actualEdit = jb.tgpTextEditor.lastEditForTester
-            //console.log(jb.utils.prettyPrint(actualEdit.edit))
-            const editsSuccess = Object.keys(jb.utils.objectDiff(actualEdit.edit,expectedEdit)).length == 0
-            const selectionSuccess  = expectedTextAtSelection == null || jb.tgpTextEditor.host.getTextAtSelection() == expectedTextAtSelection
-            const cursorPosSuccess = !expectedCursorPos || expectedCursorPos == actualCursorPos
-    
-            const testFailure = (editsSuccess ? '' : 'wrong expected edit') + 
-                (selectionSuccess ? '' : `wrong expected selection "${expectedTextAtSelection}" instead of "${jb.tgpTextEditor.host.getTextAtSelection}"`) +
-                (cursorPosSuccess ? '' : `wrong cursor pos ${actualCursorPos} instead of ${expectedCursorPos}`)
-    
-            return { testFailure }        
-        },
-    expectedResult: not('%testFailure%')
+        const toActivate = completionToActivate(ctx.setData(items))
+        const item = items.find(x=>x.label == toActivate)
+        if (!item) 
+          return { items: items.map(x=>x.label), toActivate }
+
+        await jb.tgpTextEditor.applyCompChange(item,ctx)
+        await jb.delay(1) // wait for cursor change
+        const {cursorLine, cursorCol } = jb.tgpTextEditor.host.compTextAndCursor()
+        const actualCursorPos = [cursorLine, cursorCol].join(',')
+        const actualEdit = jb.tgpTextEditor.lastEditForTester
+        //console.log(actualEdit)
+        return {items: items.map(x=>x.label), item: item.label, actualEdit, actualCursorPos, toActivate}
+    },
+    expectedResult: ({data},{},{expectedEdit, expectedTextAtSelection, expectedCursorPos}) => {
+      const {item,actualEdit,actualCursorPos, toActivate } = data
+      if (!item)
+        return { testFailure: `completion not found - ${toActivate}` }
+
+      const editsSuccess = Object.keys(jb.utils.objectDiff(actualEdit.edit,expectedEdit)).length == 0
+      const selectionSuccess  = expectedTextAtSelection == null || jb.tgpTextEditor.host.getTextAtSelection() == expectedTextAtSelection
+      const cursorPosSuccess = !expectedCursorPos || expectedCursorPos == actualCursorPos
+
+      const testFailure = (editsSuccess ? '' : 'wrong expected edit') + 
+          (selectionSuccess ? '' : `wrong expected selection "${expectedTextAtSelection}" instead of "${jb.tgpTextEditor.host.getTextAtSelection}"`) +
+          (cursorPosSuccess ? '' : `wrong cursor pos ${actualCursorPos} instead of ${expectedCursorPos}`)
+
+      return { testFailure }
+    },
+    includeTestRes: true
   })
 })
 

@@ -252,7 +252,7 @@ component('itemlists.masterDetailsWithContainer', {
           text({text: '%name%', title: 'name'}),
           text({text: '%age%', title: 'age'})
         ],
-        features: [group.data({data: '%$itemlistCntrData/selected%', watch: true}), group.card({})]
+        features: [group.data({Data: '%$itemlistCntrData/selected%', watch: true}), group.card({})]
       })
     ],
     features: group.itemlistContainer({})
@@ -285,7 +285,7 @@ component('itemlists.masterDetails', {
           text({text: '%name%', title: 'name'}),
           text({text: '%age%', title: 'age'})
         ],
-        features: [group.data({data: '%$selected%', watch: true}), group.card({width: '500'})]
+        features: [group.data({Data: '%$selected%', watch: true}), group.card({width: '500'})]
       })
     ],
     features: [

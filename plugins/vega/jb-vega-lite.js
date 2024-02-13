@@ -61,7 +61,7 @@ component('vega.interactiveChart', {
 component('vega.spec', {
   type: 'vega.spec',
   params: [
-    {id: 'data', type: 'vega.data', mandatory: true},
+    {id: 'Data', type: 'vega.data', mandatory: true},
     {id: 'transform', type: 'vega.transform[]', as: 'array'},
     {id: 'mark', type: 'vega.mark', defaultValue: vega.bar()},
     {id: 'encoding', type: 'vega.encoding'},
@@ -69,7 +69,7 @@ component('vega.spec', {
     {id: 'title', as: 'string'},
     {id: 'description', as: 'string'}
   ],
-  impl: ctx => ctx.params
+  impl: ctx => ({...ctx.params, data: ctx.params.Data})
 })
 
 component('vega.dataFromUrl', {

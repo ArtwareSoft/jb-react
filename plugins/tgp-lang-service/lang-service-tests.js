@@ -414,3 +414,46 @@ component('completionTest.dslTest.top', {
     dsl: 'location'
   })
 })
+
+component('completionTest.multiLine', {
+  impl: completionActionTest({
+    compText: `component('x', {
+  impl: group(__
+    text('hello'),
+    group(text('-1-'), controlWithCondition('1==2', text('-1.5-')), text('-2-')),
+    text('world')
+  )
+})`,
+    completionToActivate: 'button',
+    expectedEdit: () => ({
+      range: {start: {line: 2, col: 4}, end: {line: 2, col: 4}}, 
+      newText: `button('click me'),
+    `}),
+    expectedCursorPos: '2,11'
+  })
+})
+
+component('completionTest.multiLineAddProp', {
+  impl: completionActionTest({
+    compText: `component('x', {
+  impl: group(__
+    text('hello'),
+    group(text('-1-'), controlWithCondition('1==2', text('-1.5-')), text('-2-')),
+    text('world')
+  )
+})`,
+    completionToActivate: 'features', 
+    expectedEdit: () => ({
+          range: {start: {line: 1, col: 14}, end: {line: 5, col: 2}},
+          newText: `{
+    controls: [
+      text('hello'),
+      group(text('-1-'), controlWithCondition('1==2', text('-1.5-')), text('-2-')),
+      text('world')
+    ],
+    features: TBD()
+  }`
+      }),
+    expectedCursorPos: '7,14'
+  })
+})

@@ -146,16 +146,18 @@ extension('utils', 'prettyPrint', {
         const actionForFirstArgByValue = !singleArgAsArray || singleLine ? `addProp!${path}` : `prependPT!${singleArgAsArrayPath}`
         const firstInArray = path.match(/[0-9]$/)
         const parentPath = path.split('~').slice(0,-1).join('~')
-        const macroAction = singleInArray ? `prependPT!${path}` : firstInArray ? `prependPT!${parentPath}` : `setPT!${path}`
         return [
             {item: '', action: `begin!${path}`},
-            {item: macro + '(', action: macroAction},
+            {item: '', action: singleInArray ? `prependPT!${path}` : firstInArray ? `prependPT!${parentPath}` : ''},
+            {item: macro + '(', action: `setPT!${path}`},
             {item: '', action: `edit!${path}`},
+            {item: '', action: `addProp!${path}`},
             ...(argsByValue.length && !mixedFold ? [{item: newLine(), action: actionForFirstArgByValue}] : []),
             ..._argsByValue,
             ...propsByNameSection,
-            {item: (argsByValue.length && !mixedFold ? newLine(-1) : '') + ')', 
-              action: singleArgAsArray && propsByName.length == 0 ? `appendPT!${singleArgAsArrayPath}` : `addProp!${path}`}
+            {item: argsByValue.length && !mixedFold ? newLine(-1) : '', 
+              action: singleArgAsArray && propsByName.length == 0 ? `appendPT!${singleArgAsArrayPath}` : ``},
+            {item: ')', action: `addProp!${path}`}
           ]
       }
     }

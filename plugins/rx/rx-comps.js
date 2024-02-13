@@ -3,7 +3,7 @@ using('watchable,common')
 component('source.data', {
   type: 'rx',
   params: [
-    {id: 'data', mandatory: true}
+    {id: 'Data', mandatory: true}
   ],
   impl: (ctx,data) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromIter(jb.toarray(data)))
 })
@@ -531,9 +531,9 @@ component('sink.action', {
 component('sink.data', {
   type: 'rx',
   params: [
-    {id: 'data', as: 'ref', dynamic: true, mandatory: true}
+    {id: 'Data', as: 'ref', dynamic: true, mandatory: true}
   ],
-  impl: sink.action(writeValue('%$data()%', '%%'))
+  impl: sink.action(writeValue('%$Data()%', '%%'))
 })
 
 component('rx.log', {
@@ -599,7 +599,7 @@ component('action.subjectNext', {
   type: 'action',
   params: [
     {id: 'subject', mandatory: true},
-    {id: 'data', dynamic: true, defaultValue: '%%'}
+    {id: 'Data', dynamic: true, defaultValue: '%%'}
   ],
   impl: (ctx,subject,data) => subject.trigger.next(ctx.dataObj(data(ctx)))
 })
