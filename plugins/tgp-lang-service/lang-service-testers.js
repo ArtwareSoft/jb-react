@@ -61,8 +61,8 @@ component('completionOptionsTest', {
         if (!options)
             return `no options at index ${i}`
         const res = options.includes(expectedSelections[i]) ? '' : ` ${expectedSelections[i]} not found at index ${i}`
-        return errors + res
-      }, '')
+        return [...errors,res]
+      }, []).filter(x=>x).join(', ')
       return errors.match(/^-*$/) ? true : { testFailure: errors }
     },
     includeTestRes: true

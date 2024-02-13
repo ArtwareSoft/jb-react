@@ -4,7 +4,7 @@ component('uiTest.group', {
 })
 
 component('uiTest.group1', {
-  impl: group(text('my text'))
+  impl: text('hey', { features: [css.color('green')] })
 })
 
 component('uiTest.label', {

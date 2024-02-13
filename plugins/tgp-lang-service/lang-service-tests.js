@@ -35,6 +35,17 @@ component('completionTest.text', {
   })
 })
 
+component('completionTest.mixedSingleArgAsArrayMiddle', {
+  impl: completionOptionsTest({
+    compText: `component('x', {
+  impl: group(button('click me')__,__ { features: method() })
+})`,
+    expectedSelections: ['button','button']
+  })
+})
+
+
+
 component('completionTest.betweentwoFirstArgs', {
   impl: completionOptionsTest({
     compText: `component('x', {
@@ -442,7 +453,7 @@ component('completionTest.multiLineAddProp', {
     text('world')
   )
 })`,
-    completionToActivate: 'features', 
+    completionToActivate: 'features',
     expectedEdit: () => ({
           range: {start: {line: 1, col: 14}, end: {line: 5, col: 2}},
           newText: `{
@@ -455,5 +466,21 @@ component('completionTest.multiLineAddProp', {
   }`
       }),
     expectedCursorPos: '7,14'
+  })
+})
+
+component('completionTest.multiLineFeatures', {
+  impl: completionActionTest({
+    compText: `component('x', {
+  impl: group(text('my text'), { features: [
+    method(),__
+    calcProp(),
+    css.class('asddddddddddddddddddddddddddd')
+  ] })
+})`,
+    completionToActivate: 'method',
+    expectedEdit: () => ({range: {start: {line: 3, col: 4}, end: {line: 3, col: 4}}, newText: `method(),
+    `}),
+    expectedCursorPos: '3,11'
   })
 })

@@ -51,16 +51,22 @@ component('probeUI.detailedInput', {
   type: 'control',
   impl: group({
     controls: [
-      text(pipeline('%$input/in%', prettyPrint('%data%', { noMacros: true }), join(`
+      text({
+        text: pipeline('%$input/in%', prettyPrint('%data%', { noMacros: true }), join(`
 ---
-`)), 'data', {
+`)),
+        title: 'data',
         style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
         features: [codemirror.fold(), codemirror.lineNumbers()]
       }),
       text({
-        text: pipeline('%$input/in%', prettyPrint(probeUI.stripData('%vars%'), { noMacros: true }), join(`
+        text: pipeline(
+          '%$input/in%',
+          prettyPrint(probeUI.stripData('%vars%'), { noMacros: true }),
+          join(`
 ---
-`)),
+`)
+        ),
         title: 'vars',
         style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
         features: [codemirror.fold(), codemirror.lineNumbers()]

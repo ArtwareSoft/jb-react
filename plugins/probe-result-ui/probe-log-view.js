@@ -58,9 +58,27 @@ component('logsView.main', {
 })
 
 component('logsView.toolbar', {
-  params: [
-    {id: 'spy'}
-  ],
+  type: 'control',
+  impl: group({
+    controls: [
+      editableText('query', '%$logsView/logsViewQuery%', {
+        style: editableText.input(),
+        features: [
+          htmlAttribute('placeholder', 'query'),
+          feature.onEnter(refreshControlById('event-tracker')),
+          css.class('toolbar-input'),
+          css.height('10'),
+          css.margin('4'),
+          css.width('300')
+        ]
+      })
+    ],
+    layout: layout.horizontal('2'),
+    features: chromeDebugger.colors()
+  })
+})
+
+component('logsView.toolbar', {
   type: 'control',
   impl: group({
     controls: [

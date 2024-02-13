@@ -71,14 +71,10 @@ component('PPrintTest.remark.pipeline', {
 })
 
 component('PPrintTest.Positions.closeArray', {
-  impl: dataTest({
-    calculate: pipeline(
-      () => jb.utils.prettyPrintWithPositions(text('hello world', { features: [ css.color('green'), css.color('green'), css.color('green') ] }), { colWidth: 30 }),
-      '%actionMap%',
-      filter(contains('end!~features', { allText: '%action%' })),
-      '%from%'
-    ),
-    expectedResult: equals('109')
+  impl: PPPosOfPath({
+    profile: () => text('hey', { features: [css.color('green'), css.color('green')] }),
+    path: 'end!~features',
+    expectedPos: '65,65'
   })
 })
 
@@ -95,14 +91,7 @@ component('PPrintTest.posOfFoldFunctionBug', {
 })
 
 component('PPrintTest.singleFunc', {
-  impl: dataTest({
-    calculate: pipeline(
-      () => jb.utils.prettyPrintWithPositions(frontEnd.init(({ }, { }) => 5)),
-      '%actionMap%',
-      filter(contains('function!~action', { allText: '%action%' }))
-    ),
-    expectedResult: equals('%from%', 14)
-  })
+  impl: PPPosOfPath(() => frontEnd.init(({ }, { }) => 5), 'function!~action', '14,29')
 })
 
 component('PPrintTest.primitiveArray', {

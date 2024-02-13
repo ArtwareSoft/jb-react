@@ -72,7 +72,7 @@ extension('utils', 'prettyPrint', {
           const fullInnerPath = [path,innerPath].join('~')
           const fixedPropName = props[fullInnerPath].fixedPropName
           const propName = isArray ? [] : [{ item: fixedPropName || (fixPropName(innerPath) + ': ')}]
-          const separator = index === innerVals.length-1 ? [] : [{item: ',' + separatorWS}]
+          const separator = index === innerVals.length-1 ? [] : [{item: ',' + separatorWS, action: `insertPT!${fullInnerPath}`}]
           return [
             ...acc,
             ...propName,
@@ -82,11 +82,12 @@ extension('utils', 'prettyPrint', {
         }, [])
 
         return [
-          ...jb.asArray(open).map(x=>({...x, path})),
-          {item: newLine()},
+          ...jb.asArray(open).map(x=>({...x, path, action: `propInfo!${path}`})),
+          {item: newLine(), action: `prependPT!${path}`},
           ...vals,
-          {item: newLine(-1)},
-          ...jb.asArray(close).map(x=>({...x, path})),
+          {item:'', action: `end!${path}`},
+          {item: newLine(-1), action: `appendPT!${path}`},
+          ...jb.asArray(close).map(x=>({...x, path, action: `appendPT!${path}`})),
         ]
       }
 
@@ -109,7 +110,7 @@ extension('utils', 'prettyPrint', {
       }
 
       function calcMixedTokens() {
-        const { lenOfValues, macro, argsByValue, propsByName, nameValueFold, singleArgAsArray, singleInArray } = props[path]
+        const { lenOfValues, macro, argsByValue, propsByName, nameValueFold, singleArgAsArray, singleInArray, firstParamAsArray } = props[path]
         const mixedFold = nameValueFold || !singleLine && lenOfValues && lenOfValues < colWidth
         const valueSeparatorWS = (singleLine || mixedFold) ? primitiveArray ? '' : ' ' : newLine()
 
@@ -135,8 +136,9 @@ extension('utils', 'prettyPrint', {
           ]
         }, [])
 
+        const nameValueSectionsSeparator = {item: ',' + valueSeparatorWS, action: firstParamAsArray ? `appendPT!${path}~${firstParamAsArray}` : `addProp!${path}` }
         const propsByNameSection = propsByName.length ? [
-          ...(argsByValue.length ? [{item: ',' + valueSeparatorWS, action: `addProp!${path}`}] : []),
+          ...(argsByValue.length ? [nameValueSectionsSeparator] : []),
           {item: '{'+ (newLine() || ' '), action: `addProp!${path}`},
           ..._propsByName,
           {item: (newLine(-1) || ' ') + '}', action: `addProp!${path}`}
@@ -235,7 +237,7 @@ extension('utils', 'prettyPrint', {
       const singleFunc =  propsByName.length == 0 && !varArgs.length && !systemProps.length && propsByValue.length == 1 && typeof propsByValue[0].val == 'function'
       const primitiveArray =  propsByName.length == 0 && !varArgs.length && firstParamAsArray && argsByValue.reduce((acc,item)=> acc && jb.utils.isPrimitiveValue(item.val), true)
       const singleInArray = (jb.path(parentParam,'type') || '').indexOf('[]') != -1 && !path.match(/[0-9]$/)
-      return props[path] = { macro, len, argsByValue, propsByName, nameValuePattern, nameValueFold, singleFunc, primitiveArray, singleInArray, singleArgAsArray, lenOfValues, mixed: true}
+      return props[path] = { macro, len, argsByValue, propsByName, nameValuePattern, nameValueFold, singleFunc, primitiveArray, singleInArray, singleArgAsArray, firstParamAsArray, lenOfValues, mixed: true}
     }
 
     function asIsProps(profile,path) {

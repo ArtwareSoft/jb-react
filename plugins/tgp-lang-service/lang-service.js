@@ -290,6 +290,7 @@ extension('langService', 'api', {
         }
     },
     async definition(ctx) {
+        debugger
         const compProps = await jb.langService.calcCompProps(ctx)
         const { actionMap, reformatEdits, inExtension, error, path, tgpModel, lineText } = compProps
         const allSemantics = actionMap.filter(e => e.action && e.action.endsWith(path)).map(x => x.action.split('!')[0])
