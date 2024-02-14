@@ -19,7 +19,7 @@ component('dataTest', {
 		const {testID,singleTest,uiTest}  = ctxToUse.vars
 		const remoteTimeout = testID.match(/([rR]emote)|([wW]orker)|(jbm)/) ? 5000 : null
 		const _timeout = singleTest ? Math.max(1000,timeout) : (remoteTimeout || timeout)
-		if (spy) jb.spy.initSpy({spyParam: spy || 'error'})
+		if (spy) jb.spy.setLogs(spy+',error')
 		let result = null
 		try {
 			const testRes = await Promise.race([ 
@@ -45,7 +45,7 @@ component('dataTest', {
 			jb.logException(e,'error in test',{ctx})
 			result = { id, success: false, reason: 'Exception ' + e}
 		} finally {
-			if (spy) jb.spy.initSpy({spyParam: 'error'})
+			if (spy) jb.spy.setLogs('error')
 			if (uiTest && result.elem && jb.ui)
 				jb.ui.unmount(result.elem)
 			const doNotClean = ctx.probe || singleTest

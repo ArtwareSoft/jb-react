@@ -268,16 +268,17 @@ extension('probe', 'main', {
 component('probe.runCircuit', {
   type: 'data',
   params: [
-    {id: 'probePath', as: 'string', defaultValue: '%$probe/path%'}
+    {id: 'probePath', as: 'string', defaultValue: '%$probe/path%'},
+    {id: 'timeout', as: 'number', defaultValue: 50},
   ],
-  impl: async (ctx,probePath) => {
+  impl: async (ctx,probePath,timeout) => {
         jb.log('probe start run circuit',{ctx,probePath})
         const circuit = await jb.probe.calcCircuit(ctx, probePath)
         if (!circuit)
             return jb.logError(`probe can not infer circuitCtx from ${probePath}`, )
         jb.utils.resolveDetachedProfile(circuit.circuitCtx.profile)
 
-        return new jb.probe.Probe(circuit.circuitCtx).runCircuit(probePath)
+        return new jb.probe.Probe(circuit.circuitCtx).runCircuit(probePath,timeout)
     },
   require: tgp.componentStatistics()
 })

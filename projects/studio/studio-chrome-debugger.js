@@ -11,7 +11,7 @@ extension('chromeDebugger', {
                     const m = {from, to,..._m}
                     if (jbPort.disconnected)
                         return jb.log(`chromeDebugger sending to disconnected ${from} to ${to}`,{m})
-                    jb.log(`chromeDebugger remote sent from ${from} to ${to}`,{m})
+                    jb.log(`chromeDebugger transmit remote sent from ${from} to ${to}`,{m})
                     port.postMessage(m) 
                 },
                 onMessage: { addListener: handler => { 

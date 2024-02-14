@@ -50,14 +50,14 @@ component('langServer.probe', {
     '%$compProps/path%',
     remote.data({
       calc: pipe(
-        If('%%', probe.runCircuit('%%'), '%%'),
+        If('%%', probe.runCircuit('%%',2000), '%%'),
         obj(
+          prop('circuitPath', '%circuitCtx.path%'),
           prop('probePath', '%probePath%'),
-          prop('result', probe.stripProbeResult('%result%')),
-          prop('circuitRes', '%circuitRes%'),
           prop('simpleVisits', '%simpleVisits%'),
           prop('totalTime', '%totalTime%'),
-          prop('circuitPath', '%circuitCtx.path%'),
+          prop('result', probe.stripProbeResult('%result%')),
+          prop('circuitRes', '%circuitRes%'),
           prop('errors', () => jb.spy.search('error')),
           prop('logs', () => jb.spy.logs)
         ),

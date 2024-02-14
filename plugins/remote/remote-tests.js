@@ -25,7 +25,10 @@ component('itemlists.manyItems', {
 })
 
 component('remoteTest.remote.data', {
-  impl: dataTest(pipe(remote.data(list([1,2,3]), worker()), join(',')), equals('1,2,3'))
+  impl: dataTest(pipe(remote.data(list([1,2,3]), remoteNodeWorker()), join(',')), equals('1,2,3'), {
+    timeout: 2000,
+    spy: 'remote'
+  })
 })
 
 component('remoteTest.remote.action', {

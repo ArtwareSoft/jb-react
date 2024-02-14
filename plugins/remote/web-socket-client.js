@@ -46,7 +46,7 @@ extension('webSocket', {
             socket, from, to,
             postMessage: _m => {
                 const m = {from, to,..._m}
-                jb.log(`remote sent from ${from} to ${to}`,{m})
+                jb.log(`transmit remote sent from ${from} to ${to}`,{m})
                 socket.send(JSON.stringify(m))
             },
             onMessage: { addListener: handler => socket.onmessage = m => jb.net.handleOrRouteMsg(from,to,handler,JSON.parse(m.data),options) },
@@ -62,7 +62,7 @@ extension('webSocket', {
             socket, from, to,
             postMessage: _m => {
                 const m = {from, to,..._m}
-                jb.log(`remote sent from ${from} to ${to}`,{m})
+                jb.log(`transmit remote sent from ${from} to ${to}`,{m})
                 socket.send(JSON.stringify(m))
             },
             onMessage: { addListener: handler => socket.on('message', m => jb.net.handleOrRouteMsg(from,to,handler,JSON.parse(m.utf8Data),options)) },
@@ -78,7 +78,7 @@ extension('webSocket', {
             socket, from, to,
             postMessage: _m => {
                 const m = {from, to,..._m}
-                jb.log(`remote sent from ${from} to ${to}`,{m})
+                jb.log(`transmit remote sent from ${from} to ${to}`,{m})
                 socket.sendUTF(JSON.stringify(m))
             },
             onMessage: { addListener: handler => socket.on('message', m => jb.net.handleOrRouteMsg(from,to,handler,JSON.parse(m.utf8Data),options)) },
@@ -94,7 +94,7 @@ extension('webSocket', {
             socket, from, to,
             postMessage: _m => {
                 const m = {from, to,..._m}
-                jb.log(`remote sent from ${from} to ${to}`,{m})
+                jb.log(`transmit remote sent from ${from} to ${to}`,{m})
                 socket.send(JSON.stringify(m))
             },
             onMessage: { addListener: handler => socket.addEventListener('message',m => jb.net.handleOrRouteMsg(from,to,handler,JSON.parse(m.data),options)) },
@@ -110,7 +110,7 @@ extension('webSocket', {
             proc, from, to,
             postMessage: _m => {
                 const m = {from, to,..._m}
-                jb.log(`remote sent from ${from} to ${to}`,{m})
+                jb.log(`transmit remote sent from ${from} to ${to}`,{m})
                 proc.send(m) 
             },
             onMessage: { addListener: handler => proc.on('message', m => jb.net.handleOrRouteMsg(from,to,handler,m,options)) },

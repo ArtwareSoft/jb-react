@@ -6,7 +6,7 @@ extension('spy', {
 			logs: [],
 			enrichers: [],
 			settings: { 
-				includeLogs: 'exception,error',
+				includeLogs: 'error',
 				stackFilter: /spy|jb_spy|Object.log|rx-comps|jb-core|node_modules/i,
 				MAX_LOG_SIZE: 10000
 			},

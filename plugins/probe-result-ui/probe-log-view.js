@@ -69,3 +69,11 @@ component('logsView.toolbar', {
   })
 })
 
+component('chromeDebugger.colors', {
+  type: 'feature',
+  impl: features(
+    css.color('var(--jb-menu-fg)', 'var(--jb-menubar-inactive-bg)'),
+    css('border: 0px;'),
+    css('~ option { background: white}')
+  )
+})

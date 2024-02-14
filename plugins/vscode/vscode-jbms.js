@@ -6,7 +6,7 @@ extension('vscode', 'ports', {
         from, to,
         postMessage: _m => { 
             const m = {from, to,..._m}
-            jb.log(`remote sent from ${from} to ${to}`,{m})
+            jb.log(`transmit remote sent from ${from} to ${to}`,{m})
             jb.vscode.api().postMessage(m) 
         },
         onMessage: { addListener: handler => 
@@ -17,7 +17,7 @@ extension('vscode', 'ports', {
         from, to,
         postMessage: _m => { 
             const m = {from, to,..._m}
-            jb.log(`remote sent from ${from} to ${to}`,{m})
+            jb.log(`transmit remote sent from ${from} to ${to}`,{m})
             webview.postMessage(m) 
         },
         onMessage: { addListener: handler => 
@@ -28,7 +28,7 @@ extension('vscode', 'ports', {
         parentPort, from, to,
         postMessage: _m => {
             const m = {from, to,..._m}
-            jb.log(`remote sent from ${from} to ${to}`,{m})
+            jb.log(`transmit remote sent from ${from} to ${to}`,{m})
             parentPort.postMessage(m) 
         },
         onMessage: { addListener: handler => parentPort.on('message', m => jb.net.handleOrRouteMsg(from,to,handler,m)) },
@@ -37,7 +37,7 @@ extension('vscode', 'ports', {
         worker, from, to,
         postMessage: _m => {
             const m = {from, to,..._m}
-            jb.log(`remote sent from ${from} to ${to}`,{m})
+            jb.log(`transmit remote sent from ${from} to ${to}`,{m})
             worker.postMessage(m) 
         },
         onMessage: { addListener: handler => worker.on('message', m => jb.net.handleOrRouteMsg(from,to,handler,m)) },
@@ -46,7 +46,7 @@ extension('vscode', 'ports', {
         parentProcess, from, to,
         postMessage: _m => {
             const m = {from, to,..._m}
-            jb.log(`remote sent from ${from} to ${to}`,{m})
+            jb.log(`transmit remote sent from ${from} to ${to}`,{m})
             parentProcess.send(m) 
         },
         onMessage: { addListener: handler => parentProcess.on('message', m => jb.net.handleOrRouteMsg(from,to,handler,m)) },
@@ -55,7 +55,7 @@ extension('vscode', 'ports', {
         child, from, to,
         postMessage: _m => {
             const m = {from, to,..._m}
-            jb.log(`remote sent from ${from} to ${to}`,{m})
+            jb.log(`transmit remote sent from ${from} to ${to}`,{m})
             child.send(m) 
         },
         onMessage: { addListener: handler => child.on('message', m => jb.net.handleOrRouteMsg(from,to,handler,m)) },

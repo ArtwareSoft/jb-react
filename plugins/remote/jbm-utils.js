@@ -81,7 +81,7 @@ extension('net', {
         if (blockContentScriptLoop && m.routingPath && m.routingPath.join(',').indexOf([from,to].join(',')) != -1) return
         const arrivedToDest = m.routingPath && m.routingPath.slice(-1)[0] === jb.uri || (m.to == from && m.from == to)
         if (arrivedToDest) {
-            jb.log(`remote received at ${from} from ${m.from} to ${m.to}`,{m})
+            jb.log(`transmit remote received at ${from} from ${m.from} to ${m.to}`,{m})
             handler && handler(m)
         } else if (m.routingPath) {
             const path = m.routingPath
@@ -118,7 +118,7 @@ extension('jbm', 'main', {
             frame, from, to, handlers: [],
             postMessage: _m => {
                 const m = {from, to,..._m}
-                jb.log(`remote sent from ${from} to ${to}`,{m})
+                jb.log(`transmit remote sent from ${from} to ${to}`,{m})
                 frame.postMessage(m) 
             },
             onMessage: { addListener: handler => { 

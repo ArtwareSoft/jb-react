@@ -1,6 +1,10 @@
 logs in vscode
   remote bug
 
+references
+  comp
+  prop
+  
 tests
   run tests on node
   unify tests - jbmTest.cmd*

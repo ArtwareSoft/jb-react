@@ -16,18 +16,6 @@ component('worker', {
   })
 })
 
-// remoteNodeWorker({
-//     id: '%$id%',
-//     sourceCode: firstNotEmpty('%$sourceCode%', treeShakeClientWithPlugins()),
-//     init: '%$init()%'
-//   }),
-//   webWorker({
-//     id: '%$id%',
-//     sourceCode: firstNotEmpty('%$sourceCode%', treeShakeClient()),
-//     init: '%$init()%',
-//     networkPeer: '%$networkPeer%'
-//   })
-
 component('webWorker', {
   type: 'jbm',
   params: [

@@ -1,5 +1,96 @@
 using('pretty-print,tgp-text-editor')
 
+component('probeUI.probeResViewForVSCode', {
+  type: 'control',
+  params: [
+    {id: 'probeRes', defaultValue: '%%'}
+  ],
+  impl: group({
+    controls: [
+      dynamicControls(pipeline('%badFormat%', filter('%%')), text('bad format', 'bad format')),
+      dynamicControls(pipeline('%noCircuit%', filter('%%')), text('no circuit', 'no circuit')),
+      dynamicControls(pipeline(list('%$errCount%'), filter('%%!=0')), group({
+        controls: [
+          text({
+            text: pipeline(
+              '%$probeRes/errors%',
+              prettyPrint(probeUI.stripData('%%', true), { noMacros: true }),
+              join(`
+---
+`)
+            ),
+            style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
+            features: [codemirror.fold(), codemirror.lineNumbers()]
+          })
+        ],
+        title: 'error: %$errCount%'
+      })),
+      dynamicControls({
+        controlItems: pipeline(list('%$logsCount%'), filter('%%!=0')),
+        genericControl: group(logsView.main('%$probeRes/logs%'), { title: 'logs: %$logsCount%' })
+      }),
+      table('in->out', {
+        items: '%$probeRes/result%',
+        controls: [
+          group(ui.dataBrowse('%in%'), {
+            title: 'in (%in/length%)',
+            features: css.width(300, { minMax: 'max' })
+          }),
+          group(ui.dataBrowse('%out%'), { title: 'out', features: field.columnWidth(100) })
+        ],
+        style: table.mdc(),
+        visualSizeLimit: 7,
+        features: [
+          itemlist.infiniteScroll(),
+          css.height('100%', { minMax: 'max' }),
+          field.columnWidth(100),
+          css('{white-space: normal}')
+        ]
+      }),
+      group({
+        controls: [
+          text({
+            text: pipeline('%$probeRes/result/in%', prettyPrint('%data%', { noMacros: true }), join(`
+---
+`)),
+            style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
+            features: [codemirror.fold(), codemirror.lineNumbers()]
+          })
+        ],
+        title: 'in:%$probeRes/simpleVisits%'
+      }),
+      group({
+        controls: [
+          text(prettyPrint('%$probeRes/result/out%', { noMacros: true }), {
+            style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
+            features: [codemirror.fold(), codemirror.lineNumbers()]
+          })
+        ],
+        title: 'out'
+      }),
+      group({
+        controls: [
+          text(prettyPrint('%$probeRes%', { noMacros: true }), {
+            style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
+            features: [codemirror.fold(), codemirror.lineNumbers()]
+          })
+        ],
+        title: 'probeRes'
+      }),
+      If('%$probeRes/circuitRes/html%', group(html('<style>%$probeRes/circuitRes/css%</style>%$probeRes/circuitRes/html%', { style: html.inIframe() }), {
+        title: 'preview'
+      }))
+    ],
+    style: group.tabs(button.href(), group.div(), { barLayout: layout.horizontal(30) }),
+    features: [
+      variable('errCount', count('%$probeRes/errors%')),
+      variable('logsCount', count('%$probeRes/logs%')),
+      variable('color', If('%$probeRes/circuitRes/success%', 'green', 'red')),
+      css('>div>a:first-child { color: %$color%}')
+    ]
+  })
+})
+
 extension('probeUI', 'ui', {
   initExtension() {
     return { MAX_OBJ_DEPTH: 10, MAX_ARRAY_LENGTH: 1000}
@@ -146,130 +237,6 @@ component('probeUI.probeResView', {
     features: [
       group.firstSucceeding(),
       log('probe result', obj(prop('res', '%$probeResult%')))
-    ]
-  })
-})
-
-
-component('probeUI.probeResViewForVSCode', {
-  type: 'control',
-  params: [
-    {id: 'probeRes', defaultValue: '%%'}
-  ],
-  impl: group({
-    controls: [
-      dynamicControls(pipeline('%badFormat%', filter('%%')), text('bad format', 'bad format')),
-      dynamicControls(pipeline('%noCircuit%', filter('%%')), text('no circuit', 'no circuit')),
-      dynamicControls(pipeline(list('%$errCount%'), filter('%%!=0')), group({
-        controls: [
-          text({
-            text: pipeline(
-              '%$probeRes/errors%',
-              prettyPrint(probeUI.stripData('%%', true), { noMacros: true }),
-              join(`
----
-`)
-            ),
-            style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
-            features: [codemirror.fold(), codemirror.lineNumbers()]
-          })
-        ],
-        title: 'error: %$errCount%'
-      })),
-      dynamicControls(pipeline(list('%$logsCount%'), filter('%%!=0')), group({
-        controls: logsView.main('%$probeRes/logs%'),
-        title: 'logs: %$logsCount%'
-      })),
-      table('in->out', {
-        items: '%$probeRes/result%',
-        controls: [
-          group(ui.dataBrowse('%in%'), {
-            title: 'in (%in/length%)',
-            features: css.width(300, { minMax: 'max' })
-          }),
-          group(ui.dataBrowse('%out%'), { title: 'out', features: field.columnWidth(100) })
-        ],
-        style: table.mdc(),
-        visualSizeLimit: 7,
-        features: [
-          itemlist.infiniteScroll(),
-          css.height('100%', { minMax: 'max' }),
-          field.columnWidth(100),
-          css('{white-space: normal}')
-        ]
-      }),
-      group({
-        controls: [
-          text(pipeline('%$probeRes/result/in%', prettyPrint('%data%', { noMacros: true }), join(`
----
-`)), {
-            style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
-            features: [codemirror.fold(), codemirror.lineNumbers()]
-          })
-        ],
-        title: 'in:%$probeRes/simpleVisits%'
-      }),
-      group({
-        controls: [
-          text(prettyPrint('%$probeRes/result/out%', { noMacros: true }), {
-            style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
-            features: [codemirror.fold(), codemirror.lineNumbers()]
-          })
-        ],
-        title: 'out'
-      }),
-      group({
-        controls: [
-          text({
-            text: pipeline(
-              '%$probeRes/result/in%',
-              prettyPrint(probeUI.stripData('%vars%'), { noMacros: true }),
-              join(`
----
-`)
-            ),
-            style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
-            features: [codemirror.fold(), codemirror.lineNumbers()]
-          })
-        ],
-        title: 'vars'
-      }),
-      group({
-        controls: [
-          text({
-            text: pipeline(
-              '%$probeRes/result/in%',
-              prettyPrint(probeUI.stripData('%params%'), { noMacros: true }),
-              join(`
----
-`)
-            ),
-            style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
-            features: [codemirror.fold(), codemirror.lineNumbers()]
-          })
-        ],
-        title: 'params'
-      }),
-      text({ title: 'circuit: %$probeRes/circuitPath%' }),
-      group({
-        controls: [
-          text(prettyPrint('%$probeRes%', { noMacros: true }), {
-            style: text.codemirror({ enableFullScreen: true, height: '600', mode: 'javascript' }),
-            features: [codemirror.fold(), codemirror.lineNumbers()]
-          })
-        ],
-        title: 'probeRes'
-      }),
-      group(html('<style>%$probeRes/circuitRes/css%</style>%$probeRes/circuitRes/html%', { style: html.inIframe() }), {
-        title: 'preview'
-      })
-    ],
-    style: group.tabs(button.href(), group.div(), { barLayout: layout.horizontal(30) }),
-    features: [
-      variable('errCount', count('%$probeRes/errors%')),
-      variable('logsCount', count('%$probeRes/logs%')),
-      variable('color', If('%$probeRes/circuitRes/success%', 'green', 'red')),
-      css('>div>a:first-child { color: %$color%}')
     ]
   })
 })

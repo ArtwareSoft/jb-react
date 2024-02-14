@@ -47,7 +47,7 @@ function portFromDevToolsPort(dtport,to) {
         dtport, from, to,
         postMessage: _m => { 
             const m = {from, to,..._m}
-            jb.log(`remote sent from ${from} to ${to}`,{m})
+            jb.log(`transmit remote sent from ${from} to ${to}`,{m})
             dtport.postMessage(m) 
         },
         onMessage: { addListener: handler => 
