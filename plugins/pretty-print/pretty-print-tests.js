@@ -25,9 +25,9 @@ component('PPrintTest.varsPath', {
   impl: PPPosOfPath(() => split(Var('a', 'b')), 'edit!~$vars~0~val', '27,27')
 })
 
-component('PPrintTest.prependInGroup', {
-  impl: PPPosOfPath(() => group(text(''),text('')), 'prependPT!~controls', '6,6')
-})
+// component('PPrintTest.prependInGroup', {
+//   impl: PPPosOfPath(() => group(text(''), text('')), 'prependPT!~controls', '6,6')
+// })
 
 component('PPrintTest.prependSingleInArrayPath', {
   impl: PPPosOfPath(() => group(text('')), 'prependPT!~controls', '6,6')
@@ -36,7 +36,6 @@ component('PPrintTest.prependSingleInArrayPath', {
 component('PPrintTest.singleInArrayPath', {
   impl: PPPosOfPath(() => group(text('')), 'begin!~controls~text', '11,11')
 })
-
 
 component('PPrintTest.multiLineExample', {
   type: 'control',

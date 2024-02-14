@@ -224,12 +224,13 @@ extension('tgp', 'readOnly', {
 	newProfile(comp,compName, {basedOnPath, basedOnVal} = {}) {
 		const currentVal = basedOnVal != null ?  basedOnVal : (basedOnPath && jb.tgp.valOfPath(basedOnPath))
 		const result = { $: compName }
+		const composite = jb.utils.compParams(comp).find(p=>p.composite)
 		jb.utils.compParams(comp).forEach(p=>{
 			if (p.composite)
 				result[p.id] = currentVal == null || Array.isArray(currentVal) ? [] : jb.asArray(currentVal)
-			else if (p.templateValue)
+			else if (p.templateValue && !composite)
 				result[p.id] = jb.tgp.cloneProfile(p.templateValue)
-			else if (currentVal && currentVal[p.id] !== undefined)
+			else if (currentVal && currentVal[p.id] !== undefined && !composite)
 				result[p.id] = currentVal[p.id]
 		})
 		return result

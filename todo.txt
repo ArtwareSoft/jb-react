@@ -1,25 +1,23 @@
-fix event viewer in vscode
-  build test, work in studio
-vscode
-  key for $disabled ctrl-shift-D
+logs in vscode
+  remote bug
 
 tests
   run tests on node
-
-Worker jbm should work on nodejs
-refactor
   unify tests - jbmTest.cmd*
+
+name refactor
   watchRef - second param byName
-  fix tgp-upgrade in nodejs
 
 unify contains, equal, endsWith, startsWith - %% - allText, text -> data, maybe 'data' param by name can be standard!!
 
+chatgpt
+  generate css for htmls
+  use chatgpt to plan a view of a context for a specific need and target audience.
+  use rules
 
-use chatgpt to plan a view of a context for a specific need and target audience.
-use rules
-
-use chatgpt to generate python and tgp wrapper
-external lib version, add version to using and pluginDsl - find use case with external lib
+  generate python
+  tgp wrapper for libraries
+  external lib version, add version to using and pluginDsl - find use case with external lib
 
 go over UIFrontEndTest and try to make it uiTest
 load plugin dynamically in probeTest
@@ -33,8 +31,6 @@ vdom diff bug!!!
 vscode
   preview mode - 
     two phase - calc the circuit and run preview on the circuit
-  langServer.probe => tgpTextEditor.probeOrPreviewByDocProps
-    params: previewMode, preferedCircuit
 
 tests to fix
   uiTest.editableText.richPicklistHelper.setInput
@@ -44,20 +40,12 @@ remote logs should be added to log in general (in cmd)
   how to merge?
     1. just add a new log line starting with 'source:xx 
   remote errors should be added to current log
-add logs to ctrl-I
-  log selection defaults and DSL
 add circuit selection to ctrl-I
 add disabled (like remark)
 
-
-- nested tests - pattern=remote|worker|jbm|pattern|distributed
 - implement private comps - jb.component has plugin. jb.run will try jb.utils.getPlugin(profile).comps[fullId] || jb.comps[fullId],
 jb.exec({$: 'mukki', $plugin: 'studio' })
 idea: { $: 'button', $plugin :'ui@5.2' at the json } allow multiple version simulatinously for conversion
-
-plugins
-  dist directory - check to move it to plugins/xx/external
-
 
 zui gridView
   build manual test

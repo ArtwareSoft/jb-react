@@ -4,7 +4,7 @@ component('uiTest.group', {
 })
 
 component('uiTest.group1', {
-  impl: text('hey', { features: [css.color('green')] })
+  impl: group(button('click me'), button('click me'))
 })
 
 component('uiTest.label', {
@@ -39,7 +39,7 @@ component('uiTest.waitForWithPipe', {
     control: group(text('%%'), { features: group.wait(pipe(delay(1), 'hello')) }),
     expectedResult: and(contains('hello'), not(contains('loading'))),
     uiAction: waitForNextUpdate(),
-    expectedCounters: {'init uiComp': 4}
+    expectedCounters: {'init uiComp': 4},
   })
 })
 

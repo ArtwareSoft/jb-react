@@ -176,6 +176,10 @@ component('probeUI.probeResViewForVSCode', {
         ],
         title: 'error: %$errCount%'
       })),
+      dynamicControls(pipeline(list('%$logsCount%'), filter('%%!=0')), group({
+        controls: logsView.main('%$probeRes/logs%'),
+        title: 'logs: %$logsCount%'
+      })),
       table('in->out', {
         items: '%$probeRes/result%',
         controls: [
@@ -263,6 +267,7 @@ component('probeUI.probeResViewForVSCode', {
     style: group.tabs(button.href(), group.div(), { barLayout: layout.horizontal(30) }),
     features: [
       variable('errCount', count('%$probeRes/errors%')),
+      variable('logsCount', count('%$probeRes/logs%')),
       variable('color', If('%$probeRes/circuitRes/success%', 'green', 'red')),
       css('>div>a:first-child { color: %$color%}')
     ]

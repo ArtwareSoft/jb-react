@@ -18,7 +18,7 @@ extension('codemirror', {
 		jb.ui.addClass(cmp.editor.getWrapperElement(),'autoResizeInDialog')
 		if (formatText) {
 			CodeMirror.commands.selectAll(cmp.editor)
-			cmp.editor.autoFormatRange(cmp.editor.getCursor(true), cmp.editor.getCursor(false));
+			cmp.editor.autoFormatRange && cmp.editor.autoFormatRange(cmp.editor.getCursor(true), cmp.editor.getCursor(false));
 			cmp.editor.setSelection({line:0, ch:0})
 		}
 		//cmp.editor.refresh()

@@ -236,6 +236,16 @@ component('completionTest.wrapWithGroup', {
   })
 })
 
+component('completionTest.wrapWithGroup2', {
+  impl: completionActionTest(`component('x', {
+  impl: uiTest(group(text(''), __button('click me')))
+})`, {
+    completionToActivate: 'group',
+    expectedEdit: () => ({range: {start: {line: 1, col: 31}, end: {line: 1, col: 48}}, newText: `group(button('click me')`}),
+    expectedCursorPos: '1,37'
+  })
+})
+
 component('completionTest.wrapWithArray', {
   impl: completionActionTest({
     compText: `component('x', {

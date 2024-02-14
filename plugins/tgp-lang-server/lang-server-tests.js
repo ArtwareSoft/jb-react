@@ -150,6 +150,7 @@ component('langServerTest.tgpModelData.external', {
       '%type%'
     ),
     expectedResult: equals('parser<jison>'),
-    timeout: 1000
+    timeout: 1000,
+    spy: ''
   })
 })

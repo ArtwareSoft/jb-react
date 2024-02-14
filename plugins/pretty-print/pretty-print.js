@@ -150,7 +150,7 @@ extension('utils', 'prettyPrint', {
         const parentPath = path.split('~').slice(0,-1).join('~')
         return [
             {item: '', action: `begin!${path}`},
-            {item: '', action: singleInArray ? `prependPT!${path}` : firstInArray ? `prependPT!${parentPath}` : ''},
+            {item: '', action: singleInArray ? `prependPT!${path}` : ''}, // : firstInArray ? `prependPT!${parentPath}` 
             {item: macro + '(', action: `setPT!${path}`},
             {item: '', action: `edit!${path}`},
             {item: '', action: `addProp!${path}`},
