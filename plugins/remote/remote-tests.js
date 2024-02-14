@@ -31,6 +31,16 @@ component('remoteTest.remote.data', {
   })
 })
 
+component('remoteTest.remote.deStripBug', {
+  impl: dataTest({
+    calculate: remote.data('%%', child(), { data: asIs({
+  '$$asIs': true,
+  remoteRun: {$: 'runCtx'}
+}) }),
+    expectedResult: equals('runCtx', ({data}) => data.remoteRun.$)
+  })
+})
+
 component('remoteTest.remote.action', {
   impl: dataTest({
     calculate: pipe(remote.action(() => jb.db.passive('w','hello'), worker()), remote.data('%$w%', worker())),
@@ -38,7 +48,6 @@ component('remoteTest.remote.action', {
     timeout: 3000
   })
 })
-
 
 component('remoteTest.remoteOperator.remoteParam', {
   params: [

@@ -65,7 +65,8 @@ component('langServer.probe', {
       ),
       jbm: cmd(probeServer('%$compProps/filePath%'))
     }),
-    extend(prop('tgpModelErrors','%$compProps/tgpModelErrors%'))
+    extend(prop('tgpModelErrors','%$compProps/tgpModelErrors%')),
+    first()
   )
 })
 

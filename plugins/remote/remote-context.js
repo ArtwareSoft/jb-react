@@ -9,7 +9,7 @@ extension('remoteCtx', {
         const vars = jb.objFromEntries(jb.entries(ctx.vars)
             .filter(e => jb.remoteCtx.shouldPassVar(e[0],profText))
             .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
-        const data = jb.remoteCtx.usingData(profText) && jb.remoteCtx.stripData(ctx.data) 
+        const data = jb.remoteCtx.usingData(profText) && jb.remoteCtx.stripData(ctx.data)
         const params = jb.objFromEntries(jb.entries(isJS ? ctx.params: jb.entries(jb.path(ctx.cmpCtx,'params')))
             .filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
@@ -73,14 +73,15 @@ extension('remoteCtx', {
         }
     },
     //serailizeCtx(ctx) { return JSON.stringify(jb.remoteCtx.stripCtx(ctx)) },
-    deStrip(data) {
+    deStrip(data, _asIs) {
         if (typeof data == 'string' && data.match(/^@js@/))
             return eval(data.slice(4))
-        const stripedObj = data && typeof data == 'object' && jb.objFromEntries(jb.entries(data).map(e=>[e[0],jb.remoteCtx.deStrip(e[1])]))
-        if (stripedObj && data.$ == 'runCtx')
+        const asIs = _asIs || (data && typeof data == 'object' && data.$$asIs)
+        const stripedObj = data && typeof data == 'object' && jb.objFromEntries(jb.entries(data).map(e=>[e[0],jb.remoteCtx.deStrip(e[1],asIs)]))
+        if (stripedObj && data.$ == 'runCtx' && !asIs)
             return (ctx2,data2) => (new jb.core.jbCtx().ctx(jb.utils.resolveDetachedProfile(stripedObj))).extendVars(ctx2,data2).runItself()
         if (Array.isArray(data))
-            return data.map(x=>jb.remoteCtx.deStrip(x))
+            return data.map(x=>jb.remoteCtx.deStrip(x,asIs))
         return stripedObj || data
     },
     stripCBVars(cbData) {

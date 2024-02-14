@@ -108,6 +108,10 @@ component('PPrintTest.async', {
   impl: dataTest(() => jb.utils.prettyPrint({ async a() { 3 } }), and(not(contains('a:')), contains('async a() { 3 }')))
 })
 
+component('PPrintTest.asIs', {
+  impl: dataTest(() => jb.utils.prettyPrint(asIs({remoteRun: { $: 'runCtx' }})), contains('$:'))
+})
+
 component('PPrintTest.asyncInProfile', {
   impl: dataTest({
     calculate: () => jb.utils.prettyPrint(dataTest(async () => { 5 })),

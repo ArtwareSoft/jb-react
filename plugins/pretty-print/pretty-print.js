@@ -146,8 +146,8 @@ extension('utils', 'prettyPrint', {
 
         const singleArgAsArrayPath = singleArgAsArray ? `${path}~${singleArgAsArray}` : path
         const actionForFirstArgByValue = !singleArgAsArray || singleLine ? `addProp!${path}` : `prependPT!${singleArgAsArrayPath}`
-        const firstInArray = path.match(/[0-9]$/)
-        const parentPath = path.split('~').slice(0,-1).join('~')
+        // const firstInArray = path.match(/[0-9]$/)
+        // const parentPath = path.split('~').slice(0,-1).join('~')
         return [
             {item: '', action: `begin!${path}`},
             {item: '', action: singleInArray ? `prependPT!${path}` : ''}, // : firstInArray ? `prependPT!${parentPath}` 
@@ -167,6 +167,14 @@ extension('utils', 'prettyPrint', {
     function calcProfileProps(profile, path, {forceByName, parentParam} = {}) {
       if (noMacros)
         return asIsProps(profile,path)
+      if (profile.$ == 'asIs') {
+        jb.utils.resolveDetachedProfile(profile)
+        const content = jb.utils.prettyPrint(profile.$asIs,{noMacros: true})
+        const list = [ 
+          {item: 'asIs(', action: `begin!${path}`}, {item: '', action: `edit!${path}`},
+          {item: content, action: `asIs!${path}`}, {item: ')', action: `end!${path}`}]
+        return props[path] = {list, len: content.length + 6 }
+      }
       const fullId = [jb.utils.compName(profile, {tgpModel})].map(x=> x=='var' ? 'variable' : x)[0]
       const comp = fullId && jb.utils.getCompById(fullId, {tgpModel})
       if (comp && profile.$byValue)
@@ -248,7 +256,7 @@ extension('utils', 'prettyPrint', {
         objProps.unshift('$');
       }
       const len = objProps.reduce((len,key) => len 
-        + calcValueProps(profile[key],`${path}~${key}`).len + key.length + 3,2)
+        + calcValueProps(profile[key],`${path}~${key}`).len + key.length + 3,2,{asIs: true})
       const innerVals = objProps.map(prop=>({innerPath: prop}))
       return openCloseProps(path, {item:'{'},{ item:'}'}, { len, simpleObj: true, innerVals})
     }

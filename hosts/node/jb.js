@@ -54,7 +54,7 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
         : { plugins:_plugins ? _plugins.split(',') : [], project, pluginPackages: {$:'defaultPackage'} }
 
     globalThis.jb = await jbInit(uri||'main', sourceCode)
-    jb.spy.initSpy({spyParam: spy || 'error'})
+    jb.spy.initSpy({spyParam: [spy,'error'].filter(x=>x).join(',')})
     // loading remote-context.js
     const plugin = jb.plugins.remote
     const fileSymbols = plugin.files.find(x=>x.path.match(/remote-context/))

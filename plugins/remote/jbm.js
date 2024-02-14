@@ -143,12 +143,13 @@ component('cmd', {
                 spy ? ['-spy', spy]: [],
                 doNotStripResult ? ['-doNotStripResult',''+doNotStripResult] : []
             ].filter(x=>x[1])
-            const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(arg=> arg[0] + 
+            const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(arg=> `${arg[0]}:` + 
                 (arg[1].indexOf("'") != -1 ? `"${arg[1].replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg[1]}'`)).join(' ')}`
             let cmdResult = null
             if (viaHttpServer) {
                 const body = JSON.stringify(args.map(([k,v])=>`${k}:${v}`))
                 const url = `${viaHttpServer}/?op=jb`
+                jb.log('remote cmd activated via http server',{url,body,ctx})
                 cmdResult = await jbHost.fetch(url,{method: 'POST', body}).then(r => r.text())
             } else if (jbHost.spawn) {
                 try {
@@ -159,10 +160,11 @@ component('cmd', {
             }
             try {
                 const resultWithLogs = JSON.parse(cmdResult)
+                jb.log('remote cmd result',{resultWithLogs, ctx})
                 return includeLogs ? resultWithLogs : resultWithLogs.result
             } catch (err) {
                 debugger
-                jb.logError('cmd: can not parse result returned from jb.js',{cmdResult, command, err})
+                jb.logError('remote cmd: can not parse result returned from jb.js',{cmdResult, command, err})
             }
 
             // function encodeContextVal(val) {
