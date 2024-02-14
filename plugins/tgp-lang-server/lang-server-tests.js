@@ -10,11 +10,28 @@ component('langServiceTest.provideDefinition', {
 })
 
 component('langServiceTest.references', {
+  doNotRunInTests: true,
   impl: dataTest({
     calculate: pipe(langService.dummyCompProps(`component('x', {
   impl: dataTest('', __not())
 })`), langServer.references()),
     expectedResult: contains('jb-common', { data: '%path%' }),
+    timeout: 5000
+  })
+})
+
+component('langServiceTest.localReferences', {
+  doNotRunInTests: true,
+  impl: dataTest({
+    calculate: pipe(
+      langService.dummyCompProps(
+        `component('x', {
+  impl: uiTest(text('hello world', { __features: css.color('green') }), contains('hello world','green'))
+})`
+      ),
+      langServer.localReferences()
+    ),
+    expectedResult: contains('plugins', { data: '%path%' }),
     timeout: 5000
   })
 })

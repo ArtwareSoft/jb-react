@@ -96,7 +96,9 @@ component('uiTest.asynchLabel', {
 
 component('uiTest.waitForWithVar', {
   impl: uiTest({
-    control: group(text('%$txt%'), { features: group.wait(pipe(delay(1), 'hello'), { varName: 'txt' }) }),
+    control: group(text('%$txt%'), {
+      features: group.wait(pipe(delay(1), 'hello'), { varName: 'txt' })
+    }),
     expectedResult: contains('hello'),
     uiAction: waitForNextUpdate()
   })

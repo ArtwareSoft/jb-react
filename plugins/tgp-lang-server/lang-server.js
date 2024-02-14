@@ -77,7 +77,7 @@ component('langServer.references', {
     If('%%', remote.data({
       calc: pipe('%%', langService.compReferences()),
       jbm: cmd({
-        sourceCode: sourceCode(plugins('*'), {
+        sourceCode: sourceCode(plugins('*'), project('studio'), {
           pluginPackages: packagesByPath('%$filePath%'),
           libsToInit: 'utils,tgp'
         }),
@@ -86,6 +86,11 @@ component('langServer.references', {
       timeout: 10000
     }))
   )
+})
+
+component('langServer.localReferences', {
+  impl: pipe(Var('filePath', tgpTextEditor.currentFilePath()), langService.compId(), 
+  If('%%', remote.data(pipe('%%', langService.compReferences()), jbm.self(), { timeout: 10000 })))
 })
 
 component('langServer.studioCircuitUrl', {

@@ -291,18 +291,27 @@ extension('langService', 'api', {
     },
     async compId(ctx) {
         const compProps = await jb.langService.calcCompProps(ctx)
-        const { path, tgpModel } = compProps
-        return path && tgpModel.compNameOfPath(path)
+        const { actionMap, inCompOffset, tgpModel, path } = compProps
+        const actions = actionMap.filter(e => e.from <= inCompOffset && inCompOffset < e.to || (e.from == e.to && e.from == inCompOffset))
+            .map(e => e.action).filter(e => e.indexOf('edit!') != 0 && e.indexOf('begin!') != 0 && e.indexOf('end!') != 0)
+        if (actions.length == 0) return []
+        const priorities = ['addProp']
+        const sortedActions = jb.utils.unique(actions).map(action=>action.split('!')).sort((a1,a2) => priorities.indexOf(a2[0]) - priorities.indexOf(a1[0]))
+        if (sortedActions[0] && sortedActions[0][0] == 'propInfo') 
+            return { comp: tgpModel.compNameOfPath(jb.tgp.parentPath(path)), prop: path.split('~').pop() }
+        return { comp: path && (path.match(/~/) ? tgpModel.compNameOfPath(path) : path) }
     },
     async compReferences(ctx) {
-        const target = ctx.data
+        const { comp, prop } = ctx.data
         const paths = Object.values(jb.comps).flatMap(comp=>scanForPath(comp,jb.path(comp,[jb.core.CT,'fullId']) || ''))
         return paths.map(path=>jb.tgpTextEditor.filePosOfPath(path))
 
         function scanForPath(profile,path) {
             if (!profile || jb.utils.isPrimitiveValue(profile) || typeof profile == 'function') return []
+            const res = prop ? (jb.path(profile,[jb.core.CT,'comp',jb.core.CT,'fullId']) == comp && profile[prop] ? [`${path}~${prop}`] : [])
+                : jb.path(profile,[jb.core.CT,'comp',jb.core.CT,'fullId']) == comp ? [path] : []
             return [ 
-                ...(jb.path(profile,[jb.core.CT,'comp',jb.core.CT,'fullId']) == target ? [path] : []),
+                ...res,
                 ...Object.keys(profile).flatMap(k=>scanForPath(profile[k],`${path}~${k}`))
             ]
         }
