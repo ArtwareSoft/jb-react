@@ -9,6 +9,16 @@ component('langServiceTest.provideDefinition', {
   })
 })
 
+component('langServiceTest.references', {
+  impl: dataTest({
+    calculate: pipe(langService.dummyCompProps(`component('x', {
+  impl: dataTest('', __not())
+})`), langServer.references()),
+    expectedResult: contains('jb-common', { data: '%path%' }),
+    timeout: 5000
+  })
+})
+
 component('langServiceTest.provideDefinition.inFunc', {
   impl: dataTest({
     calculate: pipe(
@@ -91,7 +101,7 @@ component('langServerTest.remoteProbe', {
   impl: uiTest(group(text('hello world'), text('2')), __containsbb('hello world','2'))
 })`
       ),
-      langService.compProps(),
+      langService.calcCompProps(),
       langServer.probe(),
     ),
     expectedResult: and(contains('hello', { allText: '%result/0/in/data%' })),

@@ -289,8 +289,25 @@ extension('langService', 'api', {
             jb.logError('completion provideCompletionItems', compProps)
         }
     },
+    async compId(ctx) {
+        const compProps = await jb.langService.calcCompProps(ctx)
+        const { path, tgpModel } = compProps
+        return path && tgpModel.compNameOfPath(path)
+    },
+    async compReferences(ctx) {
+        const target = ctx.data
+        const paths = Object.values(jb.comps).flatMap(comp=>scanForPath(comp,jb.path(comp,[jb.core.CT,'fullId']) || ''))
+        return paths.map(path=>jb.tgpTextEditor.filePosOfPath(path))
+
+        function scanForPath(profile,path) {
+            if (!profile || jb.utils.isPrimitiveValue(profile) || typeof profile == 'function') return []
+            return [ 
+                ...(jb.path(profile,[jb.core.CT,'comp',jb.core.CT,'fullId']) == target ? [path] : []),
+                ...Object.keys(profile).flatMap(k=>scanForPath(profile[k],`${path}~${k}`))
+            ]
+        }
+    },
     async definition(ctx) {
-        debugger
         const compProps = await jb.langService.calcCompProps(ctx)
         const { actionMap, reformatEdits, inExtension, error, path, tgpModel, lineText } = compProps
         const allSemantics = actionMap.filter(e => e.action && e.action.endsWith(path)).map(x => x.action.split('!')[0])
@@ -299,7 +316,7 @@ extension('langService', 'api', {
         } else if (inExtension || allSemantics.includes('function')) {
             return funcLocation()
         } else if (path) {
-            const cmpId = path && tgpModel.compNameOfPath(path)
+            const cmpId = tgpModel.compNameOfPath(path)
             return jb.path(tgpModel.comps,[cmpId,'location']) || funcLocation()
         } else if (error) {
             jb.logError('langService definition', compProps)
@@ -404,21 +421,16 @@ extension('tgpTextEditor', 'commands', {
     }
 })
 
-component('langService.completionItems', {
-    impl: ctx => jb.langService.completionItems(ctx)
+jb.defComponents('completionItems,definition,compId,compReferences,calcCompProps'
+.split(','), f => component(`langService.${f}`, {
+  autoGen: true,
+  impl: ctx => jb.langService[f](ctx)
 })
-
-component('langService.definition', {
-    impl: ctx => jb.langService.definition(ctx)
-})
+)
 
 component('langService.moveInArrayEdits', {
     params: [
         { id: 'diff', as: 'number', defaultValue: '%%' }
     ],
     impl: (ctx,diff) => jb.langService.moveInArrayEdits(diff,ctx)
-})
-
-component('langService.compProps', {
-  impl: ctx => jb.langService.calcCompProps(ctx)
 })

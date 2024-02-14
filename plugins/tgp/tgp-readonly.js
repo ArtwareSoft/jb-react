@@ -9,7 +9,7 @@ extension('tgp', 'readOnly', {
 		return res
 	},
 	firstChildOfPath: path => [path,Object.keys(jb.tgp.valOfPath(path) || {}).find(x=>x != '$')].filter(x=>x).join('~'),
-	compNameOfPath: (path,silent) => {
+	compNameOfPath(path,silent) {
 	  if (path.indexOf('~') == -1)
 		return 'jbComponent'
 	  if (path.match(/~\$vars$/)) 
@@ -85,7 +85,7 @@ extension('tgp', 'readOnly', {
 		.map(t=>t.split('[')[0])
 		.map(t=> t == '$asParent' ? jb.tgp.paramType(jb.tgp.parentPath(path)) : t),
 	paramType: path => jb.tgp.paramDef(path) ? jb.tgp.paramTypes(path)[0] : '',
-	PTsOfPath: path => {
+	PTsOfPath(path) {
 		const typeAdpter = jb.tgp.valOfPath(`${jb.tgp.parentPath(path)}~fromType`,true)
 		if (typeAdpter)
 			return jb.tgp.PTsOfType(typeAdpter)

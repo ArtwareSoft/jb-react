@@ -51,6 +51,15 @@ async function activate(context) {
             }
         }
 	}))
+	context.subscriptions.push(vscodeNS.languages.registerReferenceProvider('javascript', {
+		provideReferences() {
+            try {
+                return jb.vscode.provideReferences()
+            } catch(e) {
+                jb.logException(e,'provide References')
+            }
+        }
+	}))
     // jb.delat(5000).then(()=> {
     //     ;['main'].forEach(viewId => context.subscriptions.push(
     //         vscodeNS.commands.registerWebviewViewProvider(`jbart.${viewId}`, jb.vscode.createWebViewProvider(viewId,context.extensionUri))))

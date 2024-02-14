@@ -98,6 +98,12 @@ extension('vscode', 'utils', {
         const path = ((repo || {}).path || jbHost.jbReactDir) + loc.path
         return new vscodeNS.Location(vscodeNS.Uri.file(path), new vscodeNS.Position((+loc.line) || 0, 0))
     },
+    async provideReferences() {
+        const locations = await jb.exec(langServer.references()) 
+        const base = jbHost.jbReactDir
+        const res = locations.map(({path, line, col}) => new vscodeNS.Location(vscodeNS.Uri.file(base + path), new vscodeNS.Position(line-1, col)))
+        return res
+    },
     // commands    
     moveUp() {
         return jb.vscode.moveInArray(-1)
@@ -117,7 +123,7 @@ extension('vscode', 'utils', {
     },
     async openProbeResultEditor() {
         vscodeNS.commands.executeCommand('workbench.action.editorLayoutTwoRows')
-        const compProps = await jb.exec(langService.compProps()) // IMPORTANT - get comp props here. opening the view will change the current editor
+        const compProps = await jb.exec(langService.calcCompProps()) // IMPORTANT - get comp props here. opening the view will change the current editor
         if (!jb.vscode.panels.inspect) {
             jb.vscode.panels.inspect = {}
             const panel = jb.vscode.panels.inspect.panel = vscodeNS.window.createWebviewPanel('jbart.inpect', 'inspect', vscodeNS.ViewColumn.Two, { enableScripts: true })

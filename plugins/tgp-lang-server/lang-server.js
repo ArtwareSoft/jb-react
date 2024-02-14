@@ -70,10 +70,28 @@ component('langServer.probe', {
   )
 })
 
+component('langServer.references', {
+  impl: pipe(
+    Var('filePath', tgpTextEditor.currentFilePath()),
+    langService.compId(),
+    If('%%', remote.data({
+      calc: pipe('%%', langService.compReferences()),
+      jbm: cmd({
+        sourceCode: sourceCode(plugins('*'), {
+          pluginPackages: packagesByPath('%$filePath%'),
+          libsToInit: 'utils,tgp'
+        }),
+        doNotStripResult: true
+      }),
+      timeout: 10000
+    }))
+  )
+})
+
 component('langServer.studioCircuitUrl', {
   impl: pipe(
     Var('filePath', tgpTextEditor.currentFilePath()),
-    langService.compProps(),
+    langService.calcCompProps(),
     '%path%',
     If('%%', remote.data({
       calc: pipe(
