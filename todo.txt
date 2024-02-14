@@ -1,7 +1,5 @@
 references
-  comp
-  prop
-  
+  when stand on params: [ { id: 'dd' }]
 tests
   run tests on node
   unify tests - jbmTest.cmd*

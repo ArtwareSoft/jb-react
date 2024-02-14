@@ -43,9 +43,7 @@
     "studio": "bin/studio"
   },
   "dependencies": {
-    "node-fetch": "^2.6.0",
     "nopt": "^7.2.0",
-    "openai": "^3.2.1",
     "websocket": "^1.0.34",
     "ws": "^8.16.0"
   },
@@ -64,5 +62,9 @@
   "license": "SEE LICENSE IN license.txt",
   "optionalDependencies": {
     "bufferutil": "^4.0.8"
+  },
+  "devDependencies": {
+    "node-fetch": "^3.3.2",
+    "openai": "^4.28.0"
   }
 }

@@ -65,13 +65,13 @@ globalThis.jbHost = globalThis.jbHost || {
         return new Promise((resolve,reject) => {
             try {
                 const body = _options && _options.body
-                const headers = {'Content-Type': 'application/json' }
+                const headers = {'Content-Type': 'application/json', ...(_options.headers ? _options.headers : {}) }
                 if (body)
                     Object.assign(headers,{ 'Content-Length': Buffer.byteLength(body) })
 
                 const options = _options ? { ..._options, headers} : { method: 'GET', headers  }
-
-                const req = jbHost.http.request(url,options, res => {
+                const base = (url.match(/^https/)) ? require('https') : require('http')
+                const req = base.request(url,options, res => {
                     let data = ''
                     res.on('data', chunk => data += chunk)
                     res.on('end', () => resolve({text: () => ''+data, json: () => JSON.parse(data)}))
@@ -100,7 +100,8 @@ globalThis.jbHost = globalThis.jbHost || {
     },
     log(...args) { console.log(...args) },
     getJSFromUrl: async url => { 
-        const vm = require('vm'), fetch = require('node-fetch')
+        const vm = require('vm')
+        const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args))
         const response = await fetch(url)
         const code = await response.text()
         const context = vm.createContext({ require, process, __filename: url })
