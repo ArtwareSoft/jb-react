@@ -416,9 +416,13 @@ component('uiTest.itemlistPrimitiveArrayItemShouldBeRef', {
 
 component('uiTest.itemlistRxSource', {
   impl: uiTest({
-    control: itemlist({ items: source.data('%$people%'), controls: text('%$item.name% - %name%'), features: itemlist.incrementalFromRx() }),
+    control: itemlist({
+      items: rx.pipe(source.data('%$people%'), rx.delay(1)),
+      controls: text('%$item.name% - %name%'),
+      features: itemlist.incrementalFromRx()
+    }),
     expectedResult: contains('Homer Simpson - Homer Simpson','Bart Simpson - Bart Simpson'),
-    uiAction: waitForNextUpdate()
+    uiAction: waitForNextUpdate(8)
   })
 })
 

@@ -539,8 +539,8 @@ component('sink.data', {
 component('rx.log', {
   description: 'jb.log flow data, used for debug',
   params: [
-    {id: 'name', as: 'string', dynamic: true},
-    {id: 'extra', as: 'single', dynamic: true}
+    {id: 'name', as: 'string', dynamic: true, description: 'log names'},
+    {id: 'extra', as: 'single', dynamic: true, description: 'object. more properties to log'}
   ],
   impl: rx.do((ctx,vars,{name,extra}) => jb.log(name(ctx),{data: ctx.data,vars,...extra(ctx), ctx: ctx.cmpCtx}))
 })

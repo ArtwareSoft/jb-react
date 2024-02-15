@@ -1,3 +1,37 @@
+llm
+  add token count and $$cost (using pricing and model)
+  add nodejs support
+
+llm document assistant for *items*
+  *** it is a very good idea beacuse there are many documents it learned from
+  goal: generate qaulity items content. E.g. tutorial
+  suggest items types and items structure
+  build adaptive studio for generating content for each item type
+  content sources
+    DB, apis, internet
+  content improvement process - working on the template UIs
+    content quailty marks
+    content quailty cretria
+    optinal
+      generating content alternatives
+      merging quality from the alternatives
+    item specific quality measurement
+    item specific examples to improve from
+
+llm document assistant for jbart widget tutorial
+  top down design - starting from json
+  defining target audience
+  content depth, length, recursiveness
+  importance of each data part for summary
+  summary versus details
+  shown versus expandable
+
+use widget tutorial to train specialized models
+use trained models to be experts in item content generation
+
+fix rx dsl
+
+
 references
   when stand on params: [ { id: 'dd' }]
 tests
