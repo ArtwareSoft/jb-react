@@ -13,6 +13,7 @@ component('llmTest.buildHtml', {
 })
 
 component('llmTest.count', {
+  doNotRunInTests: true,
   impl: uiFrontEndTest({
     control: group({
       controls: [
