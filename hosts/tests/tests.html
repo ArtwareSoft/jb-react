@@ -21,10 +21,15 @@
 	const plugins = urlQuery('plugins') &&  urlQuery('plugins').split(',').map(x=>!x.match(/tests|tester/) ? `${x}-tests` : x)
 	const addRepo = urlQuery('addRepo')
 	const sourceCode = 
-		addRepo && {project: 'studio', pluginPackages: [{'$':'defaultPackage'},{'$':'jbStudioServer', repo: addRepo }],plugins:['*','studio-tests'] } 
-		|| plugins && {pluginPackages: [{'$':'defaultPackage'}],plugins } 
+		addRepo && {projects: ['studio'], plugins:['*','studio-tests'], pluginPackages: [{'$':'defaultPackage'},{'$':'jbStudioServer', repo: addRepo }] } 
+		|| plugins && { plugins } 
 		|| repo && {pluginPackages: [{'$':'defaultPackage'},{'$':'jbStudioServer', repo }],plugins:['*'] } 
-		|| { project: 'studio', plugins: ['*','studio-tests']}
+		|| { projects: ['studio'], plugins: ['*','studio-tests'] }
+
+		// addRepo && {projects: ['studio'], pluginPackages: [{'$':'defaultPackage'},{'$':'jbStudioServer', repo: addRepo }], plugins:['*','studio-tests'] } 
+		// || plugins && {pluginPackages: [{'$':'defaultPackage'}],plugins } 
+		// || repo && {pluginPackages: [{'$':'defaultPackage'},{'$':'jbStudioServer', repo }],plugins:['*'] } 
+		// || { projects: ['studio'], plugins: ['*','studio-tests']}
 
 	jbInit('tests',sourceCode,{initSpyByUrl: true}).then(jb =>{
 			globalThis.jb = jb

@@ -50,31 +50,16 @@ async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl} ={}) {
         this.plugins[plugin.id] = this.plugins[plugin.id] || { ...plugin, codePackage : jbHost.defaultCodePackage }
       })
     },
-    async loadPluginSymbols(codePackage,loadProjects) {
+    async loadPluginSymbols(codePackage,{loadProjects} = {}) {
       const jb = this
       const pluginsSymbols = await codePackage.fileSymbols('plugins')
       const projectSymbols = loadProjects ? await codePackage.fileSymbols('projects') : []
-      ;[...pluginsSymbols,...projectSymbols.map(x=>({...x,project: true}))].map(entry =>{
+      ;[...pluginsSymbols,...projectSymbols.map(x=>({...x, isProject: true}))].map(entry =>{
         const id = pathToPluginId(entry.path)
-        jb.plugins[id] = jb.plugins[id] || { id, codePackage, files: [], project: entry.project }
+        jb.plugins[id] = jb.plugins[id] || { id, codePackage, files: [], projects: entry.projects }
         jb.plugins[id].files.push(entry)
       })
     },
-    // async loadProject(project,codePackage = jbHost.codePackageFromJson()) {
-    //   const jb = this
-    //   const projectSymbols = project ? await codePackage.fileSymbols(`projects/${project}`) : []
-    //   jb.plugins = jb.plugins || {}
-    //   projectSymbols.map(entry =>{
-    //     const id = pathToPluginId(path)
-    //     jb.plugins[id] = jb.plugins[id] || { id, codePackage, files: [] }
-    //     jb.plugins[id].files.push(entry)
-    //   })
-    //   calcPluginDependencies(jb.plugins)
-    //   const libs = await jb.loadPlugins([project])
-    //   const libsToInit = sourceCode.libsToInit ? sourceCode.libsToInit.split(','): unique(libs)
-    //   await jb.initializeLibs(libsToInit)
-    //   jb.utils.resolveLoadedProfiles()
-    // },
     async loadPlugins(plugins) {
       const jb = this
       await plugins.reduce( (pr,id) => pr.then( async ()=> {
@@ -131,7 +116,7 @@ async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl} ={}) {
 
   const pluginPackages = Array.isArray(sourceCode.pluginPackages) ? sourceCode.pluginPackages : [sourceCode.pluginPackages]
   await pluginPackages.reduce( async (pr,codePackage)=> pr.then(() =>
-    jb.loadPluginSymbols(jbHost.codePackageFromJson(codePackage),sourceCode.project)), Promise.resolve());
+    jb.loadPluginSymbols(jbHost.codePackageFromJson(codePackage),{loadProjects: sourceCode.projects && sourceCode.projects.lenght})), Promise.resolve());
   calcPluginDependencies(jb.plugins,jb)
   await ['jb-core','core-utils','jb-expression','db','jb-macro','spy'].map(x=>`/plugins/core/${x}.js`).reduce((pr,path) => 
     pr.then(()=> jb.loadjbFile(path,jb,{noSymbols: true, plugin: jb.plugins.core})), Promise.resolve())
@@ -139,10 +124,10 @@ async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl} ={}) {
     jb.spy.initSpyByUrl()
   jb.noSupervisedLoad = false
   if (jb.jbm && treeShakeServerUri) jb.jbm.treeShakeServerUri = sourceCode.treeShakeServerUri
-  const topPlugins = unique([...jb.asArray(sourceCode.project),
-   ...(sourceCode.plugins.indexOf('*') != -1 
-    ? [...Object.values(jb.plugins).filter(x=>!x.project).map(x=>x.id), ...sourceCode.plugins].filter(x=>x!='*') 
-    : sourceCode.plugins) ]).filter(x=>jb.plugins[x])
+  const topPlugins = unique([
+    ...((sourceCode.proejcts||[]).indexOf('*') != -1 ? Object.values(jb.plugins).filter(x=>x.isProject).map(x=>x.id).filter(x=>x!='*') : (sourceCode.projects || [])),
+    ...((sourceCode.plugins||[]).indexOf('*') != -1 ? Object.values(jb.plugins).filter(x=>!x.isProject).map(x=>x.id).filter(x=>x!='*') : (sourceCode.plugins || [])) 
+    ]).filter(x=>jb.plugins[x])
 
   await jb.loadPlugins(topPlugins)
   const libs = unique(topPlugins.flatMap(id=>jb.plugins[id].requiredLibs))

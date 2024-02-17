@@ -180,7 +180,7 @@ extension('probe', 'main', {
                         .then(_=>this.handleGaps(_path))
             }
 
-            const hasSideEffect = jb.utils.getCompById(compName,{silent:true}) && (jb.utils.getCompById(jb.tgp.compNameOfPath(breakingPath)).type ||'').indexOf('has-side-effects') != -1
+            const hasSideEffect = jb.utils.getCompById(compName,{silent:true}) && jb.utils.getCompById(jb.tgp.compNameOfPath(breakingPath)).hasSideEffect
             if (obj && !hasSideEffect && obj[breakingProp] && typeof obj[breakingProp] == 'function')
                 return jb.probe.resolve(obj[breakingProp]())
                     .then(_=>this.handleGaps(_path))

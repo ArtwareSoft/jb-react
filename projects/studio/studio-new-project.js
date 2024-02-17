@@ -80,7 +80,8 @@ component('studio.reOpenStudio', {
 
 
 component('studio.createProjectFile', {
-  type: 'action,has-side-effects',
+  type: 'action',
+hasSideEffect: true,
   params: [
     {id: 'fileName', as: 'string'}
   ],
@@ -108,7 +109,8 @@ component('studio.projectsDir', {
 })
 
 component('studio.saveNewProject', {
-  type: 'action,has-side-effects',
+  type: 'action',
+hasSideEffect: true,
   params: [
     {id: 'project', as: 'string'}
   ],

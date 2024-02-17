@@ -44,7 +44,8 @@ component('nokdim', {
 
 component('pipeline', {
   params: [
-    {id: 'checkNameOverride'}
+    {id: 'checkNameOverride'},
+    {id: 'state', type: 'state'},
   ],
   impl: village()
 })

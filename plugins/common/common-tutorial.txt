@@ -1,0 +1,167 @@
+I would like to build a tutorial for a data query language I build. My target audience is developers.
+The query language adopts a functional approach, where data is transformed through a series of operations (components). Each component is designed to perform a specific task and can be combined with other components using the pipeline function to create more complex data transformations. This modular design allows for flexibility and reusability of components.
+By using a component-based architecture, you can easily extend the language with new components to support additional operations. Additionally, the use of dataTest components for testing ensures that each component behaves as expected, making the language more robust and reliable for developers.
+
+Here are some examples of components and relations between them
+
+component('dataTest.join', {
+  impl: dataTest(pipeline(list(1,2), '%%', join()), equals('1,2'))
+})
+
+component('dataTest.slice', {
+  impl: dataTest(pipeline(list(1,2,3), slice(0, 2), join()), equals('1,2'))
+})
+
+component('personWithChildren', { watchableData: {
+    name: "Homer Simpson",
+    children: [{ name: 'Bart' }, { name: 'Lisa' }, { name: 'Maggie' } ],
+    friends: [{ name: 'Barnie' } ],
+}})
+---
+
+pipeline works as chain of flatMap - please explain in details the following example below
+
+component('dataTest.select', {
+  impl: dataTest({
+    calculate: pipeline('%$personWithChildren/children%', '%name%', join()),
+    expectedResult: equals('Bart,Lisa,Maggie')
+  })
+})
+
+component('dataTest.selectAndFilter', {
+  impl: dataTest({
+    calculate: pipeline('%$personWithChildren/children/name%', filter(contains('i')), join()),
+    expectedResult: equals('Lisa,Maggie')
+  })
+})
+
+----
+
+here is example of implemtations of the "toUpperCase" and "split" components. please explain in details the implementation and the usage
+
+component('toUpperCase', {
+  params: [
+    {id: 'text', as: 'string', defaultValue: '%%'}
+  ],
+  impl: ({},text) => text.toUpperCase()
+})
+
+component('join', {
+  params: [
+    {id: 'separator', as: 'string', defaultValue: ',', mandatory: true},
+    {id: 'prefix', as: 'string'},
+    {id: 'suffix', as: 'string'},
+    {id: 'items', as: 'array', defaultValue: '%%'},
+  ],
+  type: 'aggregator',
+  impl: (ctx,separator,prefix,suffix,items) => {
+		return prefix + items.map(itemToText).join(separator) + suffix
+	}
+})
+
+component('capitalize', {
+  params: [
+    {id: 'text', as: 'string', defaultValue: '%%'}
+  ],
+  impl: ({},text) => text.charAt(0).toUpperCase() + text.slice(1)
+})
+
+component('split', {
+  description: 'breaks string using separator',
+  type: 'data',
+  params: [
+    {id: 'separator', as: 'string', defaultValue: ',', description: 'E.g., "," or "<a>"'},
+    {id: 'text', as: 'string', defaultValue: '%%', byName: true},
+    {id: 'part', options: 'all,first,second,last,but first,but last', defaultValue: 'all'}
+  ],
+  impl: ({},separator,text,part) => {
+		const out = text.split(separator.replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n'));
+		switch (part) {
+			case 'first': return out[0];
+			case 'second': return out[1];
+			case 'last': return out.pop();
+			case 'but first': return out.slice(1);
+			case 'but last': return out.slice(0,-1);
+			default: return out;
+		}
+	}
+})
+
+here are the tests, please notice the shorten form.
+
+component('dataTest.toUpperCase', {
+  impl: dataTest(pipeline('%$personWithChildren/children%', '%name%', toUpperCase(), join()), equals('BART,LISA,MAGGIE'))
+})
+
+component('dataTest.split', {
+  impl: dataTest({
+    calculate: pipeline('one-two-free', split('-', { part: 'but first' }), join(',')),
+    expectedResult: equals('two,free')
+  })
+})
+
+please explain the in details the split dataTest
+
+---
+component('dataTest.splitAllFeatures', {
+  impl: dataTest({
+    calculate: pipeline('one-two-three-four',
+      obj(
+        prop('original', '%%'),
+        prop('splitAll', pipeline(split('-'), join(','))),
+        prop('splitFirst', pipeline(split('-', { part: 'first' }), first())),
+        prop('splitSecond', pipeline(split('-', { part: 'second' }), first())),
+        prop('splitLast', pipeline(split('-', { part: 'last' }), first())),
+        prop('splitButFirst', pipeline(split('-', { part: 'but first' }), join(','))),
+        prop('splitButLast', pipeline(split('-', { part: 'but last' }), join(',')))
+      )
+    ),
+    expectedResult: equals(
+      obj(
+        prop('original', 'one-two-three-four'),
+        prop('splitAll', 'one,two,three,four'),
+        prop('splitFirst', 'one'),
+        prop('splitSecond', 'two'),
+        prop('splitLast', 'four'),
+        prop('splitButFirst', 'two,three,four'),
+        prop('splitButLast', 'one,two,three')
+      )
+    )
+  })
+})
+
+In this version, the pipeline starts with the original string 'one-two-three-four' and then directly constructs the result object using the obj component. Each property of the object is defined using the prop component, and the values are calculated using nested pipelines that perform the necessary split, join, and first operations.
+
+This approach simplifies the pipeline by using only one obj component and keeps the structure clear and concise.
+
+---
+component('dataTest.splitAllFeatures', {
+  impl: dataTest({
+    calculate: obj({
+      data: 'one-two-three-four',
+      props: [
+        prop('original', '%%'),
+        prop('splitAll', split('-')),
+        prop('splitFirst', pipeline(split('-'), first())),
+        prop('splitSecond', pipeline(split('-'), nth(1))),
+        prop('splitLast', pipeline(split('-'), last())),
+        prop('splitButFirst', pipeline(split('-'), slice({start: 1}), join(','))),
+        prop('splitButLast', pipeline(split('-'), slice({end: -1}), join(',')))
+      ]
+    }),
+    expectedResult: equals(
+      obj(
+        prop('original', 'one-two-three-four'),
+        prop('splitAll', 'one,two,three,four'),
+        prop('splitFirst', 'one'),
+        prop('splitSecond', 'two'),
+        prop('splitLast', 'four'),
+        prop('splitButFirst', 'two,three,four'),
+        prop('splitButLast', 'one,two,three')
+      )
+    )
+  })
+})
+
+The data input flows between the components, you can use it only once at the obj component level
+In this version, the data property is used only once at the obj component level, and the input data 'one-two-three-four' flows through the nested components without needing to specify the data property again. This makes the test more concise and easier to understand.

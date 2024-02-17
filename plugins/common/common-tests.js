@@ -26,6 +26,56 @@ component('dataTest.runActionOnItems', {
   })
 })
 
+component('dataTest.select', {
+  impl: dataTest({
+    calculate: pipeline('%$personWithChildren/children%', '%name%', join()),
+    expectedResult: equals('Bart,Lisa,Maggie')
+  })
+})
+
+component('dataTest.selectAndFilter', {
+  impl: dataTest(pipeline('%$personWithChildren/children/name%', filter(contains('i')), join()), equals('Lisa,Maggie'))
+})
+
+component('dataTest.toUpperCase', {
+  impl: dataTest(pipeline('%$personWithChildren/children%', '%name%', toUpperCase(), join()), equals('BART,LISA,MAGGIE'))
+})
+
+component('dataTest.split', {
+  impl: dataTest({
+    calculate: pipeline('one-two-free', split('-', { part: 'but first' }), join(',')),
+    expectedResult: equals('two,free')
+  })
+})
+
+component('dataTest.splitAllFeatures', {
+  impl: dataTest({
+    calculate: obj({
+      data: 'one-two-three-four',
+      props: [
+        prop('original', '%%'),
+        prop('splitAll', pipeline(split('-'), join(','))),
+        prop('splitFirst', split('-', { part: 'first' })),
+        prop('splitSecond', split('-', { part: 'second' })),
+        prop('splitLast', split('-', { part: 'last' })),
+        prop('splitButFirst', pipeline(split('-', { part: 'but first' }), join(','))),
+        prop('splitButLast', pipeline(split('-', { part: 'but last' }), join(',')))
+      ]
+    }),
+    expectedResult: equals(
+      obj(
+        prop('original', 'one-two-three-four'),
+        prop('splitAll', 'one,two,three,four'),
+        prop('splitFirst', 'one'),
+        prop('splitSecond', 'two'),
+        prop('splitLast', 'four'),
+        prop('splitButFirst', 'two,three,four'),
+        prop('splitButLast', 'one,two,three')
+      )
+    )
+  })
+})
+
 component('dataTest.pipe', {
   impl: dataTest(pipe(list(1,2), join()), equals('1,2'))
 })
@@ -92,10 +142,6 @@ component('dataTest.if', {
 
 component('dataTest.if.filters', {
   impl: dataTest(pipeline('%$personWithChildren/children%', If(equals('%name%', 'Bart'), 'funny'), count()), equals(1))
-})
-
-component('dataTest.pipelineMultiple', {
-  impl: dataTest(pipeline(list(1,2), join()), '1,2')
 })
 
 component('dataTest.assign', {

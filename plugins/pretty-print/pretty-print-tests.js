@@ -1,9 +1,5 @@
 using('ui,remote-widget,parsing,testing')
 
-// component('PPrintTest.simple', {
-//   impl: dataTest(prettyPrint(ctx => jb.comps['dataTest.obj'].impl), contains(["prop('a', 1)", ctx => "res: '%%'"]))
-// })
-
 component('PPrintTest.vars', {
   impl: dataTest({
     calculate: ctx => {
@@ -48,6 +44,15 @@ component('PPrintTest.multiLineExample', {
 
 component('PPrintTest.multiLine.prepend', {
   impl: PPPosOfPath(() => jb.comps['PPrintTest.multiLineExample'], 'prependPT!~impl~controls', '76,81')
+})
+
+component('PPrintTest.dslNameOverideExample', {
+  type: 'settlement<location>',
+  impl: pipeline({ state: israel() })
+})
+
+component('PPrintTest.dslNameOveride', {
+  impl: PPPosOfPath(() => jb.comps['settlement<location>PPrintTest.dslNameOverideExample'], 'addProp!~impl~state', '113,113')
 })
 
 component('PPrintTest.multiLine.addPropBegin', {

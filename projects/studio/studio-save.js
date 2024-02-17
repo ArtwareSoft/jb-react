@@ -1,5 +1,6 @@
 component('studio.saveComponents', {
-  type: 'action,has-side-effects',
+  type: 'action',
+hasSideEffect: true,
   impl: rx.pipe(
     source.data(pipeline(watchableComps.changedComps(), studio.filePathOfComp('%comp%'), unique())),
     rx.var('fn', '%%'),
@@ -25,7 +26,8 @@ component('studio.getFileContent', {
 })
 
 component('studio.saveFile', {
-  type: 'action,has-side-effects',
+  type: 'action',
+hasSideEffect: true,
   params: [
     {id: 'filePath', as: 'string'},
     {id: 'content', as: 'string'}
@@ -71,7 +73,8 @@ component('studio.newFileContent', {
 })
 
 component('studio.saveProjectSettings', {
-  type: 'action,has-side-effects',
+  type: 'action',
+hasSideEffect: true,
   impl: ctx => {
 //    if (!ctx.exp('%$studio/projectFolder%')) return
     const path = ctx.run(pipeline(studio.projectsDir(),'%%/%$studio/project%/index.html'))[0]

@@ -153,26 +153,17 @@ component('elems', {
   impl: (ctx,elems) => source => jb.callbag.pipe(source, ...elems)
 })
 
-component('fork', {
-  type: 'operator',
-  description: 'separate operator with same source data',
-  params: [
-    {id: 'elems', type: 'operator[]', as: 'array', mandatory: true, templateValue: []}
-  ],
-  impl: (ctx,elems) => jb.callbag.fork(...elems)
-})
-
 component('startWith', {
   type: 'operator',
   description: 'startWith callbags sources (or any)',
   params: [
-    {id: 'sources', type: 'source[]', as: 'array'}
+    {id: 'source', type: 'source', as: 'array'}
   ],
-  impl: (ctx,sources) => jb.callbag.startWith(...sources)
+  impl: (ctx,source) => jb.callbag.startWith([source])
 })
 
 component('Var', {
-  type: 'operator',
+  type: 'operator', 
   description: 'define an immutable variable that can be used later in the pipe. recalculated for each input',
   params: [
     {id: 'name', as: 'string', dynamic: true, mandatory: true, description: 'if empty, does nothing'},
@@ -562,6 +553,30 @@ component('sniffer', {
   ],
   impl: (ctx,name) => source => jb.callbag.sniffer(source, {next: x => console.log(name,x)})
 })
+
+// component('Switch', {
+//   type: 'operator',
+//   description: 'like if, separate between cases',
+//   params: [
+//     {id: 'case', type: 'case[]', mandatory: true}
+//   ]
+// })
+
+// component('sourceCase', {
+//   type: 'case',
+//   params: [
+//     {id: 'condition', type: 'boolean', dynamic: true, mandatory: true},
+//     {id: 'source', type: 'source', mandatory: true},
+//   ]
+// })
+
+// component('operatorCase', {
+//   type: 'case',
+//   params: [
+//     {id: 'condition', type: 'boolean', dynamic: true, mandatory: true},
+//     {id: 'elems', type: 'operator', mandatory: true},
+//   ]
+// })
 
 // ** sink
 

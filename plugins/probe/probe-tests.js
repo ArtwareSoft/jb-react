@@ -130,7 +130,8 @@ component('probeTest.gaps.insideGotoUrl', {
 })
 
 component('test.actionWithSideEffects', {
-  type: 'action,has-side-effects',
+  type: 'action',
+  hasSideEffect: true,
   params: [
     {id: 'text', as: 'string'}
   ],

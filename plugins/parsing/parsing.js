@@ -1,30 +1,4 @@
 using('common')
-extension('parsing', {
-  initExtension() {
-    jb.core.jstypes['string-with-source-ref'] = v => v;
-  },
-  stringWithSourceRef: class stringWithSourceRef {
-    constructor(ctx,pathToConstStr,offset,to) {
-        this.ctx = ctx;this.pathToConstStr = pathToConstStr;
-        this.offset = offset;this.to = to;
-        this.val = ctx.exp(`%$${pathToConstStr}%`,'string').substring(offset,to);
-        jb.debugInfo = jb.debugInfo || { in: [], out: []};
-        jb.debugInfo.in.push(this);
-    }
-    $jb_val() { return this.val }
-    substring(from,new_to) {
-      const to = typeof new_to == 'undefined' ? this.to : this.offset + new_to;
-      return new jb.parsing.stringWithSourceRef(this.ctx,this.pathToConstStr,this.offset+from,to)
-    }
-    trim() {
-      if (this.val == this.val.trim()) return this;
-      const left = (this.val.match(/^\s+/)||[''])[0].length;
-      const right = (this.val.match(/\s+$/)||[''])[0].length;
-
-      return new jb.parsing.stringWithSourceRef(this.ctx,this.pathToConstStr,this.offset+left,this.to-right)
-    }
-  }
-})
 
 component('extractText', {
   description: 'text breaking according to begin/end markers',

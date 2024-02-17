@@ -63,13 +63,13 @@ extension('utils', 'core', {
       profiles.forEach(({comp}) => jb.utils.resolveProfileInnerElements(comp))
       return profiles
     },
-    resolveProfileTop(id, comp, dslFromContext, {keepLocation, tgpModel} = {}) {
+    resolveProfileTop(id, comp, compDsl, {keepLocation, tgpModel} = {}) {
       const comps = tgpModel && tgpModel.comps || jb.comps
       const CT = jb.core.CT
       if (!comp[CT]) comp[CT] = comp[CT] || { id }
       const type = comp.type || ''
       const dslOfType = type.indexOf('<') != -1 ? type.split(/<|>/)[1] : undefined // to cover t1<> dsl == ''
-      const dsl = comp[CT].dsl = dslOfType !== undefined ? dslOfType : (comp.dsl || dslFromContext)
+      const dsl = comp[CT].dsl = dslOfType !== undefined ? dslOfType : (comp.dsl || compDsl)
       const unresolvedType = comp[CT].idOfUnresolvedType = ! type && id
       if (comp.impl && typeof comp.impl == 'object')
         comp.impl[CT] = { dsl }
@@ -82,8 +82,8 @@ extension('utils', 'core', {
           jb.logError(`comp ${fullId} at ${ JSON.stringify(comp[CT].location)} already defined at ${JSON.stringify((oldCompCT.location))}`,
             {oldComp, oldLocation: oldCompCT.location, newLocation: comp[CT].location})
         }
-  //      comps[fullId] = comp
-        
+        //      comps[fullId] = comp
+                
         if (keepLocation && jb.path(oldComp,[CT,'location']))
           comp[CT].location = jb.path(oldComp,[CT,'location'])
 
@@ -94,7 +94,7 @@ extension('utils', 'core', {
       }
 
       ;(comp.params || []).forEach(p=> {
-        const _dsl = dslFromContext || dsl
+        const _dsl = compDsl || dsl
         // fix as boolean params to have type: 'boolean'
         if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
           p.type = 'boolean';
@@ -106,7 +106,7 @@ extension('utils', 'core', {
         if (p.defaultValue && typeof p.defaultValue == 'object')
           p.defaultValue[CT] = { ...p[CT] }
       })
-      return comp
+            return comp
     },
     resolveUnTypedProfile(comp,id, depth, {tgpModel} = {}) {
       const comps = tgpModel && tgpModel.comps || jb.comps
@@ -134,7 +134,8 @@ extension('utils', 'core', {
         const dslType = jb.path(prof,[CT,'dslType'])
         let comp = jb.utils.getCompById(prof.$, { types: dslType, dsl: jb.path(prof,[CT,'dsl']), silent: true, tgpModel })
         if (!comp) {
-          jb.utils.resolveUnTypedProfile(jb.utils.getUnresolvedProfile(prof.$),'', depth-1)
+          jb.core.unresolvedProfiles.filter(({id}) => id == prof.$).forEach(({comp}) => 
+            jb.utils.resolveUnTypedProfile(comp,comp.type || '', depth-1))
           comp = jb.utils.getCompById(prof.$, { types: dslType, dsl: jb.path(prof,[CT,'dsl']), tgpModel })
         }
         if (!comp)
@@ -243,7 +244,7 @@ extension('utils', 'core', {
     compParams(comp) {
       return (!comp || !comp.params) ? [] : comp.params
     },
-    getUnresolvedProfile: _id => (jb.core.unresolvedProfiles.find(({id}) => id == _id) || {}).comp,
+    getUnresolvedProfile: (_id, type) => (jb.core.unresolvedProfiles.find(({id, comp}) => id == _id && comp.type == type) || {}).comp,
     resolveFinishedPromise(val) {
       if (val && typeof val == 'object' && val._state == 1) // finished promise
         return val._result

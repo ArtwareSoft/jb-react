@@ -21,11 +21,16 @@ extension('loader','main' , {
         const res = matchResult[1] + tests
         return (!tests && addTests) ? [`${res}-tests`] : [res]
       }
+    },
+    mergeSourceCodes(sc1,sc2) {
+      const plugins = jb.utils.unique([...(sc1.plugins || []), ...(sc2.plugins || [])])
+      const projects = jb.utils.unique([...(sc1.projects || []), ...(sc2.projects || [])])
+      const pluginPackages = jb.utils.unique([...(sc1.pluginPackages || []), ...(sc2.pluginPackages || [])], package => package.repo || 'default')
+      return {plugins, projects, pluginPackages}
     }
 })
 
 // source-code
-
 component('sourceCode', {
   type: 'source-code',
   params: [
@@ -43,6 +48,14 @@ component('sourceCode', {
   })
 })
 
+component('extend', {
+  type: 'source-code',
+  params: [
+    {id: 'sourceCode', type: 'source-code', mandatory: true},
+    {id: 'with', type: 'source-code', mandatory: true},
+  ],
+  impl: (ctx,sc1,sc2) => jb.loader.mergeSourceCodes(sc1,sc2)
+})
 
 component('project', {
   type: 'source-code',
@@ -68,7 +81,7 @@ component('pluginsByPath', {
     const filePath = jb.loader.shortFilePath(fullFilePath)
     const plugins = [jb.loader.pluginOfFilePath(fullFilePath,addTests)]
     const project = jb.path(filePath.match(/projects\/([^\/]+)/),'1')
-    return { plugins, ...(project ? {project} : {}) }
+    return { plugins, ...(project ? {projects: [project]} : {}) }
   }
 })
 
@@ -88,9 +101,9 @@ component('plugins', {
 component('project', {
   type: 'plugins-to-load',
   params: [
-    {id: 'project', as: 'array', mandatory: true}
+    {id: 'project', as: 'string', mandatory: true, description: '* for all'}
   ],
-  impl: ctx => ctx.params
+  impl: (ctx,project) => ({projects: [project]})
 })
 
 

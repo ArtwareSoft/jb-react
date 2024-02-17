@@ -542,6 +542,7 @@ component('dynamicObject', {
 })
 
 component('extend', {
+  type: 'data',
   description: 'assign and extend with calculated properties',
   params: [
     {id: 'props', type: 'prop[]', mandatory: true, defaultValue: []},
@@ -550,7 +551,7 @@ component('extend', {
   impl: (ctx,properties,obj) =>
 		Object.assign({}, obj, jb.objFromEntries(properties.map(p=>[p.name, jb.core.tojstype(p.val(ctx),p.type)])))
 })
-component('assign', { autoGen: true, ...jb.utils.getUnresolvedProfile('extend'), [jb.core.CT]: null})
+component('assign', { autoGen: true, ...jb.utils.getUnresolvedProfile('extend', 'data'), [jb.core.CT]: null})
 
 component('extendWithIndex', {
   type: 'aggregator',
@@ -867,7 +868,7 @@ component('equals', {
     {id: 'item1', as: 'single', mandatory: true},
     {id: 'item2', defaultValue: '%%', as: 'single'}
   ],
-  impl: ({}, item1, item2) => item1 == item2
+  impl: ({}, item1, item2) => (item1 && typeof item1 == 'object') ? Object.keys(jb.utils.objectDiff(item1,item2)) == 0 : item1 == item2
 })
 
 component('notEquals', {

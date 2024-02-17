@@ -127,10 +127,10 @@ component('remoteNodeWorker', {
     {id: 'id', as: 'string'},
     {id: 'sourceCode', type: 'source-code<loader>', byName: true, defaultValue: treeShakeClientWithPlugins()},
     {id: 'init', type: 'action', dynamic: true},
-    {id: 'webSocketUrl', as: 'string', defaultValue: 'http://localhost:8082'},
+    {id: 'initiatorUrl', as: 'string', defaultValue: 'http://localhost:8082'},
     {id: 'workerDetails'}
   ],
-  impl: async (ctx,_id,sourceCode,init,webSocketUrl,workerDetails) => {
+  impl: async (ctx,_id,sourceCode,init,initiatorUrl,workerDetails) => {
         const id = (_id || 'nodeWorker1').replace(/-/g,'__')
         const vscode = jbHost.WebSocket_WS ? 'vscode ' : ''
         jb.log(`${vscode}remote node worker`,{ctx,id})
@@ -176,7 +176,7 @@ component('remoteNodeWorker', {
         return jbm
 
         function startNodeWorker(args) {
-            const url = `${webSocketUrl}/?op=createNodeWorker&args=${encodeURIComponent(JSON.stringify(args.map(([k,v])=>`${k}:${v}`)))}`
+            const url = `${initiatorUrl}/?op=createNodeWorker&args=${encodeURIComponent(JSON.stringify(args.map(([k,v])=>`${k}:${v}`)))}`
             return jbHost.fetch(url).then(r => r.json())
         }
     }

@@ -1,5 +1,6 @@
 component('openDialog', {
-  type: 'action,has-side-effects',
+  type: 'action',
+hasSideEffect: true,
   params: [
     {id: 'title', as: 'renderable', dynamic: true},
     {id: 'content', type: 'control', dynamic: true, templateValue: group(), defaultValue: text('')},
@@ -25,7 +26,7 @@ component('openDialog', {
 component('openDialog.probe', {
 	autoGen: true,
 	type: 'control:0',
-	params: jb.utils.getUnresolvedProfile('openDialog').params,
+	params: jb.utils.getUnresolvedProfile('openDialog','action').params,
 	impl: ctx => jb.ui.ctrl(ctx.setVar('$dialog',{}), dialog.init()).renderVdom(),
 	require: {$: 'dialog.init'}
 })

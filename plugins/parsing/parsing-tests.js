@@ -1,3 +1,5 @@
+component('textToBreak', { passiveData: 'l1-a1-b1-c1;l2-a2-b2-c2;l3-a3-b3-c3'})
+component('textToBreak2', { passiveData: 'l1-a1-b1-c1;l2|a2|b2|c2;l3-a3-b3-c3'})
 
 component('textToParse', {
   passiveData:`
@@ -11,13 +13,6 @@ second
 #end
 outside2
 `
-})
-
-component('textToBreak', { passiveData: 'l1-a1-b1-c1;l2-a2-b2-c2;l3-a3-b3-c3'})
-component('textToBreak2', { passiveData: 'l1-a1-b1-c1;l2|a2|b2|c2;l3-a3-b3-c3'})
-
-component('dataTest.stringWithSourceRef', {
-  impl: dataTest(ctx => new jb.parsing.stringWithSourceRef(ctx,'textToBreak',6,8), equals('b1'))
 })
 
 component('dataTest.extractTextRepeating', {
@@ -38,7 +33,9 @@ component('dataTest.extractTextIncludingStartMarker', {
       }),
       join()
     ),
-    expectedResult: ({data}) => data == '#start\nfirst,#start\nsecond'
+    expectedResult: equals(`#start
+first,#start
+second`)
   })
 })
 
@@ -53,7 +50,9 @@ component('dataTest.extractTextIncludingEndMarker', {
       }),
       join()
     ),
-    expectedResult: ({data}) => data == 'first\n#end,second\n#end'
+    expectedResult: equals(`first
+#end,second
+#end`)
   })
 })
 

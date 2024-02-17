@@ -7,7 +7,7 @@ component('loaderTest.studio', {
         libsToInit: 'utils,tgp'
       }))
     ),
-    expectedResult: and(equals('%project%', 'studio'), equals(join({ items: '%plugins%' }), 'studio,tgp-model-data'))
+    expectedResult: and(equals('%projects/0%', 'studio'), equals(join({ items: '%plugins%' }), 'studio,tgp-model-data'))
   })
 })
 

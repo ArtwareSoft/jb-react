@@ -25,3 +25,12 @@ component('rxDslTest.rxFlow', {
     runBefore: rxFlow(data(1), map('%%'), writeValue('%$out/x%')),
   })
 })
+
+// component('rxDslTest.switch', {
+//   impl: dataTest({
+//     calculate: rxPipe(data(list(1,2,3,4)), elems(Switch(Case('%%<2', map('%%-')), Case(true, map('-%%'))), join())),
+//     expectedResult: equals('1-,-2,-3,-4')
+//   })
+// })
+
+//     calculate: rxPipe(data(list(1,2,3,4)), elems(fork(take(1), writeValue('%$a/fork%')), skip(1), take(1), join())),
