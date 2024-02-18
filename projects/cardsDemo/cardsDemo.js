@@ -84,7 +84,7 @@ component('cardsDemo.card', {
       innerGroupStyle: styleWithFeatures(group.div(), [css.padding({top: '20', right: '20'})])
     }),
     controls: dynamicControls({
-      controlItems: styleGallery.stylesOfUiComponent('card.style'),
+      controlItems: styleGallery.stylesOfUiComponent('card-style'),
       genericControl: group({
         title: pipeline('%$__style%', suffix('.')),
         controls: [
@@ -110,7 +110,7 @@ component('cardsDemo.cardList', {
       innerGroupStyle: styleWithFeatures(group.div(), [css.padding({top: '20', right: '20'})])
     }),
     controls: dynamicControls({
-      controlItems: styleGallery.stylesOfUiComponent('card-list.style'),
+      controlItems: styleGallery.stylesOfUiComponent('card-list-style'),
       genericControl: group({
         title: pipeline('%$__style%', suffix('.')),
         controls: [

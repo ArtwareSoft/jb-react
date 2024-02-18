@@ -27,7 +27,7 @@ component('inplaceEdit.activate', {
 })
 
 component('inplaceEdit.popupStyle', {
-  type: 'dialog.style',
+  type: 'dialog-style',
   impl: customStyle({
     template: (cmp,{contentComp},h) => h('div.jb-dialog jb-popup',{}, h(contentComp)),
     css: `{ position: absolute; background: var(--jb-editor-background); padding: 6px;
@@ -150,7 +150,7 @@ Object.assign(jb.ui, {
 })
 
 component('inplaceEdit.thumbStyle', {
-  type: 'dialog.style',
+  type: 'dialog-style',
   impl: customStyle({
     template: (cmp,state,h) => h('div.jb-dialog jb-popup',{},h(state.contentComp)),
     css: '{ display: block; position: absolute; }',

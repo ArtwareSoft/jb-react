@@ -6,7 +6,7 @@ component('tableTree', {
     {id: 'leafFields', type: 'control[]', dynamic: true},
     {id: 'commonFields', type: 'control[]', dynamic: true, as: 'array'},
     {id: 'chapterHeadline', type: 'control', dynamic: true, defaultValue: text(''), description: '$collapsed as parameter'},
-    {id: 'style', type: 'table-tree.style', defaultValue: tableTree.plain(), dynamic: true},
+    {id: 'style', type: 'table-tree-style', defaultValue: tableTree.plain(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true, as: 'array'}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
@@ -108,7 +108,7 @@ component('tableTree.expandFirstLevel', {
 })
 
 component('tableTree.plain', {
-  type: 'table-tree.style',
+  type: 'table-tree-style',
   params: [
     {id: 'hideHeaders', as: 'boolean', type: 'boolean'},
     {id: 'gapWidth', as: 'number', defaultValue: 30},

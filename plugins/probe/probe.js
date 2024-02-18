@@ -1,7 +1,7 @@
 using('tgp-model-data,tgp')
 
 component('probe', { watchableData: { path : '',  
-defaultMainCircuit: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') ? (jb.path(globalThis,'location.pathname')||'').split('/')[3] : '',
+defaultMainCircuit: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') ? decodeURI(jb.path(globalThis,'location.pathname')||'').split('/')[3] : '',
 scriptChangeCounter: 1} })
 
 extension('probe', 'main', {
@@ -62,8 +62,8 @@ extension('probe', 'main', {
                 (cmp1.ctx.id - cmp2.ctx.id) ) [0] || {}
         }
         function findTest(cmpId) {
-            // #jbLoadComponents: tgp.componentStatistics
-            const statistics = jb.exec({$: 'tgp.componentStatistics', cmpId})
+            // #jbLoadComponents: data<>tgp.componentStatistics
+            const statistics = jb.exec({$: 'data<>tgp.componentStatistics', cmpId})
             const lookFor = cmpId.split('.').pop()
             const tests = (statistics.referredBy||[]).filter(refferer=>jb.tgp.isCompNameOfType(refferer,'test'))
             const testWithSameName = tests.filter(id=>id.indexOf(lookFor) != -1)[0]
@@ -175,7 +175,7 @@ extension('probe', 'main', {
             const compName = jb.tgp.compNameOfPath(breakingPath)
             if (jb.utils.getCompById(`${compName}.probe`,{silent:true})) {
                 parentCtx.profile[breakingProp][jb.core.CT] = { ...parentCtx.profile[breakingProp][jb.core.CT], comp: null }
-                return jb.probe.resolve(parentCtx.runInner(jb.utils.resolveDetachedProfile({...parentCtx.profile[breakingProp], $: `${compName}.probe`}),
+                return jb.probe.resolve(parentCtx.runInner(jb.utils.resolveProfile({...parentCtx.profile[breakingProp], $: `${compName}.probe`}),
                     jb.tgp.paramDef(breakingPath),breakingProp))
                         .then(_=>this.handleGaps(_path))
             }
@@ -276,11 +276,11 @@ component('probe.runCircuit', {
         const circuit = await jb.probe.calcCircuit(ctx, probePath)
         if (!circuit)
             return jb.logError(`probe can not infer circuitCtx from ${probePath}`, )
-        jb.utils.resolveDetachedProfile(circuit.circuitCtx.profile)
+        jb.utils.resolveProfile(circuit.circuitCtx.profile)
 
         return new jb.probe.Probe(circuit.circuitCtx).runCircuit(probePath,timeout)
     },
-  require: tgp.componentStatistics()
+  require: 'data<>tgp.componentStatistics'
 })
 
 component('probe.calcCircuitPath', {

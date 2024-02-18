@@ -44,6 +44,7 @@ component('itemlists.selection', {
 })
 
 component('itemlists.manyItems', {
+  type: 'data<>',
   params: [
     {id: 'howMany', as: 'number', defaultValue: 1000 }
   ],
@@ -306,7 +307,7 @@ component('itemlists.sort', {
             title: 'sort by:',
             databind: '%$sortBy%',
             options: picklist.optionsByComma('age,name'),
-            style: picklist.native(),
+            style: select.native(),
             features: css.width('100')
           })
         ]

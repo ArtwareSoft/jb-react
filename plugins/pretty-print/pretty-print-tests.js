@@ -5,7 +5,7 @@ component('PPrintTest.vars', {
     calculate: ctx => {
     try {
       const testToTest = 'dataTest.varsCases'
-      const compTxt = jb.utils.prettyPrintComp(testToTest.replace(/varsCases/, 'varsCases2'), jb.comps[testToTest])
+      const compTxt = jb.utils.prettyPrintComp(testToTest.replace(/varsCases/, 'varsCases2'), jb.comps['test<>'+testToTest])
       eval(compTxt)
       return ctx.run(dataTest.asArrayBug()) // checks for error
         .then(({ success }) => success && compTxt)
@@ -43,7 +43,7 @@ component('PPrintTest.multiLineExample', {
 })
 
 component('PPrintTest.multiLine.prepend', {
-  impl: PPPosOfPath(() => jb.comps['PPrintTest.multiLineExample'], 'prependPT!~impl~controls', '76,81')
+  impl: PPPosOfPath(() => jb.comps['control<>PPrintTest.multiLineExample'], 'prependPT!~impl~controls', '76,81')
 })
 
 component('PPrintTest.dslNameOverideExample', {
@@ -56,11 +56,11 @@ component('PPrintTest.dslNameOveride', {
 })
 
 component('PPrintTest.multiLine.addPropBegin', {
-  impl: PPPosOfPath(() => jb.comps['PPrintTest.multiLineExample'], 'addProp!~impl', '76,76')
+  impl: PPPosOfPath(() => jb.comps['control<>PPrintTest.multiLineExample'], 'addProp!~impl', '76,76')
 })
 
 component('PPrintTest.multiLine.addPropEnd', {
-  impl: PPPosOfPath(() => jb.comps['PPrintTest.multiLineExample'], 'addProp!~impl', '198,199')
+  impl: PPPosOfPath(() => jb.comps['control<>PPrintTest.multiLineExample'], 'addProp!~impl', '198,199')
 })
 
 component('PPrintTest.remark.pipeline', {
@@ -91,7 +91,7 @@ component('test.foldFunction', {
 })
 
 component('PPrintTest.posOfFoldFunctionBug', {
-  impl: dataTest(() => jb.tgpTextEditor.getPosOfPath('test.foldFunction~impl~items~1'), equals('%line%', 4))
+  impl: dataTest(() => jb.tgpTextEditor.getPosOfPath('data<>test.foldFunction~impl~items~1'), equals('%line%', 4))
 })
 
 component('PPrintTest.singleFunc', {

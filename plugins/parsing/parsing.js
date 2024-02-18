@@ -224,7 +224,8 @@ component('removePrefixRegex', {
 
 component('wrapAsObject', {
   description: 'object from entries, map each item as a property',
-  type: 'aggregator',
+  type: 'data',
+  aggregator: true,
   params: [
     {id: 'propertyName', as: 'string', dynamic: true, mandatory: true},
     {id: 'value', dynamic: true, defaultValue: '%%'},

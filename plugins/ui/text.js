@@ -5,7 +5,7 @@ component('text', {
   params: [
     {id: 'text', as: 'ref', mandatory: true, templateValue: 'my text', dynamic: true},
     {id: 'title', as: 'ref', dynamic: true},
-    {id: 'style', type: 'text.style', defaultValue: text.span(), dynamic: true},
+    {id: 'style', type: 'text-style', defaultValue: text.span(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
@@ -18,7 +18,7 @@ component('text.bindText', {
   category: 'text:0',
   impl: features(
     watchAndCalcModelProp('text', ({data}) => jb.ui.toVdomOrStr(data)),
-    () => ({studioFeatures :{$: 'feature.contentEditable', param: 'text' }})
+    () => ({studioFeatures :{$: 'feature<>feature.contentEditable', param: 'text' }})
   )
 })
 

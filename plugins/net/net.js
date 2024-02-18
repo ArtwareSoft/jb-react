@@ -1,7 +1,8 @@
 using('common')
 
 component('http.get', {
-  type: 'data,action',
+  type: 'data',
+  moreTypes: 'action<>',
   description: 'fetch data from external url',
   params: [
     {id: 'url', as: 'string'},
@@ -28,7 +29,8 @@ component('http.get', {
 })
 
 component('http.fetch', {
-  type: 'data,action',
+  type: 'data',
+  moreTypes: 'action<>',
   description: 'fetch, get or post data from external url',
   params: [
     {id: 'url', as: 'string', mandatory: true},

@@ -1,6 +1,7 @@
 component('css', {
   description: 'e.g. {color: red; width: 20px} or div>.myClas {color: red} ',
-  type: 'feature,dialog-feature',
+  type: 'feature',
+  moreTypes: 'dialog-feature<>,layout<>',
   params: [
     {id: 'css', mandatory: true, dynamic: true, as: 'string'}
   ],
@@ -8,7 +9,8 @@ component('css', {
 })
 
 component('css.class', {
-  type: 'feature,dialog-feature',
+  type: 'feature',
+  moreTypes: 'dialog-feature<>',
   params: [
     {id: 'class', mandatory: true, as: 'string'}
   ],
@@ -16,7 +18,8 @@ component('css.class', {
 })
 
 component('css.width', {
-  type: 'feature,dialog-feature',
+  type: 'feature',
+  moreTypes: 'dialog-feature<>',
   params: [
     {id: 'width', mandatory: true, as: 'string', description: 'e.g. 200, 100%, calc(100% - 100px)'},
     {id: 'overflow', as: 'string', options: ',auto,hidden,scroll'},
@@ -28,7 +31,8 @@ component('css.width', {
 })
 
 component('css.height', {
-  type: 'feature,dialog-feature',
+  type: 'feature',
+  moreTypes: 'dialog-feature<>',
   params: [
     {id: 'height', mandatory: true, as: 'string', description: 'e.g. 200, 100%, calc(100% - 100px)'},
     {id: 'overflow', as: 'string', options: ',auto,hidden,scroll'},
@@ -50,7 +54,8 @@ component('css.opacity', {
 })
 
 component('css.padding', {
-  type: 'feature,dialog-feature',
+  type: 'feature',
+  moreTypes: 'dialog-feature<>',
   params: [
     {id: 'top', as: 'string', description: 'e.g. 20, 20%, 0.4em'},
     {id: 'left', as: 'string'},
@@ -68,7 +73,8 @@ component('css.padding', {
 })
 
 component('css.margin', {
-  type: 'feature,dialog-feature',
+  type: 'feature',
+  moreTypes: 'dialog-feature<>',
   params: [
     {id: 'top', as: 'string', description: 'e.g. 20, 20%, 0.4em, -20'},
     {id: 'left', as: 'string'},
@@ -86,7 +92,8 @@ component('css.margin', {
 })
 
 component('css.marginAllSides', {
-  type: 'feature,dialog-feature',
+  type: 'feature',
+  moreTypes: 'dialog-feature<>',
   params: [
     {id: 'value', as: 'string', mandatory: true, description: 'e.g. 20, 20%, 0.4em'},
     {id: 'selector', as: 'string'}
@@ -95,7 +102,8 @@ component('css.marginAllSides', {
 })
 
 component('css.marginVerticalHorizontal', {
-  type: 'feature,dialog-feature',
+  type: 'feature',
+  moreTypes: 'dialog-feature<>',
   params: [
     {id: 'vertical', as: 'string', mandatory: true},
     {id: 'horizontal', as: 'string', mandatory: true},
@@ -162,7 +170,8 @@ component('css.underline', {
 })
 
 component('css.boxShadow', {
-  type: 'feature,dialog-feature',
+  type: 'feature',
+  moreTypes: 'dialog-feature<>',
   params: [
     {id: 'inset', as: 'boolean', description: 'the box is raised or content is depressed inside the box', type: 'boolean'},
     {id: 'blurRadius', as: 'string', defaultValue: '5', description: 'bigger and lighter shadow'},
@@ -181,7 +190,8 @@ component('css.boxShadow', {
 })
 
 component('css.border', {
-  type: 'feature,dialog-feature',
+  type: 'feature',
+  moreTypes: 'dialog-feature<>',
   params: [
     {id: 'width', as: 'string', defaultValue: '1'},
     {id: 'side', as: 'string', options: 'top,left,bottom,right'},
@@ -194,7 +204,8 @@ component('css.border', {
 })
 
 component('css.borderRadius', {
-  type: 'feature,dialog-feature',
+  type: 'feature',
+  moreTypes: 'dialog-feature<>',
   params: [
     {id: 'radius', as: 'string', defaultValue: '5'},
     {id: 'selector', as: 'string'}
@@ -242,7 +253,8 @@ component('css.conditionalClass', {
  jb.defComponents('layout,typography,detailedBorder,detailedColor,gridArea'.split(','), 
   id => component(`css.${id}`, ({
     autoGen: true,
-    type: 'feature:0',
+    type: 'feature',
+    hidden: true,
     params: [
       {id: 'css', mandatory: true, as: 'string'}
     ],

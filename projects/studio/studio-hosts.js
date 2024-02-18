@@ -37,7 +37,7 @@ extension('studio', 'hosts', {
         projectUrlInStudio: project => `/project/studio/${project}`,
         // preview
         jbLoader: jb.frame.location ? jb.frame.location.origin + '/plugins/loader/jb-loader.js' : '',
-        openUrlInBrowser: url => jb.exec({$: 'winUtils.gotoUrl', url }),
+        openUrlInBrowser: url => jb.exec({$: 'action<>winUtils.gotoUrl', url }),
         gotoPath: (path,semanticPart) => {}
     }),
     vscodeDevHost: () => ({

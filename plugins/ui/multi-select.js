@@ -7,13 +7,14 @@ component('multiSelect', {
     {id: 'databind', as: 'ref', mandaroy: true, dynamic: true},
     {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true},
     {id: 'promote', type: 'picklist.promote', dynamic: true},
-    {id: 'style', type: 'multiSelect.style', defaultValue: picklist.native(), dynamic: true},
+    {id: 'style', type: 'multiSelect-style', defaultValue: select.native(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
 component('multiSelect.modelAsBooleanRef', {
+  type: 'boolean',
   params: [
     {id: 'multiSelectModel'},
     {id: 'code'}
@@ -32,10 +33,10 @@ component('multiSelect.modelAsBooleanRef', {
 })
 
 component('multiSelect.choiceList', {
-  type: 'multiSelect.style',
+  type: 'multiSelect-style',
   params: [
-    {id: 'choiceStyle', type: 'editable-boolean.style', dynamic: true, defaultValue: editableBoolean.checkboxWithLabel()},
-    {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.ulLi()}
+    {id: 'choiceStyle', type: 'editable-boolean-style', dynamic: true, defaultValue: editableBoolean.checkboxWithLabel()},
+    {id: 'itemlistStyle', type: 'itemlist-style', dynamic: true, defaultValue: itemlist.ulLi()}
   ],
   impl: styleByControl({
     control: itemlist({
@@ -54,10 +55,10 @@ component('multiSelect.choiceList', {
 })
 
 component('multiSelect.chips', {
-  type: 'multiSelect.style',
+  type: 'multiSelect-style',
   params: [
-    {id: 'chipStyle', type: 'text.style', dynamic: true, defaultValue: text.chip()},
-    {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.horizontal()}
+    {id: 'chipStyle', type: 'text-style', dynamic: true, defaultValue: text.chip()},
+    {id: 'itemlistStyle', type: 'itemlist-style', dynamic: true, defaultValue: itemlist.horizontal()}
   ],
   impl: styleByControl({
     control: group({
@@ -81,7 +82,7 @@ component('multiSelect.chips', {
           features: itemlist.dragAndDrop()
         }),
         picklist({
-          options: pipeline('%$multiSelectModel/options%', filter(not(inGroup('%$multiSelectModel/databind%', '%code%')))),
+          options: typeAdapter('data<>', pipeline('%$multiSelectModel/options%', filter(not(inGroup('%$multiSelectModel/databind%', '%code%'))))),
           features: [
             picklist.onChange(addToArray('%$multiSelectModel/databind%', { toAdd: '%%' })),
             picklist.plusIcon()

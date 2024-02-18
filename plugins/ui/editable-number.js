@@ -4,7 +4,7 @@ component('editableNumber', {
   params: [
     {id: 'databind', as: 'ref', mandaroy: true, dynamic: true},
     {id: 'title', as: 'string', dynamic: true},
-    {id: 'style', type: 'editable-number.style', defaultValue: editableText.mdcInput(), dynamic: true},
+    {id: 'style', type: 'editable-number-style', defaultValue: typeAdapter('editable-text-style<>',editableText.mdcInput()), dynamic: true},
     {id: 'symbol', as: 'string', description: 'leave empty to parse symbol from value'},
     {id: 'min', as: 'number', defaultValue: 0},
     {id: 'max', as: 'number', defaultValue: 10},

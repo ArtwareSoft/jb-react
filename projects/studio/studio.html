@@ -20,12 +20,12 @@
   const project = /sourceCode=/.test(location.href) ? '' : location.pathname.split('/')[3]
   const sourceCodeStr = urlQuery('sourceCode')
   const sourceCode = sourceCodeStr ? JSON.parse(decodeURIComponent(sourceCodeStr)) 
-      : { project: ['studio',project].filter(x=>x), plugins: ['*'] }
-  if (sourceCodeStr) sourceCode.project = 'studio'
+      : { projects: ['studio',project].filter(x=>x), plugins: ['*'] }
+  if (sourceCodeStr) sourceCode.projects = ['studio']
 	globalThis.jb = await jbInit('studio',sourceCode)
   jb.spy.initSpyByUrl && jb.spy.initSpyByUrl()
-  jb.exec({$: 'defaultTheme'})
-  jb.ui.renderWidget(({$: 'studio.main'}), main)
+  jb.exec({$: 'data<>defaultTheme'})
+  jb.ui.renderWidget(({$: 'control<>studio.main'}), main)
 
  })()
 </script>

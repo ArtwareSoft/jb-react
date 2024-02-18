@@ -334,7 +334,7 @@ component('flatMap', {
 
     sink(0, function flatMap(t,d) {
       if (t == 1 && d == null || t == 2) {
-        sourceTalkback(t,d)
+        sourceTalkback && sourceTalkback(t,d)
         innerSources.forEach(src=>src.talkback && src.talkback(t,d))
       }
     })

@@ -126,6 +126,7 @@ extension('core', {
       const profile = ctx.profile
       if (profile == null || (typeof profile == 'object' && profile.$disabled))
         return jb.core.castToParam(null,parentParam)
+      //if (ctx.path == 'test<>dataTest.join~impl~calculate') debugger
       if (profile.data && ! jb.path(settings, 'dataUsed'))
         if ((jb.path(profile[jb.core.CT],'comp.params') || []).find(p=>p.id == 'data') == null) {
           const data = ctx.setData(ctx.runInner(profile.data, {}, 'data'))
@@ -153,7 +154,7 @@ extension('core', {
         case 'null': return castToParam(null,parentParam)
         case 'ignore': return ctx.data
         case 'list': return profile.map((inner,i) => ctxWithVars.runInner(inner,null,i))
-        case 'runActions': return jb.comps.runActions.impl(new jb.core.jbCtx(ctxWithVars,{profile: { actions : profile },path:''}))
+        case 'runActions': return jb.comps['action<>runActions'].impl(new jb.core.jbCtx(ctxWithVars,{profile: { actions : profile },path:''}))
         case 'profile':
           if (!run.impl)
             run.ctx.callerPath = ctx.path;
@@ -237,7 +238,7 @@ extension('core', {
     const profile = ctx.profile
     const profile_jstype = typeof profile
     const parentParam_type = parentParam && parentParam.type
-    const jstype = parentParam && parentParam.as
+        const jstype = parentParam && parentParam.as
     const isArray = Array.isArray(profile)
 
     if (profile_jstype === 'string' && parentParam_type === 'boolean') return { type: 'booleanExp' }
@@ -304,7 +305,7 @@ extension('core', {
       }
     }
     run(profile,parentParam) {
-      return jb.core.run(new jb.core.jbCtx(this,{ profile: jb.utils.resolveDetachedProfile(profile, {expectedType: jb.path(parentParam,'type')}), comp: profile.$ , path: ''}), parentParam)
+      return jb.core.run(new jb.core.jbCtx(this,{ profile: jb.utils.resolveProfile(profile, {expectedType: jb.path(parentParam,'type')}), comp: profile.$ , path: ''}), parentParam)
     }
     exp(exp,jstype) { return jb.expression.calc(exp, this, {as: jstype}) }
     setVars(vars) { return new jb.core.jbCtx(this,{vars: vars}) }

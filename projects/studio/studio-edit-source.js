@@ -109,7 +109,7 @@ component('studio.viewAllFiles', {
 })
 
 component('studio.gotoEditorSecondary', {
-  type: 'action',
+  type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -125,7 +125,7 @@ component('studio.gotoEditorSecondary', {
 })
 
 component('studio.gotoEditorFirst', {
-  type: 'action',
+  type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -191,12 +191,6 @@ component('studio.openEditProperty', {
         ]
       })),
       action.switchCase(tgp.isOfType('%$actualPath%', 'data,boolean'), runActions(
-        Var('sugarArrayPath', sourceEditor.firstParamAsArrayPath('%$actualPath%')),
-        Var('index', data.switch(data.case(equals('open-sugar', '%$pathType%'), 0), {
-          default: data.case(equals('close-sugar', '%$pathType%'), count(tgp.val('%$sugarArrayPath%')))
-        })),
-        Var('actualPathHere', If(endsWith('-sugar', '%$pathType%'), '%$sugarArrayPath%~%$index%', '%$actualPath%')),
-        If(endsWith('-sugar', '%$pathType%'), tgp.addArrayItem('%$sugarArrayPath%', '', { index: '%$index%' })),
         openDialog({
           content: studio.jbFloatingInput('%$actualPathHere%'),
           style: dialog.studioJbEditorPopup(),

@@ -144,6 +144,7 @@ extension('probe', 'suggestions', {
 })
 
 component('suggestions.shouldShow', {
+  type: 'boolean',
   params: [
     {id: 'expressionOnly', as: 'boolean', type: 'boolean'}
   ],

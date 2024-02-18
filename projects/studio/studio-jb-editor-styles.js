@@ -1,5 +1,5 @@
 component('dialog.studioJbEditorPopup', {
-  type: 'dialog.style',
+  type: 'dialog-style',
   impl: customStyle({
     template: (cmp,{contentComp},h) => h('div',{ class: 'jb-dialog jb-popup' },[
         h('button.dialog-close', {onclick: 'dialogClose' },'×'),
@@ -47,7 +47,7 @@ component('studio.nearLauncherPosition', {
 })
 
 component('dialog.studioSuggestionsPopup', {
-  type: 'dialog.style',
+  type: 'dialog-style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup' },[
         h(state.contentComp),

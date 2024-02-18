@@ -1,5 +1,5 @@
 component('editableNumber.sliderNoText', {
-  type: 'editable-number.style',
+  type: 'editable-number-style',
   impl: customStyle({
     template: (cmp,{min,max,step,numbericVal},h) => h('input', { 
         type: 'range', value: numbericVal, mouseup: 'onblurHandler', tabindex: -1, min,max,step
@@ -13,7 +13,7 @@ component('editableNumber.sliderNoText', {
 })
 
 component('editableNumber.slider', {
-  type: 'editable-number.style',
+  type: 'editable-number-style',
   impl: styleByControl({
     control: group({
       controls: group({
@@ -51,7 +51,7 @@ component('editableNumber.slider', {
 })
 
 component('editableNumber.mdcSlider', {
-  type: 'editable-number.style',
+  type: 'editable-number-style',
   impl: styleByControl({
     control: group({
       controls: group({
@@ -84,7 +84,7 @@ component('editableNumber.mdcSlider', {
 })
 
 component('editableNumber.mdcSliderNoText', {
-  type: 'editable-number.style',
+  type: 'editable-number-style',
   params: [
     {id: 'thumbSize', as: 'number', defaultValue: 21},
     {id: 'cx', as: 'number', defaultValue: 10.5},

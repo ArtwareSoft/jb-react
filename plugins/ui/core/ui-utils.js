@@ -76,7 +76,7 @@ component('feature.serviceRegistey', {
 })
 
 component('service.registerBackEndService', {
-  type: 'data',
+  type: 'feature',
   params: [
     {id: 'id', as: 'string', mandatory: true, dynamic: true},
     {id: 'service', mandatory: true, dynamic: true},
@@ -249,12 +249,13 @@ component('action.focusOnCmp', {
 })
 
 component('customStyle', {
+  type: 'style',
   typePattern: t => /\.style$/.test(t),
   category: 'advanced:10,all:10',
   params: [
     {id: 'template', as: 'single', mandatory: true, dynamic: true, ignore: true, byName: true},
     {id: 'css', as: 'string'},
-    {id: 'features', type: 'feature[]', dynamic: true}
+    {id: 'features', type: 'feature[]', typeAsParent: t=>t.replace(/style/,'feature'), dynamic: true}
   ],
   impl: (ctx, css, features) => ({
     template: ctx.profile.template,
@@ -265,6 +266,7 @@ component('customStyle', {
 })
 
 component('styleByControl', {
+  type: 'style',
   typePattern: t => /\.style$/.test(t),
   category: 'advanced:10,all:20',
   params: [
@@ -275,12 +277,13 @@ component('styleByControl', {
 })
 
 component('styleWithFeatures', {
+  type: 'style',
   typePattern: t => /\.style$/.test(t),
   description: 'customize, add more features to style',
   category: 'advanced:10,all:20',
   params: [
     {id: 'style', type: '$asParent', mandatory: true, composite: true},
-    {id: 'features', type: 'feature[]', templateValue: [], dynamic: true, mandatory: true}
+    {id: 'features', type: 'feature[]', templateValue: [], typeAsParent: t=>t.replace(/style/,'feature'), dynamic: true, mandatory: true}
   ],
   impl: (ctx, style, features) => {
     if (style.isBEComp)
@@ -316,9 +319,3 @@ component('renderWidget', {
   }
 })
 
-// component('elemOfSelector', {
-//   params: [
-//     {id: 'selector', as: 'string' },
-//   ],
-//   impl: (ctx,selector) => jb.ui.elemOfSelector(selector,ctx)
-// })

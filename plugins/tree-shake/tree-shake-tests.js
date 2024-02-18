@@ -1,21 +1,21 @@
 component('treeShakeTest.basic', {
   impl: dataTest({
-    calculate: pipeline(() => jb.treeShake.treeShake(['notContains'],{}), join(',')),
-    expectedResult: and(contains('contains'), contains('not'))
+    calculate: pipeline(() => jb.treeShake.treeShake(['boolean<>notContains'],{}), join(',')),
+    expectedResult: and(contains('boolean<>contains'), contains('boolean<>not'))
   })
 })
 
 component('treeShakeTest.itemlist', {
   impl: dataTest({
-    calculate: pipeline(() => jb.treeShake.treeShake(['itemlist'],{}), join(',')),
-    expectedResult: and(contains('writeValue'), contains('#ui.vdomDiff'))
+    calculate: pipeline(() => jb.treeShake.treeShake(['control<>itemlist'],{}), join(',')),
+    expectedResult: and(contains('action<>writeValue'), contains('#ui.vdomDiff'))
   })
 })
 
 component('treeShakeTest.big', {
   impl: dataTest({
     calculate: pipeline(
-      () => jb.treeShake.code(jb.treeShake.treeShake('widget.headless,call,editableText,editableText.codemirror'.split(','),{}))
+      () => jb.treeShake.code(jb.treeShake.treeShake('rx<>widget.headless,any<>call,control<>editableText'.split(','),{}))
     ),
     expectedResult: contains('jb.ui.h')
   })
@@ -40,5 +40,5 @@ component('test.compWithEscInFunc', {
 })
 
 component('treeShakeTest.compToStrEsc', {
-  impl: dataTest(ctx => jb.treeShake.compToStr('test.compWithEscInFunc'), notContains('\\\\\\'))
+  impl: dataTest(ctx => jb.treeShake.compToStr('data<>test.compWithEscInFunc'), notContains('\\\\\\'))
 })

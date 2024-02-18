@@ -84,7 +84,8 @@ component('source.interval', {
 })
 
 component('rx.pipe', {
-  type: 'rx,data,action',
+  type: 'rx',
+  moreTypes: 'data<>,action<>',
   category: 'source',
   description: 'pipeline of reactive observables with source',
   params: [
@@ -320,7 +321,7 @@ component('rx.flatMap', {
 
     sink(0, function flatMap(t,d) {
       if (t == 1 && d == null || t == 2) {
-        sourceTalkback(t,d)
+        sourceTalkback && sourceTalkback(t,d)
         innerSources.forEach(src=>src.talkback && src.talkback(t,d))
       }
     })
@@ -360,7 +361,7 @@ component('rx.concatMap', {
   type: 'rx',
   category: 'operator,combine',
   params: [
-    {id: 'func', dynamic: true, mandatory: true, description: 'keeps the order of the results, can return array, promise or callbag'},
+    {id: 'func', type: 'rx', dynamic: true, mandatory: true, description: 'keeps the order of the results, can return array, promise or callbag'},
     {id: 'combineResultWithInput', dynamic: true, description: 'combines %$input% with the inner result %%'}
   ],
   impl: (ctx,func,combine) => combine.profile ? jb.callbag.concatMap(ctx2 => func(ctx2), (input,{data}) => combine({data,vars: {...input.vars, input: input.data} }))

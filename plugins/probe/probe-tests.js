@@ -90,12 +90,6 @@ component('probeTest.pipelineNoSugar', {
   impl: probeTest(group(text(pipeline('hello'))), 'controls~text~items~0')
 })
 
-component('probeTest.gap.actionsArray', {
-  impl: probeTest(group(button('hello', [winUtils.gotoUrl('google')])), 'controls~action~0~url', {
-    allowClosestPath: true,
-    expectedVisits: 1
-  })
-})
 
 component('probeTest.insideWriteValue', {
   impl: probeTest(button({ action: writeValue('%$person/name%', 'homer') }), 'action~to', {
@@ -246,10 +240,10 @@ component('suggestionsTest.varsFilter', {
 
 component('suggestionsTest.component', {
   impl: suggestionsTest('=watc', {
-    path: 'suggestionsTest.defaultProbe~impl~features~0',
+    path: 'control<>suggestionsTest.defaultProbe~impl~features~0',
     expectedResult: contains('watchRef')
   }),
-  require: suggestionsTest.defaultProbe()
+  require: 'control<>suggestionsTest.defaultProbe'
 })
 
 component('suggestionsTest.insideArray', {

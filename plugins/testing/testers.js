@@ -3,7 +3,7 @@ using('remote')
 component('dataTest', {
   type: 'test',
   params: [
-    {id: 'calculate', dynamic: true},
+    {id: 'calculate', type:'data', dynamic: true},
     {id: 'expectedResult', type: 'boolean', dynamic: true},
     {id: 'runBefore', type: 'action', dynamic: true},
     {id: 'timeout', as: 'number', defaultValue: 200},
@@ -130,13 +130,13 @@ extension('test', {
 			return (jb.comps[name] && jb.comps[name].type || '').indexOf(type) == 0
 		}
 	},
-	async runSingleTest(testID,{doNotcleanBeforeRun, showOnlyTest} = {}) {
+	async runSingleTest(testID,{doNotcleanBeforeRun, showOnlyTest,fullId} = {}) {
 		const tstCtx = (jb.ui ? jb.ui.extendWithServiceRegistry() : new jb.core.jbCtx())
 			.setVars({ testID, singleTest: jb.test.singleTest })
 		const start = new Date().getTime()
 		await !doNotcleanBeforeRun && jb.test.cleanBeforeRun()
 		jb.log('start test',{testID})
-		const res = await tstCtx.run({$:testID})
+		const res = await tstCtx.run({$:fullId})
 		res.duration = new Date().getTime() - start
 		jb.log('end test',{testID,res})
 		if (!jb.test.singleTest)
@@ -144,11 +144,11 @@ extension('test', {
 		jb.ui && jb.ui.garbageCollectUiComps({forceNow: true,clearAll: true ,ctx: tstCtx})
 
 		res.show = () => {
-			const profile = jb.comps[testID]
+			const profile = jb.comps[fullId]
 			if (!profile.impl.control) return
 			const doc = jb.frame.document
 			if (!doc) return
-			const ctxToRun = jb.ui.extendWithServiceRegistry(new jb.core.jbCtx(tstCtx,{ profile: profile.impl.control , forcePath: testID+ '~impl~control', path: '' } ))
+			const ctxToRun = jb.ui.extendWithServiceRegistry(new jb.core.jbCtx(tstCtx,{ profile: profile.impl.control , forcePath: fullId+ '~impl~control', path: '' } ))
 			const elem = doc.createElement('div')
 			elem.className = 'show elemToTest'
 			if (showOnlyTest)
@@ -173,9 +173,10 @@ extension('test', {
 		})
 
 		let tests = jb.entries(jb.comps)
+			 .map(([id,comp]) => [id.split('test<>').pop(),comp,id])
 			.filter(e=>typeof e[1].impl == 'object')
 			.filter(e=>e[1].type != 'test') // exclude the testers
-			.filter(e=>jb.test.isCompNameOfType(e[0],'test'))
+			.filter(e=>jb.path(e[1],[jb.core.CT,'dslType']) == 'test<>')
 			.filter(e=>!testType || e[1].impl.$ == testType)
 			.filter(e=>!specificTest || e[0] == specificTest)
 	//		.filter(e=> !e[0].match(/throw/)) // tests that throw exceptions and stop the debugger
@@ -219,10 +220,10 @@ extension('test', {
 				document.getElementById('progress').innerHTML = `<div id=${testID}>${index++}: ${testID} started</div>`
 				await jb.delay(1)
 				console.log('starting ' + testID )
-				const res = await jb.test.runSingleTest(testID,{showOnlyTest})
+				const res = await jb.test.runSingleTest(testID,{showOnlyTest, fullId: e[2]})
 				console.log('end      ' + testID, res)
 				document.getElementById('progress').innerHTML = `<div id=${testID}>${testID} finished</div>`
-				return res
+				return { ...res, fullId: e[2]}
 			})() )),
 			subscribe(res=> {
 				res.success ? jb.test.success_counter++ : jb.test.fail_counter++;
@@ -239,15 +240,16 @@ extension('test', {
   	},
 	testResultHtml(res, repo) {
 		const baseUrl = jb.frame.location.href.split('/tests.html')[0]
-		const location = jb.comps[res.id][jb.core.CT].location || {}
+		const testComp = jb.comps[res.fullId]
+		const location = testComp[jb.core.CT].location || {}
 		const sourceCode = JSON.stringify(jb.exec(typeAdapter('source-code<loader>', test({
 			filePath: () => location.path, repo: () => location.repo
 		}))))
-		const studioUrl = `http://localhost:8082/project/studio/${res.id}/${res.id}?sourceCode=${encodeURIComponent(sourceCode)}`
+		const studioUrl = `http://localhost:8082/project/studio/${res.fullId}/${res.fullId}?sourceCode=${encodeURIComponent(sourceCode)}`
 		const _repo = repo ? `&repo=${repo}` : ''
-		const coveredTests = jb.comps[res.id].impl.covers ? `<a href="${baseUrl}/tests.html?coveredTestsOf=${res.id}${_repo}">${jb.comps[res.id].impl.covers.length} dependent tests</a>` : ''
+		const coveredTests = testComp.impl.covers ? `<a href="${baseUrl}/tests.html?coveredTestsOf=${res.id}${_repo}">${testComp.impl.covers.length} dependent tests</a>` : ''
 		return `<div class="${res.success ? 'success' : 'failure'}">
-			<a href="${baseUrl}/tests.html?test=${res.id}${_repo}&show&spy=${jb.spy.spyParamForTest(res.id)}" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
+			<a href="${baseUrl}/tests.html?test=${res.id}${_repo}&show&spy=${jb.spy.spyParamForTest(res.fullId)}" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
 			<span> ${res.duration}mSec</span> 
 			${coveredTests}
 			<a class="test-button" href="javascript:jb.test.goto_editor('${res.id}','${repo||''}')">src</a>
@@ -267,7 +269,7 @@ extension('test', {
 })
 
 component('source.testsResults', {
-  type: 'rx',
+  type: 'rx<>',
   params: [
     {id: 'tests', as: 'array'},
     {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self()}
@@ -275,11 +277,12 @@ component('source.testsResults', {
   impl: source.remote({
     rx: rx.pipe(
       source.data('%$tests%'),
+	  rx.var('fullId','test<>%%'),
       rx.var('testID'),
       rx.concatMap(
         source.merge(
           source.data(obj(prop('id', '%%'), prop('started', 'true'))),
-          rx.pipe(source.promise(({},{testID}) => jb.test.runSingleTest(testID)))
+          rx.pipe(source.promise(({},{testID,fullId}) => jb.test.runSingleTest(testID,{fullId})))
         )
       )
     ),
@@ -292,11 +295,11 @@ component('tests.batchRunner', {
     {id: 'tests', as: 'array'},
     {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self()}
   ],
-  impl: pipe(source.testsResults('%$tests%', '%$jbm%'))
+  impl: pipe(rx.pipe(source.testsResults('%$tests%', '%$jbm%')))
 })
 
 component('tests.runner', {
-  type: 'action',
+  type: 'action<>',
   params: [
     {id: 'tests', as: 'array'},
     {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self()},

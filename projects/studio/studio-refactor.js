@@ -28,6 +28,7 @@ component('studio.canExtractParam', {
 component('studio.calcExtractComponent', {
   description: 'returns the suggested component comp with save action',
   type: 'data',
+  moreTypes: 'action<>',
   params: [
     {id: 'path', as: 'string', mandatory: true},
     {id: 'compName', as: 'string', mandatory: true},
@@ -138,6 +139,7 @@ component('studio.openExtractParam', {
 
 component('studio.calcExtractParam', {
   type: 'data',
+  moreTypes: 'action<>',
   params: [
     {id: 'path', as: 'string', mandatory: true},
     {id: 'id', as: 'string'},
@@ -218,7 +220,8 @@ component('studio.canMakeLocal', {
 })
 
 component('studio.calcMakeLocal', {
-  type: 'data,action',
+  type: 'data',
+  moreTypes: 'action<>',
   params: [
     {id: 'path', as: 'string'},
     {id: 'activate', as: 'boolean', type: 'boolean'}

@@ -92,7 +92,7 @@ component('studio.jbFloatingInput', {
 })
 
 component('studio.suggestionList', {
-  type: 'picklist.style',
+  type: 'picklist-style',
   impl: styleByControl({
     control: itemlist({
       items: '%$picklistModel/options%',

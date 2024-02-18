@@ -1,5 +1,5 @@
 component('dialog.editSourceStyle', {
-  type: 'dialog.style',
+  type: 'dialog-style',
   params: [
     {id: 'id', as: 'string'},
     {id: 'width', as: 'number', defaultValue: 300},
@@ -59,7 +59,7 @@ component('dialog.editSourceStyle', {
 })
 
 component('studio.dialogParticleStyle', {
-  type: 'dialog.style',
+  type: 'dialog-style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
     css: `{ position: fixed; z-index: 6000 !important; width: 20px; height: 20px;}
@@ -109,7 +109,7 @@ component('studio.openMultilineEdit', {
 })
 
 component('dialog.studioFloating', {
-  type: 'dialog.style',
+  type: 'dialog-style',
   params: [
     {id: 'id', as: 'string'},
     {id: 'width', as: 'number', defaultValue: 300},

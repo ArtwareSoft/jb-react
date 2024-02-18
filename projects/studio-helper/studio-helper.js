@@ -303,8 +303,8 @@ component('studioHelperSample.propertiesParams', {
     {id: 'boolAsComp', type: 'boolean', as: 'boolean'},
     {id: 'boolAsJs', type: 'boolean', as: 'boolean'},
     {id: 'boolAsExp', type: 'boolean', as: 'boolean'},
-    {id: 'style', type: 'button.style', defaultValue: button.mdcIcon()},
-    {id: 'groupStyle', type: 'group.style'},
+    {id: 'style', type: 'button-style', defaultValue: button.mdcIcon()},
+    {id: 'groupStyle', type: 'group-style'},
     {id: 'action', type: 'action'},
     {id: 'features', type: 'feature[]'}
   ],
@@ -358,8 +358,8 @@ component('studioHelperSample.propertiesParamsProf', {
 component('studioHelperSample.propertiesPTForTgp', {
   type: 'control',
   params: [
-    {id: 'style1', type: 'button.style'},
-    {id: 'style2', type: 'button.style'}
+    {id: 'style1', type: 'button-style'},
+    {id: 'style2', type: 'button-style'}
   ],
   impl: group({
 
@@ -388,7 +388,7 @@ component('studioHelperSample.componentHeader', {
   category: 'group:100,common:90',
   params: [
     {id: 'title12', as: 'string', dynamic: true},
-    {id: 'style11', type: 'group.style', defaultValue: layout.vertical(), mandatory: true, dynamic: true},
+    {id: 'style11', type: 'group-style', defaultValue: layout.vertical(), mandatory: true, dynamic: true},
     {id: 'controls', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true, composite: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],

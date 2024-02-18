@@ -27,7 +27,7 @@ component('tree', {
   params: [
     {id: 'title', as: 'string'},
     {id: 'nodeModel', type: 'tree.node-model', dynamic: true, mandatory: true},
-    {id: 'style', type: 'tree.style', defaultValue: tree.expandBox(), dynamic: true},
+    {id: 'style', type: 'tree-style', defaultValue: tree.expandBox(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true, as: 'array'}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
@@ -80,7 +80,7 @@ component('tree.expandPath', {
 
 // **** styles ***
 component('tree.plain', {
-  type: 'tree.style',
+  type: 'tree-style',
   params: [
     {id: 'showIcon', as: 'boolean', type: 'boolean'}
   ],
@@ -115,7 +115,7 @@ component('tree.plain', {
 })
 
 component('tree.expandBox', {
-  type: 'tree.style',
+  type: 'tree-style',
   params: [
     {id: 'showIcon', as: 'boolean', type: 'boolean'},
     {id: 'lineWidth', as: 'string', defaultValue: '300px'}
@@ -177,7 +177,10 @@ component('tree.selection', {
   impl: features(
     tree.expandPath(tree.parentPath('%$databind()%')),
     method('onSelection', runActions(If(isRef('%$databind()%'), writeValue('%$databind()%', '%%')), call('onSelection'))),
-    method('onRightClick', runActions(If(isRef('%$databind()%'), writeValue('%$databind()%', '%%')), call('onRightClick'))),
+    method({
+      id: 'onRightClick',
+      action: runActions(If(isRef('%$databind()%'), writeValue('%$databind()%', '%%')), call('onRightClick'))
+    }),
     userStateProp({
       id: 'selected',
       value: (ctx,{$props,$state},{databind, autoSelectFirst}) => jb.val(databind()) || $state.selected || 
@@ -354,7 +357,8 @@ component('tree.dragAndDrop', {
 })
 
 component('tree.nextSelected', {
-  type: 'data:0',
+  type: 'data',
+  hidden: true,
   descrition: 'FE action',
   params: [
     {id: 'diff', as: 'number'}
@@ -374,7 +378,8 @@ component('tree.pathOfInteractiveItem', {
 })
 
 component('tree.pathOfElem', {
-  type: 'data:0',
+  type: 'data',
+  hidden: true,
   descrition: 'FE action',
   params: [
     {id: 'elem'}

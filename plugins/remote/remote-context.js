@@ -79,7 +79,7 @@ extension('remoteCtx', {
         const asIs = _asIs || (data && typeof data == 'object' && data.$$asIs)
         const stripedObj = data && typeof data == 'object' && jb.objFromEntries(jb.entries(data).map(e=>[e[0],jb.remoteCtx.deStrip(e[1],asIs)]))
         if (stripedObj && data.$ == 'runCtx' && !asIs)
-            return (ctx2,data2) => (new jb.core.jbCtx().ctx(jb.utils.resolveDetachedProfile(stripedObj))).extendVars(ctx2,data2).runItself()
+            return (ctx2,data2) => (new jb.core.jbCtx().ctx(jb.utils.resolveProfile(stripedObj, {topComp: stripedObj}))).extendVars(ctx2,data2).runItself()
         if (Array.isArray(data))
             return data.map(x=>jb.remoteCtx.deStrip(x,asIs))
         return stripedObj || data

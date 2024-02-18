@@ -71,7 +71,7 @@ component('remote.action', {
   type: 'action<>',
   description: 'exec a script on a remote node and returns a promise if not oneWay',
   params: [
-    {id: 'action', type: 'action', dynamic: true},
+    {id: 'action', type: 'action<>', dynamic: true},
     {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self()},
     {id: 'oneway', as: 'boolean', description: 'do not wait for the respone', type: 'boolean'},
     {id: 'timeout', as: 'number', defaultValue: 10000},
@@ -166,7 +166,7 @@ component('remote.shadowResource', {
 })
 
 component('remote.updateShadowData', {
-  type: 'action<>:0',
+  type: 'action<>',
   description: 'internal - update shadow on remote jbm',
   params: [
     {id: 'entry'}
@@ -184,7 +184,7 @@ component('remote.updateShadowData', {
 /*** net comps */
 
 component('net.listSubJbms', {
-  type: 'rx<>',
+  type: 'data<>',
   category: 'source',
   impl: pipe(
     () => Object.values(jb.jbm.childJbms || {}),

@@ -95,7 +95,7 @@ extension('codemirror', {
 })
 
 component('editableText.codemirror', {
-  type: 'editable-text.style',
+  type: 'editable-text-style',
   params: [
     {id: 'cm_settings', as: 'single'},
     {id: 'enableFullScreen', type: 'boolean', as: 'boolean', defaultValue: true},
@@ -197,7 +197,7 @@ component('codemirror.enrichUserEvent', {
 })
 
 component('text.codemirror', {
-  type: 'text.style',
+  type: 'text-style',
   params: [
     {id: 'cm_settings', as: 'single'},
     {id: 'enableFullScreen', type: 'boolean', as: 'boolean', defaultValue: true},

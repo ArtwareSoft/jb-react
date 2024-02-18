@@ -71,6 +71,7 @@ component('studio.openNewProject', {
 })
 
 component('studio.reOpenStudio', {
+  type: 'action',
   params: [
     {id: 'fileName', as: 'string', defaultValue: pipeline(studio.projectsDir(), '%%/%$studio/project%/%$studio/project%.js')},
     {id: 'line', as: 'number', defaultValue: 0}

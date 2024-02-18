@@ -3,7 +3,7 @@ component('editableText.picklistHelper', {
   type: 'feature',
   params: [
     {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true},
-    {id: 'picklistStyle', type: 'picklist.style', dynamic: true, defaultValue: picklist.labelList()},
+    {id: 'picklistStyle', type: 'picklist-style', dynamic: true, defaultValue: picklist.labelList()},
     {id: 'picklistFeatures', type: 'feature[]', flattenArray: true, dynamic: true},
     {id: 'showHelper', as: 'boolean', dynamic: true, defaultValue: notEmpty('%value%'), description: 'show/hide helper according to input content', type: 'boolean'},
     {id: 'autoOpen', as: 'boolean', type: 'boolean'},
@@ -99,7 +99,7 @@ component('editableText.helperPopup', {
   type: 'feature',
   params: [
     {id: 'control', type: 'control', dynamic: true, mandatory: true},
-    {id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue: dialog.popup()},
+    {id: 'popupStyle', type: 'dialog-style', dynamic: true, defaultValue: dialog.popup()},
     {id: 'showHelper', as: 'boolean', dynamic: true, defaultValue: notEmpty('%value%'), description: 'show/hide helper according to input content', type: 'boolean'},
     {id: 'autoOpen', as: 'boolean', type: 'boolean'},
     {id: 'onEnter', type: 'action', dynamic: true},

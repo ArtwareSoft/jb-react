@@ -4,13 +4,13 @@ using('remote-widget,watchable-comps,probe-preview,tgp-lang-server,workspace-IDE
 component('dataResource.studio', {
   watchableData: {
     sourceCode: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') ? JSON.parse(globalThis.decodeURIComponent((globalThis.location.href.match(new RegExp('sourceCode' + '=([^&]*)')) || [])[1])) : '',
-    circuit: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') ? (jb.path(globalThis,'location.pathname')||'').split('/')[3] : '',
+    circuit: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') ? decodeURI(jb.path(globalThis,'location.pathname')||'').split('/')[3] : '',
     project: '',
     page: '',
-    profile_path: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') ? (jb.path(globalThis,'location.pathname')||'').split('/')[4] : '',
+    profile_path: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') ? decodeURI(jb.path(globalThis,'location.pathname')||'').split('/')[4] : '',
     pickSelectionCtxId: '',
     jbEditor: {
-      selected: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') ? (jb.path(globalThis,'location.pathname')||'').split('/')[4] : ''
+      selected: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') ? decodeURI(jb.path(globalThis,'location.pathname')||'').split('/')[4] : ''
     },
     preview: {
       width: 1280,
@@ -48,7 +48,6 @@ component('studio.isCircuit', {
 })
 
 component('studio.circuitPlugin', {
-  type: 'boolean',
   impl: ctx => (jb.path(jb.comps,[ctx.exp('%$studio/circuit%'),jb.core.CT,'plugin','id']) || '').split('-tests')[0]
 })
 

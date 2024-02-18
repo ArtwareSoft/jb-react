@@ -82,6 +82,7 @@ component('feature.initValue', {
 })
 
 component('feature.requireService', {
+  type: 'feature',
   params: [
     {id: 'service', type: 'service'},
     {id: 'condition', dynamic: true, defaultValue: true}
@@ -93,7 +94,7 @@ component('feature.requireService', {
 })
 
 component('feature.init', {
-  type: 'feature:0',
+  type: 'feature',
   category: 'lifecycle',
   description: 'activated before calc properties, use initValue or require instead',
   params: [
@@ -123,9 +124,10 @@ component('templateModifier', {
 
 component('features', {
   type: 'feature',
+  moreTypes: 'style',
   description: 'list of features, auto flattens',
   params: [
-    {id: 'features', type: 'feature[]', as: 'array', composite: true}
+    {id: 'features', type: 'feature[]', as: 'array', typeAsParent: t=>t.replace(/style/,'feature'), composite: true}
   ],
   impl: (ctx,features) => features.flatMap(x=> Array.isArray(x) ? x: [x])
 })
@@ -189,7 +191,7 @@ component('followUp.watchObservable', {
   category: 'watch',
   description: 'subscribes to a custom observable to refresh component',
   params: [
-    {id: 'toWatch', mandatory: true, dynamic: true},
+    {id: 'toWatch', type: 'rx', mandatory: true, dynamic: true},
     {id: 'debounceTime', as: 'number', description: 'in mSec'}
   ],
   impl: followUp.flow(
@@ -247,7 +249,7 @@ component('htmlAttribute', {
 })
 
 component('cmpId', {
-  type: 'feature:0',
+  type: 'feature',
   priority: 0,
   description: 'force cmpId',
   params: [

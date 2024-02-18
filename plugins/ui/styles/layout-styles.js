@@ -1,5 +1,6 @@
 component('layout.vertical', {
-  type: 'layout,feature',
+  type: 'layout',
+  moreTypes: 'feature<>',
   params: [
     {id: 'spacing', as: 'string', defaultValue: 3}
   ],
@@ -9,7 +10,8 @@ component('layout.vertical', {
 })
 
 component('layout.horizontal', {
-  type: 'layout,feature',
+  type: 'layout',
+  moreTypes: 'feature<>',
   params: [
     {id: 'spacing', as: 'string', defaultValue: 3}
   ],
@@ -19,7 +21,8 @@ component('layout.horizontal', {
 })
 
 component('layout.horizontalFixedSplit', {
-  type: 'layout,feature',
+  type: 'layout',
+  moreTypes: 'feature<>',
   params: [
     {id: 'leftWidth', as: 'string', defaultValue: '200px', mandatory: true},
     {id: 'rightWidth', as: 'string', defaultValue: '100%', mandatory: true},
@@ -34,7 +37,8 @@ component('layout.horizontalFixedSplit', {
 })
 
 component('layout.horizontalWrapped', {
-  type: 'layout,feature',
+  type: 'layout',
+  moreTypes: 'feature<>',
   params: [
     {id: 'spacing', as: 'string', defaultValue: 3}
   ],
@@ -46,7 +50,8 @@ component('layout.horizontalWrapped', {
 })
 
 component('layout.flex', {
-  type: 'layout,feature',
+  type: 'layout',
+  moreTypes: 'feature<>',
   params: [
     {id: 'direction', as: 'string', options: ',row,row-reverse,column,column-reverse'},
     {id: 'justifyContent', as: 'string', options: ',flex-start,flex-end,center,space-between,space-around'},
@@ -63,7 +68,8 @@ component('layout.flex', {
 })
 
 component('layout.grid', {
-  type: 'layout,feature',
+  type: 'layout',
+  moreTypes: 'feature<>',
   params: [
     {id: 'columnSizes', as: 'array', templateValue: list('auto','auto'), description: 'grid-template-columns, list of lengths'},
     {id: 'rowSizes', as: 'array', description: 'grid-template-rows, list of lengths'},

@@ -16,7 +16,7 @@ component('itemlist.divider', {
 })
 
 component('itemlist.ulLi', {
-  type: 'itemlist.style',
+  type: 'itemlist-style',
   impl: customStyle({
     template: ({},{ctrls},h) => h('ul.jb-itemlist',{},
         ctrls.map((ctrl) => h('li.jb-item', {}, ctrl.map(singleCtrl=>h(singleCtrl))))),
@@ -27,7 +27,7 @@ component('itemlist.ulLi', {
 })
 
 component('itemlist.div', {
-  type: 'itemlist.style',
+  type: 'itemlist-style',
   params: [
     {id: 'spacing', as: 'number', defaultValue: 0}
   ],
@@ -39,7 +39,8 @@ component('itemlist.div', {
 })
 
 component('itemlist.horizontal', {
-  type: 'itemlist.style',
+  type: 'itemlist-style',
+  moreTypes: 'group-style<>',
   params: [
     {id: 'spacing', as: 'number', defaultValue: 0}
   ],

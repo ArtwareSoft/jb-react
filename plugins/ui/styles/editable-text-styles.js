@@ -1,5 +1,5 @@
 component('editableText.input', {
-  type: 'editable-text.style',
+  type: 'editable-text-style',
   impl: customStyle({
     template: (cmp,{databind},h) => h('input', {value: databind, onchange: true, onkeyup: true, onblur: true }),
     features: field.databindText()
@@ -7,7 +7,7 @@ component('editableText.input', {
 })
 
 component('editableText.textarea', {
-  type: 'editable-text.style',
+  type: 'editable-text-style',
   params: [
     {id: 'rows', as: 'number', defaultValue: 4},
     {id: 'cols', as: 'number', defaultValue: 120},
@@ -21,7 +21,8 @@ component('editableText.textarea', {
 })
 
 component('editableText.mdcInput', {
-  type: 'editable-text.style,editable-number.style',
+  type: 'editable-text-style',
+  moreTypes: 'editable-number.style<>',
   params: [
     {id: 'width', as: 'number'},
     {id: 'noLabel', as: 'boolean', type: 'boolean'},
@@ -56,7 +57,7 @@ component('editableText.mdcInput', {
 })
 
 component('editableText.mdcNoLabel', {
-  type: 'editable-text.style',
+  type: 'editable-text-style',
   params: [
     {id: 'width', as: 'number'}
   ],
@@ -68,7 +69,7 @@ component('editableText.mdcSearch', {
     {id: 'width', as: 'number'}
   ],
   description: 'debounced and one way binding',
-  type: 'editable-text.style',
+  type: 'editable-text-style',
   impl: styleWithFeatures(editableText.mdcInput('%$width%', true), {
     features: feature.icon('search', { position: 'post' })
   })
@@ -76,12 +77,12 @@ component('editableText.mdcSearch', {
 
 component('editableText.expandable', {
   description: 'label that changes to editable class on double click',
-  type: 'editable-text.style',
+  type: 'editable-text-style',
   params: [
     {id: 'buttonFeatures', type: 'feature[]', flattenArray: true, dynamic: true},
     {id: 'editableFeatures', type: 'feature[]', flattenArray: true, dynamic: true},
-    {id: 'buttonStyle', type: 'button.style', dynamic: true, defaultValue: button.href()},
-    {id: 'editableStyle', type: 'editable-text.style', dynamic: true, defaultValue: editableText.input()},
+    {id: 'buttonStyle', type: 'button-style', dynamic: true, defaultValue: button.href()},
+    {id: 'editableStyle', type: 'editable-text-style', dynamic: true, defaultValue: editableText.input()},
     {id: 'onToggle', type: 'action', dynamic: true}
   ],
   impl: styleByControl({

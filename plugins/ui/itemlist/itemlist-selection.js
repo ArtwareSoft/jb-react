@@ -84,7 +84,7 @@ component('itemlist.keyboardSelection', {
     htmlAttribute('tabIndex', 0),
     method('onEnter', runActionOnItem(itemlist.indexToData(), call('onEnter'))),
     frontEnd.passSelectionKeySource(),
-    frontEnd.prop('onkeydown', source.merge(source.frontEndEvent('keydown'), source.findSelectionKeySource())),
+    frontEnd.prop('onkeydown', rx.pipe(source.merge(source.frontEndEvent('keydown'), source.findSelectionKeySource()))),
     frontEnd.flow(
       '%$cmp.onkeydown%',
       rx.log('test onkeydown keyboardSelection'),
@@ -108,7 +108,8 @@ component('itemlist.keyboardSelection', {
 })
 
 component('itemlist.indexOfElem', {
-  type: 'data:0',
+  type: 'data',
+  hidden: true,
   description: 'also supports multiple elements',
   params: [
     {id: 'elem', defaultValue: '%%'}
@@ -122,7 +123,8 @@ component('itemlist.indexOfElem', {
 })
 
 component('itemlist.indexToData', {
-  type: 'data:0',
+  type: 'data',
+  hidden: true,
   params: [
     {id: 'index', as: 'number', defaultValue: '%%'}
   ],
@@ -130,7 +132,8 @@ component('itemlist.indexToData', {
 })
 
 component('itemlist.findSelectionSource', {
-  type: 'data:0',
+  type: 'data',
+  hidden: true,
   impl: ctx => {
     const {cmp,itemlistCntr} = ctx.vars
     const srcCtxId = itemlistCntr && itemlistCntr.selectionKeySourceCmp
@@ -140,7 +143,8 @@ component('itemlist.findSelectionSource', {
 })
 
 component('itemlist.nextSelected', {
-  type: 'data:0',
+  type: 'data',
+  hidden: true,
   params: [
     {id: 'diff', as: 'number'},
     {id: 'elementFilter', dynamic: 'true', defaultValue: true}

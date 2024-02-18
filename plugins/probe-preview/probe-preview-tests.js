@@ -17,7 +17,7 @@ component('suggestionsTest.varsFilter.remote', {
 
 component('workerPreviewTest.basic', {
   impl: uiTest(probe.remoteCircuitPreview(), contains('hello'), {
-    runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
+    runBefore: writeValue('%$probe/defaultMainCircuit%', 'control<>sampleProject.main'),
     uiAction: waitForText('hello'),
     timeout: 3000
   })
@@ -25,8 +25,8 @@ component('workerPreviewTest.basic', {
 
 component('workerPreviewTest.changeScript', {
   impl: uiTest(probe.remoteCircuitPreview(), contains('world'), {
-    runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
-    uiAction: uiActions(writeValue(tgp.ref('sampleProject.main~impl~controls~0~text'), 'world'), waitForText('world')),
+    runBefore: writeValue('%$probe/defaultMainCircuit%', 'control<>sampleProject.main'),
+    uiAction: uiActions(writeValue(tgp.ref('control<>sampleProject.main~impl~controls~0~text'), 'world'), waitForText('world')),
     timeout: 1000
   })
 })
@@ -36,10 +36,10 @@ component('workerPreviewTest.changeScript', {
 //     control: group({
 //       controls: [
 //         probe.remoteCircuitPreview(),
-//         probe.propertyPrimitive('sampleProject.main~impl~controls~0~text')
+//         probe.propertyPrimitive('control<>sampleProject.main~impl~controls~0~text')
 //       ]
 //     }),
-//     runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
+//     runBefore: writeValue('%$probe/defaultMainCircuit%', 'control<>sampleProject.main'),
 //     userInputRx: source.mergeConcat(
 //       source.promise(waitForSelector('input')),
 //       source.data(userInput.setText('hello %$var1', 'input')),
@@ -56,12 +56,12 @@ component('uiTest.workerPreviewTest.addCss', {
     control: group(
       button({
         title: 'change script',
-        action: writeValue(tgp.ref('sampleProject.main~impl~controls~0~features~1'), () => css('color: green'))
+        action: writeValue(tgp.ref('control<>sampleProject.main~impl~controls~0~features~1'), () => ({$:'feature<>css', css: 'color: green'}))
       }),
       probe.remoteCircuitPreview()
     ),
     expectedResult: contains('color: green'),
-    runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
+    runBefore: writeValue('%$probe/defaultMainCircuit%', 'control<>sampleProject.main'),
     uiAction: click(),
     useFrontEnd: true
   })
@@ -72,14 +72,14 @@ component('uiTest.workerPreviewTest.changeCss', {
     control: group(
       button({
         title: 'change script',
-        action: writeValue(tgp.ref('sampleProject.main~impl~controls~0~features~1'), () => css('color: blue'))
+        action: writeValue(tgp.ref('control<>sampleProject.main~impl~controls~0~features~1'), () => ({$:'feature<>css', css: 'color: blue'}))
       }),
       probe.remoteCircuitPreview()
     ),
     expectedResult: ctx => Object.values(jb.ui.FEEmulator[ctx.vars.widgetId].styles).join(';').indexOf('color: blue') != -1,
     runBefore: runActions(
-      writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
-      writeValue(tgp.ref('sampleProject.main~impl~controls~0~features~1'), () => css('color: green'))
+      writeValue('%$probe/defaultMainCircuit%', 'control<>sampleProject.main'),
+      writeValue(tgp.ref('control<>sampleProject.main~impl~controls~0~features~1'), () => ({$:'feature<>css', css: 'color: green'}))
     ),
     uiAction: click(),
     useFrontEnd: true
@@ -92,7 +92,7 @@ component('uiTest.workerPreviewTest.changeCss', {
 //     control: probe.remoteCircuitPreview(child('childProbe')),
 //     runBefore: runActions(
 //       jbm.start(child({id: 'childProbe', init: probe.initPreview()})),
-//       writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main')
+//       writeValue('%$probe/defaultMainCircuit%', 'control<>sampleProject.main')
 //     ),
 //     checkResultRx: () => jb.ui.renderingUpdates,
 //     expectedResult: contains('hello'),
@@ -105,7 +105,7 @@ component('uiTest.workerPreviewTest.changeCss', {
 //     control: probe.remoteCircuitPreview(worker('childProbe')),
 //     runBefore: runActions(
 //       jbm.start(worker({id: 'childProbe', init: probe.initPreview()})),
-//       writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main')
+//       writeValue('%$probe/defaultMainCircuit%', 'control<>sampleProject.main')
 //     ),
 //     checkResultRx: () => jb.ui.renderingUpdates,
 //     expectedResult: contains('hello'),

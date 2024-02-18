@@ -14,7 +14,8 @@
 //     })))
 // })
 
-component('itemlists.manyItems', {
+component('itemlists.manyItems2', {
+  type: 'data<>',
   params: [
     {id: 'howMany', as: 'number', defaultValue: 1000}
   ],
@@ -43,9 +44,10 @@ component('remoteTest.remote.deStripBug', {
 
 component('remoteTest.remote.action', {
   impl: dataTest({
-    calculate: pipe(remote.action(() => jb.db.passive('w','hello'), worker()), remote.data('%$w%', worker())),
+    runBefore: remote.action(() => jb.db.passive('w','hello'), worker()),
+    calculate: remote.data('%$w%', worker()),
     expectedResult: equals('hello'),
-    timeout: 3000
+    timeout: 1000
   })
 })
 
@@ -87,7 +89,7 @@ component('remoteTest.remoteOperator.child.loadOperatorCode', {
 component('remoteTest.childWorker.sourceCode.project', {
   impl: dataTest({
     calculate: remote.data({
-      calc: pipeline(itemlists.manyItems(3), '%id%', join(',')),
+      calc: pipeline(itemlists.manyItems2(3), '%id%', join(',')),
       jbm: worker('itemlists', { sourceCode: project('itemlists') })
     }),
     expectedResult: equals('1,2,3'),
@@ -97,10 +99,16 @@ component('remoteTest.childWorker.sourceCode.project', {
 
 component('remoteTest.networkGateway', {
   impl: dataTest({
-    calculate: source.remote({
-      rx: rx.pipe(source.data('hello'), rx.map('%%'), remote.operator(rx.map('%% world'), byUri('peer2'))),
-      jbm: byUri('peer1')
-    }),
+    calculate: rx.pipe(
+      source.remote({
+        rx: rx.pipe(
+          source.data('hello'),
+          rx.map('%%'),
+          remote.operator(rx.map('%% world'), byUri('peer2'))
+        ),
+        jbm: byUri('peer1')
+      })
+    ),
     expectedResult: equals('hello world'),
     runBefore: runActions(
       jbm.start(worker('peer1', { networkPeer: true })),
@@ -236,10 +244,11 @@ component('remoteTest.webSocket.runTest', {
     calculate: pipe(
       rx.pipe(
         source.data('%$testsToRun%'),
+        rx.var('fullId','test<>%%'),
         rx.log('test'),
         remote.operator({
-          rx: rx.mapPromise(({data}) => jb.test.runSingleTest(data)),
-          jbm: remoteNodeWorker('tester', {
+          rx: rx.mapPromise(({data},{fullId}) => jb.test.runSingleTest(data,{fullId})),
+          jbm: worker('tester', {
             sourceCode: sourceCode(pluginsByPath('/plugins/common/xx-tests.js'))
           })
         }),
@@ -260,7 +269,7 @@ component('remoteTest.testResults', {
     ],
     calculate: pipe(
       rx.pipe(
-        source.testsResults('%$testsToRun%', remoteNodeWorker('tester', {
+        source.testsResults('%$testsToRun%', worker('tester', {
           sourceCode: sourceCode(pluginsByPath('/plugins/common/xx-tests.js'))
         })),
         rx.log('test')

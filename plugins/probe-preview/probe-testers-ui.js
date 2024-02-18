@@ -8,12 +8,12 @@ component('test.showTestInStudio', {
   ],
   impl: (ctx,testId, controlOnly) => {
 		const profile = jb.path(jb.comps[testId],'impl')
-    jb.utils.resolveDetachedProfile(profile)
+    jb.utils.resolveProfile(profile)
 		const ctxForUi = jb.ui.extendWithServiceRegistry(ctx)
 		if (profile.$ == 'dataTest')
-			return ctxForUi.run({ $: 'test.dataTestView' ,testId, testResult })
+			return ctxForUi.run({ $: 'control<>test.dataTestView' ,testId, testResult })
 		else if (profile.$ == 'uiFrontEndTest')
-			return ctxForUi.run({ $: 'test.uiFrontEndTestView' ,testId, testResult })
+			return ctxForUi.run({ $: 'control<>test.uiFrontEndTestView' ,testId, testResult })
     else if (profile.$ == 'uiTest' && controlOnly) {
         const ctxWithVars = ctx.setVars(jb.objFromEntries((profile.vars||[]).map(v=>[v.name,ctx.run(v.val)])))
         const ctxToRun = jb.ui.extendWithServiceRegistry(new jb.core.jbCtx(ctxWithVars,{ profile: profile.control, forcePath: testId+ '~impl~control', path: '' } ))
@@ -21,7 +21,7 @@ component('test.showTestInStudio', {
     } else if (profile.$ == 'uiTest') {
 			const ctxWithVars = ctx.setVars(jb.objFromEntries((profile.vars||[]).map(v=>[v.name,ctx.run(v.val)])))
 			const ctxToRun = jb.ui.extendWithServiceRegistry(new jb.core.jbCtx(ctxWithVars,{ profile, forcePath: testId+ '~impl', path: '' } ))
-			return ctxForUi.run({ $: 'test.uiTestRunner', testId,ctxToRun,testResult })
+			return ctxForUi.run({ $: 'control<>test.uiTestRunner', testId,ctxToRun,testResult })
 		}
 
 		async function testResult() {
@@ -40,7 +40,7 @@ component('test.showTestInStudio', {
 			return res
 		}
 	},
-  require: [test.dataTestView(), test.uiTestRunner()]
+  require: [{ $: 'control<>test.dataTestView' }, {$: 'control<>test.uiTestRunner' }, { $: 'control<>test.uiFrontEndTestView'}]
 })
 
 component('test.expectedResultProfile', {
@@ -120,7 +120,7 @@ component('test.uiFrontEndTestView', {
       group.wait('%$testResult()%', { varName: 'result' })
     ]
   }),
-  require: winUtils.gotoUrl()
+  require: ({$: 'action<>winUtils.gotoUrl' })
 })
 
 component('test.dataTestView', {
@@ -155,7 +155,7 @@ component('test.dataTestView', {
       group.wait('%$testResult()%', { varName: 'result' })
     ]
   }),
-  require: winUtils.gotoUrl()
+  require: ({$: 'action<>winUtils.gotoUrl' })
 })
 
 component('test.uiTestRunner', {
@@ -201,5 +201,5 @@ component('test.uiTestRunner', {
       })
     ]
   }),
-  require: winUtils.gotoUrl()
+  require: ({$: 'action<>winUtils.gotoUrl' })
 })

@@ -1,5 +1,5 @@
 component('group.htmlTag', {
-  type: 'group.style',
+  type: 'group-style',
   params: [
     {id: 'htmlTag', as: 'string', defaultValue: 'section', options: 'div,ul,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label,form'},
     {id: 'groupClass', as: 'string'},
@@ -13,17 +13,17 @@ component('group.htmlTag', {
 })
 
 component('group.div', {
-  type: 'group.style',
+  type: 'group-style',
   impl: group.htmlTag('div')
 })
 
 component('group.section', {
-  type: 'group.style',
+  type: 'group-style',
   impl: group.htmlTag('section')
 })
 
 component('group.ulLi', {
-  type: 'group.style',
+  type: 'group-style',
   impl: customStyle({
     template: (cmp,{ctrls},h) => h('ul.jb-itemlist',{},
         ctrls.map(ctrl=> h('li', {class: 'jb-item'} ,h(ctrl)))),
@@ -57,12 +57,12 @@ component('group.chipSet', {
 })
 
 component('group.tabs', {
-  type: 'group.style',
+  type: 'group-style',
   params: [
-    {id: 'tabStyle', type: 'button.style', dynamic: true, defaultValue: button.mdcTab()},
-    {id: 'barStyle', type: 'group.style', dynamic: true, defaultValue: group.mdcTabBar()},
+    {id: 'tabStyle', type: 'button-style', dynamic: true, defaultValue: button.mdcTab()},
+    {id: 'barStyle', type: 'group-style', dynamic: true, defaultValue: group.mdcTabBar()},
     {id: 'barLayout', type: 'layout', dynamic: true},
-    {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()},
+    {id: 'innerGroupStyle', type: 'group-style', dynamic: true, defaultValue: group.div()},
     {id: 'selectedTabRef', as: 'ref', description: 'watchable numeric'}
   ],
   impl: styleByControl({
@@ -75,8 +75,8 @@ component('group.tabs', {
               style: call('tabStyle'),
               raised: '%$tabIndex% == %$selectedTab%',
               features: [
-                ctx => ctx.cmpCtx.params.barStyle.profile.$ !== 'group.mdcTabBar' && {$: 'watchRef', ref: '%$selectedTab%'},
-                ctx => ctx.run({ $: 'features', features: (ctx.vars.tab.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x) })
+                ctx => ctx.cmpCtx.params.barStyle.profile.$ !== 'group.mdcTabBar' && {$: 'feature<>watchRef', ref: '%$selectedTab%'},
+                ctx => ctx.run({ $: 'feature<>features', features: (ctx.vars.tab.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x) })
               ]
             }),
             itemVariable: 'tab',
@@ -101,7 +101,7 @@ component('group.tabs', {
 })
 
 component('group.mdcTabBar', {
-  type: 'group.style',
+  type: 'group-style',
   impl: customStyle({
     template: (cmp,{ctrls},h) =>
       h('div',{class: 'mdc-tab-bar', role: 'tablist'},
@@ -113,11 +113,11 @@ component('group.mdcTabBar', {
 })
 
 component('group.accordion', {
-  type: 'group.style',
+  type: 'group-style',
   params: [
-    {id: 'titleStyle', type: 'button.style', dynamic: true, defaultValue: button.mdcHeader(true)},
-    {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: group.section()},
-    {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
+    {id: 'titleStyle', type: 'button-style', dynamic: true, defaultValue: button.mdcHeader(true)},
+    {id: 'sectionStyle', type: 'group-style', dynamic: true, defaultValue: group.section()},
+    {id: 'innerGroupStyle', type: 'group-style', dynamic: true, defaultValue: group.div()}
   ],
   impl: styleByControl({
     control: group({
@@ -155,11 +155,11 @@ component('group.accordion', {
 })
 
 component('group.sections', {
-  type: 'group.style',
+  type: 'group-style',
   params: [
-    {id: 'titleStyle', type: 'text.style', dynamic: true, defaultValue: header.mdcHeaderWithIcon()},
-    {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: group.div()},
-    {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
+    {id: 'titleStyle', type: 'text-style', dynamic: true, defaultValue: header.mdcHeaderWithIcon()},
+    {id: 'sectionStyle', type: 'group-style', dynamic: true, defaultValue: group.div()},
+    {id: 'innerGroupStyle', type: 'group-style', dynamic: true, defaultValue: group.div()}
   ],
   impl: styleByControl({
     control: group(
@@ -184,10 +184,10 @@ component('group.sections', {
 })
 
 component('group.sectionExpandCollapse', {
-  type: 'group.style',
+  type: 'group-style',
   params: [
     {id: 'titleCtrl', type: 'control', dynamic: true, defaultValue: text('%$$sectionsModel.title()%', { style: header.h2() })},
-    {id: 'toggleStyle', type: 'editable-boolean.style', defaultValue: editableBoolean.expandCollapse()},
+    {id: 'toggleStyle', type: 'editable-boolean-style', defaultValue: editableBoolean.expandCollapse()},
     {id: 'autoExpand', as: 'boolean', type: 'boolean'}
   ],
   impl: styleByControl({
@@ -207,13 +207,13 @@ component('group.sectionExpandCollapse', {
 })
 
 component('group.sectionsExpandCollapse', {
-  type: 'group.style',
+  type: 'group-style',
   params: [
     {id: 'autoExpand', as: 'boolean', type: 'boolean'},
-    {id: 'titleStyle', type: 'text.style', dynamic: true, defaultValue: header.h2()},
-    {id: 'toggleStyle', type: 'editable-boolean.style', defaultValue: editableBoolean.expandCollapse()},
-    {id: 'titleGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()},
-    {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
+    {id: 'titleStyle', type: 'text-style', dynamic: true, defaultValue: header.h2()},
+    {id: 'toggleStyle', type: 'editable-boolean-style', defaultValue: editableBoolean.expandCollapse()},
+    {id: 'titleGroupStyle', type: 'group-style', dynamic: true, defaultValue: group.div()},
+    {id: 'innerGroupStyle', type: 'group-style', dynamic: true, defaultValue: group.div()}
   ],
   impl: styleByControl({
     control: group(

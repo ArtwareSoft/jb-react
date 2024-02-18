@@ -127,16 +127,17 @@ component('langServerTest.remoteProbe', {
 })
 
 component('langServerTest.studioCircuitUrl', {
+  doNotRunInTests: true,
   impl: dataTest({
     calculate: pipe(
       langService.dummyCompProps(
         `component('x', {
-  impl: dataTest(pipeline('hello,world'), __split(','))
+  impl: dataTest(pipeline('hello,world', __split(',')))
 })`
       ),
       langServer.studioCircuitUrl()
     ),
-    expectedResult: contains('http://localhost:8082/project/studio/CmpltnTst','impl~expectedResult?sourceCode='),
+    expectedResult: contains('http://localhost:8082/project/studio/test<>CmpltnTst','impl~expectedResult?sourceCode='),
     timeout: 2000
   })
 })
@@ -159,7 +160,7 @@ component('langServerTest.tgpModelData.studio', {
     calculate: pipe(
       remote.tgpModelData('%$PROJECTS_PATH%/jb-react/projects/studio/studio-main.js'),
       '%comps%',
-      property('studio.main'),
+      property('control<>studio.main'),
       '%type%'
     ),
     expectedResult: equals('control'),

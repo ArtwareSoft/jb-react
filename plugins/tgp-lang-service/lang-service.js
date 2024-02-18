@@ -158,7 +158,7 @@ extension('langService', 'impl', {
         const { line, col } = jb.tgpTextEditor.offsetToLineCol(text, item.from - startOffset - 1)
 
         const suggestions = await ctx.setData(input).setVars({ filePath, probePath: path }).run(
-            {$: 'langServer.remoteProbe', sourceCode: {$: 'probeServer', filePath: '%$filePath%'}, probePath: '%$probePath%', expressionOnly: true })
+            {$: 'langServer.remoteProbe', sourceCode: {$: 'source-code<loader>probeServer', filePath: '%$filePath%'}, probePath: '%$probePath%', expressionOnly: true })
         return (jb.path(suggestions, '0.options') || []).map(option => {
             const { pos, toPaste, tail, text } = option
             const primiteVal = option.valueType != 'object'
@@ -220,12 +220,10 @@ extension('langService', 'impl', {
             if (this.ptsOfTypeCache[type])
                 return this.ptsOfTypeCache[type]
             const comps = this.comps
-            const single = /([^\[]*)(\[\])?/
-            const types = [...(type||'').replace(/<>|\[\]/g,'').split(',').map(x=>x.match(single)[1]),'any']
-                .flatMap(x=> x=='data' ? ['data','aggregator','boolean'] : [x])
+            const types = [...(type||'').replace(/\[\]/g,'').split(','),'any']
             const res = types.flatMap(t=> jb.entries(comps).filter(c=> !c[1].hidden && jb.tgp.isCompObjOfType(c[1],t)).map(c=>c[0]) )
             res.sort((c1,c2) => this.markOfComp(c2) - this.markOfComp(c1))
-            return (this.ptsOfTypeCache[type] = res)
+            return this.ptsOfTypeCache[type] = res
         }
         markOfComp(id) {
             return +(((this.getCompById(id).category||'').match(/common:([0-9]+)/)||[0,0])[1])

@@ -207,7 +207,7 @@ component('frontEnd.flow', {
   ],
   impl: (ctx, elems) => ({ frontEndMethod: { 
       method: 'init', path: ctx.path, _flow: elems.profile,
-      action: { $: 'rx.pipe', elems: _ctx => elems(_ctx) }
+      action: { $: 'action<>rx.pipe', elems: _ctx => elems(_ctx) }
     }})
 })
 
@@ -273,7 +273,6 @@ component('key.eventMatchKey', {
 })
 
 component('key.eventToMethod', {
-  type: 'boolean',
   params: [
     {id: 'event'},
     {id: 'elem'}

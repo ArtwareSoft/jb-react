@@ -5,7 +5,7 @@ component('editableText', {
     {id: 'title', as: 'string', dynamic: true},
     {id: 'databind', as: 'ref', mandaroy: true, dynamic: true},
     {id: 'updateOnBlur', as: 'boolean', type: 'boolean'},
-    {id: 'style', type: 'editable-text.style', defaultValue: editableText.mdcInput(), dynamic: true},
+    {id: 'style', type: 'editable-text-style', defaultValue: editableText.mdcInput(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)

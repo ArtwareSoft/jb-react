@@ -56,7 +56,7 @@ async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl} ={}) {
       const projectSymbols = loadProjects ? await codePackage.fileSymbols('projects') : []
       ;[...pluginsSymbols,...projectSymbols.map(x=>({...x, isProject: true}))].map(entry =>{
         const id = pathToPluginId(entry.path)
-        jb.plugins[id] = jb.plugins[id] || { id, codePackage, files: [], projects: entry.projects }
+        jb.plugins[id] = jb.plugins[id] || { id, codePackage, files: [], isProject: entry.isProject }
         jb.plugins[id].files.push(entry)
       })
     },
@@ -116,7 +116,7 @@ async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl} ={}) {
 
   const pluginPackages = Array.isArray(sourceCode.pluginPackages) ? sourceCode.pluginPackages : [sourceCode.pluginPackages]
   await pluginPackages.reduce( async (pr,codePackage)=> pr.then(() =>
-    jb.loadPluginSymbols(jbHost.codePackageFromJson(codePackage),{loadProjects: sourceCode.projects && sourceCode.projects.lenght})), Promise.resolve());
+    jb.loadPluginSymbols(jbHost.codePackageFromJson(codePackage),{loadProjects: sourceCode.projects && sourceCode.projects.length})), Promise.resolve());
   calcPluginDependencies(jb.plugins,jb)
   await ['jb-core','core-utils','jb-expression','db','jb-macro','spy'].map(x=>`/plugins/core/${x}.js`).reduce((pr,path) => 
     pr.then(()=> jb.loadjbFile(path,jb,{noSymbols: true, plugin: jb.plugins.core})), Promise.resolve())
@@ -125,7 +125,7 @@ async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl} ={}) {
   jb.noSupervisedLoad = false
   if (jb.jbm && treeShakeServerUri) jb.jbm.treeShakeServerUri = sourceCode.treeShakeServerUri
   const topPlugins = unique([
-    ...((sourceCode.proejcts||[]).indexOf('*') != -1 ? Object.values(jb.plugins).filter(x=>x.isProject).map(x=>x.id).filter(x=>x!='*') : (sourceCode.projects || [])),
+    ...((sourceCode.projects||[]).indexOf('*') != -1 ? Object.values(jb.plugins).filter(x=>x.isProject).map(x=>x.id).filter(x=>x!='*') : (sourceCode.projects || [])),
     ...((sourceCode.plugins||[]).indexOf('*') != -1 ? Object.values(jb.plugins).filter(x=>!x.isProject).map(x=>x.id).filter(x=>x!='*') : (sourceCode.plugins || [])) 
     ]).filter(x=>jb.plugins[x])
 

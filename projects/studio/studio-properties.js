@@ -234,7 +234,7 @@ component('studio.propertyBoolean', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: editableBoolean(tgp.ref('%$path%'), editableBoolean.mdcSlideToggle(), {
+  impl: editableBoolean(typeAdapter('data<>', tgp.ref('%$path%')), editableBoolean.mdcSlideToggle(), {
     features: css('{flex-direction: row;     display: flex;} ~ label {padding-left: 10px }')
   })
 })
@@ -355,9 +355,9 @@ component('studio.openProperties', {
   ],
   impl: runActions(
     Var('path', studio.currentProfilePath()),
-    If(tgp.compName('%$path%'), openDialog({
+    If(notEmpty(tgp.compName('%$path%')), openDialog({
       title: pipeline(
-        {'$': 'object', title: tgp.shortTitle('%$path%'), comp: tgp.compName('%$path%')},
+        {$: 'object', title: tgp.shortTitle('%$path%'), comp: tgp.compName('%$path%')},
         If(equals('%comp%', '%title%'), '%comp%', '%comp% %title%'),
         'Properties of %%'
       ),

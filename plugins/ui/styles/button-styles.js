@@ -11,7 +11,7 @@ extension('ui','button', {
 })
 
 component('button.href', {
-  type: 'button.style',
+  type: 'button-style',
   impl: customStyle({
     template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
     css: '{color: var(--jb-textLink-fg)} .raised { color: var(--jb-textLink-active-fg) }',
@@ -20,7 +20,7 @@ component('button.href', {
 })
 
 component('button.hrefText', {
-  type: 'button.style',
+  type: 'button-style',
   impl: customStyle({
     template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
     css: '{color: var(--jb-input-fg) ; text-decoration: none }     ~.hover, ~.active: { text-decoration: underline }',
@@ -29,7 +29,7 @@ component('button.hrefText', {
 })
 
 component('button.x', {
-  type: 'button.style',
+  type: 'button-style',
   params: [
     {id: 'size', as: 'number', defaultValue: '21'}
   ],
@@ -51,7 +51,7 @@ component('button.x', {
 })
 
 component('button.native', {
-  type: 'button.style',
+  type: 'button-style',
   impl: customStyle({
     template: (cmp,{title,raised},h) => h('button',{class: raised ? 'raised' : '', title, onclick: true },title),
     css: '.raised {font-weight: bold}',
@@ -60,7 +60,7 @@ component('button.native', {
 })
 
 component('button.mdc', {
-  type: 'button.style',
+  type: 'button-style',
   params: [
     {id: 'noRipple', as: 'boolean', type: 'boolean'},
     {id: 'noTitle', as: 'boolean', type: 'boolean'}
@@ -78,7 +78,7 @@ component('button.mdc', {
 })
 
 component('button.mdcChipAction', {
-  type: 'button.style',
+  type: 'button-style',
   impl: customStyle({
     template: (cmp,{title,raised},h) =>
     h('div.mdc-chip-set mdc-chip-set--filter', {onclick: true},
@@ -93,7 +93,7 @@ component('button.mdcChipAction', {
 })
 
 component('button.plainIcon', {
-  type: 'button.style',
+  type: 'button-style',
   impl: customStyle({
     template: (cmp,{title,raised},h) =>
       jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=> vdom.setAttribute('title',vdom.getAttribute('title') || title))[0],
@@ -102,7 +102,8 @@ component('button.plainIcon', {
 })
 
 component('button.mdcIcon', {
-  type: 'button.style,icon.style',
+  type: 'button-style',
+  moreTypes: 'icon.style<>',
   params: [
     {id: 'icon', type: 'icon'},
     {id: 'buttonSize', as: 'number', defaultValue: 40, description: 'button size is larger than the icon size, usually at the rate of 40/24'}
@@ -116,7 +117,8 @@ component('button.mdcIcon', {
 })
 
 component('button.mdcFloatingAction', {
-  type: 'button.style,icon.style',
+  type: 'button-style',
+  moreTypes: 'icon.style<>',
   description: 'fab icon',
   params: [
     {id: 'buttonSize', as: 'number', defaultValue: 60, description: 'mini is 40'},
@@ -140,7 +142,7 @@ component('button.mdcFloatingAction', {
 })
 
 component('button.mdcTab', {
-  type: 'button.style',
+  type: 'button-style',
   impl: customStyle({
     template: (cmp,{title,raised},h) =>
       h('button.mdc-tab',{ class: raised ? 'mdc-tab--active' : '',tabIndex: -1, role: 'tab', onclick: true}, [
@@ -157,7 +159,7 @@ component('button.mdcTab', {
 })
 
 component('button.mdcHeader', {
-  type: 'button.style',
+  type: 'button-style',
   params: [
     {id: 'stretch', as: 'boolean', type: 'boolean'}
   ],

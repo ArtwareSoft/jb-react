@@ -33,7 +33,7 @@ component('dialogFeature.studioPick', {
     frontEnd.var('circuitPlugin', studio.circuitPlugin()),
     frontEnd.var('testHost', ctx => ['tests','studio-helper'].indexOf(ctx.exp('%$studio/project%')) != -1),
     frontEnd.prop('eventToElemPredicate', ({},{from, circuitPlugin, testHost}) => from == 'preview' ?
-      (path => testHost || jb.path(jb.comps,[path.split('~')[0],jb.core.CT,'plugin','id']) == circuitPlugin) : (path => jb.studio.isStudioCmp(path.split('~')[0]))),
+      (path => testHost || jb.path(jb.comps,[path.split('~')[0],jb.core.CT,'plugin','id']).split('-tests')[0] == circuitPlugin) : (path => jb.studio.isStudioCmp(path.split('~')[0]))),
     frontEnd.prop('cover', ({},{cmp}) => {
       if (!cmp.cover) {
         const cover = cmp.cover = document.querySelector('.jb-cover') || document.createElement('div')
@@ -83,7 +83,7 @@ component('dialogFeature.studioPick', {
 
 component('dialog.studioPickDialog', {
   hidden: true,
-  type: 'dialog.style',
+  type: 'dialog-style',
   params: [
     {id: 'from', as: 'string'}
   ],
@@ -134,6 +134,7 @@ extension('studio','pick', {
     return results[index] // { el: results[index].el , index };
   },
   pathOfElem(el) {
+    debugger
     return jb.path(el,'debug.path') || jb.path(jb.ui.cmpCtxOfElem(el),'path') || '' 
   }
 })

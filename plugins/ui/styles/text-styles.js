@@ -1,5 +1,5 @@
 component('text.htmlTag', {
-  type: 'text.style',
+  type: 'text-style',
   params: [
     {id: 'htmlTag', as: 'string', defaultValue: 'p', options: 'span,p,h1,h2,h3,h4,h5,div,li,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label'},
     {id: 'cssClass', as: 'string'}
@@ -11,23 +11,23 @@ component('text.htmlTag', {
 })
   
 component('text.noWrappingTag', {
-  type: 'text.style',
+  type: 'text-style',
   category: 'text:0',
   impl: customStyle({ template: (cmp,{text},h) => text, features: text.bindText() })
 })
   
 component('text.span', {
-  type: 'text.style',
+  type: 'text-style',
   impl: customStyle({ template: (cmp,{text},h) => h('span',{},text), features: text.bindText() })
 })
 
 component('text.chip', {
-  type: 'text.style',
+  type: 'text-style',
   impl: customStyle({ template: (cmp,{text},h) => h('div.jb-chip',{},h('span',{},text)), features: text.bindText() })
 })
   
 component('header.mdcHeaderWithIcon', {
-  type: 'text.style',
+  type: 'text-style',
   params: [
     {id: 'level', options: '1,2,3,4,5,6', as: 'string', defaultValue: '1'}
   ],
@@ -44,7 +44,7 @@ component('header.mdcHeaderWithIcon', {
 })
 
 component('text.alignToBottom', {
-  type: 'text.style',
+  type: 'text-style',
   impl: customStyle({
     template: (cmp,{text},h) => h('div',{},h('span',{},text)),
     css: '{position: relative } ~>span { position: absolute; left: 0; bottom: 0 }',
@@ -55,7 +55,7 @@ component('text.alignToBottom', {
  jb.defComponents('1,2,3,4,5,6'.split(','), 
   level=> component(`header.h${level}`, ({
     autoGen: true,
-    type: 'text.style',
+    type: 'text-style',
     params: [
       { id: 'level', as: 'string', defaultValue: level }
     ],
@@ -66,7 +66,8 @@ component('text.alignToBottom', {
 })))
 
 component('text.h2WithClass', {
-  type: 'text.style:0',
+  type: 'text-style',
+  hidden: true,
   params: [
     {id: 'clz', as: 'string'}
   ],
@@ -75,21 +76,21 @@ component('text.h2WithClass', {
 
  jb.defComponents('1,2,3,4,5,6'.split(','), 
   level=> component(`header.mdcHeadline${level}`, 
-    ({autoGen: true, type: 'text.style', impl: {$: 'text.h2WithClass', clz: `mdc-typography mdc-typography--headline${level}`}})
+    ({autoGen: true, type: 'text-style', impl: {$: 'text.h2WithClass', clz: `mdc-typography mdc-typography--headline${level}`}})
 ))
 
  jb.defComponents('1,2'.split(','), 
   level=> component(`header.mdcSubtitle${level}`, 
-    ({autoGen: true, type: 'text.style', impl: {$: 'text.h2WithClass', clz: `header.mdcSubtitle${level}`}})
+    ({autoGen: true, type: 'text-style', impl: {$: 'text.h2WithClass', clz: `header.mdcSubtitle${level}`}})
 ))
 
  jb.defComponents('1,2'.split(','), 
   level => component(`header.mdcBody${level}`, 
-    ({autoGen: true, type: 'text.style', impl: {$: 'text.h2WithClass', clz: `mdc-typography mdc-typography--body${level}`}})
+    ({autoGen: true, type: 'text-style', impl: {$: 'text.h2WithClass', clz: `mdc-typography mdc-typography--body${level}`}})
 ))
 
 component('text.textarea', {
-  type: 'text.style',
+  type: 'text-style',
   params: [
     {id: 'rows', as: 'number', defaultValue: 4},
     {id: 'cols', as: 'number', defaultValue: 120}

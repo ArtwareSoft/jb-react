@@ -34,7 +34,7 @@
 	jbInit('tests',sourceCode,{initSpyByUrl: true}).then(jb =>{
 			globalThis.jb = jb
 			if (jb.comps.defaultTheme)
-				jb.exec({$: 'defaultTheme'})
+				jb.exec({$: 'data<>defaultTheme'})
 //			jb.spy.initSpyByUrl()
 			const params = { 
 				testType: '',

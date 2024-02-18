@@ -3,7 +3,7 @@ component('suggestionsTest', {
   params: [
     {id: 'expression', as: 'string'},
     {id: 'selectionStart', as: 'number', defaultValue: -1},
-    {id: 'path', as: 'string', defaultValue: 'suggestionsTest.defaultProbe~impl~text'},
+    {id: 'path', as: 'string', defaultValue: 'control<>suggestionsTest.defaultProbe~impl~text'},
     {id: 'expectedResult', type: 'boolean', dynamic: true, as: 'boolean'}
   ],
   impl: dataTest({
@@ -23,13 +23,13 @@ component('suggestionsTest', {
     expectedResult: call('expectedResult'),
     timeout: 1000
   }),
-  require: suggestionsTest.defaultProbe()
+  require: {$: 'control<>suggestionsTest.defaultProbe' }
 })
 
 component('probeTest', {
   type: 'test',
   params: [
-    {id: 'circuit', type: 'control', dynamic: true},
+    {id: 'circuit', type: 'data,control', dynamic: true},
     {id: 'probePath', as: 'string'},
     {id: 'allowClosestPath', as: 'boolean', type: 'boolean'},
     {id: 'expectedVisits', as: 'number', defaultValue: -1},
@@ -43,12 +43,14 @@ component('probeTest', {
     const failure = reason => ({ id: testId, title: testId, success:false, reason: reason });
     const success = _ => ({ id: testId, title: testId, success: true });
 
-    const full_path = testId + '~impl~circuit~' + probePath;
+    const base_path = `test<>${testId}~impl~circuit`
+    const full_path = `${base_path}~${probePath}`
     jb.cbLogByPath = {}
-    const res1 = await new jb.probe.Probe(new jb.core.jbCtx(ctx,{ profile: circuit.profile, forcePath: testId+ '~impl~circuit', path: '' } ))
+    const res1 = await new jb.probe.Probe(new jb.core.jbCtx(ctx,{ profile: circuit.profile, forcePath: base_path, path: '' } ))
       .runCircuit(full_path)
     const res = await (jb.cbLogByPath[res1.probePath] || res1)
     jb.cbLogByPath = null
+    debugger
     try {
         if (expectedVisits == 0 && res.closestPath)
           return success();

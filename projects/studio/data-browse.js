@@ -22,7 +22,7 @@ component('studio.showRxSniffer', {
     {id: 'snifferLog'}
   ],
   impl: itemlist({
-    items: source.data('%$snifferLog/result%'),
+    items: rx.pipe(source.data('%$snifferLog/result%')),
     controls: group({
       controls: [
         group(ui.dataBrowse('%d%'), {

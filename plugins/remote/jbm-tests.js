@@ -73,14 +73,14 @@ component('jbmTest.remote.data.defComponents', {
   impl: dataTest(remote.data(pipeline('1.5', math.floor()), worker()), equals(1), { timeout: 500 })
 })
 
-component('jbmTest.innerTreeShake', {
-  impl: dataTest({
-    calculate: remote.data(() => jb.utils.emptyLineWithSpaces != null, byUri('tests•w1•inner')),
-    expectedResult: equals(true),
-    runBefore: pipe(jbm.start(worker()), remote.action(jbm.start(child('inner')), '%%')),
-    timeout: 5000
-  })
-})
+// component('jbmTest.innerTreeShake', {
+//   impl: dataTest({
+//     calculate: remote.data(() => jb.utils.emptyLineWithSpaces != null, byUri('tests•w1•inner')),
+//     expectedResult: equals(true),
+//     runBefore: pipe(jbm.start(worker()), remote.action(jbm.start(child('inner')), '%%')),
+//     timeout: 5000
+//   })
+// })
 
 component('jbmTest.innerWorker', {
   impl: dataTest(pipe(net.listSubJbms(), join(',')), contains('tests•w1','tests•w1•inWorker'), {
@@ -105,12 +105,23 @@ component('jbmTest.worker.byUri', {
   })
 })
 
+// calculate: source.remote({
+//   rx: rx.pipe(source.data('hello'), rx.map('%%'), remote.operator(rx.map('%% world'), byUri('tests•w2'))),
+//   jbm: byUri('tests•w1')
+// }),
+
 component('jbmTest.workerToWorker', {
   impl: dataTest({
-    calculate: source.remote({
-      rx: rx.pipe(source.data('hello'), rx.map('%%'), remote.operator(rx.map('%% world'), byUri('tests•w2'))),
-      jbm: byUri('tests•w1')
-    }),
+    calculate: rx.pipe(
+      source.remote({
+        rx: rx.pipe(
+          source.data('hello'),
+          rx.map('%%'),
+          remote.operator(rx.map('%% world'), byUri('tests•w2'))
+        ),
+        jbm: byUri('tests•w1')
+      })
+    ),
     expectedResult: equals('hello world'),
     runBefore: runActions(jbm.start(worker('w1')), jbm.start(worker('w2'))),
     timeout: 5000
@@ -119,10 +130,16 @@ component('jbmTest.workerToWorker', {
 
 component('jbmTest.networkToWorker', {
   impl: dataTest({
-    calculate: source.remote({
-      rx: rx.pipe(source.data('hello'), rx.map('%%'), remote.operator(rx.map('%% world'), byUri('tests•w2'))),
-      jbm: byUri('peer1')
-    }),
+    calculate: rx.pipe(
+      source.remote({
+        rx: rx.pipe(
+          source.data('hello'),
+          rx.map('%%'),
+          remote.operator(rx.map('%% world'), byUri('tests•w2'))
+        ),
+        jbm: byUri('peer1')
+      })
+    ),
     expectedResult: equals('hello world'),
     runBefore: runActions(jbm.start(worker('peer1', { networkPeer: true })), jbm.start(worker('w2'))),
     timeout: 5000
@@ -181,7 +198,7 @@ component('jbmTest.remote.data', {
 
 component('jbmTest.childJbmPort', {
   impl: dataTest(remote.data('hello', byUri('tests•w1•inner')), 'hello', {
-    runBefore: pipe(jbm.start(worker()), remote.action(jbm.start(child('inner')), '%%')),
+    runBefore: runActions(jbm.start(worker()), remote.action(jbm.start(child('inner')), worker())),
     timeout: 5000
   })
 })

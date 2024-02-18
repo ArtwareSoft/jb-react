@@ -371,7 +371,7 @@ component('eventTracker.highlightElem', {
 })
 
 component('eventTracker.highlightDialogStyle', {
-  type: 'dialog.style',
+  type: 'dialog-style',
   impl: customStyle({
     template: ({},{contentComp},h) => h('div.jb-dialog jb-popup',{},h(contentComp)),
     css: '{ display: block; position: absolute; background: transparent}',
@@ -482,7 +482,7 @@ component('eventTracker.compInspector', {
 })
 
 component('chromeDebugger.icon', {
-  type: 'button.style',
+  type: 'button-style',
   params: [
     {id: 'position', as: 'string', defaultValue: '0px 144px'}
   ],
@@ -497,7 +497,7 @@ component('chromeDebugger.icon', {
 })
 
 component('chromeDebugger.sectionsExpandCollapse', {
-  type: 'group.style',
+  type: 'group-style',
   impl: group.sectionsExpandCollapse(true, text.span(), {
     toggleStyle: editableBoolean.expandCollapseWithUnicodeChars(),
     titleGroupStyle: styleWithFeatures(group.div(), {
@@ -512,7 +512,7 @@ component('chromeDebugger.sectionsExpandCollapse', {
 })
 
 component('chromeDebugger.toggleStyle', {
-  type: 'editable-boolean.style',
+  type: 'editable-boolean-style',
   impl: editableBoolean.expandCollapseWithUnicodeChars()
 })
 

@@ -95,8 +95,7 @@ component('studio.openNewDataSource', {
         writeValue('%$dialogData/file%', '%$dialogData/name%.js'),
         studio.createProjectFile('%$dialogData/name%.js')
       )),
-      studio.newComp({
-        compName: 'dataResource.%$name%',
+      studio.newComp('dataResource.%$name%', {
         compContent: obj(
           prop({
             name: '%$watchableOrPassive%Data',
@@ -116,7 +115,7 @@ component('studio.dataResourceMenu', {
   impl: menu.menu('Data', {
     options: [
       menu.endWithSeparator(
-        dynamicControls({
+        typeAdapter('control<>', dynamicControls({
           controlItems: ctx => jb.studio.projectCompsAsEntries()
           .filter(e=>e[1].watchableData !== undefined || e[1].passiveData !== undefined)
             .map(e=> {
@@ -131,7 +130,7 @@ component('studio.dataResourceMenu', {
             }
             ),
           genericControl: menu.action('%$controlItem/title%', studio.openResource('%$controlItem/path%', '%$controlItem/name%'))
-        })
+        }))
       ),
       menu.action('New ...', studio.openNewDataSource())
     ]

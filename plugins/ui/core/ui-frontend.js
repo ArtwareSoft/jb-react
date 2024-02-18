@@ -49,12 +49,14 @@ extension('ui', 'frontend', {
                 const ctxToUse = this.ctx.setData(data).setVars(vars)
                 const {_prop, _flow } = feMEthod.frontEndMethod
                 if (_prop)
-                    jb.log(`frontend uiComp calc prop ${_prop}`,{cmp: {...this}, srcCtx, ...feMEthod.frontEndMethod, el,ctxToUse})
+                    jb.log(`frontend uiComp before calc prop ${_prop}`,{cmp: {...this}, srcCtx, ...feMEthod.frontEndMethod, el,ctxToUse})
                 else if (_flow)
                     jb.log(`frontend uiComp start flow ${jb.ui.rxPipeName(_flow)}`,{cmp: {...this}, srcCtx, ...feMEthod.frontEndMethod, el, ctxToUse})
                 else 
                     jb.log(`frontend uiComp run method ${method}`,{cmp: {...this}, srcCtx , ...feMEthod.frontEndMethod,el,ctxToUse})
                 const res = ctxToUse.run(feMEthod.frontEndMethod.action)
+                if (_prop)
+                    jb.log(`frontend prop ${_prop} value`,{res, cmp: {...this}})
                 if (_flow && res) this.flows.push(res)
             }, `frontEnd-${method}`,this.ctx))
         }

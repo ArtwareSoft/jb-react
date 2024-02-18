@@ -1,3 +1,6 @@
+puppeteer
+  activate chatGPT via puppeteer
+  
 llm query dsl
   toturial doc
     architecture

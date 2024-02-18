@@ -127,3 +127,17 @@ extension('db', {
     canChangeDB: ctx => !ctx.probe || ctx.vars.testID
 })
 
+component('isRef', {
+  type: 'boolean',
+  params: [
+    {id: 'obj', mandatory: true}
+  ],
+  impl: ({},obj) => jb.db.isRef(obj)
+})
+
+component('asRef', {
+  params: [
+    {id: 'obj', mandatory: true}
+  ],
+  impl: ({},obj) => jb.db.asRef(obj)
+})

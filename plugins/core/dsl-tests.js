@@ -1,4 +1,9 @@
 component('cmp1', {
+  impl: 'noDsl-DataType'
+})
+
+component('cmp1', {
+  type: 'myType',
   impl: 'noDsl'
 })
 

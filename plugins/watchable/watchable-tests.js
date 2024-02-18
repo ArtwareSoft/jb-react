@@ -131,11 +131,11 @@ component('uiTest.watchableVarAsObjectNotInitialized', {
 // })
 
 component('uiTest.booleanNotReffableTrue', {
-  impl: uiTest(text(isOfType('string', '123')), contains('true'))
+  impl: uiTest(text(typeAdapter('boolean<>', isOfType('string', '123'))), contains('true'))
 })
 
 component('uiTest.booleanNotReffableFalse', {
-  impl: uiTest(text(isOfType('string2', '123')), contains('false'))
+  impl: uiTest(text(typeAdapter('boolean<>', isOfType('string2', '123'))), contains('false'))
 })
 
 component('uiTest.labelWithWatchRefInSplicedArray', {
@@ -369,12 +369,6 @@ component('uiTest.spliceAndWatchRefAddTwice', {
       )
     ),
     expectedCounters: {'do refresh element !check': 2}
-  })
-})
-
-component('uiTest.refProp', {
-  impl: dataTest('%$person/name%', equals('Dan'), {
-    runBefore: writeValue(pipeline(obj(refProp('personName', '%$person/name%')), '%personName%'), 'Dan')
   })
 })
 

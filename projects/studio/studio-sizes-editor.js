@@ -42,7 +42,6 @@ component('sizesEditor.cssSizes', {
 })
 
 component('sizesEditor.computedContent', {
-  type: 'control',
   impl: ctx => {
         const style = jb.studio.previewWindow().getComputedStyle(ctx.vars.inplaceElem)
         return style[jb.macro.titleToId(ctx.exp('%level%-%side%'))]

@@ -14,7 +14,7 @@
 		.then(jb=>{
       globalThis.jb = jb
       jb.spy.initSpyByUrl && jb.spy.initSpyByUrl()
-      jb.exec({$: 'defaultTheme'})
+      jb.exec({$: 'data<>defaultTheme'})
       jb.ui.renderWidget(({$: 'zuiDemo.main'}), main)
 		})
   </script>

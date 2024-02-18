@@ -70,27 +70,33 @@ extension('utils', 'pipe', {
     const innerPath = (ctx.profile.items && ctx.profile.items.sugar) ? ''
       : (ctx.profile[ptName] ? (ptName + '~') : 'items~');
 
-    if (ptName == '$pipe') // promise pipe
-      return profiles.reduce((deferred,prof,index) =>
-        deferred.then(data=>jb.utils.toSynchArray(data, !passRx)).then(data=>step(prof,index,data))
-      , Promise.resolve(start))
-        .then(data=>jb.utils.toSynchArray(data, !passRx))
+    if (ptName == '$pipe') return (async function pipe() {
+      const pipeRes = await profiles.reduce( async (pr,prof,index) => {
+        const data = await pr;
+        const input = await jb.utils.toSynchArray(data, !passRx)
+        const stepRes = await step(prof,index,input)
+        return stepRes
+      }, Promise.resolve(start))
+
+        const res = await jb.utils.toSynchArray(pipeRes, !passRx)
+        return res
+      })()
 
     return profiles.reduce((data,prof,index) => step(prof,index,data), start)
 
     function step(profile,i,data) {
       if (!profile || profile.$disabled) return data;
       const path = innerPath+i
-      const parentParam = (i < profiles.length - 1) ? { as: 'array'} : (ctx.parentParam || {}) ;
-      if (jb.utils.profileType(profile) == 'aggregator')
-        return jb.core.run( new jb.core.jbCtx(ctx, { data, profile, path }), parentParam);
-      return [].concat.apply([],data.map(item =>
-          jb.core.run(new jb.core.jbCtx(ctx,{data: item, profile, path}), parentParam))
+      const parentParam = (i < profiles.length - 1) ? { as: 'array'} : (ctx.parentParam || {})
+      if (jb.path(profile,[jb.core.CT,'comp','aggregator']))
+        return jb.core.run( new jb.core.jbCtx(ctx, { data, profile, path }), parentParam)
+      const res = data.map(item => jb.core.run(new jb.core.jbCtx(ctx,{data: item, profile, path}), parentParam))
         .filter(x=>x!=null)
-        .map(x=> {
+        .flatMap(x=> {
           const val = jb.val(x)
-          return Array.isArray(val) ? val : x 
-        }));
+          return jb.asArray(val)
+        })
+        return res
     }
   }
 })
@@ -100,7 +106,7 @@ component('pipeline', {
   category: 'common:100',
   description: 'map data arrays one after the other, do not wait for promises and rx',
   params: [
-    {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true, description: 'chain/map data functions'}
+    {id: 'items', type: 'data[]', ignore: true, mandatory: true, composite: true, description: 'chain/map data functions'}
   ],
   impl: ctx => jb.utils.calcPipe(ctx,'$pipeline')
 })
@@ -110,7 +116,7 @@ component('pipe', {
   category: 'async:100',
   description: 'synch data, wait for promises and reactive (callbag) data',
   params: [
-    {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true}
+    {id: 'items', type: 'data[]', ignore: true, mandatory: true, composite: true}
   ],
   impl: ctx => jb.utils.calcPipe(ctx,'$pipe',false)
 })
@@ -178,28 +184,32 @@ component('entries', {
 })
 
 component('aggregate', {
-  type: 'aggregator',
+  type: 'data',
+  aggregator: true,
   description: 'calc function on all items, rather then one by one',
   params: [
-    {id: 'aggregator', type: 'aggregator', mandatory: true, dynamic: true}
+    {id: 'aggregator', type: 'data', mandatory: true, dynamic: true}
   ],
   impl: ({},aggregator) => aggregator()
 })
 
 component('math.max', {
-  type: 'aggregator',
+  type: 'data',
+  aggregator: true,
   category: 'math:80',
   impl: ctx => Math.max.apply(0,ctx.data)
 })
 
 component('math.min', {
-  type: 'aggregator',
+  type: 'data',
+  aggregator: true,
   category: 'math:80',
   impl: ctx => Math.max.apply(0,ctx.data)
 })
 
 component('math.sum', {
-  type: 'aggregator',
+  type: 'data',
+  aggregator: true,
   category: 'math:80',
   impl: ctx => ctx.data.reduce((acc,item) => +item+acc, 0)
 })
@@ -254,7 +264,8 @@ component('math.div', {
 
 component('objFromEntries', {
   description: 'object from entries',
-  type: 'aggregator',
+  type: 'data',
+  aggregator: true,
   params: [
     {id: 'entries', defaultValue: '%%', as: 'array'}
   ],
@@ -446,7 +457,8 @@ component('toggleBooleanValue', {
 })
 
 component('slice', {
-  type: 'aggregator',
+  type: 'data',
+  aggregator: true,
   params: [
     {id: 'start', as: 'number', defaultValue: 0, description: '0-based index', mandatory: true},
     {id: 'end', as: 'number', mandatory: true, description: '0-based index of where to end the selection (not including itself)'}
@@ -458,7 +470,8 @@ component('slice', {
 })
 
 component('sort', {
-  type: 'aggregator',
+  type: 'data',
+  aggregator: true,
   params: [
     {id: 'propertyName', as: 'string', description: 'sort by property inside object'},
     {id: 'lexical', as: 'boolean', type: 'boolean'},
@@ -479,7 +492,8 @@ component('sort', {
 })
 
 component('first', {
-  type: 'aggregator',
+  type: 'data',
+  aggregator: true,
   params: [
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
@@ -487,7 +501,8 @@ component('first', {
 })
 
 component('last', {
-  type: 'aggregator',
+  type: 'data',
+  aggregator: true,
   params: [
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
@@ -495,7 +510,8 @@ component('last', {
 })
 
 component('count', {
-  type: 'aggregator',
+  type: 'data',
+  aggregator: true,
   description: 'length, size of array',
   params: [
     {id: 'items', as: 'array', defaultValue: '%%'}
@@ -504,7 +520,8 @@ component('count', {
 })
 
 component('reverse', {
-  type: 'aggregator',
+  type: 'data',
+  aggregator: true,
   params: [
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
@@ -512,7 +529,8 @@ component('reverse', {
 })
 
 component('sample', {
-  type: 'aggregator',
+  type: 'data',
+  aggregator: true,
   params: [
     {id: 'size', as: 'number', defaultValue: 300},
     {id: 'items', as: 'array', defaultValue: '%%'}
@@ -554,7 +572,8 @@ component('extend', {
 component('assign', { autoGen: true, ...jb.utils.getUnresolvedProfile('extend', 'data'), [jb.core.CT]: null})
 
 component('extendWithIndex', {
-  type: 'aggregator',
+  type: 'data',
+  aggregator: true,
   description: 'extend with calculated properties. %$index% is available ',
   params: [
     {id: 'props', type: 'prop[]', mandatory: true, defaultValue: []}
@@ -572,18 +591,9 @@ component('prop', {
   ]
 })
 
-component('refProp', {
-  type: 'prop',
-  description: 'value by reference allows to change or watch the value',
-  params: [
-    {id: 'name', as: 'string', mandatory: true},
-    {id: 'val', dynamic: true, as: 'ref', mandatory: true}
-  ],
-  impl: ctx => ({ ...ctx.params, type: 'ref' })
-})
-
 component('pipeline.var', {
-  type: 'aggregator',
+  type: 'data',
+  aggregator: true,
   params: [
     {id: 'name', as: 'string', mandatory: true},
     {id: 'val', mandatory: true, dynamic: true, defaultValue: '%%'}
@@ -679,7 +689,8 @@ component('endsWith', {
 
 
 component('filter', {
-  type: 'aggregator',
+  type: 'data',
+  aggregator: true,
   params: [
     {id: 'filter', type: 'boolean', as: 'boolean', dynamic: true, mandatory: true}
   ],
@@ -718,6 +729,8 @@ component('capitalize', {
 })
 
 component('join', {
+  type: 'data',
+  aggregator: true,
   params: [
     {id: 'separator', as: 'string', defaultValue: ',', mandatory: true},
     {id: 'prefix', as: 'string'},
@@ -725,7 +738,6 @@ component('join', {
     {id: 'items', as: 'array', defaultValue: '%%'},
     {id: 'itemText', as: 'string', dynamic: true, defaultValue: '%%'}
   ],
-  type: 'aggregator',
   impl: (ctx,separator,prefix,suffix,items,itemText) => {
 		const itemToText = ctx.profile.itemText ?	item => itemText(ctx.setData(item)) :	item => jb.tostring(item);	// performance
 		return prefix + items.map(itemToText).join(separator) + suffix;
@@ -737,7 +749,8 @@ component('unique', {
     {id: 'id', as: 'string', dynamic: true, defaultValue: '%%'},
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
-  type: 'aggregator',
+  type: 'data',
+  aggregator: true,
   impl: (ctx,idFunc,items) => {
 		const _idFunc = idFunc.profile == '%%' ? x=>x : x => idFunc(ctx.setData(x));
 		return jb.utils.unique(items,_idFunc);
@@ -745,6 +758,8 @@ component('unique', {
 })
 
 component('log', {
+  type: 'data',
+  moreTypes: 'action<>',
   params: [
     {id: 'logName', as: 'string', mandatory: 'true'},
     {id: 'logObj', as: 'single', defaultValue: '%%'}
@@ -922,7 +937,8 @@ component('runActionOnItems', {
 })
 
 component('delay', {
-  type: 'action,data',
+  type: 'action',
+  moreTypes: 'data<>',
   params: [
     {id: 'mSec', as: 'number', defaultValue: 1},
     {id: 'res', defaultValue: '%%'}
@@ -1033,20 +1049,6 @@ component('inGroup', {
   impl: ({},group,item) =>	group.indexOf(item) != -1
 })
 
-component('isRef', {
-  params: [
-    {id: 'obj', mandatory: true}
-  ],
-  impl: ({},obj) => jb.db.isRef(obj)
-})
-
-component('asRef', {
-  params: [
-    {id: 'obj', mandatory: true}
-  ],
-  impl: ({},obj) => jb.db.asRef(obj)
-})
-
 component('data.switch', {
   macroByValue: false,
   params: [
@@ -1129,6 +1131,7 @@ component('getSessionStorage', {
 })
 
 component('action.setSessionStorage', {
+  type: 'action',
   params: [
     {id: 'id', as: 'string'},
     {id: 'value', dynamic: true}
@@ -1137,6 +1140,7 @@ component('action.setSessionStorage', {
 })
 
 component('waitFor', {
+  type: 'action',
   params: [
     {id: 'check', dynamic: true},
     {id: 'interval', as: 'number', defaultValue: 14, byName: true},

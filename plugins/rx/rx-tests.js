@@ -247,7 +247,7 @@ component('rxTest.flatMapActiveActive', {
 })
 
 component('rxTest.promises', {
-  impl: dataTest(pipe(source.promises(delay(1, 1), delay(1, 2)), join(',')), equals('1,2'))
+  impl: dataTest(pipe(rx.pipe(source.promises(delay(1, 1), delay(1, 2))), join(',')), equals('1,2'))
 })
 
 component('rxTest.mapPromiseActiveSource', {
@@ -419,7 +419,7 @@ component('rxTest.subjectReplay', {
     vars: [
       Var('subj', rx.subject({ replay: true }))
     ],
-    calculate: source.subject('%$subj%'),
+    calculate: rx.pipe(source.subject('%$subj%')),
     expectedResult: equals('1'),
     runBefore: runActions(action.subjectNext('%$subj%', '1'), action.subjectComplete('%$subj%'))
   })
@@ -526,7 +526,7 @@ component('rxTest.paramedRxPipe', {
 })
 
 component('rxTest.dynamicParam', {
-  impl: dataTest(rxTest.paramedRxPipe(source.data(1), rx.map('a%%')), '%%==a1')
+  impl: dataTest(rx.pipe(rxTest.paramedRxPipe(source.data(1), rx.map('a%%'))), '%%==a1')
 })
 
 component('rxTest.snifferBug', {

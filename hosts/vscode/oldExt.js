@@ -116,8 +116,8 @@ class jBartStudio {
 		<script>
           self.spy = jb.spy.initSpy({spyParam: 'all'})
           jb.studio.vsCodeApi = acquireVsCodeApi()
-          jb.exec({$: 'defaultTheme'})
-          jb.ui.renderWidget({$:'studio.main'},document.getElementById('studio'))
+          jb.exec({$: 'data<>defaultTheme'})
+          jb.ui.renderWidget({$:'control<>studio.main'},document.getElementById('studio'))
 		</script>
 	</body>
 </html>`;

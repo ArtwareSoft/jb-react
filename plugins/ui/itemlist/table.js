@@ -7,7 +7,7 @@ component('table', {
     {id: 'title', as: 'string', dynamic: true},
     {id: 'items', as: 'array', dynamic: true, mandatory: true},
     {id: 'controls', type: 'control[]', description: 'fields', mandatory: true, dynamic: true},
-    {id: 'style', type: 'table.style', defaultValue: table.plain()},
+    {id: 'style', type: 'table-style', defaultValue: table.plain()},
     {id: 'itemVariable', as: 'string', defaultValue: 'item'},
     {id: 'visualSizeLimit', as: 'number', defaultValue: 100, description: 'by default itemlist is limmited to 100 shown items'},
     {id: 'features', type: 'feature[]', dynamic: true, flattenArray: true},
@@ -28,15 +28,15 @@ component('table', {
 })
 
 component('table.style', {
-  type: 'table.style',
+  type: 'table-style',
   params: [
-    {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true},
-    {id: 'lineStyle', type: 'group.style', dynamic: true, defaultValue: table.trTd()}
+    {id: 'itemlistStyle', type: 'itemlist-style', dynamic: true},
+    {id: 'lineStyle', type: 'group-style', dynamic: true, defaultValue: table.trTd()}
   ]
 })
 
 component('table.plain', {
-  type: 'table.style',
+  type: 'table-style',
   params: [
     {id: 'hideHeaders', as: 'boolean', type: 'boolean'}
   ],
@@ -60,7 +60,7 @@ component('table.plain', {
 })
 
 component('table.mdc', {
-  type: 'table.style',
+  type: 'table-style',
   params: [
     {id: 'hideHeaders', as: 'boolean', type: 'boolean'},
     {id: 'classForTable', as: 'string', defaultValue: 'mdc-data-table__table mdc-data-table--selectable'}
@@ -100,7 +100,7 @@ component('table.mdc', {
 })
 
 component('table.trTd', {
-  type: 'group.style',
+  type: 'group-style',
   impl: customStyle({
     template: ({},{ctrls},h) => h('tr.jb-item',{}, ctrls.map(ctrl=> h('td',{}, h(ctrl)))),
     features: group.initGroup()

@@ -3,7 +3,7 @@ component('editableBoolean', {
   category: 'input:20',
   params: [
     {id: 'databind', as: 'ref', type: 'boolean', mandaroy: true, dynamic: true},
-    {id: 'style', type: 'editable-boolean.style', defaultValue: editableBoolean.checkbox(), dynamic: true},
+    {id: 'style', type: 'editable-boolean-style', defaultValue: editableBoolean.checkbox(), dynamic: true},
     {id: 'title', as: 'string', dynamic: true},
     {id: 'textForTrue', as: 'string', defaultValue: 'yes', dynamic: true},
     {id: 'textForFalse', as: 'string', defaultValue: 'no', dynamic: true},
@@ -19,7 +19,7 @@ component('editableBoolean.initToggle', {
     calcProp('toggleText', If('%$$model/databind()%', '%$$model/textForTrue()%', '%$$model/textForFalse()%')),
     watchRef('%$$model/databind()%', { allowSelfRefresh: true, strongRefresh: true }),
     method('toggle', runActions(
-      writeValue('%$$model/databind()%', not('%$$model/databind()%')),
+      writeValue('%$$model/databind()%', typeAdapter('boolean<>',not('%$$model/databind()%'))),
       refreshIfNotWatchable('%$$model/databind()%')
     )),
     method('toggleByKey', (ctx,{cmp, ev}) => 

@@ -18,7 +18,7 @@ extension('test','uiActions', {
 component('action', {
   type: 'ui-action',
   params: [
-    {id: 'action', type: 'action', dynamic: true}
+    {id: 'action', type: 'action<>', dynamic: true}
   ],
   impl: '%$action()%'
 })

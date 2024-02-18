@@ -1,5 +1,5 @@
 component('editableBoolean.checkbox', {
-  type: 'editable-boolean.style',
+  type: 'editable-boolean-style',
   impl: customStyle({
     template: ({},{databind},h) => h('input', { type: 'checkbox', ...(databind && {checked: ''}) , 
       onclick: 'toggle', onchange: 'toggle', onkeyup: 'toggleByKey'  }),
@@ -8,7 +8,7 @@ component('editableBoolean.checkbox', {
 })
 
 component('editableBoolean.checkboxWithLabel', {
-  type: 'editable-boolean.style',
+  type: 'editable-boolean-style',
   impl: customStyle({
     template: ({},{title,databind,fieldId},h) => h('div',{},[ 
       h('input', { type: 'checkbox', ...(databind && {checked: ''}), id: "switch_"+fieldId, onchange: 'toggle', onkeyup: 'toggleByKey' }),
@@ -19,7 +19,7 @@ component('editableBoolean.checkboxWithLabel', {
 })
 
 component('editableBoolean.expandCollapseWithUnicodeChars', {
-  type: 'editable-boolean.style',
+  type: 'editable-boolean-style',
   params: [
     {id: 'toExpandSign', as: 'string', defaultValue: '⯈'},
     {id: 'toCollapseSign', as: 'string', defaultValue: '⯆'}
@@ -33,7 +33,7 @@ component('editableBoolean.expandCollapseWithUnicodeChars', {
 })
 
 component('editableBoolean.expandCollapse', {
-  type: 'editable-boolean.style',
+  type: 'editable-boolean-style',
   impl: customStyle({
     template: ({},{databind},h) => h('i',{class:'material-icons noselect', onclick: 'toggle' },
       databind ? 'keyboard_arrow_down' : 'keyboard_arrow_right'),
@@ -43,7 +43,7 @@ component('editableBoolean.expandCollapse', {
 })
 
 component('editableBoolean.mdcXV', {
-  type: 'editable-boolean.style',
+  type: 'editable-boolean-style',
   description: 'two icons',
   params: [
     {id: 'yesIcon', as: 'string', mandatory: true, defaultValue: 'check'},
@@ -62,12 +62,12 @@ component('editableBoolean.mdcXV', {
 })
 
 component('editableBoolean.buttonXV', {
-  type: 'editable-boolean.style',
+  type: 'editable-boolean-style',
   description: 'two icons',
   params: [
     {id: 'yesIcon', type: 'icon', mandatory: true, defaultValue: icon('check')},
     {id: 'noIcon', type: 'icon', mandatory: true, defaultValue: icon('close')},
-    {id: 'buttonStyle', type: 'button.style', dynamic: true, mandatory: true, defaultValue: button.mdcFloatingAction()}
+    {id: 'buttonStyle', type: 'button-style', dynamic: true, mandatory: true, defaultValue: button.mdcFloatingAction()}
   ],
   impl: styleByControl({
     control: button({
@@ -77,7 +77,7 @@ component('editableBoolean.buttonXV', {
         Else: '%$editableBooleanModel/textForFalse()%'
       }),
       action: runActions(
-        writeValue('%$editableBooleanModel/databind()%', not('%$editableBooleanModel/databind()%')),
+        writeValue('%$editableBooleanModel/databind()%', typeAdapter('boolean<>', not('%$editableBooleanModel/databind()%'))),
         refreshIfNotWatchable('%$editableBooleanModel/databind()%')
       ),
       style: call('buttonStyle'),
@@ -95,7 +95,7 @@ component('editableBoolean.buttonXV', {
 })
 
 component('editableBoolean.mdcSlideToggle', {
-  type: 'editable-boolean.style',
+  type: 'editable-boolean-style',
   params: [
     {id: 'width', as: 'string', defaultValue: 80}
   ],
@@ -116,7 +116,7 @@ component('editableBoolean.mdcSlideToggle', {
 })
 
 component('editableBoolean.mdcCheckBox', {
-  type: 'editable-boolean.style',
+  type: 'editable-boolean-style',
   params: [
     {id: 'width', as: 'string', defaultValue: 80}
   ],
@@ -145,17 +145,17 @@ component('editableBoolean.mdcCheckBox', {
 })
 
 component('editableBoolean.picklist', {
-  type: 'editable-boolean.style',
+  type: 'editable-boolean-style',
   params: [
-    {id: 'picklistStyle', type: 'picklist.style', defaultValue: picklist.native(), dynamic: true}
+    {id: 'picklistStyle', type: 'picklist-style', defaultValue: select.native(), dynamic: true}
   ],
   impl: styleByControl({
     control: picklist({
       databind: '%$editableBooleanModel/databind%',
-      options: list(
+      options: typeAdapter('data<>' ,list(
         obj(prop('text', '%$editableBooleanModel/textForTrue()%'), prop('code', true)),
         obj(prop('text', '%$editableBooleanModel/textForFalse()%'), prop('code', false))
-      ),
+      )),
       style: call('picklistStyle'),
       features: picklist.onChange(writeValue('%$editableBooleanModel/databind()%', If('%%==true', true, false)))
     }),

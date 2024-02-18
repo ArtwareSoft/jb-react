@@ -132,7 +132,7 @@ component('remote.distributedWidget', {
         sink.action(remote.action(action.updateFrontEnd('%%'), byUri('%$frontEndUri%')))
       ),
       jbm: '%$backend%',
-      require: 'action.updateFrontEnd'
+      require: () => {$: 'rx<>source.callbag'}
     })
   )
 })
@@ -180,9 +180,8 @@ component('action.renderXwidget', {
     const elem = selector ? jb.ui.widgetBody(ctx).querySelector(selector) : jb.ui.widgetBody(ctx)
     if (!elem)
       return jb.logError('renderXwidget - can not find top elem', { body: jb.ui.widgetBody(ctx), ctx, selector })
-    jb.ui.renderWidget({ $: 'widget.frontEndCtrl', widgetId: widgetId }, elem)
+    jb.ui.renderWidget({ $: 'control<>widget.frontEndCtrl', widgetId: widgetId }, elem)
   },
-  dependency: [widget.frontEndCtrl()]
 })
 
 // headless

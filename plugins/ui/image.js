@@ -1,5 +1,6 @@
 component('image', {
-  type: 'control,image',
+  type: 'control',
+  moreTypes: 'image<>',
   category: 'control:50,common:70',
   params: [
     {id: 'url', as: 'string', mandatory: true, templateValue: 'https://freesvg.org/img/UN-CONSTRUCTION-2.png'},
@@ -7,11 +8,11 @@ component('image', {
     {id: 'height', as: 'string', mandatory: true, description: 'e.g: 100, 20%'},
     {id: 'resize', type: 'image.resize', description: 'background-size, resize the image', defaultValue: image.fullyVisible()},
     {id: 'position', type: 'image.position', description: 'move/shift image'},
-    {id: 'style', type: 'image.style', dynamic: true, defaultValue: image.background()},
+    {id: 'style', type: 'image-style', dynamic: true, defaultValue: image.background()},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx, {
-    studioFeatures :{$: 'feature.contentEditable' },
+    studioFeatures :{$: 'feature<>feature.contentEditable' },
   })
 })
 
@@ -49,7 +50,7 @@ component('image.position', {
 })
 
 component('image.background', {
-  type: 'image.style',
+  type: 'image-style',
   impl: customStyle({
     template: (cmp,state,h) => h('div'),
     css: pipeline(
@@ -70,7 +71,7 @@ component('image.background', {
 })
 
 component('image.img', {
-  type: 'image.style',
+  type: 'image-style',
   impl: customStyle({
     template: ({},{url},h) => h('img', { src: url}),
     css: pipeline(

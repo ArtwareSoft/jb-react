@@ -25,13 +25,13 @@ Object.assign(jb, {
 })
 
 extension('utils', 'core', {
-    profileType(profile, tgpModel) {
-        const comps = tgpModel && tgpModel.comps || jb.comps
-        if (!profile) return ''
-        if (typeof profile == 'string') return 'data'
-        const comp_name = jb.utils.compName(profile)
-        return (comps[comp_name] && comps[comp_name].type) || ''
-    },
+    // profileType(profile, tgpModel) {
+    //     const comps = tgpModel && tgpModel.comps || jb.comps
+    //     if (!profile) return ''
+    //     if (typeof profile == 'string') return 'data<>'
+    //     const comp_name = jb.utils.compName(profile)
+    //     return (comps[comp_name] && comps[comp_name].type) || ''
+    // },
     singleInType(parentParam, tgpModel) {
         const comps = tgpModel && tgpModel.comps || jb.comps
         const _type = parentParam && parentParam.type && parentParam.type.split('[')[0]
@@ -41,12 +41,16 @@ extension('utils', 'core', {
         if (!profile || Array.isArray(profile)) return
         const id = profile.$ || jb.utils.singleInType(parentParam, tgpModel) || ''
         if (!id) return ''
+        if (id.indexOf('<') != -1)
+          return id
+        if (jb.core.genericCompIds[id])
+          return `any<>${id}`
         const CT = jb.core.CT
         const comp = jb.path(profile,[CT,'comp']) || {}
-        const dslType = profile.$dslType || (tgpModel ? comp.dslType : jb.path(comp,[CT,'dslType'])) || ''
-        return (!dslType.match(/</) || dslType.match(/<>/) ? '' : dslType) + id
+        const dslType = comp.type == 'any' ? '' : (profile.$dslType || (tgpModel ? comp.dslType : jb.path(comp,[CT,'dslType'])) || '')
+        return dslType + id
     },
-    resolveProfile(comp,id,dsl, {keepLocation, tgpModel} = {}) {
+    resolveSingleComp(comp,id,dsl, {keepLocation, tgpModel} = {}) {
       jb.utils.resolveProfileTop(id,comp,dsl, {keepLocation, tgpModel})
       jb.utils.resolveUnTypedProfile(comp,id, 10, {tgpModel})
       jb.utils.resolveProfileInnerElements(comp, {tgpModel})
@@ -56,10 +60,20 @@ extension('utils', 'core', {
       const CT = jb.core.CT
       const profiles = jb.core.unresolvedProfiles
       profiles.forEach(({comp,id,dsl}) => jb.utils.resolveProfileTop(id,comp,dsl, {keepLocation}))
-      profiles.forEach(({comp}) => comp[CT].fullId && (jb.comps[comp[CT].fullId] = comp))
+      profiles.forEach(({comp,id}) => { 
+        if (comp[CT].fullId)  {
+          jb.comps[comp[CT].fullId] = comp
+          ;(comp.moreTypes || '').split(',').filter(x=>x).forEach(t=>jb.comps[t+id] = comp)
+        }
+      })
       profiles.forEach(({comp,id}) => jb.utils.resolveUnTypedProfile(comp,id, 10))
       profiles.forEach(({comp}) => comp[CT].fullId && (jb.comps[comp[CT].fullId] = comp))
       jb.core.unresolvedProfiles = []
+
+      const dslDeclarations = Object.keys(jb.comps).filter(x=>x.match(/\.dslDeclarations$/))
+      dslDeclarations.forEach(k => jb.utils.resolveProfileInnerElements(jb.comps[k]))
+      dslDeclarations.forEach(k=>jb.exec({$:k}))
+
       profiles.forEach(({comp}) => jb.utils.resolveProfileInnerElements(comp))
       return profiles
     },
@@ -69,13 +83,13 @@ extension('utils', 'core', {
       if (!comp[CT]) comp[CT] = comp[CT] || { id }
       const type = comp.type || ''
       const dslOfType = type.indexOf('<') != -1 ? type.split(/<|>/)[1] : undefined // to cover t1<> dsl == ''
-      const dsl = comp[CT].dsl = dslOfType !== undefined ? dslOfType : (comp.dsl || compDsl)
+      const dsl = comp[CT].dsl = dslOfType !== undefined ? dslOfType : (comp.dsl || compDsl || '')
       const unresolvedType = comp[CT].idOfUnresolvedType = ! type && id
       if (comp.impl && typeof comp.impl == 'object')
         comp.impl[CT] = { dsl }
       if (!unresolvedType) {
-        const dslType = comp[CT].dslType = (dsl && type.indexOf('<') == -1 ? `${type}<${dsl}>` : type).replace(/\<\>/g,'')
-        const fullId = comp[CT].fullId = (dsl ? dslType : '') + id
+        const dslType = comp[CT].dslType = type.indexOf('<') == -1 ? `${type}<${dsl}>` : type
+        const fullId = comp[CT].fullId = dslType + id
         const oldComp = comps[fullId]
         if (oldComp && oldComp != comp) {
           const oldCompCT = oldComp[CT] || {}
@@ -97,46 +111,48 @@ extension('utils', 'core', {
         const _dsl = compDsl || dsl
         // fix as boolean params to have type: 'boolean'
         if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
-          p.type = 'boolean';
-        const dslType = (p.type || '').split(',')
-          .map(t => t || 'data')
-          .map(t=> _dsl && t.indexOf('<') == -1 && ['data','action'].indexOf(t) == -1 ? `${t}<${_dsl}>` : t)
+          p.type = 'boolean<>';
+        const dslType = (p.type || '').split(',').map(t => t || 'data<>')
+          .map(t=> t.indexOf('<') == -1 ? `${t}<${_dsl}>` : t) // && ['data','action'].indexOf(t) == -1 
           .join(',')
         p[CT] = { dslType, originalType: p.type}
         if (p.defaultValue && typeof p.defaultValue == 'object')
           p.defaultValue[CT] = { ...p[CT] }
+        if (p.templateValue && typeof p.templateValue == 'object')
+          p.templateValue[CT] = { ...p[CT] }
       })
-            return comp
+      
+      return comp
     },
     resolveUnTypedProfile(comp,id, depth, {tgpModel} = {}) {
       const comps = tgpModel && tgpModel.comps || jb.comps
       const CT = jb.core.CT
       //if (comp[CT].idOfUnresolvedType == 'assign') debugger
       if (! comp)
-        return 'data'
+        return 'data<>'
       if (depth < 1) 
-        return registerWithType('data')
+        return registerWithType('data<>')
       if (comp[CT].dslType) 
         return registerWithType(comp[CT].dslType)
       if (!comp.impl || typeof comp.impl != 'object')
-        return registerWithType('data')
+        return registerWithType('data<>')
 
       resolveImpl(comp.impl)
       const compFromImpl = jb.path(comp.impl,[CT,'comp'])
       const dslType = compFromImpl && (jb.path(compFromImpl,[CT,'dslType']) || jb.path(compFromImpl,'dslType'))
       if (dslType) {
-        comp.impl[CT].dslType = dslType.replace(/\<\>/g,'')
+        comp.impl[CT].dslType = dslType
         return registerWithType(dslType)
       }
       return 'unknown'
 
       function resolveImpl(prof) {
         const dslType = jb.path(prof,[CT,'dslType'])
-        let comp = jb.utils.getCompById(prof.$, { types: dslType, dsl: jb.path(prof,[CT,'dsl']), silent: true, tgpModel })
+        let comp = jb.utils.getCompById(prof.$, { dslType, dsl: jb.path(prof,[CT,'dsl']), silent: true, tgpModel })
         if (!comp) {
           jb.core.unresolvedProfiles.filter(({id}) => id == prof.$).forEach(({comp}) => 
             jb.utils.resolveUnTypedProfile(comp,comp.type || '', depth-1))
-          comp = jb.utils.getCompById(prof.$, { types: dslType, dsl: jb.path(prof,[CT,'dsl']), tgpModel })
+          comp = jb.utils.getCompById(prof.$, { dslType, dsl: jb.path(prof,[CT,'dsl']), tgpModel })
         }
         if (!comp)
           return jb.logError(`resolveUnTypedProfile - can not resolve profile ${prof.$}`, {prof})
@@ -145,8 +161,8 @@ extension('utils', 'core', {
       }
       function registerWithType(dslType) {
         if (!comp[CT].idOfUnresolvedType) return dslType
-        const typePrefix = comp[CT].dsl && dslType.indexOf('<') != -1 ? dslType : ''
-        comp[CT].fullId = typePrefix + comp[CT].idOfUnresolvedType
+        //const typePrefix = comp[CT].dsl && dslType.indexOf('<') != -1 ? dslType : ''
+        comp[CT].fullId = dslType + comp[CT].idOfUnresolvedType
         const oldComp = comps[comp[CT].fullId]
 
         if (!tgpModel) comps[comp[CT].fullId] = comp
@@ -159,87 +175,138 @@ extension('utils', 'core', {
     },
 
     resolveProfileInnerElements(topComp, {tgpModel} = {}) {
-      const CT = jb.core.CT
       if (!topComp) return
-      ;(topComp.params || []).forEach(p=> doResolve(p.defaultValue))
-      //if (topComp[CT].fullId =='state<loc>israel') debugger
-      doResolve(topComp.impl)
+      ;(topComp.params || []).forEach(p=> jb.utils.resolveProfile(p.defaultValue))
+      ;(topComp.params || []).forEach(p=> jb.utils.resolveProfile(p.templateValue))
+      //if (topComp[CT].fullId =='test<>dataTest.join') debugger
+      jb.utils.resolveProfile(topComp.impl, {tgpModel, topComp, parent: topComp})
 
-      function doResolve(prof, _expectedType,parent) {
-          if (!prof || !prof.constructor || ['Object','Array'].indexOf(prof.constructor.name) == -1) return
-          const expectedType = _expectedType == '$asParent' ? jb.path(parent,[CT,'dslType']) : _expectedType
-          const typeFromParentAdapter = parent && parent.$ == 'typeAdapter' && parent.fromType
-          const dslType = typeFromParentAdapter || jb.path(prof,[CT,'dslType']) ||  expectedType
-          const comp = jb.utils.getCompById(prof.$, { types: dslType, dsl: jb.path(prof,[CT,'dsl']), tgpModel })
-          prof[CT] = prof[CT] || {}
-          Object.assign(prof[CT], {comp, dslType})
-          if (prof.$byValue && comp) {
-              Object.assign(prof, jb.macro.argsToProfile(prof.$, comp, prof.$byValue, topComp))
-              if (jb.core.OrigValues) prof[jb.core.OrigValues] = prof.$byValue
-              delete prof.$byValue
-          }
-          if (Array.isArray(prof)) {
-            prof.forEach(v=>doResolve(v, expectedType))
-          } else if (comp && prof.$ != 'asIs') {
-            ;[...(comp.params || []), {id: 'data'}].forEach(p=> doResolve(prof[p.id], (p.$symbolDslType || jb.path(p,[CT,'dslType']) ||'').replace(/\[\]/g,''),prof ))
-            doResolve(prof.$vars)
-            if (prof.$ == 'object')
-              Object.values(prof).forEach(v=>doResolve(v))
-          } else if (!comp && prof.$) {
-              return jb.logError(`resolveProfile - can not resolve ${prof.$} at ${topComp[CT].fullId} expected type ${dslType || 'unknown'}`, 
-                  {compId: prof.$, prof, expectedType, dslType, topComp})
-          }
-      }
-    },    
-    resolveDetachedProfile(prof, {expectedType, parent, tgpModel}= {}) {
+      // function doResolve(prof, _expectedType,{parent, parentProp} = {}) {
+      //     if (!prof || !prof.constructor || ['Object','Array'].indexOf(prof.constructor.name) == -1) return
+      //     const expectedType = _expectedType == '$asParent<>' ? jb.path(parent,[CT,'dslType']) : _expectedType
+      //     const typeFromParentAdapter = parent && parent.$ == 'typeAdapter' && parent.fromType
+      //     const dslType = typeFromParentAdapter || jb.path(prof,[CT,'dslType']) || expectedType
+      //     const comp = jb.utils.getCompById(prof.$, { dslType, dsl: jb.path(prof,[CT,'dsl']), parent, parentProp, tgpModel })
+      //     prof[CT] = prof[CT] || {}
+      //     Object.assign(prof[CT], {comp, dslType})
+      //     if (prof.$byValue && comp) {
+      //         Object.assign(prof, jb.macro.argsToProfile(prof.$, comp, prof.$byValue, topComp))
+      //         if (jb.core.OrigValues) prof[jb.core.OrigValues] = prof.$byValue
+      //         delete prof.$byValue
+      //     }
+      //     if (Array.isArray(prof)) {
+      //       prof.forEach(v=>doResolve(v, expectedType, {parent, parentProp}))
+      //     } else if (comp && prof.$ != 'asIs') {
+      //       ;[...(comp.params || []), {id: 'data'}].forEach(p=> 
+      //           doResolve(prof[p.id], (p.$symbolDslType || jb.path(p,[CT,'dslType']) ||'').replace(/\[\]/g,''), {parent: prof, parentProp: p}))
+      //       doResolve(prof.$vars)
+      //       if (prof.$ == 'object')
+      //         Object.values(prof).forEach(v=>doResolve(v))
+      //     } else if (!comp && prof.$) {
+      //         return jb.logError(`resolveProfile - can not resolve ${prof.$} at ${topComp[CT].fullId} expected type ${dslType || 'unknown'}`, 
+      //             {compId: prof.$, prof, expectedType, dslType, topComp})
+      //     }
+      // }
+    },
+    resolveProfile(prof, { expectedType, parent, parentProp, tgpModel, topComp} = {}) {
       const CT = jb.core.CT
-      if (!prof || !prof.constructor || ['Object','Array'].indexOf(prof.constructor.name) == -1) 
-        return prof
-      if (Array.isArray(prof)) {
-          prof.forEach(v=>jb.utils.resolveDetachedProfile(v, {expectedType, parent: prof, tgpModel}))
-          return prof
-      }
-      const typeFromParentAdapter = parent && parent.$ == 'typeAdapter' && parent.fromType
-      const dslType = typeFromParentAdapter || expectedType
-      const comp = jb.utils.getCompById(prof.$, { types: dslType, tgpModel })
-      prof[CT] = {comp, dslType}
+      if (!prof || !prof.constructor || ['Object','Array'].indexOf(prof.constructor.name) == -1) return prof
+      const typeFromParent = expectedType == '$asParent<>' ? jb.path(parent,[CT,'dslType']) : expectedType
+      const typeFromAdapter = parent && parent.$ == 'typeAdapter' && parent.fromType
+      const fromFullId = prof.$ && prof.$.indexOf('>') != -1 && (prof.$.split('>')[0] + '>')
+      const dslType = typeFromAdapter || prof.$dslType || jb.path(prof,[CT,'dslType']) || typeFromParent || fromFullId
+      const comp = jb.utils.getCompById(prof.$, { dslType, dsl: jb.path(prof,[CT,'dsl']), parent, parentProp, tgpModel })
+      prof[CT] = prof[CT] || {}
+      Object.assign(prof[CT], {comp, dslType})
       if (prof.$byValue && comp) {
-          Object.assign(prof, jb.macro.argsToProfile(prof.$, comp, prof.$byValue))
+          Object.assign(prof, jb.macro.argsToProfile(prof.$, comp, prof.$byValue, topComp))
           if (jb.core.OrigValues) prof[jb.core.OrigValues] = prof.$byValue
           delete prof.$byValue
-          ;(comp.params || []).forEach(p=> jb.utils.resolveDetachedProfile(prof[p.id], {expectedType : p.$symbolDslType || jb.path(p,[CT,'dslType']), parent: prof, tgpModel}))
-          jb.utils.resolveDetachedProfile(prof.$vars, {expectedType, parent, tgpModel})
-      } else if (prof.$byValue && !comp) {
-          return jb.logError(`resolveDetachedProfile - can not resolve ${prof.$} expected type ${dslType || 'unknown'}`, 
-              {compId: prof.$, prof, expectedType, dslType })
-      } else {
-        Object.keys(prof).forEach(key=> {
-          const p = (comp && comp.params || []).find(p=>p.id == key)
-          const type = p && (p.$symbolDslType || jb.path(p,[CT,'dslType']) ||'').replace(/\[\]/g,'')
-          jb.utils.resolveDetachedProfile(prof[key], { expectedType: type, parent: prof, tgpModel})
-        })
+      }
+      if (Array.isArray(prof)) {
+        prof.forEach(v=>jb.utils.resolveProfile(v, { expectedType: dslType, parent, parentProp, topComp, tgpModel}))
+      } else if (comp && prof.$ != 'asIs') {
+        ;[...(comp.params || []), {id: 'data'}].forEach(p=> 
+            jb.utils.resolveProfile(prof[p.id], { expectedType: (p.$symbolDslType || jb.path(p,[CT,'dslType']) ||'').replace(/\[\]/g,''), parent: prof, parentProp: p, topComp, tgpModel}))
+        jb.utils.resolveProfile(prof.$vars, {tgpModel, topComp})
+        if (prof.$ == 'object')
+          Object.values(prof).forEach(v=>jb.utils.resolveProfile(v, {tgpModel, topComp}))
+      } else if (!comp && prof.$) {
+          jb.logError(`resolveProfile - can not resolve ${prof.$} at ${topComp[CT].fullId} expected type ${dslType || 'unknown'}`, 
+              {compId: prof.$, prof, expectedType, dslType, topComp})
       }
       return prof
-    },
-    getCompById(id, {types, dsl, silent, tgpModel} = {}) {
+    },    
+    // resolveDetachedProfile(prof, {expectedType, parent, tgpModel}= {}) {
+    //   const CT = jb.core.CT
+    //   if (!prof || !prof.constructor || ['Object','Array'].indexOf(prof.constructor.name) == -1) 
+    //     return prof
+    //   if (Array.isArray(prof)) {
+    //       prof.forEach(v=>jb.utils.resolveDetachedProfile(v, {expectedType, parent: prof, tgpModel}))
+    //       return prof
+    //   }
+    //   const typeFromParentAdapter = parent && parent.$ == 'typeAdapter' && parent.fromType
+    //   const dslType = typeFromParentAdapter || prof.$dslType || expectedType
+    //   const comp = jb.utils.getCompById(prof.$, { dslType, tgpModel })
+    //   prof[CT] = {comp, dslType}
+    //   if (prof.$byValue && comp) {
+    //       Object.assign(prof, jb.macro.argsToProfile(prof.$, comp, prof.$byValue))
+    //       if (jb.core.OrigValues) prof[jb.core.OrigValues] = prof.$byValue
+    //       delete prof.$byValue
+    //       ;(comp.params || []).forEach(p=> jb.utils.resolveDetachedProfile(prof[p.id], {expectedType : p.$symbolDslType || jb.path(p,[CT,'dslType']), parent: prof, tgpModel}))
+    //       jb.utils.resolveDetachedProfile(prof.$vars, {expectedType, parent, tgpModel})
+    //   } else if (prof.$byValue && !comp) {
+    //       return jb.logError(`resolveDetachedProfile - can not resolve ${prof.$} expected type ${dslType || 'unknown'}`, 
+    //           {compId: prof.$, prof, expectedType, dslType })
+    //   } else {
+    //     Object.keys(prof).forEach(key=> {
+    //       const p = (comp && comp.params || []).find(p=>p.id == key)
+    //       const type = p && (p.$symbolDslType || jb.path(p,[CT,'dslType']) ||'').replace(/\[\]/g,'')
+    //       jb.utils.resolveDetachedProfile(prof[key], { expectedType: type, parent: prof, tgpModel})
+    //     })
+    //   }
+    //   return prof
+    // },
+    getCompById(id, {dslType, dsl, silent, tgpModel, parentProp, parent} = {}) {
+      if (!id) return
       const comps = tgpModel && tgpModel.comps || jb.comps
+      //if (id == 'css' && parent && parent.$ == 'text') debugger
       if (jb.core.genericCompIds[id])
-        return comps[id]
-      const byFullId = id && (types || '').split(',')
-        .map(t=>t.replace(/<>|\[\]/g,'')).map(t => t.indexOf('<') == -1 ? id : t+id).map(fullId => comps[fullId]).find(x=>x)
+        return comps['any<>'+id]
+      if (comps[id]) return comps[id]
+      if (comps[(dslType||'')+id]) return comps[(dslType||'')+id]
+
+      const CT = jb.core.CT
+      const typeFromParent = parentProp && parentProp.typeAsParent === true && jb.path(parent,[CT,'dslType'])
+      const dynamicTypeFromParent = parentProp && typeof parentProp.typeAsParent == 'function' && parentProp.typeAsParent(jb.path(parent,[CT,'dslType']))
+      const byDsl = [dynamicTypeFromParent,typeFromParent,dslType].filter(x=>x).join(',').split(',').filter(x=>x)
+        .map(t=>t.split('<')[0]).flatMap(t=>moreTypesByDsl(t,dsl||'')).join(',')
+  
+      const allTypes = jb.utils.unique([byDsl,dynamicTypeFromParent,typeFromParent,dslType].filter(x=>x).join(',').replace(/\[\]/g,'').split(',').filter(x=>x))
+      const byFullId = allTypes.map(t=>comps[t+id]).find(x=>x)
       if (byFullId)
         return byFullId
-        
-      if (!types && dsl) { // be carefull - looking by shortid without type, can find a comp from the wrong type
-        const pattern = `<${dsl}>${id}`
-        const options = Object.keys(comps).filter(fullId =>fullId.endsWith(pattern))
-        if (options.length == 1)
-          return comps[options[0]]
-        else if (options.length > 1 && !silent)
-          jb.logError('getComp - several options', {dsl,id,options})
-      }      
-      if (id && !silent)
-        jb.logError(`utils getComp - can not find comp for id ${id}`,{id, types, dsl})
+
+      const byUnkownType = (!dslType || dslType == '$asParent<>') && (lookForUnknownTypeInDsl(dsl) || lookForUnknownTypeInDsl(''))
+      if (!byUnkownType && id && !silent) {
+        debugger
+        jb.logError(`utils getComp - can not find comp for id ${id}`,{id, allTypes, dslType, dsl})
+      }
+
+      return byUnkownType
+
+      function moreTypesByDsl(type,dsl) {
+        return (jb.macro.dslsDeclarations[dsl] || []).filter(decl=>decl.match(type))
+          .flatMap(decl=>decl.genericType.split(',').filter(x=>x).map(x=>`${x}<${dsl}>`))
+      }
+      function lookForUnknownTypeInDsl(dsl) {
+          const pattern = `<${dsl}>${id}`
+          const options = jb.utils.unique(Object.keys(comps).filter(fullId =>fullId.endsWith(pattern)), x=>comps[x].type)
+          if (options.length == 1)
+            return comps[options[0]]
+          else if (options.length > 1 && !silent)
+            jb.logError('getComp - several options for unknown type', {dsl,id,options})
+      }
     },
     compParams(comp) {
       return (!comp || !comp.params) ? [] : comp.params

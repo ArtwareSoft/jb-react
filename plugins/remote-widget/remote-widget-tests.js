@@ -49,7 +49,7 @@ component('remoteWidgetTest.changeText', {
 component('remoteWidgetTest.group.wait', {
   impl: uiTest({
     control: group(button('hello world'), {
-      features: group.wait(treeShake.getCodeFromRemote('sampleProject.main'))
+      features: group.wait(treeShake.getCodeFromRemote('control<>sampleProject.main'))
     }),
     expectedResult: contains('hello world'),
     backEndJbm: worker()
@@ -77,8 +77,8 @@ component('remoteWidgetTest.dialog', {
 
 component('remoteWidgetTest.loadCodeManully', {
   impl: uiTest({
-    control: group(ctx => ctx.run({$: 'text', text: 'hello' }), {
-      features: group.wait(treeShake.getCodeFromRemote('text'))
+    control: group(ctx => ctx.run({$: 'control<>text', text: 'hello' }), {
+      features: group.wait(treeShake.getCodeFromRemote('control<>text'))
     }),
     expectedResult: contains('hello'),
     backEndJbm: worker()

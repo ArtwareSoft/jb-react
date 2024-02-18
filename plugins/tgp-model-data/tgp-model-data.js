@@ -5,8 +5,9 @@ extension('tgp', 'modelData', {
 		const filePath = settings.filePath && jb.loader.shortFilePath(settings.filePath)
 		const plugin = settings.plugin || jb.loader.pluginOfFilePath(filePath)
 		const pluginsAr = plugin ? [...jb.plugins[plugin].dependent,plugin] : []
-		const compsAr = Object.values(jb.comps).map(c=>c[jb.core.CT]).filter(c=>c && c.fullId).filter(c=>pluginsAr.includes(c.plugin.id))
-			.map(ct=>({...jb.comps[ct.fullId],id: ct.fullId, plugin: ct.plugin.id, dslType: ct.dslType, location: ct.location, 
+		const compsAr = jb.entries(jb.comps).map(([k,c]) => [k,c[jb.core.CT]])
+			.filter(([k,ct]) => ct && ct.fullId && pluginsAr.includes(ct.plugin.id))
+			.map(([id,ct]) => ({id, ...jb.comps[id], plugin: ct.plugin.id, dslType: ct.dslType, location: ct.location, 
 					params: fixParams(jb.comps[ct.fullId])}))
 		Object.values(compsAr).forEach(c=>{delete c.impl; delete c[jb.core.CT]})
 		const comps = jb.objFromEntries(compsAr.map(comp=>[comp.id,comp]))

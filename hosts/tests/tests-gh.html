@@ -22,7 +22,7 @@
 	jbInit('tests', {projects: ['studio'], plugins: jb_plugins, useFileSymbolsFromBuild: true })
 		.then(jb=>{
 			globalThis.jb = jb
-			jb.exec({$: 'defaultTheme'})
+			jb.exec({$: 'data<>defaultTheme'})
 			jb.spy.initSpyByUrl()
 			const params = { 
 				testType: '',

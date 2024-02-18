@@ -76,6 +76,7 @@ component('studio.redrawStudio', {
 component('studio.lastEdit', {
   description: 'latest edited path',
   type: 'data',
+  moreTypes: 'boolean<>',
   params: [
     {id: 'justNow', as: 'boolean', type: 'boolean', defaultValue: true}
   ],

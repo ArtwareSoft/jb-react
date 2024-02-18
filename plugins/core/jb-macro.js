@@ -5,7 +5,10 @@ Object.assign(jb, {
 
 extension('macro', {
     initExtension() {
-        return { proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro'), systemProps: ['remark', 'data', '$debug', '$disabled', '$log' ] }
+        return { 
+            dslsDeclarations: {}, dslsDeclarationsInit: {},
+            proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro'), systemProps: ['remark', 'data', '$debug', '$disabled', '$log' ] 
+        }
     },  
     titleToId: id => id.replace(/-([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
     newProxy: id => new Proxy(() => 0, {
@@ -82,7 +85,7 @@ extension('macro', {
 })
 
 component('Var', {
-  type: 'var,system',
+  type: 'var',
   isSystem: true,
   params: [
     {id: 'name', as: 'string', mandatory: true},
@@ -102,6 +105,28 @@ component('remark', {
   ],
   macro: (result, self) => Object.assign(result,{ $remark: self.remark || self.$byValue[0] })
 })
+
+// component('dslDeclarations', {
+//     type: 'dslDeclaration',
+//     params: [ 
+//         { id: 'items', type: 'dslDeclaration[]', dynamic: true }
+//     ],
+//     impl: (ctx,items) => items(ctx)
+// })
+
+// component('genericType', {
+//   type: 'dslDeclaration',
+//   params: [
+//     {id: 'dsl', as: 'string', mandatory: true, byName: true},
+//     {id: 'genericType', as: 'string', mandatory: true},
+//     {id: 'match', as: 'boolean', mandatory: true, dynamic: true}
+//   ],
+//   impl: ctx => {
+//     const {dsl,genericType,match} = ctx.params
+//     const gtypes = jb.macro.dslsDeclarations[dsl] = jb.macro.dslsDeclarations[dsl] || []
+//     gtypes.push({genericType,match})
+//   }
+// })
 
 component('unknownCmp', {
   type: 'system',

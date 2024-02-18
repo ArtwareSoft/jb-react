@@ -168,7 +168,7 @@ extension('utils', 'prettyPrint', {
       if (noMacros)
         return asIsProps(profile,path)
       if (profile.$ == 'asIs') {
-        jb.utils.resolveDetachedProfile(profile)
+        jb.utils.resolveProfile(profile)
         const content = jb.utils.prettyPrint(profile.$asIs,{noMacros: true})
         const list = [ 
           {item: 'asIs(', action: `begin!${path}`}, {item: '', action: `edit!${path}`},
@@ -178,7 +178,7 @@ extension('utils', 'prettyPrint', {
       const fullId = [jb.utils.compName(profile, {tgpModel})].map(x=> x=='var' ? 'variable' : x)[0]
       const comp = fullId && jb.utils.getCompById(fullId, {tgpModel})
       if (comp && profile.$byValue)
-        jb.utils.resolveDetachedProfile(profile,{tgpModel})
+        jb.utils.resolveProfile(profile,{tgpModel})
       const id = fullId.split('>').pop()
         
       if (!id || !comp || ',object,var,'.indexOf(`,${id},`) != -1)

@@ -96,12 +96,13 @@ component('langServer.localReferences', {
 component('langServer.studioCircuitUrl', {
   impl: pipe(
     Var('filePath', tgpTextEditor.currentFilePath()),
+    Var('sourceCode', sourceCode.encodeUri(probeServer('%$filePath%', 'studio'))),
     langService.calcCompProps(),
     '%path%',
     If('%%', remote.data({
       calc: pipe(
-        Var('sourceCode', sourceCode.encodeUri(probeServer('%$filePath%', 'studio'))),
         Var('probePath', '%%'),
+        Var('sourceCode', '%$sourceCode%'),
         {$: 'probe.calcCircuitPath', probePath: '%%'},
         join('/', { items: list('%path%','%$probePath%') }),
         'http://localhost:8082/project/studio/%%?sourceCode=%$sourceCode%&spy=test'

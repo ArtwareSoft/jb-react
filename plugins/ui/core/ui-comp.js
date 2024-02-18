@@ -8,7 +8,8 @@ extension('ui','comp', {
                 return jb.ui.h('div',{},value.map(item=>jb.core.jstypes.renderable(item)));
             return '' + jb.val(value,true);
         }
-    
+   
+        jb.ui.initDslDeclarations()
         return {
             lifeCycle: new Set('init,extendCtx,templateModifier,followUp,destroy'.split(',')),
             arrayProps: new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,frontEndLib,frontEndVar'.split(',')),
@@ -21,6 +22,14 @@ extension('ui','comp', {
             cmps: {}              
         }
     },
+    initDslDeclarations() {
+        if (jb.macro.dslsDeclarationsInit.ui) return
+        jb.macro.dslsDeclarationsInit.ui = true
+        const dsl = ''
+        const gtypes = jb.macro.dslsDeclarations[dsl] = jb.macro.dslsDeclarations[dsl] || []
+        gtypes.push({genericType: 'feature', match: t => /feature$/.test(t)})
+        gtypes.push({genericType: 'style,feature', match: t => /style$/.test(t)})
+    },    
     h(cmpOrTag,attributes,children) {
         if (cmpOrTag instanceof jb.ui.VNode) return cmpOrTag // Vdom
         if (cmpOrTag && cmpOrTag.renderVdom)
@@ -32,8 +41,10 @@ extension('ui','comp', {
         const styleByControl = jb.path(origCtx,'cmpCtx.profile.$') == 'styleByControl'
         const $state = (origCtx.vars.$refreshElemCall || styleByControl) ? origCtx.vars.$state : {}
         const cmpId = origCtx.vars.$cmpId, cmpVer = origCtx.vars.$cmpVer
-        if (!origCtx.vars.$serviceRegistry)
+        if (!origCtx.vars.$serviceRegistry) {
+            //debugger
             jb.logError('no serviceRegistry',{ctx: origCtx})
+        }
         const ctx = origCtx.setVars({
             $model: { ctx: origCtx, ...origCtx.params},
             $state,
@@ -182,7 +193,7 @@ extension('ui','comp', {
         }
         elem.removeAttribute('__refreshing')
         jb.ui.refreshNotification.next({cmp,ctx,elem, state, options})
-        //jb .studio.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
+        //jb .studio.execInStudio({ $$:'animate.refreshElem', elem: () => elem })
     },
     JbComponent : class JbComponent {
         constructor(ctx,id,ver) {
@@ -456,4 +467,9 @@ extension('ui','comp', {
             return this;
         }
     }
+})
+
+component('uiPlugin.dslDeclarations', {
+  type: 'dslDeclaration',
+  impl: () => jb.ui.initDslDeclarations()
 })

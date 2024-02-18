@@ -34,7 +34,6 @@ Object.assign(jb.ui,{
 })
 
 component('contentEditable.effectiveProp', {
-  type: 'control',
   params: [
     {id: 'axis', as: 'string', options: 'x,y'}
   ],
@@ -42,7 +41,7 @@ component('contentEditable.effectiveProp', {
 })
 
 component('contentEditable.actionIcon', {
-  type: 'control',
+  type: 'icon',
   params: [
     {id: 'cssProp', as: 'string'}
   ],
@@ -244,7 +243,7 @@ component('contentEditable.dragableThumb', {
 })
 
 component('contentEditable.positionThumbsStyle', {
-  type: 'dialog.style',
+  type: 'dialog-style',
   impl: customStyle({
     template: (cmp,state,h) => h('div.jb-dialog jb-popup',{},h(state.contentComp)),
     css: '{ display: block; position: absolute; background: var(--jb-dropdown-bg); }',

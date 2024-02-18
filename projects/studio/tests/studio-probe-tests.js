@@ -2,8 +2,8 @@ using('probe-tests')
 
 component('FETest.workerPreviewTest.suggestions.select', {
   impl: uiFrontEndTest({
-    control: group(studio.propertyPrimitive('sampleProject.main~impl~controls~0~text'), probe.remoteCircuitPreview()),
-    runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
+    control: group(studio.propertyPrimitive('control<>sampleProject.main~impl~controls~0~text'), probe.remoteCircuitPreview()),
+    runBefore: writeValue('%$probe/defaultMainCircuit%', 'control<>sampleProject.main'),
     uiAction: uiActions(
       waitForSelector('#sampleText'),
       setText('hello %$var1'),
@@ -21,8 +21,8 @@ component('FETest.workerPreviewTest.suggestions.select', {
 
 component('FETest.workerPreviewTest.suggestions', {
   impl: uiFrontEndTest({
-    control: group(probe.remoteCircuitPreview(), studio.propertyPrimitive('sampleProject.main~impl~controls~0~text')),
-    runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
+    control: group(probe.remoteCircuitPreview(), studio.propertyPrimitive('control<>sampleProject.main~impl~controls~0~text')),
+    runBefore: writeValue('%$probe/defaultMainCircuit%', 'control<>sampleProject.main'),
     uiAction: uiActions(
       waitForSelector('[cmp-pt="text"]'),
       waitForSelector('input'),
@@ -36,8 +36,8 @@ component('FETest.workerPreviewTest.suggestions', {
 
 component('FETest.workerPreviewTest.suggestions.selectPopup', {
   impl: uiFrontEndTest({
-    control: group(studio.propertyPrimitive('sampleProject.main~impl~controls~0~text'), probe.remoteCircuitPreview()),
-    runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
+    control: group(studio.propertyPrimitive('control<>sampleProject.main~impl~controls~0~text'), probe.remoteCircuitPreview()),
+    runBefore: writeValue('%$probe/defaultMainCircuit%', 'control<>sampleProject.main'),
     uiAction: uiActions(
       waitForSelector('#sampleText'),
       waitForSelector('input'),
@@ -51,11 +51,11 @@ component('FETest.workerPreviewTest.suggestions.selectPopup', {
 
 // jb.component('workerPreviewTest.suggestions2', {
 //   impl: uiTest({
-//     runBefore: writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
+//     runBefore: writeValue('%$probe/defaultMainCircuit%','control<>sampleProject.main'),
 //     control: group({
 //       controls: [
 //         probe.remoteCircuitPreview(),
-//         studio.propertyPrimitive('sampleProject.main~impl~controls~0~text')
+//         studio.propertyPrimitive('control<>sampleProject.main~impl~controls~0~text')
 //       ],
 //     }),
 //     expectedResult: contains('hello world')
@@ -64,8 +64,8 @@ component('FETest.workerPreviewTest.suggestions.selectPopup', {
 
 component('FETest.workerPreviewTest.suggestions.filtered', {
   impl: uiFrontEndTest({
-    control: group(probe.remoteCircuitPreview(), studio.propertyPrimitive('sampleProject.main~impl~controls~0~text')),
-    runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
+    control: group(probe.remoteCircuitPreview(), studio.propertyPrimitive('control<>sampleProject.main~impl~controls~0~text')),
+    runBefore: writeValue('%$probe/defaultMainCircuit%', 'control<>sampleProject.main'),
     uiAction: uiActions(
       waitForSelector('#sampleText'),
       waitForSelector('input'),
@@ -78,8 +78,8 @@ component('FETest.workerPreviewTest.suggestions.filtered', {
 })
 
 component('jbEditorTest.basic', {
-  impl: uiTest(group(probe.remoteCircuitPreview(), studio.jbEditor('sampleProject.main~impl')), contains('hello'), {
-    runBefore: writeValue('%$probe/defaultMainCircuit%', 'sampleProject.main'),
+  impl: uiTest(group(probe.remoteCircuitPreview(), studio.jbEditor('control<>sampleProject.main~impl')), contains('hello'), {
+    runBefore: writeValue('%$probe/defaultMainCircuit%', 'control<>sampleProject.main'),
     timeout: 1000
   })
 })
@@ -89,11 +89,11 @@ component('jbEditorTest.basic', {
 //     renderDOM: true,
 //     timeout: 5000,
 //     runBefore: runActions(
-//       writeValue('%$probe/defaultMainCircuit%','sampleProject.main'),
+//       writeValue('%$probe/defaultMainCircuit%','control<>sampleProject.main'),
 //       remote.action(() => jb.component('dataResource.studio', { watchableData: {
 //         jbEditor: { 
-//           circuit: 'sampleProject.main',
-//           selected: 'sampleProject.main~impl~controls~0~0~text'}} 
+//           circuit: 'control<>sampleProject.main',
+//           selected: 'control<>sampleProject.main~impl~controls~0~0~text'}} 
 //         }), worker('inteli'))
 //     ),
 //     control: group({
@@ -101,16 +101,16 @@ component('jbEditorTest.basic', {
 //         probe.remoteCircuitPreview(),
 //         remote.widget(
 //           controlWithFeatures(
-//             studio.jbEditorInteliTree('sampleProject.main~impl'),{
+//             studio.jbEditorInteliTree('control<>sampleProject.main~impl'),{
 //               toLoad: [
 //               () => { /* code loader: jb.watchableComps.forceLoad(); jb.ui.createHeadlessWidget() */ },
-//               {$: 'sampleProject.main'}
+//               {$: 'control<>sampleProject.main'}
 //             ]})
 //         ,worker('inteli')),
 //       ],
 //     }),
 //     action: uiActions(
-//       click('[path="sampleProject.main~impl~controls~0~text"]'),
+//       click('[path="control<>sampleProject.main~impl~controls~0~text"]'),
 //       waitForSelector('.selected'),
 //       keyboardEvent({ selector: '.jb-editor', type: 'keydown', keyCode: 13 }),
 //       waitForSelector('.jb-dialog'),

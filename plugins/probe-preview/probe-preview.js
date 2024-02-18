@@ -21,6 +21,8 @@ component('probePreviewWorker', {
 })
 
 component('suggestions.calcFromProbePreview', {
+  type: 'data<>',
+  moreTypes: 'picklist.options<>',
   params: [
     {id: 'probePath', as: 'string'},
     {id: 'expressionOnly', as: 'boolean', type: 'boolean'},
@@ -36,7 +38,7 @@ component('suggestions.calcFromProbePreview', {
       then: jbm.self(),
       Else: probePreviewWorker()
     }),
-    require: '%$require%'
+    //require: '%$require%'
   })
 })
 
@@ -71,7 +73,7 @@ component('probe.circuitPreview', {
     controls: ctx => { 
         const _circuit = ctx.exp('%$probe/defaultMainCircuit%')
         const circuit = (jb.path(jb.utils.getCompById(_circuit,{silent: true}),'impl.$') || '').match(/Test/) 
-          ? { $: 'test.showTestInStudio', testId: _circuit, controlOnly: true} : { $: _circuit }
+          ? { $: 'control<>test.showTestInStudio', testId: _circuit, controlOnly: true} : { $: _circuit }
         jb.log('probe circuit',{circuit, ctx})
         return circuit && circuit.$ && ctx.run(circuit)
     },
@@ -84,7 +86,7 @@ component('probe.circuitPreview', {
       variable('$previewMode', true)
     ]
   }),
-  require: [test.showTestInStudio()]
+  require: [{$: 'control<>test.showTestInStudio'}]
 })
 
 component('probe.initPreview', {
@@ -122,7 +124,7 @@ component('probe.handleScriptChangeOnPreview', {
         handler.makeWatchable(path[0])
         jb.log('probe handleScriptChangeOnPreview doOp',{ctx,op,path})
         handler.doOp(handler.refOfPath(path), op, ctx)
-        jb.utils.resolveDetachedProfile(jb.comps[path[0]])
+        jb.utils.resolveProfile(jb.comps[path[0]])
 
         const headlessWidgetId = Object.keys(jb.ui.headless)[0]
         const headless = jb.ui.headless[headlessWidgetId]

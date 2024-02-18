@@ -1,19 +1,19 @@
 component('button', {
-  type: 'control,clickable',
+  type: 'control',
   category: 'control:100,common:100',
   params: [
     {id: 'title', as: 'ref', mandatory: true, templateValue: 'click me', dynamic: true},
     {id: 'action', type: 'action', mandatory: true, dynamic: true},
-    {id: 'style', type: 'button.style', defaultValue: button.native(), dynamic: true},
+    {id: 'style', type: 'button-style', defaultValue: button.native(), dynamic: true},
     {id: 'raised', as: 'boolean', dynamic: true, type: 'boolean'},
     {id: 'disabledTillActionFinished', as: 'boolean', type: 'boolean'},
-    {id: 'features', type: 'feature[],button.feature[]', dynamic: true}
+    {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
 component('button.initAction', {
-  type: 'button.feature',
+  type: 'feature',
   category: 'button:0',
   impl: features(
     watchAndCalcModelProp('title'),
@@ -27,12 +27,12 @@ component('button.initAction', {
         $model.action(ctx)
     }),
     feature.userEventProps('ctrlKey,altKey'),
-    () => ({studioFeatures :{$: 'feature.contentEditable', param: 'title' }})
+    () => ({studioFeatures :{$: 'feature<>feature.contentEditable', param: 'title' }})
   )
 })
 
 component('button.initDisabled', {
-  type: 'button.feature',
+  type: 'feature',
   category: 'button:0',
   impl: features(
     watchAndCalcModelProp('title'),
@@ -58,12 +58,12 @@ component('button.initDisabled', {
         $model.action(ctx)
     }),
     feature.userEventProps('ctrlKey,altKey'),
-    () => ({studioFeatures :{$: 'feature.contentEditable', param: 'title' }})
+    () => ({studioFeatures :{$: 'feature<>feature.contentEditable', param: 'title' }})
   )
 })
 
 component('button.ctrlAction', {
-  type: 'button.feature',
+  type: 'feature',
   category: 'button:70',
   description: 'action to perform on control+click',
   params: [
@@ -73,7 +73,7 @@ component('button.ctrlAction', {
 })
 
 component('button.altAction', {
-  type: 'button.feature',
+  type: 'feature',
   category: 'button:70',
   description: 'action to perform on alt+click',
   params: [

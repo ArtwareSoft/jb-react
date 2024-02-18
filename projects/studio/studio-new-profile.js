@@ -16,7 +16,7 @@ component('studio.categoriesMarks', {
         split(','),
         {'$': 'object', code: split(':', { part: 'first' }), mark: split(':', { part: 'second' })}
       ),
-      'group.style': pipeline(
+      'group-style': pipeline(
         list('layout:100','group:90','tabs:0'),
         split(','),
         {'$': 'object', code: split(':', { part: 'first' }), mark: split(':', { part: 'second' })}
@@ -27,7 +27,8 @@ component('studio.categoriesMarks', {
 })
 
 component('studio.flattenCategories', {
-  type: 'aggregator',
+  type: 'data',
+  aggregator: true,
   impl: ctx =>
     ctx.data.filter(cat=>cat.code != 'all')
       .flatMap(category=> [{text: `---${category.code}---`}, ...category.pts.map(text => ({text, compName: text, description: jb.comps[text].description}))])
@@ -134,7 +135,7 @@ component('studio.selectProfile', {
       variable('Categories', picklist.sortedOptions('%$unsortedCategories%', {
         marks: studio.categoriesMarks('%$type%', '%$path%')
       })),
-      watchable('SelectedCategory', If(tgp.val('%$path%'), 'all', '%$Categories[0]/code%')),
+      watchable('SelectedCategory', If(notEmpty(tgp.val('%$path%')), 'all', '%$Categories[0]/code%')),
       group.itemlistContainer(tgp.compName('%$path%')),
       css.width('400')
     ]
@@ -204,7 +205,7 @@ component('studio.openPickProfile', {
       studio.selectProfile({
         onSelect: tgp.setComp('%$path%', '%%'),
         onBrowse: If({
-          condition: or(equals('layout', tgp.paramType('%$path%')), endsWith('.style', tgp.paramType('%$path%'))),
+          condition: or(equals('layout', tgp.paramType('%$path%')), endsWith('-style', tgp.paramType('%$path%'))),
           then: tgp.setComp('%$path%', '%%')
         }),
         type: tgp.paramType('%$path%'),
@@ -230,7 +231,11 @@ component('studio.openNewPage', {
   type: 'action',
   impl: studio.openNewProfile('New Reusable Control (page)', runActions(
     Var('compName', tgp.titleToId('%$dialogData/name%')),
-    studio.newComp('%$compName%', asIs({type: 'control', impl: group()}), {
+    studio.newComp('%$compName%', {
+      compContent: asIs({
+  type: 'control',
+  impl: {$: 'control<>group'}
+}),
       file: '%$dialogData/file%'
     }),
     writeValue('%$studio/profile_path%', '%$compName%~impl'),
@@ -244,7 +249,11 @@ component('studio.openNewFunction', {
   type: 'action',
   impl: studio.openNewProfile('New Function', runActions(
     Var('compName', tgp.titleToId('%$dialogData/name%')),
-    studio.newComp('%$compName%', asIs({type: 'data', impl: pipeline('')}), {
+    studio.newComp('%$compName%', {
+      compContent: asIs({
+  type: 'data',
+  impl: {$: 'data<>pipeline', items: ['']}
+}),
       file: '%$dialogData/file%'
     }),
     writeValue('%$studio/profile_path%', '%$compName%'),
@@ -367,9 +376,10 @@ component('studio.newProfile', {
 })
 
 component('studio.newComp', {
+  type: 'action',
   params: [
     {id: 'compName', as: 'string'},
-    {id: 'compContent'},
+    {id: 'compContent', byName: true},
     {id: 'file', as: 'string'}
   ],
   impl: (ctx, compName, compContent,file) => {

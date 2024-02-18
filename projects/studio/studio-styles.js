@@ -1,5 +1,5 @@
 component('editableText.studioPrimitiveText', {
-  type: 'editable-text.style',
+  type: 'editable-text-style',
   impl: customStyle({
     template: (cmp,{databind},h) => h('input', {
           class: 'mdc-text-field__input',
@@ -17,7 +17,7 @@ component('editableText.studioPrimitiveText', {
 })
 
 component('editableText.floatingInput', {
-  type: 'editable-text.style',
+  type: 'editable-text-style',
   impl: styleWithFeatures(editableText.mdcInput(), {
     features: css('~ .mdc-text-field { width: 100%; margin-right: 13px;}')
   })
@@ -38,7 +38,7 @@ extension('studio', 'codeMirror', {
 })
 
 component('editableText.studioCodemirrorTgp', {
-  type: 'editable-text.style',
+  type: 'editable-text-style',
   impl: editableText.codemirror({
     cm_settings: {
       '$': 'object',
@@ -56,7 +56,7 @@ component('editableText.studioCodemirrorTgp', {
 })
 
 component('button.selectProfileStyle', {
-  type: 'button.style',
+  type: 'button-style',
   impl: customStyle({
     template: (cmp,{title},h) => h('input', { class: 'mdc-text-field__input', type: 'text', readonly: true, title,
             value: title, onmouseup: 'onclickHandler',
@@ -72,7 +72,7 @@ component('button.selectProfileStyle', {
 })
 
 component('studio.propertyToolbarStyle', {
-  type: 'button.style',
+  type: 'button-style',
   impl: customStyle({
     template: (cmp,state,h) => h('i',{class: 'material-icons', onclick: true, title: 'more...' },'more_vert'),
     css: `{ cursor: pointer;width: 16px; font-size: 16px; vertical-align: super; opacity: 0.5; transform: translate(-5px, 10px);}
@@ -83,7 +83,7 @@ component('studio.propertyToolbarStyle', {
 })
 
 component('button.studioScript', {
-  type: 'button.style',
+  type: 'button-style',
   impl: customStyle({
     template: (cmp,{title},h) =>
         h('input.mdc-text-field__input', { type: 'text', readonly: true, title, value: title, onmouseup: 'onclickHandler' }),
@@ -98,7 +98,7 @@ component('button.studioScript', {
 })
 
 component('picklist.studioEnum', {
-  type: 'picklist.style',
+  type: 'picklist-style',
   impl: customStyle({
     template: (cmp,state,h) => h('select', { value: state.databind, onchange: true },
           (state.options || []).map(option=>h('option',{value: option.code},option.text))
@@ -119,7 +119,7 @@ component('picklist.studioEnum', {
 })
 
 component('text.studioMessage', {
-  type: 'text.style',
+  type: 'text-style',
   impl: customStyle({
     template: (cmp,{text},h) => h('span.studio-message',{}, text),
     css: `{ position: absolute;
@@ -134,7 +134,7 @@ component('text.studioMessage', {
 })
 
 component('dialog.studioMultilineEdit', {
-  type: 'dialog.style',
+  type: 'dialog-style',
   impl: customStyle({
     template: (cmp,{contentComp},h) => h('div.jb-dialog jb-popup',{}, [
       h('button.dialog-close', {onclick: 'dialogClose' },'×'),

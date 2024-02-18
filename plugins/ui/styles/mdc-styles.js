@@ -46,7 +46,7 @@ component('feature.mdcRippleEffect', {
 })
 
 component('label.mdcRippleEffect', {
-  type: 'text.style',
+  type: 'text-style',
   impl: customStyle({
     template: ({},{text},h) => h('button.mdc-button',{},[
       h('div.mdc-button__ripple'),

@@ -8,7 +8,7 @@ component('picklist', {
     {id: 'databind', as: 'ref', mandaroy: true, dynamic: true},
     {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true, templateValue: picklist.optionsByComma()},
     {id: 'promote', type: 'picklist.promote', dynamic: true},
-    {id: 'style', type: 'picklist.style', defaultValue: picklist.native(), dynamic: true},
+    {id: 'style', type: 'picklist-style', defaultValue: select.native(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
@@ -112,6 +112,7 @@ component('picklist.options', {
 
 component('picklist.sortedOptions', {
   type: 'picklist.options',
+  moreTypes: 'data<>',
   params: [
     {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true, composite: true},
     {id: 'marks', as: 'array', description: 'e.g input:80,group:90. 0 mark means hidden. no mark means 50'}

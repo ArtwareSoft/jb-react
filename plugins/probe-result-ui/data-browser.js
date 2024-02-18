@@ -78,7 +78,7 @@ component('ui.dataBrowse', {
 })
 
 component('dialog.showSourceStyle', {
-  type: 'dialog.style',
+  type: 'dialog-style',
   params: [
     {id: 'id', as: 'string'},
     {id: 'width', as: 'number', defaultValue: 600},

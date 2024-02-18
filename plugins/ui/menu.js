@@ -27,7 +27,7 @@ component('menu.dynamicOptions', {
     {id: 'items', type: 'data', as: 'array', mandatory: true, dynamic: true},
     {id: 'genericOption', type: 'menu.option', mandatory: true, dynamic: true}
   ],
-  impl: pipeline('%$items()%', call('genericOption'))
+  impl: typeAdapter('data<>', pipeline('%$items()%', '%$genericOption()%'))
 })
 
 component('menu.endWithSeparator', {
@@ -37,16 +37,17 @@ component('menu.endWithSeparator', {
     {id: 'separator', type: 'menu.option', defaultValue: menu.separator()},
     {id: 'title', as: 'string'}
   ],
-  impl: pipeline(Var('opts', '%$options()%'), If('%$opts/length%>0', list('%$opts%','%$separator%')))
+  impl: typeAdapter('data<>', pipeline(Var('opts', '%$options()%'), If('%$opts/length%>0', list('%$opts%','%$separator%'))))
 })
 
 component('menu.separator', {
   type: 'menu.option',
-  impl: obj(prop('separator', true))
+  impl: typeAdapter('data<>', obj(prop('separator', true)))
 })
 
 component('menu.action', {
   type: 'menu.option',
+  moreTypes: 'control<>',
   params: [
     {id: 'title', as: 'string', dynamic: true, mandatory: true},
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
@@ -73,10 +74,11 @@ component('menu.action', {
 // ********* controls ************
 
 component('menu.control', {
-  type: 'control,clickable,menu',
+  type: 'control',
+  moreTypes: 'menu<>',
   params: [
     {id: 'menu', type: 'menu.option', dynamic: true, mandatory: true},
-    {id: 'style', type: 'menu.style', defaultValue: menuStyle.contextMenu(), dynamic: true},
+    {id: 'style', type: 'menu-style', defaultValue: menuStyle.contextMenu(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => {
@@ -98,8 +100,8 @@ component('menu.openContextMenu', {
   type: 'action',
   params: [
     {id: 'menu', type: 'menu.option', dynamic: true, mandatory: true},
-    {id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue: dialog.contextMenuPopup()},
-    {id: 'menuStyle', type: 'menu.style', dynamic: true, defaultValue: menuStyle.contextMenu()},
+    {id: 'popupStyle', type: 'dialog-style', dynamic: true, defaultValue: dialog.contextMenuPopup()},
+    {id: 'menuStyle', type: 'menu-style', dynamic: true, defaultValue: menuStyle.contextMenu()},
     {id: 'features', type: 'dialog-feature[]', dynamic: true},
     {id: 'id', as: 'string'}
   ],
@@ -114,11 +116,11 @@ component('menu.openContextMenu', {
 // ********* styles ************
 
 component('menuStyle.pulldown', {
-  type: 'menu.style',
+  type: 'menu-style',
   params: [
-    {id: 'innerMenuStyle', type: 'menu.style', dynamic: true, defaultValue: menuStyle.popupAsOption()},
-    {id: 'leafOptionStyle', type: 'menu-option.style', dynamic: true, defaultValue: menuStyle.optionLine()},
-    {id: 'layout', type: 'group.style', dynamic: true, defaultValue: itemlist.horizontal()}
+    {id: 'innerMenuStyle', type: 'menu-style', dynamic: true, defaultValue: menuStyle.popupAsOption()},
+    {id: 'leafOptionStyle', type: 'menu-option-style', dynamic: true, defaultValue: menuStyle.optionLine()},
+    {id: 'layout', type: 'group-style', dynamic: true, defaultValue: itemlist.horizontal()}
   ],
   impl: styleByControl({
     vars: [
@@ -136,9 +138,9 @@ component('menuStyle.pulldown', {
 })
 
 component('menuStyle.contextMenu', {
-  type: 'menu.style',
+  type: 'menu-style',
   params: [
-    {id: 'leafOptionStyle', type: 'menu-option.style', dynamic: true, defaultValue: menuStyle.optionLine()}
+    {id: 'leafOptionStyle', type: 'menu-option-style', dynamic: true, defaultValue: menuStyle.optionLine()}
   ],
   impl: styleByControl({
     vars: [
@@ -152,7 +154,7 @@ component('menuStyle.contextMenu', {
 component('menu.initPopupMenu', {
   type: 'feature',
   params: [
-    {id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue: dialog.contextMenuPopup()}
+    {id: 'popupStyle', type: 'dialog-style', dynamic: true, defaultValue: dialog.contextMenuPopup()}
   ],
   impl: features(
     calcProp('title', '%$menuModel.title%'),
@@ -183,11 +185,11 @@ component('menu.initMenuOption', {
 })
 
 component('menuStyle.applyMultiLevel', {
-  type: 'menu.style',
+  type: 'menu-style',
   params: [
-    {id: 'menuStyle', type: 'menu.style', dynamic: true, defaultValue: menuStyle.popupAsOption()},
-    {id: 'leafStyle', type: 'menu.style', dynamic: true, defaultValue: menuStyle.optionLine()},
-    {id: 'separatorStyle', type: 'menu-separator.style', defaultValue: menuSeparator.line()}
+    {id: 'menuStyle', type: 'menu-style', dynamic: true, defaultValue: menuStyle.popupAsOption()},
+    {id: 'leafStyle', type: 'menu-style', dynamic: true, defaultValue: menuStyle.optionLine()},
+    {id: 'separatorStyle', type: 'menu-separator-style', defaultValue: menuSeparator.line()}
   ],
   impl: (ctx,menuStyle,leafStyle,separatorStyle) => {
     const {menuModel,leafOptionStyle, innerMenuStyle } = ctx.vars
@@ -328,6 +330,7 @@ component('source.findMenuKeySource', {
 })
 
 component('menu.isRelevantMenu', {
+  type: 'boolean',
   impl: ctx => {
     const key = ctx.data.keyCode
     const el = ctx.vars.cmp.base
@@ -345,9 +348,9 @@ component('menu.isRelevantMenu', {
   }
 })
 
-
 component('menuStyle.optionLine', {
-  type: 'menu-option.style',
+  type: 'menu-option-style',
+  moreTypes: 'menu-style<>',
   impl: customStyle({
     template: (cmp,{icon,title,shortcut},h) => h('div.line noselect', { onmousedown: 'closeAndActivate' },[
         h(cmp.ctx.run({$: 'control.icon', ...icon, size: 20})),
@@ -366,7 +369,7 @@ component('menuStyle.optionLine', {
 })
 
 component('menuStyle.popupAsOption', {
-  type: 'menu.style',
+  type: 'menu-style',
   impl: customStyle({
     template: (cmp,{title},h) => h('div.line noselect', { onmousedown: 'closeAndActivate' },[
 				h('span.title',{},title),
@@ -381,7 +384,7 @@ component('menuStyle.popupAsOption', {
 })
 
 component('menuStyle.popupThumb', {
-  type: 'menu.style',
+  type: 'menu-style',
   description: 'used for pulldown',
   impl: customStyle({
     template: ({},{title},h) => h('div.pulldown-top-menu-item',{ onclick: 'openPopup'}, title),
@@ -398,7 +401,7 @@ component('menuStyle.popupThumb', {
 })
 
 component('dialog.contextMenuPopup', {
-  type: 'dialog.style',
+  type: 'dialog-style',
   params: [
     {id: 'offsetTop', as: 'number'},
     {id: 'rightSide', as: 'boolean', type: 'boolean'},
@@ -418,7 +421,7 @@ component('dialog.contextMenuPopup', {
 })
 
 component('menuSeparator.line', {
-  type: 'menu-separator.style',
+  type: 'menu-separator-style',
   impl: customStyle({
     template: ({},{},h) => h('div', {separator: true}),
     css: '{ margin: 6px 0; border-bottom: 1px solid var(--jb-menu-separator-fg);}'
@@ -427,6 +430,7 @@ component('menuSeparator.line', {
 
 component('menu.notSeparator', {
   type: 'boolean',
+  moreTypes: 'data<>',
   params: [
     {id: 'elem'}
   ],
@@ -436,10 +440,10 @@ component('menu.notSeparator', {
 /***** icon menus */
 
 component('menuStyle.toolbar', {
-  type: 'menu.style',
+  type: 'menu-style',
   params: [
-    {id: 'leafOptionStyle', type: 'menu-option.style', dynamic: true, defaultValue: menuStyle.icon()},
-    {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.horizontal(5)}
+    {id: 'leafOptionStyle', type: 'menu-option-style', dynamic: true, defaultValue: menuStyle.icon()},
+    {id: 'itemlistStyle', type: 'itemlist-style', dynamic: true, defaultValue: itemlist.horizontal(5)}
   ],
   impl: styleByControl({
     vars: [
@@ -455,7 +459,8 @@ component('menuStyle.toolbar', {
 })
 
 component('menuStyle.icon', {
-  type: 'menu-option.style',
+  type: 'menu-option-style',
+  moreTypes: 'menu-style<>',
   params: [
     {id: 'buttonSize', as: 'number', defaultValue: 20}
   ],
@@ -470,7 +475,7 @@ component('menuStyle.icon', {
 })
 
 component('menuStyle.icon3', {
-  type: 'menu-option.style',
+  type: 'menu-option-style',
   params: [
     {id: 'buttonSize', as: 'number', defaultValue: 20}
   ],
@@ -492,7 +497,7 @@ component('menuStyle.icon3', {
 })
 
 component('menuStyle.iconMenu', {
-  type: 'menu.style',
+  type: 'menu-style',
   impl: styleByControl({
     control: button('%title%', action.runBEMethod('openPopup'), {
       style: button.mdcIcon({

@@ -134,7 +134,8 @@ component('tgp.profileValueAsText', {
 })
 
 component('tgp.getOrCreateCompInArray', {
-  type: 'data',
+  type: 'action',
+  moreTypes: 'data<>',
   params: [
     {id: 'path', as: 'string', mandatory: true},
     {id: 'compId', as: 'string', mandatory: true}

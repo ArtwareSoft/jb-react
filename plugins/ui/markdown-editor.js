@@ -1,5 +1,5 @@
 component('editableText.markdown', {
-  type: 'editable-text.style',
+  type: 'editable-text-style',
   params: [
     {id: 'simplemdeSettings', as: 'single'},
     {id: 'debounceTime', as: 'number', defaultValue: 300}

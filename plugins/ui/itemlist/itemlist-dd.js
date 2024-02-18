@@ -44,7 +44,8 @@ component('itemlist.dragAndDrop', {
 })
 
 component('source.dragulaEvent', {
-  type: 'rx:0',
+  type: 'rx',
+  hidden: true,
   params: [
     {id: 'event', as: 'string'},
     {id: 'argNames', as: 'array', description: `e.g., ['dropElm', 'target', 'source']`}
@@ -54,7 +55,8 @@ component('source.dragulaEvent', {
 })
 
 component('itemlist.orignialIndexFromSibling', {
-  type: 'data:0',
+  type: 'data',
+  hidden: true,
   params: [
     {id: 'sibling', defaultValue: '%%'}
   ],

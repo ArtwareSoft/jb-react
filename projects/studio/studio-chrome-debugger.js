@@ -102,13 +102,13 @@ component('chromeDebugger.logsCtrl', {
   impl: group({
     controls: [
       picklist('jbm', '%$inspectedUri%', {
-        options: pipe(
+        options: typeAdapter('data<>', pipe(
           remote.data(net.listSubJbms(), byUri('%$uri%')),
           unique(),
           filter(not(contains('•vDebugger'))),
           filter(not(contains('devtools'))),
-          aggregate(obj(prop('options', picklist.options('%%'))))
-        ),
+          aggregate(obj(prop('options', typeAdapter('picklist.options<>', picklist.options('%%')))))
+        )),
         features: picklist.allowAsynchOptions()
       }),
       group(remote.widget(studio.eventTracker(), byUri('%$inspectedUri%•vDebugger')), {

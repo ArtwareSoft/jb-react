@@ -184,6 +184,7 @@ component('cmd', {
                 const fullId = jb.utils.compName(prof)
                 const comp = jb.comps[fullId]
                 if (!comp) {
+                    debugger
                     jb.logError(`cmd - can not find comp ${fullId} please provide sourceCode`,{ctx})
                     return []
                 }
@@ -273,7 +274,8 @@ component('parent', {
 })
 
 component('jbm.start', {
-  type: 'data<>,action<>',
+  type: 'data<>',
+  moreTypes: 'action<>',
   params: [
     {id: 'jbm', type: 'jbm', mandatory: true}
   ],

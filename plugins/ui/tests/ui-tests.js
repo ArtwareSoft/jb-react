@@ -746,17 +746,21 @@ component('uiTest.remoteItemlistKeyboardSelection', {
           ]
         })
       ],
-      features: [watchable('res', obj())]
+      features: watchable('res', obj())
     }),
     expectedResult: contains('-Homer Simpson-'),
     uiAction: keyboardEvent('.jb-itemlist', 'keydown', { keyCode: 13 }),
-    timeout: 1000,
-    backEndJbm: remoteNodeWorker('itemlist', {
-      sourceCode: sourceCode(pluginsByPath('/plugins/ui/tests/ui-tests.js'))
-    }),
+    timeout: 5000,
+    backEndJbm: worker('itemlist', {
+        sourceCode: sourceCode(pluginsByPath('/plugins/ui/tests/ui-tests.js'),plugins('remote-widget'))
+      }),
     useFrontEnd: true
   })
 })
+
+// backEndJbm: remoteNodeWorker('itemlist', {
+//   sourceCode: sourceCode(pluginsByPath('/plugins/ui/tests/ui-tests.js'))
+// }),
 
 component('uiTest.itemlistWithTableStyle', {
   impl: uiTest({
@@ -925,6 +929,8 @@ component('uiTest.editableText.richPicklistHelper.setInput', {
 })
 
 component('test.getSelectionChar', {
+  type: 'data',
+  moreTypes: 'boolean<>',
   impl: ctx => {
     const input = ctx.vars.$state.input || jb.path(ctx.vars.ev, 'input') || { value: '', selectionStart: 0 }
     const selectionStart = input.selectionStart || 0
@@ -1120,7 +1126,7 @@ component('uiTest.picklist.delayedOptions', {
     control: group(
       group({
         controls: picklist('city', '%$personWithAddress/address/city%', {
-          options: source.data(obj(prop('options', picklist.optionsByComma('Springfield,New York,Tel Aviv,London')))),
+          options: typeAdapter('rx<>', source.data(obj(prop('options', typeAdapter('picklist.options<>', picklist.optionsByComma('Springfield,New York,Tel Aviv,London')))))),
           features: picklist.allowAsynchOptions()
         }),
         style: propertySheet.titlesLeft()
@@ -1135,7 +1141,7 @@ component('uiTest.picklist.delayedOptions', {
 component('uiTest.picklist.delayedOptions.StyleByControlBug', {
   impl: uiTest({
     control: picklist('city', '%$personWithAddress/address/city%', {
-      options: source.data(obj(prop('options', picklist.optionsByComma('Springfield,New York,Tel Aviv,London')))),
+      options: typeAdapter('rx<>', source.data(obj(prop('options', typeAdapter('picklist.options<>', picklist.optionsByComma('Springfield,New York,Tel Aviv,London')))))),
       style: picklist.labelList(),
       features: picklist.allowAsynchOptions()
     }),
@@ -1147,10 +1153,10 @@ component('uiTest.picklist.delayedOptions.StyleByControlBug', {
 component('uiTest.picklist.delayedOptions.StyleByControlBug.Promise', {
   impl: uiTest({
     control: picklist('city', '%$personWithAddress/address/city%', {
-      options: pipe(
+      options: typeAdapter('data<>', pipe(
         delay(1),
-        obj(prop('options', picklist.optionsByComma('Springfield,New York,Tel Aviv,London')))
-      ),
+        obj(prop('options', typeAdapter('picklist.options<>', picklist.optionsByComma('Springfield,New York,Tel Aviv,London'))))
+      )),
       style: picklist.labelList(),
       features: picklist.allowAsynchOptions()
     }),
@@ -1164,12 +1170,12 @@ component('uiTest.picklistHelper.delayedOptions', {
     control: editableText({
       databind: '%$person/name%',
       features: editableText.picklistHelper({
-        options: pipe(
+        options: typeAdapter('data<>', pipe(
           delay(1),
           obj(
-            prop('options', picklist.optionsByComma(() => [1, 2, 3].map(() => Math.floor(Math.random() * 10)).join(',')))
+            prop('options', typeAdapter('picklist.options<>', picklist.optionsByComma(() => [1, 2, 3].map(() => Math.floor(Math.random() * 10)).join(','))))
           )
-        ),
+        )),
         picklistStyle: picklist.labelList(),
         picklistFeatures: picklist.allowAsynchOptions(),
         showHelper: true

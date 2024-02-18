@@ -1,5 +1,5 @@
-component('picklist.native', {
-  type: 'picklist.style',
+component('select.native', {
+  type: 'style',
   impl: customStyle({
     template: ({},{databind,options},h) => h('select', { onchange: true }, 
       options.map(option=>h('option', {value: option.code, ...(databind == option.code && {selected:  '' }) },option.text))),
@@ -7,8 +7,13 @@ component('picklist.native', {
   })
 })
 
+component('picklist.native', {
+  type: 'picklist-style',
+  impl: select.native()
+})
+
 component('picklist.nativePlus', {
-  type: 'picklist.style',
+  type: 'picklist-style',
   impl: customStyle({
     template: ({},{databind,options},h) => h('select', { onchange: true }, 
       options.map(option=>h('option', {value: option.code, ...(databind == option.code && {selected:  '' }) } ,option.text))),
@@ -24,7 +29,7 @@ component('picklist.nativePlus', {
 })
 
 component('picklist.nativeMdLookOpen', {
-  type: 'picklist.style',
+  type: 'picklist-style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{}, [
         h('input', { type: 'text', value: state.databind, list: 'list_' + cmp.ctx.id, onchange: true }),
@@ -72,7 +77,7 @@ component('picklist.plusIcon', {
 })
 
 component('picklist.radio', {
-  type: 'picklist.style',
+  type: 'picklist-style',
   params: [
     {id: 'radioCss', as: 'string', defaultValue: '', description: 'e.g. display: none'},
     {id: 'text', defaultValue: '%text%', dynamic: true}
@@ -88,7 +93,7 @@ component('picklist.radio', {
 })
 
 component('picklist.mdcRadio', {
-  type: 'picklist.style',
+  type: 'picklist-style',
   params: [
     {id: 'text', defaultValue: '%text%', dynamic: true}
   ],
@@ -112,12 +117,12 @@ component('picklist.mdcRadio', {
 })
 
 component('picklist.radioVertical', {
-  type: 'picklist.style',
+  type: 'picklist-style',
   impl: styleWithFeatures(picklist.radio(), { features: layout.grid(list('30px','auto')) })
 })
 
 component('picklist.mdcSelect', {
-  type: 'picklist.style',
+  type: 'picklist-style',
   params: [
     {id: 'width', as: 'number', defaultValue: 300},
     {id: 'noLabel', as: 'boolean', type: 'boolean'},
@@ -158,10 +163,10 @@ component('picklist.mdcSelect', {
 })
 
 component('picklist.labelList', {
-  type: 'picklist.style',
+  type: 'picklist-style',
   params: [
-    {id: 'labelStyle', type: 'text.style', dynamic: true, defaultValue: text.span()},
-    {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.ulLi()},
+    {id: 'labelStyle', type: 'text-style', dynamic: true, defaultValue: text.span()},
+    {id: 'itemlistStyle', type: 'itemlist-style', dynamic: true, defaultValue: itemlist.ulLi()},
     {id: 'cssForSelected', as: 'string', description: 'e.g. background: red OR >a { color: red }', defaultValue: 'background: #bbb; color: #fff'}
   ],
   impl: styleByControl({
@@ -183,10 +188,10 @@ component('picklist.labelList', {
 })
 
 component('picklist.buttonList', {
-  type: 'picklist.style',
+  type: 'picklist-style',
   params: [
-    {id: 'buttonStyle', type: 'button.style', dynamic: true, defaultValue: button.mdc()},
-    {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.horizontal()},
+    {id: 'buttonStyle', type: 'button-style', dynamic: true, defaultValue: button.mdc()},
+    {id: 'itemlistStyle', type: 'itemlist-style', dynamic: true, defaultValue: itemlist.horizontal()},
     {id: 'cssForSelected', as: 'string', description: 'e.g. background: red;color: blue;font-weight: bold;', defaultValue: 'background: #bbb; color: #fff'}
   ],
   impl: styleByControl({
@@ -207,14 +212,14 @@ component('picklist.buttonList', {
 })
 
 component('picklist.hyperlinks', {
-  type: 'picklist.style',
+  type: 'picklist-style',
   impl: picklist.buttonList(button.href(), itemlist.horizontal('10'), {
     cssForSelected: '>a { color: red }'
   })
 })
 
 component('picklist.groups', {
-  type: 'picklist.style',
+  type: 'picklist-style',
   impl: customStyle({
     template: (cmp,{databind,hasEmptyOption,groups},h) => h('select', { onchange: true },
           (hasEmptyOption ? [h('option',{value:''},'')] : []).concat(

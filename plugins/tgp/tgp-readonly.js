@@ -49,15 +49,13 @@ extension('tgp', 'readOnly', {
     	if (path.indexOf('~') == -1)
 		  return jb.tgp.isCompNameOfType(path,type)
 		const paramDef = jb.tgp.paramDef(path) || {}
-		if (type == 'style' && (paramDef.type || '').indexOf('.style') != -1)
+		if (type == 'style' && (paramDef.type || '').indexOf('-style') != -1)
 			return true
 		return (paramDef.type || 'data').split(',')
 			.map(x=>x.split('[')[0]).filter(_t=>type.split(',').indexOf(_t) != -1).length
 	},
 	PTsOfType(type) {
-		const single = /([^\[]*)(\[\])?/
-		const types = [...(type||'').replace(/<>|\[\]/g,'').split(',').map(x=>x.match(single)[1]),'any']
-			.flatMap(x=> x=='data' ? ['data','aggregator','boolean'] : [x])
+		const types = [...(type||'').replace(/\[\]/g,'').split(','),'any']
 		const res = types.flatMap(t=> jb.entries(jb.comps).filter(c=> !c[1].hidden && jb.tgp.isCompObjOfType(c[1],t)).map(c=>c[0]) )
 		res.sort((c1,c2) => jb.tgp.markOfComp(c2) - jb.tgp.markOfComp(c1))
 		return res
@@ -240,8 +238,21 @@ extension('tgp', 'readOnly', {
 // ******* components ***************
 
  jb.defComponents(
-'isArrayType,parentPath,shortTitle,summary,isDisabled,enumOptions,propName,paramDef,paramType,moreParams,paramsOfPath,firstChildOfPath,canWrapWithArray'
+'parentPath,shortTitle,summary,enumOptions,propName,paramDef,paramType,moreParams,paramsOfPath,firstChildOfPath'
 	.split(','), f => component(`tgp.${f}`, { 
+	autoGen: true,
+	params: [
+		{id: 'path', as: 'string', mandatory: true},
+		{id: 'func', as: 'string', defaultValue: f}
+	  ],
+	  impl: ({},path,f) => jb.tgp[f](path),
+	  require: `() => #jb.tgp.${f}()`
+}))
+
+ jb.defComponents(
+'isArrayType,isDisabled,canWrapWithArray'
+	.split(','), f => component(`tgp.${f}`, { 
+	type: 'boolean',
 	autoGen: true,
 	params: [
 		{id: 'path', as: 'string', mandatory: true},
@@ -256,6 +267,14 @@ component('tgp.compName', {
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => jb.tgp.compNameOfPath(path) || ''
+})
+
+component('tgp.enumOptions', {
+	type: 'picklist.options<>',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) => jb.tgp.enumOptions(path) || ''
 })
 
 component('tgp.shortCompName', {
@@ -281,6 +300,7 @@ component('tgp.profileText', {
 })
 
 component('tgp.isPrimitiveValue', {
+	type: 'boolean',
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
@@ -288,6 +308,7 @@ component('tgp.isPrimitiveValue', {
 })
 
 component('tgp.isOfType', {
+	type: 'boolean',
   params: [
     {id: 'path', as: 'string', mandatory: true},
     {id: 'type', as: 'string', mandatory: true}
@@ -303,6 +324,8 @@ component('tgp.PTsOfType', {
 })
 
 component('tgp.categoriesOfType', {
+	type: 'data',
+	moreTypes: 'picklist.options<>',
   params: [
     {id: 'type', as: 'string', mandatory: true}
   ],
@@ -381,6 +404,7 @@ component('tgp.isArrayItem', {
 
 component('tgp.isCssPath', {
   type: 'boolean',
+  moreTypes: 'data<>',
   description: 'check if the script will change only css and not html',
   params: [
     {id: 'path'}

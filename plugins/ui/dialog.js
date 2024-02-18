@@ -1,10 +1,10 @@
 component('openDialog', {
   type: 'action',
-hasSideEffect: true,
+  hasSideEffect: true,
   params: [
-    {id: 'title', as: 'renderable', dynamic: true},
+    {id: 'title', type: 'data,control', as: 'renderable', dynamic: true},
     {id: 'content', type: 'control', dynamic: true, templateValue: group(), defaultValue: text('')},
-    {id: 'style', type: 'dialog.style', dynamic: true, defaultValue: dialog.default()},
+    {id: 'style', type: 'dialog-style', dynamic: true, defaultValue: dialog.default()},
     {id: 'menu', type: 'control', dynamic: true},
     {id: 'onOK', type: 'action', dynamic: true},
     {id: 'id', as: 'string'},
@@ -25,10 +25,10 @@ hasSideEffect: true,
 
 component('openDialog.probe', {
 	autoGen: true,
-	type: 'control:0',
+	type: 'action',
+  hidden: true,
 	params: jb.utils.getUnresolvedProfile('openDialog','action').params,
-	impl: ctx => jb.ui.ctrl(ctx.setVar('$dialog',{}), dialog.init()).renderVdom(),
-	require: {$: 'dialog.init'}
+	impl: ctx => jb.ui.ctrl(ctx.setVar('$dialog',{}), {$: 'feature<>dialog.init'}).renderVdom(),
 })
 
 component('dialog.init', {
@@ -48,12 +48,10 @@ component('dialog.init', {
 })
 
 component('dialog.buildComp', {
-  type: 'control:0',
   params: [
     {id: 'dialog', defaultValue: '%$$dialog%'}
   ],
-  impl: (ctx,dlg) => jb.ui.ctrl(dlg.ctx, {$: 'dialog.init'}),
-  require: dialog.init()
+  impl: (ctx,dlg) => jb.ui.ctrl(dlg.ctx, {$: 'feature<>dialog.init'}),
 })
 
 component('dialog.createDialogTopIfNeeded', {
@@ -62,7 +60,7 @@ component('dialog.createDialogTopIfNeeded', {
 		const widgetBody = jb.ui.widgetBody(ctx)
 		const {headlessWidget, headlessWidgetId, useFrontEndInTest} = ctx.vars
 		if (!widgetBody || widgetBody.querySelector(':scope>.jb-dialogs')) return
-		const vdom = ctx.run({$: 'dialog.dialogTop'}).renderVdomAndFollowUp()
+		const vdom = ctx.run({$: 'control<>dialog.dialogTop'}).renderVdomAndFollowUp()
 		if ((headlessWidget || useFrontEndInTest )&& widgetBody instanceof jb.ui.VNode) {
 			jb.log('dialog headless createTop',{vdom,widgetBody})
 			widgetBody.children.push(vdom)
@@ -74,7 +72,6 @@ component('dialog.createDialogTopIfNeeded', {
 			jb.log('dialog dom createTop',{vdom,widgetBody})
 		}
 	},
-  require: dialog.dialogTop()
 })
 
 component('dialog.closeDialog', {
@@ -121,10 +118,11 @@ component('dialog.shownDialogs', {
 })
 
 component('dialog.isOpen', {
+  type: 'boolean',
   params: [
     {id: 'id', as: 'string'}
   ],
-  impl: dialogs.cmpIdOfDialog('%$id%')
+  impl: typeAdapter('data<>', dialogs.cmpIdOfDialog('%$id%'))
 })
 
 component('dialogs.cmpIdOfDialog', {
@@ -232,7 +230,7 @@ component('dialogFeature.dragTitle', {
 })
 
 component('dialog.default', {
-  type: 'dialog.style',
+  type: 'dialog-style',
   impl: customStyle({
     template: ({},{title,contentComp},h) => h('div.jb-dialog jb-default-dialog',{},[
 			  h('div.dialog-title',{},title),
@@ -374,7 +372,7 @@ component('dialogFeature.maxZIndexOnClick', {
 })
 
 component('dialog.dialogOkCancel', {
-  type: 'dialog.style',
+  type: 'dialog-style',
   params: [
     {id: 'okLabel', as: 'string', defaultValue: 'OK'},
     {id: 'cancelLabel', as: 'string', defaultValue: 'Cancel'}
@@ -436,7 +434,7 @@ component('dialogFeature.resizer', {
 })
 
 component('dialog.popup', {
-  type: 'dialog.style',
+  type: 'dialog-style',
   impl: customStyle({
     template: ({},{contentComp},h) => h('div.jb-dialog jb-popup',{},h(contentComp)),
     css: '{ position: absolute; background: var(--jb-dropdown-bg); box-shadow: 2px 2px 3px var(--jb-dropdown-shadow); padding: 3px 0; border: 1px solid var(--jb-dropdown-border) }',
@@ -445,7 +443,7 @@ component('dialog.popup', {
 })
 
 component('dialog.transparentPopup', {
-  type: 'dialog.style',
+  type: 'dialog-style',
   impl: customStyle({
     template: ({},{contentComp},h) => h('div.jb-dialog jb-popup',{},h(contentComp)),
     css: '{ position: absolute; padding: 3px 0; }',
@@ -454,7 +452,7 @@ component('dialog.transparentPopup', {
 })
   
 component('dialog.div', {
-  type: 'dialog.style',
+  type: 'dialog-style',
   impl: customStyle({
     template: ({},{contentComp},h) => h('div.jb-dialog jb-popup',{},h(contentComp)),
     css: '{ position: absolute }'
@@ -462,7 +460,6 @@ component('dialog.div', {
 })
 
 component('dialogs.changeEmitter', {
-  type: 'rx',
   params: [
     {id: 'widgetId', defaultValue: '%$headlessWidgetId%'}
   ],
@@ -470,22 +467,21 @@ component('dialogs.changeEmitter', {
   impl: (ctx,_widgetId) => {
 		const widgetId = !ctx.vars.previewOverlay && _widgetId || 'default'
 		jb.ui.dlgEmitters = jb.ui.dlgEmitters || {}
-		jb.ui.dlgEmitters[widgetId] = jb.ui.dlgEmitters[widgetId] || ctx.run({$: 'rx.subject', id: `dialog emitter ${widgetId}`, replay: true})
+		jb.ui.dlgEmitters[widgetId] = jb.ui.dlgEmitters[widgetId] || ctx.run({$: 'data<>rx.subject', id: `dialog emitter ${widgetId}`, replay: true})
 		return jb.ui.dlgEmitters[widgetId]
-	},
-  require: rx.subject()
+	}
 })
 
 component('dialog.dialogTop', {
   type: 'control',
   params: [
-    {id: 'style', type: 'dialogs.style', defaultValue: dialogs.defaultStyle(), dynamic: true}
+    {id: 'style', type: 'dialogs-style', defaultValue: dialogs.defaultStyle(), dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
 component('dialogs.defaultStyle', {
-  type: 'dialogs.style',
+  type: 'dialogs-style',
   impl: customStyle({
     template: ({},{},h) => h('div.jb-dialogs'),
     features: [

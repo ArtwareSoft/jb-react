@@ -27,7 +27,7 @@ component('uiTest', {
       Var('uiTest', true),
       Var('widgetId', widget.newId()),
       Var('headlessWidget', true),
-      Var('remoteUiTest', notEquals('%$backEndJbm%', () => jb)),
+      Var('remoteUiTest', typeAdapter('boolean<>', notEquals('%$backEndJbm%', () => jb))),
       Var('headlessWidgetId', '%$widgetId%'),
       Var('useFrontEndInTest', '%$useFrontEnd%'),
       Var('transactiveHeadless', '%$transactiveHeadless%'),
@@ -54,7 +54,7 @@ component('uiTest', {
       ),
       first()
     ),
-    expectedResult: pipeline('%all%', '%$expectedResult()%', first()),
+    expectedResult: typeAdapter('data<>', pipeline('%all%', '%$expectedResult()%', first())),
     runBefore: runActions(uiTest.addFrontEndEmulation(), '%$runBefore()%'),
     timeout: If(equals('%$backEndJbm%', () => jb), '%$timeout%', 5000),
     allowError: '%$allowError()%',
@@ -144,6 +144,7 @@ component('uiTest.postTestRenderingUpdate', {
 })
 
 component('uiTest.addFrontEndEmulation', {
+  type: 'action',
   impl: ctx => {
 		const { widgetId, useFrontEndInTest} = ctx.vars
 		jb.ui.FEEmulator[widgetId] = {
@@ -160,6 +161,7 @@ component('uiTest.addFrontEndEmulation', {
 })
 
 component('uiTest.removeFrontEndEmulation', {
+  type: 'action',
   impl: ctx => {
 		const { widgetId, useFrontEndInTest} = ctx.vars
 		useFrontEndInTest && jb.ui.FEEmulator[widgetId].userReqSubs.dispose()

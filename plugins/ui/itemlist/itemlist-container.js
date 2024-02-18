@@ -13,7 +13,8 @@ component('group.itemlistContainer', {
 })
 
 component('itemlistContainer.filter', {
-  type: 'aggregator',
+  type: 'data',
+  aggregator: true,
   category: 'itemlist-filter:100',
   requireService: 'dataFilters',
   params: [
@@ -42,7 +43,7 @@ component('itemlistContainer.search', {
     {id: 'title', as: 'string', dynamic: true, defaultValue: 'Search'},
     {id: 'searchIn', type: 'search-in', dynamic: true, defaultValue: search.searchInAllProperties()},
     {id: 'databind', as: 'ref', dynamic: true, defaultValue: '%$itemlistCntrData/search_pattern%'},
-    {id: 'style', type: 'editable-text.style', defaultValue: editableText.mdcSearch(), dynamic: true},
+    {id: 'style', type: 'editable-text-style', defaultValue: editableText.mdcSearch(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.cmpCtx), {
@@ -72,7 +73,7 @@ component('itemlistContainer.moreItemsButton', {
   params: [
     {id: 'title', as: 'string', dynamic: true, defaultValue: 'show %$delta% more ... (%$itemlistCntrData/countAfterFilter%/%$itemlistCntrData/countBeforeMaxFilter%)'},
     {id: 'delta', as: 'number', defaultValue: 200},
-    {id: 'style', type: 'button.style', defaultValue: button.href(), dynamic: true},
+    {id: 'style', type: 'button-style', defaultValue: button.href(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.cmpCtx), {

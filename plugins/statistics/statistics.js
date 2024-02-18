@@ -5,7 +5,8 @@ extension('statistics', {
  jb.defComponents('sum,sumsqrd,sumsqerr,sumrow,product,min,max,mean,meansqerr,geomean,median,cumsum,cumprod,diff,rank,mode,range,variance,pooledvariance,deviation,stdev,pooledstdev,meandev,meddev,skewness,kurtosis,coeffvar,quartiles,quantiles,percentile,percentileOfScore,histogram,covariance,corrcoeff'.split(','),
     f => component(`stat.${f}`, ({
         autoGen: true,
-        type: 'aggregator',
+        type: 'data',
+        aggregator: true,
         params: [
             {id: 'func', as: 'string', defaultValue: f}
         ],        
@@ -13,7 +14,8 @@ extension('statistics', {
 })))
 
 component('stat.groupBy', {
-  type: 'aggregator',
+    type: 'data',
+    aggregator: true,
   params: [
     {id: 'by', dynamic: 'true', mandatory: true},
     {id: 'calculate', type: 'fieldInGroup[]', dynamic: true}

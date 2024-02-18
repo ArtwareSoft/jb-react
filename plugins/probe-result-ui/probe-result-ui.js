@@ -236,7 +236,6 @@ component('probeUI.probeResView', {
     ],
     features: [
       group.firstSucceeding(),
-      log('probe result', obj(prop('res', '%$probeResult%')))
     ]
   })
 })
@@ -263,13 +262,16 @@ component('probeUI.showRxSniffer', {
     {id: 'snifferLog'}
   ],
   impl: itemlist({
-    items: source.data('%$snifferLog/result%'),
+    items: typeAdapter('rx<>', source.data('%$snifferLog/result%')),
     controls: group({
       controls: [
         group(ui.dataBrowse('%d%'), {
           title: 'data',
           layout: layout.flex({ justifyContent: If('%dir%==in', 'flex-start', 'flex-end') }),
-          features: [css.width('100%'), css.margin({ left: '10' })]
+          features: [
+            css.width('100%'),
+            css.margin({ left: '10' })
+          ]
         }),
         button({
           title: '%dir%',
@@ -284,8 +286,14 @@ component('probeUI.showRxSniffer', {
             feature.hoverTitle('show variables')
           ]
         }),
-        text('%t%', 't', { style: text.span(), features: [css.opacity('0.5'), css.margin({ left: '10' })] }),
-        text('%time%', 'time', { style: text.span(), features: [css.opacity('0.5'), css.margin({ left: '10' })] })
+        text('%t%', 't', { style: text.span(), features: [
+          css.opacity('0.5'),
+          css.margin({ left: '10' })
+        ] }),
+        text('%time%', 'time', { style: text.span(), features: [
+          css.opacity('0.5'),
+          css.margin({ left: '10' })
+        ] })
       ],
       layout: layout.flex({ spacing: '0' }),
       features: feature.byCondition('%dir%==out', css.color({ background: 'var(--jb-menubar-inactive-bg)' }))
