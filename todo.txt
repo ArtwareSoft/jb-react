@@ -41,7 +41,7 @@ llm document assistant for jbart widget tutorial
 use widget tutorial to train specialized models
 use trained models to be experts in item content generation
 
-fix rx dsl
+calc vars should support promise in pipe
 
 
 references

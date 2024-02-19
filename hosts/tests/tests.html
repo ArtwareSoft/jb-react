@@ -26,11 +26,6 @@
 		|| repo && {pluginPackages: [{'$':'defaultPackage'},{'$':'jbStudioServer', repo }],plugins:['*'] } 
 		|| { projects: ['studio'], plugins: ['*','studio-tests'] }
 
-		// addRepo && {projects: ['studio'], pluginPackages: [{'$':'defaultPackage'},{'$':'jbStudioServer', repo: addRepo }], plugins:['*','studio-tests'] } 
-		// || plugins && {pluginPackages: [{'$':'defaultPackage'}],plugins } 
-		// || repo && {pluginPackages: [{'$':'defaultPackage'},{'$':'jbStudioServer', repo }],plugins:['*'] } 
-		// || { projects: ['studio'], plugins: ['*','studio-tests']}
-
 	jbInit('tests',sourceCode,{initSpyByUrl: true}).then(jb =>{
 			globalThis.jb = jb
 			if (jb.comps.defaultTheme)

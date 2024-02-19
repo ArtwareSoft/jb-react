@@ -38,7 +38,8 @@ extension('langService', 'impl', {
         const { text, actionMap, startOffset } = jb.utils.prettyPrintWithPositions(comp, { initialPath: compId, tgpModel })
         const path = actionMap.filter(e => e.from <= inCompOffset && inCompOffset < e.to || (e.from == e.to && e.from == inCompOffset))
             .map(e => e.action.split('!').pop())[0] || compId
-
+        const filePos = { path: jb.path(tgpModel.comps,[compId,'location','path']) , line: cursorPos.line + compLine, col: cursorPos.col }
+        jb.tgpTextEditor.pathVisited({path,filePos})
         const compProps = (code != text) ? { path, formattedText: text, reformatEdits: jb.tgpTextEditor.deltaFileContent(code, text, compLine) }
             : { time: new Date().getTime(), text, path, actionMap, startOffset, plugin, tgpModel, compId, comp }
         return { ...docProps, ...compProps, ...tgpModelErrors }

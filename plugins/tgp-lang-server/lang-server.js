@@ -17,7 +17,7 @@ component('probeServer', {
     {id: 'filePath', as: 'string'},
     {id: 'host', as: 'string', options: ',node,studio,static'}
   ],
-  impl: sourceCode(pluginsByPath('%$filePath%',true), plugins('probe,tree-shake,tgp'), {
+  impl: sourceCode(pluginsByPath('%$filePath%', true), plugins('probe,tree-shake,tgp'), {
     pluginPackages: packagesByPath('%$filePath%', '%$host%')
   })
 })
@@ -96,16 +96,15 @@ component('langServer.localReferences', {
 component('langServer.studioCircuitUrl', {
   impl: pipe(
     Var('filePath', tgpTextEditor.currentFilePath()),
-    Var('sourceCode', sourceCode.encodeUri(probeServer('%$filePath%', 'studio'))),
+    Var('sourceCodeForStudio', typeAdapter('source-code<loader>', probeServer('%$filePath%', 'studio'))),
     langService.calcCompProps(),
     '%path%',
     If('%%', remote.data({
       calc: pipe(
         Var('probePath', '%%'),
-        Var('sourceCode', '%$sourceCode%'),
-        {$: 'probe.calcCircuitPath', probePath: '%%'},
-        join('/', { items: list('%path%','%$probePath%') }),
-        'http://localhost:8082/project/studio/%%?sourceCode=%$sourceCode%&spy=test'
+        Var('sourceCode', sourceCode.encodeUri('%$sourceCodeForStudio%')),
+        probe.calcCircuitPath('%%'),
+        'http://localhost:8082/project/studio/%path%/%$probePath%?sourceCode=%$sourceCode%&spy=test'
       ),
       jbm: cmd(probeServer('%$filePath%'))
     }))

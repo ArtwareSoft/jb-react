@@ -2,14 +2,9 @@ using('tgp-lang-server,probe-result-ui')
 
 extension('vscode', 'utils', {
     initExtension() { return { 
-        loadedProjects : {}, panels: {},
+        panels: {},
         ctx: new jb.core.jbCtx({},{vars: {}, path: 'vscode.tgpLang'})
     } },
-    initServer(clientUri) {
-        jb.tgpTextEditor.host = { // limited tgpEditor host at the server
-            serverUri: jb.uri,
-        }
-    },
     async initVscodeAsHost({context}) {
         jb.log('vscode initVscodeAsHost', {context})
         jb.tgpTextEditor.host = {
@@ -44,26 +39,27 @@ extension('vscode', 'utils', {
             },
             saveDoc() {
                 return vscodeNS.window.activeTextEditor.document.save()
-            }        
+            },
+            async gotoFilePos({path,line,col}) {
+                const targetUri = vscodeNS.Uri.file(jbHost.jbReactDir+path)
+                const position = new vscodeNS.Position(line, col)
+                const doc = await vscodeNS.workspace.openTextDocument(targetUri)
+                const editor = await vscodeNS.window.showTextDocument(doc, { preview: false })
+                editor.selection = new vscodeNS.Selection(position, position)
+                await editor.revealRange(new vscodeNS.Range(position, position))
+                jb.vscode.log(`gotoFilePos ${path}:${line},${col}`)
+            }       
         }
         jb.vscode.log('init')
 
         vscodeNS.workspace.onDidChangeTextDocument(({document, reason, contentChanges}) => {
             if (!contentChanges || contentChanges.length == 0) return
             if (!document.uri.toString().match(/^file:/)) return
-//            jb.langService.compsCache = {}
             jb.log('vscode onDidChangeTextDocument clean cache',{document, reason, contentChanges})
             if (jb.path(contentChanges,'0.text') == jb.tgpTextEditor.lastEdit) {
                 jb.tgpTextEditor.lastEdit = ''
-            } else {
-                // may be used for preview worker
-                // jb.vscode.updateCurrentCompFromEditor()
             }
         })      
-        // vscodeNS.window.onDidChangeTextEditorSelection( async () => {           
-        // })
-        // vscodeNS.workspace.onDidSaveTextDocument(() => {
-        // })
     },
     initLog() {
         if (jb.vscode._log) return
@@ -121,7 +117,7 @@ extension('vscode', 'utils', {
         const probeRes = await jb.exec(langServer.probe())
         jb.vscode.panels.main.render('probeUI.probeResViewForVSCode',probeRes)
     },
-    async openProbeResultEditor() {
+    async openProbeResultEditor() { // ctrl-I
         vscodeNS.commands.executeCommand('workbench.action.editorLayoutTwoRows')
         const compProps = await jb.exec(langService.calcCompProps()) // IMPORTANT - get comp props here. opening the view will change the current editor
         if (!jb.vscode.panels.inspect) {
@@ -141,18 +137,21 @@ extension('vscode', 'utils', {
         return jb.vscode.ctx.setData(probeRes).run(
             remote.action(renderWidget({$: 'probeUI.probeResViewForVSCode', probeRes: '%%'}, '#main'), ()=> jb.vscode.panels.inspect.jbm))
     },
-    async closeProbeResultEditor() {
+    visitLastPath() { // ctrl-Q
+        jb.tgpTextEditor.visitLastPath()
+    },
+    async closeProbeResultEditor() { // ctrl-shift-I
         delete jb.vscode.panels.inspect
         delete jb.jbm.childJbms.vscode_inspect
         vscodeNS.commands.executeCommand('workbench.action.editorLayoutSingle')
     },
     async openLiveProbeResultPanel() {
     },
-    async openjBartStudio() {
+    async openjBartStudio() { // ctrl-j
         const url = await jb.exec(langServer.studioCircuitUrl())
         vscodeNS.env.openExternal(vscodeNS.Uri.parse(url))
     },
-    async openjBartTest() {
+    async openjBartTest() { // ctrl-shift-j
         const docProps = jb.tgpTextEditor.host.compTextAndCursor()
         const testID = docProps.shortId
         const spyParam = jb.spy.spyParamForTest(testID)
@@ -265,15 +264,5 @@ component('vscode.openQuickPickMenu', {
     quickPick.show()
     }
 })
-
-component('vscode.gotoPath', {
-  type: 'action',
-  params: [
-    {id: 'path', as: 'string'},
-    {id: 'semanticPart', as: 'string'}
-  ],
-  impl: (ctx,path,semanticPart) => jb.vscode.gotoPath(path,semanticPart)
-})
-
 
 

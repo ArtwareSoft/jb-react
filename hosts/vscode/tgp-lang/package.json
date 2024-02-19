@@ -84,6 +84,10 @@
 			{
 				"command": "jbart.openLastCmd",
 				"title": "internal for debug - open last cmd"
+			},
+			{
+				"command": "jbart.visitLastPath",
+				"title": "goto the last visited jbart tgp path, can use history"
 			}			
 		],
 		"keybindings": [
@@ -131,7 +135,12 @@
 				"command": "jbart.openLastCmd",
 				"key": "ctrl+Alt+J",
 				"when": "editorTextFocus"
-			}			
+			},
+			{
+				"command": "jbart.visitLastPath",
+				"key": "ctrl+Q",
+				"when": "editorTextFocus"
+			}
 		]
 	}
 }

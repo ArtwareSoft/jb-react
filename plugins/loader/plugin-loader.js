@@ -23,6 +23,8 @@ extension('loader','main' , {
       }
     },
     mergeSourceCodes(sc1,sc2) {
+      if (!sc1) return sc2
+      if (!sc2) return sc1
       const plugins = jb.utils.unique([...(sc1.plugins || []), ...(sc2.plugins || [])])
       const projects = jb.utils.unique([...(sc1.projects || []), ...(sc2.projects || [])])
       const pluginPackages = jb.utils.unique([...(sc1.pluginPackages || []), ...(sc2.pluginPackages || [])], package => package.repo || 'default')

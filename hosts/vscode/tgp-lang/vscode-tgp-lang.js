@@ -27,7 +27,7 @@ async function activate(context) {
     ;['applyCompChange']
         .forEach(cmd => vscodeNS.commands.registerCommand(`jbart.${cmd}`, jb.tgpTextEditor[cmd]))
 
-    ;['moveUp','moveDown','openProbeResultPanel','openjBartStudio','openLastCmd','openProbeResultEditor','closeProbeResultEditor','openjBartTest']
+    ;['moveUp','moveDown','openProbeResultPanel','openjBartStudio','openLastCmd','openProbeResultEditor','closeProbeResultEditor','openjBartTest','visitLastPath']
             .forEach(cmd => vscodeNS.commands.registerCommand(`jbart.${cmd}`, jb.vscode[cmd]))
     
     ;['main'].forEach(viewId => context.subscriptions.push(
@@ -38,6 +38,7 @@ async function activate(context) {
             try {
                 return jb.vscode.provideCompletionItems()
             } catch(e) {
+                debugger
                 jb.logException(e,'provide completions')
             }
 		}
@@ -47,6 +48,7 @@ async function activate(context) {
             try {
                 return jb.vscode.provideDefinition()
             } catch(e) {
+                debugger
                 jb.logException(e,'provide definition')
             }
         }
@@ -56,6 +58,7 @@ async function activate(context) {
             try {
                 return jb.vscode.provideReferences()
             } catch(e) {
+                debugger
                 jb.logException(e,'provide References')
             }
         }

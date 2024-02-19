@@ -18,12 +18,10 @@ extension('workspace', {
             activeUri: ''
     }},
     initJbWorkspaceAsHost() {
-//        jb.langService.compsCache = {}
         if (jb.path('jb.tgpTextEditor.host.type') == 'jbWorkspace') return
         jb.tgpTextEditor.host = {
             type: 'jbWorkspace',
             async applyEdit(edit,uri) {
-//                jb.langService.compsCache = {}
                 const docUri = uri || jb.workspace.activeUri
                 const docText = jb.workspace.openDocs[docUri].text
                 const from = jb.tgpTextEditor.lineColToOffset(docText, edit.range.start)
@@ -56,7 +54,8 @@ extension('workspace', {
                 const from = jb.tgpTextEditor.lineColToOffset(docText, selection.start)
                 const to = jb.tgpTextEditor.lineColToOffset(docText, selection.start)
                 return docText.slice(from,to)
-            },            
+            },
+            async gotoFilePos(path,line,col) {}      
         }
     }
 })

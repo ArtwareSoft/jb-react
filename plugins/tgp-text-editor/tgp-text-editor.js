@@ -1,6 +1,9 @@
 using('pretty-print')
 
 extension('tgpTextEditor', {
+    initExtension() {
+        return { visitedPaths: [], currentVisited : 0}
+    },
     evalProfileDef(id, code, pluginId, fileDsl, tgpModel, { cursorPos, fixed, forceLocalSuggestions } = {}) {
         const plugin = jb.path(tgpModel, ['plugins', pluginId])
         const proxies = jb.path(plugin, 'proxies') ? jb.objFromEntries(plugin.proxies.map(id => jb.macro.registerProxy(id))) : jb.macro.proxies
@@ -57,6 +60,22 @@ extension('tgpTextEditor', {
         function isValidFunc(f) {
             return f.trim() != '' && (jb.macro.proxies[f] || jb.frame[f])
         }
+    },
+    pathVisited(e) {
+        const {visitedPaths} = jb.tgpTextEditor
+        const idx = visitedPaths.findIndex(entry=>e.path == entry.path)
+        if (visitedPaths.length && idx == visitedPaths.length -1) return
+        if (idx != -1)
+            visitedPaths.splice(idx,1)
+        visitedPaths.push(e)
+        jb.tgpTextEditor.currentVisited = 0
+    },
+    visitLastPath() {
+        jb.tgpTextEditor.currentVisited++
+        const {visitedPaths, currentVisited} = jb.tgpTextEditor
+        const idx = visitedPaths.length-currentVisited-1
+        if (idx > -1)
+            jb.tgpTextEditor.host.gotoFilePos(visitedPaths[idx].filePos)
     },
     getSinglePathChange(diff, currentVal) {
         return pathAndValueOfSingleChange(diff, '', currentVal)
@@ -320,12 +339,12 @@ component('tgpTextEditor.gotoSource', {
         else if (chromeDebugger)
             jb.frame.parent.postMessage({
                 runProfile: {
-                    $: 'chromeDebugger.openResource',
+                    $: 'action<>chromeDebugger.openResource',
                     location: [jb.frame.location.origin + '/' + filePos.file, filePos.line, filePos.col]
                 }
             })
         else
-            fetch(`/?op=gotoSource&path=${filePos.path}:${filePos.line}`)
+            jbHost.fetch(`/?op=gotoSource&path=${filePos.path}:${filePos.line}`)
     }
 })
 

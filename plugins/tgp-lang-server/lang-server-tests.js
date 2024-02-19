@@ -119,7 +119,7 @@ component('langServerTest.remoteProbe', {
 })`
       ),
       langService.calcCompProps(),
-      langServer.probe(),
+      langServer.probe()
     ),
     expectedResult: and(contains('hello', { allText: '%result/0/in/data%' })),
     timeout: 2000
@@ -131,13 +131,13 @@ component('langServerTest.studioCircuitUrl', {
   impl: dataTest({
     calculate: pipe(
       langService.dummyCompProps(
-        `component('x', {
-  impl: dataTest(pipeline('hello,world', __split(',')))
+        `component('uiTest.group', {
+  impl: uiTest(group(text('hello world'), text('2')), __containsbb('hello world','2'))
 })`
       ),
       langServer.studioCircuitUrl()
     ),
-    expectedResult: contains('http://localhost:8082/project/studio/test<>CmpltnTst','impl~expectedResult?sourceCode='),
+    expectedResult: contains('http://localhost:8082/project/studio/test<>uiTest.group/test<>uiTest.group~impl~expectedResult?sourceCode='),
     timeout: 2000
   })
 })
@@ -147,7 +147,7 @@ component('langServerTest.tgpModelData', {
   impl: dataTest({
     calculate: pipe(
       remote.tgpModelData('someDir/projects/jb-react/plugins/ui/tests/ui-tests.js'),
-      '%comps/button/type%'
+      '%comps/control<>button/type%'
     ),
     expectedResult: contains('control'),
     timeout: 1000

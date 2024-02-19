@@ -9,7 +9,7 @@ component('dataTest.data', {
 })
 
 component('dataTest.listWithVar', {
-  impl: dataTest(pipeline(Var('a',1), list('%$a%',2), join()), equals('1,2'))
+  impl: dataTest(pipeline(Var('a', 1), list('%$a%',2), join()), equals('1,2'))
 })
 
 component('dataTest.slice', {
@@ -31,10 +31,7 @@ component('dataTest.runActionOnItems', {
 })
 
 component('dataTest.select', {
-  impl: dataTest({
-    calculate: pipeline('%$personWithChildren/children%', '%name%', join()),
-    expectedResult: equals('Bart,Lisa,Maggie')
-  })
+  impl: dataTest(pipeline('%$personWithChildren/children%', '%name%', join()), equals('Bart,Lisa,Maggie'))
 })
 
 component('dataTest.selectAndFilter', {

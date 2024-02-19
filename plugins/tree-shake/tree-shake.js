@@ -68,11 +68,13 @@ extension('treeShake', {
         //if (obj[jb.core.OnlyData]) return []
         const isRemote = 'source.remote:rx,remote.operator:rx,remote.action:action,remote.data:data' // code run in remote is not dependent
         const vals = Object.keys(obj).filter(k=>!obj.$ || isRemote.indexOf(`${obj.$}:${k}`) == -1).map(k=>obj[k])
-        //const _dslType = obj.$dslType // || ''].map(x=>x.indexOf('<>') != -1 ? '' :x)[0]
-        if (obj.$ && obj.$ != 'Var' && obj.$.indexOf('<') == -1 && !obj.$dslType && obj.$ != 'runCtx' && !jb.path(obj,[jb.core.CT,'dslType']))
+        const dslType = obj.$ && (obj.$.indexOf('<') != -1 ? '' 
+            : jb.core.genericCompIds[obj.$] ? 'any<>' 
+            : (obj.$dslType || jb.path(obj,[jb.core.CT,'dslType']) || ''))
+        if (obj.$ && obj.$ != 'Var' && obj.$.indexOf('<') == -1 && obj.$ != 'runCtx' && !dslType)
             debugger
             //jb.logError('treeshake comp without a type', {obj})
-        const fullId = obj.$ && (jb.path(obj,[jb.core.CT,'comp',jb.core.CT,'fullId']) || jb.core.genericCompIds[obj.$] && `any<>${obj.$}` || `${obj.$dslType||''}${obj.$}`)
+        const fullId = obj.$ && (jb.path(obj,[jb.core.CT,'comp',jb.core.CT,'fullId']) || `${dslType}${obj.$}`)
         return [
             ...(obj.$ ? [fullId] : []),
             ...vals.filter(x=> x && typeof x == 'object').flatMap(x => jb.treeShake.dependentOnObj(x, onlyMissing)),
