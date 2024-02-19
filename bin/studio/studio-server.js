@@ -1,9 +1,8 @@
-fs = require('fs');
-http = require('http');
-child = require('child_process');
-const fetch = require('node-fetch');
+fs = require('fs')
+http = require('http')
+child = require('child_process')
 
-file_type_handlers = {};
+file_type_handlers = {}
 
 _iswin = /^win/.test(process.platform);
 
@@ -304,7 +303,7 @@ const op_get_handlers = {
         (arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg}'`)).join(' ')}`
       res.setHeader('Content-Type', 'application/json; charset=utf8')
       writeToCmdLog('./temp/lastNodeWorker', command)
-      const nodeWorker = child.spawn('node',['./node-worker.js', ...args],{cwd: 'hosts/node'})
+      const nodeWorker = child.spawn('node',['--inspect','./node-worker.js', ...args],{cwd: 'hosts/node'})
       nodeWorker.stdout.on('data', data => res.end(data))
       nodeWorker.on('exit', (code,ev) => res.end(JSON.stringify({command, exit: `exit ${''+code} ${''+ev}}`})))
       nodeWorker.on('error', (e) => res.end(JSON.stringify({command, error: `${''+e}`})))
@@ -456,8 +455,10 @@ const op_get_handlers = {
         endWithSuccess(res,'open editor cmd: ' + cmd);
       }
     },
-    fetch: function(req, res) {
+    fetch: async function(req, res) {
       try {
+        const fetch = await import('node-fetch');
+
         const param = getURLParam(req,'req')
         const fetchReq = JSON.parse(param);
         if (!fetchReq)

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script type="text/javascript" src="/plugins/loader/jb-loader.js"></script>
+<link rel="stylesheet" type="text/css" href="/bin/studio/css/studio-all.css"/>
+<style>
+	.test-button { opacity: 0 }
+	.test-button:hover { opacity: 1 }
+</style>
+</head>
+<body>
+	<div id="widget"> </div>
+ <script>
+	const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
+	const plugins = urlQuery('plugins').split(',')
+	const widget = urlQuery('widget')
+	const sourceCode = { plugins }  
+
+	jbInit(widget,sourceCode,{initSpyByUrl: true}).then(jb =>{
+			globalThis.jb = jb
+			if (jb.comps.defaultTheme)
+				jb.exec({$: 'data<>defaultTheme'})
+			jb.exec({$: 'action<>renderWidget', control: {$ : widget}, selector: '#widget' })
+		})
+  </script>
+</body>
+</html>

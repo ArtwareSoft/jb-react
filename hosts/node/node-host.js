@@ -65,7 +65,7 @@ globalThis.jbHost = globalThis.jbHost || {
         return new Promise((resolve,reject) => {
             try {
                 const body = _options && _options.body
-                const headers = {'Content-Type': 'application/json', ...(_options.headers ? _options.headers : {}) }
+                const headers = {'Content-Type': 'application/json', ...(_options && _options.headers ? _options.headers : {}) }
                 if (body)
                     Object.assign(headers,{ 'Content-Length': Buffer.byteLength(body) })
 

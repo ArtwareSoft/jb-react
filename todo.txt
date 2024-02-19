@@ -42,6 +42,7 @@ use widget tutorial to train specialized models
 use trained models to be experts in item content generation
 
 calc vars should support promise in pipe
+ctrl-D - should disable
 
 
 references

@@ -65,6 +65,9 @@
   },
   "devDependencies": {
     "node-fetch": "^3.3.2",
-    "openai": "^4.28.0"
+    "openai": "^4.28.0",
+    "puppeteer": "^22.1.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
   }
 }

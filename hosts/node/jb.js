@@ -22,7 +22,7 @@ const _params =
 const [main,_plugins,project,wrap,uri,dsl,verbose,runCtx,spy,resultAsText,doNotStripResult] = _params.map(p=>doGetProcessArgument(p))
 
 if (!main && !runCtx) {
-    console.log(`usage: jb.js 
+    console.log(`usage: jb.js - example: jb.js -main:pipeline(list(1,2),join()) -plugins:common -text
     -script:dist/myScript.jb // script file with all the params string with #
     -main:button("hello") // profile to run. mandatory or use runCtx.
     -wrap:prune(MAIN) // optional. profile that wraps the 'main' profile
@@ -68,11 +68,17 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
     if (verbose)
         console.log(JSON.stringify({params, vars}))
 
-    const wrapperCode = wrap ? `component('wrapperToRun', { impl: ${wrap.replace(/MAIN/g,"{$: 'mainToRun'}")} })` : ''
+    const wrapperCode = wrap ? `component('wrapperToRun', { impl: ${wrap.replace(/MAIN/g,"{$: 'data<>mainToRun'}")} })` : ''
+    const mainCmpId = main.split('(')[0]
+    const mainShortId = mainCmpId.split('>').pop()
+    const dslType = mainCmpId.indexOf('<') != -1 ? mainCmpId.split('>')[0] + '>'
+        : jb.comps[`data<>${mainShortId}`] ? 'data<>'
+        : jb.comps[`action<>${mainShortId}`] ? 'action<>' : ''
     const fixedMain = main.match(/^[a-zA-Z_\.]+$/) ? `${main}()` : main
+    const withTypeAdapter = `typeAdapter('${dslType}',${fixedMain})`
     const code = `
     const params = {${params.map(p=>`${p[0]}: ${p[1].match(/\(|{|"/) ? p[1] : `"${p[1]}"` }`).join(', ')} }
-    component('mainToRun', { impl: ${fixedMain} })
+    component('mainToRun', { impl: ${withTypeAdapter} })
     Object.assign(jb.core.unresolvedProfiles[0].comp.impl,params)
     ${wrapperCode}
 `
