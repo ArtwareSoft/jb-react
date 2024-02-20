@@ -6,7 +6,7 @@ Object.assign(jb, {
 extension('macro', {
     initExtension() {
         return { 
-            dslsDeclarations: {}, dslsDeclarationsInit: {},
+            typeRules: [{ extendTypes: t => t == 'data<>' && 'boolean<>' }], dslRulesInit: {},
             proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro'), systemProps: ['remark', 'data', '$debug', '$disabled', '$log' ] 
         }
     },  
@@ -106,28 +106,6 @@ component('remark', {
   macro: (result, self) => Object.assign(result,{ $remark: self.remark || self.$byValue[0] })
 })
 
-// component('dslDeclarations', {
-//     type: 'dslDeclaration',
-//     params: [ 
-//         { id: 'items', type: 'dslDeclaration[]', dynamic: true }
-//     ],
-//     impl: (ctx,items) => items(ctx)
-// })
-
-// component('genericType', {
-//   type: 'dslDeclaration',
-//   params: [
-//     {id: 'dsl', as: 'string', mandatory: true, byName: true},
-//     {id: 'genericType', as: 'string', mandatory: true},
-//     {id: 'match', as: 'boolean', mandatory: true, dynamic: true}
-//   ],
-//   impl: ctx => {
-//     const {dsl,genericType,match} = ctx.params
-//     const gtypes = jb.macro.dslsDeclarations[dsl] = jb.macro.dslsDeclarations[dsl] || []
-//     gtypes.push({genericType,match})
-//   }
-// })
-
 component('unknownCmp', {
   type: 'system',
   isSystem: true,
@@ -135,6 +113,16 @@ component('unknownCmp', {
     {id: 'id', as: 'string', mandatory: true}
   ],
   macro: (result, self) => jb.comps[self.$byValue[0]] = { impl: ctx => jb.logError(`comp ${self.$byValue[0]} is not defined`,{ctx})}
+})
+
+component('runCtx', {
+  type: 'any',
+  hidden: true,
+  params: [
+    {id: 'path', as: 'string'},
+    {id: 'vars'},
+    {id: 'profile'}
+  ]
 })
 
 extension('syntaxConverter', 'onAddComponent', {

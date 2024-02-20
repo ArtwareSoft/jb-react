@@ -752,8 +752,8 @@ component('uiTest.remoteItemlistKeyboardSelection', {
     uiAction: keyboardEvent('.jb-itemlist', 'keydown', { keyCode: 13 }),
     timeout: 5000,
     backEndJbm: worker('itemlist', {
-        sourceCode: sourceCode(pluginsByPath('/plugins/ui/tests/ui-tests.js'),plugins('remote-widget'))
-      }),
+      sourceCode: sourceCode(pluginsByPath('/plugins/ui/tests/ui-tests.js'), plugins('remote-widget'))
+    }),
     useFrontEnd: true
   })
 })

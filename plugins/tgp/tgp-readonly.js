@@ -74,7 +74,7 @@ extension('tgp', 'readOnly', {
 		}
 	},
 	isCompObjOfType(compObj,type) {
-		if (compObj.dslType === type || [jb.core.CT].dslType == type) return true
+		if (compObj.dslType === type || jb.path(compObj,[jb.core.CT,'dslType']) == type) return true
 		const compType = !compObj.type && typeof compObj.impl == 'function' ? 'data' : compObj.type || ''
 		return compType.split(',').includes(type) || (compObj.typePattern && compObj.typePattern(type))
 	},
@@ -270,7 +270,7 @@ component('tgp.compName', {
 })
 
 component('tgp.enumOptions', {
-	type: 'picklist.options<>',
+  type: 'picklist.options<>',
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -300,7 +300,7 @@ component('tgp.profileText', {
 })
 
 component('tgp.isPrimitiveValue', {
-	type: 'boolean',
+  type: 'boolean',
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
@@ -308,7 +308,7 @@ component('tgp.isPrimitiveValue', {
 })
 
 component('tgp.isOfType', {
-	type: 'boolean',
+  type: 'boolean',
   params: [
     {id: 'path', as: 'string', mandatory: true},
     {id: 'type', as: 'string', mandatory: true}
@@ -324,8 +324,8 @@ component('tgp.PTsOfType', {
 })
 
 component('tgp.categoriesOfType', {
-	type: 'data',
-	moreTypes: 'picklist.options<>',
+  type: 'data',
+  moreTypes: 'picklist.options<>',
   params: [
     {id: 'type', as: 'string', mandatory: true}
   ],

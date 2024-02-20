@@ -69,7 +69,9 @@ component('studio.selectProfile', {
           itemlist({
             items: pipeline(
               '%$Categories%',
-              filter(or(equals('%code%', '%$SelectedCategory%'), notEmpty('%$itemlistCntrData/search_pattern%'))),
+              filter(
+                or(equals('%code%', '%$SelectedCategory%'), notEmpty('%$itemlistCntrData/search_pattern%'))
+              ),
               '%pts%',
               ({data}) => ({ id: data, desc: jb.comps[data].description }),
               itemlistContainer.filter(),
@@ -205,7 +207,10 @@ component('studio.openPickProfile', {
       studio.selectProfile({
         onSelect: tgp.setComp('%$path%', '%%'),
         onBrowse: If({
-          condition: or(equals('layout', tgp.paramType('%$path%')), endsWith('-style', tgp.paramType('%$path%'))),
+          condition: or(
+            equals('layout', tgp.paramType('%$path%')),
+            endsWith('-style', tgp.paramType('%$path%'))
+          ),
           then: tgp.setComp('%$path%', '%%')
         }),
         type: tgp.paramType('%$path%'),
@@ -221,7 +226,7 @@ component('studio.openPickProfile', {
       dialogFeature.closeWhenClickingOutside(),
       dialogFeature.autoFocusOnFirstInput(),
       css.padding({ right: '20' }),
-      feature.initValue('%$dialogData/originalVal%', tgp.val('%$path%')),
+      feature.initValue('%$dialogData/originalVal%', pipeline(tgp.val('%$path%'), property('$'))),
       dialogFeature.onClose(If(not('%%'), tgp.setComp('%$path%', '%$dialogData/originalVal%')))
     ]
   })

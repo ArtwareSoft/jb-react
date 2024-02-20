@@ -15,7 +15,12 @@ extension('langService', 'impl', {
         if (jb.langService.tgpModels[packagePath] && !forceRemoteCompProps)
             return jb.langService.calcCompPropsSync(docProps, jb.langService.tgpModels[packagePath])
         const tgpModelData = forceLocalSuggestions ? jb.tgp.tgpModelData({filePath: packagePath}) 
-            : await new jb.core.jbCtx().setData(packagePath).run({$: 'remote.tgpModelData'})
+            : await new jb.core.jbCtx().setData(packagePath).run({$: 'data<>remote.tgpModelData'})
+        if (!tgpModelData.filePath) {
+            jb.vscode.log(`error creating tgpModelData for path ${packagePath}`)
+            return {}
+        }
+            
         docProps.filePath = tgpModelData.filePath
         return jb.langService.calcCompPropsSync(docProps, new jb.langService.tgpModelForLangService(tgpModelData))
     },

@@ -134,7 +134,6 @@ extension('studio','pick', {
     return results[index] // { el: results[index].el , index };
   },
   pathOfElem(el) {
-    debugger
     return jb.path(el,'debug.path') || jb.path(jb.ui.cmpCtxOfElem(el),'path') || '' 
   }
 })

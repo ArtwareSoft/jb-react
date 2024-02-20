@@ -11,19 +11,19 @@ component('zui.itemlist', {
     {id: 'items', as: 'array', dynamic: true, mandatory: true},
     {id: 'itemProps', type: 'itemProp[]', dynamic: true, flattenArray: true},
     {id: 'onChange', type: 'action<>', dynamic: true},
-    {id: 'style', type: 'itemlistStyle<zui>', dynamic: true, defaultValue: itemlistStyle()},
+    {id: 'style', type: 'itemlist-style<zui>', dynamic: true, defaultValue: itemlistStyle()},
     {id: 'features', type: 'feature<>[]', dynamic: true, flattenArray: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
 })
   
 component('itemlistStyle', {
-  type: 'itemlistStyle',
+  type: 'itemlist-style',
   params: [
     {id: 'width', as: 'string', defaultValue: '100%'},
     {id: 'height', as: 'string', defaultValue: '600'}
   ],
-  impl: typeAdapter('style', customStyle({
+  impl: typeAdapter('style<>', customStyle({
     template: ({},{width,height},h) => h('canvas', {...jb.zui.calcWidthHeight(width, height), zuiBackEndForTest:true }),
     css: '{ touch-action: none; }',
     features: [

@@ -23,12 +23,10 @@ extension('ui','comp', {
         }
     },
     initDslDeclarations() {
-        if (jb.macro.dslsDeclarationsInit.ui) return
-        jb.macro.dslsDeclarationsInit.ui = true
-        const dsl = ''
-        const gtypes = jb.macro.dslsDeclarations[dsl] = jb.macro.dslsDeclarations[dsl] || []
-        gtypes.push({genericType: 'feature', match: t => /feature$/.test(t)})
-        gtypes.push({genericType: 'style,feature', match: t => /style$/.test(t)})
+        if (jb.macro.dslRulesInit.ui) return
+        jb.macro.dslRulesInit.ui = true
+        jb.macro.typeRules.push({extendTypes: t => t != 'feature<>' && t.endsWith('feature<>') && 'feature<>' })
+        jb.macro.typeRules.push({extendTypes: t => t != 'style<>' && t.endsWith('style<>') && ['style<>','feature<>'] })
     },    
     h(cmpOrTag,attributes,children) {
         if (cmpOrTag instanceof jb.ui.VNode) return cmpOrTag // Vdom

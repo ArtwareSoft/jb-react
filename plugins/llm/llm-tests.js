@@ -7,6 +7,11 @@ component('llmTest.hello', {
   })
 })
 
+component('llmTest.tutorialBuilder', {
+  doNotRunInTests: true,
+  impl: uiTest(llm.tutorialBuilder('%$tutorialSample%'), contains('build'))
+})
+
 component('llmTest.buildHtml', {
   doNotRunInTests: true,
   impl: uiTest(llm.HtmlAndCssBuilder(), contains('build'))
@@ -38,4 +43,9 @@ component('llmTest.count', {
     expectedResult: contains('1,2,3,4,5'),
     renderDOM: true
   })
+})
+
+component('llmTest.enrichTrainingItem', {
+  doNotRunInTests: true,
+  impl: dataTest(llm.enrichTrainingItem('%$tutorialSample/training/0%'))
 })

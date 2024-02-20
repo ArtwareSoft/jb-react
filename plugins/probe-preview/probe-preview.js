@@ -123,8 +123,9 @@ component('probe.handleScriptChangeOnPreview', {
             return jb.logError(`handleScriptChangeOnPreview - missing comp ${path[0]}`, {path, ctx})
         handler.makeWatchable(path[0])
         jb.log('probe handleScriptChangeOnPreview doOp',{ctx,op,path})
+        if (op.$set) jb.utils.resolveProfile(op.$set)
         handler.doOp(handler.refOfPath(path), op, ctx)
-        jb.utils.resolveProfile(jb.comps[path[0]])
+        //jb.utils.resolveProfile(jb.comps[path[0]])
 
         const headlessWidgetId = Object.keys(jb.ui.headless)[0]
         const headless = jb.ui.headless[headlessWidgetId]

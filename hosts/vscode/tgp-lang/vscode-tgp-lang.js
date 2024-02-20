@@ -39,6 +39,7 @@ async function activate(context) {
                 return jb.vscode.provideCompletionItems()
             } catch(e) {
                 debugger
+                jb.vscode.log('exception provide completions',e)
                 jb.logException(e,'provide completions')
             }
 		}
@@ -49,6 +50,7 @@ async function activate(context) {
                 return jb.vscode.provideDefinition()
             } catch(e) {
                 debugger
+                jb.vscode.log('exception provide definition',e)
                 jb.logException(e,'provide definition')
             }
         }
@@ -59,6 +61,7 @@ async function activate(context) {
                 return jb.vscode.provideReferences()
             } catch(e) {
                 debugger
+                jb.vscode.log('exception provide References',e)
                 jb.logException(e,'provide References')
             }
         }

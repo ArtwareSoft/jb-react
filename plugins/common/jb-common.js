@@ -15,16 +15,6 @@ component('call', {
  	}
 })
 
-component('runCtx', {
-  type: 'any',
-  hidden: true,
-  params: [
-    {id: 'path', as: 'string'},
-    {id: 'vars'},
-    {id: 'profile'}
-  ]
-})
-
 component('typeAdapter', {
   type: 'any',
   params: [

@@ -25,13 +25,6 @@ Object.assign(jb, {
 })
 
 extension('utils', 'core', {
-    // profileType(profile, tgpModel) {
-    //     const comps = tgpModel && tgpModel.comps || jb.comps
-    //     if (!profile) return ''
-    //     if (typeof profile == 'string') return 'data<>'
-    //     const comp_name = jb.utils.compName(profile)
-    //     return (comps[comp_name] && comps[comp_name].type) || ''
-    // },
     singleInType(parentParam, tgpModel) {
         const comps = tgpModel && tgpModel.comps || jb.comps
         const _type = parentParam && parentParam.type && parentParam.type.split('[')[0]
@@ -81,7 +74,7 @@ extension('utils', 'core', {
       const comps = tgpModel && tgpModel.comps || jb.comps
       const CT = jb.core.CT
       if (!comp[CT]) comp[CT] = comp[CT] || { id }
-      const type = comp.type || ''
+      const type = (comp.type || '').replace(/\[\]/g,'')
       const dslOfType = type.indexOf('<') != -1 ? type.split(/<|>/)[1] : undefined // to cover t1<> dsl == ''
       const dsl = comp[CT].dsl = dslOfType !== undefined ? dslOfType : (comp.dsl || compDsl || '')
       const unresolvedType = comp[CT].idOfUnresolvedType = ! type && id
@@ -112,7 +105,7 @@ extension('utils', 'core', {
         // fix as boolean params to have type: 'boolean'
         if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
           p.type = 'boolean<>';
-        const dslType = (p.type || '').split(',').map(t => t || 'data<>')
+        const dslType = (p.type || '').replace(/\[\]/g,'').split(',').map(t => t || 'data<>')
           .map(t=> t.indexOf('<') == -1 ? `${t}<${_dsl}>` : t) // && ['data','action'].indexOf(t) == -1 
           .join(',')
         p[CT] = { dslType, originalType: p.type}
@@ -188,6 +181,7 @@ extension('utils', 'core', {
       const typeFromAdapter = parent && parent.$ == 'typeAdapter' && parent.fromType
       const fromFullId = prof.$ && prof.$.indexOf('>') != -1 && (prof.$.split('>')[0] + '>')
       const dslType = typeFromAdapter || prof.$dslType || jb.path(prof,[CT,'dslType']) || typeFromParent || fromFullId
+      if (dslType && dslType.indexOf('<') == -1) debugger
       const comp = jb.utils.getCompById(prof.$, { dslType, dsl: jb.path(prof,[CT,'dsl']), parent, parentProp, tgpModel, topComp })
       prof[CT] = prof[CT] || {}
       Object.assign(prof[CT], {comp, dslType})
@@ -222,10 +216,10 @@ extension('utils', 'core', {
       const CT = jb.core.CT
       const typeFromParent = parentProp && parentProp.typeAsParent === true && jb.path(parent,[CT,'dslType'])
       const dynamicTypeFromParent = parentProp && typeof parentProp.typeAsParent == 'function' && parentProp.typeAsParent(jb.path(parent,[CT,'dslType']))
-      const byDsl = [dynamicTypeFromParent,typeFromParent,dslType].filter(x=>x).join(',').split(',').filter(x=>x)
-        .map(t=>t.split('<')[0]).flatMap(t=>moreTypesByDsl(t,dsl||'')).join(',')
+      const byTypeRules = [dynamicTypeFromParent,typeFromParent,dslType].filter(x=>x).join(',').split(',').filter(x=>x)
+        .flatMap(t=>moreTypesByTypeRules(t)).join(',')
   
-      const allTypes = jb.utils.unique([byDsl,dynamicTypeFromParent,typeFromParent,dslType].filter(x=>x).join(',').replace(/\[\]/g,'').split(',').filter(x=>x))
+      const allTypes = jb.utils.unique([byTypeRules,dynamicTypeFromParent,typeFromParent,dslType].filter(x=>x).join(',').split(',').filter(x=>x))
       const byFullId = allTypes.map(t=>comps[t+id]).find(x=>x)
       if (byFullId)
         return byFullId
@@ -244,9 +238,8 @@ extension('utils', 'core', {
         const shortId = id.split('>').pop()
         return plugin && Object.values(comps).find(c=> jb.path(c,[CT,'plugin','id']) == plugin && (jb.path(c,[CT,'fullId'])||'').split('>').pop() == shortId )
       }
-      function moreTypesByDsl(type,dsl) {
-        return (jb.macro.dslsDeclarations[dsl] || []).filter(decl=>decl.match(type))
-          .flatMap(decl=>decl.genericType.split(',').filter(x=>x).map(x=>`${x}<${dsl}>`))
+      function moreTypesByTypeRules(type) {
+        return jb.macro.typeRules.flatMap(rule=>rule.extendTypes && jb.asArray(rule.extendTypes(type)))
       }
       function lookForUnknownTypeInDsl(dsl) {
           const pattern = `<${dsl}>${id}`

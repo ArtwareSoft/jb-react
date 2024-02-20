@@ -2,6 +2,12 @@ puppeteer
   activate chatGPT via puppeteer
   
 llm query dsl
+  tgp tree dsl,type,pt,props - count relevant training samples at each level (at summary label)
+  M/D from the tree to the relevant samples
+  button to add training samples (tests + explaination) for each pt and prop
+  buttons to run the test example and format it
+  enable deletion
+
   toturial doc
     architecture
       pipeline, data flow, expressions

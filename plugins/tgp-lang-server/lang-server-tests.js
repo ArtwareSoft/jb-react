@@ -154,6 +154,21 @@ component('langServerTest.tgpModelData', {
   })
 })
 
+component('langServerTest.tgpModelData.tester', {
+  doNotRunInTests: true,
+  impl: dataTest({
+    calculate: pipe(
+      remote.tgpModelData('/home/shaiby/projects/jb-react/projects/studio/studio-new-profile.js'),
+      '%comps%',
+      property('boolean<>tgp.isOfType'),
+      '%type%'
+    ),
+    expectedResult: contains('boolean'),
+    timeout: 1000
+  })
+})
+
+
 component('langServerTest.tgpModelData.studio', {
   doNotRunInTests: true,
   impl: dataTest({
