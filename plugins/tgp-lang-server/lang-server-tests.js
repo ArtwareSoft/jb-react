@@ -61,10 +61,7 @@ component('langServiceTest.moveInArrayEdits', {
       langService.moveInArrayEdits(1),
       first()
     ),
-    expectedResult: equals('%cursorPos%', asIs({
-  line: 1,
-  col: 47
-}))
+    expectedResult: equals('%cursorPos%', asIs({line: 1, col: 47}))
   })
 })
 

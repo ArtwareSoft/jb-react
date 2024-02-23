@@ -140,6 +140,15 @@ component('PPrintTest.typeAdapter.from', {
   })
 })
 
+component('PPrintTest.asIs', {
+  impl: dataTest({
+    calculate: prettyPrint(() => equals('hello', asIs({ line: 1, col: 47 })), {
+      type: 'boolean<>'
+    }),
+    expectedResult: equals(`equals('hello', asIs({line: 1, col: 47}))`)
+  })
+})
+
 component('PPrintTest.typeAdapter.to', {
   impl: dataTest(pipeline(typeAdapter('state<location>', israel()), '%capital/name%'), equals('Jerusalem'))
 })

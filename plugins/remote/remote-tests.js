@@ -34,10 +34,7 @@ component('remoteTest.remote.data', {
 
 component('remoteTest.remote.deStripBug', {
   impl: dataTest({
-    calculate: remote.data('%%', child(), { data: asIs({
-  '$$asIs': true,
-  remoteRun: {$: 'runCtx'}
-}) }),
+    calculate: remote.data('%%', child(), { data: asIs({'$$asIs': true, remoteRun: {$: 'runCtx'}}) }),
     expectedResult: equals('runCtx', ({data}) => data.remoteRun.$)
   })
 })

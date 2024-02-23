@@ -2,7 +2,8 @@ component('prettyPrint', {
   params: [
     {id: 'profile', defaultValue: '%%'},
     {id: 'singleLine', as: 'boolean', type: 'boolean'},
-    {id: 'noMacros', as: 'boolean', type: 'boolean'}
+    {id: 'noMacros', as: 'boolean', type: 'boolean'},
+    {id: 'type', as: 'string'}
   ],
   impl: (ctx,profile) => jb.utils.prettyPrint(jb.val(profile),{ ...ctx.params })
 })
@@ -101,7 +102,7 @@ extension('utils', 'prettyPrint', {
       function multiLine() {
         const paramsParent = path.match(/~params$/)
         //const manyVals = innerVals.length > 4 && !isArray
-        const top = !path.match(/~/g)
+        const top = !path.match(/~/g) && !noMacros
         const _longInnerValInArray = !singleParamAsArray && longInnerValInArray
         return paramsParent || top || _longInnerValInArray
       }

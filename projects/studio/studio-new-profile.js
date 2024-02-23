@@ -237,10 +237,7 @@ component('studio.openNewPage', {
   impl: studio.openNewProfile('New Reusable Control (page)', runActions(
     Var('compName', tgp.titleToId('%$dialogData/name%')),
     studio.newComp('%$compName%', {
-      compContent: asIs({
-  type: 'control',
-  impl: {$: 'control<>group'}
-}),
+      compContent: asIs({type: 'control', impl: {$: 'control<>group'}}),
       file: '%$dialogData/file%'
     }),
     writeValue('%$studio/profile_path%', '%$compName%~impl'),
@@ -255,10 +252,7 @@ component('studio.openNewFunction', {
   impl: studio.openNewProfile('New Function', runActions(
     Var('compName', tgp.titleToId('%$dialogData/name%')),
     studio.newComp('%$compName%', {
-      compContent: asIs({
-  type: 'data',
-  impl: {$: 'data<>pipeline', items: ['']}
-}),
+      compContent: asIs({type: 'data', impl: {$: 'data<>pipeline', items: ['']}}),
       file: '%$dialogData/file%'
     }),
     writeValue('%$studio/profile_path%', '%$compName%'),
