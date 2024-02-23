@@ -282,13 +282,13 @@ component('jbm.start', {
   impl: pipe('%$jbm%', '%rjbm()%', '%$jbm%', first())
 })
 
-// component('jbm.terminateChild', {
-//     type: 'action<>',
-//     params: [
-//         {id: 'id', as: 'string'}
-//     ],
-//     impl: (ctx,id) => jb.jbm.terminateChild(id,ctx)
-// })
+component('jbm.terminateChild', {
+  type: 'action<>',
+  params: [
+    {id: 'id', as: 'string'}
+  ],
+  impl: (ctx,id) => jb.jbm.terminateChild(id,ctx)
+})
 
 // component('workerGroupByKey', {
 //   type: 'jbm',

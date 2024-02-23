@@ -58,9 +58,13 @@ component('langServiceTest.moveInArrayEdits', {
   impl: dataTest(pipeline(list(1,2,3), __slice(0, 2), join()), equals('1,2'))
 })`
       ),
-      langService.moveInArrayEdits(1)
+      langService.moveInArrayEdits(1),
+      first()
     ),
-    expectedResult: equals('%cursorPos/col%', 47)
+    expectedResult: equals('%cursorPos%', asIs({
+  line: 1,
+  col: 47
+}))
   })
 })
 
@@ -115,7 +119,7 @@ component('langServerTest.remoteProbe', {
     calculate: pipe(
       langService.dummyCompProps(
         `component('uiTest.group', {
-  impl: uiTest(group(text('hello world'), text('2')), __containsbb('hello world','2'))
+  impl: uiTest(group(text('hello world'), text('2')), __contains('hello world','2'))
 })`
       ),
       langService.calcCompProps(),
@@ -132,7 +136,7 @@ component('langServerTest.studioCircuitUrl', {
     calculate: pipe(
       langService.dummyCompProps(
         `component('uiTest.group', {
-  impl: uiTest(group(text('hello world'), text('2')), __containsbb('hello world','2'))
+  impl: uiTest(group(text('hello world'), text('2')), __contains('hello world','2'))
 })`
       ),
       langServer.studioCircuitUrl()
@@ -158,7 +162,7 @@ component('langServerTest.tgpModelData.tester', {
   doNotRunInTests: true,
   impl: dataTest({
     calculate: pipe(
-      remote.tgpModelData('/home/shaiby/projects/jb-react/projects/studio/studio-new-profile.js'),
+      remote.tgpModelData('/home/shaiby/projects/jb-react/plugins/llm/llm-tests.js'),
       '%comps%',
       property('boolean<>tgp.isOfType'),
       '%type%'
@@ -167,7 +171,6 @@ component('langServerTest.tgpModelData.tester', {
     timeout: 1000
   })
 })
-
 
 component('langServerTest.tgpModelData.studio', {
   doNotRunInTests: true,

@@ -132,6 +132,7 @@ extension('treeShake', {
                 $requireLibs: jb.path(jb,`${lib}.__extensions.${ext}.requireLibs`),
                 $requireFuncs: jb.path(jb,`${lib}.__extensions.${ext}.requireFuncs`),
                 initExtension: jb.path(jb,`${lib}.__extensions.${ext}.init`),
+                typeRules: jb.path(jb,`${lib}.__extensions.${ext}.typeRules`),
             }
             const extCode = jb.utils.prettyPrint(Object.fromEntries(Object.entries(extObj).filter(([_, v]) => v != null)))
             return `jb.extension(jb.plugins['${jb[lib].__extensions[ext].plugin.id}'],'${lib}', '${ext}', ${extCode})`
@@ -142,10 +143,12 @@ extension('treeShake', {
             ...extensions.map(([lib,ext]) => jb[lib].__extensions[ext].plugin)
             ],x=>x.id).map(({id,dsl})=>({id,dsl}))
             //jb.utils.prettyPrintComp(cmpId,jb.comps[cmpId],{noMacros: true})).join('\n\n')
+        const libs = jb.utils.unique(libsFuncs.map(x=>x.lib)).map(l=>"'"+l+"'").join(',')
         return [
             `jb.createPlugins(${JSON.stringify(plugins)})`,
             topLevelCode,libsCode,compsCode,
-            `await jb.initializeLibs([${jb.utils.unique(libsFuncs.map(x=>x.lib)).map(l=>"'"+l+"'").join(',')}])`,
+            `jb.initializeTypeRules([${libs}])`,
+            `await jb.initializeLibs([${libs}])`,
             'jb.utils.resolveLoadedProfiles()'
         ].join(';\n')
     },

@@ -164,6 +164,16 @@ component('properties', {
 			({id: id, val: obj[id], index: index}))
 })
 
+component('objFromProperties', {
+  description: 'object from entries of properties {id,val}',
+  type: 'data',
+  aggregator: true,
+  params: [
+    {id: 'properties', defaultValue: '%%', as: 'array'}
+  ],
+  impl: ({},properties) => jb.objFromEntries(properties.map(({id,val}) => [id,val]))
+})
+
 component('entries', {
   description: 'object entries as array 0/1',
   type: 'data',
@@ -761,7 +771,7 @@ component('asIs', {
   params: [
     {id: '$asIs', ignore: true}
   ],
-  impl: () => context.profile.$asIs
+  impl: ctx => ctx.profile.$asIs
 })
 
 component('object', {
@@ -870,10 +880,13 @@ component('notEmpty', {
 component('equals', {
   type: 'boolean',
   params: [
-    {id: 'item1', as: 'single', mandatory: true},
-    {id: 'item2', defaultValue: '%%', as: 'single'}
+    {id: 'item1', mandatory: true},
+    {id: 'item2', defaultValue: '%%'}
   ],
-  impl: ({}, item1, item2) => (item1 && typeof item1 == 'object') ? Object.keys(jb.utils.objectDiff(item1,item2)) == 0 : item1 == item2
+  impl: ({}, item1, item2) => {
+    return typeof item1 == 'object' && typeof item1 == 'object' ? Object.keys(jb.utils.objectDiff(item1,item2)||[]).length == 0 
+      : jb.tosingle(item1) == jb.tosingle(item2)
+  }
 })
 
 component('notEquals', {

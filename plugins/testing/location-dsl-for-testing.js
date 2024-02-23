@@ -1,4 +1,7 @@
 dsl('location')
+extension('location', 'main', {
+  typeRules: [ { same: ['data<location>','data<>']} ]
+})
 
 component('city', {
   type: 'settlement',

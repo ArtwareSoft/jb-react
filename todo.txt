@@ -1,5 +1,31 @@
-puppeteer
-  activate chatGPT via puppeteer
+rewrite rxPipe without registration
+jb.ui.f1 => $ui.f1
+prettyPrint -> formatter
+prettyPrint asIs fix - singleLine
+
+remove CT and use
+  $$: fullId (in profiles)
+  $type (in comp and params)
+  $unresolved ($values)
+  $plugin at component
+  $location at component
+
+define chatRoom service
+  connect(role: A | B, chatRoomType, chatRoomName: optional -> if not given creates a new chatRoom)
+  list() - list all chat rooms with participants
+  
+component('chatRoomPeer' ,{
+type: 'jbm<remote>',
+   params: [
+    chatRoomType, Role, chatRoomName -> optinal
+   ]
+})
+  source.onDisconnent(jbm)
+
+
+stduio bugs
+  does not refresh - add tab group
+  tree - insert does not refresh need to reopen
   
 llm query dsl
   tgp tree dsl,type,pt,props - count relevant training samples at each level (at summary label)

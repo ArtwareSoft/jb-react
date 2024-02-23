@@ -32,7 +32,7 @@ extension('utils', 'core', {
     },
     compName(profile, {parentParam, tgpModel} = {}) {
         if (!profile || Array.isArray(profile)) return
-        const id = profile.$ || jb.utils.singleInType(parentParam, tgpModel) || ''
+        const id = profile.$ || jb.utils.singleInType(parentParam, tgpModel)
         if (!id) return ''
         if (id.indexOf('<') != -1)
           return id
@@ -40,7 +40,8 @@ extension('utils', 'core', {
           return `any<>${id}`
         const CT = jb.core.CT
         const comp = jb.path(profile,[CT,'comp']) || {}
-        const dslType = comp.type == 'any' ? '' : (profile.$dslType || (tgpModel ? comp.dslType : jb.path(comp,[CT,'dslType'])) || '')
+        const dslType = comp.type == 'any' ? '' : (profile.$dslType || (tgpModel ? comp.dslType : jb.path(comp,[CT,'dslType'])) || jb.path(profile,[CT,'dslType']) || '')
+        if (!dslType) debugger
         return dslType + id
     },
     resolveSingleComp(comp,id,dsl, {keepLocation, tgpModel} = {}) {
@@ -62,11 +63,6 @@ extension('utils', 'core', {
       profiles.forEach(({comp,id}) => jb.utils.resolveUnTypedProfile(comp,id, 10))
       profiles.forEach(({comp}) => comp[CT].fullId && (jb.comps[comp[CT].fullId] = comp))
       jb.core.unresolvedProfiles = []
-
-      const dslDeclarations = Object.keys(jb.comps).filter(x=>x.match(/\.dslDeclarations$/))
-      dslDeclarations.forEach(k => jb.utils.resolveProfileInnerElements(jb.comps[k]))
-      dslDeclarations.forEach(k=>jb.exec({$:k}))
-
       profiles.forEach(({comp}) => jb.utils.resolveProfileInnerElements(comp))
       return profiles
     },
@@ -239,7 +235,18 @@ extension('utils', 'core', {
         return plugin && Object.values(comps).find(c=> jb.path(c,[CT,'plugin','id']) == plugin && (jb.path(c,[CT,'fullId'])||'').split('>').pop() == shortId )
       }
       function moreTypesByTypeRules(type) {
-        return jb.macro.typeRules.flatMap(rule=>rule.extendTypes && jb.asArray(rule.extendTypes(type)))
+        // isOf: ['boolean<>','data<>'] data -> boolean
+        // same: ['data<>', 'data<llm>']
+        // isOfWhenEndsWith: ['-feature<>','feature<>']
+        // isOfWhenEndsWith: ['-style<>',[ 'feature<>', 'style<>' ]]
+        const typeRules = tgpModel && tgpModel.typeRules || jb.macro.typeRules
+
+        return typeRules.flatMap(rule=> jb.asArray(
+            rule.isOf && type == rule.isOf[0] ? rule.isOf[1]
+            : rule.same && type == rule.same[0] ? rule.same[1]
+            : rule.same && type == rule.same[1] ? rule.same[0]
+            : rule.isOfWhenEndsWith && type.endsWith(rule.isOfWhenEndsWith[0]) && rule.isOfWhenEndsWith[0] != type ? rule.isOfWhenEndsWith[1]
+            : []))          
       }
       function lookForUnknownTypeInDsl(dsl) {
           const pattern = `<${dsl}>${id}`
@@ -297,7 +304,7 @@ extension('utils', 'core', {
     subscribe: (source,listener) => jb.callbag.subscribe(listener)(source),  
     indexOfCompDeclarationInTextLines(lines,id) {
       return lines.findIndex(line=> {
-        const index = line.indexOf(`component('${id}'`)
+        const index = line.indexOf(`component('${id.split('>').pop()}'`)
         return index == 0 || index == 3
       })
     },
@@ -310,23 +317,10 @@ extension('utils', 'generic', {
     isPrimitiveValue: val => ['string','boolean','number'].indexOf(typeof val) != -1,
     tryWrapper(f,msg,ctx,reqCtx) { try { return f() } catch(e) { jb.logException(e,msg,{ctx,reqCtx}) }},
     flattenArray: items => items.flatMap(x=>x),
-    //  {
-    //   let out = [];
-    //   items.filter(i=>i).forEach(function(item) {
-    //     if (Array.isArray(item))
-    //       out = out.concat(item);
-    //     else
-    //       out.push(item);
-    //   })
-    //   return out;
-    // },
     isPromise: v => v && v != null && typeof v.then === 'function',
     isDelayed(v) {
       if (!v || v.constructor === {}.constructor || Array.isArray(v)) return
-      else if (typeof v === 'object')
-        return jb.utils.isPromise(v)
-      else if (typeof v === 'function')
-        return jb.utils.isCallbag(v)
+      return typeof v === 'object' ? jb.utils.isPromise(v) : typeof v === 'function' && jb.utils.isCallbag(v)
     },
     isCallbag: v => jb.callbag && jb.callbag.isCallbag(v),
     resolveDelayed(delayed, synchCallbag) {

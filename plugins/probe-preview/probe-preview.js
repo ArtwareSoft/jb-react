@@ -10,14 +10,28 @@ component('circuit', {
   })
 })
 
-// '%$studio/sourceCode%'
+//    {id: 'sourceCode', type: 'source-code<loader>', defaultValue: treeShakeClient()},
+    //{id: 'sourceCode', type: 'source-code<loader>', defaultValue: sourceCode(plugins(() => jb.sourceCode.plugins.join(',')))},
+
 component('probePreviewWorker', {
   type: 'jbm<jbm>',
   params: [
-    {id: 'sourceCode', type: 'source-code<loader>', defaultValue: treeShakeClient()},
+    {id: 'sourceCode', type: 'source-code<loader>', defaultValue: probePreviewWorker()},
     {id: 'id', defaultValue: 'wProbe'}
   ],
   impl: worker('%$id%', { sourceCode: '%$sourceCode%', init: probe.initPreview() })
+})
+
+component('probePreviewWorker', {
+  type: 'source-code<loader>',
+  params: [
+  ],
+  impl: If('%$uiTest%', treeShakeClient(), sourceCode(plugins(() => jb.sourceCode.plugins.join(','))))
+})
+
+component('probe.restartPreviewWorker', {
+  type: 'action<>',
+  impl: runActions(jbm.terminateChild('wProbe'), refreshControlById('preview'))
 })
 
 component('suggestions.calcFromProbePreview', {

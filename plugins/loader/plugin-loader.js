@@ -172,4 +172,3 @@ component('sourceCode.encodeUri', {
   ],
   impl: (ctx,source) => jb.frame.encodeURIComponent(JSON.stringify(source))
 })
-

@@ -59,6 +59,7 @@ component('studio.jbart', {
       studio.topBar(),
       group(preview.remoteWidget(), {
         features: [
+          id('preview'),
           watchRef('%$studio/page%'),
           watchRef('%$studio/preview%', 'yes'),
           css.height('%$studio/preview/height%', 'auto', { minMax: 'max' }),
@@ -79,15 +80,12 @@ component('studio.circuit', {
     studio.topBar(),
     group(probe.remoteCircuitPreview(), {
       features: [
-        followUp.action(
-          studio.openComponentInJbEditor('%$studio/jbEditor/selected%', '%$studio/probe/circuit%')
-        ),
+        id('preview'),
         watchRef('%$studio/preview%', 'yes'),
         css.height('%$studio/preview/height%', 'auto', { minMax: 'max' }),
         css.width('%$studio/preview/width%', 'auto', { minMax: 'max' })
       ]
     }),
-    studio.ctxCounters()
   )
 })
 

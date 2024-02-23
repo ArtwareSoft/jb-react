@@ -25,7 +25,7 @@ extension('ui', 'tree', {
 component('tree', {
   type: 'control',
   params: [
-    {id: 'title', as: 'string'},
+    {id: 'title', as: 'string', dynamic: true},
     {id: 'nodeModel', type: 'tree.node-model', dynamic: true, mandatory: true},
     {id: 'style', type: 'tree-style', defaultValue: tree.expandBox(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true, as: 'array'}

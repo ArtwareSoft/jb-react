@@ -25,26 +25,28 @@ extension('tgp', 'statistics', {
         return Object.values(profile).reduce((res,v)=> [...res,...calcRefs(v)], [jb.utils.compName(profile)])
       }    
     },
-    circuitOptions(cmpId) {
+    circuitOptions(compId) {
       jb.tgp.calcRefs()
-      const candidates = {[cmpId]: true}
+      const shortId = compId.split('>').pop()
+      const candidates = {[compId]: true}
       while (expand()) {}
-      const comps = Object.keys(candidates).filter(cmpId => noOpenParams(cmpId))
+      const comps = Object.keys(candidates).filter(compId => noOpenParams(compId))
       return comps.sort((x,y) => mark(y) - mark(x))
   
-      function mark(cmpId) {
-        if (cmpId.match(/test|tst/i)) return 10
+      function mark(id) {
+        if (id.match(/^test<>/) && id.indexOf(shortId) != -1) return 20
+        if (id.match(/^test<>/)) return 10
         return 0
       }
 
-      function noOpenParams(cmpId) {
-        return (jb.comps[cmpId].params || []).filter(p=>!p.defaultValue).length == 0
+      function noOpenParams(id) {
+        return (jb.comps[id].params || []).filter(p=>!p.defaultValue).length == 0
       }
   
       function expand() {
         const length_before = Object.keys(candidates).length
         Object.keys(candidates).forEach(k=> 
-          jb.tgp.statistics[candidates[k]] && (jb.tgp.statistics[candidates[k]].by || []).forEach(caller=>candidates[caller] = true))
+          jb.tgp.statistics[k] && (jb.tgp.statistics[k].by || []).forEach(caller=>candidates[caller] = true))
         return Object.keys(candidates).length > length_before
       }
     }

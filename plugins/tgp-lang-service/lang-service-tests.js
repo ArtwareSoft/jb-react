@@ -44,8 +44,6 @@ component('completionTest.mixedSingleArgAsArrayMiddle', {
   })
 })
 
-
-
 component('completionTest.betweentwoFirstArgs', {
   impl: completionOptionsTest({
     compText: `component('x', {
@@ -432,6 +430,16 @@ component('completionTest.dslTest.top', {
   impl: state(__)
 })`, {
     expectedSelections: ['capital'],
+    dsl: 'location'
+  })
+})
+
+component('completionTest.dslTest.typeRules', {
+  impl: completionOptionsTest(`component('x', {
+  type: 'data',
+  impl: pipeline(__)
+})`, {
+    expectedSelections: ['split'],
     dsl: 'location'
   })
 })

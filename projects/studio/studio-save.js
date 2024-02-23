@@ -1,6 +1,6 @@
 component('studio.saveComponents', {
   type: 'action',
-hasSideEffect: true,
+  hasSideEffect: true,
   impl: rx.pipe(
     source.data(pipeline(watchableComps.changedComps(), studio.filePathOfComp('%comp%'), unique())),
     rx.var('fn', '%%'),

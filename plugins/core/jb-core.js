@@ -14,7 +14,7 @@ Object.assign(jb, {
     const phase =  extension.$phase || { core: 1, utils: 5, db: 10, watchable: 20}[libId] || 100
     if (extension.initExtension) 
       extension.initExtension.requireFuncs = extension.$requireFuncs
-    lib.__extensions[extId] = { plugin, libId, phase, init: extension.initExtension, initialized, 
+    lib.__extensions[extId] = { plugin, libId, phase, init: extension.initExtension, initialized, typeRules: extension.typeRules,
       requireLibs: extension.$requireLibs, requireFuncs: extension.$requireFuncs, funcs, location }
 
     if (jb.noSupervisedLoad && extension.initExtension) {
@@ -46,7 +46,16 @@ Object.assign(jb, {
       jb.logException(e,'initializeLibs: error loading external library', {libsToLoad, libs})
     }
   },
-
+  initializeTypeRules(libs) {
+    jb.macro.initializedTypeRules = jb.macro.initializedTypeRules || {}
+    jb.macro.typeRules = [...(jb.macro.typeRules||[]), ...libs.filter(l=>jb[l]).flatMap(l => Object.entries(jb[l].__extensions))
+      .flatMap(([extId,ext])=>{
+        const key = `${ext.libId}--${extId}`
+        if (jb.macro.initializedTypeRules[key]) return []
+        jb.macro.initializedTypeRules[key] = true
+        return ext.typeRules||[]
+      })]
+  },
   calcSourceLocation(errStack,plugin) {
     try {
         const line = errStack.map(x=>x.trim()).filter(x=>x && !x.match(/^Error/) && !x.match(/at Object.component|at component|at extension/)).shift()

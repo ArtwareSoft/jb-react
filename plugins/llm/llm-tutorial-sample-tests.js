@@ -1,5 +1,5 @@
 component('tutorialSample', {
-  watchableData: {
+  passiveData: {
     title: 'query language',
     summary: '',
     components: [],

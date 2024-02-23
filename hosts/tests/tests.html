@@ -3,6 +3,7 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script type="text/javascript" src="/plugins/loader/jb-loader.js"></script>
+<link rel="icon" type="image/png" href="/bin/studio/css/favicon-done.png" />
 <link rel="stylesheet" type="text/css" href="/bin/studio/css/studio-all.css"/>
 <style>
 	.test-button { opacity: 0 }
@@ -18,7 +19,7 @@
  <script>
 	const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
 	const repo = urlQuery('repo')
-	const plugins = urlQuery('plugins') &&  urlQuery('plugins').split(',').map(x=>!x.match(/tests|tester/) ? `${x}-tests` : x)
+	const plugins = urlQuery('plugins') && urlQuery('plugins').split(',') //.map(x=>!x.match(/tests|tester/) ? `${x}-tests` : x)
 	const addRepo = urlQuery('addRepo')
 	const sourceCode = 
 		addRepo && {projects: ['studio'], plugins:['*','studio-tests'], pluginPackages: [{'$':'defaultPackage'},{'$':'jbStudioServer', repo: addRepo }] } 

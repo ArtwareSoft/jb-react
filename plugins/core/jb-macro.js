@@ -6,10 +6,10 @@ Object.assign(jb, {
 extension('macro', {
     initExtension() {
         return { 
-            typeRules: [{ extendTypes: t => t == 'data<>' && 'boolean<>' }], dslRulesInit: {},
             proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro'), systemProps: ['remark', 'data', '$debug', '$disabled', '$log' ] 
         }
-    },  
+    },
+    typeRules: [{ isOf: ['data<>','boolean<>'] }],
     titleToId: id => id.replace(/-([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
     newProxy: id => new Proxy(() => 0, {
         get: (o, p) => p === jb.macro.isMacro? true : jb.macro.getInnerMacro(id, p),
@@ -85,7 +85,7 @@ extension('macro', {
 })
 
 component('Var', {
-  type: 'var',
+  type: 'any',
   isSystem: true,
   params: [
     {id: 'name', as: 'string', mandatory: true},

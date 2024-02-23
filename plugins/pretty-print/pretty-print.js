@@ -15,7 +15,6 @@ extension('utils', 'prettyPrint', {
   },
   prettyPrintComp(compId,comp,settings={}) {
     if (comp) {
-      // const tgpModel = settings.tgpModel - jb.utils.compName(comp,{tgpModel}) || 
       return `${jb.utils.compHeader(compId)}${jb.utils.prettyPrint(comp,{ initialPath: compId, ...settings })})`
     }
   },
@@ -29,13 +28,15 @@ extension('utils', 'prettyPrint', {
     return `component('${compId.split('>').pop()}', `
   },
 
-  prettyPrintWithPositions(val,{colWidth=100,tabSize=2,initialPath='',noMacros,singleLine, depth, tgpModel} = {}) {
+  prettyPrintWithPositions(val,{colWidth=100,tabSize=2,initialPath='',noMacros,singleLine, depth, tgpModel, type} = {}) {
     const props = {}
     const fullId = jb.path(val,[jb.core.CT,'fullId'])
     const startOffset = fullId ? jb.utils.compHeader(fullId).length : 0
 
     if (!val || typeof val !== 'object')
       return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
+    if (type)
+      val.$dslType = type
 
     calcValueProps(val,initialPath)
     const tokens = calcTokens(initialPath, { depth: depth || 1, useSingleLine: singleLine })

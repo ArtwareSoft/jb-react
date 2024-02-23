@@ -36,40 +36,39 @@ component('probeTest', {
     {id: 'expectedOutResult', type: 'boolean', dynamic: true, defaultValue: true},
     {id: 'expectedResult', type: 'boolean', dynamic: true, defaultValue: true}
   ],
-  impl: async (ctx,circuit,probePath,allowClosestPath,expectedVisits,expectedOutResult,expectedResult)=> {
-    //st.initTests()
-
-    const testId = ctx.vars.testID;
-    const failure = reason => ({ id: testId, title: testId, success:false, reason: reason });
-    const success = _ => ({ id: testId, title: testId, success: true });
-
-    const base_path = `test<>${testId}~impl~circuit`
-    const full_path = `${base_path}~${probePath}`
-    jb.cbLogByPath = {}
-    const res1 = await new jb.probe.Probe(new jb.core.jbCtx(ctx,{ profile: circuit.profile, forcePath: base_path, path: '' } ))
-      .runCircuit(full_path)
-    const res = await (jb.cbLogByPath[res1.probePath] || res1)
-    jb.cbLogByPath = null
-    debugger
-    try {
-        if (expectedVisits == 0 && res.closestPath)
-          return success();
-        if (!allowClosestPath && res.closestPath)
-          return failure('no probe results at path ' + probePath);
-        if (res.result.visits != expectedVisits && expectedVisits != -1)
-          return failure(`expected visits error actual/expected: ${res.result.visits}/${expectedVisits}`);
-        if (!res.result[0])
-            return failure('no probe results at path ' + probePath)
-        const resData = res.callbagLog && res.result || res.result[0].out
-        if (!expectedOutResult(ctx.setData(resData)))
-            return failure('wrong out result ' + JSON.stringify(resData))
-        if (!expectedResult(ctx.setData(res.result)))
-            return failure('wrong result ' + JSON.stringify(res.result))
-            
-        return success();
-    } catch(e) {
-      jb.logException(e,'jb-path-test',{ctx})
-      return failure('exception')
-    }
-  }
+  impl: dataTest({
+    calculate: async (ctx,{fullTestId}, {circuit,probePath})=> {
+      const base_path = `${fullTestId}~impl~circuit`
+      const full_path = `${base_path}~${probePath}`
+      jb.cbLogByPath = {}
+      const res1 = await new jb.probe.Probe(new jb.core.jbCtx(ctx,{ profile: circuit.profile, forcePath: base_path, path: '' } ))
+        .runCircuit(full_path)
+      return await (jb.cbLogByPath[res1.probePath] || res1)
+    },
+    expectedResult: (ctx,{},{allowClosestPath,expectedVisits,expectedOutResult,expectedResult}) => {
+        jb.cbLogByPath = null
+        const {closestPath, result, callbagLog} = ctx.data
+        let error = ''
+        try {
+          if (expectedVisits == 0 && closestPath)
+            error = ''
+          else if (!allowClosestPath && closestPath)
+            error = `no probe results at path ${probePath}`
+          else if (result.visits != expectedVisits && expectedVisits != -1)
+            error = `expected visits error actual/expected: ${result.visits}/${expectedVisits}`
+          else if (!result[0])
+            error = `no probe results at path ${probePath}`
+          const resData = callbagLog && result || result[0].out
+          if (!expectedOutResult(ctx.setData(resData)))
+            error = `wrong out result ${JSON.stringify(resData)}`
+          else if (!expectedResult(ctx.setData(result)))
+            error = `wrong result`
+        } catch(e) {
+          jb.logException(e,'jb-path-test',{ctx})
+          return failure('exception')
+        }    
+        return error ? { testFailure: error } : true
+    },
+    includeTestRes: true
+  })
 })

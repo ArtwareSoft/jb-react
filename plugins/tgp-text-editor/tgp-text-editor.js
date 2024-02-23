@@ -20,7 +20,7 @@ extension('tgpTextEditor', {
             comp[jb.core.CT] = { plugin, dsl }
             const compId = jb.utils.resolveSingleComp(comp, id, dsl, { tgpModel })
             comp[jb.core.CT].location = jb.path(tgpModel,[compId,'location'])
-            jb.comps[compId] = comp
+            //jb.comps[compId] = comp // really?!!
             if (forceLocalSuggestions && jb.plugins[pluginId]) {
                 const compToRun = f(...Object.values(context))
                 jb.comps[compId] = compToRun
@@ -32,7 +32,7 @@ extension('tgpTextEditor', {
         } catch (e) {
             if (fixed)
                 return { compilationFailure: true, err: e }
-            const newCode = fixCode()
+            const newCode = cursorPos && fixCode()
             if (!newCode)
                 return { compilationFailure: true, err: e }
             return jb.tgpTextEditor.evalProfileDef(id, newCode, pluginId, fileDsl, tgpModel, { cursorPos, fixed: true })

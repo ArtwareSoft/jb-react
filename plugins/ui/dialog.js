@@ -467,7 +467,10 @@ component('dialogs.changeEmitter', {
   impl: (ctx,_widgetId) => {
 		const widgetId = !ctx.vars.previewOverlay && _widgetId || 'default'
 		jb.ui.dlgEmitters = jb.ui.dlgEmitters || {}
-		jb.ui.dlgEmitters[widgetId] = jb.ui.dlgEmitters[widgetId] || ctx.run({$: 'data<>rx.subject', id: `dialog emitter ${widgetId}`, replay: true})
+    const existing = jb.ui.dlgEmitters[widgetId]
+    if (existing) return existing
+    jb.log(`creating dialog subject emitter for widgetId ${widgetId}`, {existing: jb.ui.dlgEmitters[widgetId], ctx})
+		jb.ui.dlgEmitters[widgetId] = ctx.run({$: 'data<>rx.subject', id: `dialog emitter ${widgetId}`, replay: true})
 		return jb.ui.dlgEmitters[widgetId]
 	}
 })

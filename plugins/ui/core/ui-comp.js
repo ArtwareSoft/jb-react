@@ -8,8 +8,6 @@ extension('ui','comp', {
                 return jb.ui.h('div',{},value.map(item=>jb.core.jstypes.renderable(item)));
             return '' + jb.val(value,true);
         }
-   
-        jb.ui.initDslDeclarations()
         return {
             lifeCycle: new Set('init,extendCtx,templateModifier,followUp,destroy'.split(',')),
             arrayProps: new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,frontEndLib,frontEndVar'.split(',')),
@@ -22,12 +20,10 @@ extension('ui','comp', {
             cmps: {}              
         }
     },
-    initDslDeclarations() {
-        if (jb.macro.dslRulesInit.ui) return
-        jb.macro.dslRulesInit.ui = true
-        jb.macro.typeRules.push({extendTypes: t => t != 'feature<>' && t.endsWith('feature<>') && 'feature<>' })
-        jb.macro.typeRules.push({extendTypes: t => t != 'style<>' && t.endsWith('style<>') && ['style<>','feature<>'] })
-    },    
+    typeRules: [
+        { isOfWhenEndsWith: ['feature<>','feature<>'] },
+        { isOfWhenEndsWith: ['style<>',['feature<>', 'style<>' ]] }
+    ],
     h(cmpOrTag,attributes,children) {
         if (cmpOrTag instanceof jb.ui.VNode) return cmpOrTag // Vdom
         if (cmpOrTag && cmpOrTag.renderVdom)

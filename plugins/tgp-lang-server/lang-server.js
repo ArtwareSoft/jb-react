@@ -36,6 +36,7 @@ component('remote.tgpModelData', {
       prop('filePath', '%result/filePath%'),
       prop('errors', '%errors%'),
       prop('comps', '%result/comps%'),
+      prop('typeRules', '%result/typeRules%'),
       prop('plugins', '%result/plugins%')
     ),
     first()

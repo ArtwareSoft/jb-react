@@ -3,11 +3,12 @@ component('PPPosOfPath', {
   macroByValue: true,
   params: [
     {id: 'profile', type: 'any'},
+    {id: 'dslType', as: 'string'},
     {id: 'path', as: 'string'},
     {id: 'expectedPos', as: 'string'}
   ],
   impl: dataTest({
-    calculate: ({},{},{profile}) => jb.utils.prettyPrintWithPositions(profile),
+    calculate: ({},{},{profile, dslType}) => jb.utils.prettyPrintWithPositions(profile, {type: dslType}),
     expectedResult: ({data},{},{expectedPos,path}) => {
         const items = (jb.path(data,'actionMap') || []).filter(x=>x.action == path).map(x=>`${x.from},${x.to}`)
         let error = items.length ? '' : `path not found ${path}`

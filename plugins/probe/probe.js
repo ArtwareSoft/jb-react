@@ -38,7 +38,8 @@ extension('probe', 'main', {
                     || _ctx.exp('%$probe/defaultMainCircuit%') 
                     || jb.path(jb.utils.getCompById(cmpId),'circuit')
                     || jb.path(jb.utils.getCompById(cmpId),'impl.expectedResult') && cmpId // test
-                    || findTest(cmpId) || cmpId
+                    || jb.tgp.circuitOptions(cmpId)[0] 
+                    || cmpId
             if (circuitCmpId && !jb.utils.getCompById(circuitCmpId,{silent: true}) && !jb.treeShake.codeServerJbm) {
                 return jb.logError(`calcCircuit. can not bring circuit comp ${circuitCmpId}`,{probePath,cmpId,ctx})
             }
@@ -60,14 +61,6 @@ extension('probe', 'main', {
                 .filter(cmp => [cmp.ctx.path, ...(cmp.callStack ||[])].filter(x=>x).some(p => p.indexOf(path) == 0))
             return candidates.sort((cmp2,cmp1) => 1000* (cmp1.ctx.path.length - cmp2.ctx.path.length) + 
                 (cmp1.ctx.id - cmp2.ctx.id) ) [0] || {}
-        }
-        function findTest(cmpId) {
-            // #jbLoadComponents: data<>tgp.componentStatistics
-            const statistics = jb.exec({$: 'data<>tgp.componentStatistics', cmpId})
-            const lookFor = cmpId.split('.').pop()
-            const tests = (statistics.referredBy||[]).filter(refferer=>jb.tgp.isCompNameOfType(refferer,'test'))
-            const testWithSameName = tests.filter(id=>id.indexOf(lookFor) != -1)[0]
-            return testWithSameName || tests[0]
         }
     },
     Probe: class Probe {

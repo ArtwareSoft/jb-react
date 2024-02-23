@@ -54,10 +54,10 @@ component('workerPreviewTest.changeScript', {
 component('uiTest.workerPreviewTest.addCss', {
   impl: uiTest({
     control: group(
-      button({
-        title: 'change script',
-        action: writeValue(tgp.ref('control<>sampleProject.main~impl~controls~0~features~1'), () => ({$:'feature<>css', css: 'color: green'}))
-      }),
+      button('change script', writeValue({
+        to: tgp.ref('control<>sampleProject.main~impl~controls~0~features~1'),
+        value: () => ({$:'feature<>css', css: 'color: green'})
+      })),
       probe.remoteCircuitPreview()
     ),
     expectedResult: contains('color: green'),

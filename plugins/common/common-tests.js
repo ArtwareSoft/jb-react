@@ -158,6 +158,14 @@ component('dataTest.obj', {
 `, {'$': 'object', res: '%%'}, '%res%'), contains('1-2'))
 })
 
+component('dataTest.jbartExpression.select', {
+  impl: dataTest(pipeline('%$people/0/name%'), contains('Homer'))
+})
+
+component('dataTest.jbartExpression.boolean', {
+  impl: dataTest(pipeline('%$people%', filter('%age%==42'), '%name%'), contains('Homer'))
+})
+
 component('dataTest.evalExpression', {
   impl: dataTest(evalExpression('1+1'), equals(2))
 })

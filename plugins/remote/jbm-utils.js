@@ -267,7 +267,7 @@ extension('jbm', 'main', {
                 })) } // will be called directly by initPanel using eval
         }
     },
-    async terminateChild(id,childsOrNet = jb.jbm.childJbms,ctx) {
+    async terminateChild(id,ctx,childsOrNet=jb.jbm.childJbms) {
         if (!childsOrNet[id]) return
         const childJbm = await childsOrNet[id]
         if (!childJbm) return
@@ -291,8 +291,8 @@ extension('jbm', 'main', {
     },
     terminateAllChildren(ctx) {
         return Promise.all([
-            ...Object.keys(jb.jbm.childJbms||{}).map(id=>jb.jbm.terminateChild(id,jb.jbm.childJbms,ctx)),
-            ...Object.keys(jb.jbm.networkPeers||{}).map(id=>jb.jbm.terminateChild(id,jb.jbm.networkPeers,ctx)),
+            ...Object.keys(jb.jbm.childJbms||{}).map(id=>jb.jbm.terminateChild(id,ctx,jb.jbm.childJbms)),
+            ...Object.keys(jb.jbm.networkPeers||{}).map(id=>jb.jbm.terminateChild(id,ctx,jb.jbm.networkPeers)),
         ])
     }
 })

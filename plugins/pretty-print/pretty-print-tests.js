@@ -18,19 +18,19 @@ component('PPrintTest.vars', {
 })
 
 component('PPrintTest.varsPath', {
-  impl: PPPosOfPath(() => split(Var('a', 'b')), 'edit!~$vars~0~val', '27,27')
+  impl: PPPosOfPath(() => split(Var('a', 'b')), 'data<>', 'edit!~$vars~0~val', '27,27')
 })
 
 // component('PPrintTest.prependInGroup', {
-//   impl: PPPosOfPath(() => group(text(''), text('')), 'prependPT!~controls', '6,6')
+//   impl: PPPosOfPath(() => group(text(''), text('')), 'control<>', 'prependPT!~controls', '6,6')
 // })
 
 component('PPrintTest.prependSingleInArrayPath', {
-  impl: PPPosOfPath(() => group(text('')), 'prependPT!~controls', '6,6')
+  impl: PPPosOfPath(() => group(text('')), 'control<>', 'prependPT!~controls', '6,6')
 })
 
 component('PPrintTest.singleInArrayPath', {
-  impl: PPPosOfPath(() => group(text('')), 'begin!~controls~text', '11,11')
+  impl: PPPosOfPath(() => group(text('')), 'control<>', 'begin!~controls~text', '11,11')
 })
 
 component('PPrintTest.multiLineExample', {
@@ -43,7 +43,7 @@ component('PPrintTest.multiLineExample', {
 })
 
 component('PPrintTest.multiLine.prepend', {
-  impl: PPPosOfPath(() => jb.comps['control<>PPrintTest.multiLineExample'], 'prependPT!~impl~controls', '76,81')
+  impl: PPPosOfPath(() => jb.comps['control<>PPrintTest.multiLineExample'], 'control<>', 'prependPT!~impl~controls', '76,81')
 })
 
 component('PPrintTest.dslNameOverideExample', {
@@ -52,21 +52,21 @@ component('PPrintTest.dslNameOverideExample', {
 })
 
 component('PPrintTest.dslNameOveride', {
-  impl: PPPosOfPath(() => jb.comps['settlement<location>PPrintTest.dslNameOverideExample'], 'addProp!~impl~state', '113,113')
+  impl: PPPosOfPath(() => jb.comps['settlement<location>PPrintTest.dslNameOverideExample'], 'settlement<location>', 'addProp!~impl~state', '113,113')
 })
 
 component('PPrintTest.multiLine.addPropBegin', {
-  impl: PPPosOfPath(() => jb.comps['control<>PPrintTest.multiLineExample'], 'addProp!~impl', '76,76')
+  impl: PPPosOfPath(() => jb.comps['control<>PPrintTest.multiLineExample'], 'control<>', 'addProp!~impl', '76,76')
 })
 
 component('PPrintTest.multiLine.addPropEnd', {
-  impl: PPPosOfPath(() => jb.comps['control<>PPrintTest.multiLineExample'], 'addProp!~impl', '198,199')
+  impl: PPPosOfPath(() => jb.comps['control<>PPrintTest.multiLineExample'], 'control<>', 'addProp!~impl', '198,199')
 })
 
 component('PPrintTest.remark.pipeline', {
   impl: dataTest({
     calculate: pipeline(
-      () => jb.utils.prettyPrintWithPositions(pipeline(Var('x',1), 'a' , {remark: 'hello'}),{singleLine: true}),
+      () => jb.utils.prettyPrintWithPositions(pipeline(Var('x',1), 'a' , {remark: 'hello'}),{type: 'data<>', singleLine: true}),
       log('test'),
       '%text%'
     ),
@@ -76,7 +76,8 @@ component('PPrintTest.remark.pipeline', {
 
 component('PPrintTest.Positions.closeArray', {
   impl: PPPosOfPath({
-    profile: () => text('hey', { features: [css.color('green'), css.color('green')] }),
+    profile: () => text('hey', { features: [css.color('green'), css.color('green')] }), 
+    dslType: 'control<>',
     path: 'end!~features',
     expectedPos: '65,65'
   })
@@ -85,7 +86,7 @@ component('PPrintTest.Positions.closeArray', {
 component('test.foldFunction', {
   impl: pipeline(
     () => jb.utils.prettyPrintWithPositions(frontEnd.var('itemPropsProfile', ({ }, { $model }) => 
-      $model.itemProps.profile)),
+      $model.itemProps.profile) , {type: 'feature<>', }),
     '%text%'
   )
 })
@@ -95,18 +96,18 @@ component('PPrintTest.posOfFoldFunctionBug', {
 })
 
 component('PPrintTest.singleFunc', {
-  impl: PPPosOfPath(() => frontEnd.init(({ }, { }) => 5), 'function!~action', '14,29')
+  impl: PPPosOfPath(() => frontEnd.init(({ }, { }) => 5), 'feature<>', 'function!~action', '14,29')
 })
 
 component('PPrintTest.primitiveArray', {
   impl: dataTest({
-    calculate: () => jb.utils.prettyPrintWithPositions(list(1, 2, 3, 4)),
+    calculate: () => jb.utils.prettyPrintWithPositions(list(1, 2, 3, 4), {type: 'data<>'}),
     expectedResult: equals('%text%', 'list(1,2,3,4)')
   })
 })
 
 component('PPrintTest.byValue.cutTailingUndefinedArgs', {
-  impl: dataTest(() => jb.utils.prettyPrint(css.boxShadow({ inset: false })), notContains('undefined'))
+  impl: dataTest(() => jb.utils.prettyPrint(css.boxShadow({ inset: false }), {type: 'feature<>'}), notContains('undefined'))
 })
 
 component('PPrintTest.async', {
@@ -119,7 +120,7 @@ component('PPrintTest.asIs', {
 
 component('PPrintTest.asyncInProfile', {
   impl: dataTest({
-    calculate: () => jb.utils.prettyPrint(dataTest(async () => { 5 })),
+    calculate: () => jb.utils.prettyPrint(dataTest(async () => { 5 }), {type: 'test<>'}),
     expectedResult: and(not(contains('a:')), contains('async () => { 5 }'))
   })
 })

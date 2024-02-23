@@ -244,10 +244,10 @@ component('remoteTest.webSocket.runTest', {
     calculate: pipe(
       rx.pipe(
         source.data('%$testsToRun%'),
-        rx.var('fullId','test<>%%'),
+        rx.var('fullTestId','test<>%%'),
         rx.log('test'),
         remote.operator({
-          rx: rx.mapPromise(({data},{fullId}) => jb.test.runSingleTest(data,{fullId})),
+          rx: rx.mapPromise(({data},{fullTestId}) => jb.test.runSingleTest(data,{fullTestId})),
           jbm: worker('tester', {
             sourceCode: sourceCode(pluginsByPath('/plugins/common/xx-tests.js'))
           })

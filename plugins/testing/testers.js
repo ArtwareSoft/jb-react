@@ -62,7 +62,7 @@ extension('test', {
 	},
 	goto_editor: (id,repo) => fetch(`/?op=gotoSource&comp=${id}&repo=${repo}`),
 	hide_success_lines: () => jb.frame.document.querySelectorAll('.success').forEach(e=>e.style.display = 'none'),
-	profileSingleTest: testID => new jb.core.jbCtx().setVars({testID}).run({$: testID}),
+	profileSingleTest: fullTestId => new jb.core.jbCtx().setVars({fullTestId, testID: fullTestId.split('>').pop()}).run({$: fullTestId}),
 	initSpyEnrichers() {
 		jb.spy.registerEnrichers([
 			r => r.logNames == 'check test result' && ({ props: {success: r.success, data: r.expectedResultCtx.data, id: r.expectedResultCtx.vars.testId }}),
@@ -130,13 +130,13 @@ extension('test', {
 			return (jb.comps[name] && jb.comps[name].type || '').indexOf(type) == 0
 		}
 	},
-	async runSingleTest(testID,{doNotcleanBeforeRun, showOnlyTest,fullId} = {}) {
+	async runSingleTest(testID,{doNotcleanBeforeRun, showOnlyTest,fullTestId} = {}) {
 		const tstCtx = (jb.ui ? jb.ui.extendWithServiceRegistry() : new jb.core.jbCtx())
-			.setVars({ testID, singleTest: jb.test.singleTest })
+			.setVars({ testID, fullTestId,singleTest: jb.test.singleTest })
 		const start = new Date().getTime()
 		await !doNotcleanBeforeRun && jb.test.cleanBeforeRun()
 		jb.log('start test',{testID})
-		const res = await tstCtx.run({$:fullId})
+		const res = await tstCtx.run({$:fullTestId})
 		res.duration = new Date().getTime() - start
 		jb.log('end test',{testID,res})
 		if (!jb.test.singleTest)
@@ -144,11 +144,11 @@ extension('test', {
 		jb.ui && jb.ui.garbageCollectUiComps({forceNow: true,clearAll: true ,ctx: tstCtx})
 
 		res.show = () => {
-			const profile = jb.comps[fullId]
+			const profile = jb.comps[fullTestId]
 			if (!profile.impl.control) return
 			const doc = jb.frame.document
 			if (!doc) return
-			const ctxToRun = jb.ui.extendWithServiceRegistry(new jb.core.jbCtx(tstCtx,{ profile: profile.impl.control , forcePath: fullId+ '~impl~control', path: '' } ))
+			const ctxToRun = jb.ui.extendWithServiceRegistry(new jb.core.jbCtx(tstCtx,{ profile: profile.impl.control , forcePath: fullTestId+ '~impl~control', path: '' } ))
 			const elem = doc.createElement('div')
 			elem.className = 'show elemToTest'
 			if (showOnlyTest)
@@ -215,15 +215,15 @@ extension('test', {
 					await jb.delay(500) // gc
 				if (e[1].impl.timeout && e[1].impl.timeout > 1000)
 					await jb.delay(5)
-				const testID = e[0]
+				const testID = e[0], fullTestId = e[2]
 				//if (testID == 'previewTest.childJbm') debugger
 				document.getElementById('progress').innerHTML = `<div id=${testID}>${index++}: ${testID} started</div>`
 				await jb.delay(1)
 				console.log('starting ' + testID )
-				const res = await jb.test.runSingleTest(testID,{showOnlyTest, fullId: e[2]})
+				const res = await jb.test.runSingleTest(testID,{showOnlyTest, fullTestId })
 				console.log('end      ' + testID, res)
 				document.getElementById('progress').innerHTML = `<div id=${testID}>${testID} finished</div>`
-				return { ...res, fullId: e[2]}
+				return { ...res, fullTestId, testID}
 			})() )),
 			subscribe(res=> {
 				res.success ? jb.test.success_counter++ : jb.test.fail_counter++;
@@ -240,22 +240,23 @@ extension('test', {
   	},
 	testResultHtml(res, repo) {
 		const baseUrl = jb.frame.location.href.split('/tests.html')[0]
-		const testComp = jb.comps[res.fullId]
+		const {fullTestId, success, duration, reason, testID} = res
+		const testComp = jb.comps[fullTestId]
 		const location = testComp[jb.core.CT].location || {}
 		const sourceCode = JSON.stringify(jb.exec(typeAdapter('source-code<loader>', test({
 			filePath: () => location.path, repo: () => location.repo
 		}))))
-		const studioUrl = `http://localhost:8082/project/studio/${res.fullId}/${res.fullId}?sourceCode=${encodeURIComponent(sourceCode)}`
+		const studioUrl = `http://localhost:8082/project/studio/${fullTestId}/${fullTestId}?sourceCode=${encodeURIComponent(sourceCode)}`
 		const _repo = repo ? `&repo=${repo}` : ''
-		const coveredTests = testComp.impl.covers ? `<a href="${baseUrl}/tests.html?coveredTestsOf=${res.id}${_repo}">${testComp.impl.covers.length} dependent tests</a>` : ''
-		return `<div class="${res.success ? 'success' : 'failure'}">
-			<a href="${baseUrl}/tests.html?test=${res.id}${_repo}&show&spy=${jb.spy.spyParamForTest(res.fullId)}" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
-			<span> ${res.duration}mSec</span> 
+		const coveredTests = testComp.impl.covers ? `<a href="${baseUrl}/tests.html?coveredTestsOf=${testID}${_repo}">${testComp.impl.covers.length} dependent tests</a>` : ''
+		return `<div class="${success ? 'success' : 'failure'}">
+			<a href="${baseUrl}/tests.html?test=${testID}${_repo}&show&spy=${jb.spy.spyParamForTest(testID)}" style="color:${success ? 'green' : 'red'}">${testID}</a>
+			<span> ${duration}mSec</span> 
 			${coveredTests}
-			<a class="test-button" href="javascript:jb.test.goto_editor('${res.id}','${repo||''}')">src</a>
+			<a class="test-button" href="javascript:jb.test.goto_editor('${testID}','${repo||''}')">src</a>
 			<a class="test-button" href="${studioUrl}">studio</a>
-			<a class="test-button" href="javascript:jb.test.profileSingleTest('${res.id}')">profile</a>
-			<span>${res.reason||''}</span>
+			<a class="test-button" href="javascript:jb.test.profileSingleTest('${fullTestId}')">profile</a>
+			<span>${reason||''}</span>
 			</div>`;
 	},
 	updateTestHeader(topElem,{success_counter,fail_counter,usedJSHeapSize,startTime}) {
@@ -277,12 +278,12 @@ component('source.testsResults', {
   impl: source.remote({
     rx: rx.pipe(
       source.data('%$tests%'),
-	  rx.var('fullId','test<>%%'),
+	  rx.var('fullTestId','test<>%%'),
       rx.var('testID'),
       rx.concatMap(
         source.merge(
           source.data(obj(prop('id', '%%'), prop('started', 'true'))),
-          rx.pipe(source.promise(({},{testID,fullId}) => jb.test.runSingleTest(testID,{fullId})))
+          rx.pipe(source.promise(({},{testID,fullTestId}) => jb.test.runSingleTest(testID,{fullTestId})))
         )
       )
     ),

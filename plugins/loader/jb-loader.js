@@ -133,6 +133,7 @@ async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl} ={}) {
   const libs = unique(topPlugins.flatMap(id=>jb.plugins[id].requiredLibs))
 
   const libsToInit = sourceCode.libsToInit ? sourceCode.libsToInit.split(','): libs
+  jb.initializeTypeRules(libs)
   await jb.initializeLibs(libsToInit)
   jb.utils.resolveLoadedProfiles()
 

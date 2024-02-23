@@ -18,7 +18,7 @@ extension('langService', 'impl', {
             : await new jb.core.jbCtx().setData(packagePath).run({$: 'data<>remote.tgpModelData'})
         if (!tgpModelData.filePath) {
             jb.vscode.log(`error creating tgpModelData for path ${packagePath}`)
-            return {}
+            return { error: `error creating tgpModelData for path ${packagePath}`}
         }
             
         docProps.filePath = tgpModelData.filePath
@@ -291,13 +291,18 @@ extension('langService', 'api', {
             return items
         } else if (error) {
             jb.logError('completion provideCompletionItems', compProps)
+            return [ {
+                kind: 4, label: error && error.toString(), sortText: '0001',
+            }]
         }
     },
     async compId(ctx) {
         const compProps = await jb.langService.calcCompProps(ctx)
-        const { actionMap, inCompOffset, tgpModel, path } = compProps
+        const { actionMap, inCompOffset, tgpModel, path, comp } = compProps
         const actions = actionMap.filter(e => e.from <= inCompOffset && inCompOffset < e.to || (e.from == e.to && e.from == inCompOffset))
             .map(e => e.action).filter(e => e.indexOf('edit!') != 0 && e.indexOf('begin!') != 0 && e.indexOf('end!') != 0)
+        if (actions.length == 0 && comp) 
+            return { comp: comp[jb.core.CT].fullId}
         if (actions.length == 0) return []
         const priorities = ['addProp']
         const sortedActions = jb.utils.unique(actions).map(action=>action.split('!')).sort((a1,a2) => priorities.indexOf(a2[0]) - priorities.indexOf(a1[0]))

@@ -9,7 +9,15 @@ component('llmTest.hello', {
 
 component('llmTest.tutorialBuilder', {
   doNotRunInTests: true,
-  impl: uiTest(llm.tutorialBuilder('%$tutorialSample%'), contains('build'))
+  impl: uiTest(tutorialBuilder('%$tutorialSample%'), contains('build'))
+})
+
+component('llmTest.enrichTutorialData', {
+  doNotRunInTests: true,
+  impl: dataTest(enrichTutorialData('%$tutorialSample%'), and(
+    equals(pipeline('%features%', filter(equals('%id%', 'data<>pipeline')), '%usage/length%'), 7),
+    equals(pipeline('%features%', filter(equals('%id%', 'data<>split')), '%params/0/usage/length%'), 2)
+  ))
 })
 
 component('llmTest.buildHtml', {
@@ -47,5 +55,6 @@ component('llmTest.count', {
 
 component('llmTest.enrichTrainingItem', {
   doNotRunInTests: true,
-  impl: dataTest(llm.enrichTrainingItem('%$tutorialSample/training/0%'))
+  impl: dataTest(enrichTrainingItem('%$tutorialSample/training/0%'))
 })
+

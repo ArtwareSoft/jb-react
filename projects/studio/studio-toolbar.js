@@ -11,10 +11,14 @@ component('studio.toolbar', {
           feature.if(not(studio.inVscode()))
         ]
       }),
-      button('Refresh Preview', studio.refreshPreview(), { style: button.mdcIcon(icon('refresh')) }),
-      button('Javascript', studio.editSource(), { style: button.mdcIcon(icon('LanguageJavascript', { type: 'mdi' })) }),
+      button('Refresh Preview', probe.restartPreviewWorker(), { style: button.mdcIcon(icon('refresh')) }),
+      button('Javascript', studio.editSource(), {
+        style: button.mdcIcon(icon('LanguageJavascript', { type: 'mdi' }))
+      }),
       button('Outline', studio.openControlTree(), { style: button.mdcIcon(icon('format_align_left')) }),
-      button('Properties', studio.openProperties(true), { style: button.mdcIcon(icon('storage')) }),
+      button('Properties', studio.openProperties(true), {
+        style: button.mdcIcon(icon('storage'))
+      }),
       button('jbEditor', studio.openComponentInJbEditor(studio.currentPagePath()), {
         style: button.mdcIcon(icon('build')),
         features: button.ctrlAction(

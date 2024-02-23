@@ -20,14 +20,14 @@ component('peopleArray', {
 component('probeTest.extraElement.pipeline', {
   impl: probeTest(pipeline('%$people%'), 'items~1', {
     allowClosestPath: true,
-    expectedResult: equals('%0.in.data.name%', 'Homer Simpson')
+    expectedResult: equals('%0.in.data.name.0%', 'Homer Simpson')
   })
 })
 
 component('probeTest.extraElement.pipe', {
   impl: probeTest(pipe('%$people%', delay(1)), 'items~2', {
     allowClosestPath: true,
-    expectedResult: equals('%0.in.data.name%', 'Homer Simpson')
+    expectedResult: equals('%0.in.data.name.0%', 'Homer Simpson')
   })
 })
 
@@ -179,7 +179,7 @@ component('test.pathSrcCaller', {
 component('probeTest.pathSrcThrough.call', {
   impl: dataTest({
     calculate: ctx => {
-   	 var probe1 = new jb.probe.Probe(new jb.core.jbCtx(ctx,{ profile: {$: 'test.pathSrcCaller'}, comp: 'test.pathSrcCaller', path: '' } ),true)
+   	 var probe1 = new jb.probe.Probe(new jb.core.jbCtx(ctx,{ profile: {$: 'data<>test.pathSrcCaller'}, comp: 'data<>test.pathSrcCaller', path: '' } ),true)
       .runCircuit('test.pathSrcComp~impl~items~1');
     return probe1.then(res=> ''+res.result.visits)
    },
@@ -190,8 +190,8 @@ component('probeTest.pathSrcThrough.call', {
 component('probeTest.pathSrcThrough.call2', {
   impl: dataTest({
     calculate: ctx => {
-   	 var probe1 = new jb.probe.Probe(new jb.core.jbCtx(ctx,{ profile: {$: 'test.pathSrcCaller'}, comp: 'test.pathSrcCaller', path: '' } ),true)
-      .runCircuit('test.pathSrcCaller~impl~items~1');
+   	 var probe1 = new jb.probe.Probe(new jb.core.jbCtx(ctx,{ profile: {$: 'data<>test.pathSrcCaller'}, comp: 'data<>test.pathSrcCaller', path: '' } ),true)
+      .runCircuit('data<>test.pathSrcCaller~impl~items~1');
     return probe1.then(res=> ''+res.result.visits)
    },
     expectedResult: contains('1')
@@ -200,10 +200,33 @@ component('probeTest.pathSrcThrough.call2', {
 
 component('probeTest.runCircuit', {
   impl: dataTest({
-    calculate: pipe(probe.runCircuit('test.probePipeline~impl~items~1'), ({data}) => data.result.visits),
+    calculate: pipe(probe.runCircuit('data<>test.probePipeline~impl~items~1'), ({data}) => data.result.visits),
     expectedResult: equals(2)
   })
 })
+
+
+component('test.sourceDataTest', {
+  doNotRunInTests: true,
+  impl: dataTest(test.far1())
+})
+
+component('test.far1', {
+  impl: test.far2()
+})
+
+component('test.far2', {
+  impl: pipeline(test.far1())
+})
+
+component('probeTest.calcCircuit', {
+  impl: dataTest({
+    calculate: probe.calcCircuitPath('data<>test.far2~impl~items~0'),
+    expectedResult: equals('test<>test.sourceDataTest','%path%')
+  })
+})
+
+
 
 // jb.component('path-change-test.insert-comp', {
 // 	 impl :{$: 'path-change-test',
