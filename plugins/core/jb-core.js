@@ -82,9 +82,9 @@ Object.assign(jb, {
       jb.core.genericCompIds[id] = true
 
     comp.impl = comp.impl || (({params}) => params)
-    const h = jb.core.onAddComponent.find(x=>x.match(id,comp,dsl))
+    const h = jb.core.onAddComponent.find(x=>x.match(id,comp))
     if (h && h.register)
-      return h.register(id,comp,dsl)
+      return h.register(id,comp)
 
     jb.core.unresolvedProfiles.push({id,comp,dsl})
     if (comp.isSystem || comp.isMacro)
