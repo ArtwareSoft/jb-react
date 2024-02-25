@@ -57,9 +57,9 @@ component('completionOptionsTest', {
     expectedResult: ({data},{},{expectedSelections}) => {
       const errors = data.reduce((errors,{options},i) => {
         if (jb.path(options,'0') == 'reformat')
-          return `bad format`
+          return ['bad format']
         if (!options)
-            return `no options at index ${i}`
+            return [`no options at index ${i}`]
         const res = options.includes(expectedSelections[i]) ? '' : ` ${expectedSelections[i]} not found at index ${i}`
         return [...errors,res]
       }, []).filter(x=>x).join(', ')

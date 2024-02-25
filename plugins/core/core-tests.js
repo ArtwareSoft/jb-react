@@ -169,7 +169,7 @@ component('dataTest.refOfStringArrayItemSplice', {
       const refs = ctx.vars.refs
       refs.refOfc = ctx.exp('%$stringArray[2]%','ref')
       refs.valBefore = jb.val(refs.refOfc)
-      ctx.run(splice({array: '%$stringArray%', fromIndex: 0, noOfItemsToRemove: 1}))
+      ctx.run(splice({array: '%$stringArray%', fromIndex: 0, noOfItemsToRemove: 1}), 'action<>')
       refs.valAfter = jb.val(refs.refOfc)
     }
   })
@@ -215,7 +215,7 @@ component('dataTest.moveDown.checkPaths', {
     runBefore: ctx => {
       const bart = ctx.exp('%$personWithChildren/children[0]%')
       const lisa = ctx.exp('%$personWithChildren/children[1]%')
-      ctx.run(move('%$personWithChildren/children[0]%','%$personWithChildren/children[1]%'))
+      ctx.run(move('%$personWithChildren/children[0]%','%$personWithChildren/children[1]%'),'action<>')
       ctx.vars.res.paths = jb.db.asRef(bart).path()[2] + ',' + jb.db.asRef(lisa).path()[2]
     }
   })

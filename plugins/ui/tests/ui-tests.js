@@ -405,12 +405,11 @@ component('uiTest.itemlistPrimitiveArrayItemShouldBeRef', {
     control: itemlist({
       items: '%$personWithPrimitiveChildren/childrenNames%',
       controls: ctx => {
-        ctx.run(writeValue('%$isResultRef/answer%', () => !!jb.db.isRef(ctx.data)))
-        return ctx.run(text('%%'))
+        ctx.run(writeValue('%$isResultRef/answer%', () => !!jb.db.isRef(ctx.data)), 'action<>')
+        return ctx.run(text('%%'), 'control<>')
       }
     }),
     expectedResult: '%$isResultRef/answer%',
-    timeout: 100
   })
 })
 
@@ -693,7 +692,7 @@ component('uiTest.itemlistContainerSearchCtrl', {
         features: [
           watchRef('%$itemlistCntrData/search_pattern%'),
           itemlist.selection({ autoSelectFirst: true }),
-          itemlist.keyboardSelection(true, writeValue('%$res/selected%', '%name%'))
+          itemlist.keyboardSelection({ autoFocus: true, onEnter: writeValue('%$res/selected%', '%name%') })
         ]
       })
     ],

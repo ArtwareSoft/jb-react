@@ -4,7 +4,7 @@ component('dataTest.parseProjectHtml', {
   impl: dataTest({
     calculate: pipeline(
       list('%$html-dev%', '%$html-user%', '%$html-cloud%'),
-      {'$': 'studio.parseProjectHtml', '$byValue': []},
+      {'$': 'studio.parseProjectHtml'},
       prettyPrint()
     ),
     expectedResult: true
@@ -226,7 +226,7 @@ component('studioHelper.features', {
     controls: [
       {
         '$': 'studio.propertyArray',
-        '$byValue': ['studioHelperDummy.simpleLabel~impl~features']
+        '$unresolved': ['studioHelperDummy.simpleLabel~impl~features']
       }
     ]
   })

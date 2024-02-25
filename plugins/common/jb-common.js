@@ -78,7 +78,7 @@ extension('utils', 'pipe', {
       if (!profile || profile.$disabled) return data;
       const path = innerPath+i
       const parentParam = (i < profiles.length - 1) ? { as: 'array'} : (ctx.parentParam || {})
-      if (jb.path(profile,[jb.core.CT,'comp','aggregator']))
+      if (jb.path(jb.comps[profile.$$],'aggregator'))
         return jb.core.run( new jb.core.jbCtx(ctx, { data, profile, path }), parentParam)
       const res = data.map(item => jb.core.run(new jb.core.jbCtx(ctx,{data: item, profile, path}), parentParam))
         .filter(x=>x!=null)
@@ -569,7 +569,7 @@ component('extend', {
   impl: (ctx,properties,obj) =>
 		Object.assign({}, obj, jb.objFromEntries(properties.map(p=>[p.name, jb.core.tojstype(p.val(ctx),p.type)])))
 })
-component('assign', { autoGen: true, ...jb.utils.getUnresolvedProfile('extend', 'data'), [jb.core.CT]: null})
+component('assign', { autoGen: true, ...jb.utils.getUnresolvedProfile('extend', 'data')})
 
 component('extendWithIndex', {
   type: 'data',
@@ -674,7 +674,7 @@ component('startsWith', {
     {id: 'startsWith', as: 'string', mandatory: true},
     {id: 'text', defaultValue: '%%', as: 'string', byName: true}
   ],
-  impl: ({},startsWith,text) => text.indexOf(startsWith) == 0
+  impl: ({},startsWith,text) => text.startsWith(startsWith)
 })
 
 component('endsWith', {
@@ -684,7 +684,7 @@ component('endsWith', {
     {id: 'endsWith', as: 'string', mandatory: true},
     {id: 'text', defaultValue: '%%', as: 'string'}
   ],
-  impl: ({},endsWith,text) => text.indexOf(endsWith,text.length-endsWith.length) !== -1
+  impl: ({},endsWith,text) => text.endsWith(endsWith)
 })
 
 

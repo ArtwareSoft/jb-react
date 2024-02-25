@@ -92,8 +92,8 @@
 //                 '$': 'animation.start',
 //                 animation: {
 //                   '$': 'animation.moveTo',
-//                   X: {'$': 'animation.range', '$byValue': ['%$from/centerX%', '%$to/centerX%']},
-//                   Y: {'$': 'animation.range', '$byValue': ['%$from/centerY%', '%$to/centerY%']}
+//                   X: {'$': 'animation.range', '$unresolved': ['%$from/centerX%', '%$to/centerX%']},
+//                   Y: {'$': 'animation.range', '$unresolved': ['%$from/centerY%', '%$to/centerY%']}
 //                 },
 //                 duration: '1000'
 //               },
@@ -129,11 +129,11 @@
 //                 animation: [
 //                   {
 //                     '$': 'animation.scale',
-//                     scale: {'$': 'animation.range', '$byValue': ['0.1', '3']}
+//                     scale: {'$': 'animation.range', '$unresolved': ['0.1', '3']}
 //                   },
 //                   {
 //                     '$': 'animation.easing',
-//                     '$byValue': [{'$': 'animation.inOutEasing', '$byValue': ['Cubic', 'Out']}]
+//                     '$unresolved': [{'$': 'animation.inOutEasing', '$unresolved': ['Cubic', 'Out']}]
 //                   }
 //                 ],
 //                 direction: 'reverse',
@@ -166,7 +166,7 @@
 //             },
 //           {
 //               '$': 'animation.start',
-//               animation: {'$': 'animation.rotate', '$byValue': ['5turn']},
+//               animation: {'$': 'animation.rotate', '$unresolved': ['5turn']},
 //               duration: '1000'
 //             },
 //           dialog.closeDialog()
@@ -189,7 +189,7 @@
 //         {'$': 'animation.rotate', rotateY: () => [0,25]},
 //         {
 //           '$': 'animation.easing',
-//           '$byValue': [{'$': 'animation.inOutEasing', '$byValue': ['Quad', 'InOut']}]
+//           '$unresolved': [{'$': 'animation.inOutEasing', '$unresolved': ['Quad', 'InOut']}]
 //         }
 //       ],
 //       duration: '600',

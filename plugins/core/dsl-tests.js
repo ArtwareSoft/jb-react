@@ -58,14 +58,14 @@ component('dslTest.sameIdDifferentDsls', {
 component('dslTest.defaultDSLInParamType', {
   impl: dataTest({
     calculate: typeAdapter('data<myDsl>', testDslClientInMyDsl(cmp1(), cmp1(), { innerDsl: cmp1() })),
-    expectedResult: equals('myDsl,myDsl,innerDsl')
+    expectedResult: equals('noDsl,myDsl,innerDsl')
   })
 })
 
 component('dslTest.defaultInnerDSLInParamType', {
   impl: dataTest({
     calculate: typeAdapter('data<myDsl.inner>', testDslClientInInnerDsl(cmp1(), cmp1(), { innerDsl: cmp1() })),
-    expectedResult: equals('innerDsl,myDsl,innerDsl')
+    expectedResult: equals('noDsl,myDsl,innerDsl')
   })
 })
 
@@ -92,7 +92,7 @@ component('resolveDefaultValues', {
 })
 
 component('dslTest.resolveDefaultValues', {
-  impl: dataTest(typeAdapter('myType<myDsl>', resolveDefaultValues()), equals('myDsl,myDsl'))
+  impl: dataTest(typeAdapter('myType<myDsl>', resolveDefaultValues()), equals('myDsl,noDsl'))
 })
 
 component('cmpAtMyDsl', {
@@ -111,10 +111,10 @@ component('cmpAtInnerDsl', {
 component('testMultiTypes', {
   type: 'data<myDsl.inner>',
   params: [
-    {id: 'x1', type: 't<myDsl>,t<myDsl.inner>'},
-    {id: 'x2', type: 't<myDsl.inner>,t<myDsl>'},
-    {id: 'x3', type: 't<myDsl>,t'},
-    {id: 'x4', type: 't,t<myDsl>'}
+    {id: 'x1', type: 't<myDsl>', moreTypes: 't<myDsl.inner>'},
+    {id: 'x2', type: 't<myDsl.inner>', moreTypes: 't<myDsl>'},
+    {id: 'x3', type: 't<myDsl>', moreTypes: 't<>'},
+    {id: 'x4', type: 't', moreTypes: 't<myDsl>'}
   ],
   impl: '%$x1%,%$x2%,%$x3%,%$x4%'
 })
@@ -128,8 +128,8 @@ component('test.helperByName', {
 
 component('dslTest.multiTypes', {
   impl: dataTest({
-    calculate: typeAdapter('data<myDsl.inner>', testMultiTypes(cmpAtInnerDsl(), cmpAtMyDsl(), { x3: cmpAtInnerDsl(), x4: cmpAtMyDsl('50') })),
-    expectedResult: equals('innerDsl,myDsl,innerDsl,myDsl50')
+    calculate: typeAdapter('data<myDsl.inner>', testMultiTypes(cmpAtInnerDsl(), cmpAtMyDsl(), { x3: cmpAtMyDsl(), x4: cmpAtMyDsl('50') })),
+    expectedResult: equals('innerDsl,myDsl,myDsl,myDsl50')
   })
 })
 
@@ -158,14 +158,14 @@ component('dslTest.inheritTypeFromImp', {
 
 component('dslTest.jbDsl.dslType', {
   impl: dataTest({
-    calculate: () => jb.utils.getCompById('settlement<location>city')[jb.core.CT].dslType,
+    calculate: () => jb.utils.getCompById('settlement<location>city').$type,
     expectedResult: equals('settlement<location>')
   })
 })
 
 component('dslTest.jbDsl.inheritDslType', {
   impl: dataTest({
-    calculate: () => jb.utils.getCompById('state<location>israel')[jb.core.CT].dslType,
+    calculate: () => jb.utils.getCompById('state<location>israel').$type,
     expectedResult: equals('state<location>')
   })
 })

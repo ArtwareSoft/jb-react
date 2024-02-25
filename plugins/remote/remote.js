@@ -200,6 +200,7 @@ component('net.getRootextentionUri', {
 })
 
 component('net.listAll', {
+  type: 'data<>',
   impl: remote.data({
     calc: pipe(() => Object.values(jb.jbm.networkPeers || {}), remote.data(net.listSubJbms(), '%%'), aggregate(list(net.listSubJbms(), '%%'))),
     jbm: byUri(net.getRootextentionUri())

@@ -469,7 +469,7 @@ component('menuStyle.icon', {
       action: '%$menuModel/action()%',
       style: button.mdcFloatingAction('%$buttonSize%', false),
       features: (ctx,{menuModel},{buttonSize}) => 
-        ctx.run({$: 'feature.icon', ...menuModel.leaf.icon, title: menuModel.title, size: buttonSize * 24/40 })
+        ctx.run({$: 'feature.icon', ...menuModel.leaf.icon, title: menuModel.title, size: buttonSize * 24/40 }, 'feature<>')
     })
   )
 })
@@ -481,7 +481,7 @@ component('menuStyle.icon3', {
   ],
   impl: customStyle({
     template: (cmp,{icon,title,shortcut},h) => h('div.line noselect', { onmousedown: 'closeAndActivate' },[
-        h(cmp.ctx.run({$: 'control.icon', ...icon, size: 20})),
+        h(cmp.ctx.run({$: 'control.icon', ...icon, size: 20}, 'control<>')),
 				h('span.title',{},title),
 				h('span.shortcut',{},shortcut),
         h('div.mdc-line-ripple'),

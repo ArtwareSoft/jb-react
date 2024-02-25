@@ -10,7 +10,7 @@ component('wPreview', {
 component('studio.filePath', {
   impl: pipeline(
     firstSucceeding('%$studio/circuit%','%$studio/page%'),
-    ({data}) => jb.comps[data] && jb.comps[data][jb.core.CT].location.path
+    ({data}) => jb.path(jb.comps[data],'$location.path')
   )
 })
 

@@ -15,18 +15,18 @@ extension('tgpTextEditor', {
 
             const comp = res
             const type = comp.type || ''
-            const dslOfType = type.indexOf('<') != -1 && type.split(/<|>/)[1]
-            const dsl = fileDsl || plugin.dsl || dslOfType
-            comp[jb.core.CT] = { plugin, dsl }
-            const compId = jb.utils.resolveSingleComp(comp, id, dsl, { tgpModel })
-            comp[jb.core.CT].location = jb.path(tgpModel,[compId,'location'])
+            const dsl = fileDsl || plugin.dsl || type.indexOf('<') != -1 && type.split(/<|>/)[1]
+            const compId = jb.utils.resolveSingleComp(comp, id, { tgpModel, dsl })
+            comp.$location = jb.path(tgpModel,[compId,'$location'])
+            comp.$comp = true
             //jb.comps[compId] = comp // really?!!
             if (forceLocalSuggestions && jb.plugins[pluginId]) {
                 const compToRun = f(...Object.values(context))
                 jb.comps[compId] = compToRun
-                compToRun[jb.core.CT] = { plugin: jb.plugins[pluginId], dsl }
-                jb.utils.resolveSingleComp(compToRun, id, dsl)
-                comp[jb.core.CT].location = jb.path(jb.comps,[compId,'location'])
+                compToRun.$dsl = dsl
+                compToRun.$plugin = pluginId
+                jb.utils.resolveSingleComp(compToRun, id, {dsl})
+                compToRun.$location = jb.path(jb.comps,[compId,'$location'])
             }
             return tgpModel.currentComp = { comp, compId }
         } catch (e) {
@@ -108,7 +108,7 @@ extension('tgpTextEditor', {
             }
         }
         if (newVal !== undefined) { // many diffs
-            currentVal && currentVal[jb.core.CT] && currentVal[jb.core.CT].location && typeof newVal == 'object' && (newVal[jb.core.CT].location = currentVal[jb.core.CT].location)
+            currentVal && currentVal.$location && typeof newVal == 'object' && (newVal.$location = currentVal.$location)
             jb.db.writeValue(ref, newVal, ctx)
         }
     },
@@ -146,8 +146,8 @@ extension('tgpTextEditor', {
         return jb.tgpTextEditor.offsetToLineCol(text, item.from - startOffset)
     },
     filePosOfPath(tgpPath) {
-        const comp = tgpPath.split('~')[0]
-        const loc = jb.comps[comp][jb.core.CT].location
+        const compId = tgpPath.split('~')[0]
+        const loc = jb.comps[compId].$location
         const path = jb.path(jb, 'studio.host') ? jb.studio.host.locationToPath(loc.path) : loc.path
         const compLine = (+loc.line) || 0
         const { line, col } = jb.tgpTextEditor.getPosOfPath(tgpPath, 'begin')

@@ -173,10 +173,10 @@ extension('test', {
 		})
 
 		let tests = jb.entries(jb.comps)
-			 .map(([id,comp]) => [id.split('test<>').pop(),comp,id])
 			.filter(e=>typeof e[1].impl == 'object')
 			.filter(e=>e[1].type != 'test') // exclude the testers
-			.filter(e=>jb.path(e[1],[jb.core.CT,'dslType']) == 'test<>')
+			.filter(e=>e[0].startsWith('test<>'))
+			.map(([id,comp]) => [id.split('test<>').pop(),comp,id])
 			.filter(e=>!testType || e[1].impl.$ == testType)
 			.filter(e=>!specificTest || e[0] == specificTest)
 	//		.filter(e=> !e[0].match(/throw/)) // tests that throw exceptions and stop the debugger
@@ -242,7 +242,7 @@ extension('test', {
 		const baseUrl = jb.frame.location.href.split('/tests.html')[0]
 		const {fullTestId, success, duration, reason, testID} = res
 		const testComp = jb.comps[fullTestId]
-		const location = testComp[jb.core.CT].location || {}
+		const location = testComp.$location || {}
 		const sourceCode = JSON.stringify(jb.exec(typeAdapter('source-code<loader>', test({
 			filePath: () => location.path, repo: () => location.repo
 		}))))
@@ -347,8 +347,7 @@ component('tester.runTestsOfPlugin', {
   ],
   impl: async (ctx,plugin,test) => {
 	const tests = jb.entries(jb.comps)
-		.filter(([id,comp]) => jb.path(comp,[jb.core.CT,'plugin','id']) == plugin+'-tests' 
-			&& jb.path(comp,[jb.core.CT,'dslType']) == 'test' && comp.type != 'test')
+		.filter(([id,comp]) => comp.$plugin == plugin+'-tests' && jb.utils.dslType(id) == 'test' && comp.type != 'test')
 		.filter(([id,comp]) => jb.path(comp,'impl.$') != 'uiFrontEndTest').map(([id]) => id)
 	const testResults = []
 	await tests.reduce(async (pr,testID) => {

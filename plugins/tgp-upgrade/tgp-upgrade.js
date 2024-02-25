@@ -154,61 +154,61 @@ component('upgradePT', {
     {id: 'oldPT', as: 'string', mandatory: true},
     {id: 'cmpUpgrade', type: 'cmp-upgrade', mandatory: true, dynamic: true}
   ],
-  impl: async (ctx,PT,oldPT,cmpUpgrade) => {
-    const PTplugin = jb.path(jb.comps[PT],[jb.core.CT,'plugin','id'])
-    const cmpId = ctx.data
-    const comp = jb.comps[cmpId]
-    const ct = comp[jb.core.CT] || {}
-    const plugin = ct.plugin || {}
-    const dsl = ct.dsl
-    const shortPTName = PT.split('>').pop()
-    const workingId = `${cmpId}__working__`
-    const shortId = cmpId.split('>').pop()
-    const location = ct.location
-    const { path } = location
+//   impl: async (ctx,PT,oldPT,cmpUpgrade) => {
+//     const PTplugin = jb.comps[PT].$plugin
+//     const cmpId = ctx.data
+//     const comp = jb.comps[cmpId]
+//     const ct = comp[jb.core.CT] || {}
+//     const plugin = ct.plugin || {}
+//     const dsl = ct.dsl
+//     const shortPTName = PT.split('>').pop()
+//     const workingId = `${cmpId}__working__`
+//     const shortId = cmpId.split('>').pop()
+//     const location = ct.location
+//     const { path } = location
 
-    // check if relevant for upgrade 
-    if (comp.autoGen) return
-    if ( plugin.id != PTplugin && !(plugin.dependent || []).includes(PTplugin))
-        return
-    if (!findProfilesOfPT(comp.impl).length) 
-        return
+//     // check if relevant for upgrade 
+//     if (comp.autoGen) return
+//     if ( plugin.id != PTplugin && !(plugin.dependent || []).includes(PTplugin))
+//         return
+//     if (!findProfilesOfPT(comp.impl).length) 
+//         return
 
-    if (jb.core.unresolvedProfiles.length)
-        return jb.logError('upgradePT - resolved profiles in not empty', {})
-    const newComp = {...comp, [jb.core.CT]: {plugin, location}, impl: buildOrigProfileWithOldPT(comp.impl),}
-    jb.core.unresolvedProfiles.push({comp: newComp,id: workingId, dsl})
-    jb.utils.resolveLoadedProfiles()
-    const workingComp = jb.comps[workingId]
-    findProfilesOfPT(workingComp.impl).forEach(prof=>{ cmpUpgrade(ctx.setData(prof)); prof.$ = shortPTName})
+//     if (jb.core.unresolvedProfiles.length)
+//         return jb.logError('upgradePT - resolved profiles in not empty', {})
+//     const newComp = {...comp, [jb.core.CT]: {plugin, location}, impl: buildOrigProfileWithOldPT(comp.impl),}
+//     jb.core.unresolvedProfiles.push({comp: newComp,id: workingId, dsl})
+//     jb.utils.resolveLoadedProfiles()
+//     const workingComp = jb.comps[workingId]
+//     findProfilesOfPT(workingComp.impl).forEach(prof=>{ cmpUpgrade(ctx.setData(prof)); prof.$ = shortPTName})
 
-    const { originalProfCode, notFound } = await jb.upgrade.compTextFromFile(shortId, location, ctx)
-    if (notFound) return
-    const newCode = jb.utils.prettyPrintComp(cmpId, workingComp)
-    if (originalProfCode == newCode) return
-    const edit = jb.upgrade.deltaText(originalProfCode, newCode)
-    const hash = jb.upgrade.calcHash(originalProfCode)
+//     const { originalProfCode, notFound } = await jb.upgrade.compTextFromFile(shortId, location, ctx)
+//     if (notFound) return
+//     const newCode = jb.utils.prettyPrintComp(cmpId, workingComp)
+//     if (originalProfCode == newCode) return
+//     const edit = jb.upgrade.deltaText(originalProfCode, newCode)
+//     const hash = jb.upgrade.calcHash(originalProfCode)
 
-    const props = { cmpId, edit, hash, path }
-    const cmd = jb.utils.prettyPrint({$: 'upgradeCmp', ...props, cmpId: shortId}, {singleLine: true})
-    return { ...props, cmd }
+//     const props = { cmpId, edit, hash, path }
+//     const cmd = jb.utils.prettyPrint({$: 'upgradeCmp', ...props, cmpId: shortId}, {singleLine: true})
+//     return { ...props, cmd }
 
-    function buildOrigProfileWithOldPT(prof) {
-        if (prof.$)
-            return {$: oldPT && fullPTName(prof) == PT ? oldPT : prof.$, $byValue: prof[jb.core.OrigValues].map(x=>buildOrigProfileWithOldPT(x))}
-        return prof
-    }
-    function fullPTName(prof) {
-        const dslType = jb.path(prof,[jb.core.CT,'dslType']) || ''
-        return (dslType.indexOf('<') != -1) ? dslType + prof.$ : prof.$
-    }
-    function findProfilesOfPT(prof) {
-        if (!prof) return []
-        const inner = (prof[jb.core.OrigValues] || []).filter(x=>x.$)
-        const res = (prof.$ == PT || `${jb.path(prof,[jb.core.CT,'dslType'])}${prof.$}` == PT) ? [prof] : []
-        return [...res,...inner]
-    }
-  }
+//     function buildOrigProfileWithOldPT(prof) {
+//         if (prof.$)
+//             return {$: oldPT && fullPTName(prof) == PT ? oldPT : prof.$, $unresolved: prof[jb.core.OrigValues].map(x=>buildOrigProfileWithOldPT(x))}
+//         return prof
+//     }
+//     function fullPTName(prof) {
+//         const dslType = jb.path(prof,[jb.core.CT,'dslType']) || ''
+//         return (dslType.indexOf('<') != -1) ? dslType + prof.$ : prof.$
+//     }
+//     function findProfilesOfPT(prof) {
+//         if (!prof) return []
+//         const inner = (prof[jb.core.OrigValues] || []).filter(x=>x.$)
+//         const res = (prof.$ == PT || `${jb.path(prof,[jb.core.CT,'dslType'])}${prof.$}` == PT) ? [prof] : []
+//         return [...res,...inner]
+//     }
+//   }
 })
 
 component('renameProp', {

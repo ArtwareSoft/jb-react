@@ -29,7 +29,7 @@ component('suggestionsTest', {
 component('probeTest', {
   type: 'test',
   params: [
-    {id: 'circuit', type: 'data,control', dynamic: true},
+    {id: 'circuit', type: 'data', moreTypes: 'control<>', dynamic: true},
     {id: 'probePath', as: 'string'},
     {id: 'allowClosestPath', as: 'boolean', type: 'boolean'},
     {id: 'expectedVisits', as: 'number', defaultValue: -1},
@@ -55,10 +55,10 @@ component('probeTest', {
           else if (!allowClosestPath && closestPath)
             error = `no probe results at path ${probePath}`
           else if (result.visits != expectedVisits && expectedVisits != -1)
-            error = `expected visits error actual/expected: ${result.visits}/${expectedVisits}`
+            error = `expected visits error. actual: ${result.visits} expected: ${expectedVisits}`
           else if (!result[0])
             error = `no probe results at path ${probePath}`
-          const resData = callbagLog && result || result[0].out
+          const resData = callbagLog && result || jb.path(result,'0.out')
           if (!expectedOutResult(ctx.setData(resData)))
             error = `wrong out result ${JSON.stringify(resData)}`
           else if (!expectedResult(ctx.setData(result)))

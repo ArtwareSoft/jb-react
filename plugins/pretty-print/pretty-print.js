@@ -31,13 +31,14 @@ extension('utils', 'prettyPrint', {
 
   prettyPrintWithPositions(val,{colWidth=100,tabSize=2,initialPath='',noMacros,singleLine, depth, tgpModel, type} = {}) {
     const props = {}
-    const fullId = jb.path(val,[jb.core.CT,'fullId'])
-    const startOffset = fullId ? jb.utils.compHeader(fullId).length : 0
+    const startOffset = val.$comp ? jb.utils.compHeader(val.$$).length : 0
 
     if (!val || typeof val !== 'object')
       return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
     if (type)
-      val.$dslType = type
+      val.$type = type
+    if (val.$unresolved)
+      val.$comp ? jb.utils.resolveComp(val,{tgpModel}) : jb.utils.resolveProfile(val,{tgpModel})
 
     calcValueProps(val,initialPath)
     const tokens = calcTokens(initialPath, { depth: depth || 1, useSingleLine: singleLine })
@@ -177,14 +178,21 @@ extension('utils', 'prettyPrint', {
           {item: content, action: `asIs!${path}`}, {item: ')', action: `end!${path}`}]
         return props[path] = {list, len: content.length + 6 }
       }
-      const fullId = [jb.utils.compName(profile, {tgpModel})].map(x=> x=='var' ? 'variable' : x)[0]
-      const comp = fullId && jb.utils.getCompById(fullId, {tgpModel})
-      if (comp && profile.$byValue)
-        jb.utils.resolveProfile(profile,{tgpModel})
-      const id = fullId.split('>').pop()
-        
-      if (!id || !comp || ',object,var,'.indexOf(`,${id},`) != -1)
+      if (profile.$comp) {
+        const cleaned = {...profile}
+        Object.keys(cleaned).forEach(k=> (k == '$$' || k.match(/^\$.+/)) && delete cleaned[k])
+        return asIsProps(cleaned,path)
+      }
+      if (!profile.$$)
         return asIsProps(profile,path)
+      // const fullId = [jb.utils.compName(profile, {tgpModel})].map(x=> x=='var' ? 'variable' : x)[0]
+      const comp = jb.utils.getCompById(profile.$$, {tgpModel})
+      // if (comp && profile.$unresolved)
+      //   jb.utils.resolveProfile(profile,{tgpModel})
+      const id = profile.$$.split('>').pop()
+        
+      // if (!id || !comp || ',object,var,'.indexOf(`,${id},`) != -1)
+      //   return asIsProps(profile,path)
         
       const macro = jb.macro.titleToId(id)
 
@@ -212,7 +220,7 @@ extension('utils', 'prettyPrint', {
         paramsByName = params.slice(0)
       }
 
-      const varArgs = (profile.$vars || []).map(({name, val},i) => ({innerPath: `$vars~${i}`, val: {$: 'Var', name, val }}))
+      const varArgs = (profile.$vars || []).map(({name, val},i) => ({innerPath: `$vars~${i}`, val: {$$: 'var<>Var', name, val }}))
       const varsByValue = firstParamAsArray ? varArgs : []
       const varsByName = firstParamAsArray ? [] : ['$vars']
       const systemProps = [...varsByName, ...jb.macro.systemProps].flatMap(p=>profile[p] ? [{innerPath: p, val: profile[p]}] : [])

@@ -77,7 +77,7 @@ component('PPrintTest.remark.pipeline', {
 component('PPrintTest.Positions.closeArray', {
   impl: PPPosOfPath({
     profile: () => text('hey', { features: [css.color('green'), css.color('green')] }), 
-    dslType: 'control<>',
+    expectedType: 'control<>',
     path: 'end!~features',
     expectedPos: '65,65'
   })

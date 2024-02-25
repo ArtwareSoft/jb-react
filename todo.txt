@@ -2,6 +2,8 @@ rewrite rxPipe without registration
 jb.ui.f1 => $ui.f1
 prettyPrint -> formatter
 prettyPrint asIs fix - singleLine
+different dsls with different colors
+ctx type (vars & data) also inside pipeline
 
 remove CT and use
   $$: fullId (in profiles)

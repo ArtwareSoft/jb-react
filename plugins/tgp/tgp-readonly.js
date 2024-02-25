@@ -56,7 +56,7 @@ extension('tgp', 'readOnly', {
 	},
 	PTsOfType(type) {
 		const types = [...(type||'').replace(/\[\]/g,'').split(','),'any']
-		const res = types.flatMap(t=> jb.entries(jb.comps).filter(c=> !c[1].hidden && jb.tgp.isCompObjOfType(c[1],t)).map(c=>c[0]) )
+		const res = types.flatMap(t=> jb.entries(jb.comps).filter(([id,comp]) => !comp.hidden && id.startsWith(t)).map(c=>c[0]) )
 		res.sort((c1,c2) => jb.tgp.markOfComp(c2) - jb.tgp.markOfComp(c1))
 		return res
 	},
@@ -64,35 +64,16 @@ extension('tgp', 'readOnly', {
 		return +(((jb.tgp.getCompById(id).category||'').match(/common:([0-9]+)/)||[0,0])[1])
 	},
 	isCompNameOfType(name,type) {
-		if (name.indexOf('<') != -1)
-			return name.split('<')[0] === type
-		const comp = name && jb.comps[name]
-		if (comp) {
-			while (jb.comps[name] && !(jb.comps[name].type || jb.comps[name].typePattern) && jb.utils.compName(jb.comps[name].impl))
-				name = jb.utils.compName(jb.comps[name].impl);
-			return jb.comps[name] && jb.tgp.isCompObjOfType(jb.comps[name],type)
-		}
+		return name.startsWith(type)
 	},
-	isCompObjOfType(compObj,type) {
-		if (compObj.dslType === type || jb.path(compObj,[jb.core.CT,'dslType']) == type) return true
-		const compType = !compObj.type && typeof compObj.impl == 'function' ? 'data' : compObj.type || ''
-		return compType.split(',').includes(type) || (compObj.typePattern && compObj.typePattern(type))
+	paramType: path => {
+		const type = jb.path(jb.tgp.paramDef(path),'$type')
+		return type == '$asParent' ? jb.tgp.paramType(jb.tgp.parentPath(path)) : type
 	},
-
-	paramTypes: path => (jb.path(jb.tgp.paramDef(path),[jb.core.CT,'dslType']) || '').split(',')
-		.map(t=>t.split('[')[0])
-		.map(t=> t == '$asParent' ? jb.tgp.paramType(jb.tgp.parentPath(path)) : t),
-	paramType: path => jb.tgp.paramDef(path) ? jb.tgp.paramTypes(path)[0] : '',
 	PTsOfPath(path) {
 		const typeAdpter = jb.tgp.valOfPath(`${jb.tgp.parentPath(path)}~fromType`,true)
-		if (typeAdpter)
-			return jb.tgp.PTsOfType(typeAdpter)
-		const types = jb.tgp.paramTypes(path)
-		if (types.length == 1)
-			return jb.tgp.PTsOfType(types[0])
-		const pts = jb.utils.unique(types.flatMap(t=>jb.tgp.PTsOfType(t)))
-		pts.sort((c1,c2) => jb.tgp.markOfComp(c2) - jb.tgp.markOfComp(c1))
-		return pts
+		const type = typeAdpter || jb.tgp.paramType(path)
+		return jb.tgp.PTsOfType(type)
 	},
 	enumOptions: path => ((jb.tgp.paramDef(path) || {}).options ||'').split(',')
 		.map(x=> ({code: x.split(':')[0],text: x.split(':')[0]})),
@@ -216,7 +197,7 @@ extension('tgp', 'readOnly', {
 	},
 	cloneProfile(prof) {
 		if (!prof || jb.utils.isPrimitiveValue(prof) || typeof prof == 'function') return prof
-		const keys = [...Object.keys(prof),jb.core.OrigValues,jb.core.CT]
+		const keys = [...Object.keys(prof),jb.core.OrigValues]
 		return jb.objFromEntries(keys.map(k=>[k,jb.tgp.cloneProfile(prof[k])]))
 	},
 	newProfile(comp,compName, {basedOnPath, basedOnVal} = {}) {

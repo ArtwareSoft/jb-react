@@ -43,7 +43,7 @@ extension('langService', 'impl', {
         const { text, actionMap, startOffset } = jb.utils.prettyPrintWithPositions(comp, { initialPath: compId, tgpModel })
         const path = actionMap.filter(e => e.from <= inCompOffset && inCompOffset < e.to || (e.from == e.to && e.from == inCompOffset))
             .map(e => e.action.split('!').pop())[0] || compId
-        const filePos = { path: jb.path(tgpModel.comps,[compId,'location','path']) , line: cursorPos.line + compLine, col: cursorPos.col }
+        const filePos = { path: jb.path(tgpModel.comps[compId],'$location.path') , line: cursorPos.line + compLine, col: cursorPos.col }
         jb.tgpTextEditor.pathVisited({path,filePos})
         const compProps = (code != text) ? { path, formattedText: text, reformatEdits: jb.tgpTextEditor.deltaFileContent(code, text, compLine) }
             : { time: new Date().getTime(), text, path, actionMap, startOffset, plugin, tgpModel, compId, comp }
@@ -85,7 +85,7 @@ extension('langService', 'impl', {
         })
         const propStr = `${path.split('~').pop()}: `
         const propTitle = {
-            label: propStr + tgpModel.paramTypes(path).join(', '), kind: 19, path, extend: () => { },
+            label: propStr + tgpModel.paramType(path), kind: 19, path, extend: () => { },
             detail: jb.path(compProps.tgpModel.paramDef(path), 'description')
         }
         return [propTitle, ...options]
@@ -227,7 +227,7 @@ extension('langService', 'impl', {
                 return this.ptsOfTypeCache[type]
             const comps = this.comps
             const types = [...(type||'').replace(/\[\]/g,'').split(','),'any']
-            const res = types.flatMap(t=> jb.entries(comps).filter(c=> !c[1].hidden && jb.tgp.isCompObjOfType(c[1],t)).map(c=>c[0]) )
+            const res = types.flatMap(t=> jb.entries(comps).filter(([id,comp]) => !comp.hidden && id.startsWith(t)).map(c=>c[0]) )
             res.sort((c1,c2) => this.markOfComp(c2) - this.markOfComp(c1))
             return this.ptsOfTypeCache[type] = res
         }
@@ -236,21 +236,13 @@ extension('langService', 'impl', {
         }
         PTsOfPath(path) {
             const typeAdpter = this.valOfPath(`${jb.tgp.parentPath(path)}~fromType`,true)
-            if (typeAdpter)
-                return this.PTsOfType(typeAdpter)
-            const types = this.paramTypes(path)
-            if (types.length == 1)
-                return this.PTsOfType(types[0])
-            const pts = jb.utils.unique(types.flatMap(t=>this.PTsOfType(t)))
-            pts.sort((c1,c2) => this.markOfComp(c2) - this.markOfComp(c1))
-            return pts
+            const type = typeAdpter || this.paramType(path)
+            return this.PTsOfType(type)
         }
-        paramTypes(path) { 
-            return (jb.path(this.paramDef(path),'$symbolDslType') || '').split(',')
-                .map(t=>t.split('[')[0])
-                .map(t=> t == '$asParent' ? this.paramType(jb.tgp.parentPath(path)) : t)
+        paramType(path) {
+            const type = jb.path(this.paramDef(path),'$type')
+            return type == '$asParent' ? this.paramType(jb.tgp.parentPath(path)) : type
         }
-        paramType(path) { return this.paramDef(path) ? this.paramTypes(path)[0] : ''}
         enumOptions(path) { 
             return ((this.paramDef(path) || {}).options ||'').split(',').map(x=> ({code: x.split(':')[0],text: x.split(':')[0]}))
         }
@@ -302,7 +294,7 @@ extension('langService', 'api', {
         const actions = actionMap.filter(e => e.from <= inCompOffset && inCompOffset < e.to || (e.from == e.to && e.from == inCompOffset))
             .map(e => e.action).filter(e => e.indexOf('edit!') != 0 && e.indexOf('begin!') != 0 && e.indexOf('end!') != 0)
         if (actions.length == 0 && comp) 
-            return { comp: comp[jb.core.CT].fullId}
+            return { comp: comp.$$}
         if (actions.length == 0) return []
         const priorities = ['addProp']
         const sortedActions = jb.utils.unique(actions).map(action=>action.split('!')).sort((a1,a2) => priorities.indexOf(a2[0]) - priorities.indexOf(a1[0]))
@@ -312,13 +304,13 @@ extension('langService', 'api', {
     },
     async compReferences(ctx) {
         const { comp, prop } = ctx.data
-        const paths = Object.values(jb.comps).flatMap(comp=>scanForPath(comp,jb.path(comp,[jb.core.CT,'fullId']) || ''))
+        const paths = Object.values(jb.comps).flatMap(comp=>scanForPath(comp,comp.$$ || ''))
         return paths.map(path=>jb.tgpTextEditor.filePosOfPath(path))
 
         function scanForPath(profile,path) {
             if (!profile || jb.utils.isPrimitiveValue(profile) || typeof profile == 'function') return []
-            const res = prop ? (jb.path(profile,[jb.core.CT,'comp',jb.core.CT,'fullId']) == comp && profile[prop] ? [`${path}~${prop}`] : [])
-                : jb.path(profile,[jb.core.CT,'comp',jb.core.CT,'fullId']) == comp ? [path] : []
+            const res = prop ? (jb.path(jb.comps[profile.$$],'$$') == comp && profile[prop] ? [`${path}~${prop}`] : [])
+                : jb.path(jb.comps[profile.$$],'$$') == comp ? [path] : []
             return [ 
                 ...res,
                 ...Object.keys(profile).flatMap(k=>scanForPath(profile[k],`${path}~${k}`))
@@ -335,7 +327,7 @@ extension('langService', 'api', {
             return funcLocation()
         } else if (path) {
             const cmpId = tgpModel.compNameOfPath(path)
-            return jb.path(tgpModel.comps,[cmpId,'location']) || funcLocation()
+            return jb.path(tgpModel.comps[cmpId],'$location') || funcLocation()
         } else if (error) {
             jb.logError('langService definition', compProps)
         }
@@ -423,6 +415,7 @@ extension('tgpTextEditor', 'commands', {
             const opOnComp = {}
             jb.path(opOnComp,path.split('~').slice(1),op) // create op as nested object
             const newComp = jb.immutable.update(comp,opOnComp)
+            jb.utils.resolveComp(newComp,{tgpModel})
             const newRes = jb.utils.prettyPrintWithPositions(newComp, { initialPath: compId, tgpModel })
             const edit = jb.tgpTextEditor.deltaFileContent(text, newRes.text , compLine)
     

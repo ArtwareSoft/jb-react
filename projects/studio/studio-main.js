@@ -48,7 +48,7 @@ component('studio.isCircuit', {
 })
 
 component('studio.circuitPlugin', {
-  impl: ctx => (jb.path(jb.comps,[ctx.exp('%$studio/circuit%'),jb.core.CT,'plugin','id']) || '').split('-tests')[0]
+  impl: ctx => (jb.path(jb.comps,[ctx.exp('%$studio/circuit%'),'$plugin']) || '').split('-tests')[0]
 })
 
 

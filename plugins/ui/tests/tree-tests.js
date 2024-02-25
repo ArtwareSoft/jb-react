@@ -36,7 +36,7 @@ component('FETest.treeDD.betweenBranches', {
       item1: pipeline(list('%$personWithChildren/children%','%$personWithChildren/friends%'), '%name%', join(',')),
       item2: 'Bart,Maggie,Lisa,Barnie'
     }),
-    uiAction: move('%$personWithChildren/children[1]%', '%$personWithChildren/friends[0]%')
+    uiAction: action(move('%$personWithChildren/children[1]%', '%$personWithChildren/friends[0]%'))
   })
 })
 
@@ -67,10 +67,10 @@ component('FETest.treeDDAndBack', {
       item1: pipeline(list('%$personWithChildren/children%','%$personWithChildren/friends%'), '%name%', join(',')),
       item2: 'Bart,Lisa,Maggie,Barnie'
     }),
-    uiAction: uiActions(
+    uiAction: action(runActions(
       move('%$personWithChildren/children[1]%', '%$personWithChildren/friends[1]%'),
       move('%$personWithChildren/friends[1]%', '%$personWithChildren/children[1]%')
-    ),
+    )),
     useFrontEnd: true
   })
 })
@@ -82,10 +82,10 @@ component('FETest.treeDDTwice', {
       item1: pipeline(list('%$personWithChildren/children%','%$personWithChildren/friends%'), '%name%', join(',')),
       item2: 'Bart,Barnie,Maggie,Lisa'
     }),
-    uiAction: uiActions(
+    uiAction: action(runActions(
       move('%$personWithChildren/children[1]%', '%$personWithChildren/friends[1]%'),
       move('%$personWithChildren/children[1]%', '%$personWithChildren/friends[1]%')
-    ),
+    )),
     useFrontEnd: true
   })
 })
@@ -97,7 +97,7 @@ component('FETest.treeDDAfterLast', {
       item1: pipeline(list('%$personWithChildren/children%','%$personWithChildren/friends%'), '%name%', join()),
       item2: 'Bart,Maggie,Barnie,Lisa'
     }),
-    uiAction: move('%$personWithChildren/children[1]%', '%$personWithChildren/friends[1]%'),
+    uiAction: action(move('%$personWithChildren/children[1]%', '%$personWithChildren/friends[1]%')),
     useFrontEnd: true
   })
 })

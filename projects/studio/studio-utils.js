@@ -143,7 +143,7 @@ extension('studio', 'project', {
 	projectCompsAsEntries: () => {
 		const project = jb.exec('%$studio/project%')
     if (!project) return []
-		return jb.entries(jb.comps).filter(([id,comp]) => comp[jb.core.CT].location.path.indexOf(project) != -1)
+		return jb.entries(jb.comps).filter(([id,comp]) => comp.$location.path.indexOf(project) != -1)
 			.filter(([id,comp]) => !comp.internal)
 	},
 })

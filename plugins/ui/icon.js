@@ -68,10 +68,9 @@ component('feature.icon', {
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => ({ 
-    icon: jb.ui.ctrl(ctx, {$: 'features', features: [
-      {$: 'calcProp', id: 'icon' }, {$: 'calcProp', id: 'type' }, {$: 'calcProp', id: 'title' }, {$: 'calcProp', id: 'size' }, 
-      {$: 'calcProp', id: 'iconPosition', value: '%$$model/position%' }
-    ] })
-  })
+    icon: jb.ui.ctrl(ctx, typeAdapter('feature<>', 
+        features(calcProp('icon'), calcProp('type'),calcProp('title'), calcProp('size'), calcProp('iconPosition','%$$model/position%')
+      )))
+    })
 })
 

@@ -77,7 +77,7 @@ component('itemlist.keyboardSelection', {
   type: 'feature',
   macroByValue: false,
   params: [
-    {id: 'autoFocus', type: 'boolean'},
+    {id: 'autoFocus', type: 'boolean', byName: true},
     {id: 'onEnter', type: 'action', dynamic: true}
   ],
   impl: features(

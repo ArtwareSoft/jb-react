@@ -179,17 +179,15 @@ component('cmd', {
             // }
             function pluginsOfProfile(prof) {
                 if (!prof || typeof prof != 'object') return []
-                if (!prof.$)
+                if (!prof.$$)
                     return jb.utils.unique(Object.values(prof).flatMap(x=>pluginsOfProfile(x)))
-                const fullId = jb.utils.compName(prof)
-                const comp = jb.comps[fullId]
+                const comp = jb.comps[prof.$$]
                 if (!comp) {
                     debugger
-                    jb.logError(`cmd - can not find comp ${fullId} please provide sourceCode`,{ctx})
+                    jb.logError(`cmd - can not find comp ${prof.$$} please provide sourceCode`,{ctx})
                     return []
                 }
-                const plugin = (comp[jb.core.CT].plugin || {}).id || ''
-                return jb.utils.unique([plugin,...Object.values(prof).flatMap(x=>pluginsOfProfile(x))]).filter(x=>x)
+                return jb.utils.unique([comp.$plugin,...Object.values(prof).flatMap(x=>pluginsOfProfile(x))]).filter(x=>x)
             }
         },
         createCallbagSource: () => jb.logError('cmd.jbm - callbag is not supported'),

@@ -6,7 +6,7 @@ Object.assign(jb, {
 extension('macro', {
     initExtension() {
         return { 
-            proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro'), systemProps: ['remark', 'data', '$debug', '$disabled', '$log' ] 
+            proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro'), systemProps: ['remark', 'data', '$debug', '$disabled', '$log', 'ctx' ] 
         }
     },
     typeRules: [{ isOf: ['data<>','boolean<>'] }],
@@ -16,14 +16,14 @@ extension('macro', {
         apply: function (target, thisArg, allArgs) {
             const actualId = id[0] == '_' ? id.slice(1) : id
             const { args, system } = jb.macro.splitSystemArgs(allArgs)
-            return { $: actualId, $byValue: args, ...system, ...(id[0] == '_' ? {$disabled:true} : {} ) }
+            return { $: actualId, $unresolved: args, ...system, ...(id[0] == '_' ? {$disabled:true} : {} ) }
         }
     }),   
     getInnerMacro(ns, innerId) {
         return (...allArgs) => {
             const { args, system } = jb.macro.splitSystemArgs(allArgs)
             return { $: `${ns}.${innerId}`, 
-                ...(args.length == 0 ? {} : { $byValue: args }),
+                ...(args.length == 0 ? {} : { $unresolved: args }),
                 ...system
             }
         }
@@ -50,7 +50,7 @@ extension('macro', {
         if (args.length == 0)
             return { $: cmpId }        
         if (!comp)
-            return { $: cmpId, $byValue: args }
+            return { $: cmpId, $unresolved: args }
         if (cmpId == 'asIs') return { $: 'asIs', $asIs: args[0] }
         const lastArg = args[args.length-1]
         const lastArgIsByName = lastArg && typeof lastArg == 'object' && !Array.isArray(lastArg) && !lastArg.$
@@ -85,7 +85,7 @@ extension('macro', {
 })
 
 component('Var', {
-  type: 'any',
+  type: 'var',
   isSystem: true,
   params: [
     {id: 'name', as: 'string', mandatory: true},
@@ -94,16 +94,16 @@ component('Var', {
   macro: (result, self) => {
     result.$vars = result.$vars || []
     result.$vars.push(self)
-  }
+  },
 })
 
 component('remark', {
   type: 'system',
   isSystem: true,
   params: [
-    {id: 'remark', as: 'string', mandatory: true}
+    {id: 'text', as: 'string', mandatory: true}
   ],
-  macro: (result, self) => Object.assign(result,{ $remark: self.remark || self.$byValue[0] })
+  macro: (result, self) => Object.assign(result,{ $remark: self.$unresolved[0] })
 })
 
 component('unknownCmp', {
@@ -112,7 +112,7 @@ component('unknownCmp', {
   params: [
     {id: 'id', as: 'string', mandatory: true}
   ],
-  macro: (result, self) => jb.comps[self.$byValue[0]] = { impl: ctx => jb.logError(`comp ${self.$byValue[0]} is not defined`,{ctx})}
+  macro: (result, self) => jb.comps[self.$unresolved[0]] = { impl: ctx => jb.logError(`comp ${self.$unresolved[0]} is not defined`,{ctx})}
 })
 
 component('runCtx', {
@@ -125,18 +125,39 @@ component('runCtx', {
   ]
 })
 
+component('Var', {
+  type: 'ctx',
+  params: [
+    {id: 'name', as: 'string', mandatory: true},
+    {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: '%%'}
+  ],
+})
+
+component('vars', {
+  type: 'ctx',
+  params: [
+    {id: 'name', as: 'string', mandatory: true},
+    {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: '%%'}
+  ],
+})
+
+component('data', {
+  type: 'ctx',
+  params: [
+    {id: 'name', as: 'string', mandatory: true},
+    {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: '%%'}
+  ],
+})
+
 extension('syntaxConverter', 'onAddComponent', {
   initExtension() { 
     jb.core.onAddComponent.push({ 
-//        match:(id,comp) => (jb.path(comp[jb.core.CT].plugin,'files') || []).find(x=>x.path.match(/amta/)),
-        //match:(id,comp) => (jb.path(comp[jb.core.CT].plugin,'files') || []).find(x=>x.path.match(/tests/)),
-        match:(id,comp) => false,
+      match:(id,comp) => false,
       register: (_id,_comp,dsl) => {
         //if (_id == 'amta.aa') debugger
         const comp = jb.syntaxConverter.fixProfile(_comp,_comp,_id)
         const id = jb.macro.titleToId(_id)
         jb.core.unresolvedProfiles.push({id,comp,dsl})
-        comp[jb.core.CT] = _comp[jb.core.CT]
         return comp
       }
     })    
@@ -145,14 +166,14 @@ extension('syntaxConverter', 'onAddComponent', {
     if (profile === null) return
     if (!profile || jb.utils.isPrimitiveValue(profile) || typeof profile == 'function') return profile
     // if (profile.$ == 'uiTest') {
-    //     if ((jb.path(profile.$byValue[0].userInput,'$') || '').indexOf('userInput.') == 0) {
-    //         profile.$byValue[0].uiAction = profile.$byValue[0].userInput
-    //         profile.$byValue[0].uiAction.$ = profile.$byValue[0].uiAction.$.slice('userInput.'.length)
+    //     if ((jb.path(profile.$unresolved[0].userInput,'$') || '').indexOf('userInput.') == 0) {
+    //         profile.$unresolved[0].uiAction = profile.$unresolved[0].userInput
+    //         profile.$unresolved[0].uiAction.$ = profile.$unresolved[0].uiAction.$.slice('userInput.'.length)
     //     }
     // }
-    // if (profile.$ == 'uiFrontEndTest' && profile.$byValue[0].action) {
-    //     profile.$byValue[0].uiAction = profile.$byValue[0].action
-    //     delete profile.$byValue[0].action
+    // if (profile.$ == 'uiFrontEndTest' && profile.$unresolved[0].action) {
+    //     profile.$unresolved[0].uiAction = profile.$unresolved[0].action
+    //     delete profile.$unresolved[0].action
     // }
 
     // ;['pipeline','list','firstSucceeding','concat','and','or'].forEach(sugar => {

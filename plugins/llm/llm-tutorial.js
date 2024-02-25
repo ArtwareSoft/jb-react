@@ -68,9 +68,7 @@ component('featuresUsage', {
     function calc(comp,sampleIndex) {
       if (Array.isArray(comp))
         return comp.forEach(child=>calc(child,sampleIndex))
-      const ct = comp[jb.core.CT]
-      if (!ct) return
-      const id = ct.dslType + comp.$
+      const id = comp.$$
       const compFeature = features[id]
       if (compFeature) {
         compFeature.usage.push({sampleIndex,val: comp})
@@ -87,9 +85,9 @@ component('features', {
   impl: (ctx) => {
     const plugin = (ctx.vars.plugin || 'common')
 
-		const comps = jb.entries(jb.comps).map(([k,c]) => [k,c[jb.core.CT]])
+		const comps = jb.entries(jb.comps)
       .filter(([id]) => !id.match(/any<>/) && !id.match(/math\./))
-			.filter(([k,ct]) => ct && ct.fullId && ct.plugin.id == plugin).map(([id]) => [id, { id, usage: [], params: calcParams(id)}])
+			.filter(([k,comp]) => comp.$plugin == plugin).map(([id]) => [id, { id, usage: [], params: calcParams(id)}])
 
     return jb.objFromEntries(comps)
     function calcParams(id) {

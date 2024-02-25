@@ -54,7 +54,7 @@ extension('ui', 'frontend', {
                     jb.log(`frontend uiComp start flow ${jb.ui.rxPipeName(_flow)}`,{cmp: {...this}, srcCtx, ...feMEthod.frontEndMethod, el, ctxToUse})
                 else 
                     jb.log(`frontend uiComp run method ${method}`,{cmp: {...this}, srcCtx , ...feMEthod.frontEndMethod,el,ctxToUse})
-                const res = ctxToUse.run(feMEthod.frontEndMethod.action)
+                const res = ctxToUse.run(feMEthod.frontEndMethod.action, jb.utils.dslType(profile.$$))
                 if (_prop)
                     jb.log(`frontend prop ${_prop} value`,{res, cmp: {...this}})
                 if (_flow && res) this.flows.push(res)

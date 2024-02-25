@@ -296,7 +296,7 @@ component('map', {
 component('mapPromise', {
   type: 'operator',
   params: [
-    {id: 'func', type: 'action<>,data<>', dynamic: true, mandatory: true}
+    {id: 'func', type: 'data<>', dynamic: true, mandatory: true}
   ],
   impl: (ctx,func) => jb.callbag.mapPromise(ctx2 => Promise.resolve(func(ctx2)).then(data => ({vars: ctx2.vars || {}, data}))
     .catch(err => ({vars: {...ctx2.vars, err }, data: err})) )

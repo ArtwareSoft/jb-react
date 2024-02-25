@@ -5,7 +5,7 @@ extension('studio', 'path', {
 	  return { previewjb: jb}
   },
   execInStudio: (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.core.jbCtx().run(...args),
-  isStudioCmp: id => (jb.path(jb.comps,[id,jb.core.CT,'location','path']) || '').match(/studio|testers-ui|probe|data-browse/),
+  isStudioCmp: id => (jb.path(jb.comps[id],['$location','path']) || '').match(/studio|testers-ui|probe|data-browse/),
 })
 
 component('jbm.vDebugger', {

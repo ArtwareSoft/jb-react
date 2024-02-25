@@ -67,26 +67,24 @@ Object.assign(jb, {
       console.log(e)
     }      
   },
-  component(id,comp,{plugin, fileDsl, pluginId} = {}) {
+  component(id,comp,{plugin, fileDsl} = {}) {
     if (!jb.core.CT) jb.initializeLibs(['core']) // this line must be first
-    const CT = jb.core.CT
-    plugin = plugin || jb.plugins[pluginId] || {}
-    comp[CT] = comp[CT] || { plugin }
-    const dsl = fileDsl || plugin.dsl
-
-    const location = jb.calcSourceLocation(new Error().stack.split(/\r|\n/), plugin)
-    comp[CT].location = comp.location || location
-    delete comp.location
+    plugin = plugin || jb.plugins[comp.$plugin] || {}
+    comp.$comp = true
+    comp.$fileDsl = comp.$fileDsl || fileDsl || ''
+    comp.$plugin = comp.$plugin || plugin.id || ''
+    comp.$dsl = comp.$dsl || fileDsl || plugin.dsl || ''
+    comp.$location = comp.$location || jb.calcSourceLocation(new Error().stack.split(/\r|\n/), plugin) || ''
 
     if (comp.type == 'any')
       jb.core.genericCompIds[id] = true
 
-    comp.impl = comp.impl || (({params}) => params)
+    comp.impl = comp.impl || (({params}) => params) // maybe we need $impl ...
     const h = jb.core.onAddComponent.find(x=>x.match(id,comp))
     if (h && h.register)
       return h.register(id,comp)
 
-    jb.core.unresolvedProfiles.push({id,comp,dsl})
+    jb.core.unresolvedProfiles.push({id,comp})
     if (comp.isSystem || comp.isMacro)
       jb.comps[id] = comp
     return comp
@@ -136,8 +134,7 @@ extension('core', {
       if (profile == null || (typeof profile == 'object' && profile.$disabled))
         return jb.core.castToParam(null,parentParam)
       //if (ctx.path == 'test<>dataTest.join~impl~calculate') debugger
-      if (profile.data && ! jb.path(settings, 'dataUsed'))
-        if ((jb.path(profile[jb.core.CT],'comp.params') || []).find(p=>p.id == 'data') == null) {
+      if (profile.data && ! jb.path(settings, 'dataUsed')) {
           const data = ctx.setData(ctx.runInner(profile.data, {}, 'data'))
           // if (jb.utils.isPromise(data))
           //   return data.then(_data=>jb.core.doRun(_data,parentParam,{...(settings||{}), dataUsed: true}))
@@ -267,13 +264,13 @@ extension('core', {
         return { type: 'runActions' }
       }
     }
-    const comp_name = jb.utils.compName(profile,{parentParam})
+    const comp_name = profile.$$
     if (!comp_name)
       return { type: 'asIs' }
-    if (profile.$byValue)
+    if (profile.$unresolved)
       jb.logError(`core: prepare - unresolved profile at ${ctx.path}`, {profile, ctx})
 
-    const comp = jb.path(profile[jb.core.CT],'comp')
+    const comp = jb.comps[comp_name]
     if (!comp && comp_name) { jb.logError('component ' + comp_name + ' is not defined', {ctx}); return { type:'null' } }
     if (comp.impl == null) { jb.logError('component ' + comp_name + ' has no implementation', {ctx}); return { type:'null' } }
 
@@ -314,7 +311,8 @@ extension('core', {
       }
     }
     run(profile,parentParam) {
-      return jb.core.run(new jb.core.jbCtx(this,{ profile: jb.utils.resolveProfile(profile, {expectedType: jb.path(parentParam,'type')}), comp: profile.$ , path: ''}), parentParam)
+      const expectedType = typeof parentParam == 'string' ? parentParam : jb.path(parentParam,'$type') || jb.path(parentParam,'type')
+      return jb.core.run(new jb.core.jbCtx(this,{ profile: jb.utils.resolveProfile(profile, {expectedType}), comp: profile.$ , path: ''}), parentParam)
     }
     exp(exp,jstype) { return jb.expression.calc(exp, this, {as: jstype}) }
     setVars(vars) { return new jb.core.jbCtx(this,{vars: vars}) }

@@ -167,8 +167,9 @@ extension('probe', 'main', {
             const obj = this.probe[_path][0].out
             const compName = jb.tgp.compNameOfPath(breakingPath)
             if (jb.utils.getCompById(`${compName}.probe`,{silent:true})) {
-                parentCtx.profile[breakingProp][jb.core.CT] = { ...parentCtx.profile[breakingProp][jb.core.CT], comp: null }
-                return jb.probe.resolve(parentCtx.runInner(jb.utils.resolveProfile({...parentCtx.profile[breakingProp], $: `${compName}.probe`}),
+                parentCtx.profile[breakingProp].$$ = null //[jb.core.CT] = { ...parentCtx.profile[breakingProp][jb.core.CT], comp: null }
+                const fixedProf = {...parentCtx.profile[breakingProp], $: `${compName}.probe`}
+                return jb.probe.resolve(parentCtx.runInner(jb.utils.resolveProfile(fixedProf),
                     jb.tgp.paramDef(breakingPath),breakingProp))
                         .then(_=>this.handleGaps(_path))
             }

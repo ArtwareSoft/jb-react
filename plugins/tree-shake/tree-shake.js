@@ -66,17 +66,17 @@ extension('treeShake', {
     },
     dependentOnObj(obj, onlyMissing) {
         //if (obj[jb.core.OnlyData]) return []
-        const isRemote = 'source.remote:rx,remote.operator:rx,remote.action:action,remote.data:data' // code run in remote is not dependent
+        const isRemote = 'source.remote:rx,remote.operator:rx,remote.action:action,remote.data:calc' // code run in remote is not dependent
         const vals = Object.keys(obj).filter(k=>!obj.$ || isRemote.indexOf(`${obj.$}:${k}`) == -1).map(k=>obj[k])
-        const dslType = obj.$ && (obj.$.indexOf('<') != -1 ? '' 
-            : jb.core.genericCompIds[obj.$] ? 'any<>' 
-            : (obj.$dslType || jb.path(obj,[jb.core.CT,'dslType']) || ''))
-        if (obj.$ && obj.$ != 'Var' && obj.$.indexOf('<') == -1 && obj.$ != 'runCtx' && !dslType)
-            debugger
-            //jb.logError('treeshake comp without a type', {obj})
-        const fullId = obj.$ && (jb.path(obj,[jb.core.CT,'comp',jb.core.CT,'fullId']) || `${dslType}${obj.$}`)
+        // const dslType = obj.$ && (obj.$.indexOf('<') != -1 ? '' 
+        //     : jb.core.genericCompIds[obj.$] ? 'any<>' 
+        //     : (obj.$dslType || jb.path(obj,[jb.core.CT,'dslType']) || ''))
+        // if (obj.$ && obj.$ != 'Var' && obj.$.indexOf('<') == -1 && obj.$ != 'runCtx' && !dslType)
+        //     debugger
+        //     //jb.logError('treeshake comp without a type', {obj})
+        // const fullId = obj.$$ && (jb.path(jb.comps[obj.$$],'$$') || `${dslType}${obj.$}`)
         return [
-            ...(obj.$ ? [fullId] : []),
+            ...(obj.$$ ? [obj.$$] : []),
             ...vals.filter(x=> x && typeof x == 'object').flatMap(x => jb.treeShake.dependentOnObj(x, onlyMissing)),
             ...vals.filter(x=> x && typeof x == 'function').flatMap(x => jb.treeShake.dependentOnFunc(x, onlyMissing)),
             ...vals.filter(x=> x && typeof x == 'string' && x.indexOf('%$') != -1).flatMap(x => jb.treeShake.dependentResources(x, onlyMissing)),
@@ -139,9 +139,9 @@ extension('treeShake', {
         }).join('\n\n')
 
         const compsCode = cmps.map(cmpId =>jb.treeShake.compToStr(cmpId)).join('\n\n')
-        const plugins = jb.utils.unique([...cmps.map(cmpId => jb.comps[cmpId][jb.core.CT].plugin),
-            ...extensions.map(([lib,ext]) => jb[lib].__extensions[ext].plugin)
-            ],x=>x.id).map(({id,dsl})=>({id,dsl}))
+        const plugins = jb.utils.unique([...cmps.map(cmpId => jb.comps[cmpId].$plugin),
+            ...extensions.map(([lib,ext]) => jb[lib].__extensions[ext].plugin.id)
+            ]).map(id =>({id, dsl: jb.plugins[id].dsl}))
             //jb.utils.prettyPrintComp(cmpId,jb.comps[cmpId],{noMacros: true})).join('\n\n')
         const libs = jb.utils.unique(libsFuncs.map(x=>x.lib)).map(l=>"'"+l+"'").join(',')
         return [
@@ -153,16 +153,13 @@ extension('treeShake', {
         ].join(';\n')
     },
     compToStr(cmpId) {
-        const ct = jb.comps[cmpId][jb.core.CT]
-        const compWithCTData = { ...jb.comps[cmpId], location : ct.location, $dslType: ct.dslType, dsl: ct.dsl}
-        const content = JSON.stringify(compWithCTData,
+        //const comp = jb.comps[cmpId]
+        //const compWithCTData = { ...jb.comps[cmpId], $location : comp.$location, $plugin: comp.$plugin, $fileDsl: comp.$fileDsl, $dsl: comp.$dsl }
+        const content = JSON.stringify(jb.comps[cmpId],
             (k,v) => typeof v === 'function' ? '@@FUNC'+v.toString()+'FUNC@@' : v,2)
                 .replace(/"@@FUNC([^@]+)FUNC@@"/g, (_,str) => str.replace(/\\\\n/g,'@@__N').replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n').replace(/\\t/g,'')
                     .replace(/@@__N/g,'\\\\n').replace(/\\\\/g,'\\') )
-        const fileDsl = ct.dsl ? `, fileDsl: '${ct.dsl||''}'` : ''
-        const pluginId = ct.plugin.id ? `pluginId: '${ct.plugin.id}'` : ''
-        const settings = (fileDsl || pluginId) ? `, { ${pluginId}${fileDsl} }` : ''
-        return `jb.component('${cmpId.split('>').pop()}', ${content}${settings})`
+        return `jb.component('${cmpId.split('>').pop()}', ${content})`
     },
     async bringMissingCode(obj) {
         const missing = getMissingProfiles(obj)

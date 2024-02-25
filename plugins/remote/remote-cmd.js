@@ -1,10 +1,9 @@
-
 component('remote.cmd', {
     type: 'data<>',
     moreTypes: 'action<>',
   description: 'calc a script with jb.js',
   params: [
-    {id: 'main', type: 'data<>,action<>', dynamic: true, description: 'e.g pipeline("hello","%% -- %$v1%")'},
+    {id: 'main', type: 'data<>', dynamic: true, moreTypes: 'action<>', description: 'e.g pipeline("hello","%% -- %$v1%")'},
     {id: 'wrap', as: 'string', description: 'e.g prune(MAIN)'},
     {id: 'context', description: 'e.g {v1: "xx", param1: prof1("yy") }'},
     {id: 'sourceCode', type: 'source-code<loader>', mandatory: true},

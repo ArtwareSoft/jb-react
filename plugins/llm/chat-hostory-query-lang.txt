@@ -1,5 +1,7 @@
-I would like to build a tutorial for a data query language I build. My target audience is developers.
-please explain all the functions and components and relations between them
+You are the best javascript developer, great architect, knowledge in software engineering and domain specific langauges DSLs.
+You will help me build a tutorial for a data query language I built based on javascript. My target audience is developers.
+
+We all love examples:
 
 component('dataTest.join', {
   impl: dataTest(pipeline(list(1,2), '%%', join()), equals('1,2'))
@@ -61,27 +63,6 @@ component('capitalize', {
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
   impl: ({},text) => text.charAt(0).toUpperCase() + text.slice(1)
-})
-
-component('split', {
-  description: 'breaks string using separator',
-  type: 'data',
-  params: [
-    {id: 'separator', as: 'string', defaultValue: ',', description: 'E.g., "," or "<a>"'},
-    {id: 'text', as: 'string', defaultValue: '%%', byName: true},
-    {id: 'part', options: 'all,first,second,last,but first,but last', defaultValue: 'all'}
-  ],
-  impl: ({},separator,text,part) => {
-		const out = text.split(separator.replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n'));
-		switch (part) {
-			case 'first': return out[0];
-			case 'second': return out[1];
-			case 'last': return out.pop();
-			case 'but first': return out.slice(1);
-			case 'but last': return out.slice(0,-1);
-			default: return out;
-		}
-	}
 })
 
 here are the tests, please notice the shorten form.
@@ -141,7 +122,6 @@ Your data query language adopts a functional approach, where data is transformed
 By using a component-based architecture, you can easily extend the language with new components to support additional operations. Additionally, the use of dataTest components for testing ensures that each component behaves as expected, making the language more robust and reliable for developers.
 
 User
-I would like to build a tutorial for a data query language I build. My target audience is developers.
 The query language adopts a functional approach, where data is transformed through a series of operations (components). Each component is designed to perform a specific task and can be combined with other components using the pipeline function to create more complex data transformations. This modular design allows for flexibility and reusability of components.
 By using a component-based architecture, you can easily extend the language with new components to support additional operations. Additionally, the use of dataTest components for testing ensures that each component behaves as expected, making the language more robust and reliable for developers.
 
@@ -178,36 +158,7 @@ component('dataTest.selectAndFilter', {
   })
 })
 
-----
-
-here is example of implemtations of the "toUpperCase" and "split" components. please explain in details the implementation and the usage
-
-component('toUpperCase', {
-  params: [
-    {id: 'text', as: 'string', defaultValue: '%%'}
-  ],
-  impl: ({},text) => text.toUpperCase()
-})
-
-component('join', {
-  params: [
-    {id: 'separator', as: 'string', defaultValue: ',', mandatory: true},
-    {id: 'prefix', as: 'string'},
-    {id: 'suffix', as: 'string'},
-    {id: 'items', as: 'array', defaultValue: '%%'},
-  ],
-  type: 'aggregator',
-  impl: (ctx,separator,prefix,suffix,items) => {
-		return prefix + items.map(itemToText).join(separator) + suffix
-	}
-})
-
-component('capitalize', {
-  params: [
-    {id: 'text', as: 'string', defaultValue: '%%'}
-  ],
-  impl: ({},text) => text.charAt(0).toUpperCase() + text.slice(1)
-})
+here are the source code and test for split, please explain
 
 component('split', {
   description: 'breaks string using separator',
@@ -228,12 +179,6 @@ component('split', {
 			default: return out;
 		}
 	}
-})
-
-here are the tests, please notice the shorten form.
-
-component('dataTest.toUpperCase', {
-  impl: dataTest(pipeline('%$personWithChildren/children%', '%name%', toUpperCase(), join()), equals('BART,LISA,MAGGIE'))
 })
 
 component('dataTest.split', {
