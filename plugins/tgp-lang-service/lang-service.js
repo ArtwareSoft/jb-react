@@ -76,7 +76,7 @@ extension('langService', 'impl', {
     newPTCompletions(path, opKind, compProps) { // opKind: set,insert,append,prepend
         const tgpModel = compProps.tgpModel
         const options = compProps.tgpModel.PTsOfPath(path).filter(x => !x.match(/^dataResource\./)).map(compName => {
-            const comp = jb.utils.getCompById(compName,{tgpModel})
+            const comp = tgpModel.compById(compName)
             return {
                 label: compName.split('>').pop(), kind: 2, compName, opKind, path, compProps,
                 detail: [comp.description, compName.indexOf('>') != -1 && compName.split('>')[0] + '>'].filter(x => x).join(' '),
@@ -94,7 +94,7 @@ extension('langService', 'impl', {
             const index = opKind == 'append' ? -1 : opKind == 'insert' ? (+path.split('~').pop() + 1) : opKind == 'prepend' && 0
             const basePath = opKind == 'insert' ? path.split('~').slice(0, -1).join('~') : path
             const basedOnVal = opKind == 'set' && tgpModel.valOfPath(path)
-            const toAdd = jb.tgp.newProfile(tgpModel.getCompById(compName), compName, {basedOnVal})
+            const toAdd = jb.tgp.newProfile(tgpModel.compById(compName), compName, {basedOnVal})
             const result = opKind == 'set' ? jb.langService.setOp(path, toAdd, ctx) : addArrayItemOp(basePath, { toAdd, index, ctx })
             return result
         }
@@ -196,7 +196,7 @@ extension('langService', 'impl', {
             this.currentComp = {}
         }
         valOfPath(path, silent){ 
-            const res = jb.path(this.getCompById(path.split('~')[0], silent),path.split('~').slice(1))
+            const res = jb.path(this.compById(path.split('~')[0], silent),path.split('~').slice(1))
             return res && res[jb.macro.isMacro] ? res() : res
         }
         compName(prof) { return jb.utils.compName(prof, {tgpModel: this}) }
@@ -210,18 +210,16 @@ extension('langService', 'impl', {
         }
         paramDef(path) {
           if (!jb.tgp.parentPath(path))
-              return this.getCompById(path)
+              return this.compById(path)
           if (!isNaN(Number(path.split('~').pop()))) // array elements
               path = jb.tgp.parentPath(path)
           const comp = this.compOfPath(jb.tgp.parentPath(path))
           const paramName = path.split('~').pop()
           return jb.utils.compParams(comp).find(p=>p.id==paramName)
         }
-        compOfPath(path) { return this.getCompById(this.compNameOfPath(path)) }
+        compOfPath(path) { return this.compById(this.compNameOfPath(path)) }
         paramsOfPath(path) { return jb.utils.compParams(this.compOfPath(path)) }
-        getCompById(id, silent) { 
-            return this.currentComp.compId == id ? this.currentComp.comp : jb.utils.getCompById(id, {tgpModel: this, silent}) 
-        }
+        compById(id) { return this.currentComp.compId == id ? this.currentComp.comp : this.comps[id] }
         PTsOfType(type) {
             if (this.ptsOfTypeCache[type])
                 return this.ptsOfTypeCache[type]
@@ -232,7 +230,7 @@ extension('langService', 'impl', {
             return this.ptsOfTypeCache[type] = res
         }
         markOfComp(id) {
-            return +(((this.getCompById(id).category||'').match(/common:([0-9]+)/)||[0,0])[1])
+            return +(((this.compById(id).category||'').match(/common:([0-9]+)/)||[0,0])[1])
         }
         PTsOfPath(path) {
             const typeAdpter = this.valOfPath(`${jb.tgp.parentPath(path)}~fromType`,true)

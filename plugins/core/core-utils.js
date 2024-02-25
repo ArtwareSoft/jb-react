@@ -139,7 +139,7 @@ extension('utils', 'core', {
       const dslType = typeFromAdapter || typeFromParent || fromFullId
       if (dslType && dslType.indexOf('<') == -1) debugger
       //if (prof.$$ == 'action<>action.focusOnCmp') debugger
-      const comp = jb.utils.getCompById(prof.$$ || prof.$, { dslType, parent, parentProp, tgpModel, topComp, parentType, remoteCode })
+      const comp = jb.utils.resolveCompWithId(prof.$$ || prof.$, { dslType, parent, parentProp, tgpModel, topComp, parentType, remoteCode })
       if (comp) {
         prof.$$ = comp.$$
         // if (prof.$$.startsWith('any<>'))
@@ -166,7 +166,7 @@ extension('utils', 'core', {
       }
       return prof
     },
-    getCompById(id, {dslType, silent, tgpModel, parentProp, parent, topComp, parentType, remoteCode} = {}) {
+    resolveCompWithId(id, {dslType, silent, tgpModel, parentProp, parent, topComp, parentType, remoteCode, dsl} = {}) {
       if (!id) return
       const comps = tgpModel && tgpModel.comps || jb.comps
       //if (id == 'css' && parent && parent.$ == 'text') debugger
@@ -186,17 +186,26 @@ extension('utils', 'core', {
       const byFullId = allTypes.map(t=>comps[t+id]).find(x=>x)
       if (byFullId)
         return byFullId
-      // if (!silent)
-      //   jb.logError(`utils getComp - can not find comp for id ${id}`,{id, allTypes, dslType, topComp})
-      //const _otherTypeInPlugin = otherTypeInPlugin()
       const shortId = id.split('>').pop()
-      const byUnkownType = Object.values(comps).find(c=> (c.$$||'').split('>').pop() == shortId )
+      const plugin = jb.path(topComp,'plugin')
+      const cmps = Object.values(comps).filter(x=>x.$$)
+      const bySamePlugin = plugin && cmps.find(c=> jb.path(c,'plugin') == plugin && c.$$.split('>').pop() == shortId )
+      if (bySamePlugin)
+        return bySamePlugin
+      // const _dsl = `<${dsl}>`
+      // const bySameDsl = dsl && cmps.find(c=> c.$$.indexOf(_dsl) != -1 && c.$$.split('>').pop() == shortId )
+      // if (bySameDsl)
+      //   return bySameDsl
+      const byNoDsl = cmps.find(c=> c.$$.indexOf('<>') != -1 && c.$$.split('>').pop() == shortId )
+      if (byNoDsl)
+         return byNoDsl
+    
+      //const byUnkownType = cmps.find(c=> c.$$.split('>').pop() == shortId )
       //_otherTypeInPlugin || ((!dslType || dslType == '$asParent<>') && (lookForUnknownTypeInDsl(dsl) || lookForUnknownTypeInDsl('')))
-      if (!byUnkownType && id && !silent && !remoteCode) {
+      if (id && !silent && !remoteCode) {
         debugger
-        jb.logError(`utils getComp - can not find comp for id ${id}`,{id, topComp, parent, parentType, allTypes, dslType, dsl})
+        jb.logError(`utils getComp - can not find comp for id ${id}`,{id, topComp, parent, parentType, allTypes, dslType})
       }
-      return byUnkownType
 
       // function otherTypeInPlugin() {
       //   const plugin = jb.path(topComp,'plugin')

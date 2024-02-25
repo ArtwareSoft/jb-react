@@ -3,7 +3,7 @@ extension('tgp', 'readOnly', {
 	parentPath: path => path.split('~').slice(0,-1).join('~'),
 	parents: path => path.split('~').reduce((acc,last,i) => acc.concat(i ? [acc[acc.length-1],last].join('~') : last),[]).reverse(),
 	valOfPath: path => { 
-		const res = jb.path(jb.utils.getCompById(path.split('~')[0]),path.split('~').slice(1))
+		const res = jb.path(jb.comps[path.split('~')[0]],path.split('~').slice(1))
         if (res && res[jb.macro.isMacro])
         	return res()
 		return res
@@ -20,7 +20,7 @@ extension('tgp', 'readOnly', {
 	shortCompNameOfPath: (path,silent) => (jb.tgp.compNameOfPath(path,silent) || '').split('>').pop(),
 	paramDef: path => {
 	  if (!jb.tgp.parentPath(path))
-		  return jb.tgp.getCompById(path)
+		  return jb.tgp.compById(path)
 	  if (!isNaN(Number(path.split('~').pop()))) // array elements
 		  path = jb.tgp.parentPath(path)
 	  const comp = jb.tgp.compOfPath(jb.tgp.parentPath(path),true)
@@ -30,10 +30,10 @@ extension('tgp', 'readOnly', {
 		  return params[0]
 	  return params.find(p=>p.id==paramName)
 	},
-	compOfPath: (path,silent) => jb.tgp.getCompById(jb.tgp.compNameOfPath(path,silent)),
+	compOfPath: (path,silent) => jb.tgp.compById(jb.tgp.compNameOfPath(path,silent)),
 	paramsOfPath: (path,silent) => jb.utils.compParams(jb.tgp.compOfPath(path,silent)),
-	getCompById: id => jb.utils.getCompById(id),
-	compAsStr: id => jb.utils.prettyPrintComp(id,jb.tgp.getCompById(id)),
+	compById: id => jb.comps[id],
+	compAsStr: id => jb.utils.prettyPrintComp(id,jb.tgp.compById(id)),
 	valSummary: val => {
 		if (val && typeof val == 'object')
 			return val.id || val.name
@@ -61,7 +61,7 @@ extension('tgp', 'readOnly', {
 		return res
 	},
 	markOfComp(id) {
-		return +(((jb.tgp.getCompById(id).category||'').match(/common:([0-9]+)/)||[0,0])[1])
+		return +(((jb.tgp.compById(id).category||'').match(/common:([0-9]+)/)||[0,0])[1])
 	},
 	isCompNameOfType(name,type) {
 		return name.startsWith(type)

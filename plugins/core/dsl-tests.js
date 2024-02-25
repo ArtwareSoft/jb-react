@@ -140,14 +140,14 @@ component('dslTest.resolveByName', {
 // macro tests
 component('macroTest.dsl.simple', {
   impl: dataTest({
-    calculate: () => jb.utils.prettyPrintComp('cmpAtMyDsl',jb.utils.getCompById('t<myDsl>cmpAtMyDsl')),
+    calculate: () => jb.utils.prettyPrintComp('cmpAtMyDsl',jb.comps['t<myDsl>cmpAtMyDsl']),
     expectedResult: and(contains(`type: 't<myDsl>'`), notContains(`'$`))
   })
 })
 
 component('macroTest.dsl.inherit', {
   impl: dataTest({
-    calculate: () => jb.utils.prettyPrintComp('israel',jb.utils.getCompById('state<location>israel')),
+    calculate: () => jb.utils.prettyPrintComp('israel',jb.comps['state<location>israel']),
     expectedResult: and(notContains('state<location>'), notContains('$'))
   })
 })
@@ -158,14 +158,14 @@ component('dslTest.inheritTypeFromImp', {
 
 component('dslTest.jbDsl.dslType', {
   impl: dataTest({
-    calculate: () => jb.utils.getCompById('settlement<location>city').$type,
+    calculate: () => jb.comps['settlement<location>city'].$type,
     expectedResult: equals('settlement<location>')
   })
 })
 
 component('dslTest.jbDsl.inheritDslType', {
   impl: dataTest({
-    calculate: () => jb.utils.getCompById('state<location>israel').$type,
+    calculate: () => jb.comps['state<location>israel'].$type,
     expectedResult: equals('state<location>')
   })
 })

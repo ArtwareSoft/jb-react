@@ -76,7 +76,7 @@ component('probe.circuitPreviewRequiresMainThread', {
   type: 'boolean',
   impl: ctx => {
     const _circuit = ctx.exp('%$probe/defaultMainCircuit%')
-    return jb.utils.prettyPrint(jb.utils.getCompById(_circuit,{silent: true}),{noMacros: true})
+    return jb.utils.prettyPrint(jb.utils.resolveCompWithId(_circuit,{silent: true}),{noMacros: true})
       .indexOf('uiFrontEndTest') != -1
   }
 })
@@ -86,14 +86,14 @@ component('probe.circuitPreview', {
   impl: group({
     controls: ctx => { 
         const _circuit = ctx.exp('%$probe/defaultMainCircuit%')
-        const circuit = (jb.path(jb.utils.getCompById(_circuit,{silent: true}),'impl.$') || '').match(/Test/) 
+        const circuit = (jb.path(jb.utils.resolveCompWithId(_circuit,{silent: true}),'impl.$') || '').match(/Test/) 
           ? { $: 'control<>test.showTestInStudio', testId: _circuit, controlOnly: true} : { $: _circuit }
         jb.log('probe circuit',{circuit, ctx})
         return circuit && circuit.$ && ctx.run(circuit)
     },
     features: [
       If({
-        condition: ctx => !jb.utils.getCompById(ctx.exp('%$probe/defaultMainCircuit%'),{silent: true}),
+        condition: ctx => !jb.utils.resolveCompWithId(ctx.exp('%$probe/defaultMainCircuit%'),{silent: true}),
         then: group.wait(treeShake.getCodeFromRemote('%$probe/defaultMainCircuit%'))
       }),
       watchRef('%$probe/scriptChangeCounter%'),
@@ -132,8 +132,8 @@ component('probe.handleScriptChangeOnPreview', {
   impl: (ctx, cssOnlyChange) => {
         const {op, path} = ctx.data
         const handler = jb.watchableComps.startWatch()
-        if (path[0] == 'probeTest.label1' || !jb.ui.headless) return
-        if (!jb.utils.getCompById(path[0]))
+        if (!jb.ui.headless) return
+        if (!jb.comps(path[0]))
             return jb.logError(`handleScriptChangeOnPreview - missing comp ${path[0]}`, {path, ctx})
         handler.makeWatchable(path[0])
         jb.log('probe handleScriptChangeOnPreview doOp',{ctx,op,path})

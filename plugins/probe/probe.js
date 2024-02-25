@@ -34,13 +34,14 @@ extension('probe', 'main', {
             const _ctx = new jb.core.jbCtx()
             const cmpId = path.split('~')[0]
             jb.treeShake.codeServerJbm && await jb.treeShake.getCodeFromRemote([cmpId])
+            const resolvedComp = jb.utils.resolveCompWithId(cmpId) 
             const circuitCmpId = _ctx.exp('%$studio/circuit%') 
                     || _ctx.exp('%$probe/defaultMainCircuit%') 
-                    || jb.path(jb.utils.getCompById(cmpId),'circuit')
-                    || jb.path(jb.utils.getCompById(cmpId),'impl.expectedResult') && cmpId // test
+                    || jb.path(resolvedComp,'circuit')
+                    || jb.path(resolvedComp,'impl.expectedResult') && cmpId // test
                     || jb.tgp.circuitOptions(cmpId)[0] 
                     || cmpId
-            if (circuitCmpId && !jb.utils.getCompById(circuitCmpId,{silent: true}) && !jb.treeShake.codeServerJbm) {
+            if (circuitCmpId && !jb.utils.resolveCompWithId(circuitCmpId,{silent: true}) && !jb.treeShake.codeServerJbm) {
                 return jb.logError(`calcCircuit. can not bring circuit comp ${circuitCmpId}`,{probePath,cmpId,ctx})
             }
         
@@ -166,7 +167,7 @@ extension('probe', 'main', {
             const parentCtx = this.probe[_path][0].in, breakingPath = _path+'~'+breakingProp
             const obj = this.probe[_path][0].out
             const compName = jb.tgp.compNameOfPath(breakingPath)
-            if (jb.utils.getCompById(`${compName}.probe`,{silent:true})) {
+            if (jb.comps[`${compName}.probe`]) {
                 parentCtx.profile[breakingProp].$$ = null //[jb.core.CT] = { ...parentCtx.profile[breakingProp][jb.core.CT], comp: null }
                 const fixedProf = {...parentCtx.profile[breakingProp], $: `${compName}.probe`}
                 return jb.probe.resolve(parentCtx.runInner(jb.utils.resolveProfile(fixedProf),
@@ -174,7 +175,7 @@ extension('probe', 'main', {
                         .then(_=>this.handleGaps(_path))
             }
 
-            const hasSideEffect = jb.utils.getCompById(compName,{silent:true}) && jb.utils.getCompById(jb.tgp.compNameOfPath(breakingPath)).hasSideEffect
+            const hasSideEffect = jb.comps[compName] && jb.comps[compName].hasSideEffect
             if (obj && !hasSideEffect && obj[breakingProp] && typeof obj[breakingProp] == 'function')
                 return jb.probe.resolve(obj[breakingProp]())
                     .then(_=>this.handleGaps(_path))

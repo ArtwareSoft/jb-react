@@ -1,4 +1,5 @@
 using('remote')
+dsl('net')
 
 extension('http', {
     endWithFailure(res,desc) {
@@ -25,7 +26,7 @@ extension('http', {
 })
 
 component('node.startRemoteHttpServer', {
-  type: 'action',
+  type: 'action<>',
   params: [
     {id: 'id', as: 'string', mandatory: true},
     {id: 'port', as: 'number', mandatory: true},
@@ -45,7 +46,7 @@ component('node.startRemoteHttpServer', {
 })
 
 component('node.startHttpServer', {
-  type: 'action',
+  type: 'action<>',
   params: [
     {id: 'port', as: 'number', mandatory: true},
     {id: 'services', type: 'http-service[]', dynamic: true},
@@ -96,7 +97,7 @@ component('node.startHttpServer', {
   }
 })
 
-component('node.terminate', {
+component('terminate', {
   type: 'http-service',
   params: [],
   impl: ({}) => ({
@@ -105,7 +106,7 @@ component('node.terminate', {
   })
 })
 
-component('node.details', {
+component('details', {
   type: 'http-service',
   params: [],
   impl: ({}) => ({

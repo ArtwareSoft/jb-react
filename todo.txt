@@ -2,14 +2,6 @@ rewrite rxPipe without registration
 jb.ui.f1 => $ui.f1
 prettyPrint -> formatter
 different dsls with different colors
-ctx type (vars & data) also inside pipeline
-
-remove CT and use
-  $$: fullId (in profiles)
-  $type (in comp and params)
-  $unresolved ($values)
-  $plugin at component
-  $location at component
 
 define chatRoom service
   connect(role: A | B, chatRoomType, chatRoomName: optional -> if not given creates a new chatRoom)

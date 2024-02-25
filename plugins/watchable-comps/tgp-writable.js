@@ -27,7 +27,7 @@ extension('tgp', 'writable', {
 	//refreshRef: ref => jb.watchableComps.handler.refresh(ref),
 	writeValueOfPath: (path,value,ctx) => jb.tgp.writeValue(jb.tgp.ref(path),value,ctx),
 	setComp(path,id,srcCtx) {
-		const comp = id && jb.tgp.getCompById(id)
+		const comp = id && jb.tgp.compById(id)
 		if (!id || !comp) return
 //		const params = jb.utils.compParams(comp)
 
@@ -173,7 +173,7 @@ component('tgp.wrap', {
     {id: 'compId', as: 'string', mandatory: true}
   ],
   impl: (ctx,path,compId) => {
-        const comp = jb.tgp.getCompById(compId)
+        const comp = jb.tgp.compById(compId)
         const compositeParam = jb.utils.compParams(comp).filter(p=>p.composite)[0]
         if (compositeParam) {
             const singleOrArray = compositeParam.type.indexOf('[') == -1 ? jb.tgp.valOfPath(path) : [jb.tgp.valOfPath(path)]

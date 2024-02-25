@@ -62,7 +62,8 @@ extension('probe', 'suggestions', {
           options = jb.tgp.PTsOfPath(path).map(compName=> {
                 const name = compName.substring(compName.indexOf('.')+1);
                 const ns = compName.substring(0,compName.indexOf('.'));
-                return jb.probe.compOption(path, compName, compName, ns ? `${name} (${ns})` : name, jb.tgp.getCompById(compName).description || '')
+                return jb.probe.compOption(path, compName, compName, ns ? `${name} (${ns})` : name, 
+                  jb.path(jb.tgp.compById(compName),'description') || '')
             })
         else if (this.tailSymbol == '%')
           options = [...innerPropsOptions(probeCtx.data), ...indexOptions(probeCtx.data), ...this.calcVars(probeCtx) ]

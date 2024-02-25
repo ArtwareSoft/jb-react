@@ -185,15 +185,8 @@ extension('utils', 'prettyPrint', {
       }
       if (!profile.$$)
         return asIsProps(profile,path)
-      // const fullId = [jb.utils.compName(profile, {tgpModel})].map(x=> x=='var' ? 'variable' : x)[0]
-      const comp = jb.utils.getCompById(profile.$$, {tgpModel})
-      // if (comp && profile.$unresolved)
-      //   jb.utils.resolveProfile(profile,{tgpModel})
-      const id = profile.$$.split('>').pop()
-        
-      // if (!id || !comp || ',object,var,'.indexOf(`,${id},`) != -1)
-      //   return asIsProps(profile,path)
-        
+      const comp = tgpModel ? tgpModel.comps[profile.$$] : jb.comps[profile.$$]
+      const id = profile.$$.split('>').pop()                
       const macro = jb.macro.titleToId(id)
 
       const params = (comp.params || []).slice(0)

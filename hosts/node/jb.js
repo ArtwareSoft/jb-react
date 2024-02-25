@@ -111,9 +111,8 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
     }
 })()
 
-
 function calcParamsAndVars() {
-    const params = jb.path(jb.utils.getCompById(main.split('(')[0],{dsl}),'params') || []
+    const params = jb.path(jb.utils.resolveCompWithId(main.split('(')[0]),'params') || []
     const all = process.argv.filter(arg=>arg.indexOf('%') == 0).map(x=>splitColon(x.slice(1)))
     let vars = {}
     all.filter(p=>!isParam(p[0])).forEach(v=>{

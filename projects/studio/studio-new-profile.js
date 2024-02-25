@@ -371,7 +371,7 @@ component('studio.newProfile', {
   params: [
     {id: 'compName', as: 'string'}
   ],
-  impl: (ctx,compName) => jb.tgp.newProfile(jb.tgp.getCompById(compName), compName)
+  impl: (ctx,compName) => jb.tgp.newProfile(jb.tgp.compById(compName), compName)
 })
 
 component('studio.newComp', {

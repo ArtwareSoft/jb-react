@@ -37,7 +37,7 @@ component('studio.calcExtractComponent', {
     {id: 'activate', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,path,compName,description,file,activate) => {
-    const parentComp = jb.tgp.getCompById(path.split('~')[0])
+    const parentComp = jb.tgp.compById(path.split('~')[0])
     const parentParams = parentComp.params || []
     const impl = jb.tgp.clone(jb.tgp.valOfPath(path))
     const usedParams = parentParams.map(p=> ({ ...p, fRegExp: new RegExp(`\\b${p.id}\\b`), sRegExp: new RegExp(`%\\$${p.id}`) }))
@@ -148,7 +148,7 @@ component('studio.calcExtractParam', {
   ],
   impl: (ctx,path,id,description,activate) => {
         const compName = path.split('~')[0]
-        const parentComp = jb.tgp.getCompById(compName)
+        const parentComp = jb.tgp.compById(compName)
         const type = ((jb.tgp.paramDef(path) || {}).type || '').split('[')[0]
         const paramToAdd = {
             id,
