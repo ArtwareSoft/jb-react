@@ -1,55 +1,5 @@
 using('core')
 
-component('call', {
-  type: 'any',
-  hidden: true,
-  description: 'invoke dynamic parameter',
-  category: 'system:50',
-  params: [
-    {id: 'param', as: 'string', description: 'parameter name'}
-  ],
-  impl: (ctx,param) => {
- 	  const paramObj = ctx.cmpCtx && ctx.cmpCtx.params[param]
-    return typeof paramObj == 'function' ?
- 		  paramObj(new jb.core.jbCtx(ctx, { cmpCtx: paramObj.runCtx, forcePath: paramObj.srcPath })) : paramObj
- 	}
-})
-
-component('typeAdapter', {
-  type: 'any',
-  params: [
-    {id: 'fromType', as: 'string', mandatory: true, description: 'e.g. type1<myDsl>'},
-    {id: 'val'}
-  ],
-  impl: ctx => ctx.params.val
-})
-
-component('If', {
-  type: 'any',
-  macroByValue: true,
-  params: [
-    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true, type: 'boolean'},
-    {id: 'then', type: '$asParent', dynamic: true, composite: true},
-    {id: 'Else', type: '$asParent', dynamic: true}
-  ],
-  impl: ({},cond,_then,_else) => cond() ? _then() : _else()
-})
-
-component('firstNotEmpty', {
-  type: 'any',
-  params: [
-    {id: 'first', type: '$asParent', mandatory: true},
-    {id: 'second', type: '$asParent', mandatory: true}
-  ],
-  impl: If('%$first%', '%$first%', '%$second%')
-})
-
-component('TBD', {
-  type: 'any',
-  hidden: true,
-  impl: 'TBD'
-})
-
 extension('utils', 'pipe', {
   calcPipe(ctx,ptName,passRx) {
     let start = jb.toarray(ctx.data)
@@ -79,7 +29,7 @@ extension('utils', 'pipe', {
       const path = innerPath+i
       const parentParam = (i < profiles.length - 1) ? { as: 'array'} : (ctx.parentParam || {})
       if (jb.path(jb.comps[profile.$$],'aggregator'))
-        return jb.core.run( new jb.core.jbCtx(ctx, { data, profile, path }), parentParam)
+                return jb.core.run( new jb.core.jbCtx(ctx, { data, profile, path }), parentParam)
       const res = data.map(item => jb.core.run(new jb.core.jbCtx(ctx,{data: item, profile, path}), parentParam))
         .filter(x=>x!=null)
         .flatMap(x=> {

@@ -155,7 +155,7 @@ extension('utils', 'core', {
       if (Array.isArray(prof)) {
         prof.forEach(v=>jb.utils.resolveProfile(v, { expectedType: dslType, parent, parentProp, topComp, tgpModel, parentType, remoteCode}))
       } else if (comp && prof.$ != 'asIs') {
-        ;[...(comp.params || []), {id: 'data', $type: 'data<>'}].forEach(p=> 
+        ;[...(comp.params || []), ...jb.macro.richSystemProps].forEach(p=> 
             jb.utils.resolveProfile(prof[p.id], { expectedType: p.$type, parentType: dslType, parent: prof, parentProp: p, topComp, tgpModel, remoteCode}))
         jb.utils.resolveProfile(prof.$vars, {tgpModel, topComp, expectedType: 'var<>', remoteCode})
         if (prof.$ == 'object')

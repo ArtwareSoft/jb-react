@@ -6,7 +6,9 @@ Object.assign(jb, {
 extension('macro', {
     initExtension() {
         return { 
-            proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro'), systemProps: ['remark', 'data', '$debug', '$disabled', '$log', 'ctx' ] 
+            proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro'), 
+            systemProps: ['remark', 'data', '$debug', '$disabled', '$log', 'ctx' ],
+            richSystemProps: [ {id: 'data', $type: 'data<>'}] 
         }
     },
     typeRules: [{ isOf: ['data<>','boolean<>'] }],
@@ -82,71 +84,6 @@ extension('macro', {
         const proxyId = jb.macro.titleToId(id.split('.')[0])
         return [proxyId, jb.macro.proxies[proxyId] = jb.macro.proxies[proxyId] || jb.macro.newProxy(proxyId)]
     }
-})
-
-component('Var', {
-  type: 'var',
-  isSystem: true,
-  params: [
-    {id: 'name', as: 'string', mandatory: true},
-    {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: '%%'}
-  ],
-  macro: (result, self) => {
-    result.$vars = result.$vars || []
-    result.$vars.push(self)
-  },
-})
-
-component('remark', {
-  type: 'system',
-  isSystem: true,
-  params: [
-    {id: 'text', as: 'string', mandatory: true}
-  ],
-  macro: (result, self) => Object.assign(result,{ $remark: self.$unresolved[0] })
-})
-
-component('unknownCmp', {
-  type: 'system',
-  isSystem: true,
-  params: [
-    {id: 'id', as: 'string', mandatory: true}
-  ],
-  macro: (result, self) => jb.comps[self.$unresolved[0]] = { impl: ctx => jb.logError(`comp ${self.$unresolved[0]} is not defined`,{ctx})}
-})
-
-component('runCtx', {
-  type: 'any',
-  hidden: true,
-  params: [
-    {id: 'path', as: 'string'},
-    {id: 'vars'},
-    {id: 'profile'}
-  ]
-})
-
-component('Var', {
-  type: 'ctx',
-  params: [
-    {id: 'name', as: 'string', mandatory: true},
-    {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: '%%'}
-  ],
-})
-
-component('vars', {
-  type: 'ctx',
-  params: [
-    {id: 'name', as: 'string', mandatory: true},
-    {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: '%%'}
-  ],
-})
-
-component('data', {
-  type: 'ctx',
-  params: [
-    {id: 'name', as: 'string', mandatory: true},
-    {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: '%%'}
-  ],
 })
 
 extension('syntaxConverter', 'onAddComponent', {
