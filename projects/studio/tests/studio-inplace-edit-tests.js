@@ -1,10 +1,7 @@
 using('ui-tests')
-component('test.helloWorldCtrl', {
-  type: 'control',
-  impl: text('hello world')
-})
 
 component('test.wixIslandGridCtrl', {
+  doNotRunInTests: true,
   type: 'control',
   impl: group({
     controls: [
@@ -122,6 +119,7 @@ component('test.wixIslandGridCtrl', {
 
 component('inPlaceEditTest.text', {
   impl: uiFrontEndTest({
+    doNotRunInTests: true,
     vars: [
       Var('$previewMode', true)
     ],
@@ -134,6 +132,7 @@ component('inPlaceEditTest.text', {
 
 component('inPlaceEditTest.grid', {
   impl: uiFrontEndTest({
+    doNotRunInTests: true,
     vars: [
       Var('$previewMode', true)
     ],

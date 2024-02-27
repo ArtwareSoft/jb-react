@@ -71,7 +71,22 @@ component('FETest.itemlist.infiniteScroll', {
   })
 })
 
-component('uiTest.editableText.richPicklistHelper.setInput', {
+component('FETest.frontEnd.onDestroy', {
+  impl: uiFrontEndTest({
+    vars: [Var('res', obj())],
+    control: group({
+      controls: controlWithCondition('%$person/name%!=mukki', text('hello', {
+        features: frontEnd.onDestroy(remote.action(writeValue('%$res/destroyed%', 'ya'), backEnd()))
+      })),
+      features: watchRef('%$person/name%')
+    }),
+    expectedResult: equals('%$res/destroyed%', 'ya'),
+    uiAction: writeValue('%$person/name%', 'mukki'),
+    useFrontEnd: true
+  })
+})
+
+component('FETest.editableText.richPicklistHelper.setInput', {
   impl: uiFrontEndTest({
     control: editableText('name', '%$person/name%', {
       style: editableText.input(),
@@ -90,3 +105,65 @@ component('uiTest.editableText.richPicklistHelper.setInput', {
     expectedResult: contains('1111</input-val>')
   })
 })
+
+// component('FETest.dialogCleanup', {
+//   impl: uiFrontEndTest({
+//     vars: [
+//       Var('cleanup', obj(prop('destroy'), prop('tickAfterDestroy')))
+//     ],
+//     control: button('click me', openDialog('hello', text('world'), {
+//       id: 'hello',
+//       features: ctx => ({
+//           destroy: cmp => {
+//             ctx.run(writeValue('%$cleanup/destroy%',
+//               cmp.base && cmp.base.parentNode && cmp.base.parentNode.parentNode ? 'attached' : 'detached' ))
+//             jb.delay(1).then(()=> ctx.run(writeValue('%$cleanup/tickAfterDestroy%',
+//               cmp.base && cmp.base.parentNode && cmp.base.parentNode.parentNode ? 'attached' : 'detached' )))
+//           }
+//         })
+//     })),
+//     uiAction: uiActions(click('button'), action(dialog.closeAll()), delay(20)),
+//     expectedResult: and(equals('%$cleanup/destroy%', 'attached'), equals('%$cleanup/tickAfterDestroy%', 'detached'))
+//   })
+// })
+
+// // ensure the right order between the unmount that causes elem._component = null and the blur event which is automatically generated when detaching the dialog
+// jb.component('uiTest.updateOnBlurWhenDialogClosed', {
+//   impl: uiFrontEndTest({
+//     control: group({
+//       controls: [
+//         button({
+//           title: 'click me',
+//           action: ctx => ctx.setVars({elemToTest:null}).run(openDialog({content:
+//             editableText({title: 'name', updateOnBlur: true, databind: '%$person/name%' })
+//           }))
+//         }),
+//         text('%$person/name%')
+//       ]
+//     }),
+//     action: click('button'),
+//     expectedResult: true
+//   })
+// })
+
+// jb.component('uiTest.cssDynamic', {
+//   impl: uiFrontEndTest({
+//     control: group({
+//       controls: [
+//         text({
+//           text: '%$color%',
+//           features: [css.dynamic('{ color: %$color% }'), id('label')]
+//         }),
+//         button({
+//           title: 'green',
+//           action: writeValue('%$color%', 'green'),
+//           features: id('green')
+//         }),
+//         button({title: 'blue', action: writeValue('%$color%', 'blue')})
+//       ],
+//       features: watchable('color','blue')
+//     }),
+//     action: click('#green'),
+//     expectedResult: pipeline(ctx => jb.ui.cssOfSelector('#label',ctx), contains('color: green'))
+//   })
+// })

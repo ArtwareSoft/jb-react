@@ -214,8 +214,8 @@ component('uiTest.twoWayBinding', {
   })
 })
 
-// component('uiTest.sectionExpandCollapse', {
-//   impl: uiFrontEndTest({
+// component('uiTest.remoteSectionExpandCollapse', {
+//   impl: uiTest({
 //     control: remote.widget(group({style: group.sectionExpandCollapse(text('open')), controls: text('hello')})),
 //     expectedResult: contains('hello')
 //   })
@@ -298,57 +298,11 @@ component('uiTest.refreshDialog', {
   })
 })
 
-// jb.component('uiTest.dialogCleanup', {
-//   impl: uiFrontEndTest({
-//     vars: [Var('cleanup', obj(prop('destroy'), prop('tickAfterDestroy')))],
-//     control: button({
-//       title: 'click me',
-//       action: openDialog({
-//         id: 'hello',
-//         content: text('world'),
-//         title: 'hello',
-//         features: ctx => ({
-//           destroy: cmp => {
-//             ctx.run(writeValue('%$cleanup/destroy%',
-//               cmp.base && cmp.base.parentNode && cmp.base.parentNode.parentNode ? 'attached' : 'detached' ))
-//             jb.delay(1).then(()=> ctx.run(writeValue('%$cleanup/tickAfterDestroy%',
-//               cmp.base && cmp.base.parentNode && cmp.base.parentNode.parentNode ? 'attached' : 'detached' )))
-//           }
-//         })
-//       })
-//     }),
-//     action: [click('button'), dialog.closeAll(), delay(20)],
-//     expectedResult: and(
-//       equals('%$cleanup/destroy%', 'attached'),
-//       equals('%$cleanup/tickAfterDestroy%', 'detached')
-//     )
-//   })
-// })
-
 component('uiTest.dialogCleanupBug', {
   impl: uiTest(button('click me', openDialog('hello', text('world'), { id: 'hello' })), isEmpty(dialog.shownDialogs()), {
     uiAction: uiActions(click(), action(dialog.closeAll()))
   })
 })
-
-// // ensure the right order between the unmount that causes elem._component = null and the blur event which is automatically generated when detaching the dialog
-// jb.component('uiTest.updateOnBlurWhenDialogClosed', {
-//   impl: uiFrontEndTest({
-//     control: group({
-//       controls: [
-//         button({
-//           title: 'click me',
-//           action: ctx => ctx.setVars({elemToTest:null}).run(openDialog({content:
-//             editableText({title: 'name', updateOnBlur: true, databind: '%$person/name%' })
-//           }))
-//         }),
-//         text('%$person/name%')
-//       ]
-//     }),
-//     action: click('button'),
-//     expectedResult: true
-//   })
-// })
 
 component('uiTest.groupFlex', {
   impl: uiTest({
@@ -1033,7 +987,7 @@ component('uiTest.editableBoolean.expandCollapseWithDefaultVal', {
 })
 
 component('uiTest.editableBoolean.expandCollapseWithDefaultCollapse', {
-  impl: uiFrontEndTest(uiTest.expandCollapseWithDefaultCollapse(), { expectedResult: not(contains('inner text')), renderDOM: true })
+  impl: uiTest(uiTest.expandCollapseWithDefaultCollapse(), not(contains('inner text')))
 })
 
 component('uiTest.innerLabel1Tst', {
@@ -1447,15 +1401,15 @@ component('uiTest.firstSucceeding.sameDoesNotRecreate', {
 })
 
 component('uiTest.watchRef.recalcVars', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     control: text('%$changed%', {
       features: [
         variable('changed', '--%$person/name%--'),
         watchRef('%$person/name%')
       ]
     }),
-    uiAction: writeValue('%$person/name%', 'hello'),
-    expectedResult: contains('--hello--')
+    expectedResult: contains('--hello--'),
+    uiAction: writeValue('%$person/name%', 'hello')
   })
 })
 
@@ -1478,28 +1432,6 @@ component('uiTest.hiddenRefBug', {
     expectedResult: contains('display:none')
   })
 })
-
-// jb.component('uiTest.cssDynamic', {
-//   impl: uiFrontEndTest({
-//     control: group({
-//       controls: [
-//         text({
-//           text: '%$color%',
-//           features: [css.dynamic('{ color: %$color% }'), id('label')]
-//         }),
-//         button({
-//           title: 'green',
-//           action: writeValue('%$color%', 'green'),
-//           features: id('green')
-//         }),
-//         button({title: 'blue', action: writeValue('%$color%', 'blue')})
-//       ],
-//       features: watchable('color','blue')
-//     }),
-//     action: click('#green'),
-//     expectedResult: pipeline(ctx => jb.ui.cssOfSelector('#label',ctx), contains('color: green'))
-//   })
-// })
 
 component('uiTest.validator', {
   impl: uiTest({

@@ -192,31 +192,35 @@ component('uiTest.labelNotWatchingBasicVar', {
 })
 
 component('uiTest.watchRefCssOnly', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     control: text('hey', {
       features: [
         watchRef('%$person/name%', { cssOnly: true }),
-        css(If('%$person/name% == Homer Simpson', 'color: red; /*css-only*/', 'color: green; /*css-only*/'))
+        css(
+          If('%$person/name% == Homer Simpson', 'color: red; /*css-only*/', 'color: green; /*css-only*/')
+        )
       ]
     }),
-    uiAction: writeValue('%$person/name%', 'Dan'),
-    expectedResult: ctx => Array.from(document.querySelectorAll('style')).map(el=>el.innerText).filter(x=>x.indexOf('color: green; /*css-only*/') != -1)[0]
+    expectedResult: contains('color: green; /*css-only*/'),
+    uiAction: writeValue('%$person/name%', 'Dan')
   })
 })
 
 component('uiTest.CssOnly.SetAndBack', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     control: text('hey', {
       features: [
         watchRef('%$person/name%', { cssOnly: true }),
-        css(If('%$person/name% == Homer Simpson', 'color: red; /*css-only*/', 'color: green; /*css-only*/'))
+        css(
+          If('%$person/name% == Homer Simpson', 'color: red; /*css-only*/', 'color: green; /*css-only*/')
+        )
       ]
     }),
+    expectedResult: and(contains('color: red; /*css-only*/'), notContains('green')),
     uiAction: [
       writeValue('%$person/name%', 'Dan'),
       writeValue('%$person/name%', 'Homer Simpson')
-    ],
-    expectedResult: ctx => Array.from(document.querySelectorAll('style')).map(el=>el.innerText).filter(x=>x.indexOf('color: red; /*css-only*/') != -1)[0]
+    ]
   })
 })
 
@@ -336,21 +340,6 @@ component('uiTest.spliceAndWatchRefWithoutIncludeChildren', {
     expectedResult: contains('mukki'),
     uiAction: writeValue('%$watchablePeople[0]/name%', 'mukki'),
     expectedCounters: {'do refresh element !check': 1}
-  })
-})
-
-component('uiTest.frontEnd.onDestroy', {
-  impl: uiFrontEndTest({
-    vars: [Var('res', obj())],
-    control: group({
-      controls: controlWithCondition({
-        condition: '%$person/name%!=mukki',
-        control: text('hello', { features: frontEnd.onDestroy(writeValue('%$res/destroyed%', 'ya')) })
-      }),
-      features: watchRef('%$person/name%')
-    }),
-    uiAction: writeValue('%$person/name%', 'mukki'),
-    expectedResult: equals('%$res/destroyed%', 'ya')
   })
 })
 
