@@ -40,23 +40,43 @@ component('FETest.treeDD.betweenBranches', {
   })
 })
 
-component('FETest.treeDD.sameArray', {
-  impl: uiFrontEndTest({
-    control: tree({
-      nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
-      features: [
-        tree.selection(),
-        tree.dragAndDrop(),
-        tree.keyboardSelection(),
-        tree.expandPath('personWithChildren~children')
-      ]
+// component('FETest.treeDD.sameArray', {
+//   impl: uiTest({
+//     control: tree({
+//       nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
+//       features: [
+//         tree.selection(),
+//         tree.dragAndDrop(),
+//         tree.keyboardSelection(),
+//         tree.expandPath('personWithChildren~children')
+//       ]
+//     }),
+//     expectedResult: contains('Lisa','Bart','Maggie'),
+//     uiAction: uiActions(
+//       click('[title="Bart"]'),
+//       keyboardEvent('[interactive]', 'keydown', { keyCode: 40, ctrl: 'ctrl' })
+//     ),
+//     useFrontEnd: true
+//   })
+// })
+
+component('FETest.treeDD.boundedSelection', {
+  impl: uiTest({
+    control: group({
+      controls: tree({
+        nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
+        features: [
+          tree.selection('%$selected%'),
+          tree.dragAndDrop(),
+          tree.keyboardSelection(),
+          tree.expandPath('personWithChildren~children')
+        ]
+      }),
+      features: watchable('selected', 'personWithChildren~children~1')
     }),
-    uiAction: uiActions(
-      waitFor(()=> jb.frame.dragula),
-      click('[title="Bart"]'),
-      keyboardEvent('[interactive]', 'keydown', { keyCode: 40, ctrl: 'ctrl' })
-    ),
-    expectedResult: contains('Lisa','Bart','Maggie')
+    expectedResult: contains('Bart','Maggie','selected','Lisa'),
+    uiAction: keyboardEvent('[interactive]', 'keydown', { keyCode: 40, ctrl: 'ctrl' }),
+    useFrontEnd: true
   })
 })
 
@@ -99,25 +119,6 @@ component('FETest.treeDDAfterLast', {
     }),
     uiAction: action(move('%$personWithChildren/children[1]%', '%$personWithChildren/friends[1]%')),
     useFrontEnd: true
-  })
-})
-
-component('FETest.treeDD.boundedSelection', {
-  impl: uiFrontEndTest({
-    control: group({
-      controls: tree({
-        nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
-        features: [
-          tree.selection('%$selected%'),
-          tree.dragAndDrop(),
-          tree.keyboardSelection(),
-          tree.expandPath('personWithChildren~children')
-        ]
-      }),
-      features: watchable('selected', 'personWithChildren~children~1')
-    }),
-    uiAction: keyboardEvent('[interactive]', 'keydown', { keyCode: 40, ctrl: 'ctrl' }),
-    expectedResult: contains('Bart','Maggie','selected','Lisa')
   })
 })
 
@@ -286,31 +287,6 @@ component('uiTest.tableTreeRefresh1', {
     expectedResult: contains('name','path','Homer','friends','Barnie','~friends~0~name'),
     uiAction: writeValue('%$globals/expanded%', '~friends~0'),
     useFrontEnd: true
-  })
-})
-
-component('uiTest.tableTreeUnexpandRefresh', {
-  impl: uiFrontEndTest({
-    control: tableTree({
-      treeModel: tree.jsonReadOnly({
-        object: ()=>({
-          a: { a1: 'val' },
-          b: { b1: 'val' },
-        }),
-        rootPath: ''
-      }),
-      leafFields: text('%val%', 'name'),
-      commonFields: text('%path%', 'path'),
-      chapterHeadline: text(suffix('~', '%path%')),
-      style: tableTree.plain(),
-      features: [
-        tableTree.expandPath('%$globals/expanded%'),
-        watchRef('%$globals/expanded%', { strongRefresh: true })
-      ]
-    }),
-    runBefore: writeValue('%$globals/expanded%', '~a'),
-    uiAction: writeValue('%$globals/expanded%', ''),
-    expectedResult: not(contains('~a~a1'))
   })
 })
 

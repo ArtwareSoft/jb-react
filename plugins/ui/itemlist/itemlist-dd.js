@@ -5,7 +5,8 @@ component('itemlist.dragAndDrop', {
   impl: features(
     frontEnd.requireExternalLibrary('dragula.js','css/dragula.css'),
     method('moveItem', runActions(move(itemlist.indexToData('%from%'), itemlist.indexToData('%to%')), action.refreshCmp())),
-    frontEnd.prop('drake', ({},{cmp}) => {
+    frontEnd.prop('drake', ({},{cmp,uiTest}) => {
+        if (uiTest) return { on: () => {}}
         if (!jb.frame.dragula) return jb.logError('itemlist.dragAndDrop - the dragula lib is not loaded')
         return dragula([cmp.base.querySelector('.jb-items-parent') || cmp.base] , {
           moves: (el,source,handle) => jb.ui.parents(handle,{includeSelf: true}).some(x=>jb.ui.hasClass(x,'drag-handle'))

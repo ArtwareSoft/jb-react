@@ -29,7 +29,7 @@ extension('vscode', 'utils', {
                     editor.selection.active.line, editor.selection.active.character, editor.document.uri.path)
                 if (jb.path(docProps,'shortId')) {
                     if (jb.vscode.lastEdited != docProps.shortId)
-                        jb.langService.tgpModels = {} // clean cache
+                        jb.langService.tgpModels1 = {} // clean cache
                     jb.vscode.lastEdited = docProps.shortId
                 }
                 return docProps

@@ -392,7 +392,7 @@ component('scrollBy', {
     (ctx,{elemToTest},{selector,scrollBy}) => {
       if (!elemToTest) return
       const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : elemToTest
-      elem && elem.scrollBy(scrollBy,scrollBy)
+            elem && elem.scrollBy(scrollBy,scrollBy)
       jb.log('uiTest scroll on dom',{elem,ctx})
     },
     waitForNextUpdate()

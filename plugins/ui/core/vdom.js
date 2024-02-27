@@ -141,6 +141,8 @@ extension('ui','vdom', {
             const handlers = jb.path(this.handlers,event)
             handlers.splice(handlers.indexOf(handler),1)
         }
+        focus() { // for tests 
+        }
     },
     selectorMatcher(selector) {
         const hasAtt = selector.match(/^\[([a-zA-Z0-9_$\-]+)\]$/)
@@ -148,11 +150,13 @@ extension('ui','vdom', {
         const hasClass = selector.match(/^(\.[a-zA-Z0-9_$\-]+)+$/)
         const hasTag = selector.match(/^[a-zA-Z0-9_\-]+$/)
         const idEquals = selector.match(/^#([a-zA-Z0-9_$\-]+)$/)
+        const nthChild = selector.match(/^([a-zA-Z0-9_\-]+):nth-child\(([0-9]+)\)$/)
         const selectorMatcher = hasAtt ? el => el.attributes && el.attributes[hasAtt[1]]
             : hasClass ? el => el.hasClass(hasClass[1])
             : hasTag ? el => el.tag === hasTag[0]
             : attEquals ? el => el.attributes && el.attributes[attEquals[1]] == attEquals[2]
             : idEquals ? el => el.attributes && el.attributes.id == idEquals[1]
+            : nthChild ? el => el.parentNode && el.tag === nthChild[1] && el.parentNode.children.indexOf(el) == (nthChild[2]-1)
             : null
 
         return selectorMatcher

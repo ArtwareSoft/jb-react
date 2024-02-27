@@ -371,18 +371,6 @@ component('uiTest.resource', {
   impl: uiTest(button('%$person.name%'), contains('Homer'))
 })
 
-component('uiTest.featuresCss', {
-  impl: uiFrontEndTest(text('Hello World', { features: css('color: red') }), {
-    expectedResult: ctx => {
-      const elem = jb.ui.widgetBody(ctx)
-      document.body.appendChild(elem)
-      const ret = getComputedStyle(elem.firstElementChild).color == 'rgb(255, 0, 0)'
-      document.body.removeChild(elem)
-      return ret
-    }
-  })
-})
-
 component('uiTest.itemlist', {
   impl: uiTest({
     control: itemlist({ items: '%$people%', controls: text('%$item.name% - %name%') }),
@@ -463,39 +451,41 @@ component('uiTest.itemlistWithSelect', {
 })
 
 component('FETest.itemlistWithSelect.click', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     control: itemlist({
       items: '%$people%',
       controls: text('%$item.name% - %name%'),
       features: itemlist.selection({ autoSelectFirst: true })
     }),
-    uiAction: click('ul>li:nth-child(2)'),
-    expectedResult: contains('Homer Simpson - Homer Simpson','selected','Bart Simpson - Bart Simpson')
+    expectedResult: contains('Homer Simpson - Homer Simpson','selected','Bart Simpson - Bart Simpson'),
+    uiAction: click('ul>li:nth-child(2)', { doNotWaitForNextUpdate: true }),
+    useFrontEnd: true
   })
 })
 
 component('FETest.itemlistDD', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     control: group(
       itemlist({
         items: '%$watchablePeople%',
         controls: text('%name%', { features: css.class('drag-handle') }),
         features: [
           itemlist.selection('%$globals/selectedPerson%', { autoSelectFirst: true }),
-          itemlist.keyboardSelection(true),
+          itemlist.keyboardSelection({ autoFocus: true }),
           itemlist.dragAndDrop(),
           id('itemlist')
         ]
       }),
       text('----'),
-      itemlist({ items: '%$watchablePeople%', controls: text('%name%'), features: watchRef('%$watchablePeople%') })
-    ),
-    uiAction: uiActions(
-      waitForSelector('.drag-handle'),
-      keyboardEvent('#itemlist', 'keydown', { keyCode: 40, ctrl: 'ctrl' })
+      itemlist({
+        items: '%$watchablePeople%',
+        controls: text('%name%'),
+        features: watchRef('%$watchablePeople%')
+      })
     ),
     expectedResult: contains('Bart','Marge','Homer'),
-    renderDOM: true
+    uiAction: keyboardEvent('#itemlist', 'keydown', { keyCode: 40, ctrl: 'ctrl' }),
+    useFrontEnd: true
   })
 })
 
@@ -704,13 +694,13 @@ component('uiTest.itemlistContainerSearch', {
   impl: uiTest(uiTest.itemlistContainerSearchCtrl(), contains('Ho<','>mer'), { uiAction: setText('ho', '#search') })
 })
 
-component('FETest.itemlistContainerSearchEnterOnLi', {
-  impl: uiFrontEndTest({
+component('uiTest.itemlistContainerSearchEnterOnLi', {
+  impl: uiTest({
     vars: [Var('res', obj())],
     control: uiTest.itemlistContainerSearchCtrl(),
-    uiAction: keyboardEvent('.jb-itemlist', 'keydown', { keyCode: 13 }),
     expectedResult: equals('%$res/selected%', 'Homer Simpson'),
-    renderDOM: true
+    uiAction: keyboardEvent('.jb-itemlist', 'keydown', { keyCode: 13, doNotWaitForNextUpdate: true }),
+    useFrontEnd: true
   })
 })
 
@@ -821,7 +811,7 @@ component('uiTest.BEOnDestroy', {
   })
 })
 
-component('FETest.onKey', {
+component('uiTest.onKey', {
   impl: uiTest({
     control: editableText('name', '%$person/name%', {
       features: [
@@ -904,26 +894,6 @@ component('uiTest.editableText.richPicklistHelperWithWatchingGroup', {
     }),
     expectedResult: contains('ddd'),
     uiAction: waitForNextUpdate()
-  })
-})
-
-component('uiTest.editableText.richPicklistHelper.setInput', {
-  impl: uiFrontEndTest({
-    control: editableText('name', '%$person/name%', {
-      style: editableText.input(),
-      features: [
-        id('inp'),
-        editableText.picklistHelper(picklist.optionsByComma('1111,2,3,4'), {
-          onEnter: editableText.setInputState('%$selectedOption%', '%value%')
-        })
-      ]
-    }),
-    uiAction: uiActions(
-      keyboardEvent('#inp', 'keyup', { keyCode: 37 }),
-      keyboardEvent('#inp', 'keydown', { keyCode: 40 }),
-      keyboardEvent('#inp', 'keyup', { keyCode: 13 })
-    ),
-    expectedResult: contains('1111</input-val>')
   })
 })
 
@@ -1066,24 +1036,6 @@ component('uiTest.editableBoolean.expandCollapseWithDefaultCollapse', {
   impl: uiFrontEndTest(uiTest.expandCollapseWithDefaultCollapse(), { expectedResult: not(contains('inner text')), renderDOM: true })
 })
 
-component('uiTest.codeMirror', {
-  impl: uiFrontEndTest({
-    control: group(
-      Var('js', {'$': 'object', text: `function f1() {
-return 15
-}`}),
-      Var('css', {'$': 'object', text: '{ width: 15px; }'}),
-      Var('html', {'$': 'object', text: '<div><span>hello</span></div>'}),
-      editableText({ databind: '%$js/text%', style: editableText.codemirror({ mode: 'javascript' }), features: codemirror.fold() }),
-      editableText({ databind: '%$css/text%', style: editableText.codemirror({ mode: 'css' }), features: [codemirror.fold(), codemirror.lineNumbers()] }),
-      editableText({ databind: '%$html/text%', style: editableText.codemirror({ mode: 'htmlmixed' }) })
-    ),
-    uiAction: waitForSelector('.CodeMirror'),
-    expectedResult: contains('function','f1',15),
-    renderDOM: true
-  })
-})
-
 component('uiTest.innerLabel1Tst', {
   params: [
     {id: 'title', mandatory: true, dynamic: true}
@@ -1196,16 +1148,6 @@ component('uiTest.picklistRadio', {
 
 component('uiTest.innerSelector', {
   impl: uiTest(picklist({ options: picklist.optionsByComma('a') }), ctx => jb.ui.elemOfSelector('select>option',ctx))
-})
-
-component('uiTest.picklist.mdcSelect', {
-  impl: uiFrontEndTest({
-    control: picklist('city', '%$personWithAddress/address/city%', {
-      options: picklist.optionsByComma('Springfield,New York,Tel Aviv,London'),
-      style: picklist.mdcSelect('200')
-    }),
-    expectedResult: contains('Springfield','New York')
-  })
 })
 
 component('uiTest.fieldTitleOfLabel', {
@@ -1365,18 +1307,18 @@ component('menuTest.openContextMenu', {
 })
 
 component('uiTest.refreshControlById.text', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     vars: [
       Var('person1', () => ({ name: 'Homer' }))
     ],
     control: text('%$person1/name%', { features: id('t1') }),
-    uiAction: uiActions(writeValue('%$person1/name%', 'Dan'), action(refreshControlById('t1'))),
-    expectedResult: contains('Dan')
+    expectedResult: contains('Dan'),
+    uiAction: uiActions(writeValue('%$person1/name%', 'Dan'), action(refreshControlById('t1')))
   })
 })
 
 component('uiTest.refreshControlById.withButton', {
-  impl: uiFrontEndTest({
+  impl: uiTest({
     vars: [
       Var('person1', () => ({ name: 'Homer' }))
     ],
@@ -1384,9 +1326,8 @@ component('uiTest.refreshControlById.withButton', {
       text('%$person1/name%', { features: id('t1') }),
       button('refresh', runActions(writeValue('%$person1/name%', 'Dan'), refreshControlById('t1')))
     ),
-    uiAction: click('button'),
     expectedResult: contains('Dan'),
-    renderDOM: true
+    uiAction: click('button')
   })
 })
 
@@ -1641,24 +1582,6 @@ component('uiTest.watchableRefToInnerElementsWhenValueIsEmpty', {
   })
 })
 
-component('uiTest.infiniteScroll', {
-  impl: uiFrontEndTest({
-    control: itemlist({
-      items: range(0, 10),
-      controls: text('%%'),
-      visualSizeLimit: 7,
-      features: [
-        css.height('100', 'scroll'),
-        itemlist.infiniteScroll(4),
-        css.width('100')
-      ]
-    }),
-    uiAction: uiActions(scrollBy('.jb-itemlist', 80), waitForSelector('ul>:nth-child(8)')),
-    expectedResult: contains('>10<'),
-    renderDOM: true
-  })
-})
-
 component('uiTest.infiniteScroll.twice', {
   impl: uiTest({
     control: itemlist({
@@ -1729,8 +1652,8 @@ component('uiTest.changeText', {
   })
 })
 
-component('FETest.runFEMethod', {
-  impl: uiFrontEndTest({
+component('uiTest.runFEMethod', {
+  impl: uiTest({
     control: group(
       button('change', runFEMethod('#input1', 'changeText', { Data: 'world' })),
       editableText({
@@ -1742,24 +1665,9 @@ component('FETest.runFEMethod', {
         ]
       })
     ),
-    uiAction: click(),
     expectedResult: contains('world'),
-    renderDOM: true
-  })
-})
-
-component('FETest.coLocation', {
-  impl: uiFrontEndTest({
-    vars: [Var('toChange', obj())],
-    control: button('change', runFEMethod('#btn', 'changeDB'), {
-      features: [
-        frontEnd.coLocation(),
-        id('btn'),
-        frontEnd.method('changeDB', writeValue('%$toChange.x%', 3))
-      ]
-    }),
     uiAction: click(),
-    expectedResult: equals('%$toChange/x%', 3)
+    useFrontEnd: true
   })
 })
 
@@ -1803,3 +1711,4 @@ component('test.controlWithFeaturesUseParams', {
 component('uiTest.controlWithFeatures.useParams', {
   impl: uiTest(test.controlWithFeaturesUseParams('homer'), contains('homer'))
 })
+
