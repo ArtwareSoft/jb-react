@@ -131,20 +131,15 @@ extension('utils', 'core', {
       jb.utils.resolveProfile(topComp.impl, {expectedType: topComp.$type, tgpModel, topComp, parent: topComp})
     },
     resolveProfile(prof, { expectedType, parent, parentProp, tgpModel, topComp, parentType, remoteCode} = {}) {
-      //if (parent && parent.$ == 'frontEnd.init' && parentProp && parentProp.id == 'action' && prof.$ == 'If') debugger
       if (!prof || !prof.constructor || ['Object','Array'].indexOf(prof.constructor.name) == -1) return prof
       const typeFromParent = expectedType == '$asParent<>' ? parentType || jb.utils.dslType(jb.path(parent,'$$')) : expectedType
       const typeFromAdapter = parent && parent.$ == 'typeAdapter' && parent.fromType
       const fromFullId = prof.$$ && jb.utils.dslType(prof.$$)
       const dslType = typeFromAdapter || typeFromParent || fromFullId
       if (dslType && dslType.indexOf('<') == -1) debugger
-      //if (prof.$$ == 'action<>action.focusOnCmp') debugger
       const comp = jb.utils.resolveCompWithId(prof.$$ || prof.$, { dslType, parent, parentProp, tgpModel, topComp, parentType, remoteCode })
-      if (comp) {
+      if (comp)
         prof.$$ = comp.$$
-        // if (prof.$$.startsWith('any<>'))
-        //   prof.$type = dslType
-      }
       remoteCode = remoteCode || (prof.$$ || '').match(/>remote/) || (prof.$$ || '').match(/remote$/)
   
       if (prof.$unresolved && comp) {
@@ -192,13 +187,11 @@ extension('utils', 'core', {
       const bySamePlugin = plugin && cmps.find(c=> jb.path(c,'plugin') == plugin && c.$$.split('>').pop() == shortId )
       if (bySamePlugin)
         return bySamePlugin
-      // const _dsl = `<${dsl}>`
-      // const bySameDsl = dsl && cmps.find(c=> c.$$.indexOf(_dsl) != -1 && c.$$.split('>').pop() == shortId )
-      // if (bySameDsl)
-      //   return bySameDsl
       const byNoDsl = cmps.find(c=> c.$$.indexOf('<>') != -1 && c.$$.split('>').pop() == shortId )
-      if (byNoDsl)
+      if (byNoDsl) {
+         jb.logError('resolveCompWithId',{byNoDsl,id, topComp, parent, parentType, allTypes, dslType})
          return byNoDsl
+      }
     
       //const byUnkownType = cmps.find(c=> c.$$.split('>').pop() == shortId )
       //_otherTypeInPlugin || ((!dslType || dslType == '$asParent<>') && (lookForUnknownTypeInDsl(dsl) || lookForUnknownTypeInDsl('')))

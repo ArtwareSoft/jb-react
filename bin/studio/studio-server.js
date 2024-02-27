@@ -1,6 +1,6 @@
-fs = require('fs')
-http = require('http')
-child = require('child_process')
+const fs = require('fs')
+const http = require('http')
+const child = require('child_process')
 
 file_type_handlers = {}
 
@@ -303,7 +303,7 @@ const op_get_handlers = {
         (arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg}'`)).join(' ')}`
       res.setHeader('Content-Type', 'application/json; charset=utf8')
       writeToCmdLog('./temp/lastNodeWorker', command)
-      const nodeWorker = child.spawn('node',['--inspect','./node-worker.js', ...args],{cwd: 'hosts/node'})
+      const nodeWorker = child.spawn('node',['./node-worker.js', ...args],{cwd: 'hosts/node'})
       nodeWorker.stdout.on('data', data => res.end(data))
       nodeWorker.on('exit', (code,ev) => res.end(JSON.stringify({command, exit: `exit ${''+code} ${''+ev}}`})))
       nodeWorker.on('error', (e) => res.end(JSON.stringify({command, error: `${''+e}`})))
@@ -410,7 +410,8 @@ const op_get_handlers = {
           pluginDsl: unique(content.split('\n').map(l=>(l.match(/^(jb.)?pluginDsl\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0]))[0],
           ns: unique(content.split('\n').map(l=>(l.match(/^(jb.)?component\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0])),
           libs: unique(content.split('\n').map(l=>(l.match(/^(jb.)?extension\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0])),
-          using: unique(content.split('\n').map(l=>(l.match(/^(jb.)?using\('([^']+)/) || ['',''])[2]).filter(x=>x).flatMap(x=>x.split(',').map(x=>x.trim()))),
+          using: unique(content.split('\n').map(l=>(l.match(/^(jb.)?using\('([^)]+)/) || ['',''])[2]).filter(x=>x).map(x=>x.replace(/'/g,''))
+            .flatMap(x=>x.split(',').map(x=>x.trim()))),
         }
       }
       function unique(list) {
@@ -629,6 +630,15 @@ function writeToCmdLog(fn,content) {
 
 http.createServer(serve).listen(settings.port)
 http.createServer(serve).listen(settings.ports.nodeContainer)
+
+if (settings.https) {
+  const https = require('https')
+  const path = require('path')
+  const https_options = { key: fs.readFileSync(path.join(__dirname, 'key.pem')), cert: fs.readFileSync(path.join(__dirname, 'cert.pem')) }
+  https.createServer(https_options,serve).listen(settings.ports['studio-https'], () => {
+    console.log(`https server activated at https://localhost:${settings.ports['studio-https']}`)
+  })
+}
 
 if (process.cwd().indexOf('jb-react') != -1)
   console.log(`hello-world url: http://localhost:${settings.port}/project/studio/helloWorld`)

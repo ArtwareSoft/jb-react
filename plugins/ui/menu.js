@@ -91,7 +91,7 @@ component('menu.control', {
       () => ({pathForPick: jb.path(menuModel,'ctx.path') }),
       {$: 'calcProp', id: 'title', value: '%$menuModel.title%' },
       {$: 'htmlAttribute', attribute: 'menuDepth', value: '%$menuModel/ctx/vars/menuDepth%' },
-    ]})
+    ]}, 'feature<>')
 	},
   require: [features(), calcProp(), htmlAttribute()]
 })
@@ -160,8 +160,8 @@ component('menu.initPopupMenu', {
     calcProp('title', '%$menuModel.title%'),
     method('openPopup', parentCtx => parentCtx.run({$: 'menu.openContextMenu',
         popupStyle: {$: 'call', param: 'popupStyle'},
-        menu: () => parentCtx.run({$: 'If', condition: '%$innerMenu%', then: '%$innerMenu.menu()%', Else: '%$$model.menu()%'}),
-      })),
+        menu: () => parentCtx.run({$: 'If', condition: '%$innerMenu%', then: '%$innerMenu.menu()%', Else: '%$$model.menu()%'} ,'menu.option<>'),
+      }, 'action<>')),
     method('closePopup', dialog.closeDialogById('%$optionsParentId%')),
     method('openNewPopup', runActions(action.runBEMethod('closePopup'), action.runBEMethod('openPopup'))),
     frontEnd.onDestroy(action.runBEMethod('closePopup')),
@@ -353,7 +353,7 @@ component('menuStyle.optionLine', {
   moreTypes: 'menu-style<>',
   impl: customStyle({
     template: (cmp,{icon,title,shortcut},h) => h('div.line noselect', { onmousedown: 'closeAndActivate' },[
-        h(cmp.ctx.run({$: 'control.icon', ...icon, size: 20})),
+        h(cmp.ctx.run({$: 'control.icon', ...icon, size: 20}, 'control<>')),
 				h('span.title',{},title),
 				h('span.shortcut',{},shortcut),
         h('div.mdc-line-ripple'),

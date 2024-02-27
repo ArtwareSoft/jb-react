@@ -1,5 +1,5 @@
 
-extension('webSocket', {
+extension('webSocket', 'client', {
     initExtension() { return { toRestart: [], servers: {} } },
     connectFromBrowser: (wsUrl,serverUri,ctx) => new Promise( resolve => {
         const socket = new jbHost.WebSocket_Browser(wsUrl,'echo-protocol')

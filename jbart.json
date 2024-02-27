@@ -1,11 +1,12 @@
 {
-  "ports": { "studio": 8082, "treeShake": 26100, "webSocket": 26101, "log": 26102, "ping": 26103, "serviceRegistration": 26104,
+  "ports": { "studio": 8082, "studio-https": 8443, "jb-router": 8085, "treeShake": 26100, "webSocket": 26101, "log": 26102, "ping": 26103, "serviceRegistration": 26104,
     "firstServerPort": 26200,  "lastServerPort": 28300},
   "open_source_cmd_vsCode": "code -r -g",
   "open_source_cmd_atom": "atom ",
   "open_source_cmd_sublime": "\"c:\\Program Files\\sublime Text 3\\\"subl ",
   "open_source_cmd": "code -r -g ",
   "port": 8082,
+  "https": false,
   "http_dir": "./",
   "exclude": "node_modules",
   "devHost": true,

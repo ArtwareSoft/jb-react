@@ -1,0 +1,16 @@
+{
+  "manifest_version": 2,
+  "name": "llm-helper",
+  "version": "1.0",
+  "description": "A Chrome extension to interact with https://chat.openai.com/",
+  "permissions": [
+    "activeTab"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://www.artwaresoft.com/*"],
+      "js": ["llm-content-script.js"]
+    }
+  ],
+  "content_security_policy": "script-src 'self' 'unsafe-eval' http://localhost:8082; object-src 'self'"
+}

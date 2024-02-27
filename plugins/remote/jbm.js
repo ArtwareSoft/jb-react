@@ -77,7 +77,7 @@ component('child', {
   params: [
     {id: 'id', as: 'string'},
     {id: 'sourceCode', type: 'source-code<loader>', byName: true, defaultValue: treeShakeClient()},
-    {id: 'init', type: 'action', dynamic: true}
+    {id: 'init', type: 'action<>', dynamic: true}
   ],
   impl: (ctx,_id,sourceCode,init) => {
         const id = _id || 'child1'

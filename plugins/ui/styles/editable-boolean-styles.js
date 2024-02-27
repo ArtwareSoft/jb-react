@@ -85,7 +85,7 @@ component('editableBoolean.buttonXV', {
         (ctx,{editableBooleanModel},{yesIcon,noIcon}) => {
             const icon = jb.val(editableBooleanModel.databind()) ? yesIcon : noIcon
             const title = jb.val(editableBooleanModel.databind()) ? editableBooleanModel.textForTrue() : editableBooleanModel.textForFalse()
-            return ctx.run({$: 'feature.icon', ...icon, title})
+            return ctx.run({$: 'feature.icon', ...icon, title}, 'feature<>')
           },
         watchRef('%$editableBooleanModel/databind()%', { allowSelfRefresh: true, strongRefresh: true })
       ]

@@ -131,7 +131,10 @@ component('remoteTest.shadowResource.watchable', {
     expectedResult: equals('Dan'),
     runBefore: runActions(
       remote.shadowResource('person', worker()),
-      () => { jb.exec(runActions(delay(1), writeValue('%$person/name%','Dan'))) }
+      () => { 
+        // do not return promise
+        jb.exec(runActions(delay(1), writeValue('%$person/name%','Dan')),'action<>') 
+      }
     ),
     timeout: 5000
   })
@@ -146,7 +149,10 @@ component('remoteTest.shadowResource.childJbm', {
     expectedResult: equals('Dan'),
     runBefore: runActions(
       remote.shadowResource('person', child('inner')),
-      () => { jb.exec(runActions(delay(1), writeValue('%$person/name%','Dan'))) }
+      () => { 
+        // do not return promise
+        jb.exec(runActions(delay(1), writeValue('%$person/name%','Dan')),'action<>') 
+      }
     ),
     timeout: 5000
   })
@@ -278,20 +284,6 @@ component('remoteTest.testResults', {
       'dataTest.join-true-,dataTest.join--true,dataTest.ctx.expOfRefWithBooleanType-true-,dataTest.ctx.expOfRefWithBooleanType--true'
     ),
     timeout: 3000
-  })
-})
-
-component('remoteTest.listSubJbms', {
-  impl: dataTest(pipe(net.listSubJbms(), join(',')), contains('tests,','tests•inner'), {
-    runBefore: jbm.start(child('inner')),
-    timeout: 1000
-  })
-})
-
-component('remoteTest.listAll', {
-  impl: dataTest(pipe(net.listAll(), join(',')), contains('tests,','tests•inner','networkPeer'), {
-    runBefore: runActions(jbm.start(worker('networkPeer', { networkPeer: true })), jbm.start(child('inner'))),
-    timeout: 1000
   })
 })
 

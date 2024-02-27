@@ -7,7 +7,7 @@ component('PPrintTest.vars', {
       const testToTest = 'dataTest.varsCases'
       const compTxt = jb.utils.prettyPrintComp(testToTest.replace(/varsCases/, 'varsCases2'), jb.comps['test<>'+testToTest])
       eval(compTxt)
-      return ctx.run(dataTest.asArrayBug()) // checks for error
+      return ctx.run(dataTest.asArrayBug(),'test<>') // checks for error
         .then(({ success }) => success && compTxt)
     } catch (e) {
       return false
@@ -34,6 +34,9 @@ component('PPrintTest.singleInArrayPath', {
 })
 
 component('PPrintTest.multiLineExample', {
+  params: [
+    {id: 'param1'}
+  ],
   type: 'control',
   impl: group(
     text('hello'),
@@ -43,7 +46,22 @@ component('PPrintTest.multiLineExample', {
 })
 
 component('PPrintTest.multiLine.prepend', {
-  impl: PPPosOfPath(() => jb.comps['control<>PPrintTest.multiLineExample'], 'control<>', 'prependPT!~impl~controls', '76,81')
+  impl: PPPosOfPath(() => jb.comps['control<>PPrintTest.multiLineExample'], 'control<>', 'prependPT!~impl~controls', '112,117')
+})
+
+component('PPrintTest.param', {
+  impl: dataTest({
+    calculate: () => jb.utils.prettyPrintComp('PPrintTest.multiLineExample',jb.comps['control<>PPrintTest.multiLineExample']),
+    expectedResult: contains(`{id: 'param1'}`)
+  })
+})
+
+component('PPrintTest.multiLine.addPropBegin', {
+  impl: PPPosOfPath(() => jb.comps['control<>PPrintTest.multiLineExample'], 'control<>', 'addProp!~impl', '112,112')
+})
+
+component('PPrintTest.multiLine.addPropEnd', {
+  impl: PPPosOfPath(() => jb.comps['control<>PPrintTest.multiLineExample'], 'control<>', 'addProp!~impl', '234,235')
 })
 
 component('PPrintTest.dslNameOverideExample', {
@@ -53,14 +71,6 @@ component('PPrintTest.dslNameOverideExample', {
 
 component('PPrintTest.dslNameOveride', {
   impl: PPPosOfPath(() => jb.comps['settlement<location>PPrintTest.dslNameOverideExample'], 'settlement<location>', 'addProp!~impl~state', '113,113')
-})
-
-component('PPrintTest.multiLine.addPropBegin', {
-  impl: PPPosOfPath(() => jb.comps['control<>PPrintTest.multiLineExample'], 'control<>', 'addProp!~impl', '76,76')
-})
-
-component('PPrintTest.multiLine.addPropEnd', {
-  impl: PPPosOfPath(() => jb.comps['control<>PPrintTest.multiLineExample'], 'control<>', 'addProp!~impl', '198,199')
 })
 
 component('PPrintTest.remark.pipeline', {

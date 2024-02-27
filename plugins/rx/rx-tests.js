@@ -28,7 +28,10 @@ component('rxTest.source.watchableData', {
   impl: dataTest({
     calculate: pipe(rx.pipe(source.watchableData('%$person/name%'), rx.map('%newVal%'), rx.take(1)), join(',')),
     expectedResult: equals('Dan'),
-    runBefore: () => {jb.exec(runActions(delay(1),writeValue('%$person/name%','Dan')))}
+    runBefore: () => {
+      // do not return promise
+      jb.exec(runActions(delay(1),writeValue('%$person/name%','Dan')), 'action<>') 
+    }
   })
 })
 

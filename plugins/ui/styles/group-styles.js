@@ -132,7 +132,7 @@ component('group.accordion', {
                 css.width('%$width%'),
                 css('{justify-content: left}'),
                 watchRef('%$selectedTab%'),
-                ctx => ctx.run({ $: 'features', features: (ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x) })
+                ctx => ctx.run({ $: 'features', features: (ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x) }, 'feature<>')
               ]
             }),
             group('%$$sectionsModel/controls[{%$sectionIndex%}]%', {
@@ -169,7 +169,7 @@ component('group.sections', {
           controls: [
             text('%$section/field()/title()%', {
               style: call('titleStyle'),
-              features: ctx => ctx.run({ $: 'features', features: (ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x) })
+              features: ctx => ctx.run({ $: 'features', features: (ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x) }, 'feature<>')
             }),
             group('%$section%', { style: call('innerGroupStyle') })
           ],

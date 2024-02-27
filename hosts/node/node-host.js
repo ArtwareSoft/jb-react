@@ -43,7 +43,8 @@ function codePackageNodeFS(baseDir) { return {
                 pluginDsl: unique(content.split('\n').map(l=>(l.match(/^(jb.)?pluginDsl\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0]))[0],
                 ns: unique(content.split('\n').map(l=>(l.match(/^(jb.)?component\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0])),
                 libs: unique(content.split('\n').map(l=>(l.match(/^(jb.)?extension\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0])),
-                using: unique(content.split('\n').map(l=>(l.match(/^(jb.)?using\s*\('([^']+)/) || ['',''])[2]).filter(x=>x).flatMap(x=>x.split(',').map(x=>x.trim()))),
+                using: unique(content.split('\n').map(l=>(l.match(/^(jb.)?using\('([^)]+)/) || ['',''])[2]).filter(x=>x).map(x=>x.replace(/'/g,''))
+                .flatMap(x=>x.split(',').map(x=>x.trim()))),
             }
         }
         function unique(list) {

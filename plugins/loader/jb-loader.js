@@ -3,13 +3,16 @@ const jb_plugins = null
 function jbBrowserCodePackage(repo = '', fetchOptions= {}, useFileSymbolsFromBuild) {
   return {
     repo: repo.split('/')[0],
-    _fetch(path) { return fetch(jbHost.baseUrl + path, fetchOptions) },
+    _fetch(path) { 
+      const hasBase = path && path.match(/\/\//)
+      return fetch(hasBase ? path: jbHost.baseUrl + path, fetchOptions) 
+    },
     fetchFile(path) { return this._fetch(path).then(x=>x.text()) },
     fetchJSON(path) { return this._fetch(path).then(x=>x.json()) },
     fileSymbols(path) { return useFileSymbolsFromBuild ? this.fileSymbolsFromStaticFileServer(path) 
       : this.fileSymbolsFromStudioServer(path) },
     fileSymbolsFromStudioServer(path) {
-      return this.fetchJSON(`?op=fileSymbols&path=${repo}${path}`)
+      return this.fetchJSON(`${jbHost.baseUrl||''}?op=fileSymbols&path=${repo}${path}`)
     },
     async fileSymbolsFromStaticFileServer(path) {
       if (!this.loadedSymbols) {
@@ -38,7 +41,8 @@ globalThis.jbHost = globalThis.jbHost || { // browserHost - studioServer,worker 
   }
 }
 
-async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl} ={}) {
+async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl, baseUrl} ={}) {
+  if (baseUrl) jbHost.baseUrl = baseUrl // used for extension content script
   const jb = { 
     uri,
     sourceCode,

@@ -165,18 +165,15 @@ extension('test', {
 		jb.test.initial_resources = JSON.stringify(jb.db.resources) //.replace(/\"\$jb_id":[0-9]*,/g,'')
 		jb.test.initial_comps = jb.watchableComps && jb.watchableComps.handler && jb.watchableComps.handler.resources()
 		jb.test.coveredTests = {}
-		jb.entries(jb.comps).forEach(e=>{
-			(jb.path(e[1].impl,'covers') || []).forEach(test=>{
+		const testComps = jb.entries(jb.comps).filter(e=>e[1] && e[1].type != 'test' && e[0].startsWith('test<>')).map(([id,comp]) => [id.split('test<>').pop(),comp,id])
+		testComps.forEach(([id,comp])=>{
+			(jb.path(comp.impl,'covers') || []).forEach(test=>{
 				jb.test.coveredTests[test] = jb.test.coveredTests[test] || []
-				jb.test.coveredTests[test].push(e[0])
+				jb.test.coveredTests[test].push(id)
 			})
 		})
 
-		let tests = jb.entries(jb.comps)
-			.filter(e=>typeof e[1].impl == 'object')
-			.filter(e=>e[1].type != 'test') // exclude the testers
-			.filter(e=>e[0].startsWith('test<>'))
-			.map(([id,comp]) => [id.split('test<>').pop(),comp,id])
+		let tests = testComps
 			.filter(e=>!testType || e[1].impl.$ == testType)
 			.filter(e=>!specificTest || e[0] == specificTest)
 	//		.filter(e=> !e[0].match(/throw/)) // tests that throw exceptions and stop the debugger
@@ -184,7 +181,7 @@ extension('test', {
 			.filter(e=>!notPattern || !e[0].match(notPattern))
 			.filter(e => e[0] == specificTest || (
 				(coveredTestsOf || !jb.test.coveredTests[e[0]])
-				&& (!coveredTestsOf || (jb.comps[coveredTestsOf].impl.covers || []).includes(e[0]) || e[0] == coveredTestsOf)
+				&& (!coveredTestsOf || (jb.comps[`test<>${coveredTestsOf}`].impl.covers || []).includes(e[0]) || e[0] == coveredTestsOf)
 				&& jb.path(e[1].impl,'expectedResult') !== true
 				&& !jb.path(e[1],'doNotRunInTests')
 			))

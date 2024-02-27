@@ -111,7 +111,7 @@ component('button.mdcIcon', {
   impl: styleWithFeatures(button.mdcFloatingAction('%$buttonSize%', false), {
     features: features(
       (ctx,{},{icon}) => icon && ctx.run({$: 'feature.icon', ...icon, title: '%$model.title%',
-        size: ({},{},{buttonSize}) => buttonSize * 24/40 })
+        size: ({},{},{buttonSize}) => buttonSize * 24/40 }, 'feature<>')
     )
   })
 })

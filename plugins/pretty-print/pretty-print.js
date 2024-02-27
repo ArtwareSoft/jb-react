@@ -38,7 +38,7 @@ extension('utils', 'prettyPrint', {
     if (type)
       val.$type = type
     if (val.$unresolved)
-      val.$comp ? jb.utils.resolveComp(val,{tgpModel}) : jb.utils.resolveProfile(val,{tgpModel})
+      val.$comp ? jb.utils.resolveComp(val,{tgpModel}) : jb.utils.resolveProfile(val,{tgpModel, expectedType: type})
 
     calcValueProps(val,initialPath)
     const tokens = calcTokens(initialPath, { depth: depth || 1, useSingleLine: singleLine })
@@ -179,8 +179,11 @@ extension('utils', 'prettyPrint', {
         return props[path] = {list, len: content.length + 6 }
       }
       if (profile.$comp) {
-        const cleaned = {...profile}
+        const cleaned = {...profile }
+        if (profile.params)
+          cleaned.params = JSON.parse(JSON.stringify(profile.params))
         Object.keys(cleaned).forEach(k=> (k == '$$' || k.match(/^\$.+/)) && delete cleaned[k])
+        ;(cleaned.params||[]).forEach(p => delete p.$type)
         return asIsProps(cleaned,path)
       }
       if (!profile.$$)

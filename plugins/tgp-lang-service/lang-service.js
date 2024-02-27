@@ -164,7 +164,7 @@ extension('langService', 'impl', {
         const { line, col } = jb.tgpTextEditor.offsetToLineCol(text, item.from - startOffset - 1)
 
         const suggestions = await ctx.setData(input).setVars({ filePath, probePath: path }).run(
-            {$: 'langServer.remoteProbe', sourceCode: {$: 'source-code<loader>probeServer', filePath: '%$filePath%'}, probePath: '%$probePath%', expressionOnly: true })
+            {$: 'langServer.remoteProbe', sourceCode: {$: 'source-code<loader>probeServer', filePath: '%$filePath%'}, probePath: '%$probePath%', expressionOnly: true }, 'data<>')
         return (jb.path(suggestions, '0.options') || []).map(option => {
             const { pos, toPaste, tail, text } = option
             const primiteVal = option.valueType != 'object'

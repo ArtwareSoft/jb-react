@@ -420,7 +420,7 @@ extension('ui','comp', {
                 jb.logError('uiComp: no ctx provided for jbExtend',{_options,ctx})
             if (typeof _options != 'object')
                 jb.logError('uiComp: _options should be an object',{_options,ctx})
-            const options = _options.$ ? ctx.run(_options) : _options
+            const options = _options.$ ? ctx.run(_options, 'feature<>') : _options
             if (Array.isArray(options)) {
                 options.forEach(o=>this.jbExtend(o,ctx))
                 return this

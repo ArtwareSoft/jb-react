@@ -170,7 +170,7 @@ extension('probe', 'main', {
             if (jb.comps[`${compName}.probe`]) {
                 parentCtx.profile[breakingProp].$$ = null //[jb.core.CT] = { ...parentCtx.profile[breakingProp][jb.core.CT], comp: null }
                 const fixedProf = {...parentCtx.profile[breakingProp], $: `${compName}.probe`}
-                return jb.probe.resolve(parentCtx.runInner(jb.utils.resolveProfile(fixedProf),
+                return jb.probe.resolve(parentCtx.runInner(jb.utils.resolveProfile(fixedProf, {expectedType: jb.comps[compName].type}),
                     jb.tgp.paramDef(breakingPath),breakingProp))
                         .then(_=>this.handleGaps(_path))
             }

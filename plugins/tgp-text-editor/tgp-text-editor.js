@@ -16,6 +16,7 @@ extension('tgpTextEditor', {
             const comp = res
             const type = comp.type || ''
             const dsl = fileDsl || plugin.dsl || type.indexOf('<') != -1 && type.split(/<|>/)[1]
+            comp.$dsl = dsl
             const compId = jb.utils.resolveSingleComp(comp, id, { tgpModel, dsl })
             comp.$location = jb.path(tgpModel,[compId,'$location'])
             comp.$comp = true

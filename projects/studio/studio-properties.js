@@ -89,7 +89,7 @@ component('studio.properties', {
               css.width('100%')
             ]
           }),
-          button('new icon', tgp.getOrCreateCompInArray('%$path%~features', 'feature.icon'), {
+          button('new icon', tgp.getOrCreateCompInArray('%$path%~features', 'feature<>feature.icon'), {
             style: button.mdcIcon({ buttonSize: '24' }),
             features: feature.icon('Creation', { type: 'mdi', size: '16' })
           }),

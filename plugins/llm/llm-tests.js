@@ -1,4 +1,4 @@
-using('ui-tests')
+using('ui-tests','net')
 
 component('llmTest.hello', {
   doNotRunInTests: true,
@@ -58,3 +58,17 @@ component('llmTest.enrichTrainingItem', {
   impl: dataTest(enrichTrainingItem('%$tutorialSample/training/0%'))
 })
 
+component('llmTest.helloToRouter', {
+  doNotRunInTests: true,
+  impl: dataTest(remote.data('hello', router()), equals('hello'))
+})
+
+component('llmTest.listRouter', {
+  doNotRunInTests: true,
+  impl: dataTest(remote.data(() => Object.keys(jb.jbm.networkPeers) , router()), equals('hello'))
+})
+
+component('llmTest.testLLMHelper', {
+  doNotRunInTests: true,
+  impl: dataTest(llm.helperUrl(), equals('hello'))
+})
