@@ -20,11 +20,6 @@ component('llmTest.enrichTutorialData', {
   ))
 })
 
-component('llmTest.buildHtml', {
-  doNotRunInTests: true,
-  impl: uiTest(llm.HtmlAndCssBuilder(), contains('build'))
-})
-
 component('llmTest.count', {
   doNotRunInTests: true,
   impl: uiFrontEndTest({
@@ -65,10 +60,15 @@ component('llmTest.helloToRouter', {
 
 component('llmTest.listRouter', {
   doNotRunInTests: true,
-  impl: dataTest(remote.data(() => Object.keys(jb.jbm.networkPeers) , router()), equals('hello'))
+  impl: dataTest(remote.data(() => Object.keys(jb.jbm.networkPeers) , router()), contains('llmHelper'))
 })
 
-component('llmTest.testLLMHelper', {
+component('llmHelperTest.code', {
   doNotRunInTests: true,
-  impl: dataTest(llm.helperUrl(), equals('hello'))
+  impl: dataTest(llmHelper.code(), equals('hello'))
+})
+
+component('llmHelperTest.setPrompt', {
+  doNotRunInTests: true,
+  impl: dataTest({ runBefore: llmHelper.setPrompt('hi There mk kmk') })
 })

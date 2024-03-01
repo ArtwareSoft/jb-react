@@ -10,6 +10,7 @@ extension('db', 'onAddComponent', {
       match:(id,comp) => comp.watchableData !== undefined,
       register: (id,comp) => {
         jb.comps[jb.db.addDataResourcePrefix(id)] = comp
+        comp.$db = true
         return jb.db.resource(jb.db.removeDataResourcePrefix(id),comp.watchableData)  
       }
     })
@@ -17,6 +18,7 @@ extension('db', 'onAddComponent', {
       match:(id,comp) => comp.passiveData !== undefined,
       register: (id,comp) => {
         jb.comps[jb.db.addDataResourcePrefix(id)] = comp
+        comp.$db = true
         return jb.db.passive(jb.db.removeDataResourcePrefix(id),comp.passiveData)  
       }
     })

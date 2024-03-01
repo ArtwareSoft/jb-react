@@ -3,21 +3,24 @@ jb.ui.f1 => $ui.f1
 prettyPrint -> formatter
 different dsls with different colors
 
-define chatRoom service
-  connect(role: A | B, chatRoomType, chatRoomName: optional -> if not given creates a new chatRoom)
-  list() - list all chat rooms with participants
-  
-component('chatRoomPeer' ,{
-type: 'jbm<remote>',
-   params: [
-    chatRoomType, Role, chatRoomName -> optinal
-   ]
-})
-  source.onDisconnent(jbm)
+tutorialDB(md)
+  threadId
+  plugin or dsl
+  general (architecture & flows by example)
+  usage (examples as tests with explainations)
+    item - title,level,covered features (can be calculated and attached)
+  exercises
+    item - level,
+    type - 
+      test with missing excpected result
+      test with missing feature in the calculate selection
+      advanced
+        bug fix,can ask for code,spy,log and suggest fix
+        new feature, new comp
 
-
-stduio bugs
-  does not refresh - add tab group
+cmd.html
+studio bugs
+  tree does not refresh - add tab group
   tree - insert does not refresh need to reopen
   
 llm query dsl

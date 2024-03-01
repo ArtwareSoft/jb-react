@@ -6,9 +6,12 @@
   "permissions": [
     "activeTab"
   ],
+  "web_accessible_resources": [
+    "http://localhost:8082/*"
+  ],
   "content_scripts": [
     {
-      "matches": ["https://www.artwaresoft.com/*"],
+      "matches": ["https://www.artwaresoft.com/*", "https://chat.openai.com/*"],
       "js": ["llm-content-script.js"]
     }
   ],
