@@ -12,12 +12,13 @@
         #sourceCodeEl + .CodeMirror {  height: 25px }
         #runCtxEl + .CodeMirror {  height: 200px }
         #resultEl + .CodeMirror {  height: 1000px }
+        #errorsEl + .CodeMirror {  height: 400px }
     </style>    
 </head>
 <body>
 <div id="remoteTests"> </div>
     <textarea id="sourceCodeEl" style="width:100%; height:50px"> </textarea>
-    <h3>errors</h3><div id="errorsEl"> </div>
+    <h3>errors</h3><textarea id="errorsEl" style="height:10px"> </textarea>
     <h3>ctx</h3><textarea id="runCtxEl" style="width:100%; height:100px"> </textarea>
     <h3>result</h3><textarea id="resultEl" style="width:100%; height:700px"> </textarea>
     <script>
@@ -38,16 +39,26 @@
             sourceCodeEl.value = jb.utils.prettyPrint(sourceCode,{noMacros: true})
             runCtxEl.value = jb.utils.prettyPrint(runCtx)
             await jb.delay(1)
-            const res = await jb.remoteCtx.deStrip(runCtx)()
-            resultEl.value = JSON.stringify(res,2)
+            let res
+            try {
+                res = await jb.remoteCtx.deStrip(runCtx)()
+            } catch (e) {
+                jb.logException(e,{})
+                res = { err : true}
+            }
+            resultEl.value = JSON.stringify(res,null,2)
             await jb.delay(100)
             resultEl.value = jb.utils.prettyPrint(res,{noMacros: true})
 
-            resultEl.errorsEl = JSON.stringify(jb.spy.search('error'))
+            const errors = jb.remoteCtx.stripData(jb.spy.search('error'))
+            if (errors.length)
+                errorsEl.value = JSON.stringify(errors,null,2)
             await jb.delay(100)
             CodeMirror.fromTextArea(sourceCodeEl, { mode: 'javascript' })            
             CodeMirror.fromTextArea(runCtxEl, { lineNumbers: true,  mode: 'javascript' })            
-            CodeMirror.fromTextArea(resultEl, { lineNumbers: true,  mode: 'javascript' })            
+            CodeMirror.fromTextArea(resultEl, { lineNumbers: true,  mode: 'javascript' })
+            if (errors.length)
+                CodeMirror.fromTextArea(errorsEl, { lineNumbers: true,  mode: 'javascript' })            
             console.log(res)
         })()
     </script>

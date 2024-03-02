@@ -28,7 +28,7 @@ component('studio.main', {
     features: [
       group.wait({
         for: ctx => jb.studio.host.settings()
-        .then(settings => ctx.run(writeValue('%$studio/settings%',
+        .then(settings => ctx.runAction(writeValue('%$studio/settings%',
           Object.assign(ctx.exp('%$studio/settings%'), typeof settings == 'string' ? JSON.parse(settings) : {})))),
         loadingControl: text('')
       }),

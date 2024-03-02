@@ -115,14 +115,14 @@ component('vscodeWebView', {
   params: [
     {id: 'id', as: 'string'},
     {id: 'panel'},
-    {id: 'sourceCode', type: 'source-code<loader>', byName: true, defaultValue: xServer()},
+    {id: 'sourceCode', type: 'source-code<loader>', byName: true, defaultValue: sourceCode(plugins('remote,remote-widget,vscode,probe-result-ui')) },
     {id: 'init', type: 'action', dynamic: true}
   ],
   impl: (ctx,id,panel,sourceCode, init) => {
         if (jb.jbm.childJbms[id]) return jb.jbm.childJbms[id]
         const webViewUri = `${jb.uri}•${id}`
         const _jbBaseUrl = 'http://localhost:8082'
-        sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),'vscode','tree-shake','probe-result-ui'])
+        sourceCode.plugins = sourceCode.plugins
         const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -135,8 +135,8 @@ component('vscodeWebView', {
     jbHost.baseUrl = '${_jbBaseUrl}'
     ;(async () => {
       globalThis.jb = await jbInit('${webViewUri}', ${JSON.stringify(sourceCode)})
-      globalThis.spy = jb.spy.initSpy({spyParam: 'remote,vscode,treeShake'})
-      jb.treeShake.codeServerJbm = jb.parent = jb.ports['${jb.uri}'] = jb.jbm.extendPortToJbmProxy(jb.vscode.portFromWebViewToExt('${webViewUri}','${jb.uri}'))
+      globalThis.spy = jb.spy.initSpy({spyParam: 'remote,vscode'})
+      jb.parent = jb.ports['${jb.uri}'] = jb.jbm.extendPortToJbmProxy(jb.vscode.portFromWebViewToExt('${webViewUri}','${jb.uri}'))
       jb.parent.remoteExec(jb.remoteCtx.stripJS(() => jb.jbm.notifyChildReady['${webViewUri}']() ), {oneway: true} )
       function ${jb.vscode.portFromWebViewToExt.toString()}
     })()

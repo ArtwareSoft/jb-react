@@ -1,0 +1,48 @@
+{
+  "errors": [
+    [
+      {
+        "log": "exception error",
+        "logNames": "exception error",
+        "e": {
+          "$$": "Error",
+          "message": "ReferenceError: studio is not defined"
+        },
+        "err": "loadjbFile lib /plugins/llm/llm-ui.js",
+        "context": {
+          "jb": {
+            "uri": "main"
+          }
+        },
+        "code": "using('ui')\n\ncomponent('llmFloating', {\n  type: 'dialog-style<>',\n  params: [\n    {id: 'id', as: 'string'},\n    {id: 'width', as: 'number', defaultValue: 300},\n    {id: 'height', as: 'number', defaultValue: 100}\n  ],\n  impl: customStyle({\n    template: (cmp,{title,contentComp,id},h) => h('div',{ class: 'jb-dialog jb-default-dialog', id},[\n\t\t\t\th('div',{class: 'dialog-title noselect'},title),\n\t\t\t\tcmp.hasMenu ? h('div',{class: 'dialog-menu'}, h(cmp.menuComp)): '',\n\t\t\t\th('button.dialog-close', {onclick: 'dialogClose' },'×'),\n\t\t\t\th('div',{class: 'jb-dialog-content-parent'},h(contentComp)),\n\t\t\t]),\n    css: `{ position: fixed;\n\t\t\t\t\t\twidth: %$width%px;\n\t\t\t\t\t\tmin-height: %$height%px;\n\t\t\t\t\t\toverflow: auto;\n\t\t\t\t\t\tborder-radius: 4px;\n\t\t\t\t\t\tpadding: 0 12px 12px 12px;\n\t\t\t\t\t\tbox-shadow: 0 0px 9px var(--jb-dropdown-shadow)\n\t\t\t\t}\n\t\t\t\t>.dialog-title { background: none; padding: 10px 5px; }\n\t\t\t\t>.jb-dialog-content-parent { padding: 0; overflow-y: auto; overflow-x: hidden; }\n\t\t\t\t>.dialog-close {\n\t\t\t\t\t\tposition: absolute;\n\t\t\t\t\t\tcursor: pointer;\n\t\t\t\t\t\tright: 4px; top: 4px;\n\t\t\t\t\t\tfont: 21px sans-serif;\n\t\t\t\t\t\tborder: none;\n\t\t\t\t\t\tcolor: var(--jb-menu-fg); text-shadow: 0 1px 0 var(--jb-menu-bg); \n\t\t\t\t\t\tfont-weight: 700;\n\t\t\t\t\t\topacity: .2;\n\t\t\t\t}\n\t\t\t\t>.dialog-menu {\n\t\t\t\t\t\tposition: absolute;\n\t\t\t\t\t\tcursor: pointer;\n\t\t\t\t\t\tright: 24px; top: 4px;\n\t\t\t\t\t\tfont: 21px sans-serif;\n\t\t\t\t\t\tborder: none;\n\t\t\t\t\t\tcolor: var(--jb-menu-fg); text-shadow: 0 1px 0 var(--jb-menu-bg); \n\t\t\t\t\t\tfont-weight: 700;\n\t\t\t\t\t\topacity: .2;\n\t\t\t\t}\n\t\t\t\t>.dialog-close:hover { opacity: .5 }`,\n    features: [\n      dialogFeature.dragTitle('%$id%', true),\n      dialogFeature.uniqueDialog('%$id%'),\n      dialogFeature.maxZIndexOnClick(5000),\n      popupLocation()\n    ]\n  })\n})\n\ncomponent('popupLocation', {\n  type: 'dialog-feature<>',\n  impl: templateModifier(({},{vdom}) => { \n    const id = (vdom.getAttribute('id')||'').replace(/\\s/g,'_')\n    if (id && !jb.utils.sessionStorage(id))\n      vdom.addClass(`default-location ${id}`)\n  })\n})\n\ncomponent('llm.openHelperPopup', {\n  type: 'action<>',\n  params: [\n  ],\n  impl: openDialog({\n    title: 'LLM Helper',\n    content: llm.Helper(),\n    style: llmFloating('helper', '860', { height: '100%' }),\n    menu: button({ action: studio.openJbEditorMenu('%$path%', '%$path%'), style: button.mdcIcon('menu') }),\n    features: dialogFeature.resizer()\n  })\n})\n//# sourceURL=/plugins/llm/llm-ui.js?main",
+        "index": 0,
+        "source": [
+          "Object.loadjbFile",
+          "jb-loader.js:98:21",
+          "at Object.loadjbFile (/home/shaiby/projects/jb-react/plugins/loader/jb-loader.js:98:21)",
+          "at async Promise.all (index 3)",
+          "at async /home/shaiby/projects/jb-react/plugins/loader/jb-loader.js:74:9",
+          "at async Object.loadPlugins (/home/shaiby/projects/jb-react/plugins/loader/jb-loader.js:69:7)",
+          "at async /home/shaiby/projects/jb-react/plugins/loader/jb-loader.js:73:9",
+          "at async Object.loadPlugins (/home/shaiby/projects/jb-react/plugins/loader/jb-loader.js:69:7)",
+          "at async jbInit (/home/shaiby/projects/jb-react/plugins/loader/jb-loader.js:136:3)",
+          "at async /home/shaiby/projects/jb-react/hosts/node/jb.js:56:21"
+        ],
+        "_time": "42:711",
+        "time": 1709294562711,
+        "mem": null,
+        "$attsOrder": [
+          "e",
+          "err",
+          "stack",
+          "context",
+          "code"
+        ],
+        "$ext": {
+          "sections": [],
+          "props": {}
+        }
+      }
+    ]
+  ]
+}

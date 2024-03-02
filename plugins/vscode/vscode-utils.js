@@ -82,10 +82,10 @@ extension('vscode', 'utils', {
         jbHost.log([...args,`time: ${new Date().getTime() % 100000}`])
     },
     provideCompletionItems() {
-        return jb.exec(langService.completionItems())
+        return jb.calc(langService.completionItems())
     },
     async provideDefinition() {
-        const loc = await jb.exec(langService.definition())
+        const loc = await jb.calc(langService.definition())
         if (!loc)
             return jb.logError('provideDefinition - no location returned', {})
         const repos = (vscodeNS.workspace.workspaceFolders || []).map(ws=>ws.uri.path)
@@ -95,7 +95,7 @@ extension('vscode', 'utils', {
         return new vscodeNS.Location(vscodeNS.Uri.file(path), new vscodeNS.Position((+loc.line) || 0, 0))
     },
     async provideReferences() {
-        const locations = await jb.exec(langServer.references()) 
+        const locations = await jb.calc(langServer.references()) 
         const base = jbHost.jbReactDir
         const res = locations.map(({path, line, col}) => new vscodeNS.Location(vscodeNS.Uri.file(base + path), new vscodeNS.Position(line-1, col)))
         return res
@@ -112,14 +112,13 @@ extension('vscode', 'utils', {
         await jb.tgpTextEditor.host.applyEdit(edit)
         cursorPos && jb.tgpTextEditor.host.selectRange(cursorPos)
     },
-
     async openProbeResultPanel() {
-        const probeRes = await jb.exec(langServer.probe())
+        const probeRes = await jb.calc(langServer.probe())
         jb.vscode.panels.main.render('probeUI.probeResViewForVSCode',probeRes)
     },
     async openProbeResultEditor() { // ctrl-I
         vscodeNS.commands.executeCommand('workbench.action.editorLayoutTwoRows')
-        const compProps = await jb.exec(langService.calcCompProps()) // IMPORTANT - get comp props here. opening the view will change the current editor
+        const compProps = await jb.calc(langService.calcCompProps()) // IMPORTANT - get comp props here. opening the view will change the current editor
         if (!jb.vscode.panels.inspect) {
             jb.vscode.panels.inspect = {}
             const panel = jb.vscode.panels.inspect.panel = vscodeNS.window.createWebviewPanel('jbart.inpect', 'inspect', vscodeNS.ViewColumn.Two, { enableScripts: true })
@@ -129,9 +128,8 @@ extension('vscode', 'utils', {
             })
             jb.vscode.panels.inspect.jbm = await jb.exec(jbm.start(vscodeWebView({ id: 'vscode_inspect', panel: () => panel})))
         }
-        const probeRes = await jb.vscode.ctx.setData(compProps).run(langServer.probe())
-        if (probeRes)
-            probeRes.$$asIs = true
+        const probeRes = await jb.vscode.ctx.setData(compProps).run(langServer.probe()) || { compProps, errors: ['null probe res']}
+        probeRes.$$asIs = true
         probeRes.badFormat = (probeRes.errors || []).find(x=>x.err == 'reformat edits') && true
 
         return jb.vscode.ctx.setData(probeRes).run(
@@ -147,11 +145,11 @@ extension('vscode', 'utils', {
     },
     async openLiveProbeResultPanel() {
     },
-    async openjBartStudio() { // ctrl-j
-        const url = await jb.exec(langServer.studioCircuitUrl())
+    async openjBartStudio() { // ctrl-j - should open quick menu
+        const url = await jb.calc(langServer.studioCircuitUrl())
         vscodeNS.env.openExternal(vscodeNS.Uri.parse(url))
     },
-    async openjBartTest() { // ctrl-shift-j
+    async openjBartTest() { // ctrl-shift-j - should open menu
         const docProps = jb.tgpTextEditor.host.compTextAndCursor()
         const testID = docProps.shortId
         const spyParam = jb.spy.spyParamForTest(testID)
@@ -162,6 +160,21 @@ extension('vscode', 'utils', {
     openLastCmd() {
         const url = jbHost.fs.readFileSync(jbHost.jbReactDir + '/temp/runCtxUrl')
         vscodeNS.env.openExternal(vscodeNS.Uri.parse(url))
+    },
+    async delete() {
+        const {edit, cursorPos} = await jb.calc(langService.deleteEdits())
+        await jb.tgpTextEditor.host.applyEdit(edit)
+        cursorPos && jb.tgpTextEditor.host.selectRange(cursorPos)
+    },
+    async disable() {
+        const {edit, cursorPos} = await jb.calc(langService.disableEdits())
+        await jb.tgpTextEditor.host.applyEdit(edit)
+        cursorPos && jb.tgpTextEditor.host.selectRange(cursorPos)
+    },
+    async duplicate() {
+        const {edit, cursorPos} = await jb.calc(langService.duplicateEdits())
+        await jb.tgpTextEditor.host.applyEdit(edit)
+        cursorPos && jb.tgpTextEditor.host.selectRange(cursorPos)
     },
     toVscodeFormat(pos) {
         return { line: pos.line, character: pos.col }

@@ -49,7 +49,7 @@ component('dialogFeature.studioPick', {
     method('hoverOnElem', (ctx,{}) => {
       const el = ctx.data
       Object.assign(ctx.vars.dialogData,{ elem: el, cmpId: el.getAttribute('cmp-id'), path: jb.studio.pathOfElem(el) })
-      ctx.run(toggleBooleanValue('%$studio/refreshPick%')) // trigger for refreshing the dialog
+      ctx.runAction(toggleBooleanValue('%$studio/refreshPick%')) // trigger for refreshing the dialog
     }),
     method('endPick', runActions(writeValue('%$studio/pickSelectionCmpId%', '%$dialogData.cmpId%'), dialog.closeDialog(true))),
     frontEnd.flow(
@@ -89,7 +89,7 @@ component('dialog.studioPickDialog', {
   ],
   impl: customStyle({
     template: (cmp,{},h) => h('div.jb-dialog jb-pick',{},[
-      h('div.edge top'), h('div.edge left'), h('div.edge right'), h('div.edge bottom'), h(cmp.ctx.run(studio.pickTitle()))
+      h('div.edge top'), h('div.edge left'), h('div.edge right'), h('div.edge bottom'), h(cmp.ctx.run(studio.pickTitle(),'control<>'))
     ]),
     css: `{ display: block; position: absolute; width: 0; height:0; z-index: 10000 !important; }
     >.edge { position: absolute; box-shadow: 0 0 1px 1px gray; width: 1px; height: 1px; cursor: pointer; }`,
@@ -189,7 +189,7 @@ extension('studio','highlight', {
     const ctx = cmp && cmp.ctx
     if (!ctx) return
     ctx.profile = jb.path(jb.comps,ctx.path.split('~'))
-    const dialogCmp = ctx.profile.$ == 'openDialog' ? ctx.run({$: 'dialog.buildComp'}) : ctx.runItself()
+    const dialogCmp = ctx.profile.$ == 'openDialog' ? ctx.calc({$: 'dialog.buildComp'}) : ctx.runItself()
     dialogCmp && jb.ui.applyNewVdom(elem, jb.ui.h(dialogCmp), {strongRefresh: true, ctx})
   },
   findElemsByPathCondition: condition => Array.from(document.querySelectorAll('[cmp-id]'))

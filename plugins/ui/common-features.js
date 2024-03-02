@@ -290,7 +290,7 @@ component('watchable', {
   impl: ({}, name, value) => ({
     destroy: cmp => {
       const fullName = name + ':' + cmp.cmpId;
-      cmp.ctx.run(writeValue(`%$${fullName}%`,null))
+      cmp.ctx.runAction(writeValue(`%$${fullName}%`,null))
     },
     extendCtx: (ctx,cmp) => {
       if (name.match(/:/)) jb.logError(`watchable: do not use ":" in var name ${name}`,{ctx})

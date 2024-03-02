@@ -502,3 +502,115 @@ component('completionTest.multiLineFeatures', {
     expectedCursorPos: '3,11'
   })
 })
+
+component('langServiceTest.provideDefinition', {
+  impl: dataTest({
+    calculate: pipe(langService.dummyCompProps(`component('x', {
+  impl: dataTest('', __not())
+})`), langService.definition()),
+    expectedResult: contains('jb-common', { data: '%path%' })
+  })
+})
+
+component('langServiceTest.provideDefinition.inFunc', {
+  impl: dataTest({
+    calculate: pipe(
+      langService.dummyCompProps(
+        `component('x', {
+  impl: dataTest('', () => { __jb.utils.prettyPrint('aa'); return 3})
+})`
+      ),
+      langService.definition()
+    ),
+    expectedResult: contains('pretty-print', { data: '%path%' })
+  })
+})
+
+component('langServiceTest.moveInArrayEdits', {
+  impl: dataTest({
+    calculate: pipe(
+      langService.dummyCompProps(
+        `component('x', {
+  impl: dataTest(pipeline(list(1,2,3), __slice(0, 2), join()), equals('1,2'))
+})`
+      ),
+      langService.moveInArrayEdits(1),
+      first()
+    ),
+    expectedResult: equals('%cursorPos%', asIs({line: 1, col: 47}))
+  })
+})
+
+component('langServiceTest.duplicateEdits', {
+  impl: dataTest({
+    calculate: pipe(
+      langService.dummyCompProps(
+        `component('x', {
+  impl: dataTest(pipeline(list(1,2,3), __slice(0, 2), join()), equals('1,2'))
+})`
+      ),
+      langService.duplicateEdits(),
+      first()
+    ),
+    expectedResult: equals(asIs({
+      edit: {range: {start: {line: 1, col: 52}, end: {line: 1, col: 52}}, newText: 'slice(0, 2), '},
+      cursorPos: {line: 1, col: 52}
+    }))
+  })
+})
+
+component('langServiceTest.deleteEdits', {
+  impl: dataTest({
+    calculate: pipe(
+      langService.dummyCompProps(
+        `component('x', {
+  impl: dataTest(pipeline(list(1,2,3), __slice(0, 2), join()), equals('1,2'))
+})`
+      ),
+      langService.deleteEdits(),
+      first()
+    ),
+    expectedResult: equals(asIs({
+      edit: {range: {start: {line: 1, col: 39}, end: {line: 1, col: 52}}, newText: ''},
+      cursorPos: {line: 1, col: 39}
+    }))
+  })
+})
+
+component('langServiceTest.disableEdits', {
+  impl: dataTest({
+    calculate: pipe(
+      langService.dummyCompProps(
+        `component('x', {
+  impl: dataTest(pipeline(list(1,2,3), __slice(0, 2), join()), equals('1,2'))
+})`
+      ),
+      langService.disableEdits(),
+      first()
+    ),
+    expectedResult: equals(asIs({
+      edit: {range: {start: {line: 1, col: 49}, end: {line: 1, col: 49}}, newText: ', { $disabled: true }'},
+      cursorPos: {line: 1, col: 39}
+    }))
+  })
+})
+
+component('langServiceTest.enableEdits', {
+  impl: dataTest({
+    calculate: pipe(
+      langService.dummyCompProps(
+        `component('x', {
+  impl: dataTest(pipeline(list(1,2,3), __slice(0, 2, { $disabled: true }), join()), equals('1,2'))
+})`
+      ),
+      langService.disableEdits(),
+      first()
+    ),
+    expectedResult: equals(
+      asIs({
+  edit: {range: {start: {line: 1, col: 49}, end: {line: 1, col: 70}}, newText: ''},
+  cursorPos: {line: 1, col: 39}
+})
+    )
+  })
+})

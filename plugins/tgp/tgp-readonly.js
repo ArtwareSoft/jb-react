@@ -200,9 +200,9 @@ extension('tgp', 'readOnly', {
 		const keys = [...Object.keys(prof),jb.core.OrigValues]
 		return jb.objFromEntries(keys.map(k=>[k,jb.tgp.cloneProfile(prof[k])]))
 	},
-	newProfile(comp,compName, {basedOnPath, basedOnVal} = {}) {
+	newProfile(comp, {basedOnPath, basedOnVal} = {}) {
 		const currentVal = basedOnVal != null ?  basedOnVal : (basedOnPath && jb.tgp.valOfPath(basedOnPath))
-		const result = { $: compName }
+		const result = { $$: comp.$$, $type: comp.$type	}
 		const composite = jb.utils.compParams(comp).find(p=>p.composite)
 		jb.utils.compParams(comp).forEach(p=>{
 			if (p.composite)

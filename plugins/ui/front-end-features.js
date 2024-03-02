@@ -346,7 +346,7 @@ component('feature.keyboardShortcut', {
     frontEnd.init((ctx,{cmp,el}) => {
       if (! cmp.hasDocOnKeyHanlder) {
         cmp.hasDocOnKeyHanlder = true
-        ctx.run(rx.pipe(
+        ctx.calc(rx.pipe(
           source.frontEndEvent('keydown'),
           rx.map(key.eventToMethod('%%',el)), 
           rx.filter('%%'), 
@@ -371,7 +371,7 @@ component('feature.globalKeyboardShortcut', {
     frontEnd.init((ctx,{cmp,el}) => {
       if (! cmp.hasDocOnKeyHanlder) {
         cmp.hasDocOnKeyHanlder = true
-        ctx.run(rx.pipe(
+        ctx.calc(rx.pipe(
           source.event('keydown','%$cmp.base.ownerDocument%'), 
           rx.takeUntil('%$cmp.destroyed%'),
           rx.map(key.eventToMethod('%%',el)), 

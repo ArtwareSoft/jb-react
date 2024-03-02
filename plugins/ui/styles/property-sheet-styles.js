@@ -7,7 +7,7 @@ component('propertySheet.titlesLeft', {
   ],
   impl: customStyle({
     template: (cmp,{ctrls,titleStyle,titleText},h) => h('div',{}, ctrls.flatMap(ctrl=>[
-        h(cmp.ctx.run({$: 'control<>text' ,text: ctx => titleText(ctx.setData(ctrl.field().title())), style: ctx => titleStyle(ctx)})),
+        h(cmp.ctx.run({$: 'text' ,text: ctx => titleText(ctx.setData(ctrl.field().title())), style: ctx => titleStyle(ctx)},'control<>')),
         h(ctrl)
       ])
     ),
@@ -26,9 +26,9 @@ component('propertySheet.titlesAbove', {
   impl: customStyle({
     template: (cmp,{ctrls,titleStyle,titleText},h) => h('div',{ style: {'grid-template-columns': ctrls.map(()=>'auto').join(' ')}}, [
         ...ctrls.map(ctrl=>
-          h(cmp.ctx.run({$: 'control<>text', 
+          h(cmp.ctx.run({$: 'text', 
             text: ctx => titleText(ctx.setData(ctrl.field().title())), 
-            style: ctx => titleStyle(ctx)}))), 
+            style: ctx => titleStyle(ctx)}, 'control<>'))), 
         ...ctrls.map(ctrl=>h(ctrl))
       ]
     ),

@@ -725,16 +725,17 @@ component('asIs', {
 })
 
 component('object', {
-  impl: function(context) {
-		let result = {};
-		const obj = context.profile.$object || context.profile;
-		if (Array.isArray(obj)) return obj;
+  impl: ctx => {
+		const obj = ctx.profile.$object || ctx.profile
+		if (Array.isArray(obj)) return obj
+
+    const result = {}
 		for(let prop in obj) {
 			if ((prop == '$' && obj[prop] == 'object') || obj[prop] == null)
-				continue;
-			result[prop] = context.runInner(obj[prop],null,prop);
+				continue
+			result[prop] = ctx.runInner(obj[prop],null,prop)
 		}
-		return result;
+		return result
 	}
 })
 

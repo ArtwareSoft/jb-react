@@ -164,7 +164,7 @@ extension('ui','comp', {
         if (ctx.vars.$previewMode && jb.watchableComps && jb.watchableComps.handler) // updating to latest version of profile - todo: moveto studio
             ctx.profile = jb.watchableComps.handler.valOfPath(ctx.path.split('~')) || ctx.profile
         elem.setAttribute('__refreshing','')
-        const cmp = ctx.profile.$ == 'openDialog' ? ctx.run(dialog.buildComp()) : ctx.runItself()
+        const cmp = ctx.profile.$ == 'openDialog' ? ctx.calc(dialog.buildComp()) : ctx.runItself()
         jb.log('refresh elem start',{cmp,ctx,newState ,elem, state, options})
 
         const className = elem.className != null ? elem.className : jb.path(elem.attributes.class) || ''
@@ -456,8 +456,8 @@ extension('ui','comp', {
             // eventObservables
             this.eventObservables = this.eventObservables.concat(Object.keys(options).filter(op=>op.indexOf('on') == 0))
 
-            jb.asArray(options.featuresOptions || []).filter(x=>x).forEach(f => this.jbExtend(f.$ ? ctx.run(f) : f , ctx))
-            jb.asArray(jb.ui.inStudio() && options.studioFeatures).filter(x=>x).forEach(f => this.jbExtend(ctx.run(f), ctx))
+            jb.asArray(options.featuresOptions || []).filter(x=>x).forEach(f => this.jbExtend(f.$ ? ctx.run(f, 'feature<>') : f , ctx))
+            jb.asArray(jb.ui.inStudio() && options.studioFeatures).filter(x=>x).forEach(f => this.jbExtend(ctx.run(f, 'feature<>'), ctx))
             return this;
         }
     }

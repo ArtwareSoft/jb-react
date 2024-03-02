@@ -105,7 +105,7 @@ extension('jbm', 'main', {
         Object.assign(jb, {
             uri: jb.uri || jb.frame.jbUri,
             ports: {},
-            remoteExec: sctx => (jb.treeShake ? jb.treeShake.bringMissingCode(sctx) : Promise.resolve()).then(()=>jb.remoteCtx.deStrip(sctx)()),
+            remoteExec: sctx => (jb.treeShake.codeServerJbm ? jb.treeShake.bringMissingCode(sctx) : Promise.resolve()).then(()=>jb.remoteCtx.deStrip(sctx)()),
             createCallbagSource: sctx => jb.remoteCtx.deStrip(sctx)(),
             createCallbagOperator: sctx => jb.remoteCtx.deStrip(sctx)(),
         })
@@ -224,7 +224,7 @@ extension('jbm', 'main', {
         async function handleCBCommnad(cmd) {
             const {$,sourceId,cbId,isAction} = cmd
             try {
-                if (jb.treeShake) {
+                if (jb.treeShake.codeServerJbm) {
                     if (Object.keys(jb.treeShake.loadingCode || {}).length) {
                         jb.log('remote waiting for loadingCode',{cmd, loading: Object.keys(jb.treeShake.loadingCode)})
                         await jb.exec({$: 'action<>waitFor', timeout: 100, check: () => !Object.keys(jb.treeShake.loadingCode).length })

@@ -293,7 +293,7 @@ component('studio.rawColorPicker', {
           const picker = new Picker({
             parent,
             color: jb.tgp.valOfPath(path),
-            onChange: color => ctx.run(writeValue(tgp.ref(path),color.rgbaString)),
+            onChange: color => ctx.runAction(writeValue(tgp.ref(path),color.rgbaString)),
             onDone: () => { picker.destroy(); document.body.removeChild(parent) }
           })
           picker.show()

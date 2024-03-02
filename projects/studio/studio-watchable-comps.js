@@ -10,7 +10,7 @@ extension('studio','watchableComps', {
 		if (jb.studio.isStudioCmp(e.path[0]))
 			jb.studio.refreshStudioComponent(e.path)
 		jb.studio.lastStudioActivity = new Date().getTime()
-		e.srcCtx.run(writeValue('%$studio/lastStudioActivity%',() => jb.studio.lastStudioActivity), 'action<>')
+		e.srcCtx.runAction(writeValue('%$studio/lastStudioActivity%',() => jb.studio.lastStudioActivity))
 	
 		jb.frame.document && jb.studio.highlightByScriptPath(e.path) // TODO: define live preview as separate extension
 	

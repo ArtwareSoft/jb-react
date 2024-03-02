@@ -98,16 +98,18 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
             exception = e
         }
         const result = { result: res, exception, errors: [...jb.spy.search('error')], logs: [...jb.spy.logs], main }
+        const res1 = resultAsText ? res : {...result}
+        const res2 = doNotStripResult ? res1 : jb.remoteCtx.stripData(res1)
+        let resStr = ''
         try {
-            const res1 = resultAsText ? res : {...result}
-            const res2 = doNotStripResult ? res1 : jb.remoteCtx.stripData(res1)
-            const resStr = res2 ? JSON.stringify(res2) : ''
-            process.stdout.write(resStr)
-            process.stdout.end()
-            process.stdout.on('finish', () => process.exit(0))
+            resStr = res2 && JSON.stringify(res2, null, 2)
         } catch(err) {
-            return console.log(JSON.stringify({ desc: 'can not stringify result', err }))
+            resStr = JSON.stringify({ errors: [jb.remoteCtx.stripData(jb.spy.search('error'))] },null,2)
+            //return console.log(JSON.stringify({ desc: 'can not stringify result', err }))
         }
+        process.stdout.write(resStr)
+        process.stdout.end()
+        process.stdout.on('finish', () => process.exit(0))
     }
 })()
 

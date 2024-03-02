@@ -198,8 +198,9 @@ extension('tgpTextEditor', {
             while (newText[i] == oldText[i] && i < newText.length) i++
             const common = oldText.slice(0, i)
             oldText = oldText.slice(i); newText = newText.slice(i);
-            while (newText[newText.length - j] == oldText[oldText.length - j] && j < newText.length) j++ // calc backwards from the end
-            return { firstDiff: i, common, oldText: oldText.slice(0, -j + 1), newText: newText.slice(0, -j + 1) }
+            while (newText[newText.length - j] == oldText[oldText.length - j] && j < oldText.length && j < newText.length) j++ // calc backwards from the end
+            if (newText[newText.length - j] != oldText[oldText.length - j]) j--
+            return { firstDiff: i, common, oldText: oldText.slice(0, -j), newText: newText.slice(0, -j) }
         }
     },
     posFromCM: pos => pos && ({ line: pos.line, col: pos.ch }),

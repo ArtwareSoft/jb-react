@@ -63,12 +63,7 @@ component('llmTest.listRouter', {
   impl: dataTest(remote.data(() => Object.keys(jb.jbm.networkPeers) , router()), contains('llmHelper'))
 })
 
-component('llmHelperTest.code', {
+component('llmHelperTest.localHelper', {
   doNotRunInTests: true,
-  impl: dataTest(llmHelper.code(), equals('hello'))
-})
-
-component('llmHelperTest.setPrompt', {
-  doNotRunInTests: true,
-  impl: dataTest({ runBefore: llmHelper.setPrompt('hi There mk kmk') })
+  impl: uiTest(llm.localHelper())
 })

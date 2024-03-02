@@ -63,7 +63,7 @@ component('menu.action', {
       description: ctx.params.description(ctx),
       shortcut: ctx.params.shortcut,
 			runShortcut: event => {
-				if (ctx.run({$: 'key.eventMatchKey', event: () => event.ev, key: () => ctx.params.shortcut}))
+				if (ctx.calc({$: 'key.eventMatchKey', event: () => event.ev, key: () => ctx.params.shortcut}))
 					ctx.params.action()
 			},
 			ctx: ctx.setVar('menuDepth', (ctx.vars.menuDepth || 0)+1)
@@ -158,10 +158,10 @@ component('menu.initPopupMenu', {
   ],
   impl: features(
     calcProp('title', '%$menuModel.title%'),
-    method('openPopup', parentCtx => parentCtx.run({$: 'menu.openContextMenu',
+    method('openPopup', parentCtx => parentCtx.runAction({$: 'menu.openContextMenu',
         popupStyle: {$: 'call', param: 'popupStyle'},
         menu: () => parentCtx.run({$: 'If', condition: '%$innerMenu%', then: '%$innerMenu.menu()%', Else: '%$$model.menu()%'} ,'menu.option<>'),
-      }, 'action<>')),
+      })),
     method('closePopup', dialog.closeDialogById('%$optionsParentId%')),
     method('openNewPopup', runActions(action.runBEMethod('closePopup'), action.runBEMethod('openPopup'))),
     frontEnd.onDestroy(action.runBEMethod('closePopup')),

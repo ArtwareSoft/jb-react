@@ -347,7 +347,7 @@ component('uiTest.itemlistPrimitiveArrayItemShouldBeRef', {
     control: itemlist({
       items: '%$personWithPrimitiveChildren/childrenNames%',
       controls: ctx => {
-        ctx.run(writeValue('%$isResultRef/answer%', () => !!jb.db.isRef(ctx.data)), 'action<>')
+        ctx.runAction(writeValue('%$isResultRef/answer%', () => !!jb.db.isRef(ctx.data)))
         return ctx.run(text('%%'), 'control<>')
       }
     }),

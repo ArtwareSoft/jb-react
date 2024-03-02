@@ -1,3 +1,7 @@
+extension('markdown', {
+  $requireLibs: ['/dist/mark.js'],
+})
+
 component('markdown', {
   type: 'control',
   category: 'control:20',
@@ -15,6 +19,8 @@ component('markdown.mark', {
   type: 'markdown-style',
   impl: customStyle({
     template: ({},{html},h) => h('div',{$html: html.replace(/^(<[a-z0-9]*)/,'$1 jb_external="true"') }),
-    features: calcProp('html', (ctx,{$model}) => marked($model.markdown(ctx)) || '')
+    features: [
+      calcProp('html', (ctx,{$model}) => jb.frame.marked && jb.frame.marked($model.markdown(ctx)) || '')
+    ]
   })
 })

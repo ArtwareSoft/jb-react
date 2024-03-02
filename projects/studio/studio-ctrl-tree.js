@@ -112,8 +112,8 @@ component('studio.openTreeMenu', {
 
 component('studio.controlTreeNodes', {
   type: 'tree.node-model',
-  impl: function(context) {
-		var currentPath = context.run({ $: 'studio.currentProfilePath' });
+  impl: ctx => {
+		var currentPath = ctx.calc(studio.currentProfilePath())
 		var compPath = currentPath.split('~')[0] || '';
 		return new jb.studio.ControlTree(compPath + '~impl');
 	}

@@ -228,16 +228,16 @@ component('suggestions.applyOption', {
         const toPaste = option.toPaste + (primiteVal ? '%' : toAdd)
         const pos = option.pos + 1
         const newVal = () => input.value.substr(0,option.pos-option.tail.length) + toPaste + input.value.substr(pos)
-        ctx.run({$: 'editableText.setInputState',
+        ctx.runAction({$: 'editableText.setInputState',
             assumedVal: () => input.value,
             newVal,
             selectionStart: pos + toPaste.length,
         })
         if (toPaste.match(/%$/))
-          ctx.run(writeValue('%$$model/databind()%', newVal))        
+          ctx.runAction(writeValue('%$$model/databind()%', newVal))        
       } else if (option.type == 'comp') {
         jb.tgp.setComp(option.path, option.toPaste, ctx);
-        return jb.studio && ctx.run(runActions(
+        return jb.studio && ctx.runAction(runActions(
             { $: 'dialog.closeDialogById', id: 'studio-jb-editor-popup' },
             { $: 'studio.expandAndSelectFirstChildInJbEditor' }
           ))

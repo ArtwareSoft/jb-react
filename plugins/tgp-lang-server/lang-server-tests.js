@@ -1,18 +1,10 @@
 using('tgp-lang-service-tests')
 
-component('langServiceTest.provideDefinition', {
-  impl: dataTest({
-    calculate: pipe(langService.dummyCompProps(`component('x', {
-  impl: dataTest('', __not())
-})`), langService.definition()),
-    expectedResult: contains('jb-common', { data: '%path%' })
-  })
-})
 
-component('langServiceTest.references', {
+component('langServerTest.references', {
   doNotRunInTests: true,
   impl: dataTest({
-    calculate: pipe(langService.dummyCompProps(`component('x', {
+    calculate: pipe(langServer.dummyCompProps(`component('x', {
   impl: dataTest('', __not())
 })`), langServer.references()),
     expectedResult: contains('jb-common', { data: '%path%' }),
@@ -20,7 +12,7 @@ component('langServiceTest.references', {
   })
 })
 
-component('langServiceTest.localReferences', {
+component('langServerTest.localReferences', {
   doNotRunInTests: true,
   impl: dataTest({
     calculate: pipe(
@@ -33,35 +25,6 @@ component('langServiceTest.localReferences', {
     ),
     expectedResult: contains('plugins', { data: '%path%' }),
     timeout: 5000
-  })
-})
-
-component('langServiceTest.provideDefinition.inFunc', {
-  impl: dataTest({
-    calculate: pipe(
-      langService.dummyCompProps(
-        `component('x', {
-  impl: dataTest('', () => { __jb.utils.prettyPrint('aa'); return 3})
-})`
-      ),
-      langService.definition()
-    ),
-    expectedResult: contains('pretty-print', { data: '%path%' })
-  })
-})
-
-component('langServiceTest.moveInArrayEdits', {
-  impl: dataTest({
-    calculate: pipe(
-      langService.dummyCompProps(
-        `component('x', {
-  impl: dataTest(pipeline(list(1,2,3), __slice(0, 2), join()), equals('1,2'))
-})`
-      ),
-      langService.moveInArrayEdits(1),
-      first()
-    ),
-    expectedResult: equals('%cursorPos%', asIs({line: 1, col: 47}))
   })
 })
 
@@ -82,15 +45,15 @@ component('langServiceTest.moveInArrayEdits', {
 // })
 //     covers: ['langServerTest.completions','langServerTest.studioCompletions','langServerTest.editsAndCursorPos','langServerTest.probe','langServerTest.studioCircuitUrl']
 
-component('langServiceTest.completions', {
-  impl: dataTest({
-    calculate: pipe(langService.dummyCompProps(`component('x', {
-  impl: dataTest('', __not())
-})`), langService.completionItems(), count()),
-    expectedResult: '%% > 0',
-    timeout: 2000
-  })
-})
+// component('langServiceTest.completions', {
+//   impl: dataTest({
+//     calculate: pipe(langService.dummyCompProps(`component('x', {
+//   impl: dataTest('', __not())
+// })`), langService.completionItems(), count()),
+//     expectedResult: '%% > 0',
+//     timeout: 2000
+//   })
+// })
 
 // component('langServiceTest.studioCompletions', {
 //   impl: dataTest({
@@ -143,7 +106,7 @@ component('langServerTest.studioCircuitUrl', {
   })
 })
 
-component('langServerTest.tgpModelData', {
+component('remoteTgpModelTest', {
   doNotRunInTests: true,
   impl: dataTest({
     calculate: pipe(
@@ -155,7 +118,7 @@ component('langServerTest.tgpModelData', {
   })
 })
 
-component('langServerTest.tgpModelData.tester', {
+component('remoteTgpModelTest.tester', {
   doNotRunInTests: true,
   impl: dataTest({
     calculate: pipe(
@@ -169,7 +132,7 @@ component('langServerTest.tgpModelData.tester', {
   })
 })
 
-component('langServerTest.tgpModelData.studio', {
+component('remoteTgpModelTest.studio', {
   doNotRunInTests: true,
   impl: dataTest({
     calculate: pipe(
@@ -183,7 +146,7 @@ component('langServerTest.tgpModelData.studio', {
   })
 })
 
-component('langServerTest.tgpModelData.external', {
+component('remoteTgpModelTest.external', {
   doNotRunInTests: true,
   impl: dataTest({
     calculate: pipe(

@@ -20,8 +20,8 @@ Object.assign(jb, {
     toboolean: value => jb.core.tojstype(value,'boolean'),
     tosingle: value => jb.core.tojstype(value,'single'),
     tonumber: value => jb.core.tojstype(value,'number'),
-    exec: (...args) => new jb.core.jbCtx().run(...args),
-    exp: (...args) => new jb.core.jbCtx().exp(...args),
+    exec: (profile,parentParam='action<>') => new jb.core.jbCtx().run(profile,parentParam),
+    calc: profile => new jb.core.jbCtx().calc(profile)
 })
 
 extension('utils', 'core', {

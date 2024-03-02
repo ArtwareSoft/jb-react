@@ -88,7 +88,19 @@
 			{
 				"command": "jbart.visitLastPath",
 				"title": "goto the last visited jbart tgp path, can use history"
-			}			
+			},
+			{
+				"command": "jbart.duplicate",
+				"title": "duplicate the current profile, in array. including components and params"
+			},
+			{
+				"command": "jbart.disable",
+				"title": "toggle disable/enable current profile"
+			},
+			{
+				"command": "jbart.delete",
+				"title": "delete profile"
+			}		
 		],
 		"keybindings": [
 			{
@@ -140,7 +152,22 @@
 				"command": "jbart.visitLastPath",
 				"key": "ctrl+Q",
 				"when": "editorTextFocus"
-			}
+			},
+			{
+				"command": "jbart.duplicate",
+				"key": "ctrl+D",
+				"when": "editorTextFocus"
+			},					
+			{
+				"command": "jbart.delete",
+				"key": "ctrl+Alt+D",
+				"when": "editorTextFocus"
+			},					
+			{
+				"command": "jbart.disable",
+				"key": "ctrl+shift+D",
+				"when": "editorTextFocus"
+			}			
 		]
 	}
 }

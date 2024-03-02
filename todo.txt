@@ -3,6 +3,10 @@ jb.ui.f1 => $ui.f1
 prettyPrint -> formatter
 different dsls with different colors
 
+ctrl-D to duplicate, ctrl-shift-D disable, ctrl-alt-D delete
+todo langService tests
+
+
 tutorialDB(md)
   threadId
   plugin or dsl

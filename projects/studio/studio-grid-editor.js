@@ -30,7 +30,7 @@ Object.assign(jb.ui, {
   getOrCreateSizesRef(gridPath,axis,ctx) {
     const sizesProp = `${axis.toLowerCase().slice(0,-1)}Sizes`
     if (!jb.tgp.valOfPath(`${gridPath}~layout~${sizesProp}`))
-      ctx.run(writeValue(tgp.ref(`${gridPath}~layout~${sizesProp}`), { [sizesProp]: list(100) }))
+      ctx.runAction(writeValue(tgp.ref(`${gridPath}~layout~${sizesProp}`), { [sizesProp]: list(100) }))
     return jb.tgp.ref(`${gridPath}~layout~${sizesProp}~items`)
   },
 })

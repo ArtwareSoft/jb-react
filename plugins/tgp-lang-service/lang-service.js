@@ -17,8 +17,12 @@ extension('langService', 'impl', {
         const tgpModelData = forceLocalSuggestions ? jb.tgp.tgpModelData({filePath: packagePath}) 
             : await new jb.core.jbCtx().setData(packagePath).run({$: 'data<>remote.tgpModelData'})
         if (!tgpModelData.filePath) {
+            const errorMessage = jb.path(tgpModelData.errors,'0.0.e.message') || ''
+            const referenceError = (errorMessage.match(/ReferenceError: (.*)/) || [])[1]
+            const SyntaxError = (errorMessage.match(/SyntaxError: (.*)/) || [])[1]
+            const errors = [referenceError,SyntaxError].filter(x=>x)
             jb.vscode.log(`error creating tgpModelData for path ${packagePath}`)
-            return { error: `error creating tgpModelData for path ${packagePath}`}
+            return { errors: [...errors, ...jb.asArray(tgpModelData.errors), `error creating tgpModelData for path ${packagePath}`]}
         }
             
         docProps.filePath = tgpModelData.filePath
@@ -94,7 +98,7 @@ extension('langService', 'impl', {
             const index = opKind == 'append' ? -1 : opKind == 'insert' ? (+path.split('~').pop() + 1) : opKind == 'prepend' && 0
             const basePath = opKind == 'insert' ? path.split('~').slice(0, -1).join('~') : path
             const basedOnVal = opKind == 'set' && tgpModel.valOfPath(path)
-            const toAdd = jb.tgp.newProfile(tgpModel.compById(compName), compName, {basedOnVal})
+            const toAdd = jb.tgp.newProfile(tgpModel.compById(compName), {basedOnVal})
             const result = opKind == 'set' ? jb.langService.setOp(path, toAdd, ctx) : addArrayItemOp(basePath, { toAdd, index, ctx })
             return result
         }
@@ -163,8 +167,8 @@ extension('langService', 'impl', {
         const input = { value, selectionStart }
         const { line, col } = jb.tgpTextEditor.offsetToLineCol(text, item.from - startOffset - 1)
 
-        const suggestions = await ctx.setData(input).setVars({ filePath, probePath: path }).run(
-            {$: 'langServer.remoteProbe', sourceCode: {$: 'source-code<loader>probeServer', filePath: '%$filePath%'}, probePath: '%$probePath%', expressionOnly: true }, 'data<>')
+        const suggestions = await ctx.setData(input).setVars({ filePath, probePath: path }).calc(
+            {$: 'langServer.remoteProbe', sourceCode: {$: 'source-code<loader>probeServer', filePath: '%$filePath%'}, probePath: '%$probePath%', expressionOnly: true })
         return (jb.path(suggestions, '0.options') || []).map(option => {
             const { pos, toPaste, tail, text } = option
             const primiteVal = option.valueType != 'object'
@@ -263,7 +267,7 @@ extension('langService', 'impl', {
 extension('langService', 'api', {
     async completionItems(ctx) {
         const compProps = await jb.langService.calcCompProps(ctx)
-        const { actionMap, reformatEdits, compLine, error, cursorPos } = compProps
+        const { actionMap, reformatEdits, compLine, errors, cursorPos } = compProps
         if (reformatEdits) {
             const item = {
                 kind: 4, id: 'reformat', insertText: '', label: 'reformat', sortText: '0001',
@@ -279,10 +283,10 @@ extension('langService', 'api', {
             }))
             jb.log('completion completion items', { items, ...compProps, ctx })
             return items
-        } else if (error) {
-            jb.logError('completion provideCompletionItems', compProps)
+        } else if (errors) {
+            jb.logError('completion provideCompletionItems', {errors, compProps})
             return [ {
-                kind: 4, label: error && error.toString(), sortText: '0001',
+                kind: 4, label: (errors[0]||'').toString(), sortText: '0001',
             }]
         }
     },
@@ -344,7 +348,98 @@ extension('langService', 'api', {
             }
         }
     },
+    async deleteEdits(ctx) {
+        const compProps = await jb.langService.calcCompProps(ctx)
+        const { reformatEdits, text, comp, compLine, compId, error, path, tgpModel, lineText } = compProps
+        const pathAr = path.split('~').slice(1)
+        if (!reformatEdits) {
+            const arrayElem = !isNaN(pathAr.slice(-1)[0])
+            const indexInArray = arrayElem && +pathAr.slice(-1)[0]
 
+            const opOnComp = {}
+            if (arrayElem)
+                jb.path(opOnComp,pathAr.slice(0, -1),{$splice: [[indexInArray,1]] })
+            else
+                jb.path(opOnComp,pathAr,{$set: null });
+    
+            const newComp = jb.immutable.update(comp,opOnComp)
+            const newRes = jb.utils.prettyPrintWithPositions(newComp, { initialPath: compId, tgpModel })
+            const edit = jb.tgpTextEditor.deltaFileContent(text, newRes.text , compLine)
+            jb.log('lang services delete', { edit, ...compProps })
+            return { edit, cursorPos: calcNewPos(newRes) }
+        }
+        return { error: 'delete - bad format', ...compProps }
+
+        function calcNewPos(prettyPrintData) {
+            let { line, col } = jb.tgpTextEditor.getPosOfPath(path, 'begin',{prettyPrintData})
+            if (!line && !col) {
+                let { line, col } = jb.tgpTextEditor.getPosOfPath(jb.tgp.parentPath(path), 'begin',{prettyPrintData})
+            }
+            if (!line && !col)
+                return jb.logError('delete can not find path', { path })
+            return { line: line + compLine, col }
+        }
+    },
+    async disableEdits(ctx) {
+        const compProps = await jb.langService.calcCompProps(ctx)
+        const { reformatEdits, text, comp, compLine, compId, error, path, tgpModel, lineText } = compProps
+        const pathAr = [...path.split('~').slice(1),'$disabled']
+        if (!reformatEdits) {
+            const opOnComp = {}
+            const toggleVal = jb.path(comp,pathAr) ? null : true
+            jb.path(opOnComp,pathAr,{$set: toggleVal });
+    
+            const newComp = jb.immutable.update(comp,opOnComp)
+            const newRes = jb.utils.prettyPrintWithPositions(newComp, { initialPath: compId, tgpModel })
+            const edit = jb.tgpTextEditor.deltaFileContent(text, newRes.text , compLine)
+            jb.log('lang services disable', { edit, ...compProps })
+            return { edit, cursorPos: calcNewPos(newRes) }
+        }
+        return { error: 'disable - bad format', ...compProps }
+
+        function calcNewPos(prettyPrintData) {
+            let { line, col } = jb.tgpTextEditor.getPosOfPath(path, 'begin',{prettyPrintData})
+            return { line: line + compLine, col }
+        }
+    },    
+    async duplicateEdits(ctx) {
+        const compProps = await jb.langService.calcCompProps(ctx)
+        const { reformatEdits, text, comp, compLine, compId, error, path, tgpModel, lineText } = compProps
+        const pathAr = path.split('~').slice(1)
+        if (!reformatEdits) {
+            const arrayElem = !isNaN(pathAr.slice(-1)[0])
+            const indexInArray = arrayElem && +pathAr.slice(-1)[0]
+            const opOnComp = {}
+            if (arrayElem) {
+                const toAdd = jb.tgp.clone(jb.path(comp,pathAr))
+                jb.path(opOnComp,pathAr.slice(0, -1),{$splice: [[indexInArray, 0, toAdd]] })    
+                const newComp = jb.immutable.update(comp,opOnComp)
+                const newRes = jb.utils.prettyPrintWithPositions(newComp, { initialPath: compId, tgpModel })
+                const edit = jb.tgpTextEditor.deltaFileContent(text, newRes.text , compLine)
+                jb.log('lang services duplicate', { edit, ...compProps })
+                const targetPath = [compId,...pathAr.slice(0, -1),indexInArray+1].join('~')
+                return { edit, cursorPos: calcNewPos(targetPath, newRes) }
+            } else if (path.indexOf('~') == -1) { // duplicate component
+                const newComp = jb.tgp.clone(comp)
+                newComp.$ = 'copyOf' + newComp.$
+                newComp.$$ = newComp.$type + newComp.$
+                const newText = jb.utils.prettyPrintComp(newComp, { initialPath: compId, tgpModel })
+                const noOfLines = (newText.match(/\n/g) || []).length+1
+                const edit = jb.tgpTextEditor.deltaFileContent('', '\n' + newText, compLine+noOfLines)
+                jb.log('lang services duplicate', { edit, ...compProps })
+                return { edit, cursorPos: {line: compLine+noOfLines+1, col: 0} }
+            }
+            return { error: 'duplicate - not in array', ...compProps }
+        }
+        return { error: 'duplicate - bad format', ...compProps }
+
+        function calcNewPos(path,prettyPrintData) {
+            let { line, col } = jb.tgpTextEditor.getPosOfPath(path, 'begin',{prettyPrintData})
+            if (!line && !col)
+                return jb.logError('duplicate can not find target path', { path })
+            return { line: line + compLine, col }
+        }
+    },    
     async moveInArrayEdits(diff,ctx) {
         const compProps = await jb.langService.calcCompProps(ctx)
         const { reformatEdits, compId, compLine, actionMap, text, path, comp, tgpModel } = compProps
@@ -430,7 +525,7 @@ extension('tgpTextEditor', 'commands', {
     }
 })
 
-jb.defComponents('completionItems,definition,compId,compReferences,calcCompProps'
+jb.defComponents('completionItems,definition,compId,compReferences,calcCompProps,deleteEdits,duplicateEdits,disableEdits'
 .split(','), f => component(`langService.${f}`, {
   autoGen: true,
   impl: ctx => jb.langService[f](ctx)
