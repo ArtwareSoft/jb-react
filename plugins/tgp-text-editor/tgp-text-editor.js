@@ -15,7 +15,8 @@ extension('tgpTextEditor', {
 
             const comp = res
             const type = comp.type || ''
-            const dsl = fileDsl || plugin.dsl || type.indexOf('<') != -1 && type.split(/<|>/)[1]
+            const pluginDsl = plugin.dsl
+            const dsl = fileDsl || pluginDsl || type.indexOf('<') != -1 && type.split(/<|>/)[1]
             comp.$dsl = dsl
             const compId = jb.utils.resolveSingleComp(comp, id, { tgpModel, dsl })
             comp.$location = jb.path(tgpModel,[compId,'$location'])
@@ -29,7 +30,7 @@ extension('tgpTextEditor', {
                 jb.utils.resolveSingleComp(compToRun, id, {dsl})
                 compToRun.$location = jb.path(jb.comps,[compId,'$location'])
             }
-            return tgpModel.currentComp = { comp, compId }
+            return tgpModel.currentComp = { comp, compId, pluginDsl, compDsl: dsl }
         } catch (e) {
             if (fixed)
                 return { compilationFailure: true, err: e }
@@ -61,6 +62,16 @@ extension('tgpTextEditor', {
         function isValidFunc(f) {
             return f.trim() != '' && (jb.macro.proxies[f] || jb.frame[f])
         }
+    },
+    calcHash(str) {
+        let hash = 0, i, chr;
+        if (str.length === 0) return hash;
+        for (i = 0; i < str.length; i++) {
+          chr = str.charCodeAt(i);
+          hash = ((hash << 5) - hash) + chr;
+          hash |= 0; // Convert to 32bit integer
+        }
+        return hash;
     },
     pathVisited(e) {
         const {visitedPaths} = jb.tgpTextEditor
@@ -200,7 +211,7 @@ extension('tgpTextEditor', {
             oldText = oldText.slice(i); newText = newText.slice(i);
             while (newText[newText.length - j] == oldText[oldText.length - j] && j < oldText.length && j < newText.length) j++ // calc backwards from the end
             if (newText[newText.length - j] != oldText[oldText.length - j]) j--
-            return { firstDiff: i, common, oldText: oldText.slice(0, -j), newText: newText.slice(0, -j) }
+            return { firstDiff: i, common, oldText: oldText.slice(0, oldText.length -j), newText: newText.slice(0, newText.length-j) }
         }
     },
     posFromCM: pos => pos && ({ line: pos.line, col: pos.ch }),
@@ -350,3 +361,20 @@ component('tgpTextEditor.gotoSource', {
     }
 })
 
+component('gotoUrl', {
+  type: 'action',
+  description: 'navigate/open a new web page, change href location',
+  params: [
+    {id: 'url', as: 'string', mandatory: true},
+    {id: 'target', type: 'enum', values: ['new tab','self'], defaultValue: 'new tab', as: 'string'}
+  ],
+  impl: (ctx,url,target) => {
+		var _target = (target == 'new tab') ? '_blank' : '_self';
+		if (ctx.probe) return
+    if (globalThis.window)
+      window.open(url,_target)
+
+    if (globalThis.vscodeNS)
+      vscodeNS.env.openExternal(url)
+	}
+})

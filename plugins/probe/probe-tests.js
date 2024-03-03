@@ -120,7 +120,7 @@ component('probeTest.gaps.runActionOnItems', {
 })
 
 component('probeTest.gaps.insideGotoUrl', {
-  impl: probeTest(button({ action: winUtils.gotoUrl('google%%') }), 'action~url', { expectedVisits: 1 })
+  impl: probeTest(button({ action: gotoUrl('google%%') }), 'action~url', { expectedVisits: 1 })
 })
 
 component('test.actionWithSideEffects', {

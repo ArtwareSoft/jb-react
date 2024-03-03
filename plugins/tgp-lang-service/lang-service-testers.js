@@ -21,7 +21,7 @@ extension('test', 'completion', {
     const plugin = tgpModel.plugins[pluginId]
     plugin.files.push(filePath)
     if (dsl) {
-        plugin.dslOfFiles = plugin.dslOfFiles || []
+      plugin.dslOfFiles = plugin.dslOfFiles || []
       plugin.dslOfFiles.push([filePath,dsl])
     }
     const ctxForTest = ctx.setVars({forceLocalSuggestions: !remoteSuggestions})
@@ -143,10 +143,13 @@ component('langService.dummyCompProps', {
   params: [
     {id: 'compText', as: 'string', mandatory: true, description: 'use __ for completion point'},
     {id: 'dsl', as: 'string'},
-    {id: 'filePath', as: 'string', defaultValue: '/plugins/ui/tests/completion-tests.js'}
+    {id: 'filePath', as: 'string', defaultValue: '/plugins/ui/tests/completion-tests.js'},
+    {id: 'includeCircuitOptions', as: 'boolean', type: 'boolean<>'}
   ],
-  impl: (ctx,_compText,dsl,_filePath) => {
+  impl: (ctx,_compText,dsl,_filePath, includeCircuitOptions) => {
     const {tgpModel} = jb.test.initCompletionText({ctx,compText: _compText,filePath: _filePath,dsl})
+    if (includeCircuitOptions)
+      return jb.langService.calcCompProps(ctx,{includeCircuitOptions})
     const { compText, inCompOffset, shortId, cursorCol, cursorLine, compLine, filePath, lineText } 
       = jb.langService.calcCompPropsSync(jb.tgpTextEditor.host.compTextAndCursor(), tgpModel)
     return { compText, inCompOffset, shortId, cursorCol, cursorLine, compLine, filePath, lineText}

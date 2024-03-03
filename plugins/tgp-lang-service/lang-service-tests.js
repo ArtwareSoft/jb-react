@@ -554,7 +554,7 @@ component('langServiceTest.duplicateEdits', {
     ),
     expectedResult: equals(asIs({
       edit: {range: {start: {line: 1, col: 52}, end: {line: 1, col: 52}}, newText: 'slice(0, 2), '},
-      cursorPos: {line: 1, col: 52}
+      cursorPos: {line: 1, col: 52}, hash: 747934708
     }))
   })
 })
@@ -572,7 +572,7 @@ component('langServiceTest.deleteEdits', {
     ),
     expectedResult: equals(asIs({
       edit: {range: {start: {line: 1, col: 39}, end: {line: 1, col: 52}}, newText: ''},
-      cursorPos: {line: 1, col: 39}
+      cursorPos: {line: 1, col: 39}, hash: 747934708
     }))
   })
 })
@@ -590,7 +590,7 @@ component('langServiceTest.disableEdits', {
     ),
     expectedResult: equals(asIs({
       edit: {range: {start: {line: 1, col: 49}, end: {line: 1, col: 49}}, newText: ', { $disabled: true }'},
-      cursorPos: {line: 1, col: 39}
+      cursorPos: {line: 1, col: 39}, hash: 747934708
     }))
   })
 })
@@ -606,11 +606,10 @@ component('langServiceTest.enableEdits', {
       langService.disableEdits(),
       first()
     ),
-    expectedResult: equals(
-      asIs({
-  edit: {range: {start: {line: 1, col: 49}, end: {line: 1, col: 70}}, newText: ''},
-  cursorPos: {line: 1, col: 39}
-})
+    expectedResult: equals( asIs({
+        edit: {range: {start: {line: 1, col: 49}, end: {line: 1, col: 70}}, newText: ''},
+        cursorPos: {line: 1, col: 39}, hash: -1274638064
+      })
     )
   })
 })

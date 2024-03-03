@@ -8,12 +8,20 @@ extension('vscode', 'utils', {
     async initVscodeAsHost({context}) {
         jb.log('vscode initVscodeAsHost', {context})
         jb.tgpTextEditor.host = {
-            async applyEdit(edit,uri) {
-                uri = uri || vscodeNS.window.activeTextEditor.document.uri
+            async applyEdit(edit,{uri,hash} = {}) {
+                const editor = vscodeNS.window.activeTextEditor
+                uri = uri || editor.document.uri
                 const wEdit = new vscodeNS.WorkspaceEdit()
                 wEdit.replace(uri, { start: jb.vscode.toVscodeFormat(edit.range.start), end: jb.vscode.toVscodeFormat(edit.range.end) }, edit.newText)
                 jb.log('vscode applyEdit',{wEdit, edit,uri})
                 jb.tgpTextEditor.lastEdit = edit.newText
+                if (hash) {
+                    const { compText } = jb.tgpTextEditor.closestComp(editor.document.getText(),
+                        editor.selection.active.line, editor.selection.active.character, editor.document.uri.path)
+                    const code = '{\n' + (compText||'').split('\n').slice(1).join('\n').slice(0, -1)
+                    if (hash != jb.tgpTextEditor.calcHash(code))
+                        return jb.logError('applyEdit - different hash. edit will not be applied',{edit, text})
+                }
                 await vscodeNS.workspace.applyEdit(wEdit)
              },
             async selectRange(start,end) {
@@ -48,7 +56,7 @@ extension('vscode', 'utils', {
                 editor.selection = new vscodeNS.Selection(position, position)
                 await editor.revealRange(new vscodeNS.Range(position, position))
                 jb.vscode.log(`gotoFilePos ${path}:${line},${col}`)
-            }       
+            }
         }
         jb.vscode.log('init')
 
@@ -146,8 +154,12 @@ extension('vscode', 'utils', {
     async openLiveProbeResultPanel() {
     },
     async openjBartStudio() { // ctrl-j - should open quick menu
-        const url = await jb.calc(langServer.studioCircuitUrl())
-        vscodeNS.env.openExternal(vscodeNS.Uri.parse(url))
+        const compProps = await jb.calc(langService.calcCompProps({includeCircuitOptions: true}))
+        if (compProps.path)
+            jb.vscode.ctx.setData(compProps).run(vscode.jbMenu())
+
+        // const url = await jb.calc(langServer.studioCircuitUrl())
+        // vscodeNS.env.openExternal(vscodeNS.Uri.parse(url))
     },
     async openjBartTest() { // ctrl-shift-j - should open menu
         const docProps = jb.tgpTextEditor.host.compTextAndCursor()
@@ -162,18 +174,18 @@ extension('vscode', 'utils', {
         vscodeNS.env.openExternal(vscodeNS.Uri.parse(url))
     },
     async delete() {
-        const {edit, cursorPos} = await jb.calc(langService.deleteEdits())
-        await jb.tgpTextEditor.host.applyEdit(edit)
+        const {edit, cursorPos, hash} = await jb.calc(langService.deleteEdits())
+        await jb.tgpTextEditor.host.applyEdit(edit,{hash})
         cursorPos && jb.tgpTextEditor.host.selectRange(cursorPos)
     },
     async disable() {
-        const {edit, cursorPos} = await jb.calc(langService.disableEdits())
-        await jb.tgpTextEditor.host.applyEdit(edit)
+        const {edit, cursorPos, hash} = await jb.calc(langService.disableEdits())
+        await jb.tgpTextEditor.host.applyEdit(edit,{hash})
         cursorPos && jb.tgpTextEditor.host.selectRange(cursorPos)
     },
     async duplicate() {
-        const {edit, cursorPos} = await jb.calc(langService.duplicateEdits())
-        await jb.tgpTextEditor.host.applyEdit(edit)
+        const {edit, cursorPos, hash} = await jb.calc(langService.duplicateEdits())
+        await jb.tgpTextEditor.host.applyEdit(edit,{hash})
         cursorPos && jb.tgpTextEditor.host.selectRange(cursorPos)
     },
     toVscodeFormat(pos) {
@@ -246,7 +258,7 @@ extension('vscode', 'utils', {
 })
 
 component('vscode.openQuickPickMenu', {
-  type: 'action',
+  type: 'action<>',
   params: [
     {id: 'menu', type: 'menu.option', dynamic: true, mandatory: true},
     {id: 'path', as: 'string', mandatory: true}
@@ -278,4 +290,27 @@ component('vscode.openQuickPickMenu', {
     }
 })
 
+component('vscode.jbMenu', {
+  params: [
+    {id: 'compProps', defaultValue: '%%'}
+  ],
+  impl: vscode.openQuickPickMenu(langServer.jBartMenu())
+})
 
+component('langServer.jBartMenu', {
+  type: 'menu.option<>',
+  params: [
+    {id: 'compProps', defaultValue: '%%'}
+  ],
+  impl: menu.menu({
+    vars: [
+      Var('circuit', pipeline(split('>', { text: '%$compProps/circuitOptions/0%', part: 'last' }), 'circuit: %%'))
+    ],
+    title: 'type: %$compProps/type%, pluginDsl: %$compProps/pluginDsl%, fileDsl: %$compProps/fileDsl%',
+    options: [
+      menu.action('open test %$circuit%', gotoUrl(langServer.testUrl())),
+      menu.action('open studio for %$circuit% at %$compProps/path%', gotoUrl(langServer.studioCircuitUrl())),
+      menu.action('open probe in browser', gotoUrl(langServer.runCtxOfProbeUrl()))
+    ]
+  })
+})

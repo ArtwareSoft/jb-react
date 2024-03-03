@@ -19,12 +19,12 @@ component('jbEditorTest.cmp5JsonFormat', {
 // jb.component('jbEditorTest.actionsSugarExample1', {
 //   impl: button({
 //     title: 'hello',
-//     action: [winUtils.gotoUrl('google')]
+//     action: [gotoUrl('google')]
 //   })
 // })
 
 // jb.component('jbEditorTest.actionsSugarExample2JsonFormat', {
-//   impl: button('hello', runActions(winUtils.gotoUrl('google')))
+//   impl: button('hello', runActions(gotoUrl('google')))
 // })
 
 component('jbEditorTest.extraElemInList', {

@@ -77,7 +77,7 @@ component('pluginsByPath', {
   type: 'plugins-to-load',
   params: [
     {id: 'filePath', as: 'string', mandatory: true, description: 'E.g. someDir/plugins/mycode.js'},
-    {id: 'addTests', as: 'boolean', description: 'add plugin-tests', type: 'boolean'}
+    {id: 'addTests', as: 'boolean', description: 'add plugin-tests', type: 'boolean', byName: true}
   ],
   impl: (ctx,fullFilePath,addTests) => {
     const filePath = jb.loader.shortFilePath(fullFilePath)

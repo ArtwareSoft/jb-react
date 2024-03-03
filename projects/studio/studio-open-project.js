@@ -3,7 +3,7 @@ component('studio.gotoProject', {
   params: [
     {id: 'name', as: 'string'}
   ],
-  impl: runActions(winUtils.gotoUrl(ctx => jb.studio.host.projectUrlInStudio(ctx.exp('%$name%')), 'new tab'), dialog.closeDialog())
+  impl: runActions(gotoUrl(ctx => jb.studio.host.projectUrlInStudio(ctx.exp('%$name%')), 'new tab'), dialog.closeDialog())
 })
 
 component('studio.chooseProject', {

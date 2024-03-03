@@ -21,7 +21,7 @@ extension('workspace', {
         if (jb.path('jb.tgpTextEditor.host.type') == 'jbWorkspace') return
         jb.tgpTextEditor.host = {
             type: 'jbWorkspace',
-            async applyEdit(edit,uri) {
+            async applyEdit(edit,{uri} = {}) {
                 const docUri = uri || jb.workspace.activeUri
                 const docText = jb.workspace.openDocs[docUri].text
                 const from = jb.tgpTextEditor.lineColToOffset(docText, edit.range.start)
@@ -55,7 +55,7 @@ extension('workspace', {
                 const to = jb.tgpTextEditor.lineColToOffset(docText, selection.start)
                 return docText.slice(from,to)
             },
-            async gotoFilePos(path,line,col) {}      
+            async gotoFilePos(path,line,col) {}
         }
     }
 })

@@ -1,10 +1,36 @@
+calc circuit before the menu and add to compProps, add more circuits
+add 'using' and 'dsl' indication to compProps
+
+add goto circuit in menu
+add create test in menu
+
+refactor after types
+  menu
+    refactor names
+    refactor menu.menu options like group
+  features
+    no feature prefix
+
+cmd
+  if there is error result create error with runCtx.html link
+
+preview in vscode
+  open preview in menu using circuit and probe
+  preview sourceCode
+  watch components - maybe inside the editor applyChange will have also the op and send it to the preview
+
+plugins inside plugin
+  for ui
+  test is example for that
+  ui--tree
+  ui--markdown
+  then we make studio a plugin
+
 rewrite rxPipe without registration
+refactor to new rx dsl
 jb.ui.f1 => $ui.f1
 prettyPrint -> formatter
-different dsls with different colors
-
-ctrl-D to duplicate, ctrl-shift-D disable, ctrl-alt-D delete
-todo langService tests
+different dsls with different colors in vscode
 
 
 tutorialDB(md)
@@ -22,7 +48,6 @@ tutorialDB(md)
         bug fix,can ask for code,spy,log and suggest fix
         new feature, new comp
 
-cmd.html
 studio bugs
   tree does not refresh - add tab group
   tree - insert does not refresh need to reopen
@@ -97,7 +122,6 @@ chatgpt
   tgp wrapper for libraries
   external lib version, add version to using and pluginDsl - find use case with external lib
 
-go over UIFrontEndTest and try to make it uiTest
 load plugin dynamically in probeTest
 ctrl-I
   add plugin and file info about 'using' and 'dsl' indication for current plugin

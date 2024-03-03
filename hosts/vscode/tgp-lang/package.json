@@ -155,7 +155,7 @@
 			},
 			{
 				"command": "jbart.duplicate",
-				"key": "ctrl+D",
+				"key": "alt+D",
 				"when": "editorTextFocus"
 			},					
 			{

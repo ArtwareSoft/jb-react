@@ -2,13 +2,13 @@ dsl('llm')
 using('common,parsing')
 
 component('llm.completions', {
-    type: 'data<>',
-    params: [
-        {id: 'chat', type: 'message[]', dynamic: true },
-        {id: 'model', as: 'string', options: 'gpt-3.5-turbo-16k,gpt-4', defaultValue: 'gpt-3.5-turbo', byName: true},
-        {id: 'maxTokens', defaultValue : 100 }
-    ],
-    impl: async (ctx,chat,model,max_tokens) => {
+  type: 'data<>',
+  params: [
+    {id: 'chat', type: 'message[]', dynamic: true},
+    {id: 'model', as: 'string', options: 'gpt-3.5-turbo-16k,gpt-4', defaultValue: 'gpt-3.5-turbo', byName: true},
+    {id: 'maxTokens', defaultValue: 100}
+  ],
+  impl: async (ctx,chat,model,max_tokens) => {
         const settings = !jbHost.isNode && await fetch(`/?op=settings`).then(res=>res.json())
         const apiKey = jbHost.isNode ? process.env.OPENAI_API_KEY: settings.OPENAI_API_KEY
         const ret = await jbHost.fetch('https://api.openai.com/v1/chat/completions', {
@@ -30,11 +30,11 @@ component('llm.completions', {
 })
 
 component('system', {
-    type: 'message',
-    params: [
-        {id: 'content', as: 'string'}
-    ],
-    impl: (ctx,content) => ({role: 'system', content})
+  type: 'message',
+  params: [
+    {id: 'content', as: 'string'}
+  ],
+  impl: (ctx,content) => ({role: 'system', content})
 })
 
 component('assistant', {

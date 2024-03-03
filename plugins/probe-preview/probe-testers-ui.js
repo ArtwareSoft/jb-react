@@ -1,4 +1,4 @@
-using('testing')
+using('testing','tgp-text-editor')
 
 component('test.showTestInStudio', {
   type: 'control',
@@ -60,7 +60,7 @@ component('test.successIndication', {
       Var('color', If('%success%', '--jb-success-fg', '--jb-error-fg'))
     ],
     title: If('%success%', '✓ %$testId%', '⚠ %$testId%'),
-    action: remote.action(winUtils.gotoUrl('/hosts/tests/tests.html?test=%$testId%&show&spy=test'), parent()),
+    action: remote.action(gotoUrl('/hosts/tests/tests.html?test=%$testId%&show&spy=test'), parent()),
     style: button.href(),
     features: css.color('var(%$color%)')
   })
@@ -120,7 +120,7 @@ component('test.uiFrontEndTestView', {
       group.wait('%$testResult()%', { varName: 'result' })
     ]
   }),
-  require: ({$: 'action<>winUtils.gotoUrl' })
+  require: ({$: 'action<>gotoUrl' })
 })
 
 component('test.dataTestView', {
@@ -155,7 +155,7 @@ component('test.dataTestView', {
       group.wait('%$testResult()%', { varName: 'result' })
     ]
   }),
-  require: ({$: 'action<>winUtils.gotoUrl' })
+  require: ({$: 'action<>gotoUrl' })
 })
 
 component('test.uiTestRunner', {
@@ -201,5 +201,5 @@ component('test.uiTestRunner', {
       })
     ]
   }),
-  require: ({$: 'action<>winUtils.gotoUrl' })
+  require: ({$: 'action<>gotoUrl' })
 })

@@ -17,7 +17,7 @@ component('probeServer', {
     {id: 'filePath', as: 'string'},
     {id: 'host', as: 'string', options: ',node,studio,static'}
   ],
-  impl: sourceCode(pluginsByPath('%$filePath%', true), plugins('probe,tree-shake,tgp'), {
+  impl: sourceCode(pluginsByPath('%$filePath%', { addTests: true }), plugins('probe,tree-shake,tgp'), {
     pluginPackages: packagesByPath('%$filePath%', '%$host%')
   })
 })
@@ -41,6 +41,14 @@ component('remote.tgpModelData', {
     ),
     first()
   )
+})
+
+component('remote.circuitOptions', {
+  params: [
+    {id: 'filePath'},
+    {id: 'path'}
+  ],
+  impl: remote.data(tgp.circuitOptions('%$path%'), cmd(probeServer('%$filePath%')))
 })
 
 component('langServer.probe', {
@@ -95,22 +103,59 @@ component('langServer.localReferences', {
 })
 
 component('langServer.studioCircuitUrl', {
-  impl: pipe(
-    Var('filePath', tgpTextEditor.currentFilePath()),
-    Var('sourceCodeForStudio', typeAdapter('source-code<loader>', probeServer('%$filePath%', 'studio'))),
-    langService.calcCompProps(),
-    '%path%',
-    If('%%', remote.data({
-      calc: pipe(
-        Var('probePath', '%%'),
-        Var('sourceCode', sourceCode.encodeUri('%$sourceCodeForStudio%')),
-        probe.calcCircuitPath('%%'),
-        'http://localhost:8082/project/studio/%path%/%$probePath%?sourceCode=%$sourceCode%&spy=test'
-      ),
-      jbm: cmd(probeServer('%$filePath%'))
-    }))
+  params: [
+    {id: 'compProps', defaultValue: '%%'}
+  ],
+  impl: pipeline(
+    Var('sourceCode', sourceCode.encodeUri(
+      typeAdapter('source-code<loader>', probeServer('%$compProps/filePath%', 'studio'))
+    )),
+    Var('spyParams', spy.paramForTest('%$compProps/circuitOptions/0%')),
+    'http://localhost:8082/project/studio/%$compProps/circuitOptions/0%/%$compProps/path%?sourceCode=%$sourceCode%&spy=%$spyParams%',
+    first()
   )
 })
+
+
+component('langServer.testUrl', {
+  params: [
+    {id: 'compProps', defaultValue: '%%'}
+  ],
+  impl: pipeline(
+    Var('spyParams', spy.paramForTest('%$compProps/circuitOptions/0%')),
+    'http://localhost:8082/hosts/tests/tests.html?test=%$compProps/circuitOptions/0%&show&spy=%$spyParam%',
+    first()
+  )
+})
+
+component('langServer.runCtxOfProbeUrl', {
+  params: [
+    {id: 'compProps', defaultValue: '%%'}
+  ],
+  impl: pipe(
+    Var('sourceCode', sourceCode.encodeUri(
+      typeAdapter('source-code<loader>', probeServer('%$compProps/filePath%'))
+    )),
+    Var('spyParams', spy.paramForTest('%$compProps/circuitOptions/0%')),
+    langServer.probe(),
+    'http://localhost:8082/hosts/tests/runCtx.html?runCtx=%result.0.in%&sourceCode=%$sourceCode%&spy=%$spyParams%',
+    first()
+  )
+})
+
+// component('langServer.runCtxUrl', {
+//   params: [
+//     {id: 'compProps', defaultValue: '%%'}
+//   ],
+//   impl: pipe(
+//     Var('sourceCode', sourceCode.encodeUri(
+//       typeAdapter('source-code<loader>', probeServer('%$compProps/filePath%'))
+//     )),
+//     langServer.circuitPath('%$compProps/filePath%', '%$compProps/path%'),
+//     'http://localhost:8082/hosts/tests/runCtx.html/%%?sourceCode=%$sourceCode%',
+//     first()
+//   )
+// })
 
 component('langServer.remoteProbe', {
   params: [

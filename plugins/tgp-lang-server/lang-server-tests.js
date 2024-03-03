@@ -4,7 +4,7 @@ using('tgp-lang-service-tests')
 component('langServerTest.references', {
   doNotRunInTests: true,
   impl: dataTest({
-    calculate: pipe(langServer.dummyCompProps(`component('x', {
+    calculate: pipe(langService.dummyCompProps(`component('x', {
   impl: dataTest('', __not())
 })`), langServer.references()),
     expectedResult: contains('jb-common', { data: '%path%' }),
@@ -90,18 +90,32 @@ component('langServerTest.remoteProbe', {
   })
 })
 
+component('langServerTest.includeCircuitOptions', {
+  impl: dataTest({
+    calculate: langService.dummyCompProps({
+      compText: `component('uiTest.group', {
+  impl: uiTest(group(text('hello world'), text('2')), __contains('hello world','2'))
+})`,
+      includeCircuitOptions: true
+    }),
+    expectedResult: equals('%circuitOptions%', ['test<>uiTest.group']),
+    timeout: 2000
+  })
+})
+
 component('langServerTest.studioCircuitUrl', {
   doNotRunInTests: true,
   impl: dataTest({
     calculate: pipe(
-      langService.dummyCompProps(
-        `component('uiTest.group', {
+      langService.dummyCompProps({
+        compText: `component('uiTest.group', {
   impl: uiTest(group(text('hello world'), text('2')), __contains('hello world','2'))
-})`
-      ),
+})`,
+        includeCircuitOptions: true
+      }),
       langServer.studioCircuitUrl()
     ),
-    expectedResult: contains('http://localhost:8082/project/studio/test<>uiTest.group/test<>uiTest.group~impl~expectedResult?sourceCode='),
+    expectedResult: contains('http://localhost:8082/project/studio/test<>uiTest.group/test<>uiTest.group~impl~expectedResult?sourceCode=','spy=test,uiTest,headless'),
     timeout: 2000
   })
 })
