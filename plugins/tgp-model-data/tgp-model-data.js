@@ -12,7 +12,7 @@ extension('tgp', 'modelData', {
 			.map(({id,proxies,using,dsl,dslOfFiles,files})=>({id,proxies,dsl,dslOfFiles,files: files.map(({path}) => path) })).map(p=>[p.id,p]))
 		const typeRules = jb.macro.typeRules
 		
-		return { filePath, comps, plugins, typeRules }
+		return { filePath, comps, plugins, typeRules, sourceCode: jb.sourceCode }
 	},
 })
 

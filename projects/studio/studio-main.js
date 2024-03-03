@@ -244,7 +244,7 @@ component('studio.mainMenu', {
             action: runActions(
               writeValue('%$studio/page%', '%%'),
               writeValue('%$studio/profile_path%', '%%'),
-              writeValue('%$studio/circuit%', tgp.circuitOptions('%%'))
+              writeValue('%$studio/circuit%', pipeline(tgp.circuitOptions('%%'),'%id%'))
             )
           }))
         ]

@@ -36,6 +36,7 @@ component('remote.tgpModelData', {
       prop('filePath', '%result/filePath%'),
       prop('errors', '%errors%'),
       prop('comps', '%result/comps%'),
+      prop('sourceCode', '%result/sourceCode%'),
       prop('typeRules', '%result/typeRules%'),
       prop('plugins', '%result/plugins%')
     ),
@@ -110,25 +111,24 @@ component('langServer.studioCircuitUrl', {
     Var('sourceCode', sourceCode.encodeUri(
       typeAdapter('source-code<loader>', probeServer('%$compProps/filePath%', 'studio'))
     )),
-    Var('spyParams', spy.paramForTest('%$compProps/circuitOptions/0%')),
-    'http://localhost:8082/project/studio/%$compProps/circuitOptions/0%/%$compProps/path%?sourceCode=%$sourceCode%&spy=%$spyParams%',
+    Var('spyParams', spy.paramForTest('%$compProps/circuitOptions/0/id%')),
+    'http://localhost:8082/project/studio/%$compProps/circuitOptions/0/id%/%$compProps/path%?sourceCode=%$sourceCode%&spy=%$spyParams%',
     first()
   )
 })
-
 
 component('langServer.testUrl', {
   params: [
     {id: 'compProps', defaultValue: '%%'}
   ],
   impl: pipeline(
-    Var('spyParams', spy.paramForTest('%$compProps/circuitOptions/0%')),
-    'http://localhost:8082/hosts/tests/tests.html?test=%$compProps/circuitOptions/0%&show&spy=%$spyParam%',
+    Var('spyParams', spy.paramForTest('%$compProps/circuitOptions/0/id%')),
+    'http://localhost:8082/hosts/tests/tests.html?test=%$compProps/circuitOptions/0/shortId%&show&spy=%$spyParam%',
     first()
   )
 })
 
-component('langServer.runCtxOfProbeUrl', {
+component('langServer.runCtxOfRemoteCmdUrl', {
   params: [
     {id: 'compProps', defaultValue: '%%'}
   ],
@@ -136,11 +136,25 @@ component('langServer.runCtxOfProbeUrl', {
     Var('sourceCode', sourceCode.encodeUri(
       typeAdapter('source-code<loader>', probeServer('%$compProps/filePath%'))
     )),
-    Var('spyParams', spy.paramForTest('%$compProps/circuitOptions/0%')),
+    Var('spyParams', spy.paramForTest('%$compProps/circuitOptions/0/id')),
     langServer.probe(),
-    'http://localhost:8082/hosts/tests/runCtx.html?runCtx=%result.0.in%&sourceCode=%$sourceCode%&spy=%$spyParams%',
+    encodeJsonAsUri('%result.0.in%'),
+    'http://localhost:8082/hosts/tests/runCtx.html?runCtx=%%&sourceCode=%$sourceCode%&spy=%$spyParams%',
     first()
   )
+})
+
+component('encodeJsonAsUri', {
+  params: [
+    {id: 'obj'}
+  ],
+  impl: (ctx,obj) => {
+    try {
+      return jb.frame.encodeURIComponent(JSON.stringify(obj))
+    } catch(e) {
+      jb.logException(e,{ctx,obj})
+    }
+  }
 })
 
 // component('langServer.runCtxUrl', {

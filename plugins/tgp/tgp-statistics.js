@@ -31,7 +31,7 @@ extension('tgp', 'statistics', {
       const candidates = {[compId]: true}
       while (expand()) {}
       const comps = Object.keys(candidates).filter(compId => noOpenParams(compId))
-      return comps.sort((x,y) => mark(y) - mark(x))
+      return comps.sort((x,y) => mark(y) - mark(x)).map(id=>({id, shortId: id.split('>').pop(), location: jb.comps[id].$location}))
   
       function mark(id) {
         if (id.match(/^test<>/) && id.indexOf(shortId) != -1) return 20

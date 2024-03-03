@@ -39,7 +39,7 @@ extension('probe', 'main', {
                     || _ctx.exp('%$probe/defaultMainCircuit%') 
                     || jb.path(resolvedComp,'circuit')
                     || jb.path(resolvedComp,'impl.expectedResult') && cmpId // test
-                    || jb.tgp.circuitOptions(cmpId)[0] 
+                    || jb.path(jb.tgp.circuitOptions(cmpId),'0.id')
                     || cmpId
             if (circuitCmpId && !jb.utils.resolveCompWithId(circuitCmpId,{silent: true}) && !jb.treeShake.codeServerJbm) {
                 return jb.logError(`calcCircuit. can not bring circuit comp ${circuitCmpId}`,{probePath,cmpId,ctx})

@@ -297,6 +297,17 @@ component('vscode.jbMenu', {
   impl: vscode.openQuickPickMenu(langServer.jBartMenu())
 })
 
+component('vscode.gotoFilePos', {
+  type: 'action<>',
+  params: [
+    {id: 'location'},
+  ],
+  impl: (ctx,location) => {
+    debugger
+    jb.tgpTextEditor.host.gotoFilePos(location)
+  }
+})
+
 component('langServer.jBartMenu', {
   type: 'menu.option<>',
   params: [
@@ -304,13 +315,14 @@ component('langServer.jBartMenu', {
   ],
   impl: menu.menu({
     vars: [
-      Var('circuit', pipeline(split('>', { text: '%$compProps/circuitOptions/0%', part: 'last' }), 'circuit: %%'))
+      Var('circuit', '%$compProps/circuitOptions/0/shortId%')
     ],
     title: 'type: %$compProps/type%, pluginDsl: %$compProps/pluginDsl%, fileDsl: %$compProps/fileDsl%',
     options: [
-      menu.action('open test %$circuit%', gotoUrl(langServer.testUrl())),
-      menu.action('open studio for %$circuit% at %$compProps/path%', gotoUrl(langServer.studioCircuitUrl())),
-      menu.action('open probe in browser', gotoUrl(langServer.runCtxOfProbeUrl()))
+      menu.action('goto circuit: %$circuit%', vscode.gotoFilePos('%$compProps/circuitOptions/0/location%')),
+      menu.action('open test circuit: %$circuit%', gotoUrl(langServer.testUrl())),
+      menu.action('open studio for circuit: %$circuit% at %$compProps/path%', gotoUrl(langServer.studioCircuitUrl())),
+      menu.action('open probe in browser', gotoUrl(langServer.runCtxOfRemoteCmdUrl()))
     ]
   })
 })

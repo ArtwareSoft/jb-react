@@ -1,8 +1,6 @@
-calc circuit before the menu and add to compProps, add more circuits
-add 'using' and 'dsl' indication to compProps
 
-add goto circuit in menu
 add create test in menu
+show 10 circuits in ctrl+J
 
 refactor after types
   menu
@@ -10,6 +8,7 @@ refactor after types
     refactor menu.menu options like group
   features
     no feature prefix
+  jbm -> change dsl to remote, remote jbm. prefix
 
 cmd
   if there is error result create error with runCtx.html link

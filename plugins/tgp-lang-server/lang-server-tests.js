@@ -98,7 +98,7 @@ component('langServerTest.includeCircuitOptions', {
 })`,
       includeCircuitOptions: true
     }),
-    expectedResult: equals('%circuitOptions%', ['test<>uiTest.group']),
+    expectedResult: equals('%circuitOptions/0/id%', 'test<>uiTest.group'),
     timeout: 2000
   })
 })
@@ -114,6 +114,23 @@ component('langServerTest.studioCircuitUrl', {
         includeCircuitOptions: true
       }),
       langServer.studioCircuitUrl()
+    ),
+    expectedResult: contains('http://localhost:8082/project/studio/test<>uiTest.group/test<>uiTest.group~impl~expectedResult?sourceCode=','spy=test,uiTest,headless'),
+    timeout: 2000
+  })
+})
+
+component('langServerTest.runCtxOfRemoteCmdUrl', {
+  doNotRunInTests: true,
+  impl: dataTest({
+    calculate: pipe(
+      langService.dummyCompProps({
+        compText: `component('uiTest.group', {
+  impl: uiTest(group(text('hello world'), text('2')), __contains('hello world','2'))
+})`,
+        includeCircuitOptions: true
+      }),
+      langServer.runCtxOfRemoteCmdUrl()
     ),
     expectedResult: contains('http://localhost:8082/project/studio/test<>uiTest.group/test<>uiTest.group~impl~expectedResult?sourceCode=','spy=test,uiTest,headless'),
     timeout: 2000
