@@ -17,7 +17,8 @@ extension('ui','comp', {
             cssElemCounter: 0,
             propCounter: 0,
             cssHashMap: {},
-            cmps: {}              
+            cmps: {},
+            headless: {}              
         }
     },
     typeRules: [

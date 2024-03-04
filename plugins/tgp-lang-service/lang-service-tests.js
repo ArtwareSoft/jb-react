@@ -1,296 +1,199 @@
 using('ui-tests')
 
 component('completionTest.param', {
-  impl: completionOptionsTest({
-    compText: `component('x', {
-  impl: uiTest(__text(__'hello world',__ ''__)__,__ __contains('hello world')__)
-})`,
+  impl: completionOptionsTest(`uiTest(__text(__'hello world',__ ''__)__,__ __contains('hello world')__)`, {
     expectedSelections: ['runBefore','style','style','style','runBefore','runBefore','not','runBefore']
   })
 })
 
 component('completionTest.param1', {
-  impl: completionOptionsTest({
-    compText: `component('x', {
-  impl: uiTest(text(__'hello world', ''), contains('hello world'))
-})`,
+  impl: completionOptionsTest(`uiTest(text(__'hello world', ''), contains('hello world'))`, {
     expectedSelections: ['style']
   })
 })
 
 component('completionTest.pt', {
   impl: completionOptionsTest({
-    compText: `component('x', {
-  impl: uiTest(group(__text('__hello world'), __text('2'__)__), __contains('hello world','2'))
-})`,
+    compText: `uiTest(group(__text('__hello world'), __text('2'__)__), __contains('hello world','2'))`,
     expectedSelections: ['button','pipeline','button','style','button','not']
   })
 })
 
 component('completionTest.text', {
-  impl: completionOptionsTest(`component('x', {
-  impl: uiTest(text(__'__hello'__, __'__'__))
-})`, {
+  impl: completionOptionsTest(`uiTest(text(__'__hello'__, __'__'__))`, {
     expectedSelections: ['style','pipeline','style','style','pipeline','style']
   })
 })
 
 component('completionTest.mixedSingleArgAsArrayMiddle', {
-  impl: completionOptionsTest({
-    compText: `component('x', {
-  impl: group(button('click me')__,__ { features: method() })
-})`,
+  impl: completionOptionsTest(`group(button('click me')__,__ { features: method() })`, {
     expectedSelections: ['button','button']
   })
 })
 
 component('completionTest.betweentwoFirstArgs', {
-  impl: completionOptionsTest({
-    compText: `component('x', {
-  impl: uiTest(text('hello world'),__ contains('hello world'))
-})`,
+  impl: completionOptionsTest(`uiTest(text('hello world'),__ contains('hello world'))`, {
     expectedSelections: ['runBefore']
   })
 })
 
 component('completionTest.pipeline', {
-  impl: completionOptionsTest(`component('x', {
-  impl: uiTest(text(pipeline(__)))
-})`, {
+  impl: completionOptionsTest(`uiTest(text(pipeline(__)))`, {
     expectedSelections: ['split']
   })
 })
 
 component('completionTest.typeAdapter', {
-  impl: completionOptionsTest({
-    compText: `component('x', {
-  impl: uiTest(text(typeAdapter('state<location>', __TBD())))
-})`,
+  impl: completionOptionsTest(`uiTest(text(typeAdapter('state<location>', __TBD())))`, {
     expectedSelections: ['israel']
   })
 })
 
 component('completionTest.pipeline2', {
-  impl: completionOptionsTest(`component('x', {
-  impl: uiTest(text(pipeline('__')))
-})`, {
+  impl: completionOptionsTest(`uiTest(text(pipeline('__')))`, {
     expectedSelections: ['split']
   })
 })
 
 component('completionTest.createPipelineFromComp', {
-  impl: completionActionTest(`component('x', {
-  impl: uiTest(text(__split()))
-})`, {
+  impl: completionActionTest(`uiTest(text(__split()))`, {
     completionToActivate: 'pipeline',
-    expectedEdit: () => ({
-        range: {start: {line: 1, col: 20}, end: {line: 1, col: 26}},
-        newText: 'pipeline(split()'
-      }),
+    expectedEdit: asIs({range: {start: {line: 1, col: 20}, end: {line: 1, col: 26}}, newText: 'pipeline(split()'}),
     expectedCursorPos: '1,29'
   })
 })
 
 component('completionTest.groupInGroup', {
-  impl: completionOptionsTest({
-    compText: `component('x', {
-  impl: uiTest(group(group(__text(''))))
-})`,
+  impl: completionOptionsTest(`uiTest(group(group(__text(''))))`, {
     expectedSelections: ['button']
   })
 })
 
 component('completionTest.singleArgAsArray.begin', {
-  impl: completionActionTest(`component('x', {
-  impl: uiTest(group(__text('')))
-})`, {
+  impl: completionActionTest(`uiTest(group(__text('')))`, {
     completionToActivate: 'features',
-    expectedEdit: () => ({
-      range: {start: {line: 1, col: 29}, end: {line: 1, col: 29}},
-      newText: ', { features: TBD() }'
-    }),
+    expectedEdit: asIs({range: {start: {line: 1, col: 29}, end: {line: 1, col: 29}}, newText: ', { features: TBD() }'}),
     expectedCursorPos: '1,43'
   })
 })
 
 component('completionTest.singleArgAsArray.end', {
-  impl: completionActionTest(`component('x', {
-  impl: uiTest(group(text('')__))
-})`, {
+  impl: completionActionTest(`uiTest(group(text('')__))`, {
     completionToActivate: 'button',
-    expectedEdit: () => ({
-        range: {start: {line: 1, col: 29}, end: {line: 1, col: 29}},
-        newText: ", button('click me')"
-      }),
+    expectedEdit: asIs({range: {start: {line: 1, col: 29}, end: {line: 1, col: 29}}, newText: `, button('click me')`}),
     expectedCursorPos: '1,38'
   })
 })
 
 component('completionTest.singleArgAsArray.middle', {
-  impl: completionActionTest(`component('x', {
-  impl: uiTest(group(text(''),__ text('2')))
-})`, {
+  impl: completionActionTest(`uiTest(group(text(''),__ text('2')))`, {
     completionToActivate: 'button',
-    expectedEdit: () => ({
-      range: {start: {line: 1, col: 31}, end: {line: 1, col: 31}},
-      newText: `button('click me'), `
-    }),
+    expectedEdit: asIs({range: {start: {line: 1, col: 31}, end: {line: 1, col: 31}}, newText: `button('click me'), `}),
     expectedCursorPos: '1,38'
   })
 })
 
 component('completionTest.paramsAndProfiles', {
-  impl: completionOptionsTest(`component('x', {
-  impl: uiTest(__text(''))
-})`, {
+  impl: completionOptionsTest(`uiTest(__text(''))`, {
     expectedSelections: ['runBefore','button']
   })
 })
 
 component('completionTest.createPipelineFromString', {
-  impl: completionActionTest(`component('x', {
-  impl: uiTest(text('__aa'))
-})`, {
+  impl: completionActionTest(`uiTest(text('__aa'))`, {
     completionToActivate: 'pipeline',
-    expectedEdit: () => ({
-        range: {start: {line: 1, col: 20}, end: {line: 1, col: 24}},
-        newText: "pipeline('aa')"
-      }),
+    expectedEdit: asIs({range: {start: {line: 1, col: 20}, end: {line: 1, col: 24}}, newText: `pipeline('aa')`}),
     expectedCursorPos: '1,29'
   })
 })
 
 component('completionTest.createPipelineFromEmptyString', {
-  impl: completionActionTest(`component('x', {
-  impl: uiTest(text('hello world', '__'))
-})`, {
+  impl: completionActionTest(`uiTest(text('hello world', '__'))`, {
     completionToActivate: 'pipeline',
-    expectedEdit: () => ({
-      range: {start: {line: 1, col: 35}, end: {line: 1, col: 37}},
-      newText: `pipeline('')`
-      }),
+    expectedEdit: asIs({range: {start: {line: 1, col: 35}, end: {line: 1, col: 37}}, newText: `pipeline('')`}),
     expectedCursorPos: '1,44'
   })
 })
 
 component('completionTest.insideVar', {
-  impl: completionActionTest(`component('x', {
-  impl: dataTest({ vars: [Var('a', '__b')] })
-})`, {
+  impl: completionActionTest(`dataTest({ vars: [Var('a', '__b')] })`, {
     completionToActivate: 'pipeline',
-    expectedEdit: () => ({
-        range: {start: {line: 1, col: 35}, end: {line: 1, col: 38}},
-        newText: `pipeline('b')`
-      }),
+    expectedEdit: asIs({range: {start: {line: 1, col: 35}, end: {line: 1, col: 38}}, newText: `pipeline('b')`}),
     expectedCursorPos: '1,44'
   })
 })
 
 component('completionTest.splitInsidePipeline', {
-  impl: completionActionTest(`component('x', {
-  impl: uiTest(text(pipeline(__)))
-})`, {
+  impl: completionActionTest(`uiTest(text(pipeline(__)))`, {
     completionToActivate: 'split',
-    expectedEdit: () => ({
-        range: {start: {line: 1, col: 29}, end: {line: 1, col: 29}},
-        newText: 'split()'
-      }),
+    expectedEdit: asIs({range: {start: {line: 1, col: 29}, end: {line: 1, col: 29}}, newText: 'split()'}),
     expectedCursorPos: '1,35'
   })
 })
 
 component('completionTest.splitPart', {
-  impl: completionOptionsTest(`component('x', {
-  impl: uiTest(text(pipeline(split(__))))
-})`, {
+  impl: completionOptionsTest(`uiTest(text(pipeline(split(__))))`, {
     expectedSelections: ['part']
   })
 })
 
 component('completionTest.dynamicFormat', {
   impl: completionActionTest({
-    compText: `component('x', {
-  impl: uiTest(__text('my text'), contains('hello world'))
-})`,
+    compText: `uiTest(__text('my text'), contains('hello world'))`,
     completionToActivate: 'uiAction',
-    expectedEdit: () => ({
-      range: {start: {line: 1, col: 55}, end: {line: 1, col: 55}},
-      newText: ', { uiAction: TBD() }'
-    }),
+    expectedEdit: asIs({range: {start: {line: 1, col: 55}, end: {line: 1, col: 55}}, newText: ', { uiAction: TBD() }'}),
     expectedCursorPos: '1,69'
   })
 })
 
 component('completionTest.wrapWithGroup', {
-  impl: completionActionTest(`component('x', {
-  impl: uiTest(__text())
-})`, {
+  impl: completionActionTest(`uiTest(__text())`, {
     completionToActivate: 'group',
-    expectedEdit: () => ({
-      range: {start: {line: 1, col: 15}, end: {line: 1, col: 20}},
-      newText: 'group(text()'
-    }),
+    expectedEdit: asIs({range: {start: {line: 1, col: 15}, end: {line: 1, col: 20}}, newText: 'group(text()'}),
     expectedCursorPos: '1,21'
   })
 })
 
 component('completionTest.wrapWithGroup2', {
-  impl: completionActionTest(`component('x', {
-  impl: uiTest(group(text(''), __button('click me')))
-})`, {
+  impl: completionActionTest({
+    compText: `uiTest(group(text(''), __button('click me')))`,
     completionToActivate: 'group',
-    expectedEdit: () => ({range: {start: {line: 1, col: 31}, end: {line: 1, col: 48}}, newText: `group(button('click me')`}),
+    expectedEdit: asIs({range: {start: {line: 1, col: 31}, end: {line: 1, col: 48}}, newText: `group(button('click me')`}),
     expectedCursorPos: '1,37'
   })
 })
 
 component('completionTest.wrapWithArray', {
   impl: completionActionTest({
-    compText: `component('x', {
-  impl: uiTest(text({ features: __id('x') }), contains())
-})`,
+    compText: `uiTest(text({ features: __id('x') }), contains())`,
     completionToActivate: 'wrap with array',
-    expectedEdit: () => ({
-      range: {start: {line: 1, col: 32}, end: {line: 1, col: 39}},
-      newText: `[id('x')]`
-    }),
+    expectedEdit: asIs({range: {start: {line: 1, col: 32}, end: {line: 1, col: 39}}, newText: `[id('x')]`}),
     expectedCursorPos: '1,40'
   })
 })
 
 component('completionTest.buttonFeature', {
-  impl: completionOptionsTest(`component('x', {
-  impl: uiTest(button('', { features: [__] }))
-})`, {
+  impl: completionOptionsTest(`uiTest(button('', { features: [__] }))`, {
     expectedSelections: ['method','button.ctrlAction']
   })
 })
 
 component('completionTest.singleParamAsArray.rx', {
-  impl: completionOptionsTest(`component('x', {
-  impl: dataTest(rx.pipe(__))
-})`, {
+  impl: completionOptionsTest(`dataTest(rx.pipe(__))`, {
     expectedSelections: ['source.data']
   })
 })
 
 component('completionTest.singleParamAsArray.data', {
-  impl: completionOptionsTest(`component('x', {
-  impl: dataTest(pipeline(__))
-})`, {
+  impl: completionOptionsTest(`dataTest(pipeline(__))`, {
     expectedSelections: ['split']
   })
 })
 
 component('completionTest.actionReplaceTBD', {
-  impl: completionActionTest(`component('x', {
-  impl: uiTest(button('x', remote.action(__TBD())))
-})`, {
+  impl: completionActionTest(`uiTest(button('x', remote.action(__TBD())))`, {
     completionToActivate: 'move',
-    expectedEdit: () => ({
-        range: {start: {line: 1, col: 41}, end: {line: 1, col: 44}},
-        newText: 'move'
-      }),
+    expectedEdit: asIs({range: {start: {line: 1, col: 41}, end: {line: 1, col: 44}}, newText: 'move'}),
     expectedCursorPos: '1,46'
   })
 })
@@ -301,144 +204,95 @@ component('completionTest.fixEditedSample', {
 
 component('completionTest.fixEditedCompSpaces', {
   impl: fixEditedCompTest({
-    compText: `component('completionTest.fixEditedSample', {
-   impl:     pipeline(__) 
-})`,
-    expectedFixedComp: `{
-  impl: pipeline()
-}`
+    compText: `component('completionTest.fixEditedSample', {\n   impl:     pipeline(__)\n})`,
+    expectedFixedComp: `{\n  impl: pipeline()\n}`
   })
 })
 
 component('completionTest.fixEditedCompWrongName', {
   impl: fixEditedCompTest({
-    compText: `component('completionTest.fixEditedSample' ,{
-  impl: pipeline(__a) 
-})`,
-    expectedFixedComp: `{
-  impl: pipeline(TBD())
-}`
+    compText: `component('completionTest.fixEditedSample' ,{\n  impl: pipeline(__a)\n})`,
+    expectedFixedComp: `{\n  impl: pipeline(TBD())\n}`
   })
 })
 
 component('completionTest.people', {
-  impl: completionOptionsTest(`component('x', {
-  impl: dataTest('%$peopleArray/__')
-})`, {
+  impl: completionOptionsTest(`dataTest('%$peopleArray/__')`, {
     expectedSelections: ['people (3 items)']
   })
 })
 
 component('completionTest.person', {
-  impl: completionOptionsTest(`component('x', {
-  impl: dataTest('%$__')
-})`, {
+  impl: completionOptionsTest(`dataTest('%$__')`, {
     expectedSelections: ['$person (4 props)']
   })
 })
 
 component('completionTest.writePerson', {
-  impl: completionActionTest(`component('x', {
-  impl: dataTest('%$__')
-})`, {
+  impl: completionActionTest(`dataTest('%$__')`, {
     completionToActivate: '$person (4 props)',
-    expectedEdit: () => ({
-      range: {start: {line: 1, col: 20}, end: {line: 1, col: 20}},
-      newText: 'person/'
-    }),
+    expectedEdit: asIs({range: {start: {line: 1, col: 20}, end: {line: 1, col: 20}}, newText: 'person/'}),
     expectedCursorPos: '1,27'
   })
 })
 
 component('completionTest.writePersonInner', {
-  impl: completionActionTest(`component('x', {
-  impl: dataTest('%$p__er')
-})`, {
+  impl: completionActionTest(`dataTest('%$p__er')`, {
     completionToActivate: '$person (4 props)',
-    expectedEdit: () => ({
-      range: {start: {line: 1, col: 23}, end: {line: 1, col: 23}},
-      newText: 'son/'
-    }),
+    expectedEdit: asIs({range: {start: {line: 1, col: 23}, end: {line: 1, col: 23}}, newText: 'son/'}),
     expectedCursorPos: '1,27'
   })
 })
 
 component('completionTest.writePersonInner2', {
-  impl: completionActionTest(`component('x', {
-  impl: dataTest('%$per__')
-})`, {
+  impl: completionActionTest(`dataTest('%$per__')`, {
     completionToActivate: '$person (4 props)',
-    expectedEdit: () => ({
-      range: {start: {line: 1, col: 23}, end: {line: 1, col: 23}},
-      newText: 'son/'
-    }),
+    expectedEdit: asIs({range: {start: {line: 1, col: 23}, end: {line: 1, col: 23}}, newText: 'son/'}),
     expectedCursorPos: '1,27'
   })
 })
 
 component('completionTest.writePersonName', {
-  impl: completionActionTest(`component('x', {
-  impl: dataTest('%$person/__')
-})`, {
+  impl: completionActionTest(`dataTest('%$person/__')`, {
     completionToActivate: 'name (Homer Simpson)',
-    expectedEdit: () => ({
-      range: {start: {line: 1, col: 27}, end: {line: 1, col: 27}},
-      newText: 'name%'
-    }),
+    expectedEdit: asIs({range: {start: {line: 1, col: 27}, end: {line: 1, col: 27}}, newText: 'name%'}),
     expectedCursorPos: '1,33'
   })
 })
 
 component('completionTest.writePreviewValue', {
-  impl: completionActionTest(`component('x', {
-  impl: dataTest('%$peopleArray/__')
-})`, {
+  impl: completionActionTest(`dataTest('%$peopleArray/__')`, {
     completionToActivate: 'people (3 items)',
-    expectedEdit: () => ({
-        range: {start: {line: 1, col: 32}, end: {line: 1, col: 32}},
-        newText: 'people/'
-      }),
+    expectedEdit: asIs({range: {start: {line: 1, col: 32}, end: {line: 1, col: 32}}, newText: 'people/'}),
     expectedCursorPos: '1,39'
   })
 })
 
 component('completionTest.dslTest.createProp', {
-  impl: completionActionTest(`component('x', {
-  impl: state(__)
-})`, {
+  impl: completionActionTest(`state(__)`, {
     completionToActivate: 'capital',
-    expectedEdit: () => ({
-        range: {start: {line: 1, col: 14}, end: {line: 1, col: 14}},
-        newText: 'TBD()'
-      }),
+    expectedEdit: asIs({range: {start: {line: 1, col: 14}, end: {line: 1, col: 14}}, newText: 'TBD()'}),
     expectedCursorPos: '1,14',
     dsl: 'location'
   })
 })
 
 component('completionTest.dslTest.nameOverride', {
-  impl: completionOptionsTest(`component('x', {
-  impl: state(pipeline(__))
-})`, {
+  impl: completionOptionsTest(`state(pipeline(__))`, {
     expectedSelections: ['checkNameOverride'],
     dsl: 'location'
   })
 })
 
 component('completionTest.dslTest.top', {
-  impl: completionOptionsTest(`component('x', {
-  impl: state(__)
-})`, {
+  impl: completionOptionsTest(`state(__)`, {
     expectedSelections: ['capital'],
     dsl: 'location'
   })
 })
 
 component('completionTest.dslTest.typeRules', {
-  impl: completionOptionsTest(`component('x', {
-  type: 'data',
-  impl: pipeline(__)
-})`, {
+  impl: completionOptionsTest(`component('x', {\n  type: 'data',\n  impl: pipeline(__)\n})`, {
     expectedSelections: ['split'],
     dsl: 'location'
   })
@@ -446,68 +300,37 @@ component('completionTest.dslTest.typeRules', {
 
 component('completionTest.multiLine', {
   impl: completionActionTest({
-    compText: `component('x', {
-  impl: group(__
-    text('hello'),
-    group(text('-1-'), controlWithCondition('1==2', text('-1.5-')), text('-2-')),
-    text('world')
-  )
-})`,
+    compText: `group(__\n    text('hello'),\n    group(text('-1-'), controlWithCondition('1==2', text('-1.5-')), text('-2-')),\n    text('world')\n  )`,
     completionToActivate: 'button',
-    expectedEdit: () => ({
-      range: {start: {line: 2, col: 4}, end: {line: 2, col: 4}}, 
-      newText: `button('click me'),
-    `}),
+    expectedEdit: asIs({range: {start: {line: 2, col: 4}, end: {line: 2, col: 4}}, newText: `button('click me'),\n    `}),
     expectedCursorPos: '2,11'
   })
 })
 
 component('completionTest.multiLineAddProp', {
   impl: completionActionTest({
-    compText: `component('x', {
-  impl: group(__
-    text('hello'),
-    group(text('-1-'), controlWithCondition('1==2', text('-1.5-')), text('-2-')),
-    text('world')
-  )
-})`,
+    compText: `group(__\n    text('hello'),\n    group(text('-1-'), controlWithCondition('1==2', text('-1.5-')), text('-2-')),\n    text('world')\n  )`,
     completionToActivate: 'features',
-    expectedEdit: () => ({
-          range: {start: {line: 1, col: 14}, end: {line: 5, col: 2}},
-          newText: `{
-    controls: [
-      text('hello'),
-      group(text('-1-'), controlWithCondition('1==2', text('-1.5-')), text('-2-')),
-      text('world')
-    ],
-    features: TBD()
-  }`
-      }),
+    expectedEdit: asIs({
+        range: {start: {line: 1, col: 14}, end: {line: 5, col: 2}},
+        newText: `{\n    controls: [\n      text('hello'),\n      group(text('-1-'), controlWithCondition('1==2', text('-1.5-')), text('-2-')),\n      text('world')\n    ],\n    features: TBD()\n  }`
+    }),
     expectedCursorPos: '7,14'
   })
 })
 
 component('completionTest.multiLineFeatures', {
   impl: completionActionTest({
-    compText: `component('x', {
-  impl: group(text('my text'), { features: [
-    method(),__
-    calcProp(),
-    css.class('asddddddddddddddddddddddddddd')
-  ] })
-})`,
+    compText: `group(text('my text'), { features: [\n    method(),__\n    calcProp(),\n    css.class('asddddddddddddddddddddddddddd')\n  ] })`,
     completionToActivate: 'method',
-    expectedEdit: () => ({range: {start: {line: 3, col: 4}, end: {line: 3, col: 4}}, newText: `method(),
-    `}),
+    expectedEdit: asIs({range: {start: {line: 3, col: 4}, end: {line: 3, col: 4}}, newText: `method(),\n    `}),
     expectedCursorPos: '3,11'
   })
 })
 
 component('langServiceTest.provideDefinition', {
   impl: dataTest({
-    calculate: pipe(langService.dummyCompProps(`component('x', {
-  impl: dataTest('', __not())
-})`), langService.definition()),
+    calculate: pipe(langService.dummyCompProps(`dataTest('', __not())`), langService.definition()),
     expectedResult: contains('jb-common', { data: '%path%' })
   })
 })
@@ -515,11 +338,7 @@ component('langServiceTest.provideDefinition', {
 component('langServiceTest.provideDefinition.inFunc', {
   impl: dataTest({
     calculate: pipe(
-      langService.dummyCompProps(
-        `component('x', {
-  impl: dataTest('', () => { __jb.utils.prettyPrint('aa'); return 3})
-})`
-      ),
+      langService.dummyCompProps(`dataTest('', () => { __jb.utils.prettyPrint('aa'); return 3})`),
       langService.definition()
     ),
     expectedResult: contains('pretty-print', { data: '%path%' })
@@ -529,11 +348,7 @@ component('langServiceTest.provideDefinition.inFunc', {
 component('langServiceTest.moveInArrayEdits', {
   impl: dataTest({
     calculate: pipe(
-      langService.dummyCompProps(
-        `component('x', {
-  impl: dataTest(pipeline(list(1,2,3), __slice(0, 2), join()), equals('1,2'))
-})`
-      ),
+      langService.dummyCompProps(`dataTest(pipeline(list(1,2,3), __slice(0, 2), join()), equals('1,2'))`),
       langService.moveInArrayEdits(1),
       first()
     ),
@@ -544,17 +359,14 @@ component('langServiceTest.moveInArrayEdits', {
 component('langServiceTest.duplicateEdits', {
   impl: dataTest({
     calculate: pipe(
-      langService.dummyCompProps(
-        `component('x', {
-  impl: dataTest(pipeline(list(1,2,3), __slice(0, 2), join()), equals('1,2'))
-})`
-      ),
+      langService.dummyCompProps(`dataTest(pipeline(list(1,2,3), __slice(0, 2), join()), equals('1,2'))`),
       langService.duplicateEdits(),
       first()
     ),
     expectedResult: equals(asIs({
-      edit: {range: {start: {line: 1, col: 52}, end: {line: 1, col: 52}}, newText: 'slice(0, 2), '},
-      cursorPos: {line: 1, col: 52}, hash: 747934708
+        edit: {range: {start: {line: 1, col: 52}, end: {line: 1, col: 52}}, newText: 'slice(0, 2), '},
+        cursorPos: {line: 1, col: 52},
+        hash: 747934708
     }))
   })
 })
@@ -562,35 +374,35 @@ component('langServiceTest.duplicateEdits', {
 component('langServiceTest.deleteEdits', {
   impl: dataTest({
     calculate: pipe(
-      langService.dummyCompProps(
-        `component('x', {
-  impl: dataTest(pipeline(list(1,2,3), __slice(0, 2), join()), equals('1,2'))
-})`
-      ),
+      langService.dummyCompProps(`dataTest(pipeline(list(1,2,3), __slice(0, 2), join()), equals('1,2'))`),
       langService.deleteEdits(),
       first()
     ),
     expectedResult: equals(asIs({
-      edit: {range: {start: {line: 1, col: 39}, end: {line: 1, col: 52}}, newText: ''},
-      cursorPos: {line: 1, col: 39}, hash: 747934708
+        edit: {range: {start: {line: 1, col: 39}, end: {line: 1, col: 52}}, newText: ''},
+        cursorPos: {line: 1, col: 39},
+        hash: 747934708
     }))
   })
 })
 
-component('langServiceTest.disableEdits', {
+component('test.tst1', {
+  impl: pipeline(list(1,2,3), slice(0, 2), join())
+})
+
+component('langServiceTest.createTestEdits', {
   impl: dataTest({
     calculate: pipe(
-      langService.dummyCompProps(
-        `component('x', {
-  impl: dataTest(pipeline(list(1,2,3), __slice(0, 2), join()), equals('1,2'))
-})`
-      ),
-      langService.disableEdits(),
+      langService.dummyCompProps(`component('test.tst1', {\n  impl: pipeline(list(1,2,3), __slice(0, 2), join())\n})`),
+      langService.createTestEdits(),
       first()
     ),
     expectedResult: equals(asIs({
-      edit: {range: {start: {line: 1, col: 49}, end: {line: 1, col: 49}}, newText: ', { $disabled: true }'},
-      cursorPos: {line: 1, col: 39}, hash: 747934708
+        edit: {
+          range: {start: {line: 3, col: 0}, end: {line: 3, col: 0}},
+          newText: `\ncomponent('dataTest.test.tst1', {\n  impl: dataTest(test.tst1(), equals(''))\n})\n`
+        },
+        cursorPos: {line: 4, col: 0}
     }))
   })
 })
@@ -598,18 +410,14 @@ component('langServiceTest.disableEdits', {
 component('langServiceTest.enableEdits', {
   impl: dataTest({
     calculate: pipe(
-      langService.dummyCompProps(
-        `component('x', {
-  impl: dataTest(pipeline(list(1,2,3), __slice(0, 2, { $disabled: true }), join()), equals('1,2'))
-})`
-      ),
+      langService.dummyCompProps(`dataTest(pipeline(list(1,2,3), __slice(0, 2, { $disabled: true }), join()), equals('1,2'))`),
       langService.disableEdits(),
       first()
     ),
-    expectedResult: equals( asIs({
+    expectedResult: equals(asIs({
         edit: {range: {start: {line: 1, col: 49}, end: {line: 1, col: 70}}, newText: ''},
-        cursorPos: {line: 1, col: 39}, hash: -1274638064
-      })
-    )
+        cursorPos: {line: 1, col: 39},
+        hash: -1274638064
+    }))
   })
 })

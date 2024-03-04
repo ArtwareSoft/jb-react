@@ -3,8 +3,6 @@
 //     $jb_childProp: 'title', // used for primitive props
 // }
 
-//using('rx')
-
 extension('watchable', 'main', {
   $requireFuncs: '#watchable.resourcesRef,#db.isWatchable,#watchable.isWatchable',
 
@@ -444,7 +442,7 @@ extension('immutable', {
     return nextObject
   },
   copy(obj) {
-    res = Array.isArray(obj) ? obj.slice(0) : (obj && typeof obj === 'object') ? Object.assign({}, obj) : obj
+    const res = Array.isArray(obj) ? obj.slice(0) : (obj && typeof obj === 'object') ? Object.assign({}, obj) : obj
     res[jb.watchable.jbId] = obj[jb.watchable.jbId]
     return res
   },

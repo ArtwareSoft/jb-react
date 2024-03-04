@@ -237,6 +237,13 @@ extension('treeShake', {
         function loadFile(lib) {
             return new Promise(resolve => {
                 const type = lib.indexOf('.css') == -1 ? 'script' : 'link'
+                if (type == 'script') {
+                    (async () => {
+                        const code = await jb.frame.fetch(`${jb.baseUrl||''}/dist/${lib}`).then(x=>x.text())
+                        eval(code)
+                        resolve()
+                    })()
+                }
                 var s = document.createElement(type)
                 s.setAttribute(type == 'script' ? 'src' : 'href',`${jb.baseUrl||''}/dist/${lib}`)
                 if (type == 'script') 

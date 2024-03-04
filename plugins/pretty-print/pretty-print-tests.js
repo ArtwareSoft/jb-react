@@ -128,6 +128,15 @@ component('PPrintTest.asIs', {
   impl: dataTest(() => jb.utils.prettyPrint(asIs({remoteRun: { $: 'runCtx' }})), contains('$:'))
 })
 
+component('PPrintTest.asIsLarge', {
+  impl: dataTest({
+    calculate: () => jb.utils.prettyPrint(equals(asIs({ edit: { range: {start: {line: 3, col: 0}, end: {line: 3, col: 0}},
+    newText: `component('dataTest.test.tst1', {\n  impl: dataTest(test.tst1(), equals(''))\n})` }, cursorPos: {line: 4, col: 0} })
+  ), {type: 'data<>'}),
+    expectedResult: equals(`equals(asIs({\n    edit: {\n      range: {start: {line: 3, col: 0}, end: {line: 3, col: 0}},\n      newText: \`component('dataTest.test.tst1', {\\n  impl: dataTest(test.tst1(), equals(''))\\n})\`\n    },\n    cursorPos: {line: 4, col: 0}\n}))`)
+  })
+})
+
 component('PPrintTest.asyncInProfile', {
   impl: dataTest({
     calculate: () => jb.utils.prettyPrint(dataTest(async () => { 5 }), {type: 'test<>'}),

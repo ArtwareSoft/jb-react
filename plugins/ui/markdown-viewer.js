@@ -9,7 +9,7 @@ component('markdown', {
   params: [
     {id: 'markdown', as: 'string', mandatory: true, dynamic: true},
     {id: 'style', type: 'markdown-style', defaultValue: markdown.mark(), dynamic: true},
-    {id: 'title', as: 'string', defaultValue: 'markdown'},
+    {id: 'title', as: 'string', defaultValue: 'markdown', dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)

@@ -37,7 +37,8 @@
     "vscode-package": "nvm use 16 & vsce package",
     "copy-projects-to-template": "node bin/copy-projects-to-template.js",
     "build-atlas": "node --inspect hosts/node/jb.js -verbose '-main:buildPartition()' -projects:zuiDemo %cmpId:zuiDemo.main",
-    "upgrade-cmps": "node hosts/node/jb.js -script:./temp/upgrade-cmps.js"
+    "upgrade-cmps": "node hosts/node/jb.js -script:./temp/upgrade-cmps.js",
+    "jb-outer": "node hosts/node/jb-router.js"
   },
   "bin": {
     "studio": "bin/studio"

@@ -190,11 +190,6 @@ extension('ui', 'headless', {
   $phase: 1100,
   $requireFuncs: '#ui.render',
 
-  initExtension() { // 1100 is after ui phase (100)
-    return {
-      headless: {},
-    }
-  },
   createHeadlessWidget(widgetId, ctrl, reqCtx, { recover } = {}) {
     const ctxToUse = jb.ui.extendWithServiceRegistry(reqCtx.setVars({
         ...(recover && { recover: true }), headlessWidget: true, headlessWidgetId: widgetId

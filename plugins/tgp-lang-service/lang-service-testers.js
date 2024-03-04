@@ -12,7 +12,8 @@ extension('test', 'completion', {
   initCompletionText({ctx,compText,filePath,dsl,remoteSuggestions}) {
     const testId = ctx.vars.testID
     jb.workspace.initJbWorkspaceAsHost()
-    const parts = jb.test.fixToUniqueName(compText).split('__')
+    const fullText = compText.match(/^component\(/) ? compText : `component('x', {\n  impl: ${compText}\n})`
+    const parts = jb.test.fixToUniqueName(fullText).split('__')
     const offset = parts[0].length
     const code = parts.join('')
     jb.tgpTextEditor.host.initDoc(filePath, code)

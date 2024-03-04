@@ -4,9 +4,13 @@ async function initLLMHelper() {
 	const sourceCode = { plugins: ['net', 'llm', 'ui']}
 	const jb = await jbInit('llmHelper',sourceCode, {baseUrl: 'http://localhost:8082'})
     console.log(jb.exec('jb initialized','data<>'), jb.sourceCode)
-    await jb.exec({$: 'jbm.start' , jbm: {$:'router' }}, 'action<>')
+    await jb.exec({$: 'jbm.start' , jbm: {$:'router' }})
     console.log('connected to router', jb.jbm.networkPeers.router)
-    await jb.exec({$: 'llm.initHelperLocally'}, 'action<>')
+    jb.exec({$: 'localHelper.init'})
+    jb.baseUrl = 'http://localhost:8082'
+    const ctx = jb.ui.extendWithServiceRegistry(new jb.core.jbCtx())
+
+    ctx.runAction({$: 'localHelper.openHelperDialog'})
 }
 
 initLLMHelper()

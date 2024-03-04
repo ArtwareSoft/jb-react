@@ -5,6 +5,7 @@ component('editableText.picklistHelper', {
     {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true},
     {id: 'picklistStyle', type: 'picklist-style', dynamic: true, defaultValue: picklist.labelList()},
     {id: 'picklistFeatures', type: 'feature[]', flattenArray: true, dynamic: true},
+    {id: 'popupFeatures', type: 'dialog-feature[]', flattenArray: true, dynamic: true},
     {id: 'showHelper', as: 'boolean', dynamic: true, defaultValue: notEmpty('%value%'), description: 'show/hide helper according to input content', type: 'boolean'},
     {id: 'autoOpen', as: 'boolean', type: 'boolean'},
     {id: 'onEnter', type: 'action', dynamic: true, defaultValue: writeValue('%$$model/databind%', '%$selectedOption%')},
@@ -28,7 +29,8 @@ component('editableText.picklistHelper', {
       style: dialog.popup(),
       features: [
         dialogFeature.maxZIndexOnClick(),
-        dialogFeature.uniqueDialog('%$popupId%')
+        dialogFeature.uniqueDialog('%$popupId%'),
+        '%$popupFeatures()%'
       ]
     })),
     method('closePopup', dialog.closeDialogById('%$popupId%')),

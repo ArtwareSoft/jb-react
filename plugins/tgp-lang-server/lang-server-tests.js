@@ -4,9 +4,7 @@ using('tgp-lang-service-tests')
 component('langServerTest.references', {
   doNotRunInTests: true,
   impl: dataTest({
-    calculate: pipe(langService.dummyCompProps(`component('x', {
-  impl: dataTest('', __not())
-})`), langServer.references()),
+    calculate: pipe(langService.dummyCompProps(`dataTest('', __not())`), langServer.references()),
     expectedResult: contains('jb-common', { data: '%path%' }),
     timeout: 5000
   })
@@ -16,11 +14,7 @@ component('langServerTest.localReferences', {
   doNotRunInTests: true,
   impl: dataTest({
     calculate: pipe(
-      langService.dummyCompProps(
-        `component('x', {
-  impl: uiTest(text('hello world', { __features: css.color('green') }), contains('hello world','green'))
-})`
-      ),
+      langService.dummyCompProps(`uiTest(text('hello world', { __features: css.color('green') }))`),
       langServer.localReferences()
     ),
     expectedResult: contains('plugins', { data: '%path%' }),
@@ -77,11 +71,7 @@ component('langServerTest.remoteProbe', {
       Var('forceRemoteCompProps', true)
     ],
     calculate: pipe(
-      langService.dummyCompProps(
-        `component('uiTest.group', {
-  impl: uiTest(group(text('hello world'), text('2')), __contains('hello world','2'))
-})`
-      ),
+      langService.dummyCompProps(`component('uiTest.group', {\n  impl: uiTest(group(text('hello world'), text('2')), __contains('hello world','2'))\n})`),
       langService.calcCompProps(),
       langServer.probe()
     ),
@@ -93,9 +83,7 @@ component('langServerTest.remoteProbe', {
 component('langServerTest.includeCircuitOptions', {
   impl: dataTest({
     calculate: langService.dummyCompProps({
-      compText: `component('uiTest.group', {
-  impl: uiTest(group(text('hello world'), text('2')), __contains('hello world','2'))
-})`,
+      compText: `component('uiTest.group', {\n  impl: uiTest(group(text('hello world'), text('2')), __contains('hello world','2'))\n})`,
       includeCircuitOptions: true
     }),
     expectedResult: equals('%circuitOptions/0/id%', 'test<>uiTest.group'),
@@ -108,9 +96,7 @@ component('langServerTest.studioCircuitUrl', {
   impl: dataTest({
     calculate: pipe(
       langService.dummyCompProps({
-        compText: `component('uiTest.group', {
-  impl: uiTest(group(text('hello world'), text('2')), __contains('hello world','2'))
-})`,
+        compText: `component('uiTest.group', {\n  impl: uiTest(group(text('hello world'), text('2')), __contains('hello world','2'))\n})`,
         includeCircuitOptions: true
       }),
       langServer.studioCircuitUrl()
@@ -125,9 +111,7 @@ component('langServerTest.runCtxOfRemoteCmdUrl', {
   impl: dataTest({
     calculate: pipe(
       langService.dummyCompProps({
-        compText: `component('uiTest.group', {
-  impl: uiTest(group(text('hello world'), text('2')), __contains('hello world','2'))
-})`,
+        compText: `component('uiTest.group', {\n  impl: uiTest(group(text('hello world'), text('2')), __contains('hello world','2'))\n})`,
         includeCircuitOptions: true
       }),
       langServer.runCtxOfRemoteCmdUrl()

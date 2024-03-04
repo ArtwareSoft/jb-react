@@ -1,7 +1,7 @@
 dsl('llm')
 using('common,parsing')
 
-component('llm.completions', {
+component('llmViaApi.completions', {
   type: 'data<>',
   params: [
     {id: 'chat', type: 'message[]', dynamic: true},
@@ -59,7 +59,7 @@ component('llm.HtmlAndCssForJson', {
     {id: 'json', as: 'string'}
   ],
   impl: pipe(
-    llm.completions(
+    llmViaApi.completions(
       system(
         `"Given the following JSON data representing a mobile device, decide which fields are important and should be presented in a widget. Then, generate the widget HTML to display the selected information and provide the relevant CSS to style the widget.
 

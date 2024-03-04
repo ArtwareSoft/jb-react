@@ -1,3 +1,4 @@
+pipeline - allowInnerVars
 
 add create test in menu
 show 10 circuits in ctrl+J

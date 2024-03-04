@@ -18,9 +18,10 @@ component('llm.Floating', {
 						overflow: auto;
 						border-radius: 4px;
 						padding: 0 12px 12px 12px;
-						box-shadow: 0 0px 9px var(--jb-dropdown-shadow)
+						background: white;
+						box-shadow: 0px 0px 7px 8px gray;
 				}
-				>.dialog-title { background: none; padding: 10px 5px; }
+				>.dialog-title { background: white !important;  padding: 10px 5px; }
 				>.jb-dialog-content-parent { padding: 0; overflow-y: auto; overflow-x: hidden; }
 				>.dialog-close {
 						position: absolute;

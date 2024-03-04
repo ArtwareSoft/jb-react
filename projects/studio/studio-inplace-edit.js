@@ -52,7 +52,7 @@ component('inplaceEdit.openToolbarOfLastEdit', {
         const el = Array.from(_window.document.querySelectorAll('[cmp-id]'))
           .filter(e=> jb.path(_window.jb.ui.cmps[e.getAttribute('cmp-id')],'ctx.path') == path)[0]
         if (el)
-          jb.ui.extendWithServiceRegistry().run({$: 'inplaceEdit.openToolbar', path })
+          jb.ui.extendWithServiceRegistry().runAction({$: 'inplaceEdit.openToolbar', path })
       })
     }
 })
