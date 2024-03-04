@@ -40,7 +40,7 @@ component('rxTest.toArray', {
 })
 
 component('rxTest.distinctUntilChanged', {
-  impl: dataTest(rx.pipe(source.data(list(1,2,2,3)), rx.distinctUntilChanged(), rx.toArray(), rx.map(join())), equals('1,2,3'))
+  impl: dataTest(rx.pipe(source.data(list(1,2,2,3,3,3)), rx.distinctUntilChanged(), rx.toArray(), rx.map(join())), equals('1,2,3'))
 })
 
 component('rxTest.enrichWithPrevious', {

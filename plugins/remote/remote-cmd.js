@@ -1,6 +1,6 @@
 component('remote.cmd', {
-    type: 'data<>',
-    moreTypes: 'action<>',
+  type: 'data<>',
+  moreTypes: 'action<>',
   description: 'calc a script with jb.js',
   params: [
     {id: 'main', type: 'data<>', dynamic: true, moreTypes: 'action<>', description: 'e.g pipeline("hello","%% -- %$v1%")'},

@@ -196,17 +196,20 @@ extension('probe', 'main', {
         }
 
         // called from jb_run
-        record(ctx,out) {
+        record(ctx,out,data,vars) {
             jb.probe.singleVisitPaths[ctx.path] = ctx
             jb.probe.singleVisitCounters[ctx.path] = (jb.probe.singleVisitCounters[ctx.path] || 0) + 1
             if (!this.active || this.probePath.indexOf(ctx.path) != 0) return
     
+            if (data)
+                ctx = ctx.setData(data).setVars(vars||{}) // used by ctx.data(..,) in rx
             if (this.id < jb.probe.probeCounter) {
                 jb.log('probe probeCounter is larger than current',{ctx, probe: this, counter: jb.probe.probeCounter})
                 this.active = false
                 throw 'probe tails'
                 return
             }
+            this.startTime = this.startTime || new Date().getTime() // for the remote probe
             const now = new Date().getTime()
             if (now - this.startTime > this.maxTime && !ctx.vars.testID) {
                 jb.log('probe timeout',{ctx, probe: this,now})

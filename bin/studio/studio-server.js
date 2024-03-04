@@ -216,7 +216,7 @@ const op_post_handlers = {
 
       const sourceCode = args.filter(x=>x.match(/^-sourceCode/)).map(x=>encodeURIComponent(x.slice('-sourceCode:'.length)))[0]
       const runCtx = args.filter(x=>x.match(/^-runCtx/)).map(x=>encodeURIComponent(x.slice('-runCtx:'.length)))[0]
-      const runCtxUrl = `http://localhost:${settings.port}/hosts/tests/runCtx.html?sourceCode=${sourceCode}&runCtx=${runCtx}`
+      const runCtxUrl = `http://localhost:${settings.port}/hosts/tests/runCtx.html?runCtx=${runCtx}&sourceCode=${sourceCode}`
       writeToCmdLog('./temp/runCtxUrl', runCtxUrl)
 
       //${baseUrl}/tests.html?

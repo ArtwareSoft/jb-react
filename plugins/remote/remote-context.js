@@ -48,12 +48,10 @@ extension('remoteCtx', {
                 .filter(e=> data.$ || typeof e[1] != 'function') // if not a profile, block functions
 //                .map(e=>e[0] == '$' ? [e[0], jb.path(data,[jb.core.CT,'comp',jb.core.CT,'fullId']) || e[1]] : e)
                 .map(e=>[e[0],jb.remoteCtx.stripData(e[1], innerDepthAndPath(e[0]) )]))
-
     },
     stripFunction(f) {
         const {profile,runCtx,path,param,srcPath,require} = f
         if (!profile || !runCtx) return jb.remoteCtx.stripJS(f)
-        //injectDSLType(profile)
         const profText = jb.utils.prettyPrint(profile, {noMacros: true})
         const profNoJS = jb.remoteCtx.stripJSFromProfile(profile)
         if (require) profNoJS._require = require.split(',').map(x=>x[0] == '#' ? `jb.${x.slice(1)}()` : {$: x})
@@ -61,16 +59,16 @@ extension('remoteCtx', {
             .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
         const params = jb.objFromEntries(jb.entries(jb.path(runCtx.cmpCtx,'params')).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
+        let probe = null
+        if (runCtx.probe && runCtx.probe.active && runCtx.probe.probePath.indexOf(runCtx.path) == 0) {
+            const { probePath, maxTime, id } = runCtx.probe
+            probe = { probePath, startTime: 0, maxTime, id, probe: {}, result: [] }
+            probe.result.visits = 0
+        }
         const usingData = jb.remoteCtx.usingData(profText); //profText.match(/\bdata\b/) || profText.match(/%[^$]/)
-        return Object.assign({$: 'runCtx', id: runCtx.id, path: [srcPath,path].filter(x=>x).join('~'), param, profile: profNoJS, data: usingData ? jb.remoteCtx.stripData(runCtx.data) : null, vars}, 
+        return Object.assign({$: 'runCtx', id: runCtx.id, path: [srcPath,path].filter(x=>x).join('~'), param, probe, profile: profNoJS, data: usingData ? jb.remoteCtx.stripData(runCtx.data) : null, vars}, 
             Object.keys(params).length ? {cmpCtx: {params} } : {})
 
-        // function injectDSLType(prof) {
-        //     if (prof.$dslType) return
-        //     if ((jb.path(prof,[jb.core.CT,'dslType']) || '').indexOf('<') != -1)
-        //         prof.$dslType = prof[jb.core.CT].dslType
-        //     Object.values(prof).filter(x=>x && typeof x == 'object').forEach(x=>injectDSLType(x))
-        // }
     },
     //serailizeCtx(ctx) { return JSON.stringify(jb.remoteCtx.stripCtx(ctx)) },
     deStrip(data, _asIs) {

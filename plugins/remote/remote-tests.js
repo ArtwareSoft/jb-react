@@ -14,6 +14,14 @@
 //     })))
 // })
 
+component('remoteTest.data', {
+  impl: dataTest({
+    calculate: pipeline(Var('v1', '33'), remote.data(pipeline(list('a','b','%$v1%'), join()), cmd(sourceCode(plugins('common'))))),
+    expectedResult: equals('a,b,33'),
+    timeout: 2000
+  })
+})
+
 component('itemlists.manyItems2', {
   type: 'data<>',
   params: [
@@ -125,7 +133,9 @@ component('remoteTest.shadowResource.initWatchable', {
 component('remoteTest.shadowResource.watchable', {
   impl: dataTest({
     calculate: remote.data({
-      calc: pipe(rx.pipe(source.watchableData('%$person/name%'), rx.log('test'), rx.map('%newVal%'), rx.take(1))),
+      calc: pipe(
+        rx.pipe(source.watchableData('%$person/name%'), rx.log('test'), rx.map('%newVal%'), rx.take(1))
+      ),
       jbm: worker()
     }),
     expectedResult: equals('Dan'),
@@ -297,3 +307,4 @@ component('remoteTest.dataFromCmd', {
     timeout: 3000
   })
 })
+

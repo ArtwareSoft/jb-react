@@ -341,7 +341,10 @@ extension('core', {
       })
     }
     runItself(parentParam,settings) { return jb.core.run(this,parentParam,settings) }
-    dataObj(data) { return {data, vars: this.vars} }
+    dataObj(out,vars,input) { 
+      this.probe && this.probe.record(this,out,input||out,vars)
+      return {data: out, vars: vars || this.vars} 
+    }
   },
   _jsTypes() { return {
     asIs: x => x,

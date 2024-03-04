@@ -1,6 +1,14 @@
 pluginDsl('jbm')
 using('loader,tree-shake')
 
+component('stateless', {
+  type: 'jbm',
+  params: [
+    {id: 'sourceCode', type: 'source-code<loader>'}
+  ],
+  impl: If(isNode(), cmd('%$sourceCode%'), webWorker({ sourceCode: '%$sourceCode%', stateless: true }))
+})
+
 component('worker', {
   type: 'jbm',
   params: [
@@ -10,9 +18,13 @@ component('worker', {
     {id: 'networkPeer', as: 'boolean', description: 'used for testing', type: 'boolean'}
   ],
   impl: If({
-    condition: () => globalThis.jbHost.isNode,
+    condition: isNode(),
     then: remoteNodeWorker('%$id%', { sourceCode: '%$sourceCode%', init: '%$init()%' }),
-    Else: webWorker('%$id%', { sourceCode: '%$sourceCode%', init: '%$init()%', networkPeer: '%$networkPeer%' })
+    Else: webWorker('%$id%', {
+      sourceCode: '%$sourceCode%',
+      init: '%$init()%',
+      networkPeer: '%$networkPeer%'
+    })
   })
 })
 
@@ -22,7 +34,8 @@ component('webWorker', {
     {id: 'id', as: 'string'},
     {id: 'sourceCode', type: 'source-code<loader>', byName: true, defaultValue: treeShakeClient()},
     {id: 'init', type: 'action<>', dynamic: true},
-    {id: 'networkPeer', as: 'boolean', description: 'used for testing', type: 'boolean'}
+    {id: 'networkPeer', as: 'boolean', description: 'used for testing', type: 'boolean'},
+    {id: 'stateless', as: 'boolean', description: 'can not be rx data source, or remote widget', type: 'boolean'}
   ],
   impl: (ctx,_id,sourceCode,init,networkPeer) => {
       const id = (_id || 'w1').replace(/-/g,'__')
@@ -297,3 +310,8 @@ component('jbm.terminateChild', {
 //   ],
 //   impl: () => {} //pipe (Var('groupWorkerId', '%$groupId%-%$key()%'),'%$genericJbm()%')
 // })
+
+component('isNode', {
+  type: 'boolean<>',
+  impl: () => globalThis.jbHost.isNode
+})

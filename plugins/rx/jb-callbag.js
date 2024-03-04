@@ -100,7 +100,7 @@ extension('callbag', {
         sink(t, d)
     })
   },  
-  distinctUntilChanged: compare => source => (start, sink) => {
+  distinctUntilChanged: (compare,ctx) => source => (start, sink) => {
       compare = compare || ((prev, cur) => prev === cur)
       if (start !== 0) return
       let inited = false, prev, talkback
@@ -111,10 +111,12 @@ extension('callbag', {
           } else if (t == 1) {
             if (inited && compare(prev, d)) {
                 talkback(1)
+                ctx && ctx.dataObj('same as prev',null,d)
                 return
             }
             inited = true
             prev = d
+            ctx && ctx.dataObj(d,null,d)
             sink(1, d)
           } else {
               sink(t, d)
@@ -659,7 +661,7 @@ extension('callbag', {
       }
     })
   },      
-  take: max => source => (start, sink) => {
+  take: (max,ctx) => source => (start, sink) => {
       if (start !== 0) return
       let taken = 0, sourceTalkback, end
       function talkback(t, d) {
@@ -674,6 +676,7 @@ extension('callbag', {
           if (taken < max) {
             taken++
             sink(t, d)
+            ctx && ctx.dataObj(d)
             if (taken === max && !end) {
               end = true
               sourceTalkback(2)

@@ -26,7 +26,6 @@ component('remote.tgpModelData', {
   params: [
     {id: 'filePath', defaultValue: '%%'}
   ],
-  circuit: 'langServerTest.tgpModelData',
   impl: pipe(
     remote.data({
       calc: tgpModelData.byFilePath('%$filePath%'),

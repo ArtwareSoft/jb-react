@@ -302,9 +302,15 @@ component('vscode.gotoFilePos', {
   params: [
     {id: 'location'},
   ],
-  impl: (ctx,location) => {
-    debugger
-    jb.tgpTextEditor.host.gotoFilePos(location)
+  impl: (ctx,location) => jb.tgpTextEditor.host.gotoFilePos(location)
+})
+
+component('vscode.createTest', {
+  type: 'action<>',
+  impl: async ctx => {
+    const {edit, cursorPos, hash} = await jb.calc(langService.createTestEdits())
+    await jb.tgpTextEditor.host.applyEdit(edit,{hash})
+    cursorPos && jb.tgpTextEditor.host.selectRange(cursorPos)
   }
 })
 
@@ -322,6 +328,7 @@ component('langServer.jBartMenu', {
       menu.action('goto circuit: %$circuit%', vscode.gotoFilePos('%$compProps/circuitOptions/0/location%')),
       menu.action('open test circuit: %$circuit%', gotoUrl(langServer.testUrl())),
       menu.action('open studio for circuit: %$circuit% at %$compProps/path%', gotoUrl(langServer.studioCircuitUrl())),
+      menu.action('create test', vscode.createTest()),
       menu.action('open probe in browser', gotoUrl(langServer.runCtxOfRemoteCmdUrl()))
     ]
   })

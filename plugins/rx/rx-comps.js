@@ -15,7 +15,7 @@ component('source.watchableData', {
     {id: 'ref', as: 'ref'},
     {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', byName: true, description: 'watch childern change as well'}
   ],
-  impl: (ctx,ref,includeChildren) => jb.callbag.map(x=>ctx.dataObj(x))(jb.watchable.refObservable(ref,{includeChildren, srcCtx: ctx}))
+  impl: (ctx,ref,includeChildren) => jb.callbag.map(x => ctx.dataObj({...x, before: null, after: null}))(jb.watchable.refObservable(ref,{includeChildren, srcCtx: ctx}))
 })
 
 component('source.callbag', {
@@ -158,16 +158,14 @@ component('rx.var', {
     {id: 'name', as: 'string', dynamic: true, mandatory: true, description: 'if empty, does nothing'},
     {id: 'value', dynamic: true, defaultValue: '%%', mandatory: true}
   ],
-  impl: If(
-    '%$name%',
-    (ctx,{},{name,value}) => source => (start, sink) => {
-    if (start != 0) return 
-    return source(0, function Var(t, d) {
-      sink(t, t === 1 ? d && {data: d.data, vars: {...d.vars, [name()]: value(d)}} : d)
+  impl: If('%$name%', (ctx,{},{name,value}) => source => (start, sink) => {
+      if (start != 0) return 
+      return source(0, function Var(t, d) {
+        const vars = t == 1 && d && {...d.vars, [name()]: value(d)}
+        t == 1 && d && ctx.cmpCtx.dataObj(d.data,vars)
+        sink(t, t === 1 ? d && {data: d.data, vars } : d)
+      })
     })
-  },
-    null
-  )
 })
 
 component('rx.resource', {
@@ -178,17 +176,13 @@ component('rx.resource', {
     {id: 'name', as: 'string', dynamic: true, mandatory: true, description: 'if empty, does nothing'},
     {id: 'value', dynamic: true, mandatory: true}
   ],
-  impl: If(
-    '%$name%',
-    (ctx,{},{name,value}) => source => (start, sink) => {
+  impl: If('%$name%', (ctx,{},{name,value}) => source => (start, sink) => {
     if (start != 0) return
     const val = value()
     return source(0, function Var(t, d) {
       sink(t, t === 1 ? d && {data: d.data, vars: {...d.vars, [name()]: val}} : d)
     })
-  },
-    null
-  )
+  })
 })
 
 component('rx.reduce', {
@@ -275,7 +269,7 @@ component('rx.map', {
   params: [
     {id: 'func', dynamic: true, mandatory: true}
   ],
-  impl: (ctx,func) => jb.callbag.map(jb.utils.addDebugInfo(ctx2 => ({data: func(ctx2), vars: ctx2.vars || {}}),ctx))
+  impl: (ctx,func) => jb.callbag.map(jb.utils.addDebugInfo(ctx2 => ctx.dataObj(func(ctx2), ctx2.vars || {},ctx2.data),ctx))
 })
 
 component('rx.mapPromise', {
@@ -284,7 +278,7 @@ component('rx.mapPromise', {
   params: [
     {id: 'func', type: 'data', moreTypes: 'action<>', dynamic: true, mandatory: true}
   ],
-  impl: (ctx,func) => jb.callbag.mapPromise(ctx2 => Promise.resolve(func(ctx2)).then(data => ({vars: ctx2.vars || {}, data}))
+  impl: (ctx,func) => jb.callbag.mapPromise(ctx2 => Promise.resolve(func(ctx2)).then(data => ctx.dataObj(data, ctx2.vars || {}, ctx2.data))
     .catch(err => ({vars: {...ctx2.vars, err }, data: err})) )
 })
 
@@ -375,7 +369,7 @@ component('rx.distinctUntilChanged', {
   params: [
     {id: 'equalsFunc', dynamic: true, mandatory: true, defaultValue: ({data},{prev}) => data === prev, description: 'e.g. %% == %$prev%'}
   ],
-  impl: (ctx,equalsFunc) => jb.callbag.distinctUntilChanged((prev,cur) => equalsFunc(ctx.setData(cur.data).setVar('prev',prev.data)))
+  impl: (ctx,equalsFunc) => jb.callbag.distinctUntilChanged((prev,cur) => equalsFunc(ctx.setData(cur.data).setVar('prev',prev.data)), ctx)
 })
 
 component('rx.distinct', {
@@ -471,7 +465,7 @@ component('rx.take', {
   params: [
     {id: 'count', as: 'number', dynamic: true, mandatory: true}
   ],
-  impl: (ctx,count) => jb.callbag.take(count())
+  impl: (ctx,count) => jb.callbag.take(count(),ctx)
 })
 
 component('rx.takeWhile', {
