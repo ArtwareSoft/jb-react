@@ -95,7 +95,7 @@ extension('treeShake', {
         const funcUsage = [...funcStr.matchAll(/\bjb\.([a-zA-Z0-9_]+)\.?([a-zA-Z0-9_]*)\(/g)].map(e=>e[2] ? `#${e[1]}.${e[2]}` : `#${e[1]}`)
         const extraComps = [...funcStr.matchAll(/\/\/.?#jbLoadComponents:([ ,\.\-#a-zA-Z0-9_<>]*)/g)].map(e=>e[1]).flatMap(x=>x.split(',')).map(x=>x.trim()).filter(x=>x)
         const inCodeComps = [...funcStr.matchAll(/{\s*\$: '([^']+)'/g)].map(x=>x[1])
-            .filter(x=> !['recoverWidget','defaultPackage','Var','feature<>feature.contentEditable','updates', 'asIs', 'createHeadlessWidget', 'runCtx'].includes(x))
+            .filter(x=> !['recoverWidget','defaultPackage','Var','feature<>feature.contentEditable','updates', 'asIs', 'withProbeResult', 'createHeadlessWidget', 'runCtx'].includes(x))
         inCodeComps.forEach(x=> { if (!x.match(/</)) jb.logError(`treeshake missing type ${x}`,{func,funcStr})})
 
         //jb.log('treeshake dependent on func',{f: func.name || funcStr, funcDefs, funcUsage})
@@ -163,6 +163,8 @@ extension('treeShake', {
     },
     async bringMissingCode(obj) {
         const missing = getMissingProfiles(obj)
+        if (jb.path(obj,'probe'))
+            missing.push('data<>probe.runCircuit')
         if (missing.length) 
             jb.log('treeshake bring missing code',{obj, missing})
         return Promise.resolve(jb.treeShake.getCodeFromRemote(missing))

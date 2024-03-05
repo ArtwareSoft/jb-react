@@ -347,9 +347,13 @@ extension('utils', 'generic', {
       return path1[i] < path2[i] ? -2 : 2
     },    
 
-    unique: (ar,f = (x=>x)) => {
+    unique: (ar,f) => {
       const keys = {}, res = []
-      ar.forEach(e=>{ if (!keys[f(e)]) { keys[f(e)] = true; res.push(e) } })
+      ar.forEach(x =>{
+        const key = f ? f(x) : x
+        if (!keys[key]) res.push(x)
+        keys[key] = true
+      })
       return res
     },
     sessionStorage(id,val) {

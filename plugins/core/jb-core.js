@@ -118,11 +118,11 @@ extension('core', {
       if (ctx.probe && !ctx.probe.active) return
       const runner = () => jb.core.doRun(...arguments)
       Object.defineProperty(runner, 'name', { value: `${ctx.path} ${ctx.profile && ctx.profile.$ ||''}-run` })
-      if (ctx.probe)
-        ctx.profile = ctx.probe.alternateProfile(ctx)
+      // if (ctx.probe)
+      //   ctx.profile = ctx.probe.alternateProfile(ctx)
       let res = runner(...arguments)
       if (ctx.probe)
-          res = ctx.probe.record(ctx,res) || res
+          res = jb.probe.record(ctx,res) || res
       
     //  ctx.profile && jb.log('core result', [ctx.id,res,ctx,parentParam,settings])
       if (typeof res == 'function') jb.utils.assignDebugInfoToFunc(res,ctx)
@@ -342,7 +342,7 @@ extension('core', {
     }
     runItself(parentParam,settings) { return jb.core.run(this,parentParam,settings) }
     dataObj(out,vars,input) { 
-      this.probe && this.probe.record(this,out,input||out,vars)
+      this.probe && jb.probe.record(this,out,input||out,vars)
       return {data: out, vars: vars || this.vars} 
     }
   },

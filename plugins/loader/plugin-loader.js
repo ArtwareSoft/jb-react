@@ -5,11 +5,11 @@ extension('loader','main' , {
         const elems = fullFilePath.split('/').reverse()
         return '/' + elems.slice(0,elems.findIndex(x=> x == 'plugins' || x == 'projects')+1).reverse().join('/')
     },
-    unifyPluginsToLoad(pluginsToLoad) {
+    unifyPluginsToLoad(pluginsToLoad, plugins) {
         return jb.asArray(pluginsToLoad).reduce((acc,item) => {
-            const plugins = [...(acc.plugins || []), ...(item.plugins || [])]
+            const plugins = jb.utils.unique([...(acc.plugins || []), ...(item.plugins || [])])
             return {...acc, ...item, plugins}
-        } , {})
+        } , { plugins })
     },
     pluginOfFilePath(fullFilePath, addTests) {
       const filePath = jb.loader.shortFilePath(fullFilePath)
@@ -21,6 +21,9 @@ extension('loader','main' , {
         const res = matchResult[1] + tests
         return (!tests && addTests) ? [`${res}-tests`] : [res]
       }
+    },
+    pluginsByCtx(ctx) {
+      return ctx.probe ? ['probe','pretty-print'] : []
     },
     mergeSourceCodes(sc1,sc2) {
       if (!sc1) return sc2
@@ -43,8 +46,7 @@ component('sourceCode', {
   ],
   impl: (ctx,pluginsToLoad,pluginPackages,libsToInit,actualCode) => ({ 
     ...(pluginPackages.filter(x=>x).length ? { pluginPackages : pluginPackages.filter(x=>x)} : {}),
-    plugins:[], 
-    ...jb.loader.unifyPluginsToLoad(pluginsToLoad),
+    ...jb.loader.unifyPluginsToLoad(pluginsToLoad, jb.loader.pluginsByCtx(ctx)),
     ...(libsToInit ? {libsToInit} : {}),
     ...(actualCode ? {actualCode} : {}),
   })

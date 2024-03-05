@@ -62,8 +62,7 @@ extension('remoteCtx', {
         let probe = null
         if (runCtx.probe && runCtx.probe.active && runCtx.probe.probePath.indexOf(runCtx.path) == 0) {
             const { probePath, maxTime, id } = runCtx.probe
-            probe = { probePath, startTime: 0, maxTime, id, probe: {}, result: [] }
-            probe.result.visits = 0
+            probe = { probePath, startTime: 0, maxTime, id, records: {}, visits: {}, active: true }
         }
         const usingData = jb.remoteCtx.usingData(profText); //profText.match(/\bdata\b/) || profText.match(/%[^$]/)
         return Object.assign({$: 'runCtx', id: runCtx.id, path: [srcPath,path].filter(x=>x).join('~'), param, probe, profile: profNoJS, data: usingData ? jb.remoteCtx.stripData(runCtx.data) : null, vars}, 
@@ -77,7 +76,17 @@ extension('remoteCtx', {
         const asIs = _asIs || (data && typeof data == 'object' && data.$$asIs)
         const stripedObj = data && typeof data == 'object' && jb.objFromEntries(jb.entries(data).map(e=>[e[0],jb.remoteCtx.deStrip(e[1],asIs)]))
         if (stripedObj && data.$ == 'runCtx' && !asIs)
-            return (ctx2,data2) => (new jb.core.jbCtx().ctx(jb.utils.resolveProfile(stripedObj, {topComp: stripedObj}))).extendVars(ctx2,data2).runItself()
+            return (ctx2,data2) => {
+                const ctx = new jb.core.jbCtx(jb.utils.resolveProfile(stripedObj, {topComp: stripedObj}),{}).extendVars(ctx2,data2)
+                const res = ctx.runItself()
+                if (ctx.probe) return (async () => {
+                    await Object.values(ctx.probe.records).reduce((pr,valAr) => pr.then(
+                        () => valAr.reduce( async (pr,item,i) => { await pr; valAr[i].out = await valAr[i].out }, Promise.resolve())
+                    ), Promise.resolve())
+                    return { $: 'withProbeResult', res, probe: ctx.probe }
+                })()
+                return res
+            }
         if (Array.isArray(data))
             return data.map(x=>jb.remoteCtx.deStrip(x,asIs))
         return stripedObj || data
@@ -108,5 +117,15 @@ extension('remoteCtx', {
     //         location: jb.comps[compId][jb.core.CT].location } )
     // },
     shouldPassVar: (varName, profText) => jb.remoteCtx.allwaysPassVars.indexOf(varName) != -1 || profText.match(new RegExp(`\\b${varName.split(':')[0]}\\b`)),
-    usingData: profText => profText.match(/({data})|(ctx.data)|(%[^$])/)
+    usingData: profText => profText.match(/({data})|(ctx.data)|(%[^$])/),
+    hadleProbeResult(ctx,res,from) {
+        if (jb.path(res,'$') == 'withProbeResult') {
+            if (ctx.probe && res.probe) {
+              Object.keys(res.probe.records||{}).forEach(k=>ctx.probe.records[k] = res.probe.records[k].map(x =>({...x, from})) )
+              Object.keys(res.probe.visits||{}).forEach(k=>ctx.probe.visits[k] = res.probe.visits[k] )
+            }
+            return res.res
+        }
+        return res
+    }
 })

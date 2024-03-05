@@ -1,6 +1,5 @@
 using('tgp-lang-service-tests')
 
-
 component('langServerTest.references', {
   doNotRunInTests: true,
   impl: dataTest({
@@ -65,22 +64,33 @@ component('langServerTest.localReferences', {
 //   })
 // })
 
-component('langServerTest.remoteProbe', {
+component('dataTest.remote.circuitOptions', {
+  doNotRunInTests: true,
   impl: dataTest({
-    vars: [
-      Var('forceRemoteCompProps', true)
-    ],
+    calculate: remote.circuitOptions('/plugins/common/xx.js', 'data<>list'),
+    expectedResult: equals('%0/shortId%', 'dataTest.listWithVar')
+  })
+})
+
+component('langServerTest.remoteProbe', {
+  doNotRunInTests: true,
+  impl: dataTest({
     calculate: pipe(
-      langService.dummyCompProps(`component('uiTest.group', {\n  impl: uiTest(group(text('hello world'), text('2')), __contains('hello world','2'))\n})`),
-      langService.calcCompProps(),
+      Var('forceRemoteCompProps', true),
+      langService.dummyCompProps({
+        compText: `component('dataTest.join', {\n  impl: dataTest(pipeline(list(1,2), '%%', __join()), equals('1,2'))\n})`,
+        filePath: '/plugins/common/common-tests.js',
+        includeCircuitOptions: true
+      }),
       langServer.probe()
     ),
-    expectedResult: and(contains('hello', { allText: '%result/0/in/data%' })),
+    expectedResult: equals('1', '%result/0/in/data/0%'),
     timeout: 2000
   })
 })
 
 component('langServerTest.includeCircuitOptions', {
+  doNotRunInTests: true,
   impl: dataTest({
     calculate: langService.dummyCompProps({
       compText: `component('uiTest.group', {\n  impl: uiTest(group(text('hello world'), text('2')), __contains('hello world','2'))\n})`,
@@ -92,7 +102,6 @@ component('langServerTest.includeCircuitOptions', {
 })
 
 component('langServerTest.studioCircuitUrl', {
-  doNotRunInTests: true,
   impl: dataTest({
     calculate: pipe(
       langService.dummyCompProps({

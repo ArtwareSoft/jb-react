@@ -178,21 +178,21 @@ component('test.pathSrcCaller', {
 
 component('probeTest.pathSrcThrough.call', {
   impl: dataTest({
-    calculate: ctx => {
-   	 var probe1 = new jb.probe.Probe(new jb.core.jbCtx(ctx,{ profile: {$: 'data<>test.pathSrcCaller'}, comp: 'data<>test.pathSrcCaller', path: '' } ),true)
-      .runCircuit('test.pathSrcComp~impl~items~1');
-    return probe1.then(res=> ''+res.result.visits)
-   },
-    expectedResult: contains('0')
+    calculate: async ctx => {
+   	  const res = await new jb.probe.Probe(new jb.core.jbCtx(ctx,{ profile: {$: 'data<>test.pathSrcCaller'}, comp: 'data<>test.pathSrcCaller', path: '' } ),true)
+        .runCircuit('data<>test.pathSrcComp~impl~items~1')
+      return res.resultVisits
+    },
+    expectedResult: equals(1)
   })
 })
 
 component('probeTest.pathSrcThrough.call2', {
   impl: dataTest({
     calculate: ctx => {
-   	 var probe1 = new jb.probe.Probe(new jb.core.jbCtx(ctx,{ profile: {$: 'data<>test.pathSrcCaller'}, comp: 'data<>test.pathSrcCaller', path: '' } ),true)
+   	 const probe1 = new jb.probe.Probe(new jb.core.jbCtx(ctx,{ profile: {$: 'data<>test.pathSrcCaller'}, comp: 'data<>test.pathSrcCaller', path: '' } ),true)
       .runCircuit('data<>test.pathSrcCaller~impl~items~1');
-    return probe1.then(res=> ''+res.result.visits)
+    return probe1.then(res=> ''+res.resultVisits)
    },
     expectedResult: contains('1')
   })
@@ -200,7 +200,7 @@ component('probeTest.pathSrcThrough.call2', {
 
 component('probeTest.runCircuit', {
   impl: dataTest({
-    calculate: pipe(probe.runCircuit('data<>test.probePipeline~impl~items~1'), ({data}) => data.result.visits),
+    calculate: pipe(probe.runCircuit('data<>test.probePipeline~impl~items~1'), ({data}) => data.resultVisits),
     expectedResult: equals(2)
   })
 })

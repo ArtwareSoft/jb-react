@@ -45,17 +45,17 @@ component('probeTest', {
         .runCircuit(full_path)
       return await (jb.cbLogByPath[res1.probePath] || res1)
     },
-    expectedResult: (ctx,{},{allowClosestPath,expectedVisits,expectedOutResult,expectedResult}) => {
+    expectedResult: (ctx,{},{allowClosestPath,expectedVisits,expectedOutResult,expectedResult,probePath}) => {
         jb.cbLogByPath = null
-        const {closestPath, result, callbagLog} = ctx.data
+        const {closestPath, result, callbagLog, resultVisits} = ctx.data
         let error = ''
         try {
           if (expectedVisits == 0 && closestPath)
             error = ''
           else if (!allowClosestPath && closestPath)
             error = `no probe results at path ${probePath}`
-          else if (result.visits != expectedVisits && expectedVisits != -1)
-            error = `expected visits error. actual: ${result.visits} expected: ${expectedVisits}`
+          else if (resultVisits != expectedVisits && expectedVisits != -1)
+            error = `expected visits error. actual: ${resultVisits} expected: ${expectedVisits}`
           else if (!result[0])
             error = `no probe results at path ${probePath}`
           const resData = callbagLog && result || jb.path(result,'0.out')

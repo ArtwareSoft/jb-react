@@ -59,9 +59,9 @@ component('langServer.probe', {
     '%$compProps/path%',
     remote.data({
       calc: pipe(
-        If('%%', probe.runCircuit('%%',2000), '%%'),
+        If('%%', probe.runCircuit('%%', 2000), '%%'),
         obj(
-          prop('circuitPath', '%circuitCtx.path%'),
+          prop('circuitPath', '%circuitCtx/path%'),
           prop('probePath', '%probePath%'),
           prop('simpleVisits', '%simpleVisits%'),
           prop('totalTime', '%totalTime%'),
@@ -72,9 +72,9 @@ component('langServer.probe', {
         ),
         first()
       ),
-      jbm: cmd(probeServer('%$compProps/filePath%'))
+      jbm: stateless(probeServer('%$compProps/filePath%'))
     }),
-    extend(prop('tgpModelErrors','%$compProps/tgpModelErrors%')),
+    extend(prop('tgpModelErrors', '%$compProps/tgpModelErrors%')),
     first()
   )
 })

@@ -107,7 +107,8 @@ component('remote.data', {
             return jb.logError('remote.data - can not resolve jbm', {in: jb.uri, jbm, rjbm, jbmProfile: ctx.profile.jbm, jb, ctx})
                 
         data.require = require
-        return rjbm.remoteExec(jb.remoteCtx.stripFunction(data),{timeout,data,ctx})
+        const res = await rjbm.remoteExec(jb.remoteCtx.stripFunction(data),{timeout,data,ctx})
+        return jb.remoteCtx.hadleProbeResult(ctx,res,rjbm.uri)
     }
 })
 

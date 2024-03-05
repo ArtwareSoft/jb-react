@@ -552,7 +552,7 @@ jb.defComponents('completionItems,definition,compId,compReferences,deleteEdits,d
 
 component('langService.calcCompProps', {
   params: [
-    {id: 'includeCircuitOptions', as: 'boolean', type: 'boolean<>'}
+    {id: 'includeCircuitOptions', as: 'boolean', type: 'boolean<>', byName: true}
   ],
   impl: (ctx,includeCircuitOptions) => jb.langService.calcCompProps(ctx,{includeCircuitOptions})
 })

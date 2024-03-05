@@ -41,7 +41,8 @@
             await jb.delay(1)
             let res
             try {
-                res = await jb.remoteCtx.deStrip(runCtx)()
+                const res1 = await jb.remoteCtx.deStrip(runCtx)()
+                res = jb.remoteCtx.stripData(res1)
             } catch (e) {
                 jb.logException(e,{})
                 res = { err : true}

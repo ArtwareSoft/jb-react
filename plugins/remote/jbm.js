@@ -145,9 +145,9 @@ component('cmd', {
   impl: (ctx,_sourceCode,viaHttpServer,doNotStripResult,id,spy,includeLogs) => ({
         uri: id || 'main',
         remoteExec: async (sctx,{data, action} = {}) => {
-            const plugins = !_sourceCode && pluginsOfProfile([(data || action).profile, jb.path(sctx,'cmpCtx.params')])
+            const plugins = !_sourceCode ? pluginsOfProfile([(data || action).profile, jb.path(sctx,'cmpCtx.params')]) : []
             const sourceCode = _sourceCode || { plugins , pluginPackages: [{$:'defaultPackage'}] }
-            sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),plugins])
+            sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []), ...plugins])
     
             const args = [
                 ['-runCtx', JSON.stringify(sctx)],

@@ -1,8 +1,9 @@
 using('tgp-model-data,tgp')
 
 component('probe', { watchableData: { path : '',  
-defaultMainCircuit: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') && !location.pathname.endsWith('runCtx.html') ? decodeURI(jb.path(globalThis,'location.pathname')||'').split('/')[3] : '',
-scriptChangeCounter: 1} })
+    defaultMainCircuit: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') && !location.pathname.endsWith('runCtx.html') ? decodeURI(jb.path(globalThis,'location.pathname')||'').split('/')[3] : '',
+    scriptChangeCounter: 1} 
+})
 
 extension('probe', 'main', {
     initExtension() { return { 
@@ -17,8 +18,8 @@ extension('probe', 'main', {
         let circuitCtx = jb.path(jb.ui,['cmps',ctx.exp('%$workspace/pickSelectionCmpId%'),'calcCtx'])
         if (circuitCtx) return { reason: 'pickSelection', circuitCtx }
 
-        circuitCtx = await jb.probe.closestCtxWithSingleVisit(probePath)
-        if (circuitCtx) return { reason: 'closestCtxWithSingleVisit', circuitCtx }
+        // circuitCtx = await jb.probe .closestCtxWithSingleVisit(probePath)
+        // if (circuitCtx) return { reason: 'closestCtxWithSingleVisit', circuitCtx }
 
         if (jb.path(jb.ui,'headless')) {
             const circuitCtx = closestElemWithCmp(probePath).ctx
@@ -49,9 +50,9 @@ extension('probe', 'main', {
                 jb.treeShake.codeServerJbm && await jb.treeShake.getCodeFromRemote([circuitCmpId])
                 const res = _ctx.ctx({ profile: {$: circuitCmpId}, comp : circuitCmpId, path: ''})
                 if (jb.ui && jb.tgp.isOfType(circuitCmpId,'control'))
-                    return jb.ui.extendWithServiceRegistry(res)
+                    return jb.ui .extendWithServiceRegistry(res)
                 if (jb.ui && jb.tgp.isOfType(circuitCmpId,'test'))
-                    return jb.ui.extendWithServiceRegistry(res).setVars(
+                    return jb.ui .extendWithServiceRegistry(res).setVars(
                         { testID: cmpId, singleTest: true })
                 return res
             }
@@ -69,7 +70,8 @@ extension('probe', 'main', {
             this.noGaps = noGaps
 
             this.circuitCtx = ctx.ctx({})
-            this.probe = {}
+            this.records = {}
+            this.visits = {}
             this.circuitCtx.probe = this
             this.circuitCtx.profile = jb.tgp.valOfPath(this.circuitCtx.path) || this.circuitCtx.profile // recalc latest version of profile
             this.id = ++jb.probe.probeCounter
@@ -79,9 +81,7 @@ extension('probe', 'main', {
             this.maxTime = maxTime || 50
             this.startTime = new Date().getTime()
             jb.log('probe run circuit',{probePath, probe: this})
-            this.result = []
-            this.result.visits = 0
-            this.probe[probePath] = this.result
+            this.records[probePath]
             this.probePath = probePath
             const initial_resources = jb.db.resources
             const initial_comps = jb.watchableComps && jb.watchableComps.handler.resources()
@@ -95,7 +95,12 @@ extension('probe', 'main', {
                 this.active = true
                 this.cleanSingleVisits()
                 this.circuitRes = await this.simpleRun()
+
+                this.result = this.records[probePath] || []
                 await this.handleGaps()
+                this.result = this.closestPath ? this.records[this.closestPath] : this.records[this.probePath]
+                this.simpleVisits = this.visits[this.probePath]
+                this.resultVisits = this.closestPath ? this.visits[this.closestPath] : this.visits[this.probePath]
 
                 await (this.result || []).reduce((pr,item,i) =>
                     pr.then(_=>jb.probe.resolve(item.out)).then(resolved=> this.result[i].out =resolved), Promise.resolve())
@@ -131,7 +136,6 @@ extension('probe', 'main', {
             jb.log('probe simple run result',{probe: this, res1})
             const res2 = await res1
             const res = await jb.probe.resolve(res2)
-            this.simpleVisits = jb.path(this.probe[this.probePath],'visits')
 
             jb.log('probe simple run resolved',{probe: this, res})
             if (res && res.renderVdom) {
@@ -151,21 +155,21 @@ extension('probe', 'main', {
                 return
             // find closest path
             let _path = jb.tgp.parentPath(this.probePath),breakingProp=''
-            while (!this.probe[_path] && _path.indexOf('~') != -1) {
+            while (!this.records[_path] && _path.indexOf('~') != -1) {
                 breakingProp = _path.split('~').pop()
                 _path = jb.tgp.parentPath(_path)
             }
-            if (!this.probe[_path] || formerGap == _path) { // can not break through the gap
+            if (!this.records[_path] || formerGap == _path) { // can not break through the gap
                 this.closestPath = _path
-                this.result = this.probe[_path] || []
+                this.result = this.records[_path] || []
                 return
             }
             if (!breakingProp) return
 
             // check if parent ctx returns object with method name of breakprop as in dialog.onOK
             // TODO: generalized for all actions - breaking props may be non action props
-            const parentCtx = this.probe[_path][0].in, breakingPath = _path+'~'+breakingProp
-            const obj = this.probe[_path][0].out
+            const parentCtx = this.records[_path][0].in, breakingPath = _path+'~'+breakingProp
+            const obj = this.records[_path][0].out
             const compName = jb.tgp.compNameOfPath(breakingPath)
             if (jb.comps[`${compName}.probe`]) {
                 parentCtx.profile[breakingProp].$$ = null //[jb.core.CT] = { ...parentCtx.profile[breakingProp][jb.core.CT], comp: null }
@@ -189,78 +193,73 @@ extension('probe', 'main', {
 
             // could not solve the gap
             this.closestPath = _path
-            this.result = this.probe[_path] || []
-        }
-        alternateProfile(ctx) {
-            return ctx.profile
-        }
-
-        // called from jb_run
-        record(ctx,out,data,vars) {
-            jb.probe.singleVisitPaths[ctx.path] = ctx
-            jb.probe.singleVisitCounters[ctx.path] = (jb.probe.singleVisitCounters[ctx.path] || 0) + 1
-            if (!this.active || this.probePath.indexOf(ctx.path) != 0) return
-    
-            if (data)
-                ctx = ctx.setData(data).setVars(vars||{}) // used by ctx.data(..,) in rx
-            if (this.id < jb.probe.probeCounter) {
-                jb.log('probe probeCounter is larger than current',{ctx, probe: this, counter: jb.probe.probeCounter})
-                this.active = false
-                throw 'probe tails'
-                return
-            }
-            this.startTime = this.startTime || new Date().getTime() // for the remote probe
-            const now = new Date().getTime()
-            if (now - this.startTime > this.maxTime && !ctx.vars.testID) {
-                jb.log('probe timeout',{ctx, probe: this,now})
-                this.active = false
-                throw 'probe tails'
-                //throw 'out of time';
-            }
-            const path = ctx.path
-            if (!this.probe[path]) {
-                this.probe[path] = []
-                this.probe[path].visits = 0
-            }
-            this.probe[path].visits++
-            const found = this.probe[path].find(x=>jb.utils.compareArrays(x.in.data,ctx.data))
-            if (found)
-                found.counter++
-            else
-                this.probe[path].push({in: ctx, out, counter: 0})
-
-            return out
+            this.result = this.records[_path] || []
         }
     },
+    // called from jb_run
+    record(ctx,out,data,vars) {
+        const probe = ctx.probe
+        // jb.probe.singleVisitPaths[ctx.path] = ctx
+        // jb.probe.singleVisitCounters[ctx.path] = (jb.probe.singleVisitCounters[ctx.path] || 0) + 1
+        if (!probe.active || probe.probePath.indexOf(ctx.path) != 0) return
+
+        if (data)
+            ctx = ctx.setData(data).setVars(vars||{}) // used by ctx.data(..,) in rx
+        if (probe.id < jb.probe.probeCounter) {
+            jb.log('probe probeCounter is larger than current',{ctx, probe, counter: jb.probe.probeCounter})
+            probe.active = false
+            throw 'probe tails'
+            return
+        }
+        probe.startTime = probe.startTime || new Date().getTime() // for the remote probe
+        const now = new Date().getTime()
+        // if (now - probe.startTime > probe.maxTime && !ctx.vars.testID) {
+        //     jb.log('probe timeout',{ctx, probe,now})
+        //     probe.active = false
+        //     throw 'probe tails'
+        //     //throw 'out of time';
+        // }
+        const path = ctx.path
+        probe.records[path] = probe.records[path] || []
+        probe.visits[path] = probe.visits[path] || 0
+        probe.visits[path]++
+        const found = probe.records[path].find(x=>jb.utils.compareArrays(x.in.data,ctx.data))
+        if (found)
+            found.counter++
+        else
+            probe.records[path].push({in: ctx, out, counter: 0})
+
+        return out
+    },    
     resolve(x) {
         if (jb.callbag.isCallbag(x)) return x
         return Promise.resolve(x)
     },
-	async closestCtxWithSingleVisit(probePath) {
-        const cmpId = probePath.split('~')[0]
-        jb.treeShake.codeServerJbm && await jb.treeShake.getCodeFromRemote([cmpId])
+	// async closestCtxWithSingleVisit(probePath) {
+    //     const cmpId = probePath.split('~')[0]
+    //     jb.treeShake.codeServerJbm && await jb.treeShake.getCodeFromRemote([cmpId])
 
-		let path = probePath.split('~')
-        if (jb.tgp.isExtraElem(probePath)) {
-            if (probePath.match(/items~0$/)) {
-                const pipelinePath = path.slice(0,-2).join('~')
-                const pipelineCtx = jb.probe.singleVisitCounters[pipelinePath] == 1 && jb.probe.singleVisitPaths[pipelinePath]
-                if (pipelineCtx)
-                    return pipelineCtx.setVars(pipelineCtx.profile.$vars || {})
-            } else if (probePath.match(/items~[1-9][0-9]*$/)) {
-                const formerIndex = Number(probePath.match(/items~([1-9][0-9]*)$/)[1])-1
-                path[path.length-1] = formerIndex
-            }
-        }
+	// 	let path = probePath.split('~')
+    //     if (jb.tgp.isExtraElem(probePath)) {
+    //         if (probePath.match(/items~0$/)) {
+    //             const pipelinePath = path.slice(0,-2).join('~')
+    //             const pipelineCtx = jb.probe.singleVisitCounters[pipelinePath] == 1 && jb.probe.singleVisitPaths[pipelinePath]
+    //             if (pipelineCtx)
+    //                 return pipelineCtx.setVars(pipelineCtx.profile.$vars || {})
+    //         } else if (probePath.match(/items~[1-9][0-9]*$/)) {
+    //             const formerIndex = Number(probePath.match(/items~([1-9][0-9]*)$/)[1])-1
+    //             path[path.length-1] = formerIndex
+    //         }
+    //     }
 
-        const res = jb.tgp.parents(path.join('~'))
-            .filter(path=>jb.probe.singleVisitCounters[path] == 1)
-            .map(path=>jb.probe.singleVisitPaths[path])
-            .filter(ctx=>(jb.path(ctx,'profile.$') ||'').indexOf('rx.') != 0)
-            [0]
+    //     const res = jb.tgp.parents(path.join('~'))
+    //         .filter(path=>jb.probe.singleVisitCounters[path] == 1)
+    //         .map(path=>jb.probe.singleVisitPaths[path])
+    //         .filter(ctx=>(jb.path(ctx,'profile.$') ||'').indexOf('rx.') != 0)
+    //         [0]
 			
-	    return res
-	},
+	//     return res
+	// },
 })
 
 component('probe.runCircuit', {
@@ -296,5 +295,5 @@ component('probe.stripProbeResult', {
   params: [
     {id: 'result'}
   ],
-  impl: (ctx,result) => (result || []).map ( x => ({out: x.out,in: {data: x.in.data, params: jb.path(x.in.cmpCtx,'params'), vars: x.in.vars}}))
+  impl: (ctx,result) => (result || []).map ( x => jb.remoteCtx.stripData({from: x.from, out: x.out,in: {data: x.in.data, params: jb.path(x.in.cmpCtx,'params'), vars: x.in.vars}}))
 })

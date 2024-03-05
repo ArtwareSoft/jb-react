@@ -14,9 +14,12 @@
 //     })))
 // })
 
-component('remoteTest.data', {
+component('remoteTest.worker.data', {
   impl: dataTest({
-    calculate: pipeline(Var('v1', '33'), remote.data(pipeline(list('a','b','%$v1%'), join()), cmd(sourceCode(plugins('common'))))),
+    calculate: pipeline(
+      Var('v1', '33'),
+      remote.data(pipeline(list('a','b','%$v1%'), join()), stateless(sourceCode(plugins('common'))))
+    ),
     expectedResult: equals('a,b,33'),
     timeout: 2000
   })
@@ -33,7 +36,7 @@ component('itemlists.manyItems2', {
   )
 })
 
-component('remoteTest.remote.data', {
+component('remoteTest.remoteNodeWorker.data', {
   impl: dataTest(pipe(remote.data(list([1,2,3]), remoteNodeWorker()), join(',')), equals('1,2,3'), {
     timeout: 2000,
     spy: 'remote'
@@ -69,7 +72,12 @@ component('remoteTest.remoteOperator.remoteParam', {
 
 component('remoteTest.remoteOperator.remoteVar', {
   impl: dataTest({
-    calculate: rx.pipe(source.data(1), rx.var('retVal', 5), remote.operator(rx.map('%$retVal%'), worker()), rx.take(1)),
+    calculate: rx.pipe(
+      source.data(1),
+      rx.var('retVal', 5),
+      remote.operator(rx.map('%$retVal%'), worker()),
+      rx.take(1)
+    ),
     expectedResult: equals(5),
     timeout: 5000
   })
@@ -91,7 +99,7 @@ component('remoteTest.remoteOperator.child.loadOperatorCode', {
   })
 })
 
-component('remoteTest.childWorker.sourceCode.project', {
+component('remoteTest.worker.sourceCode.project', {
   impl: dataTest({
     calculate: remote.data({
       calc: pipeline(itemlists.manyItems2(3), '%id%', join(',')),
@@ -249,7 +257,7 @@ component('remoteTest.remote.operator', {
 //   })
 // })
 
-component('remoteTest.webSocket.runTest', {
+component('remoteTest.operator.runTest', {
   impl: dataTest({
     vars: [
       Var('testsToRun', list('dataTest.join','dataTest.ctx.expOfRefWithBooleanType'))
@@ -257,13 +265,11 @@ component('remoteTest.webSocket.runTest', {
     calculate: pipe(
       rx.pipe(
         source.data('%$testsToRun%'),
-        rx.var('fullTestId','test<>%%'),
+        rx.var('fullTestId', 'test<>%%'),
         rx.log('test'),
         remote.operator({
           rx: rx.mapPromise(({data},{fullTestId}) => jb.test.runSingleTest(data,{fullTestId})),
-          jbm: worker('tester', {
-            sourceCode: sourceCode(pluginsByPath('/plugins/common/xx-tests.js'))
-          })
+          jbm: worker('tester', { sourceCode: sourceCode(pluginsByPath('/plugins/common/xx-tests.js')) })
         }),
         rx.log('test')
       ),
