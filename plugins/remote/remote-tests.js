@@ -83,7 +83,6 @@ component('remoteTest.remoteOperator.remoteVar', {
   })
 })
 
-
 component('test.addAA', {
   type: 'rx<>',
   impl: rx.map('AA%%')

@@ -98,7 +98,7 @@ extension('probe', 'main', {
 
                 this.result = this.records[probePath] || []
                 await this.handleGaps()
-                this.result = this.closestPath ? this.records[this.closestPath] : this.records[this.probePath]
+                this.result = (this.closestPath ? this.records[this.closestPath] : this.records[this.probePath]) || []
                 this.simpleVisits = this.visits[this.probePath]
                 this.resultVisits = this.closestPath ? this.visits[this.closestPath] : this.visits[this.probePath]
 

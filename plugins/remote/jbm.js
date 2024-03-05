@@ -203,8 +203,8 @@ component('cmd', {
                 return jb.utils.unique([comp.$plugin,...Object.values(prof).flatMap(x=>pluginsOfProfile(x))]).filter(x=>x)
             }
         },
-        createCallbagSource: () => jb.logError('cmd.jbm - callbag is not supported'),
-        createCallbagOperator: () => jb.logError('cmd.jbm - callbag is not supported'),
+        createCallbagSource: () => jb.logError('callbag is not supported in statless jbm'),
+        createCallbagOperator: () => jb.logError('callbag is not supported in statless jbm'),
 
         async rjbm() { return this }
     })
