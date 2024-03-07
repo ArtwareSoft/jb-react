@@ -1,5 +1,5 @@
-extension('mdIcons', {
-//  $requireLibs: ['/dist/md-icons.js']
+extension('ui', 'mdIcons', {
+  $requireLibs: ['/dist/md-icons.js']
 })
 
 component('mdcStyle.initDynamic', {

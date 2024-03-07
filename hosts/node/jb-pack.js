@@ -28,7 +28,7 @@ async function jbMake(sourceCode, {baseDir} = {}) {
         let packedCode = ''
         if (!tempIsValid) {
             fs.appendFileSync(`${jbHost.jbReactDir}/temp/jb-pack.log`, `temp not valid ${tempFilePath} dir: ${latestModTime} file: ${fileModTime}\n`);
-            const map = new SourceMapGenerator({ file: `package/${fn}.js` })
+            const map = new SourceMapGenerator({ file2: `${jbHost.jbReactDir}/temp/${fn}.js` , file: `package/${fn}.js` })
             const codeParts = await jbInit('jb-packer', sourceCode, {packOnly: true})
             ;[line,strArr] = codeParts.reduce(([line,strArr], {path,code}) => {
                 code = code.replace(/^jbLoadPackedFile\({lineInPackage: 0/,'jbLoadPackedFile({lineInPackage:'+(line+3))

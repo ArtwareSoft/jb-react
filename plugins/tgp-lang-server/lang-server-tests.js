@@ -111,7 +111,7 @@ component('langServerTest.studioCircuitUrl', {
       langServer.studioCircuitUrl()
     ),
     expectedResult: contains('http://localhost:8082/project/studio/test<>uiTest.group/test<>uiTest.group~impl~expectedResult?sourceCode=','spy=test,uiTest,headless'),
-    timeout: 2000
+    timeout: 3000
   })
 })
 

@@ -2,8 +2,9 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- type="text/javascript" src="/package/*,studio-tests/studio.js"-->
 <script type="text/javascript" src="/plugins/loader/jb-loader.js"></script>
-<script type="text/javascript" src="/package/*,studio-tests/studio.js"></script>
+
 <link rel="icon" type="image/png" href="/bin/studio/css/favicon-done.png" />
 <link rel="stylesheet" type="text/css" href="/bin/studio/css/studio-all.css"/>
 <style>
@@ -19,20 +20,20 @@
 	<div id="show"> </div>
  <script>
 	const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
-	// if (urlQuery('pack')) {
-	// 	jbInit('pack',{ plugins: ['common'] }, {packOnly: true}).then(code=>console.log('aa',code))
-	// } else {
-	// const repo = urlQuery('repo')
-	// const plugins = urlQuery('plugins') && urlQuery('plugins').split(',') //.map(x=>!x.match(/tests|tester/) ? `${x}-tests` : x)
-	// const addRepo = urlQuery('addRepo')
-	// const sourceCode = 
-	// 	addRepo && {projects: ['studio'], plugins:['*','studio-tests'], pluginPackages: [{'$':'defaultPackage'},{'$':'jbStudioServer', repo: addRepo }] } 
-	// 	|| plugins && { plugins } 
-	// 	|| repo && {pluginPackages: [{'$':'defaultPackage'},{'$':'jbStudioServer', repo }],plugins:['*'] } 
-	// 	|| { projects: ['studio'], plugins: ['*','studio-tests'] }
+	if (urlQuery('pack')) {
+		jbInit('pack',{ plugins: ['common'] }, {packOnly: true}).then(code=>console.log('aa',code))
+	} else {
+	const repo = urlQuery('repo')
+	const plugins = urlQuery('plugins') && urlQuery('plugins').split(',') //.map(x=>!x.match(/tests|tester/) ? `${x}-tests` : x)
+	const addRepo = urlQuery('addRepo')
+	const sourceCode = 
+		addRepo && {projects: ['studio'], plugins:['*','studio-tests'], pluginPackages: [{'$':'defaultPackage'},{'$':'jbStudioServer', repo: addRepo }] } 
+		|| plugins && { plugins } 
+		|| repo && {pluginPackages: [{'$':'defaultPackage'},{'$':'jbStudioServer', repo }],plugins:['*'] } 
+		|| { projects: ['studio'], plugins: ['*','studio-tests'] }
 
-//	jbInit('tests',sourceCode,{initSpyByUrl: true}).then(jb =>{
-	jbLoadPacked({uri:'tests', initSpyByUrl: true}).then(jb => {
+	jbInit('tests',sourceCode,{initSpyByUrl: true}).then(jb =>{
+//	jbLoadPacked({uri:'tests', initSpyByUrl: true}).then(jb => {
 			globalThis.jb = jb
 			globalThis.spy = jb.spy
 			if (jb.comps.defaultTheme)
@@ -51,6 +52,7 @@
 			console.log(params)
 			jb.test.runTests(params)
 		})
+	}
   </script>
 </body>
 </html>

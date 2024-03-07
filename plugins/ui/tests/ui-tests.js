@@ -187,6 +187,18 @@ component('uiTest.editableText', {
   impl: uiTest(editableText('name', '%$person/name%', { style: editableText.input() }), contains('input','Homer Simpson'))
 })
 
+component('uiTest.editableText.onEnter', {
+  impl: uiTest({
+    control: editableText('name', '%$person/name%', {
+      style: editableText.input(),
+      features: feature.onKey('Enter', openDialog({ content: text('hello %$ev/value%') }))
+    }),
+    expectedResult: contains('hello Homer Simpson'),
+    uiAction: keyboardEvent('input', 'keydown', { keyCode: '13' }),
+    useFrontEnd: true
+  })
+})
+
 component('uiTest.editableText.emptyData', {
   impl: uiTest(editableText('name', '%$person/name1%'), not(contains('undefined')))
 })

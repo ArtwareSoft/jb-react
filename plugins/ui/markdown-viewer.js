@@ -18,7 +18,7 @@ component('markdown', {
 component('markdown.mark', {
   type: 'markdown-style',
   impl: customStyle({
-    template: ({},{html},h) => h('div',{$html: html.replace(/^(<[a-z0-9]*)/,'$1 jb_external="true"') }),
+    template: ({},{html},h) => h('div', {jb_external: true}, h('div', {$html: html})),
     features: [
       calcProp('html', (ctx,{$model}) => jb.frame.marked && jb.frame.marked($model.markdown(ctx)) || '')
     ]

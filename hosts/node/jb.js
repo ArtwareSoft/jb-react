@@ -55,8 +55,8 @@ if (verbose)
     const sourceCode = sourceCodeStr ? JSON.parse(sourceCodeStr) : { plugins : _plugins }
     sourceCode.plugins = unique([...sourceCode.plugins,'remote'])
 
-    //globalThis.jb = await jbInit(uri||'main', sourceCode)    
-    globalThis.jb = await jbFromSourceCode(sourceCode,{uri: uri||'main'})
+    globalThis.jb = await jbInit(uri||'main', sourceCode)    
+    //globalThis.jb = await jbFromSourceCode(sourceCode,{uri: uri||'main'})
     globalThis.spy = jb.spy.initSpy({spyParam: [spy,'error'].filter(x=>x).join(',')})
     // loading remote-context.js
     // const plugin = jb.plugins.remote

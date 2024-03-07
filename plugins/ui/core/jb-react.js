@@ -404,7 +404,7 @@ extension('ui', 'react', {
     buildUserEvent(ev, elem, ctx) {
         if (!ev) return null
         const userEvent = {
-            value: ev.value || (ev.target || {}).value, 
+            value: ev.value || (ev.target || {}).value || jb.path(ev,'target.attributes.value'), 
             elem: jb.ui.calcElemProps(elem),
             ev: {},
         }

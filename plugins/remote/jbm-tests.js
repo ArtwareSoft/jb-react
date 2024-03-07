@@ -13,9 +13,7 @@ component('jbmTest.cmd', {
 })
 
 component('jbmTest.cmdInCmd', {
-  impl: dataTest(remote.data(remote.data(pipeline('hello'), cmd()), cmd({ spy: 'remote' })), equals('hello'), {
-    timeout: 5000
-  })
+  impl: dataTest(remote.data(remote.data(pipeline('hello'), cmd()), cmd()), equals('hello'), { timeout: 5000 })
 })
 
 component('jbmTest.cmdWithVars', {

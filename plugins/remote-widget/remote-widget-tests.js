@@ -104,16 +104,18 @@ component('FETest.distributedWidget', {
 component('FETest.remoteWidgetTest.changeText', {
   impl: uiFrontEndTest(group({ features: css.class('xRoot') }), {
     uiAction: uiActions(
-      action(
-        remote.distributedWidget({
-          control: group(text('hey %$fName%', { features: watchRef('%$fName%') }), editableText({ databind: '%$fName%' }), {
-            features: watchable('fName', 'Dan')
-          }),
-          backend: worker(),
-          frontend: child('jbxServer'),
-          selector: '.xRoot'
-        })
-      ),
+      action(remote.distributedWidget({
+        control: group({
+          controls: [
+            text('hey %$fName%', { features: watchRef('%$fName%') }),
+            editableText({ databind: '%$fName%' })
+          ],
+          features: watchable('fName', 'Dan')
+        }),
+        backend: worker(),
+        frontend: child('jbxServer'),
+        selector: '.xRoot'
+      })),
       waitForSelector('input'),
       setText('danny'),
       keyboardEvent('input', 'keyup'),

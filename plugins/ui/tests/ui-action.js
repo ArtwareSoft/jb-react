@@ -241,16 +241,20 @@ component('setText', {
   ],
   impl: uiActions(
     waitForSelector('%$selector%'),
-    (ctx,{elemToTest},{value,selector}) => {
-          const currentTarget = selector ? jb.ui.elemOfSelector(selector,ctx) : elemToTest;
-          jb.ui.findIncludeSelf(currentTarget,'input,textarea').forEach(e=>e.value= value)
-          const widgetId = jb.ui.parentWidgetId(currentTarget) || ctx.vars.widgetId
-          const ev = { type: 'blur', currentTarget, widgetId, target: {value}}
-          jb.log('uiTest setText',{ev,currentTarget,selector,ctx})
+    (ctx,{elemToTest,useFrontEndInTest},{value,selector}) => {
+          const ctxToUse = useFrontEndInTest ? ctx.setVars({FEEMulator: true}) : ctx
+          const elem = selector ? jb.ui.elemOfSelector(selector,ctxToUse) : elemToTest
+          jb.ui.findIncludeSelf(elem,'input,textarea').forEach(e=>e.value= value)
+          const widgetId = jb.ui.parentWidgetId(elem) || ctx.vars.widgetId
+          const ev = { type: 'blur', currentTarget: elem, widgetId, target: {value}}
+          jb.log('uiTest setText',{ev,elem,selector,ctx})
           if (elemToTest) 
             jb.ui.handleCmpEvent(ev)
-          else
+          else {
+            if (useFrontEndInTest && elem instanceof jb.ui.VNode)
+                elem.attributes.value = value
             return jb.ui.rawEventToUserRequest(ev,{ctx})
+          }
       },
     If('%$useFrontEndInTest%', uiActions(delay(1), FEUserRequest(), If(not('%$doNotWaitForNextUpdate%'), waitForNextUpdate()))),
     If(and(not('%$useFrontEndInTest%'), not('%$remoteUiTest%'), not('%$doNotWaitForNextUpdate%')), waitForNextUpdate())

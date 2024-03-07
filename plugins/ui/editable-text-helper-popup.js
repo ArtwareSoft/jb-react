@@ -66,12 +66,10 @@ component('editableText.picklistHelper', {
     ),
     frontEnd.flow('%$cmp/keyUp%', rx.filter('%keyCode% == 27'), editableText.addUserEvent(), sink.BEMethod('onEsc')),
     onDestroy(action.runBEMethod('closePopup')),
-    followUp.action(
-      If('%$autoOpen%', runActions(
-        writeValue('%$watchableInput%', obj(prop('value', '%$helperCmp/renderProps/databind%'))),
-        action.runBEMethod('openPopup')
-      ))
-    )
+    followUp.action(If('%$autoOpen%', runActions(
+      writeValue('%$watchableInput%', obj(prop('value', '%$helperCmp/renderProps/databind%'))),
+      action.runBEMethod('openPopup')
+    )))
   )
 })
 

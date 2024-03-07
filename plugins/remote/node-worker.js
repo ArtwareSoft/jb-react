@@ -8,7 +8,7 @@ extension('webSocket', 'client', {
         socket.onerror = err => { jb.logError('websocket error',{err,ctx}); resolve() }
     }),
     connectFromNodeClient: (wsUrl,serverUri,ctx) => new Promise( resolve => {
-        const W3CWebSocket = require('websocket').w3cwebsocket
+        const W3CWebSocket = jbHost.require('websocket').w3cwebsocket
         const socket = new W3CWebSocket(wsUrl, 'echo-protocol')
         jb.log('remote web socket connect request',{wsUrl,serverUri,ctx})
         socket.onopen = () => { resolve(jb.webSocket.portFromW3CSocket(socket,serverUri)) }

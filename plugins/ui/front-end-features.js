@@ -311,6 +311,7 @@ component('key.eventToMethod', {
 
 component('feature.onKey', {
   type: 'feature',
+  description: 'on keydown',
   category: 'events',
   params: [
     {id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V'},
@@ -318,19 +319,17 @@ component('feature.onKey', {
   ],
   impl: features(
     method(replace('-', '+', { text: 'onKey%$key%Handler', useRegex: true }), call('action')),
-    frontEnd.init(
-      If(not('%$cmp.hasOnKeyHanlder%'), runActions(
-        ({},{cmp}) => cmp.hasOnKeyHanlder = true,
-        rx.pipe(
-          source.frontEndEvent('keydown'),
-          rx.userEventVar(),
-          rx.map(key.eventToMethod('%%')),
-          rx.filter('%%'),
-          rx.log('keyboard uiComp onKey %$key%'),
-          sink.BEMethod('%%')
-        )
-      ))
-    )
+    frontEnd.init(If(not('%$cmp.hasOnKeyHanlder%'), runActions(
+      ({},{cmp}) => cmp.hasOnKeyHanlder = true,
+      rx.pipe(
+        source.frontEndEvent('keydown'),
+        rx.userEventVar(),
+        rx.map(key.eventToMethod('%%')),
+        rx.filter('%%'),
+        rx.log('keyboard uiComp onKey %$key%'),
+        sink.BEMethod('%%')
+      )
+    )))
   )
 })
 

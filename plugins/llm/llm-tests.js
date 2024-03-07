@@ -1,5 +1,9 @@
 using('ui-tests','net')
 
+component('llmStateForTests', { passiveData: {
+  prompt: ''
+}})
+
 component('llmTest.tutorialBuilder', {
   doNotRunInTests: true,
   impl: uiTest(tutorialBuilder('%$tutorialSample%'), contains('build'))
@@ -28,7 +32,12 @@ component('llmTest.listRouter', {
   impl: dataTest(remote.data(() => Object.keys(jb.jbm.networkPeers) , router()), contains('llmHelper'))
 })
 
-component('llmHelperTest.localHelper', {
+component('llmHelperTest.localHelper.sayHello', {
   doNotRunInTests: true,
-  impl: uiTest(llm.localHelper('%$llmTutorial_Query%'))
+  impl: uiTest({
+    control: llm.localHelper('%$llmTutorial_Query%'),
+    expectedResult: equals('%$llmStateForTests.prompt%', 'hello'),
+    uiAction: uiActions(setText('setPrompt hello'), keyboardEvent('input', 'keydown', { keyCode: '13' })),
+    useFrontEnd: true
+  })
 })
