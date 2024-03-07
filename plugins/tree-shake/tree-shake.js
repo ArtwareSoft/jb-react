@@ -135,7 +135,8 @@ extension('treeShake', {
                 typeRules: jb.path(jb,`${lib}.__extensions.${ext}.typeRules`),
             }
             const extCode = jb.utils.prettyPrint(Object.fromEntries(Object.entries(extObj).filter(([_, v]) => v != null)))
-            return `jb.extension(jb.plugins['${jb[lib].__extensions[ext].plugin.id}'],'${lib}', '${ext}', ${extCode})`
+            const pluginId = jb[lib].__extensions[ext].plugin.id
+            return `jb.extension('${lib}', '${ext}', ${extCode}, {plugin: jb.plugins['${pluginId}']})`
         }).join('\n\n')
 
         const compsCode = cmps.map(cmpId =>jb.treeShake.compToStr(cmpId)).join('\n\n')
@@ -145,6 +146,7 @@ extension('treeShake', {
             //jb.utils.prettyPrintComp(cmpId,jb.comps[cmpId],{noMacros: true})).join('\n\n')
         const libs = jb.utils.unique(libsFuncs.map(x=>x.lib)).map(l=>"'"+l+"'").join(',')
         return [
+            `jb.createPlugins = function ${jb.createPlugins.toString()}`,
             `jb.createPlugins(${JSON.stringify(plugins)})`,
             topLevelCode,libsCode,compsCode,
             `jb.initializeTypeRules([${libs}])`,

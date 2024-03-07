@@ -248,7 +248,7 @@ component('probeTest.calcCircuit', {
 // 	}
 // })
 
-component('suggestionsTest.defaultProbe', {
+component('suggestionsTest.textControl', {
   type: 'control',
   impl: text('', { features: [] })
 })
@@ -263,10 +263,10 @@ component('suggestionsTest.varsFilter', {
 
 component('suggestionsTest.component', {
   impl: suggestionsTest('=watc', {
-    path: 'control<>suggestionsTest.defaultProbe~impl~features~0',
+    path: 'control<>suggestionsTest.textControl~impl~features~0',
     expectedResult: contains('watchRef')
   }),
-  require: 'control<>suggestionsTest.defaultProbe'
+  require: 'control<>suggestionsTest.textControl'
 })
 
 component('suggestionsTest.insideArray', {

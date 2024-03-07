@@ -1,11 +1,11 @@
 component('rxDslTest.mapPromise', {
-  impl: dataTest(rxPipe(data(0), mapPromise(({data}) => jb.delay(1,data+2))), equals('2'))
+  impl: dataTest(rxPipe(data(0), mapPromise(delay(1, 2))), equals(2))
 })
 
 component('rxDslTest.doPromise', {
   impl: dataTest({
-    calculate: rxPipe(data(1), elems(doPromise(({data}) =>jb.delay(1,data *10)), mapPromise(({data}) =>jb.delay(1,data+2)))),
-    expectedResult: equals('3')
+    calculate: rxPipe(data(1), elems(doPromise(delay(1, 10)), mapPromise(delay(1, 3)))),
+    expectedResult: equals(3)
   })
 })
 

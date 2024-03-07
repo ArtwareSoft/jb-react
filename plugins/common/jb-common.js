@@ -683,7 +683,7 @@ component('join', {
   aggregator: true,
   params: [
     {id: 'separator', as: 'string', defaultValue: ',', mandatory: true},
-    {id: 'prefix', as: 'string'},
+    {id: 'prefix', as: 'string', byName: true },
     {id: 'suffix', as: 'string'},
     {id: 'items', as: 'array', defaultValue: '%%'},
     {id: 'itemText', as: 'string', dynamic: true, defaultValue: '%%'}
@@ -1003,10 +1003,21 @@ component('inGroup', {
   impl: ({},group,item) =>	group.indexOf(item) != -1
 })
 
-component('data.switch', {
+component('range', {
+  description: 'is in range',
+  type: 'boolean',
+  params: [
+    {id: 'from', as: 'number', defaultValue: 1},
+    {id: 'to', as: 'number', defaultValue: 10}
+  ],
+  impl: ({data},from,to) => +data >= +from && +data <= +to
+})
+
+component('Switch', {
+  type: 'data',
   macroByValue: false,
   params: [
-    {id: 'cases', type: 'data.switch-case[]', as: 'array', mandatory: true, defaultValue: []},
+    {id: 'cases', type: 'switch-case[]', as: 'array', mandatory: true, defaultValue: []},
     {id: 'default', dynamic: true}
   ],
   impl: (ctx,cases,defaultValue) => {
@@ -1017,8 +1028,8 @@ component('data.switch', {
 	}
 })
 
-component('data.case', {
-  type: 'data.switch-case',
+component('Case', {
+  type: 'switch-case',
   params: [
     {id: 'condition', type: 'boolean', mandatory: true, dynamic: true},
     {id: 'value', mandatory: true, dynamic: true}

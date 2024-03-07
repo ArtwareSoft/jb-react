@@ -61,7 +61,7 @@ extension('utils', 'core', {
           jb.logError('can not resolve profile type',{comp})
       })
       jb.core.unresolvedProfiles = []
-      profiles.forEach(({comp}) => jb.utils.resolveComp(comp))
+              profiles.forEach(({comp}) => jb.utils.resolveComp(comp))
       return profiles
     },
     resolveProfileTop(id, comp, {tgpModel} = {}) {
@@ -125,8 +125,8 @@ extension('utils', 'core', {
 
     resolveComp(topComp, {tgpModel} = {}) {
       if (!topComp) return
-      ;(topComp.params || []).forEach(p=> jb.utils.resolveProfile(p.defaultValue, {expectedType: p.$type}))
-      ;(topComp.params || []).forEach(p=> jb.utils.resolveProfile(p.templateValue, {expectedType: p.$type}))
+      ;(topComp.params || []).forEach(p=> jb.utils.resolveProfile(p.defaultValue, {expectedType: p.$type, topComp}))
+      ;(topComp.params || []).forEach(p=> jb.utils.resolveProfile(p.templateValue, {expectedType: p.$type, topComp}))
       //if (topcomp.$$ =='test<>dataTest.join') debugger
       jb.utils.resolveProfile(topComp.impl, {expectedType: topComp.$type, tgpModel, topComp, parent: topComp})
     },
@@ -189,7 +189,7 @@ extension('utils', 'core', {
         return bySamePlugin
       const byNoDsl = cmps.find(c=> c.$$.indexOf('<>') != -1 && c.$$.split('>').pop() == shortId )
       if (byNoDsl) {
-         jb.logError('resolveCompWithId',{byNoDsl,id, topComp, parent, parentType, allTypes, dslType})
+         if (!silent) jb.logError('resolveCompWithId',{byNoDsl,id, topComp, parent, parentType, allTypes, dslType})
          return byNoDsl
       }
     

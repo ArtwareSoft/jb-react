@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script type="text/javascript" src="/plugins/loader/jb-loader.js"></script>
+<script type="text/javascript" src="/package/common.js"></script>
+<script1 type="text/javascript" src="/package/*,studio-tests/studio.js"></script1>
+<link rel="icon" type="image/png" href="/bin/studio/css/favicon-done.png" />
+<link rel="stylesheet" type="text/css" href="/bin/studio/css/studio-all.css"/>
+<style>
+	.test-button { opacity: 0 }
+	.test-button:hover { opacity: 1 }
+</style>
+</head>
+<body>
+	<div id="remoteTests"> </div>
+
+	<div id="mem"> </div>
+	<div id="testElem"> </div>
+	<div id="show"> </div>
+ <script>
+    // jbInit('tests',{plugins: ['ui-tests']},{}).then(jb =>{
+	// 	globalThis.jb = jb
+	// 	remoteTests.innerText = jb.calc({$: 'pipeline', items: ['hello']})[0]
+	// })
+
+	jbLoadPacked().then(jb => {
+		globalThis.jb = jb
+		remoteTests.innerText = jb.calc({$: 'pipeline', items: ['hello']})[0]
+		console.log(jb.calc({$: 'pipeline', items: ['hello']}))
+	})
+  </script>
+</body>
+</html>

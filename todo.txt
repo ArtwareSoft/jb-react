@@ -1,6 +1,12 @@
-pipeline - allowInnerVars
+fix remoteCircuitPreview sourceCode
+mapSource - not for each line
+add location to package
+separate the ui plugins
+pretty print - fix If probe.remoteCircuitPreview
 
-add create test in menu
+pipeline - allowInnerVars property
+add second parameter array by value
+
 show 10 circuits in ctrl+J
 
 refactor after types
@@ -10,9 +16,6 @@ refactor after types
   features
     no feature prefix
   jbm -> change dsl to remote, remote jbm. prefix
-
-cmd
-  if there is error result create error with runCtx.html link
 
 preview in vscode
   open preview in menu using circuit and probe
@@ -26,7 +29,6 @@ plugins inside plugin
   ui--markdown
   then we make studio a plugin
 
-rewrite rxPipe without registration
 refactor to new rx dsl
 jb.ui.f1 => $ui.f1
 prettyPrint -> formatter

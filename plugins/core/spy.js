@@ -20,6 +20,7 @@ extension('spy', {
 		const getSpyParam = url => (url.match('[?&]spy=([^&]+)') || ['', ''])[1]
 		jb.spy.initSpy({spyParam :frame && frame.jbUri == 'studio' && (getUrl().match('[?&]sspy=([^&]+)') || ['', ''])[1] || 
 			getSpyParam(getParentUrl() || '') || getSpyParam(getUrl() || '')})
+		jb.spy.calcIncludeLogsFromSpyParam()
 	},
 	initSpy({spyParam}) {
 		if (!spyParam) return
@@ -189,7 +190,7 @@ extension('spy', {
 	}
 })
 
-component('spy.paramForTest', {
+component('test.calcSpyParamForTest', {
   params: [
     {id: 'testID', defaultValue: '%%'}
   ],

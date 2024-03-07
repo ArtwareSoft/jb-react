@@ -22,9 +22,9 @@ function codePackageNodeFS(baseDir) { return {
     fetchJSON(url) { 
         return this.fetchFile(url).then(x=>JSON.parse(x))
     },        
-    async fileSymbols (path) {
+    async fileSymbols(path) {
         try {
-            return getFilesInDir(path).filter(f => f.match(/\.js$/)).map(path => fileContent(path))
+            return getFilesInDir(path).filter(f => f.match(/\.js$/)).map(path => fileContent('/'+path))
         } catch(e) {
             return []
         }
@@ -36,14 +36,16 @@ function codePackageNodeFS(baseDir) { return {
             }, [])
         }
         function fileContent(path) {
-            const content = fs.readFileSync(`${baseDir}/${path}`, 'utf-8')
+            const content = fs.readFileSync(`${baseDir}${path}`, 'utf-8')
+            const lines = content.split('\n')
             return {
-                path: '/' + path,
-                dsl: unique(content.split('\n').map(l=>(l.match(/^(jb.)?dsl\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0]))[0],
-                pluginDsl: unique(content.split('\n').map(l=>(l.match(/^(jb.)?pluginDsl\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0]))[0],
-                ns: unique(content.split('\n').map(l=>(l.match(/^(jb.)?component\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0])),
-                libs: unique(content.split('\n').map(l=>(l.match(/^(jb.)?extension\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0])),
-                using: unique(content.split('\n').map(l=>(l.match(/^(jb.)?using\('([^)]+)/) || ['',''])[2]).filter(x=>x).map(x=>x.replace(/'/g,''))
+                path,
+                dsl: unique(lines.map(l=>(l.match(/^(jb.)?dsl\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0]))[0],
+                pluginDsl: unique(lines.map(l=>(l.match(/^(jb.)?pluginDsl\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0]))[0],
+                //comp_locations: lines.map((l,line)=>[(l.match(/^(jb.)?component\('([^']+)/) || ['',''])[2],line]).filter(x=>x[0]),
+                ns: unique(lines.map(l=>(l.match(/^(jb.)?component\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0])),
+                libs: unique(lines.map(l=>(l.match(/^(jb.)?extension\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0])),
+                using: unique(lines.map(l=>(l.match(/^(jb.)?using\('([^)]+)/) || ['',''])[2]).filter(x=>x).map(x=>x.replace(/'/g,''))
                 .flatMap(x=>x.split(',').map(x=>x.trim()))),
             }
         }

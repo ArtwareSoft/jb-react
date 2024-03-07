@@ -3,7 +3,7 @@ component('suggestionsTest', {
   params: [
     {id: 'expression', as: 'string'},
     {id: 'selectionStart', as: 'number', defaultValue: -1},
-    {id: 'path', as: 'string', defaultValue: 'control<>suggestionsTest.defaultProbe~impl~text'},
+    {id: 'path', as: 'string', defaultValue: 'control<>suggestionsTest.textControl~impl~text'},
     {id: 'expectedResult', type: 'boolean', dynamic: true, as: 'boolean'}
   ],
   impl: dataTest({
@@ -23,7 +23,7 @@ component('suggestionsTest', {
     expectedResult: call('expectedResult'),
     timeout: 1000
   }),
-  require: {$: 'control<>suggestionsTest.defaultProbe' }
+  require: {$: 'control<>suggestionsTest.textControl' }
 })
 
 component('probeTest', {

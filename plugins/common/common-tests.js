@@ -106,7 +106,7 @@ component('dataTest.pipeWithPromise3', {
 
 component('dataTest.dataSwitch', {
   impl: dataTest({
-    calculate: pipeline(5, data.switch(data.case(equals(4), 'a'), data.case(equals(5), 'b'), data.case(equals(6), 'c'))),
+    calculate: pipeline(5, Switch(Case(equals(4), 'a'), Case(equals(5), 'b'), Case(equals(6), 'c'))),
     expectedResult: equals('b')
   })
 })
@@ -114,12 +114,13 @@ component('dataTest.dataSwitch', {
 component('dataTest.dataSwitchDefault', {
   impl: dataTest({
     calculate: pipeline(
-      7,
-      data.switch(data.case(equals(4), 'a'), data.case(equals(5), 'b'), data.case(equals(6), 'c'), {
+      list(4,5,7),
+      Switch(Case(equals(4), 'a'), Case(equals(5), 'b'), Case(equals(6), 'c'), {
         default: 'd'
-      })
+      }),
+      join()
     ),
-    expectedResult: equals('d')
+    expectedResult: equals('a,b,d')
   })
 })
 
@@ -128,16 +129,20 @@ component('dataTest.extendWithIndex', {
     calculate: pipeline(
       '%$personWithChildren/children%',
       extendWithIndex(prop('nameTwice', '%name%-%name%'), prop('index', '%$index%')),
-      join({ itemText: '%index%.%nameTwice%' })
+      join('\n', { prefix: '# The kids\n', suffix: '\n--', itemText: '%index%. %nameTwice%' })
     ),
-    expectedResult: contains('0.Bart-Bart,1.Lisa-Lisa,2.Maggie-Maggie')
+    expectedResult: equals('# The kids\n0. Bart-Bart\n1. Lisa-Lisa\n2. Maggie-Maggie\n--')
   })
 })
 
 component('dataTest.if', {
   impl: dataTest({
-    calculate: pipeline('%$personWithChildren/children%', If(equals('%name%', 'Bart'), 'funny', 'mamy'), join()),
-    expectedResult: contains('funny,mamy,mamy')
+    calculate: pipeline(
+      '%$personWithChildren/children%',
+      If(equals('%name%', 'Bart'), 'funny', 'mamy'),
+      join()
+    ),
+    expectedResult: equals('funny,mamy,mamy')
   })
 })
 
@@ -153,9 +158,7 @@ component('dataTest.assign', {
 })
 
 component('dataTest.obj', {
-  impl: dataTest(pipeline(obj(prop('a', 1), prop('b', 2)), '%a%-%b%', `
-%%
-`, {'$': 'object', res: '%%'}, '%res%'), contains('1-2'))
+  impl: dataTest(pipeline(obj(prop('a', 1), prop('b', 2)), '%a%-%b%'), equals('1-2'))
 })
 
 component('dataTest.jbartExpression.select', {
@@ -182,4 +185,28 @@ component('dataTest.unique', {
   impl: dataTest(pipeline('%$people%', unique('%male%'), count()), equals(2))
 })
 
+component('convertGradeToDescription', {
+  params: [
+    {id: 'grade', as: 'number', mandatory: true, defaultValue: '%%'}
+  ],
+  impl: pipeline(
+    '%$grade%',
+    Switch({
+      cases: [
+        Case(range(1, 60), 'Fail'),
+        Case(range(60, 70), 'Pass'),
+        Case(range(70, 80), 'Good'),
+        Case(range(80, 90), 'Very Good'),
+        Case(range(90, 101), 'Excellent')
+      ],
+      default: 'Invalid grade'
+    })
+  )
+})
 
+component('dataTest.convertGradeToDescription', {
+  impl: dataTest({
+    calculate: pipeline(list(95,85,72,65,55,-5), convertGradeToDescription('%%'), join()),
+    expectedResult: equals('Excellent,Very Good,Good,Pass,Fail,Invalid grade')
+  })
+})

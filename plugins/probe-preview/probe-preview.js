@@ -16,17 +16,18 @@ component('circuit', {
 component('probePreviewWorker', {
   type: 'jbm<jbm>',
   params: [
-    {id: 'sourceCode', type: 'source-code<loader>', defaultValue: probePreviewWorker()},
+    {id: 'sourceCode', type: 'source-code<loader>', defaultValue: sourceCodeByTgpPath('%$probe/defaultMainCircuit%')},
     {id: 'id', defaultValue: 'wProbe'}
   ],
-  impl: worker('%$id%', { sourceCode: '%$sourceCode%', init: probe.initPreview() })
+  impl: worker(probe.idOfSourceCode('%$sourceCode%'), { sourceCode: '%$sourceCode%', init: probe.initPreview() })
 })
 
-component('probePreviewWorker', {
-  type: 'source-code<loader>',
+component('probe.idOfSourceCode', {
+  type: 'data<>',
   params: [
+    {id: 'sourceCode', type: 'source-code<loader>'},
   ],
-  impl: If('%$uiTest%', treeShakeClient(), sourceCode(plugins(() => jb.sourceCode.plugins.join(','))))
+  impl: (ctx,sourceCode) => JSON.stringify(sourceCode).replace(/\*/g,'ALL').replace(/[^a-zA-Z\-]/g,'')
 })
 
 component('probe.restartPreviewWorker', {
@@ -39,63 +40,66 @@ component('suggestions.calcFromProbePreview', {
   moreTypes: 'picklist.options<>',
   params: [
     {id: 'probePath', as: 'string'},
-    {id: 'expressionOnly', as: 'boolean', type: 'boolean'},
+    {id: 'expressionOnly', as: 'boolean', type: 'boolean', byName: true},
     {id: 'input', defaultValue: '%%'},
-    {id: 'forceLocal', as: 'boolean', description: 'do not use remote preview', type: 'boolean'},
     {id: 'sessionId', as: 'string', defaultValue: '%$$dialog.cmpId%', description: 'run probe only once per session'},
-    {id: 'require', as: 'string'}
+    {id: 'circuitPath', as: 'string', defaultValue: '%$probe/defaultMainCircuit%'},
   ],
   impl: remote.data({
     calc: probe.suggestions('%$probePath%', '%$expressionOnly%', '%$input%', '%$sessionId%'),
     jbm: If({
       condition: ({},{},{input,forceLocal}) => forceLocal  || !new jb.probe.suggestions(jb.val(input)).inExpression(),
       then: jbm.self(),
-      Else: probePreviewWorker()
-    }),
-    //require: '%$require%'
+      Else: probePreviewWorker(sourceCodeByTgpPath('%$circuitPath%'))
+    })
   })
-})
-
-component('probe.remoteCircuitPreview2', {
-  params: [
-    {id: 'jbm', type: 'jbm<jbm>', defaultValue: probePreviewWorker()}
-  ],
-  type: 'control',
-  impl: probe.circuitPreview()
 })
 
 component('probe.remoteCircuitPreview', {
   params: [
-    {id: 'jbm', type: 'jbm<jbm>', defaultValue: probePreviewWorker()}
+    {id: 'circuitPath', as: 'string', mandatory: 'true'}
   ],
   type: 'control',
-  impl: If(probe.circuitPreviewRequiresMainThread(), probe.circuitPreview(), remote.widget(probe.circuitPreview(), '%$jbm%'))
+  impl: If({
+    condition: probe.circuitPreviewRequiresMainThread('%$circuitPath%'),
+    then: probe.circuitPreview('%$circuitPath%'),
+    Else: remote.widget({
+      control: probe.circuitPreview('%$circuitPath%'),
+      jbm: probePreviewWorker(sourceCodeByTgpPath('%$circuitPath%'))
+    })
+  })
 })
 
 component('probe.circuitPreviewRequiresMainThread', {
   type: 'boolean',
-  impl: ctx => {
-    const _circuit = ctx.exp('%$probe/defaultMainCircuit%')
-    return jb.utils.prettyPrint(jb.utils.resolveCompWithId(_circuit,{silent: true}),{noMacros: true})
+  params: [
+    {id: 'circuitPath', as: 'string', mandatory: 'true'}
+  ],  
+  impl: (ctx,circuitPath) => {
+    const _circuit = circuitPath
+    return jb.utils.prettyPrint(jb.utils.resolveCompWithId(_circuit ),{noMacros: true})
       .indexOf('uiFrontEndTest') != -1
   }
 })
 
 component('probe.circuitPreview', {
   type: 'control',
+  params: [
+    {id: 'circuitPath', as: 'string', mandatory: 'true'}
+  ],  
   impl: group({
-    controls: ctx => { 
-        const _circuit = ctx.exp('%$probe/defaultMainCircuit%')
+    controls: (ctx,{},{circuitPath}) => { 
+        const _circuit = circuitPath
         const circuit = (jb.path(jb.utils.resolveCompWithId(_circuit,{silent: true}),'impl.$') || '').match(/Test/) 
           ? { $: 'control<>test.showTestInStudio', testId: _circuit, controlOnly: true} : { $: _circuit }
-        jb.log('probe circuit',{circuit, ctx})
+        jb.log('probe preview circuit',{circuit, ctx})
         return circuit && circuit.$ && ctx.run(circuit)
     },
     features: [
-      If({
-        condition: ctx => !jb.utils.resolveCompWithId(ctx.exp('%$probe/defaultMainCircuit%'),{silent: true}),
-        then: group.wait(treeShake.getCodeFromRemote('%$probe/defaultMainCircuit%'))
-      }),
+      // If({
+      //   condition: ctx => !jb.utils.resolveCompWithId(ctx.exp('%$probe/defaultMainCircuit%'),{silent: true}),
+      //   then: group.wait(treeShake.getCodeFromRemote('%$probe/defaultMainCircuit%'))
+      // }),
       watchRef('%$probe/scriptChangeCounter%'),
       variable('$previewMode', true)
     ]
@@ -109,16 +113,15 @@ component('probe.initPreview', {
     Var('dataResources', () => jb.studio && jb.studio.projectCompsAsEntries().map(e=>e[0]).filter(x=>x.match(/^dataResource/)).join(',')),
     remote.action(treeShake.getCodeFromRemote('%$dataResources%'), '%$jbm%'),
     remote.shadowResource('probe', '%$jbm%'),
+    log('probe init preview'),
     rx.pipe(
       watchableComps.scriptChange(),
       rx.log('preview probe change script'),
       rx.map(obj(prop('op', '%op%'), prop('path', '%path%'))),
       rx.var('cssOnlyChange', tgp.isCssPath('%path%')),
-      sink.action(
-        remote.action(probe.handleScriptChangeOnPreview('%$cssOnlyChange%'), '%$jbm%', {
-          oneway: true
-        })
-      )
+      sink.action(remote.action(probe.handleScriptChangeOnPreview('%$cssOnlyChange%'), '%$jbm%', {
+        oneway: true
+      }))
     )
   )
 })
@@ -136,7 +139,7 @@ component('probe.handleScriptChangeOnPreview', {
         if (!jb.comps[path[0]])
             return jb.logError(`handleScriptChangeOnPreview - missing comp ${path[0]}`, {path, ctx})
         handler.makeWatchable(path[0])
-        jb.log('probe handleScriptChangeOnPreview doOp',{ctx,op,path})
+        jb.log('probe preview handleScriptChangeOnPreview doOp',{ctx,op,path})
         if (op.$set) jb.utils.resolveProfile(op.$set)
         handler.doOp(handler.refOfPath(path), op, ctx)
         //jb.utils.resolveProfile(jb.comps[path[0]])
@@ -144,7 +147,7 @@ component('probe.handleScriptChangeOnPreview', {
         const headlessWidgetId = Object.keys(jb.ui.headless)[0]
         const headless = jb.ui.headless[headlessWidgetId]
         if (!headless)
-            return jb.logError(`handleScriptChangeOnPreview - missing headless ${headlessWidgetId} at ${jb.uri}`, {path, ctx})
+            return jb.logError(`probe preview handleScriptChangeOnPreview - missing headless ${headlessWidgetId} at ${jb.uri}`, {path, ctx})
         if (cssOnlyChange) {
             let featureIndex = path.lastIndexOf('features')
             if (featureIndex == -1) featureIndex = path.lastIndexOf('layout')
@@ -157,7 +160,7 @@ component('probe.handleScriptChangeOnPreview', {
             const ref = ctx.exp('%$probe/scriptChangeCounter%','ref')
             const newVal = +jb.val(ref)+1
             jb.db.writeValue(ref, newVal ,ctx.setVars({headlessWidget: true}))
-            jb.log('probe handleScriptChangeOnPreview increaseScriptChangeCounter',{ctx,newVal})
+            jb.log('probe preview handleScriptChangeOnPreview increaseScriptChangeCounter',{ctx,newVal})
         }
     }
 })
@@ -171,7 +174,8 @@ component('probe.propertyPrimitive', {
     databind: tgp.ref('%$path%'),
     features: [
       feature.onKey('Right', suggestions.applyOption('/')),
-      editableText.picklistHelper(suggestions.calcFromProbePreview('%$path%', true), {
+      editableText.picklistHelper({
+        options: suggestions.calcFromProbePreview('%$path%', { expressionOnly: true }),
         picklistFeatures: picklist.allowAsynchOptions(),
         showHelper: suggestions.shouldShow(true),
         onEnter: suggestions.applyOption()

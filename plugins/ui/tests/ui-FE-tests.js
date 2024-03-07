@@ -167,3 +167,5 @@ component('FETest.editableText.richPicklistHelper.setInput', {
 //     expectedResult: pipeline(ctx => jb.ui.cssOfSelector('#label',ctx), contains('color: green'))
 //   })
 // })
+
+

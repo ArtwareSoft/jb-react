@@ -40,7 +40,7 @@ component('sourceCode', {
   type: 'source-code',
   params: [
     {id: 'pluginsToLoad', type: 'plugins-to-load[]', flattenArray: true},
-    {id: 'pluginPackages', type: 'plugin-package[]', flattenArray: true, defaultValue: defaultPackage()},
+    {id: 'pluginPackages', type: 'plugin-package[]', flattenArray: true}, // , defaultValue: defaultPackage()
     {id: 'libsToInit', as: 'string', description: 'empty means load all libraries'},
     {id: 'actualCode', as: 'string', description: 'alternative to plugins'}
   ],
@@ -50,6 +50,20 @@ component('sourceCode', {
     ...(libsToInit ? {libsToInit} : {}),
     ...(actualCode ? {actualCode} : {}),
   })
+})
+
+component('sourceCodeByTgpPath', {
+  type: 'source-code',
+  params: [
+    {id: 'tgpPath', as: 'string', mandatory: true},
+    {id: 'tgpModel'}
+  ],
+  impl: sourceCode(
+    plugins(({},{},{tgpModel, tgpPath}) => {
+    const comps = tgpModel ? tgpModel.comps : jb.comps
+    return jb.path(comps[tgpPath.split('~')[0]],'$plugin') || ''
+  })
+  )
 })
 
 component('extend', {
@@ -149,7 +163,7 @@ component('jbStudioServer', {
   params: [
     {id: 'repo', as: 'string'}
   ],
-  impl: ctx => repo && ({ $: 'jbStudioServer', ...ctx.params })
+  impl: (ctx,repo) => repo && ({ $: 'jbStudioServer', ...ctx.params })
 })
 
 component('fileSystem', {

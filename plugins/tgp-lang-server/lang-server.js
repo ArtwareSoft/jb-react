@@ -110,7 +110,7 @@ component('langServer.studioCircuitUrl', {
     Var('sourceCode', sourceCode.encodeUri(
       typeAdapter('source-code<loader>', probeServer('%$compProps/filePath%', 'studio'))
     )),
-    Var('spyParams', spy.paramForTest('%$compProps/circuitOptions/0/id%')),
+    Var('spyParams', test.calcSpyParamForTest('%$compProps/circuitOptions/0/id%')),
     'http://localhost:8082/project/studio/%$compProps/circuitOptions/0/id%/%$compProps/path%?sourceCode=%$sourceCode%&spy=%$spyParams%',
     first()
   )
@@ -121,7 +121,7 @@ component('langServer.testUrl', {
     {id: 'compProps', defaultValue: '%%'}
   ],
   impl: pipeline(
-    Var('spyParams', spy.paramForTest('%$compProps/circuitOptions/0/id%')),
+    Var('spyParams', test.calcSpyParamForTest('%$compProps/circuitOptions/0/id%')),
     'http://localhost:8082/hosts/tests/tests.html?test=%$compProps/circuitOptions/0/shortId%&show&spy=%$spyParam%',
     first()
   )
@@ -135,7 +135,7 @@ component('langServer.runCtxOfRemoteCmdUrl', {
     Var('sourceCode', sourceCode.encodeUri(
       typeAdapter('source-code<loader>', probeServer('%$compProps/filePath%'))
     )),
-    Var('spyParams', spy.paramForTest('%$compProps/circuitOptions/0/id')),
+    Var('spyParams', test.calcSpyParamForTest('%$compProps/circuitOptions/0/id')),
     langServer.probe(),
     encodeJsonAsUri('%result.0.in%'),
     'http://localhost:8082/hosts/tests/runCtx.html?runCtx=%%&sourceCode=%$sourceCode%&spy=%$spyParams%',

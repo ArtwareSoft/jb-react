@@ -9,7 +9,9 @@ component('studio.propertyPrimitive', {
     style: editableText.studioPrimitiveText(),
     features: [
       feature.onKey('Right', suggestions.applyOption('/')),
-      editableText.picklistHelper(suggestions.calcFromProbePreview('%$path%', true), studio.suggestionList(), {
+      editableText.picklistHelper({
+        options: suggestions.calcFromProbePreview('%$path%', { expressionOnly: true }),
+        picklistStyle: studio.suggestionList(),
         picklistFeatures: picklist.allowAsynchOptions(),
         showHelper: suggestions.shouldShow(true),
         onEnter: suggestions.applyOption()
@@ -47,12 +49,10 @@ component('studio.jbFloatingInput', {
       button('choose icon', studio.openPickIcon('%$path%'), {
         style: button.mdcIcon(),
         features: [
-          feature.if(
-            and(
-              inGroup(list('feature.icon','icon'), tgp.compName(tgp.parentPath('%$path%'))),
-              equals('icon', pipeline(tgp.paramDef('%$path%'), '%id%'))
-            )
-          ),
+          feature.if(and(
+            inGroup(list('feature.icon','icon'), tgp.compName(tgp.parentPath('%$path%'))),
+            equals('icon', pipeline(tgp.paramDef('%$path%'), '%id%'))
+          )),
           css.transformScale('1', '0.8'),
           css.margin('15'),
           feature.icon('all_out')

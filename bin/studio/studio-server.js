@@ -276,9 +276,19 @@ const op_post_handlers = {
         return endWithFailure(res,e)
       }
     }
-};
+}
 
 const base_get_handlers = {
+  package: (req,res) => {
+    const plugins = (req.url.split('/')[2] || '').split('.js')[0]
+    const project = (req.url.split('/')[3] || '').split('.js')[0]
+    const arg = project ? `-sourcecode:${JSON.stringify({projects:[project], plugins: (plugins||'').split(',')})}` : `-plugins:${plugins}`
+    const escapedArg = arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg}'`
+    res.setHeader('Content-Type', 'application/javascript;charset=utf8')
+    const srvr = child.spawn('node',['./jb-pack.js', arg],{cwd: 'hosts/node'})
+    srvr.stdout.on('data', path => serveFile(req,res,''+path))
+    srvr.on('error', (e) => res.end(JSON.stringify({error: `${''+e}`})))  
+  },
   'studio-bin': (req,res) =>
     file_type_handlers.html(req,res,`${jbReactDir}bin/studio/studio-bin.html`),
   notebook: (req,res) => 
@@ -403,14 +413,17 @@ const op_get_handlers = {
       }
       function fileContent(_path) {
         const content = fs.readFileSync(_path,'utf-8')
-        const path = unRepo(_path)
-        return { 
-          path : path.match(/^\./) ? path.slice(1) : path,
-          dsl: unique(content.split('\n').map(l=>(l.match(/^(jb.)?dsl\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0]))[0],
-          pluginDsl: unique(content.split('\n').map(l=>(l.match(/^(jb.)?pluginDsl\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0]))[0],
-          ns: unique(content.split('\n').map(l=>(l.match(/^(jb.)?component\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0])),
-          libs: unique(content.split('\n').map(l=>(l.match(/^(jb.)?extension\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0])),
-          using: unique(content.split('\n').map(l=>(l.match(/^(jb.)?using\('([^)]+)/) || ['',''])[2]).filter(x=>x).map(x=>x.replace(/'/g,''))
+        const path1 = unRepo(_path)
+        const path = path1.match(/^\./) ? path1.slice(1) : path1
+        const lines = content.split('\n')
+        return {
+            path,
+            dsl: unique(lines.map(l=>(l.match(/^(jb.)?dsl\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0]))[0],
+            pluginDsl: unique(lines.map(l=>(l.match(/^(jb.)?pluginDsl\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0]))[0],
+            //comp_locations: lines.map((l,line)=>[(l.match(/^(jb.)?component\('([^']+)/) || ['',''])[2],line]).filter(x=>x[0]),
+            ns: unique(lines.map(l=>(l.match(/^(jb.)?component\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0])),
+            libs: unique(lines.map(l=>(l.match(/^(jb.)?extension\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0])),
+            using: unique(lines.map(l=>(l.match(/^(jb.)?using\('([^)]+)/) || ['',''])[2]).filter(x=>x).map(x=>x.replace(/'/g,''))
             .flatMap(x=>x.split(',').map(x=>x.trim()))),
         }
       }
@@ -629,7 +642,7 @@ function writeToCmdLog(fn,content) {
 }
 
 http.createServer(serve).listen(settings.port)
-http.createServer(serve).listen(settings.ports.nodeContainer)
+//http.createServer(serve).listen(settings.ports.nodeContainer)
 
 if (settings.https) {
   const https = require('https')
@@ -645,4 +658,4 @@ if (process.cwd().indexOf('jb-react') != -1)
 else
   console.log(`studio url: http://localhost:${settings.port}/studio-bin`)
 
-console.log(`nodeContainer url: http://localhost:${settings.ports.nodeContainer}/?op=createNodeWorker&clientUri=mukki`)
+//console.log(`nodeContainer url: http://localhost:${settings.ports.nodeContainer}/?op=createNodeWorker&clientUri=mukki`)

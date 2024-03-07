@@ -24,7 +24,7 @@ const [main,_plugins,project,wrap,uri,dsl,verbose,runCtx,spy,resultAsText,doNotS
 if (!main && !runCtx) {
     console.log(`usage: jb.js - example: jb.js -main:pipeline(list(1,2),join()) -plugins:common -text
     -script:dist/myScript.jb // script file with all the params string with #
-    -main:button("hello") // profile to run. mandatory or use runCtx.
+    -main:pipline("hello") // profile to run. mandatory or use runCtx.
     -wrap:prune(MAIN) // optional. profile that wraps the 'main' profile
     -sourceCode:{ "project": ["studio"], "plugins": ["*"] } // "libsToinit" :"lib1,lib2"
     -spy: 'remote' // optional default is 'error'
@@ -68,7 +68,7 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
     if (verbose)
         console.log(JSON.stringify({params, vars}))
 
-    const wrapperCode = wrap ? `component('wrapperToRun', { impl: ${wrap.replace(/MAIN/g,"{$: 'data<>mainToRun'}")} })` : ''
+    const wrapperCode = wrap ? `component('wrapperToRun', { type: 'any', impl: ${wrap.replace(/MAIN/g,"{$$: 'any<>mainToRun'}")} })` : ''
     const mainCmpId = main.split('(')[0]
     const mainShortId = mainCmpId.split('>').pop()
     const dslType = mainCmpId.indexOf('<') != -1 ? mainCmpId.split('>')[0] + '>'
@@ -78,7 +78,7 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
     const withTypeAdapter = `typeAdapter('${dslType}',${fixedMain})`
     const code = `
     const params = {${params.map(p=>`${p[0]}: ${p[1].match(/\(|{|"/) ? p[1] : `"${p[1]}"` }`).join(', ')} }
-    component('mainToRun', { impl: ${withTypeAdapter} })
+    component('mainToRun', { type: 'any', impl: ${withTypeAdapter} })
     Object.assign(jb.core.unresolvedProfiles[0].comp.impl,params)
     ${wrapperCode}
 `
@@ -88,7 +88,7 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
     if (err)
         return console.log(JSON.stringify({error: { desc: 'can not resolve profile', err }}))
     
-    await runAndEmitResult(() => jb.utils.resolveDelayed(new jb.core.jbCtx().setVars(vars).run({$: compId})))
+    await runAndEmitResult(() => jb.utils.resolveDelayed(new jb.core.jbCtx().setVars(vars).run({$$: `any<>${compId}`})))
 
     async function runAndEmitResult(f) {
         let res = null, exception = null
@@ -114,7 +114,7 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
 })()
 
 function calcParamsAndVars() {
-    const params = jb.path(jb.utils.resolveCompWithId(main.split('(')[0]),'params') || []
+    const params = jb.path(jb.utils.resolveCompWithId(main.split('(')[0],{silent: true}),'params') || []
     const all = process.argv.filter(arg=>arg.indexOf('%') == 0).map(x=>splitColon(x.slice(1)))
     let vars = {}
     all.filter(p=>!isParam(p[0])).forEach(v=>{

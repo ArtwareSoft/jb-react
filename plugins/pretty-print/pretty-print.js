@@ -311,7 +311,7 @@ extension('utils', 'prettyPrint', {
       if (typeof val === 'function' && val[jb.macro.isMacro]) return calcObjProps(val(), path)
       if (typeof val === 'function') return funcProps(val, path)
   
-      if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
+      if (typeof val === 'string' && val.indexOf("'") == -1)
         return stringValProps(JSON.stringify(val).slice(1,-1).replace(/\\"/g,'"'), "'", path)
       else if (typeof val === 'string')
         return stringValProps(val.replace(/`/g,'\\`').replace(/\$\{/g, '\\${'), "`", path)

@@ -80,7 +80,7 @@ component('cCommerce.scatter', {
                           {$: 'match-regex', text: '%%', regex: '([A-Za-z]+)-core' }, 
                           {$: 'last' }, 
                           {$: 'unique', id: '%%', items: '%%' }, 
-                          {$: 'data.switch', 
+                          {$: 'switch', 
                             cases: [
                               { condition: "%% == 'Dual'", value: '1.6' }, 
                               { condition: "%% == 'Quad'", value: '2' }, 

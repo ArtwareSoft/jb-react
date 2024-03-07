@@ -7,7 +7,7 @@ extension('tgpTextEditor', {
     evalProfileDef(id, code, pluginId, fileDsl, tgpModel, { cursorPos, fixed, forceLocalSuggestions } = {}) {
         const plugin = jb.path(tgpModel, ['plugins', pluginId])
         const proxies = jb.path(plugin, 'proxies') ? jb.objFromEntries(plugin.proxies.map(id => jb.macro.registerProxy(id))) : jb.macro.proxies
-        const context = { jb, ...proxies, dsl: x => jb.dsl(x), component: (...args) => jb.component(...args, { plugin, fileDsl }) }
+        const context = { jb, ...proxies, dsl: x => jb.dsl(x), component: (id,comp) => jb.component(id,comp, { plugin, fileDsl }) }
         try {
             const f = eval(`(function(${Object.keys(context)}) {return ${code}\n})`)
             const res = f(...Object.values(context))

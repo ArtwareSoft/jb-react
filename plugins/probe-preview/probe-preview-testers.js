@@ -1,9 +1,10 @@
-component('remoteSuggestionsTest', {
+component('probePreviewSuggestionsTest', {
   type: 'test',
   params: [
+    {id: 'path', as: 'string'},
     {id: 'expression', as: 'string'},
+    {id: 'circuitPath', as: 'string'},
     {id: 'selectionStart', as: 'number', defaultValue: -1},
-    {id: 'path', as: 'string', defaultValue: 'control<>suggestionsTest.defaultProbe~impl~text'},
     {id: 'expectedResult', type: 'boolean', dynamic: true, as: 'boolean'}
   ],
   impl: dataTest({
@@ -13,15 +14,13 @@ component('remoteSuggestionsTest', {
           prop('value', '%$expression%'),
           prop('selectionStart', ({},{},{expression, selectionStart}) => selectionStart == -1 ? expression.length : selectionStart)
         ),
-        require: 'control<>suggestionsTest.defaultProbe'
+        circuitPath: '%$circuitPath%'
       }),
       log('suggestions test', obj(prop('result', '%%'))),
       '%options/text%',
       join(',')
     ),
     expectedResult: call('expectedResult'),
-    runBefore: remote.copyPassiveData('people', probePreviewWorker()),
     timeout: 1000
-  }),
-  require: 'control<>suggestionsTest.defaultProbe'
+  })
 })

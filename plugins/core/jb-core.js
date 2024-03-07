@@ -1,5 +1,5 @@
 Object.assign(jb, {
-  extension(plugin, libId, p1 , p2) {
+  extension(libId, p1 , p2,{plugin,path,lineInPackage}={}) {
     const extId = typeof p1 == 'string' ? p1 : 'main'
     const extension = p2 || p1
     const lib = jb[libId] = jb[libId] || {__extensions: {} }
@@ -10,7 +10,7 @@ Object.assign(jb, {
       extension[k].__initFunc = extension.initExtension && `#${libId}.__extensions.${extId}.init`
     })
     funcs.forEach(k=>lib[k] = extension[k])
-    const location = jb.calcSourceLocation(new Error().stack.split(/\r|\n/).slice(2), plugin)
+    const location = jb.calcSourceLocation(new Error().stack.split(/\r|\n/).slice(2), plugin,path,lineInPackage)
     const phase =  extension.$phase || { core: 1, utils: 5, db: 10, watchable: 20}[libId] || 100
     if (extension.initExtension) 
       extension.initExtension.requireFuncs = extension.$requireFuncs
@@ -40,10 +40,20 @@ Object.assign(jb, {
     const libsToLoad = libs.flatMap(l => Object.values(jb[l].__extensions))
       .flatMap(ext => (ext.requireLibs || []).filter(url => !jb.__requiredLoaded[url]).map(url=>({url,plugin: ext.plugin})) )
     try {
-      await Promise.all(libsToLoad.map( ({url,plugin}) => Promise.resolve(jb.loadjbFile(url,jb,{noSymbols: true, plugin}))
+      await Promise.all(libsToLoad.map( ({url,plugin}) => Promise.resolve(loadLib(url,plugin))
         .then(() => jb.__requiredLoaded[url] = true) ))
     } catch (e) {
       jb.logException(e,'initializeLibs: error loading external library', {libsToLoad, libs})
+    }
+
+    async function loadLib(url,plugin) {
+      const codePackage = plugin.codePackage || jbHost.codePackageFromJson()
+      try {
+        const code = await codePackage.fetchFile(url)
+        eval(code)
+      } catch(e) {
+        jb.logError('error loading library',{url,plugin})
+      }
     }
   },
   initializeTypeRules(libs) {
@@ -56,25 +66,28 @@ Object.assign(jb, {
         return ext.typeRules||[]
       })]
   },
-  calcSourceLocation(errStack,plugin) {
+  calcSourceLocation(errStack,plugin,_path,lineInPackage) {
     try {
         const line = errStack.map(x=>x.trim()).filter(x=>x && !x.match(/^Error/) && !x.match(/at Object.component|at component|at extension/)).shift()
         const location = line ? (line.split('at ').pop().split('eval (').pop().split(' (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
         location[0] = location[0].split('?')[0]
         if (location[0].match(/jb-loader.js/)) debugger
-        return { repo: ((plugin || {}).codePackage || {}).repo||'', path: location[0], line: location[1] }
+        const path = _path || location[0]
+        return { repo: ((plugin || {}).codePackage || {}).repo||'', path, line: location[1] - (lineInPackage || 0) }
     } catch(e) {
       console.log(e)
     }      
   },
-  component(id,comp,{plugin, fileDsl} = {}) {
+  component(id,comp,{plugin, fileDsl,path,lineInPackage} = {}) {
     if (!jb.core.CT) jb.initializeLibs(['core']) // this line must be first
     plugin = plugin || jb.plugins[comp.$plugin] || {}
     comp.$comp = true
     comp.$fileDsl = comp.$fileDsl || fileDsl || ''
     comp.$plugin = comp.$plugin || plugin.id || ''
     comp.$dsl = comp.$dsl || fileDsl || plugin.dsl || ''
-    comp.$location = comp.$location || jb.calcSourceLocation(new Error().stack.split(/\r|\n/), plugin) || ''
+    // const line = (comp_locations && comp_locations.find(x=>x[0] == id) || [])[1]
+    // if (line !== null) comp.$location = {line, path}
+    comp.$location = comp.$location || jb.calcSourceLocation(new Error().stack.split(/\r|\n/), plugin,path,lineInPackage) || ''
 
     if (comp.type == 'any')
       jb.core.genericCompIds[id] = true
@@ -88,6 +101,12 @@ Object.assign(jb, {
     if (comp.isSystem || comp.isMacro)
       jb.comps[id] = comp
     return comp
+  },
+  createPlugins(plugins) {
+    jbHost.defaultCodePackage = jbHost.defaultCodePackage || jbHost.codePackageFromJson()
+    plugins.forEach(plugin=> {
+      this.plugins[plugin.id] = this.plugins[plugin.id] || { ...plugin, codePackage : jbHost.defaultCodePackage }
+    })
   },
   dsl() {},
   pluginDsl() {},

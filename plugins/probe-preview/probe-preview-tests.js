@@ -9,25 +9,32 @@ component('sampleProject.main', {
   })
 })
 
-component('suggestionsTest.varsFilter.remote', {
-  impl: remoteSuggestionsTest('%$p', {
+component('workerPreviewTest.suggestions.varsFilter', {
+  doNotTerminateWorkers: true,
+  impl: probePreviewSuggestionsTest('control<>sampleProject.main~impl~controls~0~text', '%$p', {
+    circuitPath: 'control<>sampleProject.main',
     expectedResult: and(contains('$people'), not(contains('$win')))
   })
 })
 
 component('workerPreviewTest.basic', {
-  impl: uiTest(probe.remoteCircuitPreview(), contains('hello'), {
-    runBefore: writeValue('%$probe/defaultMainCircuit%', 'control<>sampleProject.main'),
+  doNotTerminateWorkers: true,
+  impl: uiTest(probe.remoteCircuitPreview('control<>sampleProject.main'), contains('hello'), {
     uiAction: waitForText('hello'),
     timeout: 3000
   })
 })
 
 component('workerPreviewTest.changeScript', {
-  impl: uiTest(probe.remoteCircuitPreview(), contains('world'), {
+  doNotTerminateWorkers: true,
+  impl: uiTest(probe.remoteCircuitPreview('control<>sampleProject.main'), contains('world'), {
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'control<>sampleProject.main'),
-    uiAction: uiActions(writeValue(tgp.ref('control<>sampleProject.main~impl~controls~0~text'), 'world'), waitForText('world')),
-    timeout: 1000
+    uiAction: uiActions(
+      waitForText('hello'),
+      writeValue(tgp.ref('control<>sampleProject.main~impl~controls~0~text'), 'hello world'),
+      waitForText('world')
+    ),
+    timeout: 3000
   })
 })
 
@@ -51,40 +58,51 @@ component('workerPreviewTest.changeScript', {
 //   require: sampleProject.main()
 // })
 
-component('uiTest.workerPreviewTest.addCss', {
+component('workerPreviewTest.addCss', {
+  doNotTerminateWorkers: true,
   impl: uiTest({
     control: group(
       button('change script', writeValue({
         to: tgp.ref('control<>sampleProject.main~impl~controls~0~features~1'),
         value: () => ({$:'feature<>css', css: 'color: green'})
       })),
-      probe.remoteCircuitPreview()
+      probe.remoteCircuitPreview('control<>sampleProject.main')
     ),
     expectedResult: contains('color: green'),
-    runBefore: writeValue('%$probe/defaultMainCircuit%', 'control<>sampleProject.main'),
-    uiAction: click(),
+    uiAction: uiActions(waitForText('hello'), click()),
     useFrontEnd: true
   })
 })
 
-component('uiTest.workerPreviewTest.changeCss', {
+component('workerPreviewTest.changeCss', {
+  doNotTerminateWorkers: true,
   impl: uiTest({
     control: group(
-      button({
-        title: 'change script',
-        action: writeValue(tgp.ref('control<>sampleProject.main~impl~controls~0~features~1'), () => ({$:'feature<>css', css: 'color: blue'}))
-      }),
-      probe.remoteCircuitPreview()
+      button('change script', writeValue({
+        to: tgp.ref('control<>sampleProject.main~impl~controls~0~features~1'),
+        value: () => ({$:'feature<>css', css: 'color: blue'})
+      })),
+      probe.remoteCircuitPreview('control<>sampleProject.main')
     ),
-    expectedResult: ctx => Object.values(jb.ui.FEEmulator[ctx.vars.widgetId].styles).join(';').indexOf('color: blue') != -1,
+    expectedResult: contains('color: blue'),
     runBefore: runActions(
-      writeValue('%$probe/defaultMainCircuit%', 'control<>sampleProject.main'),
-      writeValue(tgp.ref('control<>sampleProject.main~impl~controls~0~features~1'), () => ({$:'feature<>css', css: 'color: green'}))
+      writeValue({
+        to: tgp.ref('control<>sampleProject.main~impl~controls~0~features~1'),
+        value: () => ({$:'feature<>css', css: 'color: green'})
+      })
     ),
-    uiAction: click(),
+    uiAction: uiActions(waitForText('hello'), click()),
     useFrontEnd: true
   })
 })
+
+    // runBefore: runActions(
+    //   writeValue('%$probe/defaultMainCircuit%', 'control<>sampleProject.main'),
+    //   writeValue({
+    //     to: tgp.ref('control<>sampleProject.main~impl~controls~0~features~1'),
+    //     value: () => ({$:'feature<>css', css: 'color: green'})
+    //   })
+    // ),
 
 
 // component('previewTest.childJbm', {

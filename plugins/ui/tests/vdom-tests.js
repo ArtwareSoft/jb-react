@@ -77,3 +77,4 @@ component('uiTest.applyVdomDiff.TableTo.toAppendInTheMiddle', {
     })
   })
 })
+

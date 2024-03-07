@@ -131,20 +131,21 @@ extension('test', {
 		}
 	},
 	async runSingleTest(testID,{doNotcleanBeforeRun, showOnlyTest,fullTestId} = {}) {
+		const profile = jb.comps[fullTestId]
+		const singleTest = jb.test.singleTest
 		const tstCtx = (jb.ui ? jb.ui.extendWithServiceRegistry() : new jb.core.jbCtx())
-			.setVars({ testID, fullTestId,singleTest: jb.test.singleTest })
+			.setVars({ testID, fullTestId,singleTest })
 		const start = new Date().getTime()
-		await !doNotcleanBeforeRun && jb.test.cleanBeforeRun()
+		await !doNotcleanBeforeRun && !singleTest && jb.test.cleanBeforeRun()
 		jb.log('start test',{testID})
 		const res = await tstCtx.run({$:fullTestId})
 		res.duration = new Date().getTime() - start
 		jb.log('end test',{testID,res})
-		if (!jb.test.singleTest)
+		if (!singleTest && !profile.doNotTerminateWorkers)
 			await jb.jbm.terminateAllChildren(tstCtx)
 		jb.ui && jb.ui.garbageCollectUiComps({forceNow: true,clearAll: true ,ctx: tstCtx})
 
 		res.show = () => {
-			const profile = jb.comps[fullTestId]
 			if (!profile.impl.control) return
 			const doc = jb.frame.document
 			if (!doc) return

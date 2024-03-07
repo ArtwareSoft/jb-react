@@ -99,7 +99,7 @@ component('studio.openNewDataSource', {
         compContent: obj(
           prop({
             name: '%$watchableOrPassive%Data',
-            val: data.switch(data.case('%$dialogData/type%==text', ''), data.case('%$dialogData/type%==array', '[]'))
+            val: Switch(Case('%$dialogData/type%==text', ''), Case('%$dialogData/type%==array', '[]'))
           })
         ),
         file: '%$dialogData/file%'
