@@ -128,13 +128,16 @@ component('vscodeWebView', {
 <head>
     <meta charset="UTF-8">
     <script type="text/javascript" src="${_jbBaseUrl}/plugins/loader/jb-loader.js"></script>
+    <script type="text/javascript" src="${_jbBaseUrl}/package/${sourceCode.plugins.join(',')}.js"></script>
     <script type="text/javascript" src="${_jbBaseUrl}/dist/codemirror.js"></script>
     <link rel="stylesheet" type="text/css" href="${_jbBaseUrl}/dist/css/codemirror.css"/>
 
     <script>
     jbHost.baseUrl = '${_jbBaseUrl}'
     ;(async () => {
-      globalThis.jb = await jbInit('${webViewUri}', ${JSON.stringify(sourceCode)})
+        globalThis.jb = await jbLoadPacked('${webViewUri}')
+        jb.baseUrl = '${_jbBaseUrl}'
+//      globalThis.jb = await jbInit('${webViewUri}', ${JSON.stringify(sourceCode)})
       globalThis.spy = jb.spy.initSpy({spyParam: 'remote,vscode'})
       jb.parent = jb.ports['${jb.uri}'] = jb.jbm.extendPortToJbmProxy(jb.vscode.portFromWebViewToExt('${webViewUri}','${jb.uri}'))
       jb.parent.remoteExec(jb.remoteCtx.stripJS(() => jb.jbm.notifyChildReady['${webViewUri}']() ), {oneway: true} )

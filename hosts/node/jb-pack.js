@@ -12,21 +12,23 @@ if (!sourceCodeStr) {
     process.exit(1)
 }
 
-make()
+const sourceCode = JSON.parse(sourceCodeStr)
+jbMake(sourceCode)
 
-async function make() {
-
-    const baseDir = `${jbHost.jbReactDir}/plugins`
+async function jbMake(sourceCode, {baseDir} = {}) {
+    baseDir = baseDir || `${jbHost.jbReactDir}/plugins`
     const latestModTime = getLatestModTime(baseDir)
+    const sourceCodeStr = JSON.stringify(sourceCode)
     const fn = sourceCodeStr.replace(/\*/g,'ALL').replace(/[^a-zA-Z\-]/g,'')
     const tempFilePath = `${jbHost.jbReactDir}/temp/pack-${fn}.js`
+    const fileModTime = fs.existsSync(tempFilePath) && fs.statSync(tempFilePath).mtime.getTime()
 
-    const tempIsValid = fs.existsSync(tempFilePath) && fs.statSync(tempFilePath).mtime.getTime() > latestModTime
-    const sourceCode = JSON.parse(sourceCodeStr)
+    const tempIsValid = fileModTime >= latestModTime
     try {
         let packedCode = ''
         if (!tempIsValid) {
-            const map = new SourceMapGenerator({ file: `package/${plugins}.js` })
+            fs.appendFileSync(`${jbHost.jbReactDir}/temp/jb-pack.log`, `temp not valid ${tempFilePath} dir: ${latestModTime} file: ${fileModTime}\n`);
+            const map = new SourceMapGenerator({ file: `package/${fn}.js` })
             const codeParts = await jbInit('jb-packer', sourceCode, {packOnly: true})
             ;[line,strArr] = codeParts.reduce(([line,strArr], {path,code}) => {
                 code = code.replace(/^jbLoadPackedFile\({lineInPackage: 0/,'jbLoadPackedFile({lineInPackage:'+(line+3))
@@ -55,12 +57,13 @@ async function make() {
         process.stderr.write('error')
         process.stderr.write(err.toString && err.toString())
     }
+
+    function getLatestModTime(dir) {
+        return fs.readdirSync(dir).reduce((latest, file) => {
+            const filePath = path.join(dir, file)
+            const stats = fs.statSync(filePath)
+            return Math.max(latest, stats.isDirectory() ? getLatestModTime(filePath) : stats.mtime.getTime())
+        }, 0)
+    }    
 }
 
-function getLatestModTime(dir) {
-    return fs.readdirSync(dir).reduce((latest, file) => {
-        const filePath = path.join(dir, file)
-        const stats = fs.statSync(filePath)
-        return Math.max(latest, stats.isDirectory() ? getLatestModTime(filePath) : stats.mtime.getTime())
-    }, 0)
-}

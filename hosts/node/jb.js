@@ -1,5 +1,9 @@
 const { jbHost } = require('./node-host.js')
 const { getProcessArgument } = jbHost
+const child = require('child_process')
+const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
+const vm = require('vm')
+const fs = require('fs')
 
 const scriptFN = getProcessArgument('script')
 const argsFromScript = {}
@@ -44,22 +48,21 @@ if (!main && !runCtx) {
 if (verbose)
     console.log(JSON.stringify(process.argv))
 
-const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
-
 ;(async () => {
     const cmd = ['node --inspect-brk ../hosts/node/jb.js', 
         ...process.argv.slice(2).map(arg=> (arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg}'`))].join(' ')
     const sourceCodeStr = doGetProcessArgument('sourceCode')
-    const sourceCode = sourceCodeStr ? JSON.parse(sourceCodeStr) 
-        : { plugins:_plugins ? _plugins.split(',') : [], project, pluginPackages: {$:'defaultPackage'} }
+    const sourceCode = sourceCodeStr ? JSON.parse(sourceCodeStr) : { plugins : _plugins }
+    sourceCode.plugins = unique([...sourceCode.plugins,'remote'])
 
-    globalThis.jb = await jbInit(uri||'main', sourceCode)
-    jb.spy.initSpy({spyParam: [spy,'error'].filter(x=>x).join(',')})
+    //globalThis.jb = await jbInit(uri||'main', sourceCode)    
+    globalThis.jb = await jbFromSourceCode(sourceCode,{uri: uri||'main'})
+    globalThis.spy = jb.spy.initSpy({spyParam: [spy,'error'].filter(x=>x).join(',')})
     // loading remote-context.js
-    const plugin = jb.plugins.remote
-    const fileSymbols = plugin.files.find(x=>x.path.match(/remote-context/))
-    await jb.loadjbFile(fileSymbols.path,jb,{fileSymbols,plugin})
-    await jb.initializeLibs(fileSymbols.libs)
+    // const plugin = jb.plugins.remote
+    // const fileSymbols = plugin.files.find(x=>x.path.match(/remote-context/))
+    // await jb.loadjbFile(fileSymbols.path,jb,{fileSymbols,plugin})
+    // await jb.initializeLibs(fileSymbols.libs)
 
     if (runCtx)
         return await runAndEmitResult(jb.remoteCtx.deStrip(JSON.parse(runCtx)))
@@ -155,4 +158,24 @@ function evalInContext(code, fileDsl) {
     } catch (e) { 
         return {err: e}
     } 
+}
+
+function unique(ar,f = (x=>x) ) {
+    const keys = {}, res = []
+    ar.forEach(e=>{ if (!keys[f(e)]) { keys[f(e)] = true; res.push(e) } })
+    return res
+}
+
+function jbFromSourceCode(sourceCode,{uri}={}) {
+    return new Promise(resolve=>{
+        const arg = `-sourcecode:${JSON.stringify(sourceCode)}`
+        const srvr = child.spawn('node',['./jb-pack.js', arg],{cwd: `${jbHost.jbReactDir}/hosts/node`})
+        srvr.stdout.on('data', tempFilePath => {
+            const packedCode = '' + fs.readFileSync(`${jbHost.jbReactDir}${tempFilePath}`)
+            vm.runInThisContext(packedCode)
+            jbLoadPacked({uri}).then(jb => resolve(jb))
+        })
+        srvr.stderr.on('data', err => resolve({error: `${''+err}`}))
+        srvr.on('error', err => resolve({error: `${''+err}`}))
+    })
 }

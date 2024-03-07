@@ -1,4 +1,3 @@
-const jb_plugins = null
 
 function jbBrowserCodePackage(repo = '', fetchOptions= {}, useFileSymbolsFromBuild) {
   return {
@@ -215,9 +214,9 @@ function packedCodePrefix(jb,libs,libsToInit) {
     `const jb = ${JSON.stringify(_jb)}`,
     `jb.uri = uri || 'main'`,
     `jb.startTime = new Date().getTime()`,
-    `jb.createPlugins = function ${jb.createPlugins.toString()}`,
+    `jb.createPlugins = function ${jb.createPlugins.toString()};\n`,
     jbLoadPackedFile.toString(),
-    `\njbloadPlugins(jb)`,
+    `\njbloadPlugins(jb,jbLoadPackedFile)`,
     `if (initSpyByUrl) jb.spy.initSpyByUrl()`,
     `\njb.initializeTypeRules(${JSON.stringify(libs||[])})
 await jb.initializeLibs(${JSON.stringify(libsToInit||[])})
@@ -226,7 +225,7 @@ jb.utils.resolveLoadedProfiles()
 jb.resolveTime = new Date().getTime()-jb.beforeResolveTime
 return jb
 }`,
-'\nfunction jbloadPlugins(jb) {'
+'\nfunction jbloadPlugins(jb,jbLoadPackedFile) {'
 ].join('\n') 
   }
 }
@@ -249,4 +248,4 @@ function jbLoadPackedFile({lineInPackage, jb, noProxies, path,fileDsl,pluginId},
   }
 }
 
-if (typeof module != 'undefined') module.exports = { jbInit, jb_plugins };
+if (typeof module != 'undefined') module.exports = { jbInit };

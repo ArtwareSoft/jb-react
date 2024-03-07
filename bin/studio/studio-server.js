@@ -230,7 +230,7 @@ const op_post_handlers = {
       })
       //srvr.on('exit', onExit)
       srvr.on('error', (e) => res.end(JSON.stringify({command, error: `${''+e}`})))  
-    },    
+    },
     createProject: function(req, res,body,path) {
       let clientReq;
       try {
@@ -286,7 +286,7 @@ const base_get_handlers = {
     const escapedArg = arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg}'`
     res.setHeader('Content-Type', 'application/javascript;charset=utf8')
     const srvr = child.spawn('node',['./jb-pack.js', arg],{cwd: 'hosts/node'})
-    srvr.stdout.on('data', path => serveFile(req,res,''+path))
+    srvr.stdout.on('data', path => serveFile(req,res,''+path.slice(1)))
     srvr.on('error', (e) => res.end(JSON.stringify({error: `${''+e}`})))  
   },
   'studio-bin': (req,res) =>
@@ -420,7 +420,6 @@ const op_get_handlers = {
             path,
             dsl: unique(lines.map(l=>(l.match(/^(jb.)?dsl\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0]))[0],
             pluginDsl: unique(lines.map(l=>(l.match(/^(jb.)?pluginDsl\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0]))[0],
-            //comp_locations: lines.map((l,line)=>[(l.match(/^(jb.)?component\('([^']+)/) || ['',''])[2],line]).filter(x=>x[0]),
             ns: unique(lines.map(l=>(l.match(/^(jb.)?component\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0])),
             libs: unique(lines.map(l=>(l.match(/^(jb.)?extension\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0])),
             using: unique(lines.map(l=>(l.match(/^(jb.)?using\('([^)]+)/) || ['',''])[2]).filter(x=>x).map(x=>x.replace(/'/g,''))

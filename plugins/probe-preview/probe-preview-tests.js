@@ -9,7 +9,7 @@ component('sampleProject.main', {
   })
 })
 
-component('workerPreviewTest.suggestions.varsFilter', {
+component('probePreviewTest.suggestions.varsFilter', {
   doNotTerminateWorkers: true,
   impl: probePreviewSuggestionsTest('control<>sampleProject.main~impl~controls~0~text', '%$p', {
     circuitPath: 'control<>sampleProject.main',
@@ -17,7 +17,7 @@ component('workerPreviewTest.suggestions.varsFilter', {
   })
 })
 
-component('workerPreviewTest.basic', {
+component('probePreviewTest.basic', {
   doNotTerminateWorkers: true,
   impl: uiTest(probe.remoteCircuitPreview('control<>sampleProject.main'), contains('hello'), {
     uiAction: waitForText('hello'),
@@ -25,7 +25,7 @@ component('workerPreviewTest.basic', {
   })
 })
 
-component('workerPreviewTest.changeScript', {
+component('probePreviewTest.changeScript', {
   doNotTerminateWorkers: true,
   impl: uiTest(probe.remoteCircuitPreview('control<>sampleProject.main'), contains('world'), {
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'control<>sampleProject.main'),
@@ -38,7 +38,7 @@ component('workerPreviewTest.changeScript', {
   })
 })
 
-// component('workerPreviewTest.suggestions.filtered', {
+// component('probePreviewTest.suggestions.filtered', {
 //   impl: uiTest({
 //     control: group({
 //       controls: [
@@ -58,7 +58,7 @@ component('workerPreviewTest.changeScript', {
 //   require: sampleProject.main()
 // })
 
-component('workerPreviewTest.addCss', {
+component('probePreviewTest.addCss', {
   doNotTerminateWorkers: true,
   impl: uiTest({
     control: group(
@@ -74,7 +74,7 @@ component('workerPreviewTest.addCss', {
   })
 })
 
-component('workerPreviewTest.changeCss', {
+component('probePreviewTest.changeCss', {
   doNotTerminateWorkers: true,
   impl: uiTest({
     control: group(
@@ -132,7 +132,7 @@ component('workerPreviewTest.changeCss', {
 // })
 
 
-// jb.component('workerPreviewTest.yellowPages', {
+// jb.component('probePreviewTest.yellowPages', {
 //   impl: dataTest({
 //     runBefore: runActions(
 //       jbm.wPreview(),
