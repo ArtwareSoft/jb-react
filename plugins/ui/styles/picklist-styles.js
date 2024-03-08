@@ -1,12 +1,3 @@
-component('select.native', {
-  type: 'style',
-  impl: customStyle({
-    template: ({},{databind,options},h) => h('select', { onchange: true }, 
-      options.map(option=>h('option', {value: option.code, ...(databind == option.code && {selected:  '' }) },option.text))),
-    features: [field.databind(), picklist.init()]
-  })
-})
-
 component('picklist.native', {
   type: 'picklist-style',
   impl: select.native()

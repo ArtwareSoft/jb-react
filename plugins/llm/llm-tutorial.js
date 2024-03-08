@@ -1,4 +1,4 @@
-using('pretty-print','ui')
+using('pretty-print')
 dsl('llm')
 
 extension('llmTutorial', 'main', {

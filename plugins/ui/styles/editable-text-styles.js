@@ -1,3 +1,5 @@
+using('ui-editable')
+
 component('editableText.input', {
   type: 'editable-text-style',
   impl: customStyle({

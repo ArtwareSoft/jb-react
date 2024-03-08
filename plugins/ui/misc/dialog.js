@@ -1,9 +1,11 @@
+using('ui-core')
+
 component('openDialog', {
   type: 'action<>',
   hasSideEffect: true,
   params: [
     {id: 'title', type: 'data', moreTypes: 'control<>', as: 'renderable', dynamic: true },
-    {id: 'content', type: 'control', dynamic: true, templateValue: group(), defaultValue: text('')},
+    {id: 'content', type: 'control', dynamic: true, templateValue: {$: 'group' }, defaultValue: { $ : 'text' } },
     {id: 'style', type: 'dialog-style', dynamic: true, defaultValue: dialog.default()},
     {id: 'menu', type: 'control', dynamic: true},
     {id: 'onOK', type: 'action', dynamic: true},

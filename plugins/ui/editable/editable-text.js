@@ -1,3 +1,5 @@
+using('ui-core')
+
 component('editableText', {
   type: 'control',
   category: 'input:100,common:80',

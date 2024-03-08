@@ -1,3 +1,5 @@
+using('ui-common')
+
 component('tableTree', {
   type: 'control',
   params: [

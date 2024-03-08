@@ -1,4 +1,4 @@
-using('ui')
+using('ui-common')
 component('dataResource.people', {
   watchableData: [
     {

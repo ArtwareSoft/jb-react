@@ -1,4 +1,4 @@
-using('ui,pretty-print')
+using('ui-common','ui-tree','ui-misc','ui-styles','pretty-print')
 
 component('ui.dataBrowse', {
   type: 'control',
@@ -10,7 +10,7 @@ component('ui.dataBrowse', {
   impl: group({
     controls: [
       group({
-        controls: [
+        controls: [ 
           controlWithCondition(isNull('%$obj%'), text('null')),
           controlWithCondition(({},{obj}) => obj == null, text('null')),
           controlWithCondition({

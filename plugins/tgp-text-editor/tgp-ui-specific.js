@@ -1,4 +1,4 @@
-extension('tgp', 'specific', {
+extension('tgp', 'ui_specific', {
 	nonControlChildren: (path,includeFeatures) =>
 		jb.tgp.paramsOfPath(path).filter(p=>!jb.tgp.isControlType(p.type))
 			.filter(p=>includeFeatures || p.id != 'features')

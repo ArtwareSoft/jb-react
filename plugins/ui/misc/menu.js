@@ -1,3 +1,4 @@
+using('ui-common')
 
 component('menu.menu', {
   type: 'menu.option',

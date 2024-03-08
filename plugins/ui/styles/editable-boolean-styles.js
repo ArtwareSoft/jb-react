@@ -1,3 +1,5 @@
+using('ui-misc','ui-picklist')
+
 component('editableBoolean.checkbox', {
   type: 'editable-boolean-style',
   impl: customStyle({

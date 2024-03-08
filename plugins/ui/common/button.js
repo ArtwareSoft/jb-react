@@ -82,3 +82,12 @@ component('button.altAction', {
   impl: method('altAction', (ctx,{},{action}) => action(ctx))
 })
 
+component('button.native', {
+  type: 'button-style',
+  impl: customStyle({
+    template: (cmp,{title,raised},h) => h('button',{class: raised ? 'raised' : '', title, onclick: true },title),
+    css: '.raised {font-weight: bold}',
+    features: button.initAction()
+  })
+})
+

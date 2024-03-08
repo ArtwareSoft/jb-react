@@ -1,3 +1,5 @@
+using('ui-misc')
+
 component('multiSelect', {
   type: 'control',
   description: 'select list of options, check multiple',

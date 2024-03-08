@@ -1,4 +1,4 @@
-using('ui')
+using('ui-core')
 component('dataResource.sortBy', {
   watchableData: 'age'
 })

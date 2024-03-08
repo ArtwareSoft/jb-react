@@ -1,3 +1,4 @@
+using('ui-editable')
 
 component('picklist', {
   type: 'control',
@@ -20,6 +21,16 @@ component('picklist.init', {
     calcProp('options', '%$$model/options()%'),
     calcProp('hasEmptyOption', (ctx,{$props}) => $props.options.filter(x=>!x.text)[0])
   )
+})
+
+component('select.native', {
+  type: 'picklist-style',
+  moreTypes: 'multiSelect-style<>',
+  impl: customStyle({
+    template: ({},{databind,options},h) => h('select', { onchange: true }, 
+      options.map(option=>h('option', {value: option.code, ...(databind == option.code && {selected:  '' }) },option.text))),
+    features: [field.databind(), picklist.init()]
+  })
 })
 
 component('picklist.allowAsynchOptions', {

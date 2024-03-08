@@ -1,5 +1,5 @@
 dsl('d3')
-using('ui')
+using('ui-core')
 
 extension('d3', {
 })

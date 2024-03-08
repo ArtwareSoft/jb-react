@@ -1,3 +1,5 @@
+using('ui-core')
+
 extension('ui', 'tree', {
 	TreeRenderer: class TreeRenderer {
 		constructor(args) {
@@ -82,7 +84,7 @@ component('tree.expandPath', {
 component('tree.plain', {
   type: 'tree-style',
   params: [
-    {id: 'showIcon', as: 'boolean', type: 'boolean'}
+    {id: 'showIcon', as: 'boolean', type: 'boolean', byName: true}
   ],
   impl: customStyle({
     template: (cmp,{showIcon,noHead,expanded,model,selected},h) => {
@@ -117,7 +119,7 @@ component('tree.plain', {
 component('tree.expandBox', {
   type: 'tree-style',
   params: [
-    {id: 'showIcon', as: 'boolean', type: 'boolean'},
+    {id: 'showIcon', as: 'boolean', type: 'boolean', byName: true},
     {id: 'lineWidth', as: 'string', defaultValue: '300px'}
   ],
   impl: customStyle({

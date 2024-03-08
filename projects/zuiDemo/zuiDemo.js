@@ -1,4 +1,4 @@
-using('common,zui,ui')
+using('common','zui','ui-styles')
 
 component('zuiDemo.main', {
   type: 'control',

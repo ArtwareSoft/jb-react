@@ -1,4 +1,4 @@
-using('remote,ui')
+using('remote','ui-core')
 // component('vscode.liveProbe', {
 //   type: 'control',
 //   params: [

@@ -48,70 +48,6 @@ async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl, baseUrl,
     sourceCode,
     loadedFiles: {},
     plugins: {},
-    async loadPluginSymbols(codePackage,{loadProjects} = {}) {
-      const jb = this
-      const pluginsSymbols = await codePackage.fileSymbols('plugins')
-      const projectSymbols = loadProjects ? await codePackage.fileSymbols('projects') : []
-      ;[...pluginsSymbols,...projectSymbols.map(x=>({...x, isProject: true}))].map(entry =>{
-        const id = pathToPluginId(entry.path)
-        jb.plugins[id] = jb.plugins[id] || { id, codePackage, files: [], isProject: entry.isProject }
-        jb.plugins[id].files.push(entry)
-      })
-    },
-    async loadPlugins(plugins) {
-      const jb = this
-      await plugins.reduce( (pr,id) => pr.then( async ()=> {
-        const plugin = jb.plugins[id]
-        if (!plugin || plugin.loadingReq) return
-        plugin.loadingReq = true
-        await jb.loadPlugins(plugin.dependent)
-        await Promise.all(plugin.files.map(fileSymbols =>jb.loadjbFile(fileSymbols.path,jb,{fileSymbols,plugin})))
-      }), Promise.resolve() )
-    },
-    async loadjbFile(path,jb,{noProxies, fileSymbols, plugin} = {}) {
-      if (jb.loadedFiles[path]) return
-      const _code = await plugin.codePackage.fetchFile(path)
-      const sourceUrl = `${path}?${jb.uri}`.replace(/#/g,'')
-      const code = `${_code}\n//# sourceURL=${sourceUrl}`
-      const fileDsl = fileSymbols && fileSymbols.dsl
-      const proxies = noProxies ? {} : jb.objFromEntries(plugin.proxies.map(id=>jb.macro.registerProxy(id)) )
-      const context = { jb, 
-        ...(typeof require != 'undefined' ? {require} : {}),
-        ...proxies,
-        component:(id,comp) => jb.component(id,comp,{plugin,fileDsl}),
-        extension:(libId, p1 , p2) => jb.extension(libId, p1 , p2,{plugin}),
-        using: x=>jb.using(x), dsl: x=>jb.dsl(x), pluginDsl: x=>jb.pluginDsl(x)
-      }
-      try {
-        //console.log(`loading ${path}`)
-        const wCode = `(function({${Object.keys(context)}}) {${code}\n})`
-//        const comp_locationsStr = JSON.stringify(fileSymbols && fileSymbols.comp_locations || [])
-        if (packOnly) packedCode.push({ path,
-            code: `jbLoadPackedFile({lineInPackage: 0, jb, noProxies: ${noProxies ? true: false}, path: '${path}',fileDsl: '${fileDsl||''}', pluginId: '${plugin.id||''}' }, 
-              function({${Object.keys(context)}}) {\n${_code}\n});\n`
-        })
-        if (noProxies || !packOnly) {
-          const f = eval(wCode)
-          f(context)
-          jb.loadedFiles[path] = true
-        }
-      } catch (e) {
-        if (!handleUnknownComp((e.message.match(/^(.*) is not defined$/)||['',''])[1]))
-          return jb.logException(e,`loadjbFile lib ${path}`,{context, code})
-      }
-
-      function handleUnknownComp(unknownCmp) {
-        if (!unknownCmp) return
-        try {
-          const fixed = code.replace(new RegExp(`${unknownCmp}\\(`,'g'),`unknownCmp('${unknownCmp}',`)
-          const f = eval(`(function(${Object.keys(context)}) {${fixed}\n})`)
-          f(...Object.values(context))
-          jb.loadedFiles[path] = true
-          jb.logError(`loader unknown comp ${unknownCmp} in file ${sourceUrl}`,{})
-          return true
-        } catch(e) {}
-      }
-    }
   }
   if (!multipleInFrame) globalThis.jb = jb // multipleInFrame is used in jbm.child
   if (sourceCode.actualCode) {
@@ -122,7 +58,7 @@ async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl, baseUrl,
 
   const pluginPackages = Array.isArray(sourceCode.pluginPackages) ? sourceCode.pluginPackages : [sourceCode.pluginPackages]
   await pluginPackages.reduce( async (pr,codePackage)=> pr.then(() =>
-    jb.loadPluginSymbols(jbHost.codePackageFromJson(codePackage),{loadProjects: sourceCode.projects && sourceCode.projects.length})), Promise.resolve());
+    loadPluginSymbols(jbHost.codePackageFromJson(codePackage),{loadProjects: sourceCode.projects && sourceCode.projects.length})), Promise.resolve());
   calcPluginDependencies(jb.plugins,jb)
   const topPlugins = unique([
     ...((sourceCode.projects||[]).indexOf('*') != -1 ? Object.values(jb.plugins).filter(x=>x.isProject).map(x=>x.id).filter(x=>x!='*') : (sourceCode.projects || [])),
@@ -130,7 +66,7 @@ async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl, baseUrl,
     ]).filter(x=>jb.plugins[x])
 
   await ['jb-core','core-utils','jb-expression','db','jb-macro','spy'].map(x=>`/plugins/core/${x}.js`).reduce((pr,path) => 
-    pr.then(()=> jb.loadjbFile(path,jb,{noProxies: true, plugin: jb.plugins.core, fileSymbols: jb.plugins.core.files.find(x=>x.path == path)})), Promise.resolve())
+    pr.then(()=> loadjbFile(path,{noProxies: true, plugin: jb.plugins.core, fileSymbols: jb.plugins.core.files.find(x=>x.path == path)})), Promise.resolve())
   if (initSpyByUrl)
     jb.spy.initSpyByUrl()
   jb.noSupervisedLoad = false
@@ -138,7 +74,7 @@ async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl, baseUrl,
     packedCode.push({code: 'jb.noSupervisedLoad = false'})
   if (jb.jbm && treeShakeServerUri) jb.jbm.treeShakeServerUri = sourceCode.treeShakeServerUri
 
-  await jb.loadPlugins(topPlugins)
+  await loadPlugins(topPlugins)
   const libs = unique(topPlugins.flatMap(id=>jb.plugins[id].requiredLibs))
   const libsToInit = sourceCode.libsToInit ? sourceCode.libsToInit.split(','): libs
   jb.initializeTypeRules(libs)
@@ -156,8 +92,74 @@ async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl, baseUrl,
     return res
   }
   function pathToPluginId(path) {
-    const tests = path.match(/-(tests|testers).js$/) || path.match(/\/tests\//) ? '-tests': ''
-    return (path.match(/(plugins|projects)\/([^\/]+)/) || ['','',''])[2] + tests
+    const innerPath = (path.match(/(plugins|projects)\/(.+)/) || ['','',''])[2].split('/').slice(0,-1)
+    const testFile = path.match(/-(tests|testers).js$/)
+    const testFolder = path.match(/\/tests\//)
+    const tests = testFile || (testFolder && innerPath[innerPath.length-1] != 'tests')  ? '-tests': ''
+    if (testFile && testFolder)
+      return innerPath.slice(0,-1).join('-') + tests
+    return innerPath.join('-') + tests
+  }
+  async function loadPluginSymbols(codePackage,{loadProjects} = {}) {
+    const pluginsSymbols = await codePackage.fileSymbols('plugins')
+    const projectSymbols = loadProjects ? await codePackage.fileSymbols('projects') : []
+    ;[...pluginsSymbols,...projectSymbols.map(x=>({...x, isProject: true}))].map(entry =>{
+      const id = pathToPluginId(entry.path)
+      jb.plugins[id] = jb.plugins[id] || { id, codePackage, files: [], isProject: entry.isProject }
+      jb.plugins[id].files.push(entry)
+    })
+  }
+  async function loadPlugins(plugins) {
+    await plugins.reduce( (pr,id) => pr.then( async ()=> {
+      const plugin = jb.plugins[id]
+      if (!plugin || plugin.loadingReq) return
+      plugin.loadingReq = true
+      await loadPlugins(plugin.dependent)
+      await Promise.all(plugin.files.map(fileSymbols =>loadjbFile(fileSymbols.path,{fileSymbols,plugin})))
+    }), Promise.resolve() )
+  }
+  async function loadjbFile(path,{noProxies, fileSymbols, plugin} = {}) {
+    if (jb.loadedFiles[path]) return
+    const _code = await plugin.codePackage.fetchFile(path)
+    const sourceUrl = `${path}?${jb.uri}`.replace(/#/g,'')
+    const code = `${_code}\n//# sourceURL=${sourceUrl}`
+    const fileDsl = fileSymbols && fileSymbols.dsl
+    const proxies = noProxies ? {} : jb.objFromEntries(plugin.proxies.map(id=>jb.macro.registerProxy(id)) )
+    const context = { jb, 
+      ...(typeof require != 'undefined' ? {require} : {}),
+      ...proxies,
+      component:(id,comp) => jb.component(id,comp,{plugin,fileDsl}),
+      extension:(libId, p1 , p2) => jb.extension(libId, p1 , p2,{plugin}),
+      using: x=>jb.using(x), dsl: x=>jb.dsl(x), pluginDsl: x=>jb.pluginDsl(x)
+    }
+    try {
+      //console.log(`loading ${path}`)
+      const wCode = `(function({${Object.keys(context)}}) {${code}\n})`
+      if (packOnly) packedCode.push({ path,
+          code: `jbLoadPackedFile({lineInPackage: 0, jb, noProxies: ${noProxies ? true: false}, path: '${path}',fileDsl: '${fileDsl||''}', pluginId: '${plugin.id||''}' }, 
+            function({${Object.keys(context)}}) {\n${_code}\n});\n`
+      })
+      if (noProxies || !packOnly) {
+        const f = eval(wCode)
+        f(context)
+        jb.loadedFiles[path] = true
+      }
+    } catch (e) {
+      if (!handleUnknownComp((e.message.match(/^(.*) is not defined$/)||['',''])[1]))
+        return jb.logException(e,`loadjbFile lib ${path}`,{context, code})
+    }
+
+    function handleUnknownComp(unknownCmp) {
+      if (!unknownCmp) return
+      try {
+        const fixed = code.replace(new RegExp(`${unknownCmp}\\(`,'g'),`unknownCmp('${unknownCmp}',`)
+        const f = eval(`(function(${Object.keys(context)}) {${fixed}\n})`)
+        f(...Object.values(context))
+        jb.loadedFiles[path] = true
+        jb.logError(`loader unknown comp ${unknownCmp} in file ${sourceUrl}`,{})
+        return true
+      } catch(e) {}
+    }
   }
   function calcPluginDependencies(plugins) {
     Object.keys(plugins).map(id=>calcDependency(id))
@@ -180,7 +182,7 @@ async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl, baseUrl,
       if (plugin.dependent) return [id, ...plugin.dependent]
       if (history[id])
         return [`$circular:${id}`]
-      const baseOfTest = id.match(/-tests$/) ? [id.slice(0,-6),'testing'] : []
+      const baseOfTest = (id.match(/-tests$/) ? [id.slice(0,-6),'testing'] : []).filter(x=>plugins[x])
       plugin.using = unique(plugin.files.flatMap(e=> unique(e.using)))
       const dslOfFiles = plugin.files.filter(fileSymbols=>fileSymbols.dsl && fileSymbols.dsl != plugin.dsl).map(({path,dsl}) => [path,dsl])
       if (dslOfFiles.length)
@@ -204,6 +206,7 @@ async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl, baseUrl,
   }
 }
 
+// jb-pack
 function packedCodePrefix(jb,libs,libsToInit) {
   const plugins = Object.fromEntries(Object.values(jb.plugins).filter(x=>x.loadingReq)
     .map(({id,dependent,proxies,using,dsl,dslOfFiles,files})=>({id,dependent,proxies,dsl,dslOfFiles,files: files.map(({path}) => path) })).map(p=>[p.id,p]))

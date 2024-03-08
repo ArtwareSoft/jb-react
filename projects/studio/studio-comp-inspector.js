@@ -1,3 +1,5 @@
+using('ui-table-tree')
+
 component('studio.compInspector', {
   params: [
     {id: 'inspectedProps'}

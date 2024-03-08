@@ -1,3 +1,5 @@
+using('ui-common','ui-mdc-styles')
+
 extension('ui','button', {
   chooseIconWithRaised(icons,raised) {
     if (!icons) return []
@@ -46,15 +48,6 @@ component('button.x', {
             font-weight: 700;
         }
         :hover { color: var(--jb-menubar-active-fg) }`,
-    features: button.initAction()
-  })
-})
-
-component('button.native', {
-  type: 'button-style',
-  impl: customStyle({
-    template: (cmp,{title,raised},h) => h('button',{class: raised ? 'raised' : '', title, onclick: true },title),
-    css: '.raised {font-weight: bold}',
     features: button.initAction()
   })
 })

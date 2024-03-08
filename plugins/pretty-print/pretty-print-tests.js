@@ -1,4 +1,4 @@
-using('ui,remote-widget,parsing,testing')
+using('ui-core,remote-widget,parsing,testing')
 
 component('PPrintTest.vars', {
   impl: dataTest({

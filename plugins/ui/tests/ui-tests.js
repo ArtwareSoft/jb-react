@@ -1,3 +1,4 @@
+using('ui-misc','ui-picklist','ui-styles','ui-itemlist-container')
 
 component('uiTest.group', {
   impl: uiTest(group(text('hello world'), text('2')), contains('hello world','2'))

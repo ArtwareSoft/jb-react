@@ -1,3 +1,5 @@
+using('ui-editable')
+
 component('editableText.markdown', {
   type: 'editable-text-style',
   params: [

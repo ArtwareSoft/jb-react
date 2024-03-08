@@ -1,3 +1,4 @@
+using('ui-editable','ui-misc','ui-picklist')
 
 component('editableText.picklistHelper', {
   type: 'feature',

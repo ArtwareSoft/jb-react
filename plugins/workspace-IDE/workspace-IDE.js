@@ -1,4 +1,4 @@
-using('ui,probe-preview')
+using('ui-common','ui-tree','ui-misc','ui-styles','probe-preview')
 
 component('workspace', { watchableData: { bottomViewIndex : 0 } })
 

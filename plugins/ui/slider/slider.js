@@ -1,3 +1,5 @@
+using('ui-editable','ui-common')
+
 component('editableNumber.sliderNoText', {
   type: 'editable-number-style',
   impl: customStyle({

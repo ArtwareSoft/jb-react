@@ -1,3 +1,5 @@
+using('ui-table-tree')
+
 const h = jb.ui.h
 
 component('uiTest.applyVdomDiffText', {

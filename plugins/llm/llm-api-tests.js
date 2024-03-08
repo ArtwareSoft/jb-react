@@ -1,3 +1,5 @@
+using('ui-tests')
+
 component('llmTest.hello', {
   doNotRunInTests: true,
   impl: dataTest(llmViaApi.completions(system('please answer clearly'), user('how large is israel')), contains('srael'), {
