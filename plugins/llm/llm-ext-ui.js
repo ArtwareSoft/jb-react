@@ -1,8 +1,5 @@
 using('ui','tgp-text-editor')
 dsl('llm')
-extension('mdIcons', {
-  //  $requireLibs: ['/dist/md-icons.js']
-})
 
 component('llm.localHelper', {
   type: 'control<>',
@@ -19,7 +16,7 @@ component('llm.localHelper', {
               feature.onKey('Enter', localHelper.runHelperAction('%$ev/value%')),
               editableText.picklistHelper(picklist.optionsByComma('1111,2,3,4'), {
                 popupFeatures: [
-                  css('zoom: 60%;'),
+                  css('zoom1: 60%;font-size: 12px'),
                   css.padding({ left: '10', right: '10' })
                 ]
               })
@@ -54,7 +51,7 @@ component('llm.localHelper', {
     ],
     features: [
       watchable('command', obj(prop('cmd', ''))),
-      css('zoom: 60%;'),
+      css('zoom1: 60%; font-size: 12px'),
       frontEnd.requireExternalLibrary('../bin/studio/css/studio-all.css'),
       frontEnd.requireExternalLibrary('material-components-web.js','css/font.css','css/material.css')
     ]
@@ -96,8 +93,9 @@ component('localHelper.runHelperAction', {
   ],
   impl: (ctx,actionStr) => {
       const toRun = `${actionStr.split(' ')[0]}('${actionStr.split(' ')[1] || ''}')`
-      const profile = jb.tgpTextEditor.evalProfileDef('', `typeAdapter('helper-action<llm>',${actionStr})`, 'toRun', 'llm')
-      return profile && ctx.run(profile,'helper-action')
+      const {res} = jb.tgpTextEditor.evalProfileDef('', `typeAdapter('helper-action<llm>',${toRun})`, 'llm', 'llm')
+      const profile = jb.utils.resolveProfile(res)
+      return profile && ctx.run(profile,'helper-action<llm>')
   }
 })
 
@@ -109,7 +107,6 @@ component('setPrompt', {
   impl: (ctx,prompt) => {
       const el = document.querySelector('textarea')
       el && (el.value = prompt)
-      const llmStateForTests = jb.path(ctx.vars,'llmStateForTests')
-      llmStateForTests && (llmStateForTests.prompt = prompt)
+      jb.exec(writeValue('%$llmStateForTests/prompt%',prompt))
     }
 })

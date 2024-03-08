@@ -36,7 +36,7 @@ component('llmHelperTest.localHelper.sayHello', {
   doNotRunInTests: true,
   impl: uiTest({
     control: llm.localHelper('%$llmTutorial_Query%'),
-    expectedResult: equals('%$llmStateForTests.prompt%', 'hello'),
+    expectedResult: equals('%$llmStateForTests/prompt%', 'hello'),
     uiAction: uiActions(setText('setPrompt hello'), keyboardEvent('input', 'keydown', { keyCode: '13' })),
     useFrontEnd: true
   })

@@ -553,7 +553,7 @@ component('uiTest.itemlistMDAutoSelectFirst', {
         controls: text('%$item.name%'),
         features: [
           itemlist.selection('%$globals/selectedPerson%', { autoSelectFirst: true }),
-          itemlist.keyboardSelection(true)
+          itemlist.keyboardSelection({ autoFocus: true })
         ]
       }),
       text('%$globals/selectedPerson/name% selected', {
