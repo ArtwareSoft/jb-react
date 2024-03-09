@@ -43,7 +43,7 @@ component('webWorker', {
       if (childsOrNet[id]) return childsOrNet[id]
       const workerUri = networkPeer ? id : `${jb.uri}•${id}`
       const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
-      sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),'remote','tree-shake'])
+      sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),'remote-jbm','tree-shake'])
 
       const workerCode = `
 importScripts(location.origin+'/plugins/loader/jb-loader.js');
@@ -96,7 +96,7 @@ component('child', {
         const id = _id || 'child1'
         if (jb.jbm.childJbms[id]) return jb.jbm.childJbms[id]
         const childUri = `${jb.uri}•${id}`
-        sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),'remote','tree-shake'])
+        sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),'remote-jbm','tree-shake'])
 
         return jb.jbm.childJbms[id] = {
             uri: childUri,

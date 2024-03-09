@@ -1,4 +1,4 @@
-using('remote','ui-common')
+using('remote-jbm','ui-common')
 
 extension('ui', 'widget-frontend', {
   initExtension() {

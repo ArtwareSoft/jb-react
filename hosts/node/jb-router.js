@@ -12,7 +12,7 @@ const { getProcessArgument, getURLParam } = jbHost
     
     const uri = 'router'
     const { jbInit } = require(`${jbHost.jbReactDir}/plugins/loader/jb-loader.js`)
-    const sourceCode = { plugins: ['remote', 'net']}
+    const sourceCode = { plugins: ['remote-jbm', 'net']}
     global.jb = await jbInit(uri, sourceCode)
     jb.spy.initSpy({spyParam: 'remote'})
     

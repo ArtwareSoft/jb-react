@@ -76,7 +76,7 @@ component('pptr.start', {
 component('pptr.server', {
   type: 'remote',
   params: [
-    {id: 'libs', as: 'array', defaultValue: ['common', 'remote', 'rx', 'puppeteer']}
+    {id: 'libs', as: 'array', defaultValue: ['common', 'remote-jbm', 'rx', 'puppeteer']}
   ],
   impl: (ctx,libs) => {
         if (jb.pptr.pptrServer) return jb.pptr.pptrServer

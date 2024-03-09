@@ -1,4 +1,4 @@
-using('remote')
+using('remote-jbm')
 
 extension('probe', 'suggestions', {
     $requireLibs: ['/dist/fuse.js'],

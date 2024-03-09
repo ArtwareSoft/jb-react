@@ -1,4 +1,4 @@
-using('tgp-lang-service,common,net,remote,probe-core')
+using('tgp-lang-service,common,net,remote-jbm,probe-core')
 
 component('modelDataServer', {
   type: 'source-code<loader>',

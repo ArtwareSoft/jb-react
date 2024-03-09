@@ -11,7 +11,7 @@ component('treeShake', {
 
 component('treeShakeClientWithPlugins', {
   type: 'source-code<loader>',
-  impl: treeShake(sourceCode(plugins('remote,tree-shake')))
+  impl: treeShake(sourceCode(plugins('remote-jbm','tree-shake')))
 })
 
 component('treeShakeClient', {

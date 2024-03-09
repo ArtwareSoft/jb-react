@@ -53,7 +53,7 @@ if (verbose)
         ...process.argv.slice(2).map(arg=> (arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg}'`))].join(' ')
     const sourceCodeStr = doGetProcessArgument('sourceCode')
     const sourceCode = sourceCodeStr ? JSON.parse(sourceCodeStr) : { plugins : _plugins }
-    sourceCode.plugins = unique([...sourceCode.plugins,'remote'])
+    sourceCode.plugins = unique([...sourceCode.plugins,'remote-jbm'])
 
     globalThis.jb = await jbInit(uri||'main', sourceCode)    
     //globalThis.jb = await jbFromSourceCode(sourceCode,{uri: uri||'main'})

@@ -1,4 +1,4 @@
-using('remote,loader')
+using('remote-jbm,loader')
 
 extension('puppeteer', {
     initExtension() { return { } },

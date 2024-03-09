@@ -1,4 +1,4 @@
-using('remote')
+using('remote-jbm')
 
 component('dataTest', {
   type: 'test',

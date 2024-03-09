@@ -1,4 +1,4 @@
-using('remote')
+using('remote-jbm')
 dsl('net')
 
 extension('http', {
