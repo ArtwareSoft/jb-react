@@ -1,4 +1,4 @@
-using('tgp,tgp-text-editor,tgp-model-data')
+using('tgp-core,tgp-text-editor,tgp-model-data')
 
 extension('langService', 'impl', {
     $phase: 40,

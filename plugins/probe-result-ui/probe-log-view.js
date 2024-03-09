@@ -1,4 +1,4 @@
-using('tgp')
+using('tgp-core')
 
 component('logsView.main', {
   params: [

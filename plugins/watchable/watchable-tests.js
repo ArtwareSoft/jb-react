@@ -1,4 +1,4 @@
-using('ui-tests,tgp,workspace')
+using('ui-tests','workspace')
 
 component('uiTest.checkBoxWithCalculatedAndWatchRef', {
   impl: uiTest({

@@ -1,4 +1,4 @@
-using('tgp-model-data,tgp')
+using('tgp-model-data')
 
 component('probe', { watchableData: { path : '',  
     defaultMainCircuit: /sourceCode=/.test(jb.path(globalThis,'location.href')||'') && !location.pathname.endsWith('runCtx.html') ? decodeURI(jb.path(globalThis,'location.pathname')||'').split('/')[3] : '',
