@@ -215,7 +215,7 @@ var jb_modules = {
   ],
   'history': [ 'dist/history.js' ],
   'node-adapter': [ 'src/node-adapter/node-adapter.js' ],
-  'pretty-print': [ 'src/misc/pretty-print.js' ],
+  'tgp-formatter': [ 'src/misc/pretty-print.js' ],
   'object-encoder': [ 'src/misc/object-encoder.js' ],
   'xml': [ 'src/misc/xml.js' ],
 //  'jison': [ 'dist/jb-jison.js', 'src/misc/jison.js' ],

@@ -15,7 +15,7 @@ extension('loader','main' , {
       return jb.pathToPluginId(jb.loader.shortFilePath(fullFilePath),addTests)
     },
     pluginsByCtx(ctx) {
-      return ctx.probe ? ['probe','pretty-print'] : []
+      return ctx.probe ? ['probe-core','tgp-formatter'] : []
     },
     mergeSourceCodes(sc1,sc2) {
       if (!sc1) return sc2

@@ -17,7 +17,7 @@ component('probeServer', {
     {id: 'filePath', as: 'string'},
     {id: 'host', as: 'string', options: ',node,studio,static'}
   ],
-  impl: sourceCode(pluginsByPath('%$filePath%', { addTests: true }), plugins('probe,tree-shake,tgp'), {
+  impl: sourceCode(pluginsByPath('%$filePath%', { addTests: true }), plugins('probe-core,tree-shake,tgp-core'), {
     pluginPackages: packagesByPath('%$filePath%', '%$host%')
   })
 })

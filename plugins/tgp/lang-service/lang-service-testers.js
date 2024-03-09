@@ -144,7 +144,7 @@ component('langService.dummyCompProps', {
   params: [
     {id: 'compText', as: 'string', mandatory: true, description: 'use __ for completion point'},
     {id: 'dsl', as: 'string'},
-    {id: 'filePath', as: 'string', defaultValue: '/plugins/ui/common/ui-common-tests.js'},
+    {id: 'filePath', as: 'string', defaultValue: '/plugins/common/common-tests.js'},
     {id: 'includeCircuitOptions', as: 'boolean', type: 'boolean<>'}
   ],
   impl: (ctx,_compText,dsl,_filePath, includeCircuitOptions) => {

@@ -1,4 +1,4 @@
-using('common,pretty-print,rx')
+using('common,tgp-formatter,rx')
 
 component('source.remote', {
   type: 'rx<>',

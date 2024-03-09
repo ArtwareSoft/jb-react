@@ -1,4 +1,4 @@
-using('pretty-print')
+using('tgp-formatter')
 
 extension('tgpTextEditor', {
     initExtension() {

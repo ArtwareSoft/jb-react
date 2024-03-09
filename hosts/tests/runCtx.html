@@ -32,8 +32,8 @@
             const remoteFileSymbols = jb.plugins.remote.files.find(x => x.path.match(/remote-context/))
             await jb.loadjbFile(remoteFileSymbols.path, { fileSymbols: remoteFileSymbols, plugin: jb.plugins.remote })
             await jb.initializeLibs(remoteFileSymbols.libs)
-            const ppFileSymbols = jb.plugins['pretty-print'].files[0]
-            await jb.loadjbFile(ppFileSymbols.path, { fileSymbols: ppFileSymbols, plugin: jb.plugins['pretty-print'] })
+            const ppFileSymbols = jb.plugins['tgp-formatter'].files[0]
+            await jb.loadjbFile(ppFileSymbols.path, { fileSymbols: ppFileSymbols, plugin: jb.plugins['tgp-formatter'] })
             await jb.initializeLibs(ppFileSymbols.libs)
 
             sourceCodeEl.value = jb.utils.prettyPrint(sourceCode,{noMacros: true})

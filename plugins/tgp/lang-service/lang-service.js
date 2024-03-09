@@ -1,4 +1,4 @@
-using('tgp-core,tgp-text-editor,tgp-model-data')
+using('tgp-text-editor,tgp-model-data')
 
 extension('langService', 'impl', {
     $phase: 40,
@@ -300,7 +300,10 @@ extension('langService', 'api', {
     },
     async compId(ctx) {
         const compProps = await jb.langService.calcCompProps(ctx)
-        const { actionMap, inCompOffset, tgpModel, path, comp } = compProps
+        const { reformatEdits, actionMap, inCompOffset, tgpModel, path, comp } = compProps
+        if (reformatEdits)
+            return { error: 'compId - bad format', ...compProps }
+
         const actions = actionMap.filter(e => e.from <= inCompOffset && inCompOffset < e.to || (e.from == e.to && e.from == inCompOffset))
             .map(e => e.action).filter(e => e.indexOf('edit!') != 0 && e.indexOf('begin!') != 0 && e.indexOf('end!') != 0)
         if (actions.length == 0 && comp) 
@@ -313,7 +316,9 @@ extension('langService', 'api', {
         return { comp: path && (path.match(/~/) ? tgpModel.compNameOfPath(path) : path) }
     },
     async compReferences(ctx) {
-        const { comp, prop } = ctx.data
+        const { comp, prop, reformatEdits } = ctx.data
+        if (reformatEdits)
+            return [{...ctx.data}]
         const paths = Object.values(jb.comps).flatMap(comp=>scanForPath(comp,comp.$$ || ''))
         return paths.map(path=>jb.tgpTextEditor.filePosOfPath(path))
 
@@ -330,10 +335,10 @@ extension('langService', 'api', {
     async definition(ctx) {
         const compProps = await jb.langService.calcCompProps(ctx)
         const { actionMap, reformatEdits, inExtension, error, path, tgpModel, lineText } = compProps
+        if (reformatEdits)
+            return { error: 'definition - bad format', ...compProps }
         const allSemantics = actionMap.filter(e => e.action && e.action.endsWith(path)).map(x => x.action.split('!')[0])
-        if (reformatEdits) {
-            return // maybe should return error
-        } else if (inExtension || allSemantics.includes('function')) {
+        if (inExtension || allSemantics.includes('function')) {
             return funcLocation()
         } else if (path) {
             const cmpId = tgpModel.compNameOfPath(path)

@@ -5,7 +5,7 @@ component('cCommerce.main', {
     controls: [
       {$: 'button', title: 'my button' }, 
       {$: 'editable-text', 
-        databind :{ $pipeline: [{$: 'pretty-print', profile: '%$Product%', colWidth: 140 }] }, 
+        databind :{ $pipeline: [{$: 'tgp-formatter', profile: '%$Product%', colWidth: 140 }] }, 
         style :{$: 'editable-text.codemirror', enableFullScreen: true, debounceTime: 300 }
       }
     ], 

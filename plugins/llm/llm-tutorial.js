@@ -1,4 +1,4 @@
-using('pretty-print')
+//u sing('tgp-core')
 dsl('llm')
 
 extension('llmTutorial', 'main', {

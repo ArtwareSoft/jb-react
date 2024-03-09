@@ -43,6 +43,10 @@ component('dataTest.toUpperCase', {
 })
 
 component('dataTest.split', {
+  impl: dataTest(pipeline('1,2', split(',', { part: 'last' })), equals('2'))
+})
+
+component('dataTest.split2', {
   impl: dataTest({
     calculate: pipeline('one-two-free', split('-', { part: 'but first' }), join(',')),
     expectedResult: equals('two,free')

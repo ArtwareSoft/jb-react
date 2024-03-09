@@ -1,4 +1,4 @@
-using('ui-common','ui-tree','ui-misc','ui-styles','pretty-print')
+using('ui-common','ui-tree','ui-misc','ui-styles','tgp-formatter')
 
 component('ui.dataBrowse', {
   type: 'control',

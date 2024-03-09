@@ -337,11 +337,8 @@ component('langServiceTest.provideDefinition', {
 
 component('langServiceTest.provideDefinition.inFunc', {
   impl: dataTest({
-    calculate: pipe(
-      langService.dummyCompProps(`dataTest('', () => { __jb.utils.prettyPrint('aa'); return 3})`),
-      langService.definition()
-    ),
-    expectedResult: contains('pretty-print', { data: '%path%' })
+    calculate: pipe(langService.dummyCompProps(`dataTest('', () => { __jb.utils.prettyPrint('aa'); return 3})`), langService.definition()),
+    expectedResult: equals('/plugins/tgp/formatter/pretty-print.js', { data: '%path%' })
   })
 })
 

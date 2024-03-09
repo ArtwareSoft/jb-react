@@ -12,10 +12,7 @@ component('langServerTest.references', {
 component('langServerTest.localReferences', {
   doNotRunInTests: true,
   impl: dataTest({
-    calculate: pipe(
-      langService.dummyCompProps(`uiTest(text('hello world', { __features: css.color('green') }))`),
-      langServer.localReferences()
-    ),
+    calculate: pipe(langService.dummyCompProps(`dataTest(pipeline('1,2', split(',', { __part: 'last' })))`), langServer.localReferences()),
     expectedResult: contains('plugins', { data: '%path%' }),
     timeout: 5000
   })
@@ -79,7 +76,6 @@ component('langServerTest.remoteProbe', {
       Var('forceRemoteCompProps', true),
       langService.dummyCompProps({
         compText: `component('dataTest.join', {\n  impl: dataTest(pipeline(list(1,2), '%%', __join()), equals('1,2'))\n})`,
-        filePath: '/plugins/common/common-tests.js',
         includeCircuitOptions: true
       }),
       langServer.probe()
@@ -93,10 +89,10 @@ component('langServerTest.includeCircuitOptions', {
   doNotRunInTests: true,
   impl: dataTest({
     calculate: langService.dummyCompProps({
-      compText: `component('uiTest.group', {\n  impl: uiTest(group(text('hello world'), text('2')), __contains('hello world','2'))\n})`,
+      compText: `component('dataTest.split', {\n  impl: dataTest(pipeline('1,2', split(',', { part: 'last' })), __equals('2'))\n})`,
       includeCircuitOptions: true
     }),
-    expectedResult: equals('%circuitOptions/0/id%', 'test<>uiTest.group'),
+    expectedResult: equals('%circuitOptions/0/id%', 'test<>dataTest.split'),
     timeout: 2000
   })
 })
@@ -105,28 +101,13 @@ component('langServerTest.studioCircuitUrl', {
   impl: dataTest({
     calculate: pipe(
       langService.dummyCompProps({
-        compText: `component('uiTest.group', {\n  impl: uiTest(group(text('hello world'), text('2')), __contains('hello world','2'))\n})`,
+        compText: `component('dataTest.split', {\n  impl: dataTest(pipeline('1,2', split(',', { part: 'last' })), __equals('2'))\n})`,
         includeCircuitOptions: true
       }),
       langServer.studioCircuitUrl()
     ),
-    expectedResult: contains('http://localhost:8082/project/studio/test<>uiTest.group/test<>uiTest.group~impl~expectedResult?sourceCode=','spy=test,uiTest,headless'),
+    expectedResult: contains('http://localhost:8082/project/studio/test<>dataTest.split/test<>dataTest.split~impl~expectedResult?sourceCode=','spy=test'),
     timeout: 3000
-  })
-})
-
-component('langServerTest.runCtxOfRemoteCmdUrl', {
-  doNotRunInTests: true,
-  impl: dataTest({
-    calculate: pipe(
-      langService.dummyCompProps({
-        compText: `component('uiTest.group', {\n  impl: uiTest(group(text('hello world'), text('2')), __contains('hello world','2'))\n})`,
-        includeCircuitOptions: true
-      }),
-      langServer.runCtxOfRemoteCmdUrl()
-    ),
-    expectedResult: contains('http://localhost:8082/project/studio/test<>uiTest.group/test<>uiTest.group~impl~expectedResult?sourceCode=','spy=test,uiTest,headless'),
-    timeout: 2000
   })
 })
 

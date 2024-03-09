@@ -1,4 +1,4 @@
-using('pretty-print,tgp-text-editor')
+using('tgp-text-editor')
 
 component('probeUI.probeResViewForVSCode', {
   type: 'control',
