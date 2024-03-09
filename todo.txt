@@ -1,8 +1,17 @@
-fix remoteCircuitPreview sourceCode
-mapSource - not for each line
-add location to package
-separate the ui plugins
+ui plugins
+  separate mdi styles
+  separate tests
+  common and misc
+tests
+  log which tests use worker or cmd
+  try to run tests in parallel
+    
 pretty print - fix If probe.remoteCircuitPreview
+inner plugins
+  fix tgp structure - maybe most studio can move under tgp
+  create db structure
+  tree-shake under loader
+
 
 pipeline - allowInnerVars property
 add second parameter array by value

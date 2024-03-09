@@ -1,4 +1,4 @@
-using('ui-common')
+using('ui-common','ui-tree')
 
 component('tableTree', {
   type: 'control',

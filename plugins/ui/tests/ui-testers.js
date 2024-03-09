@@ -221,6 +221,16 @@ component('uiTest.applyVdomDiff', {
 	}
 })
 
+component('test.getSelectionChar', {
+  type: 'data',
+  moreTypes: 'boolean<>',
+  impl: ctx => {
+    const input = ctx.vars.$state.input || jb.path(ctx.vars.ev, 'input') || { value: '', selectionStart: 0 }
+    const selectionStart = input.selectionStart || 0
+    return input.value.slice(selectionStart, selectionStart + 1)
+  }
+})
+
 extension('ui','tester', {
 	initExtension() {
 		return { FEEmulator: {}, testUpdateCounters: {} }

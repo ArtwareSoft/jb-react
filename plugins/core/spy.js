@@ -192,7 +192,7 @@ extension('spy', {
 
 component('test.calcSpyParamForTest', {
   params: [
-    {id: 'testID', defaultValue: '%%'}
+    {id: 'testID' }
   ],
-  impl: (ctx,testID) => jb.spy.spyParamForTest(testID)
+  impl: (ctx,testID) => jb.spy.spyParamForTest(testID || ctx.vars.testID)
 })

@@ -1,4 +1,4 @@
-using('ui-editable')
+using('ui-common')
 
 component('editableText.input', {
   type: 'editable-text-style',

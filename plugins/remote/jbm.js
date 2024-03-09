@@ -47,10 +47,10 @@ component('webWorker', {
 
       const workerCode = `
 importScripts(location.origin+'/plugins/loader/jb-loader.js');
-importScripts(location.origin+'/package/${sourceCode.plugins.join(',')}.js'); // 
+//importScripts(location.origin+'/package/${sourceCode.plugins.join(',')}.js'); // 
 jbHost.baseUrl = location.origin || '';
-//Promise.resolve(jbInit('${workerUri}', ${JSON.stringify(sourceCode)})).then(jb => {
-jbLoadPacked({uri:'${workerUri}'}).then(jb => {
+Promise.resolve(jbInit('${workerUri}', ${JSON.stringify(sourceCode)})).then(jb => {
+//jbLoadPacked({uri:'${workerUri}'}).then(jb => {
   globalThis.jb = jb;
   jb.spy.initSpy({spyParam: "${jb.spy.spyParam}"});
   jb.treeShake.codeServerJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))

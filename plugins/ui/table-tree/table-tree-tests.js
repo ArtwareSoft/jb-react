@@ -1,4 +1,4 @@
-using('ui-tests')
+using('ui-tests','ui-table-tree')
 
 component('uiTest.tableTree.expandPath', {
   impl: uiTest({

@@ -1,4 +1,4 @@
-using('ui-editable','ui-common')
+using('ui-misc','ui-mdc-styles')
 
 component('editableNumber.sliderNoText', {
   type: 'editable-number-style',

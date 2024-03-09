@@ -134,7 +134,7 @@ component('remoteTgpModelTest', {
   doNotRunInTests: true,
   impl: dataTest({
     calculate: pipe(
-      remote.tgpModelData('someDir/projects/jb-react/plugins/ui/tests/ui-tests.js'),
+      remote.tgpModelData('someDir/projects/jb-react/plugins/ui/common/ui-common-tests.js'),
       '%comps/control<>button/type%'
     ),
     expectedResult: contains('control'),

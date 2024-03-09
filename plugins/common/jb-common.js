@@ -86,6 +86,15 @@ component('firstSucceeding', {
 	}
 })
 
+component('firstNotEmpty', {
+  type: 'any',
+  params: [
+    {id: 'first', type: '$asParent', dynamic: true, mandatory: true},
+    {id: 'second', type: '$asParent', dynamic: true, mandatory: true}
+  ],
+  impl: If('%$first()%', '%$first()%', '%$second()%')
+})
+
 component('keys', {
   type: 'data',
   description: 'Object.keys',

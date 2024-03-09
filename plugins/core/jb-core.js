@@ -102,12 +102,6 @@ Object.assign(jb, {
       jb.comps[id] = comp
     return comp
   },
-  createPlugins(plugins) {
-    jbHost.defaultCodePackage = jbHost.defaultCodePackage || jbHost.codePackageFromJson()
-    plugins.forEach(plugin=> {
-      this.plugins[plugin.id] = this.plugins[plugin.id] || { ...plugin, codePackage : jbHost.defaultCodePackage }
-    })
-  },
   dsl() {},
   pluginDsl() {},
   using() {},

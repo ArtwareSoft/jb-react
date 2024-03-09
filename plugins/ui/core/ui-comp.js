@@ -165,7 +165,7 @@ extension('ui','comp', {
         if (ctx.vars.$previewMode && jb.watchableComps && jb.watchableComps.handler) // updating to latest version of profile - todo: moveto studio
             ctx.profile = jb.watchableComps.handler.valOfPath(ctx.path.split('~')) || ctx.profile
         elem.setAttribute('__refreshing','')
-        const cmp = ctx.profile.$ == 'openDialog' ? ctx.calc(dialog.buildComp()) : ctx.runItself()
+        const cmp = ctx.profile.$ == 'openDialog' ? ctx.calc({ $$: 'data<>dialog.buildComp' }) : ctx.runItself()
         jb.log('refresh elem start',{cmp,ctx,newState ,elem, state, options})
 
         const className = elem.className != null ? elem.className : jb.path(elem.attributes.class) || ''

@@ -1,5 +1,3 @@
-using('ui-core')
-
 component('openDialog', {
   type: 'action<>',
   hasSideEffect: true,

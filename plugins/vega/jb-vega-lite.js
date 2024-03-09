@@ -1,4 +1,4 @@
-using('ui-common','ui-editable')
+using('ui-common')
 
 vegaSample = {
     "$schema": "https://vega.github.io/schema/vega-lite/v4.json",

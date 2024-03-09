@@ -1,3 +1,4 @@
+using('ui-styles')
 
 component('zui.itemPreview', {
   type: 'control',

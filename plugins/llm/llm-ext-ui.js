@@ -1,4 +1,4 @@
-using('ui-common','ui-picklist','tgp-text-editor','ui-styles','ui-tree')
+using('ui-misc','tgp-text-editor','ui-styles','ui-tree')
 dsl('llm')
 
 component('llm.localHelper', {

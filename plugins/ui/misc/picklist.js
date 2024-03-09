@@ -1,5 +1,3 @@
-using('ui-editable')
-
 component('picklist', {
   type: 'control',
   description: 'select, choose, pick, choice',

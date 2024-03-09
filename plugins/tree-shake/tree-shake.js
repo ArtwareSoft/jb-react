@@ -146,8 +146,7 @@ extension('treeShake', {
             //jb.utils.prettyPrintComp(cmpId,jb.comps[cmpId],{noMacros: true})).join('\n\n')
         const libs = jb.utils.unique(libsFuncs.map(x=>x.lib)).map(l=>"'"+l+"'").join(',')
         return [
-            `jb.createPlugins = function ${jb.createPlugins.toString()}`,
-            `jb.createPlugins(${JSON.stringify(plugins)})`,
+            `jbCreatePlugins(jb, ${JSON.stringify(plugins)})`,
             topLevelCode,libsCode,compsCode,
             `jb.initializeTypeRules([${libs}])`,
             `await jb.initializeLibs([${libs}])`,

@@ -12,15 +12,7 @@ extension('loader','main' , {
         } , { plugins })
     },
     pluginOfFilePath(fullFilePath, addTests) {
-      const filePath = jb.loader.shortFilePath(fullFilePath)
-      const tests = filePath.match(/-(tests|testers).js$/) || filePath.match(/\/tests\//) ? '-tests': ''
-      return [...calcPlugins(filePath.match(/plugins\/([^\/]+)/)), ...calcPlugins(filePath.match(/projects\/([^\/]+)/))][0]
-  
-      function calcPlugins(matchResult) {
-        if (!matchResult) return []
-        const res = matchResult[1] + tests
-        return (!tests && addTests) ? [`${res}-tests`] : [res]
-      }
+      return jb.pathToPluginId(jb.loader.shortFilePath(fullFilePath),addTests)
     },
     pluginsByCtx(ctx) {
       return ctx.probe ? ['probe','pretty-print'] : []

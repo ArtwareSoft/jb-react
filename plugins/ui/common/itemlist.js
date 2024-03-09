@@ -1,5 +1,3 @@
-using('ui-core')
-
 component('itemlist', {
   description: 'list, dynamic group, collection, repeat',
   type: 'control',

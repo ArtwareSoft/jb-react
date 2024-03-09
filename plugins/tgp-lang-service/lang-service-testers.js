@@ -17,7 +17,7 @@ extension('test', 'completion', {
     const offset = parts[0].length
     const code = parts.join('')
     jb.tgpTextEditor.host.initDoc(filePath, code)
-    const pluginId = filePath.match(/plugins\/([^\/]+)/)[1] + '-tests'
+    const pluginId = jb.pathToPluginId(filePath)
     const tgpModel = jb.langService.tgpModels[filePath] = new jb.langService.tgpModelForLangService(jb.tgp.tgpModelData({plugin: pluginId}))
     const plugin = tgpModel.plugins[pluginId]
     plugin.files.push(filePath)
@@ -39,7 +39,7 @@ component('completionOptionsTest', {
   params: [
     {id: 'compText', as: 'string', description: 'use __ for completion points'},
     {id: 'expectedSelections', as: 'array', description: 'label a selection that should exist in the menu. one for each point'},
-    {id: 'filePath', as: 'string', defaultValue: '/plugins/ui/tests/completion-tests.js'},
+    {id: 'filePath', as: 'string', defaultValue: '/plugins/ui/common/ui-common-tests.js'},
     {id: 'dsl', as: 'string'}
   ],
   impl: dataTest({
@@ -78,7 +78,7 @@ component('completionActionTest', {
     {id: 'expectedEdit', description: '{ range: , newText:}'},
     {id: 'expectedTextAtSelection', description: '{ start: , end: }'},
     {id: 'expectedCursorPos', description: 'e.g. 1,12'},
-    {id: 'filePath', as: 'string', defaultValue: '/plugins/ui/tests/completion-tests.js'},
+    {id: 'filePath', as: 'string', defaultValue: '/plugins/ui/common/ui-common-tests.js'},
     {id: 'dsl', as: 'string'},
     {id: 'remoteSuggestions', as: 'boolean', type: 'boolean'}
   ],
@@ -126,7 +126,7 @@ component('fixEditedCompTest', {
   params: [
     {id: 'compText', as: 'string', description: 'use __ for completion point'},
     {id: 'expectedFixedComp', as: 'string'},
-    {id: 'filePath', as: 'string', defaultValue: '/plugins/ui/tests/completion-tests.js'},
+    {id: 'filePath', as: 'string', defaultValue: '/plugins/ui/common/ui-common-tests.js'},
     {id: 'dsl', as: 'string'}
   ],
   impl: async (ctx,compText,expectedFixedComp,filePath,dsl) => {
@@ -144,7 +144,7 @@ component('langService.dummyCompProps', {
   params: [
     {id: 'compText', as: 'string', mandatory: true, description: 'use __ for completion point'},
     {id: 'dsl', as: 'string'},
-    {id: 'filePath', as: 'string', defaultValue: '/plugins/ui/tests/completion-tests.js'},
+    {id: 'filePath', as: 'string', defaultValue: '/plugins/ui/common/ui-common-tests.js'},
     {id: 'includeCircuitOptions', as: 'boolean', type: 'boolean<>'}
   ],
   impl: (ctx,_compText,dsl,_filePath, includeCircuitOptions) => {

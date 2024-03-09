@@ -57,7 +57,7 @@ component('suggestions.calcFromProbePreview', {
 
 component('probe.remoteCircuitPreview', {
   params: [
-    {id: 'circuitPath', as: 'string', mandatory: 'true'}
+    {id: 'circuitPath', as: 'string', mandatory: 'true', defaultValue: '%$probe/defaultMainCircuit%'}
   ],
   type: 'control',
   impl: If({

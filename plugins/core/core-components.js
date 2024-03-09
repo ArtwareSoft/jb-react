@@ -33,15 +33,6 @@ component('If', {
   impl: ({},cond,_then,_else) => cond() ? _then() : _else()
 })
 
-component('firstNotEmpty', {
-  type: 'any',
-  params: [
-    {id: 'first', type: '$asParent', dynamic: true, mandatory: true},
-    {id: 'second', type: '$asParent', dynamic: true, mandatory: true}
-  ],
-  impl: If('%$first()%', '%$first()%', '%$second()%')
-})
-
 component('TBD', {
   type: 'any',
   hidden: true,

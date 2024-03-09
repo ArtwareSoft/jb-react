@@ -48,6 +48,7 @@ async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl, baseUrl,
     sourceCode,
     loadedFiles: {},
     plugins: {},
+    loadjbFile, pathToPluginId
   }
   if (!multipleInFrame) globalThis.jb = jb // multipleInFrame is used in jbm.child
   if (sourceCode.actualCode) {
@@ -65,7 +66,7 @@ async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl, baseUrl,
     ...((sourceCode.plugins||[]).indexOf('*') != -1 ? Object.values(jb.plugins).filter(x=>!x.isProject).map(x=>x.id).filter(x=>x!='*') : (sourceCode.plugins || [])) 
     ]).filter(x=>jb.plugins[x])
 
-  await ['jb-core','core-utils','jb-expression','db','jb-macro','spy'].map(x=>`/plugins/core/${x}.js`).reduce((pr,path) => 
+  await ['jb-core','core-utils','core-components','jb-expression','db','jb-macro','spy'].map(x=>`/plugins/core/${x}.js`).reduce((pr,path) => 
     pr.then(()=> loadjbFile(path,{noProxies: true, plugin: jb.plugins.core, fileSymbols: jb.plugins.core.files.find(x=>x.path == path)})), Promise.resolve())
   if (initSpyByUrl)
     jb.spy.initSpyByUrl()
@@ -91,11 +92,11 @@ async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl, baseUrl,
     ar.forEach(e=>{ if (!keys[f(e)]) { keys[f(e)] = true; res.push(e) } })
     return res
   }
-  function pathToPluginId(path) {
+  function pathToPluginId(path,addTests) {
     const innerPath = (path.match(/(plugins|projects)\/(.+)/) || ['','',''])[2].split('/').slice(0,-1)
     const testFile = path.match(/-(tests|testers).js$/)
     const testFolder = path.match(/\/tests\//)
-    const tests = testFile || (testFolder && innerPath[innerPath.length-1] != 'tests')  ? '-tests': ''
+    const tests = addTests || testFile || (testFolder && innerPath[innerPath.length-1] != 'tests')  ? '-tests': ''
     if (testFile && testFolder)
       return innerPath.slice(0,-1).join('-') + tests
     return innerPath.join('-') + tests
@@ -217,7 +218,7 @@ function packedCodePrefix(jb,libs,libsToInit) {
     `const jb = ${JSON.stringify(_jb)}`,
     `jb.uri = uri || 'main'`,
     `jb.startTime = new Date().getTime()`,
-    `jb.createPlugins = function ${jb.createPlugins.toString()};\n`,
+    jbCreatePlugins.toString(),
     jbLoadPackedFile.toString(),
     `\njbloadPlugins(jb,jbLoadPackedFile)`,
     `if (initSpyByUrl) jb.spy.initSpyByUrl()`,
@@ -249,6 +250,13 @@ function jbLoadPackedFile({lineInPackage, jb, noProxies, path,fileDsl,pluginId},
       jb.loadedFiles[path] = true
   } catch (e) {
   }
+}
+
+function jbCreatePlugins(jb,plugins) {
+  jbHost.defaultCodePackage = jbHost.defaultCodePackage || jbHost.codePackageFromJson()
+  plugins.forEach(plugin=> {
+    jb.plugins[plugin.id] = jb.plugins[plugin.id] || { ...plugin, codePackage : jbHost.defaultCodePackage }
+  })
 }
 
 if (typeof module != 'undefined') module.exports = { jbInit };

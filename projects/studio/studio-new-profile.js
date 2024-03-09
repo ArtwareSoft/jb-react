@@ -1,4 +1,3 @@
-using('ui-itemlist-container')
 
 component('studio.categoriesMarks', {
   params: [
