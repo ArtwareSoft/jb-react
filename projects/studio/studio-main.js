@@ -1,4 +1,4 @@
-using('remote-widget,watchable-comps,probe-preview,tgp-lang-server,workspace-IDE,ui-slider')
+using('remote-widget,watchable-comps,probe-preview,tgp-lang-server,workspace-ui,ui-slider')
 
 component('dataResource.studio', {
   watchableData: {

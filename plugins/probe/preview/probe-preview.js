@@ -1,4 +1,26 @@
-using('probe,watchable-comps,tree-shake,remote-widget,testing,probe-result-ui')
+using('probe-core,watchable-comps,tree-shake,remote-widget,testing,ui-misc,probe-result-ui')
+
+component('probe.inOutView', {
+  type: 'control',
+  impl: group({
+    controls: [
+      group({
+        controls: probeUI.probeResView(),
+        features: [
+          feature.if('%$probe/path%'),
+          group.wait(pipe(probe.runCircuit('%$probe/path%'), '%result%'), text('...'), {
+            varName: 'probeResult',
+            passRx: true
+          })
+        ]
+      })
+    ],
+    layout: layout.horizontal(),
+    features: [
+      watchRef('%$probe%', 'yes', { strongRefresh: true })
+    ]
+  })
+})
 
 component('circuit', {
   type: 'source-code<loader>',
@@ -180,28 +202,6 @@ component('probe.propertyPrimitive', {
         showHelper: suggestions.shouldShow(true),
         onEnter: suggestions.applyOption()
       })
-    ]
-  })
-})
-
-component('probe.inOutView', {
-  type: 'control',
-  impl: group({
-    controls: [
-      group({
-        controls: probeUI.probeResView(),
-        features: [
-          feature.if('%$probe/path%'),
-          group.wait(pipe(probe.runCircuit('%$probe/path%'), '%result%'), text('...'), {
-            varName: 'probeResult',
-            passRx: true
-          })
-        ]
-      })
-    ],
-    layout: layout.horizontal(),
-    features: [
-      watchRef('%$probe%', 'yes', { strongRefresh: true })
     ]
   })
 })

@@ -1,4 +1,4 @@
-using('testing','tgp-text-editor')
+using('testing','ui-misc','ui-styles','tgp-text-editor')
 
 component('test.showTestInStudio', {
   type: 'control',

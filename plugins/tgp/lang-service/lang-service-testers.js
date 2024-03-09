@@ -1,4 +1,4 @@
-using('workspace')
+using('workspace-core')
 
 extension('test', 'completion', {
 	initExtension() {

@@ -1,4 +1,4 @@
-using('ui-tests,workspace-IDE')
+using('ui-tests,workspace-ui')
 
 component('tgpTextEditorTest.getPosOfPath', {
   impl: dataTest({

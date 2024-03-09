@@ -1,4 +1,4 @@
-using('probe-tests')
+using('ui-tests')
 
 component('FETest.workerPreviewTest.suggestions.select', {
   impl: uiFrontEndTest({
