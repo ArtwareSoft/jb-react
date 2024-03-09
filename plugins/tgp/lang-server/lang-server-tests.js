@@ -61,7 +61,7 @@ component('langServerTest.localReferences', {
 //   })
 // })
 
-component('dataTest.remote.circuitOptions', {
+component('langServerTest.remote.circuitOptions', {
   doNotRunInTests: true,
   impl: dataTest({
     calculate: remote.circuitOptions('/plugins/common/xx.js', 'data<>list'),

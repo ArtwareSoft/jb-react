@@ -1,19 +1,31 @@
+
 ui plugins
-  separate mdi styles
-  separate tests
-  common and misc
+  net under remote
+  watchable-comps under watchable
+  loader under core
+  dataFlow?
+  data
+    flow
+      reactive
+    watchable
+    writable
+
+  tree-shake under core
+  watchableCode - maybe under tgp
+
+  vega under ui
+  studio under tgp
+  tgp-studio
+  tgp-vscode
+
 tests
   log which tests use worker or cmd
   try to run tests in parallel
+share workers and processes
+  http://localhost:8082/hosts/tests/tests.html?pattern=jbm|FETest|remote|net|Server|vega
     
-pretty print - fix If probe.remoteCircuitPreview
-inner plugins
-  fix tgp structure - maybe most studio can move under tgp
-  create db structure
-  tree-shake under loader
-
-
 pipeline - allowInnerVars property
+  dataTest -> testData
 add second parameter array by value
 
 show 10 circuits in ctrl+J

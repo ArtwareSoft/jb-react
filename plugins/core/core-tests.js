@@ -71,21 +71,21 @@ component('dataTest.ctx.expOfRefWithBooleanType', {
   })
 })
 
-component('dataTest.writeValue', {
+component('actionTest.writeValue', {
   impl: dataTest('%$person/age%', equals('20'), { runBefore: writeValue('%$person/age%', 20) })
 })
 
-component('dataTest.writeValueFalseBug', {
+component('actionTest.writeValueFalseBug', {
   impl: dataTest('%$person/male%', equals(false), { runBefore: writeValue('%$person/male%', false) })
 })
 
-component('dataTest.spliceDelete', {
+component('actionTest.spliceDelete', {
   impl: dataTest(pipeline('%$personWithChildren/children/name%', join()), contains('Bart,Maggie'), {
     runBefore: splice('%$personWithChildren/children%', 1, { noOfItemsToRemove: 1 })
   })
 })
 
-component('dataTest.splice', {
+component('actionTest.splice', {
   impl: dataTest(pipeline('%$personWithChildren/children/name%', join()), contains('Bart,Lisa2,Maggie2,Maggie'), {
     runBefore: splice('%$personWithChildren/children%', 1, {
       noOfItemsToRemove: 1,
@@ -94,11 +94,11 @@ component('dataTest.splice', {
   })
 })
 
-component('dataTest.writeValueInner', {
+component('actionTest.writeValueInner', {
   impl: dataTest('%$person/zz/age%', equals('20'), { runBefore: writeValue('%$person/zz/age%', 20) })
 })
 
-component('dataTest.writeValueWithLink', {
+component('actionTest.writeValueWithLink', {
   impl: dataTest({
     calculate: '%$personWithChildren/children[0]/name%,%$person/linkToBart/name%',
     expectedResult: equals('Barty1,Barty1'),
@@ -109,7 +109,7 @@ component('dataTest.writeValueWithLink', {
   })
 })
 
-component('dataTest.writeValueViaLink', {
+component('actionTest.writeValueViaLink', {
   impl: dataTest({
     calculate: '%$personWithChildren/children[0]/name%,%$person/linkToBart/name%',
     expectedResult: equals('Barty1,Barty1'),
@@ -120,7 +120,7 @@ component('dataTest.writeValueViaLink', {
   })
 })
 
-component('dataTest.writeValueWithArrayLink', {
+component('actionTest.writeValueWithArrayLink', {
   impl: dataTest({
     calculate: '%$personWithChildren/children[0]/name%,%$person/childrenLink[0]/name%',
     expectedResult: equals('Barty1,Barty1'),
@@ -131,7 +131,7 @@ component('dataTest.writeValueWithArrayLink', {
   })
 })
 
-component('dataTest.writeValueViaArrayLink', {
+component('actionTest.writeValueViaArrayLink', {
   impl: dataTest({
     calculate: '%$personWithChildren/children[0]/name%,%$person/childrenLink[0]/name%',
     expectedResult: equals('Barty1,Barty1'),
@@ -142,7 +142,7 @@ component('dataTest.writeValueViaArrayLink', {
   })
 })
 
-component('dataTest.runActionOnItemsArrayRef', {
+component('actionTest.runActionOnItemsArrayRef', {
   impl: dataTest(pipeline('%$personWithChildren/children/name%', join(',')), equals('aBart,aLisa,aMaggie'), {
     runBefore: runActionOnItems('%$personWithChildren/children/name%', writeValue('%%', 'a%%'))
   })
@@ -160,7 +160,7 @@ component('dataTest.refOfArrayItem', {
         ctx.exp('%$personWithChildren/children[1]%','ref').path().join('/') == 'personWithChildren/children/1')
 })
 
-component('dataTest.refOfStringArrayItemSplice', {
+component('actionTest.refOfStringArrayItemSplice', {
   impl: dataTest({
     vars: [Var('refs', obj())],
     calculate: '',
@@ -175,7 +175,7 @@ component('dataTest.refOfStringArrayItemSplice', {
   })
 })
 
-component('dataTest.refOfStringArrayItemMove', {
+component('actionTest.refOfStringArrayItemMove', {
   impl: dataTest({
     vars: [Var('refs', obj())],
     calculate: '',
@@ -191,7 +191,7 @@ component('dataTest.refOfStringArrayItemMove', {
   })
 })
 
-component('dataTest.refOfStringTreeMove', {
+component('actionTest.refOfStringTreeMove', {
   impl: dataTest({
     vars: [Var('refs', obj())],
     calculate: '',
@@ -207,7 +207,7 @@ component('dataTest.refOfStringTreeMove', {
   })
 })
 
-component('dataTest.moveDown.checkPaths', {
+component('actionTest.moveDown.checkPaths', {
   impl: dataTest({
     vars: [Var('res', obj())],
     calculate: '',
@@ -281,7 +281,7 @@ component('dataTest.waitForPromise', {
 
 component('arTest', { watchableData: { ar: ['0'] }})
 
-component('dataTest.restoreArrayIdsBug', {
+component('actionTest.restoreArrayIdsBug', {
   impl: dataTest('%$arTest/result%', contains('0'), {
     runBefore: ctx => {
       const ar_ref = ctx.run('%$arTest/ar%',{as: 'ref'});
@@ -345,7 +345,7 @@ component('dataTest.nonWatchableRef', {
   })
 })
 
-component('dataTest.innerOfUndefinedVar', {
+component('actionTest.innerOfUndefinedVar', {
   impl: dataTest('%$unknown/a%', ({data}) => data === undefined, {
     runBefore: writeValue('%$unknown/a%', '7'),
     allowError: true
@@ -361,7 +361,7 @@ component('dataTest.innerOfUndefinedVar', {
 
 component('watchableVar', { watchableData: 'hey' })
 
-component('dataTest.stringWatchableVar', {
+component('actionTest.stringWatchableVar', {
   impl: dataTest('%$watchableVar%', equals('foo'), {
     runBefore: writeValue('%$watchableVar%', 'foo')
   })

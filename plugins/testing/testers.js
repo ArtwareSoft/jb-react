@@ -211,13 +211,13 @@ extension('test', {
 			concatMap(e => fromPromise((async () => {
 				counter++
 				if (counter % 100 == 0)
-					await jb.delay(500) // gc
-				if (e[1].impl.timeout && e[1].impl.timeout > 1000)
-					await jb.delay(5)
+					await jb.delay(5) // gc
+				// if (e[1].impl.timeout && e[1].impl.timeout > 1000)
+				// 	await jb.delay(5)
 				const testID = e[0], fullTestId = e[2]
 				//if (testID == 'previewTest.childJbm') debugger
 				document.getElementById('progress').innerHTML = `<div id=${testID}>${index++}: ${testID} started</div>`
-				await jb.delay(1)
+				//await jb.delay(1)
 				console.log('starting ' + testID )
 				const res = await jb.test.runSingleTest(testID,{showOnlyTest, fullTestId })
 				console.log('end      ' + testID, res)

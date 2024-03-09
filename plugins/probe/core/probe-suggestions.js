@@ -147,7 +147,7 @@ extension('probe', 'suggestions', {
 component('suggestions.shouldShow', {
   type: 'boolean',
   params: [
-    {id: 'expressionOnly', as: 'boolean', type: 'boolean'}
+    {id: 'expressionOnly', as: 'boolean', type: 'boolean', byName: true}
   ],
   impl: (ctx,expressionOnly) => new jb.probe.suggestions(jb.val(ctx.data), expressionOnly).suggestionsRelevant()
 })
@@ -218,14 +218,14 @@ component('probe.pruneResult', {
 component('suggestions.applyOption', {
   type: 'action',
   params: [
-    {id: 'toAdd', as: 'string', description: '% or /', defaultValue: '%'}
+    {id: 'addSuffix', as: 'string', description: '% or /', defaultValue: '%', byName: true}
   ],
-  impl: (ctx,toAdd) => {
+  impl: (ctx,addSuffix) => {
       const option = jb.val(ctx.vars.selectedOption)
       if (option.type == 'value') {
         const input = option.input
         const primiteVal = typeof option.value != 'object'
-        const toPaste = option.toPaste + (primiteVal ? '%' : toAdd)
+        const toPaste = option.toPaste + (primiteVal ? '%' : addSuffix)
         const pos = option.pos + 1
         const newVal = () => input.value.substr(0,option.pos-option.tail.length) + toPaste + input.value.substr(pos)
         ctx.runAction({$: 'editableText.setInputState',

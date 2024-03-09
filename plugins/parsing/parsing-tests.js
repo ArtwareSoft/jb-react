@@ -15,14 +15,14 @@ outside2
 `
 })
 
-component('dataTest.extractTextRepeating', {
+component('parsingTest.extractTextRepeating', {
   impl: dataTest({
     calculate: pipeline(extractText('%$textToParse%', { startMarkers: '#start', endMarker: '#end', repeating: true }), join()),
     expectedResult: equals('first,second')
   })
 })
 
-component('dataTest.extractTextIncludingStartMarker', {
+component('parsingTest.extractTextIncludingStartMarker', {
   impl: dataTest({
     calculate: pipeline(
       extractText('%$textToParse%', {
@@ -39,7 +39,7 @@ second`)
   })
 })
 
-component('dataTest.extractTextIncludingEndMarker', {
+component('parsingTest.extractTextIncludingEndMarker', {
   impl: dataTest({
     calculate: pipeline(
       extractText('%$textToParse%', {
@@ -56,7 +56,7 @@ component('dataTest.extractTextIncludingEndMarker', {
   })
 })
 
-component('dataTest.extractTextExclude', {
+component('parsingTest.extractTextExclude', {
   impl: dataTest({
     calculate: pipeline(
       extractText('%$textToParse%', {
@@ -73,28 +73,28 @@ component('dataTest.extractTextExclude', {
   })
 })
 
-component('dataTest.extractTextRegex', {
+component('parsingTest.extractTextRegex', {
   impl: dataTest({
     calculate: extractText('%$textToParse%', { startMarkers: '#s.*', endMarker: '#e.*', useRegex: true }),
     expectedResult: equals('first')
   })
 })
 
-component('dataTest.breakText', {
+component('parsingTest.breakText', {
   impl: dataTest({
     calculate: json.stringify(breakText('%$textToBreak%', { separators: [';','-'] })),
     expectedResult: equals('[["l1","a1","b1","c1"],["l2","a2","b2","c2"],["l3","a3","b3","c3"]]')
   })
 })
 
-component('dataTest.breakTextRegex', {
+component('parsingTest.breakTextRegex', {
   impl: dataTest({
     calculate: json.stringify(breakText('%$textToBreak2%', { separators: [';','-|\\|'], useRegex: true })),
     expectedResult: equals('[["l1","a1","b1","c1"],["l2","a2","b2","c2"],["l3","a3","b3","c3"]]')
   })
 })
 
-component('dataTest.zipArrays', {
+component('parsingTest.zipArrays', {
   impl: dataTest({
     calculate: json.stringify(zipArrays(() => [[1,2],[10,20],[100,200]])),
     expectedResult: equals('[[1,10,100],[2,20,200]]')

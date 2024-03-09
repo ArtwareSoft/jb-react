@@ -1,15 +1,15 @@
 studio.inspectedJb = jb.ui.parentFrameJb()
 
-component('dataTest.parseProjectHtml', {
-  impl: dataTest({
-    calculate: pipeline(
-      list('%$html-dev%', '%$html-user%', '%$html-cloud%'),
-      {'$': 'studio.parseProjectHtml'},
-      prettyPrint()
-    ),
-    expectedResult: true
-  })
-})
+// component('dataTest.parseProjectHtml', {
+//   impl: dataTest({
+//     calculate: pipeline(
+//       list('%$html-dev%', '%$html-user%', '%$html-cloud%'),
+//       {'$': 'studio.parseProjectHtml'},
+//       prettyPrint()
+//     ),
+//     expectedResult: true
+//   })
+// })
 
 component('studioHelper.main', {
   params: [

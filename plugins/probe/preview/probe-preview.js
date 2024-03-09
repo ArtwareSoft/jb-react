@@ -195,11 +195,11 @@ component('probe.propertyPrimitive', {
   impl: editableText({
     databind: tgp.ref('%$path%'),
     features: [
-      feature.onKey('Right', suggestions.applyOption('/')),
+      feature.onKey('Right', suggestions.applyOption({ addSuffix: '/' })),
       editableText.picklistHelper({
         options: suggestions.calcFromProbePreview('%$path%', { expressionOnly: true }),
         picklistFeatures: picklist.allowAsynchOptions(),
-        showHelper: suggestions.shouldShow(true),
+        showHelper: suggestions.shouldShow({ expressionOnly: true }),
         onEnter: suggestions.applyOption()
       })
     ]

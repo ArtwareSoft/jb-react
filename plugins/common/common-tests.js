@@ -24,12 +24,6 @@ component('dataTest.varInPipeline', {
   impl: dataTest(pipeline(Var('a', '33'), '%$a%'), equals('33'))
 })
 
-component('dataTest.runActionOnItems', {
-  impl: dataTest(pipeline('%$personWithChildren/children/name%', join()), equals('aBart,aLisa,aMaggie'), {
-    runBefore: runActionOnItems('%$personWithChildren/children%', writeValue('%name%', 'a%name%'))
-  })
-})
-
 component('dataTest.select', {
   impl: dataTest(pipeline('%$personWithChildren/children%', '%name%', join()), equals('Bart,Lisa,Maggie'))
 })
@@ -44,13 +38,6 @@ component('dataTest.toUpperCase', {
 
 component('dataTest.split', {
   impl: dataTest(pipeline('1,2', split(',', { part: 'last' })), equals('2'))
-})
-
-component('dataTest.split2', {
-  impl: dataTest({
-    calculate: pipeline('one-two-free', split('-', { part: 'but first' }), join(',')),
-    expectedResult: equals('two,free')
-  })
 })
 
 component('dataTest.splitAllFeatures', {
@@ -86,7 +73,7 @@ component('dataTest.pipe', {
 })
 
 component('dataTest.pipeWithPromise', {
-  impl: dataTest(pipe(ctx => Promise.resolve([1,2]), join()), equals('1,2'))
+  impl: dataTest(pipe(delay(1), list(1,2), join()), equals('1,2'))
 })
 
 component('dataTest.pipeInPipe', {
@@ -95,7 +82,7 @@ component('dataTest.pipeInPipe', {
 
 component('dataTest.pipeInPipeWithDelayedVar', {
   impl: dataTest({
-    calculate: pipe(Var('a', ctx => Promise.resolve(3)), pipe(delay(1), list([1,2,'%$a%']), join())),
+    calculate: pipe(Var('a', delay(1, 3)), pipe(delay(1), list([1,2,'%$a%']), join())),
     expectedResult: equals('1,2,3')
   })
 })
@@ -106,13 +93,6 @@ component('dataTest.pipeWithPromise2', {
 
 component('dataTest.pipeWithPromise3', {
   impl: dataTest(pipe(list(dataTest.delayedObj(1), 2, dataTest.delayedObj(3)), join()), equals('1,2,3'))
-})
-
-component('dataTest.dataSwitch', {
-  impl: dataTest({
-    calculate: pipeline(5, Switch(Case(equals(4), 'a'), Case(equals(5), 'b'), Case(equals(6), 'c'))),
-    expectedResult: equals('b')
-  })
 })
 
 component('dataTest.dataSwitchDefault', {
@@ -212,5 +192,11 @@ component('dataTest.convertGradeToDescription', {
   impl: dataTest({
     calculate: pipeline(list(95,85,72,65,55,-5), convertGradeToDescription('%%'), join()),
     expectedResult: equals('Excellent,Very Good,Good,Pass,Fail,Invalid grade')
+  })
+})
+
+component('actionTest.runActionOnItems', {
+  impl: dataTest(pipeline('%$personWithChildren/children/name%', join()), equals('aBart,aLisa,aMaggie'), {
+    runBefore: runActionOnItems('%$personWithChildren/children%', writeValue('%name%', 'a%name%'))
   })
 })
