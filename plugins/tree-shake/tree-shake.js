@@ -225,39 +225,7 @@ extension('treeShake', {
         if (!_paths.length) return []
         paths.forEach(path=>jb.treeShake.existingFEPaths[path] = true)
         return jb.utils.unique(jb.treeShake.treeShake(_paths,jb.treeShake.existing()).map(path=>path.split('~')[0]).filter(id=>jb.treeShake.missing(id)))
-    },
-    async loadFELibsDirectly(libs) {
-        if (!libs.length) return
-        if (typeof document == 'undefined') {
-            debugger
-            return jb.logError('can not load front end libs to a frame without a document')
-        }
-        const libsToLoad = jb.utils.unique(libs)//.filter(lib=>! jb.treeShake.FELibsToLoad[lib])
-        libsToLoad.forEach(lib=> jb.treeShake.FELibLoaderPromises[lib] = jb.treeShake.FELibLoaderPromises[lib] || loadFile(lib) )
-        jb.log('FELibs toLoad',{libsToLoad})
-        return libsToLoad.reduce((pr,lib) => pr.then(()=> jb.treeShake.FELibLoaderPromises[lib]), Promise.resolve())
-
-        function loadFile(lib) {
-            return new Promise(resolve => {
-                const type = lib.indexOf('.css') == -1 ? 'script' : 'link'
-                if (type == 'script') {
-                    (async () => {
-                        const code = await jb.frame.fetch(`${jb.baseUrl||''}/dist/${lib}`).then(x=>x.text())
-                        eval(code)
-                        resolve()
-                    })()
-                }
-                var s = document.createElement(type)
-                s.setAttribute(type == 'script' ? 'src' : 'href',`${jb.baseUrl||''}/dist/${lib}`)
-                if (type == 'script') 
-                    s.setAttribute('charset','utf8') 
-                else 
-                    s.setAttribute('rel','stylesheet')
-                s.onload = s.onerror = resolve
-                document.head.appendChild(s)
-            })
-        }        
-    },
+    }
 })
 
 component('treeShake.getCode', {

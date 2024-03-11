@@ -6,7 +6,7 @@
   "open_source_cmd_sublime": "\"c:\\Program Files\\sublime Text 3\\\"subl ",
   "open_source_cmd": "code -r -g ",
   "port": 8082,
-  "https": false,
+  "https": true,
   "http_dir": "./",
   "exclude": "node_modules",
   "devHost": true,

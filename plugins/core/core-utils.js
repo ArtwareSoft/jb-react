@@ -358,7 +358,9 @@ extension('utils', 'generic', {
     },
     sessionStorage(id,val) {
       if (!jb.frame.sessionStorage) return
-      return val == undefined ? JSON.parse(jb.frame.sessionStorage.getItem(id)) : jb.frame.sessionStorage.setItem(id,JSON.stringify(val))
+      const currentValue = JSON.parse(jb.frame.sessionStorage.getItem(id))
+      return val == undefined ? currentValue : 
+        jb.frame.sessionStorage.setItem(id, JSON.stringify(val && typeof val == 'object' ? {...(currentValue||{}),...val} : val))
     }
 })
 

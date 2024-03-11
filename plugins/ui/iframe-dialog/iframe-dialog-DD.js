@@ -48,7 +48,7 @@ component('inIframe.dragTitle', {
       )),
       sink.action(runActions(
         action.runFEMethod('setPos'),
-        If('%$useSessionStorage%', action.setSessionStorage('%$sessionStorageId%', '%%'))
+        action.setSessionStorage('dialog', obj(prop('pos','%%')))
       ))
     )
   )
@@ -57,11 +57,12 @@ component('inIframe.dragTitle', {
 component('inIframe.resizer', {
   type: 'dialog-feature',
   params: [
-    {id: 'padding', as: 'number', defaultValue: 0},
+    {id: 'padding', as: 'number', defaultValue: 0}
   ],
   impl: features(
+    variable('baseUrl',() => jbHost.baseUrl),
     templateModifier(({},{vdom}) => { vdom && vdom.tag == 'div' && vdom.children.push(jb.ui.h('img.jb-resizer',{})) }),
-    css(`>.jb-resizer { cursor: pointer; position: absolute; right: %$padding%px; bottom: %$padding%px; content:url("${jbHost.baseUrl}/dist/css/resizer.gif") }`),
+    css('>.jb-resizer { cursor: pointer; position: absolute; right: %$padding%px; bottom: %$padding%px; content:url("%$baseUrl%/dist/css/resizer.gif") }'),
     frontEnd.var('padding', '%$padding%'),
     frontEnd.method('setSize', ({data},{cmp,padding}) => {
         cmp.iframe.style.height = data.top +'px'
@@ -74,21 +75,18 @@ component('inIframe.resizer', {
         autoResizeOffsets.forEach(({elem,offset}) => elem.style.height = (data.top-offset-padding*2) +'px')
 	  }),
     frontEnd.init(({},{cmp, padding, el}) => // wait for libs to load
-       jb.delay(100).then(() => cmp.iframe.style.height = el.getBoundingClientRect().height+padding*2 +'px')
-    ),
+       jb.delay(100).then(() => cmp.iframe.style.height = el.getBoundingClientRect().height+padding*2 +'px')),
     frontEnd.prop('resizerElem', ({},{cmp}) => cmp.base.querySelector('.jb-resizer')),
     frontEnd.flow(
       source.event('mousedown', '%$cmp.resizerElem%'),
       rx.takeUntil('%$cmp.destroyed%'),
-      rx.var('offset', ({},{el}) => ({ left: el.getBoundingClientRect().left,	top:  el.getBoundingClientRect().top }) ),
-      rx.flatMap(
-        rx.pipe(
-          source.event('mousemove'),
-          rx.takeWhile('%buttons%!=0'),
-          rx.map(({data},{offset}) => ({ left: Math.max(0, data.clientX - offset.left),	top: Math.max(0, data.clientY - offset.top) }))
-        )
-      ),
-      sink.FEMethod('setSize')
+      rx.var('offset', ({},{el}) => ({ left: el.getBoundingClientRect().left,	top:  el.getBoundingClientRect().top })),
+      rx.flatMap(rx.pipe(
+        source.event('mousemove'),
+        rx.takeWhile('%buttons%!=0'),
+        rx.map(({data},{offset}) => ({ left: Math.max(0, data.clientX - offset.left),	top: Math.max(0, data.clientY - offset.top) }))
+      )),
+      sink.action(runActions(action.runFEMethod('setSize'), action.setSessionStorage('dialog', obj(prop('size', '%%')))))
     )
   )
 })
@@ -104,17 +102,27 @@ component('inIframe.Floating', {
   impl: customStyle({
     template: (cmp,{title,contentComp,id},h) => h('div',{ class: 'jb-dialog', id},[
 				h('div',{class: 'dialog-title noselect'},title),
-				cmp.hasMenu ? h('div',{class: 'dialog-menu'}, h(cmp.menuComp)): '',
-				h('button.dialog-close', {onclick: 'dialogClose' },'×'),
+				h('div',{class: 'dialog-menu'}, [
+				h('button', { id: 'backToSize', title: 'back to last size' },'‾'),
+				h('button', { id: 'shrink', title: 'shrink' },'–'),
+				h('button', { id: 'fullScreen', title: 'full screen' },'🗖'),
+      ]),
 				h('div',{class: 'jb-dialog-content-parent'},h(contentComp)),
 			]),
     css: '{ overflow: auto; border-radius: 4px; padding1: 0 12px 12px 12px;background: white;box-shadow: 0px 0px 7px 8px gray; }',
     features: [
       css('>.dialog-title { background: white !important;  padding: 10px 5px;}'),
       css('>.jb-dialog-content-parent { padding: 0; overflow-y: auto; overflow-x: hidden; }'),
-      css('>.dialog-close {position: absolute;cursor: pointer;right: %$padding%px; top: %$padding%px;font: 21px sans-serif;border: none;color: var(--jb-menu-fg);text-shadow: 0 1px 0 var(--jb-menu-bg); font-weight: 700;opacity: .2; }'),
-      css('>.dialog-menu {position: absolute;cursor: pointer;right: 24px; top: 4px;font: 21px sans-serif; border: none;color: var(--jb-menu-fg); text-shadow: 0 1px 0 var(--jb-menu-bg); font-weight: 700;opacity: .2; } '),
-      css('>.dialog-close:hover { opacity: .5 }'),
+      css(`>.dialog-menu {position: absolute; height: 10px;font: 12px sans-serif;border: none; font-weight: 700; cursor: pointer; 
+        width: 60px;
+        display: flex;
+        margin-top: -30px;
+        z-index: 10;
+        right: 16px;
+        justify-content: space-between;
+        flex-direction: row; } `),
+      css('>.dialog-menu>button { border: none; background: white; }'),
+      css('>.dialog-menu>button:hover { opacity: .5 }'),
       inIframe.dragTitle('%$id%', { useSessionStorage: true }),
       frontEnd.var('width', '%$width%'),
       frontEnd.var('height', '%$height%'),
@@ -127,6 +135,20 @@ component('inIframe.Floating', {
         cmp.iframe = window.parent.document.getElementById(jb.ui.parents(el).pop().iframeId)
         cmp.iframe.style.height = height +'px'
         cmp.iframe.style.width = width +'px'
+        jb.utils.sessionStorage('dialog',{size: {top: height, left: width}})
+
+        el.querySelector('#shrink').addEventListener('click', () => {
+          cmp.runFEMethod('setPos',{top: 0, left: 0},{cmp,padding}) 
+          cmp.runFEMethod('setSize',{top: 45, left: 167},{cmp,padding}) 
+        })
+        el.querySelector('#backToSize').addEventListener('click', () => {
+          cmp.runFEMethod('setPos',jb.utils.sessionStorage('dialog').pos,{cmp,padding}) 
+          cmp.runFEMethod('setSize',jb.utils.sessionStorage('dialog').size,{cmp,padding}) 
+        })
+        el.querySelector('#fullScreen').addEventListener('click', () => {
+          cmp.runFEMethod('setPos',{top: 0, left: 0},{cmp,padding}) 
+          cmp.runFEMethod('setSize',{top: window.parent.innerHeight, left: window.parent.innerWidth},{cmp,padding}) 
+        })
       }),      
       dialogFeature.uniqueDialog('%$id%'),
       dialogFeature.maxZIndexOnClick(5000),

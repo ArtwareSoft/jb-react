@@ -4,7 +4,7 @@ extension('ui', 'frontend', {
             const libs = jb.ui.feLibs(content)
             if (libs.length) {
                 jb.ui.addClass(elem,'jb-loading-libs')
-                await jb.treeShake.loadFELibsDirectly(libs)
+                await jb.ui.loadFELibsDirectly(libs)
                 jb.ui.removeClass(elem,'jb-loading-libs')
             }
         }

@@ -23,7 +23,7 @@ component('editableText.markdown', {
   ],
   impl: features(
     frontEnd.requireExternalLibrary('codemirror.js','css/codemirror.css'),
-    frontEnd.requireExternalLibrary('simplemde.js','css/simplemde.css'),
+    frontEnd.requireExternalLibrary('simplemde.js','css/simplemde.css','FontAwesome:css/fontawesome-webfont.woff2'),
     calcProp('text', '%$$model/databind()%'),
     frontEnd.var('text', '%$$props/text%'),
     css.class('md-editor'),
@@ -58,3 +58,11 @@ component('editableText.markdown', {
   )
 })
 
+/*
+@font-face {
+  font-family: 'FontAwesome';
+  src: url('fontawesome-webfont.woff2?v=4.7.0') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+*/

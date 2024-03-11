@@ -1,3 +1,7 @@
+llm helper 
+  wrap as chrome extension v3
+  allow definitions of prompts and inject them
+  expand collapse
 
 ui plugins
   net under remote

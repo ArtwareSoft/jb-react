@@ -1,10 +1,33 @@
 async function initLLMHelper() {
     const res = await fetch('http://localhost:8082/plugins/loader/jb-loader.js')
     await eval(await res.text())
-	const launcherSourceCode = { plugins: ['ui-iframe-dialog']}
-	const jb = await jbInit('llmHelper',sourceCode: launcherSourceCode, {baseUrl: 'http://localhost:8082'})
-    jb.exec({$: 'localHelper.openDialogInIframe' })
-
+	const launcherSourceCode = { plugins: ['ui-iframe-dialog','loader']}
+	const jb = await jbInit('llmHelper', launcherSourceCode, {baseUrl: 'http://localhost:8082'})
+    jb.exec({
+        "$": "renderDialogInIframe",
+        "dialogProfile": () => ({
+            "$": "inPlaceDialog",
+            "$$": "control<>inPlaceDialog",
+            "title": "LLM Helper",
+            "content": {
+                "$": "llm.docHelper",
+                "$$": "control<>llm.docHelper",
+                "doc": "%$llmDocExample%"
+            },
+            "style": {
+                "$": "inIframe.Floating",
+                "$$": "dialog-style<>inIframe.Floating",
+                "id": "helper",
+                "width": "460",
+                "height": "600"
+            }
+        }),
+        "sourceCode": {
+            "$": "plugins",
+            "$$": "source-code<loader>plugins",
+            "plugins": "llm"
+        }
+    })
 	// const jb = await jbInit('llmHelper',sourceCode, {baseUrl: 'http://localhost:8082'})
     // console.log(jb.exec('jb initialized','data<>'), jb.sourceCode)
     //await jb.exec({$: 'jbm.start' , jbm: {$:'router' }})

@@ -186,7 +186,45 @@ extension('ui', 'html', {
     const ret = getComputedStyle(el).color
     parent.removeChild(el)
     return ret
-  }
+  },
+  async loadFELibsDirectly(libs) {
+      if (!libs.length) return
+      if (typeof document == 'undefined') {
+          debugger
+          return jb.logError('can not load front end libs to a frame without a document')
+      }
+      const libsToLoad = jb.utils.unique(libs)//.filter(lib=>! jb.treeShake.FELibsToLoad[lib])
+      libsToLoad.forEach(lib=> jb.treeShake.FELibLoaderPromises[lib] = jb.treeShake.FELibLoaderPromises[lib] || loadFELib(lib) )
+      jb.log('FELibs toLoad',{libsToLoad})
+      return libsToLoad.reduce((pr,lib) => pr.then(()=> jb.treeShake.FELibLoaderPromises[lib]), Promise.resolve())
+
+      async function loadFELib(lib) {
+          if (lib.match(/js$/)) {
+            const code = await jb.frame.fetch(`${jb.baseUrl||''}/dist/${lib}`).then(x=>x.text())
+            eval(code)
+          } else if (lib.match(/css$/)) {
+              const code = await jb.frame.fetch(`${jb.baseUrl||''}/dist/${lib}`).then(x=>x.text())
+              const style = document.createElement('style')
+              style.type = 'text/css'
+              style.innerHTML = code
+              document.head.appendChild(style)
+          } else if (lib.match(/woff2$/)) {
+            const [fontName,_lib] = lib.split(':')
+            const arrayBuffer = await jb.frame.fetch(`${jb.baseUrl||''}/dist/${_lib}`).then(x=>x.arrayBuffer())
+            const base64Font = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
+    
+            const fontFace = `
+            @font-face {
+                font-family: '${fontName}';
+                src: url(data:font/woff2;base64,${base64Font}) format('woff2');
+            }`;
+    
+            const style = document.createElement('style');
+            style.textContent = fontFace;
+            document.head.appendChild(style);    
+          }
+        }
+    }
 })
 
 extension('ui', 'beautify', {
