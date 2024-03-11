@@ -48,11 +48,36 @@ component('dialog.init', {
 })
 
 component('dialog.buildComp', {
+  type: 'data<>',
   params: [
     {id: 'dialog', defaultValue: '%$$dialog%'}
   ],
   impl: (ctx,dlg) => jb.ui.ctrl(dlg.ctx, {$: 'feature<>dialog.init'}),
 })
+
+component('inPlaceDialog', {
+  type: 'control<>',
+  params: [
+    {id: 'title', type: 'data', moreTypes: 'control<>', as: 'renderable', dynamic: true },
+    {id: 'content', type: 'control', dynamic: true, templateValue: {$: 'group' }, defaultValue: { $ : 'text' } },
+    {id: 'style', type: 'dialog-style', dynamic: true, defaultValue: dialog.default()},
+    {id: 'menu', type: 'control', dynamic: true},
+    {id: 'onOK', type: 'action', dynamic: true},
+    {id: 'id', as: 'string'},
+    {id: 'features', type: 'dialog-feature[]', dynamic: true},
+  ],
+  impl: ctx => {
+	  const $dialog = { id: ctx.params.id || `dlg-${ctx.id}`, launcherCmpId: ctx.exp('%$cmp/cmpId%') }
+    const ctxWithDialog = ctx.setVars({
+      $dialog,
+      dialogData: {},
+      formContainer: { err: ''},
+    })
+    $dialog.ctx = ctxWithDialog
+    return jb.ui.ctrl(ctxWithDialog, {$: 'feature<>dialog.init'})
+  }
+})
+
 
 component('dialog.createDialogTopIfNeeded', {
   type: 'action',
@@ -187,12 +212,12 @@ component('dialogFeature.dragTitle', {
     calcProp('posFromSessionStorage', If('%$useSessionStorage%', getSessionStorage('%$$props/sessionStorageId%'))),
     css('%$selector% { cursor: pointer; user-select: none }'),
     frontEnd.method('setPos', ({data},{el}) => { 
-			el.style.top = data.top + 'px'
+      el.style.top = data.top + 'px'
 			el.style.left = data.left +'px' 
 		}),
     frontEnd.var('selector', '%$selector%'),
     frontEnd.var('useSessionStorage', '%$useSessionStorage%'),
-    frontEnd.var('sessionStorageId', '%$$props/sessionStorageId%'),
+        frontEnd.var('sessionStorageId', '%$$props/sessionStorageId%'),
     frontEnd.var('posFromSessionStorage', '%$$props/posFromSessionStorage%'),
     frontEnd.init(({},{el,posFromSessionStorage}) => {
 			if (posFromSessionStorage) {
@@ -201,29 +226,29 @@ component('dialogFeature.dragTitle', {
 			}
 		}),
     frontEnd.prop('titleElem', ({},{el,selector}) => el.querySelector(selector)),
-    frontEnd.flow(
+        frontEnd.flow(
       source.event('mousedown', '%$cmp/titleElem%'),
       rx.takeUntil('%$cmp/destroyed%'),
       rx.var('offset', ({data},{el}) => ({
-				left: data.clientX - el.getBoundingClientRect().left,
-				top:  data.clientY - el.getBoundingClientRect().top
+          left: data.clientX - el.getBoundingClientRect().left,
+          top:  data.clientY - el.getBoundingClientRect().top
 			})),
       rx.flatMap(
         rx.pipe(
-          source.eventIncludingPreview('mousemove'),
-          rx.takeWhile('%buttons%!=0'),
-          rx.var('ev'),
-          rx.map(({data},{offset}) => ({
-					left: Math.max(0, data.clientX - offset.left),
-					top: Math.max(0, data.clientY - offset.top),
-				}))
-        )
+        source.eventIncludingPreview('mousemove'),
+        rx.takeWhile('%buttons%!=0'),
+        rx.var('ev'),
+                rx.map(({data},{offset}) => ({
+            left: Math.max(0, data.clientX - offset.left),
+            top: Math.max(0, data.clientY - offset.top),
+  				}))
+      )
       ),
       sink.action(
         runActions(
-          action.runFEMethod('setPos'),
-          If('%$useSessionStorage%', action.setSessionStorage('%$sessionStorageId%', '%%'))
-        )
+        action.runFEMethod('setPos'),
+        If('%$useSessionStorage%', action.setSessionStorage('%$sessionStorageId%', '%%'))
+      )
       )
     )
   )
@@ -514,6 +539,15 @@ component('dialogs.defaultStyle', {
         sink.applyDeltaToCmp('%$delta%', '%$followUpCmp/cmpId%')
       )
     ]
+  })
+})
+
+component('popupLocation', {
+  type: 'dialog-feature<>',
+  impl: templateModifier(({},{vdom}) => { 
+    const id = (vdom.getAttribute('id')||'').replace(/\s/g,'_')
+    if (id && !jb.utils.sessionStorage(id))
+      vdom.addClass(`default-location ${id}`)
   })
 })
 

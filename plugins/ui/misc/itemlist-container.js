@@ -44,7 +44,7 @@ component('itemlistContainer.search', {
     {id: 'title', as: 'string', dynamic: true, defaultValue: 'Search'},
     {id: 'searchIn', type: 'search-in', dynamic: true, defaultValue: search.searchInAllProperties()},
     {id: 'databind', as: 'ref', dynamic: true, defaultValue: '%$itemlistCntrData/search_pattern%'},
-    {id: 'style', type: 'editable-text-style', defaultValue: editableText.mdcSearch(), dynamic: true},
+    {id: 'style', type: 'editable-text-style', dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.cmpCtx), {

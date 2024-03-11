@@ -128,7 +128,7 @@ component('vscodeWebView', {
 <head>
     <meta charset="UTF-8">
     <script type="text/javascript" src="${_jbBaseUrl}/plugins/loader/jb-loader.js"></script>
-    <script type="text/javascript" src="${_jbBaseUrl}/package/${sourceCode.plugins.join(',')}.js"></script>
+    <script type="text/javascript" src="${_jbBaseUrl}/package/${sourceCode.plugins.join(',')}.js?noSourceMaps=true"></script>
     <script type="text/javascript" src="${_jbBaseUrl}/dist/codemirror.js"></script>
     <link rel="stylesheet" type="text/css" href="${_jbBaseUrl}/dist/css/codemirror.css"/>
 

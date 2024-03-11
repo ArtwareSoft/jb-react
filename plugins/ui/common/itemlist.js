@@ -38,3 +38,30 @@ component('itemlist.init', {
     })
   )
 })
+
+component('itemlist.ulLi', {
+  type: 'itemlist-style',
+  impl: customStyle({
+    template: ({},{ctrls},h) => h('ul.jb-itemlist',{},
+        ctrls.map((ctrl) => h('li.jb-item', {}, ctrl.map(singleCtrl=>h(singleCtrl))))),
+    css: `{ list-style: none; padding: 0; margin: 0;}
+    >li { list-style: none; padding: 0; margin: 0;}`,
+    features: itemlist.init()
+  })
+})
+
+component('itemlist.horizontal', {
+  type: 'itemlist-style',
+  moreTypes: 'group-style<>',
+  params: [
+    {id: 'spacing', as: 'number', defaultValue: 0}
+  ],
+  impl: customStyle({
+    template: ({},{ctrls},h) => h('div.jb-itemlist',{},
+        ctrls.map((ctrl) => h('div.jb-item', {}, ctrl.map(singleCtrl=>h(singleCtrl))))),
+    css: `{display: flex}
+        >* { margin-right: %$spacing%px }
+        >*:last-child { margin-right:0 }`,
+    features: itemlist.init()
+  })
+})

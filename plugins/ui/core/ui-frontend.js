@@ -1,7 +1,13 @@
 extension('ui', 'frontend', {
     async refreshFrontEnd(elem, {content} = {}) {
-        if (!(elem instanceof jb.ui.VNode))
-            await jb.treeShake.loadFELibsDirectly(jb.ui.feLibs(content))
+        if (!(elem instanceof jb.ui.VNode)) {
+            const libs = jb.ui.feLibs(content)
+            if (libs.length) {
+                jb.ui.addClass(elem,'jb-loading-libs')
+                await jb.treeShake.loadFELibsDirectly(libs)
+                jb.ui.removeClass(elem,'jb-loading-libs')
+            }
+        }
         jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> {
             const coLocation = jb.ui.parents(el,{includeSelf: true}).find(_elem=>_elem.getAttribute && _elem.getAttribute('colocation') == 'true')
             const coLocationCtx = coLocation && jb.ui.cmps[el.getAttribute('cmp-id')].calcCtx

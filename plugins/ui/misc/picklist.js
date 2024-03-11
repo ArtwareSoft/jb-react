@@ -31,6 +31,31 @@ component('select.native', {
   })
 })
 
+component('picklist.labelList', {
+  type: 'picklist-style',
+  params: [
+    {id: 'labelStyle', type: 'text-style', dynamic: true, defaultValue: text.span()},
+    {id: 'itemlistStyle', type: 'itemlist-style', dynamic: true, defaultValue: itemlist.ulLi()},
+    {id: 'cssForSelected', as: 'string', description: 'e.g. background: red OR >a { color: red }', defaultValue: 'background: #bbb; color: #fff'}
+  ],
+  impl: styleByControl({
+    control: itemlist({
+      items: '%$picklistModel/options%',
+      controls: text('%text%', { style: call('labelStyle') }),
+      style: call('itemlistStyle'),
+      features: [
+        itemlist.selection('%$picklistModel/databind%', '%code%', {
+          databindToSelected: (ctx,{$props}) => $props.items.find(o=>o.code == ctx.data),
+          cssForSelected: '%$cssForSelected%'
+        }),
+        itemlist.keyboardSelection(),
+        watchRef('%$picklistModel/databind%')
+      ]
+    }),
+    modelVar: 'picklistModel'
+  })
+})
+
 component('picklist.allowAsynchOptions', {
   type: 'feature',
   description: 'allows a text value to be reactive or promise',

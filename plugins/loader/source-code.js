@@ -24,7 +24,19 @@ extension('loader','main' , {
       const projects = jb.utils.unique([...(sc1.projects || []), ...(sc2.projects || [])])
       const pluginPackages = jb.utils.unique([...(sc1.pluginPackages || []), ...(sc2.pluginPackages || [])], package => package.repo || 'default')
       return {plugins, projects, pluginPackages}
-    }
+    },
+    pluginsOfProfile(prof, comps = jb.comps) {
+        if (!prof || typeof prof != 'object') return []
+        if (!prof.$$)
+            return jb.utils.unique(Object.values(prof).flatMap(x=>jb.loader.pluginsOfProfile(x)))
+        const comp = comps[prof.$$]
+        if (!comp) {
+            debugger
+            jb.logError(`cmd - can not find comp ${prof.$$} please provide sourceCode`,{ctx})
+            return []
+        }
+        return jb.utils.unique([comp.$plugin,...Object.values(prof).flatMap(x=>jb.loader.pluginsOfProfile(x))]).filter(x=>x)
+    }    
 })
 
 // source-code
@@ -56,6 +68,14 @@ component('sourceCodeByTgpPath', {
     return jb.path(comps[tgpPath.split('~')[0]],'$plugin') || ''
   })
   )
+})
+
+component('plugins', {
+  type: 'source-code',
+  params: [
+    {id: 'plugins', mandatory: true}
+  ],
+  impl: sourceCode(plugins('%$plugins%'))
 })
 
 component('extend', {

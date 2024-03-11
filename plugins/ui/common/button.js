@@ -91,3 +91,11 @@ component('button.native', {
   })
 })
 
+component('button.href', {
+  type: 'button-style',
+  impl: customStyle({
+    template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
+    css: '{color: var(--jb-textLink-fg)} .raised { color: var(--jb-textLink-active-fg) }',
+    features: button.initAction()
+  })
+})

@@ -41,3 +41,12 @@ component('llmHelperTest.localHelper.sayHello', {
     useFrontEnd: true
   })
 })
+
+component('llmHelperTest.docHelper', {
+  impl: uiTest(llm.docHelper('%$llmDocExample%'), contains(''))
+})
+
+component('llmHelperTest.openDialogInIframe', {
+  doNotRunInTests: true,
+  impl: uiFrontEndTest(text('my text'), localHelper.openDialogInIframe(), { renderDOM: true })
+})

@@ -145,7 +145,7 @@ component('cmd', {
   impl: (ctx,_sourceCode,viaHttpServer,doNotStripResult,id,spy,includeLogs) => ({
         uri: id || 'main',
         remoteExec: async (sctx,{data, action} = {}) => {
-            const plugins = !_sourceCode ? pluginsOfProfile([(data || action).profile, jb.path(sctx,'cmpCtx.params')]) : []
+            const plugins = !_sourceCode ? jb.loader.pluginsOfProfile([(data || action).profile, jb.path(sctx,'cmpCtx.params')]) : []
             const sourceCode = _sourceCode || { plugins , pluginPackages: [{$:'defaultPackage'}] }
             sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []), ...plugins])
     
@@ -190,18 +190,18 @@ component('cmd', {
             //     }
             //     return JSON.stringify({$asIs: val})
             // }
-            function pluginsOfProfile(prof) {
-                if (!prof || typeof prof != 'object') return []
-                if (!prof.$$)
-                    return jb.utils.unique(Object.values(prof).flatMap(x=>pluginsOfProfile(x)))
-                const comp = jb.comps[prof.$$]
-                if (!comp) {
-                    debugger
-                    jb.logError(`cmd - can not find comp ${prof.$$} please provide sourceCode`,{ctx})
-                    return []
-                }
-                return jb.utils.unique([comp.$plugin,...Object.values(prof).flatMap(x=>pluginsOfProfile(x))]).filter(x=>x)
-            }
+            // function pluginsOfProfile(prof) {
+            //     if (!prof || typeof prof != 'object') return []
+            //     if (!prof.$$)
+            //         return jb.utils.unique(Object.values(prof).flatMap(x=>pluginsOfProfile(x)))
+            //     const comp = jb.comps[prof.$$]
+            //     if (!comp) {
+            //         debugger
+            //         jb.logError(`cmd - can not find comp ${prof.$$} please provide sourceCode`,{ctx})
+            //         return []
+            //     }
+            //     return jb.utils.unique([comp.$plugin,...Object.values(prof).flatMap(x=>pluginsOfProfile(x))]).filter(x=>x)
+            // }
         },
         createCallbagSource: () => jb.logError('callbag is not supported in statless jbm'),
         createCallbagOperator: () => jb.logError('callbag is not supported in statless jbm'),

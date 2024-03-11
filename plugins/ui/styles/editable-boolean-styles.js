@@ -1,14 +1,5 @@
 using('ui-misc')
 
-component('editableBoolean.checkbox', {
-  type: 'editable-boolean-style',
-  impl: customStyle({
-    template: ({},{databind},h) => h('input', { type: 'checkbox', ...(databind && {checked: ''}) , 
-      onclick: 'toggle', onchange: 'toggle', onkeyup: 'toggleByKey'  }),
-    features: [editableBoolean.initToggle(), field.databind()]
-  })
-})
-
 component('editableBoolean.checkboxWithLabel', {
   type: 'editable-boolean-style',
   impl: customStyle({

@@ -26,10 +26,11 @@ component('html.inIframe', {
   type: 'html-style',
   params: [
     {id: 'width', as: 'string', defaultValue: '100%'},
-    {id: 'height', as: 'string', defaultValue: '100%'}
+    {id: 'height', as: 'string', defaultValue: '100%'},
+    {id: 'id', as: 'string', defaultValue: 'jbart-iframe'}
   ],
   impl: customStyle({
-    template: (cmp,{width,height},h) => h('iframe', {
+    template: (cmp,{width,height,id},h) => h('iframe', { id, 
         sandbox: 'allow-same-origin allow-forms allow-scripts',
         frameborder: 0, width, height,
         src: 'javascript: document.write(parent.contentForIframe)'

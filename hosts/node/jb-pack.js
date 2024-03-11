@@ -8,18 +8,19 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
 const plugins = getProcessArgument('plugins')
 const sourceCodeStr = getProcessArgument('sourcecode') || plugins && `{"plugins": ${JSON.stringify(plugins.split(','))} }`
 if (!sourceCodeStr) {
-    console.log(`usage: jb-pack.js -plugins:common,probe -sourcecode:<sourceCode as json> -text`)
+    console.log(`usage: jb-pack.js -plugins:common,probe -sourcecode:<sourceCode as json> -text -noSourceMaps`)
     process.exit(1)
 }
 
 const sourceCode = JSON.parse(sourceCodeStr)
-jbMake(sourceCode)
+jbMake(sourceCode,{noSourceMaps: getProcessArgument('noSourceMaps')})
 
-async function jbMake(sourceCode, {baseDir} = {}) {
+async function jbMake(sourceCode, {baseDir,noSourceMaps} = {}) {
     baseDir = baseDir || `${jbHost.jbReactDir}/plugins`
     const latestModTime = getLatestModTime(baseDir)
     const sourceCodeStr = JSON.stringify(sourceCode)
-    const fn = sourceCodeStr.replace(/\*/g,'ALL').replace(/[^a-zA-Z\-]/g,'')
+    const noSourceMapsStr = noSourceMaps ? '_noMaps' : ''
+    const fn = sourceCodeStr.replace(/\*/g,'ALL').replace(/[^a-zA-Z\-]/g,'') + noSourceMapsStr
     const tempFilePath = `${jbHost.jbReactDir}/temp/pack-${fn}.js`
     const fileModTime = fs.existsSync(tempFilePath) && fs.statSync(tempFilePath).mtime.getTime()
 
@@ -40,7 +41,8 @@ async function jbMake(sourceCode, {baseDir} = {}) {
                 return [line + (code.match(/\n/g)||[]).length + 1, [...strArr, code]]
             }, [0,[]])
             const mapBase64 = Buffer.from(map.toString()).toString('base64')
-            packedCode = [...strArr,`//` + `# source` + `MappingURL=data:application/json;charset=utf-8;base64,${mapBase64}`].join('\n')
+            const sourceMaps = noSourceMaps ? [] : [`//` + `# source` + `MappingURL=data:application/json;charset=utf-8;base64,${mapBase64}`]
+            packedCode = [...strArr,...sourceMaps].join('\n')
         } else {
             packedCode = '' + fs.readFileSync(tempFilePath)
         }

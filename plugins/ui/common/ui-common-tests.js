@@ -455,7 +455,7 @@ component('uiTest.onKey', {
 component('uiTest.editableText.blockSelfRefresh', {
   impl: uiTest({
     control: group(editableText('name', '%$person/name%'), { features: watchRef('%$person/name%') }),
-    expectedResult: contains('>name<'),
+    expectedResult: contains('Homer Simpson'),
     uiAction: setText('hello', { doNotWaitForNextUpdate: true }),
     expectedCounters: {'start renderVdom': 2}
   })
