@@ -8,28 +8,28 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
 const plugins = getProcessArgument('plugins')
 const sourceCodeStr = getProcessArgument('sourcecode') || plugins && `{"plugins": ${JSON.stringify(plugins.split(','))} }`
 if (!sourceCodeStr) {
-    console.log(`usage: jb-pack.js -plugins:common,probe -sourcecode:<sourceCode as json> -text -noSourceMaps`)
+    console.log(`usage: jb-pack.js -plugins:common,probe -sourcecode:<sourceCode as json> -text -sourceMaps`)
     process.exit(1)
 }
 
 const sourceCode = JSON.parse(sourceCodeStr)
-jbMake(sourceCode,{noSourceMaps: getProcessArgument('noSourceMaps')})
+jbMake(sourceCode,{sourceMaps: getProcessArgument('sourceMaps')})
 
-async function jbMake(sourceCode, {baseDir,noSourceMaps} = {}) {
+async function jbMake(sourceCode, {baseDir,sourceMaps} = {}) {
     baseDir = baseDir || `${jbHost.jbReactDir}/plugins`
     const latestModTime = getLatestModTime(baseDir)
     const sourceCodeStr = JSON.stringify(sourceCode)
-    const noSourceMapsStr = noSourceMaps ? '_noMaps' : ''
-    const fn = sourceCodeStr.replace(/\*/g,'ALL').replace(/[^a-zA-Z\-]/g,'') + noSourceMapsStr
-    const tempFilePath = `${jbHost.jbReactDir}/temp/pack-${fn}.js`
-    const fileModTime = fs.existsSync(tempFilePath) && fs.statSync(tempFilePath).mtime.getTime()
+    const sourceMapsSuffix = sourceMaps ? '_withMaps' : ''
+    const fn = sourceCodeStr.replace(/\*/g,'ALL').replace(/[^a-zA-Z\-]/g,'') + sourceMapsSuffix
+    const packageFilePath = `${jbHost.jbReactDir}/package/${fn}.js`
+    const fileModTime = fs.existsSync(packageFilePath) && fs.statSync(packageFilePath).mtime.getTime()
 
-    const tempIsValid = fileModTime >= latestModTime
+    const packageIsUpdated = fileModTime >= latestModTime
     try {
         let packedCode = ''
-        if (!tempIsValid) {
-            fs.appendFileSync(`${jbHost.jbReactDir}/temp/jb-pack.log`, `temp not valid ${tempFilePath} dir: ${latestModTime} file: ${fileModTime}\n`);
-            const map = new SourceMapGenerator({ file2: `${jbHost.jbReactDir}/temp/${fn}.js` , file: `package/${fn}.js` })
+        if (!packageIsUpdated) {
+            fs.appendFileSync(`${jbHost.jbReactDir}/package/jb-pack.log`, `package not updated ${packageFilePath} dir: ${latestModTime} file: ${fileModTime}\n`);
+            const map = new SourceMapGenerator({ file: `package/${fn}.js` })
             const codeParts = await jbInit('jb-packer', sourceCode, {packOnly: true})
             ;[line,strArr] = codeParts.reduce(([line,strArr], {path,code}) => {
                 code = code.replace(/^jbLoadPackedFile\({lineInPackage: 0/,'jbLoadPackedFile({lineInPackage:'+(line+3))
@@ -41,17 +41,17 @@ async function jbMake(sourceCode, {baseDir,noSourceMaps} = {}) {
                 return [line + (code.match(/\n/g)||[]).length + 1, [...strArr, code]]
             }, [0,[]])
             const mapBase64 = Buffer.from(map.toString()).toString('base64')
-            const sourceMaps = noSourceMaps ? [] : [`//` + `# source` + `MappingURL=data:application/json;charset=utf-8;base64,${mapBase64}`]
-            packedCode = [...strArr,...sourceMaps].join('\n')
+            const sourceMapsContent = sourceMaps ? [`//` + `# source` + `MappingURL=data:application/json;charset=utf-8;base64,${mapBase64}`] : []
+            packedCode = [...strArr,...sourceMapsContent].join('\n')
         } else {
-            packedCode = '' + fs.readFileSync(tempFilePath)
+            packedCode = '' + fs.readFileSync(packageFilePath)
         }
-        if (!tempIsValid)
-            fs.writeFileSync(tempFilePath, packedCode)
+        if (!packageIsUpdated)
+            fs.writeFileSync(packageFilePath, packedCode)
         if (getProcessArgument('text')) {
             process.stdout.write(packedCode)
         } else {
-            process.stdout.write(`/temp/pack-${fn}.js`)
+            process.stdout.write(`/package/${fn}.js`)
         }
         process.stdout.end()
         process.stdout.on('finish', () => process.exit(0))

@@ -1,4 +1,22 @@
-using('ui-misc')
+using('ui-misc','ui-iframe-launcher')
+
+component('renderDialogInIframe', {
+  type: 'action',
+  params: [
+    {id: 'dialog', type: 'control', dynamic: true, byName: true},
+    {id: 'selector', as: 'string', defaultValue: 'body'},
+    {id: 'id', as: 'string', defaultValue: 'main'},
+    {id: 'sourceCode', type: 'source-code<loader>'},
+    {id: 'htmlAtts', as: 'string', defaultValue: 'style="font-size:12px"'}
+  ],
+  impl: renderWidgetInIframe({
+    profile: ({},{},{dialog}) => dialog.profile,
+    selector: '%$selector%',
+    id: '%$id%',
+    sourceCode: '%$sourceCode%',
+    htmlAtts: '%$htmlAtts%'
+  })
+})
 
 component('inIframe.dragTitle', {
   type: 'dialog-feature',
@@ -135,7 +153,7 @@ component('inIframe.Floating', {
         cmp.iframe = window.parent.document.getElementById(jb.ui.parents(el).pop().iframeId)
         cmp.iframe.style.height = height +'px'
         cmp.iframe.style.width = width +'px'
-        jb.utils.sessionStorage('dialog',{size: {top: height, left: width}})
+        jb.utils.sessionStorage('dialog',{size: {top: height, left: width}, pos: {top:0, left: 0}})
 
         el.querySelector('#shrink').addEventListener('click', () => {
           cmp.runFEMethod('setPos',{top: 0, left: 0},{cmp,padding}) 

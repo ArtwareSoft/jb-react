@@ -282,11 +282,11 @@ const base_get_handlers = {
   package: (req,res) => {
     const plugins = (req.url.split('/')[2] || '').split('.js')[0]
     const project = (req.url.split('/')[3] || '').split('.js')[0]
-    const noSourceMaps = getURLParam(req,'noSourceMaps') ? ['-noSourceMaps'] : []
+    const sourceMaps = getURLParam(req,'sourceMaps') ? ['-sourceMaps'] : []
     const arg = project ? `-sourcecode:${JSON.stringify({projects:[project], plugins: (plugins||'').split(',')})}` : `-plugins:${plugins}`
     const escapedArg = arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg}'`
     res.setHeader('Content-Type', 'application/javascript;charset=utf8')
-    const srvr = child.spawn('node',['./jb-pack.js', arg, ...noSourceMaps],{cwd: 'hosts/node'})
+    const srvr = child.spawn('node',['./jb-pack.js', arg, ...sourceMaps],{cwd: 'hosts/node'})
     srvr.stdout.on('data', path => serveFile(req,res,''+path.slice(1)))
     srvr.on('error', (e) => res.end(JSON.stringify({error: `${''+e}`})))  
   },

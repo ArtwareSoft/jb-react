@@ -1,11 +1,11 @@
 async function initLLMHelper() {
     const res = await fetch('http://localhost:8082/plugins/loader/jb-loader.js')
     await eval(await res.text())
-	const launcherSourceCode = { plugins: ['ui-iframe-dialog','loader']}
+	const launcherSourceCode = { plugins: ['ui-iframe-launcher']}
 	const jb = await jbInit('llmHelper', launcherSourceCode, {baseUrl: 'http://localhost:8082'})
     jb.exec({
-        "$": "renderDialogInIframe",
-        "dialogProfile": () => ({
+        "$": "renderWidgetInIframe",
+        "profile": () => ({
             "$": "inPlaceDialog",
             "$$": "control<>inPlaceDialog",
             "title": "LLM Helper",
