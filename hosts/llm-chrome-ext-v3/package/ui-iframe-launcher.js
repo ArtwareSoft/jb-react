@@ -1,5 +1,6 @@
-async function jbLoadPacked({uri,initSpyByUrl}={}) {
-const jb = {"sourceCode":{"plugins":["common"]},"loadedFiles":{},"plugins":{"common":{"id":"common","dependent":["core"],"proxies":["pipeline","pipe","list","firstSucceeding","firstNotEmpty","keys","values","properties","objFromProperties","entries","aggregate","math","objFromEntries","evalExpression","prefix","suffix","removePrefix","removeSuffix","removeSuffixRegex","property","indexOf","writeValue","addToArray","move","splice","removeFromArray","getOrCreate","toggleBooleanValue","slice","sort","first","last","count","reverse","sample","obj","dynamicObject","extend","assign","extendWithIndex","prop","not","and","or","between","contains","notContains","startsWith","endsWith","filter","matchRegex","toUpperCase","toLowerCase","capitalize","join","unique","log","asIs","object","json","split","replace","isNull","notNull","isEmpty","notEmpty","equals","notEquals","runActions","runActionOnItem","runActionOnItems","delay","onNextTimer","extractPrefix","extractSuffix","range","typeOf","className","isOfType","inGroup","Switch","Case","action","formatDate","formatNumber","getSessionStorage","waitFor","addComponent","loadLibs","loadAppFiles","call","typeAdapter","If","TBD","Var","remark","unknownCmp","runCtx","vars","data","isRef","asRef","test"],"files":["/plugins/common/jb-common.js"]},"core":{"id":"core","dependent":[],"proxies":["call","typeAdapter","If","TBD","Var","remark","unknownCmp","runCtx","vars","data","isRef","asRef","test"],"files":["/plugins/core/core-components.js","/plugins/core/core-utils.js","/plugins/core/db.js","/plugins/core/jb-core.js","/plugins/core/jb-expression.js","/plugins/core/jb-macro.js","/plugins/core/spy.js"]}}}
+async function jbLoadPacked({uri,initSpyByUrl,multipleInFrame}={}) {
+const jb = {"sourceCode":{"plugins":["ui-iframe-launcher"]},"loadedFiles":{},"plugins":{"loader":{"id":"loader","dependent":[],"proxies":["sourceCode","sourceCodeByTgpPath","plugins","extend","project","sameAsParent","pluginsByPath","loadAll","packagesByPath","defaultPackage","staticViaHttp","jbStudioServer","fileSystem","zipFile"],"dslOfFiles":[["/plugins/loader/source-code.js","loader"]],"files":["/plugins/loader/jb-loader.js","/plugins/loader/source-code.js"]},"ui-iframe-launcher":{"id":"ui-iframe-launcher","dependent":["loader"],"proxies":["renderWidgetInIframe","sourceCode","sourceCodeByTgpPath","plugins","extend","project","sameAsParent","pluginsByPath","loadAll","packagesByPath","defaultPackage","staticViaHttp","jbStudioServer","fileSystem","zipFile"],"files":["/plugins/ui/iframe/launcher/iframe-launcher.js"]}}}
+if (!multipleInFrame) globalThis.jb = jb
 jb.uri = uri || 'main'
 jb.startTime = new Date().getTime()
 function jbCreatePlugins(jb,plugins) {
@@ -29,8 +30,8 @@ function jbLoadPackedFile({lineInPackage, jb, noProxies, path,fileDsl,pluginId},
 jbloadPlugins(jb,jbLoadPackedFile)
 if (initSpyByUrl) jb.spy.initSpyByUrl()
 
-jb.initializeTypeRules(["utils","db","core","expression","macro","syntaxConverter","spy"])
-await jb.initializeLibs(["utils","db","core","expression","macro","syntaxConverter","spy"])
+jb.initializeTypeRules(["iframe","loader"])
+await jb.initializeLibs(["iframe","loader"])
 jb.beforeResolveTime = new Date().getTime()
 jb.utils.resolveLoadedProfiles()
 jb.resolveTime = new Date().getTime()-jb.beforeResolveTime
@@ -38,7 +39,7 @@ return jb
 }
 
 function jbloadPlugins(jb,jbLoadPackedFile) {
-jbLoadPackedFile({lineInPackage:43, jb, noProxies: true, path: '/plugins/core/jb-core.js',fileDsl: '', pluginId: 'core' }, 
+jbLoadPackedFile({lineInPackage:44, jb, noProxies: true, path: '/plugins/core/jb-core.js',fileDsl: '', pluginId: 'core' }, 
             function({jb,require,component,extension,using,dsl,pluginDsl}) {
 Object.assign(jb, {
   extension(libId, p1 , p2,{plugin,path,lineInPackage}={}) {
@@ -91,6 +92,8 @@ Object.assign(jb, {
     async function loadLib(url,plugin) {
       const codePackage = plugin.codePackage || jbHost.codePackageFromJson()
       try {
+        if (codePackage.loadLib) 
+          return codePackage.loadLib(url)
         const code = await codePackage.fetchFile(`${jbHost.baseUrl||''}${url}`)
         eval(code)
       } catch(e) {
@@ -457,7 +460,7 @@ extension('core', {
 
 });
 
-jbLoadPackedFile({lineInPackage:462, jb, noProxies: true, path: '/plugins/core/core-utils.js',fileDsl: '', pluginId: 'core' }, 
+jbLoadPackedFile({lineInPackage:465, jb, noProxies: true, path: '/plugins/core/core-utils.js',fileDsl: '', pluginId: 'core' }, 
             function({jb,require,component,extension,using,dsl,pluginDsl}) {
 // core utils promoted for easy usage
 Object.assign(jb, {
@@ -819,9 +822,11 @@ extension('utils', 'generic', {
     },
     sessionStorage(id,val) {
       if (!jb.frame.sessionStorage) return
-      const currentValue = JSON.parse(jb.frame.sessionStorage.getItem(id))
-      return val == undefined ? currentValue : 
-        jb.frame.sessionStorage.setItem(id, JSON.stringify(val && typeof val == 'object' ? {...(currentValue||{}),...val} : val))
+      const curVal = JSON.parse(jb.frame.sessionStorage.getItem(id))
+      if (val == undefined) return curVal
+      const cleanedVal = typeof val == 'object' ? Object.fromEntries(Object.entries(val).filter(([_, v]) => v != null)) : val
+      const newVal = typeof val == 'object' ? {...(curVal||{}), ...cleanedVal } : val
+      jb.frame.sessionStorage.setItem(id, JSON.stringify(newVal))
     }
 })
 
@@ -863,7 +868,7 @@ Object.assign(jb, {
 
 });
 
-jbLoadPackedFile({lineInPackage:868, jb, noProxies: true, path: '/plugins/core/core-components.js',fileDsl: '', pluginId: 'core' }, 
+jbLoadPackedFile({lineInPackage:873, jb, noProxies: true, path: '/plugins/core/core-components.js',fileDsl: '', pluginId: 'core' }, 
             function({jb,require,component,extension,using,dsl,pluginDsl}) {
 component('call', {
   type: 'any',
@@ -973,7 +978,7 @@ component('data', {
 
 });
 
-jbLoadPackedFile({lineInPackage:978, jb, noProxies: true, path: '/plugins/core/jb-expression.js',fileDsl: '', pluginId: 'core' }, 
+jbLoadPackedFile({lineInPackage:983, jb, noProxies: true, path: '/plugins/core/jb-expression.js',fileDsl: '', pluginId: 'core' }, 
             function({jb,require,component,extension,using,dsl,pluginDsl}) {
 extension('expression', {
   calc(_exp, ctx, parentParam) {
@@ -1128,7 +1133,7 @@ extension('expression', {
 
 });
 
-jbLoadPackedFile({lineInPackage:1133, jb, noProxies: true, path: '/plugins/core/db.js',fileDsl: '', pluginId: 'core' }, 
+jbLoadPackedFile({lineInPackage:1138, jb, noProxies: true, path: '/plugins/core/db.js',fileDsl: '', pluginId: 'core' }, 
             function({jb,require,component,extension,using,dsl,pluginDsl}) {
 extension('db', 'onAddComponent', {
   $phase :2,
@@ -1278,7 +1283,7 @@ component('asRef', {
 
 });
 
-jbLoadPackedFile({lineInPackage:1283, jb, noProxies: true, path: '/plugins/core/jb-macro.js',fileDsl: '', pluginId: 'core' }, 
+jbLoadPackedFile({lineInPackage:1288, jb, noProxies: true, path: '/plugins/core/jb-macro.js',fileDsl: '', pluginId: 'core' }, 
             function({jb,require,component,extension,using,dsl,pluginDsl}) {
 Object.assign(jb, {
     defComponents: (items,def) => items.forEach(item=>def(item)),
@@ -1434,7 +1439,7 @@ extension('syntaxConverter', 'onAddComponent', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:1439, jb, noProxies: true, path: '/plugins/core/spy.js',fileDsl: '', pluginId: 'core' }, 
+jbLoadPackedFile({lineInPackage:1444, jb, noProxies: true, path: '/plugins/core/spy.js',fileDsl: '', pluginId: 'core' }, 
             function({jb,require,component,extension,using,dsl,pluginDsl}) {
 extension('spy', {
 	$requireFuncs: '#spy.log',
@@ -1638,1204 +1643,580 @@ component('test.calcSpyParamForTest', {
 });
 
 jb.noSupervisedLoad = false
-jbLoadPackedFile({lineInPackage:1643, jb, noProxies: false, path: '/plugins/common/jb-common.js',fileDsl: '', pluginId: 'common' }, 
-            function({jb,require,pipeline,pipe,list,firstSucceeding,firstNotEmpty,keys,values,properties,objFromProperties,entries,aggregate,math,objFromEntries,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,slice,sort,first,last,count,reverse,sample,obj,dynamicObject,extend,assign,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,join,unique,log,asIs,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,delay,onNextTimer,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,loadLibs,loadAppFiles,call,typeAdapter,If,TBD,Var,remark,unknownCmp,runCtx,vars,data,isRef,asRef,test,component,extension,using,dsl,pluginDsl}) {
-using('core')
+jbLoadPackedFile({lineInPackage:1648, jb, noProxies: false, path: '/plugins/loader/jb-loader.js',fileDsl: '', pluginId: 'loader' }, 
+            function({jb,require,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,component,extension,using,dsl,pluginDsl}) {
 
-extension('utils', 'pipe', {
-  calcPipe(ctx,ptName,passRx) {
-    let start = jb.toarray(ctx.data)
-    if (start.length == 0) start = [null]
-    if (typeof ctx.profile.items == 'string')
-      return ctx.runInner(ctx.profile.items,null,'items');
-    const profiles = jb.asArray(ctx.profile.items || ctx.profile[ptName]);
-    const innerPath = (ctx.profile.items && ctx.profile.items.sugar) ? ''
-      : (ctx.profile[ptName] ? (ptName + '~') : 'items~');
-
-    if (ptName == '$pipe') return (async function pipe() {
-      const pipeRes = await profiles.reduce( async (pr,prof,index) => {
-        const data = await pr;
-        const input = await jb.utils.toSynchArray(data, !passRx)
-        const stepRes = await step(prof,index,input)
-        return stepRes
-      }, Promise.resolve(start))
-
-        const res = await jb.utils.toSynchArray(pipeRes, !passRx)
-        return res
-      })()
-
-    return profiles.reduce((data,prof,index) => step(prof,index,data), start)
-
-    function step(profile,i,data) {
-      if (!profile || profile.$disabled) return data;
-      const path = innerPath+i
-      const parentParam = (i < profiles.length - 1) ? { as: 'array'} : (ctx.parentParam || {})
-      if (jb.path(jb.comps[profile.$$],'aggregator'))
-                return jb.core.run( new jb.core.jbCtx(ctx, { data, profile, path }), parentParam)
-      const res = data.map(item => jb.core.run(new jb.core.jbCtx(ctx,{data: item, profile, path}), parentParam))
-        .filter(x=>x!=null)
-        .flatMap(x=> {
-          const val = jb.val(x)
-          return jb.asArray(val)
-        })
-        return res
-    }
+function jbBrowserCodePackage(repo = '', fetchOptions= {}, useFileSymbolsFromBuild) {
+  return {
+    repo: repo.split('/')[0],
+    _fetch(path) { 
+      const hasBase = path && path.match(/\/\//)
+      return fetch(hasBase ? path: jbHost.baseUrl + path, fetchOptions) 
+    },
+    fetchFile(path) { return this._fetch(path).then(x=>x.text()) },
+    fetchJSON(path) { return this._fetch(path).then(x=>x.json()) },
+    fileSymbols(path) { return useFileSymbolsFromBuild ? this.fileSymbolsFromStaticFileServer(path) 
+      : this.fileSymbolsFromStudioServer(path) },
+    fileSymbolsFromStudioServer(path) {
+      return this.fetchJSON(`${jbHost.baseUrl||''}?op=fileSymbols&path=${repo}${path}`)
+    },
+    async fileSymbolsFromStaticFileServer(path) {
+      if (!this.loadedSymbols) {
+        this.loadedSymbols = [
+          ...await this.fetchJSON(`/dist/symbols/plugins.json`),
+          ...await this.fetchJSON(`/dist/symbols/projects.json`),
+        ];
+      }
+      return this.loadedSymbols.filter(e=>e.path.indexOf(path+'/') == 1)
+    },
   }
-})
+}
 
-component('pipeline', {
-  type: 'data',
-  category: 'common:100',
-  description: 'map data arrays one after the other, do not wait for promises and rx',
-  params: [
-    {id: 'items', type: 'data[]', ignore: true, mandatory: true, composite: true, description: 'chain/map data functions'}
-  ],
-  impl: ctx => jb.utils.calcPipe(ctx,'$pipeline')
-})
+globalThis.jbHost = globalThis.jbHost || { // browserHost - studioServer,worker and static
+  fetch: (...args) => globalThis.fetch(...args),
+  baseUrl: '',
+  fetchOptions: {},
+  log(...args) { console.log (...args) },
+  WebSocket_Browser: globalThis.WebSocket,
+  codePackageFromJson(package) {
+    if (package == null || package.$ == 'defaultPackage') return jbBrowserCodePackage('',{})
+    if (package.$ == 'jbStudioServer' || package.$ == 'fileSystem')
+        return jbBrowserCodePackage(`${package.repo}/`)
+    if (package.$ == 'staticViaHttp')
+        return jbBrowserCodePackage(`${package.repo}/`,{mode: 'cores'}, true)
+  }
+}
 
-component('pipe', {
-  type: 'data',
-  category: 'async:100',
-  description: 'synch data, wait for promises and reactive (callbag) data',
-  params: [
-    {id: 'items', type: 'data[]', ignore: true, mandatory: true, composite: true}
-  ],
-  impl: ctx => jb.utils.calcPipe(ctx,'$pipe',false)
-})
+async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl, baseUrl, packOnly} ={}) {
+  if (baseUrl) jbHost.baseUrl = baseUrl // used for extension content script
+  const packedCode = []
+  const jb = { 
+    uri,
+    sourceCode,
+    loadedFiles: {},
+    plugins: {},
+    loadjbFile, pathToPluginId
+  }
+  if (!multipleInFrame) globalThis.jb = jb // multipleInFrame is used in jbm.child
+  if (sourceCode.actualCode) {
+    const f = eval(`(async function (jb) {${sourceCode.actualCode}\n})//# sourceURL=treeShakeClient?${jb.uri}`)
+    await f(jb)
+    return jb
+  }
 
-component('list', {
-  type: 'data',
-  description: 'list definition, flatten internal arrays',
-  params: [
-    {id: 'items', type: 'data[]', as: 'array', composite: true}
-  ],
-  impl: ({},items) => items.flatMap(item=>Array.isArray(item) ? item : [item])
-})
+  const pluginPackages = Array.isArray(sourceCode.pluginPackages) ? sourceCode.pluginPackages : [sourceCode.pluginPackages]
+  await pluginPackages.reduce( async (pr,codePackage)=> pr.then(() =>
+    loadPluginSymbols(jbHost.codePackageFromJson(codePackage),{loadProjects: sourceCode.projects && sourceCode.projects.length})), Promise.resolve());
+  calcPluginDependencies(jb.plugins,jb)
+  const topPlugins = unique([
+    ...((sourceCode.projects||[]).indexOf('*') != -1 ? Object.values(jb.plugins).filter(x=>x.isProject).map(x=>x.id).filter(x=>x!='*') : (sourceCode.projects || [])),
+    ...((sourceCode.plugins||[]).indexOf('*') != -1 ? Object.values(jb.plugins).filter(x=>!x.isProject).map(x=>x.id).filter(x=>x!='*') : (sourceCode.plugins || [])) 
+    ]).filter(x=>jb.plugins[x])
 
-component('firstSucceeding', {
-  type: 'data',
-  params: [
-    {id: 'items', type: 'data[]', as: 'array', composite: true}
-  ],
-  impl: ({},items) => {
-    for(let i=0;i<items.length;i++) {
-      const val = jb.val(items[i])
-      const isNumber = typeof val === 'number'
-      if (val !== '' && val != null && (!isNumber || (!isNaN(val)) && val !== Infinity && val !== -Infinity))
-        return items[i]
+  await ['jb-core','core-utils','core-components','jb-expression','db','jb-macro','spy'].map(x=>`/plugins/core/${x}.js`).reduce((pr,path) => 
+    pr.then(()=> loadjbFile(path,{noProxies: true, plugin: jb.plugins.core, fileSymbols: jb.plugins.core.files.find(x=>x.path == path)})), Promise.resolve())
+  if (initSpyByUrl)
+    jb.spy.initSpyByUrl()
+  jb.noSupervisedLoad = false
+  if (packOnly)
+    packedCode.push({code: 'jb.noSupervisedLoad = false'})
+  if (jb.jbm && treeShakeServerUri) jb.jbm.treeShakeServerUri = sourceCode.treeShakeServerUri
+
+  await loadPlugins(topPlugins)
+  const libs = unique(topPlugins.flatMap(id=>jb.plugins[id].requiredLibs))
+  const libsToInit = sourceCode.libsToInit ? sourceCode.libsToInit.split(','): libs
+  jb.initializeTypeRules(libs)
+  if (packOnly)
+    return [packedCodePrefix(jb,libs,libsToInit), ...packedCode , {code:'}'}]
+
+  await jb.initializeLibs(libsToInit)
+  jb.utils.resolveLoadedProfiles()
+
+  return jb
+
+  function unique(ar,f = (x=>x) ) {
+    const keys = {}, res = []
+    ar.forEach(e=>{ if (!keys[f(e)]) { keys[f(e)] = true; res.push(e) } })
+    return res
+  }
+  function pathToPluginId(path,addTests) {
+    const innerPath = (path.match(/(plugins|projects)\/(.+)/) || ['','',''])[2].split('/').slice(0,-1)
+    const testFile = path.match(/-(tests|testers).js$/)
+    const testFolder = path.match(/\/tests\//)
+    const tests = addTests || testFile || (testFolder && innerPath[innerPath.length-1] != 'tests')  ? '-tests': ''
+    if (testFile && testFolder)
+      return innerPath.slice(0,-1).join('-') + tests
+    return innerPath.join('-') + tests
+  }
+  async function loadPluginSymbols(codePackage,{loadProjects} = {}) {
+    const pluginsSymbols = await codePackage.fileSymbols('plugins')
+    const projectSymbols = loadProjects ? await codePackage.fileSymbols('projects') : []
+    ;[...pluginsSymbols,...projectSymbols.map(x=>({...x, isProject: true}))].map(entry =>{
+      const id = pathToPluginId(entry.path)
+      jb.plugins[id] = jb.plugins[id] || { id, codePackage, files: [], isProject: entry.isProject }
+      jb.plugins[id].files.push(entry)
+    })
+  }
+  async function loadPlugins(plugins) {
+    await plugins.reduce( (pr,id) => pr.then( async ()=> {
+      const plugin = jb.plugins[id]
+      if (!plugin || plugin.loadingReq) return
+      plugin.loadingReq = true
+      await loadPlugins(plugin.dependent)
+      await Promise.all(plugin.files.map(fileSymbols =>loadjbFile(fileSymbols.path,{fileSymbols,plugin})))
+    }), Promise.resolve() )
+  }
+  async function loadjbFile(path,{noProxies, fileSymbols, plugin} = {}) {
+    if (jb.loadedFiles[path]) return
+    const _code = await plugin.codePackage.fetchFile(path)
+    const sourceUrl = `${path}?${jb.uri}`.replace(/#/g,'')
+    const code = `${_code}\n//# sourceURL=${sourceUrl}`
+    const fileDsl = fileSymbols && fileSymbols.dsl
+    const proxies = noProxies ? {} : jb.objFromEntries(plugin.proxies.map(id=>jb.macro.registerProxy(id)) )
+    const context = { jb, 
+      ...(typeof require != 'undefined' ? {require} : {}),
+      ...proxies,
+      component:(id,comp) => jb.component(id,comp,{plugin,fileDsl}),
+      extension:(libId, p1 , p2) => jb.extension(libId, p1 , p2,{plugin}),
+      using: x=>jb.using(x), dsl: x=>jb.dsl(x), pluginDsl: x=>jb.pluginDsl(x)
     }
-		return items.slice(-1)[0];
-	}
-})
-
-component('firstNotEmpty', {
-  type: 'any',
-  params: [
-    {id: 'first', type: '$asParent', dynamic: true, mandatory: true},
-    {id: 'second', type: '$asParent', dynamic: true, mandatory: true}
-  ],
-  impl: If('%$first()%', '%$first()%', '%$second()%')
-})
-
-component('keys', {
-  type: 'data',
-  description: 'Object.keys',
-  params: [
-    {id: 'obj', defaultValue: '%%', as: 'single'}
-  ],
-  impl: ({},obj) => Object.keys(obj && typeof obj === 'object' ? obj : {})
-})
-
-component('values', {
-  type: 'data',
-  description: 'Object.keys',
-  params: [
-    {id: 'obj', defaultValue: '%%', as: 'single'}
-  ],
-  impl: ({},obj) => Object.values(obj && typeof obj === 'object' ? obj : {})
-})
-
-component('properties', {
-  description: 'object entries as id,val',
-  type: 'data',
-  params: [
-    {id: 'obj', defaultValue: '%%', as: 'single'}
-  ],
-  impl: ({},obj) => Object.keys(obj).filter(p=>p.indexOf('$jb_') != 0).map((id,index) =>
-			({id: id, val: obj[id], index: index}))
-})
-
-component('objFromProperties', {
-  description: 'object from entries of properties {id,val}',
-  type: 'data',
-  aggregator: true,
-  params: [
-    {id: 'properties', defaultValue: '%%', as: 'array'}
-  ],
-  impl: ({},properties) => jb.objFromEntries(properties.map(({id,val}) => [id,val]))
-})
-
-component('entries', {
-  description: 'object entries as array 0/1',
-  type: 'data',
-  params: [
-    {id: 'obj', defaultValue: '%%', as: 'single'}
-  ],
-  impl: ({},obj) => jb.entries(obj)
-})
-
-component('aggregate', {
-  type: 'data',
-  aggregator: true,
-  description: 'calc function on all items, rather then one by one',
-  params: [
-    {id: 'aggregator', type: 'data', mandatory: true, dynamic: true}
-  ],
-  impl: ({},aggregator) => aggregator()
-})
-
-component('math.max', {
-  type: 'data',
-  aggregator: true,
-  category: 'math:80',
-  impl: ctx => Math.max.apply(0,ctx.data)
-})
-
-component('math.min', {
-  type: 'data',
-  aggregator: true,
-  category: 'math:80',
-  impl: ctx => Math.max.apply(0,ctx.data)
-})
-
-component('math.sum', {
-  type: 'data',
-  aggregator: true,
-  category: 'math:80',
-  impl: ctx => ctx.data.reduce((acc,item) => +item+acc, 0)
-})
-
-component('math.plus', {
-  category: 'math:80',
-  params: [
-    {id: 'x', as: 'number', mandatory: true},
-    {id: 'y', as: 'number', mandatory: true}
-  ],
-  impl: ({},x,y) => +x + +y
-})
-
-component('math.minus', {
-  category: 'math:80',
-  params: [
-    {id: 'x', as: 'number', mandatory: true},
-    {id: 'y', as: 'number', mandatory: true}
-  ],
-  impl: ({},x,y) => +x - +y
-})
-
-component('math.mul', {
-  category: 'math:80',
-  params: [
-    {id: 'x', as: 'number', mandatory: true},
-    {id: 'y', as: 'number', mandatory: true}
-  ],
-  impl: ({},x,y) => +x * +y
-})
-
-component('math.div', {
-  category: 'math:80',
-  params: [
-    {id: 'x', as: 'number', mandatory: true},
-    {id: 'y', as: 'number', mandatory: true}
-  ],
-  impl: ({},x,y) => +x / +y
-})
-
-
- jb.defComponents('abs,acos,acosh,asin,asinh,atan,atan2,atanh,cbrt,ceil,clz32,cos,cosh,exp,expm1,floor,fround,hypot,log2,random,round,sign,sin,sinh,sqrt,tan,tanh,trunc'
-  .split(','), f => component(`math.${f}`, {
-    autoGen: true,
-    category: 'math:70',
-    params: [
-      {id: 'func', as: 'string', defaultValue: f}
-    ],
-    impl: ({data},f) => Math[f](data)
-  })
-)
-
-component('objFromEntries', {
-  description: 'object from entries',
-  type: 'data',
-  aggregator: true,
-  params: [
-    {id: 'entries', defaultValue: '%%', as: 'array'}
-  ],
-  impl: ({},entries) => jb.objFromEntries(entries)
-})
-
-component('evalExpression', {
-  description: 'evaluate javascript expression',
-  type: 'data',
-  params: [
-    {id: 'expression', as: 'string', defaultValue: '%%', expression: 'e.g. 1+2'}
-  ],
-  impl: ({},expression) => {
     try {
-      return eval('('+expression+')')
-    } catch(e) {}
-  }
-})
-
-component('prefix', {
-  type: 'data',
-  category: 'string:90',
-  params: [
-    {id: 'separator', as: 'string', mandatory: true},
-    {id: 'text', as: 'string', defaultValue: '%%'}
-  ],
-  impl: ({},separator,text) => (text||'').substring(0,text.indexOf(separator))
-})
-
-component('suffix', {
-  type: 'data',
-  category: 'string:90',
-  params: [
-    {id: 'separator', as: 'string', mandatory: true},
-    {id: 'text', as: 'string', defaultValue: '%%'}
-  ],
-  impl: ({},separator,text) => (text||'').substring(text.lastIndexOf(separator)+separator.length)
-})
-
-component('removePrefix', {
-  type: 'data',
-  category: 'string:80',
-  params: [
-    {id: 'separator', as: 'string', mandatory: true},
-    {id: 'text', as: 'string', defaultValue: '%%'}
-  ],
-  impl: ({},separator,text) =>
-		text.indexOf(separator) == -1 ? text : text.substring(text.indexOf(separator)+separator.length)
-})
-
-component('removeSuffix', {
-  type: 'data',
-  category: 'string:80',
-  params: [
-    {id: 'separator', as: 'string', mandatory: true},
-    {id: 'text', as: 'string', defaultValue: '%%'}
-  ],
-  impl: ({},separator,text) => text.lastIndexOf(separator) == -1 ? text : text.substring(0,text.lastIndexOf(separator))
-})
-
-component('removeSuffixRegex', {
-  type: 'data',
-  category: 'string:80',
-  params: [
-    {id: 'suffix', as: 'string', mandatory: true, description: 'regular expression. e.g [0-9]*'},
-    {id: 'text', as: 'string', defaultValue: '%%'}
-  ],
-  impl: (ctx,suffix,text) => {
-		ctx.profile.prefixRegexp = ctx.profile.prefixRegexp || new RegExp(suffix+'$');
-		const m = (text||'').match(ctx.profile.prefixRegexp);
-		return (m && (text||'').substring(m.index+1)) || text;
-	}
-})
-
-component('property', {
-  description: 'navigate/select/path property of object',
-  category: 'common:70',
-  params: [
-    {id: 'prop', as: 'string', mandatory: true},
-    {id: 'obj', defaultValue: '%%'}
-  ],
-  impl: (ctx,prop,obj) =>	jb.db.objectProperty(obj,prop,ctx)
-})
-
-component('indexOf', {
-  category: 'common:70',
-  params: [
-    {id: 'array', as: 'array', mandatory: true},
-    {id: 'item', as: 'single', mandatory: true}
-  ],
-  impl: ({},array,item) => array.indexOf(item)
-})
-
-component('writeValue', {
-  type: 'action',
-  category: 'mutable:100',
-  params: [
-    {id: 'to', as: 'ref', mandatory: true},
-    {id: 'value', mandatory: true},
-    {id: 'noNotifications', as: 'boolean', type: 'boolean'}
-  ],
-  impl: (ctx,to,value,noNotifications) => {
-    if (!jb.db.isRef(to)) {
-      debugger
-      ctx.run(ctx.profile.to,{as: 'ref'}) // for debug
-      return jb.logError(`can not write to: ${ctx.profile.to}`, {ctx})
+      //console.log(`loading ${path}`)
+      const wCode = `(function({${Object.keys(context)}}) {${code}\n})`
+      if (packOnly) packedCode.push({ path,
+          code: `jbLoadPackedFile({lineInPackage: 0, jb, noProxies: ${noProxies ? true: false}, path: '${path}',fileDsl: '${fileDsl||''}', pluginId: '${plugin.id||''}' }, 
+            function({${Object.keys(context)}}) {\n${_code}\n});\n`
+      })
+      if (noProxies || !packOnly) {
+        const f = eval(wCode)
+        f(context)
+        jb.loadedFiles[path] = true
+      }
+    } catch (e) {
+      if (!handleUnknownComp((e.message.match(/^(.*) is not defined$/)||['',''])[1]))
+        return jb.logException(e,`loadjbFile lib ${path}`,{context, code})
     }
-    const val = jb.val(value)
-    if (jb.utils.isPromise(val))
-      return Promise.resolve(val).then(_val=>jb.db.writeValue(to,_val,ctx,noNotifications))
-    else
-      jb.db.writeValue(to,val,ctx,noNotifications)
-  }
-})
 
-component('addToArray', {
-  type: 'action',
-  category: 'mutable:80',
-  params: [
-    {id: 'array', as: 'ref', mandatory: true},
-    {id: 'toAdd', as: 'array', mandatory: true}
-  ],
-  impl: (ctx,array,toAdd) => jb.db.push(array, JSON.parse(JSON.stringify(toAdd)),ctx)
-})
-
-component('move', {
-  type: 'action',
-  category: 'mutable:80',
-  description: 'move item in tree, activated from D&D',
-  params: [
-    {id: 'from', as: 'ref', mandatory: true},
-    {id: 'to', as: 'ref', mandatory: true}
-  ],
-  impl: (ctx,from,_to) => jb.db.move(from,_to,ctx)
-})
-
-component('splice', {
-  type: 'action',
-  category: 'mutable:80',
-  params: [
-    {id: 'array', as: 'ref', mandatory: true},
-    {id: 'fromIndex', as: 'number', mandatory: true},
-    {id: 'noOfItemsToRemove', as: 'number', defaultValue: 0},
-    {id: 'itemsToAdd', as: 'array', defaultValue: []}
-  ],
-  impl: (ctx,array,fromIndex,noOfItemsToRemove,itemsToAdd) =>
-		jb.db.splice(array,[[fromIndex,noOfItemsToRemove,...itemsToAdd]],ctx)
-})
-
-component('removeFromArray', {
-  type: 'action',
-  category: 'mutable:80',
-  params: [
-    {id: 'array', as: 'ref', mandatory: true},
-    {id: 'itemToRemove', as: 'single', description: 'choose item or index'},
-    {id: 'index', as: 'number', description: 'choose item or index'}
-  ],
-  impl: (ctx,array,itemToRemove,_index) => {
-		const index = itemToRemove ? jb.toarray(array).indexOf(itemToRemove) : _index;
-		if (index != -1)
-			jb.db.splice(array,[[index,1]],ctx)
-	}
-})
-
-component('getOrCreate', {
-  type: 'data',
-  description: 'memoize, cache, calculate value if empty and assign for next time',
-  category: 'mutable:80',
-  params: [
-    {id: 'writeTo', as: 'ref', mandatory: true},
-    {id: 'calcValue', dynamic: true}
-  ],
-  impl: async (ctx,writeTo,calcValue) => {
-    let val = jb.val(writeTo)
-    if (val == null) {
-      val = await calcValue()
-      jb.db.writeValue(writeTo,val,ctx)
+    function handleUnknownComp(unknownCmp) {
+      if (!unknownCmp) return
+      try {
+        const fixed = code.replace(new RegExp(`${unknownCmp}\\(`,'g'),`unknownCmp('${unknownCmp}',`)
+        const f = eval(`(function(${Object.keys(context)}) {${fixed}\n})`)
+        f(...Object.values(context))
+        jb.loadedFiles[path] = true
+        jb.logError(`loader unknown comp ${unknownCmp} in file ${sourceUrl}`,{})
+        return true
+      } catch(e) {}
     }
-    return val
-	}
+  }
+  function calcPluginDependencies(plugins) {
+    Object.keys(plugins).map(id=>calcDependency(id))
+    Object.values(plugins).map(plugin=>{
+      const pluginDsls = unique(plugin.files.map(e=>e.pluginDsl).filter(x=>x))
+      if (pluginDsls.length > 1)
+        jb.logError(`plugin ${plugin.id} has more than one dsl`,{pluginDsls})
+      plugin.dsl = pluginDsls[0]
+    })
+    // the virtual xx-tests plugin must have the same dsl as the plugin
+    Object.values(plugins).filter(plugin=>plugin.id.match(/-tests$/)).forEach(plugin=>
+      plugin.dsl = (jb.plugins[plugin.id.slice(0,-6)] || {}).dsl)
+
+    function calcDependency(id,history={}) {
+      const plugin = plugins[id]
+      if (!plugin) {
+        console.log('calcDependency: can not find plugin',{id, history})
+        return []
+      }
+      if (plugin.dependent) return [id, ...plugin.dependent]
+      if (history[id])
+        return [`$circular:${id}`]
+      const baseOfTest = (id.match(/-tests$/) ? [id.slice(0,-6),'testing'] : []).filter(x=>plugins[x])
+      plugin.using = unique(plugin.files.flatMap(e=> unique(e.using)))
+      const dslOfFiles = plugin.files.filter(fileSymbols=>fileSymbols.dsl && fileSymbols.dsl != plugin.dsl).map(({path,dsl}) => [path,dsl])
+      if (dslOfFiles.length)
+        plugin.dslOfFiles = dslOfFiles
+
+      const dependent = unique([
+        ...plugin.files.flatMap(e=> unique(e.using.flatMap(dep=>calcDependency(dep,{...history, [id]: true})))),
+        ...baseOfTest.flatMap(dep=>calcDependency(dep,{...history, [id]: true}))]
+      ).filter(x=>x !=`$circular:${id}`)
+
+      plugin.circular = dependent.find(x=>x.match(/^\$circular:/))
+      const ret = [id, ...dependent]
+      if(!plugin.circular) {
+        plugin.dependent = dependent
+        plugin.requiredFiles = unique(ret.flatMap(_id=>plugins[_id].files), x=>x.path)
+        plugin.requiredLibs = unique(ret.flatMap(_id=>plugins[_id].files).flatMap(x=>x.libs || []))
+        plugin.proxies = unique(plugin.requiredFiles.flatMap(x=>x.ns))
+      }
+      return ret
+    }
+  }
+}
+
+// jb-pack
+function packedCodePrefix(jb,libs,libsToInit) {
+  const plugins = Object.fromEntries(Object.values(jb.plugins).filter(x=>x.loadingReq)
+    .map(({id,dependent,proxies,using,dsl,dslOfFiles,files})=>({id,dependent,proxies,dsl,dslOfFiles,files: files.map(({path}) => path) })).map(p=>[p.id,p]))
+
+  const _jb = { sourceCode: jb.sourceCode, loadedFiles: {}, plugins}
+  return { code: [
+    'async function jbLoadPacked({uri,initSpyByUrl,multipleInFrame}={}) {',
+    `const jb = ${JSON.stringify(_jb)}`,
+    `if (!multipleInFrame) globalThis.jb = jb`,
+    `jb.uri = uri || 'main'`,
+    `jb.startTime = new Date().getTime()`,
+    jbCreatePlugins.toString(),
+    jbLoadPackedFile.toString(),
+    `\njbloadPlugins(jb,jbLoadPackedFile)`,
+    `if (initSpyByUrl) jb.spy.initSpyByUrl()`,
+    `\njb.initializeTypeRules(${JSON.stringify(libs||[])})
+await jb.initializeLibs(${JSON.stringify(libsToInit||[])})
+jb.beforeResolveTime = new Date().getTime()
+jb.utils.resolveLoadedProfiles()
+jb.resolveTime = new Date().getTime()-jb.beforeResolveTime
+return jb
+}`,
+'\nfunction jbloadPlugins(jb,jbLoadPackedFile) {'
+].join('\n') 
+  }
+}
+
+function jbLoadPackedFile({lineInPackage, jb, noProxies, path,fileDsl,pluginId}, loadFunc) {
+  if (jb.loadedFiles[path]) return
+  const plugin = jb.plugins[pluginId]
+  const proxies = noProxies ? {} : jb.objFromEntries(plugin.proxies.map(id=>jb.macro.registerProxy(id)) )
+  const context = { jb, 
+    ...(typeof require != 'undefined' ? {require} : {}),
+    ...proxies,
+    component:(id,comp) => jb.component(id,comp,{plugin,fileDsl,path,lineInPackage}),
+    extension:(libId, p1 , p2) => jb.extension(libId, p1 , p2,{plugin,path,lineInPackage}),
+    using: x=>jb.using(x), dsl: x=>jb.dsl(x), pluginDsl: x=>jb.pluginDsl(x)
+  }
+  try {
+      loadFunc(context)
+      jb.loadedFiles[path] = true
+  } catch (e) {
+  }
+}
+
+function jbCreatePlugins(jb,plugins) {
+  jbHost.defaultCodePackage = jbHost.defaultCodePackage || jbHost.codePackageFromJson()
+  plugins.forEach(plugin=> {
+    jb.plugins[plugin.id] = jb.plugins[plugin.id] || { ...plugin, codePackage : jbHost.defaultCodePackage }
+  })
+}
+
+if (typeof module != 'undefined') module.exports = { jbInit };
+
+});
+
+jbLoadPackedFile({lineInPackage:1916, jb, noProxies: false, path: '/plugins/loader/source-code.js',fileDsl: 'loader', pluginId: 'loader' }, 
+            function({jb,require,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,component,extension,using,dsl,pluginDsl}) {
+dsl('loader')
+
+extension('loader','main' , {
+    shortFilePath(fullFilePath) {
+        const elems = fullFilePath.split('/').reverse()
+        return '/' + elems.slice(0,elems.findIndex(x=> x == 'plugins' || x == 'projects')+1).reverse().join('/')
+    },
+    unifyPluginsToLoad(pluginsToLoad, plugins) {
+        return jb.asArray(pluginsToLoad).reduce((acc,item) => {
+            const plugins = jb.utils.unique([...(acc.plugins || []), ...(item.plugins || [])])
+            return {...acc, ...item, plugins}
+        } , { plugins })
+    },
+    pluginOfFilePath(fullFilePath, addTests) {
+      return jb.pathToPluginId(jb.loader.shortFilePath(fullFilePath),addTests)
+    },
+    pluginsByCtx(ctx) {
+      return ctx.probe ? ['probe-core','tgp-formatter'] : []
+    },
+    mergeSourceCodes(sc1,sc2) {
+      if (!sc1) return sc2
+      if (!sc2) return sc1
+      const plugins = jb.utils.unique([...(sc1.plugins || []), ...(sc2.plugins || [])])
+      const projects = jb.utils.unique([...(sc1.projects || []), ...(sc2.projects || [])])
+      const pluginPackages = jb.utils.unique([...(sc1.pluginPackages || []), ...(sc2.pluginPackages || [])], package => package.repo || 'default')
+      return {plugins, projects, pluginPackages}
+    },
+    pluginsOfProfile(prof, comps = jb.comps) {
+        if (!prof || typeof prof != 'object') return []
+        if (!prof.$$)
+            return jb.utils.unique(Object.values(prof).flatMap(x=>jb.loader.pluginsOfProfile(x)))
+        const comp = comps[prof.$$]
+        if (!comp) {
+            debugger
+            jb.logError(`cmd - can not find comp ${prof.$$} please provide sourceCode`,{ctx})
+            return []
+        }
+        return jb.utils.unique([comp.$plugin,...Object.values(prof).flatMap(x=>jb.loader.pluginsOfProfile(x))]).filter(x=>x)
+    }    
 })
 
-component('toggleBooleanValue', {
-  type: 'action',
+// source-code
+component('sourceCode', {
+  type: 'source-code',
   params: [
-    {id: 'of', as: 'ref'}
+    {id: 'pluginsToLoad', type: 'plugins-to-load[]', flattenArray: true},
+    {id: 'pluginPackages', type: 'plugin-package[]', flattenArray: true}, // , defaultValue: defaultPackage()
+    {id: 'libsToInit', as: 'string', description: 'empty means load all libraries'},
+    {id: 'actualCode', as: 'string', description: 'alternative to plugins'}
   ],
-  impl: (ctx,_of) => jb.db.writeValue(_of,jb.val(_of) ? false : true,ctx)
+  impl: (ctx,pluginsToLoad,pluginPackages,libsToInit,actualCode) => ({ 
+    ...(pluginPackages.filter(x=>x).length ? { pluginPackages : pluginPackages.filter(x=>x)} : {}),
+    ...jb.loader.unifyPluginsToLoad(pluginsToLoad, jb.loader.pluginsByCtx(ctx)),
+    ...(libsToInit ? {libsToInit} : {}),
+    ...(actualCode ? {actualCode} : {}),
+  })
 })
 
-component('slice', {
-  type: 'data',
-  aggregator: true,
+component('sourceCodeByTgpPath', {
+  type: 'source-code',
   params: [
-    {id: 'start', as: 'number', defaultValue: 0, description: '0-based index', mandatory: true},
-    {id: 'end', as: 'number', mandatory: true, description: '0-based index of where to end the selection (not including itself)'}
+    {id: 'tgpPath', as: 'string', mandatory: true},
+    {id: 'tgpModel'}
   ],
-  impl: ({data},start,end) => {
-		if (!data || !data.slice) return null
-		return end ? data.slice(start,end) : data.slice(start)
-	}
+  impl: sourceCode(
+    plugins(({},{},{tgpModel, tgpPath}) => {
+    const comps = tgpModel ? tgpModel.comps : jb.comps
+    return jb.path(comps[tgpPath.split('~')[0]],'$plugin') || ''
+  })
+  )
 })
 
-component('sort', {
-  type: 'data',
-  aggregator: true,
+component('plugins', {
+  type: 'source-code',
   params: [
-    {id: 'propertyName', as: 'string', description: 'sort by property inside object'},
-    {id: 'lexical', as: 'boolean', type: 'boolean'},
-    {id: 'ascending', as: 'boolean', type: 'boolean'}
+    {id: 'plugins', mandatory: true}
   ],
-  impl: ({data},prop,lexical,ascending) => {
-    if (!data || ! Array.isArray(data)) return null;
-    let sortFunc
-    const firstData = data[0] //jb.entries(data[0]||{})[0][1]
-		if (lexical || isNaN(firstData))
-			sortFunc = prop ? (x,y) => (x[prop] == y[prop] ? 0 : x[prop] < y[prop] ? -1 : 1) : (x,y) => (x == y ? 0 : x < y ? -1 : 1);
-		else
-			sortFunc = prop ? (x,y) => (x[prop]-y[prop]) : (x,y) => (x-y);
-		if (ascending)
-  		return data.slice(0).sort((x,y)=>sortFunc(x,y));
-		return data.slice(0).sort((x,y)=>sortFunc(y,x));
-	}
-})
-
-component('first', {
-  type: 'data',
-  aggregator: true,
-  params: [
-    {id: 'items', as: 'array', defaultValue: '%%'}
-  ],
-  impl: ({},items) => items[0]
-})
-
-component('last', {
-  type: 'data',
-  aggregator: true,
-  params: [
-    {id: 'items', as: 'array', defaultValue: '%%'}
-  ],
-  impl: ({},items) => items.slice(-1)[0]
-})
-
-component('count', {
-  type: 'data',
-  aggregator: true,
-  description: 'length, size of array',
-  params: [
-    {id: 'items', as: 'array', defaultValue: '%%'}
-  ],
-  impl: ({},items) => items.length
-})
-
-component('reverse', {
-  type: 'data',
-  aggregator: true,
-  params: [
-    {id: 'items', as: 'array', defaultValue: '%%'}
-  ],
-  impl: ({},items) => items.slice(0).reverse()
-})
-
-component('sample', {
-  type: 'data',
-  aggregator: true,
-  params: [
-    {id: 'size', as: 'number', defaultValue: 300},
-    {id: 'items', as: 'array', defaultValue: '%%'}
-  ],
-  impl: ({},size,items) =>	items.filter((x,i)=>i % (Math.floor(items.length/size) ||1) == 0)
-})
-
-component('obj', {
-  description: 'build object (dictionary) from props',
-  category: 'common:100',
-  params: [
-    {id: 'props', type: 'prop[]', mandatory: true, sugar: true}
-  ],
-  impl: (ctx,properties) => jb.objFromEntries(properties.map(p=>[p.name, jb.core.tojstype(p.val(ctx),p.type)]))
-})
-
-component('dynamicObject', {
-  type: 'data',
-  description: 'process items into object properties',
-  params: [
-    {id: 'items', mandatory: true, as: 'array'},
-    {id: 'propertyName', mandatory: true, as: 'string', dynamic: true},
-    {id: 'value', mandatory: true, dynamic: true}
-  ],
-  impl: (ctx,items,name,value) =>
-    items.reduce((obj,item)=>({ ...obj, [name(ctx.setData(item))]: value(ctx.setData(item)) }),{})
+  impl: sourceCode(plugins('%$plugins%'))
 })
 
 component('extend', {
-  type: 'data',
-  description: 'assign and extend with calculated properties',
+  type: 'source-code',
   params: [
-    {id: 'props', type: 'prop[]', mandatory: true, defaultValue: []},
-    {id: 'obj', byName: true, defaultValue: '%%'}
+    {id: 'sourceCode', type: 'source-code', mandatory: true},
+    {id: 'with', type: 'source-code', mandatory: true},
   ],
-  impl: (ctx,properties,obj) =>
-		Object.assign({}, obj, jb.objFromEntries(properties.map(p=>[p.name, jb.core.tojstype(p.val(ctx),p.type)])))
+  impl: (ctx,sc1,sc2) => jb.loader.mergeSourceCodes(sc1,sc2)
 })
-component('assign', { autoGen: true, ...jb.utils.getUnresolvedProfile('extend', 'data')})
 
-component('extendWithIndex', {
-  type: 'data',
-  aggregator: true,
-  description: 'extend with calculated properties. %$index% is available ',
+component('project', {
+  type: 'source-code',
   params: [
-    {id: 'props', type: 'prop[]', mandatory: true, defaultValue: []}
+    {id: 'project', as: 'string', mandatory: true}
   ],
-  impl: (ctx,properties) => jb.toarray(ctx.data).map((item,i) =>
-			Object.assign({}, item, jb.objFromEntries(properties.map(p=>[p.name, jb.core.tojstype(p.val(ctx.setData(item).setVars({index:i})),p.type)]))))
+  impl: sourceCode(project('%$project%'))
 })
 
-component('prop', {
-  type: 'prop',
-  params: [
-    {id: 'name', as: 'string', mandatory: true},
-    {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: ''},
-    {id: 'type', as: 'string', options: 'string,number,boolean,object,array,asIs', defaultValue: 'asIs'}
-  ]
+component('sameAsParent', {
+  type: 'source-code',
+  impl: () => jb.sourceCode
 })
+// plugins-to-load
 
-component('pipeline.var', {
-  type: 'data',
-  aggregator: true,
+component('pluginsByPath', {
+  type: 'plugins-to-load',
   params: [
-    {id: 'name', as: 'string', mandatory: true},
-    {id: 'val', mandatory: true, dynamic: true, defaultValue: '%%'}
+    {id: 'filePath', as: 'string', mandatory: true, description: 'E.g. someDir/plugins/mycode.js'},
+    {id: 'addTests', as: 'boolean', description: 'add plugin-tests', type: 'boolean', byName: true}
   ],
-  impl: ctx => ({ [Symbol.for('Var')]: true, ...ctx.params })
-})
-
-component('not', {
-  type: 'boolean',
-  params: [
-    {id: 'of', type: 'boolean', as: 'boolean', mandatory: true, composite: true}
-  ],
-  impl: ({}, of) => !of
-})
-
-component('and', {
-  description: 'logical and',
-  type: 'boolean',
-  params: [
-    {id: 'items', type: 'boolean[]', ignore: true, mandatory: true, composite: true}
-  ],
-  impl: ctx => (ctx.profile.items || []).reduce(
-      (res,item,i) => res && ctx.runInner(item, { type: 'boolean' }, `items~${i}`), true)
-})
-
-component('or', {
-  description: 'logical or',
-  type: 'boolean',
-  params: [
-    {id: 'items', type: 'boolean[]', ignore: true, mandatory: true, composite: true}
-  ],
-  impl: ctx => (ctx.profile.items || []).reduce(
-    (res,item,i) => res || ctx.runInner(item, { type: 'boolean' }, `items~${i}`), false)
-})
-
-component('between', {
-  description: 'checks if number is in range',
-  type: 'boolean',
-  params: [
-    {id: 'from', as: 'number', mandatory: true},
-    {id: 'to', as: 'number', mandatory: true},
-    {id: 'val', as: 'number', defaultValue: '%%'}
-  ],
-  impl: ({},from,to,val) => val >= from && val <= to
-})
-
-component('contains', {
-  type: 'boolean',
-  params: [
-    {id: 'text', type: 'data[]', as: 'array', mandatory: true},
-    {id: 'allText', defaultValue: '%%', as: 'string', byName: true},
-    {id: 'inOrder', defaultValue: true, as: 'boolean', type: 'boolean'}
-  ],
-  impl: ({},text,allText,inOrder) => {
-      let prevIndex = -1
-      for(let i=0;i<text.length;i++) {
-      	const newIndex = allText.indexOf(jb.tostring(text[i]),prevIndex+1)
-      	if (newIndex == -1) return false
-      	prevIndex = inOrder ? newIndex : -1
-      }
-      return true
-	}
-})
-
-component('notContains', {
-  type: 'boolean',
-  params: [
-    {id: 'text', type: 'data[]', as: 'array', mandatory: true},
-    {id: 'allText', defaultValue: '%%', as: 'array', byName: true}
-  ],
-  impl: not(contains('%$text%', { allText: '%$allText%' }))
-})
-
-component('startsWith', {
-  description: 'begins with, includes, contains',
-  type: 'boolean',
-  params: [
-    {id: 'startsWith', as: 'string', mandatory: true},
-    {id: 'text', defaultValue: '%%', as: 'string', byName: true}
-  ],
-  impl: ({},startsWith,text) => text.startsWith(startsWith)
-})
-
-component('endsWith', {
-  description: 'includes, contains',
-  type: 'boolean',
-  params: [
-    {id: 'endsWith', as: 'string', mandatory: true},
-    {id: 'text', defaultValue: '%%', as: 'string'}
-  ],
-  impl: ({},endsWith,text) => text.endsWith(endsWith)
-})
-
-
-component('filter', {
-  type: 'data',
-  aggregator: true,
-  params: [
-    {id: 'filter', type: 'boolean', as: 'boolean', dynamic: true, mandatory: true}
-  ],
-  impl: (ctx,filter) =>	jb.toarray(ctx.data).filter(item =>	filter(ctx,item))
-})
-
-component('matchRegex', {
-  description: 'validation with regular expression',
-  type: 'boolean',
-  params: [
-    {id: 'regex', as: 'string', mandatory: true, description: 'e.g: [a-zA-Z]*'},
-    {id: 'text', as: 'string', defaultValue: '%%'}
-  ],
-  impl: ({},regex,text) => text.match(new RegExp(regex))
-})
-
-component('toUpperCase', {
-  params: [
-    {id: 'text', as: 'string', defaultValue: '%%'}
-  ],
-  impl: ({},text) =>	text.toUpperCase()
-})
-
-component('toLowerCase', {
-  params: [
-    {id: 'text', as: 'string', defaultValue: '%%'}
-  ],
-  impl: ({},text) => text.toLowerCase()
-})
-
-component('capitalize', {
-  params: [
-    {id: 'text', as: 'string', defaultValue: '%%'}
-  ],
-  impl: ({},text) => text.charAt(0).toUpperCase() + text.slice(1)
-})
-
-component('join', {
-  type: 'data',
-  aggregator: true,
-  params: [
-    {id: 'separator', as: 'string', defaultValue: ',', mandatory: true},
-    {id: 'prefix', as: 'string', byName: true },
-    {id: 'suffix', as: 'string'},
-    {id: 'items', as: 'array', defaultValue: '%%'},
-    {id: 'itemText', as: 'string', dynamic: true, defaultValue: '%%'}
-  ],
-  impl: (ctx,separator,prefix,suffix,items,itemText) => {
-		const itemToText = ctx.profile.itemText ?	item => itemText(ctx.setData(item)) :	item => jb.tostring(item);	// performance
-		return prefix + items.map(itemToText).join(separator) + suffix;
-	}
-})
-
-component('unique', {
-  params: [
-    {id: 'id', as: 'string', dynamic: true, defaultValue: '%%'},
-    {id: 'items', as: 'array', defaultValue: '%%'}
-  ],
-  type: 'data',
-  aggregator: true,
-  impl: (ctx,idFunc,items) => {
-		const _idFunc = idFunc.profile == '%%' ? x=>x : x => idFunc(ctx.setData(x));
-		return jb.utils.unique(items,_idFunc);
-	}
-})
-
-component('log', {
-  type: 'data',
-  moreTypes: 'action<>',
-  params: [
-    {id: 'logName', as: 'string', mandatory: 'true'},
-    {id: 'logObj', as: 'single', defaultValue: '%%'}
-  ],
-  impl: (ctx,log,logObj) => { jb.log(log,{...logObj,ctx}); return ctx.data }
-})
-
-component('asIs', {
-  params: [
-    {id: '$asIs', ignore: true}
-  ],
-  impl: ctx => ctx.profile.$asIs
-})
-
-component('object', {
-  impl: ctx => {
-		const obj = ctx.profile.$object || ctx.profile
-		if (Array.isArray(obj)) return obj
-
-    const result = {}
-		for(let prop in obj) {
-			if ((prop == '$' && obj[prop] == 'object') || obj[prop] == null)
-				continue
-			result[prop] = ctx.runInner(obj[prop],null,prop)
-		}
-		return result
-	}
-})
-
-component('json.stringify', {
-  params: [
-    {id: 'value', defaultValue: '%%'},
-    {id: 'space', as: 'string', description: 'use space or tab to make pretty output'}
-  ],
-  impl: ({},value,space) => JSON.stringify(jb.val(value),null,space)
-})
-
-component('json.parse', {
-  params: [
-    {id: 'text', as: 'string'}
-  ],
-  impl: (ctx,text) =>	{
-		try {
-			return JSON.parse(text)
-		} catch (e) {
-			jb.logException(e,'json parse',{text, ctx})
-		}
-	}
-})
-
-component('split', {
-  description: 'breaks string using separator',
-  type: 'data',
-  params: [
-    {id: 'separator', as: 'string', defaultValue: ',', description: 'E.g., "," or "<a>"'},
-    {id: 'text', as: 'string', defaultValue: '%%', byName: true},
-    {id: 'part', options: 'all,first,second,last,but first,but last', defaultValue: 'all'}
-  ],
-  impl: ({},separator,text,part) => {
-		const out = text.split(separator.replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n'));
-		switch (part) {
-			case 'first': return out[0];
-			case 'second': return out[1];
-			case 'last': return out.pop();
-			case 'but first': return out.slice(1);
-			case 'but last': return out.slice(0,-1);
-			default: return out;
-		}
-	}
-})
-
-component('replace', {
-  type: 'data',
-  params: [
-    {id: 'find', as: 'string', mandatory: true},
-    {id: 'replace', as: 'string', mandatory: true},
-    {id: 'text', as: 'string', defaultValue: '%%'},
-    {id: 'useRegex', type: 'boolean', as: 'boolean', defaultValue: true},
-    {id: 'regexFlags', as: 'string', defaultValue: 'g', description: 'g,i,m'}
-  ],
-  impl: ({},find,replace,text,useRegex,regexFlags) =>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
-    useRegex ? text.replace(new RegExp(find,regexFlags) ,replace) : text.replace(find,replace)
-})
-
-component('isNull', {
-  description: 'is null or undefined',
-  type: 'boolean',
-  params: [
-    {id: 'obj', defaultValue: '%%'}
-  ],
-  impl: ({}, obj) => jb.val(obj) == null
-})
-
-component('notNull', {
-  description: 'not null or undefined',
-  type: 'boolean',
-  params: [
-    {id: 'obj', defaultValue: '%%'}
-  ],
-  impl: ({}, obj) => jb.val(obj) != null
-})
-
-component('isEmpty', {
-  type: 'boolean',
-  params: [
-    {id: 'item', as: 'single', defaultValue: '%%'}
-  ],
-  impl: ({}, item) => !item || (Array.isArray(item) && item.length == 0)
-})
-
-component('notEmpty', {
-  type: 'boolean',
-  params: [
-    {id: 'item', as: 'single', defaultValue: '%%'}
-  ],
-  impl: ({}, item) => item && !(Array.isArray(item) && item.length == 0)
-})
-
-component('equals', {
-  type: 'boolean',
-  params: [
-    {id: 'item1', mandatory: true},
-    {id: 'item2', defaultValue: '%%'}
-  ],
-  impl: ({}, item1, item2) => {
-    return typeof item1 == 'object' && typeof item1 == 'object' ? Object.keys(jb.utils.objectDiff(item1,item2)||[]).length == 0 
-      : jb.tosingle(item1) == jb.tosingle(item2)
+  impl: (ctx,fullFilePath,addTests) => {
+    const filePath = jb.loader.shortFilePath(fullFilePath)
+    const plugins = [jb.loader.pluginOfFilePath(fullFilePath,addTests)]
+    const project = jb.path(filePath.match(/projects\/([^\/]+)/),'1')
+    return { plugins, ...(project ? {projects: [project]} : {}) }
   }
 })
 
-component('notEquals', {
-  type: 'boolean',
-  params: [
-    {id: 'item1', as: 'single', mandatory: true},
-    {id: 'item2', defaultValue: '%%', as: 'single'}
-  ],
-  impl: ({}, item1, item2) => item1 != item2
+component('loadAll', {
+  type: 'plugins-to-load',
+  impl: ctx => ({ plugins: ['*'] })
 })
 
-component('runActions', {
-  type: 'action',
+component('plugins', {
+  type: 'plugins-to-load',
   params: [
-    {id: 'actions', type: 'action[]', ignore: true, composite: true, mandatory: true}
+    {id: 'plugins', mandatory: true}
   ],
-  impl: ctx => {
-		if (!ctx.profile) debugger;
-		const actions = jb.asArray(ctx.profile.actions || ctx.profile['$runActions']).filter(x=>x)
-		const innerPath =  (ctx.profile.actions && ctx.profile.actions.sugar) ? ''
-			: (ctx.profile['$runActions'] ? '$runActions~' : 'items~');
+  impl: (ctx,plugins) => ({ plugins: Array.isArray(plugins) ? plugins : plugins.split(',') })
+})
+
+component('project', {
+  type: 'plugins-to-load',
+  params: [
+    {id: 'project', as: 'string', mandatory: true, description: '* for all'}
+  ],
+  impl: (ctx,project) => ({projects: [project]})
+})
+
+
+// plugin packages
+
+component('packagesByPath', {
+  type: 'plugin-package',
+  params: [
+    {id: 'path', as: 'string', mandatory: true, description: 'E.g. someDir/plugins/xx-tests.js'},
+    {id: 'host', as: 'string', options: ',node,studio,static'}
+  ],
+  impl: (ctx,path,host) => {
+    const repo = (path.match(/projects\/([^/]*)\/(plugins|projects)/) || [])[1]
+    if (repo && repo != 'jb-react') {
+      const repsBase = path.split('projects/')[0] + 'projects/'
+      const package = (!host || host == 'node') ? { $: 'fileSystem', repo, baseDir: repsBase + repo} 
+        : host == 'studio' ? { $: 'jbStudioServer', repo }
+        : host == 'static' ? { $: 'staticViaHttp', repo } : null
+      return [{ $: 'defaultPackage' }, package]
+    }
+  }
+})
+
+component('defaultPackage', {
+  type: 'plugin-package',
+  impl: () => ({ $: 'defaultPackage' })
+})
+
+component('staticViaHttp', {
+  type: 'plugin-package',
+  params: [
+    {id: 'baseUrl', as: 'string', mandatory: true}
+  ],
+  impl: ctx => ({ $: 'staticViaHttp', ...ctx.params, useFileSymbolsFromBuild: true })
+})
+
+component('jbStudioServer', {
+  type: 'plugin-package',
+  params: [
+    {id: 'repo', as: 'string'}
+  ],
+  impl: (ctx,repo) => repo && ({ $: 'jbStudioServer', ...ctx.params })
+})
+
+component('fileSystem', {
+  type: 'plugin-package',
+  params: [
+    {id: 'baseDir', as: 'string'}
+  ],
+  impl: ctx => ({ $: 'fileSystem', ...ctx.params })
+})
+
+component('zipFile', {
+  type: 'plugin-package',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: ctx => ({ $: 'zipFile',  ...ctx.params })
+})
+
+component('sourceCode.encodeUri', {
+  params: [
+    {id: 'sourceCode', type: 'source-code<loader>', mandatory: true}
+  ],
+  impl: (ctx,source) => jb.frame.encodeURIComponent(JSON.stringify(source))
+})
+
+});
+
+jbLoadPackedFile({lineInPackage:2123, jb, noProxies: false, path: '/plugins/ui/iframe/launcher/iframe-launcher.js',fileDsl: '', pluginId: 'ui-iframe-launcher' }, 
+            function({jb,require,renderWidgetInIframe,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,component,extension,using,dsl,pluginDsl}) {
+using('loader')
+
+extension('iframe','inIframe', {
+    renderWidgetInIframe({id, profile, el, sourceCode, htmlAtts, baseUrl} = {}) {
+        baseUrl = baseUrl || 'http://localhost:8082'
+        const _plugins = sourceCode && sourceCode.plugins || jb.loader.pluginsOfProfile(profile)
+        const plugins = jb.utils.unique(_plugins)
+        const html = `<!DOCTYPE html>
+<html ${htmlAtts}>
+<head>
+    <meta charset="UTF-8">
+    <!-- 
+    <script type="text/javascript" src="${baseUrl}/plugins/loader/jb-loader.js"></script>
+    <script type="text/javascript" src="${baseUrl}/package/${plugins.join(',')}.js"></script>
+    <link rel="stylesheet" type="text/css" href="${baseUrl}/dist/css/styles.css"/>
+    -->
+    <style>
+        html, body {
+            height: 100%; /* Set height for html and body */
+            margin: 0; /* Remove default margin */
+        }
+    </style>    
+</head>
+<body>
+    <div id="main"></div>
+    <script>
+    ;(async () => {
+        let res = await fetch('${baseUrl}/plugins/loader/jb-loader.js')
+        await eval(await res.text())
+        jbHost.baseUrl = "${baseUrl}";
+        document.iframeId = "${id}"
+        res = await fetch('${baseUrl}/package/${plugins.join(',')}.js')
+        await eval(await res.text())
     
-		return actions.reduce((pr,action,index) =>
-				pr.finally(function runActions() {return ctx.runInner(action, { as: 'single'}, innerPath + index ) })
-			,Promise.resolve())
-	}
+        globalThis.jb = await jbLoadPacked("${id}");
+        jb.baseUrl = "${baseUrl}";
+        const ctx = jb.ui.extendWithServiceRegistry(new jb.core.jbCtx());
+        console.log('profile',${JSON.stringify(profile)})
+        const vdom = await ctx.run(${JSON.stringify(profile)},'control<>');
+        console.log('vdom',vdom)
+        await jb.ui.render(jb.ui.h(vdom), main, { ctx });
+        window.parent.postMessage('jbart is up', '*');
+    })()
+    </script>
+
+</body>
+</html>`
+        const iframe = document.createElement('iframe')
+        iframe.setAttribute('id',id)
+        iframe.setAttribute('sandbox', 'allow-same-origin allow-forms allow-scripts')
+        iframe.setAttribute('style', 'position: fixed;border: none;z-index:5000')
+        iframe.setAttribute('frameBorder', '0')
+        if (jbHost.chromeExtV3) {
+          iframe.src = chrome.runtime.getURL('iframe.html')  
+        } else {
+          iframe.src = 'about:blank'
+          iframe.onload = () => {
+              const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+              iframeDocument.open();
+              iframeDocument.write(html);
+              iframeDocument.close();
+          }
+        }
+        window.addEventListener('message', ev => {
+          if (ev.data && ev.data.$ == 'getInfo') {
+            iframe.contentWindow.postMessage({$: 'parentInfo', height: window.innerHeight, width: window.innerWidth, domain: document.domain}, ev.data.origin)
+          } else if (ev.data && ev.data.$ == 'setIframeRect') {
+            let {top, left, width, height} =  ev.data
+            height != null && (iframe.style.height = height +'px');
+            width != null && (iframe.style.width = width +'px');
+            top != null && (iframe.style.top = top + 'px');
+            left != null && (iframe.style.left = left +'px');
+          }
+        })
+        const res = new Promise(resolve => window.addEventListener('message', ev => (ev.data == 'jbart is up') && resolve()))
+        document.body.prepend(iframe)
+        return res
+    }
 })
 
-component('runActionOnItem', {
+component('renderWidgetInIframe', {
   type: 'action',
   params: [
-    {id: 'item', mandatory: true},
-    {id: 'action', type: 'action', dynamic: true, mandatory: true}
+    {id: 'profile', byName: true},
+    {id: 'selector', as: 'string', defaultValue: 'body'},
+    {id: 'id', as: 'string', defaultValue: 'main'},
+    {id: 'sourceCode', type: 'source-code<loader>'},
+    {id: 'htmlAtts', as: 'string', defaultValue: 'style="font-size:12px"'}
   ],
-  impl: (ctx,item,action) => jb.utils.isPromise(item) ? Promise.resolve(item).then(_item => action(ctx.setData(_item))) 
-    : item != null && action(ctx.setData(item))
-})
-
-component('runActionOnItems', {
-  type: 'action',
-  macroByValue: true,
-  params: [
-    {id: 'items', as: 'ref[]', mandatory: true},
-    {id: 'action', type: 'action', dynamic: true, mandatory: true},
-    {id: 'indexVariable', as: 'string'}
-  ],
-  impl: (ctx,items,action,indexVariable) => {
-		return (jb.val(items)||[]).reduce((def,item,i) => def.then(_ => action(ctx.setVar(indexVariable,i).setData(item))) ,Promise.resolve())
-			.catch((e) => jb.logException(e,'runActionOnItems',{item, action, ctx}))
-	}
-})
-
-component('delay', {
-  type: 'action',
-  moreTypes: 'data<>',
-  params: [
-    {id: 'mSec', as: 'number', defaultValue: 1},
-    {id: 'res', defaultValue: '%%'}
-  ],
-  impl: ({},mSec,res) => jb.delay(mSec).then(() => res)
-})
-
-component('onNextTimer', {
-  description: 'run action after delay',
-  type: 'action',
-  params: [
-    {id: 'action', type: 'action', dynamic: true, mandatory: true},
-    {id: 'delay', type: 'number', defaultValue: 1}
-  ],
-  impl: (ctx,action,delay) => jb.delay(delay,ctx).then(()=>	action())
-})
-
-component('extractPrefix', {
-  type: 'data',
-  params: [
-    {id: 'separator', as: 'string', description: '/w- alphnumberic, /s- whitespace, ^- beginline, $-endline'},
-    {id: 'text', as: 'string', defaultValue: '%%', byName: true},
-    {id: 'regex', type: 'boolean', as: 'boolean', description: 'separator is regex'},
-    {id: 'keepSeparator', type: 'boolean', as: 'boolean'}
-  ],
-  impl: ({},separator,text,regex,keepSeparator) => {
-		if (!regex) {
-			return text.substring(0,text.indexOf(separator)) + (keepSeparator ? separator : '')
-		} else { // regex
-			const match = text.match(separator)
-			if (match)
-				return text.substring(0,match.index) + (keepSeparator ? match[0] : '')
-		}
-	}
-})
-
-component('extractSuffix', {
-  type: 'data',
-  params: [
-    {id: 'separator', as: 'string', description: '/w- alphnumberic, /s- whitespace, ^- beginline, $-endline'},
-    {id: 'text', as: 'string', defaultValue: '%%', byName: true},
-    {id: 'regex', type: 'boolean', as: 'boolean', description: 'separator is regex'},
-    {id: 'keepSeparator', type: 'boolean', as: 'boolean'}
-  ],
-  impl: ({},separator,text,regex,keepSeparator) => {
-		if (!regex) {
-			return text.substring(text.lastIndexOf(separator) + (keepSeparator ? 0 : separator.length));
-		} else { // regex
-			const match = text.match(separator+'(?![\\s\\S]*' + separator +')'); // (?!) means not after, [\\s\\S]* means any char including new lines
-			if (match)
-				return text.substring(match.index + (keepSeparator ? 0 : match[0].length));
-		}
-	}
-})
-
-component('range', {
-  description: 'returns a range of number, generator, numerator, numbers, index',
-  type: 'data',
-  params: [
-    {id: 'from', as: 'number', defaultValue: 1},
-    {id: 'to', as: 'number', defaultValue: 10}
-  ],
-  impl: ({},from,to) => Array.from(Array(to-from+1).keys()).map(x=>x+from)
-})
-
-component('typeOf', {
-  type: 'data',
-  params: [
-    {id: 'obj', defaultValue: '%%'}
-  ],
-  impl: ({},_obj) => {
-	  const obj = jb.val(_obj)
-		return Array.isArray(obj) ? 'array' : typeof obj
-	}
-})
-
-component('className', {
-  type: 'data',
-  params: [
-    {id: 'obj', defaultValue: '%%'}
-  ],
-  impl: ({},_obj) => {
-	  const obj = jb.val(_obj);
-		return obj && obj.constructor && obj.constructor.name
-	}
-})
-
-component('isOfType', {
-  type: 'boolean',
-  params: [
-    {id: 'type', as: 'string', mandatory: true, description: 'e.g., string,boolean,array'},
-    {id: 'obj', defaultValue: '%%'}
-  ],
-  impl: ({},_type,_obj) => {
-  	const obj = jb.val(_obj)
-  	const objType = Array.isArray(obj) ? 'array' : typeof obj
-  	return _type.split(',').indexOf(objType) != -1
+  impl: (ctx, profile, selector, id) => {
+    const el = document.querySelector(selector)
+    if (!el)
+      return jb.logError('renderWidgetInIframe can not find element for selector', { selector })
+    return jb.iframe.renderWidgetInIframe({id, profile, el, ...ctx.params})
   }
-})
-
-component('inGroup', {
-  description: 'is in list, contains in array',
-  type: 'boolean',
-  params: [
-    {id: 'group', as: 'array', mandatory: true},
-    {id: 'item', as: 'single', defaultValue: '%%'}
-  ],
-  impl: ({},group,item) =>	group.indexOf(item) != -1
-})
-
-component('range', {
-  description: 'is in range',
-  type: 'boolean',
-  params: [
-    {id: 'from', as: 'number', defaultValue: 1},
-    {id: 'to', as: 'number', defaultValue: 10}
-  ],
-  impl: ({data},from,to) => +data >= +from && +data <= +to
-})
-
-component('Switch', {
-  type: 'data',
-  macroByValue: false,
-  params: [
-    {id: 'cases', type: 'switch-case[]', as: 'array', mandatory: true, defaultValue: []},
-    {id: 'default', dynamic: true}
-  ],
-  impl: (ctx,cases,defaultValue) => {
-		for(let i=0;i<cases.length;i++)
-			if (cases[i].condition(ctx))
-				return cases[i].value(ctx)
-		return defaultValue(ctx)
-	}
-})
-
-component('Case', {
-  type: 'switch-case',
-  params: [
-    {id: 'condition', type: 'boolean', mandatory: true, dynamic: true},
-    {id: 'value', mandatory: true, dynamic: true}
-  ],
-  impl: ctx => ctx.params
-})
-
-component('action.switch', {
-  type: 'action',
-  params: [
-    {id: 'cases', type: 'action.switch-case[]', as: 'array', mandatory: true, defaultValue: []},
-    {id: 'defaultAction', type: 'action', dynamic: true}
-  ],
-  macroByValue: false,
-  impl: (ctx,cases,defaultAction) => {
-  	for(let i=0;i<cases.length;i++)
-  		if (cases[i].condition(ctx))
-  			return cases[i].action(ctx)
-  	return defaultAction(ctx);
-  }
-})
-
-component('action.switchCase', {
-  type: 'action.switch-case',
-  params: [
-    {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true, dynamic: true},
-    {id: 'action', type: 'action', mandatory: true, dynamic: true}
-  ],
-  impl: ctx => ctx.params
-})
-
-component('formatDate', {
-  description: 'using toLocaleDateString',
-  params: [
-    {id: 'date', defaultValue: '%%', description: 'Date value'},
-    {id: 'dateStyle', as: 'string', options: 'full,long,medium,short'},
-    {id: 'timeStyle', as: 'string', options: 'full,long,medium,short'},
-    {id: 'weekday', as: 'string', options: 'long,short,narrow'},
-    {id: 'year', as: 'string', options: 'numeric,2-digit'},
-    {id: 'month', as: 'string', options: 'numeric,2-digit,long,short,narrow'},
-    {id: 'day', as: 'string', options: 'numeric,2-digit'},
-    {id: 'hour', as: 'string', options: 'numeric,2-digit'},
-    {id: 'minute', as: 'string', options: 'numeric,2-digit'},
-    {id: 'second', as: 'string', options: 'numeric,2-digit'},
-    {id: 'timeZoneName', as: 'string', options: 'long,short'}
-  ],
-  impl: (ctx,date) => new Date(date).toLocaleDateString(undefined, jb.objFromEntries(jb.entries(ctx.params).filter(e=>e[1])))
-})
-
-component('formatNumber', {
-  description: 'using toLocaleDateString',
-  params: [
-    {id: 'precision', as: 'number', defaultValue: '2', description: '10.33'},
-    {id: 'num', defaultValue: '%%'}
-  ],
-  impl: (ctx,precision,x) => typeof x == 'number' ? +x.toFixed(+precision) : x
-})
-
-component('getSessionStorage', {
-  params: [
-    {id: 'id', as: 'string'}
-  ],
-  impl: ({},id) => jb.utils.sessionStorage(id)
-})
-
-component('action.setSessionStorage', {
-  type: 'action',
-  params: [
-    {id: 'id', as: 'string'},
-    {id: 'value', dynamic: true}
-  ],
-  impl: ({},id,value) => jb.utils.sessionStorage(id,value())
-})
-
-component('waitFor', {
-  type: 'action',
-  params: [
-    {id: 'check', dynamic: true},
-    {id: 'interval', as: 'number', defaultValue: 14, byName: true},
-    {id: 'timeout', as: 'number', defaultValue: 3000},
-    {id: 'logOnError', as: 'string', dynamic: true}
-  ],
-  impl: (ctx,check,interval,timeout,logOnError) => {
-    if (!timeout) 
-      return jb.logError('waitFor no timeout',{ctx})
-    // const res1 = check()
-    // if (!jb.utils.isPromise(res1))
-    //   return Promise.resolve(res1)
-    let waitingForPromise, timesoFar = 0
-    return new Promise((resolve,reject) => {
-        const toRelease = setInterval(() => {
-            timesoFar += interval
-            if (timesoFar >= timeout) {
-              clearInterval(toRelease)
-              jb.log('waitFor timeout',{ctx})
-              logOnError() && jb.logError(logOnError() + ` timeout: ${timeout}, waitingTime: ${timesoFar}`,{ctx})
-              reject('timeout')
-            }
-            if (waitingForPromise) return
-            const v = check()
-            jb.log('waitFor check',{v, ctx})
-            if (jb.utils.isPromise(v)) {
-              waitingForPromise = true
-              v.then(_v=> {
-                waitingForPromise = false
-                handleResult(_v)
-              })
-            } else {
-              handleResult(v)
-            }
-
-            function handleResult(res) {
-              if (res) {
-                clearInterval(toRelease)
-                resolve(res)
-              }
-            }
-        }, interval)
-    })
-  }
-})
-
-component('addComponent', {
-  description: 'add a component or data resource',
-  type: 'action',
-  params: [
-    {id: 'id', as: 'string', dynamic: true, mandatory: true},
-    {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
-    {id: 'type', options: 'watchableData,passiveData,comp', mandatory: true}
-  ],
-  impl: (ctx,id,value,type) => jb.component(id(), type == 'comp' ? value() : {[type]: value() } ),
-  require: () => jb.db.addDataResourcePrefix()
-})
-
-component('loadLibs', {
-  description: 'load a list of libraries into current jbm',
-  type: 'action',
-  params: [
-    {id: 'libs', as: 'array', mandatory: true}
-  ],
-  impl: ({},libs) => 
-    jb_dynamicLoad(libs, Object.assign(jb, { loadFromDist: true}))
-})
-
-component('loadAppFiles', {
-  description: 'load a list of app files into current jbm',
-  type: 'action',
-  params: [
-    {id: 'jsFiles', as: 'array', mandatory: true}
-  ],
-  impl: ({},jsFiles) => 
-    jb_loadProject({ uri: jb.uri, baseUrl: jb.baseUrl, libs: '', jsFiles })
 })
 
 });
 
 }
-//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi9wbHVnaW5zL2NvcmUvamItY29yZS5qcyIsIi9wbHVnaW5zL2NvcmUvY29yZS11dGlscy5qcyIsIi9wbHVnaW5zL2NvcmUvY29yZS1jb21wb25lbnRzLmpzIiwiL3BsdWdpbnMvY29yZS9qYi1leHByZXNzaW9uLmpzIiwiL3BsdWdpbnMvY29yZS9kYi5qcyIsIi9wbHVnaW5zL2NvcmUvamItbWFjcm8uanMiLCIvcGx1Z2lucy9jb3JlL3NweS5qcyIsIi9wbHVnaW5zL2NvbW1vbi9qYi1jb21tb24uanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7O0NBQUM7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7O0NDamFBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTs7Q0NwWkE7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7O0NDNUdBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBOztDQ3pKQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBOztDQ3BKQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBOztDQzFKQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTs7O0NDek1BO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBO0NBQ0E7Q0FDQTtDQUNBIiwiZmlsZSI6InBhY2thZ2UvcGx1Z2luc2NvbW1vbl93aXRoTWFwcy5qcyJ9

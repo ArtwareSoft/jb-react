@@ -4,7 +4,7 @@ extension('iframe','inIframe', {
     renderWidgetInIframe({id, profile, el, sourceCode, htmlAtts, baseUrl} = {}) {
         baseUrl = baseUrl || 'http://localhost:8082'
         const _plugins = sourceCode && sourceCode.plugins || jb.loader.pluginsOfProfile(profile)
-        const plugins = jb.utils.unique([..._plugins,'tree-shake'])
+        const plugins = jb.utils.unique(_plugins)
         const html = `<!DOCTYPE html>
 <html ${htmlAtts}>
 <head>
@@ -49,14 +49,29 @@ extension('iframe','inIframe', {
         iframe.setAttribute('id',id)
         iframe.setAttribute('sandbox', 'allow-same-origin allow-forms allow-scripts')
         iframe.setAttribute('style', 'position: fixed;border: none;z-index:5000')
-        iframe.setAttribute('frameBorder', '0')        
-        iframe.src = 'about:blank'
-        iframe.onload = () => {
-            const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
-            iframeDocument.open();
-            iframeDocument.write(html);
-            iframeDocument.close();
+        iframe.setAttribute('frameBorder', '0')
+        if (jbHost.chromeExtV3) {
+          iframe.src = chrome.runtime.getURL('iframe.html')  
+        } else {
+          iframe.src = 'about:blank'
+          iframe.onload = () => {
+              const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+              iframeDocument.open();
+              iframeDocument.write(html);
+              iframeDocument.close();
+          }
         }
+        window.addEventListener('message', ev => {
+          if (ev.data && ev.data.$ == 'getInfo') {
+            iframe.contentWindow.postMessage({$: 'parentInfo', height: window.innerHeight, width: window.innerWidth, domain: document.domain}, ev.data.origin)
+          } else if (ev.data && ev.data.$ == 'setIframeRect') {
+            let {top, left, width, height} =  ev.data
+            height != null && (iframe.style.height = height +'px');
+            width != null && (iframe.style.width = width +'px');
+            top != null && (iframe.style.top = top + 'px');
+            left != null && (iframe.style.left = left +'px');
+          }
+        })
         const res = new Promise(resolve => window.addEventListener('message', ev => (ev.data == 'jbart is up') && resolve()))
         document.body.prepend(iframe)
         return res

@@ -1,7 +1,8 @@
 llm helper 
   wrap as chrome extension v3
+    jbHost.codePackageFromJson for loadLib, loadFELib
   allow definitions of prompts and inject them
-  expand collapse
+  
 
 ui plugins
   net under remote

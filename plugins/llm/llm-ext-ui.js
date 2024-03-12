@@ -11,35 +11,21 @@ component('llm.commandBar', {
           feature.onKey('Enter', localHelper.runHelperAction('%$ev/value%')),
           editableText.picklistHelper(picklist.optionsByComma('1111,2,3,4'), {
             popupFeatures: [
-              css('zoom1: 60%;font-size: 12px'),
               css.padding({ left: '10', right: '10' })
             ]
           })
         )
-      }),
-      group({
-        controls: [
-          button('Save', runActions(), { style: button.mdcIcon(icon('ContentSave', { type: 'mdi' })) }),
-          button('add', runActions(), { style: button.mdcIcon(icon('Plus', { type: 'mdi' })) }),
-          button('play', runActions(), { style: button.mdcIcon(icon('Play', 'run command', { type: 'mdi' })) })
-        ],
-        layout: layout.horizontal('5'),
-        features: [
-          feature.globalKeyboardShortcut('Alt+C'),
-          css.transformScale('0.7', '0.7'),
-          css.color({ background: 'var(--jb-menubar-selection-bg)', selector: '~ button' })
-        ]
       })
     ],
     layout: layout.flex({ justifyContent: 'space-between' }),
     features: [
       watchable('command', obj(prop('cmd', ''))),
-      css('zoom1: 60%; font-size: 12px'),
-      frontEnd.requireExternalLibrary('../bin/studio/css/studio-all.css'),
       frontEnd.requireExternalLibrary('material-components-web.js','css/font.css','css/material.css')
     ]
   })
 })
+
+//       frontEnd.requireExternalLibrary('../bin/studio/css/studio-all.css'),
 
 component('llm.docHelper', {
   type: 'control<>',

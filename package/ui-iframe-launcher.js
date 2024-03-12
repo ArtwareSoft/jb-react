@@ -1,5 +1,6 @@
-async function jbLoadPacked({uri,initSpyByUrl}={}) {
-const jb = {"sourceCode":{"plugins":["iframe-launcher"]},"loadedFiles":{},"plugins":{}}
+async function jbLoadPacked({uri,initSpyByUrl,multipleInFrame}={}) {
+const jb = {"sourceCode":{"plugins":["ui-iframe-launcher"]},"loadedFiles":{},"plugins":{"loader":{"id":"loader","dependent":[],"proxies":["sourceCode","sourceCodeByTgpPath","plugins","extend","project","sameAsParent","pluginsByPath","loadAll","packagesByPath","defaultPackage","staticViaHttp","jbStudioServer","fileSystem","zipFile"],"dslOfFiles":[["/plugins/loader/source-code.js","loader"]],"files":["/plugins/loader/jb-loader.js","/plugins/loader/source-code.js"]},"ui-iframe-launcher":{"id":"ui-iframe-launcher","dependent":["loader"],"proxies":["renderWidgetInIframe","sourceCode","sourceCodeByTgpPath","plugins","extend","project","sameAsParent","pluginsByPath","loadAll","packagesByPath","defaultPackage","staticViaHttp","jbStudioServer","fileSystem","zipFile"],"files":["/plugins/ui/iframe/launcher/iframe-launcher.js"]}}}
+if (!multipleInFrame) globalThis.jb = jb
 jb.uri = uri || 'main'
 jb.startTime = new Date().getTime()
 function jbCreatePlugins(jb,plugins) {
@@ -29,8 +30,8 @@ function jbLoadPackedFile({lineInPackage, jb, noProxies, path,fileDsl,pluginId},
 jbloadPlugins(jb,jbLoadPackedFile)
 if (initSpyByUrl) jb.spy.initSpyByUrl()
 
-jb.initializeTypeRules([])
-await jb.initializeLibs([])
+jb.initializeTypeRules(["iframe","loader"])
+await jb.initializeLibs(["iframe","loader"])
 jb.beforeResolveTime = new Date().getTime()
 jb.utils.resolveLoadedProfiles()
 jb.resolveTime = new Date().getTime()-jb.beforeResolveTime
@@ -38,7 +39,7 @@ return jb
 }
 
 function jbloadPlugins(jb,jbLoadPackedFile) {
-jbLoadPackedFile({lineInPackage:43, jb, noProxies: true, path: '/plugins/core/jb-core.js',fileDsl: '', pluginId: 'core' }, 
+jbLoadPackedFile({lineInPackage:44, jb, noProxies: true, path: '/plugins/core/jb-core.js',fileDsl: '', pluginId: 'core' }, 
             function({jb,require,component,extension,using,dsl,pluginDsl}) {
 Object.assign(jb, {
   extension(libId, p1 , p2,{plugin,path,lineInPackage}={}) {
@@ -91,6 +92,8 @@ Object.assign(jb, {
     async function loadLib(url,plugin) {
       const codePackage = plugin.codePackage || jbHost.codePackageFromJson()
       try {
+        if (codePackage.loadLib) 
+          return codePackage.loadLib(url)
         const code = await codePackage.fetchFile(`${jbHost.baseUrl||''}${url}`)
         eval(code)
       } catch(e) {
@@ -457,7 +460,7 @@ extension('core', {
 
 });
 
-jbLoadPackedFile({lineInPackage:462, jb, noProxies: true, path: '/plugins/core/core-utils.js',fileDsl: '', pluginId: 'core' }, 
+jbLoadPackedFile({lineInPackage:465, jb, noProxies: true, path: '/plugins/core/core-utils.js',fileDsl: '', pluginId: 'core' }, 
             function({jb,require,component,extension,using,dsl,pluginDsl}) {
 // core utils promoted for easy usage
 Object.assign(jb, {
@@ -819,9 +822,11 @@ extension('utils', 'generic', {
     },
     sessionStorage(id,val) {
       if (!jb.frame.sessionStorage) return
-      const currentValue = JSON.parse(jb.frame.sessionStorage.getItem(id))
-      return val == undefined ? currentValue : 
-        jb.frame.sessionStorage.setItem(id, JSON.stringify(val && typeof val == 'object' ? {...(currentValue||{}),...val} : val))
+      const curVal = JSON.parse(jb.frame.sessionStorage.getItem(id))
+      if (val == undefined) return curVal
+      const cleanedVal = typeof val == 'object' ? Object.fromEntries(Object.entries(val).filter(([_, v]) => v != null)) : val
+      const newVal = typeof val == 'object' ? {...(curVal||{}), ...cleanedVal } : val
+      jb.frame.sessionStorage.setItem(id, JSON.stringify(newVal))
     }
 })
 
@@ -863,7 +868,7 @@ Object.assign(jb, {
 
 });
 
-jbLoadPackedFile({lineInPackage:868, jb, noProxies: true, path: '/plugins/core/core-components.js',fileDsl: '', pluginId: 'core' }, 
+jbLoadPackedFile({lineInPackage:873, jb, noProxies: true, path: '/plugins/core/core-components.js',fileDsl: '', pluginId: 'core' }, 
             function({jb,require,component,extension,using,dsl,pluginDsl}) {
 component('call', {
   type: 'any',
@@ -973,7 +978,7 @@ component('data', {
 
 });
 
-jbLoadPackedFile({lineInPackage:978, jb, noProxies: true, path: '/plugins/core/jb-expression.js',fileDsl: '', pluginId: 'core' }, 
+jbLoadPackedFile({lineInPackage:983, jb, noProxies: true, path: '/plugins/core/jb-expression.js',fileDsl: '', pluginId: 'core' }, 
             function({jb,require,component,extension,using,dsl,pluginDsl}) {
 extension('expression', {
   calc(_exp, ctx, parentParam) {
@@ -1128,7 +1133,7 @@ extension('expression', {
 
 });
 
-jbLoadPackedFile({lineInPackage:1133, jb, noProxies: true, path: '/plugins/core/db.js',fileDsl: '', pluginId: 'core' }, 
+jbLoadPackedFile({lineInPackage:1138, jb, noProxies: true, path: '/plugins/core/db.js',fileDsl: '', pluginId: 'core' }, 
             function({jb,require,component,extension,using,dsl,pluginDsl}) {
 extension('db', 'onAddComponent', {
   $phase :2,
@@ -1278,7 +1283,7 @@ component('asRef', {
 
 });
 
-jbLoadPackedFile({lineInPackage:1283, jb, noProxies: true, path: '/plugins/core/jb-macro.js',fileDsl: '', pluginId: 'core' }, 
+jbLoadPackedFile({lineInPackage:1288, jb, noProxies: true, path: '/plugins/core/jb-macro.js',fileDsl: '', pluginId: 'core' }, 
             function({jb,require,component,extension,using,dsl,pluginDsl}) {
 Object.assign(jb, {
     defComponents: (items,def) => items.forEach(item=>def(item)),
@@ -1434,7 +1439,7 @@ extension('syntaxConverter', 'onAddComponent', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:1439, jb, noProxies: true, path: '/plugins/core/spy.js',fileDsl: '', pluginId: 'core' }, 
+jbLoadPackedFile({lineInPackage:1444, jb, noProxies: true, path: '/plugins/core/spy.js',fileDsl: '', pluginId: 'core' }, 
             function({jb,require,component,extension,using,dsl,pluginDsl}) {
 extension('spy', {
 	$requireFuncs: '#spy.log',
@@ -1638,4 +1643,580 @@ component('test.calcSpyParamForTest', {
 });
 
 jb.noSupervisedLoad = false
+jbLoadPackedFile({lineInPackage:1648, jb, noProxies: false, path: '/plugins/loader/jb-loader.js',fileDsl: '', pluginId: 'loader' }, 
+            function({jb,require,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,component,extension,using,dsl,pluginDsl}) {
+
+function jbBrowserCodePackage(repo = '', fetchOptions= {}, useFileSymbolsFromBuild) {
+  return {
+    repo: repo.split('/')[0],
+    _fetch(path) { 
+      const hasBase = path && path.match(/\/\//)
+      return fetch(hasBase ? path: jbHost.baseUrl + path, fetchOptions) 
+    },
+    fetchFile(path) { return this._fetch(path).then(x=>x.text()) },
+    fetchJSON(path) { return this._fetch(path).then(x=>x.json()) },
+    fileSymbols(path) { return useFileSymbolsFromBuild ? this.fileSymbolsFromStaticFileServer(path) 
+      : this.fileSymbolsFromStudioServer(path) },
+    fileSymbolsFromStudioServer(path) {
+      return this.fetchJSON(`${jbHost.baseUrl||''}?op=fileSymbols&path=${repo}${path}`)
+    },
+    async fileSymbolsFromStaticFileServer(path) {
+      if (!this.loadedSymbols) {
+        this.loadedSymbols = [
+          ...await this.fetchJSON(`/dist/symbols/plugins.json`),
+          ...await this.fetchJSON(`/dist/symbols/projects.json`),
+        ];
+      }
+      return this.loadedSymbols.filter(e=>e.path.indexOf(path+'/') == 1)
+    },
+  }
+}
+
+globalThis.jbHost = globalThis.jbHost || { // browserHost - studioServer,worker and static
+  fetch: (...args) => globalThis.fetch(...args),
+  baseUrl: '',
+  fetchOptions: {},
+  log(...args) { console.log (...args) },
+  WebSocket_Browser: globalThis.WebSocket,
+  codePackageFromJson(package) {
+    if (package == null || package.$ == 'defaultPackage') return jbBrowserCodePackage('',{})
+    if (package.$ == 'jbStudioServer' || package.$ == 'fileSystem')
+        return jbBrowserCodePackage(`${package.repo}/`)
+    if (package.$ == 'staticViaHttp')
+        return jbBrowserCodePackage(`${package.repo}/`,{mode: 'cores'}, true)
+  }
+}
+
+async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl, baseUrl, packOnly} ={}) {
+  if (baseUrl) jbHost.baseUrl = baseUrl // used for extension content script
+  const packedCode = []
+  const jb = { 
+    uri,
+    sourceCode,
+    loadedFiles: {},
+    plugins: {},
+    loadjbFile, pathToPluginId
+  }
+  if (!multipleInFrame) globalThis.jb = jb // multipleInFrame is used in jbm.child
+  if (sourceCode.actualCode) {
+    const f = eval(`(async function (jb) {${sourceCode.actualCode}\n})//# sourceURL=treeShakeClient?${jb.uri}`)
+    await f(jb)
+    return jb
+  }
+
+  const pluginPackages = Array.isArray(sourceCode.pluginPackages) ? sourceCode.pluginPackages : [sourceCode.pluginPackages]
+  await pluginPackages.reduce( async (pr,codePackage)=> pr.then(() =>
+    loadPluginSymbols(jbHost.codePackageFromJson(codePackage),{loadProjects: sourceCode.projects && sourceCode.projects.length})), Promise.resolve());
+  calcPluginDependencies(jb.plugins,jb)
+  const topPlugins = unique([
+    ...((sourceCode.projects||[]).indexOf('*') != -1 ? Object.values(jb.plugins).filter(x=>x.isProject).map(x=>x.id).filter(x=>x!='*') : (sourceCode.projects || [])),
+    ...((sourceCode.plugins||[]).indexOf('*') != -1 ? Object.values(jb.plugins).filter(x=>!x.isProject).map(x=>x.id).filter(x=>x!='*') : (sourceCode.plugins || [])) 
+    ]).filter(x=>jb.plugins[x])
+
+  await ['jb-core','core-utils','core-components','jb-expression','db','jb-macro','spy'].map(x=>`/plugins/core/${x}.js`).reduce((pr,path) => 
+    pr.then(()=> loadjbFile(path,{noProxies: true, plugin: jb.plugins.core, fileSymbols: jb.plugins.core.files.find(x=>x.path == path)})), Promise.resolve())
+  if (initSpyByUrl)
+    jb.spy.initSpyByUrl()
+  jb.noSupervisedLoad = false
+  if (packOnly)
+    packedCode.push({code: 'jb.noSupervisedLoad = false'})
+  if (jb.jbm && treeShakeServerUri) jb.jbm.treeShakeServerUri = sourceCode.treeShakeServerUri
+
+  await loadPlugins(topPlugins)
+  const libs = unique(topPlugins.flatMap(id=>jb.plugins[id].requiredLibs))
+  const libsToInit = sourceCode.libsToInit ? sourceCode.libsToInit.split(','): libs
+  jb.initializeTypeRules(libs)
+  if (packOnly)
+    return [packedCodePrefix(jb,libs,libsToInit), ...packedCode , {code:'}'}]
+
+  await jb.initializeLibs(libsToInit)
+  jb.utils.resolveLoadedProfiles()
+
+  return jb
+
+  function unique(ar,f = (x=>x) ) {
+    const keys = {}, res = []
+    ar.forEach(e=>{ if (!keys[f(e)]) { keys[f(e)] = true; res.push(e) } })
+    return res
+  }
+  function pathToPluginId(path,addTests) {
+    const innerPath = (path.match(/(plugins|projects)\/(.+)/) || ['','',''])[2].split('/').slice(0,-1)
+    const testFile = path.match(/-(tests|testers).js$/)
+    const testFolder = path.match(/\/tests\//)
+    const tests = addTests || testFile || (testFolder && innerPath[innerPath.length-1] != 'tests')  ? '-tests': ''
+    if (testFile && testFolder)
+      return innerPath.slice(0,-1).join('-') + tests
+    return innerPath.join('-') + tests
+  }
+  async function loadPluginSymbols(codePackage,{loadProjects} = {}) {
+    const pluginsSymbols = await codePackage.fileSymbols('plugins')
+    const projectSymbols = loadProjects ? await codePackage.fileSymbols('projects') : []
+    ;[...pluginsSymbols,...projectSymbols.map(x=>({...x, isProject: true}))].map(entry =>{
+      const id = pathToPluginId(entry.path)
+      jb.plugins[id] = jb.plugins[id] || { id, codePackage, files: [], isProject: entry.isProject }
+      jb.plugins[id].files.push(entry)
+    })
+  }
+  async function loadPlugins(plugins) {
+    await plugins.reduce( (pr,id) => pr.then( async ()=> {
+      const plugin = jb.plugins[id]
+      if (!plugin || plugin.loadingReq) return
+      plugin.loadingReq = true
+      await loadPlugins(plugin.dependent)
+      await Promise.all(plugin.files.map(fileSymbols =>loadjbFile(fileSymbols.path,{fileSymbols,plugin})))
+    }), Promise.resolve() )
+  }
+  async function loadjbFile(path,{noProxies, fileSymbols, plugin} = {}) {
+    if (jb.loadedFiles[path]) return
+    const _code = await plugin.codePackage.fetchFile(path)
+    const sourceUrl = `${path}?${jb.uri}`.replace(/#/g,'')
+    const code = `${_code}\n//# sourceURL=${sourceUrl}`
+    const fileDsl = fileSymbols && fileSymbols.dsl
+    const proxies = noProxies ? {} : jb.objFromEntries(plugin.proxies.map(id=>jb.macro.registerProxy(id)) )
+    const context = { jb, 
+      ...(typeof require != 'undefined' ? {require} : {}),
+      ...proxies,
+      component:(id,comp) => jb.component(id,comp,{plugin,fileDsl}),
+      extension:(libId, p1 , p2) => jb.extension(libId, p1 , p2,{plugin}),
+      using: x=>jb.using(x), dsl: x=>jb.dsl(x), pluginDsl: x=>jb.pluginDsl(x)
+    }
+    try {
+      //console.log(`loading ${path}`)
+      const wCode = `(function({${Object.keys(context)}}) {${code}\n})`
+      if (packOnly) packedCode.push({ path,
+          code: `jbLoadPackedFile({lineInPackage: 0, jb, noProxies: ${noProxies ? true: false}, path: '${path}',fileDsl: '${fileDsl||''}', pluginId: '${plugin.id||''}' }, 
+            function({${Object.keys(context)}}) {\n${_code}\n});\n`
+      })
+      if (noProxies || !packOnly) {
+        const f = eval(wCode)
+        f(context)
+        jb.loadedFiles[path] = true
+      }
+    } catch (e) {
+      if (!handleUnknownComp((e.message.match(/^(.*) is not defined$/)||['',''])[1]))
+        return jb.logException(e,`loadjbFile lib ${path}`,{context, code})
+    }
+
+    function handleUnknownComp(unknownCmp) {
+      if (!unknownCmp) return
+      try {
+        const fixed = code.replace(new RegExp(`${unknownCmp}\\(`,'g'),`unknownCmp('${unknownCmp}',`)
+        const f = eval(`(function(${Object.keys(context)}) {${fixed}\n})`)
+        f(...Object.values(context))
+        jb.loadedFiles[path] = true
+        jb.logError(`loader unknown comp ${unknownCmp} in file ${sourceUrl}`,{})
+        return true
+      } catch(e) {}
+    }
+  }
+  function calcPluginDependencies(plugins) {
+    Object.keys(plugins).map(id=>calcDependency(id))
+    Object.values(plugins).map(plugin=>{
+      const pluginDsls = unique(plugin.files.map(e=>e.pluginDsl).filter(x=>x))
+      if (pluginDsls.length > 1)
+        jb.logError(`plugin ${plugin.id} has more than one dsl`,{pluginDsls})
+      plugin.dsl = pluginDsls[0]
+    })
+    // the virtual xx-tests plugin must have the same dsl as the plugin
+    Object.values(plugins).filter(plugin=>plugin.id.match(/-tests$/)).forEach(plugin=>
+      plugin.dsl = (jb.plugins[plugin.id.slice(0,-6)] || {}).dsl)
+
+    function calcDependency(id,history={}) {
+      const plugin = plugins[id]
+      if (!plugin) {
+        console.log('calcDependency: can not find plugin',{id, history})
+        return []
+      }
+      if (plugin.dependent) return [id, ...plugin.dependent]
+      if (history[id])
+        return [`$circular:${id}`]
+      const baseOfTest = (id.match(/-tests$/) ? [id.slice(0,-6),'testing'] : []).filter(x=>plugins[x])
+      plugin.using = unique(plugin.files.flatMap(e=> unique(e.using)))
+      const dslOfFiles = plugin.files.filter(fileSymbols=>fileSymbols.dsl && fileSymbols.dsl != plugin.dsl).map(({path,dsl}) => [path,dsl])
+      if (dslOfFiles.length)
+        plugin.dslOfFiles = dslOfFiles
+
+      const dependent = unique([
+        ...plugin.files.flatMap(e=> unique(e.using.flatMap(dep=>calcDependency(dep,{...history, [id]: true})))),
+        ...baseOfTest.flatMap(dep=>calcDependency(dep,{...history, [id]: true}))]
+      ).filter(x=>x !=`$circular:${id}`)
+
+      plugin.circular = dependent.find(x=>x.match(/^\$circular:/))
+      const ret = [id, ...dependent]
+      if(!plugin.circular) {
+        plugin.dependent = dependent
+        plugin.requiredFiles = unique(ret.flatMap(_id=>plugins[_id].files), x=>x.path)
+        plugin.requiredLibs = unique(ret.flatMap(_id=>plugins[_id].files).flatMap(x=>x.libs || []))
+        plugin.proxies = unique(plugin.requiredFiles.flatMap(x=>x.ns))
+      }
+      return ret
+    }
+  }
+}
+
+// jb-pack
+function packedCodePrefix(jb,libs,libsToInit) {
+  const plugins = Object.fromEntries(Object.values(jb.plugins).filter(x=>x.loadingReq)
+    .map(({id,dependent,proxies,using,dsl,dslOfFiles,files})=>({id,dependent,proxies,dsl,dslOfFiles,files: files.map(({path}) => path) })).map(p=>[p.id,p]))
+
+  const _jb = { sourceCode: jb.sourceCode, loadedFiles: {}, plugins}
+  return { code: [
+    'async function jbLoadPacked({uri,initSpyByUrl,multipleInFrame}={}) {',
+    `const jb = ${JSON.stringify(_jb)}`,
+    `if (!multipleInFrame) globalThis.jb = jb`,
+    `jb.uri = uri || 'main'`,
+    `jb.startTime = new Date().getTime()`,
+    jbCreatePlugins.toString(),
+    jbLoadPackedFile.toString(),
+    `\njbloadPlugins(jb,jbLoadPackedFile)`,
+    `if (initSpyByUrl) jb.spy.initSpyByUrl()`,
+    `\njb.initializeTypeRules(${JSON.stringify(libs||[])})
+await jb.initializeLibs(${JSON.stringify(libsToInit||[])})
+jb.beforeResolveTime = new Date().getTime()
+jb.utils.resolveLoadedProfiles()
+jb.resolveTime = new Date().getTime()-jb.beforeResolveTime
+return jb
+}`,
+'\nfunction jbloadPlugins(jb,jbLoadPackedFile) {'
+].join('\n') 
+  }
+}
+
+function jbLoadPackedFile({lineInPackage, jb, noProxies, path,fileDsl,pluginId}, loadFunc) {
+  if (jb.loadedFiles[path]) return
+  const plugin = jb.plugins[pluginId]
+  const proxies = noProxies ? {} : jb.objFromEntries(plugin.proxies.map(id=>jb.macro.registerProxy(id)) )
+  const context = { jb, 
+    ...(typeof require != 'undefined' ? {require} : {}),
+    ...proxies,
+    component:(id,comp) => jb.component(id,comp,{plugin,fileDsl,path,lineInPackage}),
+    extension:(libId, p1 , p2) => jb.extension(libId, p1 , p2,{plugin,path,lineInPackage}),
+    using: x=>jb.using(x), dsl: x=>jb.dsl(x), pluginDsl: x=>jb.pluginDsl(x)
+  }
+  try {
+      loadFunc(context)
+      jb.loadedFiles[path] = true
+  } catch (e) {
+  }
+}
+
+function jbCreatePlugins(jb,plugins) {
+  jbHost.defaultCodePackage = jbHost.defaultCodePackage || jbHost.codePackageFromJson()
+  plugins.forEach(plugin=> {
+    jb.plugins[plugin.id] = jb.plugins[plugin.id] || { ...plugin, codePackage : jbHost.defaultCodePackage }
+  })
+}
+
+if (typeof module != 'undefined') module.exports = { jbInit };
+
+});
+
+jbLoadPackedFile({lineInPackage:1916, jb, noProxies: false, path: '/plugins/loader/source-code.js',fileDsl: 'loader', pluginId: 'loader' }, 
+            function({jb,require,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,component,extension,using,dsl,pluginDsl}) {
+dsl('loader')
+
+extension('loader','main' , {
+    shortFilePath(fullFilePath) {
+        const elems = fullFilePath.split('/').reverse()
+        return '/' + elems.slice(0,elems.findIndex(x=> x == 'plugins' || x == 'projects')+1).reverse().join('/')
+    },
+    unifyPluginsToLoad(pluginsToLoad, plugins) {
+        return jb.asArray(pluginsToLoad).reduce((acc,item) => {
+            const plugins = jb.utils.unique([...(acc.plugins || []), ...(item.plugins || [])])
+            return {...acc, ...item, plugins}
+        } , { plugins })
+    },
+    pluginOfFilePath(fullFilePath, addTests) {
+      return jb.pathToPluginId(jb.loader.shortFilePath(fullFilePath),addTests)
+    },
+    pluginsByCtx(ctx) {
+      return ctx.probe ? ['probe-core','tgp-formatter'] : []
+    },
+    mergeSourceCodes(sc1,sc2) {
+      if (!sc1) return sc2
+      if (!sc2) return sc1
+      const plugins = jb.utils.unique([...(sc1.plugins || []), ...(sc2.plugins || [])])
+      const projects = jb.utils.unique([...(sc1.projects || []), ...(sc2.projects || [])])
+      const pluginPackages = jb.utils.unique([...(sc1.pluginPackages || []), ...(sc2.pluginPackages || [])], package => package.repo || 'default')
+      return {plugins, projects, pluginPackages}
+    },
+    pluginsOfProfile(prof, comps = jb.comps) {
+        if (!prof || typeof prof != 'object') return []
+        if (!prof.$$)
+            return jb.utils.unique(Object.values(prof).flatMap(x=>jb.loader.pluginsOfProfile(x)))
+        const comp = comps[prof.$$]
+        if (!comp) {
+            debugger
+            jb.logError(`cmd - can not find comp ${prof.$$} please provide sourceCode`,{ctx})
+            return []
+        }
+        return jb.utils.unique([comp.$plugin,...Object.values(prof).flatMap(x=>jb.loader.pluginsOfProfile(x))]).filter(x=>x)
+    }    
+})
+
+// source-code
+component('sourceCode', {
+  type: 'source-code',
+  params: [
+    {id: 'pluginsToLoad', type: 'plugins-to-load[]', flattenArray: true},
+    {id: 'pluginPackages', type: 'plugin-package[]', flattenArray: true}, // , defaultValue: defaultPackage()
+    {id: 'libsToInit', as: 'string', description: 'empty means load all libraries'},
+    {id: 'actualCode', as: 'string', description: 'alternative to plugins'}
+  ],
+  impl: (ctx,pluginsToLoad,pluginPackages,libsToInit,actualCode) => ({ 
+    ...(pluginPackages.filter(x=>x).length ? { pluginPackages : pluginPackages.filter(x=>x)} : {}),
+    ...jb.loader.unifyPluginsToLoad(pluginsToLoad, jb.loader.pluginsByCtx(ctx)),
+    ...(libsToInit ? {libsToInit} : {}),
+    ...(actualCode ? {actualCode} : {}),
+  })
+})
+
+component('sourceCodeByTgpPath', {
+  type: 'source-code',
+  params: [
+    {id: 'tgpPath', as: 'string', mandatory: true},
+    {id: 'tgpModel'}
+  ],
+  impl: sourceCode(
+    plugins(({},{},{tgpModel, tgpPath}) => {
+    const comps = tgpModel ? tgpModel.comps : jb.comps
+    return jb.path(comps[tgpPath.split('~')[0]],'$plugin') || ''
+  })
+  )
+})
+
+component('plugins', {
+  type: 'source-code',
+  params: [
+    {id: 'plugins', mandatory: true}
+  ],
+  impl: sourceCode(plugins('%$plugins%'))
+})
+
+component('extend', {
+  type: 'source-code',
+  params: [
+    {id: 'sourceCode', type: 'source-code', mandatory: true},
+    {id: 'with', type: 'source-code', mandatory: true},
+  ],
+  impl: (ctx,sc1,sc2) => jb.loader.mergeSourceCodes(sc1,sc2)
+})
+
+component('project', {
+  type: 'source-code',
+  params: [
+    {id: 'project', as: 'string', mandatory: true}
+  ],
+  impl: sourceCode(project('%$project%'))
+})
+
+component('sameAsParent', {
+  type: 'source-code',
+  impl: () => jb.sourceCode
+})
+// plugins-to-load
+
+component('pluginsByPath', {
+  type: 'plugins-to-load',
+  params: [
+    {id: 'filePath', as: 'string', mandatory: true, description: 'E.g. someDir/plugins/mycode.js'},
+    {id: 'addTests', as: 'boolean', description: 'add plugin-tests', type: 'boolean', byName: true}
+  ],
+  impl: (ctx,fullFilePath,addTests) => {
+    const filePath = jb.loader.shortFilePath(fullFilePath)
+    const plugins = [jb.loader.pluginOfFilePath(fullFilePath,addTests)]
+    const project = jb.path(filePath.match(/projects\/([^\/]+)/),'1')
+    return { plugins, ...(project ? {projects: [project]} : {}) }
+  }
+})
+
+component('loadAll', {
+  type: 'plugins-to-load',
+  impl: ctx => ({ plugins: ['*'] })
+})
+
+component('plugins', {
+  type: 'plugins-to-load',
+  params: [
+    {id: 'plugins', mandatory: true}
+  ],
+  impl: (ctx,plugins) => ({ plugins: Array.isArray(plugins) ? plugins : plugins.split(',') })
+})
+
+component('project', {
+  type: 'plugins-to-load',
+  params: [
+    {id: 'project', as: 'string', mandatory: true, description: '* for all'}
+  ],
+  impl: (ctx,project) => ({projects: [project]})
+})
+
+
+// plugin packages
+
+component('packagesByPath', {
+  type: 'plugin-package',
+  params: [
+    {id: 'path', as: 'string', mandatory: true, description: 'E.g. someDir/plugins/xx-tests.js'},
+    {id: 'host', as: 'string', options: ',node,studio,static'}
+  ],
+  impl: (ctx,path,host) => {
+    const repo = (path.match(/projects\/([^/]*)\/(plugins|projects)/) || [])[1]
+    if (repo && repo != 'jb-react') {
+      const repsBase = path.split('projects/')[0] + 'projects/'
+      const package = (!host || host == 'node') ? { $: 'fileSystem', repo, baseDir: repsBase + repo} 
+        : host == 'studio' ? { $: 'jbStudioServer', repo }
+        : host == 'static' ? { $: 'staticViaHttp', repo } : null
+      return [{ $: 'defaultPackage' }, package]
+    }
+  }
+})
+
+component('defaultPackage', {
+  type: 'plugin-package',
+  impl: () => ({ $: 'defaultPackage' })
+})
+
+component('staticViaHttp', {
+  type: 'plugin-package',
+  params: [
+    {id: 'baseUrl', as: 'string', mandatory: true}
+  ],
+  impl: ctx => ({ $: 'staticViaHttp', ...ctx.params, useFileSymbolsFromBuild: true })
+})
+
+component('jbStudioServer', {
+  type: 'plugin-package',
+  params: [
+    {id: 'repo', as: 'string'}
+  ],
+  impl: (ctx,repo) => repo && ({ $: 'jbStudioServer', ...ctx.params })
+})
+
+component('fileSystem', {
+  type: 'plugin-package',
+  params: [
+    {id: 'baseDir', as: 'string'}
+  ],
+  impl: ctx => ({ $: 'fileSystem', ...ctx.params })
+})
+
+component('zipFile', {
+  type: 'plugin-package',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: ctx => ({ $: 'zipFile',  ...ctx.params })
+})
+
+component('sourceCode.encodeUri', {
+  params: [
+    {id: 'sourceCode', type: 'source-code<loader>', mandatory: true}
+  ],
+  impl: (ctx,source) => jb.frame.encodeURIComponent(JSON.stringify(source))
+})
+
+});
+
+jbLoadPackedFile({lineInPackage:2123, jb, noProxies: false, path: '/plugins/ui/iframe/launcher/iframe-launcher.js',fileDsl: '', pluginId: 'ui-iframe-launcher' }, 
+            function({jb,require,renderWidgetInIframe,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,component,extension,using,dsl,pluginDsl}) {
+using('loader')
+
+extension('iframe','inIframe', {
+    renderWidgetInIframe({id, profile, el, sourceCode, htmlAtts, baseUrl} = {}) {
+        baseUrl = baseUrl || 'http://localhost:8082'
+        const _plugins = sourceCode && sourceCode.plugins || jb.loader.pluginsOfProfile(profile)
+        const plugins = jb.utils.unique(_plugins)
+        const html = `<!DOCTYPE html>
+<html ${htmlAtts}>
+<head>
+    <meta charset="UTF-8">
+    <!-- 
+    <script type="text/javascript" src="${baseUrl}/plugins/loader/jb-loader.js"></script>
+    <script type="text/javascript" src="${baseUrl}/package/${plugins.join(',')}.js"></script>
+    <link rel="stylesheet" type="text/css" href="${baseUrl}/dist/css/styles.css"/>
+    -->
+    <style>
+        html, body {
+            height: 100%; /* Set height for html and body */
+            margin: 0; /* Remove default margin */
+        }
+    </style>    
+</head>
+<body>
+    <div id="main"></div>
+    <script>
+    ;(async () => {
+        let res = await fetch('${baseUrl}/plugins/loader/jb-loader.js')
+        await eval(await res.text())
+        jbHost.baseUrl = "${baseUrl}";
+        document.iframeId = "${id}"
+        res = await fetch('${baseUrl}/package/${plugins.join(',')}.js')
+        await eval(await res.text())
+    
+        globalThis.jb = await jbLoadPacked("${id}");
+        jb.baseUrl = "${baseUrl}";
+        const ctx = jb.ui.extendWithServiceRegistry(new jb.core.jbCtx());
+        console.log('profile',${JSON.stringify(profile)})
+        const vdom = await ctx.run(${JSON.stringify(profile)},'control<>');
+        console.log('vdom',vdom)
+        await jb.ui.render(jb.ui.h(vdom), main, { ctx });
+        window.parent.postMessage('jbart is up', '*');
+    })()
+    </script>
+
+</body>
+</html>`
+        const iframe = document.createElement('iframe')
+        iframe.setAttribute('id',id)
+        iframe.setAttribute('sandbox', 'allow-same-origin allow-forms allow-scripts')
+        iframe.setAttribute('style', 'position: fixed;border: none;z-index:5000')
+        iframe.setAttribute('frameBorder', '0')
+        if (jbHost.chromeExtV3) {
+          iframe.src = chrome.runtime.getURL('iframe.html')  
+        } else {
+          iframe.src = 'about:blank'
+          iframe.onload = () => {
+              const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+              iframeDocument.open();
+              iframeDocument.write(html);
+              iframeDocument.close();
+          }
+        }
+        window.addEventListener('message', ev => {
+          if (ev.data && ev.data.$ == 'getInfo') {
+            iframe.contentWindow.postMessage({$: 'parentInfo', height: window.innerHeight, width: window.innerWidth, domain: document.domain}, ev.data.origin)
+          } else if (ev.data && ev.data.$ == 'setIframeRect') {
+            let {top, left, width, height} =  ev.data
+            height != null && (iframe.style.height = height +'px');
+            width != null && (iframe.style.width = width +'px');
+            top != null && (iframe.style.top = top + 'px');
+            left != null && (iframe.style.left = left +'px');
+          }
+        })
+        const res = new Promise(resolve => window.addEventListener('message', ev => (ev.data == 'jbart is up') && resolve()))
+        document.body.prepend(iframe)
+        return res
+    }
+})
+
+component('renderWidgetInIframe', {
+  type: 'action',
+  params: [
+    {id: 'profile', byName: true},
+    {id: 'selector', as: 'string', defaultValue: 'body'},
+    {id: 'id', as: 'string', defaultValue: 'main'},
+    {id: 'sourceCode', type: 'source-code<loader>'},
+    {id: 'htmlAtts', as: 'string', defaultValue: 'style="font-size:12px"'}
+  ],
+  impl: (ctx, profile, selector, id) => {
+    const el = document.querySelector(selector)
+    if (!el)
+      return jb.logError('renderWidgetInIframe can not find element for selector', { selector })
+    return jb.iframe.renderWidgetInIframe({id, profile, el, ...ctx.params})
+  }
+})
+
+});
+
 }

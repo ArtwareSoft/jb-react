@@ -27,7 +27,6 @@ extension('treeShake', {
                 '#spy.initSpy','#treeShake.getCodeFromRemote','#cbHandler.terminate','data<>treeShake.getCode','action<>waitFor',
                 'any<>call','any<>runCtx','any<>If','any<>firstNotEmpty','any<>typeAdapter'],
             existingFEPaths: {},
-            FELibLoaderPromises: {},
             loadingCode: {},
             defaultPlugin: { codePackage: jbHost.codePackageFromJson()},
 //            server: jb.frame.jbInit,

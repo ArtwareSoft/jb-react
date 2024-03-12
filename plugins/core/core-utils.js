@@ -358,9 +358,11 @@ extension('utils', 'generic', {
     },
     sessionStorage(id,val) {
       if (!jb.frame.sessionStorage) return
-      const currentValue = JSON.parse(jb.frame.sessionStorage.getItem(id))
-      return val == undefined ? currentValue : 
-        jb.frame.sessionStorage.setItem(id, JSON.stringify(val && typeof val == 'object' ? {...(currentValue||{}),...val} : val))
+      const curVal = JSON.parse(jb.frame.sessionStorage.getItem(id))
+      if (val == undefined) return curVal
+      const cleanedVal = typeof val == 'object' ? Object.fromEntries(Object.entries(val).filter(([_, v]) => v != null)) : val
+      const newVal = typeof val == 'object' ? {...(curVal||{}), ...cleanedVal } : val
+      jb.frame.sessionStorage.setItem(id, JSON.stringify(newVal))
     }
 })
 

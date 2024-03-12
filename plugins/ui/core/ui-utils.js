@@ -4,6 +4,11 @@ extension('ui', 'api', {
 })
 
 extension('ui', 'utils', {
+  initExtension() {
+    return {
+      FELibLoaderPromises: {}
+    }
+  },
   focus(elem, logTxt, ctx) {
     if (!elem) debugger
     // block the preview from stealing the studio focus
@@ -190,15 +195,15 @@ extension('ui', 'html', {
   async loadFELibsDirectly(libs) {
       if (!libs.length) return
       if (typeof document == 'undefined') {
-          debugger
           return jb.logError('can not load front end libs to a frame without a document')
       }
-      const libsToLoad = jb.utils.unique(libs)//.filter(lib=>! jb.treeShake.FELibsToLoad[lib])
-      libsToLoad.forEach(lib=> jb.treeShake.FELibLoaderPromises[lib] = jb.treeShake.FELibLoaderPromises[lib] || loadFELib(lib) )
+      const libsToLoad = jb.utils.unique(libs)
+      libsToLoad.forEach(lib=> jb.ui.FELibLoaderPromises[lib] = jb.ui.FELibLoaderPromises[lib] || loadFELib(lib) )
       jb.log('FELibs toLoad',{libsToLoad})
-      return libsToLoad.reduce((pr,lib) => pr.then(()=> jb.treeShake.FELibLoaderPromises[lib]), Promise.resolve())
+      return libsToLoad.reduce((pr,lib) => pr.then(()=> jb.ui.FELibLoaderPromises[lib]), Promise.resolve())
 
       async function loadFELib(lib) {
+        if (jbHost.loadFELib) return jbHost.loadFELib(lib)
           if (lib.match(/js$/)) {
             const code = await jb.frame.fetch(`${jb.baseUrl||''}/dist/${lib}`).then(x=>x.text())
             eval(code)

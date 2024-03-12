@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "llm-helper-v3",
+  "version": "1.0",
+  "description": "A Chrome extension to interact with https://chat.openai.com/",
+  "permissions": [
+    "activeTab"
+  ],
+  "web_accessible_resources": [
+      {
+          "resources": ["iframe.html","package/ui-misc_ui-iframe-dialog.js","plugins/loader/jb-loader.js","start-iframe.js"],
+          "matches": ["<all_urls>"]
+      }
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://www.artwaresoft.com/*", "https://chat.openai.com/*"],
+      "js": ["package/ui-iframe-launcher.js", "llm-content-script-v3.js"]
+    }
+  ]
+}

@@ -20,7 +20,7 @@ async function jbMake(sourceCode, {baseDir,sourceMaps} = {}) {
     const latestModTime = getLatestModTime(baseDir)
     const sourceCodeStr = JSON.stringify(sourceCode)
     const sourceMapsSuffix = sourceMaps ? '_withMaps' : ''
-    const fn = sourceCodeStr.replace(/\*/g,'ALL').replace(/[^a-zA-Z\-]/g,'') + sourceMapsSuffix
+    const fn = sourceCodeStr.replace(/\*/g,'ALL').replace(/","/g,'_').replace(/[^_a-zA-Z\-]/g,'').replace(/^plugins/,'') + sourceMapsSuffix
     const packageFilePath = `${jbHost.jbReactDir}/package/${fn}.js`
     const fileModTime = fs.existsSync(packageFilePath) && fs.statSync(packageFilePath).mtime.getTime()
 

@@ -21,30 +21,11 @@ component('renderDialogInIframe', {
 component('inIframe.dragTitle', {
   type: 'dialog-feature',
   params: [
-    {id: 'id', as: 'string'},
-    {id: 'useSessionStorage', as: 'boolean', type: 'boolean', byName: 'true'},
     {id: 'selector', as: 'string', defaultValue: '.dialog-title'},
   ],
   impl: features(
-    calcProp('sessionStorageId', 'dialogPos-%$id%'),
-    calcProp('posFromSessionStorage', If('%$useSessionStorage%', getSessionStorage('%$$props/sessionStorageId%'))),
     css('>%$selector% { cursor: pointer; user-select: none }'),
-    frontEnd.method('setPos', ({data},{cmp}) => {
-        cmp.iframe.style.top = data.top + 'px'
-        cmp.iframe.style.left = data.left +'px' 
-    }),
     frontEnd.var('selector', '%$selector%'),
-    frontEnd.var('useSessionStorage', '%$useSessionStorage%'),
-    frontEnd.var('sessionStorageId', '%$$props/sessionStorageId%'),
-    frontEnd.var('posFromSessionStorage', '%$$props/posFromSessionStorage%'),
-    frontEnd.init(({},{cmp, posFromSessionStorage, el}) => {
-        jb.ui.parents(el)
-        cmp.iframe = window.parent.document.getElementById(jb.ui.parents(el).pop().iframeId)
-        if (posFromSessionStorage) {
-            cmp.iframe.style.top = posFromSessionStorage.top + 'px'
-            cmp.iframe.style.left = posFromSessionStorage.left +'px'
-        }
-    }),
     frontEnd.prop('titleElem', ({},{el,selector}) => el.querySelector(selector)),
     frontEnd.flow(
       source.event('mousedown', '%$cmp/titleElem%'),
@@ -58,16 +39,13 @@ component('inIframe.dragTitle', {
         rx.takeWhile('%buttons%!=0'),
         rx.var('ev'),
         rx.map(({data},{offsetFromDialog,cmp}) => { 
-            const iframeRect = cmp.iframe.getBoundingClientRect()
+            const {top, left } = jb.utils.sessionStorage('dialog')
             return {
-                left: Math.max(0, data.clientX - offsetFromDialog.left + iframeRect.left),
-                top: Math.max(0, data.clientY - offsetFromDialog.top + iframeRect.top),
-  		}})
+                left: Math.max(0, data.clientX - offsetFromDialog.left + left),
+                top: Math.max(0, data.clientY - offsetFromDialog.top + top),
+  		  }})
       )),
-      sink.action(runActions(
-        action.runFEMethod('setPos'),
-        action.setSessionStorage('dialog', obj(prop('pos','%%')))
-      ))
+      sink.FEMethod('setRect')
     )
   )
 })
@@ -82,18 +60,8 @@ component('inIframe.resizer', {
     templateModifier(({},{vdom}) => { vdom && vdom.tag == 'div' && vdom.children.push(jb.ui.h('img.jb-resizer',{})) }),
     css('>.jb-resizer { cursor: pointer; position: absolute; right: %$padding%px; bottom: %$padding%px; content:url("%$baseUrl%/dist/css/resizer.gif") }'),
     frontEnd.var('padding', '%$padding%'),
-    frontEnd.method('setSize', ({data},{cmp,padding}) => {
-        cmp.iframe.style.height = data.top +'px'
-        cmp.iframe.style.width = data.left +'px'
-        const autoResizeOffsets = [...document.querySelectorAll('.autoResizeInDialog')].map(innerElemToResize=>({
-          elem: innerElemToResize,
-          offset: innerElemToResize.getBoundingClientRect().top - cmp.main.getBoundingClientRect().top
-            + (cmp.main.getBoundingClientRect().bottom - innerElemToResize.getBoundingClientRect().bottom)}))
-
-        autoResizeOffsets.forEach(({elem,offset}) => elem.style.height = (data.top-offset-padding*2) +'px')
-	  }),
     frontEnd.init(({},{cmp, padding, el}) => // wait for libs to load
-       jb.delay(100).then(() => cmp.iframe.style.height = el.getBoundingClientRect().height+padding*2 +'px')),
+        jb.delay(100).then(() => cmp.runFEMethod('setRect',{height: el.getBoundingClientRect().height+padding*2},{cmp,padding}))),
     frontEnd.prop('resizerElem', ({},{cmp}) => cmp.base.querySelector('.jb-resizer')),
     frontEnd.flow(
       source.event('mousedown', '%$cmp.resizerElem%'),
@@ -102,9 +70,9 @@ component('inIframe.resizer', {
       rx.flatMap(rx.pipe(
         source.event('mousemove'),
         rx.takeWhile('%buttons%!=0'),
-        rx.map(({data},{offset}) => ({ left: Math.max(0, data.clientX - offset.left),	top: Math.max(0, data.clientY - offset.top) }))
+        rx.map(({data},{offset}) => ({ width: Math.max(0, data.clientX - offset.left),	height: Math.max(0, data.clientY - offset.top) }))
       )),
-      sink.action(runActions(action.runFEMethod('setSize'), action.setSessionStorage('dialog', obj(prop('size', '%%')))))
+      sink.FEMethod('setRect')
     )
   )
 })
@@ -141,32 +109,55 @@ component('inIframe.Floating', {
         flex-direction: row; } `),
       css('>.dialog-menu>button { border: none; background: white; }'),
       css('>.dialog-menu>button:hover { opacity: .5 }'),
-      inIframe.dragTitle('%$id%', { useSessionStorage: true }),
+      inIframe.dragTitle(),
       frontEnd.var('width', '%$width%'),
       frontEnd.var('height', '%$height%'),
       frontEnd.var('padding', '%$padding%'),
+      frontEnd.method('setRect', ({data},{cmp,padding}) => {
+          let {top, left, width, height, doNotSetStorage,backToSize} =  data
+          if (cmp.iframe) {
+            height != null && (cmp.iframe.style.height = height +'px');
+            width != null && (cmp.iframe.style.width = width +'px');
+            top != null && (cmp.iframe.style.top = top + 'px');
+            left != null && (cmp.iframe.style.left = left +'px'); 
+          } else {
+            window.parent.postMessage({$: 'setIframeRect', top, left, width, height }, '*');
+          }
+          jb.delay(1).then(() => {
+            if (!doNotSetStorage)
+              jb.utils.sessionStorage('dialog',{top, left, width, height})
+            const autoResizeOffsets = [...document.querySelectorAll('.autoResizeInDialog')].map(innerElemToResize=>({
+              elem: innerElemToResize,
+              offset: innerElemToResize.getBoundingClientRect().top - cmp.main.getBoundingClientRect().top
+                + (cmp.main.getBoundingClientRect().bottom - innerElemToResize.getBoundingClientRect().bottom)}))
 
+            autoResizeOffsets.forEach(({elem,offset}) => elem.style.height = (height-offset-padding*2) +'px')
+          })
+      }),
       frontEnd.init(({},{cmp, width, height, padding, el}) => {
         jb.ui.parents(el).forEach(el=>el.style && (el.style.overflow = 'hidden'))
         cmp.main = jb.ui.parents(el)[0]
         cmp.main.style.padding = padding + 'px'
-        cmp.iframe = window.parent.document.getElementById(jb.ui.parents(el).pop().iframeId)
-        cmp.iframe.style.height = height +'px'
-        cmp.iframe.style.width = width +'px'
-        jb.utils.sessionStorage('dialog',{size: {top: height, left: width}, pos: {top:0, left: 0}})
+        const session = jb.utils.sessionStorage('dialog')
+        const rect = { height: session.height || height, width: session.width || width, top: session.top || 0, left: session.left || 0}
+        jb.delay(1).then(()=> cmp.runFEMethod('setRect',rect,{cmp,padding}))
+        window.addEventListener('message', ev => {
+          if (ev.data && ev.data.$ == 'parentInfo') {
+            cmp.fullScreen = {width: ev.data.width, height: ev.data.height, top: 0, left: 0 }
+            cmp.parentDomain = ev.data.domain
+            if (cmp.parentDomain == document.domain)
+              cmp.iframe = window.parent.document.getElementById(jb.ui.parents(el).pop().iframeId)
+          }
+        })
+        console.log('getparentInfo')
+        window.parent.postMessage({$: 'getInfo', origin: location.origin }, '*')
 
-        el.querySelector('#shrink').addEventListener('click', () => {
-          cmp.runFEMethod('setPos',{top: 0, left: 0},{cmp,padding}) 
-          cmp.runFEMethod('setSize',{top: 45, left: 167},{cmp,padding}) 
-        })
-        el.querySelector('#backToSize').addEventListener('click', () => {
-          cmp.runFEMethod('setPos',jb.utils.sessionStorage('dialog').pos,{cmp,padding}) 
-          cmp.runFEMethod('setSize',jb.utils.sessionStorage('dialog').size,{cmp,padding}) 
-        })
-        el.querySelector('#fullScreen').addEventListener('click', () => {
-          cmp.runFEMethod('setPos',{top: 0, left: 0},{cmp,padding}) 
-          cmp.runFEMethod('setSize',{top: window.parent.innerHeight, left: window.parent.innerWidth},{cmp,padding}) 
-        })
+        el.querySelector('#shrink').addEventListener('click', () =>
+          cmp.runFEMethod('setRect',{top: 0, left: 0, height: 45, width: 167, doNotSetStorage: true},{cmp,padding}))
+        el.querySelector('#backToSize').addEventListener('click', () => 
+          cmp.runFEMethod('setRect',{...jb.utils.sessionStorage('dialog'), backToSize: true},{cmp,padding}))
+        el.querySelector('#fullScreen').addEventListener('click', () => 
+          cmp.runFEMethod('setRect',{...cmp.fullScreen, doNotSetStorage: true},{cmp,padding}))
       }),      
       dialogFeature.uniqueDialog('%$id%'),
       dialogFeature.maxZIndexOnClick(5000),
