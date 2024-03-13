@@ -1,7 +1,7 @@
 extension('ui', 'frontend', {
     async refreshFrontEnd(elem, {content} = {}) {
         if (!(elem instanceof jb.ui.VNode)) {
-            const libs = jb.ui.feLibs(content)
+            const libs = jb.utils.unique(jb.ui.feLibs(content))
             if (libs.length) {
                 jb.ui.addClass(elem,'jb-loading-libs')
                 await jb.ui.loadFELibsDirectly(libs)
@@ -14,11 +14,11 @@ extension('ui', 'frontend', {
             return el._component ? el._component.newVDomApplied() : new jb.ui.frontEndCmp(el,coLocationCtx) 
         })
     },
-    feLibs(obj) {
-        if (!obj || typeof obj != 'object') return []
-        if (obj.attributes && obj.attributes.$__frontEndLibs) 
-            return JSON.parse(obj.attributes.$__frontEndLibs)
-        return Object.keys(obj).filter(k=> ['parentNode','attributes'].indexOf(k) == -1).flatMap(k =>jb.ui.feLibs(obj[k]))
+    feLibs(elem) {
+        if (!elem || typeof elem != 'object') return []
+        const res = (elem.attributes && elem.attributes.$__frontEndLibs) ? JSON.parse(elem.attributes.$__frontEndLibs) : []
+        return [...res, ...[...(elem.children||[])].flatMap(x =>jb.ui.feLibs(x))]
+        //return Object.keys(obj).filter(k=> ['parentNode','attributes'].indexOf(k) == -1).flatMap(k =>jb.ui.feLibs(obj[k]))
     },
     frontEndCmp: class frontEndCmp {
         constructor(elem, coLocationCtx) {
@@ -87,12 +87,16 @@ extension('ui', 'frontend', {
             if (this._deleted) return
             Object.assign(this.state, state)
             this.base.state = this.state
+            this.frontEndStatus = 'refreshing'
             this.runFEMethod('onRefresh',null,null,true)
+            this.frontEndStatus = 'ready'
         }    
         newVDomApplied() {
             Object.assign(this.state,{...this.base.state}) // update state from BE
             this.ver= this.base.getAttribute('cmp-ver')
+            this.frontEndStatus = 'refreshing'
             this.runFEMethod('onRefresh',null,null,true)
+            this.frontEndStatus = 'ready'
         }
         destroyFE() {
             this._deleted = true

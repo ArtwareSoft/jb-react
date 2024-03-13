@@ -65,7 +65,7 @@ component('langServerTest.remote.circuitOptions', {
   doNotRunInTests: true,
   impl: dataTest({
     calculate: remote.circuitOptions('/plugins/common/xx.js', 'data<>list'),
-    expectedResult: equals('%0/shortId%', 'dataTest.listWithVar')
+    expectedResult: equals('%0/shortId%', 'commonTest.listWithVar')
   })
 })
 
@@ -75,7 +75,7 @@ component('langServerTest.remoteProbe', {
     calculate: pipe(
       Var('forceRemoteCompProps', true),
       langService.dummyCompProps({
-        compText: `component('dataTest.join', {\n  impl: dataTest(pipeline(list(1,2), '%%', __join()), equals('1,2'))\n})`,
+        compText: `component('commonTest.join', {\n  impl: dataTest(pipeline(list(1,2), '%%', __join()), equals('1,2'))\n})`,
         includeCircuitOptions: true
       }),
       langServer.probe()
@@ -89,10 +89,10 @@ component('langServerTest.includeCircuitOptions', {
   doNotRunInTests: true,
   impl: dataTest({
     calculate: langService.dummyCompProps({
-      compText: `component('dataTest.split', {\n  impl: dataTest(pipeline('1,2', split(',', { part: 'last' })), __equals('2'))\n})`,
+      compText: `component('commonTest.split', {\n  impl: dataTest(pipeline('1,2', split(',', { part: 'last' })), __equals('2'))\n})`,
       includeCircuitOptions: true
     }),
-    expectedResult: equals('%circuitOptions/0/id%', 'test<>dataTest.split'),
+    expectedResult: equals('%circuitOptions/0/id%', 'test<>commonTest.split'),
     timeout: 2000
   })
 })
@@ -101,12 +101,12 @@ component('langServerTest.studioCircuitUrl', {
   impl: dataTest({
     calculate: pipe(
       langService.dummyCompProps({
-        compText: `component('dataTest.split', {\n  impl: dataTest(pipeline('1,2', split(',', { part: 'last' })), __equals('2'))\n})`,
+        compText: `component('commonTest.split', {\n  impl: dataTest(pipeline('1,2', split(',', { part: 'last' })), __equals('2'))\n})`,
         includeCircuitOptions: true
       }),
       langServer.studioCircuitUrl()
     ),
-    expectedResult: contains('http://localhost:8082/project/studio/test<>dataTest.split/test<>dataTest.split~impl~expectedResult?sourceCode=','spy=test'),
+    expectedResult: contains('http://localhost:8082/project/studio/test<>commonTest.split/test<>commonTest.split~impl~expectedResult?sourceCode=','spy=test'),
     timeout: 3000
   })
 })

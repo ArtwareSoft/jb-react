@@ -1,3 +1,4 @@
+using('testing-ui')
 
 component('wPreview', {
   type: 'jbm<jbm>',

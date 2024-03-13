@@ -1,11 +1,8 @@
 using('ui-tests')
 
+
 component('uiTest.group', {
   impl: uiTest(group(text('hello world'), text('2')), contains('hello world','2'))
-})
-
-component('uiTest.group1', {
-  impl: group(button('click me'), button('click me'))
 })
 
 component('uiTest.text', {
@@ -133,7 +130,15 @@ component('uiTest.button.expectedEffects.compChange', {
 
 
 component('uiTest.editableText', {
-  impl: uiTest(editableText('name', '%$person/name%', { style: editableText.input() }), contains('input','Homer Simpson'))
+  impl: uiTest(editableText('name', '%$person/name%'), contains('input','Homer Simpson'))
+})
+
+component('uiTest.editableText.watchRef', {
+  impl: uiTest({
+    control: group(editableText('name', '%$person/name%'), text('%$person/name%')),
+    expectedResult: contains('hommy</span>'),
+    uiAction: setText('hommy')
+  })
 })
 
 component('uiTest.editableText.onEnter', {
@@ -153,7 +158,7 @@ component('uiTest.editableText.emptyData', {
 })
 
 component('uiTest.editableTextEmpty', {
-  impl: uiTest(editableText('name', '%$person/name1%', { style: editableText.input() }), not(contains('object')))
+  impl: uiTest(editableText('name', '%$person/name1%'), not(contains('object')))
 })
 
 component('uiTest.editableText.xButton', {

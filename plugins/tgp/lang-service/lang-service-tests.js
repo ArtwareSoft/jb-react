@@ -118,8 +118,11 @@ component('completionTest.createPipelineFromEmptyString', {
 component('completionTest.insideVar', {
   impl: completionActionTest(`dataTest({ vars: [Var('a', '__b')] })`, {
     completionToActivate: 'pipeline',
-    expectedEdit: asIs({range: {start: {line: 1, col: 35}, end: {line: 1, col: 38}}, newText: `pipeline('b')`}),
-    expectedCursorPos: '1,44'
+    expectedEdit: asIs({
+        range: {start: {line: 1, col: 26}, end: {line: 1, col: 39}},
+        newText: `\n    Var('a', pipeline('b'))\n  `
+    }),
+    expectedCursorPos: '2,22'
   })
 })
 
@@ -321,10 +324,10 @@ component('completionTest.multiLineAddProp', {
 
 component('completionTest.multiLineFeatures', {
   impl: completionActionTest({
-    compText: `group(text('my text'), { features: [\n    method(),__\n    calcProp(),\n    css.class('asddddddddddddddddddddddddddd')\n  ] })`,
+    compText: `group(text('my text'), {\n    features: [\n      method(),__\n      calcProp(),\n      css.class('asddddddddddddddddddddddddddd')\n    ]\n  })`,
     completionToActivate: 'method',
-    expectedEdit: asIs({range: {start: {line: 3, col: 4}, end: {line: 3, col: 4}}, newText: `method(),\n    `}),
-    expectedCursorPos: '3,11'
+    expectedEdit: asIs({range: {start: {line: 4, col: 6}, end: {line: 4, col: 6}}, newText: 'method(),\n      '}),
+    expectedCursorPos: '4,13'
   })
 })
 

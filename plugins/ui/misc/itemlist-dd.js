@@ -1,4 +1,3 @@
-// var { move } = jb.macro
 
 component('itemlist.dragAndDrop', {
   type: 'feature',
@@ -20,25 +19,23 @@ component('itemlist.dragAndDrop', {
       sink.subjectNext('%$cmp/selectionEmitter%')
     ),
     frontEnd.flow(
-      source.dragulaEvent('drop', { argNames: list('dropElm','target','source','sibling') }),
-      rx.map(
-        obj(
-          prop('from', itemlist.indexOfElem('%dropElm%')),
-          prop('to', itemlist.orignialIndexFromSibling('%sibling%'))
-        )
-      ),
+      source.dragulaEvent('drop', {
+        argNames: list('dropElm','target','source','sibling')
+      }),
+      rx.map(obj(
+        prop('from', itemlist.indexOfElem('%dropElm%')),
+        prop('to', itemlist.orignialIndexFromSibling('%sibling%'))
+      )),
       sink.BEMethod('moveItem')
     ),
     frontEnd.flow(
       source.frontEndEvent('keydown'),
       rx.filter('%ctrlKey%'),
       rx.filter(inGroup(list(38,40), '%keyCode%')),
-      rx.map(
-        obj(
-          prop('from', itemlist.nextSelected(0)),
-          prop('to', itemlist.nextSelected(If('%keyCode%==40', 1, -1)))
-        )
-      ),
+      rx.map(obj(
+        prop('from', itemlist.nextSelected(0)),
+        prop('to', itemlist.nextSelected(If('%keyCode%==40', 1, -1)))
+      )),
       sink.BEMethod('moveItem')
     )
   )

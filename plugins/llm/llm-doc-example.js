@@ -1,4 +1,4 @@
-component('llmDocExample', { passiveData: {
-    content: '', section: '', outline: ''
+component('llmDocExample', { watchableData: {
+    content: '', section: '', outline: '', prompts: [{text: 'hello'}], tasks: []
 }
 })

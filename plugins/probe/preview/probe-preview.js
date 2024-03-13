@@ -1,4 +1,4 @@
-using('probe-core,watchable-comps,tree-shake,remote-widget,testing,ui-misc,probe-result-ui')
+using('probe-core,watchable-comps,tree-shake,remote-widget,testing,ui-misc,probe-result-ui,testing-ui')
 
 component('probe.inOutView', {
   type: 'control',

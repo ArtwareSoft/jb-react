@@ -10,7 +10,7 @@ component('mdcStyle.initDynamic', {
     {id: 'query', as: 'string'}
   ],
   impl: features(
-    frontEnd.requireExternalLibrary('material-components-web.js','css/font.css','css/material.css'),
+    frontEnd.requireExternalLibrary('material-components-web.js','css/font.css','css/material.css','Material Icons:css/MaterialIcons-Regular.woff2'),
     frontEnd.init(async ({},{cmp}) => {
       if (cmp.base.constructor.name == 'VNode') return
       const mdc = jb.frame.mdc

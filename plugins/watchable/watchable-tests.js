@@ -1,6 +1,23 @@
-using('ui-tests','workspace-core')
+using('ui-tests','workspace-core','testing')
 
-component('uiTest.checkBoxWithCalculatedAndWatchRef', {
+component('watchableTest.property', {
+  impl: dataTest(property('name', '%$person%'), equals('Homer Simpson'))
+})
+
+component('watchableResource1', { watchableData: 'hey' })
+component('watchableTest.stringResource', {
+  impl: dataTest('%$watchableResource1%', equals('foo'), {
+    runBefore: writeValue('%$watchableResource1%', 'foo')
+  })
+})
+
+component('watchableTest.createNewResourceAndWrite', {
+  impl: dataTest('%$zzz/a%', equals(5), {
+    runBefore: runActions(ctx => component('zzz',{watchableData: {}}), writeValue('%$zzz%', () => ({a: 5})))
+  })
+})
+
+component('watchableTest.checkBoxWithCalculatedAndWatchRef', {
   impl: uiTest({
     control: editableBoolean('%$person/name% == "Homer Simpson"', editableBoolean.checkboxWithLabel(), {
       title: '%$person/name%',
@@ -8,24 +25,24 @@ component('uiTest.checkBoxWithCalculatedAndWatchRef', {
     }),
     expectedResult: contains('Mukki'),
     uiAction: writeValue('%$person/name%', 'Mukki'),
-    expectedCounters: {'do refresh element !check': 1}
+    expectedCounters: {'do refresh element': 1}
   })
 })
 
-component('uiTest.booleanWatchableVarAsBooleanTrueToFalse', {
+component('watchableTest.booleanWatchableVarAsBooleanTrueToFalse', {
   impl: uiTest(text(If('%$person/male%', 'Error', 'OK'), { features: watchRef('%$person/male%') }), contains('OK'), {
     uiAction: writeValue('%$person/male%', false)
   })
 })
 
-component('uiTest.booleanWatchableVarAsBooleanFalseToTrue', {
+component('watchableTest.booleanWatchableVarAsBooleanFalseToTrue', {
   impl: uiTest(text(If('%$person/male%', 'OK', 'Error'), { features: watchRef('%$person/male%') }), contains('OK'), {
     runBefore: writeValue('%$person/male%', false),
     uiAction: writeValue('%$person/male%', true)
   })
 })
 
-component('uiTest.watchableVar', {
+component('watchableTest.Var', {
   impl: uiTest({
     control: group(text('%$var1%'), {
       features: [
@@ -38,7 +55,7 @@ component('uiTest.watchableVar', {
   })
 })
 
-component('uiTest.watchableVarAsObject', {
+component('watchableTest.VarAsObject', {
   impl: uiTest({
     control: group(text('%$obj1/txt%'), {
       features: [
@@ -51,7 +68,7 @@ component('uiTest.watchableVarAsObject', {
   })
 })
 
-component('uiTest.watchableVarAsArray', {
+component('watchableTest.VarAsArray', {
   impl: uiTest({
     control: group(text('%$items[1]/title%'), {
       features: watchable('items', asIs([{title: 'koo'}, {title: 'foo'}]))
@@ -60,7 +77,7 @@ component('uiTest.watchableVarAsArray', {
   })
 })
 
-component('uiTest.watchableVarAsArrayOneItem', {
+component('watchableTest.VarAsArrayOneItem', {
   impl: uiTest({
     control: group(text('%$items[0]/title%'), { features: watchable('items', asIs([{title: 'foo'}])) }),
     expectedResult: contains('foo')
@@ -68,7 +85,7 @@ component('uiTest.watchableVarAsArrayOneItem', {
 })
 
 
-component('uiTest.watchableVarAsObjectNotInitialized', {
+component('watchableTest.VarAsObjectNotInitialized', {
   impl: uiTest({
     control: group(text('%$obj1/txt%'), {
       features: [
@@ -81,7 +98,7 @@ component('uiTest.watchableVarAsObjectNotInitialized', {
   })
 })
 
-// component('uiTest.calculatedVar', {
+// component('watchableTest.calculatedVar', {
 //   impl: uiTest({
 //     control: group({
 //       controls: [
@@ -105,7 +122,7 @@ component('uiTest.watchableVarAsObjectNotInitialized', {
 //   })
 // })
 
-// component('uiTest.calculatedVarCyclic', {
+// component('watchableTest.calculatedVarCyclic', {
 //   impl: uiTest({
 //     allowError: true,
 //     control: group({
@@ -130,41 +147,39 @@ component('uiTest.watchableVarAsObjectNotInitialized', {
 //   })
 // })
 
-component('uiTest.booleanNotReffableTrue', {
-  impl: uiTest(text(typeAdapter('boolean<>', isOfType('string', '123'))), contains('true'))
+component('watchableTest.booleanNotReffableTrue', {
+  impl: uiTest(text(isOfType('string', '123')), contains('true'))
 })
 
-component('uiTest.booleanNotReffableFalse', {
-  impl: uiTest(text(typeAdapter('boolean<>', isOfType('string2', '123'))), contains('false'))
+component('watchableTest.booleanNotReffableFalse', {
+  impl: uiTest(text(isOfType('string2', '123')), contains('false'))
 })
 
-component('uiTest.labelWithWatchRefInSplicedArray', {
+component('watchableTest.labelWithWatchRefInSplicedArray', {
   impl: uiTest({
     control: group(text('%$personWithChildren/children[1]/name%'), {
       features: followUp.action(splice('%$personWithChildren/children%', 0, { noOfItemsToRemove: 1 }))
     }),
     expectedResult: contains('Maggie'),
     uiAction: waitForNextUpdate(),
-    expectedCounters: {'do refresh element !check': 1}
+    expectedCounters: {'do refresh element': 1}
   })
 })
 
-component('uiTest.spliceAndSet', {
+component('watchableTest.spliceAndSet', {
   impl: uiTest({
     control: text('%$personWithChildren/children[1]/name%', {
       features: watchRef('%$personWithChildren/children%')
     }),
     expectedResult: contains('hello'),
-    uiAction: action(
-      runActions(
-        splice('%$personWithChildren/children%', 0, { noOfItemsToRemove: 1 }),
-        writeValue('%$personWithChildren/children[1]/name%', 'hello')
-      )
-    )
+    uiAction: action(runActions(
+      splice('%$personWithChildren/children%', 0, { noOfItemsToRemove: 1 }),
+      writeValue('%$personWithChildren/children[1]/name%', 'hello')
+    ))
   })
 })
 
-component('uiTest.labelNotWatchingUiVar', {
+component('watchableTest.labelNotWatchingUiVar', {
   impl: uiTest({
     control: text('%$text1/text%', {
       features: [
@@ -173,11 +188,11 @@ component('uiTest.labelNotWatchingUiVar', {
       ]
     }),
     expectedResult: contains('OK'),
-    expectedCounters: {'do refresh element !check': 0}
+    expectedCounters: {'do refresh element': 0}
   })
 })
 
-component('uiTest.labelNotWatchingBasicVar', {
+component('watchableTest.labelNotWatchingBasicVar', {
   impl: uiTest({
     control: text({
       vars: [
@@ -187,18 +202,16 @@ component('uiTest.labelNotWatchingBasicVar', {
       features: followUp.action(writeValue('%$text1/text%', 'not good'))
     }),
     expectedResult: contains('OK'),
-    expectedCounters: {'do refresh element !check': 0}
+    expectedCounters: {'do refresh element': 0}
   })
 })
 
-component('uiTest.watchRefCssOnly', {
+component('watchableTest.watchRefCssOnly', {
   impl: uiTest({
     control: text('hey', {
       features: [
         watchRef('%$person/name%', { cssOnly: true }),
-        css(
-          If('%$person/name% == Homer Simpson', 'color: red; /*css-only*/', 'color: green; /*css-only*/')
-        )
+        css(If('%$person/name% == Homer Simpson', 'color: red; /*css-only*/', 'color: green; /*css-only*/'))
       ]
     }),
     expectedResult: contains('color: green; /*css-only*/'),
@@ -206,14 +219,12 @@ component('uiTest.watchRefCssOnly', {
   })
 })
 
-component('uiTest.CssOnly.SetAndBack', {
+component('watchableTest.CssOnly.setAndBack', {
   impl: uiTest({
     control: text('hey', {
       features: [
         watchRef('%$person/name%', { cssOnly: true }),
-        css(
-          If('%$person/name% == Homer Simpson', 'color: red; /*css-only*/', 'color: green; /*css-only*/')
-        )
+        css(If('%$person/name% == Homer Simpson', 'color: red; /*css-only*/', 'color: green; /*css-only*/'))
       ]
     }),
     expectedResult: and(contains('color: red; /*css-only*/'), notContains('green')),
@@ -224,27 +235,7 @@ component('uiTest.CssOnly.SetAndBack', {
   })
 })
 
-// jb.component('uiTest.watchRefPhase', {
-//   impl: uiTest({
-//     vars: Var('arr', () => []),
-//     control: group({
-//       controls: [
-//         text({
-//           text: (ctx,{arr}) => { arr.push(1); return 'hey' },
-//           features: watchRef({ref: '%$person/name%', phase: 20}),
-//         }),
-//         text({
-//           text: (ctx,{arr}) => { arr.push(2); return 'hey' },
-//           features: watchRef({ref: '%$person/name%', phase: 5}),
-//         }),
-//       ]
-//     }),
-//     action: writeValue('%$person/name%','Dan'),
-//     expectedResult: (ctx,{arr}) => arr.join(',') == '1,2,2,1',
-//   })
-// })
-
-component('uiTest.groupWatchingWithoutIncludeChildren', {
+component('watchableTest.groupWatchingWithoutIncludeChildren', {
   impl: uiTest({
     control: group(text('%$text1/text%'), {
       features: [
@@ -254,11 +245,11 @@ component('uiTest.groupWatchingWithoutIncludeChildren', {
       ]
     }),
     expectedResult: contains('OK'),
-    expectedCounters: {'do refresh element !check': 0}
+    expectedCounters: {'do refresh element': 0}
   })
 })
 
-// jb.component('uiTest.groupWatchingWithIncludeChildren', {
+// jb.component('watchableTest.groupWatchingWithIncludeChildren', {
 //   impl: uiFrontEndTest({
 //     control: group({
 //       controls: text('%$text1/text%'),
@@ -269,55 +260,56 @@ component('uiTest.groupWatchingWithoutIncludeChildren', {
 //       ]
 //     }),
 //     expectedResult: contains('changed'),
-//     expectedCounters: {'do refresh element !check': 1}
+//     expectedCounters: {'do refresh element': 1}
 //   })
 // })
 
-component('uiTest.groupWatchingStructure', {
+component('watchableTest.groupWatchingStructure', {
   impl: uiTest({
     control: group(text('%$text1/text%'), {
       features: [
         watchable('text1', obj(prop('text', 'OK'))),
-        watchRef('%$text1%', 'structure'),
+        watchRef('%$text1%', { includeChildren: 'structure' }),
         followUp.action(writeValue('%$text1/text%', 'changed'))
       ]
     }),
     expectedResult: contains('changed'),
     uiAction: waitForNextUpdate(),
-    expectedCounters: {'do refresh element !check': 1}
+    expectedCounters: {'do refresh element': 1}
   })
 })
 
-component('uiTest.watchRefArrayDeleteWithRunActionOnItems', {
+component('watchableTest.watchRefArrayDeleteWithRunActionOnItems', {
   impl: uiTest({
-    control: group(text(json.stringify('%$watchablePeople%'), { features: watchRef('%$watchablePeople%', 'yes') }), {
-      features: followUp.action(
-        runActionOnItems('%$watchablePeople%', splice('%$watchablePeople%', indexOf('%$watchablePeople%', '%%'), {
-          noOfItemsToRemove: '1',
-          itemsToAdd: []
-        }))
-      )
+    control: group({
+      controls: text(json.stringify('%$watchablePeople%'), {
+        features: watchRef('%$watchablePeople%', { includeChildren: 'yes' })
+      }),
+      features: followUp.action(runActionOnItems('%$watchablePeople%', splice('%$watchablePeople%', indexOf('%$watchablePeople%', '%%'), {
+        noOfItemsToRemove: '1',
+        itemsToAdd: []
+      })))
     }),
     expectedResult: contains('[]'),
     uiAction: waitForNextUpdate(),
-    expectedCounters: {'do refresh element !check': 3}
+    expectedCounters: {'do refresh element': 3}
   })
 })
 
-component('uiTest.watchableObjectToPrimitiveBug', {
+component('watchableTest.ObjectToPrimitiveBug', {
   impl: uiTest(text('%$person%'), contains('hello'), {
     uiAction: uiActions(writeValue('%$person%', 'world'), writeValue('%$person%', 'hello'))
   })
 })
 
-component('uiTest.spliceShouldNotFireFullContainerChange', {
+component('watchableTest.spliceShouldNotFireFullContainerChange', {
   impl: uiTest(itemlist({ items: '%$watchablePeople%', controls: text('%name%') }), not(contains('mukki')), {
     uiAction: action(addToArray('%$watchablePeople%', { toAdd: obj(prop('name', 'mukki')) })),
-    expectedCounters: {'do refresh element !check': 0}
+    expectedCounters: {'do refresh element': 0}
   })
 })
 
-component('uiTest.spliceAndWatchRefStrcture', {
+component('watchableTest.spliceAndWatchRefStrcture', {
   impl: uiTest({
     control: itemlist({
       items: '%$watchablePeople%',
@@ -326,11 +318,12 @@ component('uiTest.spliceAndWatchRefStrcture', {
     }),
     expectedResult: contains('mukki'),
     uiAction: action(addToArray('%$watchablePeople%', { toAdd: obj(prop('name', 'mukki')) })),
-    expectedCounters: {'do refresh element !check': 1}
+    expectedCounters: {'do refresh element': 1}
   })
 })
 
-component('uiTest.spliceAndWatchRefWithoutIncludeChildren', {
+
+component('watchableTest.spliceAndWatchRefWithoutIncludeChildren', {
   impl: uiTest({
     control: itemlist({
       items: '%$watchablePeople%',
@@ -339,25 +332,23 @@ component('uiTest.spliceAndWatchRefWithoutIncludeChildren', {
     }),
     expectedResult: contains('mukki'),
     uiAction: writeValue('%$watchablePeople[0]/name%', 'mukki'),
-    expectedCounters: {'do refresh element !check': 1}
+    expectedCounters: {'do refresh element': 1}
   })
 })
 
-component('uiTest.spliceAndWatchRefAddTwice', {
+component('watchableTest.spliceAndWatchRefAddTwice', {
   impl: uiTest({
     control: itemlist({
       items: '%$watchablePeople%',
       controls: text('%name%'),
-      features: watchRef('%$watchablePeople%', 'structure')
+      features: watchRef('%$watchablePeople%', { includeChildren: 'structure' })
     }),
     expectedResult: contains('kukki'),
-    uiAction: action(
-      runActions(
-        addToArray('%$watchablePeople%', { toAdd: obj(prop('name', 'mukki')) }),
-        addToArray('%$watchablePeople%', { toAdd: obj(prop('name', 'kukki')) })
-      )
-    ),
-    expectedCounters: {'do refresh element !check': 2}
+    uiAction: action(runActions(
+      addToArray('%$watchablePeople%', { toAdd: obj(prop('name', 'mukki')) }),
+      addToArray('%$watchablePeople%', { toAdd: obj(prop('name', 'kukki')) })
+    )),
+    expectedCounters: {'do refresh element': 2}
   })
 })
 
@@ -372,3 +363,20 @@ component('uiTest.spliceAndWatchRefAddTwice', {
 //     expectedResult: equals(10)
 //   })
 // })
+
+component('watchableTest.docAsParam', {
+  params: [
+    {id: 'doc', as: 'ref', defaultValue: '%$watchablePeople%'}
+  ],
+  impl: group(
+    itemlist({
+      items: '%$doc%',
+      controls: text('%$index%-%name%'),
+      features: watchRef('%$doc%', { includeChildren: 'structure' })
+    }),
+    button('add', addToArray('%$doc%', { toAdd: obj(prop('name', 'mukki')) }))
+  )
+})
+component('watchableTest.docParam', {
+  impl: uiTest(watchableTest.docAsParam(), contains('mukki'), { uiAction: click(), expectedCounters: {'do refresh element': 1} })
+})

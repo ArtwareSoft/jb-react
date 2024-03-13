@@ -1,46 +1,46 @@
 using('core-tests')
 
-component('dataTest.join', {
+component('commonTest.json.stringify', {
+  impl: dataTest(json.stringify(()=>({a:5})), equals('{"a":5}'))
+})
+
+component('commonTest.join', {
   impl: dataTest(pipeline(list(1,2), '%%', join()), equals('1,2'))
 })
 
-component('dataTest.data', {
+component('commonTest.data', {
   impl: dataTest(join({ data: list(1,2) }), equals('1,2'))
 })
 
-component('dataTest.listWithVar', {
+component('commonTest.listWithVar', {
   impl: dataTest(pipeline(Var('a', 1), list('%$a%',2), join()), equals('1,2'))
 })
 
-component('dataTest.slice', {
+component('commonTest.slice', {
   impl: dataTest(pipeline(list(1,2,3), slice(0, 2), join()), equals('1,2'))
 })
 
-component('dataTest.disabled', {
+component('commonTest.disabled', {
   impl: dataTest(pipeline(list(1,2,3), slice(0, 2, { $disabled: true }), join()), equals('1,2,3'))
 })
 
-component('dataTest.varInPipeline', {
+component('commonTest.varInPipeline', {
   impl: dataTest(pipeline(Var('a', '33'), '%$a%'), equals('33'))
 })
 
-component('dataTest.select', {
-  impl: dataTest(pipeline('%$personWithChildren/children%', '%name%', join()), equals('Bart,Lisa,Maggie'))
-})
-
-component('dataTest.selectAndFilter', {
+component('commonTest.filter', {
   impl: dataTest(pipeline('%$personWithChildren/children/name%', filter(contains('i')), join()), equals('Lisa,Maggie'))
 })
 
-component('dataTest.toUpperCase', {
+component('commonTest.toUpperCase', {
   impl: dataTest(pipeline('%$personWithChildren/children%', '%name%', toUpperCase(), join()), equals('BART,LISA,MAGGIE'))
 })
 
-component('dataTest.split', {
+component('commonTest.split', {
   impl: dataTest(pipeline('1,2', split(',', { part: 'last' })), equals('2'))
 })
 
-component('dataTest.splitAllFeatures', {
+component('commonTest.splitAllFeatures', {
   impl: dataTest({
     calculate: obj({
       data: 'one-two-three-four',
@@ -68,34 +68,34 @@ component('dataTest.splitAllFeatures', {
   })
 })
 
-component('dataTest.pipe', {
+component('commonTest.pipe', {
   impl: dataTest(pipe(list(1,2), join()), equals('1,2'))
 })
 
-component('dataTest.pipeWithPromise', {
+component('commonTest.pipeWithPromise', {
   impl: dataTest(pipe(delay(1), list(1,2), join()), equals('1,2'))
 })
 
-component('dataTest.pipeInPipe', {
+component('commonTest.pipeInPipe', {
   impl: dataTest(pipe(Var('a', 3), pipe(delay(1), list([1,2,'%$a%']), join())), equals('1,2,3'))
 })
 
-component('dataTest.pipeInPipeWithDelayedVar', {
+component('commonTest.pipeInPipeWithDelayedVar', {
   impl: dataTest({
     calculate: pipe(Var('a', delay(1, 3)), pipe(delay(1), list([1,2,'%$a%']), join())),
     expectedResult: equals('1,2,3')
   })
 })
 
-component('dataTest.pipeWithPromise2', {
-  impl: dataTest(pipe(dataTest.delayedObj(list(1,2)), join()), equals('1,2'))
+component('commonTest.pipeWithPromise2', {
+  impl: dataTest(pipe(delay(1, list(1,2)), join()), equals('1,2'))
 })
 
-component('dataTest.pipeWithPromise3', {
-  impl: dataTest(pipe(list(dataTest.delayedObj(1), 2, dataTest.delayedObj(3)), join()), equals('1,2,3'))
+component('commonTest.pipeWithPromise3', {
+  impl: dataTest(pipe(list(delay(1, 1), 2, delay(1,3)), join()), equals('1,2,3'))
 })
 
-component('dataTest.dataSwitchDefault', {
+component('commonTest.dataSwitchDefault', {
   impl: dataTest({
     calculate: pipeline(
       list(4,5,7),
@@ -108,7 +108,7 @@ component('dataTest.dataSwitchDefault', {
   })
 })
 
-component('dataTest.extendWithIndex', {
+component('commonTest.extendWithIndex', {
   impl: dataTest({
     calculate: pipeline(
       '%$personWithChildren/children%',
@@ -119,7 +119,7 @@ component('dataTest.extendWithIndex', {
   })
 })
 
-component('dataTest.if', {
+component('commonTest.if', {
   impl: dataTest({
     calculate: pipeline(
       '%$personWithChildren/children%',
@@ -130,42 +130,42 @@ component('dataTest.if', {
   })
 })
 
-component('dataTest.if.filters', {
+component('commonTest.if.filters', {
   impl: dataTest(pipeline('%$personWithChildren/children%', If(equals('%name%', 'Bart'), 'funny'), count()), equals(1))
 })
 
-component('dataTest.assign', {
+component('commonTest.assign', {
   impl: dataTest({
     calculate: pipeline('%$personWithChildren/children%', assign(prop('nameTwice', '%name%-%name%')), '%nameTwice%', join()),
     expectedResult: contains('Bart-Bart,Lisa-Lisa,Maggie-Maggie')
   })
 })
 
-component('dataTest.obj', {
+component('commonTest.obj', {
   impl: dataTest(pipeline(obj(prop('a', 1), prop('b', 2)), '%a%-%b%'), equals('1-2'))
 })
 
-component('dataTest.jbartExpression.select', {
+component('commonTest.jbartExpression.select', {
   impl: dataTest(pipeline('%$people/0/name%'), contains('Homer'))
 })
 
-component('dataTest.jbartExpression.boolean', {
+component('commonTest.jbartExpression.boolean', {
   impl: dataTest(pipeline('%$people%', filter('%age%==42'), '%name%'), contains('Homer'))
 })
 
-component('dataTest.evalExpression', {
+component('commonTest.evalExpression', {
   impl: dataTest(evalExpression('1+1'), equals(2))
 })
 
-component('dataTest.firstSucceeding', {
+component('commonTest.firstSucceeding', {
   impl: dataTest(firstSucceeding(evalExpression('1/0'), 2, 1), equals(2))
 })
 
-component('dataTest.firstSucceeding.withEmptyString', {
+component('commonTest.firstSucceeding.withEmptyString', {
   impl: dataTest(firstSucceeding('','a','b'), equals('a'))
 })
 
-component('dataTest.unique', {
+component('commonTest.unique', {
   impl: dataTest(pipeline('%$people%', unique('%male%'), count()), equals(2))
 })
 
@@ -188,14 +188,14 @@ component('convertGradeToDescription', {
   )
 })
 
-component('dataTest.convertGradeToDescription', {
+component('commonTest.convertGradeToDescription', {
   impl: dataTest({
     calculate: pipeline(list(95,85,72,65,55,-5), convertGradeToDescription('%%'), join()),
     expectedResult: equals('Excellent,Very Good,Good,Pass,Fail,Invalid grade')
   })
 })
 
-component('actionTest.runActionOnItems', {
+component('commonTest.runActionOnItems', {
   impl: dataTest(pipeline('%$personWithChildren/children/name%', join()), equals('aBart,aLisa,aMaggie'), {
     runBefore: runActionOnItems('%$personWithChildren/children%', writeValue('%name%', 'a%name%'))
   })

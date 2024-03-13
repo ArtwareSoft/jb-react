@@ -356,6 +356,14 @@ extension('utils', 'generic', {
       })
       return res
     },
+    uniqueObjects: array => {
+      const seen = new Set()
+      return array.filter(item => {
+          if (seen.has(item)) return false
+          seen.add(item)
+          return true
+      })
+    },
     sessionStorage(id,val) {
       if (!jb.frame.sessionStorage) return
       const curVal = JSON.parse(jb.frame.sessionStorage.getItem(id))

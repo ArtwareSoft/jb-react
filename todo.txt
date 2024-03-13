@@ -1,6 +1,9 @@
+add tests to the param refernce bug - is it only structure?
+problem with the delta and the tab control, maybe related to jb-external
+  solution - when it is too different, do not use delta!
+
+icon gallery
 llm helper 
-  wrap as chrome extension v3
-    jbHost.codePackageFromJson for loadLib, loadFELib
   allow definitions of prompts and inject them
   
 

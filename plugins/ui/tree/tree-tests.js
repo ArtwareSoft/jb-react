@@ -10,14 +10,14 @@ component('move', {
   impl: (ctx,from,_to) => jb.db.move(from,_to,ctx)
 })
 
-component('uiTest.tree', {
+component('UiTreeTest.tree', {
   impl: uiTest({
     control: tree({ nodeModel: tree.jsonReadOnly('%$personWithAddress%', 'personWithAddress'), features: [tree.selection(), tree.keyboardSelection()] }),
     expectedResult: contains('address')
   })
 })
 
-component('uiTest.treeRightClick', {
+component('UiTreeTest.treeRightClick', {
   impl: uiTest({
     control: tree({
       nodeModel: tree.jsonReadOnly('%$personWithAddress%', 'personWithAddress'),
@@ -30,38 +30,44 @@ component('uiTest.treeRightClick', {
   })
 })
 
-component('FETest.treeDD.betweenBranches', {
+component('UiTreeTest.treeDD.betweenBranches', {
   impl: uiTest({
-    control: tree({ nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'), features: [tree.selection(), tree.dragAndDrop(), tree.keyboardSelection()] }),
+    control: tree({
+      nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
+      features: [
+        tree.selection(),
+        tree.dragAndDrop(),
+        tree.keyboardSelection()
+      ]
+    }),
     expectedResult: equals({
-      item1: pipeline(list('%$personWithChildren/children%','%$personWithChildren/friends%'), '%name%', join(',')),
+      item1: pipeline(
+        list('%$personWithChildren/children%','%$personWithChildren/friends%'),
+        '%name%',
+        join(',')
+      ),
       item2: 'Bart,Maggie,Lisa,Barnie'
     }),
     uiAction: action(move('%$personWithChildren/children[1]%', '%$personWithChildren/friends[0]%'))
   })
 })
 
-// component('FETest.treeDD.sameArray', {
-//   impl: uiTest({
-//     control: tree({
-//       nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
-//       features: [
-//         tree.selection(),
-//         tree.dragAndDrop(),
-//         tree.keyboardSelection(),
-//         tree.expandPath('personWithChildren~children')
-//       ]
-//     }),
-//     expectedResult: contains('Lisa','Bart','Maggie'),
-//     uiAction: uiActions(
-//       click('[title="Bart"]'),
-//       keyboardEvent('[interactive]', 'keydown', { keyCode: 40, ctrl: 'ctrl' })
-//     ),
-//     useFrontEnd: true
-//   })
-// })
+component('UiTreeTest.treeDD.sameArray', {
+  impl: uiTest({
+    control: tree({
+      nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
+      features: [
+        tree.selection(),
+        tree.dragAndDrop(),
+        tree.keyboardSelection()
+      ]
+    }),
+    expectedResult: equals(pipeline('%$personWithChildren/children/name%', join(',')), 'Bart,Maggie,Lisa'),
+    uiAction: action(move('%$personWithChildren/children[1]%', '%$personWithChildren/children[2]%'))
+  })
+})
 
-component('FETest.treeDD.boundedSelection', {
+component('UiTreeTest.treeDD.boundedSelection', {
   impl: uiTest({
     control: group({
       controls: tree({
@@ -81,7 +87,7 @@ component('FETest.treeDD.boundedSelection', {
   })
 })
 
-component('FETest.treeDDAndBack', {
+component('UiTreeTest.treeDDAndBack', {
   impl: uiTest({
     control: tree({ nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'), features: [tree.selection(), tree.dragAndDrop(), tree.keyboardSelection()] }),
     expectedResult: equals({
@@ -96,7 +102,7 @@ component('FETest.treeDDAndBack', {
   })
 })
 
-component('FETest.treeDDTwice', {
+component('UiTreeTest.treeDDTwice', {
   impl: uiTest({
     control: tree({ nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'), features: [tree.selection(), tree.dragAndDrop(), tree.keyboardSelection()] }),
     expectedResult: equals({
@@ -111,7 +117,7 @@ component('FETest.treeDDTwice', {
   })
 })
 
-component('FETest.treeDDAfterLast', {
+component('UiTreeTest.treeDDAfterLast', {
   impl: uiTest({
     control: tree({ nodeModel: tree.json('%$personWithChildren%', 'Homer'), features: [tree.selection(), tree.dragAndDrop(), tree.keyboardSelection()] }),
     expectedResult: equals({
@@ -123,7 +129,7 @@ component('FETest.treeDDAfterLast', {
   })
 })
 
-component('uiTest.treeVisualDD', {
+component('UiTreeTest.treeVisualDD', {
   impl: uiTest({
     control: tree({
       nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
@@ -138,7 +144,7 @@ component('uiTest.treeVisualDD', {
   })
 })
 
-component('uiTest.treeUnexpandRefresh', {
+component('UiTreeTest.treeUnexpandRefresh', {
   impl: uiTest({
     control: tree({
       nodeModel: tree.jsonReadOnly({
@@ -159,7 +165,7 @@ component('uiTest.treeUnexpandRefresh', {
   })
 })
 
-component('uiTest.treeExpandRefresh', {
+component('UiTreeTest.treeExpandRefresh', {
   impl: uiTest({
     control: tree({
       nodeModel: tree.jsonReadOnly({
@@ -181,7 +187,7 @@ component('uiTest.treeExpandRefresh', {
   })
 })
 
-component('uiTest.treeStyles', {
+component('UiTreeTest.treeStyles', {
   impl: uiTest({
     control: group({
       controls: [

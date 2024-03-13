@@ -1,8 +1,23 @@
-component('dataTest.delayedObj', {
+component('coreTest.datum', {
+  impl: dataTest(pipeline(Var('datum', 'hello'), '%%'), equals('hello'))
+})
+
+component('coreTest.datum2', {
+  impl: dataTest(pipeline('%%', { data: 'hello' }), equals('hello'))
+})
+
+component('coreTest.propertyPassive', {
+  impl: dataTest(property('name', obj(prop('name', 'homer'))), equals('homer'))
+})
+
+component('test.withDefaultValueComp', {
   params: [
-    {id: 'obj', type: 'data'}
+    {id: 'val', defaultValue: pipeline('5')}
   ],
-  impl: (ctx,obj) => jb.delay(1).then(_=>obj)
+  impl: '%$val%'
+})
+component('coreTest.DefaultValueComp', {
+  impl: dataTest(test.withDefaultValueComp(), equals(5))
 })
 
 component('test.getAsBool', {
@@ -12,50 +27,15 @@ component('test.getAsBool', {
   impl: (ctx,val) => val
 })
 
-component('test.withDefaultValueComp', {
-  params: [
-    {id: 'val', defaultValue: pipeline('5')}
-  ],
-  impl: '%$val%'
-})
-
-component('dataTest.getRefValueAsBoolean', {
+component('coreTest.getRefValueAsBoolean', {
   impl: dataTest(test.getAsBool('%$person/male%'), ({data}) => data === true)
 })
 
-component('dataTest.propertyWatchable', {
-  impl: dataTest(property('name', '%$person%'), equals('Homer Simpson'))
-})
-
-component('dataTest.pipelineVar', {
-  impl: dataTest({
-    calculate: pipeline('%$peopleWithChildren%', pipeline(Var('parent'), '%children%', '%name% is child of %$parent/name%'), join()),
-    expectedResult: equals(
-      'Bart is child of Homer,Lisa is child of Homer,Bart is child of Marge,Lisa is child of Marge'
-    ),
-    covers: ['dataTest.Var','dataTest.join']
-  })
-})
-
-component('dataTest.datum', {
-  impl: dataTest(pipeline('hello', pipeline(Var('datum', 'world'), '%%'), join()), equals('world'))
-})
-
-component('dataTest.propertyPassive', {
-  impl: dataTest({
-    vars: [
-      Var('person', obj(prop('name', 'homer')))
-    ],
-    calculate: property('name', '%$person%'),
-    expectedResult: equals('homer')
-  })
-})
-
-component('dataTest.getExpValueAsBoolean', {
+component('coreTest.getExpValueAsBoolean', {
   impl: dataTest(test.getAsBool('%$person/name%==Homer Simpson'), ({data}) => data === true)
 })
 
-component('dataTest.getValueViaBooleanTypeVar', {
+component('coreTest.getValueViaBooleanTypeVar', {
   impl: dataTest({
     vars: [Var('a', 'false')],
     calculate: test.getAsBool('%$a%'),
@@ -63,7 +43,7 @@ component('dataTest.getValueViaBooleanTypeVar', {
   })
 })
 
-component('dataTest.ctx.expOfRefWithBooleanType', {
+component('coreTest.ctx.expOfRefWithBooleanType', {
   impl: dataTest({
     vars: [Var('a', 'false')],
     calculate: ctx => ctx.exp('%$person/male%','boolean'),
@@ -71,239 +51,18 @@ component('dataTest.ctx.expOfRefWithBooleanType', {
   })
 })
 
-component('actionTest.writeValue', {
-  impl: dataTest('%$person/age%', equals('20'), { runBefore: writeValue('%$person/age%', 20) })
-})
-
-component('actionTest.writeValueFalseBug', {
-  impl: dataTest('%$person/male%', equals(false), { runBefore: writeValue('%$person/male%', false) })
-})
-
-component('actionTest.spliceDelete', {
-  impl: dataTest(pipeline('%$personWithChildren/children/name%', join()), contains('Bart,Maggie'), {
-    runBefore: splice('%$personWithChildren/children%', 1, { noOfItemsToRemove: 1 })
-  })
-})
-
-component('actionTest.splice', {
-  impl: dataTest(pipeline('%$personWithChildren/children/name%', join()), contains('Bart,Lisa2,Maggie2,Maggie'), {
-    runBefore: splice('%$personWithChildren/children%', 1, {
-      noOfItemsToRemove: 1,
-      itemsToAdd: asIs([{name: 'Lisa2'}, {name: 'Maggie2'}])
-    })
-  })
-})
-
-component('actionTest.writeValueInner', {
-  impl: dataTest('%$person/zz/age%', equals('20'), { runBefore: writeValue('%$person/zz/age%', 20) })
-})
-
-component('actionTest.writeValueWithLink', {
-  impl: dataTest({
-    calculate: '%$personWithChildren/children[0]/name%,%$person/linkToBart/name%',
-    expectedResult: equals('Barty1,Barty1'),
-    runBefore: runActions(
-      writeValue('%$person/linkToBart%', '%$personWithChildren/children[0]%'),
-      writeValue('%$personWithChildren/children[0]/name%', 'Barty1')
-    )
-  })
-})
-
-component('actionTest.writeValueViaLink', {
-  impl: dataTest({
-    calculate: '%$personWithChildren/children[0]/name%,%$person/linkToBart/name%',
-    expectedResult: equals('Barty1,Barty1'),
-    runBefore: runActions(
-      writeValue('%$person/linkToBart%', '%$personWithChildren/children[0]%'),
-      writeValue('%$person/linkToBart/name%', 'Barty1')
-    )
-  })
-})
-
-component('actionTest.writeValueWithArrayLink', {
-  impl: dataTest({
-    calculate: '%$personWithChildren/children[0]/name%,%$person/childrenLink[0]/name%',
-    expectedResult: equals('Barty1,Barty1'),
-    runBefore: runActions(
-      writeValue('%$person/childrenLink%', '%$personWithChildren/children%'),
-      writeValue('%$personWithChildren/children[0]/name%', 'Barty1')
-    )
-  })
-})
-
-component('actionTest.writeValueViaArrayLink', {
-  impl: dataTest({
-    calculate: '%$personWithChildren/children[0]/name%,%$person/childrenLink[0]/name%',
-    expectedResult: equals('Barty1,Barty1'),
-    runBefore: runActions(
-      writeValue('%$person/childrenLink%', '%$personWithChildren/children%'),
-      writeValue('%$person/childrenLink[0]/name%', 'Barty1')
-    )
-  })
-})
-
-component('actionTest.runActionOnItemsArrayRef', {
-  impl: dataTest(pipeline('%$personWithChildren/children/name%', join(',')), equals('aBart,aLisa,aMaggie'), {
-    runBefore: runActionOnItems('%$personWithChildren/children/name%', writeValue('%%', 'a%%'))
-  })
-})
-
-component('dataTest.refApi', {
-  impl: dataTest('', ctx =>
-        ctx.exp('%$personWithChildren/friends[0]%','ref').path().join('/') == 'personWithChildren/friends/0' &&
-        ctx.exp('%$person/name%') == 'Homer Simpson' &&
-        ctx.exp('%$person/name%','ref').path().join('/') == 'person/name')
-})
-
-component('dataTest.refOfArrayItem', {
-  impl: dataTest('', ctx =>
-        ctx.exp('%$personWithChildren/children[1]%','ref').path().join('/') == 'personWithChildren/children/1')
-})
-
-component('actionTest.refOfStringArrayItemSplice', {
-  impl: dataTest({
-    vars: [Var('refs', obj())],
-    calculate: '',
-    expectedResult: equals('%$refs/valBefore%', '%$refs/valAfter%'),
-    runBefore: ctx => {
-      const refs = ctx.vars.refs
-      refs.refOfc = ctx.exp('%$stringArray[2]%','ref')
-      refs.valBefore = jb.val(refs.refOfc)
-      ctx.run(splice({array: '%$stringArray%', fromIndex: 0, noOfItemsToRemove: 1}), 'action<>')
-      refs.valAfter = jb.val(refs.refOfc)
-    }
-  })
-})
-
-component('actionTest.refOfStringArrayItemMove', {
-  impl: dataTest({
-    vars: [Var('refs', obj())],
-    calculate: '',
-    expectedResult: equals('%$refs/valBefore%', '%$refs/valAfter%'),
-    runBefore: ctx => {
-      const refs = ctx.vars.refs
-      refs.refOfb = ctx.exp('%$stringArray[1]%','ref')
-      refs.refOfc = ctx.exp('%$stringArray[2]%','ref')
-      refs.valBefore = jb.val(refs.refOfc)
-      jb.db.move(refs.refOfc, refs.refOfb, ctx)
-      refs.valAfter = jb.val(refs.refOfc)
-    }
-  })
-})
-
-component('actionTest.refOfStringTreeMove', {
-  impl: dataTest({
-    vars: [Var('refs', obj())],
-    calculate: '',
-    expectedResult: equals('%$refs/valBefore%', '%$refs/valAfter%'),
-    runBefore: ctx => {
-      const refs = ctx.vars.refs
-      refs.refOfb = ctx.exp('%$stringTree/node1[1]%','ref')
-      refs.refOf2 = ctx.exp('%$stringTree/node2[2]%','ref')
-      refs.valBefore = jb.val(refs.refOfb)
-      jb.db.move(refs.refOfb, refs.refOf2, ctx)
-      refs.valAfter = jb.val(refs.refOfb)
-    }
-  })
-})
-
-component('actionTest.moveDown.checkPaths', {
-  impl: dataTest({
-    vars: [Var('res', obj())],
-    calculate: '',
-    expectedResult: equals('%$res/paths%', '1,0'),
-    runBefore: ctx => {
-      const bart = ctx.exp('%$personWithChildren/children[0]%')
-      const lisa = ctx.exp('%$personWithChildren/children[1]%')
-      ctx.run(move('%$personWithChildren/children[0]%','%$personWithChildren/children[1]%'),'action<>')
-      ctx.vars.res.paths = jb.db.asRef(bart).path()[2] + ',' + jb.db.asRef(lisa).path()[2]
-    }
-  })
-})
-
-component('dataTest.expWithArray', {
-  impl: dataTest('%$personWithChildren/children[0]/name%', equals('Bart'))
-})
-
-component('dataTest.arrayLength', {
-  impl: dataTest('%$personWithChildren/children/length%', equals(3))
-})
-
-component('dataTest.stringLength', {
-  impl: dataTest('%$personWithChildren/name/length%', equals(13))
-})
-
-component('dataTest.expWithArrayVar', {
-  impl: dataTest({
-    vars: [
-      Var('children', '%$personWithChildren/children%')
-    ],
-    calculate: '%$children[0]/name%',
-    expectedResult: equals('Bart')
-  })
-})
-
-component('dataTest.Var', {
-  impl: dataTest({
-    calculate: pipeline(
-      Var('children', '%$personWithChildren/children%'),
-      Var('children2', '%$personWithChildren/children%'),
-      '%$children[0]/name% %$children2[1]/name%'
-    ),
-    expectedResult: equals('Bart Lisa')
-  })
-})
-
-component('dataTest.conditionalText', {
-  impl: dataTest({
-    vars: [Var('full', 'full'), Var('empty', '')],
-    calculate: '{?%$full% is full?} {?%$empty% is empty?}',
-    expectedResult: and(contains('full'), not(contains('is empty')))
-  })
-})
-
-component('dataTest.nullParamPt', {
+component('coreTest.nullParamPt', {
   params: [
     {id: 'tst1', as: 'string'}
   ],
   impl: (ctx,tst1) => tst1
 })
-
-
-component('dataTest.emptyParamAsString', {
-  impl: dataTest(dataTest.nullParamPt(), ctx =>
-        ctx.data == '' && ctx.data != null)
+component('coreTest.emptyParamAsString', {
+  impl: dataTest(coreTest.nullParamPt(), ctx => ctx.data == '' && ctx.data != null)
 })
 
-component('dataTest.waitForPromise', {
-  impl: dataTest(() => jb.delay(1).then(()=>5), equals('5'))
-})
 
-component('arTest', { watchableData: { ar: ['0'] }})
-
-component('actionTest.restoreArrayIdsBug', {
-  impl: dataTest('%$arTest/result%', contains('0'), {
-    runBefore: ctx => {
-      const ar_ref = ctx.run('%$arTest/ar%',{as: 'ref'});
-      const refWithBug = jb.db.refHandler(ar_ref).refOfPath(['arTest','ar','0']);
-      jb.db.splice(ar_ref,[[1,0,'1']],ctx);
-      const v = jb.val(refWithBug);
-      jb.db.writeValue(ctx.exp('%$arTest/result%','ref'),v,ctx);
-   }
-  })
-})
-
-component('dataTest.activateMethod', {
-  impl: dataTest({
-    vars: [
-      Var('o1', () => ({ f1: () => ({a:5}) }))
-    ],
-    calculate: '%$o1/f1()/a%',
-    expectedResult: equals(5)
-  })
-})
-
-component('dataTest.asArrayBug', {
+component('coreTest.asArrayBug', {
   impl: dataTest({
     vars: [
       Var('items', [{id: 1}, {id: 2}])
@@ -314,7 +73,7 @@ component('dataTest.asArrayBug', {
   })
 })
 
-component('dataTest.varsCases', {
+component('coreTest.varsCases', {
   impl: dataTest({
     vars: [
       Var('items', [{id: 1}, {id: 2}])
@@ -324,60 +83,8 @@ component('dataTest.varsCases', {
   })
 })
 
-component('dataTest.macroNs', {
-  impl: dataTest(json.stringify(()=>({a:5})), contains('a','5'))
-})
 
-component('dataTest.createNewResourceAndWrite', {
-  impl: dataTest('%$zzz/a%', equals(5), {
-    runBefore: runActions(ctx => component('zzz',{watchableData: {}}), writeValue('%$zzz%', () => ({a: 5})))
-  })
-})
 
-component('dataTest.nonWatchableRef', {
-  impl: dataTest({
-    vars: [
-      Var('constA', () => ({a: 5}))
-    ],
-    calculate: '%$constA/a%',
-    expectedResult: equals(7),
-    runBefore: writeValue('%$constA/a%', '7')
-  })
-})
-
-component('actionTest.innerOfUndefinedVar', {
-  impl: dataTest('%$unknown/a%', ({data}) => data === undefined, {
-    runBefore: writeValue('%$unknown/a%', '7'),
-    allowError: true
-  })
-})
-
-// component('dataTest.httpGet', {
-//    impl :{$: 'data-test',
-//     calculate: {$pipe : [ {$: 'http.get', url: '/projects/ui-tests/people.json'}, '%people/name%', {$join:','}  ]},
-//     expectedResult :{$: 'contains', text: 'Homer' }
-//   },
-// })
-
-component('watchableVar', { watchableData: 'hey' })
-
-component('actionTest.stringWatchableVar', {
-  impl: dataTest('%$watchableVar%', equals('foo'), {
-    runBefore: writeValue('%$watchableVar%', 'foo')
-  })
-})
-
-component('passiveVar', { 
-  passiveData: 'hey'
-})
-
-component('dataTest.stringPassiveVar', {
-  impl: dataTest('%$passiveVar%', equals('foo'), { runBefore: writeValue('%$passiveVar%', 'foo') })
-})
-
-component('dataTest.DefaultValueComp', {
-  impl: dataTest(test.withDefaultValueComp(), equals(5))
-})
 
 
 

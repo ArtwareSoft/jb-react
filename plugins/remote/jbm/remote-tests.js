@@ -259,7 +259,7 @@ component('remoteTest.remote.operator', {
 component('remoteTest.operator.runTest', {
   impl: dataTest({
     vars: [
-      Var('testsToRun', list('dataTest.join','dataTest.ctx.expOfRefWithBooleanType'))
+      Var('testsToRun', list('commonTest.join','commonTest.slice'))
     ],
     calculate: pipe(
       rx.pipe(
@@ -283,7 +283,7 @@ component('remoteTest.operator.runTest', {
 component('remoteTest.testResults', {
   impl: dataTest({
     vars: [
-      Var('testsToRun', list('dataTest.join','dataTest.ctx.expOfRefWithBooleanType'))
+      Var('testsToRun', list('commonTest.join','commonTest.slice'))
     ],
     calculate: pipe(
       rx.pipe(
@@ -296,7 +296,7 @@ component('remoteTest.testResults', {
       join(',')
     ),
     expectedResult: equals(
-      'dataTest.join-true-,dataTest.join--true,dataTest.ctx.expOfRefWithBooleanType-true-,dataTest.ctx.expOfRefWithBooleanType--true'
+      'commonTest.join-true-,commonTest.join--true,commonTest.slice-true-,commonTest.slice--true'
     ),
     timeout: 3000
   })

@@ -31,13 +31,13 @@ extension('codemirror', {
     },
 	enableFullScreen(ctx,cmp,el) {
 		const width = jb.ui.outerWidth(el), height = jb.ui.outerHeight(el), editor = cmp.editor
-		const fullScreenBtnHtml = '<div class="jb-codemirror-fullScreenBtnCss hidden" title="Full Screen (F11)"</div>'
+		const fullScreenBtnHtml = '<div class="jb-codemirror-fullScreenBtnCss hidden" title="Full Screen (F11)">🗖</div>'
 		const escText = '<span class="jb-codemirror-escCss">Press ESC or F11 to exit full screen</span>'
 		const lineNumbers = true
 		const css = `
 			.jb-codemirror-escCss { cursor:default; text-align: center; width: 100%; position:absolute; top:0px; left:0px; font-family: arial; font-size: 11px; color: #a00; padding: 2px 5px 3px; }
 			.jb-codemirror-escCss:hover { text-decoration: underline; }
-			.jb-codemirror-fullScreenBtnCss { content:url("fullscreen.png"); position:absolute; bottom:5px; right:15px; -webkit-transition: opacity 1s; z-index: 20; }
+			.jb-codemirror-fullScreenBtnCss { cursor: pointer; position:absolute; bottom:5px; right:15px; -webkit-transition: opacity 1s; z-index: 20; }
 			.jb-codemirror-fullScreenBtnCss.hidden { opacity:0; }
 			.jb-codemirror-editorCss { position:relative; }
 			.jb-codemirror-fullScreenEditorCss { padding-top: 20px, display: block; position: fixed !important; top: 0; left: 0; z-index: 99999999; }
@@ -134,7 +134,7 @@ component('editableText.codemirror', {
 	}),
     method('writeText', writeValue('%$$model/databind()%', '%%')),
     frontEnd.flow(
-      source.callbag(({},{cmp}) => jb.callbag.create(obs=> cmp.editor && cmp.editor.on('change', () => obs(cmp.editor.getValue())))),
+      source.callbag(({},{cmp}) => jb.callbag.create(obs=> cmp.editor && cmp.editor.on('change', () => cmp.frontEndStatus == 'ready' && obs(cmp.editor.getValue())))),
       rx.takeUntil('%$cmp/destroyed%'),
       rx.debounceTime('%$debounceTime%'),
       rx.distinctUntilChanged(),

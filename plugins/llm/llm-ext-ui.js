@@ -1,4 +1,4 @@
-using('ui-misc','tgp-text-editor','ui-styles','ui-tree','markdown-editor','ui-iframe-dialog')
+using('ui-misc','tgp-text-editor','ui-styles','ui-tree','markdown-editor','ui-iframe-dialog','ui-mdc-styles')
 dsl('llm')
 
 component('llm.commandBar', {
@@ -20,7 +20,6 @@ component('llm.commandBar', {
     layout: layout.flex({ justifyContent: 'space-between' }),
     features: [
       watchable('command', obj(prop('cmd', ''))),
-      frontEnd.requireExternalLibrary('material-components-web.js','css/font.css','css/material.css')
     ]
   })
 })
@@ -29,22 +28,75 @@ component('llm.commandBar', {
 
 component('llm.docHelper', {
   type: 'control<>',
-  params: [
-    {id: 'doc', defaultValue: '%$llmDocExample%'}
-  ],
   impl: group(
     llm.commandBar(),
     group({
       controls: [
-        markdown.editor('%$doc/content%', 'all document'),
-        markdown.editor('%$doc/section%', 'working area'),
-        markdown.editor('%$doc/outline%', 'outline')
+        llm.prompts(),
+        markdown.editor('%$llmDocExample/content%', 'all document'),
+        markdown.editor('%$llmDocExample/section%', 'working area'),
+        markdown.editor('%$llmDocExample/outline%', 'outline')
       ],
       title: 'document',
       style: group.tabs(),
       features: features(css.border('2', 'top', { color: 'var(--jb-menubar-selection-bg)' }))
     })
   )
+})
+
+component('llm.prompts', {
+  type: 'control',
+  params: [
+    {id: 'doc', as: 'ref', defaultValue: '%$llmDocExample%'}
+  ],
+  impl: group({
+    controls: [
+      table({
+        items: '%$doc/prompts%',
+        controls: [
+          text('Ctrl+%$index%', 'shortCut', {
+            features: [
+              itemlist.dragHandle(),
+              field.columnWidth(60),
+              css.width('20px')
+            ]
+          }),
+          editableText('prompt', '%text%', {
+            style: editableText.codemirror({ height: '60', mode: 'text' }),
+            features: field.columnWidth(800)
+          }),
+          button({
+            action: removeFromArray('%$doc/prompts%', '%%'),
+            style: button.x('21'),
+            features: [
+              itemlist.shownOnlyOnItemHover(),
+              field.columnWidth(60)
+            ]
+          })
+        ],
+        style: table.mdc(false),
+        features: [
+          watchRef('%$doc/prompts%', { includeChildren: 'structure', allowSelfRefresh: true }),
+          itemlist.dragAndDrop(),
+          itemlist.keyboardSelection(),
+          itemlist.selection()
+        ]
+      }),
+      button({
+        title: 'add prompt',
+        action: addToArray('%$doc/prompts%', { toAdd: obj(prop('text', 'prompt text')) }),
+        style: button.mdcIcon(),
+        raised: 'true',
+        features: [
+          id('add-prompt'),
+          css.width('200'),
+          css.margin('10'),
+          feature.icon('Plus', { position: 'raised', type: 'mdi' })
+        ]
+      })
+    ],
+    title: 'prompts'
+  })
 })
 
 component('llm.localHelper', {

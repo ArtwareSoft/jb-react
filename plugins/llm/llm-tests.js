@@ -43,10 +43,16 @@ component('llmHelperTest.localHelper.sayHello', {
 })
 
 component('llmHelperTest.docHelper', {
+  doNotRunInTests: true,
   impl: uiTest(llm.docHelper('%$llmDocExample%'), contains(''))
 })
 
 component('llmHelperTest.openDialogInIframe', {
   doNotRunInTests: true,
   impl: uiFrontEndTest(text('my text'), localHelper.openDialogInIframe(), { renderDOM: true })
+})
+
+component('llmHelperTest.prompts', {
+  doNotRunInTests: true,
+  impl: uiTest(llm.prompts(), contains('prompt text'), { uiAction: click('#add-prompt') })
 })

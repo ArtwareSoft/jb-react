@@ -1,13 +1,13 @@
-using('ui-core,remote-widget,parsing,testing')
+using('ui-core,remote-widget,parsing,testing,core-tests')
 
 component('PPrintTest.vars', {
   impl: dataTest({
     calculate: ctx => {
     try {
-      const testToTest = 'dataTest.varsCases'
+      const testToTest = 'coreTest.varsCases'
       const compTxt = jb.utils.prettyPrintComp(testToTest.replace(/varsCases/, 'varsCases2'), jb.comps['test<>'+testToTest])
       eval(compTxt)
-      return ctx.run(dataTest.asArrayBug(),'test<>') // checks for error
+      return ctx.run(coreTest.asArrayBug(),'test<>') // checks for error
         .then(({ success }) => success && compTxt)
     } catch (e) {
       return false
@@ -136,6 +136,13 @@ component('PPrintTest.asIsLarge', {
     expectedResult: equals(`equals(asIs({\n    edit: {\n      range: {start: {line: 3, col: 0}, end: {line: 3, col: 0}},\n      newText: \`component('dataTest.test.tst1', {\\n  impl: dataTest(test.tst1(), equals(''))\\n})\`\n    },\n    cursorPos: {line: 4, col: 0}\n}))`)
   })
 })
+
+// component('PPrintTest.tooLong', {
+//   impl: dataTest({
+//     calculate: () => jb.utils.prettyPrintComp('UiTreeTest.treeDD.sameArray',jb.comps['test<>UiTreeTest.treeDD.sameArray']),
+//     expectedResult: contains('\n')
+//   })
+// })
 
 component('PPrintTest.asyncInProfile', {
   impl: dataTest({
