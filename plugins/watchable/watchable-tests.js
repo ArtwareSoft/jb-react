@@ -30,13 +30,17 @@ component('watchableTest.checkBoxWithCalculatedAndWatchRef', {
 })
 
 component('watchableTest.booleanWatchableVarAsBooleanTrueToFalse', {
-  impl: uiTest(text(If('%$person/male%', 'Error', 'OK'), { features: watchRef('%$person/male%') }), contains('OK'), {
+  impl: uiTest({
+    control: text(If('%$person/male%', 'Error', 'OK'), { features: watchRef('%$person/male%') }),
+    expectedResult: contains('OK'),
     uiAction: writeValue('%$person/male%', false)
   })
 })
 
 component('watchableTest.booleanWatchableVarAsBooleanFalseToTrue', {
-  impl: uiTest(text(If('%$person/male%', 'OK', 'Error'), { features: watchRef('%$person/male%') }), contains('OK'), {
+  impl: uiTest({
+    control: text(If('%$person/male%', 'OK', 'Error'), { features: watchRef('%$person/male%') }),
+    expectedResult: contains('OK'),
     runBefore: writeValue('%$person/male%', false),
     uiAction: writeValue('%$person/male%', true)
   })
@@ -250,7 +254,7 @@ component('watchableTest.groupWatchingWithoutIncludeChildren', {
 })
 
 // jb.component('watchableTest.groupWatchingWithIncludeChildren', {
-//   impl: uiFrontEndTest({
+//   impl: browserTest({
 //     control: group({
 //       controls: text('%$text1/text%'),
 //       features: [
@@ -322,7 +326,6 @@ component('watchableTest.spliceAndWatchRefStrcture', {
   })
 })
 
-
 component('watchableTest.spliceAndWatchRefWithoutIncludeChildren', {
   impl: uiTest({
     control: itemlist({
@@ -379,4 +382,44 @@ component('watchableTest.docAsParam', {
 })
 component('watchableTest.docParam', {
   impl: uiTest(watchableTest.docAsParam(), contains('mukki'), { uiAction: click(), expectedCounters: {'do refresh element': 1} })
+})
+
+component('watchableTest.variableAsProxy', {
+  impl: uiTest(group({ features: watchable('link', '%$person%') }), ctx => 
+    jb.db.resources[Object.keys(jb.db.resources).find(x => x.match(/link:[0-9]*/))][Symbol.for("isProxy")])
+})
+
+
+component('watchableTest.linkWriteOriginalWatchLink', {
+  impl: uiTest({
+    control: group(text('%$person/name%'), text('%$link/name%'), { features: watchable('link', '%$person%') }),
+    expectedResult: contains('hello','hello'),
+    uiAction: writeValue('%$person/name%', 'hello')
+  })
+})
+
+component('watchableTest.writeViaLink', {
+  impl: uiTest({
+    control: group({
+      controls: [
+        text('%$person/name%'),
+        text('%$link/name%'),
+        button('set', writeValue('%$link/name%', 'hello'), { features: id('set') })
+      ],
+      features: watchable('link', '%$person%')
+    }),
+    expectedResult: contains('hello','hello'),
+    uiAction: click('#set', { doNotWaitForNextUpdate: true })
+  })
+})
+
+component('watchableTest.observeAtt', {
+  impl: uiTest(text('%$person/name%'), contains('observe="resources','~name;person~name'))
+})
+
+component('watchableTest.parentRefreshMaskChildren', {
+  impl: uiTest(group(text('%$person/name%'), { features: watchRef('%$person/name%') }), contains('hello'), {
+    uiAction: writeValue('%$person/name%', 'hello'),
+    expectedCounters: {'refresh from observable elements': 1}
+  })
 })

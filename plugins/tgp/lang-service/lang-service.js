@@ -97,7 +97,7 @@ extension('langService', 'impl', {
         })
         const propStr = `${path.split('~').pop()}: `
         const propTitle = {
-            label: propStr + tgpModel.paramType(path), kind: 19, path, extend: () => { },
+            label: propStr + tgpModel.paramType(path), kind: 25, path, extend: () => { },
             detail: jb.path(compProps.tgpModel.paramDef(path), 'description')
         }
         return [propTitle, ...options]

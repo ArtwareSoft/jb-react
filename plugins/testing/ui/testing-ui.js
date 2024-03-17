@@ -12,8 +12,8 @@ component('test.showTestInStudio', {
 		const ctxForUi = jb.ui.extendWithServiceRegistry(ctx)
 		if (profile.$ == 'dataTest')
 			return ctxForUi.run({ $: 'control<>test.dataTestView' ,testId, testResult })
-		else if (profile.$ == 'uiFrontEndTest')
-			return ctxForUi.run({ $: 'control<>test.uiFrontEndTestView' ,testId, testResult })
+		else if (profile.$ == 'browserTest')
+			return ctxForUi.run({ $: 'control<>test.browserTestView' ,testId, testResult })
     else if (profile.$ == 'uiTest' && controlOnly) {
         const ctxWithVars = ctx.setVars(jb.objFromEntries((profile.vars||[]).map(v=>[v.name,ctx.run(v.val)])))
         const ctxToRun = jb.ui.extendWithServiceRegistry(new jb.core.jbCtx(ctxWithVars,{ profile: profile.control, forcePath: testId+ '~impl~control', path: '' } ))
@@ -40,7 +40,7 @@ component('test.showTestInStudio', {
 			return res
 		}
 	},
-  require: [{ $: 'control<>test.dataTestView' }, {$: 'control<>test.uiTestRunner' }, { $: 'control<>test.uiFrontEndTestView'}]
+  require: [{ $: 'control<>test.dataTestView' }, {$: 'control<>test.uiTestRunner' }, { $: 'control<>test.browserTestView'}]
 })
 
 component('test.expectedResultProfile', {
@@ -87,7 +87,7 @@ component('test.FE_BE_interaction', {
   )
 })
 
-component('test.uiFrontEndTestView', {
+component('test.browserTestView', {
   type: 'control',
   params: [
     {id: 'testId', as: 'string'},

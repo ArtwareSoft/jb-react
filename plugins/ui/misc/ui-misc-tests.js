@@ -1,31 +1,5 @@
 using('ui-slider')
 
-component('uiTest.table', {
-  impl: uiTest({
-    control: table({
-      items: '%$people%',
-      controls: [
-        text('%name%'),
-        button('delete', { style: button.x(), features: field.columnWidth('50px') })
-      ]
-    }),
-    expectedResult: contains('Homer Simpson')
-  })
-})
-
-component('uiTest.table.shownOnlyOnItemHover', {
-  impl: uiTest({
-    control: table({
-      items: '%$people%',
-      controls: [
-        text('%name%'),
-        button('delete', { style: button.x(), features: [itemlist.shownOnlyOnItemHover(), field.columnWidth('50px')] })
-      ]
-    }),
-    expectedResult: contains('Homer Simpson')
-  })
-})
-
 component('uiTest.itemlistDD', {
   impl: uiTest({
     control: group(
@@ -48,196 +22,7 @@ component('uiTest.itemlistDD', {
     ),
     expectedResult: contains('Bart','Marge','Homer'),
     uiAction: keyboardEvent('#itemlist', 'keydown', { keyCode: 40, ctrl: 'ctrl' }),
-    useFrontEnd: true
-  })
-})
-
-component('uiTest.table.expandToEndOfRow', {
-  impl: uiTest({
-    control: table({
-      items: '%$people%',
-      controls: [
-        text('%name%', { features: feature.expandToEndOfRow('%name%==Homer Simpson') }),
-        text('%age%')
-      ],
-      lineFeatures: table.enableExpandToEndOfRow()
-    }),
-    expectedResult: and(contains('colspan="'), not(contains('>42<')))
-  })
-})
-
-component('uiTest.table.MDInplace', {
-  impl: uiTest({
-    control: group({
-      controls: table({
-        items: '%$people%',
-        controls: [
-          group(editableBoolean('%$sectionExpanded/{%$index%}%', editableBoolean.expandCollapse()), text('%name%'), {
-            layout: layout.flex('row', 'start', { alignItems: 'center' })
-          }),
-          controlWithCondition({
-            condition: '%$sectionExpanded/{%$index%}%',
-            control: group(text('inner text'), { features: feature.expandToEndOfRow('%$sectionExpanded/{%$index%}%') })
-          }),
-          text('%age%'),
-          text('%age%')
-        ],
-        lineFeatures: [
-          watchRef('%$sectionExpanded/{%$index%}%', { allowSelfRefresh: true }),
-          table.enableExpandToEndOfRow()
-        ]
-      }),
-      features: watchable('sectionExpanded', obj())
-    }),
-    expectedResult: and(contains('colspan="','inner text'), not(contains('>42<'))),
-    uiAction: click('i', 'toggle')
-  })
-})
-
-component('uiTest.table.MDInplace.withScroll', {
-  impl: uiTest({
-    control: group({
-      controls: table({
-        items: '%$people%',
-        controls: [
-          group(editableBoolean('%$sectionExpanded/{%$index%}%', editableBoolean.expandCollapse()), text('%name%'), {
-            layout: layout.flex('row', 'start', { alignItems: 'center' })
-          }),
-          controlWithCondition({
-            condition: '%$sectionExpanded/{%$index%}%',
-            control: group(text('inner text'), { features: feature.expandToEndOfRow('%$sectionExpanded/{%$index%}%') })
-          }),
-          text('%age%'),
-          text('%age%')
-        ],
-        visualSizeLimit: 2,
-        features: [
-          css.height('40', 'scroll'),
-          itemlist.infiniteScroll(2)
-        ],
-        lineFeatures: [
-          watchRef('%$sectionExpanded/{%$index%}%', { allowSelfRefresh: true }),
-          table.enableExpandToEndOfRow()
-        ]
-      }),
-      features: watchable('sectionExpanded', obj())
-    }),
-    expectedResult: and(contains('colspan="','inner text','Bart'), not(contains('>42<')), not(contains('inner text','inner text'))),
-    uiAction: uiActions(click('.jb-itemlist', 'fetchNextPage'), click('i', 'toggle')),
-    timeout: 300
-  })
-})
-
-// component('uiTest.itemlistWithTableStyle', {
-//   impl: uiTest({
-//     control: table({
-//       items: '%$watchablePeople%',
-//       controls: [
-//         text('%$index%', 'index', { features: field.columnWidth(40) }),
-//         text('%name%', 'name', { features: field.columnWidth(300) }),
-//         text('%age%', 'age')
-//       ],
-//       features: itemlist.selection('%$globals/selectedPerson%', { autoSelectFirst: true })
-//     }),
-//     expectedResult: contains('300','age','Homer Simpson','38','>3<','Bart')
-//   })
-// })
-
-// component('test.personName', {
-//   type: 'control',
-//   params: [
-//     {id: 'person'}
-//   ],
-//   impl: text('%$person/name%')
-// })
-
-// component('uiTest.itemlistWithTableStyleUsingDynamicParam', {
-//   impl: uiTest(table({ items: '%$watchablePeople%', controls: test.personName('%%') }), contains('Bart'))
-// })
-
-
-component('uiTest.itemlistContainerSearchCtrl', {
-  type: 'control',
-  impl: group({
-    controls: [
-      itemlistContainer.search({ style: editableText.mdcSearch(), features: id('search') }),
-      itemlist({
-        items: pipeline('%$people%', itemlistContainer.filter()),
-        controls: text(text.highlight('%name%', '%$itemlistCntrData/search_pattern%')),
-        features: [
-          watchRef('%$itemlistCntrData/search_pattern%'),
-          itemlist.selection({ autoSelectFirst: true }),
-          itemlist.keyboardSelection({ autoFocus: true, onEnter: writeValue('%$res/selected%', '%name%') })
-        ]
-      })
-    ],
-    features: group.itemlistContainer()
-  })
-})
-
-component('uiTest.itemlistContainerSearch', {
-  impl: uiTest(uiTest.itemlistContainerSearchCtrl(), contains('Ho<','>mer'), { uiAction: setText('ho', '#search') })
-})
-
-component('uiTest.itemlistContainerSearchEnterOnLi', {
-  impl: uiTest({
-    vars: [Var('res', obj())],
-    control: uiTest.itemlistContainerSearchCtrl(),
-    expectedResult: equals('%$res/selected%', 'Homer Simpson'),
-    uiAction: keyboardEvent('.jb-itemlist', 'keydown', { keyCode: 13, doNotWaitForNextUpdate: true }),
-    useFrontEnd: true
-  })
-})
-
-component('uiTest.editableTextHelper', {
-  impl: uiTest({
-    control: editableText('name', '%$person/name%', {
-      features: editableText.helperPopup(text('--%value%--'), { autoOpen: true })
-    }),
-    expectedResult: contains('--Homer'),
-    uiAction: waitForNextUpdate()
-  })
-})
-
-component('uiTest.editableText.picklistHelper', {
-  impl: uiTest({
-    control: editableText('name', '%$person/name%', {
-      style: editableText.mdcInput(),
-      features: editableText.picklistHelper(picklist.optionsByComma('1,2,333'), {
-        autoOpen: true
-      })
-    }),
-    expectedResult: contains('333'),
-    uiAction: waitForNextUpdate()
-  })
-})
-
-component('uiTest.editableText.picklistHelperWithChangingOptions', {
-  impl: uiTest({
-    control: editableText('name', '%$person/name%', {
-      features: editableText.picklistHelper(picklist.optionsByComma(If(test.getSelectionChar(), '1,2,3,4', 'a,b,c,ddd')), {
-        showHelper: notEquals(test.getSelectionChar(), 'b'),
-        autoOpen: true
-      })
-    }),
-    expectedResult: contains('ddd'),
-    uiAction: waitForNextUpdate()
-  })
-})
-
-component('uiTest.editableText.richPicklistHelperWithWatchingGroup', {
-  impl: uiTest({
-    control: group({
-      controls: editableText('name', '%$person/name%', {
-        features: editableText.picklistHelper(picklist.optionsByComma(If(test.getSelectionChar(), '1,2,3,4', 'a,b,c,ddd')), {
-          showHelper: notEquals(test.getSelectionChar(), 'b'),
-          autoOpen: true
-        })
-      }),
-      features: watchRef('%$person/name%')
-    }),
-    expectedResult: contains('ddd'),
-    uiAction: waitForNextUpdate()
+    emulateFrontEnd: true
   })
 })
 
@@ -378,7 +163,7 @@ component('uiTest.picklist', {
   })
 })
 
-component('uiTest.picklist.delayedOptions', {
+component('uiTest.picklist.rxOptions', {
   impl: uiTest({
     control: group(
       group({
@@ -452,9 +237,9 @@ component('uiTest.picklistRadio', {
   })
 })
 
-component('uiTest.picklist.innerSelector', {
-  impl: uiTest(picklist({ options: picklist.optionsByComma('a') }), ctx => jb.ui.elemOfSelector('select>option',ctx))
-})
+// component('uiTest.picklist.innerSelector', {
+//   impl: uiTest(picklist({ options: picklist.optionsByComma('a') }), ctx => jb.ui.elemOfSelector('select>option',ctx))
+// })
 
 component('uiTest.picklistSort', {
   impl: dataTest({

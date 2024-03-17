@@ -107,6 +107,7 @@ component('feature.init', {
 component('onDestroy', {
   type: 'feature',
   category: 'lifecycle',
+  description: 'destroy on the backend',
   params: [
     {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
@@ -177,7 +178,7 @@ component('watchRef', {
     {id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data'},
     {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', byName: true, description: 'watch childern change as well'},
     {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
-    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and reinit wait for data', type: 'boolean'},
+    {id: 'strongRefresh', as: 'boolean', description: 'restart BE and FE flows, wait for data or event handlers', type: 'boolean'},
     {id: 'cssOnly', as: 'boolean', description: 'refresh only css features', type: 'boolean'},
     {id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority'},
     {id: 'methodBeforeRefresh', as: 'string', description: 'cmp method to run before refreshing'}
@@ -377,7 +378,7 @@ component('refreshControlById', {
   type: 'action',
   params: [
     {id: 'id', as: 'string', mandatory: true},
-    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and reinit wait for data', type: 'boolean'},
+    {id: 'strongRefresh', as: 'boolean', byName: true, description: 'restart BE and FE flows, wait for data or event handlers', type: 'boolean'},
     {id: 'cssOnly', as: 'boolean', description: 'refresh only css features', type: 'boolean'}
   ],
   impl: (ctx,id) => {
@@ -439,9 +440,9 @@ component('runFEMethod', {
   impl: (ctx, selector, method, data, vars) => {
     const elem = jb.ui.elemOfSelector(selector,ctx)
     const cmpElem = elem && jb.ui.closestCmpElem(elem)
-    const delta = { attributes: { $runFEMethod: JSON.stringify({method, data, vars}) } }
-    cmpElem && jb.ui.applyNewVdom(cmpElem,null,{ ctx, delta } )
-  }
+          const delta = { attributes: { $runFEMethod: JSON.stringify({method, data, vars}) } }
+      cmpElem && jb.ui.applyNewVdom(cmpElem,null,{ ctx, delta } )
+      }
 })
 
 component('css', {

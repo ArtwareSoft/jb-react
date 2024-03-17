@@ -29,13 +29,11 @@ component('uiTest.watchableAsText', {
           features: [
             id('editor'),
             feature.onKey('Alt-P', writeValue('%$path%', tgpTextEditor.cursorPath('%$watchedText%'))),
-            textarea.initTgpTextEditor(),
-            watchRef('%$watchablePeople%', 'yes')
+            {$: 'textarea.initTgpTextEditor'},
+            watchRef('%$watchablePeople%', { includeChildren: 'yes' })
           ]
         }),
-        button({
-          title: 'show path of cursor',
-          action: writeValue('%$path%', tgpTextEditor.cursorPath('%$watchedText%')),
+        button('show path of cursor', writeValue('%$path%', tgpTextEditor.cursorPath('%$watchedText%')), {
           features: [
             id('show-path'),
             textarea.enrichUserEvent('#editor')
@@ -51,10 +49,10 @@ component('uiTest.watchableAsText', {
     expectedResult: contains('watchablePeople~0~name'),
     uiAction: uiActions(
       waitForSelector('#editor'),
-      action(runFEMethod('#editor', 'setSelectionRange', obj(prop('from',22)))),
+      action(runFEMethod('#editor', 'setSelectionRange', { Data: obj(prop('from', 22)) })),
       click('#show-path')
     ),
-    useFrontEnd: true
+    emulateFrontEnd: true
   })
 })
 

@@ -1,4 +1,4 @@
-using('ui-tests')
+using('ui-tests','markdown-editor')
 
 
 component('uiTest.group', {
@@ -149,7 +149,7 @@ component('uiTest.editableText.onEnter', {
     }),
     expectedResult: contains('hello Homer Simpson'),
     uiAction: keyboardEvent('input', 'keydown', { keyCode: '13' }),
-    useFrontEnd: true
+    emulateFrontEnd: true
   })
 })
 
@@ -228,6 +228,16 @@ component('uiTest.tabs', {
   impl: uiTest({
     control: group(group(text('in tab1'), { title: 'tab1' }), group(text('in tab2'), { title: 'tab2' }), { style: group.tabs() }),
     expectedResult: and(contains('tab1','in tab1'), contains('tab2'), not(contains('in tab2')))
+  })
+})
+
+component('uiTest.tabs.selectTab', {
+  impl: uiTest({
+    control: group(group(text('in tab1'), { title: 'tab1' }), group(text('in tab2'), { title: 'tab2' }), {
+      style: group.tabs()
+    }),
+    expectedResult: and(contains('tab1','in tab2'), contains('tab2'), not(contains('in tab1'))),
+    uiAction: selectTab('tab2')
   })
 })
 
@@ -333,7 +343,7 @@ component('FETest.itemlistWithSelect.click', {
     }),
     expectedResult: contains('Homer Simpson - Homer Simpson','selected','Bart Simpson - Bart Simpson'),
     uiAction: click('ul>li:nth-child(2)', { doNotWaitForNextUpdate: true }),
-    useFrontEnd: true
+    emulateFrontEnd: true
   })
 })
 
@@ -362,7 +372,7 @@ component('uiTest.itemlistSelection.click', {
     ),
     expectedResult: contains('-Marge Simpson-'),
     uiAction: click('#idx-2'),
-    useFrontEnd: true
+    emulateFrontEnd: true
   })
 })
 
@@ -393,12 +403,10 @@ component('uiTest.itemlistMDOfRefs.refChangeBug', {
         features: [
           id('itemlist'),
           itemlist.selection('%$globals/selectedPerson%', { autoSelectFirst: true }),
-          itemlist.keyboardSelection(true)
+          itemlist.keyboardSelection({ autoFocus: true })
         ]
       }),
-      text('%$globals/selectedPerson/name% selected', {
-        features: watchRef('%$globals/selectedPerson%')
-      })
+      text('%$globals/selectedPerson/name% selected', { features: watchRef('%$globals/selectedPerson%') })
     ),
     expectedResult: contains('Marge Simpson','Marge Simpson - watchable selected'),
     uiAction: uiActions(
@@ -422,24 +430,21 @@ component('uiTest.itemlistKeyboardSelection', {
     }),
     expectedResult: equals('%$res/selected%', 'Homer Simpson'),
     uiAction: keyboardEvent('.jb-itemlist', 'keydown', { keyCode: 13, doNotWaitForNextUpdate: true }),
-    useFrontEnd: true
+    emulateFrontEnd: true
   })
 })
 
 component('uiTest.BEOnDestroy', {
-  impl: uiTest(text('%$person/name%'), contains('dialog closed'), {
-    uiAction: uiActions(
-      action(
-        runActions(
-          openDialog({
-            content: text('in dialog', { features: onDestroy(writeValue('%$person/name%', 'dialog closed')) }),
-            id: 'dlg'
-          }),
-          dialog.closeDialogById('dlg')
-        )
-      ),
-      waitForText('dialog closed')
-    )
+  impl: uiTest({
+    control: group(
+      button('click me', openDialog({
+        content: text('in dialog', { features: onDestroy(writeValue('%$person/name%', 'dialog closed')) }),
+        id: 'dlg'
+      })),
+      text('%$person/name%')
+    ),
+    expectedResult: contains('dialog closed'),
+    uiAction: uiActions(click(), action(dialog.closeDialogById('dlg')), waitForText('dialog closed'))
   })
 })
 
@@ -453,7 +458,7 @@ component('uiTest.onKey', {
     }),
     expectedResult: contains('hello'),
     uiAction: keyboardEvent('#inp', 'keydown', { keyCode: 13, ctrl: 'ctrl' }),
-    useFrontEnd: true
+    emulateFrontEnd: true
   })
 })
 
@@ -573,7 +578,7 @@ component('uiTest.refreshWithStyleByCtrl', {
     control: group({
       controls: [
         text('%$name%'),
-        button('click', ctx => jb.ui.runBEMethodByElem(jb.ui.find(ctx, '#g1')[0], 'refresh'))
+        button('click', ctx => jb.ui.runBEMethodByElem(jb.ui.querySelectorAll(jb.ui.widgetBody(ctx), '#g1')[0], 'refresh'))
       ],
       style: group.sections(),
       features: [
@@ -705,57 +710,17 @@ component('uiTest.validator', {
   })
 })
 
-component('uiTest.watchableVariableAsProxy', {
-  impl: uiTest(group({ features: watchable('link', '%$person%') }), ctx => jb.db.resources[Object.keys(jb.db.resources).filter(x => x.match(/link:[0-9]*/))[0]][Symbol.for("isProxy")])
-})
-
-
-component('uiTest.watchableLinkWriteOriginalWatchLink', {
-  impl: uiTest({
-    control: group(text('%$person/name%'), text('%$link/name%'), { features: watchable('link', '%$person%') }),
-    expectedResult: contains('hello','hello'),
-    uiAction: writeValue('%$person/name%', 'hello')
-  })
-})
-
-component('uiTest.watchableWriteViaLink', {
-  impl: uiTest({
-    control: group({
-      controls: [
-        text('%$person/name%'),
-        text('%$link/name%'),
-        button('set', writeValue('%$link/name%', 'hello'), { features: id('set') })
-      ],
-      features: watchable('link', '%$person%')
-    }),
-    expectedResult: contains('hello','hello'),
-    uiAction: click('#set', { doNotWaitForNextUpdate: true })
-  })
-})
-
-component('uiTest.watchableParentRefreshMaskChildren', {
-  impl: uiTest(group(text('%$person/name%'), { features: watchRef('%$person/name%') }), contains('hello'), {
-    uiAction: writeValue('%$person/name%', 'hello'),
-    expectedCounters: {'refresh from observable elements': 1}
-  })
-})
-
-component('uiTest.watchableUrl', {
-  impl: uiTest(text('%$person/name%'), contains('observe="resources','~name;person~name'))
-})
-
 component('uiTest.itemlistWithGroupWait', {
   impl: uiTest({
     control: itemlist({
       items: '%$items%',
       controls: text('%name%'),
-      features: group.wait(pipe(delay(1), () => [{ name: 'homer' }]), { varName: 'items' })
+      features: group.wait(delay(1, obj(prop('name', 'homer'))), { varName: 'items' })
     }),
     expectedResult: contains('homer'),
     uiAction: waitForNextUpdate()
   })
 })
-
 
 
 

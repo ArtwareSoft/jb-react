@@ -26,7 +26,7 @@ extension('ui', 'field', {
     }
   },
   checkFormValidation(elem) {
-    jb.ui.find(elem,'[jb-ctx]').map(el=>el._component).filter(cmp => cmp && cmp.validations).forEach(cmp => 
+    jb.ui.querySelectorAll(elem,'[jb-ctx]').map(el=>el._component).filter(cmp => cmp && cmp.validations).forEach(cmp => 
       jb.ui.checkValidationError(cmp,jb.val(cmp.ctx.vars.$model.databind(cmp.ctx)), cmp.ctx))
   },
   fieldTitle(cmp,fieldOrCtrl,h) {

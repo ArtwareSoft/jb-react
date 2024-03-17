@@ -9,7 +9,7 @@
 // })
 
 // jb.component('jbEditorTest.onWorker', {
-//   impl: uiFrontEndTest({
+//   impl: browserTest({
 //     renderDOM: true,
 //     timeout: 5000,
 //     runBefore: runActions(
@@ -51,7 +51,7 @@
 //   })
 // })
 
-// jb.component('previewTest.uiFrontEndTest', {
+// jb.component('previewTest.browserTest', {
 //   impl: uiTest({
 //     control: preview.remoteWidget(jbm.childPreview()),
 //     runBefore: writeValue('%$studio/circuit%', 'FETest.runFEMethod'),

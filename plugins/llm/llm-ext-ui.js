@@ -28,14 +28,17 @@ component('llm.commandBar', {
 
 component('llm.docHelper', {
   type: 'control<>',
+  params: [
+    {id: 'doc', as: 'ref', defaultValue: '%$llmDocExample%'}
+  ],
   impl: group(
     llm.commandBar(),
     group({
       controls: [
-        llm.prompts(),
-        markdown.editor('%$llmDocExample/content%', 'all document'),
-        markdown.editor('%$llmDocExample/section%', 'working area'),
-        markdown.editor('%$llmDocExample/outline%', 'outline')
+        markdown.editor('%$doc/content%', 'all document'),
+        llm.prompts('%$doc%'),
+        markdown.editor('%$doc/section%', 'working area'),
+        markdown.editor('%$doc/outline%', 'outline')
       ],
       title: 'document',
       style: group.tabs(),
@@ -63,7 +66,7 @@ component('llm.prompts', {
           }),
           editableText('prompt', '%text%', {
             style: editableText.codemirror({ height: '60', mode: 'text' }),
-            features: field.columnWidth(800)
+            features: features(field.columnWidth(800), css('> .CodeMirror {background: lightgoldenrodyellow;}'))
           }),
           button({
             action: removeFromArray('%$doc/prompts%', '%%'),
@@ -82,9 +85,7 @@ component('llm.prompts', {
           itemlist.selection()
         ]
       }),
-      button({
-        title: 'add prompt',
-        action: addToArray('%$doc/prompts%', { toAdd: obj(prop('text', 'prompt text')) }),
+      button('add prompt', addToArray('%$doc/prompts%', { toAdd: obj(prop('text', 'prompt text')) }), {
         style: button.mdcIcon(),
         raised: 'true',
         features: [

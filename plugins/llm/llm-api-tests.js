@@ -9,7 +9,7 @@ component('llmTest.hello', {
 
 component('llmTest.count', {
   doNotRunInTests: true,
-  impl: uiFrontEndTest({
+  impl: browserTest({
     control: group({
       controls: [
         itemlist({

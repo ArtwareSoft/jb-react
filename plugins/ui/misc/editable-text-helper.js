@@ -2,7 +2,7 @@
 component('editableText.picklistHelper', {
   type: 'feature',
   params: [
-    {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true},
+    {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true, byName: true},
     {id: 'picklistStyle', type: 'picklist-style', dynamic: true, defaultValue: picklist.labelList()},
     {id: 'picklistFeatures', type: 'feature[]', flattenArray: true, dynamic: true},
     {id: 'popupFeatures', type: 'dialog-feature[]', flattenArray: true, dynamic: true},
@@ -28,13 +28,14 @@ component('editableText.picklistHelper', {
       }),
       style: dialog.popup(),
       features: [
-        dialogFeature.maxZIndexOnClick(),
-        dialogFeature.uniqueDialog('%$popupId%'),
+        maxZIndexOnClick(),
+        unique('%$popupId%'),
         '%$popupFeatures()%'
       ]
     })),
     method('closePopup', dialog.closeDialogById('%$popupId%')),
     method('refresh', runActions(
+      log('refresh editableTextHelper'),
       writeValue('%$watchableInput%', '%%'),
       If({
         condition: call('showHelper'),
@@ -48,42 +49,65 @@ component('editableText.picklistHelper', {
     }),
     method('onEnter', If(dialog.isOpen('%$popupId%'), runActions(call('onEnter'), dialog.closeDialogById('%$popupId%')))),
     method('onEsc', If(dialog.isOpen('%$popupId%'), runActions(call('onEsc'), dialog.closeDialogById('%$popupId%')))),
-    feature.serviceRegistey(),
     frontEnd.selectionKeySourceService(),
     frontEnd.prop('keyUp', rx.pipe(source.frontEndEvent('keyup'), rx.delay(1))),
     frontEnd.flow(
-      '%$cmp/keyUp%',
+      source.frontEndEvent('keyup'),
+//      rx.delay(1),
       rx.log('editableTextHelper keyup'),
       rx.filter('%keyCode% == 13'),
       editableText.addUserEvent(),
       sink.BEMethod('onEnter')
     ),
     frontEnd.flow(
-      '%$cmp/keyUp%',
+      source.frontEndEvent('keyup'),
+//      rx.delay(1),
       rx.filter(not(inGroup(list(13,27,38,40), '%keyCode%'))),
       editableText.addUserEvent(),
       sink.BEMethod('refresh')
     ),
-    frontEnd.flow('%$cmp/keyUp%', rx.filter('%keyCode% == 27'), editableText.addUserEvent(), sink.BEMethod('onEsc')),
-    onDestroy(action.runBEMethod('closePopup')),
-    followUp.action(If('%$autoOpen%', runActions(
+    frontEnd.flow(
+      source.frontEndEvent('keyup'),
+//      rx.delay(1),
+      rx.filter('%keyCode% == 27'),
+      editableText.addUserEvent(),
+      sink.BEMethod('onEsc')
+    ),
+    frontEnd.var('autoOpen', '%$autoOpen%'),
+    frontEnd.flow(
+      source.data(1),
+      rx.filter('%$autoOpen%'),
+      rx.delay(1),
+      rx.var('ev', ({},{el}) => jb.ui.buildUserEvent({}, el)),
+      rx.log('autoOpen editableTextHelper'),
+      sink.BEMethod('openPopup')
+    ),
+    followUp.action(If(and('%$uiTest%','%$autoOpen%'), runActions(
       writeValue('%$watchableInput%', obj(prop('value', '%$helperCmp/renderProps/databind%'))),
       action.runBEMethod('openPopup')
-    )))
+    ))),
+    onDestroy(action.runBEMethod('closePopup'))
   )
 })
+
+// followUp.action(If('%$autoOpen%', runActions(
+//   delay(100),
+//   writeValue('%$watchableInput%', obj(prop('value', '%$helperCmp/renderProps/databind%'))),
+//   action.runBEMethod('openPopup')
+// )))
+
 
 component('editableText.setInputState', {
   type: 'action',
   params: [
-    {id: 'newVal', as: 'string'},
+    {id: 'newVal', as: 'string', byName: true},
     {id: 'assumedVal', description: 'contains value and selectionStart, the action is not performed if the not in this state'},
     {id: 'selectionStart', as: 'number'},
     {id: 'cmp', defaultValue: '%$cmp%'}
   ],
-  impl: action.applyDeltaToCmp({
+  impl: ui.applyDeltaToCmp({
     delta: (ctx,{cmp},{newVal,selectionStart,assumedVal}) => {
-    jb.log('dom set input create userRequest',{cmp,newVal,ctx})
+    jb.log('editableTextHelper dom set input create userRequest',{cmp,newVal,ctx})
     return {attributes: { $__input: JSON.stringify({ assumedVal: assumedVal, newVal,selectionStart })}}
   },
     cmpId: '%$cmp/cmpId%'
@@ -111,8 +135,8 @@ component('editableText.helperPopup', {
       content: call('control'),
       style: call('popupStyle'),
       features: [
-        dialogFeature.maxZIndexOnClick(),
-        dialogFeature.uniqueDialog('%$popupId%'),
+        maxZIndexOnClick(),
+        unique('%$popupId%'),
         group.data(firstSucceeding('%$ev/input%', obj(prop('value', '%$helperCmp/renderProps/databind%'))))
       ]
     })),
@@ -146,7 +170,12 @@ component('editableText.helperPopup', {
       editableText.addUserEvent(),
       sink.BEMethod('refresh')
     ),
-    frontEnd.flow('%$cmp/keyUp%', rx.filter('%keyCode% == 27'), editableText.addUserEvent(), sink.BEMethod('onEsc')),
+    frontEnd.flow(
+      '%$cmp/keyUp%',
+      rx.filter('%keyCode% == 27'),
+      editableText.addUserEvent(),
+      sink.BEMethod('onEsc')
+    ),
     onDestroy(action.runBEMethod('closePopup')),
     followUp.action(If('%$autoOpen%', action.runBEMethod('openPopup')))
   )

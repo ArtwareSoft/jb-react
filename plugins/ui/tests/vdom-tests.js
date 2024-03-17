@@ -2,34 +2,34 @@ using('ui-table-tree')
 
 const h = jb.ui.h
 
-component('uiTest.applyVdomDiffText', {
+component('vdomDiffTest.applyVdomDiffText', {
   impl: uiTest.applyVdomDiff(ctx => h('div',{},'aa'), ctx => h('div',{},'bb'))
 })
 
-component('uiTest.applyVdomDiffTag', {
+component('vdomDiffTest.applyVdomDiffTag', {
   impl: uiTest.applyVdomDiff(ctx => h('span',{},'aa'), ctx => h('div',{},'bb'))
 })
 
-component('uiTest.applyVdomDiffToText', {
+component('vdomDiffTest.applyVdomDiffToText', {
   impl: uiTest.applyVdomDiff(ctx => h('div',{},'aa'), ctx => 'aa')
 })
 
-component('uiTest.applyVdomDiffMixed', {
+component('vdomDiffTest.applyVdomDiffMixed', {
   impl: uiTest.applyVdomDiff(ctx => h('div',{},'aa'), ctx => h('div',{},h('div',{},'bb')))
 })
 
-component('uiTest.applyVdomDiffMixed2', {
+component('vdomDiffTest.applyVdomDiffMixed2', {
   impl: uiTest.applyVdomDiff(ctx => h('div',{},h('div',{},'bb')), ctx => h('div',{},'aa'))
 })
 
-component('uiTest.applyVdomDiffDDTree1', {
+component('vdomDiffTest.applyVdomDiffDDTree1', {
   impl: uiTest.applyVdomDiff({
     controlBefore: group(text('0'), text('1'), group(text('1.1'), text('1.2')), text('2')),
     control: group(text('1'), group(text('0'), text('1.1'), text('1.2')), text('2'))
   })
 })
 
-component('uiTest.applyVdomDiff.TableTree', {
+component('vdomDiffTest.applyVdomDiff.TableTree', {
   impl: uiTest.applyVdomDiff({
     controlBefore: tableTree({
       treeModel: tree.json(() => ({ names: ["Homer Simpson", "Marge Simpson", "Bart Simpson"] })),
@@ -44,7 +44,7 @@ component('uiTest.applyVdomDiff.TableTree', {
   })
 })
 
-component('uiTest.applyVdomDiff.TableTree2', {
+component('vdomDiffTest.applyVdomDiff.TableTree2', {
   impl: uiTest.applyVdomDiff({
     controlBefore: tableTree({
       treeModel: tree.json(() => ({ name: 'mukki'})),
@@ -59,7 +59,7 @@ component('uiTest.applyVdomDiff.TableTree2', {
   })
 })
 
-component('uiTest.applyVdomDiff.TableTo.toAppendInTheMiddle', {
+component('vdomDiffTest.applyVdomDiff.TableTo.toAppendInTheMiddle', {
   impl: uiTest.applyVdomDiff({
     controlBefore: tableTree({
       treeModel: tree.jsonReadOnly('%$personWithChildren%', ''),

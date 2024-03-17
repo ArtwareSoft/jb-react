@@ -1,20 +1,20 @@
 using('ui-tests')
 
-component('uiTest.openDialog', {
+component('dialogTest.openDialog', {
   impl: uiTest({
-    control: button('click me', openDialog('hello', text('jbart'), { id: 'hello', features: dialogFeature.nearLauncherPosition() })),
+    control: button('click me', openDialog('hello', text('jbart'), { id: 'hello', features: nearLauncherPosition() })),
     expectedResult: contains('hello','jbart'),
     uiAction: click('button')
   })
 })
 
-component('uiTest.codeMirrorDialogResizer', {
+component('dialogTest.codeMirrorDialogResizer', {
   impl: uiTest({
     control: button('click me', openDialog({
       title: 'resizer',
       content: editableText({ databind: '%$person/name%', style: editableText.codemirror({ mode: 'javascript' }) }),
       features: [
-        dialogFeature.nearLauncherPosition(),
+        nearLauncherPosition(),
         dialogFeature.resizer(true)
       ]
     })),
@@ -22,14 +22,14 @@ component('uiTest.codeMirrorDialogResizer', {
   })
 })
 
-component('uiTest.codeMirrorDialogResizerOkCancel', {
+component('dialogTest.codeMirrorDialogResizerOkCancel', {
   impl: uiTest({
     control: button('click me', openDialog({
       title: 'resizer',
       content: editableText({ databind: '%$person/name%', style: editableText.codemirror({ mode: 'javascript' }) }),
       style: dialog.dialogOkCancel(),
       features: [
-        dialogFeature.nearLauncherPosition(),
+        nearLauncherPosition(),
         dialogFeature.resizer(true)
       ]
     })),
@@ -37,7 +37,7 @@ component('uiTest.codeMirrorDialogResizerOkCancel', {
   })
 })
 
-component('uiTest.refreshDialog', {
+component('dialogTest.refreshDialog', {
   impl: uiTest({
     control: button('click me', openDialog({
       content: text('%$person/name%'),
@@ -48,13 +48,29 @@ component('uiTest.refreshDialog', {
   })
 })
 
-component('uiTest.dialogCleanupBug', {
-  impl: uiTest(button('click me', openDialog('hello', text('world'), { id: 'hello' })), isEmpty(dialog.shownDialogs()), {
+component('dialogTest.closeDialog', {
+  impl: uiTest({
+    control: button('click me', openDialog('hello', text('world'), { id: 'hello' })),
+    expectedResult: isEmpty(querySelectorAll('.jb-dialog')),
     uiAction: uiActions(click(), action(dialog.closeAll()))
   })
 })
 
-component('uiTest.inPlaceDialog', {
+component('dialogTest.closeDialogWithFlows', {
+  impl: uiTest({
+    control: button('click me', openDialog('hello', text('world'), {
+      style: dialog.div(),
+      id: 'hello',
+      features: closeWhenClickingOutside()
+    })),
+    expectedResult: isEmpty(querySelectorAll('.jb-dialog')),
+    uiAction: uiActions(click(), action(dialog.closeAll())),
+    expectedCounters: {'frontend start flow source.data...7': 1, 'frontend end flow source.data...7': 1},
+    emulateFrontEnd: true
+  })
+})
+
+component('dialogTest.inPlaceDialog', {
   impl: uiTest(inPlaceDialog('dialog title', text('inside')), contains('dialog title','inside'))
 })
 

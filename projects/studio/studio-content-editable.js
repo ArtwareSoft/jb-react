@@ -90,8 +90,8 @@ component('feature.contentEditable', {
         if (vdom.tag && vdom.tag.toLowerCase() == 'button' && vdom.children && vdom.children.length == 1 && typeof vdom.children[0] == 'string') {
           vdom.children[0] = jb.ui.h('span',attsToInject,vdom.children[0])
           return vdom
-        } else if (vdom.tag && vdom.tag.toLowerCase() == 'button' && jb.ui.find(vdom,'.mdc-button__label')) {
-          const atts = jb.ui.find(vdom,'.mdc-button__label').attributes || {}
+        } else if (vdom.tag && vdom.tag.toLowerCase() == 'button' && jb.ui.querySelectorAll(vdom,'.mdc-button__label')) {
+          const atts = jb.ui.querySelectorAll(vdom,'.mdc-button__label').attributes || {}
           Object.assign(atts,attsToInject,{style: [(atts.style || ''),'z-index: 100'].filter(x=>x).join(';') })
           return vdom
         }

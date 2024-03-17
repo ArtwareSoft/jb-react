@@ -85,10 +85,7 @@ component('probe.remoteCircuitPreview', {
   impl: If({
     condition: probe.circuitPreviewRequiresMainThread('%$circuitPath%'),
     then: probe.circuitPreview('%$circuitPath%'),
-    Else: remote.widget({
-      control: probe.circuitPreview('%$circuitPath%'),
-      jbm: probePreviewWorker(sourceCodeByTgpPath('%$circuitPath%'))
-    })
+    Else: remote.widget(probe.circuitPreview('%$circuitPath%'), probePreviewWorker(sourceCodeByTgpPath('%$circuitPath%')))
   })
 })
 
@@ -100,7 +97,7 @@ component('probe.circuitPreviewRequiresMainThread', {
   impl: (ctx,circuitPath) => {
     const _circuit = circuitPath
     return jb.utils.prettyPrint(jb.utils.resolveCompWithId(_circuit ),{noMacros: true})
-      .indexOf('uiFrontEndTest') != -1
+      .indexOf('browserTest') != -1
   }
 })
 
@@ -181,8 +178,8 @@ component('probe.handleScriptChangeOnPreview', {
         } else {
             const ref = ctx.exp('%$probe/scriptChangeCounter%','ref')
             const newVal = +jb.val(ref)+1
-            jb.db.writeValue(ref, newVal ,ctx.setVars({headlessWidget: true}))
             jb.log('probe preview handleScriptChangeOnPreview increaseScriptChangeCounter',{ctx,newVal})
+            jb.db.writeValue(ref, newVal ,ctx.setVars({headlessWidgetId }))
         }
     }
 })

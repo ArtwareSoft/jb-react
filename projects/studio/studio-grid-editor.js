@@ -172,9 +172,9 @@ component('gridEditor.dragableGridLineThumb', {
           rx.var('ev', '%%'),
           rx.do(
             runActionOnItems({
-              items: (ctx,{gridIndex}) => jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog')
-            .filter(el => el.axis == axis)
-            .filter(el => el.gridIndex >= gridIndex -1),
+              items: (ctx,{gridIndex}) => jb.ui.querySelectorAll(jb.ui.widgetBody(ctx),'.jb-dialog')
+                .filter(el => el.axis == axis)
+                .filter(el => el.gridIndex >= gridIndex -1),
               action: ({data},{fixBack,accVals,ev,gridIndex,axis}) => {
             const dlg = data
             if (axis == 'Rows')
@@ -253,7 +253,7 @@ component('gridEditor.openGridItemThumbs', {
         null
       )
     ],
-    items: (ctx,{inplaceElem}) => jb.ui.find(inplaceElem,'*'),
+    items: (ctx,{inplaceElem}) => jb.ui.querySelectorAll(inplaceElem,'*'),
     action: openDialog({
       vars: [Var('gridItemElem')],
       content: text('Ctrl to span'),

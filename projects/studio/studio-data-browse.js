@@ -106,7 +106,7 @@ component('studio.openNewDataSource', {
       }),
       studio.openResource('dataResource.%$name%~%$watchableOrPassive%Data', '%$name%')
     ),
-    features: [dialogFeature.autoFocusOnFirstInput(), dialogFeature.maxZIndexOnClick(), dialogFeature.dragTitle()]
+    features: [autoFocusOnFirstInput(), maxZIndexOnClick(), dragTitle()]
   })
 })
 

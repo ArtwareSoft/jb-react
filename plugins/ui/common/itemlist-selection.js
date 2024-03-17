@@ -84,7 +84,7 @@ component('itemlist.keyboardSelection', {
     htmlAttribute('tabIndex', 0),
     method('onEnter', runActionOnItem(itemlist.indexToData(), call('onEnter'))),
     frontEnd.passSelectionKeySource(),
-    frontEnd.prop('onkeydown', rx.pipe(source.merge(source.frontEndEvent('keydown'), source.findSelectionKeySource()))),
+    frontEnd.prop('onkeydown', typeAdapter('rx<>', source.merge(source.frontEndEvent('keydown'), source.findSelectionKeySource()))),
     frontEnd.flow(
       '%$cmp.onkeydown%',
       rx.log('test onkeydown keyboardSelection'),

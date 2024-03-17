@@ -137,7 +137,7 @@ component('studio.openJbEditProperty', {
         }),
         style: dialog.studioJbEditorPopup(),
         features: [
-          dialogFeature.autoFocusOnFirstInput(),
+          autoFocusOnFirstInput(),
           dialogFeature.onClose(popup.regainCanvasFocus())
         ]
       })),
@@ -149,7 +149,7 @@ component('studio.openJbEditProperty', {
         content: studio.jbFloatingInput('%$actualPath%'),
         style: dialog.studioJbEditorPopup(),
         features: [
-          dialogFeature.autoFocusOnFirstInput(),
+          autoFocusOnFirstInput(),
           dialogFeature.onClose(toggleBooleanValue('%$studio/refreshProbe%'))
         ]
       })),
@@ -289,7 +289,7 @@ component('studio.addVariable', {
     }),
     style: dialog.popup(),
     id: 'add variable',
-    features: [css.width('300'), dialogFeature.nearLauncherPosition(), dialogFeature.autoFocusOnFirstInput()]
+    features: [css.width('300'), nearLauncherPosition(), autoFocusOnFirstInput()]
   })
 })
 

@@ -72,13 +72,13 @@ component('action.updateFrontEnd', {
 
     async function frontEndDelta(renderingUpdate) {
       const { delta, css, widgetId, cmpId, assumedVdom } = renderingUpdate
-      const {headlessWidget, useFrontEndInTest, uiTest} = ctx.vars
+      const {headlessWidget, emulateFrontEndInTest, uiTest} = ctx.vars
       if (css)
-        return (useFrontEndInTest || !headlessWidget) && jb.ui.insertOrUpdateStyleElem(ctx, css, renderingUpdate.elemId, { classId: renderingUpdate.classId })
+        return (emulateFrontEndInTest || !headlessWidget) && jb.ui.insertOrUpdateStyleElem(ctx, css, renderingUpdate.elemId, { classId: renderingUpdate.classId })
       await jb.treeShake.getCodeFromRemote(jb.treeShake.treeShakeFrontendFeatures(pathsOfFEFeatures(delta)))
       !uiTest && await jb.ui.loadFELibsDirectly(feLibs(delta))
-      const ctxToUse = ctx.setVars({ headlessWidget: false, FEwidgetId: widgetId })
-      const elem = cmpId ? jb.ui.find(jb.ui.widgetBody(ctxToUse), `[cmp-id="${cmpId}"]`)[0] : jb.ui.widgetBody(ctxToUse)
+      const ctxToUse = ctx.setVars({ headlessWidgetId: '', headlessWidget: false,  FEWidgetId: widgetId })
+      const elem = cmpId ? jb.ui.querySelectorAll(jb.ui.widgetBody(ctxToUse), `[cmp-id="${cmpId}"]`)[0] : jb.ui.widgetBody(ctxToUse)
       try {
         const res = elem && jb.ui.applyDeltaToCmp({ delta, ctx: ctxToUse, cmpId, elem, assumedVdom })
         if (jb.path(res, 'recover')) {
@@ -105,6 +105,20 @@ component('action.updateFrontEnd', {
   }
 })
 
+component('action.renderXwidgetFrontEnd', {
+  type: 'action',
+  params: [
+    {id: 'selector', as: 'string'},
+    {id: 'widgetId', as: 'string'}
+  ],
+  impl: (ctx, selector, widgetId) => {
+    const body = jb.ui.widgetBody(ctx.setVars({headlessWidget: '', headlessWidgetId: ''})) || jb.frame.document.body
+    const elem = selector ? body.querySelector(selector) : body
+    if (!elem)
+      return jb.logError('renderXwidget - can not find top elem', { body, ctx, selector })
+    jb.ui.renderWidget({ $: 'control<>widget.frontEndCtrl', widgetId }, elem, {widgetId})
+  },
+})
 component('remote.distributedWidget', {
   type: 'action',
   params: [
@@ -116,7 +130,7 @@ component('remote.distributedWidget', {
   impl: runActions(
     Var('widgetId', widget.newId()),
     Var('frontEndUri', '%$frontend/uri%'),
-    remote.action(action.renderXwidget('%$selector%', '%$widgetId%'), byUri('%$frontEndUri%')),
+    remote.action(action.renderXwidgetFrontEnd('%$selector%', '%$widgetId%'), '%$frontend%'),
     remote.action({
       action: rx.pipe(
         source.remote({
@@ -129,7 +143,7 @@ component('remote.distributedWidget', {
           jbm: byUri('%$frontEndUri%')
         }),
         widget.headless('%$control()%', '%$widgetId%'),
-        sink.action(remote.action(action.updateFrontEnd('%%'), byUri('%$frontEndUri%')))
+        sink.action(remote.action(action.updateFrontEnd('%%'), byUri('%$frontEndUri%'), { oneway: true }))
       ),
       jbm: '%$backend%',
       require: () => {$: 'rx<>source.callbag'}
@@ -170,20 +184,6 @@ component('remote.widget', {
   })
 })
 
-component('action.renderXwidget', {
-  type: 'action',
-  params: [
-    {id: 'selector', as: 'string'},
-    {id: 'widgetId', as: 'string'}
-  ],
-  impl: (ctx, selector, widgetId) => {
-    const elem = selector ? jb.ui.widgetBody(ctx).querySelector(selector) : jb.ui.widgetBody(ctx)
-    if (!elem)
-      return jb.logError('renderXwidget - can not find top elem', { body: jb.ui.widgetBody(ctx), ctx, selector })
-    jb.ui.renderWidget({ $: 'control<>widget.frontEndCtrl', widgetId: widgetId }, elem)
-  },
-})
-
 // headless
 
 extension('ui', 'headless', {
@@ -203,6 +203,7 @@ extension('ui', 'headless', {
     jb.ui.headless[widgetId] = {} // used by styles
     const top = jb.ui.h(cmp)
     const body = jb.ui.h('div', { widgetTop: true, headless: true, widgetId, ...(reqCtx.vars.remoteUri && { remoteUri: reqCtx.vars.remoteUri }) }, top)
+    body.headless = true
     top.parentNode = body
     jb.ui.headless[widgetId].body = body
     jb.log('headless widget created', { widgetId, body })
@@ -242,7 +243,7 @@ extension('ui', 'headless', {
     }
   },
   destroyHeadless(widgetId) {
-    jb.ui.destroyAllDialogEmitters()
+    //jb. ui.destroyAllDialogEmitters()
     jb.ui.unmount(jb.ui.headless[widgetId])
     delete jb.ui.headless[widgetId]
   }
@@ -279,7 +280,7 @@ component('widget.headless', {
 
       userReqIn(0, function headless(t, d) {
         if (t == 0) {
-          jb.log('headless widget register FE', { widgetId, t, d, ctx })
+          jb.log('headless widget register FE talkback', { widgetId, t, d, ctx })
           talkback.push(d)
         }
         if (t === 2) {

@@ -42,14 +42,14 @@ extension('codemirror', {
 			.jb-codemirror-editorCss { position:relative; }
 			.jb-codemirror-fullScreenEditorCss { padding-top: 20px, display: block; position: fixed !important; top: 0; left: 0; z-index: 99999999; }
 		`;
-		if (!jb.ui.find(document,'#jb_codemirror_fullscreen')[0])
+		if (!document.querySelector('#jb_codemirror_fullscreen'))
 			jb.ui.addHTML(document.head,`<style id="jb_codemirror_fullscreen" type="text/css">${css}</style>`)
 	
 		const jEditorElem = editor.getWrapperElement()
 		  jb.ui.addClass(jEditorElem,'jb-codemirror-editorCss')
 		const prevLineNumbers = editor.getOption('lineNumbers')
 		  jb.ui.addHTML(jEditorElem,fullScreenBtnHtml)
-		const fullScreenButton =jb.ui.find(jEditorElem,'.jb-codemirror-fullScreenBtnCss')[0]
+		const fullScreenButton =jb.ui.querySelectorAll(jEditorElem,'.jb-codemirror-fullScreenBtnCss')[0]
 		fullScreenButton.onclick = _ => switchMode()
 		fullScreenButton.onmouseenter = _ => jb.ui.removeClass(fullScreenButton,'hidden')
 		fullScreenButton.onmouseleave = _ => jb.ui.addClass(fullScreenButton,'hidden')
@@ -72,7 +72,7 @@ extension('codemirror', {
 				editor.setOption('lineNumbers', prevLineNumbers)
 				editor.setSize(width, height)
 				editor.refresh()
-				jEditorElem.removeChild(jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0])
+				jEditorElem.removeChild(jb.ui.querySelectorAll(jEditorElem,'.jb-codemirror-escCss')[0])
 				jEditorElem.style.width = null
 			} else if (!onlyBackToNormal) {
 				jb.ui.addClass(jEditorElem,fullScreenClass)
@@ -82,7 +82,7 @@ extension('codemirror', {
 				if (lineNumbers) editor.setOption('lineNumbers', true)
 				editor.refresh()
 				jb.ui.addHTML(jEditorElem,escText)
-				  jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0].onclick = _ => switchMode(true)
+				  jb.ui.querySelectorAll(jEditorElem,'.jb-codemirror-escCss')[0].onclick = _ => switchMode(true)
 				jb.ui.focus(editor,'code mirror',ctx)
 			}
 		}
@@ -126,16 +126,9 @@ component('editableText.codemirror', {
     method('onCtrlEnter', call('onCtrlEnter')),
     frontEnd.init((ctx,vars) => ! jb.ui.hasClass(vars.el, 'jb-textarea-alternative-for-codemirror')
 		 && jb.codemirror.injectCodeMirror(ctx,vars)),
-    frontEnd.onRefresh((ctx,vars) => { 
-		const {text,cmp} = vars
-		if (!cmp.editor)
-			jb.codemirror.injectCodeMirror(ctx,vars);
-		text != null && cmp.editor && cmp.editor.setValue(text) 
-	}),
-    method('writeText', writeValue('%$$model/databind()%', '%%')),
+    method('writeText', (ctx,{cmp}) => jb.ui.writeFieldData(ctx,cmp,ctx.data,true)),
     frontEnd.flow(
-      source.callbag(({},{cmp}) => jb.callbag.create(obs=> cmp.editor && cmp.editor.on('change', () => cmp.frontEndStatus == 'ready' && obs(cmp.editor.getValue())))),
-      rx.takeUntil('%$cmp/destroyed%'),
+      source.codeMirrorText(),
       rx.debounceTime('%$debounceTime%'),
       rx.distinctUntilChanged(),
       sink.BEMethod('writeText', '%%')
@@ -143,6 +136,27 @@ component('editableText.codemirror', {
     css(({},{},{height}) => `{width: 100% }
 		>div { box-shadow: none !important; ${jb.ui.propWithUnits('height',height)} !important}`)
   )
+})
+
+component('source.codeMirrorText', {
+  type: 'rx',
+  impl: ctx => (start, sink) => {
+		const {cmp} = ctx.vars
+		if (!cmp.editor) 
+			return jb.logError('codemirror - no editor is available for change listener',{cmp,ctx})
+		if (!cmp.state.frontEndStatus == 'ready') 
+			return jb.logError('codemirror - frontEndStatus status not ready for change listener',{state: ''+ cmp.state, cmp,ctx})
+
+		if (start !== 0) return
+		function handler() { sink(1, cmp.editor.getValue()) }
+		sink(0, t => {
+			if (t != 2) return
+			jb.log('codemirror unregister change listener',{ctx})
+			cmp.editor.off('change', handler)
+		})
+		jb.log('codemirror register change listener',{ctx})
+		cmp.editor.on('change', handler)
+	}
 })
 
 component('codemirror.textEditorKeys', {
@@ -217,12 +231,6 @@ component('text.codemirror', {
     frontEnd.var('_enableFullScreen', '%$enableFullScreen%'),
     frontEnd.var('formatText', '%$formatText%'),
     frontEnd.init((ctx,vars) => jb.codemirror.injectCodeMirror(ctx,vars)),
-    frontEnd.onRefresh((ctx,vars) => { 
-		const {text,cmp} = vars
-		if (!cmp.editor)
-			jb.codemirror.injectCodeMirror(ctx,vars);
-		text != null && cmp.editor && cmp.editor.setValue(text) 
-	}),
     css(({},{},{height}) => `{width: 100%}
 		>div { box-shadow: none !important; ${jb.ui.propWithUnits('height',height)} !important}`)
   )

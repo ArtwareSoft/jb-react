@@ -172,11 +172,11 @@ component('studio.openNewProfileDialog', {
     features: [
       css.height('520', 'hidden', { minMax: 'min' }),
       css.width('450', 'hidden'),
-      dialogFeature.closeWhenClickingOutside(),
+      closeWhenClickingOutside(),
       css('~ .mdc-text-field { background-color: inherit }'),
-      dialogFeature.dragTitle('new %$type%', true),
+      dragTitle('new %$type%', true),
       studio.nearLauncherPosition(),
-      dialogFeature.autoFocusOnFirstInput(),
+      autoFocusOnFirstInput(),
       dialogFeature.onClose(call('onClose'))
     ]
   })
@@ -224,8 +224,8 @@ component('studio.openPickProfile', {
       css.height('520', 'hidden', { minMax: 'min' }),
       css.width('450', 'hidden'),
       css('~ .mdc-text-field { background-color: inherit }'),
-      dialogFeature.closeWhenClickingOutside(),
-      dialogFeature.autoFocusOnFirstInput(),
+      closeWhenClickingOutside(),
+      autoFocusOnFirstInput(),
       css.padding({ right: '20' }),
       feature.initValue('%$dialogData/originalVal%', pipeline(tgp.val('%$path%'), property('$'))),
       dialogFeature.onClose(If(not('%%'), tgp.setComp('%$path%', '%$dialogData/originalVal%')))
@@ -300,7 +300,7 @@ component('studio.openNewProfile', {
     }),
     style: dialog.dialogOkCancel(),
     onOK: call('onOK'),
-    features: [dialogFeature.autoFocusOnFirstInput(), dialogFeature.maxZIndexOnClick(), dialogFeature.dragTitle()]
+    features: [autoFocusOnFirstInput(), maxZIndexOnClick(), dragTitle()]
   })
 })
 
@@ -357,7 +357,7 @@ component('studio.insertControlMenu', {
           }),
           style: dialog.dialogOkCancel(),
           onOK: If('%$studio/htmlToPaste%', tgp.insertControl(studio.htmlToControl('%$studio/htmlToPaste%'), studio.currentProfilePath())),
-          features: dialogFeature.dragTitle()
+          features: dragTitle()
         }),
         shortcut: ''
       }),

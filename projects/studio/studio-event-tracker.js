@@ -321,7 +321,7 @@ component('eventTracker.elemInInspectedJb', {
     {id: 'selector'}
   ],
   impl: (ctx,selector) => {
-    const elem = selector != '#' && jb.ui.find(jb.frame.document,selector)[0]
+    const elem = selector != '#' && jb.ui.querySelectorAll(jb.frame.document,selector)[0]
     jb.log('eventTracker elemInInspectedJb',{ctx,selector,elem})
     return elem
   }
@@ -375,7 +375,7 @@ component('eventTracker.highlightDialogStyle', {
   impl: customStyle({
     template: ({},{contentComp},h) => h('div.jb-dialog jb-popup',{},h(contentComp)),
     css: '{ display: block; position: absolute; background: transparent}',
-    features: [dialogFeature.maxZIndexOnClick(), dialogFeature.closeWhenClickingOutside()]
+    features: [maxZIndexOnClick(), closeWhenClickingOutside()]
   })
 })
 

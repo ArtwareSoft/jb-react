@@ -335,7 +335,7 @@ component('menu.isRelevantMenu', {
   impl: ctx => {
     const key = ctx.data.keyCode
     const el = ctx.vars.cmp.base
-    const menus = jb.ui.find(ctx,'[menuDepth]').filter(el=>jb.ui.hasClass(el,'jb-itemlist'))
+    const menus = jb.ui.querySelectorAll(jb.ui.widgetBody(ctx),'[menuDepth]').filter(el=>jb.ui.hasClass(el,'jb-itemlist'))
     const maxDepth = menus.reduce((max,el) => Math.max(max,+el.getAttribute('menudepth')),0)
     const depth = +el.getAttribute('menudepth') || 0
     const isSelected = jb.ui.parents(el,{includeSelf: true}).find(el=>jb.ui.hasClass(el,'selected'))
@@ -394,7 +394,7 @@ component('menuStyle.popupThumb', {
       menu.mdcRippleEffect(),
       frontEnd.flow(
         source.frontEndEvent('mouseenter'),
-        rx.filter(ctx => jb.ui.find(ctx,'.pulldown-mainmenu-popup')[0]),
+        rx.filter(ctx => jb.ui.querySelectorAll(jb.ui.widgetBody(ctx),'.pulldown-mainmenu-popup')[0]),
         sink.BEMethod('openNewPopup')
       )
     ]
@@ -412,11 +412,11 @@ component('dialog.contextMenuPopup', {
     template: ({},{contentComp,toolbar},h) => h('div.jb-dialog jb-popup context-menu-popup', 
       { class: toolbar ? 'toolbar-popup' : 'pulldown-mainmenu-popup'}, h(contentComp)),
     features: [
-      dialogFeature.uniqueDialog('%$optionsParentId%'),
-      dialogFeature.maxZIndexOnClick(),
-      dialogFeature.closeWhenClickingOutside(),
-      dialogFeature.cssClassOnLaunchingElement(),
-      dialogFeature.nearLauncherPosition({ offsetTop: '%$offsetTop%', rightSide: '%$rightSide%' })
+      unique('%$optionsParentId%'),
+      maxZIndexOnClick(),
+      closeWhenClickingOutside(),
+      cssClassOnLaunchingElement(),
+      nearLauncherPosition({ offsetTop: '%$offsetTop%', rightSide: '%$rightSide%' })
     ]
   })
 })

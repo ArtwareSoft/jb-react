@@ -1,16 +1,21 @@
 dsl('test')
 
-// uiAction works in both uiTest and uiFrontEndTest. 
+// uiAction works in both uiTest and browserTest. 
 // uiAction uses ctx.vars.elemToTest to decide whether to return a sourceCb of events (uiTest) or promise (uiFETest)
 
 extension('test','uiActions', {
   activateFEHandlers(elem,type,ev,ctx) {
     //elem._component && elem._component.enrichUserEvent(ev)
+    const { emulateFrontEndInTest } = ctx.vars
+    if (!emulateFrontEndInTest)
+      return jb.ui.rawEventToUserRequest(ev,{ctx})
+
     const currentTarget = [elem, ...jb.ui.parents(elem)].find(x=>jb.path(x.handlers,type))
     if (currentTarget)
       (jb.path(currentTarget.handlers,type) || []).forEach(h=>h({...ev,currentTarget}))
     else
       jb.log(`uiTest can not find event handler for ${type}`,{elem,ev,ctx})
+
     return Promise.resolve()
   }
 })
@@ -18,9 +23,10 @@ extension('test','uiActions', {
 component('action', {
   type: 'ui-action',
   params: [
-    {id: 'action', type: 'action<>', dynamic: true}
+    {id: 'action', type: 'action<>', dynamic: true},
+    {id: 'FEContext', as: 'boolean', type: 'boolean<>', byName: true}
   ],
-  impl: '%$action()%'
+  impl: (ctx,action,FEContext) => action(ctx.setVars({headlessWidget: !FEContext, headlessWidgetId: FEContext ? '' : ctx.vars.widgetId}))
 })
 
 component('waitFor', {
@@ -29,9 +35,13 @@ component('waitFor', {
     {id: 'check', dynamic: true},
     {id: 'logOnError', as: 'string', dynamic: true}
   ],
-  impl: action(
-    waitFor('%$check()%', { timeout: firstSucceeding('%$uiActionsTimeout%',3000), logOnError: '%$logOnError()%' })
-  )
+  impl: action({
+    action: waitFor('%$check()%', {
+      timeout: firstSucceeding('%$uiActionsTimeout%',3000),
+      logOnError: '%$logOnError()%'
+    }),
+    FEContext: true
+  })
 })
 
 component('waitForPromise', {
@@ -142,7 +152,7 @@ component('waitForText', {
     {id: 'text', as: 'string'}
   ],
   impl: waitFor((ctx,{},{text}) => {
-    const body = jb.ui.widgetBody(ctx.setVars({FEEMulator: true})) // look at FE
+    const body = jb.ui.widgetBody(ctx)
     const lookin = typeof body.outerHTML == 'function' ? body.outerHTML() : body.outerHTML
     return lookin.indexOf(text) != -1
   })
@@ -154,11 +164,8 @@ component('waitForSelector', {
     {id: 'selector', as: 'string'}
   ],
   impl: waitFor({
-    check: (ctx,{elemToTest, useFrontEndInTest},{selector}) => {
-    const ctxToUse = useFrontEndInTest ? ctx.setVars({FEEMulator: true}) : ctx
-    const elem = jb.ui.elemOfSelector(selector,ctxToUse)
-
-  //  const elem = jb.ui.elemOfSelector(selector,ctx)
+    check: (ctx,{elemToTest, emulateFrontEndInTest},{selector}) => {
+    const elem = jb.ui.elemOfSelector(selector,ctx)
     const cmpElem = elem && jb.ui.closestCmpElem(elem)
     if (!cmpElem) return false
     // if FETest, wait for the frontEnd cmp to be in ready state
@@ -185,8 +192,8 @@ component('waitForNextUpdate', {
     if (ctx.vars.elemToTest) return resolve() // maybe should find the widget
     const startTime = new Date().getTime()
     let done = false
-    const { updatesCounterAtBeginUIActions, useFrontEndInTest, widgetId} = ctx.vars
-    const widget = jb.ui.headless[widgetId] || jb.ui.FEEmulator[widgetId]
+    const { updatesCounterAtBeginUIActions, widgetId} = ctx.vars
+    const widget = jb.ui.headless[widgetId] || jb.ui.FEEmulator[widgetId] 
     if (!widget) {
       jb.logError('uiTest waitForNextUpdate can not find widget',{ctx, widgetId})
       return resolve()
@@ -203,7 +210,7 @@ component('waitForNextUpdate', {
     }
     const renderingUpdates = ctx.vars.testRenderingUpdate
 
-    const userRequestSubject = useFrontEndInTest && jb.callbag.subscribe(userRequest => {
+    const userRequestSubject = jb.callbag.subscribe(userRequest => {
       if (done) return
       done = true
       userRequestSubject.dispose()
@@ -241,23 +248,22 @@ component('setText', {
   ],
   impl: uiActions(
     waitForSelector('%$selector%'),
-    (ctx,{elemToTest,useFrontEndInTest},{value,selector}) => {
-          const ctxToUse = useFrontEndInTest ? ctx.setVars({FEEMulator: true}) : ctx
-          const elem = selector ? jb.ui.elemOfSelector(selector,ctxToUse) : elemToTest
-          jb.ui.findIncludeSelf(elem,'input,textarea').forEach(e=>e.value= value)
-          const widgetId = jb.ui.parentWidgetId(elem) || ctx.vars.widgetId
-          const ev = { type: 'blur', currentTarget: elem, widgetId, target: {value}}
-          jb.log('uiTest setText',{ev,elem,selector,ctx})
-          if (elemToTest) 
-            jb.ui.handleCmpEvent(ev)
-          else {
-            if (useFrontEndInTest && elem instanceof jb.ui.VNode)
-                elem.attributes.value = value
-            return jb.ui.rawEventToUserRequest(ev,{ctx})
-          }
-      },
-    If('%$useFrontEndInTest%', uiActions(delay(1), FEUserRequest(), If(not('%$doNotWaitForNextUpdate%'), waitForNextUpdate()))),
-    If(and(not('%$useFrontEndInTest%'), not('%$remoteUiTest%'), not('%$doNotWaitForNextUpdate%')), waitForNextUpdate())
+    (ctx,{elemToTest},{value,selector}) => {
+        const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : elemToTest
+        jb.ui.findIncludeSelf(elem,'input,textarea').forEach(e=>e.value= value)
+        const widgetId = jb.ui.parentWidgetId(elem) || ctx.vars.widgetId
+        const type = 'blur'
+        const ev = { type, currentTarget: elem, widgetId, target: {value}}
+        jb.log('uiTest setText',{ev,elem,selector,ctx})
+        if (elemToTest) {
+          jb.ui.handleCmpEvent(ev)
+        } else {
+          //elem.attributes.value = value
+          return jb.test.activateFEHandlers(elem,type,ev,ctx)
+        }
+    },
+    If('%$emulateFrontEndInTest%', uiActions(delay(1), FEUserRequest(), If(not('%$doNotWaitForNextUpdate%'), waitForNextUpdate()))),
+    If(and(not('%$emulateFrontEndInTest%'), not('%$remoteUiTest%'), not('%$doNotWaitForNextUpdate%')), waitForNextUpdate())
   )
 })
 
@@ -273,30 +279,35 @@ component('click', {
   impl: uiActions(
     Var('originatingUIAction', 'click{? at %$selector%?}'),
     waitForSelector('%$selector%'),
-    (ctx,{elemToTest, useFrontEndInTest},{selector, methodToActivate, doubleClick, expectedEffects}) => {
+    (ctx,{elemToTest, emulateFrontEndInTest},{selector, methodToActivate, doubleClick, expectedEffects}) => {
       const type = doubleClick ? 'dblclick' : 'click'
-      const ctxToUse = useFrontEndInTest ? ctx.setVars({FEEMulator: true}) : ctx
-      const elem = selector ? jb.ui.elemOfSelector(selector,ctxToUse) : elemToTest
+      const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : elemToTest
       jb.log('uiTest uiAction click',{elem,selector,ctx})
       if (!elem) 
         return jb.logError(`click can not find elem ${selector}`, {ctx,elemToTest} )
       expectedEffects && expectedEffects.setLogs()
       const widgetId = jb.ui.parentWidgetId(elem) || ctx.vars.widgetId
       const ev = { type, currentTarget: elem, widgetId, target: elem }
-      if (!elemToTest && !useFrontEndInTest) 
-        return jb.ui.rawEventToUserRequest(ev, {specificMethod: methodToActivate, ctx})
-      if (!elemToTest && useFrontEndInTest)
-        return jb.test.activateFEHandlers(elem,type,ev,ctx)
+      if (!elemToTest && !emulateFrontEndInTest)
+        return jb.ui.rawEventToUserRequest({ type, target: elem, currentTarget: elem, widgetId}, {specificMethod: methodToActivate, ctx})
 
       if (elemToTest) 
         elem.click()
       else
-        return jb.ui.rawEventToUserRequest({ type, target: elem, currentTarget: elem, widgetId}, {specificMethod: methodToActivate, ctx})
+        return jb.test.activateFEHandlers(elem,type,ev,ctx)
     },
-    If('%$useFrontEndInTest%', uiActions(delay(1), FEUserRequest(), If(not('%$doNotWaitForNextUpdate%'), waitForNextUpdate()))),
-    If(and(not('%$useFrontEndInTest%'), not('%$remoteUiTest%'), not('%$doNotWaitForNextUpdate%')), waitForNextUpdate()),
+    If('%$emulateFrontEndInTest%', uiActions(delay(1), FEUserRequest(), If(not('%$doNotWaitForNextUpdate%'), waitForNextUpdate()))),
+    If(and(not('%$emulateFrontEndInTest%'), not('%$remoteUiTest%'), not('%$doNotWaitForNextUpdate%')), waitForNextUpdate()),
     If('%$expectedEffects%', '%$expectedEffects/check()%')
   )
+})
+
+component('selectTab', {
+  type: 'ui-action',
+  params: [
+    {id: 'tabName', as: 'string'},
+  ],
+  impl: click('[tabname="%$tabName%"]')
 })
   
 component('keyboardEvent', {
@@ -306,16 +317,15 @@ component('keyboardEvent', {
     {id: 'type', as: 'string', options: 'keypress,keyup,keydown,blur'},
     {id: 'keyCode', as: 'number'},
     {id: 'keyChar', as: 'string'},
-    {id: 'ctrl', as: 'string', options: ['ctrl','alt']},
+    {id: 'ctrl', as: 'string', options: 'ctrl,alt'},
     {id: 'doNotWaitForNextUpdate', as: 'boolean', type: 'boolean'},
     {id: 'expectedEffects', type: 'ui-action-effects'}
   ],
   impl: uiActions(
     Var('originatingUIAction', 'keyboardEvent %$keyChar% {? at %$selector%?}'),
     waitForSelector('%$selector%'),
-    (ctx,{elemToTest, useFrontEndInTest},{selector,type,keyCode,keyChar,ctrl,expectedEffects}) => {
-      const ctxToUse = useFrontEndInTest ? ctx.setVars({FEEMulator: true}) : ctx
-      const elem = selector ? jb.ui.elemOfSelector(selector,ctxToUse) : elemToTest
+    (ctx,{elemToTest},{selector,type,keyCode,keyChar,ctrl,expectedEffects}) => {
+      const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : elemToTest
       jb.log('uiTest uiAction keyboardEvent',{elem,selector,type,keyCode,keyChar,ctx})
       if (!elem)
         return jb.logError('can not find elem for test uiAction keyboardEvent',{ elem,selector,type,keyCode,ctx})
@@ -323,24 +333,20 @@ component('keyboardEvent', {
 
       const widgetId = jb.ui.parentWidgetId(elem) || ctx.vars.widgetId
       const ev = { widgetId, type, keyCode , ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt', key: keyChar, target: elem, currentTarget: elem}
-      if (!elemToTest && !useFrontEndInTest) 
-        return jb.ui.rawEventToUserRequest(ev, {ctx})
-      if (!elemToTest && useFrontEndInTest) {
+      if (!elemToTest) {
         elem.value = elem.value || ''
         if (type == 'keyup')
           elem.value += keyChar
         return jb.test.activateFEHandlers(elem,type,ev,ctx)
+      } else {
+        const e = new KeyboardEvent(type,{ ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt', key: keyChar })
+        Object.defineProperty(e, 'keyCode', { get : _ => keyChar ? keyChar.charCodeAt(0) : keyCode })
+        Object.defineProperty(e, 'target', { get : _ => elem })
+        elem.dispatchEvent(e)
       }
-    
-      if (keyChar && type == 'keyup')
-        elem.value = elem.value + keyChar
-      const e = new KeyboardEvent(type,{ ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt', key: keyChar })
-      Object.defineProperty(e, 'keyCode', { get : _ => keyChar ? keyChar.charCodeAt(0) : keyCode })
-      Object.defineProperty(e, 'target', { get : _ => elem })
-      elem.dispatchEvent(e)
     },
-    If('%$useFrontEndInTest%', uiActions(delay(1), FEUserRequest(), If(not('%$doNotWaitForNextUpdate%'), waitForNextUpdate()))),
-    If(and(not('%$useFrontEndInTest%'), not('%$remoteUiTest%'), not('%$doNotWaitForNextUpdate%')), waitForNextUpdate()),
+    If('%$emulateFrontEndInTest%', uiActions(delay(1), FEUserRequest(), If(not('%$doNotWaitForNextUpdate%'), waitForNextUpdate()))),
+    If(and(not('%$emulateFrontEndInTest%'), not('%$remoteUiTest%'), not('%$doNotWaitForNextUpdate%')), waitForNextUpdate()),
     If('%$expectedEffects%', '%$expectedEffects/check()%')
   )
 })
@@ -356,10 +362,9 @@ component('changeEvent', {
   impl: uiActions(
     Var('originatingUIAction', 'changeEvent to %$value% {? at %$selector%?}'),
     waitForSelector('%$selector%'),
-    (ctx,{elemToTest, useFrontEndInTest},{selector, value,expectedEffects}) => {
+    (ctx,{elemToTest},{selector, value,expectedEffects}) => {
       const type = 'change'
-      const ctxToUse = useFrontEndInTest ? ctx.setVars({FEEMulator: true}) : ctx
-      const elem = selector ? jb.ui.elemOfSelector(selector,ctxToUse) : elemToTest
+      const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : elemToTest
       jb.log('uiTest uiAction changeEvent',{elem,selector,type,ctx})
       if (!elem)
         return jb.logError('can not find elem for test uiAction keyboardEvent',{ elem,selector,type,ctx})
@@ -367,20 +372,18 @@ component('changeEvent', {
 
       const widgetId = jb.ui.parentWidgetId(elem) || ctx.vars.widgetId
       const ev = { widgetId, type, target: elem, currentTarget: elem }
-      if (!elemToTest && !useFrontEndInTest) 
-        return jb.ui.rawEventToUserRequest(ev, {ctx})
-      if (!elemToTest && useFrontEndInTest) {
+      if (!elemToTest) {
         elem.value = value
         return jb.test.activateFEHandlers(elem,type,ev,ctx)
+      } else {
+        const e = new Event(type)
+        Object.defineProperty(e, 'target', { get : _ => elem })
+        Object.defineProperty(e, 'value', { get : _ => value })
+        elem.dispatchEvent(e)
       }
-    
-      const e = new Event(type)
-      Object.defineProperty(e, 'target', { get : _ => elem })
-      Object.defineProperty(e, 'value', { get : _ => value })
-      elem.dispatchEvent(e)
     },
-    If('%$useFrontEndInTest%', uiActions(delay(1), FEUserRequest(), If(not('%$doNotWaitForNextUpdate%'), waitForNextUpdate()))),
-    If(and(not('%$useFrontEndInTest%'), not('%$remoteUiTest%'), not('%$doNotWaitForNextUpdate%')), waitForNextUpdate()),
+    If('%$emulateFrontEndInTest%', uiActions(delay(1), FEUserRequest(), If(not('%$doNotWaitForNextUpdate%'), waitForNextUpdate()))),
+    If(and(not('%$emulateFrontEndInTest%'), not('%$remoteUiTest%'), not('%$doNotWaitForNextUpdate%')), waitForNextUpdate()),
     If('%$expectedEffects%', '%$expectedEffects/check()%')
   )
 })
@@ -419,7 +422,9 @@ component('runMethod', {
       const elem = jb.ui.elemOfSelector(selector,ctx)
       const cmpElem = elem && jb.ui.closestCmpElem(elem)
       jb.log('uiTest run method',{method,cmpElem,elem,ctx})
-      jb.ui.runBEMethodByElem(cmpElem,method,Data,ctxVars ? {...ctx.vars, ...ctxVars} : ctx.vars)
+      const cmpId = cmpElem.getAttribute('cmp-id')
+      jb.ui.cmps[cmpId].runBEMethod(method,Data,ctxVars ? {...ctx.vars, ...ctxVars} : ctx.vars)
+      //jb.ui.runBEMethodByElem(cmpElem,method,Data,ctxVars ? {...ctx.vars, ...ctxVars} : ctx.vars)
     },
     If('%$doNotWaitForNextUpdate%', '', waitForNextUpdate())
   )

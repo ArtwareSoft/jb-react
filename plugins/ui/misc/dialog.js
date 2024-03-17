@@ -1,3 +1,63 @@
+extension('ui','dialog', {
+  dialogTopCmp(ctx) {
+      const widgetBody = jb.ui.widgetBody(ctx)
+      const elem = widgetBody.querySelector(':scope>.jb-dialogs')
+      if (elem) 
+        return jb.ui.cmps[elem.getAttribute('cmp-id')]
+      const dialogsCmp = ctx.run({$: 'control<>dialog.dialogsTop'})
+      const vdom = dialogsCmp.renderVdomAndFollowUp()
+      const {headlessWidget, headlessWidgetId, useFrontEndInTest} = ctx.vars
+      if ((headlessWidget || useFrontEndInTest )&& widgetBody instanceof jb.ui.VNode) {
+        jb.log('dialog headless createTop',{vdom,widgetBody})
+        widgetBody.children.push(vdom)
+        vdom.parentNode = widgetBody
+        const delta = { children: { toAppend: [jb.ui.stripVdom(vdom)] }}
+        jb.ui.sendRenderingUpdate(ctx,{delta ,widgetId: headlessWidgetId})
+      } else {
+        jb.ui.render(vdom,widgetBody)
+        jb.log('dialog dom createTop',{vdom,widgetBody})
+      }
+      // jb.ui.render(vdom,widgetBody,{ctx})
+      // if (ctx.vars.widgetId && jb.ui.FEEmulator)
+      //   jb.ui.FEEmulator[ctx.vars.widgetId].body.appendChild(jb.ui.cloneVNode(widgetBody.querySelector(':scope>.jb-dialogs')))
+      return dialogsCmp
+    }
+})
+
+component('dialog.dialogsTop', {
+  type: 'control',
+  params: [
+    {id: 'style', type: 'dialogs-style', defaultValue: dialogs.init(), dynamic: true}
+  ],
+  impl: ctx => jb.ui.ctrl(ctx)
+})
+
+component('dialogs.init', {
+  type: 'dialogs-style',
+  impl: customStyle({
+    template: ({},{},h) => h('div.jb-dialogs'),
+    features: [
+      method('open dialog', runActions(
+        Var('currDialogElem', querySelector('[id="%id%"]')),
+        Var('dialogVdom', '%calcVdom()%'),
+        If({
+          condition: '%$currDialogElem%',
+          then: ui.applyNewVdom({ elem: '%$currDialogElem%', vdom: '%$dialogVdom%', strongRefresh: true }),
+          Else: ui.applyDeltaToCmp({
+            delta: obj(prop('children', obj(prop('toAppend', list('%$dialogVdom%'))))),
+            cmpId: '%$cmp/cmpId%',
+            assumedVdom: '%$currDialogElem%'
+          })
+        })
+      )),
+      method('close dialog', ui.applyDeltaToCmp({
+        delta: obj(prop('children', obj(prop('deleteCmp', dialogs.cmpIdOfDialog('%%'))))),
+        cmpId: '%$cmp/cmpId%'
+      }))
+    ]
+  })
+})
+
 component('openDialog', {
   type: 'action<>',
   hasSideEffect: true,
@@ -9,50 +69,29 @@ component('openDialog', {
     {id: 'onOK', type: 'action', dynamic: true},
     {id: 'id', as: 'string'},
     {id: 'features', type: 'dialog-feature[]', dynamic: true},
-    {id: 'doOpen', type: 'action', dynamic: true, defaultValue: runActions(dialog.createDialogTopIfNeeded(), action.subjectNext(dialogs.changeEmitter(), obj(prop('open', true), prop('dialog', '%$$dialog%'))))}
   ],
   impl: ctx => {
-	const $dialog = { id: ctx.params.id || `dlg-${ctx.id}`, launcherCmpId: ctx.exp('%$cmp/cmpId%') }
-	const ctxWithDialog = ctx.setVars({
-		$dialog,
-		dialogData: {},
-		formContainer: { err: ''},
-	})
-	$dialog.ctx = ctxWithDialog
-	ctx.params.doOpen(ctxWithDialog)
+    const $dialog = { id: ctx.params.id || `dlg-${ctx.id}`, calcVdom, launcherCmpId: ctx.exp('%$cmp/cmpId%') }
+    const ctxWithDialog = ctx.setVars({ $dialog, dialogData: {}, formContainer: { err: ''} })
+    $dialog.ctx = ctxWithDialog
+    const cmp = jb.ui.ctrl(ctxWithDialog, {$: 'feature<>dialog.init'}) // activate the unique feature that may change the id
+    jb.ui.dialogTopCmp(ctx).runBEMethod('open dialog',$dialog)
+
+    function calcVdom() {
+        return jb.ui.stripVdom(cmp.renderVdomAndFollowUp())
+    }
   }
 })
 
-component('openDialog.probe', {
-	autoGen: true,
-	type: 'action<>',
-  hidden: true,
-	params: jb.utils.getUnresolvedProfile('openDialog','action<>').params,
-	impl: ctx => jb.ui.ctrl(ctx.setVar('$dialog',{}), {$: 'feature<>dialog.init'}).renderVdom(),
-})
-
-component('dialog.init', {
-  type: 'feature',
-  impl: features(
-    calcProp('dummy', ctx => jb.log('dialog init uiComp', {dialog: ctx.vars.$dialog, cmp: ctx.vars.cmp,ctx})),
-    calcProp('title', '%$$model/title()%'),
-    calcProp('contentComp', '%$$model/content%'),
-    calcProp('hasMenu', '%$$model/menu/profile%'),
-    calcProp('menuComp', '%$$model/menu%'),
-    feature.initValue('%$$dialog/cmpId%', '%$cmp/cmpId%', { alsoWhenNotEmpty: true }),
-    htmlAttribute('id', '%$$dialog/id%'),
-    method('dialogCloseOK', dialog.closeDialog(true)),
-    method('dialogClose', dialog.closeDialog(false)),
-    css('z-index: 100')
-  )
-})
-
-component('dialog.buildComp', {
-  type: 'data<>',
+component('unique', {
+  type: 'dialog-feature',
   params: [
-    {id: 'dialog', defaultValue: '%$$dialog%'}
-  ],
-  impl: (ctx,dlg) => jb.ui.ctrl(dlg.ctx, {$: 'feature<>dialog.init'}),
+    {id: 'id', as: 'string', mandatory: true}
+  ], 
+  impl: (ctx,id) => {
+    if (ctx.vars.$dialog) ctx.vars.$dialog.id = id
+    return
+  }
 })
 
 component('inPlaceDialog', {
@@ -68,35 +107,34 @@ component('inPlaceDialog', {
   ],
   impl: ctx => {
 	  const $dialog = { id: ctx.params.id || `dlg-${ctx.id}`, launcherCmpId: ctx.exp('%$cmp/cmpId%') }
-    const ctxWithDialog = ctx.setVars({
-      $dialog,
-      dialogData: {},
-      formContainer: { err: ''},
-    })
+    const ctxWithDialog = ctx.setVars({ $dialog, dialogData: {}, formContainer: { err: ''} })
     $dialog.ctx = ctxWithDialog
     return jb.ui.ctrl(ctxWithDialog, {$: 'feature<>dialog.init'})
   }
 })
 
+component('openDialog.probe', {
+	autoGen: true,
+	type: 'action<>',
+  hidden: true,
+	params: jb.utils.getUnresolvedProfile('openDialog','action<>').params,
+	impl: ctx => jb.ui.ctrl(ctx.setVar('$dialog',{}), {$: 'feature<>dialog.init'}).renderVdom(),
+})
 
-component('dialog.createDialogTopIfNeeded', {
-  type: 'action',
-  impl: ctx => {
-		const widgetBody = jb.ui.widgetBody(ctx)
-		const {headlessWidget, headlessWidgetId, useFrontEndInTest} = ctx.vars
-		if (!widgetBody || widgetBody.querySelector(':scope>.jb-dialogs')) return
-		const vdom = ctx.run({$: 'control<>dialog.dialogTop'}).renderVdomAndFollowUp()
-		if ((headlessWidget || useFrontEndInTest )&& widgetBody instanceof jb.ui.VNode) {
-			jb.log('dialog headless createTop',{vdom,widgetBody})
-			widgetBody.children.push(vdom)
-			vdom.parentNode = widgetBody
-			const delta = { children: { toAppend: [jb.ui.stripVdom(vdom)] }}
-			jb.ui.sendRenderingUpdate(ctx,{delta ,widgetId: headlessWidgetId})
-		} else {
-			jb.ui.render(vdom,widgetBody)
-			jb.log('dialog dom createTop',{vdom,widgetBody})
-		}
-	},
+component('dialog.init', {
+  type: 'feature',
+  impl: features(
+//    calcProp('dummy', ctx => jb.log('dialog init uiComp', {dialog: ctx.vars.$dialog, cmp: ctx.vars.cmp,ctx})),
+    calcProp('title', '%$$model/title()%'),
+    calcProp('contentComp', '%$$model/content%'),
+    calcProp('hasMenu', '%$$model/menu/profile%'),
+    calcProp('menuComp', '%$$model/menu%'),
+    feature.initValue('%$$dialog/cmpId%', '%$cmp/cmpId%', { alsoWhenNotEmpty: true }),
+    htmlAttribute('id', '%$$dialog/id%'),
+    method('dialogCloseOK', dialog.closeDialog(true)),
+    method('dialogClose', dialog.closeDialog(false)),
+    css('z-index: 100')
+  )
 })
 
 component('dialog.closeDialog', {
@@ -114,7 +152,7 @@ component('dialog.closeDialog', {
 		}),
     If({
       condition: or(not('%$OK%'), not('%$formContainer.err%')),
-      then: action.subjectNext(dialogs.changeEmitter(), obj(prop('close', true), prop('dialogId', '%$$dialog/id%')))
+      then: dialog.closeDialogById('%$$dialog/id%')
     })
   ))
 })
@@ -125,21 +163,17 @@ component('dialog.closeDialogById', {
   params: [
     {id: 'id', as: 'string'}
   ],
-  impl: action.subjectNext(dialogs.changeEmitter(), obj(prop('close', true), prop('dialogId', '%$id%')))
+  impl: (ctx,id) => jb.ui.dialogTopCmp(ctx).runBEMethod('close dialog',id)
 })
   
 component('dialog.closeAll', {
   type: 'action',
-  impl: runActionOnItems(dialog.shownDialogs(), dialog.closeDialogById('%%'))
+  impl: runActionOnItems(querySelectorAll('.jb-dialog'), dialog.closeDialogById('%@id%'))
 })
 
 component('dialog.closeAllPopups', {
   type: 'action',
-  impl: runActionOnItems(dialogs.shownPopups(), dialog.closeDialogById('%%'))
-})
-
-component('dialog.shownDialogs', {
-  impl: ctx =>jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog').map(el=> el.getAttribute('id'))
+  impl: runActionOnItems(querySelectorAll('.jb-popup'), dialog.closeDialogById('%@id%'))
 })
 
 component('dialog.isOpen', {
@@ -154,14 +188,10 @@ component('dialogs.cmpIdOfDialog', {
   params: [
     {id: 'id', as: 'string'}
   ],
-  impl: (ctx,id) => jb.ui.find(jb.ui.widgetBody(ctx),`[id="${id}"]`).map(el=> el.getAttribute('cmp-id'))[0]
+  impl: pipeline(querySelectorAll('[id="%$id%"]'),'%@cmp-id%',first())
 })
 
-component('dialogs.shownPopups', {
-  impl: ctx => jb.ui.find(jb.ui.widgetBody(ctx),'.jb-popup').map(el=>el.getAttribute('id'))
-})
-
-component('dialogFeature.modal', {
+component('modal', {
   description: 'blocks all other screen elements',
   type: 'dialog-feature',
   impl: features(
@@ -169,24 +199,6 @@ component('dialogFeature.modal', {
     frontEnd.onDestroy(() => Array.from(document.body.querySelectorAll('>.modal-overlay'))
 			.forEach(el=>document.body.removeChild(el)))
   )
-})
-
-component('dialogFeature.uniqueDialog', {
-  type: 'dialog-feature',
-  params: [
-    {id: 'id', as: 'string'}
-  ],
-  impl: If('%$id%', features(
-    feature.initValue('%$$dialog/id%', '%$id%', { alsoWhenNotEmpty: true }),
-    followUp.flow(
-      source.data(ctx => jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog')),
-      rx.filter(({data},{cmp},{id}) => data.getAttribute('id') == id && data.getAttribute('cmp-id') != cmp.cmpId),
-      rx.map(({data}) => data.getAttribute('cmp-id')),
-      rx.map(obj(prop('closeByCmpId', true), prop('cmpId', '%%'), prop('dialogId', '%$id%'))),
-      rx.log('dialog close uniqueDialog'),
-      sink.subjectNext(dialogs.changeEmitter())
-    )
-  ))
 })
 
 component('source.eventIncludingPreview', {
@@ -200,7 +212,7 @@ component('source.eventIncludingPreview', {
   )
 })
 
-component('dialogFeature.dragTitle', {
+component('dragTitle', {
   type: 'dialog-feature',
   params: [
     {id: 'id', as: 'string'},
@@ -217,7 +229,7 @@ component('dialogFeature.dragTitle', {
 		}),
     frontEnd.var('selector', '%$selector%'),
     frontEnd.var('useSessionStorage', '%$useSessionStorage%'),
-        frontEnd.var('sessionStorageId', '%$$props/sessionStorageId%'),
+    frontEnd.var('sessionStorageId', '%$$props/sessionStorageId%'),
     frontEnd.var('posFromSessionStorage', '%$$props/posFromSessionStorage%'),
     frontEnd.init(({},{el,posFromSessionStorage}) => {
 			if (posFromSessionStorage) {
@@ -226,30 +238,26 @@ component('dialogFeature.dragTitle', {
 			}
 		}),
     frontEnd.prop('titleElem', ({},{el,selector}) => el.querySelector(selector)),
-        frontEnd.flow(
+    frontEnd.flow(
       source.event('mousedown', '%$cmp/titleElem%'),
       rx.takeUntil('%$cmp/destroyed%'),
       rx.var('offset', ({data},{el}) => ({
           left: data.clientX - el.getBoundingClientRect().left,
           top:  data.clientY - el.getBoundingClientRect().top
 			})),
-      rx.flatMap(
-        rx.pipe(
+      rx.flatMap(rx.pipe(
         source.eventIncludingPreview('mousemove'),
         rx.takeWhile('%buttons%!=0'),
         rx.var('ev'),
-                rx.map(({data},{offset}) => ({
+        rx.map(({data},{offset}) => ({
             left: Math.max(0, data.clientX - offset.left),
             top: Math.max(0, data.clientY - offset.top),
   				}))
-      )
-      ),
-      sink.action(
-        runActions(
+      )),
+      sink.action(runActions(
         action.runFEMethod('setPos'),
         If('%$useSessionStorage%', action.setSessionStorage('%$sessionStorageId%', '%%'))
-      )
-      )
+      ))
     )
   )
 })
@@ -262,41 +270,42 @@ component('dialog.default', {
 			  h('button.dialog-close', {onclick: 'dialogClose' },'×'),
 			  h(contentComp),
 		  ]),
-    features: dialogFeature.dragTitle()
+    features: dragTitle()
   })
 })
 
-component('dialogFeature.nearLauncherPosition', {
+component('nearLauncherPosition', {
   type: 'dialog-feature',
   params: [
     {id: 'offsetLeft', as: 'number', dynamic: true, defaultValue: 0},
     {id: 'offsetTop', as: 'number', dynamic: true, defaultValue: 0},
-    {id: 'rightSide', as: 'boolean', type: 'boolean'}
+    {id: 'rightSide', as: 'boolean', type: 'boolean'},
+    {id: 'insideLauncher', as: 'boolean', type: 'boolean'}
   ],
   impl: features(
     calcProp('launcherRectangle', '%$ev/elem/clientRect%'),
     frontEnd.var('launcherRectangle', '%$$props/launcherRectangle%'),
     frontEnd.var('launcherCmpId', '%$$dialog/launcherCmpId%'),
-    frontEnd.var('pos', ({},{},{offsetLeft,offsetTop,rightSide}) => ({offsetLeft: offsetLeft() || 0, offsetTop: offsetTop() || 0,rightSide})),
-    userStateProp('dialogPos', ({},{ev,$props},{offsetLeft,offsetTop,rightSide}) => {
-		if (!ev) return { left: 0, top: 0}
-		const _offsetLeft = offsetLeft() || 0, _offsetTop = offsetTop() || 0
-		if (!$props.launcherRectangle)
-			return { left: _offsetLeft + ev.clientX || 0, top: _offsetTop + ev.clientY || 0}
-		return {
-			left: $props.launcherRectangle.x + _offsetLeft  + (rightSide ? ev.elem.outerWidth : 0), 
-			top:  $props.launcherRectangle.y  + _offsetTop   + ev.elem.outerHeight
-		}
+    frontEnd.var('pos', ({},{},{offsetLeft,offsetTop,rightSide,insideLauncher}) => ({offsetLeft: offsetLeft() || 0, offsetTop: offsetTop() || 0,rightSide,insideLauncher})),
+    userStateProp('dialogPos', ({},{ev,$props},{offsetLeft,offsetTop,rightSide,insideLauncher}) => {
+      if (!ev) return { left: 0, top: 0}
+      const _offsetLeft = offsetLeft() || 0, _offsetTop = offsetTop() || 0
+      if (!$props.launcherRectangle)
+        return { left: _offsetLeft + (ev.clientX || 0), top: _offsetTop + (ev.clientY || 0)}
+      return {
+        left: $props.launcherRectangle.x + _offsetLeft  + (rightSide ? ev.elem.outerWidth : 0), 
+        top:  $props.launcherRectangle.y  + _offsetTop   + (insideLauncher ? 0 : ev.elem.outerHeight)
+      }
 	  }),
     frontEnd.onRefresh(({},{$state,el}) => { 
-		const {top,left} = $state.dialogPos || { top: 0, left: 0}
-		jb.ui.setStyle(el,'top',`${top}px`)
-		jb.ui.setStyle(el,'left',`${left}px`)
+      const {top,left} = $state.dialogPos || { top: 0, left: 0}
+      jb.ui.setStyle(el,'top',`${top}px`)
+      jb.ui.setStyle(el,'left',`${left}px`)
 	  }),
     frontEnd.init((ctx,{cmp,pos,launcherCmpId,elemToTest}) => { // handle launcherCmpId
 		  if (!elemToTest && launcherCmpId && cmp.state.dialogPos.left == 0 && cmp.state.dialogPos.top == 0) {
 			  const el = jb.ui.elemOfCmp(ctx,launcherCmpId)
-			  if (!el) return
+			  if (!el || !el.getBoundingClientRect) return // tests
 			  const launcherRectangle = el.getBoundingClientRect()
 			  const dialogPos = {
 				left: launcherRectangle.x + pos.offsetLeft + (pos.rightSide ? jb.ui.outerWidth(el) : 0), 
@@ -307,17 +316,17 @@ component('dialogFeature.nearLauncherPosition', {
 		  }
 	  }),
     frontEnd.init(({},{cmp,elemToTest}) => { // fixDialogPositionAtScreenEdges
-		if (elemToTest || cmp.state.dialogPos.left == 0 && cmp.state.dialogPos.top == 0) return
-		const dialog = jb.ui.findIncludeSelf(cmp.base,'.jb-dialog')[0]
-		const dialogPos = cmp.state.dialogPos
-		let top,left
-		const padding = 2, dialog_height = jb.ui.outerHeight(dialog), dialog_width = jb.ui.outerWidth(dialog);
-		if (dialogPos.top > dialog_height && dialogPos.top + dialog_height + padding > window.innerHeight + window.pageYOffset)
-			top = dialogPos.top - dialog_height
-		if (dialogPos.left > dialog_width && dialogPos.left + dialog_width + padding > window.innerWidth + window.pageXOffset)
-			left = dialogPos.left - dialog_width
-		if (left || top)
-			cmp.refreshFE({ dialogPos: { top: top || dialogPos.top , left: left || dialogPos.left} })
+      if (elemToTest || cmp.state.dialogPos.left == 0 && cmp.state.dialogPos.top == 0) return
+      const dialog = jb.ui.findIncludeSelf(cmp.base,'.jb-dialog')[0]
+      const dialogPos = cmp.state.dialogPos
+      let top,left
+      const padding = 2, dialog_height = jb.ui.outerHeight(dialog), dialog_width = jb.ui.outerWidth(dialog);
+      if (dialogPos.top > dialog_height && dialogPos.top + dialog_height + padding > window.innerHeight + window.pageYOffset)
+        top = dialogPos.top - dialog_height
+      if (dialogPos.left > dialog_width && dialogPos.left + dialog_width + padding > window.innerWidth + window.pageXOffset)
+        left = dialogPos.left - dialog_width
+      if (left || top)
+        cmp.refreshFE({ dialogPos: { top: top || dialogPos.top , left: left || dialogPos.left} })
 	  })
   )
 })
@@ -330,7 +339,7 @@ component('dialogFeature.onClose', {
   impl: onDestroy(call('action'))
 })
 
-component('dialogFeature.closeWhenClickingOutside', {
+component('closeWhenClickingOutside', {
   type: 'dialog-feature',
   impl: features(
     feature.initValue('%$$dialog.isPopup%', true),
@@ -346,7 +355,7 @@ component('dialogFeature.closeWhenClickingOutside', {
   )
 })
 
-component('dialogFeature.autoFocusOnFirstInput', {
+component('autoFocusOnFirstInput', {
   type: 'dialog-feature',
   params: [
     {id: 'selectText', as: 'boolean', type: 'boolean'}
@@ -354,7 +363,7 @@ component('dialogFeature.autoFocusOnFirstInput', {
   impl: features(
     frontEnd.var('selectText', '%$selectText%'),
     frontEnd.init((ctx,{el,selectText}) => {
-	    const elem = jb.ui.find(el,'input,textarea,select').filter(e => e.getAttribute('type') != 'checkbox')[0]
+	    const elem = jb.ui.querySelectorAll(el,'input,textarea,select').filter(e => e.getAttribute('type') != 'checkbox')[0]
 		if (elem)
 			jb.ui.focus(elem, 'dialog-feature.auto-focus-on-first-input',ctx);
 		if (selectText)
@@ -368,7 +377,7 @@ component('popup.regainCanvasFocus', {
   impl: action.focusOnCmp('regain focus', '%$popupLauncherCanvas/cmpId%')
 })
 
-component('dialogFeature.cssClassOnLaunchingElement', {
+component('cssClassOnLaunchingElement', {
   type: 'dialog-feature',
   description: 'launching element toggles class "dialog-open" if the dialog is open',
   impl: features(
@@ -378,7 +387,7 @@ component('dialogFeature.cssClassOnLaunchingElement', {
   )
 })
 
-component('dialogFeature.maxZIndexOnClick', {
+component('maxZIndexOnClick', {
   type: 'dialog-feature',
   params: [
     {id: 'minZIndex', as: 'number', defaultValue: 100}
@@ -386,7 +395,8 @@ component('dialogFeature.maxZIndexOnClick', {
   impl: features(
     frontEnd.var('minZIndex', '%$minZIndex%'),
     frontEnd.method('setAsMaxZIndex', (ctx,{el,minZIndex}) => {
-			const dialogs = jb.frame.document && Array.from(document.querySelectorAll('.jb-dialog')) || jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog')
+			const dialogs = jb.frame.document && Array.from(document.querySelectorAll('.jb-dialog')) 
+        || jb.ui.querySelectorAll(jb.ui.widgetBody(ctx),'.jb-dialog')
 			const calcMaxIndex = dialogs.filter(dl=>!jb.ui.hasClass(dl, 'jb-popup')).reduce((max, _el) => 
 				Math.max(max,(_el && parseInt(jb.ui.getStyle(_el,'zIndex') || 100)+1) || 100), minZIndex || 100)
 			jb.ui.setStyle(el,'zIndex',calcMaxIndex)
@@ -413,7 +423,7 @@ component('dialog.dialogOkCancel', {
 			]),
 		]),
     css: '>.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }',
-    features: dialogFeature.maxZIndexOnClick()
+    features: maxZIndexOnClick()
   })
 })
 
@@ -463,7 +473,12 @@ component('dialog.popup', {
   impl: customStyle({
     template: ({},{contentComp},h) => h('div.jb-dialog jb-popup',{},h(contentComp)),
     css: '{ position: absolute; background: var(--jb-dropdown-bg); box-shadow: 2px 2px 3px var(--jb-dropdown-shadow); padding: 3px 0; border: 1px solid var(--jb-dropdown-border) }',
-    features: [dialogFeature.maxZIndexOnClick(), dialogFeature.closeWhenClickingOutside(), dialogFeature.cssClassOnLaunchingElement(), dialogFeature.nearLauncherPosition()]
+    features: [
+      maxZIndexOnClick(),
+      closeWhenClickingOutside(),
+      cssClassOnLaunchingElement(),
+      nearLauncherPosition()
+    ]
   })
 })
 
@@ -472,7 +487,7 @@ component('dialog.transparentPopup', {
   impl: customStyle({
     template: ({},{contentComp},h) => h('div.jb-dialog jb-popup',{},h(contentComp)),
     css: '{ position: absolute; padding: 3px 0; }',
-    features: [dialogFeature.maxZIndexOnClick(), dialogFeature.closeWhenClickingOutside(), dialogFeature.cssClassOnLaunchingElement(), dialogFeature.nearLauncherPosition()]
+    features: [maxZIndexOnClick(), closeWhenClickingOutside(), cssClassOnLaunchingElement(), nearLauncherPosition()]
   })
 })
   
@@ -484,64 +499,6 @@ component('dialog.div', {
   })
 })
 
-component('dialogs.changeEmitter', {
-  params: [
-    {id: 'widgetId', defaultValue: '%$headlessWidgetId%'}
-  ],
-  category: 'source',
-  impl: (ctx,_widgetId) => {
-		const widgetId = !ctx.vars.previewOverlay && _widgetId || 'default'
-		jb.ui.dlgEmitters = jb.ui.dlgEmitters || {}
-    const existing = jb.ui.dlgEmitters[widgetId]
-    if (existing) return existing
-    jb.log(`creating dialog subject emitter for widgetId ${widgetId}`, {existing: jb.ui.dlgEmitters[widgetId], ctx})
-		jb.ui.dlgEmitters[widgetId] = ctx.run({$: 'data<>rx.subject', id: `dialog emitter ${widgetId}`, replay: true})
-		return jb.ui.dlgEmitters[widgetId]
-	}
-})
-
-component('dialog.dialogTop', {
-  type: 'control',
-  params: [
-    {id: 'style', type: 'dialogs-style', defaultValue: dialogs.defaultStyle(), dynamic: true}
-  ],
-  impl: ctx => jb.ui.ctrl(ctx)
-})
-
-component('dialogs.defaultStyle', {
-  type: 'dialogs-style',
-  impl: customStyle({
-    template: ({},{},h) => h('div.jb-dialogs'),
-    features: [
-      followUp.flow(
-        source.subject(dialogs.changeEmitter()),
-        rx.filter('%open%'),
-        rx.var('dialogVdom', pipeline(dialog.buildComp('%dialog%'), '%renderVdomAndFollowUp()%')),
-        rx.var('delta', obj(prop('children', obj(prop('toAppend', pipeline('%$dialogVdom%', ({data}) => jb.ui.stripVdom(data))))))),
-        rx.log('open dialog', obj(prop('dialogId', '%dialog/id%'))),
-        sink.applyDeltaToCmp('%$delta%', '%$followUpCmp/cmpId%')
-      ),
-      followUp.flow(
-        source.subject(dialogs.changeEmitter()),
-        rx.filter('%close%'),
-        rx.log('close dialog', obj(prop('dialogId', '%dialogId%'))),
-        rx.var('dlgCmpId', dialogs.cmpIdOfDialog('%dialogId%')),
-        rx.filter('%$dlgCmpId%'),
-        rx.var('delta', obj(prop('children', obj(prop('deleteCmp', '%$dlgCmpId%'))))),
-        rx.log('close dialog', obj(prop('dialogId', '%dialogId%'))),
-        sink.applyDeltaToCmp('%$delta%', '%$followUpCmp/cmpId%')
-      ),
-      followUp.flow(
-        source.subject(dialogs.changeEmitter()),
-        rx.filter('%closeByCmpId%'),
-        rx.var('delta', obj(prop('children', obj(prop('deleteCmp', '%cmpId%'))))),
-        rx.log('close dialog', obj(prop('dialogId', '%dialogId%'))),
-        sink.applyDeltaToCmp('%$delta%', '%$followUpCmp/cmpId%')
-      )
-    ]
-  })
-})
-
 component('popupLocation', {
   type: 'dialog-feature<>',
   impl: templateModifier(({},{vdom}) => { 
@@ -549,13 +506,4 @@ component('popupLocation', {
     if (id && !jb.utils.sessionStorage(id))
       vdom.addClass(`default-location ${id}`)
   })
-})
-
-extension('ui','dialog' , {
-	destroyAllDialogEmitters: () => {
-		Object.keys(jb.ui.dlgEmitters||{}).forEach(k=>{
-			jb.ui.dlgEmitters[k].trigger.complete()
-			delete jb.ui.dlgEmitters[k]
-		})
-	}
 })

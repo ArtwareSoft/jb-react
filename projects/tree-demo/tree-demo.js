@@ -25,7 +25,7 @@ component('treeDemo.rightClick', {
       nodeModel: tree.jsonReadOnly('%$personWithAddress%', 'personWithAddress'),
       features: [
         tree.selection({
-          onRightClick: openDialog({title: 'hello', features: dialogFeature.nearLauncherPosition({})})
+          onRightClick: openDialog({title: 'hello', features: nearLauncherPosition({})})
         }),
         tree.keyboardSelection({})
       ]

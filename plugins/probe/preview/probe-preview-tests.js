@@ -70,7 +70,7 @@ component('probePreviewTest.addCss', {
     ),
     expectedResult: contains('color: green'),
     uiAction: uiActions(waitForText('hello'), click()),
-    useFrontEnd: true
+    emulateFrontEnd: true
   })
 })
 
@@ -92,7 +92,7 @@ component('probePreviewTest.changeCss', {
       })
     ),
     uiAction: uiActions(waitForText('hello'), click()),
-    useFrontEnd: true
+    emulateFrontEnd: true
   })
 })
 
@@ -144,7 +144,7 @@ component('probePreviewTest.changeCss', {
 // })
 
 // component('FETest.workerPreviewTest.suggestions.select', {
-//   impl: uiFrontEndTest({
+//   impl: browserTest({
 //     control: group(studio.propertyPrimitive('control<>sampleProject.main~impl~controls~0~text'), probe.remoteCircuitPreview()),
 //     runBefore: writeValue('%$probe/defaultMainCircuit%', 'control<>sampleProject.main'),
 //     uiAction: uiActions(
@@ -163,7 +163,7 @@ component('probePreviewTest.changeCss', {
 // })
 
 // component('FETest.workerPreviewTest.suggestions', {
-//   impl: uiFrontEndTest({
+//   impl: browserTest({
 //     control: group(probe.remoteCircuitPreview(), studio.propertyPrimitive('control<>sampleProject.main~impl~controls~0~text')),
 //     runBefore: writeValue('%$probe/defaultMainCircuit%', 'control<>sampleProject.main'),
 //     uiAction: uiActions(
@@ -178,7 +178,7 @@ component('probePreviewTest.changeCss', {
 // })
 
 // component('FETest.workerPreviewTest.suggestions.selectPopup', {
-//   impl: uiFrontEndTest({
+//   impl: browserTest({
 //     control: group(studio.propertyPrimitive('control<>sampleProject.main~impl~controls~0~text'), probe.remoteCircuitPreview()),
 //     runBefore: writeValue('%$probe/defaultMainCircuit%', 'control<>sampleProject.main'),
 //     uiAction: uiActions(
@@ -206,7 +206,7 @@ component('probePreviewTest.changeCss', {
 // })
 
 // component('FETest.workerPreviewTest.suggestions.filtered', {
-//   impl: uiFrontEndTest({
+//   impl: browserTest({
 //     control: group(probe.remoteCircuitPreview(), studio.propertyPrimitive('control<>sampleProject.main~impl~controls~0~text')),
 //     runBefore: writeValue('%$probe/defaultMainCircuit%', 'control<>sampleProject.main'),
 //     uiAction: uiActions(

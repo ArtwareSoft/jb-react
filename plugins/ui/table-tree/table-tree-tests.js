@@ -32,11 +32,11 @@ component('uiTest.tableTree.DD', {
       ]
     }),
     expectedResult: contains('Lisa','Maggie','Bart'),
-    uiAction: uiActions(
+    uiAction: action(runActions(
       ctx => jb.db.move(ctx.exp('%$personWithChildren/children[2]%', 'ref'), ctx.exp('%$personWithChildren/children[0]%', 'ref'),ctx),
       ctx => jb.db.move(ctx.exp('%$personWithChildren/children[2]%', 'ref'), ctx.exp('%$personWithChildren/children[0]%', 'ref'),ctx)
-    ),
-    useFrontEnd: true
+    )),
+    emulateFrontEnd: true
   })
 })
 

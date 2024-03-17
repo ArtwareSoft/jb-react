@@ -147,6 +147,13 @@ component('rxTest.var', {
   })
 })
 
+component('rxTest.varAsParam', {
+  params: [
+    {id: 'param', defaultValue: '$debugger:hello', dynamic: true}
+  ],
+  impl: dataTest(rx.pipe(source.data(1), rx.var('a', '%$param()%'), rx.map('%$a%')), equals('hello'))
+})
+
 component('rxTest.reduceCount', {
   impl: dataTest(rx.pipe(source.interval(1), rx.take('4'), rx.count(), rx.map('%$count%'), rx.last()), equals(4))
 })

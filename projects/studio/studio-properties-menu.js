@@ -75,7 +75,7 @@ component('studio.jbEditorMenu', {
           }),
           style: dialog.popup(),
           id: 'add property',
-          features: [watchable('name'), dialogFeature.nearLauncherPosition(), dialogFeature.autoFocusOnFirstInput()]
+          features: [watchable('name'), nearLauncherPosition(), autoFocusOnFirstInput()]
         }),
         showCondition: equals(tgp.compName('%$path%'), 'object')
       }),
@@ -164,8 +164,8 @@ component('studio.jbEditorMenu', {
               id: 'add property',
               features: [
                 watchable('remark', tgp.val('%$path%~remark')),
-                dialogFeature.nearLauncherPosition(),
-                dialogFeature.autoFocusOnFirstInput()
+                nearLauncherPosition(),
+                autoFocusOnFirstInput()
               ]
             }),
             showCondition: isOfType('object', tgp.val('%$path%'))

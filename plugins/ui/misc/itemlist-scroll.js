@@ -43,7 +43,7 @@ component('itemlist.applyDeltaOfNextPage', {
     jb.ui.cmps[cmpId] = oldCmp
     cmp.renderProps.items = [...cmp.renderProps.items, ...deltaCmp.renderProps.items]
     cmp.renderProps.ctrls = [...cmp.renderProps.ctrls, ...deltaCmp.renderProps.ctrls]
-    const itemsParent = jb.ui.find(vdomOfDeltaItems,'.jb-items-parent')[0] || vdomOfDeltaItems
+    const itemsParent = jb.ui.querySelectorAll(vdomOfDeltaItems,'.jb-items-parent')[0] || vdomOfDeltaItems
     const appendDelta = { children: {toAppend: jb.ui.stripVdom(itemsParent).children } }
     const deltaOfItems = itemsParent == vdomOfDeltaItems ? appendDelta : { _$bySelector: {'.jb-items-parent': appendDelta} }
     const deltaOfCmp = { attributes: { $scrollDown: true, $__state : JSON.stringify($state) } }
@@ -94,7 +94,7 @@ component('itemlist.deltaOfNextItem', {
     jb.ui.cmps[cmpId] = oldCmp
     cmp.renderProps.items = [...cmp.renderProps.items, ...deltaCmp.renderProps.items]
     cmp.renderProps.ctrls = [...cmp.renderProps.ctrls, ...deltaCmp.renderProps.ctrls]
-    const itemsParent = jb.ui.find(vdomOfDeltaItems,'.jb-items-parent')[0] || vdomOfDeltaItems
+    const itemsParent = jb.ui.querySelectorAll(vdomOfDeltaItems,'.jb-items-parent')[0] || vdomOfDeltaItems
     const appendDelta = { children: {toAppend: jb.ui.stripVdom(itemsParent).children } }
     const deltaOfItems = itemsParent == vdomOfDeltaItems ? appendDelta : { _$bySelector: {'.jb-items-parent': appendDelta} }
     const deltaOfCmp = { attributes: { $scrollDown: true, $__state : JSON.stringify(state) } }

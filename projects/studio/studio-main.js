@@ -212,7 +212,7 @@ component('studio.mainMenu', {
           menu.action('Settings...', openDialog('Project Settings', studio.projectSettings(), {
             style: dialog.dialogOkCancel(),
             onOK: runActions(writeValue('%$studio/projectSettings/libs%', pipeline('%$studio/libsAsArray%', join(','))), studio.saveProjectSettings(), studio.refreshPreview()),
-            features: dialogFeature.dragTitle()
+            features: dragTitle()
           }))
         ]
       }),

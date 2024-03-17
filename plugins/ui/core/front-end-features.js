@@ -162,6 +162,16 @@ component('frontEnd.init', {
   impl: (ctx,action) => ({ frontEndMethod: { method: 'init', path: ctx.path, action: action.profile} })
 })
 
+component('frontEnd.initOrRefresh', {
+  type: 'feature',
+  category: 'front-end',
+  description: 'run in on both first initialization and refresh',
+  params: [
+    {id: 'action', type: 'action', mandatory: true, dynamic: true}
+  ],
+  impl: (ctx,action) => ({ frontEndMethod: { method: 'initOrRefresh', path: ctx.path, action: action.profile} })
+})
+
 component('frontEnd.prop', {
   type: 'feature',
   category: 'front-end',
@@ -293,7 +303,7 @@ component('key.eventToMethod', {
       function calcKeysHash() {
         const keys = elem.getAttribute('methods').split(',').map(x=>x.split('-')[0])
         .filter(x=>x.indexOf('onKey') == 0).map(x=>x.slice(5).slice(0,-7))
-        const dict = { tab: 9, delete: 46, tab: 9, esc: 27, enter: 13, right: 39, left: 37, up: 38, down: 40}
+        const dict = { tab: 9, delete: 46, tab: 9, esc: 27, enter: 13, right: 39, left: 37, up: 38, down: 40, space: 32}
     
         return keys.map(_key=>{
           const key = _key.replace(/-/,'+');
@@ -309,6 +319,27 @@ component('key.eventToMethod', {
   }
 })
 
+component('key.match', {
+  type: 'boolean',
+  params: [
+    {id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V'},
+    {id: 'event', defaultValue: '%%'}
+  ],
+  impl: (ctx, key, event) => {
+      const dict = { tab: 9, delete: 46, tab: 9, esc: 27, enter: 13, right: 39, left: 37, up: 38, down: 40, space: 32}
+      return [key].map(_key=>{
+        const key = _key.replace(/-/,'+');
+        const keyWithoutPrefix = key.split('+').pop()
+        let keyCode = dict[keyWithoutPrefix.toLowerCase()]
+        if (+keyWithoutPrefix)
+          keyCode = +keyWithoutPrefix
+        if (keyWithoutPrefix.length == 1)
+          keyCode = keyWithoutPrefix.charCodeAt(0)
+        return { keyCode, ctrl: !!key.match(/^[Cc]trl/), alt: !!key.match(/^[Aa]lt/)}
+      }).find(key=>key.keyCode == event.keyCode && event.ctrlKey == key.ctrl && event.altKey == key.alt)
+  }
+})
+
 component('feature.onKey', {
   type: 'feature',
   description: 'on keydown',
@@ -319,17 +350,14 @@ component('feature.onKey', {
   ],
   impl: features(
     method(replace('-', '+', { text: 'onKey%$key%Handler', useRegex: true }), call('action')),
-    frontEnd.init(If(not('%$cmp.hasOnKeyHanlder%'), runActions(
-      ({},{cmp}) => cmp.hasOnKeyHanlder = true,
-      rx.pipe(
-        source.frontEndEvent('keydown'),
-        rx.userEventVar(),
-        rx.map(key.eventToMethod('%%')),
-        rx.filter('%%'),
-        rx.log('keyboard uiComp onKey %$key%'),
-        sink.BEMethod('%%')
-      )
-    )))
+    frontEnd.flow(
+      source.frontEndEvent('keydown'),
+      rx.userEventVar(),
+      rx.map(key.eventToMethod('%%')),
+      rx.filter('%%'),
+      rx.log('keyboard frontend onKey %$key%'),
+      sink.BEMethod('%%')
+    )
   )
 })
 
@@ -342,18 +370,13 @@ component('feature.keyboardShortcut', {
   ],
   impl: features(
     method(replace('-', '+', { text: 'onKey%$key%Handler', useRegex: true }), call('action')),
-    frontEnd.init((ctx,{cmp,el}) => {
-      if (! cmp.hasDocOnKeyHanlder) {
-        cmp.hasDocOnKeyHanlder = true
-        ctx.calc(rx.pipe(
-          source.frontEndEvent('keydown'),
-          rx.map(key.eventToMethod('%%',el)), 
-          rx.filter('%%'), 
-          rx.log('keyboardShortcut keyboard uiComp run handler'),
-          sink.BEMethod('%%')
-        ))
-      }
-    })
+    frontEnd.flow(
+      source.frontEndEvent('keydown'),
+      rx.map(key.eventToMethod('%%')),
+      rx.filter('%%'),
+      rx.log('keyboardShortcut keyboard frontend run handler'),
+      sink.BEMethod('%%')
+    )
   )
 })
 
@@ -367,19 +390,13 @@ component('feature.globalKeyboardShortcut', {
   ],
   impl: features(
     method(replace('-', '+', { text: 'onKey%$key%Handler', useRegex: true }), call('action')),
-    frontEnd.init((ctx,{cmp,el}) => {
-      if (! cmp.hasDocOnKeyHanlder) {
-        cmp.hasDocOnKeyHanlder = true
-        ctx.calc(rx.pipe(
-          source.event('keydown','%$cmp.base.ownerDocument%'), 
-          rx.takeUntil('%$cmp.destroyed%'),
-          rx.map(key.eventToMethod('%%',el)), 
-          rx.filter('%%'), 
-          rx.log('keyboardShortcut keyboard uiComp run handler'),
-          sink.BEMethod('%%')
-        ))
-      }
-    })
+    frontEnd.flow(
+      source.event('keydown', '%$cmp.base.ownerDocument%'),
+      rx.map(key.eventToMethod('%%')),
+      rx.filter('%%'),
+      rx.log('keyboardShortcut keyboard uiComp run handler'),
+      sink.BEMethod('%%')
+    )
   )
 })
 
@@ -405,32 +422,38 @@ component('frontEnd.selectionKeySourceService', {
   type: 'feature',
   description: 'assign cmp.selectionKeySource with observable for meta-keys, also stops propagation !!!',
   params: [
-    {id: 'autoFocs', as: 'boolean', type: 'boolean'}
+    {id: 'autoFocus', as: 'boolean', type: 'boolean'}
   ],
   impl: features(
     service.registerBackEndService('selectionKeySource', obj(prop('cmpId', '%$cmp/cmpId%')), {
       allowOverride: true
     }),
-    frontEnd.var('autoFocs', '%$autoFocs%'),
-    frontEnd.prop('selectionKeySource', (ctx,{cmp,el,autoFocs}) => {
-      if (el.keydown_src) return
-      const {pipe, takeUntil,subject} = jb.callbag
-      el.keydown_src = subject()
-      el.onkeydown = e => {
-        if ([38,40,13,27].indexOf(e.keyCode) != -1) {
-          jb.log('key source',{ctx, e})
-          el.keydown_src.next((ctx.cmpCtx || ctx).dataObj(e))
-          return false // stop propagation
-        }
-        return true
-      }
-      if (autoFocs)
-        jb.ui.focus(el,'selectionKeySource',ctx)
-      jb.log('register selectionKeySource',{cmp,cmp,el,ctx})
-      return pipe(el.keydown_src, takeUntil(cmp.destroyed))
-    })
+    frontEnd.var('autoFocus', '%$autoFocus%'),
+    frontEnd.prop('selectionKeySource', rx.pipe(
+      source.frontEndEvent('keydown'),
+      rx.filter(inGroup(list(13,27,38,40), '%keyCode%'))
+    )),
+    frontEnd.initOrRefresh((ctx,{el,autoFocus}) => autoFocus && jb.ui.focus(el,'selectionKeySource',ctx)),
   )
 })
+
+// frontEnd.prop('selectionKeySource', (ctx,{cmp,el,autoFocus}) => {
+//   if (el.keydown_src) return
+//   const {pipe, takeUntil,subject} = jb.callbag
+//   el.keydown_src = subject()
+//   el.onkeydown = e => {
+//     if ([38,40,13,27].indexOf(e.keyCode) != -1) {
+//       jb.log('key source',{ctx, e})
+//       el.keydown_src.next((ctx.cmpCtx || ctx).dataObj(e))
+//       return false // stop propagation
+//     }
+//     return true
+//   }
+//   if (autoFocus)
+//     jb.ui.focus(el,'selectionKeySource',ctx)
+//   jb.log('register selectionKeySource',{cmp,cmp,el,ctx})
+//   return pipe(el.keydown_src, takeUntil(cmp.destroyed))
+// })
 
 component('frontEnd.passSelectionKeySource', {
   type: 'feature',
@@ -440,22 +463,19 @@ component('frontEnd.passSelectionKeySource', {
 component('source.findSelectionKeySource', {
   type: 'rx',
   category: 'source',
-  description: 'used in front end, works with "selectionKeySourceService" and "passSelectionKeySource"',
+  description: 'used in frontend, works with "selectionKeySourceService" and "passSelectionKeySource"',
   impl: rx.pipe(
     Var('clientCmp', '%$cmp%'),
-    source.merge(
-      source.data([]),
-      (ctx,{cmp,selectionKeySourceCmpId}) => {
-        jb.log('keyboard search selectionKeySource',{cmp,selectionKeySourceCmpId,ctx})
-        const el = jb.ui.elemOfCmp(ctx,selectionKeySourceCmpId)
-        const ret = jb.path(el, '_component.selectionKeySource')
-        if (!ret)
-          jb.log('keyboard selectionKeySource notFound',{cmp,selectionKeySourceCmpId,el,ctx})
-        else
-          jb.log('keyboard found selectionKeySource',{cmp,el,selectionKeySourceCmpId,ctx})
-        return ret
-      }
-    ),
+    (ctx,{cmp,selectionKeySourceCmpId}) => {
+      jb.log('keyboard search selectionKeySource',{cmp,selectionKeySourceCmpId,ctx})
+      const el = jb.ui.elemOfCmp(ctx,selectionKeySourceCmpId)
+      const ret = jb.path(el, '_component.selectionKeySource')
+      if (!ret)
+        jb.log('keyboard selectionKeySource notFound',{cmp,selectionKeySourceCmpId,el,ctx})
+      else
+        jb.log('keyboard found selectionKeySource',{cmp,el,selectionKeySourceCmpId,ctx})
+      return ret
+    },
     rx.takeUntil('%$clientCmp.destroyed%'),
     rx.var('cmp', '%$clientCmp%'),
     rx.log('keyboard from selectionKeySource')

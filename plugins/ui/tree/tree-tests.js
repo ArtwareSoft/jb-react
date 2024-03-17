@@ -22,7 +22,7 @@ component('UiTreeTest.treeRightClick', {
     control: tree({
       nodeModel: tree.jsonReadOnly('%$personWithAddress%', 'personWithAddress'),
       features: [
-        tree.selection({ onRightClick: openDialog('hello', { features: dialogFeature.nearLauncherPosition() }) }),
+        tree.selection({ onRightClick: openDialog('hello', { features: nearLauncherPosition() }) }),
         tree.keyboardSelection()
       ]
     }),
@@ -83,7 +83,7 @@ component('UiTreeTest.treeDD.boundedSelection', {
     }),
     expectedResult: contains('Bart','Maggie','selected','Lisa'),
     uiAction: keyboardEvent('[interactive]', 'keydown', { keyCode: 40, ctrl: 'ctrl' }),
-    useFrontEnd: true
+    emulateFrontEnd: true
   })
 })
 
@@ -98,7 +98,7 @@ component('UiTreeTest.treeDDAndBack', {
       move('%$personWithChildren/children[1]%', '%$personWithChildren/friends[1]%'),
       move('%$personWithChildren/friends[1]%', '%$personWithChildren/children[1]%')
     )),
-    useFrontEnd: true
+    emulateFrontEnd: true
   })
 })
 
@@ -113,7 +113,7 @@ component('UiTreeTest.treeDDTwice', {
       move('%$personWithChildren/children[1]%', '%$personWithChildren/friends[1]%'),
       move('%$personWithChildren/children[1]%', '%$personWithChildren/friends[1]%')
     )),
-    useFrontEnd: true
+    emulateFrontEnd: true
   })
 })
 
@@ -125,7 +125,7 @@ component('UiTreeTest.treeDDAfterLast', {
       item2: 'Bart,Maggie,Barnie,Lisa'
     }),
     uiAction: action(move('%$personWithChildren/children[1]%', '%$personWithChildren/friends[1]%')),
-    useFrontEnd: true
+    emulateFrontEnd: true
   })
 })
 
@@ -161,7 +161,7 @@ component('UiTreeTest.treeUnexpandRefresh', {
     }),
     expectedResult: contains('~a~a1'),
     runBefore: writeValue('%$globals/expanded%', '~a'),
-    useFrontEnd: true
+    emulateFrontEnd: true
   })
 })
 
@@ -183,7 +183,7 @@ component('UiTreeTest.treeExpandRefresh', {
     expectedResult: not(contains('~a~a1')),
     runBefore: writeValue('%$globals/expanded%', '~a'),
     uiAction: writeValue('%$globals/expanded%', ''),
-    useFrontEnd: true
+    emulateFrontEnd: true
   })
 })
 

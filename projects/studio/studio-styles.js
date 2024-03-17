@@ -16,13 +16,6 @@ component('editableText.studioPrimitiveText', {
   })
 })
 
-component('editableText.floatingInput', {
-  type: 'editable-text-style',
-  impl: styleWithFeatures(editableText.mdcInput(), {
-    features: css('~ .mdc-text-field { width: 100%; margin-right: 13px;}')
-  })
-})
-
 extension('studio', 'codeMirror', {
     incNumberAtCursor(editor, {inc}) {
       const cur = editor.getCursor(), token = editor.getTokenAt(cur);
@@ -157,6 +150,6 @@ component('dialog.studioMultilineEdit', {
 				}
 				>.dialog-close:hover { opacity: .5 }
 				`,
-    features: [dialogFeature.maxZIndexOnClick(), dialogFeature.closeWhenClickingOutside(), dialogFeature.cssClassOnLaunchingElement()]
+    features: [maxZIndexOnClick(), closeWhenClickingOutside(), cssClassOnLaunchingElement()]
   })
 })

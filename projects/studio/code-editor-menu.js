@@ -142,8 +142,8 @@ component('tgpTextEditor.editMenu', {
           id: 'add property',
           features: [
             watchable('remark', tgp.val('%$path%~remark')),
-            dialogFeature.nearLauncherPosition(),
-            dialogFeature.autoFocusOnFirstInput()
+            nearLauncherPosition(),
+            autoFocusOnFirstInput()
           ]
         }),
         showCondition: isOfType('object', tgp.val('%$path%'))

@@ -1,6 +1,7 @@
 using('ui-tests')
 
 component('uiTest.probeUI.detailedInput', {
+  doNotRunInTests: true,
   impl: uiTest(probeUI.detailedInput('%$probe_sampleProbe/result%'), contains('---'))
 })
 

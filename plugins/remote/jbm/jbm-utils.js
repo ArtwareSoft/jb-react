@@ -138,6 +138,7 @@ extension('jbm', 'main', {
         if (port && !port.createCalllbagSource) {
             Object.assign(port, {
                 uri: port.to,
+                rjbm() { return this },
                 createCallbagSource(remoteRun) {
                     const cbId = jb.cbHandler.newId()
                     port.postMessage({$:'CB.createSource', remoteRun, cbId })

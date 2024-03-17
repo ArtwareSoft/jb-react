@@ -108,7 +108,7 @@ extension('syntaxConverter', 'onAddComponent', {
     //         profile.$unresolved[0].uiAction.$ = profile.$unresolved[0].uiAction.$.slice('userInput.'.length)
     //     }
     // }
-    // if (profile.$ == 'uiFrontEndTest' && profile.$unresolved[0].action) {
+    // if (profile.$ == 'browserTest' && profile.$unresolved[0].action) {
     //     profile.$unresolved[0].uiAction = profile.$unresolved[0].action
     //     delete profile.$unresolved[0].action
     // }

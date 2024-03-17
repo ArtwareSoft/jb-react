@@ -4,8 +4,8 @@ component('itemlist.dragAndDrop', {
   impl: features(
     frontEnd.requireExternalLibrary('dragula.js','css/dragula.css'),
     method('moveItem', runActions(move(itemlist.indexToData('%from%'), itemlist.indexToData('%to%')), action.refreshCmp())),
-    frontEnd.prop('drake', ({},{cmp,uiTest}) => {
-        if (uiTest) return { on: () => {}}
+    frontEnd.prop('drake', ({},{cmp,emulateFrontEndInTest}) => {
+        if (emulateFrontEndInTest) return { on: () => {}, off: () => {}}
         if (!jb.frame.dragula) return jb.logError('itemlist.dragAndDrop - the dragula lib is not loaded')
         return dragula([cmp.base.querySelector('.jb-items-parent') || cmp.base] , {
           moves: (el,source,handle) => jb.ui.parents(handle,{includeSelf: true}).some(x=>jb.ui.hasClass(x,'drag-handle'))
@@ -48,8 +48,19 @@ component('source.dragulaEvent', {
     {id: 'event', as: 'string'},
     {id: 'argNames', as: 'array', description: `e.g., ['dropElm', 'target', 'source']`}
   ],
-  impl: source.callbag(({},{cmp},{event,argNames}) =>
-    jb.callbag.create(obs=> cmp.drake.on(event, (...args) => obs(jb.objFromEntries(args.map((v,i) => [argNames[i],v]))))))
+  impl: (ctx,event,argNames) => (start, sink) => {
+		const {cmp} = ctx.vars
+
+		if (start !== 0) return
+		function handler(...args) { sink(1, jb.objFromEntries(args.map((v,i) => [argNames[i],v])) ) }
+		sink(0, t => {
+			if (t != 2) return
+			jb.log('dragula unregister event listener',{ctx,event})
+			cmp.drake.off(event, handler)
+		})
+		jb.log('dragula register change listener',{ctx,event})
+		cmp.drake.on(event, handler)
+	}
 })
 
 component('itemlist.orignialIndexFromSibling', {

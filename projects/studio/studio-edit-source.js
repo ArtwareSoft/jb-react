@@ -170,7 +170,7 @@ component('studio.openEditProperty', {
           style: dialog.studioJbEditorPopup(),
           features: [
             studio.nearLauncherPosition(),
-            dialogFeature.autoFocusOnFirstInput(),
+            autoFocusOnFirstInput(),
             dialogFeature.onClose(sourceEditor.refreshEditor())
           ]
         })
@@ -186,7 +186,7 @@ component('studio.openEditProperty', {
         style: dialog.studioJbEditorPopup(),
         features: [
           studio.nearLauncherPosition(),
-          dialogFeature.autoFocusOnFirstInput(),
+          autoFocusOnFirstInput(),
           dialogFeature.onClose(sourceEditor.refreshEditor())
         ]
       })),
@@ -195,7 +195,7 @@ component('studio.openEditProperty', {
           content: studio.jbFloatingInput('%$actualPathHere%'),
           style: dialog.studioJbEditorPopup(),
           features: [
-            dialogFeature.autoFocusOnFirstInput(),
+            autoFocusOnFirstInput(),
             studio.nearLauncherPosition(),
             dialogFeature.onClose(runActions(toggleBooleanValue('%$studio/jb_preview_result_counter%'), sourceEditor.refreshEditor()))
           ]
@@ -428,4 +428,77 @@ git push - copy the local repostiry to github's cloud repository`
       dialogFeature.resizer(true)
     ]
   })
+})
+
+component('codemirror.initTgpTextEditor', {
+  type: 'feature',
+  impl: features(
+    codemirror.enrichUserEvent(),
+    frontEnd.method('replaceRange', ({data},{cmp}) => {
+        const {text, from, to} = data
+        const _from = jb.tgpTextEditor.lineColToOffset(cmp.base.value,from)
+        const _to = jb.tgpTextEditor.lineColToOffset(cmp.base.value,to)
+        cmp.base.value = cmp.base.value.slice(0,_from) + text + cmp.base.value.slice(_to)
+    }),
+    frontEnd.method('setSelectionRange', ({data},{cmp}) => {
+        const from = data.from || data
+        const to = data.to || from
+        const _from = jb.tgpTextEditor.lineColToOffset(cmp.base.value,from)
+        const _to = to && jb.tgpTextEditor.lineColToOffset(cmp.base.value,to) || _from
+        cmp.base.setSelectionRange(_from,_to)
+    }),
+    frontEnd.flow(
+      source.callbag(({},{cmp}) => jb.callbag.create(obs=> cmp.editor.on('cursorActivity', 
+        () => obs(cmp.editor.getDoc().getCursor())))),
+      rx.takeUntil('%$cmp/destroyed%'),
+      rx.debounceTime('%$debounceTime%'),
+      sink.BEMethod('selectionChanged', '%%')
+    ),
+    frontEnd.flow(
+      source.callbag(({},{cmp}) => jb.callbag.create(obs=> cmp.editor.on('change', () => obs(cmp.editor.getValue())))),
+      rx.takeUntil('%$cmp/destroyed%'),
+      rx.debounceTime('%$debounceTime%'),
+      rx.distinctUntilChanged(),
+      sink.BEMethod('contentChanged', '%%')
+    )
+  )
+})
+
+component('textarea.initTgpTextEditor', {
+  type: 'feature',
+  impl: features(
+    textarea.enrichUserEvent(),
+    frontEnd.method('applyEdit', ({data},{docUri, el}) => {
+        const {edits, uri} = data
+        if (uri != docUri) return
+        ;(edits || []).forEach(({text, from, to}) => {
+            el.value = el.value.slice(0,from) + text + el.value.slice(to)
+            el.setSelectionRange(from,from)
+        })
+    }),
+    frontEnd.method('setSelectionRange', ({data},{docUri, el}) => {
+        const {uri, from, to} = data || {}
+        if (uri != docUri) return
+        if (!from) 
+            return jb.logError('tgpTextEditor setSelectionRange empty offset',{data ,el})
+        jb.log('tgpTextEditor selection set to', {data})
+        if (el.setSelectionRange)
+          el.setSelectionRange(from,to || from)
+        else
+          Object.assign(el._component.state, { selectionRange : {from, to: to || from} })
+    }),
+    frontEnd.flow(
+      source.event('selectionchange', () => jb.frame.document),
+      rx.takeUntil('%$cmp.destroyed%'),
+      rx.filter(({},{el}) => el == jb.path(jb.frame.document,'activeElement')),
+      rx.map(({},{el}) => jb.tgpTextEditor.offsetToLineCol(el.value,el.selectionStart)),
+      sink.BEMethod('selectionChanged', '%%')
+    ),
+    frontEnd.flow(
+      source.frontEndEvent('keyup'),
+      rx.map(({},{el}) => el.value),
+      rx.distinctUntilChanged(),
+      sink.BEMethod('contentChanged', '%%')
+    )
+  )
 })

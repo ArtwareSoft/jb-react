@@ -82,9 +82,3 @@ component('coreTest.varsCases', {
     expectedResult: equals('1 -,2 -')
   })
 })
-
-
-
-
-
-

@@ -1,6 +1,9 @@
 extension('ui', 'api', {
-  renderWidget: (profile, topElem, ctx) => 
-    jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry(ctx).run(profile)), topElem, { ctx }),
+  renderWidget(profile, topElem, settings = {}) { // {ctx, widgetId} = settings
+    const widgetId = settings.widgetId || topElem.getAttribute('id') || 'main'
+    const ctx = (settings.ctx || new jb.core.jbCtx()).setVars({widgetId})
+    return jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry(ctx).run(profile)), topElem, { ctx })
+  }
 })
 
 extension('ui', 'utils', {
@@ -16,18 +19,12 @@ extension('ui', 'utils', {
     const lastStudioActivity = jb.path(jb, ['studio', 'lastStudioActivity']) || jb.path(jb, ['studio', 'studioWindow', 'jb', 'studio', 'lastStudioActivity']) || 0
 
     jb.log('focus request', { ctx, logTxt, timeDiff: now - lastStudioActivity, elem })
-    // if (jb.studio.previewjb == jb && jb.path(jb.ui.parentFrameJb(),'resources.studio.project') != 'studio-helper' && lastStudioActivity && now - lastStudioActivity < 1000)
-    //     return
     jb.log('focus dom', { elem, ctx, logTxt })
     jb.delay(1).then(() => elem.focus())
   },
   withUnits: v => (v === '' || v === undefined) ? '' : ('' + v || '').match(/[^0-9]$/) ? v : `${v}px`,
   propWithUnits: (prop, v) => (v === '' || v === undefined) ? '' : `${prop}: ` + (('' + v || '').match(/[^0-9]$/) ? v : `${v}px`) + ';',
   fixCssLine: css => css.indexOf('\n') == -1 && !css.match(/}\s*/) ? `{ ${css} }` : css,
-  // preserveCtx(ctx) {
-  //   jb.ctxDictionary[ctx.id] = ctx
-  //   return '' + ctx.id
-  // },
   inStudio() { return jb.studio && jb.studio.studioWindow },
   isMobile: () => typeof navigator != 'undefined' && /Mobi|Android/i.test(navigator.userAgent),
   parentFrameJb() {
@@ -35,19 +32,27 @@ extension('ui', 'utils', {
       return jb.frame.parent && jb.frame.parent.jb
     } catch (e) { }
   },
-  //    inPreview: () => !jb.ui.inStudio() && jb.ui.parentFrameJb() && jb.ui.parentFrameJb().studio.initPreview,
   widgetBody(ctx) {
-    const { elemToTest, widgetId, headlessWidget, FEwidgetId, headlessWidgetId, uiTest, useFrontEndInTest, FEEMulator } = ctx.vars
-    const top = elemToTest ||
-      FEEMulator && jb.path(jb, `ui.FEEmulator.${headlessWidgetId}.body`) ||
-      uiTest && headlessWidget && jb.path(jb, `ui.headless.${headlessWidgetId}.body`) ||
-      uiTest && jb.path(jb, `ui.FEEmulator.${headlessWidgetId}.body`) ||
-      uiTest && jb.path(jb, `parent.ui.headless.${headlessWidgetId}.body`) ||
-      widgetId && jb.path(jb, `ui.headless.${widgetId}.body`) ||
-      headlessWidget && jb.path(jb, `ui.headless.${headlessWidgetId}.body`) ||
+    const { elemToTest, FEWidgetId, headlessWidgetId, widgetId } = ctx.vars
+    const body = elemToTest ||
+      headlessWidgetId && jb.path(jb, `ui.headless.${headlessWidgetId}.body`) ||
+      jb.ui.FEEmulator && jb.path(Object.values(jb.ui.FEEmulator)[0], 'body') ||
       jb.path(jb.frame.document, 'body')
-    return FEwidgetId ? jb.ui.findIncludeSelf(top, `[widgetid="${FEwidgetId}"]`)[0] : top
+      
+      return FEWidgetId ? jb.ui.findIncludeSelf(body, `[widgetid="${FEWidgetId}"]`)[0] : body
   },
+  // widgetBody(ctx) {
+  //   const { elemToTest, widgetId, headlessWidget, FEWidgetId, headlessWidgetId, uiTest, emulateFrontEndInTest, FEEMulator } = ctx.vars
+  //   const top = elemToTest ||
+  //     FEEMulator && jb.path(jb, `ui.FEEmulator.${headlessWidgetId}.body`) ||
+  //     uiTest && headlessWidget && jb.path(jb, `ui.headless.${headlessWidgetId}.body`) ||
+  //     uiTest && jb.path(jb, `ui.FEEmulator.${headlessWidgetId}.body`) ||
+  //     uiTest && jb.path(jb, `parent.ui.headless.${headlessWidgetId}.body`) ||
+  //     widgetId && jb.path(jb, `ui.headless.${widgetId}.body`) ||
+  //     headlessWidget && jb.path(jb, `ui.headless.${headlessWidgetId}.body`) ||
+  //     jb.path(jb.frame.document, 'body')
+  //   return FEWidgetId ? jb.ui.findIncludeSelf(top, `[widgetid="${FEWidgetId}"]`)[0] : top
+  // },
   cmpCtxOfElem: (elem) => elem && elem.getAttribute && jb.path(jb.ui.cmps[elem.getAttribute('cmp-id')],'calcCtx'),
   parentCmps: el => jb.ui.parents(el).map(el => el._component).filter(x => x),
   closestCmpElem: elem => jb.ui.parents(elem, { includeSelf: true }).find(el => el.getAttribute && el.getAttribute('cmp-id') != null),
@@ -108,6 +113,7 @@ extension('ui', 'html', {
     return el.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom)
   },
   offset: el => el.getBoundingClientRect(),
+  isHeadless: el => jb.ui.parents(el, {includeSelf: true}).pop().headless,
   parents(el, { includeSelf } = {}) {
     const res = []
     el = includeSelf ? el : el && el.parentNode
@@ -125,16 +131,18 @@ extension('ui', 'html', {
   },
   scrollIntoView: el => el.scrollIntoViewIfNeeded && el.scrollIntoViewIfNeeded(),
   activeElement: () => jb.path(jb.frame.document,'activeElement'),
-  find(el, selector, options) {
+  querySelectorAll(el, selector, options) {
     if (!el) return []
-    if (jb.path(el, 'constructor.name') == 'jbCtx')
+    if (jb.path(el, 'constructor.name') == 'jbCtx') {
+      jb.logError('jb.utils.find ctx instead of el',{ctx: el})
       el = jb.ui.widgetBody(el)
+    }
     if (!el) return []
     return el instanceof jb.ui.VNode ? el.querySelectorAll(selector, options) :
       [... (options && options.includeSelf && jb.ui.matches(el, selector) ? [el] : []),
       ...Array.from(el.querySelectorAll(selector))]
   },
-  findIncludeSelf: (el, selector) => jb.ui.find(el, selector, { includeSelf: true }),
+  findIncludeSelf: (el, selector) => jb.ui.querySelectorAll(el, selector, { includeSelf: true }),
   addClass: (el, clz) => el && el.addClass ? el.addClass(clz) : el.classList && el.classList.add(clz),
   removeClass: (el, clz) => el && el.removeClass ? el.removeClass(clz) : el.classList && el.classList.remove(clz),
   hasClass: (el, clz) => el && el.hasClass ? el.hasClass(clz) : el.classList && el.classList.contains(clz),
@@ -252,10 +260,20 @@ extension('ui', 'beautify', {
 
 // ****************** components ****************
 
-component('action.applyDeltaToCmp', {
+component('ui.applyNewVdom', {
   type: 'action',
   params: [
-    {id: 'delta', mandatory: true},
+    {id: 'elem', mandatory: true, byName: true},
+    {id: 'vdom', mandatory: true},
+    {id: 'strongRefresh', as: 'boolean', description: 'restart FE flows', type: 'boolean'},
+  ],
+  impl: (ctx, elem, vdom, strongRefresh) => jb.ui.applyNewVdom(elem, vdom, { ctx, strongRefresh })
+})
+
+component('ui.applyDeltaToCmp', {
+  type: 'action',
+  params: [
+    {id: 'delta', mandatory: true, byName: true},
     {id: 'cmpId', as: 'string', mandatory: true},
     {id: 'assumedVdom'}
   ],
@@ -268,7 +286,7 @@ component('sink.applyDeltaToCmp', {
     {id: 'delta', dynamic: true, mandatory: true},
     {id: 'cmpId', as: 'string', mandatory: true}
   ],
-  impl: sink.action(action.applyDeltaToCmp('%$delta()%', '%$cmpId%'))
+  impl: sink.action(ui.applyDeltaToCmp('%$delta()%', '%$cmpId%'))
 })
 
 component('action.focusOnCmp', {
@@ -362,3 +380,18 @@ component('renderWidget', {
   }
 })
 
+component('querySelectorAll', {
+  type: 'data',
+  params: [
+    {id: 'selector', as: 'string' },
+  ],
+  impl: (ctx, selector) => jb.ui.querySelectorAll(jb.ui.widgetBody(ctx),selector)
+})
+
+component('querySelector', {
+  type: 'data',
+  params: [
+    {id: 'selector', as: 'string' },
+  ],
+  impl: (ctx, selector) => jb.ui.querySelectorAll(jb.ui.widgetBody(ctx),selector)[0]
+})

@@ -21,3 +21,19 @@ component('dbTest.restoreArrayIdsBug', {
    }
   })
 })
+
+component('dbTest.loosingRefAfterMovingParentItem', {
+  impl: dataTest({
+    calculate: '',
+    expectedResult: equals(pipeline('%$personWithChildren/children/name%', slice(0, 2), join()), 'newVal1,newVal0'),
+    runBefore: ctx => {
+      const ref0 = ctx.exp('%$personWithChildren/children[0]%','ref')
+      const ref1 = ctx.exp('%$personWithChildren/children[1]%','ref')
+      const refInner0 = ctx.setData(ref0).exp('%name%','ref')
+      const refInner1 = ctx.setData(ref1).exp('%name%','ref')
+      jb.db.move(ref0, ref1,ctx)
+      jb.db.writeValue(refInner0,'newVal0',ctx)
+      jb.db.writeValue(refInner1,'newVal1',ctx)
+    }
+  })
+})

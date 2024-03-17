@@ -9,7 +9,7 @@ component('dataResource.vegaItems', {
 })
 
 component('vegaTest.bar', {
-  impl: uiFrontEndTest({
+  impl: browserTest({
     control: vega.interactiveChart(
       vega.spec(vega.jbData('%$vegaItems%'), {
         mark: vega.bar(),

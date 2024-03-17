@@ -105,6 +105,13 @@ component('picklist.allowAsynchOptions', {
   )
 })
 
+// sink.refreshCmp({
+//   state: obj(
+//     prop('refreshSource', 'dataArrived'),
+//     prop('options', ({data}) => jb.path(data,'data.options') || data.options || jb.path(data,'0.options') || data)
+//   ),
+//   options: ({data}) => jb.path(data,'data.options') || data.options || jb.path(data,'0.options') || data
+// })
 component('picklist.onChange', {
   category: 'picklist:100',
   type: 'feature',

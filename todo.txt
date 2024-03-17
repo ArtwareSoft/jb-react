@@ -1,6 +1,10 @@
-add tests to the param refernce bug - is it only structure?
-problem with the delta and the tab control, maybe related to jb-external
-  solution - when it is too different, do not use delta!
+fix editableTextHelperTest.setInput
+
+vscode
+  add boolean property should set it to true
+  definition of non formatted
+
+menu.selectionKeySourceService - rewrite with source.event
 
 icon gallery
 llm helper 

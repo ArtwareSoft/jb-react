@@ -63,9 +63,9 @@ component('studio.openNewProject', {
       studio.reOpenStudio('%$mainFileName%', 5)
     ),
     features: [
-      dialogFeature.autoFocusOnFirstInput(),
-      dialogFeature.nearLauncherPosition('300', '100'),
-      dialogFeature.dragTitle('newProject')
+      autoFocusOnFirstInput(),
+      nearLauncherPosition('300', '100'),
+      dragTitle('newProject')
     ]
   })
 })

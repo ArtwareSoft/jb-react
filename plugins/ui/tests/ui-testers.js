@@ -16,9 +16,8 @@ component('uiTest', {
     {id: 'cleanUp', type: 'action', dynamic: true},
     {id: 'expectedCounters', as: 'single'},
     {id: 'backEndJbm', type: 'jbm<jbm>', defaultValue: jbm.self()},
-    {id: 'useFrontEnd', as: 'boolean', type: 'boolean'},
+    {id: 'emulateFrontEnd', as: 'boolean', type: 'boolean'},
     {id: 'transactiveHeadless', as: 'boolean', type: 'boolean'},
-    {id: 'engine', as: 'string'},
     {id: 'spy'},
     {id: 'covers'}
   ],
@@ -26,26 +25,28 @@ component('uiTest', {
     vars: [
       Var('uiTest', true),
       Var('widgetId', widget.newId()),
-      Var('headlessWidget', true),
       Var('remoteUiTest', typeAdapter('boolean<>', notEquals('%$backEndJbm%', () => jb))),
-      Var('headlessWidgetId', '%$widgetId%'),
-      Var('useFrontEndInTest', '%$useFrontEnd%'),
       Var('transactiveHeadless', '%$transactiveHeadless%'),
       Var('testRenderingUpdate', () => jb.callbag.subject('testRenderingUpdate')),
-      Var('engineForTest', '%$engine%')
+      Var('emulateFrontEndInTest', '%$emulateFrontEnd%')
     ],
     calculate: pipe(
       Var('uiActionsTimeout', If('%$backEndJbm%', 2000, 3000)),
       rx.pipe(
-        typeAdapter('ui-action<test>', uiActions(waitForPromise(remote.waitForJbm('%$backEndJbm%')), '%$uiAction()%')),
+        typeAdapter('ui-action<test>', uiActions(
+          waitForPromise(remote.waitForJbm('%$backEndJbm%')),
+          '%$uiAction()%'
+        )),
         rx.log('uiTest userRequest'),
         remote.operator({
-          rx: widget.headless('%$control()%', '%$widgetId%', {
-            transactiveHeadless: '%$transactiveHeadless%'
-          }),
+          vars: [
+            Var('headlessWidget', true),
+            Var('headlessWidgetId', '%$widgetId%')
+          ],
+          rx: widget.headless('%$control()%', '%$widgetId%', { transactiveHeadless: '%$transactiveHeadless%' }),
           jbm: '%$backEndJbm%'
         }),
-        rx.do(uiTest.aggregateDelta('%%')),
+        rx.do(uiTest.applyDeltaToEmulator('%%')),
         rx.var('renderingCounters', uiTest.postTestRenderingUpdate()),
         rx.log('uiTest uiDelta from headless %$renderingCounters%'),
         rx.toArray(),
@@ -65,13 +66,114 @@ component('uiTest', {
   })
 })
 
-component('uiFrontEndTest', {
+component('uiTest.vdomResultAsHtml', {
+  impl: ctx => {
+		const { widgetId } = ctx.vars
+		const widget = jb.ui.FEEmulator[widgetId]
+		const css = Object.values(jb.path(jb.ui.headless,[widgetId,'styles']) || {}).join('\n')
+		const html = (!widget || !widget.body) ? '' : (typeof widget.body.outerHTML == 'function')
+			? widget.body.outerHTML() : ''
+		return { html, css, all : [html,css].join('\n')}
+	}
+})
+
+component('uiTest.postTestRenderingUpdate', {
+  impl: ctx => {
+		const {widgetId} = ctx.vars
+		jb.ui.testUpdateCounters[widgetId] = (jb.ui.testUpdateCounters[widgetId] || 0) + 1
+		const counter = '' + jb.ui.testUpdateCounters[widgetId]
+		// jb.log('postTestRenderingUpdate', {widgetId, counter, ctx }) - causing test stuck in FETest.workerPreviewTest.suggestions
+		ctx.vars.testRenderingUpdate && ctx.vars.testRenderingUpdate.next({widgetId})
+        return counter
+	}
+})
+
+component('uiTest.addFrontEndEmulation', {
+  type: 'action',
+  impl: ctx => {
+		const { widgetId, emulateFrontEndInTest} = ctx.vars
+		jb.ui.FEEmulator[widgetId] = {
+			userReqSubs: emulateFrontEndInTest && jb.callbag.subscribe(userRequest => {
+				if (userRequest.$$ == 'destroy') return
+				jb.log('uiTest frontend widgetUserRequest recorded', {ctx,userRequest})
+				jb.ui.FEEmulator[widgetId].userRequests.push(userRequest)
+			})(jb.ui.widgetUserRequests),
+			userRequests: [],
+			body: jb.ui.h('div',{widgetId , widgetTop:true, frontend: true}) 
+		}
+		jb.ui.FEEmulator[widgetId].body.FEEmulator = true
+		// jb.ui.elemOfSelector() - for loader
+	}
+})
+
+component('uiTest.removeFrontEndEmulation', {
+  type: 'action',
+  impl: ctx => {
+		const { widgetId, emulateFrontEndInTest} = ctx.vars
+		emulateFrontEndInTest && jb.ui.FEEmulator[widgetId].userReqSubs.dispose()
+		delete jb.ui.FEEmulator[widgetId]
+		jb.ui.testUpdateCounters = {}
+	}
+})
+
+component('uiTest.applyDeltaToEmulator', {
+  type: 'action',
+  params: [
+    {id: 'renderingUpdate'}
+  ],
+  impl: (ctx, renderingUpdate) => {
+	if (renderingUpdate.$ == 'updates')
+      return renderingUpdate.updates.forEach(inner => applyDelta(inner))
+    else
+      return applyDelta(renderingUpdate)
+
+    function applyDelta(renderingUpdate) {
+		const {delta,css,widgetId,cmpId,elemId,classId} = renderingUpdate
+		const ctxToUse = ctx.setVars({headlessWidgetId: '' })
+		if (css)
+	        return jb.ui.insertOrUpdateStyleElem(ctxToUse, css, elemId, { classId })
+
+		const widgetBody = jb.ui.widgetBody(ctxToUse)
+		const elem = cmpId ? jb.ui.querySelectorAll(widgetBody,`[cmp-id="${cmpId}"]`)[0] : widgetBody
+		jb.log('uiTest aggregate delta',{ctx,delta,renderingUpdate,cmpId, widgetBody,elem})
+		delta && jb.ui.applyDeltaToCmp({delta,ctx: ctxToUse,cmpId,elem})
+	}
+  }
+})
+
+component('uiTest.applyVdomDiff', {
+  type: 'test',
+  params: [
+    {id: 'controlBefore', type: 'control', dynamic: true},
+    {id: 'control', type: 'control', dynamic: true}
+  ],
+  impl: function(ctx,controlBefore,control) {
+		console.log('starting ' + ctx.vars.testID)
+		const show = new URL(jb.frame.location.href).searchParams.get('show') !== null
+
+		const elem = document.createElement('div');
+		const vdomBefore = jb.ui.h(controlBefore(ctx))
+		const vdom = jb.ui.h(control(ctx))
+		jb.ui.render(vdomBefore,elem)
+		jb.ui.applyNewVdom(elem.firstElementChild,vdom,{ctx})
+		const actualVdom = jb.ui.elemToVdom(elem.firstElementChild)
+		const diff = jb.ui.vdomDiff(vdom,actualVdom)
+
+		const success = Object.keys(diff).length == 0
+		if (!show);
+		const result = { id: ctx.vars.testID, success, vdom, actualVdom, diff }
+			jb.ui.unmount(elem)
+		return result
+	}
+})
+
+component('browserTest', {
   type: 'test',
   params: [
     {id: 'control', type: 'control', dynamic: true},
+    {id: 'expectedResult', as: 'boolean', dynamic: true, type: 'boolean'},
     {id: 'runBefore', type: 'action', dynamic: true},
     {id: 'uiAction', type: 'ui-action<test>', dynamic: true},
-    {id: 'expectedResult', as: 'boolean', dynamic: true, type: 'boolean'},
     {id: 'allowError', as: 'boolean', dynamic: true, type: 'boolean'},
     {id: 'cleanUp', type: 'action', dynamic: true},
     {id: 'expectedCounters', as: 'single'},
@@ -113,110 +215,10 @@ component('uiFrontEndTest', {
 		if (!show && !singleTest) {
 			jb.ui.unmount(elemToTest)
 			ctx.run(dialog.closeAll())
-			jb.ui.destroyAllDialogEmitters()
+			//jb. ui.destroyAllDialogEmitters()
 		}
 		if (renderDOM && !show && !singleTest) document.body.removeChild(elemToTest)
 		await cleanUp()
-		return result
-	}
-})
-
-component('uiTest.vdomResultAsHtml', {
-  impl: ctx => {
-		const { widgetId } = ctx.vars
-		const widget = jb.ui.FEEmulator[widgetId]
-		const css = Object.values(jb.path(jb.ui.headless,[widgetId,'styles']) || {}).join('\n')
-		const html = (!widget || !widget.body) ? '' : (typeof widget.body.outerHTML == 'function')
-			? widget.body.outerHTML() : ''
-		return { html, css, all : [html,css].join('\n')}
-	}
-})
-
-component('uiTest.postTestRenderingUpdate', {
-  impl: ctx => {
-		const {widgetId} = ctx.vars
-		jb.ui.testUpdateCounters[widgetId] = (jb.ui.testUpdateCounters[widgetId] || 0) + 1
-		const counter = '' + jb.ui.testUpdateCounters[widgetId]
-		// jb.log('postTestRenderingUpdate', {widgetId, counter, ctx }) - causing test stuck in FETest.workerPreviewTest.suggestions
-		ctx.vars.testRenderingUpdate && ctx.vars.testRenderingUpdate.next({widgetId})
-        return counter
-	}
-})
-
-component('uiTest.addFrontEndEmulation', {
-  type: 'action',
-  impl: ctx => {
-		const { widgetId, useFrontEndInTest} = ctx.vars
-		jb.ui.FEEmulator[widgetId] = {
-			userReqSubs: useFrontEndInTest && jb.callbag.subscribe(userRequest => {
-				if (userRequest.$$ == 'destroy') return
-				jb.log('uiTest frontend widgetUserRequest recorded', {ctx,userRequest})
-				jb.ui.FEEmulator[widgetId].userRequests.push(userRequest)
-			})(jb.ui.widgetUserRequests),
-			userRequests: [],
-			body: jb.ui.h('div',{widgetId , widgetTop:true, frontend: true}) 
-		}
-		// jb.ui.elemOfSelector() - for loader
-	}
-})
-
-component('uiTest.removeFrontEndEmulation', {
-  type: 'action',
-  impl: ctx => {
-		const { widgetId, useFrontEndInTest} = ctx.vars
-		useFrontEndInTest && jb.ui.FEEmulator[widgetId].userReqSubs.dispose()
-		delete jb.ui.FEEmulator[widgetId]
-		jb.ui.testUpdateCounters = {}
-	}
-})
-
-component('uiTest.aggregateDelta', {
-  type: 'action',
-  params: [
-    {id: 'renderingUpdate'}
-  ],
-  impl: (ctx, renderingUpdate) => {
-	if (renderingUpdate.$ == 'updates')
-      return renderingUpdate.updates.forEach(inner => aggDelta(inner))
-    else
-      return aggDelta(renderingUpdate)
-
-    function aggDelta(renderingUpdate) {
-		const {delta,css,widgetId,cmpId,elemId,classId} = renderingUpdate
-		const ctxToUse = ctx.setVars({headlessWidget: false, FEwidgetId: widgetId })
-		if (css)
-	        return jb.ui.insertOrUpdateStyleElem(ctxToUse, css, elemId, { classId })
-
-		const widgetBody = jb.ui.widgetBody(ctxToUse)
-		const elem = cmpId ? jb.ui.find(widgetBody,`[cmp-id="${cmpId}"]`)[0] : widgetBody
-		jb.log('uiTest aggregate delta',{ctx,delta,renderingUpdate,cmpId, widgetBody,elem})
-		delta && jb.ui.applyDeltaToCmp({delta,ctx: ctxToUse,cmpId,elem})
-	}
-  }
-})
-
-component('uiTest.applyVdomDiff', {
-  type: 'test',
-  params: [
-    {id: 'controlBefore', type: 'control', dynamic: true},
-    {id: 'control', type: 'control', dynamic: true}
-  ],
-  impl: function(ctx,controlBefore,control) {
-		console.log('starting ' + ctx.vars.testID)
-		const show = new URL(jb.frame.location.href).searchParams.get('show') !== null
-
-		const elem = document.createElement('div');
-		const vdomBefore = jb.ui.h(controlBefore(ctx))
-		const vdom = jb.ui.h(control(ctx))
-		jb.ui.render(vdomBefore,elem)
-		jb.ui.applyNewVdom(elem.firstElementChild,vdom,{ctx})
-		const actualVdom = jb.ui.elemToVdom(elem.firstElementChild)
-		const diff = jb.ui.vdomDiff(vdom,actualVdom)
-
-		const success = Object.keys(diff).length == 0
-		if (!show);
-		const result = { id: ctx.vars.testID, success, vdom, actualVdom, diff }
-			jb.ui.unmount(elem)
 		return result
 	}
 })
@@ -287,3 +289,4 @@ extension('spy','headless', {
 	}
 	
 })
+

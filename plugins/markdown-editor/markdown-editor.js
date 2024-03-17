@@ -30,7 +30,7 @@ component('editableText.markdown', {
     css('.md-editor .CodeMirror, .CodeMirror-scroll {  min-height: 50px; }'),
     () => ({ template: ({},{},h) => h('div.simple-mde') }),
     frontEnd.var('simplemdeSettings', '%$simplemdeSettings%'),
-    frontEnd.init((ctx,{el,text,cmp,simplemdeSettings}) => {
+    frontEnd.initOrRefresh((ctx,{el,text,cmp,simplemdeSettings,FELifeCycle}) => {
         el.innerHTML = `<div jb_external="true"/>`
         const wrapper = el.firstChild
         wrapper.innerHTML = `<textarea>${text}</textarea>`
@@ -45,8 +45,7 @@ component('editableText.markdown', {
         cmp.simplemde = new SimpleMDE({ element: wrapper.firstChild, ...simplemdeSettings, ...defaultSettings})
         cmp.editor = cmp.simplemde.codemirror
         jb.ui.addClass(cmp.editor.getWrapperElement(),'autoResizeInDialog')
-      }),
-    frontEnd.onRefresh(({},{text,cmp}) => cmp.editor.setValue(text)),
+    }),
     method('writeText', writeValue('%$$model/databind()%', '%%')),
     frontEnd.flow(
       source.callbag(({},{cmp}) => jb.callbag.create(obs=> cmp.editor.on('change', () => obs(cmp.simplemde.value())))),

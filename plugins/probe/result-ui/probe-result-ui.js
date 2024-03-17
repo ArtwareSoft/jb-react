@@ -278,7 +278,7 @@ component('probeUI.showRxSniffer', {
           action: openDialog('variables', group(ui.dataBrowse('%d/vars%')), {
             style: dialog.popup(),
             id: '',
-            features: dialogFeature.uniqueDialog('variables')
+            features: unique('variables')
           }),
           style: button.href(),
           features: [

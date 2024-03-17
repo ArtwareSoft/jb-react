@@ -33,11 +33,11 @@ component('inplaceEdit.popupStyle', {
     css: `{ position: absolute; background: var(--jb-editor-background); padding: 6px;
               box-shadow: 2px 2px 3px #d5d5d5; border: 1px solid rgb(213, 213, 213); }`,
     features: [
-      dialogFeature.dragTitle({ selector: '*' }),
-      dialogFeature.uniqueDialog('inplace-edit-toolbar'),
-      dialogFeature.maxZIndexOnClick(),
-      dialogFeature.closeWhenClickingOutside(),
-      dialogFeature.nearLauncherPosition(100, (ctx,{inplaceElem}) =>
+      dragTitle({ selector: '*' }),
+      unique('inplace-edit-toolbar'),
+      maxZIndexOnClick(),
+      closeWhenClickingOutside(),
+      nearLauncherPosition(100, (ctx,{inplaceElem}) =>
           jb.ui.studioFixYPos() - jb.ui.computeStyle(inplaceElem,'marginBottom'))
     ]
   })
@@ -154,6 +154,6 @@ component('inplaceEdit.thumbStyle', {
   impl: customStyle({
     template: (cmp,state,h) => h('div.jb-dialog jb-popup',{},h(state.contentComp)),
     css: '{ display: block; position: absolute; }',
-    features: [dialogFeature.maxZIndexOnClick(), dialogFeature.closeWhenClickingOutside()]
+    features: [maxZIndexOnClick(), closeWhenClickingOutside()]
   })
 })

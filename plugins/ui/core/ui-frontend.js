@@ -1,5 +1,6 @@
 extension('ui', 'frontend', {
-    async refreshFrontEnd(elem, {content} = {}) {
+    async refreshFrontEnd(elem, {content, emulateFrontEndInTest, widgetId} = {}) {
+        if (jb.ui.isHeadless(elem)) return
         if (!(elem instanceof jb.ui.VNode)) {
             const libs = jb.utils.unique(jb.ui.feLibs(content))
             if (libs.length) {
@@ -11,20 +12,23 @@ extension('ui', 'frontend', {
         jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> {
             const coLocation = jb.ui.parents(el,{includeSelf: true}).find(_elem=>_elem.getAttribute && _elem.getAttribute('colocation') == 'true')
             const coLocationCtx = coLocation && jb.ui.cmps[el.getAttribute('cmp-id')].calcCtx
-            return el._component ? el._component.newVDomApplied() : new jb.ui.frontEndCmp(el,coLocationCtx) 
+            return el._component ? el._component.newVDomApplied(content) : new jb.ui.frontEndCmp(el,{coLocationCtx, emulateFrontEndInTest, widgetId}) 
         })
     },
     feLibs(elem) {
         if (!elem || typeof elem != 'object') return []
         const res = (elem.attributes && elem.attributes.$__frontEndLibs) ? JSON.parse(elem.attributes.$__frontEndLibs) : []
-        return [...res, ...[...(elem.children||[])].flatMap(x =>jb.ui.feLibs(x))]
+        const children = jb.path(elem.children,'toAppend') || (Array.isArray(elem.children) ? elem.children : [])
+        return [...res, ...(children.flatMap(x =>jb.ui.feLibs(x)))]
         //return Object.keys(obj).filter(k=> ['parentNode','attributes'].indexOf(k) == -1).flatMap(k =>jb.ui.feLibs(obj[k]))
     },
     frontEndCmp: class frontEndCmp {
-        constructor(elem, coLocationCtx) {
+        constructor(elem, {coLocationCtx, emulateFrontEndInTest, widgetId}= {}) {
             this.ctx = coLocationCtx || jb.ui.parents(elem,{includeSelf: true}).map(elem=>elem.ctxForFE).filter(x=>x)[0] || new jb.core.jbCtx()
-            if (elem.getAttribute('uiTest'))
-                this.ctx = this.ctx.setVars({uiTest: true})
+            if (emulateFrontEndInTest)
+                this.ctx = this.ctx.setVars({emulateFrontEndInTest, widgetId})
+            // if (elem.getAttribute('uiTest'))
+            //     this.ctx = this.ctx.setVars({uiTest: true})
             this.state = { ...elem.state, frontEndStatus: 'initializing' }
             this.base = elem
             this.cmpId = elem.getAttribute('cmp-id')
@@ -35,15 +39,16 @@ extension('ui', 'frontend', {
             elem._component = this
             this.runFEMethod('calcProps',null,null,true)
             this.runFEMethod('init',null,null,true)
+            this.runFEMethod('initOrRefresh',null,{FELifeCycle: 'constructor'},true)
             this.state.frontEndStatus = 'ready'
             this.props = coLocationCtx && this.ctx.vars.$props
         }
         runFEMethod(method,data,_vars,silent) {
-            if (this.state.frontEndStatus != 'ready' && ['init','calcProps'].indexOf(method) == -1)
-                return jb.logError('frontEnd - running method before init', {cmp: {...this}, method,data,_vars})
+            if (this.state.frontEndStatus != 'ready' && ['onRefresh','initOrRefresh','init','calcProps'].indexOf(method) == -1)
+                return jb.logError('frontend - running method before init', {cmp: {...this}, method,data,_vars})
             const toRun = (this.base.frontEndMethods || []).filter(x=>x.method == method)
             if (toRun.length == 0 && !silent)
-                return jb.logError(`frontEnd - no method ${method}`,{cmp: {...this}})
+                return jb.logError(`frontend - no method ${method}`,{cmp: {...this}})
             toRun.forEach(({path}) => jb.utils.tryWrapper(() => {
                 const profile = path.split('~').reduce((o,p)=>o && o[p],jb.comps)
                 if (!profile)
@@ -55,15 +60,15 @@ extension('ui', 'frontend', {
                 const ctxToUse = this.ctx.setData(data).setVars(vars)
                 const {_prop, _flow } = feMEthod.frontEndMethod
                 if (_prop)
-                    jb.log(`frontend uiComp before calc prop ${_prop}`,{cmp: {...this}, srcCtx, ...feMEthod.frontEndMethod, el,ctxToUse})
+                    jb.log(`frontend before calc prop ${_prop}`,{cmp: {...this}, srcCtx, ...feMEthod.frontEndMethod, el,ctxToUse})
                 else if (_flow)
-                    jb.log(`frontend uiComp start flow ${jb.ui.rxPipeName(_flow)}`,{cmp: {...this}, srcCtx, ...feMEthod.frontEndMethod, el, ctxToUse})
+                    jb.log(`frontend start flow ${jb.ui.rxPipeName(_flow)}`,{cmp: {...this}, srcCtx, ...feMEthod.frontEndMethod, el, ctxToUse})
                 else 
-                    jb.log(`frontend uiComp run method ${method}`,{cmp: {...this}, srcCtx , ...feMEthod.frontEndMethod,el,ctxToUse})
+                    jb.log(`frontend run method ${method}`,{cmp: {...this}, srcCtx , ...feMEthod.frontEndMethod,el,ctxToUse})
                 const res = ctxToUse.run(feMEthod.frontEndMethod.action, jb.utils.dslType(profile.$$))
                 if (_prop)
                     jb.log(`frontend prop ${_prop} value`,{res, cmp: {...this}})
-                if (_flow && res) this.flows.push(res)
+                if (_flow && res) this.flows.unshift({flow: res, profile: _flow})
             }, `frontEnd-${method}`,this.ctx))
         }
         enrichUserEvent(ev, {userEvent , ctx}) {
@@ -77,7 +82,7 @@ extension('ui', 'frontend', {
             }, 'enrichUserEvent', ctx || this.ctx))
         }
         refresh(state, options) {
-            jb.log('frontend uiComp refresh request',{cmp: {...this} , state, options})
+            jb.log('frontend refresh request',{cmp: {...this} , state, options})
             if (this._deleted) return
             Object.assign(this.state, state)
             this.base.state = this.state
@@ -87,20 +92,27 @@ extension('ui', 'frontend', {
             if (this._deleted) return
             Object.assign(this.state, state)
             this.base.state = this.state
-            this.frontEndStatus = 'refreshing'
+            this.state.frontEndStatus = 'refreshing'
+            this.runFEMethod('initOrRefresh',null,{FELifeCycle: 'refreshFE'},true)
             this.runFEMethod('onRefresh',null,null,true)
-            this.frontEndStatus = 'ready'
+            this.state.frontEndStatus = 'ready'
         }    
-        newVDomApplied() {
+        newVDomApplied(vdom) {
             Object.assign(this.state,{...this.base.state}) // update state from BE
+            jb.log('frontend newVDomApplied',{cmp: this,ctx: this.ctx,vdom})
             this.ver= this.base.getAttribute('cmp-ver')
-            this.frontEndStatus = 'refreshing'
+            this.state.frontEndStatus = 'refreshing'
+            this.runFEMethod('initOrRefresh',null,{FELifeCycle: 'newVDomApplied'},true)
             this.runFEMethod('onRefresh',null,null,true)
-            this.frontEndStatus = 'ready'
+            this.state.frontEndStatus = 'ready'
         }
         destroyFE() {
+            jb.log(`frontend destroy`,{cmp: {...this}, ctx: this.ctx})
             this._deleted = true
-            this.flows.forEach(flow=>flow.dispose())
+            this.flows.forEach(({flow, profile})=> {
+                flow.dispose()
+                jb.log(`frontend end flow ${jb.ui.rxPipeName(profile)}`,{cmp: {...this}, ctx: this.ctx})
+            })
             this.runFEMethod('destroy',null,null,true)
             this.resolveDestroyed() // notifications to takeUntil(this.destroyed) observers
         }

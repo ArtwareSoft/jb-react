@@ -38,18 +38,18 @@ component('llmHelperTest.localHelper.sayHello', {
     control: llm.localHelper('%$llmTutorial_Query%'),
     expectedResult: equals('%$llmStateForTests/prompt%', 'hello'),
     uiAction: uiActions(setText('setPrompt hello'), keyboardEvent('input', 'keydown', { keyCode: '13' })),
-    useFrontEnd: true
+    emulateFrontEnd: true
   })
 })
 
 component('llmHelperTest.docHelper', {
   doNotRunInTests: true,
-  impl: uiTest(llm.docHelper('%$llmDocExample%'), contains(''))
+  impl: browserTest(llm.docHelper('%$llmDocExample%'), { uiAction: selectTab('prompts') })
 })
 
 component('llmHelperTest.openDialogInIframe', {
   doNotRunInTests: true,
-  impl: uiFrontEndTest(text('my text'), localHelper.openDialogInIframe(), { renderDOM: true })
+  impl: browserTest(text('my text'), { runBefore: localHelper.openDialogInIframe(), renderDOM: true })
 })
 
 component('llmHelperTest.prompts', {

@@ -159,8 +159,8 @@ component('inIframe.Floating', {
         el.querySelector('#fullScreen').addEventListener('click', () => 
           cmp.runFEMethod('setRect',{...cmp.fullScreen, doNotSetStorage: true},{cmp,padding}))
       }),      
-      dialogFeature.uniqueDialog('%$id%'),
-      dialogFeature.maxZIndexOnClick(5000),
+      unique('%$id%'),
+      maxZIndexOnClick(5000),
       popupLocation(),
       inIframe.resizer('%$padding%')
     ]

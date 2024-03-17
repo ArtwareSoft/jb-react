@@ -118,7 +118,7 @@ component('test.wixIslandGridCtrl', {
 })
 
 component('inPlaceEditTest.text', {
-  impl: uiFrontEndTest({
+  impl: browserTest({
     doNotRunInTests: true,
     vars: [
       Var('$previewMode', true)
@@ -131,7 +131,7 @@ component('inPlaceEditTest.text', {
 })
 
 component('inPlaceEditTest.grid', {
-  impl: uiFrontEndTest({
+  impl: browserTest({
     doNotRunInTests: true,
     vars: [
       Var('$previewMode', true)

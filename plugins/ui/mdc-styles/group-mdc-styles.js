@@ -40,6 +40,7 @@ component('group.tabs', {
               style: call('tabStyle'),
               raised: '%$tabIndex% == %$selectedTab%',
               features: [
+                htmlAttribute('tabName','%$tab/field()/title%'),
                 ctx => ctx.cmpCtx.params.barStyle.profile.$ !== 'group.mdcTabBar' && {$: 'feature<>watchRef', ref: '%$selectedTab%'},
                 ctx => ctx.run({ $: 'feature<>features', features: (ctx.vars.tab.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x) })
               ]

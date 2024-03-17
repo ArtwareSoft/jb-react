@@ -54,8 +54,8 @@ component('tree.initTree', {
 			 ...(!$state.refresh && {[$props.model.rootPath]: true}) 
 		})),
     frontEnd.enrichUserEvent(({},{cmp,ev}) => {
-			const el = jb.ui.find(ev.target,'.selected')[0] || ev.target
-			const labelEl = jb.ui.find(el,'.treenode-label')[0] || el
+			const el = jb.ui.querySelectorAll(ev.target,'.selected')[0] || ev.target
+			const labelEl = jb.ui.querySelectorAll(el,'.treenode-label')[0] || el
 			ev.fixedTarget = labelEl
 			return { path: cmp.elemToPath(el) }
 		}),
@@ -320,13 +320,13 @@ component('tree.dragAndDrop', {
       sink.BEMethod('moveItem', '%%')
     ),
     frontEnd.var('uiTest', '%$uiTest%'),
-    frontEnd.onRefresh((ctx,{cmp}) => cmp.drake && (cmp.drake.containers = jb.ui.find(cmp.base,'.jb-array-node>.treenode-children'))),
+    frontEnd.onRefresh((ctx,{cmp}) => cmp.drake && (cmp.drake.containers = jb.ui.querySelectorAll(cmp.base,'.jb-array-node>.treenode-children'))),
     frontEnd.init((ctx,{uiTest, cmp}) => {
 		if (uiTest) return
 		const drake = cmp.drake = dragula([], {
 			moves: el => jb.ui.matches(el,'.jb-array-node>.treenode-children>div')
 		})
-		drake.containers = jb.ui.find(cmp.base,'.jb-array-node>.treenode-children');
+		drake.containers = jb.ui.querySelectorAll(cmp.base,'.jb-array-node>.treenode-children');
 		drake.on('drag', function(el) {
 			const path = cmp.elemToPath(el.firstElementChild)
 			el.dragged = { path, expanded: cmp.state.expanded[path]}

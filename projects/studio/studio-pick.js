@@ -112,7 +112,7 @@ component('dialog.studioPickDialog', {
       ),
       watchRef('%$studio/refreshPick%', { allowSelfRefresh: true }),
       dialogFeature.studioPick('%$from%'),
-      dialogFeature.closeWhenClickingOutside()
+      closeWhenClickingOutside()
     ]
   })
 })

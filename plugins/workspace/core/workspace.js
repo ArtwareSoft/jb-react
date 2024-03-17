@@ -42,7 +42,6 @@ extension('workspace', {
             },
             async saveDoc() {
             },
-            // testers only use
             initDoc(uri,text, selection = { start:{line:0,col:0}, end:{line:0,col:0} }) {
                 jb.workspace.openDocs[uri] = { text, selection}
                 jb.workspace.activeUri = uri
@@ -58,4 +57,44 @@ extension('workspace', {
             async gotoFilePos(path,line,col) {}
         }
     }
+})
+
+component('workspace.initAsHost', {
+  type: 'action<>',
+  params: [
+    {id: 'docUri', as: 'string'},
+    {id: 'docContent', as: 'string'},
+    {id: 'line', as: 'number'},
+    {id: 'col', as: 'number'},
+  ],
+  impl: (ctx,docUri,docContent,line,col) => {
+      jb.workspace.initJbWorkspaceAsHost()
+      jb.tgpTextEditor.host.initDoc(docUri,docContent)
+      const doc = jb.workspace.openDocs[jb.workspace.activeUri]
+      doc.selection = { start : { line, col }, end: { line, col}}
+  }
+})
+
+component('workspace.activeUri', {
+  type: 'data<>',
+  impl: () => jb.workspace.activeUri
+})
+
+component('workspace.activeDocContent', {
+  type: 'data<>',
+  impl: () => jb.workspace.openDocs[jb.workspace.activeUri]
+})
+
+component('workspace.selelctionChanged', {
+  type: 'action',
+  params: [
+    {id: 'selection'},
+    {id: 'docUri', as: 'string'}
+  ],
+  impl: (ctx,selection,docUri) => {
+      jb.workspace.activeUri = docUri
+      const line = selection.line, col = selection.ch
+      const doc = jb.workspace.openDocs[jb.workspace.activeUri]
+      doc.selection = { start : { line, col }, end: { line, col}}
+  }
 })

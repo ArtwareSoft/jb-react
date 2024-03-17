@@ -1,5 +1,7 @@
-component('FETest.codeMirror', {
-  impl: uiFrontEndTest({
+using('ui-misc','ui-styles')
+
+component('browserTest.codeMirror', {
+  impl: browserTest({
     control: group(
       Var('js', obj(prop('text', `function f1() {
 return 15
@@ -16,8 +18,9 @@ return 15
   })
 })
 
-component('FETest.featuresCss', {
-  impl: uiFrontEndTest(text('Hello World', { features: css('color: red') }), {
+component('browserTest.featuresCss', {
+  doNotRunInTests: true,
+  impl: browserTest(text('Hello World', { features: css('color: red') }), {
     expectedResult: ctx => {
       const elem = jb.ui.widgetBody(ctx)
       document.body.appendChild(elem)
@@ -28,8 +31,9 @@ component('FETest.featuresCss', {
   })
 })
 
-component('FETest.picklist.mdcSelect', {
-  impl: uiFrontEndTest({
+component('browserTest.picklist.mdcSelect', {
+  doNotRunInTests: true,
+  impl: browserTest({
     control: picklist('city', '%$personWithAddress/address/city%', {
       options: picklist.optionsByComma('Springfield,New York,Tel Aviv,London'),
       style: picklist.mdcSelect('200')
@@ -38,8 +42,8 @@ component('FETest.picklist.mdcSelect', {
   })
 })
 
-component('FETest.coLocation', {
-  impl: uiFrontEndTest({
+component('browserTest.coLocation', {
+  impl: browserTest({
     vars: [Var('toChange', obj())],
     control: button('change', runFEMethod('#btn', 'changeDB'), {
       features: [
@@ -53,8 +57,9 @@ component('FETest.coLocation', {
   })
 })
 
-component('FETest.itemlist.infiniteScroll', {
-  impl: uiFrontEndTest({
+component('browserTest.itemlist.infiniteScroll', {
+  doNotRunInTests: true,
+  impl: browserTest({
     control: itemlist({
       items: range(0, 10),
       controls: text('%%'),
@@ -71,43 +76,24 @@ component('FETest.itemlist.infiniteScroll', {
   })
 })
 
-component('FETest.frontEnd.onDestroy', {
-  impl: uiFrontEndTest({
-    vars: [Var('res', obj())],
-    control: group({
-      controls: controlWithCondition('%$person/name%!=mukki', text('hello', {
-        features: frontEnd.onDestroy(remote.action(writeValue('%$res/destroyed%', 'ya'), backEnd()))
-      })),
-      features: watchRef('%$person/name%')
-    }),
-    expectedResult: equals('%$res/destroyed%', 'ya'),
-    uiAction: writeValue('%$person/name%', 'mukki'),
-    useFrontEnd: true
-  })
-})
-
-component('FETest.editableText.richPicklistHelper.setInput', {
-  impl: uiFrontEndTest({
-    control: editableText('name', '%$person/name%', {
-      style: editableText.input(),
-      features: [
-        id('inp'),
-        editableText.picklistHelper(picklist.optionsByComma('1111,2,3,4'), {
-          onEnter: editableText.setInputState('%$selectedOption%', '%value%')
-        })
-      ]
-    }),
-    uiAction: uiActions(
-      keyboardEvent('#inp', 'keyup', { keyCode: 37 }),
-      keyboardEvent('#inp', 'keydown', { keyCode: 40 }),
-      keyboardEvent('#inp', 'keyup', { keyCode: 13 })
+component('uiTest.onDestroy', {
+  impl: uiTest({
+    control: group(
+      button('click me', writeValue('%$person/name%', 'mukki')),
+      group({
+        controls: controlWithCondition('%$person/name%!=mukki', text('hello', { features: frontEnd.onDestroy(() => jb.frame.xx = 3) })),
+        features: watchRef('%$person/name%')
+      })
     ),
-    expectedResult: contains('1111</input-val>')
+    expectedResult: equals(()=>jb.frame.xx, 3),
+    uiAction: click(),
+    emulateFrontEnd: true
   })
 })
 
-// component('FETest.dialogCleanup', {
-//   impl: uiFrontEndTest({
+
+// component('browserTest.dialogCleanup', {
+//   impl: browserTest({
 //     vars: [
 //       Var('cleanup', obj(prop('destroy'), prop('tickAfterDestroy')))
 //     ],
@@ -129,7 +115,7 @@ component('FETest.editableText.richPicklistHelper.setInput', {
 
 // // ensure the right order between the unmount that causes elem._component = null and the blur event which is automatically generated when detaching the dialog
 // jb.component('uiTest.updateOnBlurWhenDialogClosed', {
-//   impl: uiFrontEndTest({
+//   impl: browserTest({
 //     control: group({
 //       controls: [
 //         button({
@@ -147,7 +133,7 @@ component('FETest.editableText.richPicklistHelper.setInput', {
 // })
 
 // jb.component('uiTest.cssDynamic', {
-//   impl: uiFrontEndTest({
+//   impl: browserTest({
 //     control: group({
 //       controls: [
 //         text({

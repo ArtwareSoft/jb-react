@@ -88,8 +88,8 @@ component('zui.visualItemPreview', {
                   features: css.margin({ left: '30px' })
                 }),
                 features: [
-                  dialogFeature.nearLauncherPosition(),
-                  dialogFeature.uniqueDialog('zui-preview')
+                  nearLauncherPosition(),
+                  unique('zui-preview')
                 ]
               })
             ),

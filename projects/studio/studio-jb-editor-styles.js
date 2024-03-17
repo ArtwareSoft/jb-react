@@ -22,10 +22,10 @@ component('dialog.studioJbEditorPopup', {
         >.dialog-close:hover { opacity: .5 }
         `,
     features: [
-      dialogFeature.maxZIndexOnClick(),
-      dialogFeature.closeWhenClickingOutside(),
-      dialogFeature.nearLauncherPosition(),
-      dialogFeature.uniqueDialog('studio-jb-editor-popup'),
+      maxZIndexOnClick(),
+      closeWhenClickingOutside(),
+      nearLauncherPosition(),
+      unique('studio-jb-editor-popup'),
       css.boxShadow({
         blurRadius: 5,
         spreadRadius: 0,
@@ -40,7 +40,7 @@ component('dialog.studioJbEditorPopup', {
 
 component('studio.nearLauncherPosition', {
   type: 'dialog-feature',
-  impl: dialogFeature.nearLauncherPosition({
+  impl: nearLauncherPosition({
     offsetLeft: (ctx,{cursorCoord}) => cursorCoord && cursorCoord.left || 0,
     offsetTop: (ctx,{cursorCoord}) => cursorCoord && cursorCoord.top || 0
   })
@@ -54,11 +54,11 @@ component('dialog.studioSuggestionsPopup', {
       ]),
     css: '{ background: var(--jb-editor-background); position: absolute; padding: 3px 5px }',
     features: [
-      dialogFeature.maxZIndexOnClick(),
-      dialogFeature.closeWhenClickingOutside(),
-      dialogFeature.cssClassOnLaunchingElement(),
-      dialogFeature.nearLauncherPosition(),
-      dialogFeature.uniqueDialog('studio-suggestions-popup'),
+      maxZIndexOnClick(),
+      closeWhenClickingOutside(),
+      cssClassOnLaunchingElement(),
+      nearLauncherPosition(),
+      unique('studio-suggestions-popup'),
       css.boxShadow({
         blurRadius: 5,
         spreadRadius: 0,

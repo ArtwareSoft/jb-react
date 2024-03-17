@@ -10,25 +10,6 @@ component('uiTest.changeText', {
   })
 })
 
-component('uiTest.runFEMethod', {
-  impl: uiTest({
-    control: group(
-      button('change', runFEMethod('#input1', 'changeText', { Data: 'world' })),
-      editableText({
-        databind: '%$person/name%',
-        style: editableText.input(),
-        features: [
-          id('input1'),
-          frontEnd.method('changeText', ({data},{el}) => el.value = data)
-        ]
-      })
-    ),
-    expectedResult: contains('world'),
-    uiAction: click(),
-    useFrontEnd: true
-  })
-})
-
 component('uiTest.transactiveHeadless.createWidget', {
   impl: uiTest(text('hello world'), contains('hello world'), { transactiveHeadless: true })
 })
@@ -129,6 +110,6 @@ component('uiTest.remoteItemlistKeyboardSelection', {
     backEndJbm: worker('itemlist', {
       sourceCode: sourceCode(pluginsByPath('/plugins/ui/tests/ui-tests.js'), plugins('remote-widget'))
     }),
-    useFrontEnd: true
+    emulateFrontEnd: true
   })
 })

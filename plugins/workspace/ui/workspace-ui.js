@@ -1,4 +1,4 @@
-using('ui-tree','ui-misc','ui-styles','probe-preview')
+using('ui-tree','ui-misc','ui-styles','probe-preview','workspace-core','tgp-lang-service')
 
 component('workspace', { watchableData: { bottomViewIndex : 0 } })
 
@@ -55,145 +55,6 @@ component('workspace.openDoc', {
   impl: ({},docUri) => jb.workspace.openDoc(docUri)
 })
 
-component('workspace.selelctionChanged', {
-  type: 'action',
-  params: [
-    {id: 'selection'},
-    {id: 'docUri', as: 'string'}
-  ],
-  impl: runActions(
-    Var('editorPath', ({},{},{docUri, selection}) => {
-            jb.workspace.activeUri = docUri
-            jb.workspace.openDocs[jb.workspace.activeUri].activeSelection = selection
-            return jb.workspace.calcActiveTextEditorPath()
-        }),
-    writeValue('%$probe/path%', '%$editorPath/path%'),
-    writeValue('%$workspace/offset%', '%$editorPath/offset%'),
-    writeValue('%$workspace/relevant%', '%$editorPath/relevant%'),
-    writeValue('%$workspace/semanticPath%', '%$editorPath/semanticPath/path%'),
-    writeValue('%$workspace/selectedPath%', '%$editorPath/path%'),
-    writeValue('%$workspace/probeCircuit%', remote.data(probe.calcCircuitPath('%$editorPath/path%'), probePreviewWorker()))
-  )
-})
-
-component('workspace.openQuickPickMenu', {
-  type: 'action',
-  params: [
-    {id: 'menu', type: 'menu.option', dynamic: true, mandatory: true},
-    {id: 'path', as: 'string', mandatory: true}
-  ],
-  impl: menu.openContextMenu('%$menu()%', {
-    features: [
-      dialogFeature.nearLauncherPosition({
-        offsetLeft: ({},{ev}) => ev.clientRect.width / 120 * (jb.workspace.activeTextEditor.selection.active().col +1),
-        offsetTop: ({},{ev}) => -1 * ev.clientRect.height + ev.clientRect.height / 15 * (jb.workspace.activeTextEditor.selection.active().line+1)
-      })
-    ]
-  })
-})
-
-component('workspace.textEditor', {
-  type: 'control',
-  params: [
-    {id: 'docContent', as: 'string'},
-    {id: 'docUri', as: 'string'},
-    {id: 'debounceTime', as: 'number', defaultValue: 300},
-    {id: 'codeMirror', as: 'boolean', type: 'boolean'},
-    {id: 'height', as: 'number', defaultValue: '300'}
-  ],
-  impl: text('%$docContent%', {
-    style: If('%$codeMirror%', text.codemirror({ height: '%$height%' }), text.textarea(20)),
-    features: [
-      id('activeEditor'),
-      frontEnd.var('docUri', '%$docUri%'),
-      variable('popupLauncherCanvas', '%$cmp%'),
-      feature.byCondition('%$codeMirror%', codemirror.initTgpTextEditor(), textarea.initTgpTextEditor()),
-      feature.onKey('Ctrl-Enter', action.runBEMethod('onEnter')),
-      method('onEnter', ctx => jb.workspace.onEnter(ctx)),
-      method('selectionChanged', workspace.selelctionChanged('%%', '%$docUri%')),
-      method('contentChanged', (ctx,{},{docUri}) => jb.workspace.contentChanged(ctx.data,docUri,ctx)),
-      feature.byCondition(
-        '%$height%',
-        css.height('%$height%', { minMax: 'max' }),
-        null
-      )
-    ]
-  })
-})
-
-component('textarea.initTgpTextEditor', {
-  type: 'feature',
-  impl: features(
-    textarea.enrichUserEvent(),
-    frontEnd.method('applyEdit', ({data},{docUri, el}) => {
-        const {edits, uri} = data
-        if (uri != docUri) return
-        ;(edits || []).forEach(({text, from, to}) => {
-            el.value = el.value.slice(0,from) + text + el.value.slice(to)
-            el.setSelectionRange(from,from)
-        })
-    }),
-    frontEnd.method('setSelectionRange', ({data},{docUri, el}) => {
-        const {uri, from, to} = data || {}
-        if (uri != docUri) return
-        if (!from) 
-            return jb.logError('tgpTextEditor setSelectionRange empty offset',{data ,el})
-        jb.log('tgpTextEditor selection set to', {data})
-        if (el.setSelectionRange)
-          el.setSelectionRange(from,to || from)
-        else
-          Object.assign(el._component.state, { selectionRange : {from, to: to || from} })
-    }),
-    frontEnd.flow(
-      source.event('selectionchange', () => jb.frame.document),
-      rx.takeUntil('%$cmp.destroyed%'),
-      rx.filter(({},{el}) => el == jb.path(jb.frame.document,'activeElement')),
-      rx.map(({},{el}) => jb.tgpTextEditor.offsetToLineCol(el.value,el.selectionStart)),
-      sink.BEMethod('selectionChanged', '%%')
-    ),
-    frontEnd.flow(
-      source.frontEndEvent('keyup'),
-      rx.map(({},{el}) => el.value),
-      rx.distinctUntilChanged(),
-      sink.BEMethod('contentChanged', '%%')
-    )
-  )
-})
-
-component('codemirror.initTgpTextEditor', {
-  type: 'feature',
-  impl: features(
-    codemirror.enrichUserEvent(),
-    frontEnd.method('replaceRange', ({data},{cmp}) => {
-        const {text, from, to} = data
-        const _from = jb.tgpTextEditor.lineColToOffset(cmp.base.value,from)
-        const _to = jb.tgpTextEditor.lineColToOffset(cmp.base.value,to)
-        cmp.base.value = cmp.base.value.slice(0,_from) + text + cmp.base.value.slice(_to)
-    }),
-    frontEnd.method('setSelectionRange', ({data},{cmp}) => {
-        const from = data.from || data
-        const to = data.to || from
-        const _from = jb.tgpTextEditor.lineColToOffset(cmp.base.value,from)
-        const _to = to && jb.tgpTextEditor.lineColToOffset(cmp.base.value,to) || _from
-        cmp.base.setSelectionRange(_from,_to)
-    }),
-    frontEnd.flow(
-      source.callbag(({},{cmp}) => jb.callbag.create(obs=> cmp.editor.on('cursorActivity', 
-        () => obs(cmp.editor.getDoc().getCursor())))),
-      rx.takeUntil('%$cmp/destroyed%'),
-      rx.debounceTime('%$debounceTime%'),
-      sink.BEMethod('selectionChanged', '%%')
-    ),
-    frontEnd.flow(
-      source.callbag(({},{cmp}) => jb.callbag.create(obs=> cmp.editor.on('change', () => obs(cmp.editor.getValue())))),
-      rx.takeUntil('%$cmp/destroyed%'),
-      rx.debounceTime('%$debounceTime%'),
-      rx.distinctUntilChanged(),
-      sink.BEMethod('contentChanged', '%%')
-    )
-  )
-})
-
 component('textarea.enrichUserEvent', {
   type: 'feature',
   params: [
@@ -216,3 +77,132 @@ component('textarea.enrichUserEvent', {
   )
 })
 
+component('workspace.openQuickPickMenu', {
+  type: 'action',
+  params: [
+    {id: 'menu', type: 'menu.option', dynamic: true, mandatory: true},
+    {id: 'path', as: 'string', mandatory: true}
+  ],
+  impl: menu.openContextMenu('%$menu()%', {
+    features: [
+      nearLauncherPosition({
+        offsetLeft: ({},{ev}) => ev.clientRect.width / 120 * (jb.workspace.activeTextEditor.selection.active().col +1),
+        offsetTop: ({},{ev}) => -1 * ev.clientRect.height + ev.clientRect.height / 15 * (jb.workspace.activeTextEditor.selection.active().line+1)
+      })
+    ]
+  })
+})
+
+component('workspace.currentTextEditor', {
+  impl: group(workspace.textEditor('%$docContent%', workspace.activeUri()), {
+    features: watchable('docContent', pipeline(workspace.activeDocContent(), '%text%', first()))
+  })
+})
+
+component('workspace.textEditor', {
+  type: 'control',
+  params: [
+    {id: 'docContent', as: 'ref'},
+    {id: 'docUri', as: 'string'},
+    {id: 'debounceTime', as: 'number', defaultValue: 300},
+    {id: 'height', as: 'number', defaultValue: '300'}
+  ],
+  impl: editableText('edit %$docUri%', '%$docContent%', {
+    style: editableText.codemirror({ height: '%$height%', mode: 'javascript' }),
+    features: [
+      id('activeEditor'),
+      frontEnd.var('docUri', '%$docUri%'),
+      frontEnd.var('initCursorPos', () => jb.workspace.openDocs[jb.workspace.activeUri].selection.start),
+      variable('popupLauncherCanvas', '%$cmp%'),
+      frontEnd.init(({},{cmp, initCursorPos}) => cmp.editor.setCursor(initCursorPos.line, initCursorPos.col)),
+      frontEnd.flow(
+        source.callbag(({},{cmp}) => jb.callbag.create(obs=> 
+            cmp.editor.on('cursorActivity', () => obs(cmp.editor.getDoc().getCursor())))),
+        rx.takeUntil('%$cmp/destroyed%'),
+        rx.debounceTime('%$debounceTime%'),
+        sink.BEMethod('selectionChanged', '%%')
+      ),
+      frontEnd.flow(
+        source.frontEndEvent('keydown'),
+        rx.filter(key.match('Ctrl+Space')),
+        rx.userEventVar(),
+        rx.var('offsets', ({},{cmp}) => cmp.editor.charCoords(cmp.editor.getCursor(), "local")),
+        sink.BEMethod('openPopup', '%$offsets%', obj(prop('ev', '%$ev%')))
+      ),
+      method('openPopup', openDialog({
+        content: workspace.floatingCompletions(),
+        style: workspace.popup(),
+        id: 'floatingCompletions',
+        features: [
+          autoFocusOnFirstInput(),
+          nearLauncherPosition('%left%', '%top%', { insideLauncher: true })
+        ]
+      })),
+      method('selectionChanged', workspace.selelctionChanged('%%', '%$docUri%')),
+      feature.byCondition('%$height%', css.height('%$height%', { minMax: 'max' }), null)
+    ]
+  })
+})
+
+component('workspace.floatingCompletions', {
+  type: 'control',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: group({
+    controls: [
+      group({
+        controls: [
+          editableText('', '%$text%', {
+            updateOnBlur: true,
+            style: editableText.floatingInput(),
+            features: [
+              watchRef(tgp.ref('%$path%'), { strongRefresh: true }),
+              feature.onKey('Right', suggestions.applyOption({ addSuffix: '/' })),
+              feature.onKey('Enter', runActions(
+                suggestions.applyOption(),
+                dialog.closeDialogById('floatingCompletions'),
+                popup.regainCanvasFocus()
+              )),
+              feature.onKey('Esc', runActions(dialog.closeDialogById('floatingCompletions'), popup.regainCanvasFocus())),
+              editableText.picklistHelper({
+                options: workspace.completionOptions(),
+                picklistStyle: workspace.completions(),
+                picklistFeatures: picklist.allowAsynchOptions(),
+                showHelper: true,
+                autoOpen: true
+              }),
+              css.width('100%'),
+              css('~ input { padding-top: 30px !important}')
+            ]
+          }),
+          text(pipeline(tgp.paramDef('%$path%'), '%description%'), { features: css('color: grey') })
+        ],
+        layout: layout.vertical(),
+        features: css.width('100%')
+      })
+    ],
+    layout: layout.horizontal('20'),
+    features: [
+      watchable('text', ''),
+      variable('completions', obj()),
+      css.padding({ left: '4', right: '4' }),
+      css.width('500')
+    ]
+  })
+})
+
+component('workspace.completionOptions', {
+  type: 'picklist.options',
+  params: [
+    {id: 'input', defaultValue: '%%'}
+  ],
+  impl: (ctx, input) => {
+    const { completions } = ctx.vars
+    if (completions.options)
+      return completions.options.filter(({text})=> text.indexOf(input.value) != -1)
+    return new Promise(resolve => 
+      jb.langService.completionItems(ctx).then(res => 
+        resolve(completions.options = res.filter(({kind}) => kind != 25).map((item,i)=>({i, code: item.label, text: item.label})))))
+  }
+})

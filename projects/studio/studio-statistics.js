@@ -100,7 +100,7 @@ component('studio.componentsList', {
               ),
               features: [
                 css('z-index: 6000 !important'),
-                dialogFeature.nearLauncherPosition()
+                nearLauncherPosition()
               ]
             }),
             style: button.x(),

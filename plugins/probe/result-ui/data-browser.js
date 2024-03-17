@@ -112,9 +112,9 @@ component('dialog.showSourceStyle', {
 				  }
 				  >.dialog-close:hover { opacity: .5 }`,
     features: [
-      dialogFeature.dragTitle('%$id%', true),
-      dialogFeature.uniqueDialog('%$id%'),
-      dialogFeature.maxZIndexOnClick(5000),
+      dragTitle('%$id%', true),
+      unique('%$id%'),
+      maxZIndexOnClick(5000),
       dialogFeature.resizer(true)
     ]
   })

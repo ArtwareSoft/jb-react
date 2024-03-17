@@ -347,7 +347,7 @@ component('tester.runTestsOfPlugin', {
   impl: async (ctx,plugin,test) => {
 	const tests = jb.entries(jb.comps)
 		.filter(([id,comp]) => comp.$plugin == plugin+'-tests' && jb.utils.dslType(id) == 'test' && comp.type != 'test')
-		.filter(([id,comp]) => jb.path(comp,'impl.$') != 'uiFrontEndTest').map(([id]) => id)
+		.filter(([id,comp]) => jb.path(comp,'impl.$') != 'browserTest').map(([id]) => id)
 	const testResults = []
 	await tests.reduce(async (pr,testID) => {
 		await pr

@@ -64,6 +64,7 @@ extension('ui', 'react', {
     },
     applyNewVdom(elem,vdomAfter,{strongRefresh, ctx, delta, srcCtx} = {}) {
         const widgetId = jb.ui.headlessWidgetId(elem)
+        const tagChange = vdomAfter && vdomAfter.tag != (elem.tagName || elem.tag).toLowerCase()
         jb.log('applyNew vdom',{widgetId,elem,vdomAfter,strongRefresh, ctx})
         if (delta) { // used only by $runFEMethod
             const cmpId = elem.getAttribute('cmp-id')
@@ -80,6 +81,9 @@ extension('ui', 'react', {
             const delta = jb.ui.compareVdom(vdomBefore,vdomAfter,ctx)
             //const assumedVdom = JSON.parse(JSON.stringify(jb.ui.stripVdom(elem)))
             if (elem != vdomAfter) { // update the elem
+                if (tagChange || strongRefresh)
+                    jb.ui.unmount(elem)
+        
                 ;(elem.children ||[]).forEach(ch=>ch.parentNode = null)
                 Object.keys(elem).filter(x=>x !='parentNode').forEach(k=>delete elem[k])
                 Object.assign(elem,vdomAfter)
@@ -90,7 +94,7 @@ extension('ui', 'react', {
             return
         }
         const active = jb.ui.activeElement() === elem
-        if (vdomAfter.tag != (elem.tagName || elem.tag).toLowerCase() || strongRefresh) {
+        if (tagChange || strongRefresh) {
             jb.ui.unmount(elem)
             const newElem = jb.ui.render(vdomAfter,elem.parentElement,{ctx})
             elem.parentElement.replaceChild(newElem,elem)
@@ -101,9 +105,11 @@ extension('ui', 'react', {
             const delta = jb.ui.compareVdom(vdomBefore,vdomAfter,ctx)
             const cmpId = elem.getAttribute('cmp-id')
             jb.log('applyDeltaTop apply delta top dom',{cmpId, vdomBefore,vdomAfter,active,elem,vdomAfter,strongRefresh, delta, ctx})
+            if (!(elem instanceof jb.ui.VNode) && elem.querySelectorAll)
+                [...elem.querySelectorAll('[jb_external]')].forEach(el=>el.parentNode.removeChild(el))
             jb.ui.applyDeltaToDom(elem,delta,ctx)
         }
-        if (!(elem instanceof jb.ui.VNode) || ctx.vars.useFrontEndInTest) {
+        if (!(elem instanceof jb.ui.VNode) || ctx.vars.emulateFrontEndInTest) {
             if (elem instanceof jb.ui.VNode)
                 jb.ui.setAttToVdom(elem,ctx)
             jb.ui.refreshFrontEnd(elem, {content: vdomAfter})
@@ -290,6 +296,7 @@ extension('ui', 'react', {
             jb.log('dom set input check',{el, assumedVal,newVal,selectionStart,ctx})
             if (!el)
                 return jb.logError('setInput: can not find input under elem',{elem,ctx})
+            if (el.value == null) el.value = ''
             if (assumedVal != el.value) 
                 return jb.logError('setInput: assumed val is not as expected',{ assumedVal, value: el.value, el,ctx })
             const active = activeElem === el
@@ -307,6 +314,7 @@ extension('ui', 'react', {
         const groupByWidgets = {}
         jb.ui.findIncludeSelf(elem,'[cmp-id]').forEach(el => {
             el._component && el._component.destroyFE()
+            el._component = null
             const FEWidgetId = jb.ui.frontendWidgetId(elem)
             if (FEWidgetId && FEWidgetId != 'client') return
             const widgetId = jb.ui.headlessWidgetId(el) || '_local_'
@@ -326,7 +334,7 @@ extension('ui', 'react', {
         jb.log('render',{vdom,parentElem,prepend})
         if (parentElem instanceof jb.ui.VNode) {
             parentElem.appendChild(vdom)
-            if (ctx.vars.useFrontEndInTest) {
+            if (ctx.vars.emulateFrontEndInTest) {
                 jb.ui.setAttToVdom(vdom,ctx)
                 jb.ui.refreshFrontEnd(vdom, {content: vdom})
             }
@@ -462,16 +470,16 @@ extension('ui', 'react', {
             }
         }
         const bySelector = delta._$bySelector && Object.keys(delta._$bySelector)[0]
-        const actualElem = bySelector ? jb.ui.find(elem,bySelector)[0] : elem
+        const actualElem = bySelector ? jb.ui.querySelectorAll(elem,bySelector)[0] : elem
         const actualdelta = bySelector ? delta._$bySelector[bySelector] : delta
         jb.log('applyDelta uiComp',{cmpId, delta, ctx, elem, bySelector, actualElem})
         if (actualElem instanceof jb.ui.VNode) {
             jb.ui.applyDeltaToVDom(actualElem, actualdelta,ctx)
-            const { headlessWidgetId, headlessWidget, useFrontEndInTest } = ctx.vars
+            const { headlessWidgetId, headlessWidget, emulateFrontEndInTest, widgetId } = ctx.vars
             headlessWidget && jb.ui.sendRenderingUpdate(ctx,{delta,cmpId,widgetId: headlessWidgetId,ctx})
-            if (useFrontEndInTest) {
+            if (emulateFrontEndInTest) {
                 jb.ui.setAttToVdom(actualElem,ctx)
-                jb.ui.refreshFrontEnd(actualElem, {content: delta})
+                jb.ui.refreshFrontEnd(actualElem, {content: delta, emulateFrontEndInTest: true, widgetId })
             }
             // if (uiTest && jb.path(jb,'parent.uri') == 'tests' && jb.path(jb,'parent.ui.renderingUpdates')) // used for distributedWidget tests
             //     jb.parent.ui.sendRenderingUpdate(ctx,{delta,ctx})
