@@ -148,6 +148,7 @@ extension('langService', 'impl', {
                 return jb.logError(`no param def for path ${path}`, { srcCtx })
             const paramType = tgpModel.paramType(path)
             const result = param.templateValue ? JSON.parse(JSON.stringify(param.templateValue))
+                : paramType == 'boolean<>' ? true
                 : paramType.indexOf('data') != -1 ? '' : { $: 'TBD' }
     
             return jb.langService.setOp(path, result, srcCtx)

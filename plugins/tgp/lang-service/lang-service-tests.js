@@ -63,6 +63,14 @@ component('completionTest.createPipelineFromComp', {
   })
 })
 
+component('completionTest.newBooleanAsTrue', {
+  impl: completionActionTest('uiTest(__text(split()))', {
+    completionToActivate: 'allowError',
+    expectedEdit: asIs({range: {start: {line: 1, col: 28}, end: {line: 1, col: 28}}, newText: ', { allowError: true }'}),
+    expectedCursorPos: '1,44'
+  })
+})
+
 component('completionTest.groupInGroup', {
   impl: completionOptionsTest(`uiTest(group(group(__text(''))))`, {
     expectedSelections: ['button']
