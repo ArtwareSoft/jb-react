@@ -60,7 +60,7 @@ component('gridEditor.addRemoveTabPopup', {
       If('%$ev/ctrlKey%', menu.openContextMenu({
         menu: menu({
           options: [
-            menu.action({
+            option({
               title: 'remove tab',
               action: runActions(
                 (ctx,{gridIndex,gridPath},{axis}) => jb.ui.removeGridTab(gridPath,gridIndex,axis,ctx),
@@ -72,7 +72,7 @@ component('gridEditor.addRemoveTabPopup', {
               icon: icon('delete'),
               showCondition: (ctx,{gridIndex,gridPath},{axis}) => jb.ui.canRemoveGridTab(gridPath,gridIndex,axis,ctx)
             }),
-            menu.action({
+            option({
               title: 'new tab',
               action: runActions(
                 (ctx,{gridIndex,gridPath},{axis}) => jb.ui.addGridTab(gridPath,gridIndex,axis,ctx),

@@ -245,7 +245,7 @@ component('menu.studioWrapWith', {
   ],
   impl: menu.dynamicOptions({
     items: If(tgp.isOfType('%$path%', '%$type%'), '%$components%', list()),
-    genericOption: menu.action('Wrap with %%', runActions(tgp.wrap('%$path%', '%%'), studio.expandAndSelectFirstChildInJbEditor(), studio.gotoPath('%$path%', 'close-array')))
+    genericOption: option('Wrap with %%', runActions(tgp.wrap('%$path%', '%%'), studio.expandAndSelectFirstChildInJbEditor(), studio.gotoPath('%$path%', 'close-array')))
   })
 })
 
@@ -256,7 +256,7 @@ component('menu.studioWrapWithArray', {
   ],
   impl: If({
     condition: tgp.canWrapWithArray('%$path%'),
-    then: menu.action('Wrap with array', runActions(tgp.wrapWithArray('%$path%'), studio.expandAndSelectFirstChildInJbEditor(), studio.gotoPath('%$path%', 'close-array'))),
+    then: option('Wrap with array', runActions(tgp.wrapWithArray('%$path%'), studio.expandAndSelectFirstChildInJbEditor(), studio.gotoPath('%$path%', 'close-array'))),
     Else: []
   })
 })
@@ -366,7 +366,7 @@ component('studio.jbEditorTitle', {
       menu({
         menu: menu({
           options: [
-            menu.action('pick context', studio.pick(), { icon: icon('Selection', { type: 'mdi' }) })
+            option('pick context', studio.pick(), { icon: icon('Selection', { type: 'mdi' }) })
           ],
           icon: icon('undo')
         }),

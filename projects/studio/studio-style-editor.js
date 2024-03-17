@@ -20,7 +20,7 @@ component('studio.openStyleMenu', {
   impl: menu.openContextMenu(
     menu({
       options: [
-        menu.action({
+        option({
           title: 'Clone as local style',
           action: [
             studio.calcMakeLocal('%$path%', true),
@@ -30,11 +30,11 @@ component('studio.openStyleMenu', {
           icon: icon('build'),
           showCondition: `%$styleSource/type% == 'global'`
         }),
-        menu.action('Extract style as a reusable component', {
+        option('Extract style as a reusable component', {
           icon: icon('build'),
           showCondition: `%$styleSource/type% == 'inner'`
         }),
-        menu.action('Format css', writeValue({
+        option('Format css', writeValue({
           to: sourceEditor.profileAsText('%$styleSource/path%~css'),
           value: studio.formatCss(sourceEditor.profileAsText('%$styleSource/path%~css'))
         }))
@@ -141,12 +141,12 @@ component('studio.styleEditorOptions', {
     vars: [
       Var('compName', tgp.compName('%$path%'))
     ],
-    options: menu.action({
+    options: option({
       title: 'Style editor',
       action: runActions(studio.calcMakeLocal('%$path%', true), studio.openStyleEditor('%$path%')),
       showCondition: endsWith('~style', '%$path%')
     }),
-    separator: menu.action('Style editor of %$compName%', studio.openStyleEditor('%$compName%~impl'), {
+    separator: option('Style editor of %$compName%', studio.openStyleEditor('%$compName%~impl'), {
       showCondition: and(endsWith('~style', '%$path%'), notEmpty('%$compName%'))
     })
   })

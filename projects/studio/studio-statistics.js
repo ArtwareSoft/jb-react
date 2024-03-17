@@ -8,9 +8,9 @@ component('studio.gotoReferencesOptions', {
   impl: menu.dynamicOptions('%$refs%', If({
     condition: '%refs/length% > 1',
     then: menu('%id% (%refs/length%)', {
-      options: menu.dynamicOptions('%$menuData/refs%', menu.action('%%', studio.openComponentInJbEditor('%%', '%$path%')))
+      options: menu.dynamicOptions('%$menuData/refs%', option('%%', studio.openComponentInJbEditor('%%', '%$path%')))
     }),
-    Else: menu.action({
+    Else: option({
       vars: [
         Var('compName', split('~', { text: '%refs[0]%', part: 'first' }))
       ],
@@ -53,7 +53,7 @@ component('studio.gotoReferencesMenu', {
     then: menu('%$noOfReferences% references for %$path%', {
       options: studio.gotoReferencesOptions('%$path%', { refs: '%$refs%' })
     }),
-    Else: menu.action('no references for %$path%')
+    Else: option('no references for %$path%')
   })
 })
 

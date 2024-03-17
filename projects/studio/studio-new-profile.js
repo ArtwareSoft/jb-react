@@ -310,7 +310,7 @@ component('studio.insertCompOption', {
     {id: 'title', as: 'string'},
     {id: 'comp', as: 'string'}
   ],
-  impl: menu.action('%$title%', tgp.insertControl('%$comp%', studio.currentProfilePath()))
+  impl: option('%$title%', tgp.insertControl('%$comp%', studio.currentProfilePath()))
 })
 
 component('studio.insertControlMenu', {
@@ -330,9 +330,9 @@ component('studio.insertControlMenu', {
           studio.insertCompOption('Editable Boolean', 'editable-boolean')
         ]
       }),
-      menu.action('More...', studio.openNewProfileDialog({ type: 'control', mode: 'insert-control' })),
+      option('More...', studio.openNewProfileDialog({ type: 'control', mode: 'insert-control' })),
       menu.separator(),
-      menu.action({
+      option({
         title: 'Drop html from any web site',
         action: openDialog({
           title: 'Drop html from any web site',
@@ -364,8 +364,8 @@ component('studio.insertControlMenu', {
         shortcut: ''
       }),
       menu.separator(),
-      menu.action('New Page (Control)', studio.openNewPage()),
-      menu.action('New Function', studio.openNewFunction())
+      option('New Page (Control)', studio.openNewPage()),
+      option('New Function', studio.openNewFunction())
     ]
   })
 })

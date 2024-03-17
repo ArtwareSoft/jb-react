@@ -19,26 +19,26 @@ component('menusDemo.pulldown', {
         menu({
           title: 'File',
           options: [
-            menu.action({
+            option({
               title: 'Open',
               action: openDialog({content: group({}), title: 'open'}),
               shortcut: 'o',
               showCondition: true
             }),
-            menu.action({title: 'Save', showCondition: true})
+            option({title: 'Save', showCondition: true})
           ]
         }),
         menu({
           title: 'Edit',
           options: [
-            menu.action({title: 'Copy', showCondition: true}),
-            menu.action({title: 'Paste', showCondition: true}),
+            option({title: 'Copy', showCondition: true}),
+            option({title: 'Paste', showCondition: true}),
             menu.separator(),
             menu({
               title: 'Change case',
               options: [
-                menu.action({title: 'uppercase', showCondition: true}),
-                menu.action({title: 'lowercase', showCondition: true})
+                option({title: 'uppercase', showCondition: true}),
+                option({title: 'lowercase', showCondition: true})
               ]
             })
           ]
@@ -59,14 +59,14 @@ component('menusDemo.popup', {
           menu: menu({
             title: 'Edit',
             options: [
-              menu.action({
+              option({
                 title: 'Copy',
                 action: openDialog({content: group({}), title: 'hello'}),
                 icon: icon({icon: 'ContentCopy', type: 'mdi'}),
                 shortcut: 'c',
                 showCondition: true
               }),
-              menu.action({
+              option({
                 title: 'Paste',
                 icon: icon({icon: 'ContentPaste', type: 'mdi'}),
                 showCondition: true
@@ -74,8 +74,8 @@ component('menusDemo.popup', {
               menu({
                 title: 'Change case',
                 options: [
-                  menu.action({title: 'uppercase', showCondition: true}),
-                  menu.action({title: 'lowercase', showCondition: true})
+                  option({title: 'uppercase', showCondition: true}),
+                  option({title: 'lowercase', showCondition: true})
                 ],
                 icon: icon({icon: 'text_format', type: 'mdc'})
               })
@@ -105,8 +105,8 @@ component('menusDemo.dynamic', {
         menu({
           title: pipeline('%name%', toUpperCase()),
           options: [
-            menu.action({title: '%name%', showCondition: true}),
-            menu.action({title: 'show address', showCondition: true})
+            option({title: '%name%', showCondition: true}),
+            option({title: 'show address', showCondition: true})
           ]
         })
       )
@@ -121,7 +121,7 @@ component('menusDemo.iconToolbar', {
   impl: group({
     title: '',
     controls: menu(
-      menu({options: [menu.action({icon: icon('alarm')}), menu.action({icon: icon('build')})]}),
+      menu({options: [option({icon: icon('alarm')}), option({icon: icon('build')})]}),
       menuStyle.toolbar()
     )
   })

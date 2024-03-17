@@ -113,7 +113,7 @@ component('studio.gotoEditorSecondary', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: menu.action({
+  impl: option({
     vars: [
       Var('baseComp', split('~', { text: '%$path%', part: 'first' })),
       Var('shortBaseComp', split('>', { text: '%$baseComp%', part: 'last' }))
@@ -129,7 +129,7 @@ component('studio.gotoEditorFirst', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: menu.action({
+  impl: option({
     title: pipeline(tgp.shortCompName('%$path%'), 'Goto editor: %%'),
     action: tgpTextEditor.gotoSource(tgp.compName('%$path%')),
     shortcut: 'Alt+E',

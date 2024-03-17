@@ -129,10 +129,10 @@ component('studio.dataResourceMenu', {
               }
             }
             ),
-          genericControl: menu.action('%$controlItem/title%', studio.openResource('%$controlItem/path%', '%$controlItem/name%'))
+          genericControl: option('%$controlItem/title%', studio.openResource('%$controlItem/path%', '%$controlItem/name%'))
         }))
       ),
-      menu.action('New ...', studio.openNewDataSource())
+      option('New ...', studio.openNewDataSource())
     ]
   })
 })

@@ -331,11 +331,11 @@ component('langServer.jBartMenu', {
     ],
     title: 'type: %$compProps/type%, pluginDsl: %$compProps/pluginDsl%, fileDsl: %$compProps/fileDsl%',
     options: [
-      menu.action('goto circuit: %$circuit%', vscode.gotoFilePos('%$compProps/circuitOptions/0/location%')),
-      menu.action('open test circuit: %$circuit%', gotoUrl(langServer.testUrl())),
-      menu.action('open studio for circuit: %$circuit% at %$compProps/path%', gotoUrl(langServer.studioCircuitUrl())),
-      menu.action('create test', vscode.createTest()),
-      menu.action('open probe in browser', gotoUrl(langServer.runCtxOfRemoteCmdUrl()))
+      option('goto circuit: %$circuit%', vscode.gotoFilePos('%$compProps/circuitOptions/0/location%')),
+      option('open test circuit: %$circuit%', gotoUrl(langServer.testUrl())),
+      option('open studio for circuit: %$circuit% at %$compProps/path%', gotoUrl(langServer.studioCircuitUrl())),
+      option('create test', vscode.createTest()),
+      option('open probe in browser', gotoUrl(langServer.runCtxOfRemoteCmdUrl()))
     ]
   })
 })

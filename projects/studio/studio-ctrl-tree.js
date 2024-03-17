@@ -53,7 +53,7 @@ component('studio.treeMenu', {
   ],
   impl: menu({
     options: [
-      menu.action({
+      option({
         title: 'Insert Field',
         action: studio.openNewProfileDialog('%$path%', 'table-field', {
           mode: 'insert-control',
@@ -61,22 +61,22 @@ component('studio.treeMenu', {
         }),
         showCondition: equals(pipeline(tgp.val('%$path%'), '%$%'), 'table')
       }),
-      menu.action('Insert', studio.openNewProfileDialog('%$path%', 'control', {
+      option('Insert', studio.openNewProfileDialog('%$path%', 'control', {
         mode: 'insert-control',
         onClose: studio.gotoLastEdit()
       })),
-      menu.action({
+      option({
         title: 'Wrap with group',
         action: runActions(tgp.wrapWithGroup('%$path%'), writeValue('%$studio/profile_path%', '%$path%~controls~0'), popup.regainCanvasFocus())
       }),
-      menu.action('Duplicate', tgp.duplicateControl('%$path%'), { shortcut: 'Ctrl+D' }),
+      option('Duplicate', tgp.duplicateControl('%$path%'), { shortcut: 'Ctrl+D' }),
       menu.separator(),
-      menu.action('Inteliscript editor', studio.openJbEditor('%$path%'), { shortcut: 'Ctrl+I' }),
-      menu.action('Javascript editor', studio.editSource('%$path%'), {
+      option('Inteliscript editor', studio.openJbEditor('%$path%'), { shortcut: 'Ctrl+I' }),
+      option('Javascript editor', studio.editSource('%$path%'), {
         icon: icon('code'),
         shortcut: 'Ctrl+J'
       }),
-      menu.action({
+      option({
         vars: [
           Var('compName', tgp.compName('%$path%'))
         ],
@@ -87,15 +87,15 @@ component('studio.treeMenu', {
       studio.gotoEditorOptions('%$path%'),
       menu.separator(),
       menu.endWithSeparator(studio.gotoReferencesOptions('%$path%')),
-      menu.action('Delete', tgp.delete('%$path%'), { icon: icon('delete'), shortcut: 'Delete' }),
-      menu.action(If(tgp.isDisabled('%$path%'), 'Enable', 'Disable'), tgp.toggleDisabled('%$path%'), {
+      option('Delete', tgp.delete('%$path%'), { icon: icon('delete'), shortcut: 'Delete' }),
+      option(If(tgp.isDisabled('%$path%'), 'Enable', 'Disable'), tgp.toggleDisabled('%$path%'), {
         icon: icon('do_not_disturb'),
         shortcut: 'Ctrl+X'
       }),
-      menu.action('Copy', studio.copy('%$path%'), { icon: icon('copy'), shortcut: 'Ctrl+C' }),
-      menu.action('Paste', studio.paste('%$path%'), { icon: icon('paste'), shortcut: 'Ctrl+V' }),
-      menu.action('Undo', watchableComps.undo(), { icon: icon('undo'), shortcut: 'Ctrl+Z' }),
-      menu.action('Redo', watchableComps.redo(), { icon: icon('redo'), shortcut: 'Ctrl+Y' })
+      option('Copy', studio.copy('%$path%'), { icon: icon('copy'), shortcut: 'Ctrl+C' }),
+      option('Paste', studio.paste('%$path%'), { icon: icon('paste'), shortcut: 'Ctrl+V' }),
+      option('Undo', watchableComps.undo(), { icon: icon('undo'), shortcut: 'Ctrl+Z' }),
+      option('Redo', watchableComps.redo(), { icon: icon('redo'), shortcut: 'Ctrl+Y' })
     ]
   })
 })

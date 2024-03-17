@@ -186,7 +186,7 @@ component('studio.sampleProject', {
   params: [
     {id: 'project', as: 'string'}
   ],
-  impl: menu.action('%$project%', If(studio.inVscode(), studio.reOpenStudio(pipeline(studio.projectsDir(), '%%/%$project%/%$project%.js'), 0)))
+  impl: option('%$project%', If(studio.inVscode(), studio.reOpenStudio(pipeline(studio.projectsDir(), '%%/%$project%/%$project%.js'), 0)))
 })
 
 component('studio.mainMenu', {
@@ -204,12 +204,12 @@ component('studio.mainMenu', {
               studio.sampleProject('cardsDemo')
             ]
           }),
-          menu.action('New Project', studio.openNewProject(), { icon: icon('new') }),
-          menu.action('Open Project ...', studio.openProject(), { showCondition: not(studio.inVscode()) }),
-          menu.action('Save', studio.saveComponents(), { icon: icon('save'), shortcut: 'Ctrl+S', showCondition: not(studio.inVscode()) }),
-          menu.action('Force Save', studio.saveComponents(), { icon: icon('save'), showCondition: not(studio.inVscode()) }),
-          menu.action('Github helper...', studio.githubHelper(), { showCondition: not(studio.inVscode()) }),
-          menu.action('Settings...', openDialog('Project Settings', studio.projectSettings(), {
+          option('New Project', studio.openNewProject(), { icon: icon('new') }),
+          option('Open Project ...', studio.openProject(), { showCondition: not(studio.inVscode()) }),
+          option('Save', studio.saveComponents(), { icon: icon('save'), shortcut: 'Ctrl+S', showCondition: not(studio.inVscode()) }),
+          option('Force Save', studio.saveComponents(), { icon: icon('save'), showCondition: not(studio.inVscode()) }),
+          option('Github helper...', studio.githubHelper(), { showCondition: not(studio.inVscode()) }),
+          option('Settings...', openDialog('Project Settings', studio.projectSettings(), {
             style: dialog.dialogOkCancel(),
             onOK: runActions(writeValue('%$studio/projectSettings/libs%', pipeline('%$studio/libsAsArray%', join(','))), studio.saveProjectSettings(), studio.refreshPreview()),
             features: dragTitle()
@@ -218,22 +218,22 @@ component('studio.mainMenu', {
       }),
       menu('Edit', {
         options: [
-          menu.action('Undo', watchableComps.undo(), { icon: icon('undo'), shortcut: 'Ctrl+Z' }),
-          menu.action('Redo', watchableComps.redo(), { icon: icon('redo'), shortcut: 'Ctrl+Y' }),
-          menu.action('Extract Component', studio.openExtractComponent(), { shortcut: '', showCondition: studio.canExtractParam() }),
-          menu.action('Extract Param', studio.openExtractParam(), { shortcut: '', showCondition: studio.canExtractParam() })
+          option('Undo', watchableComps.undo(), { icon: icon('undo'), shortcut: 'Ctrl+Z' }),
+          option('Redo', watchableComps.redo(), { icon: icon('redo'), shortcut: 'Ctrl+Y' }),
+          option('Extract Component', studio.openExtractComponent(), { shortcut: '', showCondition: studio.canExtractParam() }),
+          option('Extract Param', studio.openExtractParam(), { shortcut: '', showCondition: studio.canExtractParam() })
         ]
       }),
       menu('View', {
         options: [
-          menu.action('Components...', openDialog('components', studio.componentsList(), { style: dialog.studioFloating(), features: css.width('600') })),
-          menu.action('Refresh Preview', studio.refreshPreview()),
-          menu.action('Redraw Studio', studio.redrawStudio()),
-          menu.action('Edit source', studio.editSource()),
-          menu.action('Outline', studio.openControlTree()),
-          menu.action('Inteliscript Editor', studio.openJbEditor(studio.currentProfilePath())),
+          option('Components...', openDialog('components', studio.componentsList(), { style: dialog.studioFloating(), features: css.width('600') })),
+          option('Refresh Preview', studio.refreshPreview()),
+          option('Redraw Studio', studio.redrawStudio()),
+          option('Edit source', studio.editSource()),
+          option('Outline', studio.openControlTree()),
+          option('Inteliscript Editor', studio.openJbEditor(studio.currentProfilePath())),
           menu.separator(),
-          menu.dynamicOptions(studio.cmpsOfProject(), menu.action({
+          menu.dynamicOptions(studio.cmpsOfProject(), option({
             title: pipeline(
               Var('type', If(tgp.isOfType('%%', 'control'), 'page', 'component')),
               suffix('.'),

@@ -4,14 +4,14 @@ component('menuTest.menu1', {
     options: [
       menu('File', {
         options: [
-          menu.action('New', () => alert(1)),
-          menu.action('Open'),
-          menu('Bookmarks', { options: [menu.action('Google'), menu.action('Facebook')] }),
-          menu('Friends', { options: [menu.action('Dave'), menu.action('Dan')] })
+          option('New', () => alert(1)),
+          option('Open'),
+          menu('Bookmarks', { options: [option('Google'), option('Facebook')] }),
+          menu('Friends', { options: [option('Dave'), option('Dan')] })
         ]
       }),
-      menu('Edit', { options: [menu.action('Copy'), menu.action('Paste')] }),
-      menu.dynamicOptions(list(1,2,3), menu.action('dynamic-%%'))
+      menu('Edit', { options: [option('Copy'), option('Paste')] }),
+      menu.dynamicOptions(list(1,2,3), option('dynamic-%%'))
     ]
   })
 })
@@ -21,7 +21,7 @@ component('menuTest.toolbar', {
     control: menu({
       menu: menu({
         options: [
-          menu.action('select', () => console.log('select'), { icon: icon('Selection', { type: 'mdi' }) })
+          option('select', () => console.log('select'), { icon: icon('Selection', { type: 'mdi' }) })
         ],
         icon: icon('undo')
       }),

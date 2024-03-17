@@ -56,7 +56,7 @@ component('treeDemo.tableTree', {
           features: field.titleCtrl(
             button({
               title: '%title%',
-              action: menu.openContextMenu({menu: menu({options: menu.action('my %title%')})}),
+              action: menu.openContextMenu({menu: menu({options: option('my %title%')})}),
               style: button.href()
             })
           )

@@ -46,7 +46,7 @@ component('menu.separator', {
   impl: typeAdapter('data<>', obj(prop('separator', true)))
 })
 
-component('menu.action', {
+component('option', {
   type: 'menu.option',
   moreTypes: 'control<>',
   params: [
