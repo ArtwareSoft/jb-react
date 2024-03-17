@@ -13,7 +13,7 @@ component('menusDemo.main', {
 
 component('menusDemo.pulldown', {
   type: 'control',
-  impl: menu.control({
+  impl: menu({
     menu: menu({
       options: [
         menu({
@@ -98,7 +98,7 @@ component('menusDemo.popup', {
 
 component('menusDemo.dynamic', {
   type: 'control',
-  impl: menu.control({
+  impl: menu({
     menu: menu({
       options: menu.dynamicOptions(
         '%$people%',
@@ -120,7 +120,7 @@ component('menusDemo.iconToolbar', {
   type: 'control',
   impl: group({
     title: '',
-    controls: menu.control(
+    controls: menu(
       menu({options: [menu.action({icon: icon('alarm')}), menu.action({icon: icon('build')})]}),
       menuStyle.toolbar()
     )

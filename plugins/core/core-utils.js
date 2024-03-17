@@ -89,7 +89,7 @@ extension('utils', 'core', {
       } 
       return comp     
     },
-    resolveUnTypedProfile(comp,id, {tgpModel, dsl} = {}) {
+    resolveUnTypedProfile(comp,id, {tgpModel, dsl, silent} = {}) {
       if (comp.$$ || !comp) return
       const comps = tgpModel && tgpModel.comps || jb.comps
       //if(id=='jbmTest.child') debugger

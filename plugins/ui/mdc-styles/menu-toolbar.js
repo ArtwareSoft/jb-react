@@ -13,7 +13,7 @@ component('menuStyle.toolbar', {
     ],
     control: itemlist({
       items: '%$menuModel/options()%',
-      controls: menu.control('%$item%', menuStyle.applyMultiLevel(menuStyle.iconMenu(), menuStyle.icon())),
+      controls: menu('%$item%', menuStyle.applyMultiLevel(menuStyle.iconMenu(), menuStyle.icon())),
       style: call('itemlistStyle')
     })
   })

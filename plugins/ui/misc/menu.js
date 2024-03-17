@@ -74,7 +74,7 @@ component('menu.action', {
 
 // ********* controls ************
 
-component('menu.control', {
+component('menu', {
   type: 'control',
   moreTypes: 'menu<>',
   params: [
@@ -107,7 +107,7 @@ component('menu.openContextMenu', {
     {id: 'id', as: 'string'}
   ],
   impl: openDialog({
-    content: menu.control(call('menu'), call('menuStyle')),
+    content: menu(call('menu'), call('menuStyle')),
     style: call('popupStyle'),
     id: '%$id%',
     features: call('features')
@@ -131,7 +131,7 @@ component('menuStyle.pulldown', {
     ],
     control: itemlist({
       items: '%$menuModel.options()%',
-      controls: menu.control('%$item%', menuStyle.popupThumb()),
+      controls: menu('%$item%', menuStyle.popupThumb()),
       style: call('layout'),
       features: menu.selection()
     })
@@ -148,7 +148,7 @@ component('menuStyle.contextMenu', {
       Var('optionsParentId', ctx => ctx.id),
       Var('leafOptionStyle', '%$leafOptionStyle%')
     ],
-    control: itemlist({ items: '%$menuModel.options()%', controls: menu.control('%$item%', menuStyle.applyMultiLevel()), features: menu.selection() })
+    control: itemlist({ items: '%$menuModel.options()%', controls: menu('%$item%', menuStyle.applyMultiLevel()), features: menu.selection() })
   })
 })
 

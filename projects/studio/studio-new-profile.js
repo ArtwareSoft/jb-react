@@ -305,6 +305,7 @@ component('studio.openNewProfile', {
 })
 
 component('studio.insertCompOption', {
+  type: 'menu.option',
   params: [
     {id: 'title', as: 'string'},
     {id: 'comp', as: 'string'}
@@ -313,6 +314,7 @@ component('studio.insertCompOption', {
 })
 
 component('studio.insertControlMenu', {
+  type: 'menu.option',
   impl: menu('Insert', {
     options: [
       menu('Control', {

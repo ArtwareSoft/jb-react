@@ -1,4 +1,5 @@
 component('menuTest.menu1', {
+    type: 'menu.option',
   impl: menu('main', {
     options: [
       menu('File', {
@@ -17,7 +18,7 @@ component('menuTest.menu1', {
 
 component('menuTest.toolbar', {
   impl: uiTest({
-    control: menu.control({
+    control: menu({
       menu: menu({
         options: [
           menu.action('select', () => console.log('select'), { icon: icon('Selection', { type: 'mdi' }) })
@@ -31,12 +32,12 @@ component('menuTest.toolbar', {
 })
 
 component('menuTest.pulldown', {
-  impl: uiTest(menu.control(menuTest.menu1(), menuStyle.pulldown()), contains('File','Edit','dynamic-1','dynamic-3'))
+  impl: uiTest(menu(menuTest.menu1(), menuStyle.pulldown()), contains('File','Edit','dynamic-1','dynamic-3'))
 })
 
 component('menuTest.pulldown.inner', {
   impl: uiTest({
-    control: menu.control(menuTest.menu1(), menuStyle.pulldown()),
+    control: menu(menuTest.menu1(), menuStyle.pulldown()),
     expectedResult: and(contains('Open'), contains('Bookmarks')),
     uiAction: click('[$text="File"]', 'openPopup')
   })
@@ -44,7 +45,7 @@ component('menuTest.pulldown.inner', {
 
 component('menuTest.pulldown.clickToOpen', {
   impl: uiTest({
-    control: menu.control(menuTest.menu1(), menuStyle.pulldown()),
+    control: menu(menuTest.menu1(), menuStyle.pulldown()),
     expectedResult: and(contains('Open'), contains('Bookmarks')),
     uiAction: click('[$text="File"]', 'openPopup'),
     emulateFrontEnd: true
@@ -52,7 +53,7 @@ component('menuTest.pulldown.clickToOpen', {
 })
 
 component('menuTest.contextMenu', {
-  impl: uiTest(menu.control(menuTest.menu1()), contains('File','Edit'))
+  impl: uiTest(menu(menuTest.menu1()), contains('File','Edit'))
 })
 
 component('menuTest.openContextMenu', {

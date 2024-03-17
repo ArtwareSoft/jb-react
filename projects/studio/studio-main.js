@@ -274,7 +274,7 @@ component('studio.topBar', {
           text('message', { style: text.studioMessage() }),
           group({
             controls: [
-              menu.control(studio.mainMenu(), menuStyle.pulldown(), { features: [id('mainMenu'), css.height('30'), css.margin('18')] }),
+              menu(studio.mainMenu(), menuStyle.pulldown(), { features: [id('mainMenu'), css.height('30'), css.margin('18')] }),
               group(studio.toolbar(), { title: 'toolbar', features: css.margin('8') }),
               controlWithFeatures(studio.searchComponent(), { features: [css.margin('8', '-100')] })
             ],
@@ -313,7 +313,7 @@ component('studio.vscodeTopBar', {
         controls: [
           group({
             controls: [
-              menu.control(studio.mainMenu(), menuStyle.pulldown(), { features: id('mainMenu') }),
+              menu(studio.mainMenu(), menuStyle.pulldown(), { features: id('mainMenu') }),
               group(studio.toolbar(), { title: 'toolbar' }),
               studio.searchComponent('')
             ],

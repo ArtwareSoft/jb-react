@@ -363,7 +363,7 @@ component('studio.jbEditorTitle', {
         style: button.href(),
         features: feature.hoverTitle('%$path%')
       }),
-      menu.control({
+      menu({
         menu: menu({
           options: [
             menu.action('pick context', studio.pick(), { icon: icon('Selection', { type: 'mdi' }) })
