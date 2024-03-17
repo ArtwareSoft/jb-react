@@ -13,7 +13,10 @@ component('llmTest.enrichTutorialData', {
   doNotRunInTests: true,
   impl: dataTest(enrichTutorialData('%$tutorialSample%'), and(
     equals(pipeline('%features%', filter(equals('%id%', 'data<>pipeline')), '%usage/length%'), 7),
-    equals(pipeline('%features%', filter(equals('%id%', 'data<>split')), '%params/0/usage/length%'), 2)
+    equals({
+      item1: pipeline('%features%', filter(equals('%id%', 'data<>split')), '%params/0/usage/length%'),
+      item2: 2
+    })
   ))
 })
 

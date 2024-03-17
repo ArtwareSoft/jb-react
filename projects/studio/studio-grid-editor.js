@@ -58,7 +58,7 @@ component('gridEditor.addRemoveTabPopup', {
     method('onclickHandler', runActions(
       dialog.closeDialogById('add-remove-tab'),
       If('%$ev/ctrlKey%', menu.openContextMenu({
-        menu: menu.menu({
+        menu: menu({
           options: [
             menu.action({
               title: 'remove tab',

@@ -112,7 +112,7 @@ component('studio.openNewDataSource', {
 
 component('studio.dataResourceMenu', {
   type: 'menu.option',
-  impl: menu.menu('Data', {
+  impl: menu('Data', {
     options: [
       menu.endWithSeparator(
         typeAdapter('control<>', dynamicControls({

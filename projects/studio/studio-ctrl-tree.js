@@ -51,7 +51,7 @@ component('studio.treeMenu', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: menu.menu({
+  impl: menu({
     options: [
       menu.action({
         title: 'Insert Field',

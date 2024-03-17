@@ -33,7 +33,7 @@ component('tgpTextEditor.selectPT', {
     {id: 'path', as: 'string'},
     {id: 'semanticPart', as: 'string'}
   ],
-  impl: menu.menu({
+  impl: menu({
     vars: [
       Var('type', tgp.paramType('%$path%'))
     ],
@@ -62,7 +62,7 @@ component('tgpTextEditor.selectEnum', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: menu.menu({
+  impl: menu({
     options: menu.dynamicOptions({
       items: ({},{},{path}) => jb.tgp.paramDef(path).options.split(','),
       genericOption: menu.action('%%', (ctx,{},{path}) => jb.studio.writeValueOfPath(path,ctx.data,ctx))
@@ -75,7 +75,7 @@ component('tgpTextEditor.editMenu', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: menu.menu(tgp.shortTitle('%$path%'), {
+  impl: menu(tgp.shortTitle('%$path%'), {
     options: [
       menu.action('Add variable', studio.addVariable('%$path%'), {
         showCondition: endsWith('~$vars', '%$path%')

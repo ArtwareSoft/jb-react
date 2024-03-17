@@ -27,7 +27,7 @@ component('studio.searchList', {
       button({
         title: '%refCount%',
         action: menu.openContextMenu(
-          menu.menu({
+          menu({
             options: [
               studio.gotoReferencesOptions('%id%', { refs: tgp.references('%id%') })
             ]

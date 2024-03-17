@@ -14,9 +14,9 @@ component('menusDemo.main', {
 component('menusDemo.pulldown', {
   type: 'control',
   impl: menu.control({
-    menu: menu.menu({
+    menu: menu({
       options: [
-        menu.menu({
+        menu({
           title: 'File',
           options: [
             menu.action({
@@ -28,13 +28,13 @@ component('menusDemo.pulldown', {
             menu.action({title: 'Save', showCondition: true})
           ]
         }),
-        menu.menu({
+        menu({
           title: 'Edit',
           options: [
             menu.action({title: 'Copy', showCondition: true}),
             menu.action({title: 'Paste', showCondition: true}),
             menu.separator(),
-            menu.menu({
+            menu({
               title: 'Change case',
               options: [
                 menu.action({title: 'uppercase', showCondition: true}),
@@ -56,7 +56,7 @@ component('menusDemo.popup', {
       button({
         title: 'open menu',
         action: menu.openContextMenu({
-          menu: menu.menu({
+          menu: menu({
             title: 'Edit',
             options: [
               menu.action({
@@ -71,7 +71,7 @@ component('menusDemo.popup', {
                 icon: icon({icon: 'ContentPaste', type: 'mdi'}),
                 showCondition: true
               }),
-              menu.menu({
+              menu({
                 title: 'Change case',
                 options: [
                   menu.action({title: 'uppercase', showCondition: true}),
@@ -99,10 +99,10 @@ component('menusDemo.popup', {
 component('menusDemo.dynamic', {
   type: 'control',
   impl: menu.control({
-    menu: menu.menu({
+    menu: menu({
       options: menu.dynamicOptions(
         '%$people%',
-        menu.menu({
+        menu({
           title: pipeline('%name%', toUpperCase()),
           options: [
             menu.action({title: '%name%', showCondition: true}),
@@ -121,7 +121,7 @@ component('menusDemo.iconToolbar', {
   impl: group({
     title: '',
     controls: menu.control(
-      menu.menu({options: [menu.action({icon: icon('alarm')}), menu.action({icon: icon('build')})]}),
+      menu({options: [menu.action({icon: icon('alarm')}), menu.action({icon: icon('build')})]}),
       menuStyle.toolbar()
     )
   })

@@ -19,7 +19,7 @@ component('studio.openPropertyMenu', {
     {id: 'path', as: 'string'}
   ],
   impl: menu.openContextMenu(
-    menu.menu({
+    menu({
       vars: [
         Var('compName', tgp.compName('%$path%'))
       ],
@@ -56,7 +56,7 @@ component('studio.jbEditorMenu', {
     {id: 'path', as: 'string'},
     {id: 'root', as: 'string'}
   ],
-  impl: menu.menu({
+  impl: menu({
     options: [
       menu.action({
         title: 'Add property',
@@ -141,7 +141,7 @@ component('studio.jbEditorMenu', {
       }),
       menu.separator(),
       menu.action('Set as current page', writeValue('%$studio/circuit%', split('~', { text: '%$path%', part: 'first' }))),
-      menu.menu('More', {
+      menu('More', {
         options: [
           menu.action('Pick context', studio.pick()),
           studio.gotoReferencesMenu(split('~', { text: '%$path%', part: 'first' })),

@@ -33,10 +33,10 @@ extension('ui', 'utils', {
     } catch (e) { }
   },
   widgetBody(ctx) {
-    const { elemToTest, FEWidgetId, headlessWidgetId, widgetId } = ctx.vars
+    const { elemToTest, FEWidgetId, headlessWidgetId, widgetId, uiTest } = ctx.vars
     const body = elemToTest ||
       headlessWidgetId && jb.path(jb, `ui.headless.${headlessWidgetId}.body`) ||
-      jb.ui.FEEmulator && jb.path(Object.values(jb.ui.FEEmulator)[0], 'body') ||
+      uiTest && jb.path(Object.values(jb.ui.FEEmulator)[0], 'body') ||
       jb.path(jb.frame.document, 'body')
       
       return FEWidgetId ? jb.ui.findIncludeSelf(body, `[widgetid="${FEWidgetId}"]`)[0] : body

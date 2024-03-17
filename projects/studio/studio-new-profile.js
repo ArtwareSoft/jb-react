@@ -313,15 +313,15 @@ component('studio.insertCompOption', {
 })
 
 component('studio.insertControlMenu', {
-  impl: menu.menu('Insert', {
+  impl: menu('Insert', {
     options: [
-      menu.menu('Control', {
+      menu('Control', {
         options: [
           studio.insertCompOption('Label', 'label'),
           studio.insertCompOption('Button', 'button')
         ]
       }),
-      menu.menu('Input', {
+      menu('Input', {
         options: [
           studio.insertCompOption('Editable Text', 'editable-text'),
           studio.insertCompOption('Editable Number', 'editable-number'),

@@ -18,7 +18,7 @@ component('studio.openStyleMenu', {
     {id: 'path', as: 'string'}
   ],
   impl: menu.openContextMenu(
-    menu.menu({
+    menu({
       options: [
         menu.action({
           title: 'Clone as local style',

@@ -1,6 +1,6 @@
 using('ui-common')
 
-component('menu.menu', {
+component('menu', {
   type: 'menu.option',
   params: [
     {id: 'title', as: 'string', dynamic: true, mandatory: true},
@@ -270,7 +270,7 @@ component('menu.selection', {
     )
   )
 })
-  
+
 component('menu.selectionKeySourceService', {
   type: 'feature',
   impl: If({
@@ -278,25 +278,42 @@ component('menu.selectionKeySourceService', {
     then: [],
     Else: features(
       service.registerBackEndService('menuKeySource', '%$cmp/cmpId%'),
-      frontEnd.prop('menuKeySource', (ctx,{cmp,el}) => {
-      if (el.keydown_src) return
-      const {pipe, takeUntil,subject} = jb.callbag
-      el.keydown_src = subject()
-      el.onkeydown = e => {
-        if ([37,38,39,40,13,27].indexOf(e.keyCode) != -1) {
-          jb.log('menuKeySource',{ctx,cmp,e})
-          el.keydown_src.next((ctx.cmpCtx || ctx).dataObj(e))
-          return false // stop propagation
-        }
-        return true
-      }
-      jb.ui.focus(el,'menu.selectionKeySourceService',ctx)
-      jb.log('menuKeySource register',{cmp,el,ctx})
-      return pipe(el.keydown_src, takeUntil(cmp.destroyed))
-    })
+      frontEnd.prop('menuKeySource', rx.pipe(
+        source.frontEndEvent('keydown'),
+        rx.userEventVar(),
+        rx.filter(inGroup(list(37,38,39,40,13,27), '%keyCode%')),
+        rx.log('keyboard frontend menuKeySource'),  
+      ))
     )
   })
 })
+
+// component('menu.selectionKeySourceServiceOld', {
+//   type: 'feature',
+//   impl: If({
+//     condition: '%$$serviceRegistry/services/menuKeySource%',
+//     then: [],
+//     Else: features(
+//       service.registerBackEndService('menuKeySource', '%$cmp/cmpId%'),
+//       frontEnd.prop('menuKeySource', (ctx,{cmp,el}) => {
+//       if (el.keydown_src) return
+//       const {pipe, takeUntil,subject} = jb.callbag
+//       el.keydown_src = subject()
+//       el.onkeydown = e => {
+//         if ([37,38,39,40,13,27].indexOf(e.keyCode) != -1) {
+//           jb.log('menuKeySource',{ctx,cmp,e})
+//           el.keydown_src.next((ctx.cmpCtx || ctx).dataObj(e))
+//           return false // stop propagation
+//         }
+//         return true
+//       }
+//       jb.ui.focus(el,'menu.selectionKeySourceService',ctx)
+//       jb.log('menuKeySource register',{cmp,el,ctx})
+//       return pipe(el.keydown_src, takeUntil(cmp.destroyed))
+//     })
+//     )
+//   })
+// })
 
 component('menu.passMenuKeySource', {
   type: 'feature',

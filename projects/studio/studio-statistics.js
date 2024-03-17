@@ -7,7 +7,7 @@ component('studio.gotoReferencesOptions', {
   ],
   impl: menu.dynamicOptions('%$refs%', If({
     condition: '%refs/length% > 1',
-    then: menu.menu('%id% (%refs/length%)', {
+    then: menu('%id% (%refs/length%)', {
       options: menu.dynamicOptions('%$menuData/refs%', menu.action('%%', studio.openComponentInJbEditor('%%', '%$path%')))
     }),
     Else: menu.action({
@@ -32,7 +32,7 @@ component('studio.gotoReferencesButton', {
     ],
     condition: '%$refs/length%',
     control: button('%$noOfReferences% references', menu.openContextMenu(
-      menu.menu({
+      menu({
         options: studio.gotoReferencesOptions('%$path%', { refs: '%$refs%' })
       })
     ))
@@ -50,7 +50,7 @@ component('studio.gotoReferencesMenu', {
       Var('noOfReferences', ctx => ctx.vars.refs.reduce((total,refsInObj)=>total+refsInObj.refs.length,0))
     ],
     condition: '%$noOfReferences% > 0',
-    then: menu.menu('%$noOfReferences% references for %$path%', {
+    then: menu('%$noOfReferences% references for %$path%', {
       options: studio.gotoReferencesOptions('%$path%', { refs: '%$refs%' })
     }),
     Else: menu.action('no references for %$path%')
@@ -72,7 +72,7 @@ component('studio.componentsList', {
           button({
             title: pipeline(tgp.componentStatistics('%val%'), '%refCount%.', split('.')),
             action: menu.openContextMenu(
-              menu.menu({
+              menu({
                 options: [
                   studio.gotoReferencesOptions('%val%', { refs: tgp.references('%val%') })
                 ]

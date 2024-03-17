@@ -1,8 +1,5 @@
 fix editableTextHelperTest.setInput
-
-vscode
-  add boolean property should set it to true
-  definition of non formatted
+fix menu names
 
 menu.selectionKeySourceService - rewrite with source.event
 
@@ -45,7 +42,7 @@ show 10 circuits in ctrl+J
 refactor after types
   menu
     refactor names
-    refactor menu.menu options like group
+    refactor menu options like group
   features
     no feature prefix
   jbm -> change dsl to remote, remote jbm. prefix

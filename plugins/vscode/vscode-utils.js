@@ -94,7 +94,13 @@ extension('vscode', 'utils', {
     },
     async provideDefinition() {
         const loc = await jb.calc(langService.definition())
-        if (!loc)
+        if (loc.error == 'definition - bad format') {
+            const choice = await vscodeNS.window.showInformationMessage('format?', 'OK', 'Cancel')
+            if (choice == 'OK')
+                await jb.tgpTextEditor.applyCompChange({ edit: loc.reformatEdits, cursorPos: loc.cursorPos })
+            return
+        }
+        if (!loc || loc.error)
             return jb.logError('provideDefinition - no location returned', {})
         const repos = (vscodeNS.workspace.workspaceFolders || []).map(ws=>ws.uri.path)
             .map(path=>({path,repo: path.split('/').pop()}))
@@ -319,7 +325,7 @@ component('langServer.jBartMenu', {
   params: [
     {id: 'compProps', defaultValue: '%%'}
   ],
-  impl: menu.menu({
+  impl: menu({
     vars: [
       Var('circuit', '%$compProps/circuitOptions/0/shortId%')
     ],

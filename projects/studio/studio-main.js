@@ -191,11 +191,11 @@ component('studio.sampleProject', {
 
 component('studio.mainMenu', {
   type: 'menu.option',
-  impl: menu.menu('main', {
+  impl: menu('main', {
     options: [
-      menu.menu('File', {
+      menu('File', {
         options: [
-          menu.menu('Sample Projects', {
+          menu('Sample Projects', {
             options: [
               studio.sampleProject('styleGallery'),
               studio.sampleProject('itemlists'),
@@ -216,7 +216,7 @@ component('studio.mainMenu', {
           }))
         ]
       }),
-      menu.menu('Edit', {
+      menu('Edit', {
         options: [
           menu.action('Undo', watchableComps.undo(), { icon: icon('undo'), shortcut: 'Ctrl+Z' }),
           menu.action('Redo', watchableComps.redo(), { icon: icon('redo'), shortcut: 'Ctrl+Y' }),
@@ -224,7 +224,7 @@ component('studio.mainMenu', {
           menu.action('Extract Param', studio.openExtractParam(), { shortcut: '', showCondition: studio.canExtractParam() })
         ]
       }),
-      menu.menu('View', {
+      menu('View', {
         options: [
           menu.action('Components...', openDialog('components', studio.componentsList(), { style: dialog.studioFloating(), features: css.width('600') })),
           menu.action('Refresh Preview', studio.refreshPreview()),
