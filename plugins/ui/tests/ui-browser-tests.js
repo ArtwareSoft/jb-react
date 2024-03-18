@@ -45,7 +45,7 @@ component('browserTest.picklist.mdcSelect', {
 component('browserTest.coLocation', {
   impl: browserTest({
     vars: [Var('toChange', obj())],
-    control: button('change', runFEMethod('#btn', 'changeDB'), {
+    control: button('change', runFEMethodFromBackEnd('#btn', 'changeDB'), {
       features: [
         frontEnd.coLocation(),
         id('btn'),

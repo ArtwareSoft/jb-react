@@ -52,7 +52,7 @@ Object.assign(jb, {
         jb.log(`loading library ${url}`,{plugin})
         if (codePackage.loadLib) 
           return codePackage.loadLib(url)
-        const code = await codePackage.fetchFile(`${jbHost.baseUrl||''}${url}`)
+        const code = '' + await codePackage.fetchFile(`${jbHost.baseUrl||''}${url}`)
         eval(code)
       } catch(e) {
         jb.logError('error loading library',{url,plugin})

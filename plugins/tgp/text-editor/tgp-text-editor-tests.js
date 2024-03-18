@@ -49,7 +49,7 @@ component('uiTest.watchableAsText', {
     expectedResult: contains('watchablePeople~0~name'),
     uiAction: uiActions(
       waitForSelector('#editor'),
-      action(runFEMethod('#editor', 'setSelectionRange', { Data: obj(prop('from', 22)) })),
+      action(runFEMethodFromBackEnd('#editor', 'setSelectionRange', { Data: obj(prop('from', 22)) })),
       click('#show-path')
     ),
     emulateFrontEnd: true

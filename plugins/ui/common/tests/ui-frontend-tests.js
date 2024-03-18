@@ -3,7 +3,7 @@ using('ui-tests')
 component('uiTest.runFEMethod', {
   impl: uiTest({
     control: group(
-      button('change', runFEMethod('#input1', 'changeText', { Data: 'world' })),
+      button('change', runFEMethodFromBackEnd('#input1', 'changeText', { Data: 'world' })),
       editableText({
         databind: '%$person/name%',
         style: editableText.input(),

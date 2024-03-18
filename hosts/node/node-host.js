@@ -1,4 +1,5 @@
 const fs = require('fs')
+const vm = require('vm')
 
 function findjbReact() {
     const underJbReact = (__dirname.match(/projects\/jb-react(.*)$/) || [''])[1]
@@ -21,7 +22,14 @@ function codePackageNodeFS(baseDir) { return {
     },
     fetchJSON(url) { 
         return this.fetchFile(url).then(x=>JSON.parse(x))
-    },        
+    },
+    loadLib(path) { 
+        const code = '' + fs.readFileSync(`${baseDir}${path}`)
+        vm.runInThisContext(code)
+    },
+    loadFELib(lib) {
+        jb.logError(`loadFELib is not allowed in nodejs host ${lib}`,{})
+    },
     async fileSymbols(path) {
         try {
             return getFilesInDir(path).filter(f => f.match(/\.js$/)).map(path => fileContent('/'+path))
@@ -42,7 +50,6 @@ function codePackageNodeFS(baseDir) { return {
                 path,
                 dsl: unique(lines.map(l=>(l.match(/^(jb.)?dsl\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0]))[0],
                 pluginDsl: unique(lines.map(l=>(l.match(/^(jb.)?pluginDsl\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0]))[0],
-                //comp_locations: lines.map((l,line)=>[(l.match(/^(jb.)?component\('([^']+)/) || ['',''])[2],line]).filter(x=>x[0]),
                 ns: unique(lines.map(l=>(l.match(/^(jb.)?component\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0])),
                 libs: unique(lines.map(l=>(l.match(/^(jb.)?extension\('([^']+)/) || ['',''])[2]).filter(x=>x).map(x=>x.split('.')[0])),
                 using: unique(lines.map(l=>(l.match(/^(jb.)?using\('([^)]+)/) || ['',''])[2]).filter(x=>x).map(x=>x.replace(/'/g,''))

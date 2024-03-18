@@ -26,9 +26,7 @@ extension('ui', 'frontend', {
         constructor(elem, {coLocationCtx, emulateFrontEndInTest, widgetId}= {}) {
             this.ctx = coLocationCtx || jb.ui.parents(elem,{includeSelf: true}).map(elem=>elem.ctxForFE).filter(x=>x)[0] || new jb.core.jbCtx()
             if (emulateFrontEndInTest)
-                this.ctx = this.ctx.setVars({emulateFrontEndInTest, widgetId})
-            // if (elem.getAttribute('uiTest'))
-            //     this.ctx = this.ctx.setVars({uiTest: true})
+                this.ctx = this.ctx.setVars({emulateFrontEndInTest, widgetId, uiTest: elem.getAttribute('uiTest')})
             this.state = { ...elem.state, frontEndStatus: 'initializing' }
             this.base = elem
             this.cmpId = elem.getAttribute('cmp-id')
@@ -60,11 +58,11 @@ extension('ui', 'frontend', {
                 const ctxToUse = this.ctx.setData(data).setVars(vars)
                 const {_prop, _flow } = feMEthod.frontEndMethod
                 if (_prop)
-                    jb.log(`frontend before calc prop ${_prop}`,{cmp: {...this}, srcCtx, ...feMEthod.frontEndMethod, el,ctxToUse})
+                    jb.log(`frontend before calc prop ${_prop}`,{data, vars, cmp: {...this}, srcCtx, ...feMEthod.frontEndMethod, el,ctxToUse})
                 else if (_flow)
-                    jb.log(`frontend start flow ${jb.ui.rxPipeName(_flow)}`,{cmp: {...this}, srcCtx, ...feMEthod.frontEndMethod, el, ctxToUse})
+                    jb.log(`frontend start flow ${jb.ui.rxPipeName(_flow)}`,{data, vars, cmp: {...this}, srcCtx, ...feMEthod.frontEndMethod, el, ctxToUse})
                 else 
-                    jb.log(`frontend run method ${method}`,{cmp: {...this}, srcCtx , ...feMEthod.frontEndMethod,el,ctxToUse})
+                    jb.log(`frontend run method ${method}`,{data, vars, cmp: {...this}, srcCtx , ...feMEthod.frontEndMethod,el,ctxToUse})
                 const res = ctxToUse.run(feMEthod.frontEndMethod.action, jb.utils.dslType(profile.$$))
                 if (_prop)
                     jb.log(`frontend prop ${_prop} value`,{res, cmp: {...this}})

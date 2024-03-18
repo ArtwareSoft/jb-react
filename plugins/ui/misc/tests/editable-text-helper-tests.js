@@ -21,6 +21,20 @@ component('editableTextHelperTest.picklistHelper', {
   })
 })
 
+component('editableTextHelperTest.delayedOptions', {
+  impl: uiTest({
+    control: editableText({
+      databind: '%$person/name%',
+      features: editableText.picklistHelper({
+        options: typeAdapter('data<>', delay(1, obj(prop('options', typeAdapter('picklist.options<>', picklist.optionsByComma('1,2,3')))))),
+        picklistFeatures: picklist.allowAsynchOptions(),
+        showHelper: true
+      })
+    }),
+    expectedResult: true
+  })
+})
+
 component('editableTextHelperTest.changingOptions', {
   impl: uiTest({
     control: editableText('name', '%$person/name%', {
@@ -51,12 +65,12 @@ component('editableTextHelperTest.richWatchingGroup', {
 })
 
 component('editableTextHelperTest.setInput', {
-  doNotRunInTests: true,
-  impl: browserTest({
+  impl: uiTest({
     control: editableText('name', '%$person/name%', {
       features: [
         editableText.picklistHelper({
           options: picklist.optionsByComma('1111,2,3,4'),
+          picklistStyle: picklist.labelList(),
           autoOpen: true,
           onEnter: editableText.setInputState({ newVal: '%$selectedOption%', assumedVal: '%value%' })
         })
@@ -65,9 +79,9 @@ component('editableTextHelperTest.setInput', {
     expectedResult: contains('1111</input-val>'),
     uiAction: uiActions(
       waitForSelector('.jb-dialog'),
-      keyboardEvent('input', 'keyup', { keyCode: 40 }),
+      keyboardEvent('input', 'keydown', { keyCode: 40, doNotWaitForNextUpdate: true }),
       keyboardEvent('input', 'keyup', { keyCode: 13 })
     ),
-    renderDOM: true
+    emulateFrontEnd: true
   })
 })

@@ -66,7 +66,7 @@ extension('ui', 'react', {
         const widgetId = jb.ui.headlessWidgetId(elem)
         const tagChange = vdomAfter && vdomAfter.tag != (elem.tagName || elem.tag).toLowerCase()
         jb.log('applyNew vdom',{widgetId,elem,vdomAfter,strongRefresh, ctx})
-        if (delta) { // used only by $runFEMethod
+        if (delta) { // used only by $runFEMethod, no refreshing of frontEnd
             const cmpId = elem.getAttribute('cmp-id')
             jb.log('applyNew vdom runFEMethod',{elem,cmpId,delta, ctx})
             if (widgetId)
@@ -250,10 +250,10 @@ extension('ui', 'react', {
                 elem.checked = true
                 jb.log('dom set checked',{elem,att,val,ctx})
             })
-        } else if (att.indexOf('$__input') === 0) {
-            try {
-                setInput(JSON.parse(val),ctx)
-            } catch(e) {}
+        // } else if (att.indexOf('$__input') === 0) {
+        //     try {
+        //         jb.ui.setInput(JSON.parse(val),ctx)
+        //     } catch(e) {}
         } else if (att.indexOf('$__') === 0) {
             const id = att.slice(3)
             try {
@@ -290,24 +290,28 @@ extension('ui', 'react', {
             elem.setAttribute(att,val)
             //jb.log('dom set att',{elem,att,val,ctx}) too many calls
         }
-
-        function setInput({assumedVal,newVal,selectionStart},ctx) {
-            const el = jb.ui.findIncludeSelf(elem,'input,textarea')[0]
-            jb.log('dom set input check',{el, assumedVal,newVal,selectionStart,ctx})
-            if (!el)
-                return jb.logError('setInput: can not find input under elem',{elem,ctx})
-            if (el.value == null) el.value = ''
-            if (assumedVal != el.value) 
-                return jb.logError('setInput: assumed val is not as expected',{ assumedVal, value: el.value, el,ctx })
-            const active = activeElem === el
-            jb.log('dom set input',{el, assumedVal,newVal,selectionStart,ctx})
-            el.value = newVal
-            if (typeof selectionStart == 'number') 
-                el.selectionStart = selectionStart
-            if (active && activeElem !== el) { debugger; el.focus() }
-        }
     },
+    setInput({assumedVal,newVal,selectionStart}, ctx) {
+        const el = jb.ui.findIncludeSelf(ctx.vars.cmp.base ,'input,textarea')[0]
+        jb.log('dom set input check',{el, assumedVal,newVal,selectionStart,ctx})
+        if (!el)
+            return jb.logError('setInput: can not find input under elem',{elem,ctx})
+        //if (el.value == null) el.value = ''
+        const curValue = (el instanceof jb.ui.VNode ? el.getAttribute('value') : el.value) || ''
+        if (assumedVal != curValue) 
+            return jb.logError('setInput: assumed val is not as expected',{ assumedVal, value: el.value, el,ctx })
 
+        const activeElem = jb.path(jb.frame.document,'activeElement')        
+        const active = activeElem === el
+        jb.log('dom set input',{el, assumedVal,newVal,selectionStart,ctx})
+        if (el instanceof jb.ui.VNode)
+            el.setAttribute('value',newVal)
+        else
+            el.value = newVal
+        if (typeof selectionStart == 'number') 
+            el.selectionStart = selectionStart
+        if (active && activeElem !== el) { debugger; el.focus() }
+    },
     unmount(elem) {
         if (!elem || !elem.setAttribute) return
 

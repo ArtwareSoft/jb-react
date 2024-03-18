@@ -22,11 +22,11 @@ component('workspace.IDE', {
           followUp.watchObservable(() => jb.workspace.onOpenDoc),
           followUp.flow(
             source.callbag(() => jb.workspace.gotoOffsetRequest),
-            sink.action(runFEMethod('#activeEditor', 'setSelectionRange', { data: '%%' }))
+            sink.action(runFEMethodFromBackEnd('#activeEditor', 'setSelectionRange', { data: '%%' }))
           ),
           followUp.flow(
             source.callbag(() => jb.workspace.applyEditRequest),
-            sink.action(runFEMethod('#activeEditor', 'applyEdit', { data: '%%' }))
+            sink.action(runFEMethodFromBackEnd('#activeEditor', 'applyEdit', { data: '%%' }))
           )
         ]
       }),

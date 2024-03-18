@@ -2,7 +2,7 @@
 component('table.mdc', {
   type: 'table-style',
   params: [
-    {id: 'hideHeaders', as: 'boolean', type: 'boolean'},
+    {id: 'hideHeaders', as: 'boolean', type: 'boolean', byName: true},
     {id: 'classForTable', as: 'string', defaultValue: 'mdc-data-table__table mdc-data-table--selectable'}
   ],
   impl: table.style({

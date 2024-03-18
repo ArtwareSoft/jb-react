@@ -2,7 +2,7 @@
 component('itemlist.selection', {
   type: 'feature',
   params: [
-    {id: 'databind', as: 'ref', defaultValue: '%$itemlistCntrData/selected%', dynamic: true},
+    {id: 'databind', as: 'ref', defaultValue: '%$itemlistCntrData/selected%', dynamic: true, byName: true},
     {id: 'selectedToDatabind', dynamic: true, defaultValue: '%%'},
     {id: 'databindToSelected', dynamic: true, defaultValue: '%%'},
     {id: 'onSelection', type: 'action', dynamic: true},
@@ -101,9 +101,7 @@ component('itemlist.keyboardSelection', {
       sink.subjectNext('%$cmp/selectionEmitter%')
     ),
     frontEnd.var('autoFocus', '%$autoFocus%'),
-    frontEnd.init(
-      If(and('%$autoFocus%','%$selectionKeySourceCmpId%'), action.focusOnCmp('itemlist autofocus'))
-    )
+    frontEnd.init(If(and('%$autoFocus%','%$selectionKeySourceCmpId%'), action.focusOnCmp('itemlist autofocus')))
   )
 })
 
@@ -146,7 +144,7 @@ component('itemlist.nextSelected', {
   type: 'data',
   hidden: true,
   params: [
-    {id: 'diff', as: 'number'},
+    {id: 'diff', as: 'number', byName: true},
     {id: 'elementFilter', dynamic: 'true', defaultValue: true}
   ],
   impl: (ctx,diff,elementFilter) => {

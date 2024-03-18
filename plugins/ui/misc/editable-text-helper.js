@@ -53,7 +53,6 @@ component('editableText.picklistHelper', {
     frontEnd.prop('keyUp', rx.pipe(source.frontEndEvent('keyup'), rx.delay(1))),
     frontEnd.flow(
       source.frontEndEvent('keyup'),
-//      rx.delay(1),
       rx.log('editableTextHelper keyup'),
       rx.filter('%keyCode% == 13'),
       editableText.addUserEvent(),
@@ -61,14 +60,12 @@ component('editableText.picklistHelper', {
     ),
     frontEnd.flow(
       source.frontEndEvent('keyup'),
-//      rx.delay(1),
       rx.filter(not(inGroup(list(13,27,38,40), '%keyCode%'))),
       editableText.addUserEvent(),
       sink.BEMethod('refresh')
     ),
     frontEnd.flow(
       source.frontEndEvent('keyup'),
-//      rx.delay(1),
       rx.filter('%keyCode% == 27'),
       editableText.addUserEvent(),
       sink.BEMethod('onEsc')
@@ -77,8 +74,6 @@ component('editableText.picklistHelper', {
     frontEnd.flow(
       source.data(1),
       rx.filter('%$autoOpen%'),
-      rx.delay(1),
-      rx.var('ev', ({},{el}) => jb.ui.buildUserEvent({}, el)),
       rx.log('autoOpen editableTextHelper'),
       sink.BEMethod('openPopup')
     ),
@@ -86,8 +81,10 @@ component('editableText.picklistHelper', {
       writeValue('%$watchableInput%', obj(prop('value', '%$helperCmp/renderProps/databind%'))),
       action.runBEMethod('openPopup')
     ))),
-    onDestroy(action.runBEMethod('closePopup'))
-  )
+    onDestroy(action.runBEMethod('closePopup')),
+    frontEnd.method('setInput', ctx => jb.ui.setInput(ctx.data,ctx))
+  ),
+  circuit: 'test<>editableTextHelperTest.setInput'
 })
 
 // followUp.action(If('%$autoOpen%', runActions(
@@ -105,14 +102,17 @@ component('editableText.setInputState', {
     {id: 'selectionStart', as: 'number'},
     {id: 'cmp', defaultValue: '%$cmp%'}
   ],
-  impl: ui.applyDeltaToCmp({
-    delta: (ctx,{cmp},{newVal,selectionStart,assumedVal}) => {
-    jb.log('editableTextHelper dom set input create userRequest',{cmp,newVal,ctx})
-    return {attributes: { $__input: JSON.stringify({ assumedVal: assumedVal, newVal,selectionStart })}}
-  },
-    cmpId: '%$cmp/cmpId%'
-  })
+  impl: runFEMethodFromBackEnd('[cmp-id="%$cmp/cmpId%"]', 'setInput', { Data: 
+    obj(prop('newVal','%$newVal%'), prop('assumedVal','%$assumedVal%'), prop('selectionStart','%$selectionStart%')) })
 })
+
+// ui.applyDeltaToCmp({
+//   delta: (ctx,{cmp},{newVal,selectionStart,assumedVal}) => {
+//     jb.log('editableTextHelper dom set input create userRequest',{cmp,newVal,ctx})
+//     return {attributes: { $__input: JSON.stringify({ assumedVal: assumedVal, newVal,selectionStart })}}
+//   },
+//   cmpId: '%$cmp/cmpId%'
+// })
 
 component('editableText.addUserEvent', {
   type: 'rx',
@@ -177,6 +177,7 @@ component('editableText.helperPopup', {
       sink.BEMethod('onEsc')
     ),
     onDestroy(action.runBEMethod('closePopup')),
-    followUp.action(If('%$autoOpen%', action.runBEMethod('openPopup')))
+    followUp.action(If('%$autoOpen%', action.runBEMethod('openPopup'))),
+    frontEnd.method('setInput', ctx => jb.ui.setInput(ctx.data,ctx))
   )
 })

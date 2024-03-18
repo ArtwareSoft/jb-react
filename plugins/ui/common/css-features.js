@@ -4,7 +4,7 @@ component('css.width', {
   moreTypes: 'dialog-feature<>',
   params: [
     {id: 'width', mandatory: true, as: 'string', description: 'e.g. 200, 100%, calc(100% - 100px)'},
-    {id: 'overflow', as: 'string', options: ',auto,hidden,scroll'},
+    {id: 'overflow', as: 'string', options: ',auto,hidden,scroll', byName: true},
     {id: 'minMax', as: 'string', options: ',min,max'},
     {id: 'selector', as: 'string'}
   ],
@@ -17,7 +17,7 @@ component('css.height', {
   moreTypes: 'dialog-feature<>',
   params: [
     {id: 'height', mandatory: true, as: 'string', description: 'e.g. 200, 100%, calc(100% - 100px)'},
-    {id: 'overflow', as: 'string', options: ',auto,hidden,scroll'},
+    {id: 'overflow', as: 'string', options: ',auto,hidden,scroll', byName: true},
     {id: 'minMax', as: 'string', options: ',min,max'},
     {id: 'selector', as: 'string'}
   ],
@@ -39,7 +39,7 @@ component('css.padding', {
   type: 'feature',
   moreTypes: 'dialog-feature<>',
   params: [
-    {id: 'top', as: 'string', description: 'e.g. 20, 20%, 0.4em'},
+    {id: 'top', as: 'string', description: 'e.g. 20, 20%, 0.4em', byName: true},
     {id: 'left', as: 'string'},
     {id: 'right', as: 'string'},
     {id: 'bottom', as: 'string'},
@@ -58,7 +58,7 @@ component('css.margin', {
   type: 'feature',
   moreTypes: 'dialog-feature<>',
   params: [
-    {id: 'top', as: 'string', description: 'e.g. 20, 20%, 0.4em, -20'},
+    {id: 'top', as: 'string', description: 'e.g. 20, 20%, 0.4em, -20', byName: true},
     {id: 'left', as: 'string'},
     {id: 'bottom', as: 'string'},
     {id: 'right', as: 'string'},
@@ -87,7 +87,7 @@ component('css.marginVerticalHorizontal', {
   type: 'feature',
   moreTypes: 'dialog-feature<>',
   params: [
-    {id: 'vertical', as: 'string', mandatory: true},
+    {id: 'vertical', as: 'string', mandatory: true, byName: true},
     {id: 'horizontal', as: 'string', mandatory: true},
     {id: 'selector', as: 'string'}
   ],
@@ -98,7 +98,7 @@ component('css.marginVerticalHorizontal', {
 component('css.transformRotate', {
   type: 'feature',
   params: [
-    {id: 'angle', as: 'string', description: '0-360'},
+    {id: 'angle', as: 'string', description: '0-360', byName: true},
     {id: 'selector', as: 'string'}
   ],
   impl: (ctx,angle,selector) => ({css: `${selector} {transform:rotate(${angle}deg)}`})
@@ -108,7 +108,7 @@ component('css.color', {
   type: 'feature',
   params: [
     {id: 'color', as: 'string', dynamic: true},
-    {id: 'background', as: 'string', editAs: 'color', dynamic: true},
+    {id: 'background', as: 'string', editAs: 'color', dynamic: true, byName: true},
     {id: 'selector', as: 'string'}
   ],
   impl: ctx => {
@@ -123,7 +123,7 @@ component('css.color', {
 component('css.transformScale', {
   type: 'feature',
   params: [
-    {id: 'x', as: 'string', description: '0-1'},
+    {id: 'x', as: 'string', description: '0-1', byName: true},
     {id: 'y', as: 'string', description: '0-1'},
     {id: 'selector', as: 'string'}
   ],
@@ -134,7 +134,7 @@ component('css.transformTranslate', {
   type: 'feature',
   description: 'margin, move, shift, offset',
   params: [
-    {id: 'x', as: 'string', description: '10px', defaultValue: '0'},
+    {id: 'x', as: 'string', description: '10px', defaultValue: '0', byName: true},
     {id: 'y', as: 'string', description: '20px', defaultValue: '0'},
     {id: 'selector', as: 'string'}
   ],
@@ -155,7 +155,7 @@ component('css.boxShadow', {
   type: 'feature',
   moreTypes: 'dialog-feature<>',
   params: [
-    {id: 'inset', as: 'boolean', description: 'the box is raised or content is depressed inside the box', type: 'boolean'},
+    {id: 'inset', as: 'boolean', description: 'the box is raised or content is depressed inside the box', type: 'boolean', byName: true},
     {id: 'blurRadius', as: 'string', defaultValue: '5', description: 'bigger and lighter shadow'},
     {id: 'spreadRadius', as: 'string', defaultValue: '0', description: 'just bigger shadow'},
     {id: 'shadowColor', as: 'string', defaultValue: '#000000'},
@@ -175,7 +175,7 @@ component('css.border', {
   type: 'feature',
   moreTypes: 'dialog-feature<>',
   params: [
-    {id: 'width', as: 'string', defaultValue: '1'},
+    {id: 'width', as: 'string', defaultValue: '1', byName: true},
     {id: 'side', as: 'string', options: 'top,left,bottom,right'},
     {id: 'style', as: 'string', options: 'solid,dotted,dashed,double,groove,ridge,inset,outset', defaultValue: 'solid'},
     {id: 'color', as: 'string', defaultValue: 'black'},
@@ -199,7 +199,7 @@ component('css.lineClamp', {
   type: 'feature',
   description: 'ellipsis after X lines',
   params: [
-    {id: 'lines', mandatory: true, as: 'string', templateValue: 3, description: 'no of lines to clump'},
+    {id: 'lines', mandatory: true, as: 'string', templateValue: 3, description: 'no of lines to clump', byName: true},
     {id: 'selector', as: 'string'}
   ],
   impl: css(

@@ -428,23 +428,6 @@ component('feature.userEventProps', {
   impl: (ctx, prop) => ({userEventProps: prop })
 })
 
-component('runFEMethod', {
-  type: 'action',
-  description: 'invoke FE Method from the backend. used with library objects like codemirror',
-  params: [
-    {id: 'selector', as: 'string'},
-    {id: 'method', as: 'string'},
-    {id: 'Data'},
-    {id: 'Vars'}
-  ],
-  impl: (ctx, selector, method, data, vars) => {
-    const elem = jb.ui.elemOfSelector(selector,ctx)
-    const cmpElem = elem && jb.ui.closestCmpElem(elem)
-          const delta = { attributes: { $runFEMethod: JSON.stringify({method, data, vars}) } }
-      cmpElem && jb.ui.applyNewVdom(cmpElem,null,{ ctx, delta } )
-      }
-})
-
 component('css', {
   description: 'e.g. {color: red; width: 20px} or div>.myClas {color: red} ',
   type: 'feature',

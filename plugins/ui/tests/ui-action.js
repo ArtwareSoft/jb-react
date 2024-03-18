@@ -318,7 +318,7 @@ component('keyboardEvent', {
     {id: 'keyCode', as: 'number'},
     {id: 'keyChar', as: 'string'},
     {id: 'ctrl', as: 'string', options: 'ctrl,alt'},
-    {id: 'doNotWaitForNextUpdate', as: 'boolean', type: 'boolean'},
+    {id: 'doNotWaitForNextUpdate', as: 'boolean', type: 'boolean<>'},
     {id: 'expectedEffects', type: 'ui-action-effects'}
   ],
   impl: uiActions(

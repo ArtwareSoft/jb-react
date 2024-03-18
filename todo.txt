@@ -1,5 +1,10 @@
+vscode
+  at the begining of array add(unshift) at the first char and replace/wrap at the second
+
+itemlistTest.selection.nthChildSelector
+
 fix editableTextHelperTest.setInput
-fix menu names
+shorten menu names
 
 menu.selectionKeySourceService - rewrite with source.event
 

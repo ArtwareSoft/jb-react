@@ -604,14 +604,14 @@ component('contains', {
   params: [
     {id: 'text', type: 'data[]', as: 'array', mandatory: true},
     {id: 'allText', defaultValue: '%%', as: 'string', byName: true},
-    {id: 'inOrder', defaultValue: true, as: 'boolean', type: 'boolean'}
+    {id: 'anyOrder', as: 'boolean', type: 'boolean'}
   ],
-  impl: ({},text,allText,inOrder) => {
+  impl: ({},text,allText,anyOrder) => {
       let prevIndex = -1
       for(let i=0;i<text.length;i++) {
       	const newIndex = allText.indexOf(jb.tostring(text[i]),prevIndex+1)
       	if (newIndex == -1) return false
-      	prevIndex = inOrder ? newIndex : -1
+      	prevIndex = anyOrder ? -1 : newIndex
       }
       return true
 	}
