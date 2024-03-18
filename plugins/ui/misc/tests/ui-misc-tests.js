@@ -17,7 +17,10 @@ component('uiTest.editableNumber', {
 
 component('uiTest.markdown', {
   impl: uiTest({
-    control: markdown('| Day     | Meal    | Price |\n| --------|---------|-------|\n| Monday  | pasta   | $6    |\n| Tuesday | chicken | $8    |    '),
+    control: markdown(`| Day     | Meal    | Price |
+| --------|---------|-------|
+| Monday  | pasta   | $6    |
+| Tuesday | chicken | $8    |    `),
     expectedResult: contains('table')
   })
 })

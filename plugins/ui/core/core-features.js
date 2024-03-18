@@ -433,7 +433,7 @@ component('css', {
   type: 'feature',
   moreTypes: 'dialog-feature<>,layout<>',
   params: [
-    {id: 'css', mandatory: true, dynamic: true, as: 'string'}
+    {id: 'css', mandatory: true, dynamic: true, as: 'string', newLinesInCode: true}
   ],
   impl: (ctx,css) => ({css: _ctx => jb.ui.fixCssLine(css(_ctx))})
 })

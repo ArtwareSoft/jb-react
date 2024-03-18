@@ -9,6 +9,12 @@ fix editableTextHelperTest.setInput
 shorten menu names
 
 icon gallery
+
+gpt4 discussions
+  zui
+  simplicity of languages
+
+  
 llm helper 
   allow definitions of prompts and inject them
   

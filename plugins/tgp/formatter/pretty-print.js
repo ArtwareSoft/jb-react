@@ -29,7 +29,7 @@ extension('utils', 'prettyPrint', {
     return `component('${compId.split('>').pop()}', `
   },
 
-  prettyPrintWithPositions(val,{colWidth=100,tabSize=2,initialPath='',noMacros,singleLine, depth, tgpModel, type, newLinesInString} = {}) {
+  prettyPrintWithPositions(val,{colWidth=100,tabSize=2,initialPath='',noMacros,singleLine, depth, tgpModel, type} = {}) {
     const props = {}
     const startOffset = val.$comp ? jb.utils.compHeader(val.$$).length : 0
 
@@ -236,8 +236,8 @@ extension('utils', 'prettyPrint', {
       const varsByName = firstParamAsArray ? [] : ['$vars']
       const systemProps = [...varsByName, ...jb.macro.systemProps].flatMap(p=>profile[p] ? [{innerPath: p, val: profile[p]}] : [])
 
-      const propsByName = systemProps.concat(paramsByName.map(param=>({innerPath: param.id, val: profile[param.id]}))).filter(({val})=>val !== undefined)
-      const propsByValue = paramsByValue.map(param=>({innerPath: param.id, val: profile[param.id]})).filter(({val})=>val !== undefined)
+      const propsByName = systemProps.concat(paramsByName.map(param=>({innerPath: param.id, val: profile[param.id], newLinesInCode: param.newLinesInCode}))).filter(({val})=>val !== undefined)
+      const propsByValue = paramsByValue.map(param=>({innerPath: param.id, val: profile[param.id], newLinesInCode: param.newLinesInCode})).filter(({val})=>val !== undefined)
       const firstParamVal = profile[param0.id]
       const singleFirstParamAsArray = firstParamAsArray && !Array.isArray(firstParamVal) && firstParamVal != null
 
@@ -247,8 +247,8 @@ extension('utils', 'prettyPrint', {
       const varsLength = varsByValue.length ? calcArrayProps(varsByValue.map(x=>x.val),`${path}~$vars`).len : 0
       const firstParamLength = singleFirstParamAsArray ? calcValueProps(firstParamVal,`${path}~${params[0].id}`, {parentParam: param0}).len
         : argsOfFirstParam.length ? calcArrayProps(argsOfFirstParam.map(x=>x.val),`${path}~${params[0].id}`).len : 0
-      const propsByValueLength = (propsByValue.length && !firstParamAsArray) ? propsByValue.reduce((len,elem) => len + calcValueProps(elem.val,`${path}~${elem.innerPath}`).len + 2, 0) : 0
-      const propsByNameLength = propsByName.length ? propsByName.reduce((len,elem) => len + calcValueProps(elem.val,`${path}~${elem.innerPath}`).len + elem.innerPath.length + 2, 0) : 0
+      const propsByValueLength = (propsByValue.length && !firstParamAsArray) ? propsByValue.reduce((len,elem) => len + calcValueProps(elem.val,`${path}~${elem.innerPath}`,{newLinesInCode: elem.newLinesInCode}).len + 2, 0) : 0
+      const propsByNameLength = propsByName.length ? propsByName.reduce((len,elem) => len + calcValueProps(elem.val,`${path}~${elem.innerPath}`,{newLinesInCode: elem.newLinesInCode}).len + elem.innerPath.length + 2, 0) : 0
       const argsByValue = [...varsByValue, ...(firstParamAsArray ? argsOfFirstParam: propsByValue)]
       const lenOfValues = varsLength + firstParamLength + propsByValueLength
       const singleArgAsArray = propsByName.length == 0 && firstParamAsArray
@@ -311,10 +311,11 @@ extension('utils', 'prettyPrint', {
       if (typeof val === 'function' && val[jb.macro.isMacro]) return calcObjProps(val(), path)
       if (typeof val === 'function') return funcProps(val, path)
   
-      if (typeof val === 'string' && val.indexOf("'") == -1)
+      const putNewLinesInString = typeof val === 'string' && val.match(/\n/) && jb.path(settings,'newLinesInCode')
+      if (typeof val === 'string' && val.indexOf("'") == -1 && !putNewLinesInString)
         return stringValProps(JSON.stringify(val).slice(1,-1).replace(/\\"/g,'"'), "'", path)
       else if (typeof val === 'string')
-        return stringValProps(val.replace(/`/g,'\\`').replace(/\$\{/g, '\\${'), "`", path)
+        return stringValProps(val.replace(/`/g,'\\`').replace(/\$\{/g, '\\${'), "`", path,putNewLinesInString)
       else if (typeof val === 'boolean')
         return tokenProps(val ? 'true' : 'false',path)
       else if (typeof val === 'number')
@@ -326,9 +327,9 @@ extension('utils', 'prettyPrint', {
     function openCloseProps(path, open,close, _props) {
       return props[path] = {open,close, ..._props}
     }
-    function stringValProps(str, delim,path) {
-      if (!newLinesInString)
-        str = str.replace(/\n/g,'\\n')
+    function stringValProps(_str, delim, path, putNewLinesInString) {
+      const str = putNewLinesInString ? _str : _str.replace(/\n/g,'\\n')
+
       const parentPath = path.split('~').slice(0,-1).join('~')
       const listBegin = [ {item: '', action: `begin!${path}`}, {item: delim, action: `addProp!${parentPath}`}, {item: '', action: `edit!${path}`} ]
       const listEnd = str.length == 0 ? [ {item: delim, action: `setPT!${path}`}]

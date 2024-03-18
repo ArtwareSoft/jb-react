@@ -7,7 +7,7 @@ component('markdown', {
   category: 'control:20',
   description: 'md markdown viewer',
   params: [
-    {id: 'markdown', as: 'string', mandatory: true, dynamic: true},
+    {id: 'markdown', as: 'string', mandatory: true, dynamic: true, newLinesInCode: true},
     {id: 'style', type: 'markdown-style', defaultValue: markdown.mark(), dynamic: true},
     {id: 'title', as: 'string', defaultValue: 'markdown', dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}

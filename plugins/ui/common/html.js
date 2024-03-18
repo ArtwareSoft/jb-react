@@ -3,7 +3,7 @@ component('html', {
   description: 'rich text',
   category: 'control:100,common:80',
   params: [
-    {id: 'html', as: 'ref', mandatory: true, templateValue: '<p>html here</p>', dynamic: true},
+    {id: 'html', as: 'ref', mandatory: true, templateValue: '<p>html here</p>', dynamic: true, newLinesInCode: true},
     {id: 'title', as: 'string', dynamic: true},
     {id: 'style', type: 'html-style', defaultValue: html.plain(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}

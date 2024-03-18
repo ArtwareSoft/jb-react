@@ -85,7 +85,11 @@ component('button.studioScript', {
       cursor: pointer; opacity: 0.8; font-style: italic; }`,
     features: [
       button.initAction(),
-      frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode% == 13'), sink.BEMethod('onclickHandler'))
+      frontEnd.flow(
+        source.frontEndEvent('keydown'),
+        rx.filter('%keyCode% == 13'),
+        sink.BEMethod('onclickHandler')
+      )
     ]
   })
 })
@@ -94,8 +98,7 @@ component('picklist.studioEnum', {
   type: 'picklist-style',
   impl: customStyle({
     template: (cmp,state,h) => h('select', { value: state.databind, onchange: true },
-          (state.options || []).map(option=>h('option',{value: option.code},option.text))
-        ),
+          (state.options || []).map(option=>h('option',{value: option.code},option.text))),
     css: `
 { display: block; padding: 0; width: 150px; font-size: 12px; height: 23px;
 	color: #555555; background-color: #fff;
@@ -105,8 +108,7 @@ component('picklist.studioEnum', {
 }
 :focus { border-color: #66afe9; outline: 0;
 	box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); }
-::placeholder { color: #999; opacity: 1; }
-    `,
+::placeholder { color: #999; opacity: 1; }`,
     features: [field.databind(), picklist.init()]
   })
 })
@@ -115,13 +117,9 @@ component('text.studioMessage', {
   type: 'text-style',
   impl: customStyle({
     template: (cmp,{text},h) => h('span.studio-message',{}, text),
-    css: `{ position: absolute;
-      z-index: 10000;
-      color: white;  padding: 20px;  background: #327DC8;
-      width: 1000px;
-      margin-top: -100px;
-      animation-fill-mode: forwards;
-      }`,
+    css: `{ position: absolute; z-index: 10000; color: white;  padding: 20px;  background: #327DC8; 
+        width: 1000px; margin-top: -100px; animation-fill-mode: forwards;}
+  `,
     features: text.bindText()
   })
 })
@@ -149,7 +147,11 @@ component('dialog.studioMultilineEdit', {
 						opacity: .2;
 				}
 				>.dialog-close:hover { opacity: .5 }
-				`,
-    features: [maxZIndexOnClick(), closeWhenClickingOutside(), cssClassOnLaunchingElement()]
+`,
+    features: [
+      maxZIndexOnClick(),
+      closeWhenClickingOutside(),
+      cssClassOnLaunchingElement()
+    ]
   })
 })

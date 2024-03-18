@@ -84,6 +84,13 @@ component('PPrintTest.remark.pipeline', {
   })
 })
 
+component('PPrintTest.newLinesInCode', {
+  impl: dataTest({
+    calculate: () => jb.utils.prettyPrint(html(`<div>\n</div>`),{type: 'control<>'}),
+    expectedResult: equals('html(`<div>\n</div>`)')
+  })
+})
+
 component('PPrintTest.Positions.closeArray', {
   impl: PPPosOfPath({
     profile: () => text('hey', { features: [css.color('green'), css.color('green')] }), 

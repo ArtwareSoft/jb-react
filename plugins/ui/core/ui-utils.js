@@ -332,7 +332,7 @@ component('customStyle', {
   category: 'advanced:10,all:10',
   params: [
     {id: 'template', as: 'single', mandatory: true, dynamic: true, ignore: true, byName: true},
-    {id: 'css', as: 'string'},
+    {id: 'css', as: 'string', newLinesInCode: true},
     {id: 'features', type: 'feature[]', typeAsParent: t=>t.replace(/style/,'feature'), dynamic: true}
   ],
   impl: (ctx, css, features) => ({
