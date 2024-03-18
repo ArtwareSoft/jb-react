@@ -58,7 +58,7 @@ component('remark', {
   params: [
     {id: 'text', as: 'string', mandatory: true}
   ],
-  macro: (result, self) => Object.assign(result,{ $remark: self.$unresolved[0] })
+  macro: (result, self) => Object.assign(result,{ $remark: self.remark }) //  || jb.path(self.$unresolved,'0')
 })
 
 component('unknownCmp', {
@@ -67,7 +67,7 @@ component('unknownCmp', {
   params: [
     {id: 'id', as: 'string', mandatory: true}
   ],
-  macro: (result, self) => jb.comps[self.$unresolved[0]] = { impl: ctx => jb.logError(`comp ${self.$unresolved[0]} is not defined`,{ctx})}
+  macro: (result, self) => jb.comps[self.id] = { impl: ctx => jb.logError(`comp ${self.id} is not defined`,{ctx})}
 })
 
 component('runCtx', {

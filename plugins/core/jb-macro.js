@@ -7,7 +7,7 @@ extension('macro', {
     initExtension() {
         return { 
             proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro'), 
-            systemProps: ['remark', 'data', '$debug', '$disabled', '$log', 'ctx' ],
+            systemProps: ['//', 'data', '$debug', '$disabled', '$log', 'ctx' ],
             richSystemProps: [ {id: 'data', $type: 'data<>'}] 
         }
     },
@@ -44,7 +44,7 @@ extension('macro', {
         if (args.length == 1 && typeof args[0] === 'object') {
             jb.asArray(args[0].vars).forEach(arg => jb.comps[arg.$].macro(system, arg))
             delete args[0].vars
-            args[0].remark && jb.comps.remark.macro(system, args[0])
+            //args[0].remark && jb.comps.remark.macro(system, args[0])
         }
         return { args, system }
     },
@@ -136,10 +136,10 @@ extension('syntaxConverter', 'onAddComponent', {
 
     if (profile.$)
         profile.$ = jb.macro.titleToId(profile.$)
-    if (profile.remark) {
-        profile.$remark = profile.remark
-        delete profile.remark
-    }
+    // if (profile.remark) {
+    //     profile.$remark = profile.remark
+    //     delete profile.remark
+    // }
     
     if (profile.$ == 'object')
         return {$: 'obj', props: jb.entries(profile).filter(([x]) =>x!='$').map(([title,val]) => ({$: 'prop', title, val: jb.syntaxConverter.fixProfile(val,origin) }))}

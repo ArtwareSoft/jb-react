@@ -11,10 +11,7 @@ component('editableTextHelperTest.helperPopup', {
 component('editableTextHelperTest.picklistHelper', {
   impl: uiTest({
     control: editableText('name', '%$person/name%', {
-      style: editableText.mdcInput(),
-      features: editableText.picklistHelper(picklist.optionsByComma('1,2,333'), {
-        autoOpen: true
-      })
+      features: editableText.picklistHelper({ options: picklist.optionsByComma('1,2,333'), autoOpen: true })
     }),
     expectedResult: contains('333'),
     uiAction: waitForNextUpdate()
@@ -72,14 +69,18 @@ component('editableTextHelperTest.setInput', {
           options: picklist.optionsByComma('1111,2,3,4'),
           picklistStyle: picklist.labelList(),
           autoOpen: true,
-          onEnter: editableText.setInputState({ newVal: '%$selectedOption%', assumedVal: '%value%' })
+          onEnter: editableText.setInputState({ newVal: '%$selectedOption%', assumedVal: '%$person/name%' })
         })
       ]
     }),
-    expectedResult: contains('1111</input-val>'),
+    expectedResult: contains('value="1111"'),
     uiAction: uiActions(
       waitForSelector('.jb-dialog'),
-      keyboardEvent('input', 'keydown', { keyCode: 40, doNotWaitForNextUpdate: true }),
+      keyboardEvent('input', 'keydown', {
+        '//': 'down arrow selection - no UI update is needed at the FE',
+        keyCode: 40,
+        doNotWaitForNextUpdate: true
+      }),
       keyboardEvent('input', 'keyup', { keyCode: 13 })
     ),
     emulateFrontEnd: true

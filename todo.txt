@@ -1,12 +1,12 @@
 vscode
   at the begining of array add(unshift) at the first char and replace/wrap at the second
 
+PPPrint - allow new lines by paramDef - formatterNewLines: true
+
 itemlistTest.selection.nthChildSelector
 
 fix editableTextHelperTest.setInput
 shorten menu names
-
-menu.selectionKeySourceService - rewrite with source.event
 
 icon gallery
 llm helper 

@@ -14,15 +14,14 @@ component('editableText.picklistHelper', {
   ],
   impl: features(
     watchable('selectedOption'),
-    watchable('watchableInput', obj(prop('value', ''))),
-    variable('helperCmp', '%$cmp%'),
+    variable('editableTextModel', '%$$model%'),
     method('openPopup', openDialog({
       content: picklist({
         databind: '%$selectedOption%',
-        options: (ctx,{watchableInput},{options}) => options(ctx.setData(jb.val(watchableInput))),
+        options: call('options', {data: '%$editableTextModel.databind()%'}),
         style: call('picklistStyle'),
         features: [
-          watchRef('%$watchableInput%'),
+          watchRef('%$editableTextModel/databind()%'),
           '%$picklistFeatures()%'
         ]
       }),
@@ -36,7 +35,6 @@ component('editableText.picklistHelper', {
     method('closePopup', dialog.closeDialogById('%$popupId%')),
     method('refresh', runActions(
       log('refresh editableTextHelper'),
-      writeValue('%$watchableInput%', '%%'),
       If({
         condition: call('showHelper'),
         then: If(not(dialog.isOpen('%$popupId%')), action.runBEMethod('openPopup')),
@@ -77,19 +75,17 @@ component('editableText.picklistHelper', {
       rx.log('autoOpen editableTextHelper'),
       sink.BEMethod('openPopup')
     ),
-    followUp.action(If(and('%$uiTest%','%$autoOpen%'), runActions(
-      writeValue('%$watchableInput%', obj(prop('value', '%$helperCmp/renderProps/databind%'))),
-      action.runBEMethod('openPopup')
-    ))),
+    followUp.action(If(and('%$uiTest%','%$autoOpen%'), action.runBEMethod('openPopup'))),
     onDestroy(action.runBEMethod('closePopup')),
     frontEnd.method('setInput', ctx => jb.ui.setInput(ctx.data,ctx))
   ),
   circuit: 'test<>editableTextHelperTest.setInput'
 })
 
+    //followUp.action(If(and('%$uiTest%','%$autoOpen%'), action.runBEMethod('openPopup'))),
 // followUp.action(If('%$autoOpen%', runActions(
 //   delay(100),
-//   writeValue('%$watchableInput%', obj(prop('value', '%$helperCmp/renderProps/databind%'))),
+//   writeValue('%$watchableInput%', obj(prop('value', '%$editableTextCmp/renderProps/databind%'))),
 //   action.runBEMethod('openPopup')
 // )))
 
@@ -137,10 +133,10 @@ component('editableText.helperPopup', {
       features: [
         maxZIndexOnClick(),
         unique('%$popupId%'),
-        group.data(firstSucceeding('%$ev/input%', obj(prop('value', '%$helperCmp/renderProps/databind%'))))
+        group.data(firstSucceeding('%$ev/input%', obj(prop('value', '%$editableTextCmp/renderProps/databind%'))))
       ]
     })),
-    variable('helperCmp', '%$cmp%'),
+    variable('editableTextCmp', '%$cmp%'),
     method('closePopup', dialog.closeDialogById('%$popupId%')),
     method('refresh', runActions(
       If({

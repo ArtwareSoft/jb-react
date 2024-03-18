@@ -76,11 +76,11 @@ component('PPrintTest.dslNameOveride', {
 component('PPrintTest.remark.pipeline', {
   impl: dataTest({
     calculate: pipeline(
-      () => jb.utils.prettyPrintWithPositions(pipeline(Var('x',1), 'a' , {remark: 'hello'}),{type: 'data<>', singleLine: true}),
+      () => jb.utils.prettyPrintWithPositions(pipeline(Var('x',1), 'a' , {'//': 'hello'}),{type: 'data<>', singleLine: true}),
       log('test'),
       '%text%'
     ),
-    expectedResult: equals(`pipeline(Var('x', 1), 'a', { remark: 'hello' })`)
+    expectedResult: equals(`pipeline(Var('x', 1), 'a', { '//': 'hello' })`)
   })
 })
 
