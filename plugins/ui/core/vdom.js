@@ -146,7 +146,7 @@ extension('ui','vdom', {
     },
     selectorMatcher(selector) {
         const hasAtt = selector.match(/^\[([a-zA-Z0-9_$\-]+)\]$/)
-        const attEquals = selector.match(/^\[([a-zA-Z0-9_$\-]+)="([a-zA-Z0-9_\-→•]+)"\]$/)
+        const attEquals = selector.match(/^\[([a-zA-Z0-9_$\-]+)="([^"]+)"\]$/)
         const hasClass = selector.match(/^(\.[a-zA-Z0-9_$\-]+)+$/)
         const hasTag = selector.match(/^[a-zA-Z0-9_\-]+$/)
         const idEquals = selector.match(/^#([a-zA-Z0-9_$\-]+)$/)

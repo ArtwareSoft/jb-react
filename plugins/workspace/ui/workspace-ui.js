@@ -112,21 +112,19 @@ component('workspace.textEditor', {
     features: [
       id('activeEditor'),
       frontEnd.var('docUri', '%$docUri%'),
-      frontEnd.var('initCursorPos', () => jb.workspace.openDocs[jb.workspace.activeUri].selection.start),
+      frontEnd.var('initCursorPos', () => jb.path(jb.workspace.openDocs[jb.workspace.activeUri],'selection.start') || {line:0, col: 0}),
       variable('popupLauncherCanvas', '%$cmp%'),
-      frontEnd.init(({},{cmp, initCursorPos}) => cmp.editor.setCursor(initCursorPos.line, initCursorPos.col)),
+      frontEnd.init(({},{cmp, initCursorPos}) => cmp.editor && cmp.editor.setCursor(initCursorPos.line, initCursorPos.col)),
       frontEnd.flow(
-        source.callbag(({},{cmp}) => jb.callbag.create(obs=> 
-            cmp.editor.on('cursorActivity', () => obs(cmp.editor.getDoc().getCursor())))),
+        source.codeMirrorCursor(),
         rx.takeUntil('%$cmp/destroyed%'),
-        rx.debounceTime('%$debounceTime%'),
         sink.BEMethod('selectionChanged', '%%')
       ),
       frontEnd.flow(
         source.frontEndEvent('keydown'),
         rx.filter(key.match('Ctrl+Space')),
         rx.userEventVar(),
-        rx.var('offsets', ({},{cmp}) => cmp.editor.charCoords(cmp.editor.getCursor(), "local")),
+        rx.var('offsets', ({},{cmp}) => cmp.editor && cmp.editor.charCoords(cmp.editor.getCursor(), "local")),
         sink.BEMethod('openPopup', '%$offsets%', obj(prop('ev', '%$ev%')))
       ),
       method('openPopup', openDialog({
@@ -145,7 +143,7 @@ component('workspace.textEditor', {
 })
 
 component('workspace.floatingCompletions', {
-  type: 'control',
+  type: 'control<>',
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -182,7 +180,7 @@ component('workspace.floatingCompletions', {
         features: css.width('100%')
       })
     ],
-    layout: layout.horizontal('20'),
+    layout: layout.horizontal({ spacing: '20' }),
     features: [
       watchable('text', ''),
       variable('completions', obj()),
@@ -197,12 +195,10 @@ component('workspace.completionOptions', {
   params: [
     {id: 'input', defaultValue: '%%'}
   ],
-  impl: (ctx, input) => {
+  impl: async (ctx, input) => {
     const { completions } = ctx.vars
-    if (completions.options)
-      return completions.options.filter(({text})=> text.indexOf(input.value) != -1)
-    return new Promise(resolve => 
-      jb.langService.completionItems(ctx).then(res => 
-        resolve(completions.options = res.filter(({kind}) => kind != 25).map((item,i)=>({i, code: item.label, text: item.label})))))
+    const items = completions.resolvedItems || (completions.resolvedItems = await jb.langService.completionItems(ctx))
+    const val = jb.val(input)
+    return { options: items.map((item,i)=>({i, code: item.label, text: item.label})).filter(({text})=> text.indexOf(val) != -1) }
   }
 })

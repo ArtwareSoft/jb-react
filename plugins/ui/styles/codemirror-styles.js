@@ -1,6 +1,7 @@
 
 extension('codemirror', {
 	injectCodeMirror(ctx,{text,cmp,el,cm_settings,_enableFullScreen,formatText}) {
+		if (ctx.vars.emulateFrontEndInTest)	return
 		if (cmp.editor) return
 		if (text == null) {
 			jb.logError('codemirror - no binding to text',{ctx, cmp})
@@ -142,13 +143,12 @@ component('source.codeMirrorText', {
   type: 'rx',
   impl: ctx => (start, sink) => {
 		const {cmp} = ctx.vars
-		if (!cmp.editor) 
-			return jb.logError('codemirror - no editor is available for change listener',{cmp,ctx})
+		if (!cmp.editor) return
 		if (!cmp.state.frontEndStatus == 'ready') 
 			return jb.logError('codemirror - frontEndStatus status not ready for change listener',{state: ''+ cmp.state, cmp,ctx})
 
 		if (start !== 0) return
-		function handler() { sink(1, cmp.editor.getValue()) }
+		function handler() { sink(1, ctx.dataObj(cmp.editor.getValue())) }
 		sink(0, t => {
 			if (t != 2) return
 			jb.log('codemirror unregister change listener',{ctx})
@@ -156,6 +156,26 @@ component('source.codeMirrorText', {
 		})
 		jb.log('codemirror register change listener',{ctx})
 		cmp.editor.on('change', handler)
+	}
+})
+
+component('source.codeMirrorCursor', {
+  type: 'rx',
+  impl: ctx => (start, sink) => {
+		const {cmp} = ctx.vars
+		if (!cmp.editor) return
+		if (!cmp.state.frontEndStatus == 'ready') 
+			return jb.logError('codemirror - frontEndStatus status not ready for cursorActivity listener',{state: ''+ cmp.state, cmp,ctx})
+
+		if (start !== 0) return
+		function handler() { sink(1, ctx.dataObj([cmp.editor.getDoc().getCursor()].map(({line,ch}) => ({line, col: ch}))[0]) ) }
+		sink(0, t => {
+			if (t != 2) return
+			jb.log('codemirror unregister cursorActivity listener',{ctx})
+			cmp.editor.off('cursorActivity', handler)
+		})
+		jb.log('codemirror register cursorActivity listener',{ctx})
+		cmp.editor.on('cursorActivity', handler)
 	}
 })
 

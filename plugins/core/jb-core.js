@@ -131,7 +131,8 @@ extension('core', {
   },
   run(ctx,parentParam,settings) {
     //  ctx.profile && jb.log('core request', [ctx.id,...arguments])
-      if (ctx.probe && !ctx.probe.active) return
+      if (ctx.probe && !ctx.probe.active)
+        ctx.probe = null
       const runner = () => jb.core.doRun(...arguments)
       Object.defineProperty(runner, 'name', { value: `${ctx.path} ${ctx.profile && ctx.profile.$ ||''}-run` })
       // if (ctx.probe)

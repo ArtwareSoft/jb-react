@@ -91,9 +91,8 @@ component('workspace.selelctionChanged', {
     {id: 'selection'},
     {id: 'docUri', as: 'string'}
   ],
-  impl: (ctx,selection,docUri) => {
+  impl: (ctx,{line, col },docUri) => {
       jb.workspace.activeUri = docUri
-      const line = selection.line, col = selection.ch
       const doc = jb.workspace.openDocs[jb.workspace.activeUri]
       doc.selection = { start : { line, col }, end: { line, col}}
   }

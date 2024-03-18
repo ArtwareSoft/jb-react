@@ -213,12 +213,12 @@ extension('probe', 'main', {
         }
         probe.startTime = probe.startTime || new Date().getTime() // for the remote probe
         const now = new Date().getTime()
-        // if (now - probe.startTime > probe.maxTime && !ctx.vars.testID) {
-        //     jb.log('probe timeout',{ctx, probe,now})
-        //     probe.active = false
-        //     throw 'probe tails'
-        //     //throw 'out of time';
-        // }
+        if (now - probe.startTime > probe.maxTime && !ctx.vars.testID) {
+            jb.log('probe timeout',{ctx, probe,now})
+            probe.active = false
+            throw 'probe tails'
+            //throw 'out of time';
+        }
         const path = ctx.path
         probe.records[path] = probe.records[path] || []
         probe.visits[path] = probe.visits[path] || 0

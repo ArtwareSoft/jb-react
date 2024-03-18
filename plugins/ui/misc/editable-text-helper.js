@@ -18,7 +18,7 @@ component('editableText.picklistHelper', {
     method('openPopup', openDialog({
       content: picklist({
         databind: '%$selectedOption%',
-        options: call('options', {data: '%$editableTextModel.databind()%'}),
+        options: call('options', { data: '%$editableTextModel.databind()%' }),
         style: call('picklistStyle'),
         features: [
           watchRef('%$editableTextModel/databind()%'),
@@ -35,6 +35,7 @@ component('editableText.picklistHelper', {
     method('closePopup', dialog.closeDialogById('%$popupId%')),
     method('refresh', runActions(
       log('refresh editableTextHelper'),
+      writeValue('%$editableTextModel.databind()%', '%$ev/input/value%'),
       If({
         condition: call('showHelper'),
         then: If(not(dialog.isOpen('%$popupId%')), action.runBEMethod('openPopup')),
