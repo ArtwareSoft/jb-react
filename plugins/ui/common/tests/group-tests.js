@@ -1,6 +1,8 @@
+using('ui-styles')
+
 component('uiTest.layout.horizontal', {
   impl: uiTest({
-    control: group(button('button1'), text('label1'), { layout: layout.horizontal(30) }),
+    control: group(button('button1'), text('label1'), { layout: layout.horizontal({ spacing: 30 }) }),
     expectedResult: contains('button1','label1','margin-right: 30px;')
   })
 })

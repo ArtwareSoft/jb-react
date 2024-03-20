@@ -143,6 +143,13 @@ extension('ui','vdom', {
         }
         focus() { // for tests 
         }
+        removeChild(child) {
+            const index = children.indexOf(child)
+            if (index == -1)
+                return jb.logError('vdom remove child. child not found',{vdom: this, child})
+            children.splice(index,1)
+            // consider handler cleanup - maybe will help gc
+        }
     },
     selectorMatcher(selector) {
         const hasAtt = selector.match(/^\[([a-zA-Z0-9_$\-]+)\]$/)

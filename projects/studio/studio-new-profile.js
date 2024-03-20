@@ -8,7 +8,7 @@ component('studio.categoriesMarks', {
     {
       '$': 'object',
       control: pipeline(
-        list('common:100','control:95','input:90','group:85','studio-helper:0,suggestions-test:0,studio:0,test:0,basic:0,ui-tests:0,studio-helper-dummy:0,itemlist-container:0'),
+        list('common:100','control:95','input:90','group:85','studio-helper:0,suggestions-test:0,studio:0,test:0,basic:0,studio-helper-dummy:0,itemlist-container:0'),
         split(','),
         {'$': 'object', code: split(':', { part: 'first' }), mark: split(':', { part: 'second' })}
       ),

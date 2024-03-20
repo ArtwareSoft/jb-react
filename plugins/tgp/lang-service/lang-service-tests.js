@@ -1,4 +1,4 @@
-using('ui-tests')
+using('ui-testers')
 
 component('completionTest.param', {
   impl: completionOptionsTest(`uiTest(__text(__'hello world',__ ''__)__,__ __contains('hello world')__)`, {
@@ -82,6 +82,14 @@ component('completionTest.singleArgAsArray.begin', {
     completionToActivate: 'features',
     expectedEdit: asIs({range: {start: {line: 1, col: 29}, end: {line: 1, col: 29}}, newText: ', { features: TBD() }'}),
     expectedCursorPos: '1,43'
+  })
+})
+
+component('completionTest.singleArgAsArray.addBug', {
+  impl: completionActionTest(`uiTest(group(__text(''), text('')))`, {
+    completionToActivate: 'button',
+    expectedEdit: asIs({range: {start: {line: 1, col: 21}, end: {line: 1, col: 21}}, newText: `button('click me'), `}),
+    expectedCursorPos: '1,28'
   })
 })
 

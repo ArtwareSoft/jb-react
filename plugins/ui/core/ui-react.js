@@ -312,7 +312,7 @@ extension('ui', 'react', {
             el.selectionStart = selectionStart
         if (active && activeElem !== el) { debugger; el.focus() }
     },
-    unmount(elem) {
+    unmount(elem) { // todo - return promise
         if (!elem || !elem.setAttribute) return
 
         const groupByWidgets = {}

@@ -1,3 +1,4 @@
+using('common')
 dsl('test')
 
 // uiAction works in both uiTest and browserTest. 

@@ -26,7 +26,7 @@ component('PPrintTest.varsPath', {
 // })
 
 component('PPrintTest.prependSingleInArrayPath', {
-  impl: PPPosOfPath(() => group(text('')), 'control<>', 'prependPT!~controls', '6,6')
+  impl: PPPosOfPath(() => group(text('')), 'control<>', 'prependPT!~controls', '6,11')
 })
 
 component('PPrintTest.singleInArrayPath', {

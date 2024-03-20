@@ -1,18 +1,45 @@
 vscode
-  at the begining of array add(unshift) at the first char and replace/wrap at the second
+  completionTest.singleArgAsArray.addBug
 
-PPPrint - allow new lines by paramDef - formatterNewLines: true
+workspace.ui
+  update text
+code-watcher 
+  create both action and source
+preview for uiTest
+  no preview sctx - just uiTestPreview, not dependent on probe, maybe dependent on tests
+  control<>controlOfUiTest({playUIActions: true})
+  top FE from studio.jbm with counter for code changes, set spy, and maybe refresh button
+  also top FE from studio.jbm - counter for user req, actually *recording* them
+  preview.header (debugger) from previewJbm with counters for errors, new interactive comps, count of jb.ui.cmps, total refresh count
+    refresh after user request finished (maybe another user req refreshHeader)
+  preview tab in vscode - includes the counters, no need for refresh button, moving out should kill the preview jbm
+
+testPreview
+  control<>activatedCodeOfTest()
+  count each tgpPath visit
+  gather code snippests using codemirror, show counters on the code. use ... to separate snippests, keep call order
+
+ids without ''
+  proxies for ids
+  parse symbols Var\('(.*)', 
+  add symbols from params
+  add jb.macro.reservedKeywords = ['if', 'switch', 'case', 'to', 'component', 'dsl', 'using', 'fileDsl', 'data' ] block them in params ids
+  resolve to to '%$xx%'
+  support id.x.y with proxies
+  pretty print %$aa% -> aa, '%$id.x.y%' -> id.x.y, %$aa()% -> aa()
+
+
+jb.ui.unmount - should return promise, not easy
 
 itemlistTest.selection.nthChildSelector
-
-fix editableTextHelperTest.setInput
 shorten menu names
 
 icon gallery
 
+
+
 gpt4 discussions
   zui
-  simplicity of languages
 
   
 llm helper 

@@ -1,3 +1,5 @@
+using('ui-styles')
+
 component('uiTest.itemlistContainerSearchCtrl', {
   type: 'control',
   impl: group({

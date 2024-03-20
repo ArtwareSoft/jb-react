@@ -1,4 +1,4 @@
-using('ui-misc','ui-styles')
+using('ui-misc','ui-styles','ui-testers')
 
 component('browserTest.codeMirror', {
   impl: browserTest({

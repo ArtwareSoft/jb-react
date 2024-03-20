@@ -1,4 +1,4 @@
-using('ui-tests')
+using('ui-testers','ui-misc','tgp-text-editor')
 
 component('person', { watchableData: {
 	name: "Homer Simpson",

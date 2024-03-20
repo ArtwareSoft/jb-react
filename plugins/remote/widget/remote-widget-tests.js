@@ -1,4 +1,4 @@
-using('ui-tests')
+using('ui-testers')
 
 component('remoteWidgetTest.text', {
   impl: uiTest(text('hello world'), contains('hello world'), { timeout: 1000, backEndJbm: worker() })

@@ -1,4 +1,4 @@
-using('ui-tests','workspace-core','testing')
+using('ui-testers','workspace-core','testing')
 
 component('watchableTest.property', {
   impl: dataTest(property('name', '%$person%'), equals('Homer Simpson'))

@@ -313,3 +313,6 @@ component('remoteTest.dataFromCmd', {
   })
 })
 
+// component('remoteTest.dsl', {
+//   impl: uiTest(location.control(israel()), contains('Jerusalem'), { timeout: 500, backEndJbm: worker() })
+// })

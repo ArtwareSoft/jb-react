@@ -19,11 +19,6 @@
 	<div id="testElem"> </div>
 	<div id="show"> </div>
  <script>
-    // jbInit('tests',{plugins: ['ui-tests']},{}).then(jb =>{
-	// 	globalThis.jb = jb
-	// 	remoteTests.innerText = jb.calc({$: 'pipeline', items: ['hello']})[0]
-	// })
-
 	jbLoadPacked().then(jb => {
 		globalThis.jb = jb
 		remoteTests.innerText = jb.calc({$: 'pipeline', items: ['hello']})[0]

@@ -1,4 +1,4 @@
-using('ui-tests')
+using('ui-testers')
 
 component('puppeteer.activator', {
   type: 'control<>',

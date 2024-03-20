@@ -1,4 +1,4 @@
-using('ui-tests')
+using('ui-testers')
 
 component('dialogTest.openDialog', {
   impl: uiTest({

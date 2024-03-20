@@ -1,4 +1,4 @@
-using('ui-tests','markdown-editor')
+using('ui-testers','markdown-editor')
 
 component('uiTest.group', {
   impl: uiTest(group(text('hello world'), text('2')), contains('hello world','2'))
@@ -29,7 +29,9 @@ component('uiTest.text.allowAsynchValue', {
 
 component('uiTest.button', {
   impl: uiTest({
-    control: group(text('%$txt%'), button('btn1', writeValue('%$txt%', 'bbb')), { features: watchable('txt', 'aaa') }),
+    control: group(text('%$txt%'), button('btn1', writeValue('%$txt%', 'bbb')), {
+      features: watchable('txt', 'aaa')
+    }),
     expectedResult: contains('bbb'),
     uiAction: click()
   })

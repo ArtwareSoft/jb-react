@@ -1,4 +1,4 @@
-using('ui-tests')
+using('ui-testers')
 
 component('uiTest.changeText', {
   impl: uiTest({
@@ -183,7 +183,7 @@ component('uiTest.remoteItemlistKeyboardSelection', {
     uiAction: keyboardEvent('.jb-itemlist', 'keydown', { keyCode: 13 }),
     timeout: 5000,
     backEndJbm: worker('itemlist', {
-      sourceCode: sourceCode(pluginsByPath('/plugins/ui/tests/ui-tests.js'), plugins('remote-widget'))
+      sourceCode: plugins('ui-common-tests','remote-widget')
     }),
     emulateFrontEnd: true
   })

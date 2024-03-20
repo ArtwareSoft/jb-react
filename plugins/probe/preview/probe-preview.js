@@ -202,3 +202,86 @@ component('probe.propertyPrimitive', {
     ]
   })
 })
+
+// ** jbm
+component('jbm.restartChildJbm', {
+  params: [
+    {id: 'jbm', type: 'jbm<jbm>'}
+  ],
+})
+
+// ** watchable code
+component('watchableCode.applyNewCode', {
+  type: 'action<>',
+  params: [
+    {id: 'codeChange' }
+  ],
+})
+component('source.codeChangeEvent', {
+  type: 'rx'
+})
+
+// ** remote widget
+component('controlBySctx', {
+  type: 'control',
+  params: [
+    {id: 'sctx' }
+  ],  
+})
+component('source.FEUserRequests', {
+  type: 'rx',
+  params: [
+    {id: 'widgetId' }
+  ],  
+})
+
+component('preview.createNewFrontEndWidget', {
+  impl: async ctx => {
+    // clean up of existing and FE, create widget with new id and return the new id
+    const wrapper = jb.ui.querySelectorAll('#preview_wrapper')[0]
+    if (!wrapper)
+      return jb.logError('preview createNewFrontEndWidget can not find wrapper',{ctx})
+    await jb.ui.unmount(wrapper)
+    wrapper.querySelectorAll('>*').forEach(el=>wrapper.removeChild(el))
+    const widgetId = 'preview' + (ctx.vars.previewState.counter++)
+    await jb.ui.renderWidget({ $: 'control<>widget.frontEndCtrl', widgetId }, wrapper, {widgetId})
+    return widgetId
+  }
+})
+
+component('preview', {
+  type: 'control',
+  params: [
+    {id: 'previewSctx'},
+    {id: 'previewJbm', type: 'jbm<jbm>'}
+  ],
+  impl: group({
+    controls: [
+      button('refresh preview', action.subjectNext('%$previewButtonClick%', '1')),
+      html('<div id="preview_wrapper"></div>')
+    ],
+    features: [
+      variable('previewState', obj(prop('counter',0))),
+      variable('previewButtonClick', rxSubject('previewButtonClick')),
+      followUp.flow(
+        source.merge(source.subject('%$previewButtonClick%'), source.data(0)),
+        rx.mapPromise(jbm.restartChildJbm('%$previewJbm%')),
+        rx.mapPromise(preview.createNewFrontEndWidget),
+        rx.var('previewWidgetId'),
+        rx.takeUntil('%$cmp/destroyed%'),
+        rx.flatMap(rx.pipe(
+          source.FEUserRequests('%$previewWidgetId%'),
+          remote.operator({
+            rx: rx.pipe(
+              source.merge(source.codeChangeEvent(), source.data(0)),
+              rx.doPromise(watchableCode.applyNewCode()),
+              rx.flatMap(widget.headless({ control: controlBySctx('%$previewSctx%'), widgetId: '%$previewWidgetId%' }))
+            ),
+            jbm: '%$previewJbm%'
+          })
+        )),
+        sink.action(action.updateFrontEnd())
+      )
+    ]
+  })
+})

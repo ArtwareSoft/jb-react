@@ -1,4 +1,4 @@
-using('ui-tests')
+using('ui-testers')
 
 component('test.mixedTest.disabled', {
   impl: split(';', {

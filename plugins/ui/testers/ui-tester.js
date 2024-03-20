@@ -1,4 +1,5 @@
-using('remote-widget')
+using('remote-widget','testing')
+
 component('tests.main', {
   type: 'control',
   impl: text('')

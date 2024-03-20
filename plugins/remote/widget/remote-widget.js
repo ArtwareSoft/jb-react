@@ -1,4 +1,4 @@
-using('remote-jbm','ui-common')
+using('remote-jbm','ui-misc')
 
 extension('ui', 'widget-frontend', {
   initExtension() {
@@ -62,7 +62,7 @@ component('dataMethodFromBackend', {
 component('action.updateFrontEnd', {
   type: 'action',
   params: [
-    {id: 'renderingUpdate', defaultValue: '%%'}
+    {id: 'renderingUpdate', defaultValue: '%%'},
   ],
   impl: (ctx, renderingUpdate) => {
     if (renderingUpdate.$ == 'updates')
@@ -252,7 +252,7 @@ extension('ui', 'headless', {
 component('widget.headless', {
   type: 'rx',
   params: [
-    {id: 'control', type: 'control', dynamic: true},
+    {id: 'control', type: 'control', dynamic: true, byName: true},
     {id: 'widgetId', as: 'string'},
     {id: 'transactiveHeadless', as: 'boolean', type: 'boolean'}
   ],

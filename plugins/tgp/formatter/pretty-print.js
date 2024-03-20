@@ -164,12 +164,12 @@ extension('utils', 'prettyPrint', {
 
         const singleArgAsArrayPath = singleArgAsArray ? `${path}~${singleArgAsArray}` : path
         const actionForFirstArgByValue = !singleArgAsArray || singleLine ? `addProp!${path}` : `prependPT!${singleArgAsArrayPath}`
-        // const firstInArray = path.match(/[0-9]$/)
-        // const parentPath = path.split('~').slice(0,-1).join('~')
+        const firstInArray = path.match(/~0$/)
+        const parentPath = path.split('~').slice(0,-1).join('~')
         return [
             {item: '', action: `begin!${path}`},
-            {item: '', action: singleInArray ? `prependPT!${path}` : ''}, // : firstInArray ? `prependPT!${parentPath}` 
-            {item: macro + '(', action: `setPT!${path}`},
+            {item: macro + '(', action: singleInArray ? `prependPT!${path}` : firstInArray ? `prependPT!${parentPath}` : `setPT!${path}`},
+//            {item: , action: (singleInArray || firstInArray) ? '' : `setPT!${path}`},
             {item: '', action: `edit!${path}`},
             {item: '', action: `addProp!${path}`},
             ...(argsByValue.length && !mixedFold ? [{item: newLine(), action: actionForFirstArgByValue}] : []),

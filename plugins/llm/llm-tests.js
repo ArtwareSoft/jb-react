@@ -1,4 +1,4 @@
-using('ui-tests','net')
+using('ui-testers','net')
 
 component('llmStateForTests', { passiveData: {
   prompt: ''

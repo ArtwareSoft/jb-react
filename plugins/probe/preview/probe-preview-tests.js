@@ -1,4 +1,4 @@
-using('ui-tests')
+using('ui-testers')
 
 component('sampleProject.main', {
   impl: group(text('hello', { features: [id('sampleText')] }), {
