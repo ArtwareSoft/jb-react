@@ -7,7 +7,7 @@ extension('macro', {
     initExtension() {
         return { 
             proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro'), 
-            systemProps: ['//', 'data', '$debug', '$disabled', '$log', 'ctx' ],
+            systemProps: ['data', '$debug', '$disabled', '$log', 'ctx', '//' ],
             richSystemProps: [ {id: 'data', $type: 'data<>'}] 
         }
     },

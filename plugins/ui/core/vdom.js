@@ -97,9 +97,9 @@ extension('ui','vdom', {
             if (selector.match(/>/)) {
                 const parts = selector.split('>')
                 const first = this.querySelectorAll(parts[0])
-                return parts.slice(1).reduce((acc,part) => acc.flatMap(el=>el.children).filter(el=>el.matches(part)), first)
+                return parts.slice(1).reduce((acc,part) => acc.flatMap(el=>(el.children||[])).filter(el=>el.matches(part)), first)
             }
-            if (selector == '*') return this.children
+            if (selector == '*') return (this.children || [])
             if (selector == '' || selector == ':scope') return [this]
             if (selector.indexOf(' ') != -1)
                 return selector.split(' ').map(x=>x.trim()).reduce(
@@ -144,10 +144,11 @@ extension('ui','vdom', {
         focus() { // for tests 
         }
         removeChild(child) {
-            const index = children.indexOf(child)
+            if (!this.children) return
+            const index = this.children.indexOf(child)
             if (index == -1)
                 return jb.logError('vdom remove child. child not found',{vdom: this, child})
-            children.splice(index,1)
+            this.children.splice(index,1)
             // consider handler cleanup - maybe will help gc
         }
     },

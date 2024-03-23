@@ -235,17 +235,16 @@ extension('ui', 'headless', {
     } else if (userReq.$$ == 'destroy') {
       jb.log('destroy headless widget request', { widgetId: userReq.widgetId, userReq })
       jb.ui.BECmpsDestroyNotification.next({ cmps: userReq.cmps, destroyLocally: true })
-      if (userReq.destroyWidget) jb.delay(1).then(() => {
-        jb.log('destroy headless widget', { widgetId: userReq.widgetId, userReq })
-        delete jb.ui.headless[userReq.widgetId]
-      }) // the delay is needed for tests
+      if (userReq.destroyWidget) 
+        jb.ui.destroyHeadless(userReq.widgetId, userReq)
       sink(2)
     }
   },
-  destroyHeadless(widgetId) {
+  destroyHeadless(widgetId, userReq) {
     //jb. ui.destroyAllDialogEmitters()
+    jb.log('destroy headless widget', { widgetId, userReq })
     jb.ui.unmount(jb.ui.headless[widgetId])
-    delete jb.ui.headless[widgetId]
+    jb.delay(1).then(() => delete jb.ui.headless[widgetId]) // the delay is needed for tests
   }
 })
 

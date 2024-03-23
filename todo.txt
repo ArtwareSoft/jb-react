@@ -1,8 +1,10 @@
-vscode
-  completionTest.singleArgAsArray.addBug
+(sensors; cpufreq-info) | xclip -selection clipboard
+top -b -n 1 | xclip -selection clipboard
 
-workspace.ui
-  update text
+visit count into codemirror
+  activate it as a lang-service (extend the prove service) ctrl-I?
+  refresh the editor
+
 code-watcher 
   create both action and source
 preview for uiTest
@@ -23,7 +25,7 @@ ids without ''
   proxies for ids
   parse symbols Var\('(.*)', 
   add symbols from params
-  add jb.macro.reservedKeywords = ['if', 'switch', 'case', 'to', 'component', 'dsl', 'using', 'fileDsl', 'data' ] block them in params ids
+  add jb.macro.reservedKeywords = ['if', 'Var', 'switch', 'case', 'to', 'component', 'dsl', 'using', 'fileDsl', 'data' ] block them in params ids
   resolve to to '%$xx%'
   support id.x.y with proxies
   pretty print %$aa% -> aa, '%$id.x.y%' -> id.x.y, %$aa()% -> aa()

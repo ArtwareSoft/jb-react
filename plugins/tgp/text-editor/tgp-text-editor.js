@@ -1,4 +1,4 @@
-using('tgp-formatter')
+using('tgp-formatter','common')
 
 extension('tgpTextEditor', {
     initExtension() {
@@ -21,7 +21,6 @@ extension('tgpTextEditor', {
             const compId = jb.utils.resolveSingleComp(comp, id, { tgpModel, dsl })
             comp.$location = jb.path(tgpModel,[compId,'$location'])
             comp.$comp = true
-            //jb.comps[compId] = comp // really?!!
             if (forceLocalSuggestions && jb.plugins[pluginId]) {
                 const compToRun = f(...Object.values(context))
                 jb.comps[compId] = compToRun
@@ -33,10 +32,10 @@ extension('tgpTextEditor', {
             return tgpModel.currentComp = { comp, compId, pluginDsl, compDsl: dsl }
         } catch (e) {
             if (fixed)
-                return { compilationFailure: true, err: e }
+                return { compilationFailure: true, errors: [e] }
             const newCode = cursorPos && fixCode()
             if (!newCode)
-                return { compilationFailure: true, err: e }
+                return { compilationFailure: true, errors: [e] }
             return jb.tgpTextEditor.evalProfileDef(id, newCode, pluginId, fileDsl, tgpModel, { cursorPos, fixed: true })
         }
 
@@ -103,8 +102,8 @@ extension('tgpTextEditor', {
     },
     setStrValue(value, ref, ctx) {
         const notPrimitive = value.match(/^\s*[a-zA-Z0-9\._]*\(/) || value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
-        const { res, err } = notPrimitive ? jb.tgpTextEditor.evalProfileDef('', value) : value
-        if (err) return
+        const { res, errors } = notPrimitive ? jb.tgpTextEditor.evalProfileDef('', value) : value
+        if (errors) return
         const newVal = notPrimitive ? res : value
         // I had a guess that ',' at the end of line means editing, YET, THIS GUESS DID NOT WORK WELL ...
         // if (typeof newVal === 'object' && value.match(/,\s*}/m))
@@ -164,6 +163,16 @@ extension('tgpTextEditor', {
         const compLine = (+loc.line) || 0
         const { line, col } = jb.tgpTextEditor.getPosOfPath(tgpPath, 'begin')
         return { path, line: line + compLine, col }
+    },
+    tgpPathsForLines({ actionMap, text, startOffset }) {
+        const lines = {}
+        const item = actionMap.filter(({action}) => action.startsWith('begin')).forEach(({from,action}) => {
+            const path = action.split('!').pop()
+            const {line, col} = jb.tgpTextEditor.offsetToLineCol(text, from - startOffset)
+            lines[line] = lines[line] || []
+            lines[line].push({path,col})
+        })
+        return lines
     },
     pathOfPosition(ref, pos) {
         if (pos == null) return ''
@@ -377,4 +386,62 @@ component('gotoUrl', {
     if (globalThis.vscodeNS)
       vscodeNS.env.openExternal(url)
 	}
+})
+
+component('actionMapOverlay', {
+  type: 'overlay',
+  params: [
+    {id: 'baseStyle', as: 'object', description: 'for style.after' },
+    {id: 'tgpPathToStyle', dynamic: true, as: 'object'}
+  ],
+  impl: (ctx,baseStyle,tgpPathToStyle) => jb.tgpTextEditor.host.overlayActionMap({baseStyle,tgpPathToStyle,actionMap: ctx.vars.actionMap,ctx})
+})
+
+component('tgpTextEditor.applyOverlay', {
+  type: 'action',
+  params: [
+      {id : 'id', as: 'string'},
+      {id : 'overlay', type: 'overlay'},
+  ],
+  impl: (ctx,id,overlay) => {
+    const activeDoc = jb.tgpTextEditor.host.getActiveDoc(ctx)
+    activeDoc.overlayes = activeDoc.overlayes || {}
+    activeDoc.overlayes[id] = overlay
+    overlay.apply(ctx)
+  }
+})
+
+component('tgpTextEditor.removeOverlay', {
+  type: 'action',
+  params: [
+      {id : 'id', as: 'string'}
+  ],
+  impl: (ctx,id) => {
+    const activeDoc = jb.tgpTextEditor.host.getActiveDoc(ctx)
+    activeDoc.overlayes = activeDoc.overlayes || {}
+    overlay = activeDoc.overlayes[id]
+    delete activeDoc.overlayes[id]
+    overlay && overlay.clear(ctx)
+  }
+})
+
+component('visitCountOverlay', {
+  type: 'overlay',
+  params: [
+    {id : 'visitCount', as: 'object'}
+  ],
+  impl: actionMapOverlay({baseStyle: asIs({
+        position: 'absolute',
+        bottom: '-15px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '20px',
+        height: '20px',
+        lineHeight: '20px',
+        borderRadius: '50%',
+        backgroundColor: 'red',
+        color: 'white',
+        textAlign: 'center',
+        fontSize: '12px'
+    }), tgpPathToStyle: obj(prop('contentText','%$visitCount[{%$tgpPath%}]%')) })
 })

@@ -72,7 +72,7 @@ component('itemlist.orignialIndexFromSibling', {
   impl: (ctx,sibling) => {
     const cmp = ctx.vars.cmp
     const parent = cmp.base.querySelector('.jb-items-parent') || cmp.base
-    const indeces = Array.from(parent.children).map(el => +el.getAttribute('jb-original-index'))
+    const indeces = jb.ui.children(parent).map(el => +el.getAttribute('jb-original-index'))
     const targetIndex = sibling ? jb.ui.indexOfElement(sibling) : indeces.length
     const result = indeces[targetIndex-1]
     jb.log('itemlist DD orignialIndexFromSibling',{sibling, indeces,targetIndex, result,ctx})

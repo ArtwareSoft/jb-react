@@ -37,7 +37,7 @@ async function activate(context) {
 	context.subscriptions.push(vscodeNS.languages.registerCompletionItemProvider('javascript', {
 		provideCompletionItems() {
             try {
-                return jb.vscode.provideCompletionItems()
+                return jb.vscode.provideCompletionItems().items
             } catch(e) {
                 debugger
                 jb.vscode.log('exception provide completions',e)

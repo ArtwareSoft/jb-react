@@ -101,30 +101,28 @@ component('itemlistStyle', {
         rx.log('zui pointerdown'),
         rx.var('pid', '%pointerId%'),
         rx.do(({},{cmp,pid}) => cmp.addPointer(pid)),
-        rx.flatMap(
-          source.mergeConcat(
-            rx.pipe(
-              source.merge(source.event('pointermove'), source.frontEndEvent('pointerup')),
-              rx.filter('%$pid%==%pointerId%'),
-              rx.do(({data},{cmp,pid}) => cmp.updatePointer(pid,data)),
-              rx.takeWhile('%type%==pointermove'),
-              rx.flatMap(source.data(({},{cmp}) => cmp.zoomEventFromPointers()))
-            ),
-            rx.pipe(
-              source.data(({},{cmp,pid}) => cmp.momentumEvents(pid)),
-              rx.var('delay', '%delay%'),
-              rx.flatMap(rx.pipe(source.data('%events%'))),
-              rx.delay('%$delay%'),
-              rx.log('momentum zui')
-            ),
-            rx.pipe(source.data(1), rx.do(({},{cmp,pid}) => cmp.removePointer(pid)))
-          )
-        ),
+        rx.flatMap(source.mergeConcat(
+          rx.pipe(
+            source.merge(source.event('pointermove'), source.frontEndEvent('pointerup')),
+            rx.filter('%$pid%==%pointerId%'),
+            rx.do(({data},{cmp,pid}) => cmp.updatePointer(pid,data)),
+            rx.takeWhile('%type%==pointermove'),
+            rx.flatMap(source.data(({},{cmp}) => cmp.zoomEventFromPointers()))
+          ),
+          rx.pipe(
+            source.data(({},{cmp,pid}) => cmp.momentumEvents(pid)),
+            rx.var('delay', '%delay%'),
+            rx.flatMap(rx.pipe(source.data('%events%'))),
+            rx.delay('%$delay%'),
+            rx.log('momentum zui')
+          ),
+          rx.pipe(source.data(1), rx.do(({},{cmp,pid}) => cmp.removePointer(pid)))
+        )),
         rx.do(({data},{cmp}) => cmp.updateZoomState(data)),
         sink.subjectNext('%$cmp.zuiEvents%')
       ),
       frontEnd.flow(
-        source.event('wheel', () => jb.frame.document, obj(prop('capture', true))),
+        source.event('wheel', () => jb.frame.document, { options: obj(prop('capture', true)) }),
         rx.takeUntil('%$cmp.destroyed%'),
         rx.log('zui wheel'),
         rx.map(({},{sourceEvent}) => ({ dz: sourceEvent.deltaY > 0 ? 1.1 : sourceEvent.deltaY < 0 ? 1/1.1 : 1 })),

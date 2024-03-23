@@ -80,6 +80,10 @@ component('commonTest.pipeInPipe', {
   impl: dataTest(pipe(Var('a', 3), pipe(delay(1), list([1,2,'%$a%']), join())), equals('1,2,3'))
 })
 
+component('commonTest.delayedVar', {
+  impl: dataTest(pipe(Var('a', delay(1, 3)), '%$a%'), equals('3'))
+})
+
 component('commonTest.pipeInPipeWithDelayedVar', {
   impl: dataTest({
     calculate: pipe(Var('a', delay(1, 3)), pipe(delay(1), list([1,2,'%$a%']), join())),
@@ -199,4 +203,8 @@ component('commonTest.runActionOnItems', {
   impl: dataTest(pipeline('%$personWithChildren/children/name%', join()), equals('aBart,aLisa,aMaggie'), {
     runBefore: runActionOnItems('%$personWithChildren/children%', writeValue('%name%', 'a%name%'))
   })
+})
+
+component('commonTest.calcFromContext', {
+  impl: dataTest(calcFromContext({ Ctx: variable('a', delay(1, 3)), calc: '%$a%' }), equals('3'))
 })

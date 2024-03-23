@@ -53,7 +53,7 @@ component('dialogFeature.studioPick', {
     }),
     method('endPick', runActions(writeValue('%$studio/pickSelectionCmpId%', '%$dialogData.cmpId%'), dialog.closeDialog(true))),
     frontEnd.flow(
-      source.event('mousemove', () => jb.frame.document, obj(prop('capture', true))),
+      source.event('mousemove', () => jb.frame.document, { options: obj(prop('capture', true)) }),
       rx.debounceTime(50),
       rx.reduce('moveRight', obj(prop('count', 0), prop('dir', '')), {
         value: ({data},{moveRight,prev}) => {
@@ -69,9 +69,9 @@ component('dialogFeature.studioPick', {
     ),
     frontEnd.flow(
       source.merge(
-        source.event('mousedown', () => jb.frame.document, obj(prop('capture', true))),
+        source.event('mousedown', () => jb.frame.document, { options: obj(prop('capture', true)) }),
         rx.pipe(
-          source.event('keyup', () => jb.frame.document, obj(prop('capture', true))),
+          source.event('keyup', () => jb.frame.document, { options: obj(prop('capture', true)) }),
           rx.filter('%keyCode% == 27')
         )
       ),

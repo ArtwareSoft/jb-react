@@ -36,7 +36,7 @@ component('picklist.labelList', {
   params: [
     {id: 'labelStyle', type: 'text-style', dynamic: true, defaultValue: text.span()},
     {id: 'itemlistStyle', type: 'itemlist-style', dynamic: true, defaultValue: itemlist.ulLi()},
-    {id: 'cssForSelected', as: 'string', description: 'e.g. background: red OR >a { color: red }', defaultValue: 'background: #bbb; color: #fff'}
+    {id: 'cssForSelected', as: 'string', description: 'e.g. background: red OR >a { color: red }', defaultValue: 'background: #bbb; color: #fff'},
   ],
   impl: styleByControl({
     control: itemlist({
@@ -44,7 +44,9 @@ component('picklist.labelList', {
       controls: text('%text%', { style: call('labelStyle') }),
       style: call('itemlistStyle'),
       features: [
-        itemlist.selection('%$picklistModel/databind%', '%code%', {
+        itemlist.selection({
+          databind: '%$picklistModel/databind%',
+          selectedToDatabind: '%code%',
           databindToSelected: (ctx,{$props}) => $props.items.find(o=>o.code == ctx.data),
           cssForSelected: '%$cssForSelected%'
         }),

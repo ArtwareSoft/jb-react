@@ -124,7 +124,6 @@ component('breakText', {
   }
 })
 
-
 component('zipArrays', {
   type: 'data',
   description: '[[1,2],[10,20],[100,200]] => [[1,10,100],[2,20,200]]',

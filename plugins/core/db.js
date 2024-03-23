@@ -36,6 +36,9 @@ extension('db', {
         simpleValueByRefHandler: jb.db._simpleValueByRefHandler()
       }
     },
+    // two refs mechnism
+    // { $jb_val: val => val == null ? value : setValue(val) }
+    // { $jb_parent: obj, $jb_property: 'prop' }
     _simpleValueByRefHandler() { return {
         val(v) {
           if (v && v.$jb_val) return v.$jb_val()

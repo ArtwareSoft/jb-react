@@ -2,6 +2,13 @@ component('editableTextTest.simple', {
   impl: uiTest(editableText('name', '%$person/name%'), contains('input','Homer Simpson'))
 })
 
+component('editableTextTest.underline', {
+  impl: uiTest({
+    control: editableText('name', '%$person/name%', { style: underline() }),
+    expectedResult: contains('input','Homer Simpson')
+  })
+})
+
 component('editableTextTest.watchRef', {
   impl: uiTest({
     control: group(editableText('name', '%$person/name%'), text('%$person/name%')),

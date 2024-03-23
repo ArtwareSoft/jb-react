@@ -136,7 +136,7 @@ component('uiTest.applyDeltaToEmulator', {
 
 		const widgetBody = jb.ui.widgetBody(ctxToUse)
 		const elem = cmpId ? jb.ui.querySelectorAll(widgetBody,`[cmp-id="${cmpId}"]`)[0] : widgetBody
-		jb.log('uiTest aggregate delta',{ctx,delta,renderingUpdate,cmpId, widgetBody,elem})
+		jb.log('uiTest apply delta',{ctx,delta,renderingUpdate,cmpId, widgetBody,elem})
 		delta && jb.ui.applyDeltaToCmp({delta,ctx: ctxToUse,cmpId,elem})
 	}
   }

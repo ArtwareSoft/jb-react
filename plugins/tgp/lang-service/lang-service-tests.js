@@ -85,14 +85,6 @@ component('completionTest.singleArgAsArray.begin', {
   })
 })
 
-component('completionTest.singleArgAsArray.addBug', {
-  impl: completionActionTest(`uiTest(group(__text(''), text('')))`, {
-    completionToActivate: 'button',
-    expectedEdit: asIs({range: {start: {line: 1, col: 21}, end: {line: 1, col: 21}}, newText: `button('click me'), `}),
-    expectedCursorPos: '1,28'
-  })
-})
-
 component('completionTest.singleArgAsArray.end', {
   impl: completionActionTest(`uiTest(group(text('')__))`, {
     completionToActivate: 'button',

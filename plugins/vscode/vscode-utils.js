@@ -24,7 +24,8 @@ extension('vscode', 'utils', {
                 }
                 await vscodeNS.workspace.applyEdit(wEdit)
              },
-            async selectRange(start,end) {
+            getActiveDoc: () => vscodeNS.window.activeTextEditor.document,
+            async selectRange(start,{end}={}) {
                 end = end || start
                 const editor = vscodeNS.window.activeTextEditor
                 const line = start.line
@@ -37,7 +38,7 @@ extension('vscode', 'utils', {
                     editor.selection.active.line, editor.selection.active.character, editor.document.uri.path)
                 if (jb.path(docProps,'shortId')) {
                     if (jb.vscode.lastEdited != docProps.shortId)
-                        jb.langService.tgpModels1 = {} // clean cache
+                        jb.langService.tgpModels = {} // clean cache
                     jb.vscode.lastEdited = docProps.shortId
                 }
                 return docProps
@@ -56,6 +57,9 @@ extension('vscode', 'utils', {
                 editor.selection = new vscodeNS.Selection(position, position)
                 await editor.revealRange(new vscodeNS.Range(position, position))
                 jb.vscode.log(`gotoFilePos ${path}:${line},${col}`)
+            },
+            log(...args) {
+                return jb.vscode.log(...args)
             }
         }
         jb.vscode.log('init')
@@ -96,8 +100,11 @@ extension('vscode', 'utils', {
         const loc = await jb.calc(langService.definition())
         if (loc.error == 'definition - bad format') {
             const choice = await vscodeNS.window.showInformationMessage('format?', 'OK', 'Cancel')
-            if (choice == 'OK')
-                await jb.tgpTextEditor.applyCompChange({ edit: loc.reformatEdits, cursorPos: loc.cursorPos })
+            if (choice == 'OK') {
+                const loc = await jb.calc(langService.definition())
+                if (loc.reformatEdits)
+                    await jb.tgpTextEditor.applyCompChange({ edit: loc.reformatEdits, cursorPos: loc.cursorPos })
+            }
             return
         }
         if (!loc || loc.error)

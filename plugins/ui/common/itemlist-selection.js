@@ -45,7 +45,7 @@ component('itemlist.selection', {
       Array.from(cmp.base.querySelectorAll('.jb-item.selected,*>.jb-item.selected,*>*>.jb-item.selected'))
         .forEach(elem=>jb.ui.removeClass(elem,'selected'))
       const parent = cmp.base.querySelector('.jb-items-parent') || cmp.base
-      const elem = parent.children[cmp.state.selected]
+      const elem = jb.ui.children(parent)[cmp.state.selected]
       if (elem) {
         jb.ui.addClass(elem,'selected')
         jb.ui.scrollIntoView(elem)
@@ -150,7 +150,7 @@ component('itemlist.nextSelected', {
   impl: (ctx,diff,elementFilter) => {
     const {cmp} = ctx.vars
     const parent = cmp.base.querySelector('.jb-items-parent') || cmp.base
-    const indeces = Array.from(parent.children).map((el,i) => [el,i])
+    const indeces = jb.ui.children(parent).map((el,i) => [el,i])
       .filter(([el]) => elementFilter(ctx.setData(el))).map(([el,i]) => i)
 
     const selectedIndex = indeces.indexOf(+cmp.state.selected) + diff

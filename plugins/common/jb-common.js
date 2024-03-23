@@ -152,28 +152,28 @@ component('aggregate', {
   impl: ({},aggregator) => aggregator()
 })
 
-component('math.max', {
+component('max', {
   type: 'data',
   aggregator: true,
   category: 'math:80',
   impl: ctx => Math.max.apply(0,ctx.data)
 })
 
-component('math.min', {
+component('min', {
   type: 'data',
   aggregator: true,
   category: 'math:80',
   impl: ctx => Math.max.apply(0,ctx.data)
 })
 
-component('math.sum', {
+component('sum', {
   type: 'data',
   aggregator: true,
   category: 'math:80',
   impl: ctx => ctx.data.reduce((acc,item) => +item+acc, 0)
 })
 
-component('math.plus', {
+component('plus', {
   category: 'math:80',
   params: [
     {id: 'x', as: 'number', mandatory: true},
@@ -182,7 +182,7 @@ component('math.plus', {
   impl: ({},x,y) => +x + +y
 })
 
-component('math.minus', {
+component('minus', {
   category: 'math:80',
   params: [
     {id: 'x', as: 'number', mandatory: true},
@@ -191,7 +191,7 @@ component('math.minus', {
   impl: ({},x,y) => +x - +y
 })
 
-component('math.mul', {
+component('mul', {
   category: 'math:80',
   params: [
     {id: 'x', as: 'number', mandatory: true},
@@ -200,7 +200,7 @@ component('math.mul', {
   impl: ({},x,y) => +x * +y
 })
 
-component('math.div', {
+component('div', {
   category: 'math:80',
   params: [
     {id: 'x', as: 'number', mandatory: true},
@@ -209,6 +209,8 @@ component('math.div', {
   impl: ({},x,y) => +x / +y
 })
 
+component('math.fakeNS', {
+})
 
  jb.defComponents('abs,acos,acosh,asin,asinh,atan,atan2,atanh,cbrt,ceil,clz32,cos,cosh,exp,expm1,floor,fround,hypot,log2,random,round,sign,sin,sinh,sqrt,tan,tanh,trunc'
   .split(','), f => component(`math.${f}`, {
@@ -550,15 +552,15 @@ component('prop', {
   ]
 })
 
-component('pipeline.var', {
-  type: 'data',
-  aggregator: true,
-  params: [
-    {id: 'name', as: 'string', mandatory: true},
-    {id: 'val', mandatory: true, dynamic: true, defaultValue: '%%'}
-  ],
-  impl: ctx => ({ [Symbol.for('Var')]: true, ...ctx.params })
-})
+// component('pipeline.var', {
+//   type: 'data',
+//   aggregator: true,
+//   params: [
+//     {id: 'name', as: 'string', mandatory: true},
+//     {id: 'val', mandatory: true, dynamic: true, defaultValue: '%%'}
+//   ],
+//   impl: ctx => ({ [Symbol.for('Var')]: true, ...ctx.params })
+// })
 
 component('not', {
   type: 'boolean',
@@ -716,23 +718,6 @@ component('unique', {
 	}
 })
 
-component('log', {
-  type: 'data',
-  moreTypes: 'action<>',
-  params: [
-    {id: 'logName', as: 'string', mandatory: 'true'},
-    {id: 'logObj', as: 'single', defaultValue: '%%'}
-  ],
-  impl: (ctx,log,logObj) => { jb.log(log,{...logObj,ctx}); return ctx.data }
-})
-
-component('asIs', {
-  params: [
-    {id: '$asIs', ignore: true}
-  ],
-  impl: ctx => ctx.profile.$asIs
-})
-
 component('object', {
   impl: ctx => {
 		const obj = ctx.profile.$object || ctx.profile
@@ -879,7 +864,7 @@ component('runActionOnItem', {
   type: 'action',
   params: [
     {id: 'item', mandatory: true},
-    {id: 'action', type: 'action', dynamic: true, mandatory: true}
+    {id: 'action', type: 'action', dynamic: true, mandatory: true, composite: true}
   ],
   impl: (ctx,item,action) => jb.utils.isPromise(item) ? Promise.resolve(item).then(_item => action(ctx.setData(_item))) 
     : item != null && action(ctx.setData(item))
@@ -887,11 +872,11 @@ component('runActionOnItem', {
 
 component('runActionOnItems', {
   type: 'action',
-  macroByValue: true,
+  description: 'forEach',
   params: [
     {id: 'items', as: 'ref[]', mandatory: true},
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
-    {id: 'indexVariable', as: 'string'}
+    {id: 'indexVariable', as: 'string' }
   ],
   impl: (ctx,items,action,indexVariable) => {
 		return (jb.val(items)||[]).reduce((def,item,i) => def.then(_ => action(ctx.setVar(indexVariable,i).setData(item))) ,Promise.resolve())
@@ -907,16 +892,6 @@ component('delay', {
     {id: 'res', defaultValue: '%%'}
   ],
   impl: ({},mSec,res) => jb.delay(mSec).then(() => res)
-})
-
-component('onNextTimer', {
-  description: 'run action after delay',
-  type: 'action',
-  params: [
-    {id: 'action', type: 'action', dynamic: true, mandatory: true},
-    {id: 'delay', type: 'number', defaultValue: 1}
-  ],
-  impl: (ctx,action,delay) => jb.delay(delay,ctx).then(()=>	action())
 })
 
 component('extractPrefix', {
@@ -958,7 +933,7 @@ component('extractSuffix', {
 })
 
 component('range', {
-  description: 'returns a range of number, generator, numerator, numbers, index',
+  description: '1-10, returns a range of numbers, generator, numerator, numbers, index',
   type: 'data',
   params: [
     {id: 'from', as: 'number', defaultValue: 1},
@@ -1191,4 +1166,54 @@ component('loadAppFiles', {
   ],
   impl: ({},jsFiles) => 
     jb_loadProject({ uri: jb.uri, baseUrl: jb.baseUrl, libs: '', jsFiles })
+})
+
+component('variable', {
+  type: 'ctx',
+  params: [
+    {id: 'name', as: 'string', mandatory: true},
+    {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: '%%'}
+  ],
+  impl: async (ctx,name,val) => ctx.setVars({[name]: await val()})
+})
+
+component('vars', {
+  type: 'ctx',
+  params: [
+    {id: 'vars', as: 'object', mandatory: true},
+  ],
+  impl: (ctx,name,val) => ctx.setVars(vars)
+})
+
+component('Data', {
+  type: 'ctx',
+  params: [
+    {id: 'Data', mandatory: true},
+  ],
+  impl: (ctx,data) => ctx.setData(data)
+})
+
+component('ctxPipe', {
+  type: 'ctx',
+  params: [
+    {id: 'items', type: 'ctx[]', mandatory: true},
+  ],
+  impl: (ctx,items) => items.reduce((pr,item) => pr.then(_ctx => item(_ctx)), Promise.resolve(ctx))
+})
+
+component('calcFromContext', {
+  params: [
+    {id: 'Ctx', type: 'ctx', dynamic: true, mandatory: true, byName: true},
+    {id: 'calc', type: 'data', dynamic: true, mandatory: true, composite: true},
+  ],
+  impl: (ctx,Ctx,calc) => Promise.resolve(Ctx(ctx)).then(ctx => calc(ctx))
+})
+
+component('runActionOnContext', {
+  type: 'action',
+  params: [
+    {id: 'Ctx', type: 'ctx', dynamic: true, mandatory: true, byName: true},
+    {id: 'action', type: 'action', dynamic: true, mandatory: true, composite: true}
+  ],
+  impl: (ctx,Ctx,action) => Promise.resolve(Ctx(ctx)).then(ctx => action(ctx))
 })

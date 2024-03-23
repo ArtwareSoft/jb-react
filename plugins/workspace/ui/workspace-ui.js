@@ -1,4 +1,8 @@
-using('ui-tree','ui-misc','ui-styles','probe-preview','workspace-core','tgp-lang-service')
+using('ui-tree','ui-misc','ui-styles','probe-preview','workspace-core','tgp-lang-server')
+
+extension('workspace', 'ui', {
+  $requireLibs: ['/dist/fuse.js']
+})
 
 component('workspace', { watchableData: { bottomViewIndex : 0 } })
 
@@ -93,112 +97,5 @@ component('workspace.openQuickPickMenu', {
   })
 })
 
-component('workspace.currentTextEditor', {
-  impl: group(workspace.textEditor('%$docContent%', workspace.activeUri()), {
-    features: watchable('docContent', pipeline(workspace.activeDocContent(), '%text%', first()))
-  })
-})
 
-component('workspace.textEditor', {
-  type: 'control',
-  params: [
-    {id: 'docContent', as: 'ref'},
-    {id: 'docUri', as: 'string'},
-    {id: 'debounceTime', as: 'number', defaultValue: 300},
-    {id: 'height', as: 'number', defaultValue: '300'}
-  ],
-  impl: editableText('edit %$docUri%', '%$docContent%', {
-    style: editableText.codemirror({ height: '%$height%', mode: 'javascript' }),
-    features: [
-      id('activeEditor'),
-      frontEnd.var('docUri', '%$docUri%'),
-      frontEnd.var('initCursorPos', () => jb.path(jb.workspace.openDocs[jb.workspace.activeUri],'selection.start') || {line:0, col: 0}),
-      variable('popupLauncherCanvas', '%$cmp%'),
-      frontEnd.init(({},{cmp, initCursorPos}) => cmp.editor && cmp.editor.setCursor(initCursorPos.line, initCursorPos.col)),
-      frontEnd.flow(
-        source.codeMirrorCursor(),
-        rx.takeUntil('%$cmp/destroyed%'),
-        sink.BEMethod('selectionChanged', '%%')
-      ),
-      frontEnd.flow(
-        source.frontEndEvent('keydown'),
-        rx.filter(key.match('Ctrl+Space')),
-        rx.userEventVar(),
-        rx.var('offsets', ({},{cmp}) => cmp.editor && cmp.editor.charCoords(cmp.editor.getCursor(), "local")),
-        sink.BEMethod('openPopup', '%$offsets%', obj(prop('ev', '%$ev%')))
-      ),
-      method('openPopup', openDialog({
-        content: workspace.floatingCompletions(),
-        style: workspace.popup(),
-        id: 'floatingCompletions',
-        features: [
-          autoFocusOnFirstInput(),
-          nearLauncherPosition('%left%', '%top%', { insideLauncher: true })
-        ]
-      })),
-      method('selectionChanged', workspace.selelctionChanged('%%', '%$docUri%')),
-      feature.byCondition('%$height%', css.height('%$height%', { minMax: 'max' }), null)
-    ]
-  })
-})
 
-component('workspace.floatingCompletions', {
-  type: 'control<>',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: group({
-    controls: [
-      group({
-        controls: [
-          editableText('', '%$text%', {
-            updateOnBlur: true,
-            style: editableText.floatingInput(),
-            features: [
-              watchRef(tgp.ref('%$path%'), { strongRefresh: true }),
-              feature.onKey('Right', suggestions.applyOption({ addSuffix: '/' })),
-              feature.onKey('Enter', runActions(
-                suggestions.applyOption(),
-                dialog.closeDialogById('floatingCompletions'),
-                popup.regainCanvasFocus()
-              )),
-              feature.onKey('Esc', runActions(dialog.closeDialogById('floatingCompletions'), popup.regainCanvasFocus())),
-              editableText.picklistHelper({
-                options: workspace.completionOptions(),
-                picklistStyle: workspace.completions(),
-                picklistFeatures: picklist.allowAsynchOptions(),
-                showHelper: true,
-                autoOpen: true
-              }),
-              css.width('100%'),
-              css('~ input { padding-top: 30px !important}')
-            ]
-          }),
-          text(pipeline(tgp.paramDef('%$path%'), '%description%'), { features: css('color: grey') })
-        ],
-        layout: layout.vertical(),
-        features: css.width('100%')
-      })
-    ],
-    layout: layout.horizontal({ spacing: '20' }),
-    features: [
-      watchable('text', ''),
-      variable('completions', obj()),
-      css.padding({ left: '4', right: '4' }),
-      css.width('500')
-    ]
-  })
-})
-
-component('workspace.completionOptions', {
-  type: 'picklist.options',
-  params: [
-    {id: 'input', defaultValue: '%%'}
-  ],
-  impl: async (ctx, input) => {
-    const { completions } = ctx.vars
-    const items = completions.resolvedItems || (completions.resolvedItems = await jb.langService.completionItems(ctx))
-    const val = jb.val(input)
-    return { options: items.map((item,i)=>({i, code: item.label, text: item.label})).filter(({text})=> text.indexOf(val) != -1) }
-  }
-})

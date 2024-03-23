@@ -105,12 +105,17 @@ component('service.registerBackEndService', {
 // ****************** html utils ***************
 extension('ui', 'html', {
   outerWidth(el) {
+    if (el instanceof jb.ui.VNode) return 0
     const style = getComputedStyle(el)
     return el.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight)
   },
   outerHeight(el) {
+    if (el instanceof jb.ui.VNode) return 0
     const style = getComputedStyle(el)
     return el.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom)
+  },
+  children(el) {
+    return (el instanceof jb.ui.VNode) ? (el.children || []) : [...(el.children || [])]
   },
   offset: el => el.getBoundingClientRect(),
   isHeadless: el => jb.ui.parents(el, {includeSelf: true}).pop().headless,
@@ -264,7 +269,7 @@ component('runFEMethodFromBackEnd', {
   type: 'action',
   description: 'invoke FE Method from the backend. used with library objects like codemirror',
   params: [
-    {id: 'selector', as: 'string'},
+    {id: 'selector', as: 'string', byName: true},
     {id: 'method', as: 'string'},
     {id: 'Data'},
     {id: 'Vars'}

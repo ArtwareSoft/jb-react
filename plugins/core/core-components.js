@@ -80,26 +80,19 @@ component('runCtx', {
   ]
 })
 
-component('Var', {
-  type: 'ctx',
+component('log', {
+  type: 'data',
+  moreTypes: 'action<>',
   params: [
-    {id: 'name', as: 'string', mandatory: true},
-    {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: '%%'}
+    {id: 'logName', as: 'string', mandatory: 'true'},
+    {id: 'logObj', as: 'single', defaultValue: '%%'}
   ],
+  impl: (ctx,log,logObj) => { jb.log(log,{...logObj,ctx}); return ctx.data }
 })
 
-component('vars', {
-  type: 'ctx',
+component('asIs', {
   params: [
-    {id: 'name', as: 'string', mandatory: true},
-    {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: '%%'}
+    {id: '$asIs', ignore: true}
   ],
-})
-
-component('data', {
-  type: 'ctx',
-  params: [
-    {id: 'name', as: 'string', mandatory: true},
-    {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: '%%'}
-  ],
+  impl: ctx => ctx.profile.$asIs
 })

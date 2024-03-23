@@ -1,5 +1,5 @@
 
-extension('workspace', {
+extension('workspace', 'core', {
 	$phase: 50,
     initExtension() { 
         const gotoPathRequest = jb.callbag.subject()
@@ -21,17 +21,22 @@ extension('workspace', {
         if (jb.path('jb.tgpTextEditor.host.type') == 'jbWorkspace') return
         jb.tgpTextEditor.host = {
             type: 'jbWorkspace',
-            async applyEdit(edit,{uri} = {}) {
+            async applyEdit(edit,{uri, ctx, tgpPathsForLines} = {}) {
                 const docUri = uri || jb.workspace.activeUri
                 const docText = jb.workspace.openDocs[docUri].text
                 const from = jb.tgpTextEditor.lineColToOffset(docText, edit.range.start)
                 const to = jb.tgpTextEditor.lineColToOffset(docText,edit.range.end)
-                jb.workspace.openDocs[docUri].text = docText.slice(0,from) + edit.newText + docText.slice(to)
+                const newText = jb.workspace.openDocs[docUri].text = docText.slice(0,from) + edit.newText + docText.slice(to)
                 jb.tgpTextEditor.lastEditForTester = { edit , uri }
+                ctx && ctx.runAction({ $: 'runFEMethodFromBackEnd', selector: '#activeEditor', method: 'setText', Data: { $asIs: newText} })
+                //ctx && ctx.runAction({ $: 'runFEMethodFromBackEnd', selector: '#activeEditor', method: 'updateTgpPathClasses', Data: { $asIs: tgpPathsForLines }})
             },
-            selectRange(start,end) {
+            getActiveDoc: () => jb.workspace.openDocs[jb.workspace.activeUri],
+            selectRange(start,{end, ctx} = {}) {
+                end = end || start
                 jb.workspace.openDocs[jb.workspace.activeUri].selection = { start, end: end || start }
                 jb.tgpTextEditor.host.selectionSource.next({start,end})
+                ctx && ctx.runAction({$: 'runFEMethodFromBackEnd', selector: '#activeEditor', method: 'selectRange', Data: {start, end}})
             },
             compTextAndCursor() {
                 const doc = jb.workspace.openDocs[jb.workspace.activeUri]
@@ -54,7 +59,12 @@ extension('workspace', {
                 const to = jb.tgpTextEditor.lineColToOffset(docText, selection.start)
                 return docText.slice(from,to)
             },
-            async gotoFilePos(path,line,col) {}
+            log(arg) { jb.log(arg,{})},
+            async gotoFilePos(path,line,col) {},
+            overlayActionMap: ({id, baseStyle,tgpPathToStyle,actionMap,ctx}) => ({
+              apply: () => ctx.runAction({$: 'runFEMethodFromBackEnd', selector: '#activeEditor', method: 'applyOverlay', Data: {id, baseStyle,tgpPathToStyle,actionMap}}),
+              remove: () => ctx.runAction({$: 'runFEMethodFromBackEnd', selector: '#activeEditor', method: 'removeOverlay', Data: id })
+            })
         }
     }
 })
@@ -63,12 +73,12 @@ component('workspace.initAsHost', {
   type: 'action<>',
   params: [
     {id: 'docUri', as: 'string'},
-    {id: 'docContent', as: 'string'},
-    {id: 'line', as: 'number'},
+    {id: 'line', as: 'number', byName: true},
     {id: 'col', as: 'number'},
   ],
-  impl: (ctx,docUri,docContent,line,col) => {
+  impl: async (ctx,docUri,line,col) => {
       jb.workspace.initJbWorkspaceAsHost()
+      const docContent = await (await jbHost.fetch(docUri)).text()
       jb.tgpTextEditor.host.initDoc(docUri,docContent)
       const doc = jb.workspace.openDocs[jb.workspace.activeUri]
       doc.selection = { start : { line, col }, end: { line, col}}
@@ -80,9 +90,9 @@ component('workspace.activeUri', {
   impl: () => jb.workspace.activeUri
 })
 
-component('workspace.activeDocContent', {
+component('workspace.activeDocContentRef', {
   type: 'data<>',
-  impl: () => jb.workspace.openDocs[jb.workspace.activeUri]
+  impl: () => jb.db.objectProperty(jb.workspace.openDocs[jb.workspace.activeUri], 'text')
 })
 
 component('workspace.selelctionChanged', {

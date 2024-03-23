@@ -50,7 +50,7 @@ component('completionOptionsTest', {
       await offsetsPos.reduce(async (pr, inCompPos) => {
         await pr
         jb.tgpTextEditor.host.selectRange(inCompPos)
-        const options = (await jb.langService.completionItems(ctxForTest)).map(x=>x.label)
+        const options = (await jb.langService.completionItems(ctxForTest)).items.map(x=>x.label)
         acc.push({options})
       }, Promise.resolve())
       return acc
@@ -85,7 +85,7 @@ component('completionActionTest', {
   impl: dataTest({
     calculate: async (ctx,{}, {compText,completionToActivate, filePath, dsl, remoteSuggestions }) => {
         const {ctxForTest} = jb.test.initCompletionText({ctx,compText,filePath,dsl,remoteSuggestions})
-        const items = await jb.langService.completionItems(ctxForTest)
+        const {items} = await jb.langService.completionItems(ctxForTest)
         if (items.find(x=>x.label == 'reformat'))
             return { testFailure: `bad comp format` }
 
@@ -94,7 +94,7 @@ component('completionActionTest', {
         if (!item) 
           return { items: items.map(x=>x.label), toActivate }
 
-        await jb.tgpTextEditor.applyCompChange(item,ctx)
+        await jb.tgpTextEditor.applyCompChange(item,{ctx})
         await jb.delay(1) // wait for cursor change
         const {cursorLine, cursorCol } = jb.tgpTextEditor.host.compTextAndCursor()
         const actualCursorPos = [cursorLine, cursorCol].join(',')

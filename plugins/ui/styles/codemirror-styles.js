@@ -114,7 +114,7 @@ component('editableText.codemirror', {
     frontEnd.requireExternalLibrary('codemirror.js','css/codemirror.css'),
     calcProp('text', '%$$model/databind()%'),
     frontEnd.var('text', '%$$props/text%'),
-    calcProp('textAreaAlternative', ({},{$props},{maxLength}) => ($props.text || '').length > maxLength),
+    calcProp('textAreaAlternative', ({},{$props},{maxLength}) => maxLength != -1 && ($props.text || '').length > maxLength),
     () => ({
 		  template: ({},{text,textAreaAlternative},h) => textAreaAlternative ? 
 		  		h('textarea.jb-textarea-alternative-for-codemirror autoResizeInDialog', {value: text }) :
@@ -134,9 +134,27 @@ component('editableText.codemirror', {
       rx.distinctUntilChanged(),
       sink.BEMethod('writeText', '%%')
     ),
+    frontEnd.method('setText', ({data},{cmp}) => cmp.editor && cmp.editor.setValue(data)),
+    frontEnd.method('regainFocus', (ctx,{cmp}) => {
+		jb.log('codemirror regain focus',{ctx,cmp})
+		if (!cmp.editor) return // test
+		cmp.editor.focus()
+		jb.log('codemirror regain focus', { ctx })
+		cmp.editor.setSelection(cmp.editor.getCursor(true), cmp.editor.getCursor(false))
+	}),
+    frontEnd.method('selectRange', ({data},{cmp}) => cmp.editor && cmp.editor.setSelection({ line: data.start.line, ch: data.start.col }, { line: data.end.line, ch: data.end.col })),
     css(({},{},{height}) => `{width: 100% }
 		>div { box-shadow: none !important; ${jb.ui.propWithUnits('height',height)} !important}`)
   )
+})
+
+component('codeMirror.regainFocus', {
+  type: 'action',
+  description: 'run from backend',
+  params: [
+    {id: 'cmpId', as: 'string'}
+  ],
+  impl: (ctx,cmpId) => ctx.runAction({$: 'runFEMethodFromBackEnd', selector: `[cmp-id="${cmpId}"]`, method: 'regainFocus'})
 })
 
 component('source.codeMirrorText', {

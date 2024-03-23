@@ -241,7 +241,7 @@ component('menu.selection', {
       Array.from(cmp.base.querySelectorAll('.jb-item.selected,*>.jb-item.selected,*>*>.jb-item.selected'))
         .forEach(elem=>jb.ui.removeClass(elem,'selected'))
       const parent = cmp.base.querySelector('.jb-items-parent') || cmp.base
-      const elem = parent.children[cmp.state.selected]
+      const elem = jb.ui.children(parent)[cmp.state.selected]
       if (elem) {
         jb.ui.addClass(elem,'selected')
         jb.ui.scrollIntoView(elem)
@@ -452,7 +452,7 @@ component('menu.notSeparator', {
   params: [
     {id: 'elem'}
   ],
-  impl: (ctx,elem) => elem.firstElementChild && !elem.firstElementChild.getAttribute('separator')
+  impl: (ctx,elem) => jb.ui.children(elem)[0] && !jb.ui.children(elem)[0].getAttribute('separator')
 })
 
 component('menu.mdcRippleEffect', {

@@ -49,22 +49,21 @@ component('editableText.picklistHelper', {
     method('onEnter', If(dialog.isOpen('%$popupId%'), runActions(call('onEnter'), dialog.closeDialogById('%$popupId%')))),
     method('onEsc', If(dialog.isOpen('%$popupId%'), runActions(call('onEsc'), dialog.closeDialogById('%$popupId%')))),
     frontEnd.selectionKeySourceService(),
-    frontEnd.prop('keyUp', rx.pipe(source.frontEndEvent('keyup'), rx.delay(1))),
     frontEnd.flow(
-      source.frontEndEvent('keyup'),
+      source.frontEndEvent('keyup', { selector: 'input' }),
       rx.log('editableTextHelper keyup'),
       rx.filter('%keyCode% == 13'),
       editableText.addUserEvent(),
       sink.BEMethod('onEnter')
     ),
     frontEnd.flow(
-      source.frontEndEvent('keyup'),
+      source.frontEndEvent('keyup', { selector: 'input' }),
       rx.filter(not(inGroup(list(13,27,38,40), '%keyCode%'))),
       editableText.addUserEvent(),
       sink.BEMethod('refresh')
     ),
     frontEnd.flow(
-      source.frontEndEvent('keyup'),
+      source.frontEndEvent('keyup', { selector: 'input' }),
       rx.filter('%keyCode% == 27'),
       editableText.addUserEvent(),
       sink.BEMethod('onEsc')
@@ -82,14 +81,6 @@ component('editableText.picklistHelper', {
   ),
   circuit: 'test<>editableTextHelperTest.setInput'
 })
-
-    //followUp.action(If(and('%$uiTest%','%$autoOpen%'), action.runBEMethod('openPopup'))),
-// followUp.action(If('%$autoOpen%', runActions(
-//   delay(100),
-//   writeValue('%$watchableInput%', obj(prop('value', '%$editableTextCmp/renderProps/databind%'))),
-//   action.runBEMethod('openPopup')
-// )))
-
 
 component('editableText.setInputState', {
   type: 'action',
@@ -153,22 +144,21 @@ component('editableText.helperPopup', {
     method('onEnter', If(dialog.isOpen('%$popupId%'), runActions(call('onEnter'), dialog.closeDialogById('%$popupId%')))),
     method('onEsc', If(dialog.isOpen('%$popupId%'), runActions(call('onEsc'), dialog.closeDialogById('%$popupId%')))),
     frontEnd.selectionKeySourceService(),
-    frontEnd.prop('keyUp', rx.pipe(source.frontEndEvent('keyup'), rx.delay(1))),
     frontEnd.flow(
-      '%$cmp/keyUp%',
+      source.frontEndEvent('keyup', { selector: 'input' }),
       rx.log('editableTextHelper keyup'),
       rx.filter('%keyCode% == 13'),
       editableText.addUserEvent(),
       sink.BEMethod('onEnter')
     ),
     frontEnd.flow(
-      '%$cmp/keyUp%',
+      source.frontEndEvent('keyup', { selector: 'input' }),
       rx.filter(not(inGroup(list(13,27,38,40), '%keyCode%'))),
       editableText.addUserEvent(),
       sink.BEMethod('refresh')
     ),
     frontEnd.flow(
-      '%$cmp/keyUp%',
+      source.frontEndEvent('keyup', { selector: 'input' }),
       rx.filter('%keyCode% == 27'),
       editableText.addUserEvent(),
       sink.BEMethod('onEsc')

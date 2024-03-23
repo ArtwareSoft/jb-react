@@ -4,7 +4,7 @@ component('workspace.popup', {
   type: 'dialog-style',
   impl: customStyle({
     template: (cmp,{contentComp},h) => h('div',{ class: 'jb-dialog jb-popup' },[
-        h('button.dialog-close', {onclick: 'dialogClose' },'×'),
+//        h('button.dialog-close', {onclick: 'dialogClose' },'×'),
         h(contentComp),
       ]),
     css: `{ background: var(--jb-editor-background); position: absolute }
@@ -26,7 +26,6 @@ component('workspace.popup', {
     features: [
       maxZIndexOnClick(),
       closeWhenClickingOutside(),
-      unique('workspace.popup'),
       css.boxShadow({
         blurRadius: 5,
         spreadRadius: 0,
@@ -131,4 +130,41 @@ component('editableText.floatingInput', {
   impl: styleWithFeatures(editableText.mdcInput(), {
     features: css('~ .mdc-text-field { width: 100%; margin-right: 13px;}')
   })
+})
+
+component('workspace.editorFontCss', {
+  type: 'feature',
+  impl: css(`>.CodeMirror {
+    font-family: 'Droid Sans Mono', 'monospace', monospace;
+    font-size: 14px; /* Adjust as needed */
+    line-height: 1.4; /* Adjust as needed */
+  }
+  
+  /* JavaScript syntax colors */
+  >.CodeMirror .cm-property { color: #0000FF; } /* blue: keywords like function, if, etc. */
+  >.CodeMirror .cm-keyword { color: #0000FF; } /* blue: keywords like function, if, etc. */
+  >.CodeMirror .cm-string { color: #A31515; }  /* red: string literals */
+  >.CodeMirror .cm-comment { color: #008000; }  /* green: comments */
+  >.CodeMirror .cm-number { color: #098658; } /* green: numbers */
+  >.CodeMirror .cm-operator { color: #000000; } /* black: operators */
+  >.CodeMirror .cm-variable-2 { color: #0000FF; } /* blue: language variables (this, super, etc.) */`)
+})
+
+component('workspace.visitCountCss', {
+  type: 'feature',
+  impl: css(`>.CodeMirror .visit-count::after {
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    border-radius: 50%;
+    background-color: red;
+    color: white;
+    text-align: center;
+    font-size: 12px;
+    content: var(--visit-count);
+  }`)
 })

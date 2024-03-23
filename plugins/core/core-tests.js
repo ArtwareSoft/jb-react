@@ -61,7 +61,6 @@ component('coreTest.emptyParamAsString', {
   impl: dataTest(coreTest.nullParamPt(), ctx => ctx.data == '' && ctx.data != null)
 })
 
-
 component('coreTest.asArrayBug', {
   impl: dataTest({
     vars: [
