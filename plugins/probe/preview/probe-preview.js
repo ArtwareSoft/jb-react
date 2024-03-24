@@ -111,7 +111,7 @@ component('probe.circuitPreview', {
         const _circuit = circuitPath
         const circuit = (jb.path(jb.utils.resolveCompWithId(_circuit,{silent: true}),'impl.$') || '').match(/Test/) 
           ? { $: 'control<>test.showTestInStudio', testId: _circuit, controlOnly: true} : { $: _circuit }
-        jb.log('probe preview circuit',{circuit, ctx})
+        jb.log('running probe preview circuit from control',{circuit, ctx})
         return circuit && circuit.$ && ctx.run(circuit)
     },
     features: [

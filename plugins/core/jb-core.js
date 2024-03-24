@@ -164,7 +164,9 @@ extension('core', {
 
       if (typeof profile === 'object' && Object.getOwnPropertyNames(profile).length == 0)
         return
-      const ctxWithVars = jb.core.extendWithVars(ctx,profile.$vars)
+      const ctxWithVars = jb.path(settings, 'resolvedCtxWithVars') ? ctx : jb.core.extendWithVars(ctx,profile.$vars)
+      if (jb.utils.isPromise(ctxWithVars))
+        return ctxWithVars.then(resolvedCtxWithVars => jb.core.doRun(resolvedCtxWithVars,parentParam,{...(settings||{}), resolvedCtxWithVars: true}))
       const run = jb.core.prepare(ctxWithVars,parentParam)
       ctx.parentParam = parentParam
       const {castToParam } = jb.core
@@ -205,6 +207,11 @@ extension('core', {
     }
   },
   extendWithVars(ctx,vars) {
+    if (Array.isArray(vars) && vars.find(x=>x.async))
+        return vars.reduce( async (_ctx,{name,val},i) => {
+          const ctx = await _ctx
+          return ctx.setVar(name, await ctx.runInner(val || '%%', null,`$vars~${i}~val`))
+        } , ctx)
     if (Array.isArray(vars))
       return vars.reduce((_ctx,{name,val},i) => _ctx.setVar(name,_ctx.runInner(val || '%%', null,`$vars~${i}~val`)), ctx )
     if (vars)

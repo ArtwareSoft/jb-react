@@ -1,1 +1,0 @@
-node --inspect-brk ../hosts/node/node-worker.js '-uri:nodeWorker1' '-clientUri:tests' '-sourceCode:{"pluginPackages":[{"$":"defaultPackage"}],"plugins":["remote","tree-shake"],"treeShakeServerUri":"tests"}'

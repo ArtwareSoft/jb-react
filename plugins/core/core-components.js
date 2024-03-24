@@ -44,22 +44,23 @@ component('Var', {
   isSystem: true,
   params: [
     {id: 'name', as: 'string', mandatory: true},
-    {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: '%%'}
+    {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: '%%'},
+    {id: 'async', as: 'boolean', type: 'boolean<>'}
   ],
   macro: (result, self) => {
     result.$vars = result.$vars || []
     result.$vars.push(self)
-  },
+  }
 })
 
-component('remark', {
-  type: 'system',
-  isSystem: true,
-  params: [
-    {id: 'text', as: 'string', mandatory: true}
-  ],
-  macro: (result, self) => Object.assign(result,{ $remark: self.remark }) //  || jb.path(self.$unresolved,'0')
-})
+// component('remark', {
+//   type: 'system',
+//   isSystem: true,
+//   params: [
+//     {id: 'text', as: 'string', mandatory: true}
+//   ],
+//   macro: (result, self) => Object.assign(result,{ $remark: self.remark }) //  || jb.path(self.$unresolved,'0')
+// })
 
 component('unknownCmp', {
   type: 'system',

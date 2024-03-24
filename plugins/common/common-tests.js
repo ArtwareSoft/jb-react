@@ -205,6 +205,6 @@ component('commonTest.runActionOnItems', {
   })
 })
 
-component('commonTest.calcFromContext', {
-  impl: dataTest(calcFromContext({ Ctx: variable('a', delay(1, 3)), calc: '%$a%' }), equals('3'))
+component('commonTest.objFromVars', {
+  impl: dataTest(pipeline(Var('a', 3), Var('b', 5), objFromVars('a','b'), '%a%,%b%'), equals('3,5'))
 })

@@ -33,6 +33,10 @@ component('PPrintTest.singleInArrayPath', {
   impl: PPPosOfPath(() => group(text('')), 'control<>', 'begin!~controls~text', '11,11')
 })
 
+component('PPrintTest.asyncVar', {
+  impl: PPPosOfPath(() => pipeline(Var('a',3, {async: true})), 'data<>', 'begin!~$vars~0~async', '30,30')
+})
+
 component('PPrintTest.multiLineExample', {
   params: [
     {id: 'param1'}

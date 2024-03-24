@@ -231,7 +231,7 @@ extension('utils', 'prettyPrint', {
         paramsByName = params.slice(0)
       }
 
-      const varArgs = (profile.$vars || []).map(({name, val},i) => ({innerPath: `$vars~${i}`, val: {$$: 'var<>Var', name, val }}))
+      const varArgs = (profile.$vars || []).map(({name, val, async},i) => ({innerPath: `$vars~${i}`, val: {$$: 'var<>Var', name, val,async }}))
       const varsByValue = firstParamAsArray ? varArgs : []
       const varsByName = firstParamAsArray ? [] : ['$vars']
       const systemProps = [...varsByName, ...jb.macro.systemProps].flatMap(p=>profile[p] ? [{innerPath: p, val: profile[p]}] : [])

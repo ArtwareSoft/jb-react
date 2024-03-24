@@ -320,6 +320,7 @@ component('nearLauncherPosition', {
       const dialog = jb.ui.findIncludeSelf(cmp.base,'.jb-dialog')[0]
       const dialogPos = cmp.state.dialogPos
       let top,left
+      const window = jb.frame.window || {innerHeight: 800, innerWidth: 1200, pageYOffset: 0, pageXOffset: 0}
       const padding = 2, dialog_height = jb.ui.outerHeight(dialog), dialog_width = jb.ui.outerWidth(dialog);
       if (dialogPos.top > dialog_height && dialogPos.top + dialog_height + padding > window.innerHeight + window.pageYOffset)
         top = dialogPos.top - dialog_height

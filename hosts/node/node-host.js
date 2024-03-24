@@ -14,14 +14,14 @@ function codePackageNodeFS(baseDir) { return {
     repo: baseDir.split('/').pop(),
     fetchFile(url) {
         try {
-            return require('util').promisify(fs.readFile)(baseDir+url)
+            return require('util').promisify(fs.readFile)(baseDir+url).then(x=>''+x)
         } catch (e) {
             globalThis.jb ? jb.logException(e,'node utils load file', {url}) : process.stderr(`node utils - error loading ${url}`)
         }
         return Promise.resolve()
     },
     fetchJSON(url) { 
-        return this.fetchFile(url).then(x=>JSON.parse(x))
+        return this.fetchFile(url).then(x=>JSON.parse(''+x))
     },
     loadLib(path) { 
         const code = '' + fs.readFileSync(`${baseDir}${path}`)

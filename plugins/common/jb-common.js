@@ -520,6 +520,14 @@ component('dynamicObject', {
     items.reduce((obj,item)=>({ ...obj, [name(ctx.setData(item))]: value(ctx.setData(item)) }),{})
 })
 
+component('objFromVars', {
+  type: 'data',
+  params: [
+    {id: 'vars', type: 'data[]', mandatory: true, as: 'array', description: 'names of vars'},
+  ],
+  impl: (ctx, vars) => vars.reduce((obj,id)=>({ ...obj, [id]: ctx.vars[id] }),{})
+})
+
 component('extend', {
   type: 'data',
   description: 'assign and extend with calculated properties',
@@ -1168,52 +1176,54 @@ component('loadAppFiles', {
     jb_loadProject({ uri: jb.uri, baseUrl: jb.baseUrl, libs: '', jsFiles })
 })
 
-component('variable', {
-  type: 'ctx',
-  params: [
-    {id: 'name', as: 'string', mandatory: true},
-    {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: '%%'}
-  ],
-  impl: async (ctx,name,val) => ctx.setVars({[name]: await val()})
-})
+// ** ctx type
 
-component('vars', {
-  type: 'ctx',
-  params: [
-    {id: 'vars', as: 'object', mandatory: true},
-  ],
-  impl: (ctx,name,val) => ctx.setVars(vars)
-})
+// component('variable', {
+//   type: 'ctx',
+//   params: [
+//     {id: 'name', as: 'string', mandatory: true},
+//     {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: '%%'}
+//   ],
+//   impl: ({},name,val) => async ctx => ctx.setVars({[name]: await val()})
+// })
 
-component('Data', {
-  type: 'ctx',
-  params: [
-    {id: 'Data', mandatory: true},
-  ],
-  impl: (ctx,data) => ctx.setData(data)
-})
+// component('vars', {
+//   type: 'ctx',
+//   params: [
+//     {id: 'vars', as: 'object', mandatory: true},
+//   ],
+//   impl: (ctx,name,val) => ctx.setVars(vars)
+// })
 
-component('ctxPipe', {
-  type: 'ctx',
-  params: [
-    {id: 'items', type: 'ctx[]', mandatory: true},
-  ],
-  impl: (ctx,items) => items.reduce((pr,item) => pr.then(_ctx => item(_ctx)), Promise.resolve(ctx))
-})
+// component('Data', {
+//   type: 'ctx',
+//   params: [
+//     {id: 'Data', mandatory: true},
+//   ],
+//   impl: (ctx,data) => ctx.setData(data)
+// })
 
-component('calcFromContext', {
-  params: [
-    {id: 'Ctx', type: 'ctx', dynamic: true, mandatory: true, byName: true},
-    {id: 'calc', type: 'data', dynamic: true, mandatory: true, composite: true},
-  ],
-  impl: (ctx,Ctx,calc) => Promise.resolve(Ctx(ctx)).then(ctx => calc(ctx))
-})
+// component('ctxPipe', {
+//   type: 'ctx',
+//   params: [
+//     {id: 'items', type: 'ctx[]', mandatory: true, composite: true},
+//   ],
+//   impl: ({},items) => ctx => items.reduce( async (pr,item) => item(await pr) , ctx)
+// })
 
-component('runActionOnContext', {
-  type: 'action',
-  params: [
-    {id: 'Ctx', type: 'ctx', dynamic: true, mandatory: true, byName: true},
-    {id: 'action', type: 'action', dynamic: true, mandatory: true, composite: true}
-  ],
-  impl: (ctx,Ctx,action) => Promise.resolve(Ctx(ctx)).then(ctx => action(ctx))
-})
+// component('calcInContext', {
+//   params: [
+//     {id: 'Ctx', type: 'ctx', mandatory: true, byName: true},
+//     {id: 'calc', type: 'data', dynamic: true, mandatory: true, composite: true},
+//   ],
+//   impl: (ctx,Ctx,calc) => Promise.resolve(Ctx(ctx)).then(ctx => calc(ctx))
+// })
+
+// component('runActionInContext', {
+//   type: 'action',
+//   params: [
+//     {id: 'Ctx', type: 'ctx', mandatory: true, byName: true},
+//     {id: 'action', type: 'action', dynamic: true, mandatory: true, composite: true}
+//   ],
+//   impl: (ctx,Ctx,action) => Promise.resolve(Ctx(ctx)).then(ctx => action(ctx))
+// })

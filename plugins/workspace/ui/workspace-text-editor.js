@@ -25,6 +25,12 @@ component('workspace.textEditor', {
         rx.takeUntil('%$cmp/destroyed%'),
         sink.BEMethod('selectionChanged', '%%')
       ),
+      feature.onKey('Ctrl-I', runActions(
+        Var('compProps', langService.calcCompProps(), { async: true }),
+        Var('probeRes', langServer.probe('%$compProps%'), { async: true }),
+        Var('visitCountOverlay', tgpTextEditor.visitCountOverlay('%$probeRes%', '%$compProps%')),
+        runFEMethodFromBackEnd({ selector: '#activeEditor', method: 'applyOverlay', Data: '%$visitCountOverlay%' })
+      )),
       frontEnd.flow(
         source.frontEndEvent('keydown'),
         rx.filter(key.match('Ctrl+Space')),
@@ -32,9 +38,9 @@ component('workspace.textEditor', {
         rx.var('offsets', ({},{cmp}) => cmp.editor && cmp.editor.charCoords(cmp.editor.getCursor(), "local")),
         sink.BEMethod('openPopup', '%$offsets%', obj(prop('ev', '%$ev%')))
       ),
-      method('openPopup', runActionOnContext({
-        Ctx: variable('completions', workspace.initCompletionOptions()),
-        action: openDialog({
+      method('openPopup', runActions(
+        Var('completions', workspace.initCompletionOptions(), { async: true }),
+        openDialog({
           content: workspace.floatingCompletions(),
           style: workspace.popup(),
           id: 'floatingCompletions',
@@ -43,7 +49,7 @@ component('workspace.textEditor', {
             nearLauncherPosition('%left%', plus(20, '%top%'), { insideLauncher: true })
           ]
         })
-      })),
+      )),
       method('selectionChanged', workspace.selelctionChanged('%%', '%$docUri%')),
       feature.byCondition('%$height%', css.height('%$height%', { minMax: 'max' }), null),
       workspace.tgpPathOverlay()
@@ -125,7 +131,7 @@ component('workspace.applyCompChange', {
 component('workspace.tgpPathOverlay', {
   type: 'feature',
   impl: features(
-    frontEnd.method('applyTgpPathOverlay', (ctx,{cmp}) => {
+    frontEnd.method('applyProbeResOnCode', (ctx,{cmp}) => {
       debugger
         const {id, baseStyle,tgpPathToStyle,actionMap} = ctx.data
         const baseClassName = `overlay-${id}-base`
@@ -159,3 +165,41 @@ component('workspace.tgpPathOverlay', {
   )
 })
 
+component('tgpTextEditor.probeResOverlay', {
+  params: [
+    {id: 'id', as: 'string'},
+    {id: 'probeRes', as: 'object', byName: true},
+    {id: 'compProps', as: 'object'},
+    {id: 'baseStyle', as: 'object', description: 'for style.after' },
+    {id: 'tgpPathToStyle', dynamic: true, as: 'object'}
+  ],
+  impl: pipeline(Var('id','%$id%'), Var('fromLine', '%$compProps/line%'))
+})
+
+// applyOverlay(id, fromLine, toLine, classMap: { [pos: {line,col}, 'className className'] }, cssStyle: {[class]: css} )
+
+component('tgpTextEditor.visitCountOverlay', {
+  params: [
+    {id: 'probeRes', as: 'object'},
+    {id: 'compProps', as: 'object'}
+  ],
+  impl: tgpTextEditor.probeResOverlay('visitCount', {
+    probeRes: '%$probeRes%',
+    compProps: '%$compProps%',
+    baseStyle: asIs({
+        position: 'absolute',
+        bottom: '-15px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '20px',
+        height: '20px',
+        lineHeight: '20px',
+        borderRadius: '50%',
+        backgroundColor: 'red',
+        color: 'white',
+        textAlign: 'center',
+        fontSize: '12px'
+    }),
+    tgpPathToStyle: obj(prop('contentText', '%$visitCount[{%$tgpPath%}]%'))
+  })
+})

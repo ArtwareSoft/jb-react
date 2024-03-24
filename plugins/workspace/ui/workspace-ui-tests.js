@@ -2,7 +2,7 @@ using('ui-testers')
 
 component('workspaceUITest.currentTextEditor.openCompletions', {
   doNotRunInTests: true,
-  impl: uiTest(workspace.currentTextEditor(), contains('"text":"aggregate"'), {
+  impl: uiTest(workspace.currentTextEditor(), contains('cmp-pt="text">pipeline</span>'), {
     runBefore: workspace.initAsHost('/plugins/common/common-tests.js', { line: 7, col: 43 }),
     uiAction: uiActions(
       keyboardEvent('#activeEditor', 'keydown', { '//': 'Ctrl+Space', keyCode: '32', ctrl: 'ctrl' }),
@@ -14,7 +14,7 @@ component('workspaceUITest.currentTextEditor.openCompletions', {
 
 component('workspaceUITest.currentTextEditor.openCompletionsAndSelect', {
   doNotRunInTests: true,
-  impl: uiTest(workspace.currentTextEditor(), {
+  impl: uiTest(workspace.currentTextEditor(), contains('pipeline(join()))'), {
     runBefore: workspace.initAsHost('/plugins/common/common-tests.js', { line: 7, col: 43 }),
     uiAction: uiActions(
       keyboardEvent('#activeEditor', 'keydown', { '//': 'Ctrl+Space', keyCode: '32', ctrl: 'ctrl' }),
@@ -24,9 +24,9 @@ component('workspaceUITest.currentTextEditor.openCompletionsAndSelect', {
         keyCode: 40,
         doNotWaitForNextUpdate: true
       }),
-      keyboardEvent('input', 'keyup', { keyCode: 13 })
+      keyboardEvent('input', 'keyup', { keyCode: 13 }),
+      waitForText('pipeline(join()))')
     ),
-    timeout: 3000,
     emulateFrontEnd: true
   })
 })
@@ -34,11 +34,6 @@ component('workspaceUITest.currentTextEditor.openCompletionsAndSelect', {
 component('workspaceUITest.floatingCompletions', {
   doNotRunInTests: true,
   impl: uiTest(workspace.floatingCompletions(), {
-    runBefore: workspace.initAsHost({
-      docUri: '/plugins/common/common-tests.js',
-      docContent: `component('commonTest.join', {\n  impl: dataTest(pipeline(list(1,2), '%%', join()), equals('1,2'))\n})`,
-      line: 1,
-      col: 43
-    })
+    runBefore: workspace.initAsHost('/plugins/common/common-tests.js', { line: 1, col: 43 })
   })
 })

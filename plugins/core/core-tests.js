@@ -81,3 +81,7 @@ component('coreTest.varsCases', {
     expectedResult: equals('1 -,2 -')
   })
 })
+
+component('coreTest.asyncVar', {
+  impl: dataTest(pipeline(Var('b', 5), Var('a', delay(1, 3), { async: true }), '%$a%,%$b%'), equals('3,5'))
+})

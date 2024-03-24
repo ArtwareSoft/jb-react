@@ -31,6 +31,7 @@ extension('codemirror', {
 		return {...s1,...s2,extraKeys,gutters}
     },
 	enableFullScreen(ctx,cmp,el) {
+		if (!cmp.editor) return
 		const width = jb.ui.outerWidth(el), height = jb.ui.outerHeight(el), editor = cmp.editor
 		const fullScreenBtnHtml = '<div class="jb-codemirror-fullScreenBtnCss hidden" title="Full Screen (F11)">🗖</div>'
 		const escText = '<span class="jb-codemirror-escCss">Press ESC or F11 to exit full screen</span>'
@@ -134,7 +135,7 @@ component('editableText.codemirror', {
       rx.distinctUntilChanged(),
       sink.BEMethod('writeText', '%%')
     ),
-    frontEnd.method('setText', ({data},{cmp}) => cmp.editor && cmp.editor.setValue(data)),
+    frontEnd.method('setText', ({data},{cmp,el}) => cmp.editor ? cmp.editor.setValue(data) : el.setAttribute('value',data)),
     frontEnd.method('regainFocus', (ctx,{cmp}) => {
 		jb.log('codemirror regain focus',{ctx,cmp})
 		if (!cmp.editor) return // test

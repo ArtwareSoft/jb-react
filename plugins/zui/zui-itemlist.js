@@ -251,6 +251,7 @@ extension('zui','itemlist-FE', {
       renderCounter: 0,
       boundTextures: Array.from(new Array(NO_OF_UNITS).keys()).map(i=>({i, lru : 0})),
       calcWidthHeight(width, height) {
+        const window = jb.frame.window || {innerHeight: 800, innerWidth: 1200, pageYOffset: 0, pageXOffset: 0}
         if (width == '100%') {
             return {
               width: typeof screen != 'undefined' ? screen.width : window.innerWidth,
