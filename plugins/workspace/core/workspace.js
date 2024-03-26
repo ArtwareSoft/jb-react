@@ -74,15 +74,15 @@ component('workspace.initAsHost', {
   params: [
     {id: 'docUri', as: 'string'},
     {id: 'line', as: 'number', byName: true},
-    {id: 'col', as: 'number'},
+    {id: 'col', as: 'number'}
   ],
   impl: async (ctx,docUri,line,col) => {
-      jb.workspace.initJbWorkspaceAsHost()
-      const docContent = await jbHost.codePackageFromJson().fetchFile(docUri)
-      //(await jbHost.fetch(docUri)).text()
-      jb.tgpTextEditor.host.initDoc(docUri,docContent)
-      const doc = jb.workspace.openDocs[jb.workspace.activeUri]
-      doc.selection = { start : { line, col }, end: { line, col}}
+    jb.workspace.initJbWorkspaceAsHost()
+    const docContent = await jbHost.codePackageFromJson().fetchFile(docUri)
+    //(await jbHost.fetch(docUri)).text()
+    jb.tgpTextEditor.host.initDoc(docUri,docContent)
+    const doc = jb.workspace.openDocs[jb.workspace.activeUri]
+    doc.selection = { start : { line, col }, end: { line, col}}
   }
 })
 

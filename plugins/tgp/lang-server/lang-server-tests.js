@@ -1,5 +1,10 @@
 using('tgp-lang-service-tests')
 
+component('langServerTest.join', {
+  doNotRunInTests: true,
+  impl: dataTest(pipeline(list(1,2), '%%', join()), equals('1,2'))
+})
+
 component('langServerTest.references', {
   doNotRunInTests: true,
   impl: dataTest({
@@ -163,5 +168,18 @@ component('remoteTgpModelTest.external', {
     expectedResult: equals('parser<jison>'),
     timeout: 1000,
     spy: ''
+  })
+})
+
+component('probeOverlayTest.visitCount', {
+  doNotRunInTests: true,
+  impl: probeOverlayTest({
+    overlay: probeVisitCount(),
+    expectedResult: contains(`clz: 'overlay-visitCount-base'`, 'style: {after: {content: 1}}', {
+      allText: prettyPrint()
+    }),
+    compId: 'test<>langServerTest.join',
+    line: 2,
+    col: 43
   })
 })

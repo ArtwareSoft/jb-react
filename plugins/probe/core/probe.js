@@ -199,9 +199,14 @@ extension('probe', 'main', {
     // called from jb_run
     record(ctx,out,data,vars) {
         const probe = ctx.probe
-        // jb.probe.singleVisitPaths[ctx.path] = ctx
-        // jb.probe.singleVisitCounters[ctx.path] = (jb.probe.singleVisitCounters[ctx.path] || 0) + 1
-        if (!probe.active || probe.probePath.indexOf(ctx.path) != 0) return
+        if (!probe.active) return
+        const path = ctx.path
+        if (probe.probePath.split('~')[0] != path.split('~')[0]) return
+        probe.visits[path] = probe.visits[path] || 0
+        probe.visits[path]++
+        //jb.probe.singleVisitPaths[path] = ctx
+        //jb.probe.singleVisitCounters[path] = (jb.probe.singleVisitCounters[path] || 0) + 1
+        if (probe.probePath.indexOf(path) != 0) return
 
         if (data)
             ctx = ctx.setData(data).setVars(vars||{}) // used by ctx.data(..,) in rx
@@ -219,10 +224,7 @@ extension('probe', 'main', {
             throw 'probe tails'
             //throw 'out of time';
         }
-        const path = ctx.path
         probe.records[path] = probe.records[path] || []
-        probe.visits[path] = probe.visits[path] || 0
-        probe.visits[path]++
         const found = probe.records[path].find(x=>jb.utils.compareArrays(x.in.data,ctx.data))
         if (found)
             found.counter++

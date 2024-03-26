@@ -183,7 +183,7 @@ component('browserTest', {
     {id: 'runInStudio', type: 'action', dynamic: true, descrition: 'not for test mode'},
     {id: 'covers'}
   ],
-  impl: async (_ctx,control,runBefore,uiAction,expectedResult,allowError,cleanUp,expectedCounters,renderDOM) => {
+  impl: async (_ctx,control,expectedResult,runBefore,uiAction,allowError,cleanUp,expectedCounters,renderDOM) => {
 		if (typeof document == 'undefined')
 			return _ctx.run({..._ctx.profile, $: 'uiTest'})
 		const {testID, singleTest} = _ctx.vars

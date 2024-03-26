@@ -7,12 +7,15 @@ component('studio.openPickIcon', {
     title: 'pick icon',
     content: group({
       vars: [
-        Var('type', property('type', tgp.ref(tgp.parentPath('%$path%'))))
+        Var('type', property('type', tgp.ref(tgp.parentPath('%$path%')), { useRef: true }))
       ],
       controls: [
         group({
           controls: [
-            picklist('type', '%$type%', { options: picklist.optionsByComma('mdi,mdc'), style: picklist.buttonList() }),
+            picklist('type', '%$type%', {
+              options: picklist.optionsByComma('mdi,mdc'),
+              style: picklist.buttonList()
+            }),
             itemlistContainer.search({
               searchIn: '%%',
               databind: '%$itemlistCntrData/search_pattern%',
@@ -29,7 +32,11 @@ component('studio.openPickIcon', {
         }),
         itemlist('', {
           items: pipeline(
-            If(equals('mdi', '%$type%'), pipeline(ctx => jb.ui.MDIcons, keys()), ctx => jb.ui.mdcIconNames.split(',')),
+            If({
+              condition: equals('mdi', '%$type%'),
+              then: pipeline(ctx => jb.ui.MDIcons, keys()),
+              Else: ctx => jb.ui.mdcIconNames.split(',')
+            }),
             itemlistContainer.filter()
           ),
           controls: [
@@ -46,15 +53,22 @@ component('studio.openPickIcon', {
           features: [
             watchRef('%$itemlistCntrData/search_pattern%', { strongRefresh: 'true' }),
             watchRef('%$type%', { strongRefresh: 'true' }),
-            css.height('500', 'scroll'),
+            css.height('500', { overflow: 'scroll' }),
             css.width('600'),
             itemlist.infiniteScroll(),
-            itemlist.selection({ onDoubleClick: runActions(writeValue(tgp.ref('%$path%'), '%%'), delay(), dialog.closeDialog()) }),
-            itemlist.keyboardSelection({ onEnter: runActions(writeValue(tgp.ref('%$path%'), '%%'), delay(), dialog.closeDialog()) })
+            itemlist.selection({
+              onDoubleClick: runActions(writeValue(tgp.ref('%$path%'), '%%'), delay(), dialog.closeDialog())
+            }),
+            itemlist.keyboardSelection({
+              onEnter: runActions(writeValue(tgp.ref('%$path%'), '%%'), delay(), dialog.closeDialog())
+            })
           ]
         })
       ],
-      features: [group.itemlistContainer(), group.autoFocusOnFirstInput()]
+      features: [
+        group.itemlistContainer(),
+        group.autoFocusOnFirstInput()
+      ]
     }),
     style: dialog.studioFloating()
   })

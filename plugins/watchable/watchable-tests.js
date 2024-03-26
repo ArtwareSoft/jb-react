@@ -1,7 +1,7 @@
 using('ui-testers','workspace-core','testing')
 
 component('watchableTest.property', {
-  impl: dataTest(property('name', '%$person%'), equals('Homer Simpson'))
+  impl: dataTest(property('name', '%$person%', { useRef: true }), equals('Homer Simpson'))
 })
 
 component('watchableResource1', { watchableData: 'hey' })

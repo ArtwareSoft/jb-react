@@ -11,6 +11,10 @@ component('expTest.boolean', {
   impl: dataTest(pipeline('%$people%', filter('%age%==42'), '%name%'), contains('Homer'))
 })
 
+component('expTest.dynamicExp', {
+  impl: dataTest(pipeline('name','%$people/{%%}%'), contains('Homer'))
+})
+
 component('expTest.expWithArray', {
   impl: dataTest('%$personWithChildren/children[0]/name%', equals('Bart'))
 })

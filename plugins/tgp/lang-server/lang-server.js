@@ -63,6 +63,7 @@ component('langServer.probe', {
         obj(
           prop('circuitPath', '%circuitCtx/path%'),
           prop('probePath', '%probePath%'),
+          prop('visits', '%visits%'),
           prop('simpleVisits', '%simpleVisits%'),
           prop('totalTime', '%totalTime%'),
           prop('result', probe.stripProbeResult('%result%')),
@@ -75,6 +76,18 @@ component('langServer.probe', {
       jbm: stateless(probeServer('%$compProps/filePath%'))
     }),
     extend(prop('tgpModelErrors', '%$compProps/tgpModelErrors%')),
+    first()
+  )
+})
+
+component('langServer.calcProbeOverlay', {
+  params: [
+    {id: 'overlay', type: 'overlay<>', dynamic: true}
+  ],
+  impl: pipeline(
+    Var('compProps', langService.calcCompProps({ includeCircuitOptions: true }), { async: true }),
+    Var('probeResult', langServer.probe('%$compProps%'), { async: true }),
+    '%$overlay()%',
     first()
   )
 })

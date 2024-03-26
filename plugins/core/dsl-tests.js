@@ -18,6 +18,7 @@ component('cmp1', {
 })
 
 component('testDslClientOutOfDsl', {
+  type: 'data<>',
   params: [
     {id: 'defaultDsl', type: 'myType'},
     {id: 'myDsl', type: 'myType<myDsl>'},

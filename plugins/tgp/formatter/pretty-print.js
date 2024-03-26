@@ -168,8 +168,9 @@ extension('utils', 'prettyPrint', {
         const parentPath = path.split('~').slice(0,-1).join('~')
         return [
             {item: '', action: `begin!${path}`},
+            {item: '', action: `beginName!${path}`},
             {item: macro + '(', action: singleInArray ? `prependPT!${path}` : firstInArray ? `prependPT!${parentPath}` : `setPT!${path}`},
-//            {item: , action: (singleInArray || firstInArray) ? '' : `setPT!${path}`},
+            {item: '', action: `endName!${path}`},
             {item: '', action: `edit!${path}`},
             {item: '', action: `addProp!${path}`},
             ...(argsByValue.length && !mixedFold ? [{item: newLine(), action: actionForFirstArgByValue}] : []),

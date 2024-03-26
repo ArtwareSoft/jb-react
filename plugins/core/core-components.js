@@ -1,15 +1,18 @@
+
 component('call', {
   type: 'any',
   hidden: true,
   description: 'invoke dynamic parameter',
   category: 'system:50',
   params: [
-    {id: 'param', as: 'string', description: 'parameter name'}
+    {id: 'param', as: 'string', description: 'parameter name'},
+    {id: 'array', as: 'boolean', description: 'array of profiles', byName: true}
   ],
-  impl: (ctx,param) => {
+  impl: (ctx,param,array) => {
  	  const paramObj = ctx.cmpCtx && ctx.cmpCtx.params[param]
-      return typeof paramObj == 'function' ?
- 		  paramObj(new jb.core.jbCtx(ctx, { cmpCtx: paramObj.runCtx, forcePath: paramObj.srcPath })) : paramObj
+    if (array)
+      return jb.asArray(paramObj.profile).map((profile,index) => ctx.runInner(profile, { as: 'single'}, `${param}~${index}` ) )
+    return typeof paramObj == 'function' ? paramObj(new jb.core.jbCtx(ctx, { cmpCtx: paramObj.runCtx, forcePath: paramObj.srcPath })) : paramObj
  	}
 })
 

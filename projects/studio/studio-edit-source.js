@@ -82,14 +82,14 @@ component('studio.editSource', {
 component('studio.viewAllFiles', {
   type: 'action',
   params: [
-    {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
+    {id: 'path', as: 'string', defaultValue: {$: 'studio.currentProfilePath'}}
   ],
   impl: openDialog({
     title: '%$studio/project% files',
     content: group({
       controls: [
         picklist({ databind: '%$file%', options: picklist.options(keys('%$content/files%')) }),
-        editableText('', property('%$file%', '%$content/files%'), {
+        editableText('', property('%$file%', '%$content/files%', { useRef: true }), {
           style: editableText.studioCodemirrorTgp(),
           features: watchRef('%$file%')
         })
@@ -464,41 +464,3 @@ component('codemirror.initTgpTextEditor', {
   )
 })
 
-component('textarea.initTgpTextEditor', {
-  type: 'feature',
-  impl: features(
-    textarea.enrichUserEvent(),
-    frontEnd.method('applyEdit', ({data},{docUri, el}) => {
-        const {edits, uri} = data
-        if (uri != docUri) return
-        ;(edits || []).forEach(({text, from, to}) => {
-            el.value = el.value.slice(0,from) + text + el.value.slice(to)
-            el.setSelectionRange(from,from)
-        })
-    }),
-    frontEnd.method('setSelectionRange', ({data},{docUri, el}) => {
-        const {uri, from, to} = data || {}
-        if (uri != docUri) return
-        if (!from) 
-            return jb.logError('tgpTextEditor setSelectionRange empty offset',{data ,el})
-        jb.log('tgpTextEditor selection set to', {data})
-        if (el.setSelectionRange)
-          el.setSelectionRange(from,to || from)
-        else
-          Object.assign(el._component.state, { selectionRange : {from, to: to || from} })
-    }),
-    frontEnd.flow(
-      source.event('selectionchange', () => jb.frame.document),
-      rx.takeUntil('%$cmp.destroyed%'),
-      rx.filter(({},{el}) => el == jb.path(jb.frame.document,'activeElement')),
-      rx.map(({},{el}) => jb.tgpTextEditor.offsetToLineCol(el.value,el.selectionStart)),
-      sink.BEMethod('selectionChanged', '%%')
-    ),
-    frontEnd.flow(
-      source.frontEndEvent('keyup'),
-      rx.map(({},{el}) => el.value),
-      rx.distinctUntilChanged(),
-      sink.BEMethod('contentChanged', '%%')
-    )
-  )
-})

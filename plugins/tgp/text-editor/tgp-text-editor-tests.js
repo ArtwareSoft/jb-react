@@ -16,47 +16,51 @@ component('tgpTextEditorTest.pathChangeTest.wrap', {
   })
 })
 
-component('uiTest.watchableAsText', {
-  impl: uiTest({
-    control: group({
-      vars: [
-        Var('watchedText', tgpTextEditor.watchableAsText('%$watchablePeople%'))
-      ],
-      controls: [
-        editableText({
-          databind: '%$watchedText%',
-          style: editableText.textarea(30, 80),
-          features: [
-            id('editor'),
-            feature.onKey('Alt-P', writeValue('%$path%', tgpTextEditor.cursorPath('%$watchedText%'))),
-            {$: 'textarea.initTgpTextEditor'},
-            watchRef('%$watchablePeople%', { includeChildren: 'yes' })
-          ]
-        }),
-        button('show path of cursor', writeValue('%$path%', tgpTextEditor.cursorPath('%$watchedText%')), {
-          features: [
-            id('show-path'),
-            textarea.enrichUserEvent('#editor')
-          ]
-        }),
-        button('change name', writeValue('%$watchablePeople[1]/name%', 'mukki'), {
-          features: id('change-name')
-        }),
-        text('%$path%')
-      ],
-      features: [id('group'), watchable('path')]
-    }),
-    expectedResult: contains('watchablePeople~0~name'),
-    uiAction: uiActions(
-      waitForSelector('#editor'),
-      action(runFEMethodFromBackEnd('#editor', 'setSelectionRange', { Data: obj(prop('from', 22)) })),
-      click('#show-path')
-    ),
-    emulateFrontEnd: true
-  })
-})
+// component('tgpTextEditorTest.watchableAsText', {
+//   impl: uiTest({
+//     control: group({
+//       vars: [
+//         Var('watchedText', tgpTextEditor.watchableAsText('%$watchablePeople%'))
+//       ],
+//       controls: [
+//         editableText({
+//           databind: '%$watchedText%',
+//           style: editableText.textarea(30, 80),
+//           features: [
+//             id('editor'),
+//             feature.onKey('Alt-P', writeValue('%$path%', tgpTextEditor.cursorPath('%$watchedText%'))),
+//             textarea.initTgpTextEditor(),
+//             watchRef('%$watchablePeople%', { includeChildren: 'yes' })
+//           ]
+//         }),
+//         button('show path of cursor', writeValue('%$path%', tgpTextEditor.cursorPath('%$watchedText%')), {
+//           features: [
+//             id('show-path'),
+//             textarea.enrichUserEvent()
+//           ]
+//         }),
+//         button('change name', writeValue('%$watchablePeople[1]/name%', 'mukki'), {
+//           features: id('change-name')
+//         }),
+//         text('%$path%')
+//       ],
+//       features: [id('group'), watchable('path')]
+//     }),
+//     expectedResult: contains('watchablePeople~0~name'),
+//     uiAction: uiActions(
+//       waitForSelector('#editor'),
+//       action(runFEMethodFromBackEnd({
+//         selector: '#editor',
+//         method: 'setSelectionRange',
+//         Data: obj(prop('from', 22))
+//       })),
+//       click('#show-path')
+//     ),
+//     emulateFrontEnd: true
+//   })
+// })
 
-component('uiTest.watchableAsTextWrite', {
+component('tgpTextEditorTest.watchableAsTextWrite', {
   impl: uiTest({
     control: editableText({
       databind: tgpTextEditor.watchableAsText('%$watchablePeople%'),
@@ -71,7 +75,7 @@ component('uiTest.watchableAsTextWrite', {
   })
 })
 
-component('uiTest.watchableAsTextWriteObjectInArray', {
+component('tgpTextEditorTest.watchableAsTextWriteObjectInArray', {
   impl: uiTest({
     control: editableText({
       databind: tgpTextEditor.watchableAsText('%$watchablePeople%'),
@@ -86,7 +90,7 @@ component('uiTest.watchableAsTextWriteObjectInArray', {
   })
 })
 
-component('uiTest.watchableAsTextWriteSetObjectToArray', {
+component('tgpTextEditorTest.watchableAsTextWriteSetObjectToArray', {
   impl: uiTest({
     control: editableText({
       databind: tgpTextEditor.watchableAsText('%$emptyArray%'),

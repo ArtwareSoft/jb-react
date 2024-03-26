@@ -1,4 +1,4 @@
-using('tgp-formatter','common')
+using('tgp-formatter','common','ui-core')
 
 extension('tgpTextEditor', {
     initExtension() {
@@ -64,13 +64,13 @@ extension('tgpTextEditor', {
     },
     calcHash(str) {
         let hash = 0, i, chr;
-        if (str.length === 0) return hash;
+        if (str.length === 0) return hash
         for (i = 0; i < str.length; i++) {
-          chr = str.charCodeAt(i);
+          chr = str.charCodeAt(i)
           hash = ((hash << 5) - hash) + chr;
           hash |= 0; // Convert to 32bit integer
         }
-        return hash;
+        return hash
     },
     pathVisited(e) {
         const {visitedPaths} = jb.tgpTextEditor
@@ -348,6 +348,21 @@ component('tgpTextEditor.currentFilePath', {
     }
 })
 
+component('tgpTextEditor.hash', {
+  params: [
+    {id: 'str', as: 'string'}
+  ],
+  impl: (ctx,str) => jb.tgpTextEditor.calcHash(str)
+})
+
+component('tgpTextEditor.offsetToLineCol', {
+  params: [
+    {id: 'offset', as: 'number'},
+    {id: 'compText', as: 'string', byName: true}
+  ],
+  impl: (ctx,offset, compText) => jb.tgpTextEditor.offsetToLineCol(compText, offset)
+})
+
 component('tgpTextEditor.gotoSource', {
     type: 'action',
     params: [
@@ -388,4 +403,41 @@ component('gotoUrl', {
 	}
 })
 
-
+// component('textarea.initTgpTextEditor', {
+//   type: 'feature',
+//   impl: features(
+//     textarea.enrichUserEvent(),
+//     frontEnd.method('applyEdit', ({data},{docUri, el}) => {
+//         const {edits, uri} = data
+//         if (uri != docUri) return
+//         ;(edits || []).forEach(({text, from, to}) => {
+//             el.value = el.value.slice(0,from) + text + el.value.slice(to)
+//             el.setSelectionRange(from,from)
+//         })
+//     }),
+//     frontEnd.method('setSelectionRange', ({data},{docUri, el}) => {
+//         const {uri, from, to} = data || {}
+//         if (uri != docUri) return
+//         if (!from) 
+//             return jb.logError('tgpTextEditor setSelectionRange empty offset',{data ,el})
+//         jb.log('tgpTextEditor selection set to', {data})
+//         if (el.setSelectionRange)
+//           el.setSelectionRange(from,to || from)
+//         else
+//           Object.assign(el._component.state, { selectionRange : {from, to: to || from} })
+//     }),
+//     frontEnd.flow(
+//       source.event('selectionchange', () => jb.frame.document),
+//       rx.takeUntil('%$cmp.destroyed%'),
+//       rx.filter(({},{el}) => el == jb.path(jb.frame.document,'activeElement')),
+//       rx.map(({},{el}) => jb.tgpTextEditor.offsetToLineCol(el.value,el.selectionStart)),
+//       sink.BEMethod('selectionChanged', '%%')
+//     ),
+//     frontEnd.flow(
+//       source.frontEndEvent('keyup'),
+//       rx.map(({},{el}) => el.value),
+//       rx.distinctUntilChanged(),
+//       sink.BEMethod('contentChanged', '%%')
+//     )
+//   )
+// })

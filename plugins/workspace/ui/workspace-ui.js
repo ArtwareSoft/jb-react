@@ -59,28 +59,6 @@ component('workspace.openDoc', {
   impl: ({},docUri) => jb.workspace.openDoc(docUri)
 })
 
-component('textarea.enrichUserEvent', {
-  type: 'feature',
-  params: [
-    {id: 'textEditorSelector', as: 'string', description: 'used for external buttons'}
-  ],
-  impl: features(
-    frontEnd.var('textEditorSelector', '%$textEditorSelector%'),
-    frontEnd.enrichUserEvent((ctx,{cmp,textEditorSelector}) => {
-        const elem = textEditorSelector ? jb.ui.widgetBody(ctx).querySelector(textEditorSelector) : cmp.base
-        if (elem instanceof jb.ui.VNode)
-          return { selectionStart: jb.path(elem, '_component.state.selectionRange.from') }
-        return elem && {
-            outerHeight: jb.ui.outerHeight(elem), 
-            outerWidth: jb.ui.outerWidth(elem), 
-            clientRect: elem.getBoundingClientRect(),
-            text: elem.value,
-            selectionStart: jb.tgpTextEditor.offsetToLineCol(elem.value,elem.selectionStart)
-        }
-    })
-  )
-})
-
 component('workspace.openQuickPickMenu', {
   type: 'action',
   params: [

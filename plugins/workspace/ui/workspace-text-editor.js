@@ -26,9 +26,7 @@ component('workspace.textEditor', {
         sink.BEMethod('selectionChanged', '%%')
       ),
       feature.onKey('Ctrl-I', runActions(
-        Var('compProps', langService.calcCompProps(), { async: true }),
-        Var('probeRes', langServer.probe('%$compProps%'), { async: true }),
-        Var('visitCountOverlay', tgpTextEditor.visitCountOverlay('%$probeRes%', '%$compProps%')),
+        Var('visitCountOverlay', langServer.calcProbeOverlay(probeVisitCount()), { async: true }),
         runFEMethodFromBackEnd({ selector: '#activeEditor', method: 'applyOverlay', Data: '%$visitCountOverlay%' })
       )),
       frontEnd.flow(
@@ -52,7 +50,7 @@ component('workspace.textEditor', {
       )),
       method('selectionChanged', workspace.selelctionChanged('%%', '%$docUri%')),
       feature.byCondition('%$height%', css.height('%$height%', { minMax: 'max' }), null),
-      workspace.tgpPathOverlay()
+      workspace.compOverlay()
     ]
   })
 })
@@ -70,7 +68,6 @@ component('workspace.floatingCompletions', {
           editableText.picklistHelper({
             options: workspace.filterCompletionOptions(),
             picklistStyle: workspace.completions(),
-            //picklistFeatures: picklist.allowAsynchOptions(),
             popupFeatures: css('margin-top: -5px'),
             showHelper: true,
             autoOpen: true,
@@ -128,78 +125,47 @@ component('workspace.applyCompChange', {
   impl: (ctx,option) => jb.tgpTextEditor.applyCompChange(ctx.vars.completions.items[jb.val(option).refIndex], {ctx})
 })
 
-component('workspace.tgpPathOverlay', {
+component('workspace.compOverlay', {
   type: 'feature',
   impl: features(
-    frontEnd.method('applyProbeResOnCode', (ctx,{cmp}) => {
+    frontEnd.method('applyOverlay', (ctx,{cmp}) => {
       debugger
-        const {id, baseStyle,tgpPathToStyle,actionMap} = ctx.data
-        const baseClassName = `overlay-${id}-base`
-        const tgpPaths = jb.utils.unique(actionMap.map(x=>x.action.split('!').pop()))
+      const { id, compId, cssClassDefs, compTextHash, fromLine, toLine } = ctx.data
+      if (!cmp.editor) return
+      const styleElement = document.createElement('style');
+      styleElement.id = `overlay-${id}`
+      styleElement.textContent = cssClassDefs.map(x => asStyleDef(x)).join('\n')
+      document.head.appendChild(styleElement)
 
-        const styleElement = document.createElement('style');
-        styleElement.id = `overlay-${id}`
-        styleElement.textContent = tgpPaths.map(path=>`.overlay-${id}-${classNameOfPath(path)} { ${tgpPathToStyle(ctx.setData(path))} }`).join('\n')
-        document.head.appendChild(styleElement)
-
-        cmp.overlays = cmp.overlays || {}
-        cmp.overlays[id] = { token: (stream, state) => {
-                state.token(stream, state) // Advance the stream to the end of the token
-                const line = stream.lineOracle.line
-                const col = stream.start
-                const tgpPath = tgpPathAtPos({line, col})
-                return tgpPath ? [baseClassName,`overlay-${id}-${classNameOfPath(tgpPath)}`].join(' ') : null
-            }
+      cmp.overlays = cmp.overlays || {}
+      cmp.overlays[id] = { token: stream => {
+            const from = stream.start
+            stream.skipToEnd() // Advance the stream to the end of the token
+            const to = stream.start
+            if (stream.lineOracle.line < fromLine || stream.lineOracle.line > toLine) return
+            const _line = stream.lineOracle.line - fromLine
+            return cssClassDefs.filter(({line,col}) => line == _line && col >= from && col <= to).map(x => x.clz)[0]
         }
-        editor.addOverlay(cmp.overlays[id])
-        
-        function classNameOfPath(path) {
-            return path.replace(/[<>]/g,'_').replace(/[~\.<>]/g,'-').replace(/-[-]+/g,'-')
-        }
+      }
+      cmp.editor.addOverlay(cmp.overlays[id])
+      
+      function asStyleDef({clz, style}) {
+        return style.after 
+          ? `.${clz}::after {\n${Object.entries(style.after).map(([key, value]) => `  ${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value};`).join('\n')}}`
+          : `.${clz} {\n${Object.entries(style).map(([key, value]) => `  ${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value};`).join('\n')}}`
+      }
+      function checkHash() {
+        const compTextInDoc = cmp.editor.getValue().split('\n').slice(fromLine,toLine).join('\n')
+        const currentHash = jb.tgpTextEditor.calcHash(compTextInDoc)
+        if (currentHash != compTextHash)
+          return jb.logError('add overlay comp hash mismatch',{ctx})        
+      }
     }),
     frontEnd.method('removeOverlay', ({data},{cmp}) => {
         const id = data
         cmp.editor.removeOverlay(cmp.overlays[id])
         document.getElementById(`overlay-${id}`).remove()
+        delete cmp.overlays[id]
     })
   )
-})
-
-component('tgpTextEditor.probeResOverlay', {
-  params: [
-    {id: 'id', as: 'string'},
-    {id: 'probeRes', as: 'object', byName: true},
-    {id: 'compProps', as: 'object'},
-    {id: 'baseStyle', as: 'object', description: 'for style.after' },
-    {id: 'tgpPathToStyle', dynamic: true, as: 'object'}
-  ],
-  impl: pipeline(Var('id','%$id%'), Var('fromLine', '%$compProps/line%'))
-})
-
-// applyOverlay(id, fromLine, toLine, classMap: { [pos: {line,col}, 'className className'] }, cssStyle: {[class]: css} )
-
-component('tgpTextEditor.visitCountOverlay', {
-  params: [
-    {id: 'probeRes', as: 'object'},
-    {id: 'compProps', as: 'object'}
-  ],
-  impl: tgpTextEditor.probeResOverlay('visitCount', {
-    probeRes: '%$probeRes%',
-    compProps: '%$compProps%',
-    baseStyle: asIs({
-        position: 'absolute',
-        bottom: '-15px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: '20px',
-        height: '20px',
-        lineHeight: '20px',
-        borderRadius: '50%',
-        backgroundColor: 'red',
-        color: 'white',
-        textAlign: 'center',
-        fontSize: '12px'
-    }),
-    tgpPathToStyle: obj(prop('contentText', '%$visitCount[{%$tgpPath%}]%'))
-  })
 })

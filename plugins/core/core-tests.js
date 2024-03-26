@@ -7,7 +7,7 @@ component('coreTest.datum2', {
 })
 
 component('coreTest.propertyPassive', {
-  impl: dataTest(property('name', obj(prop('name', 'homer'))), equals('homer'))
+  impl: dataTest(property('name', obj(prop('name', 'homer')), { useRef: true }), equals('homer'))
 })
 
 component('test.withDefaultValueComp', {

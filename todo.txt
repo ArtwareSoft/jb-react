@@ -1,7 +1,10 @@
 (sensors; cpufreq-info) | xclip -selection clipboard
 top -b -n 1 | xclip -selection clipboard
 
-jb.core.extendWithVars -> support asynch vars in core -> pipeline and runActions instead of runActionInContext
+groupBy
+  types
+    aggregator - propName, aggFunc
+    groupBy - split - key, numberRange, groupSize, noOfGroups
 
 overlay testers
   build test for tgpTextEditor.probeResOverlay with compProps and probeRes 
