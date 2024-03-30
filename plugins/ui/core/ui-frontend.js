@@ -44,7 +44,7 @@ extension('ui', 'frontend', {
         runFEMethod(method,data,_vars,silent) {
             if (this.state.frontEndStatus != 'ready' && ['onRefresh','initOrRefresh','init','calcProps'].indexOf(method) == -1)
                 return jb.logError('frontend - running method before init', {cmp: {...this}, method,data,_vars})
-            const toRun = (this.base.frontEndMethods || []).filter(x=>x.method == method)
+            const toRun = (this.base.frontEndMethods || []).filter(x=>x.method == method).sort((p1,p2) => (p1.phase || 0) - (p2.phase ||0))
             if (toRun.length == 0 && !silent)
                 return jb.logError(`frontend - no method ${method}`,{cmp: {...this}})
             toRun.forEach(({path}) => jb.utils.tryWrapper(() => {

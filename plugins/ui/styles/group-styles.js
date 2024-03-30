@@ -41,7 +41,7 @@ component('group.accordion', {
               style: call('innerGroupStyle'),
               features: [
                 feature.if('%$sectionIndex% == %$selectedTab%'),
-                watchRef('%$selectedTab%')
+                watchRef('%$selectedTab%', { strongRefresh: true })
               ]
             })
           ],

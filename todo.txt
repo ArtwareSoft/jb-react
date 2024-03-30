@@ -4,21 +4,23 @@ top -b -n 1 | xclip -selection clipboard
 file:///home/shaiby/Downloads/philsiphy%20presentataions%20(1).pdf: 173
 
 check jb.utils.flattenArray
+
+build FE destruction test with tabs
+fix codemirror destruction with tabs initOrRefresh with phases
+
 workspace.ui
-  fix scroll issue
-  save ^s
-  fix ^p
-  ^p - show plugins, files, comps, tests, filters - down, comps, tests, files
-  build pluginEditor
+  pluginEditor
+    files and tests
+    add as vscode view
+    save ^s
+    fix ^p
+    ^p - show plugins, files, comps, tests, filters - down, comps, tests, files
+  
 
 llm helper 
   ref to innner doc
   promptDSL using vars & code reference
   
-
-visit count into codemirror
-  activate it as a lang-service (extend the prove service) ctrl-I?
-  refresh the editor
 
 code-watcher 
   create both action and source

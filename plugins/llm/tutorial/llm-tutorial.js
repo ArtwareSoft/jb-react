@@ -1,4 +1,4 @@
-//u sing('tgp-core')
+using('common','ui-tree','ui-misc','ui-styles')
 dsl('llm')
 
 extension('llmTutorial', 'main', {

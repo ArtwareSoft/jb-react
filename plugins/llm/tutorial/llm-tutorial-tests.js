@@ -1,3 +1,5 @@
+using('ui-testers')
+
 component('tutorialSample', {
   passiveData: {
     title: 'query language',
@@ -46,4 +48,25 @@ component('tutorialSample', {
       }
     ]
   }
+})
+
+component('llmTest.tutorialBuilder', {
+  doNotRunInTests: true,
+  impl: uiTest(tutorialBuilder('%$tutorialSample%'), contains('build'))
+})
+
+component('llmTest.enrichTutorialData', {
+  doNotRunInTests: true,
+  impl: dataTest(enrichTutorialData('%$tutorialSample%'), and(
+    equals(pipeline('%features%', filter(equals('%id%', 'data<>pipeline')), '%usage/length%'), 7),
+    equals({
+      item1: pipeline('%features%', filter(equals('%id%', 'data<>split')), '%params/0/usage/length%'),
+      item2: 2
+    })
+  ))
+})
+
+component('llmTest.enrichTrainingItem', {
+  doNotRunInTests: true,
+  impl: dataTest(enrichTrainingItem('%$tutorialSample/training/0%'))
 })

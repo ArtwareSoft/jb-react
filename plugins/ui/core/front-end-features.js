@@ -109,9 +109,10 @@ component('frontEnd.method', {
   description: 'register as front end method, the context is limited to cmp & state. can be run with cmp.runFEMetod(id,data,vars)',
   params: [
     {id: 'method', as: 'string'},
-    {id: 'action', type: 'action', mandatory: true, dynamic: true}
+    {id: 'action', type: 'action', mandatory: true, dynamic: true},
+    {id: 'phase', as: 'number', defaultValue: 10, description: 'init methods can register many times'},
   ],
-  impl: (ctx,method,action) => ({ frontEndMethod: { method, path: ctx.path, action: action.profile} })
+  impl: (ctx,method,action,phase) => ({ frontEndMethod: { method, path: ctx.path, action: action.profile, phase} })
 })
 
 component('frontEnd.coLocation', {
@@ -157,9 +158,10 @@ component('frontEnd.init', {
   category: 'front-end',
   description: 'initializes the front end, mount, component did update. runs after props',
   params: [
-    {id: 'action', type: 'action', mandatory: true, dynamic: true}
+    {id: 'action', type: 'action', mandatory: true, dynamic: true},
+    {id: 'phase', as: 'number', defaultValue: 10},
   ],
-  impl: (ctx,action) => ({ frontEndMethod: { method: 'init', path: ctx.path, action: action.profile} })
+  impl: (ctx,action,phase) => ({ frontEndMethod: { method: 'init', path: ctx.path, action: action.profile, phase} })
 })
 
 component('frontEnd.initOrRefresh', {
@@ -167,9 +169,10 @@ component('frontEnd.initOrRefresh', {
   category: 'front-end',
   description: 'run in on both first initialization and refresh',
   params: [
-    {id: 'action', type: 'action', mandatory: true, dynamic: true}
+    {id: 'action', type: 'action', mandatory: true, dynamic: true},
+    {id: 'phase', as: 'number', defaultValue: 10},
   ],
-  impl: (ctx,action) => ({ frontEndMethod: { method: 'initOrRefresh', path: ctx.path, action: action.profile} })
+  impl: (ctx,action,phase) => ({ frontEndMethod: { method: 'initOrRefresh', path: ctx.path, action: action.profile} })
 })
 
 component('frontEnd.prop', {
@@ -217,10 +220,11 @@ component('frontEnd.flow', {
   category: 'front-end',
   description: 'rx flow at front end',
   params: [
-    {id: 'elems', type: 'rx[]', as: 'array', dynamic: true, mandatory: true, templateValue: []}
+    {id: 'elems', type: 'rx[]', as: 'array', dynamic: true, mandatory: true, templateValue: []},
+    {id: 'phase', as: 'number', defaultValue: 20},
   ],
-  impl: (ctx, elems) => ({ frontEndMethod: { 
-      method: 'init', path: ctx.path, _flow: elems.profile,
+  impl: (ctx, elems, phase) => ({ frontEndMethod: { 
+      method: 'init', path: ctx.path, _flow: elems.profile, phase,
       action: { $: 'action<>rx.pipe', elems: _ctx => elems(_ctx) }
     }})
 })

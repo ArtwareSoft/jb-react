@@ -135,6 +135,7 @@ component('editableText.codemirror', {
       rx.distinctUntilChanged(),
       sink.BEMethod('writeText', '%%')
     ),
+	frontEnd.onDestroy(({},{cmp}) => delete cmp.editor ),
     frontEnd.method('setText', ({data},{cmp,el}) => cmp.editor ? cmp.editor.setValue(data) : el.setAttribute('value',data)),
     frontEnd.method('regainFocus', (ctx,{cmp}) => {
 		jb.log('codemirror regain focus',{ctx,cmp})
@@ -163,8 +164,8 @@ component('source.codeMirrorText', {
   impl: ctx => (start, sink) => {
 		const {cmp} = ctx.vars
 		if (!cmp.editor) return
-		if (!cmp.state.frontEndStatus == 'ready') 
-			return jb.logError('codemirror - frontEndStatus status not ready for change listener',{state: ''+ cmp.state, cmp,ctx})
+		if (cmp.registeredToChange) 
+			return jb.logError('codemirror - allready registered',{state: ''+ cmp.state, cmp,ctx})
 
 		if (start !== 0) return
 		function handler() { sink(1, ctx.dataObj(cmp.editor.getValue())) }
@@ -172,9 +173,11 @@ component('source.codeMirrorText', {
 			if (t != 2) return
 			jb.log('codemirror unregister change listener',{ctx})
 			cmp.editor.off('change', handler)
+			cmp.registeredToChange = false
 		})
 		jb.log('codemirror register change listener',{ctx})
 		cmp.editor.on('change', handler)
+		cmp.registeredToChange = true
 	}
 })
 

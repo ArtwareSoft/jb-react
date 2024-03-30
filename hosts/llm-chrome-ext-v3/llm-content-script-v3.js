@@ -1,5 +1,5 @@
-async function initLLMHelper() {
-	const jb = await jbLoadPacked({uri:'llmHelper'})
+async function initLlh() {
+	const jb = await jbLoadPacked({uri:'llh'})
     jbHost.chromeExtV3 = true
     jb.exec({
         "$": "renderWidgetInIframe",
@@ -8,9 +8,9 @@ async function initLLMHelper() {
             "$$": "control<>inPlaceDialog",
             "title": "LLM Helper",
             "content": {
-                "$": "llm.docHelper",
-                "$$": "control<>llm.docHelper",
-                "doc": "%$llmDocExample%"
+                "$": "llm.main",
+                "$$": "control<>llm.main",
+                "doc": "%$helperDoc%"
             },
             "style": {
                 "$": "inIframe.Floating",
@@ -28,4 +28,4 @@ async function initLLMHelper() {
     })
 }
 
-initLLMHelper()
+initLlh()

@@ -1,4 +1,4 @@
-using('ui-common')
+using('ui-common','ui-styles')
 
 // https://github.com/sparksuite/simplemde-markdown-editor
 
@@ -30,7 +30,7 @@ component('editableText.markdown', {
     css('.md-editor .CodeMirror, .CodeMirror-scroll {  min-height: 50px; }'),
     () => ({ template: ({},{},h) => h('div.simple-mde') }),
     frontEnd.var('simplemdeSettings', '%$simplemdeSettings%'),
-    frontEnd.initOrRefresh((ctx,{el,text,cmp,simplemdeSettings,FELifeCycle}) => {
+    frontEnd.init((ctx,{el,text,cmp,simplemdeSettings,FELifeCycle}) => {
         el.innerHTML = `<div jb_external="true"/>`
         const wrapper = el.firstChild
         wrapper.innerHTML = `<textarea>${text}</textarea>`
@@ -46,14 +46,25 @@ component('editableText.markdown', {
         cmp.editor = cmp.simplemde.codemirror
         jb.ui.addClass(cmp.editor.getWrapperElement(),'autoResizeInDialog')
     }),
-    method('writeText', writeValue('%$$model/databind()%', '%%')),
+    method('writeText', (ctx,{cmp}) => jb.ui.writeFieldData(ctx,cmp,ctx.data,true)),
     frontEnd.flow(
-      source.callbag(({},{cmp}) => jb.callbag.create(obs=> cmp.editor.on('change', () => obs(cmp.simplemde.value())))),
-      rx.takeUntil('%$cmp/destroyed%'),
+      source.codeMirrorText(),
       rx.debounceTime('%$debounceTime%'),
       rx.distinctUntilChanged(),
       sink.BEMethod('writeText', '%%')
-    )
+    ),
+    frontEnd.onDestroy(({},{cmp}) => delete cmp.editor ),
+    frontEnd.method('setText', ({data},{cmp,el}) => cmp.editor ? cmp.editor.setValue(data) : el.setAttribute('value',data)),
+    frontEnd.method('regainFocus', (ctx,{cmp}) => {
+      jb.log('codemirror regain focus',{ctx,cmp})
+      if (!cmp.editor) return // test
+      cmp.editor.focus()
+      jb.log('codemirror regain focus', { ctx })
+      cmp.editor.setSelection(cmp.editor.getCursor(true), cmp.editor.getCursor(false))
+    }),
+    frontEnd.method('selectRange', ({data},{cmp}) => cmp.editor && cmp.editor.setSelection({ line: data.start.line, ch: data.start.col }, { line: data.end.line, ch: data.end.col })),
+    css(({},{},{height}) => `{width: 100% }
+		>div { box-shadow: none !important; ${jb.ui.propWithUnits('height',height)} !important}`)
   )
 })
 

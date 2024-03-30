@@ -71,9 +71,9 @@
         "$$": "control<>inPlaceDialog",
         "title": "LLM Helper",
         "content": {
-            "$": "llm.docHelper",
-            "$$": "control<>llm.docHelper",
-            "doc": "%$llmDocExample%"
+            "$": "llm.main",
+            "$$": "control<>llm.main",
+            "doc": "%$helperDoc%"
         },
         "style": {
             "$": "inIframe.Floating",
