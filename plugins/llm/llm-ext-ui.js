@@ -9,7 +9,8 @@ component('llm.commandBar', {
         style: editableText.mdcInput('420'),
         features: features(
           feature.onKey('Enter', localHelper.runHelperAction('%$ev/value%')),
-          editableText.picklistHelper(picklist.optionsByComma('1111,2,3,4'), {
+          editableText.picklistHelper({
+            options: picklist.optionsByComma('1111,2,3,4'),
             popupFeatures: [
               css.padding({ left: '10', right: '10' })
             ]
@@ -19,7 +20,7 @@ component('llm.commandBar', {
     ],
     layout: layout.flex({ justifyContent: 'space-between' }),
     features: [
-      watchable('command', obj(prop('cmd', ''))),
+      watchable('command', obj(prop('cmd', '')))
     ]
   })
 })

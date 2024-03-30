@@ -11,7 +11,7 @@ component('workspace.textEditor', {
     {id: 'height', as: 'number', defaultValue: 700}
   ],
   impl: editableText('edit %$docUri%', '%$docContent%', {
-    style: editableText.codemirror({ height: '%$height%', mode: 'javascript', maxLength: -1 }),
+    style: editableText.codemirror({ height: '%$height%', mode: 'javascript', lineNumbers: true, maxLength: -1 }),
     features: [
       id('activeEditor'),
       workspace.editorFontCss(),
@@ -129,30 +129,56 @@ component('workspace.compOverlay', {
   type: 'feature',
   impl: features(
     frontEnd.method('applyOverlay', (ctx,{cmp}) => {
-      debugger
       const { id, compId, cssClassDefs, compTextHash, fromLine, toLine } = ctx.data
       if (!cmp.editor) return
       const styleElement = document.createElement('style');
-      styleElement.id = `overlay-${id}`
+      styleElement.id = `cm-overlay-${id}`
       styleElement.textContent = cssClassDefs.map(x => asStyleDef(x)).join('\n')
       document.head.appendChild(styleElement)
+      const baseClass = cssClassDefs.filter(({base}) => base).map(({clz})=>clz)[0]
 
+      let lineTokens = null, currLine = 0, token = null, inToken = false
       cmp.overlays = cmp.overlays || {}
-      cmp.overlays[id] = { token: stream => {
-            const from = stream.start
-            stream.skipToEnd() // Advance the stream to the end of the token
-            const to = stream.start
-            if (stream.lineOracle.line < fromLine || stream.lineOracle.line > toLine) return
-            const _line = stream.lineOracle.line - fromLine
-            return cssClassDefs.filter(({line,col}) => line == _line && col >= from && col <= to).map(x => x.clz)[0]
+      cmp.overlays[id] = {
+        token: stream => {
+          const newLine = currLine != stream.lineOracle.line
+          currLine = stream.lineOracle.line
+          if (currLine < fromLine || currLine > toLine) {
+            stream.skipToEnd()
+            return
+          }
+          if (newLine) {
+            lineTokens = cssClassDefs.filter(({line}) => line == currLine - fromLine)
+            inToken = false
+            token = lineTokens.shift()
+          }
+          if (inToken) {
+            const clz = token.clz
+            eat(stream, token.toCol- token.fromCol)
+            token = lineTokens.shift()
+            inToken = false
+            return `${baseClass} ${clz}`
+          } else {
+            if (!token) {
+              stream.skipToEnd()
+              return
+            }
+            eat(stream, token.fromCol - stream.start)
+            inToken = true
+            return
+          }
         }
       }
       cmp.editor.addOverlay(cmp.overlays[id])
+
+      function eat(stream,num) {
+        for(let i=0;i<num;i++) stream.next()
+      }
       
       function asStyleDef({clz, style}) {
         return style.after 
-          ? `.${clz}::after {\n${Object.entries(style.after).map(([key, value]) => `  ${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value};`).join('\n')}}`
-          : `.${clz} {\n${Object.entries(style).map(([key, value]) => `  ${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value};`).join('\n')}}`
+          ? `.cm-${clz}::after {\n${Object.entries(style.after).map(([key, value]) => `  ${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value};`).join('\n')}}`
+          : `.cm-${clz} {\n${Object.entries(style).map(([key, value]) => `  ${key.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${value};`).join('\n')}}`
       }
       function checkHash() {
         const compTextInDoc = cmp.editor.getValue().split('\n').slice(fromLine,toLine).join('\n')

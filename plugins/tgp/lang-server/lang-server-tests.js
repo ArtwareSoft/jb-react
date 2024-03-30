@@ -175,7 +175,7 @@ component('probeOverlayTest.visitCount', {
   doNotRunInTests: true,
   impl: probeOverlayTest({
     overlay: probeVisitCount(),
-    expectedResult: contains(`clz: 'overlay-visitCount-base'`, 'style: {after: {content: 1}}', {
+    expectedResult: contains(`clz: 'overlay-visitCount-base'`, 'double underline green', {
       allText: prettyPrint()
     }),
     compId: 'test<>langServerTest.join',

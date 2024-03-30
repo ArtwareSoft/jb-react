@@ -168,9 +168,9 @@ extension('utils', 'prettyPrint', {
         const parentPath = path.split('~').slice(0,-1).join('~')
         return [
             {item: '', action: `begin!${path}`},
-            {item: '', action: `beginName!${path}`},
+            {item: '', action: `beginToken!${path}`},
             {item: macro + '(', action: singleInArray ? `prependPT!${path}` : firstInArray ? `prependPT!${parentPath}` : `setPT!${path}`},
-            {item: '', action: `endName!${path}`},
+            {item: '', action: `endToken!${path}`},
             {item: '', action: `edit!${path}`},
             {item: '', action: `addProp!${path}`},
             ...(argsByValue.length && !mixedFold ? [{item: newLine(), action: actionForFirstArgByValue}] : []),
@@ -335,12 +335,20 @@ extension('utils', 'prettyPrint', {
       const listBegin = [ {item: '', action: `begin!${path}`}, {item: delim, action: `addProp!${parentPath}`}, {item: '', action: `edit!${path}`} ]
       const listEnd = str.length == 0 ? [ {item: delim, action: `setPT!${path}`}]
         : [ {item: str.slice(0,1), action: `setPT!${path}`}, {item: str.slice(1) + delim, action: `insideText!${path}`}]
-      return props[path] = {list: [...listBegin, ...listEnd], len: str.length + 2}
+      const list = [ 
+        {item: '', action: `beginToken!${path}`}, 
+        ...listBegin, ...listEnd, 
+        {item: '', action: `endToken!${path}`}
+      ]
+      return props[path] = {list, len: str.length + 2}
     }    
     function tokenProps(str, path) {
       const list = [ 
+        {item: '', action: `beginToken!${path}`},
         {item: '', action: `begin!${path}`}, {item: '', action: `edit!${path}`},
-        {item: str.slice(0,1), action: `setPT!${path}`}, {item: str.slice(1), action: `insideToken!${path}`}]
+        {item: str.slice(0,1), action: `setPT!${path}`}, {item: str.slice(1), action: `insideToken!${path}`},
+        {item: '', action: `endToken!${path}`}
+      ]
       return props[path] = {list, len: str.length }
     }
     function funcProps(func,path) {

@@ -157,6 +157,15 @@ component('completionTest.dynamicFormat', {
   })
 })
 
+component('completionTest.inComp', {
+  impl: completionActionTest({
+    compText: `uiTest(text('my text'), con__tains('hello world'))`,
+    completionToActivate: 'notContains',
+    expectedEdit: asIs({range: {start: {line: 1, col: 32}, end: {line: 1, col: 33}}, newText: 'notC'}),
+    expectedCursorPos: '1,44'
+  })
+})
+
 component('completionTest.wrapWithGroup', {
   impl: completionActionTest(`uiTest(__text())`, {
     completionToActivate: 'group',

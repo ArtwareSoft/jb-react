@@ -515,6 +515,7 @@ extension('langService', 'api', {
 extension('tgpTextEditor', 'commands', {
     async applyCompChange(item, {ctx} = {}) {
 //        if (item.id == 'reformat')
+debugger
         const host = jb.tgpTextEditor.host
         await host.saveDoc()
         const editAndCursor = item.edit ? item : calcEditAndGotoPos(item)

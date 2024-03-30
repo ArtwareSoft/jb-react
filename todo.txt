@@ -1,18 +1,16 @@
 (sensors; cpufreq-info) | xclip -selection clipboard
 top -b -n 1 | xclip -selection clipboard
 
-groupBy
-  types
-    aggregator - propName, aggFunc
-    groupBy - split - key, numberRange, groupSize, noOfGroups
+file:///home/shaiby/Downloads/philsiphy%20presentataions%20(1).pdf: 173
 
-overlay testers
-  build test for tgpTextEditor.probeResOverlay with compProps and probeRes 
-  fix the FE Method
-overlay interface BE-FE
-  applyOverlay(id, fromLine, toLine, classMap: { [pos: {line,col}, 'className className'] }, cssStyle: {[class]: css} )
+check jb.utils.flattenArray
+workspace.ui
+  fix scroll issue
+  fix ^p, save
+  ^p - show plugins, files, comps, tests, filters - down, comps, tests, files
+  build pluginEditor
 
-
+overlay 
 
 visit count into codemirror
   activate it as a lang-service (extend the prove service) ctrl-I?
