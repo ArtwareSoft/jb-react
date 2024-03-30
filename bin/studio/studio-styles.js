@@ -245,7 +245,7 @@ jb.component('dialog-feature.studio-position-under-property', {
 				if (!context.vars.$launchingElement)
 					return console.log('no launcher for dialog');
 				var control = jb.ui.parents(context.vars.$launchingElement.el).filter(el=>jb.ui.matches(el,'.input-and-toolbar'));
-				var pos = jb.ui.offset(control);
+				var pos = jb.ui.clientRect(control);
 				var jbDialog = jb.ui.findIncludeSelf(cmp.base,'.jb-dialog')[0];
         if (jbDialog) {
   				jbDialog.style.left = `${pos.left}px`;

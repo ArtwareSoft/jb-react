@@ -117,7 +117,10 @@ extension('ui', 'html', {
   children(el) {
     return (el instanceof jb.ui.VNode) ? (el.children || []) : [...(el.children || [])]
   },
-  offset: el => el.getBoundingClientRect(),
+  clientRect(el) {
+      if (!el || el instanceof jb.ui.VNode) return { top: 0, left: 0}
+      return el.getBoundingClientRect()
+  },
   isHeadless: el => jb.ui.parents(el, {includeSelf: true}).pop().headless,
   parents(el, { includeSelf } = {}) {
     const res = []

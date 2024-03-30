@@ -50,7 +50,7 @@
 // }
 
 // function fixPreviewOffset(e) {
-//     const previewOffset = jb.ui.offset(document.querySelector('.preview-iframe'))
+//     const previewOffset = jb.ui.clientRect(document.querySelector('.preview-iframe'))
 //     return Object.assign(e,{ centerX: e.centerX + previewOffset.x, centerY: e.centerY + previewOffset.y })
 // }
 
@@ -64,7 +64,7 @@
 // }
 
 // function positionsOfCtx(ctx)  {
-//     return elemsOfCtx(ctx).map(el => fixPreviewOffset(enrichWithCenter(jb.ui.offset(el))))
+//     return elemsOfCtx(ctx).map(el => fixPreviewOffset(enrichWithCenter(jb.ui.clientRect(el))))
 // }
 
 // component('studio.animateWatchRefParticle', {

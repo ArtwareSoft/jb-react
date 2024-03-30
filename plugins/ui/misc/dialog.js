@@ -293,8 +293,8 @@ component('nearLauncherPosition', {
       if (!$props.launcherRectangle)
         return { left: _offsetLeft + (ev.clientX || 0), top: _offsetTop + (ev.clientY || 0)}
       return {
-        left: $props.launcherRectangle.x + _offsetLeft  + (rightSide ? ev.elem.outerWidth : 0), 
-        top:  $props.launcherRectangle.y  + _offsetTop   + (insideLauncher ? 0 : ev.elem.outerHeight)
+        left: $props.launcherRectangle.left + _offsetLeft  + (rightSide ? ev.elem.outerWidth : 0), 
+        top:  $props.launcherRectangle.top  + _offsetTop   + (insideLauncher ? 0 : ev.elem.outerHeight)
       }
 	  }),
     frontEnd.onRefresh(({},{$state,el}) => { 
@@ -306,10 +306,10 @@ component('nearLauncherPosition', {
 		  if (!elemToTest && launcherCmpId && cmp.state.dialogPos.left == 0 && cmp.state.dialogPos.top == 0) {
 			  const el = jb.ui.elemOfCmp(ctx,launcherCmpId)
 			  if (!el || !el.getBoundingClientRect) return // tests
-			  const launcherRectangle = el.getBoundingClientRect()
+const launcherRectangle = el.getBoundingClientRect()
 			  const dialogPos = {
-				left: launcherRectangle.x + pos.offsetLeft + (pos.rightSide ? jb.ui.outerWidth(el) : 0), 
-				top:  launcherRectangle.y  + pos.offsetTop  + jb.ui.outerHeight(el)
+          left: launcherRectangle.left + pos.offsetLeft + (pos.rightSide ? jb.ui.outerWidth(el) : 0), 
+          top:  launcherRectangle.top  + pos.offsetTop  + jb.ui.outerHeight(el)
 			  }
 			  if (dialogPos.left != 0 || dialogPos.top != 0)
 			  	cmp.refreshFE({ dialogPos })

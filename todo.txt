@@ -6,11 +6,15 @@ file:///home/shaiby/Downloads/philsiphy%20presentataions%20(1).pdf: 173
 check jb.utils.flattenArray
 workspace.ui
   fix scroll issue
-  fix ^p, save
+  save ^s
+  fix ^p
   ^p - show plugins, files, comps, tests, filters - down, comps, tests, files
   build pluginEditor
 
-overlay 
+llm helper 
+  ref to innner doc
+  promptDSL using vars & code reference
+  
 
 visit count into codemirror
   activate it as a lang-service (extend the prove service) ctrl-I?
@@ -54,10 +58,6 @@ icon gallery
 gpt4 discussions
   zui
 
-  
-llm helper 
-  allow definitions of prompts and inject them
-  
 
 ui plugins
   net under remote

@@ -27,7 +27,7 @@ component('textarea.enrichUserEvent', {
       return el && {
           outerHeight: jb.ui.outerHeight(el), 
           outerWidth: jb.ui.outerWidth(el), 
-          clientRect: el.getBoundingClientRect(),
+          clientRect: jb.ui.clientRect(el),
           text: el.value,
           selectionStart: jb.tgpTextEditor.offsetToLineCol(el.value,el.selectionStart)
     }

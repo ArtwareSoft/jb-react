@@ -168,7 +168,7 @@ extension('studio','highlight', {
   },
   doHighlightElems(elems) {
       const html = elems.map(el => {
-      const offset = jb.ui.offset(el)
+      const offset = jb.ui.clientRect(el)
       let width = jb.ui.outerWidth(el)
       if (width == jb.ui.outerWidth(document.body))
           width -= 10;

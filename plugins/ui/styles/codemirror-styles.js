@@ -230,23 +230,22 @@ component('codemirror.lineNumbers', {
 
 component('codemirror.enrichUserEvent', {
   type: 'feature',
-  params: [
-    {id: 'cmSelector', as: 'string', description: 'used for external buttons'}
-  ],
-  impl: features(
-    frontEnd.var('cmSelector', '%$cmSelector%'),
-    frontEnd.enrichUserEvent((ctx,{cmp,cmSelector}) => {
-			const elem = cmSelector ? jb.ui.widgetBody(ctx).querySelector(cmSelector) : cmp.base
-			const editor = elem && elem.editor
-            return editor && {
-                outerHeight: jb.ui.outerHeight(elem), 
-                outerWidth: jb.ui.outerWidth(elem), 
-                clientRect: elem.getBoundingClientRect(),
-                text: editor.getValue(),
-                selectionStart: {line: editor.getCursor().line, col: editor.getCursor().ch}
-            }
-        })
-  )
+  impl: frontEnd.enrichUserEvent((ctx,{cmp,el}) => {
+		const editor = cmp.editor
+		if (!editor) return // test
+		const cursor = editor.getCursor()
+		const clientRect = jb.ui.clientRect(el)
+		const offsetsWindow = editor.charCoords(cursor, 'window')
+		const cursorOffset = { top: offsetsWindow.top - clientRect.top, left: offsetsWindow.left - clientRect.left}
+
+		return {
+			outerHeight: jb.ui.outerHeight(el), 
+			outerWidth: jb.ui.outerWidth(el), 
+			clientRect, cursorOffset,
+			text: editor.getValue(),
+			selectionStart: {line: cursor.line, col: cursor.ch}
+		}
+	})
 })
 
 component('text.codemirror', {

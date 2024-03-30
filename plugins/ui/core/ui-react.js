@@ -410,7 +410,7 @@ extension('ui', 'react', {
     calcElemProps(elem) {
         return elem instanceof jb.ui.VNode ? {} : { 
             outerHeight: jb.ui.outerHeight(elem), outerWidth: jb.ui.outerWidth(elem), 
-            clientRect: elem.getBoundingClientRect() 
+            clientRect: jb.ui.clientRect(elem) 
         }
     },
     buildUserEvent(ev, elem, ctx) {
