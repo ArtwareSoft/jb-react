@@ -38,7 +38,7 @@
 		},
 		"commands": [
 			{
-				"command": "jbart.applyCompChange",
+				"command": "jbart.applyCompChangeOfCompletionItem",
 				"title": "apply component change from text editor"
 			},
 			{

@@ -90,8 +90,14 @@ component('editableText.setInputState', {
     {id: 'selectionStart', as: 'number'},
     {id: 'cmp', defaultValue: '%$cmp%'}
   ],
-  impl: runFEMethodFromBackEnd('[cmp-id="%$cmp/cmpId%"]', 'setInput', { Data: 
-    obj(prop('newVal','%$newVal%'), prop('assumedVal','%$assumedVal%'), prop('selectionStart','%$selectionStart%')) })
+  impl: runFEMethodFromBackEnd({
+    method: 'setInput',
+    Data: obj(
+      prop('newVal', '%$newVal%'),
+      prop('assumedVal', '%$assumedVal%'),
+      prop('selectionStart', '%$selectionStart%')
+    )
+  })
 })
 
 // ui.applyDeltaToCmp({

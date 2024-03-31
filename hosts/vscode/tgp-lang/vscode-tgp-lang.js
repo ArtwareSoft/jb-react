@@ -24,11 +24,8 @@ async function activate(context) {
     jb.spy.initSpy({spyParam: 'remote,vscode'})
     await jb.vscode.initVscodeAsHost({context})
 
-    ;['applyCompChange']
-        .forEach(cmd => vscodeNS.commands.registerCommand(`jbart.${cmd}`, jb.tgpTextEditor[cmd]))
-
     ;['moveUp','moveDown','openProbeResultPanel','openjBartStudio','openLastCmd','openProbeResultEditor','closeProbeResultEditor'
-        ,'openjBartTest','visitLastPath','disable','delete','duplicate']
+        ,'openjBartTest','visitLastPath','disable','delete','duplicate','applyCompChangeOfCompletionItem']
             .forEach(cmd => vscodeNS.commands.registerCommand(`jbart.${cmd}`, jb.vscode[cmd]))
     
     ;['main'].forEach(viewId => context.subscriptions.push(
@@ -37,7 +34,7 @@ async function activate(context) {
 	context.subscriptions.push(vscodeNS.languages.registerCompletionItemProvider('javascript', {
 		provideCompletionItems() {
             try {
-                return jb.vscode.provideCompletionItems().items
+                return jb.vscode.provideCompletionItems().then(res=>res.items)
             } catch(e) {
                 debugger
                 jb.vscode.log('exception provide completions',e)

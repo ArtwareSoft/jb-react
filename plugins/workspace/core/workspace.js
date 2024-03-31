@@ -18,25 +18,30 @@ extension('workspace', 'core', {
             activeUri: ''
     }},
     initJbWorkspaceAsHost() {
-        if (jb.path('jb.tgpTextEditor.host.type') == 'jbWorkspace') return
+        if (jb.path(jb.tgpTextEditor,'host.type') == 'jbWorkspace') return
         jb.tgpTextEditor.host = {
             type: 'jbWorkspace',
-            async applyEdit(edit,{uri, ctx, tgpPathsForLines} = {}) {
-                const docUri = uri || jb.workspace.activeUri
-                const docText = jb.workspace.openDocs[docUri].text
+            async applyEdit(edit,{docUri, ctx} = {}) {
+                const _docUri = docUri || jb.workspace.activeUri
+                const docText = jb.workspace.openDocs[_docUri].text
                 const from = jb.tgpTextEditor.lineColToOffset(docText, edit.range.start)
                 const to = jb.tgpTextEditor.lineColToOffset(docText,edit.range.end)
-                const newText = jb.workspace.openDocs[docUri].text = docText.slice(0,from) + edit.newText + docText.slice(to)
-                jb.tgpTextEditor.lastEditForTester = { edit , uri }
-                ctx && ctx.runAction({ $: 'runFEMethodFromBackEnd', selector: '#activeEditor', method: 'setText', Data: { $asIs: newText} })
-                //ctx && ctx.runAction({ $: 'runFEMethodFromBackEnd', selector: '#activeEditor', method: 'updateTgpPathClasses', Data: { $asIs: tgpPathsForLines }})
+                const newText = jb.workspace.openDocs[_docUri].text = docText.slice(0,from) + edit.newText + docText.slice(to)
+                jb.tgpTextEditor.lastEditForTester = { edit }
+                if (jb.path(ctx,'vars.editorCmpId') && !jb.path(ctx,'vars.doNotRefreshEditor')) {
+                  const selector = `[cmp-id="${ctx.vars.editorCmpId}"]`
+                  ctx.runAction({ $: 'runFEMethodFromBackEnd', selector, method: 'setText', Data: { $asIs: newText} })
+                }
             },
             getActiveDoc: () => jb.workspace.openDocs[jb.workspace.activeUri],
             selectRange(start,{end, ctx} = {}) {
                 end = end || start
                 jb.workspace.openDocs[jb.workspace.activeUri].selection = { start, end: end || start }
                 jb.tgpTextEditor.host.selectionSource.next({start,end})
-                ctx && ctx.runAction({$: 'runFEMethodFromBackEnd', selector: '#activeEditor', method: 'selectRange', Data: {start, end}})
+                if (jb.path(ctx,'vars.editorCmpId') && !jb.path(ctx,'vars.doNotRefreshEditor')) {
+                  const selector = `[cmp-id="${ctx.vars.editorCmpId}"]`
+                  ctx.runAction({$: 'runFEMethodFromBackEnd', selector, method: 'selectRange', Data: {start, end}})
+                }
             },
             compTextAndCursor() {
                 const doc = jb.workspace.openDocs[jb.workspace.activeUri]
@@ -60,11 +65,7 @@ extension('workspace', 'core', {
                 return docText.slice(from,to)
             },
             log(arg) { jb.log(arg,{})},
-            async gotoFilePos(path,line,col) {},
-            overlayActionMap: ({id, baseStyle,tgpPathToStyle,actionMap,ctx}) => ({
-              apply: () => ctx.runAction({$: 'runFEMethodFromBackEnd', selector: '#activeEditor', method: 'applyOverlay', Data: {id, baseStyle,tgpPathToStyle,actionMap}}),
-              remove: () => ctx.runAction({$: 'runFEMethodFromBackEnd', selector: '#activeEditor', method: 'removeOverlay', Data: id })
-            })
+            async gotoFilePos(path,line,col) {}
         }
     }
 })
@@ -74,11 +75,12 @@ component('workspace.initAsHost', {
   params: [
     {id: 'docUri', as: 'string'},
     {id: 'line', as: 'number', byName: true},
-    {id: 'col', as: 'number'}
+    {id: 'col', as: 'number'},
+    {id: 'docText', as: 'string', description: 'optional, default is to fetch the uri'}
   ],
-  impl: async (ctx,docUri,line,col) => {
+  impl: async (ctx,docUri,line,col, docText) => {
     jb.workspace.initJbWorkspaceAsHost()
-    const docContent = await jbHost.codePackageFromJson().fetchFile(docUri)
+    const docContent = docText || await jbHost.codePackageFromJson().fetchFile(docUri)
     //(await jbHost.fetch(docUri)).text()
     jb.tgpTextEditor.host.initDoc(docUri,docContent)
     const doc = jb.workspace.openDocs[jb.workspace.activeUri]

@@ -285,14 +285,14 @@ extension('langService', 'api', {
         if (reformatEdits) {
             const item = {
                 kind: 4, id: 'reformat', insertText: '', label: 'reformat', sortText: '0001', edit: reformatEdits,
-                command: { command: 'jbart.applyCompChange', arguments: [{ edit: reformatEdits, cursorPos }] },
+                command: { command: 'jbart.applyCompChangeOfCompletionItem', arguments: [{ edit: reformatEdits, cursorPos }] },
             }
             title = 'bad format'
             items = [item]
         } else if (actionMap) {
             ({items, paramDef} = await jb.langService.provideCompletionItems(compProps, ctx))
             items.forEach((item, i) => Object.assign(item, {
-                compLine, insertText: '', sortText: ('0000' + i).slice(-4), command: { command: 'jbart.applyCompChange', 
+                compLine, insertText: '', sortText: ('0000' + i).slice(-4), command: { command: 'jbart.applyCompChangeOfCompletionItem', 
                 arguments: [item] 
             },
             }))
@@ -369,6 +369,29 @@ extension('langService', 'api', {
                 const lineOfFunc = lines.findIndex(l => l.match(funcHeader))
                 return { ...loc, line: lineOfExt + lineOfFunc }
             }
+        }
+    },
+    editAndCursorOfCompletionItem(item) {
+        if (item.edit) return item
+        const { text, compId, comp, compLine, tgpModel } = item.compProps
+        const itemProps = item.extend ? { ...item, ...item.extend() } : item
+        const { op, path, resultPath, whereToLand } = itemProps
+
+        const opOnComp = {}
+        jb.path(opOnComp,path.split('~').slice(1),op) // create op as nested object
+        const newComp = jb.immutable.update(comp,opOnComp)
+        jb.utils.resolveComp(newComp,{tgpModel})
+        const newRes = jb.utils.prettyPrintWithPositions(newComp, { initialPath: compId, tgpModel })
+        const edit = jb.tgpTextEditor.deltaFileContent(text, newRes.text , compLine)
+
+        const cursorPos = itemProps.cursorPos || calcNewPos(newRes)
+        return { edit, cursorPos }
+
+        function calcNewPos(prettyPrintData) {
+            const TBD = item.compName == 'TBD' || jb.path(itemProps, 'op.$set.$') == 'TBD'
+            const _whereToLand = TBD ? 'begin' : (whereToLand || 'edit')
+            const { line, col } = jb.tgpTextEditor.getPosOfPath(resultPath || path, _whereToLand, {prettyPrintData})
+            return { TBD, line: line + compLine, col }
         }
     },
     async deleteEdits(ctx) {
@@ -512,57 +535,6 @@ extension('langService', 'api', {
     }
 })
 
-extension('tgpTextEditor', 'commands', {
-    async applyCompChange(item, {ctx} = {}) {
-//        if (item.id == 'reformat')
-debugger
-        const host = jb.tgpTextEditor.host
-        await host.saveDoc()
-        const editAndCursor = item.edit ? item : calcEditAndGotoPos(item)
-        const { edit, cursorPos, tgpPathsForLines } = editAndCursor
-        try {
-            await host.applyEdit(edit,{ctx, tgpPathsForLines})
-            await host.saveDoc()
-            if (cursorPos) {
-                await host.selectRange(cursorPos,{ctx})
-                if (cursorPos.TBD) {
-                    await host.execCommand('editor.action.triggerSuggest')
-                }
-            }
-        } catch (e) {
-            jb.tgpTextEditor.host.log(`applyCompChange exception`)
-            jb.logException(e, 'completion apply comp change', { item })
-        }
-
-        function calcEditAndGotoPos(item) {
-            const { text, compId, comp, compLine, tgpModel } = item.compProps
-            const itemProps = item.extend ? { ...item, ...item.extend() } : item
-            const { op, path, resultPath, whereToLand } = itemProps
-    
-            const opOnComp = {}
-            jb.path(opOnComp,path.split('~').slice(1),op) // create op as nested object
-            const newComp = jb.immutable.update(comp,opOnComp)
-            jb.utils.resolveComp(newComp,{tgpModel})
-            const newRes = jb.utils.prettyPrintWithPositions(newComp, { initialPath: compId, tgpModel })
-            const edit = jb.tgpTextEditor.deltaFileContent(text, newRes.text , compLine)
-    
-            const cursorPos = itemProps.cursorPos || calcNewPos(newRes)
-            const tgpPathsForLines = jb.tgpTextEditor.tgpPathsForLines(newRes)
-            return { edit, cursorPos, tgpPathsForLines }
-    
-            function calcNewPos(prettyPrintData) {
-                const TBD = item.compName == 'TBD' || jb.path(itemProps, 'op.$set.$') == 'TBD'
-                const _whereToLand = TBD ? 'begin' : (whereToLand || 'edit')
-                const { line, col } = jb.tgpTextEditor.getPosOfPath(resultPath || path, _whereToLand, {prettyPrintData})
-                return { TBD, line: line + compLine, col }
-            }
-        }
-        function tgpPathsByLine() {
-
-        }
-    }
-})
-
 jb.defComponents('completionItems,definition,compId,compReferences,deleteEdits,duplicateEdits,disableEdits,createTestEdits'
 .split(','), f => component(`langService.${f}`, {
   autoGen: true,
@@ -577,9 +549,17 @@ component('langService.calcCompProps', {
   impl: (ctx,includeCircuitOptions) => jb.langService.calcCompProps(ctx,{includeCircuitOptions})
 })
 
+component('langService.editAndCursorOfCompletionItem', {
+  params: [
+    {id: 'item'}
+  ],
+  impl: (ctx,item) => jb.langService.editAndCursorOfCompletionItem(item)
+})
+
 component('langService.moveInArrayEdits', {
     params: [
         { id: 'diff', as: 'number', defaultValue: '%%' }
     ],
     impl: (ctx,diff) => jb.langService.moveInArrayEdits(diff,ctx)
 })
+

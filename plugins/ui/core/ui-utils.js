@@ -272,7 +272,7 @@ component('runFEMethodFromBackEnd', {
   type: 'action',
   description: 'invoke FE Method from the backend. used with library objects like codemirror',
   params: [
-    {id: 'selector', as: 'string', byName: true},
+    {id: 'selector', as: 'string', byName: true, defaultValue: '[cmp-id="%$cmp/cmpId%"]'},
     {id: 'method', as: 'string'},
     {id: 'Data'},
     {id: 'Vars'}

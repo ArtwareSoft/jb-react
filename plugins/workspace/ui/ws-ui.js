@@ -6,43 +6,6 @@ extension('workspace', 'ui', {
 
 component('workspace', { watchableData: { bottomViewIndex : 0 } })
 
-component('workspace.IDE', {
-  type: 'control',
-  params: [
-    {id: 'height', as: 'number', defaultValue: '300'}
-  ],
-  impl: group({
-    controls: [
-      group({
-        controls: dynamicControls({
-          controlItems: () => Object.keys(jb.workspace.openDocs),
-          genericControl: group(workspace.textEditor(({},{docUri}) => jb.workspace.openDocs[docUri].text, '%$docUri%'), {
-            title: pipeline('%$docUri%', suffix('/'))
-          }),
-          itemVariable: 'docUri'
-        }),
-        style: group.tabs(),
-        features: [
-          followUp.watchObservable(() => jb.workspace.onOpenDoc),
-          followUp.flow(
-            source.callbag(() => jb.workspace.gotoOffsetRequest),
-            sink.action(runFEMethodFromBackEnd('#activeEditor', 'setSelectionRange', { data: '%%' }))
-          ),
-          followUp.flow(
-            source.callbag(() => jb.workspace.applyEditRequest),
-            sink.action(runFEMethodFromBackEnd('#activeEditor', 'applyEdit', { data: '%%' }))
-          )
-        ]
-      }),
-      remote.widget(probe.inOutView(), probePreviewWorker())
-    ],
-    features: [
-      css.height('%$height%', { minMax: 'max' }),
-      group.wait(jbm.start(probePreviewWorker()))
-    ]
-  })
-})
-
 component('workspace.views', {
   type: 'control',
   params: [

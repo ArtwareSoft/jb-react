@@ -34,7 +34,17 @@ component('llhTest.main', {
   impl: browserTest(llh.main('%$helperDoc%'), { uiAction1: selectTab('prompts') })
 })
 
+component('llhTest.promptEditor', {
+  doNotRunInTests: true,
+  impl: uiTest(llh.promptEditor(), contains(''))
+})
+
 component('llhTest.prompts', {
   doNotRunInTests: true,
   impl: uiTest(llh.prompts(), contains('prompt text'), { uiAction: click('#add-prompt') })
+})
+
+component('llhTest.prompt', {
+  doNotRunInTests: true,
+  impl: dataTest(llh.prompt(text(), text('asaa'), outputAsMD(), example()))
 })

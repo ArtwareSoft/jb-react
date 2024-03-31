@@ -5,8 +5,10 @@ file:///home/shaiby/Downloads/philsiphy%20presentataions%20(1).pdf: 173
 
 check jb.utils.flattenArray
 
-build FE destruction test with tabs
-fix codemirror destruction with tabs initOrRefresh with phases
+completion fixes
+  on new PT, when there is a first mandatory string, create it '' and put the cursor there
+  select the first item on helper
+
 
 workspace.ui
   pluginEditor

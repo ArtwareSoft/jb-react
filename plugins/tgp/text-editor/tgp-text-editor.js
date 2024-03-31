@@ -62,6 +62,23 @@ extension('tgpTextEditor', {
             return f.trim() != '' && (jb.macro.proxies[f] || jb.frame[f])
         }
     },
+    async applyCompChange(editAndCursor, {ctx} = {}) {
+        const { edit, cursorPos } = editAndCursor
+        const host = jb.tgpTextEditor.host
+        try {
+            await host.saveDoc()
+            await host.applyEdit(edit,{ctx})
+            await host.saveDoc()
+            if (cursorPos) {
+                await host.selectRange(cursorPos,{ctx})
+                if (cursorPos.TBD)
+                    await host.execCommand('editor.action.triggerSuggest') // VSCODE command
+            }
+        } catch (e) {
+            jb.tgpTextEditor.host.log(`applyCompChange exception`)
+            jb.logException(e, 'completion apply comp change', { item })
+        }
+    },
     calcHash(str) {
         let hash = 0, i, chr;
         if (str.length === 0) return hash
@@ -163,16 +180,6 @@ extension('tgpTextEditor', {
         const compLine = (+loc.line) || 0
         const { line, col } = jb.tgpTextEditor.getPosOfPath(tgpPath, 'begin')
         return { path, line: line + compLine, col }
-    },
-    tgpPathsForLines({ actionMap, text, startOffset }) {
-        const lines = {}
-        const item = actionMap.filter(({action}) => action.startsWith('begin')).forEach(({from,action}) => {
-            const path = action.split('!').pop()
-            const {line, col} = jb.tgpTextEditor.offsetToLineCol(text, from - startOffset)
-            lines[line] = lines[line] || []
-            lines[line].push({path,col})
-        })
-        return lines
     },
     pathOfPosition(ref, pos) {
         if (pos == null) return ''
@@ -401,6 +408,15 @@ component('gotoUrl', {
     if (globalThis.vscodeNS)
       vscodeNS.env.openExternal(url)
 	}
+})
+
+component('tgpTextEditor.applyCompChange', {
+  type: 'action',
+  params: [
+    {id: 'editAndCursor'},
+    {id: 'doNotRefreshEditor', as: 'boolean', type: 'boolean<>', byName: true}
+  ],
+  impl: (ctx,editAndCursor,doNotRefreshEditor) => jb.tgpTextEditor.applyCompChange(editAndCursor,{ctx: ctx.setVars({doNotRefreshEditor})} )
 })
 
 // component('textarea.initTgpTextEditor', {

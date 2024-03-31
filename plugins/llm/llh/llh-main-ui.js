@@ -1,7 +1,7 @@
 using('ui-misc','tgp-text-editor','ui-styles','ui-tree','markdown-editor','ui-iframe-dialog','ui-mdc-styles')
 
 component('helperDoc', { watchableData: {
-  content: '', section: '', outline: '', prompts: [{text: 'prompt1'},{text: 'prompt2'}], tasks: []
+  content: '', section: '', promptScript: '', outline: '', prompts: [{text: 'prompt1'},{text: 'prompt2'}], tasks: []
 }
 })
 
@@ -35,7 +35,7 @@ component('llh.main', {
     {id: 'doc', as: 'ref', defaultValue: '%$helperDoc%'}
   ],
   impl: group(
-    llh.commandBar(),
+    llh.promptEditor(),
     group({
       controls: [
         markdown.editor('%$doc/content%', 'all document'),
@@ -45,7 +45,10 @@ component('llh.main', {
       ],
       title: 'document',
       style: group.tabs(),
-      features: features(css.border('2', 'top', { color: 'var(--jb-menubar-selection-bg)' }))
+      features: features(
+        llh.initPromptEditor(),
+        css.border({ width: '2', side: 'top', color: 'var(--jb-menubar-selection-bg)' })
+      )
     })
   )
 })
@@ -102,4 +105,5 @@ component('llh.prompts', {
     title: 'prompts'
   })
 })
+
 

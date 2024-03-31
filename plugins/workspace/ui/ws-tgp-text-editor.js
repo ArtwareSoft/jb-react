@@ -18,16 +18,15 @@ component('workspace.textEditor', {
       workspace.visitCountCss(),
       frontEnd.var('docUri', '%$docUri%'),
       frontEnd.var('initCursorPos', () => jb.path(jb.workspace.openDocs[jb.workspace.activeUri],'selection.start') || {line:0, col: 0}),
-      variable('codeMirrorCmp', '%$cmp%'),
+      variable('editorCmpId', '%$cmp/cmpId%'),
       frontEnd.init(({},{cmp, initCursorPos}) => cmp.editor && cmp.editor.setCursor(initCursorPos.line, initCursorPos.col)),
       frontEnd.flow(
         source.codeMirrorCursor(),
-        rx.takeUntil('%$cmp/destroyed%'),
         sink.BEMethod('selectionChanged', '%%')
       ),
       feature.onKey('Ctrl-I', runActions(
         Var('visitCountOverlay', langServer.calcProbeOverlay(probeVisitCount()), { async: true }),
-        runFEMethodFromBackEnd({ selector: '#activeEditor', method: 'applyOverlay', Data: '%$visitCountOverlay%' })
+        runFEMethodFromBackEnd({ method: 'applyOverlay', Data: '%$visitCountOverlay%' })
       )),
       codemirror.enrichUserEvent(),
       frontEnd.flow(
@@ -57,9 +56,6 @@ component('workspace.textEditor', {
 
 component('workspace.floatingCompletions', {
   type: 'control<>',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
   impl: group({
     controls: [
       editableText('%$completions/title%', '%$text%', {
@@ -72,14 +68,13 @@ component('workspace.floatingCompletions', {
             showHelper: true,
             autoOpen: true,
             onEnter: runActions(
+              Var('completionItem', '%$completions/items/{%$selectedOption/refIndex%}%'),
+              Var('editAndCursor', langService.editAndCursorOfCompletionItem('%$completionItem%')),
+              tgpTextEditor.applyCompChange('%$editAndCursor%'),
               dialog.closeDialogById('floatingCompletions'),
-              workspace.applyCompChange(),
-              codeMirror.regainFocus('%$codeMirrorCmp/cmpId%')
+              codeMirror.regainFocus('%$editorCmpId%')
             ),
-            onEsc: runActions(
-              dialog.closeDialogById('floatingCompletions'),
-              codeMirror.regainFocus('%$codeMirrorCmp/cmpId%')
-            )
+            onEsc: runActions(dialog.closeDialogById('floatingCompletions'), codeMirror.regainFocus('%$editorCmpId%'))
           })
         ]
       })
@@ -114,13 +109,5 @@ component('workspace.filterCompletionOptions', {
     jb.log('workspace completionOptions',{ctx, query, options})
     return options
   }
-})
-
-component('workspace.applyCompChange', {
-  type: 'action',
-  params: [
-    {id: 'option', defaultValue: '%$selectedOption%'}
-  ],
-  impl: (ctx,option) => jb.tgpTextEditor.applyCompChange(ctx.vars.completions.items[jb.val(option).refIndex], {ctx})
 })
 

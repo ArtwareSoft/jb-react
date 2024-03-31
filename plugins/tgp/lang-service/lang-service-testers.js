@@ -94,7 +94,8 @@ component('completionActionTest', {
         if (!item) 
           return { items: items.map(x=>x.label), toActivate }
 
-        await jb.tgpTextEditor.applyCompChange(item,{ctx})
+        await jb.tgpTextEditor.applyCompChange(item.edit ? item : jb.langService.editAndCursorOfCompletionItem(item), {ctx})
+        //jb.tgpTextEditor.applyCompChange(item,{ctx})
         await jb.delay(1) // wait for cursor change
         const {cursorLine, cursorCol } = jb.tgpTextEditor.host.compTextAndCursor()
         const actualCursorPos = [cursorLine, cursorCol].join(',')

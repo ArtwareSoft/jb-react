@@ -96,6 +96,9 @@ extension('vscode', 'utils', {
     provideCompletionItems() {
         return jb.calc(langService.completionItems())
     },
+    async applyCompChangeOfCompletionItem(item) {
+        return jb.tgpTextEditor.applyCompChange(item.edit ? item : jb.langService.editAndCursorOfCompletionItem(item))
+    },
     async provideDefinition() {
         const loc = await jb.calc(langService.definition())
         if (loc.error == 'definition - bad format') {

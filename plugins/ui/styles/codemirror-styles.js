@@ -161,7 +161,8 @@ component('codeMirror.regainFocus', {
 
 component('source.codeMirrorText', {
   type: 'rx',
-  impl: ctx => (start, sink) => {
+  impl: rx.pipe(
+    ctx => (start, sink) => {
 		const {cmp} = ctx.vars
 		if (!cmp.editor) return
 		if (cmp.registeredToChange) 
@@ -178,12 +179,15 @@ component('source.codeMirrorText', {
 		jb.log('codemirror register change listener',{ctx})
 		cmp.editor.on('change', handler)
 		cmp.registeredToChange = true
-	}
+	},
+    rx.takeUntil('%$cmp/destroyed%')
+  )
 })
 
 component('source.codeMirrorCursor', {
   type: 'rx',
-  impl: ctx => (start, sink) => {
+  impl: rx.pipe(
+    ctx => (start, sink) => {
 		const {cmp} = ctx.vars
 		if (!cmp.editor) return
 		if (!cmp.state.frontEndStatus == 'ready') 
@@ -198,7 +202,9 @@ component('source.codeMirrorCursor', {
 		})
 		jb.log('codemirror register cursorActivity listener',{ctx})
 		cmp.editor.on('cursorActivity', handler)
-	}
+	},
+    rx.takeUntil('%$cmp/destroyed%')
+  )
 })
 
 component('codemirror.textEditorKeys', {

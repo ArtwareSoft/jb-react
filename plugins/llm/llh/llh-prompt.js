@@ -1,13 +1,34 @@
 dsl('llh')
 
-component('setPrompt', {
-  type: 'action',
+component('llh.prompt', {
+  type: 'data<>',
   params: [
-    {id: 'prompt', as: 'string'}
+    {id: 'features', type: 'prompt-feature[]'}
+  ]
+})
+
+component('text', {
+  type: 'prompt-feature',
+  params: [
+    {id: 'text', as: 'string', mandatory: true}
   ],
-  impl: (ctx,prompt) => {
-      const el = document.querySelector('textarea')
-      el && (el.value = prompt)
-      jb.exec(writeValue('%$llmStateForTests/prompt%',prompt))
-    }
+})
+
+component('outputAsMD', {
+  type: 'prompt-feature',
+  impl: text('please provide the output in markdown format')
+})
+
+component('example', {
+  type: 'prompt-feature',
+  params: [
+    {id: 'exampleId', as: 'string', mandatory: true}
+  ],
+})
+
+component('file', {
+  type: 'prompt-feature',
+  params: [
+    {id: 'path', as: 'string', mandatory: true}
+  ],
 })
