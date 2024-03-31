@@ -166,10 +166,10 @@ extension('tgpTextEditor', {
     //     }
     //     editor.focus && jb.delay(10).then(()=>editor.focus())
     // },
-    getPosOfPath(path, where = 'edit', { prettyPrintData } = {}) { // edit,begin,end,function
+    getPosOfPath(path, _where = 'edit', { prettyPrintData } = {}) { // edit,begin,end,function
         const compId = path.split('~')[0]
         const { actionMap, text, startOffset } = prettyPrintData || jb.utils.prettyPrintWithPositions(jb.comps[compId], { initialPath: compId })
-        const item = actionMap.find(e => e.action == `${where}!${path}`)
+        const item = jb.asArray(_where).reduce((acc,where) => acc || actionMap.find(e => e.action == `${where}!${path}`), null)
         if (!item) return { line: 0, col: 0 }
         return jb.tgpTextEditor.offsetToLineCol(text, item.from - startOffset)
     },

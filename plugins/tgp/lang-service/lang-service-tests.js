@@ -89,7 +89,7 @@ component('completionTest.singleArgAsArray.end', {
   impl: completionActionTest(`uiTest(group(text('')__))`, {
     completionToActivate: 'button',
     expectedEdit: asIs({range: {start: {line: 1, col: 29}, end: {line: 1, col: 29}}, newText: `, button('click me')`}),
-    expectedCursorPos: '1,38'
+    expectedCursorPos: '1,39'
   })
 })
 
@@ -97,7 +97,7 @@ component('completionTest.singleArgAsArray.middle', {
   impl: completionActionTest(`uiTest(group(text(''),__ text('2')))`, {
     completionToActivate: 'button',
     expectedEdit: asIs({range: {start: {line: 1, col: 31}, end: {line: 1, col: 31}}, newText: `button('click me'), `}),
-    expectedCursorPos: '1,38'
+    expectedCursorPos: '1,39'
   })
 })
 
@@ -111,7 +111,7 @@ component('completionTest.createPipelineFromString', {
   impl: completionActionTest(`uiTest(text('__aa'))`, {
     completionToActivate: 'pipeline',
     expectedEdit: asIs({range: {start: {line: 1, col: 20}, end: {line: 1, col: 24}}, newText: `pipeline('aa')`}),
-    expectedCursorPos: '1,29'
+    expectedCursorPos: '1,33'
   })
 })
 
@@ -119,7 +119,7 @@ component('completionTest.createPipelineFromEmptyString', {
   impl: completionActionTest(`uiTest(text('hello world', '__'))`, {
     completionToActivate: 'pipeline',
     expectedEdit: asIs({range: {start: {line: 1, col: 35}, end: {line: 1, col: 37}}, newText: `pipeline('')`}),
-    expectedCursorPos: '1,44'
+    expectedCursorPos: '1,46'
   })
 })
 
@@ -130,7 +130,7 @@ component('completionTest.insideVar', {
         range: {start: {line: 1, col: 26}, end: {line: 1, col: 39}},
         newText: `\n    Var('a', pipeline('b'))\n  `
     }),
-    expectedCursorPos: '2,22'
+    expectedCursorPos: '2,25'
   })
 })
 
@@ -162,7 +162,7 @@ component('completionTest.inComp', {
     compText: `uiTest(text('my text'), con__tains('hello world'))`,
     completionToActivate: 'notContains',
     expectedEdit: asIs({range: {start: {line: 1, col: 32}, end: {line: 1, col: 33}}, newText: 'notC'}),
-    expectedCursorPos: '1,44'
+    expectedCursorPos: '1,45'
   })
 })
 
@@ -171,6 +171,14 @@ component('completionTest.wrapWithGroup', {
     completionToActivate: 'group',
     expectedEdit: asIs({range: {start: {line: 1, col: 15}, end: {line: 1, col: 20}}, newText: 'group(text()'}),
     expectedCursorPos: '1,21'
+  })
+})
+
+component('completionTest.addText', {
+  impl: completionActionTest(`uiTest(group(__))`, {
+    completionToActivate: 'text',
+    expectedEdit: asIs({range: {start: {line: 1, col: 21}, end: {line: 1, col: 21}}, newText: `text('my text')`}),
+    expectedCursorPos: '1,27'
   })
 })
 
@@ -323,7 +331,7 @@ component('completionTest.multiLine', {
     compText: `group(__\n    text('hello'),\n    group(text('-1-'), controlWithCondition('1==2', text('-1.5-')), text('-2-')),\n    text('world')\n  )`,
     completionToActivate: 'button',
     expectedEdit: asIs({range: {start: {line: 2, col: 4}, end: {line: 2, col: 4}}, newText: `button('click me'),\n    `}),
-    expectedCursorPos: '2,11'
+    expectedCursorPos: '2,12'
   })
 })
 

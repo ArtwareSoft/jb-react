@@ -110,9 +110,9 @@ extension('langService', 'impl', {
             const index = opKind == 'append' ? -1 : opKind == 'insert' ? (+path.split('~').pop() + 1) : opKind == 'prepend' && 0
             const basePath = opKind == 'insert' ? path.split('~').slice(0, -1).join('~') : path
             const basedOnVal = opKind == 'set' && tgpModel.valOfPath(path)
-            const toAdd = jb.tgp.newProfile(tgpModel.compById(compName), {basedOnVal})
-            const result = opKind == 'set' ? jb.langService.setOp(path, toAdd, ctx) : addArrayItemOp(basePath, { toAdd, index, ctx })
-            return result
+            const { result, cursorPath } = jb.tgp.newProfile(tgpModel.compById(compName), {basedOnVal})
+            const res = opKind == 'set' ? jb.langService.setOp(path, result, ctx) : addArrayItemOp(basePath, { toAdd: result, index, ctx })
+            return {...res, resultPath: [res.resultPath || path,cursorPath].filter(x=>x).join('~') }
         }
 
         function addArrayItemOp(path, { toAdd, index, srcCtx } = {}) {
@@ -390,7 +390,7 @@ extension('langService', 'api', {
         function calcNewPos(prettyPrintData) {
             const TBD = item.compName == 'TBD' || jb.path(itemProps, 'op.$set.$') == 'TBD'
             const _whereToLand = TBD ? 'begin' : (whereToLand || 'edit')
-            const { line, col } = jb.tgpTextEditor.getPosOfPath(resultPath || path, _whereToLand, {prettyPrintData})
+            const { line, col } = jb.tgpTextEditor.getPosOfPath(resultPath || path, [_whereToLand,'prependPT','appendPT'], {prettyPrintData})
             return { TBD, line: line + compLine, col }
         }
     },

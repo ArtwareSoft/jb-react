@@ -41,7 +41,7 @@ component('tgp.insertControl', {
     if (typeof compToInsert == 'string') {
         const comp = compToInsert && jb.tgp.compById(compToInsert)
         if (!compToInsert || !comp) return
-        newCtrl = jb.tgp.newProfile(comp)
+        newCtrl = jb.tgp.newProfile(comp).result
     }
 
     // find group parent that can insert the control
