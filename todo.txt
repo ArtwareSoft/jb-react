@@ -5,11 +5,23 @@ file:///home/shaiby/Downloads/philsiphy%20presentataions%20(1).pdf: 173
 
 check jb.utils.flattenArray
 
+icons
+  create new js file and revert to old and rename
+  control<>icon: icon, title, raised, (no size - should be from parent), features: OnOff, FAB, round, stack(some icons), 
+    fixedWidth, ul-li, border, pull-left/right, 
+  feature<>icon: icon, position_fix(after,margin(top,left,bottom,right)), raised, size,  (no title)
 completion fixes
-  on new PT, when there is a first mandatory string, create it '' and put the cursor there
-  select the first item on helper
+  select the first item on editabletext helper
 
-
+inner DSL - formatter & resolver
+  define promptTemplate: 
+    { id: 'prompt', asIs: true, formatter: {$: 'formatter<>llh.prompt' }, resolver: {$: 'resolver<>llh.prompt' }}
+    write the formatter and resolver and get completions
+ 
+aggregators - pipeline effeciency
+  allow data interface to be both single and agregator
+  by input cardinality - if recieve single return single, gets array returns array.
+  write obj-prop as aggregator
 workspace.ui
   pluginEditor
     files and tests
@@ -21,6 +33,9 @@ workspace.ui
 
 llm helper 
   ref to innner doc
+  prompt preview
+  prompt select example from code
+  
   promptDSL using vars & code reference
   
 

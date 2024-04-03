@@ -230,19 +230,26 @@ extension('ui', 'html', {
               style.innerHTML = code
               document.head.appendChild(style)
           } else if (lib.match(/woff2$/)) {
-            const [fontName,_lib] = lib.split(':')
+            const [fontName,weight,_lib] = lib.split(':')
             const arrayBuffer = await jb.frame.fetch(`${jb.baseUrl||''}/dist/${_lib}`).then(x=>x.arrayBuffer())
-            const base64Font = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
+            const CHUNK_SIZE = 0x8000
+            const chunks = []
+            const uint8Array = new Uint8Array(arrayBuffer)
+            for (let i = 0; i < uint8Array.length; i += CHUNK_SIZE)
+              chunks.push(String.fromCharCode(...uint8Array.subarray(i, i + CHUNK_SIZE)))
+            const base64Font = btoa(chunks.join(''))
     
+            const _weight = weight ? `font-weight: ${weight};` : ''
             const fontFace = `
             @font-face {
                 font-family: '${fontName}';
                 src: url(data:font/woff2;base64,${base64Font}) format('woff2');
-            }`;
+                ${_weight}
+            }`
     
-            const style = document.createElement('style');
-            style.textContent = fontFace;
-            document.head.appendChild(style);    
+            const style = document.createElement('style')
+            style.textContent = fontFace
+            document.head.appendChild(style)
           }
         }
     }

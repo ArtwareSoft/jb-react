@@ -22,7 +22,7 @@ component('llhTest.openDialogInIframe', {
 component('llhTest.sayHello', {
   doNotRunInTests: true,
   impl: uiTest({
-    control: llh.main('%$llmTutorial_Query%'),
+    control: llh.main(),
     expectedResult: equals('%$llmStateForTests/prompt%', 'hello'),
     uiAction: uiActions(setText('setPrompt hello'), keyboardEvent('input', 'keydown', { keyCode: '13' })),
     emulateFrontEnd: true
@@ -31,7 +31,7 @@ component('llhTest.sayHello', {
 
 component('llhTest.main', {
   doNotRunInTests: true,
-  impl: browserTest(llh.main('%$helperDoc%'), { uiAction1: selectTab('prompts') })
+  impl: browserTest(llh.main())
 })
 
 component('llhTest.promptEditor', {

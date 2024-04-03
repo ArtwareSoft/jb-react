@@ -140,6 +140,9 @@ extension('tgpTextEditor', {
             jb.db.writeValue(ref, newVal, ctx)
         }
     },
+    asOffset(pos, text) {
+        return isNaN(pos) ? jb.tgpTextEditor.lineColToOffset(text,pos) : pos
+    },
     lineColToOffset(text, { line, col }) {
         const res = text.split('\n').slice(0, line).reduce((sum, line) => sum + line.length + 1, 0) + col
         if (isNaN(res)) debugger

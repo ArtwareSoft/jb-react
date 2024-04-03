@@ -943,74 +943,10 @@ component('addComponent', {
   require: () => jb.db.addDataResourcePrefix()
 })
 
-component('loadLibs', {
-  description: 'load a list of libraries into current jbm',
-  type: 'action',
+component('fileContent', {
   params: [
-    {id: 'libs', as: 'array', mandatory: true}
+    {id: 'path', as: 'string', mandatory: true}
   ],
-  impl: ({},libs) => 
-    jb_dynamicLoad(libs, Object.assign(jb, { loadFromDist: true}))
+  impl: (ctx,path) => jbHost.codePackageFromJson().fetchFile(`${jbHost.baseUrl||''}${path}`)
 })
 
-component('loadAppFiles', {
-  description: 'load a list of app files into current jbm',
-  type: 'action',
-  params: [
-    {id: 'jsFiles', as: 'array', mandatory: true}
-  ],
-  impl: ({},jsFiles) => 
-    jb_loadProject({ uri: jb.uri, baseUrl: jb.baseUrl, libs: '', jsFiles })
-})
-
-// ** ctx type
-
-// component('variable', {
-//   type: 'ctx',
-//   params: [
-//     {id: 'name', as: 'string', mandatory: true},
-//     {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: '%%'}
-//   ],
-//   impl: ({},name,val) => async ctx => ctx.setVars({[name]: await val()})
-// })
-
-// component('vars', {
-//   type: 'ctx',
-//   params: [
-//     {id: 'vars', as: 'object', mandatory: true},
-//   ],
-//   impl: (ctx,name,val) => ctx.setVars(vars)
-// })
-
-// component('Data', {
-//   type: 'ctx',
-//   params: [
-//     {id: 'Data', mandatory: true},
-//   ],
-//   impl: (ctx,data) => ctx.setData(data)
-// })
-
-// component('ctxPipe', {
-//   type: 'ctx',
-//   params: [
-//     {id: 'items', type: 'ctx[]', mandatory: true, composite: true},
-//   ],
-//   impl: ({},items) => ctx => items.reduce( async (pr,item) => item(await pr) , ctx)
-// })
-
-// component('calcInContext', {
-//   params: [
-//     {id: 'Ctx', type: 'ctx', mandatory: true, byName: true},
-//     {id: 'calc', type: 'data', dynamic: true, mandatory: true, composite: true},
-//   ],
-//   impl: (ctx,Ctx,calc) => Promise.resolve(Ctx(ctx)).then(ctx => calc(ctx))
-// })
-
-// component('runActionInContext', {
-//   type: 'action',
-//   params: [
-//     {id: 'Ctx', type: 'ctx', mandatory: true, byName: true},
-//     {id: 'action', type: 'action', dynamic: true, mandatory: true, composite: true}
-//   ],
-//   impl: (ctx,Ctx,action) => Promise.resolve(Ctx(ctx)).then(ctx => action(ctx))
-// })

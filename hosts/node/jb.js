@@ -52,7 +52,7 @@ if (verbose)
     const cmd = ['node --inspect-brk ../hosts/node/jb.js', 
         ...process.argv.slice(2).map(arg=> (arg.indexOf("'") != -1 ? `"${arg.replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg}'`))].join(' ')
     const sourceCodeStr = doGetProcessArgument('sourceCode')
-    const sourceCode = sourceCodeStr ? JSON.parse(sourceCodeStr) : { plugins : _plugins }
+    const sourceCode = sourceCodeStr ? JSON.parse(sourceCodeStr) : { plugins : (_plugins||'').split(',') }
     sourceCode.plugins = unique([...sourceCode.plugins,'remote-jbm'])
 
     globalThis.jb = await jbInit(uri||'main', sourceCode)    
@@ -107,7 +107,7 @@ if (verbose)
         try {
             resStr = res2 && JSON.stringify(res2, null, 2)
         } catch(err) {
-            resStr = JSON.stringify({ errors: [jb.remoteCtx.stripData(jb.spy.search('error'))] },null,2)
+            resStr = JSON.stringify({ errors: [String(err), jb.remoteCtx.stripData(jb.spy.search('error'))] },null,2)
             //return console.log(JSON.stringify({ desc: 'can not stringify result', err }))
         }
         process.stdout.write(resStr)
@@ -147,7 +147,7 @@ function evalProfileDef(code, fileDsl) {
       jb.utils.resolveLoadedProfiles()
       return { compId }
     } catch (e) { 
-      return {err: e}
+      return {err: String(e)}
     } 
 }
 
@@ -156,7 +156,7 @@ function evalInContext(code, fileDsl) {
         const context = { jb, ...jb.macro.proxies, component: (...args) => jb.component(...args,{fileDsl}) }
         return new Function(Object.keys(context), `return ${code}`).apply(null, Object.values(context))
     } catch (e) { 
-        return {err: e}
+        return {err: String(e)}
     } 
 }
 

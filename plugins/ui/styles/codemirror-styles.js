@@ -135,7 +135,7 @@ component('editableText.codemirror', {
       rx.distinctUntilChanged(),
       sink.BEMethod('writeText', '%%')
     ),
-	frontEnd.onDestroy(({},{cmp}) => delete cmp.editor ),
+	//frontEnd.onDestroy(({},{cmp}) => delete cmp.editor ),
     frontEnd.method('setText', ({data},{cmp,el}) => cmp.editor ? cmp.editor.setValue(data) : el.setAttribute('value',data)),
     frontEnd.method('regainFocus', (ctx,{cmp}) => {
 		jb.log('codemirror regain focus',{ctx,cmp})

@@ -95,7 +95,44 @@ component('workspace.activeUri', {
 
 component('workspace.activeDocContentRef', {
   type: 'data<>',
-  impl: () => jb.db.objectProperty(jb.workspace.openDocs[jb.workspace.activeUri], 'text')
+  impl: workspace.documentRef(()=>jb.workspace.activeUri)
+})
+
+component('workspace.documentRef', {
+  type: 'data<>',
+  params: [
+    {id: 'docUri', as: 'string', byName: true},
+    {id: 'initialContent', as: 'string'},
+  ],
+  impl: (ctx,docUri, initialContent) => {
+    jb.workspace.openDocs[docUri] = jb.workspace.openDocs[docUri] || { text: initialContent }
+    return jb.db.objectProperty(jb.workspace.openDocs[docUri], 'text')
+  }
+})
+
+component('workspace.documentSectionRef', {
+  type: 'data<>',
+  params: [
+    {id: 'docUri', as: 'string', byName: true},
+    {id: 'from', description: 'offset or {line, col}'},
+    {id: 'to', description: 'offset or {line, col}'}
+  ],
+  impl: (ctx,docUri,from,to) => ({
+    $jb_val(val) {
+      const text = jb.path(jb.workspace.openDocs,[docUri,'text'])
+      if (!text)
+        return jb.logError(`workspace documentSectionRef can not find docUri ${docUri}`,{ctx})
+      const _from = jb.tgpTextEditor.asOffset(from,text), _to = jb.tgpTextEditor.asOffset(to,text)
+      const section = text.slice(_from,_to)
+      if (val == undefined) {
+        //this.sectionHash = jb.tgpTextEditor.calcHash(section)
+        return section
+      }
+      // if (this.sectionHash != jb.tgpTextEditor.calcHash(section))
+      //   return jb.logError(`workspace documentSectionRef doc section was changed ${docUri}`,{from,to,_from,_to, ctx})
+      jb.workspace.openDocs[docUri].text = text.slice(0,_from) + val + text.slice(_to)
+    }
+  })
 })
 
 component('workspace.selelctionChanged', {

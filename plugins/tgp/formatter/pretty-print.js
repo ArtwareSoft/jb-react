@@ -1,7 +1,7 @@
 component('prettyPrint', {
   params: [
     {id: 'profile', defaultValue: '%%'},
-    {id: 'singleLine', as: 'boolean', type: 'boolean'},
+    {id: 'singleLine', as: 'boolean', type: 'boolean', byName: true},
     {id: 'noMacros', as: 'boolean', type: 'boolean'},
     {id: 'type', as: 'string'}
   ],

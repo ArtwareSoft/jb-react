@@ -23,7 +23,7 @@ component('editableText.markdown', {
   ],
   impl: features(
     frontEnd.requireExternalLibrary('codemirror.js','css/codemirror.css'),
-    frontEnd.requireExternalLibrary('simplemde.js','css/simplemde.css','FontAwesome:css/fontawesome-webfont.woff2'),
+    frontEnd.requireExternalLibrary('simplemde.js','css/simplemde.css'),
     calcProp('text', '%$$model/databind()%'),
     frontEnd.var('text', '%$$props/text%'),
     css.class('md-editor'),
@@ -53,7 +53,6 @@ component('editableText.markdown', {
       rx.distinctUntilChanged(),
       sink.BEMethod('writeText', '%%')
     ),
-    frontEnd.onDestroy(({},{cmp}) => delete cmp.editor ),
     frontEnd.method('setText', ({data},{cmp,el}) => cmp.editor ? cmp.editor.setValue(data) : el.setAttribute('value',data)),
     frontEnd.method('regainFocus', (ctx,{cmp}) => {
       jb.log('codemirror regain focus',{ctx,cmp})

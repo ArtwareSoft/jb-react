@@ -14,6 +14,11 @@ component('text', {
   ],
 })
 
+component('workingSection', {
+  type: 'prompt-feature',
+  impl: text('please use this text as base\---\n %$workingSection%')
+})
+
 component('outputAsMD', {
   type: 'prompt-feature',
   impl: text('please provide the output in markdown format')

@@ -1,8 +1,16 @@
 using('ui-misc','tgp-text-editor','ui-styles','ui-tree','markdown-editor','ui-iframe-dialog','ui-mdc-styles')
 
-component('helperDoc', { watchableData: {
-  content: '', section: '', promptScript: '', outline: '', prompts: [{text: 'prompt1'},{text: 'prompt2'}], tasks: []
+component('helperData', { watchableData: {
+  workingArea: {from: { line: 1, col: 0}, to : {line:3, col: 0}}, prompts: [{text: 'prompt1'},{text: 'prompt2'}], tasks: []
 }
+})
+
+component('llh.targetDoc' ,{
+  impl: workspace.documentRef({ docUri: 'targetDoc', initialContent: `line1\nline2\nline3` })
+})
+
+component('llh.workingArea' ,{
+  impl: workspace.documentSectionRef({ docUri: 'targetDoc', from: '%$helperData/workingArea/from%', to: '%$helperData/workingArea/to%' })
 })
 
 component('llh.commandBar', {
@@ -31,24 +39,30 @@ component('llh.commandBar', {
 
 component('llh.main', {
   type: 'control<>',
-  params: [
-    {id: 'doc', as: 'ref', defaultValue: '%$helperDoc%'}
-  ],
   impl: group(
     llh.promptEditor(),
     group({
       controls: [
-        markdown.editor('%$doc/content%', 'all document'),
-        llh.prompts('%$doc%'),
-        markdown.editor('%$doc/section%', 'working area'),
-        markdown.editor('%$doc/outline%', 'outline')
+        markdown.editor(llh.targetDoc(), 'all document', { simplemdeSettings: {toolbar: [
+          {
+            name: "bold",
+            className: "fa fa-scissors",
+            title: "Bold",
+            default: true
+          },
+          {
+            name: "italic",
+            className: "fa fa-italic",
+            title: "Italic",
+            default: true
+          }
+        ]
+        }}),
+        markdown.editor(llh.workingArea(), 'working area')
       ],
       title: 'document',
       style: group.tabs(),
-      features: features(
-        llh.initPromptEditor(),
-        css.border({ width: '2', side: 'top', color: 'var(--jb-menubar-selection-bg)' })
-      )
+      features: features(css.border({ width: '2', side: 'top', color: 'var(--jb-menubar-selection-bg)' }))
     })
   )
 })

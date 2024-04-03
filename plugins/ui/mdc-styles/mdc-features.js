@@ -1,7 +1,7 @@
 using('ui-core')
 
 extension('ui', 'mdIcons', {
-  $requireLibs: ['/dist/md-icons.js']
+  $requireLibs: ['/dist/md-icons.js'] // todo: move to new icon system
 })
 
 component('mdcStyle.initDynamic', {
@@ -10,7 +10,8 @@ component('mdcStyle.initDynamic', {
     {id: 'query', as: 'string'}
   ],
   impl: features(
-    frontEnd.requireExternalLibrary('material-components-web.js','css/font.css','css/material.css','Material Icons:css/MaterialIcons-Regular.woff2'),
+    frontEnd.requireExternalLibrary('Material Icons::fonts/MaterialIcons-Regular.woff2'),
+    frontEnd.requireExternalLibrary('material-components-web.js','css/font.css','css/material.css'),
     frontEnd.init(async ({},{cmp}) => {
       if (cmp.base.constructor.name == 'VNode') return
       const mdc = jb.frame.mdc
