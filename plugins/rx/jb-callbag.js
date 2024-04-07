@@ -237,72 +237,72 @@ extension('callbag', {
         }
     }
   },
-  concatMap2(_makeSource,combineResults) {
-    const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
-    return source => (start, sink) => {
-        if (start !== 0) return
-        let queue = []
-        let innerTalkback, sourceTalkback, sourceEnded
-        if (!combineResults) combineResults = (input, inner) => inner
+  // concatMap2(_makeSource,combineResults) {
+  //   const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
+  //   return source => (start, sink) => {
+  //       if (start !== 0) return
+  //       let queue = []
+  //       let innerTalkback, sourceTalkback, sourceEnded
+  //       if (!combineResults) combineResults = (input, inner) => inner
 
-        const concatMapSink= input => function concatMap(t, d) {
-          if (t === 0) {
-            innerTalkback = d
-            innerTalkback(1)
-          } else if (t === 1) {
-            sink(1, combineResults(input,d))
-            innerTalkback(1)
-          } else if (t === 2) {
-            innerTalkback = null
-            if (queue.length === 0) {
-              stopOrContinue(d)
-              return
-            }
-            const input = queue.shift()
-            const src = makeSource(input)
-            src(0, concatMapSink(input))
-          }
-        }
+  //       const concatMapSink= input => function concatMap(t, d) {
+  //         if (t === 0) {
+  //           innerTalkback = d
+  //           innerTalkback(1)
+  //         } else if (t === 1) {
+  //           sink(1, combineResults(input,d))
+  //           innerTalkback(1)
+  //         } else if (t === 2) {
+  //           innerTalkback = null
+  //           if (queue.length === 0) {
+  //             stopOrContinue(d)
+  //             return
+  //           }
+  //           const input = queue.shift()
+  //           const src = makeSource(input)
+  //           src(0, concatMapSink(input))
+  //         }
+  //       }
 
-        source(0, function concatMap(t, d) {
-          if (t === 0) {
-            sourceTalkback = d
-            sink(0, wrappedSink)
-            return
-          } else if (t === 1) {
-            if (innerTalkback) 
-              queue.push(d) 
-            else {
-              const src = makeSource(d)
-              src(0, concatMapSink(d))
-              src(1)
-            }
-          } else if (t === 2) {
-            sourceEnded = true
-            stopOrContinue(d)
-          }
-        })
+  //       source(0, function concatMap(t, d) {
+  //         if (t === 0) {
+  //           sourceTalkback = d
+  //           sink(0, wrappedSink)
+  //           return
+  //         } else if (t === 1) {
+  //           if (innerTalkback) 
+  //             queue.push(d) 
+  //           else {
+  //             const src = makeSource(d)
+  //             src(0, concatMapSink(d))
+  //             src(1)
+  //           }
+  //         } else if (t === 2) {
+  //           sourceEnded = true
+  //           stopOrContinue(d)
+  //         }
+  //       })
 
-        function wrappedSink(t, d) {
-          if (t === 2 && innerTalkback) innerTalkback(2, d)
-          sourceTalkback(t, d)
-        }
+  //       function wrappedSink(t, d) {
+  //         if (t === 2 && innerTalkback) innerTalkback(2, d)
+  //         sourceTalkback(t, d)
+  //       }
     
-        function stopOrContinue(d) {
-          if (d != undefined) {
-            queue = []
-            innerTalkback = innerTalkback = null
-            sink(2, d)
-            return
-          }
-          if (sourceEnded && !innerTalkback && queue.length == 0) {
-            sink(2, d)
-            return
-          }
-          innerTalkback && innerTalkback(1)
-        }
-      }
-  },
+  //       function stopOrContinue(d) {
+  //         if (d != undefined) {
+  //           queue = []
+  //           innerTalkback = innerTalkback = null
+  //           sink(2, d)
+  //           return
+  //         }
+  //         if (sourceEnded && !innerTalkback && queue.length == 0) {
+  //           sink(2, d)
+  //           return
+  //         }
+  //         innerTalkback && innerTalkback(1)
+  //       }
+  //     }
+  // },
   flatMap: (_makeSource, combineResults) => source => (start, sink) => {
       if (start !== 0) return
       const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
@@ -475,30 +475,34 @@ extension('callbag', {
       else if (elem.addListener) elem.addListener(event, handler, options)
       else throw new Error('cannot add listener to elem. No method found.')
   },
-  fromCallbackFunc: (register, unRegister) => (start, sink) => {
+  fromCallbackLoop: register => (start, sink) => {
     if (start !== 0) return
-    let handler = register(fromCallback)
-    function fromCallback() { 
-      sink(1,0)
-      handler = register(fromCallback)
-    }    
+    let sinkDone
+    let handler = register(callbackLoop)
+    function callbackLoop(d) { 
+      if (sinkDone) return
+      sink(1,d || 0)
+      handler = register(callbackLoop)
+    }
   
-    sink(0, function fromCallback(t) {
-      if (t !== 2) return
-      unRegister(handler)
-    })
-  },  
-  fromPromise: promises => (start, sink) => {
+    sink(0, t => sinkDone = t == 2 )
+  },
+  fromProducer: producer => (start, sink) => {
     if (start !== 0) return
-    let endedBySink = false
-    jb.asArray(promises).reduce( (acc, pr) =>
-      acc.then(() => !endedBySink && Promise.resolve(pr).then(res => sink(1,res)).catch(err=>sink(2,err)) )
-    , Promise.resolve()).then(() => !endedBySink && sink(2))
-
-    sink(0, function fromPromises(t, d) {
-        if (t === 2) endedBySink = true
+    if (typeof producer !== 'function') {
+      jb.logError('producer must be a function',{producer})
+      sink(2,'non function producer')
+      return
+    }
+    let sinkDone
+    const cleanFunc = producer(function fromProducer(d) { return !sinkDone && sink(1,d) })
+    sink(0, (t,d) => {
+      if (!sinkDone) {
+        sinkDone = t == 2
+        if (sinkDone && typeof cleanFunc === 'function') cleanFunc()
+      }
     })
-  },  
+  },
   subject(id) {
       let sinks = []
       function subj(t, d, transactive) {
@@ -583,36 +587,6 @@ extension('callbag', {
         else sink(t, d) 
       }
     )
-  },
-  create: prod => (start, sink) => {
-      if (start !== 0) return
-      if (typeof prod !== 'function') {
-        sink(0, () => {})
-        sink(2)
-        return
-      }
-      let end = false
-      let clean
-      sink(0, (t,d) => {
-        if (!end) {
-          end = t === 2
-          if (end && typeof clean === 'function') clean()
-        }
-      })
-      if (end) return
-      clean = prod((v) => {
-          if (!end) sink(1, v)
-        }, (e) => {
-          if (!end && e !== undefined) {
-            end = true
-            sink(2, e)
-          }
-        }, () => {
-          if (!end) {
-            end = true
-            sink(2)
-          }
-      })
   },
   // swallow events. When new event arrives wait for a duration to spit it, if another event arrived when waiting, the original event is 'deleted'
   // 'immediate' means that the first event is spitted immediately
@@ -795,8 +769,75 @@ extension('callbag', {
           })
       })
   },
-  mapPromise: promiseF => source => jb.callbag.concatMap(d => jb.callbag.fromPromise(Promise.resolve().then(()=>promiseF(d))))(source),
-  doPromise: promiseF => source =>  jb.callbag.concatMap(d => jb.callbag.fromPromise(Promise.resolve().then(()=>promiseF(d)).then(()=>d)))(source),
+  // fromPromises: promises => (start, sink) => {
+  //   if (start !== 0) return
+  //   let endedBySink = false
+  //   jb.asArray(promises).reduce( (acc, pr) =>
+  //     acc.then(() => !endedBySink && Promise.resolve(pr).then(res => sink(1,res)).catch(err=>sink(2,err)) )
+  //   , Promise.resolve()).then(() => !endedBySink && sink(2))
+
+  //   sink(0, function fromPromises(t, d) {
+  //       if (t === 2) endedBySink = true
+  //   })
+  // },
+  fromPromise: pr => (start, sink) => {
+    let sinkDone
+    if (start !== 0) return
+    Promise.resolve(pr).then(d =>{ 
+      jb.log('callbag promise resolved',{d, sinkDone})
+      if (!sinkDone) {
+        sink(1,d)
+        sink(2) 
+      }
+    }).catch(err => sink(2,err))
+
+    sink(0, function mapPromiseTB(t,d) {
+      jb.log('callbag promise talkback',{t,d})
+      if (t == 2) sinkDone = true
+    })
+  },
+  // doPromise: (promiseF,{map} = {}) => source => (start, sink) => {
+  //   let talkback, sourceDone, noOfWaitingPromises = 0, sinkDone
+  //   source(0, function mapPromise(t,d) {
+  //     jb.log('callbag promise from source',{t,d})
+  //     if (t== 0)
+  //       talkback = d
+  //     else if (t == 1 && d != null) {
+  //       if (sinkDone) return
+  //       noOfWaitingPromises++
+  //       try {
+  //         Promise.resolve(promiseF(d)).then(res => {
+  //           noOfWaitingPromises--
+  //           jb.log('callbag promise resolved',{res})
+  //           !sinkDone && sink(1, map? res:d)
+  //           if (sourceDone && noOfWaitingPromises == 0)
+  //             sink(2)
+  //         }).catch(handleErr)
+  //       } catch (e) {
+  //         handleErr(e)
+  //       }
+  //     }
+  //     else if (t==2) {
+  //       sourceDone = true
+  //       noOfWaitingPromises == 0 && sink(t,d)
+  //     }
+  //   })
+  //   sink(0, function mapPromiseTB(t,d) {
+  //     jb.log('callbag promise sink',{t,d})
+  //     if (t == 2) sinkDone = true
+  //     talkback && talkback(t,d)
+  //   })
+
+  //   function handleErr(err) {
+  //     noOfWaitingPromises--
+  //     jb.log('callbag fromPromise rejected',{err, sinkDone})
+  //     if (!sinkDone)
+  //       sink(2,err)
+  //   }
+  // },
+  // mapPromise: promiseF => jb.callbag.doPromise(promiseF,{map: true}),
+  mapPromise: promiseF => jb.callbag.concatMap(d => jb.callbag.fromPromise(Promise.resolve().then(()=>promiseF(d)))),
+  doPromise: promiseF => jb.callbag.concatMap(d => jb.callbag.fromPromise(Promise.resolve().then(()=>promiseF(d)).then(()=>d))),
   interval: period => (start, sink) => {
     if (start !== 0) return
     let i = 0

@@ -46,8 +46,10 @@ component('picklistTest.delayedOptions.StyleByControlBug.Promise', {
   impl: uiTest({
     control: picklist('city', '%$personWithAddress/address/city%', {
       options: typeAdapter('data<>', pipe(
-        delay(1),
-        obj(prop('options', typeAdapter('picklist.options<>', picklist.optionsByComma('Springfield,New York,Tel Aviv,London'))))
+        delay(1,0),
+        obj(
+          prop('options', typeAdapter('picklist.options<>', picklist.optionsByComma('Springfield,New York,Tel Aviv,London')))
+        )
       )),
       style: picklist.labelList(),
       features: picklist.allowAsynchOptions()

@@ -202,7 +202,7 @@ component('browserTest', {
 			jb.logException(e,'error in test',{ctx})
 			error = await e
 		}
-		await (!error && jb.utils.toSynchArray(uiAction(ctx),true))
+		await (!error && jb.utils.waitForInnerElements(uiAction(ctx)))
 		await jb.delay(1)
 		Array.from(elemToTest.querySelectorAll('input,textarea')).forEach(e=>
 			e.parentNode && jb.ui.addHTML(e.parentNode,`<input-val style="display:none">${e.value}</input-val>`))

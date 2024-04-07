@@ -79,7 +79,10 @@ component('action.updateFrontEnd', {
       !uiTest && await jb.ui.loadFELibsDirectly(feLibs(delta))
       const ctxToUse = ctx.setVars({ headlessWidgetId: '', headlessWidget: false,  FEWidgetId: widgetId })
       const elem = cmpId ? jb.ui.querySelectorAll(jb.ui.widgetBody(ctxToUse), `[cmp-id="${cmpId}"]`)[0] : jb.ui.widgetBody(ctxToUse)
+      if (!elem)
+        jb.logError(`headless frontend update. can not find widget in DOM ${widgetId}`,{ delta, renderingUpdate, ctx, ctxToUse })
       try {
+        jb.log('headless frontend update', { delta, elem, widgetId, ctx, ctxToUse, cmpId })
         const res = elem && jb.ui.applyDeltaToCmp({ delta, ctx: ctxToUse, cmpId, elem, assumedVdom })
         if (jb.path(res, 'recover')) {
           jb.log('headless frontend recover widget request', { widgetId, ctx, elem, cmpId, ...res })

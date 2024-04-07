@@ -1,18 +1,3 @@
-// jb.component('netSetup.peers', { 
-//   impl: net.setup(
-//     jbm.peers(
-//       worker({id: 'peer1', networkPeer: true}), worker({id: 'peer2', networkPeer: true})
-//     )
-//   )
-// })
-
-// jb.component('netSetup.workerWithInner', { 
-//   impl: net.setup(
-//     jbm.children(worker({
-//       id: 'w1',
-//       features: jbm.children(child('inWorker'))
-//     })))
-// })
 
 component('remoteTest.worker.data', {
   impl: dataTest({
@@ -37,7 +22,9 @@ component('itemlists.manyItems2', {
 })
 
 component('remoteTest.remoteNodeWorker.data', {
-  impl: dataTest(pipe(remote.data(list([1,2,3]), remoteNodeWorker()), join(',')), equals('1,2,3'), {
+  impl: dataTest({
+    calculate: pipe(remote.data(list([1,2,3]), remoteNodeWorker()), join(',')),
+    expectedResult: equals('1,2,3'),
     timeout: 2000,
     spy: 'remote'
   })
@@ -51,10 +38,8 @@ component('remoteTest.remote.deStripBug', {
 })
 
 component('remoteTest.remote.action', {
-  impl: dataTest({
+  impl: dataTest(remote.data('%$w%', worker()), equals('hello'), {
     runBefore: remote.action(() => jb.db.passive('w','hello'), worker()),
-    calculate: remote.data('%$w%', worker()),
-    expectedResult: equals('hello'),
     timeout: 1000
   })
 })
@@ -109,6 +94,14 @@ component('remoteTest.worker.sourceCode.project', {
   })
 })
 
+component('remoteTest.dataAsRx', {
+  impl: dataTest(remote.data(rx.pipe(source.data('Dan')), worker()), equals('Dan'))
+})
+
+component('remoteTest.dataAsRxWrapedWithPipe', {
+  impl: dataTest(remote.data(pipe(rx.pipe(source.data('Dan'))), worker()), equals('Dan'))
+})
+
 component('remoteTest.networkGateway', {
   impl: dataTest({
     calculate: rx.pipe(
@@ -140,9 +133,7 @@ component('remoteTest.shadowResource.initWatchable', {
 component('remoteTest.shadowResource.watchable', {
   impl: dataTest({
     calculate: remote.data({
-      calc: pipe(
-        rx.pipe(source.watchableData('%$person/name%'), rx.log('test'), rx.map('%newVal%'), rx.take(1))
-      ),
+      calc: rx.pipe(source.watchableData('%$person/name%'), rx.log('test'), rx.map('%newVal%'), rx.take(1)),
       jbm: worker()
     }),
     expectedResult: equals('Dan'),
@@ -150,7 +141,7 @@ component('remoteTest.shadowResource.watchable', {
       remote.shadowResource('person', worker()),
       () => { 
         // do not return promise
-        jb.exec(runActions(delay(1), writeValue('%$person/name%','Dan')),'action<>') 
+        jb.exec(runActions(delay(1), writeValue('%$person/name%','Dan'))) 
       }
     ),
     timeout: 5000
@@ -160,7 +151,7 @@ component('remoteTest.shadowResource.watchable', {
 component('remoteTest.shadowResource.childJbm', {
   impl: dataTest({
     calculate: remote.data({
-      calc: pipe(rx.pipe(source.watchableData('%$person/name%'), rx.log('test'), rx.map('%newVal%'), rx.take(1))),
+      calc: rx.pipe(source.watchableData('%$person/name%'), rx.log('test'), rx.map('%newVal%'), rx.take(1)),
       jbm: child('inner')
     }),
     expectedResult: equals('Dan'),
@@ -168,7 +159,7 @@ component('remoteTest.shadowResource.childJbm', {
       remote.shadowResource('person', child('inner')),
       () => { 
         // do not return promise
-        jb.exec(runActions(delay(1), writeValue('%$person/name%','Dan')),'action<>') 
+        jb.exec(runActions(delay(1), writeValue('%$person/name%','Dan')))
       }
     ),
     timeout: 5000
@@ -185,16 +176,35 @@ component('remoteTest.sourceNoTalkback', {
 
 component('remoteTest.source.remote.local', {
   impl: dataTest({
-    calculate: pipe(rx.pipe(source.remote(source.data([1,2,3])), rx.take(2), rx.map('-%%-')), join(',')),
-    expectedResult: equals('-1-,-2-'),
-    timeout: 5000
+    calculate: pipe(
+      rx.pipe(source.remote(source.data([1,2,3])), rx.take(2), rx.map('-%%-')),
+      join(',')
+    ),
+    expectedResult: equals('-1-,-2-')
   })
 })
 
 component('remoteTest.source.remote.worker', {
   impl: dataTest({
-    calculate: pipe(rx.pipe(source.remote(source.data([1,2,3]), worker()), rx.take(2), rx.map('-%%-')), join(',')),
+    calculate: pipe(
+      rx.pipe(source.remote(source.data([1,2,3]), worker()), rx.take(2), rx.map('-%%-')),
+      join(',')
+    ),
     expectedResult: equals('-1-,-2-')
+  })
+})
+
+component('remoteTest.source.remote.pipe', {
+  impl: dataTest({
+    calculate: pipe(
+      rx.pipe(
+        source.remote(rx.pipe(source.data([1,2,3]), rx.map('-%%-')), worker()),
+        rx.take(2),
+        rx.map('-%%-')
+      ),
+      join(',')
+    ),
+    expectedResult: equals('--1--,--2--')
   })
 })
 
@@ -311,6 +321,27 @@ component('remoteTest.dataFromCmd', {
     expectedResult: equals('a,b,33'),
     timeout: 3000
   })
+})
+
+component('remoteTest.listSubJbms', {
+  impl: dataTest(pipe(remote.listSubJbms(), join(',')), contains('tests,','tests•inner'), {
+    runBefore: jbm.start(child('inner')),
+    timeout: 1000
+  })
+})
+
+component('remoteTest.listAll', {
+  impl: dataTest(remote.listAll(), equals(['tests','tests•inner','networkPeer']), {
+    runBefore: runActions(jbm.start(worker('networkPeer', { networkPeer: true })), jbm.start(child('inner'))),
+    timeout: 1000
+  })
+})
+
+component('remoteTest.remoteCtx.varsUsed', {
+  params: [
+    {id: 'p1', dynamic: true, defaultValue: pipeline('%$aa%','%$bb%')}
+  ],
+  impl: dataTest(remoteCtx.varsUsed(ctx => ctx.cmpCtx.params.p1.profile), equals(['aa','bb']))
 })
 
 // component('remoteTest.dsl', {

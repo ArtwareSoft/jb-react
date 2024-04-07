@@ -91,7 +91,7 @@ if (verbose)
     if (err)
         return console.log(JSON.stringify({error: { desc: 'can not resolve profile', err }}))
     
-    await runAndEmitResult(() => jb.utils.resolveDelayed(new jb.core.jbCtx().setVars(vars).run({$$: `any<>${compId}`})))
+    await runAndEmitResult(() => jb.utils.waitForInnerElements(new jb.core.jbCtx().setVars(vars).run({$$: `any<>${compId}`})))
 
     async function runAndEmitResult(f) {
         let res = null, exception = null

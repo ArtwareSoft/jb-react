@@ -30,7 +30,8 @@ component('dataTest', {
 				(async() => {
 					await runBefore(ctxToUse)
 					const res = await calculate(ctxToUse)
-					return await jb.utils.toSynchArray(res,true)
+					const _res = await jb.utils.waitForInnerElements(res)
+					return _res
 				})()
 			])
 			let testFailure = jb.path(testRes,'0.testFailure') || jb.path(testRes,'testFailure')
@@ -43,7 +44,7 @@ component('dataTest', {
 			result = { id: testID, success, reason: countersErr || testFailure, ...(includeTestRes ? testRes : {})}
 		} catch (e) {
 			jb.logException(e,'error in test',{ctx})
-			result = { id, success: false, reason: 'Exception ' + e}
+			result = { testID, success: false, reason: 'Exception ' + e}
 		} finally {
 			if (spy) jb.spy.setLogs('error')
 			if (uiTest && result.elem && jb.ui)
@@ -76,7 +77,7 @@ extension('test', {
 	dataTestResult(ctx) {
 		return Promise.resolve(jb.test.runInner('runBefore',ctx))
 		.then(_ => jb.test.runInner('calculate',ctx))
-		.then(v => jb.utils.toSynchArray(v,true))
+		.then(v => jb.utils.waitForInnerElements(v))
 		.then(value => {
 			const success = !! jb.test.runInner('expectedResult',ctx.setData(value))
 			return { success, value}
@@ -104,7 +105,7 @@ extension('test', {
 			jb.watchableComps.handler.resources(jb.test.initial_comps)
 			jb.db.watchableHandlers.push(jb.watchableComps.handler)
 		}
-		if (!jb.spy.enabled) jb.spy.initSpy({spyParam: 'test'})
+		if (!jb.spy.enabled && !jb.spy.spyParamInUrl()) jb.spy.initSpy({spyParam: 'test'})
 		jb.spy.clear()
 		// await jb.jbm.terminateAllChildren()
 		// jb.ui.garbageCollectUiComps({forceNow: true,clearAll: true})
@@ -144,6 +145,7 @@ extension('test', {
 		if (!singleTest && !profile.doNotTerminateWorkers)
 			await jb.jbm.terminateAllChildren(tstCtx)
 		jb.ui && jb.ui.garbageCollectUiComps({forceNow: true,clearAll: true ,ctx: tstCtx})
+		//await jb.delay(200)
 
 		res.show = () => {
 			if (!profile.impl.control) return

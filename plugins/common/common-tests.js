@@ -73,11 +73,11 @@ component('commonTest.pipe', {
 })
 
 component('commonTest.pipeWithPromise', {
-  impl: dataTest(pipe(delay(1), list(1,2), join()), equals('1,2'))
+  impl: dataTest(pipe(delay(1, list(1,2)), join()), equals('1,2'))
 })
 
 component('commonTest.pipeInPipe', {
-  impl: dataTest(pipe(Var('a', 3), pipe(delay(1), list([1,2,'%$a%']), join())), equals('1,2,3'))
+  impl: dataTest(pipe(Var('a', 3), delay(1, list([1,2,'%$a%'])), join()), equals('1,2,3'))
 })
 
 component('commonTest.delayedVar', {
@@ -86,7 +86,7 @@ component('commonTest.delayedVar', {
 
 component('commonTest.pipeInPipeWithDelayedVar', {
   impl: dataTest({
-    calculate: pipe(Var('a', delay(1, 3)), pipe(delay(1), list([1,2,'%$a%']), join())),
+    calculate: pipe(Var('a', delay(1, 3), { async: true }), delay(1, list([1,2,'%$a%'])), join()),
     expectedResult: equals('1,2,3')
   })
 })

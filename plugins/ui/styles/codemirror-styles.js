@@ -162,24 +162,37 @@ component('codeMirror.regainFocus', {
 component('source.codeMirrorText', {
   type: 'rx',
   impl: rx.pipe(
-    ctx => (start, sink) => {
-		const {cmp} = ctx.vars
+	source.producer(({},{cmp}) => obs => {
 		if (!cmp.editor) return
 		if (cmp.registeredToChange) 
-			return jb.logError('codemirror - allready registered',{state: ''+ cmp.state, cmp,ctx})
-
-		if (start !== 0) return
-		function handler() { sink(1, ctx.dataObj(cmp.editor.getValue())) }
-		sink(0, t => {
-			if (t != 2) return
-			jb.log('codemirror unregister change listener',{ctx})
-			cmp.editor.off('change', handler)
-			cmp.registeredToChange = false
-		})
-		jb.log('codemirror register change listener',{ctx})
+			return jb.logError('codemirror - already registered',{state: ''+ cmp.state, cmp,ctx})
+		
 		cmp.editor.on('change', handler)
 		cmp.registeredToChange = true
-	},
+		return () => { 
+			cmp.registeredToChange = true && cmp.editor.off('change', handler); 
+			cmp.registeredToChange = false
+		}
+		function handler() { obs(cmp.editor.getValue()) }
+  	}),
+    // ctx => (start, sink) => {
+	// 	const {cmp} = ctx.vars
+	// 	if (!cmp.editor) return
+	// 	if (cmp.registeredToChange) 
+	// 		return jb.logError('codemirror - already registered',{state: ''+ cmp.state, cmp,ctx})
+
+	// 	if (start !== 0) return
+	// 	function handler() { sink(1, ctx.dataObj(cmp.editor.getValue())) }
+	// 	sink(0, t => {
+	// 		if (t != 2) return
+	// 		jb.log('codemirror unregister change listener',{ctx})
+	// 		cmp.editor.off('change', handler)
+	// 		cmp.registeredToChange = false
+	// 	})
+	// 	jb.log('codemirror register change listener',{ctx})
+	// 	cmp.editor.on('change', handler)
+	// 	cmp.registeredToChange = true
+	// },
     rx.takeUntil('%$cmp/destroyed%')
   )
 })
@@ -187,22 +200,15 @@ component('source.codeMirrorText', {
 component('source.codeMirrorCursor', {
   type: 'rx',
   impl: rx.pipe(
-    ctx => (start, sink) => {
-		const {cmp} = ctx.vars
+    source.producer((ctx,{cmp}) => obs => {
 		if (!cmp.editor) return
 		if (!cmp.state.frontEndStatus == 'ready') 
 			return jb.logError('codemirror - frontEndStatus status not ready for cursorActivity listener',{state: ''+ cmp.state, cmp,ctx})
 
-		if (start !== 0) return
-		function handler() { sink(1, ctx.dataObj([cmp.editor.getDoc().getCursor()].map(({line,ch}) => ({line, col: ch}))[0]) ) }
-		sink(0, t => {
-			if (t != 2) return
-			jb.log('codemirror unregister cursorActivity listener',{ctx})
-			cmp.editor.off('cursorActivity', handler)
-		})
-		jb.log('codemirror register cursorActivity listener',{ctx})
 		cmp.editor.on('cursorActivity', handler)
-	},
+		return () => cmp.editor.off('cursorActivity', handler)
+		function handler() { obs([cmp.editor.getDoc().getCursor()].map(({line,ch}) => ({line, col: ch}))[0]) }
+	}),
     rx.takeUntil('%$cmp/destroyed%')
   )
 })

@@ -173,7 +173,7 @@ component('uiTest.firstSucceeding.sameDoesNotRecreate', {
 component('uiTest.groupWaitWithVar', {
   impl: uiTest({
     control: group(text('%$txt%'), {
-      features: group.wait(pipe(delay(1), 'hello'), { varName: 'txt' })
+      features: group.wait(delay(1,'hello'), { varName: 'txt' })
     }),
     expectedResult: contains('hello'),
     uiAction: waitForNextUpdate()
@@ -193,7 +193,7 @@ component('uiTest.controls', {
 
 component('uiTest.waitForWithPipe', {
   impl: uiTest({
-    control: group(text('%%'), { features: group.wait(pipe(delay(1), 'hello')) }),
+    control: group(text('%%'), { features: group.wait(delay(1,'hello')) }),
     expectedResult: and(contains('hello'), not(contains('loading'))),
     uiAction: waitForNextUpdate(),
     expectedCounters: {'init uiComp': 4},

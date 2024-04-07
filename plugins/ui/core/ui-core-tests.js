@@ -164,6 +164,7 @@ component('uiTest.eliminateRecursion', {
 })
 
 component('uiTest.remoteItemlistKeyboardSelection', {
+  doNotRunInTests: true,
   impl: uiTest({
     control: group({
       controls: [

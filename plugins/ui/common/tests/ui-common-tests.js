@@ -21,7 +21,7 @@ component('uiTest.html.inIframe', {
 })
 
 component('uiTest.text.allowAsynchValue', {
-  impl: uiTest(text(pipe(delay(1), 'hello'), { features: text.allowAsynchValue() }), contains('hello'), {
+  impl: uiTest(text(delay(1, 'hello'), { features: text.allowAsynchValue() }), contains('hello'), {
     uiAction: waitForNextUpdate(),
     expectedCounters: {'start renderVdom': 2, 'refresh uiComp !request': 1}
   })

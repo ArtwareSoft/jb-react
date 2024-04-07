@@ -14,21 +14,23 @@ extension('spy', {
 		}
 	},
 	initSpyByUrl() {
+		jb.spy.initSpy({spyParam : jb.spy.spyParamInUrl() })
+	},
+	spyParamInUrl() {
 		const frame = jb.frame
 		const getUrl = () => { try { return frame.location && frame.location.href } catch(e) {} }
 		const getParentUrl = () => { try { return frame.parent && frame.parent.location.href } catch(e) {} }
 		const getSpyParam = url => (url.match('[?&]spy=([^&]+)') || ['', ''])[1]
-		jb.spy.initSpy({spyParam :frame && frame.jbUri == 'studio' && (getUrl().match('[?&]sspy=([^&]+)') || ['', ''])[1] || 
-			getSpyParam(getParentUrl() || '') || getSpyParam(getUrl() || '')})
-		jb.spy.calcIncludeLogsFromSpyParam()
+		return frame && frame.jbUri == 'studio' && (getUrl().match('[?&]sspy=([^&]+)') || ['', ''])[1] || 
+			getSpyParam(getParentUrl() || '') || getSpyParam(getUrl() || '')
 	},
 	initSpy({spyParam}) {
 		if (!spyParam) return
 		jb.spy.spyParam = spyParam
 		jb.spy.enabled = true
 		if (jb.frame) jb.frame.spy = jb.spy // for console use
-		jb.spy.includeLogsInitialized = false
-		jb.spy._obs = jb.callbag && jb.callbag.subject()
+		jb.spy._obs = jb.spy._obs || jb.callbag && jb.callbag.subject()
+		jb.spy.calcIncludeLogsFromSpyParam()
 		return jb.spy
 		// for loader - jb.spy.clear(), jb.spy.search()
 	},
@@ -53,7 +55,6 @@ extension('spy', {
 			acc[log] = true
 			return acc
 		}, {})
-		jb.spy.includeLogsInitialized = true
 	},
 	shouldLog(logNames, record) {
 		// disable debugging events
@@ -66,7 +67,6 @@ extension('spy', {
 			logNames.split(' ').reduce( (acc,logName)=>acc || jb.spy.includeLogs[logName],false)
 	},
 	log(logNames, _record, {takeFrom, funcTitle, modifier} = {}) {
-		if (!jb.spy.includeLogsInitialized) jb.spy.calcIncludeLogsFromSpyParam(jb.spy.spyParam)
 		jb.spy.updateCounters(logNames)
 		jb.spy.updateLocations(logNames,takeFrom)
 		if (!jb.spy.shouldLog(logNames, _record)) return

@@ -171,7 +171,7 @@ extension('ui','vdom', {
     },
     toVdomOrStr(val) {
         if (jb.utils.isDelayed(val))
-            return jb.utils.toSynchArray(val).then(v => jb.ui.toVdomOrStr(v[0]))
+            return jb.utils.waitForInnerElements(val).then(v => jb.ui.toVdomOrStr(Array.isArray(v) ? v[0] :v))
 
         const res1 = Array.isArray(val) ? val.map(v=>jb.val(v)): val
         let res = jb.val((Array.isArray(res1) && res1.length == 1) ? res1[0] : res1)

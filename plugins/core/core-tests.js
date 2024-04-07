@@ -85,3 +85,23 @@ component('coreTest.varsCases', {
 component('coreTest.asyncVar', {
   impl: dataTest(pipeline(Var('b', 5), Var('a', delay(1, 3), { async: true }), '%$a%,%$b%'), equals('3,5'))
 })
+
+component('coreTest.waitForInnerElements.promiseInArray', {
+  impl: dataTest(()=> [jb.delay(1,1)], equals(()=>[1]))
+})
+
+component('coreTest.waitForInnerElements.doublePromiseInArray', {
+  impl: dataTest(()=> [jb.delay(1).then(()=>[jb.delay(1,5)])], equals(5))
+})
+
+component('coreTest.waitForInnerElements.cb', {
+  impl: dataTest(()=> [jb.callbag.fromIter([1,2])], equals(()=>[1,2]))
+})
+
+component('coreTest.waitForInnerElements.cbAndPromise', {
+  impl: dataTest(()=> [jb.callbag.fromIter([1,2]),jb.delay(1).then(()=>jb.callbag.fromIter([3])),jb.callbag.fromIter([4,5])], equals(()=>[1,2,3,4,5]))
+})
+
+component('coreTest.waitForInnerElements.cb', {
+  impl: dataTest(rx.pipe(source.data([1,2])), equals(()=>[1,2]))
+})

@@ -69,7 +69,6 @@ extension('remoteCtx', {
             Object.keys(params).length ? {cmpCtx: {params} } : {})
 
     },
-    //serailizeCtx(ctx) { return JSON.stringify(jb.remoteCtx.stripCtx(ctx)) },
     deStrip(data, _asIs) {
         if (typeof data == 'string' && data.match(/^@js@/))
             return eval(data.slice(4))
@@ -79,12 +78,11 @@ extension('remoteCtx', {
             return (ctx2,data2) => {
                 const ctx = new jb.core.jbCtx(jb.utils.resolveProfile(stripedObj, {topComp: stripedObj}),{}).extendVars(ctx2,data2)
                 const res = ctx.runItself()
-                if (ctx.probe) return (async () => {
-                    await Object.values(ctx.probe.records).reduce((pr,valAr) => pr.then(
-                        () => valAr.reduce( async (pr,item,i) => { await pr; valAr[i].out = await valAr[i].out }, Promise.resolve())
-                    ), Promise.resolve())
-                    return { $: 'withProbeResult', res, probe: ctx.probe }
-                })()
+                if (ctx.probe) {
+                    if (jb.utils.isCallbag(res))
+                        return jb.callbag.pipe(res, jb.callbag.mapPromise(r=>jb.remoteCtx.wrapWithProbeResult(r,ctx)))
+                    return jb.remoteCtx.wrapWithProbeResult(res,ctx)
+                }
                 return res
             }
         if (Array.isArray(data))
@@ -118,14 +116,55 @@ extension('remoteCtx', {
     // },
     shouldPassVar: (varName, profText) => jb.remoteCtx.allwaysPassVars.indexOf(varName) != -1 || profText.match(new RegExp(`\\b${varName.split(':')[0]}\\b`)),
     usingData: profText => profText.match(/({data})|(ctx.data)|(%[^$])/),
-    hadleProbeResult(ctx,res,from) {
+    async wrapWithProbeResult(res,ctx) {
+        await Object.values(ctx.probe.records).reduce((pr,valAr) => pr.then(
+            () => valAr.reduce( async (pr,item,i) => { await pr; valAr[i].out = await valAr[i].out }, Promise.resolve())
+        ), Promise.resolve())
+        const filteredProbe = { ...ctx.probe, records: jb.objFromEntries(jb.entries(ctx.probe.records).map(([k,v])=>[k,v.filter(x=>!x.sent)])) }
+        Object.values(ctx.probe.records).forEach(arr=>arr.forEach(r => r.sent = true))
+        jb.log('remote context adding probe result',{probe: filteredProbe, records: filteredProbe.records, res, ctx})
+        return { $: 'withProbeResult', res, probe: filteredProbe }
+    },
+    mergeProbeResult(ctx,res,from) {
         if (jb.path(res,'$') == 'withProbeResult') {
             if (ctx.probe && res.probe) {
               Object.keys(res.probe.records||{}).forEach(k=>ctx.probe.records[k] = res.probe.records[k].map(x =>({...x, from})) )
               Object.keys(res.probe.visits||{}).forEach(k=>ctx.probe.visits[k] = res.probe.visits[k] )
             }
+            jb.log('merged probe result', {from, remoteProbeRes: res, records: res.probe.records})
             return res.res
         }
         return res
     }
+})
+
+component('remoteCtx.mergeProbeResult', {
+    promote: 0,
+    params: [
+        {id: 'remoteResult', byName: true },
+        {id: 'from', as: 'string'}
+    ],
+    impl: (ctx,remoteResult,from) => {
+        if (jb.path(remoteResult,'$') == 'withProbeResult') {
+            const { records, visits } = remoteResult.probe
+            if (ctx.probe) {
+              Object.keys(records||{}).forEach(k=>ctx.probe.records[k] = records[k].map(x =>({...x, from})) )
+              Object.keys(visits||{}).forEach(k=>ctx.probe.visits[k] = visits[k] )
+            }
+            jb.log('merged probe result', {from, remoteResult, records })
+            return remoteResult.res
+        }
+        return remoteResult
+    }
+})
+
+component('remoteCtx.varsUsed', {
+  promote: 0,
+  params: [
+    {id: 'profile' }
+  ],
+  impl: (ctx,profile) => {
+    const profText = jb.utils.prettyPrint(profile||'', {noMacros: true})
+    return (profText.match(/%\$[a-zA-Z0-9_]+/g) || []).map(x=>x.slice(2))
+  }
 })

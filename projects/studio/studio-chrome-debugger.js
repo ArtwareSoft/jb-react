@@ -103,7 +103,7 @@ component('chromeDebugger.logsCtrl', {
     controls: [
       picklist('jbm', '%$inspectedUri%', {
         options: typeAdapter('data<>', pipe(
-          remote.data(net.listSubJbms(), byUri('%$uri%')),
+          remote.data(remote.listSubJbms(), byUri('%$uri%')),
           unique(),
           filter(not(contains('•vDebugger'))),
           filter(not(contains('devtools'))),

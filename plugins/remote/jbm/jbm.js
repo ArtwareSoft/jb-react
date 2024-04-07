@@ -179,32 +179,9 @@ component('cmd', {
                 debugger
                 jb.logError('remote cmd: can not parse result returned from jb.js',{cmdResult, command, err})
             }
-
-            // function encodeContextVal(val) {
-            //     if (!val || typeof val != 'object') return val
-            //     if (val.$ && val.$ == 'runCtx')
-            //         return JSON.stringify({$: 'runCtx', profile: val.profile})
-            //     if (val.$) {
-            //         debugger
-            //         return jb.utils.prettyPrint(val,{singleLine: true})
-            //     }
-            //     return JSON.stringify({$asIs: val})
-            // }
-            // function pluginsOfProfile(prof) {
-            //     if (!prof || typeof prof != 'object') return []
-            //     if (!prof.$$)
-            //         return jb.utils.unique(Object.values(prof).flatMap(x=>pluginsOfProfile(x)))
-            //     const comp = jb.comps[prof.$$]
-            //     if (!comp) {
-            //         debugger
-            //         jb.logError(`cmd - can not find comp ${prof.$$} please provide sourceCode`,{ctx})
-            //         return []
-            //     }
-            //     return jb.utils.unique([comp.$plugin,...Object.values(prof).flatMap(x=>pluginsOfProfile(x))]).filter(x=>x)
-            // }
         },
-        createCallbagSource: () => jb.logError('callbag is not supported in statless jbm'),
-        createCallbagOperator: () => jb.logError('callbag is not supported in statless jbm'),
+        createCallbagSource: () => jb.logError('callbag is not supported in single run jbm'),
+        createCallbagOperator: () => jb.logError('callbag is not supported in single run jbm'),
 
         async rjbm() { return this }
     })
@@ -274,6 +251,14 @@ component('jbm.self', {
       jb.rjbm = jb.rjbm || (() => jb)
       return jb
   }
+})
+
+component('jbm.isSelf', {
+  params: [
+    {id: 'jbm', type: 'jbm', mandatory: true}
+  ],
+  type: 'boolean<>',
+  impl: (ctx,jbm) => jbm == jb
 })
 
 component('parent', {

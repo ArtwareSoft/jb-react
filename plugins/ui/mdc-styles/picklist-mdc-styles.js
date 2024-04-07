@@ -50,8 +50,10 @@ component('picklist.mdcSelect', {
       mdcStyle.initDynamic(),
       css(({},{},{width}) => `>* { ${jb.ui.propWithUnits('width', width)} }`),
       frontEnd.flow(
-        source.callbag(({},{cmp}) => jb.callbag.create(obs=> 
-          cmp.mdc_comps.forEach(({mdc_cmp}) => mdc_cmp.listen('MDCSelect:change', () => obs(mdc_cmp.value))))),
+        source.producer(({},{cmp}) => obs => {
+          cmp.mdc_comps.forEach(({mdc_cmp}) => mdc_cmp.listen('MDCSelect:change', () => obs(mdc_cmp.value)))
+          return () => cmp.mdc_comps.forEach(({mdc_cmp}) => mdc_cmp.unlisten('MDCSelect:change'))
+        }),
         rx.takeUntil('%$cmp/destroyed%'),
         sink.BEMethod('writeFieldValue', '%%')
       ),

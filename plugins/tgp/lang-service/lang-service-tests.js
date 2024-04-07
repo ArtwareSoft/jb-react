@@ -370,6 +370,20 @@ component('langServiceTest.provideDefinition.inFunc', {
   })
 })
 
+component('langServiceTest.provideDefinition.firstInPipe', {
+  impl: dataTest({
+    calculate: pipe(langService.dummyCompProps('dataTest(pipeline(l__ist()))'), langService.definition()),
+    expectedResult: equals('/plugins/common/jb-common.js', { data: '%path%' })
+  })
+})
+
+component('langServiceTest.provideDefinition.inProfile', {
+  impl: dataTest({
+    calculate: pipe(langService.dummyCompProps('dataTest(pipeline(l__ist()))'), langService.definition()),
+    expectedResult: equals('/plugins/common/jb-common.js', { data: '%path%' })
+  })
+})
+
 component('langServiceTest.moveInArrayEdits', {
   impl: dataTest({
     calculate: pipe(

@@ -23,8 +23,8 @@ component('treeShakeTest.big', {
 
 component('treeShakeTest.funcDef', {
   impl: dataTest({
-    calculate: pipeline(() => jb.treeShake.treeShake(['#utils.toSynchArray'],{}), join(',')),
-    expectedResult: contains('#callbag.fromIter')
+    calculate: pipeline(() => jb.treeShake.treeShake(['#utils.waitForInnerElements'],{}), join(',')),
+    expectedResult: contains('#utils.isCallbag')
   })
 })
 

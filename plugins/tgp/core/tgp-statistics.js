@@ -27,7 +27,7 @@ extension('tgp', 'statistics', {
     },
     circuitOptions(compId) {
       jb.tgp.calcRefs()
-      const shortId = compId.split('>').pop()
+      const shortId = compId.split('>').pop().split('.').pop()
       const candidates = {[compId]: true}
       while (expand()) {}
       const comps = Object.keys(candidates).filter(compId => noOpenParams(compId))

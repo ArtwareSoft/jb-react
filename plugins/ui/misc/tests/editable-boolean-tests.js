@@ -85,7 +85,9 @@ component('uiTest.expandCollapseWithDefaultCollapse', {
 })
 
 component('uiTest.editableBoolean.expandCollapseWithDefaultVal', {
-  impl: uiTest(uiTest.expandCollapseWithDefaultCollapse(), contains('inner text'), { uiAction: click('#default', 'toggle') })
+  impl: uiTest(uiTest.expandCollapseWithDefaultCollapse(), contains('inner text'), {
+    uiAction: click('#default', 'toggle')
+  })
 })
 
 component('uiTest.editableBoolean.expandCollapseWithDefaultCollapse', {

@@ -13,6 +13,11 @@ icons
 completion fixes
   select the first item on editabletext helper
 
+how do debug the stateless jbm worker on nodejs - maybe single server by sourceCode with restart
+
+cmd,stateless,singleRun?
+fix remote.operator - new vers
+
 inner DSL - formatter & resolver
   define promptTemplate: 
     { id: 'prompt', asIs: true, formatter: {$: 'formatter<>llh.prompt' }, resolver: {$: 'resolver<>llh.prompt' }}

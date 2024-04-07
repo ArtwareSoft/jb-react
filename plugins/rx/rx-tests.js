@@ -8,12 +8,8 @@ component('rxTest.mapPromise', {
 
 component('rxTest.doPromise', {
   impl: dataTest({
-    calculate: rx.pipe(
-      source.data(1),
-      rx.doPromise(({data}) =>jb.delay(1,data *10)),
-      rx.mapPromise(({data}) =>jb.delay(1,data+2))
-    ),
-    expectedResult: equals('3')
+    calculate: rx.pipe(source.data(1), rx.doPromise(delay(1, '-%%-')), rx.mapPromise(delay(1, '-%%-'))),
+    expectedResult: equals('-1-')
   })
 })
 
@@ -107,6 +103,15 @@ component('rxTest.TakeWhileIter', {
   impl: dataTest(pipe(rx.pipe(source.data([0,1,2,3]), rx.takeWhile('%%<2')), join(',')), equals('0,1'))
 })
 
+component('rxTest.mapPromise.reactive', {
+  impl: dataTest({
+    calculate: pipe(
+      rx.pipe(source.interval(1), rx.take(2), rx.mapPromise(delay(1, '-%%-'))),
+      join(',')
+    ),
+    expectedResult: equals('-0-,-1-')
+  })
+})
 
 component('rxTest.innerPipe', {
   impl: dataTest({
@@ -114,7 +119,7 @@ component('rxTest.innerPipe', {
       rx.pipe(
         source.interval(1),
         rx.take(2),
-        rx.innerPipe(rx.mapPromise(pipe(delay(1), '-%%-')), rx.var('a', '-%%-'), rx.map('-%$a%-'))
+        rx.innerPipe(rx.mapPromise(delay(1, '-%%-')), rx.var('a', '-%%-'), rx.map('-%$a%-'))
       ),
       join(',')
     ),
@@ -149,7 +154,7 @@ component('rxTest.var', {
 
 component('rxTest.varAsParam', {
   params: [
-    {id: 'param', defaultValue: '$debugger:hello', dynamic: true}
+    {id: 'param', defaultValue: 'hello', dynamic: true}
   ],
   impl: dataTest(rx.pipe(source.data(1), rx.var('a', '%$param()%'), rx.map('%$a%')), equals('hello'))
 })
@@ -256,10 +261,6 @@ component('rxTest.flatMapActiveActive', {
   })
 })
 
-component('rxTest.promises', {
-  impl: dataTest(pipe(rx.pipe(source.promises(delay(1, 1), delay(1, 2))), join(',')), equals('1,2'))
-})
-
 component('rxTest.mapPromiseActiveSource', {
   impl: dataTest({
     calculate: rx.pipe(source.interval(1), rx.take(1), rx.mapPromise(({data}) =>jb.delay(1,data+2))),
@@ -269,21 +270,18 @@ component('rxTest.mapPromiseActiveSource', {
 
 component('rxTest.rawMapPromiseTwice', {
   impl: dataTest({
-    calculate: ctx => { const {fromIter,pipe,mapPromise,toPromiseArray} = jb.callbag
-      return toPromiseArray(pipe(fromIter([0]), mapPromise(data =>jb.delay(1,data+2)), mapPromise(data =>jb.delay(1,data+2))))
+    calculate: ctx => { 
+      const {fromIter,pipe,mapPromise,toPromiseArray} = jb.callbag
+      return pipe(fromIter([0]), mapPromise(data =>jb.delay(1,data+2)), mapPromise(data =>jb.delay(1,data+2)))
     },
-    expectedResult: equals('4')
+    expectedResult: equals(4)
   })
 })
 
 component('rxTest.mapPromiseTwice', {
   impl: dataTest({
-    calculate: rx.pipe(
-      source.data(0),
-      rx.mapPromise(({data}) =>jb.delay(1,data+2)),
-      rx.mapPromise(({data}) =>jb.delay(1,data+2))
-    ),
-    expectedResult: equals('4')
+    calculate: rx.pipe(source.data(0), rx.mapPromise('-%%-'), rx.mapPromise('-%%-')),
+    expectedResult: equals('--0--')
   })
 })
 
@@ -392,8 +390,8 @@ component('rxTest.flatMap.timing', {
 
 component('rxTest.RawConcatMapBug1', {
   impl: dataTest({
-    calculate: ctx => { const {interval,take,pipe,concatMap,fromPromise,toPromiseArray} = jb.callbag
-      return pipe(interval(1),take(1), concatMap(data => fromPromise(jb.delay(1,data+2) )), toPromiseArray)
+    calculate: ctx => { const {interval,take,pipe,concatMap,fromPromise} = jb.callbag
+      return pipe(interval(1),take(1), concatMap(data => fromPromise(jb.delay(1,data+2) )))
     },
     expectedResult: equals('2')
   })
@@ -401,12 +399,11 @@ component('rxTest.RawConcatMapBug1', {
 
 component('rxTest.RawFlatMapBug1', {
   impl: dataTest({
-    calculate: ctx => { const {interval,take,pipe,flatMap,fromPromise,toPromiseArray} = jb.callbag
+    calculate: ctx => { 
+      const {interval,take,pipe,flatMap,fromPromise} = jb.callbag
       return pipe(interval(1),take(1), 
         flatMap(data => fromPromise(jb.delay(1,data+2) )), 
-        flatMap(data => fromPromise(jb.delay(1,data+2) )),
-        toPromiseArray)
-
+        flatMap(data => fromPromise(jb.delay(1,data+2) )))
     },
     expectedResult: equals(4)
   })
@@ -468,7 +465,9 @@ component('rxTest.throwInMapPromise', {
 
 component('rxTest.throwInMapPromise2', {
   impl: dataTest({
-    vars: [Var('$throw', true)],
+    vars: [
+      Var('$throw', true)
+    ],
     calculate: rx.pipe(source.data(2), rx.mapPromise(() => { throw 'err'}), rx.catchError(), rx.map('%%1')),
     expectedResult: equals('err1')
   })

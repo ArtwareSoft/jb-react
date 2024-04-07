@@ -49,7 +49,7 @@ extension('cbHandler', {
     },
     removeEntry(ids,m,delay=10) {
         jb.log(`remote remove cb handlers at ${jb.uri}`,{ids,m})
-        jb.delay(delay).then(()=> // TODO: BUGGY delay - not sure why the delay is needed - test: remoteTest.workerByUri
+        jb.delay(delay).then(()=> // TODO: BUGGY delay - keep alive as sink talkback may want to send 1. think how to know when sink got 2.
             jb.asArray(ids).filter(x=>x).forEach(id => {
                 jb.cbHandler.map[id].terminated = true
             } )
@@ -105,11 +105,16 @@ extension('jbm', 'main', {
         Object.assign(jb, {
             uri: jb.uri || jb.frame.jbUri,
             ports: {},
-            remoteExec: sctx => (jb.treeShake.codeServerJbm ? jb.treeShake.bringMissingCode(sctx) : Promise.resolve()).then(()=>jb.remoteCtx.deStrip(sctx)()),
-            createCallbagSource: sctx => jb.remoteCtx.deStrip(sctx)(),
-            createCallbagOperator: sctx => jb.remoteCtx.deStrip(sctx)(),
+            remoteExec,
+            createCallbagSource: remoteExec,
+            createCallbagOperator: remoteExec,
         })
         return { childJbms: {}, networkPeers: {}, notifyChildReady: {} }
+
+        async function remoteExec(sctx) {
+            await jb.treeShake.codeServerJbm && jb.treeShake.bringMissingCode(sctx)
+            return jb.utils.waitForInnerElements(jb.remoteCtx.deStrip(sctx)())
+        }
     },
     portFromFrame(frame,to,options) {
         if (jb.ports[to]) return jb.ports[to]
@@ -183,7 +188,7 @@ extension('jbm', 'main', {
                 if (jb.terminated) return // TODO: removeEventListener
                 jb.log(`remote command from ${m.from} ${m.$}`,{m})
                 if ((m.$ || '').indexOf('CB.') == 0)
-                    handleCBCommnad(m)
+                    handleCBCommand(m)
                 else if (m.$ == 'CB')
                     inboundMsg(m)
                 else if (m.$ == 'execResult')
@@ -222,7 +227,7 @@ extension('jbm', 'main', {
                 port.postMessage({$:'CB', cbId,t, d: t == 0 ? (talkback = jb.cbHandler.addToLookup(d)) : jb.remoteCtx.stripCBVars(d), ...jb.net.reverseRoutingProps(routingMsg) }) 
             }
         }
-        async function handleCBCommnad(cmd) {
+        async function handleCBCommand(cmd) {
             const {$,sourceId,cbId,isAction} = cmd
             try {
                 if (jb.treeShake.codeServerJbm) {
@@ -234,15 +239,17 @@ extension('jbm', 'main', {
                 }
                 const deStrip = jb.remoteCtx.deStrip(cmd.remoteRun)
                 const result1 = await (typeof deStrip == 'function' ? deStrip() : deStrip)
-                const result = jb.path(result1,'$') ? result1.res : result1
+                const result = jb.path(result1,'$') ? result1.res : result1 // withProbeResult
                 if ($ == 'CB.createSource' && typeof result == 'function')
                     jb.cbHandler.map[cbId] = result
                 else if ($ == 'CB.createOperator' && typeof result == 'function')
                     jb.cbHandler.map[cbId] = result(remoteCB(sourceId, cbId,cmd) )
-                else if ($ == 'CB.exec')
-                    port.postMessage({$:'execResult', cbId, result: isAction ? {} : jb.remoteCtx.stripData(result) , ...jb.net.reverseRoutingProps(cmd) })
+                else if ($ == 'CB.exec') {
+                    const res = await jb.utils.waitForInnerElements(result)
+                    port.postMessage({$:'execResult', cbId, result: isAction ? {} : jb.remoteCtx.stripData(res) , ...jb.net.reverseRoutingProps(cmd) })
+                }
             } catch(err) { 
-                jb.logException(err,'remote handleCBCommnad',{cmd})
+                jb.logException(err,'remote handleCBCommand',{cmd})
                 $ == 'CB.exec' && port.postMessage({$:'execResult', cbId, result: { type: 'error', err}, ...jb.net.reverseRoutingProps(cmd) })
             }
         }

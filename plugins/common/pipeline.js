@@ -1,52 +1,30 @@
-extension('utils', 'pipe', {
-  calcPipe(ctx,ptName,passRx) {
-    let start = jb.toarray(ctx.data)
-    if (start.length == 0) start = [null]
-    if (typeof ctx.profile.items == 'string')
-      return ctx.runInner(ctx.profile.items,null,'items');
-    const profiles = jb.asArray(ctx.profile.items || ctx.profile[ptName]);
-    const innerPath = (ctx.profile.items && ctx.profile.items.sugar) ? ''
-      : (ctx.profile[ptName] ? (ptName + '~') : 'items~');
+extension('common', 'pipe', {
+    runAsAggregator(ctx, profile,i, dataArray,profiles) {
+      if (!profile || profile.$disabled) return dataArray
 
-    if (ptName == '$pipe') return (async function pipe() {
-      const pipeRes = await profiles.reduce( async (pr,prof,index) => {
-        const data = await pr;
-        const input = await jb.utils.toSynchArray(data, !passRx)
-        const stepRes = await step(prof,index,input)
-        return stepRes
-      }, Promise.resolve(start))
-
-        const res = await jb.utils.toSynchArray(pipeRes, !passRx)
-        return res
-      })()
-
-    return profiles.reduce((data,prof,index) => step(prof,index,data), start)
-
-    function step(profile,i,data) {
-      if (!profile || profile.$disabled) return data;
-      const path = innerPath+i
-      const parentParam = (i < profiles.length - 1) ? { as: 'array'} : (ctx.parentParam || {})
+      const parentParam = (i < profiles.length - 1) ? { as: 'array'} : (ctx.parentParam || {}) // use parent param to last element to convert to client needs
       if (jb.path(jb.comps[profile.$$],'aggregator'))
-                return jb.core.run( new jb.core.jbCtx(ctx, { data, profile, path }), parentParam)
-      const res = data.map(item => jb.core.run(new jb.core.jbCtx(ctx,{data: item, profile, path}), parentParam))
+        return ctx.setData(jb.asArray(dataArray)).runInner(profile, parentParam, `items~${i}`)
+      const res = jb.asArray(dataArray).map(item => ctx.setData(item).runInner(profile, parentParam, `items~${i}`))
         .filter(x=>x!=null)
-        .flatMap(x=> {
-          const val = jb.val(x)
-          return jb.asArray(val)
-        })
-        return res
+        .flatMap(x=> jb.asArray(jb.val(x)))
+      return res
     }
-  }
 })
 
 component('pipeline', {
   type: 'data',
   category: 'common:100',
-  description: 'map data arrays one after the other, do not wait for promises and rx',
+  description: 'flat map data arrays one after the other, do not wait for promises and rx',
   params: [
-    {id: 'items', type: 'data[]', ignore: true, mandatory: true, composite: true, description: 'chain/map data functions'}
+    {id: 'items', type: 'data[]', dynamic: true, mandatory: true, composite: true, description: 'chain/map data functions'}
   ],
-  impl: ctx => jb.utils.calcPipe(ctx,'$pipeline')
+  impl: (ctx,items) => {
+    const sourceVal = jb.val(ctx.data)
+    const source = sourceVal == null ? [null] : sourceVal
+    const profiles = jb.asArray(ctx.profile.items)
+    return profiles.reduce((dataArray,prof,index) => jb.common.runAsAggregator(ctx, prof,index,dataArray,profiles), source)
+  }
 })
 
 component('pipe', {
@@ -54,9 +32,21 @@ component('pipe', {
   category: 'async:100',
   description: 'synch data, wait for promises and reactive (callbag) data',
   params: [
-    {id: 'items', type: 'data[]', ignore: true, mandatory: true, composite: true}
+    {id: 'items', type: 'data[]', dynamic: true, mandatory: true, composite: true}
   ],
-  impl: ctx => jb.utils.calcPipe(ctx,'$pipe',false)
+  impl: async ctx => {
+    if (Array.isArray(ctx.data)) debugger
+    const profiles = jb.asArray(ctx.profile.items)
+    const source = ctx.runInner(profiles[0], null, `items~0`)
+    const _res = profiles.slice(1).reduce( async (pr,prof,index) => {
+      const dataArray = await jb.utils.waitForInnerElements(pr)
+      jb.log(`pipe elem resolved input for ${index+1}`,{dataArray,ctx})
+      return jb.common.runAsAggregator(ctx, prof,index+1,dataArray, profiles)
+    }, source)
+    const res = await jb.utils.waitForInnerElements(_res)
+    jb.log(`pipe result`,{res,ctx})
+    return _res
+  }
 })
 
 component('aggregate', {

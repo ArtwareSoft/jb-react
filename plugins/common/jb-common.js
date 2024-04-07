@@ -345,6 +345,17 @@ component('selectProps', {
   impl: (ctx, propNames, obj) => propNames.reduce((acc,id)=>({ ...acc, [id]: obj[id] }),{})
 })
 
+component('transformProp', {
+  type: 'data',
+  description: 'make transformation on a single prop, leave the other props alone',
+  params: [
+    {id: 'prop', as: 'string', mandatory: true, description: 'property to work on'},
+    {id: 'transform', as: 'string', dynamic: true, mandatory: true, description: 'prop value as input', composite: true},
+    {id: 'ofObj', type: 'data', defaultValue: '%%'},
+  ],
+  impl: (ctx, prop, transform, obj) => (typeof obj == 'object' && prop) ? {...obj, [prop]: transform(ctx.setData(obj[prop])) } : obj
+})
+
 component('extend', {
   type: 'data',
   description: 'assign and extend with calculated properties',
@@ -356,6 +367,17 @@ component('extend', {
 		Object.assign({}, obj, jb.objFromEntries(properties.map(p=>[p.name, jb.core.tojstype(p.val(ctx),p.type)])))
 })
 component('assign', { autoGen: true, ...jb.utils.getUnresolvedProfile('extend', 'data')})
+
+component('extendWithObj', {
+  type: 'data',
+  description: 'assign to extend with another obj',
+  params: [
+    {id: 'obj', mandatory: true },
+    {id: 'withObj', byName: true, defaultValue: '%%'}
+  ],
+  impl: (ctx,obj,withObj) => Object.assign({}, withObj, obj)
+})
+component('merge', { autoGen: true, ...jb.utils.getUnresolvedProfile('extendWithObj', 'data')})
 
 component('extendWithIndex', {
   type: 'data',
@@ -376,16 +398,6 @@ component('prop', {
     {id: 'type', as: 'string', options: 'string,number,boolean,object,array,asIs', defaultValue: 'asIs'}
   ]
 })
-
-// component('pipeline.var', {
-//   type: 'data',
-//   aggregator: true,
-//   params: [
-//     {id: 'name', as: 'string', mandatory: true},
-//     {id: 'val', mandatory: true, dynamic: true, defaultValue: '%%'}
-//   ],
-//   impl: ctx => ({ [Symbol.for('Var')]: true, ...ctx.params })
-// })
 
 component('not', {
   type: 'boolean',
@@ -679,6 +691,16 @@ component('runActionOnItems', {
 	}
 })
 
+component('removeProps', {
+  type: 'action',
+  description: 'remove properties from object',
+  params: [
+    {id: 'names', type: 'data[]', mandatory: true},
+    {id: 'obj', byName: true, defaultValue: '%%'}
+  ],
+  impl: (ctx,names,obj) => obj && names.forEach(name=> delete obj[name])
+})
+
 component('delay', {
   type: 'action',
   moreTypes: 'data<>',
@@ -686,7 +708,7 @@ component('delay', {
     {id: 'mSec', as: 'number', defaultValue: 1},
     {id: 'res', defaultValue: '%%'}
   ],
-  impl: ({},mSec,res) => jb.delay(mSec).then(() => res)
+  impl: ({},mSec,res) => jb.delay(mSec,res)
 })
 
 component('extractPrefix', {

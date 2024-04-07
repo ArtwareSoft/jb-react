@@ -186,10 +186,7 @@ component('probe.suggestions', {
     {id: 'sessionId', as: 'string', defaultValue: '%$$dialog.cmpId%', description: 'run probe only once per session'}
   ],
   impl: pipe(
-    getOrCreate({
-      writeTo: suggestions.lastRunCtxRef('%$sessionId%'),
-      calcValue: pipe(probe.runCircuit('%$probePath%'), log('memoize suggestions'))
-    }),
+    getOrCreate(suggestions.lastRunCtxRef('%$sessionId%'), probe.runCircuit('%$probePath%')),
     suggestions.optionsByProbeResult('%$probePath%', '%$expressionOnly%', '%$input%', '%%')
   ),
   macroByValue: true

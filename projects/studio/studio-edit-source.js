@@ -448,15 +448,12 @@ component('codemirror.initTgpTextEditor', {
         cmp.base.setSelectionRange(_from,_to)
     }),
     frontEnd.flow(
-      source.callbag(({},{cmp}) => jb.callbag.create(obs=> cmp.editor.on('cursorActivity', 
-        () => obs(cmp.editor.getDoc().getCursor())))),
-      rx.takeUntil('%$cmp/destroyed%'),
+      source.codeMirrorCursor(),
       rx.debounceTime('%$debounceTime%'),
       sink.BEMethod('selectionChanged', '%%')
     ),
     frontEnd.flow(
-      source.callbag(({},{cmp}) => jb.callbag.create(obs=> cmp.editor.on('change', () => obs(cmp.editor.getValue())))),
-      rx.takeUntil('%$cmp/destroyed%'),
+      source.codeMirrorText(),
       rx.debounceTime('%$debounceTime%'),
       rx.distinctUntilChanged(),
       sink.BEMethod('contentChanged', '%%')

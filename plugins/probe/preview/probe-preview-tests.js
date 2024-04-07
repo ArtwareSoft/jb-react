@@ -10,7 +10,7 @@ component('sampleProject.main', {
 })
 
 component('probePreviewTest.suggestions.varsFilter', {
-  doNotTerminateWorkers: true,
+  doNotRunInTests: true,
   impl: probePreviewSuggestionsTest('control<>sampleProject.main~impl~controls~0~text', '%$p', {
     circuitPath: 'control<>sampleProject.main',
     expectedResult: and(contains('$people'), not(contains('$win')))
@@ -18,7 +18,7 @@ component('probePreviewTest.suggestions.varsFilter', {
 })
 
 component('probePreviewTest.basic', {
-  doNotTerminateWorkers: true,
+  doNotRunInTests: true,
   impl: uiTest(probe.remoteCircuitPreview('control<>sampleProject.main'), contains('hello'), {
     uiAction: waitForText('hello'),
     timeout: 3000
@@ -26,7 +26,6 @@ component('probePreviewTest.basic', {
 })
 
 component('probePreviewTest.changeScript', {
-  doNotTerminateWorkers: true,
   impl: uiTest(probe.remoteCircuitPreview('control<>sampleProject.main'), contains('world'), {
     runBefore: writeValue('%$probe/defaultMainCircuit%', 'control<>sampleProject.main'),
     uiAction: uiActions(
@@ -59,7 +58,7 @@ component('probePreviewTest.changeScript', {
 // })
 
 component('probePreviewTest.addCss', {
-  doNotTerminateWorkers: true,
+  doNotRunInTests: true,
   impl: uiTest({
     control: group(
       button('change script', writeValue({
@@ -74,8 +73,8 @@ component('probePreviewTest.addCss', {
   })
 })
 
-component('probePreviewTest.changeCss', {
-  doNotTerminateWorkers: true,
+component('probePreview1Test.changeCss', {
+  doNotRunInTests: true,
   impl: uiTest({
     control: group(
       button('change script', writeValue({

@@ -266,10 +266,12 @@ component('tree.keyboardSelection', {
 			cmp.refresh($state,{},ctx)
 		}
 	}),
-    frontEnd.prop({
-      id: 'onkeydown',
-      value: rx.pipe(source.frontEndEvent('keydown'), rx.filter(not('%ctrlKey%')), rx.filter(not('%altKey%')), rx.userEventVar())
-    }),
+    frontEnd.prop('onkeydown', rx.pipe(
+      source.frontEndEvent('keydown'),
+      rx.filter(not('%ctrlKey%')),
+      rx.filter(not('%altKey%')),
+      rx.userEventVar()
+    )),
     frontEnd.flow(
       '%$cmp.onkeydown%',
       rx.filter('%keyCode%==13'),
@@ -282,12 +284,18 @@ component('tree.keyboardSelection', {
       rx.map(tree.nextSelected(If('%keyCode%==40', 1, -1))),
       sink.subjectNext('%$cmp.selectionEmitter%')
     ),
-    frontEnd.flow('%$cmp.onkeydown%', rx.filter('%keyCode%==39'), sink.BEMethod('expand', '%$cmp.state.selected%')),
-    frontEnd.flow('%$cmp.onkeydown%', rx.filter('%keyCode%==37'), sink.BEMethod('collapse', '%$cmp.state.selected%')),
     frontEnd.flow(
-      source.callbag(({},{cmp}) => 
-		  	jb.callbag.create(obs=> cmp.base.onkeydown = ev => { obs(ev); return false } // stop propagation
-		)),
+      '%$cmp.onkeydown%',
+      rx.filter('%keyCode%==39'),
+      sink.BEMethod('expand', '%$cmp.state.selected%')
+    ),
+    frontEnd.flow(
+      '%$cmp.onkeydown%',
+      rx.filter('%keyCode%==37'),
+      sink.BEMethod('collapse', '%$cmp.state.selected%')
+    ),
+    frontEnd.flow(
+      '%$cmp.onkeydown%',
       rx.filter(({data}) => (data.ctrlKey || data.altKey || data.keyCode == 46) // Delete
 			  && (data.keyCode != 17 && data.keyCode != 18)),
       rx.userEventVar(),

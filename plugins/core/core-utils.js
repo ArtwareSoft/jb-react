@@ -224,11 +224,6 @@ extension('utils', 'core', {
       return (!comp || !comp.params) ? [] : comp.params
     },
     getUnresolvedProfile: (_id, type) => (jb.core.unresolvedProfiles.find(({id, comp}) => id == _id && comp.type == type) || {}).comp,
-    resolveFinishedPromise(val) {
-      if (val && typeof val == 'object' && val._state == 1) // finished promise
-        return val._result
-      return val
-    },
     isRefType: jstype => jstype === 'ref' || jstype === 'ref[]',
     calcVar(ctx,varname,jstype) {
       let res
@@ -264,7 +259,6 @@ extension('utils', 'core', {
       const debugFuncName = ctx.profile && ctx.profile.$ || typeof ctx.profile == 'string' && ctx.profile.slice(0,10) || ''
       Object.defineProperty(func, 'name', { value: (ctx.path ||'').split('~').pop() + ': ' + debugFuncName })
     },
-    subscribe: (source,listener) => jb.callbag.subscribe(listener)(source),  
     indexOfCompDeclarationInTextLines(lines,id) {
       return lines.findIndex(line=> {
         const index = line.indexOf(`component('${id.split('>').pop()}'`)
@@ -285,30 +279,23 @@ extension('utils', 'generic', {
       if (!v || v.constructor === {}.constructor || Array.isArray(v)) return
       return typeof v === 'object' ? jb.utils.isPromise(v) : typeof v === 'function' && jb.utils.isCallbag(v)
     },
-    isCallbag: v => jb.callbag && jb.callbag.isCallbag(v),
-    resolveDelayed(delayed, synchCallbag) {
-      if (jb.utils.isPromise(delayed))
-        return Promise.resolve(delayed)
-      if (! jb.asArray(delayed).find(v=> jb.utils.isCallbag(v) || jb.utils.isPromise(v))) return delayed
-      return jb.utils.toSynchArray(delayed, synchCallbag)
-    },
-    toSynchArray(item, synchCallbag) {
+    waitForInnerElements(item, {passRx} = {}) { // resolve promises in array and double promise (via array), passRx - do not wait for reactive data to end, and pass it as is
       if (jb.utils.isPromise(item))
-        return item.then(x=>[x])
+        return item.then(r=>jb.utils.waitForInnerElements(r,{passRx}))
+      if (!passRx &&jb.utils.isCallbag(item))
+        return jb.utils.callbagToPromiseArray(item)
 
-      if (! jb.asArray(item).find(v=> jb.utils.isCallbag(v) || jb.utils.isPromise(v))) return item
-      if (!jb.callbag) return Promise.all(jb.asArray(item))
-
-      const {pipe, fromIter, toPromiseArray, mapPromise,flatMap, map, isCallbag} = jb.callbag
-      if (isCallbag(item)) return synchCallbag ? toPromiseArray(pipe(item,map(x=> x && x.vars ? x.data : x ))) : item
-      if (Array.isArray(item) && isCallbag(item[0])) return synchCallbag ? toPromiseArray(pipe(item[0], map(x=> x && x.vars ? x.data : x ))) : item
-  
-      return pipe( // array of promises
-              fromIter(jb.asArray(item)),
-              mapPromise(x=> Promise.resolve(x)),
-              flatMap(v => Array.isArray(v) ? v : [v]),
-              toPromiseArray)
-    },    
+      if (Array.isArray(item)) {
+        if (! item.find(v=> jb.utils.isCallbag(v) || jb.utils.isPromise(v))) return item
+        return Promise.all(item.map(x=>jb.utils.waitForInnerElements(x,{passRx}))).then(items=>items.flatMap(x=>x))
+      }
+      return item
+    },
+    resolveFinishedPromise(val) {
+      if (val && typeof val == 'object' && val._state == 1) // finished promise
+        return val._result
+      return val
+    }, 
     compareArrays(arr1, arr2) {
         if (arr1 === arr2)
           return true;
@@ -374,6 +361,29 @@ extension('utils', 'generic', {
     }
 })
 
+extension('utils', 'callbag', {
+  isCallbag: cb => typeof cb == 'function' && cb.toString().split('=>')[0].split('{')[0].replace(/\s/g,'').match(/start,sink|t,d/),
+  callbagToPromiseArray: source => new Promise(resolve => {
+    let talkback
+    const res = []
+    source(0, function toPromiseArray(t, d) {
+      if (t === 0) talkback = d
+      if (t === 1) res.push(d && d.vars ? d.data : d)
+      if (t === 2) resolve(res)
+      if (t === 1 || t === 0) talkback(1)  // Pull
+    })
+  }),
+  subscribe: (source, callback) => {
+    let talkback
+    source(0, function subscribe(t, d) {
+      if (t === 0) talkback = d
+      if (t === 1) callback(d)
+      if (t === 1 || t === 0) talkback(1)  // Pull
+    })
+  },
+  subscribe: (source,listener) => jb.callbag.subscribe(listener)(source), 
+})
+
 // common generic promoted for easy usage
 Object.assign(jb, {
   path: (object,path,value) => {
@@ -394,14 +404,16 @@ Object.assign(jb, {
         }
   },  
   entries(obj) {
-      if (!obj || typeof obj != 'object') return [];
-      let ret = [];
+      if (!obj || typeof obj != 'object') return []
+      if (Object.entries) return Object.entries(obj) 
+      let ret = []
       for(let i in obj) // please do not change. it keeps the definition order !!!!
-          if (obj.hasOwnProperty && obj.hasOwnProperty(i) && i.indexOf('$jb_') != 0)
-            ret.push([i,obj[i]])
+        if (obj.hasOwnProperty && obj.hasOwnProperty(i) && i.indexOf('$jb_') != 0)
+          ret.push([i,obj[i]])
       return ret
   },
   objFromEntries(entries) {
+      if (Object.fromEntries) return Object.fromEntries(entries) 
       const res = {}
       entries.forEach(e => res[e[0]] = e[1])
       return res

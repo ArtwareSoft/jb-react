@@ -234,8 +234,9 @@ extension('probe', 'main', {
         return out
     },    
     resolve(x) {
-        if (jb.callbag.isCallbag(x)) return x
-        return Promise.resolve(x)
+        return Promise.resolve(jb.utils.waitForInnerElements(x))
+        // if (jb.callbag.isCallbag(x)) return x
+        // return Promise.resolve(x)
     },
 	// async closestCtxWithSingleVisit(probePath) {
     //     const cmpId = probePath.split('~')[0]

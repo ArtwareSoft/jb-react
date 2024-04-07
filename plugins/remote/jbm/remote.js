@@ -2,21 +2,48 @@ using('common,tgp-formatter,rx')
 
 component('source.remote', {
   type: 'rx<>',
-  macroByValue: true,
   params: [
     {id: 'rx', type: 'rx<>', dynamic: true},
     {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self()}
   ],
-  impl: (ctx,rx,jbm) => {
-        if (!jbm)
-            return jb.logError('source.remote - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
-        if (jbm == jb) return rx()
-        const stripedRx = jbm.callbag ? rx : jb.remoteCtx.stripFunction(rx)
-        return jb.callbag.pipe(
-            jb.callbag.fromPromise(jbm), jb.callbag.mapPromise(_jbm=>_jbm.rjbm()),
-            jb.callbag.concatMap(rjbm => rjbm.createCallbagSource(stripedRx)))
-    }
+  impl: If({
+    condition: jbm.isSelf('%$jbm%'),
+    then: '%$rx()%',
+    Else: rx.pipe(
+      source.promise('%$jbm%'),
+      rx.mapPromise('%rjbm()%'),
+      rx.concatMap(({data},{},{rx}) => data.createCallbagSource(jb.remoteCtx.stripFunction(rx))),
+      rx.map(remoteCtx.mergeProbeResult({ remoteResult: '%%', from: '%$jbm/uri%' }))
+    )
+  })
 })
+
+// component('remote.operator', {
+//   type: 'rx<>',
+//   params: [
+//     {id: 'rx', type: 'rx<>', dynamic: true},
+//     {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self()},
+//     {id: 'passVars', as: 'array'}
+//   ],
+//   impl: If({
+//     condition: jbm.isSelf('%$jbm%'),
+//     then: '%$rx()%',
+//     Else: rx.innerPipe(
+//       rx.mapPromise('%$jbm%'),
+//       rx.mapPromise('%rjbm()%'),
+//       rx.resource('varStorage', obj(prop('counter', 0))),
+//       rx.resource('varsToPass', list('%$passVars%', remoteCtx.varsUsed(({cmpCtx}) => cmpCtx.params.rx.profile), 'messageId')),
+//       rx.do(({data, vars},{varStorage}) => varStorage[++varStorage.counter] = vars),
+//       rx.var('messageId', '%$varStorage/counter%'),
+//       rx.map(transformProp('vars', selectProps('%$varsToPass%'))),
+//       rx.do(ctx=>{debugger}),
+//       rx.concatMap(({data},{},{rx}) => data.createCallbagOperator(jb.remoteCtx.stripFunction(rx))),
+//       rx.map(transformProp('vars', pipeline(extendWithObj('%$varStorage/{%$messageId%}%'), removeProps('messageId')))),
+//       rx.do(removeProps('%$messageId%', { obj: '%$varStorage%' }))
+//     )
+//   }),
+//   circuit: 'remoteTest.remoteOperator.remoteVar'
+// })
 
 component('remote.operator', {
   type: 'rx<>',
@@ -29,7 +56,7 @@ component('remote.operator', {
         if (!jbm)
             return jb.logError('remote.operator - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
         if (jbm == jb) return rx()
-        const stripedRx = jbm.callbag ? rx : jb.remoteCtx.stripFunction(rx)
+        const stripedRx = jb.remoteCtx.stripFunction(rx)
         const profText = jb.utils.prettyPrint(rx.profile)
         let counter = 0
         const varsMap = {}
@@ -108,7 +135,7 @@ component('remote.data', {
                 
         data.require = require
         const res = await rjbm.remoteExec(jb.remoteCtx.stripFunction(data),{timeout,data,ctx})
-        return jb.remoteCtx.hadleProbeResult(ctx,res,rjbm.uri)
+        return jb.remoteCtx.mergeProbeResult(ctx,res,rjbm.uri)
     }
 })
 
@@ -184,27 +211,29 @@ component('remote.updateShadowData', {
 
 /*** net comps */
 
-component('net.listSubJbms', {
+component('remote.listSubJbms', {
   type: 'data<>',
-  category: 'source',
   impl: pipe(
     () => Object.values(jb.jbm.childJbms || {}),
-    log('test listSubJbms 1'),
-    remote.data(net.listSubJbms(), '%%'),
-    log('test listSubJbms 2'),
+    remote.data(remote.listSubJbms(), '%%'),
     aggregate(list(() => jb.uri, '%%'))
   )
 })
 
-component('net.getRootextentionUri', {
+component('remote.getRootextentionUri', {
   impl: () => jb.uri.split('•')[0]
 })
 
-component('net.listAll', {
+component('remote.listAll', {
   type: 'data<>',
   impl: remote.data({
-    calc: pipe(() => Object.values(jb.jbm.networkPeers || {}), remote.data(net.listSubJbms(), '%%'), aggregate(list(net.listSubJbms(), '%%'))),
-    jbm: byUri(net.getRootextentionUri())
+    calc: pipe(
+      Var('subJbms', remote.listSubJbms(), { async: true }),
+      () => Object.values(jb.jbm.networkPeers || {}),
+      remote.data(remote.listSubJbms(), '%%'),
+      aggregate(list('%$subJbms%','%%'))
+    ),
+    jbm: byUri(remote.getRootextentionUri())
   })
 })
 

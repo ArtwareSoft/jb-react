@@ -55,8 +55,10 @@ extension('langService', 'impl', {
             return { errors: ['can not determine compId'], shortId, plugin }
 
         const { text, actionMap, startOffset } = jb.utils.prettyPrintWithPositions(comp, { initialPath: compId, tgpModel })
-        const path = actionMap.filter(e => e.from <= inCompOffset && inCompOffset < e.to || (e.from == e.to && e.from == inCompOffset))
-            .map(e => e.action.split('!').pop())[0] || compId
+        const lastToken = Object.values(actionMap).filter(x=>x.action.indexOf('Token!') != -1 && x.from < inCompOffset).sort((x,y)=>x.from-y.from).pop()
+        const pathByToken = lastToken && lastToken.action.startsWith('beginToken!') && lastToken.action.split('!').pop()
+        const path = pathByToken || actionMap.filter(e => e.from <= inCompOffset && inCompOffset < e.to || (e.from == e.to && e.from == inCompOffset))
+             .map(e => e.action.split('!').pop())[0] || compId
         const filePos = { path: jb.path(tgpModel.comps[compId],'$location.path') , line: cursorPos.line + compLine, col: cursorPos.col }
         jb.tgpTextEditor.pathVisited({path,filePos})
         const compProps = (code != text) ? { path, formattedText: text, reformatEdits: jb.tgpTextEditor.deltaFileContent(code, text, compLine) }

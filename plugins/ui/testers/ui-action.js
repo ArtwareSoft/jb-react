@@ -155,7 +155,10 @@ component('waitForText', {
   impl: waitFor((ctx,{},{text}) => {
     const body = jb.ui.widgetBody(ctx)
     const lookin = typeof body.outerHTML == 'function' ? body.outerHTML() : body.outerHTML
-    return lookin.indexOf(text) != -1
+    const res = lookin.indexOf(text) != -1
+    const {testID} = ctx.vars
+    //jb.log(`uiTest waitForText ${testID} ${text} ${res}`, {ctx, lookin, text})
+    return res
   })
 })
 

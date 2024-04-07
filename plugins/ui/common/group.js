@@ -105,7 +105,7 @@ component('group.wait', {
     followUp.action(async (ctx,{cmp,$props},{varName,passRx}) => {
       try {
         if (!cmp.state.dataArrived && !cmp.state.error) {
-          const data = await jb.utils.resolveDelayed($props.waitFor, !passRx)
+          const data = await jb.utils.waitForInnerElements($props.waitFor, {passRx})
           jb.log('group wait dataArrived', {ctx,data})
           cmp.refresh({ dataArrived: true }, {
             srcCtx: ctx.cmpCtx,

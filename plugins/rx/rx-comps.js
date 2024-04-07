@@ -26,18 +26,32 @@ component('source.callbag', {
   impl: (ctx,callbag) => jb.callbag.map(x=>ctx.dataObj(x))(callbag || jb.callbag.fromIter([]))
 })
 
-component('source.callback', {
+component('source.callbackLoop', {
   type: 'rx',
   params: [
-    {id: 'registerFunc', mandatory: true, description: 'receive callback function, returns handler'},
-    {id: 'unRegisterFunc', mandatory: true, description: 'receive handler from register'}
+    {id: 'registerFunc', mandatory: true, description: 'receive callback function. needs to be recalled for next event'},
   ],
-  impl: (ctx,registerFunc,unRegisterFunc) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromCallbackFunc(registerFunc,unRegisterFunc))
+  impl: (ctx,registerFunc) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromCallbackLoop(registerFunc))
 })
 
 component('source.animationFrame', {
   type: 'rx',
-  impl: source.callback(()=>jb.frame.requestAnimationFrame, () => jb.frame.cancelAnimationFrame)
+  impl: source.callbackLoop(()=>jb.frame.requestAnimationFrame)
+})
+
+/*
+producer interface: obs => {
+  bind('myBind', handler)
+  return () => unbind('myBind',handler)
+  function handler(x) { obs(x) }
+}
+*/
+component('source.producer', {
+  type: 'rx',
+  params: [
+    {id: 'producer', dynamic: true, mandatory: true, description: 'producer function'},
+  ],
+  impl: (ctx,producer) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromProducer(producer))
 })
 
 component('source.event', {
@@ -68,14 +82,6 @@ component('source.promise', {
     {id: 'promise', mandatory: true}
   ],
   impl: (ctx,promise) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromPromise(promise))
-})
-
-component('source.promises', {
-  type: 'rx',
-  params: [
-    {id: 'promises', type: 'data[]', mandatory: true}
-  ],
-  impl: (ctx,promises) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromPromise(promises))
 })
 
 component('source.interval', {
@@ -181,8 +187,10 @@ component('rx.resource', {
   ],
   impl: If('%$name%', (ctx,{},{name,value}) => source => (start, sink) => {
     if (start != 0) return
-    const val = value()
+    let val, calculated
     return source(0, function Var(t, d) {
+      val = calculated ? val : value()
+      calculated = true
       sink(t, t === 1 ? d && {data: d.data, vars: {...d.vars, [name()]: val}} : d)
     })
   })

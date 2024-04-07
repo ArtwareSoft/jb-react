@@ -30,7 +30,7 @@ component('text.allowAsynchValue', {
   impl: features(
     calcProp('%$propId%', firstSucceeding('%$$state/{%$propId%}%','%$$props/{%$propId%}%')),
     followUp.flow(
-      source.any(If('%$$state/{%$propId%}%', '', '%$$props/{%$propId%}%')),
+      source.any(If('%$$state/{%$propId%}%', '', '$debugger:%$$props/{%$propId%}%')),
       rx.log('followUp allowAsynchValue'),
       rx.map(({data}) => jb.ui.toVdomOrStr(data)),
       sink.refreshCmp(obj(prop('%$propId%', '%%')))
