@@ -53,6 +53,7 @@ extension('tgp', 'statistics', {
 })
 
 component('tgp.circuitOptions', {
+  type: 'data',
   params: [
     {id: 'path'}
   ],

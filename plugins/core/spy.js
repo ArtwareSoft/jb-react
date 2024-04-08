@@ -1,12 +1,12 @@
-extension('spy', {
+extension('spy', 'main', {
 	$requireFuncs: '#spy.log',
 	initExtension() {
 		// jb.spy.log() -- for codeLoader
 		return {
 			logs: [],
 			enrichers: [],
+			includeLogs: {error: true},
 			settings: { 
-				includeLogs: 'error',
 				stackFilter: /spy|jb_spy|Object.log|rx-comps|jb-core|node_modules/i,
 				MAX_LOG_SIZE: 10000
 			},
@@ -51,10 +51,11 @@ extension('spy', {
 	calcIncludeLogsFromSpyParam() {
 		const includeLogsFromParam = (jb.spy.spyParam || '').split(',').filter(x => x[0] !== '-').filter(x => x)
 		const excludeLogsFromParam = (jb.spy.spyParam || '').split(',').filter(x => x[0] === '-').map(x => x.slice(1))
-		jb.spy.includeLogs = jb.spy.settings.includeLogs.split(',').concat(includeLogsFromParam).filter(log => excludeLogsFromParam.indexOf(log) === -1).reduce((acc, log) => {
+		jb.spy.includeLogs = includeLogsFromParam.filter(log => excludeLogsFromParam.indexOf(log) === -1).reduce((acc, log) => {
 			acc[log] = true
 			return acc
 		}, {})
+		jb.spy.includeLogs.error = true
 	},
 	shouldLog(logNames, record) {
 		// disable debugging events

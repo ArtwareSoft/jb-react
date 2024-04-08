@@ -7,7 +7,7 @@ component('modelDataServer', {
   ],
   impl: sourceCode(pluginsByPath('%$filePath%'), plugins('tgp-model-data'), {
     pluginPackages: packagesByPath('%$filePath%'),
-    libsToInit: 'utils,tgp'
+    libsToInit: 'utils,tgp,spy'
   })
 })
 
@@ -101,7 +101,7 @@ component('langServer.references', {
       jbm: cmd({
         sourceCode: sourceCode(plugins('*'), project('studio'), {
           pluginPackages: packagesByPath('%$filePath%'),
-          libsToInit: 'utils,tgp'
+          libsToInit: 'utils,tgp,spy'
         }),
         doNotStripResult: true
       }),
@@ -120,12 +120,9 @@ component('langServer.studioCircuitUrl', {
     {id: 'compProps', defaultValue: '%%'}
   ],
   impl: pipeline(
-    Var('sourceCode', sourceCode.encodeUri(
-      typeAdapter('source-code<loader>', probeServer('%$compProps/filePath%', 'studio'))
-    )),
+    Var('sourceCode', sourceCode.encodeUri(typeAdapter('source-code<loader>', probeServer('%$compProps/filePath%', 'studio')))),
     Var('spyParams', test.calcSpyParamForTest('%$compProps/circuitOptions/0/id%')),
-    'http://localhost:8082/project/studio/%$compProps/circuitOptions/0/id%/%$compProps/path%?sourceCode=%$sourceCode%&spy=%$spyParams%',
-    first()
+    'http://localhost:8082/project/studio/%$compProps/circuitOptions/0/id%/%$compProps/path%?sourceCode=%$sourceCode%&spy=%$spyParams%'
   )
 })
 
@@ -135,8 +132,7 @@ component('langServer.testUrl', {
   ],
   impl: pipeline(
     Var('spyParams', test.calcSpyParamForTest('%$compProps/circuitOptions/0/id%')),
-    'http://localhost:8082/hosts/tests/tests.html?test=%$compProps/circuitOptions/0/shortId%&show&spy=%$spyParam%',
-    first()
+    'http://localhost:8082/hosts/tests/tests.html?test=%$compProps/circuitOptions/0/shortId%&show&spy=%$spyParam%'
   )
 })
 
@@ -145,9 +141,7 @@ component('langServer.runCtxOfRemoteCmdUrl', {
     {id: 'compProps', defaultValue: '%%'}
   ],
   impl: pipe(
-    Var('sourceCode', sourceCode.encodeUri(
-      typeAdapter('source-code<loader>', probeServer('%$compProps/filePath%'))
-    )),
+    Var('sourceCode', sourceCode.encodeUri(typeAdapter('source-code<loader>', probeServer('%$compProps/filePath%')))),
     Var('spyParams', test.calcSpyParamForTest('%$compProps/circuitOptions/0/id')),
     langServer.probe(),
     encodeJsonAsUri('%result.0.in%'),

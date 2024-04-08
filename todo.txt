@@ -3,20 +3,18 @@ top -b -n 1 | xclip -selection clipboard
 
 file:///home/shaiby/Downloads/philsiphy%20presentataions%20(1).pdf: 173
 
-check jb.utils.flattenArray
+icon2
+  build tests
 
-icons
-  create new js file and revert to old and rename
-  control<>icon: icon, title, raised, (no size - should be from parent), features: OnOff, FAB, round, stack(some icons), 
-    fixedWidth, ul-li, border, pull-left/right, 
-  feature<>icon: icon, position_fix(after,margin(top,left,bottom,right)), raised, size,  (no title)
-completion fixes
+workspace ui
   select the first item on editabletext helper
+  build plugin editor
 
-how do debug the stateless jbm worker on nodejs - maybe single server by sourceCode with restart
-
-cmd,stateless,singleRun?
-fix remote.operator - new vers
+jbm.cluster
+  stateless jbms 
+  move ui data to session
+  move watchable to session
+  handle code changes
 
 inner DSL - formatter & resolver
   define promptTemplate: 
@@ -27,6 +25,7 @@ aggregators - pipeline effeciency
   allow data interface to be both single and agregator
   by input cardinality - if recieve single return single, gets array returns array.
   write obj-prop as aggregator
+
 workspace.ui
   pluginEditor
     files and tests

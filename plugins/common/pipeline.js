@@ -1,14 +1,13 @@
 extension('common', 'pipe', {
     runAsAggregator(ctx, profile,i, dataArray,profiles) {
       if (!profile || profile.$disabled) return dataArray
-
-      const parentParam = (i < profiles.length - 1) ? { as: 'array'} : (ctx.parentParam || {}) // use parent param to last element to convert to client needs
+      const parentParam = (i < profiles.length - 1) ? { as: 'array'} : (ctx.parentParam || {}) // use parent param for last element to convert to client needs
       if (jb.path(jb.comps[profile.$$],'aggregator'))
         return ctx.setData(jb.asArray(dataArray)).runInner(profile, parentParam, `items~${i}`)
-      const res = jb.asArray(dataArray).map(item => ctx.setData(item).runInner(profile, parentParam, `items~${i}`))
+      return jb.asArray(dataArray)
+        .map(item => ctx.setData(item).runInner(profile, parentParam, `items~${i}`))
         .filter(x=>x!=null)
         .flatMap(x=> jb.asArray(jb.val(x)))
-      return res
     }
 })
 
@@ -20,10 +19,14 @@ component('pipeline', {
     {id: 'items', type: 'data[]', dynamic: true, mandatory: true, composite: true, description: 'chain/map data functions'}
   ],
   impl: (ctx,items) => {
-    const sourceVal = jb.val(ctx.data)
-    const source = sourceVal == null ? [null] : sourceVal
     const profiles = jb.asArray(ctx.profile.items)
-    return profiles.reduce((dataArray,prof,index) => jb.common.runAsAggregator(ctx, prof,index,dataArray,profiles), source)
+    const source = ctx.runInner(profiles[0], profiles.length == 1 ? ctx.parentParam : null, `items~0`)
+    return profiles.slice(1).reduce( (dataArray,prof,index) => jb.common.runAsAggregator(ctx, prof,index+1,dataArray, profiles), source)
+
+    // const sourceVal = jb.val(ctx.data)
+    // const source = sourceVal == null ? [null] : sourceVal
+    // const profiles = jb.asArray(ctx.profile.items)
+    // return profiles.reduce((dataArray,prof,index) => jb.common.runAsAggregator(ctx, prof,index,dataArray,profiles), source)
   }
 })
 
@@ -35,9 +38,8 @@ component('pipe', {
     {id: 'items', type: 'data[]', dynamic: true, mandatory: true, composite: true}
   ],
   impl: async ctx => {
-    if (Array.isArray(ctx.data)) debugger
     const profiles = jb.asArray(ctx.profile.items)
-    const source = ctx.runInner(profiles[0], null, `items~0`)
+    const source = ctx.runInner(profiles[0], profiles.length == 1 ? ctx.parentParam : null, `items~0`)
     const _res = profiles.slice(1).reduce( async (pr,prof,index) => {
       const dataArray = await jb.utils.waitForInnerElements(pr)
       jb.log(`pipe elem resolved input for ${index+1}`,{dataArray,ctx})
@@ -45,7 +47,7 @@ component('pipe', {
     }, source)
     const res = await jb.utils.waitForInnerElements(_res)
     jb.log(`pipe result`,{res,ctx})
-    return _res
+    return res
   }
 })
 
@@ -254,9 +256,11 @@ component('groupBy', {
   params: [
     {id: 'pivot', as: 'string', description: 'new prop name', mandatory: true},
     {id: 'calcPivot', dynamic: true, mandatory: true, byName: true},
-    {id: 'aggregate', type: 'group-prop[]', mandatory: true}
+    {id: 'aggregate', type: 'group-prop[]', mandatory: true},
+    {id: 'inputItems', defaultValue: '%%'},
   ],
   impl: pipeline(
+    '%$inputItems%',
     prop('%$pivot%', '%$calcPivot()%'),
     splitByPivot('%$pivot%'),
     groupProps('%$aggregate%'),
