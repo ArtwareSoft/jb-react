@@ -40,7 +40,9 @@ extension('utils', 'prettyPrint', {
     if (val.$unresolved)
       val.$comp ? jb.utils.resolveComp(val,{tgpModel}) : jb.utils.resolveProfile(val,{tgpModel, expectedType: type})
 
-    calcValueProps(val,initialPath)
+    // first phase - fill the props[path] dictionary. composite with innerVals, primitives with tokens(token,action)
+    calcValueProps(val,initialPath) 
+    // second phase - build list of tokens
     const tokens = calcTokens(initialPath, { depth: depth || 1, useSingleLine: singleLine })
     const res = aggregateTokens(tokens)
     return res
@@ -48,49 +50,47 @@ extension('utils', 'prettyPrint', {
     function aggregateTokens(tokens) {
       const actionMap = []
       let pos = startOffset
-      const text = tokens.reduce((acc,{action, item}) => {
-        action && actionMap.push({from: pos, to: pos+item.length ,action})
-        pos = pos+ item.length
-        return acc + item
+      const text = tokens.reduce((acc,{action, token}) => {
+        action && actionMap.push({from: pos, to: pos+token.length ,action})
+        pos = pos+ token.length
+        return acc + token
       }, '')
       return { text, actionMap, tokens, startOffset}
     }
 
     function calcTokens(path, { depth = 1, useSingleLine }) {
-      if (depth > 100)
-        throw `prettyprint structure too deep ${path}`
-      const { open, close, isArray, len, singleParamAsArray, primitiveArray, longInnerValInArray, singleFunc,
-          nameValuePattern, item, list, mixed, indentWithParent } = props[path]
-      
-      const items = item != null ? [props[path]] : (list && props[path].list)
-      if (!indentWithParent && items)
-        return items.map(x=>({...x, path}))
+      if (depth > 100) throw `prettyprint structure too deep ${path}`
 
-      const paramProps = path.match(/~params~[0-9]+$/)
-      const singleLine = paramProps || useSingleLine || singleFunc || nameValuePattern || primitiveArray || (len < colWidth && !multiLine())
-      const separatorWS = primitiveArray ? '' : singleLine ? ' ' : newLine()
-      
-      if (indentWithParent && items)  { // used by asIs - indent lines after the the first line
-        const splitWithLines = items.flatMap(x => x.item.split('\n').map((line,i)=>({...x, item: line, startWithNewLine: i !=0 })))
-        if (splitWithLines.length == items.length) 
-          return items.map(x=>({...x, path}))
+      const tokens = props[path].token != null ? [props[path]] : props[path].tokens
+      if (props[path].indentWithParent && tokens)  { // used by asIs - indent all token lines after the the first line
+        const splitWithLines = tokens.flatMap(x => x.token.split('\n').map((line,i)=>({...x, token: line, startWithNewLine: i !=0 })))
+        if (splitWithLines.length == tokens.length) 
+          return tokens.map(x=>({...x, path}))
         const lastLine = splitWithLines.length - splitWithLines.slice(0).reverse().findIndex(x=>x.startWithNewLine) -1
         splitWithLines[lastLine].lastLine = true
 
         const fullIndent = '\n' + jb.utils.emptyLineWithSpaces.slice(0,depth*tabSize)
         const lastIndent = '\n' + jb.utils.emptyLineWithSpaces.slice(0,(depth-1)*tabSize)
         return splitWithLines.map((x,i) => ({...x,path,
-          item: (x.lastLine ? lastIndent : x.startWithNewLine ? fullIndent : '') + x.item
+          token: (x.lastLine ? lastIndent : x.startWithNewLine ? fullIndent : '') + x.token
         }))
       }
-        
+      if (tokens)
+        return tokens
+
+      const { open, close, isArray, len, singleParamAsArray, primitiveArray, longInnerValInArray, singleFunc, nameValuePattern, token, mixed } = props[path]
+      
+      const paramProp = path.match(/~params~[0-9]+$/)
+      const singleLine = paramProp || useSingleLine || singleFunc || nameValuePattern || primitiveArray || (len < colWidth && !multiLine())
+      const separatorWS = primitiveArray ? '' : singleLine ? ' ' : newLine()
+
       if (!mixed) {
         const innerVals = props[path].innerVals || []
         const vals = innerVals.reduce((acc,{innerPath}, index) => {
           const fullInnerPath = [path,innerPath].join('~')
           const fixedPropName = props[fullInnerPath].fixedPropName
-          const propName = isArray ? [] : [{ item: fixedPropName || (fixPropName(innerPath) + ': ')}]
-          const separator = index === innerVals.length-1 ? [] : [{item: ',' + separatorWS, action: `insertPT!${fullInnerPath}`}]
+          const propName = isArray ? [] : [{ token: fixedPropName || (fixPropName(innerPath) + ': ')}]
+          const separator = index === innerVals.length-1 ? [] : [{token: ',' + separatorWS, action: `insertPT!${fullInnerPath}`}]
           return [
             ...acc,
             ...propName,
@@ -101,10 +101,10 @@ extension('utils', 'prettyPrint', {
 
         return [
           ...jb.asArray(open).map(x=>({...x, path, action: `propInfo!${path}`})),
-          {item: newLine(), action: `prependPT!${path}`},
+          {token: newLine(), action: `prependPT!${path}`},
           ...vals,
-          {item:'', action: `end!${path}`},
-          {item: newLine(-1), action: `appendPT!${path}`},
+          {token:'', action: `end!${path}`},
+          {token: newLine(-1), action: `appendPT!${path}`},
           ...jb.asArray(close).map(x=>({...x, path, action: `appendPT!${path}`})),
         ]
       }
@@ -122,20 +122,25 @@ extension('utils', 'prettyPrint', {
         const _longInnerValInArray = !singleParamAsArray && longInnerValInArray
         return paramsParent || top || _longInnerValInArray
       }
+
       function fixPropName(prop) {
         if (prop == '$vars') return 'vars'
         return prop.match(/^[$a-zA-Z_][a-zA-Z0-9_]*$/) ? prop : `'${prop}'`
       }
 
       function calcMixedTokens() {
-        const { lenOfValues, macro, argsByValue, propsByName, nameValueFold, singleArgAsArray, singleInArray, singleVal, firstParamAsArray } = props[path]
+        const { lenOfValues, macro, argsByValue, propsByName, nameValueFold, singleArgAsArray, singleInArray, singleVal, hasParamAsArray } = props[path]
         const mixedFold = nameValueFold || singleVal || !singleLine && lenOfValues && lenOfValues < colWidth
         const valueSeparatorWS = (singleLine || mixedFold) ? primitiveArray ? '' : ' ' : newLine()
 
-        const _argsByValue = argsByValue.reduce((acc,{innerPath}, index) => {
+        const _argsByValue = argsByValue.reduce((acc,{innerPath, posInArray, isLast}, index) => {
           const fullInnerPath = [path,innerPath].join('~')
-          const separator = singleArgAsArray ? { item: ',' + valueSeparatorWS, action: `insertPT!${path}~${singleArgAsArray}~${index}` }
-            : {item: ',' + valueSeparatorWS, action: `addProp!${path}`}
+          const paramAsArrayPath = [path,hasParamAsArray].join('~')
+          const separatorAction = hasParamAsArray && posInArray == null ? `prependPT!${paramAsArrayPath}` 
+            : hasParamAsArray && isLast ? `appendPT!${paramAsArrayPath}`
+            : hasParamAsArray ? `insertPT!${fullInnerPath}`
+            : `addProp!${path}`
+          const separator = { token: ',' + valueSeparatorWS, action: separatorAction }
           return [
             ...acc,
             ...calcTokens(fullInnerPath, { depth: (singleLine || mixedFold) ? depth : depth +1, singleLine }),
@@ -145,21 +150,21 @@ extension('utils', 'prettyPrint', {
         const _propsByName = propsByName.reduce((acc,{innerPath}, index) => {
           const fullInnerPath = [path,innerPath].join('~')
           const fixedPropName = props[fullInnerPath].fixedPropName
-          const separator = index != propsByName.length-1 ? [{item: ',' + separatorWS, action: `addProp!${path}`}] : []
+          const separator = index != propsByName.length-1 ? [{token: ',' + separatorWS, action: `addProp!${path}`}] : []
           return [
             ...acc,
-            {item: fixedPropName || (fixPropName(innerPath) + ': '), action: `propInfo!${fullInnerPath}`},
+            {token: fixedPropName || (fixPropName(innerPath) + ': '), action: `propInfo!${fullInnerPath}`},
             ...calcTokens(fullInnerPath, { depth: singleLine ? depth : depth +1, singleLine}),
             ...separator
           ]
         }, [])
 
-        const nameValueSectionsSeparator = {item: ',' + valueSeparatorWS, action: firstParamAsArray ? `appendPT!${path}~${firstParamAsArray}` : `addProp!${path}` }
+        const nameValueSectionsSeparator = {token: ',' + valueSeparatorWS, action: hasParamAsArray ? `appendPT!${path}~${hasParamAsArray}` : `addProp!${path}` }
         const propsByNameSection = propsByName.length ? [
           ...(argsByValue.length ? [nameValueSectionsSeparator] : []),
-          {item: '{'+ (newLine() || ' '), action: `addProp!${path}`},
+          {token: '{'+ (newLine() || ' '), action: `addProp!${path}`},
           ..._propsByName,
-          {item: (newLine(-1) || ' ') + '}', action: `addProp!${path}`}
+          {token: (newLine(-1) || ' ') + '}', action: `addProp!${path}`}
         ] : []
 
         const singleArgAsArrayPath = singleArgAsArray ? `${path}~${singleArgAsArray}` : path
@@ -167,32 +172,33 @@ extension('utils', 'prettyPrint', {
         const firstInArray = path.match(/~0$/)
         const parentPath = path.split('~').slice(0,-1).join('~')
         return [
-            {item: '', action: `begin!${path}`},
-            {item: '', action: `beginToken!${path}`},
-            {item: macro + '(', action: singleInArray ? `prependPT!${path}` : firstInArray ? `prependPT!${parentPath}` : `setPT!${path}`},
-            {item: '', action: `endToken!${path}`},
-            {item: '', action: `edit!${path}`},
-            {item: '', action: `addProp!${path}`},
-            ...(argsByValue.length && !mixedFold ? [{item: newLine(), action: actionForFirstArgByValue}] : []),
+            {token: '', action: `begin!${path}`},
+            {token: '', action: `beginToken!${path}`},
+            {token: macro + '(', action: singleInArray ? `prependPT!${path}` : firstInArray ? `prependPT!${parentPath}` : `setPT!${path}`},
+            {token: '', action: `endToken!${path}`},
+            {token: '', action: `edit!${path}`},
+            {token: '', action: `addProp!${path}`},
+            ...(argsByValue.length && !mixedFold ? [{token: newLine(), action: actionForFirstArgByValue}] : []),
             ..._argsByValue,
             ...propsByNameSection,
-            {item: argsByValue.length && !mixedFold ? newLine(-1) : '', 
-              action: singleArgAsArray && propsByName.length == 0 ? `appendPT!${singleArgAsArrayPath}` : ``},
-            {item: ')', action: `addProp!${path}`}
+            {token: argsByValue.length && !mixedFold ? newLine(-1) : '', 
+              action: hasParamAsArray && propsByName.length == 0 ? `appendPT!${path}~${hasParamAsArray}` : ``},
+            {token: ')', action: `addProp!${path}`}
           ]
       }
     }
 
-    function calcProfileProps(profile, path, {forceByName, parentParam} = {}) {
+    function calcProfileProps(profile, path, settings = {}) {
+      const {forceByName, parentParam, posInArray} = settings
       if (noMacros)
         return asIsProps(profile,path)
       if (profile.$ == 'asIs') {
         jb.utils.resolveProfile(profile)
         const content = jb.utils.prettyPrint(profile.$asIs,{noMacros: true})
-        const list = [ 
-          {item: 'asIs(', action: `begin!${path}`}, {item: '', action: `edit!${path}`},
-          {item: content, action: `asIs!${path}`}, {item: ')', action: `end!${path}`}]
-        return props[path] = {list, len: content.length + 6, indentWithParent: true }
+        const tokens = [ 
+          {token: 'asIs(', action: `begin!${path}`}, {token: '', action: `edit!${path}`},
+          {token: content, action: `asIs!${path}`}, {token: ')', action: `end!${path}`}]
+        return props[path] = {tokens, len: content.length + 6, indentWithParent: true }
       }
       if (profile.$comp) {
         const cleaned = {...profile }
@@ -209,14 +215,17 @@ extension('utils', 'prettyPrint', {
       const macro = jb.macro.titleToId(id)
 
       const params = (comp.params || []).slice(0)
-      const param0 = params[0] ? params[0] : {}
+      const param0 = params[0] || {}
+      const param1 = params[1] || {}
       const firstParamByName = param0.byName
       let firstParamAsArray = (param0.type||'').indexOf('[]') != -1 && !firstParamByName && param0.id
+      let secondParamAsArray = param1.secondParamAsArray && param1.id
 
       let paramsByValue = (firstParamAsArray || firstParamByName) ? [] : params.slice(0,2)
-      let paramsByName = firstParamByName ? params.slice(0) : firstParamAsArray ? params.slice(1) : params.slice(2)
-      const param1 = params[1] ? params[1] : {}
-      if (!firstParamAsArray && paramsByValue.length && (param1.as == 'array' || (param1.type||'').indexOf('[]') != -1 || param1.byName))
+      let paramsByName = firstParamByName ? params.slice(0) 
+        : firstParamAsArray ? params.slice(1) 
+        : params.slice(2)
+      if (param1.byName && paramsByValue.length)
         paramsByName.unshift(paramsByValue.pop())
       if (comp.macroByValue) {
         paramsByValue = params
@@ -228,30 +237,41 @@ extension('utils', 'prettyPrint', {
       }
       if (forceByName) {
         firstParamAsArray = false
+        secondParamAsArray = false
         paramsByValue = []
         paramsByName = params.slice(0)
       }
 
-      const varArgs = (profile.$vars || []).map(({name, val, async},i) => ({innerPath: `$vars~${i}`, val: {$$: 'var<>Var', name, val,async }}))
-      const varsByValue = firstParamAsArray ? varArgs : []
-      const varsByName = firstParamAsArray ? [] : ['$vars']
+      const hasParamAsArray = firstParamAsArray || secondParamAsArray
+      const varArgs = (profile.$vars || []).map(({name, val, async},i) => ({innerPath: `$vars~${i}`, val: {$$: 'var<>Var', name, val,async, ...calcArrayPos(i,profile.$vars) }}))
+      const varsByValue = hasParamAsArray ? varArgs : []
+      const varsByName = hasParamAsArray ? [] : ['$vars']
       const systemProps = [...varsByName, ...jb.macro.systemProps].flatMap(p=>profile[p] ? [{innerPath: p, val: profile[p]}] : [])
 
-      const propsByName = systemProps.concat(paramsByName.map(param=>({innerPath: param.id, val: profile[param.id], newLinesInCode: param.newLinesInCode}))).filter(({val})=>val !== undefined)
+      const propsByName = systemProps.concat(paramsByName.map(param=>({innerPath: param.id, val: profile[param.id], newLinesInCode: param.newLinesInCode }))).filter(({val})=>val !== undefined)
       const propsByValue = paramsByValue.map(param=>({innerPath: param.id, val: profile[param.id], newLinesInCode: param.newLinesInCode})).filter(({val})=>val !== undefined)
       const firstParamVal = profile[param0.id]
+      const secondParamVal = jb.asArray(profile[param1.id])
       const singleFirstParamAsArray = firstParamAsArray && !Array.isArray(firstParamVal) && firstParamVal != null
 
-      const argsOfFirstParam = singleFirstParamAsArray ? [{innerPath: params[0].id, val: firstParamVal}] 
-        : firstParamAsArray && firstParamVal ? firstParamVal.map((val,i) => ({innerPath: params[0].id + '~' + i, val})) : []
+      const argsOfSingleFirstParam = [{innerPath: param0.id, val: firstParamVal}]
+      const argsOfParamAsArray = singleFirstParamAsArray ? argsOfSingleFirstParam
+        : firstParamAsArray && firstParamVal ? firstParamVal.map((val,i) => ({innerPath: param0.id + '~' + i, val, ...calcArrayPos(i,firstParamVal)})) 
+        : secondParamAsArray ? secondParamVal.map((val,i) => ({innerPath: param1.id + '~' + i, val, ...calcArrayPos(i,secondParamVal)}))
+        : []
 
       const varsLength = varsByValue.length ? calcArrayProps(varsByValue.map(x=>x.val),`${path}~$vars`).len : 0
-      const firstParamLength = singleFirstParamAsArray ? calcValueProps(firstParamVal,`${path}~${params[0].id}`, {parentParam: param0}).len
-        : argsOfFirstParam.length ? calcArrayProps(argsOfFirstParam.map(x=>x.val),`${path}~${params[0].id}`).len : 0
-      const propsByValueLength = (propsByValue.length && !firstParamAsArray) ? propsByValue.reduce((len,elem) => len + calcValueProps(elem.val,`${path}~${elem.innerPath}`,{newLinesInCode: elem.newLinesInCode}).len + 2, 0) : 0
-      const propsByNameLength = propsByName.length ? propsByName.reduce((len,elem) => len + calcValueProps(elem.val,`${path}~${elem.innerPath}`,{newLinesInCode: elem.newLinesInCode}).len + elem.innerPath.length + 2, 0) : 0
-      const argsByValue = [...varsByValue, ...(firstParamAsArray ? argsOfFirstParam: propsByValue)]
-      const lenOfValues = varsLength + firstParamLength + propsByValueLength
+      const paramsAsArrayLength = singleFirstParamAsArray ? calcValueProps(firstParamVal,`${path}~${param0.id}`, {parentParam: param0}).len
+        : firstParamAsArray ? calcArrayProps(argsOfParamAsArray.map(x=>x.val),`${path}~${param0.id}`).len 
+        : secondParamAsArray ? calcValueProps(firstParamVal,`${path}~${param0.id}`, {parentParam: param0}).len
+            + calcArrayProps(argsOfParamAsArray.map(x=>x.val),`${path}~${param1.id}`).len 
+        : 0
+      const restPropsByValueLength = hasParamAsArray ? 0 :
+        propsByValue.reduce((len,elem) => len + calcValueProps(elem.val,`${path}~${elem.innerPath}`,{newLinesInCode: elem.newLinesInCode}).len + 2, 0) 
+      const propsByNameLength = propsByName.reduce((len,elem) => len + calcValueProps(elem.val,`${path}~${elem.innerPath}`,
+        {newLinesInCode: elem.newLinesInCode}).len + elem.innerPath.length + 2, 0)
+      const argsByValue = [...varsByValue, ...(secondParamAsArray ? argsOfSingleFirstParam : []), ...(hasParamAsArray ? argsOfParamAsArray: propsByValue)]
+      const lenOfValues = varsLength + paramsAsArrayLength + restPropsByValueLength
       const singleArgAsArray = propsByName.length == 0 && firstParamAsArray
       const singleProp = propsByName.length == 0 && propsByValue.length == 1
 
@@ -261,14 +281,19 @@ extension('utils', 'prettyPrint', {
       const nameValueFold = valuePair && !nameValuePattern && propsByValue[1].val && propsByValue[1].val.$ 
         && props[`${path}~${propsByValue[1].innerPath}`].len >= colWidth
       if (lenOfValues >= colWidth && !singleArgAsArray && !nameValuePattern &&!nameValueFold && !singleProp)
-        return calcProfileProps(profile, path, {forceByName: true})
+        return calcProfileProps(profile, path, {...settings, forceByName: true})
 
       const len = macro.length + 2 + lenOfValues + propsByNameLength
       const singleFunc =  propsByName.length == 0 && !varArgs.length && !systemProps.length && propsByValue.length == 1 && typeof propsByValue[0].val == 'function'
       const singleVal =  propsByName.length == 0 && !varArgs.length && !systemProps.length && propsByValue.length == 1
-      const primitiveArray =  propsByName.length == 0 && !varArgs.length && firstParamAsArray && argsByValue.reduce((acc,item)=> acc && jb.utils.isPrimitiveValue(item.val), true)
+      const primitiveArray =  propsByName.length == 0 && !varArgs.length && firstParamAsArray && 
+        argsByValue.reduce((acc,item)=> acc && jb.utils.isPrimitiveValue(item.val), true)
       const singleInArray = (jb.path(parentParam,'type') || '').indexOf('[]') != -1 && !path.match(/[0-9]$/)
-      return props[path] = { macro, len, argsByValue, propsByName, nameValuePattern, nameValueFold, singleVal, singleFunc, primitiveArray, singleInArray, singleArgAsArray, firstParamAsArray, lenOfValues, mixed: true}
+      return props[path] = { macro, posInArray, len, argsByValue, propsByName, nameValuePattern, nameValueFold, singleVal, singleFunc, primitiveArray, singleInArray, singleArgAsArray, hasParamAsArray, lenOfValues, mixed: true}
+    }
+
+    function calcArrayPos(index,array) {
+      return { posInArray: index, isLast: index == array.length -1 }
     }
 
     function asIsProps(profile,path) {
@@ -281,14 +306,16 @@ extension('utils', 'prettyPrint', {
       const len = objProps.reduce((len,key) => len 
         + calcValueProps(profile[key],`${path}~${key}`).len + key.length + 3,2,{asIs: true})
       const innerVals = objProps.map(prop=>({innerPath: prop}))
-      return openCloseProps(path, {item:'{'},{ item:'}'}, { len, simpleObj: true, innerVals})
+      return openCloseProps(path, {token:'{'},{ token:'}'}, { len, simpleObj: true, innerVals})
     }
 
     function calcArrayProps(array, path) {
       const primitiveArray = array.reduce((acc,item)=> acc && jb.utils.isPrimitiveValue(item), true)
       let longInnerValInArray = false
-      const len = Array.from(array.keys()).map(x=>array[x]).reduce((len,val,i) => {
-        const innerLen = calcValueProps(val,`${path}~${i}`).len
+//      const len = Array.from(array.keys()).map(x=>array[x]).reduce((len,val,i) => {
+      const _arr = Object.values(array) 
+      const len = _arr.reduce((len,val,i) => {
+        const innerLen = calcValueProps(val,`${path}~${i}`, calcArrayPos(i,_arr)).len
         longInnerValInArray = longInnerValInArray || innerLen > 20
         return len + innerLen + 2 
       }, 2)
@@ -296,12 +323,13 @@ extension('utils', 'prettyPrint', {
     }
 
     function calcValueProps(val,path,settings) {
+      const posInArray = jb.path(settings,'posInArray')
       const parentPath = path.split('~').slice(0,-1).join('~')
       if (Array.isArray(val)) 
         return openCloseProps(path, 
-          [{item:'[', action: `addProp!${parentPath}`}, {item:'', action: `begin!${path}`}], 
-          [{item:'', action: `end!${path}`}, {item:']', action: `appendPT!${path}`}]
-          , {...calcArrayProps(val, path), isArray: true, innerVals: Array.from(val.keys()).map(innerPath=>({innerPath})) }
+          [{token:'[', action: `addProp!${parentPath}`}, {token:'', action: `begin!${path}`}], 
+          [{token:'', action: `end!${path}`}, {token:']', action: `appendPT!${path}`}]
+          , {...calcArrayProps(val, path), isArray: true, innerVals: Array.from(val.keys()).map((innerPath,i)=>({innerPath, ...calcArrayPos(i,val)})) }
         )
         
       if (val === null) return tokenProps('null', path)
@@ -316,7 +344,7 @@ extension('utils', 'prettyPrint', {
       if (typeof val === 'string' && val.indexOf("'") == -1 && !putNewLinesInString)
         return stringValProps(JSON.stringify(val).slice(1,-1).replace(/\\"/g,'"'), "'", path)
       else if (typeof val === 'string')
-        return stringValProps(val.replace(/`/g,'\\`').replace(/\$\{/g, '\\${'), "`", path,putNewLinesInString)
+        return stringValProps(val.replace(/`/g,'\\`').replace(/\$\{/g, '\\${'), "`", path, {putNewLinesInString})
       else if (typeof val === 'boolean')
         return tokenProps(val ? 'true' : 'false',path)
       else if (typeof val === 'number')
@@ -328,28 +356,29 @@ extension('utils', 'prettyPrint', {
     function openCloseProps(path, open,close, _props) {
       return props[path] = {open,close, ..._props}
     }
-    function stringValProps(_str, delim, path, putNewLinesInString) {
+    function stringValProps(_str, delim, path, {putNewLinesInString} = {}) {
       const str = putNewLinesInString ? _str : _str.replace(/\n/g,'\\n')
 
       const parentPath = path.split('~').slice(0,-1).join('~')
-      const listBegin = [ {item: '', action: `begin!${path}`}, {item: delim, action: `addProp!${parentPath}`}, {item: '', action: `edit!${path}`} ]
-      const listEnd = str.length == 0 ? [ {item: delim, action: `setPT!${path}`}]
-        : [ {item: str.slice(0,1), action: `setPT!${path}`}, {item: str.slice(1) + delim, action: `insideText!${path}`}]
-      const list = [ 
-        {item: '', action: `beginToken!${path}`}, 
+      const listBegin = [ {token: '', action: `begin!${path}`}, {token: delim, action: `addProp!${parentPath}`}, {token: '', action: `edit!${path}`} ]
+      const listEnd = str.length == 0 ? [ {token: delim, action: `setPT!${path}`}]
+        : [ {token: str.slice(0,1), action: `setPT!${path}`}, {token: str.slice(1) + delim, action: `insideText!${path}`}]
+      const tokens = [ 
+        {token: '', action: `beginToken!${path}`}, 
         ...listBegin, ...listEnd, 
-        {item: '', action: `endToken!${path}`}
+        {token: '', action: `endToken!${path}`}
       ]
-      return props[path] = {list, len: str.length + 2}
+      return props[path] = {tokens, len: str.length + 2}
     }    
     function tokenProps(str, path) {
-      const list = [ 
-        {item: '', action: `beginToken!${path}`},
-        {item: '', action: `begin!${path}`}, {item: '', action: `edit!${path}`},
-        {item: str.slice(0,1), action: `setPT!${path}`}, {item: str.slice(1), action: `insideToken!${path}`},
-        {item: '', action: `endToken!${path}`}
+      const tokens = [ 
+        {token: '', action: `beginToken!${path}`},
+        {token: '', action: `begin!${path}`}, 
+        {token: '', action: `edit!${path}`},
+        {token: str.slice(0,1), action: `setPT!${path}`}, {token: str.slice(1), action: `insideToken!${path}`},
+        {token: '', action: `endToken!${path}`}
       ]
-      return props[path] = {list, len: str.length }
+      return props[path] = {tokens, len: str.length }
     }
     function funcProps(func,path) {
       let asStr = func.toString().trim().replace(/^'([a-zA-Z_\-0-9]+)'/,'$1')
@@ -361,7 +390,7 @@ extension('utils', 'prettyPrint', {
       const header = noPrefix.indexOf(`${funcName}(`) == 0 ? funcName : noPrefix.indexOf(`function ${funcName}(`) == 0 ? `function ${funcName}` : ''
       const fixedPropName = header ? `${asynch}${header}` : ''
       const text = (fixedPropName ? '' : asynch) + asStr.slice(header.length+asynch.length)
-      return props[path] = { item: text, fixedPropName, len: text.length, action: `function!${path}` }
+      return props[path] = { token: text, fixedPropName, len: text.length, action: `function!${path}` }
     }
   }
 })

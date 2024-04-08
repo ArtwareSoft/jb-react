@@ -30,7 +30,6 @@ extension('macro', {
             }
         }
     },
-    //isParamsByNameArgs : args => args.length == 1 && typeof args[0] == 'object' && !Array.isArray(args[0]) && !jb.utils.compName(args[0]),    
     splitSystemArgs(allArgs) {
         const args = [], system = {}
         allArgs.forEach(arg => {
@@ -44,7 +43,6 @@ extension('macro', {
         if (args.length == 1 && typeof args[0] === 'object') {
             jb.asArray(args[0].vars).forEach(arg => jb.comps[arg.$].macro(system, arg))
             delete args[0].vars
-            //args[0].remark && jb.comps.remark.macro(system, args[0])
         }
         return { args, system }
     },
@@ -60,12 +58,15 @@ extension('macro', {
         const propsByName = lastArgIsByName ? lastArg : {}
         const onlyByName = lastArgIsByName && args.length == 1
         const params = comp.params || []
-        const param0 = params[0] || {}        
+        const param0 = params[0] || {}, param1 = params[1] || {}
         const firstParamAsArray = (param0.type||'').indexOf('[]') != -1 && !param0.byName
+        const secondParamAsArray = param1.secondParamAsArray
 
         if (!lastArgIsByName) {
             if (firstParamAsArray)
                 return { $: cmpId, [param0.id]: params.length > 1 && args.length == 1 ? args[0] : args }
+            if (secondParamAsArray)
+                return { $: cmpId, [param0.id]: args[0], [param1.id] : args.slice(1) }
 
             if (comp.macroByValue || params.length < 3)
                 return { $: cmpId, ...jb.objFromEntries(args.filter((_, i) => params[i]).map((arg, i) => [params[i].id, arg])) }
@@ -74,10 +75,13 @@ extension('macro', {
         const varArgs = []
         while (argsByValue[0] && argsByValue[0].$ == 'Var')
             varArgs.push(argsByValue.shift())
-        const firstProps = onlyByName ? [] : firstParamAsArray ? { [param0.id] : argsByValue } : jb.objFromEntries(argsByValue.map((v,i) => [params[i].id, v]))
+        const propsByValue = onlyByName ? []
+            : firstParamAsArray ? { [param0.id] : argsByValue }
+            : secondParamAsArray ? { [param0.id] : argsByValue[0], [param1.id] : argsByValue.slice(1) } 
+            : jb.objFromEntries(argsByValue.map((v,i) => [params[i].id, v]))
         return { $: cmpId,
             ...(varArgs.length ? {$vars: varArgs} : {}),
-            ...firstProps, ...propsByName
+            ...propsByValue, ...propsByName
         }
     },
     registerProxy: id => {

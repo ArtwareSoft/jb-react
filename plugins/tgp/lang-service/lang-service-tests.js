@@ -1,15 +1,14 @@
 using('ui-testers')
 
 component('completionTest.param', {
-  impl: completionOptionsTest(`uiTest(__text(__'hello world',__ ''__)__,__ __contains('hello world')__)`, {
+  impl: completionOptionsTest({
+    compText: `uiTest(__text(__'hello world',__ ''__)__,__ __contains('hello world')__)`,
     expectedSelections: ['runBefore','style','style','style','runBefore','runBefore','not','runBefore']
   })
 })
 
 component('completionTest.param1', {
-  impl: completionOptionsTest(`uiTest(text(__'hello world', ''), contains('hello world'))`, {
-    expectedSelections: ['style']
-  })
+  impl: completionOptionsTest(`uiTest(text(__'hello world', ''), contains('hello world'))`, ['style'])
 })
 
 component('completionTest.pt', {
@@ -20,27 +19,23 @@ component('completionTest.pt', {
 })
 
 component('completionTest.text', {
-  impl: completionOptionsTest(`uiTest(text(__'__hello'__, __'__'__))`, {
-    expectedSelections: ['style','pipeline','style','style','pipeline','style']
-  })
+  impl: completionOptionsTest(`uiTest(text(__'__hello'__, __'__'__))`, ['style','pipeline','style','style','pipeline','style'])
 })
 
 component('completionTest.mixedSingleArgAsArrayMiddle', {
-  impl: completionOptionsTest(`group(button('click me')__,__ { features: method() })`, {
-    expectedSelections: ['button','button']
-  })
+  impl: completionOptionsTest(`group(button('click me')__,__ { features: method() })`, ['button','button'])
 })
 
 component('completionTest.betweentwoFirstArgs', {
-  impl: completionOptionsTest(`uiTest(text('hello world'),__ contains('hello world'))`, {
-    expectedSelections: ['runBefore']
-  })
+  impl: completionOptionsTest(`uiTest(text('hello world'),__ contains('hello world'))`, ['runBefore'])
 })
 
 component('completionTest.pipeline', {
-  impl: completionOptionsTest(`uiTest(text(pipeline(__)))`, {
-    expectedSelections: ['split']
-  })
+  impl: completionOptionsTest('uiTest(text(pipeline(__)))', ['split'])
+})
+
+component('completionTest.secondParamAsArray', {
+  impl: completionOptionsTest(`dataTest(pip('a',__ '__-%%-',__ '%%'__))`, ['split','split','split','split'])
 })
 
 component('completionTest.typeAdapter', {

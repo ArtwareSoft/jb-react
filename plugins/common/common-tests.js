@@ -212,3 +212,4 @@ component('commonTest.objFromVars', {
 component('commonTest.selectProps', {
   impl: dataTest(selectProps('a', 'c', { ofObj: asIs({a: 1, b: 2, c: 3}) }), equals(asIs({a: 1, c: 3})))
 })
+

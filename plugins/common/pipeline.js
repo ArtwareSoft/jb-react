@@ -11,6 +11,18 @@ extension('common', 'pipe', {
     }
 })
 
+component('pip', {
+  type: 'data',
+  category: 'common:100',
+  description: 'flat map data arrays one after the other, do not wait for promises and rx',
+  params: [
+    {id: 'source', type: 'data', dynamic: true, mandatory: true },
+    {id: 'items', type: 'data[]', dynamic: true, mandatory: true, composite: true, secondParamAsArray: true, description: 'chain/map data functions'}
+  ],
+  impl: (ctx,source,items) => jb.asArray(ctx.profile.items).reduce( (dataArray,prof,index) => 
+    jb.common.runAsAggregator(ctx, prof,index,dataArray, jb.asArray(ctx.profile.items)), source())
+})
+
 component('pipeline', {
   type: 'data',
   category: 'common:100',
@@ -22,11 +34,6 @@ component('pipeline', {
     const profiles = jb.asArray(ctx.profile.items)
     const source = ctx.runInner(profiles[0], profiles.length == 1 ? ctx.parentParam : null, `items~0`)
     return profiles.slice(1).reduce( (dataArray,prof,index) => jb.common.runAsAggregator(ctx, prof,index+1,dataArray, profiles), source)
-
-    // const sourceVal = jb.val(ctx.data)
-    // const source = sourceVal == null ? [null] : sourceVal
-    // const profiles = jb.asArray(ctx.profile.items)
-    // return profiles.reduce((dataArray,prof,index) => jb.common.runAsAggregator(ctx, prof,index,dataArray,profiles), source)
   }
 })
 

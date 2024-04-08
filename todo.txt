@@ -1,7 +1,9 @@
 (sensors; cpufreq-info) | xclip -selection clipboard
 top -b -n 1 | xclip -selection clipboard
 
-file:///home/shaiby/Downloads/philsiphy%20presentataions%20(1).pdf: 173
+dsl
+  support second param as array for pipeline
+  support var name without quote
 
 icon2
   build tests
