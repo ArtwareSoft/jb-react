@@ -13,7 +13,7 @@ component('pptr.pageCrawler', {
     type: 'pptr.page-crawler',
     params: [
         {id: 'url', as: 'string' },
-        {id: 'features', type: 'pptr.feature[]', as: 'array', dynamic: true ,flattenArray: true},
+        {id: 'features', type: 'pptr.feature[]', as: 'array', dynamic: true},
         {id: 'extract', type: 'pptr.extract', mandatory: true },
         {id: 'transformToResultItems', dynamic: true, description: 'single or array, better to have id'},
         {id: 'transformToUrlRequests', dynamic: true, templateValue: obj(prop('url','%%')), description: 'optional props: varsForFollowing, nextPptrPageType' },

@@ -18,7 +18,7 @@ component('text', {
   params: [
     {id: 'att', as: 'string', mandatory: true},
     {id: 'calc', dynamic: true, description: 'optional. When empty, item property with same name is used'},
-    {id: 'features', type: 'prop_feature[]', dynamic: true, flattenArray: true}
+    {id: 'features', type: 'prop_feature[]', dynamic: true}
   ],
   impl: (ctx, att, calc, features) => {
     const items = ctx.vars.items || []
@@ -47,7 +47,7 @@ component('numeric', {
     {id: 'calc', dynamic: true, description: 'optional. When empty, item property with same name is used'},
     {id: 'prefix', as: 'string', description: 'e.g. $'},
     {id: 'suffix', as: 'string', description: 'e.g. meter'},
-    {id: 'features', type: 'prop_feature[]', dynamic: true, flattenArray: true}
+    {id: 'features', type: 'prop_feature[]', dynamic: true}
   ],
   impl: (ctx, att, calc, prefix, suffix, features) => {
     const items = ctx.vars.items || []
@@ -74,7 +74,7 @@ component('geo', {
   type: 'itemProp',
   params: [
     {id: 'att', as: 'string'},
-    {id: 'features', type: 'prop_feature[]', dynamic: true, flattenArray: true}
+    {id: 'features', type: 'prop_feature[]', dynamic: true}
   ],
   impl: (ctx, att, features) => {
     const items = ctx.vars.items
@@ -99,7 +99,7 @@ component('geo', {
 component('xyByIndex', {
   type: 'itemProp',
   params: [
-    {id: 'features', type: 'prop_feature[]', dynamic: true, flattenArray: true}
+    {id: 'features', type: 'prop_feature[]', dynamic: true}
   ],
   impl: (ctx,features) => {
     const items = ctx.vars.items

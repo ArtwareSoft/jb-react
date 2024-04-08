@@ -6,7 +6,7 @@ component('image', {
     {id: 'url', as: 'string', dynamic: 'true', description: '%% is item'},
     {id: 'preferedSize', as: 'string', defaultValue: '400,400'},
     {id: 'minSize', as: 'string', defaultValue: '32,32'},
-    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true},
+    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true},
     {id: 'build', type: 'imageBuild', defaultValue: imageBuild()}
   ],
   impl: (ctx,url,preferedSize,minSize,features,build) => { 

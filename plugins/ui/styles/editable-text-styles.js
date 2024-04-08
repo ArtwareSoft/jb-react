@@ -58,8 +58,8 @@ component('editableText.expandable', {
   description: 'label that changes to editable class on double click',
   type: 'editable-text-style',
   params: [
-    {id: 'buttonFeatures', type: 'feature[]', flattenArray: true, dynamic: true},
-    {id: 'editableFeatures', type: 'feature[]', flattenArray: true, dynamic: true},
+    {id: 'buttonFeatures', type: 'feature[]', dynamic: true},
+    {id: 'editableFeatures', type: 'feature[]', dynamic: true},
     {id: 'buttonStyle', type: 'button-style', dynamic: true, defaultValue: button.href()},
     {id: 'editableStyle', type: 'editable-text-style', dynamic: true, defaultValue: editableText.input()},
     {id: 'onToggle', type: 'action', dynamic: true}

@@ -10,7 +10,7 @@ component('itemlist', {
     {id: 'layout', type: 'layout'},
     {id: 'itemVariable', as: 'string', defaultValue: 'item'},
     {id: 'visualSizeLimit', as: 'number', defaultValue: 100, description: 'by default itemlist is limmited to 100 shown items'},
-    {id: 'features', type: 'feature[]', dynamic: true, flattenArray: true}
+    {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx, ctx.params.layout)
 })

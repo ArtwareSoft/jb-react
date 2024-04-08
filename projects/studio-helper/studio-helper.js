@@ -389,7 +389,7 @@ component('studioHelperSample.componentHeader', {
   params: [
     {id: 'title12', as: 'string', dynamic: true},
     {id: 'style11', type: 'group-style', defaultValue: layout.vertical(), mandatory: true, dynamic: true},
-    {id: 'controls', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true, composite: true},
+    {id: 'controls', type: 'control[]', mandatory: true, dynamic: true, composite: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => ''

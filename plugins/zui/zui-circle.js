@@ -4,7 +4,7 @@ component('circle', {
   type: 'view',
   params: [
     {id: 'prop', type: 'itemProp'},
-    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true}
+    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true}
   ],
   impl: (ctx,prop,features) => { 
     const zuiElem = jb.zui.circleZuiElem()

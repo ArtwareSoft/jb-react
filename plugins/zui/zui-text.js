@@ -5,7 +5,7 @@ component('growingText', {
   type: 'view',
   params: [
     {id: 'prop', type: 'itemProp', mandatory: true},
-    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true},
+    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true},
     {id: 'backgroundColorByProp', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,prop, features) => {
@@ -29,7 +29,7 @@ component('fixedText', {
   type: 'view',
   params: [
     {id: 'prop', type: 'itemProp', mandatory: true},
-    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true},
+    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true},
     {id: 'length', as: 'number', description: '<= 8', defaultValue: 8},
     {id: 'backgroundColorByProp', as: 'boolean', type: 'boolean'}
   ],

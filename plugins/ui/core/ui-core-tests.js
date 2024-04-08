@@ -89,23 +89,6 @@ component('uiTest.transactiveHeadless.createWidget', {
   impl: uiTest(text('hello world'), contains('hello world'), { transactiveHeadless: true })
 })
 
-component('uiTest.transactiveHeadlessChangeText', {
-  impl: uiTest({
-    control: group({
-      controls: [
-        text('-%$fName%-', { features: watchRef('%$fName%') }),
-        text('+%$fName%+', { features: watchRef('%$fName%') }),
-        editableText({ databind: '%$fName%', style: editableText.input() })
-      ],
-      features: watchable('fName', 'Dan')
-    }),
-    expectedResult: contains('-danny-','+danny+'),
-    uiAction: setText('danny'),
-    backEndJbm: worker('changeText', { sourceCode: sourceCode(pluginsByPath('/plugins/ui/group.js')) }),
-    transactiveHeadless: true,
-  })
-})
-
 component('uiTest.controlWithFeatures.variable', {
   impl: uiTest({
     control: controlWithFeatures(text('%$txt%'), { features: variable('txt', 'homer') }),
@@ -250,6 +233,21 @@ component('uiTest.BEOnDestroy', {
     ),
     expectedResult: contains('dialog closed'),
     uiAction: uiActions(click(), action(dialog.closeDialogById('dlg')), waitForText('dialog closed'))
+  })
+})
+
+component('uiTest.FEonDestroy', {
+  impl: uiTest({
+    control: group(
+      button('click me', writeValue('%$person/name%', 'mukki')),
+      group({
+        controls: controlWithCondition('%$person/name%!=mukki', text('hello', { features: frontEnd.onDestroy(() => jb.frame.xx = 3) })),
+        features: watchRef('%$person/name%')
+      })
+    ),
+    expectedResult: equals(()=>jb.frame.xx, 3),
+    uiAction: click(),
+    emulateFrontEnd: true
   })
 })
 

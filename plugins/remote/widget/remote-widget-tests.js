@@ -98,6 +98,7 @@ component('distributedWidgetTest.load', {
 })
 
 component('distributedWidgetTest.changeText', {
+  doNotRunInTests: true,
   impl: browserTest(group({ features: css.class('xRoot') }), contains('hey danny'), {
     uiAction: uiActions(
       action(remote.distributedWidget({
@@ -119,6 +120,7 @@ component('distributedWidgetTest.changeText', {
 })
 
 component('FETest.remoteWidget.codemirror', {
+  doNotRunInTests: true,
   impl: browserTest(remote.widget(text('hello', { style: text.codemirror({ height: 100 }) }), worker()), contains('hello'), {
     uiAction: waitFor(() => jb.frame.document.querySelector('.CodeMirror')),
     renderDOM: true
@@ -126,6 +128,7 @@ component('FETest.remoteWidget.codemirror', {
 })
 
 component('FETest.remoteWidget.codemirror.editableText', {
+  doNotRunInTests: true,
   impl: browserTest({
     control: remote.widget(editableText({ databind: '%$person/name%', style: editableText.codemirror({ height: 100 }) }), worker()),
     expectedResult: contains('Homer'),
@@ -187,5 +190,22 @@ component('remoteWidgetTest.runInBECmpContext', {
     uiAction: click(),
     backEndJbm: worker(),
     emulateFrontEnd: true
+  })
+})
+
+component('remoteWidgetTest.backEndJbm.transactiveHeadlessChangeText', {
+  impl: uiTest({
+    control: group({
+      controls: [
+        text('-%$fName%-', { features: watchRef('%$fName%') }),
+        text('+%$fName%+', { features: watchRef('%$fName%') }),
+        editableText({ databind: '%$fName%', style: editableText.input() })
+      ],
+      features: watchable('fName', 'Dan')
+    }),
+    expectedResult: contains('-danny-','+danny+'),
+    uiAction: setText('danny'),
+    backEndJbm: worker('changeText', { sourceCode: sourceCode(pluginsByPath('/plugins/ui/group.js')) }),
+    transactiveHeadless: true,
   })
 })

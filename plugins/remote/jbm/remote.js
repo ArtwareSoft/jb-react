@@ -47,7 +47,6 @@ component('source.remote', {
 
 component('remote.operator', {
   type: 'rx<>',
-  macroByValue: true,
   params: [
     {id: 'rx', type: 'rx<>', dynamic: true},
     {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self()}

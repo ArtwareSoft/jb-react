@@ -273,7 +273,6 @@ extension('utils', 'generic', {
     isObject: o => o != null && typeof o === 'object',
     isPrimitiveValue: val => ['string','boolean','number'].indexOf(typeof val) != -1,
     tryWrapper(f,msg,ctx,reqCtx) { try { return f() } catch(e) { jb.logException(e,msg,{ctx,reqCtx}) }},
-    flattenArray: items => items.flatMap(x=>x),
     isPromise: v => v && v != null && typeof v.then === 'function',
     isDelayed(v) {
       if (!v || v.constructor === {}.constructor || Array.isArray(v)) return

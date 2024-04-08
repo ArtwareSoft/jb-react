@@ -11,7 +11,7 @@ component('d3.histogram', {
     {id: 'ticks', as: 'number', defaultValue: 5},
     {id: 'axes', type: 'd3g.axes', dynamic: true, as: 'array', defaultValue: {'$': 'd3g.buttom-and-left-axes'}},
     {id: 'style', type: 'd3g.histogram-style', dynamic: true, defaultValue: {'$': 'd3-histogram.plain'}},
-    {id: 'features', type: 'd3-feature[]', dynamic: true, flattenArray: true}
+    {id: 'features', type: 'd3-feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx, { featuresOptions: ctx.params.axes() })
 })

@@ -43,8 +43,8 @@ extension('loader','main' , {
 component('sourceCode', {
   type: 'source-code',
   params: [
-    {id: 'pluginsToLoad', type: 'plugins-to-load[]', flattenArray: true},
-    {id: 'pluginPackages', type: 'plugin-package[]', flattenArray: true}, // , defaultValue: defaultPackage()
+    {id: 'pluginsToLoad', type: 'plugins-to-load[]'},
+    {id: 'pluginPackages', type: 'plugin-package[]'}, // , defaultValue: defaultPackage()
     {id: 'libsToInit', as: 'string', description: 'empty means load all libraries'},
     {id: 'actualCode', as: 'string', description: 'alternative to plugins'}
   ],

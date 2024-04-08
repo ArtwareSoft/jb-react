@@ -44,9 +44,7 @@ component('menuTest.pulldown.inner', {
 })
 
 component('menuTest.pulldown.clickToOpen', {
-  impl: uiTest({
-    control: menu(menuTest.menu1(), menuStyle.pulldown()),
-    expectedResult: and(contains('Open'), contains('Bookmarks')),
+  impl: uiTest(menu(menuTest.menu1(), menuStyle.pulldown()), and(contains('Open'), contains('Bookmarks')), {
     uiAction: click('[$text="File"]', 'openPopup'),
     emulateFrontEnd: true
   })

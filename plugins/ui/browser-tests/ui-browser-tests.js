@@ -76,22 +76,6 @@ component('browserTest.itemlist.infiniteScroll', {
   })
 })
 
-component('uiTest.onDestroy', {
-  impl: uiTest({
-    control: group(
-      button('click me', writeValue('%$person/name%', 'mukki')),
-      group({
-        controls: controlWithCondition('%$person/name%!=mukki', text('hello', { features: frontEnd.onDestroy(() => jb.frame.xx = 3) })),
-        features: watchRef('%$person/name%')
-      })
-    ),
-    expectedResult: equals(()=>jb.frame.xx, 3),
-    uiAction: click(),
-    emulateFrontEnd: true
-  })
-})
-
-
 // component('browserTest.dialogCleanup', {
 //   impl: browserTest({
 //     vars: [

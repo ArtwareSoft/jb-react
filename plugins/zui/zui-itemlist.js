@@ -9,10 +9,10 @@ component('zui.itemlist', {
     {id: 'initialZoom', as: 'number', description: 'in terms of board window. empty is all board'},
     {id: 'center', as: 'string', description: 'e.g., 2,7'},
     {id: 'items', as: 'array', dynamic: true, mandatory: true},
-    {id: 'itemProps', type: 'itemProp[]', dynamic: true, flattenArray: true},
+    {id: 'itemProps', type: 'itemProp[]', dynamic: true},
     {id: 'onChange', type: 'action<>', dynamic: true},
     {id: 'style', type: 'itemlist-style<zui>', dynamic: true, defaultValue: itemlistStyle()},
-    {id: 'features', type: 'feature<>[]', dynamic: true, flattenArray: true}
+    {id: 'features', type: 'feature<>[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
 })

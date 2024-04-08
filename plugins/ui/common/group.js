@@ -23,7 +23,7 @@ component('inlineControls', {
   type: 'control',
   description: 'controls without a wrapping group',
   params: [
-    {id: 'controls', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true, composite: true}
+    {id: 'controls', type: 'control[]', mandatory: true, dynamic: true, composite: true}
   ],
   impl: ctx => ctx.params.controls().filter(x=>x)
 })

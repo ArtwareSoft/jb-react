@@ -4,7 +4,7 @@ component('menu', {
   type: 'menu.option',
   params: [
     {id: 'title', as: 'string', dynamic: true, mandatory: true},
-    {id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true, defaultValue: []},
+    {id: 'options', type: 'menu.option[]', dynamic: true, mandatory: true, defaultValue: []},
     {id: 'icon', type: 'icon'}
   ],
   impl: ctx => ({
@@ -34,7 +34,7 @@ component('menu.dynamicOptions', {
 component('menu.endWithSeparator', {
   type: 'menu.option',
   params: [
-    {id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true},
+    {id: 'options', type: 'menu.option[]', dynamic: true, mandatory: true},
     {id: 'separator', type: 'menu.option', defaultValue: menu.separator()},
     {id: 'title', as: 'string'}
   ],

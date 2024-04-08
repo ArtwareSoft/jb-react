@@ -112,6 +112,7 @@ extension('jbm', 'main', {
         return { childJbms: {}, networkPeers: {}, notifyChildReady: {} }
 
         async function remoteExec(sctx) {
+            // used by child jbm
             await jb.treeShake.codeServerJbm && jb.treeShake.bringMissingCode(sctx)
             return jb.utils.waitForInnerElements(jb.remoteCtx.deStrip(sctx)())
         }

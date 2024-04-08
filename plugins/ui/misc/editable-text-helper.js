@@ -4,8 +4,8 @@ component('editableText.picklistHelper', {
   params: [
     {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true, byName: true},
     {id: 'picklistStyle', type: 'picklist-style', dynamic: true, defaultValue: picklist.labelList()},
-    {id: 'picklistFeatures', type: 'feature[]', flattenArray: true, dynamic: true},
-    {id: 'popupFeatures', type: 'dialog-feature[]', flattenArray: true, dynamic: true},
+    {id: 'picklistFeatures', type: 'feature[]', dynamic: true},
+    {id: 'popupFeatures', type: 'dialog-feature[]', dynamic: true},
     {id: 'showHelper', as: 'boolean', dynamic: true, defaultValue: notEmpty('%value%'), description: 'show/hide helper according to input content', type: 'boolean'},
     {id: 'autoOpen', as: 'boolean', type: 'boolean'},
     {id: 'onEnter', type: 'action', dynamic: true, defaultValue: writeValue('%$$model/databind%', '%$selectedOption%')},

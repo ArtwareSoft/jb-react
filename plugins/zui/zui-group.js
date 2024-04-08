@@ -23,7 +23,7 @@ component('group', {
   params: [
     {id: 'views', mandatory: true, type: 'view[]', dynamic: true, composite: true},
     {id: 'layout', type: 'layout', defaultValue: vertical()},
-    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true}
+    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true}
   ],
   impl: ctx => jb.zui.initGroup(ctx)
 })
@@ -33,7 +33,7 @@ component('allOrNone', {
   params: [
     {id: 'views', mandatory: true, type: 'view[]', dynamic: true, composite: true},
     {id: 'layout', type: 'layout', defaultValue: vertical()},
-    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true}
+    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true}
   ],
   impl: ctx => Object.assign(jb.zui.initGroup(ctx), {title: 'allOrNone', allOrNone: true })
 })
@@ -43,7 +43,7 @@ component('firstToFit', {
   params: [
     {id: 'views', mandatory: true, type: 'view[]', dynamic: true, composite: true},
     {id: 'layout', type: 'layout', defaultValue: vertical()},
-    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true, flattenArray: true}
+    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true}
   ],
   impl: ctx => Object.assign(jb.zui.initGroup(ctx), {title: 'firstToFit', firstToFit: true })
 })
