@@ -112,9 +112,9 @@ extension('langService', 'impl', {
             const index = opKind == 'append' ? -1 : opKind == 'insert' ? (+path.split('~').pop() + 1) : opKind == 'prepend' && 0
             const basePath = opKind == 'insert' ? path.split('~').slice(0, -1).join('~') : path
             const basedOnVal = opKind == 'set' && tgpModel.valOfPath(path)
-            const { result, cursorPath } = jb.tgp.newProfile(tgpModel.compById(compName), {basedOnVal})
+            const { result, cursorPath, whereToLand } = jb.tgp.newProfile(tgpModel.compById(compName), {basedOnVal})
             const res = opKind == 'set' ? jb.langService.setOp(path, result, ctx) : addArrayItemOp(basePath, { toAdd: result, index, ctx })
-            return {...res, resultPath: [res.resultPath || path,cursorPath].filter(x=>x).join('~') }
+            return {...res, resultPath: [res.resultPath || path,cursorPath].filter(x=>x).join('~'), whereToLand }
         }
 
         function addArrayItemOp(path, { toAdd, index, srcCtx } = {}) {

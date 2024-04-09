@@ -18,7 +18,7 @@ component('peopleArray', {
 })
 
 component('probeTest.extraElement.pipeline', {
-  impl: probeTest(pipeline('%$people%'), 'items~1', {
+  impl: probeTest(pipeline('%$people%', '%%'), 'items~1', {
     allowClosestPath: true,
     expectedResult: equals('%0.in.data.name.0%', 'Homer Simpson')
   })
@@ -77,7 +77,7 @@ component('probeTest.labelText', {
 })
 
 component('probeTest.pipelineMultiple', {
-  impl: probeTest(pipeline(list(1,2), join()), 'items~1', { expectedVisits: 1 })
+  impl: probeTest(pipeline(list(1,2), join()), 'items~0', { expectedVisits: 1 })
 })
 
 component('probeTest.innerInTemplate', {
@@ -85,11 +85,6 @@ component('probeTest.innerInTemplate', {
     expectedVisits: 1
   })
 })
-
-component('probeTest.pipelineNoSugar', {
-  impl: probeTest(group(text(pipeline('hello'))), 'controls~text~items~0')
-})
-
 
 component('probeTest.insideWriteValue', {
   impl: probeTest(button({ action: writeValue('%$person/name%', 'homer') }), 'action~to', {
@@ -136,10 +131,6 @@ component('probeTest.insideActionWithSideEffects', {
   impl: probeTest(button({ action: test.actionWithSideEffects('hello') }), 'action~text', {
     expectedVisits: 0
   })
-})
-
-component('probeTest.filterNoSugar', {
-  impl: probeTest(group(text(pipeline('hello', filter('%% == "hello"')))), 'controls~text~items~1~filter')
 })
 
 // jb.component('probeTest.callbag.sniffer', {
@@ -200,11 +191,10 @@ component('probeTest.pathSrcThrough.call2', {
 
 component('probeTest.runCircuit', {
   impl: dataTest({
-    calculate: pipe(probe.runCircuit('data<>test.probePipeline~impl~items~1'), ({data}) => data.resultVisits),
+    calculate: pipe(probe.runCircuit('data<>test.probePipeline~impl~items~0'), ({data}) => data.resultVisits),
     expectedResult: equals(2)
   })
 })
-
 
 component('test.sourceDataTest', {
   doNotRunInTests: true,

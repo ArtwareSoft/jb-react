@@ -1,8 +1,8 @@
 using('ui-core,remote-widget,parsing,testing,core-tests')
 
 component('PPrintTest.vars', {
-  impl: dataTest({
-    calculate: ctx => {
+  impl: dataTest(
+    ctx => {
     try {
       const testToTest = 'coreTest.varsCases'
       const compTxt = jb.utils.prettyPrintComp(testToTest.replace(/varsCases/, 'varsCases2'), jb.comps['test<>'+testToTest])
@@ -13,8 +13,8 @@ component('PPrintTest.vars', {
       return false
     }
   },
-    expectedResult: contains(`Var('items', [{id: 1}, {id: 2}])`)
-  })
+    contains(`Var('items', [{id: 1}, {id: 2}])`)
+  )
 })
 
 component('PPrintTest.varsPath', {
@@ -33,8 +33,31 @@ component('PPrintTest.singleInArrayPath', {
   impl: PPPosOfPath(() => group(text('')), 'control<>', 'begin!~controls~text', '11,11')
 })
 
+component('PPrintTest.singleParamByNameComp', {
+  params: [
+    {id: 'p1', as: 'boolean', type: 'boolean<>', byName: true}
+  ]
+})
+
+component('PPrintTest.singleParamByName', {
+  impl: PPPosOfPath(() => pipeline(PPrintTest.singleParamByNameComp({p1: true})), 'data<>', 'begin!~source~p1', '48,48')
+})
+
 component('PPrintTest.secondParamAsArray', {
-  impl: PPPosOfPath(() => pip(list(1,2), '%%'), 'data<>', 'begin!~items~0', '15,15')
+  impl: PPPosOfPath(() => pipeline(list(1,2), '%%'), 'data<>', 'begin!~items~0', '20,20')
+})
+
+component('PPrintTest.secondParamAsArrayWithVars', {
+  impl: PPPosOfPath(() => pipeline(Var('a', 3), '%%', 'aa'), 'data<>', 'begin!~items~0', '28,28')
+})
+
+component('PPrintTest.secondParamAsArrayWithLongVars', {
+  impl: PPPosOfPath({
+    profile: () => pipeline(Var('a', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'), '%%', 'aaaaaaaaaaaaaaaaaaaaaadasdaaaaaaaaaaaaaaaaaaaaa'),
+    expectedType: 'data<>',
+    path: 'begin!~items~0',
+    expectedPos: '82,82'
+  })
 })
 
 component('PPrintTest.asyncVar', {
@@ -45,7 +68,6 @@ component('PPrintTest.multiLineExample', {
   params: [
     {id: 'param1'}
   ],
-  type: 'control',
   impl: group(
     text('hello'),
     group(text('-1-'), controlWithCondition('1==2', text('-1.5-')), text('-2-')),
@@ -54,7 +76,7 @@ component('PPrintTest.multiLineExample', {
 })
 
 component('PPrintTest.multiLine.prepend', {
-  impl: PPPosOfPath(() => jb.comps['control<>PPrintTest.multiLineExample'], 'control<>', 'prependPT!~impl~controls', '112,117')
+  impl: PPPosOfPath(() => jb.comps['control<>PPrintTest.multiLineExample'], 'control<>', 'prependPT!~impl~controls', '93,98')
 })
 
 component('PPrintTest.param', {
@@ -64,12 +86,12 @@ component('PPrintTest.param', {
   })
 })
 
-component('PPrintTest.multiLine.addPropBegin', {
-  impl: PPPosOfPath(() => jb.comps['control<>PPrintTest.multiLineExample'], 'control<>', 'addProp!~impl', '112,112')
+component('PPrintTest.multiLine.implBegin', {
+  impl: PPPosOfPath(() => jb.comps['control<>PPrintTest.multiLineExample'], 'control<>', 'begin!~impl', '87,87')
 })
 
-component('PPrintTest.multiLine.addPropEnd', {
-  impl: PPPosOfPath(() => jb.comps['control<>PPrintTest.multiLineExample'], 'control<>', 'addProp!~impl', '234,235')
+component('PPrintTest.multiLine.implEnd', {
+  impl: PPPosOfPath(() => jb.comps['control<>PPrintTest.multiLineExample'], 'control<>', 'end!~impl', '216,216')
 })
 
 component('PPrintTest.dslNameOverideExample', {
@@ -109,15 +131,15 @@ component('PPrintTest.Positions.closeArray', {
 })
 
 component('test.foldFunction', {
-  impl: pipeline(
-    () => jb.utils.prettyPrintWithPositions(frontEnd.var('itemPropsProfile', ({ }, { $model }) => 
+  impl: pipeline({
+    source: () => jb.utils.prettyPrintWithPositions(frontEnd.var('itemPropsProfile', ({ }, { $model }) => 
       $model.itemProps.profile) , {type: 'feature<>', }),
-    '%text%'
-  )
+    items: ['%text%']
+  })
 })
 
 component('PPrintTest.posOfFoldFunctionBug', {
-  impl: dataTest(() => jb.tgpTextEditor.getPosOfPath('data<>test.foldFunction~impl~items~1'), equals('%line%', 4))
+  impl: dataTest(() => jb.tgpTextEditor.getPosOfPath('data<>test.foldFunction~impl~items~0'), equals('%line%', 4))
 })
 
 component('PPrintTest.singleFunc', {

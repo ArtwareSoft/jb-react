@@ -111,8 +111,11 @@ component('langServer.references', {
 })
 
 component('langServer.localReferences', {
-  impl: pipe(Var('filePath', tgpTextEditor.currentFilePath()), langService.compId(), 
-  If('%%', remote.data(pipe('%%', langService.compReferences()), jbm.self(), { timeout: 10000 })))
+  impl: pipe(
+    Var('filePath', tgpTextEditor.currentFilePath()),
+    langService.compId(),
+    If('%%', remote.data(pipe('%%', langService.compReferences()), jbm.self(), { timeout: 10000 }))
+  )
 })
 
 component('langServer.studioCircuitUrl', {

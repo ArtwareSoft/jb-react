@@ -1,4 +1,4 @@
-using('ui-testers,workspace-ui')
+using('ui-testers','workspace-ui','tgp-lang-service-tests')
 
 component('tgpTextEditorTest.getPosOfPath', {
   impl: dataTest({
@@ -10,9 +10,16 @@ component('tgpTextEditorTest.getPosOfPath', {
   })
 })
 
-component('tgpTextEditorTest.pathChangeTest.wrap', {
-  impl: tgp.pathChangeTest('control<>probeTest.label1~impl', tgp.wrapWithGroup('control<>probeTest.label1~impl'), {
-    expectedPathAfter: 'control<>probeTest.label1~impl~controls~0'
+component('tgpTextEditorTest.label1', {
+  type: 'control',
+  impl: text()
+})
+
+component('tgpTextEditorTest.pathChangeTestWrap', {
+  impl: tgp.pathChangeTest({
+    path: 'control<>tgpTextEditorTest.label1~impl',
+    action: tgp.wrapWithGroup('control<>tgpTextEditorTest.label1~impl'),
+    expectedPathAfter: 'control<>tgpTextEditorTest.label1~impl~controls~0'
   })
 })
 

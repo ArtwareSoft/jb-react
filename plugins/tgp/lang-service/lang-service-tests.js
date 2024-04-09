@@ -31,11 +31,11 @@ component('completionTest.betweentwoFirstArgs', {
 })
 
 component('completionTest.pipeline', {
-  impl: completionOptionsTest('uiTest(text(pipeline(__)))', ['split'])
+  impl: completionOptionsTest(`uiTest(text(pipeline(''__)))`, ['split'])
 })
 
 component('completionTest.secondParamAsArray', {
-  impl: completionOptionsTest(`dataTest(pip('a',__ '__-%%-',__ '%%'__))`, ['split','split','split','split'])
+  impl: completionOptionsTest(`dataTest(pipeline('a',__ '__-%%-',__ '%%'__))`, ['split','split','split','split'])
 })
 
 component('completionTest.typeAdapter', {
@@ -54,7 +54,7 @@ component('completionTest.createPipelineFromComp', {
   impl: completionActionTest(`uiTest(text(__split()))`, {
     completionToActivate: 'pipeline',
     expectedEdit: asIs({range: {start: {line: 1, col: 20}, end: {line: 1, col: 26}}, newText: 'pipeline(split()'}),
-    expectedCursorPos: '1,29'
+    expectedCursorPos: '1,36'
   })
 })
 
@@ -129,14 +129,6 @@ component('completionTest.insideVar', {
   })
 })
 
-component('completionTest.splitInsidePipeline', {
-  impl: completionActionTest(`uiTest(text(pipeline(__)))`, {
-    completionToActivate: 'split',
-    expectedEdit: asIs({range: {start: {line: 1, col: 29}, end: {line: 1, col: 29}}, newText: 'split()'}),
-    expectedCursorPos: '1,35'
-  })
-})
-
 component('completionTest.splitPart', {
   impl: completionOptionsTest(`uiTest(text(pipeline(split(__))))`, {
     expectedSelections: ['part']
@@ -165,7 +157,7 @@ component('completionTest.wrapWithGroup', {
   impl: completionActionTest(`uiTest(__text())`, {
     completionToActivate: 'group',
     expectedEdit: asIs({range: {start: {line: 1, col: 15}, end: {line: 1, col: 20}}, newText: 'group(text()'}),
-    expectedCursorPos: '1,21'
+    expectedCursorPos: '1,27'
   })
 })
 
@@ -182,7 +174,7 @@ component('completionTest.wrapWithGroup2', {
     compText: `uiTest(group(text(''), __button('click me')))`,
     completionToActivate: 'group',
     expectedEdit: asIs({range: {start: {line: 1, col: 31}, end: {line: 1, col: 48}}, newText: `group(button('click me')`}),
-    expectedCursorPos: '1,37'
+    expectedCursorPos: '1,55'
   })
 })
 
@@ -201,16 +193,8 @@ component('completionTest.buttonFeature', {
   })
 })
 
-component('completionTest.singleParamAsArray.rx', {
-  impl: completionOptionsTest(`dataTest(rx.pipe(__))`, {
-    expectedSelections: ['source.data']
-  })
-})
-
 component('completionTest.singleParamAsArray.data', {
-  impl: completionOptionsTest(`dataTest(pipeline(__))`, {
-    expectedSelections: ['split']
-  })
+  impl: completionOptionsTest(`dataTest('', contains(__))`, ['split'])
 })
 
 component('completionTest.actionReplaceTBD', {
@@ -227,15 +211,15 @@ component('completionTest.fixEditedSample', {
 
 component('completionTest.fixEditedCompSpaces', {
   impl: fixEditedCompTest({
-    compText: `component('completionTest.fixEditedSample', {\n   impl:     pipeline(__)\n})`,
-    expectedFixedComp: `{\n  impl: pipeline()\n}`
+    compText: `component('completionTest.fixEditedSample', {\n   impl:     split(__)\n})`,
+    expectedFixedComp: '{\n  impl: split()\n}'
   })
 })
 
 component('completionTest.fixEditedCompWrongName', {
   impl: fixEditedCompTest({
-    compText: `component('completionTest.fixEditedSample' ,{\n  impl: pipeline(__a)\n})`,
-    expectedFixedComp: `{\n  impl: pipeline(TBD())\n}`
+    compText: `component('completionTest.fixEditedSample' ,{\n  impl: split(__a)\n})`,
+    expectedFixedComp: `{\n  impl: split(TBD())\n}`
   })
 })
 
@@ -315,8 +299,7 @@ component('completionTest.dslTest.top', {
 })
 
 component('completionTest.dslTest.typeRules', {
-  impl: completionOptionsTest(`component('x', {\n  type: 'data',\n  impl: pipeline(__)\n})`, {
-    expectedSelections: ['split'],
+  impl: completionOptionsTest(`component('x', {\n  type: 'data',\n  impl: pipeline('__')\n})`, ['split'], {
     dsl: 'location'
   })
 })
@@ -341,6 +324,7 @@ component('completionTest.multiLineAddProp', {
     expectedCursorPos: '7,14'
   })
 })
+//group(text('hello'), group(text('-1-'), controlWithCondition('1==2', text('-1.5-')), text('-2-')), text('world'))
 
 component('completionTest.multiLineFeatures', {
   impl: completionActionTest({
