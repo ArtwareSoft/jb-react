@@ -2,20 +2,29 @@
 top -b -n 1 | xclip -selection clipboard
 
 dsl
-  support second param as array for pipeline
   support var name without quote
+  use secondPAsArray for rx.pipe, rx.flow - replace them all, maybe get rid of sinks
+  use secondPAsArray for pipe
 
 icon2
   build tests
+
+tgp parser
+  type: struct -> api: detect, calcSize, ctxAtPos(pos) -> path, PT
 
 workspace ui
   select the first item on editabletext helper
   build plugin editor
 
+stateless widget
+  rx.loop(FEWidget,BEWidget)
+  BEwidget at the ctx: id, cmpCounter, cmps, styles, vdom. 
+  fix gardbadge collection
+  put FEwidget and the flows on session
+  maybe watchable is only for session
+
 jbm.cluster
   stateless jbms 
-  move ui data to session
-  move watchable to session
   handle code changes
 
 inner DSL - formatter & resolver

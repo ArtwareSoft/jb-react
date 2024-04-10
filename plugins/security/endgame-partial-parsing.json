@@ -1,0 +1,255 @@
+{
+    "user":{
+       "id":"S-1-5-20",
+       "domain":"NT AUTHORITY",
+       "name":"NETWORK SERVICE"
+    },
+    "host":{
+       "os":{
+          "platform":"windows",
+          "name":"Windows",
+          "version":"10.0",
+          "family":"windows"
+       },
+       "ip":"10.154.0.21",
+       "hostname":"james-honeypot-windows-demo",
+       "name":"james-honeypot-windows-demo"
+    },
+    "event":{
+       "module":"endgame",
+       "category":"network",
+       "dataset":"network",
+       "kind":"event",
+       "action":"ipv4_disconnect_received_event"
+    },
+    "labels":{
+       "account_id":"6e21f384-af6b-438a-b9da-ae5d46843b59",
+       "endpoint_id":"31505ce1-552b-4a8a-8097-d0652ac4fb79"
+    },
+    "agent":{
+       "type":"endgame",
+       "name":"endgame",
+       "id":"31505ce1-552b-4a8a-8097-d0652ac4fb79",
+       "version":"3.54.4"
+    },
+    "ecs":{
+       "version":"1.5.0"
+    },
+    "observer":{
+       "type":"SMP",
+       "name":"6e21f384-af6b-438a-b9da-ae5d46843b59",
+       "version":"3.17"
+    },
+    "@timestamp":1589536785000,
+    "network":{
+       "community_id":"1:rD52qxfA1jEb4uYcWyMmGM6ziZY=",
+       "transport":"tcp",
+       "bytes":2909
+    },
+    "process":{
+       "pid":396,
+       "name":"svchost.exe",
+       "executable":"C:\\Windows\\System32\\svchost.exe"
+    },
+    "source":{
+       "address":"134.209.229.61",
+       "ip":"134.209.229.61",
+       "port":59529,
+       "bytes":1685
+    },
+    "destination":{
+       "address":"10.154.0.21",
+       "port":3389,
+       "ip":"10.154.0.21",
+       "bytes":1224
+    },
+    "winlog":{
+       "opcode":13
+    },
+    "endgame":{
+       "event_subtype_full":"ipv4_disconnect_received_event",
+       "event_type_full":"network_event",
+       "opcode":13,
+       "pid":396,
+       "process_name":"svchost.exe",
+       "process_path":"C:\\Windows\\System32\\svchost.exe",
+       "serial_event_id":64168561,
+       "unique_pid":61441095,
+       "user_domain":"NT AUTHORITY",
+       "user_name":"NETWORK SERVICE",
+       "user_sid":"S-1-5-20",
+       "protocol":"tcp",
+       "connection_id":103184,
+       "total_in_bytes":1224,
+       "total_out_bytes":1685,
+       "destination_address":"10.154.0.21",
+       "source_address":"134.209.229.61",
+       "source_port":59529,
+       "destination_port":3389,
+       "timestamp_utc":"2020-05-15 09:59:45Z",
+       "timestamp":132340103854741475
+    }
+ }
+ 
+{
+    "user":{
+       
+    },
+    "host":{
+       "os":{
+          "platform":"windows",
+          "name":"Windows",
+          "version":"10.0",
+          "family":"windows"
+       },
+       "ip":"10.154.0.21",
+       "hostname":"james-honeypot-windows-demo",
+       "name":"james-honeypot-windows-demo"
+    },
+    "event":{
+       "module":"endgame",
+       "category":"authentication",
+       "dataset":"authentication",
+       "type":"authentication_failure",
+       "kind":"event",
+       "action":"user_logon_failed"
+    },
+    "labels":{
+       "account_id":"6e21f384-af6b-438a-b9da-ae5d46843b59",
+       "endpoint_id":"31505ce1-552b-4a8a-8097-d0652ac4fb79"
+    },
+    "agent":{
+       "type":"endgame",
+       "name":"endgame",
+       "id":"31505ce1-552b-4a8a-8097-d0652ac4fb79",
+       "version":"3.54.4"
+    },
+    "ecs":{
+       "version":"1.5.0"
+    },
+    "observer":{
+       "type":"SMP",
+       "name":"6e21f384-af6b-438a-b9da-ae5d46843b59",
+       "version":"3.17"
+    },
+    "@timestamp":1589536758000,
+    "process":{
+       "pid":0,
+       "name":"-"
+    },
+    "winlog":{
+       "opcode":4625,
+       "task":12544,
+       "event_id":4625,
+       "message":"<Event xmlns='http://schemas.microsoft.com/win/2004/08/events/event'><System><Provider Name='Microsoft-Windows-Security-Auditing' Guid='{54849625-5478-4994-a5ba-3e3b0328c30d}'/><EventID>4625</EventID><Version>0</Version><Level>0</Level><Task>12544</Task><Opcode>0</Opcode><Keywords>0x8010000000000000</Keywords><TimeCreated SystemTime='2020-05-15T09:59:18.289168500Z'/><EventRecordID>165849546</EventRecordID><Correlation ActivityID='{9f3ca93e-0524-0000-2efe-908fa329d601}'/><Execution ProcessID='632' ThreadID='3068'/><Channel>Security</Channel><Computer>james-honeypot-windows-demo</Computer><Security/></System><EventData><Data Name='SubjectUserSid'>S-1-0-0</Data><Data Name='SubjectUserName'>-</Data><Data Name='SubjectDomainName'>-</Data><Data Name='SubjectLogonId'>0x0</Data><Data Name='TargetUserSid'>S-1-0-0</Data><Data Name='TargetUserName'>ADMINISTRATOR</Data><Data Name='TargetDomainName'></Data><Data Name='Status'>0xc000006d</Data><Data Name='FailureReason'>%%2313</Data><Data Name='SubStatus'>0xc000006a</Data><Data Name='LogonType'>3</Data><Data Name='LogonProcessName'>NtLmSsp </Data><Data Name='AuthenticationPackageName'>NTLM</Data><Data Name='WorkstationName'>-</Data><Data Name='TransmittedServices'>-</Data><Data Name='LmPackageName'>-</Data><Data Name='KeyLength'>0</Data><Data Name='ProcessId'>0x0</Data><Data Name='ProcessName'>-</Data><Data Name='IpAddress'>5.189.175.134</Data><Data Name='IpPort'>0</Data></EventData><RenderingInfo Culture='en-US'><Message>An account failed to log on.\r\n\r\nSubject:\r\n\tSecurity ID:\t\tS-1-0-0\r\n\tAccount Name:\t\t-\r\n\tAccount Domain:\t\t-\r\n\tLogon ID:\t\t0x0\r\n\r\nLogon Type:\t\t\t3\r\n\r\nAccount For Which Logon Failed:\r\n\tSecurity ID:\t\tS-1-0-0\r\n\tAccount Name:\t\tADMINISTRATOR\r\n\tAccount Domain:\t\t\r\n\r\nFailure Information:\r\n\tFailure Reason:\t\tUnknown user name or bad password.\r\n\tStatus:\t\t\t0xC000006D\r\n\tSub Status:\t\t0xC000006A\r\n\r\nProcess Information:\r\n\tCaller Process ID:\t0x0\r\n\tCaller Process Name:\t-\r\n\r\nNetwork Information:\r\n\tWorkstation Name:\t-\r\n\tSource Network Address:\t5.189.175.134\r\n\tSource Port:\t\t0\r\n\r\nDetailed Authentication Information:\r\n\tLogon Process:\t\tNtLmSsp \r\n\tAuthentication Package:\tNTLM\r\n\tTransited Services:\t-\r\n\tPackage Name (NTLM only):\t-\r\n\tKey Length:\t\t0\r\n\r\nThis event is generated when a logon request fails. It is generated on the computer where access was attempted.\r\n\r\nThe Subject fields indicate the account on the local system which requested the logon. This is most commonly a service such as the Server service, or a local process such as Winlogon.exe or Services.exe.\r\n\r\nThe Logon Type field indicates the kind of logon that was requested. The most common types are 2 (interactive) and 3 (network).\r\n\r\nThe Process Information fields indicate which account and process on the system requested the logon.\r\n\r\nThe Network Information fields indicate where a remote logon request originated. Workstation name is not always available and may be left blank in some cases.\r\n\r\nThe authentication information fields provide detailed information about this specific logon request.\r\n\t- Transited services indicate which intermediate services have participated in this logon request.\r\n\t- Package name indicates which sub-protocol was used among the NTLM protocols.\r\n\t- Key length indicates the length of the generated session key. This will be 0 if no session key was requested.</Message><Level>Information</Level><Task>Logon</Task><Opcode>Info</Opcode><Channel>Security</Channel><Provider>Microsoft Windows security auditing.</Provider><Keywords><Keyword>Audit Failure</Keyword></Keywords></RenderingInfo></Event>",
+       "provider_guid":"54849625-5478-4994-a5ba3e3b0328c30d",
+       "provider_name":"Microsoft-Windows-Security-Auditing",
+       "channel":"Security",
+       "computer_name":"james-honeypot-windows-demo"
+    },
+    "endgame":{
+       "event_id":4625,
+       "event_subtype_full":"user_logon_failed",
+       "event_type_full":"security_event",
+       "level":0,
+       "opcode":4625,
+       "opcode_name":"Info",
+       "process_name":"-",
+       "process_path":"",
+       "serial_event_id":64168108,
+       "task":12544,
+       "unique_pid":61441080,
+       "user_domain":"",
+       "user_name":"",
+       "user_sid":"",
+       "version":0,
+       "task_name":"Logon",
+       "level_name":"Information",
+       "provider_name":"Microsoft-Windows-Security-Auditing",
+       "channel_name":"Security",
+       "computer_name":"james-honeypot-windows-demo",
+       "provider_guid":"54849625-5478-4994-a5ba3e3b0328c30d",
+       "activity_id":"9f3ca93e-0524-0000-2efe908fa329d601",
+       "pid":0,
+       "system_process_name":"lsass.exe",
+       "system_process_path":"C:\\Windows\\System32\\lsass.exe",
+       "system_pid":632,
+       "system_thread_id":3068,
+       "keyword_high":2097152,
+       "keyword_low":0,
+       "timestamp_high":61625662,
+       "timestamp_low":2140716709,
+       "event_record_high":0,
+       "event_record_low":165849546,
+       "timestamp_string":"2020-05-15T09:59:18.289168500Z",
+       "target_user_name":"ADMINISTRATOR",
+       "target_domain_name":"",
+       "logon_type":3,
+       "ip_address":"5.189.175.134",
+       "event_data_process_id":0,
+       "event_data_process_name":"-",
+       "event_data_process_path":"",
+       "subject_user_sid":"S-1-0-0",
+       "subject_user_name":"-",
+       "subject_domain_name":"-",
+       "subject_logon_id":"0x0",
+       "timestamp_utc":"2020-05-15 09:59:18Z",
+       "timestamp":132340103582891685
+    }
+ }
+
+ {
+    "host_os_platform": "windows",
+    "host_os_version": "10.0",
+    "host_ip": "10.154.0.21",
+    "hostname": "james-honeypot-windows-demo",
+    "event_module": "endgame",
+    "event_category": "authentication",
+    "event_type": "authentication_failure",
+    "event_action": "user_logon_failed",
+    "labels_account_id": "6e21f384-af6b-438a-b9da-ae5d46843b59",
+    "labels_endpoint_id": "31505ce1-552b-4a8a-8097-d0652ac4fb79",
+    "agent_version": "3.54.4",
+    "ecs_version": "1.5.0",
+    "observer_type": "SMP",
+    "observer_version": "3.17",
+    "@timestamp": 1589536758000,
+    "winlog_opcode": 4625,
+    "winlog_task": 12544,
+    "winlog_event_id": 4625,
+    "winlog_provider_guid": "54849625-5478-4994-a5ba3e3b0328c30d",
+    "winlog_channel": "Security",
+    "event_id": 4625,
+    "level": 0,
+    "task": 12544,
+    "opcode": 0,
+    "keywords": "0x8010000000000000",
+    "time_created": "2020-05-15T09:59:18.289168500Z",
+    "event_record_id": 165849546,
+    "process_id": 632,
+    "thread_id": 3068,
+    "computer": "james-honeypot-windows-demo",
+    "subject_user_sid": "S-1-0-0",
+    "subject_user_name": "-",
+    "subject_domain_name": "-",
+    "subject_logon_id": "0x0",
+    "target_user_sid": "S-1-0-0",
+    "target_user_name": "ADMINISTRATOR",
+    "status": "0xc000006d",
+    "failure_reason": "Unknown user name or bad password.",
+    "sub_status": "0xc000006a",
+    "logon_type": 3,
+    "logon_process_name": "NtLmSsp",
+    "authentication_package_name": "NTLM",
+    "workstation_name": "-",
+    "ip_address": "5.189.175.134",
+    "ip_port": 0,
+    "key_length": 0,
+    "info_level": "Information",
+    "info_task": "Logon",
+    "info_opcode": "Info",
+    "info_channel": "Security",
+    "info_provider": "Microsoft Windows security auditing.",
+    "info_keyword": "Audit Failure"
+  }
+  
