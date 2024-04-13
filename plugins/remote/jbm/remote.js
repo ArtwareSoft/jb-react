@@ -4,7 +4,8 @@ component('source.remote', {
   type: 'rx<>',
   params: [
     {id: 'rx', type: 'rx<>', dynamic: true},
-    {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self()}
+    {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self()},
+    {id: 'require', as: 'string'}
   ],
   impl: If({
     condition: jbm.isSelf('%$jbm%'),
@@ -12,8 +13,12 @@ component('source.remote', {
     Else: rx.pipe(
       source.promise('%$jbm%'),
       rx.mapPromise('%rjbm()%'),
-      rx.concatMap(({data},{},{rx}) => data.createCallbagSource(jb.remoteCtx.stripFunction(rx))),
-      rx.map(remoteCtx.mergeProbeResult({ remoteResult: '%%', from: '%$jbm/uri%' }))
+      rx.concatMap((ctx,{},{rx,require}) => {
+        const rjbm = ctx.data
+        const { pipe, map } = jb.callbag
+        return pipe(rjbm.createCallbagSource(jb.remoteCtx.stripFunction(rx,{require})), 
+          map(res => jb.remoteCtx.mergeProbeResult(ctx,res,rjbm.uri)) )
+      })
     )
   })
 })
@@ -37,7 +42,7 @@ component('source.remote', {
 //       rx.var('messageId', '%$varStorage/counter%'),
 //       rx.map(transformProp('vars', selectProps('%$varsToPass%'))),
 //       rx.do(ctx=>{debugger}),
-//       rx.concatMap(({data},{},{rx}) => data.createCallbagOperator(jb.remoteCtx.stripFunction(rx))),
+//       rx.concatMap(({data},{},{rx, require}) => data.createCallbagOperator(jb.remoteCtx.stripFunction(rx,{require}))),
 //       rx.map(transformProp('vars', pipeline(extendWithObj('%$varStorage/{%$messageId%}%'), removeProps('messageId')))),
 //       rx.do(removeProps('%$messageId%', { obj: '%$varStorage%' }))
 //     )
@@ -49,32 +54,35 @@ component('remote.operator', {
   type: 'rx<>',
   params: [
     {id: 'rx', type: 'rx<>', dynamic: true},
-    {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self()}
+    {id: 'jbm', type: 'jbm<jbm>', defaultValue: jbm.self()},
+    {id: 'require', as: 'string'}
   ],
-  impl: (ctx,rx,jbm) => {
+  impl: (ctx,rx,jbm,require) => {
+        const { map, mapPromise, pipe, fromPromise, concatMap, replay} = jb.callbag
         if (!jbm)
             return jb.logError('remote.operator - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
         if (jbm == jb) return rx()
-        const stripedRx = jb.remoteCtx.stripFunction(rx)
+        const stripedRx = jb.remoteCtx.stripFunction(rx,{require})
         const profText = jb.utils.prettyPrint(rx.profile)
         let counter = 0
         const varsMap = {}
-        const cleanDataObjVars = jb.callbag.map(dataObj => {
+        const cleanDataObjVars = map(dataObj => {
             if (typeof dataObj != 'object' || !dataObj.vars) return dataObj
             const vars = { ...jb.objFromEntries(jb.entries(dataObj.vars).filter(e => jb.remoteCtx.shouldPassVar(e[0],profText))), messageId: ++counter } 
             varsMap[counter] = dataObj.vars
             return { data: dataObj.data, vars}
         })
-        const restoreDataObjVars = jb.callbag.map(dataObj => {
+        const restoreDataObjVars = map(dataObj => {
             const origVars = varsMap[dataObj.vars.messageId] 
             varsMap[dataObj.messageId] = null
             return origVars ? {data: dataObj.data, vars: Object.assign(origVars,dataObj.vars) } : dataObj
         })
-        return source => jb.callbag.pipe(
-            jb.callbag.fromPromise(jbm), jb.callbag.mapPromise(_jbm=>_jbm.rjbm()),
-            jb.callbag.concatMap(rjbm => jb.callbag.pipe(
-                source, jb.callbag.replay(5), cleanDataObjVars, rjbm.createCallbagOperator(stripedRx), restoreDataObjVars)))
-
+        return source => pipe( fromPromise(jbm), mapPromise(_jbm=>_jbm.rjbm()),
+            concatMap(rjbm => pipe(
+              source, replay(5), cleanDataObjVars, rjbm.createCallbagOperator(stripedRx), 
+              map(res => jb.remoteCtx.mergeProbeResult(ctx,res,rjbm.uri)), 
+              restoreDataObjVars
+            )))
     }
 })
 
@@ -110,8 +118,8 @@ component('remote.action', {
         const rjbm = await (await jbm).rjbm()
         if (!rjbm || !rjbm.remoteExec)
             return jb.logError('remote.action - can not resolve jbm', {in: jb.uri, jbm, rjbm, jbmProfile: ctx.profile.jbm, jb, ctx})
-        action.require = require
-        return rjbm.remoteExec(jb.remoteCtx.stripFunction(action),{timeout,oneway,isAction: true,action,ctx})
+        const res = await rjbm.remoteExec(jb.remoteCtx.stripFunction(action,{require}),{timeout,oneway,isAction: true,action,ctx})
+        return jb.remoteCtx.mergeProbeResult(ctx,res,rjbm.uri)
     }
 })
 
@@ -132,8 +140,7 @@ component('remote.data', {
         if (!rjbm || !rjbm.remoteExec)
             return jb.logError('remote.data - can not resolve jbm', {in: jb.uri, jbm, rjbm, jbmProfile: ctx.profile.jbm, jb, ctx})
                 
-        data.require = require
-        const res = await rjbm.remoteExec(jb.remoteCtx.stripFunction(data),{timeout,data,ctx})
+        const res = await rjbm.remoteExec(jb.remoteCtx.stripFunction(data,{require}),{timeout,data,ctx})
         return jb.remoteCtx.mergeProbeResult(ctx,res,rjbm.uri)
     }
 })

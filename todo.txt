@@ -1,6 +1,22 @@
 (sensors; cpufreq-info) | xclip -selection clipboard
 top -b -n 1 | xclip -selection clipboard
 
+ui-widget
+
+build log-mapping dsl
+  PTs
+    PT selector - byField ()
+    PT { fields: [{id, distributionOfPos}] }
+  clean commands
+
+webAssembly
+  run first prog
+  parse buffer check SMID
+  string refs
+  build log-mapping DSL
+  clean log files
+  add log
+
 dsl
   support var name without quote
   use secondPAsArray for rx.pipe, rx.flow - replace them all, maybe get rid of sinks

@@ -19,7 +19,11 @@ component('worker', {
   ],
   impl: If({
     condition: isNode(),
-    then: remoteNodeWorker('%$id%', { sourceCode: '%$sourceCode%', init: '%$init()%' }),
+    then: If({
+      condition: isVscode(),
+      then: remoteNodeWorker('%$id%', { sourceCode: '%$sourceCode%', init: '%$init()%' }),
+      Else: nodeWorker('%$id%', { sourceCode: '%$sourceCode%', init: '%$init()%' })
+    }),
     Else: webWorker('%$id%', {
       sourceCode: '%$sourceCode%',
       init: '%$init()%',
@@ -103,6 +107,7 @@ component('child', {
             async rjbm() {
                 if (this._rjbm) return this._rjbm
                 const child = this.child = await jbInit(childUri, sourceCode, {multipleInFrame: true})
+                //child.spy.initSpy({spyParam: jb.spy.spyParam})
                 child.rjbm = () => this._rjbm
                 this._rjbm = initChild(child)
                 await init(ctx.setVar('jbm',child))
@@ -299,4 +304,9 @@ component('jbm.terminateChild', {
 component('isNode', {
   type: 'boolean<>',
   impl: () => globalThis.jbHost.isNode
+})
+
+component('isVscode', {
+  type: 'boolean<>',
+  impl: () => globalThis.jbHost.isVscode
 })

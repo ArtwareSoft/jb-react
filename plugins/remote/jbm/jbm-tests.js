@@ -94,6 +94,13 @@ component('jbmTest.child.byUri', {
   })
 })
 
+component('jbmTest.child.operator', {
+  impl: dataTest({
+    calculate: rx.pipe(source.data('hello'), remote.operator(rx.map('%% world'), child())),
+    expectedResult: equals('hello world')
+  })
+})
+
 component('jbmTest.worker.byUri', {
   impl: dataTest({
     calculate: rx.pipe(source.data('hello'), remote.operator(rx.map('%% world'), byUri('tests•w1'))),

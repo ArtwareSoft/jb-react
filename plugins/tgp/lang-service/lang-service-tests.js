@@ -324,7 +324,6 @@ component('completionTest.multiLineAddProp', {
     expectedCursorPos: '7,14'
   })
 })
-//group(text('hello'), group(text('-1-'), controlWithCondition('1==2', text('-1.5-')), text('-2-')), text('world'))
 
 component('completionTest.multiLineFeatures', {
   impl: completionActionTest({

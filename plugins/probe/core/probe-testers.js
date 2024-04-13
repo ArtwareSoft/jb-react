@@ -43,7 +43,8 @@ component('probeTest', {
       jb.cbLogByPath = {}
       const res1 = await new jb.probe.Probe(new jb.core.jbCtx(ctx,{ profile: circuit.profile, forcePath: base_path, path: '' } ))
         .runCircuit(full_path)
-      return await (jb.cbLogByPath[res1.probePath] || res1)
+      const res = await (jb.cbLogByPath[res1.probePath] || res1)
+      return res
     },
     expectedResult: (ctx,{},{allowClosestPath,expectedVisits,expectedOutResult,expectedResult,probePath}) => {
         jb.cbLogByPath = null

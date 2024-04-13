@@ -102,10 +102,12 @@ component('group.wait', {
         return 10
       }
     }),
-    followUp.action(async (ctx,{cmp,$props},{varName,passRx}) => {
+    followUp.action(async (ctx,{cmp,$props,widget},{varName,passRx}) => {
       try {
         if (!cmp.state.dataArrived && !cmp.state.error) {
-          const data = await jb.utils.waitForInnerElements($props.waitFor, {passRx})
+          const waitFor = jb.utils.waitForInnerElements($props.waitFor, {passRx})
+          jb.path(widget,'tx') && widget.tx.appendPromise(waitFor)
+          const data = await waitFor
           jb.log('group wait dataArrived', {ctx,data})
           cmp.refresh({ dataArrived: true }, {
             srcCtx: ctx.cmpCtx,

@@ -1,0 +1,87 @@
+extension('ui', 'widget', {
+    backendWidget: class backendWidget {
+        constructor(control, id, ctx) {
+            this.id = id
+            this.db = jb.db.newDB()
+            this.cmps = {}
+            this.ctx = ctx.setVars({widget: this})
+            this.control = control
+        }
+        async initialContent(ctx) {
+            if (this.body)
+                return jb.logError(`widget ${this.id} already initialized`, {ctx, widgetCtx: this.ctx})
+            const cmp = typeof this.control == 'function' ? control() : ctx.run(control,'control<>')
+            this.initializationPromises = []
+            const top = jb.ui.h(cmp)
+            this.body = jb.ui.h('div', { widgetId: this.id }, top)
+            await jb.utils.waitForInnerElements(this.initializationPromises)
+            await jb.delay(1) // let them be resolved into this.body
+
+            if (jb.path(jb.spy,'includeLogs.backend')) {
+                this.userReqHistory = []
+                this.initialContent = this.body.outerHTML()
+            }
+            return this.body
+        }
+        userRequestToDeltaHtml(userReq) {
+            if (this.tx)
+                return jb.logError(`widget transaction is already active ${this.id}`, {ctx, this.ctx})
+            this.updates = []
+            this.tx = jb.ui.userReqTx({ userReq, ctx: this.ctx })
+            const delta = await new Promise(resolve => tx.onComplete(resolve))
+            if (jb.path(jb.spy,'includeLogs.backend'))
+                this.userReqHistory.push({userRes,delta,content: this.body.outerHTML()})
+            this.tx = null
+            return delta
+        }
+        garbageCollect() {
+
+        }
+        destroy() {
+            // look in jb-react - returns promise
+        }
+    },
+    frontendWidget: class frontendWidget {
+        constructor(widgetElem, BEProxy, ctx) {
+            this.ctx = ctx.setVars({frontEndWidget: this})
+        }
+        async init() {
+            const initialContent = await BEProxy.initialContent()
+            if (jb.path(jb.spy,'includeLogs.frontend')) {
+                this.userReqHistory = []
+                this.initialContent = initialContent
+            }
+            jb.ui.applyDelta(this.widgetElem, initialContent)
+        }
+        bindFEToBE(userReqSrc, applyDeltaSink) {
+            const {pipe, mapPromise, subject, subscribe} = jb.callbag
+            this.userReqSrc = subject()
+            const applyDelta = subscribe({ 
+                next: delta => jb.ui.applyDelta(this.widgetElem, delta),
+                finally: () => this.destroy({fromFlow: true})
+            })
+            const notificationHandler = subscribe(
+                message => message.$destroy ? this.destroy({fromBE: true}) : message.$delta && jb.ui.applyDelta(this.widgetElem, message.$delta)
+            )
+            this.userReqflow = pipe(this.userReqSrc, mapPromise(({data}) => this.BEProxy.userEventToDeltaHtml(data)), applyDelta)
+            this.notificationflow = pipe(this.BEProxy.notificationSrc, notificationHandler)
+        }
+        async sendUserReqToBE(userReq) {
+            this.userReqSrc.next(userReq)
+        }
+        loadCode() {
+            
+        }
+        loadExternalLibs() {
+
+        }
+        destroyLocal() { 
+
+        }
+        destroy({fromFlow, fromFE, fromBE}) {
+            !fromFE && this.destroyLocal();
+            !fromBE && this.BEProxy.destroy();
+            !fromFlow && this.flow.destroy();
+        }
+    }
+})

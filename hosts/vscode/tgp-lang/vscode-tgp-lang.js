@@ -18,6 +18,7 @@ function findjbReact() {
 const { jbHost } = require(findjbReact() + '/hosts/node/node-host.js')
 const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
 jbHost.WebSocket_WS = require('ws')
+jbHost.isVscode = true
  
 async function activate(context) {
     globalThis.jb = await jbInit('jbart_lsp_ext', { plugins: ['tgp-lang-server', 'remote-widget','vscode']})

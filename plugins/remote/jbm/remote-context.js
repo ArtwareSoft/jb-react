@@ -2,6 +2,26 @@ extension('remoteCtx', {
     initExtension() {
         return { allwaysPassVars: ['widgetId','disableLog','uiTest'], MAX_ARRAY_LENGTH: 10000, MAX_OBJ_DEPTH: 100}
     },
+    stripFunction(f, {require} = {}) {
+        const {profile,runCtx,path,param,srcPath} = f
+        if (!profile || !runCtx) return jb.remoteCtx.stripJS(f)
+        const profText = [jb.utils.prettyPrint(profile, {noMacros: true}),require].filter(x=>x).join(';')
+        const profNoJS = jb.remoteCtx.stripJSFromProfile(profile)
+        if (require) profNoJS.require = require.split(',').map(x=>x[0] == '#' ? `jb.${x.slice(1)}()` : {$: x})
+        const vars = jb.objFromEntries(jb.entries(runCtx.vars).filter(e => jb.remoteCtx.shouldPassVar(e[0],profText))
+            .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
+        const params = jb.objFromEntries(jb.entries(jb.path(runCtx.cmpCtx,'params')).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
+            .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
+        let probe = null
+        if (runCtx.probe && runCtx.probe.active && runCtx.probe.probePath.indexOf(srcPath) == 0) {
+            const { probePath, maxTime, id } = runCtx.probe
+            probe = { probePath, startTime: 0, maxTime, id, records: {}, visits: {}, active: true }
+        }
+        const usingData = jb.remoteCtx.usingData(profText)
+        return Object.assign({$: 'runCtx', id: runCtx.id, path: [srcPath,path].filter(x=>x).join('~'), param, probe, profile: profNoJS, data: usingData ? jb.remoteCtx.stripData(runCtx.data) : null, vars}, 
+            Object.keys(params).length ? {cmpCtx: {params} } : {})
+
+    },    
     stripCtx(ctx) {
         if (!ctx) return null
         const isJS = typeof ctx.profile == 'function'
@@ -49,26 +69,6 @@ extension('remoteCtx', {
 //                .map(e=>e[0] == '$' ? [e[0], jb.path(data,[jb.core.CT,'comp',jb.core.CT,'fullId']) || e[1]] : e)
                 .map(e=>[e[0],jb.remoteCtx.stripData(e[1], innerDepthAndPath(e[0]) )]))
     },
-    stripFunction(f) {
-        const {profile,runCtx,path,param,srcPath,require} = f
-        if (!profile || !runCtx) return jb.remoteCtx.stripJS(f)
-        const profText = jb.utils.prettyPrint(profile, {noMacros: true})
-        const profNoJS = jb.remoteCtx.stripJSFromProfile(profile)
-        if (require) profNoJS._require = require.split(',').map(x=>x[0] == '#' ? `jb.${x.slice(1)}()` : {$: x})
-        const vars = jb.objFromEntries(jb.entries(runCtx.vars).filter(e => jb.remoteCtx.shouldPassVar(e[0],profText))
-            .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
-        const params = jb.objFromEntries(jb.entries(jb.path(runCtx.cmpCtx,'params')).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
-            .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
-        let probe = null
-        if (runCtx.probe && runCtx.probe.active && runCtx.probe.probePath.indexOf(runCtx.path) == 0) {
-            const { probePath, maxTime, id } = runCtx.probe
-            probe = { probePath, startTime: 0, maxTime, id, records: {}, visits: {}, active: true }
-        }
-        const usingData = jb.remoteCtx.usingData(profText); //profText.match(/\bdata\b/) || profText.match(/%[^$]/)
-        return Object.assign({$: 'runCtx', id: runCtx.id, path: [srcPath,path].filter(x=>x).join('~'), param, probe, profile: profNoJS, data: usingData ? jb.remoteCtx.stripData(runCtx.data) : null, vars}, 
-            Object.keys(params).length ? {cmpCtx: {params} } : {})
-
-    },
     deStrip(data, _asIs) {
         if (typeof data == 'string' && data.match(/^@js@/))
             return eval(data.slice(4))
@@ -80,8 +80,11 @@ extension('remoteCtx', {
                 const res = ctx.runItself()
                 if (ctx.probe) {
                     if (jb.utils.isCallbag(res))
-                        return jb.callbag.pipe(res, jb.callbag.mapPromise(r=>jb.remoteCtx.wrapWithProbeResult(r,ctx)))
-                    return jb.remoteCtx.wrapWithProbeResult(res,ctx)
+                        return jb.callbag.pipe(res, jb.callbag.mapPromise(r=>jb.remoteCtx.waitAndWrapProbeResult(r,ctx.probe,ctx)))
+                    if (jb.callbag.isCallbagOperator(res))
+                        return source => jb.callbag.pipe(res(source), jb.callbag.mapPromise(r=>jb.remoteCtx.waitAndWrapProbeResult(r,ctx.probe,ctx)))
+
+                    return jb.remoteCtx.waitAndWrapProbeResult(res,ctx.probe,ctx)
                 }
                 return res
             }
@@ -89,6 +92,17 @@ extension('remoteCtx', {
             return data.map(x=>jb.remoteCtx.deStrip(x,asIs))
         return stripedObj || data
     },
+    async waitAndWrapProbeResult(_res,probe,ctx) {
+        const res = await _res
+        await Object.values(probe.records).reduce((pr,valAr) => pr.then(
+            () => valAr.reduce( async (pr,item,i) => { await pr; valAr[i].out = await valAr[i].out }, Promise.resolve())
+        ), Promise.resolve())
+        const filteredProbe = { ...probe, records: jb.objFromEntries(jb.entries(probe.records).map(([k,v])=>[k,v.filter(x=>!x.sent)])) }
+        Object.values(probe.records).forEach(arr=>arr.forEach(r => r.sent = true))
+        const originalRecords = Object.fromEntries(Object.entries(probe.records).map(([k,v]) => [k,[...v]]))
+        jb.log('remote context wrapping probe result',{probe, originalRecords, filteredProbe, res, ctx})
+        return { $: 'withProbeResult', res, probe: filteredProbe }
+    },    
     stripCBVars(cbData) {
         const res = jb.remoteCtx.stripData(cbData)
         if (res && res.vars)
@@ -108,23 +122,9 @@ extension('remoteCtx', {
     stripJS(val) {
         return typeof val == 'function' ? `@js@${val.toString()}` : jb.remoteCtx.stripData(val)
     },
-    // serializeCmp(compId) {
-    //     if (!jb.comps[compId])
-    //         return jb.logError('no component of id ',{compId}),''
-    //     return jb.utils.prettyPrint({compId, ...jb.comps[compId],
-    //         location: jb.comps[compId][jb.core.CT].location } )
-    // },
     shouldPassVar: (varName, profText) => jb.remoteCtx.allwaysPassVars.indexOf(varName) != -1 || profText.match(new RegExp(`\\b${varName.split(':')[0]}\\b`)),
     usingData: profText => profText.match(/({data})|(ctx.data)|(%[^$])/),
-    async wrapWithProbeResult(res,ctx) {
-        await Object.values(ctx.probe.records).reduce((pr,valAr) => pr.then(
-            () => valAr.reduce( async (pr,item,i) => { await pr; valAr[i].out = await valAr[i].out }, Promise.resolve())
-        ), Promise.resolve())
-        const filteredProbe = { ...ctx.probe, records: jb.objFromEntries(jb.entries(ctx.probe.records).map(([k,v])=>[k,v.filter(x=>!x.sent)])) }
-        Object.values(ctx.probe.records).forEach(arr=>arr.forEach(r => r.sent = true))
-        jb.log('remote context adding probe result',{probe: filteredProbe, records: filteredProbe.records, res, ctx})
-        return { $: 'withProbeResult', res, probe: filteredProbe }
-    },
+
     mergeProbeResult(ctx,res,from) {
         if (jb.path(res,'$') == 'withProbeResult') {
             if (ctx.probe && res.probe) {
@@ -135,7 +135,10 @@ extension('remoteCtx', {
             return res.res
         }
         return res
-    }
+    },
+    markProbeRecords(probe,prop) {
+        probe && Object.values(probe.records||{}).forEach(x => x[prop] = true)
+    },
 })
 
 component('remoteCtx.mergeProbeResult', {

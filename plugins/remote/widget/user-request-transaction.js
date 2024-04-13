@@ -58,6 +58,10 @@ extension('ui', 'userReqTx', {
       onComplete(handler) {
         this.onCompleteHandler = handler
       },
+      appendPromise(pr) {
+        this.childrenLeft++
+        Promise.resolve(pr).finally(()=>this.childCompleteNotfication('promise'))
+      },
       completeByChildren(tActions, ctx) {
         this.childrenLeft = tActions.length
         tActions.forEach(childtAction=>

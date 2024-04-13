@@ -50,7 +50,8 @@ extension('utils', 'core', {
       profiles.forEach(({comp,id}) => { 
         if (comp.$$)  {
           jb.comps[comp.$$] = comp
-          ;(comp.moreTypes || '').split(',').filter(x=>x).forEach(t=>jb.comps[t+id] = comp)
+          jb.utils.handleMoreTypes(id,comp)
+          //;(comp.moreTypes || '').split(',').filter(x=>x).map(t=>(t.indexOf('<') != -1) ? t : `${t}<${dsl}>`).forEach(t=>jb.comps[t+id] = comp)
         }
       })
       profiles.forEach(({comp,id}) => jb.utils.resolveUnTypedProfile(comp,id))
@@ -63,6 +64,9 @@ extension('utils', 'core', {
       jb.core.unresolvedProfiles = []
               profiles.forEach(({comp}) => jb.utils.resolveComp(comp))
       return profiles
+    },
+    handleMoreTypes(id,comp) {
+      ;(comp.moreTypes || '').split(',').filter(x=>x).map(t=>(t.indexOf('<') != -1) ? t : `${t}<${comp.$dsl}>`).forEach(t=>jb.comps[t+id] = comp)
     },
     resolveProfileTop(id, comp, {tgpModel} = {}) {
       const comps = tgpModel && tgpModel.comps || jb.comps
@@ -107,6 +111,7 @@ extension('utils', 'core', {
       if (resolvedType) {
         comp.$$ =`${resolvedType}${id}`
         comp.$type = resolvedType
+        jb.utils.handleMoreTypes(id,comp)
       }
       else
         jb.logError(`can not resolve profile type for ${id}`,{comp})

@@ -186,7 +186,7 @@ extension('probe', 'main', {
 
             if (!hasSideEffect) {
                 const innerProf = parentCtx.profile[breakingProp]
-                if (innerProf.$)
+                if (innerProf && innerProf.$)
                     return jb.probe.resolve(parentCtx.runInner(innerProf,jb.tgp.paramDef(breakingPath),breakingProp))
                         .then(_=>this.handleGaps(_path))
             }
@@ -208,8 +208,7 @@ extension('probe', 'main', {
         //jb.probe.singleVisitCounters[path] = (jb.probe.singleVisitCounters[path] || 0) + 1
         if (probe.probePath.indexOf(path) != 0) return
 
-        if (data)
-            ctx = ctx.setData(data).setVars(vars||{}) // used by ctx.data(..,) in rx
+        const _ctx = data ? ctx = ctx.setData(data).setVars(vars||{}) : ctx // used by ctx.data(..,) in rx
         if (probe.id < jb.probe.probeCounter) {
             jb.log('probe probeCounter is larger than current',{ctx, probe, counter: jb.probe.probeCounter})
             probe.active = false
@@ -218,18 +217,19 @@ extension('probe', 'main', {
         }
         probe.startTime = probe.startTime || new Date().getTime() // for the remote probe
         const now = new Date().getTime()
-        if (now - probe.startTime > probe.maxTime && !ctx.vars.testID) {
-            jb.log('probe timeout',{ctx, probe,now})
-            probe.active = false
-            throw 'probe tails'
-            //throw 'out of time';
-        }
+        // if (now - probe.startTime > probe.maxTime && !ctx.vars.testID) {
+        //     jb.log('probe timeout',{ctx, probe,now})
+        //     probe.active = false
+        //     throw 'probe tails'
+        //     //throw 'out of time';
+        // }
         probe.records[path] = probe.records[path] || []
-        const found = probe.records[path].find(x=>jb.utils.compareArrays(x.in.data,ctx.data))
+        const found = probe.records[path].find(x=>jb.utils.compareArrays(x.in.data,_ctx.data))
         if (found)
             found.counter++
         else
-            probe.records[path].push({in: ctx, out, counter: 0})
+            probe.records[path].push({in: _ctx, out, counter: 0})
+        jb.log('probe record',{path,out,found,ctx})
 
         return out
     },    
@@ -269,17 +269,19 @@ component('probe.runCircuit', {
   type: 'data',
   params: [
     {id: 'probePath', as: 'string', defaultValue: '%$probe/path%'},
-    {id: 'timeout', as: 'number', defaultValue: 50},
+    {id: 'timeout', as: 'number', defaultValue: 50, byName: true}
   ],
   impl: async (ctx,probePath,timeout) => {
+        if (!probePath)
+            return jb.logError(`probe runCircuit missing probe path`, {ctx})
         jb.log('probe start run circuit',{ctx,probePath})
         const circuit = await jb.probe.calcCircuit(ctx, probePath)
         if (!circuit)
-            return jb.logError(`probe can not infer circuitCtx from ${probePath}`, )
+            return jb.logError(`probe can not infer circuitCtx from ${probePath}`, {ctx})
         jb.utils.resolveProfile(circuit.circuitCtx.profile)
 
         return new jb.probe.Probe(circuit.circuitCtx).runCircuit(probePath,timeout)
-    },
+  },
   require: 'data<>tgp.componentStatistics'
 })
 
@@ -291,7 +293,7 @@ component('probe.calcCircuitPath', {
   impl: async (ctx, probePath) => {
         const circuit = await jb.probe.calcCircuit(ctx, probePath)
         return circuit && { reason: circuit.reason, path: (circuit.circuitCtx.path || '').split('~impl')[0] } || {}
-    }
+  }
 })
 
 component('probe.stripProbeResult', {

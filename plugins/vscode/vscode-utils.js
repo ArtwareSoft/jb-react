@@ -34,8 +34,11 @@ extension('vscode', 'utils', {
              },
             compTextAndCursor() {
                 const editor = vscodeNS.window.activeTextEditor
+                const _path = editor.document.uri.path
+                const path = jbHost.jbReactDir && _path.indexOf(jbHost.jbReactDir) == 0 ? _path.slice(jbHost.jbReactDir.length) : _path
+
                 const docProps = jb.tgpTextEditor.closestComp(editor.document.getText(),
-                    editor.selection.active.line, editor.selection.active.character, editor.document.uri.path)
+                    editor.selection.active.line, editor.selection.active.character, path)
                 if (jb.path(docProps,'shortId')) {
                     if (jb.vscode.lastEdited != docProps.shortId)
                         jb.langService.tgpModels = {} // clean cache
@@ -137,8 +140,8 @@ extension('vscode', 'utils', {
         cursorPos && jb.tgpTextEditor.host.selectRange(cursorPos)
     },
     async openProbeResultPanel() {
-        const probeRes = await jb.calc(langServer.probe())
-        jb.vscode.panels.main.render('probeUI.probeResViewForVSCode',probeRes)
+        // const probeRes = await jb.calc(langServer.probe())
+        // jb.vscode.panels.main.render('probeUI.probeResViewForVSCode',probeRes)
     },
     async openProbeResultEditor() { // ctrl-I
         vscodeNS.commands.executeCommand('workbench.action.editorLayoutTwoRows')

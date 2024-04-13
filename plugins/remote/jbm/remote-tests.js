@@ -1,5 +1,5 @@
 
-component('remoteTest.worker.data', {
+component('remoteTest.stateless', {
   impl: dataTest({
     calculate: pipeline(
       Var('v1', '33'),
@@ -10,15 +10,12 @@ component('remoteTest.worker.data', {
   })
 })
 
-component('itemlists.manyItems2', {
-  type: 'data<>',
-  params: [
-    {id: 'howMany', as: 'number', defaultValue: 1000}
-  ],
-  impl: pipeline(
-    range(1, '%$howMany%'),
-    obj(prop('id', '%%'), prop('name', '%%-%%'), prop('group', ({data}) => Math.floor(Number(data) /10)))
-  )
+component('remoteTest.workerData', {
+  impl: remote.data(list([1,2,3]), worker())
+})
+
+component('remoteTest.worker.data', {
+  impl: dataTest(pipe(remote.data(list([1,2,3]), worker()), join(',')), equals('1,2,3'))
 })
 
 component('remoteTest.remoteNodeWorker.data', {
@@ -48,21 +45,14 @@ component('remoteTest.remoteOperator.remoteParam', {
   params: [
     {id: 'retVal', defaultValue: 5}
   ],
-  impl: dataTest({
-    calculate: rx.pipe(source.data(1), remote.operator(rx.map('%$retVal%'), worker()), rx.take(1)),
-    expectedResult: equals(5),
+  impl: dataTest(rx.pipe(source.data(1), remote.operator(rx.map('%$retVal%'), worker()), rx.take(1)), equals(5), {
     timeout: 5000
   })
 })
 
 component('remoteTest.remoteOperator.remoteVar', {
   impl: dataTest({
-    calculate: rx.pipe(
-      source.data(1),
-      rx.var('retVal', 5),
-      remote.operator(rx.map('%$retVal%'), worker()),
-      rx.take(1)
-    ),
+    calculate: rx.pipe(source.data(1), rx.var('retVal', 5), remote.operator(rx.map('%$retVal%'), worker()), rx.take(1)),
     expectedResult: equals(5),
     timeout: 5000
   })
@@ -83,6 +73,16 @@ component('remoteTest.remoteOperator.child.loadOperatorCode', {
   })
 })
 
+component('itemlists.manyItems2', {
+  type: 'data<>',
+  params: [
+    {id: 'howMany', as: 'number', defaultValue: 1000}
+  ],
+  impl: pipeline(
+    range(1, '%$howMany%'),
+    obj(prop('id', '%%'), prop('name', '%%-%%'), prop('group', ({data}) => Math.floor(Number(data) /10)))
+  )
+})
 component('remoteTest.worker.sourceCode.project', {
   impl: dataTest({
     calculate: remote.data({
@@ -176,10 +176,7 @@ component('remoteTest.sourceNoTalkback', {
 
 component('remoteTest.source.remote.local', {
   impl: dataTest({
-    calculate: pipe(
-      rx.pipe(source.remote(source.data([1,2,3])), rx.take(2), rx.map('-%%-')),
-      join(',')
-    ),
+    calculate: pipe(rx.pipe(source.remote(source.data([1,2,3])), rx.take(2), rx.map('-%%-')), join(',')),
     expectedResult: equals('-1-,-2-')
   })
 })
@@ -210,7 +207,10 @@ component('remoteTest.source.remote.pipe', {
 
 component('remoteTest.remote.operator', {
   impl: dataTest({
-    calculate: pipe(rx.pipe(source.data([1,2,3]), remote.operator(rx.take(2), worker()), rx.map('-%%-')), join(',')),
+    calculate: pipe(
+      rx.pipe(source.data([1,2,3]), remote.operator(rx.take(2), worker()), rx.map('-%%-')),
+      join(',')
+    ),
     expectedResult: equals('-1-,-2-'),
     timeout: 5000
   })

@@ -59,7 +59,7 @@ component('langServer.probe', {
     '%$compProps/path%',
     remote.data({
       calc: pipe(
-        If('%%', probe.runCircuit('%%', 2000), '%%'),
+        probe.runCircuit('%%', { timeout: 2000 }),
         obj(
           prop('circuitPath', '%circuitCtx/path%'),
           prop('probePath', '%probePath%'),
@@ -73,7 +73,8 @@ component('langServer.probe', {
         ),
         first()
       ),
-      jbm: stateless(probeServer('%$compProps/filePath%'))
+      jbm: stateless(probeServer('%$compProps/filePath%')),
+      require: '$testID,$fullTestId'
     }),
     extend(prop('tgpModelErrors', '%$compProps/tgpModelErrors%')),
     first()

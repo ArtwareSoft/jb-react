@@ -140,6 +140,6 @@ globalThis.jbHost = globalThis.jbHost || {
     }
 }
 
-module.exports = { jbHost, codePackageNodeFS }
+module.exports = { jbHost: globalThis.jbHost, codePackageNodeFS }
 
 

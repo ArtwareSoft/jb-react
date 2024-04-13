@@ -19,26 +19,6 @@ extension('webSocket', 'client', {
         client.on('error', err => {jb.logError('websocket client - connection failed',{ctx,err}); resolve() })
         client.on('open', () => resolve(jb.webSocket.portFromVSCodeWebSocket(client,serverUri)))
     }),
-    // connectFromNodeClient: (wsUrl,serverUri,ctx) => new Promise( resolve => {
-    //     const WebSocketClient = require('websocket').client
-    //     if (!WebSocketClient)
-    //         return jb.logError('connectFromNodeClient can not import webSocket client',{ctx})
-    //     const client = new WebSocketClient()
-    //     if (!client)
-    //         return jb.logError('connectFromNodeClient can not create webSocket client',{ctx,WebSocketClient})
-
-    //     //const client = new globalThis.require('websocket').client
-    //     client.on('connectFailed', err => {jb.logError('websocket client - connection failed',{ctx,err}); resolve() })
-    //     client.on('connect', socket => {
-    //         if (!socket.connected) {
-    //             jb.logError('websocket client not connected',{ctx})
-    //             resolve()
-    //         } else {
-    //             resolve(jb.webSocket.portFromNodeWebSocket(socket,serverUri))
-    //         }
-    //     })
-    //     client.connect(wsUrl, 'echo-protocol')  
-    // }),
     portFromW3CSocket(socket,to,options) {
         if (jb.ports[to]) return jb.ports[to]
         const from = jb.uri
@@ -118,7 +98,28 @@ extension('webSocket', 'client', {
         }
         jb.ports[to] = port
         return port
-    }
+    },
+})    
+
+extension('jbm', 'worker', {
+    portFromWorkerToParent(parentPort,from,to) { return {
+        parentPort, from, to,
+        postMessage: _m => {
+            const m = {from, to,..._m}
+            jb.log(`transmit remote sent from ${from} to ${to}`,{m})
+            parentPort.postMessage(m) 
+        },
+        onMessage: { addListener: handler => parentPort.on('message', m => jb.net.handleOrRouteMsg(from,to,handler,m)) },
+    }},
+    portFromParentToWorker(worker,from,to) { return {
+        worker, from, to,
+        postMessage: _m => {
+            const m = {from, to,..._m}
+            jb.log(`transmit remote sent from ${from} to ${to}`,{m})
+            worker.postMessage(m) 
+        },
+        onMessage: { addListener: handler => worker.on('message', m => jb.net.handleOrRouteMsg(from,to,handler,m)) },
+    }},    
 })
 
 component('remoteNodeWorker', {
@@ -132,7 +133,7 @@ component('remoteNodeWorker', {
   ],
   impl: async (ctx,_id,sourceCode,init,initiatorUrl,workerDetails) => {
         const id = (_id || 'nodeWorker1').replace(/-/g,'__')
-        const vscode = jbHost.WebSocket_WS ? 'vscode ' : ''
+        const vscode = jbHost.isVscode ? 'vscode ' : ''
         jb.log(`${vscode}remote node worker`,{ctx,id})
         const nodeWorkerUri = `${jb.uri}__${id}`
         const restart = (jb.webSocket.toRestart||[]).indexOf(id)
@@ -180,6 +181,73 @@ component('remoteNodeWorker', {
             return jbHost.fetch(url).then(r => r.json())
         }
     }
+})
+
+component('nodeWorker', {
+  type: 'jbm',
+  params: [
+    {id: 'id', as: 'string'},
+    {id: 'sourceCode', type: 'source-code<loader>', byName: true, defaultValue: treeShakeClientWithPlugins()},
+    {id: 'init', type: 'action<>', dynamic: true},
+    {id: 'usePackedCode', as: 'boolean', type: 'boolean<>'}
+  ],
+  impl: async (ctx,_id,sourceCode,init,usePackedCode) => {
+    const id = (_id || 'w1').replace(/-/g,'__')
+    if (jb.jbm.childJbms[id]) return jb.jbm.childJbms[id]
+    if (!jbHost.isNode || jbHost.isVscode)
+        return jb.logError(`nodeWorker ${id} can only run on pure nodejs`, {ctx})
+
+    const { Worker } = require('worker_threads')
+    const workerUri = `${jb.uri}•${id}`
+    sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),'remote-jbm','tree-shake'])
+    const baseDir = jbHost.jbReactDir
+    const initJb = usePackedCode ? `jbLoadPacked({uri:'${workerUri}'})` : `Promise.resolve(jbInit('${workerUri}', ${JSON.stringify(sourceCode)}))`
+
+    const workerCode = `
+const fs = require('fs')
+const { jbHost } = require('${jbHost.jbReactDir}/hosts/node/node-host.js')
+const inspector = require('inspector')
+const { parentPort } = require('worker_threads')
+// inspector.open()
+// inspector.waitForDebugger()
+
+const { jbInit } = require('${jbHost.jbReactDir}/plugins/loader/jb-loader.js')
+
+${initJb}.then(jb => {
+globalThis.jb = jb;
+jb.spy.initSpy({spyParam: "${jb.spy.spyParam}"});
+jb.treeShake.codeServerJbm = jb.parent = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromWorkerToParent(parentPort,'${workerUri}','${jb.uri}'))
+parentPort.postMessage({ $: 'workerReady' })
+ })
+//# sourceURL=${workerUri}-initJb.js`
+
+    return jb.jbm.childJbms[id] = {
+        uri: workerUri,
+        rjbm() {
+            if (this._rjbm) return this._rjbm
+            if (this.waitingForPromise) return this.waitingForPromise
+            const self = this
+            return this.waitingForPromise = new Promise(resolve => {
+              debugger
+              const worker = new Worker(workerCode, { eval: true, execArgv: ["--inspect"] })
+              worker.on('message', async function f1(m) {
+                debugger
+                if (m.$ == 'workerReady') {
+                    if (self._rjbm) {
+                        resolve(self._rjbm) // race condition
+                    } else {
+                        worker.off('message',f1)
+                        const rjbm = self._rjbm = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromParentToWorker(worker,jb.uri,workerUri))
+                        rjbm.worker = worker
+                        await init(ctx.setVar('jbm',jb.jbm.childJbms[id]))
+                        resolve(rjbm)
+                    }
+                }
+              })
+        })
+      }
+    }
+  }
 })
 
 // component('spawn', {

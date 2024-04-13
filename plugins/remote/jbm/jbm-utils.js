@@ -156,6 +156,7 @@ extension('jbm', 'main', {
                         const cbId = jb.cbHandler.newId()
                         port.postMessage({$:'CB.createOperator', remoteRun, sourceId, cbId })
                         return (t,d) => {
+                            jb.log('remote callbag operator send',{t,d, remoteRun, cbId})
                             if (t == 2) console.log('send 2',cbId,sourceId)
                             outboundMsg({cbId,t,d})
                         }
@@ -202,6 +203,7 @@ extension('jbm', 'main', {
         }
         function inboundMsg(m) { 
             const {cbId,t,d} = m
+            jb.log('remote callbag source/operator',{t,d, cbId})
             if (t == 2) jb.cbHandler.removeEntry(cbId,m)
             return jb.cbHandler.getAsPromise(cbId,t).then(cb=> !jb.terminated && cb && cb(t, t == 0 ? remoteCB(d,cbId,m) : d)) 
         }
@@ -238,20 +240,29 @@ extension('jbm', 'main', {
                     }
                     await jb.treeShake.bringMissingCode(cmd.remoteRun)
                 }
+                jb.log('remote handleCBCommand',{cmd})
                 const deStrip = jb.remoteCtx.deStrip(cmd.remoteRun)
-                const result1 = await (typeof deStrip == 'function' ? deStrip() : deStrip)
-                const result = jb.path(result1,'$') ? result1.res : result1 // withProbeResult
-                if ($ == 'CB.createSource' && typeof result == 'function')
-                    jb.cbHandler.map[cbId] = result
-                else if ($ == 'CB.createOperator' && typeof result == 'function')
-                    jb.cbHandler.map[cbId] = result(remoteCB(sourceId, cbId,cmd) )
-                else if ($ == 'CB.exec') {
-                    const res = await jb.utils.waitForInnerElements(result)
-                    port.postMessage({$:'execResult', cbId, result: isAction ? {} : jb.remoteCtx.stripData(res) , ...jb.net.reverseRoutingProps(cmd) })
+                const deStripResult = await (typeof deStrip == 'function' ? deStrip() : deStrip)
+                const {result, actualResult, probe} = await waitForResult(deStripResult)
+                if ($ == 'CB.createSource' && typeof actualResult == 'function') {
+                    jb.remoteCtx.markProbeRecords(probe, 'initSource')
+                    jb.cbHandler.map[cbId] = actualResult
+                } else if ($ == 'CB.createOperator' && typeof actualResult == 'function') {
+                    jb.remoteCtx.markProbeRecords(probe, 'initOperator')
+                    jb.cbHandler.map[cbId] = actualResult(remoteCB(sourceId, cbId,cmd) ) // bind to source
+                } else if ($ == 'CB.exec') {
+                    const resultToReturn = isAction ? (probe ? {$: 'withProbeResult', probe} : {}) : jb.remoteCtx.stripData(result)
+                    port.postMessage({$:'execResult', cbId, result: resultToReturn , ...jb.net.reverseRoutingProps(cmd) })
                 }
             } catch(err) { 
                 jb.logException(err,'remote handleCBCommand',{cmd})
                 $ == 'CB.exec' && port.postMessage({$:'execResult', cbId, result: { type: 'error', err}, ...jb.net.reverseRoutingProps(cmd) })
+            }
+            async function waitForResult(result) {
+                const res = jb.path(result,'$') ? result.res : result
+                const actualResult = $ == 'CB.exec' ? await jb.utils.waitForInnerElements(res) : res
+                const probe = jb.path(result,'$') ? result.probe : null
+                return {result: probe ? {...result, res: actualResult } : actualResult, actualResult, probe}
             }
         }
     },

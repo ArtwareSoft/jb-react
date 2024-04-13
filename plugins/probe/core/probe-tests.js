@@ -277,3 +277,35 @@ component('sampleComp.ctrlWithPipeline', {
     ]
   })
 })
+
+component('probeTest.remote.data', {
+  impl: probeTest(remote.data(pipeline('hello', '%%', '%% world'), child()), 'calc~items~0', {
+    expectedVisits: 1,
+    expectedOutResult: equals('hello')
+  })
+})
+
+component('probeTest.remote.action', {
+  impl: probeTest(typeAdapter('action<>', remote.action(runActionOnItem('hello'), child())), 'val~action~item', {
+    expectedVisits: 1,
+    expectedOutResult: equals('hello')
+  })
+})
+
+component('probeTest.remote.source', {
+  impl: probeTest({
+    circuit: rx.pipe(source.remote(source.data(pipeline('hello', '%%', '%% world')), child())),
+    probePath: 'elems~0~rx~Data~items~0',
+    expectedVisits: 1,
+    expectedOutResult: equals('hello')
+  })
+})
+
+component('probeTest.remote.operator', {
+  impl: probeTest({
+    circuit: rx.pipe(source.data('hello'), remote.operator(rx.map('%%'), child()), rx.map('%% world')),
+    probePath: 'elems~1~rx~func',
+    expectedVisits: 1,
+    expectedOutResult: equals('hello')
+  })
+})

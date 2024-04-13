@@ -22,7 +22,8 @@ component('treeShakeClient', {
 extension('treeShake', {
     initExtension() {
         return {
-            clientComps: ['#extension','#core.run','#component','#jbm.extendPortToJbmProxy','#jbm.portFromFrame',
+            clientComps: ['#extension','#core.run','#component',
+                '#jbm.extendPortToJbmProxy','#jbm.portFromFrame',
                 '#db.addDataResourcePrefix','#db.removeDataResourcePrefix',
                 '#spy.initSpy','#treeShake.getCodeFromRemote','#cbHandler.terminate','data<>treeShake.getCode','action<>waitFor',
                 'any<>call','any<>runCtx','any<>If','any<>firstNotEmpty','any<>typeAdapter'],
