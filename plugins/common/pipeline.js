@@ -24,7 +24,7 @@ component('pipeline', {
 })
 
 // component('pipeline', {
-//   type: 'data',
+  //   type: 'data',
 //   category: 'common:100',
 //   description: 'flat map data arrays one after the other, do not wait for promises and rx',
 //   params: [
@@ -271,7 +271,7 @@ component('groupBy', {
     prop('%$pivot%', '%$calcPivot()%'),
     splitByPivot('%$pivot%'),
     groupProps('%$aggregate%'),
-    removeProps('items')
+    removeProps('items'),
   )
 })
 

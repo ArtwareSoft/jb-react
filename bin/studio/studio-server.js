@@ -220,8 +220,9 @@ const op_post_handlers = {
       writeToCmdLog('./temp/runCtxUrl', runCtxUrl)
 
       //${baseUrl}/tests.html?
-      res.setHeader('Content-Type', 'application/json; charset=utf8') // '--inspect-brk', 
-      const srvr = child.spawn('node',['./jb.js', ...args],{cwd: 'hosts/node'})
+      res.setHeader('Content-Type', 'application/json; charset=utf8') // '--inspect-brk', --experimental-wasm-simd
+      const flags = [] //'--experimental-wasm-simd']
+      const srvr = child.spawn('node',[...flags, './jb.js', ...args],{cwd: 'hosts/node'})
       let res_str = ''
       srvr.stdout.on('data', data => { res.write(data); res_str += data })
       srvr.stdout.on('end', data => {

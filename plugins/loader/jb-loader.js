@@ -43,6 +43,7 @@ globalThis.jbHost = globalThis.jbHost || { // browserHost - studioServer,worker 
 async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl, baseUrl, packOnly} ={}) {
   if (baseUrl) jbHost.baseUrl = baseUrl // used for extension content script
   const packedCode = []
+  const loadErrors = []
   const jb = { 
     uri,
     sourceCode,
@@ -84,6 +85,7 @@ async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl, baseUrl,
 
   await jb.initializeLibs(libsToInit)
   jb.utils.resolveLoadedProfiles()
+  loadErrors.forEach(({err,logObj}) => jb.logError(err,logObj))
 
   return jb
 
@@ -177,7 +179,7 @@ async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl, baseUrl,
     function calcDependency(id,history={}) {
       const plugin = plugins[id]
       if (!plugin) {
-        console.log('calcDependency: can not find plugin',{id, history})
+        loadErrors.push({err: 'calcDependency: can not find plugin', logObj: {id, history}})
         return []
       }
       if (plugin.dependent) return [id, ...plugin.dependent]

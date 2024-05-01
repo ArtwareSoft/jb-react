@@ -1,9 +1,17 @@
 (sensors; cpufreq-info) | xclip -selection clipboard
 top -b -n 1 | xclip -selection clipboard
 
+learn about git 
+
 ui-widget
+  move all state to widget
 
 build log-mapping dsl
+  etl - source operator sinks
+    fileSource
+    pipeline with table schema in ctx
+    extract(fields)
+    transformRecord
   PTs
     PT selector - byField ()
     PT { fields: [{id, distributionOfPos}] }
@@ -11,7 +19,7 @@ build log-mapping dsl
 
 webAssembly
   run first prog
-  parse buffer check SMID
+  parse buffer check simd
   string refs
   build log-mapping DSL
   clean log files

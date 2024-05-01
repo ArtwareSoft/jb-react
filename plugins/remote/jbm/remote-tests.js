@@ -344,6 +344,6 @@ component('remoteTest.remoteCtx.varsUsed', {
   impl: dataTest(remoteCtx.varsUsed(ctx => ctx.cmpCtx.params.p1.profile), equals(['aa','bb']))
 })
 
-// component('remoteTest.dsl', {
-//   impl: uiTest(location.control(israel()), contains('Jerusalem'), { timeout: 500, backEndJbm: worker() })
-// })
+component('remoteTest.nodeOnly', {
+  impl: dataTest(nodeOnly('5', plugins('common')), equals(5))
+})

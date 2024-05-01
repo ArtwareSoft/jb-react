@@ -291,16 +291,6 @@ component('jbm.terminateChild', {
   impl: (ctx,id) => jb.jbm.terminateChild(id,ctx)
 })
 
-// component('workerGroupByKey', {
-//   type: 'jbm',
-//   params: [
-//     {id: 'groupId', as: 'string', description: 'used as prefix', mandatory: true },
-//     {id: 'genericJbm', type: 'jbm', composite: true, mandatory: true},
-//     {id: 'key', as: 'string', dynamic: true, mandatory: true, description: 'specialized worker for each key' },
-//   ],
-//   impl: () => {} //pipe (Var('groupWorkerId', '%$groupId%-%$key()%'),'%$genericJbm()%')
-// })
-
 component('isNode', {
   type: 'boolean<>',
   impl: () => globalThis.jbHost.isNode
@@ -309,4 +299,13 @@ component('isNode', {
 component('isVscode', {
   type: 'boolean<>',
   impl: () => globalThis.jbHost.isVscode
+})
+
+component('nodeOnly', {
+  type: 'data<>',
+  params: [
+    {id: 'calc', dynamic: true, mandatory: true},
+    {id: 'sourceCode', type: 'source-code<loader>', mandatory: true}
+  ],
+  impl: If(and(isNode(), not(isVscode())), '%$calc()%', remote.data('%$calc()%', cmd('%$sourceCode%')))
 })
