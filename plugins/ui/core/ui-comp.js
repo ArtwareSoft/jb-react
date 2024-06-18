@@ -157,7 +157,8 @@ extension('ui','comp', {
         const strongRefresh = jb.path(options,'strongRefresh')
         const newState = strongRefresh ? {refresh: true } 
             : { ...jb.path(elem._component,'state'), refreshSource: jb.path(options,'refreshSource'), refresh: true, ...state} // strongRefresh kills state
-        let ctx = _ctx.setVars({$model: null, $state: newState, $refreshElemCall: true, $cmpId: cmpId, $cmpVer: cmpVer+1})
+        let ctx = _ctx.setVars({$model: null, $state: newState, $refreshElemCall: true, $cmpId: cmpId
+            , $cmpVer: cmpVer+1, $OnlyCalcDialog: _ctx.profile.$ == 'openDialog'})
         ctx._parent = null
         if (options && options.extendCtx)
             ctx = options.extendCtx(ctx)
@@ -165,7 +166,7 @@ extension('ui','comp', {
         if (ctx.vars.$previewMode && jb.watchableComps && jb.watchableComps.handler) // updating to latest version of profile - todo: moveto studio
             ctx.profile = jb.watchableComps.handler.valOfPath(ctx.path.split('~')) || ctx.profile
         elem.setAttribute('__refreshing','')
-        const cmp = ctx.profile.$ == 'openDialog' ? ctx.calc({ $$: 'data<>dialog.buildComp' }) : ctx.runItself()
+        const cmp = ctx.runItself()
         jb.log('refresh elem start',{cmp,ctx,newState ,elem, state, options})
 
         const className = elem.className != null ? elem.className : jb.path(elem.attributes.class) || ''

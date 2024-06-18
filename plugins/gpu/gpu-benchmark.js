@@ -5,8 +5,18 @@ extension('gpu', 'basic', {
     async test2() { return 'hello' },
     async test1() {
         const _gl = require('gl');
-        const DIM = 4;
-        const gl = _gl(DIM,DIM);
+        const DIM = 8;
+        const gl = _gl(DIM,DIM,{
+            alpha: false,
+            depth: true,
+            stencil: false,
+            antialias: false,
+            premultipliedAlpha: false,
+            preserveDrawingBuffer: true,
+            powerPreference: 'high-performance',
+            failIfMajorPerformanceCaveat: false,
+            desynchronized: true
+        });
 
         // Create a shader program
         const vertexShaderSource = `
@@ -17,12 +27,15 @@ extension('gpu', 'basic', {
         `;
 
         const fragmentShaderSource = `
-            precision highp float;
-            uniform int y;
-            uniform sampler2D textureArray;
-            void main() {
-                gl_FragColor = texture2D(textureArray, gl_FragCoord.xy);
-                //float _input = ${DIM}.0 * floor(gl_FragCoord.y) + floor(gl_FragCoord.x);
+        precision highp float;
+        uniform int y;
+        uniform sampler2D textureArray;
+        void main() {
+            vec4 texture = texture2D(textureArray, gl_FragCoord.xy);
+            gl_FragColor = vec4(texture.r, 0.0, 0.0, 255.0);
+        }`;
+
+                        //float _input = ${DIM}.0 * floor(gl_FragCoord.y) + floor(gl_FragCoord.x);
                 //vec4 texValue = texture2D(textureArray, gl_FragCoord.xy);
                 // float _input = texValue.a * 256.0 * 256.0 * 256.0 + texValue.b * 256.0 * 256.0 + texValue.g * 256.0 + texValue.r;                
                 // float res = _input * float(y);
@@ -32,8 +45,6 @@ extension('gpu', 'basic', {
                 // float h = mod(res / (256.0 * 256.0 * 256.0), 256.0);
                 // gl_FragColor = vec4(r / 256.0, g / 256.0, b / 256.0, h/256.0); // result wrapped as color
                 //gl_FragColor = texValue;
-            }
-        `;
 
         const vertexShader = gl.createShader(gl.VERTEX_SHADER);
         gl.shaderSource(vertexShader, vertexShaderSource);
@@ -100,7 +111,7 @@ extension('gpu', 'basic', {
         const buildRes = jb.gpu.calcDuration(() => {
             res = [...new Array(400)].map((_,i) => r[i*4] + r[i*4+1]*0xFF + + r[i*4+2]*0xFFFF + + r[i*4+3]*0xFFFFFF )
         })
-        return { r: [...r], textureData: [...textureData], res, gpuRun, bufferOut, buildRes}
+        return { canvas: [...r], textureData: [...textureData], res, gpuRun, bufferOut, buildRes}
 
     },
     calcDuration(f) {

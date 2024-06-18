@@ -75,6 +75,8 @@ component('openDialog', {
     const ctxWithDialog = ctx.setVars({ $dialog, dialogData: {}, formContainer: { err: ''} })
     $dialog.ctx = ctxWithDialog
     const cmp = jb.ui.ctrl(ctxWithDialog, {$: 'feature<>dialog.init'}) // activate the unique feature that may change the id
+    if (ctx.vars.$OnlyCalcDialog)
+      return cmp
     jb.ui.dialogTopCmp(ctx).runBEMethod('open dialog',$dialog)
 
     function calcVdom() {

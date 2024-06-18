@@ -189,7 +189,7 @@ extension('studio','highlight', {
     const ctx = cmp && cmp.ctx
     if (!ctx) return
     ctx.profile = jb.path(jb.comps,ctx.path.split('~'))
-    const dialogCmp = ctx.profile.$ == 'openDialog' ? ctx.calc({$: 'dialog.buildComp'}) : ctx.runItself()
+    const dialogCmp = ctx.setVars({$OnlyCalcDialog: ctx.profile.$ == 'openDialog'}).runItself()
     dialogCmp && jb.ui.applyNewVdom(elem, jb.ui.h(dialogCmp), {strongRefresh: true, ctx})
   },
   findElemsByPathCondition: condition => Array.from(document.querySelectorAll('[cmp-id]'))

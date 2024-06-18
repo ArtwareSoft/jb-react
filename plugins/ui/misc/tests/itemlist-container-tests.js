@@ -19,7 +19,7 @@ component('uiTest.itemlistContainerSearchCtrl', {
   })
 })
 
-component('itemlistContainerTest.search.highligh', {
+component('itemlistContainerTest.search.highlight', {
   impl: uiTest(uiTest.itemlistContainerSearchCtrl(), contains('Ho<','>mer'), { uiAction: setText('ho', '#search') })
 })
 

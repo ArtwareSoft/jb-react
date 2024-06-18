@@ -29,7 +29,10 @@ component('commonTest.varInPipeline', {
 })
 
 component('commonTest.filter', {
-  impl: dataTest(pipeline('%$personWithChildren/children/name%', filter(contains('i')), join()), equals('Lisa,Maggie'))
+  impl: dataTest({
+    calculate: pipeline('%$personWithChildren/children/name%', filter(contains('i')), join()),
+    expectedResult: equals('Lisa,Maggie')
+  })
 })
 
 component('commonTest.toUpperCase', {

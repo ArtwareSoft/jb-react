@@ -35,6 +35,24 @@ component('uiTest.refreshControlById.withButton', {
   })
 })
 
+component('uiTest.refreshDialogContent', {
+  impl: uiTest({
+    control: group({
+      controls: [
+        button('open', openDialog({ content: text('%$person1/name%'), id: 'dlg' }), {
+          features: id('open')
+        }),
+        button('refresh', runActions(writeValue('%$person1/name%', 'Dan'), refreshControlById('dlg')), {
+          features: id('refresh')
+        })
+      ],
+      features: variable('person1', obj(prop('name','Homer')))
+    }),
+    expectedResult: contains('Dan'),
+    uiAction: uiActions(click('#open'), click('#refresh'))
+  })
+})
+
 component('uiTest.refreshByStateChange', {
   impl: uiTest({
     control: group(text('%$name%'), {
