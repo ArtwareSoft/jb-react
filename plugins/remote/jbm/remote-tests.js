@@ -208,7 +208,10 @@ component('remoteTest.source.remote.pipe', {
 component('remoteTest.remote.operator', {
   impl: dataTest({
     calculate: pipe(
-      rx.pipe(source.data([1,2,3]), remote.operator(rx.take(2), worker()), rx.map('-%%-')),
+      rx.pipe(
+        source.data([1,2,3]),
+        remote.operator(rx.innerPipe(rx.take(2), rx.map('-%%-')), worker())
+      ),
       join(',')
     ),
     expectedResult: equals('-1-,-2-'),

@@ -160,16 +160,16 @@ component('rxTest.varAsParam', {
 })
 
 component('rxTest.reduceCount', {
-  impl: dataTest(rx.pipe(source.interval(1), rx.take('4'), rx.count(), rx.map('%$count%'), rx.last()), equals(4))
+  impl: dataTest(rx.pipe(source.interval(1), rx.take(4), rx.count(), rx.map('%$count%'), rx.last()), equals(4))
 })
 
 component('rxTest.reduceMax', {
-  impl: dataTest(rx.pipe(source.interval(1), rx.take('4'), rx.max(), rx.map('%$max%'), rx.last()), equals(3))
+  impl: dataTest(rx.pipe(source.interval(1), rx.take(4), rx.max(), rx.map('%$max%'), rx.last()), equals(3))
 })
 
 component('rxTest.reduceJoin', {
   impl: dataTest({
-    calculate: rx.pipe(source.interval(1), rx.take('4'), rx.join('res', ';'), rx.map('%$res%'), rx.last()),
+    calculate: rx.pipe(source.interval(1), rx.take(4), rx.join('res', ';'), rx.map('%$res%'), rx.last()),
     expectedResult: equals('0;1;2;3')
   })
 })
@@ -317,7 +317,7 @@ component('rxTest.concatMapBug1', {
       source.interval(1),
       rx.take(10),
       rx.concatMap(source.promise(({data}) => jb.delay(1,data+2))),
-      rx.take('1')
+      rx.take(1)
     ),
     expectedResult: equals('2')
   })

@@ -1,8 +1,17 @@
 (sensors; cpufreq-info) | xclip -selection clipboard
 top -b -n 1 | xclip -selection clipboard
 
-learn about git 
+studio
+  studio/package/plugin/probe(optional - main)?circuit=(optional - by)
+  how to define one-word package - settings - package-base, or package-path
+  where to load the profiles for the editor - child jbm - same main thread
+    floating content from child jbm
+  studio
+    jb.langService - inteliMode
+    jb.langService.tgpModels for components content (includeImpl) compStr in cache.
+    preview jbm on worker
 
+  studio main
 ui-widget
   move all state to widget
 

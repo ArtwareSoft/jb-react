@@ -171,10 +171,12 @@ component('remote.widget', {
         source.callbag(() => jb.ui.widgetUserRequests),
         rx.log('remote widget userReq'),
         rx.filter('%widgetId% == %$widgetId%'),
-        rx.takeWhile(({ data }) => data.$$ != 'destroy', true),
+        rx.takeWhile(({ data }) => data.$$ != 'destroy', { passLastEvent: true }),
         rx.log('remote widget sent to headless'),
         remote.operator({
-          rx: widget.headless(call('control'), '%$widgetId%', {
+          rx: widget.headless({
+            control: call('control'),
+            widgetId: '%$widgetId%',
             transactiveHeadless: '%$transactiveHeadless%'
           }),
           jbm: '%$resolvedJbm%'

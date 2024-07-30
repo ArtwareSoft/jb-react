@@ -43,13 +43,12 @@ component('urlHistory.mapStudioUrlToResource', {
         const hasSearchUrl = location.pathname.match(/\.html$/);
         const params = ['project','circuit','profile_path'].concat( hasSearchUrl ? ['host','hostProjectId'] : [])
 
-        jb.ui.location = jb.frame.History.createBrowserHistory();
         const _search = location.search.substring(1);
         if (_search)
             Object.assign(ctx.exp('%$queryParams%'),JSON.parse('{"' + decodeURI(_search).replace(/"/g, '\\"').replace(/&/g, '","').replace(/=/g,'":"') + '"}'))
 
-        const {pipe, fromIter, subscribe,merge,create,map,filter} = jb.callbag
-        const browserUrlEm = create(obs=> jb.ui.location.listen(x=> obs(x)))
+        const {pipe, fromIter, subscribe,merge,fromEvent,map,filter} = jb.callbag
+        const browserUrlEm = fromEvent('popstate',jb.frame.window)
 
         const databindEm = pipe(jb.db.useResourcesHandler(h=>h.resourceChange),
             filter(e=> e.path[0] == resource && params.indexOf(e.path[1]) != -1),
@@ -66,7 +65,7 @@ component('urlHistory.mapStudioUrlToResource', {
                 // change the url if needed
                 if (loc.pathname && loc.pathname === location.pathname) return
                 if (loc.search && loc.search === location.search) return
-                jb.ui.location.push(Object.assign({},jb.ui.location.location, loc));
+                jb.path(jb.frame.window, history) && history.pushState({}, "", loc);
                 ctx.params.onUrlChange(ctx.setData(loc));
         }))
   }})

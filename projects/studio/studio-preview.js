@@ -70,7 +70,7 @@ component('preview.control', {
   impl: group({
     controls: ctx => { 
       const _circuit = ctx.exp('%$studio/circuit%')
-      const circuit = (jb.path(jb.comps[_circuit],'impl.$') || '').match(/Test/) ? { $: 'test.showTestInStudio', testId: _circuit} : { $: _circuit }
+      const circuit = (jb.path(jb.comps[_circuit],'impl.$') || '').match(/Test/) ? { $: 'control<>test.showTestInStudio', testId: _circuit} : { $: _circuit }
       jb.log('preview circuit',{circuit, ctx})
       return circuit && circuit.$ && ctx.run(circuit)
     },
@@ -79,8 +79,7 @@ component('preview.control', {
       watchRef('%$probe/scriptChangeCounter%'),
       variable('$previewMode', true)
     ]
-  }),
-  require: test.showTestInStudio()
+  })
 })
 
 

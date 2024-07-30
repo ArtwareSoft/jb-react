@@ -144,7 +144,7 @@ component('FETest.remoteWidget.infiniteScroll', {
     control: itemlist({
       items: range(0, 10),
       controls: text('%%'),
-      visualSizeLimit: '7',
+      visualSizeLimit: 7,
       features: [
         css.height('100', 'scroll'),
         itemlist.infiniteScroll(),

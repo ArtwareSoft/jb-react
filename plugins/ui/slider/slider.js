@@ -105,7 +105,7 @@ component('editableNumber.mdcSliderNoText', {
         ])
       ]),
     features: [
-      frontEnd.requireExternalLibrary('material-components-web.js','css/font.css','css/material.css'),
+      frontEnd.requireExternalLibrary('material-components-web.js','css/material.css'),
       field.databind(),
       slider.init(),
       frontEnd.init((ctx,{cmp}) => {

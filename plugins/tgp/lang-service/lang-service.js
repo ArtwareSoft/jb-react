@@ -299,7 +299,7 @@ extension('langService', 'api', {
             },
             }))
             title = paramDef && `${paramDef.id}: ${paramDef.$type.replace('<>','')}`
-            jb.log('completion completion items', { items, ...compProps, ctx })
+            jb.log('completion items', { items, ...compProps, ctx })
         } else if (errors) {
             jb.logError('completion provideCompletionItems', {errors, compProps})
             items = [ {

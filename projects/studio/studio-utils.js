@@ -124,19 +124,19 @@ component('studio.watchPath', {
   })
 })
 
-component('studio.watchScriptChanges', {
-  type: 'feature',
-  params: [
-    {id: 'path', as: 'string', description: 'under this path, empty means any path'},
-    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'}
-  ],
-  impl: watchRef('%$studio/lastStudioActivity%', { allowSelfRefresh: '%$allowSelfRefresh%' })
-})
+// component('studio.watchScriptChanges', {
+//   type: 'feature',
+//   params: [
+//     {id: 'path', as: 'string', description: 'under this path, empty means any path'},
+//     {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'}
+//   ],
+//   impl: watchRef('%$studio/lastStudioActivity%', { allowSelfRefresh: '%$allowSelfRefresh%' })
+// })
 
-component('studio.watchComponents', {
-  type: 'feature',
-  impl: followUp.flow(watchableComps.scriptChange(), rx.filter('%path/length%==1'), sink.refreshCmp())
-})
+// component('studio.watchComponents', {
+//   type: 'feature',
+//   impl: followUp.flow(watchableComps.scriptChange(), rx.filter('%path/length%==1'), sink.refreshCmp())
+// })
 
 extension('studio', 'project', {
 	projectFiles: () => jb.exec('%$studio/projectSettings/jsFiles%'),

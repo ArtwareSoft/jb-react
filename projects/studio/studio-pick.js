@@ -8,17 +8,20 @@ component('studio.pickAndOpen', {
   params: [
     {id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'}
   ],
-  impl: openDialog({
-    content: text(''),
-    style: dialog.studioPickDialog('%$from%'),
-    onOK: runActions(writeValue('%$studio/profile_path%', '%$dialogData/path%'), studio.openControlTree()),
-    id: 'studio.pick'
-  })
+  impl: runActions(
+    Var('pickData', obj()),
+    openDialog({
+      content: text(''),
+      style: dialog.studioPickDialog('%$from%'),
+      onOK: runActions(writeValue('%$studio/profile_path%', '%$pickData/path%'), studio.openControlTree()),
+      id: 'studio.pick'
+    })
+  )
 })
 
 component('studio.pickTitle', {
   type: 'control',
-  impl: text(tgp.shortTitle('%$dialogData/path%'), {
+  impl: text(tgp.shortTitle('%$pickData/path%'), {
     features: css('display: block; margin-top: -20px; background: white; opacity: 0.7')
   })
 })
@@ -48,10 +51,10 @@ component('dialogFeature.studioPick', {
     }),
     method('hoverOnElem', (ctx,{}) => {
       const el = ctx.data
-      Object.assign(ctx.vars.dialogData,{ elem: el, cmpId: el.getAttribute('cmp-id'), path: jb.studio.pathOfElem(el) })
+      Object.assign(ctx.vars.pickData,{ elem: el, cmpId: el.getAttribute('cmp-id'), path: jb.studio.pathOfElem(el) })
       ctx.runAction(toggleBooleanValue('%$studio/refreshPick%')) // trigger for refreshing the dialog
     }),
-    method('endPick', runActions(writeValue('%$studio/pickSelectionCmpId%', '%$dialogData.cmpId%'), dialog.closeDialog(true))),
+    method('endPick', runActions(writeValue('%$studio/pickSelectionCmpId%', '%$pickData.cmpId%'), dialog.closeDialog(true))),
     frontEnd.flow(
       source.event('mousemove', () => jb.frame.document, { options: obj(prop('capture', true)) }),
       rx.debounceTime(50),
@@ -96,9 +99,9 @@ component('dialog.studioPickDialog', {
     features: [
       css(
         pipeline(
-          (ctx,{dialogData},{from}) => {
-        if (!dialogData.elem) return {}
-        const elemRect = dialogData.elem.getBoundingClientRect()
+          (ctx,{pickData},{from}) => {
+        if (!pickData.elem) return {}
+        const elemRect = pickData.elem.getBoundingClientRect()
         const zoom = +(document.body.style.zoom) || 1
         const top = (from == 'preview' ? jb.ui.studioFixYPos() : 0) + elemRect.top*zoom
         const left = (from == 'preview' ? jb.ui.studioFixXPos() : 0) + elemRect.left*zoom

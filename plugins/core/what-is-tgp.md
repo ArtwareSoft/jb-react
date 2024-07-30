@@ -2,46 +2,6 @@
 
 TGP (Types, Generic implementations, Profiles) is a methodology for developing and using Domain-Specific Languages (DSLs). It provides a structured way to define and implement DSLs by separating concerns into three main concepts: Types, Generic implementations (Generics), and Profiles.
 
-let's start with Rust example
-
-**Rust Example:**
-```rust
-
-enum settlement { // TGP type
-    City { name: &'static str, population: u32, area: f32 }, // PT of type settlement
-    Village { name: &'static str, rural: bool }, // Another PT of type settlement
-}
-
-enum state { // TGP type
-    State { name: &'static str, capital: &'static settlement, settlements: &'static [&'static settlement; 3] }, // PT of type state
-}
-
-const jerusalem: settlement = settlement::City { // Profile
-    name: "Jerusalem",
-    population: 936_000,
-    area: 125.1,
-};
-
-const telAviv: settlement = settlement::City { // Profile
-    name: "Tel Aviv",
-    population: 451_523,
-    area: 52.0,
-};
-
-const israel: state = state::State { // Nested profile with polymorphic aggregation
-    name: "Israel",
-    capital: &jerusalem,
-    settlements: &[
-        &jerusalem,
-        &telAviv,
-        &settlement::Village {
-            name: "Nokdim",
-            rural: true,
-        },
-    ],
-};
-```
-
 ## Types
 
 Types are abstract categories used to classify components in the DSL. They help define the grammar rules, see polymorphic aggregation later on.

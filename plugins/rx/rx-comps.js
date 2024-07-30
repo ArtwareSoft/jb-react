@@ -485,9 +485,9 @@ component('rx.takeWhile', {
   category: 'terminate',
   params: [
     {id: 'whileCondition', as: 'boolean', dynamic: true, mandatory: true, type: 'boolean'},
-    {id: 'passtLastEvent', as: 'boolean', type: 'boolean'}
+    {id: 'passLastEvent', as: 'boolean', type: 'boolean', byName: true}
   ],
-  impl: (ctx,whileCondition,passtLastEvent) => jb.callbag.takeWhile(ctx => whileCondition(ctx), passtLastEvent)
+  impl: (ctx,whileCondition,passLastEvent) => jb.callbag.takeWhile(ctx => whileCondition(ctx), passLastEvent)
 })
 
 component('rx.toArray', {

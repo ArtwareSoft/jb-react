@@ -107,10 +107,10 @@ component('studio.jbEditor', {
       })
     ],
     title: 'main',
-    layout: layout.horizontalFixedSplit('350px', '100%'),
+    layout: layout.horizontalFixedSplit({ leftWidth: '350px', rightWidth: '100%' }),
     features: [
       id('jbEditor'),
-      css.padding('10'),
+      css.padding({ top: '10' }),
       css.height('800', { minMax: 'max' })
     ]
   })
@@ -141,10 +141,7 @@ component('studio.openJbEditProperty', {
           dialogFeature.onClose(popup.regainCanvasFocus())
         ]
       })),
-      action.switchCase({
-        condition: isOfType('function', tgp.val('%$actualPath%')),
-        action: studio.editSource('%$actualPath%')
-      }),
+      action.switchCase(isOfType('function', tgp.val('%$actualPath%')), studio.editSource('%$actualPath%')),
       action.switchCase(tgp.isOfType('%$actualPath%', 'data,boolean'), openDialog({
         content: studio.jbFloatingInput('%$actualPath%'),
         style: dialog.studioJbEditorPopup(),
@@ -175,7 +172,7 @@ component('studio.jbEditorInteliTree', {
   ],
   impl: tree({
     nodeModel: studio.jbEditorNodes('%$path%'),
-    style: tree.expandBox(true, '800px'),
+    style: tree.expandBox({ showIcon: true, lineWidth: '800px' }),
     features: [
       variable('popupLauncherCanvas', '%$cmp%'),
       css.class('jb-editor'),

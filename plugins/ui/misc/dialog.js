@@ -72,12 +72,12 @@ component('openDialog', {
   ],
   impl: ctx => {
     const $dialog = { id: ctx.params.id || `dlg-${ctx.id}`, calcVdom, launcherCmpId: ctx.exp('%$cmp/cmpId%') }
-    const ctxWithDialog = ctx.setVars({ $dialog, dialogData: {}, formContainer: { err: ''} })
+    const ctxWithDialog = ctx.setVars({ $dialog, dialogData: {}, formContainer: { err: ''}, $OnlyCalcDialog: false })
     $dialog.ctx = ctxWithDialog
     const cmp = jb.ui.ctrl(ctxWithDialog, {$: 'feature<>dialog.init'}) // activate the unique feature that may change the id
     if (ctx.vars.$OnlyCalcDialog)
       return cmp
-    jb.ui.dialogTopCmp(ctx).runBEMethod('open dialog',$dialog)
+    jb.ui.dialogTopCmp(ctxWithDialog).runBEMethod('open dialog',$dialog)
 
     function calcVdom() {
         return jb.ui.stripVdom(cmp.renderVdomAndFollowUp())

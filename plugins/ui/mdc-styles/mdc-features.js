@@ -11,7 +11,7 @@ component('mdcStyle.initDynamic', {
   ],
   impl: features(
     frontEnd.requireExternalLibrary('Material Icons::fonts/MaterialIcons-Regular.woff2'),
-    frontEnd.requireExternalLibrary('material-components-web.js','css/font.css','css/material.css'),
+    frontEnd.requireExternalLibrary('material-components-web.js','css/material.css'),
     frontEnd.init(async ({},{cmp}) => {
       if (cmp.base.constructor.name == 'VNode') return
       const mdc = jb.frame.mdc
