@@ -1,12 +1,63 @@
 (sensors; cpufreq-info) | xclip -selection clipboard
 top -b -n 1 | xclip -selection clipboard
 
+plugin-package
+  fileSymbols()
+  fetchFile(path)
+  storeFile(path, text)
+
+ide = tgpEditorHost
+  openDoc(uri)
+  applyEdit()
+  getActiveDoc -> uri
+  selectRange
+  compTextAndCursor
+  saveActiveDoc
+  getEditedDocs
+  closeDoc
+
+  saveCurrentDoc
+  saveEditedDocs
+  applyEdit(uri,edit)
+
+ide state
+  active doc + cursor versus active comp + path
+  working docs versus working comps
+solution 1
+  support multiple editors of the same doc
+    inteli is editor of the doc focusing on comp
+    doc can also have cached comp objects - and manage the changes in its comps & lifecycle
+    preview updates - edit can be both text and comp-op or text only and version + base file crc
+    need to have doc versions to let the multiple editors & preview keep sync
+  preview should be able to separate in-memory updated code-package from the RT state, in order to re-init, 
+    extensions state should be handled differently
+
+how to handle extension state
+  profiles - no state (just resolve)
+  ctx - natural place for state
+  global ctx - extensions should store their state there
+  what about objects like rx-subjects?
+    all should be json - no objects
+  
+
+
+
+workspace<ide>
+  vscodeWS
+  jbStudio
+  testWS
+
+
 studio
   studio/package/plugin/probe(optional - main)?circuit=(optional - by)
   how to define one-word package - settings - package-base, or package-path
   where to load the profiles for the editor - child jbm - same main thread
     floating content from child jbm
-  studio
+  workspace
+    add origin to workspace
+    separate between origin (plugin-package) and ide (vscode do both)
+  studio -> workspace-ui
+    jb.langService.tgpModels[packagePath]
     jb.langService - inteliMode
     jb.langService.tgpModels for components content (includeImpl) compStr in cache.
     preview jbm on worker

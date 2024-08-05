@@ -101,10 +101,9 @@ component('tgp.references', {
   impl: (ctx,path) => {
 	  if (path.indexOf('~') != -1) return [];
 
-    var res = jb.entries(jb.comps)
+    return jb.entries(jb.comps)
     	.map(e=>({id: e[0], refs: refs(e[1].impl,`${e[0]}~impl`)}))
       .filter(e=>e.refs.length > 0)
-    return res;
 
     function refs(profile, parentPath) {
     	if (profile && typeof profile == 'object') {

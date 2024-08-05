@@ -1,0 +1,257 @@
+using('workspace-text-editor')
+
+extension('workspace', 'inteli', {
+	inteliTree: {
+		title(path, collapsed) {
+			let val = jb.tgp.valOfPath(path)
+			let compName = jb.tgp.shortCompNameOfPath(path)
+			if (path.indexOf('~') == -1)
+				compName = 'jbComponent'
+			if (path.match(/^[^~]+~params~[0-9]+$/))
+				compName = 'jbParam'
+			if (compName && compName.match(/case$/))
+				compName = 'case'
+			let prop = path.split('~').pop()
+			if (!isNaN(Number(prop))) // array value - title as a[i]
+				prop = path.split('~').slice(-2)
+					.map(x=>x.replace(/\$pipeline/,'').replace(/\$obj/,''))
+					.join('[') + ']'
+			if (path.match(/\$vars~[0-9]+~val$/))
+				prop = jb.tgp.valOfPath(jb.tgp.parentPath(path)).name
+			let summary = ''
+			if (collapsed && typeof val == 'object')
+				summary = ': ' + jb.tgp.summary(path).substr(0,20)
+			// if (path.match(/\$vars~[0-9]+$/))
+			//  	summary = jb.tgp.summary(path+'~val') || jb.tgp.shortCompNameOfPath(path+'~val')
+			if (typeof val == 'function')
+				val = val.toString()
+
+			// if (path.match(/\$vars~[0-9]+~val$/))
+			// 	return jb.ui.h('div',{},[val.name ,jb.ui.h('span',{class:'treenode-val', title: summary},jb.ui.limitStringLength(summary,50))]);
+			if (compName)
+				return jb.ui.h('div',{},[prop,jb.ui.h('span',{class:'treenode-val', title: compName+summary},jb.ui.limitStringLength(compName+summary,50))]);
+			else if (prop === '$vars')
+				return jb.ui.h('div',{},['vars',jb.ui.h('span',{class:'treenode-val', title: summary},jb.ui.limitStringLength(summary,50))]);
+			else if (['string','boolean','number'].indexOf(typeof val) != -1)
+				return jb.ui.h('div',{},[prop,jb.ui.h('span',{class:'treenode-val', title: ''+val},jb.ui.limitStringLength(''+val,50))]);
+
+			return prop + (Array.isArray(val) ? ` (${val.length})` : '');
+		}
+		isArray(path) {
+			return this.children(path).length > 0;
+		}
+		children(path) {
+			const val = jb.tgp.valOfPath(path)
+			if (!val) return []
+			return ( /\$vars$/.test(path) ? [] : jb.tgp.arrayChildren(path) || [])
+	//        .concat((this.includeCompHeader && this.compHeader(path,val)) || [])
+					.concat(this.vars(path,val) || [])
+	//				.concat(this.sugarChildren(path,val) || [])
+					.concat(this.specialCases(path,val) || [])
+					.concat(this.innerProfiles(path) || [])
+		}
+		move(from,to,ctx) {
+			return jb.db.move(jb.tgp.ref(from),jb.tgp.ref(to),ctx)
+		}
+		disabled(path) {
+			return jb.tgp.isDisabled(path)
+		}
+		icon(path) {
+			return jb.tgp.icon(path)
+		}
+		innerProfiles(path) {
+			if (!this.includeCompHeader && path.indexOf('~') == -1)
+				path = path + '~impl';
+
+			return jb.tgp.paramsOfPath(path).map(p=> ({ path: path + '~' + p.id, param: p}))
+					.filter(e=>jb.tgp.valOfPath(e.path) !== undefined || e.param.mandatory)
+					.flatMap(({path})=> Array.isArray(jb.tgp.valOfPath(path)) ? jb.tgp.arrayChildren(path) : [path])
+		}
+		vars(path,val) {
+			if (path.match(/\$vars$/))
+				return jb.tgp.arrayChildren(path,true).map(p=>p+'~val')
+			if (Array.isArray(jb.path(val,'$vars')))
+				return [path+'~$vars']
+		}
+
+		specialCases(path,val) {
+			if (jb.utils.compName(val) == 'object')
+				return Object.getOwnPropertyNames(val)
+					.filter(p=>p!='$')
+					.filter(p=>p.indexOf('$jb_') != 0)
+					.map(p=>path+'~'+p);
+			if (jb.utils.compName(val) == 'if')
+				return ['then','else']
+			return []
+		}
+	}
+})
+
+component('inteli.open', {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'},
+  ],
+  impl: openDialog({
+    title: inteli.titleCtrl('%$path%'),
+    content: inteli.withProbe('%$path%'),
+    style: dialog.studioFloating('', '860', { height: '100%' }),
+    menu: button({ action: inteli.openMenu('%$path%', '%$path%'), style: button.mdcIcon('menu') }),
+    features: dialogFeature.resizer()
+  })
+})
+
+component('inteli.treeCtrl', {
+  type: 'control',
+  impl: tree({
+    nodeModel: inteli.nodes('%$inteli/path%'),
+    style: tree.expandBox({ showIcon: true, lineWidth: '800px' }),
+    features: [
+      variable('popupLauncherCanvas', '%$cmp%'),
+      css.class('jb-editor'),
+      tree.selection('%$inteli/selected%', writeValue('%$probe/path%', '%%'), {
+        onRightClick: inteli.openMenu('%%', '%$inteli/path%'),
+        autoSelectFirst: true
+      }),
+      tree.keyboardSelection({
+        onEnter: inteli.openEditProperty('%$inteli/selected%'),
+        onRightClickOfExpanded: inteli.openMenu('%%', '%$inteli/path%'),
+        autoFocus: true,
+        applyMenuShortcuts: inteli.menu('%%', '%$inteli/path%')
+      }),
+      tree.dragAndDrop(),
+      css.width('500', { selector: 'jb-editor' }),
+      workspace.watchPath('%$inteli/path%', 'yes', { allowSelfRefresh: true }),
+    ]
+  })
+})
+
+component('inteli.withProbe', {
+  type: 'control',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: group({
+    controls: [
+      inteli.treeCtrl('%$path%'),
+      group(remote.widget(probe.inOutView(), probePreviewWorker()), {
+        features: [
+          feature.if(not('%$studio/hideProbe%')),
+          watchRef('%$studio/hideProbe%')
+        ]
+      })
+    ],
+    title: 'main',
+    layout: layout.horizontalFixedSplit({ leftWidth: '350px', rightWidth: '100%' }),
+    features: [
+      id('inteli'),
+      css.padding({ top: '10' }),
+      css.height('800', { minMax: 'max' })
+    ]
+  })
+})
+
+component('inteli.openEditProperty', {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: action.switch({
+    vars: [
+      Var('actualPath', inteli.pathForEdit('%$path%')),
+      Var('paramDef', tgp.paramDef('%$actualPath%'))
+    ],
+    cases: [
+      action.switchCase(endsWith('$vars', '%$path%'), workspace.addVariable('%$path%')),
+      action.switchCase('%$paramDef/options%', openDialog({
+        content: group(workspace.jbFloatingInputRich('%$actualPath%'), {
+          features: [
+            feature.onEsc(dialog.closeDialog(true)),
+            feature.onEnter(dialog.closeDialog(true))
+          ]
+        }),
+        style: dialog.studiointeliPopup(),
+        features: [
+          autoFocusOnFirstInput(),
+          dialogFeature.onClose(popup.regainCanvasFocus())
+        ]
+      })),
+      action.switchCase(isOfType('function', tgp.val('%$actualPath%')), workspace.editSource('%$actualPath%')),
+      action.switchCase(tgp.isOfType('%$actualPath%', 'data,boolean'), openDialog({
+        content: workspace.jbFloatingInput('%$actualPath%'),
+        style: dialog.studiointeliPopup(),
+        features: [
+          autoFocusOnFirstInput(),
+          dialogFeature.onClose(toggleBooleanValue('%$studio/refreshProbe%'))
+        ]
+      })),
+      action.switchCase({
+        vars: [
+          Var('ptsOfType', tgp.PTsOfType(tgp.paramType('%$actualPath%')))
+        ],
+        condition: '%$ptsOfType/length% == 1',
+        action: tgp.setComp('%$path%', '%$ptsOfType[0]%')
+      })
+    ],
+    defaultAction: workspace.openNewProfileDialog('%$actualPath%', tgp.paramType('%$actualPath%'), {
+      mode: 'update',
+      onClose: popup.regainCanvasFocus()
+    })
+  })
+})
+
+component('inteli.pathForEdit', {
+  type: 'data',
+  description: 'in case of array, use extra element path',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) => {
+    const ar = jb.tgp.valOfPath(path)
+    return Array.isArray(ar) ? path + '~' + ar.length : path
+  }
+})
+
+component('inteli.openMenu', {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'},
+    {id: 'root', as: 'string'}
+  ],
+  impl: menu.openContextMenu(inteli.menu('%$path%', '%$root%'), {
+    features: dialogFeature.onClose(popup.regainCanvasFocus())
+  })
+})
+
+component('inteli.nodes', {
+  type: 'tree.node-model',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) => new jb.inteli.inteliTree(path)
+})
+
+component('inteli.titleCtrl', {
+  type: 'control',
+  params: [
+    {id: 'path', as: 'string', mandatory: true},
+  ],
+  impl: group({
+    controls: [
+      text('inteliscript'),
+      editableBoolean({
+        databind: '%$inteli/hideProbe%',
+        style: editableBoolean.buttonXV({
+          yesIcon: icon('ArrowCollapseRight', { type: 'mdi' }),
+          noIcon: icon('ArrowCollapseLeft', { type: 'mdi' }),
+          buttonStyle: button.mdcFloatingAction(20, true)
+        }),
+        title: 'hide input-output',
+        textForTrue: 'hide probe',
+        textForFalse: 'show probe',
+        features: css('>*>svg { transform: scale(0.5,0.5) }')
+      })
+    ],
+    layout: layout.horizontal('9')
+  })
+})

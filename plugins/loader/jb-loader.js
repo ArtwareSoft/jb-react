@@ -2,18 +2,19 @@
 function jbBrowserCodePackage(repo = '', fetchOptions= {}, useFileSymbolsFromBuild) {
   return {
     repo: repo.split('/')[0],
+    fetchFile(path) { return this._fetch(path).then(x=>x.text()) },
+    fetchJSON(path) { return this._fetch(path).then(x=>x.json()) },
+    fileSymbols(path) { return useFileSymbolsFromBuild ? this._fileSymbolsFromStaticFileServer(path) 
+      : this._fileSymbolsFromStudioServer(path) },
+
     _fetch(path) { 
       const hasBase = path && path.match(/\/\//)
       return fetch(hasBase ? path: jbHost.baseUrl + path, fetchOptions) 
-    },
-    fetchFile(path) { return this._fetch(path).then(x=>x.text()) },
-    fetchJSON(path) { return this._fetch(path).then(x=>x.json()) },
-    fileSymbols(path) { return useFileSymbolsFromBuild ? this.fileSymbolsFromStaticFileServer(path) 
-      : this.fileSymbolsFromStudioServer(path) },
-    fileSymbolsFromStudioServer(path) {
+    },      
+    _fileSymbolsFromStudioServer(path) {
       return this.fetchJSON(`${jbHost.baseUrl||''}?op=fileSymbols&path=${repo}${path}`)
     },
-    async fileSymbolsFromStaticFileServer(path) {
+    async _fileSymbolsFromStaticFileServer(path) {
       if (!this.loadedSymbols) {
         this.loadedSymbols = [
           ...await this.fetchJSON(`/dist/symbols/plugins.json`),

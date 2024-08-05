@@ -1,4 +1,4 @@
-using('workspace-ui','workspace-core')
+using('workspace-text-editor','workspace-core')
 
 component('llh.myPrompt', {
   impl: llh.prompt()

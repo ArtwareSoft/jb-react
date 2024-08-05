@@ -37,7 +37,6 @@ extension('workspace', 'core', {
             selectRange(start,{end, ctx} = {}) {
                 end = end || start
                 jb.workspace.openDocs[jb.workspace.activeUri].selection = { start, end: end || start }
-                jb.tgpTextEditor.host.selectionSource.next({start,end})
                 if (jb.path(ctx,'vars.editorCmpId') && !jb.path(ctx,'vars.doNotRefreshEditor')) {
                   const selector = `[cmp-id="${ctx.vars.editorCmpId}"]`
                   ctx.runAction({$: 'runFEMethodFromBackEnd', selector, method: 'selectRange', Data: {start, end}})
@@ -56,7 +55,6 @@ extension('workspace', 'core', {
                 jb.workspace.openDocs[uri] = { text, selection}
                 jb.workspace.activeUri = uri
             },
-            selectionSource: jb.callbag.subject(),
             async getTextAtSelection() {
                 const selection = jb.workspace.openDocs[jb.workspace.activeUri].selection
                 const docText = jb.workspace.openDocs[jb.workspace.activeUri].text

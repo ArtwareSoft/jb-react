@@ -28,7 +28,7 @@ extension('db', 'onAddComponent', {
 })
 
 extension('db', {
-    initExtension() { return { 
+    initExtension() { return {
         passiveSym: Symbol.for('passive'),
         resources: {}, consts: {}, 
         watchableHandlers: [],

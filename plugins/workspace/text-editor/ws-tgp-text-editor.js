@@ -1,10 +1,16 @@
+using('ui-misc','ui-styles','workspace-ui','workspace-core','tgp-lang-server')
+
+extension('workspace', 'textEditor', {
+  $requireLibs: ['/dist/fuse.js']
+})
+
 component('workspace.currentTextEditor', {
   impl: workspace.textEditor(workspace.activeDocContentRef(), workspace.activeUri())
 })
 
 component('workspace.textEditor', {
   type: 'control',
-  params: [
+  params: [ 
     {id: 'docContent', as: 'ref'},
     {id: 'docUri', as: 'string'},
     {id: 'debounceTime', as: 'number', defaultValue: 300},
