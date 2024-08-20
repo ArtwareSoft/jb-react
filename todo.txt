@@ -1,7 +1,61 @@
 (sensors; cpufreq-info) | xclip -selection clipboard
 top -b -n 1 | xclip -selection clipboard
 
-plugin-package
+plugin encapsulation
+  plugins files have dsls
+    if a comp is of type of the dsl, the name is with prefix, otherwise the plugin name is added as prefix
+    during the resolve id, we look for the current plugin Path, at the file level we can also add, usePrefix
+    if a plugin has API, it can define some non
+codeDB
+  json interface 
+    profiles
+    resolved profiles
+    applyDelta(file delta, comp delta (optional))
+    applyCompDelta(comp delta)
+    subscribeForCodeChange(plugin, vid) -> ({comp delta, vid, impact})
+    subscribeForResolvedCodeChange(plugin, vid) -> ({comp delta, vid, impact})
+
+    js code (as string @JS@)
+    plugin info
+      files, symbols for js compilation, dependencies
+      profiles (json) versus code
+      singleton state (dbs)
+  impact
+    localProfile
+    reload plugins (only profiles/reload code)
+    reload services
+    reload code
+  plugin state management
+    - code level. e.g., init registration from setup, IOC
+    - external - connection pool objects
+    - calculted objects dependencies + resolution
+       - document the dependency tree (better not to be circular...)
+       - the amount of mem/cpu of preserving the dependency. sometimes it is too big and we choose *lower resolution* = watchRef
+    - services
+      data owned by services (like rust closure)
+    - ctx level - objects created for client reactive services. E.g. user state of a session
+      is it plugin level? 
+        life cycle attached to parent object. plugin provides release logic if needed
+    - the problem with DB
+      available to many clients in many situations
+      data in DB should be confined to write/read phases and data layers (dependencies) and isolulated objects (jsons) and maybe doc relations objects
+      enrich of objects and adding dependencies for each enrichment
+      where do we keep the enrichment dependencies data
+        - code or profile in a generic level (without id) - can be infer from code
+        - data while running the code, tend to be record level (with id)
+      data flows should run through the layers
+      can enrichment be immutable?
+      id source - user (code) or auto
+    how to manage db returned object life cycle?
+      pass ownership - takes(delete or just allow single query) it from the DB. once. strange?
+      const ref - the DB can not change it if the client does not finish with it. means client should tell when finish using it (kind of lock for read)
+      mut ref - the DB can not change it if the client does not finish with it. means client should tell when finish using it (kind of lock for write)
+      client can subscribe for data invalidation
+      client can check data invalidation with vid
+
+
+
+  plugin-package
   fileSymbols()
   fetchFile(path)
   storeFile(path, text)

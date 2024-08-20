@@ -25,11 +25,11 @@ Object.assign(jb, {
 })
 
 extension('utils', 'core', {
-    singleInType(parentParam, tgpModel) {
-        const comps = tgpModel && tgpModel.comps || jb.comps
-        const _type = parentParam && parentParam.type && parentParam.type.split('[')[0]
-        return _type && comps[_type] && comps[_type].singleInType && _type
-    },
+    // singleInType(parentParam, tgpModel) {
+    //     const comps = tgpModel && tgpModel.comps || jb.comps
+    //     const _type = parentParam && parentParam.type && parentParam.type.split('[')[0]
+    //     return _type && comps[_type] && comps[_type].singleInType && _type
+    // },
     dslType(fullId) {
       if (fullId.indexOf('<') == -1)
         jb.logError(`util dslType not fullId ${fullId}`,{})
