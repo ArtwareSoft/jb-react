@@ -130,8 +130,8 @@ extension('utils', 'core', {
 
     resolveComp(topComp, {tgpModel} = {}) {
       if (!topComp) return
-      ;(topComp.params || []).forEach(p=> jb.utils.resolveProfile(p.defaultValue, {expectedType: p.$type, topComp}))
-      ;(topComp.params || []).forEach(p=> jb.utils.resolveProfile(p.templateValue, {expectedType: p.$type, topComp}))
+      ;(topComp.params || []).forEach(p=> jb.utils.resolveProfile(p.defaultValue, {expectedType: p.$type, topComp, tgpModel}))
+      ;(topComp.params || []).forEach(p=> jb.utils.resolveProfile(p.templateValue, {expectedType: p.$type, topComp, tgpModel}))
       //if (topcomp.$$ =='test<>dataTest.join') debugger
       jb.utils.resolveProfile(topComp.impl, {expectedType: topComp.$type, tgpModel, topComp, parent: topComp})
     },

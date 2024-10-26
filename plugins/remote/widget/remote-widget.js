@@ -53,10 +53,10 @@ component('dataMethodFromBackend', {
   macroByValue: true,
   params: [
     {id: 'method', as: 'string'},
-    {id: 'datum', defaultValue: '%%'},
+    {id: 'Data', defaultValue: '%%'},
     {id: 'vars'}
   ],
-  impl: remote.data(backend.dataMethod('%$cmp/cmpId%', '%$method%', { Data: '%$data%' }), backEnd())
+  impl: remote.data(backend.dataMethod('%$cmp/cmpId%', '%$method%', { Data: '%$Data%' }), backEnd())
 })
 
 component('action.updateFrontEnd', {

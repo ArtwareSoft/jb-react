@@ -88,7 +88,30 @@ component('geo', {
           items.sort((i1,i2) => i1[att] - i2[att] )
           const from = items[0][att], to = items[items.length-1][att], range = to - from
           items.forEach((x) => x[`scale_${att}`] = (x[att] - from) / range)
-          return [{ att, spaceFactor:1, scale: x => x[`scale_${att}`], linearScale: item=> ((+item[att] || 0)-range[0])/(range[1]-range[0]) , preferedAxis: this.preferedAxis }]
+          return [{ att, spaceFactor:0.999, scale: x => x[`scale_${att}`], linearScale: item=> ((+item[att] || 0)-range[0])/(range[1]-range[0]) , preferedAxis: this.preferedAxis }]
+      }
+    }
+    features().forEach(f=>f.enrich(prop))
+    return prop
+  }
+})
+
+component('xyByProps', {
+  type: 'itemProp',
+  params: [
+    {id: 'xAtt', as: 'string', defaultValue: 'x'},
+    {id: 'yAtt', as: 'string', defaultValue: 'y'},
+    {id: 'features', type: 'prop_feature[]', dynamic: true}
+  ],
+  impl: (ctx,xAtt,yAtt,features) => {
+    const prop = {
+      val: item => [item[xAtt],item[yAtt]],
+      asText: item => [item[xAtt],item[yAtt]].join(','),
+      pivots({DIM} = {}) { // create scale by order
+        return [
+            { att: 'x', spaceFactor: 1 , scale: item => item[xAtt]/DIM, preferedAxis: 'x' },
+            { att: 'y', spaceFactor: 1 , scale: item => item[yAtt]/DIM, preferedAxis: 'y' }            
+        ]
       }
     }
     features().forEach(f=>f.enrich(prop))
@@ -147,7 +170,7 @@ component('preferedAxis', {
 component('colorScale', {
   type: 'prop_feature',
   params: [
-    {id: 'colorScale', mandatory: true, type: 'color_scale', defaultValue: green()}
+    {id: 'colorScale', mandatory: true, type: 'color_scale' }
   ],
   impl: (ctx,colorScale) => ({
     enrich(obj) { obj.colorScale = colorScale}

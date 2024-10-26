@@ -11,7 +11,7 @@ extension('zui','layout', {
       children: _views,
       ctxPath: ctx.path,
       ...layout,
-      pivots: () => _views.flatMap(v=>v.pivots()),
+      pivots: params => _views.flatMap(v=>v.pivots(params)),
     }
     viewFeatures().forEach(f=>f.enrich(view))
     return view

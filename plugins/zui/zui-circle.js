@@ -28,9 +28,8 @@ component('circle', {
 
 extension('zui','circle', {
     circleZuiElem: () => ({
-      src: [jb.zui.vertexShaderCode({
-        id:'circle',
-        code: 'attribute vec3 _backgroundColor;varying vec3 backgroundColor;',
+      src: [jb.zui.vertexShaderCodeBase({
+        declarations: 'attribute vec3 _backgroundColor;varying vec3 backgroundColor;',
         main: 'backgroundColor = _backgroundColor;'
       }), 
       jb.zui.fragementShaderCode({
@@ -44,35 +43,43 @@ extension('zui','circle', {
           const backgroundColor = view.backgroundColorByProp || { colorScale: x => [0,x,0], prop: {pivots: () => [ {scale: () => 1 }]}}
           const itemToColor01 = backgroundColor.prop.pivots({DIM})[0].scale
 
-          const circleNodes = itemsPositions.sparse.map(([item, x,y]) => [x,y, ...backgroundColor.colorScale(itemToColor01(item))])
+          const circleNodes = itemsPositions.sparse.map(([item, x,y]) => backgroundColor.colorScale(itemToColor01(item)))
           const vertexArray = new Float32Array(circleNodes.flatMap(v=> v.map(x=>1.0*x)))
 
-          const floatsInVertex = 2 + 3
-          const vertexCount = vertexArray.length / floatsInVertex
-
-          return { vertexArray, vertexCount, floatsInVertex, src: this.src }    
-      },
-
-      // frontEnd
-      renderGPUFrame({cmp, shaderProgram, glCanvas, gl, zoom, center, elemsLayout, vertexCount, floatsInVertex, vertexBuffer, size, pos}) {
-
-          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'zoom'), [zoom, zoom])
-          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'center'), center)
-          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'canvasSize'), [glCanvas.width, glCanvas.height])
-          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'gridSizeInPixels'), [glCanvas.width/ zoom, glCanvas.height/ zoom])
-          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'pos'), pos)
-          gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'size'), size)
-
-          gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
-          const itemPos = gl.getAttribLocation(shaderProgram, 'itemPoscircle')
-          gl.enableVertexAttribArray(itemPos)
-          gl.vertexAttribPointer(itemPos, 2, gl.FLOAT, false, floatsInVertex* Float32Array.BYTES_PER_ELEMENT, 0)
-
-          const background = gl.getAttribLocation(shaderProgram, '_backgroundColor')
-          gl.enableVertexAttribArray(background)
-          gl.vertexAttribPointer(background, 3, gl.FLOAT, false, floatsInVertex* Float32Array.BYTES_PER_ELEMENT, 2* Float32Array.BYTES_PER_ELEMENT)
-  
-         gl.drawArrays(gl.POINTS, 0, vertexCount)
+          return { itemAtts: { backgroundColor: { vertexArray, floatsInVertex : 3 } } }    
       }
     })
+})
+
+component('view', {
+  type: 'view',
+  params: [
+    {id: 'title', as: 'string'},
+    {id: 'prop', type: 'itemProp'},
+    {id: 'size', type: 'view_size[]', dynamic: true},
+    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true}
+  ],
+  impl: (ctx,title,prop,sizeFeatures, features) => { 
+    const view = {
+      title,
+      ctxPath: ctx.path,
+      pivots: (s) => prop ? prop.pivots(s): [],
+      priority: prop.priority || 0,
+    }
+    ;[...sizeFeatures(ctx), ...features(ctx)].forEach(f=>f.enrich(view))
+    return view
+  }
+})
+
+component('circle2', {
+  type: 'view',
+  params: [
+    {id: 'prop', type: 'itemProp'},
+    {id: 'colorScale', type: 'color_scale', defaultValue: green()},
+    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true}
+  ],
+  impl: view('circle', '%$prop%', {
+    size: smoothGrowth({ min: 5, base: 10, growthFactor: 0.1 }),
+    viewFeatures: backgroundColorByProp({ colorScale: '%$colorScale%' })
+  })
 })

@@ -98,6 +98,15 @@ extension('zui','debug', {
     }
   }),
   markGridAreaZuiElem: () => ({
+      src: [
+        jb.zui.vertexShaderCodeBase({}), 
+        jb.zui.fragementShaderCode({main: 'gl_FragColor = vec4(inElem/size,0.0, 1.0);'})
+      ],
+      posSize(itemViewSize) { return { size: [0,1].map(i=>itemViewSize[i]/2), pos: [0,1].map(i=>itemViewSize[i]/4)} },
+      ready: true,     
+      ver: 2
+  }),
+  markGridAreaZuiElem2: () => ({
     prepareGPU({ gl, itemsPositions }) {
         const src = [
           jb.zui.vertexShaderCode({id: 'markGrid'}), 

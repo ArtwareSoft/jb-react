@@ -12,7 +12,7 @@ component('frontEnd.varsFromBEProps', {
   type: 'feature',
   description: 'calculate in the BE and pass to frontEnd',
   params: [
-    {id: 'idList', as: 'array', mandatory: true}
+    {id: 'idList', type: 'data[]', as: 'array', mandatory: true}
   ],
   impl: ({},idList) => idList.map(id => ({ frontEndVar: {id, value: ctx => ctx.vars.$props[id]} }))
 })

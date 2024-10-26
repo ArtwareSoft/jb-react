@@ -41,7 +41,7 @@ extension('zui','image', {
       return { imageViewCounter : 0}
     },
     image: viewCtx => ({
-      async calcBuffers(view, {itemsPositions, DIM }) {
+      calcBuffers(view, {itemsPositions, DIM }) {
         const src = [jb.zui.vertexShaderCode({
             id:'image',
             code: `attribute float atlasId;
@@ -101,8 +101,7 @@ extension('zui','image', {
                 imagePos[1] + 256.0*ratio*(1.0 - rInElem[1])) /atlasSize);`
             })] 
 
-          const atlasGroups = await jb.frame.fetch(`${jb.zui.partitionDir(view,DIM)}/groups.json`).then(r=>r.json())
-          const xyToImage = jb.objFromEntries(atlasGroups.flatMap(g=>
+          const xyToImage = jb.objFromEntries(view.atlasGroups.flatMap(g=>
             g.items.map(item=>[[item.x,item.y].join(','),{atlas: g.id, size: item.size, pos: item.pos} ])))
                 
           const imageNodes = itemsPositions.sparse.map(([item, x,y]) => {
@@ -123,7 +122,6 @@ extension('zui','image', {
         view.atlasGroups = await jb.frame.fetch(`${jb.zui.partitionDir(view,DIM)}/groups.json`).then(r=>r.json())
         this.atlasIdToHeight = view.atlasGroups.map(g=>g.totalHeight)
       },
-
       renderGPUFrame({cmp, shaderProgram, glCanvas, gl, zoom, center, DIM, vertexCount, floatsInVertex, vertexBuffer, size, pos}) {
         
           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'zoom'), [zoom, zoom])

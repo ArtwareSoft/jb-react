@@ -1,5 +1,12 @@
 using('ui-testers')
 
+component('points', { passiveData: [
+      {"name": "A", x: 0, y : 0 },
+      {"name": "A", x: 1, y : 1 },
+      {"name": "B", x: 2, y : 2 },
+      {"name": "C", x: 3, y : 3 },
+]})
+
 component('zuiTest.gallery', {
   impl: uiTest({
     control: group({
@@ -25,11 +32,50 @@ component('zuiTest.gallery', {
   })
 })
 
+component('zuiTest.itemlistCircles', {
+  impl: browserTest({
+    control: zui.itemlist({
+      items: '%$points%',
+      itemProps: [xyByProps()],
+      boardSize: 10,
+      itemView: group(circle(numeric('x', { prefix: '$', features: [priorty(1), colorScale(green())] }))),
+      initialZoom: 10,
+      center: '5,5'
+    }),
+    expectedResult: contains('-'),
+    renderDOM: true
+  })
+})
+
+component('zuiTest.fixedText', {
+  impl: browserTest({
+    control: zui.itemlist({
+      items: '%$points%',
+      itemProps: [xyByProps()],
+      boardSize: 10,
+      itemView: group(fixedText(text('name'))),
+      initialZoom: 10,
+      center: '5,5'
+    }),
+    expectedResult: contains('-'),
+    renderDOM: true
+  })
+})
+
 component('zuiTest.itemlist', {
-  impl: uiTest({
+  impl: browserTest({
     control: group({
       controls: [
         zui.itemlist({
+          items: '%$hotels%',
+          itemProps: [
+            numeric('price', { prefix: '$', features: [priorty(1), colorScale(green())] }),
+            numeric('rating', { features: [priorty(2), colorScale(red())] }),
+            text('name', { features: priorty(3) }),
+            geo('lat', preferedAxis('y')),
+            geo('long', preferedAxis('x'))
+          ],
+          boardSize: 64,
           itemView: group(
             growingText(byName('name')),
             group({
@@ -45,29 +91,22 @@ component('zuiTest.itemlist', {
             }),
             image('https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp', {
               build: imageBuild('projects/zuiDemo/build/top')
-            }),
-            fixedText(text('x', ' ')),
-            fixedText(text('x', ' '))
+            })
           ),
-          boardSize: 64,
-          initialZoom: 3.821267725000016,
-          center: '1.3130639001816125,0.9833333333333321',
-          items: pipeline('%$hotels%'),
-          itemProps: [
-            numeric('price', { prefix: '$', features: [priorty(1), colorScale(green())] }),
-            numeric('rating', { features: [priorty(2), colorScale(red())] }),
-            text('name', { features: priorty(3) }),
-            geo('lat', { features: preferedAxis('y') }),
-            geo('long', { features: preferedAxis('x') })
-          ],
-          onChange: refreshControlById('itemPreview')
+          initialZoom: 64,
+          center: '8,8',
+          onChange: refreshControlById('itemPreview'),
+          features: features(css.width(256, { minMax: 'max' }), css.height(256, { minMax: 'max' }))
         }),
         zui.visualItemPreview()
       ],
-      layout: layout.flex('row', { wrap: 'wrap' }),
-      features: [variable('zuiCtx', obj())]
+      layout: layout.flex({ direction: 'row', wrap: 'wrap' }),
+      features: [
+        variable('zuiCtx', obj())
+      ]
     }),
-    expectedResult: contains('-')
+    expectedResult: contains('-'),
+    renderDOM: true
   })
 })
 
@@ -148,7 +187,7 @@ component('hotels', { passiveData:
           "imagesCount": 99,
           "image": "/itemimages/31/43/3143319_v6",
           "gallery": ["/uploadimages/11/88/11884520","/partnerimages/14/33/1433844342","/partnerimages/14/33/1433844384","/partnerimages/14/33/1433844340","/partnerimages/14/33/1433844390","/partnerimages/14/33/1433844364","/partnerimages/14/33/1433844362","/partnerimages/14/33/1433844346","/partnerimages/66/63/66637386","/partnerimages/13/16/1316611754","/partnerimages/13/16/1316611750","/partnerimages/66/63/66637398","/partnerimages/66/63/66637396","/partnerimages/33/74/337480938","/partnerimages/13/16/1316611676","/partnerimages/33/74/337480936"],
-      },
+      }
 ]})
 
 // component('zuiTest.build', {

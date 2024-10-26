@@ -10,11 +10,12 @@ component('priorty', {
   })
 })
 
+
 component('backgroundColorByProp', {
   type: 'view_feature',
   params: [
     {id: 'prop', type: 'itemProp', mandatory: true},
-    {id: 'colorScale', mandatory: true, type: 'color_scale', defaultValue: green()}
+    {id: 'colorScale', type: 'color_scale', defaultValue: green()}
   ],
   impl: (ctx,prop,colorScale) => ({
     enrich(obj) { obj.backgroundColorByProp = { prop, colorScale} }

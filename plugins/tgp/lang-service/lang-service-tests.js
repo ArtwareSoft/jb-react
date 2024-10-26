@@ -304,6 +304,14 @@ component('completionTest.dslTest.typeRules', {
   })
 })
 
+component('completionTest.dslTest.defaultValue', {
+  impl: completionOptionsTest({
+    compText: `component('x', {\n  type: 'data<>',\n  params: [\n    {id: 'p1', type: 'state<location>', defaultValue: __israel()}\n  ]\n})`,
+    expectedSelections: ['israel2'],
+    filePath: '/plugins/core/dsl-tests.js'
+  })
+})
+
 component('completionTest.multiLine', {
   impl: completionActionTest({
     compText: `group(__\n    text('hello'),\n    group(text('-1-'), controlWithCondition('1==2', text('-1.5-')), text('-2-')),\n    text('world')\n  )`,

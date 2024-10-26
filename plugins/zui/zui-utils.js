@@ -55,7 +55,7 @@ extension('zui','FE-utils', {
           tZoom *= dz**factor
         const tZoomF = Math.floor(tZoom)
         if (dp)
-          tCenter = [tCenter[0] - dp[0]/w*tZoomF, tCenter[1] + dp[1]/h*tZoomF]
+          tCenter = [tCenter[0] - dp[0]/w*tZoomF, tCenter[1] - dp[1]/h*tZoomF]
 
         ;[0,1].forEach(axis=>tCenter[axis] = Math.min(DIM,Math.max(0,tCenter[axis])))
 
@@ -68,7 +68,7 @@ extension('zui','FE-utils', {
       },      
       animationStep() {
         let { tZoom, tCenter, zoom, center } = state
-        if ( zoom == tZoom && center[0] == tCenter[0] && center[1] == tCenter[1]) 
+        if ( zoom == tZoom && center[0] == tCenter[0] && center[1] == tCenter[1] && !this.renderRequest) 
           return [] // no rendering
         // used at initialiation
         zoom = zoom || tZoom
@@ -86,6 +86,7 @@ extension('zui','FE-utils', {
         })
         
         state.zoom = zoom
+        this.renderRequest = false
         return [state]
       },            
       pointers: [],
@@ -126,16 +127,16 @@ extension('zui','FE-utils', {
           return [0,1].map(axis => target[axis] * (Math.sin((i+1)/n*Math.PI/2) - Math.sin(i/n*Math.PI/2)))
         }
       },
-      bindBuffers(elem, {gl}, {vertexArray, vertexCount, floatsInVertex, src}) {
-        const vertexBuffer = gl.createBuffer()
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
-        gl.bufferData(gl.ARRAY_BUFFER, vertexArray, gl.STATIC_DRAW)
+      // bindBuffers(elem, {gl}, {vertexArray, vertexCount, floatsInVertex, src}) {
+      //   const vertexBuffer = gl.createBuffer()
+      //   gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
+      //   gl.bufferData(gl.ARRAY_BUFFER, vertexArray, gl.STATIC_DRAW)
 
-        Object.assign(elem, {
-          shaderProgram: jb.zui.buildShaderProgram(gl, src),
-          vertexBuffer, vertexCount, floatsInVertex
-        })
-      },
+      //   Object.assign(elem, {
+      //     shaderProgram: jb.zui.buildShaderProgram(gl, src),
+      //     vertexBuffer, vertexCount, floatsInVertex
+      //   })
+      // },
     })
   },
   buildShaderProgram(gl, sources) {
@@ -187,38 +188,64 @@ extension('zui','FE-utils', {
     const lru = cmp.renderCounter
     const freeTexture = cmp.boundTextures.find(rec=>rec.view == view) || cmp.boundTextures.filter(rec => rec.lru != lru).sort((r1,r2) => r1.lru - r2.lru)[0]
     return Object.assign(freeTexture, {lru, view})
-  },  
-  vertexShaderCode: ({code,main,id} = {}) => `attribute vec2 itemPos${id};
-    uniform vec2 zoom;
-    uniform vec2 center;
-    uniform vec2 canvasSize;
-    uniform vec2 gridSizeInPixels;
-    uniform vec2 pos;
-    uniform vec2 size;
-    varying vec2 elemTopLeftCoord;
-    ${code||''}
+  },
+  vertexShaderCodeBase: ({declarations,main} = {}) => `attribute vec2 itemPos;
+  uniform vec2 zoom;
+  uniform vec2 center;
+  uniform vec2 canvasSize;
+  uniform vec2 gridSizeInPixels;
+  uniform vec2 pos;
+  uniform vec2 size;
+  varying vec2 elemBottomLeftCoord;
+  ${declarations||''}
 
-    void main() {
-      vec2 elemCenter = pos+size/2.0;
-      vec2 elemCenterOffset = vec2(elemCenter[0],-1.0* elemCenter[1])/canvasSize;
-      vec2 npos = (itemPos${id} +vec2(-0.5,+0.5) - center) / zoom + elemCenterOffset;
-      gl_Position = vec4( npos * 2.0, 0.0, 1.0);
-      elemTopLeftCoord = (npos + 0.5) * canvasSize - size/2.0;
-      gl_PointSize = max(size[0],size[1]) * 1.0;
-      ${main||''}
-    }`,
+  void main() {
+    vec2 elemCenterPx = pos+size/2.0;
+    vec2 itemBottomLeftNdc = (itemPos - center) / (0.5*zoom);
+    vec2 elemCenterNdc = itemBottomLeftNdc + elemCenterPx/(0.5*canvasSize);
+    gl_Position = vec4( elemCenterNdc, 0.0, 1.0);
+    vec2 elemBottomLeftOffsetNdc = pos/(0.5*canvasSize);
+    vec2 elemBottomLeftNdc = itemBottomLeftNdc + elemBottomLeftOffsetNdc;
+    elemBottomLeftCoord = (elemBottomLeftNdc + 1.0) * (0.5*canvasSize);
+    gl_PointSize = max(gridSizeInPixels[0],gridSizeInPixels[1]) * 1.0;
+    ${main||''}
+  }`,
+// Ndc [-1,1] 
+
+  // vertexShaderCode: ({code,main,id} = {}) => `attribute vec2 itemPos${id};
+  //   uniform vec2 zoom;
+  //   uniform vec2 center;
+  //   uniform vec2 canvasSize;
+  //   uniform vec2 gridSizeInPixels;
+  //   uniform vec2 pos;
+  //   uniform vec2 size;
+  //   varying vec2 elemTopLeftCoord;
+  //   ${code||''}
+
+  //   void main() {
+  //     vec2 elemCenter = pos+size/2.0;
+  //     vec2 elemCenterOffset = vec2(elemCenter[0],-1.0* elemCenter[1])/canvasSize;
+  //     vec2 npos = (itemPos${id} +vec2(-0.5,+0.5) - center) / zoom + elemCenterOffset;
+  //     gl_Position = vec4( npos * 2.0, 0.0, 1.0);
+  //     elemTopLeftCoord = (npos + 0.5) * canvasSize - size/2.0;
+  //     gl_PointSize = max(size[0],size[1]) * 1.0;
+  //     ${main||''}
+  //   }`,
     fragementShaderCode: ({code,main} = {}) => `precision highp float;
     precision highp float;
     uniform vec2 canvasSize;
     uniform vec2 pos;
     uniform vec2 size;
     uniform vec2 gridSizeInPixels;
-    varying vec2 elemTopLeftCoord;
+    varying vec2 elemBottomLeftCoord;
     ${code||''}
 
     void main() {
-      vec2 inElem = gl_FragCoord.xy - elemTopLeftCoord;
-      if (inElem[0] >= size[0] || inElem[0] < 0.0 || inElem[1] >= size[1] || inElem[1] < 0.0) return;
+      vec2 inElem = gl_FragCoord.xy - elemBottomLeftCoord;
+      if (inElem[0] >= size[0] || inElem[0] < 0.0 || inElem[1] >= size[1] || inElem[1] < 0.0) {
+        gl_FragColor = vec4(1.0,1.0, 0.0, 1.0);
+        return;
+      };
       vec2 rInElem = inElem/size;
       //bool isInElem = (rInElem[0] < 0.9 && rInElem[0] > 0.1 && rInElem[1] < 0.9 && rInElem[1] > 0.1 );
       //if (!isInElem) return;
@@ -244,7 +271,12 @@ extension('zui','itemPositions', {
       return [item, x,y] 
     })
 
-    return { mat, sparse }
+    jb.log('zui calcItemsPositions',{mat, sparse})
+    // items positions are build like in x,y in math - from bottom-left to up-right
+    const vertexArray = new Float32Array(sparse.flatMap(([item, x,y]) => [1.0*x,1.0*(DIM-y-1)]))
+    //const vertexArray = new Float32Array([1,1,5,5])
+
+    return { mat, sparse, vertexArray, vertexCount: sparse.length }
 
     function repulsion() {
         for (let i=0;i<DIM**2;i++)

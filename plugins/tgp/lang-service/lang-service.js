@@ -68,6 +68,7 @@ extension('langService', 'impl', {
     },
 
     async provideCompletionItems(compProps, ctx) {
+        debugger
         const { actionMap, inCompOffset, tgpModel } = compProps
         const actions = actionMap.filter(e => e.from <= inCompOffset && inCompOffset < e.to || (e.from == e.to && e.from == inCompOffset))
             .map(e => e.action).filter(e => e.indexOf('edit!') != 0 && e.indexOf('begin!') != 0 && e.indexOf('end!') != 0)
@@ -228,13 +229,22 @@ extension('langService', 'impl', {
           return this.compName(prof) || this.compName(prof,{ parentParam: this.paramDef(path) })
         }
         paramDef(path) {
-          if (!jb.tgp.parentPath(path))
-              return this.compById(path)
-          if (!isNaN(Number(path.split('~').pop()))) // array elements
-              path = jb.tgp.parentPath(path)
-          const comp = this.compOfPath(jb.tgp.parentPath(path))
+          let parentPath = jb.tgp.parentPath(path)
           const paramName = path.split('~').pop()
+          if (!parentPath)
+              return this.compById(path)
+          if (!isNaN(Number(paramName))) { // array elements
+              path = parentPath
+              parentPath = jb.tgp.parentPath(path)
+          }
+          if (paramName == 'defaultValue' && this.isParamDef(parentPath))
+            return this.valOfPath(parentPath)
+          const comp = this.compOfPath(parentPath)
           return jb.utils.compParams(comp).find(p=>p.id==paramName)
+        }
+        isParamDef(path) {
+            const pathAr = path.split('~')
+            return pathAr.length == 3 && pathAr[1] == 'params'
         }
         compOfPath(path) { return this.compById(this.compNameOfPath(path)) }
         paramsOfPath(path) { return jb.utils.compParams(this.compOfPath(path)) }
