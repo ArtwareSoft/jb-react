@@ -29,7 +29,7 @@ component('zuiDemo.main', {
         itemProps: [
           numeric({att: 'price', prefix: '$', features: [
             priorty(1),
-            colorScale(green())
+            colorScale(greens())
           ]}),
           numeric({att: 'rating', features: [priorty(2), colorScale(red())]}),
           text({att: 'name', features: priorty(3)}),

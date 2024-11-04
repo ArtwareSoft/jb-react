@@ -40,6 +40,7 @@ extension('ui', 'frontend', {
             this.runFEMethod('initOrRefresh',null,{FELifeCycle: 'constructor'},true)
             this.state.frontEndStatus = 'ready'
             this.props = coLocationCtx && this.ctx.vars.$props
+            this.FE = true
         }
         runFEMethod(method,data,_vars,silent) {
             if (this.state.frontEndStatus != 'ready' && ['onRefresh','initOrRefresh','init','calcProps'].indexOf(method) == -1)

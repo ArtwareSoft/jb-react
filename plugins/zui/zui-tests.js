@@ -1,32 +1,93 @@
 using('ui-testers')
 
 component('points', { passiveData: [
-      {"name": "A", x: 0, y : 0 },
-      {"name": "A", x: 1, y : 1 },
-      {"name": "B", x: 2, y : 2 },
-      {"name": "C", x: 3, y : 3 },
+      {"name": "Tel Aviv", x: 0, y : 0 },
+      {"name": "Jerusalem", x: 1, y : 1 },
+      {"name": "Eilat", x: 2, y : 2 },
+      {"name": "Beer Sheva", x: 3, y : 3 },
 ]})
+
+component('zuiTest.image', {
+  impl: uiTest({
+    control: zui.itemlist({
+      items: '%$hotels%',
+      itemsPositions: xyByProps(),
+      boardSize: 10,
+      itemView: image('https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp', {
+        build: imageBuild('projects/zuiDemo/build/gallery0')
+      }),
+      initialZoom: 1,
+      center: '1,1'
+    }),
+    expectedResult: and(
+      contains('size":[200,40]'),
+      contains('pos":[0,80]'),
+      contains('[13380,19200,8533,18517]'),
+      contains('attribute vec4 _text;varying vec4 text')
+    )
+  })
+})
+
+component('zuiTest.fixedText', {
+  impl: uiTest({
+    control: zui.itemlist({
+      items: '%$points%',
+      itemsPositions: xyByProps(),
+      boardSize: 10,
+      itemView: fixedText(text('name')),
+      initialZoom: 1,
+      center: '1,1'
+    }),
+    expectedResult: and(
+      contains('size":[200,40]'),
+      contains('pos":[0,80]'),
+      contains('[13380,19200,8533,18517]'),
+      contains('attribute vec4 _text;varying vec4 text')
+    )
+  })
+})
+
+component('zuiTest.circles', {
+  impl: uiTest({
+    control: zui.itemlist({
+      items: '%$points%',
+      itemsPositions: xyByProps(),
+      boardSize: 10,
+      itemView: circle(numeric('x'), greens()),
+      initialZoom: 10,
+      center: '5,5'
+    }),
+    expectedResult: and(
+      contains('size":[17.8,17.8]'),
+      contains('pos":[91.1,91.1]'),
+      contains('[[0,0,0],[0,0.3333333333333333,0],[0,0.6666666666666666,0],[0,1,0]]}'),
+      contains('[[0,10],[1,9],[2,8],[3,7]')
+    )
+  })
+})
 
 component('zuiTest.gallery', {
   impl: uiTest({
     control: group({
       controls: [
         zui.itemlist({
+          items: pipeline('%$hotels/0/gallery%', obj(prop('image', '%%'))),
+          itemsPositions: xyByIndex(),
+          boardSize: 4,
           itemView: group(
             image('https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp', {
               build: imageBuild('projects/zuiDemo/build/gallery0')
             }),
             fixedText(text('xy'))
           ),
-          boardSize: 4,
           initialZoom: 3,
-          center: '2,2',
-          items: pipeline('%$hotels/0/gallery%', obj(prop('image', '%%'))),
-          itemProps: [xyByIndex()]
+          center: '2,2'
         })
       ],
-      layout: layout.flex('row', { wrap: 'wrap' }),
-      features: [variable('zuiCtx', obj())]
+      layout: layout.flex({ direction: 'row', wrap: 'wrap' }),
+      features: [
+        variable('zuiCtx', obj())
+      ]
     }),
     expectedResult: contains('-')
   })
@@ -36,24 +97,9 @@ component('zuiTest.itemlistCircles', {
   impl: browserTest({
     control: zui.itemlist({
       items: '%$points%',
-      itemProps: [xyByProps()],
+      itemsPositions: xyByProps(),
       boardSize: 10,
-      itemView: group(circle(numeric('x', { prefix: '$', features: [priorty(1), colorScale(green())] }))),
-      initialZoom: 10,
-      center: '5,5'
-    }),
-    expectedResult: contains('-'),
-    renderDOM: true
-  })
-})
-
-component('zuiTest.fixedText', {
-  impl: browserTest({
-    control: zui.itemlist({
-      items: '%$points%',
-      itemProps: [xyByProps()],
-      boardSize: 10,
-      itemView: group(fixedText(text('name'))),
+      itemView: circle(numeric('x'), greens()),
       initialZoom: 10,
       center: '5,5'
     }),
@@ -68,9 +114,9 @@ component('zuiTest.itemlist', {
       controls: [
         zui.itemlist({
           items: '%$hotels%',
-          itemProps: [
-            numeric('price', { prefix: '$', features: [priorty(1), colorScale(green())] }),
-            numeric('rating', { features: [priorty(2), colorScale(red())] }),
+          prepareProps: [
+            numeric('price', { prefix: '$', features: [priorty(1), colorScale(greens())] }),
+            numeric('rating', { features: [priorty(2), colorScale(reds())] }),
             text('name', { features: priorty(3) }),
             geo('lat', preferedAxis('y')),
             geo('long', preferedAxis('x'))
@@ -126,16 +172,16 @@ component('zuiTest.nested', {
                 fixedText(text('xy')),
                 fixedText(text('imageDebug'))
               ),
-              itemProps: xyByIndex()
+              itemsPositions: xyByIndex()
             })
           ),
           boardSize: 64,
           initialZoom: 3.821267725000016,
           center: '1.3130639001816125,0.9833333333333321',
           items: pipeline('%$hotels%'),
-          itemProps: [
-            numeric('price', { prefix: '$', features: [priorty(1), colorScale(green())] }),
-            numeric('rating', { features: [priorty(2), colorScale(red())] }),
+          prepareProps: [
+            numeric('price', { prefix: '$', features: [priorty(1), colorScale(greens())] }),
+            numeric('rating', { features: [priorty(2), colorScale(reds())] }),
             text('name', { features: priorty(3) }),
             geo('lat', { features: preferedAxis('y') }),
             geo('long', { features: preferedAxis('x') })

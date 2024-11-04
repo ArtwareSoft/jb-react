@@ -1,33 +1,23 @@
 dsl('zui')
 
-component('priorty', {
-  type: 'view_feature',
-  params: [
-    {id: 'priority', mandatory: true, as: 'number', description: 'scene enter order'}
-  ],
-  impl: (ctx,priority) => ({
-    enrich(obj) { obj.priority = priority}
-  })
-})
-
 
 component('backgroundColorByProp', {
-  type: 'view_feature',
+  type: 'be_feature',
   params: [
     {id: 'prop', type: 'itemProp', mandatory: true},
-    {id: 'colorScale', type: 'color_scale', defaultValue: green()}
+    {id: 'colorScale', type: 'color_scale', defaultValue: greens()}
   ],
   impl: (ctx,prop,colorScale) => ({
-    enrich(obj) { obj.backgroundColorByProp = { prop, colorScale} }
+    enrich(view) { view.backgroundColorByProp = { prop, colorScale} }
   })
 })
 
 component('borderTypeByProp', {
-  type: 'view_feature',
+  type: 'be_feature',
   params: [
     {id: 'prop', type: 'itemProp', mandatory: true}
   ],
   impl: (ctx,prop) => ({
-    enrich(obj) { obj.borderTypeByProp = prop}
+    enrich(view) { view.borderTypeByProp = prop}
   })
 })

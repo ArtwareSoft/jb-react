@@ -6,9 +6,9 @@ component('byName', {
     {id: 'att', as: 'string', mandatory: true, defaultValue: ''}
   ],
   impl: (ctx, att) => {
-    const res = (ctx.vars.itemProps || []).find(x=>x.att == att)
+    const res = (ctx.vars.prepareProps || []).find(x=>x.att == att)
     if (!res && att)
-      jb.logError(`preDefined itemProp - can not find ${att} in pre-defined props`,{att, itemProps: ctx.vars.itemProps, ctx})
+      jb.logError(`preDefined itemProp - can not find ${att} in pre-defined props`,{att, prepareProps: ctx.vars.prepareProps, ctx})
     return res
   }
 })
@@ -50,6 +50,7 @@ component('numeric', {
     {id: 'features', type: 'prop_feature[]', dynamic: true}
   ],
   impl: (ctx, att, calc, prefix, suffix, features) => {
+    const DIM = ctx.vars.DIM
     const items = ctx.vars.items || []
     if (calc.profile) // calculated attribute
       items.forEach(i=> i[att] = calc(ctx.setData(i)))
@@ -58,11 +59,18 @@ component('numeric', {
       att,
       val: item => item[att],
       asText: item => prefix + item[att] + suffix,
-      pivots({DIM} = {}) { // create scale by order
+      pivots() { // create scale by order
+          if (this._pivots) return this._pivots
           const spaceFactor = Math.floor(DIM / Math.sqrt(items.length))
           items.sort((i1,i2) => i2[att] - i1[att] ).forEach((x,i) => x[`scale_${att}`] = i/items.length)
           const range = [items[0][att] || 0,items.slice(-1)[0][att] || 0]
-          return [{ att, spaceFactor, scale: x => x[`scale_${att}`], linearScale: item=> ((+item[att] || 0)-range[0])/(range[1]-range[0]) , preferedAxis: this.preferedAxis }]
+          return this._pivots = [
+            { att, spaceFactor, 
+              scale: x => x[`scale_${att}`], 
+              linearScale: item=> ((+item[att] || 0)-range[0])/(range[1]-range[0]) , 
+              preferedAxis: this.preferedAxis 
+            }
+          ]
       }
     }
     features().forEach(f=>f.enrich(prop))
@@ -83,63 +91,13 @@ component('geo', {
       att,
       val: item => item[att],
       asText: item => ''+item[att],
-      pivots({DIM} = {}) { // create scale by order
+      pivots() { // create scale by order
+          if (this._pivots) return this._pivots
           //const spaceFactor = Math.floor(DIM / Math.sqrt(items.length))
           items.sort((i1,i2) => i1[att] - i2[att] )
           const from = items[0][att], to = items[items.length-1][att], range = to - from
           items.forEach((x) => x[`scale_${att}`] = (x[att] - from) / range)
-          return [{ att, spaceFactor:0.999, scale: x => x[`scale_${att}`], linearScale: item=> ((+item[att] || 0)-range[0])/(range[1]-range[0]) , preferedAxis: this.preferedAxis }]
-      }
-    }
-    features().forEach(f=>f.enrich(prop))
-    return prop
-  }
-})
-
-component('xyByProps', {
-  type: 'itemProp',
-  params: [
-    {id: 'xAtt', as: 'string', defaultValue: 'x'},
-    {id: 'yAtt', as: 'string', defaultValue: 'y'},
-    {id: 'features', type: 'prop_feature[]', dynamic: true}
-  ],
-  impl: (ctx,xAtt,yAtt,features) => {
-    const prop = {
-      val: item => [item[xAtt],item[yAtt]],
-      asText: item => [item[xAtt],item[yAtt]].join(','),
-      pivots({DIM} = {}) { // create scale by order
-        return [
-            { att: 'x', spaceFactor: 1 , scale: item => item[xAtt]/DIM, preferedAxis: 'x' },
-            { att: 'y', spaceFactor: 1 , scale: item => item[yAtt]/DIM, preferedAxis: 'y' }            
-        ]
-      }
-    }
-    features().forEach(f=>f.enrich(prop))
-    return prop
-  }
-})
-
-component('xyByIndex', {
-  type: 'itemProp',
-  params: [
-    {id: 'features', type: 'prop_feature[]', dynamic: true}
-  ],
-  impl: (ctx,features) => {
-    const items = ctx.vars.items
-    const dim = Math.ceil(Math.sqrt(items.length))
-    items.map((item,i) => {item.x = (i % dim)/dim; item.y = Math.floor(i / dim)/dim })
-
-    const prop = {
-      val: item => [item.x,item.y],
-      asText: item => [item.x,item.y].join(','),
-      pivots({DIM} = {}) { // create scale by order
-        const spaceFactor = Math.floor(DIM / dim)
-        if (spaceFactor == 0)
-          jb.logError('xyByIndex, DIM too low',{DIM,dim,ctx})
-        return [
-            { att: 'x', spaceFactor , scale: item => item.x, preferedAxis: 'x' },
-            { att: 'y', spaceFactor , scale: item => item.y, preferedAxis: 'y' }            
-        ]
+          return this._pivots = [{ att, spaceFactor:0.999, scale: x => x[`scale_${att}`], linearScale: item=> ((+item[att] || 0)-range[0])/(range[1]-range[0]) , preferedAxis: this.preferedAxis }]
       }
     }
     features().forEach(f=>f.enrich(prop))
@@ -177,15 +135,25 @@ component('colorScale', {
   })
 })
 
-component('red', {
+component('white', {
+  type: 'color_scale',
+  impl: () => x => [255,255,255]
+})
+
+component('black', {
+  type: 'color_scale',
+  impl: () => x => [0,0,0]
+})
+
+component('reds', {
   type: 'color_scale',
   impl: () => x => [x,0,0]
 })
-component('green', {
+component('greens', {
   type: 'color_scale',
   impl: () => x => [0,x,0]
 })
-component('blue', {
+component('blues', {
   type: 'color_scale',
   impl: () => x => [0,0,x]
 })

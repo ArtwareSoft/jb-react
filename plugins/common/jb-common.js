@@ -62,6 +62,16 @@ component('properties', {
 			({id: id, val: obj[id], index: index}))
 })
 
+component('mapValues', {
+  description: 'change each value of properties',
+  type: 'data',
+  params: [
+    {id: 'map', dynamic: true, mandatory: true},
+    {id: 'obj', defaultValue: '%%', as: 'single'}
+  ],
+  impl: (ctx,map,obj) => jb.objFromEntries(Object.keys(obj).map(k=>[k, map(ctx.setData(obj[k]))]))
+})
+
 component('entries', {
   description: 'object entries as array 0/1',
   type: 'data',

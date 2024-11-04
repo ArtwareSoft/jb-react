@@ -1,30 +1,32 @@
 dsl('zui')
+using('remote-widget')
 
 component('zui.itemlist', {
   type: 'control<>',
   params: [
     {id: 'items', as: 'array', dynamic: true, mandatory: true, byName: true},
-    {id: 'itemProps', type: 'itemProp[]', dynamic: true},
+    {id: 'itemsPositions', type: 'items_positions', as: 'array', dynamic: true},
+    {id: 'prepareProps', type: 'itemProp[]', dynamic: true},
     {id: 'boardSize', as: 'number', defaultValue: 256},
     {id: 'itemView', type: 'view<zui>', mandatory: true, dynamic: true},
     {id: 'title', as: 'string'},
     {id: 'initialZoom', as: 'number', description: 'in terms of board window. empty is all board'},
     {id: 'center', as: 'string', description: 'e.g., 2,7'},
     {id: 'onChange', type: 'action<>', dynamic: true},
-    {id: 'style', type: 'itemlist-style<zui>', dynamic: true, defaultValue: itemlistStyle()},
+    {id: 'style', type: 'itemlist-style<zui>', dynamic: true, defaultValue: GPU()},
     {id: 'features', type: 'feature<>[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
 })
   
-component('itemlistStyle', {
+component('GPU', {
   type: 'itemlist-style',
   params: [
     {id: 'width', as: 'string', defaultValue: '200'},
     {id: 'height', as: 'string', defaultValue: '200'}
   ],
   impl: typeAdapter('style<>', customStyle({
-    template: ({},{width,height},h) => h('canvas', {...jb.zui.calcWidthHeight(width, height), zuiBackEndForTest:true }),
+    template: ({},{width,height},h) => h('canvas', {...jb.zui.calcWidthHeightBE(width, height), zuiBackEndForTest:true }),
     css: '{ touch-action: none; border: 1px black solid;}',
     features: [
       calcProps((ctx,{$model,zuiCtx},{width,height})=> {
@@ -32,273 +34,168 @@ component('itemlistStyle', {
         const items = $model.items()
         const zoom = +($model.initialZoom || DIM)
         const tCenter = $model.center ? $model.center.split(',').map(x=>+x) : [DIM* 0.5, DIM* 0.5]
-        const ctxWithItems = ctx.setVars({items})
-        const itemProps = $model.itemProps(ctxWithItems)
-        const itemView = $model.itemView(ctxWithItems.setVars({itemProps}))
-        const pivotsFromItemProps = itemProps.flatMap(prop=>prop.pivots({DIM}))
-        const pivots = [...pivotsFromItemProps, ...itemView.pivots({DIM}).filter(p=>! pivotsFromItemProps.find(_p => _p.att == p.att)) ]
+        const ctxWithItems = ctx.setVars({items, DIM, gpu: true})
+        const prepareProps = [...$model.prepareProps(ctxWithItems), ...$model.itemsPositions(ctxWithItems)]
+        const pivots = prepareProps.flatMap(prop=>prop.pivots())
         pivots.forEach(p=>{if (p.preferedAxis) pivots[p.preferedAxis] = p})
-        const itemsPositions = pivots.x && pivots.y && jb.zui.calcItemsPositions({items, pivots, DIM})
-        jb.zui.prepareItemView(itemView)
+        const itemsPositions = jb.zui.calcItemsPositions(pivots, ctxWithItems)
+        const noOfItems = items.length
+
+        const itemview = $model.itemView(ctxWithItems)
+        // layout calculator is done in both BE and FE
+        const { elemsLayout, shownViews } = jb.zui.initLayoutCalculator(itemview.createLayoutObj('top')).layoutView([width,height])
+
+        const be_views = itemview.createBEObjs('top',true)
+        const beData = jb.objFromEntries(be_views.map(v => [v.id, v.calc()]))
+        beData.itemsPositions = {atts: [itemsPositions.itemPos] }
+
         const props = {
-          DIM, center: [], tCenter, tZoom: zoom, itemsPositions, itemView //width,height,
+          DIM, center: [], tCenter, tZoom: zoom, elemsLayout, shownViews, width,height, be_views, beData, noOfItems
         }
         if (zuiCtx) 
           zuiCtx.props = props
-        // if (itemsPositions) { // emulate layout in BE for tests
-        //        jb.zui.prepareItemView(itemView)
-
-        //   const sizeInPx = jb.zui.calcWidthHeight(width, height)
-        //   const elemsLayout = {itemView: { size: [sizeInPx.width/zoom,sizeInPx.height/zoom], zoom }}
-        //   const itemView = $model.itemView(ctxWithItems.setVars({itemProps}))
-        //   jb.zui.layoutView(itemView, elemsLayout, props)
-        // }
         return props
       }),
-      frontEnd.var('itemPropsProfile', ({},{$model}) => $model.itemProps.profile),
+      method('buildPartition', (...args) => jb.zui.buildPartitionFromItemList(...args)),
+      method('onChange', '%$$model/onChange()%'),
+      method('calcBEData', '%$props/be_views/{%%}/calc()%'),
+      frontEnd.varsFromBEProps('DIM','tCenter','tZoom','beData','elemsLayout','noOfItems'),
+      frontEnd.prop('beDataGpu', mapValues(zui.convertBEDataForGPU(), '%$beData%')),
       frontEnd.var('itemViewProfile', ({},{$model}) => $model.itemView.profile),
-      frontEnd.prop('itemView', (ctx,{itemPropsProfile, itemViewProfile}) => {
-          const itemProps = ctx.run(itemPropsProfile, {type: 'itemProp[]<zui>' })
-          return ctx.setVars({itemProps}).run(itemViewProfile,{ type: 'view<zui>'})
-      }),
-      frontEnd.varsFromBEProps('DIM','tCenter','tZoom','itemsPositions'),
+      frontEnd.prop('layoutCalculator', (ctx,{itemViewProfile}) =>
+        jb.zui.initLayoutCalculator(ctx.run(itemViewProfile,{ type: 'view<zui>'}).createLayoutObj('top'))),
+      frontEnd.prop('feViews', (ctx,{itemViewProfile}) =>
+        jb.objFromEntries(ctx.run(itemViewProfile,{ type: 'view<zui>'}).createFEObjs('top',true).map(v=>[v.id,v]) )),
       frontEnd.prop('ZOOM_LIMIT', ({},{DIM}) => [1, jb.ui.isMobile() ? DIM: DIM*2]),
-      frontEnd.prop('elemBuffers', obj()),
       frontEnd.prop('debugElems', () => [
           //jb.zui.showTouchPointers(),
           //jb.zui.mark4PointsZuiElem(), 
           //jb.zui.markGridAreaZuiElem()
       ]),
-      frontEnd.method('refreshCanvas', async ({},{cmp, el}) => {
-          const sizeInPx = cmp.calcWidthHeight(cmp.width, cmp.height)
-          el.width = sizeInPx.width;
-          el.height = sizeInPx.height;
-          cmp.clearCanvas()
-          cmp.aspectRatio = el.width/el.height
-          await jb.delay(1)
-          cmp.elemsLayoutCache = {}
-          cmp.renderRequest = true
-      }),
-      frontEnd.init(async ({},vars) => {
-          //document.body.style.overflow = "hidden"
-          const {cmp, el, itemsPositions, DIM} = vars
-          cmp.glCanvas = el
-          const gl = cmp.gl = el.getContext('webgl', { alpha: true, premultipliedAlpha: true })
-          gl.enable(gl.BLEND)
-          gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-
-          jb.zui.initZuiCmp(vars,el,gl)
-          itemsPositions.vertexArray = new Float32Array(itemsPositions.sparse.flatMap(([item, x,y]) => [1.0*x,1.0*(DIM-y)]))
-
-          await jb.zui.initItemlistCmp(vars)
-          
-          cmp.clearCanvas()
-          cmp.renderRequest = true
-          el.setAttribute('zui-rendered',true) // for tests
-          cmp.updateZoomState({ dz :1, dp:0 })
-      }),
-      frontEnd.prop('zuiEvents', rx.subject()),
+      zui.Zoom(),
       frontEnd.prop('exposedView', rx.subject()),
-      frontEnd.flow(
-        source.frontEndEvent('pointerdown'),
-        rx.log('zui pointerdown'),
-        rx.var('pid', '%pointerId%'),
-        rx.do(({},{cmp,pid}) => cmp.addPointer(pid)),
-        rx.flatMap(source.mergeConcat(
-          rx.pipe(
-            source.merge(source.event('pointermove'), source.frontEndEvent('pointerup')),
-            rx.filter('%$pid%==%pointerId%'),
-            rx.do(({data},{cmp,pid}) => cmp.updatePointer(pid,data)),
-            rx.takeWhile('%type%==pointermove'),
-            rx.flatMap(source.data(({},{cmp}) => cmp.zoomEventFromPointers()))
-          ),
-          rx.pipe(
-            source.data(({},{cmp,pid}) => cmp.momentumEvents(pid)),
-            rx.var('delay', '%delay%'),
-            rx.flatMap(rx.pipe(source.data('%events%'))),
-            rx.delay('%$delay%'),
-            rx.log('momentum zui')
-          ),
-          rx.pipe(source.data(1), rx.do(({},{cmp,pid}) => cmp.removePointer(pid)))
-        )),
-        rx.do(({data},{cmp}) => cmp.updateZoomState(data)),
-        sink.subjectNext('%$cmp.zuiEvents%')
-      ),
-      frontEnd.flow(
-        source.event('wheel', () => jb.frame.document, { options: obj(prop('capture', true)) }),
-        rx.takeUntil('%$cmp.destroyed%'),
-        rx.log('zui wheel'),
-        rx.map(({},{sourceEvent}) => ({ dz: sourceEvent.deltaY > 0 ? 1.1 : sourceEvent.deltaY < 0 ? 1/1.1 : 1 })),
-        rx.do(({data},{cmp}) => cmp.updateZoomState(data)),
-        sink.subjectNext('%$cmp.zuiEvents%')
-      ),
-      frontEnd.flow(source.event('resize', () => jb.frame.window), sink.FEMethod('refreshCanvas')),
       frontEnd.flow(
         source.animationFrame(),
         rx.flatMap(source.data('%$cmp.animationStep()%')),
         rx.do(({},{cmp}) => cmp.renderCounter++),
         rx.flatMap(source.data('%$cmp.layoutViews()%')),
+        rx.map('%$cmp/feViews/{%%}%'),
         rx.do(action.subjectNext('%$cmp.exposedView%')),
-        rx.var('viewId'),
-        rx.map(({data},{cmp})=> jb.zui.viewOfId(cmp.itemView,data)),
+        rx.log('zui view to render candidate'),
+        rx.filter('%$cmp/beDataGpu/{%id%}%'),
+        rx.flatMap(source.merge(source.data('%$cmp.debugViews%'), source.data('%%'))),
         rx.log('zui view to render'),
-        rx.flatMap(source.merge(source.data('%$cmp.debugElems%'), source.data('%zuiElem%'))), 
-        rx.log('zui elem to render'),
-        rx.filter(or('%ready%', '%$cmp/elemBuffers/{%$viewId%}%')),
-//        rx.filter('%ready%'),
-        rx.do('%calcExtraProps()%'),
-        rx.log('zui elem to render'),
-        sink.action('%$cmp.renderGPUFrame()%')
+        sink.action('%$cmp.renderGPUView()%')
       ),
-      method('onChange', '%$$model/onChange()%'),
-      method('calcElemBuffers', (...args) => jb.zui.calcElemBuffersBE(...args)),
-      frontEnd.flow(source.subject('%$cmp.zuiEvents%'), rx.debounceTime(100), sink.BEMethod('onChange')),
       frontEnd.flow(
         source.subject('%$cmp.exposedView%'),
-        rx.log('zui exposedView 1'),
-//        rx.distinct(),
-//        rx.mapPromise(jb.zui.calcElemBuffers),
+        rx.log('zui exposedView handler'),
+        rx.filter(not('%$cmp/beDataGpu/{%id%}%')),
+        rx.filter(not('%waitingForBE%')),
+        rx.do(writeValue('%waitingForBE%', 'true')),
+        rx.log('zui calcBEData'),
         rx.var('viewId'),
-        rx.filter(not('%$cmp/elemBuffers/{%$viewId%}%')),
-        rx.log('zui calc elem buffers'),
-        rx.mapPromise(dataMethodFromBackend('calcElemBuffers', '%%')),
-        rx.do(writeValue('%$cmp/elemBuffers/{%$viewId%}%', '%%')),
+        rx.mapPromise(dataMethodFromBackend('calcBEData', '%id%')),
+        rx.do(writeValue('%$cmp/beDataGpu/{%$viewId%}%', zui.convertBEDataForGPU())),
+        rx.do(writeValue('%waitingForBE%', '')),
         sink.action(writeValue('%$cmp/renderRequest%', true))
       ),
-      method('buildPartition', (...args) => jb.zui.buildPartitionFromItemList(...args))
+      frontEnd.flow(source.subject('%$cmp.zuiEvents%'), rx.debounceTime(100), sink.BEMethod('onChange')),
+      frontEnd.flow(source.event('resize', () => jb.frame.window), sink.action('%$cmp.refreshCanvas()%')),
+      frontEnd.init( async ctx => {
+          const {cmp} = ctx.vars
+          await jb.zui.initFECmp(ctx)
+          cmp.clearCanvas()
+          cmp.renderRequest = true
+          cmp.updateZoomState({ dz :1, dp:0 })
+      })
     ]
   }))
 })
 
 extension('zui','itemlist-BE', {
-  prepareItemView(itemView) {
-    const shortPaths = calcShortPaths(itemView, '')
-    const axes = [0,1]
-    const records = axes.map(axis => calcMinRecord(itemView, axis).sort((r1,r2) => r1.p - r2.p))
+  calcWidthHeightBE(width, height) {
+    if (width == '100%') width = 600
+    return {width: +width, height: +height}
+  }  
+})
 
-    return { records, shortPaths }
-
-    function calcMinRecord(view, layoutAxis) {
-      if (!view.children) {
-        return [{
-          p: view.priority || 10000, path: view.shortPath, 
-          axis: layoutAxis, title: view.title,
-          min: view.sizeNeeds({round: 0, available:[0,0]})[layoutAxis] }]
-        }
-      return view.children.flatMap(childView => calcMinRecord(childView,layoutAxis))
-    }
-
-    function calcShortPaths(view, shortPath) {
-      view.id = view.shortPath = shortPath
-      if (!view.children) return { [shortPath]: view.ctxPath }
-      return view.children.reduce(
-        (acc, childView,i) => ({...acc, ...calcShortPaths(childView, [shortPath,''+i].filter(x=>x!='').join('~'))}),{})
-    }
-  },
-  async calcElemBuffersBE({data},{$props}) {
-    const viewId = data
-    const view = jb.zui.viewOfId($props.itemView,viewId)
-    const buffers = await view && view.zuiElem && view.zuiElem.calcBuffers(view, $props)
-    return buffers
+component('zui.convertBEDataForGPU', {
+  impl: ctx => {
+    const be_view = ctx.data
+    const {atts} = be_view
+    const {noOfItems} = ctx.vars
+  
+    const floatsInVertex = atts.reduce((acc,att) => acc + att.size, 0)
+    const resAtts = atts.reduce((acc,att) => ({ 
+        offset: acc.offset + att.size, 
+        atts: [...acc.atts, {id: `_${att.id}`, size: att.size, offset: acc.offset}]
+      }), {offset: 0, atts: []}).atts
+    const buffer = new Float32Array(floatsInVertex * noOfItems)
+    for (let i = 0; i < noOfItems; i++) for (let att = 0; att < atts.length; att++) for (let j = 0; j < atts[att].size; j++)
+        buffer[i * floatsInVertex + resAtts[att].offset + j] = 1.0*atts[att].ar[i][j];
+    return { atts: resAtts, buffer, floatsInVertex, glCode: be_view.glCode}
   }
 })
 
 extension('zui','itemlist-FE', {
-  viewOfId(view, id) {
-    if (view.id == id) return view
-    for(let i=0;i<(view.children||[]).length;i++) {
-      const found = jb.zui.viewOfId(view.children[i],id)
-      if (found) return found
-    }
-  },
-  assignBuffersFromBE(ctx, {cmp}) {
-    const {gl} = cmp
-    const {viewId, buffers} = ctx.data
-    cmp.elemBuffers[viewId] = buffers
-    // const view = jb.zui.viewOfId(cmp.itemView,viewId)
-    // const elem = view.zuiElem
-    // if (!elem) return
-    // elem.buffers = buffers
-    // rx.log('zui before bind buffers',{viewId, view, buffers: elem.buffers, elem, ctx})
-    // ;(elem.bindBuffers || cmp.bindBuffers)(elem, cmp, elem.buffers)
-
-    // elem.buffers.vertexBuffer = gl.createBuffer()
-    // gl.bindBuffer(gl.ARRAY_BUFFER, elem.buffers.vertexBuffer)
-    // gl.bufferData(gl.ARRAY_BUFFER, elem.buffers.vertexArray, gl.STATIC_DRAW)
-    // elem.ready = true
-  },
-  async initItemlistCmp(vars) {
+  async initFECmp(ctx) {
+    //document.body.style.overflow = "hidden"
+    const {cmp, el, beDataGpu, DIM} = ctx.vars
+    const glCanvas = el
+    const gl = el.getContext('webgl', { alpha: true, premultipliedAlpha: true })
+    gl.enable(gl.BLEND)
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+    el.setAttribute('zui-rendered',true) // for tests
+        
     const NO_OF_UNITS = 8
-    const {cmp} = vars
     Object.assign(cmp, { 
-      ...jb.zui.prepareItemView(cmp.itemView),
-      layoutViews() {
-        // state
-        //   userEvent -> tZoom + time -> zoom -> elemsLayout - calculated, cached by zoom
-        //   userEvent -> tCenter + time -> center
-          
-        const {zoom } = cmp.state
-        const {glCanvas, elemsLayoutCache} = cmp
-        if (elemsLayoutCache[zoom]) {
-          cmp.state.elemsLayout = elemsLayoutCache[zoom]
-        } else {
-          const [width, height] = [glCanvas.width/ zoom, glCanvas.height/ zoom]
-          cmp.state.elemsLayout = { itemViewSize: [width,height] }
-          const shownViews = cmp.state.elemsLayout.shownViews = jb.zui.layoutView(cmp,vars)
-          const elemsLayout = elemsLayoutCache[zoom] = JSON.parse(JSON.stringify(cmp.state.elemsLayout))
-          jb.log('zui elemsLayout',{elemsLayout, shownViews, ctx:cmp.ctx})
-        }
-        return cmp.state.elemsLayout.shownViews
+      clearCanvas() {
+        gl.viewport(0, 0, glCanvas.width, glCanvas.height)
+        gl.clearColor(1.0, 1.0, 1.0, 1.0)
+        gl.clear(gl.COLOR_BUFFER_BIT)    
       },
-      // renderGPUFrame(ctx) {
-      //   const elem = ctx.data
-      //   if (elem.ver == 2)
-      //     return this.renderGPUFrame2(ctx)
-      //   const {cmp} = ctx.vars
-      //   const { glCanvas, gl } = cmp
-      //   const { elemsLayout, zoom, center } = cmp.state
-      //   const { vertexCount, floatsInVertex, vertexBuffer, src } = cmp.elemBuffers[elem.view.id]
-      //   const shaderProgram = jb.zui.buildShaderProgram(gl, src)
-      //   gl.useProgram(shaderProgram)
-      //   const elemLayout = elem.view ? elemsLayout[elem.view.ctxPath] : {}
-      //   const {size, pos } = elemLayout
-      //   return elem.renderGPUFrame({...ctx.vars, cmp, shaderProgram, glCanvas, gl, zoom, center, elemLayout, vertexCount, floatsInVertex, vertexBuffer, size, pos})
-      // },
-      renderGPUFrame(ctx) {
-        const elem = ctx.data
-        const {cmp, itemsPositions, DIM } = ctx.vars
-        const { glCanvas, gl } = cmp
-        const { elemsLayout, zoom, center } = cmp.state
-        const shaderProgram = jb.zui.buildShaderProgram(gl, elem.src)
-        gl.useProgram(shaderProgram)
-        const elemLayout = elem.view ? elemsLayout[elem.view.ctxPath] : 
-          elem.posSize && elem.posSize(cmp.state.elemsLayout.itemViewSize) || { size: cmp.state.elemsLayout.itemViewSize, pos : [ 0.0,0.0] }
+      layoutViews() {          
+        const {zoom } = cmp.state
+        cmp.state.itemViewSize = [glCanvas.width/ zoom, glCanvas.height/ zoom]
+        const {elemsLayoutCache, layoutCalculator} = cmp
+        if (elemsLayoutCache[zoom]) {
+          Object.assign(cmp.state, [zoom])
+        } else {
+          const layout = layoutCalculator.layoutView(cmp.state.itemViewSize)
+          elemsLayoutCache[zoom] = JSON.parse(JSON.stringify(layout))
+          Object.assign(cmp.state, elemsLayoutCache[zoom])
+          jb.log('zui elemsLayout',{...layout, ctx:cmp.ctx})
+        }
+        return cmp.state.shownViews
+      },
+      prepareTextures(view) {
+        const textures = view.renderGPU.uniforms.filter(({glType})=>glType == 'sampler2D')
+        const allLoaded = textures.reduce((acc, {id}) => acc && view.textures[id], true)
+        if (allLoaded) return true
+        view.waitingForTextures = view.waitingForTextures || {}
+        const toLoad = textures.filter( ({id}) => !view.waitingForTextures[id] && !view.textures[id])
+        return toLoad.reduce((pr,{id, imageUrl}) => pr.then( async () => {
+          view.waitingForTextures[id] = true
+          view.textures[id] = await jb.zui.imageToTexture(gl,imageUrl()) 
+          delete view.waitingForTextures[id]
+        }), Promise.resolve())
+      },
+      renderGPUView(ctx) {
+        const view = ctx.data
+        const { noOfItems} = ctx.vars
+        const { beDataGpu } = cmp
+        const { itemViewSize, elemsLayout, zoom, center } = cmp.state
+        const elemLayout = elemsLayout[view.id]
         const {size, pos } = elemLayout
-        const { vertexArray, vertexCount } = itemsPositions
+        if (!this.prepareTextures(view)) return
 
-        const itemPosBuffer = gl.createBuffer()
-        gl.bindBuffer(gl.ARRAY_BUFFER, itemPosBuffer)
-        gl.bufferData(gl.ARRAY_BUFFER, vertexArray, gl.STATIC_DRAW)
-
-        const itemPos = gl.getAttribLocation(shaderProgram, 'itemPos')
-        gl.enableVertexAttribArray(itemPos)
-        gl.vertexAttribPointer(itemPos, 2, gl.FLOAT, false, 0, 0)
-
-        const buffers = cmp.elemBuffers[elem.view.id]
-        Object.entries(buffers.itemAtts).forEach(([bufId,buff]) =>{
-          const vertexBuffer = gl.createBuffer()
-          gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
-          gl.bufferData(gl.ARRAY_BUFFER, buff.vertexArray, gl.STATIC_DRAW)
-  
-          const att = gl.getAttribLocation(shaderProgram, `_${bufId}`)
-          gl.enableVertexAttribArray(att)
-          gl.vertexAttribPointer(att, buff.floatsInVertex, gl.FLOAT, false, 0, 0)
-        })
-
+        const glCode = beDataGpu[view.id].glCode
+        const shaderProgram = jb.zui.buildShaderProgram(gl, glCode)
+        gl.useProgram(shaderProgram)
         const canvasSize = [glCanvas.width, glCanvas.height]
         const gridSizeInPixels = [glCanvas.width/ zoom, glCanvas.height/ zoom]
         const fixedCenter = [center[0], DIM-center[1]+1]
-
         gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'zoom'), [zoom, zoom])
         gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'center'), fixedCenter)
         gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'canvasSize'), canvasSize)
@@ -306,16 +203,39 @@ extension('zui','itemlist-FE', {
         gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'pos'), pos)
         gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'size'), size)
 
-        jb.log('zui itemlist renderGPUFrame2', {vertexArray, elem, zoom,fixedCenter,canvasSize,gridSizeInPixels,pos,size,ctx})
+        const ctxWithElem = ctx.setVars({elemLayout})
+        view.renderGPU.uniforms.forEach(({glType,id,glMethod,val}) => {
+          if (glType == 'sampler2D') {
+            const {i} = jb.zui.allocateSingleTextureUnit({view: id,cmp})
+            gl.activeTexture(gl['TEXTURE'+i])
+            gl.bindTexture(gl.TEXTURE_2D, view.textures[id])
+            gl.uniform1i(gl.getUniformLocation(shaderProgram, id), i)    
+          } else {
+            gl[`uniform${glMethod}`](gl.getUniformLocation(shaderProgram, id), val(ctxWithElem))
+          }
+        })
 
-        elem.renderGPUFrame && elem.renderGPUFrame({...ctx.vars, cmp, shaderProgram, glCanvas, gl, zoom, center, elemLayout, vertexCount, vertexBuffer, size, pos})  
-        gl.drawArrays(gl.POINTS, 0, vertexCount)
+        beDataGpu.itemsPositions.atts[0].id = 'itemPos' // the default id is _itemPos...
+        ;[ beDataGpu.itemsPositions, beDataGpu[view.id]].forEach(({id, atts, buffer, floatsInVertex}) => {
+          gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
+          gl.bufferData(gl.ARRAY_BUFFER, buffer, gl.STATIC_DRAW)
+  
+          atts.forEach(({id,size,offset}) => {
+            const att = gl.getAttribLocation(shaderProgram, id)
+            gl.enableVertexAttribArray(att)
+            gl.vertexAttribPointer(att, size, gl.FLOAT, false,  floatsInVertex* Float32Array.BYTES_PER_ELEMENT, offset* Float32Array.BYTES_PER_ELEMENT)
+          })
+        })
+        jb.log('zui itemlist renderGPUView', {elemLayout, glCode, view, zoom,fixedCenter,canvasSize,gridSizeInPixels,ctx})
+        console.log(zoom,center,size)
+
+        gl.drawArrays(gl.POINTS, 0, noOfItems)
       },
       elemsLayoutCache: {},
       atlasTexturePool: {},
       renderCounter: 0,
       boundTextures: Array.from(new Array(NO_OF_UNITS).keys()).map(i=>({i, lru : 0})),
-      calcWidthHeight(width, height) {
+      calcWidthHeight() {
         const window = jb.frame.window || {innerHeight: 800, innerWidth: 1200, pageYOffset: 0, pageXOffset: 0}
         if (width == '100%') {
             return {
@@ -324,11 +244,19 @@ extension('zui','itemlist-FE', {
             }
         }
         return {width: +width, height: +height}
-      }      
+      },
+      async refreshCanvas() {
+        const sizeInPx = this.calcWidthHeight()
+        glCanvas.width = sizeInPx.width
+        glCanvas.height = sizeInPx.height
+        this.clearCanvas()
+        this.aspectRatio = glCanvas.width/glCanvas.height
+        await jb.delay(1)
+        cmp.state.elemsLayoutCache = {}
+        cmp.renderRequest = true
+      }
     })
-  },
-  calcWidthHeight(width, height) {
-    if (width == '100%') width = 600
-    return {width: +width, height: +height}
+
+    await Object.values(cmp.feViews).reduce((pr,feView) => pr.then(() => cmp.prepareTextures(feView)), Promise.resolve())
   }
 })
