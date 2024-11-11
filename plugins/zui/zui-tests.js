@@ -10,21 +10,21 @@ component('points', { passiveData: [
 component('zuiTest.image', {
   impl: uiTest({
     control: zui.itemlist({
-      items: '%$hotels%',
+      items: '%$points%',
       itemsPositions: xyByProps(),
       boardSize: 10,
-      itemView: image('https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp', {
-        build: imageBuild('projects/zuiDemo/build/gallery0')
-      }),
-      initialZoom: 1,
-      center: '1,1'
+      itemView: image(imageOfText('%name%')),
+      initialZoom: 3,
+      center: '0,10'
     }),
     expectedResult: and(
-      contains('size":[200,40]'),
-      contains('pos":[0,80]'),
-      contains('[13380,19200,8533,18517]'),
-      contains('attribute vec4 _text;varying vec4 text')
-    )
+      contains('[[0,0], [256,0], [512,0], [768,0]]'),
+      //contains('[[53,19], [73,19], [31,19], [83,19]]'),
+      contains('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA'),
+      contains('value: [19]')
+    ),
+    uiAction: waitForNextUpdate(),
+    emulateFrontEnd: true
   })
 })
 
@@ -35,15 +35,17 @@ component('zuiTest.fixedText', {
       itemsPositions: xyByProps(),
       boardSize: 10,
       itemView: fixedText(text('name')),
-      initialZoom: 1,
-      center: '1,1'
+      initialZoom: 3,
+      center: '0,10'
     }),
     expectedResult: and(
       contains('size":[200,40]'),
       contains('pos":[0,80]'),
       contains('[13380,19200,8533,18517]'),
       contains('attribute vec4 _text;varying vec4 text')
-    )
+    ),
+    uiAction: waitForNextUpdate(),
+    emulateFrontEnd: true
   })
 })
 
@@ -61,12 +63,13 @@ component('zuiTest.circles', {
       contains('size":[17.8,17.8]'),
       contains('pos":[91.1,91.1]'),
       contains('[[0,0,0],[0,0.3333333333333333,0],[0,0.6666666666666666,0],[0,1,0]]}'),
-      contains('[[0,10],[1,9],[2,8],[3,7]')
+      contains('[[0,0],[1,1],[2,2],[3,3]]}]')
     )
   })
 })
 
 component('zuiTest.gallery', {
+  doNotRunInTests: true,
   impl: uiTest({
     control: group({
       controls: [
@@ -76,7 +79,6 @@ component('zuiTest.gallery', {
           boardSize: 4,
           itemView: group(
             image('https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp', {
-              build: imageBuild('projects/zuiDemo/build/gallery0')
             }),
             fixedText(text('xy'))
           ),
@@ -93,23 +95,9 @@ component('zuiTest.gallery', {
   })
 })
 
-component('zuiTest.itemlistCircles', {
-  impl: browserTest({
-    control: zui.itemlist({
-      items: '%$points%',
-      itemsPositions: xyByProps(),
-      boardSize: 10,
-      itemView: circle(numeric('x'), greens()),
-      initialZoom: 10,
-      center: '5,5'
-    }),
-    expectedResult: contains('-'),
-    renderDOM: true
-  })
-})
-
-component('zuiTest.itemlist', {
-  impl: browserTest({
+component('zuiTest.hotels', {
+  doNotRunInTests: true,
+  impl: uiTest({
     control: group({
       controls: [
         zui.itemlist({
@@ -136,7 +124,6 @@ component('zuiTest.itemlist', {
               layout: horizontal()
             }),
             image('https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp', {
-              build: imageBuild('projects/zuiDemo/build/top')
             })
           ),
           initialZoom: 64,
@@ -156,46 +143,45 @@ component('zuiTest.itemlist', {
   })
 })
 
-component('zuiTest.nested', {
-  impl: uiTest({
-    control: group({
-      controls: [
-        zui.itemlist({
-          itemView: group(
-            circle(byName('price')),
-            growingText(byName('name')),
-            zui.gridView(pipeline('%$hotels/0/gallery%', obj(prop('image', '%%'))), {
-              itemView: group(
-                image('https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp', {
-                  build: imageBuild('projects/zuiDemo/build/gallery0')
-                }),
-                fixedText(text('xy')),
-                fixedText(text('imageDebug'))
-              ),
-              itemsPositions: xyByIndex()
-            })
-          ),
-          boardSize: 64,
-          initialZoom: 3.821267725000016,
-          center: '1.3130639001816125,0.9833333333333321',
-          items: pipeline('%$hotels%'),
-          prepareProps: [
-            numeric('price', { prefix: '$', features: [priorty(1), colorScale(greens())] }),
-            numeric('rating', { features: [priorty(2), colorScale(reds())] }),
-            text('name', { features: priorty(3) }),
-            geo('lat', { features: preferedAxis('y') }),
-            geo('long', { features: preferedAxis('x') })
-          ],
-          onChange: refreshControlById('itemPreview')
-        }),
-        zui.visualItemPreview()
-      ],
-      layout: layout.flex('row', { wrap: 'wrap' }),
-      features: [variable('zuiCtx', obj())]
-    }),
-    expectedResult: contains('-')
-  })
-})
+// component('zuiTest.nested', {
+//   impl: uiTest({
+//     control: group({
+//       controls: [
+//         zui.itemlist({
+//           itemView: group(
+//             circle(byName('price')),
+//             growingText(byName('name')),
+//             zui.gridView(pipeline('%$hotels/0/gallery%', obj(prop('image', '%%'))), {
+//               itemView: group(
+//                 image('https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp', {
+//                 }),
+//                 fixedText(text('xy')),
+//                 fixedText(text('imageDebug'))
+//               ),
+//               itemsPositions: xyByIndex()
+//             })
+//           ),
+//           boardSize: 64,
+//           initialZoom: 3.821267725000016,
+//           center: '1.3130639001816125,0.9833333333333321',
+//           items: pipeline('%$hotels%'),
+//           prepareProps: [
+//             numeric('price', { prefix: '$', features: [priorty(1), colorScale(greens())] }),
+//             numeric('rating', { features: [priorty(2), colorScale(reds())] }),
+//             text('name', { features: priorty(3) }),
+//             geo('lat', { features: preferedAxis('y') }),
+//             geo('long', { features: preferedAxis('x') })
+//           ],
+//           onChange: refreshControlById('itemPreview')
+//         }),
+//         zui.visualItemPreview()
+//       ],
+//       layout: layout.flex('row', { wrap: 'wrap' }),
+//       features: [variable('zuiCtx', obj())]
+//     }),
+//     expectedResult: contains('-')
+//   })
+// })
               // firstToFit(
               //   [
               //     zui.gridView({

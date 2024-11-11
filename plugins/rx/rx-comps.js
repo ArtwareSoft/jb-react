@@ -36,7 +36,7 @@ component('source.callbackLoop', {
 
 component('source.animationFrame', {
   type: 'rx',
-  impl: source.callbackLoop(()=>jb.frame.requestAnimationFrame)
+  impl: source.callbackLoop(()=>jb.frame.requestAnimationFrame || (() => {}))
 })
 
 /*

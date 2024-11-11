@@ -24,7 +24,6 @@ component('smoothGrowth', {
   }
 })
 
-
 component('keepBaseRatio', {
   type: 'layout_feature',
   description: 'use all available yet keeps the base x/y ratio',
@@ -32,16 +31,31 @@ component('keepBaseRatio', {
     {id: 'base', as: 'array', defaultValue: [5,5], byName: true},
     {id: 'rounds', as: 'number', defaultValue: 2, description: 'negotiate with brothers, the more round it will allow others with lowest priority to get real estate'},
   ],
-  impl: (ctx,base,rounds) => {
-    return {
+  impl: (ctx,base,rounds) => ({
       layoutRounds: rounds,
       sizeNeeds: ({round, available }) => {
         if (Math.min(...available) == 0) return base
         const xFactor = Math.min(...[available[0], available[1]*base[0]/base[1]])/available[0]
         return [available[0]*xFactor, available[0]*xFactor*base[1]/base[0]]
       }
-    }
-  }
+  })
+})
+
+component('image', {
+  type: 'layout_feature',
+  params: [
+    {id: 'prefered', as: 'array', byName: true, mandatory: true},
+    {id: 'min', as: 'array', defaultValue: [16,16], byName: true}
+  ],
+  impl: (ctx,prefered,min) => ({
+      layoutRounds: 3,
+      sizeNeeds: ({round, available }) => {
+        if (round == 0) return min
+        if (round == 1) return prefered
+        const xFactor = Math.min(...[available[0], available[1]*prefered[0]/prefered[1]])/available[0]
+        return [available[0]*xFactor, available[0]*xFactor*prefered[1]/prefered[0]]
+      }
+  })
 })
 
 component('priorty', {

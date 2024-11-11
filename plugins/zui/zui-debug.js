@@ -127,14 +127,14 @@ extension('zui','debug', {
     },
     renderGPUFrame({ gl, glCanvas, zoom, center}, { vertexBuffer, shaderProgram, vertexNumComponents, vertexCount }) {
         gl.useProgram(shaderProgram)
-        const gridSizeInPixels = [glCanvas.width/ zoom, glCanvas.height/ zoom]
+        const itemViewSize = [glCanvas.width/ zoom, glCanvas.height/ zoom]
       
         gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'zoom'), [zoom, zoom] )
         gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'center'), center)
-        gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'gridSizeInPixels'), gridSizeInPixels)
+        gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'itemViewSize'), itemViewSize)
         gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'canvasSize'), [glCanvas.width, glCanvas.height])
-        gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'pos'), [0.2*gridSizeInPixels[0],0.7*gridSizeInPixels[1]])
-        gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'size'), [0.6*gridSizeInPixels[0],0.2*gridSizeInPixels[1]])
+        gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'pos'), [0.2*itemViewSize[0],0.7*itemViewSize[1]])
+        gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'size'), [0.6*itemViewSize[0],0.2*itemViewSize[1]])
 
         gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
         const itemPos = gl.getAttribLocation(shaderProgram, 'itemPosmarkGrid')

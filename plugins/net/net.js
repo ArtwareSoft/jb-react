@@ -6,7 +6,7 @@ component('http.get', {
   description: 'fetch data from external url',
   params: [
     {id: 'url', as: 'string'},
-    {id: 'json', as: 'boolean', description: 'convert result to json', type: 'boolean'},
+    {id: 'json', as: 'boolean', description: 'convert result to json', type: 'boolean', byName: true},
     {id: 'useProxy', as: 'string', options: ',localhost-server,cloud'}
   ],
   impl: (ctx,_url,_json,useProxy) => {

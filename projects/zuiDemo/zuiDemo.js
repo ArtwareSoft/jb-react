@@ -16,7 +16,6 @@ component('zuiDemo.main', {
             ], horizontal()),
             image({
               url: 'https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp',
-              build: imageBuild('projects/zuiDemo/build/top')
             }),
             fixedText(text('xy')),
             fixedText(text('imageDebug'))

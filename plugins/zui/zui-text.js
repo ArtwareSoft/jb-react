@@ -6,21 +6,25 @@ component('fixedText', {
   params: [
     {id: 'prop', type: 'itemProp', mandatory: true},
     {id: 'viewFeatures', type: 'view_feature[]', dynamic: true},
-    {id: 'length', as: 'number', description: '<= 8', defaultValue: 8}
+    {id: 'length', as: 'number', description: '<= 8', defaultValue: 8},
+    {id: 'fontSize', as: 'number', defaultValue: 16},
+    {id: 'fontWidth', as: 'number', defaultValue: 10},
+    {id: 'charSet', as: 'string', defaultValue: ` !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_\`abcdefghijklmnopqrstuvwxyz{|}~    `}
   ],
   impl: view('fixedText-%$prop/att%', '%$prop%', {
-    layout: keepBaseRatio({ base: ({},{},{length}) => [10*length/2,16/2] }),
+    layout: keepBaseRatio({ base: ({},{},{length,fontWidth}) => [fontWidth*length/2,16/2] }),
+    viewProps: prop('charSetImage', ({},{},params) => jb.zui.charSetImage(params), { async: true }),
     atts: [
       color('backgroundColor', white()),
-      text8('text', '%$length%')
+      text8('text', '%$length%', { charSet: '%$charSet%' })
     ],
     renderGPU: gpuCode({
-      shaderCode: colorOfPoint({
-        codeInMain: `float fStrLen = float(strLen);
+      shaderCode: colorOfPoint(`float fStrLen = float(strLen);
     float charCode = calcCharCode(rInElem[0]);    
     float inCharPosPx = mod(inElem[0], charWidthInElem);
     float sizeRatio = charWidthInElem / charWidthInTexture;
     vec2 texturePos = vec2(charCode * charWidthInTexture + inCharPosPx/sizeRatio, (size[1] - inElem[1])/sizeRatio) / charSetTextureSize;
+
     if (backgroundColor[0] == -1.0) {
       gl_FragColor = texture2D( charSetTexture, texturePos);
       return;
@@ -31,15 +35,16 @@ component('fixedText', {
       gl_FragColor = vec4(backgroundColor, 1.0);
     } else {
       gl_FragColor = vec4(getContrastingFontColor(), 1.0);
-    }`
-      }),
+    }`),
       utils: text8Utils(),
       uniforms: [
-        texture('charSetTexture', () => jb.zui.asciiCharSetImage()),
-        Float('charWidthInTexture', () => 10),
-        Float('charWidthInElem', (ctx,{elemLayout},{length}) => elemLayout.size[0]/length ),
-        vec2('charSetTextureSize', () => jb.zui.charSetTextureSize),
-        Int('strLen', ({},{},{length}) => length)
+        texture('charSetTexture', '%$view.props.charSetImage%'),
+        Float('charWidthInTexture', '%$fontWidth%'),
+        vec2('charSetTextureSize', ({},{},{charSet,fontWidth,fontSize}) => [charSet.length * fontWidth,fontSize]),
+        Int('strLen', '%$length%')
+      ],
+      zoomDependentUniforms: [
+        Float('charWidthInElem', (ctx,{elemLayout},{length}) => elemLayout.size[0]/length)
       ]
     })
   })
@@ -78,16 +83,17 @@ component('text8Utils', {
 })
 
 component('text8', {
-  type: 'att_calculator',
+  type: 'attribute',
   params: [
     {id: 'id', as: 'string'},
-    {id: 'length', as: 'number', description: '<= 8', defaultValue: 8}
+    {id: 'length', as: 'number', description: '<= 8', defaultValue: 8},
+    {id: 'charSet', as: 'string'}
   ],
-  impl: (ctx,id, length) => ({ 
+  impl: (ctx,id, length,charSet) => ({ 
       id,
       size: 4,
       glType: 'vec4',
-      calc: v => ctx.vars.items.map(item=>jb.zui.textAsFloats(v.itemProp.asText(item), length))
+      calc: v => ctx.vars.items.map(item=>jb.zui.textAsFloats(charSet, v.itemProp.asText(item), length))
     })
 })
 
@@ -97,56 +103,67 @@ component('growingText', {
   type: 'view',
 })
 
-extension('zui','ascii', {
-    initExtension() {
-        const fontSize = 16, asciiCharSetSize = 128
-        return { 
-            asciiCharSet: ' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~    ',
-            asciiCharSetSize,
-            fontSize,
-            charSetTextureSize: [asciiCharSetSize * 10,fontSize]
-        }
-    },
-    asciiCharSetImage() {
-        if (jb.zui.asciiCharSetDataUrl)
-          return jb.zui.asciiCharSetDataUrl
-        const canvas = document.createElement('canvas')
-        canvas.width = jb.zui.charSetTextureSize[0]
-        canvas.height = jb.zui.charSetTextureSize[1]
-        document.body.appendChild(canvas)
-        const ctx = canvas.getContext('2d')
-        ctx.font = `500 ${jb.zui.fontSize}px monospace`
-        ctx.fontWeight = 'bold'
-        ctx.textBaseline = 'top'
-        ctx.textAlign = 'left'
-        ctx.fillStyle = 'black'
-        const charSet = jb.zui.asciiCharSet
-        Array.from(new Array(charSet.length).keys()).forEach(i=> ctx.fillText(charSet[i],i*10,0))
-        const dataUrl = canvas.toDataURL('image/png')
-        document.body.removeChild(canvas)
-        return jb.zui.asciiCharSetDataUrl = dataUrl
-    },
-    charsetEncodeAscii(text) {
-        return Array.from(text).map(x=> {
-            const code = jb.zui.asciiCharSet.indexOf(x)
-            return code == -1 ? 0 : code
+extension('zui','canvas', {
+  createCanvas(...size) {
+    return jbHost.isNode ? require('canvas').createCanvas(...size) : new OffscreenCanvas(...size)
+  },
+  async canvasToDataUrl(canvas) {
+    if (jbHost.isNode) {
+      const buffer = canvas.toBuffer('image/png')
+      const base64 = buffer.toString('base64')
+      return `data:image/png;base64,${base64}`
+    } else {
+        const blob = await canvas.convertToBlob()
+        const dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onloadend = () => resolve(reader.result)
+            reader.onerror = reject
+            reader.readAsDataURL(blob)
         })
+        return dataUrl
+    }
+  }
+})
+
+extension('zui','text', {
+    async charSetImage({charSet, fontSize, fontWidth}) {
+        const canvas = jb.zui.createCanvas(charSet.length * fontWidth,fontSize)
+        const ctx2d = canvas.getContext('2d')
+        ctx2d.font = `500 ${fontSize}px monospace`
+        ctx2d.fontWeight = 'bold'
+        ctx2d.textBaseline = 'top'
+        ctx2d.textAlign = 'left'
+        ctx2d.fillStyle = 'black'
+        Array.from(new Array(charSet.length).keys()).forEach(i=> ctx2d.fillText(charSet[i],i*10,0))
+        return jb.zui.canvasToDataUrl(canvas)
     },
-    async asciiCharSetTexture(gl) {
-      if (!jb.zui._asciiCharSetTexture)
-        jb.zui._asciiCharSetTexture = jb.zui.imageToTexture(gl, jb.zui.asciiCharSetImage())
-      return jb.zui._asciiCharSetTexture
-    },
-    textAsFloats(_text, length) {
+    // charsetEncodeAscii(text) {
+    //     return Array.from(text).map(x=> {
+    //         const code = jb.zui.charSet.indexOf(x)
+    //         return code == -1 ? 0 : code
+    //     })
+    // },
+    // async charSetTexture(gl) {
+    //   if (!jb.zui._charSetTexture)
+    //     jb.zui._charSetTexture = jb.zui.imageToTexture(gl, jb.zui.charSetImage())
+    //   return jb.zui._charSetTexture
+    // },
+    textAsFloats(charSet, _text, length) {
       const text = (_text || 'null').slice(0,length)
       const pad = '                  '.slice(0,Math.ceil((length-text.length)/2))
-      const txtChars = jb.zui.charsetEncodeAscii((pad + text + pad).slice(0,length))
+      const txtChars = encode((pad + text + pad).slice(0,length))
       const floats = Array.from(new Array(4).keys())
           .map(i => twoCharsToFloat(txtChars[i*2],txtChars[i*2+1])).map(x=> isNaN(x) ? 0 :x) 
       return floats
 
       function twoCharsToFloat(char1, char2) {
         return char1 * 256 + char2
+      }
+      function encode(params) {
+        return Array.from(text).map(x=> {
+          const code = charSet.indexOf(x)
+          return code == -1 ? 0 : code
+        })
       }
     }      
 })
@@ -179,7 +196,7 @@ extension('zui','ascii', {
 //   text2_32ZuiElem: viewCtx => ({
 //       txt_fields: ['2','4','8','16_0','16_1','32_0','32_1','32_2','32_3'],
 //       async asyncPrepare({gl}) {
-//         this.charSetTexture = await jb.zui.asciiCharSetTexture(gl)
+//         this.charSetTexture = await jb.zui.charSetTexture(gl)
 //       },
 //       vertexShaderCode() {
 //         const txt_fields = this.txt_fields
@@ -274,7 +291,7 @@ extension('zui','ascii', {
 //           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'zoom'), [zoom, zoom])
 //           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'center'), center)
 //           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'canvasSize'), [glCanvas.width, glCanvas.height])
-//           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'gridSizeInPixels'), [glCanvas.width/ zoom, glCanvas.height/ zoom])
+//           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'itemViewSize'), [glCanvas.width/ zoom, glCanvas.height/ zoom])
 //           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'pos'), pos)
 //           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'size'), size)
 
@@ -334,7 +351,7 @@ extension('zui','ascii', {
 // extension('zui','text8', {
 //   text8ZuiElem: viewCtx => ({
 //       async asyncPrepare({gl}) {
-//         this.charSetTexture = await jb.zui.asciiCharSetTexture(gl)
+//         this.charSetTexture = await jb.zui.charSetTexture(gl)
 //       },
 //       vertexShaderCode: () => jb.zui.vertexShaderCode({id: 'text8',
 //         code: `attribute vec4 _text; varying vec4 text;
@@ -430,7 +447,7 @@ extension('zui','ascii', {
 //           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'zoom'), [zoom, zoom])
 //           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'center'), center)
 //           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'canvasSize'), [glCanvas.width, glCanvas.height])
-//           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'gridSizeInPixels'), [glCanvas.width/ zoom, glCanvas.height/ zoom])
+//           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'itemViewSize'), [glCanvas.width/ zoom, glCanvas.height/ zoom])
 //           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'pos'), pos)
 //           gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'size'), size)
 

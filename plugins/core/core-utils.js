@@ -269,8 +269,7 @@ extension('utils', 'core', {
         const index = line.indexOf(`component('${id.split('>').pop()}'`)
         return index == 0 || index == 3
       })
-    },
-    calcDirectory: dir => dir[0] != '/' ? `${jbHost.baseUrl}/${dir}` : dir,
+    }
 })
 
 extension('utils', 'generic', {

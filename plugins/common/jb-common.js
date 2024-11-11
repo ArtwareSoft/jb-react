@@ -982,3 +982,9 @@ component('fileContent', {
   impl: (ctx,path) => jbHost.codePackageFromJson().fetchFile(`${jbHost.baseUrl||''}${path}`)
 })
 
+component('calcDirectory', {
+  params: [
+    {id: 'path', as: 'string', mandatory: true}
+  ],
+  impl: (ctx,path) => path[0] != '/' ? `${jbHost.baseUrl}/${path}` : path
+})

@@ -63,23 +63,23 @@ extension('zui','itemsPositions', {
       const [x,y] = [Math.floor(DIM*pivots.x.scale(item)*pivots.x.spaceFactor), Math.floor(DIM*pivots.y.scale(item)*pivots.y.spaceFactor)]
       mat[DIM*y + x] = mat[DIM*y + x] || []
       mat[DIM*y + x].push(item)
-      item.originalXY = [x,y].join(',')
+//      item.originalXY = [x,y].join(',')
     })      
     repulsion()
     const sparse = Array.from(Array(DIM**2).keys()).filter(i=>mat[i]).map(i=> {
       const item = mat[i][0]
-      const [x,y] = [i%DIM, Math.floor(i/DIM)]
-      item.xy = [x,y].join(',')
-      return [item, x,y] 
+      const [xPos,yPos] = [i%DIM, Math.floor(i/DIM)]
+      item.xyPos = [xPos,yPos].join(',')
+      return [item, xPos,yPos] 
     })
+    const itemPos = { id: 'itemPos', size: 2, ar: sparse.map(([item, xPos,yPos]) => [xPos,yPos]) }
 
-    jb.log('zui calcItemsPositions',{mat, sparse})
+    jb.log('zui calcItemsPositions',{mat, itemPos})
     // items positions are build like in x,y in math - from bottom-left to up-right
     //const vertexArray = new Float32Array(sparse.flatMap(([item, x,y]) => [1.0*x,1.0*(DIM-y-1)]))
     //const vertexArray = new Float32Array([1,1,5,5])
-    const itemPos = { id: 'itemPos', size: 2, ar: sparse.map(([item, x,y]) => [x,DIM-y]) }
 
-    return { mat, sparse, itemPos }
+    return { mat, itemPos }
 
     function repulsion() {
         for (let i=0;i<DIM**2;i++)

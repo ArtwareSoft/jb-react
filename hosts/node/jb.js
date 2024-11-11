@@ -82,7 +82,7 @@ if (verbose)
     const code = `
     const params = {${params.map(p=>`${p[0]}: ${p[1].match(/\(|{|"/) ? p[1] : `"${p[1]}"` }`).join(', ')} }
     component('mainToRun', { type: 'any', impl: ${withTypeAdapter} })
-    Object.assign(jb.core.unresolvedProfiles[0].comp.impl,params)
+    Object.assign(jb.core.unresolvedProfiles[0].comp.impl.$unresolved[1],params)
     ${wrapperCode}
 `
     if (verbose) console.log(JSON.stringify({code}))

@@ -68,7 +68,7 @@
   "devDependencies": {
     "canvas": "^2.11.2",
     "ffi-napi": "^4.0.3",
-    "gl": "^8.0.2",
+    "gl": "^8.1.6",
     "node-fetch": "^3.3.2",
     "openai": "^4.28.0",
     "puppeteer-extra": "^3.3.6",
