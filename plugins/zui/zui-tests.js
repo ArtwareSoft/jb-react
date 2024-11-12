@@ -27,13 +27,13 @@ component('zuiTest.image', {
   })
 })
 
-component('zuiTest.fixedText', {
+component('zuiTest.text8', {
   impl: uiTest({
     control: zui.itemlist({
       items: '%$points%',
       itemsPositions: xyByProps(),
       boardSize: 10,
-      itemView: fixedText('%name%'),
+      itemView: text8('%name%'),
       initialZoom: 3,
       center: '0,10'
     }),
@@ -81,7 +81,7 @@ component('zuiTest.circles', {
     }),
     expectedResult: and(
       contains('size":[17.8,17.8]'),
-      //contains('pos":[91.1,91.1]'),
+      contains('pos":[91.1,91.1]'),
       contains('[[0,0,0],[0,0.3333333333333333,0],[0,0.6666666666666666,0],[0,1,0]]}'),
       contains('[[0,0],[1,1],[2,2],[3,3]]}]')
     )
@@ -128,7 +128,7 @@ component('zuiTest.gallery', {
           itemView: group(
             image('https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp', {
             }),
-            fixedText('%xy%')
+            text8('%xy%')
           ),
           initialZoom: 3,
           center: '2,2'
@@ -164,11 +164,11 @@ component('zuiTest.hotels', {
             group({
               views: [
                 firstToFit(
-                  fixedText(byName('price'), { length: 8 }),
-                  fixedText(byName('price'), { length: 4, backgroundColorByProp: true }),
+                  text8(byName('price'), { length: 8 }),
+                  text8(byName('price'), { length: 4, backgroundColorByProp: true }),
                   circle(byName('price'))
                 ),
-                fixedText(byName('rating'), { length: 4 })
+                text8(byName('rating'), { length: 4 })
               ],
               layout: horizontal()
             }),
@@ -205,8 +205,8 @@ component('zuiTest.hotels', {
 //               itemView: group(
 //                 image('https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp', {
 //                 }),
-//                 fixedText(text('xy')),
-//                 fixedText(text('imageDebug'))
+//                 text8(text('xy')),
+//                 text8(text('imageDebug'))
 //               ),
 //               itemsPositions: xyByIndex()
 //             })

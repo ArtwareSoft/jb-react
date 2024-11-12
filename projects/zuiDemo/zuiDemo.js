@@ -8,17 +8,17 @@ component('zuiDemo.main', {
       zui.itemlist({
         itemView: group(
           [
-            fixedText({prop: byName('price'), length: 8}),
+            text8({prop: byName('price'), length: 8}),
             circle(byName('price')),
             growingText(byName('name')),
             group([
-              fixedText({prop: byName('rating'), length: 4})
+              text8({prop: byName('rating'), length: 4})
             ], horizontal()),
             image({
               url: 'https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp',
             }),
-            fixedText('%xy%'),
-            fixedText('%imageDebug%')
+            text8('%xy%'),
+            text8('%imageDebug%')
           ]
         ),
         boardSize: 64,
@@ -47,8 +47,8 @@ component('zuiDemo.main', {
 
 //                 firstToFit(
 //                   [
-//                     fixedText({prop: byName('price'), length: 8}),
-//                     // fixedText({
+//                     text8({prop: byName('price'), length: 8}),
+//                     // text8({
 //                     //   prop: byName('price'),
 //                     //   length: 4,
 //                     //   backgroundColorByProp: true

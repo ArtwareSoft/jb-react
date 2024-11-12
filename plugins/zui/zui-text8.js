@@ -1,6 +1,6 @@
 dsl('zui')
 
-component('fixedText', {
+component('text8', {
   description: 'fixed length text',
   type: 'view',
   params: [
@@ -10,7 +10,7 @@ component('fixedText', {
     {id: 'fontWidth', as: 'number', defaultValue: 10},
     {id: 'charSet', as: 'string', defaultValue: ` !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_\`abcdefghijklmnopqrstuvwxyz{|}~    `}
   ],
-  impl: view('fixedText', text('%$text()%'), {
+  impl: view('text8', text8('%$text()%'), {
     layout: keepBaseRatio({ base: ({},{},{length,fontWidth}) => [fontWidth*length/2,16/2] }),
     viewProps: prop('charSetImage', ({},{},params) => jb.zui.charSetImage(params), { async: true }),
     atts: [
@@ -96,29 +96,7 @@ component('text8', {
     })
 })
 
-extension('zui','canvas', {
-  createCanvas(...size) {
-    return jbHost.isNode ? require('canvas').createCanvas(...size) : new OffscreenCanvas(...size)
-  },
-  async canvasToDataUrl(canvas) {
-    if (jbHost.isNode) {
-      const buffer = canvas.toBuffer('image/png')
-      const base64 = buffer.toString('base64')
-      return `data:image/png;base64,${base64}`
-    } else {
-        const blob = await canvas.convertToBlob()
-        const dataUrl = await new Promise((resolve, reject) => {
-            const reader = new FileReader()
-            reader.onloadend = () => resolve(reader.result)
-            reader.onerror = reject
-            reader.readAsDataURL(blob)
-        })
-        return dataUrl
-    }
-  }
-})
-
-extension('zui','text', {
+extension('zui','text8', {
     async charSetImage({charSet, fontSize, fontWidth}) {
         const canvas = jb.zui.createCanvas(charSet.length * fontWidth,fontSize)
         const ctx2d = canvas.getContext('2d')
@@ -150,7 +128,7 @@ extension('zui','text', {
     }      
 })
 
-component('text', {
+component('text8', {
   type: 'itemProp',
   params: [
     {id: 'text', as: 'string', dynamic: true},
