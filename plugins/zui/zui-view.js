@@ -53,15 +53,16 @@ extension('zui','view', {
     features.forEach(feature => Object.assign(view,feature))
     return view
   },
-  initGroup(ctx) {
+  initGroup(ctx, title, layoutProps) {
     const { layout, views } = ctx.params
     const _views = views()
     return { 
       createLayoutObj: id => ({
         id,
-        title: 'group',
+        title: title || 'group',
         ctxPath: ctx.path,
         ...layout,
+        ...(layoutProps || {}),
         children: _views.map((v,i) =>v.createLayoutObj(`${id}~${i}`)).sort((x,y) => y.priority-x.priority )
       }),
       createBEObjs: id => _views.flatMap((v,i) =>v.createBEObjs(`${id}~${i}`)),
@@ -110,9 +111,14 @@ component('color', {
       size: 3,
       glType: 'vec3',
       calc(v) {
-          const pivot = (prop || v.itemProp).pivots()[0]
+          const pivots = (prop || v.itemProp).pivots
+          const pivot = pivots && pivots()[0]
           const linearScale = jb.path(pivot,'linearScale') || (() => 0)
-          return ctx.vars.items.map(item => colorScale(linearScale(item)))
+          return ctx.vars.items.map(item => {
+            const res = colorScale(linearScale(item))
+            if (isNaN(res[1])) debugger
+            return res
+          })
       }
   })
 })

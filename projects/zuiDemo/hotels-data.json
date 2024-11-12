@@ -1,6 +1,3 @@
-
-
-component('hotels', { passiveData:
     [
         {
             "name": "Sheraton Tel Aviv",
@@ -1928,4 +1925,3 @@ component('hotels', { passiveData:
             "image": "/itemimages/32/19/321946_v4"
         }
     ]
-})

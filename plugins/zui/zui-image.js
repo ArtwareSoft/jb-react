@@ -47,10 +47,8 @@ component('image', {
     renderGPU: gpuCode({
       shaderCode: colorOfPoint('gl_FragColor = getTexturePixel((imagePos + flipH(rInElem)*imageSize)/atlasSize);'),
       varyings: [
-        varying('float', 'unit', '0.0'),
-        varying('vec2', 'atlasSize', 'vec2(1024.0, 19.0)'),
-        varying('float', 'unit2', 'float(atlasIdToUnit[int(atlasId)])'),
-        varying('vec2', 'atlasSize2', 'vec2(1024.0, float(atlasIdToHeight[int(atlasId)]))')
+        varying('float', 'unit', 'float(atlasIdToUnit[int(atlasId)])'),
+        varying('vec2', 'atlasSize', 'vec2(1024.0, float(atlasIdToHeight[int(atlasId)]))')
       ],
       utils: [
         utils(`vec4 getTexturePixel(vec2 texCoord) {

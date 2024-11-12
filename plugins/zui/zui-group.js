@@ -17,7 +17,7 @@ component('allOrNone', {
     {id: 'layout', type: 'group_layout', defaultValue: vertical()},
     {id: 'viewFeatures', type: 'view_feature[]', dynamic: true}
   ],
-  impl: ctx => Object.assign(jb.zui.initGroup(ctx), {title: 'allOrNone', allOrNone: true })
+  impl: ctx => jb.zui.initGroup(ctx, 'allOrNone', { allOrNone: true })
 })
 
 component('firstToFit', {
@@ -27,7 +27,7 @@ component('firstToFit', {
     {id: 'layout', type: 'group_layout', defaultValue: vertical()},
     {id: 'viewFeatures', type: 'view_feature[]', dynamic: true}
   ],
-  impl: ctx => Object.assign(jb.zui.initGroup(ctx), {title: 'firstToFit', firstToFit: true })
+  impl: ctx => jb.zui.initGroup(ctx, 'firstToFit', { firstToFit: true })
 })
 
 component('vertical', {

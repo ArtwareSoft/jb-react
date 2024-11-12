@@ -13,33 +13,6 @@ component('byName', {
   }
 })
 
-component('text', {
-  type: 'itemProp',
-  params: [
-    {id: 'att', as: 'string', mandatory: true},
-    {id: 'calc', dynamic: true, description: 'optional. When empty, item property with same name is used'},
-    {id: 'features', type: 'prop_feature[]', dynamic: true}
-  ],
-  impl: (ctx, att, calc, features) => {
-    const items = ctx.vars.items || []
-    if (calc.profile) // calculated attribute
-      items.forEach(i=> i[att] = calc(ctx.setData(i)))
-
-    const prop = {
-      att,
-      val: item => item[att],
-      asText: item => item[att],
-      pivots() { // create scale by string sort
-        return []
-          // items.sort((i1,i2) => i1[att].localeCompare(i2[att]) ).forEach((x,i) => x[`scale_${att}`] = i/items.length)
-          // return [{ att, scale: x => x[`scale_${att}`] , preferedAxis: this.preferedAxis }]
-      }
-    }
-    features().forEach(f=>f.enrich(prop))
-    return prop
-  }
-})
-
 component('numeric', {
   type: 'itemProp',
   params: [
@@ -64,10 +37,13 @@ component('numeric', {
           const spaceFactor = Math.floor(DIM / Math.sqrt(items.length))
           items.sort((i1,i2) => i2[att] - i1[att] ).forEach((x,i) => x[`scale_${att}`] = i/items.length)
           const range = [items[0][att] || 0,items.slice(-1)[0][att] || 0]
+          if (range[0] == range[1])
+            jb.logError(`zui empty range for ${att}`,{ctx})
+          const linearScale = range[0] == range[1] ? () => 0 : item=> ((+item[att] || 0)-range[0])/(range[1]-range[0])
           return this._pivots = [
             { att, spaceFactor, 
               scale: x => x[`scale_${att}`], 
-              linearScale: item=> ((+item[att] || 0)-range[0])/(range[1]-range[0]) , 
+              linearScale, 
               preferedAxis: this.preferedAxis 
             }
           ]

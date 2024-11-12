@@ -59,7 +59,7 @@ component('colorOfPoint', {
   })
 })
 
-component('redColor', {
+component('red', {
   type: 'shader_code',
   impl: colorOfPoint({ codeInMain: 'gl_FragColor = vec4(1.0,0.0,0.0, 1.0);' })
 })
@@ -136,7 +136,6 @@ component('vec3', {
   ],
   impl: (ctx,id,val) => ({id, val, glType: 'vec3', glMethod: '3fv'})
 })
-
 
 component('float', {
   type: 'uniform',
@@ -229,27 +228,6 @@ extension('zui','GPU', {
     //gl_PointSize = max(itemViewSize[0],itemViewSize[1]) * 1.0;
     ${main||''}
   }`,
-// Ndc [-1,1] 
-
-  // vertexShaderCode: ({code,main,id} = {}) => `attribute vec2 itemPos${id};
-  //   uniform vec2 zoom;
-  //   uniform vec2 center;
-  //   uniform vec2 canvasSize;
-  //   uniform vec2 itemViewSize;
-  //   uniform vec2 pos;
-  //   uniform vec2 size;
-  //   varying vec2 elemTopLeftCoord;
-  //   ${code||''}
-
-  //   void main() {
-  //     vec2 elemCenter = pos+size/2.0;
-  //     vec2 elemCenterOffset = vec2(elemCenter[0],-1.0* elemCenter[1])/canvasSize;
-  //     vec2 npos = (itemPos${id} +vec2(-0.5,+0.5) - center) / zoom + elemCenterOffset;
-  //     gl_Position = vec4( npos * 2.0, 0.0, 1.0);
-  //     elemTopLeftCoord = (npos + 0.5) * canvasSize - size/2.0;
-  //     gl_PointSize = max(size[0],size[1]) * 1.0;
-  //     ${main||''}
-  //   }`,
     fragementShaderCode: ({declarations,main} = {}) => `precision highp float;
     precision highp float;
     uniform vec2 canvasSize;

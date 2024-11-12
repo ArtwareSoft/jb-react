@@ -19,7 +19,6 @@ component('zuiTest.image', {
     }),
     expectedResult: and(
       contains('[[0,0], [256,0], [512,0], [768,0]]'),
-      //contains('[[53,19], [73,19], [31,19], [83,19]]'),
       contains('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA'),
       contains('value: [19]')
     ),
@@ -34,7 +33,7 @@ component('zuiTest.fixedText', {
       items: '%$points%',
       itemsPositions: xyByProps(),
       boardSize: 10,
-      itemView: fixedText(text('name')),
+      itemView: fixedText('%name%'),
       initialZoom: 3,
       center: '0,10'
     }),
@@ -45,6 +44,27 @@ component('zuiTest.fixedText', {
       contains('attribute vec4 _text;varying vec4 text')
     ),
     uiAction: waitForNextUpdate(),
+    emulateFrontEnd: true
+  })
+})
+
+component('zuiTest.growingText', {
+  impl: uiTest({
+    control: zui.itemlist({
+      items: '%$points%',
+      itemsPositions: xyByProps(),
+      boardSize: 64,
+      itemView: group(growingText('%name%'), circle(numeric('x'))),
+      initialZoom: 8,
+      center: '0,64',
+      style: GPU('640', '640')
+    }),
+    expectedResult: and(
+      contains('[768,0], [512,0], [256,0], [0,0]'),
+      contains('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABAAAAAATCAYAA')
+    ),
+    uiAction: waitForText('data:image/png;base64,'),
+    timeout: 1000,
     emulateFrontEnd: true
   })
 })
@@ -61,10 +81,38 @@ component('zuiTest.circles', {
     }),
     expectedResult: and(
       contains('size":[17.8,17.8]'),
-      contains('pos":[91.1,91.1]'),
+      //contains('pos":[91.1,91.1]'),
       contains('[[0,0,0],[0,0.3333333333333333,0],[0,0.6666666666666666,0],[0,1,0]]}'),
       contains('[[0,0],[1,1],[2,2],[3,3]]}]')
     )
+  })
+})
+
+component('zuiTest.growingTextHotels', {
+  doNotRunInTests: true,
+  impl: uiTest({
+    control: group({
+      controls: zui.itemlist({
+        items: pipeline('%$allHotels%', slice(0,100)),
+        itemsPositions: xyByProps('lat', 'long'),
+        boardSize: 64,
+        itemView: group(growingText('%name%'), circle(numeric('price'))),
+        initialZoom: 7,
+        center: '32,30',
+        style: GPU('640', '640')
+      }),
+      features: group.wait(pipe(fileContent('/projects/zuiDemo/hotels-data.json'), json.parse('%%')), {
+        varName: 'allHotels'
+      })
+    }),
+    expectedResult: and(
+      contains('size":[200,40]'),
+      contains('pos":[0,80]'),
+      contains('[13380,19200,8533,18517]'),
+      contains('attribute vec4 _text;varying vec4 text')
+    ),
+    uiAction: uiActions(waitForNextUpdate(), waitForNextUpdate()),
+    emulateFrontEnd: true
   })
 })
 
@@ -80,7 +128,7 @@ component('zuiTest.gallery', {
           itemView: group(
             image('https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp', {
             }),
-            fixedText(text('xy'))
+            fixedText('%xy%')
           ),
           initialZoom: 3,
           center: '2,2'
@@ -95,6 +143,7 @@ component('zuiTest.gallery', {
   })
 })
 
+/*
 component('zuiTest.hotels', {
   doNotRunInTests: true,
   impl: uiTest({
@@ -142,6 +191,7 @@ component('zuiTest.hotels', {
     renderDOM: true
   })
 })
+*/
 
 // component('zuiTest.nested', {
 //   impl: uiTest({

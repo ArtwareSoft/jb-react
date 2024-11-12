@@ -144,16 +144,7 @@ component('zui.convertBEDataForGPU', {
     const buffer = new Float32Array(floatsInVertex * noOfItems)
     for (let i = 0; i < noOfItems; i++) for (let att = 0; att < atts.length; att++) for (let j = 0; j < atts[att].size; j++)
         buffer[i * floatsInVertex + resAtts[att].offset + j] = atts[att].size == 1 ? 1.0*atts[att].ar[i] : 1.0*atts[att].ar[i][j]
-    //const uniforms = (be_data.uniforms||[]).map(uniform=>({...uniform, value: fixGpuValue(uniform.glMethod,uniform.value)}))
     return { ...be_data, atts: resAtts, buffer, floatsInVertex }
-
-    // function fixGpuValue(glMethod, value) {
-    //   if (glMethod.endsWith('iv'))
-    //     return new Int32Array(value)
-    //   else if (glMethod.endsWith('fv'))
-    //     return new Float32Array(value)
-    //   return value
-    // }
   }
 })
 
@@ -209,7 +200,7 @@ extension('zui','itemlist-FE', {
       },
       renderGPUView(ctx) {
         const view = ctx.data
-        const { noOfItems} = ctx.vars
+        const { noOfItems, DIM} = ctx.vars
         const { beDataGpu, emptyTexture } = cmp
         const viewBeData = beDataGpu[view.id]
         const { itemViewSize, elemsLayout, zoom, center } = cmp.state
@@ -225,6 +216,7 @@ extension('zui','itemlist-FE', {
         const shaderProgram = jb.zui.buildShaderProgram(gl, glCode)
         const fixedCenter = [center[0], DIM-center[1]+1]
         gl.useProgram(shaderProgram)
+        gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'gridPadding'), [2,0])
         gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'zoom'), [zoom, zoom])
         gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'center'), fixedCenter)
         gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'canvasSize'), canvasSize)

@@ -9,7 +9,8 @@ extension('probe', 'main', {
     initExtension() { return { 
         probeCounter: 0,
         singleVisitPaths: {},
-        singleVisitCounters: {}
+        singleVisitCounters: {},
+        http_get_cache: {}
     }},
     async calcCircuit(ctx, probePath) {
         jb.log('probe calc circuit',{ctx, probePath})
