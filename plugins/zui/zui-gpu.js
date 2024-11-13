@@ -81,6 +81,14 @@ component('varying', {
   ]
 })
 
+component('uniforms', {
+  type: 'uniform',
+  params: [
+    {id: 'uniforms', type: 'uniform[]', composite: true},
+  ],
+  impl: (ctx,uniforms) => uniforms
+})
+
 component('texture', {
   type: 'uniform',
   params: [

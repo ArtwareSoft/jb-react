@@ -133,6 +133,16 @@ component('prop', {
   ]
 })
 
+component('asyncProp', {
+  type: 'view_prop',
+  params: [
+    {id: 'id', as: 'string'},
+    {id: 'calcProp', dynamic: true},
+    {id: 'async', as: 'boolean', type: 'boolean<>', defaultValue: true},
+    {id: 'passToFE', as: 'boolean', type: 'boolean<>'}
+  ]
+})
+
 component('FEProp', {
   type: 'view_prop',
   params: [

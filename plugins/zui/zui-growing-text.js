@@ -5,28 +5,28 @@ component('growingText', {
   params: [
     {id: 'text', dynamic: true, mandatory: true},
     {id: 'summary', type: 'summary', defaultValue: slice()},
-    {id: 'fontSize', as: 'number', defaultValue: 16},
-    {id: 'fontWidth', as: 'number', defaultValue: 10}
+    {id: 'font', as: 'string', defaultValue: '500 16px Arial'},
+    {id: 'align', type: 'align_image', defaultValue: keepSize()}
   ],
   impl: firstToFit(
-    image(imageOfText(zui.summary(64,'%$text()%','%$summary%')), { preferedSize: [640,16], minSize: [321,16] }),
-    image(imageOfText(zui.summary(32,'%$text()%','%$summary%')), { preferedSize: [320,16], minSize: [161,16] }),
-    image(imageOfText(zui.summary(16,'%$text()%','%$summary%')), { preferedSize: [160,16], minSize: [81,16] }),
-    image(imageOfText(zui.summary(8,'%$text()%','%$summary%')), { preferedSize: [80,16], minSize: [41,16] }),
-    image(imageOfText(zui.summary(4,'%$text()%','%$summary%')), { preferedSize: [40,16], minSize: [21,16] }),
-    image(imageOfText(zui.summary(2,'%$text()%','%$summary%')), { preferedSize: [20,16], minSize: [11,16] }),
-    image(imageOfText(zui.summary(1,'%$text()%','%$summary%')), { preferedSize: [10,16], minSize: [10,16] }),
+    text('%$text()%', 32, { summary: '%$summary%', font: '%$font%', align: '%$align%' }),
+    text('%$text()%', 16, { summary: '%$summary%', font: '%$font%', align: '%$align%' }),
+    text('%$text()%', 8, { summary: '%$summary%', font: '%$font%', align: '%$align%' }),
+    text('%$text()%', 4, { summary: '%$summary%', font: '%$font%', align: '%$align%' }),
+    text('%$text()%', 2, { summary: '%$summary%', font: '%$font%', align: '%$align%' }),
+    text('%$text()%', 1, { summary: '%$summary%', font: '%$font%', align: '%$align%' })
   )
 })
 
 component('slice', {
   type: 'summary',
   impl: ctx => ({
-    summary: (text, size) => {
-      const padding = '                                                      '
+    summary: (text, size,padding) => {
       const sliced = text.slice(0,size)
+      if (!padding) return sliced
+      const spaces = '                                                      '
       const paddingSize = size - sliced.length
-      return (padding.slice(0,paddingSize/2) + sliced + padding.slice(0,1+ paddingSize/2)).slice(0,size)
+      return (spaces.slice(0,paddingSize/2) + sliced + spaces.slice(0,1+ paddingSize/2)).slice(0,size)
     }
   })
 })
@@ -36,6 +36,7 @@ component('zui.summary', {
     {id: 'size', as: 'number', mandatory: true},
     {id: 'text', as: 'string', dynamic: true, mandatory: true},
     {id: 'summary', type: 'summary'},
+    {id: 'padding', as: 'boolean', defaultValue: true},
   ],
-  impl: (ctx,size, text,summary) => summary.summary(text(ctx), size)
+  impl: (ctx,size, text,summary,padding) => summary.summary(text(ctx), size, padding)
 })

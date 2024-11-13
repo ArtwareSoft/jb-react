@@ -1,5 +1,4 @@
 dsl('zui')
-using('net')
 
 component('image', {
   type: 'view',
@@ -21,12 +20,7 @@ component('image', {
           '%items%',
           obj(
             prop('id', '%item/xyPos%'),
-            prop('val', obj(
-              prop('atlas', '%$atlas%'),
-              prop('size', '%size%'),
-              prop('pos', '%pos%'),
-              prop('ratio', ({data}) => data.size[0] ? (data.size[1]/ data.size[0]) : 0)
-            ))
+            prop('val', obj(prop('atlas', '%$atlas%'), prop('size', '%size%'), prop('pos', '%pos%')))
           )
         )
       ))),
@@ -41,8 +35,7 @@ component('image', {
     atts: [
       float('atlasId', '%$view.props.xyToImage/{%$item.xyPos%}/atlas%'),
       vec2('imagePos', '%$view.props.xyToImage/{%$item.xyPos%}/pos%'),
-      vec2('imageSize', '%$view.props.xyToImage/{%$item.xyPos%}/size%'),
-      float('imageRatio', '%$view.props.xyToImage/{%$item.xyPos%}/ratio%')
+      vec2('imageSize', '%$view.props.xyToImage/{%$item.xyPos%}/size%')
     ],
     renderGPU: gpuCode({
       shaderCode: colorOfPoint('gl_FragColor = getTexturePixel((imagePos + flipH(rInElem)*imageSize)/atlasSize);'),
@@ -261,7 +254,7 @@ component('imageOfText', {
   type: 'image',
   params: [
     {id: 'text', dynamic: true},
-    {id: 'font', as: 'string', defaultValue: '500 16px Arial' },
+    {id: 'font', as: 'string', defaultValue: '500 16px Arial'}
   ],
   impl: (ctx,textF,font) => ({
     canvas: _ctx => {

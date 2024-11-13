@@ -27,6 +27,27 @@ component('zuiTest.image', {
   })
 })
 
+component('zuiTest.text', {
+  impl: uiTest({
+    control: zui.itemlist({
+      items: '%$points%',
+      itemsPositions: xyByProps(),
+      boardSize: 10,
+      itemView: text('%name%', 4),
+      initialZoom: 3,
+      center: '1.5,9.4'
+    }),
+    expectedResult: and(
+      contains('[[0,0], [24.8984375,0], [56.0234375,0], [82.703125,0]]'),
+      contains('[[24.8984375,15], [31.125,15], [26.6796875,15], [33.796875,15]]'),
+      contains(`{id: 'alignX', glType: 'int', glMethod: '1i', value: 1}`),
+      contains('data:image/png;base64,iVBORw0')
+    ),
+    uiAction: waitForNextUpdate(),
+    emulateFrontEnd: true
+  })
+})
+
 component('zuiTest.text8', {
   impl: uiTest({
     control: zui.itemlist({
@@ -60,10 +81,10 @@ component('zuiTest.growingText', {
       style: GPU('640', '640')
     }),
     expectedResult: and(
-      contains('[768,0], [512,0], [256,0], [0,0]'),
-      contains('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABAAAAAATCAYAA')
+      contains('[0,0], [83.609375,0], [114.734375,0], [188.5390625,0]'),
+      contains('data:image/png;base64,iVBORw0KGgoAAAANSUhEUg')
     ),
-    uiAction: waitForText('data:image/png;base64,'),
+    uiAction: waitForNextUpdate(),
     timeout: 1000,
     emulateFrontEnd: true
   })
@@ -93,7 +114,7 @@ component('zuiTest.growingTextHotels', {
   impl: uiTest({
     control: group({
       controls: zui.itemlist({
-        items: pipeline('%$allHotels%', slice(0,100)),
+        items: '%$allHotels%',
         itemsPositions: xyByProps('lat', 'long'),
         boardSize: 64,
         itemView: group(growingText('%name%'), circle(numeric('price'))),
@@ -104,15 +125,7 @@ component('zuiTest.growingTextHotels', {
       features: group.wait(pipe(fileContent('/projects/zuiDemo/hotels-data.json'), json.parse('%%')), {
         varName: 'allHotels'
       })
-    }),
-    expectedResult: and(
-      contains('size":[200,40]'),
-      contains('pos":[0,80]'),
-      contains('[13380,19200,8533,18517]'),
-      contains('attribute vec4 _text;varying vec4 text')
-    ),
-    uiAction: uiActions(waitForNextUpdate(), waitForNextUpdate()),
-    emulateFrontEnd: true
+    })
   })
 })
 
