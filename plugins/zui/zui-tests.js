@@ -13,14 +13,14 @@ component('zuiTest.image', {
       items: '%$points%',
       itemsPositions: xyByProps(),
       boardSize: 10,
-      itemView: image(imageOfText('%name%')),
+      itemView: image(imageOfText('%name%'), { align: keepSize() }),
       initialZoom: 3,
       center: '0,10'
     }),
     expectedResult: and(
       contains('[[0,0], [256,0], [512,0], [768,0]]'),
-      contains('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA'),
-      contains('value: [19]')
+      contains('data:image/png;base64,iVBORw0KGgoAA'),
+      contains('[73,12], [31,12], [83,12]')
     ),
     uiAction: waitForNextUpdate(),
     emulateFrontEnd: true
@@ -125,7 +125,38 @@ component('zuiTest.growingTextHotels', {
       features: group.wait(pipe(fileContent('/projects/zuiDemo/hotels-data.json'), json.parse('%%')), {
         varName: 'allHotels'
       })
-    })
+    }),
+    uiAction: waitForNextUpdate(),
+    emulateFrontEnd: true
+  })
+})
+
+component('zuiTest.diagnostics', {
+  doNotRunInTests: true,
+  impl: uiTest({
+    control: group({
+      controls: zui.itemlist({
+        items: '%$diagnostics%',
+        itemsPositions: xyByProps('urgency', 'likelihood'),
+        boardSize: 10,
+        itemView: group(growingText('%title%'), circle(enumarator('department')), text('%description%', 20)),
+        initialZoom: 7,
+        center: '32,30',
+        style: GPU('640', '640')
+      }),
+      features: group.wait({
+        for: pipe(
+          Var('diag', fileContent('/projects/zuiDemo/diagnostics.json'), { async: true }),
+          Var('depAr', fileContent('/projects/zuiDemo/departments.json'), { async: true }),
+          Var('dep', dynamicObject(json.parse('%$depAr%'), '%title%', { value: '%%' })),
+          json.parse('%$diag%'),
+          extendWithObj(property('%title%', '%$dep%'), '%%')
+        ),
+        varName: 'diagnostics'
+      })
+    }),
+    uiAction: waitForNextUpdate(),
+    emulateFrontEnd: true
   })
 })
 

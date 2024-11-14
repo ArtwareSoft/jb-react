@@ -177,10 +177,11 @@ extension('zui','itemlist-FE', {
         if (elemsLayoutCache[zoom]) {
           Object.assign(cmp.state, [zoom])
         } else {
-          const layout = layoutCalculator.layoutView(cmp.state.itemViewSize)
+          const itemViewSize = cmp.state.itemViewSize
+          const layout = layoutCalculator.layoutView(itemViewSize)
           elemsLayoutCache[zoom] = JSON.parse(JSON.stringify(layout))
           Object.assign(cmp.state, elemsLayoutCache[zoom])
-          jb.log('zui elemsLayout',{...layout, ctx:cmp.ctx})
+          jb.log('zui elemsLayout',{...layout, itemViewSize, ctx:cmp.ctx})
         }
         return cmp.state.shownViews
       },

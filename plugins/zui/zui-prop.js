@@ -54,6 +54,32 @@ component('numeric', {
   }
 })
 
+component('enumarator', {
+  type: 'itemProp',
+  params: [
+    {id: 'att', as: 'string'},
+    {id: 'calc', dynamic: true, description: 'optional. When empty, item property with same name is used'},
+  ],
+  impl: (ctx, att, calc) => {
+    const DIM = ctx.vars.DIM
+    const items = ctx.vars.items || []
+    if (calc.profile) // calculated attribute
+      items.forEach(i=> i[att] = calc(ctx.setData(i)))
+
+    const prop = {
+      att,
+      val: item => item[att],
+      pivots() { // create scale by order
+          if (this._pivots) return this._pivots
+          const domain = jb.utils.unique(items.map(item=>item[att]))
+          const linearScale = item => domain.indexOf(item[att]) / (domain.length-1)
+          return this._pivots = [ { att, linearScale } ]
+      }
+    }
+    return prop
+  }
+})
+
 component('geo', {
   type: 'itemProp',
   params: [

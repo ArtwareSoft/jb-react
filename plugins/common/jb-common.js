@@ -383,11 +383,11 @@ component('extendWithObj', {
   description: 'assign to extend with another obj',
   params: [
     {id: 'obj', mandatory: true },
-    {id: 'withObj', byName: true, defaultValue: '%%'}
+    {id: 'withObj', defaultValue: '%%'}
   ],
   impl: (ctx,obj,withObj) => Object.assign({}, withObj, obj)
 })
-component('merge', { autoGen: true, ...jb.utils.getUnresolvedProfile('extendWithObj', 'data')})
+//component('merge', { autoGen: true, ...jb.utils.getUnresolvedProfile('extendWithObj', 'data')})
 
 component('extendWithIndex', {
   type: 'data',
@@ -560,7 +560,7 @@ component('json.stringify', {
 
 component('json.parse', {
   params: [
-    {id: 'text', as: 'string'}
+    {id: 'text', as: 'string', defaultValue: '%%'}
   ],
   impl: (ctx,text) =>	{
 		try {

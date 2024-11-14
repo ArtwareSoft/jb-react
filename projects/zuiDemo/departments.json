@@ -1,0 +1,142 @@
+[
+    {
+        "title": "Appendicitis",
+        "department": "General Surgery",
+        "sub_department": "Emergency"
+    },
+    {
+        "title": "Diverticulitis",
+        "department": "Gastroenterology",
+        "sub_department": ""
+    },
+    {
+        "title": "Kidney Stones",
+        "department": "Urology",
+        "sub_department": "Emergency"
+    },
+    {
+        "title": "Gastritis",
+        "department": "Gastroenterology",
+        "sub_department": ""
+    },
+    {
+        "title": "Pancreatitis",
+        "department": "Gastroenterology",
+        "sub_department": "Emergency"
+    },
+    {
+        "title": "Pneumonia",
+        "department": "Pulmonology",
+        "sub_department": "Respiratory"
+    },
+    {
+        "title": "Peptic Ulcer",
+        "department": "Gastroenterology",
+        "sub_department": ""
+    },
+    {
+        "title": "Irritable Bowel Syndrome",
+        "department": "Gastroenterology",
+        "sub_department": ""
+    },
+    {
+        "title": "Pulmonary Embolism",
+        "department": "Pulmonology",
+        "sub_department": "Emergency"
+    },
+    {
+        "title": "Gallstones",
+        "department": "Gastroenterology",
+        "sub_department": "Hepatobiliary"
+    },
+    {
+        "title": "GERD",
+        "department": "Gastroenterology",
+        "sub_department": ""
+    },
+    {
+        "title": "Abdominal Aortic Aneurysm",
+        "department": "Vascular Surgery",
+        "sub_department": "Emergency"
+    },
+    {
+        "title": "Pancreatic Cancer",
+        "department": "Oncology",
+        "sub_department": "Gastrointestinal"
+    },
+    {
+        "title": "Hernia",
+        "department": "General Surgery",
+        "sub_department": ""
+    },
+    {
+        "title": "Ileus",
+        "department": "Gastroenterology",
+        "sub_department": "Emergency"
+    },
+    {
+        "title": "Crohn's Disease",
+        "department": "Gastroenterology",
+        "sub_department": ""
+    },
+    {
+        "title": "Mesenteric Ischemia",
+        "department": "Vascular Surgery",
+        "sub_department": "Emergency"
+    },
+    {
+        "title": "Acute Bronchitis",
+        "department": "Pulmonology",
+        "sub_department": ""
+    },
+    {
+        "title": "Liver Disease",
+        "department": "Hepatology",
+        "sub_department": ""
+    },
+    {
+        "title": "Intestinal Obstruction",
+        "department": "General Surgery",
+        "sub_department": "Emergency"
+    },
+    {
+        "title": "Pleuritis",
+        "department": "Pulmonology",
+        "sub_department": ""
+    },
+    {
+        "title": "Hiatal Hernia",
+        "department": "Gastroenterology",
+        "sub_department": ""
+    },
+    {
+        "title": "Gastroenteritis",
+        "department": "Gastroenterology",
+        "sub_department": "Infectious Disease"
+    },
+    {
+        "title": "Anxiety Attack",
+        "department": "Psychiatry",
+        "sub_department": "Emergency"
+    },
+    {
+        "title": "Pericarditis",
+        "department": "Cardiology",
+        "sub_department": "Emergency"
+    },
+    {
+        "title": "Acid Reflux",
+        "department": "Gastroenterology",
+        "sub_department": ""
+    },
+    {
+        "title": "Chronic Obstructive Pulmonary Disease",
+        "department": "Pulmonology",
+        "sub_department": "Respiratory"
+    },
+    {
+        "title": "Lung Cancer",
+        "department": "Oncology",
+        "sub_department": "Pulmonology"
+    }
+]

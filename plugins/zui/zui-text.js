@@ -21,22 +21,8 @@ component('text', {
       vec2('imageSize', '%$view.props.atlas.xyToPos/{%$item.xyPos%}/size%')
     ],
     renderGPU: gpuCode({
-      shaderCode: colorOfPoint(`
-        vec2 effSize = effectiveSize();
-        vec2 inImage = inImagePx(effSize, inElem);
-        
-        if (inImage[0] < 0.0 || inImage[0] >= effSize[0] || inImage[1] < 0.0 || inImage[1] >= effSize[1]) {
-          gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
-          return;
-        }
-        
-        vec2 rInImage = inImage / effSize;
-        gl_FragColor = texture2D(atlas, (imagePos + flipH(rInImage) * imageSize) / atlasSize);
-      `),
-      utils: [
-        utils('vec2 flipH(vec2 pos) { return vec2(pos[0],1.0-pos[1]); }'),
-        imageUtils('%$align%')
-      ],
+      shaderCode: imageColorOfPoint(),
+      utils: imageUtils('%$align%', 'vec4 getTexturePixel(vec2 texCoord) { return texture2D(atlas, texCoord);}'),
       uniforms: [
         imageUniforms('%$align%'),
         vec2('atlasSize', '%$view.props.atlas.size%'),
@@ -51,7 +37,6 @@ component('calcAtlas', {
     const {items, view} = ctx.vars
     const { text, summary, lineLength, font } = view.itemProp
     const {fontDimention} = ctx.vars.view.props
-
 
     const tmpCanvas = jb.zui.createCanvas(1,1)
     const tmpCtx = tmpCanvas.getContext('2d');tmpCtx.font = font; tmpCtx.textBaseline = 'top'; tmpCtx.textAlign = 'left'; tmpCtx.fillStyle = 'black'
@@ -103,6 +88,6 @@ component('text', {
   ],
   impl: (ctx,lineLength,noOfLines,fontDimention,lineSpace) => ({
       layoutRounds: 1,
-      sizeNeeds: ({round, available }) => [fontDimention[0]*lineLength, fontDimention[1]*noOfLines + lineSpace*(noOfLines-1) ]
+      sizeNeeds: ({round, available }) => [fontDimention.avgWidth*lineLength, fontDimention[1]*noOfLines + lineSpace*(noOfLines-1) ]
   })
 })

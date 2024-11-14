@@ -1,6 +1,11 @@
 dsl('zui')
 
 extension('zui','canvas', {
+  measureCanvasCtx(font) {
+    jb.zui._measureCanvasCtx = jb.zui._measureCanvasCtx || jb.zui.createCanvas(1, 1).getContext("2d")
+    jb.zui._measureCanvasCtx.font = font
+    return jb.zui._measureCanvasCtx
+  },
   createCanvas(...size) {
     return jbHost.isNode ? require('canvas').createCanvas(...size) : new OffscreenCanvas(...size)
   },
@@ -32,15 +37,14 @@ component('zui.fontDimention', {
     {id: 'font', as: 'string', defaultValue: '500 16px Arial'},
   ],
   impl: (ctx,font) => {
-      const canvas = jb.zui.createCanvas(1, 1)
-      const cnvCtx = canvas.getContext("2d")
-      cnvCtx.font = font
-      const text = "M"
-      const metrics = cnvCtx.measureText(text)
-      const width = metrics.width    
-      const height = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent
+      const text = 'Hello World'
+      const avgMetrics = jb.zui.measureCanvasCtx(font).measureText(text)
+      const maxMetrics = jb.zui.measureCanvasCtx(font).measureText('M')
+      const height = avgMetrics.actualBoundingBoxAscent + avgMetrics.actualBoundingBoxDescent
     
-      return [width, height+3].map(x=>Math.ceil(x))
+      const ret = [maxMetrics.width, height+3].map(x=>Math.ceil(x))
+      ret.avgWidth = avgMetrics.width/text.length
+      return ret
   }
 })
 
@@ -91,10 +95,13 @@ component('imageUtils', {
     using vec2 size, vec2 imageSize, vec2 inElemPx, and the int uniforms alignX and alignY`,
   type: 'gpu_utils',
   params: [
-    { id: 'align', type: 'align_image' }
+    { id: 'align', type: 'align_image' },
+    { id: 'getTexturePixelFunc', as: 'string' },
   ],
-  impl: utils(({}, {}, { align }) =>
-    align.fill ? `
+  impl: utils(({}, {}, { align, getTexturePixelFunc }) =>
+    ['vec2 flipH(vec2 pos) { return vec2(pos[0],1.0-pos[1]); }'
+    ,getTexturePixelFunc
+    ,(align.fill ? `
       vec2 effectiveSize() { return size; }
       vec2 inImagePx(vec2 effSize, vec2 inElem) { return inElem; }
     `
@@ -158,6 +165,22 @@ component('imageUtils', {
         // Apply the alignment offset directly
         return inElem - vec2(offsetX, offsetY);
       }
-    ` : ''
+    ` : '')].join('\n')
   )
-});
+})
+
+component('imageColorOfPoint', {
+  type: 'shader_code',
+  impl: colorOfPoint(`
+  vec2 effSize = effectiveSize();
+  vec2 inImage = inImagePx(effSize, inElem);
+  
+  if (inImage[0] < 0.0 || inImage[0] >= effSize[0] || inImage[1] < 0.0 || inImage[1] >= effSize[1]) {
+    gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+    return;
+  }
+  
+  vec2 rInImage = inImage / effSize;
+  gl_FragColor = getTexturePixel((imagePos + flipH(rInImage) * imageSize) / atlasSize);
+`)
+})

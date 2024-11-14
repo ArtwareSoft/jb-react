@@ -58,6 +58,14 @@ component('test.innerLabelTemplate', {
   impl: group(call('ctrl'))
 })
 
+component('test.innerLabelTemplate2', {
+  type: 'control',
+  params: [
+    {id: 'ctrl', type: 'control', dynamic: true}
+  ],
+  impl: group('%$ctrl()%')
+})
+
 component('test.innerLabelTemplateStaticParam', {
   type: 'control',
   params: [
@@ -82,6 +90,12 @@ component('probeTest.pipelineMultiple', {
 
 component('probeTest.innerInTemplate', {
   impl: probeTest(group(test.innerLabelTemplate(text('hello'))), 'controls~ctrl~text', {
+    expectedVisits: 1
+  })
+})
+
+component('probeTest.innerInTemplate2', {
+  impl: probeTest(group(test.innerLabelTemplate2(text('hello'))), 'controls~ctrl~text', {
     expectedVisits: 1
   })
 })

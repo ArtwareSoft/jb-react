@@ -5,7 +5,8 @@ component('image', {
   params: [
     {id: 'image', type: 'image'},
     {id: 'preferedSize', as: 'array', defaultValue: [100,100], byName: true},
-    {id: 'minSize', as: 'array', defaultValue: [32,32]}
+    {id: 'minSize', as: 'array', defaultValue: [32,32]},
+    {id: 'align', type: 'align_image', defaultValue: keepProportions()}
   ],
   impl: view('image', image('%$image%'), {
     layout: image({ prefered: '%$preferedSize%', min: '%$minSize%' }),
@@ -27,9 +28,12 @@ component('image', {
       prop('atlasIdToHeight', '%$view.props.atlasGroups.totalHeight%'),
       prop('glCodeForTextPixelFunc', pipeline(
         '%$view.props.atlasGroups%',
-        filter('%id% !=0'),
-        'else if (unit == %id%.0) {\n        return texture2D(atlas%id%, texCoord);\n      }',
-        join('\n')
+        pipeline(
+          Var('prefix', If('%id% !=0', 'else if', 'if')),
+          '%$prefix% (unit == %id%.0) {\n        return texture2D(atlas%id%, texCoord);\n      }'
+        ),
+        join('\n'),
+        'vec4 getTexturePixel(vec2 texCoord) { %% ;}'
       ))
     ],
     atts: [
@@ -38,22 +42,14 @@ component('image', {
       vec2('imageSize', '%$view.props.xyToImage/{%$item.xyPos%}/size%')
     ],
     renderGPU: gpuCode({
-      shaderCode: colorOfPoint('gl_FragColor = getTexturePixel((imagePos + flipH(rInElem)*imageSize)/atlasSize);'),
+      shaderCode: imageColorOfPoint(),
       varyings: [
         varying('float', 'unit', 'float(atlasIdToUnit[int(atlasId)])'),
         varying('vec2', 'atlasSize', 'vec2(1024.0, float(atlasIdToHeight[int(atlasId)]))')
       ],
-      utils: [
-        utils(`vec4 getTexturePixel(vec2 texCoord) {
-        if (unit == 0.0) {
-          return texture2D(atlas0, texCoord);
-        } %$view.props.glCodeForTextPixelFunc%
-      }
-      vec2 flipH(vec2 pos) {
-        return vec2(pos[0],1.0-pos[1]);
-      }`)
-      ],
+      utils: imageUtils('%$align%', '%$view.props.glCodeForTextPixelFunc%'),
       uniforms: [
+        imageUniforms('%$align%'),
         intVec('atlasIdToHeight', 20, '%$view/props/atlasIdToHeight%')
       ],
       zoomDependentUniforms: [
@@ -259,15 +255,9 @@ component('imageOfText', {
   impl: (ctx,textF,font) => ({
     canvas: _ctx => {
       const text = textF(_ctx)
-      const tempCanvas = jb.zui.createCanvas(1, 1)
-      const tempCtx = tempCanvas.getContext('2d')
-      tempCtx.font = font
-      const metrics = tempCtx.measureText(text)
-      const textWidth = metrics.width
-      const fontSizeMatch = font.match(/(\d+)px/)
-      const fontSize = fontSizeMatch ? parseInt(fontSizeMatch[1], 10) : 16
+      const metrics = jb.zui.measureCanvasCtx(font).measureText(text)
 
-      const canvas = jb.zui.createCanvas(textWidth, fontSize * 1.2) // 1.2 is a line-height factor to add padding
+      const canvas = jb.zui.createCanvas(metrics.width, metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent)
       const ctx2d = canvas.getContext('2d')
       ctx2d.font = font
       ctx2d.textBaseline = 'top'
