@@ -24,12 +24,24 @@ component('smoothGrowth', {
   }
 })
 
+component('flowDown', {
+  type: 'layout_feature',
+  description: 'takes available up to maxWidth',
+  params: [
+    {id: 'min', as: 'array', byName: true},
+    {id: 'maxWidth', as: 'number'}
+  ],
+  impl: (ctx,min,maxWidth) => ({
+      sizeNeeds: ({round, available }) => round ? [available[0], Math.min(available[1],maxWidth)] : min
+  })
+})
+
 component('keepBaseRatio', {
   type: 'layout_feature',
   description: 'use all available yet keeps the base x/y ratio',
   params: [
     {id: 'base', as: 'array', defaultValue: [5,5], byName: true},
-    {id: 'rounds', as: 'number', defaultValue: 2, description: 'negotiate with brothers, the more round it will allow others with lowest priority to get real estate'},
+    {id: 'rounds', as: 'number', defaultValue: 2, description: 'negotiate with brothers, the more round it will allow others with lowest priority to get real estate'}
   ],
   impl: (ctx,base,rounds) => ({
       layoutRounds: rounds,

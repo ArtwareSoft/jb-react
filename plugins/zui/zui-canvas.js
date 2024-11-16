@@ -9,6 +9,29 @@ extension('zui','canvas', {
   createCanvas(...size) {
     return jbHost.isNode ? require('canvas').createCanvas(...size) : new OffscreenCanvas(...size)
   },
+  canvasToPackedBW(canvasCtx, width, height) {
+    const imageData = canvasCtx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+
+    // Step 3: Pack into 1-bit-per-pixel format
+    const packedData = new Uint8Array(Math.ceil((width * height) / 8));
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const i = (y * width + x) * 4; // Position in RGBA array
+            const gray = (data[i] + data[i + 1] + data[i + 2]) / 3; // Average to grayscale
+
+            const bitPosition = y * width + x;
+            const byteIndex = Math.floor(bitPosition / 8);
+            const bitIndex = 7 - (bitPosition % 8); // Pack bits from left to right
+
+            // For black text, invert the logic: black pixels (text) set the bit to 1
+            if (gray < 128) { // Black pixel (text)
+                packedData[byteIndex] |= (1 << bitIndex);
+            }
+        }
+    }
+    return packedData
+  },
   async canvasToDataUrl(canvas) {
     if (jbHost.isNode) {
       const buffer = canvas.toBuffer('image/png')
@@ -24,6 +47,12 @@ extension('zui','canvas', {
         })
         return dataUrl
     }
+  },
+  createGl(canvasSize,emulateFrontEndInTest,el) {
+    const glParams = { alpha: true, premultipliedAlpha: true }
+    return jbHost.isNode ? require('gl')(...canvasSize, glParams)
+      : emulateFrontEndInTest ? new OffscreenCanvas(...canvasSize).getContext('webgl', glParams)
+      : el.getContext('webgl', glParams)
   }
 })
 

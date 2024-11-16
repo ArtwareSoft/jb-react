@@ -626,7 +626,7 @@ component('notNull', {
 component('isEmpty', {
   type: 'boolean',
   params: [
-    {id: 'item', as: 'single', defaultValue: '%%'}
+    {id: 'item', as: 'single', defaultValue: '%%', composite: true}
   ],
   impl: ({}, item) => !item || (Array.isArray(item) && item.length == 0)
 })
@@ -634,7 +634,7 @@ component('isEmpty', {
 component('notEmpty', {
   type: 'boolean',
   params: [
-    {id: 'item', as: 'single', defaultValue: '%%'}
+    {id: 'item', as: 'single', defaultValue: '%%', composite: true}
   ],
   impl: ({}, item) => item && !(Array.isArray(item) && item.length == 0)
 })

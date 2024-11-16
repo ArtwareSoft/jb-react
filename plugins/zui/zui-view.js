@@ -9,18 +9,19 @@ component('view', {
     {id: 'viewProps', type: 'view_prop[]'},
     {id: 'atts', type: 'attribute[]', dynamic: true},
     {id: 'renderGPU', type: 'render_gpu', dynamic: true},
+    {id: 'incrementalItemsData', type: 'inc_items_data'},
     {id: 'renderD3', type: 'render_d3', dynamic: true},
   ],
-  impl: (ctx,title,itemProp,layout,propsF,attsF, renderGpuF,renderD3F) => ({ 
+  impl: (ctx,title,itemProp,layout,propsF,attsF, renderGpuF,incrementalItemsData, renderD3F) => ({ 
     createLayoutObj: id => jb.zui.assignFeatures({
       id, title, ctxPath: ctx.path, priority: itemProp.priority || 0,
     }, layout(ctx)),
     createBEObjs: id => [{ 
-      id, title, itemProp, ctxPath: ctx.path, attsF, props: {}, propsF, renderGpuF,
+      id, title, itemProp, ctxPath: ctx.path, attsF, props: {}, propsF, incrementalItemsData, renderGpuF,
       async: propsF.reduce((acc,profF) => acc || profF.async, false),
       calc() { return this.async ? jb.zui.asyncBEData(ctx, this) : jb.zui.calcBEData(ctx, this)}
     }],
-    createFEObjs: id => [jb.zui.newFEView(ctx, { id, title, ctxPath: ctx.path, textures: {}, renderGpuF, renderD3F})],
+    createFEObjs: id => [jb.zui.newFEView(ctx, { id, title, ctxPath: ctx.path, textures: {}, renderGpuF, incrementalItemsData, renderD3F})],
   })
 })
 
@@ -32,14 +33,20 @@ extension('zui','view', {
   },
   async asyncBEData(ctx, view) {
     const ctxWithView = ctx.setVars({view})
-    await view.propsF.reduce((pr, {id,calcProp}) => pr.then(async () => view.props[id] = await calcProp(ctxWithView)), Promise.resolve())
+    await view.propsF.reduce((pr, prop) => pr.then(async () => jb.zui.assignProp(prop,view,await prop.calcProp(ctxWithView))), Promise.resolve())
     return jb.zui.calcBEData(ctx, view)
+  },
+  assignProp(prop,view,val) {
+    if (prop.multiple)
+      Object.assign(view.props,val)
+    else
+      view.props[prop.id] = val
   },
   calcBEData(ctx, view) {
     const ctxWithView = ctx.setVars({view})
     if (!view.async)
-      view.propsF.forEach(({id,calcProp}) => view.props[id] = calcProp(ctxWithView))
-    view.atts = view.attsF(ctxWithView).map(att=> ({...att, calc: null, ar: att.calc(view)}))
+      view.propsF.forEach(prop => jb.zui.assignProp(prop,view,prop.calcProp(ctxWithView)))
+    view.atts = view.attsF(ctxWithView).flatMap(x=>x).map(att=> ({...att, calc: null, ar: att.calc(view)}))
     view.renderGPU = view.renderGpuF(ctxWithView).calc(view)
     return {
       id: view.id,
@@ -71,6 +78,15 @@ extension('zui','view', {
   }
 })
 
+component('attsOfElements', {
+  type: 'attribute',
+  params: [
+    {id: 'elements'},
+    {id: 'attsOfElem', dynamic: true, type: 'attribute[]'}
+  ],
+  impl: (ctx,elems,attsOfElem) => elems.flatMap(elem => attsOfElem(ctx.setVars({elem})))
+})
+
 component('float', {
   type: 'attribute',
   params: [
@@ -96,6 +112,34 @@ component('vec2', {
       size: 2,
       glType: 'vec2',
       calc: view => ctx.vars.items.map(item => itemToVec2(ctx.setVars({item,view})))
+  })
+})
+
+component('vec3', {
+  type: 'attribute',
+  params: [
+    {id: 'id', as: 'string'},
+    {id: 'itemToVec3', dynamic: true},
+  ],
+  impl: (ctx,id, itemToVec3) => ({ 
+      id,
+      size: 3,
+      glType: 'vec3',
+      calc: view => ctx.vars.items.map(item => itemToVec3(ctx.setVars({item,view})))
+  })
+})
+
+component('vec4', {
+  type: 'attribute',
+  params: [
+    {id: 'id', as: 'string'},
+    {id: 'itemToVec4', dynamic: true}
+  ],
+  impl: (ctx,id, itemToVec4) => ({ 
+      id,
+      size: 4,
+      glType: 'vec4',
+      calc: view => ctx.vars.items.map(item => itemToVec4(ctx.setVars({item,view})))
   })
 })
 
@@ -133,13 +177,24 @@ component('prop', {
   ]
 })
 
+component('props', {
+  type: 'view_prop',
+  params: [
+    {id: 'ids', as: 'string', description: 'as remark'},
+    {id: 'calcProp', dynamic: true},
+    {id: 'async', as: 'boolean', type: 'boolean<>', defaultValue: true},
+    {id: 'passToFE', as: 'boolean', type: 'boolean<>'},
+    {id: 'multiple', as: 'boolean', type: 'boolean<>', defaultValue: true},
+  ]
+})
+
 component('asyncProp', {
   type: 'view_prop',
   params: [
     {id: 'id', as: 'string'},
     {id: 'calcProp', dynamic: true},
     {id: 'async', as: 'boolean', type: 'boolean<>', defaultValue: true},
-    {id: 'passToFE', as: 'boolean', type: 'boolean<>'}
+    {id: 'passToFE', as: 'boolean', type: 'boolean<>'},
   ]
 })
 

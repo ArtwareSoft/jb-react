@@ -66,10 +66,8 @@ component('atlasesOfExposedItems', {
     const { view, cmp} = ctx.vars
     if (cmp.isBEComp)
       return view.props.atlasGroups.map(({id, url})=>({id: `atlas${id}`, glType: 'sampler2D', glMethod: '1i'}))
-
-    const { itemViewSize, elemsLayout, zoom, center } = cmp.state
-    const { atlasGroupsFE } = cmp.beDataGpu[view.id].props
-    return atlasGroupsFE.map(({id, url})=>({id: `atlas${id}`, glType: 'sampler2D', glMethod: '1i', 
+    if (!cmp.beDataGpu[view.id]) return []
+    return cmp.beDataGpu[view.id].props.atlasGroupsFE.map(({id, url})=>({id: `atlas${id}`, glType: 'sampler2D', glMethod: '1i', 
       val: () => url
     }))
   }

@@ -14,11 +14,11 @@ component('text', {
     layout: text('%$lineLength%', '%$noOfLines%', { fontDimention: zui.fontDimention('%$font%') }),
     viewProps: [
       prop('fontDimention', zui.fontDimention('%$font%')),
-      asyncProp('atlas', calcAtlas())
+      props('atlas,xyToPos', zuiText.calcAtlas())
     ],
     atts: [
-      vec2('imagePos', '%$view.props.atlas.xyToPos/{%$item.xyPos%}/pos%'),
-      vec2('imageSize', '%$view.props.atlas.xyToPos/{%$item.xyPos%}/size%')
+      vec2('imagePos', '%$view.props.xyToPos/{%$item.xyPos%}/pos%'),
+      vec2('imageSize', '%$view.props.xyToPos/{%$item.xyPos%}/size%')
     ],
     renderGPU: gpuCode({
       shaderCode: imageColorOfPoint(),
@@ -32,7 +32,7 @@ component('text', {
   })
 })
 
-component('calcAtlas', {
+component('zuiText.calcAtlas', {
   impl: async ctx => {
     const {items, view} = ctx.vars
     const { text, summary, lineLength, font } = view.itemProp
@@ -62,7 +62,7 @@ component('calcAtlas', {
     glyphs.forEach(({str, pos})=> cnvCtx.fillText(str,...pos))
 
     const url = await jb.zui.canvasToDataUrl(canvas)
-    return {url, size, xyToPos}
+    return { atlas: {url, size} , xyToPos}
   }
 })
 

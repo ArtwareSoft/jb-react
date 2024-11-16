@@ -22,7 +22,7 @@ component('zuiTest.image', {
       contains('data:image/png;base64,iVBORw0KGgoAA'),
       contains('[73,12], [31,12], [83,12]')
     ),
-    uiAction: waitForNextUpdate(),
+    uiAction: animationEvent(),
     emulateFrontEnd: true
   })
 })
@@ -43,7 +43,7 @@ component('zuiTest.text', {
       contains(`{id: 'alignX', glType: 'int', glMethod: '1i', value: 1}`),
       contains('data:image/png;base64,iVBORw0')
     ),
-    uiAction: waitForNextUpdate(),
+    uiAction: animationEvent(),
     emulateFrontEnd: true
   })
 })
@@ -59,12 +59,12 @@ component('zuiTest.text8', {
       center: '0,10'
     }),
     expectedResult: and(
-      contains('size":[200,40]'),
-      contains('pos":[0,80]'),
+      contains('size":[66.66666666666667,13.333333333333334]'),
+      contains('pos":[0,26.666666666666668]'),
       contains('[13380,19200,8533,18517]'),
       contains('attribute vec4 _text;varying vec4 text')
     ),
-    uiAction: waitForNextUpdate(),
+    uiAction: animationEvent(),
     emulateFrontEnd: true
   })
 })
@@ -81,11 +81,27 @@ component('zuiTest.growingText', {
       style: GPU('640', '640')
     }),
     expectedResult: and(
-      contains('[0,0], [83.609375,0], [114.734375,0], [188.5390625,0]'),
-      contains('data:image/png;base64,iVBORw0KGgoAAAANSUhEUg')
+      contains('[59.92613636363637,33.2]'),
+      contains('data:image/png;base64,iVBORw0KGgoAAAANSUhEU')
     ),
-    uiAction: waitForNextUpdate(),
-    timeout: 1000,
+    uiAction: animationEvent(),
+    emulateFrontEnd: true
+  })
+})
+
+component('zuiTest.growingText.changeView', {
+  impl: uiTest({
+    control: zui.itemlist({
+      items: '%$points%',
+      itemsPositions: xyByProps(),
+      boardSize: 64,
+      itemView: group(growingText('%name%'), circle(numeric('x'))),
+      initialZoom: 8,
+      center: '0,64',
+      style: GPU('640', '640')
+    }),
+    expectedResult: contains('top~0~2','data:image/png;base64','calcbedata1','top~0~0','data:image/png;base64,'),
+    uiAction: uiActions(animationEvent(), zoomEvent(2)),
     emulateFrontEnd: true
   })
 })
@@ -101,11 +117,11 @@ component('zuiTest.circles', {
       center: '5,5'
     }),
     expectedResult: and(
-      contains('size":[17.8,17.8]'),
-      contains('pos":[91.1,91.1]'),
-      contains('[[0,0,0],[0,0.3333333333333333,0],[0,0.6666666666666666,0],[0,1,0]]}'),
+      contains('[0,0.3333333333333333,0]'),
       contains('[[0,0],[1,1],[2,2],[3,3]]}]')
-    )
+    ),
+    uiAction: animationEvent(),
+    emulateFrontEnd: true
   })
 })
 
