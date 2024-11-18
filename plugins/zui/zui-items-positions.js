@@ -24,6 +24,34 @@ component('xyByProps', {
   }
 })
 
+component('xyByPropsNormalized', {
+  type: 'items_positions',
+  params: [
+    {id: 'xAtt', as: 'string', defaultValue: 'x'},
+    {id: 'yAtt', as: 'string', defaultValue: 'y'},
+    {id: 'features', type: 'prop_feature[]', dynamic: true}
+  ],
+  impl: (ctx,xAtt,yAtt,features) => {
+    const {items, DIM } = ctx.vars
+    const prop = {
+      pivots() { // create scale by order
+        if (this._pivots) return this._pivots
+        ;[xAtt,yAtt].forEach(att=>{
+          items.sort((i1,i2) => i1[att] - i2[att] )
+          const from = items[0][att], to = items[items.length-1][att], range = (to - from) || 1
+          items.forEach(x => x[`scale_${att}`] = (x[att] - from) / range)
+        })
+        return this._pivots = [
+            { att: 'x', spaceFactor:0.999 , scale: item => item[`scale_${xAtt}`], preferedAxis: 'x' },
+            { att: 'y', spaceFactor:0.999 , scale: item => item[`scale_${yAtt}`], preferedAxis: 'y' }            
+        ]
+      }
+    }
+    features().forEach(f=>f.enrich(prop))
+    return prop
+  }
+})
+
 component('xyByIndex', {
   type: 'items_positions',
   params: [

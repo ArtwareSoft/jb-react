@@ -6,10 +6,14 @@ component('growingFlow', {
     {id: 'elements', type: 'flow_element[]'}
   ],
   impl: firstToFit(
+    flow('%$elements%', { width: 900 }),
+    flow('%$elements%', { width: 800 }),
+    flow('%$elements%', { width: 700 }),
     flow('%$elements%', { width: 600 }),
+    flow('%$elements%', { width: 500 }),
     flow('%$elements%', { width: 400 }),
-    flow('%$elements%', { width: 200 }),
-    flow('%$elements%', { width: 100 }),
+    flow('%$elements%', { width: 300 }),
+    flow('%$elements%', { width: 200 })
   )
 })
 
@@ -50,13 +54,13 @@ component('flow', {
           vec2 rInImage = inImage / effSize;
   
           if (inImage[0] < 0.0 || inImage[0] >= effSize[0] || inImage[1] < 0.0 || inImage[1] >= effSize[1])
-              return vec4(1.0, 0.0, 0.0, 0.5);
+              return vec4(1.0, 0.0, 0.0, 0.0);
           
           vec2 texCoord = (imagePos + rInImage * imageSize) / atlasSize;
           ${ctx.vars.view.props.atlases.map(({id}) => `
           if (atlasId == ${id}.0)
               return texture2D(atlas${id}, texCoord);`).join('')} 
-          return vec4(0.0, 1.0, 0.0, 0.5);
+          return vec4(0.0, 1.0, 0.0, 0.0);
       }`),
         utils(ctx => `vec4 getTexturePixel(vec2 inElem) {
         float avgHeight = size[1]/noOfElements;
@@ -68,7 +72,7 @@ component('flow', {
             return getAtlasPixel(vec2(inElem[0], base- inElem[1]),  elem${id}posSize, elemAlign[${id}] );
 
         base = base - effHeight;`).join('')}
-        return vec4(1.0, 0.0, 0.0, 1.0);
+        return vec4(1.0, 0.0, 0.0, 0.0);
     }`)
       ],
       uniforms: [
@@ -105,39 +109,42 @@ component('flowItemsData', {
     async calcMoreItemsData(view,center,recalc = []) { // runs in BE
         const {DIM,mat} = ctx.vars
         const {atlases, elems, width, MAX_ATLAS_SIZE, textures, xyToAtlas} = view.props
-        const atlasObj = {}
-        atlasObj.id = atlases.push(atlasObj)-1
+        let curAtlas = {glyphs: [], height: 0, id: atlases.length}
+        atlases.push(curAtlas)
 
-        let atlasFull = false, yPos = 0
-        const glyphs = []
         for await (const it of jb.zui.areaIter(mat, DIM, ...center.map(x=>Math.round(x)))) {
-            if (atlasFull) break;
+            if (curAtlas.height*width > MAX_ATLAS_SIZE) {
+              curAtlas = {glyphs: [], height: 0, id: atlases.length}
+              atlases.push(curAtlas)
+            }
+
             const item = it.item
-            xyToAtlas[item.xyPos] = atlasObj.id
-            await elems.reduce((pr,elem, i) => pr.then(async ()=> {
+            xyToAtlas[item.xyPos] = curAtlas.id;
+
+            await elems.reduce( (pr,elem, i) => pr.then(async ()=> {
                 if (elem.xyToPos[item.xyPos].item) return
                 const elemGC = elemGCs[i]
                 const data = await elemGC.calc(item, width)
                 const size = await elemGC.size(data, width)
-                const pos = [0,yPos]
+                const pos = [0,curAtlas.height]
                 elem.xyToPos[item.xyPos] = [...pos,...size]
-                glyphs.push({elemGC,pos,data})
-                yPos += size[1]
+                curAtlas.glyphs.push({elemGC,pos,data})
+                curAtlas.height += size[1]
             }), Promise.resolve())
-            atlasFull = yPos*width > MAX_ATLAS_SIZE
         }
-        if (yPos == 0) {
-            atlases.pop()
-            return {}
-        }
+        if (curAtlas.height == 0) atlases.pop()
 
-        atlasObj.height = yPos
-        const canvas = jb.zui.createCanvas(width,yPos)
-        const cnvCtx = canvas.getContext('2d')
-        cnvCtx.textBaseline = 'top'; cnvCtx.textAlign = 'left'; cnvCtx.fillStyle = 'black'
-
-        glyphs.forEach(({elemGC,pos,data})=> elemGC.drawItem(cnvCtx, pos, data))
-        textures[`atlas${atlasObj.id}`] = await jb.zui.canvasToDataUrl(canvas)
+        await atlases.reduce((pr, atlas) => pr.then( async () => {
+          const {id,height,glyphs} = atlas
+          if (textures[`atlas${id}`]) return
+          const canvas = jb.zui.createCanvas(width,height)
+          const cnvCtx = canvas.getContext('2d')
+          cnvCtx.textBaseline = 'top'; cnvCtx.textAlign = 'left'; cnvCtx.fillStyle = 'black'
+          glyphs.forEach(({elemGC,pos,data})=> elemGC.drawItem(cnvCtx, pos, data))
+          textures[`atlas${id}`] = await jb.zui.canvasToDataUrl(canvas)
+          delete atlas.glyphs
+        }), Promise.resolve())
+        const tt = 3
         
         // recalc atts ?   
     }
@@ -194,7 +201,7 @@ component('title', {
   type: 'flow_element',
   params: [
     {id: 'title', as: 'string', dynamic: true},
-    {id: 'font', as: 'string', defaultValue: '900 20px Arial'},
+    {id: 'font', as: 'string', defaultValue: '900 16px Arial'},
     {id: 'align', type: 'align_image', defaultValue: keepSize('left', 'top')}
   ],
   impl: text('%$title()%', '%$font%', { align: '%$align%' })
@@ -204,7 +211,7 @@ component('text', {
   type: 'flow_element',
   params: [
     {id: 'text', as: 'string', dynamic: true},
-    {id: 'font', as: 'string', defaultValue: '500 16px Arial'},
+    {id: 'font', as: 'string', defaultValue: '600 16px Arial'},
     {id: 'align', type: 'align_image', defaultValue: keepSize('left', 'top')}
   ],
   impl: (ctx,text,font,align) => ({

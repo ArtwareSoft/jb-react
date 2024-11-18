@@ -248,9 +248,11 @@ extension('zui','layout', {
       }
       function filterFirstToFit(view) {
         if (!view.children) return
-        if (!view.firstToFit) return view.children.map(ch =>filterFirstToFit(ch))
+        const res = view.children.map(ch =>filterFirstToFit(ch))
+        if (!view.firstToFit) return res
         view.children.reduce((foundFit, ch) => {
-          if (foundFit) filteredOutView(ch)
+          if (foundFit) 
+            return filteredOutView(ch)
           const size = elemsLayout[ch.id].size
           return foundFit || size[0] != 0 && size[1] != 0
         } ,false)
@@ -291,6 +293,7 @@ extension('zui','layout', {
       function filteredOutView(view) {
         filteredOut[view.id] = true
         ;(view.children||[]).map(ch => filteredOutView(ch))
+        return true
       }
     }
   }

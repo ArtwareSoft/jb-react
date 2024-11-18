@@ -27,7 +27,7 @@ component('zuiTest.flow', {
       center: '1.5,9.4',
       style: GPU('640', '640')
     }),
-    expectedResult: contains('[0,704,200,84]'),
+    expectedResult: contains('[200,492.30769230769226'),
     uiAction: animationEvent(),
     emulateFrontEnd: true
   })
@@ -51,7 +51,7 @@ component('zuiTest.growingFlow', {
       center: '1.5,9.4',
       style: GPU('640', '640')
     }),
-    expectedResult: contains('[0,276,400,64]','[0,436,200,104]'),
+    expectedResult: contains('[0,406,400,61]','[0,506,300,61]'),
     uiAction: uiActions(animationEvent(), zoomEvent(2)),
     emulateFrontEnd: true
   })
@@ -193,18 +193,27 @@ component('zuiTest.growingTextHotels', {
   })
 })
 
-component('zuiTest.diagnostics', {
+component('zuiTest.growingDiagnostics', {
   doNotRunInTests: true,
   impl: uiTest({
     control: group({
       controls: zui.itemlist({
         items: '%$diagnostics%',
-        itemsPositions: xyByProps('urgency', 'likelihood'),
-        boardSize: 10,
-        itemView: group(growingText('%title%'), circle(enumarator('department')), text('%description%', 20)),
-        initialZoom: 7,
-        center: '32,30',
-        style: GPU('640', '640')
+        itemsPositions: xyByPropsNormalized('urgency', 'likelihood'),
+        boardSize: 8,
+        itemView: firstToFit(
+          growingFlow(
+            title('%title% (%department%)', { align: keepSize('center', 'top') }),
+            paragraph('%description%'),
+            group(title('explanation'), paragraph('%general_explanation%')),
+            group(title('symptoms'), paragraph('%how_it_relates_to_the_symptoms%'))
+          ),
+          group(growingText('%title%'), circle(enumarator('department')), text('%description%', 20)),
+          circle(enumarator('department'))
+        ),
+        initialZoom: 4,
+        center: '4,4',
+        style: GPU('1600', '1600')
       }),
       features: group.wait({
         for: pipe(

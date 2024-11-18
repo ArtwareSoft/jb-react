@@ -236,8 +236,8 @@ extension('zui','GPU', {
     vec2 elemBottomLeftOffsetNdc = pos/(0.5*canvasSize);
     vec2 elemBottomLeftNdc = itemBottomLeftNdc + elemBottomLeftOffsetNdc;
     elemBottomLeftCoord = (elemBottomLeftNdc + 1.0) * (0.5*canvasSize);
-    //gl_PointSize = max(size[0],size[1]) * 1.0;
-    gl_PointSize = max(itemViewSize[0],itemViewSize[1]) * 1.0;
+    gl_PointSize = max(size[0],size[1]) * 1.0;
+    //gl_PointSize = max(itemViewSize[0],itemViewSize[1]) * 1.0;
     ${main||''}
   }`,
     fragementShaderCode: ({declarations,main} = {}) => `precision highp float;
@@ -252,7 +252,7 @@ extension('zui','GPU', {
     void main() {
       vec2 inElem = gl_FragCoord.xy - elemBottomLeftCoord;
       if (inElem[0] >= size[0] || inElem[0] < 0.0 || inElem[1] >= size[1] || inElem[1] < 0.0) {
-        gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0); 
+        gl_FragColor = vec4(0.0, 0.0, 1.0, 0.0); 
         return;
       };
       vec2 rInElem = inElem/size;
