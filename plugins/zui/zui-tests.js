@@ -21,15 +21,38 @@ component('zuiTest.flow', {
             paragraph('2222 %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name%')
           )
         ],
-        width: 150,
-        minHeight: 50
+        width: 200
       }),
-      initialZoom: 4,
+      initialZoom: 1.3,
       center: '1.5,9.4',
       style: GPU('640', '640')
     }),
-    expectedResult: contains('tel aviv'),
+    expectedResult: contains('[0,704,200,84]'),
     uiAction: animationEvent(),
+    emulateFrontEnd: true
+  })
+})
+
+
+component('zuiTest.growingFlow', {
+  impl: uiTest({
+    control: zui.itemlist({
+      items: '%$points%',
+      itemsPositions: xyByProps(),
+      boardSize: 10,
+      itemView: growingFlow(
+        group(title('%name%1'), paragraph('1111 %name% %name% %name% %name% %name% %name% %name%')),
+        group(
+          title('%name%2'),
+          paragraph('2222 %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name%')
+        )
+      ),
+      initialZoom: 1.3,
+      center: '1.5,9.4',
+      style: GPU('640', '640')
+    }),
+    expectedResult: contains('[0,276,400,64]','[0,436,200,104]'),
+    uiAction: uiActions(animationEvent(), zoomEvent(2)),
     emulateFrontEnd: true
   })
 })
@@ -106,10 +129,7 @@ component('zuiTest.growingText', {
       center: '0,64',
       style: GPU('640', '640')
     }),
-    expectedResult: and(
-      contains('[59.92613636363637,33.2]'),
-      contains('data:image/png;base64,iVBORw0KGgoAAAANSUhEU')
-    ),
+    expectedResult: and(contains('[59.92613636363637,33.2]'), contains('data:image/png;base64,iVBORw0KGgoAAAANSUhEU')),
     uiAction: animationEvent(),
     emulateFrontEnd: true
   })

@@ -186,7 +186,7 @@ extension('core', {
           const calcParam = paramObj => {
             const paramVal = paramObj.type == 'function' ? paramObj.outerFunc(run.ctx) 
             : paramObj.type == 'primitive' ? paramObj.val
-            : paramObj.type == 'array' ? paramObj.array.map(function prepareParamItem(prof,i) { 
+            : paramObj.type == 'array' ? paramObj.array.flatMap(function prepareParamItem(prof,i) { 
                   return prof != null && jb.core.run(new jb.core.jbCtx(run.ctx,{
                         profile: prof, forcePath: paramObj.forcePath || ctx.path + '~' + paramObj.path+ '~' + i, path: ''}), paramObj.param)
                   })
@@ -268,7 +268,7 @@ extension('core', {
     const profile = ctx.profile
     const profile_jstype = typeof profile
     const parentParam_type = parentParam && parentParam.type
-        const jstype = parentParam && parentParam.as
+    const jstype = parentParam && parentParam.as
     const isArray = Array.isArray(profile)
 
     if (profile_jstype === 'string' && parentParam_type === 'boolean') return { type: 'booleanExp' }

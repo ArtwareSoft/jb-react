@@ -7,12 +7,12 @@ component('view', {
     {id: 'itemProp', type: 'itemProp', mandatory: true},
     {id: 'layout', type: 'layout_feature[]', mandatory: true, dynamic: true},
     {id: 'viewProps', type: 'view_prop[]'},
+    {id: 'incrementalItemsData', type: 'inc_items_data'},
     {id: 'atts', type: 'attribute[]', dynamic: true},
     {id: 'renderGPU', type: 'render_gpu', dynamic: true},
-    {id: 'incrementalItemsData', type: 'inc_items_data'},
     {id: 'renderD3', type: 'render_d3', dynamic: true},
   ],
-  impl: (ctx,title,itemProp,layout,propsF,attsF, renderGpuF,incrementalItemsData, renderD3F) => ({ 
+  impl: (ctx,title,itemProp,layout,propsF,incrementalItemsData, attsF, renderGpuF, renderD3F) => ({ 
     createLayoutObj: id => jb.zui.assignFeatures({
       id, title, ctxPath: ctx.path, priority: itemProp && itemProp.priority || 0,
     }, layout(ctx)),
@@ -76,7 +76,7 @@ extension('zui','view', {
 component('attsOfElements', {
   type: 'attribute',
   params: [
-    {id: 'elements'},
+    {id: 'elements', as: 'array'},
     {id: 'attsOfElem', dynamic: true, type: 'attribute[]'}
   ],
   impl: (ctx,elems,attsOfElem) => elems.flatMap(elem => attsOfElem(ctx.setVars({elem})))

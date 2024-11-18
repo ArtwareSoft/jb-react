@@ -131,6 +131,15 @@ component('int', {
   impl: (ctx,id,val) => ({id, val, glType: 'int', glMethod: '1i'})
 })
 
+component('float', {
+  type: 'uniform',
+  params: [
+    {id: 'id', as: 'string'},
+    {id: 'val', dynamic: true},
+  ],
+  impl: (ctx,id,val) => ({id, val, glType: 'float', glMethod: '1f'})
+})
+
 component('vec2', {
   type: 'uniform',
   params: [
@@ -147,15 +156,6 @@ component('vec3', {
     {id: 'val', dynamic: true, mandatory: true},
   ],
   impl: (ctx,id,val) => ({id, val, glType: 'vec3', glMethod: '3fv'})
-})
-
-component('float', {
-  type: 'uniform',
-  params: [
-    {id: 'id', as: 'string'},
-    {id: 'val', dynamic: true},
-  ],
-  impl: ctx => ({glType: 'sampler2D', ...ctx.params})
 })
 
 component('prop', {

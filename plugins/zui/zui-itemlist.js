@@ -161,6 +161,7 @@ component('zui.loadBEDataToFE', {
     })
     await Object.keys(BEViewsData).map(k => cmp.feViews[k]).filter(x=>x)
       .reduce((pr,view) => pr.then(()=>cmp.prepareTextures(view)), Promise.resolve())
+    jb.log('zui BEData loaded in FE',{beDataGpu: cmp.beDataGpu,BEViewsData,ctx})
   }
 })
 

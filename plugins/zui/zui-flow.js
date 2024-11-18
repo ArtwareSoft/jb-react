@@ -1,11 +1,24 @@
 dsl('zui')
 
+component('growingFlow', {
+  type: 'view',
+  params: [
+    {id: 'elements', type: 'flow_element[]'}
+  ],
+  impl: firstToFit(
+    flow('%$elements%', { width: 600 }),
+    flow('%$elements%', { width: 400 }),
+    flow('%$elements%', { width: 200 }),
+    flow('%$elements%', { width: 100 }),
+  )
+})
+
 component('flow', {
   type: 'view',
   params: [
     {id: 'elements', type: 'flow_element[]'},
     {id: 'width', as: 'number', defaultValue: 300},
-    {id: 'minHeight', as: 'array', defaultValue: 100},
+    {id: 'minHeight', as: 'number', defaultValue: 50},
     {id: 'align', type: 'align_image', defaultValue: keepProportions()},
     {id: 'MAX_ATLAS_SIZE', as: 'number', defaultValue: 1048576}
   ],
@@ -19,17 +32,45 @@ component('flow', {
       FEProp('atlases', list()),
       FEProp('textures', obj())
     ],
+    incrementalItemsData: flowItemsData('%$elements%'),
     atts: [
-      float('atlasId', ({},{view,item}) => view.props.xyToAtlas[item.xyPos] || -1),
+      float('atlasId', ({},{view,item}) => view.props.xyToAtlas[item.xyPos] == null ? -1 : view.props.xyToAtlas[item.xyPos]),
       attsOfElements('%$view.props.elems%', vec4('elem%$elem.id%posSize', '%$elem/xyToPos/{%$item.xyPos%}%'))
     ],
     renderGPU: gpuCode({
       shaderCode: colorOfPoint('gl_FragColor = getTexturePixel(inElem);'),
-      varyings: [
-        varying('float', 'unit', 'float(atlasIdToUnit[int(atlasId)])'),
-        varying('vec2', 'atlasSize', 'vec2(%$width%.0, float(atlasIdToHeight[int(atlasId)]))')
+      varyings: varying('vec2', 'atlasSize', 'vec2(%$width%.0, float(atlasIdToHeight[int(atlasId)]))'),
+      utils: [
+        alignUtils(),
+        utils(ctx => `vec4 getAtlasPixel(vec2 inElem, vec4 imagePosSize, vec3 align) {
+          vec2 imagePos = vec2(imagePosSize[0],imagePosSize[1]);
+          vec2 imageSize= vec2(imagePosSize[2],imagePosSize[3]);
+          vec2 effSize = effectiveSize(align, size, imageSize);
+          vec2 inImage = inImagePx(align, size, imageSize, effSize, inElem);
+          vec2 rInImage = inImage / effSize;
+  
+          if (inImage[0] < 0.0 || inImage[0] >= effSize[0] || inImage[1] < 0.0 || inImage[1] >= effSize[1])
+              return vec4(1.0, 0.0, 0.0, 0.5);
+          
+          vec2 texCoord = (imagePos + rInImage * imageSize) / atlasSize;
+          ${ctx.vars.view.props.atlases.map(({id}) => `
+          if (atlasId == ${id}.0)
+              return texture2D(atlas${id}, texCoord);`).join('')} 
+          return vec4(0.0, 1.0, 0.0, 0.5);
+      }`),
+        utils(ctx => `vec4 getTexturePixel(vec2 inElem) {
+        float avgHeight = size[1]/noOfElements;
+        float effHeight;
+        float base = size[1];
+        ${ctx.vars.view.props.elems.map(({id}) => `
+        effHeight = min(elem${id}posSize[3],avgHeight);
+        if (inElem[1] > base - effHeight )
+            return getAtlasPixel(vec2(inElem[0], base- inElem[1]),  elem${id}posSize, elemAlign[${id}] );
+
+        base = base - effHeight;`).join('')}
+        return vec4(1.0, 0.0, 0.0, 1.0);
+    }`)
       ],
-      utils: [alignUtils(), flowUtils()],
       uniforms: [
         vec3Vec('elemAlign', '%$view/props/elems/length%', '%$view/props/elems/align%'),
         intVec('atlasIdToHeight', '%$view/props/atlases/length%', '%$view/props/atlases/height%'),
@@ -39,40 +80,8 @@ component('flow', {
         zuiFlow.atlasesOfExposedItems(),
         intVec('atlasIdToUnit', '%$view/props/atlases/length%', zuiFlow.allocateTexturesToUnits())
       ]
-    }),
-    incrementalItemsData: flowItemsData('%$elements%')
+    })
   })
-})
-
-component('flowUtils', {
-    type: 'gpu_utils',
-    impl: utils(ctx => `
-    vec4 getAtlasPixel(vec2 inElem, vec4 imagePosSize, vec3 align) {
-        vec2 imagePos = vec2(imagePosSize[0],imagePosSize[1]);
-        vec2 imageSize= vec2(imagePosSize[2],imagePosSize[3]);
-        vec2 effSize = effectiveSize(align, size, imageSize);
-        vec2 inImage = inImagePx(align, size, imageSize, effSize, inElem);
-        vec2 rInImage = inImage / effSize;
-
-        if (inImage[0] < 0.0 || inImage[0] >= effSize[0] || inImage[1] < 0.0 || inImage[1] >= effSize[1])
-            return vec4(1.0, 0.0, 0.0, 1.0);
-        
-        vec2 texCoord = (imagePos + flipH(rInImage) * imageSize) / atlasSize;
-        ${ctx.vars.view.props.atlases.map(({id}) => `
-        if (unit == ${id}.0)
-            return texture2D(atlas${id}, texCoord);`).join('')} 
-        return vec4(0.0, 1.0, 0.0, 1.0);
-    }
-    vec4 getTexturePixel(vec2 inElem) {
-        float base = 0.0;
-        ${ctx.vars.view.props.elems.map(({id}) => `
-        if (inElem[1] < base + elem${id}posSize[3] )
-            return getAtlasPixel(inElem - vec2(0.0,base),  elem${id}posSize, elemAlign[${id}] );
-
-        base = base + elem${id}posSize[3];`).join('')}
-        return vec4(1.0, 0.0, 0.0, 1.0);
-    }
-    `)
 })
 
 component('flowItemsData', {
@@ -130,17 +139,7 @@ component('flowItemsData', {
         glyphs.forEach(({elemGC,pos,data})=> elemGC.drawItem(cnvCtx, pos, data))
         textures[`atlas${atlasObj.id}`] = await jb.zui.canvasToDataUrl(canvas)
         
-        // recalc atts
-        // const ctxWithView = ctx.setVars({view})        
-        // view.atts = view.attsF(ctxWithView).flatMap(x=>x).map(att=> ({...att, calc: null, ar: att.calc(view)}))
-        // view.renderGPU = view.renderGpuF(ctxWithView).calc(view)
-        // return {
-        //   id: view.id,
-        //   atts: view.atts,
-        //   glCode: view.renderGPU.glCode,
-        //   uniforms: Object.values(view.renderGPU.uniforms).map(({id,glType,glMethod,value}) => ({id,glType,glMethod,value})),
-        //   props: jb.objFromEntries(view.propsF.filter(p=>p.passToFE).map(({id})=>[id, view.props[id]]))
-        // }    
+        // recalc atts ?   
     }
   })
 })
@@ -149,11 +148,8 @@ component('zuiFlow.emptyElems', {
   params: [
     {id: 'flowElements'}
   ],
-  impl: (ctx,elemGCs) => {
-    const elems = elemGCs.map(({align},id) => ({id, align, xyToPos:{}}))
-    ctx.vars.items.forEach(item => elems.forEach(elem => elem.xyToPos[item.xyPos] = [0,0,0,0] ))
-    return elems
-  }
+  impl: (ctx,elemGCs) => elemGCs.map(({align},id) => ({id, align, 
+    xyToPos: jb.objFromEntries(ctx.vars.items.map(({xyPos})=>[xyPos,[0,0,0,0]])) }))
 })
 
 component('image', {
@@ -306,7 +302,7 @@ component('zuiFlow.atlasesOfExposedItems', {
   type: 'uniform',
   impl: ctx => {
     const { view, cmp} = ctx.vars
-    if (view.atlasesOfExposedItemsCache) return view.atlasesOfExposedItemsCache
+    //if (view.atlasesOfExposedItemsCache) return view.atlasesOfExposedItemsCache
     if (cmp.isBEComp)
       return view.props.atlases.map(({id})=>({id: `atlas${id}`, glType: 'sampler2D', glMethod: '1i'}))
     if (!cmp.beDataGpu[view.id]) return []
@@ -319,7 +315,7 @@ component('zuiFlow.atlasesOfExposedItems', {
 component('zuiFlow.allocateTexturesToUnits', {
   impl: ctx => {
     const {view, cmp} = ctx.vars
-    if (view.allocateTexturesToUnitsCache) return view.allocateTexturesToUnitsCache
+    //if (view.allocateTexturesToUnitsCache) return view.allocateTexturesToUnitsCache
 
     const atlasIdToUnit = cmp.beDataGpu[view.id].props.atlases.map(({id}) => jb.zui.allocateSingleTextureUnit({view, uniformId: id,cmp}).i)
     return view.allocateTexturesToUnitsCache = new Int32Array(atlasIdToUnit)

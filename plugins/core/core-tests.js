@@ -105,3 +105,26 @@ component('coreTest.waitForInnerElements.cbAndPromise', {
 component('coreTest.waitForInnerElements.cb', {
   impl: dataTest(rx.pipe(source.data([1,2])), equals(()=>[1,2]))
 })
+
+component('test.withArrayParam', {
+  params: [
+    {id: 'arr', type: 't1[]'}
+  ],
+  impl: '%$arr%'
+})
+
+component('test.withArrayParam2', {
+  params: [
+    {id: 'arr', type: 't1[]'}
+  ],
+  impl: test.withArrayParam('$debugger:%$arr%')
+})
+
+component('test.t1', {
+  type: 't1',
+  impl: 'txt'
+})
+
+component('coreTest.usingArrayParam', {
+  impl: dataTest(test.withArrayParam2(test.t1(), test.t1()), equals(join(','), 'txt,txt'))
+})
