@@ -19,22 +19,59 @@
  <script>
 	const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
 	jbHost.baseUrl = 'https://artwaresoft.github.io/jb-react/'
-	jbInit('tests', {projects: ['studio'], plugins: jb_plugins, useFileSymbolsFromBuild: true })
-		.then(jb=>{
+	if (urlQuery('pack')) {
+		jbInit('pack',{ plugins: ['common'] }, {packOnly: true}).then(code=>console.log('aa',code))
+	} else {
+	const repo = urlQuery('repo')
+	const plugins = urlQuery('plugins') && urlQuery('plugins').split(',') //.map(x=>!x.match(/tests|tester/) ? `${x}-tests` : x)
+	const addRepo = urlQuery('addRepo')
+	const sourceCode = 
+		addRepo && {projects: ['studio'], plugins:['*','studio-tests'], pluginPackages: [{'$':'defaultPackage'},{'$':'jbStudioServer', repo: addRepo }] } 
+		|| plugins && { plugins } 
+		|| repo && {pluginPackages: [{'$':'defaultPackage'},{'$':'jbStudioServer', repo }],plugins:['*'] } 
+		|| { projects: ['studio'], plugins: ['*','studio-tests'] }
+
+	jbInit('tests',sourceCode,{initSpyByUrl: true}).then(jb =>{
+//	jbLoadPacked({uri:'tests', initSpyByUrl: true}).then(jb => {
 			globalThis.jb = jb
-			jb.exec({$: 'data<>defaultTheme'})
-			jb.spy.initSpyByUrl()
+			globalThis.spy = jb.spy
+			if (jb.comps.defaultTheme)
+				jb.exec({$: 'data<>defaultTheme'})
+//			jb.spy.initSpyByUrl()
 			const params = { 
 				testType: '',
 				show: window.location.href.indexOf('&show') != -1,
 				specificTest: urlQuery('test'),
 				notPattern: urlQuery('not'),
+				coveredTestsOf: urlQuery('coveredTestsOf'),
+				top: window.location.href.match(/\btop\b/),
 				showOnlyTest: urlQuery('show') == 'onlyTest',
 				...jb.objFromEntries(['repo','rerun','pattern','take','remoteTests'].map(x=>[x,urlQuery(x)]))
 			}
 			console.log(params)
 			jb.test.runTests(params)
 		})
+	}
+
+
+	// const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
+	// jbHost.baseUrl = 'https://artwaresoft.github.io/jb-react/'
+	// jbInit('tests', {projects: ['studio'], plugins: jb_plugins, useFileSymbolsFromBuild: true })
+	// 	.then(jb=>{
+	// 		globalThis.jb = jb
+	// 		jb.exec({$: 'data<>defaultTheme'})
+	// 		jb.spy.initSpyByUrl()
+	// 		const params = { 
+	// 			testType: '',
+	// 			show: window.location.href.indexOf('&show') != -1,
+	// 			specificTest: urlQuery('test'),
+	// 			notPattern: urlQuery('not'),
+	// 			showOnlyTest: urlQuery('show') == 'onlyTest',
+	// 			...jb.objFromEntries(['repo','rerun','pattern','take','remoteTests'].map(x=>[x,urlQuery(x)]))
+	// 		}
+	// 		console.log(params)
+	// 		jb.test.runTests(params)
+	// 	})
   </script>
 </body>
 </html>
