@@ -9,7 +9,7 @@ function jbBrowserCodePackage(repo = '', fetchOptions= {}, useFileSymbolsFromBui
 
     _fetch(path) { 
       const hasBase = path && path.match(/\/\//)
-      return fetch(hasBase ? path: jbHost.baseUrl + path, fetchOptions) 
+      return fetch(hasBase ? path: jbHost.baseUrl + path) //, fetchOptions) 
     },      
     _fileSymbolsFromStudioServer(path) {
       return this.fetchJSON(`${jbHost.baseUrl||''}?op=fileSymbols&path=${repo}${path}`)
