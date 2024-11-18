@@ -49,7 +49,7 @@ component('zuiTest.growingFlow', {
       ),
       initialZoom: 1.3,
       center: '1.5,9.4',
-      style: GPU('640', '640')
+      style: GPU('400', '400')
     }),
     expectedResult: contains('[0,406,400,61]','[0,506,300,61]'),
     uiAction: uiActions(animationEvent(), zoomEvent(2)),
