@@ -2,8 +2,8 @@ dsl('zui')
 
 extension('zui','canvas', {
   measureCanvasCtx(font) {
-    jb.zui._measureCanvasCtx = jb.zui._measureCanvasCtx || jb.zui.createCanvas(1, 1).getContext("2d")
-    jb.zui._measureCanvasCtx.font = font
+    const mCtx = jb.zui._measureCanvasCtx = jb.zui._measureCanvasCtx || jb.zui.createCanvas(1, 1).getContext('2d')
+    mCtx.font = font; mCtx.textBaseline = 'top'; mCtx.textAlign = 'left'; mCtx.fillStyle = 'black'
     return jb.zui._measureCanvasCtx
   },
   createCanvas(...size) {
@@ -79,7 +79,7 @@ component('zui.fontDimention', {
 
 component('fill', {
   type: 'align_image',
-  impl: () => ({fill: true})
+  impl: () => [2,0,0]
 })
 
 component('keepProportions', {
@@ -88,7 +88,7 @@ component('keepProportions', {
     {id: 'alignX', as: 'string', options: 'left,center,right', defaultValue: 'center'},
     {id: 'alignY', as: 'string', options: 'top,center,bottom', defaultValue: 'center'}
   ],
-  impl: ctx => ({...ctx.params, keepProportions: true})
+  impl: (ctx,alignX,alignY) => [1,['left','center','right'].indexOf(alignX), ['top','center','bottom'].indexOf(alignY)]
 })
 
 component('keepSize', {
@@ -97,108 +97,100 @@ component('keepSize', {
     {id: 'alignX', as: 'string', options: 'left,center,right', defaultValue: 'center'},
     {id: 'alignY', as: 'string', options: 'top,center,bottom', defaultValue: 'center'}
   ],
-  impl: ctx => ({...ctx.params, keepSize: true})
+  impl: (ctx,alignX,alignY) => [0,['left','center','right'].indexOf(alignX), ['top','center','bottom'].indexOf(alignY)]
 })
 
-component('imageUniforms', {
-  type: 'uniform',
-  params: [
-    {id: 'align', type: 'align_image'}
-  ],
-  impl: uniforms(
-    Int('alignX', Switch(
-      Case('%$align/alignX%==left', 0),
-      Case('%$align/alignX%==center', 1),
-      Case('%$align/alignX%==right', 2)
-    )),
-    Int('alignY', Switch(
-      Case('%$align/alignY%==top', 0),
-      Case('%$align/alignY%==center', 1),
-      Case('%$align/alignY%==bottom', 2)
-    ))
-  )
-})
-
-component('imageUtils', {
-  description: `Align image of a known size into a larger box. Provides two GL functions: effectiveSize() and inImagePx() 
-    using vec2 size, vec2 imageSize, vec2 inElemPx, and the int uniforms alignX and alignY`,
+component('alignUtils', {
+  description: 'Align image of a known size into a larger box. Provides two GL functions: effectiveSize() and inImagePx() \n    using vec2 size, vec2 imageSize, vec2 inElemPx, and the vec3 uniform [type: [keepSize,keepProportions,fill], alignX: [0,1,2] , alignY: [0,1,2]]',
   type: 'gpu_utils',
-  params: [
-    { id: 'align', type: 'align_image' },
-    { id: 'getTexturePixelFunc', as: 'string' },
-  ],
-  impl: utils(({}, {}, { align, getTexturePixelFunc }) =>
-    ['vec2 flipH(vec2 pos) { return vec2(pos[0],1.0-pos[1]); }'
-    ,getTexturePixelFunc
-    ,(align.fill ? `
-      vec2 effectiveSize() { return size; }
-      vec2 inImagePx(vec2 effSize, vec2 inElem) { return inElem; }
-    `
-    : align.keepProportions ? `
-      vec2 effectiveSize() { 
+  impl: utils(`   
+    vec2 flipH(vec2 pos) { return vec2(pos[0],1.0-pos[1]); }
+    vec2 effectiveSize(vec3 align, vec2 outerSize, vec2 imageSize) {
+        if (align[0] == 0.0) { return imageSize; }
+        if (align[0] == 2.0) { return outerSize; }
+
         float aspectRatioImage = imageSize[0] / imageSize[1];
-        float aspectRatioBox = size[0] / size[1];
+        float aspectRatioBox = outerSize[0] / outerSize[1];
         if (aspectRatioImage > aspectRatioBox) {
-          return vec2(size[0], size[0] / aspectRatioImage); // width-based scaling
+          return vec2(outerSize[0], outerSize[0] / aspectRatioImage); // width-based scaling
         } else {
-          return vec2(size[1] * aspectRatioImage, size[1]); // height-based scaling
+          return vec2(outerSize[1] * aspectRatioImage, outerSize[1]); // height-based scaling
         }
       }
-
-      vec2 inImagePx(vec2 effSize, vec2 inElem) {
+      vec2 inImagePx(vec3 align, vec2 outerSize, vec2 imageSize, vec2 effSize, vec2 inElem) { 
+        if (align[0] == 2.0) { return inElem; }
+        float alignX = align[1];
+        float alignY = align[2];
         float offsetX;
-        if (alignX == 0) {
-          offsetX = 0.0;
-        } else if (alignX == 1) {
-          offsetX = 0.5 * (size[0] - effSize[0]);
-        } else {
-          offsetX = size[0] - effSize[0];
-        }
-
         float offsetY;
-        if (alignY == 0) {
-          offsetY = 0.0;
-        } else if (alignY == 1) {
-          offsetY = 0.5 * (size[1] - effSize[1]);
-        } else {
-          offsetY = size[1] - effSize[1];
-        }
-        
-        // Transform inElem to image coordinates
-        return (inElem - vec2(offsetX, offsetY)) * (imageSize / effSize);
-      }
-    `
-    : align.keepSize ? `
-      vec2 effectiveSize() { return imageSize; }
-      
-      vec2 inImagePx(vec2 effSize, vec2 inElem) { 
-        // Calculate offset based on alignX and alignY
-        float offsetX;
-        if (alignX == 0) {
-          offsetX = 0.0;
-        } else if (alignX == 1) {
-          offsetX = 0.5 * (size[0] - imageSize[0]);
-        } else {
-          offsetX = size[0] - imageSize[0];
-        }
 
-        float offsetY;
-        if (alignY == 0) {
-          offsetY = 0.0;
-        } else if (alignY == 1) {
-          offsetY = 0.5 * (size[1] - imageSize[1]);
-        } else {
-          offsetY = size[1] - imageSize[1];
+        if (align[0] == 0.0) {
+          if (alignX == 0.0) {
+            offsetX = 0.0;
+          } else if (alignX == 1.0) {
+            offsetX = 0.5 * (outerSize[0] - imageSize[0]);
+          } else {
+            offsetX = outerSize[0] - imageSize[0];
+          }
+  
+          if (alignY == 0.0) {
+            offsetY = 0.0;
+          } else if (alignY == 1.0) {
+            offsetY = 0.5 * (outerSize[1] - imageSize[1]);
+          } else {
+            offsetY = outerSize[1] - imageSize[1];
+          }
+          
+          // Apply the alignment offset directly
+          return inElem - vec2(offsetX, offsetY);          
         }
-        
-        // Apply the alignment offset directly
-        return inElem - vec2(offsetX, offsetY);
+        if (align[0] == 1.0) {
+          if (alignX == 0.0) {
+            offsetX = 0.0;
+          } else if (alignX == 1.0) {
+            offsetX = 0.5 * (outerSize[0] - effSize[0]);
+          } else {
+            offsetX = outerSize[0] - effSize[0];
+          }
+  
+          if (alignY == 0.0) {
+            offsetY = 0.0;
+          } else if (alignY == 1.0) {
+            offsetY = 0.5 * (outerSize[1] - effSize[1]);
+          } else {
+            offsetY = outerSize[1] - effSize[1];
+          }
+          
+          // Transform inElem to image coordinates
+          return (inElem - vec2(offsetX, offsetY)) * (imageSize / effSize);  
+        }
       }
-    ` : '')].join('\n')
-  )
+    `)
 })
 
 component('imageColorOfPoint', {
+  type: 'shader_code',
+  params: [
+    {id: 'getTexturePixel', as: 'string', newLinesInCode: true, description: 'e.g. texture2D(atlas, texCoord)'}
+  ],
+  impl: colorOfPoint({
+    codeInMain: `
+  vec2 effSize = effectiveSize(align, size, imageSize);
+  vec2 inImage = inImagePx(align, size, imageSize, effSize, inElem);
+  
+  if (inImage[0] < 0.0 || inImage[0] >= effSize[0] || inImage[1] < 0.0 || inImage[1] >= effSize[1]) {
+    gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+    return;
+  }
+  
+  vec2 rInImage = inImage / effSize;
+  gl_FragColor = getTexturePixel((imagePos + flipH(rInImage) * imageSize) / atlasSize);
+`,
+    getTexturePixel: '%$getTexturePixel%'
+  })
+})
+
+component('imageColorOfPointOld', {
   type: 'shader_code',
   impl: colorOfPoint(`
   vec2 effSize = effectiveSize();

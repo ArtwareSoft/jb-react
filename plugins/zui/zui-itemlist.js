@@ -240,9 +240,11 @@ extension('zui','itemlist-FE', {
         gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'pos'), pos)
         gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'size'), size)
 
+        const atlasIdToUnit = (viewBeData.uniforms.find(u=>u.id == 'atlasIdToUnit') || {}).value
         viewBeData.uniforms.forEach(({glType,id,glMethod,value}) => {
           if (glType == 'sampler2D') {
-            const {i} = jb.zui.allocateSingleTextureUnit({view: id,cmp})
+            const i = atlasIdToUnit && id.indexOf('atlas') == 0 ? atlasIdToUnit[id.split('atlas').pop()]
+              : jb.zui.allocateSingleTextureUnit({view, uniformId: id,cmp}).i
             gl.activeTexture(gl['TEXTURE'+i])
             gl.bindTexture(gl.TEXTURE_2D, view.textures[id] || emptyTexture)
             gl.uniform1i(gl.getUniformLocation(shaderProgram, id), i)    

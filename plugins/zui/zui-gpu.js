@@ -45,15 +45,17 @@ component('passAttsValues', {
 component('colorOfPoint', {
   type: 'shader_code',
   params: [
-    {id: 'codeInMain', as: 'string', newLinesInCode: true, description: 'can use canvasSize, pos,size, itemViewSize, elemBottomLeftCoord, inElem (offset in elem), rInElem ([0-1])'}
+    {id: 'codeInMain', as: 'string', newLinesInCode: true, description: 'can use canvasSize, pos,size, itemViewSize, elemBottomLeftCoord, inElem (offset in elem), rInElem ([0-1])'},
+    {id: 'getTexturePixel', as: 'string', newLinesInCode: true, description: 'e.g. texture2D(atlas, texCoord)'}
   ],
-  impl: (ctx,codeInMain) => ({
+  impl: (ctx,codeInMain,getTexturePixel) => ({
     calc: (v,utils, uniforms,varyings) => jb.zui.fragementShaderCode({
         declarations: [
           ...v.atts.map(({glType,id}) => `varying ${glType} ${id};`),
           ...uniforms.map(({glType,id,vecSize}) => `uniform ${glType} ${id}${vecSize ? `[${vecSize}]` : ''};`),
           ...varyings.map(({glType,id}) => `varying ${glType} ${id};`),
-          ...utils.map(x=>x.code)].filter(x=>x).join('\n'),
+          getTexturePixel ? `vec4 getTexturePixel(vec2 texCoord) { return ${getTexturePixel};}` : '',
+          ...utils.map(x=>x.code())].filter(x=>x).join('\n'),
         main: codeInMain
     })
   })
@@ -67,7 +69,7 @@ component('red', {
 component('utils', {
   type: 'gpu_utils',
   params: [
-    {id: 'code', as: 'string', newLinesInCode: true},
+    {id: 'code', as: 'string', dynamic: true, newLinesInCode: true},
   ]
 })
 
@@ -104,34 +106,36 @@ component('intVec', {
   params: [
     {id: 'id', as: 'string', mandatory: true},
     {id: 'size', as: 'number', mandatory: true},
-    {id: 'value', dynamic: true, mandatory: true},
+    {id: 'val', dynamic: true, mandatory: true},
   ],
   impl: (ctx,id,size,val) => ({id, val, glType: 'int', glMethod: '1iv', vecSize: size})
 })
 
-component('Int', {
+component('vec3Vec', {
   type: 'uniform',
+  macroByValue: true,
   params: [
     {id: 'id', as: 'string', mandatory: true},
-    {id: 'value', dynamic: true, mandatory: true},
+    {id: 'size', as: 'number', mandatory: true},
+    {id: 'val', dynamic: true, mandatory: true},
   ],
-  impl: (ctx,id,val) => ({id, val, glType: 'int', glMethod: '1i'})
+  impl: (ctx,id,size,val) => ({id, val, glType: 'vec3', glMethod: '3fv', vecSize: size})
 })
 
-component('Float', {
+component('int', {
   type: 'uniform',
   params: [
     {id: 'id', as: 'string', mandatory: true},
-    {id: 'value', dynamic: true, mandatory: true},
+    {id: 'val', dynamic: true, mandatory: true},
   ],
-  impl: (ctx,id,val) => ({id, val, glType: 'float', glMethod: '1f'})
+  impl: (ctx,id,val) => ({id, val, glType: 'int', glMethod: '1i'})
 })
 
 component('vec2', {
   type: 'uniform',
   params: [
     {id: 'id', as: 'string', mandatory: true},
-    {id: 'value', dynamic: true, mandatory: true},
+    {id: 'val', dynamic: true, mandatory: true},
   ],
   impl: (ctx,id,val) => ({id, val, glType: 'vec2', glMethod: '2fv'})
 })
@@ -140,7 +144,7 @@ component('vec3', {
   type: 'uniform',
   params: [
     {id: 'id', as: 'string', mandatory: true},
-    {id: 'value', dynamic: true, mandatory: true},
+    {id: 'val', dynamic: true, mandatory: true},
   ],
   impl: (ctx,id,val) => ({id, val, glType: 'vec3', glMethod: '3fv'})
 })
@@ -149,7 +153,7 @@ component('float', {
   type: 'uniform',
   params: [
     {id: 'id', as: 'string'},
-    {id: 'value', dynamic: true},
+    {id: 'val', dynamic: true},
   ],
   impl: ctx => ({glType: 'sampler2D', ...ctx.params})
 })
@@ -209,10 +213,10 @@ extension('zui','GPU', {
       image.src = url
     })
   },
-  allocateSingleTextureUnit({view,cmp}) {
+  allocateSingleTextureUnit({view,uniformId, cmp}) {
     const lru = cmp.renderCounter
-    const freeTexture = cmp.boundTextures.find(rec=>rec.view == view) || cmp.boundTextures.filter(rec => rec.lru != lru).sort((r1,r2) => r1.lru - r2.lru)[0]
-    return Object.assign(freeTexture, {lru, view})
+    const freeTexture = cmp.boundTextures.find(rec=>rec.view == view && rec.uniformId == uniformId) || cmp.boundTextures.filter(rec => rec.lru != lru).sort((r1,r2) => r1.lru - r2.lru)[0]
+    return Object.assign(freeTexture, {lru,uniformId,view})
   },
   vertexShaderCode: ({declarations,main} = {}) => `attribute vec2 itemPos;
   uniform vec2 zoom;
@@ -232,8 +236,8 @@ extension('zui','GPU', {
     vec2 elemBottomLeftOffsetNdc = pos/(0.5*canvasSize);
     vec2 elemBottomLeftNdc = itemBottomLeftNdc + elemBottomLeftOffsetNdc;
     elemBottomLeftCoord = (elemBottomLeftNdc + 1.0) * (0.5*canvasSize);
-    gl_PointSize = max(size[0],size[1]) * 1.0;
-    //gl_PointSize = max(itemViewSize[0],itemViewSize[1]) * 1.0;
+    //gl_PointSize = max(size[0],size[1]) * 1.0;
+    gl_PointSize = max(itemViewSize[0],itemViewSize[1]) * 1.0;
     ${main||''}
   }`,
     fragementShaderCode: ({declarations,main} = {}) => `precision highp float;
@@ -248,7 +252,7 @@ extension('zui','GPU', {
     void main() {
       vec2 inElem = gl_FragCoord.xy - elemBottomLeftCoord;
       if (inElem[0] >= size[0] || inElem[0] < 0.0 || inElem[1] >= size[1] || inElem[1] < 0.0) {
-        gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0); 
+        gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0); 
         return;
       };
       vec2 rInElem = inElem/size;

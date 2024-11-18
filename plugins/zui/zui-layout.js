@@ -26,13 +26,14 @@ component('smoothGrowth', {
 
 component('flowDown', {
   type: 'layout_feature',
-  description: 'takes available up to maxWidth',
+  description: 'takes width and max available height',
   params: [
-    {id: 'min', as: 'array', byName: true},
-    {id: 'maxWidth', as: 'number'}
+    {id: 'width', as: 'number'},
+    {id: 'minHeight', as: 'number'}
   ],
-  impl: (ctx,min,maxWidth) => ({
-      sizeNeeds: ({round, available }) => round ? [available[0], Math.min(available[1],maxWidth)] : min
+  impl: (ctx,width,minHeight) => ({
+      layoutRounds: 2,
+      sizeNeeds: ({round, available }) => round ? [width, available[1]] : [width, minHeight]
   })
 })
 

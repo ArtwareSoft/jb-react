@@ -14,12 +14,12 @@ component('view', {
   ],
   impl: (ctx,title,itemProp,layout,propsF,attsF, renderGpuF,incrementalItemsData, renderD3F) => ({ 
     createLayoutObj: id => jb.zui.assignFeatures({
-      id, title, ctxPath: ctx.path, priority: itemProp.priority || 0,
+      id, title, ctxPath: ctx.path, priority: itemProp && itemProp.priority || 0,
     }, layout(ctx)),
     createBEObjs: id => [{ 
       id, title, itemProp, ctxPath: ctx.path, attsF, props: {}, propsF, incrementalItemsData, renderGpuF,
       async: propsF.reduce((acc,profF) => acc || profF.async, false),
-      calc() { return this.async ? jb.zui.asyncBEData(ctx, this) : jb.zui.calcBEData(ctx, this)}
+      calc() { return jb.zui.asyncBEData(ctx, this) }
     }],
     createFEObjs: id => [jb.zui.newFEView(ctx, { id, title, ctxPath: ctx.path, textures: {}, renderGpuF, incrementalItemsData, renderD3F})],
   })
@@ -34,18 +34,7 @@ extension('zui','view', {
   async asyncBEData(ctx, view) {
     const ctxWithView = ctx.setVars({view})
     await view.propsF.reduce((pr, prop) => pr.then(async () => jb.zui.assignProp(prop,view,await prop.calcProp(ctxWithView))), Promise.resolve())
-    return jb.zui.calcBEData(ctx, view)
-  },
-  assignProp(prop,view,val) {
-    if (prop.multiple)
-      Object.assign(view.props,val)
-    else
-      view.props[prop.id] = val
-  },
-  calcBEData(ctx, view) {
-    const ctxWithView = ctx.setVars({view})
-    if (!view.async)
-      view.propsF.forEach(prop => jb.zui.assignProp(prop,view,prop.calcProp(ctxWithView)))
+    view.incrementalItemsData && await view.incrementalItemsData.calcMoreItemsData(view,ctx.vars.$props.tCenter)
     view.atts = view.attsF(ctxWithView).flatMap(x=>x).map(att=> ({...att, calc: null, ar: att.calc(view)}))
     view.renderGPU = view.renderGpuF(ctxWithView).calc(view)
     return {
@@ -55,6 +44,12 @@ extension('zui','view', {
       uniforms: Object.values(view.renderGPU.uniforms).map(({id,glType,glMethod,value}) => ({id,glType,glMethod,value})),
       props: jb.objFromEntries(view.propsF.filter(p=>p.passToFE).map(({id})=>[id, view.props[id]]))
     }
+  },
+  assignProp(prop,view,val) {
+    if (prop.multiple)
+      Object.assign(view.props,val)
+    else
+      view.props[prop.id] = val
   },
   assignFeatures(view, features) {
     features.forEach(feature => Object.assign(view,feature))

@@ -7,6 +7,33 @@ component('points', { passiveData: [
       {"name": "Beer Sheva", x: 3, y : 3 },
 ]})
 
+component('zuiTest.flow', {
+  impl: uiTest({
+    control: zui.itemlist({
+      items: '%$points%',
+      itemsPositions: xyByProps(),
+      boardSize: 10,
+      itemView: flow({
+        elements: [
+          group(title('%name%1'), paragraph('1111 %name% %name% %name% %name% %name% %name% %name%')),
+          group(
+            title('%name%2'),
+            paragraph('2222 %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name%')
+          )
+        ],
+        width: 150,
+        minHeight: 50
+      }),
+      initialZoom: 4,
+      center: '1.5,9.4',
+      style: GPU('640', '640')
+    }),
+    expectedResult: contains('tel aviv'),
+    uiAction: animationEvent(),
+    emulateFrontEnd: true
+  })
+})
+
 component('zuiTest.image', {
   impl: uiTest({
     control: zui.itemlist({
@@ -40,7 +67,6 @@ component('zuiTest.text', {
     expectedResult: and(
       contains('[[0,0], [24.8984375,0], [56.0234375,0], [82.703125,0]]'),
       contains('[[24.8984375,15], [31.125,15], [26.6796875,15], [33.796875,15]]'),
-      contains(`{id: 'alignX', glType: 'int', glMethod: '1i', value: 1}`),
       contains('data:image/png;base64,iVBORw0')
     ),
     uiAction: animationEvent(),

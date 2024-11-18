@@ -24,17 +24,7 @@ component('image', {
             prop('val', obj(prop('atlas', '%$atlas%'), prop('size', '%size%'), prop('pos', '%pos%')))
           )
         )
-      ))),
-      prop('atlasIdToHeight', '%$view.props.atlasGroups.totalHeight%'),
-      prop('glCodeForTextPixelFunc', pipeline(
-        '%$view.props.atlasGroups%',
-        pipeline(
-          Var('prefix', If('%id% !=0', 'else if', 'if')),
-          '%$prefix% (unit == %id%.0) {\n        return texture2D(atlas%id%, texCoord);\n      }'
-        ),
-        join('\n'),
-        'vec4 getTexturePixel(vec2 texCoord) { %% ;}'
-      ))
+      )))
     ],
     atts: [
       float('atlasId', '%$view.props.xyToImage/{%$item.xyPos%}/atlas%'),
@@ -47,35 +37,46 @@ component('image', {
         varying('float', 'unit', 'float(atlasIdToUnit[int(atlasId)])'),
         varying('vec2', 'atlasSize', 'vec2(1024.0, float(atlasIdToHeight[int(atlasId)]))')
       ],
-      utils: imageUtils('%$align%', '%$view.props.glCodeForTextPixelFunc%'),
+      utils: [
+        alignUtils(),
+        utils(pipeline(
+          '%$view.props.atlasGroups%',
+          'if (unit == %id%.0) return texture2D(atlas%id%, texCoord);',
+          join('\n'),
+          'vec4 getTexturePixel(vec2 texCoord) { %% ;}'
+        ))
+      ],
       uniforms: [
-        imageUniforms('%$align%'),
-        intVec('atlasIdToHeight', 20, '%$view/props/atlasIdToHeight%')
+        vec3('align', '%$align%'),
+        intVec('atlasIdToHeight', '%$view.props.atlasGroups.length%', '%$view.props.atlasGroups.totalHeight%')
       ],
       zoomDependentUniforms: [
-        atlasesOfExposedItems(),
-        intVec('atlasIdToUnit', 20, allocateTexturesToUnits())
+        zuiImage.atlasesOfExposedItems(),
+        intVec('atlasIdToUnit', '%$view.props.atlasGroups.length%', zuiImage.allocateTexturesToUnits())
       ]
     })
   })
 })
 
-component('atlasesOfExposedItems', {
+component('zuiImage.atlasesOfExposedItems', {
   type: 'uniform',
   impl: ctx => {
     const { view, cmp} = ctx.vars
     if (cmp.isBEComp)
-      return view.props.atlasGroups.map(({id, url})=>({id: `atlas${id}`, glType: 'sampler2D', glMethod: '1i'}))
+      return view.props.atlasGroups.map(({id})=>({id: `atlas${id}`, glType: 'sampler2D', glMethod: '1i'}))
     if (!cmp.beDataGpu[view.id]) return []
-    return cmp.beDataGpu[view.id].props.atlasGroupsFE.map(({id, url})=>({id: `atlas${id}`, glType: 'sampler2D', glMethod: '1i', 
+    const ret = view.atlasesOfExposedItems || cmp.beDataGpu[view.id].props.atlasGroupsFE.map(({id, url})=>({id: `atlas${id}`, glType: 'sampler2D', glMethod: '1i', 
       val: () => url
     }))
+    view.atlasesOfExposedItems = ret
+    return ret
   }
 })
 
-component('allocateTexturesToUnits', {
+component('zuiImage.allocateTexturesToUnits', {
   impl: ctx => {
     const {view,DIM,cmp} = ctx.vars
+    if (view._allocateTexturesToUnits) return view._allocateTexturesToUnits
     const { itemViewSize, elemsLayout, zoom, center } = cmp.state
 
     const { atlasGroupsFE } = cmp.beDataGpu[view.id].props
@@ -106,7 +107,7 @@ component('allocateTexturesToUnits', {
     boundTextures.forEach(rec =>rec.group != null && (newBoundTextureByGroup[rec.group] = rec))
     const atlasIdToUnit = atlasGroupsFE.map(g=> jb.path(newBoundTextureByGroup,[g.id,'i']))
 
-    return new Int32Array(atlasIdToUnit)
+    return view._allocateTexturesToUnits = new Int32Array(atlasIdToUnit)
   }
 })
 

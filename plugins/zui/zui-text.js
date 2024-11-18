@@ -21,10 +21,10 @@ component('text', {
       vec2('imageSize', '%$view.props.xyToPos/{%$item.xyPos%}/size%')
     ],
     renderGPU: gpuCode({
-      shaderCode: imageColorOfPoint(),
-      utils: imageUtils('%$align%', 'vec4 getTexturePixel(vec2 texCoord) { return texture2D(atlas, texCoord);}'),
+      shaderCode: imageColorOfPoint('texture2D(atlas, texCoord)'),
+      utils: alignUtils(),
       uniforms: [
-        imageUniforms('%$align%'),
+        vec3('align', '%$align%'),
         vec2('atlasSize', '%$view.props.atlas.size%'),
         texture('atlas', '%$view.props.atlas.url%')
       ]
@@ -38,8 +38,9 @@ component('zuiText.calcAtlas', {
     const { text, summary, lineLength, font } = view.itemProp
     const {fontDimention} = ctx.vars.view.props
 
-    const tmpCanvas = jb.zui.createCanvas(1,1)
-    const tmpCtx = tmpCanvas.getContext('2d');tmpCtx.font = font; tmpCtx.textBaseline = 'top'; tmpCtx.textAlign = 'left'; tmpCtx.fillStyle = 'black'
+    // const tmpCanvas = jb.zui.createCanvas(1,1)
+    // const tmpCtx = tmpCanvas.getContext('2d');tmpCtx.font = font; tmpCtx.textBaseline = 'top'; tmpCtx.textAlign = 'left'; tmpCtx.fillStyle = 'black'
+    const tmpCtx = jb.zui.measureCanvasCtx(font)
 
     const xyToPos = {}, MAX_WIDTH = 1024
     let yPos = 0, xPos = 0

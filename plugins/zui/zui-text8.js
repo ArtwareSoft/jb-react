@@ -38,12 +38,12 @@ component('text8', {
       utils: text8Utils(),
       uniforms: [
         texture('charSetTexture', '%$view.props.charSetImage%'),
-        Float('charWidthInTexture', '%$fontWidth%'),
+        float('charWidthInTexture', '%$fontWidth%'),
         vec2('charSetTextureSize', ({},{},{charSet,fontWidth,fontSize}) => [charSet.length * fontWidth,fontSize]),
-        Int('strLen', '%$length%')
+        int('strLen', '%$length%')
       ],
       zoomDependentUniforms: [
-        Float('charWidthInElem', (ctx,{elemLayout},{length}) => elemLayout.size[0]/length)
+        float('charWidthInElem', (ctx,{elemLayout},{length}) => elemLayout.size[0]/length)
       ]
     })
   })
