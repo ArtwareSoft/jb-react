@@ -156,8 +156,11 @@ extension('zui','layout', {
       initSizes(topView)
       topView.sizeVec = axes.map(axis => buildSizeVec(topView,axis))
 
-      axes.map(axis => allocMinSizes(axis))
       const filteredOut = {}
+      axes.map(axis => allocMinSizes(axis))
+      calcGroupsSize(topView)
+      filterAllOrNone(topView)
+      axes.map(axis => allocMinSizes(axis))
       calcGroupsSize(topView)
       filterFirstToFit(topView)
 
@@ -178,11 +181,11 @@ extension('zui','layout', {
         minRecords[axis].map(r=>{
           const allocatedSize = elemsLayout[r.id].size
           const currentTotal = calcTotalSize(axis)
-          allocatedSize[axis] = r.min
+          allocatedSize[axis] = filteredOut[r.id] ? 0 : r.min
           const requestedTotal = calcTotalSize(axis)
           if (requestedTotal > size[axis]) {
-            allocatedSize[axis] = 0
             jb.log('zui layout min alloc rejected',{axis, requested: r.min, available: size[axis], view: r.id, requestedTotal, currentTotal, r})
+            allocatedSize[axis] = 0
           } else {
             jb.log('zui layout min alloc accepted',{axis, requested: r.min, available: size[axis], view: r.id, requestedTotal, currentTotal, r})
             r.alloc = r.min
@@ -255,6 +258,16 @@ extension('zui','layout', {
           const size = elemsLayout[ch.id].size
           return foundFit || size[0] != 0 && size[1] != 0
         } ,false)
+      }
+      function filterAllOrNone(view) {
+        if (!view.children) return
+        view.children.map(ch =>filterAllOrNone(ch))
+        if (view.allOrNone) {
+          const notAllShown = view.children.reduce((acc, ch) => 
+            acc || filteredOut[ch.id] || elemsLayout[ch.id].size.reduce((acc,s) => acc*s,1) == 0, false)
+          if (notAllShown)
+            filteredOutView(view)
+        }
       }
       function calcShownViews(view) {
         const size = elemsLayout[view.id].size

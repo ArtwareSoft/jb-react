@@ -7,6 +7,70 @@ component('points', { passiveData: [
       {"name": "Beer Sheva", x: 3, y : 3 },
 ]})
 
+component('zuiTest.growingDiagnostics', {
+  doNotRunInTests: true,
+  impl: uiTest({
+    control: group({
+      controls: zui.grid({
+        items: '%$diagnostics%',
+        itemsPositions: xyByPropsNormalized('urgency', 'likelihood'),
+        boardSize: 8,
+        itemView: firstToFit(
+          allOrNone({
+            views: [
+              circle(enumarator('department')),
+              growingFlow(
+                title('%title%', { align: keepSize('center', 'top') }),
+                title('%department%', { align: keepSize('center', 'top') }),
+                paragraph('%description%'),
+                group(title('explanation'), paragraph('%general_explanation%')),
+                group(title('symptoms'), paragraph('%how_it_relates_to_the_symptoms%'))
+              )
+            ],
+            layoutFeatures: minSize([100,150])
+          }),
+          group(
+            circle(enumarator('department')),
+            growingText('%title%'),
+            growingText('%department%', { minSize: [100,75] })
+          )
+        ),
+        initialZoom: 16,
+        center: '4,4',
+        style: GPU('1600', '1600')
+      }),
+      features: group.wait({
+        for: pipe(
+          Var('diag', fileContent('/projects/zuiDemo/diagnostics.json'), { async: true }),
+          Var('depAr', fileContent('/projects/zuiDemo/departments.json'), { async: true }),
+          Var('dep', dynamicObject(json.parse('%$depAr%'), '%title%', { value: '%%' })),
+          json.parse('%$diag%'),
+          extendWithObj(property('%title%', '%$dep%'), '%%')
+        ),
+        varName: 'diagnostics'
+      })
+    }),
+    uiAction: waitForNextUpdate(),
+    emulateFrontEnd: true
+  })
+})
+
+component('zuiTest.allOrNone', {
+  impl: uiTest({
+    control: zui.grid({
+      items: '%$points%',
+      itemsPositions: xyByProps(),
+      boardSize: 10,
+      itemView: group(allOrNone(circle(numeric('x')), text('hello', 5), text('world', 5)), text('sec', 3)),
+      initialZoom: 6,
+      center: '1.5,9.4'
+    }),
+    expectedResult: notContains(`id: 'top~0'`),
+    uiAction: animationEvent(),
+    emulateFrontEnd: true
+  })
+})
+
 component('zuiTest.minSize', {
   impl: uiTest({
     control: zui.grid({
@@ -205,50 +269,6 @@ component('zuiTest.growingTextHotels', {
       }),
       features: group.wait(pipe(fileContent('/projects/zuiDemo/hotels-data.json'), json.parse('%%')), {
         varName: 'allHotels'
-      })
-    }),
-    uiAction: waitForNextUpdate(),
-    emulateFrontEnd: true
-  })
-})
-
-component('zuiTest.growingDiagnostics', {
-  doNotRunInTests: true,
-  impl: uiTest({
-    control: group({
-      controls: zui.grid({
-        items: '%$diagnostics%',
-        itemsPositions: xyByPropsNormalized('urgency', 'likelihood'),
-        boardSize: 8,
-        itemView: firstToFit(
-          allOrNone({
-            views: [
-              circle(enumarator('department')),
-              growingFlow(
-                title('%title%', { align: keepSize('center', 'top') }),
-                title('%department%', { align: keepSize('center', 'top') }),
-                paragraph('%description%'),
-                group(title('explanation'), paragraph('%general_explanation%')),
-                group(title('symptoms'), paragraph('%how_it_relates_to_the_symptoms%'))
-              )
-            ],
-            layoutFeatures: minSize([300,300])
-          }),
-          group(circle(enumarator('department')), growingText('%title%'))
-        ),
-        initialZoom: 16,
-        center: '4,4',
-        style: GPU('1600', '1600')
-      }),
-      features: group.wait({
-        for: pipe(
-          Var('diag', fileContent('/projects/zuiDemo/diagnostics.json'), { async: true }),
-          Var('depAr', fileContent('/projects/zuiDemo/departments.json'), { async: true }),
-          Var('dep', dynamicObject(json.parse('%$depAr%'), '%title%', { value: '%%' })),
-          json.parse('%$diag%'),
-          extendWithObj(property('%title%', '%$dep%'), '%%')
-        ),
-        varName: 'diagnostics'
       })
     }),
     uiAction: waitForNextUpdate(),

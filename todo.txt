@@ -2,7 +2,6 @@
 top -b -n 1 | xclip -selection clipboard
 
 zui
-  add minSize to group
   fix phone issues
   boxFlow
 

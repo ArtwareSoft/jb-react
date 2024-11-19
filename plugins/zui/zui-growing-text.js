@@ -6,16 +6,20 @@ component('growingText', {
     {id: 'text', dynamic: true, mandatory: true},
     {id: 'summary', type: 'summary', defaultValue: slice()},
     {id: 'font', as: 'string', defaultValue: '500 16px Arial'},
-    {id: 'align', type: 'align_image', defaultValue: keepSize()}
+    {id: 'align', type: 'align_image', defaultValue: keepSize()},
+    {id: 'minSize', mandatory: true, as: 'array', defaultValue: [0,0]}
   ],
-  impl: firstToFit(
-    text('%$text()%', 32, { summary: '%$summary%', font: '%$font%', align: '%$align%' }),
-    text('%$text()%', 16, { summary: '%$summary%', font: '%$font%', align: '%$align%' }),
-    text('%$text()%', 8, { summary: '%$summary%', font: '%$font%', align: '%$align%' }),
-    text('%$text()%', 4, { summary: '%$summary%', font: '%$font%', align: '%$align%' }),
-    text('%$text()%', 2, { summary: '%$summary%', font: '%$font%', align: '%$align%' }),
-    text('%$text()%', 1, { summary: '%$summary%', font: '%$font%', align: '%$align%' })
-  )
+  impl: firstToFit({
+    views: [
+      text('%$text()%', 32, { summary: '%$summary%', font: '%$font%', align: '%$align%' }),
+      text('%$text()%', 16, { summary: '%$summary%', font: '%$font%', align: '%$align%' }),
+      text('%$text()%', 8, { summary: '%$summary%', font: '%$font%', align: '%$align%' }),
+      text('%$text()%', 4, { summary: '%$summary%', font: '%$font%', align: '%$align%' }),
+      text('%$text()%', 2, { summary: '%$summary%', font: '%$font%', align: '%$align%' }),
+      text('%$text()%', 1, { summary: '%$summary%', font: '%$font%', align: '%$align%' })
+    ],
+    layoutFeatures: minSize('%$minSize%')
+  })
 })
 
 component('slice', {
