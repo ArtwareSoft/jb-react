@@ -1,6 +1,6 @@
 dsl('zui')
 
-component('zui.gridView', {
+component('zui.boxFlow', {
   type: 'view',
   params: [
     {id: 'items', as: 'array', dynamic: true, mandatory: true},

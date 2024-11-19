@@ -1,7 +1,7 @@
 dsl('zui')
 using('remote-widget')
 
-component('zui.itemlist', {
+component('zui.grid', {
   type: 'control<>',
   params: [
     {id: 'items', as: 'array', dynamic: true, mandatory: true, byName: true},

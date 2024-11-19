@@ -6,7 +6,6 @@
   "bugs": {
     "url": "https://github.com/artwaresoft/jb-react/issues"
   },
-  "main": "dist/jbart-core.js",
   "files": [
     "dist",
     "bin"
@@ -18,25 +17,15 @@
   ],
   "scripts": {
     "start": "npm run studio",
-    "webpack": "node_modules/.bin/webpack",
-    "build": "node_modules/.bin/webpack & node bin/build-libs & npm run ts",
     "build-libs": "node bin/build-libs",
-    "build-symbols": "",
-    "ts": "node bin/tgp2ts srcDir:bin/studio -out:dist/jbart",
-    "pretty": "node bin/tgp-pretty -file:studio/.*",
-    "pretty-for-specific-files": "node bin/tgp-pretty -file:studio-helper -filesToLoad:projects/studio-helper/studio-helper.js",
-    "pretty-for-d3": "node bin/tgp-pretty -file:itemlist -filesToLoad:projects/itemlists/itemlists.js -modules:d3",
+    "build-symbols": "node bin/build-symbols.js",
     "studio": "npm run studio-server & npm run helloWorld",
     "studio-server": "node --inspect=7000 bin/studio/studio-server.js",
-    "code-server": "node bin/code-loader/treeShake-server.js -modules=studio,test",
-    "puppeteer-server": "node src/misc/puppeteer/pptr-server.js",
     "helloWorld": "start http://localhost:8082/project/studio/helloWorld",
     "test": "start http://localhost:8082/projects/tests/tests.html",
     "vscode-helper": "start http://localhost:8082/bin/vscode/vscode.html",
-    "pub": "yarn build-libs && git commit -am build-lib",
     "vscode-package": "nvm use 16 & vsce package",
-    "copy-projects-to-template": "node bin/copy-projects-to-template.js",
-    "build-atlas": "node --inspect hosts/node/jb.js -verbose '-main:buildPartition()' -projects:zuiDemo %cmpId:zuiDemo.main",
+    "gh-test": "start https://artwaresoft.github.io/jb-react/hosts/tests/tests-gh.html?test=zuiTest.growingDiagnostics&show&plugins=zui-tests",
     "upgrade-cmps": "node hosts/node/jb.js -script:./temp/upgrade-cmps.js",
     "jb-outer": "node hosts/node/jb-router.js",
     "build-icon-repo": "node hosts/node/jb.js -main:buildRepo -plugins:ui-misc-tests -text > dist/fonts/allFontsRepository.js"
@@ -62,9 +51,6 @@
   ],
   "author": "Shai Ben-Yehuda (http://artwaresoft.com)",
   "license": "SEE LICENSE IN license.txt",
-  "optionalDependencies": {
-    "bufferutil": "^4.0.8"
-  },
   "devDependencies": {
     "canvas": "^2.11.2",
     "ffi-napi": "^4.0.3",

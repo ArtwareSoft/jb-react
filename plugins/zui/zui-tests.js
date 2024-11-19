@@ -9,7 +9,7 @@ component('points', { passiveData: [
 
 component('zuiTest.flow', {
   impl: uiTest({
-    control: zui.itemlist({
+    control: zui.grid({
       items: '%$points%',
       itemsPositions: xyByProps(),
       boardSize: 10,
@@ -36,7 +36,7 @@ component('zuiTest.flow', {
 
 component('zuiTest.growingFlow', {
   impl: uiTest({
-    control: zui.itemlist({
+    control: zui.grid({
       items: '%$points%',
       itemsPositions: xyByProps(),
       boardSize: 10,
@@ -51,7 +51,7 @@ component('zuiTest.growingFlow', {
       center: '1.5,9.4',
       style: GPU('400', '400')
     }),
-    expectedResult: contains('[0,406,400,61]','[0,506,300,61]'),
+    expectedResult: contains('elem0posSize','calcbedata1','elem1posSize'),
     uiAction: uiActions(animationEvent(), zoomEvent(2)),
     emulateFrontEnd: true
   })
@@ -59,7 +59,7 @@ component('zuiTest.growingFlow', {
 
 component('zuiTest.image', {
   impl: uiTest({
-    control: zui.itemlist({
+    control: zui.grid({
       items: '%$points%',
       itemsPositions: xyByProps(),
       boardSize: 10,
@@ -79,7 +79,7 @@ component('zuiTest.image', {
 
 component('zuiTest.text', {
   impl: uiTest({
-    control: zui.itemlist({
+    control: zui.grid({
       items: '%$points%',
       itemsPositions: xyByProps(),
       boardSize: 10,
@@ -99,7 +99,7 @@ component('zuiTest.text', {
 
 component('zuiTest.text8', {
   impl: uiTest({
-    control: zui.itemlist({
+    control: zui.grid({
       items: '%$points%',
       itemsPositions: xyByProps(),
       boardSize: 10,
@@ -120,7 +120,7 @@ component('zuiTest.text8', {
 
 component('zuiTest.growingText', {
   impl: uiTest({
-    control: zui.itemlist({
+    control: zui.grid({
       items: '%$points%',
       itemsPositions: xyByProps(),
       boardSize: 64,
@@ -137,7 +137,7 @@ component('zuiTest.growingText', {
 
 component('zuiTest.growingText.changeView', {
   impl: uiTest({
-    control: zui.itemlist({
+    control: zui.grid({
       items: '%$points%',
       itemsPositions: xyByProps(),
       boardSize: 64,
@@ -154,7 +154,7 @@ component('zuiTest.growingText.changeView', {
 
 component('zuiTest.circles', {
   impl: uiTest({
-    control: zui.itemlist({
+    control: zui.grid({
       items: '%$points%',
       itemsPositions: xyByProps(),
       boardSize: 10,
@@ -175,7 +175,7 @@ component('zuiTest.growingTextHotels', {
   doNotRunInTests: true,
   impl: uiTest({
     control: group({
-      controls: zui.itemlist({
+      controls: zui.grid({
         items: '%$allHotels%',
         itemsPositions: xyByProps('lat', 'long'),
         boardSize: 64,
@@ -197,7 +197,7 @@ component('zuiTest.growingDiagnostics', {
   doNotRunInTests: true,
   impl: uiTest({
     control: group({
-      controls: zui.itemlist({
+      controls: zui.grid({
         items: '%$diagnostics%',
         itemsPositions: xyByPropsNormalized('urgency', 'likelihood'),
         boardSize: 8,
@@ -236,7 +236,7 @@ component('zuiTest.gallery', {
   impl: uiTest({
     control: group({
       controls: [
-        zui.itemlist({
+        zui.grid({
           items: pipeline('%$hotels/0/gallery%', obj(prop('image', '%%'))),
           itemsPositions: xyByIndex(),
           boardSize: 4,
@@ -264,7 +264,7 @@ component('zuiTest.hotels', {
   impl: uiTest({
     control: group({
       controls: [
-        zui.itemlist({
+        zui.grid({
           items: '%$hotels%',
           prepareProps: [
             numeric('price', { prefix: '$', features: [priorty(1), colorScale(greens())] }),
@@ -312,7 +312,7 @@ component('zuiTest.hotels', {
 //   impl: uiTest({
 //     control: group({
 //       controls: [
-//         zui.itemlist({
+//         zui.grid({
 //           itemView: group(
 //             circle(byName('price')),
 //             growingText(byName('name')),
