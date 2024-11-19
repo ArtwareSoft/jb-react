@@ -124,7 +124,7 @@ component('zuiTest.growingText', {
       items: '%$points%',
       itemsPositions: xyByProps(),
       boardSize: 64,
-      itemView: group(growingText('%name%'), circle(numeric('x'))),
+      itemView: group(circle(numeric('x')), growingText('%name%')),
       initialZoom: 8,
       center: '0,64',
       style: GPU('640', '640')
@@ -141,7 +141,7 @@ component('zuiTest.growingText.changeView', {
       items: '%$points%',
       itemsPositions: xyByProps(),
       boardSize: 64,
-      itemView: group(growingText('%name%'), circle(numeric('x'))),
+      itemView: group(circle(numeric('x')), growingText('%name%')),
       initialZoom: 8,
       center: '0,64',
       style: GPU('640', '640')
@@ -179,7 +179,7 @@ component('zuiTest.growingTextHotels', {
         items: '%$allHotels%',
         itemsPositions: xyByProps('lat', 'long'),
         boardSize: 64,
-        itemView: group(growingText('%name%'), circle(numeric('price'))),
+        itemView: group(circle(numeric('price')), growingText('%name%')),
         initialZoom: 7,
         center: '32,30',
         style: GPU('640', '640')
@@ -203,12 +203,13 @@ component('zuiTest.growingDiagnostics', {
         boardSize: 8,
         itemView: firstToFit(
           growingFlow(
-            title('%title% (%department%)', { align: keepSize('center', 'top') }),
+            title('%title%', { align: keepSize('center', 'top') }),
+            title('%department%', { align: keepSize('center', 'top') }),
             paragraph('%description%'),
             group(title('explanation'), paragraph('%general_explanation%')),
             group(title('symptoms'), paragraph('%how_it_relates_to_the_symptoms%'))
           ),
-          group(growingText('%title%'), circle(enumarator('department')), text('%description%', 20)),
+          group(circle(enumarator('department')), growingText('%title%')),
           circle(enumarator('department'))
         ),
         initialZoom: 4,

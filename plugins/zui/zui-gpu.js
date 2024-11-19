@@ -227,16 +227,18 @@ extension('zui','GPU', {
   uniform vec2 size;
   varying vec2 elemBottomLeftCoord;
   ${declarations||''}
+  vec2 invertY(vec2 pos) { return vec2(pos[0],-1.0*pos[1]); }
 
   void main() {
-    vec2 elemCenterPx = pos+size/2.0;
-    vec2 itemBottomLeftNdc = (itemPos - center) / (0.5*zoom);
-    vec2 elemCenterNdc = itemBottomLeftNdc + elemCenterPx/(0.5*canvasSize);
+    vec2 elemCenterPx = invertY(pos+size/2.0);
+    vec2 itemTopLeftNdc = (itemPos - center) / (0.5*zoom);
+    vec2 elemCenterNdc = itemTopLeftNdc + elemCenterPx/(0.5*canvasSize);
     gl_Position = vec4( elemCenterNdc, 0.0, 1.0);
-    vec2 elemBottomLeftOffsetNdc = pos/(0.5*canvasSize);
-    vec2 elemBottomLeftNdc = itemBottomLeftNdc + elemBottomLeftOffsetNdc;
+    //vec2 elemBottomLeftOffsetNdc = (pos+size)/(0.5*canvasSize);
+    vec2 elemBottomLeftNdc = itemTopLeftNdc + invertY(pos+vec2(0.0,size[1])) / (0.5 * canvasSize);
+    //vec2 elemBottomLeftNdc = itemTopLeftNdc - vec2(0,elemBottomLeftOffsetNdc[1]);
     elemBottomLeftCoord = (elemBottomLeftNdc + 1.0) * (0.5*canvasSize);
-    gl_PointSize = max(size[0],size[1]) * 1.0;
+    gl_PointSize = max(size[0],size[1]) * 1.42;
     //gl_PointSize = max(itemViewSize[0],itemViewSize[1]) * 1.0;
     ${main||''}
   }`,
@@ -250,15 +252,23 @@ extension('zui','GPU', {
     ${declarations||''}
 
     void main() {
-      vec2 inElem = gl_FragCoord.xy - elemBottomLeftCoord;
+      vec2 inElem = gl_FragCoord.xy- elemBottomLeftCoord;
+      inElem = vec2(inElem[0], size[1] - inElem[1]);
+
+      if (inElem[0] >= size[0] || inElem[1] >= size[1]) {
+        gl_FragColor = vec4(0.0, 0.0, 1.0, 0.0); 
+        return;
+      }
+      if (inElem[0] < 0.0 || inElem[1] < 0.0) {
+        gl_FragColor = vec4(0.0, 1.0, 0.0, 0.0); 
+        return;
+      }
       if (inElem[0] >= size[0] || inElem[0] < 0.0 || inElem[1] >= size[1] || inElem[1] < 0.0) {
         gl_FragColor = vec4(0.0, 0.0, 1.0, 0.0); 
         return;
       };
       vec2 rInElem = inElem/size;
-      //bool isInElem = (rInElem[0] < 0.9 && rInElem[0] > 0.1 && rInElem[1] < 0.9 && rInElem[1] > 0.1 );
-      //if (!isInElem) return;
-      //gl_FragColor = vec4(rInElem, 0.0, 1.0);
+      //gl_FragColor = vec4(rInElem, 0.0, 1.0); return;
       ${main||''}
     }`
 })

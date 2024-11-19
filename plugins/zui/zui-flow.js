@@ -52,8 +52,8 @@ component('flow', {
           vec2 effSize = effectiveSize(align, size, imageSize);
           vec2 inImage = inImagePx(align, size, imageSize, effSize, inElem);
           vec2 rInImage = inImage / effSize;
-  
-          if (inImage[0] < 0.0 || inImage[0] >= effSize[0] || inImage[1] < 0.0 || inImage[1] >= effSize[1])
+
+          if (rInImage[0] < 0.0 || rInImage[0] >= 1.0 || rInImage[1] < 0.0 || rInImage[1] >= 1.0)
               return vec4(1.0, 0.0, 0.0, 0.0);
           
           vec2 texCoord = (imagePos + rInImage * imageSize) / atlasSize;
@@ -65,13 +65,13 @@ component('flow', {
         utils(ctx => `vec4 getTexturePixel(vec2 inElem) {
         float avgHeight = size[1]/noOfElements;
         float effHeight;
-        float base = size[1];
+        float base = 0.0;
         ${ctx.vars.view.props.elems.map(({id}) => `
         effHeight = min(elem${id}posSize[3],avgHeight);
-        if (inElem[1] > base - effHeight )
-            return getAtlasPixel(vec2(inElem[0], base- inElem[1]),  elem${id}posSize, elemAlign[${id}] );
+        if (inElem[1] < base + effHeight )
+            return getAtlasPixel(vec2(inElem[0], inElem[1] - base),  elem${id}posSize, elemAlign[${id}] );
 
-        base = base - effHeight;`).join('')}
+        base = base + effHeight;`).join('')}
         return vec4(1.0, 0.0, 0.0, 0.0);
     }`)
       ],

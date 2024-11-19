@@ -11,10 +11,10 @@ component('circle', {
     layout: '%$size%',
     atts: color('fillColor', '%$colorScale%'),
     renderGPU: gpuCode({
-      shaderCode: colorOfPoint(`vec2 r = abs(inElem-size*0.5) / min(size[0],size[1]);
-    float distance = sqrt(r[0]*r[0] + r[1]*r[1]);
-    if (distance < 0.5)
-      gl_FragColor = vec4(fillColor,1.0);`)
+      shaderCode: colorOfPoint(`vec2 center = size * 0.5;
+      float radius = min(size[0], size[1]) * 0.5;
+      if (length(inElem - center) <= radius)
+        gl_FragColor = vec4(fillColor, 1.0);`)
     })
   })
 })

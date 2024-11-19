@@ -104,7 +104,6 @@ component('alignUtils', {
   description: 'Align image of a known size into a larger box. Provides two GL functions: effectiveSize() and inImagePx() \n    using vec2 size, vec2 imageSize, vec2 inElemPx, and the vec3 uniform [type: [keepSize,keepProportions,fill], alignX: [0,1,2] , alignY: [0,1,2]]',
   type: 'gpu_utils',
   impl: utils(`   
-    vec2 flipH(vec2 pos) { return vec2(pos[0],1.0-pos[1]); }
     vec2 effectiveSize(vec3 align, vec2 outerSize, vec2 imageSize) {
         if (align[0] == 0.0) { return imageSize; }
         if (align[0] == 2.0) { return outerSize; }
@@ -184,7 +183,7 @@ component('imageColorOfPoint', {
   }
   
   vec2 rInImage = inImage / effSize;
-  gl_FragColor = getTexturePixel((imagePos + flipH(rInImage) * imageSize) / atlasSize);
+  gl_FragColor = getTexturePixel((imagePos + rInImage * imageSize) / atlasSize);
 `,
     getTexturePixel: '%$getTexturePixel%'
   })
@@ -202,6 +201,6 @@ component('imageColorOfPointOld', {
   }
   
   vec2 rInImage = inImage / effSize;
-  gl_FragColor = getTexturePixel((imagePos + flipH(rInImage) * imageSize) / atlasSize);
+  gl_FragColor = getTexturePixel((imagePos + rInImage * imageSize) / atlasSize);
 `)
 })
