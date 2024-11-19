@@ -1,6 +1,11 @@
 (sensors; cpufreq-info) | xclip -selection clipboard
 top -b -n 1 | xclip -selection clipboard
 
+zui
+  add minSize to group
+  fix phone issues
+  boxFlow
+
 plugin encapsulation
   plugins files have dsls
     if a comp is of type of the dsl, the name is with prefix, otherwise the plugin name is added as prefix

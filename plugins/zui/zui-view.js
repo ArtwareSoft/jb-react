@@ -56,7 +56,7 @@ extension('zui','view', {
     return view
   },
   initGroup(ctx, title, layoutProps) {
-    const { layout, views } = ctx.params
+    const { layout, views, layoutFeatures } = ctx.params
     const _views = views()
     return { 
       createLayoutObj: id => ({
@@ -64,6 +64,7 @@ extension('zui','view', {
         title: title || 'group',
         ctxPath: ctx.path,
         ...layout,
+        ...(layoutFeatures||[]).reduce((acc,f) => ({...acc,...f}), {}),
         ...(layoutProps || {}),
         children: _views.map((v,i) =>v.createLayoutObj(`${id}~${i}`)).sort((x,y) => y.priority-x.priority )
       }),

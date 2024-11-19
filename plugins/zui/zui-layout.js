@@ -136,14 +136,15 @@ extension('zui','layout', {
     layoutCalculator.layoutView = layoutView
     return layoutCalculator
 
-    function calcMinRecord(view, layoutAxis) {
+    function calcMinRecord(view, layoutAxis,minSize = 0) {
       if (!view.children) {
         return [{
           p: view.priority || 10000, id: view.id,
           axis: layoutAxis, title: view.title,
-          min: view.sizeNeeds({round: 0, available:[0,0]})[layoutAxis] }]
+          min: Math.max(minSize, view.sizeNeeds({round: 0, available:[0,0]})[layoutAxis]) }]
         }
-      return view.children.flatMap(childView => calcMinRecord(childView,layoutAxis))
+      const minSizeForChildren = jb.asArray(view.minSize)[layoutAxis]
+      return view.children.flatMap(childView => calcMinRecord(childView,layoutAxis,minSizeForChildren))
     }
 
     function layoutView(size) {
@@ -154,8 +155,6 @@ extension('zui','layout', {
       // build data strucuture - TODO: recycle for better performance
       initSizes(topView)
       topView.sizeVec = axes.map(axis => buildSizeVec(topView,axis))
-
-      //axes.map(axis => records[axis].forEach(r=> ['max','alloc','size'].forEach(k=> delete r[k])))
 
       axes.map(axis => allocMinSizes(axis))
       const filteredOut = {}
@@ -270,7 +269,7 @@ extension('zui','layout', {
         for(let round=1;round<rounds;round++) {
           const otherAxis = topAxis ? 0 : 1
           const childsResidu = topView.children.map(ch=> size[otherAxis] - elemsLayout[ch.id].size[otherAxis])
-          const resideInLayoutAxis = size[topAxis] - calcTotalSize(topAxis)
+          let resideInLayoutAxis = size[topAxis] - calcTotalSize(topAxis)
 
           primitiveShownViews.map(view=>{
             if (view.layoutRounds <= round) return
@@ -284,9 +283,11 @@ extension('zui','layout', {
               return
             const oldSize = [currentSize[0],currentSize[1]]
             axes.map(axis=>elemsLayout[view.id].size[axis] = newSize[axis])
-
-            if (calcTotalSize(0) > size[0] || calcTotalSize(1) > size[1])
-              axes.map(axis=>elemsLayout[view.id].size[axis] = oldSize[axis])
+            const newTotalSize = axes.map(axis=>calcTotalSize(axis))
+            if (newTotalSize[0] > size[0] || newTotalSize[1] > size[1])
+              axes.map(axis=>elemsLayout[view.id].size[axis] = oldSize[axis]) // revert
+            else
+              resideInLayoutAxis = size[topAxis] - newTotalSize[topAxis]
           })
         }
       }

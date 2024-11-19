@@ -7,6 +7,25 @@ component('points', { passiveData: [
       {"name": "Beer Sheva", x: 3, y : 3 },
 ]})
 
+component('zuiTest.minSize', {
+  impl: uiTest({
+    control: zui.grid({
+      items: '%$points%',
+      itemsPositions: xyByProps(),
+      boardSize: 10,
+      itemView: firstToFit(
+        allOrNone(text('hello', 5), text('world', 5), { layoutFeatures: minSize(100) }),
+        circle(numeric('x'))
+      ),
+      initialZoom: 3,
+      center: '1.5,9.4'
+    }),
+    expectedResult: and(contains(`id: 'top~1'`), notContains("id: 'top~0~1'")),
+    uiAction: animationEvent(),
+    emulateFrontEnd: true
+  })
+})
+
 component('zuiTest.flow', {
   impl: uiTest({
     control: zui.grid({
@@ -202,17 +221,22 @@ component('zuiTest.growingDiagnostics', {
         itemsPositions: xyByPropsNormalized('urgency', 'likelihood'),
         boardSize: 8,
         itemView: firstToFit(
-          growingFlow(
-            title('%title%', { align: keepSize('center', 'top') }),
-            title('%department%', { align: keepSize('center', 'top') }),
-            paragraph('%description%'),
-            group(title('explanation'), paragraph('%general_explanation%')),
-            group(title('symptoms'), paragraph('%how_it_relates_to_the_symptoms%'))
-          ),
-          group(circle(enumarator('department')), growingText('%title%')),
-          circle(enumarator('department'))
+          allOrNone({
+            views: [
+              circle(enumarator('department')),
+              growingFlow(
+                title('%title%', { align: keepSize('center', 'top') }),
+                title('%department%', { align: keepSize('center', 'top') }),
+                paragraph('%description%'),
+                group(title('explanation'), paragraph('%general_explanation%')),
+                group(title('symptoms'), paragraph('%how_it_relates_to_the_symptoms%'))
+              )
+            ],
+            layoutFeatures: minSize([300,300])
+          }),
+          group(circle(enumarator('department')), growingText('%title%'))
         ),
-        initialZoom: 4,
+        initialZoom: 16,
         center: '4,4',
         style: GPU('1600', '1600')
       }),

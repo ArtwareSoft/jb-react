@@ -5,7 +5,7 @@ component('group', {
   params: [
     {id: 'views', mandatory: true, type: 'view[]', dynamic: true, composite: true},
     {id: 'layout', type: 'group_layout', defaultValue: vertical()},
-    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true}
+    {id: 'layoutFeatures', type: 'group_layout_feature[]' }
   ],
   impl: ctx => jb.zui.initGroup(ctx)
 })
@@ -15,9 +15,9 @@ component('allOrNone', {
   params: [
     {id: 'views', mandatory: true, type: 'view[]', dynamic: true, composite: true},
     {id: 'layout', type: 'group_layout', defaultValue: vertical()},
-    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true}
+    {id: 'layoutFeatures', type: 'group_layout_feature[]' }
   ],
-  impl: ctx => jb.zui.initGroup(ctx, 'allOrNone', { allOrNone: true })
+  impl: ctx => jb.zui.initGroup(ctx, 'allOrNone', { allOrNone: true})
 })
 
 component('firstToFit', {
@@ -25,9 +25,9 @@ component('firstToFit', {
   params: [
     {id: 'views', mandatory: true, type: 'view[]', dynamic: true, composite: true},
     {id: 'layout', type: 'group_layout', defaultValue: vertical()},
-    {id: 'viewFeatures', type: 'view_feature[]', dynamic: true}
+    {id: 'layoutFeatures', type: 'group_layout_feature[]' }
   ],
-  impl: ctx => jb.zui.initGroup(ctx, 'firstToFit', { firstToFit: true })
+  impl: ctx => jb.zui.initGroup(ctx, 'firstToFit', { firstToFit: true})
 })
 
 component('vertical', {
@@ -40,3 +40,9 @@ component('horizontal', {
   impl: () => ({ layoutAxis:  0 })
 })
 
+component('minSize', {
+  type: 'group_layout_feature',
+  params: [
+    {id: 'minSize', mandatory: true, as: 'array', defaultValue: [0,0]},
+  ]
+})
