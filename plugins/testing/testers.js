@@ -161,7 +161,7 @@ extension('test', {
 		}		
 		return res
 	},
-	async runTests({testType,specificTest,show,pattern,notPattern,take,remoteTests,repo,showOnlyTest,top,coveredTestsOf}) {
+	async runTests({testType,specificTest,show,pattern,notPattern,take,remoteTests,repo,showOnlyTest,top,coveredTestsOf,quiet}) {
 		const {pipe, fromIter, subscribe,concatMap, fromPromise } = jb.callbag 
 		let index = 1
 		specificTest = specificTest && decodeURIComponent(specificTest).split('>').pop()
@@ -206,7 +206,7 @@ extension('test', {
 			return
 		}
 
-		document.body.innerHTML = `<div style="font-size: 20px"><div id="progress"></div><span id="fail-counter" onclick="jb.test.hide_success_lines()"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span><span id="memory-usage"></span></div>`;
+		document.body.innerHTML = quiet ? '': `<div style="font-size: 20px"><div id="progress"></div><span id="fail-counter" onclick="jb.test.hide_success_lines()"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span><span id="memory-usage"></span></div>`;
 		let counter = 0
 		return pipe(
 			fromIter(tests),
@@ -217,22 +217,25 @@ extension('test', {
 				// if (e[1].impl.timeout && e[1].impl.timeout > 1000)
 				// 	await jb.delay(5)
 				const testID = e[0], fullTestId = e[2]
-				//if (testID == 'previewTest.childJbm') debugger
-				document.getElementById('progress').innerHTML = `<div id=${testID}>${index++}: ${testID} started</div>`
-				//await jb.delay(1)
-				console.log('starting ' + testID )
+				if (!quiet) {
+					document.getElementById('progress').innerHTML = `<div id=${testID}>${index++}: ${testID} started</div>`
+					console.log('starting ' + testID )
+				}
 				const res = await jb.test.runSingleTest(testID,{showOnlyTest, fullTestId })
-				console.log('end      ' + testID, res)
-				document.getElementById('progress').innerHTML = `<div id=${testID}>${testID} finished</div>`
+				if (!quiet) {
+					console.log('end      ' + testID, res)
+					document.getElementById('progress').innerHTML = `<div id=${testID}>${testID} finished</div>`
+				}
 				return { ...res, fullTestId, testID}
 			})() )),
 			subscribe(res=> {
 				res.success ? jb.test.success_counter++ : jb.test.fail_counter++;
 				jb.test.usedJSHeapSize = (jb.path(jb.frame,'performance.memory.usedJSHeapSize' || 0) / 1000000)
+				if (quiet || (!res.renderDOM && show)) res.show()
+				if (quiet) return
 				jb.test.updateTestHeader(jb.frame.document, jb.test)
 
 				jb.test.addHTML(document.body, jb.test.testResultHtml(res, repo), {beforeResult: jb.test.singleTest && res.renderDOM});
-				if (!res.renderDOM && show) res.show()
 				if (jb.ui && tests.length >1) {
 					jb.cbLogByPath = {}
 					jb.frame.scrollTo(0,0)
