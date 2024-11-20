@@ -204,3 +204,14 @@ component('imageColorOfPointOld', {
   gl_FragColor = getTexturePixel((imagePos + rInImage * imageSize) / atlasSize);
 `)
 })
+
+component('zui.glLimits', {
+  impl: ctx => {
+    const gl = ctx.vars.cmp.gl
+    return { glLimits : { 
+      EXT_disjoint_timer_query: gl.getExtension('EXT_disjoint_timer_query'),
+      MAX_COMBINED_TEXTURE_IMAGE_UNITS: gl.getParameter(gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS), 
+      MAX_TEXTURE_SIZE: gl.getParameter(gl.MAX_TEXTURE_SIZE)} 
+    }
+  }
+})

@@ -54,9 +54,12 @@ component('dataMethodFromBackend', {
   params: [
     {id: 'method', as: 'string'},
     {id: 'Data', defaultValue: '%%'},
-    {id: 'vars'}
+    {id: 'ctxVars'}
   ],
-  impl: remote.data(backend.dataMethod('%$cmp/cmpId%', '%$method%', { Data: '%$Data%' }), backEnd())
+  impl: remote.data({
+    calc: backend.dataMethod('%$cmp/cmpId%', '%$method%', { Data: '%$Data%', ctxVars: '%$ctxVars%' }),
+    jbm: backEnd()
+  })
 })
 
 component('action.updateFrontEnd', {

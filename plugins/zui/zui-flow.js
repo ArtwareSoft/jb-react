@@ -24,14 +24,12 @@ component('flow', {
     {id: 'width', as: 'number', defaultValue: 300},
     {id: 'minHeight', as: 'number', defaultValue: 50},
     {id: 'align', type: 'align_image', defaultValue: keepProportions()},
-    {id: 'MAX_ATLAS_SIZE', as: 'number', defaultValue: 1048576}
   ],
   impl: view('flow', {
     layout: flowDown('%$width%', '%$minHeight%'),
     viewProps: [
       prop('elems', zuiFlow.emptyElems('%$elements%')),
       prop('width', '%$width%'),
-      prop('MAX_ATLAS_SIZE', '%$MAX_ATLAS_SIZE%'),
       prop('xyToAtlas', obj()),
       FEProp('atlases', list()),
       FEProp('textures', obj())
@@ -106,31 +104,38 @@ component('flowItemsData', {
         if (!missingCount) return
         return { center_avg: [sum[0]/missingCount, sum[1]/missingCount], missingCount }
     },
-    async calcMoreItemsData(view,center,recalc = []) { // runs in BE
+    async calcMoreItemsData(view,{center, glLimits}) { // runs in BE
         const {DIM,mat} = ctx.vars
-        const {atlases, elems, width, MAX_ATLAS_SIZE, textures, xyToAtlas} = view.props
+        const MAX_TEXTURE_SIZE = jb.path(glLimits,'MAX_TEXTURE_SIZE') || 4096
+        const {atlases, elems, width, textures, xyToAtlas} = view.props
+        if (!elems.length) return
         let curAtlas = {glyphs: [], height: 0, id: atlases.length}
         atlases.push(curAtlas)
 
         for await (const it of jb.zui.areaIter(mat, DIM, ...center.map(x=>Math.round(x)))) {
-            if (curAtlas.height*width > MAX_ATLAS_SIZE) {
-              curAtlas = {glyphs: [], height: 0, id: atlases.length}
-              atlases.push(curAtlas)
-            }
-
             const item = it.item
-            xyToAtlas[item.xyPos] = curAtlas.id;
+            if (elems[0].xyToPos[item.xyPos].item) return
 
+            const itemGlyphs = []
             await elems.reduce( (pr,elem, i) => pr.then(async ()=> {
-                if (elem.xyToPos[item.xyPos].item) return
                 const elemGC = elemGCs[i]
                 const data = await elemGC.calc(item, width)
                 const size = await elemGC.size(data, width)
-                const pos = [0,curAtlas.height]
+                itemGlyphs.push({elemGC,elem,size,data})
+            }), Promise.resolve())
+            const itemHeight = itemGlyphs.reduce((acc,{size}) => acc+size[1],0)
+            if (curAtlas.height + itemHeight > MAX_TEXTURE_SIZE) {
+              curAtlas = {glyphs: [], height: 0, id: atlases.length}
+              atlases.push(curAtlas)
+            }
+            xyToAtlas[item.xyPos] = curAtlas.id
+            itemGlyphs.reduce((height,{elemGC,elem,size,data}) => {
+                const pos = [0,curAtlas.height+height]
                 elem.xyToPos[item.xyPos] = [...pos,...size]
                 curAtlas.glyphs.push({elemGC,pos,data})
-                curAtlas.height += size[1]
-            }), Promise.resolve())
+                return height += size[1]
+            },0)
+            curAtlas.height += itemHeight
         }
         if (curAtlas.height == 0) atlases.pop()
 

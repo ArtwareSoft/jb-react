@@ -218,7 +218,10 @@ extension('zui','GPU', {
     const freeTexture = cmp.boundTextures.find(rec=>rec.view == view && rec.uniformId == uniformId) || cmp.boundTextures.filter(rec => rec.lru != lru).sort((r1,r2) => r1.lru - r2.lru)[0]
     return Object.assign(freeTexture, {lru,uniformId,view})
   },
-  vertexShaderCode: ({declarations,main} = {}) => `attribute vec2 itemPos;
+  vertexShaderCode: ({declarations,main} = {}) => `precision highp float;
+  precision mediump int;
+
+  attribute vec2 itemPos;
   uniform vec2 zoom;
   uniform vec2 center;
   uniform vec2 canvasSize;
@@ -244,6 +247,7 @@ extension('zui','GPU', {
   }`,
     fragementShaderCode: ({declarations,main} = {}) => `precision highp float;
     precision highp float;
+    precision mediump int;
     uniform vec2 canvasSize;
     uniform vec2 pos;
     uniform vec2 size;

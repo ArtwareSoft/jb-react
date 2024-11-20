@@ -35,9 +35,9 @@ component('zuiTest.growingDiagnostics', {
             growingText('%department%', { minSize: [100,75] })
           )
         ),
-        initialZoom: 16,
-        center: '4,4',
-        style: GPU('1600', '1600')
+        initialZoom: 8,
+        center: '7,7',
+        style: GPU('100%', '100%', { fullScreen: true })
       }),
       features: group.wait({
         for: pipe(
@@ -63,7 +63,8 @@ component('zuiTest.allOrNone', {
       boardSize: 10,
       itemView: group(allOrNone(circle(numeric('x')), text('hello', 5), text('world', 5)), text('sec', 3)),
       initialZoom: 6,
-      center: '1.5,9.4'
+      center: '1.5,9.4',
+      style: GPU('640', '640')
     }),
     expectedResult: notContains(`id: 'top~0'`),
     uiAction: animationEvent(),

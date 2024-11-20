@@ -19,7 +19,7 @@ component('view', {
     createBEObjs: id => [{ 
       id, title, itemProp, ctxPath: ctx.path, attsF, props: {}, propsF, incrementalItemsData, renderGpuF,
       async: propsF.reduce((acc,profF) => acc || profF.async, false),
-      calc() { return jb.zui.asyncBEData(ctx, this) }
+      calc(ctx2) { return jb.zui.asyncBEData(ctx2 || ctx, this) }
     }],
     createFEObjs: id => [jb.zui.newFEView(ctx, { id, title, ctxPath: ctx.path, textures: {}, renderGpuF, incrementalItemsData, renderD3F})],
   })
@@ -34,7 +34,7 @@ extension('zui','view', {
   async asyncBEData(ctx, view) {
     const ctxWithView = ctx.setVars({view})
     await view.propsF.reduce((pr, prop) => pr.then(async () => jb.zui.assignProp(prop,view,await prop.calcProp(ctxWithView))), Promise.resolve())
-    view.incrementalItemsData && await view.incrementalItemsData.calcMoreItemsData(view,ctx.vars.$props.tCenter)
+    view.incrementalItemsData && await view.incrementalItemsData.calcMoreItemsData(view,{glLimits: ctx.vars.glLimits, center: ctx.vars.$props.tCenter})
     view.atts = view.attsF(ctxWithView).flatMap(x=>x).map(att=> ({...att, calc: null, ar: att.calc(view)}))
     view.renderGPU = view.renderGpuF(ctxWithView).calc(view)
     return {

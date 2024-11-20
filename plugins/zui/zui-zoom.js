@@ -51,6 +51,13 @@ extension('zui','zoom', {
         state.center = tCenter
         //const w = glCanvas.offsetWidth, h = glCanvas.offsetHeight
         const w = el.offsetWidth, h = el.offsetHeight
+        if (el instanceof Element) {
+          el.style.touchAction = 'none'
+          el.oncontextmenu = e => (e.preventDefault(), false)
+
+          ;['pointerdown', 'pointermove', 'pointerup', 'touchstart', 'touchmove', 'touchend']
+              .forEach(event => el.addEventListener(event, e => e.preventDefault()))
+        }
   
       Object.assign(cmp, {
         updatePointer(pid,sourceEvent) {
