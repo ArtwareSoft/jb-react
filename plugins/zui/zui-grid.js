@@ -8,12 +8,13 @@ component('zui.grid', {
     {id: 'itemsPositions', type: 'items_positions', as: 'array', dynamic: true},
     {id: 'prepareProps', type: 'itemProp[]', dynamic: true},
     {id: 'boardSize', as: 'number', defaultValue: 256},
-    {id: 'itemView', type: 'view<zui>', mandatory: true, dynamic: true},
+    {id: 'itemView', type: 'view', mandatory: true, dynamic: true},
     {id: 'title', as: 'string'},
     {id: 'initialZoom', as: 'number', description: 'in terms of board window. empty is all board'},
     {id: 'center', as: 'string', description: 'e.g., 2,7'},
     {id: 'onChange', type: 'action<>', dynamic: true},
-    {id: 'style', type: 'itemlist-style<zui>', dynamic: true, defaultValue: GPU()},
+    {id: 'style', type: 'itemlist-style', dynamic: true, defaultValue: GPU()},
+    {id: 'extraRendering', type: 'extra_client_rendering[]', dynamic: true, defaultValue: showTouchPointers()},
     {id: 'features', type: 'feature<>[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
@@ -72,15 +73,12 @@ component('GPU', {
       }),
       frontEnd.varsFromBEProps('DIM','tCenter','tZoom','itemsPositionsData','noOfItems','canvasSizeFromBE','width','height','elemsLayout','itemViewSize','fullScreen'),
       frontEnd.var('itemViewProfile', ({},{$model}) => $model.itemView.profile),
-      frontEnd.prop('beDataGpu', obj()),
       frontEnd.prop('layoutCalculator', (ctx,{itemViewProfile}) =>
         jb.zui.initLayoutCalculator(ctx.run(itemViewProfile,{ type: 'view<zui>'}).createLayoutObj('top'))),
+      frontEnd.var('extraRenderingProfile', ({},{$model}) => $model.extraRendering.profile),
+      frontEnd.prop('extraRendering', (ctx,{extraRenderingProfile}) => ctx.run(extraRenderingProfile,{ type: 'extra_client_rendering<zui>'})),
       frontEnd.prop('ZOOM_LIMIT', ({},{DIM}) => [1, jb.ui.isMobile() ? DIM: DIM*2]),
-      frontEnd.prop('debugElems', () => [
-          //jb.zui.showTouchPointers(),
-          //jb.zui.mark4PointsZuiElem(), 
-          //jb.zui.markGridAreaZuiElem()
-      ]),
+      frontEnd.prop('beDataGpu', obj()),
       zui.Zoom(),
       frontEnd.prop('exposedViews', rx.subject()),
       frontEnd.flow(
@@ -267,6 +265,7 @@ extension('zui','itemlist-FE', {
         console.log(zoom,center,size)
 
         gl.drawArrays(gl.POINTS, 0, noOfItems)
+        jb.asArray(cmp.extraRendering).forEach(r=>r.renderGPUFrame({ gl, glCanvas, canvasSize, cmp, ctx }))
       },
       elemsLayoutCache: {},
       atlasTexturePool: {},
@@ -297,8 +296,5 @@ extension('zui','itemlist-FE', {
     })
     if (fullScreen) cmp.refreshCanvasToFullScreen()
     cmp.emptyTexture = cmp.emptyTexture || jbHost.isNode || await jb.zui.imageToTexture(gl,jb.zui.emptyImageUrl()) 
-
-    // await Object.values(cmp.feViews).filter(({id}) => shownViews.indexOf(id) != -1)
-    //   .reduce((pr,feView) => pr.then(() => cmp.prepareTextures(feView)), Promise.resolve())
   }
 })
