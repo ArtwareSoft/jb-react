@@ -31,6 +31,7 @@ component('showTouchPointers', {
       const vertexBuffer = gl.createBuffer()
       const vertexNumComponents = 4
       const vertexCount = vertexArray.length/vertexNumComponents
+      if (vertexCount == 0) return
 
       gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'canvasSize'), canvasSize)
 
