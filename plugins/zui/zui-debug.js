@@ -4,6 +4,11 @@ component('showTouchPointers', {
   type: 'extra_client_rendering',
   impl: ctx => ({
     renderGPUFrame({ gl, glCanvas, canvasSize, cmp, ctx }) {
+      const vertexArray = new Float32Array(cmp.pointers.flatMap(p=>[...pointTo01(p.p), ...(p.p || [0,0]) ]).map(x=>1.0*x))
+      const key = vertexArray.join(',')
+      if (key == cmp.lastShowTouchPointersKey) return
+      cmp.lastShowTouchPointersKey = key
+
       const src = [`attribute vec4 pointersPos;
           uniform vec2 canvasSize;
           varying vec2 coord;
@@ -26,7 +31,6 @@ component('showTouchPointers', {
 
       const shaderProgram = jb.zui.buildShaderProgram(gl, src)
       gl.useProgram(shaderProgram)
-      const vertexArray = new Float32Array(cmp.pointers.flatMap(p=>[...pointTo01(p.p), ...(p.p || [0,0]) ]).map(x=>1.0*x))
 
       const vertexBuffer = gl.createBuffer()
       const vertexNumComponents = 4

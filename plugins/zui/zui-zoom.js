@@ -11,6 +11,7 @@ component('zui.Zoom', {
       source.frontEndEvent('pointerdown'),
       rx.log('zui pointerdown'),
       rx.var('pid', '%pointerId%'),
+      rx.do(({},{cmp})=>{if (cmp.base.requestFullscreen) try{ cmp.base.requestFullscreen() } catch(e) {}}),
       rx.do(({},{cmp,pid}) => cmp.addPointer(pid)),
       rx.flatMap(source.mergeConcat(
         rx.pipe(

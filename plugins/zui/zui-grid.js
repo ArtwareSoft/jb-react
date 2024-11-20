@@ -192,6 +192,7 @@ extension('zui','itemlist-FE', {
           const duration = new Date().getTime() - time
           elemsLayoutCache[zoom] = JSON.parse(JSON.stringify(layout))
           Object.assign(cmp.state, elemsLayoutCache[zoom])
+          console.log(duration, 'layout', zoom)
           jb.log('zui elemsLayout',{zoom, duration, ...layout, itemViewSize, ctx:cmp.ctx})
         }
         return cmp.state.shownViews
@@ -211,6 +212,7 @@ extension('zui','itemlist-FE', {
         }), Promise.resolve())
       },
       renderGPUView(ctx) {
+        const baseTime = new Date().getTime()
         const view = ctx.data
         const { noOfItems, DIM} = ctx.vars
         const { beDataGpu, emptyTexture } = cmp
@@ -225,7 +227,7 @@ extension('zui','itemlist-FE', {
         if (emulateFrontEndInTest) return
 
         const glCode = viewBeData.glCode
-        const shaderProgram = jb.zui.buildShaderProgram(gl, glCode)
+        const shaderProgram = view.shaderProgram = view.shaderProgram || jb.zui.buildShaderProgram(gl, glCode)
         const fixedCenter = [center[0], DIM-center[1]+1]
         gl.useProgram(shaderProgram)
         gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'gridPadding'), [2,0])
@@ -262,7 +264,8 @@ extension('zui','itemlist-FE', {
         })
         jb.log('zui itemlist renderGPUView beDataGpu', {beDataGpu, ctx})
         jb.log('zui itemlist renderGPUView', {elemLayout, glCode, view, zoom,fixedCenter,canvasSize,itemViewSize,ctx})
-        console.log(zoom,center,size)
+        const duration = new Date().getTime() - baseTime
+        console.log(duration, view.id)
 
         gl.drawArrays(gl.POINTS, 0, noOfItems)
         jb.asArray(cmp.extraRendering).forEach(r=>r.renderGPUFrame({ gl, glCanvas, canvasSize, cmp, ctx }))
