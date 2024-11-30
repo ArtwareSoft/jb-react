@@ -5,7 +5,7 @@ component('zui.grid', {
   type: 'control<>',
   params: [
     {id: 'items', as: 'array', dynamic: true, mandatory: true, byName: true},
-    {id: 'itemsPositions', type: 'items_positions', as: 'array', dynamic: true},
+    {id: 'itemsPositions', type: 'grid_pivot', dynamic: true},
     {id: 'prepareProps', type: 'itemProp[]', dynamic: true},
     {id: 'boardSize', as: 'number', defaultValue: 256},
     {id: 'itemView', type: 'view', mandatory: true, dynamic: true},
@@ -14,7 +14,7 @@ component('zui.grid', {
     {id: 'center', as: 'string', description: 'e.g., 2,7'},
     {id: 'onChange', type: 'action<>', dynamic: true},
     {id: 'style', type: 'itemlist-style', dynamic: true, defaultValue: GPU()},
-    {id: 'extraRendering', type: 'extra_client_rendering[]', dynamic: true, defaultValue: showTouchPointers()},
+    {id: 'extraRendering', type: 'control[]', dynamic: true, defaultValue: showTouchPointers()},
     {id: 'features', type: 'feature<>[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
@@ -76,7 +76,7 @@ component('GPU', {
       frontEnd.prop('layoutCalculator', (ctx,{itemViewProfile}) =>
         jb.zui.initLayoutCalculator(ctx.run(itemViewProfile,{ type: 'view<zui>'}).createLayoutObj('top'))),
       frontEnd.var('extraRenderingProfile', ({},{$model}) => $model.extraRendering.profile),
-      frontEnd.prop('extraRendering', (ctx,{extraRenderingProfile}) => ctx.run(extraRenderingProfile,{ type: 'extra_client_rendering<zui>'})),
+      frontEnd.prop('extraRendering', (ctx,{extraRenderingProfile}) => ctx.run(extraRenderingProfile,{ type: 'control<zui>'})),
       frontEnd.prop('ZOOM_LIMIT', ({},{DIM}) => [1, jb.ui.isMobile() ? DIM: DIM*2]),
       frontEnd.prop('beDataGpu', obj()),
       zui.Zoom(),
@@ -162,7 +162,7 @@ extension('zui','itemlist-FE', {
   async initFECmp(ctx) {
     if (jbHost.document)
       document.body.style.overflow = "hidden"
-    const {cmp, el, DIM, emulateFrontEndInTest, canvasSizeFromBE, width, height, itemViewProfile, shownViews, fullScreen} = ctx.vars
+    const {cmp, el, DIM, emulateFrontEndInTest, canvasSizeFromBE, width, height, itemViewProfile, shownCmps, fullScreen} = ctx.vars
     const glCanvas = el
     const canvasSize = el instanceof jb.ui.VNode ? canvasSizeFromBE : [glCanvas.width, glCanvas.height]
     const gl = cmp.gl = jb.zui.createGl(canvasSize,emulateFrontEndInTest,el)
@@ -192,10 +192,10 @@ extension('zui','itemlist-FE', {
           const duration = new Date().getTime() - time
           elemsLayoutCache[zoom] = JSON.parse(JSON.stringify(layout))
           Object.assign(cmp.state, elemsLayoutCache[zoom])
-          console.log(duration, 'layout', zoom)
+          //console.log(duration, 'layout', zoom)
           jb.log('zui elemsLayout',{zoom, duration, ...layout, itemViewSize, ctx:cmp.ctx})
         }
-        return cmp.state.shownViews
+        return cmp.state.shownCmps
       },
       prepareTextures(view) {
         const viewBeData = cmp.beDataGpu[view.id]
@@ -265,7 +265,7 @@ extension('zui','itemlist-FE', {
         jb.log('zui itemlist renderGPUView beDataGpu', {beDataGpu, ctx})
         jb.log('zui itemlist renderGPUView', {elemLayout, glCode, view, zoom,fixedCenter,canvasSize,itemViewSize,ctx})
         const duration = new Date().getTime() - baseTime
-        console.log(duration, view.id)
+        //console.log(duration, view.id)
 
         gl.drawArrays(gl.POINTS, 0, noOfItems)
         jb.asArray(cmp.extraRendering).forEach(r=>r.renderGPUFrame({ gl, glCanvas, canvasSize, cmp, ctx }))
@@ -298,6 +298,7 @@ extension('zui','itemlist-FE', {
       }
     })
     if (fullScreen) cmp.refreshCanvasToFullScreen()
+    await jb.asArray(cmp.extraRendering).reduce((pr,r) =>pr.then(()=> r.init && r.init({ gl, glCanvas, canvasSize, cmp, ctx })), Promise.resolve())
     cmp.emptyTexture = cmp.emptyTexture || jbHost.isNode || await jb.zui.imageToTexture(gl,jb.zui.emptyImageUrl()) 
   }
 })

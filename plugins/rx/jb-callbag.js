@@ -454,7 +454,7 @@ extension('callbag', {
       }
   }},
   fromEvent: (event, elem, options) => (start, sink) => {
-      if (!elem) return
+      if (!elem || !elem.addEventListener) return
       if (start !== 0) return
       let disposed = false
       const handler = ev => sink(1, ev)

@@ -48,11 +48,11 @@ extension('zui','canvas', {
         return dataUrl
     }
   },
-  createGl(canvasSize,emulateFrontEndInTest,el) {
+  createGl(canvasSize,{ offscreen,canvas } = {}) {
     const glParams = { alpha: true, premultipliedAlpha: true }
     return jbHost.isNode ? require('gl')(...canvasSize, glParams)
-      : emulateFrontEndInTest ? new OffscreenCanvas(...canvasSize).getContext('webgl', glParams)
-      : el.getContext('webgl', glParams)
+      : offscreen ? new OffscreenCanvas(...canvasSize).getContext('webgl', glParams)
+      : canvas.getContext('webgl', glParams)
   }
 })
 
@@ -74,6 +74,34 @@ component('zui.fontDimention', {
       const ret = [maxMetrics.width, height+3].map(x=>Math.ceil(x))
       ret.avgWidth = avgMetrics.width/text.length
       return ret
+  }
+})
+
+component('zui.imageOfText', {
+  params: [
+    {id: 'text', as: 'string', mandatory: true},
+    {id: 'font', as: 'string', defaultValue: '500 16px Arial'},
+    {id: 'padding', as: 'array', defaultValue: [10,20], description: '1,2, or 4 values, top right bottom left'}
+  ],
+  impl: async (ctx,text, font, pd) => {
+    const padding = pd.length == 0 ? [0,0,0,0] 
+      : pd.length == 1 ? [pd[0],pd[0],pd[0],pd[0]]
+      : pd.length == 2 ? [pd[0],pd[1],pd[0],pd[1]]
+      : pd.length == 4 ? pd : [0,0,0,0]
+    const metrics = jb.zui.measureCanvasCtx(font).measureText(text)
+    const height = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent
+    const size = [metrics.width + (padding[1] || 0) + (padding[3] || 0), height + (padding[0] || 0) + (padding[2] || 0)].map(x => Math.ceil(x))
+
+    const canvas = jb.zui.createCanvas(...size)
+    const ctx2d = canvas.getContext('2d')
+    ctx2d.font = font
+    ctx2d.textBaseline = 'top'
+    ctx2d.textAlign = 'left'
+    ctx2d.fillStyle = 'black'
+    ctx2d.fillText(text, padding[3] || 0, padding[0] || 0)
+
+    const value = await jb.zui.canvasToDataUrl(canvas)
+    return { value, size }
   }
 })
 

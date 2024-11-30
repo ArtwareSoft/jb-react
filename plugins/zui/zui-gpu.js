@@ -83,81 +83,6 @@ component('varying', {
   ]
 })
 
-component('uniforms', {
-  type: 'uniform',
-  params: [
-    {id: 'uniforms', type: 'uniform[]', composite: true},
-  ],
-  impl: (ctx,uniforms) => uniforms
-})
-
-component('texture', {
-  type: 'uniform',
-  params: [
-    {id: 'id', as: 'string', mandatory: true},
-    {id: 'imageUrl', dynamic: true, mandatory: true}
-  ],
-  impl: (ctx,id,imageUrl) => ({id, glType: 'sampler2D', glMethod: '1i', val: imageUrl})
-})
-
-component('intVec', {
-  type: 'uniform',
-  macroByValue: true,
-  params: [
-    {id: 'id', as: 'string', mandatory: true},
-    {id: 'size', as: 'number', mandatory: true},
-    {id: 'val', dynamic: true, mandatory: true},
-  ],
-  impl: (ctx,id,size,val) => ({id, val, glType: 'int', glMethod: '1iv', vecSize: size})
-})
-
-component('vec3Vec', {
-  type: 'uniform',
-  macroByValue: true,
-  params: [
-    {id: 'id', as: 'string', mandatory: true},
-    {id: 'size', as: 'number', mandatory: true},
-    {id: 'val', dynamic: true, mandatory: true},
-  ],
-  impl: (ctx,id,size,val) => ({id, val, glType: 'vec3', glMethod: '3fv', vecSize: size})
-})
-
-component('int', {
-  type: 'uniform',
-  params: [
-    {id: 'id', as: 'string', mandatory: true},
-    {id: 'val', dynamic: true, mandatory: true},
-  ],
-  impl: (ctx,id,val) => ({id, val, glType: 'int', glMethod: '1i'})
-})
-
-component('float', {
-  type: 'uniform',
-  params: [
-    {id: 'id', as: 'string'},
-    {id: 'val', dynamic: true},
-  ],
-  impl: (ctx,id,val) => ({id, val, glType: 'float', glMethod: '1f'})
-})
-
-component('vec2', {
-  type: 'uniform',
-  params: [
-    {id: 'id', as: 'string', mandatory: true},
-    {id: 'val', dynamic: true, mandatory: true},
-  ],
-  impl: (ctx,id,val) => ({id, val, glType: 'vec2', glMethod: '2fv'})
-})
-
-component('vec3', {
-  type: 'uniform',
-  params: [
-    {id: 'id', as: 'string', mandatory: true},
-    {id: 'val', dynamic: true, mandatory: true},
-  ],
-  impl: (ctx,id,val) => ({id, val, glType: 'vec3', glMethod: '3fv'})
-})
-
 component('prop', {
   type: 'fe_view_prop',
   params: [
@@ -246,7 +171,6 @@ extension('zui','GPU', {
     ${main||''}
   }`,
     fragementShaderCode: ({declarations,main} = {}) => `precision highp float;
-    precision highp float;
     precision mediump int;
     uniform vec2 canvasSize;
     uniform vec2 pos;

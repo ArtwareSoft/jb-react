@@ -14,7 +14,7 @@ component('text8', {
     layout: keepBaseRatio({ base: ({},{},{length,fontWidth}) => [fontWidth*length/2,16/2] }),
     viewProps: prop('charSetImage', ({},{},params) => jb.zui.charSetImage(params), { async: true }),
     atts: [
-      color('backgroundColor', white()),
+      //color('backgroundColor', white()),
       text8('text', '%$length%', { charSet: '%$charSet%' })
     ],
     renderGPU: gpuCode({

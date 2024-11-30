@@ -7,302 +7,332 @@ component('points', { passiveData: [
       {"name": "Beer Sheva", x: 3, y : 3 },
 ]})
 
-component('zuiTest.growingDiagnostics', {
-  doNotRunInTests: true,
-  impl: uiTest({
-    control: group({
-      controls: zui.grid({
-        items: '%$diagnostics%',
-        itemsPositions: xyByPropsNormalized('urgency', 'likelihood'),
-        boardSize: 8,
-        itemView: firstToFit(
-          allOrNone({
-            views: [
-              circle(enumarator('department')),
-              growingFlow(
-                title('%title%', { align: keepSize('center', 'top') }),
-                title('%department%', { align: keepSize('center', 'top') }),
-                paragraph('%description%'),
-                group(title('explanation'), paragraph('%general_explanation%')),
-                group(title('symptoms'), paragraph('%how_it_relates_to_the_symptoms%'))
-              )
-            ],
-            layoutFeatures: minSize([100,150])
-          }),
-          group(
-            circle(enumarator('department')),
-            growingText('%title%'),
-            growingText('%department%', { minSize: [100,75] })
-          )
-        ),
-        initialZoom: 8,
-        center: '7,7',
-        style: GPU('100%', '100%', { fullScreen: true })
-      }),
-      features: group.wait({
-        for: pipe(
-          Var('diag', fileContent('/projects/zuiDemo/diagnostics.json'), { async: true }),
-          Var('depAr', fileContent('/projects/zuiDemo/departments.json'), { async: true }),
-          Var('dep', dynamicObject(json.parse('%$depAr%'), '%title%', { value: '%%' })),
-          json.parse('%$diag%'),
-          extendWithObj(property('%title%', '%$dep%'), '%%')
-        ),
-        varName: 'diagnostics'
-      })
-    }),
-    uiAction: waitForNextUpdate(),
-    emulateFrontEnd: true
-  })
-})
-
-component('zuiTest.allOrNone', {
-  impl: uiTest({
-    control: zui.grid({
-      items: '%$points%',
-      itemsPositions: xyByProps(),
-      boardSize: 10,
-      itemView: group(allOrNone(circle(numeric('x')), text('hello', 5), text('world', 5)), text('sec', 3)),
-      initialZoom: 6,
-      center: '1.5,9.4',
-      style: GPU('640', '640')
-    }),
-    expectedResult: notContains(`id: 'top~0'`),
-    uiAction: animationEvent(),
-    emulateFrontEnd: true
-  })
-})
-
-component('zuiTest.minSize', {
-  impl: uiTest({
-    control: zui.grid({
-      items: '%$points%',
-      itemsPositions: xyByProps(),
-      boardSize: 10,
-      itemView: firstToFit(
-        allOrNone(text('hello', 5), text('world', 5), { layoutFeatures: minSize(100) }),
-        circle(numeric('x'))
-      ),
-      initialZoom: 3,
-      center: '1.5,9.4'
-    }),
-    expectedResult: and(contains(`id: 'top~1'`), notContains("id: 'top~0~1'")),
-    uiAction: animationEvent(),
-    emulateFrontEnd: true
-  })
-})
-
-component('zuiTest.flow', {
-  impl: uiTest({
-    control: zui.grid({
-      items: '%$points%',
-      itemsPositions: xyByProps(),
-      boardSize: 10,
-      itemView: flow({
-        elements: [
-          group(title('%name%1'), paragraph('1111 %name% %name% %name% %name% %name% %name% %name%')),
-          group(
-            title('%name%2'),
-            paragraph('2222 %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name%')
-          )
-        ],
-        width: 200
-      }),
-      initialZoom: 1.3,
-      center: '1.5,9.4',
-      style: GPU('640', '640')
-    }),
-    expectedResult: contains('[200,492.30769230769226'),
-    uiAction: animationEvent(),
-    emulateFrontEnd: true
-  })
-})
-
-
-component('zuiTest.growingFlow', {
-  impl: uiTest({
-    control: zui.grid({
-      items: '%$points%',
-      itemsPositions: xyByProps(),
-      boardSize: 10,
-      itemView: growingFlow(
-        group(title('%name%1'), paragraph('1111 %name% %name% %name% %name% %name% %name% %name%')),
-        group(
-          title('%name%2'),
-          paragraph('2222 %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name%')
-        )
-      ),
-      initialZoom: 1.3,
-      center: '1.5,9.4',
-      style: GPU('400', '400')
-    }),
-    expectedResult: contains('elem0posSize','calcbedata1','elem1posSize'),
-    uiAction: uiActions(animationEvent(), zoomEvent(2)),
-    emulateFrontEnd: true
-  })
-})
-
-component('zuiTest.image', {
-  impl: uiTest({
-    control: zui.grid({
-      items: '%$points%',
-      itemsPositions: xyByProps(),
-      boardSize: 10,
-      itemView: image(imageOfText('%name%'), { align: keepSize() }),
-      initialZoom: 3,
-      center: '0,10'
-    }),
-    expectedResult: and(
-      contains('[[0,0], [256,0], [512,0], [768,0]]'),
-      contains('data:image/png;base64,iVBORw0KGgoAA'),
-      contains('[73,12], [31,12], [83,12]')
-    ),
-    uiAction: animationEvent(),
-    emulateFrontEnd: true
-  })
-})
-
-component('zuiTest.text', {
-  impl: uiTest({
-    control: zui.grid({
-      items: '%$points%',
-      itemsPositions: xyByProps(),
-      boardSize: 10,
-      itemView: text('%name%', 4),
-      initialZoom: 3,
-      center: '1.5,9.4'
-    }),
-    expectedResult: and(
-      contains('[[0,0], [24.8984375,0], [56.0234375,0], [82.703125,0]]'),
-      contains('[[24.8984375,15], [31.125,15], [26.6796875,15], [33.796875,15]]'),
-      contains('data:image/png;base64,iVBORw0')
-    ),
-    uiAction: animationEvent(),
-    emulateFrontEnd: true
-  })
-})
-
-component('zuiTest.text8', {
-  impl: uiTest({
-    control: zui.grid({
-      items: '%$points%',
-      itemsPositions: xyByProps(),
-      boardSize: 10,
-      itemView: text8('%name%'),
-      initialZoom: 3,
-      center: '0,10'
-    }),
-    expectedResult: and(
-      contains('size":[66.66666666666667,13.333333333333334]'),
-      contains('pos":[0,26.666666666666668]'),
-      contains('[13380,19200,8533,18517]'),
-      contains('attribute vec4 _text;varying vec4 text')
-    ),
-    uiAction: animationEvent(),
-    emulateFrontEnd: true
-  })
-})
-
-component('zuiTest.growingText', {
-  impl: uiTest({
-    control: zui.grid({
-      items: '%$points%',
-      itemsPositions: xyByProps(),
-      boardSize: 64,
-      itemView: group(circle(numeric('x')), growingText('%name%')),
-      initialZoom: 8,
-      center: '0,64',
-      style: GPU('640', '640')
-    }),
-    expectedResult: and(contains('[59.92613636363637,33.2]'), contains('data:image/png;base64,iVBORw0KGgoAAAANSUhEU')),
-    uiAction: animationEvent(),
-    emulateFrontEnd: true
-  })
-})
-
-component('zuiTest.growingText.changeView', {
-  impl: uiTest({
-    control: zui.grid({
-      items: '%$points%',
-      itemsPositions: xyByProps(),
-      boardSize: 64,
-      itemView: group(circle(numeric('x')), growingText('%name%')),
-      initialZoom: 8,
-      center: '0,64',
-      style: GPU('640', '640')
-    }),
-    expectedResult: contains('top~0~2','data:image/png;base64','calcbedata1','top~0~0','data:image/png;base64,'),
-    uiAction: uiActions(animationEvent(), zoomEvent(2)),
-    emulateFrontEnd: true
-  })
-})
-
 component('zuiTest.circles', {
-  impl: uiTest({
-    control: zui.grid({
+  impl: zuiTest({
+    control: itemlist({
       items: '%$points%',
-      itemsPositions: xyByProps(),
-      boardSize: 10,
-      itemView: circle(numeric('x'), greens()),
-      initialZoom: 10,
-      center: '5,5'
+      itemControl: circle(smoothGrowth({ growthFactor: 20 }), { features: fillColor({ colorScale: green10() }) }),
+      itemsLayout: grid([10,10], { initialZoom: 10, center: [5,5] })
     }),
-    expectedResult: and(
-      contains('[0,0.3333333333333333,0]'),
-      contains('[[0,0],[1,1],[2,2],[3,3]]}]')
-    ),
-    uiAction: animationEvent(),
-    emulateFrontEnd: true
+    expectedResult: contains(`glVar: 'fillColor'`)
   })
 })
 
-component('zuiTest.growingTextHotels', {
-  doNotRunInTests: true,
-  impl: uiTest({
-    control: group({
-      controls: zui.grid({
-        items: '%$allHotels%',
-        itemsPositions: xyByProps('lat', 'long'),
-        boardSize: 64,
-        itemView: group(circle(numeric('price')), growingText('%name%')),
-        initialZoom: 7,
-        center: '32,30',
-        style: GPU('640', '640')
-      }),
-      features: group.wait(pipe(fileContent('/projects/zuiDemo/hotels-data.json'), json.parse('%%')), {
-        varName: 'allHotels'
-      })
+component('zuiTest.buttons', {
+  impl: zuiTest({
+    control: itemlist({
+      items: '%$points%',
+      itemControl: button('click me'),
+      itemsLayout: grid([4,4], { initialZoom: 4, center: [2,2] })
     }),
-    uiAction: waitForNextUpdate(),
-    emulateFrontEnd: true
+    expectedResult: contains(`glVar: 'fillColor'`)
   })
 })
 
-component('zuiTest.gallery', {
-  doNotRunInTests: true,
-  impl: uiTest({
-    control: group({
-      controls: [
-        zui.grid({
-          items: pipeline('%$hotels/0/gallery%', obj(prop('image', '%%'))),
-          itemsPositions: xyByIndex(),
-          boardSize: 4,
-          itemView: group(
-            image('https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp', {
-            }),
-            text8('%xy%')
-          ),
-          initialZoom: 3,
-          center: '2,2'
-        })
-      ],
-      layout: layout.flex({ direction: 'row', wrap: 'wrap' }),
-      features: [
-        variable('zuiCtx', obj())
-      ]
-    }),
-    expectedResult: contains('-')
-  })
+component('zuiTest.group', {
+  impl: zuiTest(group(button('Hello'), button('World', { fixedPos: [50,50] })), '')
 })
+
+component('zuiTest.button', {
+  impl: zuiTest(button('click me'), '')
+})
+
+// component('zuiTest.growingDiagnostics', {
+//   doNotRunInTests: true,
+//   impl: uiTest({
+//     control: group({
+//       controls: zui.grid({
+//         items: '%$diagnostics%',
+//         itemsPositions: xyByProps('urgency', 'likelihood'),
+//         boardSize: 8,
+//         itemView: firstToFit(
+//           allOrNone({
+//             views: [
+//               circle(enumarator('department')),
+//               growingFlow(
+//                 title('%title%', { align: keepSize('center', 'top') }),
+//                 title('%department%', { align: keepSize('center', 'top') }),
+//                 paragraph('%description%'),
+//                 group(title('explanation'), paragraph('%general_explanation%')),
+//                 group(title('symptoms'), paragraph('%how_it_relates_to_the_symptoms%'))
+//               )
+//             ],
+//             layoutFeatures: minSize([100,150])
+//           }),
+//           group(
+//             circle(enumarator('department')),
+//             growingText('%title%'),
+//             growingText('%department%', { minSize: [100,75] })
+//           )
+//         ),
+//         initialZoom: 8,
+//         center: '7,7',
+//         style: GPU('100%', '100%', { fullScreen: true })
+//       }),
+//       features: group.wait({
+//         for: pipe(
+//           Var('diag', fileContent('/projects/zuiDemo/diagnostics.json'), { async: true }),
+//           Var('depAr', fileContent('/projects/zuiDemo/departments.json'), { async: true }),
+//           Var('dep', dynamicObject(json.parse('%$depAr%'), '%title%', { value: '%%' })),
+//           json.parse('%$diag%'),
+//           extendWithObj(property('%title%', '%$dep%'), '%%')
+//         ),
+//         varName: 'diagnostics'
+//       })
+//     }),
+//     uiAction: waitForNextUpdate(),
+//     emulateFrontEnd: true
+//   })
+// })
+
+// component('zuiTest.allOrNone', {
+//   impl: uiTest({
+//     control: zui.grid({
+//       items: '%$points%',
+//       itemsPositions: xyByProps(),
+//       boardSize: 10,
+//       itemView: group(allOrNone(circle(numeric('x')), text('hello', 5), text('world', 5)), text('sec', 3)),
+//       initialZoom: 6,
+//       center: '1.5,9.4',
+//       style: GPU('640', '640')
+//     }),
+//     expectedResult: notContains(`id: 'top~0'`),
+//     uiAction: animationEvent(),
+//     emulateFrontEnd: true
+//   })
+// })
+
+// component('zuiTest.minSize', {
+//   impl: uiTest({
+//     control: zui.grid({
+//       items: '%$points%',
+//       itemsPositions: xyByProps(),
+//       boardSize: 10,
+//       itemView: firstToFit(
+//         allOrNone(text('hello', 5), text('world', 5), { layoutFeatures: minSize(100) }),
+//         circle(numeric('x'))
+//       ),
+//       initialZoom: 3,
+//       center: '1.5,9.4'
+//     }),
+//     expectedResult: and(contains(`id: 'top~1'`), notContains("id: 'top~0~1'")),
+//     uiAction: animationEvent(),
+//     emulateFrontEnd: true
+//   })
+// })
+
+// component('zuiTest.flow', {
+//   impl: uiTest({
+//     control: zui.grid({
+//       items: '%$points%',
+//       itemsPositions: xyByProps(),
+//       boardSize: 10,
+//       itemView: flow({
+//         elements: [
+//           group(title('%name%1'), paragraph('1111 %name% %name% %name% %name% %name% %name% %name%')),
+//           group(
+//             title('%name%2'),
+//             paragraph('2222 %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name%')
+//           )
+//         ],
+//         width: 200
+//       }),
+//       initialZoom: 1.3,
+//       center: '1.5,9.4',
+//       style: GPU('640', '640')
+//     }),
+//     expectedResult: contains('[200,492.30769230769226'),
+//     uiAction: animationEvent(),
+//     emulateFrontEnd: true
+//   })
+// })
+
+
+// component('zuiTest.growingFlow', {
+//   impl: uiTest({
+//     control: zui.grid({
+//       items: '%$points%',
+//       itemsPositions: xyByProps(),
+//       boardSize: 10,
+//       itemView: growingFlow(
+//         group(title('%name%1'), paragraph('1111 %name% %name% %name% %name% %name% %name% %name%')),
+//         group(
+//           title('%name%2'),
+//           paragraph('2222 %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name% %name%')
+//         )
+//       ),
+//       initialZoom: 1.3,
+//       center: '1.5,9.4',
+//       style: GPU('400', '400')
+//     }),
+//     expectedResult: contains('elem0posSize','calcbedata1','elem1posSize'),
+//     uiAction: uiActions(animationEvent(), zoomEvent(2)),
+//     emulateFrontEnd: true
+//   })
+// })
+
+// component('zuiTest.image', {
+//   impl: uiTest({
+//     control: zui.grid({
+//       items: '%$points%',
+//       itemsPositions: xyByProps(),
+//       boardSize: 10,
+//       itemView: image(imageOfText('%name%'), { align: keepSize() }),
+//       initialZoom: 3,
+//       center: '0,10'
+//     }),
+//     expectedResult: and(
+//       contains('[[0,0], [256,0], [512,0], [768,0]]'),
+//       contains('data:image/png;base64,iVBORw0KGgoAA'),
+//       contains('[73,12], [31,12], [83,12]')
+//     ),
+//     uiAction: animationEvent(),
+//     emulateFrontEnd: true
+//   })
+// })
+
+// component('zuiTest.text', {
+//   impl: uiTest({
+//     control: zui.grid({
+//       items: '%$points%',
+//       itemsPositions: xyByProps(),
+//       boardSize: 10,
+//       itemView: text('%name%', 4),
+//       initialZoom: 3,
+//       center: '1.5,9.4'
+//     }),
+//     expectedResult: and(
+//       contains('[[0,0], [24.8984375,0], [56.0234375,0], [82.703125,0]]'),
+//       contains('[[24.8984375,15], [31.125,15], [26.6796875,15], [33.796875,15]]'),
+//       contains('data:image/png;base64,iVBORw0')
+//     ),
+//     uiAction: animationEvent(),
+//     emulateFrontEnd: true
+//   })
+// })
+
+// component('zuiTest.text8', {
+//   impl: uiTest({
+//     control: zui.grid({
+//       items: '%$points%',
+//       itemsPositions: xyByProps(),
+//       boardSize: 10,
+//       itemView: text8('%name%'),
+//       initialZoom: 3,
+//       center: '0,10'
+//     }),
+//     expectedResult: and(
+//       contains('size":[66.66666666666667,13.333333333333334]'),
+//       contains('pos":[0,26.666666666666668]'),
+//       contains('[13380,19200,8533,18517]'),
+//       contains('attribute vec4 _text;varying vec4 text')
+//     ),
+//     uiAction: animationEvent(),
+//     emulateFrontEnd: true
+//   })
+// })
+
+// component('zuiTest.growingText', {
+//   impl: uiTest({
+//     control: zui.grid({
+//       items: '%$points%',
+//       itemsPositions: xyByProps(),
+//       boardSize: 64,
+//       itemView: group(circle(numeric('x')), growingText('%name%')),
+//       initialZoom: 8,
+//       center: '0,64',
+//       style: GPU('640', '640')
+//     }),
+//     expectedResult: and(contains('[59.92613636363637,33.2]'), contains('data:image/png;base64,iVBORw0KGgoAAAANSUhEU')),
+//     uiAction: animationEvent(),
+//     emulateFrontEnd: true
+//   })
+// })
+
+// component('zuiTest.growingText.changeView', {
+//   impl: uiTest({
+//     control: zui.grid({
+//       items: '%$points%',
+//       itemsPositions: xyByProps(),
+//       boardSize: 64,
+//       itemView: group(circle(numeric('x')), growingText('%name%')),
+//       initialZoom: 8,
+//       center: '0,64',
+//       style: GPU('640', '640')
+//     }),
+//     expectedResult: contains('top~0~2','data:image/png;base64','calcbedata1','top~0~0','data:image/png;base64,'),
+//     uiAction: uiActions(animationEvent(), zoomEvent(2)),
+//     emulateFrontEnd: true
+//   })
+// })
+
+// component('zuiTest.circles', {
+//   impl: uiTest({
+//     control: zui.grid({
+//       items: '%$points%',
+//       itemsPositions: xyByProps(),
+//       boardSize: 10,
+//       itemView: circle(numeric('x'), green10()),
+//       initialZoom: 10,
+//       center: '5,5'
+//     }),
+//     expectedResult: and(
+//       contains('[0,0.3333333333333333,0]'),
+//       contains('[[0,0],[1,1],[2,2],[3,3]]}]')
+//     ),
+//     uiAction: animationEvent(),
+//     emulateFrontEnd: true
+//   })
+// })
+
+// component('zuiTest.growingTextHotels', {
+//   doNotRunInTests: true,
+//   impl: uiTest({
+//     control: group({
+//       controls: zui.grid({
+//         items: '%$allHotels%',
+//         itemsPositions: xyByProps('lat', 'long'),
+//         boardSize: 64,
+//         itemView: group(circle(numeric('price')), growingText('%name%')),
+//         initialZoom: 7,
+//         center: '32,30',
+//         style: GPU('640', '640')
+//       }),
+//       features: group.wait(pipe(fileContent('/projects/zuiDemo/hotels-data.json'), json.parse('%%')), {
+//         varName: 'allHotels'
+//       })
+//     }),
+//     uiAction: waitForNextUpdate(),
+//     emulateFrontEnd: true
+//   })
+// })
+
+// component('zuiTest.gallery', {
+//   doNotRunInTests: true,
+//   impl: uiTest({
+//     control: group({
+//       controls: [
+//         zui.grid({
+//           items: pipeline('%$hotels/0/gallery%', obj(prop('image', '%%'))),
+//           itemsPositions: xyByIndex(),
+//           boardSize: 4,
+//           itemView: group(
+//             image('https://imgcy.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_256,q_auto,w_256%image%.webp', {
+//             }),
+//             text8('%xy%')
+//           ),
+//           initialZoom: 3,
+//           center: '2,2'
+//         })
+//       ],
+//       layout: layout.flex({ direction: 'row', wrap: 'wrap' }),
+//       features: [
+//         variable('zuiCtx', obj())
+//       ]
+//     }),
+//     expectedResult: contains('-')
+//   })
+// })
 
 /*
 component('zuiTest.hotels', {
@@ -313,7 +343,7 @@ component('zuiTest.hotels', {
         zui.grid({
           items: '%$hotels%',
           prepareProps: [
-            numeric('price', { prefix: '$', features: [priorty(1), colorScale(greens())] }),
+            numeric('price', { prefix: '$', features: [priorty(1), colorScale(green10())] }),
             numeric('rating', { features: [priorty(2), colorScale(reds())] }),
             text('name', { features: priorty(3) }),
             geo('lat', preferedAxis('y')),
@@ -377,7 +407,7 @@ component('zuiTest.hotels', {
 //           center: '1.3130639001816125,0.9833333333333321',
 //           items: pipeline('%$hotels%'),
 //           prepareProps: [
-//             numeric('price', { prefix: '$', features: [priorty(1), colorScale(greens())] }),
+//             numeric('price', { prefix: '$', features: [priorty(1), colorScale(green10())] }),
 //             numeric('rating', { features: [priorty(2), colorScale(reds())] }),
 //             text('name', { features: priorty(3) }),
 //             geo('lat', { features: preferedAxis('y') }),

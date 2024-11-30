@@ -80,7 +80,7 @@ component('text', {
 })
 
 component('text', {
-  type: 'layout_feature',
+  type: 'zooming_size',
   params: [
     {id: 'lineLength', as: 'number'},
     {id: 'noOfLines', as: 'number'},

@@ -127,35 +127,3 @@ component('preferedAxis', {
   })
 })
 
-component('colorScale', {
-  type: 'prop_feature',
-  params: [
-    {id: 'colorScale', mandatory: true, type: 'color_scale' }
-  ],
-  impl: (ctx,colorScale) => ({
-    enrich(obj) { obj.colorScale = colorScale}
-  })
-})
-
-component('white', {
-  type: 'color_scale',
-  impl: () => x => [255,255,255]
-})
-
-component('black', {
-  type: 'color_scale',
-  impl: () => x => [0,0,0]
-})
-
-component('reds', {
-  type: 'color_scale',
-  impl: () => x => [x,0,0]
-})
-component('greens', {
-  type: 'color_scale',
-  impl: () => x => [0,x,0]
-})
-component('blues', {
-  type: 'color_scale',
-  impl: () => x => [0,0,x]
-})

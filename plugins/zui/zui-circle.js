@@ -1,35 +1,43 @@
 dsl('zui')
 
 component('circle', {
-  type: 'view',
+  type: 'control',
   params: [
-    {id: 'prop', type: 'itemProp'},
-    {id: 'colorScale', type: 'color_scale', defaultValue: greens()},
-    {id: 'size', type: 'layout_feature[]', dynamic: true, defaultValue: smoothGrowth({ base: [5,5], growthFactor: 0.1 })}
+    {id: 'size', type: 'zooming_size', dynamic: true, defaultValue: smoothGrowth({ base: [5,5], growthFactor: 0.1 })},
+    {id: 'style', type: 'circle-style', defaultValue: circle(), dynamic: true},
+    {id: 'features', type: 'feature', dynamic: true}
   ],
-  impl: view('circle', '%$prop%', {
-    layout: '%$size%',
-    atts: color('fillColor', '%$colorScale%'),
-    renderGPU: gpuCode({
-      shaderCode: colorOfPoint(`vec2 center = size * 0.5;
-      float radius = min(size[0], size[1]) * 0.5;
-      if (length(inElem - center) <= radius)
-        gl_FragColor = vec4(fillColor, 1.0);`)
-    })
+  impl: ctx => jb.zui.ctrl(ctx)
+})
+
+component('circle', {
+  type: 'circle-style',
+  params: [],
+  impl: features(
+    posByContext('%$$model/fixedPos%'),
+    sizeByContext('%$$model/size()%'),
+    centerRadius(),
+    fillColor(),
+    fillCircleElem()
+  )
+})
+
+component('centerRadius', {
+  type: 'feature',
+  params: [],
+  impl: shaderMainSnippet(`vec2 center = size * 0.5;
+    float radius = min(size[0], size[1]) * 0.5;`)
+})
+
+component('fillCircleElem', {
+  type: 'feature',
+  params: [],
+  impl: dependentFeature({
+    feature: shaderMainSnippet(`
+    if (length(inElem - center) <= radius)
+      gl_FragColor = vec4(fillColor, 1.0);`),
+    glVars: ['fillColor']
   })
 })
 
-component('square', {
-  type: 'view',
-  params: [
-    {id: 'prop', type: 'itemProp'},
-    {id: 'colorScale', type: 'color_scale', defaultValue: greens()},
-    {id: 'size', type: 'layout_feature[]', dynamic: true, defaultValue: smoothGrowth({ base: [5,5], growthFactor: 0.1 })}
-  ],
-  impl: view('square', '%$prop%', {
-    layout: '%$size%',
-    atts: color('fillColor', '%$colorScale%'),
-    renderGPU: gpuCode({ shaderCode: colorOfPoint(`gl_FragColor = vec4(fillColor,1.0);`) })
-  })
-})
 

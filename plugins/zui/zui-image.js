@@ -225,7 +225,7 @@ extension('zui','atlas', {
           return { image, imageItem }
         }
       } catch(e) {
-        console.log(e, image)
+        //console.log(e, image)
       }
     }
   }

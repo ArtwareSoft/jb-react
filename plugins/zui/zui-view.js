@@ -5,7 +5,7 @@ component('view', {
   params: [
     {id: 'title', as: 'string', mandatory: true},
     {id: 'itemProp', type: 'itemProp', mandatory: true},
-    {id: 'layout', type: 'layout_feature[]', mandatory: true, dynamic: true},
+    {id: 'layout', type: 'zooming_size', mandatory: true, dynamic: true},
     {id: 'viewProps', type: 'view_prop[]'},
     {id: 'incrementalItemsData', type: 'inc_items_data'},
     {id: 'atts', type: 'attribute[]', dynamic: true},
@@ -74,94 +74,6 @@ extension('zui','view', {
   }
 })
 
-component('attsOfElements', {
-  type: 'attribute',
-  params: [
-    {id: 'elements', as: 'array'},
-    {id: 'attsOfElem', dynamic: true, type: 'attribute[]'}
-  ],
-  impl: (ctx,elems,attsOfElem) => elems.flatMap(elem => attsOfElem(ctx.setVars({elem})))
-})
-
-component('float', {
-  type: 'attribute',
-  params: [
-    {id: 'id', as: 'string'},
-    {id: 'itemToFloat', dynamic: true},
-  ],
-  impl: (ctx,id, itemToFloat) => ({ 
-      id,
-      size: 1,
-      glType: 'float',
-      calc: view => ctx.vars.items.map(item => itemToFloat(ctx.setVars({item,view})))
-  })
-})
-
-component('vec2', {
-  type: 'attribute',
-  params: [
-    {id: 'id', as: 'string'},
-    {id: 'itemToVec2', dynamic: true},
-  ],
-  impl: (ctx,id, itemToVec2) => ({ 
-      id,
-      size: 2,
-      glType: 'vec2',
-      calc: view => ctx.vars.items.map(item => itemToVec2(ctx.setVars({item,view})))
-  })
-})
-
-component('vec3', {
-  type: 'attribute',
-  params: [
-    {id: 'id', as: 'string'},
-    {id: 'itemToVec3', dynamic: true},
-  ],
-  impl: (ctx,id, itemToVec3) => ({ 
-      id,
-      size: 3,
-      glType: 'vec3',
-      calc: view => ctx.vars.items.map(item => itemToVec3(ctx.setVars({item,view})))
-  })
-})
-
-component('vec4', {
-  type: 'attribute',
-  params: [
-    {id: 'id', as: 'string'},
-    {id: 'itemToVec4', dynamic: true}
-  ],
-  impl: (ctx,id, itemToVec4) => ({ 
-      id,
-      size: 4,
-      glType: 'vec4',
-      calc: view => ctx.vars.items.map(item => itemToVec4(ctx.setVars({item,view})))
-  })
-})
-
-component('color', {
-  type: 'attribute',
-  params: [
-    {id: 'id', as: 'string'},
-    {id: 'colorScale', type: 'color_scale', mandatory: true},
-    {id: 'prop', type: 'itemProp', description: 'default prop is the view prop' },
-  ],
-  impl: (ctx,id, colorScale, prop) => ({ 
-      id,
-      size: 3,
-      glType: 'vec3',
-      calc(v) {
-          const pivots = (prop || v.itemProp).pivots
-          const pivot = pivots && pivots()[0]
-          const linearScale = jb.path(pivot,'linearScale') || (() => 0)
-          return ctx.vars.items.map(item => {
-            const res = colorScale(linearScale(item))
-            if (isNaN(res[1])) debugger
-            return res
-          })
-      }
-  })
-})
 
 component('prop', {
   type: 'view_prop',

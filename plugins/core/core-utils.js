@@ -182,7 +182,7 @@ extension('utils', 'core', {
       const byTypeRules = [dynamicTypeFromParent,typeFromParent,dslType].filter(x=>x).join(',').split(',').filter(x=>x)
         .flatMap(t=>moreTypesByTypeRules(t)).join(',')
   
-      const allTypes = jb.utils.unique([moreTypesFromProp,byTypeRules,dynamicTypeFromParent,typeFromParent,dslType].filter(x=>x).join(',').split(',').filter(x=>x))
+      const allTypes = jb.utils.unique([moreTypesFromProp,byTypeRules,dynamicTypeFromParent,typeFromParent,dslType,'test<>','data<>','action<>'].filter(x=>x).join(',').split(',').filter(x=>x))
       const byFullId = allTypes.map(t=>comps[t+id]).find(x=>x)
       if (byFullId)
         return byFullId

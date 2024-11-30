@@ -1,17 +1,21 @@
 
 component('zui.Zoom', {
   type: 'feature<>',
+  impl: features()
+})
+
+component('zui.canvasZoom', {
+  type: 'feature<zui>',
   impl: features(
     frontEnd.init(ctx => {
-        jb.zui.initZoom(ctx)
-        ctx.vars.cmp.updateZoomState({ dz :1, dp:0 })
+      jb.zui.initZoom(ctx)
+      ctx.vars.cmp.updateZoomState({ dz :1, dp:0 })
     }),
     frontEnd.prop('zuiEvents', rx.subject()),
     frontEnd.flow(
       source.frontEndEvent('pointerdown'),
       rx.log('zui pointerdown'),
       rx.var('pid', '%pointerId%'),
-      rx.do(({},{cmp})=>{if (cmp.base.requestFullscreen) try{ cmp.base.requestFullscreen() } catch(e) {}}),
       rx.do(({},{cmp,pid}) => cmp.addPointer(pid)),
       rx.flatMap(source.mergeConcat(
         rx.pipe(
@@ -35,7 +39,6 @@ component('zui.Zoom', {
     ),
     frontEnd.flow(
       source.event('wheel', () => jb.frame.document, { options: obj(prop('capture', true)) }),
-      rx.takeUntil('%$cmp.destroyed%'),
       rx.log('zui wheel'),
       rx.map(({},{sourceEvent}) => ({ dz: sourceEvent.deltaY > 0 ? 1.1 : sourceEvent.deltaY < 0 ? 1/1.1 : 1 })),
       rx.do(({data},{cmp}) => cmp.updateZoomState(data)),
@@ -47,17 +50,15 @@ component('zui.Zoom', {
 extension('zui','zoom', {
     initZoom(ctx) {
         const vars = ctx.vars
-        const {cmp, el, DIM, tCenter} =  vars
-        const {ZOOM_LIMIT, state} = cmp
-        state.center = tCenter
-        //const w = glCanvas.offsetWidth, h = glCanvas.offsetHeight
-        const w = el.offsetWidth, h = el.offsetHeight
-        if (el instanceof Element) {
-          el.style.touchAction = 'none'
-          el.oncontextmenu = e => (e.preventDefault(), false)
+        const {widget, cmp } =  vars
+        const {state, canvas} = widget
+        const w = canvas.offsetWidth, h = canvas.offsetHeight
+        if (canvas.addEventListener && canvas.style) {
+          canvas.style.touchAction = 'none'
+          canvas.oncontextmenu = e => (e.preventDefault(), false)
 
           ;['pointerdown', 'pointermove', 'pointerup', 'touchstart', 'touchmove', 'touchend']
-              .forEach(event => el.addEventListener(event, e => e.preventDefault()))
+              .forEach(event => canvas.addEventListener(event, e => e.preventDefault()))
         }
   
       Object.assign(cmp, {
@@ -80,39 +81,42 @@ extension('zui','zoom', {
               otherPointer.dscale = pointer.dscale = dscale
               otherPointer.gap = pointer.gap = gap
           }
-          jb.log('zui update pointers', {v: `[${pointer.v[0]},${pointer.v[1]}]` , pointer, otherPointer, cmp})
+          jb.log('zui update pointers', {v: `[${pointer.v[0]},${pointer.v[1]}]` , pointer, otherPointer, cmp, widget})
           if (this.pointers.length > 2) {
               jb.logError('zui more than 2 pointers', {pointers: this.pointers})
               this.pointers = this.pointers.slice(-2)
           }
         },      
         zoomEventFromPointers() {
-            return cmp.pointers.length == 0 ? [] : cmp.pointers[1] 
-                ? [{ p: avg('p'), dp: avg('dp'), v: avg('v'), dz: cmp.pointers[0].dscale }]
-                : [{ v: cmp.pointers[0].v, dp: cmp.pointers[0].dp }]
-        
-            function avg(att) {
-              const pointers = cmp.pointers.filter(p=>p[att])
-              return [0,1].map(axis => pointers.reduce((sum,p) => sum + p[att][axis], 0) / pointers.length)
-            }
+          const pointers = this.pointers
+          return pointers.length == 0 ? [] : pointers[1] 
+              ? [{ p: avg('p'), dp: avg('dp'), v: avg('v'), dz: pointers[0].dscale }]
+              : [{ v: pointers[0].v, dp: pointers[0].dp }]
+      
+          function avg(att) {
+            const pointers = pointers.filter(p=>p[att])
+            return [0,1].map(axis => pointers.reduce((sum,p) => sum + p[att][axis], 0) / pointers.length)
+          }
         },
         updateZoomState({ dz, dp }) {
-          let tZoom =  state.tZoom || vars.tZoom, tCenter = state.tCenter || vars.tCenter
+          let {tZoom, tCenter} =  state
           const factor = jb.ui.isMobile() ? 1.2 : 3
           if (dz)
             tZoom *= dz**factor
           const tZoomF = Math.floor(tZoom)
           if (dp)
-            tCenter = [tCenter[0] - dp[0]/w*tZoomF, tCenter[1] - dp[1]/h*tZoomF]
+            tCenter = [tCenter[0] - dp[0]/w*tZoomF, tCenter[1] + dp[1]/h*tZoomF]
   
-          ;[0,1].forEach(axis=>tCenter[axis] = Math.min(DIM,Math.max(0,tCenter[axis])))
-  
+          const gridSize  = cmp.vars.gridSize
+          const maxDim = Math.max(gridSize[0],gridSize[1])
+          const ZOOM_LIMIT = [1, jb.ui.isMobile() ? maxDim: maxDim]
+          ;[0,1].forEach(axis=>tCenter[axis] = Math.min(gridSize[axis],Math.max(0,tCenter[axis])))
   
           tZoom = Math.max(ZOOM_LIMIT[0],Math.min(tZoom, ZOOM_LIMIT[1]))
           state.tZoom = tZoom
           state.tCenter = tCenter
   
-          jb.log('zui event',{dz, dp, tZoom, tCenter, cmp})
+          jb.log('zui event',{dz, dp, tZoom, tCenter, cmp, widget})
         },      
         animationStep() {
           let { tZoom, tCenter, zoom, center } = state
@@ -154,9 +158,9 @@ extension('zui','zoom', {
           this.pointers.push({pid})
         },
         removePointer(pid) {
-          console.log('removePointer',pid,this.pointers)
+          //console.log('removePointer',pid,this.pointers)
           const found = this.pointers.findIndex(x=>x.pid == pid)
-          console.log(found)
+          //console.log(found)
           if (found != -1)
             this.pointers.splice(found, 1)
         } ,

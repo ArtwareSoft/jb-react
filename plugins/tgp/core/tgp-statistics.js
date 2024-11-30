@@ -11,7 +11,7 @@ extension('tgp', 'statistics', {
   
       Object.keys(comps).filter(k=>comps[k]).forEach(k=>
         refs[k] = {
-          refs: calcRefs(comps[k].impl).filter((x,index,_self) => x && _self.indexOf(x) === index),
+          refs: [...calcRefs(comps[k].impl), ...calcRefs(comps[k].params|| [])].filter((x,index,_self) => x && _self.indexOf(x) === index),
           by: []
       })
       Object.keys(comps).filter(k=>comps[k]).forEach(k=>

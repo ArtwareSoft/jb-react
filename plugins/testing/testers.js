@@ -131,7 +131,7 @@ extension('test', {
 			return (jb.comps[name] && jb.comps[name].type || '').indexOf(type) == 0
 		}
 	},
-	async runSingleTest(testID,{doNotcleanBeforeRun, showOnlyTest,fullTestId} = {}) {
+	async runSingleTest(testID,{doNotcleanBeforeRun, showOnlyTest,fullTestId, quiet} = {}) {
 		const profile = jb.comps[fullTestId]
 		const singleTest = jb.test.singleTest
 		const tstCtx = (jb.ui ? jb.ui.extendWithServiceRegistry() : new jb.core.jbCtx())
@@ -139,7 +139,7 @@ extension('test', {
 		const start = new Date().getTime()
 		await !doNotcleanBeforeRun && !singleTest && jb.test.cleanBeforeRun()
 		jb.log('start test',{testID})
-		const res = await tstCtx.run({$:fullTestId})
+		const res = quiet ? {} : await tstCtx.run({$:fullTestId})
 		res.duration = new Date().getTime() - start
 		jb.log('end test',{testID,res})
 		if (!singleTest && !profile.doNotTerminateWorkers)
@@ -151,12 +151,17 @@ extension('test', {
 			if (!profile.impl.control) return
 			const doc = jb.frame.document
 			if (!doc) return
-			const ctxToRun = jb.ui.extendWithServiceRegistry(new jb.core.jbCtx(tstCtx,{ profile: profile.impl.control , forcePath: fullTestId+ '~impl~control', path: '' } ))
+			const ctxToRun = jb.ui.extendWithServiceRegistry(new jb.core.jbCtx(tstCtx,{ vars:{quiet}, profile: profile.impl.control , forcePath: fullTestId+ '~impl~control', path: '' } ))
 			const elem = doc.createElement('div')
 			elem.className = 'show elemToTest'
 			if (showOnlyTest)
 				doc.body.innerHTML = ''
 			doc.body.appendChild(elem)
+			if (profile.impl.$ == 'zuiTest') {
+				profile.impl.$$ = 'action<>zuiControlRunner'
+				const ctxToRun = new jb.core.jbCtx(tstCtx,{ vars:{quiet}, profile: profile.impl , forcePath: fullTestId+ '~impl', path: '' } )
+				return ctxToRun.runItself()
+			}
 			jb.ui.render(jb.ui.h(ctxToRun.runItself()),elem)    
 		}		
 		return res
@@ -221,7 +226,7 @@ extension('test', {
 					document.getElementById('progress').innerHTML = `<div id=${testID}>${index++}: ${testID} started</div>`
 					console.log('starting ' + testID )
 				}
-				const res = await jb.test.runSingleTest(testID,{showOnlyTest, fullTestId })
+				const res = await jb.test.runSingleTest(testID,{showOnlyTest, fullTestId,quiet })
 				if (!quiet) {
 					console.log('end      ' + testID, res)
 					document.getElementById('progress').innerHTML = `<div id=${testID}>${testID} finished</div>`

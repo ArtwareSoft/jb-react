@@ -340,7 +340,7 @@ extension('utils', 'prettyPrint', {
       if (val === undefined) return tokenProps('undefined', path)
 
       if (typeof val === 'object') return calcProfileProps(val, path,settings)
-      if (typeof val === 'function' && val[jb.macro.isMacro]) return calcObjProps(val(), path)
+      if (typeof val === 'function' && val[jb.macro.isMacro]) return '' //calcObjProps(val(), path)
       if (typeof val === 'function') return funcProps(val, path)
   
       const putNewLinesInString = typeof val === 'string' && val.match(/\n/) && jb.path(settings,'newLinesInCode')

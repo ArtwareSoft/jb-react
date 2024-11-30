@@ -110,6 +110,8 @@ extension('probe', 'suggestions', {
         return ''+val
       else if (val == null)
         return 'null'
+      else if (Array.isArray(val) && val.every(x=>jb.utils.isPrimitiveValue(x)) && val.length < 4)
+        return `[${val.slice(0,3).join(',')}]`
       else if (Array.isArray(val))
         return `${val.length} item${val.length != 1 ? 's' : ''}`
       else if (val && typeof val == 'object')
