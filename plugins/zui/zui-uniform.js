@@ -14,7 +14,10 @@ component('texture', {
     {id: 'id', as: 'string', mandatory: true},
     {id: 'imageF', dynamic: true, mandatory: true}
   ],
-  impl: (ctx,glVar,imageF) => ({glVar, glType: 'sampler2D', glMethod: '1i', imageF})
+  impl: (ctx,glVar,imageF) => [
+    {glVar, glType: 'sampler2D', glMethod: '1i', imageF},
+    {glVar: `${glVar}Size`, glType: 'vec2', glMethod: '2fv', val: ctx => imageF(ctx).textureSize },
+  ]
 })
 
 component('textureOfText', {

@@ -20,9 +20,7 @@ component('button', {
     {id: 'clickEffect', as: 'number', defaultValue: 1}
   ],
   impl: features(
-    If('%$parentItemlistId%', zoomingSize(texture('titleTexture'))),
-    posByContext('%$$model/fixedPos%'),
-    fixedBorderColor('red'),
+    fixedPos('%$$model/fixedPos%'),
     prop('titleImage', zui.imageOfText('%$$model/title()%')),
     uniforms(
       vec2('size', '%$$props/titleImage/size%'),
@@ -31,8 +29,7 @@ component('button', {
       texture('titleTexture', '%$$props/titleImage%')
     ),
     borderRadius('%$borderRadius%'),
-    textBackground('texture2D(titleTexture, rInElem)'),
-    shaderMainSnippet('gl_FragColor = resColor;')
+    textBackground('#010101')
   )
 })
 

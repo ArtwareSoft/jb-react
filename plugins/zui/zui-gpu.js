@@ -115,34 +115,6 @@ extension('zui','GPU', {
       return program
   },
 
-  async imageToTexture(gl, url) {
-    const isPowerOf2 = value => (value & (value - 1)) === 0
-    return new Promise( resolve => {
-      const texture = gl.createTexture()
-      const image = new Image()
-      image.onload = () => {
-        gl.bindTexture(gl.TEXTURE_2D, texture)
-        gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image)
-        texture.width = image.width
-        texture.height = image.height
-        if (isPowerOf2(image.width) && isPowerOf2(image.height)) {
-          gl.generateMipmap(gl.TEXTURE_2D)
-        } else {
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-        }
-        resolve(texture)
-      }
-      image.onerror = () => resolve(texture)
-      image.src = url
-    })
-  },
-  allocateSingleTextureUnit({view,uniformId, cmp}) {
-    const lru = cmp.renderCounter
-    const freeTexture = cmp.boundTextures.find(rec=>rec.view == view && rec.uniformId == uniformId) || cmp.boundTextures.filter(rec => rec.lru != lru).sort((r1,r2) => r1.lru - r2.lru)[0]
-    return Object.assign(freeTexture, {lru,uniformId,view})
-  },
   vertexShaderCode: ({declarations,main} = {}) => `precision highp float;
   precision mediump int;
 

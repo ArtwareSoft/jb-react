@@ -258,6 +258,7 @@ component('imageOfText', {
 
       const canvas = jb.zui.createCanvas(metrics.width, metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent)
       const ctx2d = canvas.getContext('2d')
+      ctx2d.globalCompositeOperation = 'copy'
       ctx2d.font = font
       ctx2d.textBaseline = 'top'
       ctx2d.textAlign = 'left'

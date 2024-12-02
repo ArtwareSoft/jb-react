@@ -63,6 +63,15 @@ component('index', {
     impl: unitScale('index')
 })
 
+component('colorUniform', {
+  type: 'feature',
+  params: [
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'color', mandatory: true, as: 'string'}
+  ],
+  impl: uniforms(vec3('%$id%', zui.colorToRGB('%$color%')))
+})
+
 component('fixedFillColor', {
   type: 'feature',
   params: [
@@ -87,7 +96,7 @@ component('zui.colorToRGB', {
     const mctx = jb.zui.measureCanvasCtx('500 16px Arial')
     mctx.fillStyle = color
     mctx.fillRect(0,0,1,1)
-    return mctx.getImageData(0,0,1,1).data
+    return Array.from(mctx.getImageData(0,0,1,1).data).slice(0,3)
   }
 })
 

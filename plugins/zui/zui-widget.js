@@ -142,11 +142,12 @@ component('widgetFE', {
             if (allLoaded) return true
             cmp.waitingForTextures = cmp.waitingForTextures || {}
             const toLoad = textures.filter( ({id}) => !cmp.waitingForTextures[id] && !cmp.textures[id])
-            return toLoad.reduce((pr,{id, value, size}) => pr.then( async () => {
+            return toLoad.reduce((pr,{id, textureSize, bwBitMap, size,packRatio}) => pr.then( async () => {
               cmp.waitingForTextures[id] = true
-              const url = jbHost.isNode || value || jb.path(cmpData,['textures',id])
-              const texture = jbHost.isNode || await jb.zui.imageToTexture(this.gl,url) 
-              cmp.textures[id] = { texture, size }
+              //const url = jbHost.isNode || url || jb.path(cmpData,['textures',id])
+              const texture = jbHost.isNode || await jb.zui.bwBitMapToTexture(gl,packRatio, bwBitMap, ...size)
+              //console.log(jb.zui.xImage(bwBitMap, ...textureSize),size)
+              cmp.textures[id] = { texture, size, textureSize }
               delete cmp.waitingForTextures[id]
               this.renderRequest = true
             }), Promise.resolve())
@@ -205,7 +206,7 @@ component('widgetFE', {
                 gl.vertexAttribPointer(att, size, gl.FLOAT, false,  floatsInVertex* Float32Array.BYTES_PER_ELEMENT, offset* Float32Array.BYTES_PER_ELEMENT)
                 })
             })
-            jb.log('zui widget renderCmp cmpsData', {cmpsData, ctx})
+            jb.log('zui widget renderCmp', {cmp, cmpData, cmpsData, ctx})
             const duration = new Date().getTime() - baseTime
             //console.log(duration, cmp.id)    
             gl.drawArrays(gl.POINTS, 0, noOfItems)
