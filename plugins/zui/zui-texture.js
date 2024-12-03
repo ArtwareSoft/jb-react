@@ -19,14 +19,14 @@ extension('zui','texture', {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
         gl.bindTexture(gl.TEXTURE_2D, null)
 
-        // const testData = jb.zui.readTexture(gl, texture, width, height)
+        // const testData = jb.zui.readTexture(gl, packRatio, texture, width, height)
         // const compareUint8Arrays = (a, b) => a.length === b.length && a.every((val, i) => val === b[i]);
         // if (!compareUint8Arrays(testData,bitmapData))
         //     jb.logError('bwBitMapToTexture texture distortion',{ testData,bitmapData, width, height})
 
         return texture
     },
-    readTexture(gl, texture, width, height,packRatio = 32) {
+    readTexture(gl, packRatio,texture, width, height) {
         const framebuffer = gl.createFramebuffer()
         const bitmapWidth = Math.ceil(width / packRatio)
         gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer)

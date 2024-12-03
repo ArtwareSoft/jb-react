@@ -11,50 +11,61 @@ extension('zui','canvas', {
   },
   bwCanvasToBase64(packRatio, canvasData,width,height) {
     const bitsPerPixel = 32/packRatio
-    const paddedWidth = Math.ceil(width / packRatio) * packRatio;
+    const pixelsPerByte = 8 / bitsPerPixel
+    //const paddedWidth = Math.ceil(width / packRatio) * packRatio;
     const bitmapWidth = Math.ceil(width / packRatio) * 4; 
     const bitmapData = new Uint8Array(bitmapWidth * height);
+    //let asText = '',asText2 = ''
       
-      for (let y = 0; y < height; y++) {
-          for (let x = 0; x < width; x++) {
-              const pixelIndex = (y * width + x) * 4 // RGBA index
-              const alpha = canvasData[pixelIndex + 3] / 255 // Normalize alpha
-              const luminance = alpha * ( 0.299 * canvasData[pixelIndex] + 0.587 * canvasData[pixelIndex + 1] + 0.114 * canvasData[pixelIndex + 2])
-              const bits = Math.floor(luminance/2**(8-bitsPerPixel))
-              const byteIndex = Math.floor(x / 8) + y * bitmapWidth;
-              const localBitIndex = x%8*bitsPerPixel; // Position within the byte
-              const mask = bits << (8 - bitsPerPixel - localBitIndex); // Align bits to the correct position  
-              //console.log(bits,byteIndex,localBitIndex, mask.toString(16),bitmapData[byteIndex].toString(16),bitmapWidth * height)
-              const bitPosition = y * width + x;
-              const bitIndex = 7 - (bitPosition % 8); 
-              bitmapData[byteIndex] |= mask;
-          }
-      }
-      const res = btoa(String.fromCharCode(...bitmapData))
-      console.log(jb.zui.xImage(res, paddedWidth,height))
-      return res
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            // calc luminance
+            const i = (y * width + x) * 4 // RGBA index
+            const alpha = canvasData[i + 3] / 255 // Normalize alpha
+            const luminance1 = alpha * ( 0.299 * canvasData[i] + 0.587 * canvasData[i + 1] + 0.114 * canvasData[i + 2])
+            const luminance = Math.pow(luminance1 / 255, 0.5) * 255
+            //output
+            const bits = Math.floor(luminance/2**(8-bitsPerPixel))
+            //let color = bits
+            //asText += color == 0 ? '-' : color == 1 ? 'x' : color == 2 ? '#' : '@'
+            const byteIndex = Math.floor(x / pixelsPerByte ) + y * bitmapWidth;
+            const localPixelIndex = x % pixelsPerByte;
+            const startBitIndex = localPixelIndex * bitsPerPixel
+            const mask = bits << startBitIndex;
+            //console.log(bits,byteIndex,localBitIndex, mask.toString(16),bitmapData[byteIndex].toString(16),bitmapWidth * height)
+            bitmapData[byteIndex] |= mask;
+            //color = Math.floor(bitmapData[byteIndex] / 2 ** (startBitIndex)) % (2**bitsPerPixel)
+            //asText2 += color == 0 ? '-' : color == 1 ? 'x' : color == 2 ? '#' : '@'
+        }
+        //asText += asText2 + '\n';asText2 = '';
+    }
+    const res = btoa(String.fromCharCode(...bitmapData))
+//    console.log(asText); 
+    console.log(jb.zui.xImage(res, bitmapWidth,width, height,pixelsPerByte));
+    return res
   },
-  xImage(base64Data, width, height) {
+  xImage(base64Data, bitmapWidth, width, height,pixelsPerByte) {
     const binaryString = atob(base64Data)
     const bitmapData = new Uint8Array(binaryString.length)
     for (let i = 0; i < binaryString.length; i++) bitmapData[i] = binaryString.charCodeAt(i)
-    jb.zui.xImageOfData(bitmapData, width, height)
+    return jb.zui.xImageOfData(bitmapData, bitmapWidth,width, height,pixelsPerByte)
   },
-  xImageOfData(bitmapData, width, height) {
-      // Generate the textual image
-      const compressedWidth = Math.ceil(width / 8); // Width in 8-bit units
+  xImageOfData(bitmapData, bitmapWidth, width, height,pixelsPerByte) {
       let result = "";
-  
+      const bitsPerPixel = 8 / pixelsPerByte
+ 
       for (let y = 0; y < height; y++) {
-          for (let unitIndex = 0; unitIndex < compressedWidth; unitIndex++) {
-              const unit = bitmapData[y * compressedWidth + unitIndex]; // Get the 8-bit unit
-              for (let bit = 7; bit >= 0; bit--) {
-                  // Compute the bit value
-                  const isSet = (unit & (1 << bit)) !== 0;
-                  // Add 'x' for 1, space for 0
-                  result += isSet ? "x" : "-";
-                  // Stop if we reach the image width (avoid trailing bits for partial units)
-                  if (unitIndex * 8 + (7 - bit) >= width) break;
+          for (let unitIndex = 0; unitIndex < bitmapWidth; unitIndex++) {
+              const unit = bitmapData[y * bitmapWidth + unitIndex]; // Get the 8-bit unit
+              for(let localPixelIndex=0;localPixelIndex<pixelsPerByte;localPixelIndex++) {
+                const startBitIndex= localPixelIndex * bitsPerPixel
+                if (pixelsPerByte == 8) 
+                  result += (unit & (1 << pixel)) !== 0 ? "-" : "x";
+                if (pixelsPerByte == 4) {
+                  const color = Math.floor(unit / 2 ** (startBitIndex)) % (2**bitsPerPixel)
+                  const color2 = (unit >> startBitIndex+2) % 4
+                  result += color == 0 ? '-' : color == 1 ? 'x' : color == 2 ? '#' : '@'
+                }
               }
           }
           result += "\n"; // Add a newline after each row
@@ -124,16 +135,16 @@ component('zui.imageOfText', {
     const canvas = jb.zui.createCanvas(...size)
     const ctx2d = canvas.getContext('2d')
     ctx2d.font = font
-    ctx2d.fillStyle = 'white'
+    ctx2d.fillStyle = 'black'
     ctx2d.fillRect(0, 0, canvas.width, canvas.height)
 
-    ctx2d.fillStyle = 'black'; // Text color
+    ctx2d.fillStyle = 'white'; // Text color
     ctx2d.textBaseline = 'top'
     ctx2d.textAlign = 'left'
     ctx2d.fillText(text, padding[3] || 0, padding[0] || 0)
 
 //    const url = await jb.zui.canvasToDataUrl(canvas)
-    const packRatio = 32
+    const packRatio = 16
     const bwBitMap = jb.zui.bwCanvasToBase64(packRatio, ctx2d.getImageData(0, 0, ...size).data, ...size)
     const textureSize = [ Math.ceil(size[0] / 32) * 32, size[1]]
     return { textureSize, size, bwBitMap, packRatio }

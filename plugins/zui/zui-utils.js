@@ -99,25 +99,23 @@ component('textBackground', {
     colorUniform('textBackgroundColor', '%$textBackgroundColor%'),
     shaderMainSnippet({
       code: `// textBackground
-      vec2 rInElem32 = (vec2(floor(inElem.x / 32.0) * 32.0 + 16.0, floor(inElem.y) + 0.5)) / size;
-      vec4 unit = texture2D(%$texture%, rInElem32) * 255.0;
-      int bitIndex = int(mod(floor(inElem.x), 32.0));
-      int byteIndex = bitIndex / 8;
-      int localBitIndex = int(mod(float(bitIndex), 8.0));
-  
+      float packRatio = 16.0;
+      float bitsPerPixel = floor(32.0 / packRatio);
+      float pixelsPerByte = floor(8.0 / bitsPerPixel);
+      float unitX = floor(inElem.x / packRatio) * packRatio;
+      vec2 rBase = (vec2(unitX + 0.5, floor(inElem.y) + 0.5)) / size;
+      vec4 unit = texture2D(%$texture%, rBase) * 255.0;
+      float pixel = floor(inElem.x - unitX);
+      int byteIndex = int(floor(pixel/pixelsPerByte));
       float byteValue = unit[3];
       if (byteIndex == 0) byteValue = unit[0]; else if (byteIndex == 1) byteValue = unit[1]; else if (byteIndex == 2) byteValue = unit[2];
-      int bitValue = int(floor(mod(byteValue / pow(2.0, float(7 - localBitIndex)), 2.0)));
       
-      if (bitValue == 0) {
-        gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); // White
-      } else if (bitValue == 1) {
-          gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0); // Black
-      }
+      float localPixelIndex = floor(mod(pixel, pixelsPerByte));
+      float startBitIndex = bitsPerPixel * localPixelIndex;
+      float noOfGrayColors = pow(2.0, bitsPerPixel);
+      float grayColor = mod(byteValue / pow(2.0, startBitIndex), noOfGrayColors);      
+      gl_FragColor = vec4(0.0, 0.0, 0.0, grayColor/(noOfGrayColors-1.0));
       return;
-
-      // vec4 resColor = texture2D(%$texture%, rInElem);
-      // gl_FragColor = vec4(textBackgroundColor, abs(length(resColor.rgb)));
       `,
       phase: 4
     })
