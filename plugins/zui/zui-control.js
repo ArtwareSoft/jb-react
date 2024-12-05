@@ -62,8 +62,8 @@ extension('zui','control' , {
             this.id = '' + jb.zui.cmpCounter++
             this.title = `${ctx.profile.$}-${this.id}`
         }
-        init(childIndex) {
-            this.childIndex = childIndex || 0
+        init(settings) {
+            Object.assign(this,settings || {}) 
             const sortedExtendCtx = (this.extendCtxFuncs || []).sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
             this.ctx = sortedExtendCtx.reduce((accCtx,extendCtx) => jb.utils.tryWrapper(() => 
                 extendCtx.setVar(accCtx),'extendCtx',this.ctx), this.ctx.setVar('cmp',this))
@@ -74,11 +74,12 @@ extension('zui','control' , {
             sortedInit.forEach(init=>jb.utils.tryWrapper(() => init.action(this.calcCtx),'init', this.ctx))
             
             // assign all layout props directly into cmp
-            this.layoutProps = {}
-            ;(this.layoutProp || []).forEach(p=>Object.keys(p).forEach(k=>this.layoutProps[k] = p[k]))
-            Object.assign(this,this.zoomingSize || {}, this.layoutProps)
+            this.layoutProps = (this.layoutProp||[]).reduce((acc,obj) => ({...acc,...obj}), {})
+            //;(this.layoutProp || []).forEach(p=>Object.keys(p).forEach(k=>this.layoutProps[k] = p[k]))
+            Object.assign(this, this.zoomingSize || {}, this.layoutProps, {zoomingSizeProfile: jb.path(this.zoomingSize,'profile')})
+            this.childIndex = this.childIndex || 0
             if (!Array.isArray(this.children) && this.children)
-                this.children = this.children(this.calcCtx).map((cmp,childIndex) =>cmp.init(childIndex))
+                this.children = this.children(this.calcCtx).map((cmp,childIndex) =>cmp.init({childIndex}))
 
             return this
         }
@@ -100,8 +101,7 @@ extension('zui','control' , {
             const sortedProps = (this.calcProp || []).sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
             await sortedProps.reduce((pr,prop)=> pr.then(async () => {
                     const val = jb.val( await jb.utils.tryWrapper(async () => 
-                        prop.value.profile === null ? ctxToUse.vars.$model[prop.id] : await prop.value(ctxToUse),
-                    `renderProp:${prop.id}`,this.ctx))
+                        prop.value.profile === null ? ctxToUse.vars.$model[prop.id] : await prop.value(ctxToUse),`prop:${prop.id}`,this.ctx))
                     const value = val == null ? prop.defaultValue : val
                     Object.assign(this.props, { ...(prop.id == '$props' ? value : { [prop.id]: value })})
                 }), Promise.resolve())
@@ -119,18 +119,15 @@ extension('zui','control' , {
             const vertexMainSnippets = (this.vertexMainSnippet || []).sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index)).map(x=>x.code(ctxToUse))
             const shaderMainSnippets = (this.shaderMainSnippet || []).sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index)).map(x=>x.code(ctxToUse))
 
-            const glCode = [calcVertexCode(glVars,vertexDecls,vertexMainSnippets), 
-                            calcShaderCode(glVars,shaderDecls,shaderMainSnippets)]
-
+            const glCode = [calcVertexCode(glVars,vertexDecls,vertexMainSnippets), calcShaderCode(glVars,shaderDecls,shaderMainSnippets)]
             const methods = (this.method||[]).map(h=>h.id).join(',')
             const frontEndMethods = (this.frontEndMethod || []).map(h=>({method: h.method, path: h.path}))
             const frontEndUniforms = (this.frontEndUniform || [])
             const frontEndVars = this.frontEndVar && jb.objFromEntries(this.frontEndVar.map(h=>[h.id, jb.val(h.value(ctxToUse))]))
-            const zoomingSizeProfile = jb.path(this.zoomingSize,'profile')
             const noOfItems = (ctxToUse.vars.items||[]).length
-            const { id , title, layoutProps, gridElem } = this
+            const { id , title, layoutProps, gridElem, zoomingSizeProfile, topOfWidget } = this
             const res = { id, title, ...glVars, glCode, frontEndMethods, frontEndVars, frontEndUniforms, 
-                    noOfItems, methods, zoomingSizeProfile, layoutProps, gridElem }
+                topOfWidget, noOfItems, methods, zoomingSizeProfile, layoutProps, gridElem }
             if (this.children)
                 res.childrenIds = this.children.map(({id})=>id).join(',')
 

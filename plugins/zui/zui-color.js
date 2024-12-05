@@ -80,12 +80,20 @@ component('fixedFillColor', {
   impl: uniforms(vec3('fillColor', zui.colorToRGB('%$color%')))
 })
 
+component('fixedBackgroundColor', {
+  type: 'feature',
+  params: [
+    {id: 'color', mandatory: true, as: 'string'}
+  ],
+  impl: uniforms(vec3('backgroundColor', zui.colorToRGB('%$color%')))
+})
+
 component('fixedBorderColor', {
   type: 'feature',
   params: [
     {id: 'color', mandatory: true, as: 'string'}
   ],
-  impl: features(uniforms(vec3('borderColor', zui.colorToRGB('%$color%'))), elemBorder())
+  impl: uniforms(vec3('borderColor', zui.colorToRGB('%$color%')))
 })
 
 component('zui.colorToRGB', {

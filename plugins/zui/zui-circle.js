@@ -7,15 +7,14 @@ component('circle', {
     {id: 'style', type: 'circle-style', defaultValue: circle(), dynamic: true},
     {id: 'features', type: 'feature', dynamic: true}
   ],
-  impl: ctx => jb.zui.ctrl(ctx)
+  impl: ctx => jb.zui.ctrl(ctx,ctx.params.size)
 })
 
 component('circle', {
   type: 'circle-style',
   params: [],
   impl: features(
-    posByContext('%$$model/fixedPos%'),
-    sizeByContext('%$$model/size()%'),
+    modeByContext(),
     centerRadius(),
     fillColor(),
     fillCircleElem()

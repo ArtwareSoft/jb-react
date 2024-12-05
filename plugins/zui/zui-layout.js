@@ -104,6 +104,79 @@ component('image', {
   })
 })
 
+component('layout', {
+  type: 'feature',
+  params: [
+    {id: 'layout', type: 'layout[]', composite: true},
+  ],
+  impl: (ctx,layoutProp) => ({layoutProp, srcPath: ctx.path})
+})
+
+component('fixedPos', {
+  type: 'layout',
+  params: [
+    {id: 'fixedPos', as: 'array', description: '2 values'}
+  ],
+  impl: (ctx,fixedPos) => ({layoutProp: { fixedPos: jb.zui.fix2(fixedPos,ctx) } })
+})
+
+component('padding', {
+  type: 'layout',
+  params: [
+    {id: 'padding', as: 'array', description: '1,2, or 4 values, top right bottom left'}
+  ],
+  impl: (ctx,padding) => ({layoutProp: { padding: jb.zui.fix4(padding,ctx) } })
+})
+
+component('margin', {
+  type: 'layout',
+  params: [
+    {id: 'margin', as: 'array', description: '1,2, or 4 values, top right bottom left'}
+  ],
+  impl: (ctx,margin) => ({layoutProp: { margin: jb.zui.fix4(margin,ctx) } })
+})
+
+component('size', {
+  type: 'layout',
+  params: [
+    {id: 'width', as: 'string'},
+    {id: 'height', as: 'string'}
+  ],
+  impl: ctx => ({layoutProp: ctx.params })
+})
+
+component('width', {
+  type: 'layout',
+  params: [
+    {id: 'width', as: 'string'}
+  ],
+  impl: (ctx,width) => ({layoutProp: { width } })
+})
+
+component('height', {
+  type: 'layout',
+  params: [
+    {id: 'height', as: 'string'}
+  ],
+  impl: (ctx,height) => ({layoutProp: { height } })
+})
+
+component('borderWidth', {
+  type: 'layout',
+  params: [
+    {id: 'borderWidth', as: 'array', description: '1,2, or 4 values, top right bottom left'}
+  ],
+  impl: (ctx,borderWidth) => ({layoutProp: { borderWidth: jb.zui.fix4(borderWidth,ctx) } })
+})
+
+component('borderRadius', {
+  type: 'layout',
+  params: [
+    {id: 'radius', as: 'array', description: '1,2 values'}
+  ],
+  impl: (ctx,radius) => ({layoutProp: { borderRadius: jb.zui.fix2(radius,ctx) } })
+})
+
 // component('priorty', {
 //   type: 'zooming_size',
 //   params: [
@@ -128,7 +201,44 @@ component('image', {
 //   impl: (ctx,maxHeight) => ({ maxHeight })
 // })
 
+component('zui.fix2', {
+  params: [
+    {id: 'arr', as: 'array', description: '0,1 or 2 values fixed to 2'}
+  ],
+  impl: (ctx,ar) => jb.zui.fix2(ar,ctx)
+})
+
+component('zui.fix4', {
+  params: [
+    {id: 'arr', as: 'array', description: '0,1 or 2,4 values fixed to 4'}
+  ],
+  impl: (ctx,ar) => jb.zui.fix4(ar,ctx)
+})
+
 extension('zui','layout', {
+  fix2(ar,ctx) {
+    if (!ar) return [0,0]
+    if (typeof ar == 'number' || typeof ar == 'string') return [+ar,+ar]
+    if (Array.isArray(ar)) {
+      if (ar.length == 0) return [0,0]
+      if (ar.length == 1) return [+ar[0],+ar[0]]
+      if (ar.length == 2) return ar
+    } 
+    jb.logError(`fix2 can not fix ${ar}`,{ar, ctx})
+    return [0,0]
+  },
+  fix4(ar,ctx) {
+    if (!ar) return [0,0,0,0]
+    if (typeof ar == 'number' || typeof ar == 'string') return [+ar,+ar,+ar,+ar]
+    if (Array.isArray(ar)) {
+      if (ar.length == 0) return [0,0,0,0]
+      if (ar.length == 1) return [+ar[0],+ar[0],+ar[0],+ar[0]]
+      if (ar.length == 2) return [+ar[0],+ar[1],+ar[0],+ar[1]]
+      if (ar.length == 4) return ar
+    } 
+    jb.logError(`fix4 can not fix ${ar}`,{ar, ctx})
+    return [0,0,0,0]
+  },
   floorLog2(size) {
     return 2**Math.floor(Math.log(size)/Math.log(2))
   },

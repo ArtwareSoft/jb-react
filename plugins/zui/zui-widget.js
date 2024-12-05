@@ -16,19 +16,20 @@ component('widget', {
         
         const widget = {
             frontEnd,
-//            gl, canvasSize, glLimits,
             clearCanvas() {
                 gl.viewport(0, 0, ...canvasSize)
-                gl.clearColor(1.0, 1.0, 1.0, 1.0)
+                gl.clearColor(1, 1, 1, 1)
                 gl.clear(gl.COLOR_BUFFER_BIT)    
             },
             async init() {
-                const ctxForBe = ctx.setVars({glLimits: frontEnd.glLimits,canvasSize, widget: this})
+                const ctxForBe = ctx.setVars({glLimits: frontEnd.glLimits,canvasSize, widget: this, zuiMode: 'fixed'})
                 const beCmp = this.be_cmp = control(ctxForBe).applyFeatures(features,20)
-                beCmp.init()
-                const beCmps= this.cmps = beCmp.descendants()
-                const payload = {}
-                await beCmps.filter(cmp=>!cmp.gridElem).reduce((pr,cmp) => pr.then(async ()=> mergePayload(await cmp.calcPayload())), Promise.resolve())
+                beCmp.init({topOfWidget: true})
+                //const payload = {}
+                //const beCmps= this.cmps = beCmp.descendants()
+                //await beCmps.filter(cmp=>!cmp.gridElem).reduce((pr,cmp) => pr.then(async ()=> mergePayload(await cmp.calcPayload())), Promise.resolve())
+                const _payload = await beCmp.calcPayload()
+                const payload = _payload.id ? {[_payload.id] : _payload }: _payload
                 await frontEnd.handleInitPayload(payload)
                 frontEnd.renderCmps()
                 frontEnd.beProxy = {
@@ -39,14 +40,14 @@ component('widget', {
                     }
                 }
 
-                function mergePayload(cmpPayload) {
-                    if (cmpPayload.pack) {
-                        Object.assign(payload,cmpPayload)
-                        delete payload.pack
-                    }
-                    else
-                        payload[cmpPayload.id] = cmpPayload
-                }
+                // function mergePayload(cmpPayload) {
+                //     if (cmpPayload.pack) {
+                //         Object.assign(payload,cmpPayload)
+                //         delete payload.pack
+                //     }
+                //     else
+                //         payload[cmpPayload.id] = cmpPayload
+                // }
             },
         }
         return widget
@@ -145,7 +146,7 @@ component('widgetFE', {
             return toLoad.reduce((pr,{id, textureSize, bwBitMap, size,packRatio}) => pr.then( async () => {
               cmp.waitingForTextures[id] = true
               //const url = jbHost.isNode || url || jb.path(cmpData,['textures',id])
-              const texture = jbHost.isNode || await jb.zui.bwBitMapToTexture(gl,packRatio, bwBitMap, ...size)
+              const texture = await jb.zui.bwBitMapToTexture(gl,packRatio, bwBitMap, ...size)
               //console.log(jb.zui.xImage(bwBitMap, ...textureSize),size)
               cmp.textures[id] = { texture, size, textureSize }
               delete cmp.waitingForTextures[id]
@@ -165,7 +166,7 @@ component('widgetFE', {
         renderCmps() {
             if (this.ctx.vars.canUseConsole) console.log(this.state.tZoom, this.state.zoom, this.state.center)
             Object.values(this.cmps).filter(cmp=>!cmp.notReady)
-                .forEach(cmp=>cmp.render ? cmp.render(this.ctx) : !cmp.vars.parentItemlistId && this.renderCmp(cmp,this.ctx))
+                .forEach(cmp=>cmp.render ? cmp.render(this.ctx) : cmp.vars.zuiMode != 'zoomingGrid' && this.renderCmp(cmp,this.ctx))
         },        
         renderCmp(cmp,ctx) {
             if (!this.cmpsData[cmp.id].binaryAtts.length) return

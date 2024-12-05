@@ -88,6 +88,15 @@ component('vec3', {
   impl: (ctx,glVar,val) => ({glVar, val, glType: 'vec3', glMethod: '3fv'})
 })
 
+component('vec4', {
+  type: 'uniform',
+  params: [
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'val', dynamic: true, mandatory: true}
+  ],
+  impl: (ctx,glVar,val) => ({glVar, val, glType: 'vec4', glMethod: '4fv'})
+})
+
 component('canvasSize', {
   type: 'uniform',
   params: [

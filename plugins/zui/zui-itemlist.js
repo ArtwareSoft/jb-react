@@ -25,11 +25,11 @@ component('grid', {
   type: 'itemlist-style',
   impl: features(
     variable('items', '%$$model/items()%'),
-    variable('parentItemlistId', '%$cmp.id%'),
+    variable('zoomingGridGlSetUp', true),
     variable('itemsLayout', '%$$model/itemsLayout()%'),
     frontEnd.var('gridSize', '%$itemsLayout/gridSize%'),
     frontEnd.var('initialZoomCenter', ['%$itemsLayout/initialZoom%','%$itemsLayout/center%']),
-    init((ctx,{cmp, itemsLayout, $model}) => {
+    init((ctx,{cmp, itemsLayout, widget, $model}) => {
       cmp.children = [$model.itemControl(ctx).init()]
       setAsGridElem(cmp.children[0])
       function setAsGridElem(cmp) {
@@ -37,13 +37,11 @@ component('grid', {
         ;(cmp.children||[]).forEach(setAsGridElem)
       }
       cmp.extendedPayload = async res => {
-        const cmps = ctx.vars.widget.cmps
         const layoutCalculator = jb.zui.initLayoutCalculator(cmp)
         const {shownCmps} = layoutCalculator.calcItemLayout(itemsLayout.itemSize)
         const pack = { pack: true, [res.id]: res }
-        await cmps.filter(cmp=>cmp.id != res.id).reduce((pr,cmp)=>pr.then(async ()=> {
-          const { id , title, layoutProps, gridElem, zoomingSize } = cmp
-          const zoomingSizeProfile = jb.path(zoomingSize,'profile')
+        await widget.cmps.filter(cmp=>cmp.id != res.id).reduce((pr,cmp)=>pr.then(async ()=> {
+          const { id , title, layoutProps, gridElem, zoomingSizeProfile } = cmp
           pack[id] = cmp.children || shownCmps.indexOf(id) != -1 ? await cmp.calcPayload() 
               : {id, title, zoomingSizeProfile, layoutProps, gridElem, notReady: true} 
         }), Promise.resolve())
@@ -188,13 +186,13 @@ component('gridElem', {
   )
 })
 
-component('elemBorder', {
-  type: 'feature',
-  params: [],
-  impl: dependentFeature({
-    feature: shaderMainSnippet(`
-    if (inElem[0] <1.0 || inElem[0] > size[0]-1.0 || inElem[1] <1.0 || inElem[1] > size[1]-1.0)
-      gl_FragColor = vec4(borderColor, 1.0);`),
-    glVars: ['borderColor']
-  })
-})
+// component('elemBorder', {
+//   type: 'feature',
+//   params: [],
+//   impl: dependentFeature({
+//     feature: shaderMainSnippet(`
+//     if (inElem[0] <1.0 || inElem[0] > size[0]-1.0 || inElem[1] <1.0 || inElem[1] > size[1]-1.0)
+//       gl_FragColor = vec4(borderColor, 1.0);`),
+//     glVars: ['borderColor']
+//   })
+// })

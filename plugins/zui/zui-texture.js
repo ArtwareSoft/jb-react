@@ -8,7 +8,7 @@ extension('zui','texture', {
 
         const bitmapData = new Uint8Array(binaryString.length)
         for (let i = 0; i < binaryString.length; i++) bitmapData[i] = binaryString.charCodeAt(i)
-        console.log(jb.zui.xImageOfData(bitmapData, bitmapWidth*packRatio,height))
+        //console.log(jb.zui.xImageOfData(bitmapData, bitmapWidth*packRatio,height))
         
         const texture = gl.createTexture()
         gl.bindTexture(gl.TEXTURE_2D, texture)

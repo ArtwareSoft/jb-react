@@ -41,7 +41,7 @@ extension('zui','canvas', {
     }
     const res = btoa(String.fromCharCode(...bitmapData))
 //    console.log(asText); 
-    console.log(jb.zui.xImage(res, bitmapWidth,width, height,pixelsPerByte));
+    //console.log(jb.zui.xImage(res, bitmapWidth,width, height,pixelsPerByte));
     return res
   },
   xImage(base64Data, bitmapWidth, width, height,pixelsPerByte) {

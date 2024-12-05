@@ -7,7 +7,7 @@ component('points', { passiveData: [
       {"name": "Beer Sheva", x: 3, y : 3 },
 ]})
 
-component('zuiTest.circles', {
+component('zuiTest.zoomingGrid', {
   impl: zuiTest({
     control: itemlist({
       items: '%$points%',
@@ -18,7 +18,7 @@ component('zuiTest.circles', {
   })
 })
 
-component('zuiTest.buttons', {
+component('zuiTest.zoomingGridWithText', {
   impl: zuiTest({
     control: itemlist({
       items: '%$points%',
@@ -29,12 +29,12 @@ component('zuiTest.buttons', {
   })
 })
 
-component('zuiTest.group', {
-  impl: zuiTest(group(button('Hello'), button('World', { fixedPos: [50,50] })), '')
+component('zuiTest.flowMode', {
+  impl: zuiTest(group(button('Hello'), button('World')), '')
 })
 
-component('zuiTest.button', {
-  impl: zuiTest(button('click me'), '')
+component('zuiTest.fixedMode', {
+  impl: zuiTest(button('click me'), 'size: [98,32]')
 })
 
 // component('zuiTest.growingDiagnostics', {

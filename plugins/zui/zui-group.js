@@ -13,9 +13,32 @@ component('group', {
 component('group', {
   type: 'group-style',
   impl: features(
-    If('%$parentItemlistId%', frontEnd.var('parentItemlistId', '%$parentItemlistId%')),
+    frontEnd.var('zuiMode', '%$zuiMode%'),
     children('%$$model/controls()%'),
-    '%$$model/layout%'
+    '%$$model/layout%',
+    // init((ctx,{cmp, $model, widget}) => {
+    //   if (!cmp.topOfWidget) return
+    //   cmp.extendedPayload = async topPayload => {
+    //     const layoutCalculator = jb.zui.initLayoutCalculator(cmp)
+    //     const {shownCmps} = layoutCalculator.calcStaticLayout()
+    //     const mainShader = ''
+    //     await staticCmps.reduce((pr,cmp,i)=>pr.then(async ()=> {
+    //       const childPayload = await cmp.calcPayload()
+    //       const { id } = cmp
+    //       const shaderMain = res.uniforms.map(({glVar}) => `${glVar} = ${u.glVar}_${id}`)
+    //       mainShader += `${i: '} else ' : ''}if (inSizePos(inTopElem,sizePos_${id})) {
+    //         vec2 inGlyph = inTopElem - sizePos_${id}.zw;
+    //         vec2 size = sizePos_${id}.xy;
+    //         vec2 rInGlyph = inGlyph/size;
+    //         ${res.uniforms.map(({glVar}) => `${glVar} = ${u.glVar}_${id}`)}
+    //         ${shaderMain}
+    //         `
+    //       res.uniforms.forEach(u=>topPayload.uniforms.push({...u,glVar: `${u.glVar}_${id}`}))
+    //     }), Promise.resolve())
+    //     // merge sahder main
+    //     return topPayload
+    //   }
+    // }),
   )
 })
 
