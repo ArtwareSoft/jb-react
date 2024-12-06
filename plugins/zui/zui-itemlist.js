@@ -25,24 +25,24 @@ component('grid', {
   type: 'itemlist-style',
   impl: features(
     variable('items', '%$$model/items()%'),
-    variable('zoomingGridGlSetUp', true),
     variable('itemsLayout', '%$$model/itemsLayout()%'),
     frontEnd.var('gridSize', '%$itemsLayout/gridSize%'),
     frontEnd.var('initialZoomCenter', ['%$itemsLayout/initialZoom%','%$itemsLayout/center%']),
     init((ctx,{cmp, itemsLayout, widget, $model}) => {
-      cmp.children = [$model.itemControl(ctx).init()]
+      const ctxToUse = ctx.setVars({zuiMode: 'zoomingGrid'})
+      cmp.children = [$model.itemControl(ctxToUse).init()]
       setAsGridElem(cmp.children[0])
       function setAsGridElem(cmp) {
         cmp.gridElem = true
         ;(cmp.children||[]).forEach(setAsGridElem)
       }
-      cmp.extendedPayload = async res => {
+      cmp.extendedPayload = async (res,descendants) => {
         const layoutCalculator = jb.zui.initLayoutCalculator(cmp)
         const {shownCmps} = layoutCalculator.calcItemLayout(itemsLayout.itemSize)
-        const pack = { pack: true, [res.id]: res }
-        await widget.cmps.filter(cmp=>cmp.id != res.id).reduce((pr,cmp)=>pr.then(async ()=> {
+        const pack = { [res.id]: res }
+        await descendants.filter(cmp=>cmp.id != res.id).reduce((pr,cmp)=>pr.then(async ()=> {
           const { id , title, layoutProps, gridElem, zoomingSizeProfile } = cmp
-          pack[id] = cmp.children || shownCmps.indexOf(id) != -1 ? await cmp.calcPayload() 
+          pack[id] = cmp.children || shownCmps.indexOf(id) != -1 ? await cmp.calcPayload()
               : {id, title, zoomingSizeProfile, layoutProps, gridElem, notReady: true} 
         }), Promise.resolve())
         return pack
@@ -132,59 +132,6 @@ component('grid', {
   impl: (ctx,gridSize) =>jb.zui.gridItemsLayout({...ctx.params,gridSize: jb.zui.fixGrid(gridSize)},ctx)
 })
 
-component('gridElem', {
-  type: 'feature',
-  circuit: 'zuiTest.itemlist',
-  impl: features(
-    frontEnd.uniforms(
-      float('zoom', '%$widget.state.zoom%'),
-      vec2('center', '%$widget.state.center%'),
-      vec2('pos', '%$elemLayout.pos%'),
-      vec2('size', '%$elemLayout.size%')
-    ),
-    uniforms(
-      canvasSize(),
-      vec2('gridSize', '%$itemsLayout/gridSize%'),
-      float('zoom', '%$itemsLayout/initialZoom%'),
-      vec2('center', '%$itemsLayout/center%'),
-      vec2('pos', [0,0]),
-      vec2('size', [0,0])
-    ),
-    glAtt(vec2('itemPos', '%$item.xyPos%')),
-    vertexDecl('vec2 invertY(vec2 pos) { return vec2(pos[0],-1.0*pos[1]); }'),
-    varying('vec2', 'elemBottomLeftCoord', {
-      glCode: 'floor((elemBottomLeftNdc + 1.0) * (0.5*canvasSize))'
-    }),
-    vertexMainSnippet(`vec2 elemCenterPx = invertY(pos+size/2.0);
-    vec2 itemTopLeftNdc = (itemPos - center) / (0.5*zoom);
-    vec2 elemCenterNdc = itemTopLeftNdc + elemCenterPx/(0.5*canvasSize);
-    vec2 elemBottomLeftNdc = itemTopLeftNdc + invertY(pos+vec2(0.0,size[1])) / (0.5 * canvasSize);
-    gl_PointSize = max(size[0],size[1]) * 1.42;
-    gl_Position = vec4( elemCenterNdc, 0.0, 1.0);
-    `),
-    shaderMainSnippet({
-      code: `
-        vec2 inElem = gl_FragCoord.xy- elemBottomLeftCoord;
-        inElem = vec2(inElem[0], size[1] - inElem[1]);
-
-        if (inElem[0] >= size[0] || inElem[1] >= size[1]) {
-          gl_FragColor = vec4(0.0, 0.0, 1.0, 0.0); 
-          return;
-        }
-        if (inElem[0] < 0.0 || inElem[1] < 0.0) {
-          gl_FragColor = vec4(0.0, 1.0, 0.0, 0.0); 
-          return;
-        }
-        // if (inElem[0] >= size[0] || inElem[0] < 0.0 || inElem[1] >= size[1] || inElem[1] < 0.0) {
-        //   gl_FragColor = vec4(0.0, 0.0, 1.0, 0.0); 
-        //   return;
-        // };
-        vec2 rInElem = inElem/size;
-    `,
-      phase: 1
-    })
-  )
-})
 
 // component('elemBorder', {
 //   type: 'feature',

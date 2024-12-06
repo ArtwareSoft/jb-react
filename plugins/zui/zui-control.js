@@ -6,8 +6,10 @@ extension('zui','control' , {
         { isOfWhenEndsWith: ['style<zui>',['feature<zui>', 'style<zui>' ]] }
     ],    
     ctrl(origCtx,featuresProfile) {
-        const ctx = origCtx.setVars({ $model: { ctx: origCtx, ...origCtx.params} })
-        const cmp = new jb.zui.BeComp(ctx)
+        const ctxBefore = origCtx.setVars({ $model: { ctx: origCtx, ...origCtx.params} })
+        const cmp = new jb.zui.BeComp(ctxBefore)
+        const ctx = ctxBefore.setVars({cmp})
+        cmp.ctx = ctx
         applyFeatures(featuresProfile)
         applyFeatures(origCtx.params.style && origCtx.params.style(ctx))
         jb.path(ctx.params.features,'profile') && applyFeatures(ctx.params.features(ctx), 10)
@@ -58,7 +60,6 @@ extension('zui','control' , {
     },
     BeComp : class BeComp {
         constructor(ctx) {
-            this.ctx = ctx
             this.id = '' + jb.zui.cmpCounter++
             this.title = `${ctx.profile.$}-${this.id}`
         }
@@ -66,7 +67,7 @@ extension('zui','control' , {
             Object.assign(this,settings || {}) 
             const sortedExtendCtx = (this.extendCtxFuncs || []).sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
             this.ctx = sortedExtendCtx.reduce((accCtx,extendCtx) => jb.utils.tryWrapper(() => 
-                extendCtx.setVar(accCtx),'extendCtx',this.ctx), this.ctx.setVar('cmp',this))
+                extendCtx.setVar(accCtx),'extendCtx',this.ctx), this.ctx)
             this.props = {}
             this.calcCtx = this.ctx.setVars({$props: this.props, cmp: this })
 
@@ -90,13 +91,13 @@ extension('zui','control' , {
             return this.pivot.find(({id}) => id == pivotId).scale(item)
         }
 
-        async calcPayload() {
+        async calcPayload(vars) {
             if (this.ctx.probe && this.ctx.probe.outOfTime) return {}
             if (!this.props)
                 return jb.logError(`glPayload - cmp ${this.title} not initialized`,{cmp: this, ctx: cmp.ctx})
 //            const vars = this.calcItemLayout ? this.calcItemLayout() : { elemsLayout: {}}
 
-            const ctxToUse = this.calcCtx
+            const ctxToUse = vars ? this.calcCtx.setVars(vars) : this.calcCtx
             ;[...(this.calcProp || []),...(this.method || [])].forEach(p=>typeof p.value == 'function' && Object.defineProperty(p.value, 'name', { value: p.id }))    
             const sortedProps = (this.calcProp || []).sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
             await sortedProps.reduce((pr,prop)=> pr.then(async () => {
@@ -138,7 +139,7 @@ extension('zui','control' , {
                     jb.logError(`zui unsupported vars ${unsupported.join(',')}`, {feature, ctx: ctxToUse})
             })
 
-            return this.extendedPayload ? this.extendedPayload(res) : res
+            return this.extendedPayload ? this.extendedPayload(res,this.descendants()) : res
 
             function flatMapAtt(att) {
                 return att.composite ? att.atts(ctxToUse).flatMap(att=>flatMapAtt(att)) : att
@@ -152,7 +153,7 @@ extension('zui','control' , {
                     ...uniforms.map(({glType,glVar,vecSize}) => `uniform ${glType} ${glVar}${vecSize ? `[${vecSize}]` : ''};`),
                     ...varyings.map(({glType,glVar}) => `varying ${glType} ${glVar};`),
                     ...glAtts.map(({glType,glVar}) => `attribute ${glType} _${glVar};varying ${glType} ${glVar};`),
-                    declarations,
+                    ...declarations,
                     '\nvoid main() {',
                     ...glAtts.map(({glType,glVar}) => `${glVar} = _${glVar};`),
                     ...mainSnippests,
@@ -166,7 +167,7 @@ extension('zui','control' , {
                     ...uniforms.map(({glType,glVar,vecSize}) => `uniform ${glType} ${glVar}${vecSize ? `[${vecSize}]` : ''};`),
                     ...varyings.map(({glType,glVar}) => `varying ${glType} ${glVar};`),
                     ...glAtts.map(({glType,glVar}) => `varying ${glType} ${glVar};`),
-                    declarations,
+                    ...declarations,
                     '\nvoid main() {',
                     ...mainSnippests,
                     '}'
@@ -180,7 +181,13 @@ extension('zui','control' , {
             }
             function mergeGlVars({glAtts,uniforms,varyings}) {
                 const glVars = varsInFeatures({glAtts,uniforms,varyings})
-                const filtered = Object.values(glVars).map(objs => objs[objs.length-1])
+                const filtered = Object.values(glVars).map(objs => {
+                    if (objs.length == 1) return objs[0]
+                    // sort by attribute/varying and then index
+                    return objs.map((obj,index)=>({...obj,imp: obj.uniform ? 0 : 100,index}))
+                        .sort((y,x) => x.imp - y.imp + x.index - y.index)[0]
+                })
+                
                 {
                     const glAtts = [], uniforms = [],varyings = []
                     filtered.forEach(obj=>obj.glAtt ? glAtts.push(obj): obj.uniform ? uniforms.push(obj) : varyings.push(obj))

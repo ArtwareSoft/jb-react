@@ -13,7 +13,7 @@ component('modeByContext', {
 component('fixedMode', {
   type: 'feature',
   impl: features(
-    uniforms(canvasSize(), vec2('fixedPos', zui.fix2('%$cmp.fixedPos%'))),
+    uniforms(canvasSize(), vec2('elemPos', zui.fix2('%$cmp.fixedPos%'))),
     variable('items', [1]),
     glAtt(float('dummy', 1)),
     vertexDecl('vec2 invertY(vec2 pos) { return vec2(pos[0],-1.0*pos[1]); }'),
@@ -21,10 +21,45 @@ component('fixedMode', {
       glCode: 'floor((elemBottomLeftNdc + 1.0) * (0.5*canvasSize))'
     }),
     defaultGlVarsAsUniforms(),
-    vertexMainSnippet(`vec2 elemCenterPx = invertY(fixedPos+elemSize/2.0);
+    vertexMainSnippet(`vec2 elemCenterPx = invertY(elemPos+elemSize/2.0);
     vec2 itemTopLeftNdc = vec2(-1.0,1.0);
     vec2 elemCenterNdc = itemTopLeftNdc + elemCenterPx/(0.5*canvasSize);
-    vec2 elemBottomLeftNdc = itemTopLeftNdc + invertY(fixedPos+vec2(0.0,elemSize[1])) / (0.5 * canvasSize);
+    vec2 elemBottomLeftNdc = itemTopLeftNdc + invertY(elemPos+vec2(0.0,elemSize[1])) / (0.5 * canvasSize);
+    gl_PointSize = max(elemSize[0],elemSize[1]) * 1.42;
+    gl_Position = vec4( elemCenterNdc, 0.0, 1.0);
+    `),
+    simpleShaderMain()
+  )
+})
+
+component('zoomingGridMode', {
+  type: 'feature',
+  circuit: 'zuiTest.zoomingGrid',
+  impl: features(
+    frontEnd.uniforms(
+      float('zoom', '%$widget.state.zoom%'),
+      vec2('center', '%$widget.state.center%'),
+      vec2('elemPos', '%$elemLayout.pos%'),
+      vec2('elemSize', '%$elemLayout.size%')
+    ),
+    uniforms(
+      canvasSize(),
+      vec2('gridSize', '%$itemsLayout/gridSize%'),
+      float('zoom', '%$itemsLayout/initialZoom%'),
+      vec2('center', '%$itemsLayout/center%'),
+      vec2('elemPos', [0,0]),
+      vec2('elemSize', [0,0])
+    ),
+    glAtt(vec2('itemPos', '%$item.xyPos%')),
+    vertexDecl('vec2 invertY(vec2 pos) { return vec2(pos[0],-1.0*pos[1]); }'),
+    varying('vec2', 'elemBottomLeftCoord', {
+      glCode: 'floor((elemBottomLeftNdc + 1.0) * (0.5*canvasSize))'
+    }),
+    defaultGlVarsAsUniforms(),
+    vertexMainSnippet(`vec2 elemCenterPx = invertY(elemPos+elemSize/2.0);
+    vec2 itemTopLeftNdc = (itemPos - center) / (0.5*zoom);
+    vec2 elemCenterNdc = itemTopLeftNdc + elemCenterPx/(0.5*canvasSize);
+    vec2 elemBottomLeftNdc = itemTopLeftNdc + invertY(elemPos+vec2(0.0,elemSize[1])) / (0.5 * canvasSize);
     gl_PointSize = max(elemSize[0],elemSize[1]) * 1.42;
     gl_Position = vec4( elemCenterNdc, 0.0, 1.0);
     `),
@@ -33,12 +68,6 @@ component('fixedMode', {
 })
 
 component('flowMode', {
-  type: 'feature',
-  impl: features(
-  )
-})
-
-component('zoomingGridMode', {
   type: 'feature',
   impl: features(
   )
@@ -66,9 +95,8 @@ component('defaultGlVarsAsUniforms', {
 
 component('simpleTitleBlending', {
   type: 'feature',
-  impl: features(If('%$$props/titleImage', shaderDecl({
-      code: `
-    float simpleTitleBlending(vec2 inGlyph, vec2 glyphSize) {
+  impl: shaderDecl(If('%$cmp.props.titleImage%', `
+  float simpleTitleBlending(vec2 inGlyph, vec2 glyphSize) {
       float packRatio = 16.0;
       float bitsPerPixel = floor(32.0 / packRatio);
       float pixelsPerByte = floor(8.0 / bitsPerPixel);
@@ -85,15 +113,14 @@ component('simpleTitleBlending', {
       float noOfGrayColors = pow(2.0, bitsPerPixel);
       float grayColor = mod(byteValue / pow(2.0, startBitIndex), noOfGrayColors);      
       return grayColor/(noOfGrayColors-1.0);
-    }`
-  })))
+    }`,''))
 })
 
 component('simpleShaderMain', {
   type: 'feature',
   impl: features(
     shaderDecl({
-      code: `struct box {
+      code: ({},{cmp}) => `struct box {
       vec2 pos;
       vec2 size;
   };
@@ -105,25 +132,6 @@ component('simpleShaderMain', {
       int cmpId;
   };
 
-  float simpleTitleBlending(vec2 inGlyph, vec2 glyphSize) {
-    float packRatio = 16.0;
-    float bitsPerPixel = floor(32.0 / packRatio);
-    float pixelsPerByte = floor(8.0 / bitsPerPixel);
-    float unitX = floor(inGlyph.x / packRatio) * packRatio;
-    vec2 rBase = (vec2(unitX + 0.5, floor(inGlyph.y) + 0.5)) / glyphSize;
-    vec4 unit = texture2D(titleTexture, rBase) * 255.0;
-    float pixel = floor(inGlyph.x - unitX);
-    int byteIndex = int(floor(pixel/pixelsPerByte));
-    float byteValue = unit[3];
-    if (byteIndex == 0) byteValue = unit[0]; else if (byteIndex == 1) byteValue = unit[1]; else if (byteIndex == 2) byteValue = unit[2];
-    
-    float localPixelIndex = floor(mod(pixel, pixelsPerByte));
-    float startBitIndex = bitsPerPixel * localPixelIndex;
-    float noOfGrayColors = pow(2.0, bitsPerPixel);
-    float grayColor = mod(byteValue / pow(2.0, startBitIndex), noOfGrayColors);      
-    return grayColor/(noOfGrayColors-1.0);
-  }
-  
   pixelInfo simplePixelInfo() {
       vec2 inElem = gl_FragCoord.xy - elemBottomLeftCoord;
       inElem = vec2(inElem[0], elemSize[1] - inElem[1]); // flipY
@@ -143,10 +151,12 @@ component('simpleShaderMain', {
   
       // Define boxes
       box marginBox = box(vec2(0.0), elemSize);
-      box borderBox = box(marginBox.pos + margin.xy, marginBox.size - margin.zw);
-      box paddingBox = box(borderBox.pos + borderWidth.xy, borderBox.size - borderWidth.zw);
+      ${cmp.borderWidth ? `box borderBox = box(marginBox.pos + margin.xy, marginBox.size - margin.zw);
+      box paddingBox = box(borderBox.pos + borderWidth.xy, borderBox.size - borderWidth.zw);`
+      : 'box paddingBox = box(marginBox.pos + margin.xy, marginBox.size - margin.zw);'}
       box glyphBox = box(paddingBox.pos + padding.xy, paddingBox.size - padding.zw);
   
+      ${cmp.borderWidth ? `
       // Determine element part (margin, border, padding, glyph)
       if (inElem.x >= borderBox.pos.x && inElem.x <= borderBox.pos.x + borderBox.size.x &&
           inElem.y >= borderBox.pos.y && inElem.y <= borderBox.pos.y + borderBox.size.y) {
@@ -156,17 +166,13 @@ component('simpleShaderMain', {
           else if (inElem.x >= borderBox.pos.x + borderBox.size.x - borderWidth.z) elemPart = 2; // Right border
           else if (inElem.y >= borderBox.pos.y + borderBox.size.y - borderWidth.w) elemPart = 3; // Bottom border
           else if (inElem.x <= borderBox.pos.x + borderWidth.x) elemPart = 4; // Left border
-      }
-      if (inElem.x >= paddingBox.pos.x && inElem.x <= paddingBox.pos.x + paddingBox.size.x &&
-          inElem.y >= paddingBox.pos.y && inElem.y <= paddingBox.pos.y + paddingBox.size.y) {
+      }` : ''}
+      if (inElem.x >= paddingBox.pos.x && inElem.x <= paddingBox.pos.x + paddingBox.size.x && inElem.y >= paddingBox.pos.y && inElem.y <= paddingBox.pos.y + paddingBox.size.y)
           elemPart = 5; // Padding
-      }
-      if (inElem.x >= glyphBox.pos.x && inElem.x <= glyphBox.pos.x + glyphBox.size.x &&
-          inElem.y >= glyphBox.pos.y && inElem.y <= glyphBox.pos.y + glyphBox.size.y) {
+      if (inElem.x >= glyphBox.pos.x && inElem.x <= glyphBox.pos.x + glyphBox.size.x && inElem.y >= glyphBox.pos.y && inElem.y <= glyphBox.pos.y + glyphBox.size.y)
           elemPart = 6; // Glyph
-      }
   
-      // Handle border radius
+      ${cmp.borderRadius ? `
       if (elemPart < 6) { // Only for border-related parts
           vec2 topLeft = borderBox.pos + vec2(borderRadius.x, borderRadius.y);
           vec2 topRight = vec2(borderBox.pos.x + borderBox.size.x - borderRadius.x, borderBox.pos.y + borderRadius.y);
@@ -191,20 +197,15 @@ component('simpleShaderMain', {
           if (inElem.x > borderBox.pos.x + borderBox.size.x - borderRadius.x && inElem.y > borderBox.pos.y + borderBox.size.y - borderRadius.y && distBottomRight > borderRadius.x) {
               elemPart = 10; // Bottom-right rounded corner
           }
-      }
-  
-      // Discard if still in margin (elemPart == 0)
-      if (elemPart == 0) discard;
-  
-      // Return pixel info
+      }` : ''}
+      if (elemPart == 0) discard; // margin  
       return pixelInfo(inElem - glyphBox.pos, glyphBox.size, elemPart, 0); // cmpId is 0 as a placeholder
   }`,
       phase: 1
     }),
+    simpleTitleBlending(),
     shaderMainSnippet({
       code: `// simple main
-      vec2 inElem = gl_FragCoord.xy- elemBottomLeftCoord;
-      inElem = vec2(inElem[0], elemSize[1] - inElem[1]); // flipY
       pixelInfo info = simplePixelInfo();
       vec2 inGlyph = info.inGlyph;
       vec2 glyphSize = info.glyphSize;

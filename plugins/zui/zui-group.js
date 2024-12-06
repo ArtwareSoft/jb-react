@@ -19,7 +19,7 @@ component('group', {
     init((ctx,{cmp, $model, widget}) => {
       debugger;
       if (!cmp.topOfWidget) return
-      cmp.extendedPayload = async topPayload => {
+      cmp.extendedPayload = async (topPayload, descendants) => {
         const layoutCalculator = jb.zui.initLayoutCalculator(cmp)
         const {shownCmps} = layoutCalculator.calcStaticLayout()
         const groupCmps = {}

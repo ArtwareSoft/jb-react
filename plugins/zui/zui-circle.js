@@ -19,8 +19,8 @@ component('circle', {
 component('centerRadius', {
   type: 'feature',
   params: [],
-  impl: shaderMainSnippet(`vec2 center = size * 0.5;
-    float radius = min(size[0], size[1]) * 0.5;`)
+  impl: shaderMainSnippet(`vec2 center = glyphSize * 0.5;
+    float radius = min(glyphSize[0], glyphSize[1]) * 0.5;`)
 })
 
 component('fillCircleElem', {
@@ -28,7 +28,7 @@ component('fillCircleElem', {
   params: [],
   impl: dependentFeature({
     feature: shaderMainSnippet(`
-    if (length(inElem - center) <= radius)
+    if (length(inGlyph - center) <= radius)
       gl_FragColor = vec4(fillColor, 1.0);`),
     glVars: ['fillColor']
   })

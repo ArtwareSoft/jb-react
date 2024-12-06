@@ -36,35 +36,12 @@ dsl('zui')
 //   )
 // })
 
-component('textByTexture', {
+component('textByTexture', { // todo: add backgroundColor
   type: 'feature',
-  description: '',
   params: [
-    {id: 'texture', as: 'string', defaultValue: 'titleTexture'},
+    {id: 'texture', as: 'string', defaultValue: 'titleTexture'}
   ],
-  impl: features(
-    shaderMainSnippet({
-      code: `// textBackground
-      float packRatio = 16.0;
-      float bitsPerPixel = floor(32.0 / packRatio);
-      float pixelsPerByte = floor(8.0 / bitsPerPixel);
-      float unitX = floor(inGlyph.x / packRatio) * packRatio;
-      vec2 rBase = (vec2(unitX + 0.5, floor(inGlyph.y) + 0.5)) / glyphSize;
-      vec4 unit = texture2D(%$texture%, rBase) * 255.0;
-      float pixel = floor(inGlyph.x - unitX);
-      int byteIndex = int(floor(pixel/pixelsPerByte));
-      float byteValue = unit[3];
-      if (byteIndex == 0) byteValue = unit[0]; else if (byteIndex == 1) byteValue = unit[1]; else if (byteIndex == 2) byteValue = unit[2];
-      
-      float localPixelIndex = floor(mod(pixel, pixelsPerByte));
-      float startBitIndex = bitsPerPixel * localPixelIndex;
-      float noOfGrayColors = pow(2.0, bitsPerPixel);
-      float grayColor = mod(byteValue / pow(2.0, startBitIndex), noOfGrayColors);      
-      gl_FragColor = vec4(0.0, 0.0, 0.0, grayColor/(noOfGrayColors-1.0));
-      `,
-      phase: 4
-    })
-  )
+  impl: shaderMainSnippet('gl_FragColor = vec4(0.0, 0.0, 0.0, simpleTitleBlending(inGlyph, glyphSize));', 20)
 })
 
 // function flowTitleBlending(vec2 inGlyph)<cmpId> {
