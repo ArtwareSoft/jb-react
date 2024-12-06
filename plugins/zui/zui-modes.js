@@ -226,7 +226,7 @@ component('flowShaderMain', {
       code: `// flowShaderMain
       vec2 inTopElem = gl_FragCoord.xy- elemBottomLeftCoord;
       vec2 inTopElem = vec2(inTopElem[0], elemSize[1] - inTopElem[1]); // flipY
-      pixelInfo info = flowPixelInfo();
+      pixelInfo info = flowPixelInfo(); // child SizePos
       vec2 inGlyph = info.inGlyph;
       vec2 glyphSize = info.glyphSize;
       int elemPart = info.elemPart;
@@ -235,7 +235,6 @@ component('flowShaderMain', {
       if (elemPart == 0) discard;
 
       //...all unique(uniforms) of all cmps with defaults
-      float text_opacity = 1.0;
       if (cmp == 101) {
         borderColor = borderColor_101
         ... other uniforms of cmp101

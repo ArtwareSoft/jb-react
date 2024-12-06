@@ -238,11 +238,3 @@ component('frontEnd.uniforms', {
   impl: (ctx,uniform) => ({frontEndUniform: { profile: ctx.profile.uniforms, path: ctx.path + '~uniforms' }, srcPath: ctx.path})
 })
 
-component('zoomingSize', {
-  type: 'feature',
-  params: [
-    {id: 'size', type: 'zooming_size', mandatory: true},
-    {id: 'priority', as: 'number', dynamic: true, defaultValue: 1, description: 'if same prop was defined elsewhere decides who will override. range 1-1000, can use the $state variable'}
-  ],
-  impl: (ctx,size,priority) => ({ zoomingSize: { path: ctx.path + '~size', profile : size.profile, ...size, priority } })
-})
