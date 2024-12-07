@@ -11,7 +11,7 @@ component('zuiTest.zoomingGrid', {
   impl: zuiTest({
     control: itemlist({
       items: '%$points%',
-      itemControl: circle(smoothGrowth({ growthFactor: 20 }), { features: fillColor({ colorScale: green10() }) }),
+      itemControl: circle(smoothGrowth({ growthFactor: 20 }), { features: valueColor('fill', green10()) }),
       itemsLayout: grid([10,10], { initialZoom: 10, center: [5,5] })
     }),
     expectedResult: contains(`glVar: 'fillColor'`)
@@ -30,7 +30,7 @@ component('zuiTest.zoomingGridWithText', {
 })
 
 component('zuiTest.flowMode', {
-  impl: zuiTest(group(button('Hello'), button('World'), button('Hey')), contains('titleTexture_0'))
+  impl: zuiTest(group(button('Hello'), button('World'), circle(fixed([20,20]))), contains('titleTexture_0'))
 })
 
 component('zuiTest.fixedMode', {

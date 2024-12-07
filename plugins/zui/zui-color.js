@@ -1,32 +1,41 @@
 dsl('zui')
 
-component('fillColor', {
+// -- fixed colors
+
+component('color', {
   type: 'feature',
   params: [
-    {id: 'unitScale', mandatory: true, dynamic: true, type: 'unit_scale', defaultValue: index()},
-    {id: 'colorScale', mandatory: true, type: 'color_scale', defaultValue: distinct10()}
+    {id: 'of', as: 'string', options: 'fill,background,border,text', mandatory: true},
+    {id: 'color', mandatory: true, as: 'string', defaultValue: 'white'}
   ],
-  impl: colorScaleAtt('fillColor', '%$unitScale()%', '%$colorScale%')
+  impl: uniforms(vec3('%$of%Color', zui.colorToRGB('%$color%')))
 })
 
-component('borderColor', {
-  type: 'feature',
+component('zui.colorToRGB', {
   params: [
-    {id: 'unitScale', mandatory: true, dynamic: true, type: 'unit_scale', defaultValue: index()},
-    {id: 'colorScale', mandatory: true, type: 'color_scale', defaultValue: distinct10()}
+    {id: 'color', as: 'string'}
   ],
-  impl: colorScaleAtt('borderColor', '%$unitScale()%', '%$colorScale%')
+  impl: ({},color) => {
+    const mctx = jb.zui.measureCanvasCtx('500 16px Arial')
+    mctx.fillStyle = color
+    mctx.fillRect(0,0,1,1)
+    return Array.from(mctx.getImageData(0,0,1,1).data).slice(0,3)
+  }
 })
 
-component('colorScaleAtt', {
+//**  value colors
+
+component('valueColor', {
   type: 'feature',
   macroByValue: true,
   params: [
-    {id: 'glVar', as: 'string', description: 'e.g. fillColor', defaultValue: 'fillColor'},
-    {id: 'unitScale', mandatory: true, dynamic: true, type: 'unit_scale', defaultValue: index()},
-    {id: 'colorScale', mandatory: true, type: 'color_scale', defaultValue: distinct10()}
+    {id: 'of', as: 'string', options: 'fill,background,border,text', mandatory: true},
+    {id: 'colorScale', mandatory: true, type: 'color_scale', defaultValue: distinct10()},
+    {id: 'unitScale', mandatory: true, dynamic: true, type: 'unit_scale', defaultValue: index()}
   ],
-  impl: (ctx,glVar,unitScaleF,colorScale) => {
+  impl: (ctx,_of,unitScaleF,colorScale) => {
+        if (ctx.vars.zuiMode!='zoomingGrid') return []
+        const glVar = `${_of}Color`
         const unitScale = unitScaleF()
         const glAtt = ({ glVar, size: 3, glType: 'vec3', calc: ctx2 => ctx2.vars.items.map(calcColor) })
         return ({glAtt, srcPath: ctx.path})
@@ -61,51 +70,6 @@ component('unitScale', {
 component('index', {
     type: 'unit_scale',
     impl: unitScale('index')
-})
-
-component('colorUniform', {
-  type: 'feature',
-  params: [
-    {id: 'id', as: 'string', mandatory: true},
-    {id: 'color', mandatory: true, as: 'string'}
-  ],
-  impl: uniforms(vec3('%$id%', zui.colorToRGB('%$color%')))
-})
-
-component('fixedFillColor', {
-  type: 'feature',
-  params: [
-    {id: 'color', mandatory: true, as: 'string'}
-  ],
-  impl: uniforms(vec3('fillColor', zui.colorToRGB('%$color%')))
-})
-
-component('fixedBackgroundColor', {
-  type: 'feature',
-  params: [
-    {id: 'color', mandatory: true, as: 'string'}
-  ],
-  impl: uniforms(vec3('backgroundColor', zui.colorToRGB('%$color%')))
-})
-
-component('fixedBorderColor', {
-  type: 'feature',
-  params: [
-    {id: 'color', mandatory: true, as: 'string'}
-  ],
-  impl: uniforms(vec3('borderColor', zui.colorToRGB('%$color%')))
-})
-
-component('zui.colorToRGB', {
-  params: [
-    {id: 'color', as: 'string'}
-  ],
-  impl: ({},color) => {
-    const mctx = jb.zui.measureCanvasCtx('500 16px Arial')
-    mctx.fillStyle = color
-    mctx.fillRect(0,0,1,1)
-    return Array.from(mctx.getImageData(0,0,1,1).data).slice(0,3)
-  }
 })
 
 component('good5', {

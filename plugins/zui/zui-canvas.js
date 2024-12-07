@@ -3,7 +3,7 @@ dsl('zui')
 extension('zui','canvas', {
   measureCanvasCtx(font) {
     const mCtx = jb.zui._measureCanvasCtx = jb.zui._measureCanvasCtx || jb.zui.createCanvas(1, 1).getContext('2d')
-    mCtx.font = font; mCtx.textBaseline = 'top'; mCtx.textAlign = 'left'; mCtx.fillStyle = 'black'
+    mCtx.font = font; mCtx.textBaseline = 'alphabetic'; mCtx.textAlign = 'left'; mCtx.fillStyle = 'black'
     return jb.zui._measureCanvasCtx
   },
   createCanvas(...size) {
@@ -120,8 +120,8 @@ component('zui.fontDimention', {
 component('zui.imageOfText', {
   params: [
     {id: 'text', as: 'string', mandatory: true},
-    {id: 'font', as: 'string', defaultValue: '500 16px Arial', defaultValue1: "10px 'Noto Sans', 'Roboto', 'Arial', sans-serif"},
-    {id: 'padding', as: 'array', defaultValue: [10,20], description: '1,2, or 4 values, top right bottom left'}
+    {id: 'font', as: 'string', defaultValue1: '16px Arial', defaultValue: "16px 'Noto Sans', 'Roboto', 'Arial', sans-serif"},
+    {id: 'padding', as: 'array', defaultValue: 0, description: '1,2, or 4 values, top right bottom left'}
   ],
   impl: async (ctx,text, font, pd) => {
     const padding = pd.length == 0 ? [0,0,0,0] 
@@ -139,12 +139,12 @@ component('zui.imageOfText', {
     ctx2d.fillRect(0, 0, canvas.width, canvas.height)
 
     ctx2d.fillStyle = 'white'; // Text color
-    ctx2d.textBaseline = 'top'
+    ctx2d.textBaseline = 'alphabetic'
     ctx2d.textAlign = 'left'
-    ctx2d.fillText(text, padding[3] || 0, padding[0] || 0)
+    ctx2d.fillText(text, 0, metrics.actualBoundingBoxAscent)
 
-//    const url = await jb.zui.canvasToDataUrl(canvas)
-    const packRatio = 16
+    const url = await jb.zui.canvasToDataUrl(canvas)
+    const packRatio = 4
     const bwBitMap = jb.zui.bwCanvasToBase64(packRatio, ctx2d.getImageData(0, 0, ...size).data, ...size)
     const textureSize = [ Math.ceil(size[0] / 32) * 32, size[1]]
     return { textureSize, size, bwBitMap, packRatio }

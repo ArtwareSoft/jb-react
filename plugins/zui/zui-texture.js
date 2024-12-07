@@ -1,5 +1,5 @@
 extension('zui','texture', {
-    bwBitMapToTexture(gl, packRatio = 32, base64Data, width, height) {
+    bwBitMapToTexture(gl, packRatio, base64Data, width, height) {
         const binaryString = atob(base64Data)
         const bitmapWidth = Math.ceil(width / packRatio)
         

@@ -13,7 +13,14 @@ component('circle', {
 component('circle', {
   type: 'circle-style',
   params: [],
-  impl: features(zoomingSize('%$$model/size()%'), modeByContext(), centerRadius(), fillColor(), fillCircleElem())
+  impl: features(
+    zoomingSize('%$$model/size()%'),
+    modeByContext(),
+    centerRadius(),
+    valueColor('fill'),
+    color('fill', 'red'),
+    fillCircleElem()
+  )
 })
 
 component('centerRadius', {
@@ -27,9 +34,7 @@ component('fillCircleElem', {
   type: 'feature',
   params: [],
   impl: dependentFeature({
-    feature: shaderMainSnippet(`
-    if (length(inGlyph - center) <= radius)
-      gl_FragColor = vec4(fillColor, 1.0);`),
+    feature: shaderMainSnippet(`if (length(inGlyph - center) <= radius) gl_FragColor = vec4(fillColor, 1.0);`),
     glVars: ['fillColor']
   })
 })

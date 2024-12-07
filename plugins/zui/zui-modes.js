@@ -82,8 +82,8 @@ component('defaultGlVarsAsUniforms', {
       vec4('borderRadius', zui.fix4('%$cmp.borderRadius%')),
       vec4('padding', zui.fix4('%$cmp.padding%'))
     ),
-    fixedBorderColor('white'),
-    fixedBackgroundColor('white')
+    color('border'),
+    color('background')
   )
 })
 
@@ -91,7 +91,7 @@ component('simpleTitleBlending', {
   type: 'feature',
   impl: shaderDecl(If('%$cmp.props.titleImage%', `
   float simpleTitleBlending(vec2 inGlyph, vec2 glyphSize) {
-      float packRatio = 16.0;
+      float packRatio = 4.0;
       float bitsPerPixel = floor(32.0 / packRatio);
       float pixelsPerByte = floor(8.0 / bitsPerPixel);
       float unitX = floor(inGlyph.x / packRatio) * packRatio;
@@ -319,23 +319,23 @@ ${cmp.flowDecendentsUniforms.filter(u=>u.glType!='sampler2D').map(({glType,glVar
         gl_FragColor = vec4(1.0, 0.0, 0.0, 0.5);
         return;
       }
-      if (cmp == 0) {
-        gl_FragColor = vec4(1.0, 0.0, 0.0, flowTitleBlending(0, inGlyph, glyphSize));
-        return;
-      }
-      if (cmp == 1) {
-        gl_FragColor = vec4(0.0, 1.0, 0.0, flowTitleBlending(1, inGlyph, glyphSize));
-        return;
-      }
-      if (cmp == 2) {
-        gl_FragColor = vec4(0.0, 0.0, 1.0, flowTitleBlending(2, inGlyph, glyphSize));
-        return;
-      }
+      // if (cmp == 0) {
+      //   gl_FragColor = vec4(1.0, 0.0, 0.0, flowTitleBlending(0, inGlyph, glyphSize));
+      //   return;
+      // }
+      // if (cmp == 1) {
+      //   gl_FragColor = vec4(0.0, 1.0, 0.0, flowTitleBlending(1, inGlyph, glyphSize));
+      //   return;
+      // }
+      // if (cmp == 2) {
+      //   gl_FragColor = vec4(0.0, 0.0, 1.0, flowTitleBlending(2, inGlyph, glyphSize));
+      //   return;
+      // }
 
       ${cmp.flowDecendents.map((fCmp,i)=>`if (cmp == ${i}) {
       elemSize = elemBasics_${i}[0].xy;
 ${fCmp.glVars.uniforms.filter(u=>u.glType!='sampler2D').map(({glVar})=> `\t  ${glVar} = ${glVar}_${i};`).join('\n')}
-  ${cmp.shaderMainSnippets[i]||''}
+  ${(cmp.shaderMainSnippets[i]||[]).join('')}
       }`).join('\n')}
       `,
       phase: 4
@@ -346,13 +346,14 @@ ${fCmp.glVars.uniforms.filter(u=>u.glType!='sampler2D').map(({glVar})=> `\t  ${g
 component('flowTitleBlending', {
   type: 'feature',
   impl: shaderDecl(({},{cmp}) => `float flowTitleBlending(int cmp, vec2 inGlyph, vec2 glyphSize) {
-    float packRatio = 16.0;
+    float packRatio = 4.0;
     float bitsPerPixel = floor(32.0 / packRatio);
     float pixelsPerByte = floor(8.0 / bitsPerPixel);
     float unitX = floor(inGlyph.x / packRatio) * packRatio;
     vec2 rBase = (vec2(unitX + 0.5, floor(inGlyph.y) + 0.5)) / glyphSize;
     vec4 unit;
-${cmp.flowDecendents.map((_,i)=>`\t\tif (cmp == ${i}) unit = texture2D(titleTexture_${i}, rBase) * 255.0;`).join('\n')}
+${cmp.flowDecendents.filter((_,i)=>cmp.glVars.uniforms.find(u=>u.glVar == `titleTexture_${i}`))
+      .map((_,i)=>`\t\tif (cmp == ${i}) unit = texture2D(titleTexture_${i}, rBase) * 255.0;`).join('\n')}
     float pixel = floor(inGlyph.x - unitX);
     int byteIndex = int(floor(pixel/pixelsPerByte));
     float byteValue = unit[3];
