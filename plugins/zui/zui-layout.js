@@ -269,13 +269,25 @@ extension('zui','layout', {
         return [{
           p: cmp.priority || 10000, id: cmp.id,
           axis: layoutAxis, title: cmp.title,
-          min: Math.max(minSize, cmp.sizeNeeds({round: 0, available:[0,0]})[layoutAxis]) }]
+          min: Math.max(minSize, sizeNeeds(cmp, {round: 0, available:[0,0]})[layoutAxis]) }]
         }
       const minSizeForChildren = jb.asArray(cmp.minSize)[layoutAxis]
       return cmp.children.flatMap(childView => calcMinRecord(childView,layoutAxis,minSizeForChildren))
     }
 
-    function calcItemLayout(size) {
+    function sizeNeeds(cmp,args) {
+      if (cmp.sizeNeeds) return cmp.sizeNeeds(args)
+      if (cmp.fixedSizeNeeds) return cmp.fixedSizeNeeds
+      const margin = (cmp.glVars.uniforms||[]).filter(u=>u.glVar == 'margin').map(u=>u.value)[0] || [0,0,0,0]
+      const borderWidth = (cmp.glVars.uniforms||[]).filter(u=>u.glVar == 'borderWidth').map(u=>u.value)[0] || [0,0,0,0]
+      const padding = (cmp.glVars.uniforms||[]).filter(u=>u.glVar == 'padding').map(u=>u.value)[0] || [0,0,0,0]
+      const size = (cmp.glVars.uniforms||[]).filter(u=>u.glVar == 'elemSize').map(u=>u.value)[0] || [0,0]
+      cmp.fixedSizeNeeds = [margin[0]+borderWidth[0]+padding[0]+size[0] + margin[3]+borderWidth[3]+padding[3], 
+                            margin[1]+borderWidth[1]+padding[1]+size[1] + margin[2]+borderWidth[2]+padding[2]]
+      return cmp.fixedSizeNeeds
+    }
+
+    function calcItemLayout(itemSize) {
       const spaceSize = 10
       const elemsLayout = {}
       const topView = layoutCalculator
@@ -285,10 +297,10 @@ extension('zui','layout', {
       topView.sizeVec = axes.map(axis => buildSizeVec(topView,axis))
 
       const filteredOut = {}
-      axes.map(axis => allocMinSizes(axis))
+      axes.map(axis => allocMinSizes(axis,itemSize))
       calcGroupsSize(topView)
       filterAllOrNone(topView)
-      axes.map(axis => allocMinSizes(axis))
+      axes.map(axis => allocMinSizes(axis,itemSize))
       calcGroupsSize(topView)
       filterFirstToFit(topView)
 
@@ -298,24 +310,29 @@ extension('zui','layout', {
         jb.path(elemsLayout,[v.id,'visible'],true)
       })
       const primitiveShownCmps = shownCmps.filter(v=>!v.children)
-
-      calcRounds(primitiveShownCmps)
-      calcGroupsSize(topView)
-      assignCenterPositions(topView,[0,0],size)
+      if (itemSize) {
+        calcRounds(primitiveShownCmps,itemSize)
+        calcGroupsSize(topView)
+      }
+      assignPositions(topView,[0,0],itemSize || elemsLayout[topView.id].size)
 
       return { elemsLayout, shownCmps: primitiveShownCmps.map(v=>v.id) }
 
-      function allocMinSizes(axis) {
+      function allocMinSizes(axis,itemSize) {
         minRecords[axis].map(r=>{
           const allocatedSize = elemsLayout[r.id].size
           const currentTotal = calcTotalSize(axis)
           allocatedSize[axis] = filteredOut[r.id] ? 0 : r.min
-          const requestedTotal = calcTotalSize(axis)
-          if (requestedTotal > size[axis]) {
-            jb.log('zui layout min alloc rejected',{axis, requested: r.min, available: size[axis], cmp: r.id, requestedTotal, currentTotal, r})
-            allocatedSize[axis] = 0
+          if (itemSize) {
+            const requestedTotal = calcTotalSize(axis)
+            if (requestedTotal > itemSize[axis]) {
+              jb.log('zui layout min alloc rejected',{axis, requested: r.min, available: size[axis], cmp: r.id, requestedTotal, currentTotal, r})
+              allocatedSize[axis] = 0
+            } else {
+              jb.log('zui layout min alloc accepted',{axis, requested: r.min, available: size[axis], cmp: r.id, requestedTotal, currentTotal, r})
+              r.alloc = r.min
+            }
           } else {
-            jb.log('zui layout min alloc accepted',{axis, requested: r.min, available: size[axis], cmp: r.id, requestedTotal, currentTotal, r})
             r.alloc = r.min
           }
         })
@@ -328,9 +345,9 @@ extension('zui','layout', {
         rProps.size = axes.map(axis=> calcSizeOfVec(rProps.sizeVec[axis],axis))
       }
 
-      function assignCenterPositions(cmp,basePos,availableSize) {
+      function assignPositions(cmp,basePos,availableSize) {
         elemsLayout[cmp.id].pos = basePos
-        if (!cmp.children) return
+        if (!cmp.children || !availableSize) return
         const main = cmp.layoutAxis, other = cmp.layoutAxis == 0 ? 1: 0
         const visibleChildren = cmp.children.filter(v=>jb.path(elemsLayout,[v.id,'visible']))
         visibleChildren.reduce((posInMain, child,i) => {
@@ -338,7 +355,7 @@ extension('zui','layout', {
           const childPos = []
           childPos[main] = posInMain + (i ? 0 : (availableSize[main] - elemsLayout[cmp.id].size[main]) / 2)
           childPos[other] = basePos[other] + (availableSize[other] - childSize[other]) / 2
-          assignCenterPositions(child,childPos,childSize)
+          assignPositions(child,childPos,childSize)
           return childPos[main] + childSize[main] + spaceSize
         },basePos[main])
       }
@@ -404,12 +421,12 @@ extension('zui','layout', {
           return [cmp, ...cmp.children.flatMap(ch=>calcShownViews(ch))]
         return [cmp]
       }
-      function calcRounds(primitiveShownCmps) {
+      function calcRounds(primitiveShownCmps,itemSize) {
         const topAxis = layoutCalculator.layoutAxis
         const rounds = primitiveShownCmps.reduce((max,v) => Math.max(max,v.layoutRounds),0)
         for(let round=1;round<rounds;round++) {
           const otherAxis = topAxis ? 0 : 1
-          const childsResidu = topView.children.map(ch=> size[otherAxis] - elemsLayout[ch.id].size[otherAxis])
+          const childsResidu = topView.children.map(ch=> itemSize[otherAxis] - elemsLayout[ch.id].size[otherAxis])
           let resideInLayoutAxis = size[topAxis] - calcTotalSize(topAxis)
 
           primitiveShownCmps.map(cmp=>{
@@ -418,7 +435,7 @@ extension('zui','layout', {
             const available = []
             available[otherAxis] = currentSize[otherAxis] + childsResidu[cmp.childIndex]
             available[topAxis] = currentSize[topAxis] + resideInLayoutAxis
-            const newSize = cmp.sizeNeeds({round, available }).map((v,axis)=>Math.min(v, available[axis]))
+            const newSize = sizeNeeds(cmp,{round, available }).map((v,axis)=>Math.min(v, available[axis]))
             const noChange = (newSize[0] == 0 && newSize[1] == 0 || newSize[0] == currentSize[0] && newSize[1] == currentSize[1])
             if (noChange) return
             const oldSize = [currentSize[0],currentSize[1]]

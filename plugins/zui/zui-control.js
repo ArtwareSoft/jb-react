@@ -27,7 +27,7 @@ extension('zui','control' , {
             }
 
             const categories = jb.zui.featureCategories || (jb.zui.featureCategories = {
-                lifeCycle: new Set('init,extendCtx,destroy'.split(',')),
+                lifeCycle: new Set('init,extendCtx,extendChildrenCtx,destroy'.split(',')),
                 arrayProps: new Set('calcProp,glAtt,uniform,varying,pivot,shaderDecl,shaderMainSnippet,vertexDecl,vertexMainSnippet,frontEndUniform,frontEndMethod,frontEndVar,css,cssClass,layoutProp,dependent'.split(',')),
                 singular: new Set('calcMoreItemsData,zoomingSize,styleParams,children'.split(',')),
             })
@@ -69,23 +69,25 @@ extension('zui','control' , {
             this.ctx = sortedExtendCtx.reduce((accCtx,extendCtx) => jb.utils.tryWrapper(() => 
                 extendCtx.setVar(accCtx),'extendCtx',this.ctx), this.ctx)
             this.props = {}
-            this.calcCtx = this.ctx.setVars({$props: this.props, cmp: this })
+            this.calcCtx = this.ctx.setVars({$props: this.props }) // , cmp: this
 
             const sortedInit = (this.initFuncs || []).sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
             sortedInit.forEach(init=>jb.utils.tryWrapper(() => init.action(this.calcCtx),'init', this.ctx))
             
             // assign all layout props directly into cmp
             this.layoutProps = (this.layoutProp||[]).reduce((acc,obj) => ({...acc,...obj}), {})
-            //;(this.layoutProp || []).forEach(p=>Object.keys(p).forEach(k=>this.layoutProps[k] = p[k]))
             Object.assign(this, this.zoomingSize || {}, this.layoutProps, {zoomingSizeProfile: jb.path(this.zoomingSize,'profile')})
             this.childIndex = this.childIndex || 0
+            const childrenCtx = (this.extendChildrenCtxFuncs || []).reduce((accCtx,extendChildrenCtx) => jb.utils.tryWrapper(() => 
+                extendChildrenCtx.setVar(accCtx),'extendChildrenCtx',this.ctx), this.ctx)
+
             if (!Array.isArray(this.children) && this.children)
-                this.children = this.children(this.calcCtx).map((cmp,childIndex) =>cmp.init({childIndex}))
+                this.children = this.children(childrenCtx).map((cmp,childIndex) =>cmp.init({childIndex}))
 
             return this
         }
         descendants() {
-            return (this.children||[]).reduce((acc,cmp) => [...acc,cmp,...(cmp.children||[])], [this])
+            return (this.children||[]).filter(cmp=>!cmp.extendedPayload).reduce((acc,cmp) => [...acc,cmp,...(cmp.children||[])], [])
         }
         valByScale(pivotId,item) {
             return this.pivot.find(({id}) => id == pivotId).scale(item)
@@ -95,7 +97,6 @@ extension('zui','control' , {
             if (this.ctx.probe && this.ctx.probe.outOfTime) return {}
             if (!this.props)
                 return jb.logError(`glPayload - cmp ${this.title} not initialized`,{cmp: this, ctx: cmp.ctx})
-//            const vars = this.calcItemLayout ? this.calcItemLayout() : { elemsLayout: {}}
 
             const ctxToUse = vars ? this.calcCtx.setVars(vars) : this.calcCtx
             ;[...(this.calcProp || []),...(this.method || [])].forEach(p=>typeof p.value == 'function' && Object.defineProperty(p.value, 'name', { value: p.id }))    
@@ -108,7 +109,7 @@ extension('zui','control' , {
                 }), Promise.resolve())
             Object.assign(this.props, this.styleParams)
             
-            const glVars = mergeGlVars({
+            const glVars = this.glVars = mergeGlVars({
                 glAtts: (this.glAtt || []).flatMap(att=> flatMapAtt(att)).map(att=> ({...att, calc: null, ar: att.calc(ctxToUse)})),
                 uniforms: (this.uniform || []).flatMap(u=>flatMapUniform(u)).map(uniform=>({...uniform,
                     ...(uniform.imageF ? {...uniform.imageF(ctxToUse), imageF: null} : { value: uniform.val(ctxToUse), val: null })

@@ -36,14 +36,22 @@ component('props', {
 
 component('variable', {
   type: 'feature',
-  category: 'general:90',
-  description: 'define a constant passive variable',
   params: [
     {id: 'name', as: 'string', mandatory: true},
     {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
     {id: 'phase', as: 'number', defaultValue: 10 }
   ],
   impl: (ctx, name, value, phase) => ({ extendCtx: {setVar: ctx => ctx.setVar(name,jb.val(value(ctx))), phase, index: jb.zui.fCounter++ }, srcPath: ctx.path})
+})
+
+component('variableForChildren', {
+  type: 'feature',
+  params: [
+    {id: 'name', as: 'string', mandatory: true},
+    {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
+    {id: 'phase', as: 'number', defaultValue: 10}
+  ],
+  impl: (ctx, name, value, phase) => ({ extendChildrenCtx: {setVar: ctx => ctx.setVar(name,jb.val(value(ctx))), phase, index: jb.zui.fCounter++ }, srcPath: ctx.path})
 })
 
 component('features', {

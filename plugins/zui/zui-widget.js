@@ -25,9 +25,6 @@ component('widget', {
                 const ctxForBe = ctx.setVars({glLimits: frontEnd.glLimits,canvasSize, widget: this, zuiMode: 'fixed'})
                 const beCmp = this.be_cmp = control(ctxForBe).applyFeatures(features,20)
                 beCmp.init({topOfWidget: true})
-                //const payload = {}
-                //const beCmps= this.cmps = beCmp.descendants()
-                //await beCmps.filter(cmp=>!cmp.gridElem).reduce((pr,cmp) => pr.then(async ()=> mergePayload(await cmp.calcPayload())), Promise.resolve())
                 const _payload = await beCmp.calcPayload()
                 const payload = _payload.id ? {[_payload.id] : _payload }: _payload
                 await frontEnd.handleInitPayload(payload)
@@ -39,15 +36,6 @@ component('widget', {
                         await frontEnd.handlePayload(updatePayload)
                     }
                 }
-
-                // function mergePayload(cmpPayload) {
-                //     if (cmpPayload.pack) {
-                //         Object.assign(payload,cmpPayload)
-                //         delete payload.pack
-                //     }
-                //     else
-                //         payload[cmpPayload.id] = cmpPayload
-                // }
             },
         }
         return widget
@@ -63,7 +51,7 @@ component('widgetFE', {
         cmps: {},
         cmpsData: {},
         textures: {},
-        renderCounter: 0,
+        renderCounter: 1,
         state: {tCenter: [1,1], tZoom : 2, zoom: 2, center: [1,1]},
 
         initFE(canvasSize) {
@@ -214,10 +202,20 @@ component('widgetFE', {
         },
         allocateSingleTextureUnit(cmp,uniformId) {
             const lru = this.renderCounter
-            const freeTexture = this.boundTextures.find(rec=>rec.cmp == cmp && rec.uniformId == uniformId) 
-                || this.boundTextures.filter(rec => rec.lru != lru).sort((r1,r2) => r1.lru - r2.lru)[0]
-                || this.boundTextures[0]
-            return Object.assign(freeTexture, {lru,uniformId,cmp})
+            const boundTextures = this.boundTextures
+            const freeTexture = alloc()
+            return Object.assign(freeTexture, {lru,uniformId,cmpId: cmp.id})
+
+            function alloc() {
+                const sameTexture = boundTextures.find(rec=>rec.cmpId == cmp.id && rec.uniformId == uniformId)
+                if (sameTexture) return sameTexture
+                const newTexture = boundTextures.find(rec => rec.lru == 0)
+                if (newTexture) return newTexture
+                const textureFromDifferentRun = boundTextures.filter(rec => rec.lru != lru).sort((r1,r2) => r1.lru - r2.lru)[0]
+                if (textureFromDifferentRun) return textureFromDifferentRun
+                jb.logError('can not allocate unit for texture',{cmp,uniformId})
+                return boundTextures[0]
+            }
         }
     })
 })

@@ -30,7 +30,7 @@ component('zuiTest.zoomingGridWithText', {
 })
 
 component('zuiTest.flowMode', {
-  impl: zuiTest(group(button('Hello'), button('World')), '')
+  impl: zuiTest(group(button('Hello'), button('World'), button('Hey')), contains('titleTexture_0'))
 })
 
 component('zuiTest.fixedMode', {

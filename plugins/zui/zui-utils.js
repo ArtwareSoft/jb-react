@@ -36,12 +36,19 @@ dsl('zui')
 //   )
 // })
 
-component('textByTexture', { // todo: add backgroundColor
+component('textByTitleTexture', {
   type: 'feature',
-  params: [
-    {id: 'texture', as: 'string', defaultValue: 'titleTexture'}
-  ],
-  impl: shaderMainSnippet('gl_FragColor = vec4(0.0, 0.0, 0.0, simpleTitleBlending(inGlyph, glyphSize));', 20)
+  impl: features(
+    shaderMainSnippet({
+      code: If({
+        condition: '%$zuiMode%==flow',
+        then: 'gl_FragColor = vec4(0.0, 0.0, 0.0, flowTitleBlending(cmp, inGlyph, glyphSize));',
+        Else: 'gl_FragColor = vec4(0.0, 0.0, 0.0, simpleTitleBlending(inGlyph, glyphSize));'
+      }),
+      phase: 20
+    }),
+    prop('requiredForFlowMode', 'flowTitleBlending')
+  )
 })
 
 // function flowTitleBlending(vec2 inGlyph)<cmpId> {
