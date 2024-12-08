@@ -7,7 +7,7 @@ component('points', { passiveData: [
       {"name": "Beer Sheva", x: 3, y : 3 },
 ]})
 
-component('zuiTest.zoomingGrid', {
+component('zuiTest.zoomingGridMode', {
   impl: zuiTest({
     control: itemlist({
       items: '%$points%',
@@ -18,7 +18,7 @@ component('zuiTest.zoomingGrid', {
   })
 })
 
-component('zuiTest.zoomingGridWithText', {
+component('zuiTest.dynamicFlowMode', {
   impl: zuiTest({
     control: itemlist({
       items: '%$points%',
@@ -29,12 +29,23 @@ component('zuiTest.zoomingGridWithText', {
   })
 })
 
+component('zuiTest.zoomingGridWithTextures', {
+  impl: zuiTest({
+    control: itemlist({
+      items: '%$points%',
+      itemControl: button('%name%'),
+      itemsLayout: grid([4,4], { initialZoom: 4, center: [2,2] })
+    }),
+    expectedResult: contains(`glVar: 'fillColor'`)
+  })
+})
+
 component('zuiTest.flowMode', {
-  impl: zuiTest(group(button('Hello'), button('World'), circle(fixed([20,20]))), contains('titleTexture_0'))
+  impl: zuiTest(group(text('Hello'), text('World'), circle(fixed([20,20]))), contains('titleTexture_0'))
 })
 
 component('zuiTest.fixedMode', {
-  impl: zuiTest(button('click me'), 'size: [98,32]')
+  impl: zuiTest(text('click me'), 'size: [98,32]')
 })
 
 // component('zuiTest.growingDiagnostics', {

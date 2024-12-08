@@ -13,19 +13,20 @@ component('group', {
 component('group', {
   type: 'group-style',
   impl: features(
-    variable('zuiMode', If('%$cmp/topOfWidget%', 'flow', '%$zuiMode%')),
-    variableForChildren('zuiMode', If('%$zuiMode%==flow', 'noCode', '%$zuiMode%')),
+    variable('zuiMode', If('%$cmp/topOfWidget%', 'flowTop', '%$zuiMode%')),
+    variableForChildren('zuiMode', If('%$zuiMode%==flowTop', 'flowElem', '%$zuiMode%')),
     children('%$$model/controls()%'),
     '%$$model/layout%',
     init((ctx,{cmp, $model, widget}) => {
       if (!cmp.topOfWidget) return
       cmp.extendedPayload = async (topPayload, flowDecendents) => {
         if (cmp.flowDecendents) return topPayload // ugly - avoid endless recurtion
-        await flowDecendents.reduce((pr,child_cmp,i)=>pr.then(async ()=> await child_cmp.calcPayload()), Promise.resolve())
+        await flowDecendents.reduce((pr,child_cmp,i)=>pr.then(async ()=> {child_cmp.flowCmpIndex = i; await child_cmp.calcPayload() }), Promise.resolve())
         const layoutCalculator = jb.zui.initLayoutCalculator(cmp)
-        const {elemsLayout } = layoutCalculator.calcItemLayout()
+        const {elemsLayout } = layoutCalculator.calcItemLayout(null,ctx)
         cmp.topElemSize = elemsLayout[cmp.id].size
         cmp.shaderMainSnippets = []
+        cmp.shaderDecls = []
         cmp.requiredForFlowMode = []
         // copy the uniforms from children to the group cmp
         const basicProps = ['margin','borderWidth','padding','borderRadius']
@@ -41,7 +42,9 @@ component('group', {
             ...child_cmp.glVars.uniforms.map(u=>({...u, glVar: `${u.glVar}_${i}`, val: () => u.value}))
           ]
           cmp.shaderMainSnippets[i] = (child_cmp.shaderMainSnippet || []).sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
-            .map(x=>x.code(ctx.setVars({cmp: child_cmp})))
+            .map(x=>x.code(child_cmp.calcCtx))
+          cmp.shaderDecls[i] = (child_cmp.shaderDecl || []).sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
+            .map(x=>x.code(child_cmp.calcCtx))
           cmp.requiredForFlowMode = [...cmp.requiredForFlowMode, ...jb.asArray(child_cmp.props.requiredForFlowMode)]
         })
         cmp.flowDecendents = flowDecendents

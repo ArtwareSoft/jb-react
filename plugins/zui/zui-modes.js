@@ -4,7 +4,7 @@ component('modeByContext', {
   type: 'feature',
   impl: features(
     If('%$zuiMode%==fixed', fixedMode()),
-    If('%$zuiMode%==flow', flowMode()),
+    If('%$zuiMode%==flowTop', flowMode()),
     If('%$zuiMode%==zoomingGrid', zoomingGridMode()),
     If('%$zuiMode%==dynamicFlow', dynamicFlowMode()),
   )
@@ -117,8 +117,8 @@ component('inElemPixelInfo', {
   struct pixelInfo { vec2 inGlyph;  vec2 glyphSize; int elemPart; int cmpId; };
 
   pixelInfo inElemPixelInfo(vec2 inElem) {
-    if (inElem[0] >= elemSize[0] || inElem[1] >= elemSize[1]) { gl_FragColor = vec4(0.0, 0.0, 1.0, 0.0); discard; }
-    if (inElem[0] < 0.0 || inElem[1] < 0.0) { gl_FragColor = vec4(0.0, 1.0, 0.0, 0.0); discard; }
+    if (inElem[0] >= elemSize[0] || inElem[1] >= elemSize[1]) { gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0); discard; }
+    if (inElem[0] < 0.0 || inElem[1] < 0.0) { gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0); discard; }
 
     vec2 rInElem = inElem / elemSize;
     int elemPart = 0; // Default to Margin
@@ -180,15 +180,11 @@ component('simpleShaderMain', {
   type: 'feature',
   impl: features(
     inElemPixelInfo(),
-    shaderDecl(`pixelInfo simplePixelInfo() {
-      vec2 inElem = gl_FragCoord.xy - elemBottomLeftCoord;
-      inElem = vec2(inElem[0], elemSize[1] - inElem[1]); // flipY
-      return inElemPixelInfo(inElem);
-    }`),
-    simpleTitleBlending(),
     shaderMainSnippet({
       code: `// simple main
-      pixelInfo info = simplePixelInfo();
+      vec2 inElem = gl_FragCoord.xy - elemBottomLeftCoord;
+      inElem = vec2(inElem[0], elemSize[1] - inElem[1]); // flipY
+      pixelInfo info = inElemPixelInfo(inElem);
       vec2 inGlyph = info.inGlyph;
       vec2 glyphSize = info.glyphSize;
       int elemPart = info.elemPart;
@@ -341,30 +337,6 @@ ${fCmp.glVars.uniforms.filter(u=>u.glType!='sampler2D').map(({glVar})=> `\t  ${g
       phase: 4
     })
   )
-})
-
-component('flowTitleBlending', {
-  type: 'feature',
-  impl: shaderDecl(({},{cmp}) => `float flowTitleBlending(int cmp, vec2 inGlyph, vec2 glyphSize) {
-    float packRatio = 4.0;
-    float bitsPerPixel = floor(32.0 / packRatio);
-    float pixelsPerByte = floor(8.0 / bitsPerPixel);
-    float unitX = floor(inGlyph.x / packRatio) * packRatio;
-    vec2 rBase = (vec2(unitX + 0.5, floor(inGlyph.y) + 0.5)) / glyphSize;
-    vec4 unit;
-${cmp.flowDecendents.filter((_,i)=>cmp.glVars.uniforms.find(u=>u.glVar == `titleTexture_${i}`))
-      .map((_,i)=>`\t\tif (cmp == ${i}) unit = texture2D(titleTexture_${i}, rBase) * 255.0;`).join('\n')}
-    float pixel = floor(inGlyph.x - unitX);
-    int byteIndex = int(floor(pixel/pixelsPerByte));
-    float byteValue = unit[3];
-    if (byteIndex == 0) byteValue = unit[0]; else if (byteIndex == 1) byteValue = unit[1]; else if (byteIndex == 2) byteValue = unit[2];
-
-    float localPixelIndex = floor(mod(pixel, pixelsPerByte));
-    float startBitIndex = bitsPerPixel * localPixelIndex;
-    float noOfGrayColors = pow(2.0, bitsPerPixel);
-    float grayColor = mod(byteValue / pow(2.0, startBitIndex), noOfGrayColors);   
-    return grayColor/(noOfGrayColors-1.0);
-    }`)
 })
 
 // function DEFflowTitleBlending(vec2 inGlyph)<cmpId> {

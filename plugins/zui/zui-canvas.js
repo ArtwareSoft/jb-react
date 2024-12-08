@@ -117,40 +117,6 @@ component('zui.fontDimention', {
   }
 })
 
-component('zui.imageOfText', {
-  params: [
-    {id: 'text', as: 'string', mandatory: true},
-    {id: 'font', as: 'string', defaultValue1: '16px Arial', defaultValue: "16px 'Noto Sans', 'Roboto', 'Arial', sans-serif"},
-    {id: 'padding', as: 'array', defaultValue: 0, description: '1,2, or 4 values, top right bottom left'}
-  ],
-  impl: async (ctx,text, font, pd) => {
-    const padding = pd.length == 0 ? [0,0,0,0] 
-      : pd.length == 1 ? [pd[0],pd[0],pd[0],pd[0]]
-      : pd.length == 2 ? [pd[0],pd[1],pd[0],pd[1]]
-      : pd.length == 4 ? pd : [0,0,0,0]
-    const metrics = jb.zui.measureCanvasCtx(font).measureText(text)
-    const height = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent
-    const size = [metrics.width + (padding[1] || 0) + (padding[3] || 0), height + (padding[0] || 0) + (padding[2] || 0)].map(x => Math.ceil(x))
-
-    const canvas = jb.zui.createCanvas(...size)
-    const ctx2d = canvas.getContext('2d')
-    ctx2d.font = font
-    ctx2d.fillStyle = 'black'
-    ctx2d.fillRect(0, 0, canvas.width, canvas.height)
-
-    ctx2d.fillStyle = 'white'; // Text color
-    ctx2d.textBaseline = 'alphabetic'
-    ctx2d.textAlign = 'left'
-    ctx2d.fillText(text, 0, metrics.actualBoundingBoxAscent)
-
-    const url = await jb.zui.canvasToDataUrl(canvas)
-    const packRatio = 4
-    const bwBitMap = jb.zui.bwCanvasToBase64(packRatio, ctx2d.getImageData(0, 0, ...size).data, ...size)
-    const textureSize = [ Math.ceil(size[0] / 32) * 32, size[1]]
-    return { textureSize, size, bwBitMap, packRatio }
-  }
-})
-
 component('fill', {
   type: 'align_image',
   impl: () => [2,0,0]

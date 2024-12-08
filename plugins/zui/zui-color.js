@@ -33,7 +33,7 @@ component('valueColor', {
     {id: 'colorScale', mandatory: true, type: 'color_scale', defaultValue: distinct10()},
     {id: 'unitScale', mandatory: true, dynamic: true, type: 'unit_scale', defaultValue: index()}
   ],
-  impl: (ctx,_of,unitScaleF,colorScale) => {
+  impl: (ctx,_of,colorScale,unitScaleF) => {
         if (ctx.vars.zuiMode!='zoomingGrid') return []
         const glVar = `${_of}Color`
         const unitScale = unitScaleF()

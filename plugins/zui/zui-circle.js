@@ -39,4 +39,12 @@ component('fillCircleElem', {
   })
 })
 
+component('fillCircleElem1', {
+  type: 'feature',
+  params: [],
+  impl: dependentFeature({
+    feature: shaderMainSnippet(`gl_FragColor = vec4(1.0,0.0,0.0, 1.0);`),
+    glVars: ['fillColor']
+  })
+})
 

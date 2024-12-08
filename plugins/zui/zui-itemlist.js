@@ -37,13 +37,14 @@ component('grid', {
         ;(cmp.children||[]).forEach(setAsGridElem)
       }
       cmp.extendedPayload = async (res,descendants) => {
+        await descendants.filter(cmp=>cmp.id != res.id).reduce((pr,cmp)=>pr.then(async ()=> cmp.calcPayload()), Promise.resolve())
         const layoutCalculator = jb.zui.initLayoutCalculator(cmp)
-        const {shownCmps} = layoutCalculator.calcItemLayout(itemsLayout.itemSize)
+        const {shownCmps} = layoutCalculator.calcItemLayout(itemsLayout.itemSize, ctx)
         const pack = { [res.id]: res }
         await descendants.filter(cmp=>cmp.id != res.id).reduce((pr,cmp)=>pr.then(async ()=> {
-          const { id , title, layoutProps, gridElem, zoomingSizeProfile } = cmp
+          const { id , title, layoutProps, gridElem, zoomingSizeProfile, sizeProps } = cmp
           pack[id] = cmp.children || shownCmps.indexOf(id) != -1 ? await cmp.calcPayload()
-              : {id, title, zoomingSizeProfile, layoutProps, gridElem, notReady: true} 
+              : {id, title, zoomingSizeProfile, layoutProps, gridElem, notReady: true, sizeProps} 
         }), Promise.resolve())
         return pack
       }
@@ -66,12 +67,13 @@ component('grid', {
       function buildNode(id,childIndex) {
         const zoomingSize = cmpsData[id].zoomingSizeProfile ? ctx.run(cmpsData[id].zoomingSizeProfile) : {}
         const children = cmpsData[id].childrenIds && cmpsData[id].childrenIds.split(',').map((ch,i)=>buildNode(ch,i))
-        return { id, childIndex, children, ...zoomingSize, ...(cmpsData[id].layoutProps || {}) }
+        const sizeProps = cmpsData[id].sizeProps
+        return { id, childIndex, children, sizeProps, ...zoomingSize, ...(cmpsData[id].layoutProps || {}) }
       }
     }),
     frontEnd.method('render', (ctx,{cmp,widget}) => {
       const itemSize = [0,1].map(axis=>widget.canvasSize[axis]/(widget.state.zoom*cmp.vars.gridSize[axis]))
-      const {shownCmps, elemsLayout} = cmp.layoutCalculator.calcItemLayout(itemSize)
+      const {shownCmps, elemsLayout} = cmp.layoutCalculator.calcItemLayout(itemSize,ctx)
       widget.cmpsData[cmp.id].itemLayoutforTest = {shownCmps, elemsLayout}
       const toRender = Object.values(widget.cmps).filter(({id})=>shownCmps.indexOf(id) != -1)
       const notReady = toRender.filter(cmp=>cmp.notReady).map(cmp=>cmp.id)

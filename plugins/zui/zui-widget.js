@@ -109,7 +109,7 @@ component('widgetFE', {
 
             function newFECmp(cmpId, be_data, canvas) {
                 const cmp = new (class FECmp {})
-                const fromBeData = { notReady, title, gridElem, frontEndMethods, frontEndUniforms } = be_data
+                const fromBeData = { notReady, title, gridElem, frontEndMethods, frontEndUniforms, sizeProps } = be_data
                 Object.assign(cmp, { id: cmpId, textures: {}, state: {}, flows: [], base: canvas, vars: be_data.frontEndVars || {}, ...fromBeData })
                 cmp.destroyed = new Promise(resolve=> cmp.resolveDestroyed = resolve)
                 ;(frontEndUniforms||[]).forEach(u=>u.id = u.glVar)
@@ -170,6 +170,7 @@ component('widgetFE', {
 
             const shaderProgram = cmp.shaderProgram = cmp.shaderProgram || jb.zui.buildShaderProgram(gl, glCode)
             gl.useProgram(shaderProgram)
+            //if (this.ctx.vars.canUseConsole) console.log(cmp.title,glCode[0],glCode[1])
 
             const atlasIdToUnit = (uniforms.find(u=>u.id == 'atlasIdToUnit') || {}).value
             uniforms.forEach(({glType,id,glMethod,value}) => {

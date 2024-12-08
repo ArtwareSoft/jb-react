@@ -36,21 +36,6 @@ dsl('zui')
 //   )
 // })
 
-component('textByTitleTexture', {
-  type: 'feature',
-  impl: features(
-    shaderMainSnippet({
-      code: If({
-        condition: '%$zuiMode%==flow',
-        then: 'gl_FragColor = vec4(0.0, 0.0, 0.0, flowTitleBlending(cmp, inGlyph, glyphSize));',
-        Else: 'gl_FragColor = vec4(0.0, 0.0, 0.0, simpleTitleBlending(inGlyph, glyphSize));'
-      }),
-      phase: 20
-    }),
-    prop('requiredForFlowMode', 'flowTitleBlending')
-  )
-})
-
 // function flowTitleBlending(vec2 inGlyph)<cmpId> {
 //   float packRatio = 16.0;
 //   float bitsPerPixel = floor(32.0 / packRatio);

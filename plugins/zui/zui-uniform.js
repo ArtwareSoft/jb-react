@@ -11,30 +11,20 @@ component('uniforms', {
 component('texture', {
   type: 'uniform',
   params: [
-    {id: 'id', as: 'string', mandatory: true},
+    {id: 'id', as: 'string', mandatory: true, dynamic: true},
     {id: 'imageF', dynamic: true, mandatory: true}
   ],
   impl: (ctx,glVar,imageF) => [
     {glVar, glType: 'sampler2D', glMethod: '1i', imageF},
-    {glVar: `${glVar}Size`, glType: 'vec2', glMethod: '2fv', val: ctx => imageF(ctx).textureSize },
+    {glVar: ctx => `${glVar(ctx)}Size`, glType: 'vec2', glMethod: '2fv', val: ctx => imageF(ctx).textureSize },
   ]
-})
-
-component('textureOfText', {
-  type: 'uniform',
-  params: [
-    {id: 'id', as: 'string', mandatory: true},
-    {id: 'text', dynamic: true, mandatory: true},
-    {id: 'font', as: 'string', defaultValue: '500 16px Arial'}
-  ],
-  impl: (ctx,glVar,text,font) => ({glVar, glType: 'sampler2D', glMethod: '1i', text, font })
 })
 
 component('intVec', {
   type: 'uniform',
   macroByValue: true,
   params: [
-    {id: 'id', as: 'string', mandatory: true},
+    {id: 'id', as: 'string', mandatory: true, dynamic: true},
     {id: 'size', as: 'number', mandatory: true},
     {id: 'val', dynamic: true, mandatory: true},
   ],
@@ -45,7 +35,7 @@ component('vec3Vec', {
   type: 'uniform',
   macroByValue: true,
   params: [
-    {id: 'id', as: 'string', mandatory: true},
+    {id: 'id', as: 'string', mandatory: true, dynamic: true},
     {id: 'size', as: 'number', mandatory: true},
     {id: 'val', dynamic: true, mandatory: true},
   ],
@@ -55,7 +45,7 @@ component('vec3Vec', {
 component('int', {
   type: 'uniform',
   params: [
-    {id: 'id', as: 'string', mandatory: true},
+    {id: 'id', as: 'string', mandatory: true, dynamic: true},
     {id: 'val', dynamic: true, mandatory: true},
   ],
   impl: (ctx,glVar,val) => ({glVar, val, glType: 'int', glMethod: '1i'})
@@ -64,7 +54,7 @@ component('int', {
 component('float', {
   type: 'uniform',
   params: [
-    {id: 'id', as: 'string'},
+    {id: 'id', as: 'string', mandatory: true, dynamic: true},
     {id: 'val', dynamic: true},
   ],
   impl: (ctx,glVar,val) => ({glVar, val, glType: 'float', glMethod: '1f'})
@@ -73,7 +63,7 @@ component('float', {
 component('vec2', {
   type: 'uniform',
   params: [
-    {id: 'id', as: 'string', mandatory: true},
+    {id: 'id', as: 'string', mandatory: true, dynamic: true},
     {id: 'val', dynamic: true, mandatory: true},
   ],
   impl: (ctx,glVar,val) => ({glVar, val, glType: 'vec2', glMethod: '2fv'})
@@ -82,7 +72,7 @@ component('vec2', {
 component('vec3', {
   type: 'uniform',
   params: [
-    {id: 'id', as: 'string', mandatory: true},
+    {id: 'id', as: 'string', mandatory: true, dynamic: true},
     {id: 'val', dynamic: true, mandatory: true},
   ],
   impl: (ctx,glVar,val) => ({glVar, val, glType: 'vec3', glMethod: '3fv'})
@@ -91,7 +81,7 @@ component('vec3', {
 component('vec4', {
   type: 'uniform',
   params: [
-    {id: 'id', as: 'string', mandatory: true},
+    {id: 'id', as: 'string', mandatory: true, dynamic: true},
     {id: 'val', dynamic: true, mandatory: true}
   ],
   impl: (ctx,glVar,val) => ({glVar, val, glType: 'vec4', glMethod: '4fv'})
@@ -99,9 +89,5 @@ component('vec4', {
 
 component('canvasSize', {
   type: 'uniform',
-  params: [
-    {id: 'id', as: 'string', mandatory: true},
-    {id: 'val', dynamic: true, mandatory: true}
-  ],
   impl: vec2('canvasSize', '%$canvasSize%')
 })

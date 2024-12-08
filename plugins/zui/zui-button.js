@@ -38,3 +38,48 @@ component('titleTexture', {
     textByTitleTexture()
   )
 })
+
+component('zoomingGrid.titleTexture', {
+  type: 'feature',
+  params: [
+    {id: 'text', as: 'string', dynamic: 'true', defaultValue: 'my title'}
+  ],
+  impl: features(
+    prop('titleImage', zui.imageOfText('%$text()%')),
+    uniforms(
+      vec2('elemSize', '%$$props/titleImage/size%'),
+      vec2('titleImageSize', '%$$props/titleImage/size%'),
+      texture('titleTexture', '%$$props/titleImage%')
+    ),
+    textByTitleTexture()
+  )
+})
+
+component('titleTextureByContext', {
+  type: 'feature',
+  params: [
+    {id: 'text', as: 'string', dynamic: 'true', defaultValue: 'my title'}
+  ],
+  impl: features(
+    If('%$zuiMode%==fixed', titleTexture('%$text()%')),
+    If('%$zuiMode%==flow', titleTexture('%$text()%')),
+    If('%$zuiMode%==zoomingGrid', zoomingGrid.titleTexture('%$text()%')),
+    If('%$zuiMode%==dynamicFlow', zoomingGrid.titleTexture('%$text()%')),
+  )
+})
+
+component('textByTitleTexture', {
+  type: 'feature',
+  impl: features(
+    shaderMainSnippet({
+      code: If({
+        condition: '%$zuiMode%==flow',
+        then: 'gl_FragColor = vec4(0.0, 0.0, 0.0, flowTitleBlending(cmp, inGlyph, glyphSize));',
+        Else: 'gl_FragColor = vec4(0.0, 0.0, 0.0, titleBlending(inGlyph, glyphSize));'
+      }),
+      phase: 20
+    }),
+    textBlendingFunction('title'),
+    prop('requiredForFlowMode', 'flowTitleBlending')
+  )
+})

@@ -41,12 +41,10 @@ extension('zui','control' , {
                 if (categories.lifeCycle.has(key)) {
                     cmp[key+'Funcs'] = cmp[key+'Funcs'] || []
                     cmp[key+'Funcs'].push(feature[key])
-                }
-                else if (categories.arrayProps.has(key)) {
+                } else if (categories.arrayProps.has(key)) {
                     cmp[key] = cmp[key] || []
                     cmp[key].push(feature[key])
-                }
-                else if (categories.singular.has(key)) {
+                } else if (categories.singular.has(key)) {
                     cmp[key] && jb.logError(`zui applyFeatures - redefine singular feature ${key}`, {feature, ctx})
                     cmp[key] = feature[key] || cmp[key]
                 } else {
@@ -112,6 +110,7 @@ extension('zui','control' , {
             const glVars = this.glVars = mergeGlVars({
                 glAtts: (this.glAtt || []).flatMap(att=> flatMapAtt(att)).map(att=> ({...att, calc: null, ar: att.calc(ctxToUse)})),
                 uniforms: (this.uniform || []).flatMap(u=>flatMapUniform(u)).map(uniform=>({...uniform,
+                    ...(typeof uniform.glVar == 'function' ? {glVar: uniform.glVar(ctxToUse)} : {}),
                     ...(uniform.imageF ? {...uniform.imageF(ctxToUse), imageF: null} : { value: uniform.val(ctxToUse), val: null })
                  })),
                 varyings: (this.varying || []).flatMap(v=>v)
@@ -127,8 +126,14 @@ extension('zui','control' , {
             const frontEndUniforms = (this.frontEndUniform || [])
             const frontEndVars = this.frontEndVar && jb.objFromEntries(this.frontEndVar.map(h=>[h.id, jb.val(h.value(ctxToUse))]))
             const noOfItems = (ctxToUse.vars.items||[]).length
-            const { id , title, layoutProps, gridElem, zoomingSizeProfile, topOfWidget } = this
-            const res = { id, title, ...glVars, glCode, frontEndMethods, frontEndVars, frontEndUniforms, 
+            this.sizeProps = {
+                margin : glVars.uniforms.filter(u=>u.glVar == 'margin').map(u=>u.value)[0] || [0,0,0,0],
+                borderWidth : glVars.uniforms.filter(u=>u.glVar == 'borderWidth').map(u=>u.value)[0] || [0,0,0,0],
+                padding : glVars.uniforms.filter(u=>u.glVar == 'padding').map(u=>u.value)[0] || [0,0,0,0],
+                size : glVars.uniforms.filter(u=>u.glVar == 'elemSize').map(u=>u.value)[0] || [0,0]
+            }
+            const { id , title, layoutProps, gridElem, zoomingSizeProfile, topOfWidget, sizeProps } = this
+            const res = { id, title, ...glVars, glCode, frontEndMethods, frontEndVars, frontEndUniforms, sizeProps,
                 topOfWidget, noOfItems, methods, zoomingSizeProfile, layoutProps, gridElem }
             if (this.children)
                 res.childrenIds = this.children.map(({id})=>id).join(',')

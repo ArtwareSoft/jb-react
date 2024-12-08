@@ -278,33 +278,30 @@ extension('zui','layout', {
     function sizeNeeds(cmp,args) {
       if (cmp.sizeNeeds) return cmp.sizeNeeds(args)
       if (cmp.fixedSizeNeeds) return cmp.fixedSizeNeeds
-      const margin = (cmp.glVars.uniforms||[]).filter(u=>u.glVar == 'margin').map(u=>u.value)[0] || [0,0,0,0]
-      const borderWidth = (cmp.glVars.uniforms||[]).filter(u=>u.glVar == 'borderWidth').map(u=>u.value)[0] || [0,0,0,0]
-      const padding = (cmp.glVars.uniforms||[]).filter(u=>u.glVar == 'padding').map(u=>u.value)[0] || [0,0,0,0]
-      const size = (cmp.glVars.uniforms||[]).filter(u=>u.glVar == 'elemSize').map(u=>u.value)[0] || [0,0]
+      const {margin,borderWidth,padding,size} = cmp.sizeProps || {}
       cmp.fixedSizeNeeds = [margin[0]+borderWidth[0]+padding[0]+size[0] + margin[3]+borderWidth[3]+padding[3], 
                             margin[1]+borderWidth[1]+padding[1]+size[1] + margin[2]+borderWidth[2]+padding[2]]
       return cmp.fixedSizeNeeds
     }
 
-    function calcItemLayout(itemSize) {
+    function calcItemLayout(itemSize, ctx) {
       const spaceSize = 10
       const elemsLayout = {}
-      const topView = layoutCalculator
+      const topCmp = layoutCalculator
 
       // build data strucuture - TODO: recycle for better performance
-      initSizes(topView)
-      topView.sizeVec = axes.map(axis => buildSizeVec(topView,axis))
+      initSizes(topCmp)
+      topCmp.sizeVec = axes.map(axis => buildSizeVec(topCmp,axis))
 
       const filteredOut = {}
       axes.map(axis => allocMinSizes(axis,itemSize))
-      calcGroupsSize(topView)
-      filterAllOrNone(topView)
+      calcGroupsSize(topCmp)
+      filterAllOrNone(topCmp)
       axes.map(axis => allocMinSizes(axis,itemSize))
-      calcGroupsSize(topView)
-      filterFirstToFit(topView)
+      calcGroupsSize(topCmp)
+      filterFirstToFit(topCmp)
 
-      const shownCmps = calcShownViews(topView).sort((v1,v2) => (v1.priority || 10000) - (v2.priority || 10000))
+      const shownCmps = calcShownViews(topCmp).sort((v1,v2) => (v1.priority || 10000) - (v2.priority || 10000))
       shownCmps.map(v=> {
         jb.path(elemsLayout,[v.id,'title'],v.title)
         jb.path(elemsLayout,[v.id,'visible'],true)
@@ -312,9 +309,11 @@ extension('zui','layout', {
       const primitiveShownCmps = shownCmps.filter(v=>!v.children)
       if (itemSize) {
         calcRounds(primitiveShownCmps,itemSize)
-        calcGroupsSize(topView)
+        calcGroupsSize(topCmp)
       }
-      assignPositions(topView,[0,0],itemSize || elemsLayout[topView.id].size)
+      assignPositions(topCmp,[0,0],itemSize || elemsLayout[topCmp.id].size)
+      if (Object.values(elemsLayout).flatMap(x=>[...(x.pos||[]), ...x.size]).filter(x=>isNaN(x)).length)
+        jb.logError('bad layout result',{elemsLayout,ctx})
 
       return { elemsLayout, shownCmps: primitiveShownCmps.map(v=>v.id) }
 
@@ -426,8 +425,8 @@ extension('zui','layout', {
         const rounds = primitiveShownCmps.reduce((max,v) => Math.max(max,v.layoutRounds),0)
         for(let round=1;round<rounds;round++) {
           const otherAxis = topAxis ? 0 : 1
-          const childsResidu = topView.children.map(ch=> itemSize[otherAxis] - elemsLayout[ch.id].size[otherAxis])
-          let resideInLayoutAxis = size[topAxis] - calcTotalSize(topAxis)
+          const childsResidu = topCmp.children.map(ch=> itemSize[otherAxis] - elemsLayout[ch.id].size[otherAxis])
+          let resideInLayoutAxis = itemSize[topAxis] - calcTotalSize(topAxis)
 
           primitiveShownCmps.map(cmp=>{
             if (cmp.layoutRounds <= round) return
@@ -441,10 +440,10 @@ extension('zui','layout', {
             const oldSize = [currentSize[0],currentSize[1]]
             axes.map(axis=>elemsLayout[cmp.id].size[axis] = newSize[axis])
             const newTotalSize = axes.map(axis=>calcTotalSize(axis))
-            if (newTotalSize[0] > size[0] || newTotalSize[1] > size[1])
+            if (newTotalSize[0] > itemSize[0] || newTotalSize[1] > itemSize[1])
               axes.map(axis=>elemsLayout[cmp.id].size[axis] = oldSize[axis]) // revert
             else
-              resideInLayoutAxis = size[topAxis] - newTotalSize[topAxis]
+              resideInLayoutAxis = itemSize[topAxis] - newTotalSize[topAxis]
           })
         }
       }
