@@ -36,10 +36,13 @@ component('group', {
         shownChildren.forEach((child_cmp,i)=> {
           child_cmp.glVars.uniforms = child_cmp.glVars.uniforms.filter(u=>irrelevantProps.indexOf(u.glVar) == -1)
           const actualSize = jb.path(child_cmp.glVars.uniforms.find(u=>u.glVar=='textTextureSize'),'value') || elemsLayout[child_cmp.id].size
+          const align = jb.path(child_cmp.glVars.uniforms.find(u=>u.glVar=='align'),'value') || [0,0,0]
           cmp.uniform = [...(cmp.uniform || []),
-            { glVar: `elemParts_${i}`, glMethod: '4fv', vecSize: 5, glType: 'vec4', val: () => [
-              ...actualSize, ...elemsLayout[child_cmp.id].pos,
-              ...elemPartsProps.flatMap(p=>child_cmp[p] || [0,0,0,0])
+            { glVar: `elemParts_${i}`, glMethod: '4fv', vecSize: 7, glType: 'vec4', val: () => [
+              ...elemsLayout[child_cmp.id].size, ...elemsLayout[child_cmp.id].pos,
+              ...elemPartsProps.flatMap(p=>child_cmp[p] || [0,0,0,0]),
+              ...align,0,
+              ...actualSize,0,0,
             ]},
             ...child_cmp.glVars.uniforms.map(u=>({...u, glVar: `${u.glVar}_${i}`, val: () => u.value}))
           ]

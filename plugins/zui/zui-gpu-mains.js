@@ -257,11 +257,26 @@ component('flowShaderMain', {
   impl: features(
     basicCodeUtils(),
     flowPixelInfo(),
-    shaderDecl(({},{cmp}) => `
-  pixelInfo flowPixelInfo(vec2 inTopElem) {
-    // elemParts_xx[0] - sizePos
-${cmp.shownChildren.map((fCmp,i)=>`\tif (inBox(inTopElem - elemParts_${i}[0].zw, elemParts_${i}[0].xy))
-        return inElemFlowPixelInfo(${i}, inTopElem - elemParts_${i}[0].zw, elemParts_${i}[0].xy, elemParts_${i}[1], elemParts_${i}[2], elemParts_${i}[3], elemParts_${i}[4].xy);`)
+    alignFunc(),
+    shaderDecl(({},{cmp}) => `pixelInfo flowPixelInfo(vec2 inTopElem) {
+    vec2 elemSize;
+    vec2 elemPos;
+    vec3 align;
+    vec2 totalGlyphSize;
+    vec2 inElem;
+    vec2 inTotalGlyph;
+
+${cmp.shownChildren.map((fCmp,i)=>`\t
+        elemSize = elemParts_${i}[0].xy;
+        elemPos = elemParts_${i}[0].zw;
+        align = elemParts_${i}[5].xyz;
+        totalGlyphSize = elemParts_${i}[6].xy;
+        inElem = inTopElem - elemPos;
+        if (inBox(inElem, elemSize)) {
+          inTotalGlyph = alignGlyphInElem(inElem, align, elemSize, totalGlyphSize);
+          if (!inBox(inTotalGlyph, totalGlyphSize)) discard;
+          return inElemFlowPixelInfo(${i}, inTotalGlyph, totalGlyphSize , elemParts_${i}[1], elemParts_${i}[2], elemParts_${i}[3], elemParts_${i}[4].xy);
+}`)
       .join('\n')}
       return pixelInfo(vec2(0.0), vec2(0.0), 0, -1);
   }`),
