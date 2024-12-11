@@ -2,8 +2,17 @@
 top -b -n 1 | xclip -selection clipboard
 
 zui
-  fix phone issues
-  boxFlow
+  events to comps
+   pass flow comps to fe for events handling
+   button click event
+   button click effect
+  add align to elemParts and use it with text
+  add responsive and width(width,control)
+  borderRadius for text
+  border
+  underline
+  remove old fw with ui
+
 
 plugin encapsulation
   plugins files have dsls

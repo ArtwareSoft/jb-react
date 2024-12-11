@@ -41,31 +41,32 @@ extension('zui','canvas', {
     }
     const res = btoa(String.fromCharCode(...bitmapData))
 //    console.log(asText); 
-    //console.log(jb.zui.xImage(res, bitmapWidth,width, height,pixelsPerByte));
+//    console.log(jb.zui.xImage(res, bitmapWidth,width, height,packRatio));
     return res
   },
-  xImage(base64Data, bitmapWidth, width, height,pixelsPerByte) {
+  xImage(base64Data, bitmapWidth, width, height,packRatio) {
     const binaryString = atob(base64Data)
     const bitmapData = new Uint8Array(binaryString.length)
     for (let i = 0; i < binaryString.length; i++) bitmapData[i] = binaryString.charCodeAt(i)
-    return jb.zui.xImageOfData(bitmapData, bitmapWidth,width, height,pixelsPerByte)
+    return jb.zui.xImageOfData(bitmapData, bitmapWidth,width, height,packRatio)
   },
-  xImageOfData(bitmapData, bitmapWidth, width, height,pixelsPerByte) {
+  xImageOfData(bitmapData, bitmapWidth, width, height,packRatio) {
       let result = "";
-      const bitsPerPixel = 8 / pixelsPerByte
+      const bitsPerPixel = 32/packRatio
+      const pixelsPerByte = 8 / bitsPerPixel
  
       for (let y = 0; y < height; y++) {
           for (let unitIndex = 0; unitIndex < bitmapWidth; unitIndex++) {
               const unit = bitmapData[y * bitmapWidth + unitIndex]; // Get the 8-bit unit
               for(let localPixelIndex=0;localPixelIndex<pixelsPerByte;localPixelIndex++) {
                 const startBitIndex= localPixelIndex * bitsPerPixel
+                const color = Math.floor(unit / 2 ** (startBitIndex)) % (2**bitsPerPixel)
                 if (pixelsPerByte == 8) 
                   result += (unit & (1 << pixel)) !== 0 ? "-" : "x";
-                if (pixelsPerByte == 4) {
-                  const color = Math.floor(unit / 2 ** (startBitIndex)) % (2**bitsPerPixel)
-                  const color2 = (unit >> startBitIndex+2) % 4
+                else if (pixelsPerByte == 4)
                   result += color == 0 ? '-' : color == 1 ? 'x' : color == 2 ? '#' : '@'
-                }
+                else
+                  result += color == 0 ? '-' : '#'
               }
           }
           result += "\n"; // Add a newline after each row
@@ -202,6 +203,70 @@ component('alignUtils', {
           
           // Transform inElem to image coordinates
           return (inElem - vec2(offsetX, offsetY)) * (imageSize / effSize);  
+        }
+      }
+    `)
+})
+
+component('alignFunc', {
+  description: 'Align glyph in outer box, vec3 [type: [0:keepSize,keepProportions,fill], alignX: [0:left,1,2] , alignY: [0:top,1,2]]',
+  type: 'feature',
+  impl: shaderDecl(` // "elem coordinates" to "totalGlyph coordinates" user should check inBox(res,elemSize). total Glyph means glyph + padding + border
+      vec2 alignGlyphInElem(vec2 inElem, vec3 align, vec2 elemSize, vec2 totalGlyphSize) { 
+        if (align[0] == 2.0) { return inElem * totalGlyphSize / elemSize; }
+
+        float alignX = align[1];
+        float alignY = align[2];
+        float offsetX;
+        float offsetY;
+
+        if (align[0] == 0.0) { // keep size
+          if (alignX == 0.0) {
+            offsetX = 0.0;
+          } else if (alignX == 1.0) {
+            offsetX = 0.5 * (elemSize[0] - totalGlyphSize[0]);
+          } else {
+            offsetX = elemSize[0] - totalGlyphSize[0];
+          }
+  
+          if (alignY == 0.0) {
+            offsetY = 0.0;
+          } else if (alignY == 1.0) {
+            offsetY = 0.5 * (elemSize[1] - totalGlyphSize[1]);
+          } else {
+            offsetY = elemSize[1] - totalGlyphSize[1];
+          }          
+          return inElem - vec2(offsetX, offsetY);
+        }
+
+        if (align[0] == 1.0) { // keepProportions
+          vec2 effSize;
+          float aspectRatioImage = totalGlyphSize[0] / totalGlyphSize[1];
+          float aspectRatioBox = elemSize[0] / elemSize[1];
+          if (aspectRatioImage > aspectRatioBox) {
+            effSize = vec2(elemSize[0], elemSize[0] / aspectRatioImage); // width-based scaling
+          } else {
+            effSize = vec2(elemSize[1] * aspectRatioImage, elemSize[1]); // height-based scaling
+          }
+  
+          if (alignX == 0.0) {
+            offsetX = 0.0;
+          } else if (alignX == 1.0) {
+            offsetX = 0.5 * (elemSize[0] - effSize[0]);
+          } else {
+            offsetX = elemSize[0] - effSize[0];
+          }
+  
+          if (alignY == 0.0) {
+            offsetY = 0.0;
+          } else if (alignY == 1.0) {
+            offsetY = 0.5 * (elemSize[1] - effSize[1]);
+          } else {
+            offsetY = elemSize[1] - effSize[1];
+          }
+          
+          // Transform inElem to image coordinates
+          return (inElem - vec2(offsetX, offsetY)) * (totalGlyphSize / effSize);  
         }
       }
     `)

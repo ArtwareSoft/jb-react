@@ -19,7 +19,7 @@ component('textureByContext', {
   impl: features(
     mainByContext(),
     minWidth('%$$model/width%'),
-    minHeight(10),
+    minHeight(12),
     If('%$renderRole%==fixed', text.singleTexture()),
     If('%$renderRole%==flowElem', text.singleTexture()),
     If('%$inZoomingGrid%', text.zoomingGrid())
@@ -31,6 +31,7 @@ component('text.singleTexture', {
   impl: features(
     prop('textImage', zui.imageOfText('%$$model/text()%')),
     uniforms(
+      vec3('align', '%$$model/align%'),
       vec2('elemSize', '%$$props/textImage/size%'),
       vec2('textImageSize', '%$$props/textImage/size%'),
       texture('textTexture', '%$$props/textImage%')
@@ -103,7 +104,7 @@ component('zui.imageOfText', {
     //jb.zui.canvasToDataUrl(canvas).then(url => console.log(url));
 
     const bwBitMap = jb.zui.bwCanvasToBase64(packRatio, cnvCtx.getImageData(0, 0, ...size).data, ...size)
-    const textureSize = [ Math.ceil(size[0] / 32) * 32, size[1]]
+    const textureSize = [ Math.ceil(size[0] / packRatio) * 4, size[1]]
     return { textureSize, size, bwBitMap, packRatio }
   }
 })
@@ -203,8 +204,8 @@ component('zuiText.multiLineAtlas', {
 
     const bwBitMap = jb.zui.bwCanvasToBase64(packRatio, cnvCtx.getImageData(0, 0, ...size).data, ...size)
     //jb.zui.canvasToDataUrl(canvas).then(url => console.log(url));
-
-    return { offsets, actualSize, texture: { textureSize: size, size, bwBitMap, packRatio } }
+    const textureSize = [ Math.ceil(size[0] / packRatio) * 4, size[1]]
+    return { offsets, actualSize, texture: { textureSize, size, bwBitMap, packRatio } }
   }
 })
 

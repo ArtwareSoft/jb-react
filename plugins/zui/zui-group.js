@@ -28,17 +28,18 @@ component('group', {
         cmp.shaderDecls = []
         cmp.requiredForFlowMain = []
         // copy the uniforms from children to the group cmp
-        const basicProps = ['margin','borderWidth','padding','borderRadius']
+        const elemPartsProps = ['margin','borderWidth','padding','borderRadius']
         const irrelevantProps = ['margin','borderWidth','padding','borderRadius','elemPos','elemSize','canvasSize']
         const shownChildren = flowDecendents.filter(cmp=>shownCmps.indexOf(cmp.id) != -1)
         await shownChildren.reduce((pr,child_cmp,i)=>pr.then(async ()=> {child_cmp.flowCmpIndex = i; await child_cmp.calcPayload() }), Promise.resolve())
 
         shownChildren.forEach((child_cmp,i)=> {
           child_cmp.glVars.uniforms = child_cmp.glVars.uniforms.filter(u=>irrelevantProps.indexOf(u.glVar) == -1)
+          const actualSize = jb.path(child_cmp.glVars.uniforms.find(u=>u.glVar=='textTextureSize'),'value') || elemsLayout[child_cmp.id].size
           cmp.uniform = [...(cmp.uniform || []),
-            { glVar: `elemBasics_${i}`, glMethod: '4fv', vecSize: 5, glType: 'vec4', val: () => [
-              ...elemsLayout[child_cmp.id].size, ...elemsLayout[child_cmp.id].pos,
-              ...basicProps.flatMap(p=>child_cmp[p] || [0,0,0,0])
+            { glVar: `elemParts_${i}`, glMethod: '4fv', vecSize: 5, glType: 'vec4', val: () => [
+              ...actualSize, ...elemsLayout[child_cmp.id].pos,
+              ...elemPartsProps.flatMap(p=>child_cmp[p] || [0,0,0,0])
             ]},
             ...child_cmp.glVars.uniforms.map(u=>({...u, glVar: `${u.glVar}_${i}`, val: () => u.value}))
           ]

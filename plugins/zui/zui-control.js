@@ -128,7 +128,7 @@ extension('zui','control' , {
             const vertexMainSnippets = (this.vertexMainSnippet || []).sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index)).map(x=>x.code(ctxToUse))
             const shaderMainSnippets = (this.shaderMainSnippet || []).sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index)).map(x=>x.code(ctxToUse))
 
-            const glCode = [calcVertexCode(glVars,vertexDecls,vertexMainSnippets,this.title), calcShaderCode(glVars,shaderDecls,shaderMainSnippets,this.title)]
+            const glCode = [calcVertexCode(glVars,vertexDecls,vertexMainSnippets,this), calcShaderCode(glVars,shaderDecls,shaderMainSnippets,this)]
             const methods = (this.method||[]).map(h=>h.id).join(',')
             const frontEndMethods = (this.frontEndMethod || []).map(h=>({method: h.method, path: h.path}))
             const frontEndUniforms = (this.frontEndUniform || [])
@@ -163,28 +163,28 @@ extension('zui','control' , {
             function flatMapUniform(u) {
                 return u.composite ? u.uniforms.flatMap(u=>flatMapUniform(u)) : u
             }
-            function calcVertexCode({uniforms,varyings,glAtts},declarations,mainSnippests,title) {
+            function calcVertexCode({uniforms,varyings,glAtts},declarations,mainSnippests,cmp) {
                 return [
                     'precision highp float;\nprecision mediump int;',
                     ...uniforms.map(({glType,glVar,vecSize}) => `uniform ${glType} ${glVar}${vecSize ? `[${vecSize}]` : ''};`),
                     ...varyings.map(({glType,glVar}) => `varying ${glType} ${glVar};`),
                     ...glAtts.map(({glType,glVar}) => `attribute ${glType} _${glVar};varying ${glType} ${glVar};`),
                     ...declarations,
-                    `\nvoid main() { // vertex ${title}`,
+                    `\nvoid main() { // vertex renderRole: ${cmp.renderRole}, inZoomingGrid: ${cmp.inZoomingGrid}, title: ${cmp.title}`,
                     ...glAtts.map(({glType,glVar}) => `${glVar} = _${glVar};`),
                     ...mainSnippests,
                     ...varyings.map(({glVar,glCode}) => `${glVar} = ${glCode};`),
                     '}'
                   ].join('\n')
             }
-            function calcShaderCode({uniforms,varyings,glAtts},declarations,mainSnippests,title) {
+            function calcShaderCode({uniforms,varyings,glAtts},declarations,mainSnippests,cmp) {
                 return [
                     'precision highp float;\nprecision mediump int;',
                     ...uniforms.map(({glType,glVar,vecSize}) => `uniform ${glType} ${glVar}${vecSize ? `[${vecSize}]` : ''};`),
                     ...varyings.map(({glType,glVar}) => `varying ${glType} ${glVar};`),
                     ...glAtts.map(({glType,glVar}) => `varying ${glType} ${glVar};`),
                     ...declarations,
-                    `\nvoid main() { // shader ${title}`,
+                    `\nvoid main() { // shader renderRole: ${cmp.renderRole}, inZoomingGrid: ${cmp.inZoomingGrid}, title: ${cmp.title}`,
                     ...mainSnippests,
                     '}'
                   ].join('\n')

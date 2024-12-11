@@ -150,7 +150,7 @@ component('widgetFE', {
               cmp.waitingForTextures[id] = true
               //const url = jbHost.isNode || url || jb.path(cmpData,['textures',id])
               const texture = await jb.zui.bwBitMapToTexture(gl,packRatio, bwBitMap, ...size)
-              //console.log(jb.zui.xImage(bwBitMap, ...textureSize),size)
+//              console.log(jb.zui.xImage(bwBitMap, textureSize[0],...size,packRatio))
               cmp.textures[id] = { texture, size, textureSize }
               delete cmp.waitingForTextures[id]
               this.renderRequest = true
