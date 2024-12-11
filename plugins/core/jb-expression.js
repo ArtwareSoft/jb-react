@@ -9,7 +9,7 @@ extension('expression', {
     }
     if (exp.indexOf('$log:') == 0) {
       const out = jb.expression.calc(exp.split('$log:')[1],ctx,parentParam)
-      jb.comps.log.impl(ctx, out)
+      console.log(out, ctx)
       return out
     }
     if (exp.indexOf('%') == -1 && exp.indexOf('{') == -1) return exp
@@ -105,7 +105,7 @@ extension('expression', {
     if (exp.indexOf('$log:') == 0) {
       const calculated = jb.expression.calc(exp.split('$log:')[1],ctx,{as: 'boolean'})
       const result = jb.expression.calcBool(exp.split('$log:')[1], ctx, parentParam)
-      jb.comps.log.impl(ctx, calculated + ':' + result)
+      console.log(result, calculated, ctx)
       return result
     }
     if (exp.indexOf('!') == 0)

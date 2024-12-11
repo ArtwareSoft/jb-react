@@ -22,11 +22,12 @@ component('widget', {
                 gl.clear(gl.COLOR_BUFFER_BIT)    
             },
             async init() {
-                const ctxForBe = ctx.setVars({glLimits: frontEnd.glLimits,canvasSize, widget: this, zuiMode: 'fixed'})
+                const ctxForBe = ctx.setVars({glLimits: frontEnd.glLimits,canvasSize, widget: this, renderRole: 'fixed'})
                 const beCmp = this.be_cmp = control(ctxForBe).applyFeatures(features,20)
                 beCmp.init({topOfWidget: true})
                 const _payload = await beCmp.calcPayload()
                 const payload = _payload.id ? {[_payload.id] : _payload }: _payload
+                const beCmps = beCmp.allDescendants()
                 await frontEnd.handleInitPayload(payload)
                 frontEnd.renderCmps()
                 frontEnd.beProxy = {
@@ -108,13 +109,27 @@ component('widgetFE', {
             this.renderRequest = true
 
             function newFECmp(cmpId, be_data, canvas) {
-                const cmp = new (class FECmp {})
-                const fromBeData = { notReady, title, gridElem, frontEndMethods, frontEndUniforms, sizeProps } = be_data
-                Object.assign(cmp, { id: cmpId, textures: {}, state: {}, flows: [], base: canvas, vars: be_data.frontEndVars || {}, ...fromBeData })
+                const cmp = new (class FECmp {}) // used for serialization filtering
+                const fromBeData = { notReady, title, gridElem, frontEndMethods, frontEndUniforms, layoutProps, uniforms } = be_data
+                Object.assign(cmp, { id: cmpId, textures: {}, state: {}, flows: [], base: canvas, 
+                    flowElem: be_data.renderRole && be_data.renderRole.match(/[Ff]lowElem/),
+                    vars: be_data.frontEndVars || {}, ...fromBeData 
+                })
+                if (cmp.notReady) return cmp
                 cmp.destroyed = new Promise(resolve=> cmp.resolveDestroyed = resolve)
-                ;(frontEndUniforms||[]).forEach(u=>u.id = u.glVar)
+                cmp.feUniforms = (cmp.frontEndUniforms||[]).flatMap(({profile,path}) => {
+                    return Array.isArray(profile) ? profile.map((inner_profile,i)=> {
+                        const _path = `${path}~${i}`
+                        const uniform = new jb.core.jbCtx(ctx, { profile: inner_profile, path: _path, forcePath: _path }).runItself()
+                        uniform.id = uniform.glVar = uniform.glVar(ctx)
+                        return uniform
+                    }) : jb.core.run(new jb.core.jbCtx(ctx, { profile, path, forcePath: path }))
+                })
+                cmp.mergedUniforms = [
+                    ...be_data.uniforms.filter(({glVar}) => !cmp.feUniforms.find(fe=>fe.glVar == glVar)),
+                    ...cmp.feUniforms
+                ]
 
-                //;['frontEndMethods', 'frontEndVars', 'frontEndUniforms'].forEach(p=>cmp[p] = cmp[p] || be_data[p])
                 jb.zui.runFEMethod(cmp,'calcProps',{silent:true,ctx})
                 jb.zui.runFEMethod(cmp,'init',{silent:true,ctx})
                 ;(be_data.frontEndMethods ||[]).map(m=>m.method).filter(m=>['init','calcProps'].indexOf(m) == -1)
@@ -125,8 +140,8 @@ component('widgetFE', {
             }
         },
         prepareTextures(cmp) {
-            const cmpData = this.cmpsData[cmp.id], gl = this.gl
-            const textures = cmpData.uniforms.filter(({glType})=>glType == 'sampler2D')
+            const gl = this.gl
+            const textures = cmp.uniforms.filter(({glType})=>glType == 'sampler2D')
             const allLoaded = textures.reduce((acc, {id}) => acc && cmp.textures[id], true)
             if (allLoaded) return true
             cmp.waitingForTextures = cmp.waitingForTextures || {}
@@ -141,61 +156,53 @@ component('widgetFE', {
               this.renderRequest = true
             }), Promise.resolve())
         },
-        prepareFrontEndUniforms(cmp,ctx) {
-            return cmp.prepUniforms || (cmp.prepUniforms = (cmp.frontEndUniforms||[]).flatMap(({profile,path}) => {
-                return Array.isArray(profile) ? profile.map((inner_profile,i)=> {
-                            const _path = `${path}~${i}`
-                            const uniform = new jb.core.jbCtx(ctx, { profile: inner_profile, path: _path, forcePath: _path }).runItself()
-                            uniform.id = uniform.glVar
-                            return uniform
-                    }) : jb.core.run(new jb.core.jbCtx(ctx, { profile, path, forcePath: path }))
-            }))
-        },
         renderCmps() {
             if (this.ctx.vars.canUseConsole) console.log(this.state.tZoom, this.state.zoom, this.state.center)
-            Object.values(this.cmps).filter(cmp=>!cmp.notReady)
-                .forEach(cmp=>cmp.render ? cmp.render(this.ctx) : cmp.vars.zuiMode != 'zoomingGrid' && this.renderCmp(cmp,this.ctx))
+            Object.values(this.cmps).filter(cmp=>!cmp.notReady && !cmp.flowElem)
+                .forEach(cmp=>cmp.render ? cmp.render(this.ctx) : this.renderCmp(cmp,this.ctx))
         },        
         renderCmp(cmp,ctx) {
-            if (!this.cmpsData[cmp.id].binaryAtts.length) return
-
             const baseTime = new Date().getTime()
             const { cmpsData, emptyTexture, gl } = this
+            const { uniforms, feUniforms, mergedUniforms } = cmp
             const cmpData = cmpsData[cmp.id]
-            const { glCode, uniforms, noOfItems } = cmpData
-            if (!this.prepareTextures(cmp)) return
+            const {id, binaryAtts, buffer, floatsInVertex} = cmpData
+            const { glCode, noOfItems } = cmpData
 
-            this.prepareFrontEndUniforms(cmp,ctx).forEach(({id,val}) => uniforms.find(u=>u.id ==id).value = val(ctx))
-            //if (emulateFrontEndInTest) return
+            if (!binaryAtts.length || !this.prepareTextures(cmp) || this.renderCounter == cmp.lru) return
+            cmp.lru = this.renderCounter
+
+            feUniforms.forEach(u => {
+                u.value = u.val(ctx)
+                if (u.value == null)
+                    u.value = uniforms.find(_u=>_u.id == u.id).value
+            })
 
             const shaderProgram = cmp.shaderProgram = cmp.shaderProgram || jb.zui.buildShaderProgram(gl, glCode)
             gl.useProgram(shaderProgram)
             //if (this.ctx.vars.canUseConsole) console.log(cmp.title,glCode[0],glCode[1])
 
             const atlasIdToUnit = (uniforms.find(u=>u.id == 'atlasIdToUnit') || {}).value
-            uniforms.forEach(({glType,id,glMethod,value}) => {
+            mergedUniforms.forEach(({glType,id,glMethod,value}) => {
                 if (glType == 'sampler2D') {
-                const i = atlasIdToUnit && id.indexOf('atlas') == 0 ? atlasIdToUnit[id.split('atlas').pop()]
-                    : this.allocateSingleTextureUnit(cmp,id).i
-                gl.activeTexture(gl['TEXTURE'+i])
-                gl.bindTexture(gl.TEXTURE_2D, cmp.textures[id].texture || emptyTexture)
-                gl.uniform1i(gl.getUniformLocation(shaderProgram, id), i)    
+                    const i = atlasIdToUnit && id.indexOf('atlas') == 0 ? atlasIdToUnit[id.split('atlas').pop()]
+                        : this.allocateSingleTextureUnit(cmp,id).i
+                    gl.activeTexture(gl['TEXTURE'+i])
+                    gl.bindTexture(gl.TEXTURE_2D, cmp.textures[id].texture || emptyTexture)
+                    gl.uniform1i(gl.getUniformLocation(shaderProgram, id), i)    
                 } else {
-                gl[`uniform${glMethod}`](gl.getUniformLocation(shaderProgram, id), value)
+                    gl[`uniform${glMethod}`](gl.getUniformLocation(shaderProgram, id), value)
                 }
             })
 
-            //cmpsData.itemsPositions.binaryAtts[0].id = 'itemPos' // the default id is _itemPos...
-            ;[cmpData].forEach(({id, binaryAtts, buffer, floatsInVertex}) => {
-                gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
-                gl.bufferData(gl.ARRAY_BUFFER, buffer, gl.STATIC_DRAW)
-        
-                binaryAtts.forEach(({id,size,offset}) => {
+            gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
+            gl.bufferData(gl.ARRAY_BUFFER, buffer, gl.STATIC_DRAW)    
+            binaryAtts.forEach(({id,size,offset}) => {
                 const att = gl.getAttribLocation(shaderProgram, id)
                 gl.enableVertexAttribArray(att)
                 gl.vertexAttribPointer(att, size, gl.FLOAT, false,  floatsInVertex* Float32Array.BYTES_PER_ELEMENT, offset* Float32Array.BYTES_PER_ELEMENT)
-                })
             })
+            
             jb.log('zui widget renderCmp', {cmp, cmpData, cmpsData, ctx})
             const duration = new Date().getTime() - baseTime
             //console.log(duration, cmp.id)    

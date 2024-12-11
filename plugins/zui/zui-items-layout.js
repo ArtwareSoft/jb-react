@@ -4,11 +4,11 @@ dsl('zui')
 component('xyByProps', {
   type: 'grid_pivot',
   params: [
-    {id: 'normalized', as: 'boolean', type: 'boolean<>'},
     {id: 'xAtt', as: 'string', defaultValue: 'x'},
-    {id: 'yAtt', as: 'string', defaultValue: 'y'}
+    {id: 'yAtt', as: 'string', defaultValue: 'y'},
+    {id: 'normalized', as: 'boolean', type: 'boolean<>'},
   ],
-  impl: (ctx,normalized,xAtt,yAtt) => {
+  impl: (ctx,xAtt,yAtt,normalized) => {
     const {items,gridSize } = ctx.vars
     ;[xAtt,yAtt].forEach((att,axis)=>{
       const numericAtt = `n_${att}`
@@ -67,7 +67,7 @@ extension('zui','gridItemsLayout', {
 
     jb.log('zui gridItemsLayout',{mat})
 
-    const itemSize = [0,1].map(axis=>canvasSize[axis]/(initialZoom*gridSize[axis]))
+    const itemSize = [0,1].map(axis=>canvasSize[axis]/initialZoom) // *gridSize[axis]))
     return { mat, initialZoom, center, gridSize: [X,Y], itemSize }
 
     function repulsion() {

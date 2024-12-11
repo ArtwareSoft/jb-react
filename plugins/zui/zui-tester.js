@@ -27,13 +27,15 @@ component('zuiTest', {
     {id: 'timeout', as: 'number', defaultValue: 200},
     {id: 'cleanUp', type: 'action<>', dynamic: true},
     {id: 'expectedCounters', as: 'single'},
+    {id: 'testData', dynamic: true},
     {id: 'spy'},
     {id: 'covers'}
   ],
   impl: dataTest({
     vars: [
       Var('uiTest', true),
-      Var('widget', typeAdapter('widget<zui>', widget('%$control()%', '%$canvasSize%'))),
+      Var('testData', '%$testData()%', { async: true }),
+      Var('widget', pipeline('%$testData%', typeAdapter('widget<zui>', widget('%$control()%', '%$canvasSize%')))),
       Var('initwidget', '%$widget.init()%', { async: true })
     ],
     calculate: pipe('%$userEvents%','%$widget.be_cmp.processFEReq()%'),
@@ -50,11 +52,13 @@ component('zuiControlRunner', {
   type: 'action<>',
   params: [
     {id: 'control', type: 'control', dynamic: true, mandatory: true},
+    {id: 'testData', dynamic: true},
     {id: 'canvasSize', as: 'array'},
     {id: 'styleSheet', as: 'string', newLinesInCode: true}
   ],
   impl: runActions(
-    Var('widget', typeAdapter('widget<zui>', widget('%$control()%', { frontEnd: widgetFE('.elemToTest') }))),
+    Var('testData', '%$testData()%', { async: true }),
+    Var('widget', pipeline('%$testData%', typeAdapter('widget<zui>', widget('%$control()%', { frontEnd: widgetFE('.elemToTest') })))),
     '%$widget.init()%'
   )
 })

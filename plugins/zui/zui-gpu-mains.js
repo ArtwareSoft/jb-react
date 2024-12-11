@@ -1,25 +1,26 @@
 dsl('zui')
 
-component('modeByContext', {
+component('mainByContext', {
   type: 'feature',
   impl: features(
-    If('%$zuiMode%==fixed', fixedMode()),
-    If('%$zuiMode%==flowTop', flowMode()),
-    If('%$zuiMode%==zoomingGrid', zoomingGridMode()),
-    If('%$zuiMode%==dynamicFlow', dynamicFlowMode()),
+    basicShaderUtils(),
+    If('%$renderRole%==fixed', fixedMain()),
+    If('%$renderRole%==flowTop', flowTopMain()),
+    If(and('%$inZoomingGrid%','%$renderRole%==dynamicFlowTop'), dynamicFlowTopMain()),
+    If(and('%$inZoomingGrid%','%$renderRole%!=dynamicFlowElem'), zoomingGridMain())
   )
 })
 
-component('fixedMode', {
+component('fixedMain', {
   type: 'feature',
   impl: features(
     uniforms(canvasSize(), vec2('elemPos', zui.fix2('%$cmp.fixedPos%'))),
     variable('items', [1]),
     glAtt(float('dummy', 1)),
-    vertexDecl('vec2 invertY(vec2 pos) { return vec2(pos[0],-1.0*pos[1]); }'),
     varying('vec2', 'elemBottomLeftCoord', {
       glCode: 'floor((elemBottomLeftNdc + 1.0) * (0.5*canvasSize))'
     }),
+    varying('vec2', 'itemBottomLeftCoord', { glCode: 'vec2(0.0)' }),
     defaultGlVarsAsUniforms(),
     vertexMainSnippet(`vec2 elemCenterPx = invertY(elemPos+elemSize/2.0);
     vec2 itemTopLeftNdc = vec2(-1.0,1.0);
@@ -32,7 +33,7 @@ component('fixedMode', {
   )
 })
 
-component('zoomingGridMode', {
+component('zoomingGridMain', {
   type: 'feature',
   circuit: 'zuiTest.zoomingGrid',
   impl: features(
@@ -51,10 +52,10 @@ component('zoomingGridMode', {
       vec2('elemSize', [0,0])
     ),
     glAtt(vec2('itemPos', '%$item.xyPos%')),
-    vertexDecl('vec2 invertY(vec2 pos) { return vec2(pos[0],-1.0*pos[1]); }'),
     varying('vec2', 'elemBottomLeftCoord', {
       glCode: 'floor((elemBottomLeftNdc + 1.0) * (0.5*canvasSize))'
     }),
+    varying('vec2', 'itemBottomLeftCoord', { glCode: '((itemPos-1.0 - center) / (0.5*zoom) + 1.0) * (0.5*canvasSize)' }),
     defaultGlVarsAsUniforms(),
     vertexMainSnippet(`vec2 elemCenterPx = invertY(elemPos+elemSize/2.0);
     vec2 itemTopLeftNdc = (itemPos - center) / (0.5*zoom);
@@ -64,12 +65,6 @@ component('zoomingGridMode', {
     gl_Position = vec4( elemCenterNdc, 0.0, 1.0);
     `),
     simpleShaderMain()
-  )
-})
-
-component('dynamicFlowMode', {
-  type: 'feature',
-  impl: features(
   )
 })
 
@@ -87,35 +82,9 @@ component('defaultGlVarsAsUniforms', {
   )
 })
 
-component('simpleTitleBlending', {
-  type: 'feature',
-  impl: shaderDecl(If('%$cmp.props.titleImage%', `
-  float simpleTitleBlending(vec2 inGlyph, vec2 glyphSize) {
-      float packRatio = 4.0;
-      float bitsPerPixel = floor(32.0 / packRatio);
-      float pixelsPerByte = floor(8.0 / bitsPerPixel);
-      float unitX = floor(inGlyph.x / packRatio) * packRatio;
-      vec2 rBase = (vec2(unitX + 0.5, floor(inGlyph.y) + 0.5)) / glyphSize;
-      vec4 unit = texture2D(titleTexture, rBase) * 255.0;
-      float pixel = floor(inGlyph.x - unitX);
-      int byteIndex = int(floor(pixel/pixelsPerByte));
-      float byteValue = unit[3];
-      if (byteIndex == 0) byteValue = unit[0]; else if (byteIndex == 1) byteValue = unit[1]; else if (byteIndex == 2) byteValue = unit[2];
-      
-      float localPixelIndex = floor(mod(pixel, pixelsPerByte));
-      float startBitIndex = bitsPerPixel * localPixelIndex;
-      float noOfGrayColors = pow(2.0, bitsPerPixel);
-      float grayColor = mod(byteValue / pow(2.0, startBitIndex), noOfGrayColors);      
-      return grayColor/(noOfGrayColors-1.0);
-    }`,''))
-})
-
 component('inElemPixelInfo', {
   type: 'feature',
   impl: shaderDecl(({},{cmp}) => `
-  struct box { vec2 pos; vec2 size; };
-  struct pixelInfo { vec2 inGlyph;  vec2 glyphSize; int elemPart; int cmpId; };
-
   pixelInfo inElemPixelInfo(vec2 inElem) {
     if (inElem[0] >= elemSize[0] || inElem[1] >= elemSize[1]) { gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0); discard; }
     if (inElem[0] < 0.0 || inElem[1] < 0.0) { gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0); discard; }
@@ -181,8 +150,10 @@ component('simpleShaderMain', {
   impl: features(
     inElemPixelInfo(),
     shaderMainSnippet({
-      code: `// simple main
+      code: `// renderRole: %$renderRole%, inZoomingGrid: %$inZoomingGrid%, title: %$cmp/title%
       vec2 inElem = gl_FragCoord.xy - elemBottomLeftCoord;
+      vec2 outOfItem = gl_FragCoord.xy - itemBottomLeftCoord;
+      if (outOfItem.x < 0.0 || outOfItem.y < 0.0) discard;
       inElem = vec2(inElem[0], elemSize[1] - inElem[1]); // flipY
       pixelInfo info = inElemPixelInfo(inElem);
       vec2 inGlyph = info.inGlyph;
@@ -198,15 +169,15 @@ component('simpleShaderMain', {
 
 // -- flow Mode
 
-component('flowMode', {
+component('flowTopMain', {
   type: 'feature',
   impl: features(
     uniforms(canvasSize(), vec2('topElemSize', zui.fix2('%$cmp.topElemSize%'))),
     glAtt(float('dummy', 1)),
-    vertexDecl('vec2 invertY(vec2 pos) { return vec2(pos[0],-1.0*pos[1]); }'),
     varying('vec2', 'elemBottomLeftCoord', {
       glCode: 'floor((elemBottomLeftNdc + 1.0) * (0.5*canvasSize))'
     }),
+    varying('vec2', 'itemBottomLeftCoord', { glCode: 'vec2(0.0)' }),
     defaultGlVarsAsUniforms(),
     vertexMainSnippet(`vec2 elemCenterPx = invertY(topElemSize/2.0);
     vec2 itemTopLeftNdc = vec2(-1.0,1.0);
@@ -222,9 +193,6 @@ component('flowMode', {
 component('flowPixelInfo', {
   type: 'feature',
   impl: shaderDecl(`
-  struct box { vec2 pos; vec2 size; };
-  struct pixelInfo { vec2 inGlyph;  vec2 glyphSize; int elemPart; int cmpIndex; };
-
   pixelInfo inElemFlowPixelInfo(int cmpIndex, vec2 inElem, vec2 elemSize, vec4 margin, vec4 borderWidth, vec4 padding, vec2 borderRadius ) {
     if (inElem[0] >= elemSize[0] || inElem[1] >= elemSize[1]) { gl_FragColor = vec4(0.0, 0.0, 1.0, 0.0); discard; }
     if (inElem[0] < 0.0 || inElem[1] < 0.0) { gl_FragColor = vec4(0.0, 1.0, 0.0, 0.0); discard; }
@@ -286,19 +254,19 @@ component('flowShaderMain', {
   impl: features(
     flowPixelInfo(),
     shaderDecl(({},{cmp}) => `
-  bool inBox(vec2 point, vec2 boxSize) {
-    return (point.x <= boxSize.x && point.y <= boxSize.y && point.x > 0.0 && point.y > 0.0);
-  }
   pixelInfo flowPixelInfo(vec2 inTopElem) {
     // elemBasics_xx[0] - sizePos
-${cmp.flowDecendents.map((fCmp,i)=>`\tif (inBox(inTopElem - elemBasics_${i}[0].zw, elemBasics_${i}[0].xy))
+${cmp.shownChildren.map((fCmp,i)=>`\tif (inBox(inTopElem - elemBasics_${i}[0].zw, elemBasics_${i}[0].xy))
         return inElemFlowPixelInfo(${i}, inTopElem - elemBasics_${i}[0].zw, elemBasics_${i}[0].xy, elemBasics_${i}[1], elemBasics_${i}[2], elemBasics_${i}[3], elemBasics_${i}[4].xy);`)
       .join('\n')}
       return pixelInfo(vec2(0.0), vec2(0.0), 0, -1);
   }`),
     shaderMainSnippet({
-      code: ({},{cmp}) => `// flowShaderMain
-      vec2 inTopElem = gl_FragCoord.xy- elemBottomLeftCoord;
+      code: (ctx,{cmp}) => `// flowShaderMain, ${ctx.exp('renderRole: %$renderRole%, inZoomingGrid: %$inZoomingGrid%, title: %$cmp/title%')}
+      vec2 inTopElem = gl_FragCoord.xy - elemBottomLeftCoord;
+      vec2 outOfItem = gl_FragCoord.xy - itemBottomLeftCoord;
+      if (outOfItem.x < 0.0 || outOfItem.y < 0.0) discard;
+
       inTopElem = vec2(inTopElem[0], topElemSize[1] - inTopElem[1]); // flipY
       pixelInfo info = flowPixelInfo(inTopElem); // child SizePos
       vec2 inGlyph = info.inGlyph;
@@ -309,26 +277,14 @@ ${cmp.flowDecendents.map((fCmp,i)=>`\tif (inBox(inTopElem - elemBasics_${i}[0].z
       if (elemPart == 0) discard;
       if (elemPart < 5) { gl_FragColor = vec4(borderColor, 1.0); return; }       
 
-${cmp.flowDecendentsUniforms.filter(u=>u.glType!='sampler2D').map(({glType,glVar})=> `\t  ${glType} ${glVar};`).join('\n')}
-      vec2 elemSize;
-      if (cmp == -1) {
-        gl_FragColor = vec4(1.0, 0.0, 0.0, 0.5);
-        return;
-      }
-      // if (cmp == 0) {
-      //   gl_FragColor = vec4(1.0, 0.0, 0.0, flowTitleBlending(0, inGlyph, glyphSize));
-      //   return;
-      // }
-      // if (cmp == 1) {
-      //   gl_FragColor = vec4(0.0, 1.0, 0.0, flowTitleBlending(1, inGlyph, glyphSize));
-      //   return;
-      // }
-      // if (cmp == 2) {
-      //   gl_FragColor = vec4(0.0, 0.0, 1.0, flowTitleBlending(2, inGlyph, glyphSize));
-      //   return;
-      // }
+${cmp.shownChildrenUniforms.filter(u=>u.glType!='sampler2D').map(({glType,glVar})=> `\t  ${glType} ${glVar};`).join('\n')}
+  vec2 elemSize;
+  if (cmp == -1) { gl_FragColor = vec4(1.0, 0.0, 0.0, 0.5); return; }
+  // if (cmp == 0) { gl_FragColor = vec4(1.0, 0.0, 0.0, flowTitleBlending(0, inGlyph, glyphSize)); return;}
+  // if (cmp == 1) { gl_FragColor = vec4(0.0, 1.0, 0.0, flowTitleBlending(1, inGlyph, glyphSize)); return;}
+  // if (cmp == 2) { gl_FragColor = vec4(0.0, 0.0, 1.0, flowTitleBlending(2, inGlyph, glyphSize)); return;}
 
-      ${cmp.flowDecendents.map((fCmp,i)=>`if (cmp == ${i}) {
+      ${cmp.shownChildren.map((fCmp,i)=>`if (cmp == ${i}) {
       elemSize = elemBasics_${i}[0].xy;
 ${fCmp.glVars.uniforms.filter(u=>u.glType!='sampler2D').map(({glVar})=> `\t  ${glVar} = ${glVar}_${i};`).join('\n')}
   ${(cmp.shaderMainSnippets[i]||[]).join('')}
@@ -339,23 +295,105 @@ ${fCmp.glVars.uniforms.filter(u=>u.glType!='sampler2D').map(({glVar})=> `\t  ${g
   )
 })
 
-// function DEFflowTitleBlending(vec2 inGlyph)<cmpId> {
-//   float packRatio = 16.0;
-//   float bitsPerPixel = floor(32.0 / packRatio);
-//   float pixelsPerByte = floor(8.0 / bitsPerPixel);
-//   float unitX = floor(inGlyph.x / packRatio) * packRatio;
-//   vec2 size = titleTextureAtlasPosSize_${cmpId}.size
-//   vec2 imagePos = vec2(unitX + 0.5, floor(inGlyph.y) + 0.5);
-//   vec2 atlasPos = titleTextureAtlasPosSize_${cmpId}.pos + imagePos
-//   vec4 unit = texture2D(titleTextureAtlas_${cmpId}, atlasPos / size) * 255.0;
-//   float pixel = floor(inGlyph.x - unitX);
-//   int byteIndex = int(floor(pixel/pixelsPerByte));
-//   float byteValue = unit[3];
-//   if (byteIndex == 0) byteValue = unit[0]; else if (byteIndex == 1) byteValue = unit[1]; else if (byteIndex == 2) byteValue = unit[2];
-  
-//   float localPixelIndex = floor(mod(pixel, pixelsPerByte));
-//   float startBitIndex = bitsPerPixel * localPixelIndex;
-//   float noOfGrayColors = pow(2.0, bitsPerPixel);
-//   float grayColor = mod(byteValue / pow(2.0, startBitIndex), noOfGrayColors);      
-//   return grayColor/(noOfGrayColors-1.0);
-// }
+// -- dynamic flow Mode
+
+component('dynamicFlowTopMain', {
+  type: 'feature',
+  impl: features(
+    frontEnd.uniforms(
+      float('zoom', '%$widget.state.zoom%'),
+      vec2('center', '%$widget.state.center%'),
+      vec2('topElemPos', '%$elemLayout.pos%'),
+      vec2('topElemSize', '%$elemLayout.size%')
+    ),
+    uniforms(
+      canvasSize(),
+      vec2('gridSize', '%$itemsLayout/gridSize%'),
+      float('zoom', '%$itemsLayout/initialZoom%'),
+      vec2('center', '%$itemsLayout/center%'),
+      vec2('topElemPos', [0,0]),
+      vec2('topElemSize', [0,0])
+    ),
+    color('border'),
+    color('background'),
+    glAtt(vec2('itemPos', '%$item.xyPos%')),
+    varying('vec2', 'elemBottomLeftCoord', {
+      glCode: 'floor((elemBottomLeftNdc + 1.0) * (0.5*canvasSize))'
+    }),
+    varying('vec2', 'itemBottomLeftCoord', { glCode: '((itemPos-1.0 - center) / (0.5*zoom) + 1.0) * (0.5*canvasSize)' }),
+    vertexMainSnippet(`vec2 elemCenterPx = invertY(topElemPos+topElemSize/2.0);
+    vec2 itemTopLeftNdc = (itemPos - center) / (0.5*zoom);
+    vec2 elemBottomLeftNdc = itemTopLeftNdc + invertY(topElemPos+vec2(0.0,topElemSize[1])) / (0.5 * canvasSize);
+    gl_PointSize = max(topElemSize[0],topElemSize[1]) * 1.42;
+    gl_Position = vec4( elemCenterNdc, 0.0, 1.0);
+    `),
+    dynamicFlowShaderMain()
+  )
+})
+
+component('dynamicFlowShaderMain', {
+  type: 'feature',
+  params: [],
+  impl: features(
+    flowPixelInfo(),
+    shaderDecl(({},{cmp}) => `
+  pixelInfo dynamicFlowPixelInfo(vec2 inTopElem) {
+    // elemBasics_xx[0] - sizePos
+    float base = 0.0;
+    vec2 elemSize;
+    vec2 inElem;
+    ${cmp.shownChildren.map((fCmp,i)=>`
+elemSize = ${fCmp.findGlVar('actualSize') ? `vec2(elemBasics_${i}[0].x, min(actualSize_${i}.y, elemBasics_${i}[0].y))` : `elemBasics_${i}[0].xy`};
+inElem = inTopElem - vec2(0.0,base);
+if (inBox(inElem, elemSize))
+    return inElemFlowPixelInfo(${i}, inElem, elemSize, elemBasics_${i}[1], elemBasics_${i}[2], elemBasics_${i}[3], elemBasics_${i}[4].xy);
+base = base + elemSize.y;`)
+   .join('\n')}
+      return pixelInfo(vec2(0.0), vec2(0.0), 0, -1);
+  }`),
+    shaderMainSnippet({
+      code: (ctx,{cmp}) => `// dynamicFlowShaderMain, ${ctx.exp('renderRole: %$renderRole%, inZoomingGrid: %$inZoomingGrid%, title: %$cmp/title%')}
+      vec2 inTopElem = gl_FragCoord.xy - elemBottomLeftCoord;
+      vec2 outOfItem = gl_FragCoord.xy - itemBottomLeftCoord;
+      if (outOfItem.x < 0.0 || outOfItem.y < 0.0) discard;
+
+      inTopElem = vec2(inTopElem[0], topElemSize[1] - inTopElem[1]); // flipY
+      pixelInfo info = dynamicFlowPixelInfo(inTopElem); // child SizePos
+      vec2 inGlyph = info.inGlyph;
+      vec2 glyphSize = info.glyphSize;
+      int elemPart = info.elemPart;
+      int cmp = info.cmpIndex;
+
+      if (elemPart == 0) discard;
+      if (elemPart < 5) { gl_FragColor = vec4(borderColor, 1.0); return; }       
+
+${cmp.shownChildrenUniforms.filter(u=>u.glType!='sampler2D').map(({glType,glVar})=> `\t  ${glType} ${glVar};`).join('\n')}
+      vec2 elemSize;
+      if (cmp == -1) { gl_FragColor = vec4(1.0, 0.0, 0.0, 0.5); return; }
+      // if (cmp == 0) { gl_FragColor = vec4(1.0, 0.0, 0.0, flowTitleBlending(0, inGlyph, glyphSize)); return;}
+      // if (cmp == 1) { gl_FragColor = vec4(0.0, 1.0, 0.0, flowTitleBlending(1, inGlyph, glyphSize)); return;}
+      // if (cmp == 2) { gl_FragColor = vec4(0.0, 0.0, 1.0, flowTitleBlending(2, inGlyph, glyphSize)); return;}
+
+      ${cmp.shownChildren.map((fCmp,i)=>`if (cmp == ${i}) {
+        elemSize = ${fCmp.findGlVar('actualSize') ? `vec2(elemBasics_${i}[0].x, min(actualSize_${i}.y, elemBasics_${i}[0].y))` : `elemBasics_${i}[0].xy`};
+${fCmp.glVars.uniforms.filter(u=>u.glType!='sampler2D').map(({glVar})=> `\t  ${glVar} = ${glVar}_${i};`).join('\n')}
+  ${(cmp.shaderMainSnippets[i]||[]).join('')}
+      }`).join('\n')}
+      `,
+      phase: 4
+    })
+  )
+})
+
+component('basicShaderUtils', {
+  type: 'feature',
+  impl: features(
+    shaderDecl(`
+bool inBox(vec2 point, vec2 boxSize) { return (point.x <= boxSize.x && point.y <= boxSize.y && point.x > 0.0 && point.y > 0.0); }
+vec2 invertY(vec2 pos) { return vec2(pos[0],-1.0*pos[1]); }
+struct box { vec2 pos; vec2 size; };
+struct pixelInfo { vec2 inGlyph;  vec2 glyphSize; int elemPart; int cmpId; };
+`),
+    vertexDecl('vec2 invertY(vec2 pos) { return vec2(pos[0],-1.0*pos[1]); }')
+  )
+})

@@ -145,29 +145,32 @@ component('margin', {
   impl: (ctx,margin) => ({layoutProp: { margin: jb.zui.fix4(margin,ctx) } })
 })
 
-component('size', {
+component('minSize', {
   type: 'layout',
+  moreTypes: 'feature<zui>',
   params: [
-    {id: 'width', as: 'string'},
-    {id: 'height', as: 'string'}
+    {id: 'minWidth', as: 'number'},
+    {id: 'minHeight', as: 'number'}
   ],
   impl: ctx => ({layoutProp: ctx.params })
 })
 
-component('width', {
+component('minWidth', {
   type: 'layout',
+  moreTypes: 'feature<zui>',
   params: [
-    {id: 'width', as: 'string'}
+    {id: 'width', as: 'number'}
   ],
-  impl: (ctx,width) => ({layoutProp: { width } })
+  impl: (ctx,minWidth) => ({layoutProp: { minWidth } })
 })
 
-component('height', {
+component('minHeight', {
   type: 'layout',
+  moreTypes: 'feature<zui>',
   params: [
-    {id: 'height', as: 'string'}
+    {id: 'height', as: 'number'}
   ],
-  impl: (ctx,height) => ({layoutProp: { height } })
+  impl: (ctx,minHeight) => ({layoutProp: { minHeight } })
 })
 
 component('borderWidth', {
@@ -186,78 +189,8 @@ component('borderRadius', {
   impl: (ctx,radius) => ({layoutProp: { borderRadius: jb.zui.fix2(radius,ctx) } })
 })
 
-// component('priorty', {
-//   type: 'zooming_size',
-//   params: [
-//     {id: 'priority', mandatory: true, as: 'number', description: 'scene enter order'}
-//   ],
-//   impl: (ctx,priority) => ({ priority })
-// })
-
-// component('maxWidth', {
-//   type: 'zooming_size',
-//   params: [
-//     {id: 'max', as: 'number', mandatory: true},
-//   ],
-//   impl: (ctx,maxWidth) => ({ maxWidth })
-// })
-
-// component('maxHeight', {
-//   type: 'zooming_size',
-//   params: [
-//     {id: 'max', as: 'number', mandatory: true},
-//   ],
-//   impl: (ctx,maxHeight) => ({ maxHeight })
-// })
-
-component('zui.fix2', {
-  params: [
-    {id: 'arr', as: 'array', description: '0,1 or 2 values fixed to 2'}
-  ],
-  impl: (ctx,ar) => jb.zui.fix2(ar,ctx)
-})
-
-component('zui.fix4', {
-  params: [
-    {id: 'arr', as: 'array', description: '0,1 or 2,4 values fixed to 4'}
-  ],
-  impl: (ctx,ar) => jb.zui.fix4(ar,ctx)
-})
-
 extension('zui','layout', {
-  fix2(ar,ctx) {
-    if (!ar) return [0,0]
-    if (typeof ar == 'number' || typeof ar == 'string') return [+ar,+ar]
-    if (Array.isArray(ar)) {
-      if (ar.length == 0) return [0,0]
-      if (ar.length == 1) return [+ar[0],+ar[0]]
-      if (ar.length == 2) return ar
-    } 
-    jb.logError(`fix2 can not fix ${ar}`,{ar, ctx})
-    return [0,0]
-  },
-  fix4(ar,ctx) {
-    if (!ar) return [0,0,0,0]
-    if (typeof ar == 'number' || typeof ar == 'string') return [+ar,+ar,+ar,+ar]
-    if (Array.isArray(ar)) {
-      if (ar.length == 0) return [0,0,0,0]
-      if (ar.length == 1) return [+ar[0],+ar[0],+ar[0],+ar[0]]
-      if (ar.length == 2) return [+ar[0],+ar[1],+ar[0],+ar[1]]
-      if (ar.length == 4) return ar
-    } 
-    jb.logError(`fix4 can not fix ${ar}`,{ar, ctx})
-    return [0,0,0,0]
-  },
-  floorLog2(size) {
-    return 2**Math.floor(Math.log(size)/Math.log(2))
-  },
   initLayoutCalculator(layoutCalculator) {
-    // const layoutCalculator = _layoutCalculator.children ? _layoutCalculator : { // wrap with group if single top single
-    //   children: [_layoutCalculator],
-    //   layoutAxis: 0,
-    //   id: 'dummyGroup'
-    // }
-    //layoutCalculator.children = layoutCalculator.children || []
     layoutCalculator.layoutAxis = layoutCalculator.layoutAxis || 0
     const axes = [0,1]
     const minRecords = axes.map(axis => calcMinRecord(layoutCalculator, axis).sort((r1,r2) => r1.p - r2.p))
@@ -276,12 +209,11 @@ extension('zui','layout', {
     }
 
     function sizeNeeds(cmp,args) {
-      if (cmp.sizeNeeds) return cmp.sizeNeeds(args)
-      if (cmp.fixedSizeNeeds) return cmp.fixedSizeNeeds
-      const {margin,borderWidth,padding,size} = cmp.sizeProps || {}
-      cmp.fixedSizeNeeds = [margin[0]+borderWidth[0]+padding[0]+size[0] + margin[3]+borderWidth[3]+padding[3], 
-                            margin[1]+borderWidth[1]+padding[1]+size[1] + margin[2]+borderWidth[2]+padding[2]]
-      return cmp.fixedSizeNeeds
+      if (jb.path(cmp.zoomingSize,'sizeNeeds')) return cmp.zoomingSize.sizeNeeds(args)
+      const { minWidth, minHeight } = cmp.layoutProps
+      if (!minWidth || !minHeight)
+        jb.logError(`missing size needs for cmp ${cmp.title}`,{cmp,ctx:cmp.ctx})
+      return [minWidth, minHeight]
     }
 
     function calcItemLayout(itemSize, ctx) {
@@ -325,10 +257,10 @@ extension('zui','layout', {
           if (itemSize) {
             const requestedTotal = calcTotalSize(axis)
             if (requestedTotal > itemSize[axis]) {
-              jb.log('zui layout min alloc rejected',{axis, requested: r.min, available: size[axis], cmp: r.id, requestedTotal, currentTotal, r})
+              jb.log('zui layout min alloc rejected',{axis, requested: r.min, available: itemSize[axis], cmp: r.id, requestedTotal, currentTotal, r})
               allocatedSize[axis] = 0
             } else {
-              jb.log('zui layout min alloc accepted',{axis, requested: r.min, available: size[axis], cmp: r.id, requestedTotal, currentTotal, r})
+              jb.log('zui layout min alloc accepted',{axis, requested: r.min, available: itemSize[axis], cmp: r.id, requestedTotal, currentTotal, r})
               r.alloc = r.min
             }
           } else {
@@ -347,7 +279,8 @@ extension('zui','layout', {
       function assignPositions(cmp,basePos,availableSize) {
         elemsLayout[cmp.id].pos = basePos
         if (!cmp.children || !availableSize) return
-        const main = cmp.layoutAxis, other = cmp.layoutAxis == 0 ? 1: 0
+        const main = cmp.layoutProps.layoutAxis || 0
+        const other = main == 0 ? 1: 0
         const visibleChildren = cmp.children.filter(v=>jb.path(elemsLayout,[v.id,'visible']))
         visibleChildren.reduce((posInMain, child,i) => {
           const childSize = elemsLayout[child.id].size
@@ -355,7 +288,9 @@ extension('zui','layout', {
           childPos[main] = posInMain + (i ? 0 : (availableSize[main] - elemsLayout[cmp.id].size[main]) / 2)
           childPos[other] = basePos[other] + (availableSize[other] - childSize[other]) / 2
           assignPositions(child,childPos,childSize)
-          return childPos[main] + childSize[main] + spaceSize
+          const res = childPos[main] + childSize[main] + spaceSize
+          if (isNaN(res)) debugger
+          return res
         },basePos[main])
       }
 
@@ -453,5 +388,45 @@ extension('zui','layout', {
         return true
       }
     }
+  },
+  fix2(ar,ctx) {
+    if (!ar) return [0,0]
+    if (typeof ar == 'number' || typeof ar == 'string') return [+ar,+ar]
+    if (Array.isArray(ar)) {
+      if (ar.length == 0) return [0,0]
+      if (ar.length == 1) return [+ar[0],+ar[0]]
+      if (ar.length == 2) return ar
+    } 
+    jb.logError(`fix2 can not fix ${ar}`,{ar, ctx})
+    return [0,0]
+  },
+  fix4(ar,ctx) {
+    if (!ar) return [0,0,0,0]
+    if (typeof ar == 'number' || typeof ar == 'string') return [+ar,+ar,+ar,+ar]
+    if (Array.isArray(ar)) {
+      if (ar.length == 0) return [0,0,0,0]
+      if (ar.length == 1) return [+ar[0],+ar[0],+ar[0],+ar[0]]
+      if (ar.length == 2) return [+ar[0],+ar[1],+ar[0],+ar[1]]
+      if (ar.length == 4) return ar
+    } 
+    jb.logError(`fix4 can not fix ${ar}`,{ar, ctx})
+    return [0,0,0,0]
+  },
+  floorLog2(size) {
+    return 2**Math.floor(Math.log(size)/Math.log(2))
   }
+})
+
+component('zui.fix2', {
+  params: [
+    {id: 'arr', as: 'array', description: '0,1 or 2 values fixed to 2'}
+  ],
+  impl: (ctx,ar) => jb.zui.fix2(ar,ctx)
+})
+
+component('zui.fix4', {
+  params: [
+    {id: 'arr', as: 'array', description: '0,1 or 2,4 values fixed to 4'}
+  ],
+  impl: (ctx,ar) => jb.zui.fix4(ar,ctx)
 })

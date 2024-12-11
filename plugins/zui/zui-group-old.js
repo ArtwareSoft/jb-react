@@ -40,9 +40,9 @@ component('firstToFit', {
 //   impl: () => ({ layoutAxis:  0 })
 // })
 
-component('minSize', {
-  type: 'group_layout_feature',
-  params: [
-    {id: 'minSize', mandatory: true, as: 'array', defaultValue: [0,0]},
-  ]
-})
+// component('minSize', {
+//   type: 'group_layout_feature',
+//   params: [
+//     {id: 'minSize', mandatory: true, as: 'array', defaultValue: [0,0]},
+//   ]
+// })

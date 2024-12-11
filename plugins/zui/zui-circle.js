@@ -15,7 +15,7 @@ component('circle', {
   params: [],
   impl: features(
     zoomingSize('%$$model/size()%'),
-    modeByContext(),
+    mainByContext(),
     centerRadius(),
     valueColor('fill'),
     color('fill', 'red'),

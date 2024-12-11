@@ -22,8 +22,8 @@ component('zuiTest.dynamicFlowMode', {
   impl: zuiTest({
     control: itemlist({
       items: '%$points%',
-      itemControl: button('click me'),
-      itemsLayout: grid([4,4], { initialZoom: 4, center: [2,2] })
+      itemControl: group(text('11111 1111', { features: minHeight(100) }), text('222222 222222222 22222222 222222222', { features: minHeight(100) })),
+      itemsLayout: grid([10,10], { initialZoom: 10, center: [4,4] })
     }),
     expectedResult: contains(`glVar: 'fillColor'`)
   })
@@ -33,7 +33,7 @@ component('zuiTest.zoomingGridWithTextures', {
   impl: zuiTest({
     control: itemlist({
       items: '%$points%',
-      itemControl: button('%name%'),
+      itemControl: text('%name%'),
       itemsLayout: grid([4,4], { initialZoom: 4, center: [2,2] })
     }),
     expectedResult: contains(`glVar: 'fillColor'`)
@@ -48,9 +48,36 @@ component('zuiTest.fixedMode', {
   impl: zuiTest(text('click me'), 'size: [98,32]')
 })
 
+component('zuiTest.growingDiagnostics', {
+  doNotRunInTests: true,
+  impl: zuiTest({
+    control: itemlist({
+      items: '%$testData%',
+      itemControl: flow(
+        text('%title%', { align: keepSize('center', 'top') }),
+        text('%department%', { align: keepSize('center', 'top') }),
+        //text('%description%'),
+      ),
+      itemsLayout: grid([8,8], xyByProps('urgency', 'likelihood'), { initialZoom: 8, center: [7,7] })
+    }),
+    testData: pipe(
+      Var('diag', fileContent('/projects/zuiDemo/diagnostics.json'), { async: true }),
+      Var('depAr', fileContent('/projects/zuiDemo/departments.json'), { async: true }),
+      Var('dep', dynamicObject(json.parse('%$depAr%'), '%title%', { value: '%%' })),
+      json.parse('%$diag%'),
+      extendWithObj(property('%title%', '%$dep%'), '%%')
+    )
+  })
+})
+
+        // text('%description%'),
+        // group(text('explanation'), text('%general_explanation%')),
+        // group(text('symptoms'), text('%how_it_relates_to_the_symptoms%'))
+
+
 // component('zuiTest.growingDiagnostics', {
 //   doNotRunInTests: true,
-//   impl: uiTest({
+//   impl: zuiTest({
 //     control: group({
 //       controls: zui.grid({
 //         items: '%$diagnostics%',

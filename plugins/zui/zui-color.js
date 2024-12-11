@@ -34,7 +34,7 @@ component('valueColor', {
     {id: 'unitScale', mandatory: true, dynamic: true, type: 'unit_scale', defaultValue: index()}
   ],
   impl: (ctx,_of,colorScale,unitScaleF) => {
-        if (ctx.vars.zuiMode!='zoomingGrid') return []
+        if (!ctx.vars.inZoomingGrid) return []
         const glVar = `${_of}Color`
         const unitScale = unitScaleF()
         const glAtt = ({ glVar, size: 3, glType: 'vec3', calc: ctx2 => ctx2.vars.items.map(calcColor) })

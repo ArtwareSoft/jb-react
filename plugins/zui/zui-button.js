@@ -17,7 +17,7 @@ component('simpleButton', {
     {id: 'clickEffect', as: 'number', defaultValue: 1}
   ],
   impl: features(
-    modeByContext(),
+    mainByContext(),
     titleTexture('%$$model/title()%'),
     uniforms(float('clickEffect', '%$clickEffect%'))
   )
@@ -61,10 +61,9 @@ component('titleTextureByContext', {
     {id: 'text', as: 'string', dynamic: 'true', defaultValue: 'my title'}
   ],
   impl: features(
-    If('%$zuiMode%==fixed', titleTexture('%$text()%')),
-    If('%$zuiMode%==flow', titleTexture('%$text()%')),
-    If('%$zuiMode%==zoomingGrid', zoomingGrid.titleTexture('%$text()%')),
-    If('%$zuiMode%==dynamicFlow', zoomingGrid.titleTexture('%$text()%')),
+    If('%$renderRole%==fixed', titleTexture('%$text()%')),
+    If('%$renderRole%==flow', titleTexture('%$text()%')),
+    If('%$inZoomingGrid%', zoomingGrid.titleTexture('%$text()%')),
   )
 })
 
@@ -73,13 +72,13 @@ component('textByTitleTexture', {
   impl: features(
     shaderMainSnippet({
       code: If({
-        condition: '%$zuiMode%==flow',
+        condition: '%$renderRole%==flow',
         then: 'gl_FragColor = vec4(0.0, 0.0, 0.0, flowTitleBlending(cmp, inGlyph, glyphSize));',
         Else: 'gl_FragColor = vec4(0.0, 0.0, 0.0, titleBlending(inGlyph, glyphSize));'
       }),
       phase: 20
     }),
     textBlendingFunction('title'),
-    prop('requiredForFlowMode', 'flowTitleBlending')
+    prop('requiredForFlowMain', 'flowTitleBlending')
   )
 })

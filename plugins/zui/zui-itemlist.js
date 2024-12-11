@@ -28,23 +28,19 @@ component('grid', {
     variable('itemsLayout', '%$$model/itemsLayout()%'),
     frontEnd.var('gridSize', '%$itemsLayout/gridSize%'),
     frontEnd.var('initialZoomCenter', ['%$itemsLayout/initialZoom%','%$itemsLayout/center%']),
+    variable('inZoomingGrid',true),
     init((ctx,{cmp, itemsLayout, widget, $model}) => {
-      const ctxToUse = ctx.setVars({zuiMode: 'zoomingGrid'})
-      cmp.children = [$model.itemControl(ctxToUse).init()]
-      setAsGridElem(cmp.children[0])
-      function setAsGridElem(cmp) {
-        cmp.gridElem = true
-        ;(cmp.children||[]).forEach(setAsGridElem)
-      }
-      cmp.extendedPayload = async (res,descendants) => {
-        await descendants.filter(cmp=>cmp.id != res.id).reduce((pr,cmp)=>pr.then(async ()=> cmp.calcPayload()), Promise.resolve())
+      const ctxForChildren = ctx.setVars({renderRole: 'zoomingGridElem'}) // using the feature is not feasible in init
+      cmp.children = [$model.itemControl(ctxForChildren).init()]
+      cmp.extendedPayloadWithDescendants = async (res,descendants) => {
         const layoutCalculator = jb.zui.initLayoutCalculator(cmp)
         const {shownCmps} = layoutCalculator.calcItemLayout(itemsLayout.itemSize, ctx)
         const pack = { [res.id]: res }
-        await descendants.filter(cmp=>cmp.id != res.id).reduce((pr,cmp)=>pr.then(async ()=> {
-          const { id , title, layoutProps, gridElem, zoomingSizeProfile, sizeProps } = cmp
+        await descendants.filter(cmp=>!cmp.dynamicFlowElem).reduce((pr,cmp)=>pr.then(async ()=> {
+          const { id , title, layoutProps, zoomingSizeProfile } = cmp
+
           pack[id] = cmp.children || shownCmps.indexOf(id) != -1 ? await cmp.calcPayload()
-              : {id, title, zoomingSizeProfile, layoutProps, gridElem, notReady: true, sizeProps} 
+              : {id, title, zoomingSizeProfile, layoutProps, notReady: true } 
         }), Promise.resolve())
         return pack
       }
@@ -61,26 +57,29 @@ component('grid', {
       sink.action('%$widget.renderCmps()%')
     ),
     frontEnd.method('buildLayoutCalculator', (ctx,{cmp,widget}) => {
-      const cmpsData = widget.cmpsData
       cmp.layoutCalculator = jb.zui.initLayoutCalculator(buildNode(cmp.id,0))
 
       function buildNode(id,childIndex) {
-        const zoomingSize = cmpsData[id].zoomingSizeProfile ? ctx.run(cmpsData[id].zoomingSizeProfile) : {}
-        const children = cmpsData[id].childrenIds && cmpsData[id].childrenIds.split(',').map((ch,i)=>buildNode(ch,i))
-        const sizeProps = cmpsData[id].sizeProps
-        return { id, childIndex, children, sizeProps, ...zoomingSize, ...(cmpsData[id].layoutProps || {}) }
+        const cmpData = widget.cmpsData[id]
+        const zoomingSize = cmpData.zoomingSizeProfile ? ctx.run(cmpData.zoomingSizeProfile) : {}
+        const layoutProps = cmpData.layoutProps || {}
+        const children = cmpData.childrenIds && cmpData.childrenIds.split(',').map((ch,i)=>buildNode(ch,i))
+        return { id, childIndex, children, zoomingSize, layoutProps, title: cmpData.title}
       }
     }),
     frontEnd.method('render', (ctx,{cmp,widget}) => {
-      const itemSize = [0,1].map(axis=>widget.canvasSize[axis]/(widget.state.zoom*cmp.vars.gridSize[axis]))
+      const itemSize = [0,1].map(axis=>widget.canvasSize[axis]/widget.state.zoom)
       const {shownCmps, elemsLayout} = cmp.layoutCalculator.calcItemLayout(itemSize,ctx)
       widget.cmpsData[cmp.id].itemLayoutforTest = {shownCmps, elemsLayout}
-      const toRender = Object.values(widget.cmps).filter(({id})=>shownCmps.indexOf(id) != -1)
+      const toRender = Object.values(widget.cmps)
+        .filter(cmp=>cmp.renderRole == 'dynamicFlowTop' || shownCmps.indexOf(cmp.id) != -1)
       const notReady = toRender.filter(cmp=>cmp.notReady).map(cmp=>cmp.id)
       if (notReady.length) 
         widget.beProxy.beUpdateRequest(notReady)
       cmp.showGrid(ctx)
-      toRender.filter(cmp=>!cmp.notReady).forEach(cmp=>widget.renderCmp(cmp,ctx.setVars({elemLayout: elemsLayout[cmp.id]})))
+      jb.log('zui itemlist render',{elemsLayout, shownCmps, toRender, notReady, ctx})
+      toRender.filter(cmp=>!cmp.notReady && !cmp.renderRole.match(/[Ff]lowElem/))
+        .forEach(cmp=>widget.renderCmp(cmp,ctx.setVars({elemLayout: elemsLayout[cmp.id]})))
     }),
     frontEnd.method('showGrid', (ctx,{cmp,widget}) => {
         const glCode = [`attribute vec2 itemPos;

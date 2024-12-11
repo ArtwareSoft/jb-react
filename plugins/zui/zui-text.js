@@ -8,7 +8,7 @@ component('text', {
     {id: 'font', as: 'string', defaultValue1: '16px Arial', defaultValue: `16px 'Noto Sans', 'Roboto', 'Arial', sans-serif`},
     {id: 'packRatio', as: 'number', defaultValue: 4, options: '2,4,8,16,32', description: 'performance versus text quality'},
     {id: 'align', type: 'align_image', defaultValue: keepSize()},
-    {id: 'style', type: 'text-style', defaultValue: textureByContext('text'), dynamic: true},
+    {id: 'style', type: 'text-style', defaultValue: textureByContext(), dynamic: true},
     {id: 'features', type: 'feature', dynamic: true}
   ],
   impl: ctx => jb.zui.ctrl(ctx)
@@ -16,16 +16,13 @@ component('text', {
 
 component('textureByContext', {
   type: 'text-style',
-  params: [
-    {id: 'textureId', as: 'string', mandatory: true}
-  ],
   impl: features(
-    modeByContext(),
-    prop('textureId', '%$textureId%'),
-    If('%$zuiMode%==fixed', text.singleTexture()),
-    If('%$zuiMode%==flowElem', text.singleTexture()),
-    If('%$zuiMode%==zoomingGrid', text.atlas()),
-    If('%$zuiMode%==dynamicFlow', text.atlas())
+    mainByContext(),
+    minWidth('%$$model/width%'),
+    minHeight(10),
+    If('%$renderRole%==fixed', text.singleTexture()),
+    If('%$renderRole%==flowElem', text.singleTexture()),
+    If('%$inZoomingGrid%', text.zoomingGrid())
   )
 })
 
@@ -43,16 +40,18 @@ component('text.singleTexture', {
   )
 })
 
-component('text.atlas', {
+component('text.zoomingGrid', {
   type: 'feature',
   impl: features(
-    variable('atlas', zuiText.multiLineAtlas()),
-    glAtt(vec4('textPosSize', '%$atlas.posSize/{%$item.xyPos%}%')),
+    prop('atlas', zuiText.multiLineAtlas()),
+    glAtt(vec2('atlasOffset', '%$$props/atlas.offsets/{%$item.xyPosStr%}%')),
+    glAtt(vec2('actualSize', '%$$props/atlas.actualSize/{%$item.xyPosStr%}%')),
     uniforms(
       vec3('align', '%$$model/align%'),
-      vec2('textTextureSize', '%$atlas.size%'),
-      texture('textTexture', '%$atlas%')
+      vec2('atlasSize', '%$$props/atlas.texture.size%'),
+      texture('textTexture', '%$$props/atlas.texture%')
     ),
+    textBlendingFunction(),
     text.colorOfPixel()
   )
 })
@@ -63,22 +62,25 @@ component('text.colorOfPixel', {
     shaderMainSnippet({
       code: pipeline(
         Switch(
-          Case('%$zuiMode%==fixed', 'textBlending(inGlyph, glyphSize, vec2(0.0)'),
-          Case('%$zuiMode%==flowElem', 'textFlowBlending(cmp, inGlyph, glyphSize, vec2(0.0)'),
-          Case('%$zuiMode%==zoomingGrid', 'textBlending(inGlyph, textTextureSize, textPosSize.xy'),
-          Case('%$zuiMode%==dynamicFlow', 'textFlowBlending(cmp, inGlyph, textTextureSize_%$cmp.flowCmpIndex%, textPosSize_%$cmp.flowCmpIndex%.xy')
+          Case('%$renderRole%==fixed', 'textBlending(inGlyph, glyphSize, vec2(0.0)'),
+          Case('%$renderRole%==flowElem', 'textFlowBlending(cmp, inGlyph, glyphSize, vec2(0.0)'),
+          Case({
+            condition: '%$renderRole%==dynamicFlowElem',
+            value: 'textFlowBlending(cmp, inGlyph, atlasSize_%$cmp.flowCmpIndex%, atlasOffset_%$cmp.flowCmpIndex%.xy'
+          }),
+          Case('%$inZoomingGrid%', 'textBlending(inGlyph, atlasSize, atlasOffset.xy')
         ),
         'gl_FragColor = vec4(0.0, 0.0, 0.0, %%, %$$model/packRatio%.0));'
       ),
       phase: 20
     }),
-    prop('requiredForFlowMode', 'textFlowBlendingFunction')
+    prop('requiredForFlowMain', 'textFlowBlendingFunction')
   )
 })
 
 component('zui.imageOfText', {
   params: [
-    {id: 'text', as: 'string', defaultValue1: '%$$model/text()%'},
+    {id: 'text', as: 'string' },
     {id: 'font', as: 'string', defaultValue: '%$$model/font%'},
     {id: 'packRatio', as: 'number', defaultValue: '%$$model/packRatio%'}
   ],
@@ -98,7 +100,8 @@ component('zui.imageOfText', {
     cnvCtx.textAlign = 'left'
     cnvCtx.fillText(text, 0, metrics.actualBoundingBoxAscent)
 
-    //const url = await jb.zui.canvasToDataUrl(canvas)
+    //jb.zui.canvasToDataUrl(canvas).then(url => console.log(url));
+
     const bwBitMap = jb.zui.bwCanvasToBase64(packRatio, cnvCtx.getImageData(0, 0, ...size).data, ...size)
     const textureSize = [ Math.ceil(size[0] / 32) * 32, size[1]]
     return { textureSize, size, bwBitMap, packRatio }
@@ -108,7 +111,7 @@ component('zui.imageOfText', {
 component('textBlendingFunction', {
   type: 'feature',
   impl: shaderDecl(`
-  float textBlending(vec2 inGlyph, vec2 textureSize, vec2 textureOffset, packRatio) {
+  float textBlending(vec2 inGlyph, vec2 textureSize, vec2 textureOffset, float packRatio) {
       float bitsPerPixel = floor(32.0 / packRatio);
       float pixelsPerByte = floor(8.0 / bitsPerPixel);
       float unitX = floor(inGlyph.x / packRatio) * packRatio;
@@ -135,7 +138,7 @@ component('textFlowBlendingFunction', {
     float unitX = floor(inGlyph.x / packRatio) * packRatio;
     vec2 rBase = (textureOffset + vec2(unitX + 0.5, floor(inGlyph.y) + 0.5)) / textureSize;
     vec4 unit;
-${cmp.flowDecendents.filter((_,i)=>cmp.glVars.uniforms.find(u=>u.glVar == `textTexture_${i}`))
+${cmp.shownChildren.filter((_,i)=>cmp.glVars.uniforms.find(u=>u.glVar == `textTexture_${i}`))
       .map((_,i)=>`\t\tif (cmp == ${i}) unit = texture2D(textTexture_${i}, rBase) * 255.0;`).join('\n')}
     float pixel = floor(inGlyph.x - unitX);
     int byteIndex = int(floor(pixel/pixelsPerByte));
@@ -160,10 +163,11 @@ component('zuiText.multiLineAtlas', {
   impl: (ctx,textF,width,font,packRatio) => {
     const {items,glLimits,cmp} = ctx.vars
 
-    const maxMetrics = jb.zui.measureCanvasCtx(font).measureText('M')
+    const maxMetrics = jb.zui.measureCanvasCtx(font).measureText('XgQ')
     const lineHeight = maxMetrics.actualBoundingBoxAscent + maxMetrics.actualBoundingBoxDescent
+    const height_shift = 3
 
-    const posSize = {}, maxHeight = glLimits.MAX_TEXTURE_SIZE, maxWidth = glLimits.MAX_TEXTURE_SIZE*packRatio
+    const offsets = {}, actualSize = {},maxHeight = glLimits.MAX_TEXTURE_SIZE, maxWidth = glLimits.MAX_TEXTURE_SIZE*packRatio
     let yPos = 0, xPos = 0
     const glyphs = items.map((item,i) => {
         const str = textF(ctx.setData(item))
@@ -173,12 +177,13 @@ component('zuiText.multiLineAtlas', {
         if (xPos > maxWidth)
             jb.logError(`texture is too small for atlas for ${cmp.title}`,{cmp, ctx})
 
-        posSize[item.xyPos] = [xPos,yPos,width,height]
+        offsets[item.xyPos] = [xPos,yPos+height_shift]
+        actualSize[item.xyPos] = [width,height]
         yPos += height
         return { pos: [xPos,yPos] , lines }
     })
     
-    const size = [Math.ceil(xPos+width/32)*32, yPos]
+    const size = [Math.ceil(xPos+width/32)*32, yPos+height_shift]
     const canvas = jb.zui.createCanvas(...size)
     const cnvCtx = canvas.getContext('2d')
     cnvCtx.font = font; cnvCtx.textBaseline = 'alphabetic'; cnvCtx.textAlign = 'left'; 
@@ -197,9 +202,9 @@ component('zuiText.multiLineAtlas', {
     })
 
     const bwBitMap = jb.zui.bwCanvasToBase64(packRatio, cnvCtx.getImageData(0, 0, ...size).data, ...size)
-    //const url = await jb.zui.canvasToDataUrl(canvas)
+    //jb.zui.canvasToDataUrl(canvas).then(url => console.log(url));
 
-    return { posSize, size, bwBitMap, packRatio }
+    return { offsets, actualSize, texture: { textureSize: size, size, bwBitMap, packRatio } }
   }
 })
 
