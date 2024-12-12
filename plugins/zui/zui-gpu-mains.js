@@ -76,7 +76,7 @@ component('defaultGlVarsAsUniforms', {
     uniforms(
       vec4('margin', zui.fix4('%$cmp.margin%')),
       vec4('borderWidth', zui.fix4('%$cmp.borderWidth%')),
-      vec4('borderRadius', zui.fix4('%$cmp.borderRadius%')),
+      vec2('borderRadius', zui.fix4('%$cmp.borderRadius%')),
       vec4('padding', zui.fix4('%$cmp.padding%'))
     ),
     color('border'),
@@ -84,7 +84,7 @@ component('defaultGlVarsAsUniforms', {
   )
 })
 
-component('inElemPixelInfo', {
+component('inElemPixelInfo2', {
   type: 'feature',
   impl: shaderDecl(({},{cmp}) => `
   pixelInfo inElemPixelInfo(vec2 inElem) {
@@ -151,15 +151,20 @@ component('simpleShaderMain', {
   type: 'feature',
   impl: features(
     inElemPixelInfo(),
+    alignFunc(),
     shaderMainSnippet({
       code: `// simpleShaderMain
       vec2 inElem = gl_FragCoord.xy - elemBottomLeftCoord;
       vec2 outOfItem = gl_FragCoord.xy - itemBottomLeftCoord;
       if (outOfItem.x < 0.0 || outOfItem.y < 0.0) discard;
       inElem = vec2(inElem[0], elemSize[1] - inElem[1]); // flipY
-      pixelInfo info = inElemPixelInfo(inElem);
+      vec2 borderBoxSize = glyphSize + vec2(padding.x + padding.z + borderWidth.x + borderWidth.z, padding.y + padding.w + borderWidth.y + borderWidth.w);
+      vec2 inBorderBox = alignGlyphInElem(inElem, align, elemSize, borderBoxSize);
+      if (!inBox(inBorderBox, borderBoxSize)) discard;
+
+      pixelInfo info = inElemPixelInfo(0, inBorderBox, borderBoxSize, margin, borderWidth, padding, borderRadius);
       vec2 inGlyph = info.inGlyph;
-      vec2 glyphSize = info.glyphSize;
+      //vec2 glyphSize = info.glyphSize;
       int elemPart = info.elemPart;
       if (elemPart == 0) discard;
       if (elemPart < 5) { gl_FragColor = vec4(borderColor, 1.0); return; } 
@@ -193,12 +198,11 @@ component('flowTopMain', {
   )
 })
 
-component('flowPixelInfo', {
+component('inElemPixelInfo', {
   type: 'feature',
   impl: shaderDecl(`
-  pixelInfo inElemFlowPixelInfo(int cmpIndex, vec2 inElem, vec2 elemSize, vec4 margin, vec4 borderWidth, vec4 padding, vec2 borderRadius ) {
-    if (inElem[0] >= elemSize[0] || inElem[1] >= elemSize[1]) { gl_FragColor = vec4(0.0, 0.0, 1.0, 0.0); discard; }
-    if (inElem[0] < 0.0 || inElem[1] < 0.0) { gl_FragColor = vec4(0.0, 1.0, 0.0, 0.0); discard; }
+  pixelInfo inElemPixelInfo(int cmpIndex, vec2 inElem, vec2 elemSize, vec4 margin, vec4 borderWidth, vec4 padding, vec2 borderRadius ) {
+    if (!inBox(inElem, elemSize)) { gl_FragColor = vec4(0.0, 0.0, 1.0, 0.0); discard; }
 
     vec2 rInElem = inElem / elemSize;
     int elemPart = 0; // Default to Margin
@@ -207,8 +211,7 @@ component('flowPixelInfo', {
     box borderBox = box(marginBox.pos + margin.xy, marginBox.size - margin.zw);
     box paddingBox = box(borderBox.pos + borderWidth.xy, borderBox.size - borderWidth.zw);
     box glyphBox = box(paddingBox.pos + padding.xy, paddingBox.size - padding.zw);
-    // Determine element part (margin, border, padding, glyph)
-    if (inElem.x >= borderBox.pos.x && inElem.x <= borderBox.pos.x + borderBox.size.x && inElem.y >= borderBox.pos.y && inElem.y <= borderBox.pos.y + borderBox.size.y) {
+    if (inBox(inElem - borderBox.pos, borderBox.size)) {
         elemPart = 1; // Border
         // Split specific border positions
         if (inElem.y <= borderBox.pos.y + borderWidth.y) elemPart = 1; // Top border
@@ -216,12 +219,10 @@ component('flowPixelInfo', {
         else if (inElem.y >= borderBox.pos.y + borderBox.size.y - borderWidth.w) elemPart = 3; // Bottom border
         else if (inElem.x <= borderBox.pos.x + borderWidth.x) elemPart = 4; // Left border
     }
-    if (inElem.x >= paddingBox.pos.x && inElem.x <= paddingBox.pos.x + paddingBox.size.x && inElem.y >= paddingBox.pos.y && inElem.y <= paddingBox.pos.y + paddingBox.size.y)
-        elemPart = 5; // Padding
-    if (inElem.x >= glyphBox.pos.x && inElem.x <= glyphBox.pos.x + glyphBox.size.x && inElem.y >= glyphBox.pos.y && inElem.y <= glyphBox.pos.y + glyphBox.size.y)
-        elemPart = 6; // Glyph
+    if (inBox(inElem - paddingBox.pos, paddingBox.size)) elemPart = 5; // Padding
+    if (inBox(inElem - glyphBox.pos, glyphBox.size)) elemPart = 6; // Glyph
 
-    if (elemPart < 6) { // Only for border-related parts
+    if (elemPart < 6) { // border radius
         vec2 topLeft = borderBox.pos + vec2(borderRadius.x, borderRadius.y);
         vec2 topRight = vec2(borderBox.pos.x + borderBox.size.x - borderRadius.x, borderBox.pos.y + borderRadius.y);
         vec2 bottomLeft = vec2(borderBox.pos.x + borderRadius.x, borderBox.pos.y + borderBox.size.y - borderRadius.y);
@@ -233,18 +234,11 @@ component('flowPixelInfo', {
         float distBottomRight = length(inElem - bottomRight);
 
         // Adjust elemPart based on distance to rounded corners
-        if (inElem.x < borderRadius.x && inElem.y < borderRadius.y && distTopLeft > borderRadius.x) {
-            elemPart = 7; // Top-left rounded corner
-        }
-        if (inElem.x > borderBox.pos.x + borderBox.size.x - borderRadius.x && inElem.y < borderRadius.y && distTopRight > borderRadius.x) {
-            elemPart = 8; // Top-right rounded corner
-        }
-        if (inElem.x < borderRadius.x && inElem.y > borderBox.pos.y + borderBox.size.y - borderRadius.y && distBottomLeft > borderRadius.x) {
-            elemPart = 9; // Bottom-left rounded corner
-        }
-        if (inElem.x > borderBox.pos.x + borderBox.size.x - borderRadius.x && inElem.y > borderBox.pos.y + borderBox.size.y - borderRadius.y && distBottomRight > borderRadius.x) {
+        if (inElem.x < borderRadius.x && inElem.y < borderRadius.y && distTopLeft > borderRadius.x) elemPart = 7; // Top-left rounded corner
+        if (inElem.x > borderBox.pos.x + borderBox.size.x - borderRadius.x && inElem.y < borderRadius.y && distTopRight > borderRadius.x) elemPart = 8; // Top-right rounded corner
+        if (inElem.x < borderRadius.x && inElem.y > borderBox.pos.y + borderBox.size.y - borderRadius.y && distBottomLeft > borderRadius.x) elemPart = 9; // Bottom-left rounded corner
+        if (inElem.x > borderBox.pos.x + borderBox.size.x - borderRadius.x && inElem.y > borderBox.pos.y + borderBox.size.y - borderRadius.y && distBottomRight > borderRadius.x)
             elemPart = 10; // Bottom-right rounded corner
-        }
     }
     if (elemPart == 0) discard; // margin  
     return pixelInfo(inElem - glyphBox.pos, glyphBox.size, elemPart, cmpIndex);
@@ -256,26 +250,36 @@ component('flowShaderMain', {
   params: [],
   impl: features(
     basicCodeUtils(),
-    flowPixelInfo(),
+    inElemPixelInfo(),
     alignFunc(),
     shaderDecl(({},{cmp}) => `pixelInfo flowPixelInfo(vec2 inTopElem) {
     vec2 elemSize;
+    vec2 glyphSize;
     vec2 elemPos;
     vec3 align;
-    vec2 totalGlyphSize;
+    vec2 borderBoxSize;
     vec2 inElem;
-    vec2 inTotalGlyph;
+    vec2 inBorderBox;
+    vec4 margin;
+    vec4 padding;
+    vec4 borderWidth;
+    vec2 borderRadius;
 
-${cmp.shownChildren.map((fCmp,i)=>`\t
+${cmp.shownChildren.map((fCmp,i)=>`
         elemSize = elemParts_${i}[0].xy;
         elemPos = elemParts_${i}[0].zw;
+        margin = elemParts_${i}[1];
+        borderWidth = elemParts_${i}[2];
+        padding = elemParts_${i}[3];
+        borderRadius = elemParts_${i}[4].xy;
         align = elemParts_${i}[5].xyz;
-        totalGlyphSize = elemParts_${i}[6].xy;
+        glyphSize = glyphSize_${i};
+        borderBoxSize = glyphSize + vec2(padding.x + padding.z + borderWidth.x + borderWidth.z, padding.y + padding.w + borderWidth.y + borderWidth.w);
         inElem = inTopElem - elemPos;
         if (inBox(inElem, elemSize)) {
-          inTotalGlyph = alignGlyphInElem(inElem, align, elemSize, totalGlyphSize);
-          if (!inBox(inTotalGlyph, totalGlyphSize)) discard;
-          return inElemFlowPixelInfo(${i}, inTotalGlyph, totalGlyphSize , elemParts_${i}[1], elemParts_${i}[2], elemParts_${i}[3], elemParts_${i}[4].xy);
+          inBorderBox = alignGlyphInElem(inElem, align, elemSize, borderBoxSize);
+          if (!inBox(inBorderBox, borderBoxSize)) discard;
+          return inElemPixelInfo(${i}, inBorderBox, borderBoxSize , margin, borderWidth, padding, borderRadius);
 }`)
       .join('\n')}
       return pixelInfo(vec2(0.0), vec2(0.0), 0, -1);
@@ -289,7 +293,7 @@ ${cmp.shownChildren.map((fCmp,i)=>`\t
       inTopElem = vec2(inTopElem[0], topElemSize[1] - inTopElem[1]); // flipY
       pixelInfo info = flowPixelInfo(inTopElem); // child SizePos
       vec2 inGlyph = info.inGlyph;
-      vec2 glyphSize = info.glyphSize;
+      //vec2 glyphSize = info.glyphSize;
       int elemPart = info.elemPart;
       int cmp = info.cmpIndex;
 
@@ -356,7 +360,7 @@ component('dynamicFlowShaderMain', {
   type: 'feature',
   params: [],
   impl: features(
-    flowPixelInfo(),
+    inElemPixelInfo(),
     shaderDecl(({},{cmp}) => `
   pixelInfo dynamicFlowPixelInfo(vec2 inTopElem) {
     // elemParts_xx[0] - sizePos
@@ -364,10 +368,10 @@ component('dynamicFlowShaderMain', {
     vec2 elemSize;
     vec2 inElem;
     ${cmp.shownChildren.map((fCmp,i)=>`
-elemSize = ${fCmp.findGlVar('actualSize') ? `vec2(elemParts_${i}[0].x, min(actualSize_${i}.y, elemParts_${i}[0].y))` : `elemParts_${i}[0].xy`};
+elemSize = ${fCmp.findGlVar('glyphSize') ? `vec2(elemParts_${i}[0].x, min(glyphSize_${i}.y, elemParts_${i}[0].y))` : `elemParts_${i}[0].xy`};
 inElem = inTopElem - vec2(0.0,base);
 if (inBox(inElem, elemSize))
-    return inElemFlowPixelInfo(${i}, inElem, elemSize, elemParts_${i}[1], elemParts_${i}[2], elemParts_${i}[3], elemParts_${i}[4].xy);
+    return inElemPixelInfo(${i}, inElem, elemSize, elemParts_${i}[1], elemParts_${i}[2], elemParts_${i}[3], elemParts_${i}[4].xy);
 base = base + elemSize.y;`)
    .join('\n')}
       return pixelInfo(vec2(0.0), vec2(0.0), 0, -1);
@@ -381,7 +385,7 @@ base = base + elemSize.y;`)
       inTopElem = vec2(inTopElem[0], topElemSize[1] - inTopElem[1]); // flipY
       pixelInfo info = dynamicFlowPixelInfo(inTopElem); // child SizePos
       vec2 inGlyph = info.inGlyph;
-      vec2 glyphSize = info.glyphSize;
+      //vec2 glyphSize = info.glyphSize;
       int elemPart = info.elemPart;
       int cmp = info.cmpIndex;
 
@@ -393,7 +397,7 @@ ${cmp.shownChildrenUniforms.filter(u=>u.glType!='sampler2D').map(({glType,glVar}
       if (cmp == -1) { gl_FragColor = vec4(1.0, 0.0, 0.0, 0.5); return; }
 
       ${cmp.shownChildren.map((fCmp,i)=>`if (cmp == ${i}) {
-        elemSize = ${fCmp.findGlVar('actualSize') ? `vec2(elemParts_${i}[0].x, min(actualSize_${i}.y, elemParts_${i}[0].y))` : `elemParts_${i}[0].xy`};
+        elemSize = ${fCmp.findGlVar('glyphSize') ? `vec2(elemParts_${i}[0].x, min(glyphSize_${i}.y, elemParts_${i}[0].y))` : `elemParts_${i}[0].xy`};
 ${fCmp.glVars.uniforms.filter(u=>u.glType!='sampler2D').map(({glVar})=> `\t  ${glVar} = ${glVar}_${i};`).join('\n')}
   ${(cmp.shaderMainSnippets[i]||[]).join('')}
       }`).join('\n')}

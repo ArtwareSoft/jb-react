@@ -53,24 +53,27 @@ component('zuiTest.growingDiagnostics', {
   impl: zuiTest({
     control: itemlist({
       items: '%$testData%',
-      itemControl: flow(
-        text('%title%', { align: keepSize('center', 'top') }),
-        text('%department%', { align: keepSize('center', 'top') }),
-        //text('%description%'),
-      ),
-      itemsLayout: grid([8,8], xyByProps('urgency', 'likelihood'), { initialZoom: 8, center: [7,7] })
+      itemControl: text('%title%', { align: keepSize('right', 'top') }),
+      itemsLayout: grid([8,8], xyByProps('urgency', 'likelihood'), { initialZoom: 3, center: [4,6] })
     }),
-    testData: pipe(
-      Var('diag', fileContent('/projects/zuiDemo/diagnostics.json'), { async: true }),
-      Var('depAr', fileContent('/projects/zuiDemo/departments.json'), { async: true }),
-      Var('dep', dynamicObject(json.parse('%$depAr%'), '%title%', { value: '%%' })),
-      json.parse('%$diag%'),
-      extendWithObj(property('%title%', '%$dep%'), '%%')
-    )
+    testData: test.diagnostics()
   })
 })
 
-        // text('%description%'),
+component('test.diagnostics', {
+  impl: pipe(
+    Var('diag', fileContent('/projects/zuiDemo/diagnostics.json'), { async: true }),
+    Var('depAr', fileContent('/projects/zuiDemo/departments.json'), { async: true }),
+    Var('dep', dynamicObject(json.parse('%$depAr%'), '%title%', { value: '%%' })),
+    json.parse('%$diag%'),
+    extendWithObj(property('%title%', '%$dep%'), '%%')
+  )
+})
+
+// text('%title%', { align: keepSize('center', 'top') }),
+// text('%department%', { align: keepSize('center', 'top') }),
+
+// text('%description%'),
         // group(text('explanation'), text('%general_explanation%')),
         // group(text('symptoms'), text('%how_it_relates_to_the_symptoms%'))
 

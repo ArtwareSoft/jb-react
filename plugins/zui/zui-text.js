@@ -4,7 +4,7 @@ component('text', {
   type: 'control',
   params: [
     {id: 'text', dynamic: true, mandatory: true},
-    {id: 'width', as: 'number', defaultValue: 100},
+    {id: 'width', as: 'number', defaultValue: 200},
     {id: 'font', as: 'string', defaultValue1: '16px Arial', defaultValue: `16px 'Noto Sans', 'Roboto', 'Arial', sans-serif`},
     {id: 'packRatio', as: 'number', defaultValue: 4, options: '2,4,8,16,32', description: 'performance versus text quality'},
     {id: 'align', type: 'align_image', defaultValue: keepSize()},
@@ -19,7 +19,7 @@ component('textureByContext', {
   impl: features(
     mainByContext(),
     minWidth('%$$model/width%'),
-    minHeight(12),
+    minHeight(14),
     If('%$renderRole%==fixed', text.singleTexture()),
     If('%$renderRole%==flowElem', text.singleTexture()),
     If('%$inZoomingGrid%', text.zoomingGrid())
@@ -32,8 +32,7 @@ component('text.singleTexture', {
     prop('textImage', zui.imageOfText('%$$model/text()%')),
     uniforms(
       vec3('align', '%$$model/align%'),
-      vec2('elemSize', '%$$props/textImage/size%'),
-      vec2('textImageSize', '%$$props/textImage/size%'),
+      vec2('glyphSize', '%$$props/textImage/size%'),
       texture('textTexture', '%$$props/textImage%')
     ),
     textBlendingFunction(),
@@ -46,7 +45,7 @@ component('text.zoomingGrid', {
   impl: features(
     prop('atlas', zuiText.multiLineAtlas()),
     glAtt(vec2('atlasOffset', '%$$props/atlas.offsets/{%$item.xyPosStr%}%')),
-    glAtt(vec2('actualSize', '%$$props/atlas.actualSize/{%$item.xyPosStr%}%')),
+    glAtt(vec2('glyphSize', '%$$props/atlas.glyphSize/{%$item.xyPosStr%}%')),
     uniforms(
       vec3('align', '%$$model/align%'),
       vec2('atlasSize', '%$$props/atlas.texture.size%'),
@@ -168,7 +167,7 @@ component('zuiText.multiLineAtlas', {
     const lineHeight = maxMetrics.actualBoundingBoxAscent + maxMetrics.actualBoundingBoxDescent
     const height_shift = 3
 
-    const offsets = {}, actualSize = {},maxHeight = glLimits.MAX_TEXTURE_SIZE, maxWidth = glLimits.MAX_TEXTURE_SIZE*packRatio
+    const offsets = {}, glyphSize = {},maxHeight = glLimits.MAX_TEXTURE_SIZE, maxWidth = glLimits.MAX_TEXTURE_SIZE*packRatio
     let yPos = 0, xPos = 0
     const glyphs = items.map((item,i) => {
         const str = textF(ctx.setData(item))
@@ -179,9 +178,8 @@ component('zuiText.multiLineAtlas', {
             jb.logError(`texture is too small for atlas for ${cmp.title}`,{cmp, ctx})
 
         offsets[item.xyPos] = [xPos,yPos+height_shift]
-        actualSize[item.xyPos] = [width,height]
         yPos += height
-        return { pos: [xPos,yPos] , lines }
+        return { pos: [xPos,yPos] , lines, xyPos: item.xyPos}
     })
     
     const size = [Math.ceil(xPos+width/32)*32, yPos+height_shift]
@@ -190,7 +188,8 @@ component('zuiText.multiLineAtlas', {
     cnvCtx.font = font; cnvCtx.textBaseline = 'alphabetic'; cnvCtx.textAlign = 'left'; 
     cnvCtx.fillStyle = 'black'; cnvCtx.fillRect(0, 0, canvas.width, canvas.height); cnvCtx.fillStyle = 'white' // Text color
 
-    glyphs.forEach(({lines, pos})=> {
+    glyphs.forEach(({lines, pos, xyPos})=> {
+        let width = 0;
         lines.forEach((line, index) => {
             let x = 0
             const y = index * lineHeight
@@ -199,13 +198,15 @@ component('zuiText.multiLineAtlas', {
                 if (line.wordSpacing)
                     x += cnvCtx.measureText(word).width + line.wordSpacing // Move x position for the next word
             })
+            width = Math.max(x,width)
         })
+        glyphSize[xyPos] = [width,lines.length*lineHeight]
     })
 
     const bwBitMap = jb.zui.bwCanvasToBase64(packRatio, cnvCtx.getImageData(0, 0, ...size).data, ...size)
     //jb.zui.canvasToDataUrl(canvas).then(url => console.log(url));
     const textureSize = [ Math.ceil(size[0] / packRatio) * 4, size[1]]
-    return { offsets, actualSize, texture: { textureSize, size, bwBitMap, packRatio } }
+    return { offsets, glyphSize, texture: { textureSize, size, bwBitMap, packRatio } }
   }
 })
 

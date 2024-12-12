@@ -11,6 +11,7 @@ zui
   borderRadius for text
   border
   underline
+  preview on text('%')
   remove old fw with ui
 
 

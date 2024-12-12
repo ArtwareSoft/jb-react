@@ -211,9 +211,9 @@ component('alignUtils', {
 component('alignFunc', {
   description: 'Align glyph in outer box, vec3 [type: [0:keepSize,keepProportions,fill], alignX: [0:left,1,2] , alignY: [0:top,1,2]]',
   type: 'feature',
-  impl: shaderDecl(` // "elem coordinates" to "totalGlyph coordinates" user should check inBox(res,elemSize). total Glyph means glyph + padding + border
-      vec2 alignGlyphInElem(vec2 inElem, vec3 align, vec2 elemSize, vec2 totalGlyphSize) { 
-        if (align[0] == 2.0) { return inElem * totalGlyphSize / elemSize; }
+  impl: shaderDecl(` // "elem coordinates" to "borderBox coordinates" user should check inBox(res,elemSize). glyph + padding + border
+      vec2 alignGlyphInElem(vec2 inElem, vec3 align, vec2 elemSize, vec2 borderBoxSize) { 
+        if (align[0] == 2.0) { return inElem * borderBoxSize / elemSize; }
 
         float alignX = align[1];
         float alignY = align[2];
@@ -224,24 +224,24 @@ component('alignFunc', {
           if (alignX == 0.0) {
             offsetX = 0.0;
           } else if (alignX == 1.0) {
-            offsetX = 0.5 * (elemSize[0] - totalGlyphSize[0]);
+            offsetX = 0.5 * (elemSize[0] - borderBoxSize[0]);
           } else {
-            offsetX = elemSize[0] - totalGlyphSize[0];
+            offsetX = elemSize[0] - borderBoxSize[0];
           }
   
           if (alignY == 0.0) {
             offsetY = 0.0;
           } else if (alignY == 1.0) {
-            offsetY = 0.5 * (elemSize[1] - totalGlyphSize[1]);
+            offsetY = 0.5 * (elemSize[1] - borderBoxSize[1]);
           } else {
-            offsetY = elemSize[1] - totalGlyphSize[1];
+            offsetY = elemSize[1] - borderBoxSize[1];
           }          
           return inElem - vec2(offsetX, offsetY);
         }
 
         if (align[0] == 1.0) { // keepProportions
           vec2 effSize;
-          float aspectRatioImage = totalGlyphSize[0] / totalGlyphSize[1];
+          float aspectRatioImage = borderBoxSize[0] / borderBoxSize[1];
           float aspectRatioBox = elemSize[0] / elemSize[1];
           if (aspectRatioImage > aspectRatioBox) {
             effSize = vec2(elemSize[0], elemSize[0] / aspectRatioImage); // width-based scaling
@@ -266,7 +266,7 @@ component('alignFunc', {
           }
           
           // Transform inElem to image coordinates
-          return (inElem - vec2(offsetX, offsetY)) * (totalGlyphSize / effSize);  
+          return (inElem - vec2(offsetX, offsetY)) * (borderBoxSize / effSize);  
         }
       }
     `)
