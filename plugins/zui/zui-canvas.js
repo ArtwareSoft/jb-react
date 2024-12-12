@@ -9,7 +9,7 @@ extension('zui','canvas', {
   createCanvas(...size) {
     return jbHost.isNode ? require('canvas').createCanvas(...size) : new OffscreenCanvas(...size)
   },
-  bwCanvasToBase64(packRatio, canvasData,width,height) {
+  async bwCanvasToBase64(packRatio, canvasData,width,height) {
     const bitsPerPixel = 32/packRatio
     const pixelsPerByte = 8 / bitsPerPixel
     //const paddedWidth = Math.ceil(width / packRatio) * packRatio;
@@ -39,10 +39,22 @@ extension('zui','canvas', {
         }
         //asText += asText2 + '\n';asText2 = '';
     }
-    const res = btoa(String.fromCharCode(...bitmapData))
+    const res = await bufferToBase64(bitmapData)
+    //const res = btoa(new TextDecoder('latin1').decode(bitmapData))
+//    const res = btoa(String.fromCharCode(...bitmapData))
 //    console.log(asText); 
 //    console.log(jb.zui.xImage(res, bitmapWidth,width, height,packRatio));
     return res
+
+    async function bufferToBase64(buffer) {
+      // use a FileReader to generate a base64 data URI:
+      const base64url = await new Promise(r => {
+        const reader = new FileReader()
+        reader.onload = () => r(reader.result)
+        reader.readAsDataURL(new Blob([buffer]))
+      });
+      return base64url.slice(base64url.indexOf(',') + 1);
+    }    
   },
   xImage(base64Data, bitmapWidth, width, height,packRatio) {
     const binaryString = atob(base64Data)

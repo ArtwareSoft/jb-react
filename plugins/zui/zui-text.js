@@ -43,7 +43,7 @@ component('text.singleTexture', {
 component('text.zoomingGrid', {
   type: 'feature',
   impl: features(
-    prop('atlas', zuiText.multiLineAtlas()),
+    prop('atlas', zuiText.singleLineAtlas()),
     glAtt(vec2('atlasOffset', '%$$props/atlas.offsets/{%$item.xyPosStr%}%')),
     glAtt(vec2('glyphSize', '%$$props/atlas.glyphSize/{%$item.xyPosStr%}%')),
     uniforms(
@@ -102,7 +102,7 @@ component('zui.imageOfText', {
 
     //jb.zui.canvasToDataUrl(canvas).then(url => console.log(url));
 
-    const bwBitMap = jb.zui.bwCanvasToBase64(packRatio, cnvCtx.getImageData(0, 0, ...size).data, ...size)
+    const bwBitMap = await jb.zui.bwCanvasToBase64(packRatio, cnvCtx.getImageData(0, 0, ...size).data, ...size)
     const textureSize = [ Math.ceil(size[0] / packRatio) * 4, size[1]]
     return { textureSize, size, bwBitMap, packRatio }
   }
@@ -153,6 +153,52 @@ ${cmp.shownChildren.filter((_,i)=>cmp.glVars.uniforms.find(u=>u.glVar == `textTe
     }`)
 })
 
+component('zuiText.singleLineAtlas', {
+  params: [
+    {id: 'text', as: 'string', dynamic: true, defaultValue: '%$$model/text()%'},
+    {id: 'font', as: 'string', defaultValue: '%$$model/font%'},
+    {id: 'packRatio', as: 'number', defaultValue: '%$$model/packRatio%'}
+  ],
+  impl: async (ctx,textF,font,packRatio) => {
+    const {items,glLimits,cmp} = ctx.vars
+
+    const mCtx = jb.zui.measureCanvasCtx(font)
+    const maxMetrics = mCtx.measureText('XgQ')
+    const lineHeight = maxMetrics.actualBoundingBoxAscent + maxMetrics.actualBoundingBoxDescent + 3
+    const height_shift = 2
+
+    const offsets = {}, glyphSize = {},maxHeight = glLimits.MAX_TEXTURE_SIZE, maxWidth = glLimits.MAX_TEXTURE_SIZE*packRatio
+    let yPos = 0, xPos = 0
+    const glyphs = items.map((item,i) => {
+        const text = textF(ctx.setData(item))
+        const width = mCtx.measureText(text).width + 3
+        if (xPos+width > maxWidth) {yPos += lineHeight; xPos =0}
+        if (yPos > maxHeight)
+            jb.logError(`texture is too small for atlas for ${cmp.title}`,{cmp, ctx})
+
+        offsets[item.xyPos] = [xPos,yPos+height_shift]
+        glyphSize[item.xyPos] = [width,lineHeight]
+        xPos += width
+        console.log(width, text,xPos-width)
+        return { pos: [xPos-width,yPos], text}
+    })
+    
+    const size = [Math.ceil(xPos/32)*32, yPos+lineHeight+height_shift]
+    const canvas = jb.zui.createCanvas(...size)
+    const cnvCtx = canvas.getContext('2d')
+    cnvCtx.font = font; cnvCtx.textBaseline = 'alphabetic'; cnvCtx.textAlign = 'left'; 
+    cnvCtx.fillStyle = 'black'; cnvCtx.fillRect(0, 0, canvas.width, canvas.height); cnvCtx.fillStyle = 'white' // Text color
+
+    glyphs.forEach(({text, pos})=> cnvCtx.fillText(text,pos[0],pos[1]+lineHeight))
+
+    const bwBitMap = await jb.zui.bwCanvasToBase64(packRatio, cnvCtx.getImageData(0, 0, ...size).data, ...size)
+    // const url = await jb.zui.canvasToDataUrl(canvas)
+    // console.log(url)
+    const textureSize = [ Math.ceil(size[0] / packRatio) * 4, size[1]]
+    return { offsets, glyphSize, texture: { textureSize, size, bwBitMap, packRatio } }
+  }
+})
+
 component('zuiText.multiLineAtlas', {
   params: [
     {id: 'text', as: 'string', dynamic: true, defaultValue: '%$$model/text()%'},
@@ -160,7 +206,7 @@ component('zuiText.multiLineAtlas', {
     {id: 'font', as: 'string', defaultValue: '%$$model/font%'},
     {id: 'packRatio', as: 'number', defaultValue: '%$$model/packRatio%'}
   ],
-  impl: (ctx,textF,width,font,packRatio) => {
+  impl: async (ctx,textF,width,font,packRatio) => {
     const {items,glLimits,cmp} = ctx.vars
 
     const maxMetrics = jb.zui.measureCanvasCtx(font).measureText('XgQ')
@@ -203,7 +249,7 @@ component('zuiText.multiLineAtlas', {
         glyphSize[xyPos] = [width,lines.length*lineHeight]
     })
 
-    const bwBitMap = jb.zui.bwCanvasToBase64(packRatio, cnvCtx.getImageData(0, 0, ...size).data, ...size)
+    const bwBitMap = await jb.zui.bwCanvasToBase64(packRatio, cnvCtx.getImageData(0, 0, ...size).data, ...size)
     //jb.zui.canvasToDataUrl(canvas).then(url => console.log(url));
     const textureSize = [ Math.ceil(size[0] / packRatio) * 4, size[1]]
     return { offsets, glyphSize, texture: { textureSize, size, bwBitMap, packRatio } }

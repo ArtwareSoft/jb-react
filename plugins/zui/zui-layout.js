@@ -318,7 +318,7 @@ extension('zui','layout', {
         v.children.map(ch=> ch.children ? initSizes(ch) : jb.path(elemsLayout,[ch.id,'size'],[0,0]))
       }
       function buildSizeVec(v,axis) {
-        const sumMax = (axis == v.layoutAxis) && !v.firstToFit
+        const sumMax = (axis == v.layoutProps.layoutAxis) && !v.layoutProps.firstToFit
         return elemsLayout[v.id].sizeVec[axis] = {
           sumMax, elems: v.children.map(ch=> ch.children ? buildSizeVec(ch,axis) : elemsLayout[ch.id].size)
         }
@@ -330,7 +330,7 @@ extension('zui','layout', {
       function filterFirstToFit(cmp) {
         if (!cmp.children) return
         const res = cmp.children.map(ch =>filterFirstToFit(ch))
-        if (!cmp.firstToFit) return res
+        if (!cmp.layoutProps.firstToFit) return res
         cmp.children.reduce((foundFit, ch) => {
           if (foundFit) 
             return filteredOutView(ch)
@@ -341,7 +341,7 @@ extension('zui','layout', {
       function filterAllOrNone(cmp) {
         if (!cmp.children) return
         cmp.children.map(ch =>filterAllOrNone(ch))
-        if (cmp.allOrNone) {
+        if (cmp.layoutProps.allOrNone) {
           const notAllShown = cmp.children.reduce((acc, ch) => 
             acc || filteredOut[ch.id] || elemsLayout[ch.id].size.reduce((acc,s) => acc*s,1) == 0, false)
           if (notAllShown)
@@ -356,7 +356,7 @@ extension('zui','layout', {
         return [cmp]
       }
       function calcRounds(primitiveShownCmps,itemSize) {
-        const topAxis = layoutCalculator.layoutAxis
+        const topAxis = layoutCalculator.layoutProps.layoutAxis
         const rounds = primitiveShownCmps.reduce((max,v) => Math.max(max,v.layoutRounds),0)
         for(let round=1;round<rounds;round++) {
           const otherAxis = topAxis ? 0 : 1

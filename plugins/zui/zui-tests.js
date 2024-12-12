@@ -53,7 +53,12 @@ component('zuiTest.growingDiagnostics', {
   impl: zuiTest({
     control: itemlist({
       items: '%$testData%',
-      itemControl: text('%title%', { align: keepSize('right', 'top') }),
+      itemControl: firstToFit(
+        text('%title%', 400, { font: '16px Arial' }),
+        text('%title%', 300, { font: '14px Arial' }),
+        text('%title%', 200, { font: '12px Arial' }),
+        text('%title%', 100, { font: '10px Arial' })
+      ),
       itemsLayout: grid([8,8], xyByProps('urgency', 'likelihood'), { initialZoom: 3, center: [4,6] })
     }),
     testData: test.diagnostics()

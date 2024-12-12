@@ -16,11 +16,6 @@ component('widget', {
         
         const widget = {
             frontEnd,
-            clearCanvas() {
-                gl.viewport(0, 0, ...canvasSize)
-                gl.clearColor(1, 1, 1, 1)
-                gl.clear(gl.COLOR_BUFFER_BIT)    
-            },
             async init() {
                 const ctxForBe = ctx.setVars({glLimits: frontEnd.glLimits,canvasSize, widget: this, renderRole: 'fixed'})
                 const beCmp = this.be_cmp = control(ctxForBe).applyFeatures(features,20)
@@ -156,9 +151,15 @@ component('widgetFE', {
               this.renderRequest = true
             }), Promise.resolve())
         },
+        clearCanvas() {
+            this.gl.viewport(0, 0, ...this.canvasSize)
+            this.gl.clearColor(1, 1, 1, 1)
+            this.gl.clear(this.gl.COLOR_BUFFER_BIT)    
+        },
         renderCmps() {
+//            this.clearCanvas()
             if (this.ctx.vars.canUseConsole) console.log(this.state.tZoom, this.state.zoom, this.state.center)
-            Object.values(this.cmps).filter(cmp=>!cmp.notReady && !cmp.flowElem)
+            Object.values(this.cmps).filter(cmp=>!cmp.notReady && !cmp.flowElem && cmp.renderRole !='zoomingGridElem')
                 .forEach(cmp=>cmp.render ? cmp.render(this.ctx) : this.renderCmp(cmp,this.ctx))
         },        
         renderCmp(cmp,ctx) {

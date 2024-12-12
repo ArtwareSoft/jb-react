@@ -76,7 +76,7 @@ component('defaultGlVarsAsUniforms', {
     uniforms(
       vec4('margin', zui.fix4('%$cmp.margin%')),
       vec4('borderWidth', zui.fix4('%$cmp.borderWidth%')),
-      vec2('borderRadius', zui.fix4('%$cmp.borderRadius%')),
+      vec2('borderRadius', zui.fix2('%$cmp.borderRadius%')),
       vec4('padding', zui.fix4('%$cmp.padding%'))
     ),
     color('border'),
