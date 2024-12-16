@@ -28,6 +28,7 @@ component('zuiTest', {
     {id: 'cleanUp', type: 'action<>', dynamic: true},
     {id: 'expectedCounters', as: 'single'},
     {id: 'testData', dynamic: true},
+    {id: 'htmlMode', as: 'boolean', type: 'boolean<>'},
     {id: 'spy'},
     {id: 'covers'}
   ],
@@ -35,7 +36,10 @@ component('zuiTest', {
     vars: [
       Var('uiTest', true),
       Var('testData', '%$testData()%', { async: true }),
-      Var('widget', pipeline('%$testData%', typeAdapter('widget<zui>', widget('%$control()%', '%$canvasSize%')))),
+      Var('widget', pipeline(
+        '%$testData%',
+        typeAdapter('widget<zui>', widget('%$control()%', '%$canvasSize%', { frontEnd: widgetFE({ htmlMode: '%$htmlMode%' }) }))
+      )),
       Var('initwidget', '%$widget.init()%', { async: true })
     ],
     calculate: pipe('%$userEvents%','%$widget.be_cmp.processFEReq()%'),
@@ -53,12 +57,16 @@ component('zuiControlRunner', {
   params: [
     {id: 'control', type: 'control', dynamic: true, mandatory: true},
     {id: 'testData', dynamic: true},
-    {id: 'canvasSize', as: 'array'},
+    {id: 'htmlMode', as: 'boolean', type: 'boolean<>'},
+    {id: 'canvasSize', as: 'array', defaultValue: [600,600]},
     {id: 'styleSheet', as: 'string', newLinesInCode: true}
   ],
   impl: runActions(
     Var('testData', '%$testData()%', { async: true }),
-    Var('widget', pipeline('%$testData%', typeAdapter('widget<zui>', widget('%$control()%', { frontEnd: widgetFE('.elemToTest') })))),
+    Var('widget', pipeline(
+      '%$testData%',
+      typeAdapter('widget<zui>', widget('%$control()%', '%$canvasSize%', { frontEnd: widgetFE('.elemToTest', { htmlMode: '%$htmlMode%' }) }))
+    )),
     '%$widget.init()%'
   )
 })

@@ -14,9 +14,31 @@ component('text', {
   impl: ctx => jb.zui.ctrl(ctx)
 })
 
+component('paragraph', {
+  type: 'control',
+  params: [
+    {id: 'text', dynamic: true, mandatory: true},
+    {id: 'width', as: 'number', defaultValue: 200},
+    {id: 'height', as: 'number', defaultValue: 200},
+    {id: 'font', as: 'string', defaultValue: `12px 'Noto Sans', 'Roboto', 'Arial', sans-serif`},
+    {id: 'packRatio', as: 'number', defaultValue: 4, options: '2,4,8,16,32', description: 'performance versus text quality'},
+    {id: 'align', type: 'align_image', defaultValue: keepSize('left', 'top')},
+    {id: 'style', type: 'text-style', defaultValue: textureByContext(), dynamic: true},
+    {id: 'features', type: 'feature', dynamic: true}
+  ],
+  impl: text('%$text()%', '%$width%', {
+    font: '%$font%',
+    packRatio: '%$packRatio%',
+    align: '%$align%',
+    style: '%$style()%',
+    features: features(minHeight('%$height%'), prop('atlas', zuiText.multiLineAtlas()))
+  })
+})
+
 component('textureByContext', {
   type: 'text-style',
   impl: features(
+    html('<span>%$$model/text()%</span>'),
     mainByContext(),
     minWidth('%$$model/width%'),
     minHeight(14),
@@ -179,9 +201,9 @@ component('zuiText.singleLineAtlas', {
         offsets[item.xyPos] = [xPos,yPos+height_shift]
         glyphSize[item.xyPos] = [width,lineHeight]
         xPos += width
-        console.log(width, text,xPos-width)
-        return { pos: [xPos-width,yPos], text}
+        return { pos: [xPos-width,yPos], width, text}
     })
+    const avgLen = glyphs.map(g=>g.text.length).sort().slice(3).slice(0,-3).reduce((acc, num, i, { length }) => acc + num / length, 0)
     
     const size = [Math.ceil(xPos/32)*32, yPos+lineHeight+height_shift]
     const canvas = jb.zui.createCanvas(...size)
@@ -210,7 +232,7 @@ component('zuiText.multiLineAtlas', {
     const {items,glLimits,cmp} = ctx.vars
 
     const maxMetrics = jb.zui.measureCanvasCtx(font).measureText('XgQ')
-    const lineHeight = maxMetrics.actualBoundingBoxAscent + maxMetrics.actualBoundingBoxDescent
+    const lineHeight = maxMetrics.actualBoundingBoxAscent + maxMetrics.actualBoundingBoxDescent + 3
     const height_shift = 3
 
     const offsets = {}, glyphSize = {},maxHeight = glLimits.MAX_TEXTURE_SIZE, maxWidth = glLimits.MAX_TEXTURE_SIZE*packRatio
@@ -224,29 +246,31 @@ component('zuiText.multiLineAtlas', {
             jb.logError(`texture is too small for atlas for ${cmp.title}`,{cmp, ctx})
 
         offsets[item.xyPos] = [xPos,yPos+height_shift]
+        const res = { pos: [xPos,yPos] , lines, xyPos: item.xyPos}
         yPos += height
-        return { pos: [xPos,yPos] , lines, xyPos: item.xyPos}
+        return res
     })
     
-    const size = [Math.ceil(xPos+width/32)*32, yPos+height_shift]
+    const size = [Math.ceil(xPos+width/32)*32, yPos+height_shift+lineHeight]
     const canvas = jb.zui.createCanvas(...size)
     const cnvCtx = canvas.getContext('2d')
     cnvCtx.font = font; cnvCtx.textBaseline = 'alphabetic'; cnvCtx.textAlign = 'left'; 
     cnvCtx.fillStyle = 'black'; cnvCtx.fillRect(0, 0, canvas.width, canvas.height); cnvCtx.fillStyle = 'white' // Text color
 
     glyphs.forEach(({lines, pos, xyPos})=> {
-        let width = 0;
+        let glyph_width = 0;
         lines.forEach((line, index) => {
             let x = 0
             const y = index * lineHeight
-            line.words.forEach(word => {
-                cnvCtx.fillText(word,pos[0]+x,pos[1]+y)
+            line.words.forEach((word,i,{length}) => {
+                cnvCtx.fillText(word,pos[0]+x,pos[1]+lineHeight+y)
                 if (line.wordSpacing)
-                    x += cnvCtx.measureText(word).width + line.wordSpacing // Move x position for the next word
+                    x += cnvCtx.measureText(word).width + (i<length-1 ? line.wordSpacing: 0) // Move x position for the next word
             })
-            width = Math.max(x,width)
+            glyph_width = Math.max(x,glyph_width)
+            if (glyph_width>width+1) debugger
         })
-        glyphSize[xyPos] = [width,lines.length*lineHeight]
+        glyphSize[xyPos] = [glyph_width,lines.length*lineHeight]
     })
 
     const bwBitMap = await jb.zui.bwCanvasToBase64(packRatio, cnvCtx.getImageData(0, 0, ...size).data, ...size)

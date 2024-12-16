@@ -7,9 +7,9 @@ component('zui.Zoom', {
 component('zui.canvasZoom', {
   type: 'feature<zui>',
   impl: features(
-    frontEnd.init(ctx => {
+    frontEnd.init((ctx,{uiTest}) => {
       jb.zui.initZoom(ctx)
-      ctx.vars.cmp.updateZoomState({ dz :1, dp:0 })
+      !uiTest && ctx.vars.cmp.updateZoomState({ dz :1, dp:0 })
     }),
     frontEnd.prop('zuiEvents', rx.subject()),
     frontEnd.flow(
@@ -50,7 +50,8 @@ component('zui.canvasZoom', {
 extension('zui','zoom', {
     initZoom(ctx) {
         const vars = ctx.vars
-        const {widget, cmp } =  vars
+        const {widget, cmp, uiTest } =  vars
+        if (uiTest) return
         const {state, canvas} = widget
         const w = canvas.offsetWidth, h = canvas.offsetHeight
         if (canvas.addEventListener && canvas.style) {

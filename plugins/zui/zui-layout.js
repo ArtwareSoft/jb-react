@@ -50,6 +50,7 @@ component('smoothGrowth', {
       layoutRounds: 2,
       sizeNeeds: ({round, available }) => {
         const avail = fixAvailable(available)
+        console.log(avail)
         return [0,1].map(axis=> base[axis] + growthFactor*jb.zui.floorLog2(avail[axis])) 
       },
       profile: { $$: 'zooming_size<zui>smoothGrowth', base, growthFactor }
@@ -191,7 +192,7 @@ component('borderRadius', {
 
 extension('zui','layout', {
   initLayoutCalculator(layoutCalculator) {
-    layoutCalculator.layoutAxis = layoutCalculator.layoutAxis || 0
+    layoutCalculator.layoutProps.layoutAxis = layoutCalculator.layoutProps.layoutAxis || 0
     const axes = [0,1]
     const minRecords = axes.map(axis => calcMinRecord(layoutCalculator, axis).sort((r1,r2) => r1.p - r2.p))
     layoutCalculator.calcItemLayout = calcItemLayout
@@ -357,7 +358,7 @@ extension('zui','layout', {
       }
       function calcRounds(primitiveShownCmps,itemSize) {
         const topAxis = layoutCalculator.layoutProps.layoutAxis
-        const rounds = primitiveShownCmps.reduce((max,v) => Math.max(max,v.layoutRounds),0)
+        const rounds = primitiveShownCmps.reduce((max,v) => Math.max(max,v.zoomingSize.layoutRounds),0)
         for(let round=1;round<rounds;round++) {
           const otherAxis = topAxis ? 0 : 1
           const childsResidu = topCmp.children.map(ch=> itemSize[otherAxis] - elemsLayout[ch.id].size[otherAxis])

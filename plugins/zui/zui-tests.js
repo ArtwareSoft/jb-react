@@ -11,10 +11,11 @@ component('zuiTest.zoomingGridMode', {
   impl: zuiTest({
     control: itemlist({
       items: '%$points%',
-      itemControl: circle(smoothGrowth({ growthFactor: 20 }), { features: valueColor('fill', green10()) }),
+      itemControl: circle(smoothGrowth({ growthFactor: 0.1 }), { features: valueColor('fill', green10()) }),
       itemsLayout: grid([10,10], { initialZoom: 10, center: [5,5] })
     }),
-    expectedResult: contains(`glVar: 'fillColor'`)
+    expectedResult: contains(`glVar: 'fillColor'`),
+    htmlMode: true
   })
 })
 
@@ -48,17 +49,74 @@ component('zuiTest.fixedMode', {
   impl: zuiTest(text('click me'), 'size: [98,32]')
 })
 
-component('zuiTest.growingDiagnostics', {
+component('zuiTest.growingSection', {
   doNotRunInTests: true,
   impl: zuiTest({
     control: itemlist({
       items: '%$testData%',
-      itemControl: firstToFit(
-        text('%title%', 400, { font: '16px Arial' }),
-        text('%title%', 300, { font: '14px Arial' }),
-        text('%title%', 200, { font: '12px Arial' }),
-        text('%title%', 100, { font: '10px Arial' })
-      ),
+      itemControl: group({
+        controls: [
+          firstToFit(
+            text('%title%', 400, { font: '16px Arial' }),
+            text('%title%', 300, { font: '14px Arial' }),
+            // text('%title%', 250, { font: 'bold 12px Arial' }),
+            // text('%title%', 200, { font: 'bold 12px Arial' }),
+            text('%title%', 150, { font: 'bold 12px Arial' }),
+            // text('%title%', 100, { font: 'bold 12px Arial' }),
+            // text('%title%', 70, { font: 'bold 12px Arial' }),
+            text('%title%', 50, { font: 'bold 10px Arial' })
+          ),
+          // firstToFit(
+          //   paragraph('%general_explanation%', 600, { height: 50 }),
+          //   paragraph('%general_explanation%', 400, { height: 50 }),
+          //   paragraph('%general_explanation%', 350, { height: 50 }),
+          //   paragraph('%general_explanation%', 300, { height: 50 }),
+          //   paragraph('%general_explanation%', 250, { height: 80 }),
+          //   paragraph('%general_explanation%', 200, { height: 70 }),
+          //   paragraph('%general_explanation%', 150, { height: 70 }),
+          //   paragraph('%general_explanation%', 100, { height: 60 })
+          // ),
+          // firstToFit(group(
+          //   text('symptoms', 600, { font: '16px Arial', align: keepSize('left') }),
+          //   paragraph('%how_it_relates_to_the_symptoms%', 600, { height: 70 })
+          // ),group(
+          //   text('symptoms', 400, { font: '16px Arial', align: keepSize('left') }),
+          //   paragraph('%how_it_relates_to_the_symptoms%', 400, { height: 70 })
+          // ),
+          // group(
+          //   text('symptoms', 300, { font: '14px Arial', align: keepSize('left') }),
+          //   paragraph('%how_it_relates_to_the_symptoms%', 300, { height: 70 })
+          // ))
+        ],
+        layout: vertical()
+      }),
+      itemsLayout: grid([8,8], xyByProps('urgency', 'likelihood'), { initialZoom: 7, center: [4,6] })
+    }),
+    canvasSize: [1000,1000],
+    testData: test.diagnostics()
+  })
+})
+
+// text('%description%'),
+        // group(text('explanation'), text('%general_explanation%')),
+        // group(text('symptoms'), text('%how_it_relates_to_the_symptoms%'))
+
+component('zuiTest.growingTitle', {
+  doNotRunInTests: true,
+  impl: zuiTest({
+    control: itemlist({
+      items: '%$testData%',
+      itemControl: group({
+        controls: [
+          firstToFit(
+            text('%title%', 400, { font: '16px Arial' }),
+            text('%title%', 300, { font: '14px Arial' }),
+            text('%title%', 200, { font: '12px Arial' }),
+            text('%title%', 100, { font: '10px Arial' })
+          ),
+        ],
+        layout: vertical()
+      }),
       itemsLayout: grid([8,8], xyByProps('urgency', 'likelihood'), { initialZoom: 3, center: [4,6] })
     }),
     testData: test.diagnostics()
@@ -75,12 +133,16 @@ component('test.diagnostics', {
   )
 })
 
+// group(
+//   text('explanation', { font: 'bold 12px Arial', align: keepSize('left') }),
+//   text('%general_explanation%', { font: '10px Arial' })
+// ),
+// text('%department%', {font: '8px Arial'}, { align: keepSize('center', 'top') })
+
+
 // text('%title%', { align: keepSize('center', 'top') }),
 // text('%department%', { align: keepSize('center', 'top') }),
 
-// text('%description%'),
-        // group(text('explanation'), text('%general_explanation%')),
-        // group(text('symptoms'), text('%how_it_relates_to_the_symptoms%'))
 
 
 // component('zuiTest.growingDiagnostics', {

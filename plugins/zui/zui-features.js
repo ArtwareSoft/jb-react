@@ -162,13 +162,28 @@ component('If', {
   impl: (ctx,cond,_then,_else) =>	cond ? _then() : _else()
 })
 
-component('css', {
-  description: 'e.g. {color: red; width: 20px} or div>.myClas {color: red} ',
+component('html', {
   type: 'feature',
   params: [
-    {id: 'css', mandatory: true, dynamic: true, as: 'string', newLinesInCode: true}
+    {id: 'html', mandatory: true, dynamic: true, as: 'string', newLinesInCode: true}
   ],
-  impl: (ctx,css) => ({css: _ctx => jb.zui.parseCss(css(_ctx))})
+  impl: (ctx,html) => ({html})
+})
+
+component('css', {
+  type: 'feature',
+  params: [
+    {id: 'css', mandatory: true, dynamic: true, as: 'array', newLinesInCode: true}
+  ],
+  impl: (ctx,css) => ({css})
+})
+
+component('zoomingCss', {
+  type: 'feature',
+  params: [
+    {id: 'css', mandatory: true, dynamic: true, as: 'array', newLinesInCode: true}
+  ],
+  impl: (ctx,zoomingCss) => ({ frontEndMethod: { method: 'zoomingCss', path: ctx.path, action: zoomingCss.profile} })
 })
 
 component('css.class', {

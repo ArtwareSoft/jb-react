@@ -1,34 +1,42 @@
 dsl('zui')
 
 component('widget', {
-    type: 'widget',
-    params: [
-        {id: 'control', type: 'control', dynamic: true },
-        {id: 'canvasSize', as: 'array', defaultValue: [ 600, 600] },
-        {id: 'frontEnd', type: 'widget_frontend', defaultValue: widgetFE() },
-        {id: 'features', type: 'feature', defaultValue: zui.initFEWidget() },
-    ],
-    impl: ctx => {
+  type: 'widget',
+  params: [
+    {id: 'control', type: 'control', dynamic: true},
+    {id: 'canvasSize', as: 'array', defaultValue: [600,600]},
+    {id: 'frontEnd', type: 'widget_frontend'},
+    {id: 'features', type: 'feature', defaultValue: zui.initFEWidget()}
+  ],
+  impl: ctx => {
         const {canvasSize, control, frontEnd, features} = ctx.params
-        const gl = frontEnd.initFE(canvasSize)
-        gl.enable(gl.BLEND)
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+        const {gl,htmlMode} = frontEnd.initFE(canvasSize)
+        if (!htmlMode) {
+            gl.enable(gl.BLEND)
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+        }
         
         const widget = {
             frontEnd,
+            calcPayload(cmp) {
+                return htmlMode ? cmp.calcHtmlPayload() : cmp.calcPayload()
+            },
             async init() {
                 const ctxForBe = ctx.setVars({glLimits: frontEnd.glLimits,canvasSize, widget: this, renderRole: 'fixed'})
                 const beCmp = this.be_cmp = control(ctxForBe).applyFeatures(features,20)
                 beCmp.init({topOfWidget: true})
-                const _payload = await beCmp.calcPayload()
+
+                const _payload = await this.calcPayload(beCmp)
                 const payload = _payload.id ? {[_payload.id] : _payload }: _payload
                 const beCmps = beCmp.allDescendants()
-                await frontEnd.handleInitPayload(payload)
-                frontEnd.renderCmps()
+                await frontEnd.handlePayload(payload)
+                //frontEnd.renderCmps(ctx)
+                const self = this
                 frontEnd.beProxy = {
                     async beUpdateRequest(cmpIds) {
                         const updatePayload = {}
-                        await cmpIds.reduce((pr,id) => pr.then(async ()=> updatePayload[id] = await beCmps.find(cmp=>cmp.id==id).calcPayload()), Promise.resolve())
+                        await cmpIds.reduce((pr,id) => pr.then(async ()=> updatePayload[id] = 
+                            await self.calcPayload(beCmps.find(cmp=>cmp.id==id))), Promise.resolve())
                         await frontEnd.handlePayload(updatePayload)
                     }
                 }
@@ -41,9 +49,10 @@ component('widget', {
 component('widgetFE', {
   type: 'widget_frontend',
   params: [
-    {id: 'selector', as: 'string'}
+    {id: 'selector', as: 'string'},
+    {id: 'htmlMode', as: 'boolean', type: 'boolean<>', byName: true}
   ],
-  impl: (ctx, selector, features) => ({
+  impl: (ctx, selector, htmlMode) => ({
         cmps: {},
         cmpsData: {},
         textures: {},
@@ -52,33 +61,75 @@ component('widgetFE', {
 
         initFE(canvasSize) {
             this.canvasSize = canvasSize
-            let gl = null
-            if (!ctx.vars.uiTest) {
-                const doc = jb.frame.document
-                const canvas = this.canvas = doc.createElement('canvas')
-                canvas.width = canvasSize[0];canvas.height = canvasSize[1];
-                doc.querySelector(selector).appendChild(canvas)
-                gl = this.gl = jb.zui.createGl(canvasSize,{canvas})
+            const doc = jb.frame.document
+            if (htmlMode) {
+                if (!ctx.vars.uiTest) {
+                    const doc = jb.frame.document
+                    const canvas = this.canvas = doc.createElement('div')
+                    canvas.classList.add('widget-top')
+                    canvas.style.border = '1px black solid'
+                    canvas.style.width = `${canvasSize[0]}px`;canvas.style.height = `${canvasSize[1]}px`;
+                    doc.querySelector(selector).appendChild(canvas);
+                }
+                this.ctx = new jb.core.jbCtx().setVars({widget: this, canUseConsole: ctx.vars.quiet, uiTest: ctx.vars.uiTest})
+                this.ctx.probe = ctx.probe
+                return {htmlMode}
             } else {
-                this.canvas = jbHost.isNode ? require('canvas').createCanvas(...canvasSize) : new OffscreenCanvas(...canvasSize)
-                gl = this.gl = jb.zui.createGl(canvasSize,{offscreen: true})
+                let gl = null
+                if (!ctx.vars.uiTest) {
+                    const doc = jb.frame.document
+                    const canvas = this.canvas = doc.createElement('canvas')
+                    canvas.width = canvasSize[0];canvas.height = canvasSize[1];
+                    doc.querySelector(selector).appendChild(canvas)
+                    gl = this.gl = jb.zui.createGl(canvasSize,{canvas})
+                } else {
+                    this.canvas = jbHost.isNode ? require('canvas').createCanvas(...canvasSize) : new OffscreenCanvas(...canvasSize)
+                    gl = this.gl = jb.zui.createGl(canvasSize,{offscreen: true})
+                }
+                this.glLimits = { 
+                    MAX_COMBINED_TEXTURE_IMAGE_UNITS: gl.getParameter(gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS), 
+                    MAX_TEXTURE_SIZE: gl.getParameter(gl.MAX_TEXTURE_SIZE)
+                }
+                this.ctx = new jb.core.jbCtx().setVars({widget: this, canUseConsole: ctx.vars.quiet})
+                this.ctx.probe = ctx.probe
+                this.boundTextures = Array.from(new Array(this.glLimits.MAX_COMBINED_TEXTURE_IMAGE_UNITS).keys()).map(i=>({i, lru : 0}))
+                return {gl}
             }
-            this.glLimits = { 
-                MAX_COMBINED_TEXTURE_IMAGE_UNITS: gl.getParameter(gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS), 
-                MAX_TEXTURE_SIZE: gl.getParameter(gl.MAX_TEXTURE_SIZE)
-            }
-            this.ctx = new jb.core.jbCtx().setVars({widget: this, canUseConsole: ctx.vars.quiet})
-            this.ctx.probe = ctx.probe
-            this.boundTextures = Array.from(new Array(this.glLimits.MAX_COMBINED_TEXTURE_IMAGE_UNITS).keys()).map(i=>({i, lru : 0}))
-            return gl
         },
-        handleInitPayload(glPayload) {
-            return this.handlePayload(glPayload)
+        async handleHtmlPayload(payload) {
+            const ctx = this.ctx
+            Object.entries(payload).map(([cmpId,be_data]) => {
+                const cmp = this.cmps[cmpId] = newHtmlFECmp(cmpId, be_data, this.canvas)
+                this.cmpsData[cmpId] = { ...(this.cmpsData[cmpId] || {}), ...be_data }
+                cmp.renderHtml && cmp.renderHtml(ctx)
+                jb.zui.setCmpCss(cmp)
+            })
+            jb.log('zui handlePayload loaded in FE',{cmpsData: this.cmpsData, payload,ctx})
+
+
+            function newHtmlFECmp(cmpId, be_data, canvas) {
+                const cmp = new (class FECmp {}) // used for serialization filtering
+                const fromBeData = { notReady, title, gridElem, frontEndMethods, frontEndUniforms, layoutProps, clz } = be_data
+                Object.assign(cmp, { id: cmpId, state: {}, flows: [], base: canvas, canvas, 
+                    vars: be_data.frontEndVars || {}, ...fromBeData,
+                    runFEMethod: (method,data,_vars) => jb.zui.runFEMethod(cmp,method,{data,_vars,silent:true,ctx})
+                })
+                if (cmp.notReady) return cmp
+                cmp.destroyed = new Promise(resolve=> cmp.resolveDestroyed = resolve)
+                jb.zui.runFEMethod(cmp,'calcProps',{silent:true,ctx})
+                jb.zui.runFEMethod(cmp,'init',{silent:true,ctx})
+                ;(be_data.frontEndMethods ||[]).map(m=>m.method).filter(m=>['init','calcProps'].indexOf(m) == -1)
+                    .forEach(method=> cmp[method] = ctx => jb.zui.runFEMethod(cmp,method,{silent:true,ctx}) )
+
+                cmp.state.frontEndStatus = 'ready'
+                return cmp
+            }
         },
         async handlePayload(glPayload) {
+            if (htmlMode) return this.handleHtmlPayload(glPayload)
             const ctx = this.ctx
             Object.entries(glPayload).map(([cmpId,be_data]) => {
-                this.cmps[cmpId] = newFECmp(cmpId, be_data, this.canvas)
+                this.cmps[cmpId] = newFECmp(cmpId, be_data, this.canvas, this.canvas)
                 const {noOfItems, glAtts} = be_data
                 this.cmpsData[cmpId] = { ...(this.cmpsData[cmpId] || {}), ...be_data }
                 if (glAtts) {
@@ -106,7 +157,7 @@ component('widgetFE', {
             function newFECmp(cmpId, be_data, canvas) {
                 const cmp = new (class FECmp {}) // used for serialization filtering
                 const fromBeData = { notReady, title, gridElem, frontEndMethods, frontEndUniforms, layoutProps, uniforms } = be_data
-                Object.assign(cmp, { id: cmpId, textures: {}, state: {}, flows: [], base: canvas, 
+                Object.assign(cmp, { id: cmpId, textures: {}, state: {}, flows: [], base: canvas,
                     flowElem: be_data.renderRole && be_data.renderRole.match(/[Ff]lowElem/),
                     vars: be_data.frontEndVars || {}, ...fromBeData 
                 })
@@ -156,9 +207,13 @@ component('widgetFE', {
             this.gl.clearColor(1, 1, 1, 1)
             this.gl.clear(this.gl.COLOR_BUFFER_BIT)    
         },
-        renderCmps() {
-//            this.clearCanvas()
-            if (this.ctx.vars.canUseConsole) console.log(this.state.tZoom, this.state.zoom, this.state.center)
+        renderCmps(ctx) {
+            if (htmlMode) {
+                Object.values(this.cmps).filter(cmp=>!cmp.notReady)
+                    .forEach(cmp=>cmp.zoomingCss && cmp.zoomingCss(ctx))
+                return
+            }
+            if (this.ctx.vars.canUseConsole) console.log(this.state.zoom, ...this.state.center)
             Object.values(this.cmps).filter(cmp=>!cmp.notReady && !cmp.flowElem && cmp.renderRole !='zoomingGridElem')
                 .forEach(cmp=>cmp.render ? cmp.render(this.ctx) : this.renderCmp(cmp,this.ctx))
         },        
@@ -232,4 +287,22 @@ component('widgetFE', {
 component('zui.initFEWidget', {
   type: 'feature',
   impl: features()
+})
+
+extension('zui','html', {
+    setCmpCss(cmp) {
+        const cssObjs  = typeof cmp.css == 'string' ? [{id: cmp.id, css: cmp.css}] : jb.asArray(cmp.css)
+        cssObjs.forEach(({id,css})=>jb.zui.setCss(`style-elm-${id}`, css))
+    },
+    setCss(id,content) {
+        const document = jb.frame.document
+        if (!document) return
+        let styleTag = document.getElementById(id)
+        if (!styleTag) {
+          styleTag = document.createElement('style')
+          styleTag.id = id
+          document.head.appendChild(styleTag)
+        }
+        styleTag.textContent = Array.isArray(content)? content.join('\n') : content
+    },
 })

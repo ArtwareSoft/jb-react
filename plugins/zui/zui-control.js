@@ -29,7 +29,7 @@ extension('zui','control' , {
             const categories = jb.zui.featureCategories || (jb.zui.featureCategories = {
                 lifeCycle: new Set('init,extendCtx,extendChildrenCtx,destroy'.split(',')),
                 arrayProps: new Set('calcProp,glAtt,uniform,varying,pivot,shaderDecl,shaderMainSnippet,vertexDecl,vertexMainSnippet,frontEndUniform,frontEndMethod,frontEndVar,css,cssClass,layoutProp,dependent'.split(',')),
-                singular: new Set('calcMoreItemsData,zoomingSize,styleParams,children'.split(',')),
+                singular: new Set('calcMoreItemsData,zoomingSize,zoomingCss,styleParams,children,html'.split(',')),
             })
     
             Object.keys(feature).filter(key=>key!='srcPath').forEach(key=>{
@@ -60,6 +60,7 @@ extension('zui','control' , {
         constructor(ctx) {
             this.id = '' + jb.zui.cmpCounter++
             this.title = `${ctx.profile.$}-${this.id}`
+            this.clz = this.title
         }
         init(settings) {
             Object.assign(this,settings || {}) 
@@ -95,6 +96,38 @@ extension('zui','control' , {
         }
         valByScale(pivotId,item) {
             return this.pivot.find(({id}) => id == pivotId).scale(item)
+        }
+        
+        async calcHtmlPayload(vars) {
+            if (this.ctx.probe && this.ctx.probe.outOfTime) return {}
+            if (!this.props)
+                return jb.logError(`glPayload - cmp ${this.title} not initialized`,{cmp: this, ctx: cmp.ctx})
+            if (this.enrichCtxFromDecendents)
+                vars = await this.enrichCtxFromDecendents(this.descendantsTillGrid())
+
+            const ctxToUse = vars ? this.calcCtx.setVars(vars) : this.calcCtx
+            ;[...(this.calcProp || []),...(this.method || [])].forEach(p=>typeof p.value == 'function' && Object.defineProperty(p.value, 'name', { value: p.id }))    
+            const sortedProps = (this.calcProp || []).sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
+            await sortedProps.reduce((pr,prop)=> pr.then(async () => {
+                    const val = jb.val( await jb.utils.tryWrapper(async () => 
+                        prop.value.profile === null ? ctxToUse.vars.$model[prop.id] : await prop.value(ctxToUse),`prop:${prop.id}`,this.ctx))
+                    const value = val == null ? prop.defaultValue : val
+                    Object.assign(this.props, { ...(prop.id == '$props' ? value : { [prop.id]: value })})
+                }), Promise.resolve())
+            Object.assign(this.props, this.styleParams)
+
+            const zoomingCssProfile = jb.path(this.zoomingCss,'profile')
+            const html = this.html && this.html(ctxToUse)
+            const css = (this.css || []).flatMap(x=>x(ctxToUse))
+
+            const methods = this.methods = (this.method||[]).map(h=>h.id).join(',')
+            const frontEndMethods = this.frontEndMethods =(this.frontEndMethod || []).map(h=>({method: h.method, path: h.path}))
+            const frontEndVars = this.frontEndVars = this.frontEndVar && jb.objFromEntries(this.frontEndVar.map(h=>[h.id, jb.val(h.value(ctxToUse))]))
+            const noOfItems = (ctxToUse.vars.items||[]).length
+            
+            const { id , title, clz, inZoomingGrid, topOfWidget } = this
+            const res = { id, title, clz, frontEndMethods, frontEndVars, topOfWidget, noOfItems, methods, zoomingCssProfile,  html, css }
+            return this.extendedPayloadWithHtmlDescendants ? this.extendedPayloadWithHtmlDescendants(res,this.descendantsTillGrid()) : res
         }
 
         async calcPayload(vars) {
@@ -134,15 +167,10 @@ extension('zui','control' , {
             const frontEndUniforms = (this.frontEndUniform || [])
             const frontEndVars = this.frontEndVar && jb.objFromEntries(this.frontEndVar.map(h=>[h.id, jb.val(h.value(ctxToUse))]))
             const noOfItems = (ctxToUse.vars.items||[]).length
-            // this.sizeProps = {
-            //     margin : glVars.uniforms.filter(u=>u.glVar == 'margin').map(u=>u.value)[0] || [0,0,0,0],
-            //     borderWidth : glVars.uniforms.filter(u=>u.glVar == 'borderWidth').map(u=>u.value)[0] || [0,0,0,0],
-            //     padding : glVars.uniforms.filter(u=>u.glVar == 'padding').map(u=>u.value)[0] || [0,0,0,0],
-            //     size : glVars.uniforms.filter(u=>u.glVar == 'elemSize').map(u=>u.value)[0] || [0,0]
-            // }
+
             const { id , title, layoutProps, inZoomingGrid, renderRole, zoomingSizeProfile, topOfWidget } = this
-            let res = { id, title, ...glVars, glCode, frontEndMethods, frontEndVars, frontEndUniforms,
-                topOfWidget, noOfItems, methods, zoomingSizeProfile, layoutProps, inZoomingGrid, renderRole }
+            let res = { id, title, frontEndMethods, frontEndVars, topOfWidget, noOfItems, methods, 
+                frontEndUniforms, ...glVars, glCode, zoomingSizeProfile, layoutProps, inZoomingGrid, renderRole }
             if (JSON.stringify(res).indexOf('null') != -1)
                 jb.logError(`cmp ${this.title} has nulls in payload`, {cmp: this, ctx: this.ctx})
             if (this.children)
