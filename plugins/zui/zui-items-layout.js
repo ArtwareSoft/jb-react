@@ -1,6 +1,5 @@
 dsl('zui')
 
-
 component('xyByProps', {
   type: 'grid_pivot',
   params: [

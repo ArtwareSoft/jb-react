@@ -37,6 +37,7 @@ component('grid', {
         return {elemsHtmlCss}
       }
       cmp.extendedPayloadWithHtmlDescendants = (res,descendants) => {
+        delete res.calcHtmlOfItem
         const pack = { [res.id]: res }
         descendants.forEach(cmp=>{
           const  { id, title, clz, frontEndMethods, frontEndVars, methods, zoomingCssProfile } = cmp
@@ -46,11 +47,12 @@ component('grid', {
       }
     }),
     html((ctx,{elemsHtmlCss,cmp,items}) => `<div class="zui-items ${cmp.clz}">${items.map(
-      item=>`<div class="zui-item pos_${item.xyPos.join('-')}">${elemsHtmlCss.map(ch=>ch.html).join('\t\n')}</div>`)
+      item=>`<div class="zui-item pos_${item.xyPos.join('-')}">${elemsHtmlCss.map(ch=>ch.calcHtmlOfItem(item)).join('\t\n')}</div>`)
       .join('\n')}</div>`),
     css((ctx,{elemsHtmlCss,cmp}) => [
       ...elemsHtmlCss.map(({id,css}) => ({id, css})),
-      {id: cmp.id, css: `.${cmp.clz}.zui-items {position: relative}\n .${cmp.clz}>.zui-item {pointer-events: none; position: absolute}`}
+      {id: cmp.id, css: `.${cmp.clz}.zui-items {position: relative}
+        .${cmp.clz}>.zui-item {overflow: hidden; text-overflow: ellipsis; pointer-events: none; position: absolute; border1: 1px solid gray}`}
     ]),
     zui.canvasZoom(),
     frontEnd.init((ctx,{cmp,widget,initialZoomCenter}) => {
@@ -60,7 +62,6 @@ component('grid', {
     frontEnd.method('renderHtml', (ctx,{cmp,widget,uiTest}) => {
       if (uiTest) return
       widget.canvas.innerHTML = cmp.html || ''
-      jb.zui.setCmpCss(cmp)
     }),
     frontEnd.method('zoomingCss', (ctx,{cmp,itemSize,widget,itemsXyPos}) => {
       const center = widget.state.center, canvasSize = widget.canvasSize

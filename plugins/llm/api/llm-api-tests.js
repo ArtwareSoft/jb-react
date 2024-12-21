@@ -2,7 +2,9 @@ using('ui-testers')
 
 component('llmTest.hello', {
   doNotRunInTests: true,
-  impl: dataTest(llmViaApi.completions(system('please answer clearly'), user('how large is israel')), contains('srael'), {
+  impl: dataTest({
+    calculate: llmViaApi.completions(system('please answer clearly'), user('how large is israel')),
+    expectedResult: contains('srael'),
     timeout: 5000
   })
 })

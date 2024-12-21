@@ -14,6 +14,12 @@ component('circle', {
   type: 'circle-style',
   params: [],
   impl: features(
+    frontEnd.method('zoomingCss', (ctx,{cmp,itemSize}) => {
+      const [width,height] = [0,1].map(axis=> 0.1 *jb.zui.floorLog2(itemSize[axis]))
+      jb.zui.setCss(`dynamic-${cmp.clz}`, `.${cmp.clz} { width: ${width}px; height: ${height}px;}` )
+    }),
+    html('<div class="%$cmp/clz%"><div class="circle"></div></div>'),
+    css('.%$cmp/clz%>.circle { width: 100%; height: 100%; background-color: red; border-radius: 50%; }'),
     frontEnd.uniforms(vec2('glyphSize', '%$elemLayout.size%')),
     uniforms(vec2('glyphSize', [5,5]), vec3('align', [0,0,0])),
     zoomingSize('%$$model/size()%'),
@@ -21,14 +27,7 @@ component('circle', {
     centerRadius(),
     valueColor('fill'),
     color('fill', 'red'),
-    fillCircleElem(),
-    frontEnd.method('zoomingCss', (ctx,{cmp,itemSize}) => {
-      const [width,height] = [0,1].map(axis=> 0.1 *jb.zui.floorLog2(itemSize[axis]))
-      jb.zui.setCss(`dynamic-${cmp.clz}`, `.${cmp.clz} { width: ${width}px; height: ${height}px;}` )
-    }),
-    html('<div class="%$cmp/clz%"><div class="circle"></div></div>'),
-    css('.%$cmp/clz% { width: 20px; height: 20px;}'),
-    css('.%$cmp/clz%>.circle { width: 100%; height: 100%; background-color: red; border-radius: 50%; }')
+    fillCircleElem()
   )
 })
 

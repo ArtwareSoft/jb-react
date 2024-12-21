@@ -29,7 +29,7 @@ extension('zui','control' , {
             const categories = jb.zui.featureCategories || (jb.zui.featureCategories = {
                 lifeCycle: new Set('init,extendCtx,extendChildrenCtx,destroy'.split(',')),
                 arrayProps: new Set('calcProp,glAtt,uniform,varying,pivot,shaderDecl,shaderMainSnippet,vertexDecl,vertexMainSnippet,frontEndUniform,frontEndMethod,frontEndVar,css,cssClass,layoutProp,dependent'.split(',')),
-                singular: new Set('calcMoreItemsData,zoomingSize,zoomingCss,styleParams,children,html'.split(',')),
+                singular: new Set('calcMoreItemsData,zoomingSize,zoomingCss,styleParams,children,html,htmlOfItem'.split(',')),
             })
     
             Object.keys(feature).filter(key=>key!='srcPath').forEach(key=>{
@@ -116,6 +116,7 @@ extension('zui','control' , {
                 }), Promise.resolve())
             Object.assign(this.props, this.styleParams)
 
+            this.calcHtmlOfItem = item => this.htmlOfItem ? this.htmlOfItem(ctxToUse.setData(item)) : ''
             const zoomingCssProfile = jb.path(this.zoomingCss,'profile')
             const html = this.html && this.html(ctxToUse)
             const css = (this.css || []).flatMap(x=>x(ctxToUse))
@@ -125,8 +126,8 @@ extension('zui','control' , {
             const frontEndVars = this.frontEndVars = this.frontEndVar && jb.objFromEntries(this.frontEndVar.map(h=>[h.id, jb.val(h.value(ctxToUse))]))
             const noOfItems = (ctxToUse.vars.items||[]).length
             
-            const { id , title, clz, inZoomingGrid, topOfWidget } = this
-            const res = { id, title, clz, frontEndMethods, frontEndVars, topOfWidget, noOfItems, methods, zoomingCssProfile,  html, css }
+            const { id , title, clz, inZoomingGrid, topOfWidget, calcHtmlOfItem } = this
+            const res = { id, title, clz, frontEndMethods, frontEndVars, topOfWidget, noOfItems, methods, zoomingCssProfile,  html, css, calcHtmlOfItem }
             return this.extendedPayloadWithHtmlDescendants ? this.extendedPayloadWithHtmlDescendants(res,this.descendantsTillGrid()) : res
         }
 

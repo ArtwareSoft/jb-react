@@ -17,6 +17,7 @@ component('widget', {
         }
         
         const widget = {
+            htmlMode,
             frontEnd,
             calcPayload(cmp) {
                 return htmlMode ? cmp.calcHtmlPayload() : cmp.calcPayload()
@@ -53,6 +54,7 @@ component('widgetFE', {
     {id: 'htmlMode', as: 'boolean', type: 'boolean<>', byName: true}
   ],
   impl: (ctx, selector, htmlMode) => ({
+        htmlMode,
         cmps: {},
         cmpsData: {},
         textures: {},
@@ -293,6 +295,11 @@ extension('zui','html', {
     setCmpCss(cmp) {
         const cssObjs  = typeof cmp.css == 'string' ? [{id: cmp.id, css: cmp.css}] : jb.asArray(cmp.css)
         cssObjs.forEach(({id,css})=>jb.zui.setCss(`style-elm-${id}`, css))
+    },
+    setCssVars(cssClass,cssVars) {
+        const cssVarRules = Object.entries(cssVars).map(([key, value]) => `--${key}: ${value};`).join('\n')
+        const content = `.${cssClass} { ${cssVarRules} }`
+        jb.zui.setCss(`vars-${cssClass}`,content)
     },
     setCss(id,content) {
         const document = jb.frame.document

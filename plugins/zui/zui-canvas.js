@@ -9,6 +9,13 @@ extension('zui','canvas', {
   createCanvas(...size) {
     return jbHost.isNode ? require('canvas').createCanvas(...size) : new OffscreenCanvas(...size)
   },
+  colorToRgb(color) {
+    if (Array.isArray(color)) return color
+    const mctx = jb.zui.measureCanvasCtx()
+    mctx.fillStyle = color
+    mctx.fillRect(0,0,1,1)
+    return Array.from(mctx.getImageData(0,0,1,1).data).slice(0,3)
+  },
   async bwCanvasToBase64(packRatio, canvasData,width,height) {
     const bitsPerPixel = 32/packRatio
     const pixelsPerByte = 8 / bitsPerPixel

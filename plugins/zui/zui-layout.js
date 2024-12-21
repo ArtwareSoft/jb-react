@@ -64,6 +64,15 @@ component('smoothGrowth', {
   }
 })
 
+component('fill', {
+  type: 'zooming_size',
+  impl: ctx => ({
+      layoutRounds: 2,
+      sizeNeeds: ({round, available }) => round ? available : [1,1],
+      profile: { $$: 'zooming_size<zui>fill' }
+  })
+})
+
 component('flowDown', {
   type: 'zooming_size',
   description: 'takes width and max available height',

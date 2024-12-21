@@ -170,6 +170,14 @@ component('html', {
   impl: (ctx,html) => ({html})
 })
 
+component('htmlOfItem', {
+  type: 'feature',
+  params: [
+    {id: 'html', mandatory: true, dynamic: true, as: 'string', newLinesInCode: true}
+  ],
+  impl: (ctx,htmlOfItem) => ({htmlOfItem})
+})
+
 component('css', {
   type: 'feature',
   params: [

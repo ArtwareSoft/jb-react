@@ -5,10 +5,11 @@ component('llmViaApi.completions', {
   type: 'data<>',
   params: [
     {id: 'chat', type: 'message[]', dynamic: true},
-    {id: 'model', as: 'string', options: 'gpt-3.5-turbo-16k,gpt-4', defaultValue: 'gpt-3.5-turbo', byName: true},
-    {id: 'maxTokens', defaultValue: 100}
+    {id: 'model', as: 'string', options: 'gpt-4o-mini,o1-preview,gpt-3.5-turbo,gpt-3.5-turbo-0125', defaultValue: 'gpt-3.5-turbo-0125', byName: true},
+    {id: 'maxTokens', defaultValue: 100},
+    {id: 'includeSystemMessages', as: 'boolean', type: 'boolean<>'}
   ],
-  impl: async (ctx,chat,model,max_tokens) => {
+  impl: async (ctx,chat,model,max_completion_tokens,includeSystemMessages) => {
         const settings = !jbHost.isNode && await fetch(`/?op=settings`).then(res=>res.json())
         const apiKey = jbHost.isNode ? process.env.OPENAI_API_KEY: settings.OPENAI_API_KEY
         const ret = await jbHost.fetch('https://api.openai.com/v1/chat/completions', {
@@ -19,20 +20,21 @@ component('llmViaApi.completions', {
                 'Authorization': `Bearer ${apiKey}`
               },
               body: JSON.stringify({
-                model, max_tokens, top_p: 1, frequency_penalty: 0, presence_penalty: 0,
+                max_completion_tokens,
+                model, top_p: 1, frequency_penalty: 0, presence_penalty: 0,
                 messages: chat()                
               })
             }
           )
         const res = await ret.json()
-        return jb.path(res,'choices.0.message.content') || jb.path(res)
+        return includeSystemMessages ? res: (jb.path(res,'choices.0.message.content') || res)
     }
 })
 
 component('system', {
   type: 'message',
   params: [
-    {id: 'content', as: 'string'}
+    {id: 'content', as: 'string', newLinesInCode: true}
   ],
   impl: (ctx,content) => ({role: 'system', content})
 })
@@ -40,17 +42,17 @@ component('system', {
 component('assistant', {
     type: 'message',
     params: [
-        {id: 'content', as: 'string'}
+        {id: 'content', as: 'string', newLinesInCode: true}
     ],
     impl: (ctx,content) => ({role: 'assistant', content})
 })
 
 component('user', {
-    type: 'message',
-    params: [
-        {id: 'content', as: 'string'}
-    ],
-    impl: (ctx,content) => ({role: 'user', content})
+  type: 'message',
+  params: [
+    {id: 'content', as: 'string', newLinesInCode: true}
+  ],
+  impl: (ctx,content) => ({role: 'user', content})
 })
 
 component('llm.HtmlAndCssForJson', {
@@ -95,11 +97,11 @@ component('source.llmCompletions', {
   type: 'rx<>',
   params: [
     {id: 'chat', type: 'message[]', dynamic: true},
-    {id: 'model', as: 'string', options: 'gpt-3.5-turbo-16k,gpt-4', defaultValue: 'gpt-3.5-turbo', byName: true},
+    {id: 'model', as: 'string', options: 'o1-preview,gpt-3.5-turbo-16k,gpt-4', defaultValue: 'gpt-3.5-turbo', byName: true},
     {id: 'maxTokens', defaultValue: 100},
     {id: 'includeSystemMessages', as: 'boolean', type: 'boolean'}
   ],
-  impl: (ctx,chat,model,max_tokens,includeSystemMessages) => (start, sink) => {
+  impl: (ctx,chat,model,max_completion_tokens,includeSystemMessages) => (start, sink) => {
       if (start !== 0) return
       let controller = null, connection, connectionAborted
       sink(0, (t,d) => {
@@ -123,7 +125,7 @@ component('source.llmCompletions', {
                 'Authorization': `Bearer ${apiKey}`
               },
               body: JSON.stringify({
-                model, max_tokens, top_p: 1, frequency_penalty: 0, presence_penalty: 0, stream: true,
+                model, max_completion_tokens, top_p: 1, frequency_penalty: 0, presence_penalty: 0, stream: true,
                 messages: chat()                
               })
             }

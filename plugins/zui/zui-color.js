@@ -1,6 +1,15 @@
 dsl('zui')
 
-// -- fixed colors
+component('rgb', {
+  type: 'static_color',
+  macroByValue: true,
+  params: [
+    {id: 'r', as: 'number', mandatory: true},
+    {id: 'g', as: 'number', mandatory: true},
+    {id: 'b', as: 'number', mandatory: true}
+  ],
+  impl: (ctx,r,g,b) => [r,g,b]
+})
 
 component('color', {
   type: 'feature',
@@ -8,23 +17,48 @@ component('color', {
     {id: 'of', as: 'string', options: 'fill,background,border,text', mandatory: true},
     {id: 'color', mandatory: true, as: 'string', defaultValue: 'white'}
   ],
-  impl: uniforms(vec3('%$of%Color', zui.colorToRGB('%$color%')))
+  impl: uniforms(vec3('%$of%Color', ({},{},{color}) => jb.zui.colorToRgb(color) ))
 })
 
-component('zui.colorToRGB', {
+component('itemColor', {
+  type: 'item_color',
   params: [
-    {id: 'color', as: 'string'}
+    {id: 'unitScale', mandatory: true, dynamic: true, type: 'unit_scale'},
+    {id: 'colorScale', mandatory: true, type: 'color_scale', defaultValue: distinct10()}
   ],
-  impl: ({},color) => {
-    const mctx = jb.zui.measureCanvasCtx('500 16px Arial')
-    mctx.fillStyle = color
-    mctx.fillRect(0,0,1,1)
-    return Array.from(mctx.getImageData(0,0,1,1).data).slice(0,3)
+  impl: (ctx,unitScale,colorScale) => ctx => {
+        const index = Math.floor(unitScale(ctx.data) * colorScale.length *0.9999)
+        const color = colorScale[index] ? colorScale[index] : [255,255,255]
+        return ctx.vars.widget.htmlMode ? `rgb(${color.join(',')})` : color
+    }
+})
+
+component('colorByItemValue', {
+  type: 'item_color',
+  params: [
+    {id: 'value', mandatory: true, dynamic: true},
+    {id: 'case', type: 'item_color_case[]'},
+    {id: 'defaultColor', type: 'static_color', defaultValue: [255,255,255]}
+  ],
+  impl: (ctx,valF,cases,defaultColor) => {
+    const casesHash = jb.objFromEntries(cases.map(x=>x.entry))
+    return ctx => {
+      const color = casesHash[valF(ctx)] || defaultColor
+      return ctx.vars.widget.htmlMode ? `rgb(${color.join(',')})` : color
+    }
   }
 })
 
-//**  value colors
+component('Case', {
+  type: 'item_color_case',
+  params: [
+    {id: 'val', as: 'string', mandatory: true},
+    {id: 'color', type: 'static_color'}
+  ],
+  impl: (ctx,val,color) => ({entry: [val,jb.zui.colorToRgb(color)]})
+})
 
+//**  value colors
 component('valueColor', {
   type: 'feature',
   macroByValue: true,
@@ -72,6 +106,17 @@ component('index', {
     impl: unitScale('index')
 })
 
+component('severity5', {
+  type: 'color_scale',
+  impl: () => [
+    { from: 0, color: [231, 76, 60], description: 'very bad' }, // Bright red
+    { from: 0.2, color: [230, 126, 34], description: 'bad' },    // Orange
+    { from: 0.4, color: [244, 208, 63], description: 'neutral' }, // Yellow
+    { from: 0.6, color: [169, 223, 191], description: 'good' },   // Light green
+    { from: 0.8, color: [46, 204, 113], description: 'very good' } // Bright green
+  ]
+})
+
 component('good5', {
   type: 'color_scale',
   impl: () => [
@@ -81,7 +126,7 @@ component('good5', {
     { from: 0.6, color: [169, 223, 191], description: 'good' },   // Light green
     { from: 0.8, color: [46, 204, 113], description: 'very good' } // Bright green
   ]
-});
+})
 
 component('success5', {
   type: 'color_scale',
@@ -92,7 +137,7 @@ component('success5', {
     { from: 0.75, color: [40, 180, 99], description: 'success' },// Green
     { from: 1, color: [29, 131, 72], description: 'full success' } // Dark green
   ]
-});
+})
 
 component('distinct5', {
   type: 'color_scale',
@@ -103,7 +148,7 @@ component('distinct5', {
     { from: 0.6, color: [241, 196, 15] }, // Yellow
     { from: 0.8, color: [155, 89, 182] }  // Purple
   ]
-});
+})
 
 component('distinct10', {
   type: 'color_scale',
@@ -119,7 +164,7 @@ component('distinct10', {
     { from: 0.8, color: [189, 195, 199] }, // Light Gray
     { from: 0.9, color: [142, 68, 173] }  // Violet
   ]
-});
+})
 
 component('green10', {
   type: 'color_scale',
@@ -135,7 +180,7 @@ component('green10', {
     { from: 0.8, color: [34, 139, 34] }, // Forest Green
     { from: 0.9, color: [0, 100, 0] }  // Dark Green
   ]
-});
+})
 
 component('gray5', {
   type: 'color_scale',
@@ -146,7 +191,7 @@ component('gray5', {
     { from: 0.75, color: [97, 97, 97] }, // Dark Gray
     { from: 1, color: [33, 33, 33] }  // Very Dark Gray
   ]
-});
+})
 
 component('gray10', {
   type: 'color_scale',
@@ -162,7 +207,7 @@ component('gray10', {
     { from: 0.8, color: [48, 48, 48] },
     { from: 0.9, color: [33, 33, 33] }  // Very Dark Gray
   ]
-});
+})
 
 component('coolToWarm10', {
   type: 'color_scale',
@@ -178,7 +223,7 @@ component('coolToWarm10', {
     { from: 0.8, color: [215, 48, 39] }, // Red
     { from: 0.9, color: [165, 0, 38] }  // Deep Red
   ]
-});
+})
 
 // component('greens', {
 //   type: 'color_scale',

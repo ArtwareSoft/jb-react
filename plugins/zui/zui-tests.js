@@ -7,6 +7,59 @@ component('points', { passiveData: [
       {"name": "Beer Sheva", x: 3, y : 3 },
 ]})
 
+component('dataTest.smartMetaIconLevel', {
+  impl: dataTest(zui.smartMetaIconLevel(), '', { timeout: 50000 })
+})
+
+component('dataTest.smartIconCode', {
+  impl: dataTest({
+    calculate: zui.smartIconCode(`I am a doctor in emergency room,
+    I have a pateint age 40 with strong headache and high blood preasure, 
+    please help me with medical condition options`),
+    expectedResult: '',
+    timeout: 50000
+  })
+})
+
+component('dataTest.smartMetadata', {
+  impl: dataTest({
+    calculate: zui.smartMetadata(`I am a doctor in emergency room,
+    I have a pateint age 40 with strong headache and high blood preasure, 
+    please help me with medical condition options`),
+    expectedResult: '',
+    timeout: 50000
+  })
+})
+
+component('dataTest.firstItemsNames', {
+  impl: dataTest({
+    calculate: zui.firstItemsNames(`I am a doctor in emergency room,
+    I have a pateint age 40 with strong headache and high blood preasure, 
+    please help me with medical condition options`),
+    expectedResult: '',
+    timeout: 50000
+  })
+})
+
+component('dataTest.llmMetaDataRunnigShoes', {
+  impl: dataTest(zui.firstItemsNames('running shoes for training and running'), '', {
+    timeout: 50000
+  })
+})
+
+component('zuiTest.cards', {
+  impl: zuiTest({
+    control: itemlist({
+      items: '%$testData%',
+      itemControl: card('%title%', '%general_explanation%'),
+      itemsLayout: grid([8,8], xyByProps('urgency', 'likelihood'), { initialZoom: 7, center: [4,6] })
+    }),
+    expectedResult: contains(`glVar: 'fillColor'`),
+    testData: test.diagnostics(),
+    htmlMode: true
+  })
+})
+
 component('zuiTest.zoomingGridMode', {
   impl: zuiTest({
     control: itemlist({
