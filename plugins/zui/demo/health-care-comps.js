@@ -1,30 +1,6 @@
 dsl('zui')
 using('zui')
 
-component('zuiTest.healthCare.conditionIconBox', {
-  doNotRunInTests: true,
-  impl: zuiTest({
-    control: itemlist({
-      items: '%$testData%',
-      itemControl: healthCare.conditionIconBox(),
-      itemsLayout: groupByScatter('category', { sort: 'likelihood' })
-    }),
-    testData: healthCare.conditionDataSample300(),
-  })
-})
-
-component('zuiTest.healthCare.conditionCard', {
-  doNotRunInTests: true,
-  impl: zuiTest({
-    control: itemlist({
-      items: '%$testData%',
-      itemControl: firstToFit(healthCare.conditionCard(), healthCare.conditionIconBox()),
-      itemsLayout: groupByScatter('category', { sort: 'likelihood' })
-    }),
-    testData: healthCare.conditionDataSample300(),
-  })
-})
-
 component('healthCare.conditionCard', {
   type: 'control',
   impl: card('%title%', '%description%', {

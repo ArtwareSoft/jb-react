@@ -177,5 +177,18 @@ component('frontEnd.flow', {
     }})
 })
 
+component('source.frontEndEvent', {
+  type: 'rx<>',
+  category: 'source',
+  description: 'assumes cmp in context',
+  params: [
+    {id: 'event', as: 'string', options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll'},
+    {id: 'selector', as: 'string', description: 'optional including the elem', byName: true}
+  ],
+  impl: rx.pipe(
+    source.event('%$event%', '%$cmp.base%', { selector: '%$selector%' }),
+    rx.takeUntil('%$cmp.destroyed%')
+  )
+})
 
 

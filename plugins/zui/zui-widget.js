@@ -163,3 +163,13 @@ extension('zui', 'frontend', {
         }, `frontEnd-${method}`,ctx))
     }
 })
+
+component('session', {
+    type: 'session',
+    params: [
+      {id: 'query', as: 'string'},
+      {id: 'contextCrums', as: 'array'},
+      {id: 'budget', type: 'budget'},
+      {id: 'usage', type: 'usage' }
+    ]
+})

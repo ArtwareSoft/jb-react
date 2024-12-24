@@ -1,10 +1,60 @@
 dsl('zui')
 using('llm-api')
 
-component('zui.llmTodo', {
-  impl: `
-    build the icon html css
-  `
+component('session', {
+  type: 'session',
+  params: [
+    {id: 'query', as: 'string'},
+    {id: 'contextCrums', as: 'array'},
+    {id: 'budget', type: 'budget'},
+    {id: 'usage', type: 'usage' }
+  ]
+})
+
+component('zui.itemsFromLlm', {
+  params: [
+    {id: 'session', type: 'session' },
+    {id: 'exampleItem', type: 'item-data' },
+    {id: 'titles', as: 'array' },
+    {id: 'llmModel', type: 'llm_model'}
+  ],
+  impl: llmViaApi.completions({
+    chat: [
+      user(`You are a metadata discovery assistant for a Zoomable User Interface (ZUI) system. presenting items.
+      Based on the following **query**: "%$query%"
+      return a list of 2 **most relevant** metadata properties for **positining** items of this type/category
+         on x/y axes of a 2D canvas. For example: price/performance
+    ---
+         provide the response as javascript array of strings            
+      `)
+    ],
+    model: 'o1-preview',
+    maxTokens: 25000,
+    includeSystemMessages: true
+  })
+})
+
+component('model', {
+  type: 'llm_model',
+  params: [
+    {id: 'name', as: 'string'},
+    {id: 'cost', as: 'number', description: '$/M tokens'},
+    {id: 'reasoning', as: 'boolean', type: 'boolean<>'},
+    {id: 'estimatedDuration', as: 'number', description: 'item/sec'}
+  ]
+})
+
+component('o1', {
+  type: 'llm_model',
+  impl: model('o1-preview', 60, { reasoning: true, estimatedDuration: 50 })
+})
+component('o1-mini', {
+  type: 'llm_model',
+  impl: model('o1-mini', 20, { reasoning: true, estimatedDuration: 20 })
+})
+component('gpt35', {
+  type: 'llm_model',
+  impl: model('gpt-3.5-turbo-0125', 20, { estimatedDuration: 20 })
 })
 
 component('zui.smartMetadata', {
@@ -228,3 +278,5 @@ component('zui.metadataForQuery', {
 
 // Then, Return a list of the most relevant metadata properties for **positining** items of this type/category
 // on x/y axes of a 2D canvas. For example: price/performance
+
+

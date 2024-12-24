@@ -7111,7 +7111,322 @@ component('rxQueue', {
 
 });
 
-jbLoadPackedFile({lineInPackage:7116, jb, noProxies: false, path: '/plugins/remote/jbm/jbm-utils.js',fileDsl: '', pluginId: 'remote-jbm' }, 
+jbLoadPackedFile({lineInPackage:7116, jb, noProxies: false, path: '/plugins/remote/jbm/jbm.js',fileDsl: '', pluginId: 'remote-jbm' }, 
+            function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
+pluginDsl('jbm')
+using('loader,tree-shake')
+
+component('stateless', {
+  type: 'jbm',
+  params: [
+    {id: 'sourceCode', type: 'source-code<loader>'}
+  ],
+  impl: If(isNode(), cmd('%$sourceCode%'), webWorker({ sourceCode: '%$sourceCode%', stateless: true }))
+})
+
+component('worker', {
+  type: 'jbm',
+  params: [
+    {id: 'id', as: 'string'},
+    {id: 'sourceCode', type: 'source-code<loader>', byName: true},
+    {id: 'init', type: 'action<>', dynamic: true},
+    {id: 'networkPeer', as: 'boolean', description: 'used for testing', type: 'boolean'}
+  ],
+  impl: If({
+    condition: isNode(),
+    then: If({
+      condition: isVscode(),
+      then: remoteNodeWorker('%$id%', { sourceCode: '%$sourceCode%', init: '%$init()%' }),
+      Else: nodeWorker('%$id%', { sourceCode: '%$sourceCode%', init: '%$init()%' })
+    }),
+    Else: webWorker('%$id%', {
+      sourceCode: '%$sourceCode%',
+      init: '%$init()%',
+      networkPeer: '%$networkPeer%'
+    })
+  })
+})
+
+component('webWorker', {
+  type: 'jbm',
+  params: [
+    {id: 'id', as: 'string'},
+    {id: 'sourceCode', type: 'source-code<loader>', byName: true, defaultValue: treeShakeClient()},
+    {id: 'init', type: 'action<>', dynamic: true},
+    {id: 'networkPeer', as: 'boolean', description: 'used for testing', type: 'boolean'},
+    {id: 'stateless', as: 'boolean', description: 'can not be rx data source, or remote widget', type: 'boolean'}
+  ],
+  impl: (ctx,_id,sourceCode,init,networkPeer) => {
+      const id = (_id || 'w1').replace(/-/g,'__')
+      const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
+      if (childsOrNet[id]) return childsOrNet[id]
+      const workerUri = networkPeer ? id : `${jb.uri}•${id}`
+      const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
+      sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),'remote-jbm','tree-shake'])
+
+      const workerCode = `
+importScripts(location.origin+'/plugins/loader/jb-loader.js');
+//importScripts(location.origin+'/package/${sourceCode.plugins.join(',')}.js'); // 
+jbHost.baseUrl = location.origin || '';
+Promise.resolve(jbInit('${workerUri}', ${JSON.stringify(sourceCode)})).then(jb => {
+//jbLoadPacked({uri:'${workerUri}'}).then(jb => {
+  globalThis.jb = jb;
+  jb.spy.initSpy({spyParam: "${jb.spy.spyParam}"});
+  jb.treeShake.codeServerJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
+  self.postMessage({ $: 'workerReady' })
+})
+//# sourceURL=${workerUri}-initJb.js`
+
+      return childsOrNet[id] = {
+          uri: workerUri,
+          rjbm() {
+                if (this._rjbm) return this._rjbm
+                if (this.waitingForPromise) return this.waitingForPromise
+                const self = this
+                return this.waitingForPromise = new Promise(resolve => {
+                  const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
+                  worker.addEventListener('message', async function f1(m) {
+                      if (m.data.$ == 'workerReady') {
+                          if (self._rjbm) {
+                              resolve(self._rjbm) // race condition
+                          } else {
+                              worker.removeEventListener('message',f1)
+                              const rjbm = self._rjbm = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
+                              rjbm.worker = worker
+                              await init(ctx.setVar('jbm',childsOrNet[id]))
+                              resolve(rjbm)
+                          }
+                      }
+                  })
+              })
+          }
+      }
+  }
+})
+
+component('child', {
+  type: 'jbm',
+  params: [
+    {id: 'id', as: 'string'},
+    {id: 'sourceCode', type: 'source-code<loader>', byName: true, defaultValue: treeShakeClient()},
+    {id: 'init', type: 'action<>', dynamic: true}
+  ],
+  impl: (ctx,_id,sourceCode,init) => {
+        const id = _id || 'child1'
+        if (jb.jbm.childJbms[id]) return jb.jbm.childJbms[id]
+        const childUri = `${jb.uri}•${id}`
+        sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),'remote-jbm','tree-shake'])
+
+        return jb.jbm.childJbms[id] = {
+            uri: childUri,
+            async rjbm() {
+                if (this._rjbm) return this._rjbm
+                const child = this.child = await jbInit(childUri, sourceCode, {multipleInFrame: true})
+                //child.spy.initSpy({spyParam: jb.spy.spyParam})
+                child.rjbm = () => this._rjbm
+                this._rjbm = initChild(child)
+                await init(ctx.setVar('jbm',child))
+                return this._rjbm
+            }
+        }
+
+        function initChild(child) {
+            child.spy.initSpy({spyParam: jb.spy.spyParam})
+            child.parent = jb
+            child.treeShake.codeServerJbm = jb.treeShake.codeServerJbm || jb // TODO: use codeLoaderUri
+            child.ports[jb.uri] = {
+                from: child.uri, to: jb.uri,
+                postMessage: m => 
+                    jb.net.handleOrRouteMsg(jb.uri,child.uri,jb.ports[child.uri].handler, {from: child.uri, to: jb.uri,...m}),
+                onMessage: { addListener: handler => child.ports[jb.uri].handler = handler }, // only one handler
+            }
+            child.jbm.extendPortToJbmProxy(child.ports[jb.uri])
+            jb.ports[child.uri] = {
+                from: jb.uri,to: child.uri,
+                postMessage: m => 
+                    child.net.handleOrRouteMsg(child.uri,jb.uri,child.ports[jb.uri].handler , {from: jb.uri, to: child.uri,...m}),
+                onMessage: { addListener: handler => jb.ports[child.uri].handler = handler }, // only one handler
+            }
+            return jb.jbm.extendPortToJbmProxy(jb.ports[child.uri])
+        }
+    }
+})
+
+component('cmd', {
+  type: 'jbm',
+  params: [
+    {id: 'sourceCode', type: 'source-code<loader>', mandatory: true},
+    {id: 'viaHttpServer', as: 'string', defaultValue: 'http://localhost:8082'},
+    {id: 'doNotStripResult', as: 'boolean', type: 'boolean'},
+    {id: 'id', as: 'string'},
+    {id: 'spy', as: 'string'},
+    {id: 'includeLogs', as: 'boolean', type: 'boolean'}
+  ],
+  impl: (ctx,_sourceCode,viaHttpServer,doNotStripResult,id,spy,includeLogs) => ({
+        uri: id || 'main',
+        remoteExec: async (sctx,{data, action} = {}) => {
+            const plugins = !_sourceCode ? jb.loader.pluginsOfProfile([(data || action).profile, jb.path(sctx,'cmpCtx.params')]) : []
+            const sourceCode = _sourceCode || { plugins , pluginPackages: [{$:'defaultPackage'}] }
+            sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []), ...plugins])
+    
+            const args = [
+                ['-runCtx', JSON.stringify(sctx)],
+                ['-uri', id || `main`],
+                ['-sourceCode', JSON.stringify(sourceCode)],
+                spy ? ['-spy', spy]: [],
+                doNotStripResult ? ['-doNotStripResult',''+doNotStripResult] : []
+            ].filter(x=>x[1])
+            const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(arg=> `${arg[0]}:` + 
+                (arg[1].indexOf("'") != -1 ? `"${arg[1].replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg[1]}'`)).join(' ')}`
+            let cmdResult = null
+            if (viaHttpServer) {
+                const body = JSON.stringify(args.map(([k,v])=>`${k}:${v}`))
+                const url = `${viaHttpServer}/?op=jb`
+                jb.log('remote cmd activated via http server',{url,body,ctx})
+                cmdResult = await jbHost.fetch(url,{method: 'POST', body}).then(r => r.text())
+            } else if (jbHost.spawn) {
+                try {
+                   cmdResult = await jbHost.spawn(args)
+                } catch (e) {
+                  jb.logException(e,'cmd',{command})
+                }
+            }
+            try {
+                const resultWithLogs = JSON.parse(cmdResult)
+                jb.log('remote cmd result',{resultWithLogs, ctx})
+                return includeLogs ? resultWithLogs : resultWithLogs.result
+            } catch (err) {
+                debugger
+                jb.logError('remote cmd: can not parse result returned from jb.js',{cmdResult, command, err})
+            }
+        },
+        createCallbagSource: () => jb.logError('callbag is not supported in single run jbm'),
+        createCallbagOperator: () => jb.logError('callbag is not supported in single run jbm'),
+
+        async rjbm() { return this }
+    })
+})
+
+component('byUri', {
+  type: 'jbm',
+  params: [
+    {id: 'uri', as: 'string', dynamic: true}
+  ],
+  impl: ({},_uri) => {
+      const uri = _uri()
+      return findNeighbourJbm(uri) || {
+          uri,
+          rjbm() {
+              this._rjbm = this._rjbm || jb.jbm.extendPortToJbmProxy(remoteRoutingPort(jb.uri, uri),{doNotinitCommandListener: true})
+              return this._rjbm
+          }
+      }
+
+      function remoteRoutingPort(from,to) {
+          if (jb.ports[to]) return jb.ports[to]
+          const routingPath = calcRoutingPath(from,to)
+          if (routingPath.length == 2 && jb.ports[routingPath[1]])
+              return jb.ports[routingPath[1]]
+          let nextPort = jb.ports[routingPath[1]]
+          if (!nextPort && jb.jbm.gateway) {
+              routingPath.splice(1,0,jb.jbm.gateway.uri)
+              nextPort = jb.jbm.gateway
+          }
+          if (!nextPort) {
+              return jb.logError(`routing - can not find next port`,{routingPath, uri: jb.uri, from,to})
+          }
+  
+          const port = {
+              from, to,
+              postMessage: _m => { 
+                  const m = {from, to,routingPath,..._m}
+                  jb.log(`remote routing sent from ${from} to ${to}`,{m})
+                  nextPort.postMessage(m)
+              },
+              onMessage: { addListener: handler => nextPort.onMessage.addListener(m => jb.net.handleOrRouteMsg(from,to,handler,m)) },
+              onDisconnect: { addListener: handler => { port.disconnectHandler = handler} }
+          }
+          jb.ports[to] = port
+          return port
+      }
+
+      function calcRoutingPath(from,to) {
+          const pp1 = from.split('•'), pp2 = to.split('•')
+          const p1 = pp1.map((p,i) => pp1.slice(0,i+1).join('•'))
+          const p2 = pp2.map((p,i) => pp2.slice(0,i+1).join('•'))
+          let i =0;
+          while (p1[i] === p2[i] && i < p1.length) i++;
+          const path_to_shared_parent = i ? p1.slice(i-1) : p1.slice(i) // i == 0 means there is no shared parent, so network is used
+          return [...path_to_shared_parent.reverse(),...p2.slice(i)]
+      }
+      function findNeighbourJbm(uri) {
+          return [jb, jb.parent, ...Object.values(jb.jbm.childJbms), ...Object.values(jb.jbm.networkPeers)].filter(x=>x).find(x=>x.uri == uri)
+      }
+  }
+})
+
+component('jbm.self', {
+  type: 'jbm',
+  impl: () => {
+      jb.rjbm = jb.rjbm || (() => jb)
+      return jb
+  }
+})
+
+component('jbm.isSelf', {
+  params: [
+    {id: 'jbm', type: 'jbm', mandatory: true}
+  ],
+  type: 'boolean<>',
+  impl: (ctx,jbm) => jbm == jb
+})
+
+component('parent', {
+  type: 'jbm',
+  impl: () => ({
+    uri: jb.parent.uri,
+    rjbm: () => jb.parent
+  })
+})
+
+component('jbm.start', {
+  type: 'data<>',
+  moreTypes: 'action<>',
+  params: [
+    {id: 'jbm', type: 'jbm', mandatory: true}
+  ],
+  impl: pipe('%$jbm%', '%rjbm()%', '%$jbm%', first())
+})
+
+component('jbm.terminateChild', {
+  type: 'action<>',
+  params: [
+    {id: 'id', as: 'string'}
+  ],
+  impl: (ctx,id) => jb.jbm.terminateChild(id,ctx)
+})
+
+component('isNode', {
+  type: 'boolean<>',
+  impl: () => globalThis.jbHost.isNode
+})
+
+component('isVscode', {
+  type: 'boolean<>',
+  impl: () => globalThis.jbHost.isVscode
+})
+
+component('nodeOnly', {
+  type: 'data<>',
+  params: [
+    {id: 'calc', dynamic: true, mandatory: true},
+    {id: 'sourceCode', type: 'source-code<loader>', mandatory: true}
+  ],
+  impl: If(and(isNode(), not(isVscode())), '%$calc()%', remote.data('%$calc()%', cmd('%$sourceCode%')))
+})
+});
+
+jbLoadPackedFile({lineInPackage:7431, jb, noProxies: false, path: '/plugins/remote/jbm/jbm-utils.js',fileDsl: '', pluginId: 'remote-jbm' }, 
             function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
 /* jbm - a virtual jBart machine - can be implemented in same frame/sub frames/workers over the network
 interface jbm : {
@@ -7435,44 +7750,7 @@ extension('jbm', 'main', {
 
 });
 
-jbLoadPackedFile({lineInPackage:7440, jb, noProxies: false, path: '/plugins/remote/jbm/remote-cmd.js',fileDsl: '', pluginId: 'remote-jbm' }, 
-            function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
-component('remote.cmd', {
-  type: 'data<>',
-  moreTypes: 'action<>',
-  description: 'calc a script with jb.js',
-  params: [
-    {id: 'main', type: 'data<>', dynamic: true, moreTypes: 'action<>', description: 'e.g pipeline("hello","%% -- %$v1%")'},
-    {id: 'wrap', as: 'string', description: 'e.g prune(MAIN)'},
-    {id: 'context', description: 'e.g {v1: "xx", param1: prof1("yy") }'},
-    {id: 'sourceCode', type: 'source-code<loader>', mandatory: true},
-    {id: 'id', as: 'string', description: 'jb.uri of cmd, default is main'},
-    {id: 'viaHttpServer', as: 'string', defaultValue: 'http://localhost:8082'}
-  ],
-  impl: async (ctx, main, wrap, context, sourceCode, id, viaHttpServer) => {
-        const args = [
-            ['-main', jb.utils.prettyPrint(main.profile, { singleLine: true })],
-            ['-wrap', wrap],
-            ['-uri', id],
-            ['-sourceCode', JSON.stringify(sourceCode)],
-            ...Object.keys(context).map(k => [`%${k}`, context[k]]),
-        ].filter(x => x[1])
-        const body = JSON.stringify(args.map(([k, v]) => `${k}:${v}`))
-        const url = `${viaHttpServer}/?op=jb`
-
-        return jbHost.fetch(url, { method: 'POST', body }).then(r => r.json()).then(x => x.result)
-
-        function serializeContextVal(val) {
-            if (val && typeof val == 'object')
-                return `() => ${JSON.stringify(val)}`
-            return val
-        }
-    }
-})
-
-});
-
-jbLoadPackedFile({lineInPackage:7477, jb, noProxies: false, path: '/plugins/remote/jbm/node-worker.js',fileDsl: '', pluginId: 'remote-jbm' }, 
+jbLoadPackedFile({lineInPackage:7755, jb, noProxies: false, path: '/plugins/remote/jbm/node-worker.js',fileDsl: '', pluginId: 'remote-jbm' }, 
             function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
 
 extension('webSocket', 'client', {
@@ -7779,322 +8057,7 @@ parentPort.postMessage({ $: 'workerReady' })
 
 });
 
-jbLoadPackedFile({lineInPackage:7784, jb, noProxies: false, path: '/plugins/remote/jbm/jbm.js',fileDsl: '', pluginId: 'remote-jbm' }, 
-            function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
-pluginDsl('jbm')
-using('loader,tree-shake')
-
-component('stateless', {
-  type: 'jbm',
-  params: [
-    {id: 'sourceCode', type: 'source-code<loader>'}
-  ],
-  impl: If(isNode(), cmd('%$sourceCode%'), webWorker({ sourceCode: '%$sourceCode%', stateless: true }))
-})
-
-component('worker', {
-  type: 'jbm',
-  params: [
-    {id: 'id', as: 'string'},
-    {id: 'sourceCode', type: 'source-code<loader>', byName: true},
-    {id: 'init', type: 'action<>', dynamic: true},
-    {id: 'networkPeer', as: 'boolean', description: 'used for testing', type: 'boolean'}
-  ],
-  impl: If({
-    condition: isNode(),
-    then: If({
-      condition: isVscode(),
-      then: remoteNodeWorker('%$id%', { sourceCode: '%$sourceCode%', init: '%$init()%' }),
-      Else: nodeWorker('%$id%', { sourceCode: '%$sourceCode%', init: '%$init()%' })
-    }),
-    Else: webWorker('%$id%', {
-      sourceCode: '%$sourceCode%',
-      init: '%$init()%',
-      networkPeer: '%$networkPeer%'
-    })
-  })
-})
-
-component('webWorker', {
-  type: 'jbm',
-  params: [
-    {id: 'id', as: 'string'},
-    {id: 'sourceCode', type: 'source-code<loader>', byName: true, defaultValue: treeShakeClient()},
-    {id: 'init', type: 'action<>', dynamic: true},
-    {id: 'networkPeer', as: 'boolean', description: 'used for testing', type: 'boolean'},
-    {id: 'stateless', as: 'boolean', description: 'can not be rx data source, or remote widget', type: 'boolean'}
-  ],
-  impl: (ctx,_id,sourceCode,init,networkPeer) => {
-      const id = (_id || 'w1').replace(/-/g,'__')
-      const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
-      if (childsOrNet[id]) return childsOrNet[id]
-      const workerUri = networkPeer ? id : `${jb.uri}•${id}`
-      const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
-      sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),'remote-jbm','tree-shake'])
-
-      const workerCode = `
-importScripts(location.origin+'/plugins/loader/jb-loader.js');
-//importScripts(location.origin+'/package/${sourceCode.plugins.join(',')}.js'); // 
-jbHost.baseUrl = location.origin || '';
-Promise.resolve(jbInit('${workerUri}', ${JSON.stringify(sourceCode)})).then(jb => {
-//jbLoadPacked({uri:'${workerUri}'}).then(jb => {
-  globalThis.jb = jb;
-  jb.spy.initSpy({spyParam: "${jb.spy.spyParam}"});
-  jb.treeShake.codeServerJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
-  self.postMessage({ $: 'workerReady' })
-})
-//# sourceURL=${workerUri}-initJb.js`
-
-      return childsOrNet[id] = {
-          uri: workerUri,
-          rjbm() {
-                if (this._rjbm) return this._rjbm
-                if (this.waitingForPromise) return this.waitingForPromise
-                const self = this
-                return this.waitingForPromise = new Promise(resolve => {
-                  const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
-                  worker.addEventListener('message', async function f1(m) {
-                      if (m.data.$ == 'workerReady') {
-                          if (self._rjbm) {
-                              resolve(self._rjbm) // race condition
-                          } else {
-                              worker.removeEventListener('message',f1)
-                              const rjbm = self._rjbm = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
-                              rjbm.worker = worker
-                              await init(ctx.setVar('jbm',childsOrNet[id]))
-                              resolve(rjbm)
-                          }
-                      }
-                  })
-              })
-          }
-      }
-  }
-})
-
-component('child', {
-  type: 'jbm',
-  params: [
-    {id: 'id', as: 'string'},
-    {id: 'sourceCode', type: 'source-code<loader>', byName: true, defaultValue: treeShakeClient()},
-    {id: 'init', type: 'action<>', dynamic: true}
-  ],
-  impl: (ctx,_id,sourceCode,init) => {
-        const id = _id || 'child1'
-        if (jb.jbm.childJbms[id]) return jb.jbm.childJbms[id]
-        const childUri = `${jb.uri}•${id}`
-        sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),'remote-jbm','tree-shake'])
-
-        return jb.jbm.childJbms[id] = {
-            uri: childUri,
-            async rjbm() {
-                if (this._rjbm) return this._rjbm
-                const child = this.child = await jbInit(childUri, sourceCode, {multipleInFrame: true})
-                //child.spy.initSpy({spyParam: jb.spy.spyParam})
-                child.rjbm = () => this._rjbm
-                this._rjbm = initChild(child)
-                await init(ctx.setVar('jbm',child))
-                return this._rjbm
-            }
-        }
-
-        function initChild(child) {
-            child.spy.initSpy({spyParam: jb.spy.spyParam})
-            child.parent = jb
-            child.treeShake.codeServerJbm = jb.treeShake.codeServerJbm || jb // TODO: use codeLoaderUri
-            child.ports[jb.uri] = {
-                from: child.uri, to: jb.uri,
-                postMessage: m => 
-                    jb.net.handleOrRouteMsg(jb.uri,child.uri,jb.ports[child.uri].handler, {from: child.uri, to: jb.uri,...m}),
-                onMessage: { addListener: handler => child.ports[jb.uri].handler = handler }, // only one handler
-            }
-            child.jbm.extendPortToJbmProxy(child.ports[jb.uri])
-            jb.ports[child.uri] = {
-                from: jb.uri,to: child.uri,
-                postMessage: m => 
-                    child.net.handleOrRouteMsg(child.uri,jb.uri,child.ports[jb.uri].handler , {from: jb.uri, to: child.uri,...m}),
-                onMessage: { addListener: handler => jb.ports[child.uri].handler = handler }, // only one handler
-            }
-            return jb.jbm.extendPortToJbmProxy(jb.ports[child.uri])
-        }
-    }
-})
-
-component('cmd', {
-  type: 'jbm',
-  params: [
-    {id: 'sourceCode', type: 'source-code<loader>', mandatory: true},
-    {id: 'viaHttpServer', as: 'string', defaultValue: 'http://localhost:8082'},
-    {id: 'doNotStripResult', as: 'boolean', type: 'boolean'},
-    {id: 'id', as: 'string'},
-    {id: 'spy', as: 'string'},
-    {id: 'includeLogs', as: 'boolean', type: 'boolean'}
-  ],
-  impl: (ctx,_sourceCode,viaHttpServer,doNotStripResult,id,spy,includeLogs) => ({
-        uri: id || 'main',
-        remoteExec: async (sctx,{data, action} = {}) => {
-            const plugins = !_sourceCode ? jb.loader.pluginsOfProfile([(data || action).profile, jb.path(sctx,'cmpCtx.params')]) : []
-            const sourceCode = _sourceCode || { plugins , pluginPackages: [{$:'defaultPackage'}] }
-            sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []), ...plugins])
-    
-            const args = [
-                ['-runCtx', JSON.stringify(sctx)],
-                ['-uri', id || `main`],
-                ['-sourceCode', JSON.stringify(sourceCode)],
-                spy ? ['-spy', spy]: [],
-                doNotStripResult ? ['-doNotStripResult',''+doNotStripResult] : []
-            ].filter(x=>x[1])
-            const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(arg=> `${arg[0]}:` + 
-                (arg[1].indexOf("'") != -1 ? `"${arg[1].replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg[1]}'`)).join(' ')}`
-            let cmdResult = null
-            if (viaHttpServer) {
-                const body = JSON.stringify(args.map(([k,v])=>`${k}:${v}`))
-                const url = `${viaHttpServer}/?op=jb`
-                jb.log('remote cmd activated via http server',{url,body,ctx})
-                cmdResult = await jbHost.fetch(url,{method: 'POST', body}).then(r => r.text())
-            } else if (jbHost.spawn) {
-                try {
-                   cmdResult = await jbHost.spawn(args)
-                } catch (e) {
-                  jb.logException(e,'cmd',{command})
-                }
-            }
-            try {
-                const resultWithLogs = JSON.parse(cmdResult)
-                jb.log('remote cmd result',{resultWithLogs, ctx})
-                return includeLogs ? resultWithLogs : resultWithLogs.result
-            } catch (err) {
-                debugger
-                jb.logError('remote cmd: can not parse result returned from jb.js',{cmdResult, command, err})
-            }
-        },
-        createCallbagSource: () => jb.logError('callbag is not supported in single run jbm'),
-        createCallbagOperator: () => jb.logError('callbag is not supported in single run jbm'),
-
-        async rjbm() { return this }
-    })
-})
-
-component('byUri', {
-  type: 'jbm',
-  params: [
-    {id: 'uri', as: 'string', dynamic: true}
-  ],
-  impl: ({},_uri) => {
-      const uri = _uri()
-      return findNeighbourJbm(uri) || {
-          uri,
-          rjbm() {
-              this._rjbm = this._rjbm || jb.jbm.extendPortToJbmProxy(remoteRoutingPort(jb.uri, uri),{doNotinitCommandListener: true})
-              return this._rjbm
-          }
-      }
-
-      function remoteRoutingPort(from,to) {
-          if (jb.ports[to]) return jb.ports[to]
-          const routingPath = calcRoutingPath(from,to)
-          if (routingPath.length == 2 && jb.ports[routingPath[1]])
-              return jb.ports[routingPath[1]]
-          let nextPort = jb.ports[routingPath[1]]
-          if (!nextPort && jb.jbm.gateway) {
-              routingPath.splice(1,0,jb.jbm.gateway.uri)
-              nextPort = jb.jbm.gateway
-          }
-          if (!nextPort) {
-              return jb.logError(`routing - can not find next port`,{routingPath, uri: jb.uri, from,to})
-          }
-  
-          const port = {
-              from, to,
-              postMessage: _m => { 
-                  const m = {from, to,routingPath,..._m}
-                  jb.log(`remote routing sent from ${from} to ${to}`,{m})
-                  nextPort.postMessage(m)
-              },
-              onMessage: { addListener: handler => nextPort.onMessage.addListener(m => jb.net.handleOrRouteMsg(from,to,handler,m)) },
-              onDisconnect: { addListener: handler => { port.disconnectHandler = handler} }
-          }
-          jb.ports[to] = port
-          return port
-      }
-
-      function calcRoutingPath(from,to) {
-          const pp1 = from.split('•'), pp2 = to.split('•')
-          const p1 = pp1.map((p,i) => pp1.slice(0,i+1).join('•'))
-          const p2 = pp2.map((p,i) => pp2.slice(0,i+1).join('•'))
-          let i =0;
-          while (p1[i] === p2[i] && i < p1.length) i++;
-          const path_to_shared_parent = i ? p1.slice(i-1) : p1.slice(i) // i == 0 means there is no shared parent, so network is used
-          return [...path_to_shared_parent.reverse(),...p2.slice(i)]
-      }
-      function findNeighbourJbm(uri) {
-          return [jb, jb.parent, ...Object.values(jb.jbm.childJbms), ...Object.values(jb.jbm.networkPeers)].filter(x=>x).find(x=>x.uri == uri)
-      }
-  }
-})
-
-component('jbm.self', {
-  type: 'jbm',
-  impl: () => {
-      jb.rjbm = jb.rjbm || (() => jb)
-      return jb
-  }
-})
-
-component('jbm.isSelf', {
-  params: [
-    {id: 'jbm', type: 'jbm', mandatory: true}
-  ],
-  type: 'boolean<>',
-  impl: (ctx,jbm) => jbm == jb
-})
-
-component('parent', {
-  type: 'jbm',
-  impl: () => ({
-    uri: jb.parent.uri,
-    rjbm: () => jb.parent
-  })
-})
-
-component('jbm.start', {
-  type: 'data<>',
-  moreTypes: 'action<>',
-  params: [
-    {id: 'jbm', type: 'jbm', mandatory: true}
-  ],
-  impl: pipe('%$jbm%', '%rjbm()%', '%$jbm%', first())
-})
-
-component('jbm.terminateChild', {
-  type: 'action<>',
-  params: [
-    {id: 'id', as: 'string'}
-  ],
-  impl: (ctx,id) => jb.jbm.terminateChild(id,ctx)
-})
-
-component('isNode', {
-  type: 'boolean<>',
-  impl: () => globalThis.jbHost.isNode
-})
-
-component('isVscode', {
-  type: 'boolean<>',
-  impl: () => globalThis.jbHost.isVscode
-})
-
-component('nodeOnly', {
-  type: 'data<>',
-  params: [
-    {id: 'calc', dynamic: true, mandatory: true},
-    {id: 'sourceCode', type: 'source-code<loader>', mandatory: true}
-  ],
-  impl: If(and(isNode(), not(isVscode())), '%$calc()%', remote.data('%$calc()%', cmd('%$sourceCode%')))
-})
-});
-
-jbLoadPackedFile({lineInPackage:8099, jb, noProxies: false, path: '/plugins/remote/jbm/remote-context.js',fileDsl: '', pluginId: 'remote-jbm' }, 
+jbLoadPackedFile({lineInPackage:8062, jb, noProxies: false, path: '/plugins/remote/jbm/remote-context.js',fileDsl: '', pluginId: 'remote-jbm' }, 
             function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
 extension('remoteCtx', {
     initExtension() {
@@ -8268,6 +8231,43 @@ component('remoteCtx.varsUsed', {
     const profText = jb.utils.prettyPrint(profile||'', {noMacros: true})
     return (profText.match(/%\$[a-zA-Z0-9_]+/g) || []).map(x=>x.slice(2))
   }
+})
+
+});
+
+jbLoadPackedFile({lineInPackage:8240, jb, noProxies: false, path: '/plugins/remote/jbm/remote-cmd.js',fileDsl: '', pluginId: 'remote-jbm' }, 
+            function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
+component('remote.cmd', {
+  type: 'data<>',
+  moreTypes: 'action<>',
+  description: 'calc a script with jb.js',
+  params: [
+    {id: 'main', type: 'data<>', dynamic: true, moreTypes: 'action<>', description: 'e.g pipeline("hello","%% -- %$v1%")'},
+    {id: 'wrap', as: 'string', description: 'e.g prune(MAIN)'},
+    {id: 'context', description: 'e.g {v1: "xx", param1: prof1("yy") }'},
+    {id: 'sourceCode', type: 'source-code<loader>', mandatory: true},
+    {id: 'id', as: 'string', description: 'jb.uri of cmd, default is main'},
+    {id: 'viaHttpServer', as: 'string', defaultValue: 'http://localhost:8082'}
+  ],
+  impl: async (ctx, main, wrap, context, sourceCode, id, viaHttpServer) => {
+        const args = [
+            ['-main', jb.utils.prettyPrint(main.profile, { singleLine: true })],
+            ['-wrap', wrap],
+            ['-uri', id],
+            ['-sourceCode', JSON.stringify(sourceCode)],
+            ...Object.keys(context).map(k => [`%${k}`, context[k]]),
+        ].filter(x => x[1])
+        const body = JSON.stringify(args.map(([k, v]) => `${k}:${v}`))
+        const url = `${viaHttpServer}/?op=jb`
+
+        return jbHost.fetch(url, { method: 'POST', body }).then(r => r.json()).then(x => x.result)
+
+        function serializeContextVal(val) {
+            if (val && typeof val == 'object')
+                return `() => ${JSON.stringify(val)}`
+            return val
+        }
+    }
 })
 
 });
@@ -8532,460 +8532,7 @@ component('remote.listAll', {
 
 });
 
-jbLoadPackedFile({lineInPackage:8537, jb, noProxies: false, path: '/plugins/ui/core/core-features.js',fileDsl: '', pluginId: 'ui-core' }, 
-            function({jb,require,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,group,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,css,frontEnd,action,backend,sink,source,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
-component('method', {
-  type: 'feature',
-  description: 'define backend event handler',
-  params: [
-    {id: 'id', as: 'string', mandatory: true, description: 'if using the pattern onXXHandler, or onKeyXXHandler automaticaly binds to UI event XX, assuming on-XX:true is defined at the template'},
-    {id: 'action', type: 'action', mandatory: true, dynamic: true}
-  ],
-  impl: (ctx,id) => ({method: {id, ctx}})
-})
-
-component('watchAndCalcModelProp', {
-  type: 'feature',
-  description: 'Use a model property in the rendering and watch its changes (refresh on change)',
-  params: [
-    {id: 'prop', as: 'string', mandatory: true},
-    {id: 'transformValue', dynamic: true, defaultValue: '%%'},
-    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
-    {id: 'defaultValue'}
-  ],
-  impl: ctx => ({watchAndCalcModelProp: ctx.params})
-})
-
-component('calcProp', {
-  type: 'feature',
-  description: 'define a variable to be used in the rendering calculation process',
-  params: [
-    {id: 'id', as: 'string', mandatory: true},
-    {id: 'value', mandatory: true, dynamic: true, description: 'when empty, value is taken from model'},
-    {id: 'priority', as: 'number', dynamic: true, defaultValue: 1, description: 'if same prop was defined elsewhere decides who will override. range 1-1000, can use the $state variable'},
-    {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'},
-    {id: 'defaultValue'}
-  ],
-  impl: ctx => ({calcProp: {... ctx.params, index: jb.ui.propCounter++}})
-})
-
-component('userStateProp', {
-  type: 'feature',
-  description: 'define a user state (e.g., selection) that is passed to the FE and back to the BE via refresh calls. The first calculation is done at the BE and then the FE can change it',
-  params: [
-    {id: 'id', as: 'string', mandatory: true},
-    {id: 'value', mandatory: true, dynamic: true, description: 'when empty value is taken from model'},
-    {id: 'priority', as: 'number', dynamic: true, defaultValue: 1, description: 'if same prop was defined elsewhere decides who will override. range 1-1000, can use the $state variable'},
-    {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'}
-  ],
-  impl: ctx => ({calcProp: {... ctx.params, userStateProp: true, index: jb.ui.propCounter++}})
-})
-
-component('calcProps', {
-  type: 'feature',
-  description: 'define variables to be used in the rendering calculation process',
-  params: [
-    {id: 'props', as: 'object', mandatory: true, description: 'props as object', dynamic: true},
-    {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'}
-  ],
-  impl: (ctx,propsF,phase) => ({
-      calcProp: {id: '$props', value: ctx => propsF(ctx), phase, index: jb.ui.propCounter++ }
-    })
-})
-
-component('feature.initValue', {
-  type: 'feature',
-  category: 'lifecycle',
-  description: 'set value if the value is empty, activated before calc properties',
-  params: [
-    {id: 'to', as: 'ref', mandatory: true, dynamic: true},
-    {id: 'value', mandatory: true, dynamic: true},
-    {id: 'alsoWhenNotEmpty', as: 'boolean', type: 'boolean'}
-  ],
-  impl: (ctx,_to,_value,alsoWhenNotEmpty) => ({ init: { 
-    action: (_ctx,{cmp}) => {
-      const value = _value(_ctx), to = _to(_ctx)
-      const toAssign = jb.val(value), currentVal = jb.val(to)
-      if ((alsoWhenNotEmpty || currentVal == null) && toAssign !== currentVal) {
-        jb.log('init value',{cmp, ...ctx.params})
-        jb.db.writeValue(to,toAssign,ctx,true)
-      } else if (toAssign !== currentVal) {
-        jb.logError(`feature.initValue: init non empty value ${jb.utils.prettyPrint(to.profile)}`,{toAssign,currentVal,cmp,ctx,to,value})
-      }
-    }, 
-    phase: 10 
-  }})
-})
-
-component('feature.requireService', {
-  type: 'feature',
-  params: [
-    {id: 'service', type: 'service'},
-    {id: 'condition', dynamic: true, defaultValue: true}
-  ],
-  impl: (_ctx,service,condition) => ({ init: { 
-    action: ctx => condition(ctx) && service.init(ctx),
-    phase: 10 
-  }})
-})
-
-component('feature.init', {
-  type: 'feature',
-  category: 'lifecycle',
-  description: 'activated before calc properties, use initValue or require instead',
-  params: [
-    {id: 'action', type: 'action', mandatory: true, dynamic: true},
-    {id: 'phase', as: 'number', defaultValue: 10, description: 'init funcs from different features can use each other, phase defines the calculation order'}
-  ],
-  impl: ({},action,phase) => ({ init: { action, phase }})
-})
-
-component('onDestroy', {
-  type: 'feature',
-  category: 'lifecycle',
-  description: 'destroy on the backend',
-  params: [
-    {id: 'action', type: 'action', mandatory: true, dynamic: true}
-  ],
-  impl: method('destroy', '%$action()%')
-})
-
-component('templateModifier', {
-  type: 'feature',
-  description: 'change the html template',
-  params: [
-    {id: 'value', mandatory: true, dynamic: true}
-  ],
-  impl: (ctx,value) => ({ templateModifier: (vdom,cmp) => value(cmp.calcCtx.setVars({vdom, ...cmp.renderProps })) })
-})
-
-component('features', {
-  type: 'feature',
-  moreTypes: 'style',
-  description: 'list of features, auto flattens',
-  params: [
-    {id: 'features', type: 'feature[]', as: 'array', typeAsParent: t=>t.replace(/style/,'feature'), composite: true}
-  ],
-  impl: (ctx,features) => features.flatMap(x=> Array.isArray(x) ? x: [x])
-})
-
-component('followUp.action', {
-  type: 'feature',
-  description: 'runs at the backend a tick after the vdom was returned. Try to avoid it, use initValue or require instead',
-  category: 'lifecycle',
-  params: [
-    {id: 'action', type: 'action', mandatory: true, dynamic: true}
-  ],
-  impl: ctx => ({ followUp: { action: ctx2 => ctx.params.action(ctx2), srcCtx: ctx } })
-})
-
-component('followUp.flow', {
-  type: 'feature',
-  description: 'rx flow at the backend after the vdom was sent. Try to avoid it, use watchRef instead',
-  params: [
-    {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
-  ],
-  impl: followUp.action(
-    runActions(
-      Var('followUpCmp', '%$cmp%'),
-      Var('pipeToRun', rx.pipe('%$elems()%')),
-      (ctx,{cmp,pipeToRun}) => {
-        jb.ui.followUps[cmp.cmpId] = jb.ui.followUps[cmp.cmpId] || []
-        jb.ui.followUps[cmp.cmpId].push({cmp, pipe: pipeToRun, srcPath: ctx.cmpCtx.callerPath})
-      }
-    )
-  )
-})
-
-// jb.component('registerCmpFLow', {
-//   type: 'action',
-//   params: [
-//     {id: 'cmp'},
-
-//   ],
-//   impl: 
-// })
-
-component('watchRef', {
-  type: 'feature',
-  category: 'watch:100',
-  description: 'subscribes to data changes to refresh component',
-  params: [
-    {id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data'},
-    {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', byName: true, description: 'watch childern change as well'},
-    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
-    {id: 'strongRefresh', as: 'boolean', description: 'restart BE and FE flows, wait for data or event handlers', type: 'boolean'},
-    {id: 'cssOnly', as: 'boolean', description: 'refresh only css features', type: 'boolean'},
-    {id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority'},
-    {id: 'methodBeforeRefresh', as: 'string', description: 'cmp method to run before refreshing'}
-  ],
-  impl: ctx => ({ watchRef: {refF: ctx.params.ref, ...ctx.params}}),
-  dependencies: () => jb.ui.subscribeToRefChange()
-})
-
-component('followUp.watchObservable', {
-  type: 'feature',
-  category: 'watch',
-  description: 'subscribes to a custom observable to refresh component',
-  params: [
-    {id: 'toWatch', type: 'rx', mandatory: true, dynamic: true},
-    {id: 'debounceTime', as: 'number', description: 'in mSec'}
-  ],
-  impl: followUp.flow(
-    source.data(0),
-    rx.var('cmp', '%$cmp%'),
-    rx.flatMap('%$toWatch()%'),
-    rx.debounceTime('%$debounceTime%'),
-    sink.refreshCmp()
-  )
-})
-
-component('followUp.onDataChange', {
-  type: 'feature',
-  category: 'watch',
-  description: 'watch observable data reference, subscribe and run action',
-  params: [
-    {id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data'},
-    {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
-    {id: 'action', type: 'action', dynamic: true, description: 'run on change'}
-  ],
-  impl: followUp.flow(
-    source.watchableData('%$ref()%', { includeChildren: '%$includeChildren%' }),
-    sink.action(call('action'))
-  )
-})
-
-component('group.data', {
-  type: 'feature',
-  category: 'general:100,watch:80',
-  params: [
-    {id: 'Data', mandatory: true, dynamic: true, as: 'ref'},
-    {id: 'itemVariable', as: 'string', description: 'optional. define data as a local variable'},
-    {id: 'watch', as: 'boolean', type: 'boolean'},
-    {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'}
-  ],
-  impl: ({}, refF, itemVariable,watch,includeChildren) => ({
-      ...(watch ? {watchRef: { refF, includeChildren }} : {}),
-      extendCtx: ctx => {
-          const ref = refF()
-          return ctx.setData(ref).setVar(itemVariable,ref)
-      },
-  })
-})
-
-component('htmlAttribute', {
-  type: 'feature',
-  description: 'set attribute to html element and give it value',
-  params: [
-    {id: 'attribute', mandatory: true, as: 'string'},
-    {id: 'value', mandatory: true, as: 'string', dynamic: true}
-  ],
-  impl: (ctx,id,value) => ({
-    templateModifier: (vdom,cmp) => vdom.setAttribute(id.match(/^on[^-]/) ? `${id.slice(0,2)}-${id.slice(2)}` : id, value(cmp.ctx))
-  })
-})
-
-component('cmpId', {
-  type: 'feature',
-  priority: 0,
-  description: 'force cmpId',
-  params: [
-    {id: 'cmpId', mandatory: true, as: 'string'}
-  ],
-  impl: (ctx,cmpId) => {
-    if (cmpId.match(/:/)) jb.logError(`cmpId: do not use ":" in cmpId ${cmpId}`,{ctx})
-    return ({ cmpId})
-  }
-})
-
-component('id', {
-  type: 'feature',
-  description: 'adds id to html element',
-  params: [
-    {id: 'id', mandatory: true, as: 'string', dynamic: true}
-  ],
-  impl: htmlAttribute('id', '%$id()%')
-})
-
-component('feature.hoverTitle', {
-  type: 'feature',
-  description: 'set element title, usually shown by browser on hover',
-  params: [
-    {id: 'title', as: 'string', mandatory: true}
-  ],
-  impl: htmlAttribute('title', '%$title%')
-})
-
-component('watchable', {
-  type: 'feature',
-  category: 'general:90',
-  description: 'define a watchable variable',
-  params: [
-    {id: 'name', as: 'string', mandatory: true},
-    {id: 'value', dynamic: true, defaultValue: '', mandatory: true}
-  ],
-  impl: ({}, name, value) => ({
-    destroy: cmp => {
-      const fullName = name + ':' + cmp.cmpId;
-      cmp.ctx.runAction(writeValue(`%$${fullName}%`,null))
-    },
-    extendCtx: (ctx,cmp) => {
-      if (name.match(/:/)) jb.logError(`watchable: do not use ":" in var name ${name}`,{ctx})
-      const fullName = name + ':' + cmp.cmpId;
-      jb.log('create watchable var',{cmp,ctx,fullName})
-      const refToResource = jb.db.useResourcesHandler(h=>h.refOfPath([fullName]))
-      jb.db.writeValue(refToResource,value(ctx),ctx)
-      return ctx.setVar(name, refToResource);
-    }
-  }),
-  dependencies: () => jb.ui.subscribeToRefChange()
-})
-
-component('variable', {
-  type: 'feature',
-  category: 'general:90',
-  description: 'define a constant passive variable',
-  params: [
-    {id: 'name', as: 'string', mandatory: true},
-    {id: 'value', dynamic: true, defaultValue: '', mandatory: true}
-  ],
-  impl: ({}, name, value) => ({ extendCtx: ctx => ctx.setVar(name,jb.val(value(ctx))) })
-})
-
-// component('calculatedVar', {
-//   type: 'feature',
-//   category: 'general:60',
-//   description: 'defines a local variable that watches other variables with auto recalc',
-//   params: [
-//     {id: 'name', as: 'string', mandatory: true},
-//     {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
-//     {id: 'watchRefs', as: 'array', dynamic: true, mandatory: true, defaultValue: [], description: 'variable to watch. needs to be in array'}
-//   ],
-//   impl: features(
-//     onDestroy(writeValue('%${%$name%}:{%$cmp/cmpId%}%', null)),
-//     followUp.flow(
-//       source.merge((ctx,{},{watchRefs}) => watchRefs(ctx).map(ref=>ctx.setData(ref).run(source.watchableData('%%')) )),
-//       rx.log('check calculatedVar'),
-//       rx.map('%$value()%'),
-//       sink.data('%${%$name%}:{%$cmp/cmpId%}%')
-//     ),
-//     ctx => ({
-//       extendCtx: (_ctx,cmp) => {
-//         const {name,value} = ctx.cmpCtx.params
-//         const fullName = name + ':' + cmp.cmpId;
-//         jb.log('create watchable calculatedVar',{ctx,cmp,fullName})
-//         jb.db.resource(fullName, jb.val(value(_ctx)));
-//         const ref = _ctx.exp(`%$${fullName}%`,'ref')
-//         return _ctx.setVar(name, ref);
-//       }
-//     })
-//   )
-// })
-
-component('feature.if', {
-  type: 'feature',
-  category: 'feature:85',
-  description: 'adds/remove element to dom by condition. keywords: hidden/show',
-  params: [
-    {id: 'showCondition', as: 'boolean', mandatory: true, dynamic: true, type: 'boolean'}
-  ],
-  impl: (ctx, condition) => ({
-    templateModifier: (vdom,cmp) =>
-      jb.toboolean(condition(cmp.ctx)) ? vdom : jb.ui.h('span',{style: {display: 'none'}})
-  })
-})
-
-component('hidden', {
-  type: 'feature',
-  category: 'feature:85',
-  description: 'display:none on element. keywords: show',
-  params: [
-    {id: 'showCondition', type: 'boolean', mandatory: true, dynamic: true}
-  ],
-  impl: (ctx,showCondition) => ({
-    templateModifier: (vdom,cmp) => {
-      jb.path(vdom,'attributes.style.display',jb.toboolean(showCondition(cmp.ctx)) ? 'inherit' : 'none')
-      return vdom
-    }
-  })
-})
-
-component('refreshControlById', {
-  type: 'action',
-  params: [
-    {id: 'id', as: 'string', mandatory: true},
-    {id: 'strongRefresh', as: 'boolean', byName: true, description: 'restart BE and FE flows, wait for data or event handlers', type: 'boolean'},
-    {id: 'cssOnly', as: 'boolean', description: 'refresh only css features', type: 'boolean'}
-  ],
-  impl: (ctx,id) => {
-    const elem = jb.ui.widgetBody(ctx).querySelector('#'+id)
-    if (!elem)
-      return jb.logError('refreshControlById can not find elem for #'+id, {ctx})
-    return jb.ui.refreshElem(elem,null,{srcCtx: ctx, ...ctx.params})
-  }
-})
-
-component('group.autoFocusOnFirstInput', {
-  type: 'feature',
-  impl: templateModifier(({},{vdom}) => {
-    const elem = vdom.querySelectorAll('input,textarea,select').filter(e => e.getAttribute('type') != 'checkbox')[0]
-    if (elem)
-      elem.setAttribute('$focus','autoFocusOnFirstInput')
-    return vdom
-  })
-})
-
-component('refreshIfNotWatchable', {
-  type: 'action',
-  params: [
-    {id: 'Data'}
-  ],
-  impl: (ctx, data) => !jb.db.isWatchable(data) && ctx.vars.cmp.refresh(null,{strongRefresh: true}, ctx)
-})
-
-component('feature.byCondition', {
-  type: 'feature',
-  description: 'conditional feature, define feature if then else condition',
-  macroByValue: true,
-  params: [
-    {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
-    {id: 'then', type: 'feature', mandatory: true, dynamic: true, composite: true},
-    {id: 'else', type: 'feature', dynamic: true}
-  ],
-  impl: (ctx,cond,_then,_else) =>	cond ? _then() : _else()
-})
-
-component('feature.userEventProps', {
-  type: 'feature',
-  description: 'add data to the event sent from the front end',
-  params: [
-    {id: 'props', as: 'string', description: 'comma separated props to take from the original event e.g., altKey,ctrlKey'}
-  ],
-  impl: (ctx, prop) => ({userEventProps: prop })
-})
-
-component('css', {
-  description: 'e.g. {color: red; width: 20px} or div>.myClas {color: red} ',
-  type: 'feature',
-  moreTypes: 'dialog-feature<>,layout<>',
-  params: [
-    {id: 'css', mandatory: true, dynamic: true, as: 'string', newLinesInCode: true}
-  ],
-  impl: (ctx,css) => ({css: _ctx => jb.ui.fixCssLine(css(_ctx))})
-})
-
-component('css.class', {
-  type: 'feature',
-  moreTypes: 'dialog-feature<>',
-  params: [
-    {id: 'class', mandatory: true, as: 'string'}
-  ],
-  impl: (ctx,clz) => ({class: clz})
-})
-
-});
-
-jbLoadPackedFile({lineInPackage:8990, jb, noProxies: false, path: '/plugins/ui/core/front-end-features.js',fileDsl: '', pluginId: 'ui-core' }, 
+jbLoadPackedFile({lineInPackage:8537, jb, noProxies: false, path: '/plugins/ui/core/front-end-features.js',fileDsl: '', pluginId: 'ui-core' }, 
             function({jb,require,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,group,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,css,frontEnd,action,backend,sink,source,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
 component('frontEnd.var', {
   type: 'feature',
@@ -9481,483 +9028,7 @@ component('source.findSelectionKeySource', {
 
 });
 
-jbLoadPackedFile({lineInPackage:9486, jb, noProxies: false, path: '/plugins/ui/core/ui-comp.js',fileDsl: '', pluginId: 'ui-core' }, 
-            function({jb,require,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,group,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,css,frontEnd,action,backend,sink,source,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
-extension('ui','comp', {
-    initExtension() {
-        jb.core.jstypes.renderable = value => {
-            if (value == null) return '';
-            if (value instanceof jb.ui.VNode) return value;
-            if (value.isBEComp) return jb.ui.h(value)
-            if (Array.isArray(value))
-                return jb.ui.h('div',{},value.map(item=>jb.core.jstypes.renderable(item)));
-            return '' + jb.val(value,true);
-        }
-        return {
-            lifeCycle: new Set('init,extendCtx,templateModifier,followUp,destroy'.split(',')),
-            arrayProps: new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,frontEndLib,frontEndVar'.split(',')),
-            singular: new Set('template,calcRenderProps,toolbar,styleParams,pathForPick,coLocation'.split(',')),
-            cmpCounter: 1,
-            cssHashCounter: 0,
-            cssElemCounter: 0,
-            propCounter: 0,
-            cssHashMap: {},
-            cmps: {},
-            headless: {}              
-        }
-    },
-    typeRules: [
-        { isOfWhenEndsWith: ['feature<>','feature<>'] },
-        { isOfWhenEndsWith: ['style<>',['feature<>', 'style<>' ]] }
-    ],
-    h(cmpOrTag,attributes,children) {
-        if (cmpOrTag instanceof jb.ui.VNode) return cmpOrTag // Vdom
-        if (cmpOrTag && cmpOrTag.renderVdom)
-            return cmpOrTag.renderVdomAndFollowUp()
-    
-        return new jb.ui.VNode(cmpOrTag,attributes,children)
-    },
-    ctrl(origCtx,options) {
-        const styleByControl = jb.path(origCtx,'cmpCtx.profile.$') == 'styleByControl'
-        const $state = (origCtx.vars.$refreshElemCall || styleByControl) ? origCtx.vars.$state : {}
-        const cmpId = origCtx.vars.$cmpId, cmpVer = origCtx.vars.$cmpVer
-        if (!origCtx.vars.$serviceRegistry) {
-            //debugger
-            jb.logError('no serviceRegistry',{ctx: origCtx})
-        }
-        const ctx = origCtx.setVars({
-            $model: { ctx: origCtx, ...origCtx.params},
-            $state,
-            $serviceRegistry: origCtx.vars.$serviceRegistry,
-            $refreshElemCall : undefined, $props : undefined, cmp: undefined, $cmpId: undefined, $cmpVer: undefined 
-        })
-        const styleOptions = runEffectiveStyle(ctx) || {}
-        if (styleOptions.isBEComp)  {// style by control
-            return styleOptions.orig(ctx).jbExtend(options,ctx).applyParamFeatures(ctx)
-        }
-        return new jb.ui.JbComponent(ctx,cmpId,cmpVer).jbExtend(options,ctx).jbExtend(styleOptions,ctx).applyParamFeatures(ctx)
-    
-        function runEffectiveStyle(ctx) {
-            const profile = origCtx.profile
-            const defaultVar = '$theme.' + (profile.$ || '')
-            if (!profile.style && origCtx.vars[defaultVar])
-                return ctx.run({$:origCtx.vars[defaultVar]})
-            return origCtx.params.style ? origCtx.params.style(ctx) : {}
-        }
-    },
-    garbageCollectUiComps({forceNow,clearAll,ctx}) {
-        if (!forceNow)
-            return jb.delay(1000).then(()=>jb.ui.garbageCollectUiComps({forceNow: true, clearAll, ctx}))
-   
-        // remove unused cmps from dictionary
-        const usedCmps = new Map(querySelectAllWithWidgets(`[cmp-id]`).map(el=>[el.getAttribute('cmp-id'),el.getAttribute('ctx-id')]))
-        const maxUsed = Object.values(usedCmps).map(x=> +x || 0).sort((x,y)=>x-y)[0] || (clearAll ? Number.MAX_SAFE_INTEGER : 0)
-        const removedCmps = []
-        Object.keys(jb.ui.cmps).filter(id=> (usedCmps.get(id) || 0) < maxUsed && !usedCmps.get(id)).forEach(id=> {removedCmps.push(id); delete jb.ui.cmps[id] })
-
-        // remove unused vars from resources
-        const removedResources = []
-        // const ctxToPath = ctx => Object.values(ctx.vars).filter(v=>jb.db.isWatchable(v)).map(v => jb.db.asRef(v))
-        //     .map(ref=>jb.db.refHandler(ref).pathOfRef(ref)).flat()
-        // const globalVarsUsed = jb.utils.unique(Object.keys(usedCmps).map(id=>jb.path(jb.ui.cmps[id],'calcCtx')).filter(x=>x).map(ctx=>ctxToPath(ctx)).flat())
-        Object.keys(jb.db.resources).filter(id=>id.indexOf(':') != -1)
-            .filter(id=>{
-                const cmpId = id.split(':').pop() // no ':' in cmpID or var name
-                return (usedCmps.get(cmpId) || 0) < maxUsed && !usedCmps.get(cmpId)
-            })
-            .forEach(id => { removedResources.push(id); delete jb.db.resources[id]})
-
-        // remove front-end widgets
-        const usedWidgets = jb.objFromEntries(
-            Array.from(querySelectAllWithWidgets(`[widgetid]`)).filter(el => el.getAttribute('frontend')).map(el => [el.getAttribute('widgetid'),1]))
-        const removeWidgets = Object.keys(jb.ui.frontendWidgets||{}).filter(id=>!usedWidgets[id])
-
-        removeWidgets.forEach(widgetId => {
-            jb.ui.sendUserReq({$$:'destroy', widgetId, destroyWidget: true, cmps: [] })
-            if (jb.ui.frontendWidgets) delete jb.ui.frontendWidgets[widgetId]
-        })
-        
-        // remove component follow ups
-        const removeFollowUps = Object.keys(jb.ui.followUps).flatMap(cmpId=> {
-            const curVer = Array.from(querySelectAllWithWidgets(`[cmp-id="${cmpId}"]`)).map(el=>+el.getAttribute('cmp-ver'))[0]
-            return jb.ui.followUps[cmpId].flatMap(({cmp})=>cmp).filter(cmp => !curVer || cmp.ver > curVer)
-        })
-        if (removeFollowUps.length)
-            jb.ui.BECmpsDestroyNotification.next({ cmps: removeFollowUps})
-
-        jb.log('garbageCollect',{maxUsed,removedCmps,removedResources,removeWidgets,removeFollowUps,ctx})
-
-        function querySelectAllWithWidgets(query) {
-            return jb.ui.headless ? [...Object.values(jb.ui.headless).filter(x=>x.body).flatMap(w=>w.body.querySelectorAll(query,{includeSelf:true})), 
-                ...Array.from(jb.frame.document && document.querySelectorAll(query) || [])].filter(x=>x) : []
-        }
-    },    
-    hashCss(_cssLines,ctx,{existingClass, existingElemId} = {}) {
-        const cssLines = (_cssLines||[]).filter(x=>x)
-        const cssKey = cssLines.join('\n')
-        if (!cssKey) return ''
-
-        const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId
-        const classPrefix = widgetId || 'jb'
-        const cssMap = this.cssHashMap[classPrefix] = this.cssHashMap[classPrefix] || {}
-
-        if (!cssMap[cssKey]) {
-            if (existingClass) {
-                const existingKey = Object.keys(cssMap).filter(k=>cssMap[k].classId == existingClass)[0]
-                existingKey && delete cssMap[existingKey]
-            } else {
-                this.cssHashCounter++;
-            }
-            const classId = existingClass || `${classPrefix}⦾${this.cssHashCounter}`
-            const elemId = existingElemId || `${classPrefix}⦾${(++jb.ui.cssElemCounter)}`
-            cssMap[cssKey] = {classId, paths : {[ctx.path]: true}}
-            const cssContent = linesToCssStyle(classId)
-            jb.ui.insertOrUpdateStyleElem(ctx,cssContent,elemId,{classId})
-        }
-        Object.assign(cssMap[cssKey].paths, {[ctx.path] : true})
-        return cssMap[cssKey].classId
-
-        function linesToCssStyle(classId) {
-            const cssStyle = cssLines.map(selectorPlusExp=>{
-                const selector = selectorPlusExp.split('{')[0];
-                const fixed_selector = selector.split(',').map(x=>x.trim().replace('|>',' '))
-                    .map(x=>x.indexOf('~') == -1 ? `.${classId}${x}` : x.replace('~',`.${classId}`));
-                return fixed_selector + ' { ' + selectorPlusExp.split('{')[1];
-            }).join('\n');
-            return `${cssStyle} /* ${ctx.path} */`
-        }
-    },
-    refreshElem(elem, state, options = {}) {
-        if (jb.path(elem,'_component.state.frontEndStatus') == 'initializing' || jb.ui.findIncludeSelf(elem,'[__refreshing]')[0]) 
-            return jb.logError('circular refresh',{elem, state, options})
-        const cmpId = elem.getAttribute('cmp-id'), cmpVer = +elem.getAttribute('cmp-ver')
-        const cmpBefore = jb.ui.cmps[cmpId]
-        if (!cmpBefore)
-            return jb.logError('refresh elem. can not find former cmp',{cmpId})
-        const _ctx = cmpBefore.originatingCtx()
-        const {methodBeforeRefresh, opVal} = options
-        methodBeforeRefresh && cmpBefore && methodBeforeRefresh.split(',').forEach(m=>cmpBefore.runBEMethod(m,opVal))
-        if (!_ctx) 
-            return jb.logError('refreshElem - no ctx for elem',{elem, cmpId, cmpVer})
-        const strongRefresh = jb.path(options,'strongRefresh')
-        const newState = strongRefresh ? {refresh: true } 
-            : { ...jb.path(elem._component,'state'), refreshSource: jb.path(options,'refreshSource'), refresh: true, ...state} // strongRefresh kills state
-        let ctx = _ctx.setVars({$model: null, $state: newState, $refreshElemCall: true, $cmpId: cmpId
-            , $cmpVer: cmpVer+1, $OnlyCalcDialog: _ctx.profile.$ == 'openDialog'})
-        ctx._parent = null
-        if (options && options.extendCtx)
-            ctx = options.extendCtx(ctx)
-//        ctx = ctx.setVar('$refreshElemCall',true).setVar('$cmpId', cmpId).setVar('$cmpVer', cmpVer+1) // special vars for refresh
-        if (ctx.vars.$previewMode && jb.watchableComps && jb.watchableComps.handler) // updating to latest version of profile - todo: moveto studio
-            ctx.profile = jb.watchableComps.handler.valOfPath(ctx.path.split('~')) || ctx.profile
-        elem.setAttribute('__refreshing','')
-        const cmp = ctx.runItself()
-        jb.log('refresh elem start',{cmp,ctx,newState ,elem, state, options})
-
-        const className = elem.className != null ? elem.className : jb.path(elem.attributes.class) || ''
-        const existingClass = (className.match(/[•a-zA-Z0-9_-]+⦾[0-9]*/)||[''])[0]
-        if (jb.path(options,'cssOnly') && existingClass) {
-            const { headlessWidget, headlessWidgetId } = ctx.vars
-            if (headlessWidget) {
-                const existingElemId = jb.entries(jb.ui.headless[headlessWidgetId].styles||{}).find(([id,text])=>text.indexOf(existingClass) != -1)[0]
-                jb.log('css only refresh headelss element',{existingElemId, cmp, lines: cmp.cssLines,ctx,elem, state, options})
-                jb.ui.hashCss(cmp.calcCssLines(),cmp.ctx,{existingClass, existingElemId})
-            } else {
-                const existingElem = Array.from(document.querySelectorAll('style')).find(el=>el.innerText.indexOf(existingClass) != -1)
-                const existingElemId = existingElem.getAttribute('elemId')
-                jb.log('css only refresh element',{existingElemId, existingElem, cmp, lines: cmp.cssLines,ctx,elem, state, options})
-                jb.ui.hashCss(cmp.calcCssLines(),cmp.ctx,{existingClass, existingElemId})
-            }
-        } else {
-            jb.log('do refresh element',{cmp,ctx,elem, state, options})
-            cmp && jb.ui.applyNewVdom(elem, jb.ui.h(cmp), {strongRefresh, ctx, srcCtx: options.srcCtx})
-        }
-        elem.removeAttribute('__refreshing')
-        jb.ui.refreshNotification.next({cmp,ctx,elem, state, options})
-        //jb .studio.execInStudio({ $$:'animate.refreshElem', elem: () => elem })
-    },
-    JbComponent : class JbComponent {
-        constructor(ctx,id,ver) {
-            this.ctx = ctx // used to calc features
-            this.cmpId = id || `${jb.uri}-${jb.ui.cmpCounter++}`
-            //const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId || ''
-            //id || (widgetId ? (widgetId+'-'+(jb.ui.cmpCounter++)) : ''+(jb.ui.cmpCounter++))
-            this.ver = ver || 1
-            this.eventObservables = []
-            this.cssLines = []
-            this.contexts = []
-            this.originators = [ctx]
-            this.isBEComp = true
-        }
-        init() {
-            if (this.initialized) return
-            jb.log('init uiComp',{cmp: this})
-            const baseVars = this.ctx.vars
-            this.ctx = (this.extendCtxFuncs||[])
-                .reduce((acc,extendCtx) => jb.utils.tryWrapper(() => extendCtx(acc,this),'extendCtx',this.ctx), this.ctx.setVar('cmp',this))
-            this.newVars = jb.objFromEntries(jb.entries(this.ctx.vars).filter(([k,v]) => baseVars[k] != v))
-            this.renderProps = {}
-            this.state = this.ctx.vars.$state
-            this.calcCtx = this.ctx.setVars({$props: this.renderProps, cmp: this})
-            this.initialized = true
-        }
-    
-        calcRenderProps() {
-            this.init()
-            ;(this.initFuncs||[]).sort((p1,p2) => p1.phase - p2.phase)
-                .forEach(f => jb.utils.tryWrapper(() => f.action(this.calcCtx, this.calcCtx.vars), 'init',this.ctx));
-    
-            this.toObserve = this.watchRef ? this.watchRef.map(obs=>({...obs,ref: obs.refF(this.ctx)})).filter(obs=>jb.db.isWatchable(obs.ref)) : []
-            this.watchAndCalcModelProp && this.watchAndCalcModelProp.forEach(e=>{
-                if (this.state[e.prop] != undefined) return // we have the value in the state, probably asynch value so do not calc again
-                const modelProp = this.ctx.vars.$model[e.prop]
-                if (!modelProp)
-                    return jb.logError(`calcRenderProps: missing model prop for watchAndCalc "${e.prop}"`, {cmp: this, model: this.ctx.vars.$model, ctx: this.ctx})
-                const ref = modelProp(this.ctx)
-                if (jb.db.isWatchable(ref))
-                    this.toObserve.push({id: e.prop, cmp: this, ref,...e})
-                const val = jb.val(ref)
-                this.renderProps[e.prop] = e.transformValue(this.ctx.setData(val == null ? e.defaultValue : val))
-            })
-
-            ;[...(this.calcProp || []),...(this.method || [])].forEach(
-                p=>typeof p.value == 'function' && Object.defineProperty(p.value, 'name', { value: p.id }))
-            ;(this.calcProp || []).forEach(prop=> 
-                prop._priority = jb.utils.tryWrapper(() => prop.priority ? prop.priority(this.calcCtx) : 1, `renderPropPriority:${prop.id}`,this.ctx) )
-
-            const filteredPropsByPriority = (this.calcProp || []).filter(toFilter=> 
-                    this.calcProp.filter(p=>p.id == toFilter.id && p._priority > toFilter._priority).length == 0)
-            filteredPropsByPriority.sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
-                .forEach(prop=> { 
-                    const val = jb.val( jb.utils.tryWrapper(() => 
-                        prop.value.profile === null ? this.calcCtx.vars.$model[prop.id] : prop.value(this.calcCtx),
-                    `renderProp:${prop.id}`,this.ctx))
-                    const value = val == null ? prop.defaultValue : val
-                    Object.assign(this.renderProps, { ...(prop.id == '$props' ? value : { [prop.id]: value })})
-                })
-            ;(this.calcProp || []).filter(p => p.userStateProp && !this.state.refresh).forEach(p => this.state[p.id] = this.renderProps[p.id])
-            Object.assign(this.renderProps,this.styleParams, this.state)
-            return this.renderProps
-        }
-
-        renderVdom() {
-            jb.log('uiComp start renderVdom', {cmp: this})
-            this.calcRenderProps()
-            if (this.ctx.probe && this.ctx.probe.outOfTime) return
-            this.template = this.template || (() => '')
-            const initialVdom = jb.utils.tryWrapper(() => this.template(this,this.renderProps,jb.ui.h), 'template',this.ctx) || {}
-            const vdom = (this.templateModifierFuncs||[]).reduce((vd,modifier) =>
-                    (vd && typeof vd === 'object') ? jb.utils.tryWrapper(() => modifier(vd,this,this.renderProps,jb.ui.h) || vd, 'templateModifier',this.ctx) 
-                        : vd ,initialVdom)
-
-            const observe = this.toObserve.map(x=>[
-                x.ref.handler.urlOfRef(x.ref),
-                x.includeChildren && `includeChildren=${x.includeChildren}`,
-                x.methodBeforeRefresh && `methodBeforeRefresh=${x.methodBeforeRefresh}`,
-                x.strongRefresh && `strongRefresh`,  x.cssOnly && `cssOnly`, x.allowSelfRefresh && `allowSelfRefresh`, x.delay && `delay=${x.delay}`] 
-                .filter(x=>x).join(';')).join(',')
-                this.calcCtx
-            const methods = (this.method||[]).map(h=>h.id).join(',')
-            const usereventprops = (this.userEventProps||[]).join(',')
-            const colocation = this.coLocation
-            const frontEndMethods = (this.frontEndMethod || []).map(h=>({method: h.method, path: h.path}))
-            const frontEndLibs = (this.frontEndLib || [])
-            const frontEndVars = this.frontEndVar && jb.objFromEntries(this.frontEndVar.map(h=>[h.id, jb.val(h.value(this.calcCtx))]))
-            const passive = (frontEndMethods.length + frontEndLibs.length) == 0 && !this.followUpFuncs && !observe && !methods
-            const hasAtts = (!passive) || this.ctx.vars.$previewMode || jb.path(vdom.attributes.id)
-            if (vdom instanceof jb.ui.VNode) {
-                vdom.addClass(this.jbCssClass())
-                vdom.attributes = Object.assign(vdom.attributes || {}, Object.keys(this.state||{}).length && { $__state : JSON.stringify(this.state)})
-                vdom.attributes = Object.assign(vdom.attributes,  {
-                        'ctx-id': ''+ this.ctx.id,
-                        'cmp-id': this.cmpId, 
-                        'cmp-ver': ''+this.ver,
-                        'cmp-pt': this.ctx.profile.$,
-            //            'full-cmp-ctx': jb.ui .preserveCtx(this.calcCtx),
-                })
-                if (hasAtts) Object.assign(vdom.attributes,
-                    observe && {observe}, 
-                    methods && {methods},
-                    this.ctx.vars.uiTest && {uiTest: this.ctx.vars.uiTest},
-                    usereventprops && {usereventprops},
-                    colocation && {colocation},
-                    frontEndLibs.length && {$__frontEndLibs : JSON.stringify(frontEndLibs)},
-                    frontEndMethods.length && {$__frontEndMethods : JSON.stringify(frontEndMethods) },
-                    (frontEndMethods.length + frontEndLibs.length)  && {interactive : 'true'}, 
-                    frontEndVars && { $__vars : JSON.stringify(frontEndVars)},                    
-                    (this.ctx.vars.$previewMode || this.pathForPick) && { $__debug: JSON.stringify({ 
-                        path: this.pathForPick || this.originatingCtx().path,
-                        callStack: jb.utils.callStack(this.calcCtx) 
-                    }) },
-                )
-            }
-            if (this.ctx.vars.$previewMode)
-                this.callStack = jb.utils.callStack(this.calcCtx)
-        
-            jb.log('uiComp end renderVdom',{cmp: this, vdom})
-            this.afterFirstRendering = true
-            jb.ui.cmps[this.cmpId] = this
-            return vdom
-        }
-        renderVdomAndFollowUp() {
-            const vdom = this.renderVdom()
-            jb.delay(1).then(() => (this.followUpFuncs||[]).forEach(fu=> jb.utils.tryWrapper(() => { 
-                jb.log(`backend uiComp followUp`, {cmp: this, fu, srcCtx: fu.srcCtx})
-                fu.action(this.calcCtx)
-                if (this.ver>1)
-                    jb.ui.BECmpsDestroyNotification.next({ cmps: [{cmpId: this.cmpId, ver: this.ver-1}]})
-            }, 'followUp',this.ctx) ) ).then(()=> this.ready = true)
-            this.ready = false
-            return vdom
-        }
-        hasBEMethod(method) {
-            return (this.method||[]).filter(h=> h.id == method)[0]
-        }
-        runBEMethod(method, data, vars, options = {}) {
-            const {doNotUseUserReqTx, dataMethod, userReqTx} = options
-            jb.log(`backend uiComp method ${method}`, {cmp: this,data,vars,doNotUseUserReqTx, dataMethod, userReqTx})
-            if (jb.path(vars,'$state'))
-                Object.assign(this.state,vars.$state)
-            const tActions = (this.method||[]).filter(h=> h.id == method).map(h => ctx => {
-                const _vars = { ...vars, userReqTx: userReqTx || (!doNotUseUserReqTx && ctx.vars.userReqTx) }
-                this.runMethodObject(h,data,_vars)
-                userReqTx && userReqTx.complete(`method ${method}`)                        
-            })
-            if (dataMethod && tActions[0])
-                return this.runMethodObject((this.method||[]).filter(h=> h.id == method)[0],data,vars)
-
-            const tx = this.calcCtx.vars.userReqTx
-            if (tx)
-                tx.completeByChildren(tActions, this.calcCtx)
-            else
-                tActions.forEach(action => action(this.calcCtx))
-    
-            if (tActions.length == 0)
-                jb.logError(`no method ${method} in cmp`, {cmp: this, data, vars})
-        }
-        refresh(state,options,ctx) {
-            const elem = jb.ui.elemOfCmp(ctx,this.cmpId)
-            jb.log('backend uiComp refresh request',{ctx, cmp: this,elem,state,options})
-            jb.ui.BECmpsDestroyNotification.next({ cmps: [{cmpId: this.cmpId, ver: this.ver, destroyCtxs: [] }] })
-            elem && jb.ui.refreshElem(elem,state,options) // cmpId may be deleted
-        }
-        runMethodObject(methodObj,data, vars) {
-            return methodObj.ctx.setData(data).setVars({
-                cmp: this,$state: this.state, $props: this.renderProps, ...vars, ...this.newVars, $model: this.calcCtx.vars.$model
-            }).runInner(methodObj.ctx.profile.action,'action','action')
-        }
-        destroy(reqCtx = {}) {
-            (this.method||[]).filter(h=> h.id == 'destroy').forEach(h => this.runMethodObject(h,null,reqCtx.vars))
-        }
-        calcCssLines() {
-            return jb.utils.unique((this.css || []).map(l=> typeof l == 'function' ? l(this.calcCtx): l)
-            .flatMap(css=>css.split(/}\s*/m)
-                .map(x=>x.trim()).filter(x=>x)
-                .map(x=>x+'}')
-                .map(x=>x.replace(/^!/,' '))))
-        }
-        jbCssClass() {
-            return jb.ui.hashCss(this.calcCssLines() ,this.ctx)
-        }
-        originatingCtx() {
-            return this.originators[this.originators.length-1]
-        }
-
-        field() {
-            if (this._field) return this._field
-            const ctx = this.originatingCtx()
-            this._field = {
-                class: '',
-                // ctxId: jb.ui .preserveCtx(ctx),
-                control: (item,index,noCache) => this.getOrCreateItemField(item, () => ctx.setData(item).setVars({index: (index||0)+1}).runItself(),noCache),
-            }
-            this.enrichField && this.enrichField.forEach(enrichField=>enrichField(this._field))
-            let title = jb.tosingle(jb.val(ctx.params.title)) || (() => '');
-            if (this._field.title !== undefined)
-                title = this._field.title
-            // make it always a function 
-            this._field.title = typeof title == 'function' ? title : () => ''+title;
-            this.itemfieldCache = new Map()
-            return this._field
-        }
-        getOrCreateItemField(item,factory,noCache) {
-            if (noCache)
-                return factory()
-            if (!this.itemfieldCache.get(item))
-                this.itemfieldCache.set(item,factory())
-            return this.itemfieldCache.get(item)
-        }
-        orig(ctx) {
-            const comp = ctx.profile && ctx.profile.$ && jb.comps[ctx.profile.$]
-            if (comp && (comp.type || '').split(/,|-/).indexOf('control') == -1)
-                debugger
-            this.originators.push(ctx)
-            return this
-        }
-        applyParamFeatures(ctx) {
-            (ctx.params.features && ctx.params.features(ctx) || []).forEach(f => this.jbExtend(f,ctx))
-            return this
-        }
-
-        jbExtend(_options,ctx) {
-            if (!_options) return this;
-            if (!ctx) debugger
-            ctx = ctx || this.ctx;
-            if (!ctx)
-                jb.logError('uiComp: no ctx provided for jbExtend',{_options,ctx})
-            if (typeof _options != 'object')
-                jb.logError('uiComp: _options should be an object',{_options,ctx})
-            const options = _options.$ ? ctx.run(_options, 'feature<>') : _options
-            if (Array.isArray(options)) {
-                options.forEach(o=>this.jbExtend(o,ctx))
-                return this
-            }
-
-            if (options.afterViewInit) 
-                options.frontEnd = options.afterViewInit
-            if (typeof options.class == 'string') 
-                options.templateModifier = vdom => vdom.addClass(options.class)
-
-            Object.keys(options).forEach(key=>{
-                if (typeof options[key] == 'function')
-                    Object.defineProperty(options[key], 'name', { value: key })
-
-                if (jb.ui.lifeCycle.has(key)) {
-                    this[key+'Funcs'] = this[key+'Funcs'] || []
-                    this[key+'Funcs'].push(options[key])
-                }
-                if (jb.ui.arrayProps.has(key)) {
-                    this[key] = this[key] || []
-                    this[key].push(options[key])
-                }
-                if (jb.ui.singular.has(key))
-                    this[key] = this[key] || options[key]
-            })
-            if (options.watchRef) {
-                this.watchRef = this.watchRef || []
-                this.watchRef.push({cmp: this,...options.watchRef});
-            }
-            if (options.cmpId)
-                this.cmpId = options.cmpId
-
-            // eventObservables
-            this.eventObservables = this.eventObservables.concat(Object.keys(options).filter(op=>op.indexOf('on') == 0))
-
-            jb.asArray(options.featuresOptions || []).filter(x=>x).forEach(f => this.jbExtend(f.$ ? ctx.run(f, 'feature<>') : f , ctx))
-            jb.asArray(jb.ui.inStudio() && options.studioFeatures).filter(x=>x).forEach(f => this.jbExtend(ctx.run(f, 'feature<>'), ctx))
-            return this;
-        }
-    }
-})
-
-component('uiPlugin.dslDeclarations', {
-  type: 'dslDeclaration',
-  impl: () => jb.ui.initDslDeclarations()
-})
-
-});
-
-jbLoadPackedFile({lineInPackage:9962, jb, noProxies: false, path: '/plugins/ui/core/ui-frontend.js',fileDsl: '', pluginId: 'ui-core' }, 
+jbLoadPackedFile({lineInPackage:9033, jb, noProxies: false, path: '/plugins/ui/core/ui-frontend.js',fileDsl: '', pluginId: 'ui-core' }, 
             function({jb,require,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,group,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,css,frontEnd,action,backend,sink,source,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
 extension('ui', 'frontend', {
     async refreshFrontEnd(elem, {content, emulateFrontEndInTest, widgetId} = {}) {
@@ -10082,7 +9153,7 @@ extension('ui', 'frontend', {
 
 });
 
-jbLoadPackedFile({lineInPackage:10087, jb, noProxies: false, path: '/plugins/ui/core/ui-react.js',fileDsl: '', pluginId: 'ui-core' }, 
+jbLoadPackedFile({lineInPackage:9158, jb, noProxies: false, path: '/plugins/ui/core/ui-react.js',fileDsl: '', pluginId: 'ui-core' }, 
             function({jb,require,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,group,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,css,frontEnd,action,backend,sink,source,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
 extension('ui', 'react', {
     initExtension() {
@@ -10592,7 +9663,7 @@ extension('ui', 'react', {
 
 });
 
-jbLoadPackedFile({lineInPackage:10597, jb, noProxies: false, path: '/plugins/ui/core/ui-utils.js',fileDsl: '', pluginId: 'ui-core' }, 
+jbLoadPackedFile({lineInPackage:9668, jb, noProxies: false, path: '/plugins/ui/core/ui-utils.js',fileDsl: '', pluginId: 'ui-core' }, 
             function({jb,require,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,group,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,css,frontEnd,action,backend,sink,source,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
 extension('ui', 'api', {
   renderWidget(profile, topElem, settings = {}) { // {ctx, widgetId} = settings
@@ -11026,6 +10097,935 @@ component('querySelector', {
 
 });
 
+jbLoadPackedFile({lineInPackage:10102, jb, noProxies: false, path: '/plugins/ui/core/ui-comp.js',fileDsl: '', pluginId: 'ui-core' }, 
+            function({jb,require,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,group,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,css,frontEnd,action,backend,sink,source,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
+extension('ui','comp', {
+    initExtension() {
+        jb.core.jstypes.renderable = value => {
+            if (value == null) return '';
+            if (value instanceof jb.ui.VNode) return value;
+            if (value.isBEComp) return jb.ui.h(value)
+            if (Array.isArray(value))
+                return jb.ui.h('div',{},value.map(item=>jb.core.jstypes.renderable(item)));
+            return '' + jb.val(value,true);
+        }
+        return {
+            lifeCycle: new Set('init,extendCtx,templateModifier,followUp,destroy'.split(',')),
+            arrayProps: new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,frontEndLib,frontEndVar'.split(',')),
+            singular: new Set('template,calcRenderProps,toolbar,styleParams,pathForPick,coLocation'.split(',')),
+            cmpCounter: 1,
+            cssHashCounter: 0,
+            cssElemCounter: 0,
+            propCounter: 0,
+            cssHashMap: {},
+            cmps: {},
+            headless: {}              
+        }
+    },
+    typeRules: [
+        { isOfWhenEndsWith: ['feature<>','feature<>'] },
+        { isOfWhenEndsWith: ['style<>',['feature<>', 'style<>' ]] }
+    ],
+    h(cmpOrTag,attributes,children) {
+        if (cmpOrTag instanceof jb.ui.VNode) return cmpOrTag // Vdom
+        if (cmpOrTag && cmpOrTag.renderVdom)
+            return cmpOrTag.renderVdomAndFollowUp()
+    
+        return new jb.ui.VNode(cmpOrTag,attributes,children)
+    },
+    ctrl(origCtx,options) {
+        const styleByControl = jb.path(origCtx,'cmpCtx.profile.$') == 'styleByControl'
+        const $state = (origCtx.vars.$refreshElemCall || styleByControl) ? origCtx.vars.$state : {}
+        const cmpId = origCtx.vars.$cmpId, cmpVer = origCtx.vars.$cmpVer
+        if (!origCtx.vars.$serviceRegistry) {
+            //debugger
+            jb.logError('no serviceRegistry',{ctx: origCtx})
+        }
+        const ctx = origCtx.setVars({
+            $model: { ctx: origCtx, ...origCtx.params},
+            $state,
+            $serviceRegistry: origCtx.vars.$serviceRegistry,
+            $refreshElemCall : undefined, $props : undefined, cmp: undefined, $cmpId: undefined, $cmpVer: undefined 
+        })
+        const styleOptions = runEffectiveStyle(ctx) || {}
+        if (styleOptions.isBEComp)  {// style by control
+            return styleOptions.orig(ctx).jbExtend(options,ctx).applyParamFeatures(ctx)
+        }
+        return new jb.ui.JbComponent(ctx,cmpId,cmpVer).jbExtend(options,ctx).jbExtend(styleOptions,ctx).applyParamFeatures(ctx)
+    
+        function runEffectiveStyle(ctx) {
+            const profile = origCtx.profile
+            const defaultVar = '$theme.' + (profile.$ || '')
+            if (!profile.style && origCtx.vars[defaultVar])
+                return ctx.run({$:origCtx.vars[defaultVar]})
+            return origCtx.params.style ? origCtx.params.style(ctx) : {}
+        }
+    },
+    garbageCollectUiComps({forceNow,clearAll,ctx}) {
+        if (!forceNow)
+            return jb.delay(1000).then(()=>jb.ui.garbageCollectUiComps({forceNow: true, clearAll, ctx}))
+   
+        // remove unused cmps from dictionary
+        const usedCmps = new Map(querySelectAllWithWidgets(`[cmp-id]`).map(el=>[el.getAttribute('cmp-id'),el.getAttribute('ctx-id')]))
+        const maxUsed = Object.values(usedCmps).map(x=> +x || 0).sort((x,y)=>x-y)[0] || (clearAll ? Number.MAX_SAFE_INTEGER : 0)
+        const removedCmps = []
+        Object.keys(jb.ui.cmps).filter(id=> (usedCmps.get(id) || 0) < maxUsed && !usedCmps.get(id)).forEach(id=> {removedCmps.push(id); delete jb.ui.cmps[id] })
+
+        // remove unused vars from resources
+        const removedResources = []
+        // const ctxToPath = ctx => Object.values(ctx.vars).filter(v=>jb.db.isWatchable(v)).map(v => jb.db.asRef(v))
+        //     .map(ref=>jb.db.refHandler(ref).pathOfRef(ref)).flat()
+        // const globalVarsUsed = jb.utils.unique(Object.keys(usedCmps).map(id=>jb.path(jb.ui.cmps[id],'calcCtx')).filter(x=>x).map(ctx=>ctxToPath(ctx)).flat())
+        Object.keys(jb.db.resources).filter(id=>id.indexOf(':') != -1)
+            .filter(id=>{
+                const cmpId = id.split(':').pop() // no ':' in cmpID or var name
+                return (usedCmps.get(cmpId) || 0) < maxUsed && !usedCmps.get(cmpId)
+            })
+            .forEach(id => { removedResources.push(id); delete jb.db.resources[id]})
+
+        // remove front-end widgets
+        const usedWidgets = jb.objFromEntries(
+            Array.from(querySelectAllWithWidgets(`[widgetid]`)).filter(el => el.getAttribute('frontend')).map(el => [el.getAttribute('widgetid'),1]))
+        const removeWidgets = Object.keys(jb.ui.frontendWidgets||{}).filter(id=>!usedWidgets[id])
+
+        removeWidgets.forEach(widgetId => {
+            jb.ui.sendUserReq({$$:'destroy', widgetId, destroyWidget: true, cmps: [] })
+            if (jb.ui.frontendWidgets) delete jb.ui.frontendWidgets[widgetId]
+        })
+        
+        // remove component follow ups
+        const removeFollowUps = Object.keys(jb.ui.followUps).flatMap(cmpId=> {
+            const curVer = Array.from(querySelectAllWithWidgets(`[cmp-id="${cmpId}"]`)).map(el=>+el.getAttribute('cmp-ver'))[0]
+            return jb.ui.followUps[cmpId].flatMap(({cmp})=>cmp).filter(cmp => !curVer || cmp.ver > curVer)
+        })
+        if (removeFollowUps.length)
+            jb.ui.BECmpsDestroyNotification.next({ cmps: removeFollowUps})
+
+        jb.log('garbageCollect',{maxUsed,removedCmps,removedResources,removeWidgets,removeFollowUps,ctx})
+
+        function querySelectAllWithWidgets(query) {
+            return jb.ui.headless ? [...Object.values(jb.ui.headless).filter(x=>x.body).flatMap(w=>w.body.querySelectorAll(query,{includeSelf:true})), 
+                ...Array.from(jb.frame.document && document.querySelectorAll(query) || [])].filter(x=>x) : []
+        }
+    },    
+    hashCss(_cssLines,ctx,{existingClass, existingElemId} = {}) {
+        const cssLines = (_cssLines||[]).filter(x=>x)
+        const cssKey = cssLines.join('\n')
+        if (!cssKey) return ''
+
+        const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId
+        const classPrefix = widgetId || 'jb'
+        const cssMap = this.cssHashMap[classPrefix] = this.cssHashMap[classPrefix] || {}
+
+        if (!cssMap[cssKey]) {
+            if (existingClass) {
+                const existingKey = Object.keys(cssMap).filter(k=>cssMap[k].classId == existingClass)[0]
+                existingKey && delete cssMap[existingKey]
+            } else {
+                this.cssHashCounter++;
+            }
+            const classId = existingClass || `${classPrefix}⦾${this.cssHashCounter}`
+            const elemId = existingElemId || `${classPrefix}⦾${(++jb.ui.cssElemCounter)}`
+            cssMap[cssKey] = {classId, paths : {[ctx.path]: true}}
+            const cssContent = linesToCssStyle(classId)
+            jb.ui.insertOrUpdateStyleElem(ctx,cssContent,elemId,{classId})
+        }
+        Object.assign(cssMap[cssKey].paths, {[ctx.path] : true})
+        return cssMap[cssKey].classId
+
+        function linesToCssStyle(classId) {
+            const cssStyle = cssLines.map(selectorPlusExp=>{
+                const selector = selectorPlusExp.split('{')[0];
+                const fixed_selector = selector.split(',').map(x=>x.trim().replace('|>',' '))
+                    .map(x=>x.indexOf('~') == -1 ? `.${classId}${x}` : x.replace('~',`.${classId}`));
+                return fixed_selector + ' { ' + selectorPlusExp.split('{')[1];
+            }).join('\n');
+            return `${cssStyle} /* ${ctx.path} */`
+        }
+    },
+    refreshElem(elem, state, options = {}) {
+        if (jb.path(elem,'_component.state.frontEndStatus') == 'initializing' || jb.ui.findIncludeSelf(elem,'[__refreshing]')[0]) 
+            return jb.logError('circular refresh',{elem, state, options})
+        const cmpId = elem.getAttribute('cmp-id'), cmpVer = +elem.getAttribute('cmp-ver')
+        const cmpBefore = jb.ui.cmps[cmpId]
+        if (!cmpBefore)
+            return jb.logError('refresh elem. can not find former cmp',{cmpId})
+        const _ctx = cmpBefore.originatingCtx()
+        const {methodBeforeRefresh, opVal} = options
+        methodBeforeRefresh && cmpBefore && methodBeforeRefresh.split(',').forEach(m=>cmpBefore.runBEMethod(m,opVal))
+        if (!_ctx) 
+            return jb.logError('refreshElem - no ctx for elem',{elem, cmpId, cmpVer})
+        const strongRefresh = jb.path(options,'strongRefresh')
+        const newState = strongRefresh ? {refresh: true } 
+            : { ...jb.path(elem._component,'state'), refreshSource: jb.path(options,'refreshSource'), refresh: true, ...state} // strongRefresh kills state
+        let ctx = _ctx.setVars({$model: null, $state: newState, $refreshElemCall: true, $cmpId: cmpId
+            , $cmpVer: cmpVer+1, $OnlyCalcDialog: _ctx.profile.$ == 'openDialog'})
+        ctx._parent = null
+        if (options && options.extendCtx)
+            ctx = options.extendCtx(ctx)
+//        ctx = ctx.setVar('$refreshElemCall',true).setVar('$cmpId', cmpId).setVar('$cmpVer', cmpVer+1) // special vars for refresh
+        if (ctx.vars.$previewMode && jb.watchableComps && jb.watchableComps.handler) // updating to latest version of profile - todo: moveto studio
+            ctx.profile = jb.watchableComps.handler.valOfPath(ctx.path.split('~')) || ctx.profile
+        elem.setAttribute('__refreshing','')
+        const cmp = ctx.runItself()
+        jb.log('refresh elem start',{cmp,ctx,newState ,elem, state, options})
+
+        const className = elem.className != null ? elem.className : jb.path(elem.attributes.class) || ''
+        const existingClass = (className.match(/[•a-zA-Z0-9_-]+⦾[0-9]*/)||[''])[0]
+        if (jb.path(options,'cssOnly') && existingClass) {
+            const { headlessWidget, headlessWidgetId } = ctx.vars
+            if (headlessWidget) {
+                const existingElemId = jb.entries(jb.ui.headless[headlessWidgetId].styles||{}).find(([id,text])=>text.indexOf(existingClass) != -1)[0]
+                jb.log('css only refresh headelss element',{existingElemId, cmp, lines: cmp.cssLines,ctx,elem, state, options})
+                jb.ui.hashCss(cmp.calcCssLines(),cmp.ctx,{existingClass, existingElemId})
+            } else {
+                const existingElem = Array.from(document.querySelectorAll('style')).find(el=>el.innerText.indexOf(existingClass) != -1)
+                const existingElemId = existingElem.getAttribute('elemId')
+                jb.log('css only refresh element',{existingElemId, existingElem, cmp, lines: cmp.cssLines,ctx,elem, state, options})
+                jb.ui.hashCss(cmp.calcCssLines(),cmp.ctx,{existingClass, existingElemId})
+            }
+        } else {
+            jb.log('do refresh element',{cmp,ctx,elem, state, options})
+            cmp && jb.ui.applyNewVdom(elem, jb.ui.h(cmp), {strongRefresh, ctx, srcCtx: options.srcCtx})
+        }
+        elem.removeAttribute('__refreshing')
+        jb.ui.refreshNotification.next({cmp,ctx,elem, state, options})
+        //jb .studio.execInStudio({ $$:'animate.refreshElem', elem: () => elem })
+    },
+    JbComponent : class JbComponent {
+        constructor(ctx,id,ver) {
+            this.ctx = ctx // used to calc features
+            this.cmpId = id || `${jb.uri}-${jb.ui.cmpCounter++}`
+            //const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId || ''
+            //id || (widgetId ? (widgetId+'-'+(jb.ui.cmpCounter++)) : ''+(jb.ui.cmpCounter++))
+            this.ver = ver || 1
+            this.eventObservables = []
+            this.cssLines = []
+            this.contexts = []
+            this.originators = [ctx]
+            this.isBEComp = true
+        }
+        init() {
+            if (this.initialized) return
+            jb.log('init uiComp',{cmp: this})
+            const baseVars = this.ctx.vars
+            this.ctx = (this.extendCtxFuncs||[])
+                .reduce((acc,extendCtx) => jb.utils.tryWrapper(() => extendCtx(acc,this),'extendCtx',this.ctx), this.ctx.setVar('cmp',this))
+            this.newVars = jb.objFromEntries(jb.entries(this.ctx.vars).filter(([k,v]) => baseVars[k] != v))
+            this.renderProps = {}
+            this.state = this.ctx.vars.$state
+            this.calcCtx = this.ctx.setVars({$props: this.renderProps, cmp: this})
+            this.initialized = true
+        }
+    
+        calcRenderProps() {
+            this.init()
+            ;(this.initFuncs||[]).sort((p1,p2) => p1.phase - p2.phase)
+                .forEach(f => jb.utils.tryWrapper(() => f.action(this.calcCtx, this.calcCtx.vars), 'init',this.ctx));
+    
+            this.toObserve = this.watchRef ? this.watchRef.map(obs=>({...obs,ref: obs.refF(this.ctx)})).filter(obs=>jb.db.isWatchable(obs.ref)) : []
+            this.watchAndCalcModelProp && this.watchAndCalcModelProp.forEach(e=>{
+                if (this.state[e.prop] != undefined) return // we have the value in the state, probably asynch value so do not calc again
+                const modelProp = this.ctx.vars.$model[e.prop]
+                if (!modelProp)
+                    return jb.logError(`calcRenderProps: missing model prop for watchAndCalc "${e.prop}"`, {cmp: this, model: this.ctx.vars.$model, ctx: this.ctx})
+                const ref = modelProp(this.ctx)
+                if (jb.db.isWatchable(ref))
+                    this.toObserve.push({id: e.prop, cmp: this, ref,...e})
+                const val = jb.val(ref)
+                this.renderProps[e.prop] = e.transformValue(this.ctx.setData(val == null ? e.defaultValue : val))
+            })
+
+            ;[...(this.calcProp || []),...(this.method || [])].forEach(
+                p=>typeof p.value == 'function' && Object.defineProperty(p.value, 'name', { value: p.id }))
+            ;(this.calcProp || []).forEach(prop=> 
+                prop._priority = jb.utils.tryWrapper(() => prop.priority ? prop.priority(this.calcCtx) : 1, `renderPropPriority:${prop.id}`,this.ctx) )
+
+            const filteredPropsByPriority = (this.calcProp || []).filter(toFilter=> 
+                    this.calcProp.filter(p=>p.id == toFilter.id && p._priority > toFilter._priority).length == 0)
+            filteredPropsByPriority.sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
+                .forEach(prop=> { 
+                    const val = jb.val( jb.utils.tryWrapper(() => 
+                        prop.value.profile === null ? this.calcCtx.vars.$model[prop.id] : prop.value(this.calcCtx),
+                    `renderProp:${prop.id}`,this.ctx))
+                    const value = val == null ? prop.defaultValue : val
+                    Object.assign(this.renderProps, { ...(prop.id == '$props' ? value : { [prop.id]: value })})
+                })
+            ;(this.calcProp || []).filter(p => p.userStateProp && !this.state.refresh).forEach(p => this.state[p.id] = this.renderProps[p.id])
+            Object.assign(this.renderProps,this.styleParams, this.state)
+            return this.renderProps
+        }
+
+        renderVdom() {
+            jb.log('uiComp start renderVdom', {cmp: this})
+            this.calcRenderProps()
+            if (this.ctx.probe && this.ctx.probe.outOfTime) return
+            this.template = this.template || (() => '')
+            const initialVdom = jb.utils.tryWrapper(() => this.template(this,this.renderProps,jb.ui.h), 'template',this.ctx) || {}
+            const vdom = (this.templateModifierFuncs||[]).reduce((vd,modifier) =>
+                    (vd && typeof vd === 'object') ? jb.utils.tryWrapper(() => modifier(vd,this,this.renderProps,jb.ui.h) || vd, 'templateModifier',this.ctx) 
+                        : vd ,initialVdom)
+
+            const observe = this.toObserve.map(x=>[
+                x.ref.handler.urlOfRef(x.ref),
+                x.includeChildren && `includeChildren=${x.includeChildren}`,
+                x.methodBeforeRefresh && `methodBeforeRefresh=${x.methodBeforeRefresh}`,
+                x.strongRefresh && `strongRefresh`,  x.cssOnly && `cssOnly`, x.allowSelfRefresh && `allowSelfRefresh`, x.delay && `delay=${x.delay}`] 
+                .filter(x=>x).join(';')).join(',')
+                this.calcCtx
+            const methods = (this.method||[]).map(h=>h.id).join(',')
+            const usereventprops = (this.userEventProps||[]).join(',')
+            const colocation = this.coLocation
+            const frontEndMethods = (this.frontEndMethod || []).map(h=>({method: h.method, path: h.path}))
+            const frontEndLibs = (this.frontEndLib || [])
+            const frontEndVars = this.frontEndVar && jb.objFromEntries(this.frontEndVar.map(h=>[h.id, jb.val(h.value(this.calcCtx))]))
+            const passive = (frontEndMethods.length + frontEndLibs.length) == 0 && !this.followUpFuncs && !observe && !methods
+            const hasAtts = (!passive) || this.ctx.vars.$previewMode || jb.path(vdom.attributes.id)
+            if (vdom instanceof jb.ui.VNode) {
+                vdom.addClass(this.jbCssClass())
+                vdom.attributes = Object.assign(vdom.attributes || {}, Object.keys(this.state||{}).length && { $__state : JSON.stringify(this.state)})
+                vdom.attributes = Object.assign(vdom.attributes,  {
+                        'ctx-id': ''+ this.ctx.id,
+                        'cmp-id': this.cmpId, 
+                        'cmp-ver': ''+this.ver,
+                        'cmp-pt': this.ctx.profile.$,
+            //            'full-cmp-ctx': jb.ui .preserveCtx(this.calcCtx),
+                })
+                if (hasAtts) Object.assign(vdom.attributes,
+                    observe && {observe}, 
+                    methods && {methods},
+                    this.ctx.vars.uiTest && {uiTest: this.ctx.vars.uiTest},
+                    usereventprops && {usereventprops},
+                    colocation && {colocation},
+                    frontEndLibs.length && {$__frontEndLibs : JSON.stringify(frontEndLibs)},
+                    frontEndMethods.length && {$__frontEndMethods : JSON.stringify(frontEndMethods) },
+                    (frontEndMethods.length + frontEndLibs.length)  && {interactive : 'true'}, 
+                    frontEndVars && { $__vars : JSON.stringify(frontEndVars)},                    
+                    (this.ctx.vars.$previewMode || this.pathForPick) && { $__debug: JSON.stringify({ 
+                        path: this.pathForPick || this.originatingCtx().path,
+                        callStack: jb.utils.callStack(this.calcCtx) 
+                    }) },
+                )
+            }
+            if (this.ctx.vars.$previewMode)
+                this.callStack = jb.utils.callStack(this.calcCtx)
+        
+            jb.log('uiComp end renderVdom',{cmp: this, vdom})
+            this.afterFirstRendering = true
+            jb.ui.cmps[this.cmpId] = this
+            return vdom
+        }
+        renderVdomAndFollowUp() {
+            const vdom = this.renderVdom()
+            jb.delay(1).then(() => (this.followUpFuncs||[]).forEach(fu=> jb.utils.tryWrapper(() => { 
+                jb.log(`backend uiComp followUp`, {cmp: this, fu, srcCtx: fu.srcCtx})
+                fu.action(this.calcCtx)
+                if (this.ver>1)
+                    jb.ui.BECmpsDestroyNotification.next({ cmps: [{cmpId: this.cmpId, ver: this.ver-1}]})
+            }, 'followUp',this.ctx) ) ).then(()=> this.ready = true)
+            this.ready = false
+            return vdom
+        }
+        hasBEMethod(method) {
+            return (this.method||[]).filter(h=> h.id == method)[0]
+        }
+        runBEMethod(method, data, vars, options = {}) {
+            const {doNotUseUserReqTx, dataMethod, userReqTx} = options
+            jb.log(`backend uiComp method ${method}`, {cmp: this,data,vars,doNotUseUserReqTx, dataMethod, userReqTx})
+            if (jb.path(vars,'$state'))
+                Object.assign(this.state,vars.$state)
+            const tActions = (this.method||[]).filter(h=> h.id == method).map(h => ctx => {
+                const _vars = { ...vars, userReqTx: userReqTx || (!doNotUseUserReqTx && ctx.vars.userReqTx) }
+                this.runMethodObject(h,data,_vars)
+                userReqTx && userReqTx.complete(`method ${method}`)                        
+            })
+            if (dataMethod && tActions[0])
+                return this.runMethodObject((this.method||[]).filter(h=> h.id == method)[0],data,vars)
+
+            const tx = this.calcCtx.vars.userReqTx
+            if (tx)
+                tx.completeByChildren(tActions, this.calcCtx)
+            else
+                tActions.forEach(action => action(this.calcCtx))
+    
+            if (tActions.length == 0)
+                jb.logError(`no method ${method} in cmp`, {cmp: this, data, vars})
+        }
+        refresh(state,options,ctx) {
+            const elem = jb.ui.elemOfCmp(ctx,this.cmpId)
+            jb.log('backend uiComp refresh request',{ctx, cmp: this,elem,state,options})
+            jb.ui.BECmpsDestroyNotification.next({ cmps: [{cmpId: this.cmpId, ver: this.ver, destroyCtxs: [] }] })
+            elem && jb.ui.refreshElem(elem,state,options) // cmpId may be deleted
+        }
+        runMethodObject(methodObj,data, vars) {
+            return methodObj.ctx.setData(data).setVars({
+                cmp: this,$state: this.state, $props: this.renderProps, ...vars, ...this.newVars, $model: this.calcCtx.vars.$model
+            }).runInner(methodObj.ctx.profile.action,'action','action')
+        }
+        destroy(reqCtx = {}) {
+            (this.method||[]).filter(h=> h.id == 'destroy').forEach(h => this.runMethodObject(h,null,reqCtx.vars))
+        }
+        calcCssLines() {
+            return jb.utils.unique((this.css || []).map(l=> typeof l == 'function' ? l(this.calcCtx): l)
+            .flatMap(css=>css.split(/}\s*/m)
+                .map(x=>x.trim()).filter(x=>x)
+                .map(x=>x+'}')
+                .map(x=>x.replace(/^!/,' '))))
+        }
+        jbCssClass() {
+            return jb.ui.hashCss(this.calcCssLines() ,this.ctx)
+        }
+        originatingCtx() {
+            return this.originators[this.originators.length-1]
+        }
+
+        field() {
+            if (this._field) return this._field
+            const ctx = this.originatingCtx()
+            this._field = {
+                class: '',
+                // ctxId: jb.ui .preserveCtx(ctx),
+                control: (item,index,noCache) => this.getOrCreateItemField(item, () => ctx.setData(item).setVars({index: (index||0)+1}).runItself(),noCache),
+            }
+            this.enrichField && this.enrichField.forEach(enrichField=>enrichField(this._field))
+            let title = jb.tosingle(jb.val(ctx.params.title)) || (() => '');
+            if (this._field.title !== undefined)
+                title = this._field.title
+            // make it always a function 
+            this._field.title = typeof title == 'function' ? title : () => ''+title;
+            this.itemfieldCache = new Map()
+            return this._field
+        }
+        getOrCreateItemField(item,factory,noCache) {
+            if (noCache)
+                return factory()
+            if (!this.itemfieldCache.get(item))
+                this.itemfieldCache.set(item,factory())
+            return this.itemfieldCache.get(item)
+        }
+        orig(ctx) {
+            const comp = ctx.profile && ctx.profile.$ && jb.comps[ctx.profile.$]
+            if (comp && (comp.type || '').split(/,|-/).indexOf('control') == -1)
+                debugger
+            this.originators.push(ctx)
+            return this
+        }
+        applyParamFeatures(ctx) {
+            (ctx.params.features && ctx.params.features(ctx) || []).forEach(f => this.jbExtend(f,ctx))
+            return this
+        }
+
+        jbExtend(_options,ctx) {
+            if (!_options) return this;
+            if (!ctx) debugger
+            ctx = ctx || this.ctx;
+            if (!ctx)
+                jb.logError('uiComp: no ctx provided for jbExtend',{_options,ctx})
+            if (typeof _options != 'object')
+                jb.logError('uiComp: _options should be an object',{_options,ctx})
+            const options = _options.$ ? ctx.run(_options, 'feature<>') : _options
+            if (Array.isArray(options)) {
+                options.forEach(o=>this.jbExtend(o,ctx))
+                return this
+            }
+
+            if (options.afterViewInit) 
+                options.frontEnd = options.afterViewInit
+            if (typeof options.class == 'string') 
+                options.templateModifier = vdom => vdom.addClass(options.class)
+
+            Object.keys(options).forEach(key=>{
+                if (typeof options[key] == 'function')
+                    Object.defineProperty(options[key], 'name', { value: key })
+
+                if (jb.ui.lifeCycle.has(key)) {
+                    this[key+'Funcs'] = this[key+'Funcs'] || []
+                    this[key+'Funcs'].push(options[key])
+                }
+                if (jb.ui.arrayProps.has(key)) {
+                    this[key] = this[key] || []
+                    this[key].push(options[key])
+                }
+                if (jb.ui.singular.has(key))
+                    this[key] = this[key] || options[key]
+            })
+            if (options.watchRef) {
+                this.watchRef = this.watchRef || []
+                this.watchRef.push({cmp: this,...options.watchRef});
+            }
+            if (options.cmpId)
+                this.cmpId = options.cmpId
+
+            // eventObservables
+            this.eventObservables = this.eventObservables.concat(Object.keys(options).filter(op=>op.indexOf('on') == 0))
+
+            jb.asArray(options.featuresOptions || []).filter(x=>x).forEach(f => this.jbExtend(f.$ ? ctx.run(f, 'feature<>') : f , ctx))
+            jb.asArray(jb.ui.inStudio() && options.studioFeatures).filter(x=>x).forEach(f => this.jbExtend(ctx.run(f, 'feature<>'), ctx))
+            return this;
+        }
+    }
+})
+
+component('uiPlugin.dslDeclarations', {
+  type: 'dslDeclaration',
+  impl: () => jb.ui.initDslDeclarations()
+})
+
+});
+
+jbLoadPackedFile({lineInPackage:10578, jb, noProxies: false, path: '/plugins/ui/core/core-features.js',fileDsl: '', pluginId: 'ui-core' }, 
+            function({jb,require,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,group,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,css,frontEnd,action,backend,sink,source,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
+component('method', {
+  type: 'feature',
+  description: 'define backend event handler',
+  params: [
+    {id: 'id', as: 'string', mandatory: true, description: 'if using the pattern onXXHandler, or onKeyXXHandler automaticaly binds to UI event XX, assuming on-XX:true is defined at the template'},
+    {id: 'action', type: 'action', mandatory: true, dynamic: true}
+  ],
+  impl: (ctx,id) => ({method: {id, ctx}})
+})
+
+component('watchAndCalcModelProp', {
+  type: 'feature',
+  description: 'Use a model property in the rendering and watch its changes (refresh on change)',
+  params: [
+    {id: 'prop', as: 'string', mandatory: true},
+    {id: 'transformValue', dynamic: true, defaultValue: '%%'},
+    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
+    {id: 'defaultValue'}
+  ],
+  impl: ctx => ({watchAndCalcModelProp: ctx.params})
+})
+
+component('calcProp', {
+  type: 'feature',
+  description: 'define a variable to be used in the rendering calculation process',
+  params: [
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'value', mandatory: true, dynamic: true, description: 'when empty, value is taken from model'},
+    {id: 'priority', as: 'number', dynamic: true, defaultValue: 1, description: 'if same prop was defined elsewhere decides who will override. range 1-1000, can use the $state variable'},
+    {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'},
+    {id: 'defaultValue'}
+  ],
+  impl: ctx => ({calcProp: {... ctx.params, index: jb.ui.propCounter++}})
+})
+
+component('userStateProp', {
+  type: 'feature',
+  description: 'define a user state (e.g., selection) that is passed to the FE and back to the BE via refresh calls. The first calculation is done at the BE and then the FE can change it',
+  params: [
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'value', mandatory: true, dynamic: true, description: 'when empty value is taken from model'},
+    {id: 'priority', as: 'number', dynamic: true, defaultValue: 1, description: 'if same prop was defined elsewhere decides who will override. range 1-1000, can use the $state variable'},
+    {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'}
+  ],
+  impl: ctx => ({calcProp: {... ctx.params, userStateProp: true, index: jb.ui.propCounter++}})
+})
+
+component('calcProps', {
+  type: 'feature',
+  description: 'define variables to be used in the rendering calculation process',
+  params: [
+    {id: 'props', as: 'object', mandatory: true, description: 'props as object', dynamic: true},
+    {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'}
+  ],
+  impl: (ctx,propsF,phase) => ({
+      calcProp: {id: '$props', value: ctx => propsF(ctx), phase, index: jb.ui.propCounter++ }
+    })
+})
+
+component('feature.initValue', {
+  type: 'feature',
+  category: 'lifecycle',
+  description: 'set value if the value is empty, activated before calc properties',
+  params: [
+    {id: 'to', as: 'ref', mandatory: true, dynamic: true},
+    {id: 'value', mandatory: true, dynamic: true},
+    {id: 'alsoWhenNotEmpty', as: 'boolean', type: 'boolean'}
+  ],
+  impl: (ctx,_to,_value,alsoWhenNotEmpty) => ({ init: { 
+    action: (_ctx,{cmp}) => {
+      const value = _value(_ctx), to = _to(_ctx)
+      const toAssign = jb.val(value), currentVal = jb.val(to)
+      if ((alsoWhenNotEmpty || currentVal == null) && toAssign !== currentVal) {
+        jb.log('init value',{cmp, ...ctx.params})
+        jb.db.writeValue(to,toAssign,ctx,true)
+      } else if (toAssign !== currentVal) {
+        jb.logError(`feature.initValue: init non empty value ${jb.utils.prettyPrint(to.profile)}`,{toAssign,currentVal,cmp,ctx,to,value})
+      }
+    }, 
+    phase: 10 
+  }})
+})
+
+component('feature.requireService', {
+  type: 'feature',
+  params: [
+    {id: 'service', type: 'service'},
+    {id: 'condition', dynamic: true, defaultValue: true}
+  ],
+  impl: (_ctx,service,condition) => ({ init: { 
+    action: ctx => condition(ctx) && service.init(ctx),
+    phase: 10 
+  }})
+})
+
+component('feature.init', {
+  type: 'feature',
+  category: 'lifecycle',
+  description: 'activated before calc properties, use initValue or require instead',
+  params: [
+    {id: 'action', type: 'action', mandatory: true, dynamic: true},
+    {id: 'phase', as: 'number', defaultValue: 10, description: 'init funcs from different features can use each other, phase defines the calculation order'}
+  ],
+  impl: ({},action,phase) => ({ init: { action, phase }})
+})
+
+component('onDestroy', {
+  type: 'feature',
+  category: 'lifecycle',
+  description: 'destroy on the backend',
+  params: [
+    {id: 'action', type: 'action', mandatory: true, dynamic: true}
+  ],
+  impl: method('destroy', '%$action()%')
+})
+
+component('templateModifier', {
+  type: 'feature',
+  description: 'change the html template',
+  params: [
+    {id: 'value', mandatory: true, dynamic: true}
+  ],
+  impl: (ctx,value) => ({ templateModifier: (vdom,cmp) => value(cmp.calcCtx.setVars({vdom, ...cmp.renderProps })) })
+})
+
+component('features', {
+  type: 'feature',
+  moreTypes: 'style',
+  description: 'list of features, auto flattens',
+  params: [
+    {id: 'features', type: 'feature[]', as: 'array', typeAsParent: t=>t.replace(/style/,'feature'), composite: true}
+  ],
+  impl: (ctx,features) => features.flatMap(x=> Array.isArray(x) ? x: [x])
+})
+
+component('followUp.action', {
+  type: 'feature',
+  description: 'runs at the backend a tick after the vdom was returned. Try to avoid it, use initValue or require instead',
+  category: 'lifecycle',
+  params: [
+    {id: 'action', type: 'action', mandatory: true, dynamic: true}
+  ],
+  impl: ctx => ({ followUp: { action: ctx2 => ctx.params.action(ctx2), srcCtx: ctx } })
+})
+
+component('followUp.flow', {
+  type: 'feature',
+  description: 'rx flow at the backend after the vdom was sent. Try to avoid it, use watchRef instead',
+  params: [
+    {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
+  ],
+  impl: followUp.action(
+    runActions(
+      Var('followUpCmp', '%$cmp%'),
+      Var('pipeToRun', rx.pipe('%$elems()%')),
+      (ctx,{cmp,pipeToRun}) => {
+        jb.ui.followUps[cmp.cmpId] = jb.ui.followUps[cmp.cmpId] || []
+        jb.ui.followUps[cmp.cmpId].push({cmp, pipe: pipeToRun, srcPath: ctx.cmpCtx.callerPath})
+      }
+    )
+  )
+})
+
+// jb.component('registerCmpFLow', {
+//   type: 'action',
+//   params: [
+//     {id: 'cmp'},
+
+//   ],
+//   impl: 
+// })
+
+component('watchRef', {
+  type: 'feature',
+  category: 'watch:100',
+  description: 'subscribes to data changes to refresh component',
+  params: [
+    {id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data'},
+    {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', byName: true, description: 'watch childern change as well'},
+    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
+    {id: 'strongRefresh', as: 'boolean', description: 'restart BE and FE flows, wait for data or event handlers', type: 'boolean'},
+    {id: 'cssOnly', as: 'boolean', description: 'refresh only css features', type: 'boolean'},
+    {id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority'},
+    {id: 'methodBeforeRefresh', as: 'string', description: 'cmp method to run before refreshing'}
+  ],
+  impl: ctx => ({ watchRef: {refF: ctx.params.ref, ...ctx.params}}),
+  dependencies: () => jb.ui.subscribeToRefChange()
+})
+
+component('followUp.watchObservable', {
+  type: 'feature',
+  category: 'watch',
+  description: 'subscribes to a custom observable to refresh component',
+  params: [
+    {id: 'toWatch', type: 'rx', mandatory: true, dynamic: true},
+    {id: 'debounceTime', as: 'number', description: 'in mSec'}
+  ],
+  impl: followUp.flow(
+    source.data(0),
+    rx.var('cmp', '%$cmp%'),
+    rx.flatMap('%$toWatch()%'),
+    rx.debounceTime('%$debounceTime%'),
+    sink.refreshCmp()
+  )
+})
+
+component('followUp.onDataChange', {
+  type: 'feature',
+  category: 'watch',
+  description: 'watch observable data reference, subscribe and run action',
+  params: [
+    {id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data'},
+    {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
+    {id: 'action', type: 'action', dynamic: true, description: 'run on change'}
+  ],
+  impl: followUp.flow(
+    source.watchableData('%$ref()%', { includeChildren: '%$includeChildren%' }),
+    sink.action(call('action'))
+  )
+})
+
+component('group.data', {
+  type: 'feature',
+  category: 'general:100,watch:80',
+  params: [
+    {id: 'Data', mandatory: true, dynamic: true, as: 'ref'},
+    {id: 'itemVariable', as: 'string', description: 'optional. define data as a local variable'},
+    {id: 'watch', as: 'boolean', type: 'boolean'},
+    {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'}
+  ],
+  impl: ({}, refF, itemVariable,watch,includeChildren) => ({
+      ...(watch ? {watchRef: { refF, includeChildren }} : {}),
+      extendCtx: ctx => {
+          const ref = refF()
+          return ctx.setData(ref).setVar(itemVariable,ref)
+      },
+  })
+})
+
+component('htmlAttribute', {
+  type: 'feature',
+  description: 'set attribute to html element and give it value',
+  params: [
+    {id: 'attribute', mandatory: true, as: 'string'},
+    {id: 'value', mandatory: true, as: 'string', dynamic: true}
+  ],
+  impl: (ctx,id,value) => ({
+    templateModifier: (vdom,cmp) => vdom.setAttribute(id.match(/^on[^-]/) ? `${id.slice(0,2)}-${id.slice(2)}` : id, value(cmp.ctx))
+  })
+})
+
+component('cmpId', {
+  type: 'feature',
+  priority: 0,
+  description: 'force cmpId',
+  params: [
+    {id: 'cmpId', mandatory: true, as: 'string'}
+  ],
+  impl: (ctx,cmpId) => {
+    if (cmpId.match(/:/)) jb.logError(`cmpId: do not use ":" in cmpId ${cmpId}`,{ctx})
+    return ({ cmpId})
+  }
+})
+
+component('id', {
+  type: 'feature',
+  description: 'adds id to html element',
+  params: [
+    {id: 'id', mandatory: true, as: 'string', dynamic: true}
+  ],
+  impl: htmlAttribute('id', '%$id()%')
+})
+
+component('feature.hoverTitle', {
+  type: 'feature',
+  description: 'set element title, usually shown by browser on hover',
+  params: [
+    {id: 'title', as: 'string', mandatory: true}
+  ],
+  impl: htmlAttribute('title', '%$title%')
+})
+
+component('watchable', {
+  type: 'feature',
+  category: 'general:90',
+  description: 'define a watchable variable',
+  params: [
+    {id: 'name', as: 'string', mandatory: true},
+    {id: 'value', dynamic: true, defaultValue: '', mandatory: true}
+  ],
+  impl: ({}, name, value) => ({
+    destroy: cmp => {
+      const fullName = name + ':' + cmp.cmpId;
+      cmp.ctx.runAction(writeValue(`%$${fullName}%`,null))
+    },
+    extendCtx: (ctx,cmp) => {
+      if (name.match(/:/)) jb.logError(`watchable: do not use ":" in var name ${name}`,{ctx})
+      const fullName = name + ':' + cmp.cmpId;
+      jb.log('create watchable var',{cmp,ctx,fullName})
+      const refToResource = jb.db.useResourcesHandler(h=>h.refOfPath([fullName]))
+      jb.db.writeValue(refToResource,value(ctx),ctx)
+      return ctx.setVar(name, refToResource);
+    }
+  }),
+  dependencies: () => jb.ui.subscribeToRefChange()
+})
+
+component('variable', {
+  type: 'feature',
+  category: 'general:90',
+  description: 'define a constant passive variable',
+  params: [
+    {id: 'name', as: 'string', mandatory: true},
+    {id: 'value', dynamic: true, defaultValue: '', mandatory: true}
+  ],
+  impl: ({}, name, value) => ({ extendCtx: ctx => ctx.setVar(name,jb.val(value(ctx))) })
+})
+
+// component('calculatedVar', {
+//   type: 'feature',
+//   category: 'general:60',
+//   description: 'defines a local variable that watches other variables with auto recalc',
+//   params: [
+//     {id: 'name', as: 'string', mandatory: true},
+//     {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
+//     {id: 'watchRefs', as: 'array', dynamic: true, mandatory: true, defaultValue: [], description: 'variable to watch. needs to be in array'}
+//   ],
+//   impl: features(
+//     onDestroy(writeValue('%${%$name%}:{%$cmp/cmpId%}%', null)),
+//     followUp.flow(
+//       source.merge((ctx,{},{watchRefs}) => watchRefs(ctx).map(ref=>ctx.setData(ref).run(source.watchableData('%%')) )),
+//       rx.log('check calculatedVar'),
+//       rx.map('%$value()%'),
+//       sink.data('%${%$name%}:{%$cmp/cmpId%}%')
+//     ),
+//     ctx => ({
+//       extendCtx: (_ctx,cmp) => {
+//         const {name,value} = ctx.cmpCtx.params
+//         const fullName = name + ':' + cmp.cmpId;
+//         jb.log('create watchable calculatedVar',{ctx,cmp,fullName})
+//         jb.db.resource(fullName, jb.val(value(_ctx)));
+//         const ref = _ctx.exp(`%$${fullName}%`,'ref')
+//         return _ctx.setVar(name, ref);
+//       }
+//     })
+//   )
+// })
+
+component('feature.if', {
+  type: 'feature',
+  category: 'feature:85',
+  description: 'adds/remove element to dom by condition. keywords: hidden/show',
+  params: [
+    {id: 'showCondition', as: 'boolean', mandatory: true, dynamic: true, type: 'boolean'}
+  ],
+  impl: (ctx, condition) => ({
+    templateModifier: (vdom,cmp) =>
+      jb.toboolean(condition(cmp.ctx)) ? vdom : jb.ui.h('span',{style: {display: 'none'}})
+  })
+})
+
+component('hidden', {
+  type: 'feature',
+  category: 'feature:85',
+  description: 'display:none on element. keywords: show',
+  params: [
+    {id: 'showCondition', type: 'boolean', mandatory: true, dynamic: true}
+  ],
+  impl: (ctx,showCondition) => ({
+    templateModifier: (vdom,cmp) => {
+      jb.path(vdom,'attributes.style.display',jb.toboolean(showCondition(cmp.ctx)) ? 'inherit' : 'none')
+      return vdom
+    }
+  })
+})
+
+component('refreshControlById', {
+  type: 'action',
+  params: [
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'strongRefresh', as: 'boolean', byName: true, description: 'restart BE and FE flows, wait for data or event handlers', type: 'boolean'},
+    {id: 'cssOnly', as: 'boolean', description: 'refresh only css features', type: 'boolean'}
+  ],
+  impl: (ctx,id) => {
+    const elem = jb.ui.widgetBody(ctx).querySelector('#'+id)
+    if (!elem)
+      return jb.logError('refreshControlById can not find elem for #'+id, {ctx})
+    return jb.ui.refreshElem(elem,null,{srcCtx: ctx, ...ctx.params})
+  }
+})
+
+component('group.autoFocusOnFirstInput', {
+  type: 'feature',
+  impl: templateModifier(({},{vdom}) => {
+    const elem = vdom.querySelectorAll('input,textarea,select').filter(e => e.getAttribute('type') != 'checkbox')[0]
+    if (elem)
+      elem.setAttribute('$focus','autoFocusOnFirstInput')
+    return vdom
+  })
+})
+
+component('refreshIfNotWatchable', {
+  type: 'action',
+  params: [
+    {id: 'Data'}
+  ],
+  impl: (ctx, data) => !jb.db.isWatchable(data) && ctx.vars.cmp.refresh(null,{strongRefresh: true}, ctx)
+})
+
+component('feature.byCondition', {
+  type: 'feature',
+  description: 'conditional feature, define feature if then else condition',
+  macroByValue: true,
+  params: [
+    {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
+    {id: 'then', type: 'feature', mandatory: true, dynamic: true, composite: true},
+    {id: 'else', type: 'feature', dynamic: true}
+  ],
+  impl: (ctx,cond,_then,_else) =>	cond ? _then() : _else()
+})
+
+component('feature.userEventProps', {
+  type: 'feature',
+  description: 'add data to the event sent from the front end',
+  params: [
+    {id: 'props', as: 'string', description: 'comma separated props to take from the original event e.g., altKey,ctrlKey'}
+  ],
+  impl: (ctx, prop) => ({userEventProps: prop })
+})
+
+component('css', {
+  description: 'e.g. {color: red; width: 20px} or div>.myClas {color: red} ',
+  type: 'feature',
+  moreTypes: 'dialog-feature<>,layout<>',
+  params: [
+    {id: 'css', mandatory: true, dynamic: true, as: 'string', newLinesInCode: true}
+  ],
+  impl: (ctx,css) => ({css: _ctx => jb.ui.fixCssLine(css(_ctx))})
+})
+
+component('css.class', {
+  type: 'feature',
+  moreTypes: 'dialog-feature<>',
+  params: [
+    {id: 'class', mandatory: true, as: 'string'}
+  ],
+  impl: (ctx,clz) => ({class: clz})
+})
+
+});
+
 jbLoadPackedFile({lineInPackage:11031, jb, noProxies: false, path: '/plugins/ui/core/ui-watchref.js',fileDsl: '', pluginId: 'ui-core' }, 
             function({jb,require,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,group,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,css,frontEnd,action,backend,sink,source,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
 using('watchable,common,rx')
@@ -11448,7 +11448,112 @@ extension('ui','vdom', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:11453, jb, noProxies: false, path: '/plugins/ui/common/css-features.js',fileDsl: '', pluginId: 'ui-common' }, 
+jbLoadPackedFile({lineInPackage:11453, jb, noProxies: false, path: '/plugins/ui/common/button.js',fileDsl: '', pluginId: 'ui-common' }, 
+            function({jb,require,button,css,editableText,textarea,field,validation,group,inlineControls,dynamicControls,controlWithCondition,controls,html,itemlist,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,source,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
+component('button', {
+  type: 'control',
+  category: 'control:100,common:100',
+  params: [
+    {id: 'title', as: 'ref', mandatory: true, templateValue: 'click me', dynamic: true},
+    {id: 'action', type: 'action', mandatory: true, dynamic: true},
+    {id: 'style', type: 'button-style', defaultValue: button.native(), dynamic: true},
+    {id: 'raised', as: 'boolean', dynamic: true, type: 'boolean'},
+    {id: 'disabledTillActionFinished', as: 'boolean', type: 'boolean'},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx => jb.ui.ctrl(ctx)
+})
+
+component('button.initAction', {
+  type: 'feature',
+  category: 'button:0',
+  impl: features(
+    watchAndCalcModelProp('title'),
+    watchAndCalcModelProp('raised'),
+    method('onclickHandler', (ctx,{cmp, ev, $model}) => {
+      if (jb.path(ev,'ev.ctrlKey'))
+        cmp.runBEMethod('ctrlAction',ctx.data,ctx.vars)
+      else if (jb.path(ev,'ev.alyKey'))
+        cmp.runBEMethod('altAction',ctx.data,ctx.vars)
+      else
+        $model.action(ctx)
+    }),
+    feature.userEventProps('ctrlKey,altKey'),
+    () => ({studioFeatures :{$: 'feature<>feature.contentEditable', param: 'title' }})
+  )
+})
+
+component('button.initDisabled', {
+  type: 'feature',
+  category: 'button:0',
+  impl: features(
+    watchAndCalcModelProp('title'),
+    watchAndCalcModelProp('raised'),
+    frontEnd.method('disable', ({data},{el}) => { 
+      const btn = jb.ui.findIncludeSelf(el,'button')[0]
+      if (btn)
+        data ? btn.setAttribute('disabled',data) : btn.removeAttribute('disabled')
+    }),
+    frontEnd.flow(
+      source.event('click'),
+      rx.do(action.runFEMethod('disable', true)),
+      rx.mapPromise(action.runBEMethod('handleClick')),
+      rx.do(action.runFEMethod('disable', false)),
+      sink.action()
+    ),
+    method('handleClick', (ctx,{cmp, ev, $model}) => {
+      if (jb.path(ev,'ev.ctrlKey'))
+        cmp.runBEMethod('ctrlAction',ctx.data,ctx.vars)
+      else if (jb.path(ev,'ev.alyKey'))
+        cmp.runBEMethod('altAction',ctx.data,ctx.vars)
+      else
+        $model.action(ctx)
+    }),
+    feature.userEventProps('ctrlKey,altKey'),
+    () => ({studioFeatures :{$: 'feature<>feature.contentEditable', param: 'title' }})
+  )
+})
+
+component('button.ctrlAction', {
+  type: 'feature',
+  category: 'button:70',
+  description: 'action to perform on control+click',
+  params: [
+    {id: 'action', type: 'action', mandatory: true, dynamic: true}
+  ],
+  impl: method('ctrlAction', (ctx,{},{action}) => action(ctx))
+})
+
+component('button.altAction', {
+  type: 'feature',
+  category: 'button:70',
+  description: 'action to perform on alt+click',
+  params: [
+    {id: 'action', type: 'action', mandatory: true, dynamic: true}
+  ],
+  impl: method('altAction', (ctx,{},{action}) => action(ctx))
+})
+
+component('button.native', {
+  type: 'button-style',
+  impl: customStyle({
+    template: (cmp,{title,raised},h) => h('button',{class: raised ? 'raised' : '', title, onclick: true },title),
+    css: '.raised {font-weight: bold}',
+    features: button.initAction()
+  })
+})
+
+component('button.href', {
+  type: 'button-style',
+  impl: customStyle({
+    template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
+    css: '{color: var(--jb-textLink-fg)} .raised { color: var(--jb-textLink-active-fg) }',
+    features: button.initAction()
+  })
+})
+});
+
+jbLoadPackedFile({lineInPackage:11558, jb, noProxies: false, path: '/plugins/ui/common/css-features.js',fileDsl: '', pluginId: 'ui-common' }, 
             function({jb,require,button,css,editableText,textarea,field,validation,group,inlineControls,dynamicControls,controlWithCondition,controls,html,itemlist,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,source,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
 
 component('css.width', {
@@ -11698,7 +11803,7 @@ component('css.conditionalClass', {
 
 });
 
-jbLoadPackedFile({lineInPackage:11703, jb, noProxies: false, path: '/plugins/ui/common/editable-text.js',fileDsl: '', pluginId: 'ui-common' }, 
+jbLoadPackedFile({lineInPackage:11808, jb, noProxies: false, path: '/plugins/ui/common/editable-text.js',fileDsl: '', pluginId: 'ui-common' }, 
             function({jb,require,button,css,editableText,textarea,field,validation,group,inlineControls,dynamicControls,controlWithCondition,controls,html,itemlist,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,source,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
 component('editableText', {
   type: 'control',
@@ -11737,324 +11842,7 @@ component('textarea.enrichUserEvent', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:11742, jb, noProxies: false, path: '/plugins/ui/common/button.js',fileDsl: '', pluginId: 'ui-common' }, 
-            function({jb,require,button,css,editableText,textarea,field,validation,group,inlineControls,dynamicControls,controlWithCondition,controls,html,itemlist,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,source,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
-component('button', {
-  type: 'control',
-  category: 'control:100,common:100',
-  params: [
-    {id: 'title', as: 'ref', mandatory: true, templateValue: 'click me', dynamic: true},
-    {id: 'action', type: 'action', mandatory: true, dynamic: true},
-    {id: 'style', type: 'button-style', defaultValue: button.native(), dynamic: true},
-    {id: 'raised', as: 'boolean', dynamic: true, type: 'boolean'},
-    {id: 'disabledTillActionFinished', as: 'boolean', type: 'boolean'},
-    {id: 'features', type: 'feature[]', dynamic: true}
-  ],
-  impl: ctx => jb.ui.ctrl(ctx)
-})
-
-component('button.initAction', {
-  type: 'feature',
-  category: 'button:0',
-  impl: features(
-    watchAndCalcModelProp('title'),
-    watchAndCalcModelProp('raised'),
-    method('onclickHandler', (ctx,{cmp, ev, $model}) => {
-      if (jb.path(ev,'ev.ctrlKey'))
-        cmp.runBEMethod('ctrlAction',ctx.data,ctx.vars)
-      else if (jb.path(ev,'ev.alyKey'))
-        cmp.runBEMethod('altAction',ctx.data,ctx.vars)
-      else
-        $model.action(ctx)
-    }),
-    feature.userEventProps('ctrlKey,altKey'),
-    () => ({studioFeatures :{$: 'feature<>feature.contentEditable', param: 'title' }})
-  )
-})
-
-component('button.initDisabled', {
-  type: 'feature',
-  category: 'button:0',
-  impl: features(
-    watchAndCalcModelProp('title'),
-    watchAndCalcModelProp('raised'),
-    frontEnd.method('disable', ({data},{el}) => { 
-      const btn = jb.ui.findIncludeSelf(el,'button')[0]
-      if (btn)
-        data ? btn.setAttribute('disabled',data) : btn.removeAttribute('disabled')
-    }),
-    frontEnd.flow(
-      source.event('click'),
-      rx.do(action.runFEMethod('disable', true)),
-      rx.mapPromise(action.runBEMethod('handleClick')),
-      rx.do(action.runFEMethod('disable', false)),
-      sink.action()
-    ),
-    method('handleClick', (ctx,{cmp, ev, $model}) => {
-      if (jb.path(ev,'ev.ctrlKey'))
-        cmp.runBEMethod('ctrlAction',ctx.data,ctx.vars)
-      else if (jb.path(ev,'ev.alyKey'))
-        cmp.runBEMethod('altAction',ctx.data,ctx.vars)
-      else
-        $model.action(ctx)
-    }),
-    feature.userEventProps('ctrlKey,altKey'),
-    () => ({studioFeatures :{$: 'feature<>feature.contentEditable', param: 'title' }})
-  )
-})
-
-component('button.ctrlAction', {
-  type: 'feature',
-  category: 'button:70',
-  description: 'action to perform on control+click',
-  params: [
-    {id: 'action', type: 'action', mandatory: true, dynamic: true}
-  ],
-  impl: method('ctrlAction', (ctx,{},{action}) => action(ctx))
-})
-
-component('button.altAction', {
-  type: 'feature',
-  category: 'button:70',
-  description: 'action to perform on alt+click',
-  params: [
-    {id: 'action', type: 'action', mandatory: true, dynamic: true}
-  ],
-  impl: method('altAction', (ctx,{},{action}) => action(ctx))
-})
-
-component('button.native', {
-  type: 'button-style',
-  impl: customStyle({
-    template: (cmp,{title,raised},h) => h('button',{class: raised ? 'raised' : '', title, onclick: true },title),
-    css: '.raised {font-weight: bold}',
-    features: button.initAction()
-  })
-})
-
-component('button.href', {
-  type: 'button-style',
-  impl: customStyle({
-    template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
-    css: '{color: var(--jb-textLink-fg)} .raised { color: var(--jb-textLink-active-fg) }',
-    features: button.initAction()
-  })
-})
-});
-
-jbLoadPackedFile({lineInPackage:11847, jb, noProxies: false, path: '/plugins/ui/common/field.js',fileDsl: '', pluginId: 'ui-common' }, 
-            function({jb,require,button,css,editableText,textarea,field,validation,group,inlineControls,dynamicControls,controlWithCondition,controls,html,itemlist,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,source,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
-extension('ui', 'field', {
-  initExtension: () => ({field_id_counter : 0 }),
-  writeFieldData(ctx,cmp,value,oneWay) {
-    if (jb.val(ctx.vars.$model.databind(cmp.ctx)) == value) return
-    jb.db.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx)
-    jb.ui.checkValidationError(cmp,value,ctx)
-    cmp.hasBEMethod('onValueChange') && cmp.runBEMethod('onValueChange',value,ctx.vars)
-    !oneWay && cmp.refresh({},{srcCtx: ctx.cmpCtx},ctx)
-  },
-  checkValidationError(cmp,val,ctx) {
-    const err = validationError()
-    if (cmp.state.error != err) {
-      jb.log('field validation set error state',{cmp,err})
-      cmp.refresh({valid: !err, error:err}, {srcCtx: ctx.cmpCtx},ctx)
-    }
-  
-    function validationError() {
-      if (!cmp.validations) return
-      const ctx = cmp.ctx.setData(val)
-      const err = (cmp.validations || [])
-        .filter(validator=>!validator.validCondition(ctx))
-        .map(validator=>validator.errorMessage(ctx))[0]
-      if (ctx.exp('%$formContainer%'))
-        ctx.run(writeValue('%$formContainer/err%',err))
-      return err
-    }
-  },
-  checkFormValidation(elem) {
-    jb.ui.querySelectorAll(elem,'[jb-ctx]').map(el=>el._component).filter(cmp => cmp && cmp.validations).forEach(cmp => 
-      jb.ui.checkValidationError(cmp,jb.val(cmp.ctx.vars.$model.databind(cmp.ctx)), cmp.ctx))
-  },
-  fieldTitle(cmp,fieldOrCtrl,h) {
-    let field = fieldOrCtrl.field && fieldOrCtrl.field() || fieldOrCtrl
-    field = typeof field === 'function' ? field() : field
-    if (field.titleCtrl) {
-      const ctx = cmp.ctx.setData(field).setVars({input: cmp.ctx.data})
-      const jbComp = field.titleCtrl(ctx);
-      return jbComp && h(jbComp,{'cmp-id': jbComp.cmpId })
-    }
-    return field.title(cmp.ctx)
-  }
-})
-
-component('field.databind', {
-  type: 'feature',
-  category: 'field:0',
-  params: [
-    {id: 'debounceTime', as: 'number', defaultValue: 0},
-    {id: 'oneWay', as: 'boolean', type: 'boolean'}
-  ],
-  impl: features(
-    If({
-      condition: '%$oneWay%',
-      then: calcProp('databind', '%$$model/databind()%', { defaultValue: '' }),
-      Else: watchAndCalcModelProp('databind', { allowSelfRefresh: true, defaultValue: '' })
-    }),
-    calcProp('title'),
-    calcProp('fieldId', () => jb.ui.field_id_counter++),
-    method('writeFieldValue', (ctx,{cmp},{oneWay}) => jb.ui.writeFieldData(ctx,cmp,ctx.data,oneWay)),
-    method('onblurHandler', (ctx,{cmp, ev},{oneWay}) => jb.ui.writeFieldData(ctx,cmp,ev.value,oneWay)),
-    method('onchangeHandler', (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && jb.ui.writeFieldData(ctx,cmp,ev.value,oneWay)),
-    method('onkeyupHandler', (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && jb.ui.writeFieldData(ctx,cmp,ev.value,oneWay)),
-    method('onkeydownHandler', (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && jb.ui.writeFieldData(ctx,cmp,ev.value,oneWay)),
-    feature.byCondition('%$$dialog%', feature.initValue('%$$dialog/hasFields%', true))
-  )
-})
-
-component('field.onChange', {
-  type: 'feature',
-  category: 'field:100',
-  description: 'on picklist selection, text or boolean value change',
-  params: [
-    {id: 'action', type: 'action', dynamic: true}
-  ],
-  impl: followUp.onDataChange('%$$model/databind%', { action: call('action') })
-})
-
-component('field.databindText', {
-  type: 'feature',
-  category: 'field:0',
-  params: [
-    {id: 'debounceTime', as: 'number', defaultValue: 0},
-    {id: 'oneWay', type: 'boolean', as: 'boolean', defaultValue: true}
-  ],
-  impl: field.databind('%$debounceTime%', '%$oneWay%')
-})
-
-// jb.component('field.keyboardShortcut', {
-//   type: 'feature',
-//   category: 'events',
-//   description: 'listen to events at the document level even when the component is not active',
-//   params: [
-//     {id: 'key', as: 'string', description: 'e.g. Alt+C'},
-//     {id: 'action', type: 'action', dynamic: true}
-//   ],
-//   frontEnd.init((ctx,{cmp},{key,action}) => {
-//         const elem = cmp.base.querySelector('input') || cmp.base
-//         if (elem.tabIndex === undefined) elem.tabIndex = -1
-//         jb.utils.subscribe(jb.ui.fromEvent(cmp,'keydown',elem),event=>{
-//               const keyStr = key.split('+').slice(1).join('+');
-//               const keyCode = keyStr.charCodeAt(0);
-//               if (key == 'Delete') keyCode = 46;
-
-//               const helper = (key.match('([A-Za-z]*)+') || ['',''])[1];
-//               if (helper == 'Ctrl' && !event.ctrlKey) return
-//               if (helper == 'Alt' && !event.altKey) return
-//               if (event.keyCode == keyCode || (event.key && event.key == keyStr))
-//                 action();
-//         })
-//     }
-//   )
-// })
-
-// ***** validation
-
-component('validation', {
-  type: 'feature',
-  category: 'validation:100',
-  params: [
-    {id: 'validCondition', mandatory: true, as: 'boolean', dynamic: true, type: 'boolean'},
-    {id: 'errorMessage', mandatory: true, as: 'string', dynamic: true}
-  ],
-  impl: (ctx,validCondition,errorMessage) => ({validations: {validCondition, errorMessage }})
-})
-
-component('field.title', {
-  description: 'used to set table title in button and label',
-  type: 'feature',
-  category: 'table:80',
-  params: [
-    {id: 'title', as: 'string', dynamic: true, mandatory: true}
-  ],
-  impl: (ctx,title) => ({
-      enrichField: field => field.title = ctx => title(ctx)
-  })
-})
-
-component('field.titleCtrl', {
-  description: 'title as control, buttons are usefull',
-  type: 'feature',
-  category: 'table:80',
-  params: [
-    {id: 'titleCtrl', type: 'control', mandatory: true, dynamic: true} // templateValue: button('%title%', { style: button.href() })
-  ],
-  impl: (ctx,titleCtrl) => ({
-      enrichField: field => field.titleCtrl = ctx => titleCtrl(ctx)
-  })
-})
-
-component('field.columnWidth', {
-  description: 'used in itemlist fields',
-  type: 'feature',
-  category: 'table:80',
-  params: [
-    {id: 'width', as: 'number', mandatory: true}
-  ],
-  impl: (ctx,width) => ({
-      enrichField: field => field.width = width
-  })
-})
-});
-
-jbLoadPackedFile({lineInPackage:12011, jb, noProxies: false, path: '/plugins/ui/common/html.js',fileDsl: '', pluginId: 'ui-common' }, 
-            function({jb,require,button,css,editableText,textarea,field,validation,group,inlineControls,dynamicControls,controlWithCondition,controls,html,itemlist,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,source,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
-component('html', {
-  type: 'control',
-  description: 'rich text',
-  category: 'control:100,common:80',
-  params: [
-    {id: 'html', as: 'ref', mandatory: true, templateValue: '<p>html here</p>', dynamic: true, newLinesInCode: true},
-    {id: 'title', as: 'string', dynamic: true},
-    {id: 'style', type: 'html-style', defaultValue: html.plain(), dynamic: true},
-    {id: 'features', type: 'feature[]', dynamic: true}
-  ],
-  impl: ctx => jb.ui.ctrl(ctx)
-})
-
-component('html.plain', {
-  type: 'html-style',
-  impl: customStyle({
-    template: (cmp,{html},h) => h('div',{$html: (html||'').replace(/^(<[a-z0-9]*)/,'$1 jb_external="true"') } ),
-    features: [
-      watchAndCalcModelProp('html'),
-      () => ({ studioFeatures :{$: 'feature<>feature.contentEditable', param: 'html' } })
-    ]
-  })
-})
-
-component('html.inIframe', {
-  type: 'html-style',
-  params: [
-    {id: 'width', as: 'string', defaultValue: '100%'},
-    {id: 'height', as: 'string', defaultValue: '100%'},
-    {id: 'id', as: 'string', defaultValue: 'jbart-iframe'}
-  ],
-  impl: customStyle({
-    template: (cmp,{width,height,id},h) => h('iframe', { id, 
-        sandbox: 'allow-same-origin allow-forms allow-scripts',
-        frameborder: 0, width, height,
-        src: 'javascript: document.write(parent.contentForIframe)'
-    }),
-    features: [
-      frontEnd.var('html', '%$$model/html()%'),
-      frontEnd.init(({},{html}) => window.contentForIframe = html)
-    ]
-  })
-})
-
-});
-
-jbLoadPackedFile({lineInPackage:12059, jb, noProxies: false, path: '/plugins/ui/common/group.js',fileDsl: '', pluginId: 'ui-common' }, 
+jbLoadPackedFile({lineInPackage:11847, jb, noProxies: false, path: '/plugins/ui/common/group.js',fileDsl: '', pluginId: 'ui-common' }, 
             function({jb,require,button,css,editableText,textarea,field,validation,group,inlineControls,dynamicControls,controlWithCondition,controls,html,itemlist,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,source,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
 using('ui-core')
 
@@ -12225,6 +12013,218 @@ component('group.htmlTag', {
 component('group.div', {
   type: 'group-style',
   impl: group.htmlTag('div')
+})
+});
+
+jbLoadPackedFile({lineInPackage:12021, jb, noProxies: false, path: '/plugins/ui/common/html.js',fileDsl: '', pluginId: 'ui-common' }, 
+            function({jb,require,button,css,editableText,textarea,field,validation,group,inlineControls,dynamicControls,controlWithCondition,controls,html,itemlist,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,source,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
+component('html', {
+  type: 'control',
+  description: 'rich text',
+  category: 'control:100,common:80',
+  params: [
+    {id: 'html', as: 'ref', mandatory: true, templateValue: '<p>html here</p>', dynamic: true, newLinesInCode: true},
+    {id: 'title', as: 'string', dynamic: true},
+    {id: 'style', type: 'html-style', defaultValue: html.plain(), dynamic: true},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx => jb.ui.ctrl(ctx)
+})
+
+component('html.plain', {
+  type: 'html-style',
+  impl: customStyle({
+    template: (cmp,{html},h) => h('div',{$html: (html||'').replace(/^(<[a-z0-9]*)/,'$1 jb_external="true"') } ),
+    features: [
+      watchAndCalcModelProp('html'),
+      () => ({ studioFeatures :{$: 'feature<>feature.contentEditable', param: 'html' } })
+    ]
+  })
+})
+
+component('html.inIframe', {
+  type: 'html-style',
+  params: [
+    {id: 'width', as: 'string', defaultValue: '100%'},
+    {id: 'height', as: 'string', defaultValue: '100%'},
+    {id: 'id', as: 'string', defaultValue: 'jbart-iframe'}
+  ],
+  impl: customStyle({
+    template: (cmp,{width,height,id},h) => h('iframe', { id, 
+        sandbox: 'allow-same-origin allow-forms allow-scripts',
+        frameborder: 0, width, height,
+        src: 'javascript: document.write(parent.contentForIframe)'
+    }),
+    features: [
+      frontEnd.var('html', '%$$model/html()%'),
+      frontEnd.init(({},{html}) => window.contentForIframe = html)
+    ]
+  })
+})
+
+});
+
+jbLoadPackedFile({lineInPackage:12069, jb, noProxies: false, path: '/plugins/ui/common/field.js',fileDsl: '', pluginId: 'ui-common' }, 
+            function({jb,require,button,css,editableText,textarea,field,validation,group,inlineControls,dynamicControls,controlWithCondition,controls,html,itemlist,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,source,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
+extension('ui', 'field', {
+  initExtension: () => ({field_id_counter : 0 }),
+  writeFieldData(ctx,cmp,value,oneWay) {
+    if (jb.val(ctx.vars.$model.databind(cmp.ctx)) == value) return
+    jb.db.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx)
+    jb.ui.checkValidationError(cmp,value,ctx)
+    cmp.hasBEMethod('onValueChange') && cmp.runBEMethod('onValueChange',value,ctx.vars)
+    !oneWay && cmp.refresh({},{srcCtx: ctx.cmpCtx},ctx)
+  },
+  checkValidationError(cmp,val,ctx) {
+    const err = validationError()
+    if (cmp.state.error != err) {
+      jb.log('field validation set error state',{cmp,err})
+      cmp.refresh({valid: !err, error:err}, {srcCtx: ctx.cmpCtx},ctx)
+    }
+  
+    function validationError() {
+      if (!cmp.validations) return
+      const ctx = cmp.ctx.setData(val)
+      const err = (cmp.validations || [])
+        .filter(validator=>!validator.validCondition(ctx))
+        .map(validator=>validator.errorMessage(ctx))[0]
+      if (ctx.exp('%$formContainer%'))
+        ctx.run(writeValue('%$formContainer/err%',err))
+      return err
+    }
+  },
+  checkFormValidation(elem) {
+    jb.ui.querySelectorAll(elem,'[jb-ctx]').map(el=>el._component).filter(cmp => cmp && cmp.validations).forEach(cmp => 
+      jb.ui.checkValidationError(cmp,jb.val(cmp.ctx.vars.$model.databind(cmp.ctx)), cmp.ctx))
+  },
+  fieldTitle(cmp,fieldOrCtrl,h) {
+    let field = fieldOrCtrl.field && fieldOrCtrl.field() || fieldOrCtrl
+    field = typeof field === 'function' ? field() : field
+    if (field.titleCtrl) {
+      const ctx = cmp.ctx.setData(field).setVars({input: cmp.ctx.data})
+      const jbComp = field.titleCtrl(ctx);
+      return jbComp && h(jbComp,{'cmp-id': jbComp.cmpId })
+    }
+    return field.title(cmp.ctx)
+  }
+})
+
+component('field.databind', {
+  type: 'feature',
+  category: 'field:0',
+  params: [
+    {id: 'debounceTime', as: 'number', defaultValue: 0},
+    {id: 'oneWay', as: 'boolean', type: 'boolean'}
+  ],
+  impl: features(
+    If({
+      condition: '%$oneWay%',
+      then: calcProp('databind', '%$$model/databind()%', { defaultValue: '' }),
+      Else: watchAndCalcModelProp('databind', { allowSelfRefresh: true, defaultValue: '' })
+    }),
+    calcProp('title'),
+    calcProp('fieldId', () => jb.ui.field_id_counter++),
+    method('writeFieldValue', (ctx,{cmp},{oneWay}) => jb.ui.writeFieldData(ctx,cmp,ctx.data,oneWay)),
+    method('onblurHandler', (ctx,{cmp, ev},{oneWay}) => jb.ui.writeFieldData(ctx,cmp,ev.value,oneWay)),
+    method('onchangeHandler', (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && jb.ui.writeFieldData(ctx,cmp,ev.value,oneWay)),
+    method('onkeyupHandler', (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && jb.ui.writeFieldData(ctx,cmp,ev.value,oneWay)),
+    method('onkeydownHandler', (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && jb.ui.writeFieldData(ctx,cmp,ev.value,oneWay)),
+    feature.byCondition('%$$dialog%', feature.initValue('%$$dialog/hasFields%', true))
+  )
+})
+
+component('field.onChange', {
+  type: 'feature',
+  category: 'field:100',
+  description: 'on picklist selection, text or boolean value change',
+  params: [
+    {id: 'action', type: 'action', dynamic: true}
+  ],
+  impl: followUp.onDataChange('%$$model/databind%', { action: call('action') })
+})
+
+component('field.databindText', {
+  type: 'feature',
+  category: 'field:0',
+  params: [
+    {id: 'debounceTime', as: 'number', defaultValue: 0},
+    {id: 'oneWay', type: 'boolean', as: 'boolean', defaultValue: true}
+  ],
+  impl: field.databind('%$debounceTime%', '%$oneWay%')
+})
+
+// jb.component('field.keyboardShortcut', {
+//   type: 'feature',
+//   category: 'events',
+//   description: 'listen to events at the document level even when the component is not active',
+//   params: [
+//     {id: 'key', as: 'string', description: 'e.g. Alt+C'},
+//     {id: 'action', type: 'action', dynamic: true}
+//   ],
+//   frontEnd.init((ctx,{cmp},{key,action}) => {
+//         const elem = cmp.base.querySelector('input') || cmp.base
+//         if (elem.tabIndex === undefined) elem.tabIndex = -1
+//         jb.utils.subscribe(jb.ui.fromEvent(cmp,'keydown',elem),event=>{
+//               const keyStr = key.split('+').slice(1).join('+');
+//               const keyCode = keyStr.charCodeAt(0);
+//               if (key == 'Delete') keyCode = 46;
+
+//               const helper = (key.match('([A-Za-z]*)+') || ['',''])[1];
+//               if (helper == 'Ctrl' && !event.ctrlKey) return
+//               if (helper == 'Alt' && !event.altKey) return
+//               if (event.keyCode == keyCode || (event.key && event.key == keyStr))
+//                 action();
+//         })
+//     }
+//   )
+// })
+
+// ***** validation
+
+component('validation', {
+  type: 'feature',
+  category: 'validation:100',
+  params: [
+    {id: 'validCondition', mandatory: true, as: 'boolean', dynamic: true, type: 'boolean'},
+    {id: 'errorMessage', mandatory: true, as: 'string', dynamic: true}
+  ],
+  impl: (ctx,validCondition,errorMessage) => ({validations: {validCondition, errorMessage }})
+})
+
+component('field.title', {
+  description: 'used to set table title in button and label',
+  type: 'feature',
+  category: 'table:80',
+  params: [
+    {id: 'title', as: 'string', dynamic: true, mandatory: true}
+  ],
+  impl: (ctx,title) => ({
+      enrichField: field => field.title = ctx => title(ctx)
+  })
+})
+
+component('field.titleCtrl', {
+  description: 'title as control, buttons are usefull',
+  type: 'feature',
+  category: 'table:80',
+  params: [
+    {id: 'titleCtrl', type: 'control', mandatory: true, dynamic: true} // templateValue: button('%title%', { style: button.href() })
+  ],
+  impl: (ctx,titleCtrl) => ({
+      enrichField: field => field.titleCtrl = ctx => titleCtrl(ctx)
+  })
+})
+
+component('field.columnWidth', {
+  description: 'used in itemlist fields',
+  type: 'feature',
+  category: 'table:80',
+  params: [
+    {id: 'width', as: 'number', mandatory: true}
+  ],
+  impl: (ctx,width) => ({
+      enrichField: field => field.width = width
+  })
 })
 });
 
@@ -12772,145 +12772,7 @@ component('theme.materialDesign', {
 
 });
 
-jbLoadPackedFile({lineInPackage:12777, jb, noProxies: false, path: '/plugins/ui/misc/divider.js',fileDsl: '', pluginId: 'ui-misc' }, 
-            function({jb,require,dialog,dialogs,openDialog,unique,inPlaceDialog,modal,source,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableBoolean,editableNumber,editableText,control,icon,feature,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,group,itemlistContainer,filterType,search,itemlist,markdown,menu,option,menuStyle,menuSeparator,multiSelect,picklist,select,table,button,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
-component('divider', {
-  type: 'control',
-  params: [
-    {id: 'style', type: 'divider-style', defaultValue: divider.br(), dynamic: true},
-    {id: 'title', as: 'string', defaultValue: 'divider'},
-    {id: 'features', type: 'feature[]', dynamic: true}
-  ],
-  impl: ctx => jb.ui.ctrl(ctx)
-})
-
-component('divider.br', {
-  type: 'divider-style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('div'),
-    css: '{ border-top-color: var(--jb-menu-separator-fg); display: block; border-top-width: 1px; border-top-style: solid;margin-top: 10px; margin-bottom: 10px;} '
-  })
-})
-
-component('divider.vertical', {
-  type: 'divider-style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('div'),
-    css: '{ border-left-color: var(--jb-menu-separator-fg); display: block; border-left-width: 1px; border-left-style: solid;margin-left: 10px; margin: 5px 5px;} '
-  })
-})
-
-component('divider.flexAutoGrow', {
-  type: 'divider-style',
-  impl: customStyle({ template: (cmp,state,h) => h('div'), css: '{ flex-grow: 10 }' })
-})
-
-});
-
-jbLoadPackedFile({lineInPackage:12812, jb, noProxies: false, path: '/plugins/ui/misc/editable-boolean.js',fileDsl: '', pluginId: 'ui-misc' }, 
-            function({jb,require,dialog,dialogs,openDialog,unique,inPlaceDialog,modal,source,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableBoolean,editableNumber,editableText,control,icon,feature,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,group,itemlistContainer,filterType,search,itemlist,markdown,menu,option,menuStyle,menuSeparator,multiSelect,picklist,select,table,button,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
-component('editableBoolean', {
-  type: 'control',
-  category: 'input:20',
-  params: [
-    {id: 'databind', as: 'ref', type: 'boolean', mandaroy: true, dynamic: true},
-    {id: 'style', type: 'editable-boolean-style', defaultValue: editableBoolean.checkbox(), dynamic: true},
-    {id: 'title', as: 'string', dynamic: true},
-    {id: 'textForTrue', as: 'string', defaultValue: 'yes', dynamic: true},
-    {id: 'textForFalse', as: 'string', defaultValue: 'no', dynamic: true},
-    {id: 'features', type: 'feature[]', dynamic: true}
-  ],
-  impl: ctx => jb.ui.ctrl(ctx)
-})
-
-component('editableBoolean.initToggle', {
-  type: 'feature',
-  category: 'editableBoolean:0',
-  impl: features(
-    calcProp('toggleText', If('%$$model/databind()%', '%$$model/textForTrue()%', '%$$model/textForFalse()%')),
-    watchRef('%$$model/databind()%', { allowSelfRefresh: true, strongRefresh: true }),
-    method('toggle', runActions(
-      writeValue('%$$model/databind()%', typeAdapter('boolean<>',not('%$$model/databind()%'))),
-      refreshIfNotWatchable('%$$model/databind()%')
-    )),
-    method('toggleByKey', (ctx,{cmp, ev}) => 
-      ev.keyCode != 27 && cmp.runBEMethod('toggle'))
-  )
-})
-
-component('editableBoolean.checkbox', {
-  type: 'editable-boolean-style',
-  impl: customStyle({
-    template: ({},{databind},h) => h('input', { type: 'checkbox', ...(databind && {checked: ''}) , 
-      onclick: 'toggle', onchange: 'toggle', onkeyup: 'toggleByKey'  }),
-    features: [editableBoolean.initToggle(), field.databind()]
-  })
-})
-});
-
-jbLoadPackedFile({lineInPackage:12853, jb, noProxies: false, path: '/plugins/ui/misc/editable-number.js',fileDsl: '', pluginId: 'ui-misc' }, 
-            function({jb,require,dialog,dialogs,openDialog,unique,inPlaceDialog,modal,source,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableBoolean,editableNumber,editableText,control,icon,feature,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,group,itemlistContainer,filterType,search,itemlist,markdown,menu,option,menuStyle,menuSeparator,multiSelect,picklist,select,table,button,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
-component('editableNumber', {
-  type: 'control',
-  category: 'input:30',
-  params: [
-    {id: 'databind', as: 'ref', mandaroy: true, dynamic: true},
-    {id: 'title', as: 'string', dynamic: true},
-    {id: 'style', type: 'editable-number-style', dynamic: true, defaultValue: editableNumber.input() },
-    {id: 'symbol', as: 'string', description: 'leave empty to parse symbol from value'},
-    {id: 'min', as: 'number', defaultValue: 0},
-    {id: 'max', as: 'number', defaultValue: 10},
-    {id: 'displayString', as: 'string', dynamic: true, defaultValue: '%$Value%%$Symbol%'},
-    {id: 'dataString', as: 'string', dynamic: true, defaultValue: '%$Value%%$Symbol%'},
-    {id: 'autoScale', as: 'boolean', defaultValue: true, description: 'adjust its scale if at edges', type: 'boolean'},
-    {id: 'step', as: 'number', defaultValue: 1, description: 'used by slider'},
-    {id: 'initialPixelsPerUnit', as: 'number', description: 'used by slider'},
-    {id: 'features', type: 'feature[]', dynamic: true}
-  ],
-  impl: ctx => {
-      class editableNumber {
-        constructor(params) {
-          Object.assign(this,params);
-          if (this.min == null) this.min = NaN;
-          if (this.max == null) this.max = NaN;
-        }
-        numericPart(dataString) {
-          if (typeof dataString == 'number') return dataString
-          if (dataString == '') return NaN;
-          var parts = (''+dataString).match(/([^0-9\.\-]*)([0-9\.\-]+)([^0-9\.\-]*)/); // prefix-number-suffix
-          if (parts)
-            this.symbol = parts[1] || parts[3]
-          return +(parts && parts[2])
-        }
-
-        calcDisplayString(number,ctx) {
-          if (isNaN(number)) return this.placeholder || '';
-          return this.displayString(ctx.setVars({ Value: ''+number, Symbol: this.symbol }));
-        }
-
-        calcDataString(number,ctx) {
-          if (isNaN(number)) return '';
-          return this.dataString(ctx.setVars({ Value: ''+number, Symbol: this.symbol }));
-        }
-        keepInDomain(val) {
-          return Math.min(this.max, Math.max(this.min,val))
-        }
-      }
-      return jb.ui.ctrl(ctx.setVars({ editableNumber: new editableNumber(ctx.params) }))
-  }
-})
-
-component('editableNumber.input', {
-  type: 'editable-number-style',
-  impl: customStyle({
-    template: (cmp,{databind},h) => h('input', {value: databind, onchange: true, onkeyup: true, onblur: true }),
-    features: field.databindText()
-  })
-})
-
-});
-
-jbLoadPackedFile({lineInPackage:12915, jb, noProxies: false, path: '/plugins/ui/misc/dialog.js',fileDsl: '', pluginId: 'ui-misc' }, 
+jbLoadPackedFile({lineInPackage:12777, jb, noProxies: false, path: '/plugins/ui/misc/dialog.js',fileDsl: '', pluginId: 'ui-misc' }, 
             function({jb,require,dialog,dialogs,openDialog,unique,inPlaceDialog,modal,source,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableBoolean,editableNumber,editableText,control,icon,feature,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,group,itemlistContainer,filterType,search,itemlist,markdown,menu,option,menuStyle,menuSeparator,multiSelect,picklist,select,table,button,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
 extension('ui','dialog', {
   dialogTopCmp(ctx) {
@@ -13427,6 +13289,144 @@ component('popupLocation', {
 
 });
 
+jbLoadPackedFile({lineInPackage:13294, jb, noProxies: false, path: '/plugins/ui/misc/editable-boolean.js',fileDsl: '', pluginId: 'ui-misc' }, 
+            function({jb,require,dialog,dialogs,openDialog,unique,inPlaceDialog,modal,source,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableBoolean,editableNumber,editableText,control,icon,feature,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,group,itemlistContainer,filterType,search,itemlist,markdown,menu,option,menuStyle,menuSeparator,multiSelect,picklist,select,table,button,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
+component('editableBoolean', {
+  type: 'control',
+  category: 'input:20',
+  params: [
+    {id: 'databind', as: 'ref', type: 'boolean', mandaroy: true, dynamic: true},
+    {id: 'style', type: 'editable-boolean-style', defaultValue: editableBoolean.checkbox(), dynamic: true},
+    {id: 'title', as: 'string', dynamic: true},
+    {id: 'textForTrue', as: 'string', defaultValue: 'yes', dynamic: true},
+    {id: 'textForFalse', as: 'string', defaultValue: 'no', dynamic: true},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx => jb.ui.ctrl(ctx)
+})
+
+component('editableBoolean.initToggle', {
+  type: 'feature',
+  category: 'editableBoolean:0',
+  impl: features(
+    calcProp('toggleText', If('%$$model/databind()%', '%$$model/textForTrue()%', '%$$model/textForFalse()%')),
+    watchRef('%$$model/databind()%', { allowSelfRefresh: true, strongRefresh: true }),
+    method('toggle', runActions(
+      writeValue('%$$model/databind()%', typeAdapter('boolean<>',not('%$$model/databind()%'))),
+      refreshIfNotWatchable('%$$model/databind()%')
+    )),
+    method('toggleByKey', (ctx,{cmp, ev}) => 
+      ev.keyCode != 27 && cmp.runBEMethod('toggle'))
+  )
+})
+
+component('editableBoolean.checkbox', {
+  type: 'editable-boolean-style',
+  impl: customStyle({
+    template: ({},{databind},h) => h('input', { type: 'checkbox', ...(databind && {checked: ''}) , 
+      onclick: 'toggle', onchange: 'toggle', onkeyup: 'toggleByKey'  }),
+    features: [editableBoolean.initToggle(), field.databind()]
+  })
+})
+});
+
+jbLoadPackedFile({lineInPackage:13335, jb, noProxies: false, path: '/plugins/ui/misc/editable-number.js',fileDsl: '', pluginId: 'ui-misc' }, 
+            function({jb,require,dialog,dialogs,openDialog,unique,inPlaceDialog,modal,source,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableBoolean,editableNumber,editableText,control,icon,feature,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,group,itemlistContainer,filterType,search,itemlist,markdown,menu,option,menuStyle,menuSeparator,multiSelect,picklist,select,table,button,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
+component('editableNumber', {
+  type: 'control',
+  category: 'input:30',
+  params: [
+    {id: 'databind', as: 'ref', mandaroy: true, dynamic: true},
+    {id: 'title', as: 'string', dynamic: true},
+    {id: 'style', type: 'editable-number-style', dynamic: true, defaultValue: editableNumber.input() },
+    {id: 'symbol', as: 'string', description: 'leave empty to parse symbol from value'},
+    {id: 'min', as: 'number', defaultValue: 0},
+    {id: 'max', as: 'number', defaultValue: 10},
+    {id: 'displayString', as: 'string', dynamic: true, defaultValue: '%$Value%%$Symbol%'},
+    {id: 'dataString', as: 'string', dynamic: true, defaultValue: '%$Value%%$Symbol%'},
+    {id: 'autoScale', as: 'boolean', defaultValue: true, description: 'adjust its scale if at edges', type: 'boolean'},
+    {id: 'step', as: 'number', defaultValue: 1, description: 'used by slider'},
+    {id: 'initialPixelsPerUnit', as: 'number', description: 'used by slider'},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx => {
+      class editableNumber {
+        constructor(params) {
+          Object.assign(this,params);
+          if (this.min == null) this.min = NaN;
+          if (this.max == null) this.max = NaN;
+        }
+        numericPart(dataString) {
+          if (typeof dataString == 'number') return dataString
+          if (dataString == '') return NaN;
+          var parts = (''+dataString).match(/([^0-9\.\-]*)([0-9\.\-]+)([^0-9\.\-]*)/); // prefix-number-suffix
+          if (parts)
+            this.symbol = parts[1] || parts[3]
+          return +(parts && parts[2])
+        }
+
+        calcDisplayString(number,ctx) {
+          if (isNaN(number)) return this.placeholder || '';
+          return this.displayString(ctx.setVars({ Value: ''+number, Symbol: this.symbol }));
+        }
+
+        calcDataString(number,ctx) {
+          if (isNaN(number)) return '';
+          return this.dataString(ctx.setVars({ Value: ''+number, Symbol: this.symbol }));
+        }
+        keepInDomain(val) {
+          return Math.min(this.max, Math.max(this.min,val))
+        }
+      }
+      return jb.ui.ctrl(ctx.setVars({ editableNumber: new editableNumber(ctx.params) }))
+  }
+})
+
+component('editableNumber.input', {
+  type: 'editable-number-style',
+  impl: customStyle({
+    template: (cmp,{databind},h) => h('input', {value: databind, onchange: true, onkeyup: true, onblur: true }),
+    features: field.databindText()
+  })
+})
+
+});
+
+jbLoadPackedFile({lineInPackage:13397, jb, noProxies: false, path: '/plugins/ui/misc/divider.js',fileDsl: '', pluginId: 'ui-misc' }, 
+            function({jb,require,dialog,dialogs,openDialog,unique,inPlaceDialog,modal,source,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableBoolean,editableNumber,editableText,control,icon,feature,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,group,itemlistContainer,filterType,search,itemlist,markdown,menu,option,menuStyle,menuSeparator,multiSelect,picklist,select,table,button,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
+component('divider', {
+  type: 'control',
+  params: [
+    {id: 'style', type: 'divider-style', defaultValue: divider.br(), dynamic: true},
+    {id: 'title', as: 'string', defaultValue: 'divider'},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx => jb.ui.ctrl(ctx)
+})
+
+component('divider.br', {
+  type: 'divider-style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div'),
+    css: '{ border-top-color: var(--jb-menu-separator-fg); display: block; border-top-width: 1px; border-top-style: solid;margin-top: 10px; margin-bottom: 10px;} '
+  })
+})
+
+component('divider.vertical', {
+  type: 'divider-style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div'),
+    css: '{ border-left-color: var(--jb-menu-separator-fg); display: block; border-left-width: 1px; border-left-style: solid;margin-left: 10px; margin: 5px 5px;} '
+  })
+})
+
+component('divider.flexAutoGrow', {
+  type: 'divider-style',
+  impl: customStyle({ template: (cmp,state,h) => h('div'), css: '{ flex-grow: 10 }' })
+})
+
+});
+
 jbLoadPackedFile({lineInPackage:13432, jb, noProxies: false, path: '/plugins/ui/misc/editable-text-helper.js',fileDsl: '', pluginId: 'ui-misc' }, 
             function({jb,require,dialog,dialogs,openDialog,unique,inPlaceDialog,modal,source,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableBoolean,editableNumber,editableText,control,icon,feature,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,group,itemlistContainer,filterType,search,itemlist,markdown,menu,option,menuStyle,menuSeparator,multiSelect,picklist,select,table,button,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
 
@@ -13907,99 +13907,7 @@ component('toolbar-with-icons', {
   */
 });
 
-jbLoadPackedFile({lineInPackage:13912, jb, noProxies: false, path: '/plugins/ui/misc/itemlist-dd.js',fileDsl: '', pluginId: 'ui-misc' }, 
-            function({jb,require,dialog,dialogs,openDialog,unique,inPlaceDialog,modal,source,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableBoolean,editableNumber,editableText,control,icon,feature,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,group,itemlistContainer,filterType,search,itemlist,markdown,menu,option,menuStyle,menuSeparator,multiSelect,picklist,select,table,button,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
-
-component('itemlist.dragAndDrop', {
-  type: 'feature',
-  impl: features(
-    frontEnd.requireExternalLibrary('dragula.js','css/dragula.css'),
-    method('moveItem', runActions(move(itemlist.indexToData('%from%'), itemlist.indexToData('%to%')), action.refreshCmp())),
-    frontEnd.prop('drake', ({},{cmp,emulateFrontEndInTest}) => {
-        if (emulateFrontEndInTest) return { on: () => {}, off: () => {}}
-        if (!jb.frame.dragula) return jb.logError('itemlist.dragAndDrop - the dragula lib is not loaded')
-        return dragula([cmp.base.querySelector('.jb-items-parent') || cmp.base] , {
-          moves: (el,source,handle) => jb.ui.parents(handle,{includeSelf: true}).some(x=>jb.ui.hasClass(x,'drag-handle'))
-        })
-    }),
-    frontEnd.flow(
-      source.dragulaEvent('drag', { argNames: list('el') }),
-      rx.map(itemlist.indexOfElem('%el%')),
-      rx.do(({},{cmp}) => 
-        Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).forEach(el=>el.setAttribute('jb-original-index',jb.ui.indexOfElement(el)))),
-      sink.subjectNext('%$cmp/selectionEmitter%')
-    ),
-    frontEnd.flow(
-      source.dragulaEvent('drop', {
-        argNames: list('dropElm','target','source','sibling')
-      }),
-      rx.map(obj(
-        prop('from', itemlist.indexOfElem('%dropElm%')),
-        prop('to', itemlist.orignialIndexFromSibling('%sibling%'))
-      )),
-      sink.BEMethod('moveItem')
-    ),
-    frontEnd.flow(
-      source.frontEndEvent('keydown'),
-      rx.filter('%ctrlKey%'),
-      rx.filter(inGroup(list(38,40), '%keyCode%')),
-      rx.map(obj(
-        prop('from', itemlist.nextSelected(0)),
-        prop('to', itemlist.nextSelected(If('%keyCode%==40', 1, -1)))
-      )),
-      sink.BEMethod('moveItem')
-    )
-  )
-})
-
-component('source.dragulaEvent', {
-  type: 'rx',
-  hidden: true,
-  params: [
-    {id: 'event', as: 'string'},
-    {id: 'argNames', as: 'array', description: `e.g., ['dropElm', 'target', 'source']`}
-  ],
-  impl: (ctx,event,argNames) => (start, sink) => {
-		const {cmp} = ctx.vars
-
-		if (start !== 0) return
-		function handler(...args) { sink(1, jb.objFromEntries(args.map((v,i) => [argNames[i],v])) ) }
-		sink(0, t => {
-			if (t != 2) return
-			jb.log('dragula unregister event listener',{ctx,event})
-			cmp.drake.off(event, handler)
-		})
-		jb.log('dragula register change listener',{ctx,event})
-		cmp.drake.on(event, handler)
-	}
-})
-
-component('itemlist.orignialIndexFromSibling', {
-  type: 'data',
-  hidden: true,
-  params: [
-    {id: 'sibling', defaultValue: '%%'}
-  ],
-  impl: (ctx,sibling) => {
-    const cmp = ctx.vars.cmp
-    const parent = cmp.base.querySelector('.jb-items-parent') || cmp.base
-    const indeces = jb.ui.children(parent).map(el => +el.getAttribute('jb-original-index'))
-    const targetIndex = sibling ? jb.ui.indexOfElement(sibling) : indeces.length
-    const result = indeces[targetIndex-1]
-    jb.log('itemlist DD orignialIndexFromSibling',{sibling, indeces,targetIndex, result,ctx})
-    return result
-  }
-})
-
-component('itemlist.dragHandle', {
-  description: 'put on the control inside the item which is used to drag the whole line',
-  type: 'feature',
-  impl: features(css.class('drag-handle'), css('{cursor: pointer}'))
-})
-
-});
-
-jbLoadPackedFile({lineInPackage:14004, jb, noProxies: false, path: '/plugins/ui/misc/image.js',fileDsl: '', pluginId: 'ui-misc' }, 
+jbLoadPackedFile({lineInPackage:13912, jb, noProxies: false, path: '/plugins/ui/misc/image.js',fileDsl: '', pluginId: 'ui-misc' }, 
             function({jb,require,dialog,dialogs,openDialog,unique,inPlaceDialog,modal,source,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableBoolean,editableNumber,editableText,control,icon,feature,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,group,itemlistContainer,filterType,search,itemlist,markdown,menu,option,menuStyle,menuSeparator,multiSelect,picklist,select,table,button,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
 component('image', {
   type: 'control',
@@ -14091,7 +13999,7 @@ component('image.img', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:14096, jb, noProxies: false, path: '/plugins/ui/misc/itemlist-container.js',fileDsl: '', pluginId: 'ui-misc' }, 
+jbLoadPackedFile({lineInPackage:14004, jb, noProxies: false, path: '/plugins/ui/misc/itemlist-container.js',fileDsl: '', pluginId: 'ui-misc' }, 
             function({jb,require,dialog,dialogs,openDialog,unique,inPlaceDialog,modal,source,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableBoolean,editableNumber,editableText,control,icon,feature,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,group,itemlistContainer,filterType,search,itemlist,markdown,menu,option,menuStyle,menuSeparator,multiSelect,picklist,select,table,button,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
 
 component('group.itemlistContainer', {
@@ -14288,6 +14196,98 @@ component('search.fuse', {
 
 });
 
+jbLoadPackedFile({lineInPackage:14201, jb, noProxies: false, path: '/plugins/ui/misc/itemlist-dd.js',fileDsl: '', pluginId: 'ui-misc' }, 
+            function({jb,require,dialog,dialogs,openDialog,unique,inPlaceDialog,modal,source,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableBoolean,editableNumber,editableText,control,icon,feature,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,group,itemlistContainer,filterType,search,itemlist,markdown,menu,option,menuStyle,menuSeparator,multiSelect,picklist,select,table,button,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
+
+component('itemlist.dragAndDrop', {
+  type: 'feature',
+  impl: features(
+    frontEnd.requireExternalLibrary('dragula.js','css/dragula.css'),
+    method('moveItem', runActions(move(itemlist.indexToData('%from%'), itemlist.indexToData('%to%')), action.refreshCmp())),
+    frontEnd.prop('drake', ({},{cmp,emulateFrontEndInTest}) => {
+        if (emulateFrontEndInTest) return { on: () => {}, off: () => {}}
+        if (!jb.frame.dragula) return jb.logError('itemlist.dragAndDrop - the dragula lib is not loaded')
+        return dragula([cmp.base.querySelector('.jb-items-parent') || cmp.base] , {
+          moves: (el,source,handle) => jb.ui.parents(handle,{includeSelf: true}).some(x=>jb.ui.hasClass(x,'drag-handle'))
+        })
+    }),
+    frontEnd.flow(
+      source.dragulaEvent('drag', { argNames: list('el') }),
+      rx.map(itemlist.indexOfElem('%el%')),
+      rx.do(({},{cmp}) => 
+        Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).forEach(el=>el.setAttribute('jb-original-index',jb.ui.indexOfElement(el)))),
+      sink.subjectNext('%$cmp/selectionEmitter%')
+    ),
+    frontEnd.flow(
+      source.dragulaEvent('drop', {
+        argNames: list('dropElm','target','source','sibling')
+      }),
+      rx.map(obj(
+        prop('from', itemlist.indexOfElem('%dropElm%')),
+        prop('to', itemlist.orignialIndexFromSibling('%sibling%'))
+      )),
+      sink.BEMethod('moveItem')
+    ),
+    frontEnd.flow(
+      source.frontEndEvent('keydown'),
+      rx.filter('%ctrlKey%'),
+      rx.filter(inGroup(list(38,40), '%keyCode%')),
+      rx.map(obj(
+        prop('from', itemlist.nextSelected(0)),
+        prop('to', itemlist.nextSelected(If('%keyCode%==40', 1, -1)))
+      )),
+      sink.BEMethod('moveItem')
+    )
+  )
+})
+
+component('source.dragulaEvent', {
+  type: 'rx',
+  hidden: true,
+  params: [
+    {id: 'event', as: 'string'},
+    {id: 'argNames', as: 'array', description: `e.g., ['dropElm', 'target', 'source']`}
+  ],
+  impl: (ctx,event,argNames) => (start, sink) => {
+		const {cmp} = ctx.vars
+
+		if (start !== 0) return
+		function handler(...args) { sink(1, jb.objFromEntries(args.map((v,i) => [argNames[i],v])) ) }
+		sink(0, t => {
+			if (t != 2) return
+			jb.log('dragula unregister event listener',{ctx,event})
+			cmp.drake.off(event, handler)
+		})
+		jb.log('dragula register change listener',{ctx,event})
+		cmp.drake.on(event, handler)
+	}
+})
+
+component('itemlist.orignialIndexFromSibling', {
+  type: 'data',
+  hidden: true,
+  params: [
+    {id: 'sibling', defaultValue: '%%'}
+  ],
+  impl: (ctx,sibling) => {
+    const cmp = ctx.vars.cmp
+    const parent = cmp.base.querySelector('.jb-items-parent') || cmp.base
+    const indeces = jb.ui.children(parent).map(el => +el.getAttribute('jb-original-index'))
+    const targetIndex = sibling ? jb.ui.indexOfElement(sibling) : indeces.length
+    const result = indeces[targetIndex-1]
+    jb.log('itemlist DD orignialIndexFromSibling',{sibling, indeces,targetIndex, result,ctx})
+    return result
+  }
+})
+
+component('itemlist.dragHandle', {
+  description: 'put on the control inside the item which is used to drag the whole line',
+  type: 'feature',
+  impl: features(css.class('drag-handle'), css('{cursor: pointer}'))
+})
+
+});
+
 jbLoadPackedFile({lineInPackage:14293, jb, noProxies: false, path: '/plugins/ui/misc/itemlist-scroll.js',fileDsl: '', pluginId: 'ui-misc' }, 
             function({jb,require,dialog,dialogs,openDialog,unique,inPlaceDialog,modal,source,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableBoolean,editableNumber,editableText,control,icon,feature,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,group,itemlistContainer,filterType,search,itemlist,markdown,menu,option,menuStyle,menuSeparator,multiSelect,picklist,select,table,button,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
 component('itemlist.infiniteScroll', {
@@ -14430,46 +14430,7 @@ component('markdown.mark', {
 
 });
 
-jbLoadPackedFile({lineInPackage:14435, jb, noProxies: false, path: '/plugins/ui/misc/multi-select.js',fileDsl: '', pluginId: 'ui-misc' }, 
-            function({jb,require,dialog,dialogs,openDialog,unique,inPlaceDialog,modal,source,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableBoolean,editableNumber,editableText,control,icon,feature,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,group,itemlistContainer,filterType,search,itemlist,markdown,menu,option,menuStyle,menuSeparator,multiSelect,picklist,select,table,button,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
-component('multiSelect', {
-  type: 'control',
-  description: 'select list of options, check multiple',
-  category: 'input:80',
-  params: [
-    {id: 'title', as: 'string', dynamic: true},
-    {id: 'databind', as: 'ref', mandaroy: true, dynamic: true},
-    {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true},
-    {id: 'promote', type: 'picklist.promote', dynamic: true},
-    {id: 'style', type: 'multiSelect-style', defaultValue: select.native(), dynamic: true},
-    {id: 'features', type: 'feature[]', dynamic: true}
-  ],
-  impl: ctx => jb.ui.ctrl(ctx)
-})
-
-component('multiSelect.modelAsBooleanRef', {
-  type: 'boolean',
-  params: [
-    {id: 'multiSelectModel'},
-    {id: 'code'}
-  ],
-  impl: (ctx,multiSelectModel,code) => {
-        const ref = multiSelectModel.databind()
-        return { $jb_val: val => val === undefined ? has() : val === true ? add() : remove() }
-
-        function has() { return jb.val(ref).indexOf(code) != -1 }
-        function add() { if (!has(code)) jb.db.push(ref, code,ctx) }
-        function remove() { 
-            const index = jb.val(ref).indexOf(code)
-            index != -1 && jb.db.splice(ref,[[index,1]],ctx)
-        }
-    }
-})
-
-
-});
-
-jbLoadPackedFile({lineInPackage:14474, jb, noProxies: false, path: '/plugins/ui/misc/menu.js',fileDsl: '', pluginId: 'ui-misc' }, 
+jbLoadPackedFile({lineInPackage:14435, jb, noProxies: false, path: '/plugins/ui/misc/menu.js',fileDsl: '', pluginId: 'ui-misc' }, 
             function({jb,require,dialog,dialogs,openDialog,unique,inPlaceDialog,modal,source,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableBoolean,editableNumber,editableText,control,icon,feature,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,group,itemlistContainer,filterType,search,itemlist,markdown,menu,option,menuStyle,menuSeparator,multiSelect,picklist,select,table,button,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
 using('ui-common')
 
@@ -14937,7 +14898,7 @@ component('menu.mdcRippleEffect', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:14942, jb, noProxies: false, path: '/plugins/ui/misc/picklist.js',fileDsl: '', pluginId: 'ui-misc' }, 
+jbLoadPackedFile({lineInPackage:14903, jb, noProxies: false, path: '/plugins/ui/misc/picklist.js',fileDsl: '', pluginId: 'ui-misc' }, 
             function({jb,require,dialog,dialogs,openDialog,unique,inPlaceDialog,modal,source,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableBoolean,editableNumber,editableText,control,icon,feature,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,group,itemlistContainer,filterType,search,itemlist,markdown,menu,option,menuStyle,menuSeparator,multiSelect,picklist,select,table,button,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
 component('picklist', {
   type: 'control',
@@ -15156,6 +15117,45 @@ component('picklist.initGroups', {
 
 });
 
+jbLoadPackedFile({lineInPackage:15122, jb, noProxies: false, path: '/plugins/ui/misc/multi-select.js',fileDsl: '', pluginId: 'ui-misc' }, 
+            function({jb,require,dialog,dialogs,openDialog,unique,inPlaceDialog,modal,source,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableBoolean,editableNumber,editableText,control,icon,feature,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,group,itemlistContainer,filterType,search,itemlist,markdown,menu,option,menuStyle,menuSeparator,multiSelect,picklist,select,table,button,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
+component('multiSelect', {
+  type: 'control',
+  description: 'select list of options, check multiple',
+  category: 'input:80',
+  params: [
+    {id: 'title', as: 'string', dynamic: true},
+    {id: 'databind', as: 'ref', mandaroy: true, dynamic: true},
+    {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true},
+    {id: 'promote', type: 'picklist.promote', dynamic: true},
+    {id: 'style', type: 'multiSelect-style', defaultValue: select.native(), dynamic: true},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx => jb.ui.ctrl(ctx)
+})
+
+component('multiSelect.modelAsBooleanRef', {
+  type: 'boolean',
+  params: [
+    {id: 'multiSelectModel'},
+    {id: 'code'}
+  ],
+  impl: (ctx,multiSelectModel,code) => {
+        const ref = multiSelectModel.databind()
+        return { $jb_val: val => val === undefined ? has() : val === true ? add() : remove() }
+
+        function has() { return jb.val(ref).indexOf(code) != -1 }
+        function add() { if (!has(code)) jb.db.push(ref, code,ctx) }
+        function remove() { 
+            const index = jb.val(ref).indexOf(code)
+            index != -1 && jb.db.splice(ref,[[index,1]],ctx)
+        }
+    }
+})
+
+
+});
+
 jbLoadPackedFile({lineInPackage:15161, jb, noProxies: false, path: '/plugins/ui/misc/table.js',fileDsl: '', pluginId: 'ui-misc' }, 
             function({jb,require,dialog,dialogs,openDialog,unique,inPlaceDialog,modal,source,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableBoolean,editableNumber,editableText,control,icon,feature,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,group,itemlistContainer,filterType,search,itemlist,markdown,menu,option,menuStyle,menuSeparator,multiSelect,picklist,select,table,button,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
 
@@ -15252,7 +15252,91 @@ component('feature.expandToEndOfRow', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:15257, jb, noProxies: false, path: '/plugins/remote/widget/remote-widget.js',fileDsl: '', pluginId: 'remote-widget' }, 
+jbLoadPackedFile({lineInPackage:15257, jb, noProxies: false, path: '/plugins/remote/widget/user-request-transaction.js',fileDsl: '', pluginId: 'remote-widget' }, 
+            function({jb,require,widget,backEnd,dataMethodFromBackend,action,remote,frontEnd,runInBECmpContext,xServer,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,dialog,dialogs,openDialog,inPlaceDialog,modal,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableBoolean,editableNumber,editableText,control,icon,feature,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,group,itemlistContainer,filterType,search,itemlist,markdown,menu,option,menuStyle,menuSeparator,multiSelect,picklist,select,table,button,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,backend,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,component,extension,using,dsl,pluginDsl}) {
+extension('ui', 'userReqTx', {
+  initExtension() {
+    return { userReqTxCounter: 0}
+  },
+  // interface - complete notification is done by calling complete OR completeByChildren
+  userReqChildTx({ parent, ctx }) {
+    return {
+      next(renderingUpdate) {
+        parent.next(renderingUpdate)
+      },      
+      complete(logTxt) { 
+        jb.log(`userReqTx userReqChildTx complete ${logTxt}`,{ctx})
+        this.completed = true
+        parent.childCompleteNotfication(this)
+      },
+
+      completeByChildren(tActions, ctx) {
+        this.childrenLeft = tActions.length
+        tActions.forEach(childtAction=>
+          childtAction(ctx.setVars({ userReqTx: jb.ui.userReqChildTx({ parent: this, ctx }) })))
+      },
+      childCompleteNotfication(callerChild) {
+        jb.log('userReqTx userReqChildTx childCompleteNotfication',{ctx,callerChild, childrenLeft: this.childrenLeft})
+        if (this.childrenLeft == null)
+          jb.logError('childCompleteNotfication called before completeByChildren',{ctx})
+        this.childrenLeft--;
+        if (this.childrenLeft < 1) {
+          this.completed = true
+          parent.childCompleteNotfication(this)
+        }
+      },      
+    }
+  },
+
+  userReqTx({ userReq, ctx }) {
+    return {
+      id: jb.ui.userReqTxCounter++,
+      updates: [],
+      cb: jb.callbag.subject(userReq.reqId || userReq.widgetId),
+      next(renderingUpdate) {
+        this.updates.push(renderingUpdate)
+        const {widgetId} = userReq
+        const updatesCounter = jb.ui.headless[widgetId].updatesCounter = (jb.ui.headless[widgetId].updatesCounter || 0) + 1
+        const txCounter = jb.ui.headless[widgetId].txCounter || 0
+        jb.log(`userReqTx delta ${txCounter}-${updatesCounter}`, { widgetId, ctx, renderingUpdate, delta: renderingUpdate.delta })
+        this.cb.next({userReq, ...renderingUpdate})
+        ctx.vars.testRenderingUpdate && ctx.vars.testRenderingUpdate.next({userReq, ...renderingUpdate})
+      },      
+      complete(logTxt) {
+        //if (this.updates.length == 0) return
+        const update = this.updates.length == 0 ? [] : this.updates.length == 1 ? this.updates[0] : { $: 'updates', updates: this.updates }
+        this.updates = []
+        jb.log(`userReqTx top complete ${logTxt}`,{ctx,update})
+        this.onCompleteHandler && this.onCompleteHandler(update)
+        const { widgetId } = userReq
+        jb.ui.headless[widgetId].txCounter = (jb.ui.headless[widgetId].txCounter || 0) + 1
+      },
+      onComplete(handler) {
+        this.onCompleteHandler = handler
+      },
+      appendPromise(pr) {
+        this.childrenLeft++
+        Promise.resolve(pr).finally(()=>this.childCompleteNotfication('promise'))
+      },
+      completeByChildren(tActions, ctx) {
+        this.childrenLeft = tActions.length
+        tActions.forEach(childtAction=>
+          childtAction(ctx.setVars({ userReqTx: jb.ui.userReqChildTx({ parent: this, ctx }) })))
+      },
+      childCompleteNotfication(callerChild) {
+        jb.log('userReqTx top childCompleteNotfication',{ctx,callerChild, childrenLeft: this.childrenLeft})
+        if (this.childrenLeft == null)
+          jb.logError('childCompleteNotfication called before completeByChildren',{ctx})
+        this.childrenLeft--;
+        if (this.childrenLeft < 1)
+          this.complete('last child')
+      }
+    }
+  },
+})
+});
+
+jbLoadPackedFile({lineInPackage:15341, jb, noProxies: false, path: '/plugins/remote/widget/remote-widget.js',fileDsl: '', pluginId: 'remote-widget' }, 
             function({jb,require,widget,backEnd,dataMethodFromBackend,action,remote,frontEnd,runInBECmpContext,xServer,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,dialog,dialogs,openDialog,inPlaceDialog,modal,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableBoolean,editableNumber,editableText,control,icon,feature,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,group,itemlistContainer,filterType,search,itemlist,markdown,menu,option,menuStyle,menuSeparator,multiSelect,picklist,select,table,button,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,backend,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,component,extension,using,dsl,pluginDsl}) {
 using('remote-jbm','ui-misc')
 
@@ -15602,91 +15686,84 @@ component('xServer', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:15607, jb, noProxies: false, path: '/plugins/remote/widget/user-request-transaction.js',fileDsl: '', pluginId: 'remote-widget' }, 
-            function({jb,require,widget,backEnd,dataMethodFromBackend,action,remote,frontEnd,runInBECmpContext,xServer,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,dialog,dialogs,openDialog,inPlaceDialog,modal,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableBoolean,editableNumber,editableText,control,icon,feature,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,group,itemlistContainer,filterType,search,itemlist,markdown,menu,option,menuStyle,menuSeparator,multiSelect,picklist,select,table,button,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,backend,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,component,extension,using,dsl,pluginDsl}) {
-extension('ui', 'userReqTx', {
-  initExtension() {
-    return { userReqTxCounter: 0}
-  },
-  // interface - complete notification is done by calling complete OR completeByChildren
-  userReqChildTx({ parent, ctx }) {
-    return {
-      next(renderingUpdate) {
-        parent.next(renderingUpdate)
-      },      
-      complete(logTxt) { 
-        jb.log(`userReqTx userReqChildTx complete ${logTxt}`,{ctx})
-        this.completed = true
-        parent.childCompleteNotfication(this)
-      },
+jbLoadPackedFile({lineInPackage:15691, jb, noProxies: false, path: '/plugins/tgp/text-editor/tgp-ui-specific.js',fileDsl: '', pluginId: 'tgp-text-editor' }, 
+            function({jb,require,tgpTextEditor,gotoUrl,tgp,prettyPrint,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,group,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,css,frontEnd,backend,sink,source,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
+extension('tgp', 'ui_specific', {
+	nonControlChildren: (path,includeFeatures) =>
+		jb.tgp.paramsOfPath(path).filter(p=>!jb.tgp.isControlType(p.type))
+			.filter(p=>includeFeatures || p.id != 'features')
+			.map(p=>path + '~' + p.id),
 
-      completeByChildren(tActions, ctx) {
-        this.childrenLeft = tActions.length
-        tActions.forEach(childtAction=>
-          childtAction(ctx.setVars({ userReqTx: jb.ui.userReqChildTx({ parent: this, ctx }) })))
-      },
-      childCompleteNotfication(callerChild) {
-        jb.log('userReqTx userReqChildTx childCompleteNotfication',{ctx,callerChild, childrenLeft: this.childrenLeft})
-        if (this.childrenLeft == null)
-          jb.logError('childCompleteNotfication called before completeByChildren',{ctx})
-        this.childrenLeft--;
-        if (this.childrenLeft < 1) {
-          this.completed = true
-          parent.childCompleteNotfication(this)
-        }
-      },      
-    }
-  },
+	isControlType: type => (type||'').split('[')[0].match(/^(control|options|menu.option|table-field|d3g.axis)$/),
+	controlParams: path => jb.tgp.paramsOfPath(path).filter(p=>jb.tgp.isControlType(p.type)).map(p=>p.id),
 
-  userReqTx({ userReq, ctx }) {
-    return {
-      id: jb.ui.userReqTxCounter++,
-      updates: [],
-      cb: jb.callbag.subject(userReq.reqId || userReq.widgetId),
-      next(renderingUpdate) {
-        this.updates.push(renderingUpdate)
-        const {widgetId} = userReq
-        const updatesCounter = jb.ui.headless[widgetId].updatesCounter = (jb.ui.headless[widgetId].updatesCounter || 0) + 1
-        const txCounter = jb.ui.headless[widgetId].txCounter || 0
-        jb.log(`userReqTx delta ${txCounter}-${updatesCounter}`, { widgetId, ctx, renderingUpdate, delta: renderingUpdate.delta })
-        this.cb.next({userReq, ...renderingUpdate})
-        ctx.vars.testRenderingUpdate && ctx.vars.testRenderingUpdate.next({userReq, ...renderingUpdate})
-      },      
-      complete(logTxt) {
-        //if (this.updates.length == 0) return
-        const update = this.updates.length == 0 ? [] : this.updates.length == 1 ? this.updates[0] : { $: 'updates', updates: this.updates }
-        this.updates = []
-        jb.log(`userReqTx top complete ${logTxt}`,{ctx,update})
-        this.onCompleteHandler && this.onCompleteHandler(update)
-        const { widgetId } = userReq
-        jb.ui.headless[widgetId].txCounter = (jb.ui.headless[widgetId].txCounter || 0) + 1
-      },
-      onComplete(handler) {
-        this.onCompleteHandler = handler
-      },
-      appendPromise(pr) {
-        this.childrenLeft++
-        Promise.resolve(pr).finally(()=>this.childCompleteNotfication('promise'))
-      },
-      completeByChildren(tActions, ctx) {
-        this.childrenLeft = tActions.length
-        tActions.forEach(childtAction=>
-          childtAction(ctx.setVars({ userReqTx: jb.ui.userReqChildTx({ parent: this, ctx }) })))
-      },
-      childCompleteNotfication(callerChild) {
-        jb.log('userReqTx top childCompleteNotfication',{ctx,callerChild, childrenLeft: this.childrenLeft})
-        if (this.childrenLeft == null)
-          jb.logError('childCompleteNotfication called before completeByChildren',{ctx})
-        this.childrenLeft--;
-        if (this.childrenLeft < 1)
-          this.complete('last child')
-      }
-    }
-  },
+	getOrCreateControlArrayRef(path,srcCtx) {
+		const val = jb.tgp.valOfPath(path)
+		const prop = jb.tgp.controlParams(path)[0]
+		if (!prop)
+			return jb.logError('getOrCreateControlArrayRef: no control param',{path,srcCtx})
+		let ref = jb.tgp.ref(path+'~'+prop)
+		if (val[prop] === undefined)
+			jb.db.writeValue(ref,[],srcCtx)
+		else if (!Array.isArray(val[prop])) // wrap
+			jb.db.writeValue(ref,[val[prop]],srcCtx)
+		ref = jb.tgp.ref(path+'~'+prop)
+		return ref
+	}
 })
+
+component('tgp.wrapWithGroup', {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) => jb.tgp.writeValueOfPath(path,{ $: 'group', controls: [ jb.tgp.valOfPath(path) ] },ctx)
+})
+
+component('tgp.insertControl', {
+  type: 'action',
+  params: [
+    {id: 'comp', mandatory: true, description: 'comp name or comp json'},
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,compToInsert,path) => {
+    let newCtrl = compToInsert
+    if (typeof compToInsert == 'string') {
+        const comp = compToInsert && jb.tgp.compById(compToInsert)
+        if (!compToInsert || !comp) return
+        newCtrl = jb.tgp.newProfile(comp).result
+    }
+
+    // find group parent that can insert the control
+    if (path.indexOf('~') == -1)
+        path = path + '~impl'
+    let group_path = path
+    while (jb.tgp.controlParams(group_path).length == 0 && group_path)
+        group_path = jb.tgp.parentPath(group_path)
+    const group_ref = jb.tgp.getOrCreateControlArrayRef(group_path,ctx)
+    if (group_path == jb.tgp.parentPath(jb.tgp.parentPath(path)))
+        jb.tgp.splice(group_ref,[[Number(path.split('~').pop())+1, 0,newCtrl]],ctx)
+    else if (group_ref)
+        jb.tgp.push(group_ref,[newCtrl],ctx)	}
+})
+
+component('tgp.duplicateControl', {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) => {
+		const prop = path.split('~').pop()
+		const val = jb.tgp.valOfPath(path)
+		const parent_ref = jb.tgp.getOrCreateControlArrayRef(jb.tgp.parentPath(jb.tgp.parentPath(path)))
+		if (parent_ref)
+			jb.tgp.splice(parent_ref,[[Number(prop), 0,jb.tgp.clone(val)]],ctx)
+	}
+})
+
 });
 
-jbLoadPackedFile({lineInPackage:15691, jb, noProxies: false, path: '/plugins/tgp/text-editor/tgp-text-editor.js',fileDsl: '', pluginId: 'tgp-text-editor' }, 
+jbLoadPackedFile({lineInPackage:15768, jb, noProxies: false, path: '/plugins/tgp/text-editor/tgp-text-editor.js',fileDsl: '', pluginId: 'tgp-text-editor' }, 
             function({jb,require,tgpTextEditor,gotoUrl,tgp,prettyPrint,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,group,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,css,frontEnd,backend,sink,source,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
 using('tgp-formatter','common','ui-core')
 
@@ -16150,83 +16227,6 @@ component('tgpTextEditor.applyCompChange', {
 //     )
 //   )
 // })
-});
-
-jbLoadPackedFile({lineInPackage:16157, jb, noProxies: false, path: '/plugins/tgp/text-editor/tgp-ui-specific.js',fileDsl: '', pluginId: 'tgp-text-editor' }, 
-            function({jb,require,tgpTextEditor,gotoUrl,tgp,prettyPrint,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,group,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,css,frontEnd,backend,sink,source,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
-extension('tgp', 'ui_specific', {
-	nonControlChildren: (path,includeFeatures) =>
-		jb.tgp.paramsOfPath(path).filter(p=>!jb.tgp.isControlType(p.type))
-			.filter(p=>includeFeatures || p.id != 'features')
-			.map(p=>path + '~' + p.id),
-
-	isControlType: type => (type||'').split('[')[0].match(/^(control|options|menu.option|table-field|d3g.axis)$/),
-	controlParams: path => jb.tgp.paramsOfPath(path).filter(p=>jb.tgp.isControlType(p.type)).map(p=>p.id),
-
-	getOrCreateControlArrayRef(path,srcCtx) {
-		const val = jb.tgp.valOfPath(path)
-		const prop = jb.tgp.controlParams(path)[0]
-		if (!prop)
-			return jb.logError('getOrCreateControlArrayRef: no control param',{path,srcCtx})
-		let ref = jb.tgp.ref(path+'~'+prop)
-		if (val[prop] === undefined)
-			jb.db.writeValue(ref,[],srcCtx)
-		else if (!Array.isArray(val[prop])) // wrap
-			jb.db.writeValue(ref,[val[prop]],srcCtx)
-		ref = jb.tgp.ref(path+'~'+prop)
-		return ref
-	}
-})
-
-component('tgp.wrapWithGroup', {
-  type: 'action',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: (ctx,path) => jb.tgp.writeValueOfPath(path,{ $: 'group', controls: [ jb.tgp.valOfPath(path) ] },ctx)
-})
-
-component('tgp.insertControl', {
-  type: 'action',
-  params: [
-    {id: 'comp', mandatory: true, description: 'comp name or comp json'},
-    {id: 'path', as: 'string'}
-  ],
-  impl: (ctx,compToInsert,path) => {
-    let newCtrl = compToInsert
-    if (typeof compToInsert == 'string') {
-        const comp = compToInsert && jb.tgp.compById(compToInsert)
-        if (!compToInsert || !comp) return
-        newCtrl = jb.tgp.newProfile(comp).result
-    }
-
-    // find group parent that can insert the control
-    if (path.indexOf('~') == -1)
-        path = path + '~impl'
-    let group_path = path
-    while (jb.tgp.controlParams(group_path).length == 0 && group_path)
-        group_path = jb.tgp.parentPath(group_path)
-    const group_ref = jb.tgp.getOrCreateControlArrayRef(group_path,ctx)
-    if (group_path == jb.tgp.parentPath(jb.tgp.parentPath(path)))
-        jb.tgp.splice(group_ref,[[Number(path.split('~').pop())+1, 0,newCtrl]],ctx)
-    else if (group_ref)
-        jb.tgp.push(group_ref,[newCtrl],ctx)	}
-})
-
-component('tgp.duplicateControl', {
-  type: 'action',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: (ctx,path) => {
-		const prop = path.split('~').pop()
-		const val = jb.tgp.valOfPath(path)
-		const parent_ref = jb.tgp.getOrCreateControlArrayRef(jb.tgp.parentPath(jb.tgp.parentPath(path)))
-		if (parent_ref)
-			jb.tgp.splice(parent_ref,[[Number(prop), 0,jb.tgp.clone(val)]],ctx)
-	}
-})
-
 });
 
 jbLoadPackedFile({lineInPackage:16234, jb, noProxies: false, path: '/plugins/tgp/model-data/tgp-model-data.js',fileDsl: '', pluginId: 'tgp-model-data' }, 
@@ -16841,7 +16841,144 @@ component('langService.moveInArrayEdits', {
 
 });
 
-jbLoadPackedFile({lineInPackage:16846, jb, noProxies: false, path: '/plugins/net/node-http-server.js',fileDsl: 'net', pluginId: 'net' }, 
+jbLoadPackedFile({lineInPackage:16846, jb, noProxies: false, path: '/plugins/net/net.js',fileDsl: '', pluginId: 'net' }, 
+            function({jb,require,http,node,terminate,details,viaRouter,router,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
+using('common')
+
+component('http.get', {
+  type: 'data',
+  moreTypes: 'action<>',
+  description: 'fetch data from external url',
+  params: [
+    {id: 'url', as: 'string'},
+    {id: 'json', as: 'boolean', description: 'convert result to json', type: 'boolean', byName: true},
+    {id: 'useProxy', as: 'string', options: ',localhost-server,cloud'}
+  ],
+  impl: (ctx,_url,_json,useProxy) => {
+    jb.urlProxy = jb.urlProxy || (typeof window !== 'undefined' && jb.frame.location.href.match(/^[^:]*/)[0] || 'http') + '://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
+    jb.cacheKiller = jb.cacheKiller || 1
+    if (jb.path(jb.probe,['http_get_cache',_url]))
+			return jb.probe.http_get_cache[_url]
+    const json = _json || _url.match(/json$/)
+    let url = _url
+    if (useProxy == 'localhost-server')
+      url = `/?op=fetch&req=${JSON.stringify({url})}&cacheKiller=${jb.cacheKiller++}`
+    else if (useProxy == 'cloud')
+      url = `//jbart5-server.appspot.com/?op=fetch&req={url:"${url}"}&cacheKiller=${jb.cacheKiller++}`
+
+		return jb.frame.fetch(url, {mode: 'cors'})
+			  .then(r => json ? r.json() : r.text())
+				.then(res=> jb.path(jb.probe,'http_get_cache') ? (jb.probe.http_get_cache[_url] = res) : res)
+			  .catch(e => jb.logException(e,'http.get',{ctx}) || [])
+	}
+})
+
+component('http.fetch', {
+  type: 'data',
+  moreTypes: 'action<>',
+  description: 'fetch, get or post data from external url',
+  params: [
+    {id: 'url', as: 'string', mandatory: true},
+    {id: 'method', as: 'string', options: 'GET,POST', defaultValue: 'GET'},
+    {id: 'headers', as: 'single', templateValue: obj(prop('Content-Type', 'application/json; charset=UTF-8'))},
+    {id: 'body', as: 'single'},
+    {id: 'json', as: 'boolean', description: 'convert result to json', type: 'boolean'},
+    {id: 'useProxy', as: 'string', options: ',localhost-server,cloud,cloud-test-local'}
+  ],
+  impl: (ctx,url,method,headers,body,json,proxy) => {
+    const reqObj = {
+      url,
+      method,
+      headers: headers || {},
+      mode: 'cors',
+      body: (typeof body == 'string' || body == null) ? body : JSON.stringify(body)
+    }
+
+    const reqStr = jb.frame.encodeURIComponent(JSON.stringify(reqObj))
+		if (ctx.probe)
+			return jb.http_get_cache[reqStr];
+
+    if (proxy == 'localhost-server')
+      reqObj.url = `/?op=fetch&req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
+    else if (proxy == 'cloud')
+      reqObj.url = `//jbart5-server.appspot.com/fetch?req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
+    else if (proxy == 'cloud-test-local')
+      reqObj.url = `http://localhost:8080/fetch?req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
+
+    return jbHost.fetch(reqObj.url, proxy ? {mode: 'cors'} : reqObj)
+			  .then(r => json ? r.json() : r.text())
+				.then(res=> jb.http_get_cache ? (jb.http_get_cache[reqStr] = res) : res)
+			  .catch(e => jb.logException(e,'http.fetch',{ctx}) || [])
+	}
+})
+
+});
+
+jbLoadPackedFile({lineInPackage:16919, jb, noProxies: false, path: '/plugins/net/router.js',fileDsl: '', pluginId: 'net' }, 
+            function({jb,require,http,node,terminate,details,viaRouter,router,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
+
+component('viaRouter', {
+  type: 'jbm<jbm>',
+  params: [
+    {id: 'uri', as: 'string'}
+  ],
+  impl: (ctx, uri) => {
+    return jb.jbm.networkPeers[uri] = jb.jbm.networkPeers[uri] || { uri,
+          async rjbm() {
+            if (this._rjbm) return this._rjbm
+            await jb.exec(jbm.start(router()), 'action<>')
+            const routerPort = jb.ports.router
+            const routingPath = [jb.uri, 'router' , uri]
+            if (!routerPort)
+                return jb.logError(`viaRouter - router was not initialized`,{ctx})
+  
+            this._rjbm = this._rjbm || jb.jbm.extendPortToJbmProxy(remoteRoutingPort(jb.uri, uri, routerPort, routingPath))
+//                {doNotinitCommandListener: true})
+            return this._rjbm
+          }
+      }
+
+      function remoteRoutingPort(from,to, routerPort, routingPath) {          
+          const port = {
+              routerPort, routingPath, // for debug
+              from, to,
+              postMessage: _m => { 
+                  const m = {from, to,routingPath,..._m}
+                  jb.log(`remote routing sent from ${from} to ${to}`,{m})
+                  routerPort.postMessage(m)
+              },
+              onMessage: { addListener: handler => routerPort.onMessage.addListener(m => jb.net.handleOrRouteMsg(from,to,handler,m)) },
+              onDisconnect: { addListener: handler => { port.disconnectHandler = handler} }
+          }
+          jb.ports[to] = port
+          return port
+      }
+  }
+})
+
+component('router', {
+  type: 'jbm<jbm>',
+  params: [
+    {id: 'routerWSUrl', as: 'string', defaultValue: 'ws://localhost:8085'},
+  ],
+  impl: async (ctx,routerWSUrl) => {
+        return jb.jbm.networkPeers.router = jb.jbm.networkPeers.router || { uri: 'router',
+            async rjbm() {
+                if (this._rjbm) return this._rjbm
+                const method = 'connectFrom' + (jbHost.WebSocket_WS ? 'VSCodeClient' 
+                    : jbHost.WebSocket_Browser ? 'Browser' : 'NodeClient')
+                const port = await jb.webSocket[method](`${routerWSUrl}?clientUri=${jb.uri}`, 'router',ctx)
+                jb.log(`remote connected to router`,{ctx,routerWSUrl})
+            
+                this._rjbm = this._rjbm || (jb.ports.router = jb.jbm.extendPortToJbmProxy(port))
+                return this._rjbm
+            }
+        }
+    }
+})
+});
+
+jbLoadPackedFile({lineInPackage:16983, jb, noProxies: false, path: '/plugins/net/node-http-server.js',fileDsl: 'net', pluginId: 'net' }, 
             function({jb,require,http,node,terminate,details,viaRouter,router,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
 using('remote-jbm')
 dsl('net')
@@ -16958,143 +17095,6 @@ component('details', {
     match: req => jb.http.getURLParam(req,'op') == 'details',
     serve: () => ({uri: jb.uri,pid:process.pid})
   })
-})
-});
-
-jbLoadPackedFile({lineInPackage:16966, jb, noProxies: false, path: '/plugins/net/net.js',fileDsl: '', pluginId: 'net' }, 
-            function({jb,require,http,node,terminate,details,viaRouter,router,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
-using('common')
-
-component('http.get', {
-  type: 'data',
-  moreTypes: 'action<>',
-  description: 'fetch data from external url',
-  params: [
-    {id: 'url', as: 'string'},
-    {id: 'json', as: 'boolean', description: 'convert result to json', type: 'boolean', byName: true},
-    {id: 'useProxy', as: 'string', options: ',localhost-server,cloud'}
-  ],
-  impl: (ctx,_url,_json,useProxy) => {
-    jb.urlProxy = jb.urlProxy || (typeof window !== 'undefined' && jb.frame.location.href.match(/^[^:]*/)[0] || 'http') + '://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
-    jb.cacheKiller = jb.cacheKiller || 1
-    if (jb.path(jb.probe,['http_get_cache',_url]))
-			return jb.probe.http_get_cache[_url]
-    const json = _json || _url.match(/json$/)
-    let url = _url
-    if (useProxy == 'localhost-server')
-      url = `/?op=fetch&req=${JSON.stringify({url})}&cacheKiller=${jb.cacheKiller++}`
-    else if (useProxy == 'cloud')
-      url = `//jbart5-server.appspot.com/?op=fetch&req={url:"${url}"}&cacheKiller=${jb.cacheKiller++}`
-
-		return jb.frame.fetch(url, {mode: 'cors'})
-			  .then(r => json ? r.json() : r.text())
-				.then(res=> jb.path(jb.probe,'http_get_cache') ? (jb.probe.http_get_cache[_url] = res) : res)
-			  .catch(e => jb.logException(e,'http.get',{ctx}) || [])
-	}
-})
-
-component('http.fetch', {
-  type: 'data',
-  moreTypes: 'action<>',
-  description: 'fetch, get or post data from external url',
-  params: [
-    {id: 'url', as: 'string', mandatory: true},
-    {id: 'method', as: 'string', options: 'GET,POST', defaultValue: 'GET'},
-    {id: 'headers', as: 'single', templateValue: obj(prop('Content-Type', 'application/json; charset=UTF-8'))},
-    {id: 'body', as: 'single'},
-    {id: 'json', as: 'boolean', description: 'convert result to json', type: 'boolean'},
-    {id: 'useProxy', as: 'string', options: ',localhost-server,cloud,cloud-test-local'}
-  ],
-  impl: (ctx,url,method,headers,body,json,proxy) => {
-    const reqObj = {
-      url,
-      method,
-      headers: headers || {},
-      mode: 'cors',
-      body: (typeof body == 'string' || body == null) ? body : JSON.stringify(body)
-    }
-
-    const reqStr = jb.frame.encodeURIComponent(JSON.stringify(reqObj))
-		if (ctx.probe)
-			return jb.http_get_cache[reqStr];
-
-    if (proxy == 'localhost-server')
-      reqObj.url = `/?op=fetch&req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
-    else if (proxy == 'cloud')
-      reqObj.url = `//jbart5-server.appspot.com/fetch?req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
-    else if (proxy == 'cloud-test-local')
-      reqObj.url = `http://localhost:8080/fetch?req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
-
-    return jbHost.fetch(reqObj.url, proxy ? {mode: 'cors'} : reqObj)
-			  .then(r => json ? r.json() : r.text())
-				.then(res=> jb.http_get_cache ? (jb.http_get_cache[reqStr] = res) : res)
-			  .catch(e => jb.logException(e,'http.fetch',{ctx}) || [])
-	}
-})
-
-});
-
-jbLoadPackedFile({lineInPackage:17039, jb, noProxies: false, path: '/plugins/net/router.js',fileDsl: '', pluginId: 'net' }, 
-            function({jb,require,http,node,terminate,details,viaRouter,router,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
-
-component('viaRouter', {
-  type: 'jbm<jbm>',
-  params: [
-    {id: 'uri', as: 'string'}
-  ],
-  impl: (ctx, uri) => {
-    return jb.jbm.networkPeers[uri] = jb.jbm.networkPeers[uri] || { uri,
-          async rjbm() {
-            if (this._rjbm) return this._rjbm
-            await jb.exec(jbm.start(router()), 'action<>')
-            const routerPort = jb.ports.router
-            const routingPath = [jb.uri, 'router' , uri]
-            if (!routerPort)
-                return jb.logError(`viaRouter - router was not initialized`,{ctx})
-  
-            this._rjbm = this._rjbm || jb.jbm.extendPortToJbmProxy(remoteRoutingPort(jb.uri, uri, routerPort, routingPath))
-//                {doNotinitCommandListener: true})
-            return this._rjbm
-          }
-      }
-
-      function remoteRoutingPort(from,to, routerPort, routingPath) {          
-          const port = {
-              routerPort, routingPath, // for debug
-              from, to,
-              postMessage: _m => { 
-                  const m = {from, to,routingPath,..._m}
-                  jb.log(`remote routing sent from ${from} to ${to}`,{m})
-                  routerPort.postMessage(m)
-              },
-              onMessage: { addListener: handler => routerPort.onMessage.addListener(m => jb.net.handleOrRouteMsg(from,to,handler,m)) },
-              onDisconnect: { addListener: handler => { port.disconnectHandler = handler} }
-          }
-          jb.ports[to] = port
-          return port
-      }
-  }
-})
-
-component('router', {
-  type: 'jbm<jbm>',
-  params: [
-    {id: 'routerWSUrl', as: 'string', defaultValue: 'ws://localhost:8085'},
-  ],
-  impl: async (ctx,routerWSUrl) => {
-        return jb.jbm.networkPeers.router = jb.jbm.networkPeers.router || { uri: 'router',
-            async rjbm() {
-                if (this._rjbm) return this._rjbm
-                const method = 'connectFrom' + (jbHost.WebSocket_WS ? 'VSCodeClient' 
-                    : jbHost.WebSocket_Browser ? 'Browser' : 'NodeClient')
-                const port = await jb.webSocket[method](`${routerWSUrl}?clientUri=${jb.uri}`, 'router',ctx)
-                jb.log(`remote connected to router`,{ctx,routerWSUrl})
-            
-                this._rjbm = this._rjbm || (jb.ports.router = jb.jbm.extendPortToJbmProxy(port))
-                return this._rjbm
-            }
-        }
-    }
 })
 });
 
@@ -17949,7 +17949,131 @@ component('probeVisitCount2', {
 
 });
 
-jbLoadPackedFile({lineInPackage:17954, jb, noProxies: false, path: '/plugins/ui/tree/tree.js',fileDsl: '', pluginId: 'ui-tree' }, 
+jbLoadPackedFile({lineInPackage:17954, jb, noProxies: false, path: '/plugins/ui/tree/json-tree-model.js',fileDsl: '', pluginId: 'ui-tree' }, 
+            function({jb,require,tree,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,group,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,css,frontEnd,action,backend,sink,source,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
+extension('tree', {
+	ROjson: class ROjson {
+		constructor(json,rootPath) {
+			this.json = json
+			this.rootPath = rootPath
+		}
+		children(path) {
+			const val = this.val(path)
+			const out = (typeof val == 'object') ? Object.keys(val || {}) : []
+			return out.filter(p=>p.indexOf('$jb_') != 0).map(p=>path+'~'+p)
+		}
+		val(path) {
+			if (path.indexOf('~') == -1)
+				return jb.val(this.json)
+			return jb.val(path.split('~').slice(1).reduce((o,p) =>o[p], this.json))
+		}
+		isArray(path) {
+			const val = this.val(path)
+			return typeof val == 'object' && val !== null
+		}
+		icon() {
+			return ''
+		}
+		title(path,collapsed) {
+			const val = this.val(path)
+			const prop = path.split('~').pop()
+			const h = jb.ui.h
+			if (val == null)
+				return h('div',{},prop + ': null')
+			if (!collapsed && typeof val == 'object')
+				return h('div',{},prop)
+	
+			if (typeof val != 'object')
+				return h('div',{},[prop + ': ',h('span',{class:'treenode-val', title: ''+val},jb.ui.limitStringLength(''+val,20))])
+	
+			return h('div',{},[h('span',{},prop + ': ')].concat(
+				Object.keys(val).filter(p=>p.indexOf('$jb_') != 0).filter(p=> ['string','boolean','number'].indexOf(typeof val[p]) != -1)
+				.map(p=> h('span',{class:'treenode-val', title: ''+val[p]},jb.ui.limitStringLength(''+val[p],20)))))
+		}
+	},
+	Json: class Json {
+		constructor(jsonRef,rootPath) {
+			this.json = jsonRef;
+			this.rootPath = rootPath;
+			this.refHandler = jb.db.refHandler(jsonRef)
+		}
+		children(path) {
+			const val = this.val(path)
+			const out = (typeof val == 'object') ? Object.keys(val || {}) : [];
+			return out.filter(p=>p.indexOf('$jb_') != 0).map(p=>path+'~'+p);
+		}
+		val(path) {
+			if (path.indexOf('~') == -1)
+				return jb.val(this.json)
+			return jb.val(path.split('~').slice(1).reduce((o,p) => o[p], jb.val(this.json)))
+	
+			function clean(v) {
+				const cls = jb.path(v,'constructor.name')
+				return ['Object','Array','Boolean','Number','String'].indexOf(cls) == -1 ? cls : v
+			}
+		}
+		isArray(path) {
+			var val = this.val(path);
+			return typeof val == 'object' && val !== null;
+		}
+		icon() {
+			return ''
+		}
+		title(path,collapsed) {
+			var val = this.val(path);
+			var prop = path.split('~').pop();
+			var h = jb.ui.h;
+			if (val == null)
+				return prop + ': null';
+			if (!collapsed && typeof val == 'object')
+				return prop
+	
+			if (typeof val != 'object')
+				return h('div',{},[prop + ': ',h('span',{class:'treenode-val', title: val},jb.ui.limitStringLength(val,20))]);
+	
+			return h('div',{},[h('span',{},prop + ': ')].concat(
+				Object.keys(val).filter(p=> typeof val[p] == 'string' || typeof val[p] == 'number' || typeof val[p] == 'boolean')
+				.map(p=> h('span',{class:'treenode-val', title: ''+val[p]},jb.ui.limitStringLength(''+val[p],20)))))
+		}
+		modify(op,path,args,ctx) {
+			op.call(this,path,args);
+		}
+		move(dragged,_target,ctx) { // drag & drop
+			const draggedArr = this.val(dragged.split('~').slice(0,-1).join('~'));
+			const target = isNaN(Number(_target.split('~').slice(-1))) ? _target + '~0' : _target
+			const targetArr = this.val(target.split('~').slice(0,-1).join('~'));
+			if (Array.isArray(draggedArr) && Array.isArray(targetArr))
+				jb.db.move(jb.db.asRef(this.val(dragged)), this.val(target) ? jb.db.asRef(this.val(target)) : this.extraArrayRef(target) ,ctx)
+		}
+		extraArrayRef(target) {
+			const targetArr = this.val(target.split('~').slice(0,-1).join('~'));
+			const targetArrayRef = jb.db.asRef(targetArr)
+			const handler = targetArrayRef.handler
+			return handler && handler.refOfPath(handler.pathOfRef(targetArrayRef).concat(target.split('~').slice(-1)))
+		}
+	}	
+})
+
+component('tree.jsonReadOnly', {
+  type: 'tree.node-model',
+  params: [
+    {id: 'object', as: 'single', mandatory: true},
+    {id: 'rootPath', as: 'string'}
+  ],
+  impl: ({}, json, rootPath) => new jb.tree.ROjson(json,rootPath)
+})
+
+component('tree.json', {
+  type: 'tree.node-model',
+  params: [
+    {id: 'object', as: 'ref', mandatory: true},
+    {id: 'rootPath', as: 'string'}
+  ],
+  impl: ({}, json, rootPath) => new jb.tree.Json(json,rootPath)
+})
+});
+
+jbLoadPackedFile({lineInPackage:18078, jb, noProxies: false, path: '/plugins/ui/tree/tree.js',fileDsl: '', pluginId: 'ui-tree' }, 
             function({jb,require,tree,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,group,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,css,frontEnd,action,backend,sink,source,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
 using('ui-core')
 
@@ -18424,130 +18548,6 @@ component('tree.moveItem', {
 
 });
 
-jbLoadPackedFile({lineInPackage:18429, jb, noProxies: false, path: '/plugins/ui/tree/json-tree-model.js',fileDsl: '', pluginId: 'ui-tree' }, 
-            function({jb,require,tree,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,group,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,css,frontEnd,action,backend,sink,source,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
-extension('tree', {
-	ROjson: class ROjson {
-		constructor(json,rootPath) {
-			this.json = json
-			this.rootPath = rootPath
-		}
-		children(path) {
-			const val = this.val(path)
-			const out = (typeof val == 'object') ? Object.keys(val || {}) : []
-			return out.filter(p=>p.indexOf('$jb_') != 0).map(p=>path+'~'+p)
-		}
-		val(path) {
-			if (path.indexOf('~') == -1)
-				return jb.val(this.json)
-			return jb.val(path.split('~').slice(1).reduce((o,p) =>o[p], this.json))
-		}
-		isArray(path) {
-			const val = this.val(path)
-			return typeof val == 'object' && val !== null
-		}
-		icon() {
-			return ''
-		}
-		title(path,collapsed) {
-			const val = this.val(path)
-			const prop = path.split('~').pop()
-			const h = jb.ui.h
-			if (val == null)
-				return h('div',{},prop + ': null')
-			if (!collapsed && typeof val == 'object')
-				return h('div',{},prop)
-	
-			if (typeof val != 'object')
-				return h('div',{},[prop + ': ',h('span',{class:'treenode-val', title: ''+val},jb.ui.limitStringLength(''+val,20))])
-	
-			return h('div',{},[h('span',{},prop + ': ')].concat(
-				Object.keys(val).filter(p=>p.indexOf('$jb_') != 0).filter(p=> ['string','boolean','number'].indexOf(typeof val[p]) != -1)
-				.map(p=> h('span',{class:'treenode-val', title: ''+val[p]},jb.ui.limitStringLength(''+val[p],20)))))
-		}
-	},
-	Json: class Json {
-		constructor(jsonRef,rootPath) {
-			this.json = jsonRef;
-			this.rootPath = rootPath;
-			this.refHandler = jb.db.refHandler(jsonRef)
-		}
-		children(path) {
-			const val = this.val(path)
-			const out = (typeof val == 'object') ? Object.keys(val || {}) : [];
-			return out.filter(p=>p.indexOf('$jb_') != 0).map(p=>path+'~'+p);
-		}
-		val(path) {
-			if (path.indexOf('~') == -1)
-				return jb.val(this.json)
-			return jb.val(path.split('~').slice(1).reduce((o,p) => o[p], jb.val(this.json)))
-	
-			function clean(v) {
-				const cls = jb.path(v,'constructor.name')
-				return ['Object','Array','Boolean','Number','String'].indexOf(cls) == -1 ? cls : v
-			}
-		}
-		isArray(path) {
-			var val = this.val(path);
-			return typeof val == 'object' && val !== null;
-		}
-		icon() {
-			return ''
-		}
-		title(path,collapsed) {
-			var val = this.val(path);
-			var prop = path.split('~').pop();
-			var h = jb.ui.h;
-			if (val == null)
-				return prop + ': null';
-			if (!collapsed && typeof val == 'object')
-				return prop
-	
-			if (typeof val != 'object')
-				return h('div',{},[prop + ': ',h('span',{class:'treenode-val', title: val},jb.ui.limitStringLength(val,20))]);
-	
-			return h('div',{},[h('span',{},prop + ': ')].concat(
-				Object.keys(val).filter(p=> typeof val[p] == 'string' || typeof val[p] == 'number' || typeof val[p] == 'boolean')
-				.map(p=> h('span',{class:'treenode-val', title: ''+val[p]},jb.ui.limitStringLength(''+val[p],20)))))
-		}
-		modify(op,path,args,ctx) {
-			op.call(this,path,args);
-		}
-		move(dragged,_target,ctx) { // drag & drop
-			const draggedArr = this.val(dragged.split('~').slice(0,-1).join('~'));
-			const target = isNaN(Number(_target.split('~').slice(-1))) ? _target + '~0' : _target
-			const targetArr = this.val(target.split('~').slice(0,-1).join('~'));
-			if (Array.isArray(draggedArr) && Array.isArray(targetArr))
-				jb.db.move(jb.db.asRef(this.val(dragged)), this.val(target) ? jb.db.asRef(this.val(target)) : this.extraArrayRef(target) ,ctx)
-		}
-		extraArrayRef(target) {
-			const targetArr = this.val(target.split('~').slice(0,-1).join('~'));
-			const targetArrayRef = jb.db.asRef(targetArr)
-			const handler = targetArrayRef.handler
-			return handler && handler.refOfPath(handler.pathOfRef(targetArrayRef).concat(target.split('~').slice(-1)))
-		}
-	}	
-})
-
-component('tree.jsonReadOnly', {
-  type: 'tree.node-model',
-  params: [
-    {id: 'object', as: 'single', mandatory: true},
-    {id: 'rootPath', as: 'string'}
-  ],
-  impl: ({}, json, rootPath) => new jb.tree.ROjson(json,rootPath)
-})
-
-component('tree.json', {
-  type: 'tree.node-model',
-  params: [
-    {id: 'object', as: 'ref', mandatory: true},
-    {id: 'rootPath', as: 'string'}
-  ],
-  impl: ({}, json, rootPath) => new jb.tree.Json(json,rootPath)
-})
-});
-
 jbLoadPackedFile({lineInPackage:18553, jb, noProxies: false, path: '/plugins/ui/mdc-styles/button-mdc-styles.js',fileDsl: '', pluginId: 'ui-mdc-styles' }, 
             function({jb,require,button,editableBoolean,editableText,group,mdcStyle,feature,menuStyle,picklist,table,dialog,dialogs,openDialog,unique,inPlaceDialog,modal,source,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableNumber,control,icon,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,itemlistContainer,filterType,search,itemlist,markdown,menu,option,menuSeparator,multiSelect,select,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
 using('ui-misc')
@@ -18935,61 +18935,7 @@ component('group.mdcTabBar', {
 
 });
 
-jbLoadPackedFile({lineInPackage:18940, jb, noProxies: false, path: '/plugins/ui/mdc-styles/mdc-features.js',fileDsl: '', pluginId: 'ui-mdc-styles' }, 
-            function({jb,require,button,editableBoolean,editableText,group,mdcStyle,feature,menuStyle,picklist,table,dialog,dialogs,openDialog,unique,inPlaceDialog,modal,source,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableNumber,control,icon,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,itemlistContainer,filterType,search,itemlist,markdown,menu,option,menuSeparator,multiSelect,select,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
-using('ui-core')
-
-extension('ui', 'mdIcons', {
-  $requireLibs: ['/dist/md-icons.js'] // todo: move to new icon system
-})
-
-component('mdcStyle.initDynamic', {
-  type: 'feature',
-  params: [
-    {id: 'query', as: 'string'}
-  ],
-  impl: features(
-    frontEnd.requireExternalLibrary('Material Icons::fonts/MaterialIcons-Regular.woff2'),
-    frontEnd.requireExternalLibrary('material-components-web.js','css/material.css'),
-    frontEnd.init(async ({},{cmp}) => {
-      if (cmp.base.constructor.name == 'VNode') return
-      const mdc = jb.frame.mdc
-      if (!mdc) return jb.logError('please load mdc library')
-      cmp.mdc_comps = cmp.mdc_comps || [];
-      const module = { switch: 'switchControl', 'chip-set': 'chips', 'tab-bar': 'tabBar', 'text-field': 'textField' }
-      ;['switch','chip-set','tab-bar','slider','select','text-field'].forEach(cmpName => {
-        const elm = jb.ui.findIncludeSelf(cmp.base,`.mdc-${cmpName}`)[0]
-        if (elm) {
-          const name1 = cmpName.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase())
-          const name = name1[0].toUpperCase() + name1.slice(1)
-          const m = mdc[cmpName] ? cmpName : module[cmpName]
-          cmp.mdc_comps.push({mdc_cmp: new mdc[m][`MDC${name}`](elm), cmpName})
-          jb.log(`mdc frontend init ${cmpName}`,{cmp})
-        }
-      })
-      if (cmp.base.classList.contains('mdc-button') || cmp.base.classList.contains('mdc-fab')) {
-        cmp.mdc_comps.push({mdc_cmp: new mdc.ripple.MDCRipple(cmp.base), cmpName: 'ripple' })
-        jb.log('mdc frontend init ripple',{cmp})
-      }
-    }),
-    frontEnd.onDestroy(({},{cmp}) => (cmp.mdc_comps || []).forEach(({mdc_cmp,cmpName}) => {
-      mdc_cmp.destroy()
-      jb.log(`mdc frontend destroy ${cmpName}`,{cmp})
-    }))
-  )
-})
-
-component('feature.mdcRippleEffect', {
-  type: 'feature',
-  description: 'add ripple effect',
-  impl: () => ({
-      templateModifier: vdom => vdom.addClass('mdc-ripple-surface mdc-ripple-radius-bounded mdc-states mdc-states-base-color(red)')
-   })
-})
-
-});
-
-jbLoadPackedFile({lineInPackage:18994, jb, noProxies: false, path: '/plugins/ui/mdc-styles/menu-toolbar.js',fileDsl: '', pluginId: 'ui-mdc-styles' }, 
+jbLoadPackedFile({lineInPackage:18940, jb, noProxies: false, path: '/plugins/ui/mdc-styles/menu-toolbar.js',fileDsl: '', pluginId: 'ui-mdc-styles' }, 
             function({jb,require,button,editableBoolean,editableText,group,mdcStyle,feature,menuStyle,picklist,table,dialog,dialogs,openDialog,unique,inPlaceDialog,modal,source,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableNumber,control,icon,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,itemlistContainer,filterType,search,itemlist,markdown,menu,option,menuSeparator,multiSelect,select,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
 /***** icon menus */
 
@@ -19068,6 +19014,60 @@ component('menuStyle.iconMenu', {
     }),
     modelVar: 'innerMenu'
   })
+})
+
+});
+
+jbLoadPackedFile({lineInPackage:19023, jb, noProxies: false, path: '/plugins/ui/mdc-styles/mdc-features.js',fileDsl: '', pluginId: 'ui-mdc-styles' }, 
+            function({jb,require,button,editableBoolean,editableText,group,mdcStyle,feature,menuStyle,picklist,table,dialog,dialogs,openDialog,unique,inPlaceDialog,modal,source,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableNumber,control,icon,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,itemlistContainer,filterType,search,itemlist,markdown,menu,option,menuSeparator,multiSelect,select,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,text,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,component,extension,using,dsl,pluginDsl}) {
+using('ui-core')
+
+extension('ui', 'mdIcons', {
+  $requireLibs: ['/dist/md-icons.js'] // todo: move to new icon system
+})
+
+component('mdcStyle.initDynamic', {
+  type: 'feature',
+  params: [
+    {id: 'query', as: 'string'}
+  ],
+  impl: features(
+    frontEnd.requireExternalLibrary('Material Icons::fonts/MaterialIcons-Regular.woff2'),
+    frontEnd.requireExternalLibrary('material-components-web.js','css/material.css'),
+    frontEnd.init(async ({},{cmp}) => {
+      if (cmp.base.constructor.name == 'VNode') return
+      const mdc = jb.frame.mdc
+      if (!mdc) return jb.logError('please load mdc library')
+      cmp.mdc_comps = cmp.mdc_comps || [];
+      const module = { switch: 'switchControl', 'chip-set': 'chips', 'tab-bar': 'tabBar', 'text-field': 'textField' }
+      ;['switch','chip-set','tab-bar','slider','select','text-field'].forEach(cmpName => {
+        const elm = jb.ui.findIncludeSelf(cmp.base,`.mdc-${cmpName}`)[0]
+        if (elm) {
+          const name1 = cmpName.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase())
+          const name = name1[0].toUpperCase() + name1.slice(1)
+          const m = mdc[cmpName] ? cmpName : module[cmpName]
+          cmp.mdc_comps.push({mdc_cmp: new mdc[m][`MDC${name}`](elm), cmpName})
+          jb.log(`mdc frontend init ${cmpName}`,{cmp})
+        }
+      })
+      if (cmp.base.classList.contains('mdc-button') || cmp.base.classList.contains('mdc-fab')) {
+        cmp.mdc_comps.push({mdc_cmp: new mdc.ripple.MDCRipple(cmp.base), cmpName: 'ripple' })
+        jb.log('mdc frontend init ripple',{cmp})
+      }
+    }),
+    frontEnd.onDestroy(({},{cmp}) => (cmp.mdc_comps || []).forEach(({mdc_cmp,cmpName}) => {
+      mdc_cmp.destroy()
+      jb.log(`mdc frontend destroy ${cmpName}`,{cmp})
+    }))
+  )
+})
+
+component('feature.mdcRippleEffect', {
+  type: 'feature',
+  description: 'add ripple effect',
+  impl: () => ({
+      templateModifier: vdom => vdom.addClass('mdc-ripple-surface mdc-ripple-radius-bounded mdc-states mdc-states-base-color(red)')
+   })
 })
 
 });
@@ -19193,66 +19193,7 @@ component('table.mdc', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:19198, jb, noProxies: false, path: '/plugins/ui/styles/button-styles.js',fileDsl: '', pluginId: 'ui-styles' }, 
-            function({jb,require,button,editableText,codeMirror,source,codemirror,text,editableBoolean,underline,group,itemlist,multiSelect,picklist,propertySheet,header,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,mdcStyle,menuStyle,table,dialog,dialogs,openDialog,inPlaceDialog,modal,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableNumber,control,icon,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,itemlistContainer,filterType,search,markdown,menu,option,menuSeparator,select,component,extension,using,dsl,pluginDsl}) {
-using('ui-common','ui-mdc-styles')
-
-extension('ui','button', {
-  chooseIconWithRaised(icons,raised) {
-    if (!icons) return []
-    const raisedIcon = icons.filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'raised')[0]
-    const otherIcons = (raisedIcon && icons.filter(cmp=>cmp && cmp.ctx.vars.$model.position != 'raised') || icons)
-      .filter(cmp=>cmp && cmp.ctx.vars.$model.position != 'post')
-    if (raised)
-      return raisedIcon ? [raisedIcon] : otherIcons
-    return otherIcons
-  }
-})
-
-component('button.hrefText', {
-  type: 'button-style',
-  impl: customStyle({
-    template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
-    css: '{color: var(--jb-input-fg) ; text-decoration: none }     ~.hover, ~.active: { text-decoration: underline }',
-    features: button.initAction()
-  })
-})
-
-component('button.x', {
-  type: 'button-style',
-  params: [
-    {id: 'size', as: 'number', defaultValue: '21'}
-  ],
-  impl: customStyle({
-    template: (cmp,state,h) => h('button',{title: state.title, onclick: true },'×'),
-    css: `{
-            padding: 0;
-            cursor: pointer;
-            font: %$size%px sans-serif;
-            border: none;
-            background: transparent;
-            color: var(--mdc-theme-text-primary-on-background);
-            text-shadow: 0 1px 0 var(--jb-dropdown-shadow);
-            font-weight: 700;
-        }
-        :hover { color: var(--jb-menubar-active-fg) }`,
-    features: button.initAction()
-  })
-})
-
-component('button.plainIcon', {
-  type: 'button-style',
-  impl: customStyle({
-    template: (cmp,{title,raised},h) =>
-      jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=> vdom.setAttribute('title',vdom.getAttribute('title') || title))[0],
-    features: button.initAction()
-  })
-})
-
-
-});
-
-jbLoadPackedFile({lineInPackage:19257, jb, noProxies: false, path: '/plugins/ui/styles/codemirror-styles.js',fileDsl: '', pluginId: 'ui-styles' }, 
+jbLoadPackedFile({lineInPackage:19198, jb, noProxies: false, path: '/plugins/ui/styles/codemirror-styles.js',fileDsl: '', pluginId: 'ui-styles' }, 
             function({jb,require,button,editableText,codeMirror,source,codemirror,text,editableBoolean,underline,group,itemlist,multiSelect,picklist,propertySheet,header,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,mdcStyle,menuStyle,table,dialog,dialogs,openDialog,inPlaceDialog,modal,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableNumber,control,icon,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,itemlistContainer,filterType,search,markdown,menu,option,menuSeparator,select,component,extension,using,dsl,pluginDsl}) {
 
 extension('codemirror', {
@@ -19547,7 +19488,7 @@ component('text.codemirror', {
 
 });
 
-jbLoadPackedFile({lineInPackage:19552, jb, noProxies: false, path: '/plugins/ui/styles/editable-boolean-styles.js',fileDsl: '', pluginId: 'ui-styles' }, 
+jbLoadPackedFile({lineInPackage:19493, jb, noProxies: false, path: '/plugins/ui/styles/editable-boolean-styles.js',fileDsl: '', pluginId: 'ui-styles' }, 
             function({jb,require,button,editableText,codeMirror,source,codemirror,text,editableBoolean,underline,group,itemlist,multiSelect,picklist,propertySheet,header,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,mdcStyle,menuStyle,table,dialog,dialogs,openDialog,inPlaceDialog,modal,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableNumber,control,icon,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,itemlistContainer,filterType,search,markdown,menu,option,menuSeparator,select,component,extension,using,dsl,pluginDsl}) {
 using('ui-misc')
 
@@ -19604,6 +19545,65 @@ component('editableBoolean.picklist', {
     modelVar: 'editableBooleanModel'
   })
 })
+});
+
+jbLoadPackedFile({lineInPackage:19552, jb, noProxies: false, path: '/plugins/ui/styles/button-styles.js',fileDsl: '', pluginId: 'ui-styles' }, 
+            function({jb,require,button,editableText,codeMirror,source,codemirror,text,editableBoolean,underline,group,itemlist,multiSelect,picklist,propertySheet,header,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,mdcStyle,menuStyle,table,dialog,dialogs,openDialog,inPlaceDialog,modal,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableNumber,control,icon,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,itemlistContainer,filterType,search,markdown,menu,option,menuSeparator,select,component,extension,using,dsl,pluginDsl}) {
+using('ui-common','ui-mdc-styles')
+
+extension('ui','button', {
+  chooseIconWithRaised(icons,raised) {
+    if (!icons) return []
+    const raisedIcon = icons.filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'raised')[0]
+    const otherIcons = (raisedIcon && icons.filter(cmp=>cmp && cmp.ctx.vars.$model.position != 'raised') || icons)
+      .filter(cmp=>cmp && cmp.ctx.vars.$model.position != 'post')
+    if (raised)
+      return raisedIcon ? [raisedIcon] : otherIcons
+    return otherIcons
+  }
+})
+
+component('button.hrefText', {
+  type: 'button-style',
+  impl: customStyle({
+    template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
+    css: '{color: var(--jb-input-fg) ; text-decoration: none }     ~.hover, ~.active: { text-decoration: underline }',
+    features: button.initAction()
+  })
+})
+
+component('button.x', {
+  type: 'button-style',
+  params: [
+    {id: 'size', as: 'number', defaultValue: '21'}
+  ],
+  impl: customStyle({
+    template: (cmp,state,h) => h('button',{title: state.title, onclick: true },'×'),
+    css: `{
+            padding: 0;
+            cursor: pointer;
+            font: %$size%px sans-serif;
+            border: none;
+            background: transparent;
+            color: var(--mdc-theme-text-primary-on-background);
+            text-shadow: 0 1px 0 var(--jb-dropdown-shadow);
+            font-weight: 700;
+        }
+        :hover { color: var(--jb-menubar-active-fg) }`,
+    features: button.initAction()
+  })
+})
+
+component('button.plainIcon', {
+  type: 'button-style',
+  impl: customStyle({
+    template: (cmp,{title,raised},h) =>
+      jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=> vdom.setAttribute('title',vdom.getAttribute('title') || title))[0],
+    features: button.initAction()
+  })
+})
+
+
 });
 
 jbLoadPackedFile({lineInPackage:19611, jb, noProxies: false, path: '/plugins/ui/styles/editable-text-styles.js',fileDsl: '', pluginId: 'ui-styles' }, 
@@ -19719,41 +19719,7 @@ component('editableText.expandable', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:19724, jb, noProxies: false, path: '/plugins/ui/styles/itemlist-styles.js',fileDsl: '', pluginId: 'ui-styles' }, 
-            function({jb,require,button,editableText,codeMirror,source,codemirror,text,editableBoolean,underline,group,itemlist,multiSelect,picklist,propertySheet,header,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,mdcStyle,menuStyle,table,dialog,dialogs,openDialog,inPlaceDialog,modal,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableNumber,control,icon,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,itemlistContainer,filterType,search,markdown,menu,option,menuSeparator,select,component,extension,using,dsl,pluginDsl}) {
-component('itemlist.shownOnlyOnItemHover', {
-  type: 'feature',
-  category: 'itemlist:75',
-  description: 'put on the control inside the item which is shown when the mouse enters the line',
-  impl: css.class('jb-shown-on-item-hover')
-})
-
-component('itemlist.divider', {
-  type: 'feature',
-  params: [
-    {id: 'space', as: 'number', defaultValue: 5}
-  ],
-  impl: css(
-    '>.jb-item:not(:first-of-type) { border-top: 1px solid rgba(0,0,0,0.12); padding-top: %$space%px }'
-  )
-})
-
-component('itemlist.div', {
-  type: 'itemlist-style',
-  params: [
-    {id: 'spacing', as: 'number', defaultValue: 0}
-  ],
-  impl: customStyle({
-    template: ({},{ctrls},h) => h('div.jb-itemlist',{},
-        ctrls.map((ctrl) => h('div.jb-item', {}, ctrl.map(singleCtrl=>h(singleCtrl))))),
-    features: itemlist.init()
-  })
-})
-
-
-});
-
-jbLoadPackedFile({lineInPackage:19758, jb, noProxies: false, path: '/plugins/ui/styles/group-styles.js',fileDsl: '', pluginId: 'ui-styles' }, 
+jbLoadPackedFile({lineInPackage:19724, jb, noProxies: false, path: '/plugins/ui/styles/group-styles.js',fileDsl: '', pluginId: 'ui-styles' }, 
             function({jb,require,button,editableText,codeMirror,source,codemirror,text,editableBoolean,underline,group,itemlist,multiSelect,picklist,propertySheet,header,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,mdcStyle,menuStyle,table,dialog,dialogs,openDialog,inPlaceDialog,modal,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableNumber,control,icon,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,itemlistContainer,filterType,search,markdown,menu,option,menuSeparator,select,component,extension,using,dsl,pluginDsl}) {
 component('group.section', {
   type: 'group-style',
@@ -19905,6 +19871,40 @@ component('group.sectionsExpandCollapse', {
 
 });
 
+jbLoadPackedFile({lineInPackage:19876, jb, noProxies: false, path: '/plugins/ui/styles/itemlist-styles.js',fileDsl: '', pluginId: 'ui-styles' }, 
+            function({jb,require,button,editableText,codeMirror,source,codemirror,text,editableBoolean,underline,group,itemlist,multiSelect,picklist,propertySheet,header,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,mdcStyle,menuStyle,table,dialog,dialogs,openDialog,inPlaceDialog,modal,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableNumber,control,icon,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,itemlistContainer,filterType,search,markdown,menu,option,menuSeparator,select,component,extension,using,dsl,pluginDsl}) {
+component('itemlist.shownOnlyOnItemHover', {
+  type: 'feature',
+  category: 'itemlist:75',
+  description: 'put on the control inside the item which is shown when the mouse enters the line',
+  impl: css.class('jb-shown-on-item-hover')
+})
+
+component('itemlist.divider', {
+  type: 'feature',
+  params: [
+    {id: 'space', as: 'number', defaultValue: 5}
+  ],
+  impl: css(
+    '>.jb-item:not(:first-of-type) { border-top: 1px solid rgba(0,0,0,0.12); padding-top: %$space%px }'
+  )
+})
+
+component('itemlist.div', {
+  type: 'itemlist-style',
+  params: [
+    {id: 'spacing', as: 'number', defaultValue: 0}
+  ],
+  impl: customStyle({
+    template: ({},{ctrls},h) => h('div.jb-itemlist',{},
+        ctrls.map((ctrl) => h('div.jb-item', {}, ctrl.map(singleCtrl=>h(singleCtrl))))),
+    features: itemlist.init()
+  })
+})
+
+
+});
+
 jbLoadPackedFile({lineInPackage:19910, jb, noProxies: false, path: '/plugins/ui/styles/picklist-styles.js',fileDsl: '', pluginId: 'ui-styles' }, 
             function({jb,require,button,editableText,codeMirror,source,codemirror,text,editableBoolean,underline,group,itemlist,multiSelect,picklist,propertySheet,header,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,mdcStyle,menuStyle,table,dialog,dialogs,openDialog,inPlaceDialog,modal,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableNumber,control,icon,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,itemlistContainer,filterType,search,markdown,menu,option,menuSeparator,select,component,extension,using,dsl,pluginDsl}) {
 component('picklist.native', {
@@ -20044,51 +20044,7 @@ component('picklist.groups', {
 
 });
 
-jbLoadPackedFile({lineInPackage:20049, jb, noProxies: false, path: '/plugins/ui/styles/property-sheet-styles.js',fileDsl: '', pluginId: 'ui-styles' }, 
-            function({jb,require,button,editableText,codeMirror,source,codemirror,text,editableBoolean,underline,group,itemlist,multiSelect,picklist,propertySheet,header,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,mdcStyle,menuStyle,table,dialog,dialogs,openDialog,inPlaceDialog,modal,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableNumber,control,icon,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,itemlistContainer,filterType,search,markdown,menu,option,menuSeparator,select,component,extension,using,dsl,pluginDsl}) {
-
-component('propertySheet.titlesLeft', {
-  type: 'group-style',
-  params: [
-    {id: 'titleStyle', type: 'text-style', defaultValue: styleWithFeatures(text.span(), { features: css.bold() }), dynamic: true},
-    {id: 'titleText', defaultValue: '%%:', dynamic: true},
-    {id: 'spacing', as: 'string', description: 'grid-column-gap', defaultValue: '10px'}
-  ],
-  impl: customStyle({
-    template: (cmp,{ctrls,titleStyle,titleText},h) => h('div',{}, ctrls.flatMap(ctrl=>[
-        h(cmp.ctx.run({$: 'text' ,text: ctx => titleText(ctx.setData(ctrl.field().title())), style: ctx => titleStyle(ctx)},'control<>')),
-        h(ctrl)
-      ])
-    ),
-    css: '{ display: grid; grid-template-columns: auto auto; grid-column-gap:%$spacing%}',
-    features: group.initGroup()
-  })
-})
-
-component('propertySheet.titlesAbove', {
-  type: 'group-style',
-  params: [
-    {id: 'titleStyle', type: 'text-style', defaultValue: styleWithFeatures(text.span(), { features: css.bold() }), dynamic: true},
-    {id: 'titleText', defaultValue: '%%', dynamic: true},
-    {id: 'spacing', as: 'string', description: 'grid-column-gap', defaultValue: '10px'}
-  ],
-  impl: customStyle({
-    template: (cmp,{ctrls,titleStyle,titleText},h) => h('div',{ style: {'grid-template-columns': ctrls.map(()=>'auto').join(' ')}}, [
-        ...ctrls.map(ctrl=>
-          h(cmp.ctx.run({$: 'text', 
-            text: ctx => titleText(ctx.setData(ctrl.field().title())), 
-            style: ctx => titleStyle(ctx)}, 'control<>'))), 
-        ...ctrls.map(ctrl=>h(ctrl))
-      ]
-    ),
-    css: '{ display: grid; grid-column-gap:%$spacing% }',
-    features: group.initGroup()
-  })
-})
-
-});
-
-jbLoadPackedFile({lineInPackage:20093, jb, noProxies: false, path: '/plugins/ui/styles/multi-select-styles.js',fileDsl: '', pluginId: 'ui-styles' }, 
+jbLoadPackedFile({lineInPackage:20049, jb, noProxies: false, path: '/plugins/ui/styles/multi-select-styles.js',fileDsl: '', pluginId: 'ui-styles' }, 
             function({jb,require,button,editableText,codeMirror,source,codemirror,text,editableBoolean,underline,group,itemlist,multiSelect,picklist,propertySheet,header,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,mdcStyle,menuStyle,table,dialog,dialogs,openDialog,inPlaceDialog,modal,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableNumber,control,icon,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,itemlistContainer,filterType,search,markdown,menu,option,menuSeparator,select,component,extension,using,dsl,pluginDsl}) {
 component('multiSelect.choiceList', {
   type: 'multiSelect-style',
@@ -20151,6 +20107,50 @@ component('multiSelect.chips', {
       features: watchRef('%$multiSelectModel/databind%', 'yes', { allowSelfRefresh: true, strongRefresh: false })
     }),
     modelVar: 'multiSelectModel'
+  })
+})
+
+});
+
+jbLoadPackedFile({lineInPackage:20117, jb, noProxies: false, path: '/plugins/ui/styles/property-sheet-styles.js',fileDsl: '', pluginId: 'ui-styles' }, 
+            function({jb,require,button,editableText,codeMirror,source,codemirror,text,editableBoolean,underline,group,itemlist,multiSelect,picklist,propertySheet,header,css,textarea,field,validation,inlineControls,dynamicControls,controlWithCondition,controls,html,layout,flexItem,defaultTheme,theme,method,watchAndCalcModelProp,calcProp,userStateProp,calcProps,feature,onDestroy,templateModifier,features,followUp,watchRef,htmlAttribute,cmpId,id,watchable,variable,hidden,refreshControlById,refreshIfNotWatchable,frontEnd,action,backend,sink,rx,key,uiPlugin,service,runFEMethodFromBackEnd,ui,customStyle,styleByControl,styleWithFeatures,controlWithFeatures,renderWidget,querySelectorAll,querySelector,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,mdcStyle,menuStyle,table,dialog,dialogs,openDialog,inPlaceDialog,modal,dragTitle,nearLauncherPosition,dialogFeature,closeWhenClickingOutside,autoFocusOnFirstInput,popup,cssClassOnLaunchingElement,maxZIndexOnClick,popupLocation,divider,editableNumber,control,icon,clickable,solid,normal,raised,on,off,round,size,fixedWidth,subIcon,bulletPoints,toolbarWithIcons,image,itemlistContainer,filterType,search,markdown,menu,option,menuSeparator,select,component,extension,using,dsl,pluginDsl}) {
+
+component('propertySheet.titlesLeft', {
+  type: 'group-style',
+  params: [
+    {id: 'titleStyle', type: 'text-style', defaultValue: styleWithFeatures(text.span(), { features: css.bold() }), dynamic: true},
+    {id: 'titleText', defaultValue: '%%:', dynamic: true},
+    {id: 'spacing', as: 'string', description: 'grid-column-gap', defaultValue: '10px'}
+  ],
+  impl: customStyle({
+    template: (cmp,{ctrls,titleStyle,titleText},h) => h('div',{}, ctrls.flatMap(ctrl=>[
+        h(cmp.ctx.run({$: 'text' ,text: ctx => titleText(ctx.setData(ctrl.field().title())), style: ctx => titleStyle(ctx)},'control<>')),
+        h(ctrl)
+      ])
+    ),
+    css: '{ display: grid; grid-template-columns: auto auto; grid-column-gap:%$spacing%}',
+    features: group.initGroup()
+  })
+})
+
+component('propertySheet.titlesAbove', {
+  type: 'group-style',
+  params: [
+    {id: 'titleStyle', type: 'text-style', defaultValue: styleWithFeatures(text.span(), { features: css.bold() }), dynamic: true},
+    {id: 'titleText', defaultValue: '%%', dynamic: true},
+    {id: 'spacing', as: 'string', description: 'grid-column-gap', defaultValue: '10px'}
+  ],
+  impl: customStyle({
+    template: (cmp,{ctrls,titleStyle,titleText},h) => h('div',{ style: {'grid-template-columns': ctrls.map(()=>'auto').join(' ')}}, [
+        ...ctrls.map(ctrl=>
+          h(cmp.ctx.run({$: 'text', 
+            text: ctx => titleText(ctx.setData(ctrl.field().title())), 
+            style: ctx => titleStyle(ctx)}, 'control<>'))), 
+        ...ctrls.map(ctrl=>h(ctrl))
+      ]
+    ),
+    css: '{ display: grid; grid-column-gap:%$spacing% }',
+    features: group.initGroup()
   })
 })
 
@@ -20245,164 +20245,7 @@ component('text.textarea', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:20250, jb, noProxies: false, path: '/plugins/tgp/core/tgp-meta.js',fileDsl: '', pluginId: 'tgp-core' }, 
-            function({jb,require,jbComponent,jbParam,tgp,component,extension,using,dsl,pluginDsl}) {
-component('jbComponent', {
-  type: 'any',
-  hidden: true,
-  params: [
-    {id: 'type', as: 'string', mandatory: true},
-    {id: 'category', as: 'string'},
-    {id: 'description', as: 'string'},
-    {id: 'params', type: 'jbParam[]'},
-    {id: 'impl', type: '$asParent', dynamicType: '%type%', mandatory: true}
-  ],
-  impl: ctx => ctx.params
-})
-
-component('jbParam', {
-  type: 'jbParam',
-  singleInType: true,
-  params: [
-    {id: 'id', as: 'string', mandatory: true},
-    {id: 'type', as: 'string'},
-    {id: 'description', as: 'string'},
-    {id: 'as', as: 'string', options: 'string,number,boolean,ref,single,array'},
-    {id: 'dynamic', type: 'boolean', as: 'boolean', defaultValue: true},
-    {id: 'mandatory', type: 'boolean', as: 'boolean', defaultValue: true},
-    {id: 'composite', type: 'boolean', as: 'boolean', defaultValue: true},
-    {id: 'singleInType', type: 'boolean', as: 'boolean', defaultValue: true},
-    {id: 'defaultValue', dynamicType: '%type%'}
-  ],
-  impl: ctx => ctx.params
-})
-
-
-});
-
-jbLoadPackedFile({lineInPackage:20285, jb, noProxies: false, path: '/plugins/tgp/core/tgp-statistics.js',fileDsl: '', pluginId: 'tgp-core' }, 
-            function({jb,require,jbComponent,jbParam,tgp,component,extension,using,dsl,pluginDsl}) {
-
-extension('tgp', 'statistics', {
-    $phase: 50,
-    initExtension() {
-//      jb.watchableComps && jb.utils.subscribe(jb.watchableComps.source, () => jb.tgp.statistics = {})
-      return { statistics: {} }
-    },
-    calcRefs() {
-      if (Object.keys(jb.tgp.statistics).length) return
-      const refs = {}, comps = jb.comps;
-  
-      Object.keys(comps).filter(k=>comps[k]).forEach(k=>
-        refs[k] = {
-          refs: [...calcRefs(comps[k].impl), ...calcRefs(comps[k].params|| [])].filter((x,index,_self) => x && _self.indexOf(x) === index),
-          by: []
-      })
-      Object.keys(comps).filter(k=>comps[k]).forEach(k=>
-        refs[k].refs.forEach(cross=>
-          refs[cross] && refs[cross].by.push(k))
-      )
-      jb.tgp.statistics = refs
-  
-      function calcRefs(profile) {
-        if (profile == null || typeof profile != 'object') return [];
-        return Object.values(profile).reduce((res,v)=> [...res,...calcRefs(v)], [jb.utils.compName(profile)])
-      }    
-    },
-    circuitOptions(compId) {
-      jb.tgp.calcRefs()
-      const shortId = compId.split('>').pop().split('.').pop()
-      const candidates = {[compId]: true}
-      while (expand()) {}
-      const comps = Object.keys(candidates).filter(compId => noOpenParams(compId))
-      return comps.sort((x,y) => mark(y) - mark(x)).map(id=>({id, shortId: id.split('>').pop(), location: jb.comps[id].$location}))
-  
-      function mark(id) {
-        if (id.match(/^test<>/) && id.indexOf(shortId) != -1) return 20
-        if (id.match(/^test<>/)) return 10
-        return 0
-      }
-
-      function noOpenParams(id) {
-        return (jb.comps[id].params || []).filter(p=>!p.defaultValue).length == 0
-      }
-  
-      function expand() {
-        const length_before = Object.keys(candidates).length
-        Object.keys(candidates).forEach(k=> 
-          jb.tgp.statistics[k] && (jb.tgp.statistics[k].by || []).forEach(caller=>candidates[caller] = true))
-        return Object.keys(candidates).length > length_before
-      }
-    }
-})
-
-component('tgp.circuitOptions', {
-  type: 'data',
-  params: [
-    {id: 'path'}
-  ],
-  impl: ({},path) => jb.tgp.circuitOptions(path.split('~')[0])
-})
-
-component('tgp.allComps', {
-  type: 'data',
-  impl: () => Object.keys(jb.comps)
-})
-
-component('tgp.componentStatistics', {
-  type: 'data',
-  params: [
-    {id: 'cmpId', as: 'string', defaultValue: '%%'}
-  ],
-  impl: (ctx,cmpId) => {
-	  jb.tgp.calcRefs()
-
-    const cmp = jb.comps[cmpId]
-    const cmpRefs = jb.tgp.statistics[cmpId] || {}
-    if (!cmp) return {}
-    const asStr = '' //jb.utils.prettyPrint(cmp.impl || '',{comps: jb.comps})
-
-    return {
-      id: cmpId,
-      file: (cmp.$location || {}).path,
-      lineInFile: +(cmp.$location ||{}).line,
-      linesOfCode: (asStr.match(/\n/g)||[]).length,
-      refs: cmpRefs.refs,
-      referredBy: cmpRefs.by,
-      type: cmp.type || 'data',
-      implType: typeof cmp.impl,
-      refCount: jb.path(cmpRefs.by,'length'),
-      size: asStr.length
-    }
-	}
-})
-
-component('tgp.references', {
-  type: 'data',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: (ctx,path) => {
-	  if (path.indexOf('~') != -1) return [];
-
-    return jb.entries(jb.comps)
-    	.map(e=>({id: e[0], refs: refs(e[1].impl,`${e[0]}~impl`)}))
-      .filter(e=>e.refs.length > 0)
-
-    function refs(profile, parentPath) {
-    	if (profile && typeof profile == 'object') {
-        var subResult = Object.keys(profile).reduce((res,prop)=>
-      		res.concat(refs(profile[prop],`${parentPath}~${prop}`)) ,[]);
-      	return (profile.$ == path ? [parentPath] : []).concat(subResult);
-      }
-      return [];
-    }
-	}
-})
-
-});
-
-jbLoadPackedFile({lineInPackage:20407, jb, noProxies: false, path: '/plugins/tgp/core/tgp-readonly.js',fileDsl: '', pluginId: 'tgp-core' }, 
+jbLoadPackedFile({lineInPackage:20250, jb, noProxies: false, path: '/plugins/tgp/core/tgp-readonly.js',fileDsl: '', pluginId: 'tgp-core' }, 
             function({jb,require,jbComponent,jbParam,tgp,component,extension,using,dsl,pluginDsl}) {
 
 extension('tgp', 'readOnly', {
@@ -20815,6 +20658,163 @@ component('tgp.isCssPath', {
           return path.slice(0,featureIndex+(array?2:1)).join('~')
       }
   }
+})
+
+});
+
+jbLoadPackedFile({lineInPackage:20667, jb, noProxies: false, path: '/plugins/tgp/core/tgp-meta.js',fileDsl: '', pluginId: 'tgp-core' }, 
+            function({jb,require,jbComponent,jbParam,tgp,component,extension,using,dsl,pluginDsl}) {
+component('jbComponent', {
+  type: 'any',
+  hidden: true,
+  params: [
+    {id: 'type', as: 'string', mandatory: true},
+    {id: 'category', as: 'string'},
+    {id: 'description', as: 'string'},
+    {id: 'params', type: 'jbParam[]'},
+    {id: 'impl', type: '$asParent', dynamicType: '%type%', mandatory: true}
+  ],
+  impl: ctx => ctx.params
+})
+
+component('jbParam', {
+  type: 'jbParam',
+  singleInType: true,
+  params: [
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'type', as: 'string'},
+    {id: 'description', as: 'string'},
+    {id: 'as', as: 'string', options: 'string,number,boolean,ref,single,array'},
+    {id: 'dynamic', type: 'boolean', as: 'boolean', defaultValue: true},
+    {id: 'mandatory', type: 'boolean', as: 'boolean', defaultValue: true},
+    {id: 'composite', type: 'boolean', as: 'boolean', defaultValue: true},
+    {id: 'singleInType', type: 'boolean', as: 'boolean', defaultValue: true},
+    {id: 'defaultValue', dynamicType: '%type%'}
+  ],
+  impl: ctx => ctx.params
+})
+
+
+});
+
+jbLoadPackedFile({lineInPackage:20702, jb, noProxies: false, path: '/plugins/tgp/core/tgp-statistics.js',fileDsl: '', pluginId: 'tgp-core' }, 
+            function({jb,require,jbComponent,jbParam,tgp,component,extension,using,dsl,pluginDsl}) {
+
+extension('tgp', 'statistics', {
+    $phase: 50,
+    initExtension() {
+//      jb.watchableComps && jb.utils.subscribe(jb.watchableComps.source, () => jb.tgp.statistics = {})
+      return { statistics: {} }
+    },
+    calcRefs() {
+      if (Object.keys(jb.tgp.statistics).length) return
+      const refs = {}, comps = jb.comps;
+  
+      Object.keys(comps).filter(k=>comps[k]).forEach(k=>
+        refs[k] = {
+          refs: [...calcRefs(comps[k].impl), ...calcRefs(comps[k].params|| [])].filter((x,index,_self) => x && _self.indexOf(x) === index),
+          by: []
+      })
+      Object.keys(comps).filter(k=>comps[k]).forEach(k=>
+        refs[k].refs.forEach(cross=>
+          refs[cross] && refs[cross].by.push(k))
+      )
+      jb.tgp.statistics = refs
+  
+      function calcRefs(profile) {
+        if (profile == null || typeof profile != 'object') return [];
+        return Object.values(profile).reduce((res,v)=> [...res,...calcRefs(v)], [jb.utils.compName(profile)])
+      }    
+    },
+    circuitOptions(compId) {
+      jb.tgp.calcRefs()
+      const shortId = compId.split('>').pop().split('.').pop()
+      const candidates = {[compId]: true}
+      while (expand()) {}
+      const comps = Object.keys(candidates).filter(compId => noOpenParams(compId))
+      return comps.sort((x,y) => mark(y) - mark(x)).map(id=>({id, shortId: id.split('>').pop(), location: jb.comps[id].$location}))
+  
+      function mark(id) {
+        if (id.match(/^test<>/) && id.indexOf(shortId) != -1) return 20
+        if (id.match(/^test<>/)) return 10
+        return 0
+      }
+
+      function noOpenParams(id) {
+        return (jb.comps[id].params || []).filter(p=>!p.defaultValue).length == 0
+      }
+  
+      function expand() {
+        const length_before = Object.keys(candidates).length
+        Object.keys(candidates).forEach(k=> 
+          jb.tgp.statistics[k] && (jb.tgp.statistics[k].by || []).forEach(caller=>candidates[caller] = true))
+        return Object.keys(candidates).length > length_before
+      }
+    }
+})
+
+component('tgp.circuitOptions', {
+  type: 'data',
+  params: [
+    {id: 'path'}
+  ],
+  impl: ({},path) => jb.tgp.circuitOptions(path.split('~')[0])
+})
+
+component('tgp.allComps', {
+  type: 'data',
+  impl: () => Object.keys(jb.comps)
+})
+
+component('tgp.componentStatistics', {
+  type: 'data',
+  params: [
+    {id: 'cmpId', as: 'string', defaultValue: '%%'}
+  ],
+  impl: (ctx,cmpId) => {
+	  jb.tgp.calcRefs()
+
+    const cmp = jb.comps[cmpId]
+    const cmpRefs = jb.tgp.statistics[cmpId] || {}
+    if (!cmp) return {}
+    const asStr = '' //jb.utils.prettyPrint(cmp.impl || '',{comps: jb.comps})
+
+    return {
+      id: cmpId,
+      file: (cmp.$location || {}).path,
+      lineInFile: +(cmp.$location ||{}).line,
+      linesOfCode: (asStr.match(/\n/g)||[]).length,
+      refs: cmpRefs.refs,
+      referredBy: cmpRefs.by,
+      type: cmp.type || 'data',
+      implType: typeof cmp.impl,
+      refCount: jb.path(cmpRefs.by,'length'),
+      size: asStr.length
+    }
+	}
+})
+
+component('tgp.references', {
+  type: 'data',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) => {
+	  if (path.indexOf('~') != -1) return [];
+
+    return jb.entries(jb.comps)
+    	.map(e=>({id: e[0], refs: refs(e[1].impl,`${e[0]}~impl`)}))
+      .filter(e=>e.refs.length > 0)
+
+    function refs(profile, parentPath) {
+    	if (profile && typeof profile == 'object') {
+        var subResult = Object.keys(profile).reduce((res,prop)=>
+      		res.concat(refs(profile[prop],`${parentPath}~${prop}`)) ,[]);
+      	return (profile.$ == path ? [parentPath] : []).concat(subResult);
+      }
+      return [];
+    }
+	}
 })
 
 });
