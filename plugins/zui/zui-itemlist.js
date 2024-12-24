@@ -73,7 +73,7 @@ component('grid', {
       rx.var('itemSize', (ctx,{widget}) => [0,1].map(axis=>widget.canvasSize[axis]/widget.state.zoom)),
       sink.action('%$widget.renderCmps()%')
     ),
-    frontEnd.method('render', (ctx,{cmp,widget,htmlMode}) => {
+    frontEnd.method('render', (ctx,{cmp,widget}) => {
       const itemSize = [0,1].map(axis=>widget.canvasSize[axis]/widget.state.zoom)
       const {shownCmps, elemsLayout} = cmp.layoutCalculator.calcItemLayout(itemSize,ctx)
       widget.cmpsData[cmp.id].itemLayoutforTest = {shownCmps, elemsLayout}
@@ -82,7 +82,7 @@ component('grid', {
       if (notReady.length) 
         widget.beProxy.beUpdateRequest(notReady)
       jb.log('zui itemlist render',{elemsLayout, shownCmps, toRender, notReady, ctx})
-      if (htmlMode && !widget.canvas.querySelector(`.${cmp.clz}`)) widget.canvas.appendChild(cmp.el)
+      if (!widget.canvas.querySelector(`.${cmp.clz}`)) widget.canvas.appendChild(cmp.el)
       const itemlistCmp = cmp
       const ctxWithItemSize = ctx.setVars({itemSize})
       itemlistCmp.zoomingCss && itemlistCmp.zoomingCss(ctxWithItemSize)

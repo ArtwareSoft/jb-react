@@ -10,7 +10,6 @@ component('zuiTest.healthCare.conditionIconBox', {
       itemsLayout: groupByScatter('category', { sort: 'likelihood' })
     }),
     testData: healthCare.conditionDataSample300(),
-    htmlMode: true
   })
 })
 
@@ -23,7 +22,6 @@ component('zuiTest.healthCare.conditionCard', {
       itemsLayout: groupByScatter('category', { sort: 'likelihood' })
     }),
     testData: healthCare.conditionDataSample300(),
-    htmlMode: true
   })
 })
 

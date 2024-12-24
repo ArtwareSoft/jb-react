@@ -1,4 +1,5 @@
 dsl('zui')
+using('testing')
 
 extension('test', 'zui', {
 	initExtension() {
@@ -21,13 +22,12 @@ component('zuiTest', {
     {id: 'expectedResult', type: 'boolean<>', dynamic: true, mandatory: true},
     {id: 'canvasSize', as: 'array', defaultValue: [600,600]},
     {id: 'runBefore', type: 'action<>', dynamic: true},
-    {id: 'userEvents', type: 'animation_event[]'},
+    {id: 'userEvents', type: 'animation_event<zui>[]'},
     {id: 'allowError', as: 'boolean', dynamic: true, type: 'boolean<>'},
     {id: 'timeout', as: 'number', defaultValue: 200},
     {id: 'cleanUp', type: 'action<>', dynamic: true},
     {id: 'expectedCounters', as: 'single'},
     {id: 'testData', dynamic: true},
-    {id: 'htmlMode', as: 'boolean', type: 'boolean<>'},
     {id: 'spy'},
     {id: 'covers'}
   ],
@@ -37,7 +37,7 @@ component('zuiTest', {
       Var('testData', '%$testData()%', { async: true }),
       Var('widget', pipeline(
         '%$testData%',
-        typeAdapter('widget<zui>', widget('%$control()%', '%$canvasSize%', { frontEnd: widgetFE({ htmlMode: '%$htmlMode%' }) }))
+        typeAdapter('widget<zui>', widget('%$control()%', '%$canvasSize%', { frontEnd: widgetFE() }))
       )),
       Var('initwidget', '%$widget.init()%', { async: true })
     ],
@@ -56,7 +56,6 @@ component('zuiControlRunner', {
   params: [
     {id: 'control', type: 'control', dynamic: true, mandatory: true},
     {id: 'testData', dynamic: true},
-    {id: 'htmlMode', as: 'boolean', type: 'boolean<>'},
     {id: 'canvasSize', as: 'array', defaultValue: [600,600]},
     {id: 'styleSheet', as: 'string', newLinesInCode: true}
   ],
@@ -64,7 +63,7 @@ component('zuiControlRunner', {
     Var('testData', '%$testData()%', { async: true }),
     Var('widget', pipeline(
       '%$testData%',
-      typeAdapter('widget<zui>', widget('%$control()%', '%$canvasSize%', { frontEnd: widgetFE('.elemToTest', { htmlMode: '%$htmlMode%' }) }))
+      typeAdapter('widget<zui>', widget('%$control()%', '%$canvasSize%', { frontEnd: widgetFE('.elemToTest') }))
     )),
     '%$widget.init()%'
   )
@@ -89,16 +88,4 @@ component('zoomEvent', {
         ...(center ? {}: { center, tCenter: center})
     }))
 })
-
-component('zoomEvent', {
-    type: 'ui-action<test>',
-    params: [
-      {id: 'zoom', as: 'number'},
-      {id: 'center', as: 'array'},
-      {id: 'selector', as: 'string', defaultValue: 'canvas'},
-    ],
-    impl: animationEvent(({},{},{zoom,center}) => ({
-        ...(isNaN(zoom) ? {} : { zoom, tZoom: zoom}),
-        ...(center ? {}: { center, tCenter: center})
-    }))
-})  
+ 

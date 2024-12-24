@@ -23,12 +23,11 @@ component('widget', {
                 const payload = _payload.id ? {[_payload.id] : _payload }: _payload
                 const beCmps = beCmp.allDescendants()
                 await frontEnd.handlePayload(payload)
-                //frontEnd.renderCmps(ctx)
                 frontEnd.beProxy = {
                     async beUpdateRequest(cmpIds) {
                         const updatePayload = {}
-                        await cmpIds.reduce((pr,id) => pr.then(async ()=> updatePayload[id] = 
-                            await beCmps.find(cmp=>cmp.id==id)).calcPayload(), Promise.resolve())
+                        await cmpIds.reduce((pr,id) => pr.then(
+                            async () => updatePayload[id] = await beCmps.find(cmp=>cmp.id==id).calcPayload()), Promise.resolve())
                         await frontEnd.handlePayload(updatePayload)
                     }
                 }
@@ -59,7 +58,7 @@ component('widgetFE', {
                 canvas.style.width = `${canvasSize[0]}px`;canvas.style.height = `${canvasSize[1]}px`;
                 doc.querySelector(selector).appendChild(canvas);
             }
-            this.ctx = new jb.core.jbCtx().setVars({widget: this, canUseConsole: ctx.vars.quiet, uiTest: ctx.vars.uiTest, htmlMode})
+            this.ctx = new jb.core.jbCtx().setVars({widget: this, canUseConsole: ctx.vars.quiet, uiTest: ctx.vars.uiTest})
             this.ctx.probe = ctx.probe
         },
         async handlePayload(payload) {
@@ -75,8 +74,6 @@ component('widgetFE', {
                 if (cmp.css)
                     jb.zui.setCmpCss(cmp)
             })
-            await Object.keys(payload).map(k => this.cmps[k]).filter(cmp=>!cmp.notReady)
-              .reduce((pr,cmp) => pr.then(()=>this.prepareTextures(cmp)), Promise.resolve())
             jb.log('zui handlePayload loaded in FE',{cmpsData: this.cmpsData, payload,ctx})
             // dirty - build itemlist layout calculator only after loading its ancestors
             const layoutTop =  Object.values(this.cmps).find(cmp => cmp.buildLayoutCalculator)
@@ -87,7 +84,7 @@ component('widgetFE', {
             function newFECmp(cmpId, be_data, canvas) {
                 const cmp = new (class FECmp {}) // used for serialization filtering
                 const fromBeData = { notReady, title, gridElem, frontEndMethods, layoutProps, renderRole, clz, html, css } = be_data
-                Object.assign(cmp, { id: cmpId, state: {}, base: canvas, vars: be_data.frontEndVars || {}, ...fromBeData })
+                Object.assign(cmp, { id: cmpId, state: {}, flows: [], base: canvas, vars: be_data.frontEndVars || {}, ...fromBeData })
                 if (cmp.notReady) return cmp
                 cmp.destroyed = new Promise(resolve=> cmp.resolveDestroyed = resolve)
                 jb.zui.runFEMethod(cmp,'calcProps',{silent:true,ctx})
