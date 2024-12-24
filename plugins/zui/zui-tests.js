@@ -14,7 +14,7 @@ component('dataTest.smartMetaIconLevel', {
 component('dataTest.smartIconCode', {
   impl: dataTest({
     calculate: zui.smartIconCode(`I am a doctor in emergency room,
-    I have a pateint age 40 with strong headache and high blood preasure, 
+    I have a patient age 40 with strong headache and high blood pressure, 
     please help me with medical condition options`),
     expectedResult: '',
     timeout: 50000
@@ -24,7 +24,7 @@ component('dataTest.smartIconCode', {
 component('dataTest.smartMetadata', {
   impl: dataTest({
     calculate: zui.smartMetadata(`I am a doctor in emergency room,
-    I have a pateint age 40 with strong headache and high blood preasure, 
+    I have a patient age 40 with strong headache and high blood pressure, 
     please help me with medical condition options`),
     expectedResult: '',
     timeout: 50000
@@ -34,7 +34,7 @@ component('dataTest.smartMetadata', {
 component('dataTest.firstItemsNames', {
   impl: dataTest({
     calculate: zui.firstItemsNames(`I am a doctor in emergency room,
-    I have a pateint age 40 with strong headache and high blood preasure, 
+    I have a patient age 40 with strong headache and high blood pressure, 
     please help me with medical condition options`),
     expectedResult: '',
     timeout: 50000

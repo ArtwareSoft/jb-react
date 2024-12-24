@@ -79,12 +79,11 @@ extension('zui','control' , {
             this.layoutProps = (this.layoutProp||[]).reduce((acc,obj) => ({...acc,...obj}), {})
             //Object.assign(this, this.zoomingSize || {}, this.layoutProps, {zoomingSizeProfile: jb.path(this.zoomingSize,'profile')})
             this.zoomingSizeProfile = jb.path(this.zoomingSize,'profile')
-            this.childIndex = this.childIndex || 0
             const childrenCtx = (this.extendChildrenCtxFuncs || []).reduce((accCtx,extendChildrenCtx) => jb.utils.tryWrapper(() => 
                 extendChildrenCtx.setVar(accCtx),'extendChildrenCtx',this.ctx), this.ctx)
 
             if (!Array.isArray(this.children) && this.children)
-                this.children = this.children(childrenCtx).map((cmp,childIndex) =>cmp.init({childIndex}))
+                this.children = this.children(childrenCtx).map(cmp =>cmp.init())
 
             return this
         }
@@ -98,45 +97,47 @@ extension('zui','control' , {
             return this.pivot.find(({id}) => id == pivotId).scale(item)
         }
         
-        async calcHtmlPayload(vars) {
-            if (this.ctx.probe && this.ctx.probe.outOfTime) return {}
-            if (!this.props)
-                return jb.logError(`glPayload - cmp ${this.title} not initialized`,{cmp: this, ctx: cmp.ctx})
-            if (this.enrichCtxFromDecendents)
-                vars = await this.enrichCtxFromDecendents(this.descendantsTillGrid())
+        // async calcHtmlPayload(vars) {
+        //     if (this.ctx.probe && this.ctx.probe.outOfTime) return {}
+        //     if (!this.props)
+        //         return jb.logError(`glPayload - cmp ${this.title} not initialized`,{cmp: this, ctx: cmp.ctx})
+        //     if (this.enrichCtxFromDecendents)
+        //         vars = await this.enrichCtxFromDecendents(this.descendantsTillGrid())
 
-            const ctxToUse = vars ? this.calcCtx.setVars(vars) : this.calcCtx
-            ;[...(this.calcProp || []),...(this.method || [])].forEach(p=>typeof p.value == 'function' && Object.defineProperty(p.value, 'name', { value: p.id }))    
-            const sortedProps = (this.calcProp || []).sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
-            await sortedProps.reduce((pr,prop)=> pr.then(async () => {
-                    const val = jb.val( await jb.utils.tryWrapper(async () => 
-                        prop.value.profile === null ? ctxToUse.vars.$model[prop.id] : await prop.value(ctxToUse),`prop:${prop.id}`,this.ctx))
-                    const value = val == null ? prop.defaultValue : val
-                    Object.assign(this.props, { ...(prop.id == '$props' ? value : { [prop.id]: value })})
-                }), Promise.resolve())
-            Object.assign(this.props, this.styleParams)
+        //     const ctxToUse = vars ? this.calcCtx.setVars(vars) : this.calcCtx
+        //     ;[...(this.calcProp || []),...(this.method || [])].forEach(p=>typeof p.value == 'function' && Object.defineProperty(p.value, 'name', { value: p.id }))    
+        //     const sortedProps = (this.calcProp || []).sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
+        //     await sortedProps.reduce((pr,prop)=> pr.then(async () => {
+        //             const val = jb.val( await jb.utils.tryWrapper(async () => 
+        //                 prop.value.profile === null ? ctxToUse.vars.$model[prop.id] : await prop.value(ctxToUse),`prop:${prop.id}`,this.ctx))
+        //             const value = val == null ? prop.defaultValue : val
+        //             Object.assign(this.props, { ...(prop.id == '$props' ? value : { [prop.id]: value })})
+        //         }), Promise.resolve())
+        //     Object.assign(this.props, this.styleParams)
 
-            this.calcHtmlOfItem = item => this.htmlOfItem ? this.htmlOfItem(ctxToUse.setData(item)) : ''
-            const zoomingCssProfile = jb.path(this.zoomingCss,'profile')
-            const html = this.html && this.html(ctxToUse)
-            const css = (this.css || []).flatMap(x=>x(ctxToUse))
+        //     this.calcHtmlOfItem = item => this.htmlOfItem ? this.htmlOfItem(ctxToUse.setVars({item}).setData(item)) : ''
+        //     const zoomingCssProfile = jb.path(this.zoomingCss,'profile')
+        //     const html = this.html && this.html(ctxToUse)
+        //     const css = (this.css || []).flatMap(x=>x(ctxToUse))
 
-            const methods = this.methods = (this.method||[]).map(h=>h.id).join(',')
-            const frontEndMethods = this.frontEndMethods =(this.frontEndMethod || []).map(h=>({method: h.method, path: h.path}))
-            const frontEndVars = this.frontEndVars = this.frontEndVar && jb.objFromEntries(this.frontEndVar.map(h=>[h.id, jb.val(h.value(ctxToUse))]))
-            const noOfItems = (ctxToUse.vars.items||[]).length
+        //     const methods = this.methods = (this.method||[]).map(h=>h.id).join(',')
+        //     const frontEndMethods = this.frontEndMethods =(this.frontEndMethod || []).map(h=>({method: h.method, path: h.path}))
+        //     const frontEndVars = this.frontEndVars = this.frontEndVar && jb.objFromEntries(this.frontEndVar.map(h=>[h.id, jb.val(h.value(ctxToUse))]))
+        //     const noOfItems = (ctxToUse.vars.items||[]).length
             
-            const { id , title, clz, inZoomingGrid, topOfWidget, calcHtmlOfItem } = this
-            const res = { id, title, clz, frontEndMethods, frontEndVars, topOfWidget, noOfItems, methods, zoomingCssProfile,  html, css, calcHtmlOfItem }
-            return this.extendedPayloadWithHtmlDescendants ? this.extendedPayloadWithHtmlDescendants(res,this.descendantsTillGrid()) : res
-        }
+        //     const { id , title, clz, inZoomingGrid, topOfWidget, calcHtmlOfItem } = this
+        //     const res = { id, title, clz, frontEndMethods, frontEndVars, topOfWidget, noOfItems, methods, zoomingCssProfile,  html, css, calcHtmlOfItem }
+        //     return this.extendedPayloadWithHtmlDescendants ? this.extendedPayloadWithHtmlDescendants(res,this.descendantsTillGrid()) : res
+        // }
 
         async calcPayload(vars) {
             if (this.ctx.probe && this.ctx.probe.outOfTime) return {}
             if (!this.props)
                 return jb.logError(`glPayload - cmp ${this.title} not initialized`,{cmp: this, ctx: cmp.ctx})
             if (this.enrichPropsFromDecendents)
-                vars = await this.enrichPropsFromDecendents(this.descendantsTillGrid())
+                vars = {...vars, ...await this.enrichPropsFromDecendents(this.descendantsTillGrid())}
+            if (this.enrichCtxFromDecendents)
+                vars = {...vars, ...await this.enrichCtxFromDecendents(this.descendantsTillGrid()) }
 
             const ctxToUse = vars ? this.calcCtx.setVars(vars) : this.calcCtx
             ;[...(this.calcProp || []),...(this.method || [])].forEach(p=>typeof p.value == 'function' && Object.defineProperty(p.value, 'name', { value: p.id }))    
@@ -169,8 +170,13 @@ extension('zui','control' , {
             const frontEndVars = this.frontEndVar && jb.objFromEntries(this.frontEndVar.map(h=>[h.id, jb.val(h.value(ctxToUse))]))
             const noOfItems = (ctxToUse.vars.items||[]).length
 
-            const { id , title, layoutProps, inZoomingGrid, renderRole, zoomingSizeProfile, topOfWidget } = this
-            let res = { id, title, frontEndMethods, frontEndVars, topOfWidget, noOfItems, methods, 
+            const zoomingCssProfile = jb.path(this.zoomingCss,'profile')
+            this.calcHtmlOfItem = item => this.htmlOfItem ? this.htmlOfItem(ctxToUse.setVars({item}).setData(item)) : ''
+            const html = this.html && this.html(ctxToUse)
+            const css = (this.css || []).flatMap(x=>x(ctxToUse))
+
+            const { id , title, layoutProps, inZoomingGrid, renderRole, zoomingSizeProfile, topOfWidget, clz } = this
+            let res = { id, title, frontEndMethods, frontEndVars, topOfWidget, noOfItems, methods, zoomingCssProfile,  html, css, clz,
                 frontEndUniforms, ...glVars, glCode, zoomingSizeProfile, layoutProps, inZoomingGrid, renderRole }
             if (JSON.stringify(res).indexOf('null') != -1)
                 jb.logError(`cmp ${this.title} has nulls in payload`, {cmp: this, ctx: this.ctx})

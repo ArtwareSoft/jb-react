@@ -59,6 +59,39 @@ component('zui.smartMetaIconLevel', {
   })
 })
 
+component('zui.smartMetaCardLevel', {
+  params: [
+    //{id: 'query', as: 'string', newLinesInCode: true}
+  ],
+  impl: llmViaApi.completions({
+    chat: [
+      user(`You are LLM prompt expert, helping building a Zoomable User Interface (ZUI) system. presenting items.
+      We need to build a prompt (or set of prompts) that based on artbitrary query in any domain will suggest the properties, and html/css templates 
+        for the icon level of the zui system.
+      The second zoomable level, called card level, is 64x64 - 320*320 pixels. it usually uses item title, description, 4-8 properties and colors and shapes that represent the item.
+
+      Please help to improve the prompt below or suggest a different prompt(s) for this purpose
+      ----
+      You are a both metadata discovery assistant and html/css developer working on a Zoomable User Interface (ZUI) system. presenting items.
+
+      Now you are working on the second zoomable level. It can grow from 64x64 to 320x400 pixels. it usually uses item title, description, 4-8 properties and colors and shapes that represent the item.
+      The item width/height is set by the framework and can get any value in this range. the html/css can also be replaced according to levels. 
+        yet can also keep the same html and change only the css, or define single css using relative(responsive) terms
+
+      Based on the following **query**: "{{query}}"
+
+      return a list of 10 **most relevant** metadata properties for **presenting** items of this type/category at the card level
+      provide sample data for 2 items,
+      suggest html/css code in this format
+      ---      
+      `)
+    ],
+    model: 'o1-preview',
+    maxTokens: 25000,
+    includeSystemMessages: true
+  })
+})
+
 component('zui.smartIconCode', {
   params: [
     {id: 'query', as: 'string', newLinesInCode: true}

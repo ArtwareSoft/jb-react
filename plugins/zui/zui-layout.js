@@ -66,10 +66,13 @@ component('smoothGrowth', {
 
 component('fill', {
   type: 'zooming_size',
-  impl: ctx => ({
+  params: [
+    {id: 'min', as: 'number', defaultValue: 1, byName: true}
+  ],
+  impl: (ctx,min) => ({
       layoutRounds: 2,
-      sizeNeeds: ({round, available }) => round ? available : [1,1],
-      profile: { $$: 'zooming_size<zui>fill' }
+      sizeNeeds: ({round, available }) => round ? available : [min,min],
+      profile: { $$: 'zooming_size<zui>fill', min }
   })
 })
 
@@ -205,7 +208,13 @@ extension('zui','layout', {
     const axes = [0,1]
     const minRecords = axes.map(axis => calcMinRecord(layoutCalculator, axis).sort((r1,r2) => r1.p - r2.p))
     layoutCalculator.calcItemLayout = calcItemLayout
+    setTopChildIndex(layoutCalculator, 0, 0)
     return layoutCalculator
+
+    function setTopChildIndex(cmp, depth, topChildIndex) {
+      cmp.topChildIndex = topChildIndex
+      ;(cmp.children||[]).forEach((ch,i) => setTopChildIndex(ch,depth+1,depth ? topChildIndex : i))
+    }
 
     function calcMinRecord(cmp, layoutAxis,minSize = 0) {
       if (!cmp.children) {
@@ -377,7 +386,7 @@ extension('zui','layout', {
             if (cmp.layoutRounds <= round) return
             const currentSize = elemsLayout[cmp.id].size
             const available = []
-            available[otherAxis] = currentSize[otherAxis] + childsResidu[cmp.childIndex]
+            available[otherAxis] = currentSize[otherAxis] + childsResidu[cmp.topChildIndex]
             available[topAxis] = currentSize[topAxis] + resideInLayoutAxis
             const newSize = sizeNeeds(cmp,{round, available }).map((v,axis)=>Math.min(v, available[axis]))
             const noChange = (newSize[0] == 0 && newSize[1] == 0 || newSize[0] == currentSize[0] && newSize[1] == currentSize[1])

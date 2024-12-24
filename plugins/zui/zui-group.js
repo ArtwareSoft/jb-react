@@ -17,7 +17,7 @@ component('group', {
     variableForChildren('renderRole', If('%$cmp/topOfWidget%', 'flowElem', '%$renderRole%')), 
     children('%$$model/controls()%'),
     '%$$model/layout%',
-    init((ctx,{cmp, $model, widget, renderRole}) => {
+    init((ctx,{cmp, $model, widget, renderRole, htmlMode}) => {
       if (['dynamicFlowTop','flowTop'].indexOf(renderRole) == -1) return
       cmp.enrichPropsFromDecendents = async flowDecendents => {
         //await flowDecendents.reduce((pr,child_cmp,i)=>pr.then(async ()=> {child_cmp.flowCmpIndex = i; await child_cmp.calcPayload() }), Promise.resolve())
