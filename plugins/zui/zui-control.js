@@ -1,4 +1,3 @@
-
 extension('zui','control' , {
     initExtension() { return {  fCounter: 0, cmpCounter: 1,  } },
     typeRules: [
@@ -28,7 +27,7 @@ extension('zui','control' , {
 
             const categories = jb.zui.featureCategories || (jb.zui.featureCategories = {
                 lifeCycle: new Set('init,extendCtx,extendChildrenCtx,destroy'.split(',')),
-                arrayProps: new Set('calcProp,glAtt,uniform,varying,pivot,shaderDecl,shaderMainSnippet,vertexDecl,vertexMainSnippet,frontEndUniform,frontEndMethod,frontEndVar,css,cssClass,layoutProp,dependent'.split(',')),
+                arrayProps: new Set('calcProp,frontEndMethod,frontEndVar,css,cssClass,layoutProp'.split(',')),
                 singular: new Set('calcMoreItemsData,zoomingSize,zoomingCss,styleParams,children,html,htmlOfItem'.split(',')),
             })
     
@@ -97,39 +96,6 @@ extension('zui','control' , {
             return this.pivot.find(({id}) => id == pivotId).scale(item)
         }
         
-        // async calcHtmlPayload(vars) {
-        //     if (this.ctx.probe && this.ctx.probe.outOfTime) return {}
-        //     if (!this.props)
-        //         return jb.logError(`glPayload - cmp ${this.title} not initialized`,{cmp: this, ctx: cmp.ctx})
-        //     if (this.enrichCtxFromDecendents)
-        //         vars = await this.enrichCtxFromDecendents(this.descendantsTillGrid())
-
-        //     const ctxToUse = vars ? this.calcCtx.setVars(vars) : this.calcCtx
-        //     ;[...(this.calcProp || []),...(this.method || [])].forEach(p=>typeof p.value == 'function' && Object.defineProperty(p.value, 'name', { value: p.id }))    
-        //     const sortedProps = (this.calcProp || []).sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
-        //     await sortedProps.reduce((pr,prop)=> pr.then(async () => {
-        //             const val = jb.val( await jb.utils.tryWrapper(async () => 
-        //                 prop.value.profile === null ? ctxToUse.vars.$model[prop.id] : await prop.value(ctxToUse),`prop:${prop.id}`,this.ctx))
-        //             const value = val == null ? prop.defaultValue : val
-        //             Object.assign(this.props, { ...(prop.id == '$props' ? value : { [prop.id]: value })})
-        //         }), Promise.resolve())
-        //     Object.assign(this.props, this.styleParams)
-
-        //     this.calcHtmlOfItem = item => this.htmlOfItem ? this.htmlOfItem(ctxToUse.setVars({item}).setData(item)) : ''
-        //     const zoomingCssProfile = jb.path(this.zoomingCss,'profile')
-        //     const html = this.html && this.html(ctxToUse)
-        //     const css = (this.css || []).flatMap(x=>x(ctxToUse))
-
-        //     const methods = this.methods = (this.method||[]).map(h=>h.id).join(',')
-        //     const frontEndMethods = this.frontEndMethods =(this.frontEndMethod || []).map(h=>({method: h.method, path: h.path}))
-        //     const frontEndVars = this.frontEndVars = this.frontEndVar && jb.objFromEntries(this.frontEndVar.map(h=>[h.id, jb.val(h.value(ctxToUse))]))
-        //     const noOfItems = (ctxToUse.vars.items||[]).length
-            
-        //     const { id , title, clz, inZoomingGrid, topOfWidget, calcHtmlOfItem } = this
-        //     const res = { id, title, clz, frontEndMethods, frontEndVars, topOfWidget, noOfItems, methods, zoomingCssProfile,  html, css, calcHtmlOfItem }
-        //     return this.extendedPayloadWithHtmlDescendants ? this.extendedPayloadWithHtmlDescendants(res,this.descendantsTillGrid()) : res
-        // }
-
         async calcPayload(vars) {
             if (this.ctx.probe && this.ctx.probe.outOfTime) return {}
             if (!this.props)
@@ -150,23 +116,8 @@ extension('zui','control' , {
                 }), Promise.resolve())
             Object.assign(this.props, this.styleParams)
             
-            const glVars = this.glVars = mergeGlVars({
-                glAtts: (this.glAtt || []).flatMap(att=> flatMapAtt(att)).map(att=> ({...att, calc: undefined, ar: att.calc(ctxToUse)})),
-                uniforms: (this.uniform || []).flatMap(u=>flatMapUniform(u)).map(uniform=>({...uniform,
-                    ...(typeof uniform.glVar == 'function' ? {glVar: uniform.glVar(ctxToUse)} : {}),
-                    ...(uniform.imageF ? {...uniform.imageF(ctxToUse), imageF: undefined} : { value: uniform.val(ctxToUse), val: undefined })
-                 })),
-                varyings: (this.varying || []).flatMap(v=>v)
-            })
-            const vertexDecls = (this.vertexDecl || []).sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index)).map(x=>x.code(ctxToUse))
-            const shaderDecls = (this.shaderDecl || []).sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index)).map(x=>x.code(ctxToUse))
-            const vertexMainSnippets = (this.vertexMainSnippet || []).sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index)).map(x=>x.code(ctxToUse))
-            const shaderMainSnippets = (this.shaderMainSnippet || []).sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index)).map(x=>x.code(ctxToUse))
-
-            const glCode = [calcVertexCode(glVars,vertexDecls,vertexMainSnippets,this), calcShaderCode(glVars,shaderDecls,shaderMainSnippets,this)]
             const methods = (this.method||[]).map(h=>h.id).join(',')
             const frontEndMethods = (this.frontEndMethod || []).map(h=>({method: h.method, path: h.path}))
-            const frontEndUniforms = (this.frontEndUniform || [])
             const frontEndVars = this.frontEndVar && jb.objFromEntries(this.frontEndVar.map(h=>[h.id, jb.val(h.value(ctxToUse))]))
             const noOfItems = (ctxToUse.vars.items||[]).length
 
@@ -177,77 +128,13 @@ extension('zui','control' , {
 
             const { id , title, layoutProps, inZoomingGrid, renderRole, zoomingSizeProfile, topOfWidget, clz } = this
             let res = { id, title, frontEndMethods, frontEndVars, topOfWidget, noOfItems, methods, zoomingCssProfile,  html, css, clz,
-                frontEndUniforms, ...glVars, glCode, zoomingSizeProfile, layoutProps, inZoomingGrid, renderRole }
+                frontEndUniforms, zoomingSizeProfile, layoutProps, inZoomingGrid, renderRole }
             if (JSON.stringify(res).indexOf('null') != -1)
                 jb.logError(`cmp ${this.title} has nulls in payload`, {cmp: this, ctx: this.ctx})
             if (this.children)
                 res.childrenIds = this.children.map(({id})=>id).join(',')
 
-            const supportedVars = Object.keys(varsInFeatures(glVars))
-            ;(this.dependent||[]).forEach(({glVars,feature})=> {
-                const unsupported = glVars.filter(v=> !supportedVars.includes(v))
-                if (unsupported.length > 0)
-                    jb.logError(`zui unsupported vars ${unsupported.join(',')}`, {feature, ctx: ctxToUse})
-            })
-
             return this.extendedPayloadWithDescendants ? this.extendedPayloadWithDescendants(res,this.descendantsTillGrid()) : res
-
-            function flatMapAtt(att) {
-                return att.composite ? att.atts(ctxToUse).flatMap(att=>flatMapAtt(att)) : att
-            }
-            function flatMapUniform(u) {
-                return u.composite ? u.uniforms.flatMap(u=>flatMapUniform(u)) : u
-            }
-            function calcVertexCode({uniforms,varyings,glAtts},declarations,mainSnippests,cmp) {
-                return [
-                    'precision highp float;\nprecision mediump int;',
-                    ...uniforms.map(({glType,glVar,vecSize}) => `uniform ${glType} ${glVar}${vecSize ? `[${vecSize}]` : ''};`),
-                    ...varyings.map(({glType,glVar}) => `varying ${glType} ${glVar};`),
-                    ...glAtts.map(({glType,glVar}) => `attribute ${glType} _${glVar};varying ${glType} ${glVar};`),
-                    ...declarations,
-                    `\nvoid main() { // vertex renderRole: ${cmp.renderRole}, inZoomingGrid: ${cmp.inZoomingGrid}, title: ${cmp.title}`,
-                    ...glAtts.map(({glType,glVar}) => `${glVar} = _${glVar};`),
-                    ...mainSnippests,
-                    ...varyings.map(({glVar,glCode}) => `${glVar} = ${glCode};`),
-                    '}'
-                  ].join('\n')
-            }
-            function calcShaderCode({uniforms,varyings,glAtts},declarations,mainSnippests,cmp) {
-                return [
-                    'precision highp float;\nprecision mediump int;',
-                    ...uniforms.map(({glType,glVar,vecSize}) => `uniform ${glType} ${glVar}${vecSize ? `[${vecSize}]` : ''};`),
-                    ...varyings.map(({glType,glVar}) => `varying ${glType} ${glVar};`),
-                    ...glAtts.map(({glType,glVar}) => `varying ${glType} ${glVar};`),
-                    ...declarations,
-                    `\nvoid main() { // shader renderRole: ${cmp.renderRole}, inZoomingGrid: ${cmp.inZoomingGrid}, title: ${cmp.title}`,
-                    ...mainSnippests,
-                    '}'
-                  ].join('\n')
-            }
-            function varsInFeatures({glAtts,uniforms,varyings}) {
-                const glVars = {}
-                ;[...glAtts.map(x=>({...x,glAtt: true})),...uniforms.map(x=>({...x, uniform: true})),...varyings]
-                    .forEach(obj=>{ glVars[obj.glVar] = glVars[obj.glVar] || []; glVars[obj.glVar].push(obj )})
-                return glVars
-            }
-            function mergeGlVars({glAtts,uniforms,varyings}) {
-                const glVars = varsInFeatures({glAtts,uniforms,varyings})
-                const filtered = Object.values(glVars).map(objs => {
-                    if (objs.length == 1) return objs[0]
-                    // sort by attribute/varying and then index
-                    return objs.map((obj,index)=>({...obj,imp: obj.uniform ? 0 : 100,index}))
-                        .sort((y,x) => x.imp - y.imp + x.index - y.index)[0]
-                })
-                
-                {
-                    const glAtts = [], uniforms = [],varyings = []
-                    filtered.forEach(obj=>obj.glAtt ? glAtts.push(obj): obj.uniform ? uniforms.push(obj) : varyings.push(obj))
-                    return {glAtts,uniforms,varyings}
-                }
-            }
-        }
-        findGlVar(glVar) {
-            return [...this.glVars.uniforms,...this.glVars.glAtts].find(u=>u.glVar == glVar)
         }
         runBEMethod(method, data, vars, options = {}) {
             const {doNotUseUserReqTx, dataMethod, userReqTx} = options

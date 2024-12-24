@@ -1,5 +1,4 @@
 dsl('zui')
-using('ui-testers')
 
 extension('test', 'zui', {
 	initExtension() {
@@ -89,34 +88,6 @@ component('zoomEvent', {
         ...(isNaN(zoom) ? {} : { zoom, tZoom: zoom}),
         ...(center ? {}: { center, tCenter: center})
     }))
-})
-
-component('animationEvent', {
-  type: 'ui-action<test>',
-  params: [
-    {id: 'cmpState', defaultValue: obj()},
-    {id: 'selector', as: 'string', defaultValue: 'canvas'},
-    {id: 'expectedEffects', type: 'ui-action-effects'}
-  ],
-  impl: uiActions(
-    Var('originatingUIAction', 'animationEvent{? at %$selector%?}'),
-    waitForSelector('%$selector%'),
-    (ctx,{elemToTest, emulateFrontEndInTest},{selector, cmpState, expectedEffects}) => {
-      if (!emulateFrontEndInTest)
-        return jb.logError(`animationEvent requires emulateFrontEnd to be set in test`, {ctx} )
-
-      const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : elemToTest
-      const cmpElem = elem && jb.ui.closestCmpElem(elem)
-      jb.log(`uiTest uiAction animationEvent zoom: ${cmpState.zoom}`,{cmpState, cmpElem,elem,selector,ctx})
-      if (!cmpElem) 
-        return jb.logError(`animationEvent can not find elem ${selector}`, {ctx,elemToTest} )
-      expectedEffects && expectedEffects.setLogs()
-      cmpElem._component && Object.assign(cmpElem._component.state, cmpState)
-      jb.test.triggerAnimationEvent(ctx)
-    },
-    waitForNextUpdate(),
-    If('%$expectedEffects%', '%$expectedEffects/check()%')
-  )
 })
 
 component('zoomEvent', {

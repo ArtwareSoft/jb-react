@@ -1,11 +1,8 @@
-
-component('zui.Zoom', {
-  type: 'feature<>',
-  impl: features()
-})
+dsl('zui')
+using('rx')
 
 component('zui.canvasZoom', {
-  type: 'feature<zui>',
+  type: 'feature',
   impl: features(
     frontEnd.init((ctx,{uiTest}) => {
       jb.zui.initZoom(ctx)

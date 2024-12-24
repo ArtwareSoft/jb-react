@@ -1,20 +1,11 @@
 dsl('zui')
 
-extension('zui','itemlist', {
-  fixGrid(grid) {
-    if (!grid) return [5,5]
-    if (typeof grid === 'number') return [grid,grid]
-    if (grid.length == 1) return [grid[0],grid[0]]
-    return grid
-  }
-})
-
 component('itemlist', {
   type: 'control',
   params: [
     {id: 'items', as: 'array', dynamic: true, mandatory: true, byName: true},
     {id: 'itemControl', type: 'control', mandatory: true, dynamic: true},
-    {id: 'itemsLayout', type: 'items_layout', dynamic: true, defaultValue: grid()},
+    {id: 'itemsLayout', type: 'items_layout', dynamic: true, defaultValue: spiral()},
     {id: 'style', type: 'itemlist-style', dynamic: true, defaultValue: grid()},
     {id: 'features', type: 'feature<>[]', dynamic: true}
   ],
@@ -86,72 +77,21 @@ component('grid', {
       const itemSize = [0,1].map(axis=>widget.canvasSize[axis]/widget.state.zoom)
       const {shownCmps, elemsLayout} = cmp.layoutCalculator.calcItemLayout(itemSize,ctx)
       widget.cmpsData[cmp.id].itemLayoutforTest = {shownCmps, elemsLayout}
-      const toRender = Object.values(widget.cmps).filter(cmp=>cmp.renderRole == 'dynamicFlowTop' || shownCmps.indexOf(cmp.id) != -1)
+      const toRender = Object.values(widget.cmps).filter(cmp=>shownCmps.indexOf(cmp.id) != -1)
       const notReady = toRender.filter(cmp=>cmp.notReady).map(cmp=>cmp.id)
       if (notReady.length) 
         widget.beProxy.beUpdateRequest(notReady)
       jb.log('zui itemlist render',{elemsLayout, shownCmps, toRender, notReady, ctx})
       if (htmlMode && !widget.canvas.querySelector(`.${cmp.clz}`)) widget.canvas.appendChild(cmp.el)
-      cmp.showGrid(ctx)
       const itemlistCmp = cmp
       const ctxWithItemSize = ctx.setVars({itemSize})
       itemlistCmp.zoomingCss && itemlistCmp.zoomingCss(ctxWithItemSize)
       Object.values(widget.cmps).filter(cmp=>cmp.el && cmp.renderRole == 'zoomingGridElem')
         .forEach(cmp=> cmp.el.style.display = shownCmps.indexOf(cmp.id) == -1 ? 'none' : 'block')
-      toRender.filter(cmp=>!cmp.notReady && !cmp.renderRole.match(/[Ff]lowElem/))
+      toRender.filter(cmp=>!cmp.notReady)
           .forEach(cmp=>widget.renderCmp(cmp,ctx.setVars({itemlistCmp, itemSize, elemLayout: elemsLayout[cmp.id]})))
-    }),
-    frontEnd.method('showGrid', (ctx,{cmp,widget,htmlMode}) => {
-        if (htmlMode) return
-        const glCode = [`attribute vec2 itemPos;
-            uniform vec2 zoom;
-            uniform vec2 center;
-        
-            void main() {
-              vec2 itemTopLeftNdc = (itemPos - center) / (0.5*zoom);
-              gl_PointSize = 3.0;
-              gl_Position = vec4( itemTopLeftNdc, 0.0, 1.0);
-            }`,
-            `precision highp float;
-            void main() {
-              gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0);
-              return;
-            }`
-        ]
-        
-        const {gridSize} = cmp.vars
-        const {gl} = widget
-        const ar = []
-        for(let x = 0;x<gridSize[0];x++) for(let y = 0;y<gridSize[1];y++) { ar.push(x); ar.push(y) }
-        const vertexArray = new Float32Array(ar.map(x=>1.0*x))
-
-        const shaderProgram = jb.zui.buildShaderProgram(gl, glCode)
-        gl.useProgram(shaderProgram)
-
-        gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'zoom'), [widget.state.zoom,widget.state.zoom])
-        gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'center'), widget.state.center)
-
-        const vertexBuffer = gl.createBuffer()
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
-        gl.bufferData(gl.ARRAY_BUFFER, vertexArray, gl.STATIC_DRAW)
-        const itemPos = gl.getAttribLocation(shaderProgram, 'itemPos')
-        gl.enableVertexAttribArray(itemPos)
-        gl.vertexAttribPointer(itemPos, 2, gl.FLOAT, false, 0, 0)
-
-        gl.drawArrays(gl.POINTS, 0, gridSize[0]*gridSize[1])  
     })
   )
-})
-
-component('grid', {
-  type: 'items_layout',
-  params: [
-    {id: 'gridSize', as: 'array', defaultValue: 10, description: 'e,g, 5 => [5,5]'},
-    {id: 'xyPivots', type: 'grid_pivot', dynamic: true, defaultValue: xyByProps()},
-    {id: 'initialZoom', as: 'number', description: 'grid units', defaultValue: 10},
-    {id: 'center', as: 'array', description: 'grid units', defaultValue: [2.5,2.6]}
-  ],
-  impl: (ctx,gridSize) =>jb.zui.gridItemsLayout({...ctx.params,gridSize: jb.zui.fixGrid(gridSize)},ctx)
 })
 
 component('spiral', {

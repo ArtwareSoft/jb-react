@@ -198,8 +198,6 @@ component('groupByScatter', {
   }
 })
 
-
-
 extension('zui','gridItemsLayout', {
   gridItemsLayout({gridSize,xyPivots, initialZoom, center}, ctx) {
     const {scaleX, scaleY} = xyPivots(ctx.setVars({gridSize}))

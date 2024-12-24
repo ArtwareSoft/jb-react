@@ -64,82 +64,6 @@ component('features', {
   impl: (ctx,features) => features.flatMap(x=> Array.isArray(x) ? x: [x])
 })
 
-component('dependentFeature', {
-  type: 'feature',
-  moreTypes: 'style',
-  params: [
-    {id: 'feature', type: 'feature', composite: true},
-    {id: 'glVars', as: 'array'}
-  ],
-  impl: (ctx,feature,glVars) => ({...feature, dependent : {glVars, feature} })
-})
-
-component('glAtt', {
-  type: 'feature',
-  params: [
-    {id: 'att', type: 'attribute' },
-  ],
-  impl: (ctx,glAtt) => ({glAtt, srcPath: ctx.path})
-})
-
-component('shaderDecl', {
-  type: 'feature',
-  description: 'define function or header line',
-  params: [
-    {id: 'code', as: 'string', dynamic: true, newLinesInCode: true },
-    {id: 'phase', as: 'number', defaultValue: 10},
-  ],
-  impl: ctx => ({shaderDecl: ctx.params, srcPath: ctx.path})
-})
-
-component('shaderMainSnippet', {
-  type: 'feature',
-  description: 'define code snippet to pur in main',
-  params: [
-    {id: 'code', as: 'string', dynamic: true, newLinesInCode: true },
-    {id: 'phase', as: 'number', defaultValue: 10},
-  ],
-  impl: ctx => ({shaderMainSnippet: ctx.params, srcPath: ctx.path})
-})
-
-component('vertexDecl', {
-  type: 'feature',
-  description: 'define function or header line',
-  params: [
-    {id: 'code', as: 'string', dynamic: true, newLinesInCode: true },
-    {id: 'phase', as: 'number', defaultValue: 10},
-  ],
-  impl: ctx => ({vertexDecl: ctx.params, srcPath: ctx.path})
-})
-
-component('vertexMainSnippet', {
-  type: 'feature',
-  description: 'define code snippet to pur in main',
-  params: [
-    {id: 'code', as: 'string', dynamic: true, newLinesInCode: true },
-    {id: 'phase', as: 'number', defaultValue: 10},
-  ],
-  impl: ctx => ({vertexMainSnippet: ctx.params, srcPath: ctx.path})
-})
-
-component('varying', {
-  type: 'feature',
-  params: [
-    {id: 'glType', as: 'string', mandatory: true},
-    {id: 'glVar', as: 'string', mandatory: true},
-    {id: 'glCode', mandatory: true}
-  ],
-  impl: ctx => ({varying: ctx.params, srcPath: ctx.path})
-})
-
-component('uniforms', {
-  type: 'feature',
-  params: [
-    {id: 'uniforms', type: 'uniform[]', composite: true},
-  ],
-  impl: (ctx,uniform) => ({uniform, srcPath: ctx.path})
-})
-
 component('method', {
   type: 'feature',
   description: 'define backend event handler',
@@ -192,14 +116,6 @@ component('zoomingCss', {
     {id: 'css', mandatory: true, dynamic: true, as: 'array', newLinesInCode: true}
   ],
   impl: (ctx,zoomingCss) => ({ frontEndMethod: { method: 'zoomingCss', path: ctx.path, action: zoomingCss.profile} })
-})
-
-component('css.class', {
-  type: 'feature',
-  params: [
-    {id: 'class', mandatory: true, as: 'string'}
-  ],
-  impl: (ctx,clz) => ({cssClass: clz})
 })
 
 component('frontEnd.init', {
@@ -261,11 +177,5 @@ component('frontEnd.flow', {
     }})
 })
 
-component('frontEnd.uniforms', {
-  type: 'feature',
-  params: [
-    {id: 'uniforms', type: 'uniform[]', composite: true}
-  ],
-  impl: (ctx,uniform) => ({frontEndUniform: { profile: ctx.profile.uniforms, path: ctx.path + '~uniforms' }, srcPath: ctx.path})
-})
+
 
