@@ -97,7 +97,7 @@ extension('zui','zoom', {
         },
         updateZoomState({ dz, dp }) {
           let {tZoom, tCenter} =  state
-          const factor = jb.zui.isMobile() ? 2 : 3
+          const factor = jb.zui.isMobile() ? 3 : 3
           if (dz)
             tZoom *= dz**factor
           const tZoomF = Math.floor(tZoom)
@@ -124,7 +124,7 @@ extension('zui','zoom', {
           ;[0,1].forEach(axis=>center[axis] = center[axis] == null ? tCenter[axis] : center[axis])
   
           // zoom gets closer to targetZoom, when 1% close assign its value
-          const SPEED = jb.zui.isMobile() ? 1 : 4
+          const SPEED = jb.zui.isMobile() ? 5 : 4
           zoom = zoom + (tZoom - zoom) / SPEED
           if (!tZoom || Math.abs((zoom-tZoom)/tZoom) < 0.01) 
             zoom = tZoom

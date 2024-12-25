@@ -23,6 +23,8 @@
 	if (urlQuery('pack')) {
 		jbInit('pack',{ plugins: ['common'] }, {packOnly: true}).then(code=>console.log('aa',code))
 	} else {
+	if (location.host.indexOf('github') != -1)
+		jbHost.baseUrl = 'https://artwaresoft.github.io/jb-react/'
 	const repo = urlQuery('repo')
 	const pluginsParam = urlQuery('plugins') || urlQuery('packed_plugins')
 	const plugins = pluginsParam && pluginsParam.split(',') //.map(x=>!x.match(/tests|tester/) ? `${x}-tests` : x)
