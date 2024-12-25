@@ -6185,685 +6185,7 @@ extension('callbag', {
 
 });
 
-jbLoadPackedFile({lineInPackage:6190, jb, noProxies: false, path: '/plugins/rx/rx-comps.js',fileDsl: '', pluginId: 'rx' }, 
-            function({jb,require,source,rx,sink,action,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,Var,resource,reduce,count,joinIntoVariable,join,max,Do,doPromise,map,mapPromise,filter,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,unique,catchError,timeoutLimit,throwError,debounceTime,throttleTime,delay,replay,takeUntil,take,takeWhile,toArray,last,skip,log,consoleLog,sniffer,subscribe,writeValue,rxSubject,subjectNext,subject,rxQueue,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,min,sum,slice,sort,first,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,unknownCmp,runCtx,asIs,isRef,asRef,test,component,extension,using,dsl,pluginDsl}) {
-using('watchable,common')
-
-component('source.data', {
-  type: 'rx',
-  params: [
-    {id: 'Data', mandatory: true}
-  ],
-  impl: (ctx,data) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromIter(jb.toarray(data)))
-})
-
-component('source.watchableData', {
-  type: 'rx',
-  description: 'wait for data change and returns {op, newVal,oldVal}',
-  params: [
-    {id: 'ref', as: 'ref'},
-    {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', byName: true, description: 'watch childern change as well'}
-  ],
-  impl: (ctx,ref,includeChildren) => jb.callbag.map(x => ctx.dataObj({...x, before: null, after: null}))(jb.watchable.refObservable(ref,{includeChildren, srcCtx: ctx}))
-})
-
-component('source.callbag', {
-  type: 'rx',
-  params: [
-    {id: 'callbag', mandatory: true, description: 'callbag source function'}
-  ],
-  impl: (ctx,callbag) => jb.callbag.map(x=>ctx.dataObj(x))(callbag || jb.callbag.fromIter([]))
-})
-
-component('source.callbackLoop', {
-  type: 'rx',
-  params: [
-    {id: 'registerFunc', mandatory: true, description: 'receive callback function. needs to be recalled for next event'},
-  ],
-  impl: (ctx,registerFunc) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromCallbackLoop(registerFunc))
-})
-
-component('source.animationFrame', {
-  type: 'rx',
-  impl: source.callbackLoop(({},{uiTest})=> (uiTest ? jb.test : jb.frame).requestAnimationFrame || (() => {}))
-})
-
-/*
-producer interface: obs => {
-  bind('myBind', handler)
-  return () => unbind('myBind',handler)
-  function handler(x) { obs(x) }
-}
-*/
-component('source.producer', {
-  type: 'rx',
-  params: [
-    {id: 'producer', dynamic: true, mandatory: true, description: 'producer function'},
-  ],
-  impl: (ctx,producer) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromProducer(producer))
-})
-
-component('source.event', {
-  type: 'rx',
-  params: [
-    {id: 'event', as: 'string', mandatory: true, options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll,resize'},
-    {id: 'elem', description: 'html element', defaultValue: () => jb.frame.document},
-    {id: 'options', description: 'addEventListener options, https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener'},
-    {id: 'selector', as: 'string', description: 'optional, including the elem', byName: true}
-  ],
-  impl: (ctx,event,_elem,options,selector) => {
-    const elem = selector ? jb.ui.findIncludeSelf(_elem,selector)[0]: _elem
-    return elem && jb.callbag.map(sourceEvent=>ctx.setVars({sourceEvent, elem}).dataObj(sourceEvent))(jb.callbag.fromEvent(event,elem,options))
-  }
-})
-
-component('source.any', {
-  type: 'rx',
-  params: [
-    {id: 'source', mandatory: true, description: 'the source is detected by its type: promise, iterable, single, callbag element, etc..'}
-  ],
-  impl: (ctx,source) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromAny(source || []))
-})
-
-component('source.promise', {
-  type: 'rx',
-  params: [
-    {id: 'promise', mandatory: true}
-  ],
-  impl: (ctx,promise) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromPromise(promise))
-})
-
-component('source.interval', {
-  type: 'rx',
-  params: [
-    {id: 'interval', as: 'number', templateValue: '1000', description: 'time in mSec'}
-  ],
-  impl: (ctx,interval) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.interval(interval))
-})
-
-component('rx.pipe', {
-  type: 'rx',
-  moreTypes: 'data<>,action<>',
-  category: 'source',
-  description: 'pipeline of reactive observables with source',
-  params: [
-    {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
-  ],
-  impl: (ctx,elems) => 
-    jb.callbag.pipe(...jb.callbag.injectSniffers(elems(ctx).filter(x=>x),ctx))
-})
-
-component('source.merge', {
-  type: 'rx',
-  category: 'source',
-  description: 'merge callbags sources (or any)',
-  params: [
-    {id: 'sources', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: [], composite: true}
-  ],
-  impl: (ctx,sources) => jb.callbag.merge(...sources(ctx))
-})
-
-component('source.mergeConcat', {
-  type: 'rx',
-  category: 'source',
-  description: 'merge sources while keeping the order of sources',
-  params: [
-    {id: 'sources', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: [], composite: true}
-  ],
-  impl: rx.pipe(
-    source.data(ctx => ctx.cmpCtx.params.sources.profile),
-    rx.concatMap(ctx => ctx.run(ctx.data))
-  )
-})
-
-// ******** operators *****
-
-component('rx.innerPipe', {
-  type: 'rx',
-  category: 'operator',
-  description: 'composite operator, inner reactive pipeline without source',
-  params: [
-    {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, templateValue: []}
-  ],
-  impl: (ctx,elems) => source => jb.callbag.pipe(source, ...elems)
-})
-
-component('rx.fork', {
-  type: 'rx',
-  category: 'operator',
-  description: 'separate operator with same source data',
-  params: [
-    {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, templateValue: []}
-  ],
-  impl: (ctx,elems) => jb.callbag.fork(...elems)
-})
-
-component('rx.startWith', {
-  type: 'rx',
-  category: 'operator',
-  description: 'startWith callbags sources (or any)',
-  params: [
-    {id: 'sources', type: 'rx[]', as: 'array'}
-  ],
-  impl: (ctx,sources) => jb.callbag.startWith(...sources)
-})
-
-component('rx.var', {
-  type: 'rx',
-  category: 'operator',
-  description: 'define an immutable variable that can be used later in the pipe',
-  params: [
-    {id: 'name', as: 'string', dynamic: true, mandatory: true, description: 'if empty, does nothing'},
-    {id: 'value', dynamic: true, defaultValue: '%%', mandatory: true}
-  ],
-  impl: If('%$name%', (ctx,{},{name,value}) => source => (start, sink) => {
-      if (start != 0) return 
-      return source(0, function Var(t, d) {
-        const vars = t == 1 && d && {...d.vars, [name()]: value(d)}
-        t == 1 && d && ctx.cmpCtx.dataObj(d.data,vars)
-        sink(t, t === 1 ? d && {data: d.data, vars } : d)
-      })
-    })
-})
-
-component('rx.resource', {
-  type: 'rx',
-  category: 'operator',
-  description: 'define a static mutable variable that can be used later in the pipe',
-  params: [
-    {id: 'name', as: 'string', dynamic: true, mandatory: true, description: 'if empty, does nothing'},
-    {id: 'value', dynamic: true, mandatory: true}
-  ],
-  impl: If('%$name%', (ctx,{},{name,value}) => source => (start, sink) => {
-    if (start != 0) return
-    let val, calculated
-    return source(0, function Var(t, d) {
-      val = calculated ? val : value()
-      calculated = true
-      sink(t, t === 1 ? d && {data: d.data, vars: {...d.vars, [name()]: val}} : d)
-    })
-  })
-})
-
-component('rx.reduce', {
-  type: 'rx',
-  category: 'operator',
-  description: 'incrementally aggregates/accumulates data in a variable, e.g. count, concat, max, etc',
-  params: [
-    {id: 'varName', as: 'string', mandatory: true, description: 'the result is accumulated in this var', templateValue: 'acc'},
-    {id: 'initialValue', dynamic: true, description: 'receives first value as input', mandatory: true},
-    {id: 'value', dynamic: true, defaultValue: '%%', description: 'the accumulated value use %$acc%,%% %$prev%', mandatory: true},
-    {id: 'avoidFirst', as: 'boolean', description: 'used for join with separators, initialValue uses the first value without adding the separtor', type: 'boolean'}
-  ],
-  impl: (ctx,varName,initialValue,value,avoidFirst) => source => (start, sink) => {
-    if (start !== 0) return
-    let acc, prev, first = true
-    source(0, function reduce(t, d) {
-      if (t == 1) {
-        if (first) {
-          acc = initialValue(d)
-          first = false
-          if (!avoidFirst)
-            acc = value({data: d.data, vars: {...d.vars, [varName]: acc}})
-        } else {
-          acc = value({data: d.data, vars: {...d.vars, prev, [varName]: acc}})
-        }
-        sink(t, acc == null ? d : {data: d.data, vars: {...d.vars, [varName]: acc}})
-        prev = d.data
-      } else {
-        sink(t, d)
-      }
-    })
-  }
-})
-
-component('rx.count', {
-  params: [
-    {id: 'varName', as: 'string', mandatory: true, defaultValue: 'count'}
-  ],
-  impl: rx.reduce('%$varName%', 0, { value: (ctx,{},{varName}) => ctx.vars[varName]+1 })
-})
-
-component('rx.join', {
-  params: [
-    {id: 'varName', as: 'string', mandatory: true, defaultValue: 'join'},
-    {id: 'separator', as: 'string', defaultValue: ','}
-  ],
-  impl: rx.reduce('%$varName%', '%%', {
-    value: (ctx,{},{varName,separator}) => [ctx.vars[varName],ctx.data].join(separator),
-    avoidFirst: true
-  })
-})
-
-component('rx.max', {
-  params: [
-    {id: 'varName', as: 'string', mandatory: true, defaultValue: 'max'},
-    {id: 'value', dynamic: true, defaultValue: '%%'}
-  ],
-  impl: rx.reduce('%$varName%', -Infinity, {
-    value: (ctx,{},{varName,value}) => Math.max(ctx.vars[varName],value(ctx))
-  })
-})
-
-component('rx.do', {
-  type: 'rx',
-  category: 'operator',
-  params: [
-    {id: 'action', type: 'action', dynamic: true, mandatory: true}
-  ],
-  impl: (ctx,action) => jb.callbag.Do(ctx2 => action(ctx2))
-})
-
-component('rx.doPromise', {
-  type: 'rx',
-  category: 'operator',
-  params: [
-    {id: 'action', type: 'action', dynamic: true, mandatory: true}
-  ],
-  impl: (ctx,action) => jb.callbag.doPromise(ctx2 => action(ctx2))
-})
-
-component('rx.map', {
-  type: 'rx',
-  category: 'operator',
-  params: [
-    {id: 'func', dynamic: true, mandatory: true}
-  ],
-  impl: (ctx,func) => jb.callbag.map(jb.utils.addDebugInfo(ctx2 => ctx.dataObj(func(ctx2), ctx2.vars || {},ctx2.data),ctx))
-})
-
-component('rx.mapPromise', {
-  type: 'rx',
-  category: 'operator',
-  params: [
-    {id: 'func', type: 'data', moreTypes: 'action<>', dynamic: true, mandatory: true}
-  ],
-  impl: (ctx,func) => jb.callbag.mapPromise(ctx2 => Promise.resolve(func(ctx2)).then(data => ctx.dataObj(data, ctx2.vars || {}, ctx2.data))
-    .catch(err => ({vars: {...ctx2.vars, err }, data: err})) )
-})
-
-component('rx.filter', {
-  type: 'rx',
-  category: 'filter',
-  params: [
-    {id: 'filter', type: 'boolean', dynamic: true, mandatory: true}
-  ],
-  impl: (ctx,filter) => jb.callbag.filter(jb.utils.addDebugInfo(ctx2 => filter(ctx2),ctx))
-})
-
-component('rx.flatMap', {
-  type: 'rx',
-  category: 'operator',
-  description: 'match inputs the callbags or promises',
-  params: [
-    {id: 'source', type: 'rx', category: 'source', dynamic: true, mandatory: true, description: 'map each input to source callbag'}
-  ],
-  impl: (ctx,sourceGenerator) => source => (start, sink) => {
-    if (start !== 0) return
-    let sourceTalkback, innerSources = [], sourceEnded
-
-    source(0, function flatMap(t, d) {
-      if (t === 0) 
-        sourceTalkback = d
-      if (t === 1 && d != null)
-        createInnerSrc(d)
-      if (t === 2) {
-          sourceEnded = true
-          stopOrContinue(d)
-      }
-    })
-
-    sink(0, function flatMap(t,d) {
-      if (t == 1 && d == null || t == 2) {
-        sourceTalkback && sourceTalkback(t,d)
-        innerSources.forEach(src=>src.talkback && src.talkback(t,d))
-      }
-    })
-
-    function createInnerSrc(d) {
-      const newSrc = sourceGenerator(ctx.setData(d.data).setVars(d.vars))
-      innerSources.push(newSrc)
-      newSrc(0, function flatMap(t,d) {
-        if (t == 0) newSrc.talkback = d
-        if (t == 1) sink(t,d)
-        if (t != 2 && newSrc.talkback) newSrc.talkback(1)
-        if (t == 2) {
-          innerSources.splice(innerSources.indexOf(newSrc),1)
-          stopOrContinue(d)
-        }
-      })
-    }
-
-    function stopOrContinue(d) {
-      if (sourceEnded && innerSources.length == 0)
-        sink(2,d)
-    }
-  }
-})
-
-component('rx.flatMapArrays', {
-  type: 'rx',
-  category: 'operator',
-  description: 'match inputs to data arrays',
-  params: [
-    {id: 'func', dynamic: true, defaultValue: '%%', description: 'should return array, items will be passed one by one'}
-  ],
-  impl: rx.flatMap(source.data(call('func')))
-})
-
-component('rx.concatMap', {
-  type: 'rx',
-  category: 'operator,combine',
-  params: [
-    {id: 'func', type: 'rx', dynamic: true, mandatory: true, description: 'keeps the order of the results, can return array, promise or callbag'},
-    {id: 'combineResultWithInput', dynamic: true, description: 'combines %$input% with the inner result %%'}
-  ],
-  impl: (ctx,func,combine) => combine.profile ? jb.callbag.concatMap(ctx2 => func(ctx2), (input,{data}) => combine({data,vars: {...input.vars, input: input.data} }))
-    : jb.callbag.concatMap(ctx2 => func(ctx2))
-})
-
-component('rx.distinctUntilChanged', {
-  type: 'rx',
-  description: 'filters adjacent items in stream',
-  category: 'filter',
-  params: [
-    {id: 'equalsFunc', dynamic: true, mandatory: true, defaultValue: ({data},{prev}) => data === prev, description: 'e.g. %% == %$prev%'}
-  ],
-  impl: (ctx,equalsFunc) => jb.callbag.distinctUntilChanged((prev,cur) => equalsFunc(ctx.setData(cur.data).setVar('prev',prev.data)), ctx)
-})
-
-component('rx.distinct', {
-  type: 'rx',
-  description: 'filters unique values',
-  category: 'filter',
-  params: [
-    {id: 'key', as: 'string', dynamic: true, defaultValue: '%%'}
-  ],
-  impl: (ctx,keyFunc) => jb.callbag.distinct(jb.utils.addDebugInfo(ctx2 => keyFunc(ctx2),ctx))
-})
-
-component('rx.catchError', {
-  type: 'rx',
-  category: 'error',
-  impl: ctx => jb.callbag.catchError(err => ctx.dataObj(err))
-})
-
-component('rx.timeoutLimit', {
-  type: 'rx',
-  category: 'error',
-  params: [
-    {id: 'timeout', dynamic: true, defaultValue: '3000', description: 'can be dynamic'},
-    {id: 'error', dynamic: true, defaultValue: 'timeout'}
-  ],
-  impl: (ctx,timeout,error) => jb.callbag.timeoutLimit(timeout,error)
-})
-
-component('rx.throwError', {
-  type: 'rx',
-  category: 'error',
-  params: [
-    {id: 'condition', as: 'boolean', dynamic: true, mandatory: true, type: 'boolean'},
-    {id: 'error', mandatory: true}
-  ],
-  impl: (ctx,condition,error) => jb.callbag.throwError(ctx2=>condition(ctx2), error)
-})
-
-component('rx.debounceTime', {
-  type: 'rx',
-  description: 'waits for a cooldown period, them emits the last arrived',
-  category: 'operator',
-  params: [
-    {id: 'cooldownPeriod', dynamic: true, description: 'can be dynamic'},
-    {id: 'immediate', as: 'boolean', description: 'emits the first event immediately, default is true', type: 'boolean'}
-  ],
-  impl: (ctx,cooldownPeriod,immediate) => jb.callbag.debounceTime(cooldownPeriod,immediate)
-})
-
-component('rx.throttleTime', {
-  type: 'rx',
-  description: 'enforces a cooldown period. Any data that arrives during the quiet time is ignored',
-  category: 'operator',
-  params: [
-    {id: 'cooldownPeriod', dynamic: true, description: 'can be dynamic'},
-    {id: 'emitLast', as: 'boolean', description: 'emits the last event arrived at the end of the cooldown, default is true', type: 'boolean'}
-  ],
-  impl: (ctx,cooldownPeriod,emitLast) => jb.callbag.throttleTime(cooldownPeriod,emitLast)
-})
-
-component('rx.delay', {
-  type: 'rx',
-  category: 'operator',
-  params: [
-    {id: 'time', dynamic: true, description: 'can be dynamic'}
-  ],
-  impl: (ctx,time) => jb.callbag.delay(time)
-})
-
-component('rx.replay', {
-  type: 'rx',
-  description: 'stores messages and replay them for later subscription',
-  params: [
-    {id: 'itemsToKeep', as: 'number', description: 'empty for unlimited'}
-  ],
-  impl: (ctx,keep) => jb.callbag.replay(keep)
-})
-
-component('rx.takeUntil', {
-  type: 'rx',
-  description: 'closes the stream when events comes from notifier',
-  category: 'terminate',
-  params: [
-    {id: 'notifier', type: 'rx', description: 'can be also promise or any other'}
-  ],
-  impl: (ctx,notifier) => jb.callbag.takeUntil(notifier)
-})
-
-component('rx.take', {
-  type: 'rx',
-  description: 'closes the stream after taking some items',
-  category: 'terminate',
-  params: [
-    {id: 'count', as: 'number', dynamic: true, mandatory: true}
-  ],
-  impl: (ctx,count) => jb.callbag.take(count(),ctx)
-})
-
-component('rx.takeWhile', {
-  type: 'rx',
-  description: 'closes the stream on condition',
-  category: 'terminate',
-  params: [
-    {id: 'whileCondition', as: 'boolean', dynamic: true, mandatory: true, type: 'boolean'},
-    {id: 'passLastEvent', as: 'boolean', type: 'boolean', byName: true}
-  ],
-  impl: (ctx,whileCondition,passLastEvent) => jb.callbag.takeWhile(ctx => whileCondition(ctx), passLastEvent)
-})
-
-component('rx.toArray', {
-  type: 'rx',
-  category: 'operator',
-  description: 'wait for all and returns next item as array',
-  impl: ctx => source => jb.callbag.pipe(source, jb.callbag.toArray(), jb.callbag.map(arr=> ctx.dataObj(arr.map(x=>x.data))))
-})
-
-component('rx.last', {
-  type: 'rx',
-  category: 'filter',
-  impl: () => jb.callbag.last()
-})
-
-component('rx.skip', {
-  type: 'rx',
-  category: 'filter',
-  params: [
-    {id: 'count', as: 'number', dynamic: true}
-  ],
-  impl: (ctx,count) => jb.callbag.skip(count())
-})
-
-component('rx.subscribe', {
-  type: 'rx',
-  description: 'forEach action for all items',
-  category: 'sink',
-  params: [
-    {id: 'next', type: 'action', dynamic: true, mandatory: true},
-    {id: 'error', type: 'action', dynamic: true},
-    {id: 'complete', type: 'action', dynamic: true}
-  ],
-  impl: (ctx,next, error, complete) => jb.callbag.subscribe(ctx2 => next(ctx2), ctx2 => error(ctx2), () => complete())
-})
-
-component('sink.action', {
-  type: 'rx',
-  category: 'sink',
-  description: 'subscribe',
-  params: [
-    {id: 'action', type: 'action', dynamic: true, mandatory: true}
-  ],
-  impl: (ctx,action) => jb.callbag.subscribe(ctx2 => { ctx; return action(ctx2) })
-})
-
-component('sink.data', {
-  type: 'rx',
-  params: [
-    {id: 'Data', as: 'ref', dynamic: true, mandatory: true}
-  ],
-  impl: sink.action(writeValue('%$Data()%', '%%'))
-})
-
-component('rx.log', {
-  description: 'jb.log flow data, used for debug',
-  params: [
-    {id: 'name', as: 'string', dynamic: true, description: 'log names'},
-    {id: 'extra', as: 'single', dynamic: true, description: 'object. more properties to log'}
-  ],
-  impl: rx.do((ctx,vars,{name,extra}) => jb.log(name(ctx),{data: ctx.data,vars,...extra(ctx), ctx: ctx.cmpCtx}))
-})
-
-component('rx.clog', {
-  description: 'console.log flow data, used for debug',
-  params: [
-    {id: 'name', as: 'string'}
-  ],
-  impl: rx.do((x,{},{name}) => console.log(name,x))
-})
-
-component('rx.sniffer', {
-  description: 'console.log data & control',
-  params: [
-    {id: 'name', as: 'string'}
-  ],
-  impl: (ctx,name) => source => jb.callbag.sniffer(source, {next: x => console.log(name,x)})
-})
-
-// ********** subject 
-component('rx.subject', {
-  type: 'data',
-  description: 'callbag "variable" that you can write or listen to',
-  category: 'variable',
-  params: [
-    {id: 'id', as: 'string', description: 'can be used for logging'},
-    {id: 'replay', as: 'boolean', description: 'keep pushed items for late subscription', type: 'boolean'},
-    {id: 'itemsToKeep', as: 'number', description: 'relevant for replay, empty for unlimited'}
-  ],
-  impl: (ctx,id, replay,itemsToKeep) => {
-      const trigger = jb.callbag.subject(id)
-      const source = replay ? jb.callbag.replay(itemsToKeep)(trigger): trigger
-      source.ctx = trigger.ctx = ctx
-      return { trigger, source } 
-    }
-})
-
-component('sink.subjectNext', {
-  type: 'rx',
-  params: [
-    {id: 'subject', mandatory: true}
-  ],
-  impl: (ctx,subject) => jb.callbag.subscribe(e => subject.trigger.next(e))
-})
-
-component('source.subject', {
-  type: 'rx',
-  params: [
-    {id: 'subject', mandatory: true}
-  ],
-  impl: (ctx,subj) => subj.source
-})
-
-component('action.subjectNext', {
-  type: 'action',
-  params: [
-    {id: 'subject', mandatory: true},
-    {id: 'Data', dynamic: true, defaultValue: '%%'}
-  ],
-  impl: (ctx,subject,data) => subject.trigger.next(ctx.dataObj(data(ctx)))
-})
-
-component('action.subjectComplete', {
-  type: 'action',
-  params: [
-    {id: 'subject', mandatory: true}
-  ],
-  impl: (ctx,subject) => subject.trigger.complete()
-})
-
-component('action.subjectError', {
-  type: 'action',
-  params: [
-    {id: 'subject', mandatory: true},
-    {id: 'error', dynamic: true, mandatory: true}
-  ],
-  impl: (ctx,subject,error) => subject.trigger.error(error())
-})
-
-// ********** queue 
-component('rx.queue', {
-  type: 'data',
-  description: 'message queue',
-  category: 'variable',
-  params: [
-    {id: 'items', as: 'array'}
-  ],
-  impl: (ctx,items) => ({ items: items.slice(0), subject: jb.callbag.subject(), mkmk: 5 })
-})
-
-component('source.queue', {
-  type: 'rx',
-  params: [
-    {id: 'queue', mandatory: true}
-  ],
-  impl: source.merge(source.data('%$queue/items%'), '%$queue/subject%')
-})
-
-component('action.addToQueue', {
-  type: 'action',
-  params: [
-    {id: 'queue', mandatory: true},
-    {id: 'item', dynamic: true, defaultValue: '%%'}
-  ],
-  impl: (ctx,queue,item) => {
-    const toAdd = item(ctx)
-    queue.items.push(toAdd)
-    queue.subject.next(ctx.dataObj(toAdd)) 
-  }
-})
-
-component('action.removeFromQueue', {
-  type: 'action',
-  params: [
-    {id: 'queue', mandatory: true},
-    {id: 'item', dynamic: true, defaultValue: '%%'}
-  ],
-  impl: (ctx,queue,item) => {
-		const index = queue.items.indexOf(item(ctx))
-		if (index != -1)
-      queue.items.splice(index,1)
-  }
-})
-
-});
-
-jbLoadPackedFile({lineInPackage:6868, jb, noProxies: false, path: '/plugins/rx/rx.js',fileDsl: 'rx', pluginId: 'rx' }, 
+jbLoadPackedFile({lineInPackage:6190, jb, noProxies: false, path: '/plugins/rx/rx.js',fileDsl: 'rx', pluginId: 'rx' }, 
             function({jb,require,source,rx,sink,action,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,Var,resource,reduce,count,joinIntoVariable,join,max,Do,doPromise,map,mapPromise,filter,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,unique,catchError,timeoutLimit,throwError,debounceTime,throttleTime,delay,replay,takeUntil,take,takeWhile,toArray,last,skip,log,consoleLog,sniffer,subscribe,writeValue,rxSubject,subjectNext,subject,rxQueue,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,min,sum,slice,sort,first,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,unknownCmp,runCtx,asIs,isRef,asRef,test,component,extension,using,dsl,pluginDsl}) {
 dsl('rx')
 
@@ -7583,6 +6905,684 @@ component('rxQueue', {
 
 });
 
+jbLoadPackedFile({lineInPackage:6910, jb, noProxies: false, path: '/plugins/rx/rx-comps.js',fileDsl: '', pluginId: 'rx' }, 
+            function({jb,require,source,rx,sink,action,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,Var,resource,reduce,count,joinIntoVariable,join,max,Do,doPromise,map,mapPromise,filter,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,unique,catchError,timeoutLimit,throwError,debounceTime,throttleTime,delay,replay,takeUntil,take,takeWhile,toArray,last,skip,log,consoleLog,sniffer,subscribe,writeValue,rxSubject,subjectNext,subject,rxQueue,runTransaction,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,min,sum,slice,sort,first,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,unknownCmp,runCtx,asIs,isRef,asRef,test,component,extension,using,dsl,pluginDsl}) {
+using('watchable,common')
+
+component('source.data', {
+  type: 'rx',
+  params: [
+    {id: 'Data', mandatory: true}
+  ],
+  impl: (ctx,data) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromIter(jb.toarray(data)))
+})
+
+component('source.watchableData', {
+  type: 'rx',
+  description: 'wait for data change and returns {op, newVal,oldVal}',
+  params: [
+    {id: 'ref', as: 'ref'},
+    {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', byName: true, description: 'watch childern change as well'}
+  ],
+  impl: (ctx,ref,includeChildren) => jb.callbag.map(x => ctx.dataObj({...x, before: null, after: null}))(jb.watchable.refObservable(ref,{includeChildren, srcCtx: ctx}))
+})
+
+component('source.callbag', {
+  type: 'rx',
+  params: [
+    {id: 'callbag', mandatory: true, description: 'callbag source function'}
+  ],
+  impl: (ctx,callbag) => jb.callbag.map(x=>ctx.dataObj(x))(callbag || jb.callbag.fromIter([]))
+})
+
+component('source.callbackLoop', {
+  type: 'rx',
+  params: [
+    {id: 'registerFunc', mandatory: true, description: 'receive callback function. needs to be recalled for next event'},
+  ],
+  impl: (ctx,registerFunc) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromCallbackLoop(registerFunc))
+})
+
+component('source.animationFrame', {
+  type: 'rx',
+  impl: source.callbackLoop(({},{uiTest})=> (uiTest ? jb.test : jb.frame).requestAnimationFrame || (() => {}))
+})
+
+/*
+producer interface: obs => {
+  bind('myBind', handler)
+  return () => unbind('myBind',handler)
+  function handler(x) { obs(x) }
+}
+*/
+component('source.producer', {
+  type: 'rx',
+  params: [
+    {id: 'producer', dynamic: true, mandatory: true, description: 'producer function'},
+  ],
+  impl: (ctx,producer) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromProducer(producer))
+})
+
+component('source.event', {
+  type: 'rx',
+  params: [
+    {id: 'event', as: 'string', mandatory: true, options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll,resize'},
+    {id: 'elem', description: 'html element', defaultValue: () => jb.frame.document},
+    {id: 'options', description: 'addEventListener options, https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener'},
+    {id: 'selector', as: 'string', description: 'optional, including the elem', byName: true}
+  ],
+  impl: (ctx,event,_elem,options,selector) => {
+    const elem = selector ? jb.ui.findIncludeSelf(_elem,selector)[0]: _elem
+    return elem && jb.callbag.map(sourceEvent=>ctx.setVars({sourceEvent, elem}).dataObj(sourceEvent))(jb.callbag.fromEvent(event,elem,options))
+  }
+})
+
+component('source.any', {
+  type: 'rx',
+  params: [
+    {id: 'source', mandatory: true, description: 'the source is detected by its type: promise, iterable, single, callbag element, etc..'}
+  ],
+  impl: (ctx,source) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromAny(source || []))
+})
+
+component('source.promise', {
+  type: 'rx',
+  params: [
+    {id: 'promise', mandatory: true}
+  ],
+  impl: (ctx,promise) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromPromise(promise))
+})
+
+component('source.interval', {
+  type: 'rx',
+  params: [
+    {id: 'interval', as: 'number', templateValue: '1000', description: 'time in mSec'}
+  ],
+  impl: (ctx,interval) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.interval(interval))
+})
+
+component('rx.pipe', {
+  type: 'rx',
+  moreTypes: 'data<>,action<>',
+  category: 'source',
+  description: 'pipeline of reactive observables with source',
+  params: [
+    {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
+  ],
+  impl: (ctx,elems) => 
+    jb.callbag.pipe(...jb.callbag.injectSniffers(elems(ctx).filter(x=>x),ctx))
+})
+
+component('source.merge', {
+  type: 'rx',
+  category: 'source',
+  description: 'merge callbags sources (or any)',
+  params: [
+    {id: 'sources', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: [], composite: true}
+  ],
+  impl: (ctx,sources) => jb.callbag.merge(...sources(ctx))
+})
+
+component('source.mergeConcat', {
+  type: 'rx',
+  category: 'source',
+  description: 'merge sources while keeping the order of sources',
+  params: [
+    {id: 'sources', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: [], composite: true}
+  ],
+  impl: rx.pipe(
+    source.data(ctx => ctx.cmpCtx.params.sources.profile),
+    rx.concatMap(ctx => ctx.run(ctx.data))
+  )
+})
+
+// ******** operators *****
+
+component('rx.innerPipe', {
+  type: 'rx',
+  category: 'operator',
+  description: 'composite operator, inner reactive pipeline without source',
+  params: [
+    {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, templateValue: []}
+  ],
+  impl: (ctx,elems) => source => jb.callbag.pipe(source, ...elems)
+})
+
+component('rx.fork', {
+  type: 'rx',
+  category: 'operator',
+  description: 'separate operator with same source data',
+  params: [
+    {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, templateValue: []}
+  ],
+  impl: (ctx,elems) => jb.callbag.fork(...elems)
+})
+
+component('rx.startWith', {
+  type: 'rx',
+  category: 'operator',
+  description: 'startWith callbags sources (or any)',
+  params: [
+    {id: 'sources', type: 'rx[]', as: 'array'}
+  ],
+  impl: (ctx,sources) => jb.callbag.startWith(...sources)
+})
+
+component('rx.var', {
+  type: 'rx',
+  category: 'operator',
+  description: 'define an immutable variable that can be used later in the pipe',
+  params: [
+    {id: 'name', as: 'string', dynamic: true, mandatory: true, description: 'if empty, does nothing'},
+    {id: 'value', dynamic: true, defaultValue: '%%', mandatory: true}
+  ],
+  impl: If('%$name%', (ctx,{},{name,value}) => source => (start, sink) => {
+      if (start != 0) return 
+      return source(0, function Var(t, d) {
+        const vars = t == 1 && d && {...d.vars, [name()]: value(d)}
+        t == 1 && d && ctx.cmpCtx.dataObj(d.data,vars)
+        sink(t, t === 1 ? d && {data: d.data, vars } : d)
+      })
+    })
+})
+
+component('rx.resource', {
+  type: 'rx',
+  category: 'operator',
+  description: 'define a static mutable variable that can be used later in the pipe',
+  params: [
+    {id: 'name', as: 'string', dynamic: true, mandatory: true, description: 'if empty, does nothing'},
+    {id: 'value', dynamic: true, mandatory: true}
+  ],
+  impl: If('%$name%', (ctx,{},{name,value}) => source => (start, sink) => {
+    if (start != 0) return
+    let val, calculated
+    return source(0, function Var(t, d) {
+      val = calculated ? val : value()
+      calculated = true
+      sink(t, t === 1 ? d && {data: d.data, vars: {...d.vars, [name()]: val}} : d)
+    })
+  })
+})
+
+component('rx.reduce', {
+  type: 'rx',
+  category: 'operator',
+  description: 'incrementally aggregates/accumulates data in a variable, e.g. count, concat, max, etc',
+  params: [
+    {id: 'varName', as: 'string', mandatory: true, description: 'the result is accumulated in this var', templateValue: 'acc'},
+    {id: 'initialValue', dynamic: true, description: 'receives first value as input', mandatory: true},
+    {id: 'value', dynamic: true, defaultValue: '%%', description: 'the accumulated value use %$acc%,%% %$prev%', mandatory: true},
+    {id: 'avoidFirst', as: 'boolean', description: 'used for join with separators, initialValue uses the first value without adding the separtor', type: 'boolean'}
+  ],
+  impl: (ctx,varName,initialValue,value,avoidFirst) => source => (start, sink) => {
+    if (start !== 0) return
+    let acc, prev, first = true
+    source(0, function reduce(t, d) {
+      if (t == 1) {
+        if (first) {
+          acc = initialValue(d)
+          first = false
+          if (!avoidFirst)
+            acc = value({data: d.data, vars: {...d.vars, [varName]: acc}})
+        } else {
+          acc = value({data: d.data, vars: {...d.vars, prev, [varName]: acc}})
+        }
+        sink(t, acc == null ? d : {data: d.data, vars: {...d.vars, [varName]: acc}})
+        prev = d.data
+      } else {
+        sink(t, d)
+      }
+    })
+  }
+})
+
+component('rx.count', {
+  params: [
+    {id: 'varName', as: 'string', mandatory: true, defaultValue: 'count'}
+  ],
+  impl: rx.reduce('%$varName%', 0, { value: (ctx,{},{varName}) => ctx.vars[varName]+1 })
+})
+
+component('rx.join', {
+  params: [
+    {id: 'varName', as: 'string', mandatory: true, defaultValue: 'join'},
+    {id: 'separator', as: 'string', defaultValue: ','}
+  ],
+  impl: rx.reduce('%$varName%', '%%', {
+    value: (ctx,{},{varName,separator}) => [ctx.vars[varName],ctx.data].join(separator),
+    avoidFirst: true
+  })
+})
+
+component('rx.max', {
+  params: [
+    {id: 'varName', as: 'string', mandatory: true, defaultValue: 'max'},
+    {id: 'value', dynamic: true, defaultValue: '%%'}
+  ],
+  impl: rx.reduce('%$varName%', -Infinity, {
+    value: (ctx,{},{varName,value}) => Math.max(ctx.vars[varName],value(ctx))
+  })
+})
+
+component('rx.do', {
+  type: 'rx',
+  category: 'operator',
+  params: [
+    {id: 'action', type: 'action', dynamic: true, mandatory: true}
+  ],
+  impl: (ctx,action) => jb.callbag.Do(ctx2 => action(ctx2))
+})
+
+component('rx.doPromise', {
+  type: 'rx',
+  category: 'operator',
+  params: [
+    {id: 'action', type: 'action', dynamic: true, mandatory: true}
+  ],
+  impl: (ctx,action) => jb.callbag.doPromise(ctx2 => action(ctx2))
+})
+
+component('rx.map', {
+  type: 'rx',
+  category: 'operator',
+  params: [
+    {id: 'func', dynamic: true, mandatory: true}
+  ],
+  impl: (ctx,func) => jb.callbag.map(jb.utils.addDebugInfo(ctx2 => ctx.dataObj(func(ctx2), ctx2.vars || {},ctx2.data),ctx))
+})
+
+component('rx.mapPromise', {
+  type: 'rx',
+  category: 'operator',
+  params: [
+    {id: 'func', type: 'data', moreTypes: 'action<>', dynamic: true, mandatory: true}
+  ],
+  impl: (ctx,func) => jb.callbag.mapPromise(ctx2 => Promise.resolve(func(ctx2)).then(data => ctx.dataObj(data, ctx2.vars || {}, ctx2.data))
+    .catch(err => ({vars: {...ctx2.vars, err }, data: err})) )
+})
+
+component('rx.filter', {
+  type: 'rx',
+  category: 'filter',
+  params: [
+    {id: 'filter', type: 'boolean', dynamic: true, mandatory: true}
+  ],
+  impl: (ctx,filter) => jb.callbag.filter(jb.utils.addDebugInfo(ctx2 => filter(ctx2),ctx))
+})
+
+component('rx.flatMap', {
+  type: 'rx',
+  category: 'operator',
+  description: 'match inputs the callbags or promises',
+  params: [
+    {id: 'source', type: 'rx', category: 'source', dynamic: true, mandatory: true, description: 'map each input to source callbag'}
+  ],
+  impl: (ctx,sourceGenerator) => source => (start, sink) => {
+    if (start !== 0) return
+    let sourceTalkback, innerSources = [], sourceEnded
+
+    source(0, function flatMap(t, d) {
+      if (t === 0) 
+        sourceTalkback = d
+      if (t === 1 && d != null)
+        createInnerSrc(d)
+      if (t === 2) {
+          sourceEnded = true
+          stopOrContinue(d)
+      }
+    })
+
+    sink(0, function flatMap(t,d) {
+      if (t == 1 && d == null || t == 2) {
+        sourceTalkback && sourceTalkback(t,d)
+        innerSources.forEach(src=>src.talkback && src.talkback(t,d))
+      }
+    })
+
+    function createInnerSrc(d) {
+      const newSrc = sourceGenerator(ctx.setData(d.data).setVars(d.vars))
+      innerSources.push(newSrc)
+      newSrc(0, function flatMap(t,d) {
+        if (t == 0) newSrc.talkback = d
+        if (t == 1) sink(t,d)
+        if (t != 2 && newSrc.talkback) newSrc.talkback(1)
+        if (t == 2) {
+          innerSources.splice(innerSources.indexOf(newSrc),1)
+          stopOrContinue(d)
+        }
+      })
+    }
+
+    function stopOrContinue(d) {
+      if (sourceEnded && innerSources.length == 0)
+        sink(2,d)
+    }
+  }
+})
+
+component('rx.flatMapArrays', {
+  type: 'rx',
+  category: 'operator',
+  description: 'match inputs to data arrays',
+  params: [
+    {id: 'func', dynamic: true, defaultValue: '%%', description: 'should return array, items will be passed one by one'}
+  ],
+  impl: rx.flatMap(source.data(call('func')))
+})
+
+component('rx.concatMap', {
+  type: 'rx',
+  category: 'operator,combine',
+  params: [
+    {id: 'func', type: 'rx', dynamic: true, mandatory: true, description: 'keeps the order of the results, can return array, promise or callbag'},
+    {id: 'combineResultWithInput', dynamic: true, description: 'combines %$input% with the inner result %%'}
+  ],
+  impl: (ctx,func,combine) => combine.profile ? jb.callbag.concatMap(ctx2 => func(ctx2), (input,{data}) => combine({data,vars: {...input.vars, input: input.data} }))
+    : jb.callbag.concatMap(ctx2 => func(ctx2))
+})
+
+component('rx.distinctUntilChanged', {
+  type: 'rx',
+  description: 'filters adjacent items in stream',
+  category: 'filter',
+  params: [
+    {id: 'equalsFunc', dynamic: true, mandatory: true, defaultValue: ({data},{prev}) => data === prev, description: 'e.g. %% == %$prev%'}
+  ],
+  impl: (ctx,equalsFunc) => jb.callbag.distinctUntilChanged((prev,cur) => equalsFunc(ctx.setData(cur.data).setVar('prev',prev.data)), ctx)
+})
+
+component('rx.distinct', {
+  type: 'rx',
+  description: 'filters unique values',
+  category: 'filter',
+  params: [
+    {id: 'key', as: 'string', dynamic: true, defaultValue: '%%'}
+  ],
+  impl: (ctx,keyFunc) => jb.callbag.distinct(jb.utils.addDebugInfo(ctx2 => keyFunc(ctx2),ctx))
+})
+
+component('rx.catchError', {
+  type: 'rx',
+  category: 'error',
+  impl: ctx => jb.callbag.catchError(err => ctx.dataObj(err))
+})
+
+component('rx.timeoutLimit', {
+  type: 'rx',
+  category: 'error',
+  params: [
+    {id: 'timeout', dynamic: true, defaultValue: '3000', description: 'can be dynamic'},
+    {id: 'error', dynamic: true, defaultValue: 'timeout'}
+  ],
+  impl: (ctx,timeout,error) => jb.callbag.timeoutLimit(timeout,error)
+})
+
+component('rx.throwError', {
+  type: 'rx',
+  category: 'error',
+  params: [
+    {id: 'condition', as: 'boolean', dynamic: true, mandatory: true, type: 'boolean'},
+    {id: 'error', mandatory: true}
+  ],
+  impl: (ctx,condition,error) => jb.callbag.throwError(ctx2=>condition(ctx2), error)
+})
+
+component('rx.debounceTime', {
+  type: 'rx',
+  description: 'waits for a cooldown period, them emits the last arrived',
+  category: 'operator',
+  params: [
+    {id: 'cooldownPeriod', dynamic: true, description: 'can be dynamic'},
+    {id: 'immediate', as: 'boolean', description: 'emits the first event immediately, default is true', type: 'boolean'}
+  ],
+  impl: (ctx,cooldownPeriod,immediate) => jb.callbag.debounceTime(cooldownPeriod,immediate)
+})
+
+component('rx.throttleTime', {
+  type: 'rx',
+  description: 'enforces a cooldown period. Any data that arrives during the quiet time is ignored',
+  category: 'operator',
+  params: [
+    {id: 'cooldownPeriod', dynamic: true, description: 'can be dynamic'},
+    {id: 'emitLast', as: 'boolean', description: 'emits the last event arrived at the end of the cooldown, default is true', type: 'boolean'}
+  ],
+  impl: (ctx,cooldownPeriod,emitLast) => jb.callbag.throttleTime(cooldownPeriod,emitLast)
+})
+
+component('rx.delay', {
+  type: 'rx',
+  category: 'operator',
+  params: [
+    {id: 'time', dynamic: true, description: 'can be dynamic'}
+  ],
+  impl: (ctx,time) => jb.callbag.delay(time)
+})
+
+component('rx.replay', {
+  type: 'rx',
+  description: 'stores messages and replay them for later subscription',
+  params: [
+    {id: 'itemsToKeep', as: 'number', description: 'empty for unlimited'}
+  ],
+  impl: (ctx,keep) => jb.callbag.replay(keep)
+})
+
+component('rx.takeUntil', {
+  type: 'rx',
+  description: 'closes the stream when events comes from notifier',
+  category: 'terminate',
+  params: [
+    {id: 'notifier', type: 'rx', description: 'can be also promise or any other'}
+  ],
+  impl: (ctx,notifier) => jb.callbag.takeUntil(notifier)
+})
+
+component('rx.take', {
+  type: 'rx',
+  description: 'closes the stream after taking some items',
+  category: 'terminate',
+  params: [
+    {id: 'count', as: 'number', dynamic: true, mandatory: true}
+  ],
+  impl: (ctx,count) => jb.callbag.take(count(),ctx)
+})
+
+component('rx.takeWhile', {
+  type: 'rx',
+  description: 'closes the stream on condition',
+  category: 'terminate',
+  params: [
+    {id: 'whileCondition', as: 'boolean', dynamic: true, mandatory: true, type: 'boolean'},
+    {id: 'passLastEvent', as: 'boolean', type: 'boolean', byName: true}
+  ],
+  impl: (ctx,whileCondition,passLastEvent) => jb.callbag.takeWhile(ctx => whileCondition(ctx), passLastEvent)
+})
+
+component('rx.toArray', {
+  type: 'rx',
+  category: 'operator',
+  description: 'wait for all and returns next item as array',
+  impl: ctx => source => jb.callbag.pipe(source, jb.callbag.toArray(), jb.callbag.map(arr=> ctx.dataObj(arr.map(x=>x.data))))
+})
+
+component('rx.last', {
+  type: 'rx',
+  category: 'filter',
+  impl: () => jb.callbag.last()
+})
+
+component('rx.skip', {
+  type: 'rx',
+  category: 'filter',
+  params: [
+    {id: 'count', as: 'number', dynamic: true}
+  ],
+  impl: (ctx,count) => jb.callbag.skip(count())
+})
+
+component('rx.subscribe', {
+  type: 'rx',
+  description: 'forEach action for all items',
+  category: 'sink',
+  params: [
+    {id: 'next', type: 'action', dynamic: true, mandatory: true},
+    {id: 'error', type: 'action', dynamic: true},
+    {id: 'complete', type: 'action', dynamic: true}
+  ],
+  impl: (ctx,next, error, complete) => jb.callbag.subscribe(ctx2 => next(ctx2), ctx2 => error(ctx2), () => complete())
+})
+
+component('sink.action', {
+  type: 'rx',
+  category: 'sink',
+  description: 'subscribe',
+  params: [
+    {id: 'action', type: 'action', dynamic: true, mandatory: true}
+  ],
+  impl: (ctx,action) => jb.callbag.subscribe(ctx2 => { ctx; return action(ctx2) })
+})
+
+component('sink.data', {
+  type: 'rx',
+  params: [
+    {id: 'Data', as: 'ref', dynamic: true, mandatory: true}
+  ],
+  impl: sink.action(writeValue('%$Data()%', '%%'))
+})
+
+component('rx.log', {
+  description: 'jb.log flow data, used for debug',
+  params: [
+    {id: 'name', as: 'string', dynamic: true, description: 'log names'},
+    {id: 'extra', as: 'single', dynamic: true, description: 'object. more properties to log'}
+  ],
+  impl: rx.do((ctx,vars,{name,extra}) => jb.log(name(ctx),{data: ctx.data,vars,...extra(ctx), ctx: ctx.cmpCtx}))
+})
+
+component('rx.clog', {
+  description: 'console.log flow data, used for debug',
+  params: [
+    {id: 'name', as: 'string'}
+  ],
+  impl: rx.do((x,{},{name}) => console.log(name,x))
+})
+
+component('rx.sniffer', {
+  description: 'console.log data & control',
+  params: [
+    {id: 'name', as: 'string'}
+  ],
+  impl: (ctx,name) => source => jb.callbag.sniffer(source, {next: x => console.log(name,x)})
+})
+
+// ********** subject 
+component('rx.subject', {
+  type: 'data',
+  description: 'callbag "variable" that you can write or listen to',
+  category: 'variable',
+  params: [
+    {id: 'id', as: 'string', description: 'can be used for logging'},
+    {id: 'replay', as: 'boolean', description: 'keep pushed items for late subscription', type: 'boolean'},
+    {id: 'itemsToKeep', as: 'number', description: 'relevant for replay, empty for unlimited'}
+  ],
+  impl: (ctx,id, replay,itemsToKeep) => {
+      const trigger = jb.callbag.subject(id)
+      const source = replay ? jb.callbag.replay(itemsToKeep)(trigger): trigger
+      source.ctx = trigger.ctx = ctx
+      return { trigger, source } 
+    }
+})
+
+component('sink.subjectNext', {
+  type: 'rx',
+  params: [
+    {id: 'subject', mandatory: true}
+  ],
+  impl: (ctx,subject) => jb.callbag.subscribe(e => subject.trigger.next(e))
+})
+
+component('source.subject', {
+  type: 'rx',
+  params: [
+    {id: 'subject', mandatory: true}
+  ],
+  impl: (ctx,subj) => subj.source
+})
+
+component('action.subjectNext', {
+  type: 'action',
+  params: [
+    {id: 'subject', mandatory: true},
+    {id: 'Data', dynamic: true, defaultValue: '%%'}
+  ],
+  impl: (ctx,subject,data) => subject.trigger.next(ctx.dataObj(data(ctx)))
+})
+
+component('action.subjectComplete', {
+  type: 'action',
+  params: [
+    {id: 'subject', mandatory: true}
+  ],
+  impl: (ctx,subject) => subject.trigger.complete()
+})
+
+component('action.subjectError', {
+  type: 'action',
+  params: [
+    {id: 'subject', mandatory: true},
+    {id: 'error', dynamic: true, mandatory: true}
+  ],
+  impl: (ctx,subject,error) => subject.trigger.error(error())
+})
+
+// ********** queue 
+component('rx.queue', {
+  type: 'data',
+  description: 'message queue',
+  category: 'variable',
+  params: [
+    {id: 'items', as: 'array'}
+  ],
+  impl: (ctx,items) => ({ items: items.slice(0), subject: jb.callbag.subject(), mkmk: 5 })
+})
+
+component('source.queue', {
+  type: 'rx',
+  params: [
+    {id: 'queue', mandatory: true}
+  ],
+  impl: source.merge(source.data('%$queue/items%'), '%$queue/subject%')
+})
+
+component('action.addToQueue', {
+  type: 'action',
+  params: [
+    {id: 'queue', mandatory: true},
+    {id: 'item', dynamic: true, defaultValue: '%%'}
+  ],
+  impl: (ctx,queue,item) => {
+    const toAdd = item(ctx)
+    queue.items.push(toAdd)
+    queue.subject.next(ctx.dataObj(toAdd)) 
+  }
+})
+
+component('action.removeFromQueue', {
+  type: 'action',
+  params: [
+    {id: 'queue', mandatory: true},
+    {id: 'item', dynamic: true, defaultValue: '%%'}
+  ],
+  impl: (ctx,queue,item) => {
+		const index = queue.items.indexOf(item(ctx))
+		if (index != -1)
+      queue.items.splice(index,1)
+  }
+})
+
+});
+
 jbLoadPackedFile({lineInPackage:7588, jb, noProxies: false, path: '/plugins/remote/jbm/jbm-utils.js',fileDsl: '', pluginId: 'remote-jbm' }, 
             function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
 /* jbm - a virtual jBart machine - can be implemented in same frame/sub frames/workers over the network
@@ -7907,7 +7907,44 @@ extension('jbm', 'main', {
 
 });
 
-jbLoadPackedFile({lineInPackage:7912, jb, noProxies: false, path: '/plugins/remote/jbm/jbm.js',fileDsl: '', pluginId: 'remote-jbm' }, 
+jbLoadPackedFile({lineInPackage:7912, jb, noProxies: false, path: '/plugins/remote/jbm/remote-cmd.js',fileDsl: '', pluginId: 'remote-jbm' }, 
+            function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
+component('remote.cmd', {
+  type: 'data<>',
+  moreTypes: 'action<>',
+  description: 'calc a script with jb.js',
+  params: [
+    {id: 'main', type: 'data<>', dynamic: true, moreTypes: 'action<>', description: 'e.g pipeline("hello","%% -- %$v1%")'},
+    {id: 'wrap', as: 'string', description: 'e.g prune(MAIN)'},
+    {id: 'context', description: 'e.g {v1: "xx", param1: prof1("yy") }'},
+    {id: 'sourceCode', type: 'source-code<loader>', mandatory: true},
+    {id: 'id', as: 'string', description: 'jb.uri of cmd, default is main'},
+    {id: 'viaHttpServer', as: 'string', defaultValue: 'http://localhost:8082'}
+  ],
+  impl: async (ctx, main, wrap, context, sourceCode, id, viaHttpServer) => {
+        const args = [
+            ['-main', jb.utils.prettyPrint(main.profile, { singleLine: true })],
+            ['-wrap', wrap],
+            ['-uri', id],
+            ['-sourceCode', JSON.stringify(sourceCode)],
+            ...Object.keys(context).map(k => [`%${k}`, context[k]]),
+        ].filter(x => x[1])
+        const body = JSON.stringify(args.map(([k, v]) => `${k}:${v}`))
+        const url = `${viaHttpServer}/?op=jb`
+
+        return jbHost.fetch(url, { method: 'POST', body }).then(r => r.json()).then(x => x.result)
+
+        function serializeContextVal(val) {
+            if (val && typeof val == 'object')
+                return `() => ${JSON.stringify(val)}`
+            return val
+        }
+    }
+})
+
+});
+
+jbLoadPackedFile({lineInPackage:7949, jb, noProxies: false, path: '/plugins/remote/jbm/jbm.js',fileDsl: '', pluginId: 'remote-jbm' }, 
             function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
 pluginDsl('jbm')
 using('loader,tree-shake')
@@ -8222,7 +8259,7 @@ component('nodeOnly', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:8227, jb, noProxies: false, path: '/plugins/remote/jbm/node-worker.js',fileDsl: '', pluginId: 'remote-jbm' }, 
+jbLoadPackedFile({lineInPackage:8264, jb, noProxies: false, path: '/plugins/remote/jbm/node-worker.js',fileDsl: '', pluginId: 'remote-jbm' }, 
             function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
 
 extension('webSocket', 'client', {
@@ -8526,43 +8563,6 @@ parentPort.postMessage({ $: 'workerReady' })
 //   }
 // })
 
-
-});
-
-jbLoadPackedFile({lineInPackage:8534, jb, noProxies: false, path: '/plugins/remote/jbm/remote-cmd.js',fileDsl: '', pluginId: 'remote-jbm' }, 
-            function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,merge,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
-component('remote.cmd', {
-  type: 'data<>',
-  moreTypes: 'action<>',
-  description: 'calc a script with jb.js',
-  params: [
-    {id: 'main', type: 'data<>', dynamic: true, moreTypes: 'action<>', description: 'e.g pipeline("hello","%% -- %$v1%")'},
-    {id: 'wrap', as: 'string', description: 'e.g prune(MAIN)'},
-    {id: 'context', description: 'e.g {v1: "xx", param1: prof1("yy") }'},
-    {id: 'sourceCode', type: 'source-code<loader>', mandatory: true},
-    {id: 'id', as: 'string', description: 'jb.uri of cmd, default is main'},
-    {id: 'viaHttpServer', as: 'string', defaultValue: 'http://localhost:8082'}
-  ],
-  impl: async (ctx, main, wrap, context, sourceCode, id, viaHttpServer) => {
-        const args = [
-            ['-main', jb.utils.prettyPrint(main.profile, { singleLine: true })],
-            ['-wrap', wrap],
-            ['-uri', id],
-            ['-sourceCode', JSON.stringify(sourceCode)],
-            ...Object.keys(context).map(k => [`%${k}`, context[k]]),
-        ].filter(x => x[1])
-        const body = JSON.stringify(args.map(([k, v]) => `${k}:${v}`))
-        const url = `${viaHttpServer}/?op=jb`
-
-        return jbHost.fetch(url, { method: 'POST', body }).then(r => r.json()).then(x => x.result)
-
-        function serializeContextVal(val) {
-            if (val && typeof val == 'object')
-                return `() => ${JSON.stringify(val)}`
-            return val
-        }
-    }
-})
 
 });
 
@@ -9824,7 +9824,206 @@ component('card', {
 
 });
 
-jbLoadPackedFile({lineInPackage:9829, jb, noProxies: false, path: '/plugins/zui/zui-itemlist.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:9829, jb, noProxies: false, path: '/plugins/zui/zui-features.js',fileDsl: 'zui', pluginId: 'zui' }, 
+            function({jb,require,prop,init,props,variable,variableForChildren,features,method,If,html,htmlOfItem,css,zoomingCss,frontEnd,source,group,allOrNone,firstToFit,children,vertical,horizontal,iconBox,card,itemlist,grid,spiral,zoomingGridElem,xyByProps,xyByIndex,groupByScatter,zoomingSize,fixed,fill,session,zui,model,o1,o1Mini,gpt35,itemColor,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,app,widgetFE,llmViaApi,system,assistant,user,llm,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,nameOfCity,phones,dataTest,tests,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
+dsl('zui')
+
+component('prop', {
+  type: 'feature',
+  description: 'define a variable to be used in the rendering calculation process',
+  params: [
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'value', mandatory: true, dynamic: true, description: 'when empty, value is taken from model'},
+    {id: 'priority', as: 'number', dynamic: true, defaultValue: 1, description: 'if same prop was defined elsewhere decides who will override. range 1-1000, can use the $state variable'},
+    {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'},
+    {id: 'defaultValue'}
+  ],
+  impl: ctx => ({calcProp: {... ctx.params, index: jb.zui.fCounter++}, srcPath: ctx.path})
+})
+
+component('init', {
+  type: 'feature',
+  category: 'lifecycle',
+  description: 'activated after variables and before calc properties',
+  params: [
+    {id: 'action', type: 'action', mandatory: true, dynamic: true},
+    {id: 'phase', as: 'number', defaultValue: 10}
+  ],
+  impl: ctx => ({ init: { ... ctx.params, index: jb.zui.fCounter++ }, srcPath: ctx.path})
+})
+
+component('props', {
+  type: 'feature',
+  description: 'define variables to be used in the rendering calculation process',
+  params: [
+    {id: 'props', as: 'object', mandatory: true, description: 'props as object', dynamic: true},
+    {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'}
+  ],
+  impl: (ctx,propsF,phase) => ({ calcProp: {id: '$props', value: ctx => propsF(ctx), phase, index: jb.zui.fCounter++ } , srcPath: ctx.path})
+})
+
+component('variable', {
+  type: 'feature',
+  params: [
+    {id: 'name', as: 'string', mandatory: true},
+    {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
+    {id: 'phase', as: 'number', defaultValue: 10 }
+  ],
+  impl: (ctx, name, value, phase) => ({ extendCtx: {setVar: ctx => ctx.setVar(name,jb.val(value(ctx))), phase, index: jb.zui.fCounter++ }, srcPath: ctx.path})
+})
+
+component('variableForChildren', {
+  type: 'feature',
+  params: [
+    {id: 'name', as: 'string', mandatory: true},
+    {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
+    {id: 'phase', as: 'number', defaultValue: 10}
+  ],
+  impl: (ctx, name, value, phase) => ({ extendChildrenCtx: {setVar: ctx => ctx.setVar(name,jb.val(value(ctx))), phase, index: jb.zui.fCounter++ }, srcPath: ctx.path})
+})
+
+component('features', {
+  type: 'feature',
+  moreTypes: 'style',
+  description: 'list of features, auto flattens',
+  params: [
+    {id: 'features', type: 'feature[]', as: 'array', typeAsParent: t=>t.replace(/style/,'feature'), composite: true}
+  ],
+  impl: (ctx,features) => features.flatMap(x=> Array.isArray(x) ? x: [x])
+})
+
+component('method', {
+  type: 'feature',
+  description: 'define backend event handler',
+  params: [
+    {id: 'id', as: 'string', mandatory: true, description: 'if using the pattern onXXHandler, or onKeyXXHandler automaticaly binds to UI event XX, assuming on-XX:true is defined at the template'},
+    {id: 'action', type: 'action', mandatory: true, dynamic: true}
+  ],
+  impl: (ctx,id) => ({method: {id, ctx}, srcPath: ctx.path})
+})
+
+component('If', {
+  type: 'feature',
+  description: 'conditional feature, define feature if then else condition',
+  macroByValue: true,
+  params: [
+    {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
+    {id: 'then', type: 'feature', mandatory: true, dynamic: true, composite: true},
+    {id: 'else', type: 'feature', dynamic: true}
+  ],
+  impl: (ctx,cond,_then,_else) =>	cond ? _then() : _else()
+})
+
+component('html', {
+  type: 'feature',
+  params: [
+    {id: 'html', mandatory: true, dynamic: true, as: 'string', newLinesInCode: true}
+  ],
+  impl: (ctx,html) => ({html})
+})
+
+component('htmlOfItem', {
+  type: 'feature',
+  params: [
+    {id: 'html', mandatory: true, dynamic: true, as: 'string', newLinesInCode: true}
+  ],
+  impl: (ctx,htmlOfItem) => ({htmlOfItem})
+})
+
+component('css', {
+  type: 'feature',
+  params: [
+    {id: 'css', mandatory: true, dynamic: true, as: 'array', newLinesInCode: true}
+  ],
+  impl: (ctx,css) => ({css})
+})
+
+component('zoomingCss', {
+  type: 'feature',
+  params: [
+    {id: 'css', mandatory: true, dynamic: true, as: 'array', newLinesInCode: true}
+  ],
+  impl: (ctx,zoomingCss) => ({ frontEndMethod: { method: 'zoomingCss', path: ctx.path, action: zoomingCss.profile} })
+})
+
+component('frontEnd.init', {
+  type: 'feature',
+  category: 'front-end',
+  description: 'initializes the front end, mount, component did update. runs after props',
+  params: [
+    {id: 'action', type: 'action<>', mandatory: true, dynamic: true},
+    {id: 'phase', as: 'number', defaultValue: 10},
+  ],
+  impl: (ctx,action,phase) => ({ frontEndMethod: { method: 'init', path: ctx.path, action: action.profile, phase} })
+})
+
+component('frontEnd.prop', {
+  type: 'feature',
+  category: 'front-end',
+  description: 'assign front end property (calculated using the limited FE context). runs before init',
+  params: [
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'value', mandatory: true, dynamic: true}
+  ],
+  impl: (ctx,id,value) => ({ frontEndMethod: { method: 'calcProps', path: ctx.path, _prop: id,
+      action: (_ctx,{cmp}) => cmp[id] = value(_ctx) } })
+})
+
+component('frontEnd.var', {
+  type: 'feature',
+  description: 'calculate in the BE and pass to frontEnd',
+  params: [
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'value', mandatory: true, dynamic: true}
+  ],
+  impl: ctx => ({ frontEndVar: ctx.params , srcPath: ctx.path})
+})
+
+component('frontEnd.method', {
+  type: 'feature',
+  category: 'front-end',
+  description: 'register as front end method, the context is limited to cmp & state. can be run with cmp.runFEMetod(id,data,vars)',
+  params: [
+    {id: 'method', as: 'string'},
+    {id: 'action', type: 'action<>', mandatory: true, dynamic: true},
+    {id: 'phase', as: 'number', defaultValue: 10, description: 'init methods can register many times'},
+  ],
+  impl: (ctx,method,action,phase) => ({ frontEndMethod: { method, path: ctx.path, action: action.profile, phase} })
+})
+
+component('frontEnd.flow', {
+  type: 'feature',
+  category: 'front-end',
+  description: 'rx flow at front end',
+  params: [
+    {id: 'elems', type: 'rx<>[]', as: 'array', dynamic: true, mandatory: true, templateValue: []},
+    {id: 'phase', as: 'number', defaultValue: 20},
+  ],
+  impl: (ctx, elems, phase) => ({ frontEndMethod: { 
+      method: 'init', path: ctx.path, _flow: elems.profile, phase,
+      action: { $: 'action<>rx.pipe', elems: _ctx => elems(_ctx) }
+    }})
+})
+
+component('source.frontEndEvent', {
+  type: 'rx<>',
+  category: 'source',
+  description: 'assumes cmp in context',
+  params: [
+    {id: 'event', as: 'string', options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll'},
+    {id: 'selector', as: 'string', description: 'optional including the elem', byName: true}
+  ],
+  impl: rx.pipe(
+    source.event('%$event%', '%$cmp.base%', { selector: '%$selector%' }),
+    rx.takeUntil('%$cmp.destroyed%')
+  )
+})
+
+
+
+});
+
+jbLoadPackedFile({lineInPackage:10028, jb, noProxies: false, path: '/plugins/zui/zui-itemlist.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,prop,init,props,variable,variableForChildren,features,method,If,html,htmlOfItem,css,zoomingCss,frontEnd,source,group,allOrNone,firstToFit,children,vertical,horizontal,iconBox,card,itemlist,grid,spiral,zoomingGridElem,xyByProps,xyByIndex,groupByScatter,zoomingSize,fixed,fill,session,zui,model,o1,o1Mini,gpt35,itemColor,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,app,widgetFE,llmViaApi,system,assistant,user,llm,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,nameOfCity,phones,dataTest,tests,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 
@@ -9943,7 +10142,7 @@ component('zoomingGridElem', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:9948, jb, noProxies: false, path: '/plugins/zui/zui-items-layout.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:10147, jb, noProxies: false, path: '/plugins/zui/zui-items-layout.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,prop,init,props,variable,variableForChildren,features,method,If,html,htmlOfItem,css,zoomingCss,frontEnd,source,group,allOrNone,firstToFit,children,vertical,horizontal,iconBox,card,itemlist,grid,spiral,zoomingGridElem,xyByProps,xyByIndex,groupByScatter,zoomingSize,fixed,fill,session,zui,model,o1,o1Mini,gpt35,itemColor,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,app,widgetFE,llmViaApi,system,assistant,user,llm,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,nameOfCity,phones,dataTest,tests,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 
@@ -10218,205 +10417,6 @@ extension('zui','gridItemsLayout', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:10223, jb, noProxies: false, path: '/plugins/zui/zui-features.js',fileDsl: 'zui', pluginId: 'zui' }, 
-            function({jb,require,prop,init,props,variable,variableForChildren,features,method,If,html,htmlOfItem,css,zoomingCss,frontEnd,source,group,allOrNone,firstToFit,children,vertical,horizontal,iconBox,card,itemlist,grid,spiral,zoomingGridElem,xyByProps,xyByIndex,groupByScatter,zoomingSize,fixed,fill,session,zui,model,o1,o1Mini,gpt35,itemColor,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,app,widgetFE,llmViaApi,system,assistant,user,llm,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,nameOfCity,phones,dataTest,tests,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
-dsl('zui')
-
-component('prop', {
-  type: 'feature',
-  description: 'define a variable to be used in the rendering calculation process',
-  params: [
-    {id: 'id', as: 'string', mandatory: true},
-    {id: 'value', mandatory: true, dynamic: true, description: 'when empty, value is taken from model'},
-    {id: 'priority', as: 'number', dynamic: true, defaultValue: 1, description: 'if same prop was defined elsewhere decides who will override. range 1-1000, can use the $state variable'},
-    {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'},
-    {id: 'defaultValue'}
-  ],
-  impl: ctx => ({calcProp: {... ctx.params, index: jb.zui.fCounter++}, srcPath: ctx.path})
-})
-
-component('init', {
-  type: 'feature',
-  category: 'lifecycle',
-  description: 'activated after variables and before calc properties',
-  params: [
-    {id: 'action', type: 'action', mandatory: true, dynamic: true},
-    {id: 'phase', as: 'number', defaultValue: 10}
-  ],
-  impl: ctx => ({ init: { ... ctx.params, index: jb.zui.fCounter++ }, srcPath: ctx.path})
-})
-
-component('props', {
-  type: 'feature',
-  description: 'define variables to be used in the rendering calculation process',
-  params: [
-    {id: 'props', as: 'object', mandatory: true, description: 'props as object', dynamic: true},
-    {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'}
-  ],
-  impl: (ctx,propsF,phase) => ({ calcProp: {id: '$props', value: ctx => propsF(ctx), phase, index: jb.zui.fCounter++ } , srcPath: ctx.path})
-})
-
-component('variable', {
-  type: 'feature',
-  params: [
-    {id: 'name', as: 'string', mandatory: true},
-    {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
-    {id: 'phase', as: 'number', defaultValue: 10 }
-  ],
-  impl: (ctx, name, value, phase) => ({ extendCtx: {setVar: ctx => ctx.setVar(name,jb.val(value(ctx))), phase, index: jb.zui.fCounter++ }, srcPath: ctx.path})
-})
-
-component('variableForChildren', {
-  type: 'feature',
-  params: [
-    {id: 'name', as: 'string', mandatory: true},
-    {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
-    {id: 'phase', as: 'number', defaultValue: 10}
-  ],
-  impl: (ctx, name, value, phase) => ({ extendChildrenCtx: {setVar: ctx => ctx.setVar(name,jb.val(value(ctx))), phase, index: jb.zui.fCounter++ }, srcPath: ctx.path})
-})
-
-component('features', {
-  type: 'feature',
-  moreTypes: 'style',
-  description: 'list of features, auto flattens',
-  params: [
-    {id: 'features', type: 'feature[]', as: 'array', typeAsParent: t=>t.replace(/style/,'feature'), composite: true}
-  ],
-  impl: (ctx,features) => features.flatMap(x=> Array.isArray(x) ? x: [x])
-})
-
-component('method', {
-  type: 'feature',
-  description: 'define backend event handler',
-  params: [
-    {id: 'id', as: 'string', mandatory: true, description: 'if using the pattern onXXHandler, or onKeyXXHandler automaticaly binds to UI event XX, assuming on-XX:true is defined at the template'},
-    {id: 'action', type: 'action', mandatory: true, dynamic: true}
-  ],
-  impl: (ctx,id) => ({method: {id, ctx}, srcPath: ctx.path})
-})
-
-component('If', {
-  type: 'feature',
-  description: 'conditional feature, define feature if then else condition',
-  macroByValue: true,
-  params: [
-    {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
-    {id: 'then', type: 'feature', mandatory: true, dynamic: true, composite: true},
-    {id: 'else', type: 'feature', dynamic: true}
-  ],
-  impl: (ctx,cond,_then,_else) =>	cond ? _then() : _else()
-})
-
-component('html', {
-  type: 'feature',
-  params: [
-    {id: 'html', mandatory: true, dynamic: true, as: 'string', newLinesInCode: true}
-  ],
-  impl: (ctx,html) => ({html})
-})
-
-component('htmlOfItem', {
-  type: 'feature',
-  params: [
-    {id: 'html', mandatory: true, dynamic: true, as: 'string', newLinesInCode: true}
-  ],
-  impl: (ctx,htmlOfItem) => ({htmlOfItem})
-})
-
-component('css', {
-  type: 'feature',
-  params: [
-    {id: 'css', mandatory: true, dynamic: true, as: 'array', newLinesInCode: true}
-  ],
-  impl: (ctx,css) => ({css})
-})
-
-component('zoomingCss', {
-  type: 'feature',
-  params: [
-    {id: 'css', mandatory: true, dynamic: true, as: 'array', newLinesInCode: true}
-  ],
-  impl: (ctx,zoomingCss) => ({ frontEndMethod: { method: 'zoomingCss', path: ctx.path, action: zoomingCss.profile} })
-})
-
-component('frontEnd.init', {
-  type: 'feature',
-  category: 'front-end',
-  description: 'initializes the front end, mount, component did update. runs after props',
-  params: [
-    {id: 'action', type: 'action<>', mandatory: true, dynamic: true},
-    {id: 'phase', as: 'number', defaultValue: 10},
-  ],
-  impl: (ctx,action,phase) => ({ frontEndMethod: { method: 'init', path: ctx.path, action: action.profile, phase} })
-})
-
-component('frontEnd.prop', {
-  type: 'feature',
-  category: 'front-end',
-  description: 'assign front end property (calculated using the limited FE context). runs before init',
-  params: [
-    {id: 'id', as: 'string', mandatory: true},
-    {id: 'value', mandatory: true, dynamic: true}
-  ],
-  impl: (ctx,id,value) => ({ frontEndMethod: { method: 'calcProps', path: ctx.path, _prop: id,
-      action: (_ctx,{cmp}) => cmp[id] = value(_ctx) } })
-})
-
-component('frontEnd.var', {
-  type: 'feature',
-  description: 'calculate in the BE and pass to frontEnd',
-  params: [
-    {id: 'id', as: 'string', mandatory: true},
-    {id: 'value', mandatory: true, dynamic: true}
-  ],
-  impl: ctx => ({ frontEndVar: ctx.params , srcPath: ctx.path})
-})
-
-component('frontEnd.method', {
-  type: 'feature',
-  category: 'front-end',
-  description: 'register as front end method, the context is limited to cmp & state. can be run with cmp.runFEMetod(id,data,vars)',
-  params: [
-    {id: 'method', as: 'string'},
-    {id: 'action', type: 'action<>', mandatory: true, dynamic: true},
-    {id: 'phase', as: 'number', defaultValue: 10, description: 'init methods can register many times'},
-  ],
-  impl: (ctx,method,action,phase) => ({ frontEndMethod: { method, path: ctx.path, action: action.profile, phase} })
-})
-
-component('frontEnd.flow', {
-  type: 'feature',
-  category: 'front-end',
-  description: 'rx flow at front end',
-  params: [
-    {id: 'elems', type: 'rx<>[]', as: 'array', dynamic: true, mandatory: true, templateValue: []},
-    {id: 'phase', as: 'number', defaultValue: 20},
-  ],
-  impl: (ctx, elems, phase) => ({ frontEndMethod: { 
-      method: 'init', path: ctx.path, _flow: elems.profile, phase,
-      action: { $: 'action<>rx.pipe', elems: _ctx => elems(_ctx) }
-    }})
-})
-
-component('source.frontEndEvent', {
-  type: 'rx<>',
-  category: 'source',
-  description: 'assumes cmp in context',
-  params: [
-    {id: 'event', as: 'string', options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll'},
-    {id: 'selector', as: 'string', description: 'optional including the elem', byName: true}
-  ],
-  impl: rx.pipe(
-    source.event('%$event%', '%$cmp.base%', { selector: '%$selector%' }),
-    rx.takeUntil('%$cmp.destroyed%')
-  )
-})
-
-
-
-});
-
 jbLoadPackedFile({lineInPackage:10422, jb, noProxies: false, path: '/plugins/zui/zui-layout.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,prop,init,props,variable,variableForChildren,features,method,If,html,htmlOfItem,css,zoomingCss,frontEnd,source,group,allOrNone,firstToFit,children,vertical,horizontal,iconBox,card,itemlist,grid,spiral,zoomingGridElem,xyByProps,xyByIndex,groupByScatter,zoomingSize,fixed,fill,session,zui,model,o1,o1Mini,gpt35,itemColor,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,app,widgetFE,llmViaApi,system,assistant,user,llm,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,nameOfCity,phones,dataTest,tests,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
@@ -10667,7 +10667,286 @@ extension('zui','layout', {
 
 });
 
-jbLoadPackedFile({lineInPackage:10672, jb, noProxies: false, path: '/plugins/zui/zui-llm.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:10672, jb, noProxies: false, path: '/plugins/zui/zui-scale.js',fileDsl: 'zui', pluginId: 'zui' }, 
+            function({jb,require,prop,init,props,variable,variableForChildren,features,method,If,html,htmlOfItem,css,zoomingCss,frontEnd,source,group,allOrNone,firstToFit,children,vertical,horizontal,iconBox,card,itemlist,grid,spiral,zoomingGridElem,xyByProps,xyByIndex,groupByScatter,zoomingSize,fixed,fill,session,zui,model,o1,o1Mini,gpt35,itemColor,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,app,widgetFE,llmViaApi,system,assistant,user,llm,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,nameOfCity,phones,dataTest,tests,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
+dsl('zui')
+
+component('itemColor', {
+  type: 'item_color',
+  params: [
+    {id: 'unitScale', mandatory: true, dynamic: true, type: 'unit_scale'},
+    {id: 'colorScale', mandatory: true, type: 'color_scale', defaultValue: distinct10()}
+  ],
+  impl: (ctx,unitScale,colorScale) => ctx => {
+        const index = Math.floor(unitScale(ctx.data) * colorScale.length *0.9999)
+        const color = colorScale[index] ? colorScale[index] : 'white'
+        return Array.isArray(color) ? `rgb(${color.join(',')})` : color
+    }
+})
+
+component('colorByItemValue', {
+  type: 'item_color',
+  params: [
+    {id: 'value', mandatory: true, dynamic: true},
+    {id: 'case', type: 'item_color_case[]'},
+    {id: 'defaultColor', type: 'static_color', defaultValue: [255,255,255]}
+  ],
+  impl: (ctx,valF,cases,defaultColor) => {
+    const casesHash = jb.objFromEntries(cases.map(x=>x.entry))
+    return ctx => {
+      const color = casesHash[valF(ctx)] || defaultColor
+      return Array.isArray(color) ? `rgb(${color.join(',')})` : color
+    }
+  }
+})
+
+component('Case', {
+  type: 'item_color_case',
+  params: [
+    {id: 'val', as: 'string', mandatory: true},
+    {id: 'color', type: 'static_color'}
+  ],
+  impl: (ctx,val,color) => ({entry: [val,color]})
+})
+
+component('borderStyle', {
+  type: 'item_border_style',
+  params: [
+    {id: 'unitScale', mandatory: true, dynamic: true, type: 'unit_scale'},
+    {id: 'borderStyleScale', mandatory: true, type: 'border_style_scale', defaultValue: borderStyleScale3()}
+  ],
+  impl: (ctx,unitScaleF,borderStyleScale) => {
+    const unitScale = unitScaleF()
+    return ctx => {
+            const index = Math.floor(unitScale(ctx.data) * borderStyleScale.length *0.9999)
+            return borderStyleScale[index] ? borderStyleScale[index] : 'solid'
+        }
+    }
+})
+
+component('borderStyleScale3', {
+  type: 'border_style_scale',
+  impl: () => ['solid','dashed','dotted']
+})
+
+component('opacity', {
+  type: 'item_opacity',
+  params: [
+    {id: 'unitScale', mandatory: true, dynamic: true, type: 'unit_scale'},
+    {id: 'opacityScale', mandatory: true, type: 'opacity_scale', defaultValue: opacityScale()}
+  ],
+  impl: (ctx,unitScaleF,opacityScale) => {
+    const unitScale = unitScaleF()
+    return ctx => {
+            const index = Math.floor(unitScale(ctx.data) * opacityScale.length *0.9999)
+            return opacityScale[index] ? opacityScale[index] : 1
+        }
+    }
+})
+
+component('opacityScale', {
+  type: 'opacity_scale',
+  impl: () => [1.0,0.8,0.6,0.4,0.2]
+})
+
+component('symbol', {
+  type: 'item_symbol',
+  params: [
+    {id: 'unitScale', mandatory: true, dynamic: true, type: 'unit_scale'},
+    {id: 'symbolScale', mandatory: true, type: 'symbol_scale'}
+  ],
+  impl: (ctx,unitScaleF,symbolScale) => {
+        const unitScale = unitScaleF()
+        return ctx => {
+            const index = Math.floor(unitScale(ctx.data) * symbolScale.length *0.9999)
+            return symbolScale[index] ? symbolScale[index] : ''
+        }
+    }
+})
+
+component('symbolByItemValue', {
+  type: 'item_symbol',
+  params: [
+    {id: 'value', mandatory: true, dynamic: true},
+    {id: 'case', type: 'item_symbol_case[]'}
+  ],
+  impl: (ctx,valF,cases) => {
+    const casesHash = jb.objFromEntries(cases.map(x=>x.entry))
+    return ctx => casesHash[valF(ctx)] || '❓'
+  }
+})
+
+component('Case', {
+  type: 'item_symbol_case',
+  params: [
+    {id: 'val', as: 'string', mandatory: true},
+    {id: 'symbol', mandatory: true, as: 'string'}
+  ],
+  impl: (ctx,val,symbol) => ({entry: [val,symbol]})
+})
+
+
+
+component('list', {
+  type: 'symbol_scale',
+  params: [
+    {id: 'list', type: 'data<>[]', as: 'array'}
+  ],
+  impl: '%$list%'
+})
+
+component('success3', {
+  type: 'symbol_scale',
+  impl: list('✔️', '➖', '❌')
+})
+
+component('unitScale', {
+  type: 'unit_scale',
+  params: [
+    {id: 'att', as: 'string', defaultValue: 'index' },
+    {id: 'calc', dynamic: true, description: 'optional. When empty, item property with same name is used'},
+  ],
+  impl: (ctx, _att, calc) => {
+    const items = ctx.vars.items || []
+    const att = `fixed_${_att}`
+    items.forEach((item,i) => item[att] = calc.profile ? calc(ctx.setData(item)) : _att == 'index' ? i : +item[_att] )
+    items.sort((i1,i2) => i1[att] - i2[att])
+    const range = [items[0][att] || 0,items.slice(-1)[0][att] || 0]
+    if (range[0] == range[1]) {
+        jb.logError(`zui empty range for ${att}`,{ctx})
+        return () => 0
+    }
+    return item=> ((+item[att] || 0)-range[0])/(range[1]-range[0])
+  }
+})
+
+component('index', {
+    type: 'unit_scale',
+    impl: unitScale('index')
+})
+
+component('severity5', {
+  type: 'color_scale',
+  impl: () => [
+    { from: 0, color: [231, 76, 60], description: 'very bad' }, // Bright red
+    { from: 0.2, color: [230, 126, 34], description: 'bad' },    // Orange
+    { from: 0.4, color: [244, 208, 63], description: 'neutral' }, // Yellow
+    { from: 0.6, color: [169, 223, 191], description: 'good' },   // Light green
+    { from: 0.8, color: [46, 204, 113], description: 'very good' } // Bright green
+  ]
+})
+
+component('good5', {
+  type: 'color_scale',
+  impl: () => [
+    { from: 0, color: [231, 76, 60], description: 'very bad' }, // Bright red
+    { from: 0.2, color: [230, 126, 34], description: 'bad' },    // Orange
+    { from: 0.4, color: [244, 208, 63], description: 'neutral' }, // Yellow
+    { from: 0.6, color: [169, 223, 191], description: 'good' },   // Light green
+    { from: 0.8, color: [46, 204, 113], description: 'very good' } // Bright green
+  ]
+})
+
+component('success5', {
+  type: 'color_scale',
+  impl: () => [
+    { from: 0, color: [192, 57, 43], description: 'failure' },  // Dark red
+    { from: 0.25, color: [211, 84, 0], description: 'partial failure' }, // Dark orange
+    { from: 0.5, color: [244, 208, 63], description: 'neutral' },// Yellow
+    { from: 0.75, color: [40, 180, 99], description: 'success' },// Green
+    { from: 1, color: [29, 131, 72], description: 'full success' } // Dark green
+  ]
+})
+
+component('distinct5', {
+  type: 'color_scale',
+  impl: () => [
+    { from: 0, color: [231, 76, 60] }, // Red
+    { from: 0.2, color: [52, 152, 219] }, // Blue
+    { from: 0.4, color: [46, 204, 113] }, // Green
+    { from: 0.6, color: [241, 196, 15] }, // Yellow
+    { from: 0.8, color: [155, 89, 182] }  // Purple
+  ]
+})
+
+component('distinct10', {
+  type: 'color_scale',
+  impl: () => [
+    { from: 0, color: [231, 76, 60] },  // Red
+    { from: 0.1, color: [52, 152, 219] }, // Blue
+    { from: 0.2, color: [46, 204, 113] }, // Green
+    { from: 0.3, color: [241, 196, 15] }, // Yellow
+    { from: 0.4, color: [155, 89, 182] }, // Purple
+    { from: 0.5, color: [230, 126, 34] }, // Orange
+    { from: 0.6, color: [26, 188, 156] }, // Teal
+    { from: 0.7, color: [52, 73, 94] }, // Dark Gray
+    { from: 0.8, color: [189, 195, 199] }, // Light Gray
+    { from: 0.9, color: [142, 68, 173] }  // Violet
+  ]
+})
+
+component('green10', {
+  type: 'color_scale',
+  impl: () => [
+    { from: 0, color: [208, 240, 192] },  // Tea Green
+    { from: 0.1, color: [152, 255, 152] }, // Mint Green
+    { from: 0.2, color: [163, 230, 53] }, // Lime Green
+    { from: 0.3, color: [119, 221, 119] }, // Pastel Green
+    { from: 0.4, color: [46, 204, 113] }, // Bright Green
+    { from: 0.5, color: [46, 204, 64] }, // Emerald Green
+    { from: 0.6, color: [0, 255, 127] }, // Spring Green
+    { from: 0.7, color: [46, 139, 87] }, // Sea Green
+    { from: 0.8, color: [34, 139, 34] }, // Forest Green
+    { from: 0.9, color: [0, 100, 0] }  // Dark Green
+  ]
+})
+
+component('gray5', {
+  type: 'color_scale',
+  impl: () => [
+    { from: 0, color: [224, 224, 224] }, // Very Light Gray
+    { from: 0.25, color: [189, 189, 189] }, // Light Gray
+    { from: 0.5, color: [158, 158, 158] }, // Medium Gray
+    { from: 0.75, color: [97, 97, 97] }, // Dark Gray
+    { from: 1, color: [33, 33, 33] }  // Very Dark Gray
+  ]
+})
+
+component('gray10', {
+  type: 'color_scale',
+  impl: () => [
+    { from: 0, color: [245, 245, 245] }, // Very Light Gray
+    { from: 0.1, color: [224, 224, 224] },
+    { from: 0.2, color: [204, 204, 204] },
+    { from: 0.3, color: [189, 189, 189] },
+    { from: 0.4, color: [158, 158, 158] },
+    { from: 0.5, color: [125, 125, 125] }, // Medium Gray
+    { from: 0.6, color: [97, 97, 97] },
+    { from: 0.7, color: [66, 66, 66] },
+    { from: 0.8, color: [48, 48, 48] },
+    { from: 0.9, color: [33, 33, 33] }  // Very Dark Gray
+  ]
+})
+
+component('coolToWarm10', {
+  type: 'color_scale',
+  impl: () => [
+    { from: 0, color: [44, 123, 182] }, // Deep Blue
+    { from: 0.1, color: [83, 158, 204] }, // Blue
+    { from: 0.2, color: [137, 196, 210] }, // Light Blue
+    { from: 0.3, color: [171, 217, 233] }, // Very Light Blue
+    { from: 0.4, color: [225, 238, 241] }, // Pale Cool
+    { from: 0.5, color: [254, 224, 144] }, // Yellow
+    { from: 0.6, color: [253, 174, 97] }, // Orange
+    { from: 0.7, color: [244, 109, 67] }, // Light Red-Orange
+    { from: 0.8, color: [215, 48, 39] }, // Red
+    { from: 0.9, color: [165, 0, 38] }  // Deep Red
+  ]
+})
+
+});
+
+jbLoadPackedFile({lineInPackage:10951, jb, noProxies: false, path: '/plugins/zui/zui-llm.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,prop,init,props,variable,variableForChildren,features,method,If,html,htmlOfItem,css,zoomingCss,frontEnd,source,group,allOrNone,firstToFit,children,vertical,horizontal,iconBox,card,itemlist,grid,spiral,zoomingGridElem,xyByProps,xyByIndex,groupByScatter,zoomingSize,fixed,fill,session,zui,model,o1,o1Mini,gpt35,itemColor,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,app,widgetFE,llmViaApi,system,assistant,user,llm,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,nameOfCity,phones,dataTest,tests,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 using('llm-api')
@@ -10954,285 +11233,6 @@ component('zui.metadataForQuery', {
 
 });
 
-jbLoadPackedFile({lineInPackage:10959, jb, noProxies: false, path: '/plugins/zui/zui-scale.js',fileDsl: 'zui', pluginId: 'zui' }, 
-            function({jb,require,prop,init,props,variable,variableForChildren,features,method,If,html,htmlOfItem,css,zoomingCss,frontEnd,source,group,allOrNone,firstToFit,children,vertical,horizontal,iconBox,card,itemlist,grid,spiral,zoomingGridElem,xyByProps,xyByIndex,groupByScatter,zoomingSize,fixed,fill,session,zui,model,o1,o1Mini,gpt35,itemColor,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,app,widgetFE,llmViaApi,system,assistant,user,llm,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,nameOfCity,phones,dataTest,tests,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
-dsl('zui')
-
-component('itemColor', {
-  type: 'item_color',
-  params: [
-    {id: 'unitScale', mandatory: true, dynamic: true, type: 'unit_scale'},
-    {id: 'colorScale', mandatory: true, type: 'color_scale', defaultValue: distinct10()}
-  ],
-  impl: (ctx,unitScale,colorScale) => ctx => {
-        const index = Math.floor(unitScale(ctx.data) * colorScale.length *0.9999)
-        const color = colorScale[index] ? colorScale[index] : 'white'
-        return Array.isArray(color) ? `rgb(${color.join(',')})` : color
-    }
-})
-
-component('colorByItemValue', {
-  type: 'item_color',
-  params: [
-    {id: 'value', mandatory: true, dynamic: true},
-    {id: 'case', type: 'item_color_case[]'},
-    {id: 'defaultColor', type: 'static_color', defaultValue: [255,255,255]}
-  ],
-  impl: (ctx,valF,cases,defaultColor) => {
-    const casesHash = jb.objFromEntries(cases.map(x=>x.entry))
-    return ctx => {
-      const color = casesHash[valF(ctx)] || defaultColor
-      return Array.isArray(color) ? `rgb(${color.join(',')})` : color
-    }
-  }
-})
-
-component('Case', {
-  type: 'item_color_case',
-  params: [
-    {id: 'val', as: 'string', mandatory: true},
-    {id: 'color', type: 'static_color'}
-  ],
-  impl: (ctx,val,color) => ({entry: [val,color]})
-})
-
-component('borderStyle', {
-  type: 'item_border_style',
-  params: [
-    {id: 'unitScale', mandatory: true, dynamic: true, type: 'unit_scale'},
-    {id: 'borderStyleScale', mandatory: true, type: 'border_style_scale', defaultValue: borderStyleScale3()}
-  ],
-  impl: (ctx,unitScaleF,borderStyleScale) => {
-    const unitScale = unitScaleF()
-    return ctx => {
-            const index = Math.floor(unitScale(ctx.data) * borderStyleScale.length *0.9999)
-            return borderStyleScale[index] ? borderStyleScale[index] : 'solid'
-        }
-    }
-})
-
-component('borderStyleScale3', {
-  type: 'border_style_scale',
-  impl: () => ['solid','dashed','dotted']
-})
-
-component('opacity', {
-  type: 'item_opacity',
-  params: [
-    {id: 'unitScale', mandatory: true, dynamic: true, type: 'unit_scale'},
-    {id: 'opacityScale', mandatory: true, type: 'opacity_scale', defaultValue: opacityScale()}
-  ],
-  impl: (ctx,unitScaleF,opacityScale) => {
-    const unitScale = unitScaleF()
-    return ctx => {
-            const index = Math.floor(unitScale(ctx.data) * opacityScale.length *0.9999)
-            return opacityScale[index] ? opacityScale[index] : 1
-        }
-    }
-})
-
-component('opacityScale', {
-  type: 'opacity_scale',
-  impl: () => [1.0,0.8,0.6,0.4,0.2]
-})
-
-component('symbol', {
-  type: 'item_symbol',
-  params: [
-    {id: 'unitScale', mandatory: true, dynamic: true, type: 'unit_scale'},
-    {id: 'symbolScale', mandatory: true, type: 'symbol_scale'}
-  ],
-  impl: (ctx,unitScaleF,symbolScale) => {
-        const unitScale = unitScaleF()
-        return ctx => {
-            const index = Math.floor(unitScale(ctx.data) * symbolScale.length *0.9999)
-            return symbolScale[index] ? symbolScale[index] : ''
-        }
-    }
-})
-
-component('symbolByItemValue', {
-  type: 'item_symbol',
-  params: [
-    {id: 'value', mandatory: true, dynamic: true},
-    {id: 'case', type: 'item_symbol_case[]'}
-  ],
-  impl: (ctx,valF,cases) => {
-    const casesHash = jb.objFromEntries(cases.map(x=>x.entry))
-    return ctx => casesHash[valF(ctx)] || '❓'
-  }
-})
-
-component('Case', {
-  type: 'item_symbol_case',
-  params: [
-    {id: 'val', as: 'string', mandatory: true},
-    {id: 'symbol', mandatory: true, as: 'string'}
-  ],
-  impl: (ctx,val,symbol) => ({entry: [val,symbol]})
-})
-
-
-
-component('list', {
-  type: 'symbol_scale',
-  params: [
-    {id: 'list', type: 'data<>[]', as: 'array'}
-  ],
-  impl: '%$list%'
-})
-
-component('success3', {
-  type: 'symbol_scale',
-  impl: list('✔️', '➖', '❌')
-})
-
-component('unitScale', {
-  type: 'unit_scale',
-  params: [
-    {id: 'att', as: 'string', defaultValue: 'index' },
-    {id: 'calc', dynamic: true, description: 'optional. When empty, item property with same name is used'},
-  ],
-  impl: (ctx, _att, calc) => {
-    const items = ctx.vars.items || []
-    const att = `fixed_${_att}`
-    items.forEach((item,i) => item[att] = calc.profile ? calc(ctx.setData(item)) : _att == 'index' ? i : +item[_att] )
-    items.sort((i1,i2) => i1[att] - i2[att])
-    const range = [items[0][att] || 0,items.slice(-1)[0][att] || 0]
-    if (range[0] == range[1]) {
-        jb.logError(`zui empty range for ${att}`,{ctx})
-        return () => 0
-    }
-    return item=> ((+item[att] || 0)-range[0])/(range[1]-range[0])
-  }
-})
-
-component('index', {
-    type: 'unit_scale',
-    impl: unitScale('index')
-})
-
-component('severity5', {
-  type: 'color_scale',
-  impl: () => [
-    { from: 0, color: [231, 76, 60], description: 'very bad' }, // Bright red
-    { from: 0.2, color: [230, 126, 34], description: 'bad' },    // Orange
-    { from: 0.4, color: [244, 208, 63], description: 'neutral' }, // Yellow
-    { from: 0.6, color: [169, 223, 191], description: 'good' },   // Light green
-    { from: 0.8, color: [46, 204, 113], description: 'very good' } // Bright green
-  ]
-})
-
-component('good5', {
-  type: 'color_scale',
-  impl: () => [
-    { from: 0, color: [231, 76, 60], description: 'very bad' }, // Bright red
-    { from: 0.2, color: [230, 126, 34], description: 'bad' },    // Orange
-    { from: 0.4, color: [244, 208, 63], description: 'neutral' }, // Yellow
-    { from: 0.6, color: [169, 223, 191], description: 'good' },   // Light green
-    { from: 0.8, color: [46, 204, 113], description: 'very good' } // Bright green
-  ]
-})
-
-component('success5', {
-  type: 'color_scale',
-  impl: () => [
-    { from: 0, color: [192, 57, 43], description: 'failure' },  // Dark red
-    { from: 0.25, color: [211, 84, 0], description: 'partial failure' }, // Dark orange
-    { from: 0.5, color: [244, 208, 63], description: 'neutral' },// Yellow
-    { from: 0.75, color: [40, 180, 99], description: 'success' },// Green
-    { from: 1, color: [29, 131, 72], description: 'full success' } // Dark green
-  ]
-})
-
-component('distinct5', {
-  type: 'color_scale',
-  impl: () => [
-    { from: 0, color: [231, 76, 60] }, // Red
-    { from: 0.2, color: [52, 152, 219] }, // Blue
-    { from: 0.4, color: [46, 204, 113] }, // Green
-    { from: 0.6, color: [241, 196, 15] }, // Yellow
-    { from: 0.8, color: [155, 89, 182] }  // Purple
-  ]
-})
-
-component('distinct10', {
-  type: 'color_scale',
-  impl: () => [
-    { from: 0, color: [231, 76, 60] },  // Red
-    { from: 0.1, color: [52, 152, 219] }, // Blue
-    { from: 0.2, color: [46, 204, 113] }, // Green
-    { from: 0.3, color: [241, 196, 15] }, // Yellow
-    { from: 0.4, color: [155, 89, 182] }, // Purple
-    { from: 0.5, color: [230, 126, 34] }, // Orange
-    { from: 0.6, color: [26, 188, 156] }, // Teal
-    { from: 0.7, color: [52, 73, 94] }, // Dark Gray
-    { from: 0.8, color: [189, 195, 199] }, // Light Gray
-    { from: 0.9, color: [142, 68, 173] }  // Violet
-  ]
-})
-
-component('green10', {
-  type: 'color_scale',
-  impl: () => [
-    { from: 0, color: [208, 240, 192] },  // Tea Green
-    { from: 0.1, color: [152, 255, 152] }, // Mint Green
-    { from: 0.2, color: [163, 230, 53] }, // Lime Green
-    { from: 0.3, color: [119, 221, 119] }, // Pastel Green
-    { from: 0.4, color: [46, 204, 113] }, // Bright Green
-    { from: 0.5, color: [46, 204, 64] }, // Emerald Green
-    { from: 0.6, color: [0, 255, 127] }, // Spring Green
-    { from: 0.7, color: [46, 139, 87] }, // Sea Green
-    { from: 0.8, color: [34, 139, 34] }, // Forest Green
-    { from: 0.9, color: [0, 100, 0] }  // Dark Green
-  ]
-})
-
-component('gray5', {
-  type: 'color_scale',
-  impl: () => [
-    { from: 0, color: [224, 224, 224] }, // Very Light Gray
-    { from: 0.25, color: [189, 189, 189] }, // Light Gray
-    { from: 0.5, color: [158, 158, 158] }, // Medium Gray
-    { from: 0.75, color: [97, 97, 97] }, // Dark Gray
-    { from: 1, color: [33, 33, 33] }  // Very Dark Gray
-  ]
-})
-
-component('gray10', {
-  type: 'color_scale',
-  impl: () => [
-    { from: 0, color: [245, 245, 245] }, // Very Light Gray
-    { from: 0.1, color: [224, 224, 224] },
-    { from: 0.2, color: [204, 204, 204] },
-    { from: 0.3, color: [189, 189, 189] },
-    { from: 0.4, color: [158, 158, 158] },
-    { from: 0.5, color: [125, 125, 125] }, // Medium Gray
-    { from: 0.6, color: [97, 97, 97] },
-    { from: 0.7, color: [66, 66, 66] },
-    { from: 0.8, color: [48, 48, 48] },
-    { from: 0.9, color: [33, 33, 33] }  // Very Dark Gray
-  ]
-})
-
-component('coolToWarm10', {
-  type: 'color_scale',
-  impl: () => [
-    { from: 0, color: [44, 123, 182] }, // Deep Blue
-    { from: 0.1, color: [83, 158, 204] }, // Blue
-    { from: 0.2, color: [137, 196, 210] }, // Light Blue
-    { from: 0.3, color: [171, 217, 233] }, // Very Light Blue
-    { from: 0.4, color: [225, 238, 241] }, // Pale Cool
-    { from: 0.5, color: [254, 224, 144] }, // Yellow
-    { from: 0.6, color: [253, 174, 97] }, // Orange
-    { from: 0.7, color: [244, 109, 67] }, // Light Red-Orange
-    { from: 0.8, color: [215, 48, 39] }, // Red
-    { from: 0.9, color: [165, 0, 38] }  // Deep Red
-  ]
-})
-
-});
-
 jbLoadPackedFile({lineInPackage:11238, jb, noProxies: false, path: '/plugins/zui/zui-tester.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,prop,init,props,variable,variableForChildren,features,method,If,html,htmlOfItem,css,zoomingCss,frontEnd,source,group,allOrNone,firstToFit,children,vertical,horizontal,iconBox,card,itemlist,grid,spiral,zoomingGridElem,xyByProps,xyByIndex,groupByScatter,zoomingSize,fixed,fill,session,zui,model,o1,o1Mini,gpt35,itemColor,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,app,widgetFE,llmViaApi,system,assistant,user,llm,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,nameOfCity,phones,dataTest,tests,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
@@ -11296,11 +11296,9 @@ component('zuiControlRunner', {
   ],
   impl: runActions(
     Var('testData', '%$testData()%', { async: true }),
-    Var('widget', pipeline(
-      '%$testData%',
-      typeAdapter('widget<zui>', widget('%$control()%', { frontEnd: widgetFE() }))
-    )),
-    '%$widget.init()%'
+    Var('widget', pipeline('%$testData%', typeAdapter('widget<zui>', widget('%$control()%', { frontEnd: widgetFE() })))),
+    '%$widget.init()%',
+    '%$widget.frontEnd.renderCmps()%'
   )
 })
 
@@ -11326,193 +11324,7 @@ component('zoomEvent', {
  
 });
 
-jbLoadPackedFile({lineInPackage:11331, jb, noProxies: false, path: '/plugins/zui/zui-zoom.js',fileDsl: 'zui', pluginId: 'zui' }, 
-            function({jb,require,prop,init,props,variable,variableForChildren,features,method,If,html,htmlOfItem,css,zoomingCss,frontEnd,source,group,allOrNone,firstToFit,children,vertical,horizontal,iconBox,card,itemlist,grid,spiral,zoomingGridElem,xyByProps,xyByIndex,groupByScatter,zoomingSize,fixed,fill,session,zui,model,o1,o1Mini,gpt35,itemColor,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,app,widgetFE,llmViaApi,system,assistant,user,llm,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,nameOfCity,phones,dataTest,tests,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
-dsl('zui')
-using('rx')
-
-component('zui.canvasZoom', {
-  type: 'feature',
-  impl: features(
-    frontEnd.init((ctx,{uiTest}) => {
-      jb.zui.initZoom(ctx)
-      !uiTest && ctx.vars.cmp.updateZoomState({ dz :1, dp:0 })
-    }),
-    frontEnd.prop('zuiEvents', rx.subject()),
-    frontEnd.flow(
-      source.frontEndEvent('pointerdown'),
-      rx.log('zui pointerdown'),
-      rx.var('pid', '%pointerId%'),
-      rx.do(({},{cmp,pid}) => cmp.addPointer(pid)),
-      rx.flatMap(source.mergeConcat(
-        rx.pipe(
-          source.merge(source.event('pointermove'), source.frontEndEvent('pointerup')),
-          rx.filter('%$pid%==%pointerId%'),
-          rx.do(({data},{cmp,pid}) => cmp.updatePointer(pid,data)),
-          rx.takeWhile('%type%==pointermove'),
-          rx.flatMap(source.data(({},{cmp}) => cmp.zoomEventFromPointers()))
-        ),
-        rx.pipe(
-          source.data(({},{cmp,pid}) => cmp.momentumEvents(pid)),
-          rx.var('delay', '%delay%'),
-          rx.flatMap(rx.pipe(source.data('%events%'))),
-          rx.delay('%$delay%'),
-          rx.log('momentum zui')
-        ),
-        rx.pipe(source.data(1), rx.do(({},{cmp,pid}) => cmp.removePointer(pid)))
-      )),
-      rx.do(({data},{cmp}) => cmp.updateZoomState(data)),
-      sink.subjectNext('%$cmp.zuiEvents%')
-    ),
-    frontEnd.flow(
-      source.event('wheel', () => jb.frame.document, { options: obj(prop('capture', true)) }),
-      rx.log('zui wheel'),
-      rx.map(({},{sourceEvent}) => ({ dz: sourceEvent.deltaY > 0 ? 1.1 : sourceEvent.deltaY < 0 ? 1/1.1 : 1 })),
-      rx.do(({data},{cmp}) => cmp.updateZoomState(data)),
-      sink.subjectNext('%$cmp.zuiEvents%')
-    )
-  )
-})
-
-extension('zui','zoom', {
-    initZoom(ctx) {
-        const vars = ctx.vars
-        const {widget, cmp, uiTest } =  vars
-        if (uiTest) return
-        const {state, canvas} = widget
-        const w = canvas.offsetWidth, h = canvas.offsetHeight
-        if (canvas.addEventListener && canvas.style) {
-          canvas.style.touchAction = 'none'
-          canvas.oncontextmenu = e => (e.preventDefault(), false)
-
-          ;['pointerdown', 'pointermove', 'pointerup', 'touchstart', 'touchmove', 'touchend']
-              .forEach(event => canvas.addEventListener(event, e => e.preventDefault()))
-        }
-  
-      Object.assign(cmp, {
-        updatePointer(pid,sourceEvent) {
-          const pointer = this.pointers.find(x=>x.pid == pid)
-          if (!pointer) return
-          const dt = pointer.dt = sourceEvent.timeStamp - (pointer.time || 0)
-          const [x,y] = [sourceEvent.offsetX, sourceEvent.offsetY];
-          const dp = (!pointer.p) ? [0,0] : [x - pointer.p[0], y - pointer.p[1]]
-          const v = dt == 0 ? [0,0] : [0,1].map(axis => dp[axis]/dt)
-          Object.assign(pointer, {
-              time: sourceEvent.timeStamp,
-              vAvg: pointer.v ? [0,1].map(axis=> pointer.v[axis] * 0.8 + v[axis] *0.2) : v,
-              p: [x,y], v, dp, sourceEvent
-          })
-          const otherPointer = this.pointers.length > 1 && this.pointers.find(x=>x.pid != pid)
-          if (otherPointer && otherPointer.p) {
-              const gap = Math.hypot(...[0,1].map(axis => Math.abs(pointer.p[axis] - otherPointer.p[axis])))
-              const dscale = (gap == 0  || pointer.gap == 0) ? 1 : pointer.gap / gap
-              otherPointer.dscale = pointer.dscale = dscale
-              otherPointer.gap = pointer.gap = gap
-          }
-          jb.log('zui update pointers', {v: `[${pointer.v[0]},${pointer.v[1]}]` , pointer, otherPointer, cmp, widget})
-          if (this.pointers.length > 2) {
-              jb.logError('zui more than 2 pointers', {pointers: this.pointers})
-              this.pointers = this.pointers.slice(-2)
-          }
-        },      
-        zoomEventFromPointers() {
-          const pointers = this.pointers
-          return pointers.length == 0 ? [] : pointers[1] 
-              ? [{ p: avg('p'), dp: avg('dp'), v: avg('v'), dz: pointers[0].dscale }]
-              : [{ v: pointers[0].v, dp: pointers[0].dp }]
-      
-          function avg(att) {
-            return [0,1].map(axis => pointers.filter(p=>p[att]!=null).reduce((sum,p) => sum + p[att][axis], 0) / pointers.length)
-          }
-        },
-        updateZoomState({ dz, dp }) {
-          let {tZoom, tCenter} =  state
-          const factor = jb.zui.isMobile() ? 3 : 3
-          if (dz)
-            tZoom *= dz**factor
-          const tZoomF = Math.floor(tZoom)
-          if (dp)
-            tCenter = [tCenter[0] - dp[0]/w*tZoomF, tCenter[1] + dp[1]/h*tZoomF]
-  
-          const gridSize  = cmp.vars.gridSize
-          const maxDim = Math.max(gridSize[0],gridSize[1])
-          const ZOOM_LIMIT = [1, jb.zui.isMobile() ? maxDim: maxDim]
-          ;[0,1].forEach(axis=>tCenter[axis] = Math.min(gridSize[axis],Math.max(0,tCenter[axis])))
-  
-          tZoom = Math.max(ZOOM_LIMIT[0],Math.min(tZoom, ZOOM_LIMIT[1]))
-          state.tZoom = tZoom
-          state.tCenter = tCenter
-  
-          jb.log('zui event',{dz, dp, tZoom, tCenter, cmp, widget})
-        },      
-        animationStep() {
-          let { tZoom, tCenter, zoom, center } = state
-          if ( zoom == tZoom && center[0] == tCenter[0] && center[1] == tCenter[1] && !this.renderRequest) 
-            return [] // no rendering
-          // used at initialiation
-          zoom = zoom || tZoom
-          ;[0,1].forEach(axis=>center[axis] = center[axis] == null ? tCenter[axis] : center[axis])
-  
-          // zoom gets closer to targetZoom, when 1% close assign its value
-          const SPEED = jb.zui.isMobile() ? 5 : 4
-          zoom = zoom + (tZoom - zoom) / SPEED
-          if (!tZoom || Math.abs((zoom-tZoom)/tZoom) < 0.01) 
-            zoom = tZoom
-          ;[0,1].forEach(axis=> {
-            center[axis] = center[axis] + (tCenter[axis] - center[axis]) / SPEED
-            if (!tCenter[axis] || Math.abs((center[axis]-tCenter[axis])/tCenter[axis]) < 0.01) 
-              center[axis] = tCenter[axis]
-          })
-          
-          state.zoom = zoom
-          this.renderRequest = false
-          return [state]
-        },            
-        pointers: [],
-        findPointer(pid) { return this.pointers.find(x=>x.pid == pid) },
-        removeOldPointers() {
-          const now = new Date().getTime()
-          this.pointers = this.pointers.filter(pointer => now - pointer.time < 2000)
-        },
-        addPointer(pid) { 
-          if (this.findPointer(pid))
-            return jb.logError('zui pointer already exists', {pid})
-          if (this.pointers.length > 1)
-            this.removeOldPointers()
-          if (this.pointers.length > 1)
-            return jb.logError('zui pointer tring to add thirs pointer', {pid})
-  
-          this.pointers.push({pid})
-        },
-        removePointer(pid) {
-          //console.log('removePointer',pid,this.pointers)
-          const found = this.pointers.findIndex(x=>x.pid == pid)
-          //console.log(found)
-          if (found != -1)
-            this.pointers.splice(found, 1)
-        } ,
-        momentumEvents(pid) {
-          const pointer = this.pointers.find(x=>x.pid == pid)
-          if (!pointer) return { delay: 0, events: [] }
-          const target = [limitJump(w,500*pointer.vAvg[0]), limitJump(h,500*pointer.vAvg[1])]
-          const n = 50
-          const dps = Array.from(new Array(n).keys()).map( i => smoth(i,n))
-          return { delay: 5, events: dps.map(dp=>({dp})) }
-  
-          function limitJump(limit,value) {
-            return Math.sign(value) * Math.min(Math.abs(value),limit)
-          }
-          function smoth(i,n) {
-            return [0,1].map(axis => target[axis] * (Math.sin((i+1)/n*Math.PI/2) - Math.sin(i/n*Math.PI/2)))
-          }
-        }
-      })
-    },
-    isMobile: () => typeof navigator != 'undefined' && /Mobi|Android/i.test(navigator.userAgent),
-})
-});
-
-jbLoadPackedFile({lineInPackage:11517, jb, noProxies: false, path: '/plugins/zui/zui-widget.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:11329, jb, noProxies: false, path: '/plugins/zui/zui-widget.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,prop,init,props,variable,variableForChildren,features,method,If,html,htmlOfItem,css,zoomingCss,frontEnd,source,group,allOrNone,firstToFit,children,vertical,horizontal,iconBox,card,itemlist,grid,spiral,zoomingGridElem,xyByProps,xyByIndex,groupByScatter,zoomingSize,fixed,fill,session,zui,model,o1,o1Mini,gpt35,itemColor,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,app,widgetFE,llmViaApi,system,assistant,user,llm,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,nameOfCity,phones,dataTest,tests,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 
@@ -11715,7 +11527,193 @@ component('session', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:11720, jb, noProxies: false, path: '/plugins/zui/demo/health-care-comps.js',fileDsl: 'zui', pluginId: 'zui-demo' }, 
+jbLoadPackedFile({lineInPackage:11532, jb, noProxies: false, path: '/plugins/zui/zui-zoom.js',fileDsl: 'zui', pluginId: 'zui' }, 
+            function({jb,require,prop,init,props,variable,variableForChildren,features,method,If,html,htmlOfItem,css,zoomingCss,frontEnd,source,group,allOrNone,firstToFit,children,vertical,horizontal,iconBox,card,itemlist,grid,spiral,zoomingGridElem,xyByProps,xyByIndex,groupByScatter,zoomingSize,fixed,fill,session,zui,model,o1,o1Mini,gpt35,itemColor,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,app,widgetFE,llmViaApi,system,assistant,user,llm,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,nameOfCity,phones,dataTest,tests,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
+dsl('zui')
+using('rx')
+
+component('zui.canvasZoom', {
+  type: 'feature',
+  impl: features(
+    frontEnd.init((ctx,{uiTest}) => {
+      jb.zui.initZoom(ctx)
+      !uiTest && ctx.vars.cmp.updateZoomState({ dz :1, dp:0 })
+    }),
+    frontEnd.prop('zuiEvents', rx.subject()),
+    frontEnd.flow(
+      source.frontEndEvent('pointerdown'),
+      rx.log('zui pointerdown'),
+      rx.var('pid', '%pointerId%'),
+      rx.do(({},{cmp,pid}) => cmp.addPointer(pid)),
+      rx.flatMap(source.mergeConcat(
+        rx.pipe(
+          source.merge(source.event('pointermove'), source.frontEndEvent('pointerup')),
+          rx.filter('%$pid%==%pointerId%'),
+          rx.do(({data},{cmp,pid}) => cmp.updatePointer(pid,data)),
+          rx.takeWhile('%type%==pointermove'),
+          rx.flatMap(source.data(({},{cmp}) => cmp.zoomEventFromPointers()))
+        ),
+        rx.pipe(
+          source.data(({},{cmp,pid}) => cmp.momentumEvents(pid)),
+          rx.var('delay', '%delay%'),
+          rx.flatMap(rx.pipe(source.data('%events%'))),
+          rx.delay('%$delay%'),
+          rx.log('momentum zui')
+        ),
+        rx.pipe(source.data(1), rx.do(({},{cmp,pid}) => cmp.removePointer(pid)))
+      )),
+      rx.do(({data},{cmp}) => cmp.updateZoomState(data)),
+      sink.subjectNext('%$cmp.zuiEvents%')
+    ),
+    frontEnd.flow(
+      source.event('wheel', () => jb.frame.document, { options: obj(prop('capture', true)) }),
+      rx.log('zui wheel'),
+      rx.map(({},{sourceEvent}) => ({ dz: sourceEvent.deltaY > 0 ? 1.1 : sourceEvent.deltaY < 0 ? 1/1.1 : 1 })),
+      rx.do(({data},{cmp}) => cmp.updateZoomState(data)),
+      sink.subjectNext('%$cmp.zuiEvents%')
+    )
+  )
+})
+
+extension('zui','zoom', {
+    initZoom(ctx) {
+        const vars = ctx.vars
+        const {widget, cmp, uiTest } =  vars
+        if (uiTest) return
+        const {state, canvas} = widget
+        const w = canvas.offsetWidth, h = canvas.offsetHeight
+        if (canvas.addEventListener && canvas.style) {
+          canvas.style.touchAction = 'none'
+          canvas.oncontextmenu = e => (e.preventDefault(), false)
+
+          ;['pointerdown', 'pointermove', 'pointerup', 'touchstart', 'touchmove', 'touchend']
+              .forEach(event => canvas.addEventListener(event, e => e.preventDefault()))
+        }
+  
+      Object.assign(cmp, {
+        updatePointer(pid,sourceEvent) {
+          const pointer = this.pointers.find(x=>x.pid == pid)
+          if (!pointer) return
+          const dt = pointer.dt = sourceEvent.timeStamp - (pointer.time || 0)
+          const [x,y] = [sourceEvent.offsetX, sourceEvent.offsetY];
+          const dp = (!pointer.p) ? [0,0] : [x - pointer.p[0], y - pointer.p[1]]
+          const v = dt == 0 ? [0,0] : [0,1].map(axis => dp[axis]/dt)
+          Object.assign(pointer, {
+              time: sourceEvent.timeStamp,
+              vAvg: pointer.v ? [0,1].map(axis=> pointer.v[axis] * 0.8 + v[axis] *0.2) : v,
+              p: [x,y], v, dp, sourceEvent
+          })
+          const otherPointer = this.pointers.length > 1 && this.pointers.find(x=>x.pid != pid)
+          if (otherPointer && otherPointer.p) {
+              const gap = Math.hypot(...[0,1].map(axis => Math.abs(pointer.p[axis] - otherPointer.p[axis])))
+              const dscale = (gap == 0  || pointer.gap == 0) ? 1 : pointer.gap / gap
+              otherPointer.dscale = pointer.dscale = dscale
+              otherPointer.gap = pointer.gap = gap
+          }
+          jb.log('zui update pointers', {v: `[${pointer.v[0]},${pointer.v[1]}]` , pointer, otherPointer, cmp, widget})
+          if (this.pointers.length > 2) {
+              jb.logError('zui more than 2 pointers', {pointers: this.pointers})
+              this.pointers = this.pointers.slice(-2)
+          }
+        },      
+        zoomEventFromPointers() {
+          const pointers = this.pointers
+          return pointers.length == 0 ? [] : pointers[1] 
+              ? [{ p: avg('p'), dp: avg('dp'), v: avg('v'), dz: pointers[0].dscale }]
+              : [{ v: pointers[0].v, dp: pointers[0].dp }]
+      
+          function avg(att) {
+            return [0,1].map(axis => pointers.filter(p=>p[att]!=null).reduce((sum,p) => sum + p[att][axis], 0) / pointers.length)
+          }
+        },
+        updateZoomState({ dz, dp }) {
+          let {tZoom, tCenter} =  state
+          const factor = jb.zui.isMobile() ? 3 : 3
+          if (dz)
+            tZoom *= dz**factor
+          const tZoomF = Math.floor(tZoom)
+          if (dp)
+            tCenter = [tCenter[0] - dp[0]/w*tZoomF, tCenter[1] + dp[1]/h*tZoomF]
+  
+          const gridSize  = cmp.vars.gridSize
+          const maxDim = Math.max(gridSize[0],gridSize[1])
+          const ZOOM_LIMIT = [1, jb.zui.isMobile() ? maxDim: maxDim]
+          ;[0,1].forEach(axis=>tCenter[axis] = Math.min(gridSize[axis],Math.max(0,tCenter[axis])))
+  
+          tZoom = Math.max(ZOOM_LIMIT[0],Math.min(tZoom, ZOOM_LIMIT[1]))
+          state.tZoom = tZoom
+          state.tCenter = tCenter
+  
+          jb.log('zui event',{dz, dp, tZoom, tCenter, cmp, widget})
+        },      
+        animationStep() {
+          let { tZoom, tCenter, zoom, center } = state
+          if ( zoom == tZoom && center[0] == tCenter[0] && center[1] == tCenter[1] && !this.renderRequest) 
+            return [] // no rendering
+          // used at initialiation
+          zoom = zoom || tZoom
+          ;[0,1].forEach(axis=>center[axis] = center[axis] == null ? tCenter[axis] : center[axis])
+  
+          // zoom gets closer to targetZoom, when 1% close assign its value
+          const SPEED = jb.zui.isMobile() ? 5 : 4
+          zoom = zoom + (tZoom - zoom) / SPEED
+          if (!tZoom || Math.abs((zoom-tZoom)/tZoom) < 0.01) 
+            zoom = tZoom
+          ;[0,1].forEach(axis=> {
+            center[axis] = center[axis] + (tCenter[axis] - center[axis]) / SPEED
+            if (!tCenter[axis] || Math.abs((center[axis]-tCenter[axis])/tCenter[axis]) < 0.01) 
+              center[axis] = tCenter[axis]
+          })
+          
+          state.zoom = zoom
+          this.renderRequest = false
+          return [state]
+        },            
+        pointers: [],
+        findPointer(pid) { return this.pointers.find(x=>x.pid == pid) },
+        removeOldPointers() {
+          const now = new Date().getTime()
+          this.pointers = this.pointers.filter(pointer => now - pointer.time < 2000)
+        },
+        addPointer(pid) { 
+          if (this.findPointer(pid))
+            return jb.logError('zui pointer already exists', {pid})
+          if (this.pointers.length > 1)
+            this.removeOldPointers()
+          if (this.pointers.length > 1)
+            return jb.logError('zui pointer tring to add thirs pointer', {pid})
+  
+          this.pointers.push({pid})
+        },
+        removePointer(pid) {
+          //console.log('removePointer',pid,this.pointers)
+          const found = this.pointers.findIndex(x=>x.pid == pid)
+          //console.log(found)
+          if (found != -1)
+            this.pointers.splice(found, 1)
+        } ,
+        momentumEvents(pid) {
+          const pointer = this.pointers.find(x=>x.pid == pid)
+          if (!pointer) return { delay: 0, events: [] }
+          const target = [limitJump(w,500*pointer.vAvg[0]), limitJump(h,500*pointer.vAvg[1])]
+          const n = 50
+          const dps = Array.from(new Array(n).keys()).map( i => smoth(i,n))
+          return { delay: 5, events: dps.map(dp=>({dp})) }
+  
+          function limitJump(limit,value) {
+            return Math.sign(value) * Math.min(Math.abs(value),limit)
+          }
+          function smoth(i,n) {
+            return [0,1].map(axis => target[axis] * (Math.sin((i+1)/n*Math.PI/2) - Math.sin(i/n*Math.PI/2)))
+          }
+        }
+      })
+    },
+    isMobile: () => typeof navigator != 'undefined' && /Mobi|Android/i.test(navigator.userAgent),
+})
+});
+
+jbLoadPackedFile({lineInPackage:11718, jb, noProxies: false, path: '/plugins/zui/demo/health-care-comps.js',fileDsl: 'zui', pluginId: 'zui-demo' }, 
             function({jb,require,healthCare,prop,init,props,variable,variableForChildren,features,method,If,html,htmlOfItem,css,zoomingCss,frontEnd,source,group,allOrNone,firstToFit,children,vertical,horizontal,iconBox,card,itemlist,grid,spiral,zoomingGridElem,xyByProps,xyByIndex,groupByScatter,zoomingSize,fixed,fill,session,zui,model,o1,o1Mini,gpt35,itemColor,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,app,widgetFE,llmViaApi,system,assistant,user,llm,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,nameOfCity,phones,dataTest,tests,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 using('zui')
@@ -11967,7 +11965,7 @@ component('healthCare.categoryColor', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:11972, jb, noProxies: false, path: '/plugins/zui/demo/health-care-data.js',fileDsl: '', pluginId: 'zui-demo' }, 
+jbLoadPackedFile({lineInPackage:11970, jb, noProxies: false, path: '/plugins/zui/demo/health-care-data.js',fileDsl: '', pluginId: 'zui-demo' }, 
             function({jb,require,healthCare,prop,init,props,variable,variableForChildren,features,method,If,html,htmlOfItem,css,zoomingCss,frontEnd,source,group,allOrNone,firstToFit,children,vertical,horizontal,iconBox,card,itemlist,grid,spiral,zoomingGridElem,xyByProps,xyByIndex,groupByScatter,zoomingSize,fixed,fill,session,zui,model,o1,o1Mini,gpt35,itemColor,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,app,widgetFE,llmViaApi,system,assistant,user,llm,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,nameOfCity,phones,dataTest,tests,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
 component('healthCare.conditionDataSample', {
   impl: () => [
@@ -12519,7 +12517,7 @@ component('healthCare.conditionDataSample300', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:12524, jb, noProxies: false, path: '/plugins/zui/demo/hc-tests.js',fileDsl: 'zui', pluginId: 'zui-demo-tests' }, 
+jbLoadPackedFile({lineInPackage:12522, jb, noProxies: false, path: '/plugins/zui/demo/hc-tests.js',fileDsl: 'zui', pluginId: 'zui-demo-tests' }, 
             function({jb,require,zuiTest,healthCare,prop,init,props,variable,variableForChildren,features,method,If,html,htmlOfItem,css,zoomingCss,frontEnd,source,group,allOrNone,firstToFit,children,vertical,horizontal,iconBox,card,itemlist,grid,spiral,zoomingGridElem,xyByProps,xyByIndex,groupByScatter,zoomingSize,fixed,fill,session,zui,model,o1,o1Mini,gpt35,itemColor,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,zuiControlRunner,animationEvent,zoomEvent,widget,app,widgetFE,llmViaApi,system,assistant,user,llm,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,nameOfCity,phones,dataTest,tests,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,prettyPrint,rx,sink,rxPipe,rxFlow,sourcePipe,data,watchableData,callbag,callback,animationFrame,event,any,promise,promises,interval,mergeConcat,elems,startWith,resource,reduce,joinIntoVariable,Do,doPromise,map,mapPromise,flatMap,flatMapArrays,concatMap,distinctUntilChanged,distinct,catchError,timeoutLimit,throwError,debounceTime,throttleTime,replay,takeUntil,take,takeWhile,toArray,skip,consoleLog,sniffer,subscribe,rxSubject,subjectNext,subject,rxQueue,runTransaction,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 

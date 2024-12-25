@@ -59,11 +59,9 @@ component('zuiControlRunner', {
   ],
   impl: runActions(
     Var('testData', '%$testData()%', { async: true }),
-    Var('widget', pipeline(
-      '%$testData%',
-      typeAdapter('widget<zui>', widget('%$control()%', { frontEnd: widgetFE() }))
-    )),
-    '%$widget.init()%'
+    Var('widget', pipeline('%$testData%', typeAdapter('widget<zui>', widget('%$control()%', { frontEnd: widgetFE() })))),
+    '%$widget.init()%',
+    '%$widget.frontEnd.renderCmps()%'
   )
 })
 
