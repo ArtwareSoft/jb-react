@@ -20,7 +20,6 @@ component('zuiTest', {
   params: [
     {id: 'control', type: 'control', dynamic: true, mandatory: true},
     {id: 'expectedResult', type: 'boolean<>', dynamic: true, mandatory: true},
-    {id: 'canvasSize', as: 'array', defaultValue: [600,600]},
     {id: 'runBefore', type: 'action<>', dynamic: true},
     {id: 'userEvents', type: 'animation_event<zui>[]'},
     {id: 'allowError', as: 'boolean', dynamic: true, type: 'boolean<>'},
@@ -37,7 +36,7 @@ component('zuiTest', {
       Var('testData', '%$testData()%', { async: true }),
       Var('widget', pipeline(
         '%$testData%',
-        typeAdapter('widget<zui>', widget('%$control()%', '%$canvasSize%', { frontEnd: widgetFE() }))
+        typeAdapter('widget<zui>', widget('%$control()%', { frontEnd: widgetFE() }))
       )),
       Var('initwidget', '%$widget.init()%', { async: true })
     ],
@@ -56,14 +55,13 @@ component('zuiControlRunner', {
   params: [
     {id: 'control', type: 'control', dynamic: true, mandatory: true},
     {id: 'testData', dynamic: true},
-    {id: 'canvasSize', as: 'array', defaultValue: [600,600]},
     {id: 'styleSheet', as: 'string', newLinesInCode: true}
   ],
   impl: runActions(
     Var('testData', '%$testData()%', { async: true }),
     Var('widget', pipeline(
       '%$testData%',
-      typeAdapter('widget<zui>', widget('%$control()%', '%$canvasSize%', { frontEnd: widgetFE('.elemToTest') }))
+      typeAdapter('widget<zui>', widget('%$control()%', { frontEnd: widgetFE() }))
     )),
     '%$widget.init()%'
   )

@@ -41,6 +41,14 @@ globalThis.jbHost = globalThis.jbHost || { // browserHost - studioServer,worker 
   }
 }
 
+async function jbInitFromPacked(uri, sourceCode , {initSpyByUrl} ={}) {
+  const code = await fetch(`${jbHost.baseUrl}/package/${sourceCode.plugins.join(',')}.js`).then(x=>x.text())
+  await eval(code)
+  const jb = await jbLoadPacked("${id}");
+  jb.uri = uri
+  return jb
+}
+
 async function jbInit(uri, sourceCode , {multipleInFrame, initSpyByUrl, baseUrl, packOnly} ={}) {
   if (baseUrl) jbHost.baseUrl = baseUrl // used for extension content script
   const packedCode = []

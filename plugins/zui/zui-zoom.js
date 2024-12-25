@@ -92,13 +92,12 @@ extension('zui','zoom', {
               : [{ v: pointers[0].v, dp: pointers[0].dp }]
       
           function avg(att) {
-            const pointers = pointers.filter(p=>p[att])
-            return [0,1].map(axis => pointers.reduce((sum,p) => sum + p[att][axis], 0) / pointers.length)
+            return [0,1].map(axis => pointers.filter(p=>p[att]!=null).reduce((sum,p) => sum + p[att][axis], 0) / pointers.length)
           }
         },
         updateZoomState({ dz, dp }) {
           let {tZoom, tCenter} =  state
-          const factor = jb.ui.isMobile() ? 1.2 : 3
+          const factor = jb.zui.isMobile() ? 2 : 3
           if (dz)
             tZoom *= dz**factor
           const tZoomF = Math.floor(tZoom)
@@ -107,7 +106,7 @@ extension('zui','zoom', {
   
           const gridSize  = cmp.vars.gridSize
           const maxDim = Math.max(gridSize[0],gridSize[1])
-          const ZOOM_LIMIT = [1, jb.ui.isMobile() ? maxDim: maxDim]
+          const ZOOM_LIMIT = [1, jb.zui.isMobile() ? maxDim: maxDim]
           ;[0,1].forEach(axis=>tCenter[axis] = Math.min(gridSize[axis],Math.max(0,tCenter[axis])))
   
           tZoom = Math.max(ZOOM_LIMIT[0],Math.min(tZoom, ZOOM_LIMIT[1]))
@@ -125,7 +124,7 @@ extension('zui','zoom', {
           ;[0,1].forEach(axis=>center[axis] = center[axis] == null ? tCenter[axis] : center[axis])
   
           // zoom gets closer to targetZoom, when 1% close assign its value
-          const SPEED = jb.ui.isMobile() ? 1 : 4
+          const SPEED = jb.zui.isMobile() ? 1 : 4
           zoom = zoom + (tZoom - zoom) / SPEED
           if (!tZoom || Math.abs((zoom-tZoom)/tZoom) < 0.01) 
             zoom = tZoom
@@ -179,4 +178,5 @@ extension('zui','zoom', {
         }
       })
     },
+    isMobile: () => typeof navigator != 'undefined' && /Mobi|Android/i.test(navigator.userAgent),
 })

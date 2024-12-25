@@ -50,7 +50,7 @@ component('grid', {
         `.${cmp.clz} .zui-item { width: ${itemSize[0]}px; height: ${itemSize[1]}px }`,
         ...itemsXyPos.map(xyPos => {
           const pos = xyPos.map((v,axis)=>(v- center[axis]+1)*itemSize[axis]+ canvasSize[axis]/2)
-          const visible = pos[0] > 0 && pos[0] <= canvasSize[0] && pos[1] > 0 && pos[1] <= canvasSize[1]
+          const visible = pos[0]+itemSize[0] > 0 && pos[0] <= canvasSize[0] && pos[1]+itemSize[1] > 0 && pos[1] <= canvasSize[1]
           return `.${cmp.clz} .pos_${xyPos.join('-')} { ${visible ? `top: ${canvasSize[1] - pos[1]}px; left: ${pos[0]}px` : 'display:none'} }`
         })].join('\n')
       )
@@ -70,11 +70,11 @@ component('grid', {
       source.animationFrame(),
       rx.flatMap(source.data('%$cmp.animationStep()%')),
       rx.do(({},{widget}) => widget.renderCounter++),
-      rx.var('itemSize', (ctx,{widget}) => [0,1].map(axis=>widget.canvasSize[axis]/widget.state.zoom)),
+      //rx.var('itemSize', (ctx,{widget}) => [0,1].map(axis=>widget.canvasSize[0]/widget.state.zoom)),
       sink.action('%$widget.renderCmps()%')
     ),
     frontEnd.method('render', (ctx,{cmp,widget}) => {
-      const itemSize = [0,1].map(axis=>widget.canvasSize[axis]/widget.state.zoom)
+      const itemSize = [0,1].map(axis=>widget.canvasSize[0]/widget.state.zoom)
       const {shownCmps, elemsLayout} = cmp.layoutCalculator.calcItemLayout(itemSize,ctx)
       widget.cmpsData[cmp.id].itemLayoutforTest = {shownCmps, elemsLayout}
       const toRender = Object.values(widget.cmps).filter(cmp=>shownCmps.indexOf(cmp.id) != -1)

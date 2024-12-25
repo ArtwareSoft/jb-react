@@ -151,7 +151,6 @@ extension('test', {
 			if (!profile.impl.control) return
 			const doc = jb.frame.document
 			if (!doc) return
-			const ctxToRun = jb.ui.extendWithServiceRegistry(new jb.core.jbCtx(tstCtx,{ vars:{quiet}, profile: profile.impl.control , forcePath: fullTestId+ '~impl~control', path: '' } ))
 			const elem = doc.createElement('div')
 			elem.className = 'show elemToTest'
 			if (showOnlyTest)
@@ -162,7 +161,10 @@ extension('test', {
 				const ctxToRun = new jb.core.jbCtx(tstCtx,{ vars:{quiet}, profile: profile.impl , forcePath: fullTestId+ '~impl', path: '' } )
 				return ctxToRun.runItself()
 			}
-			jb.ui.render(jb.ui.h(ctxToRun.runItself()),elem)    
+			if (profile.impl.$ == 'uiTest') {
+				const ctxToRun = jb.ui.extendWithServiceRegistry(new jb.core.jbCtx(tstCtx,{ vars:{quiet}, profile: profile.impl.control , forcePath: fullTestId+ '~impl~control', path: '' } ))
+				jb.ui.render(jb.ui.h(ctxToRun.runItself()),elem)
+			}
 		}		
 		return res
 	},

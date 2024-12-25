@@ -90,7 +90,7 @@ component('healthCare.conditionCardStyle', {
         .card-%$cmp/id% .icon { position: relative; width: 32px; min-height: 32px;}
         .card-%$cmp/id% .icon-background { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; }
         .card-%$cmp/id% .icon-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .card-%$cmp/id% .icon-urgencySymbol { font-size: 32px; line-height: 1; position: absolute; top: 0px; right: 2px; }
+        .card-%$cmp/id% .icon-urgencySymbol { font-size: 32px; line-height: 1; position: absolute; top: 10px; right: 2px; }
         .card-%$cmp/id% .icon-main-symbol { font-size: 32px; line-height: 1; }
 
         .card-%$cmp/id% > .title { font-size: var(--title-font-size); font-weight: bold; margin-bottom: 8px; color: #333; }

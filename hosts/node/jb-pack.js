@@ -8,7 +8,7 @@ const { jbInit } = require(jbHost.jbReactDir + '/plugins/loader/jb-loader.js')
 const plugins = getProcessArgument('plugins')
 const sourceCodeStr = getProcessArgument('sourcecode') || plugins && `{"plugins": ${JSON.stringify(plugins.split(','))} }`
 if (!sourceCodeStr) {
-    console.log(`usage: jb-pack.js -plugins:common,probe -sourcecode:<sourceCode as json> -text -sourceMaps`)
+    console.log(`usage: ../hosts/node/jb-pack.js -plugins:common,probe -sourcecode:<sourceCode as json> -text -sourceMaps`)
     process.exit(1)
 }
 

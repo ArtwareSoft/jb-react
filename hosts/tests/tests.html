@@ -24,7 +24,8 @@
 		jbInit('pack',{ plugins: ['common'] }, {packOnly: true}).then(code=>console.log('aa',code))
 	} else {
 	const repo = urlQuery('repo')
-	const plugins = urlQuery('plugins') && urlQuery('plugins').split(',') //.map(x=>!x.match(/tests|tester/) ? `${x}-tests` : x)
+	const pluginsParam = urlQuery('plugins') || urlQuery('packed_plugins')
+	const plugins = pluginsParam && pluginsParam.split(',') //.map(x=>!x.match(/tests|tester/) ? `${x}-tests` : x)
 	const addRepo = urlQuery('addRepo')
 	const sourceCode = 
 		addRepo && {projects: ['studio'], plugins:['*','studio-tests'], pluginPackages: [{'$':'defaultPackage'},{'$':'jbStudioServer', repo: addRepo }] } 
@@ -32,7 +33,8 @@
 		|| repo && {pluginPackages: [{'$':'defaultPackage'},{'$':'jbStudioServer', repo }],plugins:['*'] } 
 		|| { projects: ['studio'], plugins: ['*','studio-tests'] }
 
-	jbInit('tests',sourceCode,{initSpyByUrl: true}).then(jb =>{
+	const jbInitFunc = urlQuery('packed_plugins') ? jbInitFromPacked : jbInit
+	jbInitFromPacked('tests',sourceCode,{initSpyByUrl: true}).then(jb =>{
 //	jbLoadPacked({uri:'tests', initSpyByUrl: true}).then(jb => {
 			globalThis.jb = jb
 			globalThis.spy = jb.spy

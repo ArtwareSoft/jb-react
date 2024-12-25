@@ -4,18 +4,18 @@ component('widget', {
   type: 'widget',
   params: [
     {id: 'control', type: 'control', dynamic: true},
-    {id: 'canvasSize', as: 'array', defaultValue: [600,600]},
+    {id: 'canvasSizeForTest', as: 'array', defaultValue: [600,600]},
     {id: 'frontEnd', type: 'widget_frontend'},
     {id: 'features', type: 'feature' }
   ],
   impl: ctx => {
-        const {canvasSize, control, frontEnd, features} = ctx.params
-        frontEnd.initFE(canvasSize)
+        const {canvasSizeForTest, control, frontEnd, features} = ctx.params
+        frontEnd.initFE(canvasSizeForTest)
         
         const widget = {
             frontEnd,
             async init() {
-                const ctxForBe = ctx.setVars({canvasSize, widget: this, renderRole: 'fixed'})
+                const ctxForBe = ctx.setVars({canvasSize: frontEnd.canvasSize, widget: this, renderRole: 'fixed'})
                 const beCmp = this.be_cmp = control(ctxForBe).applyFeatures(features,20)
                 beCmp.init({topOfWidget: true})
 
@@ -37,26 +37,49 @@ component('widget', {
     }
 })
 
+component('app', {
+    type: 'application',
+    params: [
+      {id: 'selector', as: 'string', defaultValue: 'body'},
+    ],
+    impl: (ctx, selector) => ({
+        init(appSize) {
+            if (!ctx.vars.uiTest && jb.frame.document) {
+                jb.zui.setCss('app',`html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }`)
+                const doc = jb.frame.document
+                // const appElem = jb.frame.document.createElement('div')
+                // app.innerHtml = 
+                const canvas = doc.createElement('div')
+                canvas.classList.add('widget-top')
+                canvas.style.width = '100vw'
+                canvas.style.height = '100vh'
+                doc.querySelector(selector).appendChild(canvas)
+                const rect = canvas.getBoundingClientRect()
+                return { canvas, canvasSize: [rect.width, rect.height] }
+            }
+        }
+        
+    })
+})
+
 component('widgetFE', {
   type: 'widget_frontend',
   params: [
-    {id: 'selector', as: 'string'},
+    {id: 'app', type: 'application', defaultValue: app() },
   ],
-  impl: (ctx, selector) => ({
+  impl: (ctx, app) => ({
         cmps: {},
         cmpsData: {},
         renderCounter: 1,
         state: {tCenter: [1,1], tZoom : 2, zoom: 2, center: [1,1]},
 
-        initFE(canvasSize) {
-            this.canvasSize = canvasSize
-            if (!ctx.vars.uiTest) {
-                const doc = jb.frame.document
-                const canvas = this.canvas = doc.createElement('div')
-                canvas.classList.add('widget-top')
-                canvas.style.border = '1px black solid'
-                canvas.style.width = `${canvasSize[0]}px`;canvas.style.height = `${canvasSize[1]}px`;
-                doc.querySelector(selector).appendChild(canvas);
+        initFE(canvasSizeForTest) {
+            if (!ctx.vars.uiTest && jb.frame.document) {
+                const {canvas,canvasSize} = app.init()
+                this.canvas = canvas
+                this.canvasSize = canvasSize
+            } else {
+                this.canvasSize = canvasSizeForTest
             }
             this.ctx = new jb.core.jbCtx().setVars({widget: this, canUseConsole: ctx.vars.quiet, uiTest: ctx.vars.uiTest})
             this.ctx.probe = ctx.probe
@@ -135,6 +158,7 @@ extension('zui','html', {
 })
 
 extension('zui', 'frontend', {
+    rxPipeName: profile => (jb.path(profile, '0.event') || jb.path(profile, '0.$') || '') + '...' + jb.path(profile, 'length'),
     runFEMethod(cmp,method,{data,_vars,silent,ctx} = {}) {
         if (cmp.state.frontEndStatus != 'ready' && ['onRefresh','initOrRefresh','init','calcProps'].indexOf(method) == -1)
             return jb.logError('frontend - running method before init', {cmp, method,data,_vars})
@@ -153,7 +177,7 @@ extension('zui', 'frontend', {
             if (_prop)
                 jb.log(`frontend before calc prop ${_prop}`,{data, vars, cmp, srcCtx, ...feMEthod.frontEndMethod, ctxToUse})
             else if (_flow)
-                jb.log(`frontend start flow ${jb.ui.rxPipeName(_flow)}`,{data, vars, cmp, srcCtx, ...feMEthod.frontEndMethod,  ctxToUse})
+                jb.log(`frontend start flow ${jb.zui.rxPipeName(_flow)}`,{data, vars, cmp, srcCtx, ...feMEthod.frontEndMethod,  ctxToUse})
             else 
                 jb.log(`frontend run method ${method}`,{data, vars, cmp, srcCtx , ...feMEthod.frontEndMethod,ctxToUse})
             const res = ctxToUse.run(feMEthod.frontEndMethod.action, jb.utils.dslType(profile.$$))
