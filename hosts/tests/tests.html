@@ -2,11 +2,32 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- type="text/javascript" src="/package/*,studio-tests/studio.js"-->
-<script type="text/javascript" src="/plugins/loader/jb-loader.js"></script>
+<script>
+  globalThis.inGitHub = 5 || location.host.indexOf('github') != -1
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = `${inGitHub?'':'/'}${src}`
+      script.type = 'text/javascript'
+      script.onload = () => resolve(`Script loaded: ${src}`)
+      script.onerror = () => reject(new Error(`Script load error: ${src}`))
+      document.head.appendChild(script)
+    })
+  }
+  if (inGitHub) {
+    const baseTag = document.createElement('base')
+    baseTag.target = '_top'
+    baseTag.href = 'https://artwaresoft.github.io/jb-react/'
+    document.head.appendChild(baseTag)
+  }
+  	const baseLink = document.createElement('link')
+	baseLink.rel = 'stylesheet'
+	baseLink.type = 'text/css'
+	baseLink.href = `${inGitHub?'':'/'}bin/studio/css/studio-all.css`
+	document.head.appendChild(baseLink)
+</script>
 
 <link rel="icon" type="image/png" href="/bin/studio/css/favicon-done.png" />
-<link rel="stylesheet" type="text/css" href="/bin/studio/css/studio-all.css"/>
 <style>
 	.test-button { opacity: 0 }
 	.test-button:hover { opacity: 1 }
@@ -19,12 +40,11 @@
 	<div id="testElem"> </div>
 	<div id="show"> </div>
  <script>
+	(async function() {
 	const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
-	if (urlQuery('pack')) {
-		jbInit('pack',{ plugins: ['common'] }, {packOnly: true}).then(code=>console.log('aa',code))
-	} else {
-	if (location.host.indexOf('github') != -1)
-		jbHost.baseUrl = 'https://artwaresoft.github.io/jb-react/'
+	await loadScript('plugins/loader/jb-loader.js')
+	if (inGitHub) jbHost.baseUrl = 'https://artwaresoft.github.io/jb-react/'
+
 	const repo = urlQuery('repo')
 	const pluginsParam = urlQuery('plugins') || urlQuery('packed_plugins')
 	const plugins = pluginsParam && pluginsParam.split(',') //.map(x=>!x.match(/tests|tester/) ? `${x}-tests` : x)
@@ -36,28 +56,26 @@
 		|| { projects: ['studio'], plugins: ['*','studio-tests'] }
 
 	const jbInitFunc = urlQuery('packed_plugins') ? jbInitFromPacked : jbInit
-	jbInitFunc('tests',sourceCode,{initSpyByUrl: true}).then(jb =>{
-//	jbLoadPacked({uri:'tests', initSpyByUrl: true}).then(jb => {
-			globalThis.jb = jb
-			globalThis.spy = jb.spy
-			if (jb.comps.defaultTheme)
-				jb.exec({$: 'data<>defaultTheme'})
+	const jb = await jbInitFunc('tests',sourceCode,{initSpyByUrl: true})
+	globalThis.jb = jb
+	globalThis.spy = jb.spy
+	if (jb.comps.defaultTheme)
+		jb.exec({$: 'data<>defaultTheme'})
 //			jb.spy.initSpyByUrl()
-			const params = { 
-				testType: '',
-				show: window.location.href.indexOf('&show') != -1,
-				quiet: window.location.href.indexOf('&quiet') != -1,
-				specificTest: urlQuery('test'),
-				notPattern: urlQuery('not'),
-				coveredTestsOf: urlQuery('coveredTestsOf'),
-				top: window.location.href.match(/\btop\b/),
-				showOnlyTest: urlQuery('show') == 'onlyTest',
-				...jb.objFromEntries(['repo','rerun','pattern','take','remoteTests'].map(x=>[x,urlQuery(x)]))
-			}
-			console.log(params)
-			jb.test.runTests(params)
-		})
+	const params = { 
+		testType: '',
+		show: window.location.href.indexOf('&show') != -1,
+		quiet: window.location.href.indexOf('&quiet') != -1,
+		specificTest: urlQuery('test'),
+		notPattern: urlQuery('not'),
+		coveredTestsOf: urlQuery('coveredTestsOf'),
+		top: window.location.href.match(/\btop\b/),
+		showOnlyTest: urlQuery('show') == 'onlyTest',
+		...jb.objFromEntries(['repo','rerun','pattern','take','remoteTests'].map(x=>[x,urlQuery(x)]))
 	}
+	console.log(params)
+	jb.test.runTests(params)
+	})()
   </script>
 </body>
 </html>
