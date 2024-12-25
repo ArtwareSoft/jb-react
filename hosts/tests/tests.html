@@ -34,7 +34,7 @@
 		|| { projects: ['studio'], plugins: ['*','studio-tests'] }
 
 	const jbInitFunc = urlQuery('packed_plugins') ? jbInitFromPacked : jbInit
-	jbInitFromPacked('tests',sourceCode,{initSpyByUrl: true}).then(jb =>{
+	jbInitFunc('tests',sourceCode,{initSpyByUrl: true}).then(jb =>{
 //	jbLoadPacked({uri:'tests', initSpyByUrl: true}).then(jb => {
 			globalThis.jb = jb
 			globalThis.spy = jb.spy
