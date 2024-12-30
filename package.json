@@ -59,6 +59,7 @@
     "openai": "^4.28.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "redis": "^4.7.0",
     "ref-array-di": "^1.2.2",
     "ref-napi": "^3.0.3",
     "source-map": "^0.7.4",

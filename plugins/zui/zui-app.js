@@ -1,64 +1,5 @@
 dsl('zui')
 
-extension('zui','DataBinder', {
-    DataBinder: class DataBinder {
-        constructor(ctx,rootElement) {
-          this.ctx = ctx
-          this.rootElement = rootElement
-          this.boundElements = []
-          this.registerHtmlEvents()
-          this.populateHtml()
-        }
-      
-        registerHtmlEvents() {
-          this.rootElement.querySelectorAll('[twoWayBind]').forEach(el => {
-            const ref = this.ctx.run(el.getAttribute('twoWayBind'), {as: 'ref'})
-            const handler = e => { 
-                jb.db.writeValue(ref, e.target.value, this.ctx)
-                this.ctx.vars.widget.renderRequest = true 
-            }
-            el.addEventListener('input', handler)
-            el.value = jb.val(ref)
-            this.boundElements.push({ el, event: 'input', handler })
-          })
-      
-          this.rootElement.querySelectorAll('[onEnter]').forEach(el => {
-            const handler = e => {
-                if (e.key != 'Enter') return
-                this.ctx.run(el.getAttribute('onEnter'),'action<>')
-                this.ctx.vars.widget.renderRequest = true 
-            }
-            el.addEventListener('keypress', handler)      
-            this.boundElements.push({ el, event: 'keypress', handler })
-          })
-        }
-      
-        populateHtml() {
-          this.rootElement.querySelectorAll('[bind], [bind_max], [bind_value], [bind_text], [bind_display]').forEach( el => {
-            for (const attr of el.attributes) {
-              if (attr.name.startsWith('bind')) {
-                const val = this.ctx.run(attr.value, 'data<>')
-                if (val == null) {
-                    el.style.display = 'none'
-                } else {
-                    if (attr.name === 'bind_value' && el.value != val) el.value = val
-                    if (attr.name === 'bind_max' && el.value != val) el.max = val
-                    if ((attr.name === 'bind_text' || attr.name == 'bind') && el.textContent != val) el.textContent = val
-                    el.style.display = ''
-                }
-              }
-            }
-          })
-        }
-
-        destroy() {
-            this.boundElements.forEach(({ el, event, handler }) => el.removeEventListener(event,handler))
-            this.boundElements = []
-            this.rootElement = null
-        }
-      }
-})
-
 component('app', {
   type: 'control',
   params: [
@@ -77,12 +18,18 @@ component('app', {
   impl: features(
     html((ctx,{$model}) => $model.html(ctx.setVars(jb.objFromEntries($model.sections.map(sec=>[sec.id,sec]))))),
     css((ctx,{$model}) => $model.css(ctx.setVars(jb.objFromEntries($model.sections.map(sec=>[sec.id,sec]))))),
-    init((ctx,{cmp, $model}) => {
+    init((ctx,{cmp, $model, userData, appData}) => {
       const zuiCtrl = $model.zuiControl(ctx).init()
       cmp.children = [zuiCtrl]
-      cmp.extendedPayloadWithDescendants = async (res) => ({ [res.id]: res, ...await zuiCtrl.calcPayload() })
+      cmp.extendedPayloadWithDescendants = async res => ({ 
+            [res.id]: {...res, userData, appData }, 
+            ...await zuiCtrl.calcPayload() 
+        })
     }),
-    frontEnd.init((ctx,{cmp}) => cmp.dataBinder = new jb.zui.DataBinder(ctx,cmp.base)),
+    frontEnd.init((ctx,{cmp}) => {
+        const ctxToUse = ctx.setVars({userData: cmp.userData, appData: cmp.appData})
+        cmp.dataBinder = new jb.zui.DataBinder(ctxToUse,cmp.base)
+    }),
     frontEnd.method('render', (ctx,{cmp}) => cmp.dataBinder.populateHtml())
   )
 })
@@ -152,17 +99,17 @@ component('topPanel', {
     <img src="${jbHost.baseUrl}/plugins/zui/zui-logo.webp" alt="ZUI Logo" />
   </a>
   <div class="search-box">
-    <input type="text" twoWayBind="%$session.query%" placeholder="Search or enter your query..." onEnter="%$widget.search()" />
+    <input type="text" twoWayBind="%$userData.query%" placeholder="Search or enter your query..." onEnter="%$widget.search()" />
     <button type="submit">🔍</button>
   </div>
-  <div class="context-chips">${[0,1,2,3,4,5,6,7,8,9,10].map(i => `<span class="chip context-chip" bind_display="%$session/contextChips/${i}%">
-        <span class="chip-text" bind="%$session/contextChips/${i}%"></span>
+  <div class="context-chips">${[0,1,2,3,4,5,6,7,8,9,10].map(i => `<span class="chip context-chip" bind_display="%$userData/contextChips/${i}%">
+        <span class="chip-text" bind="%$userData/contextChips/${i}%"></span>
         <button class="remove" onclick="removeContextChip(${i})">×</button>
       </span>`).join('')}
   </div>
   <div class="suggested-chips">${[0,1,2,3,4,5,6,7,8,9,10].map(i => `
-  <div class="chip suggested-chip" bind_display="%$session/suggestedContextChips/${i}%" onclick="addToContext(${i})">
-        <span class="chip-text" bind="%$session/suggestedContextChips/${i}%"></span>
+  <div class="chip suggested-chip" bind_display="%$appData/suggestedContextChips/${i}%" onclick="addToContext(${i})">
+        <span class="chip-text" bind="%$appData/suggestedContextChips/${i}%"></span>
         <span class="add-icon">+</span>
       </div>`).join('')}
   </div>
@@ -198,8 +145,8 @@ component('leftPanel', {
     id: 'leftPanel',
     html: () => `<div class="left-panel">
     <div class="controls">
-        <label for="llmModel">LLM Model:</label>
-        <select twoWayBind="%$session.llmModel%" id="llmModel" class="llm-select">
+        <label for="preferedLlmModel">LLM Model:</label>
+        <select twoWayBind="%$userData.preferedLlmModel%" id="preferedLlmModel" class="llm-select">
           ${jb.exec({$: 'zui.decoratedllmModels'}).map(({name,cost,speed,qualitySymbol,speedSymbol}) => `<option value="${name}">
           ${qualitySymbol} ${speedSymbol} ${name} ${speed} (${cost})</option>`).join('')}
         </select>
@@ -220,15 +167,15 @@ component('leftPanel', {
     </div>
     <div class="section tasks">
       <h3>Tasks</h3>${[0,1,2,3,4].map(i => `
-        <div class="task" bind_display="%$session/runningTasks/${i}%">
-          <p bind_text="%$session/runningTasks/${i}/title%"></p>
-          <progress bind_value="%$session/runningTasks/${i}/duration()%" bind_max="%$session/runningTasks/${i}/estimatedDuration%" value="0.04" max="1"></progress>
-          <small bind_text="%$session/runningTasks/${i}/duration()%/%$session/runningTasks/${i}/estimatedDuration% sec">2/50 sec</small>
+        <div class="task" bind_display="%$appData/runningTasks/${i}%">
+          <p bind_text="%$appData/runningTasks/${i}/title%"></p>
+          <progress bind_value="%$appData/runningTasks/${i}/duration()%" bind_max="%$appData/runningTasks/${i}/estimatedDuration%" value="0.04" max="1"></progress>
+          <small bind_text="%$appData/runningTasks/${i}/duration()%/%$appData/runningTasks/${i}/estimatedDuration% sec">2/50 sec</small>
         </div>`).join('')}
       <div class="expandable">
         <h4>Done Tasks</h4>
         <ul>${[0,1,2,3,4].map(i => `
-          <li bind="%$session/doneTasks/${i}/title%">Query 1: 
+          <li bind="%$appData/doneTasks/${i}/title%">Query 1: 
             <span>5 sec</span>, <span>$0.08</span>, <span>500 tokens</span>
           </li>`).join('')}
         </ul>
@@ -296,4 +243,63 @@ component('zui.decoratedllmModels', {
             cost: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(item.cost) + ' / 1M tokens',
         }))
     }
+})
+
+extension('zui','DataBinder', {
+    DataBinder: class DataBinder {
+        constructor(ctx,rootElement) {
+          this.ctx = ctx
+          this.rootElement = rootElement
+          this.boundElements = []
+          this.registerHtmlEvents()
+          this.populateHtml()
+        }
+      
+        registerHtmlEvents() {
+          this.rootElement.querySelectorAll('[twoWayBind]').forEach(el => {
+            const ref = this.ctx.run(el.getAttribute('twoWayBind'), {as: 'ref'})
+            const handler = e => { 
+                jb.db.writeValue(ref, e.target.value, this.ctx)
+                this.ctx.vars.widget.renderRequest = true 
+            }
+            el.addEventListener('input', handler)
+            el.value = jb.val(ref)
+            this.boundElements.push({ el, event: 'input', handler })
+          })
+      
+          this.rootElement.querySelectorAll('[onEnter]').forEach(el => {
+            const handler = e => {
+                if (e.key != 'Enter') return
+                this.ctx.run(el.getAttribute('onEnter'),'action<>')
+                this.ctx.vars.widget.renderRequest = true 
+            }
+            el.addEventListener('keypress', handler)      
+            this.boundElements.push({ el, event: 'keypress', handler })
+          })
+        }
+      
+        populateHtml() {
+          this.rootElement.querySelectorAll('[bind], [bind_max], [bind_value], [bind_text], [bind_display]').forEach( el => {
+            for (const attr of el.attributes) {
+              if (attr.name.startsWith('bind')) {
+                const val = this.ctx.run(attr.value, 'data<>')
+                if (val == null) {
+                    el.style.display = 'none'
+                } else {
+                    if (attr.name === 'bind_value' && el.value != val) el.value = val
+                    if (attr.name === 'bind_max' && el.value != val) el.max = val
+                    if ((attr.name === 'bind_text' || attr.name == 'bind') && el.textContent != val) el.textContent = val
+                    el.style.display = ''
+                }
+              }
+            }
+          })
+        }
+
+        destroy() {
+            this.boundElements.forEach(({ el, event, handler }) => el.removeEventListener(event,handler))
+            this.boundElements = []
+            this.rootElement = null
+        }
+      }
 })

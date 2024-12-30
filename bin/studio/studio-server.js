@@ -169,7 +169,26 @@ function serveFile(req,res,path,_try = 0) {
 //   });
 // }
 
+let redisClient = null
+async function initRedis() {
+  if (!redisClient) {
+    redisClient = require('redis').redisClient
+    await redisClient.connect()
+  }
+  return redisClient
+}
+
 const op_post_handlers = {
+    redisSet: async function(req, res,body,path) {
+      try {
+        const {key,value} = JSON.parse(body)
+        const redisClient = await initRedis()
+        await redisClient.set(key, value)
+        return endWithSuccess(res, `${key} written to redis`)
+      } catch (err) {
+        return endWithFailure(res, `redis Failed to set value. ${err.message}`)
+      }
+    },
     saveComp: function(req, res,body,path) {
         let clientReq;
         try {
@@ -309,6 +328,16 @@ const base_get_handlers = {
 }
 
 const op_get_handlers = {
+    redisGet: async function(req, res) {
+      try {
+        const key = getURLParam(req,'key')
+        const redisClient = await initRedis()
+        const value = await redisClient.get(key)
+        return endWithSuccess(res, JSON.stringify({ key, value }))
+      } catch (err) {
+        return endWithFailure(res, `redis Failed to set value. ${err.message}`)
+      }
+    },
     createNodeWorker: (req,res,path) => {
       const args = JSON.parse(getURLParam(req,'args'))
       const command = `node --inspect-brk ../hosts/node/node-worker.js ${args.map(arg=> 

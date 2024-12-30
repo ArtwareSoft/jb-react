@@ -31,7 +31,7 @@ component('widget', {
                         await frontEnd.handlePayload(updatePayload)
                     }
                 }
-            },
+            }
         }
         return widget
     }
@@ -65,7 +65,7 @@ component('widgetFE', {
 
             function newFECmp(cmpId, be_data) {
                 const cmp = new (class FECmp {}) // used for serialization filtering
-                const fromBeData = { notReady, title, gridElem, frontEndMethods, layoutProps, renderRole, clz, html, css } = be_data
+                const fromBeData = { notReady, title, gridElem, frontEndMethods, layoutProps, renderRole, clz, html, css, userData, appData } = be_data
                 Object.assign(cmp, { id: cmpId, state: {}, flows: [], vars: be_data.frontEndVars || {}, ...fromBeData })
                 if (cmp.html && jb.frame.document) {
                     const temp = jb.frame.document.createElement('div')
