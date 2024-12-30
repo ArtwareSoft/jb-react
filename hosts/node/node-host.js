@@ -86,8 +86,8 @@ globalThis.jbHost = globalThis.jbHost || {
                     let data = ''
                     res.on('data', chunk => data += chunk)
                     res.on('end', () => resolve({text: () => ''+data, json: () => JSON.parse(data)}))
-                    req.on('error', error => reject({error}))
                 })
+                req.on('error', error => reject({ error }))
                 body && req.write(body)
                 req.end()
             } catch(e) {

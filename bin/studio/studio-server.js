@@ -170,10 +170,18 @@ function serveFile(req,res,path,_try = 0) {
 // }
 
 let redisClient = null
+
 async function initRedis() {
   if (!redisClient) {
-    redisClient = require('redis').redisClient
+    const { createClient } = require('redis')
+    redisClient = createClient()
+
+    redisClient.on('error', (err) => {
+      console.error('Redis Client Error', err)
+    })
+
     await redisClient.connect()
+    console.log('Connected to Redis!')
   }
   return redisClient
 }
@@ -333,7 +341,7 @@ const op_get_handlers = {
         const key = getURLParam(req,'key')
         const redisClient = await initRedis()
         const value = await redisClient.get(key)
-        return endWithSuccess(res, JSON.stringify({ key, value }))
+        return endWithSuccess(res, { key, value })
       } catch (err) {
         return endWithFailure(res, `redis Failed to set value. ${err.message}`)
       }

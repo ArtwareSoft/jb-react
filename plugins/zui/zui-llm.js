@@ -1,5 +1,5 @@
 dsl('zui')
-using('llm-api')
+using('llm-api','net')
 
 component('zui.parseItems', {
   impl: ctx => {

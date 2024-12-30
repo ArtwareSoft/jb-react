@@ -97,6 +97,7 @@ if (verbose)
         let res = null, exception = null
         try {
             res = await f()
+            debugger
         } catch(e) {
             exception = e
         }

@@ -40,18 +40,18 @@ component('http.fetch', {
     {id: 'json', as: 'boolean', description: 'convert result to json', type: 'boolean'},
     {id: 'useProxy', as: 'string', options: ',localhost-server,cloud,cloud-test-local'}
   ],
-  impl: (ctx,url,method,headers,body,json,proxy) => {
+  impl: async (ctx,url,method,headers,body,json,proxy) => {
     const reqObj = {
       url,
       method,
       headers: headers || {},
-      mode: 'cors',
+      //mode: 'cors',
       body: (typeof body == 'string' || body == null) ? body : JSON.stringify(body)
     }
 
     const reqStr = jb.frame.encodeURIComponent(JSON.stringify(reqObj))
-		if (ctx.probe)
-			return jb.http_get_cache[reqStr];
+		if (jb.path(jb.probe,['http_get_cache',reqStr]))
+			return jb.probe.http_get_cache[reqStr]
 
     if (proxy == 'localhost-server')
       reqObj.url = `/?op=fetch&req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
@@ -60,9 +60,15 @@ component('http.fetch', {
     else if (proxy == 'cloud-test-local')
       reqObj.url = `http://localhost:8080/fetch?req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
 
-    return jbHost.fetch(reqObj.url, proxy ? {mode: 'cors'} : reqObj)
-			  .then(r => json ? r.json() : r.text())
-				.then(res=> jb.http_get_cache ? (jb.http_get_cache[reqStr] = res) : res)
-			  .catch(e => jb.logException(e,'http.fetch',{ctx}) || [])
+    try {
+      const r = await fetch(reqObj.url, proxy ? {mode: 'cors'} : reqObj)
+      const res = json ? await r.json() : await r.text()
+      if (jb.path(jb.probe,['http_get_cache',reqStr]))
+        jb.probe.http_get_cache[reqStr] = res
+      return res
+    } catch(e) {
+      debugger
+      jb.logException('http.fetch', e)
+    }
 	}
 })
