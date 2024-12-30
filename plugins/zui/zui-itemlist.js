@@ -22,14 +22,14 @@ component('grid', {
     frontEnd.var('initialZoomCenter', ['%$itemsLayout/initialZoom%','%$itemsLayout/center%']),
     variable('inZoomingGrid', true),
     html((ctx,{cmp}) => `<div class="zui-items ${cmp.clz}">`),
-    css('.%$cmp.clz% {position: relative; width: 100%; height: 100%}'),
-    zui.canvasZoom(),
-    init((ctx,{cmp, itemsLayout, widget, $model}) => {
+    css('.%$cmp.clz% {position: relative; width: 100%; height: 100%; overflow: hidden;}'),
+    init((ctx,{cmp, itemsLayout, widget, $model, screenSize}) => {
       const ctxForChildren = ctx.setVars({renderRole: 'zoomingGridElem', itemlistCmp: cmp}) // variableForChildren does not work with init
       cmp.children = [$model.itemControl(ctxForChildren).init()]
       cmp.extendedPayloadWithDescendants = async (res,descendants) => {
         const layoutCalculator = jb.zui.initLayoutCalculator(cmp)
-        const {shownCmps} = layoutCalculator.calcItemLayout(itemsLayout.itemSize, ctx)
+        const estimatedItemSize = [0,1].map(axis => screenSize[axis] / itemsLayout.initialZoom)
+        const {shownCmps} = layoutCalculator.calcItemLayout(estimatedItemSize, ctx)
         const pack = { [res.id]: res }
         await descendants.filter(cmp=>!cmp.dynamicFlowElem).reduce((pr,cmp)=>pr.then(async ()=> {
           const { id , title, layoutProps, zoomingSizeProfile } = cmp
@@ -43,9 +43,17 @@ component('grid', {
     frontEnd.init((ctx,{cmp,widget,initialZoomCenter}) => {
       widget.state.zoom = widget.state.tZoom = initialZoomCenter[0]
       widget.state.center = widget.state.tCenter = initialZoomCenter[1]
+
+      widget.itemlistCmp = cmp
+      if (!document.querySelector(`.${cmp.clz}`)) 
+        document.querySelector('.zui-control').appendChild(cmp.base)
+      const {width,height} = cmp.base.getBoundingClientRect()
+      const canvasSize = [width,height]
+      cmp.enrichCtxWithItemSize = ctx2 => ctx2.setVars({itemSize: [0,1].map(axis=>width/widget.state.zoom),canvasSize})
     }),
-    frontEnd.method('zoomingCss', (ctx,{cmp,itemSize,widget,itemsXyPos}) => {
-      const center = widget.state.center, canvasSize = widget.canvasSize
+    zui.canvasZoom(),
+    frontEnd.method('zoomingCss', (ctx,{cmp,itemSize,canvasSize,widget,itemsXyPos}) => {
+      const center = widget.state.center
       jb.zui.setCss(`sizePos-${cmp.clz}`, [ // todo - move to vars
         `.${cmp.clz} .zui-item { width: ${itemSize[0]}px; height: ${itemSize[1]}px }`,
         ...itemsXyPos.map(xyPos => {
@@ -70,26 +78,21 @@ component('grid', {
       source.animationFrame(),
       rx.flatMap(source.data('%$cmp.animationStep()%')),
       rx.do(({},{widget}) => widget.renderCounter++),
-      //rx.var('itemSize', (ctx,{widget}) => [0,1].map(axis=>widget.canvasSize[0]/widget.state.zoom)),
       sink.action('%$widget.renderCmps()%')
     ),
-    frontEnd.method('render', (ctx,{cmp,widget}) => {
-      const itemSize = [0,1].map(axis=>widget.canvasSize[0]/widget.state.zoom)
+    frontEnd.method('render', (ctx,{cmp,widget,itemSize}) => {
       const {shownCmps, elemsLayout} = cmp.layoutCalculator.calcItemLayout(itemSize,ctx)
       widget.cmpsData[cmp.id].itemLayoutforTest = {shownCmps, elemsLayout}
       const toRender = Object.values(widget.cmps).filter(cmp=>shownCmps.indexOf(cmp.id) != -1)
       const notReady = toRender.filter(cmp=>cmp.notReady).map(cmp=>cmp.id)
-      if (notReady.length) 
+      if (notReady.length)
         widget.beProxy.beUpdateRequest(notReady)
       jb.log('zui itemlist render',{elemsLayout, shownCmps, toRender, notReady, ctx})
-      if (!widget.canvas.querySelector(`.${cmp.clz}`)) widget.canvas.appendChild(cmp.el)
-      const itemlistCmp = cmp
-      const ctxWithItemSize = ctx.setVars({itemSize})
-      itemlistCmp.zoomingCss && itemlistCmp.zoomingCss(ctxWithItemSize)
-      Object.values(widget.cmps).filter(cmp=>cmp.el && cmp.renderRole == 'zoomingGridElem')
-        .forEach(cmp=> cmp.el.style.display = shownCmps.indexOf(cmp.id) == -1 ? 'none' : 'block')
+      cmp.zoomingCss(ctx)
+      Object.values(widget.cmps).filter(cmp=>cmp.base && cmp.renderRole == 'zoomingGridElem')
+        .forEach(cmp=> cmp.base.style.display = shownCmps.indexOf(cmp.id) == -1 ? 'none' : 'block')
       toRender.filter(cmp=>!cmp.notReady)
-          .forEach(cmp=>widget.renderCmp(cmp,ctx.setVars({itemlistCmp, itemSize, elemLayout: elemsLayout[cmp.id]})))
+          .forEach(cmp=>widget.renderCmp(cmp,ctx.setVars({elemLayout: elemsLayout[cmp.id]})))
     })
   )
 })

@@ -45,42 +45,44 @@
 	<div id="testElem"> </div>
 	<div id="show"> </div>
  <script>
-	(async function() {
-	const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
-	await loadScript('plugins/loader/jb-loader.js')
-	if (inGitHub) jbHost.baseUrl = 'https://artwaresoft.github.io/jb-react/'
+	async function test() {
+		const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
+		await loadScript('plugins/loader/jb-loader.js')
+		if (inGitHub) jbHost.baseUrl = 'https://artwaresoft.github.io/jb-react/'
 
-	const repo = urlQuery('repo')
-	const pluginsParam = urlQuery('plugins') || urlQuery('packed_plugins')
-	const plugins = pluginsParam && pluginsParam.split(',') //.map(x=>!x.match(/tests|tester/) ? `${x}-tests` : x)
-	const addRepo = urlQuery('addRepo')
-	const sourceCode = 
-		addRepo && {projects: ['studio'], plugins:['*','studio-tests'], pluginPackages: [{'$':'defaultPackage'},{'$':'jbStudioServer', repo: addRepo }] } 
-		|| plugins && { plugins } 
-		|| repo && {pluginPackages: [{'$':'defaultPackage'},{'$':'jbStudioServer', repo }],plugins:['*'] } 
-		|| { projects: ['studio'], plugins: ['*','studio-tests'] }
+		const repo = urlQuery('repo')
+		const pluginsParam = urlQuery('plugins') || urlQuery('packed_plugins')
+		const plugins = pluginsParam && pluginsParam.split(',') //.map(x=>!x.match(/tests|tester/) ? `${x}-tests` : x)
+		const addRepo = urlQuery('addRepo')
+		const sourceCode = 
+			addRepo && {projects: ['studio'], plugins:['*','studio-tests'], pluginPackages: [{'$':'defaultPackage'},{'$':'jbStudioServer', repo: addRepo }] } 
+			|| plugins && { plugins } 
+			|| repo && {pluginPackages: [{'$':'defaultPackage'},{'$':'jbStudioServer', repo }],plugins:['*'] } 
+			|| { projects: ['studio'], plugins: ['*','studio-tests'] }
 
-	const jbInitFunc = urlQuery('packed_plugins') ? jbInitFromPacked : jbInit
-	const jb = await jbInitFunc('tests',sourceCode,{initSpyByUrl: true})
-	globalThis.jb = jb
-	globalThis.spy = jb.spy
-	if (jb.comps.defaultTheme)
-		jb.exec({$: 'data<>defaultTheme'})
-//			jb.spy.initSpyByUrl()
-	const params = { 
-		testType: '',
-		show: window.location.href.indexOf('&show') != -1,
-		quiet: window.location.href.indexOf('&quiet') != -1,
-		specificTest: urlQuery('test'),
-		notPattern: urlQuery('not'),
-		coveredTestsOf: urlQuery('coveredTestsOf'),
-		top: window.location.href.match(/\btop\b/),
-		showOnlyTest: urlQuery('show') == 'onlyTest',
-		...jb.objFromEntries(['repo','rerun','pattern','take','remoteTests'].map(x=>[x,urlQuery(x)]))
+		const jbInitFunc = urlQuery('packed_plugins') ? jbInitFromPacked : jbInit
+		const jb = await jbInitFunc('tests',sourceCode,{initSpyByUrl: true})
+		globalThis.jb = jb
+		globalThis.spy = jb.spy
+		if (jb.comps.defaultTheme)
+			jb.exec({$: 'data<>defaultTheme'})
+	//			jb.spy.initSpyByUrl()
+		const params = { 
+			testType: '',
+			show: window.location.href.indexOf('&show') != -1,
+			quiet: window.location.href.indexOf('&quiet') != -1,
+			specificTest: urlQuery('test'),
+			notPattern: urlQuery('not'),
+			coveredTestsOf: urlQuery('coveredTestsOf'),
+			top: window.location.href.match(/\btop\b/),
+			showOnlyTest: urlQuery('show') == 'onlyTest',
+			...jb.objFromEntries(['repo','rerun','pattern','take','remoteTests'].map(x=>[x,urlQuery(x)]))
+		}
+		console.log(params)
+		await jb.test.runTests(params)
 	}
-	console.log(params)
-	jb.test.runTests(params)
-	})()
+	test()
+
   </script>
 </body>
 </html>

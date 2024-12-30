@@ -1,14 +1,74 @@
 dsl('zui')
 using('llm-api')
 
-component('session', {
-  type: 'session',
+component('zui.parseItems', {
+  impl: ctx => {
+    const text = ctx.data
+    const jsonText = text.split('```json').pop().split('```')[0]
+    try {
+      return JSON.parse(jsonText)
+    } catch (e) {
+      debugger
+    }
+  }
+})
+
+component('zui.itemKeysFromLlm', {
   params: [
-    {id: 'query', as: 'string'},
-    {id: 'contextCrums', as: 'array'},
-    {id: 'budget', type: 'budget'},
-    {id: 'usage', type: 'usage' }
-  ]
+    {id: 'session', type: 'session'},
+    {id: 'noOfItems', as: 'number', defaultValue: 5}
+  ],
+  impl: pipe(
+    Var('hints', join(', ', { items: list('%$session/genericContextChips%','%$session/contextChips%') })),
+    Var('startTime', () => new Date().getTime()),
+    llmViaApi.completions({
+      chat: [
+        user(`You are an expert assistant specialized in retrieving structured and homogeneous data. 
+
+      Your task is to generate a JSON list of %$noOfItems% items based on a given query and context hints. 
+      Each item must include:
+      - A title: The name of the item.
+      - A relevancy score: A number between 0 to 1. when 1 is the highest relevancy to the query and context.
+      
+      ### Input:
+      - **Query**: %$session/query%
+      - **Hints**: %$hints%
+      
+      ### Requirements:
+      1. All %$noOfItems% items must be relevant to the query and tailored to the context hints.
+      2. Items must belong to the same category, ensuring homogeneity.
+      3. Each item in the JSON list must have:
+         - A "title" (name of the item).
+         - A "relevancy" score between 1 and 100.
+      4. Ensure the relevancy scores are realistic and vary slightly to reflect relevance to the query and context.
+      
+      ### Example Input:
+      - **Query**: Running shoes
+      - **Hints**: Man, 30 years old, training
+      
+      ### Example Output:
+      \`\`\`json
+      [
+        {"title": "Nike Air Zoom Pegasus 39", "relevancy": 98},
+        {"title": "Adidas Ultraboost 22", "relevancy": 97},
+        ...
+        {"title": "Hoka Clifton 9", "relevancy": 89}
+      ]
+      `)
+      ],
+      llmModel: '%$session/llmModel%',
+      maxTokens: 25000,
+      includeSystemMessages: true
+    }),
+    split('```json\n', { part: 'last' }),
+    split('```', { part: 'first' }),
+    json.parse(),
+    extend(prop('system', obj(
+      prop('creationCtxVer', '%$session/ctxVer%'),
+      prop('creationCtxVer', '%$session/ctxVer%'),
+      prop('creationModel', '%$session/llmModel/name%')
+    )))
+  )
 })
 
 component('zui.itemsFromLlm', {
@@ -16,7 +76,7 @@ component('zui.itemsFromLlm', {
     {id: 'session', type: 'session' },
     {id: 'exampleItem', type: 'item-data' },
     {id: 'titles', as: 'array' },
-    {id: 'llmModel', type: 'llm_model'}
+    {id: 'llmModel', type: 'model<llm>'}
   ],
   impl: llmViaApi.completions({
     chat: [
@@ -34,28 +94,8 @@ component('zui.itemsFromLlm', {
   })
 })
 
-component('model', {
-  type: 'llm_model',
-  params: [
-    {id: 'name', as: 'string'},
-    {id: 'cost', as: 'number', description: '$/M tokens'},
-    {id: 'reasoning', as: 'boolean', type: 'boolean<>'},
-    {id: 'estimatedDuration', as: 'number', description: 'item/sec'}
-  ]
-})
+// please try only symptoms visible to the doctor or easily detectible by question or test
 
-component('o1', {
-  type: 'llm_model',
-  impl: model('o1-preview', 60, { reasoning: true, estimatedDuration: 50 })
-})
-component('o1-mini', {
-  type: 'llm_model',
-  impl: model('o1-mini', 20, { reasoning: true, estimatedDuration: 20 })
-})
-component('gpt35', {
-  type: 'llm_model',
-  impl: model('gpt-3.5-turbo-0125', 20, { estimatedDuration: 20 })
-})
 
 component('zui.smartMetadata', {
   params: [

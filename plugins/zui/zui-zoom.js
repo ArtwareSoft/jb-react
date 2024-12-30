@@ -46,17 +46,17 @@ component('zui.canvasZoom', {
 
 extension('zui','zoom', {
     initZoom(ctx) {
-        const vars = ctx.vars
-        const {widget, cmp, uiTest } =  vars
+        const {widget, cmp, uiTest } =  ctx.vars
         if (uiTest) return
-        const {state, canvas} = widget
-        const w = canvas.offsetWidth, h = canvas.offsetHeight
-        if (canvas.addEventListener && canvas.style) {
-          canvas.style.touchAction = 'none'
-          canvas.oncontextmenu = e => (e.preventDefault(), false)
+        const {state} = widget
+        const el = cmp.base
+        const w = el.offsetWidth, h = el.offsetHeight
+        if (el.addEventListener && el.style) {
+          el.style.touchAction = 'none'
+          el.oncontextmenu = e => (e.preventDefault(), false)
 
           ;['pointerdown', 'pointermove', 'pointerup', 'touchstart', 'touchmove', 'touchend']
-              .forEach(event => canvas.addEventListener(event, e => e.preventDefault()))
+              .forEach(event => el.addEventListener(event, e => e.preventDefault()))
         }
   
       Object.assign(cmp, {
@@ -96,10 +96,9 @@ extension('zui','zoom', {
           }
         },
         updateZoomState({ dz, dp }) {
-          let {tZoom, tCenter} =  state
-          const factor = jb.zui.isMobile() ? 3 : 3
+          let {tZoom, tCenter,sensitivity} =  state
           if (dz)
-            tZoom *= dz**factor
+            tZoom *= dz**sensitivity
           const tZoomF = Math.floor(tZoom)
           if (dp)
             tCenter = [tCenter[0] - dp[0]/w*tZoomF, tCenter[1] + dp[1]/h*tZoomF]
@@ -116,26 +115,25 @@ extension('zui','zoom', {
           jb.log('zui event',{dz, dp, tZoom, tCenter, cmp, widget})
         },      
         animationStep() {
-          let { tZoom, tCenter, zoom, center } = state
-          if ( zoom == tZoom && center[0] == tCenter[0] && center[1] == tCenter[1] && !this.renderRequest) 
+          let { tZoom, tCenter, zoom, center, speed } = state
+          if ( zoom == tZoom && center[0] == tCenter[0] && center[1] == tCenter[1] && !widget.renderRequest) 
             return [] // no rendering
           // used at initialiation
           zoom = zoom || tZoom
           ;[0,1].forEach(axis=>center[axis] = center[axis] == null ? tCenter[axis] : center[axis])
   
           // zoom gets closer to targetZoom, when 1% close assign its value
-          const SPEED = jb.zui.isMobile() ? 5 : 4
-          zoom = zoom + (tZoom - zoom) / SPEED
+          zoom = zoom + (tZoom - zoom) / speed
           if (!tZoom || Math.abs((zoom-tZoom)/tZoom) < 0.01) 
             zoom = tZoom
           ;[0,1].forEach(axis=> {
-            center[axis] = center[axis] + (tCenter[axis] - center[axis]) / SPEED
+            center[axis] = center[axis] + (tCenter[axis] - center[axis]) / speed
             if (!tCenter[axis] || Math.abs((center[axis]-tCenter[axis])/tCenter[axis]) < 0.01) 
               center[axis] = tCenter[axis]
           })
           
           state.zoom = zoom
-          this.renderRequest = false
+          widget.renderRequest = false
           return [state]
         },            
         pointers: [],
@@ -160,7 +158,7 @@ extension('zui','zoom', {
           //console.log(found)
           if (found != -1)
             this.pointers.splice(found, 1)
-        } ,
+        },
         momentumEvents(pid) {
           const pointer = this.pointers.find(x=>x.pid == pid)
           if (!pointer) return { delay: 0, events: [] }

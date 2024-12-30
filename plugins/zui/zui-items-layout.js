@@ -47,12 +47,12 @@ component('spiral', {
     {id: 'pivot', as: 'string'}
   ],
   impl: (ctx,pivot) => {
-    const { items, canvasSize } = ctx.vars
+    const { items, screenSize } = ctx.vars
     const numericAtt = `n_${pivot}`
     items.forEach(item => (item[numericAtt] = +item[pivot]))
     items.sort((i1, i2) => i1[numericAtt] - i2[numericAtt])
 
-    const aspectRatio = canvasSize[0] / canvasSize[1]
+    const aspectRatio = screenSize[0] / screenSize[1]
     const itemsPerRow = Math.ceil(Math.sqrt(items.length / aspectRatio))
     const gridSize = [itemsPerRow,Math.ceil(items.length / itemsPerRow)]
     const center = [0, 1].map(axis => Math.floor(gridSize[axis] / 2))
@@ -77,8 +77,7 @@ component('spiral', {
     })
     
     const initialZoom = Math.max(...gridSize)
-    const itemSize = [0, 1].map(axis => canvasSize[axis] / initialZoom) // Item size in canvas units
-    return { initialZoom, center, gridSize, itemSize }
+    return { initialZoom, center, gridSize }
   }
 })
 
@@ -90,7 +89,7 @@ component('groupByScatter', {
     {id: 'groupGap', as: 'number', defaultValue: 1}
   ],
   impl: (ctx, groupBy, sortAtt, groupGap) => {
-    const { items, canvasSize } = ctx.vars
+    const { items } = ctx.vars
     const groups = {}
     if (sortAtt) {
       const numericAtt = `n_${sortAtt}`
@@ -171,8 +170,7 @@ component('groupByScatter', {
     const gridSize = [gridBounds.maxX - gridBounds.minX, gridBounds.maxY - gridBounds.minY]
     const center = [0, 1].map(axis => Math.floor(gridSize[axis] / 2))
     const initialZoom = Math.max(...gridSize)
-    const itemSize = [0, 1].map(axis => canvasSize[axis] / initialZoom)
-    return { initialZoom, center, gridSize, itemSize }
+    return { initialZoom, center, gridSize }
 
     function spiral(groupItems, center) {
       let x = center[0], y = center[1]
@@ -202,7 +200,7 @@ extension('zui','gridItemsLayout', {
   gridItemsLayout({gridSize,xyPivots, initialZoom, center}, ctx) {
     const {scaleX, scaleY} = xyPivots(ctx.setVars({gridSize}))
     const [X,Y] = gridSize.length == 1 ? [gridSize,gridSize] : gridSize
-    const {items, canvasSize} = ctx.vars
+    const {items} = ctx.vars
     if (!scaleX || !scaleY)
       return jb.logError('no xyPivots for position calculation',{scaleX, scaleY, ctx})
 
@@ -223,8 +221,7 @@ extension('zui','gridItemsLayout', {
 
     jb.log('zui gridItemsLayout',{mat})
 
-    const itemSize = [0,1].map(axis=>canvasSize[axis]/initialZoom) // *gridSize[axis]))
-    return { mat, initialZoom, center, gridSize: [X,Y], itemSize }
+    return { mat, initialZoom, center, gridSize: [X,Y] }
 
     function repulsion() {
         for (let i=0;i<X*Y;i++)

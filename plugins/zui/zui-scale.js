@@ -114,8 +114,6 @@ component('Case', {
   impl: (ctx,val,symbol) => ({entry: [val,symbol]})
 })
 
-
-
 component('list', {
   type: 'symbol_scale',
   params: [
@@ -129,6 +127,22 @@ component('success3', {
   impl: list('✔️', '➖', '❌')
 })
 
+component('iqScale', {
+  type: 'symbol_scale',
+  impl: list('🐦', '🐒', '🐋', '🐬', '🧒', '🧑', '🧑‍🎓')
+})
+
+
+component('star5', {
+  type: 'symbol_scale',
+  impl: list('⭐', '⭐⭐', '⭐⭐⭐', '⭐⭐⭐⭐', '⭐⭐⭐⭐⭐')
+})
+
+component('speedScale10', {
+  type: 'symbol_scale',
+  impl: list('🚶','🚶‍♀️','🏃','🏃‍♀️','🚴','🚴‍♀️','🚗','🏎️','✈️','🚀')
+})
+
 component('unitScale', {
   type: 'unit_scale',
   params: [
@@ -137,6 +151,7 @@ component('unitScale', {
   ],
   impl: (ctx, _att, calc) => {
     const items = ctx.vars.items || []
+    if (items.length == 0) return () => 0
     const att = `fixed_${_att}`
     items.forEach((item,i) => item[att] = calc.profile ? calc(ctx.setData(item)) : _att == 'index' ? i : +item[_att] )
     items.sort((i1,i2) => i1[att] - i2[att])

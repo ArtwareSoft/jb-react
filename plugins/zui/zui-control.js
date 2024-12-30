@@ -86,9 +86,9 @@ extension('zui','control' , {
 
             return this
         }
-        descendantsTillGrid() {
-            return (this.children||[]).filter(cmp=>!cmp.extendedPayloadWithDescendants).reduce((acc,cmp) => [...acc,cmp,...cmp.descendantsTillGrid()], [])
-        }
+        // allDescendants() {
+        //     return (this.children||[]).filter(cmp=>!cmp.extendedPayloadWithDescendants).reduce((acc,cmp) => [...acc,cmp,...cmp.descendantsTillGrid()], [])
+        // }
         allDescendants() {
             return (this.children||[]).reduce((acc,cmp) => [...acc,cmp,...cmp.allDescendants()], [])
         }
@@ -101,9 +101,9 @@ extension('zui','control' , {
             if (!this.props)
                 return jb.logError(`glPayload - cmp ${this.title} not initialized`,{cmp: this, ctx: cmp.ctx})
             if (this.enrichPropsFromDecendents)
-                vars = {...vars, ...await this.enrichPropsFromDecendents(this.descendantsTillGrid())}
+                vars = {...vars, ...await this.enrichPropsFromDecendents(this.allDescendants())}
             if (this.enrichCtxFromDecendents)
-                vars = {...vars, ...await this.enrichCtxFromDecendents(this.descendantsTillGrid()) }
+                vars = {...vars, ...await this.enrichCtxFromDecendents(this.allDescendants()) }
 
             const ctxToUse = vars ? this.calcCtx.setVars(vars) : this.calcCtx
             ;[...(this.calcProp || []),...(this.method || [])].forEach(p=>typeof p.value == 'function' && Object.defineProperty(p.value, 'name', { value: p.id }))    
@@ -126,15 +126,15 @@ extension('zui','control' , {
             const html = this.html && this.html(ctxToUse)
             const css = (this.css || []).flatMap(x=>x(ctxToUse))
 
-            const { id , title, layoutProps, inZoomingGrid, renderRole, zoomingSizeProfile, topOfWidget, clz } = this
-            let res = { id, title, frontEndMethods, frontEndVars, topOfWidget, noOfItems, methods, zoomingCssProfile,  html, css, clz,
+            const { id , title, layoutProps, inZoomingGrid, renderRole, zoomingSizeProfile, clz, appCmp } = this
+            let res = { id, title, appCmp, frontEndMethods, frontEndVars, noOfItems, methods, zoomingCssProfile,  html, css, clz,
                 zoomingSizeProfile, layoutProps, inZoomingGrid, renderRole }
             if (JSON.stringify(res).indexOf('null') != -1)
                 jb.logError(`cmp ${this.title} has nulls in payload`, {cmp: this, ctx: this.ctx})
             if (this.children)
                 res.childrenIds = this.children.map(({id})=>id).join(',')
 
-            return this.extendedPayloadWithDescendants ? this.extendedPayloadWithDescendants(res,this.descendantsTillGrid()) : res
+            return this.extendedPayloadWithDescendants ? this.extendedPayloadWithDescendants(res,this.allDescendants()) : res
         }
         runBEMethod(method, data, vars, options = {}) {
             const {doNotUseUserReqTx, dataMethod, userReqTx} = options

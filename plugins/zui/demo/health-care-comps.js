@@ -1,6 +1,15 @@
 dsl('zui')
 using('zui')
 
+component('healthCare.fixed5Items', {
+  type: 'domain',
+  impl: domain('healthCare condition', {
+    itemsLayout: groupByScatter('category', { sort: 'likelihood' }),
+    zuiControl: firstToFit(healthCare.conditionCard(), healthCare.conditionIconBox()),
+    calcItems: healthCare.conditionDataSample()
+  })
+})
+
 component('healthCare.conditionCard', {
   type: 'control',
   impl: card('%title%', '%description%', {

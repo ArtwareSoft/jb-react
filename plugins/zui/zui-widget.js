@@ -4,20 +4,20 @@ component('widget', {
   type: 'widget',
   params: [
     {id: 'control', type: 'control', dynamic: true},
-    {id: 'canvasSizeForTest', as: 'array', defaultValue: [600,600]},
+    {id: 'screenSizeForTest', as: 'array', defaultValue: [600,600]},
     {id: 'frontEnd', type: 'widget_frontend'},
     {id: 'features', type: 'feature' }
   ],
   impl: ctx => {
-        const {canvasSizeForTest, control, frontEnd, features} = ctx.params
-        frontEnd.initFE(canvasSizeForTest)
+        const {screenSizeForTest, control, frontEnd, features} = ctx.params
+        frontEnd.initFE(screenSizeForTest)
         
         const widget = {
             frontEnd,
             async init() {
-                const ctxForBe = ctx.setVars({canvasSize: frontEnd.canvasSize, widget: this, renderRole: 'fixed'})
+                const ctxForBe = ctx.setVars({screenSize: frontEnd.screenSize, widget: this})
                 const beCmp = this.be_cmp = control(ctxForBe).applyFeatures(features,20)
-                beCmp.init({topOfWidget: true})
+                beCmp.init({appCmp: true})
 
                 const _payload = await beCmp.calcPayload(beCmp)
                 const payload = _payload.id ? {[_payload.id] : _payload }: _payload
@@ -37,65 +37,24 @@ component('widget', {
     }
 })
 
-component('app', {
-    type: 'application',
-    params: [
-      {id: 'selector', as: 'string', defaultValue: 'body'},
-    ],
-    impl: (ctx, selector) => ({
-        init(appSize) {
-            if (!ctx.vars.uiTest && jb.frame.document) {
-                jb.zui.setCss('app',`html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }`)
-                const doc = jb.frame.document
-                // const appElem = jb.frame.document.createElement('div')
-                // app.innerHtml = 
-                const canvas = doc.createElement('div')
-                canvas.classList.add('widget-top')
-                canvas.style.width = '100vw'
-                canvas.style.height = '100vh'
-                doc.querySelector(selector).appendChild(canvas)
-                const rect = canvas.getBoundingClientRect()
-                return { canvas, canvasSize: [rect.width, rect.height] }
-            }
-        }
-        
-    })
-})
-
 component('widgetFE', {
   type: 'widget_frontend',
-  params: [
-    {id: 'app', type: 'application', defaultValue: app() },
-  ],
-  impl: (ctx, app) => ({
+  impl: (ctx) => ({
         cmps: {},
         cmpsData: {},
         renderCounter: 1,
-        state: {tCenter: [1,1], tZoom : 2, zoom: 2, center: [1,1]},
+        state: {tCenter: [1,1], tZoom : 2, zoom: 2, center: [1,1], speed: 3, sensitivity: 5},
 
-        initFE(canvasSizeForTest) {
-            if (!ctx.vars.uiTest && jb.frame.document) {
-                const {canvas,canvasSize} = app.init()
-                this.canvas = canvas
-                this.canvasSize = canvasSize
-            } else {
-                this.canvasSize = canvasSizeForTest
-            }
+        initFE(screenSizeForTest) {
             this.ctx = new jb.core.jbCtx().setVars({widget: this, canUseConsole: ctx.vars.quiet, uiTest: ctx.vars.uiTest})
+            this.screenSize = (!ctx.vars.uiTest && jb.frame.window) ? [window.innerWidth,window.innerHeight] : screenSizeForTest
             this.ctx.probe = ctx.probe
         },
         async handlePayload(payload) {
             const ctx = this.ctx
             Object.entries(payload).map(([cmpId,be_data]) => {
-                const cmp = this.cmps[cmpId] = newFECmp(cmpId, be_data, this.canvas, this.canvas)
+                const cmp = this.cmps[cmpId] = newFECmp(cmpId, be_data)
                 this.cmpsData[cmpId] = { ...(this.cmpsData[cmpId] || {}), ...be_data }
-                if (cmp.html && jb.frame.document) {
-                    const temp = jb.frame.document.createElement('div')
-                    temp.innerHTML = cmp.html
-                    cmp.el = temp.children[0]
-                }
-                if (cmp.css)
-                    jb.zui.setCmpCss(cmp)
             })
             jb.log('zui handlePayload loaded in FE',{cmpsData: this.cmpsData, payload,ctx})
             // dirty - build itemlist layout calculator only after loading its ancestors
@@ -104,10 +63,20 @@ component('widgetFE', {
 
             this.renderRequest = true
 
-            function newFECmp(cmpId, be_data, canvas) {
+            function newFECmp(cmpId, be_data) {
                 const cmp = new (class FECmp {}) // used for serialization filtering
                 const fromBeData = { notReady, title, gridElem, frontEndMethods, layoutProps, renderRole, clz, html, css } = be_data
-                Object.assign(cmp, { id: cmpId, state: {}, flows: [], base: canvas, vars: be_data.frontEndVars || {}, ...fromBeData })
+                Object.assign(cmp, { id: cmpId, state: {}, flows: [], vars: be_data.frontEndVars || {}, ...fromBeData })
+                if (cmp.html && jb.frame.document) {
+                    const temp = jb.frame.document.createElement('div')
+                    temp.innerHTML = cmp.html
+                    cmp.base = temp.children[0]
+                    if (be_data.appCmp) 
+                        jb.frame.document.body.appendChild(cmp.base)
+                }
+                if (cmp.css)
+                    jb.zui.setCmpCss(cmp)
+
                 if (cmp.notReady) return cmp
                 cmp.destroyed = new Promise(resolve=> cmp.resolveDestroyed = resolve)
                 jb.zui.runFEMethod(cmp,'calcProps',{silent:true,ctx})
@@ -120,22 +89,22 @@ component('widgetFE', {
             }
         },
         renderCmps(ctx) {
+            const ctxToUse = this.itemlistCmp.enrichCtxWithItemSize(ctx).setVars({widget: this})
             if (this.ctx.vars.canUseConsole) console.log(this.state.zoom, ...this.state.center)
-            Object.values(this.cmps).filter(cmp=>!cmp.notReady && !cmp.flowElem && cmp.renderRole !='zoomingGridElem')
-                .forEach(cmp=>cmp.render ? cmp.render(this.ctx) : this.renderCmp(cmp,this.ctx))
-        },        
+            Object.values(this.cmps).filter(cmp=>!cmp.notReady && cmp.renderRole !='zoomingGridElem')
+                .forEach(cmp=>cmp.render ? cmp.render(ctxToUse) : this.renderCmp(cmp,ctxToUse))
+        },
         renderCmp(cmp,ctx) {
-            const { itemlistCmp } = ctx.vars
-            if (cmp.el && itemlistCmp) {
-                if (!itemlistCmp.el.querySelector(`.${cmp.clz}`)) itemlistCmp.el.appendChild(cmp.el)
+            if (cmp.base) {
+                if (!this.itemlistCmp.base.querySelector(`.${cmp.clz}`)) this.itemlistCmp.base.appendChild(cmp.base)
                 cmp.zoomingCss && cmp.zoomingCss(ctx)
-                cmp.el.style.display = 'block'
+                cmp.base.style.display = 'block'
             }
         }
     })
 })
 
-extension('zui','html', {
+extension('zui', 'frontend', {
     setCmpCss(cmp) {
         jb.zui.setCss(cmp.clz, cmp.css.join('\n'))
     },
@@ -155,9 +124,6 @@ extension('zui','html', {
         }
         styleTag.textContent = Array.isArray(content)? content.join('\n') : content
     },
-})
-
-extension('zui', 'frontend', {
     rxPipeName: profile => (jb.path(profile, '0.event') || jb.path(profile, '0.$') || '') + '...' + jb.path(profile, 'length'),
     runFEMethod(cmp,method,{data,_vars,silent,ctx} = {}) {
         if (cmp.state.frontEndStatus != 'ready' && ['onRefresh','initOrRefresh','init','calcProps'].indexOf(method) == -1)
@@ -186,14 +152,4 @@ extension('zui', 'frontend', {
             if (_flow && res) cmp.flows.unshift({flow: res, profile: _flow})
         }, `frontEnd-${method}`,ctx))
     }
-})
-
-component('session', {
-    type: 'session',
-    params: [
-      {id: 'query', as: 'string'},
-      {id: 'contextCrums', as: 'array'},
-      {id: 'budget', type: 'budget'},
-      {id: 'usage', type: 'usage' }
-    ]
 })
