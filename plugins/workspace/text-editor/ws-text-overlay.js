@@ -56,7 +56,7 @@ component('workspace.compOverlay', {
       }
       function checkHash() {
         const compTextInDoc = cmp.editor.getValue().split('\n').slice(fromLine,toLine).join('\n')
-        const currentHash = jb.tgpTextEditor.calcHash(compTextInDoc)
+        const currentHash = jb.utils.calcHash(compTextInDoc)
         if (currentHash != compTextHash)
           return jb.logError('add overlay comp hash mismatch',{ctx})        
       }

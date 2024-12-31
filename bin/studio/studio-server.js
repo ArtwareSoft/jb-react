@@ -175,11 +175,7 @@ async function initRedis() {
   if (!redisClient) {
     const { createClient } = require('redis')
     redisClient = createClient()
-
-    redisClient.on('error', (err) => {
-      console.error('Redis Client Error', err)
-    })
-
+    redisClient.on('error', (err) => console.error('Redis Client Error', err))
     await redisClient.connect()
     console.log('Connected to Redis!')
   }
@@ -341,6 +337,8 @@ const op_get_handlers = {
         const key = getURLParam(req,'key')
         const redisClient = await initRedis()
         const value = await redisClient.get(key)
+        if (value == null)
+          return endWithFailure(res, `redis Failed to find key. ${key}`)
         return endWithSuccess(res, { key, value })
       } catch (err) {
         return endWithFailure(res, `redis Failed to set value. ${err.message}`)

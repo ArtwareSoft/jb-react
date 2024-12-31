@@ -362,7 +362,7 @@ component('tgpTextEditor.hash', {
   params: [
     {id: 'str', as: 'string'}
   ],
-  impl: (ctx,str) => jb.tgpTextEditor.calcHash(str)
+  impl: (ctx,str) => jb.utils.calcHash(str)
 })
 
 component('tgpTextEditor.offsetToLineCol', {

@@ -25,11 +25,6 @@ Object.assign(jb, {
 })
 
 extension('utils', 'core', {
-    // singleInType(parentParam, tgpModel) {
-    //     const comps = tgpModel && tgpModel.comps || jb.comps
-    //     const _type = parentParam && parentParam.type && parentParam.type.split('[')[0]
-    //     return _type && comps[_type] && comps[_type].singleInType && _type
-    // },
     dslType(fullId) {
       if (fullId.indexOf('<') == -1)
         jb.logError(`util dslType not fullId ${fullId}`,{})
@@ -361,7 +356,41 @@ extension('utils', 'generic', {
       const cleanedVal = typeof val == 'object' ? Object.fromEntries(Object.entries(val).filter(([_, v]) => v != null)) : val
       const newVal = typeof val == 'object' ? {...(curVal||{}), ...cleanedVal } : val
       jb.frame.sessionStorage.setItem(id, JSON.stringify(newVal))
-    }
+    },
+    async redisStorage(_key,_value) {
+      const key = ''+_key
+      if (_value == undefined) {
+        if (jbHost.isNode)
+          return JSON.parse(await (await initRedis()).get(key))
+        const ret = await (await fetch(`http://localhost:8082/?op=redisGet&key=${key}`)).json()
+        if (ret.type == 'error') return null
+        return JSON.parse(ret.message.value)
+      }
+      const value = JSON.stringify(_value)
+      if (jbHost.isNode)
+        return (await initRedis()).set(key,value)
+      return fetch(`http://localhost:8082/?op=redisSet`, {method: 'POST', body: JSON.stringify({key,value}) })
+
+      async function initRedis() {
+        if (!jb.utils.redisClient) {
+          const { createClient } = require('redis')
+          jb.utils.redisClient = createClient()
+          jb.utils.redisClient.on('error', (err) => jb.logError('Redis Client Error', {err}))
+          await jb.utils.redisClient.connect()
+        }
+        return jb.utils.redisClient
+      }
+    },
+    calcHash(str) {
+      let hash = 0, i, chr;
+      if (str.length === 0) return hash;
+      for (i = 0; i < str.length; i++) {
+        chr = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + chr;
+        hash |= 0; // Convert to 32bit integer
+      }
+      return hash;
+    },
 })
 
 extension('utils', 'callbag', {

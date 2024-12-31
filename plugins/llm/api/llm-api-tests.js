@@ -9,6 +9,17 @@ component('llmTest.hello', {
   })
 })
 
+component('llmTest.hello.withRedis', {
+  doNotRunInTests: true,
+  impl: dataTest({
+    calculate: llmViaApi.completions(system('please answer clearly'), user('how large is usa'), {
+      useRedisCache: true
+    }),
+    expectedResult: contains('usa'),
+    timeout: 5000
+  })
+})
+
 component('llmTest.count', {
   doNotRunInTests: true,
   impl: browserTest({

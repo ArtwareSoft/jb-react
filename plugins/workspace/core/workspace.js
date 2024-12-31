@@ -123,10 +123,10 @@ component('workspace.documentSectionRef', {
       const _from = jb.tgpTextEditor.asOffset(from,text), _to = jb.tgpTextEditor.asOffset(to,text)
       const section = text.slice(_from,_to)
       if (val == undefined) {
-        //this.sectionHash = jb.tgpTextEditor.calcHash(section)
+        //this.sectionHash = jb.utils.calcHash(section)
         return section
       }
-      // if (this.sectionHash != jb.tgpTextEditor.calcHash(section))
+      // if (this.sectionHash != jb.utils.calcHash(section))
       //   return jb.logError(`workspace documentSectionRef doc section was changed ${docUri}`,{from,to,_from,_to, ctx})
       jb.workspace.openDocs[docUri].text = text.slice(0,_from) + val + text.slice(_to)
     }

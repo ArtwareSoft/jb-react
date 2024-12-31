@@ -7,26 +7,37 @@ component('llmViaApi.completions', {
     {id: 'chat', type: 'message[]', dynamic: true},
     {id: 'llmModel', type: 'model', defaultValue: gpt_35_turbo_0125()},
     {id: 'maxTokens', defaultValue: 100},
-    {id: 'includeSystemMessages', as: 'boolean', type: 'boolean<>'}
+    {id: 'includeSystemMessages', as: 'boolean', type: 'boolean<>'},
+    {id: 'useRedisCache', as: 'boolean', type: 'boolean<>'}
   ],
-  impl: async (ctx,chat,model,max_tokens,includeSystemMessages) => {
-        const settings = !jbHost.isNode && await fetch(`/?op=settings`).then(res=>res.json())
-        const apiKey = jbHost.isNode ? process.env.OPENAI_API_KEY: settings.OPENAI_API_KEY
-        const ret = await jbHost.fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
-              },
-              body: JSON.stringify({
-                ...(model.reasoning ? {max_completion_tokens: max_tokens} : {max_tokens : Math.min(max_tokens, model.maxContextLength)}),
-                model: model.name, top_p: 1, frequency_penalty: 0, presence_penalty: 0,
-                messages: chat()                
-              })
-            }
-          )
-        const res = await ret.json()
+  impl: async (ctx,chatF,model,max_tokens,includeSystemMessages,useRedisCache) => {
+        const chat = chatF()
+        const key = jb.utils.calcHash(model.name + JSON.stringify(chat))
+        let res = useRedisCache && await jb.utils.redisStorage(key)
+        if (!res) {
+          const settings = !jbHost.isNode && await fetch(`/?op=settings`).then(res=>res.json())
+          const apiKey = jbHost.isNode ? process.env.OPENAI_API_KEY: settings.OPENAI_API_KEY
+          const ret = await fetch('https://api.openai.com/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                  ...(model.reasoning ? {max_completion_tokens: max_tokens} : {max_tokens : Math.min(max_tokens, model.maxContextLength)}),
+                  model: model.name, top_p: 1, frequency_penalty: 0, presence_penalty: 0,
+                  messages: chat
+                })
+              }
+            )
+          res = await ret.json()
+          if (useRedisCache) {
+            debugger
+            await jb.utils.redisStorage(key,res)
+            await jb.utils.redisStorage(`${key}_chat`,chat)
+          }
+        }
         return includeSystemMessages ? res: (jb.path(res,'choices.0.message.content') || res)
     }
 })

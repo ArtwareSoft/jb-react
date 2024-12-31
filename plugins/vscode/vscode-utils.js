@@ -19,7 +19,7 @@ extension('vscode', 'utils', {
                     const { compText } = jb.tgpTextEditor.closestComp(editor.document.getText(),
                         editor.selection.active.line, editor.selection.active.character, editor.document.uri.path)
                     const code = '{\n' + (compText||'').split('\n').slice(1).join('\n').slice(0, -1)
-                    if (hash != jb.tgpTextEditor.calcHash(code))
+                    if (hash != jb.utils.calcHash(code))
                         return jb.logError('applyEdit - different hash. edit will not be applied',{edit, text})
                 }
                 await vscodeNS.workspace.applyEdit(wEdit)

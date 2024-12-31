@@ -426,7 +426,7 @@ extension('langService', 'api', {
         const newRes = jb.utils.prettyPrintWithPositions(newComp, { initialPath: compId, tgpModel })
         const edit = jb.tgpTextEditor.deltaFileContent(text, newRes.text , compLine)
         jb.log('lang services delete', { edit, ...compProps })
-        return { edit, cursorPos: calcNewPos(newRes), hash: jb.tgpTextEditor.calcHash(text) }
+        return { edit, cursorPos: calcNewPos(newRes), hash: jb.utils.calcHash(text) }
 
         function calcNewPos(prettyPrintData) {
             let { line, col } = jb.tgpTextEditor.getPosOfPath(path, 'begin',{prettyPrintData})
@@ -453,7 +453,7 @@ extension('langService', 'api', {
         const newRes = jb.utils.prettyPrintWithPositions(newComp, { initialPath: compId, tgpModel })
         const edit = jb.tgpTextEditor.deltaFileContent(text, newRes.text , compLine)
         jb.log('lang services disable', { edit, ...compProps })
-        return { edit, cursorPos: calcNewPos(newRes) , hash: jb.tgpTextEditor.calcHash(text)}
+        return { edit, cursorPos: calcNewPos(newRes) , hash: jb.utils.calcHash(text)}
 
         function calcNewPos(prettyPrintData) {
             let { line, col } = jb.tgpTextEditor.getPosOfPath(path, 'begin',{prettyPrintData})
@@ -478,7 +478,7 @@ extension('langService', 'api', {
             const edit = jb.tgpTextEditor.deltaFileContent(text, newRes.text , compLine)
             jb.log('lang services duplicate', { edit, ...compProps })
             const targetPath = [compId,...pathAr.slice(0, -1),indexInArray+1].join('~')
-            return { edit, cursorPos: calcNewPos(targetPath, newRes), hash: jb.tgpTextEditor.calcHash(text) }
+            return { edit, cursorPos: calcNewPos(targetPath, newRes), hash: jb.utils.calcHash(text) }
         } else if (path.indexOf('~') == -1) { // duplicate component
             const noOfLines = (text.match(/\n/g) || []).length+1
             const edit = jb.tgpTextEditor.deltaFileContent('', `\ncomponent('${shortId}', ${text})\n`, compLine+noOfLines)

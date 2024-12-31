@@ -19,7 +19,7 @@ component('zuiTest.healthCare.items', {
 component('zuiTest.writeToRedis', {
   doNotRunInTests: true,
   impl: dataTest({
-    calculate: http.fetch('?op=redisSet', 'POST', { body: obj(prop('key', 'hello'), prop('value', 'world')) }),
+    calculate: http.fetch('http://localhost:8082/?op=redisSet', 'POST', { body: obj(prop('key', 'hello'), prop('value', 'world2')) }),
     expectedResult: contains('')
   })
 })

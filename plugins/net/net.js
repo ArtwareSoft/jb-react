@@ -45,7 +45,7 @@ component('http.fetch', {
       url,
       method,
       headers: headers || {},
-      //mode: 'cors',
+      mode: 'cors',
       body: (typeof body == 'string' || body == null) ? body : JSON.stringify(body)
     }
 
