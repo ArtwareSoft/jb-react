@@ -3,7 +3,6 @@ dsl('zui')
 component('itemlist', {
   type: 'control',
   params: [
-    {id: 'items', as: 'array', dynamic: true, mandatory: true, byName: true},
     {id: 'itemControl', type: 'control', mandatory: true, dynamic: true},
     {id: 'itemsLayout', type: 'items_layout', dynamic: true, defaultValue: spiral()},
     {id: 'style', type: 'itemlist-style', dynamic: true, defaultValue: grid()},
@@ -15,7 +14,8 @@ component('itemlist', {
 component('grid', {
   type: 'itemlist-style',
   impl: features(
-    variable('items', '%$$model/items()%'),
+    injectUnderContainerClass('zui-control'),
+    variable('items', '%$appData/items%'),
     variable('itemsLayout', '%$$model/itemsLayout()%'),
     frontEnd.var('gridSize', '%$itemsLayout/gridSize%'),
     frontEnd.var('itemsXyPos', ({},{items}) => items.map(i=>i.xyPos)),
@@ -45,11 +45,11 @@ component('grid', {
       widget.state.center = widget.state.tCenter = initialZoomCenter[1]
 
       widget.itemlistCmp = cmp
-      if (!document.querySelector(`.${cmp.clz}`)) 
+      if (jb.frame.document && !document.querySelector(`.${cmp.clz}`)) 
         document.querySelector('.zui-control').appendChild(cmp.base)
-      const {width,height} = cmp.base.getBoundingClientRect()
-      const canvasSize = [width,height]
-      cmp.enrichCtxWithItemSize = ctx2 => ctx2.setVars({itemSize: [0,1].map(axis=>width/widget.state.zoom),canvasSize})
+      const rect = cmp.base && cmp.base.getBoundingClientRect()
+      const canvasSize = jb.frame.document ? [rect.width,rect.height] : widget.screenSize
+      cmp.enrichCtxWithItemSize = ctx2 => ctx2.setVars({itemSize: [0,1].map(axis=>canvasSize[0]/widget.state.zoom),canvasSize})
     }),
     zui.canvasZoom(),
     frontEnd.method('zoomingCss', (ctx,{cmp,itemSize,canvasSize,widget,itemsXyPos}) => {
@@ -86,7 +86,7 @@ component('grid', {
       const toRender = Object.values(widget.cmps).filter(cmp=>shownCmps.indexOf(cmp.id) != -1)
       const notReady = toRender.filter(cmp=>cmp.notReady).map(cmp=>cmp.id)
       if (notReady.length)
-        widget.beProxy.beUpdateRequest(notReady)
+        widget.beProxy.updateShownNotReadyComps(notReady)
       jb.log('zui itemlist render',{elemsLayout, shownCmps, toRender, notReady, ctx})
       cmp.zoomingCss(ctx)
       Object.values(widget.cmps).filter(cmp=>cmp.base && cmp.renderRole == 'zoomingGridElem')

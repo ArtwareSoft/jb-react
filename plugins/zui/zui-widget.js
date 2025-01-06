@@ -6,31 +6,30 @@ component('widget', {
     {id: 'control', type: 'control', dynamic: true},
     {id: 'screenSizeForTest', as: 'array', defaultValue: [600,600]},
     {id: 'frontEnd', type: 'widget_frontend'},
-    {id: 'features', type: 'feature' }
+    {id: 'domain', type: 'domain'},
+    {id: 'features', type: 'feature'},
+    {id: 'userData', type: 'user_data', defaultValue: userData()},
+    {id: 'appData', type: 'app_data', defaultValue: appData()},
   ],
   impl: ctx => {
-        const {screenSizeForTest, control, frontEnd, features} = ctx.params
-        frontEnd.initFE(screenSizeForTest)
+        const {screenSizeForTest, control, frontEnd, userData, appData, domain, features} = ctx.params
+        const ctxToUse = ctx.setVars({userData, appData, domain})
+        userData.query = jb.path(domain.sample,'query') || ''
+        userData.contextChips = jb.path(domain.sample,'contextChips') || []
+        appData.suggestedContextChips = jb.path(domain.sample,'suggestedContextChips') || []
+
+        frontEnd.initFE(screenSizeForTest,userData)
         
         const widget = {
             frontEnd,
             async init() {
-                const ctxForBe = ctx.setVars({screenSize: frontEnd.screenSize, widget: this})
-                const beCmp = this.be_cmp = control(ctxForBe).applyFeatures(features,20)
-                beCmp.init({appCmp: true})
-
-                const _payload = await beCmp.calcPayload(beCmp)
-                const payload = _payload.id ? {[_payload.id] : _payload }: _payload
-                const beCmps = beCmp.allDescendants()
-                await frontEnd.handlePayload(payload)
-                frontEnd.beProxy = {
-                    async beUpdateRequest(cmpIds) {
-                        const updatePayload = {}
-                        await cmpIds.reduce((pr,id) => pr.then(
-                            async () => updatePayload[id] = await beCmps.find(cmp=>cmp.id==id).calcPayload()), Promise.resolve())
-                        await frontEnd.handlePayload(updatePayload)
-                    }
-                }
+                const ctxForBe = ctxToUse.setVars({screenSize: frontEnd.screenSize, widget: this})
+                const appCmp = control(ctxForBe).applyFeatures(features,20)
+                appCmp.init()
+                await frontEnd.handlePayload(await appCmp.calcPayload())
+                frontEnd.beAppCmpProxy = appCmp // should be jbm and activated by jbm.remoteExec
+                await frontEnd.runBEMethodAndUpdate(appCmp.id,'updateZuiControl',ctx)
+                return this
             }
         }
         return widget
@@ -45,16 +44,30 @@ component('widgetFE', {
         renderCounter: 1,
         state: {tCenter: [1,1], tZoom : 2, zoom: 2, center: [1,1], speed: 3, sensitivity: 5},
 
-        initFE(screenSizeForTest) {
-            this.ctx = new jb.core.jbCtx().setVars({widget: this, canUseConsole: ctx.vars.quiet, uiTest: ctx.vars.uiTest})
+        initFE(screenSizeForTest,userData) {
+            this.ctx = new jb.core.jbCtx().setVars({widget: this, canUseConsole: ctx.vars.quiet, uiTest: ctx.vars.uiTest, userData})
             this.screenSize = (!ctx.vars.uiTest && jb.frame.window) ? [window.innerWidth,window.innerHeight] : screenSizeForTest
             this.ctx.probe = ctx.probe
         },
-        async handlePayload(payload) {
+        async runBEMethodAndUpdate(cmpId,method,ctx) { // should use jbm
+            const cmp = this.beAppCmpProxy.id == cmpId ? this.beAppCmpProxy : this.beAppCmpProxy.allDescendants().find(x=>x.id == cmpId)
+            if (!cmp)
+                return jb.logError(`runBEMethodAndUpdate can not find cmp ${cmpId} to run method ${method}`, {ctx})
+            const payload = await cmp[method](this.ctx.vars.userData)
+            await frontEnd.handlePayload(payload)        
+        },
+        async handlePayload(_payload) {
+            const payload = _payload.id ? {[_payload.id] : _payload }: _payload
             const ctx = this.ctx
-            Object.entries(payload).map(([cmpId,be_data]) => {
-                const cmp = this.cmps[cmpId] = newFECmp(cmpId, be_data)
-                this.cmpsData[cmpId] = { ...(this.cmpsData[cmpId] || {}), ...be_data }
+            Object.entries(payload).map(([id,be_data]) => {
+                if (id == 'userData') {
+                    this.userData = be_data
+                } else if (id == 'appData') {
+                    this.appData = be_data
+                } else {
+                    const cmp = this.cmps[id] = newFECmp(id, be_data)
+                    this.cmpsData[id] = { ...(this.cmpsData[id] || {}), ...be_data }
+                }
             })
             jb.log('zui handlePayload loaded in FE',{cmpsData: this.cmpsData, payload,ctx})
             // dirty - build itemlist layout calculator only after loading its ancestors
@@ -65,14 +78,23 @@ component('widgetFE', {
 
             function newFECmp(cmpId, be_data) {
                 const cmp = new (class FECmp {}) // used for serialization filtering
-                const fromBeData = { notReady, title, gridElem, frontEndMethods, layoutProps, renderRole, clz, html, css, userData, appData } = be_data
+                const fromBeData = { notReady, title, gridElem, frontEndMethods, layoutProps, renderRole, clz, html, css } = be_data
                 Object.assign(cmp, { id: cmpId, state: {}, flows: [], vars: be_data.frontEndVars || {}, ...fromBeData })
                 if (cmp.html && jb.frame.document) {
-                    const temp = jb.frame.document.createElement('div')
-                    temp.innerHTML = cmp.html
-                    cmp.base = temp.children[0]
-                    if (be_data.appCmp) 
-                        jb.frame.document.body.appendChild(cmp.base)
+                    if (be_data.containerClass) {
+                        const container = document.querySelector(be_data.containerClass)
+                        container.classList.add('hidden')
+                        setTimeout(() => {
+                            container.innerHTML = cmp.html
+                            container.classList.remove('hidden')
+                        }, 500)
+                    } else if (be_data.appCmp && !document.querySelector(`.${cmp.clz}`)) {
+                        const temp = document.createElement('div')
+                        temp.innerHTML = cmp.html
+                        cmp.base = temp.children[0]
+                        cmp.base.classList.add(cmp.clz)
+                        document.body.appendChild(cmp.base)
+                    }
                 }
                 if (cmp.css)
                     jb.zui.setCmpCss(cmp)

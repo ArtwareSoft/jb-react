@@ -1,12 +1,75 @@
 dsl('zui')
 using('zui')
 
-component('healthCare.fixed5Items', {
+component('healthCare', {
   type: 'domain',
   impl: domain('healthCare condition', {
+    iconProps: props({
+      description: `- **title**: Name of the condition.
+    - **category**: The medical category (e.g., Gastrointestinal, Neurological).
+    - **urgency**: A scale from 1 to 10 indicating how urgent it is to address this condition (10 being the most urgent).
+    - **likelihood**: A scale from 1 to 10 estimating how likely this diagnosis is based on the input.
+    - **abrv**: An abbreviation for the condition's name.`,
+      sample: `"title": "Appendicitis",
+      "category": "Gastrointestinal",
+      "urgency": 9,
+      "likelihood": 7,
+      "abrv": "APN",`
+    }),
+    cardProps: props({
+      description: `- **description**: A concise explanation of the condition.
+      - **symptoms**: Key symptoms associated with the condition.
+      - **ageGroupAffected**: The primary age group affected (e.g., "Children", "Adults", "All ages").
+      - **severityLevel**: Describes the severity (e.g., "Critical", "Severe", "Moderate").
+      - **riskFactors**: Common risk factors.
+      - **treatmentUrgency**: Describes how quickly treatment is needed (e.g., "Immediate", "Moderate").
+      - **possibleComplications**: Potential complications if untreated.
+      - **diagnosticTests**: Suggested tests to confirm the diagnosis.
+      - **recommendedTreatments**: Suggested treatments.
+      - **prevalenceRate**: Describes how common the condition is (e.g., "Rare", "Common").`,
+      sample: `"description": "A condition in which the appendix becomes inflamed and filled with pus.",
+      "symptoms": ["Abdominal pain", "Nausea"],
+      "ageGroupAffected": "All ages",
+      "severityLevel": "Critical",
+      "riskFactors": ["Family history", "Infection"],
+      "treatmentUrgency": "Immediate",
+      "possibleComplications": ["Peritonitis", "Sepsis"],
+      "diagnosticTests": ["Ultrasound", "CT scan"],
+      "recommendedTreatments": ["Surgery", "Antibiotics"],
+      "prevalenceRate": "Moderate"`
+    }),
+    itemsPrompt: `
+    You are an expert medical assistant for doctors in emergency settings. 
+    Given this brief description of a patient or their symptoms, 
+    Query: %$userData.query%
+    context: %$userData.contextChips%
+    generate a JSON list of %$task/noOfItems% diagnostic suggestions. 
+    Each suggestion should follow the structure below and include relevant, accurate medical information.
+    
+    Each item in the JSON should include:
+    %$propsInDescription%
+        
+    1. Use medical knowledge to populate the fields based on the input hints.  
+    2. Generate realistic and context-appropriate values for urgency, likelihood, and other attributes. 
+
+    Example Input:  
+    "A patient presents with abdominal pain and fever."
+    
+    **Response format (JSON)**
+    \`\`\`json
+    [
+      {
+        %$propsInSample%
+      }
+    ]
+    `,
     itemsLayout: groupByScatter('category', { sort: 'likelihood' }),
     zuiControl: firstToFit(healthCare.conditionCard(), healthCare.conditionIconBox()),
-    calcItems: healthCare.conditionDataSample()
+    sample: sample({
+      query: 'age 40, dizziness, stomach ache',
+      contextChips: ['Balance issues','pain or discomfort'],
+      suggestedContextChips: ['Low blood pressure (Hypotension)','High blood pressure (Hypertension)','Rapid or irregular heartbeat (Arrhythmia)']
+    })
   })
 })
 

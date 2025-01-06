@@ -16,19 +16,26 @@ component('app', {
 component('app', {
   type: 'app-style',
   impl: features(
+    appCmp(),
     html((ctx,{$model}) => $model.html(ctx.setVars(jb.objFromEntries($model.sections.map(sec=>[sec.id,sec]))))),
     css((ctx,{$model}) => $model.css(ctx.setVars(jb.objFromEntries($model.sections.map(sec=>[sec.id,sec]))))),
-    init((ctx,{cmp, $model, userData, appData}) => {
-      const zuiCtrl = $model.zuiControl(ctx).init()
-      cmp.children = [zuiCtrl]
-      cmp.extendedPayloadWithDescendants = async res => ({ 
-            [res.id]: {...res, userData, appData }, 
-            ...await zuiCtrl.calcPayload() 
-        })
+    init((ctx,{cmp, appData,$model}) => {
+        cmp.updateZuiControl = async userData => {
+            const ctxToUse = ctx.setVars({userData})
+            appData.items = await ctxToUse.run({$: 'domain.calcItems'})
+            debugger
+            const zuiCtrl = $model.zuiControl(ctxToUse).init()
+            cmp.children = [zuiCtrl]
+            cmp.extendedPayloadWithDescendants = async res => ({ 
+                appData, ...await zuiCtrl.calcPayload() 
+            })
+            const ret = await cmp.calcPayload()
+            return ret
+        }
     }),
-    frontEnd.init((ctx,{cmp}) => {
-        const ctxToUse = ctx.setVars({userData: cmp.userData, appData: cmp.appData})
-        cmp.dataBinder = new jb.zui.DataBinder(ctxToUse,cmp.base)
+    frontEnd.init((ctx,{cmp, uiTest, widget}) => {
+        const ctxToUse = ctx.setVars({userData: widget.userData, appData: widget.appData})
+        cmp.dataBinder = !uiTest && new jb.zui.DataBinder(ctxToUse,cmp.base)
     }),
     frontEnd.method('render', (ctx,{cmp}) => cmp.dataBinder.populateHtml())
   )
@@ -59,22 +66,16 @@ component('group', {
 
 component('mainApp', {
   type: 'control',
-  params: [
-    {id: 'domain', type: 'domain'}
-  ],
   impl: app({
-    vars: [
-      Var('userData', typeAdapter('user_data<zui>', userData())),
-      Var('appData', typeAdapter('app_data<zui>', appData()))
-    ],
     html: `<div class="app-layout">
             %$topPanel.html%
             %$leftPanel.html%
             <div class="zui-control"></div>
         </div>`,
-    css: `body {
-    font-family: Arial, sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-
+    css: `body { font-family: Arial, sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    .fade { transition: opacity 0.5s ease; opacity: 1; }
+    .hidden { opacity: 0; }
+    
   .app-layout { display: grid; grid-template-rows: auto 1fr; grid-template-columns: auto 1fr auto; height: 100%; 
     grid-template-areas: "top top top" "left body body";
   }
@@ -82,11 +83,7 @@ component('mainApp', {
   %$topPanel.css% 
   %$leftPanel.css%`,
     sections: [topPanel(), leftPanel()],
-    zuiControl: itemlist({
-      items: '%$domain.calcItems()%',
-      itemControl: '%$domain.zuiControl()%',
-      itemsLayout: '%$domain.itemsLayout()%'
-    })
+    zuiControl: itemlist('%$domain.zuiControl()%', '%$domain.itemsLayout()%')
   })
 })
 

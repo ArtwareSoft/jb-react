@@ -3,66 +3,82 @@ dsl('zui')
 component('userData', {
   type: 'user_data',
   params: [
-    {id: 'query', as: 'string'},
+    {id: 'query', as: 'string', byName: true},
     {id: 'contextChips', type: 'data[]', as: 'array', defaultValue: []},
-    {id: 'preferedLlmModel', as: 'string', defaultValue: 'gpt-3.5-turbo-0125'},
   ]
 })
 
 component('appData', {
   type: 'app_data',
   params: [
-    {id: 'suggestedContextChips', type: 'data[]', defaultValue: []},
+    {id: 'suggestedContextChips', type: 'data[]', defaultValue: [], byName: true},
     {id: 'ctxVer', as : 'number', defaultValue: 1},
-    {id: 'runningTasks', type: 'task[]', defaultValue: []},
-    {id: 'doneTasks', type: 'done_task[]', defaultValue: []},
+    {id: 'tasks', type: 'task[]', defaultValue: () => jb.zui.createTasks()},
     {id: 'budget', type: 'budget'},
     {id: 'usage', type: 'usage'}
   ]
-})
-
-component('sampleUserData', {
-  type: 'user_data',
-  impl: userData('age 40, dizziness, stomach ache', ['Balance issues','pain or discomfort'])
-})
-
-component('sampleAppData', {
-  type: 'app_data',
-  impl: appData({
-    suggestedContextChips: ['Low blood pressure (Hypotension)','High blood pressure (Hypertension)','Rapid or irregular heartbeat (Arrhythmia)'],
-    runningTasks: llmSampleTask('50 items', '50', { llmModel: 'o1', llmPrompt: 'prmopt', estimatedItems: '50' })
-  })
 })
 
 component('domain', {
   type: 'domain',
   params: [
     {id: 'title', as: 'string'},
-    {id: 'itemsPromptPrefix', as: 'string', byName: true},
-    {id: 'iconBoxPropsPrompt', as: 'string'},
-    {id: 'cardPropsPrompt', as: 'string'},
-    {id: 'docPropsPrompt', as: 'string'},
-    {id: 'contextChips', type: 'data[]', as: 'array'},
+    {id: 'iconProps', type: 'domain_props', byName: true},
+    {id: 'cardProps', type: 'domain_props'},
+    {id: 'itemsPrompt', as: 'string', dynamic: true, byName: true, newLinesInCode: true},
+    {id: 'contextHintsPrompt', as: 'string', dynamic: true, byName: true, newLinesInCode: true},
     {id: 'itemsLayout', type: 'items_layout', dynamic: true},
     {id: 'zuiControl', type: 'control', dynamic: true},
-    {id: 'calcItems', dynamic: true}
+    {id: 'sample', type: 'domain_sample'},
+  ],
+  impl: ctx => ({...ctx.params, 
+    itemsPromptForTask(ctx2) {
+      const {sample, iconProps,cardProps,itemsPrompt, contextHintsPrompt} = ctx.params
+      const task = ctx2.data
+      const ctxToUse = ctx.vars.testID ? ctx2.setVars({task, userData: sample, appData: sample}) : ctx.setVars({task})
+      if (task.details == 'contextHints')
+        return contextHintsPrompt(ctxToUse)
+
+      const [propsInDescription, propsInSample] = 
+        task.details == 'card' ? [`${iconProps.description}\n${cardProps.description}`, `${iconProps.sample},\n${cardProps.sample}`] 
+        : task.details == 'icon' ? [iconProps.description, iconProps.sample] : ['','']; 
+      return itemsPrompt(ctxToUse.setVars({propsInDescription, propsInSample}))
+    }
+  })
+})
+
+component('props', {
+  type: 'domain_props',
+  params: [
+    {id: 'description', as: 'string', newLinesInCode: true},
+    {id: 'sample', as: 'string', newLinesInCode: true}
   ]
 })
 
-component('llmSampleTask', {
-  type: 'task',
+component('sample', {
+  type: 'domain_sample',
   params: [
-    {id: 'title', as: 'string'},
-    {id: 'estimatedDuration', as: 'number'},
-    {id: 'llmModel', as: 'string'},
-    {id: 'llmPrompt', as: 'string'},
-    {id: 'estimatedItems', as: 'number'},
-    {id: 'actualItems', as: 'number'},
-    {id: 'tokens', as: 'number'},
-    {id: 'costPerItem', as: 'number'}
-  ],
-  impl: ctx => ({ ...ctx.params, 
-        startTime: new Date().getTime(),
-        duration() { return this.done ? this.duration : (new Date().getTime() - this.startTime) / 1000 },
-    })
+    {id: 'items', dynamic: true},
+    {id: 'query', as: 'string'},
+    {id: 'contextChips', type: 'data[]', as: 'array', defaultValue: []},
+    {id: 'suggestedContextChips', type: 'data[]', defaultValue: [], byName: true},
+  ]
 })
+
+component('domain.calcItems', {
+  impl: pipe(
+    llmViaApi.completions(user('%$domain.itemsPrompt()%'), {
+      llmModel: model('%$userData/preferedLlmModel%'),
+      maxTokens: 25000,
+      includeSystemMessages: true,
+      useRedisCache: true
+    }),
+    zui.parseLlmItems('%choices.0.message.content%'),
+    extendWithObj(obj(
+      prop('creationCtxVer', '%$appData/ctxVer%'),
+      prop('creationModel', '%$userData/preferedLlmModel%')
+    ))
+  ),
+  circuit: 'zuiTest.healthCare.app'
+})
+

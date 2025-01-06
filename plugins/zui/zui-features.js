@@ -94,6 +94,20 @@ component('html', {
   impl: (ctx,html) => ({html})
 })
 
+component('appCmp', {
+  type: 'feature',
+  impl: () => ({appCmp: true})
+})
+
+component('injectUnderContainerClass', {
+  type: 'feature',
+  params: [
+    {id: 'containerClass', mandatory: true, as: 'string'}
+  ],
+  impl: (ctx,containerClass) => ({containerClass})
+})
+
+
 component('htmlOfItem', {
   type: 'feature',
   params: [

@@ -20,27 +20,23 @@ component('zuiTest', {
   params: [
     {id: 'control', type: 'control', dynamic: true, mandatory: true},
     {id: 'expectedResult', type: 'boolean<>', dynamic: true, mandatory: true},
+    {id: 'domain', type: 'domain', defaultValue: healthCare()},
     {id: 'runBefore', type: 'action<>', dynamic: true},
     {id: 'userEvents', type: 'animation_event<zui>[]'},
     {id: 'allowError', as: 'boolean', dynamic: true, type: 'boolean<>'},
     {id: 'timeout', as: 'number', defaultValue: 200},
     {id: 'cleanUp', type: 'action<>', dynamic: true},
     {id: 'expectedCounters', as: 'single'},
-    {id: 'testData', dynamic: true},
     {id: 'spy'},
     {id: 'covers'}
   ],
   impl: dataTest({
     vars: [
       Var('uiTest', true),
-      Var('testData', '%$testData()%', { async: true }),
-      Var('widget', pipeline(
-        '%$testData%',
-        typeAdapter('widget<zui>', widget('%$control()%', { frontEnd: widgetFE() }))
-      )),
+      Var('widget', typeAdapter('widget<zui>', widget('%$control()%', { frontEnd: widgetFE(), domain: '%$domain%' }))),
       Var('initwidget', '%$widget.init()%', { async: true })
     ],
-    calculate: pipe('%$userEvents%','%$widget.be_cmp.processFEReq()%'),
+    calculate: pipe('%$userEvents%','%$widget.app_cmp.processFEReq()%'),
     expectedResult: typeAdapter('data<>', pipeline('%$widget.frontEnd.cmpsData%', prettyPrint({ noMacros: true }), '%$expectedResult()%', first())),
     timeout: If(equals('%$backEndJbm%', () => jb), '%$timeout%', 5000),
     allowError: '%$allowError()%',
@@ -54,14 +50,12 @@ component('zuiControlRunner', {
   type: 'action<>',
   params: [
     {id: 'control', type: 'control', dynamic: true, mandatory: true},
-    {id: 'testData', dynamic: true},
-    {id: 'styleSheet', as: 'string', newLinesInCode: true}
+    {id: 'styleSheet', as: 'string', newLinesInCode: true},
+    {id: 'domain', type: 'domain', defaultValue: healthCare()}
   ],
   impl: runActions(
-    Var('testData', '%$testData()%', { async: true }),
-    Var('widget', pipeline('%$testData%', typeAdapter('widget<zui>', widget('%$control()%', { frontEnd: widgetFE() })))),
-    '%$widget.init()%',
-    '%$widget.frontEnd.renderCmps()%'
+    Var('widget', typeAdapter('widget<zui>', widget('%$control()%', { frontEnd: widgetFE(), domain: '%$domain%' }))),
+    '%$widget.init()%'
   )
 })
 

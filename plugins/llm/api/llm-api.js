@@ -7,38 +7,57 @@ component('llmViaApi.completions', {
     {id: 'chat', type: 'message[]', dynamic: true},
     {id: 'llmModel', type: 'model', defaultValue: gpt_35_turbo_0125()},
     {id: 'maxTokens', defaultValue: 100},
+    {id: 'metaPrompt', type: 'meta_prompt', dynamic: true},
+    {id: 'llmModelForMetaPrompt', type: 'model', defaultValue: gpt_4o()},
     {id: 'includeSystemMessages', as: 'boolean', type: 'boolean<>'},
     {id: 'useRedisCache', as: 'boolean', type: 'boolean<>'}
   ],
-  impl: async (ctx,chatF,model,max_tokens,includeSystemMessages,useRedisCache) => {
-        const chat = chatF()
-        const key = jb.utils.calcHash(model.name + JSON.stringify(chat))
-        let res = useRedisCache && await jb.utils.redisStorage(key)
-        if (!res) {
-          const settings = !jbHost.isNode && await fetch(`/?op=settings`).then(res=>res.json())
-          const apiKey = jbHost.isNode ? process.env.OPENAI_API_KEY: settings.OPENAI_API_KEY
-          const ret = await fetch('https://api.openai.com/v1/chat/completions', {
-              method: 'POST',
-              headers: {
-                  'Accept': 'application/json',
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${apiKey}`
-                },
-                body: JSON.stringify({
-                  ...(model.reasoning ? {max_completion_tokens: max_tokens} : {max_tokens : Math.min(max_tokens, model.maxContextLength)}),
-                  model: model.name, top_p: 1, frequency_penalty: 0, presence_penalty: 0,
-                  messages: chat
-                })
-              }
-            )
-          res = await ret.json()
-          if (useRedisCache) {
-            debugger
-            await jb.utils.redisStorage(key,res)
-            await jb.utils.redisStorage(`${key}_chat`,chat)
+  impl: async (ctx,chatF,model,max_tokens,metaPrompt,llmModelForMetaPrompt, includeSystemMessages,useRedisCache) => {
+        if (metaPrompt.profile == null) 
+          return dataFromLlm(chatF())
+        const originalChat = chatF()
+        const taskOrPrompt = originalChat.map(x=>x.content).join('\n')
+        const metaPromptChat = metaPrompt(ctx.setVars({taskOrPrompt}))
+        if (llmModelForMetaPrompt.reasoning) metaPromptChat.forEach(m=>m.role = 'user')
+        const res = await dataFromLlm(metaPromptChat, llmModelForMetaPrompt)
+        const content = jb.path(res,'choices.0.message.content') || res
+        const actualChat = [{role: 'system', content: 'please answer clearly'}, {role: 'user', content}]
+        return dataFromLlm(actualChat, model, originalChat)
+
+        async function dataFromLlm(chat, model, originalChat) {
+          const key = 'llm' + jb.utils.calcHash(model.name + JSON.stringify(chat))
+          let res = useRedisCache && await jb.utils.redisStorage(key)
+          if (!res) {
+            const start_time = new Date().getTime()
+            const settings = !jbHost.isNode && await fetch(`/?op=settings`).then(res=>res.json())
+            const apiKey = jbHost.isNode ? process.env.OPENAI_API_KEY: settings.OPENAI_API_KEY
+            const ret = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                  },
+                  body: JSON.stringify({
+                    ...(model.reasoning ? {max_completion_tokens: max_tokens} : {max_tokens : Math.min(max_tokens, model.maxContextLength)}),
+                    model: model.name, top_p: 1, frequency_penalty: 0, presence_penalty: 0,
+                    messages: chat
+                  })
+                }
+              )
+            res = await ret.json()
+            res.duration = new Date().getTime() - start_time
+            res.chat = chat
+            res.originalChat = originalChat
+            res.model = model.name
+            res.includeSystemMessages = includeSystemMessages
+            if (res.error)
+                jb.logError('llmViaApi.completions', {error: res.error, chat, model, res, ctx})
+            if (useRedisCache && !res.error)
+              await jb.utils.redisStorage(key,res)
           }
+          return includeSystemMessages ? res: (jb.path(res,'choices.0.message.content') || res)
         }
-        return includeSystemMessages ? res: (jb.path(res,'choices.0.message.content') || res)
     }
 })
 

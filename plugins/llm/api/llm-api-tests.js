@@ -12,10 +12,22 @@ component('llmTest.hello', {
 component('llmTest.hello.withRedis', {
   doNotRunInTests: true,
   impl: dataTest({
-    calculate: llmViaApi.completions(system('please answer clearly'), user('how large is usa'), {
+    calculate: llmViaApi.completions(system('please answer clearly'), user('how large is USA'), {
       useRedisCache: true
     }),
-    expectedResult: contains('usa'),
+    expectedResult: contains('3.8'),
+    timeout: 5000
+  })
+})
+
+component('llmTest.hello.reasoning', {
+  doNotRunInTests: true,
+  impl: dataTest({
+    calculate: llmViaApi.completions(user('how large is USA?'), {
+      metaPrompt: reasoning(),
+      useRedisCache: true
+    }),
+    expectedResult: contains('3.8'),
     timeout: 5000
   })
 })

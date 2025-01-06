@@ -28,7 +28,7 @@ extension('zui','control' , {
             const categories = jb.zui.featureCategories || (jb.zui.featureCategories = {
                 lifeCycle: new Set('init,extendCtx,extendChildrenCtx,destroy'.split(',')),
                 arrayProps: new Set('calcProp,frontEndMethod,frontEndVar,css,cssClass,layoutProp'.split(',')),
-                singular: new Set('calcMoreItemsData,zoomingSize,zoomingCss,styleParams,children,html,htmlOfItem'.split(',')),
+                singular: new Set('calcMoreItemsData,zoomingSize,zoomingCss,styleParams,children,html,htmlOfItem,containerClass,appCmp'.split(',')),
             })
     
             Object.keys(feature).filter(key=>key!='srcPath').forEach(key=>{
@@ -86,9 +86,6 @@ extension('zui','control' , {
 
             return this
         }
-        // allDescendants() {
-        //     return (this.children||[]).filter(cmp=>!cmp.extendedPayloadWithDescendants).reduce((acc,cmp) => [...acc,cmp,...cmp.descendantsTillGrid()], [])
-        // }
         allDescendants() {
             return (this.children||[]).reduce((acc,cmp) => [...acc,cmp,...cmp.allDescendants()], [])
         }
@@ -126,8 +123,8 @@ extension('zui','control' , {
             const html = this.html && this.html(ctxToUse)
             const css = (this.css || []).flatMap(x=>x(ctxToUse))
 
-            const { id , title, layoutProps, inZoomingGrid, renderRole, zoomingSizeProfile, clz, appCmp } = this
-            let res = { id, title, appCmp, frontEndMethods, frontEndVars, noOfItems, methods, zoomingCssProfile,  html, css, clz,
+            const { id , title, layoutProps, inZoomingGrid, renderRole, zoomingSizeProfile, clz, appCmp, containerClass } = this
+            let res = { id, title, appCmp, containerClass, frontEndMethods, frontEndVars, noOfItems, methods, zoomingCssProfile,  html, css, clz,
                 zoomingSizeProfile, layoutProps, inZoomingGrid, renderRole }
             if (JSON.stringify(res).indexOf('null') != -1)
                 jb.logError(`cmp ${this.title} has nulls in payload`, {cmp: this, ctx: this.ctx})
