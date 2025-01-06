@@ -85,53 +85,15 @@ component('user', {
   impl: (ctx,content) => ({role: 'user', content})
 })
 
-component('llm.HtmlAndCssForJson', {
-  type: 'data<>',
-  params: [
-    {id: 'json', as: 'string'}
-  ],
-  impl: pipe(
-    llmViaApi.completions(
-      system(
-        `"Given the following JSON data representing a mobile device, decide which fields are important and should be presented in a widget. Then, generate the widget HTML to display the selected information and provide the relevant CSS to style the widget.
-
-JSON Data:
-{json_data}
-
-Stage 1: Field Selection
-- Determine which fields are important and should be included in the small widget. Consider factors such as relevance to the target audience, space constraints, and the overall goal of the widget. 
-
-Stage 2: Field Sorting
-- Determine the importance of the fields and sort them accordingly.
-
-Stage 3: HTML Generation
-- Based on the selected fields, create the HTML structure for the widget. Ensure that it is easy to read and maintain.
-
-Stage 4: CSS Styling
-- Provide CSS to style the widget in a visually appealing and responsive manner. Ensure that the styling complements the content and layout of the widget.
-`
-      ),
-      user('%$json%')
-    ),
-    obj(
-      prop('html', extractText({ startMarkers: '```html', endMarker: '```' })),
-      prop('css', extractText({ startMarkers: '```css', endMarker: '```' }))
-    )
-  )
-})
-
-
-// rx
-
 component('source.llmCompletions', {
   type: 'rx<>',
   params: [
     {id: 'chat', type: 'message[]', dynamic: true},
-    {id: 'model', as: 'string', options: 'o1-preview,gpt-3.5-turbo-16k,gpt-4', defaultValue: 'gpt-3.5-turbo', byName: true},
-    {id: 'maxTokens', defaultValue: 100},
+    {id: 'llmModel', type: 'model', defaultValue: gpt_35_turbo_0125()},
+    {id: 'maxTokens', defaultValue: 3500},
     {id: 'includeSystemMessages', as: 'boolean', type: 'boolean'}
   ],
-  impl: (ctx,chat,model,max_completion_tokens,includeSystemMessages) => (start, sink) => {
+  impl: (ctx,chat,model,max_tokens,includeSystemMessages) => (start, sink) => {
       if (start !== 0) return
       let controller = null, connection, connectionAborted
       sink(0, (t,d) => {
@@ -155,7 +117,7 @@ component('source.llmCompletions', {
                 'Authorization': `Bearer ${apiKey}`
               },
               body: JSON.stringify({
-                model, max_completion_tokens, top_p: 1, frequency_penalty: 0, presence_penalty: 0, stream: true,
+                model: model.name, max_tokens, top_p: 1, frequency_penalty: 0, presence_penalty: 0, stream: true,
                 messages: chat()                
               })
             }
@@ -208,3 +170,52 @@ component('source.llmCompletions', {
   }
 })
 
+component('llm.textToJsonItems', {
+  type: 'rx<>',
+  category: 'operator',
+  params: [],
+  impl: ctx => source => (start, sink) => {
+  if (start !== 0) return
+
+  let buffer = '', braceCount = 0, inString = false, escapeNext = false, currentIndex = 0, talkback, inItem
+
+  sink(0, (t,d) => talkback && talkback(t,d))
+  source(0, (t, d) => { 
+    if (t === 0) talkback = d
+    if (t === 1) {
+      buffer += d.data
+      if (!inItem && buffer.indexOf('{') == -1) return
+      while (currentIndex < buffer.length) {
+        const char = buffer[currentIndex]
+        if (escapeNext)
+          escapeNext = false
+        else if (char === '\\')
+          escapeNext = true
+        else if (char === '"')
+          inString = !inString
+        else if (!inString) {
+          if (char === '{') {
+            braceCount++
+            inItem = true
+          }
+          if (char === '}') braceCount--
+          if (inItem && braceCount === 0) {
+            const potentialJson = buffer.slice(0, currentIndex + 1).replace(/^[^{]*{/, '{')
+            try {
+              const jsonItem = JSON.parse(potentialJson)
+              sink(1, ctx.dataObj(jsonItem, d.vars || {}, d.data))
+            } catch (error) {
+              console.error('Error parsing JSON:', error.message)
+            }
+            buffer = buffer.slice(currentIndex + 1)
+            if (buffer.indexOf('{') == -1) inItem = false
+            currentIndex = 0
+          }
+        }
+        currentIndex++
+      }
+    }
+    if (t === 2) sink(2, d)
+  })
+  }
+})

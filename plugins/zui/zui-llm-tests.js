@@ -7,10 +7,10 @@ component('zuiTest.measureLlmDurationForTasks', {
     slice(0, 1),
     pipe(
       Var('task', '%%'),
-      llmViaApi.completions(user('%$domain.itemsPromptForTask()%'), {
+      Var('prompt', '%$domain.itemsPromptForTask()%'),
+      llmViaApi.completions(user('%$prompt%'), {
         llmModel: '%model%',
         maxTokens: 25000,
-        metaPrompt: reasoning(),
         includeSystemMessages: true,
         useRedisCache: true
       }),

@@ -32,6 +32,52 @@ component('llmTest.hello.reasoning', {
   })
 })
 
+component('llmTest.rx', {
+  doNotRunInTests: true,
+  impl: dataTest({
+    calculate: rx.pipe(
+      source.llmCompletions({
+        chat: user(`You are an expert medical assistant for doctors in emergency settings. 
+    Given this brief description of a patient or their symptoms, 
+    Query: age 40, dizziness, stomach ache
+    context: Balance issues
+    generate a JSON list of *30* diagnostic suggestions. 
+    Each suggestion should follow the structure below and include relevant, accurate medical information.
+    
+    Each item in the JSON should include:
+    - **title**: Name of the condition.
+    - **category**: The medical category (e.g., Gastrointestinal, Neurological).
+    - **urgency**: A scale from 1 to 10 indicating how urgent it is to address this condition (10 being the most urgent).
+    - **likelihood**: A scale from 1 to 10 estimating how likely this diagnosis is based on the input.
+    - **abrv**: An abbreviation for the condition's name.
+        
+    1. Use medical knowledge to populate the fields based on the input hints.  
+    2. Generate realistic and context-appropriate values for urgency, likelihood, and other attributes. 
+
+    Example Input:  
+    "A patient presents with abdominal pain and fever."
+    
+    **Response format (JSON)**
+    \`\`\`json
+    [
+      {
+        "title": "Appendicitis",
+      "category": "Gastrointestinal",
+      "urgency": 9,
+      "likelihood": 7,
+      "abrv": "APN",
+      }
+    ]
+    `),
+        llmModel: gpt_4o()
+      }),
+      llm.textToJsonItems(),
+      rx.do(({data}) => console.log(data))
+    ),
+    expectedResult: contains('')
+  })
+})
+
 component('llmTest.count', {
   doNotRunInTests: true,
   impl: browserTest({
