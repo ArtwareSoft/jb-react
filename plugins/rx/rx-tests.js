@@ -63,7 +63,7 @@ component('rxTest.toArray.empty', {
 })
 
 component('rxTest.toArray.active', {
-  impl: dataTest(rx.pipe(source.interval(1), rx.take(4), rx.toArray(), rx.map(join())), equals('0,1,2,3'))
+  impl: dataTest(pipe(rx.pipe(source.interval(1), rx.take(4)), join(',')), equals('0,1,2,3'))
 })
 
 component('rxTest.pipeInsidePipeWithConcatMap', {

@@ -34,6 +34,47 @@ component('props', {
   impl: (ctx,propsF,phase) => ({ calcProp: {id: '$props', value: ctx => propsF(ctx), phase, index: jb.zui.fCounter++ } , srcPath: ctx.path})
 })
 
+component('itemSymbol', {
+  type: 'feature',
+  description: 'used in itemlists. the value will be instered into each item',
+  params: [
+    {id: 'name', as: 'string', mandatory: true},
+    {id: 'val', dynamic: true, type: 'item_symbol'}
+  ],
+  impl: ctx => ({
+    calcProp: {... ctx.params, index: jb.zui.fCounter++},
+    extendItem: (itemCtx,{$props}, {name}) => $props[ctx.params.name](itemCtx),
+    srcPath: ctx.path
+  })
+})
+
+component('itemColor', {
+  type: 'feature',
+  description: 'used in itemlists. the value will be instered into each item',
+  params: [
+    {id: 'name', as: 'string', mandatory: true},
+    {id: 'val', dynamic: true, type: 'item_color'}
+  ]
+})
+
+component('itemBorderStyle', {
+  type: 'feature',
+  description: 'used in itemlists. the value will be instered into each item',
+  params: [
+    {id: 'name', as: 'string', mandatory: true},
+    {id: 'val', dynamic: true, type: 'item_border_style'}
+  ]
+})
+
+component('itemOpacity', {
+  type: 'feature',
+  description: 'used in itemlists. the value will be instered into each item',
+  params: [
+    {id: 'name', as: 'string', mandatory: true},
+    {id: 'val', dynamic: true, type: 'item_opacity'}
+  ]
+})
+
 component('variable', {
   type: 'feature',
   params: [
@@ -94,6 +135,14 @@ component('html', {
   impl: (ctx,html) => ({html})
 })
 
+component('extendItem', {
+  type: 'feature',
+  params: [
+    {id: 'extendItem', mandatory: true, dynamic: true }
+  ],
+  impl: (ctx,html) => ({extendItem})
+})
+
 component('appCmp', {
   type: 'feature',
   impl: () => ({appCmp: true})
@@ -129,8 +178,17 @@ component('zoomingCss', {
   params: [
     {id: 'css', mandatory: true, dynamic: true, as: 'array', newLinesInCode: true}
   ],
-  impl: (ctx,zoomingCss) => ({ frontEndMethod: { method: 'zoomingCss', path: ctx.path, action: zoomingCss.profile} })
+  impl: (ctx,zoomingCss) => ({ frontEndMethod: { method: 'zoomingCss', path: ctx.path, profile: zoomingCss.profile} })
 })
+
+component('dynamicCssVars', {
+  type: 'feature',
+  params: [
+    {id: 'cssVars', mandatory: true, dynamic: true }
+  ],
+  impl: (ctx,cssVars) => ({ frontEndMethod: { method: 'cssVars', path: ctx.path, profile: cssVars.profile} })
+})
+
 
 component('frontEnd.init', {
   type: 'feature',
@@ -140,7 +198,7 @@ component('frontEnd.init', {
     {id: 'action', type: 'action<>', mandatory: true, dynamic: true},
     {id: 'phase', as: 'number', defaultValue: 10},
   ],
-  impl: (ctx,action,phase) => ({ frontEndMethod: { method: 'init', path: ctx.path, action: action.profile, phase} })
+  impl: (ctx,action,phase) => ({ frontEndMethod: { method: 'init', path: ctx.path, profile: action.profile, phase} })
 })
 
 component('frontEnd.prop', {
@@ -152,7 +210,7 @@ component('frontEnd.prop', {
     {id: 'value', mandatory: true, dynamic: true}
   ],
   impl: (ctx,id,value) => ({ frontEndMethod: { method: 'calcProps', path: ctx.path, _prop: id,
-      action: (_ctx,{cmp}) => cmp[id] = value(_ctx) } })
+      profile: (_ctx,{cmp}) => cmp[id] = value(_ctx) } })
 })
 
 component('frontEnd.var', {

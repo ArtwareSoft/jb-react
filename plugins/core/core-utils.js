@@ -360,8 +360,15 @@ extension('utils', 'generic', {
     async redisStorage(_key,_value) {
       const key = ''+_key
       if (_value == undefined) {
-        if (jbHost.isNode)
-          return JSON.parse(await (await initRedis()).get(key))
+        if (jbHost.isNode) {
+          const redisClient = await initRedis()
+          const redisVal = await redisClient.get(key)
+          let jsonVal = null
+          try {
+            jsonVal = JSON.parse(redisVal)
+          } catch(e) {}
+          return jsonVal || redisVal
+        }
         const ret = await (await fetch(`http://localhost:8082/?op=redisGet&key=${key}`)).json()
         if (ret.type == 'error') return null
         return JSON.parse(ret.message.value)

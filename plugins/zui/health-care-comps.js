@@ -14,7 +14,7 @@ component('healthCare', {
       "category": "Gastrointestinal",
       "urgency": 9,
       "likelihood": 7,
-      "abrv": "APN",`
+      "abrv": "APN"`
     }),
     cardProps: props({
       description: `- **description**: A concise explanation of the condition.
@@ -64,7 +64,8 @@ component('healthCare', {
     ]
     `,
     itemsLayout: groupByScatter('category', { sort: 'likelihood' }),
-    zuiControl: firstToFit(healthCare.conditionCard(), healthCare.conditionIconBox()),
+    iconBox: healthCare.conditionIconBoxStyle(),
+    card: healthCare.conditionCardStyle(),
     sample: sample({
       query: 'age 40, dizziness, stomach ache',
       contextChips: ['Balance issues','pain or discomfort'],
@@ -73,28 +74,8 @@ component('healthCare', {
   })
 })
 
-component('healthCare.conditionCard', {
-  type: 'control',
-  impl: card('%title%', '%description%', {
-    style: healthCare.conditionCardStyle({
-      categorySymbol: healthCare.categorySymbol(),
-      urgencySymbol: symbol(unitScale('urgency'), list('','❗','⚠️')),
-      borderStyle: borderStyle(unitScale('likelihood')),
-      borderColor: itemColor(unitScale('urgency'), list('green','orange','red')),
-      categoryColor: healthCare.categoryColor()
-    })
-  })
-})
-
 component('healthCare.conditionCardStyle', {
   type: 'card-style',
-  params: [
-    {id: 'categorySymbol', type: 'item_symbol', byName: true},
-    {id: 'urgencySymbol', type: 'item_symbol', byName: true},
-    {id: 'borderStyle', type: 'item_border_style'},
-    {id: 'borderColor', type: 'item_color'},
-    {id: 'categoryColor', type: 'item_color'}
-  ],
   impl: features(
     zoomingSize(fill({ min: 133 })),
     zoomingGridElem(),
@@ -104,62 +85,55 @@ component('healthCare.conditionCardStyle', {
         256: { title: 12, description: 12 },
         320: { title: 14, description: 12 },
     })),
-    frontEnd.method('zoomingCss', (ctx, {fontSizeMap, cmp, itemSize}) => {
-        const cssVars = {}
-        const baseSize = itemSize[0]
-        const closestSize = Object.keys(fontSizeMap).map(Number).reduce((prev, curr) => (baseSize <= curr ? curr : prev), 320)
-        const fontSizes = fontSizeMap[closestSize]
-        
-        cssVars['title-font-size'] = `${fontSizes.title}px`
-        cssVars['description-font-size'] = `${fontSizes.description}px`
-        
-        jb.zui.setCssVars(`card-${cmp.id}`, cssVars)
+    dynamicCssVars(({},{fontSizeMap, itemSize})=>{
+      const baseSize = itemSize[0]
+      const closestSize = Object.keys(fontSizeMap).map(Number).reduce((prev, curr) => (baseSize <= curr ? curr : prev), 320)
+      const fontSizes = fontSizeMap[closestSize]
+      
+      return {
+        'title-font-size': `${fontSizes.title}px`,
+        'description-font-size': `${fontSizes.description}px`
+      }
     }),
-    htmlOfItem((ctx,{cmp, item},{categorySymbol,urgencySymbol,borderStyle,borderColor,categoryColor}) => `
+    itemSymbol('categorySymbol', healthCare.categorySymbol()),
+    itemSymbol('urgencySymbol', symbol(unitScale('urgency'), list('','❗','⚠️'))),
+    itemBorderStyle('likelihoodBorderStyle', borderStyle(unitScale('likelihood'))),
+    itemColor('urgencyBorderColor', itemColor(unitScale('urgency'), list('green','orange','red'))),
+    itemColor('categoryColor', healthCare.categoryColor()),
+    htmlOfItem((ctx,{cmp}) => `
         <div class="card-${cmp.id}" style="font-family: Arial, sans-serif;">
-          <div class="icon" style="border-style: ${borderStyle(ctx)}; border-color: ${borderColor(ctx)};">
-            <div class="icon-background" style="background-color: ${categoryColor(ctx)}"></div>
+          <div class="icon" bind_style="border-style:%likelihoodBorderStyle%;border-color:%urgencyBorderColor%">
+            <div class="icon-background" bind_style="background-color:%categoryColor%"></div>
             <div class="icon-content">
-                <div class="icon-main-symbol">${categorySymbol(ctx)}</div>
+                <div class="icon-main-symbol" bind="%categorySymbol%"></div>
             </div>
           </div>
-          <div class="icon-urgencySymbol">${urgencySymbol(ctx)}</div>
-          <div class="title">${item.title}</div>
-          <div class="category">${item.category}</div>
-          <div class="description">${item.description}</div>
-          <div class="urgency">Urgency: ${item.urgency}</div>
-          <div class="likelihood">Likelihood: ${item.likelihood}</div>
-          <div class="symptoms">Symptoms: ${jb.asArray(item.symptoms).join(', ')}</div>
-          <div class="riskFactors">
-            Risk Factors:
-            <ul>
-                ${jb.asArray(item.riskFactors).map(x => `<li>${x}</li>`).join('')}
-            </ul>
+          <div class="icon-urgencySymbol" bind="%urgencySymbol%"></div>
+          <div class="title" bind="%title%"></div>
+          <div class="category" bind="%category%"></div>
+          <div class="description" bind="%description%"></div>
+          <div class="urgency" bind="%urgency%"></div>
+          <div class="likelihood" bind="%likelihood%"></div>
+          <div class="symptoms">Symptoms:
+            <ul>${[0,1,2,3,4,5].map(i => `<li bind="%symptoms/i%"></li>`)}</ul>
           </div>
-          <div class="treatments">
-            Treatments:
-            <ul>
-                ${jb.asArray(item.recommendedTreatments).map(x => `<li>${x}</li>`).join('')}
-            </ul>
+          <div class="riskFactors">Risk Factors:
+            <ul>${[0,1,2,3,4,5].map(i => `<li bind="%riskFactors/i%"></li>`)}</ul>
           </div>
-          <div class="tests">
-            Tests:
-            <ul>
-                ${jb.asArray(item.diagnosticTests).map(x => `<li>${x}</li>`).join('')}
-            </ul>
+          <div class="treatments">Treatments:
+            <ul>${[0,1,2,3,4,5].map(i => `<li bind="%recommendedTreatments/i%"></li>`)}</ul>
+          </div>
+          <div class="tests">Tests:
+            <ul>${[0,1,2,3,4,5].map(i => `<li bind="%diagnosticTests/i%"></li>`)}</ul>
           </div>
         </div>
       `),
     css(`
         .card-%$cmp/id% {
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          padding: 10px;
-          overflow: hidden;
+          display: flex; flex-direction: column; justify-content: space-between; padding: 10px; overflow: hidden;
           box-shadow: inset 0px 0px 10px 0px rgba(0, 0, 0, 0.1);
         }
-        .card-%$cmp/id% .icon { position: relative; width: 32px; min-height: 32px;}
+        .card-%$cmp/id%>.icon { position: relative; width: 32px; min-height: 32px;}
         .card-%$cmp/id% .icon-background { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; }
         .card-%$cmp/id% .icon-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .card-%$cmp/id% .icon-urgencySymbol { font-size: 32px; line-height: 1; position: absolute; top: 10px; right: 2px; }
@@ -186,66 +160,46 @@ component('healthCare.conditionCardStyle', {
   )
 })
 
-component('healthCare.conditionIconBox', {
-  type: 'control',
-  impl: iconBox('%abrv%', healthCare.conditionIconBoxStyle({
-    categorySymbol: healthCare.categorySymbol(),
-    urgencySymbol: symbol(unitScale('urgency'), list('','❗','⚠️')),
-    borderStyle: borderStyle(unitScale('likelihood')),
-    opacity: opacity(unitScale('likelihood')),
-    borderColor: itemColor(unitScale('urgency'), list('green','orange','red')),
-    categoryColor: healthCare.categoryColor()
-  }))
-})
-
 component('healthCare.conditionIconBoxStyle', {
   type: 'iconBox-style',
-  params: [
-    {id: 'categorySymbol', type: 'item_symbol', byName: true},
-    {id: 'urgencySymbol', type: 'item_symbol'},
-    {id: 'borderStyle', type: 'item_border_style'},
-    {id: 'opacity', type: 'item_opacity'},
-    {id: 'borderColor', type: 'item_color'},
-    {id: 'categoryColor', type: 'item_color'}
-  ],
   impl: features(
     zoomingSize(fill()),
     zoomingGridElem(),
-    frontEnd.method('zoomingCss', (ctx,{cmp,itemSize}) => {
+    itemSymbol('categorySymbol', healthCare.categorySymbol()),
+    itemSymbol('urgencySymbol', symbol(unitScale('urgency'), list('','❗','⚠️'))),
+    itemBorderStyle('likelihoodBorderStyle', borderStyle(unitScale('likelihood'))),
+    itemOpacity('likelihoodOpacity', opacity(unitScale('likelihood'))),
+    itemColor('urgencyBorderColor', itemColor(unitScale('urgency'), list('green','orange','red'))),
+    itemColor('categoryColor', healthCare.categoryColor()),
+    dynamicCssVars(({},{itemSize})=>{
       const boxSize = 2 ** Math.floor(Math.log(itemSize[0]+0.1)/Math.log(2))
-      const cssVars = {}
-      cssVars['border-width'] = `${Math.min(2,Math.max(0,jb.zui.floorLog2(boxSize)-3))}px`
-      cssVars['box-size'] = `${boxSize}px`
-      if (boxSize >= 16) {
-        cssVars['symbol-font-size'] = `${boxSize * 0.5}px`
-        cssVars['urgency-symbol-font-size'] = `${boxSize * 0.25}px`
-        cssVars['urgency-symbol-offset'] = `${boxSize / 16}px`
-        cssVars['abrv-font-size'] = `${boxSize * 0.25}px`
-        cssVars['abrv-margin'] = `${boxSize / 16}px`
-      } else {
-        cssVars['symbol-font-size'] = `0px`
-        cssVars['urgency-symbol-font-size'] = `0px`
-        cssVars['urgency-symbol-offset'] = `0px`
-        cssVars['abrv-font-size'] = `0px`
-        cssVars['abrv-margin'] = `0px`
-      }
-      jb.zui.setCssVars(`icon-${cmp.id}`,cssVars)
+      return (boxSize >= 16) ? {
+        'symbol-font-size': `${boxSize * 0.5}px`,
+        'urgency-symbol-font-size': `${boxSize * 0.25}px`,
+        'urgency-symbol-offset': `${boxSize / 16}px`,
+        'abrv-font-size': `${boxSize * 0.25}px`,
+        'abrv-margin': `${boxSize / 16}px`,
+      } : { 'symbol-font-size': '0', 'urgency-symbol-font-size': '0', 'urgency-symbol-offset': '0', 'abrv-font-size': '0', 'abrv-margin': '0' }
     }),
-    htmlOfItem(`<div class="icon-%$cmp/id%" style="opacity: %$opacity()%; border-style: %$borderStyle()%; border-color: %$borderColor()%; font-family: Arial, sans-serif;">
-      <div class="icon-background-%$cmp/id%" style="background-color: %$categoryColor()%"></div>
-      <div class="icon-content-%$cmp/id%">
-        <div class="icon-urgencySymbol-%$cmp/id%">%$urgencySymbol()%</div>
-        <div class="icon-main-symbol-%$cmp/id%">%$categorySymbol()%</div>
-        <div class="icon-abrv-%$cmp/id%">%$$model/abrv()%</div>
+    htmlOfItem(`<div class="icon-%$cmp/id%" 
+          bind_style="opacity: %likelihoodOpacity%;border-style:%likelihoodBorderStyle%;border-color:%urgencyBorderColor%">
+      <div class="background" bind_style="background-color: %categoryColor%"></div>
+      <div class="content">
+        <div class="urgencySymbol" bind="%urgencySymbol%"></div>
+        <div class="main-symbol" bind="%categorySymbol%"></div>
+        <div class="abrv" bind="%abrv%"></div>
       </div>
     </div>`),
     css(`
-      .icon-%$cmp/id% { position: relative; border-width: var(--border-width); width: var(--box-size); height: var(--box-size);}
-      .icon-background-%$cmp/id% { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; }
-      .icon-content-%$cmp/id% { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-      .icon-urgencySymbol-%$cmp/id% { position: absolute; top: var(--urgency-symbol-offset); right: var(--urgency-symbol-offset); font-size: var(--urgency-symbol-font-size); }
-      .icon-main-symbol-%$cmp/id% { font-size: var(--symbol-font-size); line-height: 1; }
-      .icon-abrv-%$cmp/id% { font-size: var(--abrv-font-size); margin: var(--abrv-margin); line-height: 1; }
+      .icon-%$cmp/id% { position: relative; border-width: var(--border-width); width: var(--box-size); height: var(--box-size); 
+          font-family: Arial, sans-serif}
+      .icon-%$cmp/id% >.background { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; }
+      .icon-%$cmp/id% >.icon-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+          display: flex; flex-direction: column; align-items: center; justify-content: center; }
+      .icon-%$cmp/id% .icon-urgencySymbol { position: absolute; top: var(--urgency-symbol-offset); right: var(--urgency-symbol-offset); 
+          font-size: var(--urgency-symbol-font-size); }
+      .icon-%$cmp/id% .icon-main-symbol { font-size: var(--symbol-font-size); line-height: 1; }
+      .icon-%$cmp/id% .icon-abrv { font-size: var(--abrv-font-size); margin: var(--abrv-margin); line-height: 1; }
     `)
   )
 })

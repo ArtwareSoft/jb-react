@@ -78,6 +78,13 @@ component('opacityScale', {
   impl: () => [1.0,0.8,0.6,0.4,0.2]
 })
 
+component('zui.itemSymbolFunc', {
+  params: [
+    {id: 'itemSymbol', dynamic: true, type: 'item_symbol'}
+  ],
+  impl: (ctxWithItems,itemSymbolF) => itemSymbolF(ctxWithItems)
+})
+
 component('symbol', {
   type: 'item_symbol',
   params: [

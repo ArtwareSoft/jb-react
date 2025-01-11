@@ -59,3 +59,10 @@ component('gpt_35_turbo', {
   impl: model('gpt-3.5-turbo', 8, { quality: 4, speed: 50 })
 })
 
+component('byId', {
+  type: 'model',
+  params: [
+    {id: 'modelId', as: 'string', options: 'gpt_35_turbo_0125,gpt_4o,o1_mini,o1_preview'}
+  ],
+  impl: (ctx,id) => jb.exec({ $$: `model<llm>${id}` })
+})

@@ -1,27 +1,14 @@
 dsl('zui')
 
-component('zuiTest.measureLlmDurationForTasks', {
-  impl: dataTest(pipe(
-    Var('domain', typeAdapter('domain<zui>', healthCare())),
-    candidateTasks(),
-    slice(0, 1),
-    pipe(
-      Var('task', '%%'),
-      Var('prompt', '%$domain.itemsPromptForTask()%'),
-      llmViaApi.completions(user('%$prompt%'), {
-        llmModel: '%model%',
-        maxTokens: 25000,
-        includeSystemMessages: true,
-        useRedisCache: true
-      }),
-      obj(
-        prop('noOfItems', '%$task/noOfItems%'),
-        prop('model', '%$task/model/name%'),
-        prop('details', '%$task/details%'),
-        prop('duration', '%duration%')
-      )
-    )
-  ))
+component('zuiTest.domain.itemsSource', {
+  impl: dataTest({
+    calculate: pipe(
+      domain.itemsSource(healthCare(), baseTask({ noOfItems: '3', details: 'icon', modelId: 'gpt_35_turbo_0125' })),
+      join(',', { itemText: '%title%' })
+    ),
+    expectedResult: contains('Vertigo'),
+    timeout: '20000'
+  })
 })
 //'%model% %$task/onOfItems%: %duration%'
 

@@ -153,6 +153,7 @@ extension('zui', 'frontend', {
         const toRun = (cmp.frontEndMethods || []).filter(x=>x.method == method).sort((p1,p2) => (p1.phase || 0) - (p2.phase ||0))
         if (toRun.length == 0 && !silent)
             return jb.logError(`frontend - no method ${method}`,{cmp})
+        let methodResult = null
         toRun.forEach(({path}) => jb.utils.tryWrapper(() => {
             const profile = path.split('~').reduce((o,p)=>o && o[p],jb.comps)
             if (!profile)
@@ -168,10 +169,11 @@ extension('zui', 'frontend', {
                 jb.log(`frontend start flow ${jb.zui.rxPipeName(_flow)}`,{data, vars, cmp, srcCtx, ...feMEthod.frontEndMethod,  ctxToUse})
             else 
                 jb.log(`frontend run method ${method}`,{data, vars, cmp, srcCtx , ...feMEthod.frontEndMethod,ctxToUse})
-            const res = ctxToUse.run(feMEthod.frontEndMethod.action, jb.utils.dslType(profile.$$))
+            methodResult = ctxToUse.run(feMEthod.frontEndMethod.profile, jb.utils.dslType(profile.$$))
             if (_prop)
-                jb.log(`frontend prop ${_prop} value`,{res, cmp})
-            if (_flow && res) cmp.flows.unshift({flow: res, profile: _flow})
+                jb.log(`frontend prop ${_prop} value`,{methodResult, cmp})
+            if (_flow && methodResult) cmp.flows.unshift({flow: methodResult, profile: _flow})
         }, `frontEnd-${method}`,ctx))
+        return methodResult
     }
 })

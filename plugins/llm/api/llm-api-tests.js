@@ -46,10 +46,7 @@ component('llmTest.rx', {
     
     Each item in the JSON should include:
     - **title**: Name of the condition.
-    - **category**: The medical category (e.g., Gastrointestinal, Neurological).
-    - **urgency**: A scale from 1 to 10 indicating how urgent it is to address this condition (10 being the most urgent).
     - **likelihood**: A scale from 1 to 10 estimating how likely this diagnosis is based on the input.
-    - **abrv**: An abbreviation for the condition's name.
         
     1. Use medical knowledge to populate the fields based on the input hints.  
     2. Generate realistic and context-appropriate values for urgency, likelihood, and other attributes. 
@@ -62,10 +59,7 @@ component('llmTest.rx', {
     [
       {
         "title": "Appendicitis",
-      "category": "Gastrointestinal",
-      "urgency": 9,
       "likelihood": 7,
-      "abrv": "APN",
       }
     ]
     `),
