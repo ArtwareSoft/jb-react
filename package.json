@@ -35,8 +35,7 @@
   },
   "dependencies": {
     "nopt": "^7.2.0",
-    "websocket": "^1.0.34",
-    "ws": "^8.16.0"
+    "websocket": "^1.0.34"
   },
   "repository": {
     "type": "git",
@@ -52,17 +51,5 @@
   "author": "Shai Ben-Yehuda (http://artwaresoft.com)",
   "license": "SEE LICENSE IN license.txt",
   "devDependencies": {
-    "canvas": "^2.11.2",
-    "ffi-napi": "^4.0.3",
-    "gl": "^8.1.6",
-    "node-fetch": "^3.3.2",
-    "openai": "^4.28.0",
-    "puppeteer-extra": "^3.3.6",
-    "puppeteer-extra-plugin-stealth": "^2.11.2",
-    "redis": "^4.7.0",
-    "ref-array-di": "^1.2.2",
-    "ref-napi": "^3.0.3",
-    "source-map": "^0.7.4",
-    "webgl-context": "^2.2.0"
   }
 }

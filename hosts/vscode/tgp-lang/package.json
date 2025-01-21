@@ -2,7 +2,7 @@
 	"name": "tgp-lang",
 	"displayName": "TGP Language",
 	"description": "TGP language service and probe activation",
-	"version": "0.9.0",
+	"version": "0.9.1",
 	"publisher": "artwaresoft",
 	"license": "MIT",
 	"engines": {
@@ -14,7 +14,7 @@
 		"onLanguage:javascript"
 	],
 	"dependencies": {
-		"ws": "^8.13.0"
+		"ws": "^8.18.0"
 	},
 	"main": "vscode-tgp-lang.js",
 	"contributes": {
@@ -72,7 +72,7 @@
 			{
 				"command": "jbart.closeProbeResultEditor",
 				"title": "close jbart inspect probe result input output editor"
-			},						
+			},
 			{
 				"command": "jbart.openjBartStudio",
 				"title": "open jBart studio"
@@ -100,7 +100,7 @@
 			{
 				"command": "jbart.delete",
 				"title": "delete profile"
-			}		
+			}
 		],
 		"keybindings": [
 			{
@@ -127,12 +127,12 @@
 				"command": "jbart.closeProbeResultEditor",
 				"key": "ctrl+Shift+I",
 				"when": "editorTextFocus"
-			},			
+			},
 			{
 				"command": "jbart.openProbeResultPanel",
 				"key": "ctrl+U",
 				"when": "editorTextFocus"
-			},			
+			},
 			{
 				"command": "jbart.openjBartStudio",
 				"key": "ctrl+J",
@@ -142,7 +142,7 @@
 				"command": "jbart.openjBartTest",
 				"key": "ctrl+Shift+J",
 				"when": "editorTextFocus"
-			},					
+			},
 			{
 				"command": "jbart.openLastCmd",
 				"key": "ctrl+Alt+J",
@@ -157,17 +157,17 @@
 				"command": "jbart.duplicate",
 				"key": "alt+D",
 				"when": "editorTextFocus"
-			},					
+			},
 			{
 				"command": "jbart.delete",
 				"key": "ctrl+Alt+D",
 				"when": "editorTextFocus"
-			},					
+			},
 			{
 				"command": "jbart.disable",
 				"key": "ctrl+shift+D",
 				"when": "editorTextFocus"
-			}			
+			}
 		]
 	}
 }

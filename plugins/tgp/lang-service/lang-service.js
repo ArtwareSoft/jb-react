@@ -68,7 +68,6 @@ extension('langService', 'impl', {
     },
 
     async provideCompletionItems(compProps, ctx) {
-        debugger
         const { actionMap, inCompOffset, tgpModel } = compProps
         const actions = actionMap.filter(e => e.from <= inCompOffset && inCompOffset < e.to || (e.from == e.to && e.from == inCompOffset))
             .map(e => e.action).filter(e => e.indexOf('edit!') != 0 && e.indexOf('begin!') != 0 && e.indexOf('end!') != 0)

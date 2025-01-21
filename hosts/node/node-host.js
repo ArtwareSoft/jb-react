@@ -1,17 +1,33 @@
 const fs = require('fs')
 const vm = require('vm')
+const path = require('path')
 
 function findjbReact() {
-    const underJbReact = (__dirname.match(/projects\/jb-react(.*)$/) || [''])[1]
-    if (underJbReact)
-        return __dirname.slice(0,-1*underJbReact.length)
-    const dir2 = [...__dirname.split('/').slice(0,__dirname.split('/').indexOf('projects')), 'jb-react'].join('/')
-    if (fs.statSync(dir2).isDirectory())
-        return dir2
+    const underJbReactMatch =  (__dirname.replace(/\\/g,'/').match(/projects\/jb-react(.*)$/) || [''])[1]
+    if (underJbReactMatch)
+        return __dirname.slice(0, -1 * underJbReactMatch.length)
+
+    const dirParts = __dirname.split(path.sep)
+    const projectsIndex = dirParts.indexOf('projects')
+
+    if (projectsIndex !== -1) {
+        const jbReactPath = path.join(...dirParts.slice(0, projectsIndex), 'jb-react');
+        if (fs.existsSync(jbReactPath) && fs.statSync(jbReactPath).isDirectory())
+            return jbReactPath
+    }
 }
 
+// function findjbReact() {
+//     const underJbReact = (__dirname.match(/projects\/jb-react(.*)$/) || [''])[1]
+//     if (underJbReact)
+//         return __dirname.slice(0,-1*underJbReact.length)
+//     const dir2 = [...__dirname.split('/').slice(0,__dirname.split('/').indexOf('projects')), 'jb-react'].join('/')
+//     if (fs.statSync(dir2).isDirectory())
+//         return dir2
+// }
+
 function codePackageNodeFS(baseDir) { return {
-    repo: baseDir.split('/').pop(),
+    repo: baseDir.split(path.sep).pop(),
     fetchFile(url) {
         try {
             return require('util').promisify(fs.readFile)(baseDir+url).then(x=>''+x)
@@ -23,24 +39,24 @@ function codePackageNodeFS(baseDir) { return {
     fetchJSON(url) { 
         return this.fetchFile(url).then(x=>JSON.parse(''+x))
     },
-    loadLib(path) { 
-        const code = '' + fs.readFileSync(`${baseDir}${path}`)
+    loadLib(libPath) { 
+        const code = '' + fs.readFileSync(`${baseDir}${libPath}`)
         vm.runInThisContext(code)
     },
     loadFELib(lib) {
         jb.logError(`loadFELib is not allowed in nodejs host ${lib}`,{})
     },
-    async fileSymbols(path) {
+    async fileSymbols(topPath) {
         try {
-            return getFilesInDir(path).filter(f => f.match(/\.js$/)).map(path => fileContent('/'+path))
+            return getFilesInDir(topPath).filter(f => f.match(/\.js$/)).map(f => fileContent('/'+f))
         } catch(e) {
             return []
         }
     
         function getFilesInDir(dirPath) {
             return fs.readdirSync(`${baseDir}/${dirPath}`).sort((x, y) => x == y ? 0 : x < y ? -1 : 1).reduce((acc, file) => {
-                const path = `${dirPath}/${file}`
-                return fs.statSync(`${baseDir}/${path}`).isDirectory() ? [...acc, ...getFilesInDir(path)] : [...acc, path]
+                const subPath = `${dirPath}/${file}`
+                return fs.statSync(`${baseDir}/${subPath}`).isDirectory() ? [...acc, ...getFilesInDir(subPath)] : [...acc, subPath]
             }, [])
         }
         function fileContent(path) {

@@ -1,8 +1,9 @@
 globalThis.vscodeNS = require('vscode')
 globalThis.jbVSCodeLog = vscodeNS.window.createOutputChannel('jbart').appendLine
+
 function findjbReact() {
     const _dirname = __dirname.replace(/\\/g,'/')
-    const workspaceDir = (vscodeNS.workspace.workspaceFolders || []).map(ws=>ws.uri.path.replace(/\\/g,'/'))[0] || ''
+    const workspaceDir = (vscodeNS.workspace.workspaceFolders || []).map(ws=>ws.uri.fsPath.replace(/\\/g,'/'))[0] || ''
     const rep = (workspaceDir.match(/projects\/([^/]*)$/) || [])[1]
     jbVSCodeLog('rep:' + rep)
     if (rep)

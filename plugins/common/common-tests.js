@@ -5,7 +5,7 @@ component('commonTest.json.stringify', {
 })
 
 component('commonTest.join', {
-  impl: dataTest(pipeline(list(1,2), '%%', join()), equals('1,2'))
+  impl: dataTest(pipeline(list(1,2), '%%', join()), equals('1,2'), { runBefore: writeValue() })
 })
 
 component('commonTest.data', {

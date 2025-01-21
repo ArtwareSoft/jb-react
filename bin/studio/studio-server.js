@@ -111,8 +111,9 @@ function serveFile(req,res,path,_try = 0) {
       return endWithFailure(res,'file status code 500 ' + full_path + ' ' + err)
     } else {
       res.setHeader('Cache-Control','max-age: 0, must-revalidate,no-cache')
-      const etag = stat.size + '-' + Date.parse(stat.mtime)
-      res.setHeader('Last-Modified', stat.mtime)
+      const etag = `${stat.size}-${stat.mtime.getTime()}`
+      res.setHeader('ETag', etag)
+      res.setHeader('Last-Modified', stat.mtime.toUTCString())
 
       if (extension == 'json') res.setHeader('Content-Type', 'application/json;charset=utf8')
       if (extension == 'css') res.setHeader('Content-Type', 'text/css')
@@ -245,7 +246,9 @@ const op_post_handlers = {
       //${baseUrl}/tests.html?
       res.setHeader('Content-Type', 'application/json; charset=utf8') // '--inspect-brk', --experimental-wasm-simd
       const flags = [] //'--experimental-wasm-simd']
-      const srvr = child.spawn('node',[...flags, './jb.js', ...args],{cwd: 'hosts/node'})
+
+      const cwd = require('path').join('hosts', 'node')
+      const srvr = child.spawn('node',[...flags, './jb.js', ...args],{cwd})
       let res_str = ''
       srvr.stdout.on('data', data => { res.write(data); res_str += data })
       srvr.stdout.on('end', data => {
