@@ -66,7 +66,7 @@ component('sink.BEMethod', {
 })
 
 component('sink.FEMethod', {
-  type: 'rx',
+  type: 'rx<>',
   category: 'sink',
   macroByValue: true,
   params: [

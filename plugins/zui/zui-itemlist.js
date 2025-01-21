@@ -1,5 +1,19 @@
 dsl('zui')
 
+/*
+TODO:
+llmItem - title (key), _details,_ctxVer, _modelId, ...props
+itemReq - title, _details, _ctxVer, exposure level
+incomingItem - title, _details, _ctxVer, _tta (time to arrive), taskId
+
+fe queues:
+  itemReq
+be queues:
+  newItems
+  itemsToUpdate:
+  incomingItem? - maybe just send directly. no need for queue
+*/
+
 component('itemlist', {
   type: 'control',
   params: [
@@ -14,16 +28,17 @@ component('itemlist', {
 component('grid', {
   type: 'itemlist-style',
   impl: features(
-    injectUnderContainerClass('zui-control'),
-    variable('items', '%$appData/items%'),
+    injectUndercontainerSelector('.zui-control'),
     variable('itemsLayout', '%$$model/itemsLayout()%'),
-    frontEnd.var('gridSize', '%$itemsLayout/gridSize%'),
-    frontEnd.var('itemsXyPos', ({},{items}) => items.map(i=>i.xyPos)),
-    frontEnd.var('initialZoomCenter', ['%$itemsLayout/initialZoom%','%$itemsLayout/center%']),
     variable('inZoomingGrid', true),
+    variableForChildren('itemlistCmp', '%$cmp%'),
+    frontEnd.var('initialZoomCenter', ['%$itemsLayout/initialZoom%','%$itemsLayout/center%','%$itemsLayout/gridSize%']),
     html((ctx,{cmp}) => `<div class="zui-items ${cmp.clz}">`),
     css('.%$cmp.clz% {position: relative; width: 100%; height: 100%; overflow: hidden;}'),
-    init((ctx,{cmp, itemsLayout, widget, $model, screenSize}) => {
+    init((ctx,{cmp, itemsLayout, $model, screenSize}) => {
+      cmp.items = []
+      cmp.newItems = []
+      cmp.itemsLayout = itemsLayout
       const ctxForChildren = ctx.setVars({renderRole: 'zoomingGridElem', itemlistCmp: cmp}) // variableForChildren does not work with init
       cmp.children = [$model.itemControl(ctxForChildren).init()]
       cmp.extendedPayloadWithDescendants = async (res,descendants) => {
@@ -43,23 +58,29 @@ component('grid', {
     frontEnd.init((ctx,{cmp,widget,initialZoomCenter}) => {
       widget.state.zoom = widget.state.tZoom = initialZoomCenter[0]
       widget.state.center = widget.state.tCenter = initialZoomCenter[1]
+      widget.state.gridSize = initialZoomCenter[2]
 
       widget.itemlistCmp = cmp
+      cmp.items = []
       if (jb.frame.document && !document.querySelector(`.${cmp.clz}`)) 
         document.querySelector('.zui-control').appendChild(cmp.base)
       const rect = cmp.base && cmp.base.getBoundingClientRect()
       const canvasSize = jb.frame.document ? [rect.width,rect.height] : widget.screenSize
       cmp.enrichCtxWithItemSize = ctx2 => ctx2.setVars({itemSize: [0,1].map(axis=>canvasSize[0]/widget.state.zoom),canvasSize})
+      widget.BERxSource(cmp.id,'userDataListener',ctx)
     }),
     zui.canvasZoom(),
-    frontEnd.method('zoomingCss', (ctx,{cmp,itemSize,canvasSize,widget,itemsXyPos}) => {
+    frontEnd.method('zoomingCss', (ctx,{cmp,itemSize,canvasSize,widget}) => {
       const center = widget.state.center
-      jb.zui.setCss(`sizePos-${cmp.clz}`, [ // todo - move to vars
+      const gridSize = widget.state.gridSize
+      const transition = [0,1].map(axis=>canvasSize[axis]/2 - center[axis]*itemSize[axis] )
+      jb.zui.setCss(`sizePos-${cmp.clz}`, [
+        `/* itemsize: ${itemSize},  gridSize: ${gridSize}, center: ${center}, transition: ${transition}*/`,
         `.${cmp.clz} .zui-item { width: ${itemSize[0]}px; height: ${itemSize[1]}px }`,
-        ...itemsXyPos.map(xyPos => {
-          const pos = xyPos.map((v,axis)=>(v- center[axis]+1)*itemSize[axis]+ canvasSize[axis]/2)
+        ...cmp.items.map(({xyPos,title}) => {
+          const pos = [0,1].map(axis=>xyPos[axis]*itemSize[axis] + transition[axis])
           const visible = pos[0]+itemSize[0] > 0 && pos[0] <= canvasSize[0] && pos[1]+itemSize[1] > 0 && pos[1] <= canvasSize[1]
-          return `.${cmp.clz} .pos_${xyPos.join('-')} { ${visible ? `top: ${canvasSize[1] - pos[1]}px; left: ${pos[0]}px` : 'display:none'} }`
+          return `.${cmp.clz} div[itemkey="${title}"] { ${visible ? `top: ${pos[1]}px; left: ${pos[0]}px` : 'display:none'} } /* ${xyPos} ${pos.join(',')}*/`
         })].join('\n')
       )
     }),
@@ -68,9 +89,10 @@ component('grid', {
 
       function buildNode(id) {
         const cmpData = widget.cmpsData[id]
+        if (!cmpData) return
         const zoomingSize = cmpData.zoomingSizeProfile ? ctx.run(cmpData.zoomingSizeProfile) : {}
         const layoutProps = cmpData.layoutProps || {}
-        const children = cmpData.childrenIds && cmpData.childrenIds.split(',').map((ch,i)=>buildNode(ch,i))
+        const children = cmpData.childrenIds && cmpData.childrenIds.split(',').map((ch,i)=>buildNode(ch,i)).filter(x=>x)
         return { id, children, zoomingSize, layoutProps, title: cmpData.title}
       }
     }),
@@ -80,21 +102,170 @@ component('grid', {
       rx.do(({},{widget}) => widget.renderCounter++),
       sink.action('%$widget.renderCmps()%')
     ),
+    frontEnd.method('clipItems', (ctx,{cmp,widget,itemSize}) => {
+      const center = widget.state.center
+      cmp.items.filter(({xyPos,title}) => {
+        const pos = [0,1].map(axis=>xyPos[axis]*itemSize[axis] + transition[axis])
+        const distance = Math.sqrt(pos[0]^2+pos[1]^2)
+        const visible = pos[0]+itemSize[0] > 0 && pos[0] <= canvasSize[0] && pos[1]+itemSize[1] > 0 && pos[1] <= canvasSize[1]
+        const screenRadius = Math.min(...canvasSize)
+        const alpha = 1, falloffRate = 1
+        if (visible)
+          return Math.max(0, 1 - alpha * (distance / screenRadius))
+        const offScreenDistance = distance - screenRadius
+        return Math.exp(-offScreenDistance / (screenRadius * falloffRate))        
+      })
+    }),
     frontEnd.method('render', (ctx,{cmp,widget,itemSize}) => {
       const {shownCmps, elemsLayout} = cmp.layoutCalculator.calcItemLayout(itemSize,ctx)
       widget.cmpsData[cmp.id].itemLayoutforTest = {shownCmps, elemsLayout}
       const toRender = Object.values(widget.cmps).filter(cmp=>shownCmps.indexOf(cmp.id) != -1)
       const notReady = toRender.filter(cmp=>cmp.notReady).map(cmp=>cmp.id)
       if (notReady.length)
-        widget.beProxy.updateShownNotReadyComps(notReady)
+        widget.runBEMethodAndUpdate(notReady[0],'recalcPayload',ctx)
       jb.log('zui itemlist render',{elemsLayout, shownCmps, toRender, notReady, ctx})
       cmp.zoomingCss(ctx)
       Object.values(widget.cmps).filter(cmp=>cmp.base && cmp.renderRole == 'zoomingGridElem')
         .forEach(cmp=> cmp.base.style.display = shownCmps.indexOf(cmp.id) == -1 ? 'none' : 'block')
-      toRender.filter(cmp=>!cmp.notReady)
-          .forEach(cmp=>widget.renderCmp(cmp,ctx.setVars({elemLayout: elemsLayout[cmp.id]})))
-    })
+      toRender.filter(cmp=>!cmp.notReady).forEach(cmp=>cmp.render(ctx))
+    }),
+    prop('userDataSubj', rx.subject()),
+    flow(
+      'userDataListener',
+      source.subject('%$cmp.props.userDataSubj%'),
+      rx.flatMap(source.data(zui.taskToRun())),
+      rx.log('zui task to run'),
+      rx.var('task'),
+      rx.flatMap(domain.itemsSource('%$domain%', '%$task%'), {
+        onInputBegin: runActions(
+          zui.sendIncomingItems('%$task%'),
+          addToArray('%$appData/runningTasks%'),
+          writeValue('%startTime%', now())
+        ),
+        onInputEnd: runActions(
+          writeValue('%actualDuration%', minus(now(), '%startTime%')),
+          addToArray('%$appData/doneTasks%'),
+          removeFromArray('%$appData/runningTasks%', '%%')
+        )
+      }),
+      rx.do(zui.extendItem('%%', '%$task/details%')),
+      rx.map(extendWithObj(obj(
+        prop('_details', '%$task/details%'),
+        prop('_ctxVer', '%$task/ctxVer%'),
+        prop('_modelId', '%$task/model/id%')
+      ))),
+      rx.log('zui new item from llm'),
+      sink.action(addToArray('%$cmp.newItems%'))
+    ),
+    dataSource('updateFrontEnd', source.interval(1000), rx.map(zui.payloadForFE()), rx.filter('%%'), rx.log('zui new payload')),
+    frontEnd.flow(
+      zui.backEndSource('updateFrontEnd'),
+      sink.action(({data},{widget}) => widget.handlePayload(data))
+    ),
+    frontEnd.flow(source.interval(1000), sink.updateUserData())
   )
+})
+
+component('zoomingGridElem', {
+  type: 'feature',
+  params: [
+    {id: 'taskDetails', as: 'string'}
+  ],
+  impl: features(
+    prop('taskDetails', '%$taskDetails%'),
+    init((ctx,{cmp,widget}) => {
+      cmp.recalcPayload = userData => {
+        return cmp.calcPayload()
+      }
+      cmp.doExtendItem = item => {
+        const ctxWithItem = ctx.setData(item)
+        ;(cmp.extendItem||[]).forEach(f=>f(ctxWithItem))
+      }
+    }),
+    frontEnd.method('render', (ctx,{cmp,widget,itemSize,fontSizeMap}) => {
+      const itemlistCmp = widget.itemlistCmp
+      if (cmp.base && !itemlistCmp.base.querySelector(`.${cmp.clz}`)) 
+        itemlistCmp.base.appendChild(cmp.base)
+      let fontSizes = {}
+      if (fontSizeMap) {
+        const baseSize = itemSize[0]
+        const closestSize = Object.keys(fontSizeMap).map(Number).reduce((prev, curr) => (baseSize <= curr ? curr : prev), 320)
+        fontSizes = {
+          'title-font-size': `${fontSizeMap[closestSize].title}px`,
+          'description-font-size': `${fontSizeMap[closestSize].description}px`
+        }
+      }
+      const cssVars = cmp.dynamicCssVars ? cmp.dynamicCssVars(ctx) : {}
+      jb.zui.setCssVars(cmp.clz, {...fontSizes, ...cssVars})
+      cmp.base.style.display = 'block'
+      itemlistCmp.items.forEach(item=>{
+        let elem = itemlistCmp.base.querySelector(`[itemkey="${item.title}"]`)
+        if (!elem) {
+          const elem = document.createElement('div')
+          elem.innerHTML = cmp.templateHtmlItem
+          elem.setAttribute('itemkey',item.title)
+          elem.setAttribute('xy',''+item.xyPos)
+          elem.classList.add('zui-item')
+          elem.item = item         
+          cmp.base.appendChild(elem)  
+          jb.zui.populateHtml(elem,ctx.setData(item))
+        }
+      })
+    }),
+    html('<div class="%$cmp.clz%"></div>'),
+    css(`.%$cmp.clz% {width: 100%; height: 100%}
+        .%$cmp.clz%>.zui-item {overflow: hidden; text-overflow: ellipsis; pointer-events: none; position: absolute; 
+          border1: 1px black solid; transition: top 0.3s ease, left 0.3s ease;}`)
+  )
+})
+
+component('sink.updateUserData', {
+  type: 'rx<>',
+  category: 'sink',
+  impl: sink.action((ctx,{widget}) => {
+    const { state, beAppCmpProxy } = widget
+    const { userData } = ctx.vars
+    const cmpId = ctx.vars.cmp.id
+    const cmp = beAppCmpProxy.id == cmpId ? beAppCmpProxy : beAppCmpProxy.allDescendants().find(x=>x.id == cmpId)
+    if (!cmp)
+        return jb.logError(`updateUserData can not find cmp ${cmpId}`, {ctx})
+    cmp.props.userDataSubj.trigger.next(cmp.ctx.dataObj({state, userData}))
+  })
+})
+
+component('zui.extendItem', {
+  type: 'action<>',
+  params: [
+    {id: 'item'},
+    {id: 'taskDetails', as: 'string'}
+  ],
+  impl: (ctx,item, taskDetails) => ctx.vars.cmp.allDescendants().filter(c=>c.props.taskDetails == taskDetails)
+    .forEach(child=>child.doExtendItem(item))
+})
+
+component('zui.sendIncomingItems', {
+  type: 'action<>',
+  params: [
+    {id: 'task'}
+  ],
+  impl: (ctx,task) => {}
+})
+
+component('zui.payloadForFE', {
+  impl: ctx => {
+    const { $model, cmp } = ctx.vars
+    const { newItems, tasks } = cmp
+    if (newItems.length) {
+      const itemsMap = jb.objFromEntries(cmp.items.map(item=>[item.title,item]))
+      const newItemsMap = jb.objFromEntries(newItems.map(item=>[item.title,item]))
+      const keys = jb.utils.unique([...Object.keys(itemsMap), ... Object.keys(newItemsMap)])
+      cmp.items = keys.map(k=>newItemsMap[k] || itemsMap[k])
+      // todo - check if no need to re-layout the items (icon->card only or ctxVer update only with no new items!)
+      cmp.itemsLayout = $model.itemsLayout(ctx.setVars({items: cmp.items}))
+      cmp.newItems = []
+      return { items : { cmpId: cmp.id, gridSize: cmp.itemsLayout.gridSize, items: cmp.items} }
+    }
+  }
 })
 
 component('spiral', {
@@ -105,14 +276,3 @@ component('spiral', {
   impl: (ctx,pivot) => jb.zui.spiral(pivot,ctx)
 })
 
-component('zoomingGridElem', {
-  type: 'feature',
-  params: [],
-  impl: features(
-    html((ctx,{cmp,items}) => `<div class="${cmp.clz}">
-  ${items.map(item=>`<div class="zui-item pos_${item.xyPos.join('-')}">${cmp.calcHtmlOfItem(item)}</div>`).join('\n')}
-</div>`),
-    css(`.%$cmp.clz% {width: 100%; height: 100%}
-        .%$cmp.clz%>.zui-item {overflow: hidden; text-overflow: ellipsis; pointer-events: none; position: absolute; border1: 1px solid gray}`)
-  )
-})

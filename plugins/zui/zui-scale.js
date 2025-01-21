@@ -7,7 +7,7 @@ component('itemColor', {
     {id: 'colorScale', mandatory: true, type: 'color_scale', defaultValue: distinct10()}
   ],
   impl: (ctx,unitScale,colorScale) => ctx => {
-        const index = Math.floor(unitScale(ctx.data) * colorScale.length *0.9999)
+        const index = Math.floor(unitScale(ctx) * colorScale.length *0.9999)
         const color = colorScale[index] ? colorScale[index] : 'white'
         return Array.isArray(color) ? `rgb(${color.join(',')})` : color
     }
@@ -47,7 +47,7 @@ component('borderStyle', {
   impl: (ctx,unitScaleF,borderStyleScale) => {
     const unitScale = unitScaleF()
     return ctx => {
-            const index = Math.floor(unitScale(ctx.data) * borderStyleScale.length *0.9999)
+            const index = Math.floor(unitScale(ctx) * borderStyleScale.length *0.9999)
             return borderStyleScale[index] ? borderStyleScale[index] : 'solid'
         }
     }
@@ -67,7 +67,7 @@ component('opacity', {
   impl: (ctx,unitScaleF,opacityScale) => {
     const unitScale = unitScaleF()
     return ctx => {
-            const index = Math.floor(unitScale(ctx.data) * opacityScale.length *0.9999)
+            const index = Math.floor(unitScale(ctx) * opacityScale.length *0.9999)
             return opacityScale[index] ? opacityScale[index] : 1
         }
     }
@@ -94,7 +94,7 @@ component('symbol', {
   impl: (ctx,unitScaleF,symbolScale) => {
         const unitScale = unitScaleF()
         return ctx => {
-            const index = Math.floor(unitScale(ctx.data) * symbolScale.length *0.9999)
+            const index = Math.floor(unitScale(ctx) * symbolScale.length *0.9999)
             return symbolScale[index] ? symbolScale[index] : ''
         }
     }
@@ -155,19 +155,30 @@ component('unitScale', {
   params: [
     {id: 'att', as: 'string', defaultValue: 'index' },
     {id: 'calc', dynamic: true, description: 'optional. When empty, item property with same name is used'},
+    {id: 'items', dynamic: true, defaultValue: '%$itemlistCmp/items%'},
   ],
-  impl: (ctx, _att, calc) => {
-    const items = ctx.vars.items || []
-    if (items.length == 0) return () => 0
+  impl: (_ctx, _att, calc, itemsF) => {
     const att = `fixed_${_att}`
-    items.forEach((item,i) => item[att] = calc.profile ? calc(ctx.setData(item)) : _att == 'index' ? i : +item[_att] )
-    items.sort((i1,i2) => i1[att] - i2[att])
-    const range = [items[0][att] || 0,items.slice(-1)[0][att] || 0]
-    if (range[0] == range[1]) {
-        jb.logError(`zui empty range for ${att}`,{ctx})
-        return () => 0
+    let _items = null
+    let range = null
+    let valid = false
+    return ctx => {
+      calcRange(ctx)
+      if (!valid) return 0
+      const item = ctx.data
+      return ((+item[att] || 0)-range[0])/(range[1]-range[0])
     }
-    return item=> ((+item[att] || 0)-range[0])/(range[1]-range[0])
+    function calcRange(ctx) {
+      const {cmp} = ctx.vars
+      const items = itemsF(_ctx) || itemsF(ctx)     
+      if (items.length == 0) { valid = false; return }
+      if (items == _items) return // caching range calculation. assuming items is immutable
+      _items = items
+      items.forEach((item,i) => item[att] = calc.profile ? calc(_ctx.setData(item)) : _att == 'index' ? i : +item[_att] )
+      items.sort((i1,i2) => i1[att] - i2[att])
+      range = [items[0][att] || 0,items.slice(-1)[0][att] || 0]
+      valid = range[0] != range[1]
+    }
   }
 })
 

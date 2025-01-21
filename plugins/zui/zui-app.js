@@ -17,14 +17,12 @@ component('app', {
   type: 'app-style',
   impl: features(
     appCmp(),
-    html((ctx,{$model}) => $model.html(ctx.setVars(jb.objFromEntries($model.sections.map(sec=>[sec.id,sec]))))),
-    css((ctx,{$model}) => $model.css(ctx.setVars(jb.objFromEntries($model.sections.map(sec=>[sec.id,sec]))))),
-    init((ctx,{cmp, appData,$model}) => {
+    html((ctx,{$model}) => $model.html(ctx.setVars(jb.objFromEntries($model.sections.map(sec=>[sec.id,sec.html(ctx)]))))),
+    css((ctx,{$model}) => $model.css(ctx.setVars(jb.objFromEntries($model.sections.map(sec=>[sec.id,sec.css(ctx)]))))),
+    init((ctx,{cmp,appData, $model}) => {
         cmp.updateZuiControl = async userData => {
             const ctxToUse = ctx.setVars({userData})
-            appData.items = await ctxToUse.run({$: 'domain.calcItems'})
-            debugger
-            const zuiCtrl = $model.zuiControl(ctxToUse).init()
+            const zuiCtrl = cmp.zuiCtrl = $model.zuiControl(ctxToUse).init()
             cmp.children = [zuiCtrl]
             cmp.extendedPayloadWithDescendants = async res => ({ 
                 appData, ...await zuiCtrl.calcPayload() 
@@ -35,7 +33,8 @@ component('app', {
     }),
     frontEnd.init((ctx,{cmp, uiTest, widget}) => {
         const ctxToUse = ctx.setVars({userData: widget.userData, appData: widget.appData})
-        cmp.dataBinder = !uiTest && new jb.zui.DataBinder(ctxToUse,cmp.base)
+        const rootElements = [cmp.base.querySelector('.top-panel'), cmp.base.querySelector('.left-panel')]
+        cmp.dataBinder = !uiTest && new jb.zui.DataBinder(ctxToUse,rootElements)
     }),
     frontEnd.method('render', (ctx,{cmp}) => cmp.dataBinder.populateHtml())
   )
@@ -45,8 +44,8 @@ component('mainApp', {
   type: 'control',
   impl: app({
     html: `<div class="app-layout">
-            %$topPanel.html%
-            %$leftPanel.html%
+            %$topPanel%
+            %$leftPanel%
             <div class="zui-control"></div>
         </div>`,
     css: `body { font-family: Arial, sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
@@ -57,10 +56,10 @@ component('mainApp', {
     grid-template-areas: "top top top" "left body body";
   }
   .top-panel { grid-area: top; }
-  %$topPanel.css% 
-  %$leftPanel.css%`,
+  %$topPanel% 
+  %$leftPanel%`,
     sections: [topPanel(), leftPanel()],
-    zuiControl: itemlist('%$domain.zuiControl()%', '%$domain.itemsLayout()%')
+    zuiControl: itemlist(firstToFit(card('%$domain/card%'), iconBox('%$domain/iconBox%')), '%$domain.itemsLayout()%')
   })
 })
 
@@ -121,7 +120,7 @@ component('leftPanel', {
     <div class="controls">
         <label for="preferedLlmModel">LLM Model:</label>
         <select twoWayBind="%$userData.preferedLlmModel%" id="preferedLlmModel" class="llm-select">
-          ${jb.exec({$: 'zui.decoratedllmModels'}).map(({name,cost,speed,qualitySymbol,speedSymbol}) => `<option value="${name}">
+          ${jb.exec({$: 'zui.decoratedllmModels'}).map(({id,name,cost,speed,qualitySymbol,speedSymbol}) => `<option value="${id}">
           ${qualitySymbol} ${speedSymbol} ${name} ${speed} (${cost})</option>`).join('')}
         </select>
     </div>
@@ -143,8 +142,8 @@ component('leftPanel', {
       <h3>Tasks</h3>${[0,1,2,3,4].map(i => `
         <div class="task" bind_display="%$appData/runningTasks/${i}%">
           <p bind_text="%$appData/runningTasks/${i}/title%"></p>
-          <progress bind_value="%$appData/runningTasks/${i}/duration()%" bind_max="%$appData/runningTasks/${i}/estimatedDuration%" value="0.04" max="1"></progress>
-          <small bind_text="%$appData/runningTasks/${i}/duration()%/%$appData/runningTasks/${i}/estimatedDuration% sec">2/50 sec</small>
+          <progress bind_value="%$appData/runningTasks/${i}/duration()%" bind_max="%$appData/runningTasks/${i}/estimatedDuration%"></progress>
+          <small bind_text="%$appData/runningTasks/${i}/duration()%/%$appData/runningTasks/${i}/estimatedDuration% sec"></small>
         </div>`).join('')}
       <div class="expandable">
         <h4>Done Tasks</h4>
@@ -202,13 +201,13 @@ component('leftPanel', {
 })
 
 component('zui.decoratedllmModels', {
-    params: [
-        {id: 'qualitySymbol', dynamic: true, type: 'item_symbol', defaultValue: symbol(unitScale('quality'), iqScale())},
-        {id: 'speedSymbol', dynamic: true, type: 'item_symbol', defaultValue: symbol(unitScale('speed'), speedScale10())}
-    ],
-    impl: (ctx,qualitySymbolF,speedSymbolF) => {
-        const profileIds = Object.keys(jb.comps).filter(k=>k.indexOf('model<llm>') == 0 && k!='model<llm>model')
-        const items = profileIds.map(k=>ctx.run({$$: k}))
+  params: [
+    {id: 'qualitySymbol', dynamic: true, type: 'item_symbol', defaultValue: symbol(unitScale('quality', { items: '%$items%' }), iqScale())},
+    {id: 'speedSymbol', dynamic: true, type: 'item_symbol', defaultValue: symbol(unitScale('_speed', { items: '%$items%' }), speedScale10())}
+  ],
+  impl: (ctx,qualitySymbolF,speedSymbolF) => {
+        const profileIds = Object.keys(jb.comps).filter(k=>k.indexOf('model<llm>') == 0 && !k.match(/model$|byId$/))
+        const items = profileIds.map(k=>({...ctx.run({$$: k}), id: k.split('>').pop()}))
         const ctxWithItems = ctx.setVars({items})
         const [qualitySymbol,speedSymbol] = [qualitySymbolF(ctxWithItems), speedSymbolF(ctxWithItems)]
         return items.sort((x,y) => y.quality-x.quality).map(item=>({...item, 

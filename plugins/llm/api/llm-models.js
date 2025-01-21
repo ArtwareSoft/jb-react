@@ -9,7 +9,8 @@ component('model', {
     {id: 'speed', type: 'model_speed' },
     {id: 'maxContextLength', as: 'number', defaultValue: 4096},
     {id: 'reasoning', as: 'boolean', type: 'boolean<>'}
-  ]
+  ],
+  impl: ctx => ({...ctx.params, _speed: jb.path(ctx.params.speed,'icon.1') || ctx.params.speed })
 })
 
 component('linear', {
@@ -41,22 +42,22 @@ component('gpt_35_turbo_0125', {
 
 component('o1_mini', {
   type: 'model',
-  impl: model('o1-mini', 20, { quality: 8, speed: 1, reasoning: true  })
+  impl: model('o1-mini', 20, { quality: 8, speed: 10000, reasoning: true })
 })
 
 component('gpt_4o', {
   type: 'model',
-  impl: model('gpt-4o', 10, { quality: 6, speed: 20 })
+  impl: model('gpt-4o', 10, { quality: 6, speed: 4000 })
 })
 
 component('gpt_4o_2024_08_06', {
   type: 'model',
-  impl: model('gpt-4o-2024-08-06', 10, { quality: 6, speed: 10 })
+  impl: model('gpt-4o-2024-08-06', 10, { quality: 6, speed: 4000 })
 })
 
 component('gpt_35_turbo', {
   type: 'model',
-  impl: model('gpt-3.5-turbo', 8, { quality: 4, speed: 50 })
+  impl: model('gpt-3.5-turbo', 8, { quality: 4, speed: 1000 })
 })
 
 component('byId', {

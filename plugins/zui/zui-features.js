@@ -34,47 +34,6 @@ component('props', {
   impl: (ctx,propsF,phase) => ({ calcProp: {id: '$props', value: ctx => propsF(ctx), phase, index: jb.zui.fCounter++ } , srcPath: ctx.path})
 })
 
-component('itemSymbol', {
-  type: 'feature',
-  description: 'used in itemlists. the value will be instered into each item',
-  params: [
-    {id: 'name', as: 'string', mandatory: true},
-    {id: 'val', dynamic: true, type: 'item_symbol'}
-  ],
-  impl: ctx => ({
-    calcProp: {... ctx.params, index: jb.zui.fCounter++},
-    extendItem: (itemCtx,{$props}, {name}) => $props[ctx.params.name](itemCtx),
-    srcPath: ctx.path
-  })
-})
-
-component('itemColor', {
-  type: 'feature',
-  description: 'used in itemlists. the value will be instered into each item',
-  params: [
-    {id: 'name', as: 'string', mandatory: true},
-    {id: 'val', dynamic: true, type: 'item_color'}
-  ]
-})
-
-component('itemBorderStyle', {
-  type: 'feature',
-  description: 'used in itemlists. the value will be instered into each item',
-  params: [
-    {id: 'name', as: 'string', mandatory: true},
-    {id: 'val', dynamic: true, type: 'item_border_style'}
-  ]
-})
-
-component('itemOpacity', {
-  type: 'feature',
-  description: 'used in itemlists. the value will be instered into each item',
-  params: [
-    {id: 'name', as: 'string', mandatory: true},
-    {id: 'val', dynamic: true, type: 'item_opacity'}
-  ]
-})
-
 component('variable', {
   type: 'feature',
   params: [
@@ -115,6 +74,26 @@ component('method', {
   impl: (ctx,id) => ({method: {id, ctx}, srcPath: ctx.path})
 })
 
+component('dataSource', {
+  type: 'feature',
+  description: 'backend rx source',
+  params: [
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'elems', type: 'rx<>[]', as: 'array', dynamic: true, mandatory: true, secondParamAsArray: true, templateValue: []}
+  ],
+  impl: (ctx, id, elems) => ({ dataSource: { $: 'action<>rx.pipe', id, elems: elems.profile } })
+})
+
+component('flow', {
+  type: 'feature',
+  description: 'backend rx flow',
+  params: [
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'elems', type: 'rx<>[]', as: 'array', dynamic: true, mandatory: true, secondParamAsArray: true, templateValue: []}
+  ],
+  impl: (ctx, id, elems) => ({ dataSource: { $: 'action<>rx.pipe', id, elems: elems.profile } })
+})
+
 component('If', {
   type: 'feature',
   description: 'conditional feature, define feature if then else condition',
@@ -148,21 +127,21 @@ component('appCmp', {
   impl: () => ({appCmp: true})
 })
 
-component('injectUnderContainerClass', {
+component('injectUndercontainerSelector', {
   type: 'feature',
   params: [
-    {id: 'containerClass', mandatory: true, as: 'string'}
+    {id: 'containerSelector', mandatory: true, as: 'string'}
   ],
-  impl: (ctx,containerClass) => ({containerClass})
+  impl: (ctx,containerSelector) => ({containerSelector})
 })
 
 
-component('htmlOfItem', {
+component('templateHtmlItem', {
   type: 'feature',
   params: [
     {id: 'html', mandatory: true, dynamic: true, as: 'string', newLinesInCode: true}
   ],
-  impl: (ctx,htmlOfItem) => ({htmlOfItem})
+  impl: (ctx,templateHtmlItem) => ({templateHtmlItem})
 })
 
 component('css', {
@@ -180,15 +159,6 @@ component('zoomingCss', {
   ],
   impl: (ctx,zoomingCss) => ({ frontEndMethod: { method: 'zoomingCss', path: ctx.path, profile: zoomingCss.profile} })
 })
-
-component('dynamicCssVars', {
-  type: 'feature',
-  params: [
-    {id: 'cssVars', mandatory: true, dynamic: true }
-  ],
-  impl: (ctx,cssVars) => ({ frontEndMethod: { method: 'cssVars', path: ctx.path, profile: cssVars.profile} })
-})
-
 
 component('frontEnd.init', {
   type: 'feature',
@@ -232,7 +202,7 @@ component('frontEnd.method', {
     {id: 'action', type: 'action<>', mandatory: true, dynamic: true},
     {id: 'phase', as: 'number', defaultValue: 10, description: 'init methods can register many times'},
   ],
-  impl: (ctx,method,action,phase) => ({ frontEndMethod: { method, path: ctx.path, action: action.profile, phase} })
+  impl: (ctx,method,action,phase) => ({ frontEndMethod: { method, path: ctx.path, profile: action.profile, phase} })
 })
 
 component('frontEnd.flow', {
@@ -245,7 +215,7 @@ component('frontEnd.flow', {
   ],
   impl: (ctx, elems, phase) => ({ frontEndMethod: { 
       method: 'init', path: ctx.path, _flow: elems.profile, phase,
-      action: { $: 'action<>rx.pipe', elems: _ctx => elems(_ctx) }
+      profile: { $: 'action<>rx.pipe', elems: _ctx => elems(_ctx) }
     }})
 })
 
@@ -263,4 +233,59 @@ component('source.frontEndEvent', {
   )
 })
 
+component('extendItemWithProp', {
+  type: 'feature',
+  description: 'used in itemlists. the value will be instered into each item',
+  params: [
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'value', dynamic: true }
+  ],
+  impl: (ctx,id) => ({
+    calcProp: {... ctx.params, phase: 10, index: jb.zui.fCounter++},
+    extendItem: itemCtx => {
+      itemCtx.data[id] = itemCtx.vars.$props[id](itemCtx)
+    },
+    srcPath: ctx.path
+  })
+})
+
+component('itemSymbol', {
+  type: 'feature',
+  description: 'used in itemlists. the value will be instered into each item',
+  params: [
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'val', dynamic: true, type: 'item_symbol'}
+  ],
+  impl: extendItemWithProp('%$id%', '%$val()%')
+})
+
+component('itemColor', {
+  type: 'feature',
+  description: 'used in itemlists. the value will be instered into each item',
+  params: [
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'val', dynamic: true, type: 'item_color'}
+  ],
+  impl: extendItemWithProp('%$id%', '%$val()%')
+})
+
+component('itemBorderStyle', {
+  type: 'feature',
+  description: 'used in itemlists. the value will be instered into each item',
+  params: [
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'val', dynamic: true, type: 'item_border_style'}
+  ],
+  impl: extendItemWithProp('%$id%', '%$val()%')
+})
+
+component('itemOpacity', {
+  type: 'feature',
+  description: 'used in itemlists. the value will be instered into each item',
+  params: [
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'val', dynamic: true, type: 'item_opacity'}
+  ],
+  impl: extendItemWithProp('%$id%', '%$val()%')
+})
 

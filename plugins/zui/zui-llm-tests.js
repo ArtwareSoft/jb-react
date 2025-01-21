@@ -10,7 +10,6 @@ component('zuiTest.domain.itemsSource', {
     timeout: '20000'
   })
 })
-//'%model% %$task/onOfItems%: %duration%'
 
 // component('zuiTest.itemKeys', {
 //   doNotRunInTests: true,

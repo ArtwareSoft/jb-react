@@ -81,6 +81,10 @@ component('entries', {
   impl: ({},obj) => jb.entries(obj)
 })
 
+component('now', {
+  impl: () => new Date().getTime()
+})
+
 component('plus', {
   category: 'math:80',
   params: [
@@ -246,7 +250,7 @@ component('addToArray', {
   category: 'mutable:80',
   params: [
     {id: 'array', as: 'ref', mandatory: true},
-    {id: 'toAdd', as: 'array', mandatory: true}
+    {id: 'toAdd', as: 'array', defaultValue: '%%'}
   ],
   impl: (ctx,array,toAdd) => jb.db.push(array, JSON.parse(JSON.stringify(toAdd)),ctx)
 })

@@ -54,7 +54,6 @@ extension('zui','zoom', {
         if (el.addEventListener && el.style) {
           el.style.touchAction = 'none'
           el.oncontextmenu = e => (e.preventDefault(), false)
-
           ;['pointerdown', 'pointermove', 'pointerup', 'touchstart', 'touchmove', 'touchend']
               .forEach(event => el.addEventListener(event, e => e.preventDefault()))
         }
@@ -96,19 +95,17 @@ extension('zui','zoom', {
           }
         },
         updateZoomState({ dz, dp }) {
-          let {tZoom, tCenter,sensitivity} =  state
+          let {tZoom, tCenter,sensitivity, gridSize} =  state
           if (dz)
             tZoom *= dz**sensitivity
           const tZoomF = Math.floor(tZoom)
           if (dp)
             tCenter = [tCenter[0] - dp[0]/w*tZoomF, tCenter[1] + dp[1]/h*tZoomF]
   
-          const gridSize  = cmp.vars.gridSize
           const maxDim = Math.max(gridSize[0],gridSize[1])
-          const ZOOM_LIMIT = [1, jb.zui.isMobile() ? maxDim: maxDim]
           ;[0,1].forEach(axis=>tCenter[axis] = Math.min(gridSize[axis],Math.max(0,tCenter[axis])))
   
-          tZoom = Math.max(ZOOM_LIMIT[0],Math.min(tZoom, ZOOM_LIMIT[1]))
+          tZoom = Math.min(tZoom, maxDim)
           state.tZoom = tZoom
           state.tCenter = tCenter
   
@@ -130,6 +127,7 @@ extension('zui','zoom', {
             center[axis] = center[axis] + (tCenter[axis] - center[axis]) / speed
             if (!tCenter[axis] || Math.abs((center[axis]-tCenter[axis])/tCenter[axis]) < 0.01) 
               center[axis] = tCenter[axis]
+            center[axis] = Math.round(center[axis] * 100) / 100
           })
           
           state.zoom = zoom

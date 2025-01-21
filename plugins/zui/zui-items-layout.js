@@ -76,7 +76,7 @@ component('spiral', {
         }
     })
     
-    const initialZoom = Math.max(...gridSize)
+    const initialZoom = Math.max(...gridSize,1)
     return { initialZoom, center, gridSize }
   }
 })
@@ -89,7 +89,8 @@ component('groupByScatter', {
     {id: 'groupGap', as: 'number', defaultValue: 1}
   ],
   impl: (ctx, groupBy, sortAtt, groupGap) => {
-    const { items } = ctx.vars
+    const items = ctx.vars.items || []
+    const minGridSize = ctx.vars.domain.minGridSize
     const groups = {}
     if (sortAtt) {
       const numericAtt = `n_${sortAtt}`
@@ -105,7 +106,7 @@ component('groupByScatter', {
     const sortedGroups = Object.keys(groups).sort((a, b) => groups[b].length - groups[a].length)
 
     const groupCenters = [], groupLayouts = {}
-    let gridBounds = { minX: 0, minY: 0, maxX: 0, maxY: 0 }
+    let gridBounds = [[0,0],[0,0]]
 
     sortedGroups.forEach((groupKey, index) => {
       const groupItems = groups[groupKey]
@@ -113,11 +114,10 @@ component('groupByScatter', {
       const itemsPerRow = Math.ceil(Math.sqrt(groupItems.length))
       const gridSize = [itemsPerRow, Math.ceil(groupItems.length / itemsPerRow)]
       const groupBoxSize = Math.max(...gridSize)
-      let x = 0, y = 0
+      let pos = [0,0]
 
       if (index === 0) {
-        x = 0
-        y = 0
+        pos = [0,0]
       } else {
         // Place subsequent groups around existing groups
         let placed = false
@@ -136,7 +136,8 @@ component('groupByScatter', {
               return distance < combinedSize
             })
             if (noOverlap) {
-              x = candidateX; y = candidateY; placed = true; break
+              pos = [candidateX, candidateY]
+              placed = true; break
             }
           }
           if (placed) break
@@ -144,32 +145,34 @@ component('groupByScatter', {
 
         if (!placed) {
           // If no valid position is found, expand the bounds and place
-          x = gridBounds.maxX + groupBoxSize / 2 + groupGap
-          y = gridBounds.maxY + groupBoxSize / 2 + groupGap
+          pos = [0,1].map(axis=>gridBounds[axis][1] + groupBoxSize / 2 + groupGap)
+          // x = gridBounds.maxX + groupBoxSize / 2 + groupGap
+          // y = gridBounds.maxY + groupBoxSize / 2 + groupGap
         }
       }
 
-      gridBounds.minX = Math.min(gridBounds.minX, x - groupBoxSize / 2)
-      gridBounds.maxX = Math.max(gridBounds.maxX, x + groupBoxSize / 2)
-      gridBounds.minY = Math.min(gridBounds.minY, y - groupBoxSize / 2)
-      gridBounds.maxY = Math.max(gridBounds.maxY, y + groupBoxSize / 2)
+      [0,1].map(axis=>{ 
+        gridBounds[axis][0] = Math.min(gridBounds[axis][0], pos[axis] - groupBoxSize / 2) 
+        gridBounds[axis][1] = Math.max(gridBounds[axis][1], pos[axis] + groupBoxSize / 2) 
+      })
 
-      groupCenters.push([x, y, groupBoxSize])
-      groupLayouts[groupKey] = { gridSize, center: [x, y] }
+      groupCenters.push([...pos, groupBoxSize])
+      groupLayouts[groupKey] = { gridSize, center: pos }
 
-      const center = [x,y].map((v,axis)=>Math.floor(v-gridSize[axis]/2))
+      const center = [0,1].map(axis=>Math.floor(pos[axis] -gridSize[axis]/2))
       spiral(groupItems, center)
-      // groupItems.forEach((item, idx) => {
-      //   const pos = [idx % gridSize[0], Math.floor(idx / gridSize[0])]
-      //   item.xyPos = [0,1].map(axis=>center[axis] + pos[axis])
-      // })
     })
 
+    items.forEach(item => [0,1].map(axis=> item.xyPos[axis] -= gridBounds[axis][0])) // -= min
 
-    items.forEach(item => item.xyPos = [item.xyPos[0] -gridBounds.minX, item.xyPos[1] -gridBounds.minY])
-    const gridSize = [gridBounds.maxX - gridBounds.minX, gridBounds.maxY - gridBounds.minY]
-    const center = [0, 1].map(axis => Math.floor(gridSize[axis] / 2))
-    const initialZoom = Math.max(...gridSize)
+    const _gridSize = [0,1].map(axis => gridBounds[axis][1] - gridBounds[axis][0]) // max-min
+    const gridSize = [0,1].map(axis => Math.max(_gridSize[axis], minGridSize[axis]))
+    // const minCenterFix = [0,1].map(axis => _gridSize[axis] - gridSize[axis])
+    // const centerOffset = [ gridBounds.minX + Math.floor(_gridSize[0] / 2), gridBounds.minY + Math.floor(_gridSize[1] / 2) ]
+    // items.forEach(item => [0,1].map(axis=> item.xyPos[axis] = Math.floor(item.xyPos[axis] - centerOffset[axis])))
+
+    const center = [0,1].map(axis => Math.floor(gridSize[axis] / 2))
+    const initialZoom = Math.max(...gridSize,1)
     return { initialZoom, center, gridSize }
 
     function spiral(groupItems, center) {
@@ -200,7 +203,7 @@ extension('zui','gridItemsLayout', {
   gridItemsLayout({gridSize,xyPivots, initialZoom, center}, ctx) {
     const {scaleX, scaleY} = xyPivots(ctx.setVars({gridSize}))
     const [X,Y] = gridSize.length == 1 ? [gridSize,gridSize] : gridSize
-    const {items} = ctx.vars
+    const items = ctx.vars.items || []
     if (!scaleX || !scaleY)
       return jb.logError('no xyPivots for position calculation',{scaleX, scaleY, ctx})
 

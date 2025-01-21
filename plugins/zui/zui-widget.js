@@ -22,6 +22,7 @@ component('widget', {
         
         const widget = {
             frontEnd,
+            appData,
             async init() {
                 const ctxForBe = ctxToUse.setVars({screenSize: frontEnd.screenSize, widget: this})
                 const appCmp = control(ctxForBe).applyFeatures(features,20)
@@ -54,14 +55,31 @@ component('widgetFE', {
             if (!cmp)
                 return jb.logError(`runBEMethodAndUpdate can not find cmp ${cmpId} to run method ${method}`, {ctx})
             const payload = await cmp[method](this.ctx.vars.userData)
-            await frontEnd.handlePayload(payload)        
+            await this.handlePayload(payload)        
+        },
+        BERxSource(cmpId,sourceId,ctx) { // should use jbm
+            const cmp = this.beAppCmpProxy.id == cmpId ? this.beAppCmpProxy : this.beAppCmpProxy.allDescendants().find(x=>x.id == cmpId)
+            if (!cmp)
+                return jb.logError(`runBERxSource can not find cmp ${cmpId} to run source ${sourceId}`, {ctx})
+            return cmp.activateDataSource(sourceId)
         },
         async handlePayload(_payload) {
             const payload = _payload.id ? {[_payload.id] : _payload }: _payload
             const ctx = this.ctx
             Object.entries(payload).map(([id,be_data]) => {
+                jb.log(`zui handlePayload ${id}`,{be_data, ctx})
                 if (id == 'userData') {
                     this.userData = be_data
+                } else if (id == 'items') {
+                    const cmp = this.cmps[be_data.cmpId]
+                    cmp.items = be_data.items
+                    if (cmp.gridSize != be_data.gridSize) {
+                        this.state.gridSize = cmp.gridSize = be_data.gridSize
+                        const zoom = Math.max(...be_data.gridSize,1)
+                        const center = [0,1].map(axis => Math.floor(cmp.gridSize[axis] / 2))
+                        this.state.zoom = this.state.tZoom = zoom
+                        this.state.center = this.state.tCenter = center
+                    }
                 } else if (id == 'appData') {
                     this.appData = be_data
                 } else {
@@ -78,23 +96,21 @@ component('widgetFE', {
 
             function newFECmp(cmpId, be_data) {
                 const cmp = new (class FECmp {}) // used for serialization filtering
-                const fromBeData = { notReady, title, gridElem, frontEndMethods, layoutProps, renderRole, clz, html, css } = be_data
+                const fromBeData = { notReady, title, gridElem, frontEndMethods, layoutProps, renderRole, clz, html, templateHtmlItem, css } = be_data
                 Object.assign(cmp, { id: cmpId, state: {}, flows: [], vars: be_data.frontEndVars || {}, ...fromBeData })
                 if (cmp.html && jb.frame.document) {
-                    if (be_data.containerClass) {
-                        const container = document.querySelector(be_data.containerClass)
-                        container.classList.add('hidden')
-                        setTimeout(() => {
-                            container.innerHTML = cmp.html
-                            container.classList.remove('hidden')
-                        }, 500)
-                    } else if (be_data.appCmp && !document.querySelector(`.${cmp.clz}`)) {
+                    if (be_data.containerSelector) {
+                        const container = document.querySelector(be_data.containerSelector)
+                        container.innerHTML = cmp.html
+                        cmp.base = container.children[0]
+                    } else {
                         const temp = document.createElement('div')
                         temp.innerHTML = cmp.html
                         cmp.base = temp.children[0]
-                        cmp.base.classList.add(cmp.clz)
-                        document.body.appendChild(cmp.base)
                     }
+                    cmp.base.classList.add(cmp.clz)
+                    if (be_data.appCmp)
+                        document.body.appendChild(cmp.base)
                 }
                 if (cmp.css)
                     jb.zui.setCmpCss(cmp)
@@ -104,7 +120,11 @@ component('widgetFE', {
                 jb.zui.runFEMethod(cmp,'calcProps',{silent:true,ctx})
                 jb.zui.runFEMethod(cmp,'init',{silent:true,ctx})
                 ;(be_data.frontEndMethods ||[]).map(m=>m.method).filter(m=>['init','calcProps'].indexOf(m) == -1)
-                    .forEach(method=> cmp[method] = ctx => jb.zui.runFEMethod(cmp,method,{silent:true,ctx}))
+                    .forEach(method=> {
+                        const path = (cmp.frontEndMethods || []).find(x=>x.method == method).path
+                        const func = path.split('~').reduce((o,p)=>o && o[p],jb.comps).action
+                        cmp[method] = ctx => func(ctx,{...ctx.vars, ...cmp.vars, cmp})
+                    })
 
                 cmp.state.frontEndStatus = 'ready'
                 return cmp
@@ -112,13 +132,13 @@ component('widgetFE', {
         },
         renderCmps(ctx) {
             const ctxToUse = this.itemlistCmp.enrichCtxWithItemSize(ctx).setVars({widget: this})
-            if (this.ctx.vars.canUseConsole) console.log(this.state.zoom, ...this.state.center)
+            this.state.itemSize = ctxToUse.vars.itemSize
+            //if (this.ctx.vars.canUseConsole) console.log(this.state.zoom, ...this.state.center)
             Object.values(this.cmps).filter(cmp=>!cmp.notReady && cmp.renderRole !='zoomingGridElem')
                 .forEach(cmp=>cmp.render ? cmp.render(ctxToUse) : this.renderCmp(cmp,ctxToUse))
         },
         renderCmp(cmp,ctx) {
             if (cmp.base) {
-                if (!this.itemlistCmp.base.querySelector(`.${cmp.clz}`)) this.itemlistCmp.base.appendChild(cmp.base)
                 cmp.zoomingCss && cmp.zoomingCss(ctx)
                 cmp.base.style.display = 'block'
             }
@@ -176,4 +196,18 @@ extension('zui', 'frontend', {
         }, `frontEnd-${method}`,ctx))
         return methodResult
     }
+})
+
+component('zui.backEndSource', {
+  type: 'rx<>',
+  params: [
+    {id: 'sourceId', as: 'string'}
+  ],
+  impl: rx.pipe((ctx,{cmp,widget}, {sourceId}) => widget.BERxSource(cmp.id,sourceId,ctx), rx.switchToLocalVars())
+})
+
+component('rx.switchToLocalVars', {
+  type: 'rx<>',
+  category: 'operator',
+  impl: ctx => jb.callbag.map(jb.utils.addDebugInfo(ctx2 => ctx.dataObj(ctx2.data),ctx))
 })

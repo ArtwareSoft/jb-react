@@ -4,46 +4,12 @@ using('zui')
 component('healthCare', {
   type: 'domain',
   impl: domain('healthCare condition', {
-    iconProps: props({
-      description: `- **title**: Name of the condition.
-    - **category**: The medical category (e.g., Gastrointestinal, Neurological).
-    - **urgency**: A scale from 1 to 10 indicating how urgent it is to address this condition (10 being the most urgent).
-    - **likelihood**: A scale from 1 to 10 estimating how likely this diagnosis is based on the input.
-    - **abrv**: An abbreviation for the condition's name.`,
-      sample: `"title": "Appendicitis",
-      "category": "Gastrointestinal",
-      "urgency": 9,
-      "likelihood": 7,
-      "abrv": "APN"`
-    }),
-    cardProps: props({
-      description: `- **description**: A concise explanation of the condition.
-      - **symptoms**: Key symptoms associated with the condition.
-      - **ageGroupAffected**: The primary age group affected (e.g., "Children", "Adults", "All ages").
-      - **severityLevel**: Describes the severity (e.g., "Critical", "Severe", "Moderate").
-      - **riskFactors**: Common risk factors.
-      - **treatmentUrgency**: Describes how quickly treatment is needed (e.g., "Immediate", "Moderate").
-      - **possibleComplications**: Potential complications if untreated.
-      - **diagnosticTests**: Suggested tests to confirm the diagnosis.
-      - **recommendedTreatments**: Suggested treatments.
-      - **prevalenceRate**: Describes how common the condition is (e.g., "Rare", "Common").`,
-      sample: `"description": "A condition in which the appendix becomes inflamed and filled with pus.",
-      "symptoms": ["Abdominal pain", "Nausea"],
-      "ageGroupAffected": "All ages",
-      "severityLevel": "Critical",
-      "riskFactors": ["Family history", "Infection"],
-      "treatmentUrgency": "Immediate",
-      "possibleComplications": ["Peritonitis", "Sepsis"],
-      "diagnosticTests": ["Ultrasound", "CT scan"],
-      "recommendedTreatments": ["Surgery", "Antibiotics"],
-      "prevalenceRate": "Moderate"`
-    }),
     itemsPrompt: `
     You are an expert medical assistant for doctors in emergency settings. 
     Given this brief description of a patient or their symptoms, 
     Query: %$userData.query%
     context: %$userData.contextChips%
-    generate a JSON list of %$task/noOfItems% diagnostic suggestions. 
+    generate a JSON list of %$task/noOfItems% diagnostic suggestions *sorted by relevancy* high to low.
     Each suggestion should follow the structure below and include relevant, accurate medical information.
     
     Each item in the JSON should include:
@@ -63,45 +29,104 @@ component('healthCare', {
       }
     ]
     `,
-    itemsLayout: groupByScatter('category', { sort: 'likelihood' }),
+    iconPromptProps: props({
+      description: `- **title**: Name of the condition.
+    - **relevancy**: A scale from 1 to 10 indicating how relevant it is to doctors in emergency settings
+    - **category**: The medical category of this list: Cardiovascular, Neurological, Respiratory, Gastrointestinal, Musculoskeletal, Endocrine, Infectious Disease, Dermatological, Psychiatric, Hematological, Nephrological, Oncological, Ophthalmological, Otolaryngological, Immunological, Rheumatological, Gynecological, Urological, Pediatric, Geriatric, Emergency Medicine, Allergy, Psychological, Dental, Radiological
+    - **urgency**: A scale from 1 to 10 indicating how urgent it is to address this condition (10 being the most urgent).
+    - **abrv**: An abbreviation for the condition's name.`,
+      sample: `"title": "Appendicitis",
+      "relevancy": 8,
+      "category": "Gastrointestinal",
+      "urgency": 9,
+      "abrv": "APN"`
+    }),
+    cardPromptProps: props({
+      description: `- **description**: A concise explanation of the condition.
+      - **likelihood**: A scale from 1 to 10 estimating how likely this diagnosis is based on the input.
+      - **symptoms**: Key symptoms associated with the condition.
+      - **ageGroupAffected**: The primary age group affected (e.g., "Children", "Adults", "All ages").
+      - **severityLevel**: Describes the severity (e.g., "Critical", "Severe", "Moderate").
+      - **riskFactors**: Common risk factors.
+      - **treatmentUrgency**: Describes how quickly treatment is needed (e.g., "Immediate", "Moderate").
+      - **possibleComplications**: Potential complications if untreated.
+      - **diagnosticTests**: Suggested tests to confirm the diagnosis.
+      - **recommendedTreatments**: Suggested treatments.
+      - **prevalenceRate**: Describes how common the condition is (e.g., "Rare", "Common").`,
+      sample: `"description": "A condition in which the appendix becomes inflamed and filled with pus.",
+      "likelihood": 7,
+      "symptoms": ["Abdominal pain", "Nausea"],
+      "ageGroupAffected": "All ages",
+      "severityLevel": "Critical",
+      "riskFactors": ["Family history", "Infection"],
+      "treatmentUrgency": "Immediate",
+      "possibleComplications": ["Peritonitis", "Sepsis"],
+      "diagnosticTests": ["Ultrasound", "CT scan"],
+      "recommendedTreatments": ["Surgery", "Antibiotics"],
+      "prevalenceRate": "Moderate"`
+    }),
+    itemsLayout: groupByScatter('category', { sort: 'relevancy' }),
     iconBox: healthCare.conditionIconBoxStyle(),
     card: healthCare.conditionCardStyle(),
     sample: sample({
-      query: 'age 40, dizziness, stomach ache',
+      query: 'age 32, dizziness, stomach ache',
       contextChips: ['Balance issues','pain or discomfort'],
-      suggestedContextChips: ['Low blood pressure (Hypotension)','High blood pressure (Hypertension)','Rapid or irregular heartbeat (Arrhythmia)']
+      suggestedContextChips: ['Low blood pressure (Hypotension)','High blood pressure (Hypertension)','Rapid or irregular heartbeat (Arrhythmia)'],
+      preferedLlmModel: 'gpt_35_turbo_0125'
     })
   })
+})
+
+component('healthCare.conditionIconBoxStyle', {
+  type: 'iconBox-style',
+  impl: features(
+    itemSymbol('categorySymbol', healthCare.categorySymbol()),
+    itemSymbol('urgencySymbol', symbol(unitScale('urgency'), list('','❗','⚠️'))),
+    itemBorderStyle('relevancyBorderStyle', borderStyle(unitScale('relevancy'))),
+    itemOpacity('relevancyOpacity', opacity(unitScale('relevancy'))),
+    itemColor('urgencyBorderColor', itemColor(unitScale('urgency'), list('green','orange','red'))),
+    itemColor('categoryColor', healthCare.categoryColor()),
+    frontEnd.method('dynamicCssVars', ({},{itemSize})=>{
+      const boxSize = 2 ** Math.floor(Math.log(itemSize[0]+0.1)/Math.log(2))
+      return (boxSize >= 16) ? {
+        'box-size': `${boxSize}px`,
+        'urgency-symbol-offset': `${boxSize / 16}px`,
+        'abrv-margin': `${boxSize / 16}px`,
+      } : { 'box-size': `${boxSize}px`, 'urgency-symbol-offset': '0', 'abrv-margin': '0' }
+    }),
+    templateHtmlItem(()=> `<div class="icon" 
+          bind_style="opacity: %relevancyOpacity%;border-style:%relevancyBorderStyle%;border-color:%urgencyBorderColor%">
+      <div class="background" bind_style="background-color: %categoryColor%"></div>
+      <div class="content">
+        <div class="urgencySymbol" bind="%urgencySymbol%"></div>
+        <div class="main-symbol" bind="%categorySymbol%"></div>
+        <div class="abrv" bind="%abrv%"></div>
+      </div>
+    </div>`),
+    css(`
+      .%$cmp.clz% .icon { position: relative; border-width: var(--border-width); width: var(--box-size); height: var(--box-size); 
+          font-family: Arial, sans-serif}
+      .%$cmp.clz% .background { opacity: 0.5; position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; }
+      .%$cmp.clz% .content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+          display: flex; flex-direction: column; align-items: center; justify-content: center; }
+      .%$cmp.clz% .urgencySymbol { position: absolute; top: var(--urgency-symbol-offset); right: var(--urgency-symbol-offset); 
+          font-size: var(--description-font-size); }
+      .%$cmp.clz% .main-symbol { font-size: var(--description-font-size); line-height: 1; }
+      .%$cmp.clz% .abrv { font-size: var(--description-font-size); margin: var(--abrv-margin); line-height: 1; }
+    `)
+  )
 })
 
 component('healthCare.conditionCardStyle', {
   type: 'card-style',
   impl: features(
-    zoomingSize(fill({ min: 133 })),
-    zoomingGridElem(),
-    frontEnd.var('fontSizeMap', () => ({
-        64: { title: 12, description: 10 },
-        128: { title: 12, description: 10 },
-        256: { title: 12, description: 12 },
-        320: { title: 14, description: 12 },
-    })),
-    dynamicCssVars(({},{fontSizeMap, itemSize})=>{
-      const baseSize = itemSize[0]
-      const closestSize = Object.keys(fontSizeMap).map(Number).reduce((prev, curr) => (baseSize <= curr ? curr : prev), 320)
-      const fontSizes = fontSizeMap[closestSize]
-      
-      return {
-        'title-font-size': `${fontSizes.title}px`,
-        'description-font-size': `${fontSizes.description}px`
-      }
-    }),
     itemSymbol('categorySymbol', healthCare.categorySymbol()),
     itemSymbol('urgencySymbol', symbol(unitScale('urgency'), list('','❗','⚠️'))),
     itemBorderStyle('likelihoodBorderStyle', borderStyle(unitScale('likelihood'))),
     itemColor('urgencyBorderColor', itemColor(unitScale('urgency'), list('green','orange','red'))),
     itemColor('categoryColor', healthCare.categoryColor()),
-    htmlOfItem((ctx,{cmp}) => `
-        <div class="card-${cmp.id}" style="font-family: Arial, sans-serif;">
+    templateHtmlItem((ctx,{cmp}) => `
+        <div class="card" style="font-family: Arial, sans-serif;">
           <div class="icon" bind_style="border-style:%likelihoodBorderStyle%;border-color:%urgencyBorderColor%">
             <div class="icon-background" bind_style="background-color:%categoryColor%"></div>
             <div class="icon-content">
@@ -129,78 +154,34 @@ component('healthCare.conditionCardStyle', {
         </div>
       `),
     css(`
-        .card-%$cmp/id% {
+        .%$cmp.clz%>.card {
           display: flex; flex-direction: column; justify-content: space-between; padding: 10px; overflow: hidden;
           box-shadow: inset 0px 0px 10px 0px rgba(0, 0, 0, 0.1);
         }
-        .card-%$cmp/id%>.icon { position: relative; width: 32px; min-height: 32px;}
-        .card-%$cmp/id% .icon-background { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; }
-        .card-%$cmp/id% .icon-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .card-%$cmp/id% .icon-urgencySymbol { font-size: 32px; line-height: 1; position: absolute; top: 10px; right: 2px; }
-        .card-%$cmp/id% .icon-main-symbol { font-size: 32px; line-height: 1; }
+        .%$cmp.clz%>.card>.icon { position: relative; width: 32px; min-height: 32px;}
+        .%$cmp.clz%>.card .icon-background { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; }
+        .%$cmp.clz%>.card .icon-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .%$cmp.clz%>.card .icon-urgencySymbol { font-size: 32px; line-height: 1; position: absolute; top: 10px; right: 2px; }
+        .%$cmp.clz%>.card .icon-main-symbol { font-size: 32px; line-height: 1; }
 
-        .card-%$cmp/id% > .title { font-size: var(--title-font-size); font-weight: bold; margin-bottom: 8px; color: #333; }
-        .card-%$cmp/id% > .category { font-size: var(--description-font-size); margin-bottom: 5px; font-weight: bold; }
-        .card-%$cmp/id% > .description { font-size: var(--description-font-size); margin-bottom: 10px; font-style: italic; color: #666; }
-        .card-%$cmp/id% > .urgency,
-        .card-%$cmp/id% > .likelihood,
-        .card-%$cmp/id% > .symptoms,
-        .card-%$cmp/id% > .riskFactors,
-        .card-%$cmp/id% > .treatments,
-        .card-%$cmp/id% > .tests {font-size: var(--description-font-size);margin-bottom: 8px;color: #444; }
+        .%$cmp.clz%>.card > .title { font-size: var(--title-font-size); font-weight: bold; margin-bottom: 8px; color: #333; }
+        .%$cmp.clz%>.card > .category { font-size: var(--description-font-size); margin-bottom: 5px; font-weight: bold; }
+        .%$cmp.clz%>.card > .description { font-size: var(--description-font-size); margin-bottom: 10px; font-style: italic; color: #666; }
+        .%$cmp.clz%>.card > .urgency,
+        .%$cmp.clz%>.card > .likelihood,
+        .%$cmp.clz%>.card > .symptoms,
+        .%$cmp.clz%>.card > .riskFactors,
+        .%$cmp.clz%>.card > .treatments,
+        .%$cmp.clz%>.card > .tests {font-size: var(--description-font-size);margin-bottom: 8px;color: #444; }
 
-        .card-%$cmp/id% .riskFactors ul,
-        .card-%$cmp/id% .treatments ul,
-        .card-%$cmp/id% .tests ul {list-style-type: disc;padding-left: 20px;margin: 0;}
+        .%$cmp.clz%>.card .riskFactors ul,
+        .%$cmp.clz%>.card .treatments ul,
+        .%$cmp.clz%>.card .tests ul {list-style-type: disc;padding-left: 20px;margin: 0;}
 
-        .card-%$cmp/id% .riskFactors ul li,
-        .card-%$cmp/id% .treatments ul li,
-        .card-%$cmp/id% .tests ul li {margin-bottom: 4px; }
+        .%$cmp.clz%>.card .riskFactors ul li,
+        .%$cmp.clz%>.card .treatments ul li,
+        .%$cmp.clz%>.card .tests ul li {margin-bottom: 4px; }
       `)
-  )
-})
-
-component('healthCare.conditionIconBoxStyle', {
-  type: 'iconBox-style',
-  impl: features(
-    zoomingSize(fill()),
-    zoomingGridElem(),
-    itemSymbol('categorySymbol', healthCare.categorySymbol()),
-    itemSymbol('urgencySymbol', symbol(unitScale('urgency'), list('','❗','⚠️'))),
-    itemBorderStyle('likelihoodBorderStyle', borderStyle(unitScale('likelihood'))),
-    itemOpacity('likelihoodOpacity', opacity(unitScale('likelihood'))),
-    itemColor('urgencyBorderColor', itemColor(unitScale('urgency'), list('green','orange','red'))),
-    itemColor('categoryColor', healthCare.categoryColor()),
-    dynamicCssVars(({},{itemSize})=>{
-      const boxSize = 2 ** Math.floor(Math.log(itemSize[0]+0.1)/Math.log(2))
-      return (boxSize >= 16) ? {
-        'symbol-font-size': `${boxSize * 0.5}px`,
-        'urgency-symbol-font-size': `${boxSize * 0.25}px`,
-        'urgency-symbol-offset': `${boxSize / 16}px`,
-        'abrv-font-size': `${boxSize * 0.25}px`,
-        'abrv-margin': `${boxSize / 16}px`,
-      } : { 'symbol-font-size': '0', 'urgency-symbol-font-size': '0', 'urgency-symbol-offset': '0', 'abrv-font-size': '0', 'abrv-margin': '0' }
-    }),
-    htmlOfItem(`<div class="icon-%$cmp/id%" 
-          bind_style="opacity: %likelihoodOpacity%;border-style:%likelihoodBorderStyle%;border-color:%urgencyBorderColor%">
-      <div class="background" bind_style="background-color: %categoryColor%"></div>
-      <div class="content">
-        <div class="urgencySymbol" bind="%urgencySymbol%"></div>
-        <div class="main-symbol" bind="%categorySymbol%"></div>
-        <div class="abrv" bind="%abrv%"></div>
-      </div>
-    </div>`),
-    css(`
-      .icon-%$cmp/id% { position: relative; border-width: var(--border-width); width: var(--box-size); height: var(--box-size); 
-          font-family: Arial, sans-serif}
-      .icon-%$cmp/id% >.background { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; }
-      .icon-%$cmp/id% >.icon-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-          display: flex; flex-direction: column; align-items: center; justify-content: center; }
-      .icon-%$cmp/id% .icon-urgencySymbol { position: absolute; top: var(--urgency-symbol-offset); right: var(--urgency-symbol-offset); 
-          font-size: var(--urgency-symbol-font-size); }
-      .icon-%$cmp/id% .icon-main-symbol { font-size: var(--symbol-font-size); line-height: 1; }
-      .icon-%$cmp/id% .icon-abrv { font-size: var(--abrv-font-size); margin: var(--abrv-margin); line-height: 1; }
-    `)
   )
 })
 

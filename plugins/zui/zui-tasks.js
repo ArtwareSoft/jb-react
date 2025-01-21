@@ -1,5 +1,25 @@
 dsl('zui')
 
+component('zui.taskToRun', {
+  impl: ctx => {
+    const {userData, state } = ctx.data
+    const {itemSize} = state
+    const details = itemSize[0] < 128 ? 'icon' : 'card'
+    const detailsLevel = details == 'icon' ? 0 : 1
+    const { cmp, appData } = ctx.vars
+    const modelId = userData.preferedLlmModel || 'gpt_35_turbo_0125'
+    const model = {id: modelId, ...ctx.run({$$: `model<llm>${modelId}` }) }
+    const noOfItems = 30 // todo: where to put?
+    const speed = model.speed[details]
+    const estimatedStartEmit = speed[1]
+    const estimatedDuration = speed[0] * noOfItems + speed[1]
+    const res = [{ noOfItems, details, detailsLevel, model, quality: model.quality, ctxVer: appData.ctxVer, estimatedStartEmit, estimatedDuration }]
+    const allTasks = [...appData.runningTasks,...appData.doneTasks]
+    const res2 = res.filter(task=>!allTasks.find(t=> ['detailsLevel','quality','ctxVer'].every(p => t[p]>=task[p])))
+    return res2
+  }
+})
+
 component('baseTask', {
   type: 'task',
   params: [
@@ -32,47 +52,39 @@ component('doneTask', {
   ],
 })
 
-extension('zui', 'tasks' , {
-    FE_calcState(ctx) {
-        // const items = [{ pos, iconQuality, cardQuality, ctxVer, firstShow, relevance, userTime}]
-        // const timeStep
-        // const runningTasks
-    },
-    async runTask(task,ctx) {
+// extension('zui', 'tasks' , {
+//     taskEstimatedDuration(task,ctx) {
+//         const {modelId, noOfItems, details} = task
+//         const model = jb.exec({ $$: `model<llm>${modelId}` })
+//         if (!model)
+//           return jb.logError(`model id ${modelId} is not defined as component`, { ctx })
+//         const speed = model.speed[details]
+//         return speed[0] * noOfItems + speed[1]
+//     }
+// })
 
-    },
-    taskEstimatedDuration(task,ctx) {
-        const {modelId, noOfItems, details} = task
-        const model = jb.exec({ $$: `model<llm>${modelId}` })
-        if (!model)
-          return jb.logError(`model id ${modelId} is not defined as component`, { ctx })
-        const speed = model.speed[details]
-        return speed[0] * noOfItems + speed[1]
-    }
-})
-
-component('candidateTasks', {
-  params: [
-    { id: 'noOfItemsOptions', as: 'array', defaultValue: [1, 5, 30, 50] },
-    { id: 'detailsOptions', as: 'array', defaultValue: ['icon', 'card'] },
-    { id: 'modelOptions', as: 'array', defaultValue: ['gpt_35_turbo_0125', 'o1_preview'] }
-  ],
-  impl: (ctx, noOfItemsOptions, detailsOptions, modelOptions) => {
-    let id = 0
-    return noOfItemsOptions.flatMap(noOfItems =>
-      detailsOptions.flatMap(details =>
-        modelOptions.flatMap(modelId => {
-          const model = jb.exec({ $$: `model<llm>${modelId}` })
-          if (!model) {
-            jb.logError(`model id ${modelId} is not defined as component`, { ctx })
-            return []
-          }
-          if (details === 'card' && noOfItems > model.maxCards) return []
-          const title = `${noOfItems} items from ${model.name} for ${details}`
-          const estimatedDuration = jb.zui.taskEstimatedDuration({noOfItems,details,modelId})
-          return [{ title, noOfItems, details, model, estimatedDuration, id: id++ }]
-        })
-      )
-    )
-  }
-})
+// component('candidateTasks', {
+//   params: [
+//     { id: 'noOfItemsOptions', as: 'array', defaultValue: [1, 5, 30, 50] },
+//     { id: 'detailsOptions', as: 'array', defaultValue: ['icon', 'card'] },
+//     { id: 'modelOptions', as: 'array', defaultValue: ['gpt_35_turbo_0125', 'o1_preview'] }
+//   ],
+//   impl: (ctx, noOfItemsOptions, detailsOptions, modelOptions) => {
+//     let id = 0
+//     return noOfItemsOptions.flatMap(noOfItems =>
+//       detailsOptions.flatMap(details =>
+//         modelOptions.flatMap(modelId => {
+//           const model = jb.exec({ $$: `model<llm>${modelId}` })
+//           if (!model) {
+//             jb.logError(`model id ${modelId} is not defined as component`, { ctx })
+//             return []
+//           }
+//           if (details === 'card' && noOfItems > model.maxCards) return []
+//           const title = `${noOfItems} items from ${model.name} for ${details}`
+//           const estimatedDuration = jb.zui.taskEstimatedDuration({noOfItems,details,modelId})
+//           return [{ title, noOfItems, details, model, estimatedDuration, id: id++ }]
+//         })
+//       )
+//     )
+//   }
+// })

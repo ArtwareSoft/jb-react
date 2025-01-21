@@ -19,7 +19,7 @@ extension('zui','control' , {
             if (!featuresProfile) return cmp
             if (typeof featuresProfile != 'object')
                 jb.logError('zui comp: featuresProfile should be an object',{featuresProfile,ctx})
-            const feature = featuresProfile.$ ? ctx.run(featuresProfile, 'feature<>') : featuresProfile
+            const feature = featuresProfile.$ ? ctx.run(featuresProfile, 'feature<zui>') : featuresProfile
             if (Array.isArray(feature)) {
                 feature.forEach(f=>applyFeatures(f,priority))
                 return cmp
@@ -27,8 +27,8 @@ extension('zui','control' , {
 
             const categories = jb.zui.featureCategories || (jb.zui.featureCategories = {
                 lifeCycle: new Set('init,extendCtx,extendChildrenCtx,destroy'.split(',')),
-                arrayProps: new Set('calcProp,frontEndMethod,frontEndVar,css,cssClass,layoutProp'.split(',')),
-                singular: new Set('calcMoreItemsData,zoomingSize,zoomingCss,styleParams,children,html,htmlOfItem,containerClass,appCmp'.split(',')),
+                arrayProps: new Set('calcProp,dataSource,frontEndMethod,frontEndVar,css,cssClass,layoutProp,extendItem,method'.split(',')),
+                singular: new Set('calcMoreItemsData,zoomingSize,zoomingCss,styleParams,children,html,templateHtmlItem,containerSelector,appCmp'.split(',')),
             })
     
             Object.keys(feature).filter(key=>key!='srcPath').forEach(key=>{
@@ -60,6 +60,7 @@ extension('zui','control' , {
             this.id = '' + jb.zui.cmpCounter++
             this.title = `${ctx.profile.$}-${this.id}`
             this.clz = this.title
+            this.ver = 1
         }
         init(settings) {
             Object.assign(this,settings || {}) 
@@ -119,12 +120,12 @@ extension('zui','control' , {
             const noOfItems = (ctxToUse.vars.items||[]).length
 
             const zoomingCssProfile = jb.path(this.zoomingCss,'profile')
-            this.calcHtmlOfItem = item => this.htmlOfItem ? this.htmlOfItem(ctxToUse.setVars({item}).setData(item)) : ''
             const html = this.html && this.html(ctxToUse)
+            const templateHtmlItem = this.templateHtmlItem && this.templateHtmlItem(ctxToUse)
             const css = (this.css || []).flatMap(x=>x(ctxToUse))
 
-            const { id , title, layoutProps, inZoomingGrid, renderRole, zoomingSizeProfile, clz, appCmp, containerClass } = this
-            let res = { id, title, appCmp, containerClass, frontEndMethods, frontEndVars, noOfItems, methods, zoomingCssProfile,  html, css, clz,
+            const { id , title, layoutProps, inZoomingGrid, renderRole, zoomingSizeProfile, clz, appCmp, containerSelector } = this
+            let res = { id, title, appCmp, containerSelector, templateHtmlItem, frontEndMethods, frontEndVars, noOfItems, methods, zoomingCssProfile,  html, css, clz,
                 zoomingSizeProfile, layoutProps, inZoomingGrid, renderRole }
             if (JSON.stringify(res).indexOf('null') != -1)
                 jb.logError(`cmp ${this.title} has nulls in payload`, {cmp: this, ctx: this.ctx})
@@ -132,6 +133,12 @@ extension('zui','control' , {
                 res.childrenIds = this.children.map(({id})=>id).join(',')
 
             return this.extendedPayloadWithDescendants ? this.extendedPayloadWithDescendants(res,this.allDescendants()) : res
+        }
+        activateDataSource(id) {
+            const source = (this.dataSource||[]).find(x=>x.id == id)
+            if (!source)
+                return jb.logError(`backend uiComp ${this.id} can not find dataSource ${id}`,{cmp: this, ctx: this.ctx})
+            return this.ctx.run(source)
         }
         runBEMethod(method, data, vars, options = {}) {
             const {doNotUseUserReqTx, dataMethod, userReqTx} = options

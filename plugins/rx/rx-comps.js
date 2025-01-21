@@ -307,9 +307,11 @@ component('rx.flatMap', {
   category: 'operator',
   description: 'match inputs the callbags or promises',
   params: [
-    {id: 'source', type: 'rx', category: 'source', dynamic: true, mandatory: true, description: 'map each input to source callbag'}
+    {id: 'source', type: 'rx', category: 'source', dynamic: true, mandatory: true, description: 'map each input to source callbag'},
+    {id: 'onInputBegin', type: 'action', dynamic: true, byName: true},
+    {id: 'onInputEnd', type: 'action', dynamic: true}
   ],
-  impl: (ctx,sourceGenerator) => source => (start, sink) => {
+  impl: (ctx,sourceGenerator,onInputBegin,onInputEnd) => source => (start, sink) => {
     if (start !== 0) return
     let sourceTalkback, innerSources = [], sourceEnded
 
@@ -332,13 +334,16 @@ component('rx.flatMap', {
     })
 
     function createInnerSrc(d) {
-      const newSrc = sourceGenerator(ctx.setData(d.data).setVars(d.vars))
+      const ctxToUse = ctx.setData(d.data).setVars(d.vars)
+      const newSrc = sourceGenerator(ctxToUse)
       innerSources.push(newSrc)
+      onInputBegin.profile && onInputBegin(ctxToUse)
       newSrc(0, function flatMap(t,d) {
         if (t == 0) newSrc.talkback = d
         if (t == 1) sink(t,d)
         if (t != 2 && newSrc.talkback) newSrc.talkback(1)
         if (t == 2) {
+          onInputEnd.profile && onInputEnd(ctxToUse)
           innerSources.splice(innerSources.indexOf(newSrc),1)
           stopOrContinue(d)
         }
