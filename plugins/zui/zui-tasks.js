@@ -27,30 +27,30 @@ component('baseTask', {
     {id: 'title', as: 'string'},
     {id: 'noOfItems', as: 'number', options: '1,5,30'},
     {id: 'details', as: 'string', options: 'icon,card'},
-    {id: 'modelId', as: 'string', options: 'gpt_35_turbo_0125,gpt_4o,o1_mini,o1_preview'}
+    {id: 'model', type: 'model<llm>'}
   ]
 })
 
-component('runningTask', {
-  type: 'task',
-  params: [
-    {id: 'startTime', as: 'number'},
-    {id: 'llmModel', as: 'string'},
-    {id: 'llmPrompt', as: 'string'},
-    {id: 'estimatedDuration', as: 'number'}
-  ]
-})
+// component('runningTask', {
+//   type: 'task',
+//   params: [
+//     {id: 'startTime', as: 'number'},
+//     {id: 'llmModel', as: 'string'},
+//     {id: 'llmPrompt', as: 'string'},
+//     {id: 'estimatedDuration', as: 'number'}
+//   ]
+// })
 
-component('doneTask', {
-  type: 'task',
-  params: [
-    {id: 'contextVer', as: 'number'},
-    {id: 'actualDuration', as: 'number'},
-    {id: 'actualItems', as: 'number'},
-    {id: 'tokens', as: 'number'},
-    {id: 'costPerItem', as: 'number'}
-  ],
-})
+// component('doneTask', {
+//   type: 'task',
+//   params: [
+//     {id: 'contextVer', as: 'number'},
+//     {id: 'actualDuration', as: 'number'},
+//     {id: 'actualItems', as: 'number'},
+//     {id: 'tokens', as: 'number'},
+//     {id: 'costPerItem', as: 'number'}
+//   ],
+// })
 
 // extension('zui', 'tasks' , {
 //     taskEstimatedDuration(task,ctx) {

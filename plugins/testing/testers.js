@@ -29,7 +29,12 @@ component('dataTest', {
 				})(),
 				(async() => {
 					await runBefore(ctxToUse)
-					const res = await calculate(ctxToUse)
+					let res
+					try {
+						res = await calculate(ctxToUse)
+					} catch (e) {
+						res = [{testFailure: e}]	
+					}
 					const _res = await jb.utils.waitForInnerElements(res)
 					return _res
 				})()
@@ -139,7 +144,12 @@ extension('test', {
 		const start = new Date().getTime()
 		await !doNotcleanBeforeRun && !singleTest && jb.test.cleanBeforeRun()
 		jb.log('start test',{testID})
-		const res = quiet ? {} : await tstCtx.run({$:fullTestId})
+		let res = null
+		try {
+			res = quiet ? {} : await tstCtx.run({$:fullTestId})
+		} catch (e) {
+			res = { success: false, reason: e}
+		}
 		res.duration = new Date().getTime() - start
 		jb.log('end test',{testID,res})
 		if (!singleTest && !profile.doNotTerminateWorkers)

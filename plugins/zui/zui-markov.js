@@ -33,114 +33,114 @@ The system should anticipate the user's zoom behavior and pre-fetch the "3 fast 
 focusing on the conditions with the highest likelihood.
 */
 
-extension('zui', 'Markov' , {
-    reward(state) {
-        // help needed here
-        const iconMode = st.zoomPan.zoom > 3
-        return Math.sum(...st.items.map(item=>this.itemVisibleSize(st.zoomPan, item.pos)* iconMode ? item.iconQuality : item.cardQuality))
-    },
-    agentPolicy(state) {
-        // create task action
-        // objectives
-        // fast data to the user, high quality of data, coverage of data by probability of future user engagement with the data
+// extension('zui', 'Markov' , {
+//     reward(state) {
+//         // help needed here
+//         const iconMode = st.zoomPan.zoom > 3
+//         return Math.sum(...st.items.map(item=>this.itemVisibleSize(st.zoomPan, item.pos)* iconMode ? item.iconQuality : item.cardQuality))
+//     },
+//     agentPolicy(state) {
+//         // create task action
+//         // objectives
+//         // fast data to the user, high quality of data, coverage of data by probability of future user engagement with the data
         
-        //tradeoffs: limited budget - limited no of running tasks, limited $
-    },
-    evaluateTask(task) {
-        const {noOfItems, details, smartModel} = task
-        // details: 1 - icon, 2 - card
-        // const estimatedTime = noOfItems * details * smartModel // please fix to comply with this table
-        // [1]
+//         //tradeoffs: limited budget - limited no of running tasks, limited $
+//     },
+//     evaluateTask(task) {
+//         const {noOfItems, details, smartModel} = task
+//         // details: 1 - icon, 2 - card
+//         // const estimatedTime = noOfItems * details * smartModel // please fix to comply with this table
+//         // [1]
 
-    },
-    userPolicy(state) {
-        // help needed here
-        const relevanceCenter = { x: Math.sqrt(state.items.length), y: Math.sqrt(state.items.length) }
-        state.userState = state.userState || { mode: "exploration", remainingSteps: 5 }
+//     },
+//     userPolicy(state) {
+//         // help needed here
+//         const relevanceCenter = { x: Math.sqrt(state.items.length), y: Math.sqrt(state.items.length) }
+//         state.userState = state.userState || { mode: "exploration", remainingSteps: 5 }
         
-        if (--state.userState.remainingSteps <= 0) {
-            state.userState = {
-                mode: state.userState.mode === "exploration" ? "exploitation" : "exploration",
-                remainingSteps: state.userState.mode === "exploration" ? 5 : 3
-            }
-        }
+//         if (--state.userState.remainingSteps <= 0) {
+//             state.userState = {
+//                 mode: state.userState.mode === "exploration" ? "exploitation" : "exploration",
+//                 remainingSteps: state.userState.mode === "exploration" ? 5 : 3
+//             }
+//         }
     
-        if (state.userState.mode === "exploration") {
-            return { zoomPan: { center: relevanceCenter, zoom: Math.min(state.zoomPan.zoom * 1.5, 50) } }
-        } else {
-            const nearestItem = state.items
-                .filter(item => isVisible(item.pos, state.zoomPan))
-                .reduce((nearest, item) => {
-                    const dist = distanceTo(item.pos, relevanceCenter)
-                    return !nearest || dist < nearest.dist ? { item, dist } : nearest
-                }, null)
+//         if (state.userState.mode === "exploration") {
+//             return { zoomPan: { center: relevanceCenter, zoom: Math.min(state.zoomPan.zoom * 1.5, 50) } }
+//         } else {
+//             const nearestItem = state.items
+//                 .filter(item => isVisible(item.pos, state.zoomPan))
+//                 .reduce((nearest, item) => {
+//                     const dist = distanceTo(item.pos, relevanceCenter)
+//                     return !nearest || dist < nearest.dist ? { item, dist } : nearest
+//                 }, null)
     
-            return nearestItem
-                ? { zoomPan: { center: nearestItem.item.pos, zoom: Math.max(state.zoomPan.zoom / 1.5, 1) } }
-                : { zoomPan: { center: relevanceCenter, zoom: Math.min(state.zoomPan.zoom * 1.5, 50) } }
-        }
+//             return nearestItem
+//                 ? { zoomPan: { center: nearestItem.item.pos, zoom: Math.max(state.zoomPan.zoom / 1.5, 1) } }
+//                 : { zoomPan: { center: relevanceCenter, zoom: Math.min(state.zoomPan.zoom * 1.5, 50) } }
+//         }
     
-        function distanceTo(pos, center) {
-            return Math.sqrt(Math.pow(pos.x - center.x, 2) + Math.pow(pos.y - center.y, 2))
-        }
+//         function distanceTo(pos, center) {
+//             return Math.sqrt(Math.pow(pos.x - center.x, 2) + Math.pow(pos.y - center.y, 2))
+//         }
     
-        function isVisible(pos, zoomPan) {
-            return distanceTo(pos, zoomPan.center) <= zoomPan.zoom
-        }
-    },
-    itemVisibleSize(zoomPan, pos) {
-        const distance = Math.sqrt(Math.pow(pos.x - zoomPan.center.x, 2) +  Math.pow(pos.y - zoomPan.center.y, 2))
-        const maxDistance = zoomPan.zoom; // Zoom level defines visible range
-        if (distance > maxDistance) return 0; // Item is not visible
-        return Math.max(0, 1 - distance / maxDistance); // Size decreases with distance
-    },
+//         function isVisible(pos, zoomPan) {
+//             return distanceTo(pos, zoomPan.center) <= zoomPan.zoom
+//         }
+//     },
+//     itemVisibleSize(zoomPan, pos) {
+//         const distance = Math.sqrt(Math.pow(pos.x - zoomPan.center.x, 2) +  Math.pow(pos.y - zoomPan.center.y, 2))
+//         const maxDistance = zoomPan.zoom; // Zoom level defines visible range
+//         if (distance > maxDistance) return 0; // Item is not visible
+//         return Math.max(0, 1 - distance / maxDistance); // Size decreases with distance
+//     },
 
-    MDPSimulator: class MDPSimulator { // Markov Decision Processes
-        // state.zoomPan
-        // zoomPan.center - center of view port using items unit. viewPort size is sqrt(noOfItems)**2. 
-        // items are positioned with more relevant items in the middle spreading out
-        // st.zoomPan.zoom - 1 means only single item is shown, 10 means 10x10 items can be shown
-        transition(currentState, action) {
-            const st = {...currentState}
-            if (action.task) {
-                const task = {...action.task}
-                task.start = st.timeStep
-                st.runningTask.push(task)
-            }
-            if (action.zoomPan) {
-                st.zoomPan = action.zoomPan
-                st.items.forEach(item=>{
-                    const visibleSize = jb.zui.itemVisibleSize(st.zoomPan, item.pos)
-                    if (visibleSize > 0 && item.firstShow == 0)
-                        item.firstShow = st.timeStep
-                    item.userTime += visibleSize
-                })
-            }
+//     MDPSimulator: class MDPSimulator { // Markov Decision Processes
+//         // state.zoomPan
+//         // zoomPan.center - center of view port using items unit. viewPort size is sqrt(noOfItems)**2. 
+//         // items are positioned with more relevant items in the middle spreading out
+//         // st.zoomPan.zoom - 1 means only single item is shown, 10 means 10x10 items can be shown
+//         transition(currentState, action) {
+//             const st = {...currentState}
+//             if (action.task) {
+//                 const task = {...action.task}
+//                 task.start = st.timeStep
+//                 st.runningTask.push(task)
+//             }
+//             if (action.zoomPan) {
+//                 st.zoomPan = action.zoomPan
+//                 st.items.forEach(item=>{
+//                     const visibleSize = jb.zui.itemVisibleSize(st.zoomPan, item.pos)
+//                     if (visibleSize > 0 && item.firstShow == 0)
+//                         item.firstShow = st.timeStep
+//                     item.userTime += visibleSize
+//                 })
+//             }
 
-            st.runningTask.filter(task.start+task.duration == st.timeStep).forEach(finishedTask=>{
-                if (finishedTask.newItems)
-                    st.items = finishedTask.newItems
-                finishedTask.items.forEach(item=>{
-                    const stItem = st.items.find(it=>it.pos == item.pos)
-                    stItem.iconQuality = finishedTask.icon ? finishedTask.llmQuality : 0
-                    stItem.cardQuality = finishedTask.card ? finishedTask.llmQuality : 0
-                    stItem.ctxVer = st.ctxVer
-                })
-            })
-            st.runningTask = st.runningTask.filter(task.start+task.duration <= st.timeStep)
-            st.timeStep++
-            return st
-        }
-      }
-})
+//             st.runningTask.filter(task.start+task.duration == st.timeStep).forEach(finishedTask=>{
+//                 if (finishedTask.newItems)
+//                     st.items = finishedTask.newItems
+//                 finishedTask.items.forEach(item=>{
+//                     const stItem = st.items.find(it=>it.pos == item.pos)
+//                     stItem.iconQuality = finishedTask.icon ? finishedTask.llmQuality : 0
+//                     stItem.cardQuality = finishedTask.card ? finishedTask.llmQuality : 0
+//                     stItem.ctxVer = st.ctxVer
+//                 })
+//             })
+//             st.runningTask = st.runningTask.filter(task.start+task.duration <= st.timeStep)
+//             st.timeStep++
+//             return st
+//         }
+//       }
+// })
 
-component('taskForPolicy', {
-  type: 'task',
-  params: [
-    {id: 'order', as: 'number'},
-    {id: 'estimatedDuration', as: 'number'},
-    {id: 'mark', as: 'number'}
-  ]
-})
+// component('taskForPolicy', {
+//   type: 'task',
+//   params: [
+//     {id: 'order', as: 'number'},
+//     {id: 'estimatedDuration', as: 'number'},
+//     {id: 'mark', as: 'number'}
+//   ]
+// })
 
 

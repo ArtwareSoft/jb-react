@@ -3,7 +3,7 @@ dsl('zui')
 component('zuiTest.domain.itemsSource', {
   impl: dataTest({
     calculate: pipe(
-      domain.itemsSource(healthCare(), baseTask({ noOfItems: '3', details: 'icon', modelId: 'gpt_35_turbo_0125' })),
+      domain.itemsSource(healthCare(), baseTask({ noOfItems: '3', details: 'icon', model: gpt_35_turbo_0125() })),
       join(',', { itemText: '%title%' })
     ),
     expectedResult: contains('Vertigo'),

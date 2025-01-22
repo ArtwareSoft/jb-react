@@ -17,15 +17,6 @@ function findjbReact() {
     }
 }
 
-// function findjbReact() {
-//     const underJbReact = (__dirname.match(/projects\/jb-react(.*)$/) || [''])[1]
-//     if (underJbReact)
-//         return __dirname.slice(0,-1*underJbReact.length)
-//     const dir2 = [...__dirname.split('/').slice(0,__dirname.split('/').indexOf('projects')), 'jb-react'].join('/')
-//     if (fs.statSync(dir2).isDirectory())
-//         return dir2
-// }
-
 function codePackageNodeFS(baseDir) { return {
     repo: baseDir.split(path.sep).pop(),
     fetchFile(url) {
