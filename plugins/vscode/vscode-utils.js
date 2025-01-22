@@ -31,13 +31,13 @@ extension('vscode', 'utils', {
                 const line = start.line
                  editor.revealRange(new vscodeNS.Range(line, 0,line, 0), vscodeNS.TextEditorRevealType.InCenterIfOutsideViewport)
                  editor.selection = new vscodeNS.Selection(line, start.col, end.line, end.col)
-             },
+            },
             compTextAndCursor() {
                 const editor = vscodeNS.window.activeTextEditor
                 const _path = editor.document.uri.path
                 const path = jbHost.jbReactDir && _path.indexOf(jbHost.jbReactDir) == 0 ? _path.slice(jbHost.jbReactDir.length) : _path
 
-                const docProps = jb.tgpTextEditor.closestComp(editor.document.getText(),
+                const docProps = jb.tgpTextEditor.closestComp(editor.document.getText().replace(/\r\n/g,'\n'),
                     editor.selection.active.line, editor.selection.active.character, path)
                 if (jb.path(docProps,'shortId')) {
                     if (jb.vscode.lastEdited != docProps.shortId)
