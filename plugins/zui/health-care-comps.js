@@ -128,9 +128,9 @@ component('healthCare.conditionCardStyle', {
     templateHtmlItem((ctx,{cmp}) => `
         <div class="card" style="font-family: Arial, sans-serif;">
           <div class="icon" bind_style="border-style:%likelihoodBorderStyle%;border-color:%urgencyBorderColor%">
-            <div class="icon-background" bind_style="background-color:%categoryColor%"></div>
-            <div class="icon-content">
-                <div class="icon-main-symbol" bind="%categorySymbol%"></div>
+            <div class="background" bind_style="background-color:%categoryColor%"></div>
+            <div class="content">
+                <div class="main-symbol" bind="%categorySymbol%"></div>
             </div>
           </div>
           <div class="icon-urgencySymbol" bind="%urgencySymbol%"></div>
@@ -158,29 +158,29 @@ component('healthCare.conditionCardStyle', {
           display: flex; flex-direction: column; justify-content: space-between; padding: 10px; overflow: hidden;
           box-shadow: inset 0px 0px 10px 0px rgba(0, 0, 0, 0.1);
         }
-        .%$cmp.clz%>.card>.icon { position: relative; width: 32px; min-height: 32px;}
-        .%$cmp.clz%>.card .icon-background { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; }
-        .%$cmp.clz%>.card .icon-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .%$cmp.clz%>.card .icon-urgencySymbol { font-size: 32px; line-height: 1; position: absolute; top: 10px; right: 2px; }
-        .%$cmp.clz%>.card .icon-main-symbol { font-size: 32px; line-height: 1; }
+        .%$cmp.clz% .icon { position: relative; width: 32px; min-height: 32px;}
+        .%$cmp.clz% .icon .background { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; }
+        .%$cmp.clz% .icon .content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .%$cmp.clz% .icon .urgencySymbol { font-size: 32px; line-height: 1; position: absolute; top: 10px; right: 2px; }
+        .%$cmp.clz% .icon .main-symbol { font-size: 32px; line-height: 1; }
 
-        .%$cmp.clz%>.card > .title { font-size: var(--title-font-size); font-weight: bold; margin-bottom: 8px; color: #333; }
-        .%$cmp.clz%>.card > .category { font-size: var(--description-font-size); margin-bottom: 5px; font-weight: bold; }
-        .%$cmp.clz%>.card > .description { font-size: var(--description-font-size); margin-bottom: 10px; font-style: italic; color: #666; }
-        .%$cmp.clz%>.card > .urgency,
-        .%$cmp.clz%>.card > .likelihood,
-        .%$cmp.clz%>.card > .symptoms,
-        .%$cmp.clz%>.card > .riskFactors,
-        .%$cmp.clz%>.card > .treatments,
-        .%$cmp.clz%>.card > .tests {font-size: var(--description-font-size);margin-bottom: 8px;color: #444; }
+        .%$cmp.clz% .title { font-size: var(--title-font-size); font-weight: bold; margin-bottom: 8px; color: #333; }
+        .%$cmp.clz% .category { font-size: var(--description-font-size); margin-bottom: 5px; font-weight: bold; }
+        .%$cmp.clz% .description { font-size: var(--description-font-size); margin-bottom: 10px; font-style: italic; color: #666; }
+        .%$cmp.clz% .urgency,
+        .%$cmp.clz% .likelihood,
+        .%$cmp.clz% .symptoms,
+        .%$cmp.clz% .riskFactors,
+        .%$cmp.clz% .treatments,
+        .%$cmp.clz% .tests {font-size: var(--description-font-size);margin-bottom: 8px;color: #444; }
 
-        .%$cmp.clz%>.card .riskFactors ul,
-        .%$cmp.clz%>.card .treatments ul,
-        .%$cmp.clz%>.card .tests ul {list-style-type: disc;padding-left: 20px;margin: 0;}
+        .%$cmp.clz% .riskFactors ul,
+        .%$cmp.clz% .treatments ul,
+        .%$cmp.clz% .tests ul {list-style-type: disc;padding-left: 20px;margin: 0;}
 
-        .%$cmp.clz%>.card .riskFactors ul li,
-        .%$cmp.clz%>.card .treatments ul li,
-        .%$cmp.clz%>.card .tests ul li {margin-bottom: 4px; }
+        .%$cmp.clz% .riskFactors ul li,
+        .%$cmp.clz% .treatments ul li,
+        .%$cmp.clz% .tests ul li {margin-bottom: 4px; }
       `)
   )
 })

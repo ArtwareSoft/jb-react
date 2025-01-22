@@ -6,7 +6,7 @@ component('app', {
     {id: 'html', as: 'string', dynamic: true, newLinesInCode: true},
     {id: 'css', as: 'string', dynamic: true, newLinesInCode: true},
     {id: 'sections', type: 'section[]'},
-    {id: 'zuiControl', type: 'control', dynamic: true},
+    {id: 'zoomingGrid', type: 'control', dynamic: true},
     {id: 'style', type: 'app-style', dynamic: true, defaultValue: app()},
     {id: 'features', type: 'feature<>[]', dynamic: true}
   ],
@@ -16,25 +16,22 @@ component('app', {
 component('app', {
   type: 'app-style',
   impl: features(
-    appCmp(),
     html((ctx,{$model}) => $model.html(ctx.setVars(jb.objFromEntries($model.sections.map(sec=>[sec.id,sec.html(ctx)]))))),
     css((ctx,{$model}) => $model.css(ctx.setVars(jb.objFromEntries($model.sections.map(sec=>[sec.id,sec.css(ctx)]))))),
-    init((ctx,{cmp,appData, $model}) => {
-        cmp.updateZuiControl = async userData => {
-            const ctxToUse = ctx.setVars({userData})
-            const zuiCtrl = cmp.zuiCtrl = $model.zuiControl(ctxToUse).init()
-            cmp.children = [zuiCtrl]
-            cmp.extendedPayloadWithDescendants = async res => ({ 
-                appData, ...await zuiCtrl.calcPayload() 
-            })
-            const ret = await cmp.calcPayload()
-            return ret
-        }
+    init((ctx,{cmp, $model}) => {
+      cmp.children = [$model.zoomingGrid(ctx).init()]
+      cmp.extendedPayloadWithDescendants = async (res) => {
+        const zoomingGrid = cmp.children[0]
+        const pack = { [res.id]: res, ...(await zoomingGrid.calcPayload()) }
+        return pack
+      }
     }),
     frontEnd.init((ctx,{cmp, uiTest, widget}) => {
         const ctxToUse = ctx.setVars({userData: widget.userData, appData: widget.appData})
         const rootElements = [cmp.base.querySelector('.top-panel'), cmp.base.querySelector('.left-panel')]
         cmp.dataBinder = !uiTest && new jb.zui.DataBinder(ctxToUse,rootElements)
+        if (jb.frame.document)
+          document.body.appendChild(cmp.base)
     }),
     frontEnd.method('render', (ctx,{cmp}) => cmp.dataBinder.populateHtml())
   )
@@ -46,7 +43,7 @@ component('mainApp', {
     html: `<div class="app-layout">
             %$topPanel%
             %$leftPanel%
-            <div class="zui-control"></div>
+            <div class="zooming-grid"></div>
         </div>`,
     css: `body { font-family: Arial, sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
     .fade { transition: opacity 0.5s ease; opacity: 1; }
@@ -59,7 +56,9 @@ component('mainApp', {
   %$topPanel% 
   %$leftPanel%`,
     sections: [topPanel(), leftPanel()],
-    zuiControl: itemlist(firstToFit(card('%$domain/card%'), iconBox('%$domain/iconBox%')), '%$domain.itemsLayout()%')
+    zoomingGrid: zoomingGrid(card('%$domain/card%'), iconBox('%$domain/iconBox%'), {
+      itemsLayout: '%$domain.itemsLayout()%'
+    })
   })
 })
 

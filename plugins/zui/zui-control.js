@@ -28,7 +28,7 @@ extension('zui','control' , {
             const categories = jb.zui.featureCategories || (jb.zui.featureCategories = {
                 lifeCycle: new Set('init,extendCtx,extendChildrenCtx,destroy'.split(',')),
                 arrayProps: new Set('calcProp,dataSource,frontEndMethod,frontEndVar,css,cssClass,layoutProp,extendItem,method'.split(',')),
-                singular: new Set('calcMoreItemsData,zoomingSize,zoomingCss,styleParams,children,html,templateHtmlItem,containerSelector,appCmp'.split(',')),
+                singular: new Set('calcMoreItemsData,zoomingSize,styleParams,children,html,templateHtmlItem'.split(',')),
             })
     
             Object.keys(feature).filter(key=>key!='srcPath').forEach(key=>{
@@ -69,8 +69,7 @@ extension('zui','control' , {
                 extendCtx.setVar(accCtx),'extendCtx',this.ctx), this.ctx)
             this.props = {}
             this.calcCtx = this.ctx.setVars({$props: this.props })
-            const { inZoomingGrid, renderRole } = this.ctx.vars
-            ;['inZoomingGrid', 'renderRole'].forEach(p=>this[p]=this.ctx.vars[p])
+
 
             const sortedInit = (this.initFuncs || []).sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
             sortedInit.forEach(init=>jb.utils.tryWrapper(() => init.action(this.calcCtx),'init', this.ctx))
@@ -119,14 +118,14 @@ extension('zui','control' , {
             const frontEndVars = this.frontEndVar && jb.objFromEntries(this.frontEndVar.map(h=>[h.id, jb.val(h.value(ctxToUse))]))
             const noOfItems = (ctxToUse.vars.items||[]).length
 
-            const zoomingCssProfile = jb.path(this.zoomingCss,'profile')
             const html = this.html && this.html(ctxToUse)
             const templateHtmlItem = this.templateHtmlItem && this.templateHtmlItem(ctxToUse)
             const css = (this.css || []).flatMap(x=>x(ctxToUse))
+            const detailsLevel = this.props.detailsLevel
 
-            const { id , title, layoutProps, inZoomingGrid, renderRole, zoomingSizeProfile, clz, appCmp, containerSelector } = this
-            let res = { id, title, appCmp, containerSelector, templateHtmlItem, frontEndMethods, frontEndVars, noOfItems, methods, zoomingCssProfile,  html, css, clz,
-                zoomingSizeProfile, layoutProps, inZoomingGrid, renderRole }
+            const { id , title, layoutProps, zoomingSizeProfile, clz } = this
+            let res = { id, title, templateHtmlItem, frontEndMethods, frontEndVars, noOfItems, methods, html, css, clz,
+                zoomingSizeProfile, layoutProps, detailsLevel }
             if (JSON.stringify(res).indexOf('null') != -1)
                 jb.logError(`cmp ${this.title} has nulls in payload`, {cmp: this, ctx: this.ctx})
             if (this.children)

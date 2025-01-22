@@ -155,7 +155,7 @@ component('unitScale', {
   params: [
     {id: 'att', as: 'string', defaultValue: 'index' },
     {id: 'calc', dynamic: true, description: 'optional. When empty, item property with same name is used'},
-    {id: 'items', dynamic: true, defaultValue: '%$itemlistCmp/items%'},
+    {id: 'items', dynamic: true, defaultValue: '%$zoomingGridCmp/items%'},
   ],
   impl: (_ctx, _att, calc, itemsF) => {
     const att = `fixed_${_att}`

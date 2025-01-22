@@ -122,20 +122,6 @@ component('extendItem', {
   impl: (ctx,html) => ({extendItem})
 })
 
-component('appCmp', {
-  type: 'feature',
-  impl: () => ({appCmp: true})
-})
-
-component('injectUndercontainerSelector', {
-  type: 'feature',
-  params: [
-    {id: 'containerSelector', mandatory: true, as: 'string'}
-  ],
-  impl: (ctx,containerSelector) => ({containerSelector})
-})
-
-
 component('templateHtmlItem', {
   type: 'feature',
   params: [
@@ -150,14 +136,6 @@ component('css', {
     {id: 'css', mandatory: true, dynamic: true, as: 'array', newLinesInCode: true}
   ],
   impl: (ctx,css) => ({css})
-})
-
-component('zoomingCss', {
-  type: 'feature',
-  params: [
-    {id: 'css', mandatory: true, dynamic: true, as: 'array', newLinesInCode: true}
-  ],
-  impl: (ctx,zoomingCss) => ({ frontEndMethod: { method: 'zoomingCss', path: ctx.path, profile: zoomingCss.profile} })
 })
 
 component('frontEnd.init', {

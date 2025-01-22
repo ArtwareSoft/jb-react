@@ -100,7 +100,7 @@ extension('zui','zoom', {
             tZoom *= dz**sensitivity
           const tZoomF = Math.floor(tZoom)
           if (dp)
-            tCenter = [tCenter[0] - dp[0]/w*tZoomF, tCenter[1] + dp[1]/h*tZoomF]
+            tCenter = [tCenter[0] - dp[0]/w*tZoomF, tCenter[1] - dp[1]/h*tZoomF]
   
           const maxDim = Math.max(gridSize[0],gridSize[1])
           ;[0,1].forEach(axis=>tCenter[axis] = Math.min(gridSize[axis],Math.max(0,tCenter[axis])))

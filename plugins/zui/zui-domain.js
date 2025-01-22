@@ -6,6 +6,7 @@ component('userData', {
     {id: 'query', as: 'string', byName: true},
     {id: 'contextChips', type: 'data[]', as: 'array', defaultValue: []},
     {id: 'preferedLlmModel', as: 'string'},
+    {id: 'detailsLevel', as: 'number', defaultValue: 1},
   ]
 })
 
@@ -32,8 +33,8 @@ component('domain', {
     {id: 'itemsLayout', type: 'items_layout', dynamic: true},
     {id: 'iconBox', type: 'iconBox-style', dynamic: true},
     {id: 'card', type: 'card-style', dynamic: true},
+    {id: 'cardWithIconData', type: 'card-style', dynamic: true},
     {id: 'minGridSize', as: 'array', type: 'data<>[]', defaultValue: [6,6]},
-    {id: 'zuiControl', type: 'control', dynamic: true, defaultValue: firstToFit(card('%$domain/card()%'), iconBox('%$domain/iconBox()%'))},
     {id: 'sample', type: 'domain_sample'}
   ]
 })
@@ -88,8 +89,7 @@ component('domain.itemsSource', {
       llmModel: '%$task/model%',
       useRedisCache: true
     }),
-    llm.textToJsonItems(),
-    rx.delay(100)
+    llm.textToJsonItems()
   )
 })
 
@@ -104,14 +104,13 @@ component('iconBox', {
 component('iconBoxFeatures', {
   type: 'feature',
   impl: features(
-    zoomingSize(fill()),
     frontEnd.var('fontSizeMap', () => ({
       16: { title: 8, description: 8 },
       32: { title: 10, description: 8 },
       64: { title: 10, description: 10 },
       128: { title: 12, description: 10 },
     })),
-    zoomingGridElem('icon')
+    zoomingGridElem(1)
   )
 })
 
@@ -126,8 +125,20 @@ component('card', {
 component('cardFeatures', {
   type: 'feature',
   impl: features(
-    zoomingSize(fill({ min: 128 })),
-    zoomingGridElem('card'),
+    zoomingGridElem(2),
+    frontEnd.var('fontSizeMap', () => ({
+      64: { title: 12, description: 10 },
+      128: { title: 12, description: 10 },
+      256: { title: 12, description: 12 },
+      320: { title: 14, description: 12 },
+    }))
+  )
+})
+
+component('cardWithIconDataFeatures', {
+  type: 'feature',
+  impl: features(
+    zoomingGridElem(1.5),
     frontEnd.var('fontSizeMap', () => ({
       64: { title: 12, description: 10 },
       128: { title: 12, description: 10 },

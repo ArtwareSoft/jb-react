@@ -3,11 +3,11 @@ dsl('zui')
 component('zui.taskToRun', {
   impl: ctx => {
     const {userData, state } = ctx.data
-    const {itemSize} = state
-    const details = itemSize[0] < 128 ? 'icon' : 'card'
-    const detailsLevel = details == 'icon' ? 0 : 1
+    const { detailsLevel, preferedLlmModel } = userData
+    if (!detailsLevel) return []
+    const details = detailsLevel == 1 ? 'icon' : 'card'
     const { cmp, appData } = ctx.vars
-    const modelId = userData.preferedLlmModel || 'gpt_35_turbo_0125'
+    const modelId = preferedLlmModel || 'gpt_35_turbo_0125'
     const model = {id: modelId, ...ctx.run({$$: `model<llm>${modelId}` }) }
     const noOfItems = 30 // todo: where to put?
     const speed = model.speed[details]

@@ -2,8 +2,13 @@ dsl('zui')
 
 /*
 TODO:
+how to know if item needs itemDataReq
+  zoomingGridCmp.detailsLevel, appData.ctxVer, userData.modelQuality
+how to know zoomingGridCmp.detailsLevel?
+  no need for itemLayout, group, and firstSucceding
+    itemlist -> iconCardDocItems
 llmItem - title (key), _details,_ctxVer, _modelId, ...props
-itemReq - title, _details, _ctxVer, exposure level
+itemDataReq - title, _details, _ctxVer, exposure level
 incomingItem - title, _details, _ctxVer, _tta (time to arrive), taskId
 
 fe queues:
@@ -14,68 +19,71 @@ be queues:
   incomingItem? - maybe just send directly. no need for queue
 */
 
-component('itemlist', {
+component('zoomingGrid', {
   type: 'control',
   params: [
-    {id: 'itemControl', type: 'control', mandatory: true, dynamic: true},
+    {id: 'iconControl', type: 'control', mandatory: true, dynamic: true},
+    {id: 'cardControl', type: 'control', mandatory: true, dynamic: true},
+    {id: 'cardControlWithIconData', type: 'control', mandatory: true, dynamic: true},
     {id: 'itemsLayout', type: 'items_layout', dynamic: true, defaultValue: spiral()},
-    {id: 'style', type: 'itemlist-style', dynamic: true, defaultValue: grid()},
+    {id: 'style', type: 'zooming-grid-style', dynamic: true, defaultValue: zoomingGridStyle()},
     {id: 'features', type: 'feature<>[]', dynamic: true}
   ],
   impl: ctx => jb.zui.ctrl(ctx)
 })
 
-component('grid', {
-  type: 'itemlist-style',
+component('zoomingGridStyle', {
+  params: [
+    {id: 'changeToCard', as: 'number', defaultValue: 128}
+  ],
+  type: 'zooming-grid-style',
   impl: features(
-    injectUndercontainerSelector('.zui-control'),
     variable('itemsLayout', '%$$model/itemsLayout()%'),
-    variable('inZoomingGrid', true),
-    variableForChildren('itemlistCmp', '%$cmp%'),
+    frontEnd.var('changeToCard', '%$changeToCard%'),
     frontEnd.var('initialZoomCenter', ['%$itemsLayout/initialZoom%','%$itemsLayout/center%','%$itemsLayout/gridSize%']),
-    html((ctx,{cmp}) => `<div class="zui-items ${cmp.clz}">`),
+    html((ctx,{cmp}) => `<div></div>`),
     css('.%$cmp.clz% {position: relative; width: 100%; height: 100%; overflow: hidden;}'),
     init((ctx,{cmp, itemsLayout, $model, screenSize}) => {
       cmp.items = []
       cmp.newItems = []
+      cmp.itemsToUpdate = []
       cmp.itemsLayout = itemsLayout
-      const ctxForChildren = ctx.setVars({renderRole: 'zoomingGridElem', itemlistCmp: cmp}) // variableForChildren does not work with init
-      cmp.children = [$model.itemControl(ctxForChildren).init()]
+      const ctxForChildren = ctx.setVars({zoomingGridCmp: cmp})
+      cmp.children = [$model.iconControl(ctxForChildren).init(), $model.cardControl(ctxForChildren).init()]
       cmp.extendedPayloadWithDescendants = async (res,descendants) => {
-        const layoutCalculator = jb.zui.initLayoutCalculator(cmp)
-        const estimatedItemSize = [0,1].map(axis => screenSize[axis] / itemsLayout.initialZoom)
-        const {shownCmps} = layoutCalculator.calcItemLayout(estimatedItemSize, ctx)
         const pack = { [res.id]: res }
-        await descendants.filter(cmp=>!cmp.dynamicFlowElem).reduce((pr,cmp)=>pr.then(async ()=> {
-          const { id , title, layoutProps, zoomingSizeProfile } = cmp
-
-          pack[id] = cmp.children || shownCmps.indexOf(id) != -1 ? await cmp.calcPayload()
-              : {id, title, zoomingSizeProfile, layoutProps, notReady: true } 
-        }), Promise.resolve())
+        await cmp.children.reduce((pr,cmp)=>pr.then(async ()=> { pack[cmp.id] = await cmp.calcPayload() }), Promise.resolve())
         return pack
       }
     }),
     frontEnd.init((ctx,{cmp,widget,initialZoomCenter}) => {
+      if (jb.frame.document && !document.querySelector(`.${cmp.clz}`)) 
+        document.querySelector('.zooming-grid').appendChild(cmp.base)
+      
       widget.state.zoom = widget.state.tZoom = initialZoomCenter[0]
       widget.state.center = widget.state.tCenter = initialZoomCenter[1]
       widget.state.gridSize = initialZoomCenter[2]
 
-      widget.itemlistCmp = cmp
       cmp.items = []
-      if (jb.frame.document && !document.querySelector(`.${cmp.clz}`)) 
-        document.querySelector('.zui-control').appendChild(cmp.base)
-      const rect = cmp.base && cmp.base.getBoundingClientRect()
-      const canvasSize = jb.frame.document ? [rect.width,rect.height] : widget.screenSize
-      cmp.enrichCtxWithItemSize = ctx2 => ctx2.setVars({itemSize: [0,1].map(axis=>canvasSize[0]/widget.state.zoom),canvasSize})
+      cmp.exposure = {}
       widget.BERxSource(cmp.id,'userDataListener',ctx)
     }),
     zui.canvasZoom(),
-    frontEnd.method('zoomingCss', (ctx,{cmp,itemSize,canvasSize,widget}) => {
+    frontEnd.method('render', (ctx,{cmp,widget,changeToCard,userData}) => {
+      const rect = cmp.base && cmp.base.getBoundingClientRect()
+      const canvasSize = jb.frame.document ? [rect.width,rect.height] : widget.screenSize
+      const itemSize = [0,1].map(axis=>canvasSize[0]/widget.state.zoom)
+      const detailsLevel = itemSize[0] < changeToCard ? 1 : 2
       const center = widget.state.center
-      const gridSize = widget.state.gridSize
-      const transition = [0,1].map(axis=>canvasSize[axis]/2 - center[axis]*itemSize[axis] )
+      const transition = [0,1].map(axis=>canvasSize[axis]/2 - center[axis]*itemSize[axis])
+      const ctxToUse = ctx.setVars({itemSize,canvasSize,detailsLevel,center, transition, zoomingGridCmp: cmp})
+      cmp.sizePos(ctxToUse)
+      Object.values(widget.cmps).forEach(gridCmp => gridCmp.detailsLevel && gridCmp.render(ctxToUse))
+      Object.assign(userData,{detailsLevel, exposure: cmp.calcItemExposure(ctxToUse)})
+    }),
+    frontEnd.method('sizePos', (ctx,{cmp,itemSize,canvasSize,center, transition}) => {
       jb.zui.setCss(`sizePos-${cmp.clz}`, [
-        `/* itemsize: ${itemSize},  gridSize: ${gridSize}, center: ${center}, transition: ${transition}*/`,
+        `/* itemsize: ${itemSize}, center: ${center}, transition: ${transition}*/`,
         `.${cmp.clz} .zui-item { width: ${itemSize[0]}px; height: ${itemSize[1]}px }`,
         ...cmp.items.map(({xyPos,title}) => {
           const pos = [0,1].map(axis=>xyPos[axis]*itemSize[axis] + transition[axis])
@@ -84,50 +92,27 @@ component('grid', {
         })].join('\n')
       )
     }),
-    frontEnd.method('buildLayoutCalculator', (ctx,{cmp,widget}) => {
-      cmp.layoutCalculator = jb.zui.initLayoutCalculator(buildNode(cmp.id,0))
-
-      function buildNode(id) {
-        const cmpData = widget.cmpsData[id]
-        if (!cmpData) return
-        const zoomingSize = cmpData.zoomingSizeProfile ? ctx.run(cmpData.zoomingSizeProfile) : {}
-        const layoutProps = cmpData.layoutProps || {}
-        const children = cmpData.childrenIds && cmpData.childrenIds.split(',').map((ch,i)=>buildNode(ch,i)).filter(x=>x)
-        return { id, children, zoomingSize, layoutProps, title: cmpData.title}
-      }
-    }),
     frontEnd.flow(
       source.animationFrame(),
       rx.flatMap(source.data('%$cmp.animationStep()%')),
       rx.do(({},{widget}) => widget.renderCounter++),
-      sink.action('%$widget.renderCmps()%')
+      sink.action('%$cmp.render()%')
     ),
-    frontEnd.method('clipItems', (ctx,{cmp,widget,itemSize}) => {
-      const center = widget.state.center
-      cmp.items.filter(({xyPos,title}) => {
-        const pos = [0,1].map(axis=>xyPos[axis]*itemSize[axis] + transition[axis])
-        const distance = Math.sqrt(pos[0]^2+pos[1]^2)
-        const visible = pos[0]+itemSize[0] > 0 && pos[0] <= canvasSize[0] && pos[1]+itemSize[1] > 0 && pos[1] <= canvasSize[1]
-        const screenRadius = Math.min(...canvasSize)
-        const alpha = 1, falloffRate = 1
-        if (visible)
-          return Math.max(0, 1 - alpha * (distance / screenRadius))
-        const offScreenDistance = distance - screenRadius
-        return Math.exp(-offScreenDistance / (screenRadius * falloffRate))        
-      })
-    }),
-    frontEnd.method('render', (ctx,{cmp,widget,itemSize}) => {
-      const {shownCmps, elemsLayout} = cmp.layoutCalculator.calcItemLayout(itemSize,ctx)
-      widget.cmpsData[cmp.id].itemLayoutforTest = {shownCmps, elemsLayout}
-      const toRender = Object.values(widget.cmps).filter(cmp=>shownCmps.indexOf(cmp.id) != -1)
-      const notReady = toRender.filter(cmp=>cmp.notReady).map(cmp=>cmp.id)
-      if (notReady.length)
-        widget.runBEMethodAndUpdate(notReady[0],'recalcPayload',ctx)
-      jb.log('zui itemlist render',{elemsLayout, shownCmps, toRender, notReady, ctx})
-      cmp.zoomingCss(ctx)
-      Object.values(widget.cmps).filter(cmp=>cmp.base && cmp.renderRole == 'zoomingGridElem')
-        .forEach(cmp=> cmp.base.style.display = shownCmps.indexOf(cmp.id) == -1 ? 'none' : 'block')
-      toRender.filter(cmp=>!cmp.notReady).forEach(cmp=>cmp.render(ctx))
+    frontEnd.method('calcItemExposure', (ctx,{cmp,itemSize,canvasSize,center,transition}) => {
+      cmp.items.filter(({_detailsLevel}) => _detailsLevel < cmp.detailsLevel)
+        .forEach(({xyPos,title}) => {
+          const pos = [0,1].map(axis=>xyPos[axis]*itemSize[axis] + transition[axis])
+          const distance = Math.sqrt((pos[0]-center[0])^2+(pos[1]-center[1])^2)
+          const visible = pos[0]+itemSize[0] > 0 && pos[0] <= canvasSize[0] && pos[1]+itemSize[1] > 0 && pos[1] <= canvasSize[1]
+          const screenRadius = Math.min(...canvasSize)
+          const alpha = 1, falloffRate = 1
+          if (visible)
+            return Math.max(0, 1 - alpha * (distance / screenRadius))
+          const offScreenDistance = distance - screenRadius
+          const exposure = Math.exp(-offScreenDistance / (screenRadius * falloffRate))
+          cmp.exposure[title] = Math.avg((cmp.exposure[title] || 0),exposure)
+        })
+      return cmp.exposure
     }),
     prop('userDataSubj', rx.subject()),
     flow(
@@ -148,9 +133,9 @@ component('grid', {
           removeFromArray('%$appData/runningTasks%', '%%')
         )
       }),
-      rx.do(zui.extendItem('%%', '%$task/details%')),
+      rx.do(zui.extendItem('%%', '%$task/detailsLevel%')),
       rx.map(extendWithObj(obj(
-        prop('_details', '%$task/details%'),
+        prop('_detailsLevel', '%$task/detailsLevel%'),
         prop('_ctxVer', '%$task/ctxVer%'),
         prop('_modelId', '%$task/model/id%')
       ))),
@@ -169,23 +154,24 @@ component('grid', {
 component('zoomingGridElem', {
   type: 'feature',
   params: [
-    {id: 'taskDetails', as: 'string'}
+    {id: 'detailsLevel', as: 'number'}
   ],
   impl: features(
-    prop('taskDetails', '%$taskDetails%'),
+    prop('detailsLevel', '%$detailsLevel%'),
     init((ctx,{cmp,widget}) => {
-      cmp.recalcPayload = userData => {
-        return cmp.calcPayload()
-      }
       cmp.doExtendItem = item => {
         const ctxWithItem = ctx.setData(item)
         ;(cmp.extendItem||[]).forEach(f=>f(ctxWithItem))
       }
     }),
-    frontEnd.method('render', (ctx,{cmp,widget,itemSize,fontSizeMap}) => {
-      const itemlistCmp = widget.itemlistCmp
-      if (cmp.base && !itemlistCmp.base.querySelector(`.${cmp.clz}`)) 
-        itemlistCmp.base.appendChild(cmp.base)
+    frontEnd.method('render', (ctx,{cmp,widget,itemSize,fontSizeMap, detailsLevel,zoomingGridCmp}) => {
+      if (cmp.detailsLevel != detailsLevel) {
+        cmp.base.style.display = 'none'
+        return
+      }
+      cmp.base.style.display = 'block'
+      if (cmp.base && !zoomingGridCmp.base.querySelector(`.${cmp.clz}`)) 
+        zoomingGridCmp.base.appendChild(cmp.base)
       let fontSizes = {}
       if (fontSizeMap) {
         const baseSize = itemSize[0]
@@ -198,8 +184,8 @@ component('zoomingGridElem', {
       const cssVars = cmp.dynamicCssVars ? cmp.dynamicCssVars(ctx) : {}
       jb.zui.setCssVars(cmp.clz, {...fontSizes, ...cssVars})
       cmp.base.style.display = 'block'
-      itemlistCmp.items.forEach(item=>{
-        let elem = itemlistCmp.base.querySelector(`[itemkey="${item.title}"]`)
+      zoomingGridCmp.items.forEach(item=>{
+        let elem = cmp.base.querySelector(`[itemkey="${item.title}"]`)
         if (!elem) {
           const elem = document.createElement('div')
           elem.innerHTML = cmp.templateHtmlItem
@@ -215,7 +201,7 @@ component('zoomingGridElem', {
     html('<div class="%$cmp.clz%"></div>'),
     css(`.%$cmp.clz% {width: 100%; height: 100%}
         .%$cmp.clz%>.zui-item {overflow: hidden; text-overflow: ellipsis; pointer-events: none; position: absolute; 
-          border1: 1px black solid; transition: top 0.3s ease, left 0.3s ease;}`)
+          border1: 1px black solid; transition1: top 0.3s ease, left 0.3s ease;}`)
   )
 })
 
@@ -237,10 +223,12 @@ component('zui.extendItem', {
   type: 'action<>',
   params: [
     {id: 'item'},
-    {id: 'taskDetails', as: 'string'}
+    {id: 'detailsLevel', as: 'number'}
   ],
-  impl: (ctx,item, taskDetails) => ctx.vars.cmp.allDescendants().filter(c=>c.props.taskDetails == taskDetails)
-    .forEach(child=>child.doExtendItem(item))
+  impl: (ctx,item, detailsLevel) => {
+    const {cmp} = ctx.vars
+    cmp.children.filter(c=>c.props.detailsLevel == detailsLevel).forEach(child=>child.doExtendItem(item))
+  }
 })
 
 component('zui.sendIncomingItems', {
