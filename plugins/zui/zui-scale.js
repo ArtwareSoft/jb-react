@@ -75,7 +75,7 @@ component('opacity', {
 
 component('opacityScale', {
   type: 'opacity_scale',
-  impl: () => [1.0,0.8,0.6,0.4,0.2]
+  impl: () => [0.2,0.4,0.6,0.8,1.0]
 })
 
 component('zui.itemSymbolFunc', {
@@ -154,7 +154,7 @@ component('unitScale', {
   type: 'unit_scale',
   params: [
     {id: 'att', as: 'string', defaultValue: 'index' },
-    {id: 'calc', dynamic: true, description: 'optional. When empty, item property with same name is used'},
+    {id: 'calc', as: 'number', dynamic: true, description: 'optional. When empty, item property with same name is used'},
     {id: 'items', dynamic: true, defaultValue: '%$zoomingGridCmp/items%'},
   ],
   impl: (_ctx, _att, calc, itemsF) => {

@@ -28,21 +28,21 @@ extension('zui','DataBinder', {
         rootElement.querySelectorAll('[bind], [bind_max], [bind_value], [bind_text], [bind_display], [bind_style]').forEach( el => {
             for (const attr of el.attributes) {
                 if (attr.name.startsWith('bind')) {
-                const val = ctx.run(attr.value, 'data<>')
-                if (val == null) {
-                    el.style.display = 'none'
-                } else {
-                    if (attr.name === 'bind_style') {
-                      val.split(';').forEach(propVal=>{
-                        const [prop,val] = propVal.split(':').map(x=>x.trim().replace(/-([a-z])/g, (_, char) => char.toUpperCase()))
-                        el.style[prop] = val
-                      })
-                    }
-                    if (attr.name === 'bind_value' && el.value != val) el.value = val
-                    if (attr.name === 'bind_max' && el.value != val) el.max = val
-                    if ((attr.name === 'bind_text' || attr.name == 'bind') && el.textContent != val) el.textContent = val
-                    el.style.display = ''
-                }
+                  const val = attr.value.match(/^cmp./) ? eval(`ctx.vars.${attr.value}`) : ctx.run(attr.value, 'data<>')
+                  if (val == null) {
+                      el.style.display = 'none'
+                  } else {
+                      if (attr.name === 'bind_style') {
+                        val.split(';').forEach(propVal=>{
+                          const [prop,val] = propVal.split(':').map(x=>x.trim().replace(/-([a-z])/g, (_, char) => char.toUpperCase()))
+                          el.style[prop] = val
+                        })
+                      }
+                      if (attr.name === 'bind_value' && el.value != val) el.value = val
+                      if (attr.name === 'bind_max' && el.value != val) el.max = val
+                      if ((attr.name === 'bind_text' || attr.name == 'bind') && el.textContent != val) el.textContent = val
+                      el.style.display = ''
+                  }
                 }
             }
         })

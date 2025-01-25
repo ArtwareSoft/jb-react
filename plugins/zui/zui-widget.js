@@ -18,7 +18,7 @@ component('widget', {
         userData.contextChips = jb.path(domain.sample,'contextChips') || []
         appData.suggestedContextChips = jb.path(domain.sample,'suggestedContextChips') || []
 
-        frontEnd.initFE(screenSizeForTest,userData)
+        frontEnd.initFE(screenSizeForTest,{userData,appData})
         
         const widget = {
             frontEnd,
@@ -45,8 +45,10 @@ component('widgetFE', {
         renderCounter: 1,
         state: {tCenter: [1,1], tZoom : 2, zoom: 2, center: [1,1], speed: 3, sensitivity: 5},
 
-        initFE(screenSizeForTest,userData) {
-            this.ctx = new jb.core.jbCtx().setVars({widget: this, canUseConsole: ctx.vars.quiet, uiTest: ctx.vars.uiTest, userData})
+        initFE(screenSizeForTest,{userData,appData}) {
+            this.userData = userData
+            this.appData = appData
+            this.ctx = new jb.core.jbCtx().setVars({widget: this, canUseConsole: ctx.vars.quiet, uiTest: ctx.vars.uiTest})
             this.screenSize = (!ctx.vars.uiTest && jb.frame.window) ? [window.innerWidth,window.innerHeight] : screenSizeForTest
             this.ctx.probe = ctx.probe
         },
@@ -54,7 +56,7 @@ component('widgetFE', {
             const cmp = this.beAppCmpProxy.id == cmpId ? this.beAppCmpProxy : this.beAppCmpProxy.allDescendants().find(x=>x.id == cmpId)
             if (!cmp)
                 return jb.logError(`runBEMethodAndUpdate can not find cmp ${cmpId} to run method ${method}`, {ctx})
-            const payload = await cmp[method](this.ctx.vars.userData)
+            const payload = await cmp[method](this.userData)
             await this.handlePayload(payload)        
         },
         BERxSource(cmpId,sourceId,ctx) { // should use jbm
@@ -69,29 +71,16 @@ component('widgetFE', {
             Object.entries(payload).forEach(([id,be_data]) => {
                 jb.log(`zui handlePayload ${id}`,{be_data, ctx})
                 if (id == 'userData') {
-                    this.userData = be_data
-                } else if (id == 'items') {
-                    const cmp = this.cmps[be_data.cmpId]
-                    cmp.items = be_data.items
-                    if (cmp.gridSize != be_data.gridSize) {
-                        this.state.gridSize = cmp.gridSize = be_data.gridSize
-                        const zoom = Math.max(...be_data.gridSize,1)
-                        const center = [0,1].map(axis => Math.floor(cmp.gridSize[axis] / 2))
-                        this.state.zoom = this.state.tZoom = zoom
-                        this.state.center = this.state.tCenter = center
-                    }
+                    Object.assign(this.userData, be_data)
                 } else if (id == 'appData') {
-                    this.appData = be_data
+                    Object.assign(this.appData, be_data)
+                } else if (this.cmps[id]) {
+                    this.cmps[id].handlePayload(ctx.setVars({be_data}))
                 } else {
-                    const cmp = this.cmps[id] = newFECmp(id, be_data)
-                    this.cmpsData[id] = { ...(this.cmpsData[id] || {}), ...be_data }
+                    this.cmps[id] = newFECmp(id, be_data)
+                    this.cmpsData[id] = { ...(this.cmpsData[id] || {}), ...be_data } // for test
                 }
             })
-            jb.log('zui handlePayload loaded in FE',{widget: this, payload,ctx})
-            // dirty - build itemlist layout calculator only after loading its ancestors
-            // const layoutTop =  Object.values(this.cmps).find(cmp => cmp.buildLayoutCalculator)
-            // layoutTop && layoutTop.buildLayoutCalculator(ctx)
-
             this.renderRequest = true
 
             function newFECmp(cmpId, be_data) {
@@ -120,20 +109,7 @@ component('widgetFE', {
                 cmp.state.frontEndStatus = 'ready'
                 return cmp
             }
-        },
-        // renderCmps(ctx) {
-        //     const ctxToUse = this.zoomingGridCmp.enrichCtxWithItemSize(ctx).setVars({widget: this})
-        //     this.state.itemSize = ctxToUse.vars.itemSize
-        //     //if (this.ctx.vars.canUseConsole) console.log(this.state.zoom, ...this.state.center)
-        //     Object.values(this.cmps).filter(cmp=>!cmp.notReady && cmp.renderRole !='zoomingGridElem')
-        //         .forEach(cmp=>cmp.render ? cmp.render(ctxToUse) : this.renderCmp(cmp,ctxToUse))
-        // },
-        // renderCmp(cmp,ctx) {
-        //     if (cmp.base) {
-        //         cmp.zoomingCss && cmp.zoomingCss(ctx)
-        //         cmp.base.style.display = 'block'
-        //     }
-        // }
+        }
     })
 })
 

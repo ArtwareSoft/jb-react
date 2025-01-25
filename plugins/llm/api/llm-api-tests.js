@@ -63,7 +63,7 @@ component('llmTest.rx', {
       }
     ]
     `),
-        llmModel: gpt_4o()
+        llmModel: o1_mini()
       }),
       llm.textToJsonItems(),
       rx.do(({data}) => console.log(data))

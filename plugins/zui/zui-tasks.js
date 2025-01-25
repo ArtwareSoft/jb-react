@@ -3,20 +3,37 @@ dsl('zui')
 component('zui.taskToRun', {
   impl: ctx => {
     const {userData, state } = ctx.data
-    const { detailsLevel, preferedLlmModel } = userData
-    if (!detailsLevel) return []
-    const details = detailsLevel == 1 ? 'icon' : 'card'
-    const { cmp, appData } = ctx.vars
+    const { preferedLlmModel,exposure } = userData
+    if (!userData.detailsLevel) return []
+    const { appData } = ctx.vars
+    let op, noOfItems,detailsLevel,itemsToUpdate
+    if (Object.keys(exposure||{}).length > 0) {
+      const items = Object.entries(exposure).sort((x,y) => y[1]-x[1]).filter(x=>x[1]).map(x => x[0])
+      noOfItems = items.length
+      itemsToUpdate = items.join(', ')
+      detailsLevel = 2
+      op = 'update'
+    } else {
+      noOfItems = 30 // todo: where to put?
+      detailsLevel = 1
+      op = 'new'
+    }
     const modelId = preferedLlmModel || 'gpt_35_turbo_0125'
     const model = {id: modelId, ...ctx.run({$$: `model<llm>${modelId}` }) }
-    const noOfItems = 30 // todo: where to put?
+    const quality = model.quality, ctxVer = appData.ctxVer
+    const details = detailsLevel == 1 ? 'icon' : 'card'
     const speed = model.speed[details]
     const estimatedStartEmit = speed[1]
     const estimatedDuration = speed[0] * noOfItems + speed[1]
-    const res = [{ noOfItems, details, detailsLevel, model, quality: model.quality, ctxVer: appData.ctxVer, estimatedStartEmit, estimatedDuration }]
+    const title = `${op} ${noOfItems} ${details}s using ${modelId}`
+    const task = { title, op, noOfItems, itemsToUpdate, details, detailsLevel, model, quality,ctxVer, estimatedStartEmit, estimatedDuration }
+
     const allTasks = [...appData.runningTasks,...appData.doneTasks]
-    const res2 = res.filter(task=>!allTasks.find(t=> ['detailsLevel','quality','ctxVer'].every(p => t[p]>=task[p])))
-    return res2
+    const res = [task].filter(task=>!allTasks.find(t=> ['detailsLevel','quality','ctxVer','op','itemsToUpdate']
+      .every(p => typeof p == 'number' ? t[p] <=task[p] : t[p] == task[p])))
+    if (res.length)
+      jb.log('zui task ',{task,ctx})
+    return res
   }
 })
 
@@ -27,7 +44,9 @@ component('baseTask', {
     {id: 'title', as: 'string'},
     {id: 'noOfItems', as: 'number', options: '1,5,30'},
     {id: 'details', as: 'string', options: 'icon,card'},
-    {id: 'model', type: 'model<llm>'}
+    {id: 'model', type: 'model<llm>'},
+    {id: 'detailsLevel', as: 'number'},
+    {id: 'op', as: 'string', defaultValue: 'new', options: 'update,new'},
   ]
 })
 

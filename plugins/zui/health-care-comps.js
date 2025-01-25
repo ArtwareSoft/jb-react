@@ -9,7 +9,8 @@ component('healthCare', {
     Given this brief description of a patient or their symptoms, 
     Query: %$userData.query%
     context: %$userData.contextChips%
-    generate a JSON list of %$task/noOfItems% diagnostic suggestions *sorted by relevancy* high to low.
+
+    Generate a JSON list of %$newOrUpdateLine%
     Each suggestion should follow the structure below and include relevant, accurate medical information.
     
     Each item in the JSON should include:
@@ -29,6 +30,8 @@ component('healthCare', {
       }
     ]
     `,
+    newItemsLine: '%$task/noOfItems% condition diagnostic suggestions *sorted by relevancy* high to low.',
+    updateItemsLine: 'condition diagnostic suggestions for the following condition titles: %$task/itemsToUpdate%. keep the same order.',
     iconPromptProps: props({
       description: `- **title**: Name of the condition.
     - **relevancy**: A scale from 1 to 10 indicating how relevant it is to doctors in emergency settings
@@ -104,15 +107,15 @@ component('healthCare.conditionIconBoxStyle', {
       </div>
     </div>`),
     css(`
+      .%$cmp.clz% { font-size: var(--title-font-size) }
       .%$cmp.clz% .icon { position: relative; border-width: var(--border-width); width: var(--box-size); height: var(--box-size); 
           font-family: Arial, sans-serif}
       .%$cmp.clz% .background { opacity: 0.5; position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; }
       .%$cmp.clz% .content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
           display: flex; flex-direction: column; align-items: center; justify-content: center; }
-      .%$cmp.clz% .urgencySymbol { position: absolute; top: var(--urgency-symbol-offset); right: var(--urgency-symbol-offset); 
-          font-size: var(--description-font-size); }
-      .%$cmp.clz% .main-symbol { font-size: var(--description-font-size); line-height: 1; }
-      .%$cmp.clz% .abrv { font-size: var(--description-font-size); margin: var(--abrv-margin); line-height: 1; }
+      .%$cmp.clz% .urgencySymbol { position: absolute; top: var(--urgency-symbol-offset); right: var(--urgency-symbol-offset) }
+      .%$cmp.clz% .main-symbol { line-height: 1; }
+      .%$cmp.clz% .abrv { margin: var(--abrv-margin); line-height: 1; }
     `)
   )
 })
@@ -122,61 +125,46 @@ component('healthCare.conditionCardStyle', {
   impl: features(
     itemSymbol('categorySymbol', healthCare.categorySymbol()),
     itemSymbol('urgencySymbol', symbol(unitScale('urgency'), list('','❗','⚠️'))),
-    itemBorderStyle('likelihoodBorderStyle', borderStyle(unitScale('likelihood'))),
-    itemColor('urgencyBorderColor', itemColor(unitScale('urgency'), list('green','orange','red'))),
+    itemOpacity('relevancyOpacity', opacity(unitScale('relevancy'))),
     itemColor('categoryColor', healthCare.categoryColor()),
     templateHtmlItem((ctx,{cmp}) => `
-        <div class="card" style="font-family: Arial, sans-serif;">
-          <div class="icon" bind_style="border-style:%likelihoodBorderStyle%;border-color:%urgencyBorderColor%">
-            <div class="background" bind_style="background-color:%categoryColor%"></div>
-            <div class="content">
-                <div class="main-symbol" bind="%categorySymbol%"></div>
-            </div>
-          </div>
-          <div class="icon-urgencySymbol" bind="%urgencySymbol%"></div>
-          <div class="title" bind="%title%"></div>
+        <div class="card" bind_style="box-shadow:inset 0px 0px 10px 0px %categoryColor%">
+          <div class="title" bind_style="opacity: %relevancyOpacity%" bind="%urgencySymbol%%categorySymbol% %title%"></div>
           <div class="category" bind="%category%"></div>
           <div class="description" bind="%description%"></div>
-          <div class="urgency" bind="%urgency%"></div>
-          <div class="likelihood" bind="%likelihood%"></div>
+          <div class="urgency" bind="urgency: %urgency%, likelihood: %likelihood%, relevancy: %relevancy%"></div>
           <div class="symptoms">Symptoms:
-            <ul>${[0,1,2,3,4,5].map(i => `<li bind="%symptoms/i%"></li>`)}</ul>
+            <ul>${[0,1,2,3,4,5].map(i => `<li bind="%symptoms/${i}%"></li>`).join('')}</ul>
           </div>
           <div class="riskFactors">Risk Factors:
-            <ul>${[0,1,2,3,4,5].map(i => `<li bind="%riskFactors/i%"></li>`)}</ul>
+            <ul>${[0,1,2,3,4,5].map(i => `<li bind="%riskFactors/${i}%"></li>`).join('')}</ul>
           </div>
           <div class="treatments">Treatments:
-            <ul>${[0,1,2,3,4,5].map(i => `<li bind="%recommendedTreatments/i%"></li>`)}</ul>
+            <ul>${[0,1,2,3,4,5].map(i => `<li bind="%recommendedTreatments/${i}%"></li>`).join('')}</ul>
           </div>
           <div class="tests">Tests:
-            <ul>${[0,1,2,3,4,5].map(i => `<li bind="%diagnosticTests/i%"></li>`)}</ul>
+            <ul>${[0,1,2,3,4,5].map(i => `<li bind="%diagnosticTests/${i}%"></li>`).join('')}</ul>
           </div>
         </div>
       `),
-    css(`
-        .%$cmp.clz%>.card {
+    css(`.%$cmp.clz% .card {
+          margin: 2px; height: 90%;
+          border-width: 1px; font-family: Arial, sans-serif;
           display: flex; flex-direction: column; justify-content: space-between; padding: 10px; overflow: hidden;
-          box-shadow: inset 0px 0px 10px 0px rgba(0, 0, 0, 0.1);
         }
-        .%$cmp.clz% .icon { position: relative; width: 32px; min-height: 32px;}
-        .%$cmp.clz% .icon .background { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; }
-        .%$cmp.clz% .icon .content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .%$cmp.clz% .icon .urgencySymbol { font-size: 32px; line-height: 1; position: absolute; top: 10px; right: 2px; }
-        .%$cmp.clz% .icon .main-symbol { font-size: 32px; line-height: 1; }
-
-        .%$cmp.clz% .title { font-size: var(--title-font-size); font-weight: bold; margin-bottom: 8px; color: #333; }
-        .%$cmp.clz% .category { font-size: var(--description-font-size); margin-bottom: 5px; font-weight: bold; }
-        .%$cmp.clz% .description { font-size: var(--description-font-size); margin-bottom: 10px; font-style: italic; color: #666; }
+        .%$cmp.clz% .title { font-size: var(--main-title-font-size); cursor: pointer; }
+        .%$cmp.clz% .category { font-size: var(--normal-text-font-size); margin-bottom: 5px; font-weight: bold; }
+        .%$cmp.clz% .description { font-size: var(--normal-text-font-size); margin-bottom: 10px; font-style: italic; color: #666; }
         .%$cmp.clz% .urgency,
         .%$cmp.clz% .likelihood,
         .%$cmp.clz% .symptoms,
         .%$cmp.clz% .riskFactors,
         .%$cmp.clz% .treatments,
-        .%$cmp.clz% .tests {font-size: var(--description-font-size);margin-bottom: 8px;color: #444; }
+        .%$cmp.clz% .tests {font-size: var(--property-title-font-size);margin-bottom: 8px;color: #444; }
 
         .%$cmp.clz% .riskFactors ul,
         .%$cmp.clz% .treatments ul,
-        .%$cmp.clz% .tests ul {list-style-type: disc;padding-left: 20px;margin: 0;}
+        .%$cmp.clz% .tests ul {list-style-type: disc;padding-left: 20px;margin: 0; font-size: var(--normal-text-font-size);}
 
         .%$cmp.clz% .riskFactors ul li,
         .%$cmp.clz% .treatments ul li,

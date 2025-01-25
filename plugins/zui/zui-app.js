@@ -27,13 +27,26 @@ component('app', {
       }
     }),
     frontEnd.init((ctx,{cmp, uiTest, widget}) => {
+        cmp.taskDuration = index => { // used in html
+          const task = ctx.vars.widget.appData.runningTasks[index]
+          if (!task) return ''
+          return Math.floor((new Date().getTime() - task.startTime) /1000)
+        }
+        cmp.taskDurationWithEstimated = index => { // used in html
+          const task = ctx.vars.widget.appData.runningTasks[index]
+          if (!task) return ''
+          const duration = Math.floor((new Date().getTime() - task.startTime) /1000)
+          return `${duration}/${task.estimatedDuration} sec`
+        }
+
         const ctxToUse = ctx.setVars({userData: widget.userData, appData: widget.appData})
         const rootElements = [cmp.base.querySelector('.top-panel'), cmp.base.querySelector('.left-panel')]
         cmp.dataBinder = !uiTest && new jb.zui.DataBinder(ctxToUse,rootElements)
         if (jb.frame.document)
           document.body.appendChild(cmp.base)
     }),
-    frontEnd.method('render', (ctx,{cmp}) => cmp.dataBinder.populateHtml())
+    frontEnd.method('render', (ctx,{cmp}) => cmp.dataBinder.populateHtml()),
+    frontEnd.flow(source.animationFrame(), sink.action('%$cmp.render()%'))
   )
 })
 
@@ -88,7 +101,7 @@ component('topPanel', {
 </div>`,
     css: `.top-panel { display: flex; flex-direction: row; gap: 10px; padding: 15px; background: #f5f5f5; border-bottom: 1px solid #ddd; }
     .top-panel .logo img { height: 50px; width: auto; }
-    .top-panel .search-box { flex: 1; display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #ccc; border-radius: 20px; 
+    .top-panel .search-box { flex: 4; display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #ccc; border-radius: 20px; 
         padding: 5px 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     .top-panel .search-box input { flex: 1; border: none; font-size: 16px; }
     .top-panel .search-box button { border: none; background: #007bff; color: #fff; border-radius: 50%; width: 35px; height: 35px; 
@@ -116,11 +129,12 @@ component('leftPanel', {
   impl: section({
     id: 'leftPanel',
     html: () => `<div class="left-panel">
+    <div bind="%$userData.exposureTop%"></div>
     <div class="controls">
         <label for="preferedLlmModel">LLM Model:</label>
         <select twoWayBind="%$userData.preferedLlmModel%" id="preferedLlmModel" class="llm-select">
           ${jb.exec({$: 'zui.decoratedllmModels'}).map(({id,name,cost,speed,qualitySymbol,speedSymbol}) => `<option value="${id}">
-          ${qualitySymbol} ${speedSymbol} ${name} ${speed} (${cost})</option>`).join('')}
+          ${qualitySymbol} ${speedSymbol} ${name} (${cost})</option>`).join('')}
         </select>
     </div>
     <div class="section pan-zoom-state">
@@ -138,35 +152,18 @@ component('leftPanel', {
       </div>
     </div>
     <div class="section tasks">
-      <h3>Tasks</h3>${[0,1,2,3,4].map(i => `
+      <h3>Running Tasks</h3>${[0,1,2,3,4].map(i => `
         <div class="task" bind_display="%$appData/runningTasks/${i}%">
-          <p bind_text="%$appData/runningTasks/${i}/title%"></p>
-          <progress bind_value="%$appData/runningTasks/${i}/duration()%" bind_max="%$appData/runningTasks/${i}/estimatedDuration%"></progress>
-          <small bind_text="%$appData/runningTasks/${i}/duration()%/%$appData/runningTasks/${i}/estimatedDuration% sec"></small>
+          <small bind_text="%$appData/runningTasks/${i}/title%"></small>
+          <progress bind_value="cmp.taskDuration(${i})" bind_max="%$appData/runningTasks/${i}/estimatedDuration%"></progress>
+          <small bind_text="cmp.taskDurationWithEstimated(${i})"></small>
         </div>`).join('')}
-      <div class="expandable">
-        <h4>Done Tasks</h4>
-        <ul>${[0,1,2,3,4].map(i => `
-          <li bind="%$appData/doneTasks/${i}/title%">Query 1: 
-            <span>5 sec</span>, <span>$0.08</span>, <span>500 tokens</span>
-          </li>`).join('')}
-        </ul>
-      </div>
+      <h3>Done Tasks</h3>
+      <ul>${[0,1,2,3,4].map(i => `<li bind="%$appData/doneTasks/${i}/title%"></li>`).join('')}</ul>
     </div>
-    <div class="section content-quality">
-      <h3>Content Quality</h3>
-      <button>Improve Content</button>
-      <p>Fast LLM Items: <span>20</span></p>
-      <p>Old Context Items: <span>5</span></p>
-    </div>
-    <div class="section budget">
-      <h3>Budget</h3>
-      <progress value="4" max="10"></progress>
-      <p>
-        <span style="color: green;">$2: GPT-3.5</span>,
-        <span style="color: red;">$2: GPT-4</span>
-      </p>
-      <button>Add $2</button>
+    <div class="api-key-section">
+      <label for="apiKey">chatgpt API Key:</label>
+      <input type="text" id="apiKey" twoWayBind="%$userData.apiKey%" placeholder="Enter your API Key" />
     </div>
   </div>`,
     css: `.left-panel { display: flex; flex-direction: column; width: 300px; background: #f4f4f5; padding: 20px; 
@@ -187,15 +184,21 @@ component('leftPanel', {
     .left-panel .pan-zoom-state #speed-value { font-size: 14px; color: #444; min-width: 30px; text-align: center; }
     .left-panel .section { margin-bottom: 20px; }
     .left-panel .section h3 { font-size: 16px; margin-bottom: 10px; color: #444; }
-    .left-panel .section .task { padding: 10px; background: #fff; border-radius: 10px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); margin-bottom: 10px; }
-    .left-panel .section .expandable h4 { cursor: pointer; color: #007bff; text-decoration: underline; margin-bottom: 5px; }
-    .left-panel .section .expandable ul { list-style: none; padding: 0; margin: 0; }
-    .left-panel .section .expandable ul li { padding: 5px 0; font-size: 14px; }
+    .left-panel .task { padding: 10px; background: #fff; border-radius: 10px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
+        margin-bottom: 10px; }
+    .left-panel .section ul { list-style: none; padding: 0; margin: 0; }
+    .left-panel .section ul li { padding: 5px 0; font-size: 14px; }
     .left-panel .section button { background: #007bff; color: #fff; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; }
     .left-panel .section button:hover { background: #0056b3; }
     .left-panel .section progress { width: 100%; height: 10px; border-radius: 5px; margin: 10px 0; overflow: hidden; }
     .left-panel .section progress::-webkit-progress-bar { background-color: #e0e0e0; border-radius: 5px; }
-    .left-panel .section progress::-webkit-progress-value { background-color: #007bff; border-radius: 5px; }`
+    .left-panel .section progress::-webkit-progress-value { background-color: #007bff; border-radius: 5px; }
+
+    .left-panel .api-key-section { margin-top: auto; padding-top: 10px; border-top: 1px solid #ddd; }
+    .left-panel .api-key-section label { display: block; margin-bottom: 5px; font-size: 14px; color: #333; }
+    .left-panel .api-key-section input { width: calc(100% - 20px); padding: 10px; font-size: 14px; border: 1px solid #ccc; 
+        border-radius: 5px; margin-bottom: 10px; box-sizing: border-box; }
+    `
   })
 })
 
@@ -209,7 +212,9 @@ component('zui.decoratedllmModels', {
         const items = profileIds.map(k=>({...ctx.run({$$: k}), id: k.split('>').pop()}))
         const ctxWithItems = ctx.setVars({items})
         const [qualitySymbol,speedSymbol] = [qualitySymbolF(ctxWithItems), speedSymbolF(ctxWithItems)]
-        return items.sort((x,y) => y.quality-x.quality).map(item=>({...item, 
+        const sorted = [...items].sort((x,y) => y.quality-x.quality)
+        return sorted.map(item=>({
+            ...item,
             qualitySymbol: qualitySymbol(ctx.setData(item)),
             speedSymbol: speedSymbol(ctx.setData(item)),
             cost: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(item.cost) + ' / 1M tokens',

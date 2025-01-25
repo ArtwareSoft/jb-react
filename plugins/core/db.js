@@ -57,6 +57,10 @@ extension('db', {
           const arr = jb.asArray(jb.val(ref))
           jb.toarray(toAdd).forEach(item => arr.push(item))
         },
+        splice(ref,args) {
+          const arr = jb.asArray(jb.val(ref))
+          arr.splice(...args)
+        },
         asRef(value) {
           return value
         },

@@ -250,9 +250,10 @@ component('addToArray', {
   category: 'mutable:80',
   params: [
     {id: 'array', as: 'ref', mandatory: true},
-    {id: 'toAdd', as: 'array', defaultValue: '%%'}
+    {id: 'toAdd', as: 'array', defaultValue: '%%'},
+    {id: 'clone', as: 'boolean', type: 'boolean<>'}
   ],
-  impl: (ctx,array,toAdd) => jb.db.push(array, JSON.parse(JSON.stringify(toAdd)),ctx)
+  impl: (ctx,array,toAdd,clone) => jb.db.push(array, clone ? JSON.parse(JSON.stringify(toAdd)) : toAdd,ctx)
 })
 
 component('move', {

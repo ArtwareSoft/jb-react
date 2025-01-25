@@ -107,7 +107,8 @@ component('source.llmCompletions', {
                 'Authorization': `Bearer ${apiKey}`
               },
               body: JSON.stringify({
-                model: model.name, max_tokens, top_p: 1, frequency_penalty: 0, presence_penalty: 0, stream: true,
+                ...(model.reasoning ? {max_completion_tokens: max_tokens} : {max_tokens : Math.min(max_tokens, model.maxContextLength)}),
+                model: model.name, top_p: 1, frequency_penalty: 0, presence_penalty: 0, stream: true,
                 messages: chat
               })
             }

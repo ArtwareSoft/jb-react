@@ -7,6 +7,7 @@ component('userData', {
     {id: 'contextChips', type: 'data[]', as: 'array', defaultValue: []},
     {id: 'preferedLlmModel', as: 'string'},
     {id: 'detailsLevel', as: 'number', defaultValue: 1},
+    {id: 'apiKey', as: 'string', defaultValue: ''}
   ]
 })
 
@@ -27,13 +28,14 @@ component('domain', {
   params: [
     {id: 'title', as: 'string'},
     {id: 'itemsPrompt', as: 'string', dynamic: true, byName: true, newLinesInCode: true},
+    {id: 'newItemsLine', as: 'string', dynamic: true, byName: true, newLinesInCode: true},
+    {id: 'updateItemsLine', as: 'string', dynamic: true, byName: true, newLinesInCode: true},
     {id: 'iconPromptProps', type: 'prompt_props', byName: true},
     {id: 'cardPromptProps', type: 'prompt_props'},
     {id: 'contextHintsPrompt', as: 'string', dynamic: true, byName: true, newLinesInCode: true},
     {id: 'itemsLayout', type: 'items_layout', dynamic: true},
     {id: 'iconBox', type: 'iconBox-style', dynamic: true},
     {id: 'card', type: 'card-style', dynamic: true},
-    {id: 'cardWithIconData', type: 'card-style', dynamic: true},
     {id: 'minGridSize', as: 'array', type: 'data<>[]', defaultValue: [6,6]},
     {id: 'sample', type: 'domain_sample'}
   ]
@@ -64,7 +66,7 @@ component('domain.itemsPromptForTask', {
     {id: 'task', type: 'task'}
   ],
   impl: (ctx, domain, task) => {
-    const {sample, iconPromptProps,cardPromptProps,itemsPrompt, contextHintsPrompt} = domain
+    const {sample, iconPromptProps,cardPromptProps,itemsPrompt, contextHintsPrompt, newItemsLine, updateItemsLine} = domain
     const {userData, appData} = ctx.vars
     const ctxToUse = ctx.vars.testID ? ctx.setVars({task, userData: userData || sample, appData: appData || sample}) : ctx.setVars({task})
     if (task.details == 'contextHints')
@@ -72,8 +74,9 @@ component('domain.itemsPromptForTask', {
 
     const [propsInDescription, propsInSample] = 
       task.details == 'card' ? [`${iconPromptProps.description}\n${cardPromptProps.description}`, `${iconPromptProps.sample},\n${cardPromptProps.sample}`] 
-      : task.details == 'icon' ? [iconPromptProps.description, iconPromptProps.sample] : ['','']; 
-    return itemsPrompt(ctxToUse.setVars({propsInDescription, propsInSample}))
+      : task.details == 'icon' ? [iconPromptProps.description, iconPromptProps.sample] : ['','']
+    const newOrUpdateLine = task.op == 'update' ? updateItemsLine(ctxToUse) : newItemsLine(ctxToUse)
+    return itemsPrompt(ctxToUse.setVars({propsInDescription, propsInSample,newOrUpdateLine}))
   }
 })
 
@@ -104,12 +107,8 @@ component('iconBox', {
 component('iconBoxFeatures', {
   type: 'feature',
   impl: features(
-    frontEnd.var('fontSizeMap', () => ({
-      16: { title: 8, description: 8 },
-      32: { title: 10, description: 8 },
-      64: { title: 10, description: 10 },
-      128: { title: 12, description: 10 },
-    })),
+    frontEnd.var('baseFontSizes', () => ({ title: 10, description: 9 })),
+    frontEnd.var('fontScaleFactor', () => ({ 16: 0.6, 32: 0.8, 64: 1, 128: 1.25 })),
     zoomingGridElem(1)
   )
 })
@@ -126,24 +125,7 @@ component('cardFeatures', {
   type: 'feature',
   impl: features(
     zoomingGridElem(2),
-    frontEnd.var('fontSizeMap', () => ({
-      64: { title: 12, description: 10 },
-      128: { title: 12, description: 10 },
-      256: { title: 12, description: 12 },
-      320: { title: 14, description: 12 },
-    }))
-  )
-})
-
-component('cardWithIconDataFeatures', {
-  type: 'feature',
-  impl: features(
-    zoomingGridElem(1.5),
-    frontEnd.var('fontSizeMap', () => ({
-      64: { title: 12, description: 10 },
-      128: { title: 12, description: 10 },
-      256: { title: 12, description: 12 },
-      320: { title: 14, description: 12 },
-    }))
+    frontEnd.var('baseFontSizes', () => ({ 'main-title': 16, heading: 15, 'property-title': 14, 'normal-text': 12, description: 10 })),
+    frontEnd.var('fontScaleFactor', () => ({ 64: 0.6, 128: 0.75, 256: 1, 320: 1.25 }))
   )
 })

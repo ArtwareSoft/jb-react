@@ -14,6 +14,7 @@ component('zui.canvasZoom', {
       rx.log('zui pointerdown'),
       rx.var('pid', '%pointerId%'),
       rx.do(({},{cmp,pid}) => cmp.addPointer(pid)),
+      rx.do(({},{sourceEvent}) => console.log(sourceEvent.clientX, sourceEvent.clientY)),
       rx.flatMap(source.mergeConcat(
         rx.pipe(
           source.merge(source.event('pointermove'), source.frontEndEvent('pointerup')),
@@ -102,10 +103,13 @@ extension('zui','zoom', {
           if (dp)
             tCenter = [tCenter[0] - dp[0]/w*tZoomF, tCenter[1] - dp[1]/h*tZoomF]
   
-          const maxDim = Math.max(gridSize[0],gridSize[1])
-          ;[0,1].forEach(axis=>tCenter[axis] = Math.min(gridSize[axis],Math.max(0,tCenter[axis])))
+          const maxDim = Math.max(...gridSize)
+          const halfZoom = 1/tZoom
+          ;[0,1].forEach(axis=>tCenter[axis] = Math.min(gridSize[axis] + halfZoom,Math.max(-1*halfZoom,tCenter[axis])))
   
           tZoom = Math.min(tZoom, maxDim)
+          tZoom = Math.max(1,tZoom)
+
           state.tZoom = tZoom
           state.tCenter = tCenter
   
@@ -113,6 +117,10 @@ extension('zui','zoom', {
         },      
         animationStep() {
           let { tZoom, tCenter, zoom, center, speed } = state
+          ;[0,1].forEach(axis=> {
+            center[axis] = Math.round(center[axis] * 100) / 100
+            tCenter[axis] = Math.round(tCenter[axis] * 100) / 100
+          })
           if ( zoom == tZoom && center[0] == tCenter[0] && center[1] == tCenter[1] && !widget.renderRequest) 
             return [] // no rendering
           // used at initialiation
@@ -127,7 +135,6 @@ extension('zui','zoom', {
             center[axis] = center[axis] + (tCenter[axis] - center[axis]) / speed
             if (!tCenter[axis] || Math.abs((center[axis]-tCenter[axis])/tCenter[axis]) < 0.01) 
               center[axis] = tCenter[axis]
-            center[axis] = Math.round(center[axis] * 100) / 100
           })
           
           state.zoom = zoom
@@ -140,7 +147,7 @@ extension('zui','zoom', {
           const now = new Date().getTime()
           this.pointers = this.pointers.filter(pointer => now - pointer.time < 2000)
         },
-        addPointer(pid) { 
+        addPointer(pid) {
           if (this.findPointer(pid))
             return jb.logError('zui pointer already exists', {pid})
           if (this.pointers.length > 1)
