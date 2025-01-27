@@ -251,9 +251,15 @@ component('addToArray', {
   params: [
     {id: 'array', as: 'ref', mandatory: true},
     {id: 'toAdd', as: 'array', defaultValue: '%%'},
-    {id: 'clone', as: 'boolean', type: 'boolean<>'}
+    {id: 'clone', as: 'boolean', type: 'boolean<>'},
+    {id: 'addAtTop', as: 'boolean', type: 'boolean<>'}
   ],
-  impl: (ctx,array,toAdd,clone) => jb.db.push(array, clone ? JSON.parse(JSON.stringify(toAdd)) : toAdd,ctx)
+  impl: (ctx,array,toAdd,clone,addAtTop) => {
+    const items = clone ? JSON.parse(JSON.stringify(toAdd)) : toAdd;
+    const index = addAtTop ? 0 : jb.val(array).length;
+    jb.db.splice(array, [index, 0, ...jb.asArray(items)],ctx);
+  }
+  //jb.db.push(array, clone ? JSON.parse(JSON.stringify(toAdd)) : toAdd,ctx)
 })
 
 component('move', {

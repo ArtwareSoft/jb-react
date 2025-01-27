@@ -27,18 +27,7 @@ component('app', {
       }
     }),
     frontEnd.init((ctx,{cmp, uiTest, widget}) => {
-        cmp.taskDuration = index => { // used in html
-          const task = ctx.vars.widget.appData.runningTasks[index]
-          if (!task) return ''
-          return Math.floor((new Date().getTime() - task.startTime) /1000)
-        }
-        cmp.taskDurationWithEstimated = index => { // used in html
-          const task = ctx.vars.widget.appData.runningTasks[index]
-          if (!task) return ''
-          const duration = Math.floor((new Date().getTime() - task.startTime) /1000)
-          return `${duration}/${task.estimatedDuration} sec`
-        }
-
+        cmp.taskProgress = new jb.zui.taskProgress(ctx)
         const ctxToUse = ctx.setVars({userData: widget.userData, appData: widget.appData})
         const rootElements = [cmp.base.querySelector('.top-panel'), cmp.base.querySelector('.left-panel')]
         cmp.dataBinder = !uiTest && new jb.zui.DataBinder(ctxToUse,rootElements)
@@ -60,8 +49,7 @@ component('mainApp', {
         </div>`,
     css: `body { font-family: Arial, sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
     .fade { transition: opacity 0.5s ease; opacity: 1; }
-    .hidden { opacity: 0; }
-    
+    .hidden { opacity: 0; }    
   .app-layout { display: grid; grid-template-rows: auto 1fr; grid-template-columns: auto 1fr auto; height: 100%; 
     grid-template-areas: "top top top" "left body body";
   }
@@ -129,45 +117,50 @@ component('leftPanel', {
   impl: section({
     id: 'leftPanel',
     html: () => `<div class="left-panel">
-    <div bind="%$userData.exposureTop%"></div>
-    <div class="controls">
-        <label for="preferedLlmModel">LLM Model:</label>
-        <select twoWayBind="%$userData.preferedLlmModel%" id="preferedLlmModel" class="llm-select">
-          ${jb.exec({$: 'zui.decoratedllmModels'}).map(({id,name,cost,speed,qualitySymbol,speedSymbol}) => `<option value="${id}">
-          ${qualitySymbol} ${speedSymbol} ${name} (${cost})</option>`).join('')}
-        </select>
-    </div>
-    <div class="section pan-zoom-state">
-      <h3>Pan/Zoom State</h3>
       <div class="controls">
-        <label for="zoom">Zoom:</label>
-        <input bind_value="%$widget.state.zoom%" type="number" id="zoom" value="1.5" readonly />
-        <label for="center">Center:</label>
-        <input type="text" bind_value="%$widget.state.center%" id="center" value="[0, 0]" readonly />
+          <label for="preferedLlmModel">LLM Model:</label>
+          <select twoWayBind="%$userData.preferedLlmModel%" id="preferedLlmModel" class="llm-select">
+            ${jb.exec({$: 'zui.decoratedllmModels'}).map(({id,name,priceStr,speed,qualitySymbol,speedSymbol}) => `<option value="${id}">
+            ${qualitySymbol} ${name} (${priceStr})</option>`).join('')}
+          </select>
       </div>
-      <div class="controls">
-        <label for="speed">Speed:</label>
-        <input type="range" twoWayBind="%$widget.state.speed%" id="speed" min="1" max="5" step="0.1" value="2.5" />
-        <span id="speed-value" bind_text="%$widget.state.speed%">2.5</span>
+      <div class="section pan-zoom-state">
+        <h3>Pan/Zoom State</h3>
+        <div class="controls">
+          <label for="zoom">Zoom:</label>
+          <input bind_value="%$widget.state.zoom%" type="number" id="zoom" value="1.5" readonly />
+          <label for="center">Center:</label>
+          <input type="text" bind_value="%$widget.state.center%" id="center" value="[0, 0]" readonly />
+        </div>
+        <div class="controls">
+          <label for="speed">Speed:</label>
+          <input type="range" twoWayBind="%$widget.state.speed%" id="speed" min="1" max="5" step="0.1" value="2.5" />
+          <span id="speed-value" bind_text="%$widget.state.speed%">2.5</span>
+        </div>
       </div>
-    </div>
-    <div class="section tasks">
-      <h3>Running Tasks</h3>${[0,1,2,3,4].map(i => `
-        <div class="task" bind_display="%$appData/runningTasks/${i}%">
-          <small bind_text="%$appData/runningTasks/${i}/title%"></small>
-          <progress bind_value="cmp.taskDuration(${i})" bind_max="%$appData/runningTasks/${i}/estimatedDuration%"></progress>
-          <small bind_text="cmp.taskDurationWithEstimated(${i})"></small>
-        </div>`).join('')}
-      <h3>Done Tasks</h3>
-      <ul>${[0,1,2,3,4].map(i => `<li bind="%$appData/doneTasks/${i}/title%"></li>`).join('')}</ul>
-    </div>
-    <div class="api-key-section">
-      <label for="apiKey">chatgpt API Key:</label>
-      <input type="text" id="apiKey" twoWayBind="%$userData.apiKey%" placeholder="Enter your API Key" />
-    </div>
-  </div>`,
+      <div class="section tasks">
+        <h3>Running Tasks</h3>${[0,1,2,3,4].map(i => `
+          <div class="task" bind_display="%$appData/runningTasks/${i}%" bind_style="background-color:cmp.taskProgress.color(${i})">
+            <small bind_text="%$appData/runningTasks/${i}/title%"></small>
+            <progress bind_value="cmp.taskProgress.progress(${i})" bind_max="cmp.taskProgress.max(${i})"></progress>
+            <small bind_text="cmp.taskProgress.progressText(${i})"></small>
+          </div>`).join('')}
+        <h3>Done Tasks</h3>
+        <ul>${[0,1,2,3,4,5,6].map(i => `<li bind="%$appData/doneTasks/${i}/shortSummary%" bind_title="%$appData/doneTasks/${i}/propertySheet%"></li>`).join('')}</ul>
+      </div>
+      <div class="api-key-section">
+        <div class="api-key-row">
+          <a href="https://platform.openai.com/settings/organization/api-keys" target="_blank">Get API Key</a>
+          <span id="llmCost" bind_text="%$appData.totalCost%">$0.0046105</span>
+        </div>
+        <input type="text" id="apiKey" twoWayBind="%$userData.apiKey%" placeholder="Enter your API Key" />
+        </div>
+    </div>`,
     css: `.left-panel { display: flex; flex-direction: column; width: 300px; background: #f4f4f5; padding: 20px; 
-        border-right: 1px solid #ddd; overflow-y: auto; }
+        border-right: 1px solid #ddd; overflow-y: auto; 
+        --warmup-color: #FFB300; /* Amber/Orange */
+        --emitting-color: #66BB6A; /* Green */    
+    }
     .left-panel .controls { margin-bottom: 20px; }
     .left-panel .controls label { font-size: 14px; color: #333; margin-right: 10px; }
     .left-panel .controls .llm-select { width: 100%; padding: 10px; font-size: 14px; color: #333; border: 1px solid #ccc; 
@@ -194,30 +187,36 @@ component('leftPanel', {
     .left-panel .section progress::-webkit-progress-bar { background-color: #e0e0e0; border-radius: 5px; }
     .left-panel .section progress::-webkit-progress-value { background-color: #007bff; border-radius: 5px; }
 
+    .left-panel .llm-cost { margin-bottom: 20px; }
+    .left-panel .llm-cost h3 { font-size: 16px; margin-bottom: 10px; color: #444; }
+    .left-panel .llm-cost .controls { display: flex; align-items: center; gap: 10px; }
+    .left-panel .llm-cost span { font-size: 14px; font-weight: bold; color: #007bff; }
     .left-panel .api-key-section { margin-top: auto; padding-top: 10px; border-top: 1px solid #ddd; }
-    .left-panel .api-key-section label { display: block; margin-bottom: 5px; font-size: 14px; color: #333; }
-    .left-panel .api-key-section input { width: calc(100% - 20px); padding: 10px; font-size: 14px; border: 1px solid #ccc; 
-        border-radius: 5px; margin-bottom: 10px; box-sizing: border-box; }
-    `
+    .left-panel .api-key-row { display: flex; flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+    .left-panel .api-key-row a { color: #007bff; font-size: 14px; font-weight: bold; text-decoration: none; }
+    .left-panel .api-key-row a:hover { text-decoration: underline; color: #0056b3; }
+    .left-panel .api-key-row span { font-size: 14px; font-weight: bold; color: #007bff; }
+    .left-panel .api-key-section input { width: 100%; padding: 10px; font-size: 14px; border: 1px solid #ccc; 
+    border-radius: 5px; box-sizing: border-box; margin-top: 5px; }`
   })
 })
 
 component('zui.decoratedllmModels', {
   params: [
-    {id: 'qualitySymbol', dynamic: true, type: 'item_symbol', defaultValue: symbol(unitScale('quality', { items: '%$items%' }), iqScale())},
-    {id: 'speedSymbol', dynamic: true, type: 'item_symbol', defaultValue: symbol(unitScale('_speed', { items: '%$items%' }), speedScale10())}
+    {id: 'qualitySymbol', dynamic: true, type: 'item_symbol', defaultValue: symbol(unitScale('_price', { items: '%$items%', byOrder: true }), iqScale())},
+    {id: 'speedSymbol', dynamic: true, type: 'item_symbol', defaultValue: symbol(unitScale('_speed', { items: '%$items%', byOrder: true }), speedScale10())}
   ],
   impl: (ctx,qualitySymbolF,speedSymbolF) => {
         const profileIds = Object.keys(jb.comps).filter(k=>k.indexOf('model<llm>') == 0 && !k.match(/model$|byId$/))
         const items = profileIds.map(k=>({...ctx.run({$$: k}), id: k.split('>').pop()}))
         const ctxWithItems = ctx.setVars({items})
         const [qualitySymbol,speedSymbol] = [qualitySymbolF(ctxWithItems), speedSymbolF(ctxWithItems)]
-        const sorted = [...items].sort((x,y) => y.quality-x.quality)
+        const sorted = [...items].sort((x,y) => y._price-x._price)
         return sorted.map(item=>({
             ...item,
             qualitySymbol: qualitySymbol(ctx.setData(item)),
             speedSymbol: speedSymbol(ctx.setData(item)),
-            cost: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(item.cost) + ' / 1M tokens',
+            priceStr: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(item._price) + ' / 1M tokens',
         }))
     }
 })

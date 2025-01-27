@@ -121,24 +121,8 @@ component('zoomingGridStyle', {
     flow(
       'userDataListener',
       source.subject('%$cmp.props.userDataSubj%'),
-      rx.flatMap(source.data(zui.taskToRun())),
-      rx.log('zui task to run'),
-      rx.var('task'),
-      rx.do(writeValue('%$task/startTime%', now())),
-      rx.flatMap(domain.itemsSource('%$domain%', '%$task%'), {
-        onInputBegin: runActions(zui.sendIncomingItems('%$task%'), addToArray('%$appData/runningTasks%')),
-        onInputEnd: runActions(
-          removeFromArray('%$appData/runningTasks%', '%$task%'),
-          writeValue('%actualDuration%', minus(now(), '%$task/startTime%')),
-          addToArray('%$appData/doneTasks%')
-        )
-      }),
-      rx.map(extendWithObj(obj(
-        prop('_detailsLevel', '%$task/detailsLevel%'),
-        prop('_ctxVer', '%$task/ctxVer%'),
-        prop('_modelId', '%$task/model/id%')
-      ))),
-      rx.log('zui new item from llm'),
+      rx.log('zui userDataListener'),
+      zui.itemsFromLlm(),
       sink.action(addToArray('%$cmp.itemsFromLlm%'))
     ),
     dataSource('updateFrontEnd', source.interval(1000), rx.map(zui.buildTaskPayload()), rx.filter('%%'), rx.log('zui new payload')),
@@ -218,59 +202,6 @@ component('sink.updateUserData', {
         return jb.logError(`updateUserData can not find cmp ${cmpId}`, {ctx})
     cmp.props.userDataSubj.trigger.next(cmp.ctx.dataObj({state, userData}))
   })
-})
-
-component('zui.sendIncomingItems', {
-  type: 'action<>',
-  params: [
-    {id: 'task'}
-  ],
-  impl: (ctx,task) => {}
-})
-
-component('zui.buildTaskPayload', {
-  impl: ctx => {
-    const { $model, cmp, appData } = ctx.vars
-    const { itemsFromLlm } = cmp
-    if (itemsFromLlm.length) {
-      const itemsMap = jb.objFromEntries(cmp.items.map(item=>[item.title,item]))
-      const newItemsFromLlm = itemsFromLlm.filter(({title})=>! itemsMap[title])
-      const itemsToUpdateFromLlm = itemsFromLlm.filter(({title})=>itemsMap[title])
-      itemsToUpdateFromLlm.forEach(itemToUpdate=>Object.assign(itemsMap[itemToUpdate.title], itemToUpdate))
-      cmp.items = [...cmp.items, ...newItemsFromLlm]
-      if (newItemsFromLlm.length)
-        cmp.itemsLayout = $model.itemsLayout(ctx.setVars({items: cmp.items}))
-      const elemCmp = cmp.children.find(c=>c.props.detailsLevel == detailsLevel)
-      ;[...cmp.items].forEach(item => elemCmp.doExtendItem(item)) // doExtendItem may resort the items
-
-      const updatedItemsMap = jb.objFromEntries(cmp.items.map(item=>[item.title,item]))
-      const newItems = newItemsFromLlm.map(({title})=>updatedItemsMap[title])
-      const itemsToUpdate = itemsToUpdateFromLlm.map(({title})=>updatedItemsMap[title])
-      cmp.itemsFromLlm.length = 0
-      return {appData, [cmp.id] : { gridSize: cmp.itemsLayout.gridSize, newItems, itemsToUpdate} }
-    }
-  }
-})
-
-component('zui.hanleTaskPayload', {
-  impl: ctx => {
-    const { cmp, widget, be_data } = ctx.vars
-    const { gridSize, newItems, itemsToUpdate} = be_data
-    if (newItems && newItems.length) {
-      cmp.items = [...cmp.items, ...newItems]
-      if (widget.state.gridSize != gridSize) {
-          widget.state.gridSize = gridSize
-          const zoom = Math.max(...gridSize,1)
-          const center = [0,1].map(axis => Math.floor(gridSize[axis] / 2))
-          widget.state.zoom = widget.state.tZoom = zoom
-          widget.state.center = widget.state.tCenter = center
-      }
-    }
-    if (itemsToUpdate && itemsToUpdate.length) {
-      const itemsMap = jb.objFromEntries(cmp.items.map(item=>[item.title,item]))
-      itemsToUpdate.forEach(itemToUpdate=>Object.assign(itemsMap[itemToUpdate.title], itemToUpdate))
-    }
-  }
 })
 
 component('spiral', {

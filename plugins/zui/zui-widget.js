@@ -16,8 +16,10 @@ component('widget', {
         const ctxToUse = ctx.setVars({userData, appData, domain})
         userData.query = jb.path(domain.sample,'query') || ''
         userData.contextChips = jb.path(domain.sample,'contextChips') || []
+        userData.preferedLlmModel = jb.path(domain.sample,'preferedLlmModel') || ''
         appData.suggestedContextChips = jb.path(domain.sample,'suggestedContextChips') || []
-
+        appData.totalCost = '$0.00'
+        
         frontEnd.initFE(screenSizeForTest,{userData,appData})
         
         const widget = {

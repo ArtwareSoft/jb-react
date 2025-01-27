@@ -68,9 +68,11 @@ component('source.llmCompletions', {
     {id: 'llmModel', type: 'model', defaultValue: gpt_35_turbo_0125()},
     {id: 'maxTokens', defaultValue: 3500},
     {id: 'includeSystemMessages', as: 'boolean', type: 'boolean<>'},
-    {id: 'useRedisCache', as: 'boolean', type: 'boolean<>'}
+    {id: 'useRedisCache', as: 'boolean', type: 'boolean<>'},
+    {id: 'apiKey', as: 'string'},
+    {id: 'notifyUsage', type: 'action<>', dynamic: true}
   ],
-  impl: (ctx,chatF,model,max_tokens,includeSystemMessages,useRedisCache) => (start,sink) => {
+  impl: (ctx,chatF,model,max_tokens,includeSystemMessages,useRedisCache, _apiKey,notifyUsage) => (start,sink) => {
       if (start !== 0) return
       let controller = null, connection, connectionAborted, DONE, fullContent = ''
       sink(0, (t,d) => {
@@ -96,7 +98,7 @@ component('source.llmCompletions', {
         const start_time = new Date().getTime()
 
         const settings = !jbHost.isNode && await fetch(`/?op=settings`).then(res=>res.json())
-        const apiKey = jbHost.isNode ? process.env.OPENAI_API_KEY: settings.OPENAI_API_KEY
+        const apiKey = _apiKey || (jbHost.isNode ? process.env.OPENAI_API_KEY: settings.OPENAI_API_KEY)
         controller = new AbortController()
         connection = await fetch('https://api.openai.com/v1/chat/completions', {
             signal: controller.signal,
@@ -108,6 +110,7 @@ component('source.llmCompletions', {
               },
               body: JSON.stringify({
                 ...(model.reasoning ? {max_completion_tokens: max_tokens} : {max_tokens : Math.min(max_tokens, model.maxContextLength)}),
+                stream_options: { include_usage: true},
                 model: model.name, top_p: 1, frequency_penalty: 0, presence_penalty: 0, stream: true,
                 messages: chat
               })
@@ -135,12 +138,10 @@ component('source.llmCompletions', {
           const fullStr = chunkLeft + String.fromCharCode(...value)
           chunkLeftForLog = chunkLeft
           chunkLeft = ''
-          fullStr.split('\n\n').forEach(_line => {
+          fullStr.split('\n').map(x=>x.trim()).filter(x=>x).forEach(line => {
             if (DONE) return
             try {
-              line = _line.trim()
-              if (!line) return
-              const val = line == 'data: [DONE]' ? 'done' : (line.startsWith('data: ') && line.endsWith('}]}') ? JSON.parse(line.slice(6)) : line)
+              const val = line == 'data: [DONE]' ? 'done' : (line.startsWith('data: ') && line.endsWith('}') ? JSON.parse(line.slice(6)) : line)
               jb.log('llm processing val', {val, ctx})
               if (val == 'done') {
                 jb.log('llm source done from content', {ctx})
@@ -155,6 +156,10 @@ component('source.llmCompletions', {
                 jb.log('llm chunkLeft', {chunkLeft, ctx})
               }
               if (typeof val == 'object') {
+                if (val.usage) {
+                  jb.llm.notifyApiUsage(val,ctx)
+                  notifyUsage(ctx.setData(val))
+                }
                 const content = jb.path(val,'choices.0.delta.content')
                 if (content == null) return
                 if (typeof content != 'string') jb.logError('source.llmCompletions non string content', {content, val, ctx})

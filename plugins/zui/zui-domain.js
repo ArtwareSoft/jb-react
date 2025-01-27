@@ -56,7 +56,7 @@ component('sample', {
     {id: 'query', as: 'string'},
     {id: 'contextChips', type: 'data[]', as: 'array', defaultValue: []},
     {id: 'suggestedContextChips', type: 'data[]', defaultValue: []},
-    {id: 'preferedLlmModel', as: 'string', options: 'gpt_35_turbo_0125,gpt_4o,o1_mini,o1_preview'}
+    {id: 'preferedLlmModel', as: 'string'}
   ]
 })
 
@@ -90,7 +90,9 @@ component('domain.itemsSource', {
   impl: rx.pipe(
     source.llmCompletions(user(domain.itemsPromptForTask('%$domain%', '%$task%')), {
       llmModel: '%$task/model%',
-      useRedisCache: true
+      useRedisCache: true,
+      apiKey: '%$userData/apiKey%',
+      notifyUsage: writeValue('%$task/llmUsage%', '%%')
     }),
     llm.textToJsonItems()
   )

@@ -153,11 +153,12 @@ component('speedScale10', {
 component('unitScale', {
   type: 'unit_scale',
   params: [
-    {id: 'att', as: 'string', defaultValue: 'index' },
+    {id: 'att', as: 'string', defaultValue: 'index'},
     {id: 'calc', as: 'number', dynamic: true, description: 'optional. When empty, item property with same name is used'},
     {id: 'items', dynamic: true, defaultValue: '%$zoomingGridCmp/items%'},
+    {id: 'byOrder', as: 'boolean', type: 'boolean<>'}
   ],
-  impl: (_ctx, _att, calc, itemsF) => {
+  impl: (_ctx, _att, calc, itemsF, byOrder) => {
     const att = `fixed_${_att}`
     let _items = null
     let range = null
@@ -178,6 +179,8 @@ component('unitScale', {
       items.sort((i1,i2) => i1[att] - i2[att])
       range = [items[0][att] || 0,items.slice(-1)[0][att] || 0]
       valid = range[0] != range[1]
+      if (valid && byOrder)
+        items.forEach((item,index) => item[att] = (index+1)* (range[1]-range[0])/items.length )
     }
   }
 })

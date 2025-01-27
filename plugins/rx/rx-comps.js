@@ -309,9 +309,10 @@ component('rx.flatMap', {
   params: [
     {id: 'source', type: 'rx', category: 'source', dynamic: true, mandatory: true, description: 'map each input to source callbag'},
     {id: 'onInputBegin', type: 'action', dynamic: true, byName: true},
-    {id: 'onInputEnd', type: 'action', dynamic: true}
+    {id: 'onInputEnd', type: 'action', dynamic: true},
+    {id: 'onItem', type: 'action', dynamic: true}
   ],
-  impl: (ctx,sourceGenerator,onInputBegin,onInputEnd) => source => (start, sink) => {
+  impl: (ctx,sourceGenerator,onInputBegin,onInputEnd,onItem) => source => (start, sink) => {
     if (start !== 0) return
     let sourceTalkback, innerSources = [], sourceEnded
 
@@ -340,7 +341,10 @@ component('rx.flatMap', {
       onInputBegin.profile && onInputBegin(ctxToUse)
       newSrc(0, function flatMap(t,d) {
         if (t == 0) newSrc.talkback = d
-        if (t == 1) sink(t,d)
+        if (t == 1) {
+          if (d && onItem.profile) onItem(ctxToUse.setData(d))
+          sink(t,d)
+        }
         if (t != 2 && newSrc.talkback) newSrc.talkback(1)
         if (t == 2) {
           onInputEnd.profile && onInputEnd(ctxToUse)
