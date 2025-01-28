@@ -91,6 +91,15 @@
             ],
         },
         {
+            "name": "companion Extension",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "--extensionDevelopmentPath=${workspaceRoot}/hosts/vscode/companion"
+            ],
+        },
+        {
             "name": "TGP Lang Extension",
             "type": "extensionHost",
             "request": "launch",

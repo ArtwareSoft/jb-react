@@ -1,5 +1,5 @@
 dsl('zui')
-using('llm-api','net')
+using('llm-api')
 
 component('zui.parseLlmItems', {
   params: [

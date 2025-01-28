@@ -1,4 +1,4 @@
-dsl('zui')
+dsl('html')
 
 component('section', {
     type: 'section',
@@ -23,7 +23,7 @@ component('group', {
     }
 })
 
-extension('zui','DataBinder', {
+extension('html','DataBinder', {
     populateHtml(rootElement,ctx) {
         rootElement.querySelectorAll('[bind], [bind_max], [bind_title], [bind_value], [bind_text], [bind_display], [bind_style]').forEach( el => {
             for (const attr of el.attributes) {
@@ -43,12 +43,47 @@ extension('zui','DataBinder', {
                       if (attr.name === 'bind_max' && el.value != val) el.max = val
                       if (attr.name === 'bind_title' && el.getAttribute('title') != val) el.setAttribute('title',val)
                       if ((attr.name === 'bind_text' || attr.name == 'bind') && el.textContent != val) el.textContent = val
-                      el.style.display = ''
+                      el.style.display = 'block'
                   }
                 }
               }
             }
         })
+    },
+    registerHtmlEvents(top,ctx,boundElements) {
+      boundElements = boundElements || []
+      top.querySelectorAll('[twoWayBind]').forEach(el => {
+        const ref = ctx.run(el.getAttribute('twoWayBind'), {as: 'ref'})
+        const handler = e => { 
+            jb.db.writeValue(ref, e.target.value, ctx)
+            ctx.vars.widget.renderRequest = true 
+        }
+        el.addEventListener('input', handler)
+        el.value = jb.val(ref)
+        boundElements.push({ el, event: 'input', handler })
+      })
+
+      top.querySelectorAll('[onClick]').forEach(el => {
+        const action = el.getAttribute('onClick')
+        el.removeAttribute('onClick')
+        const handler = e => {
+            const ret = action.match(/^cmp./) ? eval(`ctx.vars.${action}`) : ctx.run(action, 'action<>')
+            ctx.vars.widget.renderRequest = true 
+        }
+        el.addEventListener('click', handler)      
+        boundElements.push({ el, event: 'click', handler })
+      })
+
+      top.querySelectorAll('[onEnter]').forEach(el => {
+        const action = el.getAttribute('onEnter')
+        const handler = e => {
+            if (e.key != 'Enter') return
+            const ret = action.match(/^cmp./) ? eval(`ctx.vars.${action}`) : ctx.run(action, 'action<>')
+            ctx.vars.widget.renderRequest = true 
+        }
+        el.addEventListener('keypress', handler)      
+        boundElements.push({ el, event: 'keypress', handler })
+      })
     },
     DataBinder: class DataBinder {
         constructor(ctx,topElements) {
@@ -59,37 +94,14 @@ extension('zui','DataBinder', {
           this.registerHtmlEvents()
         }
 
-        registerHtmlEvents() {
-          this.topElements.forEach(top=> {
-            top.querySelectorAll('[twoWayBind]').forEach(el => {
-              const ref = this.ctx.run(el.getAttribute('twoWayBind'), {as: 'ref'})
-              const handler = e => { 
-                  jb.db.writeValue(ref, e.target.value, this.ctx)
-                  this.ctx.vars.widget.renderRequest = true 
-              }
-              el.addEventListener('input', handler)
-              el.value = jb.val(ref)
-              this.boundElements.push({ el, event: 'input', handler })
-            })
-      
-            top.querySelectorAll('[onEnter]').forEach(el => {
-              const handler = e => {
-                  if (e.key != 'Enter') return
-                  this.ctx.run(el.getAttribute('onEnter'),'action<>')
-                  this.ctx.vars.widget.renderRequest = true 
-              }
-              el.addEventListener('keypress', handler)      
-              this.boundElements.push({ el, event: 'keypress', handler })
-            })
-          })
+        registerHtmlEvents() { 
+          this.topElements.forEach(top=> jb.html.registerHtmlEvents(top,this.ctx)) 
         }
-      
-        populateHtml() {
-          this.topElements.forEach(top=> jb.zui.populateHtml(top,this.ctx))
+        populateHtml() { 
+          this.topElements.forEach(top=> jb.html.populateHtml(top,this.ctx, this.boundElements)) 
         }
-
-        destroy() {
-            this.boundElements.forEach(({ el, event, handler }) => el.removeEventListener(event,handler))
+        destroy() { 
+          this.boundElements.forEach(({ el, event, handler }) => el.removeEventListener(event,handler)) 
         }
-      }
+    }
 })

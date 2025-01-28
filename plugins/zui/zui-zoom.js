@@ -36,7 +36,7 @@ component('zui.canvasZoom', {
       sink.subjectNext('%$cmp.zuiEvents%')
     ),
     frontEnd.flow(
-      source.event('wheel', () => jb.frame.document, { options: obj(prop('capture', true)) }),
+      source.event('wheel', '%$cmp/base%', { options: obj(prop('capture', true)) }),
       rx.log('zui wheel'),
       rx.map(({},{sourceEvent}) => ({ dz: sourceEvent.deltaY > 0 ? 1.1 : sourceEvent.deltaY < 0 ? 1/1.1 : 1 })),
       rx.do(({data},{cmp}) => cmp.updateZoomState(data)),

@@ -165,7 +165,7 @@ component('zoomingGridElem', {
         let elem = cmp.base.querySelector(`[itemkey="${item.title}"]`)
         if (elem) {
           elem.item = item         
-          jb.zui.populateHtml(elem,ctx.setData(item))
+          jb.html.populateHtml(elem,ctx.setData(item))
         } else {
           const elem = document.createElement('div')
           elem.innerHTML = cmp.templateHtmlItem
@@ -174,7 +174,7 @@ component('zoomingGridElem', {
           elem.classList.add('zui-item')
           elem.item = item         
           cmp.base.appendChild(elem)  
-          jb.zui.populateHtml(elem,ctx.setData(item))
+          jb.html.populateHtml(elem,ctx.setData(item))
         }
       })
     }),

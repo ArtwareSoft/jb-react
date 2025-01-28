@@ -1,7 +1,48 @@
 dsl('zui')
 
+extension('zui','task', {
+  initExtension() {
+    return { taskCounter: 0 }
+  },
+  taskProgress: class {
+      constructor(ctx) {
+        this.ctx = ctx
+      }
+      task(index) {
+        return this.ctx.vars.widget.appData.runningTasks[index]
+      }
+      max(index) {
+        const task = this.task(index)
+        if (!task) return
+        const {itemCounter, estimatedFirstItem,noOfItems} = task
+        return itemCounter ? noOfItems : estimatedFirstItem
+      }
+      progress(index) {
+        const task = this.task(index)
+        if (!task) return
+        const {itemCounter, startTime } = task
+        return itemCounter ? itemCounter : Math.floor((new Date().getTime() - startTime)/1000)
+      }
+      progressText(index) {
+        const task = this.task(index)
+        if (!task) return
+        const {itemCounter, itemsToUpdate } = task
+        const max = this.max(index), progress = this.progress(index)
+        const currentItem = itemsToUpdate ? `, ${itemsToUpdate.split(', ')[itemCounter]}` : ''
+        return itemCounter ? `${progress}/${max} items${currentItem}` : `preparing ${progress}/${max} sec`
+      }
+      color(index) {
+        const task = this.task(index)
+        if (!task) return
+        const {itemCounter } = task
+        return itemCounter ? 'var(--emitting-color)' : 'var(--warmup-color)'
+      }
+  }
+})
+
 component('zui.taskToRun', {
   impl: ctx => {
+    const id = jb.zui.taskCounter++
     const {userData } = ctx.data
     const { preferedLlmModel,exposure } = userData
     if (!preferedLlmModel)
@@ -31,7 +72,7 @@ component('zui.taskToRun', {
     const speed = model.speed[details]
     const [estimatedFirstItem] = model.speed[details]
     const shortSummary = title = `${op} ${noOfItems} ${details}s, ${modelId}`
-    const task = { title, shortSummary, op, noOfItems, itemsToUpdate, details, detailsLevel, model, quality,ctxVer, estimatedFirstItem }
+    const task = { id, title, shortSummary, op, noOfItems, itemsToUpdate, details, detailsLevel, model, quality,ctxVer, estimatedFirstItem }
 
     const res = !allTasks.find(t=> ['detailsLevel','quality','ctxVer','op','itemsToUpdate']
       .every(p => typeof p == 'number' ? t[p] <=task[p] : t[p] == task[p])) && task
@@ -52,9 +93,8 @@ component('zui.itemsFromLlm', {
     rx.do(writeValue('%$task/startTime%', now())),
     rx.flatMap(domain.itemsSource('%$domain%', '%$task%'), {
       onInputEnd: runActions(
-        addToArray('%$appData/doneTasks%', { addAtTop: true }),
-        removeFromArray('%$appData/runningTasks%', '%$task%'),
-        writeValue('%$appData/totalCost%', () => `$${jb.llm.totalCost}`),
+        zui.moveTaskToDone(),
+        writeValue('%$appData/totalCost%', () => `$${Math.floor(jb.llm.totalCost * 10000)/10000}`),
         zui.taskSummaryValues()
       ),
       onItem: (ctx,{task}) => {
@@ -63,12 +103,25 @@ component('zui.itemsFromLlm', {
       }
     }),
     rx.map(extendWithObj(obj(
+      prop('title', ({data}) => data.title.trim()),
       prop('_detailsLevel', '%$task/detailsLevel%'),
       prop('_ctxVer', '%$task/ctxVer%'),
       prop('_modelId', '%$task/model/id%')
     ))),
     rx.log('zui new item from llm')
   )
+})
+
+component('zui.moveTaskToDone', {
+  impl: ctx => {
+    const task = ctx.data
+    const {doneTasks, runningTasks} = ctx.vars.appData
+    jb.log('zui moveTaskToDone',{task,ctx})
+    doneTasks.unshift(task)
+    const index = runningTasks.indexOf(task)
+		if (index != -1)
+      runningTasks.splice(index,1)
+  }
 })
 
 component('zui.taskSummaryValues', {
@@ -78,9 +131,11 @@ component('zui.taskSummaryValues', {
     const fullDuration = task.fullDuration = (new Date().getTime() - startTime)
     task.itemDuration = noOfItems == 1 ? 0 : (fullDuration - actualFirstItem) / (noOfItems -1)
     const cost = task.llmUsage && task.llmUsage.cost ? `, $${task.llmUsage.cost}` : ''
-    task.shortSummary = `${noOfItems} ${details}s, ${model.id}${cost}`
+    task.shortSummary = `${op} ${noOfItems} ${details}s${cost}`
+    task.modelId = task.model.id
     task.estimate = `firstItem: ${actualFirstItem} vs ${estimatedFirstItem*1000}\nitemDuration: ${task.itemDuration} vs ${1000*model.speed[details][1]}`
-    task.propertySheet = ['op','estimate','itemsToUpdate'].map(k=>`${k}: ${task[k]}`).join('\n')
+    task.propertySheet = ['id', 'startTime', 'modelId','estimate','itemsToUpdate'].map(k=>`${k}: ${task[k]}`).join('\n')
+    console.log(task)
   }
 })
 
@@ -141,42 +196,4 @@ component('baseTask', {
     {id: 'op', as: 'string', defaultValue: 'new', options: 'update,new'},
   ]
 })
-
-extension('zui','task', {
-  taskProgress: class {
-      constructor(ctx) {
-        this.ctx = ctx
-      }
-      task(index) {
-        return this.ctx.vars.widget.appData.runningTasks[index]
-      }
-      max(index) {
-        const task = this.task(index)
-        if (!task) return
-        const {itemCounter, estimatedFirstItem,noOfItems} = task
-        return itemCounter ? noOfItems : estimatedFirstItem
-      }
-      progress(index) {
-        const task = this.task(index)
-        if (!task) return
-        const {itemCounter, startTime } = task
-        return itemCounter ? itemCounter : Math.floor((new Date().getTime() - startTime)/1000)
-      }
-      progressText(index) {
-        const task = this.task(index)
-        if (!task) return
-        const {itemCounter, itemsToUpdate } = task
-        const max = this.max(index), progress = this.progress(index)
-        const currentItem = (itemsToUpdate || '').split(', ')[itemCounter]
-        return itemCounter ? `${progress}/${max} items, ${currentItem}` : `${progress}/${max} sec`
-      }
-      color(index) {
-        const task = this.task(index)
-        if (!task) return
-        const {itemCounter } = task
-        return itemCounter ? 'var(--emitting-color)' : 'var(--warmup-color)'
-      }
-  }
-})
-
 

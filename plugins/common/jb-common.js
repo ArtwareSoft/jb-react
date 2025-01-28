@@ -259,7 +259,6 @@ component('addToArray', {
     const index = addAtTop ? 0 : jb.val(array).length;
     jb.db.splice(array, [index, 0, ...jb.asArray(items)],ctx);
   }
-  //jb.db.push(array, clone ? JSON.parse(JSON.stringify(toAdd)) : toAdd,ctx)
 })
 
 component('move', {

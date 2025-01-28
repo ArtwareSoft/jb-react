@@ -1,0 +1,56 @@
+{
+	"name": "companion",
+	"displayName": "Companion",
+	"description": "A VSCode extension to assist with component-based code development using AI-powered suggestions.",
+	"version": "0.1.0",
+	"publisher": "artwaresoft",
+	"license": "MIT",
+	"engines": {
+	  "vscode": "^1.75.1"
+	},
+	"icon": "logo128.png",
+	"repository": "https://github.com/artwaresoft/companion",
+	"main": "companion-ext.js",
+	"activationEvents": [
+		"onLanguage:javascript"
+	],
+	"dependencies": {},
+	"contributes": {
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "companion",
+					"title": "companion",
+					"icon": "logo128.png"
+				}
+			]
+		},
+		"views": {
+			"companion": [
+				{
+					"id": "companion.main",
+					"type": "webview",
+					"name": "main"
+				}
+			]
+		},
+	  "commands": [
+		{
+		  "command": "companion.fixComponent",
+		  "title": "Fix Component"
+		},
+		{
+			"command": "companion.openView",
+			"title": "Open View"
+		}
+	  ],
+	  "keybindings": [
+		{
+		  "command": "companion.openView",
+		  "key": "ctrl+shift+c",
+		  "when": "editorTextFocus"
+		}
+	  ]
+	}
+  }
+  

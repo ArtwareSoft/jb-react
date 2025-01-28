@@ -157,6 +157,7 @@ component('source.llmCompletions', {
               }
               if (typeof val == 'object') {
                 if (val.usage) {
+                  Object.assign(val,{chat, fullContent})
                   jb.llm.notifyApiUsage(val,ctx)
                   notifyUsage(ctx.setData(val))
                 }
