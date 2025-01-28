@@ -50,7 +50,7 @@ component('widgetFE', {
         initFE(screenSizeForTest,{userData,appData}) {
             this.userData = userData
             this.appData = appData
-            this.ctx = new jb.core.jbCtx().setVars({widget: this, canUseConsole: ctx.vars.quiet, uiTest: ctx.vars.uiTest})
+            this.ctx = new jb.core.jbCtx().setVars({widget: this, canUseConsole: ctx.vars.showOnly, uiTest: ctx.vars.uiTest})
             this.screenSize = (!ctx.vars.uiTest && jb.frame.window) ? [window.innerWidth,window.innerHeight] : screenSizeForTest
             this.ctx.probe = ctx.probe
         },

@@ -1,4 +1,38 @@
-using('llm-api','tgp-lang-service')
+dsl('companion')
+using('llm-api','tgp-lang-service','html')
+
+
+component('companion.app', {
+  type: 'section<html>',
+  impl: section({
+    id: 'app',
+    html: `<!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Fix Component</title>
+    <style>
+    </style>
+  </head>
+  <body>
+    <h3>Specify Fixes for Component</h3>
+    <textarea id="inputBox" placeholder="Enter your fixes here..."></textarea>
+    <button id="submit">Submit</button>
+    <script>
+      const vscode = acquireVsCodeApi();
+      document.getElementById('submit').addEventListener('click', () => {
+        const input = document.getElementById('inputBox').value;
+        vscode.postMessage({ type: 'submit', value: input });
+      });
+    </script>
+  </body>
+  </html>`,
+    css: `body { font-family: Arial, sans-serif; margin: 0; padding: 10px; }
+    textarea { width: 100%; height: 200px; }
+    button { margin-top: 10px; padding: 10px; background: #007acc; color: white; }
+`
+  })
+})
 
 extension('companion','main', {
     initCompanion({context}) {
@@ -12,7 +46,8 @@ extension('companion','main', {
         const view = vscodeNS.window.createWebviewPanel(
             'companion.main', 'Fix Component', vscodeNS.ViewColumn.Two, { enableScripts: true })
         
-          view.webview.html = `
+        const app = jb.exec({$: 'companion.app'}, 'section<html>')
+        view.webview.html = `
             <!DOCTYPE html>
             <html lang="en">
             <head>

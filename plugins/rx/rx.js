@@ -447,7 +447,7 @@ component('debounceTime', {
 
 component('throttleTime', {
   type: 'operator',
-  description: 'enforces a cooldown period. Any data that arrives during the quiet time is ignored',
+  description: 'enforces a cooldown period. Any data that arrives during the showOnly time is ignored',
   category: 'operator',
   params: [
     {id: 'cooldownPeriod', dynamic: true, description: 'can be dynamic'},

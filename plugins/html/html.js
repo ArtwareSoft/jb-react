@@ -23,7 +23,36 @@ component('group', {
     }
 })
 
+component('page', {
+  type: 'page',
+  params: [
+    {id: 'section', type: 'section'}
+  ],
+  impl: (ctx, section) => ({
+    section,
+    injectIntoElem: ({topEl, registerEvents}) => jb.html.injectSectionIntoElem(section, ctx, {topEl, registerEvents})
+  })
+})
+
 extension('html','DataBinder', {
+    injectSectionIntoElem(section, ctx, {topEl, registerEvents} = {}) {
+        const [html, css] = [section.html(ctx), section.css(ctx) ]
+        const elem = topEl || jb.frame && jb.frame.document.body
+        elem.innerHTML = html
+        jb.html.setCss(section.id, css)
+        return registerEvents ? new jb.html.DataBinder(ctx,elem) : jb.html.populateHtml(elem,ctx)
+    },
+    setCss(id,content) {
+        const document = jb.frame.document
+        if (!document) return
+        let styleTag = document.getElementById(id)
+        if (!styleTag) {
+          styleTag = document.createElement('style')
+          styleTag.id = id
+          document.head.appendChild(styleTag)
+        }
+        styleTag.textContent = Array.isArray(content)? content.join('\n') : content
+    },
     populateHtml(rootElement,ctx) {
         rootElement.querySelectorAll('[bind], [bind_max], [bind_title], [bind_value], [bind_text], [bind_display], [bind_style]').forEach( el => {
             for (const attr of el.attributes) {
@@ -88,7 +117,7 @@ extension('html','DataBinder', {
     DataBinder: class DataBinder {
         constructor(ctx,topElements) {
           this.ctx = ctx
-          this.topElements = topElements
+          this.topElements = jb.asArray(topElements)
           this.boundElements = []
           this.populateHtml()
           this.registerHtmlEvents()

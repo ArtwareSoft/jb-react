@@ -136,7 +136,7 @@ extension('test', {
 			return (jb.comps[name] && jb.comps[name].type || '').indexOf(type) == 0
 		}
 	},
-	async runSingleTest(testID,{doNotcleanBeforeRun, showOnlyTest,fullTestId, quiet} = {}) {
+	async runSingleTest(testID,{doNotcleanBeforeRun, showOnlyTest,fullTestId, showOnly} = {}) {
 		const profile = jb.comps[fullTestId]
 		const singleTest = jb.test.singleTest
 		const tstCtx = (jb.ui ? jb.ui.extendWithServiceRegistry() : new jb.core.jbCtx())
@@ -146,7 +146,7 @@ extension('test', {
 		jb.log('start test',{testID})
 		let res = null
 		try {
-			res = quiet ? {} : await tstCtx.run({$:fullTestId})
+			res = showOnly ? {} : await tstCtx.run({$:fullTestId})
 		} catch (e) {
 			res = { success: false, reason: e}
 		}
@@ -158,27 +158,31 @@ extension('test', {
 		//await jb.delay(200)
 
 		res.show = () => {
-			if (!profile.impl.control) return
 			const doc = jb.frame.document
 			if (!doc) return
-			const elem = doc.createElement('div')
-			elem.className = 'show elemToTest'
+			const testElem = doc.createElement('div')
+			testElem.className = 'show elemToTest'
 			if (showOnlyTest)
 				doc.body.innerHTML = ''
-			doc.body.appendChild(elem)
+			doc.body.appendChild(testElem)
 			if (profile.impl.$ == 'zuiTest') {
 				profile.impl.$$ = 'action<>zuiControlRunner'
-				const ctxToRun = new jb.core.jbCtx(tstCtx,{ vars:{quiet}, profile: profile.impl , forcePath: fullTestId+ '~impl', path: '' } )
+				const ctxToRun = new jb.core.jbCtx(tstCtx,{ vars:{testElem, showOnly}, profile: profile.impl , forcePath: fullTestId+ '~impl', path: '' } )
+				return ctxToRun.runItself()
+			}
+			if (profile.impl.$ == 'htmlTest') {
+				profile.impl.$$ = 'action<>htmlPageRunner'
+				const ctxToRun = new jb.core.jbCtx(tstCtx,{ vars:{testElem, showOnly}, profile: profile.impl , forcePath: fullTestId+ '~impl', path: '' } )
 				return ctxToRun.runItself()
 			}
 			if (profile.impl.$ == 'uiTest') {
-				const ctxToRun = jb.ui.extendWithServiceRegistry(new jb.core.jbCtx(tstCtx,{ vars:{quiet}, profile: profile.impl.control , forcePath: fullTestId+ '~impl~control', path: '' } ))
-				jb.ui.render(jb.ui.h(ctxToRun.runItself()),elem)
+				const ctxToRun = jb.ui.extendWithServiceRegistry(new jb.core.jbCtx(tstCtx,{ vars:{showOnly}, profile: profile.impl.control , forcePath: fullTestId+ '~impl~control', path: '' } ))
+				jb.ui.render(jb.ui.h(ctxToRun.runItself()),testElem)
 			}
 		}		
 		return res
 	},
-	async runTests({testType,specificTest,show,pattern,notPattern,take,remoteTests,repo,showOnlyTest,top,coveredTestsOf,quiet}) {
+	async runTests({testType,specificTest,show,pattern,notPattern,take,remoteTests,repo,showOnlyTest,top,coveredTestsOf,showOnly}) {
 		const {pipe, fromIter, subscribe,concatMap, fromPromise } = jb.callbag 
 		let index = 1
 		specificTest = specificTest && decodeURIComponent(specificTest).split('>').pop()
@@ -223,7 +227,7 @@ extension('test', {
 			return
 		}
 
-		document.body.innerHTML = quiet ? '': `<div style="font-size: 20px"><div id="progress"></div><span id="fail-counter" onclick="jb.test.hide_success_lines()"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span><span id="memory-usage"></span></div>`;
+		document.body.innerHTML = showOnly ? '': `<div style="font-size: 20px"><div id="progress"></div><span id="fail-counter" onclick="jb.test.hide_success_lines()"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span><span id="memory-usage"></span></div>`;
 		let counter = 0
 		return pipe(
 			fromIter(tests),
@@ -234,12 +238,12 @@ extension('test', {
 				// if (e[1].impl.timeout && e[1].impl.timeout > 1000)
 				// 	await jb.delay(5)
 				const testID = e[0], fullTestId = e[2]
-				if (!quiet) {
+				if (!showOnly) {
 					document.getElementById('progress').innerHTML = `<div id=${testID}>${index++}: ${testID} started</div>`
 					console.log('starting ' + testID )
 				}
-				const res = await jb.test.runSingleTest(testID,{showOnlyTest, fullTestId,quiet })
-				if (!quiet) {
+				const res = await jb.test.runSingleTest(testID,{showOnlyTest, fullTestId,showOnly })
+				if (!showOnly) {
 					console.log('end      ' + testID, res)
 					document.getElementById('progress').innerHTML = `<div id=${testID}>${testID} finished</div>`
 				}
@@ -248,8 +252,8 @@ extension('test', {
 			subscribe(res=> {
 				res.success ? jb.test.success_counter++ : jb.test.fail_counter++;
 				jb.test.usedJSHeapSize = (jb.path(jb.frame,'performance.memory.usedJSHeapSize' || 0) / 1000000)
-				if (quiet || (!res.renderDOM && show)) res.show()
-				if (quiet) return
+				if (showOnly || (!res.renderDOM && show)) res.show()
+				if (showOnly) return
 				jb.test.updateTestHeader(jb.frame.document, jb.test)
 
 				jb.test.addHTML(document.body, jb.test.testResultHtml(res, repo), {beforeResult: jb.test.singleTest && res.renderDOM});
