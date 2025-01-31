@@ -18,29 +18,44 @@ component('group', {
     {id: 'sections', type: 'section[]', composite: true}
   ],
   impl: (ctx, id, html, css, sections) => {
-        const groupCtx = ctx.setVars(jb.objFromEntries(sections.map(sec=>[sec.id,sec])))
-        return { id, html: html(groupCtx), css : css(groupCtx)}
+        const groupVars = jb.objFromEntries(sections.map(sec=>[sec.id,sec]))
+        return { id, 
+            html: ctx => html(ctx.setVars(groupVars)), 
+            css : ctx => css(ctx.setVars(groupVars))
+        }
     }
 })
 
 component('page', {
   type: 'page',
   params: [
-    {id: 'section', type: 'section'}
+    {id: 'section', type: 'section'},
+    {id: 'cmp'},
+    {id: 'onRefresh', type: 'action<>', dynamic: true}
   ],
-  impl: (ctx, section) => ({
+  impl: (ctx, section,cmp, refreshFunc) => ({
+    cmp,
     section,
-    injectIntoElem: ({topEl, registerEvents}) => jb.html.injectSectionIntoElem(section, ctx, {topEl, registerEvents})
+    injectIntoElem: ({topEl, registerEvents}) => {
+        const ctxToUse = cmp ? ctx.setVars({cmp}) : ctx
+        const elem = jb.html.injectSectionIntoElem(section, ctxToUse, {topEl, registerEvents, refreshFunc})
+        if (cmp) {
+            cmp.ctx = ctxToUse
+            cmp.base = elem
+            return cmp.init && cmp.init()
+        }
+    }
   })
 })
 
 extension('html','DataBinder', {
-    injectSectionIntoElem(section, ctx, {topEl, registerEvents} = {}) {
+    injectSectionIntoElem(section, ctx, {topEl, registerEvents, refreshFunc} = {}) {
         const [html, css] = [section.html(ctx), section.css(ctx) ]
         const elem = topEl || jb.frame && jb.frame.document.body
         elem.innerHTML = html
         jb.html.setCss(section.id, css)
-        return registerEvents ? new jb.html.DataBinder(ctx,elem) : jb.html.populateHtml(elem,ctx)
+        registerEvents ? new jb.html.DataBinder(ctx,elem, {refreshFunc}) : jb.html.populateHtml(elem,ctx)
+        return elem
     },
     setCss(id,content) {
         const document = jb.frame.document
@@ -79,58 +94,113 @@ extension('html','DataBinder', {
             }
         })
     },
-    registerHtmlEvents(top,ctx,boundElements) {
-      boundElements = boundElements || []
+    registerHtmlEvents(top,ctx,{boundElements, refreshFunc} = {}) {
       top.querySelectorAll('[twoWayBind]').forEach(el => {
         const ref = ctx.run(el.getAttribute('twoWayBind'), {as: 'ref'})
         const handler = e => { 
             jb.db.writeValue(ref, e.target.value, ctx)
-            ctx.vars.widget.renderRequest = true 
+            refreshFunc && refreshFunc(ctx)
         }
         el.addEventListener('input', handler)
         el.value = jb.val(ref)
-        boundElements.push({ el, event: 'input', handler })
+        boundElements && boundElements.push({ el, event: 'input', handler })
       })
 
       top.querySelectorAll('[onClick]').forEach(el => {
         const action = el.getAttribute('onClick')
         el.removeAttribute('onClick')
         const handler = e => {
-            const ret = action.match(/^cmp./) ? eval(`ctx.vars.${action}`) : ctx.run(action, 'action<>')
-            ctx.vars.widget.renderRequest = true 
+            const ret = action.match(/^cmp./) ? eval(`ctx.vars.${action}`) : ctx.runAction({$: action})
+            refreshFunc && refreshFunc(ctx)
         }
         el.addEventListener('click', handler)      
-        boundElements.push({ el, event: 'click', handler })
+        boundElements && boundElements.push({ el, event: 'click', handler })
       })
 
       top.querySelectorAll('[onEnter]').forEach(el => {
         const action = el.getAttribute('onEnter')
         const handler = e => {
             if (e.key != 'Enter') return
-            const ret = action.match(/^cmp./) ? eval(`ctx.vars.${action}`) : ctx.run(action, 'action<>')
-            ctx.vars.widget.renderRequest = true 
+            const ret = action.match(/^cmp./) ? eval(`ctx.vars.${action}`) : ctx.runAction({$: action})
+            refreshFunc && refreshFunc(ctx)
         }
         el.addEventListener('keypress', handler)      
-        boundElements.push({ el, event: 'keypress', handler })
+        boundElements && boundElements.push({ el, event: 'keypress', handler })
       })
     },
     DataBinder: class DataBinder {
-        constructor(ctx,topElements) {
+        constructor(ctx,topElements,{ refreshFunc } = {}) {
           this.ctx = ctx
           this.topElements = jb.asArray(topElements)
           this.boundElements = []
           this.populateHtml()
+          this.refreshFunc = refreshFunc || (() => ctx.vars.widget.renderRequest = true)
           this.registerHtmlEvents()
         }
 
         registerHtmlEvents() { 
-          this.topElements.forEach(top=> jb.html.registerHtmlEvents(top,this.ctx)) 
+          this.topElements.forEach(top=> jb.html.registerHtmlEvents(top,this.ctx,
+            { boundElements: this.boundElements, refreshFunc: this.refreshFunc})) 
         }
         populateHtml() { 
-          this.topElements.forEach(top=> jb.html.populateHtml(top,this.ctx, this.boundElements)) 
+          this.topElements.forEach(top=> jb.html.populateHtml(top,this.ctx)) 
         }
         destroy() { 
           this.boundElements.forEach(({ el, event, handler }) => el.removeEventListener(event,handler)) 
+        }
+    },
+    async loadFELibs(libs) {
+        if (!libs.length) return
+        if (typeof document == 'undefined') {
+            return jb.logError('can not load front end libs to a frame without a document')
+        }
+        const libsToLoad = jb.utils.unique(libs)
+        jb.html.loadedLibs = jb.html.loadedLibs || {}
+
+        //libsToLoad.forEach(lib=> jb.ui.FELibLoaderPromises[lib] = jb.ui.FELibLoaderPromises[lib] || loadFELib(lib) )
+        jb.log('FELibs toLoad',{libsToLoad})
+        return libsToLoad.reduce((pr,lib) => pr.then(()=> loadFELib(lib)), Promise.resolve())
+
+        function urlOfLib(lib) {
+            return lib.indexOf('://') == -1 ? `${jb.baseUrl||''}/dist/${lib}` : lib
+        }
+
+        async function loadFELib(lib) {
+            //console.log(`loading ${lib}`)
+            if (lib.match(/js$/)) {
+                const code = await jb.frame.fetch(urlOfLib(lib)).then(x=>x.text())
+                if (! jb.html.loadedLibs[lib]) {
+                    jb.html.loadedLibs[lib] = true
+                    eval(code)
+                }
+            } else if (lib.match(/css$/)) {
+                const code = await jb.frame.fetch(urlOfLib(lib)).then(x=>x.text())
+                const style = document.createElement('style')
+                style.type = 'text/css'
+                style.innerHTML = code
+                document.head.appendChild(style)
+            } else if (lib.match(/woff2$/)) {
+                const [fontName,weight,_lib] = lib.split(':')
+                const arrayBuffer = await jb.frame.fetch(urlOfLib(_lib)).then(x=>x.arrayBuffer())
+                const CHUNK_SIZE = 0x8000
+                const chunks = []
+                const uint8Array = new Uint8Array(arrayBuffer)
+                for (let i = 0; i < uint8Array.length; i += CHUNK_SIZE)
+                chunks.push(String.fromCharCode(...uint8Array.subarray(i, i + CHUNK_SIZE)))
+                const base64Font = btoa(chunks.join(''))
+        
+                const _weight = weight ? `font-weight: ${weight};` : ''
+                const fontFace = `
+                @font-face {
+                    font-family: '${fontName}';
+                    src: url(data:font/woff2;base64,${base64Font}) format('woff2');
+                    ${_weight}
+                }`
+        
+                const style = document.createElement('style')
+                style.textContent = fontFace
+                document.head.appendChild(style)
+            }
         }
     }
 })

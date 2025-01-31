@@ -15,6 +15,7 @@ extension('llm','main', {
     rec.model = model
     const cost = rec.cost = (input * usage.prompt_tokens + output * usage.completion_tokens) / 1000000
     jb.llm.totalCost += cost
+    return { totalCost: jb.llm.totalCost, cost}
   },
   calcModels(ctx) {
     const profileIds = Object.keys(jb.comps).filter(k=>k.indexOf('model<llm>') == 0 && !k.match(/model$|byId$/))

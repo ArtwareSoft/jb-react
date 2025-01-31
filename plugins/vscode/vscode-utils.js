@@ -8,22 +8,48 @@ extension('vscode', 'utils', {
     async initVscodeAsHost({context}) {
         jb.log('vscode initVscodeAsHost', {context})
         jb.tgpTextEditor.host = {
-            async applyEdit(edit,{uri,hash} = {}) {
+            async applyEdit(edit, { uri, hash } = {}) {
                 const editor = vscodeNS.window.activeTextEditor
+                if (!editor) return jb.logError('No active editor found.')
+            
                 uri = uri || editor.document.uri
                 const wEdit = new vscodeNS.WorkspaceEdit()
-                wEdit.replace(uri, { start: jb.vscode.toVscodeFormat(edit.range.start), end: jb.vscode.toVscodeFormat(edit.range.end) }, edit.newText)
-                jb.log('vscode applyEdit',{wEdit, edit,uri})
-                jb.tgpTextEditor.lastEdit = edit.newText
+                const edits = Array.isArray(edit) ? edit : [edit]
                 if (hash) {
-                    const { compText } = jb.tgpTextEditor.closestComp(editor.document.getText(),
-                        editor.selection.active.line, editor.selection.active.character, editor.document.uri.path)
-                    const code = '{\n' + (compText||'').split('\n').slice(1).join('\n').slice(0, -1)
-                    if (hash != jb.utils.calcHash(code))
-                        return jb.logError('applyEdit - different hash. edit will not be applied',{edit, text})
+                    const { compText } = jb.tgpTextEditor.closestComp(
+                        editor.document.getText(), editor.selection.active.line, editor.selection.active.character, editor.document.uri.path)
+                    const code = '{\n' + (compText || '').split('\n').slice(1).join('\n').slice(0, -1)
+                    if (hash !== jb.utils.calcHash(code))
+                        return jb.logError('applyEdit - hash mismatch, edits not applied.', { edits, text: code })
                 }
+            
+                edits.forEach(edit => {
+                    if (!edit.range || !edit.newText)
+                        return jb.logError('applyEdit - Invalid edit format.', { edit })
+                    const range = { start: jb.vscode.toVscodeFormat(edit.range.start), end: jb.vscode.toVscodeFormat(edit.range.end) }
+                    wEdit.replace(uri, range, edit.newText)
+                })
+            
+                jb.log('vscode applyEdit', { wEdit, edits, uri })
+                jb.tgpTextEditor.lastEdit = edits.map(e => e.newText).join('\n')            
                 await vscodeNS.workspace.applyEdit(wEdit)
-             },
+            },
+            // async applyEdit(edit,{uri,hash} = {}) {
+            //     const editor = vscodeNS.window.activeTextEditor
+            //     uri = uri || editor.document.uri
+            //     const wEdit = new vscodeNS.WorkspaceEdit()
+            //     wEdit.replace(uri, { start: jb.vscode.toVscodeFormat(edit.range.start), end: jb.vscode.toVscodeFormat(edit.range.end) }, edit.newText)
+            //     jb.log('vscode applyEdit',{wEdit, edit,uri})
+            //     jb.tgpTextEditor.lastEdit = edit.newText
+            //     if (hash) {
+            //         const { compText } = jb.tgpTextEditor.closestComp(editor.document.getText(),
+            //             editor.selection.active.line, editor.selection.active.character, editor.document.uri.path)
+            //         const code = '{\n' + (compText||'').split('\n').slice(1).join('\n').slice(0, -1)
+            //         if (hash != jb.utils.calcHash(code))
+            //             return jb.logError('applyEdit - different hash. edit will not be applied',{edit, text})
+            //     }
+            //     await vscodeNS.workspace.applyEdit(wEdit)
+            //  },
             getActiveDoc: () => vscodeNS.window.activeTextEditor.document,
             async selectRange(start,{end}={}) {
                 end = end || start

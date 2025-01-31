@@ -1,6 +1,7 @@
 using('tgp-formatter','common','ui-core')
 
 extension('tgpTextEditor', {
+    $requireLibs: ['/dist/diff-match-patch.js'],
     initExtension() {
         return { visitedPaths: [], currentVisited : 0}
     },
@@ -232,6 +233,33 @@ extension('tgpTextEditor', {
             if (newText[newText.length - j] != oldText[oldText.length - j]) j--
             return { firstDiff: i, common, oldText: oldText.slice(0, oldText.length -j), newText: newText.slice(0, newText.length-j) }
         }
+    },
+    calcEdits(compText, newCompText, compLine) {
+        if (!compText || !newCompText) return []
+        const dmp = new diff_match_patch()
+        const diffs = dmp.diff_main(compText, newCompText)
+        dmp.diff_cleanupSemantic(diffs) // Clean up small differences
+    
+        const edits = []
+        let line = compLine || 0, col = 0
+        diffs.forEach(([op, text]) => {
+            const lines = text.split('\n')
+            const textLength = text.length
+            if (op === DIFF_EQUAL) {
+                line += lines.length - 1
+                col = lines.length > 1 ? lines[lines.length - 1].length : col + textLength
+            } 
+            else if (op === DIFF_DELETE) {
+                const start = { line, col }
+                line += lines.length - 1
+                col = lines.length > 1 ? lines[lines.length - 1].length : col + textLength
+                edits.push({ range: { start, end: { line, col } }, newText: '' })
+            } 
+            else if (op === DIFF_INSERT) {
+                edits.push({ range: { start: { line, col }, end: { line, col } }, newText: text })
+            }
+        })        
+        return edits
     },
     posFromCM: pos => pos && ({ line: pos.line, col: pos.ch }),
 })

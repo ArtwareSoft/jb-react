@@ -97,7 +97,7 @@ component('source.llmCompletions', {
         }
         const start_time = new Date().getTime()
 
-        const settings = !jbHost.isNode && await fetch(`/?op=settings`).then(res=>res.json())
+        const settings = !jbHost.isNode && await fetch(`${jbHost.baseUrl}/?op=settings`).then(res=>res.json())
         const apiKey = _apiKey || (jbHost.isNode ? process.env.OPENAI_API_KEY: settings.OPENAI_API_KEY)
         controller = new AbortController()
         connection = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -142,7 +142,7 @@ component('source.llmCompletions', {
             if (DONE) return
             try {
               const val = line == 'data: [DONE]' ? 'done' : (line.startsWith('data: ') && line.endsWith('}') ? JSON.parse(line.slice(6)) : line)
-              jb.log('llm processing val', {val, ctx})
+              //jb.log('llm processing val', {val, ctx})
               if (val == 'done') {
                 jb.log('llm source done from content', {ctx})
                 if (DONE) jb.logError('source.llmCompletions already DONE error', {val, ctx})
@@ -158,7 +158,7 @@ component('source.llmCompletions', {
               if (typeof val == 'object') {
                 if (val.usage) {
                   Object.assign(val,{chat, fullContent})
-                  jb.llm.notifyApiUsage(val,ctx)
+                  Object.assign(val, jb.llm.notifyApiUsage(val,ctx))
                   notifyUsage(ctx.setData(val))
                 }
                 const content = jb.path(val,'choices.0.delta.content')
@@ -180,6 +180,7 @@ component('source.llmCompletions', {
               duration: new Date().getTime() - start_time,
               model: model.name
             }
+            jb.log('llm finished', {res, ctx})
             if (useRedisCache)
               return jb.utils.redisStorage(key,res)
           }
@@ -260,5 +261,24 @@ component('llm.textToJsonItems', {
     }
     if (t === 2) sink(2, d)
   })
+  }
+})
+
+component('llm.accumulateText', {
+  type: 'rx<>',
+  category: 'operator',
+  impl: ctx => source => (start, sink) => {
+    if (start !== 0) return
+    let buffer = '', talkback
+
+    sink(0, (t,d) => talkback && talkback(t,d))
+    source(0, (t,d) => { 
+      if (t === 0) talkback = d
+      if (t === 1) {
+        buffer += d.data
+        sink(1, ctx.dataObj(buffer, d.vars || {}, d.data))
+      }
+      if (t === 2) sink(2, d)
+    })
   }
 })
