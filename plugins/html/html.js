@@ -37,6 +37,7 @@ component('page', {
     cmp,
     section,
     injectIntoElem: ({topEl, registerEvents}) => {
+        cmp.beforeInjection && cmp.beforeInjection(ctx)
         const ctxToUse = cmp ? ctx.setVars({cmp}) : ctx
         const elem = jb.html.injectSectionIntoElem(section, ctxToUse, {topEl, registerEvents, refreshFunc})
         if (cmp) {

@@ -258,8 +258,8 @@ extension('tgpTextEditor', {
             else if (op === DIFF_INSERT) {
                 edits.push({ range: { start: { line, col }, end: { line, col } }, newText: text })
             }
-        })        
-        return edits
+        })
+        return edits.reverse()
     },
     posFromCM: pos => pos && ({ line: pos.line, col: pos.ch }),
 })
