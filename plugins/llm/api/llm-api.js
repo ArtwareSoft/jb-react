@@ -12,10 +12,11 @@ component('llmViaApi.completions', {
     {id: 'includeSystemMessages', as: 'boolean', type: 'boolean<>'},
     {id: 'useRedisCache', as: 'boolean', type: 'boolean<>'}
   ],
-  impl: async (ctx,chatF,model,max_tokens,metaPrompt,llmModelForMetaPrompt, includeSystemMessages,useRedisCache) => {
+  impl: async (ctx,chatF,model,max_tokens,metaPrompt,llmModelForMetaPrompt, includeSystemMessages,_useRedisCache) => {
         if (metaPrompt.profile == null) 
           return dataFromLlm(chatF())
         const originalChat = chatF()
+        const useRedisCache = _useRedisCache && !jb.llm.noRedis
         const taskOrPrompt = originalChat.map(x=>x.content).join('\n')
         const metaPromptChat = metaPrompt(ctx.setVars({taskOrPrompt}))
         if (llmModelForMetaPrompt.reasoning) metaPromptChat.forEach(m=>m.role = 'user')
@@ -72,8 +73,9 @@ component('source.llmCompletions', {
     {id: 'apiKey', as: 'string'},
     {id: 'notifyUsage', type: 'action<>', dynamic: true}
   ],
-  impl: (ctx,chatF,model,max_tokens,includeSystemMessages,useRedisCache, _apiKey,notifyUsage) => (start,sink) => {
+  impl: (ctx,chatF,model,max_tokens,includeSystemMessages,_useRedisCache, _apiKey,notifyUsage) => (start,sink) => {
       if (start !== 0) return
+      const useRedisCache = _useRedisCache && !jb.llm.noRedis
       let controller = null, connection, connectionAborted, DONE, fullContent = ''
       sink(0, (t,d) => {
         if (t == 2) {
@@ -130,7 +132,7 @@ component('source.llmCompletions', {
             jb.log('llm source done from reader', {ctx})
             if (!DONE) {
               DONE = true
-              updateRedis()
+              onEnd()
               sink(2)
             }
             return
@@ -147,7 +149,7 @@ component('source.llmCompletions', {
                 jb.log('llm source done from content', {ctx})
                 if (DONE) jb.logError('source.llmCompletions already DONE error', {val, ctx})
                 DONE = true
-                updateRedis()
+                onEnd()
                 sink(2)
                 return
               }
@@ -174,7 +176,7 @@ component('source.llmCompletions', {
           })
           return !connectionAborted && reader.read().then(processResp)
 
-          function updateRedis() {
+          function onEnd() {
             const res = {
               fullContent, chat, includeSystemMessages,              
               duration: new Date().getTime() - start_time,
