@@ -1,0 +1,20 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script type="text/javascript" src="./jb-loader.js"></script>
+</head>
+<body>
+ <script>
+	async function zuiLlm() {
+    const code = await fetch('./package-zui-tests-v0.1.js').then(x=>x.text())
+    await eval(code)
+    globalThis.jb = await jbLoadPacked({uri:'zuiLlm'})
+		await jb.test.runTests({ showOnly: true, specificTest: 'zuiTest.healthCare.app' })
+	}
+	zuiLlm()
+
+  </script>
+</body>
+</html>

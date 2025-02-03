@@ -1,4 +1,4 @@
-using('watchable,common')
+using('common')
 
 component('source.data', {
   type: 'rx',
