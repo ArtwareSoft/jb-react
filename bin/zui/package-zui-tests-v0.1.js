@@ -4214,7 +4214,694 @@ async function jbLoadPacked({uri,initSpyByUrl,multipleInFrame}={}) {
   
   });
   
-  jbLoadPackedFile({lineInPackage:4219, jb, noProxies: false, path: '/plugins/rx/jb-callbag.js',fileDsl: '', pluginId: 'rx' }, 
+  jbLoadPackedFile({lineInPackage:4219, jb, noProxies: false, path: '/plugins/rx/rx-comps.js',fileDsl: '', pluginId: 'rx' }, 
+              function({jb,require,source,rx,sink,action,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,component,extension,using,dsl,pluginDsl}) {
+  using('common')
+  
+  component('source.data', {
+    type: 'rx',
+    params: [
+      {id: 'Data', mandatory: true}
+    ],
+    impl: (ctx,data) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromIter(jb.toarray(data)))
+  })
+  
+  component('source.watchableData', {
+    type: 'rx',
+    description: 'wait for data change and returns {op, newVal,oldVal}',
+    params: [
+      {id: 'ref', as: 'ref'},
+      {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', byName: true, description: 'watch childern change as well'}
+    ],
+    impl: (ctx,ref,includeChildren) => jb.callbag.map(x => ctx.dataObj({...x, before: null, after: null}))(jb.watchable.refObservable(ref,{includeChildren, srcCtx: ctx}))
+  })
+  
+  component('source.callbag', {
+    type: 'rx',
+    params: [
+      {id: 'callbag', mandatory: true, description: 'callbag source function'}
+    ],
+    impl: (ctx,callbag) => jb.callbag.map(x=>ctx.dataObj(x))(callbag || jb.callbag.fromIter([]))
+  })
+  
+  component('source.callbackLoop', {
+    type: 'rx',
+    params: [
+      {id: 'registerFunc', mandatory: true, description: 'receive callback function. needs to be recalled for next event'},
+    ],
+    impl: (ctx,registerFunc) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromCallbackLoop(registerFunc))
+  })
+  
+  component('source.animationFrame', {
+    type: 'rx',
+    impl: source.callbackLoop(({},{uiTest})=> (uiTest ? jb.test : jb.frame).requestAnimationFrame || (() => {}))
+  })
+  
+  /*
+  producer interface: obs => {
+    bind('myBind', handler)
+    return () => unbind('myBind',handler)
+    function handler(x) { obs(x) }
+  }
+  */
+  component('source.producer', {
+    type: 'rx',
+    params: [
+      {id: 'producer', dynamic: true, mandatory: true, description: 'producer function'},
+    ],
+    impl: (ctx,producer) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromProducer(producer))
+  })
+  
+  component('source.event', {
+    type: 'rx',
+    params: [
+      {id: 'event', as: 'string', mandatory: true, options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll,resize'},
+      {id: 'elem', description: 'html element', defaultValue: () => jb.frame.document},
+      {id: 'options', description: 'addEventListener options, https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener'},
+      {id: 'selector', as: 'string', description: 'optional, including the elem', byName: true}
+    ],
+    impl: (ctx,event,_elem,options,selector) => {
+      const elem = selector ? jb.ui.findIncludeSelf(_elem,selector)[0]: _elem
+      return elem && jb.callbag.map(sourceEvent=>ctx.setVars({sourceEvent, elem}).dataObj(sourceEvent))(jb.callbag.fromEvent(event,elem,options))
+    }
+  })
+  
+  component('source.any', {
+    type: 'rx',
+    params: [
+      {id: 'source', mandatory: true, description: 'the source is detected by its type: promise, iterable, single, callbag element, etc..'}
+    ],
+    impl: (ctx,source) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromAny(source || []))
+  })
+  
+  component('source.promise', {
+    type: 'rx',
+    params: [
+      {id: 'promise', mandatory: true}
+    ],
+    impl: (ctx,promise) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromPromise(promise))
+  })
+  
+  component('source.interval', {
+    type: 'rx',
+    params: [
+      {id: 'interval', as: 'number', templateValue: '1000', description: 'time in mSec'}
+    ],
+    impl: (ctx,interval) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.interval(interval))
+  })
+  
+  component('rx.pipe', {
+    type: 'rx',
+    moreTypes: 'data<>,action<>',
+    category: 'source',
+    description: 'pipeline of reactive observables with source',
+    params: [
+      {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
+    ],
+    impl: (ctx,elems) => 
+      jb.callbag.pipe(...jb.callbag.injectSniffers(elems(ctx).filter(x=>x),ctx))
+  })
+  
+  component('source.merge', {
+    type: 'rx',
+    category: 'source',
+    description: 'merge callbags sources (or any)',
+    params: [
+      {id: 'sources', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: [], composite: true}
+    ],
+    impl: (ctx,sources) => jb.callbag.merge(...sources(ctx))
+  })
+  
+  component('source.mergeConcat', {
+    type: 'rx',
+    category: 'source',
+    description: 'merge sources while keeping the order of sources',
+    params: [
+      {id: 'sources', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: [], composite: true}
+    ],
+    impl: rx.pipe(
+      source.data(ctx => ctx.cmpCtx.params.sources.profile),
+      rx.concatMap(ctx => ctx.run(ctx.data))
+    )
+  })
+  
+  // ******** operators *****
+  
+  component('rx.innerPipe', {
+    type: 'rx',
+    category: 'operator',
+    description: 'composite operator, inner reactive pipeline without source',
+    params: [
+      {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, templateValue: []}
+    ],
+    impl: (ctx,elems) => source => jb.callbag.pipe(source, ...elems)
+  })
+  
+  component('rx.fork', {
+    type: 'rx',
+    category: 'operator',
+    description: 'separate operator with same source data',
+    params: [
+      {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, templateValue: []}
+    ],
+    impl: (ctx,elems) => jb.callbag.fork(...elems)
+  })
+  
+  component('rx.startWith', {
+    type: 'rx',
+    category: 'operator',
+    description: 'startWith callbags sources (or any)',
+    params: [
+      {id: 'sources', type: 'rx[]', as: 'array'}
+    ],
+    impl: (ctx,sources) => jb.callbag.startWith(...sources)
+  })
+  
+  component('rx.var', {
+    type: 'rx',
+    category: 'operator',
+    description: 'define an immutable variable that can be used later in the pipe',
+    params: [
+      {id: 'name', as: 'string', dynamic: true, mandatory: true, description: 'if empty, does nothing'},
+      {id: 'value', dynamic: true, defaultValue: '%%', mandatory: true}
+    ],
+    impl: If('%$name%', (ctx,{},{name,value}) => source => (start, sink) => {
+        if (start != 0) return 
+        return source(0, function Var(t, d) {
+          const vars = t == 1 && d && {...d.vars, [name()]: value(d)}
+          t == 1 && d && ctx.cmpCtx.dataObj(d.data,vars)
+          sink(t, t === 1 ? d && {data: d.data, vars } : d)
+        })
+      })
+  })
+  
+  component('rx.resource', {
+    type: 'rx',
+    category: 'operator',
+    description: 'define a static mutable variable that can be used later in the pipe',
+    params: [
+      {id: 'name', as: 'string', dynamic: true, mandatory: true, description: 'if empty, does nothing'},
+      {id: 'value', dynamic: true, mandatory: true}
+    ],
+    impl: If('%$name%', (ctx,{},{name,value}) => source => (start, sink) => {
+      if (start != 0) return
+      let val, calculated
+      return source(0, function Var(t, d) {
+        val = calculated ? val : value()
+        calculated = true
+        sink(t, t === 1 ? d && {data: d.data, vars: {...d.vars, [name()]: val}} : d)
+      })
+    })
+  })
+  
+  component('rx.reduce', {
+    type: 'rx',
+    category: 'operator',
+    description: 'incrementally aggregates/accumulates data in a variable, e.g. count, concat, max, etc',
+    params: [
+      {id: 'varName', as: 'string', mandatory: true, description: 'the result is accumulated in this var', templateValue: 'acc'},
+      {id: 'initialValue', dynamic: true, description: 'receives first value as input', mandatory: true},
+      {id: 'value', dynamic: true, defaultValue: '%%', description: 'the accumulated value use %$acc%,%% %$prev%', mandatory: true},
+      {id: 'avoidFirst', as: 'boolean', description: 'used for join with separators, initialValue uses the first value without adding the separtor', type: 'boolean'}
+    ],
+    impl: (ctx,varName,initialValue,value,avoidFirst) => source => (start, sink) => {
+      if (start !== 0) return
+      let acc, prev, first = true
+      source(0, function reduce(t, d) {
+        if (t == 1) {
+          if (first) {
+            acc = initialValue(d)
+            first = false
+            if (!avoidFirst)
+              acc = value({data: d.data, vars: {...d.vars, [varName]: acc}})
+          } else {
+            acc = value({data: d.data, vars: {...d.vars, prev, [varName]: acc}})
+          }
+          sink(t, acc == null ? d : {data: d.data, vars: {...d.vars, [varName]: acc}})
+          prev = d.data
+        } else {
+          sink(t, d)
+        }
+      })
+    }
+  })
+  
+  component('rx.count', {
+    params: [
+      {id: 'varName', as: 'string', mandatory: true, defaultValue: 'count'}
+    ],
+    impl: rx.reduce('%$varName%', 0, { value: (ctx,{},{varName}) => ctx.vars[varName]+1 })
+  })
+  
+  component('rx.join', {
+    params: [
+      {id: 'varName', as: 'string', mandatory: true, defaultValue: 'join'},
+      {id: 'separator', as: 'string', defaultValue: ','}
+    ],
+    impl: rx.reduce('%$varName%', '%%', {
+      value: (ctx,{},{varName,separator}) => [ctx.vars[varName],ctx.data].join(separator),
+      avoidFirst: true
+    })
+  })
+  
+  component('rx.max', {
+    params: [
+      {id: 'varName', as: 'string', mandatory: true, defaultValue: 'max'},
+      {id: 'value', dynamic: true, defaultValue: '%%'}
+    ],
+    impl: rx.reduce('%$varName%', -Infinity, {
+      value: (ctx,{},{varName,value}) => Math.max(ctx.vars[varName],value(ctx))
+    })
+  })
+  
+  component('rx.do', {
+    type: 'rx',
+    category: 'operator',
+    params: [
+      {id: 'action', type: 'action', dynamic: true, mandatory: true}
+    ],
+    impl: (ctx,action) => jb.callbag.Do(ctx2 => action(ctx2))
+  })
+  
+  component('rx.doPromise', {
+    type: 'rx',
+    category: 'operator',
+    params: [
+      {id: 'action', type: 'action', dynamic: true, mandatory: true}
+    ],
+    impl: (ctx,action) => jb.callbag.doPromise(ctx2 => action(ctx2))
+  })
+  
+  component('rx.map', {
+    type: 'rx',
+    category: 'operator',
+    params: [
+      {id: 'func', dynamic: true, mandatory: true}
+    ],
+    impl: (ctx,func) => jb.callbag.map(jb.utils.addDebugInfo(ctx2 => ctx.dataObj(func(ctx2), ctx2.vars || {},ctx2.data),ctx))
+  })
+  
+  component('rx.mapPromise', {
+    type: 'rx',
+    category: 'operator',
+    params: [
+      {id: 'func', type: 'data', moreTypes: 'action<>', dynamic: true, mandatory: true}
+    ],
+    impl: (ctx,func) => jb.callbag.mapPromise(ctx2 => Promise.resolve(func(ctx2)).then(data => ctx.dataObj(data, ctx2.vars || {}, ctx2.data))
+      .catch(err => ({vars: {...ctx2.vars, err }, data: err})) )
+  })
+  
+  component('rx.filter', {
+    type: 'rx',
+    category: 'filter',
+    params: [
+      {id: 'filter', type: 'boolean', dynamic: true, mandatory: true}
+    ],
+    impl: (ctx,filter) => jb.callbag.filter(jb.utils.addDebugInfo(ctx2 => filter(ctx2),ctx))
+  })
+  
+  component('rx.flatMap', {
+    type: 'rx',
+    category: 'operator',
+    description: 'match inputs the callbags or promises',
+    params: [
+      {id: 'source', type: 'rx', category: 'source', dynamic: true, mandatory: true, description: 'map each input to source callbag'},
+      {id: 'onInputBegin', type: 'action', dynamic: true, byName: true},
+      {id: 'onInputEnd', type: 'action', dynamic: true},
+      {id: 'onItem', type: 'action', dynamic: true}
+    ],
+    impl: (ctx,sourceGenerator,onInputBegin,onInputEnd,onItem) => source => (start, sink) => {
+      if (start !== 0) return
+      let sourceTalkback, innerSources = [], sourceEnded
+  
+      source(0, function flatMap(t, d) {
+        if (t === 0) 
+          sourceTalkback = d
+        if (t === 1 && d != null)
+          createInnerSrc(d)
+        if (t === 2) {
+            sourceEnded = true
+            stopOrContinue(d)
+        }
+      })
+  
+      sink(0, function flatMap(t,d) {
+        if (t == 1 && d == null || t == 2) {
+          sourceTalkback && sourceTalkback(t,d)
+          innerSources.forEach(src=>src.talkback && src.talkback(t,d))
+        }
+      })
+  
+      function createInnerSrc(d) {
+        const ctxToUse = ctx.setData(d.data).setVars(d.vars)
+        const newSrc = sourceGenerator(ctxToUse)
+        innerSources.push(newSrc)
+        onInputBegin.profile && onInputBegin(ctxToUse)
+        newSrc(0, function flatMap(t,d) {
+          if (t == 0) newSrc.talkback = d
+          if (t == 1) {
+            if (d && onItem.profile) onItem(ctxToUse.setData(d))
+            sink(t,d)
+          }
+          if (t != 2 && newSrc.talkback) newSrc.talkback(1)
+          if (t == 2) {
+            onInputEnd.profile && onInputEnd(ctxToUse)
+            innerSources.splice(innerSources.indexOf(newSrc),1)
+            stopOrContinue(d)
+          }
+        })
+      }
+  
+      function stopOrContinue(d) {
+        if (sourceEnded && innerSources.length == 0)
+          sink(2,d)
+      }
+    }
+  })
+  
+  component('rx.flatMapArrays', {
+    type: 'rx',
+    category: 'operator',
+    description: 'match inputs to data arrays',
+    params: [
+      {id: 'func', dynamic: true, defaultValue: '%%', description: 'should return array, items will be passed one by one'}
+    ],
+    impl: rx.flatMap(source.data(call('func')))
+  })
+  
+  component('rx.concatMap', {
+    type: 'rx',
+    category: 'operator,combine',
+    params: [
+      {id: 'func', type: 'rx', dynamic: true, mandatory: true, description: 'keeps the order of the results, can return array, promise or callbag'},
+      {id: 'combineResultWithInput', dynamic: true, description: 'combines %$input% with the inner result %%'}
+    ],
+    impl: (ctx,func,combine) => combine.profile ? jb.callbag.concatMap(ctx2 => func(ctx2), (input,{data}) => combine({data,vars: {...input.vars, input: input.data} }))
+      : jb.callbag.concatMap(ctx2 => func(ctx2))
+  })
+  
+  component('rx.distinctUntilChanged', {
+    type: 'rx',
+    description: 'filters adjacent items in stream',
+    category: 'filter',
+    params: [
+      {id: 'equalsFunc', dynamic: true, mandatory: true, defaultValue: ({data},{prev}) => data === prev, description: 'e.g. %% == %$prev%'}
+    ],
+    impl: (ctx,equalsFunc) => jb.callbag.distinctUntilChanged((prev,cur) => equalsFunc(ctx.setData(cur.data).setVar('prev',prev.data)), ctx)
+  })
+  
+  component('rx.distinct', {
+    type: 'rx',
+    description: 'filters unique values',
+    category: 'filter',
+    params: [
+      {id: 'key', as: 'string', dynamic: true, defaultValue: '%%'}
+    ],
+    impl: (ctx,keyFunc) => jb.callbag.distinct(jb.utils.addDebugInfo(ctx2 => keyFunc(ctx2),ctx))
+  })
+  
+  component('rx.catchError', {
+    type: 'rx',
+    category: 'error',
+    impl: ctx => jb.callbag.catchError(err => ctx.dataObj(err))
+  })
+  
+  component('rx.timeoutLimit', {
+    type: 'rx',
+    category: 'error',
+    params: [
+      {id: 'timeout', dynamic: true, defaultValue: '3000', description: 'can be dynamic'},
+      {id: 'error', dynamic: true, defaultValue: 'timeout'}
+    ],
+    impl: (ctx,timeout,error) => jb.callbag.timeoutLimit(timeout,error)
+  })
+  
+  component('rx.throwError', {
+    type: 'rx',
+    category: 'error',
+    params: [
+      {id: 'condition', as: 'boolean', dynamic: true, mandatory: true, type: 'boolean'},
+      {id: 'error', mandatory: true}
+    ],
+    impl: (ctx,condition,error) => jb.callbag.throwError(ctx2=>condition(ctx2), error)
+  })
+  
+  component('rx.debounceTime', {
+    type: 'rx',
+    description: 'waits for a cooldown period, them emits the last arrived',
+    category: 'operator',
+    params: [
+      {id: 'cooldownPeriod', dynamic: true, description: 'can be dynamic'},
+      {id: 'immediate', as: 'boolean', description: 'emits the first event immediately, default is true', type: 'boolean'}
+    ],
+    impl: (ctx,cooldownPeriod,immediate) => jb.callbag.debounceTime(cooldownPeriod,immediate)
+  })
+  
+  component('rx.throttleTime', {
+    type: 'rx',
+    description: 'enforces a cooldown period. Any data that arrives during the showOnly time is ignored',
+    category: 'operator',
+    params: [
+      {id: 'cooldownPeriod', dynamic: true, description: 'can be dynamic'},
+      {id: 'emitLast', as: 'boolean', description: 'emits the last event arrived at the end of the cooldown, default is true', type: 'boolean'}
+    ],
+    impl: (ctx,cooldownPeriod,emitLast) => jb.callbag.throttleTime(cooldownPeriod,emitLast)
+  })
+  
+  component('rx.delay', {
+    type: 'rx',
+    category: 'operator',
+    params: [
+      {id: 'time', dynamic: true, description: 'can be dynamic'}
+    ],
+    impl: (ctx,time) => jb.callbag.delay(time)
+  })
+  
+  component('rx.replay', {
+    type: 'rx',
+    description: 'stores messages and replay them for later subscription',
+    params: [
+      {id: 'itemsToKeep', as: 'number', description: 'empty for unlimited'}
+    ],
+    impl: (ctx,keep) => jb.callbag.replay(keep)
+  })
+  
+  component('rx.takeUntil', {
+    type: 'rx',
+    description: 'closes the stream when events comes from notifier',
+    category: 'terminate',
+    params: [
+      {id: 'notifier', type: 'rx', description: 'can be also promise or any other'}
+    ],
+    impl: (ctx,notifier) => jb.callbag.takeUntil(notifier)
+  })
+  
+  component('rx.take', {
+    type: 'rx',
+    description: 'closes the stream after taking some items',
+    category: 'terminate',
+    params: [
+      {id: 'count', as: 'number', dynamic: true, mandatory: true}
+    ],
+    impl: (ctx,count) => jb.callbag.take(count(),ctx)
+  })
+  
+  component('rx.takeWhile', {
+    type: 'rx',
+    description: 'closes the stream on condition',
+    category: 'terminate',
+    params: [
+      {id: 'whileCondition', as: 'boolean', dynamic: true, mandatory: true, type: 'boolean'},
+      {id: 'passLastEvent', as: 'boolean', type: 'boolean', byName: true}
+    ],
+    impl: (ctx,whileCondition,passLastEvent) => jb.callbag.takeWhile(ctx => whileCondition(ctx), passLastEvent)
+  })
+  
+  component('rx.toArray', {
+    type: 'rx',
+    category: 'operator',
+    description: 'wait for all and returns next item as array',
+    impl: ctx => source => jb.callbag.pipe(source, jb.callbag.toArray(), jb.callbag.map(arr=> ctx.dataObj(arr.map(x=>x.data))))
+  })
+  
+  component('rx.last', {
+    type: 'rx',
+    category: 'filter',
+    impl: () => jb.callbag.last()
+  })
+  
+  component('rx.skip', {
+    type: 'rx',
+    category: 'filter',
+    params: [
+      {id: 'count', as: 'number', dynamic: true}
+    ],
+    impl: (ctx,count) => jb.callbag.skip(count())
+  })
+  
+  component('rx.subscribe', {
+    type: 'rx',
+    description: 'forEach action for all items',
+    category: 'sink',
+    params: [
+      {id: 'next', type: 'action', dynamic: true, mandatory: true},
+      {id: 'error', type: 'action', dynamic: true},
+      {id: 'complete', type: 'action', dynamic: true}
+    ],
+    impl: (ctx,next, error, complete) => jb.callbag.subscribe(ctx2 => next(ctx2), ctx2 => error(ctx2), () => complete())
+  })
+  
+  component('sink.action', {
+    type: 'rx',
+    category: 'sink',
+    description: 'subscribe',
+    params: [
+      {id: 'action', type: 'action', dynamic: true, mandatory: true}
+    ],
+    impl: (ctx,action) => jb.callbag.subscribe(ctx2 => { ctx; return action(ctx2) })
+  })
+  
+  component('sink.data', {
+    type: 'rx',
+    params: [
+      {id: 'Data', as: 'ref', dynamic: true, mandatory: true}
+    ],
+    impl: sink.action(writeValue('%$Data()%', '%%'))
+  })
+  
+  component('rx.log', {
+    description: 'jb.log flow data, used for debug',
+    params: [
+      {id: 'name', as: 'string', dynamic: true, description: 'log names'},
+      {id: 'extra', as: 'single', dynamic: true, description: 'object. more properties to log'}
+    ],
+    impl: rx.do((ctx,vars,{name,extra}) => jb.log(name(ctx),{data: ctx.data,vars,...extra(ctx), ctx: ctx.cmpCtx}))
+  })
+  
+  component('rx.clog', {
+    description: 'console.log flow data, used for debug',
+    params: [
+      {id: 'name', as: 'string'}
+    ],
+    impl: rx.do((x,{},{name}) => console.log(name,x))
+  })
+  
+  component('rx.sniffer', {
+    description: 'console.log data & control',
+    params: [
+      {id: 'name', as: 'string'}
+    ],
+    impl: (ctx,name) => source => jb.callbag.sniffer(source, {next: x => console.log(name,x)})
+  })
+  
+  // ********** subject 
+  component('rx.subject', {
+    type: 'data',
+    description: 'callbag "variable" that you can write or listen to',
+    category: 'variable',
+    params: [
+      {id: 'id', as: 'string', description: 'can be used for logging'},
+      {id: 'replay', as: 'boolean', description: 'keep pushed items for late subscription', type: 'boolean'},
+      {id: 'itemsToKeep', as: 'number', description: 'relevant for replay, empty for unlimited'}
+    ],
+    impl: (ctx,id, replay,itemsToKeep) => {
+        const trigger = jb.callbag.subject(id)
+        const source = replay ? jb.callbag.replay(itemsToKeep)(trigger): trigger
+        source.ctx = trigger.ctx = ctx
+        return { trigger, source } 
+      }
+  })
+  
+  component('sink.subjectNext', {
+    type: 'rx',
+    params: [
+      {id: 'subject', mandatory: true}
+    ],
+    impl: (ctx,subject) => jb.callbag.subscribe(e => subject.trigger.next(e))
+  })
+  
+  component('source.subject', {
+    type: 'rx',
+    params: [
+      {id: 'subject', mandatory: true}
+    ],
+    impl: (ctx,subj) => subj.source
+  })
+  
+  component('action.subjectNext', {
+    type: 'action',
+    params: [
+      {id: 'subject', mandatory: true},
+      {id: 'Data', dynamic: true, defaultValue: '%%'}
+    ],
+    impl: (ctx,subject,data) => subject.trigger.next(ctx.dataObj(data(ctx)))
+  })
+  
+  component('action.subjectComplete', {
+    type: 'action',
+    params: [
+      {id: 'subject', mandatory: true}
+    ],
+    impl: (ctx,subject) => subject.trigger.complete()
+  })
+  
+  component('action.subjectError', {
+    type: 'action',
+    params: [
+      {id: 'subject', mandatory: true},
+      {id: 'error', dynamic: true, mandatory: true}
+    ],
+    impl: (ctx,subject,error) => subject.trigger.error(error())
+  })
+  
+  // ********** queue 
+  component('rx.queue', {
+    type: 'data',
+    description: 'message queue',
+    category: 'variable',
+    params: [
+      {id: 'items', as: 'array'}
+    ],
+    impl: (ctx,items) => ({ items: items.slice(0), subject: jb.callbag.subject(), mkmk: 5 })
+  })
+  
+  component('source.queue', {
+    type: 'rx',
+    params: [
+      {id: 'queue', mandatory: true}
+    ],
+    impl: source.merge(source.data('%$queue/items%'), '%$queue/subject%')
+  })
+  
+  component('action.addToQueue', {
+    type: 'action',
+    params: [
+      {id: 'queue', mandatory: true},
+      {id: 'item', dynamic: true, defaultValue: '%%'}
+    ],
+    impl: (ctx,queue,item) => {
+      const toAdd = item(ctx)
+      queue.items.push(toAdd)
+      queue.subject.next(ctx.dataObj(toAdd)) 
+    }
+  })
+  
+  component('action.removeFromQueue', {
+    type: 'action',
+    params: [
+      {id: 'queue', mandatory: true},
+      {id: 'item', dynamic: true, defaultValue: '%%'}
+    ],
+    impl: (ctx,queue,item) => {
+      const index = queue.items.indexOf(item(ctx))
+      if (index != -1)
+        queue.items.splice(index,1)
+    }
+  })
+  
+  });
+  
+  jbLoadPackedFile({lineInPackage:4906, jb, noProxies: false, path: '/plugins/rx/jb-callbag.js',fileDsl: '', pluginId: 'rx' }, 
               function({jb,require,source,rx,sink,action,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,component,extension,using,dsl,pluginDsl}) {
   extension('callbag', {
     fromIter: iter => (start, sink) => {
@@ -5278,694 +5965,322 @@ async function jbLoadPacked({uri,initSpyByUrl,multipleInFrame}={}) {
   
   });
   
-  jbLoadPackedFile({lineInPackage:5283, jb, noProxies: false, path: '/plugins/rx/rx-comps.js',fileDsl: '', pluginId: 'rx' }, 
-              function({jb,require,source,rx,sink,action,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,component,extension,using,dsl,pluginDsl}) {
-  using('common')
+  jbLoadPackedFile({lineInPackage:5970, jb, noProxies: false, path: '/plugins/remote/jbm/jbm.js',fileDsl: '', pluginId: 'remote-jbm' }, 
+              function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
+  pluginDsl('jbm')
+  using('loader,tree-shake')
   
-  component('source.data', {
-    type: 'rx',
+  component('stateless', {
+    type: 'jbm',
     params: [
-      {id: 'Data', mandatory: true}
+      {id: 'sourceCode', type: 'source-code<loader>'}
     ],
-    impl: (ctx,data) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromIter(jb.toarray(data)))
+    impl: If(isNode(), cmd('%$sourceCode%'), webWorker({ sourceCode: '%$sourceCode%', stateless: true }))
   })
   
-  component('source.watchableData', {
-    type: 'rx',
-    description: 'wait for data change and returns {op, newVal,oldVal}',
+  component('worker', {
+    type: 'jbm',
     params: [
-      {id: 'ref', as: 'ref'},
-      {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', byName: true, description: 'watch childern change as well'}
+      {id: 'id', as: 'string'},
+      {id: 'sourceCode', type: 'source-code<loader>', byName: true},
+      {id: 'init', type: 'action<>', dynamic: true},
+      {id: 'networkPeer', as: 'boolean', description: 'used for testing', type: 'boolean'}
     ],
-    impl: (ctx,ref,includeChildren) => jb.callbag.map(x => ctx.dataObj({...x, before: null, after: null}))(jb.watchable.refObservable(ref,{includeChildren, srcCtx: ctx}))
-  })
-  
-  component('source.callbag', {
-    type: 'rx',
-    params: [
-      {id: 'callbag', mandatory: true, description: 'callbag source function'}
-    ],
-    impl: (ctx,callbag) => jb.callbag.map(x=>ctx.dataObj(x))(callbag || jb.callbag.fromIter([]))
-  })
-  
-  component('source.callbackLoop', {
-    type: 'rx',
-    params: [
-      {id: 'registerFunc', mandatory: true, description: 'receive callback function. needs to be recalled for next event'},
-    ],
-    impl: (ctx,registerFunc) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromCallbackLoop(registerFunc))
-  })
-  
-  component('source.animationFrame', {
-    type: 'rx',
-    impl: source.callbackLoop(({},{uiTest})=> (uiTest ? jb.test : jb.frame).requestAnimationFrame || (() => {}))
-  })
-  
-  /*
-  producer interface: obs => {
-    bind('myBind', handler)
-    return () => unbind('myBind',handler)
-    function handler(x) { obs(x) }
-  }
-  */
-  component('source.producer', {
-    type: 'rx',
-    params: [
-      {id: 'producer', dynamic: true, mandatory: true, description: 'producer function'},
-    ],
-    impl: (ctx,producer) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromProducer(producer))
-  })
-  
-  component('source.event', {
-    type: 'rx',
-    params: [
-      {id: 'event', as: 'string', mandatory: true, options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll,resize'},
-      {id: 'elem', description: 'html element', defaultValue: () => jb.frame.document},
-      {id: 'options', description: 'addEventListener options, https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener'},
-      {id: 'selector', as: 'string', description: 'optional, including the elem', byName: true}
-    ],
-    impl: (ctx,event,_elem,options,selector) => {
-      const elem = selector ? jb.ui.findIncludeSelf(_elem,selector)[0]: _elem
-      return elem && jb.callbag.map(sourceEvent=>ctx.setVars({sourceEvent, elem}).dataObj(sourceEvent))(jb.callbag.fromEvent(event,elem,options))
-    }
-  })
-  
-  component('source.any', {
-    type: 'rx',
-    params: [
-      {id: 'source', mandatory: true, description: 'the source is detected by its type: promise, iterable, single, callbag element, etc..'}
-    ],
-    impl: (ctx,source) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromAny(source || []))
-  })
-  
-  component('source.promise', {
-    type: 'rx',
-    params: [
-      {id: 'promise', mandatory: true}
-    ],
-    impl: (ctx,promise) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromPromise(promise))
-  })
-  
-  component('source.interval', {
-    type: 'rx',
-    params: [
-      {id: 'interval', as: 'number', templateValue: '1000', description: 'time in mSec'}
-    ],
-    impl: (ctx,interval) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.interval(interval))
-  })
-  
-  component('rx.pipe', {
-    type: 'rx',
-    moreTypes: 'data<>,action<>',
-    category: 'source',
-    description: 'pipeline of reactive observables with source',
-    params: [
-      {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
-    ],
-    impl: (ctx,elems) => 
-      jb.callbag.pipe(...jb.callbag.injectSniffers(elems(ctx).filter(x=>x),ctx))
-  })
-  
-  component('source.merge', {
-    type: 'rx',
-    category: 'source',
-    description: 'merge callbags sources (or any)',
-    params: [
-      {id: 'sources', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: [], composite: true}
-    ],
-    impl: (ctx,sources) => jb.callbag.merge(...sources(ctx))
-  })
-  
-  component('source.mergeConcat', {
-    type: 'rx',
-    category: 'source',
-    description: 'merge sources while keeping the order of sources',
-    params: [
-      {id: 'sources', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: [], composite: true}
-    ],
-    impl: rx.pipe(
-      source.data(ctx => ctx.cmpCtx.params.sources.profile),
-      rx.concatMap(ctx => ctx.run(ctx.data))
-    )
-  })
-  
-  // ******** operators *****
-  
-  component('rx.innerPipe', {
-    type: 'rx',
-    category: 'operator',
-    description: 'composite operator, inner reactive pipeline without source',
-    params: [
-      {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, templateValue: []}
-    ],
-    impl: (ctx,elems) => source => jb.callbag.pipe(source, ...elems)
-  })
-  
-  component('rx.fork', {
-    type: 'rx',
-    category: 'operator',
-    description: 'separate operator with same source data',
-    params: [
-      {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, templateValue: []}
-    ],
-    impl: (ctx,elems) => jb.callbag.fork(...elems)
-  })
-  
-  component('rx.startWith', {
-    type: 'rx',
-    category: 'operator',
-    description: 'startWith callbags sources (or any)',
-    params: [
-      {id: 'sources', type: 'rx[]', as: 'array'}
-    ],
-    impl: (ctx,sources) => jb.callbag.startWith(...sources)
-  })
-  
-  component('rx.var', {
-    type: 'rx',
-    category: 'operator',
-    description: 'define an immutable variable that can be used later in the pipe',
-    params: [
-      {id: 'name', as: 'string', dynamic: true, mandatory: true, description: 'if empty, does nothing'},
-      {id: 'value', dynamic: true, defaultValue: '%%', mandatory: true}
-    ],
-    impl: If('%$name%', (ctx,{},{name,value}) => source => (start, sink) => {
-        if (start != 0) return 
-        return source(0, function Var(t, d) {
-          const vars = t == 1 && d && {...d.vars, [name()]: value(d)}
-          t == 1 && d && ctx.cmpCtx.dataObj(d.data,vars)
-          sink(t, t === 1 ? d && {data: d.data, vars } : d)
-        })
-      })
-  })
-  
-  component('rx.resource', {
-    type: 'rx',
-    category: 'operator',
-    description: 'define a static mutable variable that can be used later in the pipe',
-    params: [
-      {id: 'name', as: 'string', dynamic: true, mandatory: true, description: 'if empty, does nothing'},
-      {id: 'value', dynamic: true, mandatory: true}
-    ],
-    impl: If('%$name%', (ctx,{},{name,value}) => source => (start, sink) => {
-      if (start != 0) return
-      let val, calculated
-      return source(0, function Var(t, d) {
-        val = calculated ? val : value()
-        calculated = true
-        sink(t, t === 1 ? d && {data: d.data, vars: {...d.vars, [name()]: val}} : d)
+    impl: If({
+      condition: isNode(),
+      then: If({
+        condition: isVscode(),
+        then: remoteNodeWorker('%$id%', { sourceCode: '%$sourceCode%', init: '%$init()%' }),
+        Else: nodeWorker('%$id%', { sourceCode: '%$sourceCode%', init: '%$init()%' })
+      }),
+      Else: webWorker('%$id%', {
+        sourceCode: '%$sourceCode%',
+        init: '%$init()%',
+        networkPeer: '%$networkPeer%'
       })
     })
   })
   
-  component('rx.reduce', {
-    type: 'rx',
-    category: 'operator',
-    description: 'incrementally aggregates/accumulates data in a variable, e.g. count, concat, max, etc',
+  component('webWorker', {
+    type: 'jbm',
     params: [
-      {id: 'varName', as: 'string', mandatory: true, description: 'the result is accumulated in this var', templateValue: 'acc'},
-      {id: 'initialValue', dynamic: true, description: 'receives first value as input', mandatory: true},
-      {id: 'value', dynamic: true, defaultValue: '%%', description: 'the accumulated value use %$acc%,%% %$prev%', mandatory: true},
-      {id: 'avoidFirst', as: 'boolean', description: 'used for join with separators, initialValue uses the first value without adding the separtor', type: 'boolean'}
+      {id: 'id', as: 'string'},
+      {id: 'sourceCode', type: 'source-code<loader>', byName: true, defaultValue: treeShakeClient()},
+      {id: 'init', type: 'action<>', dynamic: true},
+      {id: 'networkPeer', as: 'boolean', description: 'used for testing', type: 'boolean'},
+      {id: 'stateless', as: 'boolean', description: 'can not be rx data source, or remote widget', type: 'boolean'}
     ],
-    impl: (ctx,varName,initialValue,value,avoidFirst) => source => (start, sink) => {
-      if (start !== 0) return
-      let acc, prev, first = true
-      source(0, function reduce(t, d) {
-        if (t == 1) {
-          if (first) {
-            acc = initialValue(d)
-            first = false
-            if (!avoidFirst)
-              acc = value({data: d.data, vars: {...d.vars, [varName]: acc}})
-          } else {
-            acc = value({data: d.data, vars: {...d.vars, prev, [varName]: acc}})
-          }
-          sink(t, acc == null ? d : {data: d.data, vars: {...d.vars, [varName]: acc}})
-          prev = d.data
-        } else {
-          sink(t, d)
+    impl: (ctx,_id,sourceCode,init,networkPeer) => {
+        const id = (_id || 'w1').replace(/-/g,'__')
+        const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
+        if (childsOrNet[id]) return childsOrNet[id]
+        const workerUri = networkPeer ? id : `${jb.uri}•${id}`
+        const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
+        sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),'remote-jbm','tree-shake'])
+  
+        const workerCode = `
+  importScripts(location.origin+'/plugins/loader/jb-loader.js');
+  //importScripts(location.origin+'/package/${sourceCode.plugins.join(',')}.js'); // 
+  jbHost.baseUrl = location.origin || '';
+  Promise.resolve(jbInit('${workerUri}', ${JSON.stringify(sourceCode)})).then(jb => {
+  //jbLoadPacked({uri:'${workerUri}'}).then(jb => {
+    globalThis.jb = jb;
+    jb.spy.initSpy({spyParam: "${jb.spy.spyParam}"});
+    jb.treeShake.codeServerJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
+    self.postMessage({ $: 'workerReady' })
+  })
+  //# sourceURL=${workerUri}-initJb.js`
+  
+        return childsOrNet[id] = {
+            uri: workerUri,
+            rjbm() {
+                  if (this._rjbm) return this._rjbm
+                  if (this.waitingForPromise) return this.waitingForPromise
+                  const self = this
+                  return this.waitingForPromise = new Promise(resolve => {
+                    const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
+                    worker.addEventListener('message', async function f1(m) {
+                        if (m.data.$ == 'workerReady') {
+                            if (self._rjbm) {
+                                resolve(self._rjbm) // race condition
+                            } else {
+                                worker.removeEventListener('message',f1)
+                                const rjbm = self._rjbm = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
+                                rjbm.worker = worker
+                                await init(ctx.setVar('jbm',childsOrNet[id]))
+                                resolve(rjbm)
+                            }
+                        }
+                    })
+                })
+            }
         }
-      })
     }
   })
   
-  component('rx.count', {
+  component('child', {
+    type: 'jbm',
     params: [
-      {id: 'varName', as: 'string', mandatory: true, defaultValue: 'count'}
+      {id: 'id', as: 'string'},
+      {id: 'sourceCode', type: 'source-code<loader>', byName: true, defaultValue: treeShakeClient()},
+      {id: 'init', type: 'action<>', dynamic: true}
     ],
-    impl: rx.reduce('%$varName%', 0, { value: (ctx,{},{varName}) => ctx.vars[varName]+1 })
+    impl: (ctx,_id,sourceCode,init) => {
+          const id = _id || 'child1'
+          if (jb.jbm.childJbms[id]) return jb.jbm.childJbms[id]
+          const childUri = `${jb.uri}•${id}`
+          sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),'remote-jbm','tree-shake'])
+  
+          return jb.jbm.childJbms[id] = {
+              uri: childUri,
+              async rjbm() {
+                  if (this._rjbm) return this._rjbm
+                  const child = this.child = await jbInit(childUri, sourceCode, {multipleInFrame: true})
+                  //child.spy.initSpy({spyParam: jb.spy.spyParam})
+                  child.rjbm = () => this._rjbm
+                  this._rjbm = initChild(child)
+                  await init(ctx.setVar('jbm',child))
+                  return this._rjbm
+              }
+          }
+  
+          function initChild(child) {
+              child.spy.initSpy({spyParam: jb.spy.spyParam})
+              child.parent = jb
+              child.treeShake.codeServerJbm = jb.treeShake.codeServerJbm || jb // TODO: use codeLoaderUri
+              child.ports[jb.uri] = {
+                  from: child.uri, to: jb.uri,
+                  postMessage: m => 
+                      jb.net.handleOrRouteMsg(jb.uri,child.uri,jb.ports[child.uri].handler, {from: child.uri, to: jb.uri,...m}),
+                  onMessage: { addListener: handler => child.ports[jb.uri].handler = handler }, // only one handler
+              }
+              child.jbm.extendPortToJbmProxy(child.ports[jb.uri])
+              jb.ports[child.uri] = {
+                  from: jb.uri,to: child.uri,
+                  postMessage: m => 
+                      child.net.handleOrRouteMsg(child.uri,jb.uri,child.ports[jb.uri].handler , {from: jb.uri, to: child.uri,...m}),
+                  onMessage: { addListener: handler => jb.ports[child.uri].handler = handler }, // only one handler
+              }
+              return jb.jbm.extendPortToJbmProxy(jb.ports[child.uri])
+          }
+      }
   })
   
-  component('rx.join', {
+  component('cmd', {
+    type: 'jbm',
     params: [
-      {id: 'varName', as: 'string', mandatory: true, defaultValue: 'join'},
-      {id: 'separator', as: 'string', defaultValue: ','}
+      {id: 'sourceCode', type: 'source-code<loader>', mandatory: true},
+      {id: 'viaHttpServer', as: 'string', defaultValue: 'http://localhost:8082'},
+      {id: 'doNotStripResult', as: 'boolean', type: 'boolean'},
+      {id: 'id', as: 'string'},
+      {id: 'spy', as: 'string'},
+      {id: 'includeLogs', as: 'boolean', type: 'boolean'}
     ],
-    impl: rx.reduce('%$varName%', '%%', {
-      value: (ctx,{},{varName,separator}) => [ctx.vars[varName],ctx.data].join(separator),
-      avoidFirst: true
+    impl: (ctx,_sourceCode,viaHttpServer,doNotStripResult,id,spy,includeLogs) => ({
+          uri: id || 'main',
+          remoteExec: async (sctx,{data, action} = {}) => {
+              const plugins = !_sourceCode ? jb.loader.pluginsOfProfile([(data || action).profile, jb.path(sctx,'cmpCtx.params')]) : []
+              const sourceCode = _sourceCode || { plugins , pluginPackages: [{$:'defaultPackage'}] }
+              sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []), ...plugins])
+      
+              const args = [
+                  ['-runCtx', JSON.stringify(sctx)],
+                  ['-uri', id || `main`],
+                  ['-sourceCode', JSON.stringify(sourceCode)],
+                  spy ? ['-spy', spy]: [],
+                  doNotStripResult ? ['-doNotStripResult',''+doNotStripResult] : []
+              ].filter(x=>x[1])
+              const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(arg=> `${arg[0]}:` + 
+                  (arg[1].indexOf("'") != -1 ? `"${arg[1].replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg[1]}'`)).join(' ')}`
+              let cmdResult = null
+              if (viaHttpServer) {
+                  const body = JSON.stringify(args.map(([k,v])=>`${k}:${v}`))
+                  const url = `${viaHttpServer}/?op=jb`
+                  jb.log('remote cmd activated via http server',{url,body,ctx})
+                  cmdResult = await jbHost.fetch(url,{method: 'POST', body}).then(r => r.text())
+              } else if (jbHost.spawn) {
+                  try {
+                     cmdResult = await jbHost.spawn(args)
+                  } catch (e) {
+                    jb.logException(e,'cmd',{command})
+                  }
+              }
+              try {
+                  const resultWithLogs = JSON.parse(cmdResult)
+                  jb.log('remote cmd result',{resultWithLogs, ctx})
+                  return includeLogs ? resultWithLogs : resultWithLogs.result
+              } catch (err) {
+                  debugger
+                  jb.logError('remote cmd: can not parse result returned from jb.js',{cmdResult, command, err})
+              }
+          },
+          createCallbagSource: () => jb.logError('callbag is not supported in single run jbm'),
+          createCallbagOperator: () => jb.logError('callbag is not supported in single run jbm'),
+  
+          async rjbm() { return this }
+      })
+  })
+  
+  component('byUri', {
+    type: 'jbm',
+    params: [
+      {id: 'uri', as: 'string', dynamic: true}
+    ],
+    impl: ({},_uri) => {
+        const uri = _uri()
+        return findNeighbourJbm(uri) || {
+            uri,
+            rjbm() {
+                this._rjbm = this._rjbm || jb.jbm.extendPortToJbmProxy(remoteRoutingPort(jb.uri, uri),{doNotinitCommandListener: true})
+                return this._rjbm
+            }
+        }
+  
+        function remoteRoutingPort(from,to) {
+            if (jb.ports[to]) return jb.ports[to]
+            const routingPath = calcRoutingPath(from,to)
+            if (routingPath.length == 2 && jb.ports[routingPath[1]])
+                return jb.ports[routingPath[1]]
+            let nextPort = jb.ports[routingPath[1]]
+            if (!nextPort && jb.jbm.gateway) {
+                routingPath.splice(1,0,jb.jbm.gateway.uri)
+                nextPort = jb.jbm.gateway
+            }
+            if (!nextPort) {
+                return jb.logError(`routing - can not find next port`,{routingPath, uri: jb.uri, from,to})
+            }
+    
+            const port = {
+                from, to,
+                postMessage: _m => { 
+                    const m = {from, to,routingPath,..._m}
+                    jb.log(`remote routing sent from ${from} to ${to}`,{m})
+                    nextPort.postMessage(m)
+                },
+                onMessage: { addListener: handler => nextPort.onMessage.addListener(m => jb.net.handleOrRouteMsg(from,to,handler,m)) },
+                onDisconnect: { addListener: handler => { port.disconnectHandler = handler} }
+            }
+            jb.ports[to] = port
+            return port
+        }
+  
+        function calcRoutingPath(from,to) {
+            const pp1 = from.split('•'), pp2 = to.split('•')
+            const p1 = pp1.map((p,i) => pp1.slice(0,i+1).join('•'))
+            const p2 = pp2.map((p,i) => pp2.slice(0,i+1).join('•'))
+            let i =0;
+            while (p1[i] === p2[i] && i < p1.length) i++;
+            const path_to_shared_parent = i ? p1.slice(i-1) : p1.slice(i) // i == 0 means there is no shared parent, so network is used
+            return [...path_to_shared_parent.reverse(),...p2.slice(i)]
+        }
+        function findNeighbourJbm(uri) {
+            return [jb, jb.parent, ...Object.values(jb.jbm.childJbms), ...Object.values(jb.jbm.networkPeers)].filter(x=>x).find(x=>x.uri == uri)
+        }
+    }
+  })
+  
+  component('jbm.self', {
+    type: 'jbm',
+    impl: () => {
+        jb.rjbm = jb.rjbm || (() => jb)
+        return jb
+    }
+  })
+  
+  component('jbm.isSelf', {
+    params: [
+      {id: 'jbm', type: 'jbm', mandatory: true}
+    ],
+    type: 'boolean<>',
+    impl: (ctx,jbm) => jbm == jb
+  })
+  
+  component('parent', {
+    type: 'jbm',
+    impl: () => ({
+      uri: jb.parent.uri,
+      rjbm: () => jb.parent
     })
   })
   
-  component('rx.max', {
+  component('jbm.start', {
+    type: 'data<>',
+    moreTypes: 'action<>',
     params: [
-      {id: 'varName', as: 'string', mandatory: true, defaultValue: 'max'},
-      {id: 'value', dynamic: true, defaultValue: '%%'}
+      {id: 'jbm', type: 'jbm', mandatory: true}
     ],
-    impl: rx.reduce('%$varName%', -Infinity, {
-      value: (ctx,{},{varName,value}) => Math.max(ctx.vars[varName],value(ctx))
-    })
+    impl: pipe('%$jbm%', '%rjbm()%', '%$jbm%', first())
   })
   
-  component('rx.do', {
-    type: 'rx',
-    category: 'operator',
+  component('jbm.terminateChild', {
+    type: 'action<>',
     params: [
-      {id: 'action', type: 'action', dynamic: true, mandatory: true}
+      {id: 'id', as: 'string'}
     ],
-    impl: (ctx,action) => jb.callbag.Do(ctx2 => action(ctx2))
+    impl: (ctx,id) => jb.jbm.terminateChild(id,ctx)
   })
   
-  component('rx.doPromise', {
-    type: 'rx',
-    category: 'operator',
+  component('isNode', {
+    type: 'boolean<>',
+    impl: () => globalThis.jbHost.isNode
+  })
+  
+  component('isVscode', {
+    type: 'boolean<>',
+    impl: () => globalThis.jbHost.isVscode
+  })
+  
+  component('nodeOnly', {
+    type: 'data<>',
     params: [
-      {id: 'action', type: 'action', dynamic: true, mandatory: true}
+      {id: 'calc', dynamic: true, mandatory: true},
+      {id: 'sourceCode', type: 'source-code<loader>', mandatory: true}
     ],
-    impl: (ctx,action) => jb.callbag.doPromise(ctx2 => action(ctx2))
+    impl: If(and(isNode(), not(isVscode())), '%$calc()%', remote.data('%$calc()%', cmd('%$sourceCode%')))
   })
-  
-  component('rx.map', {
-    type: 'rx',
-    category: 'operator',
-    params: [
-      {id: 'func', dynamic: true, mandatory: true}
-    ],
-    impl: (ctx,func) => jb.callbag.map(jb.utils.addDebugInfo(ctx2 => ctx.dataObj(func(ctx2), ctx2.vars || {},ctx2.data),ctx))
-  })
-  
-  component('rx.mapPromise', {
-    type: 'rx',
-    category: 'operator',
-    params: [
-      {id: 'func', type: 'data', moreTypes: 'action<>', dynamic: true, mandatory: true}
-    ],
-    impl: (ctx,func) => jb.callbag.mapPromise(ctx2 => Promise.resolve(func(ctx2)).then(data => ctx.dataObj(data, ctx2.vars || {}, ctx2.data))
-      .catch(err => ({vars: {...ctx2.vars, err }, data: err})) )
-  })
-  
-  component('rx.filter', {
-    type: 'rx',
-    category: 'filter',
-    params: [
-      {id: 'filter', type: 'boolean', dynamic: true, mandatory: true}
-    ],
-    impl: (ctx,filter) => jb.callbag.filter(jb.utils.addDebugInfo(ctx2 => filter(ctx2),ctx))
-  })
-  
-  component('rx.flatMap', {
-    type: 'rx',
-    category: 'operator',
-    description: 'match inputs the callbags or promises',
-    params: [
-      {id: 'source', type: 'rx', category: 'source', dynamic: true, mandatory: true, description: 'map each input to source callbag'},
-      {id: 'onInputBegin', type: 'action', dynamic: true, byName: true},
-      {id: 'onInputEnd', type: 'action', dynamic: true},
-      {id: 'onItem', type: 'action', dynamic: true}
-    ],
-    impl: (ctx,sourceGenerator,onInputBegin,onInputEnd,onItem) => source => (start, sink) => {
-      if (start !== 0) return
-      let sourceTalkback, innerSources = [], sourceEnded
-  
-      source(0, function flatMap(t, d) {
-        if (t === 0) 
-          sourceTalkback = d
-        if (t === 1 && d != null)
-          createInnerSrc(d)
-        if (t === 2) {
-            sourceEnded = true
-            stopOrContinue(d)
-        }
-      })
-  
-      sink(0, function flatMap(t,d) {
-        if (t == 1 && d == null || t == 2) {
-          sourceTalkback && sourceTalkback(t,d)
-          innerSources.forEach(src=>src.talkback && src.talkback(t,d))
-        }
-      })
-  
-      function createInnerSrc(d) {
-        const ctxToUse = ctx.setData(d.data).setVars(d.vars)
-        const newSrc = sourceGenerator(ctxToUse)
-        innerSources.push(newSrc)
-        onInputBegin.profile && onInputBegin(ctxToUse)
-        newSrc(0, function flatMap(t,d) {
-          if (t == 0) newSrc.talkback = d
-          if (t == 1) {
-            if (d && onItem.profile) onItem(ctxToUse.setData(d))
-            sink(t,d)
-          }
-          if (t != 2 && newSrc.talkback) newSrc.talkback(1)
-          if (t == 2) {
-            onInputEnd.profile && onInputEnd(ctxToUse)
-            innerSources.splice(innerSources.indexOf(newSrc),1)
-            stopOrContinue(d)
-          }
-        })
-      }
-  
-      function stopOrContinue(d) {
-        if (sourceEnded && innerSources.length == 0)
-          sink(2,d)
-      }
-    }
-  })
-  
-  component('rx.flatMapArrays', {
-    type: 'rx',
-    category: 'operator',
-    description: 'match inputs to data arrays',
-    params: [
-      {id: 'func', dynamic: true, defaultValue: '%%', description: 'should return array, items will be passed one by one'}
-    ],
-    impl: rx.flatMap(source.data(call('func')))
-  })
-  
-  component('rx.concatMap', {
-    type: 'rx',
-    category: 'operator,combine',
-    params: [
-      {id: 'func', type: 'rx', dynamic: true, mandatory: true, description: 'keeps the order of the results, can return array, promise or callbag'},
-      {id: 'combineResultWithInput', dynamic: true, description: 'combines %$input% with the inner result %%'}
-    ],
-    impl: (ctx,func,combine) => combine.profile ? jb.callbag.concatMap(ctx2 => func(ctx2), (input,{data}) => combine({data,vars: {...input.vars, input: input.data} }))
-      : jb.callbag.concatMap(ctx2 => func(ctx2))
-  })
-  
-  component('rx.distinctUntilChanged', {
-    type: 'rx',
-    description: 'filters adjacent items in stream',
-    category: 'filter',
-    params: [
-      {id: 'equalsFunc', dynamic: true, mandatory: true, defaultValue: ({data},{prev}) => data === prev, description: 'e.g. %% == %$prev%'}
-    ],
-    impl: (ctx,equalsFunc) => jb.callbag.distinctUntilChanged((prev,cur) => equalsFunc(ctx.setData(cur.data).setVar('prev',prev.data)), ctx)
-  })
-  
-  component('rx.distinct', {
-    type: 'rx',
-    description: 'filters unique values',
-    category: 'filter',
-    params: [
-      {id: 'key', as: 'string', dynamic: true, defaultValue: '%%'}
-    ],
-    impl: (ctx,keyFunc) => jb.callbag.distinct(jb.utils.addDebugInfo(ctx2 => keyFunc(ctx2),ctx))
-  })
-  
-  component('rx.catchError', {
-    type: 'rx',
-    category: 'error',
-    impl: ctx => jb.callbag.catchError(err => ctx.dataObj(err))
-  })
-  
-  component('rx.timeoutLimit', {
-    type: 'rx',
-    category: 'error',
-    params: [
-      {id: 'timeout', dynamic: true, defaultValue: '3000', description: 'can be dynamic'},
-      {id: 'error', dynamic: true, defaultValue: 'timeout'}
-    ],
-    impl: (ctx,timeout,error) => jb.callbag.timeoutLimit(timeout,error)
-  })
-  
-  component('rx.throwError', {
-    type: 'rx',
-    category: 'error',
-    params: [
-      {id: 'condition', as: 'boolean', dynamic: true, mandatory: true, type: 'boolean'},
-      {id: 'error', mandatory: true}
-    ],
-    impl: (ctx,condition,error) => jb.callbag.throwError(ctx2=>condition(ctx2), error)
-  })
-  
-  component('rx.debounceTime', {
-    type: 'rx',
-    description: 'waits for a cooldown period, them emits the last arrived',
-    category: 'operator',
-    params: [
-      {id: 'cooldownPeriod', dynamic: true, description: 'can be dynamic'},
-      {id: 'immediate', as: 'boolean', description: 'emits the first event immediately, default is true', type: 'boolean'}
-    ],
-    impl: (ctx,cooldownPeriod,immediate) => jb.callbag.debounceTime(cooldownPeriod,immediate)
-  })
-  
-  component('rx.throttleTime', {
-    type: 'rx',
-    description: 'enforces a cooldown period. Any data that arrives during the showOnly time is ignored',
-    category: 'operator',
-    params: [
-      {id: 'cooldownPeriod', dynamic: true, description: 'can be dynamic'},
-      {id: 'emitLast', as: 'boolean', description: 'emits the last event arrived at the end of the cooldown, default is true', type: 'boolean'}
-    ],
-    impl: (ctx,cooldownPeriod,emitLast) => jb.callbag.throttleTime(cooldownPeriod,emitLast)
-  })
-  
-  component('rx.delay', {
-    type: 'rx',
-    category: 'operator',
-    params: [
-      {id: 'time', dynamic: true, description: 'can be dynamic'}
-    ],
-    impl: (ctx,time) => jb.callbag.delay(time)
-  })
-  
-  component('rx.replay', {
-    type: 'rx',
-    description: 'stores messages and replay them for later subscription',
-    params: [
-      {id: 'itemsToKeep', as: 'number', description: 'empty for unlimited'}
-    ],
-    impl: (ctx,keep) => jb.callbag.replay(keep)
-  })
-  
-  component('rx.takeUntil', {
-    type: 'rx',
-    description: 'closes the stream when events comes from notifier',
-    category: 'terminate',
-    params: [
-      {id: 'notifier', type: 'rx', description: 'can be also promise or any other'}
-    ],
-    impl: (ctx,notifier) => jb.callbag.takeUntil(notifier)
-  })
-  
-  component('rx.take', {
-    type: 'rx',
-    description: 'closes the stream after taking some items',
-    category: 'terminate',
-    params: [
-      {id: 'count', as: 'number', dynamic: true, mandatory: true}
-    ],
-    impl: (ctx,count) => jb.callbag.take(count(),ctx)
-  })
-  
-  component('rx.takeWhile', {
-    type: 'rx',
-    description: 'closes the stream on condition',
-    category: 'terminate',
-    params: [
-      {id: 'whileCondition', as: 'boolean', dynamic: true, mandatory: true, type: 'boolean'},
-      {id: 'passLastEvent', as: 'boolean', type: 'boolean', byName: true}
-    ],
-    impl: (ctx,whileCondition,passLastEvent) => jb.callbag.takeWhile(ctx => whileCondition(ctx), passLastEvent)
-  })
-  
-  component('rx.toArray', {
-    type: 'rx',
-    category: 'operator',
-    description: 'wait for all and returns next item as array',
-    impl: ctx => source => jb.callbag.pipe(source, jb.callbag.toArray(), jb.callbag.map(arr=> ctx.dataObj(arr.map(x=>x.data))))
-  })
-  
-  component('rx.last', {
-    type: 'rx',
-    category: 'filter',
-    impl: () => jb.callbag.last()
-  })
-  
-  component('rx.skip', {
-    type: 'rx',
-    category: 'filter',
-    params: [
-      {id: 'count', as: 'number', dynamic: true}
-    ],
-    impl: (ctx,count) => jb.callbag.skip(count())
-  })
-  
-  component('rx.subscribe', {
-    type: 'rx',
-    description: 'forEach action for all items',
-    category: 'sink',
-    params: [
-      {id: 'next', type: 'action', dynamic: true, mandatory: true},
-      {id: 'error', type: 'action', dynamic: true},
-      {id: 'complete', type: 'action', dynamic: true}
-    ],
-    impl: (ctx,next, error, complete) => jb.callbag.subscribe(ctx2 => next(ctx2), ctx2 => error(ctx2), () => complete())
-  })
-  
-  component('sink.action', {
-    type: 'rx',
-    category: 'sink',
-    description: 'subscribe',
-    params: [
-      {id: 'action', type: 'action', dynamic: true, mandatory: true}
-    ],
-    impl: (ctx,action) => jb.callbag.subscribe(ctx2 => { ctx; return action(ctx2) })
-  })
-  
-  component('sink.data', {
-    type: 'rx',
-    params: [
-      {id: 'Data', as: 'ref', dynamic: true, mandatory: true}
-    ],
-    impl: sink.action(writeValue('%$Data()%', '%%'))
-  })
-  
-  component('rx.log', {
-    description: 'jb.log flow data, used for debug',
-    params: [
-      {id: 'name', as: 'string', dynamic: true, description: 'log names'},
-      {id: 'extra', as: 'single', dynamic: true, description: 'object. more properties to log'}
-    ],
-    impl: rx.do((ctx,vars,{name,extra}) => jb.log(name(ctx),{data: ctx.data,vars,...extra(ctx), ctx: ctx.cmpCtx}))
-  })
-  
-  component('rx.clog', {
-    description: 'console.log flow data, used for debug',
-    params: [
-      {id: 'name', as: 'string'}
-    ],
-    impl: rx.do((x,{},{name}) => console.log(name,x))
-  })
-  
-  component('rx.sniffer', {
-    description: 'console.log data & control',
-    params: [
-      {id: 'name', as: 'string'}
-    ],
-    impl: (ctx,name) => source => jb.callbag.sniffer(source, {next: x => console.log(name,x)})
-  })
-  
-  // ********** subject 
-  component('rx.subject', {
-    type: 'data',
-    description: 'callbag "variable" that you can write or listen to',
-    category: 'variable',
-    params: [
-      {id: 'id', as: 'string', description: 'can be used for logging'},
-      {id: 'replay', as: 'boolean', description: 'keep pushed items for late subscription', type: 'boolean'},
-      {id: 'itemsToKeep', as: 'number', description: 'relevant for replay, empty for unlimited'}
-    ],
-    impl: (ctx,id, replay,itemsToKeep) => {
-        const trigger = jb.callbag.subject(id)
-        const source = replay ? jb.callbag.replay(itemsToKeep)(trigger): trigger
-        source.ctx = trigger.ctx = ctx
-        return { trigger, source } 
-      }
-  })
-  
-  component('sink.subjectNext', {
-    type: 'rx',
-    params: [
-      {id: 'subject', mandatory: true}
-    ],
-    impl: (ctx,subject) => jb.callbag.subscribe(e => subject.trigger.next(e))
-  })
-  
-  component('source.subject', {
-    type: 'rx',
-    params: [
-      {id: 'subject', mandatory: true}
-    ],
-    impl: (ctx,subj) => subj.source
-  })
-  
-  component('action.subjectNext', {
-    type: 'action',
-    params: [
-      {id: 'subject', mandatory: true},
-      {id: 'Data', dynamic: true, defaultValue: '%%'}
-    ],
-    impl: (ctx,subject,data) => subject.trigger.next(ctx.dataObj(data(ctx)))
-  })
-  
-  component('action.subjectComplete', {
-    type: 'action',
-    params: [
-      {id: 'subject', mandatory: true}
-    ],
-    impl: (ctx,subject) => subject.trigger.complete()
-  })
-  
-  component('action.subjectError', {
-    type: 'action',
-    params: [
-      {id: 'subject', mandatory: true},
-      {id: 'error', dynamic: true, mandatory: true}
-    ],
-    impl: (ctx,subject,error) => subject.trigger.error(error())
-  })
-  
-  // ********** queue 
-  component('rx.queue', {
-    type: 'data',
-    description: 'message queue',
-    category: 'variable',
-    params: [
-      {id: 'items', as: 'array'}
-    ],
-    impl: (ctx,items) => ({ items: items.slice(0), subject: jb.callbag.subject(), mkmk: 5 })
-  })
-  
-  component('source.queue', {
-    type: 'rx',
-    params: [
-      {id: 'queue', mandatory: true}
-    ],
-    impl: source.merge(source.data('%$queue/items%'), '%$queue/subject%')
-  })
-  
-  component('action.addToQueue', {
-    type: 'action',
-    params: [
-      {id: 'queue', mandatory: true},
-      {id: 'item', dynamic: true, defaultValue: '%%'}
-    ],
-    impl: (ctx,queue,item) => {
-      const toAdd = item(ctx)
-      queue.items.push(toAdd)
-      queue.subject.next(ctx.dataObj(toAdd)) 
-    }
-  })
-  
-  component('action.removeFromQueue', {
-    type: 'action',
-    params: [
-      {id: 'queue', mandatory: true},
-      {id: 'item', dynamic: true, defaultValue: '%%'}
-    ],
-    impl: (ctx,queue,item) => {
-      const index = queue.items.indexOf(item(ctx))
-      if (index != -1)
-        queue.items.splice(index,1)
-    }
-  })
-  
   });
   
-  jbLoadPackedFile({lineInPackage:5970, jb, noProxies: false, path: '/plugins/remote/jbm/jbm-utils.js',fileDsl: '', pluginId: 'remote-jbm' }, 
+  jbLoadPackedFile({lineInPackage:6285, jb, noProxies: false, path: '/plugins/remote/jbm/jbm-utils.js',fileDsl: '', pluginId: 'remote-jbm' }, 
               function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
   /* jbm - a virtual jBart machine - can be implemented in same frame/sub frames/workers over the network
   interface jbm : {
@@ -6289,7 +6604,222 @@ async function jbLoadPacked({uri,initSpyByUrl,multipleInFrame}={}) {
   
   });
   
-  jbLoadPackedFile({lineInPackage:6294, jb, noProxies: false, path: '/plugins/remote/jbm/node-worker.js',fileDsl: '', pluginId: 'remote-jbm' }, 
+  jbLoadPackedFile({lineInPackage:6609, jb, noProxies: false, path: '/plugins/remote/jbm/remote-cmd.js',fileDsl: '', pluginId: 'remote-jbm' }, 
+              function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
+  component('remote.cmd', {
+    type: 'data<>',
+    moreTypes: 'action<>',
+    description: 'calc a script with jb.js',
+    params: [
+      {id: 'main', type: 'data<>', dynamic: true, moreTypes: 'action<>', description: 'e.g pipeline("hello","%% -- %$v1%")'},
+      {id: 'wrap', as: 'string', description: 'e.g prune(MAIN)'},
+      {id: 'context', description: 'e.g {v1: "xx", param1: prof1("yy") }'},
+      {id: 'sourceCode', type: 'source-code<loader>', mandatory: true},
+      {id: 'id', as: 'string', description: 'jb.uri of cmd, default is main'},
+      {id: 'viaHttpServer', as: 'string', defaultValue: 'http://localhost:8082'}
+    ],
+    impl: async (ctx, main, wrap, context, sourceCode, id, viaHttpServer) => {
+          const args = [
+              ['-main', jb.utils.prettyPrint(main.profile, { singleLine: true })],
+              ['-wrap', wrap],
+              ['-uri', id],
+              ['-sourceCode', JSON.stringify(sourceCode)],
+              ...Object.keys(context).map(k => [`%${k}`, context[k]]),
+          ].filter(x => x[1])
+          const body = JSON.stringify(args.map(([k, v]) => `${k}:${v}`))
+          const url = `${viaHttpServer}/?op=jb`
+  
+          return jbHost.fetch(url, { method: 'POST', body }).then(r => r.json()).then(x => x.result)
+  
+          function serializeContextVal(val) {
+              if (val && typeof val == 'object')
+                  return `() => ${JSON.stringify(val)}`
+              return val
+          }
+      }
+  })
+  
+  });
+  
+  jbLoadPackedFile({lineInPackage:6646, jb, noProxies: false, path: '/plugins/remote/jbm/remote-context.js',fileDsl: '', pluginId: 'remote-jbm' }, 
+              function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
+  extension('remoteCtx', {
+      initExtension() {
+          return { allwaysPassVars: ['widgetId','disableLog','uiTest'], MAX_ARRAY_LENGTH: 10000, MAX_OBJ_DEPTH: 100}
+      },
+      stripFunction(f, {require} = {}) {
+          const {profile,runCtx,path,param,srcPath} = f
+          if (!profile || !runCtx) return jb.remoteCtx.stripJS(f)
+          const profText = [jb.utils.prettyPrint(profile, {noMacros: true}),require].filter(x=>x).join(';')
+          const profNoJS = jb.remoteCtx.stripJSFromProfile(profile)
+          if (require) profNoJS.require = require.split(',').map(x=>x[0] == '#' ? `jb.${x.slice(1)}()` : {$: x})
+          const vars = jb.objFromEntries(jb.entries(runCtx.vars).filter(e => jb.remoteCtx.shouldPassVar(e[0],profText))
+              .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
+          const params = jb.objFromEntries(jb.entries(jb.path(runCtx.cmpCtx,'params')).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
+              .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
+          let probe = null
+          if (runCtx.probe && runCtx.probe.active && runCtx.probe.probePath.indexOf(srcPath) == 0) {
+              const { probePath, maxTime, id } = runCtx.probe
+              probe = { probePath, startTime: 0, maxTime, id, records: {}, visits: {}, active: true }
+          }
+          const usingData = jb.remoteCtx.usingData(profText)
+          return Object.assign({$: 'runCtx', id: runCtx.id, path: [srcPath,path].filter(x=>x).join('~'), param, probe, profile: profNoJS, data: usingData ? jb.remoteCtx.stripData(runCtx.data) : null, vars}, 
+              Object.keys(params).length ? {cmpCtx: {params} } : {})
+  
+      },    
+      stripCtx(ctx) {
+          if (!ctx) return null
+          const isJS = typeof ctx.profile == 'function'
+          const profText = jb.utils.prettyPrint(ctx.profile)
+          const vars = jb.objFromEntries(jb.entries(ctx.vars)
+              .filter(e => jb.remoteCtx.shouldPassVar(e[0],profText))
+              .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
+          const data = jb.remoteCtx.usingData(profText) && jb.remoteCtx.stripData(ctx.data)
+          const params = jb.objFromEntries(jb.entries(isJS ? ctx.params: jb.entries(jb.path(ctx.cmpCtx,'params')))
+              .filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
+              .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
+          const res = Object.assign({id: ctx.id, path: ctx.path, profile: ctx.profile, data, vars }, 
+              isJS ? {params,vars} : Object.keys(params).length ? {cmpCtx: {params} } : {} )
+          return res
+      },
+      stripData(data, { top, depth, path} = {}) {
+          if (data == null || (path||'').match(/parentNode$/)) return
+          const innerDepthAndPath = key => ({depth: (depth || 0) +1, top: top || data, path: [path,key].filter(x=>x).join('~') })
+  
+          if (['string','boolean','number'].indexOf(typeof data) != -1) return data
+          if (typeof data == 'function')
+               return jb.remoteCtx.stripFunction(data)
+          if (data instanceof jb.core.jbCtx)
+               return jb.remoteCtx.stripCtx(data)
+          if (depth > jb.remoteCtx.MAX_OBJ_DEPTH) {
+               jb.logError('stripData too deep object, maybe recursive',{top, path, depth, data})
+               return
+          }
+   
+          if (Array.isArray(data) && data.length > jb.remoteCtx.MAX_ARRAY_LENGTH)
+              jb.logError('stripData slicing large array',{data})
+          if (Array.isArray(data))
+               return data.slice(0,jb.remoteCtx.MAX_ARRAY_LENGTH).map((x,i)=>jb.remoteCtx.stripData(x, innerDepthAndPath(i)))
+          if (typeof data == 'object' && ['DOMRect'].indexOf(data.constructor.name) != -1)
+              return jb.objFromEntries(Object.keys(data.__proto__).map(k=>[k,data[k]]))
+          if (typeof data == 'object' && (jb.path(data.constructor,'name') || '').match(/Error$/))
+              return {$$: 'Error', message: data.toString() }
+          if (typeof data == 'object' && ['VNode','Object','Array'].indexOf(data.constructor.name) == -1)
+              return { $$: data.constructor.name }
+          if (typeof data == 'object' && data[jb.core.VERSION])
+              return { uri : data.uri}
+          if (typeof data == 'object')
+               return jb.objFromEntries(jb.entries(data)
+                  .filter(e=> data.$ || typeof e[1] != 'function') // if not a profile, block functions
+  //                .map(e=>e[0] == '$' ? [e[0], jb.path(data,[jb.core.CT,'comp',jb.core.CT,'fullId']) || e[1]] : e)
+                  .map(e=>[e[0],jb.remoteCtx.stripData(e[1], innerDepthAndPath(e[0]) )]))
+      },
+      deStrip(data, _asIs) {
+          if (typeof data == 'string' && data.match(/^@js@/))
+              return eval(data.slice(4))
+          const asIs = _asIs || (data && typeof data == 'object' && data.$$asIs)
+          const stripedObj = data && typeof data == 'object' && jb.objFromEntries(jb.entries(data).map(e=>[e[0],jb.remoteCtx.deStrip(e[1],asIs)]))
+          if (stripedObj && data.$ == 'runCtx' && !asIs)
+              return (ctx2,data2) => {
+                  const ctx = new jb.core.jbCtx(jb.utils.resolveProfile(stripedObj, {topComp: stripedObj}),{}).extendVars(ctx2,data2)
+                  const res = ctx.runItself()
+                  if (ctx.probe) {
+                      if (jb.utils.isCallbag(res))
+                          return jb.callbag.pipe(res, jb.callbag.mapPromise(r=>jb.remoteCtx.waitAndWrapProbeResult(r,ctx.probe,ctx)))
+                      if (jb.callbag.isCallbagOperator(res))
+                          return source => jb.callbag.pipe(res(source), jb.callbag.mapPromise(r=>jb.remoteCtx.waitAndWrapProbeResult(r,ctx.probe,ctx)))
+  
+                      return jb.remoteCtx.waitAndWrapProbeResult(res,ctx.probe,ctx)
+                  }
+                  return res
+              }
+          if (Array.isArray(data))
+              return data.map(x=>jb.remoteCtx.deStrip(x,asIs))
+          return stripedObj || data
+      },
+      async waitAndWrapProbeResult(_res,probe,ctx) {
+          const res = await _res
+          await Object.values(probe.records).reduce((pr,valAr) => pr.then(
+              () => valAr.reduce( async (pr,item,i) => { await pr; valAr[i].out = await valAr[i].out }, Promise.resolve())
+          ), Promise.resolve())
+          const filteredProbe = { ...probe, records: jb.objFromEntries(jb.entries(probe.records).map(([k,v])=>[k,v.filter(x=>!x.sent)])) }
+          Object.values(probe.records).forEach(arr=>arr.forEach(r => r.sent = true))
+          const originalRecords = Object.fromEntries(Object.entries(probe.records).map(([k,v]) => [k,[...v]]))
+          jb.log('remote context wrapping probe result',{probe, originalRecords, filteredProbe, res, ctx})
+          return { $: 'withProbeResult', res, probe: filteredProbe }
+      },    
+      stripCBVars(cbData) {
+          const res = jb.remoteCtx.stripData(cbData)
+          if (res && res.vars)
+              res.vars = jb.objFromEntries(jb.entries(res.vars).filter(e=>e[0].indexOf('$')!=0))
+  
+          return res
+      },
+      stripJSFromProfile(profile) {
+          if (typeof profile == 'function')
+              return `@js@${profile.toString()}`
+          else if (Array.isArray(profile))
+              return profile.map(val => jb.remoteCtx.stripJS(val))
+          else if (typeof profile == 'object')
+              return jb.objFromEntries(jb.entries(profile).map(([id,val]) => [id, jb.remoteCtx.stripJS(val)]))
+          return profile
+      },
+      stripJS(val) {
+          return typeof val == 'function' ? `@js@${val.toString()}` : jb.remoteCtx.stripData(val)
+      },
+      shouldPassVar: (varName, profText) => jb.remoteCtx.allwaysPassVars.indexOf(varName) != -1 || profText.match(new RegExp(`\\b${varName.split(':')[0]}\\b`)),
+      usingData: profText => profText.match(/({data})|(ctx.data)|(%[^$])/),
+  
+      mergeProbeResult(ctx,res,from) {
+          if (jb.path(res,'$') == 'withProbeResult') {
+              if (ctx.probe && res.probe) {
+                Object.keys(res.probe.records||{}).forEach(k=>ctx.probe.records[k] = res.probe.records[k].map(x =>({...x, from})) )
+                Object.keys(res.probe.visits||{}).forEach(k=>ctx.probe.visits[k] = res.probe.visits[k] )
+              }
+              jb.log('merged probe result', {from, remoteProbeRes: res, records: res.probe.records})
+              return res.res
+          }
+          return res
+      },
+      markProbeRecords(probe,prop) {
+          probe && Object.values(probe.records||{}).forEach(x => x[prop] = true)
+      },
+  })
+  
+  component('remoteCtx.mergeProbeResult', {
+      promote: 0,
+      params: [
+          {id: 'remoteResult', byName: true },
+          {id: 'from', as: 'string'}
+      ],
+      impl: (ctx,remoteResult,from) => {
+          if (jb.path(remoteResult,'$') == 'withProbeResult') {
+              const { records, visits } = remoteResult.probe
+              if (ctx.probe) {
+                Object.keys(records||{}).forEach(k=>ctx.probe.records[k] = records[k].map(x =>({...x, from})) )
+                Object.keys(visits||{}).forEach(k=>ctx.probe.visits[k] = visits[k] )
+              }
+              jb.log('merged probe result', {from, remoteResult, records })
+              return remoteResult.res
+          }
+          return remoteResult
+      }
+  })
+  
+  component('remoteCtx.varsUsed', {
+    promote: 0,
+    params: [
+      {id: 'profile' }
+    ],
+    impl: (ctx,profile) => {
+      const profText = jb.utils.prettyPrint(profile||'', {noMacros: true})
+      return (profText.match(/%\$[a-zA-Z0-9_]+/g) || []).map(x=>x.slice(2))
+    }
+  })
+  
+  });
+  
+  jbLoadPackedFile({lineInPackage:6824, jb, noProxies: false, path: '/plugins/remote/jbm/node-worker.js',fileDsl: '', pluginId: 'remote-jbm' }, 
               function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
   
   extension('webSocket', 'client', {
@@ -6593,536 +7123,6 @@ async function jbLoadPacked({uri,initSpyByUrl,multipleInFrame}={}) {
   //   }
   // })
   
-  
-  });
-  
-  jbLoadPackedFile({lineInPackage:6601, jb, noProxies: false, path: '/plugins/remote/jbm/jbm.js',fileDsl: '', pluginId: 'remote-jbm' }, 
-              function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
-  pluginDsl('jbm')
-  using('loader,tree-shake')
-  
-  component('stateless', {
-    type: 'jbm',
-    params: [
-      {id: 'sourceCode', type: 'source-code<loader>'}
-    ],
-    impl: If(isNode(), cmd('%$sourceCode%'), webWorker({ sourceCode: '%$sourceCode%', stateless: true }))
-  })
-  
-  component('worker', {
-    type: 'jbm',
-    params: [
-      {id: 'id', as: 'string'},
-      {id: 'sourceCode', type: 'source-code<loader>', byName: true},
-      {id: 'init', type: 'action<>', dynamic: true},
-      {id: 'networkPeer', as: 'boolean', description: 'used for testing', type: 'boolean'}
-    ],
-    impl: If({
-      condition: isNode(),
-      then: If({
-        condition: isVscode(),
-        then: remoteNodeWorker('%$id%', { sourceCode: '%$sourceCode%', init: '%$init()%' }),
-        Else: nodeWorker('%$id%', { sourceCode: '%$sourceCode%', init: '%$init()%' })
-      }),
-      Else: webWorker('%$id%', {
-        sourceCode: '%$sourceCode%',
-        init: '%$init()%',
-        networkPeer: '%$networkPeer%'
-      })
-    })
-  })
-  
-  component('webWorker', {
-    type: 'jbm',
-    params: [
-      {id: 'id', as: 'string'},
-      {id: 'sourceCode', type: 'source-code<loader>', byName: true, defaultValue: treeShakeClient()},
-      {id: 'init', type: 'action<>', dynamic: true},
-      {id: 'networkPeer', as: 'boolean', description: 'used for testing', type: 'boolean'},
-      {id: 'stateless', as: 'boolean', description: 'can not be rx data source, or remote widget', type: 'boolean'}
-    ],
-    impl: (ctx,_id,sourceCode,init,networkPeer) => {
-        const id = (_id || 'w1').replace(/-/g,'__')
-        const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
-        if (childsOrNet[id]) return childsOrNet[id]
-        const workerUri = networkPeer ? id : `${jb.uri}•${id}`
-        const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
-        sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),'remote-jbm','tree-shake'])
-  
-        const workerCode = `
-  importScripts(location.origin+'/plugins/loader/jb-loader.js');
-  //importScripts(location.origin+'/package/${sourceCode.plugins.join(',')}.js'); // 
-  jbHost.baseUrl = location.origin || '';
-  Promise.resolve(jbInit('${workerUri}', ${JSON.stringify(sourceCode)})).then(jb => {
-  //jbLoadPacked({uri:'${workerUri}'}).then(jb => {
-    globalThis.jb = jb;
-    jb.spy.initSpy({spyParam: "${jb.spy.spyParam}"});
-    jb.treeShake.codeServerJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
-    self.postMessage({ $: 'workerReady' })
-  })
-  //# sourceURL=${workerUri}-initJb.js`
-  
-        return childsOrNet[id] = {
-            uri: workerUri,
-            rjbm() {
-                  if (this._rjbm) return this._rjbm
-                  if (this.waitingForPromise) return this.waitingForPromise
-                  const self = this
-                  return this.waitingForPromise = new Promise(resolve => {
-                    const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
-                    worker.addEventListener('message', async function f1(m) {
-                        if (m.data.$ == 'workerReady') {
-                            if (self._rjbm) {
-                                resolve(self._rjbm) // race condition
-                            } else {
-                                worker.removeEventListener('message',f1)
-                                const rjbm = self._rjbm = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
-                                rjbm.worker = worker
-                                await init(ctx.setVar('jbm',childsOrNet[id]))
-                                resolve(rjbm)
-                            }
-                        }
-                    })
-                })
-            }
-        }
-    }
-  })
-  
-  component('child', {
-    type: 'jbm',
-    params: [
-      {id: 'id', as: 'string'},
-      {id: 'sourceCode', type: 'source-code<loader>', byName: true, defaultValue: treeShakeClient()},
-      {id: 'init', type: 'action<>', dynamic: true}
-    ],
-    impl: (ctx,_id,sourceCode,init) => {
-          const id = _id || 'child1'
-          if (jb.jbm.childJbms[id]) return jb.jbm.childJbms[id]
-          const childUri = `${jb.uri}•${id}`
-          sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),'remote-jbm','tree-shake'])
-  
-          return jb.jbm.childJbms[id] = {
-              uri: childUri,
-              async rjbm() {
-                  if (this._rjbm) return this._rjbm
-                  const child = this.child = await jbInit(childUri, sourceCode, {multipleInFrame: true})
-                  //child.spy.initSpy({spyParam: jb.spy.spyParam})
-                  child.rjbm = () => this._rjbm
-                  this._rjbm = initChild(child)
-                  await init(ctx.setVar('jbm',child))
-                  return this._rjbm
-              }
-          }
-  
-          function initChild(child) {
-              child.spy.initSpy({spyParam: jb.spy.spyParam})
-              child.parent = jb
-              child.treeShake.codeServerJbm = jb.treeShake.codeServerJbm || jb // TODO: use codeLoaderUri
-              child.ports[jb.uri] = {
-                  from: child.uri, to: jb.uri,
-                  postMessage: m => 
-                      jb.net.handleOrRouteMsg(jb.uri,child.uri,jb.ports[child.uri].handler, {from: child.uri, to: jb.uri,...m}),
-                  onMessage: { addListener: handler => child.ports[jb.uri].handler = handler }, // only one handler
-              }
-              child.jbm.extendPortToJbmProxy(child.ports[jb.uri])
-              jb.ports[child.uri] = {
-                  from: jb.uri,to: child.uri,
-                  postMessage: m => 
-                      child.net.handleOrRouteMsg(child.uri,jb.uri,child.ports[jb.uri].handler , {from: jb.uri, to: child.uri,...m}),
-                  onMessage: { addListener: handler => jb.ports[child.uri].handler = handler }, // only one handler
-              }
-              return jb.jbm.extendPortToJbmProxy(jb.ports[child.uri])
-          }
-      }
-  })
-  
-  component('cmd', {
-    type: 'jbm',
-    params: [
-      {id: 'sourceCode', type: 'source-code<loader>', mandatory: true},
-      {id: 'viaHttpServer', as: 'string', defaultValue: 'http://localhost:8082'},
-      {id: 'doNotStripResult', as: 'boolean', type: 'boolean'},
-      {id: 'id', as: 'string'},
-      {id: 'spy', as: 'string'},
-      {id: 'includeLogs', as: 'boolean', type: 'boolean'}
-    ],
-    impl: (ctx,_sourceCode,viaHttpServer,doNotStripResult,id,spy,includeLogs) => ({
-          uri: id || 'main',
-          remoteExec: async (sctx,{data, action} = {}) => {
-              const plugins = !_sourceCode ? jb.loader.pluginsOfProfile([(data || action).profile, jb.path(sctx,'cmpCtx.params')]) : []
-              const sourceCode = _sourceCode || { plugins , pluginPackages: [{$:'defaultPackage'}] }
-              sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []), ...plugins])
-      
-              const args = [
-                  ['-runCtx', JSON.stringify(sctx)],
-                  ['-uri', id || `main`],
-                  ['-sourceCode', JSON.stringify(sourceCode)],
-                  spy ? ['-spy', spy]: [],
-                  doNotStripResult ? ['-doNotStripResult',''+doNotStripResult] : []
-              ].filter(x=>x[1])
-              const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(arg=> `${arg[0]}:` + 
-                  (arg[1].indexOf("'") != -1 ? `"${arg[1].replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg[1]}'`)).join(' ')}`
-              let cmdResult = null
-              if (viaHttpServer) {
-                  const body = JSON.stringify(args.map(([k,v])=>`${k}:${v}`))
-                  const url = `${viaHttpServer}/?op=jb`
-                  jb.log('remote cmd activated via http server',{url,body,ctx})
-                  cmdResult = await jbHost.fetch(url,{method: 'POST', body}).then(r => r.text())
-              } else if (jbHost.spawn) {
-                  try {
-                     cmdResult = await jbHost.spawn(args)
-                  } catch (e) {
-                    jb.logException(e,'cmd',{command})
-                  }
-              }
-              try {
-                  const resultWithLogs = JSON.parse(cmdResult)
-                  jb.log('remote cmd result',{resultWithLogs, ctx})
-                  return includeLogs ? resultWithLogs : resultWithLogs.result
-              } catch (err) {
-                  debugger
-                  jb.logError('remote cmd: can not parse result returned from jb.js',{cmdResult, command, err})
-              }
-          },
-          createCallbagSource: () => jb.logError('callbag is not supported in single run jbm'),
-          createCallbagOperator: () => jb.logError('callbag is not supported in single run jbm'),
-  
-          async rjbm() { return this }
-      })
-  })
-  
-  component('byUri', {
-    type: 'jbm',
-    params: [
-      {id: 'uri', as: 'string', dynamic: true}
-    ],
-    impl: ({},_uri) => {
-        const uri = _uri()
-        return findNeighbourJbm(uri) || {
-            uri,
-            rjbm() {
-                this._rjbm = this._rjbm || jb.jbm.extendPortToJbmProxy(remoteRoutingPort(jb.uri, uri),{doNotinitCommandListener: true})
-                return this._rjbm
-            }
-        }
-  
-        function remoteRoutingPort(from,to) {
-            if (jb.ports[to]) return jb.ports[to]
-            const routingPath = calcRoutingPath(from,to)
-            if (routingPath.length == 2 && jb.ports[routingPath[1]])
-                return jb.ports[routingPath[1]]
-            let nextPort = jb.ports[routingPath[1]]
-            if (!nextPort && jb.jbm.gateway) {
-                routingPath.splice(1,0,jb.jbm.gateway.uri)
-                nextPort = jb.jbm.gateway
-            }
-            if (!nextPort) {
-                return jb.logError(`routing - can not find next port`,{routingPath, uri: jb.uri, from,to})
-            }
-    
-            const port = {
-                from, to,
-                postMessage: _m => { 
-                    const m = {from, to,routingPath,..._m}
-                    jb.log(`remote routing sent from ${from} to ${to}`,{m})
-                    nextPort.postMessage(m)
-                },
-                onMessage: { addListener: handler => nextPort.onMessage.addListener(m => jb.net.handleOrRouteMsg(from,to,handler,m)) },
-                onDisconnect: { addListener: handler => { port.disconnectHandler = handler} }
-            }
-            jb.ports[to] = port
-            return port
-        }
-  
-        function calcRoutingPath(from,to) {
-            const pp1 = from.split('•'), pp2 = to.split('•')
-            const p1 = pp1.map((p,i) => pp1.slice(0,i+1).join('•'))
-            const p2 = pp2.map((p,i) => pp2.slice(0,i+1).join('•'))
-            let i =0;
-            while (p1[i] === p2[i] && i < p1.length) i++;
-            const path_to_shared_parent = i ? p1.slice(i-1) : p1.slice(i) // i == 0 means there is no shared parent, so network is used
-            return [...path_to_shared_parent.reverse(),...p2.slice(i)]
-        }
-        function findNeighbourJbm(uri) {
-            return [jb, jb.parent, ...Object.values(jb.jbm.childJbms), ...Object.values(jb.jbm.networkPeers)].filter(x=>x).find(x=>x.uri == uri)
-        }
-    }
-  })
-  
-  component('jbm.self', {
-    type: 'jbm',
-    impl: () => {
-        jb.rjbm = jb.rjbm || (() => jb)
-        return jb
-    }
-  })
-  
-  component('jbm.isSelf', {
-    params: [
-      {id: 'jbm', type: 'jbm', mandatory: true}
-    ],
-    type: 'boolean<>',
-    impl: (ctx,jbm) => jbm == jb
-  })
-  
-  component('parent', {
-    type: 'jbm',
-    impl: () => ({
-      uri: jb.parent.uri,
-      rjbm: () => jb.parent
-    })
-  })
-  
-  component('jbm.start', {
-    type: 'data<>',
-    moreTypes: 'action<>',
-    params: [
-      {id: 'jbm', type: 'jbm', mandatory: true}
-    ],
-    impl: pipe('%$jbm%', '%rjbm()%', '%$jbm%', first())
-  })
-  
-  component('jbm.terminateChild', {
-    type: 'action<>',
-    params: [
-      {id: 'id', as: 'string'}
-    ],
-    impl: (ctx,id) => jb.jbm.terminateChild(id,ctx)
-  })
-  
-  component('isNode', {
-    type: 'boolean<>',
-    impl: () => globalThis.jbHost.isNode
-  })
-  
-  component('isVscode', {
-    type: 'boolean<>',
-    impl: () => globalThis.jbHost.isVscode
-  })
-  
-  component('nodeOnly', {
-    type: 'data<>',
-    params: [
-      {id: 'calc', dynamic: true, mandatory: true},
-      {id: 'sourceCode', type: 'source-code<loader>', mandatory: true}
-    ],
-    impl: If(and(isNode(), not(isVscode())), '%$calc()%', remote.data('%$calc()%', cmd('%$sourceCode%')))
-  })
-  });
-  
-  jbLoadPackedFile({lineInPackage:6916, jb, noProxies: false, path: '/plugins/remote/jbm/remote-cmd.js',fileDsl: '', pluginId: 'remote-jbm' }, 
-              function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
-  component('remote.cmd', {
-    type: 'data<>',
-    moreTypes: 'action<>',
-    description: 'calc a script with jb.js',
-    params: [
-      {id: 'main', type: 'data<>', dynamic: true, moreTypes: 'action<>', description: 'e.g pipeline("hello","%% -- %$v1%")'},
-      {id: 'wrap', as: 'string', description: 'e.g prune(MAIN)'},
-      {id: 'context', description: 'e.g {v1: "xx", param1: prof1("yy") }'},
-      {id: 'sourceCode', type: 'source-code<loader>', mandatory: true},
-      {id: 'id', as: 'string', description: 'jb.uri of cmd, default is main'},
-      {id: 'viaHttpServer', as: 'string', defaultValue: 'http://localhost:8082'}
-    ],
-    impl: async (ctx, main, wrap, context, sourceCode, id, viaHttpServer) => {
-          const args = [
-              ['-main', jb.utils.prettyPrint(main.profile, { singleLine: true })],
-              ['-wrap', wrap],
-              ['-uri', id],
-              ['-sourceCode', JSON.stringify(sourceCode)],
-              ...Object.keys(context).map(k => [`%${k}`, context[k]]),
-          ].filter(x => x[1])
-          const body = JSON.stringify(args.map(([k, v]) => `${k}:${v}`))
-          const url = `${viaHttpServer}/?op=jb`
-  
-          return jbHost.fetch(url, { method: 'POST', body }).then(r => r.json()).then(x => x.result)
-  
-          function serializeContextVal(val) {
-              if (val && typeof val == 'object')
-                  return `() => ${JSON.stringify(val)}`
-              return val
-          }
-      }
-  })
-  
-  });
-  
-  jbLoadPackedFile({lineInPackage:6953, jb, noProxies: false, path: '/plugins/remote/jbm/remote-context.js',fileDsl: '', pluginId: 'remote-jbm' }, 
-              function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
-  extension('remoteCtx', {
-      initExtension() {
-          return { allwaysPassVars: ['widgetId','disableLog','uiTest'], MAX_ARRAY_LENGTH: 10000, MAX_OBJ_DEPTH: 100}
-      },
-      stripFunction(f, {require} = {}) {
-          const {profile,runCtx,path,param,srcPath} = f
-          if (!profile || !runCtx) return jb.remoteCtx.stripJS(f)
-          const profText = [jb.utils.prettyPrint(profile, {noMacros: true}),require].filter(x=>x).join(';')
-          const profNoJS = jb.remoteCtx.stripJSFromProfile(profile)
-          if (require) profNoJS.require = require.split(',').map(x=>x[0] == '#' ? `jb.${x.slice(1)}()` : {$: x})
-          const vars = jb.objFromEntries(jb.entries(runCtx.vars).filter(e => jb.remoteCtx.shouldPassVar(e[0],profText))
-              .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
-          const params = jb.objFromEntries(jb.entries(jb.path(runCtx.cmpCtx,'params')).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
-              .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
-          let probe = null
-          if (runCtx.probe && runCtx.probe.active && runCtx.probe.probePath.indexOf(srcPath) == 0) {
-              const { probePath, maxTime, id } = runCtx.probe
-              probe = { probePath, startTime: 0, maxTime, id, records: {}, visits: {}, active: true }
-          }
-          const usingData = jb.remoteCtx.usingData(profText)
-          return Object.assign({$: 'runCtx', id: runCtx.id, path: [srcPath,path].filter(x=>x).join('~'), param, probe, profile: profNoJS, data: usingData ? jb.remoteCtx.stripData(runCtx.data) : null, vars}, 
-              Object.keys(params).length ? {cmpCtx: {params} } : {})
-  
-      },    
-      stripCtx(ctx) {
-          if (!ctx) return null
-          const isJS = typeof ctx.profile == 'function'
-          const profText = jb.utils.prettyPrint(ctx.profile)
-          const vars = jb.objFromEntries(jb.entries(ctx.vars)
-              .filter(e => jb.remoteCtx.shouldPassVar(e[0],profText))
-              .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
-          const data = jb.remoteCtx.usingData(profText) && jb.remoteCtx.stripData(ctx.data)
-          const params = jb.objFromEntries(jb.entries(isJS ? ctx.params: jb.entries(jb.path(ctx.cmpCtx,'params')))
-              .filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
-              .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
-          const res = Object.assign({id: ctx.id, path: ctx.path, profile: ctx.profile, data, vars }, 
-              isJS ? {params,vars} : Object.keys(params).length ? {cmpCtx: {params} } : {} )
-          return res
-      },
-      stripData(data, { top, depth, path} = {}) {
-          if (data == null || (path||'').match(/parentNode$/)) return
-          const innerDepthAndPath = key => ({depth: (depth || 0) +1, top: top || data, path: [path,key].filter(x=>x).join('~') })
-  
-          if (['string','boolean','number'].indexOf(typeof data) != -1) return data
-          if (typeof data == 'function')
-               return jb.remoteCtx.stripFunction(data)
-          if (data instanceof jb.core.jbCtx)
-               return jb.remoteCtx.stripCtx(data)
-          if (depth > jb.remoteCtx.MAX_OBJ_DEPTH) {
-               jb.logError('stripData too deep object, maybe recursive',{top, path, depth, data})
-               return
-          }
-   
-          if (Array.isArray(data) && data.length > jb.remoteCtx.MAX_ARRAY_LENGTH)
-              jb.logError('stripData slicing large array',{data})
-          if (Array.isArray(data))
-               return data.slice(0,jb.remoteCtx.MAX_ARRAY_LENGTH).map((x,i)=>jb.remoteCtx.stripData(x, innerDepthAndPath(i)))
-          if (typeof data == 'object' && ['DOMRect'].indexOf(data.constructor.name) != -1)
-              return jb.objFromEntries(Object.keys(data.__proto__).map(k=>[k,data[k]]))
-          if (typeof data == 'object' && (jb.path(data.constructor,'name') || '').match(/Error$/))
-              return {$$: 'Error', message: data.toString() }
-          if (typeof data == 'object' && ['VNode','Object','Array'].indexOf(data.constructor.name) == -1)
-              return { $$: data.constructor.name }
-          if (typeof data == 'object' && data[jb.core.VERSION])
-              return { uri : data.uri}
-          if (typeof data == 'object')
-               return jb.objFromEntries(jb.entries(data)
-                  .filter(e=> data.$ || typeof e[1] != 'function') // if not a profile, block functions
-  //                .map(e=>e[0] == '$' ? [e[0], jb.path(data,[jb.core.CT,'comp',jb.core.CT,'fullId']) || e[1]] : e)
-                  .map(e=>[e[0],jb.remoteCtx.stripData(e[1], innerDepthAndPath(e[0]) )]))
-      },
-      deStrip(data, _asIs) {
-          if (typeof data == 'string' && data.match(/^@js@/))
-              return eval(data.slice(4))
-          const asIs = _asIs || (data && typeof data == 'object' && data.$$asIs)
-          const stripedObj = data && typeof data == 'object' && jb.objFromEntries(jb.entries(data).map(e=>[e[0],jb.remoteCtx.deStrip(e[1],asIs)]))
-          if (stripedObj && data.$ == 'runCtx' && !asIs)
-              return (ctx2,data2) => {
-                  const ctx = new jb.core.jbCtx(jb.utils.resolveProfile(stripedObj, {topComp: stripedObj}),{}).extendVars(ctx2,data2)
-                  const res = ctx.runItself()
-                  if (ctx.probe) {
-                      if (jb.utils.isCallbag(res))
-                          return jb.callbag.pipe(res, jb.callbag.mapPromise(r=>jb.remoteCtx.waitAndWrapProbeResult(r,ctx.probe,ctx)))
-                      if (jb.callbag.isCallbagOperator(res))
-                          return source => jb.callbag.pipe(res(source), jb.callbag.mapPromise(r=>jb.remoteCtx.waitAndWrapProbeResult(r,ctx.probe,ctx)))
-  
-                      return jb.remoteCtx.waitAndWrapProbeResult(res,ctx.probe,ctx)
-                  }
-                  return res
-              }
-          if (Array.isArray(data))
-              return data.map(x=>jb.remoteCtx.deStrip(x,asIs))
-          return stripedObj || data
-      },
-      async waitAndWrapProbeResult(_res,probe,ctx) {
-          const res = await _res
-          await Object.values(probe.records).reduce((pr,valAr) => pr.then(
-              () => valAr.reduce( async (pr,item,i) => { await pr; valAr[i].out = await valAr[i].out }, Promise.resolve())
-          ), Promise.resolve())
-          const filteredProbe = { ...probe, records: jb.objFromEntries(jb.entries(probe.records).map(([k,v])=>[k,v.filter(x=>!x.sent)])) }
-          Object.values(probe.records).forEach(arr=>arr.forEach(r => r.sent = true))
-          const originalRecords = Object.fromEntries(Object.entries(probe.records).map(([k,v]) => [k,[...v]]))
-          jb.log('remote context wrapping probe result',{probe, originalRecords, filteredProbe, res, ctx})
-          return { $: 'withProbeResult', res, probe: filteredProbe }
-      },    
-      stripCBVars(cbData) {
-          const res = jb.remoteCtx.stripData(cbData)
-          if (res && res.vars)
-              res.vars = jb.objFromEntries(jb.entries(res.vars).filter(e=>e[0].indexOf('$')!=0))
-  
-          return res
-      },
-      stripJSFromProfile(profile) {
-          if (typeof profile == 'function')
-              return `@js@${profile.toString()}`
-          else if (Array.isArray(profile))
-              return profile.map(val => jb.remoteCtx.stripJS(val))
-          else if (typeof profile == 'object')
-              return jb.objFromEntries(jb.entries(profile).map(([id,val]) => [id, jb.remoteCtx.stripJS(val)]))
-          return profile
-      },
-      stripJS(val) {
-          return typeof val == 'function' ? `@js@${val.toString()}` : jb.remoteCtx.stripData(val)
-      },
-      shouldPassVar: (varName, profText) => jb.remoteCtx.allwaysPassVars.indexOf(varName) != -1 || profText.match(new RegExp(`\\b${varName.split(':')[0]}\\b`)),
-      usingData: profText => profText.match(/({data})|(ctx.data)|(%[^$])/),
-  
-      mergeProbeResult(ctx,res,from) {
-          if (jb.path(res,'$') == 'withProbeResult') {
-              if (ctx.probe && res.probe) {
-                Object.keys(res.probe.records||{}).forEach(k=>ctx.probe.records[k] = res.probe.records[k].map(x =>({...x, from})) )
-                Object.keys(res.probe.visits||{}).forEach(k=>ctx.probe.visits[k] = res.probe.visits[k] )
-              }
-              jb.log('merged probe result', {from, remoteProbeRes: res, records: res.probe.records})
-              return res.res
-          }
-          return res
-      },
-      markProbeRecords(probe,prop) {
-          probe && Object.values(probe.records||{}).forEach(x => x[prop] = true)
-      },
-  })
-  
-  component('remoteCtx.mergeProbeResult', {
-      promote: 0,
-      params: [
-          {id: 'remoteResult', byName: true },
-          {id: 'from', as: 'string'}
-      ],
-      impl: (ctx,remoteResult,from) => {
-          if (jb.path(remoteResult,'$') == 'withProbeResult') {
-              const { records, visits } = remoteResult.probe
-              if (ctx.probe) {
-                Object.keys(records||{}).forEach(k=>ctx.probe.records[k] = records[k].map(x =>({...x, from})) )
-                Object.keys(visits||{}).forEach(k=>ctx.probe.visits[k] = visits[k] )
-              }
-              jb.log('merged probe result', {from, remoteResult, records })
-              return remoteResult.res
-          }
-          return remoteResult
-      }
-  })
-  
-  component('remoteCtx.varsUsed', {
-    promote: 0,
-    params: [
-      {id: 'profile' }
-    ],
-    impl: (ctx,profile) => {
-      const profText = jb.utils.prettyPrint(profile||'', {noMacros: true})
-      return (profText.match(/%\$[a-zA-Z0-9_]+/g) || []).map(x=>x.slice(2))
-    }
-  })
   
   });
   
@@ -7456,7 +7456,74 @@ async function jbLoadPacked({uri,initSpyByUrl,multipleInFrame}={}) {
   
   });
   
-  jbLoadPackedFile({lineInPackage:7461, jb, noProxies: false, path: '/plugins/testing/testers.js',fileDsl: '', pluginId: 'testing' }, 
+  jbLoadPackedFile({lineInPackage:7461, jb, noProxies: false, path: '/plugins/testing/location-dsl-for-testing.js',fileDsl: 'location', pluginId: 'testing' }, 
+              function({jb,require,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,source,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
+  dsl('location')
+  extension('location', 'main', {
+    typeRules: [ { same: ['data<location>','data<>']} ]
+  })
+  
+  component('city', {
+    type: 'settlement',
+    params: [
+      {id: 'name', as: 'string'}
+    ]
+  })
+  
+  component('village', {
+    type: 'settlement',
+    params: [
+      {id: 'name', as: 'string'}
+    ]
+  })
+  
+  component('state', {
+    type: 'state',
+    params: [
+      {id: 'capital', type: 'settlement'},
+      {id: 'cities', type: 'settlement[]'}
+    ]
+  })
+  
+  component('israel', {
+    impl: state(jerusalem(), { cities: [eilat(), city('Tel Aviv')] })
+  })
+  
+  component('israel2', {
+    impl: state()
+  })
+  
+  component('jerusalem', {
+    impl: city('Jerusalem')
+  })
+  
+  component('eilat', {
+    impl: city('Eilat')
+  })
+  
+  component('nokdim', {
+    impl: village('Nokdim')
+  })
+  
+  component('pipeline', {
+    params: [
+      {id: 'checkNameOverride'},
+      {id: 'state', type: 'state'},
+    ],
+    impl: village()
+  })
+  
+  component('nameOfCity', {
+    type: 'data<>',
+    params: [
+      {id: 'city', type: 'settlement'}
+    ],
+    impl: '%$city/name%'
+  })
+  
+  });
+  
+  jbLoadPackedFile({lineInPackage:7528, jb, noProxies: false, path: '/plugins/testing/testers.js',fileDsl: '', pluginId: 'testing' }, 
               function({jb,require,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,source,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
   using('remote-jbm')
   
@@ -7881,73 +7948,6 @@ async function jbLoadPacked({uri,initSpyByUrl,multipleInFrame}={}) {
   
   component('PROJECTS_PATH', { passiveData : '/home/shaiby/projects' // 'c:/projects' 
   })
-  });
-  
-  jbLoadPackedFile({lineInPackage:7888, jb, noProxies: false, path: '/plugins/testing/location-dsl-for-testing.js',fileDsl: 'location', pluginId: 'testing' }, 
-              function({jb,require,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,source,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
-  dsl('location')
-  extension('location', 'main', {
-    typeRules: [ { same: ['data<location>','data<>']} ]
-  })
-  
-  component('city', {
-    type: 'settlement',
-    params: [
-      {id: 'name', as: 'string'}
-    ]
-  })
-  
-  component('village', {
-    type: 'settlement',
-    params: [
-      {id: 'name', as: 'string'}
-    ]
-  })
-  
-  component('state', {
-    type: 'state',
-    params: [
-      {id: 'capital', type: 'settlement'},
-      {id: 'cities', type: 'settlement[]'}
-    ]
-  })
-  
-  component('israel', {
-    impl: state(jerusalem(), { cities: [eilat(), city('Tel Aviv')] })
-  })
-  
-  component('israel2', {
-    impl: state()
-  })
-  
-  component('jerusalem', {
-    impl: city('Jerusalem')
-  })
-  
-  component('eilat', {
-    impl: city('Eilat')
-  })
-  
-  component('nokdim', {
-    impl: village('Nokdim')
-  })
-  
-  component('pipeline', {
-    params: [
-      {id: 'checkNameOverride'},
-      {id: 'state', type: 'state'},
-    ],
-    impl: village()
-  })
-  
-  component('nameOfCity', {
-    type: 'data<>',
-    params: [
-      {id: 'city', type: 'settlement'}
-    ],
-    impl: '%$city/name%'
-  })
-  
   });
   
   jbLoadPackedFile({lineInPackage:7955, jb, noProxies: false, path: '/plugins/html/html-tester.js',fileDsl: 'html', pluginId: 'html' }, 
@@ -8481,7 +8481,112 @@ async function jbLoadPacked({uri,initSpyByUrl,multipleInFrame}={}) {
   
   });
   
-  jbLoadPackedFile({lineInPackage:8486, jb, noProxies: false, path: '/plugins/llm/api/llm-api.js',fileDsl: 'llm', pluginId: 'llm-api' }, 
+  jbLoadPackedFile({lineInPackage:8486, jb, noProxies: false, path: '/plugins/llm/api/llm-models.js',fileDsl: 'llm', pluginId: 'llm-api' }, 
+              function({jb,require,llmViaApi,source,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
+  dsl('llm')
+  
+  extension('llm','main', {
+    initExtension() {
+      return { callHistory: [], totalCost: 0, noRedis: jb.frame.location && jb.frame.location.host.indexOf('localhost') == -1 }
+    },
+    notifyApiUsage(rec, ctx) {
+      jb.llm.callHistory.push(rec)
+      jb.llm.models = jb.llm.models || jb.llm.calcModels(ctx)
+      const model = jb.llm.models.find(m=>m.name == rec.model) 
+      if (!model)
+        return jb.logError(`notifyApiUsage can not find model ${rec.model}`, {rec, models: jb.llm.models, ctx})
+      const usage = rec.usage
+      const [input,output] = model.price
+      rec.model = model
+      const cost = rec.cost = (input * usage.prompt_tokens + output * usage.completion_tokens) / 1000000
+      jb.llm.totalCost += cost
+      return { totalCost: jb.llm.totalCost, cost}
+    },
+    calcModels(ctx) {
+      const profileIds = Object.keys(jb.comps).filter(k=>k.indexOf('model<llm>') == 0 && !k.match(/model$|byId$/))
+      return profileIds.map(k=>({...ctx.run({$$: k}), id: k.split('>').pop()}))
+    }
+  })
+  
+  component('model', {
+    type: 'model',
+    params: [
+      {id: 'name', as: 'string'},
+      {id: 'price', as: 'array', byName: true, description: 'input/output $/M tokens'},
+      {id: 'maxRequestTokens', as: 'array', description: 'input/output K'},
+      {id: 'speed', type: 'model_speed'},
+      {id: 'maxContextLength', as: 'number', defaultValue: 4096},
+      {id: 'reasoning', as: 'boolean', type: 'boolean<>'}
+    ],
+    impl: ctx => ({...ctx.params, _speed: 1/jb.path(ctx.params.speed,'icon.0'), _price: jb.path(ctx.params.price,'1') })
+  })
+  
+  component('linear', {
+    type: 'model_speed',
+    params: [
+      {id: 'icon', as: 'array', byName: true, description: 'estimated first item, estimated next item'},
+      {id: 'card', as: 'array', byName: true, description: 'estimated first item, estimated next item'}
+    ]
+  })
+  
+  component('o1', {
+    type: 'model',
+    impl: model('o1-preview-2024-09-12', {
+      price: [15, 60],
+      maxRequestTokens: [200, 100],
+      speed: linear({ icon: [16,0.5], card: [15,3] }),
+      reasoning: true
+    })
+  })
+  
+  component('o1_mini', {
+    type: 'model',
+    impl: model('o1-mini-2024-09-12', {
+      price: [3,12],
+      maxRequestTokens: [128,65],
+      speed: linear({ icon: [2,0.5], card: [5,3] }),
+      reasoning: true
+    })
+  })
+  
+  component('gpt_35_turbo_0125', {
+    type: 'model',
+    impl: model('gpt-3.5-turbo-0125', {
+      price: [0.5,1.5],
+      maxRequestTokens: [4,4],
+      speed: linear({ icon: [3,0.3], card: [3,1] })
+    })
+  })
+  
+  component('gpt_35_turbo_16k', {
+    type: 'model',
+    impl: model('gpt-3.5-turbo-16k-0613', {
+      price: [3,4],
+      maxRequestTokens: [16,16],
+      speed: linear({ icon: [5,0.5], card: [5,1] })
+    })
+  })
+  
+  component('gpt_4o', {
+    type: 'model',
+    impl: model('gpt-4o-2024-08-06', {
+      price: [2.5,10],
+      maxRequestTokens: [128,16],
+      speed: linear({ icon: [5,0.3], card: [3,2] })
+    })
+  })
+  
+  component('byId', {
+    type: 'model',
+    params: [
+      {id: 'modelId', as: 'string'}
+    ],
+    impl: (ctx,id) => jb.exec({ $$: `model<llm>${id}` })
+  })
+  
+  });
+  
+  jbLoadPackedFile({lineInPackage:8591, jb, noProxies: false, path: '/plugins/llm/api/llm-api.js',fileDsl: 'llm', pluginId: 'llm-api' }, 
               function({jb,require,llmViaApi,source,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
   dsl('llm')
   using('common,parsing')
@@ -8771,7 +8876,7 @@ async function jbLoadPacked({uri,initSpyByUrl,multipleInFrame}={}) {
   })
   });
   
-  jbLoadPackedFile({lineInPackage:8776, jb, noProxies: false, path: '/plugins/llm/api/meta-prompts.js',fileDsl: 'llm', pluginId: 'llm-api' }, 
+  jbLoadPackedFile({lineInPackage:8881, jb, noProxies: false, path: '/plugins/llm/api/meta-prompts.js',fileDsl: 'llm', pluginId: 'llm-api' }, 
               function({jb,require,llmViaApi,source,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
   dsl('llm')
   
@@ -8901,111 +9006,6 @@ async function jbLoadPacked({uri,initSpyByUrl,multipleInFrame}={}) {
       ]
     })
   })
-  });
-  
-  jbLoadPackedFile({lineInPackage:8908, jb, noProxies: false, path: '/plugins/llm/api/llm-models.js',fileDsl: 'llm', pluginId: 'llm-api' }, 
-              function({jb,require,llmViaApi,source,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
-  dsl('llm')
-  
-  extension('llm','main', {
-    initExtension() {
-      return { callHistory: [], totalCost: 0, noRedis: jbHost.location && jbHost.location.host.indexOf('localhost') == -1 }
-    },
-    notifyApiUsage(rec, ctx) {
-      jb.llm.callHistory.push(rec)
-      jb.llm.models = jb.llm.models || jb.llm.calcModels(ctx)
-      const model = jb.llm.models.find(m=>m.name == rec.model) 
-      if (!model)
-        return jb.logError(`notifyApiUsage can not find model ${rec.model}`, {rec, models: jb.llm.models, ctx})
-      const usage = rec.usage
-      const [input,output] = model.price
-      rec.model = model
-      const cost = rec.cost = (input * usage.prompt_tokens + output * usage.completion_tokens) / 1000000
-      jb.llm.totalCost += cost
-      return { totalCost: jb.llm.totalCost, cost}
-    },
-    calcModels(ctx) {
-      const profileIds = Object.keys(jb.comps).filter(k=>k.indexOf('model<llm>') == 0 && !k.match(/model$|byId$/))
-      return profileIds.map(k=>({...ctx.run({$$: k}), id: k.split('>').pop()}))
-    }
-  })
-  
-  component('model', {
-    type: 'model',
-    params: [
-      {id: 'name', as: 'string'},
-      {id: 'price', as: 'array', byName: true, description: 'input/output $/M tokens'},
-      {id: 'maxRequestTokens', as: 'array', description: 'input/output K'},
-      {id: 'speed', type: 'model_speed'},
-      {id: 'maxContextLength', as: 'number', defaultValue: 4096},
-      {id: 'reasoning', as: 'boolean', type: 'boolean<>'}
-    ],
-    impl: ctx => ({...ctx.params, _speed: 1/jb.path(ctx.params.speed,'icon.0'), _price: jb.path(ctx.params.price,'1') })
-  })
-  
-  component('linear', {
-    type: 'model_speed',
-    params: [
-      {id: 'icon', as: 'array', byName: true, description: 'estimated first item, estimated next item'},
-      {id: 'card', as: 'array', byName: true, description: 'estimated first item, estimated next item'}
-    ]
-  })
-  
-  component('o1', {
-    type: 'model',
-    impl: model('o1-preview-2024-09-12', {
-      price: [15, 60],
-      maxRequestTokens: [200, 100],
-      speed: linear({ icon: [16,0.5], card: [15,3] }),
-      reasoning: true
-    })
-  })
-  
-  component('o1_mini', {
-    type: 'model',
-    impl: model('o1-mini-2024-09-12', {
-      price: [3,12],
-      maxRequestTokens: [128,65],
-      speed: linear({ icon: [2,0.5], card: [5,3] }),
-      reasoning: true
-    })
-  })
-  
-  component('gpt_35_turbo_0125', {
-    type: 'model',
-    impl: model('gpt-3.5-turbo-0125', {
-      price: [0.5,1.5],
-      maxRequestTokens: [4,4],
-      speed: linear({ icon: [3,0.3], card: [3,1] })
-    })
-  })
-  
-  component('gpt_35_turbo_16k', {
-    type: 'model',
-    impl: model('gpt-3.5-turbo-16k-0613', {
-      price: [3,4],
-      maxRequestTokens: [16,16],
-      speed: linear({ icon: [5,0.5], card: [5,1] })
-    })
-  })
-  
-  component('gpt_4o', {
-    type: 'model',
-    impl: model('gpt-4o-2024-08-06', {
-      price: [2.5,10],
-      maxRequestTokens: [128,16],
-      speed: linear({ icon: [5,0.3], card: [3,2] })
-    })
-  })
-  
-  component('byId', {
-    type: 'model',
-    params: [
-      {id: 'modelId', as: 'string'}
-    ],
-    impl: (ctx,id) => jb.exec({ $$: `model<llm>${id}` })
-  })
-  
   });
   
   jbLoadPackedFile({lineInPackage:9013, jb, noProxies: false, path: '/plugins/zui/health-care-domain.js',fileDsl: 'zui', pluginId: 'zui' }, 
@@ -9768,145 +9768,7 @@ async function jbLoadPacked({uri,initSpyByUrl,multipleInFrame}={}) {
   })
   });
   
-  jbLoadPackedFile({lineInPackage:9773, jb, noProxies: false, path: '/plugins/zui/zui-domain.js',fileDsl: 'zui', pluginId: 'zui' }, 
-              function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
-  dsl('zui')
-  
-  component('userData', {
-    type: 'user_data',
-    params: [
-      {id: 'query', as: 'string', byName: true},
-      {id: 'contextChips', type: 'data[]', as: 'array', defaultValue: []},
-      {id: 'preferedLlmModel', as: 'string'},
-      {id: 'detailsLevel', as: 'number', defaultValue: 1},
-      {id: 'apiKey', as: 'string', defaultValue: ''}
-    ]
-  })
-  
-  component('appData', {
-    type: 'app_data',
-    params: [
-      {id: 'suggestedContextChips', type: 'data[]', defaultValue: [], byName: true},
-      {id: 'ctxVer', as : 'number', defaultValue: 1},
-      {id: 'runningTasks', type: 'task[]' },
-      {id: 'doneTasks', type: 'task[]' },
-      {id: 'budget', type: 'budget'},
-      {id: 'usage', type: 'usage'}
-    ]
-  })
-  
-  component('domain', {
-    type: 'domain',
-    params: [
-      {id: 'title', as: 'string'},
-      {id: 'itemsPrompt', as: 'string', dynamic: true, byName: true, newLinesInCode: true},
-      {id: 'newItemsLine', as: 'string', dynamic: true, byName: true, newLinesInCode: true},
-      {id: 'updateItemsLine', as: 'string', dynamic: true, byName: true, newLinesInCode: true},
-      {id: 'iconPromptProps', type: 'prompt_props', byName: true},
-      {id: 'cardPromptProps', type: 'prompt_props'},
-      {id: 'contextHintsPrompt', as: 'string', dynamic: true, byName: true, newLinesInCode: true},
-      {id: 'itemsLayout', type: 'items_layout', dynamic: true},
-      {id: 'iconBox', type: 'iconBox-style', dynamic: true},
-      {id: 'card', type: 'card-style', dynamic: true},
-      {id: 'minGridSize', as: 'array', type: 'data<>[]', defaultValue: [6,6]},
-      {id: 'sample', type: 'domain_sample'}
-    ]
-  })
-  
-  component('props', {
-    type: 'prompt_props',
-    params: [
-      {id: 'description', as: 'string', newLinesInCode: true},
-      {id: 'sample', as: 'string', newLinesInCode: true}
-    ]
-  })
-  
-  component('sample', {
-    type: 'domain_sample',
-    params: [
-      {id: 'items', dynamic: true, byName: true},
-      {id: 'query', as: 'string'},
-      {id: 'contextChips', type: 'data[]', as: 'array', defaultValue: []},
-      {id: 'suggestedContextChips', type: 'data[]', defaultValue: []},
-      {id: 'preferedLlmModel', as: 'string'}
-    ]
-  })
-  
-  component('domain.itemsPromptForTask', {
-    params: [
-      {id: 'domain', type: 'domain'},
-      {id: 'task', type: 'task'}
-    ],
-    impl: (ctx, domain, task) => {
-      const {sample, iconPromptProps,cardPromptProps,itemsPrompt, contextHintsPrompt, newItemsLine, updateItemsLine} = domain
-      const {userData, appData} = ctx.vars
-      const ctxToUse = ctx.vars.testID ? ctx.setVars({task, userData: userData || sample, appData: appData || sample}) : ctx.setVars({task})
-      if (task.details == 'contextHints')
-        return contextHintsPrompt(ctxToUse)
-  
-      const [propsInDescription, propsInSample] = 
-        task.details == 'card' ? [`${iconPromptProps.description}\n${cardPromptProps.description}`, `${iconPromptProps.sample},\n${cardPromptProps.sample}`] 
-        : task.details == 'icon' ? [iconPromptProps.description, iconPromptProps.sample] : ['','']
-      const newOrUpdateLine = task.op == 'update' ? updateItemsLine(ctxToUse) : newItemsLine(ctxToUse)
-      return itemsPrompt(ctxToUse.setVars({propsInDescription, propsInSample,newOrUpdateLine}))
-    }
-  })
-  
-  component('domain.itemsSource', {
-    type: 'rx<>',
-    moreTypes: 'data<>',
-    params: [
-      {id: 'domain', type: 'domain'},
-      {id: 'task', type: 'task'}
-    ],
-    impl: rx.pipe(
-      source.llmCompletions(user(domain.itemsPromptForTask('%$domain%', '%$task%')), {
-        llmModel: '%$task/model%',
-        useRedisCache: true,
-        apiKey: '%$userData/apiKey%',
-        notifyUsage: writeValue('%$task/llmUsage%', '%%')
-      }),
-      llm.textToJsonItems()
-    )
-  })
-  
-  component('iconBox', {
-    type: 'control',
-    params: [
-      {id: 'style', type: 'iconBox-style', dynamic: true}
-    ],
-    impl: ctx => jb.zui.ctrl(ctx, {$: 'iconBoxFeatures'})
-  })
-  
-  component('iconBoxFeatures', {
-    type: 'feature',
-    impl: features(
-      frontEnd.var('baseFontSizes', () => ({ title: 10, description: 9 })),
-      frontEnd.var('fontScaleFactor', () => ({ 16: 0.6, 32: 0.8, 64: 1, 128: 1.25 })),
-      zoomingGridElem(1)
-    )
-  })
-  
-  component('card', {
-    type: 'control',
-    params: [
-      {id: 'style', type: 'card-style', dynamic: true}
-    ],
-    impl: ctx => jb.zui.ctrl(ctx, {$: 'cardFeatures'})
-  })
-  
-  component('cardFeatures', {
-    type: 'feature',
-    impl: features(
-      zoomingGridElem(2),
-      frontEnd.var('baseFontSizes', () => ({ 'main-title': 16, heading: 15, 'property-title': 14, 'normal-text': 12, description: 10 })),
-      frontEnd.var('fontScaleFactor', () => ({ 64: 0.6, 128: 0.75, 256: 1, 320: 1.25 }))
-    )
-  })
-  
-  });
-  
-  jbLoadPackedFile({lineInPackage:9911, jb, noProxies: false, path: '/plugins/zui/zui-features.js',fileDsl: 'zui', pluginId: 'zui' }, 
+  jbLoadPackedFile({lineInPackage:9773, jb, noProxies: false, path: '/plugins/zui/zui-features.js',fileDsl: 'zui', pluginId: 'zui' }, 
               function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
   dsl('zui')
   
@@ -10177,6 +10039,144 @@ async function jbLoadPacked({uri,initSpyByUrl,multipleInFrame}={}) {
     impl: extendItemWithProp('%$id%', '%$val()%')
   })
   
+  
+  });
+  
+  jbLoadPackedFile({lineInPackage:10047, jb, noProxies: false, path: '/plugins/zui/zui-domain.js',fileDsl: 'zui', pluginId: 'zui' }, 
+              function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
+  dsl('zui')
+  
+  component('userData', {
+    type: 'user_data',
+    params: [
+      {id: 'query', as: 'string', byName: true},
+      {id: 'contextChips', type: 'data[]', as: 'array', defaultValue: []},
+      {id: 'preferedLlmModel', as: 'string'},
+      {id: 'detailsLevel', as: 'number', defaultValue: 1},
+      {id: 'apiKey', as: 'string', defaultValue: ''}
+    ]
+  })
+  
+  component('appData', {
+    type: 'app_data',
+    params: [
+      {id: 'suggestedContextChips', type: 'data[]', defaultValue: [], byName: true},
+      {id: 'ctxVer', as : 'number', defaultValue: 1},
+      {id: 'runningTasks', type: 'task[]' },
+      {id: 'doneTasks', type: 'task[]' },
+      {id: 'budget', type: 'budget'},
+      {id: 'usage', type: 'usage'}
+    ]
+  })
+  
+  component('domain', {
+    type: 'domain',
+    params: [
+      {id: 'title', as: 'string'},
+      {id: 'itemsPrompt', as: 'string', dynamic: true, byName: true, newLinesInCode: true},
+      {id: 'newItemsLine', as: 'string', dynamic: true, byName: true, newLinesInCode: true},
+      {id: 'updateItemsLine', as: 'string', dynamic: true, byName: true, newLinesInCode: true},
+      {id: 'iconPromptProps', type: 'prompt_props', byName: true},
+      {id: 'cardPromptProps', type: 'prompt_props'},
+      {id: 'contextHintsPrompt', as: 'string', dynamic: true, byName: true, newLinesInCode: true},
+      {id: 'itemsLayout', type: 'items_layout', dynamic: true},
+      {id: 'iconBox', type: 'iconBox-style', dynamic: true},
+      {id: 'card', type: 'card-style', dynamic: true},
+      {id: 'minGridSize', as: 'array', type: 'data<>[]', defaultValue: [6,6]},
+      {id: 'sample', type: 'domain_sample'}
+    ]
+  })
+  
+  component('props', {
+    type: 'prompt_props',
+    params: [
+      {id: 'description', as: 'string', newLinesInCode: true},
+      {id: 'sample', as: 'string', newLinesInCode: true}
+    ]
+  })
+  
+  component('sample', {
+    type: 'domain_sample',
+    params: [
+      {id: 'items', dynamic: true, byName: true},
+      {id: 'query', as: 'string'},
+      {id: 'contextChips', type: 'data[]', as: 'array', defaultValue: []},
+      {id: 'suggestedContextChips', type: 'data[]', defaultValue: []},
+      {id: 'preferedLlmModel', as: 'string'}
+    ]
+  })
+  
+  component('domain.itemsPromptForTask', {
+    params: [
+      {id: 'domain', type: 'domain'},
+      {id: 'task', type: 'task'}
+    ],
+    impl: (ctx, domain, task) => {
+      const {sample, iconPromptProps,cardPromptProps,itemsPrompt, contextHintsPrompt, newItemsLine, updateItemsLine} = domain
+      const {userData, appData} = ctx.vars
+      const ctxToUse = ctx.vars.testID ? ctx.setVars({task, userData: userData || sample, appData: appData || sample}) : ctx.setVars({task})
+      if (task.details == 'contextHints')
+        return contextHintsPrompt(ctxToUse)
+  
+      const [propsInDescription, propsInSample] = 
+        task.details == 'card' ? [`${iconPromptProps.description}\n${cardPromptProps.description}`, `${iconPromptProps.sample},\n${cardPromptProps.sample}`] 
+        : task.details == 'icon' ? [iconPromptProps.description, iconPromptProps.sample] : ['','']
+      const newOrUpdateLine = task.op == 'update' ? updateItemsLine(ctxToUse) : newItemsLine(ctxToUse)
+      return itemsPrompt(ctxToUse.setVars({propsInDescription, propsInSample,newOrUpdateLine}))
+    }
+  })
+  
+  component('domain.itemsSource', {
+    type: 'rx<>',
+    moreTypes: 'data<>',
+    params: [
+      {id: 'domain', type: 'domain'},
+      {id: 'task', type: 'task'}
+    ],
+    impl: rx.pipe(
+      source.llmCompletions(user(domain.itemsPromptForTask('%$domain%', '%$task%')), {
+        llmModel: '%$task/model%',
+        useRedisCache: true,
+        apiKey: '%$userData/apiKey%',
+        notifyUsage: writeValue('%$task/llmUsage%', '%%')
+      }),
+      llm.textToJsonItems()
+    )
+  })
+  
+  component('iconBox', {
+    type: 'control',
+    params: [
+      {id: 'style', type: 'iconBox-style', dynamic: true}
+    ],
+    impl: ctx => jb.zui.ctrl(ctx, {$: 'iconBoxFeatures'})
+  })
+  
+  component('iconBoxFeatures', {
+    type: 'feature',
+    impl: features(
+      frontEnd.var('baseFontSizes', () => ({ title: 10, description: 9 })),
+      frontEnd.var('fontScaleFactor', () => ({ 16: 0.6, 32: 0.8, 64: 1, 128: 1.25 })),
+      zoomingGridElem(1)
+    )
+  })
+  
+  component('card', {
+    type: 'control',
+    params: [
+      {id: 'style', type: 'card-style', dynamic: true}
+    ],
+    impl: ctx => jb.zui.ctrl(ctx, {$: 'cardFeatures'})
+  })
+  
+  component('cardFeatures', {
+    type: 'feature',
+    impl: features(
+      zoomingGridElem(2),
+      frontEnd.var('baseFontSizes', () => ({ 'main-title': 16, heading: 15, 'property-title': 14, 'normal-text': 12, description: 10 })),
+      frontEnd.var('fontScaleFactor', () => ({ 64: 0.6, 128: 0.75, 256: 1, 320: 1.25 }))
+    )
+  })
   
   });
   
@@ -10516,255 +10516,7 @@ async function jbLoadPacked({uri,initSpyByUrl,multipleInFrame}={}) {
   })
   });
   
-  jbLoadPackedFile({lineInPackage:10521, jb, noProxies: false, path: '/plugins/zui/zui-llm.js',fileDsl: 'zui', pluginId: 'zui' }, 
-              function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
-  dsl('zui')
-  using('llm-api')
-  
-  component('zui.parseLlmItems', {
-    params: [
-      {id: 'llmAnswer', as: 'string', defaultValue: '%%'}
-    ],
-    impl: (ctx,llmAnswer) => {
-      const jsonText = llmAnswer.split('```json').pop().split('```')[0]
-      try {
-        return JSON.parse(jsonText)
-      } catch (e) {
-        jb.logException(e, 'parseLLmItems ',{llmAnswer,jsonText, ctx})
-      }
-    }
-  })
-  
-  // please try only symptoms visible to the doctor or easily detectible by question or test
-  
-  
-  // component('zui.smartMetadata', {
-  //   params: [
-  //     {id: 'query', as: 'string', newLinesInCode: true}
-  //   ],
-  //   impl: llmViaApi.completions({
-  //     chat: [
-  //       user(`You are a metadata discovery assistant for a Zoomable User Interface (ZUI) system. presenting items.
-  //       Based on the following **query**: "%$query%"
-  //       return a list of 2 **most relevant** metadata properties for **positining** items of this type/category
-  //          on x/y axes of a 2D canvas. For example: price/performance
-  //     ---
-  //          provide the response as javascript array of strings            
-  //       `)
-  //     ],
-  //     model: 'o1-preview',
-  //     maxTokens: 25000,
-  //     includeSystemMessages: true
-  //   })
-  // })
-  
-  // component('zui.smartMetaIconLevel', {
-  //   params: [
-  //     //{id: 'query', as: 'string', newLinesInCode: true}
-  //   ],
-  //   impl: llmViaApi.completions({
-  //     chat: [
-  //       user(`You are LLM prompt expert, helping building a Zoomable User Interface (ZUI) system. presenting items.
-  //       We need to build a prompt (or set of prompts) that based on artbitrary query in any domain will suggest the properties, and html/css templates 
-  //         for the icon level of the zui system.
-  //       The first zoomable level, called icon level, can grow from 8x8 to 64x64 pixels. it generaly uses item initialis, colors and shapers that reprenet the item.
-  
-  //       Please help to improve the prompt below or suggest a different prompt(s) for this purpose
-  //       ----
-  //       You are a both metadata discovery assistant and html/css developer working on a Zoomable User Interface (ZUI) system. presenting items.
-  
-  //       Now you are working on the first zoomable level. It can grow from 8x8 to 64x64 pixels. it generaly uses item initialis, colors and shapers that reprenet the item.
-  //       The item width/height is set by the framework and can get any value in this range. the html/css can also be replaced according to levels. 
-  //         yet can also keep the same html and change only the css, or define single css using relative(responsive) terms
-  
-  //       Based on the following **query**: "{{query}}"
-  
-  //       return a list of 5 **most relevant** metadata properties for **presenting** items of this type/category at the icon level
-  //       1. provide sample data for 2 items,
-  //       2. suggest levels (8,16,32,32), and html template, css, and data binding to the item. 
-  //       `)
-  //     ],
-  //     model: 'o1-preview',
-  //     maxTokens: 25000,
-  //     includeSystemMessages: true
-  //   })
-  // })
-  
-  // component('zui.smartMetaCardLevel', {
-  //   params: [
-  //     //{id: 'query', as: 'string', newLinesInCode: true}
-  //   ],
-  //   impl: llmViaApi.completions({
-  //     chat: [
-  //       user(`You are LLM prompt expert, helping building a Zoomable User Interface (ZUI) system. presenting items.
-  //       We need to build a prompt (or set of prompts) that based on artbitrary query in any domain will suggest the properties, and html/css templates 
-  //         for the icon level of the zui system.
-  //       The second zoomable level, called card level, is 64x64 - 320*320 pixels. it usually uses item title, description, 4-8 properties and colors and shapes that represent the item.
-  
-  //       Please help to improve the prompt below or suggest a different prompt(s) for this purpose
-  //       ----
-  //       You are a both metadata discovery assistant and html/css developer working on a Zoomable User Interface (ZUI) system. presenting items.
-  
-  //       Now you are working on the second zoomable level. It can grow from 64x64 to 320x400 pixels. it usually uses item title, description, 4-8 properties and colors and shapes that represent the item.
-  //       The item width/height is set by the framework and can get any value in this range. the html/css can also be replaced according to levels. 
-  //         yet can also keep the same html and change only the css, or define single css using relative(responsive) terms
-  
-  //       Based on the following **query**: "{{query}}"
-  
-  //       return a list of 10 **most relevant** metadata properties for **presenting** items of this type/category at the card level
-  //       provide sample data for 2 items,
-  //       suggest html/css code in this format
-  //       ---      
-  //       `)
-  //     ],
-  //     model: 'o1-preview',
-  //     maxTokens: 25000,
-  //     includeSystemMessages: true
-  //   })
-  // })
-  
-  // component('zui.smartIconCode', {
-  //   params: [
-  //     {id: 'query', as: 'string', newLinesInCode: true}
-  //   ],
-  //   impl: llmViaApi.completions({
-  //     chat: [
-  //       user(`You are acting as both a metadata discovery assistant and an HTML/CSS developer working on a Zoomable User Interface (ZUI) system that presents items.
-  //       ---
-  //       ### **Task Overview:**
-  //       Your task is to generate appropriate metadata properties and design elements for presenting items at the icon level of a ZUI system, based on a given query.
-  //       ---
-  //       ### **Icon Level Details:**
-  //       - **Size Range:** The icon level can scale from **8x8 to 64x64 pixels**.
-  //       - **Design Elements:** Icons generally use **item initials**, **colors**, and **shapes** that represent the item.
-  //       - **Responsive Design:** The HTML/CSS can be adjusted according to different levels. You may:
-  //         - Replace the HTML/CSS based on levels.
-  //         - Keep the same HTML and modify only the CSS.
-  //         - Define a single CSS using relative (responsive) units.
-  //       ---
-  //       ### **Instructions:**
-  //       Based on the following **query**: **"%$query%"**
-  //       Please perform the following steps:
-  //       1. **Metadata Properties:**
-  //          - Identify and list the **5 most relevant metadata properties** for presenting items of this type/category at the icon level.
-  //       2. **Sample Data:**
-  //          - Provide sample data for **2 example items**, using the identified metadata properties.
-  //       3. **Design Suggestions:**
-  //          - For icon sizes at **levels 8, 16, 32, and 64 pixels**, suggest:
-  //            - **HTML Template**: Provide the minimal HTML structure for the icon.
-  //            - **CSS Styles**: Provide the CSS styling for the icon, ensuring it is responsive to the different sizes.
-  //            - **Data Binding**: Explain how the sample data binds to the HTML template (e.g., which data populates which part of the template).
-  //       ---
-  //       ### **Notes:**
-  //       - **Simplicity:** Be concise and focus on elements that are visually meaningful at small icon sizes.
-  //       - **Legibility:** Ensure that text and shapes remain clear and legible at all specified sizes.
-  //       - **Representativeness:** Choose colors and shapes that effectively represent the items based on the query.
-  //       - **Consistency:** Maintain a consistent design language across different icon sizes.
-  //       `)
-  //     ],
-  //     model: 'o1-preview',
-  //     maxTokens: 25000,
-  //     //includeSystemMessages: true
-  //   })
-  // })
-  
-  // component('zui.firstItemsNames', {
-  //   params: [
-  //     {id: 'query', as: 'string', newLinesInCode: true},
-  //     {id: 'noOfItems', as: 'number', defaultValue: 5}
-  //   ],
-  //   impl: llmViaApi.completions({
-  //     chat: [
-  //       system('You are a data provider for a Zoomable User Interface (ZUI) system'),
-  //       user(`please provide the names of the first %$noOfItems% items for this query "%$query%" 
-  //       --
-  //       provide the response as javascript array of strings
-  //       `)
-  //     ],
-  //     model: 'gpt-3.5-turbo-0125',
-  //     maxTokens: 300
-  //   })
-  // })
-  
-  // component('zui.itemsShortDescription', {
-  //   params: [
-  //     {id: 'itemName', as: 'string' },
-  //   ],
-  //   impl: llmViaApi.completions({
-  //     chat: [
-  //       system('You are a data provider for a Zoomable User Interface (ZUI) system'),
-  //       user(`please provide short description for this item "%$itemName%" in the context of this query "%$query%" 
-  //       --
-  //       provide the description as a javascript string with double quotes ""
-  //       `)
-  //     ],
-  //     maxTokens: 300
-  //   })
-  // })
-  
-  // // user(`Based on the following **query**: "%$query%"
-  // // ---
-  // // return a list of 5-10 items with most relevant 5-10 properties in json lines format
-  // // `)
-  
-  
-  // component('zui.metadataForQuery', {
-  //   params: [
-  //     {id: 'query', as: 'string', newLinesInCode: true}
-  //   ],
-  //   impl: llmViaApi.completions({
-  //     chat: [
-  //       user('You are a metadata discovery assistant for a Zoomable User Interface (ZUI) system of items'),
-  //       user(`**Task**: 
-  //       Based on the following **query**: "%$query%"
-  //       First decide what is the **item type** or **item category** resulting from this query
-  //       Then, Return a list of the **most relevant** metadata properties for **positining** items of this type/category
-  //          on x/y axes of a 2D canvas. For example: price/performance
-              
-  //       **Rules**: 
-  //       - Provide 10-20 metadata fields that could apply to items resulting from this query. 
-  //       - Each field must include: 
-  //         - **name** (property name) 
-  //         - **type** (string, number, date, boolean, array, or object) 
-  //         - **example_value** (example of what the data might look like) 
-  //         - **explanation**
-  //         - **can_be_used_on_an_quantitive_axis**
-  //         - **can_be_used_in_2D_clustering**
-  //         - **priority_score** (score from 1-10, with 10 being the most useful for visualization) 
-  //       - sort by can_be_used_on_an_quantitive_axis
-        
-  //       **Response format (JSON)**
-  //       \`\`\`json
-  //       {
-  //         "item_type": "e.g. smart phone product",
-  //         "fields": [
-  //             {
-  //             "name": "string (name of the property)",
-  //             "type": "string, number, date, boolean, array, or object",
-  //             "explanation": "string",
-  //             "example_value": "example value for this property",
-  //             "can_be_used_on_an_quantitive_axis": 1-10,
-  //             "can_be_used_in_2D_clustering": 1-10,
-  //             "priority_score": 1-10
-  //             }
-  //         ]
-  //     }
-        
-  //       `)
-  //     ],
-  //     model: 'o1-preview',
-  //     maxTokens: 1000
-  //   })
-  // })
-  
-  // // Then, Return a list of the most relevant metadata properties for **positining** items of this type/category
-  // // on x/y axes of a 2D canvas. For example: price/performance
-  
-  
-  
-  });
-  
-  jbLoadPackedFile({lineInPackage:10769, jb, noProxies: false, path: '/plugins/zui/zui-layout.js',fileDsl: 'zui', pluginId: 'zui' }, 
+  jbLoadPackedFile({lineInPackage:10521, jb, noProxies: false, path: '/plugins/zui/zui-layout.js',fileDsl: 'zui', pluginId: 'zui' }, 
               function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
   dsl('zui')
   
@@ -11014,7 +10766,7 @@ async function jbLoadPacked({uri,initSpyByUrl,multipleInFrame}={}) {
   
   });
   
-  jbLoadPackedFile({lineInPackage:11019, jb, noProxies: false, path: '/plugins/zui/zui-markov.js',fileDsl: 'zui', pluginId: 'zui' }, 
+  jbLoadPackedFile({lineInPackage:10771, jb, noProxies: false, path: '/plugins/zui/zui-markov.js',fileDsl: 'zui', pluginId: 'zui' }, 
               function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
   dsl('zui')
   
@@ -11160,6 +10912,254 @@ async function jbLoadPacked({uri,initSpyByUrl,multipleInFrame}={}) {
   //     {id: 'mark', as: 'number'}
   //   ]
   // })
+  
+  
+  
+  });
+  
+  jbLoadPackedFile({lineInPackage:10922, jb, noProxies: false, path: '/plugins/zui/zui-llm.js',fileDsl: 'zui', pluginId: 'zui' }, 
+              function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
+  dsl('zui')
+  using('llm-api')
+  
+  component('zui.parseLlmItems', {
+    params: [
+      {id: 'llmAnswer', as: 'string', defaultValue: '%%'}
+    ],
+    impl: (ctx,llmAnswer) => {
+      const jsonText = llmAnswer.split('```json').pop().split('```')[0]
+      try {
+        return JSON.parse(jsonText)
+      } catch (e) {
+        jb.logException(e, 'parseLLmItems ',{llmAnswer,jsonText, ctx})
+      }
+    }
+  })
+  
+  // please try only symptoms visible to the doctor or easily detectible by question or test
+  
+  
+  // component('zui.smartMetadata', {
+  //   params: [
+  //     {id: 'query', as: 'string', newLinesInCode: true}
+  //   ],
+  //   impl: llmViaApi.completions({
+  //     chat: [
+  //       user(`You are a metadata discovery assistant for a Zoomable User Interface (ZUI) system. presenting items.
+  //       Based on the following **query**: "%$query%"
+  //       return a list of 2 **most relevant** metadata properties for **positining** items of this type/category
+  //          on x/y axes of a 2D canvas. For example: price/performance
+  //     ---
+  //          provide the response as javascript array of strings            
+  //       `)
+  //     ],
+  //     model: 'o1-preview',
+  //     maxTokens: 25000,
+  //     includeSystemMessages: true
+  //   })
+  // })
+  
+  // component('zui.smartMetaIconLevel', {
+  //   params: [
+  //     //{id: 'query', as: 'string', newLinesInCode: true}
+  //   ],
+  //   impl: llmViaApi.completions({
+  //     chat: [
+  //       user(`You are LLM prompt expert, helping building a Zoomable User Interface (ZUI) system. presenting items.
+  //       We need to build a prompt (or set of prompts) that based on artbitrary query in any domain will suggest the properties, and html/css templates 
+  //         for the icon level of the zui system.
+  //       The first zoomable level, called icon level, can grow from 8x8 to 64x64 pixels. it generaly uses item initialis, colors and shapers that reprenet the item.
+  
+  //       Please help to improve the prompt below or suggest a different prompt(s) for this purpose
+  //       ----
+  //       You are a both metadata discovery assistant and html/css developer working on a Zoomable User Interface (ZUI) system. presenting items.
+  
+  //       Now you are working on the first zoomable level. It can grow from 8x8 to 64x64 pixels. it generaly uses item initialis, colors and shapers that reprenet the item.
+  //       The item width/height is set by the framework and can get any value in this range. the html/css can also be replaced according to levels. 
+  //         yet can also keep the same html and change only the css, or define single css using relative(responsive) terms
+  
+  //       Based on the following **query**: "{{query}}"
+  
+  //       return a list of 5 **most relevant** metadata properties for **presenting** items of this type/category at the icon level
+  //       1. provide sample data for 2 items,
+  //       2. suggest levels (8,16,32,32), and html template, css, and data binding to the item. 
+  //       `)
+  //     ],
+  //     model: 'o1-preview',
+  //     maxTokens: 25000,
+  //     includeSystemMessages: true
+  //   })
+  // })
+  
+  // component('zui.smartMetaCardLevel', {
+  //   params: [
+  //     //{id: 'query', as: 'string', newLinesInCode: true}
+  //   ],
+  //   impl: llmViaApi.completions({
+  //     chat: [
+  //       user(`You are LLM prompt expert, helping building a Zoomable User Interface (ZUI) system. presenting items.
+  //       We need to build a prompt (or set of prompts) that based on artbitrary query in any domain will suggest the properties, and html/css templates 
+  //         for the icon level of the zui system.
+  //       The second zoomable level, called card level, is 64x64 - 320*320 pixels. it usually uses item title, description, 4-8 properties and colors and shapes that represent the item.
+  
+  //       Please help to improve the prompt below or suggest a different prompt(s) for this purpose
+  //       ----
+  //       You are a both metadata discovery assistant and html/css developer working on a Zoomable User Interface (ZUI) system. presenting items.
+  
+  //       Now you are working on the second zoomable level. It can grow from 64x64 to 320x400 pixels. it usually uses item title, description, 4-8 properties and colors and shapes that represent the item.
+  //       The item width/height is set by the framework and can get any value in this range. the html/css can also be replaced according to levels. 
+  //         yet can also keep the same html and change only the css, or define single css using relative(responsive) terms
+  
+  //       Based on the following **query**: "{{query}}"
+  
+  //       return a list of 10 **most relevant** metadata properties for **presenting** items of this type/category at the card level
+  //       provide sample data for 2 items,
+  //       suggest html/css code in this format
+  //       ---      
+  //       `)
+  //     ],
+  //     model: 'o1-preview',
+  //     maxTokens: 25000,
+  //     includeSystemMessages: true
+  //   })
+  // })
+  
+  // component('zui.smartIconCode', {
+  //   params: [
+  //     {id: 'query', as: 'string', newLinesInCode: true}
+  //   ],
+  //   impl: llmViaApi.completions({
+  //     chat: [
+  //       user(`You are acting as both a metadata discovery assistant and an HTML/CSS developer working on a Zoomable User Interface (ZUI) system that presents items.
+  //       ---
+  //       ### **Task Overview:**
+  //       Your task is to generate appropriate metadata properties and design elements for presenting items at the icon level of a ZUI system, based on a given query.
+  //       ---
+  //       ### **Icon Level Details:**
+  //       - **Size Range:** The icon level can scale from **8x8 to 64x64 pixels**.
+  //       - **Design Elements:** Icons generally use **item initials**, **colors**, and **shapes** that represent the item.
+  //       - **Responsive Design:** The HTML/CSS can be adjusted according to different levels. You may:
+  //         - Replace the HTML/CSS based on levels.
+  //         - Keep the same HTML and modify only the CSS.
+  //         - Define a single CSS using relative (responsive) units.
+  //       ---
+  //       ### **Instructions:**
+  //       Based on the following **query**: **"%$query%"**
+  //       Please perform the following steps:
+  //       1. **Metadata Properties:**
+  //          - Identify and list the **5 most relevant metadata properties** for presenting items of this type/category at the icon level.
+  //       2. **Sample Data:**
+  //          - Provide sample data for **2 example items**, using the identified metadata properties.
+  //       3. **Design Suggestions:**
+  //          - For icon sizes at **levels 8, 16, 32, and 64 pixels**, suggest:
+  //            - **HTML Template**: Provide the minimal HTML structure for the icon.
+  //            - **CSS Styles**: Provide the CSS styling for the icon, ensuring it is responsive to the different sizes.
+  //            - **Data Binding**: Explain how the sample data binds to the HTML template (e.g., which data populates which part of the template).
+  //       ---
+  //       ### **Notes:**
+  //       - **Simplicity:** Be concise and focus on elements that are visually meaningful at small icon sizes.
+  //       - **Legibility:** Ensure that text and shapes remain clear and legible at all specified sizes.
+  //       - **Representativeness:** Choose colors and shapes that effectively represent the items based on the query.
+  //       - **Consistency:** Maintain a consistent design language across different icon sizes.
+  //       `)
+  //     ],
+  //     model: 'o1-preview',
+  //     maxTokens: 25000,
+  //     //includeSystemMessages: true
+  //   })
+  // })
+  
+  // component('zui.firstItemsNames', {
+  //   params: [
+  //     {id: 'query', as: 'string', newLinesInCode: true},
+  //     {id: 'noOfItems', as: 'number', defaultValue: 5}
+  //   ],
+  //   impl: llmViaApi.completions({
+  //     chat: [
+  //       system('You are a data provider for a Zoomable User Interface (ZUI) system'),
+  //       user(`please provide the names of the first %$noOfItems% items for this query "%$query%" 
+  //       --
+  //       provide the response as javascript array of strings
+  //       `)
+  //     ],
+  //     model: 'gpt-3.5-turbo-0125',
+  //     maxTokens: 300
+  //   })
+  // })
+  
+  // component('zui.itemsShortDescription', {
+  //   params: [
+  //     {id: 'itemName', as: 'string' },
+  //   ],
+  //   impl: llmViaApi.completions({
+  //     chat: [
+  //       system('You are a data provider for a Zoomable User Interface (ZUI) system'),
+  //       user(`please provide short description for this item "%$itemName%" in the context of this query "%$query%" 
+  //       --
+  //       provide the description as a javascript string with double quotes ""
+  //       `)
+  //     ],
+  //     maxTokens: 300
+  //   })
+  // })
+  
+  // // user(`Based on the following **query**: "%$query%"
+  // // ---
+  // // return a list of 5-10 items with most relevant 5-10 properties in json lines format
+  // // `)
+  
+  
+  // component('zui.metadataForQuery', {
+  //   params: [
+  //     {id: 'query', as: 'string', newLinesInCode: true}
+  //   ],
+  //   impl: llmViaApi.completions({
+  //     chat: [
+  //       user('You are a metadata discovery assistant for a Zoomable User Interface (ZUI) system of items'),
+  //       user(`**Task**: 
+  //       Based on the following **query**: "%$query%"
+  //       First decide what is the **item type** or **item category** resulting from this query
+  //       Then, Return a list of the **most relevant** metadata properties for **positining** items of this type/category
+  //          on x/y axes of a 2D canvas. For example: price/performance
+              
+  //       **Rules**: 
+  //       - Provide 10-20 metadata fields that could apply to items resulting from this query. 
+  //       - Each field must include: 
+  //         - **name** (property name) 
+  //         - **type** (string, number, date, boolean, array, or object) 
+  //         - **example_value** (example of what the data might look like) 
+  //         - **explanation**
+  //         - **can_be_used_on_an_quantitive_axis**
+  //         - **can_be_used_in_2D_clustering**
+  //         - **priority_score** (score from 1-10, with 10 being the most useful for visualization) 
+  //       - sort by can_be_used_on_an_quantitive_axis
+        
+  //       **Response format (JSON)**
+  //       \`\`\`json
+  //       {
+  //         "item_type": "e.g. smart phone product",
+  //         "fields": [
+  //             {
+  //             "name": "string (name of the property)",
+  //             "type": "string, number, date, boolean, array, or object",
+  //             "explanation": "string",
+  //             "example_value": "example value for this property",
+  //             "can_be_used_on_an_quantitive_axis": 1-10,
+  //             "can_be_used_in_2D_clustering": 1-10,
+  //             "priority_score": 1-10
+  //             }
+  //         ]
+  //     }
+        
+  //       `)
+  //     ],
+  //     model: 'o1-preview',
+  //     maxTokens: 1000
+  //   })
+  // })
+  
+  // // Then, Return a list of the most relevant metadata properties for **positining** items of this type/category
+  // // on x/y axes of a 2D canvas. For example: price/performance
   
   
   
@@ -11480,7 +11480,92 @@ async function jbLoadPacked({uri,initSpyByUrl,multipleInFrame}={}) {
   
   });
   
-  jbLoadPackedFile({lineInPackage:11485, jb, noProxies: false, path: '/plugins/zui/zui-tasks.js',fileDsl: 'zui', pluginId: 'zui' }, 
+  jbLoadPackedFile({lineInPackage:11485, jb, noProxies: false, path: '/plugins/zui/zui-tester.js',fileDsl: 'zui', pluginId: 'zui' }, 
+              function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
+  dsl('zui')
+  using('testing')
+  
+  extension('test', 'zui', {
+    initExtension() {
+      return { animationFuncs: [] } 
+    },
+      requestAnimationFrame(func) {
+          jb.test.animationFuncs.push(func)
+      },
+      triggerAnimationEvent(ctx) {
+          const funcs = jb.test.animationFuncs
+          jb.log(`zui activate animation events ${funcs.length}`, {funcs, ctx})
+          funcs.forEach(f=>f())
+      }
+  })
+  
+  component('zuiTest', {
+    type: 'test<>',
+    params: [
+      {id: 'control', type: 'control', dynamic: true, mandatory: true},
+      {id: 'expectedResult', type: 'boolean<>', dynamic: true, mandatory: true},
+      {id: 'domain', type: 'domain', defaultValue: healthCare()},
+      {id: 'runBefore', type: 'action<>', dynamic: true},
+      {id: 'userEvents', type: 'animation_event<zui>[]'},
+      {id: 'allowError', as: 'boolean', dynamic: true, type: 'boolean<>'},
+      {id: 'timeout', as: 'number', defaultValue: 200},
+      {id: 'cleanUp', type: 'action<>', dynamic: true},
+      {id: 'expectedCounters', as: 'single'},
+      {id: 'spy'},
+      {id: 'covers'}
+    ],
+    impl: dataTest({
+      vars: [
+        Var('uiTest', true),
+        Var('widget', typeAdapter('widget<zui>', widget('%$control()%', { frontEnd: widgetFE(), domain: '%$domain%' }))),
+        Var('initwidget', '%$widget.init()%', { async: true })
+      ],
+      calculate: pipe('%$userEvents%','%$widget.app_cmp.processFEReq()%'),
+      expectedResult: typeAdapter('data<>', pipeline('%$widget.frontEnd.cmpsData%', prettyPrint({ noMacros: true }), '%$expectedResult()%', first())),
+      timeout: If(equals('%$backEndJbm%', () => jb), '%$timeout%', 5000),
+      allowError: '%$allowError()%',
+      expectedCounters: '%$expectedCounters%',
+      spy: ({},{},{spy}) => spy === '' ? 'test,zui' : spy,
+      includeTestRes: true
+    })
+  })
+  
+  component('zuiControlRunner', {
+    type: 'action<>',
+    params: [
+      {id: 'control', type: 'control', dynamic: true, mandatory: true},
+      {id: 'styleSheet', as: 'string', newLinesInCode: true},
+      {id: 'domain', type: 'domain', defaultValue: healthCare()}
+    ],
+    impl: runActions(
+      Var('widget', typeAdapter('widget<zui>', widget('%$control()%', { frontEnd: widgetFE(), domain: '%$domain%' }))),
+      '%$widget.init()%'
+    )
+  })
+  
+  component('animationEvent', {
+    type: 'animation_event',
+    params: [
+      {id: 'event', defaultValue: obj()},
+    ],
+    impl: (ctx,event) => jb.test.triggerAnimationEvent(ctx.setData(event))
+  })
+  
+  component('zoomEvent', {
+      type: 'animation_event',
+      params: [
+        {id: 'zoom', as: 'number'},
+        {id: 'center', as: 'array'},
+      ],
+      impl: animationEvent(({},{},{zoom,center}) => ({
+          ...(isNaN(zoom) ? {} : { zoom, tZoom: zoom}),
+          ...(center ? {}: { center, tCenter: center})
+      }))
+  })
+   
+  });
+  
+  jbLoadPackedFile({lineInPackage:11570, jb, noProxies: false, path: '/plugins/zui/zui-tasks.js',fileDsl: 'zui', pluginId: 'zui' }, 
               function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
   dsl('zui')
   
@@ -11682,91 +11767,6 @@ async function jbLoadPacked({uri,initSpyByUrl,multipleInFrame}={}) {
   })
   
   
-  });
-  
-  jbLoadPackedFile({lineInPackage:11689, jb, noProxies: false, path: '/plugins/zui/zui-tester.js',fileDsl: 'zui', pluginId: 'zui' }, 
-              function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
-  dsl('zui')
-  using('testing')
-  
-  extension('test', 'zui', {
-    initExtension() {
-      return { animationFuncs: [] } 
-    },
-      requestAnimationFrame(func) {
-          jb.test.animationFuncs.push(func)
-      },
-      triggerAnimationEvent(ctx) {
-          const funcs = jb.test.animationFuncs
-          jb.log(`zui activate animation events ${funcs.length}`, {funcs, ctx})
-          funcs.forEach(f=>f())
-      }
-  })
-  
-  component('zuiTest', {
-    type: 'test<>',
-    params: [
-      {id: 'control', type: 'control', dynamic: true, mandatory: true},
-      {id: 'expectedResult', type: 'boolean<>', dynamic: true, mandatory: true},
-      {id: 'domain', type: 'domain', defaultValue: healthCare()},
-      {id: 'runBefore', type: 'action<>', dynamic: true},
-      {id: 'userEvents', type: 'animation_event<zui>[]'},
-      {id: 'allowError', as: 'boolean', dynamic: true, type: 'boolean<>'},
-      {id: 'timeout', as: 'number', defaultValue: 200},
-      {id: 'cleanUp', type: 'action<>', dynamic: true},
-      {id: 'expectedCounters', as: 'single'},
-      {id: 'spy'},
-      {id: 'covers'}
-    ],
-    impl: dataTest({
-      vars: [
-        Var('uiTest', true),
-        Var('widget', typeAdapter('widget<zui>', widget('%$control()%', { frontEnd: widgetFE(), domain: '%$domain%' }))),
-        Var('initwidget', '%$widget.init()%', { async: true })
-      ],
-      calculate: pipe('%$userEvents%','%$widget.app_cmp.processFEReq()%'),
-      expectedResult: typeAdapter('data<>', pipeline('%$widget.frontEnd.cmpsData%', prettyPrint({ noMacros: true }), '%$expectedResult()%', first())),
-      timeout: If(equals('%$backEndJbm%', () => jb), '%$timeout%', 5000),
-      allowError: '%$allowError()%',
-      expectedCounters: '%$expectedCounters%',
-      spy: ({},{},{spy}) => spy === '' ? 'test,zui' : spy,
-      includeTestRes: true
-    })
-  })
-  
-  component('zuiControlRunner', {
-    type: 'action<>',
-    params: [
-      {id: 'control', type: 'control', dynamic: true, mandatory: true},
-      {id: 'styleSheet', as: 'string', newLinesInCode: true},
-      {id: 'domain', type: 'domain', defaultValue: healthCare()}
-    ],
-    impl: runActions(
-      Var('widget', typeAdapter('widget<zui>', widget('%$control()%', { frontEnd: widgetFE(), domain: '%$domain%' }))),
-      '%$widget.init()%'
-    )
-  })
-  
-  component('animationEvent', {
-    type: 'animation_event',
-    params: [
-      {id: 'event', defaultValue: obj()},
-    ],
-    impl: (ctx,event) => jb.test.triggerAnimationEvent(ctx.setData(event))
-  })
-  
-  component('zoomEvent', {
-      type: 'animation_event',
-      params: [
-        {id: 'zoom', as: 'number'},
-        {id: 'center', as: 'array'},
-      ],
-      impl: animationEvent(({},{},{zoom,center}) => ({
-          ...(isNaN(zoom) ? {} : { zoom, tZoom: zoom}),
-          ...(center ? {}: { center, tCenter: center})
-      }))
-  })
-   
   });
   
   jbLoadPackedFile({lineInPackage:11774, jb, noProxies: false, path: '/plugins/zui/zui-widget.js',fileDsl: 'zui', pluginId: 'zui' }, 
@@ -12363,7 +12363,19 @@ async function jbLoadPacked({uri,initSpyByUrl,multipleInFrame}={}) {
   
   });
   
-  jbLoadPackedFile({lineInPackage:12368, jb, noProxies: false, path: '/plugins/zui/zui-llm-tests.js',fileDsl: 'zui', pluginId: 'zui-tests' }, 
+  jbLoadPackedFile({lineInPackage:12368, jb, noProxies: false, path: '/plugins/zui/hc-tests.js',fileDsl: 'zui', pluginId: 'zui-tests' }, 
+              function({jb,require,zuiTest,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
+  dsl('zui')
+  
+  component('zuiTest.healthCare.app', {
+    doNotRunInTests: true,
+    impl: zuiTest(mainApp(), contains('⚠️'), { timeout: 50000 })
+  })
+  
+  
+  });
+  
+  jbLoadPackedFile({lineInPackage:12380, jb, noProxies: false, path: '/plugins/zui/zui-llm-tests.js',fileDsl: 'zui', pluginId: 'zui-tests' }, 
               function({jb,require,zuiTest,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
   dsl('zui')
   
@@ -12386,18 +12398,6 @@ async function jbLoadPacked({uri,initSpyByUrl,multipleInFrame}={}) {
   //     expectedResult: contains('')
   //   })
   // })
-  
-  });
-  
-  jbLoadPackedFile({lineInPackage:12394, jb, noProxies: false, path: '/plugins/zui/hc-tests.js',fileDsl: 'zui', pluginId: 'zui-tests' }, 
-              function({jb,require,zuiTest,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
-  dsl('zui')
-  
-  component('zuiTest.healthCare.app', {
-    doNotRunInTests: true,
-    impl: zuiTest(mainApp(), contains('⚠️'), { timeout: 50000 })
-  })
-  
   
   });
   

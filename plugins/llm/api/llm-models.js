@@ -2,7 +2,7 @@ dsl('llm')
 
 extension('llm','main', {
   initExtension() {
-    return { callHistory: [], totalCost: 0, noRedis: jbHost.location && jbHost.location.host.indexOf('localhost') == -1 }
+    return { callHistory: [], totalCost: 0, noRedis: jb.frame.location && jb.frame.location.host.indexOf('localhost') == -1 }
   },
   notifyApiUsage(rec, ctx) {
     jb.llm.callHistory.push(rec)
