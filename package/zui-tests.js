@@ -1,5 +1,5 @@
 async function jbLoadPacked({uri,initSpyByUrl,multipleInFrame}={}) {
-const jb = {"sourceCode":{"plugins":["zui-tests"]},"loadedFiles":{},"plugins":{"common":{"id":"common","dependent":["core"],"proxies":["list","firstSucceeding","firstNotEmpty","keys","values","properties","mapValues","entries","now","plus","minus","mul","div","math","evalExpression","prefix","suffix","removePrefix","removeSuffix","removeSuffixRegex","property","indexOf","writeValue","addToArray","move","splice","removeFromArray","getOrCreate","toggleBooleanValue","obj","dynamicObject","objFromVars","selectProps","transformProp","extend","assign","extendWithObj","extendWithIndex","prop","not","and","or","between","contains","notContains","startsWith","endsWith","filter","matchRegex","toUpperCase","toLowerCase","capitalize","object","json","split","replace","isNull","notNull","isEmpty","notEmpty","equals","notEquals","runActions","runActionOnItem","runActionOnItems","removeProps","delay","extractPrefix","extractSuffix","range","typeOf","className","isOfType","inGroup","Switch","Case","action","formatDate","formatNumber","getSessionStorage","waitFor","addComponent","fileContent","calcDirectory","pipeline","pipe","aggregate","objFromProperties","objFromEntries","join","unique","max","min","sum","slice","sort","first","last","count","reverse","sample","splitByPivot","groupBy","groupProps","call","typeAdapter","If","TBD","Var","unknownCmp","runCtx","log","asIs","isRef","asRef","test"],"files":["/plugins/common/jb-common.js","/plugins/common/pipeline.js"]},"core":{"id":"core","dependent":[],"proxies":["call","typeAdapter","If","TBD","Var","unknownCmp","runCtx","log","asIs","isRef","asRef","test"],"files":["/plugins/core/core-components.js","/plugins/core/core-utils.js","/plugins/core/db.js","/plugins/core/jb-core.js","/plugins/core/jb-expression.js","/plugins/core/jb-macro.js","/plugins/core/spy.js"]},"html":{"id":"html","dependent":["testing","remote-jbm","loader","tree-shake","common","core","tgp-formatter","rx"],"proxies":["htmlTest","htmlPageRunner","section","group","page","globals","watchablePeople","person","personWithAddress","personWithPrimitiveChildren","personWithChildren","emptyArray","people","peopleWithChildren","stringArray","stringTree","city","village","state","israel","israel2","jerusalem","eilat","nokdim","pipeline","nameOfCity","dataTest","source","tests","test","tester","testServer","pluginTest","PROJECTS_PATH","stateless","worker","webWorker","child","cmd","byUri","jbm","parent","isNode","isVscode","nodeOnly","remoteNodeWorker","nodeWorker","remote","remoteCtx","sourceCode","sourceCodeByTgpPath","plugins","extend","project","sameAsParent","pluginsByPath","loadAll","packagesByPath","defaultPackage","staticViaHttp","jbStudioServer","fileSystem","zipFile","treeShake","treeShakeClientWithPlugins","treeShakeClient","list","firstSucceeding","firstNotEmpty","keys","values","properties","mapValues","entries","now","plus","minus","mul","div","math","evalExpression","prefix","suffix","removePrefix","removeSuffix","removeSuffixRegex","property","indexOf","writeValue","addToArray","move","splice","removeFromArray","getOrCreate","toggleBooleanValue","obj","dynamicObject","objFromVars","selectProps","transformProp","assign","extendWithObj","extendWithIndex","prop","not","and","or","between","contains","notContains","startsWith","endsWith","filter","matchRegex","toUpperCase","toLowerCase","capitalize","object","json","split","replace","isNull","notNull","isEmpty","notEmpty","equals","notEquals","runActions","runActionOnItem","runActionOnItems","removeProps","delay","extractPrefix","extractSuffix","range","typeOf","className","isOfType","inGroup","Switch","Case","action","formatDate","formatNumber","getSessionStorage","waitFor","addComponent","fileContent","calcDirectory","pipe","aggregate","objFromProperties","objFromEntries","join","unique","max","min","sum","slice","sort","first","last","count","reverse","sample","splitByPivot","groupBy","groupProps","call","typeAdapter","If","TBD","Var","unknownCmp","runCtx","log","asIs","isRef","asRef","prettyPrint","rx","sink"],"dslOfFiles":[["/plugins/html/html-tester.js","html"],["/plugins/html/html.js","html"]],"files":["/plugins/html/html-tester.js","/plugins/html/html.js"]},"llm-api":{"id":"llm-api","dependent":["common","core","parsing"],"proxies":["llmViaApi","source","system","assistant","user","llm","model","linear","o1","o1_mini","gpt_35_turbo_0125","gpt_35_turbo_16k","gpt_4o","byId","generic","reasoning","list","firstSucceeding","firstNotEmpty","keys","values","properties","mapValues","entries","now","plus","minus","mul","div","math","evalExpression","prefix","suffix","removePrefix","removeSuffix","removeSuffixRegex","property","indexOf","writeValue","addToArray","move","splice","removeFromArray","getOrCreate","toggleBooleanValue","obj","dynamicObject","objFromVars","selectProps","transformProp","extend","assign","extendWithObj","extendWithIndex","prop","not","and","or","between","contains","notContains","startsWith","endsWith","filter","matchRegex","toUpperCase","toLowerCase","capitalize","object","json","split","replace","isNull","notNull","isEmpty","notEmpty","equals","notEquals","runActions","runActionOnItem","runActionOnItems","removeProps","delay","extractPrefix","extractSuffix","range","typeOf","className","isOfType","inGroup","Switch","Case","action","formatDate","formatNumber","getSessionStorage","waitFor","addComponent","fileContent","calcDirectory","pipeline","pipe","aggregate","objFromProperties","objFromEntries","join","unique","max","min","sum","slice","sort","first","last","count","reverse","sample","splitByPivot","groupBy","groupProps","call","typeAdapter","If","TBD","Var","unknownCmp","runCtx","log","asIs","isRef","asRef","test","extractText","breakText","zipArrays","removeSections","merge","clone","filterEmptyProperties","trim","splitToLines","newLine","removePrefixRegex","wrapAsObject","substring","Undefined","switchByArraySize","asString"],"dslOfFiles":[["/plugins/llm/api/llm-api.js","llm"],["/plugins/llm/api/llm-models.js","llm"],["/plugins/llm/api/meta-prompts.js","llm"]],"files":["/plugins/llm/api/llm-api.js","/plugins/llm/api/llm-models.js","/plugins/llm/api/meta-prompts.js"]},"loader":{"id":"loader","dependent":[],"proxies":["sourceCode","sourceCodeByTgpPath","plugins","extend","project","sameAsParent","pluginsByPath","loadAll","packagesByPath","defaultPackage","staticViaHttp","jbStudioServer","fileSystem","zipFile"],"dslOfFiles":[["/plugins/loader/source-code.js","loader"]],"files":["/plugins/loader/jb-loader.js","/plugins/loader/source-code.js"]},"parsing":{"id":"parsing","dependent":["common","core"],"proxies":["extractText","breakText","zipArrays","removeSections","merge","clone","filterEmptyProperties","trim","splitToLines","newLine","removePrefixRegex","wrapAsObject","substring","Undefined","switchByArraySize","asString","list","firstSucceeding","firstNotEmpty","keys","values","properties","mapValues","entries","now","plus","minus","mul","div","math","evalExpression","prefix","suffix","removePrefix","removeSuffix","removeSuffixRegex","property","indexOf","writeValue","addToArray","move","splice","removeFromArray","getOrCreate","toggleBooleanValue","obj","dynamicObject","objFromVars","selectProps","transformProp","extend","assign","extendWithObj","extendWithIndex","prop","not","and","or","between","contains","notContains","startsWith","endsWith","filter","matchRegex","toUpperCase","toLowerCase","capitalize","object","json","split","replace","isNull","notNull","isEmpty","notEmpty","equals","notEquals","runActions","runActionOnItem","runActionOnItems","removeProps","delay","extractPrefix","extractSuffix","range","typeOf","className","isOfType","inGroup","Switch","Case","action","formatDate","formatNumber","getSessionStorage","waitFor","addComponent","fileContent","calcDirectory","pipeline","pipe","aggregate","objFromProperties","objFromEntries","join","unique","max","min","sum","slice","sort","first","last","count","reverse","sample","splitByPivot","groupBy","groupProps","call","typeAdapter","If","TBD","Var","unknownCmp","runCtx","log","asIs","isRef","asRef","test"],"files":["/plugins/parsing/parsing.js"]},"remote-jbm":{"id":"remote-jbm","dependent":["loader","tree-shake","common","core","tgp-formatter","rx"],"proxies":["stateless","worker","webWorker","child","cmd","byUri","jbm","parent","isNode","isVscode","nodeOnly","remoteNodeWorker","nodeWorker","remote","remoteCtx","source","sourceCode","sourceCodeByTgpPath","plugins","extend","project","sameAsParent","pluginsByPath","loadAll","packagesByPath","defaultPackage","staticViaHttp","jbStudioServer","fileSystem","zipFile","treeShake","treeShakeClientWithPlugins","treeShakeClient","list","firstSucceeding","firstNotEmpty","keys","values","properties","mapValues","entries","now","plus","minus","mul","div","math","evalExpression","prefix","suffix","removePrefix","removeSuffix","removeSuffixRegex","property","indexOf","writeValue","addToArray","move","splice","removeFromArray","getOrCreate","toggleBooleanValue","obj","dynamicObject","objFromVars","selectProps","transformProp","assign","extendWithObj","extendWithIndex","prop","not","and","or","between","contains","notContains","startsWith","endsWith","filter","matchRegex","toUpperCase","toLowerCase","capitalize","object","json","split","replace","isNull","notNull","isEmpty","notEmpty","equals","notEquals","runActions","runActionOnItem","runActionOnItems","removeProps","delay","extractPrefix","extractSuffix","range","typeOf","className","isOfType","inGroup","Switch","Case","action","formatDate","formatNumber","getSessionStorage","waitFor","addComponent","fileContent","calcDirectory","pipeline","pipe","aggregate","objFromProperties","objFromEntries","join","unique","max","min","sum","slice","sort","first","last","count","reverse","sample","splitByPivot","groupBy","groupProps","call","typeAdapter","If","TBD","Var","unknownCmp","runCtx","log","asIs","isRef","asRef","test","prettyPrint","rx","sink"],"dsl":"jbm","files":["/plugins/remote/jbm/jbm-utils.js","/plugins/remote/jbm/jbm.js","/plugins/remote/jbm/node-worker.js","/plugins/remote/jbm/remote-cmd.js","/plugins/remote/jbm/remote-context.js","/plugins/remote/jbm/remote.js"]},"rx":{"id":"rx","dependent":["common","core"],"proxies":["source","rx","sink","action","list","firstSucceeding","firstNotEmpty","keys","values","properties","mapValues","entries","now","plus","minus","mul","div","math","evalExpression","prefix","suffix","removePrefix","removeSuffix","removeSuffixRegex","property","indexOf","writeValue","addToArray","move","splice","removeFromArray","getOrCreate","toggleBooleanValue","obj","dynamicObject","objFromVars","selectProps","transformProp","extend","assign","extendWithObj","extendWithIndex","prop","not","and","or","between","contains","notContains","startsWith","endsWith","filter","matchRegex","toUpperCase","toLowerCase","capitalize","object","json","split","replace","isNull","notNull","isEmpty","notEmpty","equals","notEquals","runActions","runActionOnItem","runActionOnItems","removeProps","delay","extractPrefix","extractSuffix","range","typeOf","className","isOfType","inGroup","Switch","Case","formatDate","formatNumber","getSessionStorage","waitFor","addComponent","fileContent","calcDirectory","pipeline","pipe","aggregate","objFromProperties","objFromEntries","join","unique","max","min","sum","slice","sort","first","last","count","reverse","sample","splitByPivot","groupBy","groupProps","call","typeAdapter","If","TBD","Var","unknownCmp","runCtx","log","asIs","isRef","asRef","test"],"files":["/plugins/rx/jb-callbag.js","/plugins/rx/rx-comps.js"]},"testing":{"id":"testing","dependent":["remote-jbm","loader","tree-shake","common","core","tgp-formatter","rx"],"proxies":["globals","watchablePeople","person","personWithAddress","personWithPrimitiveChildren","personWithChildren","emptyArray","people","peopleWithChildren","stringArray","stringTree","city","village","state","israel","israel2","jerusalem","eilat","nokdim","pipeline","nameOfCity","dataTest","source","tests","test","tester","testServer","pluginTest","PROJECTS_PATH","stateless","worker","webWorker","child","cmd","byUri","jbm","parent","isNode","isVscode","nodeOnly","remoteNodeWorker","nodeWorker","remote","remoteCtx","sourceCode","sourceCodeByTgpPath","plugins","extend","project","sameAsParent","pluginsByPath","loadAll","packagesByPath","defaultPackage","staticViaHttp","jbStudioServer","fileSystem","zipFile","treeShake","treeShakeClientWithPlugins","treeShakeClient","list","firstSucceeding","firstNotEmpty","keys","values","properties","mapValues","entries","now","plus","minus","mul","div","math","evalExpression","prefix","suffix","removePrefix","removeSuffix","removeSuffixRegex","property","indexOf","writeValue","addToArray","move","splice","removeFromArray","getOrCreate","toggleBooleanValue","obj","dynamicObject","objFromVars","selectProps","transformProp","assign","extendWithObj","extendWithIndex","prop","not","and","or","between","contains","notContains","startsWith","endsWith","filter","matchRegex","toUpperCase","toLowerCase","capitalize","object","json","split","replace","isNull","notNull","isEmpty","notEmpty","equals","notEquals","runActions","runActionOnItem","runActionOnItems","removeProps","delay","extractPrefix","extractSuffix","range","typeOf","className","isOfType","inGroup","Switch","Case","action","formatDate","formatNumber","getSessionStorage","waitFor","addComponent","fileContent","calcDirectory","pipe","aggregate","objFromProperties","objFromEntries","join","unique","max","min","sum","slice","sort","first","last","count","reverse","sample","splitByPivot","groupBy","groupProps","call","typeAdapter","If","TBD","Var","unknownCmp","runCtx","log","asIs","isRef","asRef","prettyPrint","rx","sink"],"dslOfFiles":[["/plugins/testing/location-dsl-for-testing.js","location"]],"files":["/plugins/testing/generic-tests-data.js","/plugins/testing/location-dsl-for-testing.js","/plugins/testing/testers.js"]},"tgp-formatter":{"id":"tgp-formatter","dependent":[],"proxies":["prettyPrint"],"files":["/plugins/tgp/formatter/pretty-print.js"]},"tree-shake":{"id":"tree-shake","dependent":["loader"],"proxies":["treeShake","treeShakeClientWithPlugins","treeShakeClient","sourceCode","sourceCodeByTgpPath","plugins","extend","project","sameAsParent","pluginsByPath","loadAll","packagesByPath","defaultPackage","staticViaHttp","jbStudioServer","fileSystem","zipFile"],"files":["/plugins/tree-shake/tree-shake.js"]},"zui-tests":{"id":"zui-tests","dependent":["zui","html","testing","remote-jbm","loader","tree-shake","common","core","tgp-formatter","rx","llm-api","parsing"],"proxies":["zuiTest","healthCare","app","mainApp","topPanel","selectLlmModel","zoomState","taskDialog","tasks","apiKey","zui","userData","appData","domain","props","sample","iconBox","iconBoxFeatures","card","cardFeatures","prop","init","variable","variableForChildren","features","method","dataSource","flow","If","html","extendItem","templateHtmlItem","css","frontEnd","source","extendItemWithProp","itemSymbol","itemColor","itemBorderStyle","itemOpacity","group","allOrNone","firstToFit","children","vertical","horizontal","xyByProps","xyByIndex","spiral","groupByScatter","zoomingSize","fixed","fill","colorByItemValue","Case","borderStyle","borderStyleScale3","opacity","opacityScale","symbol","symbolByItemValue","list","success3","iqScale","star5","speedScale10","unitScale","index","severity5","good5","success5","distinct5","distinct10","green10","gray5","gray10","coolToWarm10","baseTask","zuiControlRunner","animationEvent","zoomEvent","widget","widgetFE","rx","zoomingGrid","zoomingGridStyle","zoomingGridElem","sink","htmlTest","htmlPageRunner","section","page","globals","watchablePeople","person","personWithAddress","personWithPrimitiveChildren","personWithChildren","emptyArray","people","peopleWithChildren","stringArray","stringTree","city","village","state","israel","israel2","jerusalem","eilat","nokdim","pipeline","nameOfCity","dataTest","tests","test","tester","testServer","pluginTest","PROJECTS_PATH","stateless","worker","webWorker","child","cmd","byUri","jbm","parent","isNode","isVscode","nodeOnly","remoteNodeWorker","nodeWorker","remote","remoteCtx","sourceCode","sourceCodeByTgpPath","plugins","extend","project","sameAsParent","pluginsByPath","loadAll","packagesByPath","defaultPackage","staticViaHttp","jbStudioServer","fileSystem","zipFile","treeShake","treeShakeClientWithPlugins","treeShakeClient","firstSucceeding","firstNotEmpty","keys","values","properties","mapValues","entries","now","plus","minus","mul","div","math","evalExpression","prefix","suffix","removePrefix","removeSuffix","removeSuffixRegex","property","indexOf","writeValue","addToArray","move","splice","removeFromArray","getOrCreate","toggleBooleanValue","obj","dynamicObject","objFromVars","selectProps","transformProp","assign","extendWithObj","extendWithIndex","not","and","or","between","contains","notContains","startsWith","endsWith","filter","matchRegex","toUpperCase","toLowerCase","capitalize","object","json","split","replace","isNull","notNull","isEmpty","notEmpty","equals","notEquals","runActions","runActionOnItem","runActionOnItems","removeProps","delay","extractPrefix","extractSuffix","range","typeOf","className","isOfType","inGroup","Switch","action","formatDate","formatNumber","getSessionStorage","waitFor","addComponent","fileContent","calcDirectory","pipe","aggregate","objFromProperties","objFromEntries","join","unique","max","min","sum","slice","sort","first","last","count","reverse","splitByPivot","groupBy","groupProps","call","typeAdapter","TBD","Var","unknownCmp","runCtx","log","asIs","isRef","asRef","prettyPrint","llmViaApi","system","assistant","user","llm","model","linear","o1","o1_mini","gpt_35_turbo_0125","gpt_35_turbo_16k","gpt_4o","byId","generic","reasoning","extractText","breakText","zipArrays","removeSections","merge","clone","filterEmptyProperties","trim","splitToLines","newLine","removePrefixRegex","wrapAsObject","substring","Undefined","switchByArraySize","asString"],"dslOfFiles":[["/plugins/zui/hc-tests.js","zui"],["/plugins/zui/zui-llm-tests.js","zui"]],"files":["/plugins/zui/hc-tests.js","/plugins/zui/zui-llm-tests.js"]},"zui":{"id":"zui","dependent":["html","testing","remote-jbm","loader","tree-shake","common","core","tgp-formatter","rx","llm-api","parsing"],"proxies":["healthCare","app","mainApp","topPanel","selectLlmModel","zoomState","taskDialog","tasks","apiKey","zui","userData","appData","domain","props","sample","iconBox","iconBoxFeatures","card","cardFeatures","prop","init","variable","variableForChildren","features","method","dataSource","flow","If","html","extendItem","templateHtmlItem","css","frontEnd","source","extendItemWithProp","itemSymbol","itemColor","itemBorderStyle","itemOpacity","group","allOrNone","firstToFit","children","vertical","horizontal","xyByProps","xyByIndex","spiral","groupByScatter","zoomingSize","fixed","fill","colorByItemValue","Case","borderStyle","borderStyleScale3","opacity","opacityScale","symbol","symbolByItemValue","list","success3","iqScale","star5","speedScale10","unitScale","index","severity5","good5","success5","distinct5","distinct10","green10","gray5","gray10","coolToWarm10","baseTask","zuiTest","zuiControlRunner","animationEvent","zoomEvent","widget","widgetFE","rx","zoomingGrid","zoomingGridStyle","zoomingGridElem","sink","htmlTest","htmlPageRunner","section","page","globals","watchablePeople","person","personWithAddress","personWithPrimitiveChildren","personWithChildren","emptyArray","people","peopleWithChildren","stringArray","stringTree","city","village","state","israel","israel2","jerusalem","eilat","nokdim","pipeline","nameOfCity","dataTest","tests","test","tester","testServer","pluginTest","PROJECTS_PATH","stateless","worker","webWorker","child","cmd","byUri","jbm","parent","isNode","isVscode","nodeOnly","remoteNodeWorker","nodeWorker","remote","remoteCtx","sourceCode","sourceCodeByTgpPath","plugins","extend","project","sameAsParent","pluginsByPath","loadAll","packagesByPath","defaultPackage","staticViaHttp","jbStudioServer","fileSystem","zipFile","treeShake","treeShakeClientWithPlugins","treeShakeClient","firstSucceeding","firstNotEmpty","keys","values","properties","mapValues","entries","now","plus","minus","mul","div","math","evalExpression","prefix","suffix","removePrefix","removeSuffix","removeSuffixRegex","property","indexOf","writeValue","addToArray","move","splice","removeFromArray","getOrCreate","toggleBooleanValue","obj","dynamicObject","objFromVars","selectProps","transformProp","assign","extendWithObj","extendWithIndex","not","and","or","between","contains","notContains","startsWith","endsWith","filter","matchRegex","toUpperCase","toLowerCase","capitalize","object","json","split","replace","isNull","notNull","isEmpty","notEmpty","equals","notEquals","runActions","runActionOnItem","runActionOnItems","removeProps","delay","extractPrefix","extractSuffix","range","typeOf","className","isOfType","inGroup","Switch","action","formatDate","formatNumber","getSessionStorage","waitFor","addComponent","fileContent","calcDirectory","pipe","aggregate","objFromProperties","objFromEntries","join","unique","max","min","sum","slice","sort","first","last","count","reverse","splitByPivot","groupBy","groupProps","call","typeAdapter","TBD","Var","unknownCmp","runCtx","log","asIs","isRef","asRef","prettyPrint","llmViaApi","system","assistant","user","llm","model","linear","o1","o1_mini","gpt_35_turbo_0125","gpt_35_turbo_16k","gpt_4o","byId","generic","reasoning","extractText","breakText","zipArrays","removeSections","merge","clone","filterEmptyProperties","trim","splitToLines","newLine","removePrefixRegex","wrapAsObject","substring","Undefined","switchByArraySize","asString"],"dslOfFiles":[["/plugins/zui/health-care-comps.js","zui"],["/plugins/zui/zui-app.js","zui"],["/plugins/zui/zui-domain.js","zui"],["/plugins/zui/zui-features.js","zui"],["/plugins/zui/zui-group.js","zui"],["/plugins/zui/zui-items-layout.js","zui"],["/plugins/zui/zui-layout.js","zui"],["/plugins/zui/zui-llm.js","zui"],["/plugins/zui/zui-markov.js","zui"],["/plugins/zui/zui-scale.js","zui"],["/plugins/zui/zui-tasks.js","zui"],["/plugins/zui/zui-tester.js","zui"],["/plugins/zui/zui-widget.js","zui"],["/plugins/zui/zui-zoom.js","zui"],["/plugins/zui/zui-zooming-grid.js","zui"]],"files":["/plugins/zui/health-care-comps.js","/plugins/zui/zui-app.js","/plugins/zui/zui-control.js","/plugins/zui/zui-domain.js","/plugins/zui/zui-features.js","/plugins/zui/zui-group.js","/plugins/zui/zui-items-layout.js","/plugins/zui/zui-layout.js","/plugins/zui/zui-llm.js","/plugins/zui/zui-markov.js","/plugins/zui/zui-scale.js","/plugins/zui/zui-tasks.js","/plugins/zui/zui-tester.js","/plugins/zui/zui-widget.js","/plugins/zui/zui-zoom.js","/plugins/zui/zui-zooming-grid.js"]}}}
+const jb = {"sourceCode":{"plugins":["zui-tests"]},"loadedFiles":{},"plugins":{"common":{"id":"common","dependent":["core"],"proxies":["list","firstSucceeding","firstNotEmpty","keys","values","properties","mapValues","entries","now","plus","minus","mul","div","math","evalExpression","prefix","suffix","removePrefix","removeSuffix","removeSuffixRegex","property","indexOf","writeValue","addToArray","move","splice","removeFromArray","getOrCreate","toggleBooleanValue","obj","dynamicObject","objFromVars","selectProps","transformProp","extend","assign","extendWithObj","extendWithIndex","prop","not","and","or","between","contains","notContains","startsWith","endsWith","filter","matchRegex","toUpperCase","toLowerCase","capitalize","object","json","split","replace","isNull","notNull","isEmpty","notEmpty","equals","notEquals","runActions","runActionOnItem","runActionOnItems","removeProps","delay","extractPrefix","extractSuffix","range","typeOf","className","isOfType","inGroup","Switch","Case","action","formatDate","formatNumber","getSessionStorage","waitFor","addComponent","fileContent","calcDirectory","pipeline","pipe","aggregate","objFromProperties","objFromEntries","join","unique","max","min","sum","slice","sort","first","last","count","reverse","sample","splitByPivot","groupBy","groupProps","call","typeAdapter","If","TBD","Var","unknownCmp","runCtx","log","asIs","isRef","asRef","test"],"files":["/plugins/common/jb-common.js","/plugins/common/pipeline.js"]},"core":{"id":"core","dependent":[],"proxies":["call","typeAdapter","If","TBD","Var","unknownCmp","runCtx","log","asIs","isRef","asRef","test"],"files":["/plugins/core/core-components.js","/plugins/core/core-utils.js","/plugins/core/db.js","/plugins/core/jb-core.js","/plugins/core/jb-expression.js","/plugins/core/jb-macro.js","/plugins/core/spy.js"]},"html":{"id":"html","dependent":["testing","remote-jbm","loader","tree-shake","common","core","tgp-formatter","rx"],"proxies":["htmlTest","htmlPageRunner","section","group","page","globals","watchablePeople","person","personWithAddress","personWithPrimitiveChildren","personWithChildren","emptyArray","people","peopleWithChildren","stringArray","stringTree","city","village","state","israel","israel2","jerusalem","eilat","nokdim","pipeline","nameOfCity","dataTest","source","tests","test","tester","testServer","pluginTest","PROJECTS_PATH","stateless","worker","webWorker","child","cmd","byUri","jbm","parent","isNode","isVscode","nodeOnly","remoteNodeWorker","nodeWorker","remote","remoteCtx","sourceCode","sourceCodeByTgpPath","plugins","extend","project","sameAsParent","pluginsByPath","loadAll","packagesByPath","defaultPackage","staticViaHttp","jbStudioServer","fileSystem","zipFile","treeShake","treeShakeClientWithPlugins","treeShakeClient","list","firstSucceeding","firstNotEmpty","keys","values","properties","mapValues","entries","now","plus","minus","mul","div","math","evalExpression","prefix","suffix","removePrefix","removeSuffix","removeSuffixRegex","property","indexOf","writeValue","addToArray","move","splice","removeFromArray","getOrCreate","toggleBooleanValue","obj","dynamicObject","objFromVars","selectProps","transformProp","assign","extendWithObj","extendWithIndex","prop","not","and","or","between","contains","notContains","startsWith","endsWith","filter","matchRegex","toUpperCase","toLowerCase","capitalize","object","json","split","replace","isNull","notNull","isEmpty","notEmpty","equals","notEquals","runActions","runActionOnItem","runActionOnItems","removeProps","delay","extractPrefix","extractSuffix","range","typeOf","className","isOfType","inGroup","Switch","Case","action","formatDate","formatNumber","getSessionStorage","waitFor","addComponent","fileContent","calcDirectory","pipe","aggregate","objFromProperties","objFromEntries","join","unique","max","min","sum","slice","sort","first","last","count","reverse","sample","splitByPivot","groupBy","groupProps","call","typeAdapter","If","TBD","Var","unknownCmp","runCtx","log","asIs","isRef","asRef","prettyPrint","rx","sink"],"dslOfFiles":[["/plugins/html/html-tester.js","html"],["/plugins/html/html.js","html"]],"files":["/plugins/html/html-tester.js","/plugins/html/html.js"]},"llm-api":{"id":"llm-api","dependent":["common","core","parsing"],"proxies":["llmViaApi","source","system","assistant","user","llm","model","linear","o1","o1_mini","gpt_35_turbo_0125","gpt_35_turbo_16k","gpt_4o","byId","generic","reasoning","list","firstSucceeding","firstNotEmpty","keys","values","properties","mapValues","entries","now","plus","minus","mul","div","math","evalExpression","prefix","suffix","removePrefix","removeSuffix","removeSuffixRegex","property","indexOf","writeValue","addToArray","move","splice","removeFromArray","getOrCreate","toggleBooleanValue","obj","dynamicObject","objFromVars","selectProps","transformProp","extend","assign","extendWithObj","extendWithIndex","prop","not","and","or","between","contains","notContains","startsWith","endsWith","filter","matchRegex","toUpperCase","toLowerCase","capitalize","object","json","split","replace","isNull","notNull","isEmpty","notEmpty","equals","notEquals","runActions","runActionOnItem","runActionOnItems","removeProps","delay","extractPrefix","extractSuffix","range","typeOf","className","isOfType","inGroup","Switch","Case","action","formatDate","formatNumber","getSessionStorage","waitFor","addComponent","fileContent","calcDirectory","pipeline","pipe","aggregate","objFromProperties","objFromEntries","join","unique","max","min","sum","slice","sort","first","last","count","reverse","sample","splitByPivot","groupBy","groupProps","call","typeAdapter","If","TBD","Var","unknownCmp","runCtx","log","asIs","isRef","asRef","test","extractText","breakText","zipArrays","removeSections","merge","clone","filterEmptyProperties","trim","splitToLines","newLine","removePrefixRegex","wrapAsObject","substring","Undefined","switchByArraySize","asString"],"dslOfFiles":[["/plugins/llm/api/llm-api.js","llm"],["/plugins/llm/api/llm-models.js","llm"],["/plugins/llm/api/meta-prompts.js","llm"]],"files":["/plugins/llm/api/llm-api.js","/plugins/llm/api/llm-models.js","/plugins/llm/api/meta-prompts.js"]},"loader":{"id":"loader","dependent":[],"proxies":["sourceCode","sourceCodeByTgpPath","plugins","extend","project","sameAsParent","pluginsByPath","loadAll","packagesByPath","defaultPackage","staticViaHttp","jbStudioServer","fileSystem","zipFile"],"dslOfFiles":[["/plugins/loader/source-code.js","loader"]],"files":["/plugins/loader/jb-loader.js","/plugins/loader/source-code.js"]},"parsing":{"id":"parsing","dependent":["common","core"],"proxies":["extractText","breakText","zipArrays","removeSections","merge","clone","filterEmptyProperties","trim","splitToLines","newLine","removePrefixRegex","wrapAsObject","substring","Undefined","switchByArraySize","asString","list","firstSucceeding","firstNotEmpty","keys","values","properties","mapValues","entries","now","plus","minus","mul","div","math","evalExpression","prefix","suffix","removePrefix","removeSuffix","removeSuffixRegex","property","indexOf","writeValue","addToArray","move","splice","removeFromArray","getOrCreate","toggleBooleanValue","obj","dynamicObject","objFromVars","selectProps","transformProp","extend","assign","extendWithObj","extendWithIndex","prop","not","and","or","between","contains","notContains","startsWith","endsWith","filter","matchRegex","toUpperCase","toLowerCase","capitalize","object","json","split","replace","isNull","notNull","isEmpty","notEmpty","equals","notEquals","runActions","runActionOnItem","runActionOnItems","removeProps","delay","extractPrefix","extractSuffix","range","typeOf","className","isOfType","inGroup","Switch","Case","action","formatDate","formatNumber","getSessionStorage","waitFor","addComponent","fileContent","calcDirectory","pipeline","pipe","aggregate","objFromProperties","objFromEntries","join","unique","max","min","sum","slice","sort","first","last","count","reverse","sample","splitByPivot","groupBy","groupProps","call","typeAdapter","If","TBD","Var","unknownCmp","runCtx","log","asIs","isRef","asRef","test"],"files":["/plugins/parsing/parsing.js"]},"remote-jbm":{"id":"remote-jbm","dependent":["loader","tree-shake","common","core","tgp-formatter","rx"],"proxies":["stateless","worker","webWorker","child","cmd","byUri","jbm","parent","isNode","isVscode","nodeOnly","remoteNodeWorker","nodeWorker","remote","remoteCtx","source","sourceCode","sourceCodeByTgpPath","plugins","extend","project","sameAsParent","pluginsByPath","loadAll","packagesByPath","defaultPackage","staticViaHttp","jbStudioServer","fileSystem","zipFile","treeShake","treeShakeClientWithPlugins","treeShakeClient","list","firstSucceeding","firstNotEmpty","keys","values","properties","mapValues","entries","now","plus","minus","mul","div","math","evalExpression","prefix","suffix","removePrefix","removeSuffix","removeSuffixRegex","property","indexOf","writeValue","addToArray","move","splice","removeFromArray","getOrCreate","toggleBooleanValue","obj","dynamicObject","objFromVars","selectProps","transformProp","assign","extendWithObj","extendWithIndex","prop","not","and","or","between","contains","notContains","startsWith","endsWith","filter","matchRegex","toUpperCase","toLowerCase","capitalize","object","json","split","replace","isNull","notNull","isEmpty","notEmpty","equals","notEquals","runActions","runActionOnItem","runActionOnItems","removeProps","delay","extractPrefix","extractSuffix","range","typeOf","className","isOfType","inGroup","Switch","Case","action","formatDate","formatNumber","getSessionStorage","waitFor","addComponent","fileContent","calcDirectory","pipeline","pipe","aggregate","objFromProperties","objFromEntries","join","unique","max","min","sum","slice","sort","first","last","count","reverse","sample","splitByPivot","groupBy","groupProps","call","typeAdapter","If","TBD","Var","unknownCmp","runCtx","log","asIs","isRef","asRef","test","prettyPrint","rx","sink"],"dsl":"jbm","files":["/plugins/remote/jbm/jbm-utils.js","/plugins/remote/jbm/jbm.js","/plugins/remote/jbm/node-worker.js","/plugins/remote/jbm/remote-cmd.js","/plugins/remote/jbm/remote-context.js","/plugins/remote/jbm/remote.js"]},"rx":{"id":"rx","dependent":["common","core"],"proxies":["source","rx","sink","action","list","firstSucceeding","firstNotEmpty","keys","values","properties","mapValues","entries","now","plus","minus","mul","div","math","evalExpression","prefix","suffix","removePrefix","removeSuffix","removeSuffixRegex","property","indexOf","writeValue","addToArray","move","splice","removeFromArray","getOrCreate","toggleBooleanValue","obj","dynamicObject","objFromVars","selectProps","transformProp","extend","assign","extendWithObj","extendWithIndex","prop","not","and","or","between","contains","notContains","startsWith","endsWith","filter","matchRegex","toUpperCase","toLowerCase","capitalize","object","json","split","replace","isNull","notNull","isEmpty","notEmpty","equals","notEquals","runActions","runActionOnItem","runActionOnItems","removeProps","delay","extractPrefix","extractSuffix","range","typeOf","className","isOfType","inGroup","Switch","Case","formatDate","formatNumber","getSessionStorage","waitFor","addComponent","fileContent","calcDirectory","pipeline","pipe","aggregate","objFromProperties","objFromEntries","join","unique","max","min","sum","slice","sort","first","last","count","reverse","sample","splitByPivot","groupBy","groupProps","call","typeAdapter","If","TBD","Var","unknownCmp","runCtx","log","asIs","isRef","asRef","test"],"files":["/plugins/rx/jb-callbag.js","/plugins/rx/rx-comps.js"]},"testing":{"id":"testing","dependent":["remote-jbm","loader","tree-shake","common","core","tgp-formatter","rx"],"proxies":["globals","watchablePeople","person","personWithAddress","personWithPrimitiveChildren","personWithChildren","emptyArray","people","peopleWithChildren","stringArray","stringTree","city","village","state","israel","israel2","jerusalem","eilat","nokdim","pipeline","nameOfCity","dataTest","source","tests","test","tester","testServer","pluginTest","PROJECTS_PATH","stateless","worker","webWorker","child","cmd","byUri","jbm","parent","isNode","isVscode","nodeOnly","remoteNodeWorker","nodeWorker","remote","remoteCtx","sourceCode","sourceCodeByTgpPath","plugins","extend","project","sameAsParent","pluginsByPath","loadAll","packagesByPath","defaultPackage","staticViaHttp","jbStudioServer","fileSystem","zipFile","treeShake","treeShakeClientWithPlugins","treeShakeClient","list","firstSucceeding","firstNotEmpty","keys","values","properties","mapValues","entries","now","plus","minus","mul","div","math","evalExpression","prefix","suffix","removePrefix","removeSuffix","removeSuffixRegex","property","indexOf","writeValue","addToArray","move","splice","removeFromArray","getOrCreate","toggleBooleanValue","obj","dynamicObject","objFromVars","selectProps","transformProp","assign","extendWithObj","extendWithIndex","prop","not","and","or","between","contains","notContains","startsWith","endsWith","filter","matchRegex","toUpperCase","toLowerCase","capitalize","object","json","split","replace","isNull","notNull","isEmpty","notEmpty","equals","notEquals","runActions","runActionOnItem","runActionOnItems","removeProps","delay","extractPrefix","extractSuffix","range","typeOf","className","isOfType","inGroup","Switch","Case","action","formatDate","formatNumber","getSessionStorage","waitFor","addComponent","fileContent","calcDirectory","pipe","aggregate","objFromProperties","objFromEntries","join","unique","max","min","sum","slice","sort","first","last","count","reverse","sample","splitByPivot","groupBy","groupProps","call","typeAdapter","If","TBD","Var","unknownCmp","runCtx","log","asIs","isRef","asRef","prettyPrint","rx","sink"],"dslOfFiles":[["/plugins/testing/location-dsl-for-testing.js","location"]],"files":["/plugins/testing/generic-tests-data.js","/plugins/testing/location-dsl-for-testing.js","/plugins/testing/testers.js"]},"tgp-formatter":{"id":"tgp-formatter","dependent":[],"proxies":["prettyPrint"],"files":["/plugins/tgp/formatter/pretty-print.js"]},"tree-shake":{"id":"tree-shake","dependent":["loader"],"proxies":["treeShake","treeShakeClientWithPlugins","treeShakeClient","sourceCode","sourceCodeByTgpPath","plugins","extend","project","sameAsParent","pluginsByPath","loadAll","packagesByPath","defaultPackage","staticViaHttp","jbStudioServer","fileSystem","zipFile"],"files":["/plugins/tree-shake/tree-shake.js"]},"zui-tests":{"id":"zui-tests","dependent":["zui","html","testing","remote-jbm","loader","tree-shake","common","core","tgp-formatter","rx","llm-api","parsing"],"proxies":["zuiTest","healthCare","app","mainApp","topPanel","selectLlmModel","zoomState","taskDialog","tasks","apiKey","zui","userData","appData","domain","props","sample","iconBox","iconBoxFeatures","card","cardFeatures","prop","init","variable","variableForChildren","features","method","dataSource","flow","If","html","extendItem","templateHtmlItem","css","frontEnd","source","extendItemWithProp","itemSymbol","itemColor","itemBorderStyle","itemOpacity","group","allOrNone","firstToFit","children","vertical","horizontal","xyByProps","xyByIndex","spiral","groupByScatter","zoomingSize","fixed","fill","colorByItemValue","Case","borderStyle","borderStyleScale3","opacity","opacityScale","symbol","symbolByItemValue","list","success3","iqScale","star5","speedScale10","unitScale","index","severity5","good5","success5","distinct5","distinct10","green10","gray5","gray10","coolToWarm10","baseTask","zuiControlRunner","animationEvent","zoomEvent","widget","widgetFE","rx","zoomingGrid","zoomingGridStyle","zoomingGridElem","sink","htmlTest","htmlPageRunner","section","page","globals","watchablePeople","person","personWithAddress","personWithPrimitiveChildren","personWithChildren","emptyArray","people","peopleWithChildren","stringArray","stringTree","city","village","state","israel","israel2","jerusalem","eilat","nokdim","pipeline","nameOfCity","dataTest","tests","test","tester","testServer","pluginTest","PROJECTS_PATH","stateless","worker","webWorker","child","cmd","byUri","jbm","parent","isNode","isVscode","nodeOnly","remoteNodeWorker","nodeWorker","remote","remoteCtx","sourceCode","sourceCodeByTgpPath","plugins","extend","project","sameAsParent","pluginsByPath","loadAll","packagesByPath","defaultPackage","staticViaHttp","jbStudioServer","fileSystem","zipFile","treeShake","treeShakeClientWithPlugins","treeShakeClient","firstSucceeding","firstNotEmpty","keys","values","properties","mapValues","entries","now","plus","minus","mul","div","math","evalExpression","prefix","suffix","removePrefix","removeSuffix","removeSuffixRegex","property","indexOf","writeValue","addToArray","move","splice","removeFromArray","getOrCreate","toggleBooleanValue","obj","dynamicObject","objFromVars","selectProps","transformProp","assign","extendWithObj","extendWithIndex","not","and","or","between","contains","notContains","startsWith","endsWith","filter","matchRegex","toUpperCase","toLowerCase","capitalize","object","json","split","replace","isNull","notNull","isEmpty","notEmpty","equals","notEquals","runActions","runActionOnItem","runActionOnItems","removeProps","delay","extractPrefix","extractSuffix","range","typeOf","className","isOfType","inGroup","Switch","action","formatDate","formatNumber","getSessionStorage","waitFor","addComponent","fileContent","calcDirectory","pipe","aggregate","objFromProperties","objFromEntries","join","unique","max","min","sum","slice","sort","first","last","count","reverse","splitByPivot","groupBy","groupProps","call","typeAdapter","TBD","Var","unknownCmp","runCtx","log","asIs","isRef","asRef","prettyPrint","llmViaApi","system","assistant","user","llm","model","linear","o1","o1_mini","gpt_35_turbo_0125","gpt_35_turbo_16k","gpt_4o","byId","generic","reasoning","extractText","breakText","zipArrays","removeSections","merge","clone","filterEmptyProperties","trim","splitToLines","newLine","removePrefixRegex","wrapAsObject","substring","Undefined","switchByArraySize","asString"],"dslOfFiles":[["/plugins/zui/hc-tests.js","zui"],["/plugins/zui/zui-llm-tests.js","zui"]],"files":["/plugins/zui/hc-tests.js","/plugins/zui/zui-llm-tests.js"]},"zui":{"id":"zui","dependent":["html","testing","remote-jbm","loader","tree-shake","common","core","tgp-formatter","rx","llm-api","parsing"],"proxies":["healthCare","app","mainApp","topPanel","selectLlmModel","zoomState","taskDialog","tasks","apiKey","zui","userData","appData","domain","props","sample","iconBox","iconBoxFeatures","card","cardFeatures","prop","init","variable","variableForChildren","features","method","dataSource","flow","If","html","extendItem","templateHtmlItem","css","frontEnd","source","extendItemWithProp","itemSymbol","itemColor","itemBorderStyle","itemOpacity","group","allOrNone","firstToFit","children","vertical","horizontal","xyByProps","xyByIndex","spiral","groupByScatter","zoomingSize","fixed","fill","colorByItemValue","Case","borderStyle","borderStyleScale3","opacity","opacityScale","symbol","symbolByItemValue","list","success3","iqScale","star5","speedScale10","unitScale","index","severity5","good5","success5","distinct5","distinct10","green10","gray5","gray10","coolToWarm10","baseTask","zuiTest","zuiControlRunner","animationEvent","zoomEvent","widget","widgetFE","rx","zoomingGrid","zoomingGridStyle","zoomingGridElem","sink","htmlTest","htmlPageRunner","section","page","globals","watchablePeople","person","personWithAddress","personWithPrimitiveChildren","personWithChildren","emptyArray","people","peopleWithChildren","stringArray","stringTree","city","village","state","israel","israel2","jerusalem","eilat","nokdim","pipeline","nameOfCity","dataTest","tests","test","tester","testServer","pluginTest","PROJECTS_PATH","stateless","worker","webWorker","child","cmd","byUri","jbm","parent","isNode","isVscode","nodeOnly","remoteNodeWorker","nodeWorker","remote","remoteCtx","sourceCode","sourceCodeByTgpPath","plugins","extend","project","sameAsParent","pluginsByPath","loadAll","packagesByPath","defaultPackage","staticViaHttp","jbStudioServer","fileSystem","zipFile","treeShake","treeShakeClientWithPlugins","treeShakeClient","firstSucceeding","firstNotEmpty","keys","values","properties","mapValues","entries","now","plus","minus","mul","div","math","evalExpression","prefix","suffix","removePrefix","removeSuffix","removeSuffixRegex","property","indexOf","writeValue","addToArray","move","splice","removeFromArray","getOrCreate","toggleBooleanValue","obj","dynamicObject","objFromVars","selectProps","transformProp","assign","extendWithObj","extendWithIndex","not","and","or","between","contains","notContains","startsWith","endsWith","filter","matchRegex","toUpperCase","toLowerCase","capitalize","object","json","split","replace","isNull","notNull","isEmpty","notEmpty","equals","notEquals","runActions","runActionOnItem","runActionOnItems","removeProps","delay","extractPrefix","extractSuffix","range","typeOf","className","isOfType","inGroup","Switch","action","formatDate","formatNumber","getSessionStorage","waitFor","addComponent","fileContent","calcDirectory","pipe","aggregate","objFromProperties","objFromEntries","join","unique","max","min","sum","slice","sort","first","last","count","reverse","splitByPivot","groupBy","groupProps","call","typeAdapter","TBD","Var","unknownCmp","runCtx","log","asIs","isRef","asRef","prettyPrint","llmViaApi","system","assistant","user","llm","model","linear","o1","o1_mini","gpt_35_turbo_0125","gpt_35_turbo_16k","gpt_4o","byId","generic","reasoning","extractText","breakText","zipArrays","removeSections","merge","clone","filterEmptyProperties","trim","splitToLines","newLine","removePrefixRegex","wrapAsObject","substring","Undefined","switchByArraySize","asString"],"dslOfFiles":[["/plugins/zui/health-care-domain.js","zui"],["/plugins/zui/zui-app.js","zui"],["/plugins/zui/zui-domain.js","zui"],["/plugins/zui/zui-features.js","zui"],["/plugins/zui/zui-group.js","zui"],["/plugins/zui/zui-items-layout.js","zui"],["/plugins/zui/zui-layout.js","zui"],["/plugins/zui/zui-llm.js","zui"],["/plugins/zui/zui-markov.js","zui"],["/plugins/zui/zui-scale.js","zui"],["/plugins/zui/zui-tasks.js","zui"],["/plugins/zui/zui-tester.js","zui"],["/plugins/zui/zui-widget.js","zui"],["/plugins/zui/zui-zoom.js","zui"],["/plugins/zui/zui-zooming-grid.js","zui"]],"files":["/plugins/zui/health-care-domain.js","/plugins/zui/running-shoes-domain.js","/plugins/zui/zui-app.js","/plugins/zui/zui-control.js","/plugins/zui/zui-domain.js","/plugins/zui/zui-features.js","/plugins/zui/zui-group.js","/plugins/zui/zui-items-layout.js","/plugins/zui/zui-layout.js","/plugins/zui/zui-llm.js","/plugins/zui/zui-markov.js","/plugins/zui/zui-scale.js","/plugins/zui/zui-tasks.js","/plugins/zui/zui-tester.js","/plugins/zui/zui-widget.js","/plugins/zui/zui-zoom.js","/plugins/zui/zui-zooming-grid.js"]}}}
 if (!multipleInFrame) globalThis.jb = jb
 jb.uri = uri || 'main'
 jb.startTime = new Date().getTime()
@@ -5965,322 +5965,7 @@ component('action.removeFromQueue', {
 
 });
 
-jbLoadPackedFile({lineInPackage:5970, jb, noProxies: false, path: '/plugins/remote/jbm/jbm.js',fileDsl: '', pluginId: 'remote-jbm' }, 
-            function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
-pluginDsl('jbm')
-using('loader,tree-shake')
-
-component('stateless', {
-  type: 'jbm',
-  params: [
-    {id: 'sourceCode', type: 'source-code<loader>'}
-  ],
-  impl: If(isNode(), cmd('%$sourceCode%'), webWorker({ sourceCode: '%$sourceCode%', stateless: true }))
-})
-
-component('worker', {
-  type: 'jbm',
-  params: [
-    {id: 'id', as: 'string'},
-    {id: 'sourceCode', type: 'source-code<loader>', byName: true},
-    {id: 'init', type: 'action<>', dynamic: true},
-    {id: 'networkPeer', as: 'boolean', description: 'used for testing', type: 'boolean'}
-  ],
-  impl: If({
-    condition: isNode(),
-    then: If({
-      condition: isVscode(),
-      then: remoteNodeWorker('%$id%', { sourceCode: '%$sourceCode%', init: '%$init()%' }),
-      Else: nodeWorker('%$id%', { sourceCode: '%$sourceCode%', init: '%$init()%' })
-    }),
-    Else: webWorker('%$id%', {
-      sourceCode: '%$sourceCode%',
-      init: '%$init()%',
-      networkPeer: '%$networkPeer%'
-    })
-  })
-})
-
-component('webWorker', {
-  type: 'jbm',
-  params: [
-    {id: 'id', as: 'string'},
-    {id: 'sourceCode', type: 'source-code<loader>', byName: true, defaultValue: treeShakeClient()},
-    {id: 'init', type: 'action<>', dynamic: true},
-    {id: 'networkPeer', as: 'boolean', description: 'used for testing', type: 'boolean'},
-    {id: 'stateless', as: 'boolean', description: 'can not be rx data source, or remote widget', type: 'boolean'}
-  ],
-  impl: (ctx,_id,sourceCode,init,networkPeer) => {
-      const id = (_id || 'w1').replace(/-/g,'__')
-      const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
-      if (childsOrNet[id]) return childsOrNet[id]
-      const workerUri = networkPeer ? id : `${jb.uri}•${id}`
-      const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
-      sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),'remote-jbm','tree-shake'])
-
-      const workerCode = `
-importScripts(location.origin+'/plugins/loader/jb-loader.js');
-//importScripts(location.origin+'/package/${sourceCode.plugins.join(',')}.js'); // 
-jbHost.baseUrl = location.origin || '';
-Promise.resolve(jbInit('${workerUri}', ${JSON.stringify(sourceCode)})).then(jb => {
-//jbLoadPacked({uri:'${workerUri}'}).then(jb => {
-  globalThis.jb = jb;
-  jb.spy.initSpy({spyParam: "${jb.spy.spyParam}"});
-  jb.treeShake.codeServerJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
-  self.postMessage({ $: 'workerReady' })
-})
-//# sourceURL=${workerUri}-initJb.js`
-
-      return childsOrNet[id] = {
-          uri: workerUri,
-          rjbm() {
-                if (this._rjbm) return this._rjbm
-                if (this.waitingForPromise) return this.waitingForPromise
-                const self = this
-                return this.waitingForPromise = new Promise(resolve => {
-                  const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
-                  worker.addEventListener('message', async function f1(m) {
-                      if (m.data.$ == 'workerReady') {
-                          if (self._rjbm) {
-                              resolve(self._rjbm) // race condition
-                          } else {
-                              worker.removeEventListener('message',f1)
-                              const rjbm = self._rjbm = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
-                              rjbm.worker = worker
-                              await init(ctx.setVar('jbm',childsOrNet[id]))
-                              resolve(rjbm)
-                          }
-                      }
-                  })
-              })
-          }
-      }
-  }
-})
-
-component('child', {
-  type: 'jbm',
-  params: [
-    {id: 'id', as: 'string'},
-    {id: 'sourceCode', type: 'source-code<loader>', byName: true, defaultValue: treeShakeClient()},
-    {id: 'init', type: 'action<>', dynamic: true}
-  ],
-  impl: (ctx,_id,sourceCode,init) => {
-        const id = _id || 'child1'
-        if (jb.jbm.childJbms[id]) return jb.jbm.childJbms[id]
-        const childUri = `${jb.uri}•${id}`
-        sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),'remote-jbm','tree-shake'])
-
-        return jb.jbm.childJbms[id] = {
-            uri: childUri,
-            async rjbm() {
-                if (this._rjbm) return this._rjbm
-                const child = this.child = await jbInit(childUri, sourceCode, {multipleInFrame: true})
-                //child.spy.initSpy({spyParam: jb.spy.spyParam})
-                child.rjbm = () => this._rjbm
-                this._rjbm = initChild(child)
-                await init(ctx.setVar('jbm',child))
-                return this._rjbm
-            }
-        }
-
-        function initChild(child) {
-            child.spy.initSpy({spyParam: jb.spy.spyParam})
-            child.parent = jb
-            child.treeShake.codeServerJbm = jb.treeShake.codeServerJbm || jb // TODO: use codeLoaderUri
-            child.ports[jb.uri] = {
-                from: child.uri, to: jb.uri,
-                postMessage: m => 
-                    jb.net.handleOrRouteMsg(jb.uri,child.uri,jb.ports[child.uri].handler, {from: child.uri, to: jb.uri,...m}),
-                onMessage: { addListener: handler => child.ports[jb.uri].handler = handler }, // only one handler
-            }
-            child.jbm.extendPortToJbmProxy(child.ports[jb.uri])
-            jb.ports[child.uri] = {
-                from: jb.uri,to: child.uri,
-                postMessage: m => 
-                    child.net.handleOrRouteMsg(child.uri,jb.uri,child.ports[jb.uri].handler , {from: jb.uri, to: child.uri,...m}),
-                onMessage: { addListener: handler => jb.ports[child.uri].handler = handler }, // only one handler
-            }
-            return jb.jbm.extendPortToJbmProxy(jb.ports[child.uri])
-        }
-    }
-})
-
-component('cmd', {
-  type: 'jbm',
-  params: [
-    {id: 'sourceCode', type: 'source-code<loader>', mandatory: true},
-    {id: 'viaHttpServer', as: 'string', defaultValue: 'http://localhost:8082'},
-    {id: 'doNotStripResult', as: 'boolean', type: 'boolean'},
-    {id: 'id', as: 'string'},
-    {id: 'spy', as: 'string'},
-    {id: 'includeLogs', as: 'boolean', type: 'boolean'}
-  ],
-  impl: (ctx,_sourceCode,viaHttpServer,doNotStripResult,id,spy,includeLogs) => ({
-        uri: id || 'main',
-        remoteExec: async (sctx,{data, action} = {}) => {
-            const plugins = !_sourceCode ? jb.loader.pluginsOfProfile([(data || action).profile, jb.path(sctx,'cmpCtx.params')]) : []
-            const sourceCode = _sourceCode || { plugins , pluginPackages: [{$:'defaultPackage'}] }
-            sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []), ...plugins])
-    
-            const args = [
-                ['-runCtx', JSON.stringify(sctx)],
-                ['-uri', id || `main`],
-                ['-sourceCode', JSON.stringify(sourceCode)],
-                spy ? ['-spy', spy]: [],
-                doNotStripResult ? ['-doNotStripResult',''+doNotStripResult] : []
-            ].filter(x=>x[1])
-            const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(arg=> `${arg[0]}:` + 
-                (arg[1].indexOf("'") != -1 ? `"${arg[1].replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg[1]}'`)).join(' ')}`
-            let cmdResult = null
-            if (viaHttpServer) {
-                const body = JSON.stringify(args.map(([k,v])=>`${k}:${v}`))
-                const url = `${viaHttpServer}/?op=jb`
-                jb.log('remote cmd activated via http server',{url,body,ctx})
-                cmdResult = await jbHost.fetch(url,{method: 'POST', body}).then(r => r.text())
-            } else if (jbHost.spawn) {
-                try {
-                   cmdResult = await jbHost.spawn(args)
-                } catch (e) {
-                  jb.logException(e,'cmd',{command})
-                }
-            }
-            try {
-                const resultWithLogs = JSON.parse(cmdResult)
-                jb.log('remote cmd result',{resultWithLogs, ctx})
-                return includeLogs ? resultWithLogs : resultWithLogs.result
-            } catch (err) {
-                debugger
-                jb.logError('remote cmd: can not parse result returned from jb.js',{cmdResult, command, err})
-            }
-        },
-        createCallbagSource: () => jb.logError('callbag is not supported in single run jbm'),
-        createCallbagOperator: () => jb.logError('callbag is not supported in single run jbm'),
-
-        async rjbm() { return this }
-    })
-})
-
-component('byUri', {
-  type: 'jbm',
-  params: [
-    {id: 'uri', as: 'string', dynamic: true}
-  ],
-  impl: ({},_uri) => {
-      const uri = _uri()
-      return findNeighbourJbm(uri) || {
-          uri,
-          rjbm() {
-              this._rjbm = this._rjbm || jb.jbm.extendPortToJbmProxy(remoteRoutingPort(jb.uri, uri),{doNotinitCommandListener: true})
-              return this._rjbm
-          }
-      }
-
-      function remoteRoutingPort(from,to) {
-          if (jb.ports[to]) return jb.ports[to]
-          const routingPath = calcRoutingPath(from,to)
-          if (routingPath.length == 2 && jb.ports[routingPath[1]])
-              return jb.ports[routingPath[1]]
-          let nextPort = jb.ports[routingPath[1]]
-          if (!nextPort && jb.jbm.gateway) {
-              routingPath.splice(1,0,jb.jbm.gateway.uri)
-              nextPort = jb.jbm.gateway
-          }
-          if (!nextPort) {
-              return jb.logError(`routing - can not find next port`,{routingPath, uri: jb.uri, from,to})
-          }
-  
-          const port = {
-              from, to,
-              postMessage: _m => { 
-                  const m = {from, to,routingPath,..._m}
-                  jb.log(`remote routing sent from ${from} to ${to}`,{m})
-                  nextPort.postMessage(m)
-              },
-              onMessage: { addListener: handler => nextPort.onMessage.addListener(m => jb.net.handleOrRouteMsg(from,to,handler,m)) },
-              onDisconnect: { addListener: handler => { port.disconnectHandler = handler} }
-          }
-          jb.ports[to] = port
-          return port
-      }
-
-      function calcRoutingPath(from,to) {
-          const pp1 = from.split('•'), pp2 = to.split('•')
-          const p1 = pp1.map((p,i) => pp1.slice(0,i+1).join('•'))
-          const p2 = pp2.map((p,i) => pp2.slice(0,i+1).join('•'))
-          let i =0;
-          while (p1[i] === p2[i] && i < p1.length) i++;
-          const path_to_shared_parent = i ? p1.slice(i-1) : p1.slice(i) // i == 0 means there is no shared parent, so network is used
-          return [...path_to_shared_parent.reverse(),...p2.slice(i)]
-      }
-      function findNeighbourJbm(uri) {
-          return [jb, jb.parent, ...Object.values(jb.jbm.childJbms), ...Object.values(jb.jbm.networkPeers)].filter(x=>x).find(x=>x.uri == uri)
-      }
-  }
-})
-
-component('jbm.self', {
-  type: 'jbm',
-  impl: () => {
-      jb.rjbm = jb.rjbm || (() => jb)
-      return jb
-  }
-})
-
-component('jbm.isSelf', {
-  params: [
-    {id: 'jbm', type: 'jbm', mandatory: true}
-  ],
-  type: 'boolean<>',
-  impl: (ctx,jbm) => jbm == jb
-})
-
-component('parent', {
-  type: 'jbm',
-  impl: () => ({
-    uri: jb.parent.uri,
-    rjbm: () => jb.parent
-  })
-})
-
-component('jbm.start', {
-  type: 'data<>',
-  moreTypes: 'action<>',
-  params: [
-    {id: 'jbm', type: 'jbm', mandatory: true}
-  ],
-  impl: pipe('%$jbm%', '%rjbm()%', '%$jbm%', first())
-})
-
-component('jbm.terminateChild', {
-  type: 'action<>',
-  params: [
-    {id: 'id', as: 'string'}
-  ],
-  impl: (ctx,id) => jb.jbm.terminateChild(id,ctx)
-})
-
-component('isNode', {
-  type: 'boolean<>',
-  impl: () => globalThis.jbHost.isNode
-})
-
-component('isVscode', {
-  type: 'boolean<>',
-  impl: () => globalThis.jbHost.isVscode
-})
-
-component('nodeOnly', {
-  type: 'data<>',
-  params: [
-    {id: 'calc', dynamic: true, mandatory: true},
-    {id: 'sourceCode', type: 'source-code<loader>', mandatory: true}
-  ],
-  impl: If(and(isNode(), not(isVscode())), '%$calc()%', remote.data('%$calc()%', cmd('%$sourceCode%')))
-})
-});
-
-jbLoadPackedFile({lineInPackage:6285, jb, noProxies: false, path: '/plugins/remote/jbm/jbm-utils.js',fileDsl: '', pluginId: 'remote-jbm' }, 
+jbLoadPackedFile({lineInPackage:5970, jb, noProxies: false, path: '/plugins/remote/jbm/jbm-utils.js',fileDsl: '', pluginId: 'remote-jbm' }, 
             function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
 /* jbm - a virtual jBart machine - can be implemented in same frame/sub frames/workers over the network
 interface jbm : {
@@ -6604,44 +6289,7 @@ extension('jbm', 'main', {
 
 });
 
-jbLoadPackedFile({lineInPackage:6609, jb, noProxies: false, path: '/plugins/remote/jbm/remote-cmd.js',fileDsl: '', pluginId: 'remote-jbm' }, 
-            function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
-component('remote.cmd', {
-  type: 'data<>',
-  moreTypes: 'action<>',
-  description: 'calc a script with jb.js',
-  params: [
-    {id: 'main', type: 'data<>', dynamic: true, moreTypes: 'action<>', description: 'e.g pipeline("hello","%% -- %$v1%")'},
-    {id: 'wrap', as: 'string', description: 'e.g prune(MAIN)'},
-    {id: 'context', description: 'e.g {v1: "xx", param1: prof1("yy") }'},
-    {id: 'sourceCode', type: 'source-code<loader>', mandatory: true},
-    {id: 'id', as: 'string', description: 'jb.uri of cmd, default is main'},
-    {id: 'viaHttpServer', as: 'string', defaultValue: 'http://localhost:8082'}
-  ],
-  impl: async (ctx, main, wrap, context, sourceCode, id, viaHttpServer) => {
-        const args = [
-            ['-main', jb.utils.prettyPrint(main.profile, { singleLine: true })],
-            ['-wrap', wrap],
-            ['-uri', id],
-            ['-sourceCode', JSON.stringify(sourceCode)],
-            ...Object.keys(context).map(k => [`%${k}`, context[k]]),
-        ].filter(x => x[1])
-        const body = JSON.stringify(args.map(([k, v]) => `${k}:${v}`))
-        const url = `${viaHttpServer}/?op=jb`
-
-        return jbHost.fetch(url, { method: 'POST', body }).then(r => r.json()).then(x => x.result)
-
-        function serializeContextVal(val) {
-            if (val && typeof val == 'object')
-                return `() => ${JSON.stringify(val)}`
-            return val
-        }
-    }
-})
-
-});
-
-jbLoadPackedFile({lineInPackage:6646, jb, noProxies: false, path: '/plugins/remote/jbm/node-worker.js',fileDsl: '', pluginId: 'remote-jbm' }, 
+jbLoadPackedFile({lineInPackage:6294, jb, noProxies: false, path: '/plugins/remote/jbm/node-worker.js',fileDsl: '', pluginId: 'remote-jbm' }, 
             function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
 
 extension('webSocket', 'client', {
@@ -6945,6 +6593,358 @@ parentPort.postMessage({ $: 'workerReady' })
 //   }
 // })
 
+
+});
+
+jbLoadPackedFile({lineInPackage:6601, jb, noProxies: false, path: '/plugins/remote/jbm/jbm.js',fileDsl: '', pluginId: 'remote-jbm' }, 
+            function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
+pluginDsl('jbm')
+using('loader,tree-shake')
+
+component('stateless', {
+  type: 'jbm',
+  params: [
+    {id: 'sourceCode', type: 'source-code<loader>'}
+  ],
+  impl: If(isNode(), cmd('%$sourceCode%'), webWorker({ sourceCode: '%$sourceCode%', stateless: true }))
+})
+
+component('worker', {
+  type: 'jbm',
+  params: [
+    {id: 'id', as: 'string'},
+    {id: 'sourceCode', type: 'source-code<loader>', byName: true},
+    {id: 'init', type: 'action<>', dynamic: true},
+    {id: 'networkPeer', as: 'boolean', description: 'used for testing', type: 'boolean'}
+  ],
+  impl: If({
+    condition: isNode(),
+    then: If({
+      condition: isVscode(),
+      then: remoteNodeWorker('%$id%', { sourceCode: '%$sourceCode%', init: '%$init()%' }),
+      Else: nodeWorker('%$id%', { sourceCode: '%$sourceCode%', init: '%$init()%' })
+    }),
+    Else: webWorker('%$id%', {
+      sourceCode: '%$sourceCode%',
+      init: '%$init()%',
+      networkPeer: '%$networkPeer%'
+    })
+  })
+})
+
+component('webWorker', {
+  type: 'jbm',
+  params: [
+    {id: 'id', as: 'string'},
+    {id: 'sourceCode', type: 'source-code<loader>', byName: true, defaultValue: treeShakeClient()},
+    {id: 'init', type: 'action<>', dynamic: true},
+    {id: 'networkPeer', as: 'boolean', description: 'used for testing', type: 'boolean'},
+    {id: 'stateless', as: 'boolean', description: 'can not be rx data source, or remote widget', type: 'boolean'}
+  ],
+  impl: (ctx,_id,sourceCode,init,networkPeer) => {
+      const id = (_id || 'w1').replace(/-/g,'__')
+      const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
+      if (childsOrNet[id]) return childsOrNet[id]
+      const workerUri = networkPeer ? id : `${jb.uri}•${id}`
+      const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
+      sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),'remote-jbm','tree-shake'])
+
+      const workerCode = `
+importScripts(location.origin+'/plugins/loader/jb-loader.js');
+//importScripts(location.origin+'/package/${sourceCode.plugins.join(',')}.js'); // 
+jbHost.baseUrl = location.origin || '';
+Promise.resolve(jbInit('${workerUri}', ${JSON.stringify(sourceCode)})).then(jb => {
+//jbLoadPacked({uri:'${workerUri}'}).then(jb => {
+  globalThis.jb = jb;
+  jb.spy.initSpy({spyParam: "${jb.spy.spyParam}"});
+  jb.treeShake.codeServerJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
+  self.postMessage({ $: 'workerReady' })
+})
+//# sourceURL=${workerUri}-initJb.js`
+
+      return childsOrNet[id] = {
+          uri: workerUri,
+          rjbm() {
+                if (this._rjbm) return this._rjbm
+                if (this.waitingForPromise) return this.waitingForPromise
+                const self = this
+                return this.waitingForPromise = new Promise(resolve => {
+                  const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
+                  worker.addEventListener('message', async function f1(m) {
+                      if (m.data.$ == 'workerReady') {
+                          if (self._rjbm) {
+                              resolve(self._rjbm) // race condition
+                          } else {
+                              worker.removeEventListener('message',f1)
+                              const rjbm = self._rjbm = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
+                              rjbm.worker = worker
+                              await init(ctx.setVar('jbm',childsOrNet[id]))
+                              resolve(rjbm)
+                          }
+                      }
+                  })
+              })
+          }
+      }
+  }
+})
+
+component('child', {
+  type: 'jbm',
+  params: [
+    {id: 'id', as: 'string'},
+    {id: 'sourceCode', type: 'source-code<loader>', byName: true, defaultValue: treeShakeClient()},
+    {id: 'init', type: 'action<>', dynamic: true}
+  ],
+  impl: (ctx,_id,sourceCode,init) => {
+        const id = _id || 'child1'
+        if (jb.jbm.childJbms[id]) return jb.jbm.childJbms[id]
+        const childUri = `${jb.uri}•${id}`
+        sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []),'remote-jbm','tree-shake'])
+
+        return jb.jbm.childJbms[id] = {
+            uri: childUri,
+            async rjbm() {
+                if (this._rjbm) return this._rjbm
+                const child = this.child = await jbInit(childUri, sourceCode, {multipleInFrame: true})
+                //child.spy.initSpy({spyParam: jb.spy.spyParam})
+                child.rjbm = () => this._rjbm
+                this._rjbm = initChild(child)
+                await init(ctx.setVar('jbm',child))
+                return this._rjbm
+            }
+        }
+
+        function initChild(child) {
+            child.spy.initSpy({spyParam: jb.spy.spyParam})
+            child.parent = jb
+            child.treeShake.codeServerJbm = jb.treeShake.codeServerJbm || jb // TODO: use codeLoaderUri
+            child.ports[jb.uri] = {
+                from: child.uri, to: jb.uri,
+                postMessage: m => 
+                    jb.net.handleOrRouteMsg(jb.uri,child.uri,jb.ports[child.uri].handler, {from: child.uri, to: jb.uri,...m}),
+                onMessage: { addListener: handler => child.ports[jb.uri].handler = handler }, // only one handler
+            }
+            child.jbm.extendPortToJbmProxy(child.ports[jb.uri])
+            jb.ports[child.uri] = {
+                from: jb.uri,to: child.uri,
+                postMessage: m => 
+                    child.net.handleOrRouteMsg(child.uri,jb.uri,child.ports[jb.uri].handler , {from: jb.uri, to: child.uri,...m}),
+                onMessage: { addListener: handler => jb.ports[child.uri].handler = handler }, // only one handler
+            }
+            return jb.jbm.extendPortToJbmProxy(jb.ports[child.uri])
+        }
+    }
+})
+
+component('cmd', {
+  type: 'jbm',
+  params: [
+    {id: 'sourceCode', type: 'source-code<loader>', mandatory: true},
+    {id: 'viaHttpServer', as: 'string', defaultValue: 'http://localhost:8082'},
+    {id: 'doNotStripResult', as: 'boolean', type: 'boolean'},
+    {id: 'id', as: 'string'},
+    {id: 'spy', as: 'string'},
+    {id: 'includeLogs', as: 'boolean', type: 'boolean'}
+  ],
+  impl: (ctx,_sourceCode,viaHttpServer,doNotStripResult,id,spy,includeLogs) => ({
+        uri: id || 'main',
+        remoteExec: async (sctx,{data, action} = {}) => {
+            const plugins = !_sourceCode ? jb.loader.pluginsOfProfile([(data || action).profile, jb.path(sctx,'cmpCtx.params')]) : []
+            const sourceCode = _sourceCode || { plugins , pluginPackages: [{$:'defaultPackage'}] }
+            sourceCode.plugins = jb.utils.unique([...(sourceCode.plugins || []), ...plugins])
+    
+            const args = [
+                ['-runCtx', JSON.stringify(sctx)],
+                ['-uri', id || `main`],
+                ['-sourceCode', JSON.stringify(sourceCode)],
+                spy ? ['-spy', spy]: [],
+                doNotStripResult ? ['-doNotStripResult',''+doNotStripResult] : []
+            ].filter(x=>x[1])
+            const command = `node --inspect-brk ../hosts/node/jb.js ${args.map(arg=> `${arg[0]}:` + 
+                (arg[1].indexOf("'") != -1 ? `"${arg[1].replace(/"/g,`\\"`).replace(/\$/g,'\\$')}"` : `'${arg[1]}'`)).join(' ')}`
+            let cmdResult = null
+            if (viaHttpServer) {
+                const body = JSON.stringify(args.map(([k,v])=>`${k}:${v}`))
+                const url = `${viaHttpServer}/?op=jb`
+                jb.log('remote cmd activated via http server',{url,body,ctx})
+                cmdResult = await jbHost.fetch(url,{method: 'POST', body}).then(r => r.text())
+            } else if (jbHost.spawn) {
+                try {
+                   cmdResult = await jbHost.spawn(args)
+                } catch (e) {
+                  jb.logException(e,'cmd',{command})
+                }
+            }
+            try {
+                const resultWithLogs = JSON.parse(cmdResult)
+                jb.log('remote cmd result',{resultWithLogs, ctx})
+                return includeLogs ? resultWithLogs : resultWithLogs.result
+            } catch (err) {
+                debugger
+                jb.logError('remote cmd: can not parse result returned from jb.js',{cmdResult, command, err})
+            }
+        },
+        createCallbagSource: () => jb.logError('callbag is not supported in single run jbm'),
+        createCallbagOperator: () => jb.logError('callbag is not supported in single run jbm'),
+
+        async rjbm() { return this }
+    })
+})
+
+component('byUri', {
+  type: 'jbm',
+  params: [
+    {id: 'uri', as: 'string', dynamic: true}
+  ],
+  impl: ({},_uri) => {
+      const uri = _uri()
+      return findNeighbourJbm(uri) || {
+          uri,
+          rjbm() {
+              this._rjbm = this._rjbm || jb.jbm.extendPortToJbmProxy(remoteRoutingPort(jb.uri, uri),{doNotinitCommandListener: true})
+              return this._rjbm
+          }
+      }
+
+      function remoteRoutingPort(from,to) {
+          if (jb.ports[to]) return jb.ports[to]
+          const routingPath = calcRoutingPath(from,to)
+          if (routingPath.length == 2 && jb.ports[routingPath[1]])
+              return jb.ports[routingPath[1]]
+          let nextPort = jb.ports[routingPath[1]]
+          if (!nextPort && jb.jbm.gateway) {
+              routingPath.splice(1,0,jb.jbm.gateway.uri)
+              nextPort = jb.jbm.gateway
+          }
+          if (!nextPort) {
+              return jb.logError(`routing - can not find next port`,{routingPath, uri: jb.uri, from,to})
+          }
+  
+          const port = {
+              from, to,
+              postMessage: _m => { 
+                  const m = {from, to,routingPath,..._m}
+                  jb.log(`remote routing sent from ${from} to ${to}`,{m})
+                  nextPort.postMessage(m)
+              },
+              onMessage: { addListener: handler => nextPort.onMessage.addListener(m => jb.net.handleOrRouteMsg(from,to,handler,m)) },
+              onDisconnect: { addListener: handler => { port.disconnectHandler = handler} }
+          }
+          jb.ports[to] = port
+          return port
+      }
+
+      function calcRoutingPath(from,to) {
+          const pp1 = from.split('•'), pp2 = to.split('•')
+          const p1 = pp1.map((p,i) => pp1.slice(0,i+1).join('•'))
+          const p2 = pp2.map((p,i) => pp2.slice(0,i+1).join('•'))
+          let i =0;
+          while (p1[i] === p2[i] && i < p1.length) i++;
+          const path_to_shared_parent = i ? p1.slice(i-1) : p1.slice(i) // i == 0 means there is no shared parent, so network is used
+          return [...path_to_shared_parent.reverse(),...p2.slice(i)]
+      }
+      function findNeighbourJbm(uri) {
+          return [jb, jb.parent, ...Object.values(jb.jbm.childJbms), ...Object.values(jb.jbm.networkPeers)].filter(x=>x).find(x=>x.uri == uri)
+      }
+  }
+})
+
+component('jbm.self', {
+  type: 'jbm',
+  impl: () => {
+      jb.rjbm = jb.rjbm || (() => jb)
+      return jb
+  }
+})
+
+component('jbm.isSelf', {
+  params: [
+    {id: 'jbm', type: 'jbm', mandatory: true}
+  ],
+  type: 'boolean<>',
+  impl: (ctx,jbm) => jbm == jb
+})
+
+component('parent', {
+  type: 'jbm',
+  impl: () => ({
+    uri: jb.parent.uri,
+    rjbm: () => jb.parent
+  })
+})
+
+component('jbm.start', {
+  type: 'data<>',
+  moreTypes: 'action<>',
+  params: [
+    {id: 'jbm', type: 'jbm', mandatory: true}
+  ],
+  impl: pipe('%$jbm%', '%rjbm()%', '%$jbm%', first())
+})
+
+component('jbm.terminateChild', {
+  type: 'action<>',
+  params: [
+    {id: 'id', as: 'string'}
+  ],
+  impl: (ctx,id) => jb.jbm.terminateChild(id,ctx)
+})
+
+component('isNode', {
+  type: 'boolean<>',
+  impl: () => globalThis.jbHost.isNode
+})
+
+component('isVscode', {
+  type: 'boolean<>',
+  impl: () => globalThis.jbHost.isVscode
+})
+
+component('nodeOnly', {
+  type: 'data<>',
+  params: [
+    {id: 'calc', dynamic: true, mandatory: true},
+    {id: 'sourceCode', type: 'source-code<loader>', mandatory: true}
+  ],
+  impl: If(and(isNode(), not(isVscode())), '%$calc()%', remote.data('%$calc()%', cmd('%$sourceCode%')))
+})
+});
+
+jbLoadPackedFile({lineInPackage:6916, jb, noProxies: false, path: '/plugins/remote/jbm/remote-cmd.js',fileDsl: '', pluginId: 'remote-jbm' }, 
+            function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
+component('remote.cmd', {
+  type: 'data<>',
+  moreTypes: 'action<>',
+  description: 'calc a script with jb.js',
+  params: [
+    {id: 'main', type: 'data<>', dynamic: true, moreTypes: 'action<>', description: 'e.g pipeline("hello","%% -- %$v1%")'},
+    {id: 'wrap', as: 'string', description: 'e.g prune(MAIN)'},
+    {id: 'context', description: 'e.g {v1: "xx", param1: prof1("yy") }'},
+    {id: 'sourceCode', type: 'source-code<loader>', mandatory: true},
+    {id: 'id', as: 'string', description: 'jb.uri of cmd, default is main'},
+    {id: 'viaHttpServer', as: 'string', defaultValue: 'http://localhost:8082'}
+  ],
+  impl: async (ctx, main, wrap, context, sourceCode, id, viaHttpServer) => {
+        const args = [
+            ['-main', jb.utils.prettyPrint(main.profile, { singleLine: true })],
+            ['-wrap', wrap],
+            ['-uri', id],
+            ['-sourceCode', JSON.stringify(sourceCode)],
+            ...Object.keys(context).map(k => [`%${k}`, context[k]]),
+        ].filter(x => x[1])
+        const body = JSON.stringify(args.map(([k, v]) => `${k}:${v}`))
+        const url = `${viaHttpServer}/?op=jb`
+
+        return jbHost.fetch(url, { method: 'POST', body }).then(r => r.json()).then(x => x.result)
+
+        function serializeContextVal(val) {
+            if (val && typeof val == 'object')
+                return `() => ${JSON.stringify(val)}`
+            return val
+        }
+    }
+})
 
 });
 
@@ -7386,74 +7386,77 @@ component('remote.listAll', {
 
 });
 
-jbLoadPackedFile({lineInPackage:7391, jb, noProxies: false, path: '/plugins/testing/location-dsl-for-testing.js',fileDsl: 'location', pluginId: 'testing' }, 
+jbLoadPackedFile({lineInPackage:7391, jb, noProxies: false, path: '/plugins/testing/generic-tests-data.js',fileDsl: '', pluginId: 'testing' }, 
             function({jb,require,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,source,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
-dsl('location')
-extension('location', 'main', {
-  typeRules: [ { same: ['data<location>','data<>']} ]
+component('globals', {
+  watchableData: {}
 })
 
-component('city', {
-  type: 'settlement',
-  params: [
-    {id: 'name', as: 'string'}
+component('watchablePeople', {
+  watchableData: [
+    {name: 'Homer Simpson - watchable', age: 42, male: true},
+    {name: 'Marge Simpson - watchable', age: 38, male: false},
+    {name: 'Bart Simpson - watchable', age: 12, male: true}
   ]
 })
 
-component('village', {
-  type: 'settlement',
-  params: [
-    {id: 'name', as: 'string'}
-  ]
+component('person', {
+  watchableData: {
+    name: 'Homer Simpson',
+    male: true,
+    isMale: 'yes',
+    age: 42
+  }
 })
 
-component('state', {
-  type: 'state',
-  params: [
-    {id: 'capital', type: 'settlement'},
-    {id: 'cities', type: 'settlement[]'}
-  ]
+component('personWithAddress', {
+  watchableData: {
+    name: 'Homer Simpson',
+    address: {city: 'Springfield', street: '742 Evergreen Terrace'}
+  }
 })
 
-component('israel', {
-  impl: state(jerusalem(), { cities: [eilat(), city('Tel Aviv')] })
+component('personWithPrimitiveChildren', {
+  watchableData: {
+    childrenNames: ['Bart','Lisa','Maggie'],
+  }
 })
 
-component('israel2', {
-  impl: state()
+component('personWithChildren', { watchableData: {
+    name: "Homer Simpson",
+    children: [{ name: 'Bart' }, { name: 'Lisa' }, { name: 'Maggie' } ],
+    friends: [{ name: 'Barnie' } ],
+}})
+  
+component('emptyArray', {
+  watchableData: []
 })
 
-component('jerusalem', {
-  impl: city('Jerusalem')
+component('people', {
+    passiveData: [
+      {name: 'Homer Simpson', age: 42, male: true},
+      {name: 'Marge Simpson', age: 38, male: false},
+      {name: 'Bart Simpson', age: 12, male: true}
+    ]
 })
 
-component('eilat', {
-  impl: city('Eilat')
-})
+component('peopleWithChildren', { watchableData: [
+  {
+    name: 'Homer',
+    children: [{name: 'Bart'}, {name: 'Lisa'}],
+  },
+  {
+    name: 'Marge',
+    children: [{name: 'Bart'}, {name: 'Lisa'}],
+  }
+]})
 
-component('nokdim', {
-  impl: village('Nokdim')
-})
-
-component('pipeline', {
-  params: [
-    {id: 'checkNameOverride'},
-    {id: 'state', type: 'state'},
-  ],
-  impl: village()
-})
-
-component('nameOfCity', {
-  type: 'data<>',
-  params: [
-    {id: 'city', type: 'settlement'}
-  ],
-  impl: '%$city/name%'
-})
+component('stringArray', { watchableData: ['a','b','c']})
+component('stringTree', { watchableData: { node1: ['a','b','c'], node2: ['1','2','3']}})
 
 });
 
-jbLoadPackedFile({lineInPackage:7458, jb, noProxies: false, path: '/plugins/testing/testers.js',fileDsl: '', pluginId: 'testing' }, 
+jbLoadPackedFile({lineInPackage:7461, jb, noProxies: false, path: '/plugins/testing/testers.js',fileDsl: '', pluginId: 'testing' }, 
             function({jb,require,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,source,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
 using('remote-jbm')
 
@@ -7880,77 +7883,114 @@ component('PROJECTS_PATH', { passiveData : '/home/shaiby/projects' // 'c:/projec
 })
 });
 
-jbLoadPackedFile({lineInPackage:7885, jb, noProxies: false, path: '/plugins/testing/generic-tests-data.js',fileDsl: '', pluginId: 'testing' }, 
+jbLoadPackedFile({lineInPackage:7888, jb, noProxies: false, path: '/plugins/testing/location-dsl-for-testing.js',fileDsl: 'location', pluginId: 'testing' }, 
             function({jb,require,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,source,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
-component('globals', {
-  watchableData: {}
+dsl('location')
+extension('location', 'main', {
+  typeRules: [ { same: ['data<location>','data<>']} ]
 })
 
-component('watchablePeople', {
-  watchableData: [
-    {name: 'Homer Simpson - watchable', age: 42, male: true},
-    {name: 'Marge Simpson - watchable', age: 38, male: false},
-    {name: 'Bart Simpson - watchable', age: 12, male: true}
+component('city', {
+  type: 'settlement',
+  params: [
+    {id: 'name', as: 'string'}
   ]
 })
 
-component('person', {
-  watchableData: {
-    name: 'Homer Simpson',
-    male: true,
-    isMale: 'yes',
-    age: 42
-  }
+component('village', {
+  type: 'settlement',
+  params: [
+    {id: 'name', as: 'string'}
+  ]
 })
 
-component('personWithAddress', {
-  watchableData: {
-    name: 'Homer Simpson',
-    address: {city: 'Springfield', street: '742 Evergreen Terrace'}
-  }
+component('state', {
+  type: 'state',
+  params: [
+    {id: 'capital', type: 'settlement'},
+    {id: 'cities', type: 'settlement[]'}
+  ]
 })
 
-component('personWithPrimitiveChildren', {
-  watchableData: {
-    childrenNames: ['Bart','Lisa','Maggie'],
-  }
+component('israel', {
+  impl: state(jerusalem(), { cities: [eilat(), city('Tel Aviv')] })
 })
 
-component('personWithChildren', { watchableData: {
-    name: "Homer Simpson",
-    children: [{ name: 'Bart' }, { name: 'Lisa' }, { name: 'Maggie' } ],
-    friends: [{ name: 'Barnie' } ],
-}})
-  
-component('emptyArray', {
-  watchableData: []
+component('israel2', {
+  impl: state()
 })
 
-component('people', {
-    passiveData: [
-      {name: 'Homer Simpson', age: 42, male: true},
-      {name: 'Marge Simpson', age: 38, male: false},
-      {name: 'Bart Simpson', age: 12, male: true}
-    ]
+component('jerusalem', {
+  impl: city('Jerusalem')
 })
 
-component('peopleWithChildren', { watchableData: [
-  {
-    name: 'Homer',
-    children: [{name: 'Bart'}, {name: 'Lisa'}],
-  },
-  {
-    name: 'Marge',
-    children: [{name: 'Bart'}, {name: 'Lisa'}],
-  }
-]})
+component('eilat', {
+  impl: city('Eilat')
+})
 
-component('stringArray', { watchableData: ['a','b','c']})
-component('stringTree', { watchableData: { node1: ['a','b','c'], node2: ['1','2','3']}})
+component('nokdim', {
+  impl: village('Nokdim')
+})
+
+component('pipeline', {
+  params: [
+    {id: 'checkNameOverride'},
+    {id: 'state', type: 'state'},
+  ],
+  impl: village()
+})
+
+component('nameOfCity', {
+  type: 'data<>',
+  params: [
+    {id: 'city', type: 'settlement'}
+  ],
+  impl: '%$city/name%'
+})
 
 });
 
-jbLoadPackedFile({lineInPackage:7955, jb, noProxies: false, path: '/plugins/html/html.js',fileDsl: 'html', pluginId: 'html' }, 
+jbLoadPackedFile({lineInPackage:7955, jb, noProxies: false, path: '/plugins/html/html-tester.js',fileDsl: 'html', pluginId: 'html' }, 
+            function({jb,require,htmlTest,htmlPageRunner,section,group,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,source,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
+dsl('html')
+using('testing')
+
+component('htmlTest', {
+  type: 'test<>',
+  params: [
+    {id: 'page', type: 'page', mandatory: true},
+    {id: 'expectedResult', type: 'boolean<>', dynamic: true, mandatory: true},
+    {id: 'runBefore', type: 'action<>', dynamic: true},
+    {id: 'userEvents', type: 'animation_event<zui>[]'},
+    {id: 'allowError', as: 'boolean', dynamic: true, type: 'boolean<>'},
+    {id: 'timeout', as: 'number', defaultValue: 200},
+    {id: 'cleanUp', type: 'action<>', dynamic: true},
+    {id: 'expectedCounters', as: 'single'},
+    {id: 'spy'}
+  ],
+  impl: dataTest({
+    vars: [Var('uiTest', true)],
+    calculate: 'html: %$page.section.html()% css: %$page.section.css()%',
+    expectedResult: '%$expectedResult()%',
+    timeout: '%$timeout%',
+    allowError: '%$allowError()%',
+    expectedCounters: '%$expectedCounters%',
+    spy: ({},{},{spy}) => spy === '' ? 'test,html' : spy,
+    includeTestRes: true
+  })
+})
+
+component('htmlPageRunner', {
+  type: 'action<>',
+  params: [
+    {id: 'page', type: 'page', mandatory: true},
+  ],
+  impl: (ctx,page) => page.injectIntoElem({topEl: ctx.vars.testElem, registerEvents: true})
+})
+
+});
+
+jbLoadPackedFile({lineInPackage:7995, jb, noProxies: false, path: '/plugins/html/html.js',fileDsl: 'html', pluginId: 'html' }, 
             function({jb,require,htmlTest,htmlPageRunner,section,group,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,source,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
 dsl('html')
 
@@ -8158,46 +8198,6 @@ extension('html','DataBinder', {
             }
         }
     }
-})
-
-});
-
-jbLoadPackedFile({lineInPackage:8167, jb, noProxies: false, path: '/plugins/html/html-tester.js',fileDsl: 'html', pluginId: 'html' }, 
-            function({jb,require,htmlTest,htmlPageRunner,section,group,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,source,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
-dsl('html')
-using('testing')
-
-component('htmlTest', {
-  type: 'test<>',
-  params: [
-    {id: 'page', type: 'page', mandatory: true},
-    {id: 'expectedResult', type: 'boolean<>', dynamic: true, mandatory: true},
-    {id: 'runBefore', type: 'action<>', dynamic: true},
-    {id: 'userEvents', type: 'animation_event<zui>[]'},
-    {id: 'allowError', as: 'boolean', dynamic: true, type: 'boolean<>'},
-    {id: 'timeout', as: 'number', defaultValue: 200},
-    {id: 'cleanUp', type: 'action<>', dynamic: true},
-    {id: 'expectedCounters', as: 'single'},
-    {id: 'spy'}
-  ],
-  impl: dataTest({
-    vars: [Var('uiTest', true)],
-    calculate: 'html: %$page.section.html()% css: %$page.section.css()%',
-    expectedResult: '%$expectedResult()%',
-    timeout: '%$timeout%',
-    allowError: '%$allowError()%',
-    expectedCounters: '%$expectedCounters%',
-    spy: ({},{},{spy}) => spy === '' ? 'test,html' : spy,
-    includeTestRes: true
-  })
-})
-
-component('htmlPageRunner', {
-  type: 'action<>',
-  params: [
-    {id: 'page', type: 'page', mandatory: true},
-  ],
-  impl: (ctx,page) => page.injectIntoElem({topEl: ctx.vars.testElem, registerEvents: true})
 })
 
 });
@@ -8497,10 +8497,11 @@ component('llmViaApi.completions', {
     {id: 'includeSystemMessages', as: 'boolean', type: 'boolean<>'},
     {id: 'useRedisCache', as: 'boolean', type: 'boolean<>'}
   ],
-  impl: async (ctx,chatF,model,max_tokens,metaPrompt,llmModelForMetaPrompt, includeSystemMessages,useRedisCache) => {
+  impl: async (ctx,chatF,model,max_tokens,metaPrompt,llmModelForMetaPrompt, includeSystemMessages,_useRedisCache) => {
         if (metaPrompt.profile == null) 
           return dataFromLlm(chatF())
         const originalChat = chatF()
+        const useRedisCache = _useRedisCache && !jb.llm.noRedis
         const taskOrPrompt = originalChat.map(x=>x.content).join('\n')
         const metaPromptChat = metaPrompt(ctx.setVars({taskOrPrompt}))
         if (llmModelForMetaPrompt.reasoning) metaPromptChat.forEach(m=>m.role = 'user')
@@ -8557,8 +8558,9 @@ component('source.llmCompletions', {
     {id: 'apiKey', as: 'string'},
     {id: 'notifyUsage', type: 'action<>', dynamic: true}
   ],
-  impl: (ctx,chatF,model,max_tokens,includeSystemMessages,useRedisCache, _apiKey,notifyUsage) => (start,sink) => {
+  impl: (ctx,chatF,model,max_tokens,includeSystemMessages,_useRedisCache, _apiKey,notifyUsage) => (start,sink) => {
       if (start !== 0) return
+      const useRedisCache = _useRedisCache && !jb.llm.noRedis
       let controller = null, connection, connectionAborted, DONE, fullContent = ''
       sink(0, (t,d) => {
         if (t == 2) {
@@ -8615,7 +8617,7 @@ component('source.llmCompletions', {
             jb.log('llm source done from reader', {ctx})
             if (!DONE) {
               DONE = true
-              updateRedis()
+              onEnd()
               sink(2)
             }
             return
@@ -8632,7 +8634,7 @@ component('source.llmCompletions', {
                 jb.log('llm source done from content', {ctx})
                 if (DONE) jb.logError('source.llmCompletions already DONE error', {val, ctx})
                 DONE = true
-                updateRedis()
+                onEnd()
                 sink(2)
                 return
               }
@@ -8659,7 +8661,7 @@ component('source.llmCompletions', {
           })
           return !connectionAborted && reader.read().then(processResp)
 
-          function updateRedis() {
+          function onEnd() {
             const res = {
               fullContent, chat, includeSystemMessages,              
               duration: new Date().getTime() - start_time,
@@ -8769,112 +8771,7 @@ component('llm.accumulateText', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:8774, jb, noProxies: false, path: '/plugins/llm/api/llm-models.js',fileDsl: 'llm', pluginId: 'llm-api' }, 
-            function({jb,require,llmViaApi,source,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
-dsl('llm')
-
-extension('llm','main', {
-  initExtension() {
-    return { callHistory: [], totalCost: 0 }
-  },
-  notifyApiUsage(rec, ctx) {
-    jb.llm.callHistory.push(rec)
-    jb.llm.models = jb.llm.models || jb.llm.calcModels(ctx)
-    const model = jb.llm.models.find(m=>m.name == rec.model) 
-    if (!model)
-      return jb.logError(`notifyApiUsage can not find model ${rec.model}`, {rec, models: jb.llm.models, ctx})
-    const usage = rec.usage
-    const [input,output] = model.price
-    rec.model = model
-    const cost = rec.cost = (input * usage.prompt_tokens + output * usage.completion_tokens) / 1000000
-    jb.llm.totalCost += cost
-    return { totalCost: jb.llm.totalCost, cost}
-  },
-  calcModels(ctx) {
-    const profileIds = Object.keys(jb.comps).filter(k=>k.indexOf('model<llm>') == 0 && !k.match(/model$|byId$/))
-    return profileIds.map(k=>({...ctx.run({$$: k}), id: k.split('>').pop()}))
-  }
-})
-
-component('model', {
-  type: 'model',
-  params: [
-    {id: 'name', as: 'string'},
-    {id: 'price', as: 'array', byName: true, description: 'input/output $/M tokens'},
-    {id: 'maxRequestTokens', as: 'array', description: 'input/output K'},
-    {id: 'speed', type: 'model_speed'},
-    {id: 'maxContextLength', as: 'number', defaultValue: 4096},
-    {id: 'reasoning', as: 'boolean', type: 'boolean<>'}
-  ],
-  impl: ctx => ({...ctx.params, _speed: 1/jb.path(ctx.params.speed,'icon.0'), _price: jb.path(ctx.params.price,'1') })
-})
-
-component('linear', {
-  type: 'model_speed',
-  params: [
-    {id: 'icon', as: 'array', byName: true, description: 'estimated first item, estimated next item'},
-    {id: 'card', as: 'array', byName: true, description: 'estimated first item, estimated next item'}
-  ]
-})
-
-component('o1', {
-  type: 'model',
-  impl: model('o1-preview-2024-09-12', {
-    price: [15, 60],
-    maxRequestTokens: [200, 100],
-    speed: linear({ icon: [16,0.5], card: [15,3] }),
-    reasoning: true
-  })
-})
-
-component('o1_mini', {
-  type: 'model',
-  impl: model('o1-mini-2024-09-12', {
-    price: [3,12],
-    maxRequestTokens: [128,65],
-    speed: linear({ icon: [2,0.5], card: [5,3] }),
-    reasoning: true
-  })
-})
-
-component('gpt_35_turbo_0125', {
-  type: 'model',
-  impl: model('gpt-3.5-turbo-0125', {
-    price: [0.5,1.5],
-    maxRequestTokens: [4,4],
-    speed: linear({ icon: [3,0.3], card: [3,1] })
-  })
-})
-
-component('gpt_35_turbo_16k', {
-  type: 'model',
-  impl: model('gpt-3.5-turbo-16k-0613', {
-    price: [3,4],
-    maxRequestTokens: [16,16],
-    speed: linear({ icon: [5,0.5], card: [5,1] })
-  })
-})
-
-component('gpt_4o', {
-  type: 'model',
-  impl: model('gpt-4o-2024-08-06', {
-    price: [2.5,10],
-    maxRequestTokens: [128,16],
-    speed: linear({ icon: [5,0.3], card: [3,2] })
-  })
-})
-
-component('byId', {
-  type: 'model',
-  params: [
-    {id: 'modelId', as: 'string'}
-  ],
-  impl: (ctx,id) => jb.exec({ $$: `model<llm>${id}` })
-})
-
-});
-
-jbLoadPackedFile({lineInPackage:8879, jb, noProxies: false, path: '/plugins/llm/api/meta-prompts.js',fileDsl: 'llm', pluginId: 'llm-api' }, 
+jbLoadPackedFile({lineInPackage:8776, jb, noProxies: false, path: '/plugins/llm/api/meta-prompts.js',fileDsl: 'llm', pluginId: 'llm-api' }, 
             function({jb,require,llmViaApi,source,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('llm')
 
@@ -9006,7 +8903,112 @@ component('reasoning', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:9011, jb, noProxies: false, path: '/plugins/zui/health-care-comps.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:8908, jb, noProxies: false, path: '/plugins/llm/api/llm-models.js',fileDsl: 'llm', pluginId: 'llm-api' }, 
+            function({jb,require,llmViaApi,source,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
+dsl('llm')
+
+extension('llm','main', {
+  initExtension() {
+    return { callHistory: [], totalCost: 0, noRedis: jbHost.location && jbHost.location.host.indexOf('localhost') == -1 }
+  },
+  notifyApiUsage(rec, ctx) {
+    jb.llm.callHistory.push(rec)
+    jb.llm.models = jb.llm.models || jb.llm.calcModels(ctx)
+    const model = jb.llm.models.find(m=>m.name == rec.model) 
+    if (!model)
+      return jb.logError(`notifyApiUsage can not find model ${rec.model}`, {rec, models: jb.llm.models, ctx})
+    const usage = rec.usage
+    const [input,output] = model.price
+    rec.model = model
+    const cost = rec.cost = (input * usage.prompt_tokens + output * usage.completion_tokens) / 1000000
+    jb.llm.totalCost += cost
+    return { totalCost: jb.llm.totalCost, cost}
+  },
+  calcModels(ctx) {
+    const profileIds = Object.keys(jb.comps).filter(k=>k.indexOf('model<llm>') == 0 && !k.match(/model$|byId$/))
+    return profileIds.map(k=>({...ctx.run({$$: k}), id: k.split('>').pop()}))
+  }
+})
+
+component('model', {
+  type: 'model',
+  params: [
+    {id: 'name', as: 'string'},
+    {id: 'price', as: 'array', byName: true, description: 'input/output $/M tokens'},
+    {id: 'maxRequestTokens', as: 'array', description: 'input/output K'},
+    {id: 'speed', type: 'model_speed'},
+    {id: 'maxContextLength', as: 'number', defaultValue: 4096},
+    {id: 'reasoning', as: 'boolean', type: 'boolean<>'}
+  ],
+  impl: ctx => ({...ctx.params, _speed: 1/jb.path(ctx.params.speed,'icon.0'), _price: jb.path(ctx.params.price,'1') })
+})
+
+component('linear', {
+  type: 'model_speed',
+  params: [
+    {id: 'icon', as: 'array', byName: true, description: 'estimated first item, estimated next item'},
+    {id: 'card', as: 'array', byName: true, description: 'estimated first item, estimated next item'}
+  ]
+})
+
+component('o1', {
+  type: 'model',
+  impl: model('o1-preview-2024-09-12', {
+    price: [15, 60],
+    maxRequestTokens: [200, 100],
+    speed: linear({ icon: [16,0.5], card: [15,3] }),
+    reasoning: true
+  })
+})
+
+component('o1_mini', {
+  type: 'model',
+  impl: model('o1-mini-2024-09-12', {
+    price: [3,12],
+    maxRequestTokens: [128,65],
+    speed: linear({ icon: [2,0.5], card: [5,3] }),
+    reasoning: true
+  })
+})
+
+component('gpt_35_turbo_0125', {
+  type: 'model',
+  impl: model('gpt-3.5-turbo-0125', {
+    price: [0.5,1.5],
+    maxRequestTokens: [4,4],
+    speed: linear({ icon: [3,0.3], card: [3,1] })
+  })
+})
+
+component('gpt_35_turbo_16k', {
+  type: 'model',
+  impl: model('gpt-3.5-turbo-16k-0613', {
+    price: [3,4],
+    maxRequestTokens: [16,16],
+    speed: linear({ icon: [5,0.5], card: [5,1] })
+  })
+})
+
+component('gpt_4o', {
+  type: 'model',
+  impl: model('gpt-4o-2024-08-06', {
+    price: [2.5,10],
+    maxRequestTokens: [128,16],
+    speed: linear({ icon: [5,0.3], card: [3,2] })
+  })
+})
+
+component('byId', {
+  type: 'model',
+  params: [
+    {id: 'modelId', as: 'string'}
+  ],
+  impl: (ctx,id) => jb.exec({ $$: `model<llm>${id}` })
+})
+
+});
+
+jbLoadPackedFile({lineInPackage:9013, jb, noProxies: false, path: '/plugins/zui/health-care-domain.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 using('zui')
@@ -9253,7 +9255,12 @@ component('healthCare.categoryColor', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:9258, jb, noProxies: false, path: '/plugins/zui/zui-app.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:9260, jb, noProxies: false, path: '/plugins/zui/running-shoes-domain.js',fileDsl: '', pluginId: 'zui' }, 
+            function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
+
+});
+
+jbLoadPackedFile({lineInPackage:9265, jb, noProxies: false, path: '/plugins/zui/zui-app.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 using('html')
@@ -9589,7 +9596,7 @@ component('zui.decoratedllmModels', {
 
 });
 
-jbLoadPackedFile({lineInPackage:9594, jb, noProxies: false, path: '/plugins/zui/zui-control.js',fileDsl: '', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:9601, jb, noProxies: false, path: '/plugins/zui/zui-control.js',fileDsl: '', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 extension('zui','control' , {
     initExtension() { return {  fCounter: 0, cmpCounter: 1,  } },
@@ -9761,7 +9768,7 @@ extension('zui','control' , {
 })
 });
 
-jbLoadPackedFile({lineInPackage:9766, jb, noProxies: false, path: '/plugins/zui/zui-domain.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:9773, jb, noProxies: false, path: '/plugins/zui/zui-domain.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 
@@ -9899,7 +9906,7 @@ component('cardFeatures', {
 
 });
 
-jbLoadPackedFile({lineInPackage:9904, jb, noProxies: false, path: '/plugins/zui/zui-features.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:9911, jb, noProxies: false, path: '/plugins/zui/zui-features.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 
@@ -10173,7 +10180,68 @@ component('itemOpacity', {
 
 });
 
-jbLoadPackedFile({lineInPackage:10178, jb, noProxies: false, path: '/plugins/zui/zui-items-layout.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:10185, jb, noProxies: false, path: '/plugins/zui/zui-group.js',fileDsl: 'zui', pluginId: 'zui' }, 
+            function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
+dsl('zui')
+
+component('group', {
+  type: 'control',
+  params: [
+    {id: 'controls', mandatory: true, type: 'control[]', dynamic: true, composite: true},
+    {id: 'layout', type: 'group_layout', defaultValue: vertical()},
+    {id: 'style', type: 'group-style', dynamic: true, defaultValue: group()},
+  ],
+  impl: ctx => jb.zui.ctrl(ctx)
+})
+
+component('group', {
+  type: 'group-style',
+  impl: features(
+    children('%$$model/controls()%'),
+    '%$$model/layout%',
+  )
+})
+
+component('allOrNone', {
+  type: 'control',
+  params: [
+    {id: 'controls', mandatory: true, type: 'control[]', dynamic: true, composite: true},
+    {id: 'layout', type: 'group_layout', defaultValue: vertical()},
+    {id: 'style', type: 'group-style', dynamic: true, defaultValue: group()},
+  ],
+  impl: ctx => jb.zui.ctrl(ctx, {layoutProp: { allOrNone: true } })
+})
+
+component('firstToFit', {
+  type: 'control',
+  params: [
+    {id: 'controls', mandatory: true, type: 'control[]', dynamic: true, composite: true},
+    {id: 'layout', type: 'group_layout', defaultValue: vertical()},
+    {id: 'style', type: 'group-style', dynamic: true, defaultValue: group()},
+  ],
+  impl: ctx => jb.zui.ctrl(ctx, {layoutProp: { firstToFit: true } })
+})
+
+component('children', {
+  type: 'feature',
+  params: [
+    {id: 'children', as: 'array', dynamic: true}
+  ],
+  impl: (ctx,children) => ({children})
+})
+
+component('vertical', {
+  type: 'group_layout',
+  impl: () => ({layoutProp: { layoutAxis:  1 }})
+})
+
+component('horizontal', {
+  type: 'group_layout',
+  impl: () => ({layoutProp: { layoutAxis:  0 }})
+})
+});
+
+jbLoadPackedFile({lineInPackage:10246, jb, noProxies: false, path: '/plugins/zui/zui-items-layout.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 
@@ -10448,7 +10516,255 @@ extension('zui','gridItemsLayout', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:10453, jb, noProxies: false, path: '/plugins/zui/zui-layout.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:10521, jb, noProxies: false, path: '/plugins/zui/zui-llm.js',fileDsl: 'zui', pluginId: 'zui' }, 
+            function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
+dsl('zui')
+using('llm-api')
+
+component('zui.parseLlmItems', {
+  params: [
+    {id: 'llmAnswer', as: 'string', defaultValue: '%%'}
+  ],
+  impl: (ctx,llmAnswer) => {
+    const jsonText = llmAnswer.split('```json').pop().split('```')[0]
+    try {
+      return JSON.parse(jsonText)
+    } catch (e) {
+      jb.logException(e, 'parseLLmItems ',{llmAnswer,jsonText, ctx})
+    }
+  }
+})
+
+// please try only symptoms visible to the doctor or easily detectible by question or test
+
+
+// component('zui.smartMetadata', {
+//   params: [
+//     {id: 'query', as: 'string', newLinesInCode: true}
+//   ],
+//   impl: llmViaApi.completions({
+//     chat: [
+//       user(`You are a metadata discovery assistant for a Zoomable User Interface (ZUI) system. presenting items.
+//       Based on the following **query**: "%$query%"
+//       return a list of 2 **most relevant** metadata properties for **positining** items of this type/category
+//          on x/y axes of a 2D canvas. For example: price/performance
+//     ---
+//          provide the response as javascript array of strings            
+//       `)
+//     ],
+//     model: 'o1-preview',
+//     maxTokens: 25000,
+//     includeSystemMessages: true
+//   })
+// })
+
+// component('zui.smartMetaIconLevel', {
+//   params: [
+//     //{id: 'query', as: 'string', newLinesInCode: true}
+//   ],
+//   impl: llmViaApi.completions({
+//     chat: [
+//       user(`You are LLM prompt expert, helping building a Zoomable User Interface (ZUI) system. presenting items.
+//       We need to build a prompt (or set of prompts) that based on artbitrary query in any domain will suggest the properties, and html/css templates 
+//         for the icon level of the zui system.
+//       The first zoomable level, called icon level, can grow from 8x8 to 64x64 pixels. it generaly uses item initialis, colors and shapers that reprenet the item.
+
+//       Please help to improve the prompt below or suggest a different prompt(s) for this purpose
+//       ----
+//       You are a both metadata discovery assistant and html/css developer working on a Zoomable User Interface (ZUI) system. presenting items.
+
+//       Now you are working on the first zoomable level. It can grow from 8x8 to 64x64 pixels. it generaly uses item initialis, colors and shapers that reprenet the item.
+//       The item width/height is set by the framework and can get any value in this range. the html/css can also be replaced according to levels. 
+//         yet can also keep the same html and change only the css, or define single css using relative(responsive) terms
+
+//       Based on the following **query**: "{{query}}"
+
+//       return a list of 5 **most relevant** metadata properties for **presenting** items of this type/category at the icon level
+//       1. provide sample data for 2 items,
+//       2. suggest levels (8,16,32,32), and html template, css, and data binding to the item. 
+//       `)
+//     ],
+//     model: 'o1-preview',
+//     maxTokens: 25000,
+//     includeSystemMessages: true
+//   })
+// })
+
+// component('zui.smartMetaCardLevel', {
+//   params: [
+//     //{id: 'query', as: 'string', newLinesInCode: true}
+//   ],
+//   impl: llmViaApi.completions({
+//     chat: [
+//       user(`You are LLM prompt expert, helping building a Zoomable User Interface (ZUI) system. presenting items.
+//       We need to build a prompt (or set of prompts) that based on artbitrary query in any domain will suggest the properties, and html/css templates 
+//         for the icon level of the zui system.
+//       The second zoomable level, called card level, is 64x64 - 320*320 pixels. it usually uses item title, description, 4-8 properties and colors and shapes that represent the item.
+
+//       Please help to improve the prompt below or suggest a different prompt(s) for this purpose
+//       ----
+//       You are a both metadata discovery assistant and html/css developer working on a Zoomable User Interface (ZUI) system. presenting items.
+
+//       Now you are working on the second zoomable level. It can grow from 64x64 to 320x400 pixels. it usually uses item title, description, 4-8 properties and colors and shapes that represent the item.
+//       The item width/height is set by the framework and can get any value in this range. the html/css can also be replaced according to levels. 
+//         yet can also keep the same html and change only the css, or define single css using relative(responsive) terms
+
+//       Based on the following **query**: "{{query}}"
+
+//       return a list of 10 **most relevant** metadata properties for **presenting** items of this type/category at the card level
+//       provide sample data for 2 items,
+//       suggest html/css code in this format
+//       ---      
+//       `)
+//     ],
+//     model: 'o1-preview',
+//     maxTokens: 25000,
+//     includeSystemMessages: true
+//   })
+// })
+
+// component('zui.smartIconCode', {
+//   params: [
+//     {id: 'query', as: 'string', newLinesInCode: true}
+//   ],
+//   impl: llmViaApi.completions({
+//     chat: [
+//       user(`You are acting as both a metadata discovery assistant and an HTML/CSS developer working on a Zoomable User Interface (ZUI) system that presents items.
+//       ---
+//       ### **Task Overview:**
+//       Your task is to generate appropriate metadata properties and design elements for presenting items at the icon level of a ZUI system, based on a given query.
+//       ---
+//       ### **Icon Level Details:**
+//       - **Size Range:** The icon level can scale from **8x8 to 64x64 pixels**.
+//       - **Design Elements:** Icons generally use **item initials**, **colors**, and **shapes** that represent the item.
+//       - **Responsive Design:** The HTML/CSS can be adjusted according to different levels. You may:
+//         - Replace the HTML/CSS based on levels.
+//         - Keep the same HTML and modify only the CSS.
+//         - Define a single CSS using relative (responsive) units.
+//       ---
+//       ### **Instructions:**
+//       Based on the following **query**: **"%$query%"**
+//       Please perform the following steps:
+//       1. **Metadata Properties:**
+//          - Identify and list the **5 most relevant metadata properties** for presenting items of this type/category at the icon level.
+//       2. **Sample Data:**
+//          - Provide sample data for **2 example items**, using the identified metadata properties.
+//       3. **Design Suggestions:**
+//          - For icon sizes at **levels 8, 16, 32, and 64 pixels**, suggest:
+//            - **HTML Template**: Provide the minimal HTML structure for the icon.
+//            - **CSS Styles**: Provide the CSS styling for the icon, ensuring it is responsive to the different sizes.
+//            - **Data Binding**: Explain how the sample data binds to the HTML template (e.g., which data populates which part of the template).
+//       ---
+//       ### **Notes:**
+//       - **Simplicity:** Be concise and focus on elements that are visually meaningful at small icon sizes.
+//       - **Legibility:** Ensure that text and shapes remain clear and legible at all specified sizes.
+//       - **Representativeness:** Choose colors and shapes that effectively represent the items based on the query.
+//       - **Consistency:** Maintain a consistent design language across different icon sizes.
+//       `)
+//     ],
+//     model: 'o1-preview',
+//     maxTokens: 25000,
+//     //includeSystemMessages: true
+//   })
+// })
+
+// component('zui.firstItemsNames', {
+//   params: [
+//     {id: 'query', as: 'string', newLinesInCode: true},
+//     {id: 'noOfItems', as: 'number', defaultValue: 5}
+//   ],
+//   impl: llmViaApi.completions({
+//     chat: [
+//       system('You are a data provider for a Zoomable User Interface (ZUI) system'),
+//       user(`please provide the names of the first %$noOfItems% items for this query "%$query%" 
+//       --
+//       provide the response as javascript array of strings
+//       `)
+//     ],
+//     model: 'gpt-3.5-turbo-0125',
+//     maxTokens: 300
+//   })
+// })
+
+// component('zui.itemsShortDescription', {
+//   params: [
+//     {id: 'itemName', as: 'string' },
+//   ],
+//   impl: llmViaApi.completions({
+//     chat: [
+//       system('You are a data provider for a Zoomable User Interface (ZUI) system'),
+//       user(`please provide short description for this item "%$itemName%" in the context of this query "%$query%" 
+//       --
+//       provide the description as a javascript string with double quotes ""
+//       `)
+//     ],
+//     maxTokens: 300
+//   })
+// })
+
+// // user(`Based on the following **query**: "%$query%"
+// // ---
+// // return a list of 5-10 items with most relevant 5-10 properties in json lines format
+// // `)
+
+
+// component('zui.metadataForQuery', {
+//   params: [
+//     {id: 'query', as: 'string', newLinesInCode: true}
+//   ],
+//   impl: llmViaApi.completions({
+//     chat: [
+//       user('You are a metadata discovery assistant for a Zoomable User Interface (ZUI) system of items'),
+//       user(`**Task**: 
+//       Based on the following **query**: "%$query%"
+//       First decide what is the **item type** or **item category** resulting from this query
+//       Then, Return a list of the **most relevant** metadata properties for **positining** items of this type/category
+//          on x/y axes of a 2D canvas. For example: price/performance
+            
+//       **Rules**: 
+//       - Provide 10-20 metadata fields that could apply to items resulting from this query. 
+//       - Each field must include: 
+//         - **name** (property name) 
+//         - **type** (string, number, date, boolean, array, or object) 
+//         - **example_value** (example of what the data might look like) 
+//         - **explanation**
+//         - **can_be_used_on_an_quantitive_axis**
+//         - **can_be_used_in_2D_clustering**
+//         - **priority_score** (score from 1-10, with 10 being the most useful for visualization) 
+//       - sort by can_be_used_on_an_quantitive_axis
+      
+//       **Response format (JSON)**
+//       \`\`\`json
+//       {
+//         "item_type": "e.g. smart phone product",
+//         "fields": [
+//             {
+//             "name": "string (name of the property)",
+//             "type": "string, number, date, boolean, array, or object",
+//             "explanation": "string",
+//             "example_value": "example value for this property",
+//             "can_be_used_on_an_quantitive_axis": 1-10,
+//             "can_be_used_in_2D_clustering": 1-10,
+//             "priority_score": 1-10
+//             }
+//         ]
+//     }
+      
+//       `)
+//     ],
+//     model: 'o1-preview',
+//     maxTokens: 1000
+//   })
+// })
+
+// // Then, Return a list of the most relevant metadata properties for **positining** items of this type/category
+// // on x/y axes of a 2D canvas. For example: price/performance
+
+
+
+});
+
+jbLoadPackedFile({lineInPackage:10769, jb, noProxies: false, path: '/plugins/zui/zui-layout.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 
@@ -10698,7 +11014,7 @@ extension('zui','layout', {
 
 });
 
-jbLoadPackedFile({lineInPackage:10703, jb, noProxies: false, path: '/plugins/zui/zui-markov.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:11019, jb, noProxies: false, path: '/plugins/zui/zui-markov.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 
@@ -10849,316 +11165,7 @@ focusing on the conditions with the highest likelihood.
 
 });
 
-jbLoadPackedFile({lineInPackage:10854, jb, noProxies: false, path: '/plugins/zui/zui-llm.js',fileDsl: 'zui', pluginId: 'zui' }, 
-            function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
-dsl('zui')
-using('llm-api')
-
-component('zui.parseLlmItems', {
-  params: [
-    {id: 'llmAnswer', as: 'string', defaultValue: '%%'}
-  ],
-  impl: (ctx,llmAnswer) => {
-    const jsonText = llmAnswer.split('```json').pop().split('```')[0]
-    try {
-      return JSON.parse(jsonText)
-    } catch (e) {
-      jb.logException(e, 'parseLLmItems ',{llmAnswer,jsonText, ctx})
-    }
-  }
-})
-
-// please try only symptoms visible to the doctor or easily detectible by question or test
-
-
-// component('zui.smartMetadata', {
-//   params: [
-//     {id: 'query', as: 'string', newLinesInCode: true}
-//   ],
-//   impl: llmViaApi.completions({
-//     chat: [
-//       user(`You are a metadata discovery assistant for a Zoomable User Interface (ZUI) system. presenting items.
-//       Based on the following **query**: "%$query%"
-//       return a list of 2 **most relevant** metadata properties for **positining** items of this type/category
-//          on x/y axes of a 2D canvas. For example: price/performance
-//     ---
-//          provide the response as javascript array of strings            
-//       `)
-//     ],
-//     model: 'o1-preview',
-//     maxTokens: 25000,
-//     includeSystemMessages: true
-//   })
-// })
-
-// component('zui.smartMetaIconLevel', {
-//   params: [
-//     //{id: 'query', as: 'string', newLinesInCode: true}
-//   ],
-//   impl: llmViaApi.completions({
-//     chat: [
-//       user(`You are LLM prompt expert, helping building a Zoomable User Interface (ZUI) system. presenting items.
-//       We need to build a prompt (or set of prompts) that based on artbitrary query in any domain will suggest the properties, and html/css templates 
-//         for the icon level of the zui system.
-//       The first zoomable level, called icon level, can grow from 8x8 to 64x64 pixels. it generaly uses item initialis, colors and shapers that reprenet the item.
-
-//       Please help to improve the prompt below or suggest a different prompt(s) for this purpose
-//       ----
-//       You are a both metadata discovery assistant and html/css developer working on a Zoomable User Interface (ZUI) system. presenting items.
-
-//       Now you are working on the first zoomable level. It can grow from 8x8 to 64x64 pixels. it generaly uses item initialis, colors and shapers that reprenet the item.
-//       The item width/height is set by the framework and can get any value in this range. the html/css can also be replaced according to levels. 
-//         yet can also keep the same html and change only the css, or define single css using relative(responsive) terms
-
-//       Based on the following **query**: "{{query}}"
-
-//       return a list of 5 **most relevant** metadata properties for **presenting** items of this type/category at the icon level
-//       1. provide sample data for 2 items,
-//       2. suggest levels (8,16,32,32), and html template, css, and data binding to the item. 
-//       `)
-//     ],
-//     model: 'o1-preview',
-//     maxTokens: 25000,
-//     includeSystemMessages: true
-//   })
-// })
-
-// component('zui.smartMetaCardLevel', {
-//   params: [
-//     //{id: 'query', as: 'string', newLinesInCode: true}
-//   ],
-//   impl: llmViaApi.completions({
-//     chat: [
-//       user(`You are LLM prompt expert, helping building a Zoomable User Interface (ZUI) system. presenting items.
-//       We need to build a prompt (or set of prompts) that based on artbitrary query in any domain will suggest the properties, and html/css templates 
-//         for the icon level of the zui system.
-//       The second zoomable level, called card level, is 64x64 - 320*320 pixels. it usually uses item title, description, 4-8 properties and colors and shapes that represent the item.
-
-//       Please help to improve the prompt below or suggest a different prompt(s) for this purpose
-//       ----
-//       You are a both metadata discovery assistant and html/css developer working on a Zoomable User Interface (ZUI) system. presenting items.
-
-//       Now you are working on the second zoomable level. It can grow from 64x64 to 320x400 pixels. it usually uses item title, description, 4-8 properties and colors and shapes that represent the item.
-//       The item width/height is set by the framework and can get any value in this range. the html/css can also be replaced according to levels. 
-//         yet can also keep the same html and change only the css, or define single css using relative(responsive) terms
-
-//       Based on the following **query**: "{{query}}"
-
-//       return a list of 10 **most relevant** metadata properties for **presenting** items of this type/category at the card level
-//       provide sample data for 2 items,
-//       suggest html/css code in this format
-//       ---      
-//       `)
-//     ],
-//     model: 'o1-preview',
-//     maxTokens: 25000,
-//     includeSystemMessages: true
-//   })
-// })
-
-// component('zui.smartIconCode', {
-//   params: [
-//     {id: 'query', as: 'string', newLinesInCode: true}
-//   ],
-//   impl: llmViaApi.completions({
-//     chat: [
-//       user(`You are acting as both a metadata discovery assistant and an HTML/CSS developer working on a Zoomable User Interface (ZUI) system that presents items.
-//       ---
-//       ### **Task Overview:**
-//       Your task is to generate appropriate metadata properties and design elements for presenting items at the icon level of a ZUI system, based on a given query.
-//       ---
-//       ### **Icon Level Details:**
-//       - **Size Range:** The icon level can scale from **8x8 to 64x64 pixels**.
-//       - **Design Elements:** Icons generally use **item initials**, **colors**, and **shapes** that represent the item.
-//       - **Responsive Design:** The HTML/CSS can be adjusted according to different levels. You may:
-//         - Replace the HTML/CSS based on levels.
-//         - Keep the same HTML and modify only the CSS.
-//         - Define a single CSS using relative (responsive) units.
-//       ---
-//       ### **Instructions:**
-//       Based on the following **query**: **"%$query%"**
-//       Please perform the following steps:
-//       1. **Metadata Properties:**
-//          - Identify and list the **5 most relevant metadata properties** for presenting items of this type/category at the icon level.
-//       2. **Sample Data:**
-//          - Provide sample data for **2 example items**, using the identified metadata properties.
-//       3. **Design Suggestions:**
-//          - For icon sizes at **levels 8, 16, 32, and 64 pixels**, suggest:
-//            - **HTML Template**: Provide the minimal HTML structure for the icon.
-//            - **CSS Styles**: Provide the CSS styling for the icon, ensuring it is responsive to the different sizes.
-//            - **Data Binding**: Explain how the sample data binds to the HTML template (e.g., which data populates which part of the template).
-//       ---
-//       ### **Notes:**
-//       - **Simplicity:** Be concise and focus on elements that are visually meaningful at small icon sizes.
-//       - **Legibility:** Ensure that text and shapes remain clear and legible at all specified sizes.
-//       - **Representativeness:** Choose colors and shapes that effectively represent the items based on the query.
-//       - **Consistency:** Maintain a consistent design language across different icon sizes.
-//       `)
-//     ],
-//     model: 'o1-preview',
-//     maxTokens: 25000,
-//     //includeSystemMessages: true
-//   })
-// })
-
-// component('zui.firstItemsNames', {
-//   params: [
-//     {id: 'query', as: 'string', newLinesInCode: true},
-//     {id: 'noOfItems', as: 'number', defaultValue: 5}
-//   ],
-//   impl: llmViaApi.completions({
-//     chat: [
-//       system('You are a data provider for a Zoomable User Interface (ZUI) system'),
-//       user(`please provide the names of the first %$noOfItems% items for this query "%$query%" 
-//       --
-//       provide the response as javascript array of strings
-//       `)
-//     ],
-//     model: 'gpt-3.5-turbo-0125',
-//     maxTokens: 300
-//   })
-// })
-
-// component('zui.itemsShortDescription', {
-//   params: [
-//     {id: 'itemName', as: 'string' },
-//   ],
-//   impl: llmViaApi.completions({
-//     chat: [
-//       system('You are a data provider for a Zoomable User Interface (ZUI) system'),
-//       user(`please provide short description for this item "%$itemName%" in the context of this query "%$query%" 
-//       --
-//       provide the description as a javascript string with double quotes ""
-//       `)
-//     ],
-//     maxTokens: 300
-//   })
-// })
-
-// // user(`Based on the following **query**: "%$query%"
-// // ---
-// // return a list of 5-10 items with most relevant 5-10 properties in json lines format
-// // `)
-
-
-// component('zui.metadataForQuery', {
-//   params: [
-//     {id: 'query', as: 'string', newLinesInCode: true}
-//   ],
-//   impl: llmViaApi.completions({
-//     chat: [
-//       user('You are a metadata discovery assistant for a Zoomable User Interface (ZUI) system of items'),
-//       user(`**Task**: 
-//       Based on the following **query**: "%$query%"
-//       First decide what is the **item type** or **item category** resulting from this query
-//       Then, Return a list of the **most relevant** metadata properties for **positining** items of this type/category
-//          on x/y axes of a 2D canvas. For example: price/performance
-            
-//       **Rules**: 
-//       - Provide 10-20 metadata fields that could apply to items resulting from this query. 
-//       - Each field must include: 
-//         - **name** (property name) 
-//         - **type** (string, number, date, boolean, array, or object) 
-//         - **example_value** (example of what the data might look like) 
-//         - **explanation**
-//         - **can_be_used_on_an_quantitive_axis**
-//         - **can_be_used_in_2D_clustering**
-//         - **priority_score** (score from 1-10, with 10 being the most useful for visualization) 
-//       - sort by can_be_used_on_an_quantitive_axis
-      
-//       **Response format (JSON)**
-//       \`\`\`json
-//       {
-//         "item_type": "e.g. smart phone product",
-//         "fields": [
-//             {
-//             "name": "string (name of the property)",
-//             "type": "string, number, date, boolean, array, or object",
-//             "explanation": "string",
-//             "example_value": "example value for this property",
-//             "can_be_used_on_an_quantitive_axis": 1-10,
-//             "can_be_used_in_2D_clustering": 1-10,
-//             "priority_score": 1-10
-//             }
-//         ]
-//     }
-      
-//       `)
-//     ],
-//     model: 'o1-preview',
-//     maxTokens: 1000
-//   })
-// })
-
-// // Then, Return a list of the most relevant metadata properties for **positining** items of this type/category
-// // on x/y axes of a 2D canvas. For example: price/performance
-
-
-
-});
-
-jbLoadPackedFile({lineInPackage:11102, jb, noProxies: false, path: '/plugins/zui/zui-group.js',fileDsl: 'zui', pluginId: 'zui' }, 
-            function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
-dsl('zui')
-
-component('group', {
-  type: 'control',
-  params: [
-    {id: 'controls', mandatory: true, type: 'control[]', dynamic: true, composite: true},
-    {id: 'layout', type: 'group_layout', defaultValue: vertical()},
-    {id: 'style', type: 'group-style', dynamic: true, defaultValue: group()},
-  ],
-  impl: ctx => jb.zui.ctrl(ctx)
-})
-
-component('group', {
-  type: 'group-style',
-  impl: features(
-    children('%$$model/controls()%'),
-    '%$$model/layout%',
-  )
-})
-
-component('allOrNone', {
-  type: 'control',
-  params: [
-    {id: 'controls', mandatory: true, type: 'control[]', dynamic: true, composite: true},
-    {id: 'layout', type: 'group_layout', defaultValue: vertical()},
-    {id: 'style', type: 'group-style', dynamic: true, defaultValue: group()},
-  ],
-  impl: ctx => jb.zui.ctrl(ctx, {layoutProp: { allOrNone: true } })
-})
-
-component('firstToFit', {
-  type: 'control',
-  params: [
-    {id: 'controls', mandatory: true, type: 'control[]', dynamic: true, composite: true},
-    {id: 'layout', type: 'group_layout', defaultValue: vertical()},
-    {id: 'style', type: 'group-style', dynamic: true, defaultValue: group()},
-  ],
-  impl: ctx => jb.zui.ctrl(ctx, {layoutProp: { firstToFit: true } })
-})
-
-component('children', {
-  type: 'feature',
-  params: [
-    {id: 'children', as: 'array', dynamic: true}
-  ],
-  impl: (ctx,children) => ({children})
-})
-
-component('vertical', {
-  type: 'group_layout',
-  impl: () => ({layoutProp: { layoutAxis:  1 }})
-})
-
-component('horizontal', {
-  type: 'group_layout',
-  impl: () => ({layoutProp: { layoutAxis:  0 }})
-})
-});
-
-jbLoadPackedFile({lineInPackage:11163, jb, noProxies: false, path: '/plugins/zui/zui-scale.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:11170, jb, noProxies: false, path: '/plugins/zui/zui-scale.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 
@@ -11473,7 +11480,7 @@ component('coolToWarm10', {
 
 });
 
-jbLoadPackedFile({lineInPackage:11478, jb, noProxies: false, path: '/plugins/zui/zui-tasks.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:11485, jb, noProxies: false, path: '/plugins/zui/zui-tasks.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 
@@ -11677,7 +11684,7 @@ component('baseTask', {
 
 });
 
-jbLoadPackedFile({lineInPackage:11682, jb, noProxies: false, path: '/plugins/zui/zui-tester.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:11689, jb, noProxies: false, path: '/plugins/zui/zui-tester.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 using('testing')
@@ -11762,7 +11769,7 @@ component('zoomEvent', {
  
 });
 
-jbLoadPackedFile({lineInPackage:11767, jb, noProxies: false, path: '/plugins/zui/zui-widget.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:11774, jb, noProxies: false, path: '/plugins/zui/zui-widget.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 
@@ -11948,7 +11955,7 @@ component('rx.switchToLocalVars', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:11953, jb, noProxies: false, path: '/plugins/zui/zui-zoom.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:11960, jb, noProxies: false, path: '/plugins/zui/zui-zoom.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 using('rx')
@@ -12137,7 +12144,7 @@ extension('zui','zoom', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:12142, jb, noProxies: false, path: '/plugins/zui/zui-zooming-grid.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:12149, jb, noProxies: false, path: '/plugins/zui/zui-zooming-grid.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 
@@ -12356,19 +12363,7 @@ component('spiral', {
 
 });
 
-jbLoadPackedFile({lineInPackage:12361, jb, noProxies: false, path: '/plugins/zui/hc-tests.js',fileDsl: 'zui', pluginId: 'zui-tests' }, 
-            function({jb,require,zuiTest,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
-dsl('zui')
-
-component('zuiTest.healthCare.app', {
-  doNotRunInTests: true,
-  impl: zuiTest(mainApp(), contains('⚠️'), { timeout: 50000 })
-})
-
-
-});
-
-jbLoadPackedFile({lineInPackage:12373, jb, noProxies: false, path: '/plugins/zui/zui-llm-tests.js',fileDsl: 'zui', pluginId: 'zui-tests' }, 
+jbLoadPackedFile({lineInPackage:12368, jb, noProxies: false, path: '/plugins/zui/zui-llm-tests.js',fileDsl: 'zui', pluginId: 'zui-tests' }, 
             function({jb,require,zuiTest,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 
@@ -12391,6 +12386,18 @@ component('zuiTest.domain.itemsSource', {
 //     expectedResult: contains('')
 //   })
 // })
+
+});
+
+jbLoadPackedFile({lineInPackage:12394, jb, noProxies: false, path: '/plugins/zui/hc-tests.js',fileDsl: 'zui', pluginId: 'zui-tests' }, 
+            function({jb,require,zuiTest,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
+dsl('zui')
+
+component('zuiTest.healthCare.app', {
+  doNotRunInTests: true,
+  impl: zuiTest(mainApp(), contains('⚠️'), { timeout: 50000 })
+})
+
 
 });
 
