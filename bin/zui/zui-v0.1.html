@@ -7,6 +7,7 @@
 </head>
 <body>
  <script>
+  githubUrl = 'https://artwaresoft.github.io/jb-react/bin/zui/zui-v0.1.html'
 	async function zuiLlm() {
     const code = await fetch('./package-zui-tests-v0.1.js').then(x=>x.text())
     await eval(code)
