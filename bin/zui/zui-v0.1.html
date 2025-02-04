@@ -10,8 +10,9 @@
  <script>
   githubUrl = 'https://artwaresoft.github.io/jb-react/bin/zui/zui-v0.1.html'
   const ver = 'v0.1'
+  jbHost.notInStudio = document.location.href.indexOf('localhost') == -1
   async function copyPackage() {
-      if (document.location.href.indexOf('localhost') == -1) return
+      if (jbHost.notInStudio) return
       const Contents = await fetch('http://localhost:8082/package/zui-tests.js').then(x=>x.text())
       const Path = `bin/zui/package-zui-tests-${ver}.js`
       const copy = await fetch(`/?op=saveFile`,{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' } , 

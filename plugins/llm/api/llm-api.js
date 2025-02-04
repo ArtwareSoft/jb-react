@@ -30,7 +30,7 @@ component('llmViaApi.completions', {
           let res = useRedisCache && await jb.utils.redisStorage(key)
           if (!res) {
             const start_time = new Date().getTime()
-            const settings = !jbHost.isNode && await fetch(`/?op=settings`).then(res=>res.json())
+            const settings = !jbHost.isNode && !jbHost.notInStudio && await fetch(`/?op=settings`).then(res=>res.json())
             const apiKey = jbHost.isNode ? process.env.OPENAI_API_KEY: settings.OPENAI_API_KEY
             const ret = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
@@ -99,7 +99,7 @@ component('source.llmCompletions', {
         }
         const start_time = new Date().getTime()
 
-        const settings = !jbHost.isNode && await fetch(`${jbHost.baseUrl}/?op=settings`).then(res=>res.json())
+        const settings = !jbHost.isNode && !jbHost.notInStudio && await fetch(`${jbHost.baseUrl}/?op=settings`).then(res=>res.json())
         const apiKey = _apiKey || (jbHost.isNode ? process.env.OPENAI_API_KEY: settings.OPENAI_API_KEY)
         controller = new AbortController()
         connection = await fetch('https://api.openai.com/v1/chat/completions', {
