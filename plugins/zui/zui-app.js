@@ -112,7 +112,7 @@ component('topPanel', {
     .top-panel .logo img { height: 50px; width: auto; }
     .top-panel .search-box { flex: 4; display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #ccc; border-radius: 20px; 
         padding: 5px 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    .top-panel .search-box input { flex: 1; border: none; font-size: 16px; }
+    .top-panel .search-box input { flex: 1; border: none; font-size: 16px; outline: none}
     .top-panel .search-box button { border: none; background: #007bff; color: #fff; border-radius: 50%; width: 35px; height: 35px; 
         font-size: 10px; cursor: pointer; }`
   })

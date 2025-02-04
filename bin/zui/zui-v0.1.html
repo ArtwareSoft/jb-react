@@ -11,6 +11,7 @@
   githubUrl = 'https://artwaresoft.github.io/jb-react/bin/zui/zui-v0.1.html'
   const ver = 'v0.1'
   jbHost.notInStudio = document.location.href.indexOf('localhost') == -1
+  jbHost.baseUrl = document.location.href.indexOf('github.io') != -1 ? '/jb-react' : jbHost.baseUrl
   async function copyPackage() {
       if (jbHost.notInStudio) return
       const Contents = await fetch('http://localhost:8082/package/zui-tests.js').then(x=>x.text())
