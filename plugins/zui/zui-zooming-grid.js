@@ -66,6 +66,7 @@ component('zoomingGridStyle', {
       widget.state.gridSize = initialZoomCenter[2]
 
       cmp.items = []
+      cmp.itemsMap = {}
       cmp.exposure = {}
       widget.BERxSource(cmp.id,'userDataListener',ctx)
     }),
@@ -100,7 +101,7 @@ component('zoomingGridStyle', {
       sink.action('%$cmp.render()%')
     ),
     frontEnd.method('calcItemExposure', (ctx,{cmp,itemSize,canvasSize,center,transition,widget,detailsLevel}) => {
-      const exposure = widget.userData.exposure = {} // widget.userData.exposure || {}
+      const exposure = widget.userData.exposure = {}
       const screenRadius = Math.min(...canvasSize)/Math.max(...itemSize) + 3
       cmp.items.forEach(item => {
           const {xyPos,title,_detailsLevel} = item
@@ -122,6 +123,7 @@ component('zoomingGridStyle', {
       'userDataListener',
       source.subject('%$cmp.props.userDataSubj%'),
       rx.log('zui userDataListener'),
+      rx.do(writeValue('%$appData.ctxVer%','%$userData.ctxVer%')),
       zui.itemsFromLlm(),
       sink.action(addToArray('%$cmp.itemsFromLlm%'))
     ),
@@ -177,6 +179,8 @@ component('zoomingGridElem', {
           jb.html.populateHtml(elem,ctx.setData(item))
         }
       })
+      cmp.base.querySelectorAll(`[itemkey]`)
+        .forEach(el => !zoomingGridCmp.itemsMap[el.getAttribute('itemkey')] && el.parentNode.removeChild(el))
     }),
     init((ctx,{cmp,widget}) => {
       cmp.doExtendItem = item => {

@@ -30,20 +30,24 @@ component('app', {
     frontEnd.init((ctx,{cmp, uiTest, widget}) => {
         cmp.taskProgress = new jb.zui.taskProgress(ctx)
         const ctxToUse = ctx.setVars({userData: widget.userData, appData: widget.appData})
-        const rootElements = [cmp.base.querySelector('.top-panel'), cmp.base.querySelector('.left-panel')]
-        cmp.dataBinder = !uiTest && new jb.html.DataBinder(ctxToUse,rootElements)
+
+        Object.assign(cmp, {
+          dataBinder: !uiTest && new jb.html.DataBinder(ctxToUse,[cmp.base.querySelector('.top-panel'), cmp.base.querySelector('.left-panel')]),
+          openTaskDialog(index) {
+            task_dialog_el.classList.remove('hidden')
+            const task = widget.appData.doneTasks[index]
+            jb.html.populateHtml(task_dialog_el,ctxToUse.setVars({task}))
+          },
+          closeTaskDialog() { task_dialog_el.classList.add('hidden') 
+          },
+          search() { widget.userData.ctxVer++ }
+        })
         if (jb.frame.document)
           document.body.appendChild(cmp.base)
 
         const task_dialog_el = cmp.base.querySelector('.task-dialog')
         jb.html.registerHtmlEvents(task_dialog_el,ctx)
         task_dialog_el.addEventListener('wheel', event => { event.fromApp = true })
-        cmp.openTaskDialog = index => {
-          task_dialog_el.classList.remove('hidden')
-          const task = widget.appData.doneTasks[index]
-          jb.html.populateHtml(task_dialog_el,ctxToUse.setVars({task}))
-        }
-        cmp.closeTaskDialog = () => task_dialog_el.classList.add('hidden')
     }),
     frontEnd.method('render', (ctx,{cmp}) => cmp.dataBinder.populateHtml()),
     frontEnd.flow(source.animationFrame(), sink.action('%$cmp.render()%'))
@@ -97,22 +101,11 @@ component('topPanel', {
     id: 'topPanel',
     html: () => `<div class="top-panel">
   <a class="logo" href="${jbHost.baseUrl}/plugins/zui/">
-    <img src="${jbHost.baseUrl}/plugins/zui/zui-logo.webp" alt="ZUI Logo" />
+    <img src="${jbHost.baseUrl}/bin/zui/zui-logo.webp" alt="ZUI Logo" />
   </a>
   <div class="search-box">
-    <input type="text" twoWayBind="%$userData.query%" placeholder="Search or enter your query..." onEnter="%$widget.search()" />
-    <button type="submit">🔍</button>
-  </div>
-  <div class="context-chips">${[0,1,2,3,4,5,6,7,8,9,10].map(i => `<span class="chip context-chip" bind_display="%$userData/contextChips/${i}%">
-        <span class="chip-text" bind="%$userData/contextChips/${i}%"></span>
-        <button class="remove" onClick="removeContextChip(${i})">×</button>
-      </span>`).join('')}
-  </div>
-  <div class="suggested-chips">${[0,1,2,3,4,5,6,7,8,9,10].map(i => `
-  <div class="chip suggested-chip" bind_display="%$appData/suggestedContextChips/${i}%" onClick="addToContext(${i})">
-        <span class="chip-text" bind="%$appData/suggestedContextChips/${i}%"></span>
-        <span class="add-icon">+</span>
-      </div>`).join('')}
+    <input type="text" twoWayBind="%$userData.query%" placeholder="Search or enter your query..." onEnter="cmp.search()" />
+    <button type="submit" onClick="cmp.search()" bind="%$appData.ctxVer%🔍"></button>
   </div>
 </div>`,
     css: `.top-panel { display: flex; flex-direction: row; gap: 10px; padding: 15px; background: #f5f5f5; border-bottom: 1px solid #ddd; }
@@ -121,22 +114,7 @@ component('topPanel', {
         padding: 5px 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     .top-panel .search-box input { flex: 1; border: none; font-size: 16px; }
     .top-panel .search-box button { border: none; background: #007bff; color: #fff; border-radius: 50%; width: 35px; height: 35px; 
-        font-size: 10px; cursor: pointer; }
-    .top-panel .context-chips, .top-panel .suggested-chips { display: flex; flex-wrap: wrap; gap: 10px; flex: 1; }
-    .top-panel .suggested-chips { flex: 2; }
-    .top-panel .chip { border-width: 0; height: 16px; padding: 5px 8px; display: inline-flex; align-items: center; gap: 5px; border-radius: 20px; 
-        font-size: 12px; font-weight: bold; cursor: pointer; }
-    .top-panel .chip.context-chip { background: #cce5ff; color: #004085; }
-    .top-panel .chip.context-chip:hover { background: #b8daff; }
-    .top-panel .chip.context-chip .remove { background: none; border: none; margin-left: 5px; color: #6c757d; font-size: 12px; cursor: pointer; 
-        display: none; }
-    .top-panel .chip.context-chip:hover .remove { display: inline; }
-    .top-panel .chip.suggested-chip { background: #d4edda; color: #155724; position: relative; transition: background 0.2s; }
-    .top-panel .chip.suggested-chip:hover { background: #c3e6cb; }
-    .top-panel .chip.suggested-chip .add-icon { display: none; background: #fff; color: #155724; border-radius: 50%; width: 18px; 
-        height: 18px; font-size: 12px; font-weight: bold; align-items: center; justify-content: center; margin-left: 8px; 
-        background: #d4edda; color: #155724;}
-    .top-panel .chip.suggested-chip:hover .add-icon { display: flex; }`
+        font-size: 10px; cursor: pointer; }`
   })
 })
 

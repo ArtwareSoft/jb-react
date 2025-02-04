@@ -13,12 +13,16 @@ component('widget', {
   ],
   impl: ctx => {
         const {screenSizeForTest, control, frontEnd, userData, appData, domain, features} = ctx.params
-        const ctxToUse = ctx.setVars({userData, appData, domain})
-        userData.query = jb.path(domain.sample,'query') || ''
-        userData.contextChips = jb.path(domain.sample,'contextChips') || []
-        userData.preferedLlmModel = jb.path(domain.sample,'preferedLlmModel') || ''
-        appData.suggestedContextChips = jb.path(domain.sample,'suggestedContextChips') || []
-        appData.totalCost = '$0.00'
+        Object.assign(userData, {
+            query: jb.path(domain.sample,'query') || '',
+            contextChips: jb.path(domain.sample,'contextChips') || [],
+            preferedLlmModel: jb.path(domain.sample,'preferedLlmModel') || '',
+            ctxVer: 1
+        })
+        Object.assign(appData, {
+            suggestedContextChips: jb.path(domain.sample,'suggestedContextChips') || [],
+            totalCost: '$0.00',
+        })
         
         frontEnd.initFE(screenSizeForTest,{userData,appData})
         
@@ -26,12 +30,11 @@ component('widget', {
             frontEnd,
             appData,
             async init() {
-                const ctxForBe = ctxToUse.setVars({screenSize: frontEnd.screenSize, widget: this})
+                const ctxForBe = ctx.setVars({userData, appData, domain, screenSize: frontEnd.screenSize, widget: this})
                 const appCmp = control(ctxForBe).applyFeatures(features,20)
                 appCmp.init()
                 frontEnd.beAppCmpProxy = appCmp // should be jbm and activated by jbm.remoteExec
                 await frontEnd.handlePayload(await appCmp.calcPayload())
-                //await frontEnd.runBEMethodAndUpdate(appCmp.id,'updateZuiControl',ctx)
                 return this
             }
         }

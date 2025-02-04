@@ -106,6 +106,7 @@ component('zui.itemsFromLlm', {
       prop('title', ({data}) => data.title.trim()),
       prop('_detailsLevel', '%$task/detailsLevel%'),
       prop('_ctxVer', '%$task/ctxVer%'),
+      prop('_taskId', '%$task/id%'),
       prop('_modelId', '%$task/model/id%')
     ))),
     rx.log('zui new item from llm')
@@ -142,7 +143,9 @@ component('zui.taskSummaryValues', {
 component('zui.buildTaskPayload', {
   impl: ctx => {
     const { $model, cmp, appData } = ctx.vars
-    const { itemsFromLlm } = cmp
+    const { ctxVer } = appData
+    cmp.items = cmp.items.filter(item=>item._ctxVer == ctxVer)
+    const itemsFromLlm = cmp.itemsFromLlm.filter(item=>item._ctxVer == ctxVer)
     if (itemsFromLlm.length) {
       const itemsMap = jb.objFromEntries(cmp.items.map(item=>[item.title,item]))
       const newItemsFromLlm = itemsFromLlm.filter(({title})=>! itemsMap[title])
@@ -166,21 +169,29 @@ component('zui.buildTaskPayload', {
 component('zui.hanleTaskPayload', {
   impl: ctx => {
     const { cmp, widget, be_data } = ctx.vars
+    const {appData, state} = widget
+    const { ctxVer, runningTasks, doneTasks } = appData
+    cmp.items = cmp.items.filter(item=>item._ctxVer == ctxVer)
     const { gridSize, newItems, itemsToUpdate} = be_data
     if (newItems && newItems.length) {
       cmp.items = [...cmp.items, ...newItems]
-      if (widget.state.gridSize != gridSize) {
-          widget.state.gridSize = gridSize
+      if (state.gridSize != gridSize) {
+          state.gridSize = gridSize
           const zoom = Math.max(...gridSize,1)
           const center = [0,1].map(axis => Math.floor(gridSize[axis] / 2))
-          widget.state.zoom = widget.state.tZoom = zoom
-          widget.state.center = widget.state.tCenter = center
+          state.zoom = state.tZoom = zoom
+          state.center = state.tCenter = center
       }
     }
-    if (itemsToUpdate && itemsToUpdate.length) {
-      const itemsMap = jb.objFromEntries(cmp.items.map(item=>[item.title,item]))
-      itemsToUpdate.forEach(itemToUpdate=>Object.assign(itemsMap[itemToUpdate.title], itemToUpdate))
-    }
+    cmp.itemsMap = jb.objFromEntries(cmp.items.map(item=>[item.title,item]))
+    itemsToUpdate && itemsToUpdate.forEach(itemToUpdate => {
+      const existingItem = cmp.itemsMap[itemToUpdate.title]
+      if (!existingItem) {
+        const task = [...runningTasks,...doneTasks].find(t=>t.id == itemToUpdate._taskId)
+        jb.logError('zui hanleTaskPayload itemToUpdate, can not find existing item',{itemToUpdate, task, itemsMap: cmp.itemsMap, be_data, ctx})
+      }
+      existingItem && Object.assign(existingItem, itemToUpdate)
+    })
   }
 })
 

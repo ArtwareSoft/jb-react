@@ -262,7 +262,7 @@ component('preview', {
     ],
     features: [
       variable('previewState', obj(prop('counter',0))),
-      variable('previewButtonClick', rxSubject('previewButtonClick')),
+      variable('previewButtonClick', rx.subject('previewButtonClick')),
       followUp.flow(
         source.merge(source.subject('%$previewButtonClick%'), source.data(0)),
         rx.mapPromise(jbm.restartChildJbm('%$previewJbm%')),
