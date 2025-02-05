@@ -9,6 +9,7 @@ component('zui.canvasZoom', {
       !uiTest && ctx.vars.cmp.updateZoomState({ dz :1, dp:0 })
     }),
     frontEnd.prop('zuiEvents', rx.subject()),
+    frontEnd.prop('hoverOnItem', rx.subject()),
     frontEnd.flow(
       source.frontEndEvent('pointerdown'),
       rx.log('zui pointerdown'),
@@ -41,6 +42,13 @@ component('zui.canvasZoom', {
       rx.map(({},{sourceEvent}) => ({ dz: sourceEvent.deltaY > 0 ? 1.1 : sourceEvent.deltaY < 0 ? 1/1.1 : 1 })),
       rx.do(({data},{cmp}) => cmp.updateZoomState(data)),
       sink.subjectNext('%$cmp.zuiEvents%')
+    ),
+    frontEnd.flow(
+      source.event('pointermove', '%$cmp/base%'),
+      rx.vars('%$cmp.positionVars()%'),
+      rx.map((ctx,{cmp})=> cmp.itemAtPoint(ctx)),
+      rx.distinctUntilChanged(),
+      sink.action('%$cmp.hoverOnItem()%')
     )
   )
 })

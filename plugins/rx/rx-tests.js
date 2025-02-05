@@ -373,6 +373,13 @@ component('rxTest.flatMap.Arrays', {
   impl: dataTest(pipe(rx.pipe(source.data(list('1,2,3')), rx.flatMapArrays(split())), join(',')), equals('1,2,3'))
 })
 
+component('rxTest.flatMap.Vars', {
+  impl: dataTest({
+    calculate: rx.pipe(source.data(1), rx.vars(obj(prop('v1', '%%'), prop('v2', '<%%%%>'))), rx.map('%$v1%;%$v2%')),
+    expectedResult: equals('1;<11>')
+  })
+})
+
 component('rxTest.flatMap.timing', {
   impl: dataTest({
     calculate: pipe(

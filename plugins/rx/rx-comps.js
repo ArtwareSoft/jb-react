@@ -170,11 +170,24 @@ component('rx.var', {
   impl: If('%$name%', (ctx,{},{name,value}) => source => (start, sink) => {
       if (start != 0) return 
       return source(0, function Var(t, d) {
-        const vars = t == 1 && d && {...d.vars, [name()]: value(d)}
-        t == 1 && d && ctx.cmpCtx.dataObj(d.data,vars)
-        sink(t, t === 1 ? d && {data: d.data, vars } : d)
+        sink(t, t === 1 ? d && {data: d.data, vars: {...d.vars, [name()]: value(d)}} : d)
       })
     })
+})
+
+component('rx.vars', {
+  type: 'rx',
+  category: 'operator',
+  description: 'define an immutable variables that can be used later in the pipe',
+  params: [
+    {id: 'Vars', dynamic: true},
+  ],
+  impl: (ctx,VarsObj) => source => (start, sink) => {
+      if (start != 0) return 
+      return source(0, function Vars(t, d) {
+        sink(t, t === 1 ? d && {data: d.data, vars: {...d.vars, ...VarsObj(d)}} : d)
+      })
+    }
 })
 
 component('rx.resource', {

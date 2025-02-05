@@ -41,8 +41,24 @@ component('zoomingGridStyle', {
     variable('itemsLayout', '%$$model/itemsLayout()%'),
     frontEnd.var('changeToCard', '%$changeToCard%'),
     frontEnd.var('initialZoomCenter', ['%$itemsLayout/initialZoom%','%$itemsLayout/center%','%$itemsLayout/gridSize%']),
-    html((ctx,{cmp}) => `<div></div>`),
-    css('.%$cmp.clz% {position: relative; width: 100%; height: 100%; overflow: hidden;}'),
+    html('<div><div class="tooltip"></div>'),
+    css(`
+    .%$cmp.clz% { position: relative; width: 100%; height: 100%; overflow: hidden; }
+    .%$cmp.clz% .tooltip { position: absolute; background: rgba(0,0,0,0.8); color: #fff;
+      padding: 5px 10px; border-radius: 5px; font-size: 12px; pointer-events: none;
+      display: none; z-index: 1000; white-space: nowrap; }`),
+    frontEnd.method('hoverOnItem', (ctx, { cmp, pointerPos, detailsLevel }) => {
+      const tooltip = cmp.base.querySelector(".tooltip")
+      if (!ctx.data || detailsLevel > 1) return tooltip.style.display = 'none'
+      const { title } = ctx.data, [x, y] = pointerPos
+      const rect = cmp.base.getBoundingClientRect(), tRect = tooltip.getBoundingClientRect(),
+            maxX = rect.width - tRect.width - 10, maxY = rect.height - tRect.height - 10
+    
+      tooltip.innerText = title
+      tooltip.style.left = `${Math.min(Math.max(x + 10, 10), maxX)}px`
+      tooltip.style.top = `${Math.min(Math.max(y + 10, 10), maxY)}px`
+      tooltip.style.display = 'block'
+    }),
     init((ctx,{cmp, itemsLayout, $model, screenSize}) => {
       cmp.items = []
       cmp.itemsFromLlm = []
@@ -71,17 +87,17 @@ component('zoomingGridStyle', {
       widget.BERxSource(cmp.id,'userDataListener',ctx)
     }),
     zui.canvasZoom(),
-    frontEnd.method('render', (ctx,{cmp,widget,changeToCard}) => {
-      const rect = cmp.base && cmp.base.getBoundingClientRect()
-      const canvasSize = jb.frame.document ? [rect.width,rect.height] : widget.screenSize
-      const itemSize = [0,1].map(axis=>canvasSize[0]/widget.state.zoom)
-      const detailsLevel = itemSize[0] < changeToCard ? 1 : 2
-      const center = widget.state.center
-      const ctxToUse = ctx.setVars({itemSize,canvasSize,detailsLevel,center, zoomingGridCmp: cmp})
-      jb.log('zui render grid',{widget,ctxToUse,ctx})
-      cmp.sizePos(ctxToUse)
-      Object.assign(widget.userData,{detailsLevel, exposure: cmp.calcItemExposure(ctxToUse)})
-      Object.values(widget.cmps).forEach(gridCmp => gridCmp.detailsLevel && gridCmp.render(ctxToUse))
+    frontEnd.flow(
+      source.animationFrame(),
+      rx.flatMap(source.data('%$cmp.animationStep()%')),
+      rx.do(({},{widget}) => widget.renderCounter++),
+      rx.vars('%$cmp.positionVars()%'),
+      rx.do('%$cmp.sizePos()%'),
+      sink.action('%$cmp.render()%')
+    ),
+    frontEnd.method('render', (ctx,{cmp,widget,detailsLevel}) => {
+      Object.assign(widget.userData,{detailsLevel, exposure: cmp.calcItemExposure(ctx)})
+      Object.values(widget.cmps).forEach(gridCmp => gridCmp.detailsLevel && gridCmp.render(ctx))
     }),
     frontEnd.method('sizePos', (ctx,{cmp,itemSize,canvasSize,center}) => {
       jb.zui.setCss(`sizePos-${cmp.clz}`, [
@@ -94,12 +110,21 @@ component('zoomingGridStyle', {
         })].join('\n')
       )
     }),
-    frontEnd.flow(
-      source.animationFrame(),
-      rx.flatMap(source.data('%$cmp.animationStep()%')),
-      rx.do(({},{widget}) => widget.renderCounter++),
-      sink.action('%$cmp.render()%')
-    ),
+    frontEnd.method('positionVars', (ctx,{cmp,widget,changeToCard}) => {
+      const rect = cmp.base && cmp.base.getBoundingClientRect()
+      const pointerPos = [ctx.data.clientX-rect.x, ctx.data.clientY-rect.y]
+      const canvasSize = jb.frame.document ? [rect.width,rect.height] : widget.screenSize
+      const itemSize = [0,1].map(axis=>canvasSize[0]/widget.state.zoom)
+      const center = widget.state.center
+      const detailsLevel = itemSize[0] < changeToCard ? 1 : 2
+      return { pointerPos, canvasSize, itemSize, center, detailsLevel, zoomingGridCmp: cmp }
+    }),
+    frontEnd.method('itemAtPoint', (ctx,{cmp,pointerPos, canvasSize, itemSize, center}) => {
+      return cmp.items.find(({xyPos}) => {
+        const itemPos = [0,1].map(axis=>(xyPos[axis]-center[axis]-0.5)*itemSize[axis] + canvasSize[axis]/2)
+        return [0,1].every(axis=> pointerPos[axis] >= itemPos[axis] &&  (pointerPos[axis] <= itemSize[axis] + itemPos[axis]))
+      })
+    }),
     frontEnd.method('calcItemExposure', (ctx,{cmp,itemSize,canvasSize,center,transition,widget,detailsLevel}) => {
       const exposure = widget.userData.exposure = {}
       const screenRadius = Math.min(...canvasSize)/Math.max(...itemSize) + 3
@@ -123,7 +148,7 @@ component('zoomingGridStyle', {
       'userDataListener',
       source.subject('%$cmp.props.userDataSubj%'),
       rx.log('zui userDataListener'),
-      rx.do(writeValue('%$appData.ctxVer%','%$userData.ctxVer%')),
+      rx.do(writeValue('%$appData.ctxVer%', '%$userData.ctxVer%')),
       zui.itemsFromLlm(),
       sink.action(addToArray('%$cmp.itemsFromLlm%'))
     ),
