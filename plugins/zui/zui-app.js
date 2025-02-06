@@ -27,9 +27,10 @@ component('app', {
         return pack
       }
     }),
-    frontEnd.init((ctx,{cmp, uiTest, widget}) => {
+    frontEnd.init((ctx,{cmp, uiTest, widget, isMobile}) => {
         cmp.taskProgress = new jb.zui.taskProgress(ctx)
         const ctxToUse = ctx.setVars({userData: widget.userData, appData: widget.appData})
+        if (isMobile) cmp.base.querySelector('.left-panel').classList.add('collapsed')
 
         Object.assign(cmp, {
           dataBinder: !uiTest && new jb.html.DataBinder(ctxToUse,[cmp.base.querySelector('.top-panel'), cmp.base.querySelector('.left-panel')]),
@@ -38,9 +39,16 @@ component('app', {
             const task = widget.appData.doneTasks[index]
             jb.html.populateHtml(task_dialog_el,ctxToUse.setVars({task}))
           },
-          closeTaskDialog() { task_dialog_el.classList.add('hidden') 
+          closeTaskDialog() { 
+            task_dialog_el.classList.add('hidden') 
           },
-          search() { widget.userData.ctxVer++ }
+          search() {
+            if (isMobile) cmp.base.querySelector('.search-box input').blur()
+            widget.userData.ctxVer++ 
+          },
+          toggleLeftPanel() { 
+            cmp.base.querySelector('.left-panel').classList.toggle('collapsed')
+          }
         })
         if (jb.frame.document)
           document.body.appendChild(cmp.base)
@@ -70,14 +78,15 @@ component('mainApp', {
             </div>
             <div class="zooming-grid"></div>
         </div>`,
-    css: `body { font-family: Arial, sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    css: `body { font-family: Arial, sans-serif; display: flex; flex-direction: column; height: 100vh;  margin: 0;  }
     .fade { transition: opacity 0.5s ease; opacity: 1; }
     .hidden { opacity: 0; }    
     .app-layout { display: grid; grid-template-rows: auto 1fr; grid-template-columns: auto 1fr auto; height: 100%; grid-template-areas: "top top top" "left body body";
   }
   .top-panel { grid-area: top; }
   .left-panel { display: grid; grid-template-rows: auto 1fr auto; width: 300px; background: #f4f4f5; padding: 20px; 
-      border-right: 1px solid #ddd; }
+    border-right: 1px solid #ddd; overflow-y: auto}
+  .left-panel.collapsed { width: 0; padding: 0; overflow: hidden; }
   .top-sections { grid-row: 1; }
   .tasks-section { grid-row: 2; height: 100%; overflow-y: auto; }
   .bottom-sections { grid-row: 3; display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
@@ -99,10 +108,11 @@ component('topPanel', {
   type: 'section<html>',
   impl: section({
     id: 'topPanel',
-    html: () => `<div class="top-panel">
-  <a class="logo" href="${jbHost.baseUrl}/plugins/zui/">
+    html: (ctx) => `<div class="top-panel">
+  ${ctx.vars.isMobile ? '' : `<a class="logo" href="${jbHost.baseUrl}/plugins/zui/">
     <img src="${jbHost.baseUrl}/bin/zui/zui-logo.webp" alt="ZUI Logo" />
-  </a>
+  </a>`}
+  <button class="hamburger" onClick="cmp.toggleLeftPanel()">☰</button>
   <div class="search-box">
     <input type="text" twoWayBind="%$userData.query%" placeholder="Search or enter your query..." onEnter="cmp.search()" />
     <button type="submit" onClick="cmp.search()" bind="%$appData.ctxVer%🔍"></button>
@@ -110,6 +120,7 @@ component('topPanel', {
 </div>`,
     css: `.top-panel { display: flex; flex-direction: row; gap: 10px; padding: 15px; background: #f5f5f5; border-bottom: 1px solid #ddd; }
     .top-panel .logo img { height: 50px; width: auto; }
+    .top-panel .hamburger { background: none; border: none; font-size: 24px; cursor: pointer; align-self: center; }
     .top-panel .search-box { flex: 4; display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #ccc; border-radius: 20px; 
         padding: 5px 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     .top-panel .search-box input { flex: 1; border: none; font-size: 16px; outline: none}
@@ -150,9 +161,9 @@ component('zoomState', {
       <input type="text" bind_value="%$widget.state.center%" id="center" value="[0, 0]" readonly />
     </div>
     <div class="controls">
-      <label for="speed">Speed:</label>
-      <input type="range" twoWayBind="%$widget.state.speed%" id="speed" min="1" max="5" step="0.1" value="2.5" />
-      <span id="speed-value" bind_text="%$widget.state.speed%">2.5</span>
+      <label for="sensitivity">Sensitivity:</label>
+      <input type="range" twoWayBind="%$widget.state.sensitivity%" id="sensitivity" min="1" max="5" step="0.1" value="2.5" />
+      <span id="sensitivity-value" bind_text="%$widget.state.sensitivity%">2.5</span>
     </div>
   </div>`,
     css: `
@@ -161,7 +172,7 @@ component('zoomState', {
         .pan-zoom-state input[type="number"], .pan-zoom-state input[type="text"] {
             font-size: 14px; padding: 5px; width: 66px; border: 1px solid #ddd; border-radius: 5px; background-color: #f5f5f5; color: #555; }
         .pan-zoom-state input[type="range"] { flex-grow: 1; margin-left: 10px; }
-        .pan-zoom-state #speed-value { font-size: 14px; color: #444; min-width: 30px; text-align: center; }`
+        .pan-zoom-state #sensitivity-value { font-size: 14px; color: #444; min-width: 30px; text-align: center; }`
   })
 })
 

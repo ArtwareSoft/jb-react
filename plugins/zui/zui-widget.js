@@ -23,14 +23,15 @@ component('widget', {
             suggestedContextChips: jb.path(domain.sample,'suggestedContextChips') || [],
             totalCost: '$0.00',
         })
+        const isMobile = typeof navigator != 'undefined' && /Mobi|Android/i.test(navigator.userAgent)
         
-        frontEnd.initFE(screenSizeForTest,{userData,appData})
+        frontEnd.initFE(screenSizeForTest,{userData,appData,isMobile})
         
         const widget = {
             frontEnd,
             appData,
             async init() {
-                const ctxForBe = ctx.setVars({userData, appData, domain, screenSize: frontEnd.screenSize, widget: this})
+                const ctxForBe = ctx.setVars({userData, appData, domain, screenSize: frontEnd.screenSize, widget: this,isMobile })
                 const appCmp = control(ctxForBe).applyFeatures(features,20)
                 appCmp.init()
                 frontEnd.beAppCmpProxy = appCmp // should be jbm and activated by jbm.remoteExec
@@ -50,10 +51,11 @@ component('widgetFE', {
         renderCounter: 1,
         state: {tCenter: [1,1], tZoom : 2, zoom: 2, center: [1,1], speed: 3, sensitivity: 5},
 
-        initFE(screenSizeForTest,{userData,appData}) {
+        initFE(screenSizeForTest,{userData,appData,isMobile}) {
             this.userData = userData
             this.appData = appData
-            this.ctx = new jb.core.jbCtx().setVars({widget: this, canUseConsole: ctx.vars.showOnly, uiTest: ctx.vars.uiTest})
+            this.state.sensitivity = isMobile ? 2 : 5
+            this.ctx = new jb.core.jbCtx().setVars({widget: this, canUseConsole: ctx.vars.showOnly, uiTest: ctx.vars.uiTest, isMobile })
             this.screenSize = (!ctx.vars.uiTest && jb.frame.window) ? [window.innerWidth,window.innerHeight] : screenSizeForTest
             this.ctx.probe = ctx.probe
         },

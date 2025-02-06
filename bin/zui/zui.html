@@ -1,0 +1,34 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script type="text/javascript" src="./jb-loader.js"></script>
+    <link rel="icon" type="image/x-icon" href="./zu_favicon.ico" />
+</head>
+<body>
+ <script>
+  githubUrl = 'https://artwaresoft.github.io/jb-react/bin/zui/zui.html'
+  const ver = 'v0.2'
+  jbHost.notInStudio = document.location.href.indexOf('localhost') == -1
+  jbHost.baseUrl = document.location.href.indexOf('github.io') != -1 ? '/jb-react' : jbHost.baseUrl
+  async function copyPackage() {
+      if (jbHost.notInStudio) return
+      const Contents = await fetch('http://localhost:8082/package/zui-tests.js').then(x=>x.text())
+      const Path = `bin/zui/package-zui-tests-${ver}.js`
+      const copy = await fetch(`/?op=saveFile`,{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' } , 
+            body: JSON.stringify({ Path, Contents }) }).then(res=>res.json())
+      alert(`package bin/zui/package-zui-tests-${ver}.js copied`)
+  }
+
+	async function zuiLlm() {
+    const code = await fetch(`./package-zui-tests-${ver}.js`).then(x=>x.text())
+    await eval(code)
+    globalThis.jb = await jbLoadPacked({uri:'zuiLlm'})
+		await jb.test.runTests({ showOnly: true, specificTest: 'zuiTest.healthCare.app' })
+	}
+  copyPackage().then(()=> zuiLlm())
+	
+  </script>
+</body>
+</html>

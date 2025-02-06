@@ -6617,7 +6617,222 @@ component('nodeOnly', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:6622, jb, noProxies: false, path: '/plugins/remote/jbm/node-worker.js',fileDsl: '', pluginId: 'remote-jbm' }, 
+jbLoadPackedFile({lineInPackage:6622, jb, noProxies: false, path: '/plugins/remote/jbm/remote-cmd.js',fileDsl: '', pluginId: 'remote-jbm' }, 
+            function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
+component('remote.cmd', {
+  type: 'data<>',
+  moreTypes: 'action<>',
+  description: 'calc a script with jb.js',
+  params: [
+    {id: 'main', type: 'data<>', dynamic: true, moreTypes: 'action<>', description: 'e.g pipeline("hello","%% -- %$v1%")'},
+    {id: 'wrap', as: 'string', description: 'e.g prune(MAIN)'},
+    {id: 'context', description: 'e.g {v1: "xx", param1: prof1("yy") }'},
+    {id: 'sourceCode', type: 'source-code<loader>', mandatory: true},
+    {id: 'id', as: 'string', description: 'jb.uri of cmd, default is main'},
+    {id: 'viaHttpServer', as: 'string', defaultValue: 'http://localhost:8082'}
+  ],
+  impl: async (ctx, main, wrap, context, sourceCode, id, viaHttpServer) => {
+        const args = [
+            ['-main', jb.utils.prettyPrint(main.profile, { singleLine: true })],
+            ['-wrap', wrap],
+            ['-uri', id],
+            ['-sourceCode', JSON.stringify(sourceCode)],
+            ...Object.keys(context).map(k => [`%${k}`, context[k]]),
+        ].filter(x => x[1])
+        const body = JSON.stringify(args.map(([k, v]) => `${k}:${v}`))
+        const url = `${viaHttpServer}/?op=jb`
+
+        return jbHost.fetch(url, { method: 'POST', body }).then(r => r.json()).then(x => x.result)
+
+        function serializeContextVal(val) {
+            if (val && typeof val == 'object')
+                return `() => ${JSON.stringify(val)}`
+            return val
+        }
+    }
+})
+
+});
+
+jbLoadPackedFile({lineInPackage:6659, jb, noProxies: false, path: '/plugins/remote/jbm/remote-context.js',fileDsl: '', pluginId: 'remote-jbm' }, 
+            function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
+extension('remoteCtx', {
+    initExtension() {
+        return { allwaysPassVars: ['widgetId','disableLog','uiTest'], MAX_ARRAY_LENGTH: 10000, MAX_OBJ_DEPTH: 100}
+    },
+    stripFunction(f, {require} = {}) {
+        const {profile,runCtx,path,param,srcPath} = f
+        if (!profile || !runCtx) return jb.remoteCtx.stripJS(f)
+        const profText = [jb.utils.prettyPrint(profile, {noMacros: true}),require].filter(x=>x).join(';')
+        const profNoJS = jb.remoteCtx.stripJSFromProfile(profile)
+        if (require) profNoJS.require = require.split(',').map(x=>x[0] == '#' ? `jb.${x.slice(1)}()` : {$: x})
+        const vars = jb.objFromEntries(jb.entries(runCtx.vars).filter(e => jb.remoteCtx.shouldPassVar(e[0],profText))
+            .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
+        const params = jb.objFromEntries(jb.entries(jb.path(runCtx.cmpCtx,'params')).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
+            .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
+        let probe = null
+        if (runCtx.probe && runCtx.probe.active && runCtx.probe.probePath.indexOf(srcPath) == 0) {
+            const { probePath, maxTime, id } = runCtx.probe
+            probe = { probePath, startTime: 0, maxTime, id, records: {}, visits: {}, active: true }
+        }
+        const usingData = jb.remoteCtx.usingData(profText)
+        return Object.assign({$: 'runCtx', id: runCtx.id, path: [srcPath,path].filter(x=>x).join('~'), param, probe, profile: profNoJS, data: usingData ? jb.remoteCtx.stripData(runCtx.data) : null, vars}, 
+            Object.keys(params).length ? {cmpCtx: {params} } : {})
+
+    },    
+    stripCtx(ctx) {
+        if (!ctx) return null
+        const isJS = typeof ctx.profile == 'function'
+        const profText = jb.utils.prettyPrint(ctx.profile)
+        const vars = jb.objFromEntries(jb.entries(ctx.vars)
+            .filter(e => jb.remoteCtx.shouldPassVar(e[0],profText))
+            .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
+        const data = jb.remoteCtx.usingData(profText) && jb.remoteCtx.stripData(ctx.data)
+        const params = jb.objFromEntries(jb.entries(isJS ? ctx.params: jb.entries(jb.path(ctx.cmpCtx,'params')))
+            .filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
+            .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
+        const res = Object.assign({id: ctx.id, path: ctx.path, profile: ctx.profile, data, vars }, 
+            isJS ? {params,vars} : Object.keys(params).length ? {cmpCtx: {params} } : {} )
+        return res
+    },
+    stripData(data, { top, depth, path} = {}) {
+        if (data == null || (path||'').match(/parentNode$/)) return
+        const innerDepthAndPath = key => ({depth: (depth || 0) +1, top: top || data, path: [path,key].filter(x=>x).join('~') })
+
+        if (['string','boolean','number'].indexOf(typeof data) != -1) return data
+        if (typeof data == 'function')
+             return jb.remoteCtx.stripFunction(data)
+        if (data instanceof jb.core.jbCtx)
+             return jb.remoteCtx.stripCtx(data)
+        if (depth > jb.remoteCtx.MAX_OBJ_DEPTH) {
+             jb.logError('stripData too deep object, maybe recursive',{top, path, depth, data})
+             return
+        }
+ 
+        if (Array.isArray(data) && data.length > jb.remoteCtx.MAX_ARRAY_LENGTH)
+            jb.logError('stripData slicing large array',{data})
+        if (Array.isArray(data))
+             return data.slice(0,jb.remoteCtx.MAX_ARRAY_LENGTH).map((x,i)=>jb.remoteCtx.stripData(x, innerDepthAndPath(i)))
+        if (typeof data == 'object' && ['DOMRect'].indexOf(data.constructor.name) != -1)
+            return jb.objFromEntries(Object.keys(data.__proto__).map(k=>[k,data[k]]))
+        if (typeof data == 'object' && (jb.path(data.constructor,'name') || '').match(/Error$/))
+            return {$$: 'Error', message: data.toString() }
+        if (typeof data == 'object' && ['VNode','Object','Array'].indexOf(data.constructor.name) == -1)
+            return { $$: data.constructor.name }
+        if (typeof data == 'object' && data[jb.core.VERSION])
+            return { uri : data.uri}
+        if (typeof data == 'object')
+             return jb.objFromEntries(jb.entries(data)
+                .filter(e=> data.$ || typeof e[1] != 'function') // if not a profile, block functions
+//                .map(e=>e[0] == '$' ? [e[0], jb.path(data,[jb.core.CT,'comp',jb.core.CT,'fullId']) || e[1]] : e)
+                .map(e=>[e[0],jb.remoteCtx.stripData(e[1], innerDepthAndPath(e[0]) )]))
+    },
+    deStrip(data, _asIs) {
+        if (typeof data == 'string' && data.match(/^@js@/))
+            return eval(data.slice(4))
+        const asIs = _asIs || (data && typeof data == 'object' && data.$$asIs)
+        const stripedObj = data && typeof data == 'object' && jb.objFromEntries(jb.entries(data).map(e=>[e[0],jb.remoteCtx.deStrip(e[1],asIs)]))
+        if (stripedObj && data.$ == 'runCtx' && !asIs)
+            return (ctx2,data2) => {
+                const ctx = new jb.core.jbCtx(jb.utils.resolveProfile(stripedObj, {topComp: stripedObj}),{}).extendVars(ctx2,data2)
+                const res = ctx.runItself()
+                if (ctx.probe) {
+                    if (jb.utils.isCallbag(res))
+                        return jb.callbag.pipe(res, jb.callbag.mapPromise(r=>jb.remoteCtx.waitAndWrapProbeResult(r,ctx.probe,ctx)))
+                    if (jb.callbag.isCallbagOperator(res))
+                        return source => jb.callbag.pipe(res(source), jb.callbag.mapPromise(r=>jb.remoteCtx.waitAndWrapProbeResult(r,ctx.probe,ctx)))
+
+                    return jb.remoteCtx.waitAndWrapProbeResult(res,ctx.probe,ctx)
+                }
+                return res
+            }
+        if (Array.isArray(data))
+            return data.map(x=>jb.remoteCtx.deStrip(x,asIs))
+        return stripedObj || data
+    },
+    async waitAndWrapProbeResult(_res,probe,ctx) {
+        const res = await _res
+        await Object.values(probe.records).reduce((pr,valAr) => pr.then(
+            () => valAr.reduce( async (pr,item,i) => { await pr; valAr[i].out = await valAr[i].out }, Promise.resolve())
+        ), Promise.resolve())
+        const filteredProbe = { ...probe, records: jb.objFromEntries(jb.entries(probe.records).map(([k,v])=>[k,v.filter(x=>!x.sent)])) }
+        Object.values(probe.records).forEach(arr=>arr.forEach(r => r.sent = true))
+        const originalRecords = Object.fromEntries(Object.entries(probe.records).map(([k,v]) => [k,[...v]]))
+        jb.log('remote context wrapping probe result',{probe, originalRecords, filteredProbe, res, ctx})
+        return { $: 'withProbeResult', res, probe: filteredProbe }
+    },    
+    stripCBVars(cbData) {
+        const res = jb.remoteCtx.stripData(cbData)
+        if (res && res.vars)
+            res.vars = jb.objFromEntries(jb.entries(res.vars).filter(e=>e[0].indexOf('$')!=0))
+
+        return res
+    },
+    stripJSFromProfile(profile) {
+        if (typeof profile == 'function')
+            return `@js@${profile.toString()}`
+        else if (Array.isArray(profile))
+            return profile.map(val => jb.remoteCtx.stripJS(val))
+        else if (typeof profile == 'object')
+            return jb.objFromEntries(jb.entries(profile).map(([id,val]) => [id, jb.remoteCtx.stripJS(val)]))
+        return profile
+    },
+    stripJS(val) {
+        return typeof val == 'function' ? `@js@${val.toString()}` : jb.remoteCtx.stripData(val)
+    },
+    shouldPassVar: (varName, profText) => jb.remoteCtx.allwaysPassVars.indexOf(varName) != -1 || profText.match(new RegExp(`\\b${varName.split(':')[0]}\\b`)),
+    usingData: profText => profText.match(/({data})|(ctx.data)|(%[^$])/),
+
+    mergeProbeResult(ctx,res,from) {
+        if (jb.path(res,'$') == 'withProbeResult') {
+            if (ctx.probe && res.probe) {
+              Object.keys(res.probe.records||{}).forEach(k=>ctx.probe.records[k] = res.probe.records[k].map(x =>({...x, from})) )
+              Object.keys(res.probe.visits||{}).forEach(k=>ctx.probe.visits[k] = res.probe.visits[k] )
+            }
+            jb.log('merged probe result', {from, remoteProbeRes: res, records: res.probe.records})
+            return res.res
+        }
+        return res
+    },
+    markProbeRecords(probe,prop) {
+        probe && Object.values(probe.records||{}).forEach(x => x[prop] = true)
+    },
+})
+
+component('remoteCtx.mergeProbeResult', {
+    promote: 0,
+    params: [
+        {id: 'remoteResult', byName: true },
+        {id: 'from', as: 'string'}
+    ],
+    impl: (ctx,remoteResult,from) => {
+        if (jb.path(remoteResult,'$') == 'withProbeResult') {
+            const { records, visits } = remoteResult.probe
+            if (ctx.probe) {
+              Object.keys(records||{}).forEach(k=>ctx.probe.records[k] = records[k].map(x =>({...x, from})) )
+              Object.keys(visits||{}).forEach(k=>ctx.probe.visits[k] = visits[k] )
+            }
+            jb.log('merged probe result', {from, remoteResult, records })
+            return remoteResult.res
+        }
+        return remoteResult
+    }
+})
+
+component('remoteCtx.varsUsed', {
+  promote: 0,
+  params: [
+    {id: 'profile' }
+  ],
+  impl: (ctx,profile) => {
+    const profText = jb.utils.prettyPrint(profile||'', {noMacros: true})
+    return (profText.match(/%\$[a-zA-Z0-9_]+/g) || []).map(x=>x.slice(2))
+  }
+})
+
+});
+
+jbLoadPackedFile({lineInPackage:6837, jb, noProxies: false, path: '/plugins/remote/jbm/node-worker.js',fileDsl: '', pluginId: 'remote-jbm' }, 
             function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
 
 extension('webSocket', 'client', {
@@ -6921,221 +7136,6 @@ parentPort.postMessage({ $: 'workerReady' })
 //   }
 // })
 
-
-});
-
-jbLoadPackedFile({lineInPackage:6929, jb, noProxies: false, path: '/plugins/remote/jbm/remote-cmd.js',fileDsl: '', pluginId: 'remote-jbm' }, 
-            function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
-component('remote.cmd', {
-  type: 'data<>',
-  moreTypes: 'action<>',
-  description: 'calc a script with jb.js',
-  params: [
-    {id: 'main', type: 'data<>', dynamic: true, moreTypes: 'action<>', description: 'e.g pipeline("hello","%% -- %$v1%")'},
-    {id: 'wrap', as: 'string', description: 'e.g prune(MAIN)'},
-    {id: 'context', description: 'e.g {v1: "xx", param1: prof1("yy") }'},
-    {id: 'sourceCode', type: 'source-code<loader>', mandatory: true},
-    {id: 'id', as: 'string', description: 'jb.uri of cmd, default is main'},
-    {id: 'viaHttpServer', as: 'string', defaultValue: 'http://localhost:8082'}
-  ],
-  impl: async (ctx, main, wrap, context, sourceCode, id, viaHttpServer) => {
-        const args = [
-            ['-main', jb.utils.prettyPrint(main.profile, { singleLine: true })],
-            ['-wrap', wrap],
-            ['-uri', id],
-            ['-sourceCode', JSON.stringify(sourceCode)],
-            ...Object.keys(context).map(k => [`%${k}`, context[k]]),
-        ].filter(x => x[1])
-        const body = JSON.stringify(args.map(([k, v]) => `${k}:${v}`))
-        const url = `${viaHttpServer}/?op=jb`
-
-        return jbHost.fetch(url, { method: 'POST', body }).then(r => r.json()).then(x => x.result)
-
-        function serializeContextVal(val) {
-            if (val && typeof val == 'object')
-                return `() => ${JSON.stringify(val)}`
-            return val
-        }
-    }
-})
-
-});
-
-jbLoadPackedFile({lineInPackage:6966, jb, noProxies: false, path: '/plugins/remote/jbm/remote-context.js',fileDsl: '', pluginId: 'remote-jbm' }, 
-            function({jb,require,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,source,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
-extension('remoteCtx', {
-    initExtension() {
-        return { allwaysPassVars: ['widgetId','disableLog','uiTest'], MAX_ARRAY_LENGTH: 10000, MAX_OBJ_DEPTH: 100}
-    },
-    stripFunction(f, {require} = {}) {
-        const {profile,runCtx,path,param,srcPath} = f
-        if (!profile || !runCtx) return jb.remoteCtx.stripJS(f)
-        const profText = [jb.utils.prettyPrint(profile, {noMacros: true}),require].filter(x=>x).join(';')
-        const profNoJS = jb.remoteCtx.stripJSFromProfile(profile)
-        if (require) profNoJS.require = require.split(',').map(x=>x[0] == '#' ? `jb.${x.slice(1)}()` : {$: x})
-        const vars = jb.objFromEntries(jb.entries(runCtx.vars).filter(e => jb.remoteCtx.shouldPassVar(e[0],profText))
-            .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
-        const params = jb.objFromEntries(jb.entries(jb.path(runCtx.cmpCtx,'params')).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
-            .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
-        let probe = null
-        if (runCtx.probe && runCtx.probe.active && runCtx.probe.probePath.indexOf(srcPath) == 0) {
-            const { probePath, maxTime, id } = runCtx.probe
-            probe = { probePath, startTime: 0, maxTime, id, records: {}, visits: {}, active: true }
-        }
-        const usingData = jb.remoteCtx.usingData(profText)
-        return Object.assign({$: 'runCtx', id: runCtx.id, path: [srcPath,path].filter(x=>x).join('~'), param, probe, profile: profNoJS, data: usingData ? jb.remoteCtx.stripData(runCtx.data) : null, vars}, 
-            Object.keys(params).length ? {cmpCtx: {params} } : {})
-
-    },    
-    stripCtx(ctx) {
-        if (!ctx) return null
-        const isJS = typeof ctx.profile == 'function'
-        const profText = jb.utils.prettyPrint(ctx.profile)
-        const vars = jb.objFromEntries(jb.entries(ctx.vars)
-            .filter(e => jb.remoteCtx.shouldPassVar(e[0],profText))
-            .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
-        const data = jb.remoteCtx.usingData(profText) && jb.remoteCtx.stripData(ctx.data)
-        const params = jb.objFromEntries(jb.entries(isJS ? ctx.params: jb.entries(jb.path(ctx.cmpCtx,'params')))
-            .filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
-            .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
-        const res = Object.assign({id: ctx.id, path: ctx.path, profile: ctx.profile, data, vars }, 
-            isJS ? {params,vars} : Object.keys(params).length ? {cmpCtx: {params} } : {} )
-        return res
-    },
-    stripData(data, { top, depth, path} = {}) {
-        if (data == null || (path||'').match(/parentNode$/)) return
-        const innerDepthAndPath = key => ({depth: (depth || 0) +1, top: top || data, path: [path,key].filter(x=>x).join('~') })
-
-        if (['string','boolean','number'].indexOf(typeof data) != -1) return data
-        if (typeof data == 'function')
-             return jb.remoteCtx.stripFunction(data)
-        if (data instanceof jb.core.jbCtx)
-             return jb.remoteCtx.stripCtx(data)
-        if (depth > jb.remoteCtx.MAX_OBJ_DEPTH) {
-             jb.logError('stripData too deep object, maybe recursive',{top, path, depth, data})
-             return
-        }
- 
-        if (Array.isArray(data) && data.length > jb.remoteCtx.MAX_ARRAY_LENGTH)
-            jb.logError('stripData slicing large array',{data})
-        if (Array.isArray(data))
-             return data.slice(0,jb.remoteCtx.MAX_ARRAY_LENGTH).map((x,i)=>jb.remoteCtx.stripData(x, innerDepthAndPath(i)))
-        if (typeof data == 'object' && ['DOMRect'].indexOf(data.constructor.name) != -1)
-            return jb.objFromEntries(Object.keys(data.__proto__).map(k=>[k,data[k]]))
-        if (typeof data == 'object' && (jb.path(data.constructor,'name') || '').match(/Error$/))
-            return {$$: 'Error', message: data.toString() }
-        if (typeof data == 'object' && ['VNode','Object','Array'].indexOf(data.constructor.name) == -1)
-            return { $$: data.constructor.name }
-        if (typeof data == 'object' && data[jb.core.VERSION])
-            return { uri : data.uri}
-        if (typeof data == 'object')
-             return jb.objFromEntries(jb.entries(data)
-                .filter(e=> data.$ || typeof e[1] != 'function') // if not a profile, block functions
-//                .map(e=>e[0] == '$' ? [e[0], jb.path(data,[jb.core.CT,'comp',jb.core.CT,'fullId']) || e[1]] : e)
-                .map(e=>[e[0],jb.remoteCtx.stripData(e[1], innerDepthAndPath(e[0]) )]))
-    },
-    deStrip(data, _asIs) {
-        if (typeof data == 'string' && data.match(/^@js@/))
-            return eval(data.slice(4))
-        const asIs = _asIs || (data && typeof data == 'object' && data.$$asIs)
-        const stripedObj = data && typeof data == 'object' && jb.objFromEntries(jb.entries(data).map(e=>[e[0],jb.remoteCtx.deStrip(e[1],asIs)]))
-        if (stripedObj && data.$ == 'runCtx' && !asIs)
-            return (ctx2,data2) => {
-                const ctx = new jb.core.jbCtx(jb.utils.resolveProfile(stripedObj, {topComp: stripedObj}),{}).extendVars(ctx2,data2)
-                const res = ctx.runItself()
-                if (ctx.probe) {
-                    if (jb.utils.isCallbag(res))
-                        return jb.callbag.pipe(res, jb.callbag.mapPromise(r=>jb.remoteCtx.waitAndWrapProbeResult(r,ctx.probe,ctx)))
-                    if (jb.callbag.isCallbagOperator(res))
-                        return source => jb.callbag.pipe(res(source), jb.callbag.mapPromise(r=>jb.remoteCtx.waitAndWrapProbeResult(r,ctx.probe,ctx)))
-
-                    return jb.remoteCtx.waitAndWrapProbeResult(res,ctx.probe,ctx)
-                }
-                return res
-            }
-        if (Array.isArray(data))
-            return data.map(x=>jb.remoteCtx.deStrip(x,asIs))
-        return stripedObj || data
-    },
-    async waitAndWrapProbeResult(_res,probe,ctx) {
-        const res = await _res
-        await Object.values(probe.records).reduce((pr,valAr) => pr.then(
-            () => valAr.reduce( async (pr,item,i) => { await pr; valAr[i].out = await valAr[i].out }, Promise.resolve())
-        ), Promise.resolve())
-        const filteredProbe = { ...probe, records: jb.objFromEntries(jb.entries(probe.records).map(([k,v])=>[k,v.filter(x=>!x.sent)])) }
-        Object.values(probe.records).forEach(arr=>arr.forEach(r => r.sent = true))
-        const originalRecords = Object.fromEntries(Object.entries(probe.records).map(([k,v]) => [k,[...v]]))
-        jb.log('remote context wrapping probe result',{probe, originalRecords, filteredProbe, res, ctx})
-        return { $: 'withProbeResult', res, probe: filteredProbe }
-    },    
-    stripCBVars(cbData) {
-        const res = jb.remoteCtx.stripData(cbData)
-        if (res && res.vars)
-            res.vars = jb.objFromEntries(jb.entries(res.vars).filter(e=>e[0].indexOf('$')!=0))
-
-        return res
-    },
-    stripJSFromProfile(profile) {
-        if (typeof profile == 'function')
-            return `@js@${profile.toString()}`
-        else if (Array.isArray(profile))
-            return profile.map(val => jb.remoteCtx.stripJS(val))
-        else if (typeof profile == 'object')
-            return jb.objFromEntries(jb.entries(profile).map(([id,val]) => [id, jb.remoteCtx.stripJS(val)]))
-        return profile
-    },
-    stripJS(val) {
-        return typeof val == 'function' ? `@js@${val.toString()}` : jb.remoteCtx.stripData(val)
-    },
-    shouldPassVar: (varName, profText) => jb.remoteCtx.allwaysPassVars.indexOf(varName) != -1 || profText.match(new RegExp(`\\b${varName.split(':')[0]}\\b`)),
-    usingData: profText => profText.match(/({data})|(ctx.data)|(%[^$])/),
-
-    mergeProbeResult(ctx,res,from) {
-        if (jb.path(res,'$') == 'withProbeResult') {
-            if (ctx.probe && res.probe) {
-              Object.keys(res.probe.records||{}).forEach(k=>ctx.probe.records[k] = res.probe.records[k].map(x =>({...x, from})) )
-              Object.keys(res.probe.visits||{}).forEach(k=>ctx.probe.visits[k] = res.probe.visits[k] )
-            }
-            jb.log('merged probe result', {from, remoteProbeRes: res, records: res.probe.records})
-            return res.res
-        }
-        return res
-    },
-    markProbeRecords(probe,prop) {
-        probe && Object.values(probe.records||{}).forEach(x => x[prop] = true)
-    },
-})
-
-component('remoteCtx.mergeProbeResult', {
-    promote: 0,
-    params: [
-        {id: 'remoteResult', byName: true },
-        {id: 'from', as: 'string'}
-    ],
-    impl: (ctx,remoteResult,from) => {
-        if (jb.path(remoteResult,'$') == 'withProbeResult') {
-            const { records, visits } = remoteResult.probe
-            if (ctx.probe) {
-              Object.keys(records||{}).forEach(k=>ctx.probe.records[k] = records[k].map(x =>({...x, from})) )
-              Object.keys(visits||{}).forEach(k=>ctx.probe.visits[k] = visits[k] )
-            }
-            jb.log('merged probe result', {from, remoteResult, records })
-            return remoteResult.res
-        }
-        return remoteResult
-    }
-})
-
-component('remoteCtx.varsUsed', {
-  promote: 0,
-  params: [
-    {id: 'profile' }
-  ],
-  impl: (ctx,profile) => {
-    const profText = jb.utils.prettyPrint(profile||'', {noMacros: true})
-    return (profText.match(/%\$[a-zA-Z0-9_]+/g) || []).map(x=>x.slice(2))
-  }
-})
 
 });
 
@@ -7469,7 +7469,74 @@ component('stringTree', { watchableData: { node1: ['a','b','c'], node2: ['1','2'
 
 });
 
-jbLoadPackedFile({lineInPackage:7474, jb, noProxies: false, path: '/plugins/testing/testers.js',fileDsl: '', pluginId: 'testing' }, 
+jbLoadPackedFile({lineInPackage:7474, jb, noProxies: false, path: '/plugins/testing/location-dsl-for-testing.js',fileDsl: 'location', pluginId: 'testing' }, 
+            function({jb,require,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,source,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
+dsl('location')
+extension('location', 'main', {
+  typeRules: [ { same: ['data<location>','data<>']} ]
+})
+
+component('city', {
+  type: 'settlement',
+  params: [
+    {id: 'name', as: 'string'}
+  ]
+})
+
+component('village', {
+  type: 'settlement',
+  params: [
+    {id: 'name', as: 'string'}
+  ]
+})
+
+component('state', {
+  type: 'state',
+  params: [
+    {id: 'capital', type: 'settlement'},
+    {id: 'cities', type: 'settlement[]'}
+  ]
+})
+
+component('israel', {
+  impl: state(jerusalem(), { cities: [eilat(), city('Tel Aviv')] })
+})
+
+component('israel2', {
+  impl: state()
+})
+
+component('jerusalem', {
+  impl: city('Jerusalem')
+})
+
+component('eilat', {
+  impl: city('Eilat')
+})
+
+component('nokdim', {
+  impl: village('Nokdim')
+})
+
+component('pipeline', {
+  params: [
+    {id: 'checkNameOverride'},
+    {id: 'state', type: 'state'},
+  ],
+  impl: village()
+})
+
+component('nameOfCity', {
+  type: 'data<>',
+  params: [
+    {id: 'city', type: 'settlement'}
+  ],
+  impl: '%$city/name%'
+})
+
+});
+
+jbLoadPackedFile({lineInPackage:7541, jb, noProxies: false, path: '/plugins/testing/testers.js',fileDsl: '', pluginId: 'testing' }, 
             function({jb,require,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,source,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
 using('remote-jbm')
 
@@ -7896,73 +7963,6 @@ component('PROJECTS_PATH', { passiveData : '/home/shaiby/projects' // 'c:/projec
 })
 });
 
-jbLoadPackedFile({lineInPackage:7901, jb, noProxies: false, path: '/plugins/testing/location-dsl-for-testing.js',fileDsl: 'location', pluginId: 'testing' }, 
-            function({jb,require,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,source,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
-dsl('location')
-extension('location', 'main', {
-  typeRules: [ { same: ['data<location>','data<>']} ]
-})
-
-component('city', {
-  type: 'settlement',
-  params: [
-    {id: 'name', as: 'string'}
-  ]
-})
-
-component('village', {
-  type: 'settlement',
-  params: [
-    {id: 'name', as: 'string'}
-  ]
-})
-
-component('state', {
-  type: 'state',
-  params: [
-    {id: 'capital', type: 'settlement'},
-    {id: 'cities', type: 'settlement[]'}
-  ]
-})
-
-component('israel', {
-  impl: state(jerusalem(), { cities: [eilat(), city('Tel Aviv')] })
-})
-
-component('israel2', {
-  impl: state()
-})
-
-component('jerusalem', {
-  impl: city('Jerusalem')
-})
-
-component('eilat', {
-  impl: city('Eilat')
-})
-
-component('nokdim', {
-  impl: village('Nokdim')
-})
-
-component('pipeline', {
-  params: [
-    {id: 'checkNameOverride'},
-    {id: 'state', type: 'state'},
-  ],
-  impl: village()
-})
-
-component('nameOfCity', {
-  type: 'data<>',
-  params: [
-    {id: 'city', type: 'settlement'}
-  ],
-  impl: '%$city/name%'
-})
-
-});
-
 jbLoadPackedFile({lineInPackage:7968, jb, noProxies: false, path: '/plugins/html/html-tester.js',fileDsl: 'html', pluginId: 'html' }, 
             function({jb,require,htmlTest,htmlPageRunner,section,group,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,source,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,rx,sink,component,extension,using,dsl,pluginDsl}) {
 dsl('html')
@@ -8013,6 +8013,8 @@ component('section', {
       {id: 'id', as: 'string'},
       {id: 'html', as: 'string', dynamic: true, newLinesInCode: true},
       {id: 'css', as: 'string', dynamic: true, newLinesInCode: true},
+      {id: 'init', dynamic: true },
+      {id: 'methods' },
     ]
 })
 
@@ -8022,13 +8024,15 @@ component('group', {
     {id: 'id', as: 'string'},
     {id: 'html', as: 'string', dynamic: true, newLinesInCode: true},
     {id: 'css', as: 'string', dynamic: true, newLinesInCode: true},
+    {id: 'cmp' },
     {id: 'sections', type: 'section[]', composite: true}
   ],
-  impl: (ctx, id, html, css, sections) => {
+  impl: (ctx, id, html, css, cmp, sections) => {
         const groupVars = jb.objFromEntries(sections.map(sec=>[sec.id,sec]))
         return { id, 
             html: ctx => html(ctx.setVars(groupVars)), 
-            css : ctx => css(ctx.setVars(groupVars))
+            css : ctx => css(ctx.setVars(groupVars)),
+            cmp: [cmp,...sections.map(sec=>sec.cmp)].reduce((acc, obj) => ({ ...acc, ...obj }), {})
         }
     }
 })
@@ -8041,7 +8045,7 @@ component('page', {
     {id: 'onRefresh', type: 'action<>', dynamic: true}
   ],
   impl: (ctx, section,cmp, refreshFunc) => ({
-    cmp,
+    cmp: Object.assign({},{...cmp, ...section.cmp}),
     section,
     injectIntoElem: ({topEl, registerEvents}) => {
         cmp.beforeInjection && cmp.beforeInjection(ctx)
@@ -8091,11 +8095,11 @@ extension('html','DataBinder', {
                   if (val == null) {
                       el.style.display = 'none'
                   } else {
+                      el.style.removeProperty('display')
                       if (attr.name === 'bind_value' && el.value != val) el.value = val
                       if (attr.name === 'bind_max' && el.value != val) el.max = val
                       if (attr.name === 'bind_title' && el.getAttribute('title') != val) el.setAttribute('title',val)
                       if ((attr.name === 'bind_text' || attr.name == 'bind') && el.textContent != val) el.textContent = val
-                      el.style.display = 'block'
                   }
                 }
               }
@@ -8215,7 +8219,7 @@ extension('html','DataBinder', {
 
 });
 
-jbLoadPackedFile({lineInPackage:8220, jb, noProxies: false, path: '/plugins/parsing/parsing.js',fileDsl: '', pluginId: 'parsing' }, 
+jbLoadPackedFile({lineInPackage:8224, jb, noProxies: false, path: '/plugins/parsing/parsing.js',fileDsl: '', pluginId: 'parsing' }, 
             function({jb,require,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,component,extension,using,dsl,pluginDsl}) {
 using('common')
 
@@ -8494,7 +8498,7 @@ component('asString', {
 
 });
 
-jbLoadPackedFile({lineInPackage:8499, jb, noProxies: false, path: '/plugins/llm/api/llm-api.js',fileDsl: 'llm', pluginId: 'llm-api' }, 
+jbLoadPackedFile({lineInPackage:8503, jb, noProxies: false, path: '/plugins/llm/api/llm-api.js',fileDsl: 'llm', pluginId: 'llm-api' }, 
             function({jb,require,llmViaApi,source,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('llm')
 using('common,parsing')
@@ -8784,7 +8788,7 @@ component('llm.accumulateText', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:8789, jb, noProxies: false, path: '/plugins/llm/api/llm-models.js',fileDsl: 'llm', pluginId: 'llm-api' }, 
+jbLoadPackedFile({lineInPackage:8793, jb, noProxies: false, path: '/plugins/llm/api/llm-models.js',fileDsl: 'llm', pluginId: 'llm-api' }, 
             function({jb,require,llmViaApi,source,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('llm')
 
@@ -8889,7 +8893,7 @@ component('byId', {
 
 });
 
-jbLoadPackedFile({lineInPackage:8894, jb, noProxies: false, path: '/plugins/llm/api/meta-prompts.js',fileDsl: 'llm', pluginId: 'llm-api' }, 
+jbLoadPackedFile({lineInPackage:8898, jb, noProxies: false, path: '/plugins/llm/api/meta-prompts.js',fileDsl: 'llm', pluginId: 'llm-api' }, 
             function({jb,require,llmViaApi,source,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,list,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,extend,assign,extendWithObj,extendWithIndex,prop,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,Case,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipeline,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,sample,splitByPivot,groupBy,groupProps,call,typeAdapter,If,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,test,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('llm')
 
@@ -9021,7 +9025,7 @@ component('reasoning', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:9026, jb, noProxies: false, path: '/plugins/zui/health-care-domain.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:9030, jb, noProxies: false, path: '/plugins/zui/health-care-domain.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 using('zui')
@@ -9117,10 +9121,12 @@ component('healthCare.conditionIconBoxStyle', {
     frontEnd.method('dynamicCssVars', ({},{itemSize})=>{
       const boxSize = 2 ** Math.floor(Math.log(itemSize[0]+0.1)/Math.log(2))
       return (boxSize >= 16) ? {
+        'show-title': boxSize >= 64 ? 'block' : 'none',
+        'show-abrv': boxSize < 64 ? 'block' : 'none',
         'box-size': `${boxSize}px`,
         'urgency-symbol-offset': `${boxSize / 16}px`,
         'abrv-margin': `${boxSize / 16}px`,
-      } : { 'box-size': `${boxSize}px`, 'urgency-symbol-offset': '0', 'abrv-margin': '0' }
+      } : { 'box-size': `${boxSize}px`, 'urgency-symbol-offset': '0', 'abrv-margin': '0', 'show-abrv': 'block', 'show-title': 'none'  }
     }),
     templateHtmlItem(()=> `<div class="icon" 
           bind_style="opacity: %relevancyOpacity%;border-style:%relevancyBorderStyle%;border-color:%urgencyBorderColor%">
@@ -9129,6 +9135,7 @@ component('healthCare.conditionIconBoxStyle', {
         <div class="urgencySymbol" bind="%urgencySymbol%"></div>
         <div class="main-symbol" bind="%categorySymbol%"></div>
         <div class="abrv" bind="%abrv%"></div>
+        <div class="title" bind="%title%"></div>
       </div>
     </div>`),
     css(`
@@ -9140,7 +9147,8 @@ component('healthCare.conditionIconBoxStyle', {
           display: flex; flex-direction: column; align-items: center; justify-content: center; }
       .%$cmp.clz% .urgencySymbol { position: absolute; top: var(--urgency-symbol-offset); right: var(--urgency-symbol-offset) }
       .%$cmp.clz% .main-symbol { line-height: 1; }
-      .%$cmp.clz% .abrv { margin: var(--abrv-margin); line-height: 1; }
+      .%$cmp.clz% .abrv { margin: var(--abrv-margin); line-height: 1; display: var(--show-abrv);}
+      .%$cmp.clz% .title { margin: var(--abrv-margin); line-height: 1; display: var(--show-title);}
     `)
   )
 })
@@ -9268,7 +9276,7 @@ component('healthCare.categoryColor', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:9273, jb, noProxies: false, path: '/plugins/zui/zui-app.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:9281, jb, noProxies: false, path: '/plugins/zui/zui-app.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 using('html')
@@ -9299,9 +9307,10 @@ component('app', {
         return pack
       }
     }),
-    frontEnd.init((ctx,{cmp, uiTest, widget}) => {
+    frontEnd.init((ctx,{cmp, uiTest, widget, isMobile}) => {
         cmp.taskProgress = new jb.zui.taskProgress(ctx)
         const ctxToUse = ctx.setVars({userData: widget.userData, appData: widget.appData})
+        if (isMobile) cmp.base.querySelector('.left-panel').classList.add('collapsed')
 
         Object.assign(cmp, {
           dataBinder: !uiTest && new jb.html.DataBinder(ctxToUse,[cmp.base.querySelector('.top-panel'), cmp.base.querySelector('.left-panel')]),
@@ -9310,9 +9319,16 @@ component('app', {
             const task = widget.appData.doneTasks[index]
             jb.html.populateHtml(task_dialog_el,ctxToUse.setVars({task}))
           },
-          closeTaskDialog() { task_dialog_el.classList.add('hidden') 
+          closeTaskDialog() { 
+            task_dialog_el.classList.add('hidden') 
           },
-          search() { widget.userData.ctxVer++ }
+          search() {
+            if (isMobile) cmp.base.querySelector('.search-box input').blur()
+            widget.userData.ctxVer++ 
+          },
+          toggleLeftPanel() { 
+            cmp.base.querySelector('.left-panel').classList.toggle('collapsed')
+          }
         })
         if (jb.frame.document)
           document.body.appendChild(cmp.base)
@@ -9342,14 +9358,15 @@ component('mainApp', {
             </div>
             <div class="zooming-grid"></div>
         </div>`,
-    css: `body { font-family: Arial, sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    css: `body { font-family: Arial, sans-serif; display: flex; flex-direction: column; height: 100vh;  margin: 0;  }
     .fade { transition: opacity 0.5s ease; opacity: 1; }
     .hidden { opacity: 0; }    
     .app-layout { display: grid; grid-template-rows: auto 1fr; grid-template-columns: auto 1fr auto; height: 100%; grid-template-areas: "top top top" "left body body";
   }
   .top-panel { grid-area: top; }
   .left-panel { display: grid; grid-template-rows: auto 1fr auto; width: 300px; background: #f4f4f5; padding: 20px; 
-      border-right: 1px solid #ddd; }
+    border-right: 1px solid #ddd; overflow-y: auto}
+  .left-panel.collapsed { width: 0; padding: 0; overflow: hidden; }
   .top-sections { grid-row: 1; }
   .tasks-section { grid-row: 2; height: 100%; overflow-y: auto; }
   .bottom-sections { grid-row: 3; display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
@@ -9371,10 +9388,11 @@ component('topPanel', {
   type: 'section<html>',
   impl: section({
     id: 'topPanel',
-    html: () => `<div class="top-panel">
-  <a class="logo" href="${jbHost.baseUrl}/plugins/zui/">
+    html: (ctx) => `<div class="top-panel">
+  ${ctx.vars.isMobile ? '' : `<a class="logo" href="${jbHost.baseUrl}/plugins/zui/">
     <img src="${jbHost.baseUrl}/bin/zui/zui-logo.webp" alt="ZUI Logo" />
-  </a>
+  </a>`}
+  <button class="hamburger" onClick="cmp.toggleLeftPanel()">☰</button>
   <div class="search-box">
     <input type="text" twoWayBind="%$userData.query%" placeholder="Search or enter your query..." onEnter="cmp.search()" />
     <button type="submit" onClick="cmp.search()" bind="%$appData.ctxVer%🔍"></button>
@@ -9382,6 +9400,7 @@ component('topPanel', {
 </div>`,
     css: `.top-panel { display: flex; flex-direction: row; gap: 10px; padding: 15px; background: #f5f5f5; border-bottom: 1px solid #ddd; }
     .top-panel .logo img { height: 50px; width: auto; }
+    .top-panel .hamburger { background: none; border: none; font-size: 24px; cursor: pointer; align-self: center; }
     .top-panel .search-box { flex: 4; display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #ccc; border-radius: 20px; 
         padding: 5px 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     .top-panel .search-box input { flex: 1; border: none; font-size: 16px; outline: none}
@@ -9422,9 +9441,9 @@ component('zoomState', {
       <input type="text" bind_value="%$widget.state.center%" id="center" value="[0, 0]" readonly />
     </div>
     <div class="controls">
-      <label for="speed">Speed:</label>
-      <input type="range" twoWayBind="%$widget.state.speed%" id="speed" min="1" max="5" step="0.1" value="2.5" />
-      <span id="speed-value" bind_text="%$widget.state.speed%">2.5</span>
+      <label for="sensitivity">Sensitivity:</label>
+      <input type="range" twoWayBind="%$widget.state.sensitivity%" id="sensitivity" min="1" max="5" step="0.1" value="2.5" />
+      <span id="sensitivity-value" bind_text="%$widget.state.sensitivity%">2.5</span>
     </div>
   </div>`,
     css: `
@@ -9433,7 +9452,7 @@ component('zoomState', {
         .pan-zoom-state input[type="number"], .pan-zoom-state input[type="text"] {
             font-size: 14px; padding: 5px; width: 66px; border: 1px solid #ddd; border-radius: 5px; background-color: #f5f5f5; color: #555; }
         .pan-zoom-state input[type="range"] { flex-grow: 1; margin-left: 10px; }
-        .pan-zoom-state #speed-value { font-size: 14px; color: #444; min-width: 30px; text-align: center; }`
+        .pan-zoom-state #sensitivity-value { font-size: 14px; color: #444; min-width: 30px; text-align: center; }`
   })
 })
 
@@ -9582,12 +9601,12 @@ component('zui.decoratedllmModels', {
 
 });
 
-jbLoadPackedFile({lineInPackage:9587, jb, noProxies: false, path: '/plugins/zui/running-shoes-domain.js',fileDsl: '', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:9606, jb, noProxies: false, path: '/plugins/zui/running-shoes-domain.js',fileDsl: '', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 
 });
 
-jbLoadPackedFile({lineInPackage:9592, jb, noProxies: false, path: '/plugins/zui/zui-control.js',fileDsl: '', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:9611, jb, noProxies: false, path: '/plugins/zui/zui-control.js',fileDsl: '', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 extension('zui','control' , {
     initExtension() { return {  fCounter: 0, cmpCounter: 1,  } },
@@ -9759,68 +9778,145 @@ extension('zui','control' , {
 })
 });
 
-jbLoadPackedFile({lineInPackage:9764, jb, noProxies: false, path: '/plugins/zui/zui-group.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:9783, jb, noProxies: false, path: '/plugins/zui/zui-domain.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 
-component('group', {
-  type: 'control',
+component('userData', {
+  type: 'user_data',
   params: [
-    {id: 'controls', mandatory: true, type: 'control[]', dynamic: true, composite: true},
-    {id: 'layout', type: 'group_layout', defaultValue: vertical()},
-    {id: 'style', type: 'group-style', dynamic: true, defaultValue: group()},
-  ],
-  impl: ctx => jb.zui.ctrl(ctx)
+    {id: 'query', as: 'string', byName: true},
+    {id: 'contextChips', type: 'data[]', as: 'array', defaultValue: []},
+    {id: 'preferedLlmModel', as: 'string'},
+    {id: 'detailsLevel', as: 'number', defaultValue: 1},
+    {id: 'apiKey', as: 'string', defaultValue: ''}
+  ]
 })
 
-component('group', {
-  type: 'group-style',
-  impl: features(
-    children('%$$model/controls()%'),
-    '%$$model/layout%',
+component('appData', {
+  type: 'app_data',
+  params: [
+    {id: 'suggestedContextChips', type: 'data[]', defaultValue: [], byName: true},
+    {id: 'ctxVer', as : 'number', defaultValue: 1},
+    {id: 'runningTasks', type: 'task[]' },
+    {id: 'doneTasks', type: 'task[]' },
+    {id: 'budget', type: 'budget'},
+    {id: 'usage', type: 'usage'}
+  ]
+})
+
+component('domain', {
+  type: 'domain',
+  params: [
+    {id: 'title', as: 'string'},
+    {id: 'itemsPrompt', as: 'string', dynamic: true, byName: true, newLinesInCode: true},
+    {id: 'newItemsLine', as: 'string', dynamic: true, byName: true, newLinesInCode: true},
+    {id: 'updateItemsLine', as: 'string', dynamic: true, byName: true, newLinesInCode: true},
+    {id: 'iconPromptProps', type: 'prompt_props', byName: true},
+    {id: 'cardPromptProps', type: 'prompt_props'},
+    {id: 'contextHintsPrompt', as: 'string', dynamic: true, byName: true, newLinesInCode: true},
+    {id: 'itemsLayout', type: 'items_layout', dynamic: true},
+    {id: 'iconBox', type: 'iconBox-style', dynamic: true},
+    {id: 'card', type: 'card-style', dynamic: true},
+    {id: 'minGridSize', as: 'array', type: 'data<>[]', defaultValue: [6,6]},
+    {id: 'sample', type: 'domain_sample'}
+  ]
+})
+
+component('props', {
+  type: 'prompt_props',
+  params: [
+    {id: 'description', as: 'string', newLinesInCode: true},
+    {id: 'sample', as: 'string', newLinesInCode: true}
+  ]
+})
+
+component('sample', {
+  type: 'domain_sample',
+  params: [
+    {id: 'items', dynamic: true, byName: true},
+    {id: 'query', as: 'string'},
+    {id: 'contextChips', type: 'data[]', as: 'array', defaultValue: []},
+    {id: 'suggestedContextChips', type: 'data[]', defaultValue: []},
+    {id: 'preferedLlmModel', as: 'string'}
+  ]
+})
+
+component('domain.itemsPromptForTask', {
+  params: [
+    {id: 'domain', type: 'domain'},
+    {id: 'task', type: 'task'}
+  ],
+  impl: (ctx, domain, task) => {
+    const {sample, iconPromptProps,cardPromptProps,itemsPrompt, contextHintsPrompt, newItemsLine, updateItemsLine} = domain
+    const {userData, appData} = ctx.vars
+    const ctxToUse = ctx.vars.testID ? ctx.setVars({task, userData: userData || sample, appData: appData || sample}) : ctx.setVars({task})
+    if (task.details == 'contextHints')
+      return contextHintsPrompt(ctxToUse)
+
+    const [propsInDescription, propsInSample] = 
+      task.details == 'card' ? [`${iconPromptProps.description}\n${cardPromptProps.description}`, `${iconPromptProps.sample},\n${cardPromptProps.sample}`] 
+      : task.details == 'icon' ? [iconPromptProps.description, iconPromptProps.sample] : ['','']
+    const newOrUpdateLine = task.op == 'update' ? updateItemsLine(ctxToUse) : newItemsLine(ctxToUse)
+    return itemsPrompt(ctxToUse.setVars({propsInDescription, propsInSample,newOrUpdateLine}))
+  }
+})
+
+component('domain.itemsSource', {
+  type: 'rx<>',
+  moreTypes: 'data<>',
+  params: [
+    {id: 'domain', type: 'domain'},
+    {id: 'task', type: 'task'}
+  ],
+  impl: rx.pipe(
+    source.llmCompletions(user(domain.itemsPromptForTask('%$domain%', '%$task%')), {
+      llmModel: '%$task/model%',
+      useRedisCache: true,
+      apiKey: '%$userData/apiKey%',
+      notifyUsage: writeValue('%$task/llmUsage%', '%%')
+    }),
+    llm.textToJsonItems()
   )
 })
 
-component('allOrNone', {
+component('iconBox', {
   type: 'control',
   params: [
-    {id: 'controls', mandatory: true, type: 'control[]', dynamic: true, composite: true},
-    {id: 'layout', type: 'group_layout', defaultValue: vertical()},
-    {id: 'style', type: 'group-style', dynamic: true, defaultValue: group()},
+    {id: 'style', type: 'iconBox-style', dynamic: true}
   ],
-  impl: ctx => jb.zui.ctrl(ctx, {layoutProp: { allOrNone: true } })
+  impl: ctx => jb.zui.ctrl(ctx, {$: 'iconBoxFeatures'})
 })
 
-component('firstToFit', {
-  type: 'control',
-  params: [
-    {id: 'controls', mandatory: true, type: 'control[]', dynamic: true, composite: true},
-    {id: 'layout', type: 'group_layout', defaultValue: vertical()},
-    {id: 'style', type: 'group-style', dynamic: true, defaultValue: group()},
-  ],
-  impl: ctx => jb.zui.ctrl(ctx, {layoutProp: { firstToFit: true } })
-})
-
-component('children', {
+component('iconBoxFeatures', {
   type: 'feature',
+  impl: features(
+    frontEnd.var('baseFontSizes', () => ({ title: 10, description: 9 })),
+    frontEnd.var('fontScaleFactor', () => ({ 16: 0.6, 32: 0.8, 64: 1, 128: 1.25 })),
+    zoomingGridElem(1)
+  )
+})
+
+component('card', {
+  type: 'control',
   params: [
-    {id: 'children', as: 'array', dynamic: true}
+    {id: 'style', type: 'card-style', dynamic: true}
   ],
-  impl: (ctx,children) => ({children})
+  impl: ctx => jb.zui.ctrl(ctx, {$: 'cardFeatures'})
 })
 
-component('vertical', {
-  type: 'group_layout',
-  impl: () => ({layoutProp: { layoutAxis:  1 }})
+component('cardFeatures', {
+  type: 'feature',
+  impl: features(
+    zoomingGridElem(2),
+    frontEnd.var('baseFontSizes', () => ({ 'main-title': 16, heading: 15, 'property-title': 14, 'normal-text': 12, description: 10 })),
+    frontEnd.var('fontScaleFactor', () => ({ 64: 0.6, 128: 0.75, 256: 1, 320: 1.25 }))
+  )
 })
 
-component('horizontal', {
-  type: 'group_layout',
-  impl: () => ({layoutProp: { layoutAxis:  0 }})
-})
 });
 
-jbLoadPackedFile({lineInPackage:9825, jb, noProxies: false, path: '/plugins/zui/zui-features.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:9921, jb, noProxies: false, path: '/plugins/zui/zui-features.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 
@@ -10094,255 +10190,7 @@ component('itemOpacity', {
 
 });
 
-jbLoadPackedFile({lineInPackage:10099, jb, noProxies: false, path: '/plugins/zui/zui-llm.js',fileDsl: 'zui', pluginId: 'zui' }, 
-            function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
-dsl('zui')
-using('llm-api')
-
-component('zui.parseLlmItems', {
-  params: [
-    {id: 'llmAnswer', as: 'string', defaultValue: '%%'}
-  ],
-  impl: (ctx,llmAnswer) => {
-    const jsonText = llmAnswer.split('```json').pop().split('```')[0]
-    try {
-      return JSON.parse(jsonText)
-    } catch (e) {
-      jb.logException(e, 'parseLLmItems ',{llmAnswer,jsonText, ctx})
-    }
-  }
-})
-
-// please try only symptoms visible to the doctor or easily detectible by question or test
-
-
-// component('zui.smartMetadata', {
-//   params: [
-//     {id: 'query', as: 'string', newLinesInCode: true}
-//   ],
-//   impl: llmViaApi.completions({
-//     chat: [
-//       user(`You are a metadata discovery assistant for a Zoomable User Interface (ZUI) system. presenting items.
-//       Based on the following **query**: "%$query%"
-//       return a list of 2 **most relevant** metadata properties for **positining** items of this type/category
-//          on x/y axes of a 2D canvas. For example: price/performance
-//     ---
-//          provide the response as javascript array of strings            
-//       `)
-//     ],
-//     model: 'o1-preview',
-//     maxTokens: 25000,
-//     includeSystemMessages: true
-//   })
-// })
-
-// component('zui.smartMetaIconLevel', {
-//   params: [
-//     //{id: 'query', as: 'string', newLinesInCode: true}
-//   ],
-//   impl: llmViaApi.completions({
-//     chat: [
-//       user(`You are LLM prompt expert, helping building a Zoomable User Interface (ZUI) system. presenting items.
-//       We need to build a prompt (or set of prompts) that based on artbitrary query in any domain will suggest the properties, and html/css templates 
-//         for the icon level of the zui system.
-//       The first zoomable level, called icon level, can grow from 8x8 to 64x64 pixels. it generaly uses item initialis, colors and shapers that reprenet the item.
-
-//       Please help to improve the prompt below or suggest a different prompt(s) for this purpose
-//       ----
-//       You are a both metadata discovery assistant and html/css developer working on a Zoomable User Interface (ZUI) system. presenting items.
-
-//       Now you are working on the first zoomable level. It can grow from 8x8 to 64x64 pixels. it generaly uses item initialis, colors and shapers that reprenet the item.
-//       The item width/height is set by the framework and can get any value in this range. the html/css can also be replaced according to levels. 
-//         yet can also keep the same html and change only the css, or define single css using relative(responsive) terms
-
-//       Based on the following **query**: "{{query}}"
-
-//       return a list of 5 **most relevant** metadata properties for **presenting** items of this type/category at the icon level
-//       1. provide sample data for 2 items,
-//       2. suggest levels (8,16,32,32), and html template, css, and data binding to the item. 
-//       `)
-//     ],
-//     model: 'o1-preview',
-//     maxTokens: 25000,
-//     includeSystemMessages: true
-//   })
-// })
-
-// component('zui.smartMetaCardLevel', {
-//   params: [
-//     //{id: 'query', as: 'string', newLinesInCode: true}
-//   ],
-//   impl: llmViaApi.completions({
-//     chat: [
-//       user(`You are LLM prompt expert, helping building a Zoomable User Interface (ZUI) system. presenting items.
-//       We need to build a prompt (or set of prompts) that based on artbitrary query in any domain will suggest the properties, and html/css templates 
-//         for the icon level of the zui system.
-//       The second zoomable level, called card level, is 64x64 - 320*320 pixels. it usually uses item title, description, 4-8 properties and colors and shapes that represent the item.
-
-//       Please help to improve the prompt below or suggest a different prompt(s) for this purpose
-//       ----
-//       You are a both metadata discovery assistant and html/css developer working on a Zoomable User Interface (ZUI) system. presenting items.
-
-//       Now you are working on the second zoomable level. It can grow from 64x64 to 320x400 pixels. it usually uses item title, description, 4-8 properties and colors and shapes that represent the item.
-//       The item width/height is set by the framework and can get any value in this range. the html/css can also be replaced according to levels. 
-//         yet can also keep the same html and change only the css, or define single css using relative(responsive) terms
-
-//       Based on the following **query**: "{{query}}"
-
-//       return a list of 10 **most relevant** metadata properties for **presenting** items of this type/category at the card level
-//       provide sample data for 2 items,
-//       suggest html/css code in this format
-//       ---      
-//       `)
-//     ],
-//     model: 'o1-preview',
-//     maxTokens: 25000,
-//     includeSystemMessages: true
-//   })
-// })
-
-// component('zui.smartIconCode', {
-//   params: [
-//     {id: 'query', as: 'string', newLinesInCode: true}
-//   ],
-//   impl: llmViaApi.completions({
-//     chat: [
-//       user(`You are acting as both a metadata discovery assistant and an HTML/CSS developer working on a Zoomable User Interface (ZUI) system that presents items.
-//       ---
-//       ### **Task Overview:**
-//       Your task is to generate appropriate metadata properties and design elements for presenting items at the icon level of a ZUI system, based on a given query.
-//       ---
-//       ### **Icon Level Details:**
-//       - **Size Range:** The icon level can scale from **8x8 to 64x64 pixels**.
-//       - **Design Elements:** Icons generally use **item initials**, **colors**, and **shapes** that represent the item.
-//       - **Responsive Design:** The HTML/CSS can be adjusted according to different levels. You may:
-//         - Replace the HTML/CSS based on levels.
-//         - Keep the same HTML and modify only the CSS.
-//         - Define a single CSS using relative (responsive) units.
-//       ---
-//       ### **Instructions:**
-//       Based on the following **query**: **"%$query%"**
-//       Please perform the following steps:
-//       1. **Metadata Properties:**
-//          - Identify and list the **5 most relevant metadata properties** for presenting items of this type/category at the icon level.
-//       2. **Sample Data:**
-//          - Provide sample data for **2 example items**, using the identified metadata properties.
-//       3. **Design Suggestions:**
-//          - For icon sizes at **levels 8, 16, 32, and 64 pixels**, suggest:
-//            - **HTML Template**: Provide the minimal HTML structure for the icon.
-//            - **CSS Styles**: Provide the CSS styling for the icon, ensuring it is responsive to the different sizes.
-//            - **Data Binding**: Explain how the sample data binds to the HTML template (e.g., which data populates which part of the template).
-//       ---
-//       ### **Notes:**
-//       - **Simplicity:** Be concise and focus on elements that are visually meaningful at small icon sizes.
-//       - **Legibility:** Ensure that text and shapes remain clear and legible at all specified sizes.
-//       - **Representativeness:** Choose colors and shapes that effectively represent the items based on the query.
-//       - **Consistency:** Maintain a consistent design language across different icon sizes.
-//       `)
-//     ],
-//     model: 'o1-preview',
-//     maxTokens: 25000,
-//     //includeSystemMessages: true
-//   })
-// })
-
-// component('zui.firstItemsNames', {
-//   params: [
-//     {id: 'query', as: 'string', newLinesInCode: true},
-//     {id: 'noOfItems', as: 'number', defaultValue: 5}
-//   ],
-//   impl: llmViaApi.completions({
-//     chat: [
-//       system('You are a data provider for a Zoomable User Interface (ZUI) system'),
-//       user(`please provide the names of the first %$noOfItems% items for this query "%$query%" 
-//       --
-//       provide the response as javascript array of strings
-//       `)
-//     ],
-//     model: 'gpt-3.5-turbo-0125',
-//     maxTokens: 300
-//   })
-// })
-
-// component('zui.itemsShortDescription', {
-//   params: [
-//     {id: 'itemName', as: 'string' },
-//   ],
-//   impl: llmViaApi.completions({
-//     chat: [
-//       system('You are a data provider for a Zoomable User Interface (ZUI) system'),
-//       user(`please provide short description for this item "%$itemName%" in the context of this query "%$query%" 
-//       --
-//       provide the description as a javascript string with double quotes ""
-//       `)
-//     ],
-//     maxTokens: 300
-//   })
-// })
-
-// // user(`Based on the following **query**: "%$query%"
-// // ---
-// // return a list of 5-10 items with most relevant 5-10 properties in json lines format
-// // `)
-
-
-// component('zui.metadataForQuery', {
-//   params: [
-//     {id: 'query', as: 'string', newLinesInCode: true}
-//   ],
-//   impl: llmViaApi.completions({
-//     chat: [
-//       user('You are a metadata discovery assistant for a Zoomable User Interface (ZUI) system of items'),
-//       user(`**Task**: 
-//       Based on the following **query**: "%$query%"
-//       First decide what is the **item type** or **item category** resulting from this query
-//       Then, Return a list of the **most relevant** metadata properties for **positining** items of this type/category
-//          on x/y axes of a 2D canvas. For example: price/performance
-            
-//       **Rules**: 
-//       - Provide 10-20 metadata fields that could apply to items resulting from this query. 
-//       - Each field must include: 
-//         - **name** (property name) 
-//         - **type** (string, number, date, boolean, array, or object) 
-//         - **example_value** (example of what the data might look like) 
-//         - **explanation**
-//         - **can_be_used_on_an_quantitive_axis**
-//         - **can_be_used_in_2D_clustering**
-//         - **priority_score** (score from 1-10, with 10 being the most useful for visualization) 
-//       - sort by can_be_used_on_an_quantitive_axis
-      
-//       **Response format (JSON)**
-//       \`\`\`json
-//       {
-//         "item_type": "e.g. smart phone product",
-//         "fields": [
-//             {
-//             "name": "string (name of the property)",
-//             "type": "string, number, date, boolean, array, or object",
-//             "explanation": "string",
-//             "example_value": "example value for this property",
-//             "can_be_used_on_an_quantitive_axis": 1-10,
-//             "can_be_used_in_2D_clustering": 1-10,
-//             "priority_score": 1-10
-//             }
-//         ]
-//     }
-      
-//       `)
-//     ],
-//     model: 'o1-preview',
-//     maxTokens: 1000
-//   })
-// })
-
-// // Then, Return a list of the most relevant metadata properties for **positining** items of this type/category
-// // on x/y axes of a 2D canvas. For example: price/performance
-
-
-
-});
-
-jbLoadPackedFile({lineInPackage:10347, jb, noProxies: false, path: '/plugins/zui/zui-items-layout.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:10195, jb, noProxies: false, path: '/plugins/zui/zui-items-layout.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 
@@ -10617,7 +10465,7 @@ extension('zui','gridItemsLayout', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:10622, jb, noProxies: false, path: '/plugins/zui/zui-layout.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:10470, jb, noProxies: false, path: '/plugins/zui/zui-layout.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 
@@ -10867,7 +10715,316 @@ extension('zui','layout', {
 
 });
 
-jbLoadPackedFile({lineInPackage:10872, jb, noProxies: false, path: '/plugins/zui/zui-markov.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:10720, jb, noProxies: false, path: '/plugins/zui/zui-group.js',fileDsl: 'zui', pluginId: 'zui' }, 
+            function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
+dsl('zui')
+
+component('group', {
+  type: 'control',
+  params: [
+    {id: 'controls', mandatory: true, type: 'control[]', dynamic: true, composite: true},
+    {id: 'layout', type: 'group_layout', defaultValue: vertical()},
+    {id: 'style', type: 'group-style', dynamic: true, defaultValue: group()},
+  ],
+  impl: ctx => jb.zui.ctrl(ctx)
+})
+
+component('group', {
+  type: 'group-style',
+  impl: features(
+    children('%$$model/controls()%'),
+    '%$$model/layout%',
+  )
+})
+
+component('allOrNone', {
+  type: 'control',
+  params: [
+    {id: 'controls', mandatory: true, type: 'control[]', dynamic: true, composite: true},
+    {id: 'layout', type: 'group_layout', defaultValue: vertical()},
+    {id: 'style', type: 'group-style', dynamic: true, defaultValue: group()},
+  ],
+  impl: ctx => jb.zui.ctrl(ctx, {layoutProp: { allOrNone: true } })
+})
+
+component('firstToFit', {
+  type: 'control',
+  params: [
+    {id: 'controls', mandatory: true, type: 'control[]', dynamic: true, composite: true},
+    {id: 'layout', type: 'group_layout', defaultValue: vertical()},
+    {id: 'style', type: 'group-style', dynamic: true, defaultValue: group()},
+  ],
+  impl: ctx => jb.zui.ctrl(ctx, {layoutProp: { firstToFit: true } })
+})
+
+component('children', {
+  type: 'feature',
+  params: [
+    {id: 'children', as: 'array', dynamic: true}
+  ],
+  impl: (ctx,children) => ({children})
+})
+
+component('vertical', {
+  type: 'group_layout',
+  impl: () => ({layoutProp: { layoutAxis:  1 }})
+})
+
+component('horizontal', {
+  type: 'group_layout',
+  impl: () => ({layoutProp: { layoutAxis:  0 }})
+})
+});
+
+jbLoadPackedFile({lineInPackage:10781, jb, noProxies: false, path: '/plugins/zui/zui-llm.js',fileDsl: 'zui', pluginId: 'zui' }, 
+            function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
+dsl('zui')
+using('llm-api')
+
+component('zui.parseLlmItems', {
+  params: [
+    {id: 'llmAnswer', as: 'string', defaultValue: '%%'}
+  ],
+  impl: (ctx,llmAnswer) => {
+    const jsonText = llmAnswer.split('```json').pop().split('```')[0]
+    try {
+      return JSON.parse(jsonText)
+    } catch (e) {
+      jb.logException(e, 'parseLLmItems ',{llmAnswer,jsonText, ctx})
+    }
+  }
+})
+
+// please try only symptoms visible to the doctor or easily detectible by question or test
+
+
+// component('zui.smartMetadata', {
+//   params: [
+//     {id: 'query', as: 'string', newLinesInCode: true}
+//   ],
+//   impl: llmViaApi.completions({
+//     chat: [
+//       user(`You are a metadata discovery assistant for a Zoomable User Interface (ZUI) system. presenting items.
+//       Based on the following **query**: "%$query%"
+//       return a list of 2 **most relevant** metadata properties for **positining** items of this type/category
+//          on x/y axes of a 2D canvas. For example: price/performance
+//     ---
+//          provide the response as javascript array of strings            
+//       `)
+//     ],
+//     model: 'o1-preview',
+//     maxTokens: 25000,
+//     includeSystemMessages: true
+//   })
+// })
+
+// component('zui.smartMetaIconLevel', {
+//   params: [
+//     //{id: 'query', as: 'string', newLinesInCode: true}
+//   ],
+//   impl: llmViaApi.completions({
+//     chat: [
+//       user(`You are LLM prompt expert, helping building a Zoomable User Interface (ZUI) system. presenting items.
+//       We need to build a prompt (or set of prompts) that based on artbitrary query in any domain will suggest the properties, and html/css templates 
+//         for the icon level of the zui system.
+//       The first zoomable level, called icon level, can grow from 8x8 to 64x64 pixels. it generaly uses item initialis, colors and shapers that reprenet the item.
+
+//       Please help to improve the prompt below or suggest a different prompt(s) for this purpose
+//       ----
+//       You are a both metadata discovery assistant and html/css developer working on a Zoomable User Interface (ZUI) system. presenting items.
+
+//       Now you are working on the first zoomable level. It can grow from 8x8 to 64x64 pixels. it generaly uses item initialis, colors and shapers that reprenet the item.
+//       The item width/height is set by the framework and can get any value in this range. the html/css can also be replaced according to levels. 
+//         yet can also keep the same html and change only the css, or define single css using relative(responsive) terms
+
+//       Based on the following **query**: "{{query}}"
+
+//       return a list of 5 **most relevant** metadata properties for **presenting** items of this type/category at the icon level
+//       1. provide sample data for 2 items,
+//       2. suggest levels (8,16,32,32), and html template, css, and data binding to the item. 
+//       `)
+//     ],
+//     model: 'o1-preview',
+//     maxTokens: 25000,
+//     includeSystemMessages: true
+//   })
+// })
+
+// component('zui.smartMetaCardLevel', {
+//   params: [
+//     //{id: 'query', as: 'string', newLinesInCode: true}
+//   ],
+//   impl: llmViaApi.completions({
+//     chat: [
+//       user(`You are LLM prompt expert, helping building a Zoomable User Interface (ZUI) system. presenting items.
+//       We need to build a prompt (or set of prompts) that based on artbitrary query in any domain will suggest the properties, and html/css templates 
+//         for the icon level of the zui system.
+//       The second zoomable level, called card level, is 64x64 - 320*320 pixels. it usually uses item title, description, 4-8 properties and colors and shapes that represent the item.
+
+//       Please help to improve the prompt below or suggest a different prompt(s) for this purpose
+//       ----
+//       You are a both metadata discovery assistant and html/css developer working on a Zoomable User Interface (ZUI) system. presenting items.
+
+//       Now you are working on the second zoomable level. It can grow from 64x64 to 320x400 pixels. it usually uses item title, description, 4-8 properties and colors and shapes that represent the item.
+//       The item width/height is set by the framework and can get any value in this range. the html/css can also be replaced according to levels. 
+//         yet can also keep the same html and change only the css, or define single css using relative(responsive) terms
+
+//       Based on the following **query**: "{{query}}"
+
+//       return a list of 10 **most relevant** metadata properties for **presenting** items of this type/category at the card level
+//       provide sample data for 2 items,
+//       suggest html/css code in this format
+//       ---      
+//       `)
+//     ],
+//     model: 'o1-preview',
+//     maxTokens: 25000,
+//     includeSystemMessages: true
+//   })
+// })
+
+// component('zui.smartIconCode', {
+//   params: [
+//     {id: 'query', as: 'string', newLinesInCode: true}
+//   ],
+//   impl: llmViaApi.completions({
+//     chat: [
+//       user(`You are acting as both a metadata discovery assistant and an HTML/CSS developer working on a Zoomable User Interface (ZUI) system that presents items.
+//       ---
+//       ### **Task Overview:**
+//       Your task is to generate appropriate metadata properties and design elements for presenting items at the icon level of a ZUI system, based on a given query.
+//       ---
+//       ### **Icon Level Details:**
+//       - **Size Range:** The icon level can scale from **8x8 to 64x64 pixels**.
+//       - **Design Elements:** Icons generally use **item initials**, **colors**, and **shapes** that represent the item.
+//       - **Responsive Design:** The HTML/CSS can be adjusted according to different levels. You may:
+//         - Replace the HTML/CSS based on levels.
+//         - Keep the same HTML and modify only the CSS.
+//         - Define a single CSS using relative (responsive) units.
+//       ---
+//       ### **Instructions:**
+//       Based on the following **query**: **"%$query%"**
+//       Please perform the following steps:
+//       1. **Metadata Properties:**
+//          - Identify and list the **5 most relevant metadata properties** for presenting items of this type/category at the icon level.
+//       2. **Sample Data:**
+//          - Provide sample data for **2 example items**, using the identified metadata properties.
+//       3. **Design Suggestions:**
+//          - For icon sizes at **levels 8, 16, 32, and 64 pixels**, suggest:
+//            - **HTML Template**: Provide the minimal HTML structure for the icon.
+//            - **CSS Styles**: Provide the CSS styling for the icon, ensuring it is responsive to the different sizes.
+//            - **Data Binding**: Explain how the sample data binds to the HTML template (e.g., which data populates which part of the template).
+//       ---
+//       ### **Notes:**
+//       - **Simplicity:** Be concise and focus on elements that are visually meaningful at small icon sizes.
+//       - **Legibility:** Ensure that text and shapes remain clear and legible at all specified sizes.
+//       - **Representativeness:** Choose colors and shapes that effectively represent the items based on the query.
+//       - **Consistency:** Maintain a consistent design language across different icon sizes.
+//       `)
+//     ],
+//     model: 'o1-preview',
+//     maxTokens: 25000,
+//     //includeSystemMessages: true
+//   })
+// })
+
+// component('zui.firstItemsNames', {
+//   params: [
+//     {id: 'query', as: 'string', newLinesInCode: true},
+//     {id: 'noOfItems', as: 'number', defaultValue: 5}
+//   ],
+//   impl: llmViaApi.completions({
+//     chat: [
+//       system('You are a data provider for a Zoomable User Interface (ZUI) system'),
+//       user(`please provide the names of the first %$noOfItems% items for this query "%$query%" 
+//       --
+//       provide the response as javascript array of strings
+//       `)
+//     ],
+//     model: 'gpt-3.5-turbo-0125',
+//     maxTokens: 300
+//   })
+// })
+
+// component('zui.itemsShortDescription', {
+//   params: [
+//     {id: 'itemName', as: 'string' },
+//   ],
+//   impl: llmViaApi.completions({
+//     chat: [
+//       system('You are a data provider for a Zoomable User Interface (ZUI) system'),
+//       user(`please provide short description for this item "%$itemName%" in the context of this query "%$query%" 
+//       --
+//       provide the description as a javascript string with double quotes ""
+//       `)
+//     ],
+//     maxTokens: 300
+//   })
+// })
+
+// // user(`Based on the following **query**: "%$query%"
+// // ---
+// // return a list of 5-10 items with most relevant 5-10 properties in json lines format
+// // `)
+
+
+// component('zui.metadataForQuery', {
+//   params: [
+//     {id: 'query', as: 'string', newLinesInCode: true}
+//   ],
+//   impl: llmViaApi.completions({
+//     chat: [
+//       user('You are a metadata discovery assistant for a Zoomable User Interface (ZUI) system of items'),
+//       user(`**Task**: 
+//       Based on the following **query**: "%$query%"
+//       First decide what is the **item type** or **item category** resulting from this query
+//       Then, Return a list of the **most relevant** metadata properties for **positining** items of this type/category
+//          on x/y axes of a 2D canvas. For example: price/performance
+            
+//       **Rules**: 
+//       - Provide 10-20 metadata fields that could apply to items resulting from this query. 
+//       - Each field must include: 
+//         - **name** (property name) 
+//         - **type** (string, number, date, boolean, array, or object) 
+//         - **example_value** (example of what the data might look like) 
+//         - **explanation**
+//         - **can_be_used_on_an_quantitive_axis**
+//         - **can_be_used_in_2D_clustering**
+//         - **priority_score** (score from 1-10, with 10 being the most useful for visualization) 
+//       - sort by can_be_used_on_an_quantitive_axis
+      
+//       **Response format (JSON)**
+//       \`\`\`json
+//       {
+//         "item_type": "e.g. smart phone product",
+//         "fields": [
+//             {
+//             "name": "string (name of the property)",
+//             "type": "string, number, date, boolean, array, or object",
+//             "explanation": "string",
+//             "example_value": "example value for this property",
+//             "can_be_used_on_an_quantitive_axis": 1-10,
+//             "can_be_used_in_2D_clustering": 1-10,
+//             "priority_score": 1-10
+//             }
+//         ]
+//     }
+      
+//       `)
+//     ],
+//     model: 'o1-preview',
+//     maxTokens: 1000
+//   })
+// })
+
+// // Then, Return a list of the most relevant metadata properties for **positining** items of this type/category
+// // on x/y axes of a 2D canvas. For example: price/performance
+
+
+
+});
+
+jbLoadPackedFile({lineInPackage:11029, jb, noProxies: false, path: '/plugins/zui/zui-markov.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 
@@ -11018,145 +11175,7 @@ focusing on the conditions with the highest likelihood.
 
 });
 
-jbLoadPackedFile({lineInPackage:11023, jb, noProxies: false, path: '/plugins/zui/zui-domain.js',fileDsl: 'zui', pluginId: 'zui' }, 
-            function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
-dsl('zui')
-
-component('userData', {
-  type: 'user_data',
-  params: [
-    {id: 'query', as: 'string', byName: true},
-    {id: 'contextChips', type: 'data[]', as: 'array', defaultValue: []},
-    {id: 'preferedLlmModel', as: 'string'},
-    {id: 'detailsLevel', as: 'number', defaultValue: 1},
-    {id: 'apiKey', as: 'string', defaultValue: ''}
-  ]
-})
-
-component('appData', {
-  type: 'app_data',
-  params: [
-    {id: 'suggestedContextChips', type: 'data[]', defaultValue: [], byName: true},
-    {id: 'ctxVer', as : 'number', defaultValue: 1},
-    {id: 'runningTasks', type: 'task[]' },
-    {id: 'doneTasks', type: 'task[]' },
-    {id: 'budget', type: 'budget'},
-    {id: 'usage', type: 'usage'}
-  ]
-})
-
-component('domain', {
-  type: 'domain',
-  params: [
-    {id: 'title', as: 'string'},
-    {id: 'itemsPrompt', as: 'string', dynamic: true, byName: true, newLinesInCode: true},
-    {id: 'newItemsLine', as: 'string', dynamic: true, byName: true, newLinesInCode: true},
-    {id: 'updateItemsLine', as: 'string', dynamic: true, byName: true, newLinesInCode: true},
-    {id: 'iconPromptProps', type: 'prompt_props', byName: true},
-    {id: 'cardPromptProps', type: 'prompt_props'},
-    {id: 'contextHintsPrompt', as: 'string', dynamic: true, byName: true, newLinesInCode: true},
-    {id: 'itemsLayout', type: 'items_layout', dynamic: true},
-    {id: 'iconBox', type: 'iconBox-style', dynamic: true},
-    {id: 'card', type: 'card-style', dynamic: true},
-    {id: 'minGridSize', as: 'array', type: 'data<>[]', defaultValue: [6,6]},
-    {id: 'sample', type: 'domain_sample'}
-  ]
-})
-
-component('props', {
-  type: 'prompt_props',
-  params: [
-    {id: 'description', as: 'string', newLinesInCode: true},
-    {id: 'sample', as: 'string', newLinesInCode: true}
-  ]
-})
-
-component('sample', {
-  type: 'domain_sample',
-  params: [
-    {id: 'items', dynamic: true, byName: true},
-    {id: 'query', as: 'string'},
-    {id: 'contextChips', type: 'data[]', as: 'array', defaultValue: []},
-    {id: 'suggestedContextChips', type: 'data[]', defaultValue: []},
-    {id: 'preferedLlmModel', as: 'string'}
-  ]
-})
-
-component('domain.itemsPromptForTask', {
-  params: [
-    {id: 'domain', type: 'domain'},
-    {id: 'task', type: 'task'}
-  ],
-  impl: (ctx, domain, task) => {
-    const {sample, iconPromptProps,cardPromptProps,itemsPrompt, contextHintsPrompt, newItemsLine, updateItemsLine} = domain
-    const {userData, appData} = ctx.vars
-    const ctxToUse = ctx.vars.testID ? ctx.setVars({task, userData: userData || sample, appData: appData || sample}) : ctx.setVars({task})
-    if (task.details == 'contextHints')
-      return contextHintsPrompt(ctxToUse)
-
-    const [propsInDescription, propsInSample] = 
-      task.details == 'card' ? [`${iconPromptProps.description}\n${cardPromptProps.description}`, `${iconPromptProps.sample},\n${cardPromptProps.sample}`] 
-      : task.details == 'icon' ? [iconPromptProps.description, iconPromptProps.sample] : ['','']
-    const newOrUpdateLine = task.op == 'update' ? updateItemsLine(ctxToUse) : newItemsLine(ctxToUse)
-    return itemsPrompt(ctxToUse.setVars({propsInDescription, propsInSample,newOrUpdateLine}))
-  }
-})
-
-component('domain.itemsSource', {
-  type: 'rx<>',
-  moreTypes: 'data<>',
-  params: [
-    {id: 'domain', type: 'domain'},
-    {id: 'task', type: 'task'}
-  ],
-  impl: rx.pipe(
-    source.llmCompletions(user(domain.itemsPromptForTask('%$domain%', '%$task%')), {
-      llmModel: '%$task/model%',
-      useRedisCache: true,
-      apiKey: '%$userData/apiKey%',
-      notifyUsage: writeValue('%$task/llmUsage%', '%%')
-    }),
-    llm.textToJsonItems()
-  )
-})
-
-component('iconBox', {
-  type: 'control',
-  params: [
-    {id: 'style', type: 'iconBox-style', dynamic: true}
-  ],
-  impl: ctx => jb.zui.ctrl(ctx, {$: 'iconBoxFeatures'})
-})
-
-component('iconBoxFeatures', {
-  type: 'feature',
-  impl: features(
-    frontEnd.var('baseFontSizes', () => ({ title: 10, description: 9 })),
-    frontEnd.var('fontScaleFactor', () => ({ 16: 0.6, 32: 0.8, 64: 1, 128: 1.25 })),
-    zoomingGridElem(1)
-  )
-})
-
-component('card', {
-  type: 'control',
-  params: [
-    {id: 'style', type: 'card-style', dynamic: true}
-  ],
-  impl: ctx => jb.zui.ctrl(ctx, {$: 'cardFeatures'})
-})
-
-component('cardFeatures', {
-  type: 'feature',
-  impl: features(
-    zoomingGridElem(2),
-    frontEnd.var('baseFontSizes', () => ({ 'main-title': 16, heading: 15, 'property-title': 14, 'normal-text': 12, description: 10 })),
-    frontEnd.var('fontScaleFactor', () => ({ 64: 0.6, 128: 0.75, 256: 1, 320: 1.25 }))
-  )
-})
-
-});
-
-jbLoadPackedFile({lineInPackage:11161, jb, noProxies: false, path: '/plugins/zui/zui-scale.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:11180, jb, noProxies: false, path: '/plugins/zui/zui-scale.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 
@@ -11235,7 +11254,7 @@ component('opacity', {
 
 component('opacityScale', {
   type: 'opacity_scale',
-  impl: () => [0.2,0.4,0.6,0.8,1.0]
+  impl: () => [0.5,0.6,0.7,0.9,1.0]
 })
 
 component('zui.itemSymbolFunc', {
@@ -11471,281 +11490,7 @@ component('coolToWarm10', {
 
 });
 
-jbLoadPackedFile({lineInPackage:11476, jb, noProxies: false, path: '/plugins/zui/zui-tester.js',fileDsl: 'zui', pluginId: 'zui' }, 
-            function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
-dsl('zui')
-using('testing')
-
-extension('test', 'zui', {
-	initExtension() {
-		return { animationFuncs: [] } 
-	},
-    requestAnimationFrame(func) {
-        jb.test.animationFuncs.push(func)
-    },
-    triggerAnimationEvent(ctx) {
-        const funcs = jb.test.animationFuncs
-        jb.log(`zui activate animation events ${funcs.length}`, {funcs, ctx})
-        funcs.forEach(f=>f())
-    }
-})
-
-component('zuiTest', {
-  type: 'test<>',
-  params: [
-    {id: 'control', type: 'control', dynamic: true, mandatory: true},
-    {id: 'expectedResult', type: 'boolean<>', dynamic: true, mandatory: true},
-    {id: 'domain', type: 'domain', defaultValue: healthCare()},
-    {id: 'runBefore', type: 'action<>', dynamic: true},
-    {id: 'userEvents', type: 'animation_event<zui>[]'},
-    {id: 'allowError', as: 'boolean', dynamic: true, type: 'boolean<>'},
-    {id: 'timeout', as: 'number', defaultValue: 200},
-    {id: 'cleanUp', type: 'action<>', dynamic: true},
-    {id: 'expectedCounters', as: 'single'},
-    {id: 'spy'},
-    {id: 'covers'}
-  ],
-  impl: dataTest({
-    vars: [
-      Var('uiTest', true),
-      Var('widget', typeAdapter('widget<zui>', widget('%$control()%', { frontEnd: widgetFE(), domain: '%$domain%' }))),
-      Var('initwidget', '%$widget.init()%', { async: true })
-    ],
-    calculate: pipe('%$userEvents%','%$widget.app_cmp.processFEReq()%'),
-    expectedResult: typeAdapter('data<>', pipeline('%$widget.frontEnd.cmpsData%', prettyPrint({ noMacros: true }), '%$expectedResult()%', first())),
-    timeout: If(equals('%$backEndJbm%', () => jb), '%$timeout%', 5000),
-    allowError: '%$allowError()%',
-    expectedCounters: '%$expectedCounters%',
-    spy: ({},{},{spy}) => spy === '' ? 'test,zui' : spy,
-    includeTestRes: true
-  })
-})
-
-component('zuiControlRunner', {
-  type: 'action<>',
-  params: [
-    {id: 'control', type: 'control', dynamic: true, mandatory: true},
-    {id: 'styleSheet', as: 'string', newLinesInCode: true},
-    {id: 'domain', type: 'domain', defaultValue: healthCare()}
-  ],
-  impl: runActions(
-    Var('widget', typeAdapter('widget<zui>', widget('%$control()%', { frontEnd: widgetFE(), domain: '%$domain%' }))),
-    '%$widget.init()%'
-  )
-})
-
-component('animationEvent', {
-  type: 'animation_event',
-  params: [
-    {id: 'event', defaultValue: obj()},
-  ],
-  impl: (ctx,event) => jb.test.triggerAnimationEvent(ctx.setData(event))
-})
-
-component('zoomEvent', {
-    type: 'animation_event',
-    params: [
-      {id: 'zoom', as: 'number'},
-      {id: 'center', as: 'array'},
-    ],
-    impl: animationEvent(({},{},{zoom,center}) => ({
-        ...(isNaN(zoom) ? {} : { zoom, tZoom: zoom}),
-        ...(center ? {}: { center, tCenter: center})
-    }))
-})
- 
-});
-
-jbLoadPackedFile({lineInPackage:11561, jb, noProxies: false, path: '/plugins/zui/zui-widget.js',fileDsl: 'zui', pluginId: 'zui' }, 
-            function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
-dsl('zui')
-
-component('widget', {
-  type: 'widget',
-  params: [
-    {id: 'control', type: 'control', dynamic: true},
-    {id: 'screenSizeForTest', as: 'array', defaultValue: [600,600]},
-    {id: 'frontEnd', type: 'widget_frontend'},
-    {id: 'domain', type: 'domain'},
-    {id: 'features', type: 'feature'},
-    {id: 'userData', type: 'user_data', defaultValue: userData()},
-    {id: 'appData', type: 'app_data', defaultValue: appData()},
-  ],
-  impl: ctx => {
-        const {screenSizeForTest, control, frontEnd, userData, appData, domain, features} = ctx.params
-        Object.assign(userData, {
-            query: jb.path(domain.sample,'query') || '',
-            contextChips: jb.path(domain.sample,'contextChips') || [],
-            preferedLlmModel: jb.path(domain.sample,'preferedLlmModel') || '',
-            ctxVer: 1
-        })
-        Object.assign(appData, {
-            suggestedContextChips: jb.path(domain.sample,'suggestedContextChips') || [],
-            totalCost: '$0.00',
-        })
-        
-        frontEnd.initFE(screenSizeForTest,{userData,appData})
-        
-        const widget = {
-            frontEnd,
-            appData,
-            async init() {
-                const ctxForBe = ctx.setVars({userData, appData, domain, screenSize: frontEnd.screenSize, widget: this})
-                const appCmp = control(ctxForBe).applyFeatures(features,20)
-                appCmp.init()
-                frontEnd.beAppCmpProxy = appCmp // should be jbm and activated by jbm.remoteExec
-                await frontEnd.handlePayload(await appCmp.calcPayload())
-                return this
-            }
-        }
-        return widget
-    }
-})
-
-component('widgetFE', {
-  type: 'widget_frontend',
-  impl: (ctx) => ({
-        cmps: {},
-        cmpsData: {},
-        renderCounter: 1,
-        state: {tCenter: [1,1], tZoom : 2, zoom: 2, center: [1,1], speed: 3, sensitivity: 5},
-
-        initFE(screenSizeForTest,{userData,appData}) {
-            this.userData = userData
-            this.appData = appData
-            this.ctx = new jb.core.jbCtx().setVars({widget: this, canUseConsole: ctx.vars.showOnly, uiTest: ctx.vars.uiTest})
-            this.screenSize = (!ctx.vars.uiTest && jb.frame.window) ? [window.innerWidth,window.innerHeight] : screenSizeForTest
-            this.ctx.probe = ctx.probe
-        },
-        async runBEMethodAndUpdate(cmpId,method,ctx) { // should use jbm
-            const cmp = this.beAppCmpProxy.id == cmpId ? this.beAppCmpProxy : this.beAppCmpProxy.allDescendants().find(x=>x.id == cmpId)
-            if (!cmp)
-                return jb.logError(`runBEMethodAndUpdate can not find cmp ${cmpId} to run method ${method}`, {ctx})
-            const payload = await cmp[method](this.userData)
-            await this.handlePayload(payload)        
-        },
-        BERxSource(cmpId,sourceId,ctx) { // should use jbm
-            const cmp = this.beAppCmpProxy.id == cmpId ? this.beAppCmpProxy : this.beAppCmpProxy.allDescendants().find(x=>x.id == cmpId)
-            if (!cmp)
-                return jb.logError(`runBERxSource can not find cmp ${cmpId} to run source ${sourceId}`, {ctx})
-            return cmp.activateDataSource(sourceId)
-        },
-        async handlePayload(_payload) {
-            const payload = _payload.id ? {[_payload.id] : _payload }: _payload
-            const ctx = this.ctx
-            Object.entries(payload).forEach(([id,be_data]) => {
-                jb.log(`zui handlePayload ${id}`,{be_data, ctx})
-                if (id == 'userData') {
-                    Object.assign(this.userData, be_data)
-                } else if (id == 'appData') {
-                    Object.assign(this.appData, be_data)
-                } else if (this.cmps[id]) {
-                    this.cmps[id].handlePayload(ctx.setVars({be_data}))
-                } else {
-                    this.cmps[id] = newFECmp(id, be_data)
-                    this.cmpsData[id] = { ...(this.cmpsData[id] || {}), ...be_data } // for test
-                }
-            })
-            this.renderRequest = true
-
-            function newFECmp(cmpId, be_data) {
-                const cmp = new (class FECmp {}) // used for serialization filtering
-                const fromBeData = { title, frontEndMethods, layoutProps, detailsLevel, clz, html, templateHtmlItem, css } = be_data
-                Object.assign(cmp, { id: cmpId, state: {}, flows: [], vars: be_data.frontEndVars || {}, ...fromBeData })
-                if (cmp.html && jb.frame.document) {
-                    const temp = document.createElement('div')
-                    temp.innerHTML = cmp.html
-                    cmp.base = temp.children[0]
-                    cmp.base.classList.add(cmp.clz)
-                }
-                if (cmp.css)
-                    jb.zui.setCmpCss(cmp)
-
-                cmp.destroyed = new Promise(resolve=> cmp.resolveDestroyed = resolve)
-                jb.zui.runFEMethod(cmp,'calcProps',{silent:true,ctx})
-                jb.zui.runFEMethod(cmp,'init',{silent:true,ctx})
-                ;(be_data.frontEndMethods ||[]).map(m=>m.method).filter(m=>['init','calcProps'].indexOf(m) == -1)
-                    .forEach(method=> {
-                        const path = (cmp.frontEndMethods || []).find(x=>x.method == method).path
-                        const func = path.split('~').reduce((o,p)=>o && o[p],jb.comps).action
-                        cmp[method] = ctx => func(ctx,{...ctx.vars, ...cmp.vars, cmp})
-                    })
-
-                cmp.state.frontEndStatus = 'ready'
-                return cmp
-            }
-        }
-    })
-})
-
-extension('zui', 'frontend', {
-    setCmpCss(cmp) {
-        jb.zui.setCss(cmp.clz, cmp.css.join('\n'))
-    },
-    setCssVars(cssClass,cssVars) {
-        const cssVarRules = Object.entries(cssVars).map(([key, value]) => `--${key}: ${value};`).join('\n')
-        const content = `.${cssClass} { ${cssVarRules} }`
-        jb.zui.setCss(`vars-${cssClass}`,content)
-    },
-    setCss(id,content) {
-        const document = jb.frame.document
-        if (!document) return
-        let styleTag = document.getElementById(id)
-        if (!styleTag) {
-          styleTag = document.createElement('style')
-          styleTag.id = id
-          document.head.appendChild(styleTag)
-        }
-        styleTag.textContent = Array.isArray(content)? content.join('\n') : content
-    },
-    rxPipeName: profile => (jb.path(profile, '0.event') || jb.path(profile, '0.$') || '') + '...' + jb.path(profile, 'length'),
-    runFEMethod(cmp,method,{data,_vars,silent,ctx} = {}) {
-        if (cmp.state.frontEndStatus != 'ready' && ['onRefresh','initOrRefresh','init','calcProps'].indexOf(method) == -1)
-            return jb.logError('frontend - running method before init', {cmp, method,data,_vars})
-        const toRun = (cmp.frontEndMethods || []).filter(x=>x.method == method).sort((p1,p2) => (p1.phase || 0) - (p2.phase ||0))
-        if (toRun.length == 0 && !silent)
-            return jb.logError(`frontend - no method ${method}`,{cmp})
-        let methodResult = null
-        toRun.forEach(({path}) => jb.utils.tryWrapper(() => {
-            const profile = path.split('~').reduce((o,p)=>o && o[p],jb.comps)
-            if (!profile)
-                return jb.logError('runFEMethod - can not get profile',{method, path})
-            const srcCtx = new jb.core.jbCtx(ctx, { profile, path, forcePath: path })
-            const feMEthod = jb.core.run(srcCtx)
-            const vars = {cmp, $state: cmp.state, ...cmp.vars, ..._vars }
-            const ctxToUse = ctx.setData(data).setVars(vars)
-            const {_prop, _flow } = feMEthod.frontEndMethod
-            if (_prop)
-                jb.log(`frontend before calc prop ${_prop}`,{data, vars, cmp, srcCtx, ...feMEthod.frontEndMethod, ctxToUse})
-            else if (_flow)
-                jb.log(`frontend start flow ${jb.zui.rxPipeName(_flow)}`,{data, vars, cmp, srcCtx, ...feMEthod.frontEndMethod,  ctxToUse})
-            else 
-                jb.log(`frontend run method ${method}`,{data, vars, cmp, srcCtx , ...feMEthod.frontEndMethod,ctxToUse})
-            methodResult = ctxToUse.run(feMEthod.frontEndMethod.profile, jb.utils.dslType(profile.$$))
-            if (_prop)
-                jb.log(`frontend prop ${_prop} value`,{methodResult, cmp})
-            if (_flow && methodResult) cmp.flows.unshift({flow: methodResult, profile: _flow})
-        }, `frontEnd-${method}`,ctx))
-        return methodResult
-    }
-})
-
-component('zui.backEndSource', {
-  type: 'rx<>',
-  params: [
-    {id: 'sourceId', as: 'string'}
-  ],
-  impl: rx.pipe((ctx,{cmp,widget}, {sourceId}) => widget.BERxSource(cmp.id,sourceId,ctx), rx.switchToLocalVars())
-})
-
-component('rx.switchToLocalVars', {
-  type: 'rx<>',
-  category: 'operator',
-  impl: ctx => jb.callbag.map(jb.utils.addDebugInfo(ctx2 => ctx.dataObj(ctx2.data),ctx))
-})
-});
-
-jbLoadPackedFile({lineInPackage:11750, jb, noProxies: false, path: '/plugins/zui/zui-tasks.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:11495, jb, noProxies: false, path: '/plugins/zui/zui-tasks.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 
@@ -11960,7 +11705,283 @@ component('baseTask', {
 
 });
 
-jbLoadPackedFile({lineInPackage:11965, jb, noProxies: false, path: '/plugins/zui/zui-zoom.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:11710, jb, noProxies: false, path: '/plugins/zui/zui-tester.js',fileDsl: 'zui', pluginId: 'zui' }, 
+            function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
+dsl('zui')
+using('testing')
+
+extension('test', 'zui', {
+	initExtension() {
+		return { animationFuncs: [] } 
+	},
+    requestAnimationFrame(func) {
+        jb.test.animationFuncs.push(func)
+    },
+    triggerAnimationEvent(ctx) {
+        const funcs = jb.test.animationFuncs
+        jb.log(`zui activate animation events ${funcs.length}`, {funcs, ctx})
+        funcs.forEach(f=>f())
+    }
+})
+
+component('zuiTest', {
+  type: 'test<>',
+  params: [
+    {id: 'control', type: 'control', dynamic: true, mandatory: true},
+    {id: 'expectedResult', type: 'boolean<>', dynamic: true, mandatory: true},
+    {id: 'domain', type: 'domain', defaultValue: healthCare()},
+    {id: 'runBefore', type: 'action<>', dynamic: true},
+    {id: 'userEvents', type: 'animation_event<zui>[]'},
+    {id: 'allowError', as: 'boolean', dynamic: true, type: 'boolean<>'},
+    {id: 'timeout', as: 'number', defaultValue: 200},
+    {id: 'cleanUp', type: 'action<>', dynamic: true},
+    {id: 'expectedCounters', as: 'single'},
+    {id: 'spy'},
+    {id: 'covers'}
+  ],
+  impl: dataTest({
+    vars: [
+      Var('uiTest', true),
+      Var('widget', typeAdapter('widget<zui>', widget('%$control()%', { frontEnd: widgetFE(), domain: '%$domain%' }))),
+      Var('initwidget', '%$widget.init()%', { async: true })
+    ],
+    calculate: pipe('%$userEvents%','%$widget.app_cmp.processFEReq()%'),
+    expectedResult: typeAdapter('data<>', pipeline('%$widget.frontEnd.cmpsData%', prettyPrint({ noMacros: true }), '%$expectedResult()%', first())),
+    timeout: If(equals('%$backEndJbm%', () => jb), '%$timeout%', 5000),
+    allowError: '%$allowError()%',
+    expectedCounters: '%$expectedCounters%',
+    spy: ({},{},{spy}) => spy === '' ? 'test,zui' : spy,
+    includeTestRes: true
+  })
+})
+
+component('zuiControlRunner', {
+  type: 'action<>',
+  params: [
+    {id: 'control', type: 'control', dynamic: true, mandatory: true},
+    {id: 'styleSheet', as: 'string', newLinesInCode: true},
+    {id: 'domain', type: 'domain', defaultValue: healthCare()}
+  ],
+  impl: runActions(
+    Var('widget', typeAdapter('widget<zui>', widget('%$control()%', { frontEnd: widgetFE(), domain: '%$domain%' }))),
+    '%$widget.init()%'
+  )
+})
+
+component('animationEvent', {
+  type: 'animation_event',
+  params: [
+    {id: 'event', defaultValue: obj()},
+  ],
+  impl: (ctx,event) => jb.test.triggerAnimationEvent(ctx.setData(event))
+})
+
+component('zoomEvent', {
+    type: 'animation_event',
+    params: [
+      {id: 'zoom', as: 'number'},
+      {id: 'center', as: 'array'},
+    ],
+    impl: animationEvent(({},{},{zoom,center}) => ({
+        ...(isNaN(zoom) ? {} : { zoom, tZoom: zoom}),
+        ...(center ? {}: { center, tCenter: center})
+    }))
+})
+ 
+});
+
+jbLoadPackedFile({lineInPackage:11795, jb, noProxies: false, path: '/plugins/zui/zui-widget.js',fileDsl: 'zui', pluginId: 'zui' }, 
+            function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
+dsl('zui')
+
+component('widget', {
+  type: 'widget',
+  params: [
+    {id: 'control', type: 'control', dynamic: true},
+    {id: 'screenSizeForTest', as: 'array', defaultValue: [600,600]},
+    {id: 'frontEnd', type: 'widget_frontend'},
+    {id: 'domain', type: 'domain'},
+    {id: 'features', type: 'feature'},
+    {id: 'userData', type: 'user_data', defaultValue: userData()},
+    {id: 'appData', type: 'app_data', defaultValue: appData()},
+  ],
+  impl: ctx => {
+        const {screenSizeForTest, control, frontEnd, userData, appData, domain, features} = ctx.params
+        Object.assign(userData, {
+            query: jb.path(domain.sample,'query') || '',
+            contextChips: jb.path(domain.sample,'contextChips') || [],
+            preferedLlmModel: jb.path(domain.sample,'preferedLlmModel') || '',
+            ctxVer: 1
+        })
+        Object.assign(appData, {
+            suggestedContextChips: jb.path(domain.sample,'suggestedContextChips') || [],
+            totalCost: '$0.00',
+        })
+        const isMobile = typeof navigator != 'undefined' && /Mobi|Android/i.test(navigator.userAgent)
+        
+        frontEnd.initFE(screenSizeForTest,{userData,appData,isMobile})
+        
+        const widget = {
+            frontEnd,
+            appData,
+            async init() {
+                const ctxForBe = ctx.setVars({userData, appData, domain, screenSize: frontEnd.screenSize, widget: this,isMobile })
+                const appCmp = control(ctxForBe).applyFeatures(features,20)
+                appCmp.init()
+                frontEnd.beAppCmpProxy = appCmp // should be jbm and activated by jbm.remoteExec
+                await frontEnd.handlePayload(await appCmp.calcPayload())
+                return this
+            }
+        }
+        return widget
+    }
+})
+
+component('widgetFE', {
+  type: 'widget_frontend',
+  impl: (ctx) => ({
+        cmps: {},
+        cmpsData: {},
+        renderCounter: 1,
+        state: {tCenter: [1,1], tZoom : 2, zoom: 2, center: [1,1], speed: 3, sensitivity: 5},
+
+        initFE(screenSizeForTest,{userData,appData,isMobile}) {
+            this.userData = userData
+            this.appData = appData
+            this.state.sensitivity = isMobile ? 2 : 5
+            this.ctx = new jb.core.jbCtx().setVars({widget: this, canUseConsole: ctx.vars.showOnly, uiTest: ctx.vars.uiTest, isMobile })
+            this.screenSize = (!ctx.vars.uiTest && jb.frame.window) ? [window.innerWidth,window.innerHeight] : screenSizeForTest
+            this.ctx.probe = ctx.probe
+        },
+        async runBEMethodAndUpdate(cmpId,method,ctx) { // should use jbm
+            const cmp = this.beAppCmpProxy.id == cmpId ? this.beAppCmpProxy : this.beAppCmpProxy.allDescendants().find(x=>x.id == cmpId)
+            if (!cmp)
+                return jb.logError(`runBEMethodAndUpdate can not find cmp ${cmpId} to run method ${method}`, {ctx})
+            const payload = await cmp[method](this.userData)
+            await this.handlePayload(payload)        
+        },
+        BERxSource(cmpId,sourceId,ctx) { // should use jbm
+            const cmp = this.beAppCmpProxy.id == cmpId ? this.beAppCmpProxy : this.beAppCmpProxy.allDescendants().find(x=>x.id == cmpId)
+            if (!cmp)
+                return jb.logError(`runBERxSource can not find cmp ${cmpId} to run source ${sourceId}`, {ctx})
+            return cmp.activateDataSource(sourceId)
+        },
+        async handlePayload(_payload) {
+            const payload = _payload.id ? {[_payload.id] : _payload }: _payload
+            const ctx = this.ctx
+            Object.entries(payload).forEach(([id,be_data]) => {
+                jb.log(`zui handlePayload ${id}`,{be_data, ctx})
+                if (id == 'userData') {
+                    Object.assign(this.userData, be_data)
+                } else if (id == 'appData') {
+                    Object.assign(this.appData, be_data)
+                } else if (this.cmps[id]) {
+                    this.cmps[id].handlePayload(ctx.setVars({be_data}))
+                } else {
+                    this.cmps[id] = newFECmp(id, be_data)
+                    this.cmpsData[id] = { ...(this.cmpsData[id] || {}), ...be_data } // for test
+                }
+            })
+            this.renderRequest = true
+
+            function newFECmp(cmpId, be_data) {
+                const cmp = new (class FECmp {}) // used for serialization filtering
+                const fromBeData = { title, frontEndMethods, layoutProps, detailsLevel, clz, html, templateHtmlItem, css } = be_data
+                Object.assign(cmp, { id: cmpId, state: {}, flows: [], vars: be_data.frontEndVars || {}, ...fromBeData })
+                if (cmp.html && jb.frame.document) {
+                    const temp = document.createElement('div')
+                    temp.innerHTML = cmp.html
+                    cmp.base = temp.children[0]
+                    cmp.base.classList.add(cmp.clz)
+                }
+                if (cmp.css)
+                    jb.zui.setCmpCss(cmp)
+
+                cmp.destroyed = new Promise(resolve=> cmp.resolveDestroyed = resolve)
+                jb.zui.runFEMethod(cmp,'calcProps',{silent:true,ctx})
+                jb.zui.runFEMethod(cmp,'init',{silent:true,ctx})
+                ;(be_data.frontEndMethods ||[]).map(m=>m.method).filter(m=>['init','calcProps'].indexOf(m) == -1)
+                    .forEach(method=> {
+                        const path = (cmp.frontEndMethods || []).find(x=>x.method == method).path
+                        const func = path.split('~').reduce((o,p)=>o && o[p],jb.comps).action
+                        cmp[method] = ctx => func(ctx,{...ctx.vars, ...cmp.vars, cmp})
+                    })
+
+                cmp.state.frontEndStatus = 'ready'
+                return cmp
+            }
+        }
+    })
+})
+
+extension('zui', 'frontend', {
+    setCmpCss(cmp) {
+        jb.zui.setCss(cmp.clz, cmp.css.join('\n'))
+    },
+    setCssVars(cssClass,cssVars) {
+        const cssVarRules = Object.entries(cssVars).map(([key, value]) => `--${key}: ${value};`).join('\n')
+        const content = `.${cssClass} { ${cssVarRules} }`
+        jb.zui.setCss(`vars-${cssClass}`,content)
+    },
+    setCss(id,content) {
+        const document = jb.frame.document
+        if (!document) return
+        let styleTag = document.getElementById(id)
+        if (!styleTag) {
+          styleTag = document.createElement('style')
+          styleTag.id = id
+          document.head.appendChild(styleTag)
+        }
+        styleTag.textContent = Array.isArray(content)? content.join('\n') : content
+    },
+    rxPipeName: profile => (jb.path(profile, '0.event') || jb.path(profile, '0.$') || '') + '...' + jb.path(profile, 'length'),
+    runFEMethod(cmp,method,{data,_vars,silent,ctx} = {}) {
+        if (cmp.state.frontEndStatus != 'ready' && ['onRefresh','initOrRefresh','init','calcProps'].indexOf(method) == -1)
+            return jb.logError('frontend - running method before init', {cmp, method,data,_vars})
+        const toRun = (cmp.frontEndMethods || []).filter(x=>x.method == method).sort((p1,p2) => (p1.phase || 0) - (p2.phase ||0))
+        if (toRun.length == 0 && !silent)
+            return jb.logError(`frontend - no method ${method}`,{cmp})
+        let methodResult = null
+        toRun.forEach(({path}) => jb.utils.tryWrapper(() => {
+            const profile = path.split('~').reduce((o,p)=>o && o[p],jb.comps)
+            if (!profile)
+                return jb.logError('runFEMethod - can not get profile',{method, path})
+            const srcCtx = new jb.core.jbCtx(ctx, { profile, path, forcePath: path })
+            const feMEthod = jb.core.run(srcCtx)
+            const vars = {cmp, $state: cmp.state, ...cmp.vars, ..._vars }
+            const ctxToUse = ctx.setData(data).setVars(vars)
+            const {_prop, _flow } = feMEthod.frontEndMethod
+            if (_prop)
+                jb.log(`frontend before calc prop ${_prop}`,{data, vars, cmp, srcCtx, ...feMEthod.frontEndMethod, ctxToUse})
+            else if (_flow)
+                jb.log(`frontend start flow ${jb.zui.rxPipeName(_flow)}`,{data, vars, cmp, srcCtx, ...feMEthod.frontEndMethod,  ctxToUse})
+            else 
+                jb.log(`frontend run method ${method}`,{data, vars, cmp, srcCtx , ...feMEthod.frontEndMethod,ctxToUse})
+            methodResult = ctxToUse.run(feMEthod.frontEndMethod.profile, jb.utils.dslType(profile.$$))
+            if (_prop)
+                jb.log(`frontend prop ${_prop} value`,{methodResult, cmp})
+            if (_flow && methodResult) cmp.flows.unshift({flow: methodResult, profile: _flow})
+        }, `frontEnd-${method}`,ctx))
+        return methodResult
+    }
+})
+
+component('zui.backEndSource', {
+  type: 'rx<>',
+  params: [
+    {id: 'sourceId', as: 'string'}
+  ],
+  impl: rx.pipe((ctx,{cmp,widget}, {sourceId}) => widget.BERxSource(cmp.id,sourceId,ctx), rx.switchToLocalVars())
+})
+
+component('rx.switchToLocalVars', {
+  type: 'rx<>',
+  category: 'operator',
+  impl: ctx => jb.callbag.map(jb.utils.addDebugInfo(ctx2 => ctx.dataObj(ctx2.data),ctx))
+})
+});
+
+jbLoadPackedFile({lineInPackage:11986, jb, noProxies: false, path: '/plugins/zui/zui-zoom.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 using('rx')
@@ -12023,7 +12044,7 @@ extension('zui','zoom', {
         if (uiTest) return
         const {state} = widget
         const el = cmp.base
-        const w = el.offsetWidth, h = el.offsetHeight
+        const canvasSize = [el.offsetWidth, el.offsetHeight]
         if (el.addEventListener && el.style) {
           el.style.touchAction = 'none'
           el.oncontextmenu = e => (e.preventDefault(), false)
@@ -12071,9 +12092,9 @@ extension('zui','zoom', {
           let {tZoom, tCenter,sensitivity, gridSize} =  state
           if (dz)
             tZoom *= dz**sensitivity
-          const tZoomF = Math.floor(tZoom)
+          const dpFactor = sensitivity / 5
           if (dp)
-            tCenter = [tCenter[0] - dp[0]/w*tZoomF, tCenter[1] - dp[1]/h*tZoomF]
+            tCenter = [0,1].map(axis=>tCenter[axis] - dpFactor*dp[axis]/canvasSize[axis]*Math.floor(tZoom))
   
           const maxDim = Math.max(...gridSize)
           const halfZoom = 1/tZoom
@@ -12139,7 +12160,7 @@ extension('zui','zoom', {
         momentumEvents(pid) {
           const pointer = this.pointers.find(x=>x.pid == pid)
           if (!pointer) return { delay: 0, events: [] }
-          const target = [limitJump(w,500*pointer.vAvg[0]), limitJump(h,500*pointer.vAvg[1])]
+          const target = [0,1].map(axis=> limitJump(canvasSize[axis], 500*pointer.vAvg[axis]))
           const n = 50
           const dps = Array.from(new Array(n).keys()).map( i => smoth(i,n))
           return { delay: 5, events: dps.map(dp=>({dp})) }
@@ -12157,7 +12178,7 @@ extension('zui','zoom', {
 })
 });
 
-jbLoadPackedFile({lineInPackage:12162, jb, noProxies: false, path: '/plugins/zui/zui-zooming-grid.js',fileDsl: 'zui', pluginId: 'zui' }, 
+jbLoadPackedFile({lineInPackage:12183, jb, noProxies: false, path: '/plugins/zui/zui-zooming-grid.js',fileDsl: 'zui', pluginId: 'zui' }, 
             function({jb,require,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiTest,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 
@@ -12405,7 +12426,7 @@ component('spiral', {
 
 });
 
-jbLoadPackedFile({lineInPackage:12410, jb, noProxies: false, path: '/plugins/zui/hc-tests.js',fileDsl: 'zui', pluginId: 'zui-tests' }, 
+jbLoadPackedFile({lineInPackage:12431, jb, noProxies: false, path: '/plugins/zui/hc-tests.js',fileDsl: 'zui', pluginId: 'zui-tests' }, 
             function({jb,require,zuiTest,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 
@@ -12417,7 +12438,7 @@ component('zuiTest.healthCare.app', {
 
 });
 
-jbLoadPackedFile({lineInPackage:12422, jb, noProxies: false, path: '/plugins/zui/zui-llm-tests.js',fileDsl: 'zui', pluginId: 'zui-tests' }, 
+jbLoadPackedFile({lineInPackage:12443, jb, noProxies: false, path: '/plugins/zui/zui-llm-tests.js',fileDsl: 'zui', pluginId: 'zui-tests' }, 
             function({jb,require,zuiTest,healthCare,app,mainApp,topPanel,selectLlmModel,zoomState,taskDialog,tasks,apiKey,zui,userData,appData,domain,props,sample,iconBox,iconBoxFeatures,card,cardFeatures,prop,init,variable,variableForChildren,features,method,dataSource,flow,If,html,extendItem,templateHtmlItem,css,frontEnd,source,extendItemWithProp,itemSymbol,itemColor,itemBorderStyle,itemOpacity,group,allOrNone,firstToFit,children,vertical,horizontal,xyByProps,xyByIndex,spiral,groupByScatter,zoomingSize,fixed,fill,colorByItemValue,Case,borderStyle,borderStyleScale3,opacity,opacityScale,symbol,symbolByItemValue,list,success3,iqScale,star5,speedScale10,unitScale,index,severity5,good5,success5,distinct5,distinct10,green10,gray5,gray10,coolToWarm10,baseTask,zuiControlRunner,animationEvent,zoomEvent,widget,widgetFE,rx,zoomingGrid,zoomingGridStyle,zoomingGridElem,sink,htmlTest,htmlPageRunner,section,page,globals,watchablePeople,person,personWithAddress,personWithPrimitiveChildren,personWithChildren,emptyArray,people,peopleWithChildren,stringArray,stringTree,city,village,state,israel,israel2,jerusalem,eilat,nokdim,pipeline,nameOfCity,dataTest,tests,test,tester,testServer,pluginTest,PROJECTS_PATH,stateless,worker,webWorker,child,cmd,byUri,jbm,parent,isNode,isVscode,nodeOnly,remoteNodeWorker,nodeWorker,remote,remoteCtx,sourceCode,sourceCodeByTgpPath,plugins,extend,project,sameAsParent,pluginsByPath,loadAll,packagesByPath,defaultPackage,staticViaHttp,jbStudioServer,fileSystem,zipFile,treeShake,treeShakeClientWithPlugins,treeShakeClient,firstSucceeding,firstNotEmpty,keys,values,properties,mapValues,entries,now,plus,minus,mul,div,math,evalExpression,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,property,indexOf,writeValue,addToArray,move,splice,removeFromArray,getOrCreate,toggleBooleanValue,obj,dynamicObject,objFromVars,selectProps,transformProp,assign,extendWithObj,extendWithIndex,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUpperCase,toLowerCase,capitalize,object,json,split,replace,isNull,notNull,isEmpty,notEmpty,equals,notEquals,runActions,runActionOnItem,runActionOnItems,removeProps,delay,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,Switch,action,formatDate,formatNumber,getSessionStorage,waitFor,addComponent,fileContent,calcDirectory,pipe,aggregate,objFromProperties,objFromEntries,join,unique,max,min,sum,slice,sort,first,last,count,reverse,splitByPivot,groupBy,groupProps,call,typeAdapter,TBD,Var,unknownCmp,runCtx,log,asIs,isRef,asRef,prettyPrint,llmViaApi,system,assistant,user,llm,model,linear,o1,o1_mini,gpt_35_turbo_0125,gpt_35_turbo_16k,gpt_4o,byId,generic,reasoning,extractText,breakText,zipArrays,removeSections,merge,clone,filterEmptyProperties,trim,splitToLines,newLine,removePrefixRegex,wrapAsObject,substring,Undefined,switchByArraySize,asString,component,extension,using,dsl,pluginDsl}) {
 dsl('zui')
 

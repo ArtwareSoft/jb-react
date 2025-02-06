@@ -59,7 +59,7 @@ extension('zui','zoom', {
         if (uiTest) return
         const {state} = widget
         const el = cmp.base
-        const w = el.offsetWidth, h = el.offsetHeight
+        const canvasSize = [el.offsetWidth, el.offsetHeight]
         if (el.addEventListener && el.style) {
           el.style.touchAction = 'none'
           el.oncontextmenu = e => (e.preventDefault(), false)
@@ -107,9 +107,9 @@ extension('zui','zoom', {
           let {tZoom, tCenter,sensitivity, gridSize} =  state
           if (dz)
             tZoom *= dz**sensitivity
-          const tZoomF = Math.floor(tZoom)
+          const dpFactor = sensitivity / 5
           if (dp)
-            tCenter = [tCenter[0] - dp[0]/w*tZoomF, tCenter[1] - dp[1]/h*tZoomF]
+            tCenter = [0,1].map(axis=>tCenter[axis] - dpFactor*dp[axis]/canvasSize[axis]*Math.floor(tZoom))
   
           const maxDim = Math.max(...gridSize)
           const halfZoom = 1/tZoom
@@ -175,7 +175,7 @@ extension('zui','zoom', {
         momentumEvents(pid) {
           const pointer = this.pointers.find(x=>x.pid == pid)
           if (!pointer) return { delay: 0, events: [] }
-          const target = [limitJump(w,500*pointer.vAvg[0]), limitJump(h,500*pointer.vAvg[1])]
+          const target = [0,1].map(axis=> limitJump(canvasSize[axis], 500*pointer.vAvg[axis]))
           const n = 50
           const dps = Array.from(new Array(n).keys()).map( i => smoth(i,n))
           return { delay: 5, events: dps.map(dp=>({dp})) }

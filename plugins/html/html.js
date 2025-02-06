@@ -6,6 +6,8 @@ component('section', {
       {id: 'id', as: 'string'},
       {id: 'html', as: 'string', dynamic: true, newLinesInCode: true},
       {id: 'css', as: 'string', dynamic: true, newLinesInCode: true},
+      {id: 'init', dynamic: true },
+      {id: 'methods' },
     ]
 })
 
@@ -15,13 +17,15 @@ component('group', {
     {id: 'id', as: 'string'},
     {id: 'html', as: 'string', dynamic: true, newLinesInCode: true},
     {id: 'css', as: 'string', dynamic: true, newLinesInCode: true},
+    {id: 'cmp' },
     {id: 'sections', type: 'section[]', composite: true}
   ],
-  impl: (ctx, id, html, css, sections) => {
+  impl: (ctx, id, html, css, cmp, sections) => {
         const groupVars = jb.objFromEntries(sections.map(sec=>[sec.id,sec]))
         return { id, 
             html: ctx => html(ctx.setVars(groupVars)), 
-            css : ctx => css(ctx.setVars(groupVars))
+            css : ctx => css(ctx.setVars(groupVars)),
+            cmp: [cmp,...sections.map(sec=>sec.cmp)].reduce((acc, obj) => ({ ...acc, ...obj }), {})
         }
     }
 })
@@ -34,7 +38,7 @@ component('page', {
     {id: 'onRefresh', type: 'action<>', dynamic: true}
   ],
   impl: (ctx, section,cmp, refreshFunc) => ({
-    cmp,
+    cmp: Object.assign({},{...cmp, ...section.cmp}),
     section,
     injectIntoElem: ({topEl, registerEvents}) => {
         cmp.beforeInjection && cmp.beforeInjection(ctx)
@@ -84,11 +88,11 @@ extension('html','DataBinder', {
                   if (val == null) {
                       el.style.display = 'none'
                   } else {
+                      el.style.removeProperty('display')
                       if (attr.name === 'bind_value' && el.value != val) el.value = val
                       if (attr.name === 'bind_max' && el.value != val) el.max = val
                       if (attr.name === 'bind_title' && el.getAttribute('title') != val) el.setAttribute('title',val)
                       if ((attr.name === 'bind_text' || attr.name == 'bind') && el.textContent != val) el.textContent = val
-                      el.style.display = 'block'
                   }
                 }
               }

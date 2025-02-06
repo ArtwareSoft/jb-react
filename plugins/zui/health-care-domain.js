@@ -92,10 +92,12 @@ component('healthCare.conditionIconBoxStyle', {
     frontEnd.method('dynamicCssVars', ({},{itemSize})=>{
       const boxSize = 2 ** Math.floor(Math.log(itemSize[0]+0.1)/Math.log(2))
       return (boxSize >= 16) ? {
+        'show-title': boxSize >= 64 ? 'block' : 'none',
+        'show-abrv': boxSize < 64 ? 'block' : 'none',
         'box-size': `${boxSize}px`,
         'urgency-symbol-offset': `${boxSize / 16}px`,
         'abrv-margin': `${boxSize / 16}px`,
-      } : { 'box-size': `${boxSize}px`, 'urgency-symbol-offset': '0', 'abrv-margin': '0' }
+      } : { 'box-size': `${boxSize}px`, 'urgency-symbol-offset': '0', 'abrv-margin': '0', 'show-abrv': 'block', 'show-title': 'none'  }
     }),
     templateHtmlItem(()=> `<div class="icon" 
           bind_style="opacity: %relevancyOpacity%;border-style:%relevancyBorderStyle%;border-color:%urgencyBorderColor%">
@@ -104,6 +106,7 @@ component('healthCare.conditionIconBoxStyle', {
         <div class="urgencySymbol" bind="%urgencySymbol%"></div>
         <div class="main-symbol" bind="%categorySymbol%"></div>
         <div class="abrv" bind="%abrv%"></div>
+        <div class="title" bind="%title%"></div>
       </div>
     </div>`),
     css(`
@@ -115,7 +118,8 @@ component('healthCare.conditionIconBoxStyle', {
           display: flex; flex-direction: column; align-items: center; justify-content: center; }
       .%$cmp.clz% .urgencySymbol { position: absolute; top: var(--urgency-symbol-offset); right: var(--urgency-symbol-offset) }
       .%$cmp.clz% .main-symbol { line-height: 1; }
-      .%$cmp.clz% .abrv { margin: var(--abrv-margin); line-height: 1; }
+      .%$cmp.clz% .abrv { margin: var(--abrv-margin); line-height: 1; display: var(--show-abrv);}
+      .%$cmp.clz% .title { margin: var(--abrv-margin); line-height: 1; display: var(--show-title);}
     `)
   )
 })

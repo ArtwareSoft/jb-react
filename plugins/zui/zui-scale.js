@@ -75,7 +75,7 @@ component('opacity', {
 
 component('opacityScale', {
   type: 'opacity_scale',
-  impl: () => [0.2,0.4,0.6,0.8,1.0]
+  impl: () => [0.5,0.6,0.7,0.9,1.0]
 })
 
 component('zui.itemSymbolFunc', {
