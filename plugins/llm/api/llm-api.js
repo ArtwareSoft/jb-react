@@ -10,9 +10,10 @@ component('llmViaApi.completions', {
     {id: 'metaPrompt', type: 'meta_prompt', dynamic: true},
     {id: 'llmModelForMetaPrompt', type: 'model', defaultValue: gpt_4o()},
     {id: 'includeSystemMessages', as: 'boolean', type: 'boolean<>'},
-    {id: 'useRedisCache', as: 'boolean', type: 'boolean<>'}
+    {id: 'useRedisCache', as: 'boolean', type: 'boolean<>'},
+    {id: 'apiKey', as: 'string'},
   ],
-  impl: async (ctx,chatF,model,max_tokens,metaPrompt,llmModelForMetaPrompt, includeSystemMessages,_useRedisCache) => {
+  impl: async (ctx,chatF,model,max_tokens,metaPrompt,llmModelForMetaPrompt, includeSystemMessages,_useRedisCache,_apiKey) => {
         if (metaPrompt.profile == null) 
           return dataFromLlm(chatF())
         const originalChat = chatF()
@@ -29,9 +30,9 @@ component('llmViaApi.completions', {
           const key = 'llm' + jb.utils.calcHash(model.name + JSON.stringify(chat))
           let res = useRedisCache && await jb.utils.redisStorage(key)
           if (!res) {
+            const apiKey = await jb.llm.apiKey(_apiKey)
             const start_time = new Date().getTime()
             const settings = !jbHost.isNode && !jbHost.notInStudio && await fetch(`/?op=settings`).then(res=>res.json())
-            const apiKey = jbHost.isNode ? process.env.OPENAI_API_KEY: settings.OPENAI_API_KEY
             const ret = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -98,9 +99,8 @@ component('source.llmCompletions', {
           }
         }
         const start_time = new Date().getTime()
+        const apiKey = await jb.llm.apiKey(_apiKey)
 
-        const settings = !jbHost.isNode && !jbHost.notInStudio && await fetch(`${jbHost.baseUrl}/?op=settings`).then(res=>res.json())
-        const apiKey = _apiKey || (jbHost.isNode ? process.env.OPENAI_API_KEY: settings.OPENAI_API_KEY)
         controller = new AbortController()
         connection = await fetch('https://api.openai.com/v1/chat/completions', {
             signal: controller.signal,

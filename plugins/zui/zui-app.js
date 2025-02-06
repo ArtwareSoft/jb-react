@@ -48,6 +48,10 @@ component('app', {
           },
           toggleLeftPanel() { 
             cmp.base.querySelector('.left-panel').classList.toggle('collapsed')
+          },
+          storeApiKey() {
+            localStorage.setItem('apiKey', widget.userData.apiKey)
+            alert('API key saved in local storage')
           }
         })
         if (jb.frame.document)
@@ -285,7 +289,7 @@ component('apiKey', {
           <span id="llmCost" bind_text="%$appData.totalCost%"></span>
         </div>
       </div>
-      <input type="text" id="apiKey" twoWayBind="%$userData.apiKey%" placeholder="Enter your API Key" />
+      <input type="text" id="apiKey" onEnter="cmp.storeApiKey()" twoWayBind="%$userData.apiKey%" placeholder="Enter your API Key" />
     </div>`,
     css: `
       .api-key-section { margin-top: auto; padding-top: 10px; border-top: 1px solid #ddd; }

@@ -20,6 +20,11 @@ extension('llm','main', {
   calcModels(ctx) {
     const profileIds = Object.keys(jb.comps).filter(k=>k.indexOf('model<llm>') == 0 && !k.match(/model$|byId$/))
     return profileIds.map(k=>({...ctx.run({$$: k}), id: k.split('>').pop()}))
+  },
+  async apiKey(_apiKey) {
+    const settings = !jbHost.isNode && !jbHost.notInStudio && await fetch(`${jbHost.baseUrl}/?op=settings`).then(res=>res.json())
+    const apiKey = _apiKey || localStorage.getItem('apiKey') || (jbHost.isNode ? process.env.OPENAI_API_KEY: settings.OPENAI_API_KEY)
+    return apiKey
   }
 })
 
